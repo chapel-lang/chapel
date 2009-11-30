@@ -116,10 +116,7 @@ resolveAutoDestroy(Type* type) {
 
 
 const char* toString(Type* type) {
-  if (type->symbol->hasFlag(FLAG_REF))
-    return type->getValType()->symbol->name;
-  else
-    return type->symbol->name;
+  return type->getValType()->symbol->name;
 }
 
 
@@ -371,9 +368,7 @@ resolveFormals(FnSymbol* fn) {
           formal->type = dtObject;
         } else {
           resolveBlock(formal->typeExpr);
-          formal->type = formal->typeExpr->body.tail->typeInfo();
-          if (formal->type->symbol->hasFlag(FLAG_REF))
-            formal->type = formal->getValType();
+          formal->type = formal->typeExpr->body.tail->getValType();
         }
       }
 
@@ -1221,9 +1216,7 @@ printResolutionError(const char* error,
                 toString(info->actuals.v[0]->type));
     }
   } else if (!strcmp("this", info->name)) {
-    Type* type = info->actuals.v[1]->type;
-    if (type->symbol->hasFlag(FLAG_REF))
-      type = type->getValType();
+    Type* type = info->actuals.v[1]->getValType();
     if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       USR_FATAL(call, "illegal access of iterator or promoted expression");
     } else {
@@ -1682,9 +1675,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
     makeNoop(call);
   } else if (call->isPrimitive(PRIM_TUPLE_EXPAND)) {
     SymExpr* sym = toSymExpr(call->get(1));
-    Type* type = sym->var->type;
-    if (isReferenceType(type))
-      type = type->getValType();
+    Type* type = sym->var->getValType();
 
     if (!type->symbol->hasFlag(FLAG_TUPLE))
       USR_FATAL(call, "invalid tuple expand primitive");
@@ -1831,12 +1822,8 @@ resolveCall(CallExpr* call, bool errorCheck) {
     if (rhsType == dtNil && lhsType != dtNil && !isClass(lhsType))
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
                 toString(lhsType));
-    Type* lhsBaseType = lhsType;
-    if (isReferenceType(lhsBaseType))
-      lhsBaseType = lhsBaseType->getValType();
-    Type* rhsBaseType = rhsType;
-    if (isReferenceType(rhsBaseType))
-      rhsBaseType = rhsBaseType->getValType();
+    Type* lhsBaseType = lhsType->getValType();
+    Type* rhsBaseType = rhsType->getValType();
     if (rhsType != dtNil &&
         rhsBaseType != lhsBaseType &&
         !isDispatchParent(rhsBaseType, lhsBaseType))
@@ -1890,9 +1877,7 @@ insertFormalTemps(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (formalRequiresTemp(formal)) {
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
-      Type* formalType = formal->type;
-      if (formalType->symbol->hasFlag(FLAG_REF))
-        formalType = formalType->getValType();
+      Type* formalType = formal->type->getValType();
       if ((formal->intent == INTENT_BLANK ||
            formal->intent == INTENT_CONST) &&
           !formalType->symbol->hasFlag(FLAG_DOMAIN) &&
@@ -2211,15 +2196,11 @@ preFold(Expr* expr) {
         //
         // resolve tuple indexing by an integral parameter
         //
-        Type* t = base->var->type;
-        if (t->symbol->hasFlag(FLAG_REF))
-          t = t->getValType();
+        Type* t = base->var->getValType();
         if (t->symbol->hasFlag(FLAG_TUPLE)) {
           if (call->numActuals() != 3)
             USR_FATAL(call, "illegal tuple indexing expression");
-          Type* indexType = call->get(3)->typeInfo();
-          if (indexType->symbol->hasFlag(FLAG_REF))
-            indexType = indexType->getValType();
+          Type* indexType = call->get(3)->getValType();
           if (!is_int_type(indexType))
             USR_FATAL(call, "tuple indexing expression is not of integral type");
           long index;
@@ -2241,9 +2222,7 @@ preFold(Expr* expr) {
       INT_ASSERT(se);
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
         USR_FATAL(call, "invalid type specification");
-      Type* type = call->get(1)->typeInfo();
-      if (type ->symbol->hasFlag(FLAG_REF))
-        type = type->getValType();
+      Type* type = call->get(1)->getValType();
       if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
         result = new CallExpr(PRIM_CAST, type->symbol, gNil);
         call->replace(result);
@@ -2257,9 +2236,7 @@ preFold(Expr* expr) {
         inits.add(call);
       }
     } else if (call->isPrimitive(PRIM_TYPEOF)) {
-      Type* type = call->get(1)->typeInfo();
-      if (type ->symbol->hasFlag(FLAG_REF))
-        type = type->getValType();
+      Type* type = call->get(1)->getValType();
       if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         result = new CallExpr("chpl__convertValueToRuntimeType", call->get(1)->remove());
         call->replace(result);
@@ -2346,28 +2323,22 @@ preFold(Expr* expr) {
       }
     } else if (call->isNamed("==")) {
       if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
-        Type* lt = call->get(1)->typeInfo();
-        Type* rt = call->get(2)->typeInfo();
+        Type* lt = call->get(1)->getValType();
+        Type* rt = call->get(2)->getValType();
         if (lt != dtUnknown && rt != dtUnknown &&
-            !lt->symbol->hasFlag(FLAG_GENERIC) && !rt->symbol->hasFlag(FLAG_GENERIC)) {
-          if (lt->symbol->hasFlag(FLAG_REF))
-            lt = lt->getValType();
-          if (rt->symbol->hasFlag(FLAG_REF))
-            rt = rt->getValType();
+            !lt->symbol->hasFlag(FLAG_GENERIC) &&
+            !rt->symbol->hasFlag(FLAG_GENERIC)) {
           result = (lt == rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
           call->replace(result);
         }
       }
     } else if (call->isNamed("!=")) {
       if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
-        Type* lt = call->get(1)->typeInfo();
-        Type* rt = call->get(2)->typeInfo();
+        Type* lt = call->get(1)->getValType();
+        Type* rt = call->get(2)->getValType();
         if (lt != dtUnknown && rt != dtUnknown &&
-            !lt->symbol->hasFlag(FLAG_GENERIC) && !rt->symbol->hasFlag(FLAG_GENERIC)) {
-          if (lt->symbol->hasFlag(FLAG_REF))
-            lt = lt->getValType();
-          if (rt->symbol->hasFlag(FLAG_REF))
-            rt = rt->getValType();
+            !lt->symbol->hasFlag(FLAG_GENERIC) &&
+            !rt->symbol->hasFlag(FLAG_GENERIC)) {
           result = (lt != rt) ? new SymExpr(gTrue) : new SymExpr(gFalse);
           call->replace(result);
         }
@@ -2454,10 +2425,7 @@ preFold(Expr* expr) {
       result = new SymExpr(new_StringSymbol(se->var->type->symbol->name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_GET_LOCALEID)) {
-      Type* type = call->get(1)->typeInfo();
-
-      if (type->symbol->hasFlag(FLAG_REF))
-        type = type->getValType();
+      Type* type = call->get(1)->getValType();
 
       //
       // ensure .locale (and on) are applied to lvalues or classes
@@ -2810,9 +2778,7 @@ postFold(Expr* expr) {
         }
       }
     } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
-      Type* baseType = call->get(1)->typeInfo();
-      if (baseType->symbol->hasFlag(FLAG_REF))
-        baseType = baseType->getValType();
+      Type* baseType = call->get(1)->getValType();
       const char* memberName = get_string(call->get(2));
       Symbol* sym = baseType->getField(memberName);
       if (sym->isParameter()) {
@@ -2829,12 +2795,8 @@ postFold(Expr* expr) {
       }
     } else if (call->isPrimitive(PRIM_ISSUBTYPE)) {
       if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
-        Type* lt = call->get(2)->typeInfo(); // a:t cast is cast(t,a)
-        Type* rt = call->get(1)->typeInfo();
-        if (lt->symbol->hasFlag(FLAG_REF))
-          lt = lt->getValType();
-        if (rt->symbol->hasFlag(FLAG_REF))
-          rt = rt->getValType();
+        Type* lt = call->get(2)->getValType(); // a:t cast is cast(t,a)
+        Type* rt = call->get(1)->getValType();
         if (lt != dtUnknown && rt != dtUnknown && lt != dtAny &&
             rt != dtAny && !lt->symbol->hasFlag(FLAG_GENERIC)) {
           bool is_true = false;
@@ -2869,17 +2831,8 @@ postFold(Expr* expr) {
       result = (is_enum) ? new SymExpr(gTrue) : new SymExpr(gFalse);
       call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_TUPLE)) {
-      bool is_tuple = false;
-      if (SymExpr* sym = toSymExpr(call->get(1))) {
-        Symbol* typeSym;
-        if (!sym->var->type->refType)
-          typeSym = sym->var->getValType()->symbol;
-        else
-          typeSym = sym->var->type->symbol;
-        if (typeSym->hasFlag(FLAG_TUPLE)) {
-          is_tuple = true;
-        }
-      }
+      Type* type = call->get(1)->getValType();
+      bool is_tuple = type->symbol->hasFlag(FLAG_TUPLE);
       result = (is_tuple) ? new SymExpr(gTrue) : new SymExpr(gFalse);
       call->replace(result);
     } else if (call->isPrimitive("chpl_string_compare")) {
@@ -4018,9 +3971,6 @@ pruneResolvedTree() {
         // Remove Noops
         call->remove();
       } else if (call->isPrimitive(PRIM_TYPEOF)) {
-        Type* type = call->get(1)->typeInfo();
-        if (type->symbol->hasFlag(FLAG_REF))
-          type = type->getValType();
         // Remove move(x, PRIM_TYPEOF(y)) calls -- useless after this
         CallExpr* parentCall = toCallExpr(call->parentExpr);
         if (parentCall && parentCall->isPrimitive(PRIM_MOVE) && 

@@ -1180,9 +1180,7 @@ insertWideReferences(void) {
                 call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
               }
             } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-              Type* valueType = call->get(1)->typeInfo();
-              if (valueType->symbol->hasFlag(FLAG_WIDE))
-                valueType = valueType->getValType();
+              Type* valueType = call->get(1)->getValType();
               Type* componentType = valueType->getField("x1")->type;
               if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
                 VarSymbol* tmp = newTemp(componentType);
@@ -1269,9 +1267,7 @@ insertWideReferences(void) {
             }
           }
         } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-          Type* valueType = call->get(1)->typeInfo();
-          if (valueType->symbol->hasFlag(FLAG_WIDE))
-            valueType = valueType->getValType();
+          Type* valueType = call->get(1)->getValType();
           Type* componentType = valueType->getField("x1")->type;
           if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS) ||
               componentType->symbol->hasFlag(FLAG_WIDE)) {

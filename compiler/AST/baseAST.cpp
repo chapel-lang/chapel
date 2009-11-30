@@ -245,13 +245,19 @@ Type* BaseAST::getValType() {
     return type->getField("_val")->type;
   else if (type->symbol->hasFlag(FLAG_WIDE))
     return type->getField("addr")->getValType();
-  return NULL;
+  else
+    return type;
 }
 
 Type* BaseAST::getRefType() {
   Type* type = typeInfo();
   INT_ASSERT(type);
-  return type->refType;
+  if (type->symbol->hasFlag(FLAG_REF))
+    return type;
+  else if (type->symbol->hasFlag(FLAG_WIDE))
+    return type->getField("addr")->type;
+  else
+    return type->refType;
 }
 
 Type* BaseAST::getWideRefType() {
@@ -259,10 +265,10 @@ Type* BaseAST::getWideRefType() {
   INT_ASSERT(type);
   if (type->symbol->hasFlag(FLAG_REF))
     return wideRefMap.get(type);
-  type = type->getRefType();
-  if (type)
-    return wideRefMap.get(type);
-  return NULL;
+  else if (type->symbol->hasFlag(FLAG_WIDE))
+    return type;
+  else
+    return wideRefMap.get(type->getRefType());
 }
 
 

@@ -127,26 +127,18 @@ void cullOverReferences() {
         call->replace(call->get(1)->remove());
     }
     if (call->isPrimitive(PRIM_GET_MEMBER)) {
-      Type* vt = call->get(2)->typeInfo();
-      if (isReferenceType(vt))
-        vt = vt->getValType();
+      Type* vt = call->get(2)->getValType();
       if (isDerefType(vt))
         call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
     }
     if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
-      Type* tupleType = call->get(1)->typeInfo();
-      if (isReferenceType(tupleType))
-        tupleType = tupleType->getValType();
-      Type* vt = tupleType->getField("x1")->typeInfo();
-      if (isReferenceType(vt))
-        vt = vt->getValType();
+      Type* tupleType = call->get(1)->getValType();
+      Type* vt = tupleType->getField("x1")->getValType();
       if (isDerefType(vt))
         call->primitive = primitives[PRIM_GET_SVEC_MEMBER_VALUE];
     }
     if (call->isPrimitive(PRIM_ARRAY_GET)) {
-      Type* vt = call->typeInfo();
-      if (isReferenceType(vt))
-        vt = vt->getValType();
+      Type* vt = call->getValType();
       if (isDerefType(vt))
         call->primitive = primitives[PRIM_ARRAY_GET_VALUE];
     }

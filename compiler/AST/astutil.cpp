@@ -393,8 +393,12 @@ pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 
 void
 prune() {
-  Vec<FnSymbol*> fns;
-  Vec<TypeSymbol*> types;
+  Vec<FnSymbol*> fns;     // set of used functions
+  Vec<TypeSymbol*> types; // set of used types
+
+  //
+  // determine sets of used functions and types
+  //
   pruneVisit(chpl_main, fns, types);
   forv_Vec(FnSymbol, fn, ftableVec)
     pruneVisit(fn, fns, types);
@@ -404,35 +408,48 @@ prune() {
         pruneVisit(fn, fns, types);
     }
   }
+
+  //
+  // delete unused functions
+  //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fns.set_in(fn)) {
+    if (!fns.set_in(fn))
       fn->defPoint->remove();
-    }
   }
+
+  //
+  // delete unused ClassType types, only deleting references to such
+  // types when the value types are deleted
+  //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (!types.set_in(ts)) {
-      if (toClassType(ts->type)) {
+      if (isClassType(ts->type)) {
         //
-        // do not delete class/record references
+        // delete reference types for classes/records/unions only if
+        // deleting value types
         //
-        if (ts->hasFlag(FLAG_REF) &&
-            toClassType(ts->type->getField("_val")->type))
+        if (ts->hasFlag(FLAG_REF) && isClassType(ts->getValType()))
           continue;
 
         //
         // delete reference type if type is not used
         //
-        if (ts->type->refType)
-          ts->type->refType->symbol->defPoint->remove();
-        Type *vt = ts->getValType();
-        // don't remove reference to nil, as it may be used when widening
-        if (vt != dtNil) {
-          if (vt) {
-            INT_ASSERT(!vt->refType || vt->refType == ts->type);
+        if (!ts->hasFlag(FLAG_REF))
+          if (Type* refType = ts->getRefType())
+            refType->symbol->defPoint->remove();
+
+        //
+        // unlink reference type from value type
+        //
+        if (ts->hasFlag(FLAG_REF)) {
+          if (Type* vt = ts->getValType()) {
+            if (vt == dtNil) // don't delete nil ref as it is used when widening
+              continue;
             vt->refType = NULL;
           }
-          ts->defPoint->remove();
         }
+
+        ts->defPoint->remove();
       }
     }
   }

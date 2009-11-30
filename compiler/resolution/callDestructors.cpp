@@ -252,9 +252,7 @@ static void
 fixupDestructors() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
-      ClassType* ct = toClassType(fn->_this->type);
-      if (ct->symbol->hasFlag(FLAG_REF))
-        ct = toClassType(ct->getValType());
+      ClassType* ct = toClassType(fn->_this->getValType());
       INT_ASSERT(ct);
 
       //

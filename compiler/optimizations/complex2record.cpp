@@ -77,15 +77,11 @@ complex2record() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_REAL)) {
       call->primitive = primitives[PRIM_GET_MEMBER];
-      ClassType* ct = toClassType(call->get(1)->typeInfo());
-      if (isReferenceType(ct))
-        ct = toClassType(ct->getValType());
+      ClassType* ct = toClassType(call->get(1)->getValType());
       call->insertAtTail(ct->getField(1));
     } else if (call->isPrimitive(PRIM_GET_IMAG)) {
       call->primitive = primitives[PRIM_GET_MEMBER];
-      ClassType* ct = toClassType(call->get(1)->typeInfo());
-      if (isReferenceType(ct))
-        ct = toClassType(ct->getValType());
+      ClassType* ct = toClassType(call->get(1)->getValType());
       call->insertAtTail(ct->getField(2));
     }
   }

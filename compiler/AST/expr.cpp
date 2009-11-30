@@ -815,8 +815,10 @@ void CallExpr::codegen(FILE* outfile) {
         if (call->isPrimitive(PRIM_GET_REF)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            Type* valueType = call->get(1)->getValType();
-            if (!valueType)
+            Type* valueType;
+            if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+              valueType = call->get(1)->getValType();
+            else
               valueType = call->get(1)->typeInfo()->getField("addr")->type;
             INT_ASSERT(valueType == get(1)->typeInfo());
             if (valueType == dtString)
@@ -926,9 +928,7 @@ void CallExpr::codegen(FILE* outfile) {
             gen(outfile, ", %A, %A, %A)",
                 fieldType, call->get(3), call->get(4));
           } else {
-            Type* tupleType = call->get(1)->typeInfo();
-            if (tupleType->symbol->hasFlag(FLAG_REF))
-              tupleType = tupleType->getValType();
+            Type* tupleType = call->get(1)->getValType();
             bool useMemCpy = tupleType->getField("x1")->type->symbol->hasFlag(FLAG_STAR_TUPLE);
             if (useMemCpy)
               fprintf(outfile, "CHPL_ASSIGN_SVEC(");
@@ -1448,9 +1448,7 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIM_GET_SVEC_MEMBER: {
-      Type* tupleType = get(1)->typeInfo();
-      if (tupleType->symbol->hasFlag(FLAG_REF))
-        tupleType = tupleType->getValType();
+      Type* tupleType = get(1)->getValType();
       if (!tupleType->getField("x1")->type->symbol->hasFlag(FLAG_REF))
         fprintf(outfile, "(&(");
       codegenTupleMember(outfile, get(1), get(2));

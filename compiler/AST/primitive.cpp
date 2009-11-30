@@ -65,9 +65,7 @@ returnInfoThreadID(CallExpr* call) {
 
 static Type*
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
-  Type *t = call->get(1)->typeInfo();
-  if (t->symbol->hasFlag(FLAG_REF))
-    t = t->getValType();
+  Type *t = call->get(1)->getValType();
   if (t == dtComplex[COMPLEX_SIZE_64]) {
     return dtReal[FLOAT_SIZE_32]->refType;
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
@@ -85,10 +83,7 @@ returnInfoFirst(CallExpr* call) {
 
 static Type*
 returnInfoFirstDeref(CallExpr* call) {
-  Type *t = call->get(1)->typeInfo();
-  if (t->symbol->hasFlag(FLAG_REF))
-    t = t->getValType();
-  return t;
+  return call->get(1)->getValType();
 }
 
 static Type*
@@ -206,13 +201,7 @@ returnInfoGetMember(CallExpr* call) {
 
 static Type*
 returnInfoGetTupleMember(CallExpr* call) {
-  SymExpr* se = toSymExpr(call->get(1));
-  INT_ASSERT(se);
-  ClassType* ct = toClassType(se->var->type);
-  if (ct->symbol->hasFlag(FLAG_WIDE))
-    ct = toClassType(ct->getField("addr")->type);
-  if (ct->symbol->hasFlag(FLAG_REF))
-    ct = toClassType(ct->getValType());
+  ClassType* ct = toClassType(call->get(1)->getValType());
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
   return ct->getField("x1")->type;
 }
@@ -225,20 +214,12 @@ returnInfoGetTupleMemberRef(CallExpr* call) {
 
 static Type*
 returnInfoGetMemberRef(CallExpr* call) {
-  SymExpr* sym1 = toSymExpr(call->get(1));
-  if (!sym1)
-    INT_FATAL(call, "bad member primitive");
-  ClassType* ct = toClassType(sym1->var->type);
-  if (ct->symbol->hasFlag(FLAG_REF))
-    ct = toClassType(ct->getValType());
-  if (!ct)
-    INT_FATAL(call, "bad member primitive");
-  SymExpr* sym = toSymExpr(call->get(2));
-  if (!sym)
-    INT_FATAL(call, "bad member primitive");
-  VarSymbol* var = toVarSymbol(sym->var);
-  if (!var)
-    INT_FATAL(call, "bad member primitive");
+  ClassType* ct = toClassType(call->get(1)->getValType());
+  INT_ASSERT(ct);
+  SymExpr* se = toSymExpr(call->get(2));
+  INT_ASSERT(se);
+  VarSymbol* var = toVarSymbol(se->var);
+  INT_ASSERT(var);
   if (var->immediate) {
     const char* name = var->immediate->v_string;
     for_fields(field, ct) {
