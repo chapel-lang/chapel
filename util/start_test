@@ -751,24 +751,6 @@ endif
 mv $logtmp $logfile
 
 
-# Find sub_test
-if (-x $testdir/Bin/sub_test.py) then
-    set gsub_test = $testdir/Bin/sub_test.py
-    # simple check for python
-    set py_executable = `head -1 $gsub_test | sed 's/^..//'`
-    if (! -x "$py_executable") then
-        if ("$py_executable" == "/usr/bin/env python") then
-            $py_executable -V >& /dev/null
-            if ( $? != 0 ) then
-                set gsub_test = $testdir/Bin/sub_test
-            endif
-        else
-            set gsub_test = $testdir/Bin/sub_test
-    endif
-else
-    set gsub_test = $testdir/Bin/sub_test
-endif
-
 
 #
 # test all of the tests that the user listed (if any).
@@ -789,7 +771,7 @@ foreach test ($testlist)
     if (-x ./sub_test) then
         set sub_test = ./sub_test
     else
-        set sub_test = $gsub_test
+	set sub_test = $testdir/Bin/sub_test
     endif
 
     if (-x ./Bin/sub_clean) then
@@ -889,9 +871,9 @@ foreach absdir ($absdirs)
             (($CHPL_TEST_INTERP == "off") || (! -e ./NOINTERP && ! -e ./NOEXEC && ! -e ./EXECOPTS)))) then
             if (-x ./sub_test) then
                 set sub_test = ./sub_test
-            else
-                set sub_test = $gsub_test
-            endif
+	    else
+		set sub_test = $testdir/Bin/sub_test
+	    endif
             if (-x ./Bin/sub_clean) then
                 set sub_clean = ./Bin/sub_clean
             else
