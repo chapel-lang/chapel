@@ -438,8 +438,6 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
       return NULL;
   }
 
-  checkInstantiationLimit(fn);
-
   SET_LINENO(fn);
 
   //
@@ -610,6 +608,8 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   if (!newFn->hasFlag(FLAG_GENERIC) && explainInstantiationLine) {
     explainInstantiation(newFn);
   }
+
+  checkInstantiationLimit(fn);
 
   return newFn;
 }
