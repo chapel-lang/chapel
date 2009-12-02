@@ -1,4 +1,3 @@
-#!/not/the/path/to/python
 #!/usr/bin/env python
 #
 # Rewrite of sub_test by Sung-Eun Choi (sungeun@cray.com)
@@ -166,10 +165,11 @@ def read_file_with_comments(f):
 # diff 2 files
 def diff_files(f1, f2):
     sys.stdout.write('[Executing diff %s %s]\n'%(f1, f2))
-    p = subprocess.Popen(['diff',f1,f2], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p.wait()
+    p = subprocess.Popen(['diff',f1,f2],
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
     if p.returncode != 0:
-        sys.stdout.write(p.communicate()[0])
+        sys.stdout.write(myoutput)
     return p.returncode
 
 # kill process
@@ -284,10 +284,10 @@ if os.access('./LASTCOMPOPTS',os.R_OK):
 # sys.stdout.write('globalLastcompopts=%s\n'%(globalLastcompopts))
 
 if os.access('./NUMLOCALES',os.R_OK):
-    globalNumlocales=subprocess.Popen(['cat', './NUMLOCALES'], stdout=subprocess.PIPE).communicate()[0]
-    globalNumlocales.strip(globalNumlocales)
+    globalNumlocales=int(subprocess.Popen(['cat', './NUMLOCALES'], stdout=subprocess.PIPE).communicate()[0])
+    # globalNumlocales.strip(globalNumlocales)
 else:
-    globalNumlocales=os.getenv('NUMLOCALES')
+    globalNumlocales=int(os.getenv('NUMLOCALES'))
 # sys.stdout.write('globalNumlocales=%s\n'%(globalNumlocales))
 
 if os.access('./CATFILES',os.R_OK):
@@ -360,9 +360,12 @@ else:
 # Global COMPOPTS
 #
 if os.access('./COMPOPTS',os.R_OK):
-    globalCompopts=subprocess.Popen(['cat', './COMPOPTS'], stdout=subprocess.PIPE).communicate()[0].strip().split()
+    globalCompopts=read_file_with_comments('./COMPOPTS')
 else:
     globalCompopts=list()
+envCompopts = os.getenv('COMPOPTS')
+if envCompopts != None:
+    globalCompopts += shlex.split(envCompopts)
 # sys.stdout.write('globalCompopts=%s\n'%(globalCompopts))
 
 #
@@ -370,8 +373,12 @@ else:
 #
 globalExecopts=list()
 if os.access('./EXECOPTS',os.R_OK):
-    tgeo=subprocess.Popen(['cat', './EXECOPTS'], stdout=subprocess.PIPE).communicate()[0]
-    globalExecopts.append(tgeo.strip())
+    globalExecopts=read_file_with_comments('./EXECOPTS')
+else:
+    globalExecopts=list()
+envExecopts = os.getenv('EXECOPTS')
+if envExecopts != None:
+    globalExecopts += shlex.split(envExecopts)
 # sys.stdout.write('globalExecopts=%s\n'%(globalExecopts))
 
 #
@@ -479,7 +486,7 @@ for testname in testsrc:
             # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
 
         elif (suffix=='.numlocales' and os.access(f, os.R_OK)):
-            numlocales=subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip()
+            numlocales=int(subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0])
 
         elif suffix==futureSuffix and os.access(f, os.R_OK):
             futuretest='Future ('+subprocess.Popen(['head', '-n 1 ./'+execname+futureSuffix], stdout=subprocess.PIPE).communicate()[0].strip()+') '
@@ -515,7 +522,7 @@ for testname in testsrc:
         continue # on to next test
 
     # Set numlocales
-    if (os.getenv('CHPL_COMM', 'none')=='none'):
+    if (numlocales == 0) or (os.getenv('CHPL_COMM', 'none')=='none'):
         numlocexecopts = None
     else:
         numlocexecopts = ' -nl '+str(numlocales)
@@ -590,8 +597,11 @@ for testname in testsrc:
         try:
             output = SuckOutputWithTimeout(p.stdout, timeout)
         except ReadTimeoutException:
-            sys.stdout.write('%s[Error: Timed out compilation for %s/%s (%d)]\n'%
-                             (futuretest, localdir, execname, compoptsnum))
+            sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
+                             (futuretest, localdir, execname))
+            if len(compoptslist) > 1:
+                sys.stdout.write('(%s%s)'%(' '.join(globalCompopts),compopts))
+            sys.stdout.write(']\n')
             kill_proc(p, killtimeout)
             continue # on to next compopts
 
@@ -634,7 +644,7 @@ for testname in testsrc:
                             checkfile=execname+'.good'
                             if not os.path.isfile(checkfile):
                                 checkfile=None
-                sys.stdout.write('default checkfile=%s\n'%(checkfile))
+            # sys.stdout.write('default checkfile=%s\n'%(checkfile))
                 
             if (not checkfile or not os.access(checkfile, os.R_OK)):
                 sys.stdout.write('[Error cannot locate compiler output comparison file %s]\n'%(checkfile))
@@ -648,8 +658,11 @@ for testname in testsrc:
                 sys.stdout.write('%s[Success '%(futuretest))
             else:
                 sys.stdout.write('%s[Error '%(futuretest))
-            sys.stdout.write('matching compiler output for %s/%s (%d)]\n'%
-                                 (localdir, execname, compoptsnum))
+            sys.stdout.write('matching compiler output for %s/%s'%
+                                 (localdir, execname))
+            if len(compoptslist) > 1:
+                sys.stdout.write('(%s%s)'%(' '.join(globalCompopts),compopts))
+            sys.std.out.write(']\n')
 
             continue # on to next compopts
         else:
@@ -683,7 +696,22 @@ for testname in testsrc:
                 # Ignore everything after the first token
                 execcheckfile = tlist[1].strip().split()[0]
             else:
-                execcheckfile = checkfile
+                if not checkfile:
+                    checkfile = execname + '.good'
+                if (len(compoptslist)==1) and (len(execoptslist)==1):
+                    execcheckfile = checkfile
+                else:
+                    execcheckfile = checkfile.strip('good')
+                    if len(compoptslist)==1:
+                        execcheckfile += '0-'
+                    else:
+                        execcheckfile += str(compoptsnum+1)+'-'
+                    if len(execoptslist)==1:
+                        execcheckfile += '0.good'
+                    else:
+                        execcheckfile += str(execoptsnum+1)+'.good'
+                    if not os.access(execcheckfile, os.R_OK):
+                        execcheckfile = None
             del tlist
 
             if (len(execoptslist)==1) and (len(compoptslist)==1):
@@ -733,9 +761,14 @@ for testname in testsrc:
             try:
                 output = SuckOutputWithTimeout(p.stdout, timeout)
             except ReadTimeoutException:
-                sys.stdout.write('%s[Error: Timed out executing program %s/%s (%d-%d)]\n'%
+                sys.stdout.write('%s[Error: Timed out executing program %s/%s %s %s'%
+
                                  (futuretest, localdir, execname,
-                                  compoptsnum, execoptsnum))
+                                  ' '.join(globalExecopts), execopts))
+                if len(compoptslist) > 1:
+                    sys.stdout.write(' (%s%s)'%
+                                     (' '.join(globalCompopts),compopts))
+                sys.stdout.write(' (%d-%d)]\n'%(compoptsnum, execoptsnum))
                 kill_proc(p, killtimeout)
                 continue # on to next execopts
 
@@ -758,13 +791,17 @@ for testname in testsrc:
 
             if globalPrediff:
                 sys.stdout.write('[Executing PREDIFF]\n')
-                subprocess.Popen(['./PREDIFF',
-                                  execname,execlog,compiler]).wait()
+                sys.stdout.write(subprocess.Popen(['./PREDIFF',
+                                                   execname,execlog,compiler],
+                                                  stdout=subprocess.PIPE).
+                                 communicate()[0])
 
             if prediff:
                 sys.stdout.write('[Executing %s.prediff]\n'%(execname))
-                subprocess.Popen(['./'+execname+'.prediff',
-                                  execname,execlog,compiler]).wait()
+                sys.stdout.write(subprocess.Popen(['./'+execname+'.prediff',
+                                                   execname,execlog,compiler],
+                                                  stdout=subprocess.PIPE).
+                                 communicate()[0])
 
             if not perftest:
                 if (execcheckfile == None):
@@ -775,7 +812,10 @@ for testname in testsrc:
                 if (not execcheckfile or not os.access(execcheckfile, os.R_OK)):
                     sys.stdout.write('[Error cannot locate program output comparison file %s]\n'%(execcheckfile))
                     sys.stdout.write('[Execution output was as follows:]\n')
-                    subprocess.Popen(['cat', execlog]).wait()
+                    sys.stdout.write(subprocess.Popen(['cat', execlog],
+                                                      stdout=subprocess.PIPE).
+                                     communicate()[0])
+
                     continue # on to next execopts
 
                 result = diff_files(execcheckfile, execlog)
@@ -784,8 +824,16 @@ for testname in testsrc:
                     sys.stdout.write('%s[Success '%(futuretest))
                 else:
                     sys.stdout.write('%s[Error '%(futuretest))
-                sys.stdout.write('matching program output for %s/%s (%d-%d)]\n'%
-                                 (localdir, execname, compoptsnum, execoptsnum))
+                sys.stdout.write('matching program output for %s/%s %s %s'%
+                                 (localdir, execname,
+                                  ' '.join(globalExecopts), execopts))
+                if len(compoptslist) > 1:
+                    sys.stdout.write('(%s%s)'%
+                                     (' '.join(globalCompopts),compopts))
+                if result==0:
+                    sys.stdout.write(']\n')
+                else:
+                    sys.stdout.write(' (%d-%d)]\n'%(compoptsnum, execoptsnum))
 
             else:
                 if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
@@ -797,7 +845,6 @@ for testname in testsrc:
                 p = subprocess.Popen([testdir+'/Bin/computePerfStats.pl',
                                       execname, perfdir],
                                      stdout=subprocess.PIPE)
-                p.wait()
                 sys.stdout.write('%s'%(p.communicate()[0]))
 
                 status = p.returncode
@@ -806,8 +853,16 @@ for testname in testsrc:
                     sys.stdout.write('[Success')
                 else:
                     sys.stdout.write('[Error')
-                sys.stdout.write(' matching performance keys for %s/%s (%d-%d)]\n'%
-                                 (localdir, execname, compoptsnum, execoptsnum))
+                sys.stdout.write(' matching performance keys for %s/%s %s %s'%
+                                 (localdir, execname,
+                                  ' '.join(globalExecopts), execopts))
+                if len(compoptslist) > 1:
+                    sys.stdout.write('(%s%s)'%
+                                     (' '.join(globalCompopts),compopts))
+                if result==0:
+                    sys.stdout.write(']\n')
+                else:
+                    sys.stdout.write(' (%d-%d)]\n'%(compoptsnum, execoptsnum))
 
         if os.path.isfile(execname):
             os.unlink(execname)
