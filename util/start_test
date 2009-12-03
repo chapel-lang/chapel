@@ -630,6 +630,8 @@ echo \[platform: $platform\] |& $tee -a $logtmp
 # see if valgrind is on.  If it is, reset the compiler
 if ($valgrind) then
     echo \[valgrind: ON\] |& $tee -a $logtmp
+    echo \[valgrind binary: `which valgrind` \] |& $tee -a $logtmp
+    echo \[valgrind version: `valgrind --version` \] |& $tee -a $logtmp
     setenv CHPL_TEST_VGRND_COMP on
     setenv CHPL_TEST_VGRND_EXE on
     which valgrind > /dev/null
