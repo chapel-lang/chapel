@@ -16,9 +16,14 @@
 general regressions
 ===================
 
+failing because they use new sub_test .goods but old sub_test script
+--------------------------------------------------------------------
+[Error cannot locate program output comparison file studies/shootout/fannkuch/fannkuch.good]
+[Error cannot locate program output comparison file studies/shootout/thread-ring/thread-ring.good]
+
 spurious failure
 ----------------
-[Error matching program output for reductions/diten/reduction_name_collision] (e.g., 10/12/09, 10/17/09, 10/20/09, 10/28/09, 10/31/09, 11/01/09, 11/06/09, 11/09/09, 11/16/09, 11/19/09 -- especially with --baseline, although on other runs as well)
+[Error matching program output for reductions/diten/reduction_name_collision] (e.g., 10/12/09, 10/17/09, 10/20/09, 10/28/09, 10/31/09, 11/01/09, 11/06/09, 11/09/09, 11/16/09, 11/19/09, 11/21/09 -- especially with --baseline, although on other runs as well)
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (e.g., 10/12/09, 10/15/09, 10/19/09, 10/24/09, 11/07/09)
 [Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
 
@@ -29,11 +34,11 @@ spurious verification failures on RA
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09)
-[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09)
-[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09)
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09, 10/17/09, 10/23/09, 10/28/09, 10/30/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09, 11/13/09, 11/18/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 10/11/09, 10/14/09, 10/16/09, 10/23/09, 10/24/09, 10/28/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09, 11/13/09, 11/18/09)
+[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09)
+[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09)
+[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09, 10/17/09, 10/23/09, 10/28/09, 10/30/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09, 11/13/09, 11/18/09, 11/24/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 10/11/09, 10/14/09, 10/16/09, 10/23/09, 10/24/09, 10/28/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09, 11/13/09, 11/18/09, 11/24/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 10/12/09, 10/19/09, 11/08/09)
 
 
@@ -60,6 +65,14 @@ maxThreads is 300, but can't create more than 254 threads
 performance-specific regressions
 ================================
 
+new sub_test seems to mysteriously resolve failures (12/02/09)
+--------------------------------------------------------------
+[Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
+[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
+[Error: Timed out executing program studies/shootout/nbody/nbody_record_domain_2a]
+[Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
+[Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
+
 execution timeouts (08/29/09)
 -----------------------------
 [Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3]
@@ -73,6 +86,10 @@ execution timeouts (08/29/09)
 =============================
 valgrind-specific regressions
 =============================
+
+program spuriously got wrong output with valgrind the night it was checked in
+-----------------------------------------------------------------------------
+[Error matching program output for studies/kmeans/kmeans-blc]
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
@@ -124,10 +141,10 @@ times out spuriously
 --------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (e.g., 11/09/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (e.g., 11/09/09)
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09)
 [Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09)
 
 
@@ -144,6 +161,44 @@ GASNet unable to start polling thread
 pvm-specific tests
 ==================
 
+new homogenous tuple seems to break --gen-communicated-structures
+-----------------------------------------------------------------
+[Error matching compiler output for release/examples/hello-module]
+[Error matching compiler output for release/examples/hello-multiloc]
+[Error matching compiler output for release/examples/hello]
+[Error matching compiler output for release/examples/hpcc/fft]
+[Error matching compiler output for release/examples/hpcc/hpl]
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for release/examples/hpcc/stream-ep]
+[Error matching compiler output for release/examples/hpcc/stream]
+[Error matching compiler output for release/examples/programs/beer]
+[Error matching compiler output for release/examples/programs/genericStack]
+[Error matching compiler output for release/examples/programs/jacobi]
+[Error matching compiler output for release/examples/programs/linkedList]
+[Error matching compiler output for release/examples/programs/norm]
+[Error matching compiler output for release/examples/programs/prodCons]
+[Error matching compiler output for release/examples/programs/quicksort]
+[Error matching compiler output for release/examples/programs/tree]
+[Error matching compiler output for release/examples/tutorials/arrays]
+[Error matching compiler output for release/examples/tutorials/block2D]
+[Error matching compiler output for release/examples/tutorials/classes]
+[Error matching compiler output for release/examples/tutorials/fileIO]
+[Error matching compiler output for release/examples/tutorials/genericClasses]
+[Error matching compiler output for release/examples/tutorials/iterators]
+[Error matching compiler output for release/examples/tutorials/multilocale]
+[Error matching compiler output for release/examples/tutorials/multirealm]
+[Error matching compiler output for release/examples/tutorials/opaque]
+[Error matching compiler output for release/examples/tutorials/ranges]
+[Error matching compiler output for release/examples/tutorials/reductions]
+[Error matching compiler output for release/examples/tutorials/slices]
+[Error matching compiler output for release/examples/tutorials/sparse]
+[Error matching compiler output for release/examples/tutorials/taskParallel]
+[Error matching compiler output for release/examples/tutorials/timers]
+[Error matching compiler output for release/examples/tutorials/varargs]
+[Error matching compiler output for release/examples/tutorials/variables]
+
+
+
 
 =======================
 baseline-specific tests
@@ -152,7 +207,7 @@ baseline-specific tests
 spurious wrong result
 ---------------------
 [Error matching program output for studies/lu/marybeth/pivlublock-alias] (e.g., 10/23/09, 11/14/09)
-[Error matching program output for studies/lu/marybeth/nopivlublock-alias] (e.g., 10/24/09, 11/14/09)
+[Error matching program output for studies/lu/marybeth/nopivlublock-alias] (e.g., 10/24/09, 11/14/09, 11/21/09)
 
 
 ===================
@@ -216,39 +271,6 @@ some spurious cases:
 x2-specific regressions
 =======================
 
-failures due to Makefile changes
---------------------------------
-[Error matching compiler output for release/examples/hello-module]
-[Error matching compiler output for release/examples/hello-multiloc]
-[Error matching compiler output for release/examples/hello]
-[Error matching compiler output for release/examples/hpcc/hpl]
-[Error matching compiler output for release/examples/hpcc/ra]
-[Error matching compiler output for release/examples/hpcc/stream-ep]
-[Error matching compiler output for release/examples/hpcc/stream]
-[Error matching compiler output for release/examples/programs/beer]
-[Error matching compiler output for release/examples/programs/genericStack]
-[Error matching compiler output for release/examples/programs/jacobi]
-[Error matching compiler output for release/examples/programs/linkedList]
-[Error matching compiler output for release/examples/programs/norm]
-[Error matching compiler output for release/examples/programs/quicksort]
-[Error matching compiler output for release/examples/programs/tree]
-[Error matching compiler output for release/examples/tutorials/arrays]
-[Error matching compiler output for release/examples/tutorials/block2D]
-[Error matching compiler output for release/examples/tutorials/classes]
-[Error matching compiler output for release/examples/tutorials/fileIO]
-[Error matching compiler output for release/examples/tutorials/genericClasses]
-[Error matching compiler output for release/examples/tutorials/iterators]
-[Error matching compiler output for release/examples/tutorials/multilocale]
-[Error matching compiler output for release/examples/tutorials/opaque]
-[Error matching compiler output for release/examples/tutorials/ranges]
-[Error matching compiler output for release/examples/tutorials/reductions]
-[Error matching compiler output for release/examples/tutorials/slices]
-[Error matching compiler output for release/examples/tutorials/sparse]
-[Error matching compiler output for release/examples/tutorials/timers]
-[Error matching compiler output for release/examples/tutorials/varargs]
-[Error matching compiler output for release/examples/tutorials/variables]
-
-
 spurious timeout
 ----------------
 [Error: Timed out executing program release/examples/hello-module] (e.g., 10/14/09, 10/30/09)
@@ -274,7 +296,7 @@ intel-specific regressions
 
 spurious compilation timeouts
 -----------------------------
-[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 10/02/09, 10/13/09, 10/13/09, 10/15/09, 10/17/09, 10/09/09, 10/24/09, 10/28/09, 10/30/09, 11/09/09, 11/12/09, 11/15/09, 11/17/09)
+[Error: Timed out compilation for studies/hpcc/RA/diten/ra] (e.g., 10/02/09, 10/13/09, 10/13/09, 10/15/09, 10/17/09, 10/09/09, 10/24/09, 10/28/09, 10/30/09, 11/09/09, 11/12/09, 11/15/09, 11/17/09, 11/20/09, 11/24/09)
 [Error: Timed out compilation for parallel/sync/diten/userLevelEndCount] (e.g., 10/10/09)
 [Error: Timed out compilation for studies/hpcc/STREAMS/bradc/stream-fragmented] (e.g., 10/02/09)
 [Error: Timed out compilation for studies/madness/common/test_likepy] (e.g., 10/30/09)
@@ -287,7 +309,7 @@ darwin-specific regressions
 spurious failures on Sam's machine
 ----------------------------------
 [Error matching program output for functions/bradc/intents-arrays2a] (e.g., 10/20/09)
-[Error matching program output for studies/590o/blerner/xml-parse] (e.g., 10/20/09, 10/28/09)
+[Error matching program output for studies/590o/blerner/xml-parse] (e.g., 10/20/09, 10/28/09, 12/03/09)
 
 spurious failure
 ----------------
@@ -299,10 +321,10 @@ execution timeout (10/05/09)
 
 spurious sprintf not thread-safe
 --------------------------------
-[Error matching program output for studies/590o/bradc/coforall-private-indices] (e.g., 10/08/09, 10/15/09, 10/20/09, 10/23/09, 11/09/09, 11/10/09, 11/13/09)
+[Error matching program output for studies/590o/bradc/coforall-private-indices] (e.g., 10/08/09, 10/15/09, 10/20/09, 10/23/09, 11/09/09, 11/10/09, 11/13/09, 12/01/09, 12/03/09)
 [Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/02/09, 10/08/09, 10/09/09, 10/14/09, 10/21/09, 10/27/09, 10/30/09, 11/06/09)
 [Error matching program output for studies/590o/bradc/coforall-private-indices-workaround2] (e.g., 10/19/09, 10/29/09)
-[Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 10/07/09, 10/14/09, 10/27/09)
+[Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 10/07/09, 10/14/09, 10/27/09, 11/23/09)
 
 
 ========================
@@ -483,42 +505,6 @@ sig_send: wait for sig_complete event failed
 ========================
 xmt-specific regressions
 ========================
-
-failures due to Makefile changes
---------------------------------
-[Error matching compiler output for release/examples/hello-module]
-[Error matching compiler output for release/examples/hello-multiloc]
-[Error matching compiler output for release/examples/hello]
-[Error matching compiler output for release/examples/hpcc/fft]
-[Error matching compiler output for release/examples/hpcc/hpl]
-[Error matching compiler output for release/examples/hpcc/ra]
-[Error matching compiler output for release/examples/hpcc/stream-ep]
-[Error matching compiler output for release/examples/hpcc/stream]
-[Error matching compiler output for release/examples/programs/beer]
-[Error matching compiler output for release/examples/programs/genericStack]
-[Error matching compiler output for release/examples/programs/jacobi]
-[Error matching compiler output for release/examples/programs/linkedList]
-[Error matching compiler output for release/examples/programs/norm]
-[Error matching compiler output for release/examples/programs/prodCons]
-[Error matching compiler output for release/examples/programs/quicksort]
-[Error matching compiler output for release/examples/programs/tree]
-[Error matching compiler output for release/examples/tutorials/arrays]
-[Error matching compiler output for release/examples/tutorials/block2D]
-[Error matching compiler output for release/examples/tutorials/classes]
-[Error matching compiler output for release/examples/tutorials/fileIO]
-[Error matching compiler output for
-release/examples/tutorials/genericClasses]
-[Error matching compiler output for release/examples/tutorials/iterators]
-[Error matching compiler output for release/examples/tutorials/multilocale]
-[Error matching compiler output for release/examples/tutorials/opaque]
-[Error matching compiler output for release/examples/tutorials/ranges]
-[Error matching compiler output for release/examples/tutorials/reductions]
-[Error matching compiler output for release/examples/tutorials/slices]
-[Error matching compiler output for release/examples/tutorials/sparse]
-[Error matching compiler output for release/examples/tutorials/taskParallel]
-[Error matching compiler output for release/examples/tutorials/timers]
-[Error matching compiler output for release/examples/tutorials/varargs]
-[Error matching compiler output for release/examples/tutorials/variables]
 
 use-before-def + ra traps with poison
 -------------------------------------
