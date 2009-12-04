@@ -22,10 +22,6 @@ spurious failure
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (e.g., 10/12/09, 10/15/09, 10/19/09, 10/24/09, 11/07/09)
 [Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
 
-??? (10/6/09)
--------------
-[Error matching program output for memory/figueroa/ClassInheritance1]
-
 spurious verification failures on RA
 ------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
@@ -80,7 +76,8 @@ valgrind-specific regressions
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
-*** 3-12 seemingly at random each night ***
+12/03/09: This is due to a Linux kernel bug.  Sent mail to crayhelp
+requesting the build machines be upgraded.
 
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
@@ -99,7 +96,6 @@ not freeing heap-allocated globals (08/29/09)
 
 memory stuff in flux (05/28/09)
 -------------------------------
-[Error matching program output for memory/figueroa/ClassInheritance1]
 [Error matching program output for memory/shannon/memstatPrint]
 [Error matching program output for memory/shannon/printFinalMemStat]
 
@@ -110,8 +106,6 @@ gasnet-everything regressions (other than the above)
 
 memory stuff in flux (06/06/09)
 -------------------------------
-[Error matching program output for memory/shannon/memmaxBytes]
-[Error matching program output for memory/shannon/memmaxInput]
 [Error matching program output for memory/shannon/memstatPrint]
 
 verbose output now shows launch command (10/31/08) (bradc)
