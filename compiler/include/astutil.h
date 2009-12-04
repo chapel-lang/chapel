@@ -15,6 +15,9 @@ class Expr;
 
 void normalize(BaseAST* base);
 
+// return vec of CallExprs of FnSymbols (no primitives)
+void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls);
+
 // collect Stmts and Exprs in the AST and return them in vectors
 void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts);
 void collect_asts_postorder(BaseAST*, Vec<BaseAST*>& asts);

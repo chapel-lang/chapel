@@ -10,11 +10,10 @@
 // inlines the function called by 'call' at that call site
 //
 static void
-inlineCall(CallExpr* call) {
+inlineCall(FnSymbol* fn, CallExpr* call) {
   SET_LINENO(call);
 
   Expr* stmt = call->getStmtExpr();
-  FnSymbol* fn = call->isResolved();
 
   //
   // calculate a map from actual symbols to formal symbols
@@ -30,7 +29,6 @@ inlineCall(CallExpr* call) {
   // copy function body, inline it at call site, and update return
   //
   BlockStmt* block = fn->body->copy(&map);
-
   reset_line_info(block, call->lineno);
   CallExpr* return_stmt = toCallExpr(block->body.last());
   if (!return_stmt || !return_stmt->isPrimitive(PRIM_RETURN))
@@ -58,16 +56,15 @@ inlineCall(CallExpr* call) {
 static void
 inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
   inlinedSet.set_add(fn);
-  Vec<BaseAST*> asts;
-  collect_asts(fn, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (FnSymbol* fn = call->isResolved()) {
-        if (call->parentSymbol && fn->hasFlag(FLAG_INLINE)) {
-          if (inlinedSet.set_in(fn))
-            INT_FATAL(call, "recursive inlining detected");
-          inlineFunction(fn, inlinedSet);
-        }
+  Vec<CallExpr*> calls;
+  collectFnCalls(fn, calls);
+  forv_Vec(CallExpr, call, calls) {
+    if (call->parentSymbol) {
+      FnSymbol* fn = call->isResolved();
+      if (fn->hasFlag(FLAG_INLINE)) {
+        if (inlinedSet.set_in(fn))
+          INT_FATAL(call, "recursive inlining detected");
+        inlineFunction(fn, inlinedSet);
       }
     }
   }
@@ -77,11 +74,11 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
     singleAssignmentRefPropagation(fn);
     localCopyPropagation(fn);
   }
- if (!fNoDeadCodeElimination)
+  if (!fNoDeadCodeElimination)
     deadVariableElimination(fn);
   deadExpressionElimination(fn);
   forv_Vec(CallExpr, call, *fn->calledBy) {
-    inlineCall(call);
+    inlineCall(fn, call);
     if (report_inlining)
       printf("chapel compiler: reporting inlining"
              ", %s function was inlined\n", fn->cname);
@@ -95,25 +92,17 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
 //
 void
 inlineFunctions(void) {
-  if (fNoInline) {
+  if (!fNoInline) {
+    compute_call_sites();
+    Vec<FnSymbol*> inlinedSet;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      collapseBlocks(fn->body);
-      removeUnnecessaryGotos(fn);
-      deadExpressionElimination(fn);
+      if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
+        inlineFunction(fn, inlinedSet);
     }
-    return;
-  }
-
-  compute_call_sites();
-
-  Vec<FnSymbol*> inlinedSet;
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
-      inlineFunction(fn, inlinedSet);
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_INLINE)) {
+    if (!fNoInline && fn->hasFlag(FLAG_INLINE)) {
       fn->defPoint->remove();
     } else {
       collapseBlocks(fn->body);

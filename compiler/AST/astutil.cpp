@@ -7,6 +7,14 @@
 #include "type.h"
 
 
+void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls) {
+  AST_CHILDREN_CALL(ast, collectFnCalls, calls);
+  if (CallExpr* call = toCallExpr(ast))
+    if (call->isResolved())
+      calls.add(call);
+}
+
+
 void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   if (Expr* expr = toExpr(ast)) {
     stmts.add(expr);
