@@ -1,3 +1,7 @@
+Reductions and Scans
+--------------------
+Add *some* reference to reduction and scan to the index.
+
 Ranges
 ------
 * should we define ranges/domains as being array-like where the
