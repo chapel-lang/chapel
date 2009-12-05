@@ -3733,74 +3733,84 @@ resolve() {
     }
   }
 
-  Vec<CallExpr*> calls;
+  Vec<CallExpr*> dynamicDispatchCalls;
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol && call->getStmtExpr())
-      calls.add(call);
+      if (FnSymbol* fn = call->isResolved())
+        if (ddf.get(fn))
+          dynamicDispatchCalls.add(call);
   }
-  forv_Vec(CallExpr, call, calls) {
+  forv_Vec(CallExpr, call, dynamicDispatchCalls) {
     SET_LINENO(call);
-    if (FnSymbol* key = call->isResolved()) {
-      if (Vec<FnSymbol*>* fns = ddf.get(key)) {
-        forv_Vec(FnSymbol, fn, *fns) {
-          Type* type = fn->getFormal(2)->type;
-          CallExpr* subcall = call->copy();
-          SymExpr* tmp = new SymExpr(gNil);
-          FnSymbol* if_fn = new FnSymbol("_if_fn");
-          if_fn->addFlag(FLAG_INLINE);
-          VarSymbol* _ret = newTemp(key->retType);
-          VarSymbol* cid = newTemp(dtBool);
-          if_fn->insertAtTail(new DefExpr(cid));
-          if_fn->insertAtTail(new CallExpr(PRIM_MOVE, cid,
-                                new CallExpr(PRIM_GETCID,
-                                             call->get(2)->copy(),
-                                             type->symbol)));
-          if_fn->insertAtTail(new DefExpr(_ret));
-          BlockStmt* trueBlock = new BlockStmt();
-          if (fn->retType == key->retType) {
-            trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, _ret, subcall));
-          } else if (isSubType(fn->retType, key->retType)) {
-            // Insert a cast to the overridden method's return type
-            VarSymbol* castTemp = newTemp(fn->retType);
-            trueBlock->insertAtTail(new DefExpr(castTemp));
-            trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, castTemp,
-                                                 subcall));
-            trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, _ret,
-                                      new CallExpr(PRIM_CAST,
-                                                   key->retType->symbol,
-                                                   castTemp)));
-          } else {
-            INT_FATAL(key, "unexpected case; return type mismatch");
-          }
-          if_fn->insertAtTail(
-            new CondStmt(
-              new SymExpr(cid),
-              trueBlock,
-              new CallExpr(PRIM_MOVE, _ret, tmp)));
-          if_fn->insertAtTail(new CallExpr(PRIM_RETURN, _ret));
-          if_fn->retType = key->retType;
-          if (key->retType == dtUnknown)
-            INT_FATAL(call, "bad parent virtual function return type");
-          call->getStmtExpr()->insertBefore(new DefExpr(if_fn));
-          call->replace(new CallExpr(if_fn));
-          tmp->replace(call);
-          subcall->baseExpr->replace(new SymExpr(fn));
-          if (SymExpr* se = toSymExpr(subcall->get(2))) {
-            VarSymbol* tmp = newTemp(type);
-            se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-            se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_CAST, type->symbol, se->var)));
-            se->replace(new SymExpr(tmp));
-          } else if (CallExpr* ce = toCallExpr(subcall->get(2)))
-            if (ce->isPrimitive(PRIM_CAST))
-              ce->get(1)->replace(new SymExpr(type->symbol));
-            else
-              INT_FATAL(subcall, "unexpected");
-          else
-            INT_FATAL(subcall, "unexpected");
-          normalize(if_fn);
-          resolvedFns.put(if_fn, true);
-        }
+    FnSymbol* key = call->isResolved();
+    Vec<FnSymbol*>* fns = ddf.get(key);
+    forv_Vec(FnSymbol, fn, *fns) {
+      Type* type = fn->getFormal(2)->type;
+      CallExpr* subcall = call->copy();
+      SymExpr* tmp = new SymExpr(gNil);
+      BlockStmt* ifBlock = new BlockStmt();
+
+      VarSymbol* cid = newTemp(dtBool);
+      ifBlock->insertAtTail(new DefExpr(cid));
+      ifBlock->insertAtTail(new CallExpr(PRIM_MOVE, cid,
+                              new CallExpr(PRIM_GETCID,
+                                           call->get(2)->copy(),
+                                           type->symbol)));
+      VarSymbol* _ret = NULL;
+      if (key->retType != dtVoid) {
+        _ret = newTemp(key->retType);
+        ifBlock->insertAtTail(new DefExpr(_ret));
       }
+      BlockStmt* trueBlock = new BlockStmt();
+      if (fn->retType == key->retType) {
+        if (_ret)
+          trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, _ret, subcall));
+        else
+          trueBlock->insertAtTail(subcall);
+      } else if (isSubType(fn->retType, key->retType)) {
+        // Insert a cast to the overridden method's return type
+        VarSymbol* castTemp = newTemp(fn->retType);
+        trueBlock->insertAtTail(new DefExpr(castTemp));
+        trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, castTemp,
+                                             subcall));
+        INT_ASSERT(_ret);
+        trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, _ret,
+                                  new CallExpr(PRIM_CAST,
+                                               key->retType->symbol,
+                                               castTemp)));
+      } else
+        INT_FATAL(key, "unexpected case");
+      BlockStmt* falseBlock = NULL;
+      if (_ret)
+        falseBlock = new BlockStmt(new CallExpr(PRIM_MOVE, _ret, tmp));
+      else
+        falseBlock = new BlockStmt(tmp);
+      ifBlock->insertAtTail(
+        new CondStmt(
+          new SymExpr(cid),
+          trueBlock,
+          falseBlock));
+      if (key->retType == dtUnknown)
+        INT_FATAL(call, "bad parent virtual function return type");
+      call->getStmtExpr()->insertBefore(ifBlock);
+      if (_ret)
+        call->replace(new SymExpr(_ret));
+      else
+        call->remove();
+      tmp->replace(call);
+      subcall->baseExpr->replace(new SymExpr(fn));
+      if (SymExpr* se = toSymExpr(subcall->get(2))) {
+        VarSymbol* tmp = newTemp(type);
+        se->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_CAST, type->symbol, se->var)));
+        se->replace(new SymExpr(tmp));
+      } else if (CallExpr* ce = toCallExpr(subcall->get(2)))
+        if (ce->isPrimitive(PRIM_CAST))
+          ce->get(1)->replace(new SymExpr(type->symbol));
+        else
+          INT_FATAL(subcall, "unexpected");
+      else
+        INT_FATAL(subcall, "unexpected");
     }
   }
 

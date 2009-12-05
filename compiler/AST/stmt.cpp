@@ -166,14 +166,22 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   thenStmt(NULL),
   elseStmt(NULL)
 {
-  if (Expr* s = toExpr(iThenStmt))
-    thenStmt = new BlockStmt(s);
-  else
+  if (Expr* s = toExpr(iThenStmt)) {
+    BlockStmt* bs = toBlockStmt(s);
+    if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfo)
+      thenStmt = bs;
+    else
+      thenStmt = new BlockStmt(s);
+    } else
     INT_FATAL(iThenStmt, "Bad then-stmt passed to CondStmt constructor");
   if (iElseStmt) {
-    if (Expr* s = toExpr(iElseStmt))
-      elseStmt = new BlockStmt(s);
-    else
+    if (Expr* s = toExpr(iElseStmt)) {
+      BlockStmt* bs = toBlockStmt(s);
+      if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfo)
+        elseStmt = bs;
+      else
+        elseStmt = new BlockStmt(s);
+    } else
       INT_FATAL(iElseStmt, "Bad else-stmt passed to CondStmt constructor");
   }
   gCondStmts.add(this);
