@@ -23,9 +23,20 @@ failing because they use new sub_test .goods but old sub_test script
 
 spurious failure
 ----------------
-[Error matching program output for reductions/diten/reduction_name_collision] (e.g., 10/12/09, 10/17/09, 10/20/09, 10/28/09, 10/31/09, 11/01/09, 11/06/09, 11/09/09, 11/16/09, 11/19/09, 11/21/09 -- especially with --baseline, although on other runs as well)
-[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (e.g., 10/12/09, 10/15/09, 10/19/09, 10/24/09, 11/07/09)
+
+12/08/09 [sungeun]: Ran for several hours without failure (gasnet -fast
+with -nl 3).  Remove?
+
 [Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
+
+spurious wrong result
+---------------------
+
+12/08/09 [sungeun]: These are due to race condition in the update loop.
+Working on best way to fix.
+
+[Error matching program output for studies/lu/marybeth/pivlublock-alias] (e.g., 10/23/09, 11/14/09)
+[Error matching program output for studies/lu/marybeth/nopivlublock-alias] (e.g., 10/24/09, 11/14/09, 11/21/09)
 
 spurious verification failures on RA
 ------------------------------------
@@ -48,6 +59,14 @@ linux regressions
 
 spurious double free or corruption
 ----------------------------------
+
+12/08/09 [sungeun]: I have run all three of these tests with
+MALLOC_CHECK_=2 (repeatedly for at least an hour each--usually more).
+I have also tried run them with the runManyTimes script, and though
+there were no faliures, sometimes the script would just die so I don't
+think I got a million times in.  Possibly these were due to the coding
+frenzy before SC09.
+
 [Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower6] (e.g., 10/26/09)
 [Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist] (e.g., 11/05/09)
 [Error matching program output for stress/deitz/test_10k_cobegins] (e.g., 11/08/09)
@@ -204,11 +223,6 @@ new homogenous tuple seems to break --gen-communicated-structures
 baseline-specific tests
 =======================
 
-spurious wrong result
----------------------
-[Error matching program output for studies/lu/marybeth/pivlublock-alias] (e.g., 10/23/09, 11/14/09)
-[Error matching program output for studies/lu/marybeth/nopivlublock-alias] (e.g., 10/24/09, 11/14/09, 11/21/09)
-
 
 ===================
 opts-specific tests
@@ -222,7 +236,9 @@ opts-specific tests
 some spurious cases:
 --------------------
 [Error matching program output for reductions/diten/reduction_name_collision] (--no-copy-propagation, --baseline --copy-propagation, --no-dead-code-elimination, --no-scalar-replacement --no-inline, --baseline --no-local)
+
 [Error matching program output for studies/lu/marybeth/pivlublock-alias] (--baseline --optimize-loop-iterators)
+
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist] (--no-scalar-replacement --no-inline)
 
 --no-dead-code-elimination
