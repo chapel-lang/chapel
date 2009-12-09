@@ -41,9 +41,14 @@ ifdef NVCC
 	@$(CMAKEDEPEND) $(DEPEND_CFLAGS) $(DEPEND_INCLS) $< | sed s/$*\\\.o/\\\$(DEPEND_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
 endif	
 
+#
+# The "$($(<:.c=)_CFLAGS)" construct lets your Makefile.share define,
+# say, a whatever_CFLAGS variable that contains command line options
+# to be used only when compiling whatever.c.
+#
 $(RUNTIME_OBJ_DIR)/%.o: %.c $(RUNTIME_OBJ_DIR_STAMP)
 	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
-	$(CC) -c $(RUNTIME_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
+	$(CC) -c $(RUNTIME_CFLAGS) $($(<:.c=)_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
 
 ifdef NVCC
 $(RUNTIME_OBJ_DIR)/%.o: %.cu $(RUNTIME_OBJ_DIR_STAMP)
