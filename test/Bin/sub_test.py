@@ -360,7 +360,8 @@ else:
 # Global COMPOPTS
 #
 if os.access('./COMPOPTS',os.R_OK):
-    globalCompopts=read_file_with_comments('./COMPOPTS')
+    tgco=read_file_with_comments('./COMPOPTS')
+    globalCompopts = shlex.split(tgco[0])
 else:
     globalCompopts=list()
 envCompopts = os.getenv('COMPOPTS')
@@ -373,7 +374,8 @@ if envCompopts != None:
 #
 globalExecopts=list()
 if os.access('./EXECOPTS',os.R_OK):
-    globalExecopts=read_file_with_comments('./EXECOPTS')
+    tgeo==read_file_with_comments('./EXECOPTS')
+    globalExecopts= shlex.split(tgeo[0])
 else:
     globalExecopts=list()
 envExecopts = os.getenv('EXECOPTS')
@@ -463,7 +465,7 @@ for testname in testsrc:
         elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
             skiptest=subprocess.Popen([testdir+'/Bin/testEnv.pl', './'+f], stdout=subprocess.PIPE).communicate()[0]
-            if skiptest:
+            if int(skiptest):
                 sys.stdout.write('[Skipping %s based on .skipif environment settings]\n'%(f))
                 do_not_test=True
                 break
@@ -600,7 +602,7 @@ for testname in testsrc:
             sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                              (futuretest, localdir, execname))
             if len(compoptslist) > 1:
-                sys.stdout.write('(%s%s)'%(' '.join(globalCompopts),compopts))
+                sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
             sys.stdout.write(']\n')
             kill_proc(p, killtimeout)
             continue # on to next compopts
@@ -661,8 +663,8 @@ for testname in testsrc:
             sys.stdout.write('matching compiler output for %s/%s'%
                                  (localdir, execname))
             if len(compoptslist) > 1:
-                sys.stdout.write('(%s%s)'%(' '.join(globalCompopts),compopts))
-            sys.std.out.write(']\n')
+                sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
+            sys.stdout.write(']\n')
 
             continue # on to next compopts
         else:
@@ -687,7 +689,7 @@ for testname in testsrc:
         execoptsnum = 0
         for texecopts in execoptslist:
             sys.stdout.flush()
-
+            onlyone = (len(compoptslist)==1) and (len(execoptslist)==1)
             tlist = texecopts.split('#')
             execopts = tlist[0].strip()
             if numlocexecopts != None:
@@ -698,7 +700,7 @@ for testname in testsrc:
             else:
                 if not checkfile:
                     checkfile = execname + '.good'
-                if (len(compoptslist)==1) and (len(execoptslist)==1):
+                if onlyone:
                     execcheckfile = checkfile
                 else:
                     execcheckfile = checkfile.strip('good')
@@ -714,11 +716,14 @@ for testname in testsrc:
                         execcheckfile = None
             del tlist
 
-            if (len(execoptslist)==1) and (len(compoptslist)==1):
+            if onlyone:
                 execlog=execname+'.exec.out.tmp'
             else:
                 execoptsnum += 1
-                execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
+                if execcheckfile != None:
+                    execlog = execcheckfile.strip('good')+'exec.out.tmp'
+                else:
+                    execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
 
             if globalPreexec:
                 sys.stdout.write('[Executing PREEXEC]\n')
@@ -731,9 +736,11 @@ for testname in testsrc:
                                   execname,execlog,compiler]).wait()
 
             if not os.access(execname, os.R_OK|os.X_OK):
-                sys.stdout.write('%s[Error could not locate executable %s for %s/%s (%d-%d)]\n'%
-                                 (futuretest, execname, localdir, execname,
-                                  compoptsnum, execoptsnum))
+                sys.stdout.write('%s[Error could not locate executable %s for %s/%s'%
+                                 (futuretest, execname, localdir, execname))
+                if not onlyone:
+                    sys.stdout.write(' (%d-%d)'%(compoptsnum, execoptsnum))
+                sys.stdout.write(']\n')
                 break; # on to next compopts
 
             args=list();
@@ -761,14 +768,14 @@ for testname in testsrc:
             try:
                 output = SuckOutputWithTimeout(p.stdout, timeout)
             except ReadTimeoutException:
-                sys.stdout.write('%s[Error: Timed out executing program %s/%s %s %s'%
-
-                                 (futuretest, localdir, execname,
-                                  ' '.join(globalExecopts), execopts))
-                if len(compoptslist) > 1:
-                    sys.stdout.write(' (%s%s)'%
-                                     (' '.join(globalCompopts),compopts))
-                sys.stdout.write(' (%d-%d)]\n'%(compoptsnum, execoptsnum))
+                sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
+                                 (futuretest, localdir, execname))
+                if not onlyone:
+                    sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                     (' '.join(globalExecopts), execopts,
+                                      ' '.join(globalCompopts),compopts,
+                                      compoptsnum, execoptsnum))
+                sys.stdout.write(']\n')
                 kill_proc(p, killtimeout)
                 continue # on to next execopts
 
@@ -824,16 +831,14 @@ for testname in testsrc:
                     sys.stdout.write('%s[Success '%(futuretest))
                 else:
                     sys.stdout.write('%s[Error '%(futuretest))
-                sys.stdout.write('matching program output for %s/%s %s %s'%
-                                 (localdir, execname,
-                                  ' '.join(globalExecopts), execopts))
-                if len(compoptslist) > 1:
-                    sys.stdout.write('(%s%s)'%
-                                     (' '.join(globalCompopts),compopts))
-                if result==0:
-                    sys.stdout.write(']\n')
-                else:
-                    sys.stdout.write(' (%d-%d)]\n'%(compoptsnum, execoptsnum))
+                sys.stdout.write('matching program output for %s/%s'%
+                                 (localdir, execname))
+                if result!=0 and not onlyone:
+                    sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                     (' '.join(globalExecopts), execopts,
+                                      ' '.join(globalCompopts),compopts,
+                                      compoptsnum, execoptsnum))
+                sys.stdout.write(']\n')
 
             else:
                 if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
@@ -853,16 +858,14 @@ for testname in testsrc:
                     sys.stdout.write('[Success')
                 else:
                     sys.stdout.write('[Error')
-                sys.stdout.write(' matching performance keys for %s/%s %s %s'%
-                                 (localdir, execname,
-                                  ' '.join(globalExecopts), execopts))
-                if len(compoptslist) > 1:
-                    sys.stdout.write('(%s%s)'%
-                                     (' '.join(globalCompopts),compopts))
-                if result==0:
-                    sys.stdout.write(']\n')
-                else:
-                    sys.stdout.write(' (%d-%d)]\n'%(compoptsnum, execoptsnum))
+                sys.stdout.write(' matching performance keys for %s/%s'%
+                                 (localdir, execname))
+                if status!=0 and not onlyone:
+                    sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                     (' '.join(globalExecopts), execopts,
+                                      ' '.join(globalCompopts),compopts,
+                                      compoptsnum, execoptsnum))
+                sys.stdout.write(']\n')
 
         if os.path.isfile(execname):
             os.unlink(execname)
