@@ -222,7 +222,7 @@ static void chpl_mpi_polling_thread(void* arg) {
         rpcArg->joinLocale = status.MPI_SOURCE;
         rpcArg->blockingCall = 1;
 
-        CHPL_BEGIN((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
+        CHPL_BEGIN((chpl_fn_p)chplExecForkedTask, rpcArg, true, false, NULL);
         break;
       }
       case ChplCommForkNB: {
@@ -244,7 +244,7 @@ static void chpl_mpi_polling_thread(void* arg) {
         rpcArg->replyTag = msg_info.replyTag;
         rpcArg->joinLocale = status.MPI_SOURCE;
         rpcArg->blockingCall = 0;
-        CHPL_BEGIN((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
+        CHPL_BEGIN((chpl_fn_p)chplExecForkedTask, rpcArg, true, false, NULL);
         break;
       }
       case ChplCommFinish: {
