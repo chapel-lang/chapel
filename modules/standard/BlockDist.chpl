@@ -7,23 +7,14 @@
 //
 
 //
-// TODO List
-//
-// 1. Make multi-dimensional
-// 2. Support strided domains of locales
-// 3. Support strided Block domains
-// 4. Support slices
-//
 // Limitations
 //
 // 1. Changes to Block.tasksPerLocale are not made in privatized
 //    copies of this distribution.
 //
 
-
 config param debugBlockDist = false; // internal development flag (debugging)
 config param sanityCheckDistribution = false; // ditto; should promote to compiler flag
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Block Distribution Class
@@ -47,36 +38,28 @@ class Block : BaseDist {
             targetLocales: [] locale = thisRealm.Locales, 
             tasksPerLocale = 0) {
     boundingBox = bbox;
-    if rank == 1 {
-      targetLocDom = [0..#targetLocales.numElements]; // 0-based for simplicity
-      targetLocs = targetLocales;
-    } else if targetLocales.rank == 1 then {
+    if rank != 1 && targetLocales.rank == 1 {
       const factors = _factor(rank, targetLocales.numElements);
       var ranges: rank*range;
       for param i in 1..rank do
-        ranges(i) = 0..factors(i)-1;
+        ranges(i) = 0..#factors(i);
       targetLocDom = [(...ranges)];
-      for (loc1, loc2) in (targetLocs, targetLocales) do
-        loc1 = loc2;
-      if debugBlockDist {
-        writeln(targetLocDom);
-        writeln(targetLocs);
-      }
+      targetLocs = reshape(targetLocales, targetLocDom);
     } else {
       if targetLocales.rank != rank then
-	compilerError("locales array rank must be one or match distribution rank");
+	compilerError("targetLocales rank must equal distribution rank or one");
 
       var ranges: rank*range;
-      for param i in 1..rank do {
-	var thisRange = targetLocales.domain.dim(i);
-	ranges(i) = 0..#thisRange.length; 
-      }
-      
-      targetLocDom = [(...ranges)];
-      if debugBlockDist then writeln(targetLocDom);
+      for param i in 1..rank do
+	ranges(i) = 0..#targetLocales.domain.dim(i).length;
 
-      targetLocs = reshape(targetLocales, targetLocDom);
-      if debugBlockDist then writeln(targetLocs);
+      targetLocDom = [(...ranges)];
+      targetLocs = targetLocales;
+    }
+
+    if debugBlockDist {
+      writeln(targetLocDom);
+      writeln(targetLocs);
     }
 
     const boundingBoxDims = boundingBox.dims();
@@ -231,6 +214,7 @@ def Block.ind2locInd(ind: rank*idxType) where rank != 1 {
   return locInd;
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Block Local Distribution Class
 //
@@ -379,6 +363,8 @@ def BlockDom.these(param tag: iterator, follower) where tag == iterator.follower
     yield i;
   }
 }
+
+//------------------- 12/8/09 to here!!!
 
 def BlockDom.strideBy(str: int) {
   var alias = new BlockDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
@@ -846,6 +832,9 @@ def LocBlockArr.numElements return myElems.numElements;
 
 //
 // helper function for blocking index ranges
+//
+// 12/8/09 note: move this for sharing with forall over default
+//               arrays, etc.
 //
 def _computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
   def intCeilXDivByY(x, y) return ((x + (y-1)) / y);

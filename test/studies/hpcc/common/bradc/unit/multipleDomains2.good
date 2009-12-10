@@ -1,6 +1,10 @@
+[0..2]
+LOCALE0 LOCALE1 LOCALE2
 locale 0 owns chunk: [-2147483648..4]
 locale 1 owns chunk: [5..7]
 locale 2 owns chunk: [8..2147483647]
+[0..2]
+LOCALE0 LOCALE1 LOCALE2
 locale 0 owns chunk: [-2147483648..4]
 locale 1 owns chunk: [5..7]
 locale 2 owns chunk: [8..2147483647]
