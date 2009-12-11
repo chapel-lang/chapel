@@ -21,35 +21,34 @@ failing because they use new sub_test .goods but old sub_test script
 [Error cannot locate program output comparison file studies/shootout/fannkuch/fannkuch.good]
 [Error cannot locate program output comparison file studies/shootout/thread-ring/thread-ring.good]
 
+spurious failure due to nondeterminism in minloc reductions
+-----------------------------------------------------------
+[Error matching program output for studies/kmeans/kmeans-blc] (e.g., 11/18/09, 12/05/09, 12/07/09)
+
 spurious failure
 ----------------
-
-12/08/09 [sungeun]: Ran for several hours without failure (gasnet -fast
-with -nl 3).  Remove?
-
 [Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
 
-spurious wrong result
----------------------
+Notes: 12/08/09 [sungeun]: Ran for several hours without failure
+(gasnet -fast with -nl 3).
 
-12/08/09 [sungeun]: These are due to race condition in the update loop.
-Working on best way to fix.
-
+spurious wrong result due to race condition in update loop
+----------------------------------------------------------
 [Error matching program output for studies/lu/marybeth/pivlublock-alias] (e.g., 10/23/09, 11/14/09)
 [Error matching program output for studies/lu/marybeth/nopivlublock-alias] (e.g., 10/24/09, 11/14/09, 11/21/09)
 
-spurious verification failures on RA
-------------------------------------
+spurious verification failures on RA (probably due to intentional races)
+------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist]
 [Error matching program output for studies/hpcc/RA/marybeth/ra3] (e.g., 10/07/09)
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09)
+[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09)
 [Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09)
-[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09)
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09, 10/17/09, 10/23/09, 10/28/09, 10/30/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09, 11/13/09, 11/18/09, 11/24/09)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 10/11/09, 10/14/09, 10/16/09, 10/23/09, 10/24/09, 10/28/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09, 11/13/09, 11/18/09, 11/24/09)
+[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09, 12/07/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09, 10/17/09, 10/23/09, 10/28/09, 10/30/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09, 11/13/09, 11/18/09, 11/24/09, 12/05/09, 12/09/09, 12/10/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 10/11/09, 10/14/09, 10/16/09, 10/23/09, 10/24/09, 10/28/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09, 11/13/09, 11/18/09, 11/24/09, 12/05/09, 12/07/09, 12/08/09, 12/09/09, 12/10/09)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 10/12/09, 10/19/09, 11/08/09)
 
 
@@ -59,17 +58,17 @@ linux regressions
 
 spurious double free or corruption
 ----------------------------------
+[Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower6] (e.g., 10/26/09)
+[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist] (e.g., 11/05/09)
+[Error matching program output for stress/deitz/test_10k_cobegins] (e.g., 11/08/09)
 
-12/08/09 [sungeun]: I have run all three of these tests with
+Notes: 12/08/09 [sungeun]: I have run all three of these tests with
 MALLOC_CHECK_=2 (repeatedly for at least an hour each--usually more).
 I have also tried run them with the runManyTimes script, and though
 there were no faliures, sometimes the script would just die so I don't
 think I got a million times in.  Possibly these were due to the coding
 frenzy before SC09.
 
-[Error matching program output for functions/deitz/iterators/leader_follower/test_leader_follower6] (e.g., 10/26/09)
-[Error matching program output for studies/matrixMult/stonea/distributed/simpleBlockDist] (e.g., 11/05/09)
-[Error matching program output for stress/deitz/test_10k_cobegins] (e.g., 11/08/09)
 
 spurious system fork failure
 ----------------------------
@@ -105,15 +104,6 @@ execution timeouts (08/29/09)
 =============================
 valgrind-specific regressions
 =============================
-
-program spuriously got wrong output with valgrind the night it was checked in
------------------------------------------------------------------------------
-
-12/08/09 [sungeun]: This actually fails with comm none pretty
-reliably.  It appears to be a race condition possibly related to
-parallel work in reductions (work with --maxChunks=1).
-
-[Error matching program output for studies/kmeans/kmeans-blc]
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
@@ -166,9 +156,9 @@ times out spuriously
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (e.g., 11/09/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (e.g., 11/09/09)
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09)
-[Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09)
+[Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09)
 [Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09)
 
 
@@ -339,9 +329,9 @@ execution timeout (10/05/09)
 spurious sprintf not thread-safe
 --------------------------------
 [Error matching program output for studies/590o/bradc/coforall-private-indices] (e.g., 10/08/09, 10/15/09, 10/20/09, 10/23/09, 11/09/09, 11/10/09, 11/13/09, 12/01/09, 12/03/09)
-[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/02/09, 10/08/09, 10/09/09, 10/14/09, 10/21/09, 10/27/09, 10/30/09, 11/06/09)
-[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround2] (e.g., 10/19/09, 10/29/09)
-[Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 10/07/09, 10/14/09, 10/27/09, 11/23/09)
+[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround] (e.g., 10/02/09, 10/08/09, 10/09/09, 10/14/09, 10/21/09, 10/27/09, 10/30/09, 11/06/09, 12/10/09)
+[Error matching program output for studies/590o/bradc/coforall-private-indices-workaround2] (e.g., 10/19/09, 10/29/09, 12/07/09)
+[Error matching program output for studies/590o/bradc/forall-begin-private-indices] (e.g., 10/07/09, 10/14/09, 10/27/09, 11/23/09, 12/07/09)
 
 
 ========================
@@ -352,6 +342,43 @@ xt-cle-specific failures
 ==============================
 cray-/cce-specific regressions
 ==============================
+
+spurious compilation timeouts
+-----------------------------
+[Error: Timed out compilation for release/examples/hpcc/hpl] (e.g., 12/07/09)
+[Error: Timed out compilation for release/examples/programs/norm] (e.g., 12/07/09)
+[Error: Timed out compilation for release/examples/tutorials/arrays] (e.g., 12/07/09)
+[Error: Timed out compilation for release/examples/tutorials/opaque] (e.g., 12/07/09)
+[Error: Timed out compilation for arrays/deitz/jacobi-no-inline] (e.g., 12/06/09)
+[Error: Timed out compilation for arrays/deitz/jacobi-unoptimized] (e.g., 12/06/09)
+[Error: Timed out compilation for arrays/deitz/jacobi5-no-local] (e.g., 12/06/09)
+[Error: Timed out compilation for arrays/deitz/many/test_many_arrays_of_records] (e.g., 12/06/09)
+[Error: Timed out compilation for classes/bradc/arrayInClass/arrayOfArithInClass] (e.g., 12/06/09)
+[Error: Timed out compilation for classes/bradc/arrayInClass/genericArrayInClass-arith] (e.g., 12/06/09)
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked4] (e.g., 12/06/09)
+[Error: Timed out compilation for npb/cg/bradc/cg-sparse] (e.g., 12/06/09)
+[Error: Timed out compilation for performance/compiler/bradc/cg-sparse-timecomp] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/hpcc/HPL/stonea/serial/hplExample2] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/recordBug/test_likepy] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/test_diff] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/test_gaxpy] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/test_likepy] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/test_mul] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/test_showboxes] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/common/test_diff] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/common/test_gaxpy] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/common/test_likepy] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/common/test_mul] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/common/test_showboxes] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_diff] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_gaxpy] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_likepy] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_mul] (e.g., 12/06/09)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 12/06/09)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 12/06/09)
 
 spurious timeout
 ----------------
@@ -418,10 +445,8 @@ some sort of gdb compatability issue?
 
 long identifiers
 ----------------
-[Error matching compiler output for studies/hpcc/RA/diten/ra]
 [Error matching program output for arrays/deitz/test_major_nesting_of_arrays]
 [Error matching program output for trivial/deitz/test_longToken]
-[Error matching program output for types/tuple/deitz/test_128int]
 
 Numerical accuracy issues (started 05/24/08)
 --------------------------------------------
@@ -436,10 +461,6 @@ negative floating point 0.0 not supported
 -----------------------------------------
 [Error matching program output for types/complex/bradc/negateimaginary3] 
 [Error matching program output for types/complex/bradc/negativeimaginaryliteral] 
-
-Some sort of offset type mismatch -- likely caused by long identifiers
-----------------------------------------------------------------------
-[Error matching program output for types/tuple/diten/tupleOfTupleOfTupleOfTuple]
 
 
 ===================================================================
