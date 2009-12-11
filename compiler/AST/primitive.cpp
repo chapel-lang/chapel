@@ -251,6 +251,15 @@ returnInfoTaskList(CallExpr* call) {
   return dtTaskList;
 }
 
+static Type*
+returnInfoVirtualMethodCall(CallExpr* call) {
+  SymExpr* se = toSymExpr(call->get(1));
+  INT_ASSERT(se);
+  FnSymbol* fn = toFnSymbol(se->var);
+  INT_ASSERT(fn);
+  return fn->retType;
+}
+
 HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
 
 PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
@@ -328,6 +337,7 @@ initPrimitive() {
   prim_def(PRIM_BXOR_ID, "_bxor_id", returnInfoFirst);
 
   prim_def(PRIM_SETCID, "setcid", returnInfoVoid, true, true);
+  prim_def(PRIM_TESTCID, "testcid", returnInfoBool, false, true);
   prim_def(PRIM_GETCID, "getcid", returnInfoBool, false, true);
   prim_def(PRIM_UNION_SETID, "set_union_id", returnInfoVoid, true, true);
   prim_def(PRIM_UNION_GETID, "get_union_id", returnInfoInt64, false, true);
@@ -642,6 +652,8 @@ initPrimitive() {
   prim_def(PRIM_SET_SVEC_MEMBER, "set svec member", returnInfoVoid, true, true);
   prim_def(PRIM_GET_SVEC_MEMBER, "get svec member", returnInfoGetTupleMemberRef);
   prim_def(PRIM_GET_SVEC_MEMBER_VALUE, "get svec member value", returnInfoGetTupleMember, false, true);
+
+  prim_def(PRIM_VMT_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

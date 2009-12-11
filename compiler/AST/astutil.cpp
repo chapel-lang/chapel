@@ -93,6 +93,15 @@ void compute_call_sites() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* fn = call->isResolved()) {
       fn->calledBy->add(call);
+    } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+      // sjd: do we have to do anything special here?
+      //      should this call be added to some function's calledBy list?
+    } else if (call->isPrimitive(PRIM_VMT_CALL)) {
+      FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
+      Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
+      fn->calledBy->add(call);
+      forv_Vec(FnSymbol, child, *children)
+        child->calledBy->add(call);
     }
   }
 }
@@ -348,6 +357,14 @@ actual_to_formal(Expr *a) {
         if (a == actual)
           return formal;
       }
+    } else if (call->isPrimitive(PRIM_VMT_CALL)) {
+      FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
+      int i = 0;
+      for_actuals(actual, call) {
+        i++;
+        if (a == actual)
+          return fn->getFormal(i-2);
+      }
     }
   }
   INT_FATAL(a, "bad call to actual_to_formal");
@@ -396,6 +413,10 @@ pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
         pruneVisit(se->var->type->symbol, fns, types);
     }
   }
+  for_formals(formal, fn) {
+    if (!types.set_in(formal->type->symbol))
+      pruneVisit(formal->type->symbol, fns, types);
+  }
 }
 
 
@@ -410,6 +431,10 @@ prune() {
   pruneVisit(chpl_main, fns, types);
   forv_Vec(FnSymbol, fn, ftableVec)
     pruneVisit(fn, fns, types);
+  for (int i = 0; i < virtualMethodTable.n; i++)
+    if (virtualMethodTable.v[i].key)
+      for (int j = 0; j < virtualMethodTable.v[i].value->n; j++)
+        pruneVisit(virtualMethodTable.v[i].value->v[j], fns, types);
   if (fRuntime) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXPORT))

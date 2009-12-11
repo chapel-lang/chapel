@@ -61,6 +61,7 @@ enum Flag {
   FLAG_INDEX_VAR,
   FLAG_INLINE,
   FLAG_INLINE_ITERATOR, // iterators that are always inlined, e.g., leaders
+  FLAG_INVISIBLE_FN, // invisible function (not a candidate for resolution)
   FLAG_INSERT_AUTO_COPY,
   FLAG_INSERT_AUTO_DESTROY,
   FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW,
@@ -109,7 +110,7 @@ enum Flag {
   FLAG_TUPLE,
   FLAG_TYPE_CONSTRUCTOR,
   FLAG_TYPE_VARIABLE, // contains a type instead of a value
-  FLAG_INVISIBLE_FN, // invisible function (not a candidate for resolution)
+  FLAG_VIRTUAL,
   FLAG_WIDE,
   FLAG_WIDE_CLASS,
   FLAG_WRAPPER, // wrapper function

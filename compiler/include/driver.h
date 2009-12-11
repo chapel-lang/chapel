@@ -16,6 +16,7 @@ extern int fdump_html;
 extern int trace_level;
 
 // optimization control flags
+extern int fConditionalDynamicDispatchLimit;
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;
 extern bool fNoDeadCodeElimination;

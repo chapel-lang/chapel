@@ -56,6 +56,7 @@ initFlags() {
   defineFlag(FLAG_INDEX_VAR, "index var");
   defineFlag(FLAG_INLINE, "inline");
   defineFlag(FLAG_INLINE_ITERATOR, "inline iterator");
+  defineFlag(FLAG_INVISIBLE_FN, "invisible fn");
   defineFlag(FLAG_INSERT_AUTO_COPY, "insert auto copy");
   defineFlag(FLAG_INSERT_AUTO_DESTROY, "insert auto destroy");
   defineFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW, "insert auto destroy for explicit new");
@@ -101,7 +102,7 @@ initFlags() {
   defineFlag(FLAG_TUPLE, "tuple");
   defineFlag(FLAG_TYPE_CONSTRUCTOR, "type constructor");
   defineFlag(FLAG_TYPE_VARIABLE, "type variable");
-  defineFlag(FLAG_INVISIBLE_FN, "invisible fn");
+  defineFlag(FLAG_VIRTUAL, "virtual");
   defineFlag(FLAG_WIDE, "wide");
   defineFlag(FLAG_WIDE_CLASS, "wide class");
   defineFlag(FLAG_WRAPPER, "wrapper");

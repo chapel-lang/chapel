@@ -835,7 +835,7 @@ static void localizeCall(CallExpr* call) {
             insertLocalTemp(rhs->get(1));
           }
           break;
-        } else if (rhs->isPrimitive(PRIM_GETCID)) {
+        } else if (rhs->isPrimitive(PRIM_TESTCID)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             insertLocalTemp(rhs->get(1));
           }
@@ -1164,7 +1164,8 @@ insertWideReferences(void) {
       if (VarSymbol* var = toVarSymbol(se->var)) {
         if (var->immediate) {
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
-            if (call->isResolved() && !call->isResolved()->hasFlag(FLAG_EXTERN)) {
+            if (call->isPrimitive(PRIM_VMT_CALL) ||
+                (call->isResolved() && !call->isResolved()->hasFlag(FLAG_EXTERN))) {
               if (Type* type = actual_to_formal(se)->typeInfo()) {
                 VarSymbol* tmp = newTemp(type);
                 call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1518,7 +1519,7 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_SETCID:
   case PRIM_ARRAY_GET:
   case PRIM_ARRAY_GET_VALUE:
-  case PRIM_GETCID:
+  case PRIM_TESTCID:
   case PRIM_DYNAMIC_CAST:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
       return true;

@@ -63,6 +63,9 @@ extern int chpl_threads_initialized;
     _ARRAY_FREE((x).addr, lineno, filename);                           \
   } while (0)
 
+#define CHPL_VMT_CALL(vmt, cid, ind)            \
+  (vmt[cid][ind])
+
 #define _noop(x)
 
 #define malloc  dont_use_malloc_use_chpl_malloc_instead

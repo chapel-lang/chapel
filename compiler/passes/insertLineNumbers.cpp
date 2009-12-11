@@ -28,6 +28,15 @@ static ArgSymbol* newLine(FnSymbol* fn) {
   ArgSymbol* line = new ArgSymbol(INTENT_BLANK, "_ln", dtInt[INT_SIZE_32]);
   fn->insertFormalAtTail(line);
   linenoMap.put(fn, line);
+  if (Vec<FnSymbol*>* rootFns = virtualRootsMap.get(fn)) {
+    forv_Vec(FnSymbol, rootFn, *rootFns)
+      if (!linenoMap.get(rootFn))
+        newLine(rootFn);
+  } else if (Vec<FnSymbol*>* childrenFns = virtualChildrenMap.get(fn)) {
+    forv_Vec(FnSymbol, childrenFn, *childrenFns)
+      if (!linenoMap.get(childrenFn))
+        newLine(childrenFn);
+  }
   return line;
 }
 
@@ -35,6 +44,16 @@ static ArgSymbol* newFile(FnSymbol* fn) {
   ArgSymbol* file = new ArgSymbol(INTENT_BLANK, "_fn", dtString);
   fn->insertFormalAtTail(file);
   filenameMap.put(fn, file);
+  queue.add(fn);
+  if (Vec<FnSymbol*>* rootFns = virtualRootsMap.get(fn)) {
+    forv_Vec(FnSymbol, rootFn, *rootFns)
+      if (!filenameMap.get(rootFn))
+        newFile(rootFn);
+  } else if (Vec<FnSymbol*>* childrenFns = virtualChildrenMap.get(fn)) {
+    forv_Vec(FnSymbol, childrenFn, *childrenFns)
+      if (!filenameMap.get(childrenFn))
+        newFile(childrenFn);
+  }
   return file;
 }
 
@@ -57,7 +76,6 @@ insertLineNumber(CallExpr* call) {
     if (!file) { 
       line = newLine(fn);
       file = newFile(fn);
-      queue.add(fn);
     }
     
     // 
@@ -66,16 +84,15 @@ insertLineNumber(CallExpr* call) {
     } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
       call->replace(new SymExpr(line));
     }
-  } else
-    if (!strcmp(fn->name, "chpl__heapAllocateGlobals") ||
+  } else if (!strcmp(fn->name, "chpl__heapAllocateGlobals") ||
              !strcmp(fn->name, "chpl__initModuleGuards") ||
              ((mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) && 
               !fn->hasFlag(FLAG_TEMP) && !fn->hasFlag(FLAG_INLINE)) ||
              (developer == true && strcmp(fn->name, "halt"))) {
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call
-      if (call->isResolved() &&
-          call->isResolved()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
+    if (call->isResolved() &&
+        call->isResolved()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
       call->insertAtTail(new_IntSymbol(0));
       FnSymbol* fn = call->isResolved();
       INT_ASSERT(fn);
@@ -108,14 +125,13 @@ insertLineNumber(CallExpr* call) {
     call->insertAtTail(line);
     call->insertAtTail(file);
   } else {
-      // call is in non-user code, and the function requires new line
-      // number and filename arguments
-      line = newLine(fn);
-      file = newFile(fn);
-      queue.add(fn);
+    // call is in non-user code, and the function requires new line
+    // number and filename arguments
+    line = newLine(fn);
+    file = newFile(fn);
 
-      call->insertAtTail(line);
-      call->insertAtTail(file);
+    call->insertAtTail(line);
+    call->insertAtTail(file);
   }
 }
 
@@ -146,12 +162,13 @@ void insertLineNumbers() {
           call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
           call->isPrimitive(PRIM_SET_MEMBER) ||
           call->isPrimitive(PRIM_GETCID) ||
+          call->isPrimitive(PRIM_TESTCID) ||
           isClassMethodCall(call)) {
         Expr* stmt = call->getStmtExpr();
         SET_LINENO(stmt);
         ClassType* ct = toClassType(call->get(1)->typeInfo());
         if (ct && (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
-          if (!call->getFunction()->hasFlag(FLAG_GPU_ON)) // disable I/O on GPU
+          if (!call->getFunction()->hasFlag(FLAG_GPU_ON)) // disable in GPU
             stmt->insertBefore(
               new CallExpr(PRIM_CHECK_NIL, call->get(1)->copy()));
         }
@@ -166,6 +183,7 @@ void insertLineNumbers() {
       insertLineNumber(call);
     }
   }
+
   // loop over all functions in the queue and all calls to these
   // functions, and pass the calls an actual line number and filename
   forv_Vec(FnSymbol, fn, queue) {

@@ -298,13 +298,16 @@ extern void* const chpl_private_broadcast_table[];
     CHPL_COMM_WIDE_PUT_SVEC(etype, chpl_macro_tmp, val, ln, fn);      \
   } while (0)
 
+#define CHPL_COMM_WIDE_CLASS_GET_CID(local, wide, stype, ln, fn)        \
+  CHPL_COMM_WIDE_GET_FIELD_VALUE(local, wide, stype, chpl__cid, chpl__class_id, ln, fn)
+
 #define CHPL_WIDE_CLASS_GET_SUPER(type, local, wide)                    \
   do {                                                                  \
     (local).locale = (wide).locale;                                     \
     (local).addr = (type)((wide).addr);                                 \
   } while (0)
 
-#define CHPL_COMM_WIDE_CLASS_GET_CID(local, wide, cid, stype, ln, fn)   \
+#define CHPL_COMM_WIDE_CLASS_TEST_CID(local, wide, cid, stype, ln, fn)   \
   do {                                                                  \
     chpl__class_id chpl_macro_tmp;                                      \
     CHPL_COMM_WIDE_GET_FIELD_VALUE(chpl_macro_tmp, wide,                \

@@ -1010,11 +1010,18 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
-        if (call->isPrimitive(PRIM_GETCID)) {
+        if (call->isPrimitive(PRIM_TESTCID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            gen(outfile, "CHPL_COMM_WIDE_CLASS_GET_CID(%A, %A, chpl__cid_%A, object, %A, %A)",
+            gen(outfile, "CHPL_COMM_WIDE_CLASS_TEST_CID(%A, %A, chpl__cid_%A, object, %A, %A)",
                 get(1), call->get(1), call->get(2)->typeInfo(),
                 call->get(3), call->get(4));
+            break;
+          }
+        }
+        if (call->isPrimitive(PRIM_GETCID)) {
+          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            gen(outfile, "CHPL_COMM_WIDE_CLASS_GET_CID(%A, %A, object, %A, %A)",
+                get(1), call->get(1), call->get(2), call->get(3));
             break;
           }
         }
@@ -1375,6 +1382,12 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     case PRIM_GETCID:
+      INT_ASSERT(get(1)->typeInfo() != dtNil);
+      fprintf(outfile, "(((object)");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ")->chpl__cid)");
+      break;
+    case PRIM_TESTCID:
       INT_ASSERT(get(1)->typeInfo() != dtNil);
       fprintf(outfile, "(((object)");
       get(1)->codegen(outfile);
@@ -2015,6 +2028,39 @@ void CallExpr::codegen(FILE* outfile) {
       get(3)->codegen(outfile);
       fprintf(outfile, ")");
       break;
+    case PRIM_VMT_CALL: {
+      SymExpr* se = toSymExpr(get(1));
+      INT_ASSERT(se);
+      FnSymbol* fn = toFnSymbol(se->var);
+      INT_ASSERT(fn);
+      gen(outfile, "((%A(*)(", fn->retType);
+      bool comma = false;
+      for_formals(arg, fn) {
+        if (comma)
+          gen(outfile, ", ");
+        comma = true;
+        gen(outfile, "%A", arg->type);
+        if (isRecord(arg->type))
+          gen(outfile, "*");
+      }
+      gen(outfile, "))(*CHPL_VMT_CALL(");
+      if (fRuntime)
+        gen(outfile, "chpl_rt_vmtable, ");
+      else
+        gen(outfile, "chpl_vmtable, ");
+      gen(outfile, "%A, ", get(2));
+      fprintf(outfile, "%d)))(", virtualMethodMap.get(fn));
+      int i = 3;
+      for_formals(arg, fn) {
+        if (i > 3)
+          gen(outfile, ", ");
+        if (isRecord(arg->type))
+          gen(outfile, "&");
+        gen(outfile, "%A", get(i++));
+      }
+      gen(outfile, ")");
+      break;
+    }
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "impossible");
       break;

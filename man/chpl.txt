@@ -112,6 +112,15 @@ OPTIONS
   --baseline        Turns off all optimizations in the Chapel compiler and
                     generates naive C code with many temporaries.
 
+  --conditional-dynamic-dispatch-limit   When greater than zero, this
+                    limit controls when the compiler will generate
+                    code to handle dynamic dispatch with conditional
+                    statements. If the number of possible method
+                    calls is less than or equal to this limit, a
+                    (possibly nested) conditional statement will be
+                    used for dynamic dispatch instead of the virtual
+                    method table. The default is zero.
+
   --fast            Turns off all runtime checks using --no-checks, turns
                     on --no-ieee-float, and enables all other compiler
                     optimizations in the rest of this section.

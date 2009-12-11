@@ -35,9 +35,6 @@ Vec<CallExpr*> callStack;
 static Vec<CondStmt*> tryStack;
 static bool tryFailure = false;
 
-static Map<FnSymbol*,Vec<FnSymbol*>*> ddf; // map of functions to
-                                           // virtual children
-
 static Map<Type*,Type*> runtimeTypeMap; // map static types to runtime types
                                         // e.g. array and domain runtime types
 static Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
@@ -3423,8 +3420,23 @@ collectInstantiatedClassTypes(Vec<Type*>& icts, Type* ct) {
 }
 
 
+//
+// return true if child overrides parent in dispatch table
+//
+static bool
+isVirtualChild(FnSymbol* child, FnSymbol* parent) {
+  if (Vec<FnSymbol*>* children = virtualChildrenMap.get(parent)) {
+    forv_Vec(FnSymbol*, candidateChild, *children) {
+      if (candidateChild == child)
+        return true;
+    }
+  }
+  return false;
+}
+
+
 static void
-add_to_ddf(FnSymbol* pfn, ClassType* ct) {
+addToVirtualMaps(FnSymbol* pfn, ClassType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
     if (cfn && !cfn->instantiatedFrom && possible_signature_match(pfn, cfn)) {
       Vec<Type*> types;
@@ -3475,55 +3487,106 @@ add_to_ddf(FnSymbol* pfn, ClassType* ct) {
                 Type* ic = fn->retType->defaultConstructor->iteratorInfo->iclass;
                 pic->dispatchChildren.add_exclusive(ic);
                 ic->dispatchParents.add_exclusive(pic);
-                continue; // do not add to ddf; handle in _getIterator
+                continue; // do not add to virtualChildrenMap; handle in _getIterator
               }
             } else if (!isSubType(fn->retType, pfn->retType)) {
               USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
               USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
               USR_STOP();
             }
-            Vec<FnSymbol*>* fns = ddf.get(pfn);
-            if (!fns) fns = new Vec<FnSymbol*>();
-            fns->add(fn);
-            ddf.put(pfn, fns);
-          }
-        }
-      }
-    }
-  }
-}
+            {
+              Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
+              if (!fns) fns = new Vec<FnSymbol*>();
+              fns->add(fn);
+              virtualChildrenMap.put(pfn, fns);
+              fn->addFlag(FLAG_VIRTUAL);
+              pfn->addFlag(FLAG_VIRTUAL);
+            }
+            {
+              Vec<FnSymbol*>* fns = virtualRootsMap.get(fn);
+              if (!fns) fns = new Vec<FnSymbol*>();
+              bool added = false;
 
+              //
+              // check if parent or child already exists in vector
+              //
+              for (int i = 0; i < fns->n; i++) {
+                //
+                // if parent already exists, do not add child to vector
+                //
+                if (isVirtualChild(pfn, fns->v[i])) {
+                  added = true;
+                  break;
+                }
 
-static void
-add_all_children_ddf(FnSymbol* fn, ClassType* ct) {
-  forv_Vec(Type, t, ct->dispatchChildren) {
-    ClassType* ct = toClassType(t);
-    if (ct->defaultTypeConstructor &&
-        (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
-         resolvedFns.get(ct->defaultTypeConstructor))) {
-      add_to_ddf(fn, ct);
-    }
-    if (!ct->instantiatedFrom)
-      add_all_children_ddf(fn, ct);
-  }
-}
+                //
+                // if child already exists, replace with parent
+                //
+                if (isVirtualChild(fns->v[i], pfn)) {
+                    fns->v[i] = pfn;
+                    added = true;
+                    break;
+                }
+              }
 
+              if (!added)
+                fns->add(pfn);
 
-static void
-build_ddf() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.get(fn) && !fn->hasFlag(FLAG_NO_PARENS)) {
-      if (fn->numFormals() > 1) {
-        if (fn->getFormal(1)->type == dtMethodToken) {
-          if (ClassType* pt = toClassType(fn->getFormal(2)->type)) {
-            if (isClass(pt) && !pt->symbol->hasFlag(FLAG_GENERIC)) {
-              add_all_children_ddf(fn, pt);
+              virtualRootsMap.put(fn, fns);
             }
           }
         }
       }
     }
   }
+}
+
+
+static void
+addAllToVirtualMaps(FnSymbol* fn, ClassType* ct) {
+  forv_Vec(Type, t, ct->dispatchChildren) {
+    ClassType* ct = toClassType(t);
+    if (ct->defaultTypeConstructor &&
+        (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
+         resolvedFns.get(ct->defaultTypeConstructor))) {
+      addToVirtualMaps(fn, ct);
+    }
+    if (!ct->instantiatedFrom)
+      addAllToVirtualMaps(fn, ct);
+  }
+}
+
+
+static void
+buildVirtualMaps() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.get(fn) && !fn->hasFlag(FLAG_NO_PARENS) && fn->retTag != RET_PARAM && fn->retTag != RET_TYPE) {
+      if (fn->numFormals() > 1) {
+        if (fn->getFormal(1)->type == dtMethodToken) {
+          if (ClassType* pt = toClassType(fn->getFormal(2)->type)) {
+            if (isClass(pt) && !pt->symbol->hasFlag(FLAG_GENERIC)) {
+              addAllToVirtualMaps(fn, pt);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+static void
+addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive = false) {
+  Vec<FnSymbol*>* fns = virtualMethodTable.get(type);
+  if (!fns) fns = new Vec<FnSymbol*>();
+  if (exclusive) {
+    forv_Vec(FnSymbol, f, *fns) {
+      if (f == fn)
+        return;
+    }
+  }
+  fns->add(fn);
+  virtualMethodTable.put(type, fns);
 }
 
 
@@ -3660,22 +3723,81 @@ resolve() {
   int num_types;
   do {
     num_types = gTypeSymbols.n;
-    Vec<Vec<FnSymbol*>*> values;
-    ddf.get_values(values);
-    forv_Vec(Vec<FnSymbol*>, value, values) {
-      delete value;
+    {
+      Vec<Vec<FnSymbol*>*> values;
+      virtualChildrenMap.get_values(values);
+      forv_Vec(Vec<FnSymbol*>, value, values) {
+        delete value;
+      }
     }
-    ddf.clear();
-    build_ddf();
+    virtualChildrenMap.clear();
+    {
+      Vec<Vec<FnSymbol*>*> values;
+      virtualRootsMap.get_values(values);
+      forv_Vec(Vec<FnSymbol*>, value, values) {
+        delete value;
+      }
+    }
+    virtualRootsMap.clear();
+    buildVirtualMaps();
   } while (num_types != gTypeSymbols.n);
 
+  for (int i = 0; i < virtualRootsMap.n; i++) {
+    if (virtualRootsMap.v[i].key) {
+      for (int j = 0; j < virtualRootsMap.v[i].value->n; j++) {
+        FnSymbol* root = virtualRootsMap.v[i].value->v[j];
+        addVirtualMethodTableEntry(root->_this->type, root, true);
+      }
+    }
+  }
+
+  Vec<Type*> ctq;
+  ctq.add(dtObject);
+  forv_Vec(Type, ct, ctq) {
+    if (Vec<FnSymbol*>* parentFns = virtualMethodTable.get(ct)) {
+      forv_Vec(FnSymbol, pfn, *parentFns) {
+        Vec<Type*> childSet;
+        if (Vec<FnSymbol*>* childFns = virtualChildrenMap.get(pfn)) {
+          forv_Vec(FnSymbol, cfn, *childFns) {
+            forv_Vec(Type, pt, cfn->_this->type->dispatchParents) {
+              if (pt == ct) {
+                if (!childSet.set_in(cfn->_this->type)) {
+                  addVirtualMethodTableEntry(cfn->_this->type, cfn);
+                  childSet.set_add(cfn->_this->type);
+                }
+                break;
+              }
+            }
+          }
+        }
+        forv_Vec(Type, childType, ct->dispatchChildren) {
+          if (!childSet.set_in(childType)) {
+            addVirtualMethodTableEntry(childType, pfn);
+          }
+        }
+      }
+    }
+    forv_Vec(Type, child, ct->dispatchChildren) {
+      ctq.add(child);
+    }
+  }
+
+  for (int i = 0; i < virtualMethodTable.n; i++) {
+    if (virtualMethodTable.v[i].key) {
+      virtualMethodTable.v[i].value->reverse();
+      for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
+        virtualMethodMap.put(virtualMethodTable.v[i].value->v[j], j);
+      }
+    }
+  }
+
   if (fPrintDispatch) {
-    printf("dynamic dispatch functions:\n");
-    for (int i = 0; i < ddf.n; i++) {
-      if (ddf.v[i].key) {
-        printf("  %s\n", toString(ddf.v[i].key));
-        for (int j = 0; j < ddf.v[i].value->n; j++) {
-          printf("    %s\n", toString(ddf.v[i].value->v[j]));
+    printf("Dynamic dispatch table:\n");
+    for (int i = 0; i < virtualMethodTable.n; i++) {
+      if (Type* t = virtualMethodTable.v[i].key) {
+        printf("  %s\n", toString(t));
+        for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
+          printf("    %s\n", toString(virtualMethodTable.v[i].value->v[j]));
         }
       }
     }
@@ -3737,87 +3859,93 @@ resolve() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol && call->getStmtExpr())
       if (FnSymbol* fn = call->isResolved())
-        if (ddf.get(fn))
+        if (virtualChildrenMap.get(fn))
           dynamicDispatchCalls.add(call);
   }
   forv_Vec(CallExpr, call, dynamicDispatchCalls) {
     SET_LINENO(call);
     FnSymbol* key = call->isResolved();
-    Vec<FnSymbol*>* fns = ddf.get(key);
-    forv_Vec(FnSymbol, fn, *fns) {
-      Type* type = fn->getFormal(2)->type;
-      CallExpr* subcall = call->copy();
-      SymExpr* tmp = new SymExpr(gNil);
-      BlockStmt* ifBlock = new BlockStmt();
+    Vec<FnSymbol*>* fns = virtualChildrenMap.get(key);
+    if (fns->n + 1 > fConditionalDynamicDispatchLimit) {
+      //
+      // change call of root method into virtual method call; replace
+      // method token with function
+      //
+      VarSymbol* cid = newTemp(dtInt[INT_SIZE_32]);
+      call->getStmtExpr()->insertBefore(new DefExpr(cid));
+      call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_GETCID, call->get(2)->copy())));
+      call->get(1)->replace(call->baseExpr->remove());
+      call->get(2)->insertBefore(new SymExpr(cid));
+      call->primitive = primitives[PRIM_VMT_CALL];
+    } else {
+      forv_Vec(FnSymbol, fn, *fns) {
+        Type* type = fn->getFormal(2)->type;
+        CallExpr* subcall = call->copy();
+        SymExpr* tmp = new SymExpr(gNil);
+        BlockStmt* ifBlock = new BlockStmt();
 
-      VarSymbol* cid = newTemp(dtBool);
-      ifBlock->insertAtTail(new DefExpr(cid));
-      ifBlock->insertAtTail(new CallExpr(PRIM_MOVE, cid,
-                              new CallExpr(PRIM_GETCID,
-                                           call->get(2)->copy(),
-                                           type->symbol)));
-      VarSymbol* _ret = NULL;
-      if (key->retType != dtVoid) {
-        _ret = newTemp(key->retType);
-        ifBlock->insertAtTail(new DefExpr(_ret));
-      }
-      BlockStmt* trueBlock = new BlockStmt();
-      if (fn->retType == key->retType) {
+        VarSymbol* cid = newTemp(dtBool);
+        ifBlock->insertAtTail(new DefExpr(cid));
+        ifBlock->insertAtTail(new CallExpr(PRIM_MOVE, cid,
+                                new CallExpr(PRIM_TESTCID,
+                                             call->get(2)->copy(),
+                                             type->symbol)));
+        VarSymbol* _ret = NULL;
+        if (key->retType != dtVoid) {
+          _ret = newTemp(key->retType);
+          ifBlock->insertAtTail(new DefExpr(_ret));
+        }
+        BlockStmt* trueBlock = new BlockStmt();
+        if (fn->retType == key->retType) {
+          if (_ret)
+            trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, _ret, subcall));
+          else
+            trueBlock->insertAtTail(subcall);
+        } else if (isSubType(fn->retType, key->retType)) {
+          // Insert a cast to the overridden method's return type
+          VarSymbol* castTemp = newTemp(fn->retType);
+          trueBlock->insertAtTail(new DefExpr(castTemp));
+          trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, castTemp,
+                                               subcall));
+          INT_ASSERT(_ret);
+          trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, _ret,
+                                    new CallExpr(PRIM_CAST,
+                                                 key->retType->symbol,
+                                                 castTemp)));
+        } else
+          INT_FATAL(key, "unexpected case");
+        BlockStmt* falseBlock = NULL;
         if (_ret)
-          trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, _ret, subcall));
+          falseBlock = new BlockStmt(new CallExpr(PRIM_MOVE, _ret, tmp));
         else
-          trueBlock->insertAtTail(subcall);
-      } else if (isSubType(fn->retType, key->retType)) {
-        // Insert a cast to the overridden method's return type
-        VarSymbol* castTemp = newTemp(fn->retType);
-        trueBlock->insertAtTail(new DefExpr(castTemp));
-        trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, castTemp,
-                                             subcall));
-        INT_ASSERT(_ret);
-        trueBlock->insertAtTail(new CallExpr(PRIM_MOVE, _ret,
-                                  new CallExpr(PRIM_CAST,
-                                               key->retType->symbol,
-                                               castTemp)));
-      } else
-        INT_FATAL(key, "unexpected case");
-      BlockStmt* falseBlock = NULL;
-      if (_ret)
-        falseBlock = new BlockStmt(new CallExpr(PRIM_MOVE, _ret, tmp));
-      else
-        falseBlock = new BlockStmt(tmp);
-      ifBlock->insertAtTail(
-        new CondStmt(
-          new SymExpr(cid),
-          trueBlock,
-          falseBlock));
-      if (key->retType == dtUnknown)
-        INT_FATAL(call, "bad parent virtual function return type");
-      call->getStmtExpr()->insertBefore(ifBlock);
-      if (_ret)
-        call->replace(new SymExpr(_ret));
-      else
-        call->remove();
-      tmp->replace(call);
-      subcall->baseExpr->replace(new SymExpr(fn));
-      if (SymExpr* se = toSymExpr(subcall->get(2))) {
-        VarSymbol* tmp = newTemp(type);
-        se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_CAST, type->symbol, se->var)));
-        se->replace(new SymExpr(tmp));
-      } else if (CallExpr* ce = toCallExpr(subcall->get(2)))
-        if (ce->isPrimitive(PRIM_CAST))
-          ce->get(1)->replace(new SymExpr(type->symbol));
+          falseBlock = new BlockStmt(tmp);
+        ifBlock->insertAtTail(new CondStmt(
+                                new SymExpr(cid),
+                                trueBlock,
+                                falseBlock));
+        if (key->retType == dtUnknown)
+          INT_FATAL(call, "bad parent virtual function return type");
+        call->getStmtExpr()->insertBefore(ifBlock);
+        if (_ret)
+          call->replace(new SymExpr(_ret));
+        else
+          call->remove();
+        tmp->replace(call);
+        subcall->baseExpr->replace(new SymExpr(fn));
+        if (SymExpr* se = toSymExpr(subcall->get(2))) {
+          VarSymbol* tmp = newTemp(type);
+          se->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_CAST, type->symbol, se->var)));
+          se->replace(new SymExpr(tmp));
+        } else if (CallExpr* ce = toCallExpr(subcall->get(2)))
+          if (ce->isPrimitive(PRIM_CAST))
+            ce->get(1)->replace(new SymExpr(type->symbol));
+          else
+            INT_FATAL(subcall, "unexpected");
         else
           INT_FATAL(subcall, "unexpected");
-      else
-        INT_FATAL(subcall, "unexpected");
+      }
     }
-  }
-
-  Vec<FnSymbol*> keys;
-  ddf.get_keys(keys);
-  forv_Vec(FnSymbol, key, keys) {
-    delete ddf.get(key);
   }
 
   insertReturnTemps(); // must be done before pruneResolvedTree is called.

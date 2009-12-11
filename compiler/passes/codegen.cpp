@@ -441,6 +441,45 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       fprintf(hdrfile, "#endif\n");
     }
   }
+
+  fprintf(hdrfile, "\n/*** Virtual Method Table ***/\n\n");
+  int maxVMT = 0;
+  for (int i = 0; i < virtualMethodTable.n; i++)
+    if (virtualMethodTable.v[i].key && virtualMethodTable.v[i].value->n > maxVMT)
+      maxVMT = virtualMethodTable.v[i].value->n;
+  const char* vmt = (fRuntime) ? "chpl_rt_vmtable" : "chpl_vmtable";
+  fprintf(hdrfile, "chpl_fn_p %s[][%d] = {\n", vmt, maxVMT);
+  bool comma = false;
+  forv_Vec(TypeSymbol, ts, typeSymbols) {
+    if (ClassType* ct = toClassType(ts->type)) {
+      if (!isReferenceType(ct) && isClass(ct)) {
+        if (comma)
+          fprintf(hdrfile, ",\n");
+        fprintf(hdrfile, "{ /* %s */\n", ct->symbol->cname);
+        int n = 0;
+        if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
+          forv_Vec(FnSymbol, vfn, *vfns) {
+            if (n > 0)
+              fprintf(hdrfile, ",\n");
+            fprintf(hdrfile, "(chpl_fn_p)%s", vfn->cname);
+            n++;
+          }
+        }
+        for (int i = n; i < maxVMT; i++) {
+          if (n > 0)
+            fprintf(hdrfile, ",\n");
+          fprintf(hdrfile, "(chpl_fn_p)NULL");
+          n++;
+        }
+        fprintf(hdrfile, "}");
+        comma = true;
+      }
+    }
+  }
+
+  fprintf(hdrfile, "\n};\n");
+
+
   
   if (fGPU)
     fprintf(hdrfile, "\n#ifndef ENABLE_GPU\n");

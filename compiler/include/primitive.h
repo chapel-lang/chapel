@@ -42,8 +42,9 @@ enum PrimitiveTag {
   PRIM_LAND_ID,                   // logical AND identity operand
   PRIM_LOR_ID,                    // logical OR identity operand
   PRIM_LXOR_ID,                   // logical XOR identity operand
-  PRIM_GETCID,
+  PRIM_TESTCID,
   PRIM_SETCID,
+  PRIM_GETCID,
   PRIM_UNION_GETID,
   PRIM_UNION_SETID,
   PRIM_GET_MEMBER,
@@ -208,6 +209,8 @@ enum PrimitiveTag {
   PRIM_SET_SVEC_MEMBER,
   PRIM_GET_SVEC_MEMBER,
   PRIM_GET_SVEC_MEMBER_VALUE,
+
+  PRIM_VMT_CALL, // virtual method call
 
   NUM_KNOWN_PRIMS
 };

@@ -78,10 +78,12 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
     deadVariableElimination(fn);
   deadExpressionElimination(fn);
   forv_Vec(CallExpr, call, *fn->calledBy) {
-    inlineCall(fn, call);
-    if (report_inlining)
-      printf("chapel compiler: reporting inlining"
-             ", %s function was inlined\n", fn->cname);
+    if (call->isResolved()) {
+      inlineCall(fn, call);
+      if (report_inlining)
+        printf("chapel compiler: reporting inlining"
+               ", %s function was inlined\n", fn->cname);
+    }
   }
 }
 
@@ -102,7 +104,7 @@ inlineFunctions(void) {
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fNoInline && fn->hasFlag(FLAG_INLINE)) {
+    if (!fNoInline && fn->hasFlag(FLAG_INLINE) && !fn->hasFlag(FLAG_VIRTUAL)) {
       fn->defPoint->remove();
     } else {
       collapseBlocks(fn->body);

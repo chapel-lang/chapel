@@ -46,6 +46,12 @@ Symbol *gCFile = NULL;
 Map<FnSymbol*,int> ftableMap;
 Vec<FnSymbol*> ftableVec;
 
+Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
+Map<FnSymbol*,int> virtualMethodMap;
+Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
+Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
+
+
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
   name(astr(init_name)),

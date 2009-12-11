@@ -745,7 +745,7 @@ buildIteratorCall(Symbol* ret, int fnid, Symbol* iterator, Vec<Type*>& children)
     VarSymbol* cid = newTemp(dtBool);
     block->insertAtTail(new DefExpr(cid));
     block->insertAtTail(new CallExpr(PRIM_MOVE, cid,
-                          new CallExpr(PRIM_GETCID,
+                          new CallExpr(PRIM_TESTCID,
                                        iterator, type->symbol)));
     BlockStmt* thenStmt = new BlockStmt();
     BlockStmt* elseStmt = new BlockStmt();
@@ -1067,7 +1067,7 @@ void lowerIterators() {
           thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, classTmp)));
           thenStmt->insertAtTail(new GotoStmt(GOTO_NORMAL, label));
           ret->defPoint->insertAfter(new CondStmt(new SymExpr(cid), thenStmt));
-          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_GETCID, tmp, type->defaultConstructor->iteratorInfo->irecord->getField(1)->type->symbol)));
+          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->defaultConstructor->iteratorInfo->irecord->getField(1)->type->symbol)));
           ret->defPoint->insertAfter(new DefExpr(cid));
           ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), irecord->getField(1))));
           ret->defPoint->insertAfter(new DefExpr(tmp));
