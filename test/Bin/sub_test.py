@@ -374,7 +374,7 @@ if envCompopts != None:
 #
 globalExecopts=list()
 if os.access('./EXECOPTS',os.R_OK):
-    tgeo==read_file_with_comments('./EXECOPTS')
+    tgeo=read_file_with_comments('./EXECOPTS')
     globalExecopts= shlex.split(tgeo[0])
 else:
     globalExecopts=list()
