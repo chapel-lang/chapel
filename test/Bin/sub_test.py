@@ -136,8 +136,8 @@ def SuckOutputWithTimeout(stream, timeout):
 #
 
 # Escape all special characters
-# def ShellEscape(str):
-#     return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', str)
+def ShellEscape(str):
+    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', str)
 
 # return True if f has .chpl extension
 def is_chpl_source(f):
@@ -222,6 +222,17 @@ if os.path.isdir(testdir)==0:
         sys.exit(0)
 # sys.stdout.write('testdir='+testdir+'\n');
 
+# Use timedexec
+# As much as I hate calling out to another script for the time out stuff,
+#  subprocess doesn't quite cut is for this kind of stuff
+useTimedExec=True
+if useTimedExec:
+    timedexec=testdir+'/Bin/timedexec'
+    if not os.access(timedexec,os.R_OK|os.X_OK):
+        sys.stdout.write('[Cannot execute timedexec script \"%s\"]\n'%(timedexec))
+        sys.exit(-1)
+# sys.stdout.write('timedexec='+timedexec+'\n');
+
 # HW platform
 platform=subprocess.Popen([chpl_base+'/util/platform.pl', '--target'], stdout=subprocess.PIPE).communicate()[0]
 platform.strip()
@@ -255,6 +266,10 @@ if localdir==os.getcwd():
     localdir='.';
 else:
     localdir = string.replace(os.getcwd(), testdir, '.')
+if localdir!='./':
+    # strip off the leading './'
+    localdir = string.lstrip(localdir, '.')
+    localdir = string.lstrip(localdir, '/')
 # sys.stdout.write('localdir=%s\n'%(localdir))
 
 #
@@ -339,9 +354,9 @@ launchcmd=os.getenv('LAUNCHCMD')
 
 if os.getenv('CHPL_TEST_INTERP')=='on':
     execute=False
-    futureSuffix='ifuture'
+    futureSuffix='.ifuture'
 else:
-    futureSuffix='future'
+    futureSuffix='.future'
 # sys.stdout.write('futureSuffix=%s\n'%(futureSuffix))
 
 if os.getenv('CHPL_TEST_PERF')!=None:
@@ -491,7 +506,7 @@ for testname in testsrc:
             numlocales=int(subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0])
 
         elif suffix==futureSuffix and os.access(f, os.R_OK):
-            futuretest='Future ('+subprocess.Popen(['head', '-n 1 ./'+execname+futureSuffix], stdout=subprocess.PIPE).communicate()[0].strip()+') '
+            futuretest='Future ('+subprocess.Popen(['head', '-n', '1', './'+execname+futureSuffix], stdout=subprocess.PIPE).communicate()[0].strip()+') '
 
         elif (suffix=='.noexec' and os.access(f, os.R_OK)):
             noexecfile=True
@@ -548,18 +563,6 @@ for testname in testsrc:
         continue # on to next test
 
 
-    # Find the default 'golden' output file
-    checkfile = execname+'.'+machine+'.good'
-    if not os.path.isfile(checkfile):
-        checkfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+'.good'
-        if not os.path.isfile(checkfile):
-            checkfile=execname+platform+'.good'
-            if not os.path.isfile(checkfile):
-                checkfile=execname+'.good'
-                if not os.path.isfile(checkfile):
-                    checkfile=None
-    # sys.stdout.write('default checkfile=%s\n'%(checkfile))
-
     # For all compopts + execopts combos..
     compoptsnum = 0
     for compopts in compoptslist:
@@ -592,23 +595,38 @@ for testname in testsrc:
         if args:
             sys.stdout.write(' %s'%(' '.join(args)))
         sys.stdout.write('< %s\']\n'%(compstdin))
-        my_stdin=file(compstdin, 'r')
-        p = subprocess.Popen([cmd]+args, stdin=my_stdin,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
-        try:
-            output = SuckOutputWithTimeout(p.stdout, timeout)
-        except ReadTimeoutException:
-            sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
-                             (futuretest, localdir, execname))
-            if len(compoptslist) > 1:
-                sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
-            sys.stdout.write(']\n')
-            kill_proc(p, killtimeout)
-            continue # on to next compopts
+        if useTimedExec:
+            wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+' < '+compstdin
+            p = subprocess.Popen([timedexec, str(timeout), wholecmd],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+            output = p.communicate()[0]
+            status = p.returncode
 
+            if status == 222:
+                sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
+                                 (futuretest, localdir, execname))
+                if len(compoptslist) > 1:
+                    sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
+                    sys.stdout.write(']\n')
+                continue # on to next compopts
+            
         else:
-            p.wait() # wait for process to finish
+            my_stdin=file(compstdin, 'r')
+            p = subprocess.Popen([cmd]+args, stdin=my_stdin,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+            try:
+                output = SuckOutputWithTimeout(p.stdout, timeout)
+            except ReadTimeoutException:
+                sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
+                                 (futuretest, localdir, execname))
+                if len(compoptslist) > 1:
+                    sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
+                    sys.stdout.write(']\n')
+                    kill_proc(p, killtimeout)
+                    continue # on to next compopts
+
             status = p.returncode
 
         if (status!=0 or not executebin):
@@ -636,19 +654,16 @@ for testname in testsrc:
             sys.stdout.write('output=%s\n'%(output))
 
             # Find the default 'golden' output file
-            if not checkfile:
-                checkfile = execname+machine+'.good'
+            checkfile = execname+'.'+machine+'.good'
+            if not os.path.isfile(checkfile):
+                checkfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+'.good'
                 if not os.path.isfile(checkfile):
-                    checkfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+'.good'
+                    checkfile=execname+platform+'.good'
                     if not os.path.isfile(checkfile):
-                        checkfile=execname+platform+'.good'
-                        if not os.path.isfile(checkfile):
-                            checkfile=execname+'.good'
-                            if not os.path.isfile(checkfile):
-                                checkfile=None
+                        checkfile=execname+'.good'
             # sys.stdout.write('default checkfile=%s\n'%(checkfile))
                 
-            if (not checkfile or not os.access(checkfile, os.R_OK)):
+            if not os.access(checkfile, os.R_OK):
                 sys.stdout.write('[Error cannot locate compiler output comparison file %s]\n'%(checkfile))
                 sys.stdout.write('[Compiler output was as follows:]\n')
                 subprocess.Popen(['cat', complog]).wait()
@@ -698,32 +713,14 @@ for testname in testsrc:
                 # Ignore everything after the first token
                 execcheckfile = tlist[1].strip().split()[0]
             else:
-                if not checkfile:
-                    checkfile = execname + '.good'
-                if onlyone:
-                    execcheckfile = checkfile
-                else:
-                    execcheckfile = checkfile.strip('good')
-                    if len(compoptslist)==1:
-                        execcheckfile += '0-'
-                    else:
-                        execcheckfile += str(compoptsnum+1)+'-'
-                    if len(execoptslist)==1:
-                        execcheckfile += '0.good'
-                    else:
-                        execcheckfile += str(execoptsnum+1)+'.good'
-                    if not os.access(execcheckfile, os.R_OK):
-                        execcheckfile = None
+                execcheckfile = None
             del tlist
 
             if onlyone:
                 execlog=execname+'.exec.out.tmp'
             else:
                 execoptsnum += 1
-                if execcheckfile != None:
-                    execlog = execcheckfile.strip('good')+'exec.out.tmp'
-                else:
-                    execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
+                execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
 
             if globalPreexec:
                 sys.stdout.write('[Executing PREEXEC]\n')
@@ -761,32 +758,49 @@ for testname in testsrc:
             #
             sys.stdout.write('[Executing program %s %s< %s\']\n'%
                              (cmd, ' '.join(args), redirectin))
-            my_stdin=file(redirectin, 'r')
-            p = subprocess.Popen([cmd]+args, stdin=my_stdin,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT)
-            try:
-                output = SuckOutputWithTimeout(p.stdout, timeout)
-            except ReadTimeoutException:
-                sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
-                                 (futuretest, localdir, execname))
-                if not onlyone:
-                    sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                     (' '.join(globalExecopts), execopts,
-                                      ' '.join(globalCompopts),compopts,
-                                      compoptsnum, execoptsnum))
-                sys.stdout.write(']\n')
-                kill_proc(p, killtimeout)
-                continue # on to next execopts
+            if useTimedExec:
+                wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+' < '+redirectin
+                p = subprocess.Popen([timedexec, str(timeout), wholecmd],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                output = p.communicate()[0]
+                status = p.returncode
+
+                if status == 222:
+                    sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
+                                     (futuretest, localdir, execname))
+                    if not onlyone:
+                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                         (' '.join(globalExecopts), execopts,
+                                          ' '.join(globalCompopts),compopts,
+                                          compoptsnum, execoptsnum))
+                        sys.stdout.write(']\n')
+                    continue # on to next execopts
 
             else:
-                p.wait() # wait for process to finish
-                # status = p.returncode
+                my_stdin=file(redirectin, 'r')
+                p = subprocess.Popen([cmd]+args, stdin=my_stdin,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                try:
+                    output = SuckOutputWithTimeout(p.stdout, timeout)
+                except ReadTimeoutException:
+                    sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
+                                     (futuretest, localdir, execname))
+                    if not onlyone:
+                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                         (' '.join(globalExecopts), execopts,
+                                          ' '.join(globalCompopts),compopts,
+                                          compoptsnum, execoptsnum))
+                        sys.stdout.write(']\n')
+                        kill_proc(p, killtimeout)
+                        continue # on to next execopts
+
+                status = p.returncode
 
             if catfiles:
                 sys.stdout.write('[Concatenating extra files: %s]\n'%
                                  (execname+'.catfiles'))
-                print catfiles
                 output+=subprocess.Popen(['cat']+catfiles.split(),
                                          stdout=subprocess.PIPE).communicate()[0]
 
@@ -812,11 +826,30 @@ for testname in testsrc:
 
             if not perftest:
                 if (execcheckfile == None):
-                    # try one more time to find the "golden" output
-                    #  as it might have been generated by the prediff script
-                    execcheckfile = execname+'.good'
+                    # Look for the "golden" output
+                    if onlyone:
+                        ceident=''
+                    else:
+                        if len(compoptslist)==1:
+                            ceident = '.0-'
+                        else:
+                            ceident = '.'+str(compoptsnum+1)+'-'
+                        if len(execoptslist)==1:
+                            ceindent += '0'
+                        else:
+                            ceident += str(execoptsnum)
 
-                if (not execcheckfile or not os.access(execcheckfile, os.R_OK)):
+                    execcheckfile = execname+'.'+machine+ceident+'.good'
+                    if not os.path.isfile(execcheckfile):
+                        execcheckfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+ceident+'.good'
+                        if not os.path.isfile(execcheckfile):
+                            execcheckfile=execname+platform+ceident+'.good'
+                            if not os.path.isfile(execcheckfile):
+                                execcheckfile=execname+ceident+'.good'
+                                if not os.path.isfile(execcheckfile):
+                                    execcheckfile=execname+'.good'
+
+                if not os.access(execcheckfile, os.R_OK):
                     sys.stdout.write('[Error cannot locate program output comparison file %s]\n'%(execcheckfile))
                     sys.stdout.write('[Execution output was as follows:]\n')
                     sys.stdout.write(subprocess.Popen(['cat', execlog],
