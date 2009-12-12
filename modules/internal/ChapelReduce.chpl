@@ -152,12 +152,14 @@ class maxloc: ReduceScanOp {
   var uninitialized = true;
 
   def accumulate(x) {
-    if uninitialized || x(1) > value(1) then
+    if uninitialized || (x(1) > value(1)) ||
+      ((x(1) == value(1)) && (x(2) < value(2))) then
       value = x;
     uninitialized = false;
   }
   def combine(x) {
-    if uninitialized || x.value(1) > value(1) {
+    if uninitialized || (x.value(1) > value(1)) ||
+      ((x.value(1) == value(1)) && (x.value(2) < value(2))) {
       value = x.value;
       uninitialized = x.uninitialized;
     }
@@ -171,12 +173,14 @@ class minloc: ReduceScanOp {
   var uninitialized = true;
 
   def accumulate(x) {
-    if uninitialized || x(1) < value(1) then
+    if uninitialized || (x(1) < value(1)) ||
+      ((x(1) == value(1)) && (x(2) < value(2))) then
       value = x;
     uninitialized = false;
   }
   def combine(x) {
-    if uninitialized || x.value(1) < value(1) {
+    if uninitialized || (x.value(1) < value(1)) ||
+      ((x.value(1) == value(1)) && (x.value(2) < value(2))) {
       value = x.value;
       uninitialized = x.uninitialized;
     }
