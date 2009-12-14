@@ -608,7 +608,7 @@ for testname in testsrc:
                                  (futuretest, localdir, execname))
                 if len(compoptslist) > 1:
                     sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
-                    sys.stdout.write(']\n')
+                sys.stdout.write(']\n')
                 continue # on to next compopts
             
         else:
@@ -623,9 +623,9 @@ for testname in testsrc:
                                  (futuretest, localdir, execname))
                 if len(compoptslist) > 1:
                     sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
-                    sys.stdout.write(']\n')
-                    kill_proc(p, killtimeout)
-                    continue # on to next compopts
+                sys.stdout.write(']\n')
+                kill_proc(p, killtimeout)
+                continue # on to next compopts
 
             status = p.returncode
 
@@ -774,7 +774,7 @@ for testname in testsrc:
                                          (' '.join(globalExecopts), execopts,
                                           ' '.join(globalCompopts),compopts,
                                           compoptsnum, execoptsnum))
-                        sys.stdout.write(']\n')
+                    sys.stdout.write(']\n')
                     continue # on to next execopts
 
             else:
@@ -792,9 +792,9 @@ for testname in testsrc:
                                          (' '.join(globalExecopts), execopts,
                                           ' '.join(globalCompopts),compopts,
                                           compoptsnum, execoptsnum))
-                        sys.stdout.write(']\n')
-                        kill_proc(p, killtimeout)
-                        continue # on to next execopts
+                    sys.stdout.write(']\n')
+                    kill_proc(p, killtimeout)
+                    continue # on to next execopts
 
                 status = p.returncode
 
