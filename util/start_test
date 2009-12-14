@@ -766,6 +766,7 @@ if (-x $testdir/Bin/sub_test.py) then
             endif
         else
             set gsub_test = $testdir/Bin/sub_test
+        endif
     endif
 else
     set gsub_test = $testdir/Bin/sub_test
