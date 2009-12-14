@@ -329,6 +329,13 @@ void globalCopyPropagation(FnSymbol* fn) {
   start = 0;
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     int stop = N.v[i];
+
+    //
+    // for large numbers of available copies, add to a kill hash and
+    // then update KILL for all defs in the basic block
+    //
+    Vec<Symbol*> killVec;
+    Vec<Symbol*> killSet;
     forv_Vec(Expr, expr, bb->exprs) {
 
       Vec<SymExpr*> symExprs;
@@ -339,16 +346,36 @@ void globalCopyPropagation(FnSymbol* fn) {
       //
       forv_Vec(SymExpr, se, symExprs) {
         if (invalidateCopies(se, defSet, useSet)) {
-          for (int j = 0; j < start; j++) {
-            if (LHS.v[j]->var == se->var || RHS.v[j]->var == se->var) {
-              KILL.v[i]->set(j);
-            }
+          if (!killSet.set_in(se->var)) {
+            killSet.set_add(se->var);
+            killVec.add(se->var);
           }
-          for (int j = stop; j < LHS.n; j++) {
-            if (LHS.v[j]->var == se->var || RHS.v[j]->var == se->var) {
-              KILL.v[i]->set(j);
-            }
+        }
+      }
+    }
+
+    if (killVec.n <= 4) {
+      forv_Vec(Symbol, sym, killVec) {
+        for (int j = 0; j < start; j++) {
+          if (LHS.v[j]->var == sym || RHS.v[j]->var == sym) {
+            KILL.v[i]->set(j);
           }
+        }
+        for (int j = stop; j < LHS.n; j++) {
+          if (LHS.v[j]->var == sym || RHS.v[j]->var == sym) {
+            KILL.v[i]->set(j);
+          }
+        }
+      }
+    } else {
+      for (int j = 0; j < start; j++) {
+        if (killSet.set_in(LHS.v[j]->var) || killSet.set_in(RHS.v[j]->var)) {
+          KILL.v[i]->set(j);
+        }
+      }
+      for (int j = stop; j < LHS.n; j++) {
+        if (killSet.set_in(LHS.v[j]->var) || killSet.set_in(RHS.v[j]->var)) {
+          KILL.v[i]->set(j);
         }
       }
     }
@@ -590,33 +617,23 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
 
 
 void copyPropagation(void) {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fNoCopyPropagation) {
+  if (!fNoCopyPropagation) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
       localCopyPropagation(fn);
       if (!fNoDeadCodeElimination) {
         deadVariableElimination(fn);
         deadExpressionElimination(fn);
-      }
-    }
-    if (!fNoCopyPropagation) {
+       }
       globalCopyPropagation(fn);
-      if (!fNoDeadCodeElimination) {
-        deadVariableElimination(fn);
-        deadExpressionElimination(fn);
-      }
     }
   }
 }
 
 
 void refPropagation() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fNoCopyPropagation) {
+  if (!fNoCopyPropagation) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
       singleAssignmentRefPropagation(fn);
-      if (!fNoDeadCodeElimination) {
-        deadVariableElimination(fn);
-        deadExpressionElimination(fn);
-      }
     }
   }
 }

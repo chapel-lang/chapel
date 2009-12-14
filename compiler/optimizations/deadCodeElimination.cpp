@@ -13,7 +13,7 @@
 static bool isDeadVariable(Symbol* var,
                            Map<Symbol*,Vec<SymExpr*>*>& defMap,
                            Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  if (isReferenceType(var->type)) {
+  if (var->type->symbol->hasFlag(FLAG_REF)) {
     Vec<SymExpr*>* uses = useMap.get(var);
     Vec<SymExpr*>* defs = defMap.get(var);
     return (!uses || uses->n == 0) && (!defs || defs->n <= 1);
@@ -23,43 +23,26 @@ static bool isDeadVariable(Symbol* var,
   }
 }
 
-static void deadVariableEliminationHelp(FnSymbol* fn,
-                                        Symbol* var,
-                                        Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                                        Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  if (isVarSymbol(var) &&
-      var->defPoint &&
-      var->defPoint->parentSymbol == fn &&
-      isDeadVariable(var, defMap, useMap)) {
-    for_defs(se, defMap, var) {
-      CallExpr* call = toCallExpr(se->parentExpr);
-      if (call->isPrimitive(PRIM_MOVE)) {
-        if (SymExpr* rhs = toSymExpr(call->get(2))) {
-          call->remove();
-          if (Vec<SymExpr*>* uses = useMap.get(var))
-            uses->n--;
-          deadVariableEliminationHelp(fn, rhs->var, defMap, useMap);
-        } else {
-          call->replace(call->get(2)->remove());
-        }
-      } else
-        INT_FATAL("unexpected case");
-    }
-    var->defPoint->remove();
-  }
-}
-
 void deadVariableElimination(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
-  collect_asts(fn, asts);
+  Vec<Symbol*> symSet;
+  Vec<SymExpr*> symExprs;
+  collectSymbolSetSymExprVec(fn, symSet, symExprs);
+
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(fn, defMap, useMap);
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      deadVariableEliminationHelp(fn, def->sym, defMap, useMap);
+  buildDefUseMaps(symSet, symExprs, defMap, useMap);
+
+  forv_Vec(Symbol, sym, symSet) if (isVarSymbol(sym)) {
+    if (isDeadVariable(sym, defMap, useMap)) {
+      for_defs(se, defMap, sym) {
+        CallExpr* call = toCallExpr(se->parentExpr);
+        INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
+        call->replace(call->get(2)->remove());
+      }
+      sym->defPoint->remove();
     }
   }
+
   freeDefUseMaps(defMap, useMap);
 }
 
@@ -160,14 +143,15 @@ void deadCodeElimination(FnSymbol* fn) {
   }
 
   freeDefUseChains(DU, UD);
+
+  deadVariableElimination(fn);
+  deadExpressionElimination(fn);
 }
 
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       deadCodeElimination(fn);
-      deadVariableElimination(fn);
-      deadExpressionElimination(fn);
     }
   }
 }

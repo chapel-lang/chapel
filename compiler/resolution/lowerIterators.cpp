@@ -962,8 +962,7 @@ void lowerIterators() {
       if (!fNoCopyPropagation)
         localCopyPropagation(fn);
       if (!fNoDeadCodeElimination) {
-        deadVariableElimination(fn);
-        deadExpressionElimination(fn);
+        deadCodeElimination(fn);
       }
     }
   }

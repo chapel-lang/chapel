@@ -121,7 +121,7 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 }
 
 
-static void collectSymsSymExprs(BaseAST* ast,
+void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<Symbol*>& symSet,
                                 Vec<SymExpr*>& symExprs) {
   if (DefExpr* def = toDefExpr(ast)) {
@@ -131,7 +131,7 @@ static void collectSymsSymExprs(BaseAST* ast,
   } else if (SymExpr* se = toSymExpr(ast)) {
     symExprs.add(se);
   }
-  AST_CHILDREN_CALL(ast, collectSymsSymExprs, symSet, symExprs);
+  AST_CHILDREN_CALL(ast, collectSymbolSetSymExprVec, symSet, symExprs);
 }
 
 
@@ -140,7 +140,7 @@ void buildDefUseMaps(FnSymbol* fn,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap) {
   Vec<Symbol*> symSet;
   Vec<SymExpr*> symExprs;
-  collectSymsSymExprs(fn, symSet, symExprs);
+  collectSymbolSetSymExprVec(fn, symSet, symExprs);
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 }
 

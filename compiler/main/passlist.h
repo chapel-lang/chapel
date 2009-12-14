@@ -41,8 +41,8 @@ PassInfo passlist[] = {
   RUN(scalarReplace),       // scalar replace all tuples
   RUN(refPropagation),      // reference propagation
   RUN(copyPropagation),     // copy propagation
-  RUN(removeWrapRecords),   // remove _array and _domain records
   RUN(deadCodeElimination), // eliminate dead code
+  RUN(removeWrapRecords),   // remove _array and _domain records
   RUN(prune),               // prune AST of dead functions and types again
 
   RUN(returnStarTuplesByReferenceArguments),

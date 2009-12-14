@@ -36,6 +36,16 @@ void reset_line_info(BaseAST* baseAST, int lineno);
 void compute_call_sites();
 
 //
+// collect set of symbols and vector of SymExpr; can be used to
+// compute defMaps and useMaps below (these are computed when
+// computing the defMaps and useMaps; precomputing them can help if
+// you need to use them elsewhere too)
+//
+void collectSymbolSetSymExprVec(BaseAST* ast,
+                                Vec<Symbol*>& symSet,
+                                Vec<SymExpr*>& symExprs);
+
+//
 // build defMap and useMap such that defMap is a map from symbols to
 // their defs and useMap is a map from symbols to their uses; these
 // vectors are built differently depending on the other arguments

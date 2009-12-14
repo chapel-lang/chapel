@@ -74,9 +74,10 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet) {
     singleAssignmentRefPropagation(fn);
     localCopyPropagation(fn);
   }
-  if (!fNoDeadCodeElimination)
+  if (!fNoDeadCodeElimination) {
     deadVariableElimination(fn);
-  deadExpressionElimination(fn);
+    deadExpressionElimination(fn);
+  }
   forv_Vec(CallExpr, call, *fn->calledBy) {
     if (call->isResolved()) {
       inlineCall(fn, call);

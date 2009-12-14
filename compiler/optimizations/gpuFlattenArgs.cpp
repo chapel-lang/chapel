@@ -223,16 +223,14 @@ gpuFlattenArgs()  {
       if (!fNoCopyPropagation) {
         localCopyPropagation(fn);
         if (!fNoDeadCodeElimination) {
-          deadVariableElimination(fn);
-          deadExpressionElimination(fn);
+          deadCodeElimination(fn);
         }
       }
       if (!fNoCopyPropagation) {
         globalCopyPropagation(fn);
         singleAssignmentRefPropagation(fn);
         if (!fNoDeadCodeElimination) {
-          deadVariableElimination(fn);
-          deadExpressionElimination(fn);
+          deadCodeElimination(fn);
         }
       }
       deadArgumentElimination(fn);
