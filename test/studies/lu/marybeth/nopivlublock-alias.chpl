@@ -56,11 +56,13 @@ for (CurrentBlockInds,TrailingBlockInds) in IterateByBlocks(A1D,blk) {
   }
 
 // Update of A12.
-  forall j in TrailingBlockInds {
+  for j in TrailingBlockInds { // This loop needs to be serial
     for k in CurrentBlockInds {
 //    slice = CurrentBlockInds(k+1..)
       slice = k+1..CurrentBlockInds.high; 
-      forall i in slice {
+      // This loop can be parallel, but for the purposes of testing
+      //  make it serial to get deterministic results.
+      for i in slice {
         A12(i,j) -= A11(i,k)*A12(k,j);
       }
     }

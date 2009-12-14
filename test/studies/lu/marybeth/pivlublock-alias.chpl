@@ -75,15 +75,25 @@ for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
   }
 
 // Update of A12.
-  forall j in TrailingBlockInds {
+  for j in TrailingBlockInds { // This loop needs to be serial
     for k in CurrentBlockInds {
 //  temporary range used instead of subdomain with indefinite range
       slice2 = k+1..CurrentBlockInds.high;
-      forall i in slice2 {
+      // This loop can be parallel, but for the purposes of testing
+      //  make it serial to get deterministic results.
+      for i in slice2 {
         A12(i,j) -= A1(i,k)*A12(k,j);
       }
     }
   }
+
+  /*
+  for k in CurrentBlockInds {
+    [(i,j) in [k+1..CurrentBlockInds.high,TrailingBlockInds]]
+      A12(i,j) = + reduce -A1(i,k)*A12(k,j);
+  }*/
+
+
 // Update of A22 -= A12*A21.
   forall (i,j) in [TrailingBlockInds, TrailingBlockInds] {
     for k in CurrentBlockInds {
