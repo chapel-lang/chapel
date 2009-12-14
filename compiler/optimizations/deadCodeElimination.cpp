@@ -37,7 +37,11 @@ void deadVariableElimination(FnSymbol* fn) {
       for_defs(se, defMap, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
         INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
-        call->replace(call->get(2)->remove());
+        Expr* rhs = call->get(2)->remove();
+        if (!isSymExpr(rhs))
+          call->replace(rhs);
+        else
+          call->remove();
       }
       sym->defPoint->remove();
     }

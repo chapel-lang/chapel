@@ -330,11 +330,6 @@ void globalCopyPropagation(FnSymbol* fn) {
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     int stop = N.v[i];
 
-    //
-    // for large numbers of available copies, add to a kill hash and
-    // then update KILL for all defs in the basic block
-    //
-    Vec<Symbol*> killVec;
     Vec<Symbol*> killSet;
     forv_Vec(Expr, expr, bb->exprs) {
 
@@ -348,35 +343,18 @@ void globalCopyPropagation(FnSymbol* fn) {
         if (invalidateCopies(se, defSet, useSet)) {
           if (!killSet.set_in(se->var)) {
             killSet.set_add(se->var);
-            killVec.add(se->var);
           }
         }
       }
     }
-
-    if (killVec.n <= 4) {
-      forv_Vec(Symbol, sym, killVec) {
-        for (int j = 0; j < start; j++) {
-          if (LHS.v[j]->var == sym || RHS.v[j]->var == sym) {
-            KILL.v[i]->set(j);
-          }
-        }
-        for (int j = stop; j < LHS.n; j++) {
-          if (LHS.v[j]->var == sym || RHS.v[j]->var == sym) {
-            KILL.v[i]->set(j);
-          }
-        }
+    for (int j = 0; j < start; j++) {
+      if (killSet.set_in(LHS.v[j]->var) || killSet.set_in(RHS.v[j]->var)) {
+        KILL.v[i]->set(j);
       }
-    } else {
-      for (int j = 0; j < start; j++) {
-        if (killSet.set_in(LHS.v[j]->var) || killSet.set_in(RHS.v[j]->var)) {
-          KILL.v[i]->set(j);
-        }
-      }
-      for (int j = stop; j < LHS.n; j++) {
-        if (killSet.set_in(LHS.v[j]->var) || killSet.set_in(RHS.v[j]->var)) {
-          KILL.v[i]->set(j);
-        }
+    }
+    for (int j = stop; j < LHS.n; j++) {
+      if (killSet.set_in(LHS.v[j]->var) || killSet.set_in(RHS.v[j]->var)) {
+        KILL.v[i]->set(j);
       }
     }
     start = stop;
@@ -622,8 +600,7 @@ void copyPropagation(void) {
       localCopyPropagation(fn);
       if (!fNoDeadCodeElimination) {
         deadVariableElimination(fn);
-        deadExpressionElimination(fn);
-       }
+      }
       globalCopyPropagation(fn);
     }
   }
