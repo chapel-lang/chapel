@@ -21,10 +21,6 @@ failing because they use new sub_test .goods but old sub_test script
 [Error cannot locate program output comparison file studies/shootout/fannkuch/fannkuch.good]
 [Error cannot locate program output comparison file studies/shootout/thread-ring/thread-ring.good]
 
-spurious failure due to nondeterminism in minloc reductions
------------------------------------------------------------
-[Error matching program output for studies/kmeans/kmeans-blc] (e.g., 11/18/09, 12/05/09, 12/07/09)
-
 spurious failure
 ----------------
 [Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
@@ -44,7 +40,7 @@ spurious verification failures on RA (probably due to intentional races)
 
 spurious compilation timeouts
 ----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09)
+[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09)
 [Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09)
 [Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09, 12/07/09)
 [Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 10/11/09, 10/16/09, 10/17/09, 10/23/09, 10/28/09, 10/30/09, 11/07/09, 11/08/09, 11/10/09, 11/11/09, 11/13/09, 11/18/09, 11/24/09, 12/05/09, 12/09/09, 12/10/09)
@@ -82,14 +78,6 @@ maxThreads is 300, but can't create more than 254 threads
 ================================
 performance-specific regressions
 ================================
-
-new sub_test seems to mysteriously resolve failures (12/02/09)
---------------------------------------------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
-[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
-[Error: Timed out executing program studies/shootout/nbody/nbody_record_domain_2a]
-[Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
-[Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -156,9 +144,9 @@ times out spuriously
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (e.g., 11/09/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (e.g., 11/09/09)
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09)
-[Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09)
+[Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09, 12/15/09)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09)
 [Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09)
 
 
@@ -313,6 +301,9 @@ spurious compilation timeouts
 darwin-specific regressions
 ===========================
 
+new sub_test only runs four tests
+---------------------------------
+
 spurious failures on Sam's machine
 ----------------------------------
 [Error matching program output for functions/bradc/intents-arrays2a] (e.g., 10/20/09)
@@ -342,6 +333,10 @@ xt-cle-specific failures
 ==============================
 cray-/cce-specific regressions
 ==============================
+
+all compilations break due to missing -lalpslli (12/15/09)
+----------------------------------------------------------
+*all*
 
 spurious compilation timeouts
 -----------------------------
@@ -544,28 +539,18 @@ sig_send: wait for sig_complete event failed
 xmt-specific regressions
 ========================
 
+spurious compilation timeout
+----------------------------
+[Error: Timed out compilation for release/examples/hello] (e.g., 12/15/09)
+
 use-before-def + ra traps with poison
 -------------------------------------
 [Error matching program output for release/examples/hpcc/ra]
 
-loop does not iterate or is not used warning
---------------------------------------------
-[Error matching program output for release/examples/programs/genericStack]
-[Error matching program output for release/examples/tutorials/opaque]
-[Error matching program output for release/examples/tutorials/sparse]
-
-compilation timeouts
---------------------
-[Error: Timed out compilation for release/examples/hello-module]
-[Error: Timed out compilation for release/examples/hpcc/hpl]
-
 execution timeouts
 ------------------
+[Error: Timed out executing program release/examples/hpcc/hpl]
 [Error: Timed out executing program release/examples/programs/prodCons]
 [Error: Timed out executing program release/examples/programs/quicksort]
 [Error: Timed out executing program release/examples/tutorials/taskParallel]
 [Error: Timed out executing program release/examples/tutorials/timers]
-
-test gets wrong output
-----------------------
-[Error matching program output for release/examples/tutorials/opaque]
