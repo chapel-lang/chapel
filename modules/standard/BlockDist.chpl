@@ -364,8 +364,6 @@ def BlockDom.these(param tag: iterator, follower) where tag == iterator.follower
   }
 }
 
-//------------------- 12/8/09 to here!!!
-
 def BlockDom.strideBy(str: int) {
   var alias = new BlockDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
   var t: rank*range(eltType=idxType, stridable=true);
@@ -466,6 +464,8 @@ def BlockDom.setup() {
   if debugBlockDist then
     for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
 }
+
+// ----- to here 12/15/09
 
 def BlockDom.supportsPrivatization() param return true;
 
