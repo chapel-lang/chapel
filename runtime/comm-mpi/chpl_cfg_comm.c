@@ -16,31 +16,37 @@
 
 #if CHPL_DIST_DEBUG
 #define DEBUG_MSG_LENGTH 256
-#define PRINTF(_s) {                                                         \
-  printf("%d/%d:%d/%d:%s\n", chpl_localeID, chpl_numLocales,                         \
+#define PRINTF(_s) do {                                                      \
+  printf("%d/%d:%d/%d:%s\n", chpl_localeID, chpl_numLocales,                 \
                              (int)getpid(), (int)pthread_self(), _s);        \
   fflush(stdout);                                                            \
-}
+} while(0)
 #else
 #define PRINTF(_s)
 #endif
 
-#define MPI_SAFE(call) {                           \
-  int retcode = call;                              \
-  if (retcode != MPI_SUCCESS) {                    \
-    char msg[256];                                 \
-    char mpiError[256];                            \
-    int length;                                    \
-    MPI_Error_string(retcode, mpiError, &length);  \
-    sprintf(msg, "\n\n%d/%d:%d MPI call failed with %s\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), mpiError); \
-    chpl_error(msg, 0, 0);   \
-  } \
-}
+#define MPI_SAFE(call) do {                                                 \
+  int retcode = call;                                                       \
+  if (retcode != MPI_SUCCESS) {                                             \
+    char msg[256];                                                          \
+    char mpiError[256];                                                     \
+    int length;                                                             \
+    MPI_Error_string(retcode, mpiError, &length);                           \
+    sprintf(msg, "\n\n%d/%d:%d MPI call failed with %s\n\n",                \
+            chpl_localeID, chpl_numLocales, (int)pthread_self(), mpiError); \
+    chpl_error(msg, 0, 0);                                                  \
+  }                                                                         \
+} while(0)
 
 // The MPI standard only requires tags as large as 32767 to work.
 #define TAGMASK 4194303
 
 chpl_mutex_t termination_lock;
+
+volatile int tag_count;
+chpl_mutex_t tag_count_lock;
+pthread_key_t tag_count_key;
+
 
 int32_t chpl_comm_getMaxThreads(void) {
   return 0;
@@ -96,27 +102,27 @@ static MPI_Status chpl_mpi_recv(void* buf, int count, MPI_Datatype datatype,
                                 int source, int tag, MPI_Comm comm);
 static void chpl_mpi_send(void* buf, int count, MPI_Datatype datatype,
                           int dest, int tag, MPI_Comm comm);
-static int makeTag(int threadID, int localeID);
-
+static int makeTag(void);
 
 //
-// A simple hash to combine the threadID and localeID into one (hopefully
-// unique) value that is small enough to use as an MPI message tag.
+// Create an MPI message tag that is unique for each thread in the program, not
+// just within a locale.
 //
-static int makeTag(int threadID, int localeID) {
-  const double A = .61803398874989;
-  double s;
-  int tag;
-  int absTid = threadID < 0 ? -threadID : threadID;
-
-  s = A * absTid;
-  s -= (int)s;
-  tag = (int)(4096 * s);
-
-  tag = tag << 8;
-  tag += localeID;
-  tag = tag & TAGMASK;
-  return tag;
+//
+static int makeTag(void) {
+  int* tag = (int*)pthread_getspecific(tag_count_key);
+  const int maxtag = (TAGMASK/chpl_numLocales)*(1+chpl_localeID) - 1;
+  if (tag == NULL) {
+    tag = chpl_malloc(1, sizeof(int), 0, 0, 0);
+    CHPL_MUTEX_LOCK(&tag_count_lock);
+    *tag = tag_count;
+    tag_count += 1;
+    CHPL_MUTEX_UNLOCK(&tag_count_lock);
+    if (*tag > maxtag)
+      chpl_error("tag is too big", 0, 0);
+    pthread_setspecific(tag_count_key, tag);
+  }
+  return *tag;
 }
 
 
@@ -287,7 +293,10 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   chpl_comm_barrier("barrier in init");
 
+  tag_count = (TAGMASK / chpl_numLocales) * chpl_localeID;
   CHPL_MUTEX_INIT(&termination_lock);
+  CHPL_MUTEX_INIT(&tag_count_lock);
+  pthread_key_create(&tag_count_key, NULL);
 
   if (pthread_create(&polling_thread, NULL,
                      (void*(*)(void*))chpl_mpi_polling_thread, 0))
@@ -374,7 +383,7 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
     memmove(raddr, addr, size);
   } else {
     _chpl_mpi_message_info msg_info;
-    int tag = makeTag((int)pthread_self(), chpl_localeID);
+    int tag = makeTag();
 #if CHPL_DIST_DEBUG
     char debugMsg[DEBUG_MSG_LENGTH];
     sprintf(debugMsg, "chpl_comm_put(loc=(%d, %p), rem=(%d, %p), size=%d, tag=%d)", chpl_localeID, addr, locale, raddr, size, tag);
@@ -402,7 +411,7 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int l
     memmove(addr, raddr, size);
   } else {
     _chpl_mpi_message_info msg_info;
-    int tag = makeTag((int)pthread_self(), chpl_localeID);
+    int tag = makeTag();
 #if CHPL_DIST_DEBUG
     char debugMsg[DEBUG_MSG_LENGTH];
     sprintf(debugMsg, "chpl_comm_get(loc=(%d, %p), rem=(%d, %p), size=%d, tag=%d)", chpl_localeID, addr, locale, raddr, size, tag);
@@ -430,12 +439,13 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
     (*chpl_ftable[fid])(arg);
   } else {
     _chpl_mpi_message_info msg_info;
-    int tag = makeTag((int)pthread_self(), chpl_localeID);
+    int tag = makeTag();
 #if CHPL_DIST_DEBUG
     char debugMsg[DEBUG_MSG_LENGTH];
     sprintf(debugMsg, "chpl_comm_fork(locale=%d, tag=%d)", locale, tag);
     PRINTF(debugMsg);
 #endif
+
     msg_info.msg_type = ChplCommFork;
     msg_info.replyTag = tag;
     msg_info.size = arg_size;
@@ -445,7 +455,6 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
                   locale, TAGMASK+1, MPI_COMM_WORLD);
     chpl_mpi_send(arg, arg_size, MPI_BYTE, locale, tag, MPI_COMM_WORLD);
     chpl_mpi_recv(NULL, 0, MPI_BYTE, locale, tag, MPI_COMM_WORLD);
-
   }
 }
 
@@ -463,12 +472,13 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
     CHPL_BEGIN((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
   } else {
     _chpl_mpi_message_info msg_info;
-    int tag = makeTag((int)pthread_self(), chpl_localeID);
+    int tag = makeTag();
 #if CHPL_DIST_DEBUG
     char debugMsg[DEBUG_MSG_LENGTH];
     sprintf(debugMsg, "chpl_comm_fork_nb(locale=%d, tag=%d)", locale, tag);
     PRINTF(debugMsg);
 #endif
+
     msg_info.msg_type = ChplCommForkNB;
     msg_info.u.fid = fid;
     msg_info.size = arg_size;
