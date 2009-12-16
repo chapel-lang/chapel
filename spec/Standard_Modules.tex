@@ -410,16 +410,15 @@ Exits the program with code \chpl{status}.
 \end{protobody}
 
 \begin{protohead}
-def halt() {
+def halt()
 \end{protohead}
 \begin{protobody}
 Exits the program and prints to standard error the location in the
-Chapel code of the call to \chpl{halt} as well as the rest of the
-arguments to the call.
+Chapel code of the call to \chpl{halt}.
 \end{protobody}
 
 \begin{protohead}
-def halt(args ...?numArgs) {
+def halt(args ...?numArgs)
 \end{protohead}
 \begin{protobody}
 Exits the program and prints to standard error the location in the
@@ -719,7 +718,7 @@ have been if it was not found.
 
 
 \begin{protohead}
-def BinarySearch(Data: [?Dom], val, in lo = Dom.low, in hi = Dom.high);
+def BinarySearch(Data: [?Dom], val, in lo = Dom.low, in hi = Dom.high)
 \end{protohead}
 \begin{protobody}
 Searches through the pre-sorted array \chpl{Data} looking for the
@@ -741,7 +740,7 @@ routines.  The current interface is minimal and should be expected to
 grow and evolve over time.
 
 \begin{protohead}
-def InsertionSort(Data: [?Dom]) where Dom.rank == 1;
+def InsertionSort(Data: [?Dom]) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
 Sorts the 1D array \chpl{Data} in-place using a sequential insertion
@@ -749,7 +748,7 @@ sort algorithm.
 \end{protobody}
 
 \begin{protohead}
-def QuickSort(Data: [?Dom]) where Dom.rank == 1;
+def QuickSort(Data: [?Dom]) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
 Sorts the 1D array \chpl{Data} in-place using a sequential
