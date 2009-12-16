@@ -4,10 +4,10 @@ CHPL = chpl
 CHPL_FLAGS = --fast
 
 TARGETS = \
-	stream \
-	ra \
-	fft \
-	hpl \
+	stream.nodist \
+	ra.nodist \
+	fft.nodist \
+	hpl.nodist \
 
 REALS = $(TARGETS:%=%_real)
 
@@ -18,16 +18,16 @@ all: $(TARGETS)
 clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 
-stream: probSize.chpl stream.chpl
+stream: probSize.chpl stream.nodist.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $^
 
-ra: probSize.chpl ra-randstream.chpl ra.chpl
+ra: probSize.chpl ra-randstream.chpl ra.nodist.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $^
 
-fft: probSize.chpl fft.chpl
+fft: probSize.chpl fft.nodist.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $^
 
-hpl: probSize.chpl hpl.chpl
+hpl: probSize.chpl hpl.nodist.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $^
 
 FORCE:
