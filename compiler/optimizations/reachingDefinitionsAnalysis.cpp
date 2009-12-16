@@ -26,24 +26,27 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   // buildDefUseMaps, but is computed from the defSet in this more
   // efficient manner
   //
-  Map<Symbol*,Vec<SymExpr*>*> localDefsMap;
-  forv_Vec(Symbol, sym, locals) {
-    localDefsMap.put(sym, new Vec<SymExpr*>());
-  }
+  int localDefs[locals.n];
+  for (int i = 0; i < locals.n; i++)
+    localDefs[i] = 0;
   forv_Vec(SymExpr, se, defSet) {
-    if (se)
-      localDefsMap.get(se->var)->add(se);
-  }
-  int i = 0;
-  forv_Vec(Symbol, sym, locals) {
-    Vec<SymExpr*>* symDefs = localDefsMap.get(sym);
-    forv_Vec(SymExpr, se, *symDefs) {
-      defs.add(se);
-      defMap.put(se, i++);
+    if (se) {
+      localDefs[localMap.get(se->var)]++;
+      defs.add(NULL);
     }
   }
-  forv_Vec(Symbol, sym, locals) {
-    delete localDefsMap.get(sym);
+  int sum = 0;
+  for (int i = 0; i < locals.n; i++) {
+    int nextSum = localDefs[i];
+    localDefs[i] = sum;
+    sum += nextSum;
+  }
+  forv_Vec(SymExpr, se, defSet) {
+    if (se) {
+      int i = localDefs[localMap.get(se->var)]++;
+      defs.v[i] = se;
+      defMap.put(se, i);
+    }
   }
 
   Vec<BitVec*> KILL;
@@ -175,17 +178,13 @@ buildDefUseChains(FnSymbol* fn,
     delete in;
 }
 
+typedef MapElem<SymExpr*,Vec<SymExpr*>*> SymExprToVecSymExprMapElem;
+
 void
 freeDefUseChains(Map<SymExpr*,Vec<SymExpr*>*>& DU,
                  Map<SymExpr*,Vec<SymExpr*>*>& UD) {
-  Vec<SymExpr*> keys;
-  DU.get_keys(keys);
-  forv_Vec(SymExpr, key, keys) {
-    delete DU.get(key);
-  }
-  keys.clear();
-  UD.get_keys(keys);
-  forv_Vec(SymExpr, key, keys) {
-    delete UD.get(key);
-  }
+  form_Map(SymExprToVecSymExprMapElem, e, DU)
+    delete e->value;
+  form_Map(SymExprToVecSymExprMapElem, e, UD)
+    delete e->value;
 }
