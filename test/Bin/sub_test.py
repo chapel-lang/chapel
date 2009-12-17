@@ -261,11 +261,8 @@ else:
 # sys.stdout.write('globalKillTimeout=%d\n'%(globalKillTimeout))
 
 # Get the current directory
-localdir = os.getenv('CHPL_TEST_INVOKE_DIR')
-if localdir==os.getcwd():
-    localdir='.';
-else:
-    localdir = string.replace(os.getcwd(), testdir, '.')
+localdir = string.replace(os.getcwd(), testdir, '.')
+
 if localdir!='./':
     # strip off the leading './'
     localdir = string.lstrip(localdir, '.')
