@@ -1,0 +1,7 @@
+bug: function resolution error
+
+In this test, function resolution favors a worse, more visible function over a
+better, less visible function.  It works incorrectly because it determines
+there is an ambiguity between two less visible functions, then does
+disambiguation based on visibility, and chooses the most visible candidate even
+though it is a worse match.
