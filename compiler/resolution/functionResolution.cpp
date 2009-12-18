@@ -1123,10 +1123,20 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
               }
             }
           }
+          if (!better && as_good) {
+            if (isMoreVisible(scope, candidateFns->v[i], candidateFns->v[j]))
+              as_good = false;
+            else if (isMoreVisible(scope, candidateFns->v[j], candidateFns->v[i]))
+              better = true;
+          }
+          if (!better && as_good) {
+            if (candidateFns->v[i]->where && !candidateFns->v[j]->where)
+              as_good = false;
+            else if (!candidateFns->v[i]->where && candidateFns->v[j]->where)
+              better = true;
+          }
           if (better || as_good) {
             if (!promotion1 && promotion2)
-              continue;
-            if (!better && isMoreVisible(scope, candidateFns->v[i], candidateFns->v[j]))
               continue;
             best = NULL;
             break;

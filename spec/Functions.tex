@@ -486,18 +486,28 @@ type $T_F$ if any of the following conditions hold:
 \label{Determining_More_Specific_Functions}
 \index{functions!most specific}
 
-Given two functions $F_1$ and $F_2$, $F_1$ is determined to be more
-specific than $F_2$ by the following steps:
+Given two functions $F_1$ and $F_2$, the more specific function is
+determined by the following steps:
 \begin{itemize}
+\item If $F_1$ does not require promotion and $F_2$ does require promotion, then $F_1$ is more specific.
+\item If $F_2$ does not require promotion and $F_1$ does require promotion, then $F_2$ is more specific.
 \item
 If at least one of the legal argument mappings to $F_1$ is a {\em more
 specific argument mapping} than the corresponding legal argument
 mapping to $F_2$ and none of the legal argument mappings to $F_2$ is a
 more specific argument mapping than the corresponding legal argument
 mapping to $F_1$, then $F_1$ is more specific.
-\item If $F_1$ does not require promotion and $F_2$ does require promotion, then $F_1$ is more specific.
+\item
+If at least one of the legal argument mappings to $F_2$ is a {\em more
+specific argument mapping} than the corresponding legal argument
+mapping to $F_1$ and none of the legal argument mappings to $F_1$ is a
+more specific argument mapping than the corresponding legal argument
+mapping to $F_2$, then $F_2$ is more specific.
 \item If $F_1$ shadows $F_2$, then $F_1$ is more specific.
-\item Otherwise, $F_1$ is not more specific than $F_2$.
+\item If $F_2$ shadows $F_1$, then $F_2$ is more specific.
+\item If $F_1$ has a where clause and $F_2$ does not have a where clause, then $F_1$ is more specific.
+\item If $F_2$ has a where clause and $F_1$ does not have a where clause, then $F_2$ is more specific.
+\item Otherwise neither function is more specific.
 \end{itemize}
 
 Given an argument mapping, $M_1$, from an actual argument, $A$, of
