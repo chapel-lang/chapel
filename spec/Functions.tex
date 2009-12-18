@@ -413,47 +413,54 @@ Given a function call, the function that the call resolves to is
 determined according to the following algorithm:
 \begin{itemize}
 \item
-Identify the set of visible functions.  A visible function is any
-function with the same name that satisfies the criteria
-in~\rsec{Identifying_Visible_Functions}.
+Identify the set of visible functions for the function call.  A
+\emph{visible function} is any function that satisfies the criteria
+in~\rsec{Determining_Visible_Functions}.  If no visible function can
+be found, the compiler will issue an error stating that the call
+cannot be resolved.
 \item
-From the set of visible functions, determine the set of candidate
-functions.  A function is a candidate if the function is a valid
-application of the function call's actual arguments as determined
-in~\rsec{Determining_Candidate_Functions}.  A compiler error occurs if
-there are no candidate functions.
+From the set of visible functions for the function call, determine the
+set of candidate functions for the function call.  A \emph{candidate
+function} is any function that satisfies the criteria
+in~\rsec{Determining_Candidate_Functions}.  If no candidate function
+can be found, the compiler will issue an error stating that the call
+cannot be resolved.  If exactly one candidate function is found, this
+is determined to be the function.
 \item
 From the set of candidate functions, the most specific function is
 determined.  The most specific function is a candidate function that
-is more specific than every other candidate function.  If there is no
+is \emph{more specific} than every other candidate function as defined
+in~\rsec{Determining_More_Specific_Functions}.  If there is no
 function that is more specific than every other candidate function,
-the function call is ambiguous and a compiler error occurs.  The term
-{\em more specific function} is defined
-in~\rsec{Determining_More_Specific_Functions}.
+the compiler will issue an error stating that the call is ambiguous.
 \end{itemize}.
 
-\subsubsection{Identifying Visible Functions}
-\label{Identifying_Visible_Functions}
+\subsubsection{Determining Visible Functions}
+\label{Determining_Visible_Functions}
 \index{functions!visible}
 
-A function is a visible function to a function call if the name of the
-function is the same as the name of the function call and the function
-is defined or used in a lexical outer scope.  Function visibility in
-generic functions is discussed
+Given a function call, a function is determined to be a \emph{visible
+function} if the name of the function is the same as the name of the
+function call and the function is defined in the same scope as the
+function call or a lexical outer scope of the function call, or if the
+function is defined in a module that is used from the same scope as
+the function call or a lexical outer scope fo the function call.
+Function visibility in generic functions is discussed
 in~\rsec{Function_Visibility_in_Generic_Functions}.
 
 \subsubsection{Determining Candidate Functions}
 \label{Determining_Candidate_Functions}
 \index{functions!candidates}
 
-A function is a candidate function if there is a {\em valid mapping}
-from the function call to the function and each actual argument is
-mapped to a formal argument that is a {\em legal argument mapping}.
+Given a function call, a function is determined to be
+a \emph{candidate function} if there is a \emph{valid mapping} from
+the function call to the function and each actual argument is mapped
+to a formal argument that is a \emph{legal argument mapping}.
 
 \paragraph{Valid Mapping}
 
-A function call is mapped to a function according to the following
-steps:
+The following algorithm determines a valid mapping from a function
+call to a function if one exists:
 \begin{itemize}
 \item
 Each actual argument that is passed by name is matched to the formal
