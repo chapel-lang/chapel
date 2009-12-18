@@ -1,0 +1,5 @@
+#!/bin/sh
+
+testname=$1
+
+sed --in-place -e 's;Histogram computed in .* seconds;elapsed time;' $testname.exec.out.tmp

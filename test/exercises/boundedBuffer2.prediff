@@ -1,0 +1,6 @@
+#!/bin/sh
+
+testname=$1
+
+sed -e 's;consumer [0-9][0-9]*;consumer #;' $testname.exec.out.tmp |  sort > $testname.exec.out.tmp.sorted
+mv $testname.exec.out.tmp.sorted $testname.exec.out.tmp
