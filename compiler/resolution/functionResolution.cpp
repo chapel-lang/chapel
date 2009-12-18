@@ -1051,104 +1051,89 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                       Vec<Symbol*>* actuals,
                       Vec<ArgSymbol*>** ret_afs,
                       Expr* scope) {
-  FnSymbol* best = NULL;
-  Vec<ArgSymbol*>* actualFormals = 0;
   for (int i = 0; i < candidateFns->n; i++) {
-    if (candidateFns->v[i]) {
-      best = candidateFns->v[i];
-      actualFormals = candidateActualFormals->v[i];
-      for (int j = 0; j < candidateFns->n; j++) {
-        if (i != j && candidateFns->v[j]) {
-          bool better = false;
-          bool as_good = true;
-          bool promotion1 = false;;
-          bool promotion2 = false;
-          Vec<ArgSymbol*>* actualFormals2 = candidateActualFormals->v[j];
-          for (int k = 0; k < actualFormals->n; k++) {
-            ArgSymbol* arg = actualFormals->v[k];
-            ArgSymbol* arg2 = actualFormals2->v[k];
-            if (arg->type == arg2->type && arg->instantiatedParam && !arg2->instantiatedParam)
-              as_good = false;
-            else if (arg->type == arg2->type && !arg->instantiatedParam && arg2->instantiatedParam)
-              better = true;
-            else {
-              bool promotes1;
-              bool promotes2;
-              canDispatch(actuals->v[k]->type, actuals->v[k], arg->type, best, &promotes1);
-              canDispatch(actuals->v[k]->type, actuals->v[k], arg2->type, best, &promotes2);
-              promotion1 |= promotes1;
-              promotion2 |= promotes2;
-              if (promotes1 && !promotes2)
-                better = true;
-              else if (!promotes1 && promotes2)
-                as_good = false;
-              else {
-                if (arg->type == arg2->type && arg->instantiatedFrom && !arg2->instantiatedFrom) {
-                  better = true;
-                } else if (arg->type == arg2->type && !arg->instantiatedFrom && arg2->instantiatedFrom) {
-                  as_good = false;
-                } else {
-                  if (!arg->hasFlag(FLAG_TYPE_VARIABLE) && arg2->hasFlag(FLAG_TYPE_VARIABLE))
-                    as_good = false;
-                  else if (arg->hasFlag(FLAG_TYPE_VARIABLE) && !arg2->hasFlag(FLAG_TYPE_VARIABLE))
-                    better = true;
-                  else if (arg->instantiatedFrom==dtAny &&
-                      arg2->instantiatedFrom!=dtAny) {
-                    better = true;
-                  } else if (arg->instantiatedFrom!=dtAny &&
-                             arg2->instantiatedFrom==dtAny) {
-                    as_good = false;
-                  } else {
-                    if (actuals->v[k]->type == arg2->type &&
-                        actuals->v[k]->type != arg->type) {
-                      better = true;
-                    } else if (actuals->v[k]->type == arg->type &&
-                               actuals->v[k]->type != arg2->type) {
-                      as_good = false;
-                    } else if (moreSpecific(best, arg2->type, arg->type) && 
-                               arg2->type != arg->type) {
-                      better = true;
-                    } else if (moreSpecific(best, arg->type, arg2->type) &&
-                               arg2->type != arg->type) {
-                      as_good = false;
-                    } else if (is_int_type(arg2->type) &&
-                               is_uint_type(arg->type)) {
-                      better = true;
-                    } else if (is_int_type(arg->type) &&
-                               is_uint_type(arg2->type)) {
-                      as_good = false;
-                    }
-                  }
-                }
-              }
-            }
-          }
-          if (!better && as_good) {
-            if (isMoreVisible(scope, candidateFns->v[i], candidateFns->v[j]))
-              as_good = false;
-            else if (isMoreVisible(scope, candidateFns->v[j], candidateFns->v[i]))
-              better = true;
-          }
-          if (!better && as_good) {
-            if (candidateFns->v[i]->where && !candidateFns->v[j]->where)
-              as_good = false;
-            else if (!candidateFns->v[i]->where && candidateFns->v[j]->where)
-              better = true;
-          }
-          if (better || as_good) {
-            if (!promotion1 && promotion2)
-              continue;
-            best = NULL;
-            break;
-          }
+    FnSymbol* fn1 = candidateFns->v[i];
+    Vec<ArgSymbol*>* actualFormals1 = candidateActualFormals->v[i];
+    bool best = true; // is fn1 the best candidate?
+    for (int j = 0; j < candidateFns->n; j++) {
+      if (i != j) {
+        FnSymbol* fn2 = candidateFns->v[j];
+        bool worse = false; // is fn1 worse than fn2?
+        bool equal = true;  // is fn1 as good as fn2?
+        bool fnPromotes1 = false; // does fn1 require promotion?
+        bool fnPromotes2 = false; // does fn2 require promotion?
+        Vec<ArgSymbol*>* actualFormals2 = candidateActualFormals->v[j];
+        for (int k = 0; k < actualFormals1->n; k++) {
+          Symbol* actual = actuals->v[k];
+
+          ArgSymbol* arg = actualFormals1->v[k];
+          bool argPromotes1;
+          canDispatch(actual->type, actual, arg->type, fn1, &argPromotes1);
+          fnPromotes1 |= argPromotes1;
+
+          ArgSymbol* arg2 = actualFormals2->v[k];
+          bool argPromotes2;
+          canDispatch(actual->type, actual, arg2->type, fn1, &argPromotes2);
+          fnPromotes2 |= argPromotes2;
+
+          if (arg->type == arg2->type && arg->instantiatedParam && !arg2->instantiatedParam)
+            equal = false;
+          else if (arg->type == arg2->type && !arg->instantiatedParam && arg2->instantiatedParam)
+            worse = true;
+          else if (!argPromotes1 && argPromotes2)
+            equal = false;
+          else if (argPromotes1 && !argPromotes2)
+            worse = true;
+          else if (arg->type == arg2->type && !arg->instantiatedFrom && arg2->instantiatedFrom)
+            equal = false;
+          else if (arg->type == arg2->type && arg->instantiatedFrom && !arg2->instantiatedFrom)
+            worse = true;
+          else if (arg->instantiatedFrom!=dtAny && arg2->instantiatedFrom==dtAny)
+            equal = false;
+          else if (arg->instantiatedFrom==dtAny && arg2->instantiatedFrom!=dtAny)
+            worse = true;
+          else if (actual->type == arg->type && actual->type != arg2->type)
+            equal = false;
+          else if (actual->type == arg2->type && actual->type != arg->type)
+            worse = true;
+          else if (moreSpecific(fn1, arg->type, arg2->type) &&
+                   arg2->type != arg->type)
+            equal = false;
+          else if (moreSpecific(fn1, arg2->type, arg->type) && 
+                   arg2->type != arg->type)
+            worse = true;
+          else if (is_int_type(arg->type) &&
+                   is_uint_type(arg2->type))
+            equal = false;
+          else if (is_int_type(arg2->type) &&
+                   is_uint_type(arg->type))
+            worse = true;
+        }
+        if (!fnPromotes1 && fnPromotes2)
+          continue;
+        if (!worse && equal) {
+          if (isMoreVisible(scope, fn1, fn2))
+            equal = false;
+          else if (isMoreVisible(scope, fn2, fn1))
+            worse = true;
+          else if (fn1->where && !fn2->where)
+            equal = false;
+          else if (!fn1->where && fn2->where)
+            worse = true;
+        }
+        if (worse || equal) {
+          best = false;
+          break;
         }
       }
-      if (best)
-        break;
+    }
+    if (best) {
+      *ret_afs = actualFormals1;
+      return fn1;
     }
   }
-  *ret_afs = actualFormals;
-  return best;
+  *ret_afs = NULL;
+  return NULL;
 }
 
 

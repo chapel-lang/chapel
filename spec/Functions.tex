@@ -524,30 +524,37 @@ argument, $F2$, of type $T_{F2}$, the more specific argument mapping
 is determined by the following steps:
 \begin{itemize}
 \item
- If $T_{F1}$ and $T_{F2}$ are the same type and $F1$ is an
- instantiated parameter, $M_1$ is more specific.
+ If $T_{F1}$ and $T_{F2}$ are the same type, $F1$ is an instantiated
+ parameter, and $F2$ is not an instantiated parameter, $M_1$ is more
+ specific.
 \item
- If $T_{F1}$ and $T_{F2}$ are the same type and $F2$ is an
- instantiated parameter, $M_2$ is more specific.
+ If $T_{F1}$ and $T_{F2}$ are the same type, $F2$ is an instantiated
+ parameter, and $F1$ is not an instantiated parameter, $M_2$ is more
+ specific.
+\item
+ If $M_1$ does not require scalar promotion and $M_2$ requires scalar
+ promotion, $M_1$ is more specific.
 \item
  If $M_1$ requires scalar promotion and $M_2$ does not require scalar
  promotion, $M_2$ is more specific.
 \item
- If $M_2$ requires scalar promotion and $M_1$ does not require scalar
- promotion, $M_1$ is more specific.
+ If $T_{F1}$ and $T_{F2}$ are the same type, $F1$ is generic, and $F2$
+ is not generic, $M_1$ is more specific.
+\item
+ If $T_{F1}$ and $T_{F2}$ are the same type, $F2$ is generic, and $F1$
+ is not generic, $M_2$ is more specific.
+\item
+ If $F1$ is not generic over all types and $F2$ is generic over all
+ types, $M_1$ is more specific.
 \item
  If $F1$ is generic over all types and $F2$ is not generic over all
  types, $M_2$ is more specific.
 \item
- If $F2$ is generic over all types and $F1$ is not generic over all
- types, $M_1$ is more specific.
+ If $T_A$ and $T_{F1}$ are the same type and $T_A$ and $T_{F2}$ are
+ not the same type, $M_1$ is more specific.
 \item
- If $T_{F1}$ and $T_{F2}$ are the same type, neither mapping is more
- specific.
-\item
- If $T_A$ and $T_{F1}$ are the same type, $M_1$ is more specific.
-\item
- If $T_A$ and $T_{F2}$ are the same type, $M_2$ is more specific.
+ If $T_A$ and $T_{F1}$ are not the same type and $T_A$ and $T_{F2}$
+ are the same type, $M_2$ is more specific.
 \item
  If $T_{F1}$ is derived from $T_{F2}$, then $M_1$ is more specific.
 \item
