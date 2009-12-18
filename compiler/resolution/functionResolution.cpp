@@ -962,92 +962,86 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
 }
 
 
-//
-// d is distance up via parentExpr/parentSymbol
-// md is number of modules used
-//
-//  sjd: not sure this is perfect; can this be computed when visible
-//  functions are grabbed for a negligible cost
-//
-static int
-visibility_distance(Expr* expr, FnSymbol* fn,
-                    Vec<BlockStmt*>& visited,
-                    int& md, int d=1) {
-  if (BlockStmt* block = toBlockStmt(expr)) {
-
-    if (visited.set_in(block))
-      return 0;
-    visited.set_add(block);
-
-    if (fn->defPoint->parentExpr == block)
-      return d;
-
-    int new_dd = 0;
-    int new_md = 0;
-    if (block && block->modUses) {
-      for_actuals(expr, block->modUses) {
-        SymExpr* se = toSymExpr(expr);
-        INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->var);
-        INT_ASSERT(mod);
-        Vec<BlockStmt*> visitedCopy;
-        visitedCopy.copy(visited);
-        int try_md = md + 1;
-        int try_dd = visibility_distance(mod->block, fn, visitedCopy, try_md, d);
-        if (try_dd > 0 && (new_md == 0 || try_md < new_md)) {
-          new_md = try_md;
-          new_dd = try_dd;
-        }
-      }
-    }
-    if (new_dd > 0 && new_md > 0) {
-      md = new_md;
-      return new_dd;
-    }
-
-    if (expr->parentExpr)
-      return visibility_distance(expr->parentExpr, fn, visited, md, d+1);
-    else if (expr->parentSymbol->defPoint)
-      return visibility_distance(expr->parentSymbol->defPoint->parentExpr, fn, visited, md, d+1);
-
-    return 0;
-
-  } else {
-    return visibility_distance(expr->parentExpr, fn, visited, md, d+1);
+static BlockStmt*
+getParentBlock(Expr* expr) {
+  BlockStmt* block = toBlockStmt(expr);
+  while (expr && !block) {
+    expr = expr->parentExpr;
+    block = toBlockStmt(expr);
   }
+  return block;
 }
 
 
-static void
-disambiguate_by_scope(Expr* parent, Vec<FnSymbol*>* candidateFns) {
-  Vec<int> vds;
-  Vec<int> vmds;
-  forv_Vec(FnSymbol, fn, *candidateFns) {
-    Vec<BlockStmt*> visited;
-    int md = 0;
-    vds.add(visibility_distance(parent, fn, visited, md));
-    vmds.add(md);
-  }
-  int ld = 0, lmd = 0;
-  for (int i = 0; i < vds.n; i++) {
-    if (vds.v[i] != 0) {
-      if (ld) {
-        if (vds.v[i] < ld) {
-          ld = vds.v[i];
-          lmd = vmds.v[i];
-        } else if (vds.v[i] == ld && vmds.v[i] < lmd) {
-          lmd = vmds.v[i];
-        }
-      } else {
-        ld = vds.v[i];
-        lmd = vmds.v[i];
-      }
+//
+// helper routine for isMoreVisible (below);
+//
+static bool
+isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
+                      Vec<BlockStmt*>& visited) {
+  //
+  // fn1 is more visible
+  //
+  if (fn1->defPoint->parentExpr == block)
+    return true;
+
+  //
+  // fn2 is more visible
+  //
+  if (fn2->defPoint->parentExpr == block)
+    return false;
+
+  visited.set_add(block);
+
+  //
+  // default to true if neither are visible
+  //
+  bool moreVisible = true;
+
+  //
+  // ensure f2 is not more visible via parent block, and recurse
+  //
+  if (BlockStmt* parentBlock = getParentBlock(block))
+    if (!visited.set_in(parentBlock))
+      moreVisible &= isMoreVisibleInternal(parentBlock, fn1, fn2, visited);
+
+  //
+  // ensure f2 is not more visible via module uses, and recurse
+  //
+  if (block && block->modUses) {
+    for_actuals(expr, block->modUses) {
+      SymExpr* se = toSymExpr(expr);
+      INT_ASSERT(se);
+      ModuleSymbol* mod = toModuleSymbol(se->var);
+      INT_ASSERT(mod);
+      if (!visited.set_in(mod->block))
+        moreVisible &= isMoreVisibleInternal(mod->block, fn1, fn2, visited);
     }
   }
-  for (int i = 0; i < vds.n; i++) {
-    if (vds.v[i] != ld || vmds.v[i] != lmd)
-      candidateFns->v[i] = 0;
-  }
+
+  return moreVisible;
+}
+
+
+//
+// return true if fn1 is more visible than fn2 from expr
+//
+// assumption: fn1 and fn2 are visible from expr; if this assumption
+//             is violated, this function will return true
+//
+static bool
+isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
+  //
+  // common-case check to see if functions have equal visibility
+  //
+  if (fn1->defPoint->parentExpr == fn2->defPoint->parentExpr)
+    return false;
+
+  //
+  // call helper function with visited set to avoid infinite recursion
+  //
+  Vec<BlockStmt*> visited;
+  return isMoreVisibleInternal(getParentBlock(expr), fn1, fn2, visited);
 }
 
 
@@ -1055,7 +1049,8 @@ static FnSymbol*
 disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                       Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
                       Vec<Symbol*>* actuals,
-                      Vec<ArgSymbol*>** ret_afs) {
+                      Vec<ArgSymbol*>** ret_afs,
+                      Expr* scope) {
   FnSymbol* best = NULL;
   Vec<ArgSymbol*>* actualFormals = 0;
   for (int i = 0; i < candidateFns->n; i++) {
@@ -1130,6 +1125,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
           }
           if (better || as_good) {
             if (!promotion1 && promotion2)
+              continue;
+            if (!better && isMoreVisible(scope, candidateFns->v[i], candidateFns->v[j]))
               continue;
             best = NULL;
             break;
@@ -1534,19 +1531,9 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
     FnSymbol* best = NULL;
     Vec<ArgSymbol*>* actualFormals = 0;
+    Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
     best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                                 &info.actuals, &actualFormals);
-
-    // use visibility and then look for best again
-    if (!best && candidateFns.n > 1) {
-      if (info.scope) {
-        disambiguate_by_scope(info.scope, &candidateFns);
-      } else {
-        disambiguate_by_scope(getVisibilityBlock(call), &candidateFns);
-      }
-      best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                                   &info.actuals, &actualFormals);
-    }
+                                 &info.actuals, &actualFormals, scope);
 
     if (best && explainCallLine && explainCallMatch(call)) {
       USR_PRINT(best, "best candidate is: %s", toString(best));
