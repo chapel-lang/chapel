@@ -102,6 +102,8 @@ enum PrimitiveTag {
   PRIM_EXECUTE_TASKS_IN_LIST,
   PRIM_FREE_TASK_LIST,
 
+  PRIM_TASK_SLEEP,
+
   PRIM_CHPL_ALLOC,
   PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_alloc wrapper that permits size 0
   PRIM_CHPL_FREE,               // only for variables on heap?

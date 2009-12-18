@@ -599,6 +599,11 @@ void chpl_begin_generic(chpl_fn_p fp, void* a,
 }
 
 
+void chpl_task_sleep_generic(int secs) {
+  sleep(secs);
+}
+
+
 chpl_bool chpl_get_serial_generic(void) {
   thread_private_data_t* tp;
 

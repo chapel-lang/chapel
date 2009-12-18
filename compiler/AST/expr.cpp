@@ -1766,6 +1766,11 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fputc( ')', outfile);
       break;
+    case PRIM_TASK_SLEEP:
+      fputs( "CHPL_TASK_SLEEP(", outfile);
+      get(1)->codegen( outfile);
+      fputc( ')', outfile);
+      break;
     case PRIM_INIT_TASK_LIST:
       fprintf( outfile, "NULL");
       break;

@@ -90,6 +90,11 @@ void CHPL_BEGIN(
          chpl_task_list_p);
 
 //
+// Suspend.
+//
+void CHPL_TASK_SLEEP(int);
+
+//
 // Get and set dynamic serial state.
 //
 chpl_bool CHPL_GET_SERIAL(void);

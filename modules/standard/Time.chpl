@@ -85,5 +85,5 @@ def _convert_microseconds(unit: TimeUnits, us: real) {
 }
 
 pragma "inline" def sleep(t: uint) {
-  __primitive("sleep", t);
+  __primitive("task sleep", t);
 }

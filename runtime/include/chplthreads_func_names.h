@@ -69,6 +69,8 @@
 
 #define CHPL_BEGIN                       _TFN(chpl_begin)
 
+#define CHPL_TASK_SLEEP                  _TFN(chpl_task_sleep)
+
 #define CHPL_GET_SERIAL                  _TFN(chpl_get_serial)
 #define CHPL_SET_SERIAL                  _TFN(chpl_set_serial)
 

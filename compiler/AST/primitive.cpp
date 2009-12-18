@@ -400,6 +400,8 @@ initPrimitive() {
   prim_def(PRIM_EXECUTE_TASKS_IN_LIST, "execute tasks in list", returnInfoVoid, true);
   prim_def(PRIM_FREE_TASK_LIST, "free task list", returnInfoVoid, true);
 
+  prim_def(PRIM_TASK_SLEEP, "task sleep", returnInfoVoid, true);
+
   prim_def(PRIM_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIM_CHPL_ALLOC_PERMIT_ZERO, "chpl_alloc_permit_zero",
            returnInfoChplAlloc, true, true);

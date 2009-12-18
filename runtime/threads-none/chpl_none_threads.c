@@ -9,6 +9,7 @@
 #include "error.h"
 #include <assert.h>
 #include <stdint.h>
+#include <unistd.h>
 
 //
 // task pool: linked list of tasks
@@ -165,6 +166,10 @@ void CHPL_BEGIN(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
 
     queued_cnt++;
   }
+}
+
+void CHPL_TASK_SLEEP(int secs) {
+  sleep(secs);
 }
 
 chpl_bool CHPL_GET_SERIAL(void) { return serial_state; }
