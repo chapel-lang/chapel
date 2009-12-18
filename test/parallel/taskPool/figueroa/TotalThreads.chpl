@@ -16,8 +16,8 @@ if b2 {
   }
   writeln(here.totalThreads(), " threads have been created up till now.");
   sleep(5);
-  writeln(here.idleThreads(), " of these is idle.");
-  write(here.runningTasks(), " tasks have started running, but ");
+  writeln(here.idleThreads(), " of these is/are idle.");
+  write(here.runningTasks(), " tasks are running, but ");
   writeln(here.blockedTasks(), " are blocked at the moment.");
 }
 
