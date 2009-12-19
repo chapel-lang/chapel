@@ -17,6 +17,16 @@ class DefaultDist: BaseDist {
     return new DefaultSparseDom(rank, idxType, this, dom);
 
   def clone() return this;
+
+  def buildArithmeticDomain(param rank: int, type idxType, param stridable: bool,
+                            ranges: rank*range(idxType,
+                                               BoundedRangeType.bounded,
+                                               stridable)) {
+    var dom = new DefaultArithmeticDom(rank, idxType, stridable, this);
+    for i in 1..rank do
+      dom.ranges(i) = ranges(i);
+    return dom;
+  }
 }
 
 //
@@ -277,57 +287,6 @@ class DefaultArithmeticDom: BaseArithmeticDom {
       }
     }
     return d;
-  }
-
-  def translate(off: rank*idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
-    for i in 1..rank do
-      x.ranges(i) = dim(i).translate(off(i));
-    return x;
-  }
-
-  def chpl__unTranslate(off: rank*idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
-    for i in 1..rank do
-      x.ranges(i) = dim(i).chpl__unTranslate(off(i));
-    return x;
-  }
-
-  def interior(off: rank*idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
-    for i in 1..rank do {
-      if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
-          (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
-        halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
-      } 
-      x.ranges(i) = dim(i).interior(off(i));
-    }
-    return x;
-  }
-
-  def exterior(off: rank*idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
-    for i in 1..rank do
-      x.ranges(i) = dim(i).exterior(off(i));
-    return x;
-  }
-
-  def expand(off: rank*idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
-    for i in 1..rank do {
-      x.ranges(i) = ranges(i).expand(off(i));
-      if (x.ranges(i)._low > x.ranges(i)._high) {
-        halt("***Error: Degenerate dimension created in dimension ", i, "***");
-      }
-    }
-    return x;
-  }  
-
-  def expand(off: idxType) {
-    var x = new DefaultArithmeticDom(rank, idxType, stridable, dist);
-    for i in 1..rank do
-      x.ranges(i) = ranges(i).expand(off);
-    return x;
   }
 
   def strideBy(str : rank*int) {

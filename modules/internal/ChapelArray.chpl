@@ -455,21 +455,72 @@ record _domain {
   def order(i) return _value.order(i);
   def position(i) return _value.position(i);
 
-  def expand(i: _value.idxType ...rank) return expand(i);
-  def expand(i: rank*_value.idxType) return _newDomain(_value.expand(i));
-  def expand(i: _value.idxType) where rank > 1 return _newDomain(_value.expand(i));
+  def expand(off: _value.idxType ...rank) return expand(off);
+  def expand(off: rank*_value.idxType) {
+    var ranges = dims();
+    for i in 1..rank do {
+      ranges(i) = ranges(i).expand(off(i));
+      if (ranges(i)._low > ranges(i)._high) {
+        halt("***Error: Degenerate dimension created in dimension ", i, "***");
+      }
+    }
+    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+                                                        _value.stridable,
+                                                        ranges));
+  }
+  def expand(off: _value.idxType) where rank > 1 {
+    var ranges = dims();
+    for i in 1..rank do
+      ranges(i) = _value.ranges(i).expand(off);
+    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+                                                        _value.stridable,
+                                                        ranges));
+  }
 
-  def exterior(i: _value.idxType ...rank) return exterior(i);
-  def exterior(i: rank*_value.idxType) return _newDomain(_value.exterior(i));
+  def exterior(off: _value.idxType ...rank) return exterior(off);
+  def exterior(off: rank*_value.idxType) {
+    var ranges = dims();
+    for i in 1..rank do
+      ranges(i) = _value.dim(i).exterior(off(i));
+    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+                                                        _value.stridable,
+                                                        ranges));
+  }
+                  
+  def interior(off: _value.idxType ...rank) return interior(off);
+  def interior(off: rank*_value.idxType) {
+    var ranges = dims();
+    for i in 1..rank do {
+      if ((off(i) > 0) && (_value.dim(i)._high+1-off(i) < _value.dim(i)._low) ||
+          (off(i) < 0) && (_value.dim(i)._low-1-off(i) > _value.dim(i)._high)) {
+        halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
+      } 
+      ranges(i) = _value.dim(i).interior(off(i));
+    }
+    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+                                                        _value.stridable,
+                                                        ranges));
+  }
 
-  def interior(i: _value.idxType ...rank) return interior(i);
-  def interior(i: rank*_value.idxType) return _newDomain(_value.interior(i));
+  def translate(off: _value.idxType ...rank) return translate(off);
+  def translate(off: rank*_value.idxType) {
+    var ranges = dims();
+    for i in 1..rank do
+      ranges(i) = _value.dim(i).translate(off(i));
+    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+                                                        _value.stridable,
+                                                        ranges));
+  }
 
-  def translate(i: _value.idxType ...rank) return translate(i);
-  def translate(i: rank*_value.idxType) return _newDomain(_value.translate(i));
-
-  def chpl__unTranslate(i: _value.idxType ...rank) return chpl__unTranslate(i);
-  def chpl__unTranslate(i: rank*_value.idxType) return _newDomain(_value.chpl__unTranslate(i));
+  def chpl__unTranslate(off: _value.idxType ...rank) return chpl__unTranslate(off);
+  def chpl__unTranslate(off: rank*_value.idxType) {
+    var ranges = dims();
+    for i in 1..rank do
+      ranges(i) = _value.dim(i).chpl__unTranslate(off(i));
+    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+                                                        _value.stridable,
+                                                        ranges));
+  }
 
   def setIndices(x) {
     _value.setIndices(x);
