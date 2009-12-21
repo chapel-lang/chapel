@@ -2,5 +2,5 @@
 
 testname=$1
 
-sed --in-place -e 's;returns.*$;returns ...;' -e 's;more than [0-9]*;more than ...;' $testname.exec.out.tmp
+sed --in-place -e 's;returns.*$;returns ...;' $testname.exec.out.tmp
 
