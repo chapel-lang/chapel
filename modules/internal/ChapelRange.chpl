@@ -493,7 +493,7 @@ def range.boundsCheck(other: range(?e,?b,?s)) where b == BoundedRangeType.bounde
 }
 
 
-def range.boundsCheck(other: range(?e,?b,?s)) where b != BoundedRangeType.boundedNone {
+def range.boundsCheck(other: range(?e,?b,?s)) {
   var boundedOther: range(e,BoundedRangeType.bounded,s||this.stridable);
   if other._hasLow() then
     boundedOther._low = other.low;

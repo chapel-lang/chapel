@@ -105,7 +105,6 @@ def chpl__buildDomainRuntimeType(dist: _distribution, param rank: int, type idxT
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
- where !__primitive("isEnumType", idxType) && idxType != opaque && idxType != _OpaqueIndex
   return _newDomain(dist.newAssociativeDom(idxType));
 
 pragma "has runtime type"
@@ -140,7 +139,6 @@ def chpl__convertValueToRuntimeType(dom: domain) type
   return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
 
 def chpl__convertValueToRuntimeType(dom: domain) type
-where !dom._value:BaseArithmeticDom && !dom._value:BaseSparseDom
   return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
 
 //
@@ -239,7 +237,7 @@ def distributionType(type dist) type where dist: BaseDist {
   return d.type;
 }
 
-def distributionType(type dist) where !(dist: BaseDist) {
+def distributionType(type dist) {
   compilerError("illegal distribution type specifier");
 }
 
@@ -247,7 +245,7 @@ def distributionValue(dist) where dist: BaseDist {
   return _newDistribution(dist);
 }
 
-def distributionValue(dist) where !(dist: BaseDist) {
+def distributionValue(dist) {
   compilerError("illegal distribution value specifier");
 }
 
@@ -702,7 +700,7 @@ record _array {
     return _newArray(x);
   }
 
-  def reindex(d: domain) where rank != 1 {
+  def reindex(d: domain) where rank > 1 {
     var x = _value.reindex(d._value);
     d._value._domCnt$ += 1;
     x._arrAlias = _value;
@@ -880,7 +878,7 @@ def _desync(type t) where t: _syncvar || t: _singlevar {
   return x.value;
 }
 
-def _desync(type t) where !(t: _syncvar|| t: _singlevar) {
+def _desync(type t) {
   var x: t;
   return x;
 }
@@ -934,7 +932,7 @@ def linearize(Xs) {
 def _callSupportsAlignedFollower(A) param where A: BaseArr
   return A.supportsAlignedFollower();
 
-def _callSupportsAlignedFollower(A) param where !(A: BaseArr)
+def _callSupportsAlignedFollower(A) param
   return false;
 
 def _callSupportsAlignedFollower() param

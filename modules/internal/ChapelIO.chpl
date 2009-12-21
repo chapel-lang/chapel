@@ -472,7 +472,7 @@ def format(fmt: string, x:?t) where _isComplexType(t) {
     return __primitive("_format", fmt, x);
 }
 
-def format(fmt: string, x: ?t) where !(_isIntegralType(t) || _isFloatType(t) || _isComplexType(t)) {
+def format(fmt: string, x: ?t) {
   return __primitive("_format", fmt, x);
 }
 
