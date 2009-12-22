@@ -605,7 +605,7 @@ pragma "inline" def exit(status: int) {
 
 def init_elts(x, s, type t) {
   for i in 1..s {
-    pragma "no auto destroy" var y: t;
+    pragma "no auto destroy" var y: t;  // TODO: why is this in the loop?
     __primitive("array_set_first", x, i-1, y);
   }
 }
@@ -993,8 +993,14 @@ def _isBooleanType(type t) param return
   (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64));
 
 def _isIntegralType(type t) param return
-  (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
-  (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64));
+  _isSignedType(t) || _isUnsignedType(t);
+
+def _isSignedType(type t) param return
+  (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
+
+
+def _isUnsignedType(type t) param return
+  (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
 def _isComplexType(type t) param return
   (t == complex(64)) | (t == complex(128));
