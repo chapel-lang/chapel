@@ -638,8 +638,8 @@ uint32_t chpl_numRunningTasks_generic(void) {
   numRunningTasks = running_cnt + extra_task_cnt + 1;
 
   // end critical section
-  CHPL_MUTEX_UNLOCK(&threading_lock);
   CHPL_MUTEX_UNLOCK(&extra_task_lock);
+  CHPL_MUTEX_UNLOCK(&threading_lock);
 
   return numRunningTasks;
 }
@@ -655,8 +655,8 @@ int32_t  chpl_numBlockedTasks_generic(void) {
     numBlockedTasks = blocked_thread_cnt - idle_cnt;
 
     // end critical section
-    CHPL_MUTEX_UNLOCK(&threading_lock);
     CHPL_MUTEX_UNLOCK(&report_lock);
+    CHPL_MUTEX_UNLOCK(&threading_lock);
 
     assert(numBlockedTasks >= 0);
     return numBlockedTasks;
