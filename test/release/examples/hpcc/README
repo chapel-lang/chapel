@@ -18,15 +18,15 @@ The main files for these benchmarks are as follows:
 
 There are also helper modules for these benchmarks:
 
-     probSize.chpl          : a common module for computing problem sizes
-     ra-randstream.chpl     : the random stream generator for ra.chpl
+     HPCCProblemSize.chpl   : a common module for computing problem sizes
+     RARandomStream.chpl    : the random stream generator for ra.chpl
 
 These benchmarks can be compiled using the following commands:
 
-     chpl -o stream probSize.chpl stream.chpl
-     chpl -o ra probSize.chpl ra-randstream.chpl ra.chpl
-     chpl -o fft probSize.chpl fft.chpl
-     chpl -o hpl probSize.chpl hpl.chpl
+     chpl -o stream stream.chpl
+     chpl -o ra ra.chpl
+     chpl -o fft fft.chpl
+     chpl -o hpl hpl.chpl
 
 Or using the provided Makefile (which also turns on optimizations,
 turns off runtime correctness checks, and permits IEEE math to be
