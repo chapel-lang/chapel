@@ -356,7 +356,7 @@ if ($buildruntime == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($starttime, $endtime);
+    print MAIL startMailHeader("<no logfile>", $starttime, $endtime);
     print MAIL "Built compiler but not runtime, and did not run tests\n";
     print MAIL endMailHeader();
     close(MAIL);
@@ -444,7 +444,7 @@ if ($runtests == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($starttime, $endtime);
+    print MAIL startMailHeader("<no logfile>", $starttime, $endtime);
     print MAIL "Built compiler and runtime but did not run tests\n";
     print MAIL endMailHeader();
     
@@ -523,7 +523,7 @@ if ($runtests == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($starttime, $endtime);
+    print MAIL startMailHeader($rawlog, $starttime, $endtime);
     print MAIL "$numtestssummary\n";
     print MAIL "$summary\n";
     print MAIL endMailHeader();
@@ -622,7 +622,7 @@ sub mysystem {
 
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
-            print MAIL startMailHeader($starttime, $endtime);
+            print MAIL startMailHeader($rawlog, $starttime, $endtime);
 	    print MAIL "ERROR $_[1]: $status\n";
 	    print MAIL "(workspace left at $tmpdir)\n";
             print MAIL endMailHeader();
@@ -705,6 +705,7 @@ sub startMailHeader {
     my $mystr =
         "=== Summary ===================================================\n" .
         "Hostname:   " . hostname . "\n" .
+        "Logfile:    " . shift(@_) . "\n" .
         "Start time: " . shift(@_) . "\n" .
         "End time:   " . shift(@_) . "\n\n";
 
