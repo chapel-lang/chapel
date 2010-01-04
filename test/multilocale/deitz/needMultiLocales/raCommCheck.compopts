@@ -1,1 +1,1 @@
-../../../release/examples/hpcc/probSize.chpl ../../../release/examples/hpcc/ra-randstream.chpl --no-warnings
+-M../../../release/examples/hpcc --no-warnings
