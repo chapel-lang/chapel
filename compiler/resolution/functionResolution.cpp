@@ -775,9 +775,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       Symbol* sym = map.get(def->sym);
       sym->defPoint->replace(new SymExpr(new_IntSymbol(numCopies)));
 
-      SymbolMap update;
-      update.put(sym, new_IntSymbol(numCopies));
-      update_symbols(newFn, &update);
+      subSymbol(newFn, sym, new_IntSymbol(numCopies));
 
       // add new function to cache
       Vec<FnSymbol*>* cfns = cache.get(fn);
@@ -824,18 +822,14 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
           fn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
           fn->insertAtHead(new DefExpr(var));
           arg->defPoint->remove();
-          SymbolMap update;
-          update.put(arg, var);
-          update_symbols(fn->body, &update);
+          subSymbol(fn->body, arg, var);
           if (fn->where) {
             VarSymbol* var = new VarSymbol(arg->name);
             if (arg->hasFlag(FLAG_TYPE_VARIABLE))
               var->addFlag(FLAG_TYPE_VARIABLE);
             fn->where->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall->copy()));
             fn->where->insertAtHead(new DefExpr(var));
-            SymbolMap update;
-            update.put(arg, var);
-            update_symbols(fn->where, &update);
+            subSymbol(fn->where, arg, var);
           }
         }
       }
@@ -3092,6 +3086,91 @@ resolveBlock(Expr* body) {
   }
 }
 
+
+static void
+computeReturnTypeParamVectors(BaseAST* ast,
+                              Symbol* retSymbol,
+                              Vec<Type*>& retTypes,
+                              Vec<Symbol*>& retParams) {
+  if (CallExpr* call = toCallExpr(ast)) {
+    if (call->isPrimitive(PRIM_MOVE)) {
+      if (SymExpr* sym = toSymExpr(call->get(1))) {
+        if (sym->var == retSymbol) {
+          if (SymExpr* sym = toSymExpr(call->get(2)))
+            retParams.add(sym->var);
+          else
+            retParams.add(NULL);
+          retTypes.add(call->get(2)->typeInfo());
+        }
+      }
+    }
+  }
+  AST_CHILDREN_CALL(ast, computeReturnTypeParamVectors, retSymbol, retTypes, retParams);
+}
+
+
+static void
+replaceSetterArgWithTrue(BaseAST* ast, FnSymbol* fn) {
+  if (SymExpr* se = toSymExpr(ast)) {
+    if (se->var == fn->setter->sym) {
+      se->var = gTrue;
+      if (fn->hasFlag(FLAG_ITERATOR_FN))
+        USR_WARN(fn, "setter argument is not supported in iterators");
+    }
+  }
+  AST_CHILDREN_CALL(ast, replaceSetterArgWithTrue, fn);
+}
+
+
+static void
+replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret) {
+  if (SymExpr* se = toSymExpr(ast)) {
+    if (se->var == fn->setter->sym)
+      se->var = gFalse;
+    else if (se->var == ret) {
+      if (CallExpr* move = toCallExpr(se->parentExpr))
+        if (move->isPrimitive(PRIM_MOVE))
+          if (CallExpr* call = toCallExpr(move->get(2)))
+            if (call->isPrimitive(PRIM_SET_REF))
+              call->primitive = primitives[PRIM_GET_REF];
+    }
+  }
+  AST_CHILDREN_CALL(ast, replaceSetterArgWithFalse, fn, ret);
+}
+
+
+static void
+insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
+  if (CallExpr* call = toCallExpr(ast)) {
+    if (call->parentSymbol == fn) {
+      if (call->isPrimitive(PRIM_MOVE)) {
+        if (SymExpr* lhs = toSymExpr(call->get(1))) {
+          Expr* rhs = call->get(2);
+          Type* rhsType = rhs->typeInfo();
+          if (rhsType != lhs->var->type &&
+              rhsType->refType != lhs->var->type &&
+              rhsType != lhs->var->type->refType) {
+            rhs->remove();
+            Symbol* tmp = NULL;
+            if (SymExpr* se = toSymExpr(rhs)) {
+              tmp = se->var;
+            } else {
+              tmp = newTemp(rhs->typeInfo());
+              call->insertBefore(new DefExpr(tmp));
+              call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
+            }
+            CallExpr* cast = new CallExpr("_cast", lhs->var->type->symbol, tmp);
+            call->insertAtTail(cast);
+            casts.add(cast);
+          }
+        }
+      }
+    }
+  }
+  AST_CHILDREN_CALL(ast, insertCasts, fn, casts);
+}
+
+
 static void
 resolveFns(FnSymbol* fn) {
   if (resolvedFns.get(fn))
@@ -3117,31 +3196,11 @@ resolveFns(FnSymbol* fn) {
       fn->defPoint->insertBefore(new DefExpr(copy));
       fn->valueFunction = copy;
       Symbol* ret = copy->getReturnSymbol();
-      Vec<SymExpr*> symExprs;
-      collectSymExprs(copy, symExprs);
-      forv_Vec(SymExpr, se, symExprs) {
-        if (se->var == copy->setter->sym)
-          se->var = gFalse;
-        else if (se->var == ret) {
-          if (CallExpr* move = toCallExpr(se->parentExpr))
-            if (move->isPrimitive(PRIM_MOVE))
-              if (CallExpr* call = toCallExpr(move->get(2)))
-                if (call->isPrimitive(PRIM_SET_REF))
-                  call->primitive = primitives[PRIM_GET_REF];
-        }
-      }
+      replaceSetterArgWithFalse(copy, copy, ret);
       resolveFns(copy);
     }
 
-    Vec<SymExpr*> symExprs;
-    collectSymExprs(fn, symExprs);
-    forv_Vec(SymExpr, se, symExprs) {
-      if (se->var == fn->setter->sym) {
-        se->var = gTrue;
-        if (fn->hasFlag(FLAG_ITERATOR_FN))
-          USR_WARN(fn, "setter argument is not supported in iterators");
-      }
-    }
+    replaceSetterArgWithTrue(fn, fn);
   }
 
   insertFormalTemps(fn);
@@ -3166,22 +3225,7 @@ resolveFns(FnSymbol* fn) {
 
   Vec<Type*> retTypes;
   Vec<Symbol*> retParams;
-
-  Vec<CallExpr*> calls;
-  collectCallExprs(fn->body, calls);
-  forv_Vec(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_MOVE)) {
-      if (SymExpr* sym = toSymExpr(call->get(1))) {
-        if (sym->var == ret) {
-          if (SymExpr* sym = toSymExpr(call->get(2)))
-            retParams.add(sym->var);
-          else
-            retParams.add(NULL);
-          retTypes.add(call->get(2)->typeInfo());
-        }
-      }
-    }
-  }
+  computeReturnTypeParamVectors(fn, ret, retTypes, retParams);
 
   if (retType == dtUnknown) {
     if (retTypes.n == 1)
@@ -3221,35 +3265,12 @@ resolveFns(FnSymbol* fn) {
   // insert casts as necessary
   //
   if (fn->retTag != RET_PARAM) {
-    calls.clear();
-    collectCallExprs(fn->body, calls);
-    forv_Vec(CallExpr, call, calls) {
-      if (call->parentSymbol == fn) {
-        if (call->isPrimitive(PRIM_MOVE)) {
-          if (SymExpr* lhs = toSymExpr(call->get(1))) {
-            Expr* rhs = call->get(2);
-            Type* rhsType = rhs->typeInfo();
-            if (rhsType != lhs->var->type &&
-                rhsType->refType != lhs->var->type &&
-                rhsType != lhs->var->type->refType) {
-              rhs->remove();
-              Symbol* tmp = NULL;
-              if (SymExpr* se = toSymExpr(rhs)) {
-                tmp = se->var;
-              } else {
-                tmp = newTemp(rhs->typeInfo());
-                call->insertBefore(new DefExpr(tmp));
-                call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
-              }
-              CallExpr* cast = new CallExpr("_cast", lhs->var->type->symbol, tmp);
-              call->insertAtTail(cast);
-              resolveCall(cast);
-              if (cast->isResolved())
-                resolveFns(cast->isResolved());
-            }
-          }
-        }
-      }
+    Vec<CallExpr*> casts;
+    insertCasts(fn->body, fn, casts);
+    forv_Vec(CallExpr, cast, casts) {
+      resolveCall(cast);
+      if (cast->isResolved())
+        resolveFns(cast->isResolved());
     }
   }
 

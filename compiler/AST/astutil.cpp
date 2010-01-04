@@ -293,6 +293,14 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
 }
 
 
+void subSymbol(BaseAST* ast, Symbol* oldSym, Symbol* newSym) {
+  if (SymExpr* se = toSymExpr(ast))
+    if (se->var == oldSym)
+      se->var = newSym;
+  AST_CHILDREN_CALL(ast, subSymbol, oldSym, newSym);
+}
+
+
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast) {
   Expr* parentExpr = NULL;
   Symbol* parentSymbol = NULL;

@@ -115,6 +115,9 @@ void buildDefUseSets(Vec<Symbol*>& syms,
 // update symbols in ast with map
 void update_symbols(BaseAST* ast, SymbolMap* map);
 
+// replace symbol use with another
+void subSymbol(BaseAST* ast, Symbol* oldSym, Symbol* newSym);
+
 // replaces Fixup
 void remove_help(BaseAST* ast, int dummy=0); // dummy is never used
 void parent_insert_help(BaseAST* parent, Expr* ast);

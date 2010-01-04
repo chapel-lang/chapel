@@ -65,7 +65,6 @@ insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
   if (fn->getReturnSymbol() == gVoid) {
     wrapper->insertAtTail(call);
   } else {
-    //if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
     Symbol* tmp = newTemp();
     tmp->addFlag(FLAG_EXPR_TEMP);
     tmp->addFlag(FLAG_MAYBE_PARAM);
@@ -73,12 +72,7 @@ insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
     wrapper->insertAtTail(new DefExpr(tmp));
     wrapper->insertAtTail(new CallExpr(PRIM_MOVE, tmp, call));
     wrapper->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
-  } /*else {
-    VarSymbol* index = newTemp("_i");
-    wrapper->insertAtTail(new DefExpr(index));
-    wrapper->insertAtTail(buildForLoopStmt(new SymExpr(index), call, new BlockStmt(new CallExpr(PRIM_YIELD, index))));
-    wrapper->addFlag(FLAG_ITERATOR_FN);
-    }*/
+  }
   fn->defPoint->insertAfter(new DefExpr(wrapper));
 }
 

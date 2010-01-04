@@ -5,17 +5,19 @@
 
 
 SymbolMapCacheEntry::SymbolMapCacheEntry(FnSymbol* ifn, SymbolMap* imap) :
-  fn(ifn), map(*imap) { }
+  fn(ifn), map(*imap) {
+}
 
 
 void
 addCache(SymbolMapCache& cache, FnSymbol* oldFn, FnSymbol* fn, SymbolMap* map) {
   Vec<SymbolMapCacheEntry*>* entries = cache.get(oldFn);
+  SymbolMapCacheEntry* entry = new SymbolMapCacheEntry(fn, map);
   if (entries) {
-    entries->add(new SymbolMapCacheEntry(fn, map));
+    entries->add(entry);
   } else {
     entries = new Vec<SymbolMapCacheEntry*>();
-    entries->add(new SymbolMapCacheEntry(fn, map));
+    entries->add(entry);
     cache.put(oldFn, entries);
   }
 }
@@ -23,12 +25,16 @@ addCache(SymbolMapCache& cache, FnSymbol* oldFn, FnSymbol* fn, SymbolMap* map) {
 
 static bool
 isCacheEntryMatch(SymbolMap* s1, SymbolMap* s2) {
-  form_Map(SymbolMapElem, e, *s1)
-    if (s2->get(e->key) != e->value)
-      return false;
-  form_Map(SymbolMapElem, e, *s2)
-    if (s1->get(e->key) != e->value)
-      return false;
+  if (s1->n != s2->n)
+    return false;
+  for(int i = 0; i < s1->n; i++) {
+    if (s1->v[i].key || s2->v[i].key) {
+      if (s1->v[i].key != s2->v[i].key)
+        return false;
+      if (s1->v[i].value != s2->v[i].value)
+        return false;
+    }
+  }
   return true;
 }
 
@@ -37,9 +43,8 @@ FnSymbol*
 checkCache(SymbolMapCache& cache, FnSymbol* oldFn, SymbolMap* map) {
   if (Vec<SymbolMapCacheEntry*>* entries = cache.get(oldFn)) {
     forv_Vec(SymbolMapCacheEntry, entry, *entries) {
-      if (isCacheEntryMatch(map, &entry->map)) {
+      if (isCacheEntryMatch(map, &entry->map))
         return entry->fn;
-      }
     }
   }
   return NULL;
@@ -62,16 +67,13 @@ replaceCache(SymbolMapCache& cache, FnSymbol* oldFn, FnSymbol* fn, SymbolMap* ma
 
 void
 freeCache(SymbolMapCache& cache) {
-  Vec<FnSymbol*> keys;
-  cache.get_keys(keys);
-  forv_Vec(FnSymbol, key, keys) {
-    Vec<SymbolMapCacheEntry*>* entries = cache.get(key);
-    forv_Vec(SymbolMapCacheEntry, entry, *entries) {
+  form_Map(SymbolMapCacheElem, elem, cache) {
+    forv_Vec(SymbolMapCacheEntry, entry, *elem->value) {
       delete entry;
     }
-    delete entries;
+    delete elem->value;
   }
-  cache.set_clear();
+  cache.clear();
 }
 
 
@@ -119,16 +121,13 @@ checkCache(SymbolVecCache& cache, FnSymbol* fn, Vec<Symbol*>* vec) {
 
 void
 freeCache(SymbolVecCache& cache) {
-  Vec<FnSymbol*> keys;
-  cache.get_keys(keys);
-  forv_Vec(FnSymbol, key, keys) {
-    Vec<SymbolVecCacheEntry*>* entries = cache.get(key);
-    forv_Vec(SymbolVecCacheEntry, entry, *entries) {
+  form_Map(SymbolVecCacheElem, elem, cache) {
+    forv_Vec(SymbolVecCacheEntry, entry, *elem->value) {
       delete entry;
     }
-    delete entries;
+    delete elem->value;
   }
-  cache.set_clear();
+  cache.clear();
 }
 
 

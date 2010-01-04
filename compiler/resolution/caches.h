@@ -23,6 +23,8 @@ class SymbolMapCacheEntry {
   SymbolMap map;
 };
 typedef Map<FnSymbol*,Vec<SymbolMapCacheEntry*>*> SymbolMapCache;
+typedef MapElem<FnSymbol*,Vec<SymbolMapCacheEntry*>*> SymbolMapCacheElem;
+
 
 void addCache(SymbolMapCache& cache, FnSymbol* old, FnSymbol* fn, SymbolMap* map);
 FnSymbol* checkCache(SymbolMapCache& cache, FnSymbol* oldFn, SymbolMap* map);
@@ -44,6 +46,7 @@ class SymbolVecCacheEntry {
   Vec<Symbol*> vec;
 };
 typedef Map<FnSymbol*,Vec<SymbolVecCacheEntry*>*> SymbolVecCache;
+typedef MapElem<FnSymbol*,Vec<SymbolVecCacheEntry*>*> SymbolVecCacheElem;
 
 void addCache(SymbolVecCache& cache, FnSymbol* newFn, FnSymbol* oldFn, Vec<Symbol*>* vec);
 FnSymbol* checkCache(SymbolVecCache& cache, FnSymbol* fn, Vec<Symbol*>* vec);
