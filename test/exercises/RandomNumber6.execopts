@@ -1,1 +1,1 @@
---quiet
+--quiet --maxThreads=100
