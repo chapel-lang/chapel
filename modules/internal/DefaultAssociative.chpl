@@ -383,6 +383,12 @@ class DefaultAssociativeArr: BaseArr {
   def _destroySortedTmpTable() {
     tmpDom = [0..-1:chpl_table_index_type];
   }
+
+  def tupleInit(t: _tuple) {
+    for (i,j) in (dom.sorted(), 1..) {
+      this(i) = t(j);
+    }
+  }
 }
 
 

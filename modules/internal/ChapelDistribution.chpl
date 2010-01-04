@@ -30,7 +30,7 @@ class BaseDist {
     compilerError("associative domains not supported by this distribution");
   }
 
-  def newEnumDom(type idxType) {
+  def newAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
     compilerError("enumerated domains not supported by this distribution");
   }
 
@@ -150,16 +150,6 @@ class BaseOpaqueDom : BaseDom {
 
   def clearForIteratableAssign() {
     clear();
-  }
-}
-
-class BaseEnumDom : BaseDom {
-  def clear() {
-    compilerError("Cannot clear an enumerated domain");
-  }
-
-  def clearForIteratableAssign() {
-    compilerError("Illegal assignment to an enumerated domain");
   }
 }
 

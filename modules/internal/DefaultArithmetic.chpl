@@ -7,9 +7,6 @@ class DefaultDist: BaseDist {
   def newAssociativeDom(type idxType)
     return new DefaultAssociativeDom(idxType, this);
 
-  def newEnumDom(type idxType)
-    return new DefaultEnumDom(idxType, this);
-
   def newOpaqueDom(type idxType)
     return new DefaultOpaqueDom(this);
 

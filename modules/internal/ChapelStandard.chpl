@@ -13,7 +13,6 @@ use ChapelRealm;
 use DefaultArithmetic;
 use DefaultAssociative;
 use DefaultSparse;
-use DefaultEnum;
 use DefaultOpaque;
 use ChapelUtil;
 

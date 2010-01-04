@@ -109,11 +109,6 @@ def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
- where __primitive("isEnumType", idxType)
-  return _newDomain(dist.newEnumDom(idxType));
-
-pragma "has runtime type"
-def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
  where idxType == _OpaqueIndex
   return _newDomain(dist.newOpaqueDom(idxType));
 
@@ -212,9 +207,7 @@ def isAssociativeDom(d: domain) param {
 }
 
 def isEnumDom(d: domain) param {
-  def isEnumDomClass(dc: BaseEnumDom) param return true;
-  def isEnumDomClass(dc) param return false;
-  return isEnumDomClass(d._value);
+  return isAssociativeDom(d) && __primitive("isEnumType", d._value.idxType);
 }
 
 def isOpaqueDom(d: domain) param {
@@ -305,13 +298,16 @@ record _distribution {
     return x;
   }
 
-  def newEnumDom(type idxType) {
-    var x = _value.newEnumDom(idxType);
+  def newAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
+    var x = _value.newAssociativeDom(idxType);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
       _value._distCnt$ = cnt + 1;
     }
+    const enumTuple = _enum_enumerate(idxType);
+    for param i in 1..enumTuple.size do
+      x.add(enumTuple(i));
     return x;
   }
 
@@ -431,6 +427,10 @@ record _domain {
     _value.clear();
   }
 
+  def clear() where __primitive("isEnumType", _value.idxType) {
+    compilerError("cannot clear enumerated domain");
+  }
+
   def create() {
     if _value.idxType != _OpaqueIndex then
       compilerError("domain.create() only applies to opaque domains");
@@ -441,8 +441,16 @@ record _domain {
     _value.add(i);
   }
 
+  def add(i) where __primitive("isEnumType", _value.idxType) {
+    compilerError("cannot add indices to enumerated domain");
+  }
+
   def remove(i) {
     _value.remove(i);
+  }
+
+  def remove(i) where __primitive("isEnumType", _value.idxType) {
+    compilerError("cannot remove indices from enumerated domain");
   }
 
   def numIndices return _value.numIndices;

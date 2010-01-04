@@ -40,8 +40,8 @@ Associative domains are sets of indices where the type of the index is
 some type that is not an array, domain, or range.  Associative domains
 define dictionaries or associative arrays implemented via hash tables.
 \item
-Enumerated domains are sets of constants defined by some enumerated
-type.
+Enumerated domains are a special case of associative domains where the
+indices are defined by an enumerated type.
 \item
 Opaque domains are sets of anonymous indices.  Opaque domains define
 graphs and unspecified sets.
@@ -877,9 +877,9 @@ enumerated-domain-type:
   `domain' ( enum-type )
 \end{syntax}
 
-Enumerated domains do not support the \chpl{add} or \chpl{remove}
-methods.  All of the constants defined by the enumerated type are
-indices into the enumerated domain.
+Enumerated domains do not support the \chpl{add}, \chpl{remove},
+or \chpl{clear} methods.  All of the constants defined by the enumerated
+type are indices into the enumerated domain.
 
 An enumerated domain is specified identically to the associative
 domain type, except that the type is an enumerated type rather than
