@@ -60,8 +60,11 @@ if ($basetmpdir eq "") {
 if ($basetmpdir eq "") {
     $basetmpdir = "/tmp";
 }
-$tmpdir = "$basetmpdir/chapel-testRelease.$user.$pid.deleteme";
-
+if ($debug == 1) {
+    $tmpdir = "$basetmpdir/chapel-testRelease-crn.$user.deleteme";
+} else {
+    $tmpdir = "$basetmpdir/chapel-testRelease-dbg.$user.deleteme";
+}
 
 
 
