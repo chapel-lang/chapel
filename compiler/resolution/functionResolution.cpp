@@ -4395,7 +4395,7 @@ fixTypeNames(ClassType* ct) {
     ct->symbol->name = astr("domain", ct->symbol->name+20);
   }
   if (ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN)) {
-    ct->symbol->name = ct->getField("_value")->type->symbol->name;
+    ct->symbol->name = ct->getField("_valueType")->type->symbol->name;
   }
 }
 
