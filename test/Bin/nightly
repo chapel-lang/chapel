@@ -171,7 +171,7 @@ if ($mailer eq "") {
 if ($debug == 1) {
     $tmpdir = "$basetmpdir/chapel-debug-$fullplatform-$user";
 } else {
-    $tmpdir = "$basetmpdir/chapel-$fullplatform-day$today-$user";
+    $tmpdir = "$basetmpdir/chapel-cron-$fullplatform-$user";
 }
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
