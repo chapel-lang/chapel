@@ -404,6 +404,10 @@ class LocCyclicDom {
   var myBlock: domain(rank, idxType, true);
 }
 
+//
+// Added as a performance stopgap to avoid returning a domain
+//
+def LocCyclicDom.member(i) return myBlock.member(i);
 
 def _computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
   def procToData(x, lo)
@@ -568,7 +572,7 @@ def CyclicArr.these(param tag: iterator, follower, param aligned: bool = false) 
   } else {
     def accessHelper(i) var {
       local {
-        if myLocArr.locDom.myBlock.member(i) then
+        if myLocArr.locDom.member(i) then
           return myLocArr.this(i);
       }
       return this(i);
