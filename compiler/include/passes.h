@@ -37,7 +37,7 @@ void prune();
 void refPropagation();
 void removeUnnecessaryAutoCopyCalls();
 void removeWrapRecords();
-void returnStarTuplesByReferenceArguments();
+void returnStarTuplesByRefArgs();
 void resolve();
 void scalarReplace();
 void scopeResolve();

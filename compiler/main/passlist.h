@@ -45,7 +45,7 @@ PassInfo passlist[] = {
   RUN(removeWrapRecords),   // remove _array and _domain records
   RUN(prune),               // prune AST of dead functions and types again
 
-  RUN(returnStarTuplesByReferenceArguments),
+  RUN(returnStarTuplesByRefArgs),
   RUN(gpuFlattenArgs),      // Flatten out arguments used to call in gpu kernel
 
   RUN(insertWideReferences), // inserts wide references for on clauses

@@ -5,12 +5,11 @@
 #include "symbol.h"
 
 //
-// returnStarTuplesByReferenceArguments changes all functions that
-// return star tuples into function that take, as arguments,
-// references to these star tuples and assign the values into these
-// references
+// returnStarTuplesByRefArgs changes all functions that return star
+// tuples into function that take, as arguments, references to these
+// star tuples and assign the values into these references
 //
-void returnStarTuplesByReferenceArguments() {
+void returnStarTuplesByRefArgs() {
   compute_call_sites();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
