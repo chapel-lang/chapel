@@ -1,6 +1,6 @@
 class mysumreduce {
   type t;
-  var state: t;
+  var state: sync t;
   
   def init() {
     state = 0;
