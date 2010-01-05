@@ -877,9 +877,8 @@ enumerated-domain-type:
   `domain' ( enum-type )
 \end{syntax}
 
-Enumerated domains do not support the \chpl{add}, \chpl{remove},
-or \chpl{clear} methods.  All of the constants defined by the enumerated
-type are indices into the enumerated domain.
+Enumerated domains are initialized with indices for each constant
+defined in the enumerated type they are declared over.
 
 An enumerated domain is specified identically to the associative
 domain type, except that the type is an enumerated type rather than

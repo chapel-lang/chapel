@@ -427,10 +427,6 @@ record _domain {
     _value.clear();
   }
 
-  def clear() where __primitive("isEnumType", _value.idxType) {
-    compilerError("cannot clear enumerated domain");
-  }
-
   def create() {
     if _value.idxType != _OpaqueIndex then
       compilerError("domain.create() only applies to opaque domains");
@@ -441,16 +437,8 @@ record _domain {
     _value.add(i);
   }
 
-  def add(i) where __primitive("isEnumType", _value.idxType) {
-    compilerError("cannot add indices to enumerated domain");
-  }
-
   def remove(i) {
     _value.remove(i);
-  }
-
-  def remove(i) where __primitive("isEnumType", _value.idxType) {
-    compilerError("cannot remove indices from enumerated domain");
   }
 
   def numIndices return _value.numIndices;
