@@ -9,8 +9,8 @@ implemented more robust concepts, which is why it's described in this
 README rather than the language specification.
 
 
-How to call a C routine from Chapel
------------------------------------
+Calling external C routines
+---------------------------
 
 1) Prototype the C routine in your Chapel code
 
@@ -119,17 +119,78 @@ or:    chpl foo.h foo.o myProgram.chpl (if foo.c had already been compiled)
      libraries.
 
 
+Referring to External C Structures
+----------------------------------
+
+External C struct types can be referred to within Chapel by prefixing
+a Chapel record definition with the _extern keyword.  For example,
+given an external C structure defined in foo.h called fltdbl:
+
+    typedef struct _fltdbl {
+      float x;
+      double y;
+    } fltdbl;
+
+This type could be referred to within a Chapel program using:
+
+   _extern record fltdbl {
+     ...
+   }
+
+Within the Chapel declaration, some or all of the fields from the C
+structure may be specified.  The order of these fields need not match
+the order they were specified within the C code.  Any fields that are
+not specified (or that cannot be specified because there is no
+equivalent Chapel type) cannot be referenced within the Chapel code.
+Thus, the following declaration would permit access to both fields x
+and y within variables of type fltdbl:
+
+   _extern record fltdbl {
+     var x: real(32);
+     var y: real(64);
+   }
+
+as would the following declaration:
+
+   _extern record fltdbl {
+     var x: real(32);
+     var y: real(64);
+   }
+
+Alternatively, the external declaration could only mention one of the
+fields.  For example, the following declaration would permit field y
+to be accessed, but not field x:
+
+   _extern record fltdbl {
+     var y: real(64);
+   }
+
+Alternatively, the external declaration can avoid mentioning any
+fields, which would permit variables of that struct type to be passed
+between Chapel and C routines, but their fields could not be accessed
+within the Chapel program.
+
+   _extern record fltdbl {
+   }
+
+A C header file containing the struct's definition in C must be
+specified on the chpl compiler command line.  Note that currently only
+typdef'd C structures are supported.  In the future we anticipate both
+typedef'd and non-typedef'd structures to be declared using _extern
+declarations.
+
+
 Opaque Types
 ------------
 
-You can refer to external C types that cannot be described in Chapel
-using the "opaque" keyword.  As the name implies, these types are
-opaque as far as Chapel is concerned and cannot be used for operations
-other than argument passing and assignment (to/from other similarly
-opaque types).
+You can refer to external pointer-based C types that cannot be
+described in Chapel using the "opaque" keyword.  As the name implies,
+these types are opaque as far as Chapel is concerned and cannot be
+used for operations other than argument passing and assignment
+(to/from other similarly opaque types).
 
 For example, Chapel could be used to call an external C function that
-returns a pointer to a malloc'ed struct as follows:
+returns a pointer to a structure as follows:
 
     _extern def returnStructPtr(): opaque;
 

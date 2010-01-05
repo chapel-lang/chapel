@@ -157,7 +157,7 @@ NOTES
 
 %token TSEMI
 
-%type <b> is_config
+%type <b> is_config opt_extern
  
 %type <pt> intent_tag
 
@@ -864,12 +864,24 @@ type_binding_part:
   /* | parenop_expr */;
 
 
+opt_extern:
+  /* nothing */
+    { $$ = false; }
+| TEXTERN
+    { $$ = true; }
+;
+
+
 class_decl_stmt:
-  class_tag identifier opt_inherit_expr_ls TLCBR class_body_stmt_ls TRCBR
+  opt_extern class_tag identifier opt_inherit_expr_ls TLCBR class_body_stmt_ls TRCBR
     {
-      DefExpr* def = buildClassDefExpr($2, $1, $5);
-      ClassType* ct = toClassType(toTypeSymbol(def->sym)->type);
-      ct->inherits.insertAtTail($3);
+      DefExpr* def = buildClassDefExpr($3, $2, $6);
+      TypeSymbol* ts = toTypeSymbol(def->sym);
+      if ($1) {
+        ts->addFlag(FLAG_EXTERN);
+      }
+      ClassType* ct = toClassType(ts->type);
+      ct->inherits.insertAtTail($4);
       $$ = buildChapelStmt(def);
     }
 ;

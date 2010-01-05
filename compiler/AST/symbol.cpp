@@ -421,12 +421,16 @@ void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void TypeSymbol::codegenPrototype(FILE* outfile) {
-  type->codegenPrototype(outfile);
+  if (!hasFlag(FLAG_EXTERN)) {
+    type->codegenPrototype(outfile);
+  }
 }
 
 
 void TypeSymbol::codegenDef(FILE* outfile) {
-  type->codegenDef(outfile);
+  if (!hasFlag(FLAG_EXTERN)) {
+    type->codegenDef(outfile);
+  }
 }
 
 

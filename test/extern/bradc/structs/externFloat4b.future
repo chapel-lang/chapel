@@ -1,0 +1,13 @@
+feature request: extern "struct foo" types
+
+My current implementation of external structs assumes that a typedef
+has been used to name the struct.  This means that if a Chapel routine
+accepts an external record named foo, the argument is code generated
+as "foo" rather than "struct foo".  Ultimately, I believe we will want
+to support both options and that an external record will come out as
+"struct foo" by default.  To get the foo version, I would expect that
+one would need to do "_extern record _foo { ... }" followed by
+"_extern type foo = _foo;" but I haven't gotten this working yet and
+want to make some other restructuring changes to how we handle type
+aliases first.
+
