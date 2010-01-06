@@ -220,6 +220,8 @@ if os.path.isdir(testdir)==0:
     if os.path.isdir(testdir)==0:
         sys.stdout.write('Error: Cannot find '+chpl_home+'/test or '+chpl_home+'/examples'+'\n')
         sys.exit(0)
+# Needed for MacOS mount points
+testdir = os.path.realpath(testdir)
 # sys.stdout.write('testdir='+testdir+'\n');
 
 # Use timedexec
@@ -260,10 +262,11 @@ else:
     globalKillTimeout=10
 # sys.stdout.write('globalKillTimeout=%d\n'%(globalKillTimeout))
 
-# Get the current directory
-localdir = string.replace(os.getcwd(), testdir, '.')
+# Get the current directory (normalize for MacOS case-sort-of-sensitivity)
+localdir = string.replace(os.path.normpath(os.getcwd()), testdir, '.')
+# sys.stdout.write('localdir=%s\n'%(localdir))
 
-if localdir!='./':
+if localdir.find('./') == 0:
     # strip off the leading './'
     localdir = string.lstrip(localdir, '.')
     localdir = string.lstrip(localdir, '/')
@@ -414,7 +417,13 @@ else:
 sys.stdout.write('[Starting subtest - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime())))
 sys.stdout.write('[compiler: \'%s\']\n'%(compiler))
 
-dirlist=os.listdir(testdir+'/'+localdir)
+if os.path.isdir(testdir+'/'+localdir):
+    dirlist=os.listdir(testdir+'/'+localdir)
+elif os.path.isdir(localdir):
+    dirlist=os.listdir(localdir)
+else:
+    sys.stdout.write('Error: Could not find local test directory: \'%s\'\n'%(localdir))
+    sys.exit(-1)
 
 onetestsrc = os.getenv('CHPL_ONETEST')
 if onetestsrc==None:
