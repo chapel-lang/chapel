@@ -2,5 +2,5 @@
 
 testname=$1
 
-sed --in-place -e 's;returns.*$;returns ...;' $testname.exec.out.tmp
-
+sed -e 's;returns.*$;returns ...;' $testname.exec.out.tmp > $testname.exec.out.tmp.2
+mv $testname.exec.out.tmp.2 $testname.exec.out.tmp
