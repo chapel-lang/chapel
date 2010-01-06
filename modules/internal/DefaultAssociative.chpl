@@ -293,14 +293,6 @@ class DefaultAssociativeArr: BaseArr {
     // reallocation is done in the setIndices function
   }
 
-
-  //
-  // Standard array interface
-  //
-  def numElements {
-    return dom.numIndices;
-  }
-
   def this(idx : idxType) var : eltType {
     const (found, slotNum) = dom._findFilledSlot(idx);
     if (found) then
@@ -371,7 +363,7 @@ class DefaultAssociativeArr: BaseArr {
   // private internal interface
 
   def _createSortedTmpTable() {
-    tmpDom = [0..numElements-1];
+    tmpDom = [0..dom.numIndices-1];
     var count: chpl_table_index_type = 0;
     for slot in dom._fullSlots() {
       tmpTable(count) = data(slot);

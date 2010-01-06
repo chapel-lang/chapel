@@ -446,6 +446,8 @@ record _domain {
   def high return _value.high;
 
   def member(i) return _value.member(i);
+
+  // 1/5/10: do we want to support order() and position()?
   def order(i) return _value.order(i);
   def position(i) return _value.position(i);
 
@@ -670,7 +672,8 @@ record _array {
     return _value.these();
   }
 
-  def numElements return _value.dom.numIndices; // assume dom name
+  // 1/5/10: do we need this since it always returns domain.numIndices?
+  def numElements return _value.dom.numIndices;
 
   def newAlias() {
     var x = _value.reindex(_value.dom);

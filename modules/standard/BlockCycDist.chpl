@@ -769,8 +769,6 @@ def BlockCyclicArr.writeThis(f: Writer) {
   }
 }
 
-def BlockCyclicArr.numElements return dom.numIndices;
-
 def BlockCyclicArr.checkSlice(ranges) {
   for param i in 1..rank do
     if !dom.dim(i).boundsCheck(ranges(i)) then {
@@ -910,8 +908,6 @@ def LocBlockCyclicArr.writeThis(x: Writer) {
   // note on this fails; see writeThisUsingOn.chpl
   x.write(myElems);
 }
-
-def LocBlockCyclicArr.numElements return myElems.numElements;
 
 
 //

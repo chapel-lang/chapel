@@ -465,8 +465,6 @@ def BlockDom.setup() {
     for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
 }
 
-// ----- to here 12/15/09
-
 def BlockDom.supportsPrivatization() param return true;
 
 def BlockDom.getPrivatizeData() return (dist.pid, whole.dims());
@@ -530,24 +528,6 @@ class LocBlockDom {
 //
 def LocBlockDom.writeThis(x:Writer) {
   x.write(myBlock);
-}
-
-//
-// queries for this locale's number of indices, low, and high bounds
-//
-// TODO: I believe these are only used by the random number generator
-// in stream -- will they always be required once that is rewritten?
-//
-def LocBlockDom.numIndices {
-  return myBlock.numIndices;
-}
-
-def LocBlockDom.low {
-  return myBlock.low;
-}
-
-def LocBlockDom.high {
-  return myBlock.high;
 }
 
 //
@@ -627,14 +607,13 @@ def BlockArr.this(i: idxType) var where rank == 1 {
 }
 
 def BlockArr.this(i: rank*idxType) var {
-//   const myLocArr = locArr(here.id);
-//   local {
-//     if myLocArr.locDom.member(i) then
-//       return myLocArr.this(i);
-//   }
   if rank == 1 {
     return this(i(1));
   } else {
+    if myLocArr then local {
+      if myLocArr.locDom.member(i) then
+        return myLocArr.this(i);
+    }
     return locArr(dom.dist.ind2locInd(i))(i);
   }
 }
@@ -701,7 +680,7 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
   var arrSection = locArr(dom.dist.ind2locInd(lowIdx));
   if aligned {
     //
-    // if arrSection is not local and we're not aligned, it means that
+    // if arrSection is not local and we're aligned, it means that
     // followThisDom is empty; make arrSection local so that we can
     // use the local block below
     //
@@ -756,8 +735,6 @@ def BlockArr.writeThis(f: Writer) {
     }
   }
 }
-
-def BlockArr.numElements return dom.numIndices;
 
 def BlockArr.checkSlice(ranges) {
   for param i in 1..rank do
@@ -826,9 +803,6 @@ def LocBlockArr.writeThis(x: Writer) {
   // note on this fails; see writeThisUsingOn.chpl
   x.write(myElems);
 }
-
-def LocBlockArr.numElements return myElems.numElements;
-
 
 //
 // helper function for blocking index ranges

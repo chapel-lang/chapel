@@ -128,6 +128,4 @@ def PrivateArr.writeThis(x: Writer) {
   }
 }
 
-def PrivateArr.numElements return numLocales;
-
 const PrivateSpace: domain(1) distributed distributionValue(new Private());
