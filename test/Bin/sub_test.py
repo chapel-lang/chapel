@@ -140,14 +140,14 @@ def ShellEscape(str):
     return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', str)
 
 # return True if f has .chpl extension
-def is_chpl_source(f):
+def IsChplSource(f):
     if ((f.count('.') !=0) and (len(f) > 6) and (len(f)-f.find('.chpl')==5)):
         return True
     else:
         return False
 
 # read file with comments
-def read_file_with_comments(f):
+def ReadFileWithComments(f):
     # sys.stdout.write('Opening: %s\n'%(f))
     myfile = open(f, 'r')
     mylines = myfile.readlines()
@@ -163,7 +163,7 @@ def read_file_with_comments(f):
     return mylist
 
 # diff 2 files
-def diff_files(f1, f2):
+def DiffFiles(f1, f2):
     sys.stdout.write('[Executing diff %s %s]\n'%(f1, f2))
     p = subprocess.Popen(['diff',f1,f2],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -173,7 +173,7 @@ def diff_files(f1, f2):
     return p.returncode
 
 # kill process
-def kill_proc(p, timeout):
+def KillProc(p, timeout):
     k = subprocess.Popen(['kill',str(p.pid)])
     k.wait()
     now = time.time()
@@ -235,7 +235,7 @@ if useTimedExec:
 
 # HW platform
 platform=subprocess.Popen([chpl_base+'/util/platform.pl', '--target'], stdout=subprocess.PIPE).communicate()[0]
-platform.strip()
+platform = platform.strip()
 # sys.stdout.write('platform='+platform+'\n')
 
 # Machine name we are running on
@@ -372,7 +372,7 @@ else:
 # Global COMPOPTS
 #
 if os.access('./COMPOPTS',os.R_OK):
-    tgco=read_file_with_comments('./COMPOPTS')
+    tgco=ReadFileWithComments('./COMPOPTS')
     globalCompopts = shlex.split(tgco[0])
 else:
     globalCompopts=list()
@@ -386,7 +386,7 @@ if envCompopts != None:
 #
 globalExecopts=list()
 if os.access('./EXECOPTS',os.R_OK):
-    tgeo=read_file_with_comments('./EXECOPTS')
+    tgeo=ReadFileWithComments('./EXECOPTS')
     globalExecopts= shlex.split(tgeo[0])
 else:
     globalExecopts=list()
@@ -418,7 +418,7 @@ dirlist=os.listdir(testdir+'/'+localdir)
 
 onetestsrc = os.getenv('CHPL_ONETEST')
 if onetestsrc==None:
-    testsrc=filter(is_chpl_source, dirlist)
+    testsrc=filter(IsChplSource, dirlist)
 else:
     testsrc=list()
     testsrc.append(onetestsrc)
@@ -543,14 +543,14 @@ for testname in testsrc:
 
     # Get list of test specific compiler options
     if os.access(execname+compoptssuffix, os.R_OK):
-        compoptslist = read_file_with_comments(execname+compoptssuffix)
+        compoptslist = ReadFileWithComments(execname+compoptssuffix)
     else:
         compoptslist = list(' ')
 
     # Get list of test specific exec options
     if os.access(execname+execoptssuffix, os.R_OK):
         execoptsfile=True
-        execoptslist = read_file_with_comments(execname+execoptssuffix)
+        execoptslist = ReadFileWithComments(execname+execoptssuffix)
     else:
         execoptslist = list(' ')
 
@@ -592,6 +592,7 @@ for testname in testsrc:
         if args:
             sys.stdout.write(' %s'%(' '.join(args)))
         sys.stdout.write('< %s\']\n'%(compstdin))
+        sys.stdout.flush()
         if useTimedExec:
             wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+' < '+compstdin
             p = subprocess.Popen([timedexec, str(timeout), wholecmd],
@@ -621,16 +622,20 @@ for testname in testsrc:
                 if len(compoptslist) > 1:
                     sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
                 sys.stdout.write(']\n')
-                kill_proc(p, killtimeout)
+                KillProc(p, killtimeout)
                 continue # on to next compopts
 
             status = p.returncode
 
         if (status!=0 or not executebin):
+            # Save original output
+            origoutput = output;
+
             # Compare compiler output with expected program output
             if catfiles:
                 sys.stdout.write('[Concatenating extra files: %s]\n'%
                                  (execname+'.catfiles'))
+                sys.stdout.flush()
                 output+=subprocess.Popen(['cat', catfiles],
                                          stdout=subprocess.PIPE).communicate()[0]
 
@@ -641,6 +646,7 @@ for testname in testsrc:
 
             if globalPrediff:
                 sys.stdout.write('Executing ./PREDIFF\n')
+                sys.stdout.flush()
                 subprocess.Popen(['./PREDIFF',
                                   execname,complog,compiler]).wait()
 
@@ -648,14 +654,12 @@ for testname in testsrc:
                 subprocess.Popen(['./'+execname+'.prediff',
                                   execname,complog,compiler]).wait()
 
-            sys.stdout.write('output=%s\n'%(output))
-
             # Find the default 'golden' output file
             checkfile = execname+'.'+machine+'.good'
             if not os.path.isfile(checkfile):
                 checkfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+'.good'
                 if not os.path.isfile(checkfile):
-                    checkfile=execname+platform+'.good'
+                    checkfile=execname+'.'+platform+'.good'
                     if not os.path.isfile(checkfile):
                         checkfile=execname+'.good'
             # sys.stdout.write('default checkfile=%s\n'%(checkfile))
@@ -663,10 +667,10 @@ for testname in testsrc:
             if not os.access(checkfile, os.R_OK):
                 sys.stdout.write('[Error cannot locate compiler output comparison file %s]\n'%(checkfile))
                 sys.stdout.write('[Compiler output was as follows:]\n')
-                subprocess.Popen(['cat', complog]).wait()
+                sys.stdout.write(origoutput)
                 continue # on to next compopts
 
-            result = diff_files(checkfile, complog)
+            result = DiffFiles(checkfile, complog)
             if result==0:
                 os.unlink(complog)
                 sys.stdout.write('%s[Success '%(futuretest))
@@ -721,11 +725,13 @@ for testname in testsrc:
 
             if globalPreexec:
                 sys.stdout.write('[Executing PREEXEC]\n')
+                sys.stdout.flush()
                 subprocess.Popen(['./PREEXEC',
                                   execname,execlog,compiler]).wait()
 
             if preexec:
                 sys.stdout.write('[Executing %s.preexec]\n'%(execname))
+                sys.stdout.flush()
                 subprocess.Popen([execname+'.preexec',
                                   execname,execlog,compiler]).wait()
 
@@ -755,6 +761,7 @@ for testname in testsrc:
             #
             sys.stdout.write('[Executing program %s %s< %s\']\n'%
                              (cmd, ' '.join(args), redirectin))
+            sys.stdout.flush()
             if useTimedExec:
                 wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+' < '+redirectin
                 p = subprocess.Popen([timedexec, str(timeout), wholecmd],
@@ -790,7 +797,7 @@ for testname in testsrc:
                                           ' '.join(globalCompopts),compopts,
                                           compoptsnum, execoptsnum))
                     sys.stdout.write(']\n')
-                    kill_proc(p, killtimeout)
+                    KillProc(p, killtimeout)
                     continue # on to next execopts
 
                 status = p.returncode
@@ -798,6 +805,7 @@ for testname in testsrc:
             if catfiles:
                 sys.stdout.write('[Concatenating extra files: %s]\n'%
                                  (execname+'.catfiles'))
+                sys.stdout.flush()
                 output+=subprocess.Popen(['cat']+catfiles.split(),
                                          stdout=subprocess.PIPE).communicate()[0]
 
@@ -809,6 +817,7 @@ for testname in testsrc:
 
             if globalPrediff:
                 sys.stdout.write('[Executing PREDIFF]\n')
+                sys.stdout.flush()
                 sys.stdout.write(subprocess.Popen(['./PREDIFF',
                                                    execname,execlog,compiler],
                                                   stdout=subprocess.PIPE).
@@ -816,6 +825,7 @@ for testname in testsrc:
 
             if prediff:
                 sys.stdout.write('[Executing %s.prediff]\n'%(execname))
+                sys.stdout.flush()
                 sys.stdout.write(subprocess.Popen(['./'+execname+'.prediff',
                                                    execname,execlog,compiler],
                                                   stdout=subprocess.PIPE).
@@ -840,7 +850,7 @@ for testname in testsrc:
                     if not os.path.isfile(execcheckfile):
                         execcheckfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+ceident+'.good'
                         if not os.path.isfile(execcheckfile):
-                            execcheckfile=execname+platform+ceident+'.good'
+                            execcheckfile=execname+'.'+platform+ceident+'.good'
                             if not os.path.isfile(execcheckfile):
                                 execcheckfile=execname+ceident+'.good'
                                 if not os.path.isfile(execcheckfile):
@@ -855,7 +865,7 @@ for testname in testsrc:
 
                     continue # on to next execopts
 
-                result = diff_files(execcheckfile, execlog)
+                result = DiffFiles(execcheckfile, execlog)
                 if result==0:
                     os.unlink(execlog)
                     sys.stdout.write('%s[Success '%(futuretest))
@@ -877,10 +887,12 @@ for testname in testsrc:
                     sys.stdout.write('[Error creating performance test directory %s]\n'%(perfdir))
                     break # on to next compopts
                 sys.stdout.write('[Executing checkKeys %s %s]\n'%(execname, perfdir))
+                sys.stdout.flush()
                 p = subprocess.Popen([testdir+'/Bin/computePerfStats.pl',
                                       execname, perfdir],
                                      stdout=subprocess.PIPE)
                 sys.stdout.write('%s'%(p.communicate()[0]))
+                sys.stdout.flush()
 
                 status = p.returncode
 
