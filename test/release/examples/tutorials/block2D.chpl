@@ -21,11 +21,9 @@
 use BlockDist;
 
 //
-// Size of each dimension of our domain.  Note that int(64) is the
-// default for domains and arrays distributed with the Block
-// distribution.
+// Size of each dimension of our domain.
 //
-config const n: int(64) = 8;
+config const n = 8;
 
 //
 // Declare and initialize an instance of the Block distribution Dist,
@@ -33,7 +31,7 @@ config const n: int(64) = 8;
 // the Block distribution distributes the domain across all locales.
 //
 var Dist = distributionValue(new Block(rank=2, bbox=[1..n, 1..n]));
-var Dom: domain(2,int(64)) distributed Dist = [1..n, 1..n];
+var Dom: domain(2) distributed Dist = [1..n, 1..n];
 var A: [Dom] int;
 
 //

@@ -1,6 +1,6 @@
 use BlockDist;
 
-var dist = distributionValue(new Block(rank=2, idxType=int, bbox=[1..10, 1..10]));
+var dist = distributionValue(new Block(rank=2, bbox=[1..10, 1..10]));
 var dom: domain(2) distributed dist = [1..10, 1..10];
 var A: [dom] int;
 

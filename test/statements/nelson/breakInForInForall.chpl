@@ -5,7 +5,7 @@ config const size : int = 8;
 const sizeRange = 0..#(size : int(64));
 
 
-const blockDist = distributionValue(new Block(rank=1, bbox=[sizeRange]));
+const blockDist = distributionValue(new Block(rank=1, idxType=int(64), bbox=[sizeRange]));
 const blockDom : domain(1, int(64)) distributed blockDist = [sizeRange];
 
 var array : [i in blockDom] int(64) = i;

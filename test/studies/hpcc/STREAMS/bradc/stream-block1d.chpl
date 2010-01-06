@@ -26,7 +26,7 @@ def main() {
   var t1, t2, t3: Timer;
 
   t1.start();
-  const BlockDist = distributionValue(new Block(rank=1, bbox=[1..m], targetLocales=Locales));
+  const BlockDist = distributionValue(new Block(rank=1, idxType=int(64), bbox=[1..m], targetLocales=Locales));
 
   const ProblemSpace: domain(1, int(64)) distributed BlockDist = [1..m];
 

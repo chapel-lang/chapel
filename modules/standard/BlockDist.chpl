@@ -21,7 +21,7 @@ config param sanityCheckDistribution = false; // ditto; should promote to compil
 //
 class Block : BaseDist {
   param rank: int;
-  type idxType = int(64);
+  type idxType = int;
 
   const boundingBox: domain(rank, idxType);
   const targetLocDom: domain(rank);
@@ -33,7 +33,7 @@ class Block : BaseDist {
   var pid: int = -1; // privatized object id
 
   def Block(param rank: int,
-            type idxType = int(64),
+            type idxType = int,
             bbox: domain(rank, idxType),
             targetLocales: [] locale = thisRealm.Locales, 
             tasksPerLocale = 0) {
