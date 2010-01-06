@@ -119,7 +119,7 @@ F4.norm2() = 1.0
 -----------------------------------------------------
 k=5 thresh=1e-05 compressed=false
 sum coefficients:
-   level  3   #boxes=   8  norm=1.00e+00
+   level  3   #boxes=   8  norm=1.00e-00
 difference coefficients:
 -----------------------------------------------------
 
