@@ -335,7 +335,7 @@ const char* runUtilScript(const char* script) {
 
 
 void makeBinary(void) {
-  if (fRuntime)
+  if (fRuntime || no_codegen)
     return;
 
   if (chplmake[0] == '\0') {
