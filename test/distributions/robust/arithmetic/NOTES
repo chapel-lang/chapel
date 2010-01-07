@@ -1,11 +1,11 @@
 types and parameters
-  domain.rank and array.rank
-  domain.idxType
-  array.eltType
+X domain.rank and array.rank
+X domain.idxType
+X array.eltType
 
 basics
-  infer type of domain
-  infer type of array
+X infer type of domain
+X infer type of array
   domain assignment
   array assignment
   array assignment where RHS is a tuple
