@@ -525,7 +525,6 @@ initPrimitive() {
   prim_def("_now_dow", returnInfoInt32, true);
   prim_def("_now_time", returnInfoReal64, true);
 
-  prim_def("chpl_bytesPerLocale", returnInfoUInt64);
   prim_def("chpl_coresPerLocale", returnInfoInt32);
   prim_def("chpl_localeName", returnInfoString);
   prim_def("chpl_maxThreads", returnInfoInt32);
@@ -552,11 +551,6 @@ initPrimitive() {
   prim_def("chpl_stopVerboseComm", returnInfoVoid, true);
   prim_def("chpl_startVerboseCommHere", returnInfoVoid, true);
   prim_def("chpl_stopVerboseCommHere", returnInfoVoid, true);
-
-  prim_def("chpl_startVerboseMem", returnInfoVoid, true);
-  prim_def("chpl_stopVerboseMem", returnInfoVoid, true);
-  prim_def("chpl_startVerboseMemHere", returnInfoVoid, true);
-  prim_def("chpl_stopVerboseMemHere", returnInfoVoid, true);
 
   prim_def("chpl_startCommDiagnostics", returnInfoVoid, true);
   prim_def("chpl_stopCommDiagnostics", returnInfoVoid, true);
