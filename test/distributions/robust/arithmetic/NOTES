@@ -1,0 +1,80 @@
+types and parameters
+  domain.rank and array.rank
+  domain.idxType
+  array.eltType
+
+basics
+  infer type of domain
+  infer type of array
+  domain assignment
+  array assignment
+  array assignment where RHS is a tuple
+  array swap
+  array accesses (reads and writes)
+
+functions
+  reshape on arrays
+  write on domains and arrays
+
+methods
+  domain.dist
+  array.domain
+  domain.dim
+  domain.dims
+  domain.numIndices and array.numElements
+  domain.member
+  domain.expand
+  domain.exterior
+  domain.interior
+  domain.translate
+  domain - index
+
+slicing
+  domain and array slices
+  local domain and array slices
+
+rank change
+  domain and array rank change
+  local domain and array rank change
+
+reindexing
+  array reindexing via function calls
+
+aliases
+  array aliases
+    and slicing
+    and reindexing
+
+striding
+  strided domains and arrays
+    and slicing
+    and rank change
+    and reindexing
+    and aliases
+
+iterating
+  serial domain and array iteration
+  parallel domain and array iteration
+
+variable domains
+  increasing domain size adds elements to arrays
+  decreasing domain size removes elements from arrays
+
+function arguments
+  domain formal arguments
+  array formal arguments
+
+robustness
+  build and destroy many domains and arrays
+  iterate over domains and arrays many times
+
+distributed arrays of arrays
+arrays of distributed arrays
+distributed arrays of distributed arrays
+promotion via distributed arrays
+reductions over distributed arrays
+scans over distributed arrays
+classes with distributed array fields
+records with distributed array fields
+forall-expressions over distributed domains and arrays
+for-expressions over distributed domains and arrays
