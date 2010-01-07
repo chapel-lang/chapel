@@ -1,1 +1,0 @@
-bug: range iteration fails if range contains max int

@@ -349,15 +349,23 @@ def range.these() {
       }
     }
   } else {
+    var i, last: eltType;
     if stridable {
-      var i = if stride > 0 then low else high;
-      while low <= i && i <= high {
+      if stride > 0 {
+        i = low;
+        last = if i > high then low else high + stride:eltType;
+      } else {
+        i = high;
+        last = if i < low then high else low + stride:eltType;
+      }
+      while i != last {
         yield i;
         i = i + stride:eltType;
       }
     } else {
-      var i = low;
-      while i <= high {
+      i = low;
+      last = if i > high then low else high + 1;
+      while i != last {
         yield i;
         i = i + 1;
       }
@@ -634,4 +642,3 @@ def _computeMyChunk(numelems, wayhi, numblocks, blocknum) {
 
   return (blo, bhi);
 }
-
