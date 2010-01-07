@@ -1,15 +1,5 @@
 use driver;
 
-const Dom1D: domain(1) distributed Dist1D = Space1;
-const Dom2D: domain(2) distributed Dist2D = Space2;
-const Dom3D: domain(3) distributed Dist3D = Space3;
-const Dom4D: domain(4) distributed Dist4D = Space4;
-
-var A1D: [Dom1D] real;
-var A2D: [Dom2D] real;
-var A3D: [Dom3D] real;
-var A4D: [Dom4D] real;
-
 var x1: index(Dom1D);
 var x2: index(Dom2D);
 var x3: index(Dom3D);
@@ -28,7 +18,6 @@ writeln(x6, " ", typeToString(x6.type));
 writeln(x7, " ", typeToString(x7.type));
 writeln(x8, " ", typeToString(x8.type));
 
-var Dom2D64: domain(2, int(64)) distributed Dist2D64 = Space2D64;
 var x9: index(Dom2D64);
 
 writeln(x9, " ", typeToString(x9.type));

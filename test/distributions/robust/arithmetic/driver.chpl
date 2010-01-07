@@ -36,3 +36,23 @@ def setupDistributions() {
 }
 
 const (Dist1D, Dist2D, Dist3D, Dist4D, Dist2D64) = setupDistributions();
+
+const Dom1D: domain(1) distributed Dist1D = Space1;
+const Dom2D: domain(2) distributed Dist2D = Space2;
+const Dom3D: domain(3) distributed Dist3D = Space3;
+const Dom4D: domain(4) distributed Dist4D = Space4;
+const Dom2D64: domain(2,int(64)) distributed Dist2D64 = Space2D64;
+
+var A1D: [Dom1D] int;
+var A2D: [Dom2D] int;
+var A3D: [Dom3D] int;
+var A4D: [Dom4D] int;
+var A2D64: [Dom2D64] int;
+
+def outputArrays() {
+  write("A1D  :"); for i in Space1 do write(" ", A1D[i]); writeln();
+  write("A2D  :"); for i in Space2 do write(" ", A2D[i]); writeln();
+  write("A3D  :"); for i in Space3 do write(" ", A3D[i]); writeln();
+  write("A4D  :"); for i in Space4 do write(" ", A4D[i]); writeln();
+  write("A2D64:"); for i in Space2D64 do write(" ", A2D64[i]); writeln();
+}
