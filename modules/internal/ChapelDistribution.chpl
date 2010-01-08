@@ -79,11 +79,6 @@ class BaseDom {
     return cnt;
   }
 
-  def member(ind) : bool {
-    halt("membership test not supported for this domain type");
-    return false;
-  }
-
   // used for associative domains/arrays
   def _backupArrays() {
     for arr in _arrs do
