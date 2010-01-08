@@ -30,7 +30,7 @@ X domain.translate
 X domain +/- index
 
 slicing
-  domain and array slices
+X domain and array slices
   local domain and array slices
 
 rank change
@@ -38,7 +38,7 @@ rank change
   local domain and array rank change
 
 reindexing
-  array reindexing via function calls
+X array reindexing via function calls
 
 aliases
   array aliases
@@ -68,13 +68,13 @@ robustness
   build and destroy many domains and arrays
   iterate over domains and arrays many times
 
-distributed arrays of arrays
-arrays of distributed arrays
-distributed arrays of distributed arrays
-promotion via distributed arrays
-reductions over distributed arrays
-scans over distributed arrays
-classes with distributed array fields
-records with distributed array fields
-forall-expressions over distributed domains and arrays
-for-expressions over distributed domains and arrays
+X distributed arrays of arrays
+X arrays of distributed arrays
+X distributed arrays of distributed arrays
+  promotion via distributed arrays
+X reductions over distributed arrays
+  scans over distributed arrays
+  classes with distributed array fields
+  records with distributed array fields
+  forall-expressions over distributed domains and arrays
+  for-expressions over distributed domains and arrays
