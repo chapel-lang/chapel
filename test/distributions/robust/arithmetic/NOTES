@@ -13,21 +13,21 @@ X array swap
 X array accesses (reads and writes)
 
 functions
-  reshape on arrays
-  write on domains and arrays
+X reshape on arrays
+X write on domains and arrays
 
 methods
-  domain.dist
-  array.domain
-  domain.dim
-  domain.dims
-  domain.numIndices and array.numElements
-  domain.member
-  domain.expand
-  domain.exterior
-  domain.interior
-  domain.translate
-  domain - index
+X domain.dist
+X array.domain
+X domain.dim
+X domain.dims
+X domain.numIndices and array.numElements
+X domain.member
+X domain.expand
+X domain.exterior
+X domain.interior
+X domain.translate
+X domain +/- index
 
 slicing
   domain and array slices
