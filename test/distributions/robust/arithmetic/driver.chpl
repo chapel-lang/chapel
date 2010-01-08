@@ -56,3 +56,31 @@ def outputArrays() {
   write("A4D  :"); for i in Space4 do write(" ", A4D[i]); writeln();
   write("A2D64:"); for i in Space2D64 do write(" ", A2D64[i]); writeln();
 }
+
+//
+// creates a tuple of size 'rank' initialized with values 'x'
+//
+def fill(param rank, x) {
+  if rank == 1 {
+    var y: 1*x.type;
+    y(1) = x;
+    return y;
+  } else if rank == 2 {
+    return (x, x);
+  } else {
+    return (x, (...fill(rank-1, x)));
+  }
+}
+
+//
+// creates a domain of rank 'rank' with each dimension equal to 'extent'
+//
+def rankDomain(param rank, extent) {
+  return [(...fill(rank, extent))];
+}
+
+//
+// returns a next integer starting at 1
+//
+var next_i = 0;
+def next() { next_i += 1; return next_i; }

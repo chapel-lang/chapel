@@ -6,11 +6,11 @@ X array.eltType
 basics
 X infer type of domain
 X infer type of array
-  domain assignment
-  array assignment
-  array assignment where RHS is a tuple
-  array swap
-  array accesses (reads and writes)
+X domain assignment
+X array assignment
+X array assignment where RHS is a tuple
+X array swap
+X array accesses (reads and writes)
 
 functions
   reshape on arrays
