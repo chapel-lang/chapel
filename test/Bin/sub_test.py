@@ -660,6 +660,8 @@ for testname in testsrc:
                                   execname,complog,compiler]).wait()
 
             if prediff:
+                sys.stdout.write('[Executing %s.prediff]\n'%(execname))
+                sys.stdout.flush()
                 subprocess.Popen(['./'+execname+'.prediff',
                                   execname,complog,compiler]).wait()
 
