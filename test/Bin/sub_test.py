@@ -731,7 +731,8 @@ for testname in testsrc:
             if onlyone:
                 execlog=execname+'.exec.out.tmp'
             else:
-                execoptsnum += 1
+                if len(execoptslist)!=1:
+                    execoptsnum += 1
                 execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
 
             if globalPreexec:
@@ -851,11 +852,8 @@ for testname in testsrc:
                         if len(compoptslist)==1:
                             ceident = '.0-'
                         else:
-                            ceident = '.'+str(compoptsnum+1)+'-'
-                        if len(execoptslist)==1:
-                            ceindent += '0'
-                        else:
-                            ceident += str(execoptsnum)
+                            ceident = '.'+str(compoptsnum)+'-'
+                        ceident += str(execoptsnum)
 
                     execcheckfile = execname+'.'+machine+ceident+'.good'
                     if not os.path.isfile(execcheckfile):
