@@ -27,26 +27,11 @@ module-declaration-statement:
 module-identifier:
   identifier
 \end{syntax}
-%% COMMENT FROM BRAD
-%% * sec 1.1, par 1: ``in this block statement'' -- do you think we need to
-%%    clarify that only top-level symbols are defined in (at?) the
-%%    module's scope?  I.e., to point out the distinction between foo and
-%%    x in:
-%%      def foo() {
-%%        var x = ...
-%%      }
-%%    since using the module will import foo but not x?  Do you think it
-%%    would be worthwhile to coin a term like ``top-level module symbol''
-%%    (or a better term?  ``module definitions''?  ``module symbols'' is
-%%    tempting but potentially confusing since the module's name could
-%%    also be considered a ``module symbol'') to define to these symbols as
-%%    the ones that will be available when a 'module use' is encountered?
-%%    (this comes up in the examples and using modules section below as
-%%    well).
 
 A module's name is specified after the \chpl{module} keyword.
 The \sntx{block-statement} opens the module's scope.  Symbols defined
-in this block statement are defined in the module's scope.
+in this block statement are defined in the module's scope and are
+called \emph{top-level module symbols}.
 
 Module declaration statements must be top-level statements within a
 module.  A module that is declared within another module is called a
@@ -61,7 +46,10 @@ relation to the file in terms of their names.
 
 \begin{example}
 The following file contains two explicitly named modules, MX and MY.
-\begin{chapelcode}
+\begin{chapelpre}
+% test_two_modules.chpl
+\end{chapelpre}
+\begin{chapel}
 module MX {
   var x: int = 0;
   def printX() {
@@ -75,7 +63,15 @@ module MY {
     writeln(y);
   }
 }
-\end{chapelcode}
+\end{chapel}
+\begin{chapelpost}
+use MX, MY;
+\end{chapelpost}
+\begin{chapeloutput}
+% no output from this test
+\end{chapeloutput}
+Module MX defines top-level module symbols x and printX, while MX
+defines top-level module symbols y and printY.
 \end{example}
 
 For any file that contains top-level statements other than module
@@ -84,11 +80,13 @@ case, the module takes its name from the file.  If the file name is
 not a legal Chapel identifier, the module name cannot be used in a use
 statement.
 
-
 \begin{example}
-The following file, named my\_module.chpl, defines an implicitly named
-module called my\_module.
-\begin{chapelcode}
+The following file, named myModule.chpl, defines an implicitly named
+module called myModule.
+\begin{chapelpre}
+% test_implicit.chpl
+\end{chapelpre}
+\begin{chapel}
 var x: int = 0;
 var y: int = 0;
 
@@ -98,7 +96,12 @@ def printX() {
 def printY() {
   writeln(y);
 }
-\end{chapelcode}
+\end{chapel}
+\begin{chapeloutput}
+% no output from this test
+\end{chapeloutput}
+Module myModule defines the top-level module symbols x, y, printX, and
+printY.
 \end{example}
 
 
@@ -126,10 +129,13 @@ Files with both module declarations and top-level statements result in
 nested modules.
 
 \begin{example}
-The following file, named my\_module.chpl, defines an
-implicitly named module called my\_module, with nested modules
+The following file, named myModule.chpl, defines an
+implicitly named module called myModule, with nested modules
 MX and MY.
-\begin{chapelcode}
+\begin{chapelpre}
+% test_nested.chpl
+\end{chapelpre}
+\begin{chapel}
 module MX {
   var x: int = 0;
 }
@@ -147,7 +153,10 @@ def printX() {
 def printY() {
   writeln(y);
 }
-\end{chapelcode}
+\end{chapel}
+\begin{chapeloutput}
+% no output from this test
+\end{chapeloutput}
 \end{example}
 
 
@@ -156,14 +165,15 @@ def printY() {
 \index{modules!using}
 
 A module can be used by code outside of that module.  This allows
-access to the symbols in the module without the need for explicit
+access to the top-level module symbols without the need for explicit
 naming~(\rsec{Explicit_Naming}).  Using modules is accomplished via
 the use statement as defined in~\rsec{The_Use_Statement}.
 
 \subsubsection{Explicit Naming}
 \label{Explicit_Naming}
 
-All symbols can be named explicitly with the following syntax:
+All top-level module symbols can be named explicitly with the
+following syntax:
 \begin{syntax}
 module-access-expression:
   module-identifier-list . identifier
@@ -182,6 +192,62 @@ If code refers to symbols that are defined by multiple modules, the
 compiler will issue an error.  Explicit naming can be used to
 disambiguated the symbols in this case.
 
+\begin{example}
+%
+% 1/7/10: This is currently a bug (does not cause compiler error).
+%
+% This example code is in test/modules/sungeun/test_ambiguity.chpl
+%
+In the following example,
+\begin{chapelpre}
+% test_ambiguity.chpl
+\end{chapelpre}
+\begin{chapel}
+module M1 {
+  var x: int = 1;
+  var y: int = -1;
+  def printX() {
+    writeln("M1's x is: ", x);
+  }
+  def printY() {
+    writeln("M1's y is: ", y);
+  }
+}
+ 
+module M2 {
+  use M3;
+  use M1;
+
+  var x: int = 2;
+
+  def printX() {
+    writeln("M2's x is: ", x);
+  }
+
+  def main() {
+    M1.x = 4;
+    M1.printX();
+    writeln(x);
+    printX(); // This is not ambiguous
+    printY(); // ERROR: This is ambiguous
+  }
+}
+
+module M3 {
+  var x: int = 3;
+  var y: int = -3;
+  def printY() {
+    writeln("M3's y is: ", y);
+  }
+}
+\end{chapel}
+The call to printX() is not ambiguous because M2's definition shadows
+that of M1.  On the other hand, the call to printY() is ambiguous
+because it is defined in both M1 and M3.  This will result in a
+compiler error.
+
+
+\end{example}
 
 
 \subsubsection{Module Initialization}
@@ -194,6 +260,12 @@ executed during module initialization.
 
 \begin{example}
 In the code,
+\begin{chapelpre}
+% test_init.chpl
+def foo() {
+    return 1;
+}
+\end{chapelpre}
 \begin{chapel}
 var x = foo();       // executed at module initialization
 writeln("Hi!");      // executed at module initialization
@@ -201,12 +273,15 @@ def sayGoodbye {
   writeln("Bye!");   // not executed at module initialization
 }
 \end{chapel}
+\begin{chapeloutput}
+Hi!
+\end{chapeloutput}
 The function foo() will be invoked and its result assigned to x.  Then
 ``Hi!'' will be printed.
 \end{example}
 
 Module initialization order is discussed
-in~\ref{Module_Initialization_Order}.
+in~\rsec{Module_Initialization_Order}.
 
 
 
@@ -234,6 +309,49 @@ main function definition will be used.  Only modules passed to the
 compiler on the command line will be searched for main functions
 unless the \emph{-- --main-module} flag is used.
 \end{craychapel}
+
+\begin{example}
+If the following code is compiled without specifying a main module, it
+will yield an error.
+\begin{chapelpre}
+% test_main_module.chpl
+\end{chapelpre}
+\begin{chapel}
+module M1 {
+  const x = 1;
+  def main() {
+    writeln("M", x, "'s main");
+  }
+}
+ 
+module M2 {
+  use M1;
+
+  const x = 2;
+  def main() {
+    M1.main();
+    writeln("M", x, "'s main");
+  }
+}
+\end{chapel}
+\begin{chapelcompopts}
+--main-module M1
+--main-module M2
+\end{chapelcompopts}
+If M1 is specified as the main module, the program will output:
+\begin{printchapeloutput}
+% test_main_module.M1.good
+M1's main
+\end{printchapeloutput}
+If M2 is specified as the main module the program will output:
+\begin{printchapeloutput}
+% test_main_module.M2.good
+M1's main\\
+M2's main
+\end{printchapeloutput}
+Notice that main is treated like just another function if it not in
+the main module and can be called as such.
+\end{example}
 
 \index{exploratory programming}
 
@@ -270,7 +388,10 @@ parent module are initialized before uses in the nested module.
 
 \begin{example}
 The code
-\begin{chapelcode}
+\begin{chapelpre}
+% test_init_order.chpl
+\end{chapelpre}
+\begin{chapel}
 module M1 {
   use M2.M3;
   use M2;
@@ -291,13 +412,17 @@ module M2 {
 module M4 {
   writeln("In M4's initializer");
 }
-\end{chapelcode}
+\end{chapel}
 prints the following
-\begin{quote}
+\begin{printchapeloutput}
 In M4's initializer\\
 In M2's initializer\\
 In M3's initializer\\
 In M1's initializer\\
 In main
-\end{quote}
+\end{printchapeloutput}
+M1, the main module, uses M2.M3 and then M2, thus M2.M3 must be
+initialized.  Because M2.M3 is a nested module, M4 (which is used by
+M2) must be initialized first.  M2 itself is initialized, followed by
+M2.M3.  Finally M1 is initialized, and the main function is run.
 \end{example}

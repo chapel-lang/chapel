@@ -1,0 +1,79 @@
+%
+% These are special commands for adding extra information about code
+% snippets which can be extracted and used to generated working
+% example codes.
+%
+
+
+%
+% Proposed structure:
+% - The use of a 'chapelpre' or 'chapel' or 'chapelcode' environment
+%   marks the start of a new test
+%
+% - New tests can be named in the 'chapelpre' enviroments via a latex
+%   style comment as the first line
+%
+% - The use of a 'chapeloutput' or 'printchapeloutput' marks the end
+%   of the test
+%
+% - The compopts and execopts are listed in order (one set per line)
+%
+% - Multiple .good files can be specified, and can be named via a
+%   latex style comment as the first line
+%
+
+
+%
+% Gobble up the text in this new box.  The text in each environment is
+% dropped on the floor during latex compilation.
+%
+\newsavebox{\teststuff}
+
+%
+% Any additional lines needed for the code snippet to run/compile
+% (before and after the chapel code segment)
+%
+\newenvironment{chapelpre} {\begin{lrbox}{\teststuff}
+\begin{minipage}{6in}}
+{\end{minipage}\end{lrbox}}
+
+\newenvironment{chapelpost} {\begin{lrbox}{\teststuff}
+\begin{minipage}{6in}}
+{\end{minipage}\end{lrbox}}
+
+
+%
+% .compopts file
+%
+\newenvironment{chapelcompopts} {\begin{lrbox}{\teststuff}
+\begin{minipage}{6in}}
+{\end{minipage}\end{lrbox}}
+
+%
+% .execopts file
+%
+\newenvironment{chapelexecopts} {\begin{lrbox}{\teststuff}
+\begin{minipage}{6in}}
+{\end{minipage}\end{lrbox}}
+
+
+%
+% .good file
+% To get more than one file, use a latex style comment to name the
+% .good file
+%
+\newenvironment{chapeloutput} {\begin{lrbox}{\teststuff}
+\begin{minipage}{6in}}
+{\end{minipage}\end{lrbox}}
+
+
+%
+% .good file that is printed in the text of the Spec
+% To get more than one file, use a latex style comment to name the
+% .good file
+%
+\newenvironment{printchapeloutput} {
+\begin{quote}
+}{
+\end{quote}
+}
