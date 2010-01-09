@@ -34,47 +34,39 @@ X domain and array slices
   local domain and array slices
 
 rank change
-  domain and array rank change
+X domain and array rank change
   local domain and array rank change
 
 reindexing
 X array reindexing via function calls
 
 aliases
-  array aliases
-    and slicing
-    and reindexing
+X array aliases with slicing and reindexing
 
 striding
-  strided domains and arrays
-    and slicing
-    and rank change
-    and reindexing
-    and aliases
+X strided domains and arrays
+X   and slicing
+X   and rank change
+X   and reindexing
+X   and aliases
 
 iterating
-  serial domain and array iteration
-  parallel domain and array iteration
+X serial domain and array iteration
+X parallel domain and array iteration
 
 variable domains
-  increasing domain size adds elements to arrays
-  decreasing domain size removes elements from arrays
-
-function arguments
-  domain formal arguments
-  array formal arguments
+X increasing domain size adds elements to arrays
+X decreasing domain size removes elements from arrays
 
 robustness
-  build and destroy many domains and arrays
-  iterate over domains and arrays many times
+X build and destroy many domains and arrays
+X iterate over domains and arrays many times
 
 X distributed arrays of arrays
 X arrays of distributed arrays
 X distributed arrays of distributed arrays
-  promotion via distributed arrays
+X promotion via distributed arrays
 X reductions over distributed arrays
-  scans over distributed arrays
-  classes with distributed array fields
-  records with distributed array fields
-  forall-expressions over distributed domains and arrays
-  for-expressions over distributed domains and arrays
+X scans over distributed arrays
+X classes with distributed array fields
+X records with distributed array fields
