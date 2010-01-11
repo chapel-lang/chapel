@@ -7,7 +7,7 @@ class C {
 
 var c = new C();
 
-forall i in c.dom do
+for i in c.dom do
   c.arr(i) = next();
 
 writeln(c);

@@ -7,7 +7,7 @@ record R {
 
 var r: R;
 
-forall i in r.dom do
+for i in r.dom do
   r.arr(i) = next();
 
 writeln(r);
