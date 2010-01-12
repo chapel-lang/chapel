@@ -1002,6 +1002,12 @@ def _isSignedType(type t) param return
 def _isUnsignedType(type t) param return
   (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
+def _isEnumeratedType(type t) param {
+  def isEnum(type t: enumerated) param return true;
+  def isEnum(type t) param return false;
+  return isEnum(t);
+}
+
 def _isComplexType(type t) param return
   (t == complex(64)) | (t == complex(128));
 

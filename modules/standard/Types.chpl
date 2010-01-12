@@ -53,3 +53,9 @@ def max(type t) where _isComplexType(t) {
   x.im = max(x.im.type);
   return x;
 }
+
+def chpl_enumerate(type t: enumerated) {
+  const enumTuple = _enum_enumerate(t);
+  for i in 1..enumTuple.size do
+    yield enumTuple(i);
+}

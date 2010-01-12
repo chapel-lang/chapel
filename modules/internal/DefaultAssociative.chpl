@@ -95,12 +95,12 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   def writeThis(f: Writer) {
     var first = true;
     f.write("[");
-    for slot in _fullSlots() {
+    for idx in this {
       if first then 
         first = false; 
       else 
         f.write(", ");
-      f.write(table(slot).idx);
+      f.write(idx);
     }
     f.write("]");
   }
@@ -114,8 +114,16 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   def these() {
-    for slot in _fullSlots() {
-      yield table(slot).idx;
+    if !_isEnumeratedType(idxType) {
+      for slot in _fullSlots() {
+        yield table(slot).idx;
+      }
+    } else {
+      for val in chpl_enumerate(idxType) {
+        var (match, slot) = _findFilledSlot(val);
+        if match then
+          yield table(slot).idx;
+      }
     }
   }
 
@@ -304,8 +312,8 @@ class DefaultAssociativeArr: BaseArr {
   }
 
   def these() var {
-    for slot in dom._fullSlots() {
-      yield data(slot);
+    for slot in dom {
+      yield this(slot);
     }
   }
 
@@ -321,12 +329,12 @@ class DefaultAssociativeArr: BaseArr {
 
   def writeThis(f: Writer) {
     var first = true;
-    for slot in dom._fullSlots() {
+    for val in this {
       if (first) then
         first = false;
       else
         f.write(" ");
-      f.write(data(slot));
+      f.write(val);
     }
   }
 
@@ -376,8 +384,10 @@ class DefaultAssociativeArr: BaseArr {
     tmpDom = [0..-1:chpl_table_index_type];
   }
 
-  def tupleInit(t: _tuple) {
-    for (i,j) in (dom.sorted(), 1..) {
+  def tupleInit(t: _tuple) where _isEnumeratedType(idxType) {
+    if t.size != dom.numIndices then
+      halt("tuple array initializer size mismatch");
+    for (i,j) in (chpl_enumerate(idxType), 1..) {
       this(i) = t(j);
     }
   }
