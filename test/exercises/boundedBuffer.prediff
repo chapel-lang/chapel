@@ -1,6 +1,7 @@
 #!/bin/sh
 
 testname=$1
+outfile=$2
 
-sort $testname.exec.out.tmp > $testname.exec.out.tmp.sorted
-mv $testname.exec.out.tmp.sorted $testname.exec.out.tmp
+sort $outfile > $outfile.sorted
+mv $outfile.sorted $outfile
