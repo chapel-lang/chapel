@@ -40,7 +40,7 @@ class GPUDist: BaseDist {
     threadPerBlock = threadsPerBlock;
   }
 
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+  def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     return new GPUArithmeticDom(rank, idxType, stridable, this);
   }
 }
@@ -66,7 +66,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     this.dist = dist;
   }
 
-  def clear() {
+  def dsiClear() {
     var emptyRange: range(idxType, BoundedRangeType.bounded, stridable);
     for param i in 1..rank do
       ranges(i) = emptyRange;

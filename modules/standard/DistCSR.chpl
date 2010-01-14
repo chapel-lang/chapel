@@ -1,9 +1,9 @@
 class CSR: BaseDist {
-  def newSparseDom(param rank: int, type idxType, dom: domain) {
+  def dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
     return new CSRDom(rank=rank, idxType=idxType, dist=this, parentDom=dom);
   }
 
-  def clone() return new CSR();
+  def dsiClone() return new CSR();
 }
 
 use Search;
@@ -31,7 +31,7 @@ class CSRDom: BaseSparseDom {
   def initialize() {
     if (rank != 2) then
       compilerError("Only 2D sparse domains are supported presently");
-    clear();
+    dsiClear();
   }
 
   def numIndices return nnz;
@@ -137,7 +137,7 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  def clear() {
+  def dsiClear() {
     nnz = 0;
     rowStart = 1;
   }

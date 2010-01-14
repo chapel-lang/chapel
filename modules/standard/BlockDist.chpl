@@ -89,11 +89,11 @@ class Block : BaseDist {
     }
   }
 
-  def clone() {
+  def dsiClone() {
     return new Block(rank, idxType, boundingBox, targetLocs, tasksPerLocale);
   }
 
-  def destroyDistributionDescriptor() {
+  def dsiDestroyDistClass() {
     coforall ld in locDist do {
       on ld do
         delete ld;
@@ -101,16 +101,20 @@ class Block : BaseDist {
   }
 }
 
+// dsi
 def Block.supportsPrivatization() param return true;
 
+// dsi
 def Block.getPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(), tasksPerLocale);
 }
 
+// dsi
 def Block.privatize(privatizeData) {
   return new Block(rank=rank, idxType=idxType, this, privatizeData);
 }
 
+// dsi
 def Block.reprivatize(other) {
   boundingBox = other.boundingBox;
   targetLocDom = other.targetLocDom;
@@ -122,7 +126,7 @@ def Block.reprivatize(other) {
 //
 // create a new arithmetic domain over this distribution
 //
-def Block.newArithmeticDom(param rank: int, type idxType,
+def Block.dsiNewArithmeticDom(param rank: int, type idxType,
                            param stridable: bool) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
@@ -137,6 +141,7 @@ def Block.newArithmeticDom(param rank: int, type idxType,
 //
 // output distribution
 //
+// dsiWrite
 def Block.writeThis(x:Writer) {
   x.writeln("Block");
   x.writeln("-------");
@@ -151,6 +156,8 @@ def Block.writeThis(x:Writer) {
 //
 // convert an index into a locale value
 //
+// dsiIndexLocale
+//  note - we only need the second one
 def Block.ind2loc(ind: idxType) where rank == 1 {
   return targetLocs(ind2locInd(ind));
 }
@@ -434,6 +441,7 @@ def BlockDom.getIndices() {
   return whole.getIndices();
 }
 
+// remove all instances of getDist
 def BlockDom.getDist(): Block(idxType) {
   return dist;
 }
@@ -444,6 +452,7 @@ def BlockDom.slice(param stridable: bool, ranges) {
   return d;
 }
 
+// dsiLocalSlice
 def BlockDom.localSlice(param stridable: bool, ranges) {
   return whole((...ranges));
 }
@@ -465,10 +474,13 @@ def BlockDom.setup() {
     for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
 }
 
+// dsi
 def BlockDom.supportsPrivatization() param return true;
 
+// dsi
 def BlockDom.getPrivatizeData() return (dist.pid, whole.dims());
 
+// dsi
 def BlockDom.privatize(privatizeData) {
   var distpid = privatizeData(1);
   var thisdist = dist;
@@ -480,8 +492,10 @@ def BlockDom.privatize(privatizeData) {
   return c;
 }
 
+// dsi
 def BlockDom.getReprivatizeData() return whole.dims();
 
+// dsi
 def BlockDom.reprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
     locDoms(i) = other.locDoms(i);
@@ -576,10 +590,13 @@ def BlockArr.setup() {
   }
 }
 
+// dsi
 def BlockArr.supportsPrivatization() param return true;
 
+// dsi
 def BlockArr.getPrivatizeData() return dom.pid;
 
+// dsi
 def BlockArr.privatize(privatizeData) {
   var dompid = privatizeData;
   var thisdom = dom;
@@ -657,6 +674,7 @@ def BlockArr.these(param tag: iterator) where tag == iterator.leader {
   }
 }
 
+// dsi
 def BlockArr.supportsAlignedFollower() param return true;
 
 def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
@@ -826,6 +844,7 @@ def _computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
 //
 // naive routine for dividing numLocales into rank factors
 //
+// move somewhere and share.
 def _factor(param rank: int, value) {
   var factors: rank*int;
   for param i in 1..rank do

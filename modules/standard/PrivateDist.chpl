@@ -3,7 +3,7 @@
 //  Defines PrivateSpace, an instance of PrivateDom
 //
 class Private: BaseDist {
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+  def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable);
   }
 

@@ -112,7 +112,7 @@ class DefaultSparseDom: BaseSparseDom {
     add_help(ind);
   }
 
-  def clear() {
+  def dsiClear() {
     nnz = 0;
   }
 

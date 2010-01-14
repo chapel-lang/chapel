@@ -99,16 +99,16 @@ def _getDistribution(value) {
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist: _distribution, param rank: int, type idxType = int(32),
                                  param stridable: bool = false) type
-  return _newDomain(dist.newArithmeticDom(rank, idxType, stridable));
+  return _newDomain(dist.dsiNewArithmeticDom(rank, idxType, stridable));
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
-  return _newDomain(dist.newAssociativeDom(idxType));
+  return _newDomain(dist.dsiNewAssociativeDom(idxType));
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
  where idxType == _OpaqueIndex
-  return _newDomain(dist.newOpaqueDom(idxType));
+  return _newDomain(dist.dsiNewOpaqueDom(idxType));
 
 // This function has no 'has runtime type' pragma since the idxType of
 // opaque domains is _OpaqueIndex, not opaque.  This function is
@@ -120,7 +120,7 @@ def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
 
 pragma "has runtime type"
 def chpl__buildSparseDomainRuntimeType(dist: _distribution, dom: domain) type
-  return _newDomain(dist.newSparseDom(dom.rank, dom._value.idxType, dom));
+  return _newDomain(dist.dsiNewSparseDom(dom.rank, dom._value.idxType, dom));
 
 def chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseArithmeticDom
@@ -265,19 +265,19 @@ record _distribution {
       on _value {
         var cnt = _value.destroyDist();
         if cnt == 0 {
-          _value.destroyDistributionDescriptor();
+          _value.dsiDestroyDistClass();
           delete _value;
         }
       }
     }
   }
 
-  def clone() {
-    return _newDistribution(_value.clone());
+  def dsiClone() {
+    return _newDistribution(_value.dsiClone());
   }
 
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
-    var x = _value.newArithmeticDom(rank, idxType, stridable);
+  def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+    var x = _value.dsiNewArithmeticDom(rank, idxType, stridable);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -286,8 +286,8 @@ record _distribution {
     return x;
   }
 
-  def newAssociativeDom(type idxType) {
-    var x = _value.newAssociativeDom(idxType);
+  def dsiNewAssociativeDom(type idxType) {
+    var x = _value.dsiNewAssociativeDom(idxType);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -296,8 +296,8 @@ record _distribution {
     return x;
   }
 
-  def newAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
-    var x = _value.newAssociativeDom(idxType);
+  def dsiNewAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
+    var x = _value.dsiNewAssociativeDom(idxType);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -309,8 +309,8 @@ record _distribution {
     return x;
   }
 
-  def newOpaqueDom(type idxType) {
-    var x = _value.newOpaqueDom(idxType);
+  def dsiNewOpaqueDom(type idxType) {
+    var x = _value.dsiNewOpaqueDom(idxType);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -319,8 +319,8 @@ record _distribution {
     return x;
   }
 
-  def newSparseDom(param rank: int, type idxType, dom: domain) {
-    var x = _value.newSparseDom(rank, idxType, dom);
+  def dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
+    var x = _value.dsiNewSparseDom(rank, idxType, dom);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -384,7 +384,7 @@ record _domain {
   }
 
   def this(ranges: range(?) ...rank) {
-    var d = _value.slice(chpl__anyStridable(ranges), ranges);
+    var d = _value.slice(_value.stridable || chpl__anyStridable(ranges), ranges);
     if (d.linksDistribution()) then
       d.dist._distCnt$ += 1;
     return _newDomain(d);
@@ -422,7 +422,7 @@ record _domain {
   }
 
   def clear() {
-    _value.clear();
+    _value.dsiClear();
   }
 
   def create() {
@@ -458,7 +458,7 @@ record _domain {
         halt("***Error: Degenerate dimension created in dimension ", i, "***");
       }
     }
-    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
                                                         _value.stridable,
                                                         ranges));
   }
@@ -466,7 +466,7 @@ record _domain {
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = _value.ranges(i).expand(off);
-    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
                                                         _value.stridable,
                                                         ranges));
   }
@@ -476,7 +476,7 @@ record _domain {
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = _value.dim(i).exterior(off(i));
-    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
                                                         _value.stridable,
                                                         ranges));
   }
@@ -491,7 +491,7 @@ record _domain {
       } 
       ranges(i) = _value.dim(i).interior(off(i));
     }
-    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
                                                         _value.stridable,
                                                         ranges));
   }
@@ -501,7 +501,7 @@ record _domain {
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = _value.dim(i).translate(off(i));
-    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
                                                         _value.stridable,
                                                         ranges));
   }
@@ -511,7 +511,7 @@ record _domain {
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = _value.dim(i).chpl__unTranslate(off(i));
-    return _newDomain(_value.dist.buildArithmeticDomain(rank, _value.idxType,
+    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
                                                         _value.stridable,
                                                         ranges));
   }
@@ -801,7 +801,7 @@ def chpl__isDomain(x) param return false;
 //
 def =(a: _distribution, b: _distribution) {
   if a._value == nil then
-    return chpl__autoCopy(b.clone());
+    return chpl__autoCopy(b.dsiClone());
   else
     halt("distribution assignment is not yet supported");
   return a;

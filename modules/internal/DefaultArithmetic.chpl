@@ -1,21 +1,28 @@
 config param debugDefaultDist = false;
 
 class DefaultDist: BaseDist {
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool)
+  def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool)
     return new DefaultArithmeticDom(rank, idxType, stridable, this);
 
-  def newAssociativeDom(type idxType)
+  def dsiNewAssociativeDom(type idxType)
     return new DefaultAssociativeDom(idxType, this);
 
-  def newOpaqueDom(type idxType)
+  def dsiNewOpaqueDom(type idxType)
     return new DefaultOpaqueDom(this);
 
-  def newSparseDom(param rank: int, type idxType, dom: domain)
+  def dsiNewSparseDom(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDom(rank, idxType, this, dom);
 
-  def clone() return this;
+  def dsiClone() return this;
 
-  def buildArithmeticDomain(param rank: int, type idxType, param stridable: bool,
+  //
+  // should this be a Domain class method because (1) we may want to
+  // take advantage of an existing domain class and (2) the new domain
+  // that we are going to build may have to have a different
+  // distribution (due to rank change, for example, but also maybe due
+  // to slice).
+  //
+  def dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
                             ranges: rank*range(idxType,
                                                BoundedRangeType.bounded,
                                                stridable)) {
@@ -45,14 +52,17 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     this.dist = dist;
   }
 
-  def clear() {
+  def dsiClear() {
     var emptyRange: range(idxType, BoundedRangeType.bounded, stridable);
     for param i in 1..rank do
       ranges(i) = emptyRange;
   }
   
+  // dsi
+  // function and iterator versions, also for setIndices
   def getIndices() return ranges;
 
+  // dsi
   def setIndices(x) {
     if ranges.size != x.size then
       compilerError("rank mismatch in domain assignment");
@@ -85,6 +95,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
+  // dsiDefaultIterator
   def these() {
     if rank == 1 {
       for i in ranges(1) do
@@ -95,6 +106,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
+  // dsiDefaultIterator
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In domain leader code: this = ", this);
@@ -150,6 +162,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
+  // dsiDefaultIterator
   def these(param tag: iterator, follower) where tag == iterator.follower {
     if debugDefaultDist then
       writeln("In domain follower code: Following ", follower);
@@ -174,12 +187,15 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
+  // dsiMember (we don't need this version)
+  //  version in wrapper record can call below version
   def member(ind: idxType) where rank == 1 {
     if !ranges(1).member(ind) then
       return false;
     return true;
   }
 
+  // dsiMember
   def member(ind: rank*idxType) {
     for param i in 1..rank do
       if !ranges(i).member(ind(i)) then
@@ -187,10 +203,12 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     return true;
   }
 
+  // use below version by having wrapper record call below
   def order(ind: idxType) where rank == 1 {
     return ranges(1).order(ind);
   }
 
+  // dsiIndexOrder, to the user: indexOrder
   def order(ind: rank*idxType) {
     var totOrder: idxType;
     var blk: idxType = 1;
@@ -203,12 +221,16 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     return totOrder;
   }
 
+  // can we use order above to implement position by passing in an
+  // optional argument that contains the dimensions.
+  // use below version by having wrapper record call below
   def position(ind: idxType) where rank == 1 {
     var pos: 1*idxType;
     pos(1) = order(ind);
     return pos;
   }
 
+  // dsiPosition
   def position(ind: rank*idxType) {
     var pos: rank*idxType;
     for d in 1..rank {
@@ -217,15 +239,20 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     return pos;
   }
 
+  // dsiDims
   def dims()
     return ranges;
 
+  // dsiDim
   def dim(d : int)
     return ranges(d);
 
+  // dsiDim (optional), is this necesary? probably not now that
+  // homogeneous tuples are implemented as C vectors.
   def dim(param d : int)
     return ranges(d);
 
+  // dsiNumIndices
   def numIndices {
     var sum = 1:idxType;
     for param i in 1..rank do
@@ -234,6 +261,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     // WANT: return * reduce (this(1..rank).length);
   }
 
+  // dsiLow
   def low {
     if rank == 1 {
       return ranges(1)._low;
@@ -245,6 +273,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
+  // dsiHigh
   def high {
     if rank == 1 {
       return ranges(1)._high;
@@ -256,6 +285,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
+  // dsiBuildArray
   def buildArray(type eltType) {
     return new DefaultArithmeticArr(eltType=eltType, rank=rank, idxType=idxType,
                                   /*stridable=stridable, reindexed=false, */
@@ -263,17 +293,20 @@ class DefaultArithmeticDom: BaseArithmeticDom {
                                     dom=this);
   }
 
+  // dsiSlice
+  // can we move this functionality to ChapelArray and use
+  // dsiBuildArithmeticDom?
   def slice(param stridable: bool, ranges) {
-    var d = new DefaultArithmeticDom(rank, idxType,
-                                     stridable || this.stridable, dist);
+    var d = new DefaultArithmeticDom(rank, idxType, stridable, dist);
     for param i in 1..rank do
       d.ranges(i) = dim(i)(ranges(i));
     return d;
   }
 
+  // dsiRankChange, or can we move this functionality to ChapelArray as above?
   def rankChange(param rank: int, param stridable: bool, args) {
-    def isRange(r: range(?e,?b,?s)) param return 1;
-    def isRange(r) param return 0;
+    def isRange(r: range(?)) param return true;
+    def isRange(r) param return false;
 
     var d = new DefaultArithmeticDom(rank, idxType, stridable, dist);
     var i = 1;
@@ -286,6 +319,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     return d;
   }
 
+  // dsiStrideBy, use 1 function, or can this be moved to ChapelArray as above.
   def strideBy(str : rank*int) {
     var x = new DefaultArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
@@ -322,8 +356,12 @@ class DefaultArithmeticArr: BaseArr {
 
   def canCopyFromDevice param return true;
 
+  // end class definition here, then defined secondary methods below
+
+  // dsi? can the compiler create this automatically?
   def getBaseDom() return dom;
 
+  // dsiDestroyData
   def destroyData() {
     if dom.numIndices > 0 {
       pragma "no copy" pragma "no auto destroy" var dr = data;
@@ -343,6 +381,7 @@ class DefaultArithmeticArr: BaseArr {
     delete data;
   }
 
+  // dsiCreateAlias
   def makeAlias(B: DefaultArithmeticArr) {
     var A = B.reindex(dom);
     off = A.off;
@@ -354,6 +393,7 @@ class DefaultArithmeticArr: BaseArr {
     delete A;
   }
 
+  // dsiDefaultIterator
   def these() var {
     if rank == 1 {
       var first = getDataIndex(dom.low);
@@ -368,6 +408,7 @@ class DefaultArithmeticArr: BaseArr {
     }
   }
 
+  // dsiDefaultIterator
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In array leader code: [\n", this, "]");
@@ -422,6 +463,7 @@ class DefaultArithmeticArr: BaseArr {
     }
   }
 
+  // dsiDefaultIterator
   def these(param tag: iterator, follower) var where tag == iterator.follower {
     if debugDefaultDist then
       writeln("*** In array follower code: [\n", this, "]");
@@ -435,7 +477,9 @@ class DefaultArithmeticArr: BaseArr {
       factoredOffs = factoredOffs + blk(i) * off(i);
     }
   }
-
+  
+  // change name to setup and call after constructor call sites
+  // we want to get rid of all initialize functions everywhere
   def initialize() {
     if noinit == true then return;
     for param dim in 1..rank {
@@ -475,10 +519,11 @@ class DefaultArithmeticArr: BaseArr {
     return sum;
   }
 
+  // dsiAccess
+  // only need second version because wrapper record can pass a 1-tuple
   pragma "inline"
   def this(ind: idxType ...1) var where rank == 1
     return this(ind);
-
   pragma "inline"
   def this(ind : rank*idxType) var {
     if boundsChecking then
@@ -487,6 +532,7 @@ class DefaultArithmeticArr: BaseArr {
     return data(getDataIndex(ind));
   }
 
+  // dsiReindex
   def reindex(d: DefaultArithmeticDom) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
@@ -509,12 +555,15 @@ class DefaultArithmeticArr: BaseArr {
     return alias;
   }
 
+  // dsiCheckSlice
+  // can this be put into ChapelArray.chpl and shared amongst all?
   def checkSlice(ranges) {
     for param i in 1..rank do
       if !dom.dim(i).boundsCheck(ranges(i)) then
         halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
 
+  // dsiSlice
   def slice(d: DefaultArithmeticDom) {
     var alias = new DefaultArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
@@ -534,6 +583,10 @@ class DefaultArithmeticArr: BaseArr {
     return alias;
   }
 
+  // pull out into ChapelArray
+  // define isRange as isCollapsedDimension (define in ChapelArray
+  // too) and call this from within distribution classes in their
+  // dsiRankChange implementations
   def checkRankChange(args) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
@@ -544,6 +597,7 @@ class DefaultArithmeticArr: BaseArr {
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
+  // dsiRankChange
   def rankChange(d, param newRank: int, param newStridable: bool, args) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
@@ -571,6 +625,7 @@ class DefaultArithmeticArr: BaseArr {
     return alias;
   }
 
+  // dsiReallocate
   def reallocate(d: domain) {
     if (d._value.type == dom.type) {
       var copy = new DefaultArithmeticArr(eltType=eltType, rank=rank,
@@ -593,6 +648,7 @@ class DefaultArithmeticArr: BaseArr {
     }
   }
 
+  // move into ChapelArray and handle by calling accessor function on array
   def tupleInit(b: _tuple) {
     def _tupleInitHelp(j, param rank: int, b: _tuple) {
       if rank == 1 {
@@ -618,6 +674,7 @@ class DefaultArithmeticArr: BaseArr {
   }
 }
 
+// dsiSerialWrite
 def DefaultArithmeticDom.writeThis(f: Writer) {
   f.write("[", dim(1));
   for i in 2..rank do
@@ -625,6 +682,7 @@ def DefaultArithmeticDom.writeThis(f: Writer) {
   f.write("]");
 }
 
+// dsiSerialWrite
 def DefaultArithmeticArr.writeThis(f: Writer) {
   if dom.numIndices == 0 then return;
   var i : rank*idxType;
@@ -651,6 +709,11 @@ def DefaultArithmeticArr.writeThis(f: Writer) {
   }
 }
 
+//
+// this should be unified with versions in BlockDist and ChapelRange,
+// use the one in BlockDist because it is correct, where should it go?
+// ChapelRange or ChapelArray?  ChapelRange is more of a root.
+//
 //
 // helper function for blocking index ranges
 // - based on _computeBlock() but specialized for cases
@@ -680,6 +743,3 @@ def _computeMyChunk(numelems, wayhi, numblocks, blocknum) {
 
   return (blo, bhi);
 }
-
-
-

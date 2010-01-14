@@ -22,30 +22,30 @@ class BaseDist {
     return cnt;
   }
 
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+  def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     compilerError("arithmetic domains not supported by this distribution");
   }
 
-  def newAssociativeDom(type idxType) {
+  def dsiNewAssociativeDom(type idxType) {
     compilerError("associative domains not supported by this distribution");
   }
 
-  def newAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
+  def dsiNewAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
     compilerError("enumerated domains not supported by this distribution");
   }
 
-  def newOpaqueDom(type idxType) {
+  def dsiNewOpaqueDom(type idxType) {
     compilerError("opaque domains not supported by this distribution");
   }
 
-  def newSparseDom(param rank: int, type idxType, dom: domain) {
+  def dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
     compilerError("sparse domains not supported by this distribution");
   }
 
   def supportsPrivatization() param return false;
   def requiresPrivatization() param return false;
 
-  def destroyDistributionDescriptor() { }
+  def dsiDestroyDistClass() { }
 }
 
 //
@@ -105,7 +105,7 @@ class BaseDom {
 }
 
 class BaseArithmeticDom : BaseDom {
-  def clear() {
+  def dsiClear() {
     halt("clear not implemented for this distribution");
   }
 
@@ -119,32 +119,32 @@ class BaseArithmeticDom : BaseDom {
 }
 
 class BaseSparseDom : BaseDom {
-  def clear() {
+  def dsiClear() {
     halt("clear not implemented for this distribution");
   }
 
   def clearForIteratableAssign() {
-    clear();
+    dsiClear();
   }
 }
 
 class BaseAssociativeDom : BaseDom {
-  def clear() {
+  def dsiClear() {
     halt("clear not implemented for this distribution");
   }
 
   def clearForIteratableAssign() {
-    clear();
+    dsiClear();
   }
 }
 
 class BaseOpaqueDom : BaseDom {
-  def clear() {
+  def dsiClear() {
     halt("clear not implemented for this distribution");
   }
 
   def clearForIteratableAssign() {
-    clear();
+    dsiClear();
   }
 }
 

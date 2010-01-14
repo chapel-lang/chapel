@@ -141,7 +141,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   //
   // Associative Domain Interface
   //
-  def clear() {
+  def dsiClear() {
     for slot in tableDom {
       table(slot).status = chpl_hash_status.empty;
     }

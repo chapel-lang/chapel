@@ -105,7 +105,7 @@ class BlockCyclic : BaseDist {
     tasksPerLocale = other.tasksPerLocale;
   }
 
-  def clone() {
+  def dsiClone() {
     return new BlockCyclic(rank, idxType, lowIdx, blocksize, targetLocs, tasksPerLocale);
   }
 }
@@ -113,7 +113,7 @@ class BlockCyclic : BaseDist {
 //
 // create a new arithmetic domain over this distribution
 //
-def BlockCyclic.newArithmeticDom(param rank: int, type idxType,
+def BlockCyclic.dsiNewArithmeticDom(param rank: int, type idxType,
                            param stridable: bool) {
   if idxType != this.idxType then
     compilerError("BlockCyclic domain index type does not match distribution's");

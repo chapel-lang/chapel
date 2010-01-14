@@ -106,7 +106,7 @@ class Cyclic: BaseDist {
     tasksPerLocale = other.tasksPerLocale;
   }
 
-  def clone() return new Cyclic(rank=rank, idxType=idxType, other=this);
+  def dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);
 }
 
 
@@ -152,7 +152,7 @@ def Cyclic.reprivatize(other, reprivatizeData) {
   tasksPerLocale = other.tasksPerLocale;
 }
 
-def Cyclic.newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+def Cyclic.dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
   if idxType != this.idxType then
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != this.rank then
