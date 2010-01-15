@@ -102,6 +102,13 @@ if ($debugmail eq "") {
 $today = `date +%w-%a`; chomp($today);
 $starttime = localtime;
 
+$svntoday = `date +%F`; chomp($svntoday);
+$svnrevdate = `date -d"$svntoday PST" +"%F %R %z"`; chomp($svnrevdate);
+
+print "$svntoday\n";
+print "$svnrevdate\n";
+
+
 #
 # directory locations
 #
@@ -232,7 +239,7 @@ if ($debug == 1) {
     $nochangerecipient = $debugmail;
 } else {
     $subjectid = "Cron$subjectid";
-    $recipient = "chapel_cronmail\@cray.com";
+    $recipient = "chapel_cronmail\@cray.com chapel_cronmail_all\@cray.com";
     $nochangerecipient = "$user\@cray.com chapel_cronmail_all\@cray.com";
 }
 
@@ -324,11 +331,12 @@ $notcheckedout = system("test -r $readonlydir");
 #print "got $notcheckedout\n";
 if ($notcheckedout) {
     print "The SVN directory has not been checked out yet\n";
-    mysystem("cd $basetmpdir && svn checkout -q $svnroot $readonlydirname", "svn checkout", 1, 1);
+    mysystem("cd $basetmpdir && svn checkout -q -r'{$svnrevdate}' $svnroot $readonlydirname", "svn checkout", 1, 1);
 } else {
     print "The SVN directory has already been checked out\n";
-    mysystem("cd $basetmpdir && svn update $readonlydirname", "svn update", 1, 1);
+    mysystem("cd $basetmpdir && svn update -q -r'{$svnrevdate}' $readonlydirname", "svn update", 1, 1);
 }
+$revision = `svn info $readonlydir | grep Revision`; chomp($revision);
 mysystem("rm -rf $chapeldir", "removing previous writeable chapel dir", 0, 1);
 mysystem("cp -r $readonlydir $chapeldir", "creating writeable chapel dir");
 
@@ -372,7 +380,7 @@ if ($buildruntime == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader("<no logfile>", $starttime, $endtime);
+    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime);
     print MAIL "Built compiler but not runtime, and did not run tests\n";
     print MAIL endMailHeader();
     close(MAIL);
@@ -460,7 +468,7 @@ if ($runtests == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader("<no logfile>", $starttime, $endtime);
+    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime);
     print MAIL "Built compiler and runtime but did not run tests\n";
     print MAIL endMailHeader();
     
@@ -547,7 +555,7 @@ if ($runtests == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($rawlog, $starttime, $endtime);
+    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime);
     print MAIL "$numtestssummary\n";
     print MAIL "$summary\n";
     print MAIL endMailHeader();
@@ -646,7 +654,7 @@ sub mysystem {
 
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
-            print MAIL startMailHeader($rawlog, $starttime, $endtime);
+            print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime);
 	    print MAIL "ERROR $_[1]: $status\n";
 	    print MAIL "(workspace left at $tmpdir)\n";
             print MAIL endMailHeader();
@@ -728,10 +736,11 @@ use Sys::Hostname;
 sub startMailHeader {
     my $mystr =
         "=== Summary ===================================================\n" .
-        "Hostname:   " . hostname . "\n" .
-        "Logfile:    " . shift(@_) . "\n" .
-        "Start time: " . shift(@_) . "\n" .
-        "End time:   " . shift(@_) . "\n\n";
+        "Hostname: " . hostname . "\n" .
+        shift(@_) . "\n" .
+        "Logfile:  " . shift(@_) . "\n" .
+        "Started:  " . shift(@_) . "\n" .
+        "Ended:    " . shift(@_) . "\n\n";
 
     $mystr;
 }
