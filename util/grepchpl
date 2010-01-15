@@ -1,12 +1,13 @@
-#!/bin/tcsh
+#!/bin/bash
 
-set grep = grep
-if `uname -s` == "SunOS" then
-    set grep = /usr/xpg4/bin/grep
-endif
+if [ -n "${CHPL_HOME:-x}" ] ; then
+    chapelDir="$CHPL_HOME"
+else
+    chapelDir="./"
+fi
 
-cd $CHPL_HOME/compiler
+pushd $chapelDir > /dev/null
 
-$grep -e "$argv" */*.lex */*.y */*.ypp */*.h */*.cpp */*/*.h
+find compiler \( -name \*.lex -o -name \*.y -o -name \*.ypp -o -name \*.h -o -name \*.cpp \) -print0 | xargs -0 grep -H $@
 
-cd -
+popd > /dev/null

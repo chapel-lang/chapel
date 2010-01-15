@@ -1,13 +1,16 @@
-#!/bin/tcsh
+#!/bin/bash
 
-set grep = grep
-if `uname -s` == "SunOS" then
-    set grep = /usr/xpg4/bin/grep
-endif
+if [ -n "${CHPL_HOME:-x}" ] ; then
+    chapelDir="$CHPL_HOME"
+else
+    chapelDir="./"
+fi
 
-grep -H -e "$argv" $CHPL_HOME/Make*
-find $CHPL_HOME/make -path "*/.svn" -prune -o -name "Make*" -exec $grep -H -e "$argv" {} \;
-find $CHPL_HOME/compiler -path "*/.svn" -prune -o -name "Make*" -exec $grep -H -e "$argv" {} \;
-find $CHPL_HOME/runtime -path "*/.svn" -prune -o -name "Make*" -exec $grep -H -e "$argv" {} \;
-grep -H -e "$argv" $CHPL_HOME/third-party/Make* $CHPL_HOME/third-party/*/Make*
+pushd $chapelDir > /dev/null
 
+find . -maxdepth 1 -name Make\* -print0 | xargs -0 grep -H $@
+find make -path "*/.svn" -prune -o -name Make\* -print0 | xargs -0 grep -H $@
+find compiler -path "*/.svn" -prune -o -name Make\* -print0 | xargs -0 grep -H $@
+find runtime -path "*/.svn" -prune -o -name Make\* -print0 | xargs -0 grep -H $@
+
+popd > /dev/null

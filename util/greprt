@@ -1,12 +1,13 @@
-#!/bin/tcsh
+#!/bin/bash
 
-set grep = grep
-if `uname -s` == "SunOS" then
-    set grep = /usr/xpg4/bin/grep
-endif
+if [ -n "${CHPL_HOME:-x}" ] ; then
+    chapelDir="$CHPL_HOME"
+else
+    chapelDir="./"
+fi
 
-cd $CHPL_HOME/runtime
+pushd $chapelDir > /dev/null
 
-$grep -e "$argv" include/*.h include/*/*.h */*.c src/*.chpl
+find runtime \( -name \*.h -o -name \*.c -o -name \*.chpl \) -print0 | xargs -0 grep -H $@
 
-cd -
+popd > /dev/null
