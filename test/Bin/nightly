@@ -175,7 +175,6 @@ if ($debug == 1) {
 }
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
-mysystem("rm -rf $tmpdir", "removing previous temp dir", 0, 1);
 
 
 
@@ -230,9 +229,11 @@ if ($performance == 1) {
 if ($debug == 1) {
     $subjectid = "Dbug$subjectid";
     $recipient = $debugmail;
+    $nochangerecipient = $debugmail;
 } else {
     $subjectid = "Cron$subjectid";
     $recipient = "chapel_cronmail\@cray.com";
+    $nochangerecipient = "$user\@cray.com chapel_cronmail_all\@cray.com";
 }
 
 
@@ -296,7 +297,9 @@ $somethingfailed = 0;
 #
 # make temp directory
 #
-mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
+if (system("test -d $tmpdir")) {
+    mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
+}
 
 
 
@@ -314,7 +317,20 @@ delete($ENV{'CHPL_HOME'});
 # checkout sources
 #
 $svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
-mysystem("cd $tmpdir && svn export -q $svnroot chapel", "svn checkout", 1, 1);
+$readonlydirname = "chapel-cron-$user-readonly";
+$readonlydir = "$basetmpdir/$readonlydirname";
+#print "testing $readonlydir\n";
+$notcheckedout = system("test -r $readonlydir");
+#print "got $notcheckedout\n";
+if ($notcheckedout) {
+    print "The SVN directory has not been checked out yet\n";
+    mysystem("cd $basetmpdir && svn checkout -q $svnroot $readonlydirname", "svn checkout", 1, 1);
+} else {
+    print "The SVN directory has already been checked out\n";
+    mysystem("cd $basetmpdir && svn update $readonlydirname", "svn update", 1, 1);
+}
+mysystem("rm -rf $chapeldir", "removing previous writeable chapel dir", 0, 1);
+mysystem("cp -r $readonlydir $chapeldir", "creating writeable chapel dir");
 
 
 #
@@ -512,10 +528,18 @@ if ($runtests == 0) {
     $newfailures = "???";
     if ($status == 0) {
         $newfailures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
+        $newresolved = `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
         $newfailures += 0;
         $shortstatus = "$newfailures/$curfail";
     } else {
         $shortstatus = "build/test failed";
+    }
+
+    if ($newfailures == 0 && $newresolved == 0) {
+        print "Mailing to minimal group\n";
+        $recipient = $nochangerecipient;
+    } else {
+        print "Mailing to everyone\n";
     }
 
     $mailsubject = "$subjectid $shortstatus ($fullplatform)";
