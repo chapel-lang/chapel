@@ -242,8 +242,6 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm);
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
 
-int compareSymbol(const void* v1, const void* v2);
-
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 extern StringChainHash uniqueStringHash;
 

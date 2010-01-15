@@ -66,7 +66,7 @@ subChar(Symbol* sym, const char* ch, const char* x) {
   return sym->cname;
 }
 
-static void legalizeCName(Symbol* sym) {
+static void legalizeName(Symbol* sym) {
   if (sym->hasFlag(FLAG_EXTERN))
     return;
   for (const char* ch = sym->cname; *ch != '\0'; ch++) {
@@ -116,103 +116,173 @@ genClassTagEnum(FILE* outfile, Vec<TypeSymbol*> typeSymbols) {
 }
 
 
+static int
+compareSymbol(const void* v1, const void* v2) {
+  Symbol* s1 = *(Symbol**)v1;
+  Symbol* s2 = *(Symbol**)v2;
+  ModuleSymbol* m1 = s1->getModule();
+  ModuleSymbol* m2 = s2->getModule();
+  if (m1 != m2) {
+    if (m1->modTag < m2->modTag)
+      return -1;
+    if (m1->modTag > m2->modTag)
+      return 1;
+    return strcmp(m1->cname, m2->cname);
+  }
+
+  if (s1->lineno != s2->lineno)
+    return (s1->lineno < s2->lineno) ? -1 : 1;
+
+  int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
+  if (!result)
+    result = strcmp(s1->cname, s2->cname);
+  return result;
+}
+
+
+//
+// given a name and up to two sets of names, return a name that is in
+// neither set and add the name to the first set; the second set may
+// be omitted
+//
+// the uniquie numbering is based on the map uniquifyNameCounts which
+// can be cleared to reset
+//
+static Map<const char*, int> uniquifyNameCounts;
+static const char* uniquifyName(const char* name,
+                                Vec<const char*>* set1,
+                                Vec<const char*>* set2 = NULL) {
+  const char* newName = name;
+  while (set1->set_in(newName) || (set2 && set2->set_in(newName))) {
+    char numberTmp[64];
+    int count = uniquifyNameCounts.get(name);
+    uniquifyNameCounts.put(name, count+1);
+    snprintf(numberTmp, 64, "%d", count+2);
+    newName = astr(name, numberTmp);
+  }
+  set1->set_add(newName);
+  return newName;
+}
+
+
 static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
-  ChainHashMap<const char*, StringHashFns, int> cnames;
-  Vec<TypeSymbol*> typeSymbols;
-  Vec<FnSymbol*> fnSymbols;
-  Vec<VarSymbol*> varSymbols;
+  Vec<const char*> cnames;
+  Vec<TypeSymbol*> types;
+  Vec<FnSymbol*> functions;
+  Vec<VarSymbol*> globals;
 
   // reserved symbol names that require renaming to compile
 #include "reservedSymbolNames.h"
 
   //
-  // change enum constant names into EnumTypeName__constantName
+  // collect types and apply canonical sort
   //
-  forv_Vec(EnumType, enumType, gEnumTypes) {
-    const char* enumName = enumType->symbol->cname;
-    for_enums(constant, enumType) {
-      Symbol* sym = constant->sym;
-      legalizeCName(sym);
-      sym->cname = astr(enumName, "__", sym->cname);
-      if (cnames.get(sym->cname))
-        sym->cname = astr("chpl__", sym->cname, "_", istr(sym->id));
-      cnames.put(sym->cname, 1);
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->defPoint->parentExpr != rootModule->block) {
+      legalizeName(ts);
+      types.add(ts);
     }
   }
+  qsort(types.v, types.n, sizeof(types.v[0]), compareSymbol);
+
+  //
+  // collect globals and apply canonical sort
+  //
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (var->defPoint->parentExpr != rootModule->block &&
+        toModuleSymbol(var->defPoint->parentSymbol)) {
+      legalizeName(var);
+      globals.add(var);
+    }
+  }
+  qsort(globals.v, globals.n, sizeof(globals.v[0]), compareSymbol);
+
+  //
+  // collect functions and apply canonical sort
+  //
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn == chpl_main)
+      fn->cname = astr("chpl_main");
+    legalizeName(fn);
+    functions.add(fn);
+  }
+  qsort(functions.v, functions.n, sizeof(functions.v[0]), compareSymbol);
+
 
   //
   // mangle type names if they clash with other types
   //
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint->parentExpr != rootModule->block) {
-      legalizeCName(ts);
-      if (!ts->hasFlag(FLAG_EXTERN) && cnames.get(ts->cname))
-        ts->cname = astr("chpl__", ts->cname, "_", istr(ts->id));
-      cnames.put(ts->cname, 1);
-      typeSymbols.add(ts);
-    }
+  forv_Vec(TypeSymbol, ts, types) {
+    if (!ts->hasFlag(FLAG_EXTERN))
+      ts->cname = uniquifyName(ts->cname, &cnames);
   }
+  uniquifyNameCounts.clear();
 
   //
-  // mangle field names if they clash with types or other fields in
-  // the same class
+  // change enum constant names into <type name>_<constant name> and
+  // mangle if they clash with other types or enum constants
   //
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+  forv_Vec(TypeSymbol, ts, types) {
+    if (EnumType* enumType = toEnumType(ts->type)) {
+      for_enums(constant, enumType) {
+        Symbol* sym = constant->sym;
+        legalizeName(sym);
+        sym->cname = astr(enumType->symbol->cname, "_", sym->cname);
+        sym->cname = uniquifyName(sym->cname, &cnames);
+      }
+    }
+  }
+  uniquifyNameCounts.clear();
+
+  //
+  // mangle field names if they clash with other fields in the same
+  // class
+  //
+  forv_Vec(TypeSymbol, ts, types) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       if (ClassType* ct = toClassType(ts->type)) {
-        Vec<const char*> fieldSet;
+        Vec<const char*> fieldNameSet;
         for_fields(field, ct) {
-          legalizeCName(field);
-          if (fieldSet.set_in(field->cname))
-            field->cname = astr(field->cname, "_", istr(field->id));
-          fieldSet.set_add(field->cname);
+          legalizeName(field);
+          field->cname = uniquifyName(field->cname, &fieldNameSet);
         }
+        uniquifyNameCounts.clear();
       }
     }
   }
 
   //
-  // mangle global variable names if they clash with types or other
-  // global variables
+  // mangle global variable names if they clash with types, enum
+  // constants, or other global variables
   //
-  forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (var->defPoint->parentExpr != rootModule->block &&
-        toModuleSymbol(var->defPoint->parentSymbol)) {
-      legalizeCName(var);
-      if (!var->hasFlag(FLAG_EXTERN) && cnames.get(var->cname))
-        var->cname = astr("chpl__", var->cname, "_", istr(var->id));
-      cnames.put(var->cname, 1);
-      varSymbols.add(var);
-    }
+  forv_Vec(VarSymbol, var, globals) {
+    if (!var->hasFlag(FLAG_EXTERN))
+      var->cname = uniquifyName(var->cname, &cnames);
   }
+  uniquifyNameCounts.clear();
 
   //
-  // mangle function names if they clash with types, global variables,
-  // or other functions
+  // mangle function names if they clash with types, enum constants,
+  // global variables, or other functions
   //
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn == chpl_main)
-      fn->cname = astr("chpl_main");
-    legalizeCName(fn);
-    if (!fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_EXTERN) && cnames.get(fn->cname))
-      fn->cname = astr("chpl__", fn->cname, "_", istr(fn->id));
-    cnames.put(fn->cname, 1);
-    fnSymbols.add(fn);
+  forv_Vec(FnSymbol, fn, functions) {
+    if (!fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_EXTERN))
+      fn->cname = uniquifyName(fn->cname, &cnames);
   }
+  uniquifyNameCounts.clear();
 
   //
-  // mangle formal argument names if they clash with types, global
-  // variables, functions, or earlier formal arguments in the same
-  // function
+  // mangle formal argument names if they clash with types, enum
+  // constants, global variables, functions, or earlier formal
+  // arguments in the same function
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    Vec<const char*> formalSet;
+    Vec<const char*> formalNameSet;
     for_formals(formal, fn) {
-      legalizeCName(formal);
-      if (cnames.get(formal->cname) || formalSet.set_in(formal->cname))
-        formal->cname = astr("chpl__", formal->cname, "_", istr(formal->id));
-      formalSet.set_add(formal->cname);
+      legalizeName(formal);
+      formal->cname = uniquifyName(formal->cname, &formalNameSet, &cnames);
     }
+    uniquifyNameCounts.clear();
   }
 
   //
@@ -227,30 +297,16 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       local.set_add(formal->cname);
     }
 
-    Map<const char*, int> duplicateCounts;
     Vec<DefExpr*> defs;
     collectDefExprs(fn->body, defs);
     forv_Vec(DefExpr, def, defs) {
-      legalizeCName(def->sym);
-      if (!strcmp(def->sym->cname, "_tmp")) {
+      legalizeName(def->sym);
+      if (!strcmp(def->sym->cname, "_tmp"))
         def->sym->cname = astr("T");
-      }
-      const char* cname = def->sym->cname;
-      while (local.set_in(cname) || cnames.get(cname)) {
-        char numberTmp[64];
-        int count = duplicateCounts.get(def->sym->cname);
-        duplicateCounts.put(def->sym->cname, count+1);
-        snprintf(numberTmp, 64, "%d", count+1);
-        cname = astr(def->sym->cname, numberTmp);
-      }
-      local.set_add(cname);
-      def->sym->cname = cname;
+      def->sym->cname = uniquifyName(def->sym->cname, &local, &cnames);
     }
+    uniquifyNameCounts.clear();
   }
-
-  qsort(varSymbols.v, varSymbols.n, sizeof(varSymbols.v[0]), compareSymbol);
-  qsort(typeSymbols.v, typeSymbols.n, sizeof(typeSymbols.v[0]), compareSymbol);
-  qsort(fnSymbols.v, fnSymbols.n, sizeof(fnSymbols.v[0]), compareSymbol);
 
   if (fRuntime) {
     chpl_main->cname = astr("chpl_init_", mainModules.v[0]->name);
@@ -258,7 +314,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "#ifndef _%s_H_\n", mainModules.v[0]->name);
     fprintf(hdrfile, "#define _%s_H_\n", mainModules.v[0]->name);
     fprintf(hdrfile, "#include \"stdchplrt.h\"\n");
-    forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
+    forv_Vec(FnSymbol, fnSymbol, functions) {
       if (fnSymbol->hasFlag(FLAG_EXPORT) || fnSymbol == chpl_main)
         fnSymbol->codegenPrototype(hdrfile);
     }
@@ -295,14 +351,14 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   }
   genIncludeCommandLineHeaders(hdrfile);
 
-  genClassTagEnum(hdrfile, typeSymbols);
+  genClassTagEnum(hdrfile, types);
 
   if (!fRuntime) {
     fprintf(hdrfile, "#include \"stdchpl.h\"\n");
   }
 
   fprintf(hdrfile, "\n/*** Class Prototypes ***/\n\n");
-  forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
+  forv_Vec(TypeSymbol, typeSymbol, types) {
     if (!typeSymbol->hasFlag(FLAG_REF))
       typeSymbol->codegenPrototype(hdrfile);
   }
@@ -310,14 +366,14 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   // codegen enumerated types
   fprintf(hdrfile, "\n/*** Enumerated Types ***/\n\n");
 
-  forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
+  forv_Vec(TypeSymbol, typeSymbol, types) {
     if (toEnumType(typeSymbol->type))
       typeSymbol->codegenDef(hdrfile);
   }
 
   // codegen reference types
   fprintf(hdrfile, "\n/*** Primitive References ***/\n\n");
-  forv_Vec(TypeSymbol, ts, typeSymbols) {
+  forv_Vec(TypeSymbol, ts, types) {
     if (ts->hasFlag(FLAG_REF)) {
       Type* vt = ts->getValType();
       if (isRecord(vt) || isUnion(vt))
@@ -330,7 +386,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   //   (int, int) before (int, (int, int))
   Map<ClassType*,int> order;
   int maxOrder = 0;
-  forv_Vec(TypeSymbol, ts, typeSymbols) {
+  forv_Vec(TypeSymbol, ts, types) {
     if (ClassType* ct = toClassType(ts->type))
       setOrder(order, maxOrder, ct);
   }
@@ -346,12 +402,12 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   // codegen records/unions in topological order
   fprintf(hdrfile, "\n/*** Records and Unions (Hierarchically) ***/\n\n");
   for (int i = 1; i <= maxOrder; i++) {
-    forv_Vec(TypeSymbol, ts, typeSymbols) {
+    forv_Vec(TypeSymbol, ts, types) {
       if (ClassType* ct = toClassType(ts->type))
         if (order.get(ct) == i && !ct->symbol->hasFlag(FLAG_REF))
           ts->codegenDef(hdrfile);
     }
-    forv_Vec(TypeSymbol, ts, typeSymbols) {
+    forv_Vec(TypeSymbol, ts, types) {
       if (ts->hasFlag(FLAG_REF))
         if (ClassType* ct = toClassType(ts->getValType()))
           if (order.get(ct) == i)
@@ -362,7 +418,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
 
   // codegen remaining types
   fprintf(hdrfile, "\n/*** Classes ***/\n\n");
-  forv_Vec(TypeSymbol, typeSymbol, typeSymbols) {
+  forv_Vec(TypeSymbol, typeSymbol, types) {
     if (isClass(typeSymbol->type) &&
         !typeSymbol->hasFlag(FLAG_REF) &&
         typeSymbol->hasFlag(FLAG_NO_OBJECT) &&
@@ -394,7 +450,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   }
 
   fprintf(hdrfile, "\n/*** Function Prototypes ***/\n\n");
-  forv_Vec(FnSymbol, fnSymbol, fnSymbols) {
+  forv_Vec(FnSymbol, fnSymbol, functions) {
     if (fnSymbol->hasFlag(FLAG_GPU_ON)) {
       fprintf(hdrfile, "\n#ifdef ENABLE_GPU\n");
       fnSymbol->codegenPrototype(hdrfile);
@@ -417,7 +473,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
 
     fprintf(hdrfile, "\n/*** Function Pointer Table ***/\n\n");
     fprintf(hdrfile, "chpl_fn_p chpl_ftable[] = {\n");
-    forv_Vec(FnSymbol, fn, fnSymbols) {
+    forv_Vec(FnSymbol, fn, functions) {
       if (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
           fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
           fn->hasFlag(FLAG_ON_BLOCK)) {
@@ -450,7 +506,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   const char* vmt = (fRuntime) ? "chpl_rt_vmtable" : "chpl_vmtable";
   fprintf(hdrfile, "chpl_fn_p %s[][%d] = {\n", vmt, maxVMT);
   bool comma = false;
-  forv_Vec(TypeSymbol, ts, typeSymbols) {
+  forv_Vec(TypeSymbol, ts, types) {
     if (ClassType* ct = toClassType(ts->type)) {
       if (!isReferenceType(ct) && isClass(ct)) {
         if (comma)
@@ -485,7 +541,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "\n#ifndef ENABLE_GPU\n");
 
   fprintf(hdrfile, "\n/*** Global Variables ***/\n\n");
-  forv_Vec(VarSymbol, varSymbol, varSymbols) {
+  forv_Vec(VarSymbol, varSymbol, globals) {
     if (fRuntime) {
       if (varSymbol->defPoint->parentSymbol == baseModule)
         continue;
@@ -532,7 +588,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
 
   if (fGPU) {
     fprintf(hdrfile, "#else\n");
-    forv_Vec(VarSymbol, varSymbol, varSymbols) {
+    forv_Vec(VarSymbol, varSymbol, globals) {
       if (fRuntime) {
         if (varSymbol->defPoint->parentSymbol == baseModule)
           continue;

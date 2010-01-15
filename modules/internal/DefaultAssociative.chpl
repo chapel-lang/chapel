@@ -7,11 +7,11 @@ type chpl_table_index_type = int(32);
 
 /* These declarations could/should both be nested within
    DefaultAssociativeDom? */
-enum chpl_hash_status { empty, full, deleted };
+enum chpl__hash_status { empty, full, deleted };
 
 record chpl_TableEntry {
   type idxType;
-  var status: chpl_hash_status = chpl_hash_status.empty;
+  var status: chpl__hash_status = chpl__hash_status.empty;
   var idx: idxType;
 }
 
@@ -143,7 +143,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   //
   def dsiClear() {
     for slot in tableDom {
-      table(slot).status = chpl_hash_status.empty;
+      table(slot).status = chpl__hash_status.empty;
     }
     numEntries = 0;
   }
@@ -160,7 +160,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     }
     const (foundSlot, slotNum) = _findEmptySlot(idx);
     if (foundSlot) {
-      table(slotNum).status = chpl_hash_status.full;
+      table(slotNum).status = chpl__hash_status.full;
       table(slotNum).idx = idx;
       numEntries += 1;
     } else {
@@ -176,7 +176,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   def remove(idx: idxType) {
     const (foundSlot, slotNum) = _findFilledSlot(idx);
     if (foundSlot) {
-      table(slotNum).status = chpl_hash_status.deleted;
+      table(slotNum).status = chpl__hash_status.deleted;
       numEntries -= 1;
     } else {
       halt("index not in domain: ", idx);
@@ -241,9 +241,9 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   def _findFilledSlot(idx: idxType, tab = table): (bool, index(tableDom)) {
     for slotNum in _lookForSlots(idx, tab.domain.high+1) {
       const slotStatus = tab(slotNum).status;
-      if (slotStatus == chpl_hash_status.empty) {
+      if (slotStatus == chpl__hash_status.empty) {
         return (false, -1);
-      } else if (slotStatus == chpl_hash_status.full) {
+      } else if (slotStatus == chpl__hash_status.full) {
         if (tab(slotNum).idx == idx) {
           return (true, slotNum);
         }
@@ -255,8 +255,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   def _findEmptySlot(idx: idxType): (bool, index(tableDom)) {
     for slotNum in _lookForSlots(idx) {
       const slotStatus = table(slotNum).status;
-      if (slotStatus == chpl_hash_status.empty ||
-          slotStatus == chpl_hash_status.deleted) {
+      if (slotStatus == chpl__hash_status.empty ||
+          slotStatus == chpl__hash_status.deleted) {
         return (true, slotNum);
       } else if (table(slotNum).idx == idx) {
         return (false, slotNum);
@@ -274,7 +274,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
   def _fullSlots(tab = table) {
     for slot in tab.domain {
-      if tab(slot).status == chpl_hash_status.full then
+      if tab(slot).status == chpl__hash_status.full then
         yield slot;
     }
   }
