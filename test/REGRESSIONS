@@ -43,11 +43,11 @@ spurious verification failures on RA (probably due to intentional races)
 spurious compilation timeouts
 ----------------------------
 [Error: Timed out compilation for classes/deitz/infer/infer_field3] (e.g., 01/11/10)
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 12/06/09, 12/25/09, 12/31/09, 01/02/10, 01/05/10, 01/07/10, 01/08/10, 01/11/10 -- esp. gasnet, intel)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 12/06/09, 12/31/09, 01/05/10, 01/07/10, 01/08/10, 01/11/10 -- esp. gasnet, intel)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 12/06/09, 12/25/09, 12/31/09, 01/02/10, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10 -- esp. gasnet, intel)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 12/06/09, 12/31/09, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10 -- esp. gasnet, intel)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 01/05/10 -- esp. intel)
-[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09)
-[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09, 12/20/09, 12/24/09, 01/10/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 01/14/10)
+[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09, 12/20/09, 12/24/09, 01/10/10, 01/14/10)
 [Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09, 12/07/09, 12/15/09, 12/22/09, 12/24/09, 01/05/10, 01/08/10, 01/10/10)
 
 
