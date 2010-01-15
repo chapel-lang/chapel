@@ -425,28 +425,26 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
         !typeSymbol->hasFlag(FLAG_OBJECT_CLASS))
       typeSymbol->codegenDef(hdrfile);
   }
-  /* Generate class definitions in breadth first order starting with
-     "object" and following its dispatch children. */
 
-  Vec<Type*> next, current;
-  Vec<Type*>* next_p = &next, *current_p = &current;
-  current_p->set_add(dtObject);
-  while (current_p->n != 0) {
-    forv_Vec(Type, t, *current_p) {
-      if (toClassType(t)) {
-        t->symbol->codegenDef(hdrfile);
-        forv_Vec(Type, child, t->dispatchChildren) {
-          if (child)
-            next_p->set_add(child);
-        }
-      } else {
-        INT_ASSERT(t == NULL);
+  //
+  // codegen class definitions in breadth first order starting with
+  // "object" and following its dispatch children
+  //
+  Vec<TypeSymbol*> next, current;
+  current.add(dtObject->symbol);
+  while (current.n) {
+    forv_Vec(TypeSymbol, ts, current) {
+      ts->codegenDef(hdrfile);
+      forv_Vec(Type, child, ts->type->dispatchChildren) {
+        if (child)
+          next.set_add(child->symbol);
       }
     }
-    Vec<Type*>* temp = next_p;
-    next_p = current_p;
-    current_p = temp;
-    next_p->clear();
+    current.clear();
+    current.move(next);
+    current.set_to_vec();
+    qsort(current.v, current.n, sizeof(current.v[0]), compareSymbol);
+    next.clear();
   }
 
   fprintf(hdrfile, "\n/*** Function Prototypes ***/\n\n");
