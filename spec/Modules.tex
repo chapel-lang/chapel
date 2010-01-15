@@ -66,9 +66,13 @@ module MY {
 \end{chapel}
 \begin{chapelpost}
 use MX, MY;
+
+MX.printX();
+MY.printY();
 \end{chapelpost}
 \begin{chapeloutput}
-% no output from this test
+0
+0
 \end{chapeloutput}
 Module MX defines top-level module symbols x and printX, while MX
 defines top-level module symbols y and printY.
@@ -97,8 +101,13 @@ def printY() {
   writeln(y);
 }
 \end{chapel}
+\begin{chapelpost}
+printX();
+printY();
+\end{chapelpost}
 \begin{chapeloutput}
-% no output from this test
+0
+0
 \end{chapeloutput}
 Module myModule defines the top-level module symbols x, y, printX, and
 printY.
@@ -118,9 +127,22 @@ A nested module can be used without using the outer module by
 explicitly naming the module in the use statement.
 \begin{example}
 The code
+\begin{chapelpre}
+% test_nested_use.chpl
+module libsci {
+  writeln("Initializing libsci");
+  module blas {
+    writeln("\\tInitializing blas");
+  }
+}
+\end{chapelpre}
 \begin{chapel}
 use libsci.blas;
 \end{chapel}
+\begin{chapeloutput}
+Initializing libsci
+	Initializing blas
+\end{chapeloutput}
 uses a module named \chpl{blas} that is nested inside a module
 named \chpl{libsci}.
 \end{example}
@@ -154,8 +176,13 @@ def printY() {
   writeln(y);
 }
 \end{chapel}
+\begin{chapelpost}
+printX();
+printY();
+\end{chapelpost}
 \begin{chapeloutput}
-% no output from this test
+0
+0
 \end{chapeloutput}
 \end{example}
 
@@ -241,6 +268,14 @@ module M3 {
   }
 }
 \end{chapel}
+\begin{chapelfuture}
+bug: Function name ambiguity not detected
+
+This should result in an ambiguity at compile time.
+\end{chapelfuture}
+\begin{chapeloutput}
+THIS SHOULD BE CHANGED WHEN BUG IS FIXED.
+\end{chapeloutput}
 The call to printX() is not ambiguous because M2's definition shadows
 that of M1.  On the other hand, the call to printY() is ambiguous
 because it is defined in both M1 and M3.  This will result in a
@@ -338,17 +373,21 @@ module M2 {
 --main-module M1
 --main-module M2
 \end{chapelcompopts}
+\begin{chapelexecopts}
+ \# test\_main\_module.M1.good
+ \# test\_main\_module.M2.good
+\end{chapelexecopts}
 If M1 is specified as the main module, the program will output:
-\begin{printchapeloutput}
+\begin{chapelprintoutput}
 % test_main_module.M1.good
 M1's main
-\end{printchapeloutput}
+\end{chapelprintoutput}
 If M2 is specified as the main module the program will output:
-\begin{printchapeloutput}
+\begin{chapelprintoutput}
 % test_main_module.M2.good
 M1's main\\
 M2's main
-\end{printchapeloutput}
+\end{chapelprintoutput}
 Notice that main is treated like just another function if it not in
 the main module and can be called as such.
 \end{example}
@@ -364,9 +403,15 @@ not define a main function.  In this case, a default main function is
 created to execute the module initialization code.
 \begin{example}
 The code
+\begin{chapelpre}
+% test_no_main.chpl
+\end{chapelpre}
 \begin{chapel}
 writeln("hello, world");
 \end{chapel}
+\begin{chapeloutput}
+hello, world
+\end{chapeloutput}
 is a legal and complete Chapel program.  Its initialization function,
 which also serves as the program's main function, is the top-level
 writeln() statement.  The module declaration is taken to be the file
@@ -414,13 +459,13 @@ module M4 {
 }
 \end{chapel}
 prints the following
-\begin{printchapeloutput}
+\begin{chapelprintoutput}
 In M4's initializer\\
 In M2's initializer\\
 In M3's initializer\\
 In M1's initializer\\
 In main
-\end{printchapeloutput}
+\end{chapelprintoutput}
 M1, the main module, uses M2.M3 and then M2, thus M2.M3 must be
 initialized.  Because M2.M3 is a nested module, M4 (which is used by
 M2) must be initialized first.  M2 itself is initialized, followed by
