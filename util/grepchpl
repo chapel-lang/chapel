@@ -1,13 +1,8 @@
 #!/bin/bash
 
-if [ -n "${CHPL_HOME:-x}" ] ; then
-    chapelDir="$CHPL_HOME"
-else
-    chapelDir="./"
-fi
+utildir=`dirname $0`
 
-pushd $chapelDir > /dev/null
-
-find compiler \( -name \*.lex -o -name \*.y -o -name \*.ypp -o -name \*.h -o -name \*.cpp \) -print0 | xargs -0 grep -H $@
-
-popd > /dev/null
+$utildir/grepcomp $@
+$utildir/greprt $@
+$utildir/grepmod $@
+$utildir/grepmake $@

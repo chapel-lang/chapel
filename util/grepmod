@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -n "${CHPL_HOME:-x}" ] ; then
+if [ ! -z "$CHPL_HOME" ] ; then
     chapelDir="$CHPL_HOME"
 else
     chapelDir="./"
@@ -8,6 +8,6 @@ fi
 
 pushd $chapelDir > /dev/null
 
-find modules -name \*.chpl -print0 | xargs -0 grep -H $@
+find modules -wholename "*/.svn" -prune -o -name \*.chpl -print0 | xargs -0 grep -H $@
 
 popd > /dev/null
