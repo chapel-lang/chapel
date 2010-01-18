@@ -50,13 +50,23 @@ import os, sys
 # Generate the test name prefix
 def GenTestName(lineno):
     infileSplit = curinfile.rsplit('/', 1)[1]
-    return outdir+'/'+curdir+'/'+infileSplit+'.'+str(lineno)
+    newof = infileSplit+'.'+str(lineno)
+    curTestNames.append(newof)
+    return outdir+'/'+curdir+'/'+newof
 
 # Extract the test name from a source line
 def GetTestName(line):
     outfile = line.strip().strip('%').strip().rstrip('.chpl')
     if options.debug:
         print outfile
+    curTestNames.append(outfile)
+    if curTestNames.count(outfile) > 1:
+        sys.stdout.write("Warning: Test name '%s' already specified\n"%
+                         (outfile));
+        newof = outfile + "." + str(curTestNames.count(outfile))
+        curTestNames.append(newof)
+        sys.stdout.write("         Renaming it to %s\n"%(newof));
+        outfile = newof
     return outdir+'/'+curdir+'/'+outfile
 
 # Helper functions for de-LaTeX-ifying output line
@@ -102,7 +112,7 @@ def WriteGoodFile(fh, output, testName):
 def OutputTest(lineno, seenChapelPre, seenChapelOutput):
     if seenChapelPre and seenChapelOutput:
         # writeout the actual test program
-        if chapelpre[0][0] == '%':
+        if len(chapelpre) > 0 and chapelpre[0][0] == '%':
             testName = GetTestName(chapelpre[0])
         else:
             testName = GenTestName(lineno)
@@ -189,6 +199,7 @@ chapelexecopts = list()
 chapeloutput = list()
 chapelprintoutput = list()
 current = None
+curTestNames = list()
 
 #
 # Parse command line args
@@ -226,6 +237,9 @@ for infile in args:
     fh = open(realinfile, 'r')
     myLines = fh.readlines()
     fh.close()
+
+    # Clean up table of testname
+    del curTestNames[:]
 
     curinfile = realinfile
     curdir = realinfile.rsplit('/', 1)[1]+'.tests'
