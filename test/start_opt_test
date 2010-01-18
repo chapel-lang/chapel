@@ -30,12 +30,13 @@ while (@ARGV) {
 }
 
 if ($cron) {
-  `rm -rf /tmp/opt_testing`;
-  `mkdir /tmp/opt_testing`;
-  `cd /tmp/opt_testing && svn export -q $svnroot chapel >& /dev/null`;
-  `cd /tmp/opt_testing/chapel && make all >& /dev/null`;
-  $home = "/tmp/opt_testing/chapel/test";
-  $ENV{'CHPL_HOME'} = "/tmp/opt_testing/chapel";
+  $testdir = "/tmp/opt_testing$all";
+  `rm -rf $testdir`;
+  `mkdir $testdir`;
+  `cd $testdir && svn export -q $svnroot chapel >& /dev/null`;
+  `cd $testdir/chapel && make all >& /dev/null`;
+  $home = "$testdir/chapel/test";
+  $ENV{'CHPL_HOME'} = "$testdir/chapel";
 } else {
   $home = ".";
 }
