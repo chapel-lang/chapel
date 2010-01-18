@@ -78,7 +78,7 @@ def main() {
   // to m/4-1 stored using the block distribution TwiddleDist.
   // Twiddles is the vector of twiddle values.
   //
-//  const TwiddleDist = distributionValue(new Block(1, idxType, bbox=[0..m/4-1]));
+//  const TwiddleDist = new dist(new Block(1, idxType, bbox=[0..m/4-1]));
   const TwiddleDom: domain(1, idxType) = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
@@ -96,7 +96,7 @@ def main() {
   // z (used to store the input vector) and ZBlk (used for the first
   // half of the FFT phases).
   //
-//  const BlkDist = distributionValue(new Block(1, idxType, bbox=ProblemSpace, 
+//  const BlkDist = new dist(new Block(1, idxType, bbox=ProblemSpace, 
 //                                              tasksPerLocale=tasksPerLocale));
   const BlkDom: domain(1, idxType) = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
@@ -108,7 +108,7 @@ def main() {
   // to define the Zcyc vector, used for the second half of the FFT
   // phases.
   //
-//  const CycDist = distributionValue(new Cyclic(1, idxType, 
+//  const CycDist = new dist(new Cyclic(1, idxType, 
 //                                               tasksPerLocale=tasksPerLocale));
   const CycDom: domain(1, idxType) = ProblemSpace;
   var Zcyc: [CycDom] elemType;

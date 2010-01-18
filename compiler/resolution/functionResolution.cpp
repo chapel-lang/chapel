@@ -3826,7 +3826,8 @@ resolve() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if ((isRecord(ts->type) ||
          ts->hasFlag(FLAG_SYNC)) &&
-        !ts->hasFlag(FLAG_GENERIC)) {
+        !ts->hasFlag(FLAG_GENERIC) &&
+        !ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
     }

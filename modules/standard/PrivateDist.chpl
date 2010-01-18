@@ -128,4 +128,4 @@ def PrivateArr.writeThis(x: Writer) {
   }
 }
 
-const PrivateSpace: domain(1) distributed distributionValue(new Private());
+const PrivateSpace: domain(1) distributed new dist(new Private());

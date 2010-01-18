@@ -44,6 +44,7 @@ initFlags() {
   defineFlag(FLAG_DEFAULT_CONSTRUCTOR, "default constructor");
   defineFlag(FLAG_DESTRUCTOR, "destructor");
   defineFlag(FLAG_DOMAIN, "domain");
+  defineFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING, "dont disable remote value forwarding");
   defineFlag(FLAG_DISTRIBUTION, "distribution");
   defineFlag(FLAG_EXPAND_TUPLES_WITH_VALUES, "expand tuples with values");
   defineFlag(FLAG_EXPORT, "export");
@@ -95,9 +96,9 @@ initFlags() {
   defineFlag(FLAG_REMOVABLE_AUTO_DESTROY, "removable auto destroy");
   defineFlag(FLAG_SINGLE, "single");
   defineFlag(FLAG_SPECIFIED_RETURN_TYPE, "specified return type");
-  defineFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING, "dont disable remote value forwarding");
   defineFlag(FLAG_SUPER_CLASS, "super class");
   defineFlag(FLAG_SYNC, "sync");
+  defineFlag(FLAG_SYNTACTIC_DISTRIBUTION, "syntactic distribution");
   defineFlag(FLAG_TEMP, "temp");
   defineFlag(FLAG_TUPLE, "tuple");
   defineFlag(FLAG_TYPE_CONSTRUCTOR, "type constructor");

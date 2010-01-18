@@ -17,20 +17,20 @@ const Space2D64 = [n5-8..n5, n5-8..n5];
 def setupDistributions() {
   if distString == 'default' {
     return (
-            distributionValue(new DefaultDist()),
-            distributionValue(new DefaultDist()),
-            distributionValue(new DefaultDist()),
-            distributionValue(new DefaultDist()),
-            distributionValue(new DefaultDist())
+            new dist(new DefaultDist()),
+            new dist(new DefaultDist()),
+            new dist(new DefaultDist()),
+            new dist(new DefaultDist()),
+            new dist(new DefaultDist())
            );
   }
   if distString == 'block' {
     return (
-            distributionValue(new Block(rank=1, bbox=Space1)),
-            distributionValue(new Block(rank=2, bbox=Space2)),
-            distributionValue(new Block(rank=3, bbox=Space3)),
-            distributionValue(new Block(rank=4, bbox=Space4)),
-            distributionValue(new Block(rank=2, idxType=int(64), bbox=Space2D64))
+            new dist(new Block(rank=1, bbox=Space1)),
+            new dist(new Block(rank=2, bbox=Space2)),
+            new dist(new Block(rank=3, bbox=Space3)),
+            new dist(new Block(rank=4, bbox=Space4)),
+            new dist(new Block(rank=2, idxType=int(64), bbox=Space2D64))
            );
   }
 }

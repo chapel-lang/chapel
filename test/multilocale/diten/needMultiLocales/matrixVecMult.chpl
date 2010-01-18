@@ -6,7 +6,7 @@ config const cols = 75;
 const RowDom: domain(1) = [1..cols];
 const ColumnDom: domain(1) = [1..rows];
 
-const BlockedDist = distributionValue(new Block(rank=1,bbox=ColumnDom));
+const BlockedDist = new dist(new Block(rank=1,bbox=ColumnDom));
 const DistColumnDom: domain(1) distributed BlockedDist = ColumnDom;
 
 var vec: [RowDom] real;

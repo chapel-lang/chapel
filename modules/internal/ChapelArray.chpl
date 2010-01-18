@@ -97,30 +97,30 @@ def _getDistribution(value) {
 // Support for domain types
 //
 pragma "has runtime type"
-def chpl__buildDomainRuntimeType(dist: _distribution, param rank: int, type idxType = int(32),
+def chpl__buildDomainRuntimeType(d: _distribution, param rank: int, type idxType = int(32),
                                  param stridable: bool = false) type
-  return _newDomain(dist.dsiNewArithmeticDom(rank, idxType, stridable));
+  return _newDomain(d.dsiNewArithmeticDom(rank, idxType, stridable));
 
 pragma "has runtime type"
-def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
-  return _newDomain(dist.dsiNewAssociativeDom(idxType));
+def chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
+  return _newDomain(d.dsiNewAssociativeDom(idxType));
 
 pragma "has runtime type"
-def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
+def chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
  where idxType == _OpaqueIndex
-  return _newDomain(dist.dsiNewOpaqueDom(idxType));
+  return _newDomain(d.dsiNewOpaqueDom(idxType));
 
 // This function has no 'has runtime type' pragma since the idxType of
 // opaque domains is _OpaqueIndex, not opaque.  This function is
 // essentially a wrapper around the function that actually builds up
 // the runtime type.
-def chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type
+def chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
  where idxType == opaque
-  return chpl__buildDomainRuntimeType(dist, _OpaqueIndex);
+  return chpl__buildDomainRuntimeType(d, _OpaqueIndex);
 
 pragma "has runtime type"
-def chpl__buildSparseDomainRuntimeType(dist: _distribution, dom: domain) type
-  return _newDomain(dist.dsiNewSparseDom(dom.rank, dom._value.idxType, dom));
+def chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain) type
+  return _newDomain(d.dsiNewSparseDom(dom.rank, dom._value.idxType, dom));
 
 def chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseArithmeticDom
@@ -168,6 +168,23 @@ def chpl__buildDomainExpr(ranges: range(?) ...?rank) {
   var d: domain(rank, ranges(1).eltType, chpl__anyStridable(ranges));
   d.setIndices(ranges);
   return d;
+}
+
+//
+// Support for distributed domain expression, e.g., [1..3, 1..3] distributed Dist
+//
+def chpl__buildDistributedDomainExpr(d: _distribution, dom: domain) {
+  if isArithmeticDom(dom) {
+    var distDom: domain(dom.rank, dom._value.idxType, dom._value.stridable) distributed d = dom;
+    return distDom;
+  } else {
+    var distDom: domain(dom._value.idxType) distributed d = dom;
+    return distDom;
+  }
+}
+
+def chpl__buildDistributedDomainExpr(d: _distribution, ranges: range(?) ...?rank) {
+  return chpl__buildDistributedDomainExpr(d, chpl__buildDomainExpr((...ranges)));
 }
 
 //
@@ -223,20 +240,24 @@ def isSparseDom(d: domain) param {
 //
 // Support for distributions
 //
-def distributionType(type dist) type where dist: BaseDist {
-  var d: _distribution(dist, dist);
-  return d.type;
+pragma "syntactic distribution"
+record dist { }
+
+def chpl__buildDistType(type t) type where t: BaseDist {
+  var x: t;
+  var y = _newDistribution(x);
+  return y.type;
 }
 
-def distributionType(type dist) {
+def chpl__buildDistType(type t) {
   compilerError("illegal distribution type specifier");
 }
 
-def distributionValue(dist) where dist: BaseDist {
-  return _newDistribution(dist);
+def chpl__buildDistValue(x) where x: BaseDist {
+  return _newDistribution(x);
 }
 
-def distributionValue(dist) {
+def chpl__buildDistValue(x) {
   compilerError("illegal distribution value specifier");
 }
 
@@ -247,6 +268,8 @@ pragma "distribution"
 record _distribution {
   var _value;
   var _valueType;
+
+  def _distribution(_value, _valueType) { }
 
   pragma "inline"
   def _value {

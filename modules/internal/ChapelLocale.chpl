@@ -43,7 +43,7 @@ def chpl_setupLocale(uid) {
     tmp = new locale(uid=uid);
     _here = tmp;
     if (defaultDist._value == nil) {
-      defaultDist = distributionValue(new DefaultDist());
+      defaultDist = new dist(new DefaultDist());
     }
   }
   return tmp;

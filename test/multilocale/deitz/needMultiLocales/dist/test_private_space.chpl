@@ -9,7 +9,7 @@ use BlockDist, PrivateDist;
 config var n: int = 8;
 
 var P: [PrivateSpace] int;
-var D: domain(1) distributed distributionValue(new Block(1,int,bbox=[1..n])) = [1..n];
+var D: domain(1) distributed new dist(new Block(1,int,bbox=[1..n])) = [1..n];
 var A: [D] int;
 
 startCommDiagnostics();

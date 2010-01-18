@@ -290,9 +290,26 @@ void normalize(void) {
   }
 }
 
+static void
+processSyntacticDistributions(CallExpr* call) {
+  if (call->isPrimitive(PRIM_NEW))
+    if (CallExpr* type = toCallExpr(call->get(1)))
+      if (SymExpr* base = toSymExpr(type->baseExpr))
+        if (base->var->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+          type->baseExpr->replace(new UnresolvedSymExpr("chpl__buildDistValue"));
+          call->replace(type->remove());
+        }
+}
+
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
 void normalize(BaseAST* base) {
+  Vec<CallExpr*> calls;
+  collectCallExprs(base, calls);
+  forv_Vec(CallExpr, call, calls) {
+    processSyntacticDistributions(call);
+  }
+
   Vec<Symbol*> symbols;
   collectSymbols(base, symbols);
   forv_Vec(Symbol, symbol, symbols) {
@@ -306,8 +323,11 @@ void normalize(BaseAST* base) {
         fix_def_expr(var);
   }
 
-  Vec<CallExpr*> calls;
+  calls.clear();
   collectCallExprs(base, calls);
+  forv_Vec(CallExpr, call, calls) {
+    processSyntacticDistributions(call);
+  }
   forv_Vec(CallExpr, call, calls) {
     applyGetterTransform(call);
     insert_call_temps(call);
@@ -433,7 +453,10 @@ static void call_constructor_for_class(CallExpr* call) {
         } else {
           if (!ct->defaultTypeConstructor)
             INT_FATAL(call, "class type has no default type constructor");
-          se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
+          if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
+            se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
+          else
+            se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
         }
       }
     }

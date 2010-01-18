@@ -2,7 +2,7 @@ use BlockCycDist;
 
 config const n = 25;
 
-var MyBlkCyc = distributionValue(new BlockCyclic(rank=1, idxType=int(32), low=tuple(1), blk=tuple(4)));
+var MyBlkCyc = new dist(new BlockCyclic(rank=1, idxType=int(32), low=tuple(1), blk=tuple(4)));
 
 writeln("Declaring D:");
 var D: domain(1) distributed MyBlkCyc = [1..n];

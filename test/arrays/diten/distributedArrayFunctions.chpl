@@ -1,7 +1,7 @@
 use BlockDist;
 
-var dist = distributionValue(new Block(rank=2, bbox=[1..3, 1..3]));
-var dom: domain(2) distributed dist = [1..3, 1..3];
+var Dist = new dist(new Block(rank=2, bbox=[1..3, 1..3]));
+var dom: domain(2) distributed Dist = [1..3, 1..3];
 
 writeln("numIndices: ", dom.numIndices);
 
@@ -23,7 +23,7 @@ var B: [1..9] int;
 B = reshape(A, [1..9]);
 writeln(B);
 
-var dist2 = distributionValue(new Block(rank=1, bbox=[1..9]));
+var dist2 = new dist(new Block(rank=1, bbox=[1..9]));
 var dom2: domain(1) distributed dist2 = [1..9];
 var C: [dom2] int;
 

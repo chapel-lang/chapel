@@ -59,8 +59,8 @@ def main() {
   // twiddle values and is a 1D domain indexed by 64-bit ints from 0
   // to m/4-1.  Twiddles is the vector of twiddle values.
   //
-  //const TwiddleDist = distributionValue(new Cyclic(rank=1, idxType=int(64), tasksPerLocale=tasksPerLocale));
-  const TwiddleDist = distributionValue(new Block(rank=1, idxType=int(64), bbox=[0..m/4-1], targetLocales=Locales));
+  //const TwiddleDist = new dist(new Cyclic(rank=1, idxType=int(64), tasksPerLocale=tasksPerLocale));
+  const TwiddleDist = new dist(new Block(rank=1, idxType=int(64), bbox=[0..m/4-1], targetLocales=Locales));
   const TwiddleDom: domain(1, int(64)) distributed TwiddleDist = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
@@ -70,11 +70,11 @@ def main() {
   // from 0 to m-1.  It is distributes the vectors Z and z across the
   // locales using the Block distribution.
   //
-  const BlkDist = distributionValue(new Block(rank=1, idxType=int(64), bbox=[0..m-1], targetLocales=Locales, tasksPerLocale=tasksPerLocale));
+  const BlkDist = new dist(new Block(rank=1, idxType=int(64), bbox=[0..m-1], targetLocales=Locales, tasksPerLocale=tasksPerLocale));
   const BlkDom: domain(1, int(64)) distributed BlkDist = [0..m-1];
   var Z, z: [BlkDom] elemType;
 
-  const CycDist = distributionValue(new Cyclic(rank=1, idxType=int(64), targetLocales=Locales, tasksPerLocale=tasksPerLocale));
+  const CycDist = new dist(new Cyclic(rank=1, idxType=int(64), targetLocales=Locales, tasksPerLocale=tasksPerLocale));
   const CycDom: domain(1, int(64)) distributed CycDist = [0..m-1];
   var Zcyc: [CycDom] elemType;
 

@@ -97,7 +97,7 @@ def chpl_setupRealm(id, numLocales, baseID) {
   var tmp: realm;
   on __primitive("chpl_on_locale_num", baseID) {
     if (defaultDist._value == nil) {
-      defaultDist = distributionValue(new DefaultDist());
+      defaultDist = new dist(new DefaultDist());
     }
     tmp = new realm(id, chpl_getRealmType(id), numLocales, baseID);
   }

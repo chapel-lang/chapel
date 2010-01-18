@@ -84,12 +84,10 @@ NOTES
 %token TEXTERN
 %token TFOR
 %token TFORALL
-%token TGOTO
 %token TIF
 %token TIN
 %token TINDEX
 %token TINOUT
-%token TITERATOR
 %token TLABEL
 %token TLET
 %token TLOCAL
@@ -116,7 +114,6 @@ NOTES
 %token TTYPE
 %token TUNION
 %token TUSE
-%token TVAL
 %token TVAR
 %token TWHEN
 %token TWHERE
@@ -194,7 +191,7 @@ NOTES
 
 %type <pexpr> parenop_expr memberaccess_expr non_tuple_lvalue lvalue
 %type <pexpr> tuple_paren_expr expr expr_list_item opt_return_part
-%type <pexpr> literal opt_where_part distributed_expr
+%type <pexpr> literal opt_where_part opt_distributed_expr
 %type <pexpr> variable_expr stmt_level_expr alias_expr formal_level_type
 %type <pexpr> reduce_expr scan_expr opt_init_expr opt_init_type var_arg_expr
 %type <pdefexpr> formal enum_item
@@ -1063,7 +1060,7 @@ tuple_var_decl_stmt_inner_ls:
 /** TYPES ********************************************************************/
 
 
-distributed_expr: /* not supported in one-locale implementation */
+opt_distributed_expr: /* not supported in one-locale implementation */
   /* nothing */
     { $$ = new UnresolvedSymExpr("defaultDist"); }
 | TDISTRIBUTED expr
@@ -1093,7 +1090,7 @@ type:
 
 formal_level_type:
   array_type
-| TDOMAIN TLP expr_ls TRP distributed_expr
+| TDOMAIN TLP expr_ls TRP opt_distributed_expr
     {
       CallExpr* call = new CallExpr("chpl__buildDomainRuntimeType", $5);
       call->insertAtTail($3);
@@ -1101,7 +1098,7 @@ formal_level_type:
     }
 | TSUBDOMAIN TLP expr_ls TRP
     { $$ = new CallExpr("chpl__buildSubDomainType", $3); }
-| TSPARSE TSUBDOMAIN TLP expr_ls TRP distributed_expr
+| TSPARSE TSUBDOMAIN TLP expr_ls TRP opt_distributed_expr
     {
       CallExpr* call = new CallExpr("chpl__buildSparseDomainRuntimeType", $6);
       call->insertAtTail($4);
@@ -1131,8 +1128,8 @@ opt_init_expr:
 opt_domain:
   /* nothing */
     { $$ = NULL; }
-| TCOLON TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("chpl__buildDomainExpr", $3); }
+| TCOLON TLSBR nonempty_expr_ls TRSBR opt_distributed_expr
+    { $$ = new CallExpr("chpl__buildDistributedDomainExpr", $5, $3); }
 ;
 
 
@@ -1366,14 +1363,14 @@ non_tuple_lvalue:
 | variable_expr
 | parenop_expr
 | memberaccess_expr
-| TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 ;
 
 
 lvalue:
   non_tuple_lvalue
 | tuple_paren_expr
+| TLSBR nonempty_expr_ls TRSBR
+    { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 ;
 
 
@@ -1426,6 +1423,8 @@ expr:
 
 stmt_level_expr: 
   lvalue
+| TLSBR nonempty_expr_ls TRSBR TDISTRIBUTED expr %prec TRSBR
+    { $$ = new CallExpr("chpl__buildDistributedDomainExpr", $5, $2); }
 | TNEW parenop_expr
     { $$ = new CallExpr(PRIM_NEW, $2); }
 | TLP TDOTDOTDOT expr TRP

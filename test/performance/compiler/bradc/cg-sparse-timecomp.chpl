@@ -35,7 +35,7 @@ config const numTrials = 1,
 
 def main() {
   const DenseSpace = [1..n, 1..n];
-  const MatrixSpace: sparse subdomain(DenseSpace) distributed(distributionValue(new CSR()))
+  const MatrixSpace: sparse subdomain(DenseSpace) distributed(new dist(new CSR()))
                    = genAIndsSorted(elemType, n, nonzer, shift);
   var A: [MatrixSpace] elemType;
 

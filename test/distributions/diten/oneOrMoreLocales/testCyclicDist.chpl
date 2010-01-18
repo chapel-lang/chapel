@@ -4,7 +4,7 @@ config const tpl = 2;
 
 def test1d() {
   const r = 3.0;
-  const Dist = distributionValue(new Cyclic(rank=1, idxType=int(64), low=tuple(min(int(64))), tasksPerLocale = tpl));
+  const Dist = new dist(new Cyclic(rank=1, idxType=int(64), low=tuple(min(int(64))), tasksPerLocale = tpl));
   const Dom: domain(1, int(64)) distributed Dist = [1..10:int(64)];
   var A, B: [Dom] real;
 
@@ -21,7 +21,7 @@ def test1d() {
 }
 
 def test2d() {
-  var Dist = distributionValue(new Cyclic(rank=2, idxType=int, low=(min(int), min(int)), tasksPerLocale=tpl));
+  var Dist = new dist(new Cyclic(rank=2, idxType=int, low=(min(int), min(int)), tasksPerLocale=tpl));
   var Dom: domain(2, int) distributed Dist = [1..5, 1..5];
   var A: [Dom] real;
 

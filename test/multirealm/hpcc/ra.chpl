@@ -58,10 +58,10 @@ config const printParams = true,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = distributionValue(new Block(1, indexType, bbox=[0..m-1], 
+const TableDist = new dist(new Block(1, indexType, bbox=[0..m-1], 
                                               tasksPerLocale=tasksPerLocale,
                                               targetLocales=AllLocales)),
-      UpdateDist = distributionValue(new Block(1, indexType, bbox=[0..N_U-1],
+      UpdateDist = new dist(new Block(1, indexType, bbox=[0..N_U-1],
                                                tasksPerLocale=tasksPerLocale,
                                                targetLocales=AllLocales));
 

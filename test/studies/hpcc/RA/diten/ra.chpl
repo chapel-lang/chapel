@@ -63,9 +63,9 @@ config const printParams = true,
 // across the locales.
 //
 const
-  TableDist = distributionValue(new Block(rank=1, indexType, bbox=[0..m-1], 
+  TableDist = new dist(new Block(rank=1, indexType, bbox=[0..m-1], 
                                           tasksPerLocale=tasksPerLocale)),
-  UpdateDist = distributionValue(new Block(rank=1, indexType, bbox=[0..N_U-1],
+  UpdateDist = new dist(new Block(rank=1, indexType, bbox=[0..N_U-1],
                                            tasksPerLocale=tasksPerLocale));
 
 //

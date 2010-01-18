@@ -37,7 +37,7 @@ class DefaultDist: BaseDist {
 // Note that the replicated copies are set up in ChapelLocale on the
 // other locales.  This just sets it up on this locale.
 //
-pragma "private" var defaultDist = distributionValue(new DefaultDist());
+pragma "private" var defaultDist = new dist(new DefaultDist());
 
 class DefaultArithmeticDom: BaseArithmeticDom {
   param rank : int;

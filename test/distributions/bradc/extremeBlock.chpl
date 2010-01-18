@@ -4,7 +4,7 @@ config const n: int(64) = 33;
 config const m: int(64) = 2**n;
 
 def testit(type t, m: t) {
-  const BD = distributionValue(new Block(1, t, bbox=[0:t..#m]));
+  const BD = new dist(new Block(1, t, bbox=[0:t..#m]));
   const D: domain(1, t) distributed BD = [0:t..#m];
 
   for l in Locales do
