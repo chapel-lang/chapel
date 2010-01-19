@@ -1,11 +1,7 @@
 #!/usr/bin/perl
 
-if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
-    print "ERROR: CHPL_HOME_REPOSITORY must be set to use nightly\n";
-    exit(1);
-}
-
 use File::Basename;
+use Cwd;
 
 $valgrind = 0;
 $interpret = 0;
@@ -128,15 +124,28 @@ if ($make eq "") {
 if ($make eq "") {
     $make = "make";
 }
-$statdir = $ENV{'CHPL_NIGHTLY_STATDIR'};
-$logdir = $ENV{'CHPL_NIGHTLY_LOGDIR'};
 $cronlogdir = $ENV{'CHPL_NIGHTLY_CRON_LOGDIR'};
 if ($cronlogdir eq "") {
     $cronlogdir = "/data/sea/cascade/chapel/Nightly";
 }
-if ($logdir eq "" || $statdir eq "") {
-    print "Error: CHPL_NIGHTLY_LOGDIR and CHPL_NIGHTLY_STATDIR must be set\n";
-    exit 1;
+$logdir = $ENV{'CHPL_NIGHTLY_LOGDIR'};
+if ($debug == 1 && $logdir eq "") {
+    $logdir = getcwd()."/Log";
+    if (! -e $logdir) {
+        mysystem("mkdir $logdir > /dev/null", "creating log dir", 1, 1);
+    } elsif (! (-r $logdir and -w $logdir and -d $logdir)) {
+        print "Error: CHPL_NIGHTLY_LOGDIR ($logdir) not accessible\n";
+    }
+}
+$statdir = $ENV{'CHPL_NIGHTLY_STATDIR'};
+if ($debug == 1 && $statdir eq "") {
+    $statdir = $logdir."/Stats";
+    if (! -e $statdir) {
+        mysystem("mkdir $statdir > /dev/null", "creating log dir", 1, 1);
+    } elsif (! (-r $statdir and -w $statdir and -d $statdir)) {
+        print "Error: CHPL_NIGHTLY_STATDIR ($statdir) not accessible\n";
+        exit 1;
+    }
 }
 
 
@@ -306,7 +315,7 @@ $somethingfailed = 0;
 #
 # make temp directory
 #
-if (system("test -d $tmpdir")) {
+if (! -d $tmpdir) {
     mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
 }
 
@@ -326,12 +335,13 @@ delete($ENV{'CHPL_HOME'});
 # checkout sources
 #
 $svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
+if ($svnroot eq "") {
+    $svnroot = "https://chapel.svn.sourceforge.net/svnroot/chapel/trunk";
+}
 $readonlydirname = "chapel-cron-$user-readonly";
 $readonlydir = "$basetmpdir/$readonlydirname";
 #print "testing $readonlydir\n";
-$notcheckedout = system("test -r $readonlydir");
-#print "got $notcheckedout\n";
-if ($notcheckedout) {
+if (! (-r $readonlydir && -d $readonlydir)) {
     print "The SVN directory has not been checked out yet\n";
     mysystem("cd $basetmpdir && svn checkout -q $svnrevopt $svnroot $readonlydirname", "svn checkout", 1, 1);
 } else {
@@ -352,6 +362,10 @@ if ($hostplatform eq "cygwin") {
 
 
 
+#
+# auto generate tests from the Chapel Spec
+#
+mysystem("cd $chapeldir && util/extract_tests.py -o test/spec/autogen spec/\*.tex", "Generating test programs from the Chapel Spec");
 
 #
 # build stuff
@@ -677,8 +691,8 @@ sub commitstats {
     if ($debug == 0) {
         `ci -l -m"automated nightly checkin" $statfile`;
     }
-    $makeplotunexe = system("test -x $statdir/makeplot");
-    if ($makeplotunexe) {
+    $makeplot = $statdir."/makeplot";
+    if (! -x $makeplot) {
         print "skipping makeplot step\n";
     } else {
         if ($hostplatform eq "linux") {
@@ -727,10 +741,9 @@ sub delta {
 
 sub ensureSummaryExists {
     $summary = $_[0];
-    $nosummary = system("test -r $summary");
-    if ($nosummary) {
+    if (! -r $summary) {
         print "Creating $summary\n";
-        mysystem("echo \"[Summary: #Successes = 0 | #Failures = 0 | #Futures = 0]\" > $summary", "creating $summary", 1, 1);
+        `echo \"[Summary: #Successes = 0 | #Failures = 0 | #Futures = 0]\" > $summary"`
     }
 }
 
