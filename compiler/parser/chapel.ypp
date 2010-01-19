@@ -49,16 +49,6 @@
 };
 
 //
-// keywords that do not require precedence (alphabetical)
-//
-%token TATOMIC TBEGIN TBREAK TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDEF TDELETE TDISTRIBUTED TDO TDOMAIN TENUM TEXTERN TFOR TFORALL TIF TIN
-%token TINDEX TINOUT TLABEL TLET TLOCAL TMINUSMINUS TMODULE TNEW TNIL TON
-%token TOTHERWISE TOUT TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TRECORD TRETURN
-%token TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN TSYNC TTHEN TTYPE TUNION TUSE
-%token TVAR TWHEN TWHERE TWHILE TYIELD
-
-//
 // identifiers and literals
 //
 %token TIDENT
@@ -66,12 +56,24 @@
 %token <pch> STRINGLITERAL
 
 //
-// operators and punctuation that do not require precedence (alphabetical)
+// keywords (alphabetical)
 //
-%token TALIAS TASSIGN TASSIGNBAND TASSIGNBOR TASSIGNBXOR TASSIGNDIVIDE
+%token TATOMIC TBEGIN TBREAK TBY TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST
+%token TCONTINUE TDEF TDELETE TDISTRIBUTED TDO TDOMAIN TELSE TENUM TEXTERN TFOR
+%token TFORALL TIF TIN TINDEX TINOUT TLABEL TLET TLOCAL TMINUSMINUS TMODULE
+%token TNEW TNIL TON TOTHERWISE TOUT TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TRECORD
+%token TREDUCE TRETURN TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN TSYNC
+%token TTHEN TTYPE TUNION TUSE TVAR TWHEN TWHERE TWHILE TYIELD
+
+//
+// operators and punctuation (alphabetical)
+//
+%token TALIAS TAND TASSIGN TASSIGNBAND TASSIGNBOR TASSIGNBXOR TASSIGNDIVIDE
 %token TASSIGNEXP TASSIGNLAND TASSIGNLOR TASSIGNMINUS TASSIGNMOD TASSIGNMULTIPLY
-%token TASSIGNPLUS TASSIGNSL TASSIGNSR TCOLON TCOMMA TDOT TDOTDOTDOT TQUESTION
-%token TSEMI TSWAP
+%token TASSIGNPLUS TASSIGNSL TASSIGNSR TBAND TBNOT TBOR TBXOR TCOLON TCOMMA
+%token TDIVIDE TDOT TDOTDOT TDOTDOTDOT TEQUAL TEXP TGREATER TGREATEREQUAL THASH
+%token TLESS TLESSEQUAL TMINUS TMOD TNOT TNOTEQUAL TOR TPLUS TQUESTION TSEMI
+%token TSHIFTLEFT TSHIFTRIGHT TSTAR TSWAP
 
 //
 // braces
@@ -103,7 +105,7 @@
 %right TUPLUS TUMINUS 
 %left TSTAR TDIVIDE TMOD
 %right TBNOT TNOT
-%left TREDUCE TSCAN
+%left TREDUCE TSCAN TDISTRIBUTED
 %right TEXP
 %left TCOLON
 %left TDOT TLP TLSBR
@@ -147,7 +149,7 @@
 %type <pexpr> parenop_expr memberaccess_expr lvalue
 %type <pexpr> tuple_paren_expr expr actual_expr
 %type <pexpr> literal opt_where_part opt_distributed_expr
-%type <pexpr> variable_expr stmt_level_expr alias_expr formal_level_type
+%type <pexpr> variable_expr stmt_level_expr type_level_expr alias_expr formal_level_type
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr opt_init_type var_arg_expr
 %type <pdefexpr> formal enum_item
 %type <pdefexpr> query_expr
@@ -808,8 +810,8 @@ var_decl_stmt_inner:
 | identifier opt_domain alias_expr
     {
       VarSymbol* var = new VarSymbol($1);
-      $$ = buildChapelStmt(new DefExpr(var, $3, $2));
       var->addFlag(FLAG_ARRAY_ALIAS);
+      $$ = buildChapelStmt(new DefExpr(var, $3, $2));
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     { $$ = buildTupleVarDeclStmt($2, $4, $5); }
@@ -847,26 +849,18 @@ array_type:
 ;
 
 type:
-  stmt_level_expr
+  type_level_expr
 | formal_level_type
 ;
 
 formal_level_type:
   array_type
 | TDOMAIN TLP actual_expr_ls TRP opt_distributed_expr
-    {
-      CallExpr* call = new CallExpr("chpl__buildDomainRuntimeType", $5);
-      call->insertAtTail($3);
-      $$ = call;
-    }
+    { $$ = new CallExpr("chpl__buildDomainRuntimeType", $5, $3); }
 | TSUBDOMAIN TLP actual_expr_ls TRP
     { $$ = new CallExpr("chpl__buildSubDomainType", $3); }
 | TSPARSE TSUBDOMAIN TLP actual_expr_ls TRP opt_distributed_expr
-    {
-      CallExpr* call = new CallExpr("chpl__buildSparseDomainRuntimeType", $6);
-      call->insertAtTail($4);
-      $$ = call;
-    }
+    { $$ = new CallExpr("chpl__buildSparseDomainRuntimeType", $6, $4); }
 | TSINGLE type
     { $$ = new CallExpr( "_singlevar", $2); }
 | TSYNC type
@@ -888,8 +882,8 @@ opt_init_expr:
 opt_domain:
   /* nothing */
     { $$ = NULL; }
-| TCOLON TLSBR nonempty_expr_ls TRSBR opt_distributed_expr
-    { $$ = new CallExpr("chpl__buildDistributedDomainExpr", $5, $3); }
+| TCOLON TLSBR nonempty_expr_ls TRSBR
+    { $$ = new CallExpr("chpl__buildDomainExpr", $3); }
 ;
 
 opt_type:
@@ -1051,14 +1045,10 @@ lvalue:
 
 expr:
   stmt_level_expr
-| TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 | TLSBR nonempty_expr_ls TRSBR TDOT identifier %prec TDOT
     { // place holder until expr can be used on lhs of dot in member access
       $$ = buildDotExpr(new CallExpr("chpl__buildDomainExpr", $2), $5);
     }
-| TLSBR nonempty_expr_ls TRSBR TDISTRIBUTED expr %prec TRSBR
-    { $$ = new CallExpr("chpl__buildDistributedDomainExpr", $5, $2); }
 | TLSBR nonempty_expr_ls TIN expr TRSBR expr %prec TRSBR
     {
       if ($2->argList.length != 1)
@@ -1104,6 +1094,12 @@ expr:
 ;
 
 stmt_level_expr: 
+  TLSBR nonempty_expr_ls TRSBR
+    { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
+| type_level_expr
+;
+
+type_level_expr:
   lvalue
 | TNEW parenop_expr
     { $$ = new CallExpr(PRIM_NEW, $2); }
@@ -1113,8 +1109,8 @@ stmt_level_expr:
     { $$ = new SymExpr(gNil); }
 | TLET var_decl_stmt_inner_ls TIN expr
     { $$ = buildLetExpr($2, $4); }
-| reduce_expr %prec TREDUCE
-| scan_expr %prec TREDUCE
+| reduce_expr
+| scan_expr
 | expr TCOLON expr
     { $$ = new CallExpr("_cast", $3, $1); }
 | expr TDOTDOT expr
@@ -1179,6 +1175,8 @@ stmt_level_expr:
     { $$ = new CallExpr("by", $1, $3); }
 | expr THASH expr
     { $$ = new CallExpr("#", $1, $3); }
+| expr TDISTRIBUTED expr
+    { $$ = new CallExpr("chpl__buildDistributedDomainExpr", $3, $1); }
 ;
 
 reduce_expr:
