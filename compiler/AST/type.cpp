@@ -499,7 +499,7 @@ void initPrimitiveTypes(void) {
 
   dtBool = createPrimitiveType ("bool", "chpl_bool");
 
-  DefExpr* objectDef = buildClassDefExpr("object", new ClassType(CLASS_CLASS), new BlockStmt());
+  DefExpr* objectDef = buildClassDefExpr("object", new ClassType(CLASS_CLASS), NULL, new BlockStmt(), false);
   objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
   objectDef->sym->addFlag(FLAG_NO_OBJECT);
   dtObject = objectDef->sym->type;

@@ -1123,17 +1123,17 @@ setVarSymbolAttributes(BlockStmt* stmts, bool isConfig, bool isParam, bool isCon
 
 
 DefExpr*
-buildClassDefExpr(const char* name, Type* type, BlockStmt* decls) {
+buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, bool isExtern) {
   ClassType* ct = toClassType(type);
-
-  if (!ct) {
-    INT_FATAL(type, "buildClassDefExpr called on non ClassType");
-  }
-
-  TypeSymbol* sym = new TypeSymbol(name, ct);
-  DefExpr* defExpr = new DefExpr(sym);
+  INT_ASSERT(ct);
+  TypeSymbol* ts = new TypeSymbol(name, ct);
+  DefExpr* def = new DefExpr(ts);
   ct->addDeclarations(decls);
-  return defExpr;
+  if (isExtern)
+    ts->addFlag(FLAG_EXTERN);
+  if (inherit)
+    ct->inherits.insertAtTail(inherit);
+  return def;
 }
 
 

@@ -57,7 +57,7 @@ void backPropagateInitsTypes(BlockStmt* stmts);
 void setVarSymbolAttributes(BlockStmt* stmts,
                             bool isConfig, bool isParam, bool isConst);
 
-DefExpr* buildClassDefExpr(const char* name, Type* type, BlockStmt* decls);
+DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, bool isExtern);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 Expr* buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base);
 
