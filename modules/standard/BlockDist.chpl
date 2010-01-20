@@ -102,7 +102,7 @@ class Block : BaseDist {
 }
 
 // dsi
-def Block.supportsPrivatization() param return true;
+def Block.dsiSupportsPrivatization() param return true;
 
 // dsi
 def Block.getPrivatizeData() {
@@ -141,7 +141,6 @@ def Block.dsiNewArithmeticDom(param rank: int, type idxType,
 //
 // output distribution
 //
-// dsiWrite
 def Block.writeThis(x:Writer) {
   x.writeln("Block");
   x.writeln("-------");
@@ -308,9 +307,9 @@ class BlockDom: BaseArithmeticDom {
   def getBaseDist() return dist;
 }
 
-def BlockDom.dims() return whole.dims();
+def BlockDom.dsiDims() return whole.dims();
 
-def BlockDom.dim(d: int) return whole.dim(d);
+def BlockDom.dsiDim(d: int) return whole.dim(d);
 
 // stopgap to avoid accessing locDoms field (and returning an array)
 def BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
@@ -371,17 +370,17 @@ def BlockDom.these(param tag: iterator, follower) where tag == iterator.follower
   }
 }
 
-def BlockDom.strideBy(str: int) {
+def BlockDom.dsiStrideBy(str: int) {
   var alias = new BlockDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
   var t: rank*range(eltType=idxType, stridable=true);
   for i in 1..rank {
-    t(i) = this.dim(i) by str;
+    t(i) = this.dsiDim(i) by str;
   }
-  alias.setIndices(t);
+  alias.dsiSetIndices(t);
   return alias;
 }
 
-def BlockDom.strideBy(str: rank*int) {
+def BlockDom.dsiStrideBy(str: rank*int) {
   var alias = new BlockDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
   var t: rank*range(eltType=idxType, stridable=true);
   for i in 1..rank {
@@ -395,28 +394,28 @@ def BlockDom.strideBy(str: rank*int) {
 //
 // output domain
 //
-def BlockDom.writeThis(x:Writer) {
+def BlockDom.dsiSerialWrite(x:Writer) {
   x.write(whole);
 }
 
 //
 // how to allocate a new array over this domain
 //
-def BlockDom.buildArray(type eltType) {
+def BlockDom.dsiBuildArray(type eltType) {
   var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   arr.setup();
   return arr;
 }
 
-def BlockDom.numIndices return whole.numIndices;
-def BlockDom.low return whole.low;
-def BlockDom.high return whole.high;
+def BlockDom.dsiNumIndices return whole.numIndices;
+def BlockDom.dsiLow return whole.low;
+def BlockDom.dsiHigh return whole.high;
 
 //
-// INTERFACE NOTES: Could we make setIndices() for an arithmetic
+// INTERFACE NOTES: Could we make dsiSetIndices() for an arithmetic
 // domain take a domain rather than something else?
 //
-def BlockDom.setIndices(x: domain) {
+def BlockDom.dsiSetIndices(x: domain) {
   if x.rank != rank then
     compilerError("rank mismatch in domain assignment");
   if x._value.idxType != idxType then
@@ -425,7 +424,7 @@ def BlockDom.setIndices(x: domain) {
   setup();
 }
 
-def BlockDom.setIndices(x) {
+def BlockDom.dsiSetIndices(x) {
   if x.size != rank then
     compilerError("rank mismatch in domain assignment");
   if x(1).eltType != idxType then
@@ -437,7 +436,7 @@ def BlockDom.setIndices(x) {
   setup();
 }
 
-def BlockDom.getIndices() {
+def BlockDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
@@ -446,9 +445,9 @@ def BlockDom.getDist(): Block(idxType) {
   return dist;
 }
 
-def BlockDom.slice(param stridable: bool, ranges) {
+def BlockDom.dsiSlice(param stridable: bool, ranges) {
   var d = new BlockDom(rank=rank, idxType=idxType, dist=dist, stridable=stridable||this.stridable);
-  d.setIndices(whole((...ranges)).getIndices());
+  d.dsiSetIndices(whole((...ranges)).getIndices());
   return d;
 }
 
@@ -474,14 +473,11 @@ def BlockDom.setup() {
     for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
 }
 
-// dsi
-def BlockDom.supportsPrivatization() param return true;
+def BlockDom.dsiSupportsPrivatization() param return true;
 
-// dsi
-def BlockDom.getPrivatizeData() return (dist.pid, whole.dims());
+def BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
-// dsi
-def BlockDom.privatize(privatizeData) {
+def BlockDom.dsiPrivatize(privatizeData) {
   var distpid = privatizeData(1);
   var thisdist = dist;
   var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
@@ -492,25 +488,23 @@ def BlockDom.privatize(privatizeData) {
   return c;
 }
 
-// dsi
-def BlockDom.getReprivatizeData() return whole.dims();
+def BlockDom.dsiGetReprivatizeData() return whole.dims();
 
-// dsi
-def BlockDom.reprivatize(other, reprivatizeData) {
+def BlockDom.dsiReprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
     locDoms(i) = other.locDoms(i);
   whole = [(...reprivatizeData)];
 }
 
-def BlockDom.member(i) {
+def BlockDom.dsiMember(i) {
   return whole.member(i);
 }
 
-def BlockDom.order(i) {
+def BlockDom.dsiIndexOrder(i) {
   return whole.order(i);
 }
 
-def BlockDom.position(i) {
+def BlockDom.dsiPosition(i) {
   return whole.position(i);
 }
 
@@ -576,7 +570,7 @@ class BlockArr: BaseArr {
   var pid: int = -1; // privatized object id
 }
 
-def BlockArr.getBaseDom() return dom;
+def BlockArr.dsiGetBaseDom() return dom;
 
 def BlockArr.setup() {
   var thisid = this.locale.uid;
@@ -590,14 +584,11 @@ def BlockArr.setup() {
   }
 }
 
-// dsi
-def BlockArr.supportsPrivatization() param return true;
+def BlockArr.dsiSupportsPrivatization() param return true;
 
-// dsi
-def BlockArr.getPrivatizeData() return dom.pid;
+def BlockArr.dsiGetPrivatizeData() return dom.pid;
 
-// dsi
-def BlockArr.privatize(privatizeData) {
+def BlockArr.dsiPrivatize(privatizeData) {
   var dompid = privatizeData;
   var thisdom = dom;
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
@@ -615,7 +606,7 @@ def BlockArr.privatize(privatizeData) {
 //
 // TODO: Do we need a global bounds check here or in ind2locind?
 //
-def BlockArr.this(i: idxType) var where rank == 1 {
+def BlockArr.dsiAccess(i: idxType) var where rank == 1 {
   if myLocArr then local {
     if myLocArr.locDom.member(i) then
       return myLocArr.this(i);
@@ -623,9 +614,9 @@ def BlockArr.this(i: idxType) var where rank == 1 {
   return locArr(dom.dist.ind2locInd(i))(i);
 }
 
-def BlockArr.this(i: rank*idxType) var {
+def BlockArr.dsiAccess(i: rank*idxType) var {
   if rank == 1 {
-    return this(i(1));
+    return dsiAccess(i(1));
   } else {
     if myLocArr then local {
       if myLocArr.locDom.member(i) then
@@ -637,7 +628,7 @@ def BlockArr.this(i: rank*idxType) var {
 
 def BlockArr.these() var {
   for i in dom do
-    yield this(i);
+    yield dsiAccess(i);
 }
 
 //
@@ -674,8 +665,7 @@ def BlockArr.these(param tag: iterator) where tag == iterator.leader {
   }
 }
 
-// dsi
-def BlockArr.supportsAlignedFollower() param return true;
+def BlockArr.dsiSupportsAlignedFollower() param return true;
 
 def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
   var followThis: rank*range(eltType=idxType, stridable=stridable);
@@ -717,7 +707,7 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
         if myLocArr.locDom.member(i) then
           return myLocArr.this(i);
       }
-      return this(i);
+      return dsiAccess(i);
     }
     for i in followThisDom {
       yield accessHelper(i);
@@ -728,23 +718,23 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
 //
 // output array
 //
-def BlockArr.writeThis(f: Writer) {
-  if dom.numIndices == 0 then return;
+def BlockArr.dsiSerialWrite(f: Writer) {
+  if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
-    i(dim) = dom.dim(dim)._low;
+    i(dim) = dom.dsiDim(dim)._low;
   label next while true {
-    f.write(this(i));
-    if i(rank) <= (dom.dim(rank)._high - dom.dim(rank)._stride:idxType) {
+    f.write(dsiAccess(i));
+    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
       f.write(" ");
-      i(rank) += dom.dim(rank)._stride:idxType;
+      i(rank) += dom.dsiDim(rank)._stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dim(dim)._high - dom.dim(dim)._stride:idxType) {
-          i(dim) += dom.dim(dim)._stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
+          i(dim) += dom.dsiDim(dim)._stride:idxType;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom.dim(dim2)._low;
+            i(dim2) = dom.dsiDim(dim2)._low;
           }
           continue next;
         }
@@ -754,16 +744,16 @@ def BlockArr.writeThis(f: Writer) {
   }
 }
 
-def BlockArr.checkSlice(ranges) {
+def BlockArr.dsiCheckSlice(ranges) {
   for param i in 1..rank do
-    if !dom.dim(i).boundsCheck(ranges(i)) then {
-      writeln(dom.dim(i), " ", ranges(i), " ", dom.dim(i).boundsCheck(ranges(i)));
+    if !dom.dsiDim(i).boundsCheck(ranges(i)) then {
+      writeln(dom.dsiDim(i), " ", ranges(i), " ", dom.dsiDim(i).boundsCheck(ranges(i)));
       halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
 }
 
 
-def BlockArr.slice(d: BlockDom) {
+def BlockArr.dsiSlice(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
   for i in dom.dist.targetLocDom {
     on dom.dist.targetLocs(i) {
