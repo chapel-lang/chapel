@@ -134,17 +134,17 @@ def Cyclic.getChunk(inds, locid) {
   //return inds((...distWhole));
 }
 
-def Cyclic.supportsPrivatization() param return true;
+def Cyclic.dsiSupportsPrivatization() param return true;
 
-def Cyclic.getPrivatizeData() return 0;
+def Cyclic.dsiGetPrivatizeData() return 0;
 
-def Cyclic.privatize(privatizeData) {
+def Cyclic.dsiPrivatize(privatizeData) {
   return new Cyclic(rank=rank, idxType=idxType, other=this);
 }
 
-def Cyclic.getReprivatizeData() return 0;
+def Cyclic.dsiGetReprivatizeData() return 0;
 
-def Cyclic.reprivatize(other, reprivatizeData) {
+def Cyclic.dsiReprivatize(other, reprivatizeData) {
   targetLocDom = other.targetLocDom;
   targetLocs = other.targetLocs;
   locDist = other.locDist;
@@ -251,22 +251,22 @@ def CyclicDom.setup() {
   }
 }
 
-def CyclicDom.buildArray(type eltType) {
+def CyclicDom.dsiBuildArray(type eltType) {
   var arr = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   arr.setup();
   return arr;
 }
 
-def CyclicDom.getIndices() {
+def CyclicDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
-def CyclicDom.setIndices(x) {
+def CyclicDom.dsiSetIndices(x) {
   whole.setIndices(x);
   setup();
 }
 
-def CyclicDom.writeThis(x: Writer) {
+def CyclicDom.dsiSerialWrite(x: Writer) {
   if verboseCyclicDistWriters {
     writeln(typeToString(this.type));
     writeln("------");
@@ -278,7 +278,7 @@ def CyclicDom.writeThis(x: Writer) {
   }
 }
 
-def CyclicDom.numIndices return whole.numIndices;
+def CyclicDom.dsiNumIndices return whole.numIndices;
 
 def CyclicDom.these() {
   for i in whole do
@@ -341,11 +341,11 @@ def CyclicDom.these(param tag: iterator, follower, param aligned: bool = false) 
     yield i;
 }
 
-def CyclicDom.supportsPrivatization() param return true;
+def CyclicDom.dsiSupportsPrivatization() param return true;
 
-def CyclicDom.getPrivatizeData() return 0;
+def CyclicDom.dsiGetPrivatizeData() return 0;
 
-def CyclicDom.privatize(privatizeData) {
+def CyclicDom.dsiPrivatize(privatizeData) {
   var distpid = dist.pid;
   var thisdist = dist;
   var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
@@ -355,26 +355,26 @@ def CyclicDom.privatize(privatizeData) {
   return c;
 }
 
-def CyclicDom.getReprivatizeData() return 0;
+def CyclicDom.dsiGetReprivatizeData() return 0;
 
-def CyclicDom.reprivatize(other, reprivatizeData) {
+def CyclicDom.dsiReprivatize(other, reprivatizeData) {
   locDoms = other.locDoms;
   whole = other.whole;
 }
 
-def CyclicDom.dim(d: int) return whole.dim(d);
+def CyclicDom.dsiDim(d: int) return whole.dim(d);
 
-def CyclicDom.strideBy(str: int) {
+def CyclicDom.dsiStrideBy(str: int) {
   var alias = new CyclicDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
   var t: rank*range(eltType=idxType, stridable=true);
   for param i in 1..rank {
-    t(i) = this.dim(i) by str;
+    t(i) = this.dsiDim(i) by str;
   }
-  alias.setIndices(t);
+  alias.dsiSetIndices(t);
   return alias;
 }
 
-def CyclicDom.strideBy(str: rank*int) {
+def CyclicDom.dsiStrideBy(str: rank*int) {
   var alias = new CyclicDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
   var t: rank*range(eltType=idxType, stridable=true);
   for i in 1..rank {
@@ -384,7 +384,7 @@ def CyclicDom.strideBy(str: rank*int) {
   return alias;
 }
 
-def CyclicDom.slice(param stridable: bool, ranges) {
+def CyclicDom.dsiSlice(param stridable: bool, ranges) {
   var alias = new CyclicDom(rank=rank, idxType=idxType, dist=dist, stridable=stridable||this.stridable);
   alias.setIndices(whole((...ranges)).getIndices());
   return alias;
@@ -436,7 +436,7 @@ class CyclicArr: BaseArr {
   var pid: int = -1;
 }
 
-def CyclicArr.checkSlice(ranges) {
+def CyclicArr.dsiCheckSlice(ranges) {
   for param i in 1..rank {
     if !dom.dim(i).boundsCheck(ranges(i)) {
       writeln(dom.dim(i), " ", ranges(i), " ", dom.dim(i).boundsCheck(ranges(i)));
@@ -445,7 +445,7 @@ def CyclicArr.checkSlice(ranges) {
   }
 }
 
-def CyclicArr.slice(d: CyclicDom) {
+def CyclicArr.dsiSlice(d: CyclicDom) {
   var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
   for i in dom.dist.targetLocDom {
     on dom.dist.targetLocs(i) {
@@ -467,7 +467,7 @@ def CyclicArr.localSlice(ranges) {
   return A;
 }
 
-def CyclicArr.getBaseDom() return dom;
+def CyclicArr.dsiGetBaseDom() return dom;
 
 def CyclicArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
@@ -479,11 +479,11 @@ def CyclicArr.setup() {
   }
 }
 
-def CyclicArr.supportsPrivatization() param return true;
+def CyclicArr.dsiSupportsPrivatization() param return true;
 
-def CyclicArr.getPrivatizeData() return 0;
+def CyclicArr.dsiGetPrivatizeData() return 0;
 
-def CyclicArr.privatize(privatizeData) {
+def CyclicArr.dsiPrivatize(privatizeData) {
   var dompid = dom.pid;
   var thisdom = dom;
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
@@ -495,7 +495,7 @@ def CyclicArr.privatize(privatizeData) {
   return c;
 }
 
-def CyclicArr.this(i: idxType) var where rank == 1 {
+def CyclicArr.dsiAccess(i: idxType) var where rank == 1 {
   local {
     if myLocArr.locDom.myBlock.member(i) then
       return myLocArr.this(i);
@@ -503,13 +503,13 @@ def CyclicArr.this(i: idxType) var where rank == 1 {
   return locArr(dom.dist.ind2locInd(i))(i);
 }
 
-def CyclicArr.this(i:rank*idxType) var {
+def CyclicArr.dsiAccess(i:rank*idxType) var {
   return locArr(dom.dist.ind2locInd(i))(i);
 }
 
 def CyclicArr.these() var {
   for i in dom do
-    yield this(i);
+    yield dsiAccess(i);
 }
 
 def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
@@ -553,7 +553,7 @@ def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
   }
 }
 
-def CyclicArr.supportsAlignedFollower() param return true;
+def CyclicArr.dsiSupportsAlignedFollower() param return true;
 
 def CyclicArr.these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
   var t: rank*range(eltType=idxType, stridable=true);
@@ -575,7 +575,7 @@ def CyclicArr.these(param tag: iterator, follower, param aligned: bool = false) 
         if myLocArr.locDom.member(i) then
           return myLocArr.this(i);
       }
-      return this(i);
+      return dsiAccess(i);
     }
 
     for i in followThis {
@@ -584,13 +584,13 @@ def CyclicArr.these(param tag: iterator, follower, param aligned: bool = false) 
   }
 }
 
-def CyclicArr.writeThis(f: Writer) {
+def CyclicArr.dsiSerialWrite(f: Writer) {
   if verboseCyclicDistWriters {
     writeln(typeToString(this.type));
     writeln("------");
   }
   for i in dom {
-    writeln(this(i));
+    writeln(dsiAccess(i));
   }
 }
 

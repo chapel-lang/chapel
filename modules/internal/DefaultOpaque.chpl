@@ -15,16 +15,16 @@ class DefaultOpaqueDom: BaseOpaqueDom {
     delete adomain;
   }
 
-  def create() {
+  def dsiCreate() {
     var i = new _OpaqueIndex();
-    adomain.add(i);
+    adomain.dsiAdd(i);
     return i;
   }
 
-  def getIndices() return adomain;
+  def dsiGetIndices() return adomain;
 
-  def setIndices(b: DefaultAssociativeDom) {
-    adomain.setIndices(b);
+  def dsiSetIndices(b: DefaultAssociativeDom) {
+    adomain.dsiSetIndices(b);
   }
 
   def these() {
@@ -42,26 +42,26 @@ class DefaultOpaqueDom: BaseOpaqueDom {
       yield i;
   }
 
-  def member(ind: idxType) {
-    return adomain.member(ind);
+  def dsiMember(ind: idxType) {
+    return adomain.dsiMember(ind);
   }
 
-  def numIndices {
-    return adomain.numIndices;
+  def dsiNumIndices {
+    return adomain.dsiNumIndices;
   }
 
-  def buildArray(type eltType) {
+  def dsiBuildArray(type eltType) {
     var ia = new DefaultOpaqueArr(eltType=eltType, idxType=idxType, dom=this);
     return ia;
   }
 }
 
-def DefaultOpaqueDom.writeThis(f: Writer) {
-  adomain.writeThis(f);
+def DefaultOpaqueDom.dsiSerialWrite(f: Writer) {
+  adomain.dsiSerialWrite(f);
 }
 
-def DefaultOpaqueArr.writeThis(f: Writer) {
-  anarray.writeThis(f);
+def DefaultOpaqueArr.dsiSerialWrite(f: Writer) {
+  anarray.dsiSerialWrite(f);
 }
 
 class DefaultOpaqueArr: BaseArr {
@@ -75,10 +75,10 @@ class DefaultOpaqueArr: BaseArr {
     delete anarray;
   }
 
-  def getBaseDom() return dom;
+  def dsiGetBaseDom() return dom;
 
-  def this(ind : idxType) var : eltType
-    return anarray(ind);
+  def dsiAccess(ind : idxType) var : eltType
+    return anarray.dsiAccess(ind);
 
   def these() var {
     for e in anarray do
@@ -92,12 +92,12 @@ class DefaultOpaqueArr: BaseArr {
 
   def these(param tag: iterator, follower) var where tag == iterator.follower {
     for i in dom.these(tag=iterator.follower, follower) do
-      yield this(i);
+      yield dsiAccess(i);
   }
 
 
-  def sorted() {
-    for e in anarray.sorted() do
+  def dsiSorted() {
+    for e in anarray.dsiSorted() do
       yield e;
   }
 
@@ -106,6 +106,6 @@ class DefaultOpaqueArr: BaseArr {
   }
 }
 
-def DefaultOpaqueDom.remove(idx: idxType) {
-  adomain.remove(idx);
+def DefaultOpaqueDom.dsiRemove(idx: idxType) {
+  adomain.dsiRemove(idx);
 }

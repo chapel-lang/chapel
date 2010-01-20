@@ -1,20 +1,20 @@
 class MyDist : BaseDist {
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+  def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     return new MyDom(rank=rank, idxType=idxType);
   }
 
-  def clone() return new MyDist();
+  def dsiClone() return new MyDist();
 }
 
 class MyDom : BaseArithmeticDom {
   param rank: int;
   type idxType = int(32);
 
-  def getIndices() {
+  def dsiGetIndices() {
     var r: range;
     return r;
   }
 
-  def setIndices(ind) {
+  def dsiSetIndices(ind) {
   }
 }

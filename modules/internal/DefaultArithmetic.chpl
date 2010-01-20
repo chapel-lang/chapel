@@ -58,12 +58,10 @@ class DefaultArithmeticDom: BaseArithmeticDom {
       ranges(i) = emptyRange;
   }
   
-  // dsi
   // function and iterator versions, also for setIndices
-  def getIndices() return ranges;
+  def dsiGetIndices() return ranges;
 
-  // dsi
-  def setIndices(x) {
+  def dsiSetIndices(x) {
     if ranges.size != x.size then
       compilerError("rank mismatch in domain assignment");
     if ranges(1).eltType != x(1).eltType then
@@ -95,7 +93,6 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  // dsiDefaultIterator
   def these() {
     if rank == 1 {
       for i in ranges(1) do
@@ -106,7 +103,6 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  // dsiDefaultIterator
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In domain leader code: this = ", this);
@@ -162,7 +158,6 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  // dsiDefaultIterator
   def these(param tag: iterator, follower) where tag == iterator.follower {
     if debugDefaultDist then
       writeln("In domain follower code: Following ", follower);
@@ -187,16 +182,15 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  // dsiMember (we don't need this version)
+  // We don't need this non-tuple version
   //  version in wrapper record can call below version
-  def member(ind: idxType) where rank == 1 {
+  def dsiMember(ind: idxType) where rank == 1 {
     if !ranges(1).member(ind) then
       return false;
     return true;
   }
 
-  // dsiMember
-  def member(ind: rank*idxType) {
+  def dsiMember(ind: rank*idxType) {
     for param i in 1..rank do
       if !ranges(i).member(ind(i)) then
         return false;
@@ -204,12 +198,12 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }
 
   // use below version by having wrapper record call below
-  def order(ind: idxType) where rank == 1 {
+  def dsiIndexOrder(ind: idxType) where rank == 1 {
     return ranges(1).order(ind);
   }
 
-  // dsiIndexOrder, to the user: indexOrder
-  def order(ind: rank*idxType) {
+  // to the user: indexOrder
+  def dsiIndexOrder(ind: rank*idxType) {
     var totOrder: idxType;
     var blk: idxType = 1;
     for param d in 1..rank by -1 {
@@ -224,14 +218,13 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   // can we use order above to implement position by passing in an
   // optional argument that contains the dimensions.
   // use below version by having wrapper record call below
-  def position(ind: idxType) where rank == 1 {
+  def dsiPosition(ind: idxType) where rank == 1 {
     var pos: 1*idxType;
-    pos(1) = order(ind);
+    pos(1) = dsiIndexOrder(ind);
     return pos;
   }
 
-  // dsiPosition
-  def position(ind: rank*idxType) {
+  def dsiPosition(ind: rank*idxType) {
     var pos: rank*idxType;
     for d in 1..rank {
       pos(d) = ranges(d).order(ind(d));
@@ -239,21 +232,18 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     return pos;
   }
 
-  // dsiDims
-  def dims()
+  def dsiDims()
     return ranges;
 
-  // dsiDim
-  def dim(d : int)
+  def dsiDim(d : int)
     return ranges(d);
 
-  // dsiDim (optional), is this necesary? probably not now that
+  // optional, is this necesary? probably not now that
   // homogeneous tuples are implemented as C vectors.
-  def dim(param d : int)
+  def dsiDim(param d : int)
     return ranges(d);
 
-  // dsiNumIndices
-  def numIndices {
+  def dsiNumIndices {
     var sum = 1:idxType;
     for param i in 1..rank do
       sum *= ranges(i).length;
@@ -261,8 +251,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     // WANT: return * reduce (this(1..rank).length);
   }
 
-  // dsiLow
-  def low {
+  def dsiLow {
     if rank == 1 {
       return ranges(1)._low;
     } else {
@@ -273,8 +262,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  // dsiHigh
-  def high {
+  def dsiHigh {
     if rank == 1 {
       return ranges(1)._high;
     } else {
@@ -285,26 +273,24 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  // dsiBuildArray
-  def buildArray(type eltType) {
+  def dsiBuildArray(type eltType) {
     return new DefaultArithmeticArr(eltType=eltType, rank=rank, idxType=idxType,
                                   /*stridable=stridable, reindexed=false, */
                                     stridable=stridable, reindexed=true,
                                     dom=this);
   }
 
-  // dsiSlice
   // can we move this functionality to ChapelArray and use
   // dsiBuildArithmeticDom?
-  def slice(param stridable: bool, ranges) {
+  def dsiSlice(param stridable: bool, ranges) {
     var d = new DefaultArithmeticDom(rank, idxType, stridable, dist);
     for param i in 1..rank do
-      d.ranges(i) = dim(i)(ranges(i));
+      d.ranges(i) = dsiDim(i)(ranges(i));
     return d;
   }
 
-  // dsiRankChange, or can we move this functionality to ChapelArray as above?
-  def rankChange(param rank: int, param stridable: bool, args) {
+  // can we move this functionality to ChapelArray as above?
+  def dsiRankChange(param rank: int, param stridable: bool, args) {
     def isRange(r: range(?)) param return true;
     def isRange(r) param return false;
 
@@ -312,22 +298,22 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
-        d.ranges(i) = dim(j)(args(j));
+        d.ranges(i) = dsiDim(j)(args(j));
         i += 1;
       }
     }
     return d;
   }
 
-  // dsiStrideBy, use 1 function, or can this be moved to ChapelArray as above.
-  def strideBy(str : rank*int) {
+  // use 1 function, or can this be moved to ChapelArray as above.
+  def dsiStrideBy(str : rank*int) {
     var x = new DefaultArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str(i);
     return x;
   }
 
-  def strideBy(str : int) {
+  def dsiStrideBy(str : int) {
     var x = new DefaultArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str;
@@ -358,18 +344,17 @@ class DefaultArithmeticArr: BaseArr {
 
   // end class definition here, then defined secondary methods below
 
-  // dsi? can the compiler create this automatically?
-  def getBaseDom() return dom;
+  // can the compiler create this automatically?
+  def dsiGetBaseDom() return dom;
 
-  // dsiDestroyData
-  def destroyData() {
-    if dom.numIndices > 0 {
+  def dsiDestroyData() {
+    if dom.dsiNumIndices > 0 {
       pragma "no copy" pragma "no auto destroy" var dr = data;
       pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
       pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, 0);
       pragma "no copy" pragma "no auto destroy" var ev = __primitive("get ref", er);
       if (chpl__maybeAutoDestroyed(ev)) {
-        for i in 0..dom.numIndices-1 {
+        for i in 0..dom.dsiNumIndices-1 {
           pragma "no copy" pragma "no auto destroy" var dr = data;
           pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
           pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, i);
@@ -381,9 +366,8 @@ class DefaultArithmeticArr: BaseArr {
     delete data;
   }
 
-  // dsiCreateAlias
-  def makeAlias(B: DefaultArithmeticArr) {
-    var A = B.reindex(dom);
+  def dsiCreateAlias(B: DefaultArithmeticArr) {
+    var A = B.dsiReindex(dom);
     off = A.off;
     blk = A.blk;
     str = A.str;
@@ -393,22 +377,20 @@ class DefaultArithmeticArr: BaseArr {
     delete A;
   }
 
-  // dsiDefaultIterator
   def these() var {
     if rank == 1 {
-      var first = getDataIndex(dom.low);
-      var second = getDataIndex(dom.low+dom.ranges(1).stride:idxType);
+      var first = getDataIndex(dom.dsiLow);
+      var second = getDataIndex(dom.dsiLow+dom.ranges(1).stride:idxType);
       var step = (second-first):int;
-      var last = first + (dom.numIndices-1) * step:idxType;
+      var last = first + (dom.dsiNumIndices-1) * step:idxType;
       for i in first..last by step do
         yield data(i);
     } else {
       for i in dom do
-        yield this(i);
+        yield dsiAccess(i);
     }
   }
 
-  // dsiDefaultIterator
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In array leader code: [\n", this, "]");
@@ -463,12 +445,11 @@ class DefaultArithmeticArr: BaseArr {
     }
   }
 
-  // dsiDefaultIterator
   def these(param tag: iterator, follower) var where tag == iterator.follower {
     if debugDefaultDist then
       writeln("*** In array follower code: [\n", this, "]");
     for i in dom.these(tag=iterator.follower, follower) do
-      yield this(i);
+      yield dsiAccess(i);
   }
 
   def computeFactoredOffs() {
@@ -483,14 +464,14 @@ class DefaultArithmeticArr: BaseArr {
   def initialize() {
     if noinit == true then return;
     for param dim in 1..rank {
-      off(dim) = dom.dim(dim)._low;
-      str(dim) = dom.dim(dim)._stride;
+      off(dim) = dom.dsiDim(dim)._low;
+      str(dim) = dom.dsiDim(dim)._stride;
     }
     blk(rank) = 1:idxType;
     for param dim in 1..rank-1 by -1 do
-      blk(dim) = blk(dim+1) * dom.dim(dim+1).length;
+      blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
     computeFactoredOffs();
-    size = blk(1) * dom.dim(1).length;
+    size = blk(1) * dom.dsiDim(1).length;
     data = new _ddata(eltType);
     data.init(size);
   }
@@ -519,25 +500,24 @@ class DefaultArithmeticArr: BaseArr {
     return sum;
   }
 
-  // dsiAccess
   // only need second version because wrapper record can pass a 1-tuple
   pragma "inline"
-  def this(ind: idxType ...1) var where rank == 1
-    return this(ind);
+  def dsiAccess(ind: idxType ...1) var where rank == 1
+    return dsiAccess(ind);
+
   pragma "inline"
-  def this(ind : rank*idxType) var {
+  def dsiAccess(ind : rank*idxType) var {
     if boundsChecking then
-      if !dom.member(ind) then
+      if !dom.dsiMember(ind) then
         halt("array index out of bounds: ", ind);
     return data(getDataIndex(ind));
   }
 
-  // dsiReindex
-  def reindex(d: DefaultArithmeticDom) {
+  def dsiReindex(d: DefaultArithmeticDom) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 1..rank do
-      if d.dim(i).length != dom.dim(i).length then
+      if d.dsiDim(i).length != dom.dsiDim(i).length then
         halt("extent in dimension ", i, " does not match actual");
     var alias = new DefaultArithmeticArr(eltType=eltType, rank=d.rank,
                                          idxType=d.idxType,
@@ -546,25 +526,23 @@ class DefaultArithmeticArr: BaseArr {
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
-      alias.off(i) = d.dim(i)._low;
-      alias.blk(i) = (blk(i) * dom.dim(i)._stride / str(i)) : d.idxType;
-      alias.str(i) = d.dim(i)._stride;
+      alias.off(i) = d.dsiDim(i)._low;
+      alias.blk(i) = (blk(i) * dom.dsiDim(i)._stride / str(i)) : d.idxType;
+      alias.str(i) = d.dsiDim(i)._stride;
     }
     alias.origin = origin:d.idxType;
     alias.computeFactoredOffs();
     return alias;
   }
 
-  // dsiCheckSlice
   // can this be put into ChapelArray.chpl and shared amongst all?
-  def checkSlice(ranges) {
+  def dsiCheckSlice(ranges) {
     for param i in 1..rank do
-      if !dom.dim(i).boundsCheck(ranges(i)) then
+      if !dom.dsiDim(i).boundsCheck(ranges(i)) then
         halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
 
-  // dsiSlice
-  def slice(d: DefaultArithmeticDom) {
+  def dsiSlice(d: DefaultArithmeticDom) {
     var alias = new DefaultArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
@@ -576,8 +554,8 @@ class DefaultArithmeticArr: BaseArr {
     alias.str = str;
     alias.origin = origin;
     for param i in 1..rank {
-      alias.off(i) = d.dim(i)._low;
-      alias.origin += blk(i) * (d.dim(i)._low - off(i)) / str(i);
+      alias.off(i) = d.dsiDim(i)._low;
+      alias.origin += blk(i) * (d.dsiDim(i)._low - off(i)) / str(i);
     }
     alias.computeFactoredOffs();
     return alias;
@@ -593,12 +571,11 @@ class DefaultArithmeticArr: BaseArr {
 
     for param i in 1..args.size do
       if isRange(args(i)) then
-        if !dom.dim(i).boundsCheck(args(i)) then
+        if !dom.dsiDim(i).boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
-  // dsiRankChange
-  def rankChange(d, param newRank: int, param newStridable: bool, args) {
+  def dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
@@ -612,8 +589,8 @@ class DefaultArithmeticArr: BaseArr {
     alias.origin = origin;
     for param j in 1..args.size {
       if isRange(args(j)) {
-        alias.off(i) = d.dim(i)._low;
-        alias.origin += blk(j) * (d.dim(i)._low - off(j)) / str(j);
+        alias.off(i) = d.dsiDim(i)._low;
+        alias.origin += blk(j) * (d.dsiDim(i)._low - off(j)) / str(j);
         alias.blk(i) = blk(j);
         alias.str(i) = str(j);
         i += 1;
@@ -625,22 +602,21 @@ class DefaultArithmeticArr: BaseArr {
     return alias;
   }
 
-  // dsiReallocate
-  def reallocate(d: domain) {
+  def dsiReallocate(d: domain) {
     if (d._value.type == dom.type) {
       var copy = new DefaultArithmeticArr(eltType=eltType, rank=rank,
                                           idxType=idxType,
                                           stridable=d._value.stridable,
                                           reindexed=reindexed, dom=d._value);
       for i in d((...dom.ranges)) do
-        copy(i) = this(i);
+        copy.dsiAccess(i) = dsiAccess(i);
       off = copy.off;
       blk = copy.blk;
       str = copy.str;
       origin = copy.origin;
       factoredOffs = copy.factoredOffs;
       size = copy.size;
-      destroyData();
+      dsiDestroyData();
       data = copy.data;
       delete copy;
     } else {
@@ -653,12 +629,12 @@ class DefaultArithmeticArr: BaseArr {
     def _tupleInitHelp(j, param rank: int, b: _tuple) {
       if rank == 1 {
         for param i in 1..b.size {
-          j(this.rank-rank+1) = dom.dim(this.rank-rank+1).low + i - 1;
-          this(j) = b(i);
+          j(this.rank-rank+1) = dom.dsiDim(this.rank-rank+1).low + i - 1;
+          dsiAccess(j) = b(i);
         }
       } else {
         for param i in 1..b.size {
-          j(this.rank-rank+1) = dom.dim(this.rank-rank+1).low + i - 1;
+          j(this.rank-rank+1) = dom.dsiDim(this.rank-rank+1).low + i - 1;
           _tupleInitHelp(j, rank-1, b(i));
         }
       }
@@ -666,7 +642,7 @@ class DefaultArithmeticArr: BaseArr {
 
     if rank == 1 {
       for param i in 1..b.size do
-        this(this.dom.dim(1).low + i - 1) = b(i);
+        dsiAccess(this.dom.dsiDim(1).low + i - 1) = b(i);
     } else {
       var j: rank*int;
       _tupleInitHelp(j, rank, b);
@@ -674,32 +650,30 @@ class DefaultArithmeticArr: BaseArr {
   }
 }
 
-// dsiSerialWrite
-def DefaultArithmeticDom.writeThis(f: Writer) {
-  f.write("[", dim(1));
+def DefaultArithmeticDom.dsiSerialWrite(f: Writer) {
+  f.write("[", dsiDim(1));
   for i in 2..rank do
-    f.write(", ", dim(i));
+    f.write(", ", dsiDim(i));
   f.write("]");
 }
 
-// dsiSerialWrite
-def DefaultArithmeticArr.writeThis(f: Writer) {
-  if dom.numIndices == 0 then return;
+def DefaultArithmeticArr.dsiSerialWrite(f: Writer) {
+  if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
-    i(dim) = dom.dim(dim)._low;
+    i(dim) = dom.dsiDim(dim)._low;
   label next while true {
-    f.write(this(i));
-    if i(rank) <= (dom.dim(rank)._high - dom.dim(rank)._stride:idxType) {
+    f.write(dsiAccess(i));
+    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
       f.write(" ");
-      i(rank) += dom.dim(rank)._stride:idxType;
+      i(rank) += dom.dsiDim(rank)._stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dim(dim)._high - dom.dim(dim)._stride:idxType) {
-          i(dim) += dom.dim(dim)._stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
+          i(dim) += dom.dsiDim(dim)._stride:idxType;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom.dim(dim2)._low;
+            i(dim2) = dom.dsiDim(dim2)._low;
           }
           continue next;
         }

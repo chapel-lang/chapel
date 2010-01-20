@@ -1,5 +1,5 @@
 class CMODist : BaseDist {
-  def newArithmeticDom(param rank: int, type dimensional_index_type, param stridable: bool, param alias: bool=false) {
+  def dsiNewArithmeticDom(param rank: int, type dimensional_index_type, param stridable: bool, param alias: bool=false) {
     return new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable, alias=alias);
   }
 }
@@ -12,9 +12,9 @@ class CMODom: BaseArithmeticDom {
   param alias: bool = false;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
-  def getIndices() return ranges;
+  def dsiGetIndices() return ranges;
 
-  def setIndices(x) {
+  def dsiSetIndices(x) {
     if ranges.size != x.size then
       compilerError("rank mismatch in domain assignment");
     if ranges(1).eltType != x(1).eltType then
@@ -44,23 +44,23 @@ class CMODom: BaseArithmeticDom {
     }
   }
 
-  def this(dim : int)
+  def dsiAccess(dim : int)
     return ranges(dim);
 
-  def member(ind: idxType) where rank == 1 {
+  def dsiMember(ind: idxType) where rank == 1 {
     if !ranges(1).member(ind) then
       return false;
     return true;
   }
 
-  def member(ind: rank*idxType) {
+  def dsiMember(ind: rank*idxType) {
     for param i in 1..rank do
       if !ranges(i).member(ind(i)) then
         return false;
     return true;
   }
 
-  def dim(d : int)
+  def dsiDim(d : int)
     return ranges(d);
 
   def bbox(d: int) {
@@ -68,7 +68,7 @@ class CMODom: BaseArithmeticDom {
     return r;
   }
 
-  def numIndices {
+  def dsiNumIndices {
     var sum = 1:idxType;
     for param i in 1..rank do
       sum *= ranges(i).length;
@@ -76,7 +76,7 @@ class CMODom: BaseArithmeticDom {
     // WANT: return * reduce (this(1..rank).length);
   }
 
-  def low {
+  def dsiLow {
     if rank == 1 {
       return ranges(1)._low;
     } else {
@@ -87,7 +87,7 @@ class CMODom: BaseArithmeticDom {
     }
   }
 
-  def high {
+  def dsiHigh {
     if rank == 1 {
       return ranges(1)._high;
     } else {
@@ -98,14 +98,14 @@ class CMODom: BaseArithmeticDom {
     }
   }
 
-  def buildArray(type eltType) {
+  def dsiBuildArray(type eltType) {
     return new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   }
  
   def buildSubdomain() 
     return new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
 
-  def rankChange(param rank: int, param stridable: bool, args) {
+  def dsiRankChange(param rank: int, param stridable: bool, args) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
@@ -113,7 +113,7 @@ class CMODom: BaseArithmeticDom {
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
-        d.ranges(i) = dim(j)(args(j));
+        d.ranges(i) = dsiDim(j)(args(j));
         i += 1;
       }
     }
@@ -164,17 +164,10 @@ class CMODom: BaseArithmeticDom {
     return x;
   }
 
-  def strideBy(str : rank*int) {
+  def dsiStrideBy(str : rank*int) {
     var x = new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str(i);
-    return x;
-  }
-
-  def strideBy(str : int) {
-    var x = new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
-    for i in 1..rank do
-      x.ranges(i) = ranges(i) by str;
     return x;
   }
 }
@@ -197,7 +190,7 @@ class CMOArr:BaseArr {
   var data: [D1] eltType;
   var noinit: bool = false;
 
-  def getBaseDom() return dom;
+  def dsiGetBaseDom() return dom;
   
   def computeFactoredOffs() {
     factoredOffs = 0:idxType;
@@ -209,30 +202,27 @@ class CMOArr:BaseArr {
   def initialize() {
     if noinit == true then return;
     for param dim in 1..rank {
-      off(dim) = dom.dim(dim)._low;
-      str(dim) = dom.dim(dim)._stride;
+      off(dim) = dom.dsiDim(dim)._low;
+      str(dim) = dom.dsiDim(dim)._stride;
     }
     blk(1) = 1:idxType;
     for dim in 2..rank do
-      blk(dim) = blk(dim-1) * dom.dim(dim-1).length;
+      blk(dim) = blk(dim-1) * dom.dsiDim(dim-1).length;
     computeFactoredOffs();
-    size = blk(rank) * dom.dim(rank).length;
+    size = blk(rank) * dom.dsiDim(rank).length;
     D1 = [0:idxType..#size:idxType];
     data = 0:eltType;
   }
 
   def these() var {
     for i in dom do {
-      yield this(i);
+      yield dsiAccess(i);
     }
   }
 
-  def this(ind: idxType ...1) var where rank == 1
-    return this(ind);
-
-  def this(ind : rank*idxType) var {
+  def dsiAccess(ind : rank*idxType) var {
     if boundsChecking then
-      if !dom.member(ind) then
+      if !dom.dsiMember(ind) then
         halt("array index out of bounds: ", ind);
     var sum = origin;  
     if stridable {
@@ -251,7 +241,7 @@ class CMOArr:BaseArr {
     return data(sum); 
   }
 
-  def reindex(d: CMODom) {
+  def dsiReindex(d: CMODom) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 1..rank do
@@ -272,7 +262,7 @@ class CMOArr:BaseArr {
     return alias;
   }
 
-  def checkSlice(d) {
+  def dsiCheckSlice(d) {
     for param i in 1..rank {
       if d(i).boundedType == BoundedRangeType.bounded then
         if !dom.dim(i).member(d(i)) then
@@ -280,7 +270,7 @@ class CMOArr:BaseArr {
     }
   }
 
-  def slice(d: CMODom) {
+  def dsiSlice(d: CMODom) {
     var alias = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, reindexed=reindexed, dom=d, noinit=true);
     alias.D1 = [0:idxType..#size:idxType];
     alias.data = data;
@@ -303,11 +293,11 @@ class CMOArr:BaseArr {
     for param i in 1..args.size do
       if isRange(args(i)) then
         if args(i).boundedType == BoundedRangeType.bounded then
-          if !dom.dim(i).member(args(i)) then
+          if !dom.dsiDim(i).member(args(i)) then
             halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
-  def rankChange(d, param newRank: int, param newStridable: bool, irs) {
+  def dsiRankChange(d, param newRank: int, param newStridable: bool, irs) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
     var alias = new CMOArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=newStridable, reindexed=true, dom=d, noinit=true);
@@ -318,8 +308,8 @@ class CMOArr:BaseArr {
     alias.origin = origin;
     for param j in 1..irs.size {
       if isRange(irs(j)) {
-        alias.off(i) = d.dim(i)._low;
-        alias.origin += blk(j) * (d.dim(i)._low - off(j)) / str(j);
+        alias.off(i) = d.dsiDim(i)._low;
+        alias.origin += blk(j) * (d.dsiDim(i)._low - off(j)) / str(j);
         alias.blk(i) = blk(j);
         alias.str(i) = str(j);
         i += 1;
@@ -332,7 +322,7 @@ class CMOArr:BaseArr {
   }
 
 
-  def reallocate(d: _domain) {
+  def dsiReallocate(d: _domain) {
     if (d._value.type == dom.type) {
       var copy = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d._value.stridable, reindexed=reindexed, dom=d._value);
       for i in _intersect(d._value, dom) do
@@ -374,29 +364,29 @@ class CMOArr:BaseArr {
   }
 }
 
-def CMODom.writeThis(f: Writer) {
+def CMODom.dsiSerialWrite(f: Writer) {
   f.write("[", this(1));
   for i in 2..rank do
     f.write(", ", this(i));
   f.write("]");
 }
 
-def CMOArr.writeThis(f: Writer) {
+def CMOArr.dsiSerialWrite(f: Writer) {
   var i : rank*idxType;
   for dim in 1..rank do
-    i(dim) = dom.dim(dim)._low;
+    i(dim) = dom.dsiDim(dim)._low;
   label next while true {
-    f.write(this(i));
-    if i(rank) <= (dom.dim(rank)._high - dom.dim(rank)._stride:idxType) {
+    f.write(dsiAccess(i));
+    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
       f.write(" ");
-      i(rank) += dom.dim(rank)._stride:idxType;
+      i(rank) += dom.dsiDim(rank)._stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dim(dim)._high - dom.dim(dim)._stride:idxType) {
-          i(dim) += dom.dim(dim)._stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
+          i(dim) += dom.dsiDim(dim)._stride:idxType;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom.dim(dim2)._low;
+            i(dim2) = dom.dsiDim(dim2)._low;
           }
           continue next;
         }

@@ -1219,7 +1219,7 @@ pragma "inline" def chpl__initCopy(x: _tuple) {
 }
 
 def chpl__initCopy(a: _distribution) {
-  pragma "no copy" var b = chpl__autoCopy(a.dsiClone());
+  pragma "no copy" var b = chpl__autoCopy(a.clone());
   return b;
 }
 

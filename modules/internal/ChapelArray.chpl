@@ -2,19 +2,19 @@ var privatizeLock$: sync int;
 
 pragma "privatized class"
 def _isPrivatized(value) param
-  return !_local & ((_privatization & value.supportsPrivatization()) | value.requiresPrivatization());
+  return !_local & ((_privatization & value.dsiSupportsPrivatization()) | value.dsiRequiresPrivatization());
 
 def _newPrivatizedClass(value) {
   privatizeLock$.writeEF(true);
   var n = __primitive("chpl_numPrivatizedClasses");
   var hereID = here.uid;
-  const privatizeData = value.getPrivatizeData();
+  const privatizeData = value.dsiGetPrivatizeData();
   on Realms(0) do
     _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
   def _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
     var newValue = originalValue;
     if hereID != here.uid {
-      newValue = parentValue.privatize(privatizeData);
+      newValue = parentValue.dsiPrivatize(privatizeData);
       __primitive("chpl_newPrivatizedClass", newValue);
       newValue.pid = n;
     } else {
@@ -37,14 +37,14 @@ def _newPrivatizedClass(value) {
 def _reprivatize(value) {
   var pid = value.pid;
   var hereID = here.uid;
-  const reprivatizeData = value.getReprivatizeData();
+  const reprivatizeData = value.dsiGetReprivatizeData();
   on Realms(0) do
     _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
   def _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
     var newValue = originalValue;
     if hereID != here.uid {
       newValue = __primitive("chpl_getPrivatizedClass", newValue, pid);
-      newValue.reprivatize(parentValue, reprivatizeData);
+      newValue.dsiReprivatize(parentValue, reprivatizeData);
     }
     cobegin {
       if chpl_localeTree.left then
@@ -100,16 +100,16 @@ pragma "has runtime type"
 def chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
                                  type idxType = int(32),
                                  param stridable: bool = false) type
-  return _newDomain(d.dsiNewArithmeticDom(rank, idxType, stridable));
+  return _newDomain(d.newArithmeticDom(rank, idxType, stridable));
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
-  return _newDomain(d.dsiNewAssociativeDom(idxType));
+  return _newDomain(d.newAssociativeDom(idxType));
 
 pragma "has runtime type"
 def chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
  where idxType == _OpaqueIndex
-  return _newDomain(d.dsiNewOpaqueDom(idxType));
+  return _newDomain(d.newOpaqueDom(idxType));
 
 // This function has no 'has runtime type' pragma since the idxType of
 // opaque domains is _OpaqueIndex, not opaque.  This function is
@@ -121,7 +121,7 @@ def chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
 
 pragma "has runtime type"
 def chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain) type
-  return _newDomain(d.dsiNewSparseDom(dom.rank, dom._value.idxType, dom));
+  return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
 
 def chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseArithmeticDom
@@ -313,11 +313,11 @@ record _distribution {
     }
   }
 
-  def dsiClone() {
+  def clone() {
     return _newDistribution(_value.dsiClone());
   }
 
-  def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+  def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     var x = _value.dsiNewArithmeticDom(rank, idxType, stridable);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
@@ -327,7 +327,7 @@ record _distribution {
     return x;
   }
 
-  def dsiNewAssociativeDom(type idxType) {
+  def newAssociativeDom(type idxType) {
     var x = _value.dsiNewAssociativeDom(idxType);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
@@ -337,7 +337,7 @@ record _distribution {
     return x;
   }
 
-  def dsiNewAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
+  def newAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
     var x = _value.dsiNewAssociativeDom(idxType);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
@@ -346,11 +346,11 @@ record _distribution {
     }
     const enumTuple = _enum_enumerate(idxType);
     for param i in 1..enumTuple.size do
-      x.add(enumTuple(i));
+      x.dsiAdd(enumTuple(i));
     return x;
   }
 
-  def dsiNewOpaqueDom(type idxType) {
+  def newOpaqueDom(type idxType) {
     var x = _value.dsiNewOpaqueDom(idxType);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
@@ -360,7 +360,7 @@ record _distribution {
     return x;
   }
 
-  def dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
+  def newSparseDom(param rank: int, type idxType, dom: domain) {
     var x = _value.dsiNewSparseDom(rank, idxType, dom);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
@@ -425,7 +425,7 @@ record _domain {
   }
 
   def this(ranges: range(?) ...rank) {
-    var d = _value.slice(_value.stridable || chpl__anyStridable(ranges), ranges);
+    var d = _value.dsiSlice(_value.stridable || chpl__anyStridable(ranges), ranges);
     if (d.linksDistribution()) then
       d.dist._distCnt$ += 1;
     return _newDomain(d);
@@ -434,24 +434,24 @@ record _domain {
   def this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-    var d = _value.rankChange(rank, stridable, args);
+    var d = _value.dsiRankChange(rank, stridable, args);
     if (d.linksDistribution()) then
       d.dist._distCnt$ += 1;
     return _newDomain(d);
   }
 
-  def dims() return _value.dims();
+  def dims() return _value.dsiDims();
 
-  def dim(d : int) return _value.dim(d);
+  def dim(d : int) return _value.dsiDim(d);
 
-  def dim(param d : int) return _value.dim(d);
+  def dim(param d : int) return _value.dsiDim(d);
 
   def dimIter(param d, ind) {
     for i in _value.dimIter(d, ind) do yield i;
   }
 
   def buildArray(type eltType) {
-    var x = _value.buildArray(eltType);
+    var x = _value.dsiBuildArray(eltType);
     pragma "dont disable remote value forwarding"
     def help() {
       var cnt = _value._domCnt$; // lock
@@ -469,26 +469,26 @@ record _domain {
   def create() {
     if _value.idxType != _OpaqueIndex then
       compilerError("domain.create() only applies to opaque domains");
-    return _value.create();
+    return _value.dsiCreate();
   }
 
   def add(i) {
-    _value.add(i);
+    _value.dsiAdd(i);
   }
 
   def remove(i) {
-    _value.remove(i);
+    _value.dsiRemove(i);
   }
 
-  def numIndices return _value.numIndices;
-  def low return _value.low;
-  def high return _value.high;
+  def numIndices return _value.dsiNumIndices;
+  def low return _value.dsiLow;
+  def high return _value.dsiHigh;
 
-  def member(i) return _value.member(i);
+  def member(i) return _value.dsiMember(i);
 
   // 1/5/10: do we want to support order() and position()?
-  def order(i) return _value.order(i);
-  def position(i) return _value.position(i);
+  def order(i) return _value.dsiIndexOrder(i);
+  def position(i) return _value.dsiPosition(i);
 
   def expand(off: _value.idxType ...rank) return expand(off);
   def expand(off: rank*_value.idxType) {
@@ -516,7 +516,7 @@ record _domain {
   def exterior(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do
-      ranges(i) = _value.dim(i).exterior(off(i));
+      ranges(i) = _value.dsiDim(i).exterior(off(i));
     return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
                                                         _value.stridable,
                                                         ranges));
@@ -526,11 +526,11 @@ record _domain {
   def interior(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do {
-      if ((off(i) > 0) && (_value.dim(i)._high+1-off(i) < _value.dim(i)._low) ||
-          (off(i) < 0) && (_value.dim(i)._low-1-off(i) > _value.dim(i)._high)) {
+      if ((off(i) > 0) && (_value.dsiDim(i)._high+1-off(i) < _value.dsiDim(i)._low) ||
+          (off(i) < 0) && (_value.dsiDim(i)._low-1-off(i) > _value.dsiDim(i)._high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
-      ranges(i) = _value.dim(i).interior(off(i));
+      ranges(i) = _value.dsiDim(i).interior(off(i));
     }
     return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
                                                         _value.stridable,
@@ -541,7 +541,7 @@ record _domain {
   def translate(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do
-      ranges(i) = _value.dim(i).translate(off(i));
+      ranges(i) = _value.dsiDim(i).translate(off(i));
     return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
                                                         _value.stridable,
                                                         ranges));
@@ -551,24 +551,24 @@ record _domain {
   def chpl__unTranslate(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do
-      ranges(i) = _value.dim(i).chpl__unTranslate(off(i));
+      ranges(i) = _value.dsiDim(i).chpl__unTranslate(off(i));
     return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
                                                         _value.stridable,
                                                         ranges));
   }
 
   def setIndices(x) {
-    _value.setIndices(x);
+    _value.dsiSetIndices(x);
     if _isPrivatized(_valueType) {
       _reprivatize(_value);
     }
   }
 
   def getIndices()
-    return _value.getIndices();
+    return _value.dsiGetIndices();
 
   def writeThis(f: Writer) {
-    f.write(_value);
+    _value.dsiSerialWrite(f);
   }
 
   def localSlice(r: range(?)... rank) {
@@ -578,7 +578,7 @@ record _domain {
   // associative array interface
 
   def sorted() {
-    for i in _value.sorted() {
+    for i in _value.dsiSorted() {
       yield i;
     }
   }
@@ -615,7 +615,7 @@ record _array {
           delete _value._arrAlias;
       }
     }
-    _value.makeAlias(A._value);
+    _value.dsiCreateAlias(A._value);
     _value._arrAlias = A._value;
     pragma "dont disable remote value forwarding"
     def help() {
@@ -652,15 +652,15 @@ record _array {
 
   pragma "inline"
   def this(i: rank*_value.idxType) var where rank > 1
-    return _value(i);
+    return _value.dsiAccess(i);
 
   pragma "inline"
   def this(i: _value.idxType ...rank) var where rank > 1
-    return _value(i);
+    return _value.dsiAccess(i);
 
   pragma "inline"
   def this(i: _value.idxType) var where rank == 1
-    return _value(i);
+    return _value.dsiAccess(i);
 
   //
   // requires dense domain implementation that returns a tuple of
@@ -676,9 +676,9 @@ record _array {
 
   def this(ranges: range(?) ...rank) var {
     if boundsChecking then
-      _value.checkSlice(ranges);
+      _value.dsiCheckSlice(ranges);
     var d = _dom((...ranges));
-    var a = _value.slice(d._value);
+    var a = _value.dsiSlice(d._value);
     a._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     def help() {
@@ -694,9 +694,9 @@ record _array {
       _value.checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-    var d = _value.dom.rankChange(rank, stridable, args);
+    var d = _value.dom.dsiRankChange(rank, stridable, args);
     d._domCnt$ += 1;
-    var a = _value.rankChange(d, rank, stridable, args);
+    var a = _value.dsiRankChange(d, rank, stridable, args);
     a._arrAlias = _value;
     a._arrAlias._arrCnt$ += 1;
     return _newArray(a);
@@ -712,10 +712,10 @@ record _array {
   }
 
   // 1/5/10: do we need this since it always returns domain.numIndices?
-  def numElements return _value.dom.numIndices;
+  def numElements return _value.dom.dsiNumIndices;
 
   def newAlias() {
-    var x = _value.reindex(_value.dom);
+    var x = _value.dsiReindex(_value.dom);
     x._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     def help() {
@@ -727,7 +727,7 @@ record _array {
   }
 
   def reindex(d: domain) where rank == 1 {
-    var x = _value.reindex(d._value);
+    var x = _value.dsiReindex(d._value);
     x._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     def help() {
@@ -739,7 +739,7 @@ record _array {
   }
 
   def reindex(d: domain) where rank > 1 {
-    var x = _value.reindex(d._value);
+    var x = _value.dsiReindex(d._value);
     d._value._domCnt$ += 1;
     x._arrAlias = _value;
     x._arrAlias._arrCnt$ += 1;
@@ -747,7 +747,7 @@ record _array {
   }
 
   def writeThis(f: Writer) {
-    f.write(_value);
+    _value.dsiSerialWrite(f);
   }
 
   // sparse array interface
@@ -759,7 +759,7 @@ record _array {
   // associative array interface
 
   def sorted() {
-    for i in _value.sorted() {
+    for i in _value.dsiSorted() {
       yield i;
     }
   }
@@ -842,7 +842,7 @@ def chpl__isDomain(x) param return false;
 //
 def =(a: _distribution, b: _distribution) {
   if a._value == nil then
-    return chpl__autoCopy(b.dsiClone());
+    return chpl__autoCopy(b.clone());
   else
     halt("distribution assignment is not yet supported");
   return a;
@@ -851,7 +851,7 @@ def =(a: _distribution, b: _distribution) {
 def =(a: domain, b: domain) {
   var bc = b;
   for e in a._value._arrs do {
-    on e do e.reallocate(bc);
+    on e do e.dsiReallocate(bc);
   }
   a.setIndices(bc.getIndices());
   return a;
@@ -928,7 +928,7 @@ def =(a: [], b: _desync(a.eltType)) {
 }
 
 def by(a: domain, b) {
-  var x = a._value.strideBy(b);
+  var x = a._value.dsiStrideBy(b);
   if (x.linksDistribution()) then
     x.dist._distCnt$ += 1;
   return _newDomain(x);
@@ -968,7 +968,7 @@ def linearize(Xs) {
 }
 
 def _callSupportsAlignedFollower(A) param where A: BaseArr
-  return A.supportsAlignedFollower();
+  return A.dsiSupportsAlignedFollower();
 
 def _callSupportsAlignedFollower(A) param
   return false;

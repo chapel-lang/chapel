@@ -34,12 +34,12 @@ class CSRDom: BaseSparseDom {
     dsiClear();
   }
 
-  def numIndices return nnz;
+  def dsiNumIndices return nnz;
 
-  def getIndices() return 0;
-  def setIndices(x) { }
+  def dsiGetIndices() return 0;
+  def dsiSetIndices(x) { }
 
-  def buildArray(type eltType)
+  def dsiBuildArray(type eltType)
     return new CSRArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
 
   def these() {
@@ -70,7 +70,7 @@ class CSRDom: BaseSparseDom {
     compilerError("Sparse iterators can't yet be zippered with others");
   }
 
-  def dim(d : int) {
+  def dsiDim(d : int) {
     if (d == 1) {
       return rowRange;
     } else {
@@ -88,12 +88,12 @@ class CSRDom: BaseSparseDom {
     return BinarySearch(colIdx, col, rowStart(row), rowStop(row));
   }
 
-  def member(ind: rank*idxType) {
+  def dsiMember(ind: rank*idxType) {
     const (found, loc) = find(ind);
     return found;
   }
 
-  def add(ind: rank*idxType) {
+  def dsiAdd(ind: rank*idxType) {
     // find position in nnzDom to insert new index
     const (found, insertPt) = find(ind);
 
@@ -161,12 +161,12 @@ class CSRArr: BaseArr {
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
-  def getBaseDom() return dom;
+  def dsiGetBaseDom() return dom;
 
   //  def this(ind: idxType ... 1) var where rank == 1
   //    return this(ind);
 
-  def this(ind: rank*idxType) var {
+  def dsiAccess(ind: rank*idxType) var {
     // make sure we're in the dense bounding box
     if boundsChecking then
       if !((dom.parentDom).member(ind)) then
@@ -202,7 +202,7 @@ class CSRArr: BaseArr {
 }
 
 
-def CSRDom.writeThis(f: Writer) {
+def CSRDom.dsiSerialWrite(f: Writer) {
   f.writeln("[");
   for r in rowRange {
     const lo = rowStart(r);
@@ -215,7 +215,7 @@ def CSRDom.writeThis(f: Writer) {
 }
 
 
-def CSRArr.writeThis(f: Writer) {
+def CSRArr.dsiSerialWrite(f: Writer) {
   for r in dom.rowRange {
     const lo = dom.rowStart(r);
     const hi = dom.rowStop(r);

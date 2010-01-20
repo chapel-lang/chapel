@@ -51,15 +51,15 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   //
   // Standard Internal Domain Interface
   //
-  def buildArray(type eltType) {
+  def dsiBuildArray(type eltType) {
     return new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
                                      dom=this); 
   }
 
-  def getIndices()
+  def dsiGetIndices()
     return this;
 
-  def setIndices(b: DefaultAssociativeDom) {
+  def dsiSetIndices(b: DefaultAssociativeDom) {
     // store cache of old domain/arrays
     _backupArrays();
     tmpDom = tableDom;
@@ -81,7 +81,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
     // add indices and copy array data over
     for idx in b {
-      const newSlotNum = add(idx);
+      const newSlotNum = dsiAdd(idx);
       const (foundit, slot) = _findFilledSlot(idx, tmpTable);
       if (foundit) {
         _preserveArrayElement(oldslot=slot, newslot=newSlotNum);
@@ -92,7 +92,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     _removeArrayBackups();
   }
   
-  def writeThis(f: Writer) {
+  def dsiSerialWrite(f: Writer) {
     var first = true;
     f.write("[");
     for idx in this {
@@ -109,7 +109,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   // Standard user domain interface
   //
 
-  def numIndices {
+  def dsiNumIndices {
     return numEntries;
   }
 
@@ -128,7 +128,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-    yield 0..numIndices-1;
+    yield 0..dsiNumIndices-1;
   }
 
   def these(param tag: iterator, follower) where tag == iterator.follower {
@@ -148,11 +148,11 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     numEntries = 0;
   }
 
-  def member(idx: idxType): bool {
+  def dsiMember(idx: idxType): bool {
     return _findFilledSlot(idx)(1);
   }
 
-  def add(idx: idxType): index(tableDom) {
+  def dsiAdd(idx: idxType): index(tableDom) {
     if ((numEntries+1)*2 > tableSize) {
       // TODO: should also make sure that we don't exceed the maximum table
       // size
@@ -173,7 +173,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     return slotNum;
   }
 
-  def remove(idx: idxType) {
+  def dsiRemove(idx: idxType) {
     const (foundSlot, slotNum) = _findFilledSlot(idx);
     if (foundSlot) {
       table(slotNum).status = chpl__hash_status.deleted;
@@ -186,7 +186,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     }
   }
 
-  def sorted() {
+  def dsiSorted() {
     _createSortedTmpTable2();
     for ind in tmpTable2 do
       yield ind;
@@ -229,7 +229,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
     // insert old data into newly resized table
     for slot in _fullSlots(tmpTable) {
-      const newslot = add(tmpTable(slot).idx);
+      const newslot = dsiAdd(tmpTable(slot).idx);
       _preserveArrayElement(oldslot=slot, newslot=newslot);
     }
     
@@ -295,13 +295,13 @@ class DefaultAssociativeArr: BaseArr {
   // Standard internal array interface
   // 
 
-  def getBaseDom() return dom;
+  def dsiGetBaseDom() return dom;
 
-  def reallocate(d: domain) {
+  def dsiReallocate(d: domain) {
     // reallocation is done in the setIndices function
   }
 
-  def this(idx : idxType) var : eltType {
+  def dsiAccess(idx : idxType) var : eltType {
     const (found, slotNum) = dom._findFilledSlot(idx);
     if (found) then
       return data(slotNum);
@@ -313,7 +313,7 @@ class DefaultAssociativeArr: BaseArr {
 
   def these() var {
     for slot in dom {
-      yield this(slot);
+      yield dsiAccess(slot);
     }
   }
 
@@ -327,7 +327,7 @@ class DefaultAssociativeArr: BaseArr {
       yield this(i);
   }
 
-  def writeThis(f: Writer) {
+  def dsiSerialWrite(f: Writer) {
     var first = true;
     for val in this {
       if (first) then
@@ -343,7 +343,7 @@ class DefaultAssociativeArr: BaseArr {
   // Associative array interface
   //
 
-  def sorted() {
+  def dsiSorted() {
     _createSortedTmpTable();
     for elem in tmpTable do
       yield elem;
@@ -371,7 +371,7 @@ class DefaultAssociativeArr: BaseArr {
   // private internal interface
 
   def _createSortedTmpTable() {
-    tmpDom = [0..dom.numIndices-1];
+    tmpDom = [0..dom.dsiNumIndices-1];
     var count: chpl_table_index_type = 0;
     for slot in dom._fullSlots() {
       tmpTable(count) = data(slot);
@@ -385,10 +385,10 @@ class DefaultAssociativeArr: BaseArr {
   }
 
   def tupleInit(t: _tuple) where _isEnumeratedType(idxType) {
-    if t.size != dom.numIndices then
+    if t.size != dom.dsiNumIndices then
       halt("tuple array initializer size mismatch");
     for (i,j) in (chpl_enumerate(idxType), 1..) {
-      this(i) = t(j);
+      dsiAccess(i) = t(j);
     }
   }
 }

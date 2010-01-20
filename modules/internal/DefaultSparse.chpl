@@ -22,17 +22,17 @@ class DefaultSparseDom: BaseSparseDom {
     nnz = 0;
   }
 
-  def numIndices return nnz;
+  def dsiNumIndices return nnz;
 
   // This isn't what getIndices/setIndices are supposed to do, but
   // this interface doesn't really make sense for sparse domains.
   // Doing the one piece that is easy to do -- copying the parent
   // domain over.
-  def getIndices() { return parentDom; }
-  def setIndices(x) { parentDom = x; }
+  def dsiGetIndices() { return parentDom; }
+  def dsiSetIndices(x) { parentDom = x; }
 
 
-  def buildArray(type eltType)
+  def dsiBuildArray(type eltType)
     return new DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
                                 dom=this);
 
@@ -55,7 +55,7 @@ class DefaultSparseDom: BaseSparseDom {
     compilerError("Sparse iterators can't yet be zippered with others");
   }
 
-  def dim(d : int) {
+  def dsiDim(d : int) {
     return parentDom.dim(d);
   }
 
@@ -64,7 +64,7 @@ class DefaultSparseDom: BaseSparseDom {
     return BinarySearch(indices, ind, 1, nnz);
   }
 
-  def member(ind) { // ind should be verified to be index type
+  def dsiMember(ind) { // ind should be verified to be index type
     const (found, loc) = find(ind);
     return found;
   }
@@ -104,11 +104,11 @@ class DefaultSparseDom: BaseSparseDom {
     }
   }
 
-  def add(ind: idxType) where rank == 1 {
+  def dsiAdd(ind: idxType) where rank == 1 {
     add_help(ind);
   }
 
-  def add(ind: rank*idxType) {
+  def dsiAdd(ind: rank*idxType) {
     add_help(ind);
   }
 
@@ -135,9 +135,9 @@ class DefaultSparseArr: BaseArr {
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
-  def getBaseDom() return dom;
+  def dsiGetBaseDom() return dom;
 
-  def this(ind: idxType) var where rank == 1 {
+  def dsiAccess(ind: idxType) var where rank == 1 {
     // make sure we're in the dense bounding box
     if boundsChecking then
       if !(dom.parentDom.member(ind)) then
@@ -153,7 +153,7 @@ class DefaultSparseArr: BaseArr {
       return irv;
   }
 
-  def this(ind: rank*idxType) var {
+  def dsiAccess(ind: rank*idxType) var {
     // make sure we're in the dense bounding box
     if boundsChecking then
       if !(dom.parentDom.member(ind)) then
@@ -189,7 +189,7 @@ class DefaultSparseArr: BaseArr {
 }
 
 
-def DefaultSparseDom.writeThis(f: Writer) {
+def DefaultSparseDom.dsiSerialWrite(f: Writer) {
   if (rank == 1) {
     f.write("[");
     if (nnz >= 1) {
@@ -218,7 +218,7 @@ def DefaultSparseDom.writeThis(f: Writer) {
 }
 
 
-def DefaultSparseArr.writeThis(f: Writer) {
+def DefaultSparseArr.dsiSerialWrite(f: Writer) {
   if (rank == 1) {
     if (dom.nnz >= 1) {
       f.write(data(1));

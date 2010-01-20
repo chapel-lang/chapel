@@ -89,7 +89,7 @@ class UserMapAssoc : BaseDist {
     locDist = other.locDist;
   }
 
-  def clone() {
+  def dsiClone() {
     return new UserMapAssoc(idxType, mapper, targetLocs);
   }
 
@@ -101,7 +101,7 @@ class UserMapAssoc : BaseDist {
   //
   // TODO: What should we do if domIdxType did not match idxType?
   //
-  def newAssociativeDom(type domIdxType) where domIdxType != idxType {
+  def dsiNewAssociativeDom(type domIdxType) where domIdxType != idxType {
     compilerError("Trying to create a domain whose index type does not match the distribution's");
   }
 
@@ -110,7 +110,7 @@ class UserMapAssoc : BaseDist {
   // initial index set if one exists?  If not, we should rewrite the
   // global domain construction to not do anything with whole...
   //
-  def newAssociativeDom(type idxType) {
+  def dsiNewAssociativeDom(type idxType) {
     var dom = new UserMapAssocDom(idxType=idxType, dist=this);
     dom.setup();
     return dom;
@@ -120,7 +120,7 @@ class UserMapAssoc : BaseDist {
   //
   // print out the distribution
   //
-  def writeThis(x:Writer) {
+  def WriteThis(x:Writer) {
     x.writeln("UserMapAssoc");
     x.writeln("-------");
     x.writeln("distributed using: ", mapper);
@@ -244,7 +244,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   // GLOBAL DOMAIN INTERFACE:
 
-  def add(i: idxType) {
+  def dsiAdd(i: idxType) {
     locDoms(dist.ind2locInd(i)).add(i);
   }
 
@@ -335,7 +335,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // the print method for the domain
   //
-  def writeThis(x:Writer) {
+  def dsiSerialWrite(x:Writer) {
     for locDom in locDoms do
       // TODO: This doesn't work -- accesses a bad file descriptor
       //      on locDom {
@@ -356,7 +356,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // how to allocate a new array over this domain
   //
-  def buildArray(type elemType) {
+  def dsiBuildArray(type elemType) {
     var arr = new UserMapAssocArr(idxType=idxType, eltType=elemType, dom=this);
     arr.setup();
     return arr;
@@ -365,7 +365,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // queries for the number of indices, low, and high bounds
   //
-  def numIndices {
+  def dsiNumIndices {
     halt("numIndices not yet implemented");
   }
 
@@ -373,15 +373,15 @@ class UserMapAssocDom: BaseAssociativeDom {
   // INTERFACE NOTES: Could we make setIndices() for an arithmetic
   // domain take a domain rather than something else?
   //
-  def setIndices(x: domain) {
+  def dsiSetIndices(x: domain) {
     writeln("setIndices not yet implemented");
   }
 
-  def setIndices(x) {
+  def dsiSetIndices(x) {
     writeln("setIndices not yet implemented");
   }
 
-  def getIndices() {
+  def dsiGetIndices() {
     writeln("getIndices not yet implemented");
   }
 
@@ -402,15 +402,15 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   }
 
-  def supportsPrivatization() param return true;
-  def getPrivatizeData() return 0;
-  def privatize(privatizeData) {
+  def dsiSupportsPrivatization() param return true;
+  def dsiGetPrivatizeData() return 0;
+  def dsiPrivatize(privatizeData) {
     var privateDist = new UserMapAssoc(idxType, dist);
     var c = new UserMapAssocDom(idxType=idxType, dist=privateDist);
     c.locDoms = locDoms;
     return c;
   }
-  def reprivatize(other) {
+  def dsiReprivatize(other) {
     locDoms = other.locDoms;
   }
 }
@@ -543,7 +543,7 @@ class UserMapAssocArr: BaseArr {
 
   var pid: int = -1; // privatized object id
 
-  def getBaseDom() return dom;
+  def dsiGetBaseDom() return dom;
 
   def setup() {
     coforall localeIdx in dom.dist.targetLocDom do
@@ -551,9 +551,9 @@ class UserMapAssocArr: BaseArr {
         locArrs(localeIdx) = new LocUserMapAssocArr(idxType, eltType, dom.locDoms(localeIdx));
   }
 
-  def supportsPrivatization() param return true;
-  def getPrivatizeData() return 0;
-  def privatize(privatizeData) {
+  def dsiSupportsPrivatization() param return true;
+  def dsiGetPrivatizeData() return 0;
+  def dsiPrivatize(privatizeData) {
     var dompid = dom.pid;
     var thisdom = dom;
     var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
@@ -570,7 +570,7 @@ class UserMapAssocArr: BaseArr {
   //
   // TODO: Do we need a global bounds check here or in ind2locind?
   //
-  def this(i: idxType) var {
+  def dsiAccess(i: idxType) var {
     const myLocArr = locArrs(here.id);
     local {
       if myLocArr.locDom.myInds.member(i) then
@@ -686,7 +686,7 @@ class UserMapAssocArr: BaseArr {
   //
   // how to print out the whole array, sequentially
   //
-  def writeThis(x: Writer) {
+  def dsiSerialWrite(x: Writer) {
 
     var first = true;
     for locArr in locArrs {
@@ -705,8 +705,8 @@ class UserMapAssocArr: BaseArr {
   //
   // a query for the number of elements in the array
   //
-  def numElements {
-    return dom.numIndices;
+  def dsiNumElements {
+    return dom.dsiNumIndices;
   }
 }
 

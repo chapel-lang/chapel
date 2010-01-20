@@ -72,9 +72,9 @@ class GPUArithmeticDom: BaseArithmeticDom {
       ranges(i) = emptyRange;
   }
   
-  def getIndices() return ranges;
+  def dsiGetIndices() return ranges;
 
-  def setIndices(x) {
+  def dsiSetIndices(x) {
     if ranges.size != x.size then
       compilerError("rank mismatch in domain assignment");
     if ranges(1).eltType != x(1).eltType then
@@ -152,24 +152,24 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def member(ind: idxType) where rank == 1 {
+  def dsiMember(ind: idxType) where rank == 1 {
     if !ranges(1).member(ind) then
       return false;
     return true;
   }
 
-  def member(ind: rank*idxType) {
+  def dsiMember(ind: rank*idxType) {
     for param i in 1..rank do
       if !ranges(i).member(ind(i)) then
         return false;
     return true;
   }
 
-  def order(ind: idxType) where rank == 1 {
+  def dsiIndexOrder(ind: idxType) where rank == 1 {
     return ranges(1).order(ind);
   }
 
-  def order(ind: rank*idxType) {
+  def dsiIndexOrder(ind: rank*idxType) {
     var totOrder: idxType;
     var blk: idxType = 1;
     for param d in 1..rank by -1 {
@@ -181,13 +181,13 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return totOrder;
   }
 
-  def position(ind: idxType) where rank == 1 {
+  def dsiPosition(ind: idxType) where rank == 1 {
     var pos: 1*idxType;
-    pos(1) = order(ind);
+    pos(1) = dsiIndexOrder(ind);
     return pos;
   }
 
-  def position(ind: rank*idxType) {
+  def dsiPosition(ind: rank*idxType) {
     var pos: rank*idxType;
     for d in 1..rank {
       pos(d) = ranges(d).order(ind(d));
@@ -195,10 +195,10 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return pos;
   }
 
-  def dim(d : int)
+  def dsiDim(d : int)
     return ranges(d);
 
-  def numIndices {
+  def dsiNumIndices {
     var sum = 1:idxType;
     for param i in 1..rank do
       sum *= ranges(i).length;
@@ -206,7 +206,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     // WANT: return * reduce (this(1..rank).length);
   }
 
-  def low {
+  def dsiLow {
     if rank == 1 {
       return ranges(1)._low;
     } else {
@@ -217,7 +217,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def high {
+  def dsiHigh {
     if rank == 1 {
       return ranges(1)._high;
     } else {
@@ -228,21 +228,21 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def buildArray(type eltType) {
+  def dsiBuildArray(type eltType) {
     return new GPUArithmeticArr(eltType=eltType, rank=rank, idxType=idxType, 
 		    		stridable=stridable, dom=this, 
 				low_val=ranges(1).low);
   }
 
-  def slice(param stridable: bool, ranges) {
+  def dsiSlice(param stridable: bool, ranges) {
     var d = new GPUArithmeticDom(rank, idxType,
                                      stridable || this.stridable, dist);
     for param i in 1..rank do
-      d.ranges(i) = dim(i)(ranges(i));
+      d.ranges(i) = dsiDim(i)(ranges(i));
     return d;
   }
 
-  def rankChange(param rank: int, param stridable: bool, args) {
+  def dsiRankChange(param rank: int, param stridable: bool, args) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
@@ -250,7 +250,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
-        d.ranges(i) = dim(j)(args(j));
+        d.ranges(i) = dsiDim(j)(args(j));
         i += 1;
       }
     }
@@ -260,25 +260,25 @@ class GPUArithmeticDom: BaseArithmeticDom {
   def translate(off: rank*idxType) {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
-      x.ranges(i) = dim(i).translate(off(i));
+      x.ranges(i) = dsiDim(i).translate(off(i));
     return x;
   }
 
   def chpl__unTranslate(off: rank*idxType) {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
-      x.ranges(i) = dim(i).chpl__unTranslate(off(i));
+      x.ranges(i) = dsiDim(i).chpl__unTranslate(off(i));
     return x;
   }
 
   def interior(off: rank*idxType) {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do {
-      if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
-          (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
+      if ((off(i) > 0) && (dsiDim(i)._high+1-off(i) < dsiDim(i)._low) ||
+          (off(i) < 0) && (dsiDim(i)._low-1-off(i) > dsiDim(i)._high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
-      x.ranges(i) = dim(i).interior(off(i));
+      x.ranges(i) = dsiDim(i).interior(off(i));
     }
     return x;
   }
@@ -286,7 +286,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
   def exterior(off: rank*idxType) {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
-      x.ranges(i) = dim(i).exterior(off(i));
+      x.ranges(i) = dsiDim(i).exterior(off(i));
     return x;
   }
 
@@ -308,14 +308,14 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return x;
   }
 
-  def strideBy(str : rank*int) {
+  def dsiStrideBy(str : rank*int) {
     var x = new GPUArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str(i);
     return x;
   }
 
-  def strideBy(str : int) {
+  def dsiStrideBy(str : int) {
     var x = new GPUArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str;
@@ -342,13 +342,13 @@ class GPUArithmeticArr: BaseArr {
 
   def canCopyFromHost param return true;
 
-  def getBaseDom() return dom;
+  def dsiGetBaseDom() return dom;
 
   def destroyData() {
     delete data;
   }
 
-  def makeAlias(B: GPUArithmeticArr) {
+  def dsiCreateAlias(B: GPUArithmeticArr) {
     var A = B.reindex(dom);
     off = A.off;
     blk = A.blk;
@@ -360,7 +360,7 @@ class GPUArithmeticArr: BaseArr {
 
   def these() var {
     for i in dom do
-      yield this(i);
+      yield dsiAccess(i);
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
@@ -375,7 +375,7 @@ class GPUArithmeticArr: BaseArr {
   }
 
   def these(param tag: iterator, follower) var where tag == iterator.follower {
-      yield this(follower + low_val);
+      yield dsiAccess(follower + low_val);
   }
 
   def computeFactoredOffs() {
@@ -387,34 +387,34 @@ class GPUArithmeticArr: BaseArr {
 
   def initialize() {
     for param dim in 1..rank {
-      off(dim) = dom.dim(dim)._low;
-      str(dim) = dom.dim(dim)._stride;
+      off(dim) = dom.dsiDim(dim)._low;
+      str(dim) = dom.dsiDim(dim)._stride;
     }
     blk(rank) = 1:idxType;
     for param dim in 1..rank-1 by -1 do
-      blk(dim) = blk(dim+1) * dom.dim(dim+1).length;
+      blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
     computeFactoredOffs();
-    size = blk(1) * dom.dim(1).length;
+    size = blk(1) * dom.dsiDim(1).length;
     data = new _gdata(eltType);
     data.init(size);
   }
 
   pragma "inline"
-  def this(ind: idxType ...1) var where rank == 1 {
-    return this(ind);
+  def dsiAccess(ind: idxType ...1) var where rank == 1 {
+    return dsiAccess(ind);
   }
 
   pragma "inline"
-  def this(ind : rank*idxType) var {
+  def dsiAccess(ind : rank*idxType) var {
     var sum = ind(1) - factoredOffs; // Hardcoded to support only 1D arrays
     return data(sum);
   }
 
-  def reindex(d: GPUArithmeticDom) {
+  def dsiReindex(d: GPUArithmeticDom) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 1..rank do
-      if d.dim(i).length != dom.dim(i).length then
+      if d.dsiDim(i).length != dom.dsiDim(i).length then
         halt("extent in dimension ", i, " does not match actual");
     var alias = new GPUArithmeticArr(eltType=eltType, rank=d.rank,
                                      idxType=d.idxType,
@@ -423,21 +423,21 @@ class GPUArithmeticArr: BaseArr {
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
-      alias.off(i) = d.dim(i)._low;
-      alias.blk(i) = (blk(i) * dom.dim(i)._stride / str(i)) : d.idxType;
-      alias.str(i) = d.dim(i)._stride;
+      alias.off(i) = d.dsiDim(i)._low;
+      alias.blk(i) = (blk(i) * dom.dsiDim(i)._stride / str(i)) : d.idxType;
+      alias.str(i) = d.dsiDim(i)._stride;
     }
     alias.computeFactoredOffs();
     return alias;
   }
 
-  def checkSlice(ranges) {
+  def dsiCheckSlice(ranges) {
     for param i in 1..rank do
-      if !dom.dim(i).boundsCheck(ranges(i)) then
+      if !dom.dsiDim(i).boundsCheck(ranges(i)) then
         halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
 
-  def slice(d: GPUArithmeticDom) {
+  def dsiSlice(d: GPUArithmeticDom) {
     var alias = new GPUArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
@@ -448,7 +448,7 @@ class GPUArithmeticArr: BaseArr {
     alias.blk = blk;
     alias.str = str;
     for param i in 1..rank {
-      alias.off(i) = d.dim(i)._low;
+      alias.off(i) = d.dsiDim(i)._low;
     }
     alias.computeFactoredOffs();
     return alias;
@@ -460,11 +460,11 @@ class GPUArithmeticArr: BaseArr {
 
     for param i in 1..args.size do
       if isRange(args(i)) then
-        if !dom.dim(i).boundsCheck(args(i)) then
+        if !dom.dsiDim(i).boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
-  def rankChange(d, param newRank: int, param newStridable: bool, args) {
+  def dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
@@ -477,7 +477,7 @@ class GPUArithmeticArr: BaseArr {
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
-        alias.off(i) = d.dim(i)._low;
+        alias.off(i) = d.dsiDim(i)._low;
         alias.blk(i) = blk(j);
         alias.str(i) = str(j);
         i += 1;
@@ -488,14 +488,14 @@ class GPUArithmeticArr: BaseArr {
     return alias;
   }
 
-  def reallocate(d: domain) {
+  def dsiReallocate(d: domain) {
     if (d._value.type == dom.type) {
       var copy = new GPUArithmeticArr(eltType=eltType, rank=rank,
                                           idxType=idxType,
                                           stridable=d._value.stridable,
                                           reindexed=reindexed, dom=d._value);
       for i in d((...dom.ranges)) do
-        copy(i) = this(i);
+        copy(i) = dsiAccess(i);
       off = copy.off;
       blk = copy.blk;
       str = copy.str;
@@ -513,12 +513,12 @@ class GPUArithmeticArr: BaseArr {
     def _tupleInitHelp(j, param rank: int, b: _tuple) {
       if rank == 1 {
         for param i in 1..b.size {
-          j(this.rank-rank+1) = dom.dim(this.rank-rank+1).low + i - 1;
+          j(this.rank-rank+1) = dom.dsiDim(this.rank-rank+1).low + i - 1;
           this(j) = b(i);
         }
       } else {
         for param i in 1..b.size {
-          j(this.rank-rank+1) = dom.dim(this.rank-rank+1).low + i - 1;
+          j(this.rank-rank+1) = dom.dsiDim(this.rank-rank+1).low + i - 1;
           _tupleInitHelp(j, rank-1, b(i));
         }
       }
@@ -526,7 +526,7 @@ class GPUArithmeticArr: BaseArr {
 
     if rank == 1 {
       for param i in 1..b.size do
-        this(this.dom.dim(1).low + i - 1) = b(i);
+        this(this.dom.dsiDim(1).low + i - 1) = b(i);
     } else {
       var j: rank*int;
       _tupleInitHelp(j, rank, b);
@@ -534,30 +534,30 @@ class GPUArithmeticArr: BaseArr {
   }
 }
 
-def GPUArithmeticDom.writeThis(f: Writer) {
-  f.write("[", dim(1));
+def GPUArithmeticDom.dsiSerialWrite(f: Writer) {
+  f.write("[", dsiDim(1));
   for i in 2..rank do
-    f.write(", ", dim(i));
+    f.write(", ", dsiDim(i));
   f.write("]");
 }
 
-def GPUArithmeticArr.writeThis(f: Writer) {
+def GPUArithmeticArr.dsiSerialWrite(f: Writer) {
   if dom.numIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
-    i(dim) = dom.dim(dim)._low;
+    i(dim) = dom.dsiDim(dim)._low;
   label next while true {
-    f.write(this(i));
-    if i(rank) <= (dom.dim(rank)._high - dom.dim(rank)._stride:idxType) {
+    f.write(dsiAccess(i));
+    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
       f.write(" ");
-      i(rank) += dom.dim(rank)._stride:idxType;
+      i(rank) += dom.dsiDim(rank)._stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dim(dim)._high - dom.dim(dim)._stride:idxType) {
-          i(dim) += dom.dim(dim)._stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
+          i(dim) += dom.dsiDim(dim)._stride:idxType;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom.dim(dim2)._low;
+            i(dim2) = dom.dsiDim(dim2)._low;
           }
           continue next;
         }

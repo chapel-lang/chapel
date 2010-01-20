@@ -42,8 +42,8 @@ class BaseDist {
     compilerError("sparse domains not supported by this distribution");
   }
 
-  def supportsPrivatization() param return false;
-  def requiresPrivatization() param return false;
+  def dsiSupportsPrivatization() param return false;
+  def dsiRequiresPrivatization() param return false;
 
   def dsiDestroyDistClass() { }
 }
@@ -95,8 +95,8 @@ class BaseDom {
       arr._preserveArrayElement(oldslot, newslot);
   }
 
-  def supportsPrivatization() param return false;
-  def requiresPrivatization() param return false;
+  def dsiSupportsPrivatization() param return false;
+  def dsiRequiresPrivatization() param return false;
 
   // false for default distribution so that we don't increment the
   // default distribution's reference count and add domains to the
@@ -113,7 +113,7 @@ class BaseArithmeticDom : BaseDom {
     compilerError("Illegal assignment to an arithmetic domain");
   }
 
-  def add(x) {
+  def dsiAdd(x) {
     compilerError("Cannot add indices to an arithmetic domain");
   }
 }
@@ -159,7 +159,7 @@ class BaseArr {
   def canCopyFromDevice param return false;
   def canCopyFromHost param return false;
 
-  def getBaseDom(): BaseDom {
+  def dsiGetBaseDom(): BaseDom {
     return nil;
   }
 
@@ -177,9 +177,9 @@ class BaseArr {
             delete _arrAlias;
         }
       } else {
-        destroyData();
+        dsiDestroyData();
       }
-      var dom = getBaseDom();
+      var dom = dsiGetBaseDom();
       on dom {
         var cnt = dom.destroyDom(this);
         if cnt == 0 then
@@ -189,9 +189,9 @@ class BaseArr {
     return cnt;
   }
 
-  def destroyData() { }
+  def dsiDestroyData() { }
 
-  def reallocate(d: domain) {
+  def dsiReallocate(d: domain) {
     halt("reallocating not supported for this array type");
   }
 
@@ -222,8 +222,8 @@ class BaseArr {
     halt("_preserveArrayElement() not supported for non-associative arrays");
   }
 
-  def supportsAlignedFollower() param return false;
+  def dsiSupportsAlignedFollower() param return false;
 
-  def supportsPrivatization() param return false;
-  def requiresPrivatization() param return false;
+  def dsiSupportsPrivatization() param return false;
+  def dsiRequiresPrivatization() param return false;
 }
