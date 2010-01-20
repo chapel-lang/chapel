@@ -97,7 +97,8 @@ def _getDistribution(value) {
 // Support for domain types
 //
 pragma "has runtime type"
-def chpl__buildDomainRuntimeType(d: _distribution, param rank: int, type idxType = int(32),
+def chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
+                                 type idxType = int(32),
                                  param stridable: bool = false) type
   return _newDomain(d.dsiNewArithmeticDom(rank, idxType, stridable));
 
@@ -173,7 +174,7 @@ def chpl__buildDomainExpr(ranges: range(?) ...?rank) {
 //
 // Support for distributed domain expression, e.g., [1..3, 1..3] distributed Dist
 //
-def chpl__buildDistributedDomainExpr(d: _distribution, dom: domain) {
+def chpl__distributed(d: _distribution, dom: domain) {
   if isArithmeticDom(dom) {
     var distDom: domain(dom.rank, dom._value.idxType, dom._value.stridable) distributed d = dom;
     return distDom;
@@ -183,8 +184,25 @@ def chpl__buildDistributedDomainExpr(d: _distribution, dom: domain) {
   }
 }
 
-def chpl__buildDistributedDomainExpr(d: _distribution, ranges: range(?) ...?rank) {
-  return chpl__buildDistributedDomainExpr(d, chpl__buildDomainExpr((...ranges)));
+def chpl__distributed(d: _distribution, ranges: range(?) ...?rank) {
+  return chpl__distributed(d, chpl__buildDomainExpr((...ranges)));
+}
+
+def chpl__distributed(d: _distribution, type domainType) type {
+  //
+  // this "no auto destroy" pragma is necessary as of 1/20 because
+  // otherwise the parentDom gets destroyed in the sparse case; see
+  // sparse/bradc/CSR/sparse.chpl as an example
+  //
+  pragma "no auto destroy" var dom: domainType;
+  if isArithmeticDom(dom) {
+    return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
+                                        dom._value.stridable);
+  } else if isSparseDom(dom) {
+    return chpl__buildSparseDomainRuntimeType(d, dom._value.parentDom);
+  } else {
+    return chpl__buildDomainRuntimeType(d, dom._value.idxType);
+  }
 }
 
 //

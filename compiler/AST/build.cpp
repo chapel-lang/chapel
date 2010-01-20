@@ -81,6 +81,57 @@ checkControlFlow(Expr* expr, const char* context) {
 }
 
 
+Expr* buildParenExpr(CallExpr* call) {
+  if (call->numActuals() == 1)
+    return call->get(1)->remove();
+  else
+    return new CallExpr("_build_tuple", call);
+}
+
+
+Expr* buildSquareCallExpr(Expr* base, CallExpr* args) {
+  CallExpr* call = new CallExpr(base, args);
+  call->square = true;
+  return call;
+}
+
+
+Expr* buildIntLiteral(const char* pch) {
+  uint64_t ull;
+  if (!strncmp("0b", pch, 2))
+    ull = binStr2uint64(pch);
+  else if (!strncmp("0x", pch, 2))
+    ull = hexStr2uint64(pch);
+  else
+    ull = str2uint64(pch);
+  if (ull <= 2147483647ull)
+    return new SymExpr(new_IntSymbol(ull, INT_SIZE_32));
+  else if (ull <= 9223372036854775807ull)
+    return new SymExpr(new_IntSymbol(ull, INT_SIZE_64));
+  else
+    return new SymExpr(new_UIntSymbol(ull, INT_SIZE_64));
+}
+
+
+Expr* buildRealLiteral(const char* pch) {
+  return new SymExpr(new_RealSymbol(pch, strtod(pch, NULL)));
+}
+
+
+Expr* buildImagLiteral(const char* pch) {
+  char* str = strdup(pch);
+  str[strlen(pch)-1] = '\0';
+  SymExpr* se = new SymExpr(new_ImagSymbol(str, strtod(str, NULL)));
+  free(str);
+  return se;
+}
+
+
+Expr* buildStringLiteral(const char* pch) {
+  return new SymExpr(new_StringSymbol(pch));
+}
+
+
 Expr* buildDotExpr(BaseAST* base, const char* member) {
   if (!strcmp("uid", member))
     if (CallExpr* intToLocale = toCallExpr(base))
@@ -1083,7 +1134,7 @@ CallExpr* buildScanExpr(Expr* op, Expr* data) {
 }
 
 
-void
+static void
 backPropagateInitsTypes(BlockStmt* stmts) {
   Expr* init = NULL;
   Expr* type = NULL;
@@ -1103,8 +1154,8 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 }
 
 
-void
-setVarSymbolAttributes(BlockStmt* stmts, bool isConfig, bool isParam, bool isConst) {
+BlockStmt*
+buildVarDecls(BlockStmt* stmts, bool isConfig, bool isParam, bool isConst) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
@@ -1119,6 +1170,8 @@ setVarSymbolAttributes(BlockStmt* stmts, bool isConfig, bool isParam, bool isCon
     }
     INT_FATAL(stmt, "Major error in setVarSymbolAttributes");
   }
+  backPropagateInitsTypes(stmts);
+  return stmts;
 }
 
 

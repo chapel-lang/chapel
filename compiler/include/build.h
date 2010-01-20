@@ -6,6 +6,15 @@
 #include "stmt.h"
 #include "symbol.h"
 
+Expr* buildParenExpr(CallExpr* call);
+
+Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
+
+Expr* buildIntLiteral(const char* pch);
+Expr* buildRealLiteral(const char* pch);
+Expr* buildImagLiteral(const char* pch);
+Expr* buildStringLiteral(const char* pch);
+
 Expr* buildDotExpr(BaseAST* base, const char* member);
 Expr* buildDotExpr(const char* base, const char* member);
 
@@ -53,9 +62,7 @@ BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 CallExpr* buildReduceExpr(Expr* op, Expr* data);
 CallExpr* buildScanExpr(Expr* op, Expr* data);
 
-void backPropagateInitsTypes(BlockStmt* stmts);
-void setVarSymbolAttributes(BlockStmt* stmts,
-                            bool isConfig, bool isParam, bool isConst);
+BlockStmt* buildVarDecls(BlockStmt* stmts, bool isConfig, bool isParam, bool isConst);
 
 DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, bool isExtern);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
