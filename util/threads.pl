@@ -4,7 +4,7 @@ use File::Basename;
 
 $utildirname = dirname($0);
 
-$preset_tasks   = (@ARGV == 1) ? $ARGV[0] : $ENV{'CHPL_TASKS'};
+$preset_tasks   = $ENV{'CHPL_TASKS'};
 $preset_threads = $ENV{'CHPL_THREADS'};
 
 if ($preset_threads eq "") {
@@ -17,8 +17,8 @@ if ($preset_threads eq "") {
 	$threads = "pthreads";
     } elsif ($preset_tasks eq "mta") {
 	$threads = "none";
-    } elsif ($preset_tasks eq "muxed") {
-	$threads = "soft-threads";
+    } elsif ($preset_tasks eq "dev-tasks-1") {
+	$threads = "dev-threads-1";
     } elsif ($preset_tasks eq "nanos") {
 	$threads = "pthreads";
     } elsif ($preset_tasks eq "none") {

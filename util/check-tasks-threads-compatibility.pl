@@ -7,8 +7,8 @@ $threads=$ARGV[1];
 
 unless (($tasks eq "fifo" && $threads eq pthreads) ||
 	($tasks eq "mta" && $threads eq "none") ||
-	($tasks eq "muxed" &&
-	 $threads =~ /^pthreads|soft-threads$/) ||
+	($tasks eq "dev-tasks-1" &&
+	 $threads =~ /^pthreads|dev-threads-1$/) ||
 	($tasks eq "nanos" && $threads eq "pthreads") ||
 	($tasks eq "none" && $threads eq "none")) {
     die "Tasks \"$tasks\" is incompatible with threads \"$threads\".\n";

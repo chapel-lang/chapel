@@ -5,13 +5,13 @@ use File::Basename;
 $utildirname = dirname($0);
 
 $preset_tasks   = $ENV{'CHPL_TASKS'};
-$preset_threads = (@ARGV == 1) ? $ARGV[0] : $ENV{'CHPL_THREADS'};
+$preset_threads = $ENV{'CHPL_THREADS'};
 
 if ($preset_tasks eq "") {
     if ($preset_threads eq "pthreads") {
 	$tasks = "fifo";
-    } elsif ($preset_threads eq "soft-threads") {
-	$tasks = "muxed";
+    } elsif ($preset_threads eq "dev-threads-1") {
+	$tasks = "dev-tasks-1";
     } elsif ($preset_threads eq "") {
 	$platform = `$utildirname/platform.pl --target`;
 	chomp($platform);

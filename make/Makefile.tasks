@@ -3,4 +3,4 @@
 #
 #
 #
-CHPL_MAKE_TASKS := $(shell $(CHAPEL_ROOT)/util/tasks.pl $(CHPL_MAKE_THREADS))
+CHPL_MAKE_TASKS := $(shell $(CHAPEL_ROOT)/util/tasks.pl)
