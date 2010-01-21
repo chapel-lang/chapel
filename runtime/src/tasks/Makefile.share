@@ -1,0 +1,2 @@
+SVN_SRCS =
+SRCS = $(SVN_SRCS)

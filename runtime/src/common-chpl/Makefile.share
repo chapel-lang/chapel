@@ -1,0 +1,15 @@
+GEN_HEADERS = \
+	chpl_rt_utils.h $(RUNTIME_INCLUDE_ROOT)/chpl_rt_utils.h \
+
+GEN_SRCS = \
+	chpl_rt_utils.c \
+
+COMMON_CHPL_SRCS = \
+	$(GEN_SRCS) \
+
+SVN_SRCS =
+SRCS = $(COMMON_CHPL_SRCS) \
+	$(SVN_SRCS) \
+
+COMMON_CHPL_OBJS = \
+	$(COMMON_CHPL_SRCS:%.c=$(COMMON_CHPL_OBJDIR)/%.o)

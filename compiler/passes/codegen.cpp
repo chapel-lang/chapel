@@ -332,7 +332,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "const char* CHPL_TARGET_PLATFORM    = \"%s\";\n", CHPL_TARGET_PLATFORM);
     fprintf(hdrfile, "const char* CHPL_HOST_COMPILER      = \"%s\";\n", CHPL_HOST_COMPILER);
     fprintf(hdrfile, "const char* CHPL_TARGET_COMPILER    = \"%s\";\n", CHPL_TARGET_COMPILER);
-    fprintf(hdrfile, "const char* CHPL_THREADS            = \"%s\";\n", CHPL_THREADS);
+    fprintf(hdrfile, "const char* CHPL_TASKS              = \"%s\";\n", CHPL_TASKS);
     fprintf(hdrfile, "const char* CHPL_COMM               = \"%s\";\n", CHPL_COMM);
     if (fGPU) {
       fprintf(hdrfile, "#else\n");
@@ -342,7 +342,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       fprintf(hdrfile, "extern const char* CHPL_TARGET_PLATFORM;\n");
       fprintf(hdrfile, "extern const char* CHPL_HOST_COMPILER;\n");
       fprintf(hdrfile, "extern const char* CHPL_TARGET_COMPILER;\n");
-      fprintf(hdrfile, "extern const char* CHPL_THREADS;\n");
+      fprintf(hdrfile, "extern const char* CHPL_TASKS;\n");
       fprintf(hdrfile, "extern const char* CHPL_COMM;\n");
       fprintf(hdrfile, "#endif\n");
     }
@@ -689,7 +689,7 @@ void codegen(void) {
   if (fRuntime) {
     openCFile(&runtimeheader, mainModules.v[0]->name, "h", true);
     openCFile(&runtimecode, mainModules.v[0]->name, "c", true);
-    fprintf(runtimecode.fptr, "#include \"chapel_code.h\"\n\n");
+    fprintf(runtimecode.fptr, "#include \"chpl_rt_utils.h\"\n\n");
   }
   if (fRuntime)
     codegen_header(runtimeheader.fptr, runtimecode.fptr);

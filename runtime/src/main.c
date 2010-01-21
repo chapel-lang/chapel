@@ -1,5 +1,5 @@
 #include "arg.h"
-#include "chapel_code.h"
+#include "chpl_rt_utils.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
 #include "chplcomm.h"
@@ -8,7 +8,7 @@
 #include "chpl_mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
-#include "chplthreads.h"
+#include "chpltasks.h"
 #include "config.h"
 #include "error.h"
 #include <stdint.h>
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
   //
   chpl_comm_verify_num_locales(execNumLocales);
   chpl_comm_rollcall();
-  chpl_init_chapel_code();
+  chpl_init_chpl_rt_utils();
 
   CHPL_TASKING_INIT();      // initialize the task management layer
 

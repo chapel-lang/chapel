@@ -16,7 +16,7 @@
 #include "chplio.h"
 #include "chpl_mem.h"
 #include "chplrt.h"
-#include "chplthreads.h"
+#include "chpltasks.h"
 #include "chpltypes.h"
 #include "error.h"
 

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "chapel_code.h"
+#include "chpl_rt_utils.h"
 #include "chplcomm.h"
 #include "chplexit.h"
 #include "chpl_mem.h"

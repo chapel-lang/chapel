@@ -413,6 +413,10 @@ if ($?CHPL_TARGET_COMPILER == 0) then
     setenv CHPL_TARGET_COMPILER `$CHPL_HOME/util/compiler.pl --target`
 endif
 
+if ($?CHPL_TASKS == 0) then
+    setenv CHPL_TASKS `$CHPL_HOME/util/tasks.pl`
+endif
+
 if ($?CHPL_THREADS == 0) then
     setenv CHPL_THREADS `$CHPL_HOME/util/threads.pl`
 endif

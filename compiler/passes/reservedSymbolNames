@@ -196,7 +196,7 @@
   UINTMAX_C
 
   // additional reserved words in the MTA/XMT compiler
-  ; if (!strcmp(CHPL_THREADS, "mta")) {
+  ; if (!strcmp(CHPL_TASKS, "mta")) {
   purge
   task }
 

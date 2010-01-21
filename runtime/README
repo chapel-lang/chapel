@@ -17,10 +17,9 @@ The directory structure of the runtime/ directory is as follows:
   comm-none/        : source code for no communication layer (1 locale only)
   etc/              : Makefiles for compiler-generated code
   include/          : header files for the runtime
+    tasks/          : header files for the runtime's tasking layers
+    threads/        : header files for the runtime's threading layers
   make/             : Makefiles for the runtime sources
   src/              : source code for the runtime
-  threads-none/     : source code for no threading package
-  threads-pthreads/ : source code for interfacing with pthreads
-  threads-pthreads-minimal/
-                    : source code demonstrating use of the generic threading
-                      implementation with a minimal pthreads threading layer
+    tasks/          : source code for the runtime's tasking layers
+    threads/        : source code for the runtime's threading layers

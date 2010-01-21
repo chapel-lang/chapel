@@ -25,7 +25,7 @@ const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
-const char* CHPL_THREADS = NULL;
+const char* CHPL_TASKS = NULL;
 const char* CHPL_COMM = NULL;
 
 int fdump_html = 0;
@@ -142,12 +142,12 @@ static void setupOrderedGlobals(void) {
   SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "platform.pl --target");
   SETUP_ENV_VAR(CHPL_HOST_COMPILER, "compiler.pl --host");
   SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "compiler.pl --target");
-  SETUP_ENV_VAR(CHPL_THREADS, "threads.pl");
+  SETUP_ENV_VAR(CHPL_TASKS, "tasks.pl");
   SETUP_ENV_VAR(CHPL_COMM, "comm.pl");
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
-  fSerial = !strcmp(CHPL_THREADS, "none"); 
+  fSerial = !strcmp(CHPL_TASKS, "none"); 
   // Enable if we are going to use Nvidia's NVCC compiler
   fGPU = !strcmp(CHPL_TARGET_COMPILER, "nvidia");
   // Eventually, we should only generate structural definitions when

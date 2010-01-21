@@ -6,7 +6,7 @@
 #include "chplcomm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
-#include "chplthreads.h"
+#include "chpltasks.h"
 #include "error.h"
 #include "gasnet.h"
 

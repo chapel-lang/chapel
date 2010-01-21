@@ -29,7 +29,7 @@
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chplsys.h"
-#include "chplthreads.h"
+#include "chpltasks.h"
 #include "chpltypes.h"
 #include "chplgpu.h"
 #include "error.h"

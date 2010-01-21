@@ -1,8 +1,0 @@
-THREADS_SRCS = \
-	chpl_pthreads_minimal_threads.c
-
-SVN_SRCS = $(THREADS_SRCS)
-SRCS = $(SVN_SRCS)
-
-THREADS_OBJS = \
-	$(THREADS_SRCS:%.c=$(THREADS_OBJDIR)/%.o)

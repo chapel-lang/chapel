@@ -16,9 +16,9 @@ if (CHPL_TARGET_COMPILER == "unset") {
   compilerWarning("CHPL_TARGET_COMPILER not set");
 }
 
-config param CHPL_THREADS: string = "unset";
-if (CHPL_THREADS == "unset") {
-  compilerWarning("CHPL_THREADS not set");
+config param CHPL_TASKS: string = "unset";
+if (CHPL_TASKS == "unset") {
+  compilerWarning("CHPL_TASKS not set");
 }
 
 config param CHPL_COMM: string = "unset";
@@ -643,7 +643,7 @@ class _ref {
 // for targets that don't have particularly fast ways of achieving this functionality
 // for simple base types.)
 def isSimpleSyncBaseType (type t) param {
-  if CHPL_THREADS == "mta" then
+  if CHPL_TASKS == "mta" then
     if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
         || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
         || t == real(32) || t == real(64) || t == imag(32) || t == imag(64) then

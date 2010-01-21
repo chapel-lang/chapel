@@ -38,6 +38,8 @@ if ($comm eq "none") {
     }
 }
 
+$tasks = `$utildirname/tasks.pl`; chomp($tasks);
+print "CHPL_TASKS: $tasks\n";
 $threads = `$utildirname/threads.pl`; chomp($threads);
 print "CHPL_THREADS: $threads\n";
 $launcher = `$utildirname/launcher.pl`; chomp($launcher);

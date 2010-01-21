@@ -41,6 +41,7 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
        "man/man1/chpl.1",
        "third-party/Makefile",
        "third-party/README",
+       "util/check-tasks-threads-compatibility.pl",
        "util/chpl-multirealm",
        "util/chplmake",
        "util/comm.pl",
@@ -54,6 +55,7 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
        "util/setchplenv.bash",
        "util/setchplenv.csh",
        "util/setchplenv.sh",
+       "util/tasks.pl",
        "util/threads.pl",
        "util/updateBuildVersion.pl"
 );
@@ -118,7 +120,8 @@ system("cd chapel/runtime && rm -r launch-apsim");
 system("cd chapel/runtime && rm -r launch-dummy");
 system("cd chapel/runtime && rm -r launch-mpirun");
 system("cd chapel/runtime && rm -r launch-zebra");
-system("cd chapel/runtime && rm -r tasks-nanos");
+system("cd chapel/runtime && rm -r include/tasks/nanos");
+system("cd chapel/runtime && rm -r src/tasks/nanos");
 system("cd chapel/runtime/include && rm -r sunos_old");
 
 foreach $file (@files) {

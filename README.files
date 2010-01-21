@@ -32,7 +32,8 @@ contain.
     $CHPL_TARGET_PLATFORM/
       $CHPL_TARGET_COMPILER/
         comm-$CHPL_COMM/
-          threads-$CHPL_THREADS/
+          tasks-$CHPL_TASKS/
+            threads-$CHPL_THREADS/
           launch-$CHPL_LAUNCHER/
   make/             : Makefile settings for various compilers and platforms
   man/              : man pages for the Chapel compiler (chpl)

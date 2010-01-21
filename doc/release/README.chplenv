@@ -142,24 +142,39 @@ Optional Settings
         other           ->  gmake
         
 
-4) Optionally, set the CHPL_THREADS environment variable to indicate
-   what threading layer you want to use to implement intra-locale
-   parallelism.  Current options are:
+4) Optionally, set the CHPL_TASKS and/or CHPL_THREADS environment
+   variables to indicate what tasking and threading layer you want to
+   use to implement intra-locale parallelism.  Current options are:
 
-        none     : no threading (implies no support for multiple tasks)
-        mta      : use Cray MTA threads (futures and sync vars)
+   CHPL_TASKS:
+        fifo     : run tasks to completion, in FIFO order
+        mta      : each task runs on a Cray MTA/XMT thread
+        none     : do not support multiple tasks
+
+   CHPL_THREADS:
         pthreads : use POSIX threads (pthreads)
+        none     : no threading
 
-   If unset, CHPL_THREADS defaults to a value based on
+   The allowed combinations of these two are:
+
+        CHPL_TASKS    CHPL_THREADS
+        ----------    ------------
+        fifo          pthreads
+        mta           none
+        none          none
+
+   If one of these is set and the other is not, the other defaults to
+   the appropriate value from the allowed combinations shown above.  If
+   both are unset, they default to values based on
    $CHPL_TARGET_PLATFORM:
 
-        platform    threads
-        --------    -------
-        xmt      ->  mta
-        other    ->  pthreads
+        platform     tasks    threads
+        --------     -----    -------
+        xmt      ->  mta      none
+        other    ->  fifo     pthreads
 
-   See README.threads for more information about executing using the
-   various CHPL_THREADS options.
+   See README.tasks for more information about executing using the
+   various CHPL_TASKS and CHPL_THREADS options.
 
 
 5) Optionally, set the CHPL_COMM environment variable to indicate what

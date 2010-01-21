@@ -5,8 +5,8 @@
 
 #include "chplrt.h"
 #include "chplmemtrack.h"
-#include "chapel_code.h"
-#include "chplthreads.h"
+#include "chpl_rt_utils.h"
+#include "chpltasks.h"
 #include "chplcomm.h"
 #include "error.h"
 

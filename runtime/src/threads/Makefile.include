@@ -1,0 +1,3 @@
+THREADS_SUBDIR = src/threads
+
+include $(RUNTIME_ROOT)/$(THREADS_SUBDIR)/Makefile.share
