@@ -6,6 +6,7 @@ config const maxChunks: int = -1;
 //
 // Abstract distribution class
 //
+pragma "base dist"
 class BaseDist {
   var _distCnt$: sync int = 0; // distribution reference count and lock
   var _doms: list(BaseDom);    // arrays declared over this domain

@@ -30,6 +30,7 @@ initFlags() {
   defineFlag(FLAG_RUNTIME_TYPE_VALUE, "runtime type value");
   defineFlag(FLAG_AUTO_II, "auto ii");
   defineFlag(FLAG_BASE_ARRAY, "base array");
+  defineFlag(FLAG_BASE_DIST, "base dist");
   defineFlag(FLAG_BEGIN, "begin");
   defineFlag(FLAG_BEGIN_BLOCK, "begin block");
   defineFlag(FLAG_CALLS_CONSTRUCTOR, "calls constructor");

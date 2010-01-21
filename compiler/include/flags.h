@@ -35,6 +35,7 @@ enum Flag {
   FLAG_RUNTIME_TYPE_VALUE, // associated runtime type (value)
   FLAG_AUTO_II,
   FLAG_BASE_ARRAY,
+  FLAG_BASE_DIST,
   FLAG_BEGIN,
   FLAG_BEGIN_BLOCK,
   FLAG_CALLS_CONSTRUCTOR, // for functions that return constructor return values

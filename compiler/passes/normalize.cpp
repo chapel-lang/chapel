@@ -290,6 +290,16 @@ void normalize(void) {
   }
 }
 
+static bool
+isDistClass(Type* type) {
+  if (type->symbol->hasFlag(FLAG_BASE_DIST))
+    return true;
+  forv_Vec(Type, pt, type->dispatchParents)
+    if (isDistClass(pt))
+      return true;
+  return false;
+}
+
 static void
 processSyntacticDistributions(CallExpr* call) {
   if (call->isPrimitive(PRIM_NEW))
@@ -299,6 +309,14 @@ processSyntacticDistributions(CallExpr* call) {
           type->baseExpr->replace(new UnresolvedSymExpr("chpl__buildDistValue"));
           call->replace(type->remove());
         }
+  if (call->isNamed("chpl__distributed"))
+    if (CallExpr* distCall = toCallExpr(call->get(1)))
+      if (SymExpr* distClass = toSymExpr(distCall->baseExpr))
+        if (TypeSymbol* ts = toTypeSymbol(distClass->var))
+          if (isDistClass(ts->type))
+            call->insertAtHead(
+              new CallExpr("chpl__buildDistValue",
+                new CallExpr(PRIM_NEW, distCall->remove())));
 }
 
 // the following function is called from multiple places,
