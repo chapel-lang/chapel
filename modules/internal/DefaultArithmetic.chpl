@@ -15,22 +15,6 @@ class DefaultDist: BaseDist {
 
   def dsiClone() return this;
 
-  //
-  // should this be a Domain class method because (1) we may want to
-  // take advantage of an existing domain class and (2) the new domain
-  // that we are going to build may have to have a different
-  // distribution (due to rank change, for example, but also maybe due
-  // to slice).
-  //
-  def dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
-                            ranges: rank*range(idxType,
-                                               BoundedRangeType.bounded,
-                                               stridable)) {
-    var dom = new DefaultArithmeticDom(rank, idxType, stridable, this);
-    for i in 1..rank do
-      dom.ranges(i) = ranges(i);
-    return dom;
-  }
 }
 
 //
@@ -318,6 +302,16 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str;
     return x;
+  }
+
+  def dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
+                            ranges: rank*range(idxType,
+                                               BoundedRangeType.bounded,
+                                               stridable)) {
+    var dom = new DefaultArithmeticDom(rank, idxType, stridable, dist);
+    for i in 1..rank do
+      dom.ranges(i) = ranges(i);
+    return dom;
   }
 }
 

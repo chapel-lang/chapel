@@ -105,12 +105,12 @@ class Block : BaseDist {
 def Block.dsiSupportsPrivatization() param return true;
 
 // dsi
-def Block.getPrivatizeData() {
+def Block.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(), tasksPerLocale);
 }
 
 // dsi
-def Block.privatize(privatizeData) {
+def Block.dsiPrivatize(privatizeData) {
   return new Block(rank=rank, idxType=idxType, this, privatizeData);
 }
 
@@ -506,6 +506,25 @@ def BlockDom.dsiIndexOrder(i) {
 
 def BlockDom.dsiPosition(i) {
   return whole.position(i);
+}
+
+//
+// build a new arithmetic domain using the given range
+//
+def BlockDom.dsiBuildArithmeticDom(param rank: int, type idxType,
+                                   param stridable: bool,
+                                   ranges: rank*range(idxType,
+                                                      BoundedRangeType.bounded,
+                                                      stridable)) {
+  if idxType != dist.idxType then
+    compilerError("Block domain index type does not match distribution's");
+  if rank != dist.rank then
+    compilerError("Block domain rank does not match distribution's");
+  
+  var dom = new BlockDom(rank=rank, idxType=idxType,
+                         dist=dist, stridable=stridable);
+  dom.dsiSetIndices(ranges);
+  return dom;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -499,63 +499,76 @@ record _domain {
         halt("***Error: Degenerate dimension created in dimension ", i, "***");
       }
     }
-    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
-                                                        _value.stridable,
-                                                        ranges));
+
+    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+                                         _value.stridable, ranges);
+    if (d.linksDistribution()) then
+      d.dist._distCnt$ += 1;
+    return _newDomain(d);
   }
   def expand(off: _value.idxType) where rank > 1 {
     var ranges = dims();
     for i in 1..rank do
-      ranges(i) = _value.ranges(i).expand(off);
-    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
-                                                        _value.stridable,
-                                                        ranges));
+      ranges(i) = dim(i).expand(off);
+    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+                                         _value.stridable, ranges);
+    if (d.linksDistribution()) then
+      d.dist._distCnt$ += 1;
+    return _newDomain(d);
   }
 
   def exterior(off: _value.idxType ...rank) return exterior(off);
   def exterior(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do
-      ranges(i) = _value.dsiDim(i).exterior(off(i));
-    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
-                                                        _value.stridable,
-                                                        ranges));
-  }
+      ranges(i) = dim(i).exterior(off(i));
+    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+                                         _value.stridable, ranges);
+    if (d.linksDistribution()) then
+      d.dist._distCnt$ += 1;
+    return _newDomain(d);
+   }
                   
   def interior(off: _value.idxType ...rank) return interior(off);
   def interior(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do {
-      if ((off(i) > 0) && (_value.dsiDim(i)._high+1-off(i) < _value.dsiDim(i)._low) ||
-          (off(i) < 0) && (_value.dsiDim(i)._low-1-off(i) > _value.dsiDim(i)._high)) {
+      if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
+          (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
       ranges(i) = _value.dsiDim(i).interior(off(i));
     }
-    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
-                                                        _value.stridable,
-                                                        ranges));
-  }
+    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+                                         _value.stridable, ranges);
+    if (d.linksDistribution()) then
+      d.dist._distCnt$ += 1;
+    return _newDomain(d);
+   }
 
   def translate(off: _value.idxType ...rank) return translate(off);
   def translate(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = _value.dsiDim(i).translate(off(i));
-    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
-                                                        _value.stridable,
-                                                        ranges));
-  }
+    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+                                         _value.stridable, ranges);
+    if (d.linksDistribution()) then
+      d.dist._distCnt$ += 1;
+    return _newDomain(d);
+   }
 
   def chpl__unTranslate(off: _value.idxType ...rank) return chpl__unTranslate(off);
   def chpl__unTranslate(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do
-      ranges(i) = _value.dsiDim(i).chpl__unTranslate(off(i));
-    return _newDomain(_value.dist.dsiBuildArithmeticDom(rank, _value.idxType,
-                                                        _value.stridable,
-                                                        ranges));
-  }
+      ranges(i) = dim(i).chpl__unTranslate(off(i));
+    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+                                         _value.stridable, ranges);
+    if (d.linksDistribution()) then
+      d.dist._distCnt$ += 1;
+    return _newDomain(d);
+   }
 
   def setIndices(x) {
     _value.dsiSetIndices(x);
