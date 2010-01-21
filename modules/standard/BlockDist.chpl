@@ -101,21 +101,17 @@ class Block : BaseDist {
   }
 }
 
-// dsi
 def Block.dsiSupportsPrivatization() param return true;
 
-// dsi
 def Block.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(), tasksPerLocale);
 }
 
-// dsi
 def Block.dsiPrivatize(privatizeData) {
   return new Block(rank=rank, idxType=idxType, this, privatizeData);
 }
 
-// dsi
-def Block.reprivatize(other) {
+def Block.dsiReprivatize(other) {
   boundingBox = other.boundingBox;
   targetLocDom = other.targetLocDom;
   targetLocs = other.targetLocs;

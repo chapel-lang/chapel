@@ -104,7 +104,7 @@ def PrivateArr.dsiAccess(i: idxType) var {
 
 def PrivateArr.these() var {
   for i in dom do
-    yield this(i);
+    yield dsiAccess(i);
 }
 
 def PrivateArr.these(param tag: iterator) where tag == iterator.leader {
@@ -117,7 +117,7 @@ def PrivateArr.these(param tag: iterator) where tag == iterator.leader {
 
 def PrivateArr.these(param tag: iterator, follower) var where tag == iterator.follower {
   for i in follower(1) do
-    yield this(i);
+    yield dsiAccess(i);
 }
 
 def PrivateArr.dsiSerialWrite(x: Writer) {
