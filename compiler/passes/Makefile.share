@@ -1,3 +1,6 @@
+GEN_HEADERS = \
+	reservedSymbolNames.h
+
 PASSES_SRCS = \
         buildDefaultFunctions.cpp \
         cleanup.cpp \
