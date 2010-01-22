@@ -123,10 +123,6 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-unresolved access in these iterator (01/21/10)
-----------------------------------------------
-[Error matching compiler output for multilocale/deitz/needMultiLocales/dist/test_private_space]
-
 spurious failure -- different numerical result
 ----------------------------------------------
 [Error matching program output for exercises/EstimatePi5opt] (e.g., 01/10/10)
