@@ -6,8 +6,6 @@ RUNTIME_SUBDIR = src/tasks/$(CHPL_MAKE_TASKS)
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-RUNTIME_INCLS += -I$(RUNTIME_ROOT)/src/
-
 TASKS_OBJDIR = $(RUNTIME_OBJDIR)
 include Makefile.share
 
