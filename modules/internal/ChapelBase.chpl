@@ -979,6 +979,9 @@ def _waitEndCount() {
 //
 // casts
 //
+def chpl__isType(type t) param return true;
+def chpl__isType(e) param return false;
+
 def _isPrimitiveType(type t) param return
   (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64)) |
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |

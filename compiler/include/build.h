@@ -6,6 +6,8 @@
 #include "stmt.h"
 #include "symbol.h"
 
+BlockStmt* buildPragmaStmt(BlockStmt*, Vec<const char*>*, BlockStmt*);
+
 Expr* buildParenExpr(CallExpr* call);
 
 Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
@@ -51,7 +53,8 @@ CallExpr* buildForLoopExpr(Expr* indices,
 CallExpr* buildForallLoopExpr(Expr* indices,
                               Expr* iterator,
                               Expr* expr,
-                              Expr* cond = NULL);
+                              Expr* cond = NULL,
+                              bool maybeArrayType = false);
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
 BlockStmt* buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs);
 BlockStmt* buildLogicalAndExprAssignment(Expr* lhs, Expr* rhs);

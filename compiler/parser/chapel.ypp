@@ -115,19 +115,18 @@
 %type <retTag> ret_tag
 
 %type <pch> identifier fn_identifier opt_identifier
-%type <pch> pragma
 
 %type <vpch> pragma_ls
 
 %type <pblockstmt> program stmt_ls
-%type <pblockstmt> class_body_stmt_ls
+%type <pblockstmt> class_level_stmt_ls
 
 %type <pblockstmt> stmt empty_stmt label_stmt break_stmt continue_stmt
 %type <pblockstmt> expr_stmt if_stmt param_for_stmt for_stmt forall_stmt coforall_stmt while_do_stmt do_while_stmt serial_stmt
-%type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt swap_stmt class_body_stmt
-%type <pblockstmt> type_select_stmt on_stmt non_empty_stmt use_expr_ls sync_stmt
+%type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt swap_stmt class_level_stmt
+%type <pblockstmt> type_select_stmt on_stmt use_expr_ls sync_stmt
 
-%type <pblockstmt> decl_stmt type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt extern_fn_decl_stmt
+%type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt extern_fn_decl_stmt
 %type <pblockstmt> enum_decl_stmt use_stmt delete_stmt array_alias_stmt
 
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
@@ -163,42 +162,19 @@ program:
   stmt_ls  { (void)@1.first_line; yyblock = $$; }
 ;
 
-/** PRAGMAS ******************************************************************/
+stmt_ls:
+                          { $$ = new BlockStmt(); }
+| stmt_ls pragma_ls stmt  { $$ = buildPragmaStmt($1, $2, $3); }
+;
 
 pragma_ls:
-                    { $$ = new Vec<const char*>(); }
-| pragma_ls pragma  { $1->add($2); }
-;
-
-pragma:
-  TPRAGMA STRINGLITERAL  { $$ = astr($2); }
-;
-
-/** STATEMENTS ***************************************************************/
-
-stmt_ls:
-  /* nothing */
-    { $$ = new BlockStmt(); }
-| stmt_ls pragma_ls stmt
-    {
-      if (DefExpr* def = toDefExpr($3->body.first()))
-        def->sym->addFlags($2);
-      delete $2;
-      $1->insertAtTail($3);
-    }
+                                   { $$ = new Vec<const char*>(); }
+| pragma_ls TPRAGMA STRINGLITERAL  { $1->add(astr($3)); }
 ;
 
 stmt:
-  empty_stmt
-| non_empty_stmt
-;
-
-empty_stmt:
-  TSEMI  { $$ = buildChapelStmt(new BlockStmt()); }
-;
-
-non_empty_stmt:
-  array_alias_stmt
+  class_level_stmt
+| array_alias_stmt
 | assign_stmt
 | atomic_stmt
 | begin_stmt
@@ -207,15 +183,16 @@ non_empty_stmt:
 | cobegin_stmt
 | coforall_stmt
 | continue_stmt
-| decl_stmt
 | delete_stmt
 | do_while_stmt
+| empty_stmt
 | expr_stmt
 | for_stmt
 | forall_stmt
 | if_stmt
 | label_stmt
 | local_stmt
+| mod_decl_stmt
 | param_for_stmt
 | on_stmt
 | return_stmt
@@ -228,6 +205,14 @@ non_empty_stmt:
 | while_do_stmt
 | yield_stmt
 | error             { printf("syntax error"); clean_exit(1); }
+;
+
+class_level_stmt:
+  fn_decl_stmt
+| class_decl_stmt
+| enum_decl_stmt
+| type_alias_decl_stmt
+| var_decl_stmt
 ;
 
 array_alias_stmt:
@@ -321,6 +306,10 @@ do_while_stmt:
   TDO stmt TWHILE expr TSEMI  { $$ = buildDoWhileLoopStmt($4, $2); }
 ;
 
+empty_stmt:
+  TSEMI  { $$ = buildChapelStmt(new BlockStmt()); }
+;
+
 expr_stmt:
   stmt_level_expr TSEMI  { $$ = buildChapelStmt($1); }
 ;
@@ -351,7 +340,7 @@ forall_stmt:
         USR_FATAL($4, "invalid index expression");
       $$ = buildForallLoopStmt($2->get(1)->remove(), $4, new BlockStmt($6));
     }
-| TLSBR nonempty_expr_ls TRSBR non_empty_stmt
+| TLSBR nonempty_expr_ls TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid loop expression");
@@ -454,17 +443,8 @@ yield_stmt:
 
 /** DECLARATION STATEMENTS ***************************************************/
 
-decl_stmt:
-  class_decl_stmt
-| enum_decl_stmt
-| fn_decl_stmt
-| mod_decl_stmt
-| type_alias_decl_stmt
-| var_decl_stmt
-;
-
 class_decl_stmt:
-  opt_extern class_tag identifier opt_inherit TLCBR class_body_stmt_ls TRCBR
+  opt_extern class_tag identifier opt_inherit TLCBR class_level_stmt_ls TRCBR
     { $$ = buildChapelStmt(buildClassDefExpr($3, $2, $4, $6, $1)); }
 ;
 
@@ -484,24 +464,11 @@ opt_inherit:
 | TCOLON nonempty_expr_ls  { $$ = $2; }
 ;
 
-class_body_stmt_ls:
+class_level_stmt_ls:
   /* nothing */
     { $$ = new BlockStmt(); }
-| class_body_stmt_ls pragma_ls class_body_stmt
-    {
-      if (DefExpr* def = toDefExpr($3->body.first()))
-        def->sym->addFlags($2);
-      delete $2;
-      $1->insertAtTail($3);
-    }
-;
-
-class_body_stmt:
-  fn_decl_stmt
-| class_decl_stmt
-| enum_decl_stmt
-| type_alias_decl_stmt
-| var_decl_stmt
+| class_level_stmt_ls pragma_ls class_level_stmt
+    { $$ = buildPragmaStmt($1, $2, $3); }
 ;
 
 enum_decl_stmt:
@@ -890,17 +857,19 @@ actual_expr:
 
 expr:
   stmt_level_expr
+| TLSBR nonempty_expr_ls TRSBR %prec TFOR
+    { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 | TLSBR nonempty_expr_ls TIN expr TRSBR expr %prec TFOR
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6);
+      $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6, NULL, true);
     }
 | TLSBR nonempty_expr_ls TRSBR expr %prec TFOR
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid loop expression");
-      $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $4);
+      $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $4, NULL, true);
     }
 | TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
@@ -935,9 +904,7 @@ expr:
 ;
 
 stmt_level_expr: 
-  TLSBR nonempty_expr_ls TRSBR %prec TFOR
-    { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
-| TLSBR nonempty_expr_ls TRSBR TDOT identifier %prec TDOT
+  TLSBR nonempty_expr_ls TRSBR TDOT identifier %prec TDOT
     { // place holder until expr can be used on lhs of dot in member access
       $$ = buildDotExpr(new CallExpr("chpl__buildDomainExpr", $2), $5);
     }

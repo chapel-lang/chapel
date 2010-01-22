@@ -81,6 +81,17 @@ checkControlFlow(Expr* expr, const char* context) {
 }
 
 
+BlockStmt* buildPragmaStmt(BlockStmt* block,
+                           Vec<const char*>* pragmas,
+                           BlockStmt* stmt) {
+  if (DefExpr* def = toDefExpr(stmt->body.first()))
+    def->sym->addFlags(pragmas);
+  delete pragmas;
+  block->insertAtTail(stmt);
+  return block;
+}
+
+
 Expr* buildParenExpr(CallExpr* call) {
   if (call->numActuals() == 1)
     return call->get(1)->remove();
@@ -482,18 +493,157 @@ buildForLoopExpr(Expr* indices, Expr* iterator, Expr* expr, Expr* cond) {
 }
 
 
+//
+// check validity of indices in loops and expressions
+//
+static void
+checkIndices(BaseAST* indices) {
+  if (CallExpr* call = toCallExpr(indices)) {
+    if (!call->isNamed("_build_tuple"))
+      USR_FATAL(indices, "invalid index expression");
+    for_actuals(actual, call)
+      checkIndices(actual);
+  } else if (!isSymExpr(indices) && !isUnresolvedSymExpr(indices))
+    USR_FATAL(indices, "invalid index expression");
+}
+
+
+static void
+destructureIndices(BlockStmt* block,
+                   BaseAST* indices,
+                   Expr* init,
+                   bool coforall) {
+  if (CallExpr* call = toCallExpr(indices)) {
+    if (call->isNamed("_build_tuple")) {
+      int i = 1;
+      for_actuals(actual, call) {
+        if (UnresolvedSymExpr* use = toUnresolvedSymExpr(actual)) {
+          if (!strcmp(use->unresolved, "_")) {
+            i++;
+            continue;
+          }
+        }
+        destructureIndices(block, actual,
+                           new CallExpr(init->copy(), new_IntSymbol(i)),
+                           coforall);
+        i++;
+      }
+    }
+  } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
+    VarSymbol* var = new VarSymbol(sym->unresolved);
+    block->insertAtHead(new CallExpr(PRIM_MOVE, var, init));
+    block->insertAtHead(new DefExpr(var));
+    var->addFlag(FLAG_INDEX_VAR);
+    if (coforall)
+      var->addFlag(FLAG_HEAP_ALLOCATE);
+    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  } else if (SymExpr* sym = toSymExpr(indices)) {
+    block->insertAtHead(new CallExpr(PRIM_MOVE, sym->var, init));
+    sym->var->addFlag(FLAG_INDEX_VAR);
+    if (coforall)
+      sym->var->addFlag(FLAG_HEAP_ALLOCATE);
+    sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  }
+}
+
+
 CallExpr*
-buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
+buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType) {
   if (fSerial || fSerialForall)
     return buildForLoopExpr(indices, iteratorExpr, expr, cond);
 
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
+  BlockStmt* block = fn->body;
+
+  if (maybeArrayType) {
+    block = new BlockStmt();
+    fn->addFlag(FLAG_MAYBE_TYPE);
+    bool hasSpecifiedIndices = !!indices;
+    if (!hasSpecifiedIndices)
+      indices = new UnresolvedSymExpr("_elided_index");
+    checkIndices(indices);
+
+    //
+    // nested function to compute isArrayType which is set to true if
+    // the inner expression is a type and false otherwise
+    //
+    // this nested function is called in a type block so that it is
+    // never executed; placing all this code in a separate function
+    // inside the type block is essential for two reasons:
+    //
+    // first, so that the iterators in any nested parallel loop
+    // expressions are not pulled all the way out during cleanup
+    //
+    // second, so that types and functions declared in this nested
+    // function do not get removed from the IR when the type lbock
+    // gets removed
+    //
+    FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
+    isArrayTypeFn->addFlag(FLAG_INLINE);
+
+    Symbol* isArrayType = newTemp("_isArrayType");
+    isArrayType->addFlag(FLAG_MAYBE_PARAM);
+    fn->insertAtTail(new DefExpr(isArrayType));
+
+    VarSymbol* iteratorSym = newTemp("_iterator");
+    isArrayTypeFn->insertAtTail(new DefExpr(iteratorSym));
+    isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, iteratorSym,
+                              new CallExpr("_getIterator", iteratorExpr->copy())));
+    VarSymbol* index = newTemp("_indexOfInterest");
+    isArrayTypeFn->insertAtTail(new DefExpr(index));
+    isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, index,
+                              new CallExpr("iteratorIndex", iteratorSym)));
+    BlockStmt* indicesBlock = new BlockStmt();
+    destructureIndices(indicesBlock, indices->copy(), new SymExpr(index), false);
+    indicesBlock->blockTag = BLOCK_SCOPELESS;
+    isArrayTypeFn->insertAtTail(indicesBlock);
+    isArrayTypeFn->insertAtTail(new CondStmt(new CallExpr("chpl__isType", expr->copy()),
+                              new CallExpr(PRIM_MOVE, isArrayType, gTrue),
+                              new CallExpr(PRIM_MOVE, isArrayType, gFalse)));
+    fn->insertAtTail(new DefExpr(isArrayTypeFn));
+    BlockStmt* typeBlock = new BlockStmt();
+    typeBlock->blockTag = BLOCK_TYPE;
+    typeBlock->insertAtTail(new CallExpr(isArrayTypeFn));
+    fn->insertAtTail(typeBlock);
+
+    Symbol* arrayType = newTemp("_arrayType");
+    arrayType->addFlag(FLAG_EXPR_TEMP);
+    arrayType->addFlag(FLAG_MAYBE_TYPE);
+    BlockStmt* thenStmt = new BlockStmt();
+    thenStmt->insertAtTail(new DefExpr(arrayType));
+    Symbol* domain = newTemp("_domain");
+    domain->addFlag(FLAG_EXPR_TEMP);
+    thenStmt->insertAtTail(new DefExpr(domain));
+    // note that we need the below autoCopy until we start reference
+    // counting domains within runtime array types
+    thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, domain,
+                                        new CallExpr("chpl__autoCopy",
+                               new CallExpr("chpl__buildDomainExpr",
+                                 iteratorExpr->copy()))));
+    if (hasSpecifiedIndices) {
+      // we want to swap something like the below commented-out
+      // statement with the compiler error statement but skyline
+      // arrays are not yet supported...
+      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType, new CallExpr("compilerError", new_StringSymbol("unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification"))));
+      //      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType,
+      //                                          new CallExpr("chpl__buildArrayRuntimeType",
+      //                                                       domain, expr->copy(),
+      //                                                       indices->copy(), domain)));
+    } else {
+      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType,
+                               new CallExpr("chpl__buildArrayRuntimeType",
+                                            domain, expr->copy())));
+    }
+    thenStmt->insertAtTail(new CallExpr(PRIM_RETURN, arrayType));
+    fn->insertAtTail(new CondStmt(new SymExpr(isArrayType), thenStmt, block));
+  }
+
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
-  fn->insertAtTail(new DefExpr(iterator));
-  fn->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
+  block->insertAtTail(new DefExpr(iterator));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
   const char* iteratorName = astr("_iterator_for_parloopexpr", istr(loopexpr_uid-1));
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
+  block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
   //
   // build serial iterator function
@@ -539,65 +689,12 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond) {
   followerIterator->addFlag(FLAG_EXPR_TEMP);
   fifn->insertAtTail(new DefExpr(followerIterator));
   fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", fifnIterator, fifnFollower)));
+  // do we need to use this map since symbols have not been resolved?
   SymbolMap map;
   Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
   Expr* bodyCopy = stmt->copy(&map);
   fifn->insertAtTail(buildForLoopStmt(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy)));
   return new CallExpr(new DefExpr(fn));
-}
-
-
-static void
-destructureIndices(BlockStmt* block,
-                   BaseAST* indices,
-                   Expr* init,
-                   bool coforall) {
-  if (CallExpr* call = toCallExpr(indices)) {
-    if (call->isNamed("_build_tuple")) {
-      int i = 1;
-      for_actuals(actual, call) {
-        if (UnresolvedSymExpr* use = toUnresolvedSymExpr(actual)) {
-          if (!strcmp(use->unresolved, "_")) {
-            i++;
-            continue;
-          }
-        }
-        destructureIndices(block, actual,
-                           new CallExpr(init->copy(), new_IntSymbol(i)),
-                           coforall);
-        i++;
-      }
-    }
-  } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
-    VarSymbol* var = new VarSymbol(sym->unresolved);
-    block->insertAtHead(new CallExpr(PRIM_MOVE, var, init));
-    block->insertAtHead(new DefExpr(var));
-    var->addFlag(FLAG_INDEX_VAR);
-    if (coforall)
-      var->addFlag(FLAG_HEAP_ALLOCATE);
-    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  } else if (SymExpr* sym = toSymExpr(indices)) {
-    block->insertAtHead(new CallExpr(PRIM_MOVE, sym->var, init));
-    sym->var->addFlag(FLAG_INDEX_VAR);
-    if (coforall)
-      sym->var->addFlag(FLAG_HEAP_ALLOCATE);
-    sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  }
-}
-
-
-//
-// check validity of indices in loops and expressions
-//
-static void
-checkIndices(BaseAST* indices) {
-  if (CallExpr* call = toCallExpr(indices)) {
-    if (!call->isNamed("_build_tuple"))
-      USR_FATAL(indices, "invalid index expression");
-    for_actuals(actual, call)
-      checkIndices(actual);
-  } else if (!isSymExpr(indices) && !isUnresolvedSymExpr(indices))
-    USR_FATAL(indices, "invalid index expression");
 }
 
 

@@ -403,6 +403,8 @@ static void normalize_returns(FnSymbol* fn) {
       retval->addFlag(FLAG_PARAM);
     if (fn->retTag == RET_TYPE)
       retval->addFlag(FLAG_TYPE_VARIABLE);
+    if (fn->hasFlag(FLAG_MAYBE_TYPE))
+      retval->addFlag(FLAG_MAYBE_TYPE);
     if (fn->retExprType && fn->retTag != RET_VAR) {
       BlockStmt* retExprType = fn->retExprType->copy();
       fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_INIT, retExprType->body.tail->remove())));
