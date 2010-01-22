@@ -44,11 +44,14 @@ endif
 #
 # The "$($(<:.c=)_CFLAGS)" construct lets your Makefile.share define,
 # say, a whatever_CFLAGS variable that contains command line options
-# to be used only when compiling whatever.c.
+# to be used only when compiling whatever.c.  Note that this is a bit
+# fragile, however, since the only consideration given for filename
+# characters not legal in Makefile variable names is that we change
+# dash ("-") to underbar ("_").
 #
 $(RUNTIME_OBJ_DIR)/%.o: %.c $(RUNTIME_OBJ_DIR_STAMP)
 	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
-	$(CC) -c $(RUNTIME_CFLAGS) $($(<:.c=)_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
+	$(CC) -c $(RUNTIME_CFLAGS) $($(subst -,_,$(<:.c=))_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
 
 ifdef NVCC
 $(RUNTIME_OBJ_DIR)/%.o: %.cu $(RUNTIME_OBJ_DIR_STAMP)
