@@ -356,41 +356,6 @@ values associated with the element type of the array.  There is an
 expectation that this default initialization can be overridden for
 performance reasons by explicitly marking the array type or variable.
 
-The initialization expression in the declaration of an array can be
-based on the indices in the domain using special array declaration
-syntax that replaces both the type and initialization specifications
-of the declaration:
-\begin{syntax}
-special-array-declaration:
-  identifier-list indexed-array-type-part initialization-part
-
-indexed-array-type-part:
-  : array-type-forall-expression type-specifier
-
-array-type-forall-expression:
-  [ identifier `in' domain-expression ]
-
-initialization-part:
-  = expression
-\end{syntax}
-In this code, the \sntx{array-type-forall-expression} is syntactic
-sugar for surrounding the \sntx{initialization-part} with this basic
-forall-expression.
-
-Given a domain expression \chpl{D}, an element type \chpl{t}, an
-expression \chpl{e} that is of type \chpl{t} or that can be implicitly
-converted to type \chpl{t}, then the declaration of array \chpl{A}
-given by
-\begin{chapel}
-var A: [i in D] t = e;
-\end{chapel}
-is equivalent to
-\begin{chapel}
-var A: [D] t = [i in D] e;
-\end{chapel}
-The scope of the forall expression is as in the rewritten part so the
-expression \chpl{e} can include references to index \chpl{i}.
-
 \subsubsection{Array Aliases}
 \label{Array_Aliases}
 \index{=>@\chpl{=>}}

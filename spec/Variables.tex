@@ -26,7 +26,6 @@ variable-declaration-list:
 variable-declaration:
   identifier-list type-part[OPT] initialization-part
   identifier-list type-part
-  special-array-declaration
   array-alias-declaration
 
 identifier-list:
@@ -81,10 +80,8 @@ are declared to have type \chpl{int} and are initialized to the default
 \chpl{int} value.
 \end{example}
 
-The \sntx{special-array-declaration}
-and \sntx{array-alias-declaration} are defined
+The \sntx{array-alias-declaration} is defined
 in~\rsec{Domains_and_Arrays}.
-
 
 \subsubsection{Default Initialization}
 \label{Default_Initialization}
