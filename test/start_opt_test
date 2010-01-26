@@ -69,7 +69,11 @@ foreach $line (@lines) {
 
 if ($cron) {
     $nerror = $nerrort2/2;
-    open(FILE, "| mail -s \"Cron $nerror/$nerror (chap02:opts tests)\" chapel_cronmail\@cray.com");
+    if ($nerror == 0) {
+        open(FILE, "| mail -s \"Cron $nerror/$nerror (chap02:opts tests)\" chapel_cronmail_all\@cray.com $ENV{'USER'}\@cray.com");
+    } else { 
+        open(FILE, "| mail -s \"Cron $nerror/$nerror (chap02:opts tests)\" chapel_cronmail\@cray.com");
+    }
 } else {
     open(FILE, ">&STDOUT");
 }
