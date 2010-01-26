@@ -1,4 +1,4 @@
-var A: [i in 1..3] real = i;
+var A: [1..3] real = [i in 1..3] i;
 
 writeln("A is: ", A);
 

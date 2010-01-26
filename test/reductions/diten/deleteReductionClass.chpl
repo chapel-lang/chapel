@@ -21,7 +21,7 @@ class LastOp: ReduceScanOp {
 }
 
 def main {
-  var A: [i in 1..5] int = i;
+  var A: [1..5] int = 1..5;
   var x: int;
   x = LastOp reduce A;
 

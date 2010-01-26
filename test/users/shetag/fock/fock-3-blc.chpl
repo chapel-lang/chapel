@@ -4,11 +4,11 @@ use blockindices, taskpool;
 type elemType = real(64);
 
 config const natom = 5;
-const bas_info : [i in 1..natom] range = (1..10/(i%2+1)) + 5*(i/2) + 10*((i-1)/2);
+const bas_info : [1..natom] range = [i in 1..natom] (1..10/(i%2+1)) + 5*(i/2) + 10*((i-1)/2);
 
 const n = (natom/2)*10 + ((natom+1)/2)*5;
 const matD : domain(2) = [1..n, 1..n]; 
-const dmat : [(i,j) in matD] elemType = 1.0/(i+j); 
+const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j); 
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
 config const numConsumers = max(1, (+ reduce Locales.numCores) - 1),

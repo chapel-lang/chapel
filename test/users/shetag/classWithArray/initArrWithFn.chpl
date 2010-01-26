@@ -10,7 +10,7 @@ class C {
   }
 
   def initArr(n) {
-    const a : [i in 1..n] int = i;
+    const a : [1..n] int = [i in 1..n] i;
     return a;
   }
 }

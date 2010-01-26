@@ -13,7 +13,7 @@ def main {
   const ADom = [1..n, 1..n];  // Create a domain of the specified problem size
 
   // Create and initialize an array of the specified size
-  var A: [(i,j) in ADom] real = i + j/10.0;
+  var A: [ADom] real = [(i,j) in ADom] i + j/10.0;
   
   // Write the problem size and array out to the specified filename
   writeSquareArray(n, A, filename);

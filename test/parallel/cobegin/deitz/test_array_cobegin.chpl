@@ -1,5 +1,5 @@
 def main() {
-  var A: [i in 1..2**10] int = i;
+  var A: [1..2**10] int = [i in 1..2**10] i;
 
   var x, y, z: int;
 

@@ -3,7 +3,7 @@ config const n = 16;
 
 const radix = 4;
 
-var A: [i in 1..n] int = i;
+var A: [1..n] int = [i in 1..n] i;
 
 writeln("A is: ", A);
 

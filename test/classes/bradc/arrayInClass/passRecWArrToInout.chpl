@@ -1,5 +1,5 @@
 record R {
-  var A: [i in 1..10] real = i;
+  var A: [1..10] real = [i in 1..10] i;
 }
 
 var myR = new R();

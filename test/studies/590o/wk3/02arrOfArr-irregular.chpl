@@ -18,7 +18,7 @@ writeln("skyline is: ", skyline);
 
 // Triangular array:
 const n = 9;
-const Tri: [i in 1..n] [j in 1..i] real = i + j/10.0;
+const Tri: [1..i] real = [i in 1..n] [j in 1..i] i + j/10.0;
 
 writeln("Tri is: ", Tri);
 

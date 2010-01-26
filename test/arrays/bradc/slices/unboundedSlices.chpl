@@ -2,7 +2,7 @@ config const n = 5;
 
 const D = [1..n];
 
-var A: [i in D] real = i;
+var A: [D] real = [i in D] i;
 
 writeln("A is: ", A);
 writeln("A[2..n-1] is: ", A[2..n-1]);

@@ -9,7 +9,7 @@ writeln("D2 is: ", D2);
 
 const D = [D1, D2];
 
-var A: [(i,j) in D] real = i + j/10.0;
+var A: [D] real = [(i,j) in D] i + j/10.0;
 var B: [D1, D2] real = 0.0;
 
 forall (i,j) in D {

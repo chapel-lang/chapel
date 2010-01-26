@@ -93,7 +93,7 @@ def conjGrad(A: [?MatDom], X: [?VectDom]) {
   var rho = + reduce R**2;
  
   for cgit in 1..cgitmax {
-    var Tmp: [(i,j) in MatDom] elemType = (A(i,j) * P(j));
+    var Tmp: [MatDom] elemType = [(i,j) in MatDom] (A(i,j) * P(j));
     const Q = partialReduce(_sum(Tmp.eltType), (.., ..), Tmp);
     // WANT (a partial reduction):
     //    const Q = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * P(j));

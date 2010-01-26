@@ -33,20 +33,20 @@ def main() {
   writeln( "Block following shape as 6-element 2D array of locales:" );
   const rowcount = 2, colcount = 3;
   const D : domain(2) = [0..#rowcount, 0..#colcount];
-  const L : [(i,j) in D] locale = Locales( (i * colcount + j) % numLocales);
+  const L : [D] locale = [(i,j) in D] Locales( (i * colcount + j) % numLocales);
   printBlockLocaleAssignments(L);
 
   writeln( "Emulate cyclic distribution by repeating locales in 1D array:" );
   // warning: creates one task per locale assignment; may create too many threads
   const oversubscribed : int = size*size;
-  const cyclicLocales : [loc in 0..#oversubscribed] locale = Locales(loc % numLocales);
+  const cyclicLocales : [0..#oversubscribed] locale = [loc in 0..#oversubscribed] Locales(loc % numLocales);
   printBlockLocaleAssignments(cyclicLocales); 
 
 
   writeln( "A more complex 2D locale assignment:" );
   const weirdDomain  : domain(2) = [0..#size, 0..#size];
   // start by emulating cyclic distribution
-  var weirdLocales : [(i,j) in weirdDomain] locale = Locales( (i * colcount + j) % numLocales );
+  var weirdLocales : [weirdDomain] locale = [(i,j) in weirdDomain] Locales( (i * colcount + j) % numLocales );
   // then update center to point elsewhere
   [ij in [2..5, 2..5] ] weirdLocales(ij) = Locales(0); // change center
   printBlockLocaleAssignments(weirdLocales);

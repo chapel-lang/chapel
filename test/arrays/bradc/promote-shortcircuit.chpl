@@ -2,8 +2,8 @@ config const n = 10;
 
 const D = [1..n];
 
-var A: [i in D] int = i-(n/2),
-    B: [i in D] int = n;
+var A: [D] int = [i in D] i-(n/2),
+    B: [D] int = [i in D] n;
 
 var C: [D] bool;
 

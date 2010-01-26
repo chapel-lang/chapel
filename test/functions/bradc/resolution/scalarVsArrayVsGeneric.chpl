@@ -15,8 +15,8 @@ def f(i: [] int, j) {
 }
 
 var D = [1..4];
-var A: [i in D] int = i;
-var B: [i in D] int = i;
+var A: [D] int = [i in D] i;
+var B: [D] int = [i in D] i;
 
 f(2,3);
 f(2,A);

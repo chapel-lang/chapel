@@ -49,8 +49,8 @@ def main() {
     }
   }
 
-  const execTime: [t in 1..numTrials] real 
-                = max reduce [loc in LocaleSpace] allExecTime(loc)(t);
+  const execTime: [1..numTrials] real 
+                = [t in 1..numTrials] max reduce [loc in LocaleSpace] allExecTime(loc)(t);
 
   const validAnswer = & reduce allValidAnswer;
 

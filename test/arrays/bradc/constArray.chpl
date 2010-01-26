@@ -1,4 +1,4 @@
-const A: [i in 1..3] int = i;
+const A: [1..3] int = [i in 1..3] i;
 
 A(2) = -1;
 

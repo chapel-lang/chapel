@@ -76,8 +76,8 @@ forall (i,j) in TableSpace {
 
 // ----- Initialize the values we still need for each box ----
 // NOTE that this is no longer used; still, it's cool
-const BoxDomains: [(br, bc) in Boxes] subdomain(TableSpace) 
-                = [(br-1)*3 + 1 .. br*3, (bc-1)*3+1..bc*3];
+const BoxDomains: [Boxes] subdomain(TableSpace) 
+                = [(br, bc) in Boxes] [(br-1)*3 + 1 .. br*3, (bc-1)*3+1..bc*3];
 // DEBUG: writeln("BoxDomains = ", BoxDomains);
 
 def getBoxIndex(ij) {

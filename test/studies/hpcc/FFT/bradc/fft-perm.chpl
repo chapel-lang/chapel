@@ -2,7 +2,8 @@ var D = [1..6];
 
 var Perm: [D] index(D);
 
-var A, B: [i in D] real = i;
+var A: [D] real = [i in D] i;
+var B: [D] real = [i in D] i;
 
 Perm(1) = 2;
 Perm(2) = 1;

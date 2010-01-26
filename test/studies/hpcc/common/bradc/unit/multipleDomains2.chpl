@@ -1,7 +1,7 @@
 use BlockDist;
 
 var myLocalesDom = [0..2];
-var myLocales: [i in myLocalesDom] locale = Locales(i%numLocales);
+var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales);
 
 const ProblemDist = new dist(new Block(rank=1, idxType=int, bbox=[1..10], targetLocales=myLocales));
 

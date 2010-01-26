@@ -1,7 +1,7 @@
-const a1 : [i in 1..6] int = i;
+const a1 : [1..6] int = 1..6;
 writeln("a1 = \n",a1,"\n");
 
-const a3 : [(i,j) in [1..6,1..3]] int = i+j;
+const a3 : [1..6,1..3] int = [(i,j) in [1..6,1..3]] i+j;
 writeln("a3 = \n",a3,"\n");
 
 var a4 : [1..3] int;

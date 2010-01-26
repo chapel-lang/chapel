@@ -1,7 +1,7 @@
 use BlockDist;
 
 var myLocalesDom = [0..3];
-var myLocales: [i in myLocalesDom] locale = Locales(i%numLocales);
+var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales);
 
 writeln("myLocales = ", myLocales);
 

@@ -44,7 +44,7 @@ def randomAccessUpdate() {
   // BLC: is it legal to make a config const/var local to a function?
   var ranDom = [0..numRandoms-1];
   // BLC: Would prefer this initialization to be:
-  // var Ran: [i in ranDom] uint(64) = HPCCstarts((numUpdates/numRandoms) * i);
+  // var Ran: [ranDom] uint(64) = [i in ranDom] HPCCstarts((numUpdates/numRandoms) * i);
   var Ran: [ranDom] uint(64);
   // BLC: writing the following line results in the promotion-to-real problem
   // [i in ranDom] Ran(i) = HPCCstarts((numUpdates/numRandoms) * i);

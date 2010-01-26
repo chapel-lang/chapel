@@ -5,7 +5,7 @@ fun ScalarLU(Mat: [?MatDom] ?t) {
   const numDiags = min(numRows, numCols);
 
   // permutation array for tracking pivots
-  var pivotArr: [i in 1..numRows] int = i;
+  var pivotArr: [1..numRows] int = [i in 1..numRows] i;
 
   // subdomains to describe different matrix substructures
   var Reduced: subdomain(MatDom) = MatDom;

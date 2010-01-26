@@ -2,7 +2,7 @@ var D1: domain(1, int(32)) = [1..4];
 var D2: domain(1, int(64)) = [1..4:int(64)];
 
 var A: [D1] real;
-var B: [i in D2] real = i;
+var B: [D2] real = [i in D2] i;
 
 writeln("B is: ", B);
 

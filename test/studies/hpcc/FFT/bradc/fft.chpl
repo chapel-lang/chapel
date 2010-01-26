@@ -85,7 +85,7 @@ def computeTwiddles(W) {
 def bitReverseShuffle(W: [?WD]) {
   const n = WD.numIndices;
   const reverse = log2(n);
-  var Perm: [i in WD] index(WD) = bitReverse(i, numBits = reverse);
+  var Perm: [WD] index(WD) = [i in WD] bitReverse(i, numBits = reverse);
   const V = W(Perm);
   W = V;
 }

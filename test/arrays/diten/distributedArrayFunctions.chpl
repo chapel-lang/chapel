@@ -17,7 +17,7 @@ for i in [0..4, 0..4] {
   writeln("position(", i, ") ", dom.position(i));
 }
 
-var A: [(i,j) in dom] int = i*10+j;
+var A: [dom] int = [(i,j) in dom] i*10+j;
 var B: [1..9] int;
 
 B = reshape(A, [1..9]);

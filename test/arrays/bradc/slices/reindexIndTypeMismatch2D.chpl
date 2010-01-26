@@ -1,7 +1,7 @@
 config var hi: int(64) = 8;
 
 var D: domain(2, int(64)) = [1..hi, 1..hi];
-var A: [(i,j) in D] real = (i-1)*hi + j;
+var A: [D] real = [(i,j) in D] (i-1)*hi + j;
 
 writeln("D is: ", D);
 writeln("A is: ", A);

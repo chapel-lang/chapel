@@ -140,28 +140,6 @@ void cleanup(void) {
   Vec<BaseAST*> asts;
   collect_asts(rootModule, asts);
 
-  // handle forall's in array type declaration with initialization
-  forv_Vec(BaseAST, ast, asts) {
-    SET_LINENO(ast);
-    if (CallExpr *call = toCallExpr(ast)) {
-      if (call->isNamed("chpl__buildArrayRuntimeType") && call->numActuals() == 4) {
-        if (DefExpr *def = toDefExpr(call->parentExpr)) {
-          CallExpr *tinfo = toCallExpr(def->exprType);
-          Expr *indices = tinfo->get(3);
-          Expr *iter = tinfo->get(4);
-          indices->remove();
-          iter->remove();
-          if (def->init) {
-            Expr* init = def->init->copy();
-            def->init->replace(buildForallLoopExpr(indices, iter, init));
-          }
-        } else {
-          USR_FATAL(call, "unhandled case of array type loop expression");
-        }
-      }
-    }
-  }
-
   asts.clear();
   collect_asts(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {

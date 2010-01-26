@@ -1,5 +1,5 @@
 def foo() {
-  var A: [i in 1..3] int = i;
+  var A: [1..3] int = [i in 1..3] i;
   return A;
 }
 

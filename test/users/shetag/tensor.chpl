@@ -187,11 +187,11 @@ def main() {
   const v1 = new Vector(6);
   writeln("v1 = ",v1);
 
-  var a2 : [i in 1..6] elemType = i; 
+  var a2 : [1..6] elemType = [i in 1..6] i; 
   var v2 = new Vector(a2.numElements,a2);
   writeln("v2 = ",v2);
 
-  var a3 : [i in 1..6] elemType = 10.0;
+  var a3 : [1..6] elemType = [1..6] 10.0;
   var v3 = new Vector(a3.numElements,a3);
   writeln("v3 = ",v3);
 
@@ -231,7 +231,7 @@ def main() {
   var m1 = new Matrix(2,3);
   writeln("m1 = ",m1);
 
-  var a4 : [(i,j) in [1..3,1..6]] elemType = i+j;
+  var a4 : [1..3,1..6] elemType = [(i,j) in [1..3, 1..6]] i+j;
   var m4 = new Matrix(a4.domain.dim(1).high,a4.domain.dim(2).high,a4);
   writeln("m4 = ",m4);
 

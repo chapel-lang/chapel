@@ -1,7 +1,7 @@
 config const natom = 5;
 const n = (natom/2)*10 + ((natom+1)/2)*5;
-// const bas_info : [(i,j) in [1..natom, 1..2]] int = 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
-const bas_info : [(i,j) in [1..natom, 1..2]] int = bas_init(i,j);
+// const bas_info : [[1..natom, 1..2]] int = [(i,j) in [1..natom, 1..2]] 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
+const bas_info : [[1..natom, 1..2]] int = [(i,j) in [1..natom, 1..2]] bas_init(i,j);
 
 def bas_init(i,j) {
   return 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
@@ -9,7 +9,7 @@ def bas_init(i,j) {
 
 type elemType = real(64);
 const matD : domain(2) = [1..n, 1..n]; 
-const dmat : [(i,j) in matD] elemType = 1.0/(i+j); 
+const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j); 
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
 class blockIndices {

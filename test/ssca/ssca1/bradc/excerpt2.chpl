@@ -28,7 +28,7 @@ forall (r,c) in NorthwestBoundary(SeqSpace) {
 forall loc in AntiDiagonals(SeqSpace) {
   -- create array of neighboring values
   -- .read reads sync variable without emptying
-  var Neighbors: [d in Directions] integer = SWtab(loc + offset(d)).read;
+  var Neighbors: [Directions] integer = [d in Directions] SWtab(loc + offset(d)).read;
 
   SWtab(loc) = SWCalc(loc, Neighbors, backTrace);
 }

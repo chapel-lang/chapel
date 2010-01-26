@@ -78,7 +78,7 @@ def bitReverseShuffle(W: [?WD]) {
   const reverse = log2(n);
   var V: [WD] W.eltType;  // BLC: rename this field?
   /* BLC: could we do this as a permutation instead?
-  var P: [i in WD] index(WD) = i;
+  var P: [WD] index(WD) = [i in WD] i;
   bitReverse(P);
   V(P) = W;
   */

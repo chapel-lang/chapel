@@ -5,7 +5,7 @@ class C {
 }
 
 def foo() {
-  var c: [i in 1..10] C = new C();
+  var c: [1..10] C = [i in 1..10]new C();
   for cc in c do delete cc;
 }
 

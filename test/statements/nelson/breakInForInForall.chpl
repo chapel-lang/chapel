@@ -8,7 +8,7 @@ const sizeRange = 0..#(size : int(64));
 const blockDist = new dist(new Block(rank=1, idxType=int(64), bbox=[sizeRange]));
 const blockDom : domain(1, int(64)) distributed blockDist = [sizeRange];
 
-var array : [i in blockDom] int(64) = i;
+var array : [blockDom] int(64) = [i in blockDom] i;
 var output : [blockDom] string;
 
 forall i in array.domain {

@@ -283,7 +283,7 @@ writeln("After negating B, it is:\n", B, "\n");
 // For example:
 //
 
-const Z: [(i,j) in ProbSpace] complex = i + j*1.0i;
+const Z: [ProbSpace] complex = [(i,j) in ProbSpace] i + j*1.0i;
 
 writeln("Z is initialized to be:\n", Z, "\n");
 
@@ -306,7 +306,7 @@ writeln("Z is initialized to be:\n", Z, "\n");
 
 var VarDom = [1..n];
 
-var VarArr: [i in VarDom] real = i;
+var VarArr: [VarDom] real = [i in VarDom] i;
 
 writeln("Initially, VarArr = ", VarArr, "\n");
 
@@ -396,7 +396,7 @@ writeln("Y is:\n", Y);
 // all be of uniform size.  In particular, it is our intention to
 // support things like:
 //
-//   const Triangle: [row in 1..n] [col in 1..row] real = row + col/10.0;
+//   const Triangle: [1..row] real = [row in 1..n] [col in 1..row] row + col/10.0;
 //
 // and:
 //

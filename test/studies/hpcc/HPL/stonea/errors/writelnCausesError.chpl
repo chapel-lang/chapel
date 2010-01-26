@@ -481,7 +481,7 @@ def test_LUFactorize(rprt = true) : bool {
     fillRandom(A);*/
 
     var randomN = 10;
-    var A : [(i,j) in [1..randomN, 1..randomN+1]] real = (i*50)+(j*4)+i/j;
+    var A : [[1..randomN, 1..randomN+1]] real = [(i,j) in [1..randomN, 1..randomN+1]] (i*50)+(j*4)+i/j;
 
     var origA = A;
 
@@ -547,7 +547,7 @@ def main() {
 //    test_LUFactorize();
 
     var n = 10;
-    var data : [(i,j) in [1..n, 1..n+1]] real = (i*50)+(j*4)+i/j;
+    var data : [[1..n, 1..n+1]] real = [(i,j) in [1..n, 1..n+1]](i*50)+(j*4)+i/j;
     var A    : [1..n, 1..n] => data[1..n, 1..n];
     var b    : [1..n] => data[1..n, n+1];
     var dataHat : [1..n, 1..n+1] real = data;

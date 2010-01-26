@@ -2,7 +2,7 @@ config const n = 4;
 
 const D = [1..n, 1..n];
 
-var A: [(i,j) in D] real = i + j/10.0;
+var A: [D] real = [(i,j) in D] i + j/10.0;
 
 writeln("A is: ", A);
 

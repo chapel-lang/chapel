@@ -1,5 +1,5 @@
-var A: [i in 1..10] int = i;
-var B: [i in 1..10] int = i;
+var A: [1..10] int = [i in 1..10] i;
+var B: [1..10] int = [i in 1..10] i;
 
 var t1 = (B, 19);
 var t2 = (A, 20);

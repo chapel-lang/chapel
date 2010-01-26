@@ -1,7 +1,7 @@
 use Cyclic;
 
 var myLocalesDom = [1..3];
-var myLocales: [i in myLocalesDom] locale = Locales(i%numLocales);
+var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales);
 
 writeln("myLocales = ", myLocales);
 
@@ -45,6 +45,4 @@ for block in A.newThese(IteratorType.leader) {
 writeln(A);
 writeln(B);
 writeln(C);
-
-
 

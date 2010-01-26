@@ -1,12 +1,12 @@
 record R {
   var D: domain(1);
-  var A: [i in D] real = i;
+  var A: [D] real = [i in D] i;
 }
 
 
 class C {
   var D: domain(1);
-  var A: [i in D] real = i;
+  var A: [D] real = [i in D] i;
 }
 
 

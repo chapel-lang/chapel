@@ -28,7 +28,7 @@ assert(k > 0, "k must be positive");
 // the index space and array for the data elements
 //
 const dataSpace = [1..n];
-var data: [i in dataSpace] coord = initData(i);
+var data: [dataSpace] coord = [i in dataSpace] initData(i);
 
 
 //

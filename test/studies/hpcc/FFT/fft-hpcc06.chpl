@@ -85,7 +85,7 @@ def computeTwiddles(Twiddles) {
 
 def bitReverseShuffle(Vect: [?Dom]) {
   const numBits = log2(Vect.numElements),
-        Perm: [i in Dom] index(Dom) = bitReverse(i, revBits = numBits),
+        Perm: [Dom] index(Dom) = [i in Dom] bitReverse(i, revBits = numBits),
         Temp = Vect(Perm);
   Vect = Temp;
 }

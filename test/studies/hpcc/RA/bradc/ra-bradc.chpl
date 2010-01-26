@@ -44,8 +44,8 @@ def randomAccessUpdate() {
   if debug then writeln("Table is: ", Table);
 
   var ranDom = [0..numRandoms-1];
-  var Ran: [i in ranDom] tableElem 
-         = HPCCstarts((numUpdates:int(64)/numRandoms) * i);
+  var Ran: [ranDom] tableElem 
+         = [i in ranDom] HPCCstarts((numUpdates:int(64)/numRandoms) * i);
 
   if debug then writeln("Ran is: ", Ran);
 

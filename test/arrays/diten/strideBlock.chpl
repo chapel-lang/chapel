@@ -1,7 +1,7 @@
 use BlockDist;
 var Dist = new dist(new Block(rank=1, bbox=[1..10]));
 var dom: domain(1, stridable=true) distributed Dist = [1..10 by 2];
-var A: [i in dom] int = i;
+var A: [dom] int = [i in dom] i;
 writeln(A);
 for i in dom {
   writeln("A(", i, ") is ", A(i), " on ", A(i).locale);

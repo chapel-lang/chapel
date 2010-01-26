@@ -1,5 +1,5 @@
 def bar() {
-  var v: [i in 1..10] real = i;
+  var v: [1..10] real = [i in 1..10] i;
   return v;
 }
 

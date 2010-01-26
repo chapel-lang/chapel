@@ -813,10 +813,10 @@ class LocBlockCyclicArr {
   var myElems: [locDom.myFlatInds] eltType;
 
   // TODO: need to be able to access these, but is this the right place?
-  const blocksize: [d in 1..rank] uint(64) = locDom.globDom.dist.blocksize(d): uint(64);
+  const blocksize: [1..rank] uint(64) = [d in 1..rank] locDom.globDom.dist.blocksize(d): uint(64);
   const low = locDom.globDom.dsiLow;
-  const locsize: [d in 1..rank] uint(64) = locDom.globDom.dist.targetLocDom.dim(d).length: uint(64);
-                                                                                  const numblocks: [d in 1..rank] uint(64) = (locDom.myStarts.dim(d).length):uint(64);
+  const locsize: [1..rank] uint(64) = [d in 1..rank] locDom.globDom.dist.targetLocDom.dim(d).length: uint(64);
+  const numblocks: [1..rank] uint(64) = [d in 1..rank] (locDom.myStarts.dim(d).length):uint(64);
 
 }
 

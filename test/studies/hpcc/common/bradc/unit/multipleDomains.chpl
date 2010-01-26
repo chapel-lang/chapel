@@ -1,7 +1,7 @@
 use BradsBlock1DPar;
 
 var myLocalesDom = [0..2];
-var myLocales: [i in myLocalesDom] locale = Locales(i%numLocales);
+var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales);
 
 //
 // The following is the manual rewrite of something like:

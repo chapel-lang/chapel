@@ -2,7 +2,7 @@ var first: bool = true;
 def main {
   var aliasDom: domain(1) = [1..5];
   var notAliasDom: domain(1) = [1..20];
-  var A: [i in notAliasDom] int = i;
+  var A: [notAliasDom] int = [i in notAliasDom] i;
   var B: [aliasDom] int;
   var C: [aliasDom + 1] int;
 

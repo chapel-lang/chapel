@@ -98,7 +98,7 @@ def main() {
         "Matrix size must be divisible by sqrt(numLocales)");
 
     // Initialize array
-    var A : [(i,j) in [1..n, 1..n]] int = i+j;
+    var A : [[1..n, 1..n]] int = [(i,j) in [1..n, 1..n]] i+j;
     var ACopy = A;
     
     // Perform the multiplication in parallel

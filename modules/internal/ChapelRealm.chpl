@@ -25,10 +25,13 @@ def chpl_computeTotNumLocalesWithoutWarning() {
 
 const totNumLocales = chpl_computeTotNumLocalesWithoutWarning();
 const AllLocaleSpace = [0..#totNumLocales];
-const AllLocales: [loc in AllLocaleSpace] locale = chpl_setupLocale(loc);
-                                              
-const Realms: [r in RealmSpace] realm = chpl_setupRealm(r, chpl_numLocales(r), 
-                                                        chpl_baseLocaleID(r));
+const AllLocales: [AllLocaleSpace] locale;
+forall loc in AllLocaleSpace do
+  AllLocales(loc) = chpl_setupLocale(loc);
+
+const Realms: [RealmSpace] realm;
+forall r in RealmSpace do
+  Realms(r) = chpl_setupRealm(r, chpl_numLocales(r), chpl_baseLocaleID(r));
 
 doneCreatingLocales = true;
 
