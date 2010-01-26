@@ -147,18 +147,21 @@ def IsChplSource(f):
         return False
 
 # read file with comments
-def ReadFileWithComments(f):
+def ReadFileWithComments(f, ignoreLeadingSpace=True):
     # sys.stdout.write('Opening: %s\n'%(f))
     myfile = open(f, 'r')
     mylines = myfile.readlines()
     myfile.close()
     mylist=list()
     for line in mylines:
-        line=line.strip()
+        line=line.rstrip()
         # ignore blank lines
         if not line.strip(): continue
         # ignore comments
-        if line.lstrip()[0] == '#': continue
+        if ignoreLeadingSpace:
+            if line.lstrip()[0] == '#': continue
+        else:
+            if line[0] == '#': continue
         mylist.append(line)
     return mylist
 
@@ -552,27 +555,40 @@ for testname in testsrc:
 
     # Get list of test specific compiler options
     if os.access(execname+compoptssuffix, os.R_OK):
-        compoptslist = ReadFileWithComments(execname+compoptssuffix)
+        compoptslist = ReadFileWithComments(execname+compoptssuffix, False)
     else:
         compoptslist = list(' ')
 
     # Get list of test specific exec options
     if os.access(execname+execoptssuffix, os.R_OK):
         execoptsfile=True
-        execoptslist = ReadFileWithComments(execname+execoptssuffix)
+        execoptslist = ReadFileWithComments(execname+execoptssuffix, False)
     else:
-        execoptslist = list(' ')
+        execoptslist = list()
 
     if (os.getenv('CHPL_TEST_INTERP')=='on' and
         (noexecfile or testfuturesfile or execoptsfile)):
         sys.stdout.write('[Skipping interpretation of : %s/%s]\n'%(localdir/execname))
         continue # on to next test
 
-
+    clist = list()
     # For all compopts + execopts combos..
     compoptsnum = 0
     for compopts in compoptslist:
         sys.stdout.flush()
+
+        del clist
+        # use the remaining portion as a .good file for executing tests
+        #  clist will be *added* to execopts if it is empty, or just used
+        #  as the default .good file if not empty
+        clist = compopts.split('#')
+        if len(clist) >= 2:
+            compopts = clist.pop(0)
+            cstr = ' #' + '#'.join(clist)
+            del clist[:]
+            clist.append(cstr)
+        else:
+            del clist[:]
 
         if len(compoptslist) == 1:
             complog=execname+'.comp.out.tmp'
@@ -666,7 +682,12 @@ for testname in testsrc:
                                   execname,complog,compiler]).wait()
 
             # Find the default 'golden' output file
-            checkfile = execname+'.'+machine+'.good'
+            if len(clist) != 0:
+                checkfile = clist[0].split('#')[1].strip()
+                if not os.path.isfile(checkfile):
+                    checkfile = execname+'.'+machine+'.good'
+            else:
+                checkfile = execname+'.'+machine+'.good'
             if not os.path.isfile(checkfile):
                 checkfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+'.good'
                 if not os.path.isfile(checkfile):
@@ -714,7 +735,15 @@ for testname in testsrc:
 
         # Execute the test for all requested execopts
         execoptsnum = 0
-        for texecopts in execoptslist:
+        # Handle empty execopts list
+        if len(execoptslist)==0 and len(clist)==0:
+            execoptslist.append(' ')
+            dfltexeccheckfile = None
+        elif len(clist)!=0:
+            dfltexeccheckfile = clist[0].split('#')[1].strip()
+        else:
+            dfltexeccheckfile = None
+        for texecopts in execoptslist+clist:
             sys.stdout.flush()
             onlyone = (len(compoptslist)==1) and (len(execoptslist)==1)
             tlist = texecopts.split('#')
@@ -725,7 +754,7 @@ for testname in testsrc:
                 # Ignore everything after the first token
                 execcheckfile = tlist[1].strip().split()[0]
             else:
-                execcheckfile = None
+                execcheckfile = dfltexeccheckfile
             del tlist
 
             if onlyone:
