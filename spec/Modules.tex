@@ -370,13 +370,9 @@ module M2 {
 }
 \end{chapel}
 \begin{chapelcompopts}
---main-module M1
---main-module M2
+--main-module M1 \# test\_main\_module.M1.good
+--main-module M2 \# test\_main\_module.M2.good
 \end{chapelcompopts}
-\begin{chapelexecopts}
- \# test\_main\_module.M1.good
- \# test\_main\_module.M2.good
-\end{chapelexecopts}
 If M1 is specified as the main module, the program will output:
 \begin{chapelprintoutput}
 % test_main_module.M1.good
