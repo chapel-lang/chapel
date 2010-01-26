@@ -17,12 +17,13 @@
 //
 // For mutexes
 //   type(s)
-//     chpl_mutex_t
+//     threadlayer_mutex_t
+//     threadlayer_mutex_p
 //   functions
-//     CHPL_MUTEX_INIT()
-//     CHPL_MUTEX_NEW()
-//     CHPL_MUTEX_LOCK()
-//     CHPL_MUTEX_UNLOCK()
+//     threadlayer_mutex_init()
+//     threadlayer_mutex_new()
+//     threadlayer_mutex_lock()
+//     threadlayer_mutex_unlock()
 //
 // For thread management
 //   type(s)
@@ -61,18 +62,23 @@
 //     threadlayer_get_thread_private_data()
 //     threadlayer_set_thread_private_data()
 //
-// The mutex type, mutex functions, and thread management functions are
-// fundamental and are declared in chpltasks.h.  The other types are
-// declared in the threads-*.h file for each specific threading layer,
-// and the callback functions are declared here.  The interfaces and
-// requirements for these other types and callback functions are
-// described elsewhere in this file.
+// The thread management functions are fundamental and are declared in
+// chpltasks.h.  The other types are declared in the threads-*.h file
+// for each specific threading layer, and the callback functions are
+// declared here.  The interfaces and requirements for these other
+// types and callback functions are described elsewhere in this file.
 //
 // Although the above list may seem long, in practice many of the
 // functions are quite simple, and with luck also easily extrapolated
 // from what is done for other threading layers.  For an example of an
 // implementation, see "pthreads" threading.
 //
+
+
+//
+// Mutexes
+//
+typedef threadlayer_mutex_t chpl_mutex_t;
 
 
 //
@@ -131,6 +137,15 @@ chpl_bool chpl_pool_is_empty(void);
 //
 void threadlayer_init(void);
 void threadlayer_exit(void);
+
+
+//
+// Mutexes
+//
+void threadlayer_mutex_init(threadlayer_mutex_p);
+threadlayer_mutex_p threadlayer_mutex_new(void);
+void threadlayer_mutex_lock(threadlayer_mutex_p);
+void threadlayer_mutex_unlock(threadlayer_mutex_p);
 
 
 //

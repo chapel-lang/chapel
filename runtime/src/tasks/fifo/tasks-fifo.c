@@ -110,12 +110,30 @@ static task_pool_p add_to_task_pool(chpl_fn_p,
                                     chpl_task_list_p);
 
 
+// Mutexes
+
+void CHPL_MUTEX_INIT(chpl_mutex_p m) {
+    threadlayer_mutex_init((threadlayer_mutex_p) m);
+}
+
+chpl_mutex_p CHPL_MUTEX_NEW(void) {
+    return (chpl_mutex_p) threadlayer_mutex_new();
+}
+
+void CHPL_MUTEX_LOCK(chpl_mutex_p m) {
+    threadlayer_mutex_lock((threadlayer_mutex_p) m);
+}
+
+void CHPL_MUTEX_UNLOCK(chpl_mutex_p m) {
+    threadlayer_mutex_unlock((threadlayer_mutex_p) m);
+}
+
+
 // Sync variables
 
 static void sync_wait_and_lock(chpl_sync_aux_t *s,
                                chpl_bool want_full,
-                               int32_t lineno,
-                               chpl_string filename) {
+                               int32_t lineno, chpl_string filename) {
   CHPL_MUTEX_LOCK(s->lock);
   while (s->is_full != want_full) {
     if (set_block_loc(lineno, filename)) {
@@ -154,14 +172,12 @@ void CHPL_SYNC_UNLOCK(chpl_sync_aux_t *s) {
 }
 
 void CHPL_SYNC_WAIT_FULL_AND_LOCK(chpl_sync_aux_t *s,
-                                  int32_t lineno,
-                                  chpl_string filename) {
+                                  int32_t lineno, chpl_string filename) {
   sync_wait_and_lock(s, true, lineno, filename);
 }
 
 void CHPL_SYNC_WAIT_EMPTY_AND_LOCK(chpl_sync_aux_t *s,
-                                   int32_t lineno,
-                                   chpl_string filename) {
+                                   int32_t lineno, chpl_string filename) {
   sync_wait_and_lock(s, false, lineno, filename);
 }
 
@@ -198,11 +214,11 @@ void CHPL_DESTROY_SYNC_AUX(chpl_sync_aux_t *s) {
 // Single variables
 
 void CHPL_SINGLE_LOCK(chpl_single_aux_t *s) {
-  CHPL_MUTEX_LOCK((chpl_mutex_t*)s->lock);
+  CHPL_MUTEX_LOCK(s->lock);
 }
 
 void CHPL_SINGLE_UNLOCK(chpl_single_aux_t *s) {
-  CHPL_MUTEX_UNLOCK((chpl_mutex_t*)s->lock);
+  CHPL_MUTEX_UNLOCK(s->lock);
 }
 
 void CHPL_SINGLE_WAIT_FULL(chpl_single_aux_t *s,

@@ -33,6 +33,26 @@
 // } thread_private_data_t;
 // 
 
+
+// Mutexes
+
+void CHPL_MUTEX_INIT(chpl_mutex_t* m) {
+    threadlayer_mutex_init((threadlayer_mutex_t*) m);
+}
+
+chpl_mutex_t* CHPL_MUTEX_NEW(void) {
+    return (chpl_mutex_t*) threadlayer_mutex_new();
+}
+
+void CHPL_MUTEX_LOCK(chpl_mutex_t* m) {
+    threadlayer_mutex_lock((threadlayer_mutex_t*) m);
+}
+
+void CHPL_MUTEX_UNLOCK(chpl_mutex_t* m) {
+    threadlayer_mutex_unlock((threadlayer_mutex_t*) m);
+}
+
+
 // Sync variables
 
 static void sync_wait_and_lock(chpl_sync_aux_t *s,

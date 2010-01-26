@@ -38,26 +38,27 @@ static void            pool_suspend_cancel_cleanup(void*);
 
 // Mutexes
 
-void CHPL_MUTEX_INIT(chpl_mutex_p mutex) {
+void threadlayer_mutex_init(threadlayer_mutex_p mutex) {
   // WAW: how to explicitly specify blocking-type?
-  if (pthread_mutex_init(mutex, NULL))
+  if (pthread_mutex_init((pthread_mutex_t*) mutex, NULL))
     chpl_internal_error("pthread_mutex_init() failed");
 }
 
-chpl_mutex_p CHPL_MUTEX_NEW(void) {
-  chpl_mutex_p m;
-  m = (chpl_mutex_p) chpl_alloc(sizeof(chpl_mutex_t), CHPL_RT_MD_MUTEX, 0, 0);
-  CHPL_MUTEX_INIT(m);
+threadlayer_mutex_p threadlayer_mutex_new(void) {
+  threadlayer_mutex_p m;
+  m = (threadlayer_mutex_p) chpl_alloc(sizeof(threadlayer_mutex_t),
+                                       CHPL_RT_MD_MUTEX, 0, 0);
+  threadlayer_mutex_init(m);
   return m;
 }
 
-void CHPL_MUTEX_LOCK(chpl_mutex_p mutex) {
-  if (pthread_mutex_lock(mutex))
+void threadlayer_mutex_lock(threadlayer_mutex_p mutex) {
+  if (pthread_mutex_lock((pthread_mutex_t*) mutex))
     chpl_internal_error("pthread_mutex_lock() failed");
 }
 
-void CHPL_MUTEX_UNLOCK(chpl_mutex_p mutex) {
-  if (pthread_mutex_unlock(mutex))
+void threadlayer_mutex_unlock(threadlayer_mutex_p mutex) {
+  if (pthread_mutex_unlock((pthread_mutex_t*) mutex))
     chpl_internal_error("pthread_mutex_unlock() failed");
 }
 
@@ -210,7 +211,7 @@ static void* pthread_func(void* void_f) {
   return (*(fn))(arg);
 }
 
-chpl_bool threadlayer_pool_suspend(chpl_mutex_t *lock,
+chpl_bool threadlayer_pool_suspend(chpl_mutex_p lock,
                                    struct timeval *deadline) {
   int last_cancel_state;
   chpl_bool res;
@@ -221,14 +222,15 @@ chpl_bool threadlayer_pool_suspend(chpl_mutex_t *lock,
   assert(last_cancel_state == PTHREAD_CANCEL_DISABLE); // sanity check
 
   if (deadline == NULL) {
-    (void) pthread_cond_wait(&wakeup_cond, lock);
+    (void) pthread_cond_wait(&wakeup_cond, (pthread_mutex_t*) lock);
     res = false;
   }
   else {
     struct timespec ts;
     ts.tv_sec  = deadline->tv_sec;
     ts.tv_nsec = deadline->tv_usec * 1000UL;
-    res = (pthread_cond_timedwait(&wakeup_cond, lock, &ts) == ETIMEDOUT);
+    res = (pthread_cond_timedwait(&wakeup_cond, (pthread_mutex_t*) lock, &ts)
+           == ETIMEDOUT);
   }
 
   // disable cancellation again

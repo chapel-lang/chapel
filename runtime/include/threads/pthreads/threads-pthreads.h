@@ -12,7 +12,8 @@ typedef pthread_t chpl_threadID_t;
 
 // Mutexes
 
-typedef pthread_mutex_t chpl_mutex_t;
+typedef pthread_mutex_t      threadlayer_mutex_t;
+typedef threadlayer_mutex_t* threadlayer_mutex_p;
 
 
 // Sync variables
