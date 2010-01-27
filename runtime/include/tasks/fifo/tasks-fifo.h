@@ -39,8 +39,8 @@
 //   functions
 //     threadlayer_sync_suspend()
 //     threadlayer_sync_awaken()
-//     threadlayer_init_sync()
-//     threadlayer_destroy_sync()
+//     threadlayer_sync_init()
+//     threadlayer_sync_destroy()
 //
 // For single variables
 //   type(s)
@@ -48,8 +48,8 @@
 //   functions
 //     threadlayer_single_suspend()
 //     threadlayer_single_awaken()
-//     threadlayer_init_single()
-//     threadlayer_destroy_single()
+//     threadlayer_single_init()
+//     threadlayer_single_destroy()
 //
 // For task management
 //   type(s)
@@ -175,15 +175,15 @@ void threadlayer_mutex_unlock(threadlayer_mutex_p);
 // threadlayer_sync_awaken() every time they are called, not just when
 // they change the state of the sync variable.
 //
-// Threadlayer_{init,destroy}_sync() are called to initialize or
+// Threadlayer_sync_{init,destroy}() are called to initialize or
 // destroy, respectively, the contents of the tl_aux member of the
 // chpl_sync_aux_t for the specific threading layer.
 //
 chpl_bool threadlayer_sync_suspend(chpl_sync_aux_t *s,
                                    struct timeval *deadline);
 void threadlayer_sync_awaken(chpl_sync_aux_t *s);
-void threadlayer_init_sync(chpl_sync_aux_t *s);
-void threadlayer_destroy_sync(chpl_sync_aux_t *s);
+void threadlayer_sync_init(chpl_sync_aux_t *s);
+void threadlayer_sync_destroy(chpl_sync_aux_t *s);
 
 
 //
@@ -210,15 +210,15 @@ void threadlayer_destroy_sync(chpl_sync_aux_t *s);
 // threadlayer_single_awaken() every time it is called, not just when it
 // fills the single variable.
 //
-// Threadlayer_{init,destroy}_single() are called to initialize or
+// Threadlayer_single_{init,destroy}() are called to initialize or
 // destroy, respectively, the contents of the tl_aux member of the
 // chpl_single_aux_t for the specific threading layer.
 //
 chpl_bool threadlayer_single_suspend(chpl_single_aux_t *s,
                                      struct timeval *deadline);
 void threadlayer_single_awaken(chpl_single_aux_t *s);
-void threadlayer_init_single(chpl_single_aux_t *s);
-void threadlayer_destroy_single(chpl_single_aux_t *s);
+void threadlayer_single_init(chpl_single_aux_t *s);
+void threadlayer_single_destroy(chpl_single_aux_t *s);
 
 
 //

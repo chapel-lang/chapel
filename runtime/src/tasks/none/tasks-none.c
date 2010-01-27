@@ -74,11 +74,11 @@ chpl_bool CHPL_SYNC_IS_FULL(void *val_ptr, chpl_sync_aux_t *s,
   return *s;
 }
 
-void CHPL_INIT_SYNC_AUX(chpl_sync_aux_t *s) {
+void CHPL_SYNC_INIT_AUX(chpl_sync_aux_t *s) {
   *s = false;
 }
 
-void CHPL_DESTROY_SYNC_AUX(chpl_sync_aux_t *s) { }
+void CHPL_SYNC_DESTROY_AUX(chpl_sync_aux_t *s) { }
 
 
 // Single variables
@@ -106,11 +106,11 @@ chpl_bool CHPL_SINGLE_IS_FULL(void *val_ptr, chpl_single_aux_t *s,
   return *s;
 }
 
-void CHPL_INIT_SINGLE_AUX(chpl_single_aux_t *s) {
+void CHPL_SINGLE_INIT_AUX(chpl_single_aux_t *s) {
   *s = false;
 }
 
-void CHPL_DESTROY_SINGLE_AUX(chpl_single_aux_t *s) { }
+void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) { }
 
 // Tasks
 

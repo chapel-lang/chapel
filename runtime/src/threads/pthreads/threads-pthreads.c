@@ -124,12 +124,12 @@ void threadlayer_sync_awaken(chpl_sync_aux_t *s) {
     chpl_internal_error("pthread_cond_signal() failed");
 }
 
-void threadlayer_init_sync(chpl_sync_aux_t *s) {
+void threadlayer_sync_init(chpl_sync_aux_t *s) {
   s->tl_aux.signal_full = chpl_condvar_new();
   s->tl_aux.signal_empty = chpl_condvar_new();
 }
 
-void threadlayer_destroy_sync(chpl_sync_aux_t *s) {
+void threadlayer_sync_destroy(chpl_sync_aux_t *s) {
   chpl_free(s->tl_aux.signal_full, 0, 0);
   chpl_free(s->tl_aux.signal_empty, 0, 0);
 }
@@ -156,11 +156,11 @@ void threadlayer_single_awaken(chpl_single_aux_t *s) {
     chpl_internal_error("pthread_cond_signal() failed");
 }
 
-void threadlayer_init_single(chpl_single_aux_t *s) {
+void threadlayer_single_init(chpl_single_aux_t *s) {
   s->tl_aux.signal_full = chpl_condvar_new();
 }
 
-void threadlayer_destroy_single(chpl_single_aux_t *s) {
+void threadlayer_single_destroy(chpl_single_aux_t *s) {
   chpl_free(s->tl_aux.signal_full, 0, 0);
 }
 

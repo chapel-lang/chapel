@@ -199,15 +199,15 @@ chpl_bool CHPL_SYNC_IS_FULL(void *val_ptr,
   return s->is_full;
 }
 
-void CHPL_INIT_SYNC_AUX(chpl_sync_aux_t *s) {
+void CHPL_SYNC_INIT_AUX(chpl_sync_aux_t *s) {
   s->is_full = false;
   s->lock = CHPL_MUTEX_NEW();
-  threadlayer_init_sync(s);
+  threadlayer_sync_init(s);
 }
 
-void CHPL_DESTROY_SYNC_AUX(chpl_sync_aux_t *s) {
+void CHPL_SYNC_DESTROY_AUX(chpl_sync_aux_t *s) {
   chpl_free(s->lock, 0, 0);
-  threadlayer_destroy_sync(s);
+  threadlayer_sync_destroy(s);
 }
 
 
@@ -264,15 +264,15 @@ chpl_bool CHPL_SINGLE_IS_FULL(void *val_ptr,
   return s->is_full;
 }
 
-void CHPL_INIT_SINGLE_AUX(chpl_single_aux_t *s) {
+void CHPL_SINGLE_INIT_AUX(chpl_single_aux_t *s) {
   s->is_full = false;
   s->lock = CHPL_MUTEX_NEW();
-  threadlayer_init_single(s);
+  threadlayer_single_init(s);
 }
 
-void CHPL_DESTROY_SINGLE_AUX(chpl_single_aux_t *s) {
+void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) {
   chpl_free(s->lock, 0, 0);
-  threadlayer_destroy_single(s);
+  threadlayer_single_destroy(s);
 }
 
 

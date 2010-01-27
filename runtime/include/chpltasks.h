@@ -42,8 +42,8 @@ void      CHPL_SYNC_WAIT_EMPTY_AND_LOCK(chpl_sync_aux_t *,
 void      CHPL_SYNC_MARK_AND_SIGNAL_FULL(chpl_sync_aux_t *);     // and unlock
 void      CHPL_SYNC_MARK_AND_SIGNAL_EMPTY(chpl_sync_aux_t *);    // and unlock
 chpl_bool CHPL_SYNC_IS_FULL(void *, chpl_sync_aux_t *, chpl_bool);
-void      CHPL_INIT_SYNC_AUX(chpl_sync_aux_t *);
-void      CHPL_DESTROY_SYNC_AUX(chpl_sync_aux_t *);
+void      CHPL_SYNC_INIT_AUX(chpl_sync_aux_t *);
+void      CHPL_SYNC_DESTROY_AUX(chpl_sync_aux_t *);
 
 
 // Single variables
@@ -53,8 +53,8 @@ void      CHPL_SINGLE_UNLOCK(chpl_single_aux_t *);
 void      CHPL_SINGLE_WAIT_FULL(chpl_single_aux_t *, int32_t, chpl_string);
 void      CHPL_SINGLE_MARK_AND_SIGNAL_FULL(chpl_single_aux_t *); // and unlock
 chpl_bool CHPL_SINGLE_IS_FULL(void *, chpl_single_aux_t *, chpl_bool);
-void      CHPL_INIT_SINGLE_AUX(chpl_single_aux_t *);
-void      CHPL_DESTROY_SINGLE_AUX(chpl_single_aux_t *);
+void      CHPL_SINGLE_INIT_AUX(chpl_single_aux_t *);
+void      CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *);
 
 
 // Tasks
