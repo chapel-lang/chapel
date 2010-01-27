@@ -140,8 +140,6 @@ void cleanup(void) {
   Vec<BaseAST*> asts;
   collect_asts(rootModule, asts);
 
-  asts.clear();
-  collect_asts(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {
     SET_LINENO(ast);
     if (DefExpr* def = toDefExpr(ast)) {
