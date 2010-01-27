@@ -54,10 +54,6 @@ variables (\chpl{var}).  Parameters are compile-time constants whereas
 constants are runtime constants.  Both levels of constants are
 discussed in~\rsec{Constants}.
 
-Multiple variables can be defined in the same \sntx{variable-declaration-list}.
-All variables defined in the same \sntx{identifier-list} are
-defined to have the same type and initialization expression.
-
 The \sntx{type-part} of a variable declaration specifies the type of
 the variable.  It is optional if the \sntx{initialization-part} is
 specified.  If the \sntx{type-part} is omitted, the type of the
@@ -69,16 +65,10 @@ initial expression to assign to the variable.  If
 the \sntx{initialization-part} is omitted, the variable is initialized
 to a default value described in~\rsec{Default_Initialization}.
 
-\begin{example}
-In the declaration
-\begin{chapel}
-var a = 1.0, b, c:int;
-\end{chapel}
-the variable \chpl{a} is inferred to be of type \chpl{real} because the
-initializer, \chpl{1.0}, is a real.  The variables \chpl{b} and \chpl{c}
-are declared to have type \chpl{int} and are initialized to the default
-\chpl{int} value.
-\end{example}
+Multiple variables can be defined in the
+same \sntx{variable-declaration-list}.  The semantics of declaring
+multiple variables that share a \sntx{initialization-part}
+and/or \sntx{type-part} is defined in~\rsec{Multiple_Variable_Declarations}.
 
 The \sntx{array-alias-declaration} is defined
 in~\rsec{Domains_and_Arrays}.
@@ -108,6 +98,7 @@ records & default constructed record \\
 ranges & {\tt 1..0} \\
 arrays & elements are default values \\
 tuples & components are default values \\
+sync/single & base default value and \emph{empty} status \\
 \hline
 \end{tabular}
 \end{center}
@@ -124,6 +115,108 @@ explicitly left uninitialized in order to address this concern.
 
 If the type is omitted from a variable declaration, the type of the
 variable is defined to be the type of the initialization expression.
+With the exception of sync and single expressions, the declaration
+\begin{chapel}
+var v = e;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+var v: e.type;
+v = e;
+\end{chapel}
+for an arbitrary expression \chpl{e}.  For expressions of sync or
+single type, this translation does not hold because the evaluation
+of \chpl{e} results in a default read of this expression.  The type of
+the variable is thus equal to the base type of the sync or single
+expression.
+
+\subsubsection{Multiple Variable Declarations}
+\label{Multiple_Variable_Declarations}
+
+All variables defined in the same \sntx{identifier-list} are defined
+such that they have the same type and value, and so that the type and
+initialization expression are evaluated only once.
+
+\begin{example}
+In the declaration
+\begin{chapel}
+def g() { writeln("side effect"); return "a string"; }
+var a, b = 1.0, c, d:int, e, f = g();
+\end{chapel}
+variables \chpl{a} and \chpl{b} are of type \chpl{real} with
+value \chpl{1.0}.  Variables \chpl{c} and \chpl{d} are of
+type \chpl{int} and are initialized to the default value of \chpl{0}.
+Variables \chpl{e} and \chpl{f} are of type \chpl{string} with
+value \chpl{"a string"}.  The string \chpl{"side effect"} has been
+written to the display once.  It is not evaluated twice.
+\end{example}
+
+The exact way that multiple variables are declared is defined as
+follows:
+\begin{itemize}
+\item If the variables in the \sntx{identifier-list} are declared
+with a type, but without an initialization expression as in
+\begin{chapel}
+var v1, v2, v3: t;
+\end{chapel}
+for an arbitrary type expression \chpl{t}, then the declarations are
+rewritten so that the first variable is declared to be of
+type \chpl{t} and each later variable is declared to be of the type of
+the first variable as in
+\begin{chapel}
+var v1: t; var v2: v1.type; var v3: v1.type;
+\end{chapel}
+
+\item If the variables in the \sntx{identifier-list} are declared
+without a type, but with an initialization expression as in
+\begin{chapel}
+var v1, v2, v3 = e;
+\end{chapel}
+for an arbitrary expression \chpl{e}, then the declarations are
+rewritten so that the first variable is initialized by
+expression \chpl{e} and each later variable is initialized by the
+first variable as in
+\begin{chapel}
+var v1 = e; var v2 = v1; var v3 = v1;
+\end{chapel}
+
+\item If the variables in the \sntx{identifier-list} are declared
+with both a type and an initialization expression as in
+\begin{chapel}
+var v1, v2, v3: t = e;
+\end{chapel}
+for an arbitrary type expression \chpl{t} and an arbitrary
+expression \chpl{e}, then the declarations are rewritten so that the
+first variable is declared to be of type \chpl{t} and initialized by
+expression \chpl{e}, and each later variable is declared to be of the
+type of the first variable and initialized by the result of calling
+the function \chpl{readXX} on the first variable as in
+\begin{chapel}
+var v1: t = e; var v2: v1.type = readXX(v1); var v3: v1.type = readXX(v1);
+\end{chapel}
+where the function \chpl{readXX} is defined as follows:
+\begin{chapel}
+def readXX(x: sync) return x.readXX();
+def readXX(x: single) return x.readXX();
+def readXX(x) return x;
+\end{chapel}
+Note that the \chpl{readXX} function cannot be called directly by a
+Chapel programmer and that adding an additional overload or shadowing
+this function will not change the semantics of variable declarations.
+This function is defined solely for the purposes of this
+specification.
+\end{itemize}
+
+\begin{rationale}
+This algorithm is complicated by the existence of \emph{sync}
+and \emph{single} variables.  If these did not exist, we could rewrite
+any multi-variable declaration such that later variables were simply
+initialized by the first variable and the first variable was defined
+as if it appeared alone in the \sntx{identifier-list}.  However,
+both \emph{sync} and \emph{single} variables require careful handling
+to avoid unintentional changes to their \emph{full}/\emph{empty}
+state.
+\end{rationale}
 
 \subsection{Global Variables}
 \label{Global_Variables}

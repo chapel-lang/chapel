@@ -636,6 +636,10 @@ class _ref {
   var _val;
 }
 
+def chpl__readXX(x: sync) return x.readXX();
+def chpl__readXX(x: single) return x.readXX();
+def chpl__readXX(x) return x;
+
 // Returns whether an object of type t occupies a 64-bit word on Cray's MTA/XMT
 // (The definition of this function should be target dependent.  This would avoid
 // the need to write C macros in the runtime that essentially duplicate

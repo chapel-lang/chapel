@@ -1235,18 +1235,27 @@ static void
 backPropagateInitsTypes(BlockStmt* stmts) {
   Expr* init = NULL;
   Expr* type = NULL;
+  DefExpr* last = NULL;
   for_alist_backward(stmt, stmts->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
       if (def->init || def->exprType) {
         init = def->init;
         type = def->exprType;
       } else {
-        def->init = init ? init->copy() : NULL;
-        def->exprType = type ? type->copy() : NULL;
+        if (type)
+          last->exprType =
+            new CallExpr(PRIM_TYPEOF, new UnresolvedSymExpr(def->sym->name));
+        if (init && type)
+          last->init =
+            new CallExpr("chpl__readXX", new UnresolvedSymExpr(def->sym->name));
+        else if (init && !type)
+          last->init = new UnresolvedSymExpr(def->sym->name);
+        def->init = init;
+        def->exprType = type;
       }
-      continue;
-    }
-    INT_FATAL(stmt, "Major error in backPropagateInitsTypes");
+      last = def;
+    } else
+      INT_FATAL(stmt, "expected DefExpr in backPropagateInitsTypes");
   }
 }
 
