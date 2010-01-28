@@ -479,20 +479,6 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
 }
 
 
-static int loopexpr_uid = 1;
-
-// builds body of for expression iterator
-CallExpr*
-buildForLoopExpr(Expr* indices, Expr* iterator, Expr* expr, Expr* cond) {
-  FnSymbol* fn = new FnSymbol(astr("_seqloopexpr", istr(loopexpr_uid++)));
-  Expr* stmt = new CallExpr(PRIM_YIELD, expr);
-  if (cond)
-    stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
-  fn->insertAtTail(buildForLoopStmt(indices, iterator, new BlockStmt(stmt)));
-  return new CallExpr(new DefExpr(fn));
-}
-
-
 //
 // check validity of indices in loops and expressions
 //
@@ -547,102 +533,146 @@ destructureIndices(BlockStmt* block,
 }
 
 
-CallExpr*
-buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType) {
-  if (fSerial || fSerialForall)
-    return buildForLoopExpr(indices, iteratorExpr, expr, cond);
+static BlockStmt*
+handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr) {
+  BlockStmt* block = new BlockStmt();
+  fn->addFlag(FLAG_MAYBE_TYPE);
+  bool hasSpecifiedIndices = !!indices;
+  if (!hasSpecifiedIndices)
+    indices = new UnresolvedSymExpr("_elided_index");
+  checkIndices(indices);
 
-  FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
+  //
+  // nested function to compute isArrayType which is set to true if
+  // the inner expression is a type and false otherwise
+  //
+  // this nested function is called in a type block so that it is
+  // never executed; placing all this code in a separate function
+  // inside the type block is essential for two reasons:
+  //
+  // first, so that the iterators in any nested parallel loop
+  // expressions are not pulled all the way out during cleanup
+  //
+  // second, so that types and functions declared in this nested
+  // function do not get removed from the IR when the type lbock gets
+  // removed
+  //
+  FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
+  isArrayTypeFn->addFlag(FLAG_INLINE);
+
+  Symbol* isArrayType = newTemp("_isArrayType");
+  isArrayType->addFlag(FLAG_MAYBE_PARAM);
+  fn->insertAtTail(new DefExpr(isArrayType));
+
+  VarSymbol* iteratorSym = newTemp("_iterator");
+  isArrayTypeFn->insertAtTail(new DefExpr(iteratorSym));
+  isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, iteratorSym,
+                                new CallExpr("_getIterator", iteratorExpr->copy())));
+  VarSymbol* index = newTemp("_indexOfInterest");
+  isArrayTypeFn->insertAtTail(new DefExpr(index));
+  isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, index,
+                                new CallExpr("iteratorIndex", iteratorSym)));
+  BlockStmt* indicesBlock = new BlockStmt();
+  destructureIndices(indicesBlock, indices->copy(), new SymExpr(index), false);
+  indicesBlock->blockTag = BLOCK_SCOPELESS;
+  isArrayTypeFn->insertAtTail(indicesBlock);
+  isArrayTypeFn->insertAtTail(new CondStmt(
+                                new CallExpr("chpl__isType", expr->copy()),
+                                new CallExpr(PRIM_MOVE, isArrayType, gTrue),
+                                new CallExpr(PRIM_MOVE, isArrayType, gFalse)));
+  fn->insertAtTail(new DefExpr(isArrayTypeFn));
+  BlockStmt* typeBlock = new BlockStmt();
+  typeBlock->blockTag = BLOCK_TYPE;
+  typeBlock->insertAtTail(new CallExpr(isArrayTypeFn));
+  fn->insertAtTail(typeBlock);
+
+  Symbol* arrayType = newTemp("_arrayType");
+  arrayType->addFlag(FLAG_EXPR_TEMP);
+  arrayType->addFlag(FLAG_MAYBE_TYPE);
+  BlockStmt* thenStmt = new BlockStmt();
+  thenStmt->insertAtTail(new DefExpr(arrayType));
+  Symbol* domain = newTemp("_domain");
+  domain->addFlag(FLAG_EXPR_TEMP);
+  thenStmt->insertAtTail(new DefExpr(domain));
+  // note that we need the below autoCopy until we start reference
+  // counting domains within runtime array types
+  thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, domain,
+                           new CallExpr("chpl__autoCopy",
+                             new CallExpr("chpl__buildDomainExpr",
+                                          iteratorExpr->copy()))));
+  if (hasSpecifiedIndices) {
+    // we want to swap something like the below commented-out
+    // statement with the compiler error statement but skyline
+    // arrays are not yet supported...
+    thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType, new CallExpr("compilerError", new_StringSymbol("unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification"))));
+    //      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType,
+    //                                          new CallExpr("chpl__buildArrayRuntimeType",
+    //                                                       domain, expr->copy(),
+    //                                                       indices->copy(), domain)));
+  } else {
+    thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType,
+                             new CallExpr("chpl__buildArrayRuntimeType",
+                                          domain, expr->copy())));
+  }
+  thenStmt->insertAtTail(new CallExpr(PRIM_RETURN, arrayType));
+  fn->insertAtTail(new CondStmt(new SymExpr(isArrayType), thenStmt, block));
+  return block;
+}
+
+
+static int loopexpr_uid = 1;
+
+// builds body of for expression iterator
+CallExpr*
+buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType) {
+  FnSymbol* fn = new FnSymbol(astr("_seqloopexpr", istr(loopexpr_uid++)));
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
-    block = new BlockStmt();
-    fn->addFlag(FLAG_MAYBE_TYPE);
-    bool hasSpecifiedIndices = !!indices;
-    if (!hasSpecifiedIndices)
-      indices = new UnresolvedSymExpr("_elided_index");
-    checkIndices(indices);
-
-    //
-    // nested function to compute isArrayType which is set to true if
-    // the inner expression is a type and false otherwise
-    //
-    // this nested function is called in a type block so that it is
-    // never executed; placing all this code in a separate function
-    // inside the type block is essential for two reasons:
-    //
-    // first, so that the iterators in any nested parallel loop
-    // expressions are not pulled all the way out during cleanup
-    //
-    // second, so that types and functions declared in this nested
-    // function do not get removed from the IR when the type lbock
-    // gets removed
-    //
-    FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
-    isArrayTypeFn->addFlag(FLAG_INLINE);
-
-    Symbol* isArrayType = newTemp("_isArrayType");
-    isArrayType->addFlag(FLAG_MAYBE_PARAM);
-    fn->insertAtTail(new DefExpr(isArrayType));
-
-    VarSymbol* iteratorSym = newTemp("_iterator");
-    isArrayTypeFn->insertAtTail(new DefExpr(iteratorSym));
-    isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, iteratorSym,
-                              new CallExpr("_getIterator", iteratorExpr->copy())));
-    VarSymbol* index = newTemp("_indexOfInterest");
-    isArrayTypeFn->insertAtTail(new DefExpr(index));
-    isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, index,
-                              new CallExpr("iteratorIndex", iteratorSym)));
-    BlockStmt* indicesBlock = new BlockStmt();
-    destructureIndices(indicesBlock, indices->copy(), new SymExpr(index), false);
-    indicesBlock->blockTag = BLOCK_SCOPELESS;
-    isArrayTypeFn->insertAtTail(indicesBlock);
-    isArrayTypeFn->insertAtTail(new CondStmt(new CallExpr("chpl__isType", expr->copy()),
-                              new CallExpr(PRIM_MOVE, isArrayType, gTrue),
-                              new CallExpr(PRIM_MOVE, isArrayType, gFalse)));
-    fn->insertAtTail(new DefExpr(isArrayTypeFn));
-    BlockStmt* typeBlock = new BlockStmt();
-    typeBlock->blockTag = BLOCK_TYPE;
-    typeBlock->insertAtTail(new CallExpr(isArrayTypeFn));
-    fn->insertAtTail(typeBlock);
-
-    Symbol* arrayType = newTemp("_arrayType");
-    arrayType->addFlag(FLAG_EXPR_TEMP);
-    arrayType->addFlag(FLAG_MAYBE_TYPE);
-    BlockStmt* thenStmt = new BlockStmt();
-    thenStmt->insertAtTail(new DefExpr(arrayType));
-    Symbol* domain = newTemp("_domain");
-    domain->addFlag(FLAG_EXPR_TEMP);
-    thenStmt->insertAtTail(new DefExpr(domain));
-    // note that we need the below autoCopy until we start reference
-    // counting domains within runtime array types
-    thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, domain,
-                                        new CallExpr("chpl__autoCopy",
-                               new CallExpr("chpl__buildDomainExpr",
-                                 iteratorExpr->copy()))));
-    if (hasSpecifiedIndices) {
-      // we want to swap something like the below commented-out
-      // statement with the compiler error statement but skyline
-      // arrays are not yet supported...
-      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType, new CallExpr("compilerError", new_StringSymbol("unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification"))));
-      //      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType,
-      //                                          new CallExpr("chpl__buildArrayRuntimeType",
-      //                                                       domain, expr->copy(),
-      //                                                       indices->copy(), domain)));
-    } else {
-      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType,
-                               new CallExpr("chpl__buildArrayRuntimeType",
-                                            domain, expr->copy())));
-    }
-    thenStmt->insertAtTail(new CallExpr(PRIM_RETURN, arrayType));
-    fn->insertAtTail(new CondStmt(new SymExpr(isArrayType), thenStmt, block));
+    INT_ASSERT(!cond);
+    block = handleArrayTypeCase(fn, indices, iteratorExpr, expr);
   }
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
   block->insertAtTail(new DefExpr(iterator));
   block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
-  const char* iteratorName = astr("_iterator_for_parloopexpr", istr(loopexpr_uid-1));
+  const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
+  block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
+
+  //
+  // build serial iterator function
+  //
+  FnSymbol* sifn = new FnSymbol(iteratorName);
+  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  sifn->insertFormalAtTail(sifnIterator);
+  fn->insertAtHead(new DefExpr(sifn));
+  Expr* stmt = new CallExpr(PRIM_YIELD, expr);
+  if (cond)
+    stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
+  sifn->insertAtTail(buildForLoopStmt(indices, new SymExpr(sifnIterator), new BlockStmt(stmt)));
+  return new CallExpr(new DefExpr(fn));
+}
+
+
+CallExpr*
+buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType) {
+  if (fSerial || fSerialForall)
+    return buildForLoopExpr(indices, iteratorExpr, expr, cond, maybeArrayType);
+
+  FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
+  BlockStmt* block = fn->body;
+
+  if (maybeArrayType) {
+    INT_ASSERT(!cond);
+    block = handleArrayTypeCase(fn, indices, iteratorExpr, expr);
+  }
+
+  VarSymbol* iterator = newTemp("_iterator");
+  iterator->addFlag(FLAG_EXPR_TEMP);
+  block->insertAtTail(new DefExpr(iterator));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
+  const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
   //

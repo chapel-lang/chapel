@@ -344,9 +344,6 @@ void normalize(BaseAST* base) {
   calls.clear();
   collectCallExprs(base, calls);
   forv_Vec(CallExpr, call, calls) {
-    processSyntacticDistributions(call);
-  }
-  forv_Vec(CallExpr, call, calls) {
     applyGetterTransform(call);
     insert_call_temps(call);
     fix_user_assign(call);
@@ -805,6 +802,12 @@ static void fixup_array_formals(FnSymbol* fn) {
   for_formals(arg, fn) {
     if (arg->typeExpr) {
       CallExpr* call = toCallExpr(arg->typeExpr->body.tail);
+      //if (call && call->isNamed("chpl__buildDomainExpr")) {
+        //CallExpr* arrayTypeCall = new CallExpr("chpl__buildArrayRuntimeType");
+        //call->insertBefore(arrayTypeCall);
+        //arrayTypeCall->insertAtTail(call->remove());
+        //call = arrayTypeCall;
+      //}
       if (call && call->isNamed("chpl__buildArrayRuntimeType")) {
         if (ArgSymbol* arg = toArgSymbol(call->parentSymbol)) {
           bool noDomain = (isSymExpr(call->get(1))) ? toSymExpr(call->get(1))->var == gNil : false;

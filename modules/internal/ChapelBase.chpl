@@ -81,6 +81,8 @@ def typeToString(type t) param {
   return __primitive("typeToString", t);
 }
 
+enum iterator {leader, follower};
+
 //
 // assignment on primitive types
 //
@@ -1223,56 +1225,6 @@ pragma "inline" def chpl__initCopy(sv: single) {
 
 pragma "inline" def chpl__initCopy(x: _tuple) { 
   // body inserted during generic instantiation
-}
-
-def chpl__initCopy(a: _distribution) {
-  pragma "no copy" var b = chpl__autoCopy(a.clone());
-  return b;
-}
-
-def chpl__initCopy(a: domain) {
-  var b: a.type;
-  b.setIndices(a.getIndices());
-  return b;
-}
-
-def chpl__initCopy(a: []) {
-  var b : [a._dom] a.eltType;
-  b = a;
-  return b;
-}
-
-def chpl__initCopy(ir: _iteratorRecord) {
-  def _ir_copy_recursive(ir) {
-    for e in ir do
-      yield chpl__initCopy(e);
-  }
-
-  pragma "no copy" var irc = _ir_copy_recursive(ir);
-
-  var i = 1, size = 4;
-  pragma "insert auto destroy" var D = [1..size];
-
-  // note that _getIterator is called in order to copy the iterator
-  // class since for arrays we need to iterate once to get the
-  // element type (at least for now); this also means that if this
-  // iterator has side effects, we will see them; a better way to
-  // handle this may be to get the static type (not initialize the
-  // array) and use a primitive to set the array's element; that may
-  // also handle skyline arrays
-  var A: [D] iteratorIndexType(irc);
-
-  for e in irc {
-    pragma "no copy" pragma "insert auto destroy" var ee = e;
-    if i > size {
-      size = size * 2;
-      D = [1..size];
-    }
-    A(i) = ee;
-    i = i + 1;
-  }
-  D = [1..i-1];
-  return A;
 }
 
 pragma "dont disable remote value forwarding"

@@ -1,11 +1,11 @@
 //
 // Chapel Parser Conventions
 //
-// _expr -- expression
-// _ls   -- list
-// _opt  -- optional
-// _stmt -- statement
-// _type -- type
+// opt_       -- optional
+//      _expr -- expression
+//      _ls   -- list
+//      _stmt -- statement
+//      _type -- type
 //
 
 %{
@@ -86,7 +86,7 @@
 %left TNOELSE
 %left TELSE
 %left TCOMMA
-%left TFOR TFORALL TIF
+%left TFOR TFORALL TIF TSYNC TSINGLE
 %left TBY THASH
 %left TIN
 %left TDOTDOT
@@ -110,9 +110,9 @@
 
 %type <b> opt_config opt_extern
  
-%type <pt> intent_tag
+%type <pt> opt_intent_tag
 
-%type <retTag> ret_tag
+%type <retTag> opt_return_tag
 
 %type <pch> identifier fn_identifier opt_identifier
 
@@ -122,8 +122,8 @@
 %type <pblockstmt> class_level_stmt_ls
 
 %type <pblockstmt> stmt empty_stmt label_stmt break_stmt continue_stmt
-%type <pblockstmt> expr_stmt if_stmt param_for_stmt for_stmt forall_stmt coforall_stmt while_do_stmt do_while_stmt serial_stmt
-%type <pblockstmt> select_stmt return_stmt yield_stmt assign_stmt swap_stmt class_level_stmt
+%type <pblockstmt> expr_stmt if_stmt param_for_stmt for_stmt forall_stmt coforall_stmt while_loop_stmt serial_stmt
+%type <pblockstmt> select_stmt return_stmt yield_stmt assignment_stmt swap_stmt class_level_stmt
 %type <pblockstmt> type_select_stmt on_stmt use_expr_ls sync_stmt
 
 %type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt extern_fn_decl_stmt
@@ -138,15 +138,15 @@
 %type <pexpr> when_stmt
 %type <pblockstmt> when_stmt_ls
 
-%type <pexpr> opt_type opt_formal_type array_type
-%type <pexpr> type opt_domain
+%type <pexpr> opt_type array_type opt_formal_type formal_array_type opt_formal_array_elt_type
+%type <pexpr> opt_domain
 %type <ptype> class_tag
 %type <penumtype> enum_ls
 
-%type <pexpr> call_expr memberaccess_expr lvalue unary_op_expr binary_op_expr
-%type <pexpr> paren_expr expr actual_expr
-%type <pexpr> literal opt_where_part
-%type <pexpr> variable_expr stmt_level_expr type_level_expr alias_expr
+%type <pexpr> call_expr dot_expr lvalue_expr unary_op_expr binary_op_expr
+%type <pexpr> parenthesized_expr expr actual_expr
+%type <pexpr> literal_expr opt_where_part
+%type <pexpr> stmt_level_expr type_level_expr alias_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr opt_init_type var_arg_expr
 %type <pdefexpr> formal enum_item
 %type <pdefexpr> query_expr
@@ -175,7 +175,7 @@ pragma_ls:
 stmt:
   class_level_stmt
 | array_alias_stmt
-| assign_stmt
+| assignment_stmt
 | atomic_stmt
 | begin_stmt
 | block_stmt
@@ -184,7 +184,6 @@ stmt:
 | coforall_stmt
 | continue_stmt
 | delete_stmt
-| do_while_stmt
 | empty_stmt
 | expr_stmt
 | for_stmt
@@ -202,9 +201,15 @@ stmt:
 | sync_stmt
 | type_select_stmt
 | use_stmt
-| while_do_stmt
+| while_loop_stmt
 | yield_stmt
 | error             { printf("syntax error"); clean_exit(1); }
+;
+
+while_loop_stmt:
+  TDO stmt TWHILE expr TSEMI  { $$ = buildDoWhileLoopStmt($4, $2); }
+| TWHILE expr TDO stmt        { $$ = buildWhileDoLoopStmt($2, $4); }
+| TWHILE expr block_stmt      { $$ = buildWhileDoLoopStmt($2, $3); }
 ;
 
 class_level_stmt:
@@ -216,7 +221,7 @@ class_level_stmt:
 ;
 
 array_alias_stmt:
-  lvalue alias_expr TSEMI
+  lvalue_expr alias_expr TSEMI
     {
       $$ = buildChapelStmt(
              new CallExpr(new CallExpr(".", $1,
@@ -224,34 +229,34 @@ array_alias_stmt:
     }
 ;
 
-assign_stmt:
-  lvalue TASSIGN expr TSEMI
+assignment_stmt:
+  lvalue_expr TASSIGN expr TSEMI
     { $$ = buildChapelStmt(new CallExpr("=", $1, $3)); }
-| lvalue TASSIGNPLUS expr TSEMI
+| lvalue_expr TASSIGNPLUS expr TSEMI
     { $$ = buildCompoundAssignment("+", $1, $3); }
-| lvalue TASSIGNMINUS expr TSEMI
+| lvalue_expr TASSIGNMINUS expr TSEMI
     { $$ = buildCompoundAssignment("-", $1, $3); }
-| lvalue TASSIGNMULTIPLY expr TSEMI
+| lvalue_expr TASSIGNMULTIPLY expr TSEMI
     { $$ = buildCompoundAssignment("*", $1, $3); }
-| lvalue TASSIGNDIVIDE expr TSEMI
+| lvalue_expr TASSIGNDIVIDE expr TSEMI
     { $$ = buildCompoundAssignment("/", $1, $3); }
-| lvalue TASSIGNMOD expr TSEMI
+| lvalue_expr TASSIGNMOD expr TSEMI
     { $$ = buildCompoundAssignment("%", $1, $3); }
-| lvalue TASSIGNEXP expr TSEMI
+| lvalue_expr TASSIGNEXP expr TSEMI
     { $$ = buildCompoundAssignment("**", $1, $3); }
-| lvalue TASSIGNBAND expr TSEMI
+| lvalue_expr TASSIGNBAND expr TSEMI
     { $$ = buildCompoundAssignment("&", $1, $3); }
-| lvalue TASSIGNBOR expr TSEMI
+| lvalue_expr TASSIGNBOR expr TSEMI
     { $$ = buildCompoundAssignment("|", $1, $3); }
-| lvalue TASSIGNBXOR expr TSEMI
+| lvalue_expr TASSIGNBXOR expr TSEMI
     { $$ = buildCompoundAssignment("^", $1, $3); }
-| lvalue TASSIGNLAND expr TSEMI
+| lvalue_expr TASSIGNLAND expr TSEMI
     { $$ = buildLogicalAndExprAssignment($1, $3); }
-| lvalue TASSIGNLOR expr TSEMI
+| lvalue_expr TASSIGNLOR expr TSEMI
     { $$ = buildLogicalOrExprAssignment($1, $3); }
-| lvalue TASSIGNSR expr TSEMI
+| lvalue_expr TASSIGNSR expr TSEMI
     { $$ = buildCompoundAssignment(">>", $1, $3); }
-| lvalue TASSIGNSL expr TSEMI
+| lvalue_expr TASSIGNSL expr TSEMI
     { $$ = buildCompoundAssignment("<<", $1, $3); }
 ;
 
@@ -270,6 +275,11 @@ block_stmt:
 break_stmt:
   TBREAK opt_identifier TSEMI
     { $$ = buildChapelStmt(new GotoStmt(GOTO_BREAK, $2)); }
+;
+
+opt_identifier:
+              { $$ = NULL; }
+| identifier
 ;
 
 cobegin_stmt:
@@ -300,10 +310,6 @@ continue_stmt:
 delete_stmt:
   TDELETE expr TSEMI
     { $$ = buildChapelStmt(new CallExpr(PRIM_DELETE, $2)); }
-;
-
-do_while_stmt:
-  TDO stmt TWHILE expr TSEMI  { $$ = buildDoWhileLoopStmt($4, $2); }
 ;
 
 empty_stmt:
@@ -407,7 +413,7 @@ serial_stmt:
 ;
 
 swap_stmt:
-  lvalue TSWAP lvalue TSEMI
+  lvalue_expr TSWAP lvalue_expr TSEMI
     { $$ = buildChapelStmt(new CallExpr("_chpl_swap", $1, $3)); }
 ;
 
@@ -425,13 +431,8 @@ use_stmt:
 ;
 
 use_expr_ls:
-  lvalue                     { $$ = buildUseList($1); }
-| use_expr_ls TCOMMA lvalue  { $$ = buildUseList($3, $1); }
-;
-
-while_do_stmt:
-  TWHILE expr TDO stmt    { $$ = buildWhileDoLoopStmt($2, new BlockStmt($4)); }
-| TWHILE expr block_stmt  { $$ = buildWhileDoLoopStmt($2, $3); }
+  stmt_level_expr                     { $$ = buildUseList($1); }
+| use_expr_ls TCOMMA stmt_level_expr  { $$ = buildUseList($3, $1); }
 ;
 
 yield_stmt:
@@ -513,7 +514,7 @@ fn_decl_stmt:
       captureTokens = 0;
       $3->userString = astr(captureString);
     }
-  ret_tag opt_type opt_where_part function_body_stmt
+  opt_return_tag opt_type opt_where_part function_body_stmt
     {
       $3->retTag = $5;
       if ($5 == RET_VAR)
@@ -614,13 +615,13 @@ formal_ls:
 ;
 
 formal:
-  intent_tag identifier opt_formal_type opt_init_expr
+  opt_intent_tag identifier opt_formal_type opt_init_expr
     { $$ = buildArgDefExpr($1, $2, $3, $4, NULL); }
-| intent_tag identifier opt_formal_type var_arg_expr
+| opt_intent_tag identifier opt_formal_type var_arg_expr
     { $$ = buildArgDefExpr($1, $2, $3, NULL, $4); }
 ;
 
-intent_tag:
+opt_intent_tag:
           { $$ = INTENT_BLANK; }
 | TIN     { $$ = INTENT_IN; }
 | TINOUT  { $$ = INTENT_INOUT; }
@@ -630,7 +631,7 @@ intent_tag:
 | TTYPE   { $$ = INTENT_TYPE; }
 ;
 
-ret_tag:
+opt_return_tag:
             { $$ = RET_VALUE; }
 | TCONST    { $$ = RET_VALUE; }
 | TVAR      { $$ = RET_VAR; }
@@ -651,13 +652,8 @@ query_expr:
 ;
 
 var_arg_expr:
-  TDOTDOTDOT expr
-    { $$ = $2; }
-| TDOTDOTDOT query_expr
-    {
-      $2->sym->addFlag(FLAG_PARAM);
-      $$ = $2;
-    }
+  TDOTDOTDOT expr        { $$ = $2; }
+| TDOTDOTDOT query_expr  { $2->sym->addFlag(FLAG_PARAM); $$ = $2; }
 ;
 
 opt_where_part:
@@ -694,7 +690,7 @@ type_alias_decl_stmt_inner:
 
 opt_init_type:
                 { $$ = NULL; }
-| TASSIGN type  { $$ = $2; }
+| TASSIGN expr  { $$ = $2; }
 ;
 
 var_decl_stmt:
@@ -749,28 +745,6 @@ tuple_var_decl_stmt_inner_ls:
 
 /** TYPES ********************************************************************/
 
-array_type:
-  TLSBR nonempty_expr_ls TIN expr TRSBR type
-    { 
-      if ($2->argList.length != 1)
-        USR_FATAL($4, "invalid index expression");
-      $$ = new CallExpr("chpl__buildArrayRuntimeType",
-                        new CallExpr("chpl__buildDomainExpr", $4), $6, $2->get(1)->remove(),
-                        new CallExpr("chpl__buildDomainExpr", $4->copy()));
-    }
-| TLSBR nonempty_expr_ls TRSBR type
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType", new CallExpr("chpl__buildDomainExpr", $2), $4); }
-;
-
-type:
-  type_level_expr
-| array_type
-| TSINGLE type
-    { $$ = new CallExpr( "_singlevar", $2); }
-| TSYNC type
-    { $$ = new CallExpr( "_syncvar", $2); }
-;
-
 alias_expr:
   TALIAS expr  { $$ = $2; }
 ;
@@ -787,14 +761,53 @@ opt_domain:
 ;
 
 opt_type:
-               { $$ = NULL; }
-| TCOLON type  { $$ = $2; }
+                          { $$ = NULL; }
+| TCOLON type_level_expr  { $$ = $2; }
+| TCOLON array_type       { $$ = $2; }
+;
+
+array_type:
+  TLSBR nonempty_expr_ls TRSBR expr
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__buildDomainExpr", $2), $4); }
+| TLSBR nonempty_expr_ls TIN expr TRSBR expr
+    { 
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__buildDomainExpr", $4), $6, $2->get(1)->remove(),
+             new CallExpr("chpl__buildDomainExpr", $4->copy()));
+    }
+;
+
+opt_formal_array_elt_type:
+             { $$ = NULL; }
+| expr       { $$ = $1; }
+| query_expr { $$ = $1; }
+;
+
+formal_array_type:
+  TLSBR TRSBR opt_formal_array_elt_type
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $3); }
+| TLSBR query_expr TRSBR opt_formal_array_elt_type
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType", $2, $4); }
+| TLSBR nonempty_expr_ls TRSBR opt_formal_array_elt_type
+    { $$ = new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__buildDomainExpr", $2), $4); }
+| TLSBR nonempty_expr_ls TIN expr TRSBR opt_formal_array_elt_type
+    { 
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__buildDomainExpr", $4), $6, $2->get(1)->remove(),
+             new CallExpr("chpl__buildDomainExpr", $4->copy()));
+    }
 ;
 
 opt_formal_type:
   /* nothing */
     { $$ = NULL; }
-| TCOLON type
+| TCOLON type_level_expr
     { $$ = $2; }
 | TCOLON query_expr
     { $$ = $2; }
@@ -804,24 +817,8 @@ opt_formal_type:
     { $$ = new UnresolvedSymExpr( "_singlevar"); }
 | TCOLON TSYNC
     { $$ = new UnresolvedSymExpr( "_syncvar"); }
-| TCOLON TLSBR TRSBR type
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $4); }
-| TCOLON TLSBR query_expr TRSBR type
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType", $3, $5); }
-| TCOLON TLSBR TRSBR
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil); }
-| TCOLON TLSBR query_expr TRSBR
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType", $3); }
-| TCOLON TLSBR nonempty_expr_ls TRSBR
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__buildDomainExpr", $3)); }
-| TCOLON TLSBR TRSBR query_expr
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $4); }
-| TCOLON TLSBR query_expr TRSBR query_expr
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType", $3, $5); }
-| TCOLON TLSBR nonempty_expr_ls TRSBR query_expr
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__buildDomainExpr", $3), $5); }
+| TCOLON formal_array_type
+    { $$ = $2; }
 ;
 
 /** EXPRESSIONS **************************************************************/
@@ -856,7 +853,7 @@ actual_expr:
 ;
 
 expr:
-  stmt_level_expr
+  type_level_expr
 | TLSBR nonempty_expr_ls TRSBR %prec TFOR
     { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 | TLSBR nonempty_expr_ls TIN expr TRSBR expr %prec TFOR
@@ -867,9 +864,10 @@ expr:
     }
 | TLSBR nonempty_expr_ls TRSBR expr %prec TFOR
     {
-      if ($2->argList.length != 1)
-        USR_FATAL($4, "invalid loop expression");
-      $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $4, NULL, true);
+      if ($2->argList.length > 1)
+        $$ = buildForallLoopExpr(NULL, new CallExpr("chpl__buildDomainExpr", $2), $4, NULL, true);
+      else
+        $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $4, NULL, true);
     }
 | TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
@@ -879,10 +877,15 @@ expr:
     }
 | TLSBR nonempty_expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
-      if ($2->argList.length != 1)
-        USR_FATAL($5, "invalid loop expression");
-      $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $7, $5);
+      if ($2->argList.length > 1)
+        $$ = buildForallLoopExpr(NULL, new CallExpr("chpl__buildDomainExpr", $2), $7, $5);
+      else
+        $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $7, $5);
     }
+;
+
+type_level_expr:
+  stmt_level_expr
 | TFOR expr TIN expr TDO expr %prec TFOR
     { $$ = buildForLoopExpr($2, $4, $6); }
 | TFOR expr TDO expr %prec TFOR
@@ -901,18 +904,15 @@ expr:
     { $$ = buildForallLoopExpr(NULL, $2, $7, $5); }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
+| TSYNC expr
+    { $$ = new CallExpr( "_syncvar", $2); }
 ;
 
 stmt_level_expr: 
-  TLSBR nonempty_expr_ls TRSBR TDOT identifier %prec TDOT
-    { // place holder until expr can be used on lhs of dot in member access
-      $$ = buildDotExpr(new CallExpr("chpl__buildDomainExpr", $2), $5);
-    }
-| type_level_expr
-;
-
-type_level_expr:
-  lvalue
+  binary_op_expr
+| literal_expr
+| lvalue_expr
+| unary_op_expr
 | TDOMAIN TLP actual_expr_ls TRP
     { $$ = new CallExpr("chpl__buildDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), $3); }
 | TSUBDOMAIN TLP actual_expr_ls TRP
@@ -921,6 +921,8 @@ type_level_expr:
     { $$ = new CallExpr("chpl__buildSparseDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), $4); }
 | TINDEX TLP expr_ls TRP
     { $$ = new CallExpr("chpl__buildIndexType", $3); }
+| TSINGLE expr
+    { $$ = new CallExpr( "_singlevar", $2); }
 | TNEW expr
     { $$ = new CallExpr(PRIM_NEW, $2); }
 | TLP TDOTDOTDOT expr TRP
@@ -941,8 +943,6 @@ type_level_expr:
     { $$ = new CallExpr("_build_range", buildDotExpr("BoundedRangeType", "boundedHigh"), $2); }
 | TDOTDOT
     { $$ = new CallExpr("_build_range", buildDotExpr("BoundedRangeType", "boundedNone")); }
-| unary_op_expr
-| binary_op_expr
 ;
 
 binary_op_expr:
@@ -979,44 +979,34 @@ unary_op_expr:
 | TBNOT expr                      { $$ = new CallExpr("~", $2); }
 ;
 
-lvalue:
-  variable_expr
+lvalue_expr:
+  identifier         { $$ = new UnresolvedSymExpr($1); }
 | call_expr
-| memberaccess_expr
-| paren_expr
-| literal
-;
-
-variable_expr:
-  identifier  { $$ = new UnresolvedSymExpr($1); }
+| dot_expr
+| parenthesized_expr
 ;
 
 identifier:
   TIDENT  { $$ = astr(yytext); }
 ;
 
-opt_identifier:
-              { $$ = NULL; }
-| identifier
-;
-
 call_expr:
-  lvalue TLP actual_expr_ls TRP      { $$ = new CallExpr($1, $3); }
-| lvalue TLSBR actual_expr_ls TRSBR  { $$ = buildSquareCallExpr($1, $3); }
-| TPRIMITIVE TLP expr_ls TRP         { $$ = buildPrimitiveExpr($3); }
+  expr TLP actual_expr_ls TRP      { $$ = new CallExpr($1, $3); }
+| expr TLSBR actual_expr_ls TRSBR  { $$ = buildSquareCallExpr($1, $3); }
+| TPRIMITIVE TLP expr_ls TRP       { $$ = buildPrimitiveExpr($3); }
 ;
 
-memberaccess_expr:
-  lvalue TDOT identifier  { $$ = buildDotExpr($1, $3); }
-| lvalue TDOT TTYPE       { $$ = new CallExpr(PRIM_TYPEOF, $1); }
-| lvalue TDOT TDOMAIN     { $$ = buildDotExpr($1, "_dom"); }
+dot_expr:
+  expr TDOT identifier  { $$ = buildDotExpr($1, $3); }
+| expr TDOT TTYPE       { $$ = new CallExpr(PRIM_TYPEOF, $1); }
+| expr TDOT TDOMAIN     { $$ = buildDotExpr($1, "_dom"); }
 ;
 
-paren_expr:
+parenthesized_expr:
   TLP nonempty_expr_ls TRP  { $$ = buildParenExpr($2); }
 ;
 
-literal:
+literal_expr:
   INTLITERAL     { $$ = buildIntLiteral(yytext); }
 | REALLITERAL    { $$ = buildRealLiteral(yytext); }
 | IMAGLITERAL    { $$ = buildImagLiteral(yytext); }

@@ -23,17 +23,6 @@ static ModuleSymbol* parseInternalModule(const char* name) {
 
 static void parseInternalModules(void) {
   baseModule = parseInternalModule("ChapelBase");
-  addStdRealmsPath();
-  standardModule = parseInternalModule("ChapelStandard"); 
-}
-
-
-void parse(void) {
-  yydebug = debugParserLevel;
-
-  parseInternalModules();
-
-  parseDependentModules(MOD_INTERNAL);
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (!strcmp(ts->name, "iterator")) {
@@ -49,7 +38,19 @@ void parse(void) {
       }
     }
   }
-  
+
+  addStdRealmsPath();
+  standardModule = parseInternalModule("ChapelStandard"); 
+}
+
+
+void parse(void) {
+  yydebug = debugParserLevel;
+
+  parseInternalModules();
+
+  parseDependentModules(MOD_INTERNAL);
+
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (!strcmp(ts->name, "_array")) {
       dtArray = toClassType(ts->type);

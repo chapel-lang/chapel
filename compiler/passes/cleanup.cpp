@@ -54,10 +54,12 @@ static void normalize_nested_function_expressions(DefExpr* def) {
     }
     def->replace(new UnresolvedSymExpr(def->sym->name));
     stmt->insertBefore(def);
-  } else if (!strncmp("_iterator_for_parloopexpr", def->sym->name, 25)) {
+  } else if (!strncmp("_iterator_for_loopexpr", def->sym->name, 22)) {
     FnSymbol* parent = toFnSymbol(def->parentSymbol);
-    INT_ASSERT(!strncmp("_parloopexpr", parent->name, 12));
-    while (!strncmp("_parloopexpr", parent->defPoint->parentSymbol->name, 12))
+    INT_ASSERT(!strncmp("_parloopexpr", parent->name, 12) ||
+               !strncmp("_seqloopexpr", parent->name, 12));
+    while (!strncmp("_parloopexpr", parent->defPoint->parentSymbol->name, 12) ||
+           !strncmp("_seqloopexpr", parent->defPoint->parentSymbol->name, 12))
       parent = toFnSymbol(parent->defPoint->parentSymbol);
     if (TypeSymbol* ts = toTypeSymbol(parent->defPoint->parentSymbol)) {
       ClassType* ct = toClassType(ts->type);

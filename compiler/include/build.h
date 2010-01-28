@@ -49,7 +49,8 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
 CallExpr* buildForLoopExpr(Expr* indices,
                            Expr* iterator,
                            Expr* expr,
-                           Expr* cond = NULL);
+                           Expr* cond = NULL,
+                           bool maybeArrayType = false);
 CallExpr* buildForallLoopExpr(Expr* indices,
                               Expr* iterator,
                               Expr* expr,
