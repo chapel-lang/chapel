@@ -364,30 +364,21 @@ def CyclicDom.dsiReprivatize(other, reprivatizeData) {
 
 def CyclicDom.dsiDim(d: int) return whole.dim(d);
 
-def CyclicDom.dsiStrideBy(str: int) {
-  var alias = new CyclicDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
-  var t: rank*range(eltType=idxType, stridable=true);
-  for param i in 1..rank {
-    t(i) = this.dsiDim(i) by str;
-  }
-  alias.dsiSetIndices(t);
-  return alias;
-}
+def CyclicDom.dsiBuildArithmeticDom(param rank, type idxType,
+                                    param stridable: bool,
+                                    ranges: rank*range(idxType,
+                                                       BoundedRangeType.bounded,
+                                                       stridable)) {
+  if idxType != dist.idxType then
+    compilerError("Cyclic domain index type does not match distribution's");
+  if rank != dist.rank then
+    compilerError("Cyclic domain rank does not match distribution's");
 
-def CyclicDom.dsiStrideBy(str: rank*int) {
-  var alias = new CyclicDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
-  var t: rank*range(eltType=idxType, stridable=true);
-  for i in 1..rank {
-    t(i) = this.dim(i) by str(i);
-  }
-  alias.setIndices(t);
-  return alias;
-}
+  var dom = new CyclicDom(rank=rank, idxType=idxType,
+                         dist=dist, stridable=stridable);
+  dom.dsiSetIndices(ranges);
+  return dom;
 
-def CyclicDom.dsiSlice(param stridable: bool, ranges) {
-  var alias = new CyclicDom(rank=rank, idxType=idxType, dist=dist, stridable=stridable||this.stridable);
-  alias.setIndices(whole((...ranges)).getIndices());
-  return alias;
 }
 
 def CyclicDom.localSlice(param stridable: bool, ranges) {
@@ -438,8 +429,8 @@ class CyclicArr: BaseArr {
 
 def CyclicArr.dsiCheckSlice(ranges) {
   for param i in 1..rank {
-    if !dom.dim(i).boundsCheck(ranges(i)) {
-      writeln(dom.dim(i), " ", ranges(i), " ", dom.dim(i).boundsCheck(ranges(i)));
+    if !dom.dsiDim(i).boundsCheck(ranges(i)) {
+      writeln(dom.dsiDim(i), " ", ranges(i), " ", dom.dsiDim(i).boundsCheck(ranges(i)));
       halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
   }
@@ -589,8 +580,28 @@ def CyclicArr.dsiSerialWrite(f: Writer) {
     writeln(typeToString(this.type));
     writeln("------");
   }
-  for i in dom {
-    writeln(dsiAccess(i));
+  if dom.dsiNumIndices == 0 then return;
+  var i : rank*idxType;
+  for dim in 1..rank do
+    i(dim) = dom.dsiDim(dim)._low;
+  label next while true {
+    f.write(dsiAccess(i));
+    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
+      f.write(" ");
+      i(rank) += dom.dsiDim(rank)._stride:idxType;
+    } else {
+      for dim in 1..rank-1 by -1 {
+        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
+          i(dim) += dom.dsiDim(dim)._stride:idxType;
+          for dim2 in dim+1..rank {
+            f.writeln();
+            i(dim2) = dom.dsiDim(dim2)._low;
+          }
+          continue next;
+        }
+      }
+      break;
+    }
   }
 }
 

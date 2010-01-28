@@ -356,27 +356,6 @@ def BlockCyclicDom.these(param tag: iterator, follower) where tag == iterator.fo
   }
 }
 
-def BlockCyclicDom.dsiStrideBy(str: int) {
-  var alias = new BlockCyclicDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
-  var t: rank*range(eltType=idxType, stridable=true);
-  for i in 1..rank {
-    t(i) = this.dim(i) by str;
-  }
-  alias.setIndices(t);
-  return alias;
-}
-
-def BlockCyclicDom.dsiStrideBy(str: rank*int) {
-  var alias = new BlockCyclicDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
-  var t: rank*range(eltType=idxType, stridable=true);
-  for i in 1..rank {
-    t(i) = this.dsiDim(i) by str(i);
-  }
-  alias.setIndices(t);
-  return alias;
-}
-
-
 //
 // output domain
 //
@@ -430,12 +409,6 @@ def BlockCyclicDom.getDist(): BlockCyclic(idxType) {
   return dist;
 }
 
-def BlockCyclicDom.dsiSlice(param stridable: bool, ranges) {
-  var d = new BlockCyclicDom(rank=rank, idxType=idxType, dist=dist, stridable=stridable||this.stridable);
-  d.dsiSetIndices(whole((...ranges)).getIndices());
-  return d;
-}
-
 def BlockCyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom do
     on dist.targetLocs(localeIdx) do
@@ -480,12 +453,25 @@ def BlockCyclicDom.dsiMember(i) {
 }
 
 def BlockCyclicDom.dsiIndexOrder(i) {
-  return whole.order(i);
+  return whole.indexOrder(i);
 }
 
-def BlockCyclicDom.dsiPosition(i) {
-  return whole.position(i);
+def BlockCyclicDom.dsiBuildArithmeticDom(param rank: int, type idxType,
+                                         param stridable: bool,
+                                         ranges: rank*range(idxType,
+                                                            BoundedRangeType.bounded,
+                                                            stridable)) {
+  if idxType != dist.idxType then
+    compilerError("BlockCyclic domain index type does not match distribution's");
+  if rank != dist.rank then
+    compilerError("BlockCyclic domain rank does not match distribution's");
+
+  var dom = new BlockCyclicDom(rank=rank, idxType=idxType,
+                               dist=dist, stridable=stridable);
+  dom.dsiSetIndices(ranges);
+  return dom;
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Domain Class

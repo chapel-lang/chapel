@@ -57,6 +57,32 @@ def _reprivatize(value) {
   }
 }
 
+//
+// Take a rank and value and check that the value is a rank-tuple or not a
+// tuple. If the value is not a tuple and expand is true, copy the value into
+// a rank-tuple. If the value is a scalar and rank is 1, copy it into a 1-tuple.
+//
+def _makeIndexTuple(param rank, t: _tuple, param expand: bool=false) where rank == t.size {
+  return t;
+}
+
+def _makeIndexTuple(param rank, t: _tuple, param expand: bool=false) where rank != t.size {
+  compilerError("index rank must match domain rank");
+}
+
+def _makeIndexTuple(param rank, val:integral, param expand: bool=false) {
+  if expand || rank == 1 {
+    var t: rank*val.type;
+    for param i in 1..rank do
+      t(i) = val;
+    return t;
+  } else {
+    compilerWarning(typeToString(val.type));
+    compilerError("index rank must match domain rank");
+    return val;
+  }
+}
+
 def _newArray(value) {
   if _isPrivatized(value) then
     return new _array(_newPrivatizedClass(value), value);
@@ -425,8 +451,16 @@ record _domain {
   }
 
   def this(ranges: range(?) ...rank) {
-    var d = _value.dsiSlice(_value.stridable || chpl__anyStridable(ranges), ranges);
-    if (d.linksDistribution()) then
+    param stridable = _value.stridable || chpl__anyStridable(ranges);
+    var r: rank*range(_value.idxType,
+                      BoundedRangeType.bounded,
+                      stridable);
+
+    for param i in 1..rank {
+      r(i) = _value.dsiDim(i)(ranges(i));
+    }
+    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType, stridable, r);
+    if d.linksDistribution() then
       d.dist._distCnt$ += 1;
     return _newDomain(d);
   }
@@ -484,11 +518,22 @@ record _domain {
   def low return _value.dsiLow;
   def high return _value.dsiHigh;
 
-  def member(i) return _value.dsiMember(i);
+  def member(i) {
+    if isArithmeticDom(this) then
+      return _value.dsiMember(_makeIndexTuple(rank, i));
+    else
+      return _value.dsiMember(i);
+  }
 
   // 1/5/10: do we want to support order() and position()?
-  def order(i) return _value.dsiIndexOrder(i);
-  def position(i) return _value.dsiPosition(i);
+  def indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
+
+  def position(i) {
+    var ind = _makeIndexTuple(rank, i), pos: rank*_value.idxType;
+    for d in 1..rank do
+      pos(d) = _value.dsiDim(d).indexOrder(ind(d));
+    return pos;
+  }
 
   def expand(off: _value.idxType ...rank) return expand(off);
   def expand(off: rank*_value.idxType) {
@@ -941,10 +986,16 @@ def =(a: [], b: _desync(a.eltType)) {
 }
 
 def by(a: domain, b) {
-  var x = a._value.dsiStrideBy(b);
-  if (x.linksDistribution()) then
-    x.dist._distCnt$ += 1;
-  return _newDomain(x);
+  var r: a.rank*range(a._value.idxType,
+                    BoundedRangeType.bounded,
+                    true);
+  var t = _makeIndexTuple(a.rank, b, expand=true);
+  for param i in 1..a.rank do
+    r(i) = a.dim(i) by t(i);
+  var d = a._value.dsiBuildArithmeticDom(a.rank, a._value.idxType, true, r);
+  if (d.linksDistribution()) then
+    d.dist._distCnt$ += 1;
+  return _newDomain(d);
 }
 
 //

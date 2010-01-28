@@ -483,7 +483,7 @@ def range.member(i: eltType) {
   }
 }
 
-def range.order(i: eltType) {
+def range.indexOrder(i: eltType) {
   if (!member(i)) then return (-1):eltType;
   return (i-low)/abs(stride);
 }

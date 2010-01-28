@@ -10,7 +10,7 @@ for i in [0..4, 0..4] {
 }
 
 for i in [0..4, 0..4] {
-  writeln("order(", i, ") ", dom.order(i));
+  writeln("order(", i, ") ", dom.indexOrder(i));
 }
 
 for i in [0..4, 0..4] {

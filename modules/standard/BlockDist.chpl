@@ -366,27 +366,6 @@ def BlockDom.these(param tag: iterator, follower) where tag == iterator.follower
   }
 }
 
-def BlockDom.dsiStrideBy(str: int) {
-  var alias = new BlockDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
-  var t: rank*range(eltType=idxType, stridable=true);
-  for i in 1..rank {
-    t(i) = this.dsiDim(i) by str;
-  }
-  alias.dsiSetIndices(t);
-  return alias;
-}
-
-def BlockDom.dsiStrideBy(str: rank*int) {
-  var alias = new BlockDom(rank=rank, idxType=idxType, stridable=true, dist=dist);
-  var t: rank*range(eltType=idxType, stridable=true);
-  for i in 1..rank {
-    t(i) = this.dim(i) by str(i);
-  }
-  alias.setIndices(t);
-  return alias;
-}
-
-
 //
 // output domain
 //
@@ -441,10 +420,9 @@ def BlockDom.getDist(): Block(idxType) {
   return dist;
 }
 
-def BlockDom.dsiSlice(param stridable: bool, ranges) {
-  var d = new BlockDom(rank=rank, idxType=idxType, dist=dist, stridable=stridable||this.stridable);
-  d.dsiSetIndices(whole((...ranges)).getIndices());
-  return d;
+def BlockDom.dsiRankChange(param rank: int, param stridable: bool, args) {
+  halt("BlockDom.dsiRankChange not implemented");
+  return new BlockDom(rank=args.size, idxType=idxType, stridable=stridable, dist=dist);
 }
 
 // dsiLocalSlice
@@ -497,11 +475,7 @@ def BlockDom.dsiMember(i) {
 }
 
 def BlockDom.dsiIndexOrder(i) {
-  return whole.order(i);
-}
-
-def BlockDom.dsiPosition(i) {
-  return whole.position(i);
+  return whole.indexOrder(i);
 }
 
 //

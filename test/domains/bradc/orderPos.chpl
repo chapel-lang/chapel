@@ -1,5 +1,5 @@
 def doInd(D, i) {
-  writeln("D.order/position(",i,") = ", D.order(i), "/", D.position(i));
+  writeln("D.order/position(",i,") = ", D.indexOrder(i), "/", D.position(i));
 }
 
 def doDom(D) {

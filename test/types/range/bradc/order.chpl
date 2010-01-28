@@ -1,5 +1,5 @@
 def doInd(D, i) {
-  writeln("D.order(",i,") = ", D.order(i));
+  writeln("D.order(",i,") = ", D.indexOrder(i));
 }
 
 def doRange(D) {

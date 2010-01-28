@@ -152,12 +152,6 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def dsiMember(ind: idxType) where rank == 1 {
-    if !ranges(1).member(ind) then
-      return false;
-    return true;
-  }
-
   def dsiMember(ind: rank*idxType) {
     for param i in 1..rank do
       if !ranges(i).member(ind(i)) then
@@ -165,34 +159,16 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return true;
   }
 
-  def dsiIndexOrder(ind: idxType) where rank == 1 {
-    return ranges(1).order(ind);
-  }
-
   def dsiIndexOrder(ind: rank*idxType) {
     var totOrder: idxType;
     var blk: idxType = 1;
     for param d in 1..rank by -1 {
-      const orderD = ranges(d).order(ind(d));
+      const orderD = ranges(d).indexOrder(ind(d));
       if (orderD == -1) then return orderD;
       totOrder += orderD * blk;
       blk *= ranges(d).length;
     }
     return totOrder;
-  }
-
-  def dsiPosition(ind: idxType) where rank == 1 {
-    var pos: 1*idxType;
-    pos(1) = dsiIndexOrder(ind);
-    return pos;
-  }
-
-  def dsiPosition(ind: rank*idxType) {
-    var pos: rank*idxType;
-    for d in 1..rank {
-      pos(d) = ranges(d).order(ind(d));
-    }
-    return pos;
   }
 
   def dsiDim(d : int)
@@ -234,14 +210,6 @@ class GPUArithmeticDom: BaseArithmeticDom {
 				low_val=ranges(1).low);
   }
 
-  def dsiSlice(param stridable: bool, ranges) {
-    var d = new GPUArithmeticDom(rank, idxType,
-                                     stridable || this.stridable, dist);
-    for param i in 1..rank do
-      d.ranges(i) = dsiDim(i)(ranges(i));
-    return d;
-  }
-
   def dsiRankChange(param rank: int, param stridable: bool, args) {
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
@@ -256,6 +224,23 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
     return d;
   }
+
+  def dsiBuildArithmeticDom(param rank: int, type idxType,
+                            param stridable: bool,
+                            ranges: rank*range(idxType,
+                            BoundedRangeType.bounded,
+                            stridable)) {
+  if idxType != dist.idxType then
+    compilerError("Block domain index type does not match distribution's");
+  if rank != dist.rank then
+    compilerError("Block domain rank does not match distribution's");
+
+  var dom = new GPUArithmeticDom(rank=rank, idxType=idxType,
+                                 dist=dist, stridable=stridable);
+  dom.dsiSetIndices(ranges);
+  return dom;
+}
+
 
   def translate(off: rank*idxType) {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
@@ -305,20 +290,6 @@ class GPUArithmeticDom: BaseArithmeticDom {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i).expand(off);
-    return x;
-  }
-
-  def dsiStrideBy(str : rank*int) {
-    var x = new GPUArithmeticDom(rank, idxType, true, dist);
-    for i in 1..rank do
-      x.ranges(i) = ranges(i) by str(i);
-    return x;
-  }
-
-  def dsiStrideBy(str : int) {
-    var x = new GPUArithmeticDom(rank, idxType, true, dist);
-    for i in 1..rank do
-      x.ranges(i) = ranges(i) by str;
     return x;
   }
 }

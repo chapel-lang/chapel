@@ -66,7 +66,7 @@ class Cyclic1DDist {
   /*
   const locDist: [loc in targetLocDom] LocCyclic1DDist(glbIdxType)
                    = on targetLocs(loc) do 
-                       new LocCyclic1DDist(glbIdxType, targetLocDom.order(loc), this);
+                       new LocCyclic1DDist(glbIdxType, targetLocDom.indexOrder(loc), this);
   */
   //
   // but this doesn't work yet because an array forall initializer
@@ -189,7 +189,7 @@ class LocCyclic1DDist {
                      ) {
     locid = _locid;
     loc = dist.targetLocs(locid);
-    const locid0 = dist.targetLocDom.order(locid); // 0-based locale ID
+    const locid0 = dist.targetLocDom.indexOrder(locid); // 0-based locale ID
     const lo = min(glbIdxType) + locid0;
     const hi = max(glbIdxType);
     const numlocs = dist.targetLocDom.numIndices;

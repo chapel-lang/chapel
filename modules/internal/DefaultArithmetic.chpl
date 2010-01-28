@@ -166,14 +166,6 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  // We don't need this non-tuple version
-  //  version in wrapper record can call below version
-  def dsiMember(ind: idxType) where rank == 1 {
-    if !ranges(1).member(ind) then
-      return false;
-    return true;
-  }
-
   def dsiMember(ind: rank*idxType) {
     for param i in 1..rank do
       if !ranges(i).member(ind(i)) then
@@ -181,39 +173,16 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     return true;
   }
 
-  // use below version by having wrapper record call below
-  def dsiIndexOrder(ind: idxType) where rank == 1 {
-    return ranges(1).order(ind);
-  }
-
-  // to the user: indexOrder
   def dsiIndexOrder(ind: rank*idxType) {
     var totOrder: idxType;
     var blk: idxType = 1;
     for param d in 1..rank by -1 {
-      const orderD = ranges(d).order(ind(d));
+      const orderD = ranges(d).indexOrder(ind(d));
       if (orderD == -1) then return orderD;
       totOrder += orderD * blk;
       blk *= ranges(d).length;
     }
     return totOrder;
-  }
-
-  // can we use order above to implement position by passing in an
-  // optional argument that contains the dimensions.
-  // use below version by having wrapper record call below
-  def dsiPosition(ind: idxType) where rank == 1 {
-    var pos: 1*idxType;
-    pos(1) = dsiIndexOrder(ind);
-    return pos;
-  }
-
-  def dsiPosition(ind: rank*idxType) {
-    var pos: rank*idxType;
-    for d in 1..rank {
-      pos(d) = ranges(d).order(ind(d));
-    }
-    return pos;
   }
 
   def dsiDims()
@@ -264,16 +233,6 @@ class DefaultArithmeticDom: BaseArithmeticDom {
                                     dom=this);
   }
 
-  // can we move this functionality to ChapelArray and use
-  // dsiBuildArithmeticDom?
-  def dsiSlice(param stridable: bool, ranges) {
-    var d = new DefaultArithmeticDom(rank, idxType, stridable, dist);
-    for param i in 1..rank do
-      d.ranges(i) = dsiDim(i)(ranges(i));
-    return d;
-  }
-
-  // can we move this functionality to ChapelArray as above?
   def dsiRankChange(param rank: int, param stridable: bool, args) {
     def isRange(r: range(?)) param return true;
     def isRange(r) param return false;
@@ -287,21 +246,6 @@ class DefaultArithmeticDom: BaseArithmeticDom {
       }
     }
     return d;
-  }
-
-  // use 1 function, or can this be moved to ChapelArray as above.
-  def dsiStrideBy(str : rank*int) {
-    var x = new DefaultArithmeticDom(rank, idxType, true, dist);
-    for i in 1..rank do
-      x.ranges(i) = ranges(i) by str(i);
-    return x;
-  }
-
-  def dsiStrideBy(str : int) {
-    var x = new DefaultArithmeticDom(rank, idxType, true, dist);
-    for i in 1..rank do
-      x.ranges(i) = ranges(i) by str;
-    return x;
   }
 
   def dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
