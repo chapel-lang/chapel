@@ -784,23 +784,17 @@ record _array {
     return _newArray(x);
   }
 
-  def reindex(d: domain) where rank == 1 {
-    var x = _value.dsiReindex(d._value);
+  def reindex(d: domain) {
+    var newDist = new dist(_value.dom.dist.dsiCreateReindexDist(d.dims()));
+    var newDom = [(...d.dims())] distributed newDist;
+    var x = _value.dsiReindex(newDom._value);
     x._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     def help() {
-      d._value._domCnt$ += 1;
+      newDom._value._domCnt$ += 1;
       x._arrAlias._arrCnt$ += 1;
     }
     help();
-    return _newArray(x);
-  }
-
-  def reindex(d: domain) where rank > 1 {
-    var x = _value.dsiReindex(d._value);
-    d._value._domCnt$ += 1;
-    x._arrAlias = _value;
-    x._arrAlias._arrCnt$ += 1;
     return _newArray(x);
   }
 

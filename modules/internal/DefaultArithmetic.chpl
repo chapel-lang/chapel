@@ -15,6 +15,7 @@ class DefaultDist: BaseDist {
 
   def dsiClone() return this;
 
+  def dsiCreateReindexDist(newSpace) return this;
 }
 
 //
