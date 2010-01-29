@@ -212,7 +212,7 @@ static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
 }
 
 
-BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
+static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
   CallExpr* newUse = new CallExpr(PRIM_USE, module);
   addModuleToSearchList(newUse, module);
   if (list == NULL) {
@@ -221,7 +221,14 @@ BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
     list->insertAtTail(newUse);
     return list;
   }
+}
 
+
+BlockStmt* buildUseStmt(CallExpr* modules) {
+  BlockStmt* list = NULL;
+  for_actuals(expr, modules)
+    list = buildUseList(expr->remove(), list);
+  return list;
 }
 
 
@@ -942,7 +949,10 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmt
 
 
 BlockStmt*
-buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
+buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
+  if (op == NULL)
+    return buildChapelStmt(new CallExpr("=", lhs, rhs));
+
   BlockStmt* stmt = buildChapelStmt();
 
   VarSymbol* ltmp = newTemp();
@@ -1001,7 +1011,7 @@ buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs) {
 }
 
 
-BlockStmt* buildLogicalAndExprAssignment(Expr* lhs, Expr* rhs) {
+BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = newTemp();
   stmt->insertAtTail(new DefExpr(ltmp));
@@ -1011,7 +1021,7 @@ BlockStmt* buildLogicalAndExprAssignment(Expr* lhs, Expr* rhs) {
 }
 
 
-BlockStmt* buildLogicalOrExprAssignment(Expr* lhs, Expr* rhs) {
+BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = newTemp();
   stmt->insertAtTail(new DefExpr(ltmp));
@@ -1020,6 +1030,16 @@ BlockStmt* buildLogicalOrExprAssignment(Expr* lhs, Expr* rhs) {
   return stmt;
 }
 
+
+BlockStmt* buildAliasStmt(Expr* lhs, Expr* rhs) {
+  return buildChapelStmt(
+           new CallExpr(
+             new CallExpr(".", lhs, new_StringSymbol("makeAlias")), rhs));
+}
+
+BlockStmt* buildSwapStmt(Expr* lhs, Expr* rhs) {
+  return buildChapelStmt(new CallExpr("_chpl_swap", lhs, rhs));
+}
 
 BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   CondStmt* otherwise = NULL;
@@ -1618,6 +1638,15 @@ buildCobeginStmt(BlockStmt* block) {
   return block;
 }
 
+
+BlockStmt*
+buildGotoStmt(GotoTag tag, const char* name) {
+  return buildChapelStmt(new GotoStmt(tag, name));
+}
+
+BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1, Expr* e2) {
+  return buildChapelStmt(new CallExpr(tag, e1, e2));
+}
 
 BlockStmt*
 buildAtomicStmt(Expr* stmt) {

@@ -24,7 +24,7 @@ Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right);
 Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right);
 
 BlockStmt* buildChapelStmt(BaseAST* ast = NULL);
-BlockStmt* buildUseList(BaseAST* module, BlockStmt* list = NULL);
+BlockStmt* buildUseStmt(CallExpr* modules);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
@@ -39,6 +39,8 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
                                  BlockStmt* body);
+BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
+BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
 BlockStmt* buildForLoopStmt(Expr* indices,
                             Expr* iterator,
                             BlockStmt* body,
@@ -57,9 +59,11 @@ CallExpr* buildForallLoopExpr(Expr* indices,
                               Expr* cond = NULL,
                               bool maybeArrayType = false);
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
-BlockStmt* buildCompoundAssignment(const char* op, Expr* lhs, Expr* rhs);
-BlockStmt* buildLogicalAndExprAssignment(Expr* lhs, Expr* rhs);
-BlockStmt* buildLogicalOrExprAssignment(Expr* lhs, Expr* rhs);
+BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op = NULL);
+BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
+BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs);
+BlockStmt* buildAliasStmt(Expr* lhs, Expr* rhs);
+BlockStmt* buildSwapStmt(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
 BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 

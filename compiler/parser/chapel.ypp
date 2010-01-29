@@ -7,6 +7,8 @@
 //      _stmt -- statement
 //      _type -- type
 //
+// The rules are listed in depth-first order from stmt and expr
+//
 
 %{
 
@@ -51,8 +53,7 @@
 //
 // identifiers and literals
 //
-%token TIDENT
-%token IMAGLITERAL INTLITERAL REALLITERAL
+%token TIDENT IMAGLITERAL INTLITERAL REALLITERAL
 %token <pch> STRINGLITERAL
 
 //
@@ -112,28 +113,27 @@
  
 %type <pt> opt_intent_tag
 
-%type <retTag> opt_return_tag
+%type <retTag> opt_ret_tag
 
-%type <pch> identifier fn_identifier opt_identifier
+%type <pch> ident fn_ident opt_ident
 
 %type <vpch> pragma_ls
 
-%type <pblockstmt> program stmt_ls
+%type <pblockstmt> program stmt_ls block_stmt
 %type <pblockstmt> class_level_stmt_ls
 
-%type <pblockstmt> stmt empty_stmt label_stmt break_stmt continue_stmt
-%type <pblockstmt> expr_stmt if_stmt param_for_stmt for_stmt forall_stmt coforall_stmt while_loop_stmt serial_stmt
-%type <pblockstmt> select_stmt return_stmt yield_stmt assignment_stmt swap_stmt class_level_stmt
-%type <pblockstmt> type_select_stmt on_stmt use_expr_ls sync_stmt
+%type <pblockstmt> stmt do_stmt
+%type <pblockstmt> if_stmt loop_stmt
+%type <pblockstmt> select_stmt assignment_stmt class_level_stmt
+%type <pblockstmt> type_select_stmt return_stmt
 
-%type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt mod_decl_stmt extern_fn_decl_stmt
-%type <pblockstmt> enum_decl_stmt use_stmt delete_stmt array_alias_stmt
+%type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt module_decl_stmt extern_fn_decl_stmt
+%type <pblockstmt> enum_decl_stmt
 
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
 %type <pblockstmt> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
 
-%type <pblockstmt> block_stmt function_body_stmt
-%type <pblockstmt> begin_stmt cobegin_stmt atomic_stmt local_stmt
+%type <pblockstmt> function_body_stmt
 
 %type <pexpr> when_stmt
 %type <pblockstmt> when_stmt_ls
@@ -143,16 +143,16 @@
 %type <ptype> class_tag
 %type <penumtype> enum_ls
 
-%type <pexpr> call_expr dot_expr lvalue_expr unary_op_expr binary_op_expr
+%type <pexpr> opt_ret_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> literal_expr opt_where_part
-%type <pexpr> stmt_level_expr type_level_expr alias_expr
+%type <pexpr> stmt_level_expr type_level_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr opt_init_type var_arg_expr
 %type <pdefexpr> formal enum_item
 %type <pdefexpr> query_expr
 
-%type <pcallexpr> opt_inherit expr_ls nonempty_expr_ls
-%type <pcallexpr> actual_expr_ls nonempty_actual_expr_ls
+%type <pcallexpr> opt_inherit expr_ls
+%type <pcallexpr> opt_actual_ls actual_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls
 
@@ -173,219 +173,118 @@ pragma_ls:
 ;
 
 stmt:
-  class_level_stmt
-| array_alias_stmt
-| assignment_stmt
-| atomic_stmt
-| begin_stmt
+  assignment_stmt
 | block_stmt
-| break_stmt
-| cobegin_stmt
-| coforall_stmt
-| continue_stmt
-| delete_stmt
-| empty_stmt
-| expr_stmt
-| for_stmt
-| forall_stmt
+| class_level_stmt
 | if_stmt
-| label_stmt
-| local_stmt
-| mod_decl_stmt
-| param_for_stmt
-| on_stmt
-| return_stmt
+| module_decl_stmt
+| loop_stmt
 | select_stmt
-| serial_stmt
-| swap_stmt
-| sync_stmt
 | type_select_stmt
-| use_stmt
-| while_loop_stmt
-| yield_stmt
-| error             { printf("syntax error"); clean_exit(1); }
-;
-
-while_loop_stmt:
-  TDO stmt TWHILE expr TSEMI  { $$ = buildDoWhileLoopStmt($4, $2); }
-| TWHILE expr TDO stmt        { $$ = buildWhileDoLoopStmt($2, $4); }
-| TWHILE expr block_stmt      { $$ = buildWhileDoLoopStmt($2, $3); }
-;
-
-class_level_stmt:
-  fn_decl_stmt
-| class_decl_stmt
-| enum_decl_stmt
-| type_alias_decl_stmt
-| var_decl_stmt
-;
-
-array_alias_stmt:
-  lvalue_expr alias_expr TSEMI
-    {
-      $$ = buildChapelStmt(
-             new CallExpr(new CallExpr(".", $1,
-                                       new_StringSymbol("makeAlias")), $2));
-    }
+| return_stmt
+| TATOMIC stmt               { $$ = buildAtomicStmt($2); }
+| TBEGIN stmt                { $$ = buildBeginStmt($2); }
+| TBREAK opt_ident TSEMI     { $$ = buildGotoStmt(GOTO_BREAK, $2); }
+| TCOBEGIN block_stmt        { $$ = buildCobeginStmt($2);  }
+| TCONTINUE opt_ident TSEMI  { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
+| TDELETE expr TSEMI         { $$ = buildPrimitiveStmt(PRIM_DELETE, $2); }
+| stmt_level_expr TSEMI      { $$ = buildChapelStmt($1); }
+| TLABEL ident stmt          { $$ = buildLabelStmt($2, $3); }
+| TLOCAL stmt                { $$ = buildLocalStmt($2); }
+| TON expr do_stmt           { $$ = buildOnStmt($2, $3); }
+| TSERIAL expr do_stmt       { $$ = buildSerialStmt($2, $3); }
+| TSYNC stmt                 { $$ = buildSyncStmt($2); }
+| TUSE expr_ls TSEMI         { $$ = buildUseStmt($2); }
+| TYIELD opt_ret_expr TSEMI  { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
+| error                      { printf("syntax error"); clean_exit(1); }
 ;
 
 assignment_stmt:
-  lvalue_expr TASSIGN expr TSEMI
-    { $$ = buildChapelStmt(new CallExpr("=", $1, $3)); }
-| lvalue_expr TASSIGNPLUS expr TSEMI
-    { $$ = buildCompoundAssignment("+", $1, $3); }
-| lvalue_expr TASSIGNMINUS expr TSEMI
-    { $$ = buildCompoundAssignment("-", $1, $3); }
-| lvalue_expr TASSIGNMULTIPLY expr TSEMI
-    { $$ = buildCompoundAssignment("*", $1, $3); }
-| lvalue_expr TASSIGNDIVIDE expr TSEMI
-    { $$ = buildCompoundAssignment("/", $1, $3); }
-| lvalue_expr TASSIGNMOD expr TSEMI
-    { $$ = buildCompoundAssignment("%", $1, $3); }
-| lvalue_expr TASSIGNEXP expr TSEMI
-    { $$ = buildCompoundAssignment("**", $1, $3); }
-| lvalue_expr TASSIGNBAND expr TSEMI
-    { $$ = buildCompoundAssignment("&", $1, $3); }
-| lvalue_expr TASSIGNBOR expr TSEMI
-    { $$ = buildCompoundAssignment("|", $1, $3); }
-| lvalue_expr TASSIGNBXOR expr TSEMI
-    { $$ = buildCompoundAssignment("^", $1, $3); }
-| lvalue_expr TASSIGNLAND expr TSEMI
-    { $$ = buildLogicalAndExprAssignment($1, $3); }
-| lvalue_expr TASSIGNLOR expr TSEMI
-    { $$ = buildLogicalOrExprAssignment($1, $3); }
-| lvalue_expr TASSIGNSR expr TSEMI
-    { $$ = buildCompoundAssignment(">>", $1, $3); }
-| lvalue_expr TASSIGNSL expr TSEMI
-    { $$ = buildCompoundAssignment("<<", $1, $3); }
-;
-
-atomic_stmt:
-  TATOMIC stmt  { $$ = buildAtomicStmt($2); }
-;
-
-begin_stmt:
-  TBEGIN stmt  { $$ = buildBeginStmt($2); }
+  lhs_expr TASSIGN expr TSEMI          { $$ = buildAssignment($1, $3); }
+| lhs_expr TASSIGNPLUS expr TSEMI      { $$ = buildAssignment($1, $3, "+"); }
+| lhs_expr TASSIGNMINUS expr TSEMI     { $$ = buildAssignment($1, $3, "-"); }
+| lhs_expr TASSIGNMULTIPLY expr TSEMI  { $$ = buildAssignment($1, $3, "*"); }
+| lhs_expr TASSIGNDIVIDE expr TSEMI    { $$ = buildAssignment($1, $3, "/"); }
+| lhs_expr TASSIGNMOD expr TSEMI       { $$ = buildAssignment($1, $3, "%"); }
+| lhs_expr TASSIGNEXP expr TSEMI       { $$ = buildAssignment($1, $3, "**"); }
+| lhs_expr TASSIGNBAND expr TSEMI      { $$ = buildAssignment($1, $3, "&"); }
+| lhs_expr TASSIGNBOR expr TSEMI       { $$ = buildAssignment($1, $3, "|"); }
+| lhs_expr TASSIGNBXOR expr TSEMI      { $$ = buildAssignment($1, $3, "^"); }
+| lhs_expr TASSIGNLAND expr TSEMI      { $$ = buildLAndAssignment($1, $3); }
+| lhs_expr TASSIGNLOR expr TSEMI       { $$ = buildLOrAssignment($1, $3); }
+| lhs_expr TASSIGNSR expr TSEMI        { $$ = buildAssignment($1, $3, ">>"); }
+| lhs_expr TASSIGNSL expr TSEMI        { $$ = buildAssignment($1, $3, "<<"); }
+| lhs_expr TALIAS expr TSEMI           { $$ = buildAliasStmt($1, $3); }
+| lhs_expr TSWAP lhs_expr TSEMI        { $$ = buildSwapStmt($1, $3); }
 ;
 
 block_stmt:
   TLCBR stmt_ls TRCBR  { $$ = buildChapelStmt($2); }
 ;
 
-break_stmt:
-  TBREAK opt_identifier TSEMI
-    { $$ = buildChapelStmt(new GotoStmt(GOTO_BREAK, $2)); }
+opt_ident:
+         { $$ = NULL; }
+| ident
 ;
 
-opt_identifier:
-              { $$ = NULL; }
-| identifier
+ident:
+  TIDENT  { $$ = astr(yytext); }
 ;
 
-cobegin_stmt:
-  TCOBEGIN block_stmt
-    {
-      $2->lineno = yystartlineno; /* capture line number in case there
-                                   * is a need to issue a warning */
-      $$ = buildCobeginStmt($2);
-    }
+do_stmt:
+  TDO stmt    { $$ = $2; }
+| block_stmt  { $$ = $1; }
 ;
 
-coforall_stmt:
-  TCOFORALL expr TIN expr block_stmt
-    { $$ = buildCoforallLoopStmt($2, $4, $5); }
-| TCOFORALL expr TIN expr TDO stmt
-    { $$ = buildCoforallLoopStmt($2, $4, new BlockStmt($6)); }
-| TCOFORALL expr block_stmt
-    { $$ = buildCoforallLoopStmt(NULL, $2, $3); }
-| TCOFORALL expr TDO stmt
-    { $$ = buildCoforallLoopStmt(NULL, $2, new BlockStmt($4)); }
+return_stmt:
+  TRETURN opt_ret_expr TSEMI  { $$ = buildPrimitiveStmt(PRIM_RETURN, $2); }
 ;
 
-continue_stmt:
-  TCONTINUE opt_identifier TSEMI
-    { $$ = buildChapelStmt(new GotoStmt(GOTO_CONTINUE, $2)); }
+opt_ret_expr:
+        { $$ = new SymExpr(gVoid); }
+| expr  { $$ = $1; }
 ;
 
-delete_stmt:
-  TDELETE expr TSEMI
-    { $$ = buildChapelStmt(new CallExpr(PRIM_DELETE, $2)); }
+class_level_stmt:
+  TSEMI                 { $$ = buildChapelStmt(new BlockStmt()); }
+| fn_decl_stmt
+| class_decl_stmt
+| enum_decl_stmt
+| type_alias_decl_stmt
+| var_decl_stmt
 ;
 
-empty_stmt:
-  TSEMI  { $$ = buildChapelStmt(new BlockStmt()); }
-;
-
-expr_stmt:
-  stmt_level_expr TSEMI  { $$ = buildChapelStmt($1); }
-;
-
-for_stmt:
-  TFOR expr TIN expr block_stmt
-    { $$ = buildForLoopStmt($2, $4, $5); }
-| TFOR expr TIN expr TDO stmt
-    { $$ = buildForLoopStmt($2, $4, new BlockStmt($6)); }
-| TFOR expr block_stmt
-    { $$ = buildForLoopStmt(NULL, $2, $3); }
-| TFOR expr TDO stmt
-    { $$ = buildForLoopStmt(NULL, $2, new BlockStmt($4)); }
-;
-
-forall_stmt:
-  TFORALL expr TIN expr block_stmt
-    { $$ = buildForallLoopStmt($2, $4, $5); }
-| TFORALL expr TIN expr TDO stmt
-    { $$ = buildForallLoopStmt($2, $4, new BlockStmt($6)); }
-| TFORALL expr block_stmt
-    { $$ = buildForallLoopStmt(NULL, $2, $3); }
-| TFORALL expr TDO stmt
-    { $$ = buildForallLoopStmt(NULL, $2, new BlockStmt($4)); }
-| TLSBR nonempty_expr_ls TIN expr TRSBR stmt
+loop_stmt:
+  TDO stmt TWHILE expr TSEMI       { $$ = buildDoWhileLoopStmt($4, $2); }
+| TWHILE expr do_stmt              { $$ = buildWhileDoLoopStmt($2, $3); }
+| TCOFORALL expr TIN expr do_stmt  { $$ = buildCoforallLoopStmt($2, $4, $5); }
+| TCOFORALL expr do_stmt           { $$ = buildCoforallLoopStmt(NULL, $2, $3); }
+| TFOR expr TIN expr do_stmt       { $$ = buildForLoopStmt($2, $4, $5); }
+| TFOR expr do_stmt                { $$ = buildForLoopStmt(NULL, $2, $3); }
+| TFOR TPARAM ident TIN expr do_stmt  { $$ = buildParamForLoopStmt($3, $5, $6); }
+| TFORALL expr TIN expr do_stmt    { $$ = buildForallLoopStmt($2, $4, $5); }
+| TFORALL expr do_stmt             { $$ = buildForallLoopStmt(NULL, $2, $3); }
+| TLSBR expr_ls TIN expr TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
       $$ = buildForallLoopStmt($2->get(1)->remove(), $4, new BlockStmt($6));
     }
-| TLSBR nonempty_expr_ls TRSBR stmt
+| TLSBR expr_ls TRSBR stmt
     {
-      if ($2->argList.length != 1)
-        USR_FATAL($4, "invalid loop expression");
-      $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), new BlockStmt($4));
+      if ($2->argList.length > 1)
+        $$ = buildForallLoopStmt(NULL, new CallExpr("chpl__buildDomainExpr", $2), new BlockStmt($4));
+      else
+        $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), new BlockStmt($4));
     }
 ;
 
+
 if_stmt:
-  TIF expr block_stmt %prec TNOELSE  { $$ = buildIfStmt($2, $3); }
-| TIF expr TTHEN stmt %prec TNOELSE  { $$ = buildIfStmt($2, $4); }
-| TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
+  TIF expr TTHEN stmt %prec TNOELSE  { $$ = buildIfStmt($2, $4); }
+| TIF expr block_stmt %prec TNOELSE  { $$ = buildIfStmt($2, $3); }
 | TIF expr TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
-;
-
-label_stmt:
-  TLABEL identifier stmt  { $$ = buildLabelStmt($2, $3); }
-;
-
-local_stmt:
-  TLOCAL stmt  { $$ = buildLocalStmt($2); }
-;
-
-param_for_stmt:
-  TFOR TPARAM identifier TIN expr TDO stmt
-    { $$ = buildParamForLoopStmt($3, $5, $7); }
-| TFOR TPARAM identifier TIN expr block_stmt
-    { $$ = buildParamForLoopStmt($3, $5, $6); }
-;
-
-on_stmt:
-  TON expr TDO stmt    { $$ = buildOnStmt($2, $4); }
-| TON expr block_stmt  { $$ = buildOnStmt($2, $3); }
-;
-
-return_stmt:
-  TRETURN expr TSEMI
-    { $$ = buildChapelStmt(new CallExpr(PRIM_RETURN, $2)); }
-| TRETURN TSEMI
-    { $$ = buildChapelStmt(new CallExpr(PRIM_RETURN, new SymExpr(gVoid))); }
+| TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
 ;
 
 select_stmt:
@@ -399,53 +298,21 @@ when_stmt_ls:
 ;
 
 when_stmt:
-  TWHEN nonempty_expr_ls TDO stmt
-    { $$ = new CondStmt(new CallExpr(PRIM_WHEN, $2), $4); }
-| TWHEN nonempty_expr_ls block_stmt
+  TWHEN expr_ls do_stmt
     { $$ = new CondStmt(new CallExpr(PRIM_WHEN, $2), $3); }
 | TOTHERWISE stmt
     { $$ = new CondStmt(new CallExpr(PRIM_WHEN), $2); }
 ;
 
-serial_stmt:
-  TSERIAL expr block_stmt  { $$ = buildSerialStmt($2, $3); }
-| TSERIAL expr TDO stmt    { $$ = buildSerialStmt($2, $4); }
-;
-
-swap_stmt:
-  lvalue_expr TSWAP lvalue_expr TSEMI
-    { $$ = buildChapelStmt(new CallExpr("_chpl_swap", $1, $3)); }
-;
-
-sync_stmt:
-  TSYNC stmt  { $$ = buildSyncStmt($2); }
-;
-
 type_select_stmt:
-  TTYPE TSELECT nonempty_expr_ls TLCBR when_stmt_ls TRCBR
+  TTYPE TSELECT expr_ls TLCBR when_stmt_ls TRCBR
     { $$ = buildTypeSelectStmt($3, $5); }
-;
-
-use_stmt:
-  TUSE use_expr_ls TSEMI  { $$ = $2; }
-;
-
-use_expr_ls:
-  stmt_level_expr                     { $$ = buildUseList($1); }
-| use_expr_ls TCOMMA stmt_level_expr  { $$ = buildUseList($3, $1); }
-;
-
-yield_stmt:
-  TYIELD expr TSEMI
-    { $$ = buildChapelStmt(new CallExpr(PRIM_YIELD, $2)); }
-| TYIELD TSEMI
-    { $$ = buildChapelStmt(new CallExpr(PRIM_YIELD, new SymExpr(gVoid))); }
 ;
 
 /** DECLARATION STATEMENTS ***************************************************/
 
 class_decl_stmt:
-  opt_extern class_tag identifier opt_inherit TLCBR class_level_stmt_ls TRCBR
+  opt_extern class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
     { $$ = buildChapelStmt(buildClassDefExpr($3, $2, $4, $6, $1)); }
 ;
 
@@ -461,8 +328,8 @@ class_tag:
 ;
 
 opt_inherit:
-                           { $$ = new CallExpr(PRIM_ACTUALS_LIST); }
-| TCOLON nonempty_expr_ls  { $$ = $2; }
+                  { $$ = new CallExpr(PRIM_ACTUALS_LIST); }
+| TCOLON expr_ls  { $$ = $2; }
 ;
 
 class_level_stmt_ls:
@@ -473,7 +340,7 @@ class_level_stmt_ls:
 ;
 
 enum_decl_stmt:
-  TENUM identifier TLCBR enum_ls TRCBR TSEMI
+  TENUM ident TLCBR enum_ls TRCBR TSEMI
     {
       EnumType* pdt = $4;
       TypeSymbol* pst = new TypeSymbol($2, pdt);
@@ -498,8 +365,8 @@ enum_ls:
 ;
 
 enum_item:
-  identifier               { $$ = new DefExpr(new EnumSymbol($1)); }
-| identifier TASSIGN expr  { $$ = new DefExpr(new EnumSymbol($1), $3); }
+  ident               { $$ = new DefExpr(new EnumSymbol($1)); }
+| ident TASSIGN expr  { $$ = new DefExpr(new EnumSymbol($1), $3); }
 ;
 
 fn_decl_stmt:
@@ -514,7 +381,7 @@ fn_decl_stmt:
       captureTokens = 0;
       $3->userString = astr(captureString);
     }
-  opt_return_tag opt_type opt_where_part function_body_stmt
+  opt_ret_tag opt_type opt_where_part function_body_stmt
     {
       $3->retTag = $5;
       if ($5 == RET_VAR)
@@ -542,7 +409,7 @@ extern_fn_decl_stmt:
 ;
 
 fn_decl_stmt_inner:
-  fn_identifier opt_formal_ls
+  fn_ident opt_formal_ls
     {
       $$ = $2;
       $$->name = astr($1);
@@ -550,7 +417,7 @@ fn_decl_stmt_inner:
       if ($1[0] == '~' && $1[1] != '\0')
         $$->addFlag(FLAG_DESTRUCTOR);
     }
-| identifier TDOT fn_identifier opt_formal_ls
+| ident TDOT fn_ident opt_formal_ls
     {
       $$ = $4;
       $$->name = astr($3);
@@ -563,31 +430,31 @@ fn_decl_stmt_inner:
     }
 ;
 
-fn_identifier:
-  identifier
-| TBNOT identifier  { $$ = astr("~", $2); }
-| TASSIGN           { $$ = "="; } 
-| TBAND             { $$ = "&"; } 
-| TBOR              { $$ = "|"; } 
-| TBXOR             { $$ = "^"; } 
-| TBNOT             { $$ = "~"; } 
-| TEQUAL            { $$ = "=="; } 
-| TNOTEQUAL         { $$ = "!="; } 
-| TLESSEQUAL        { $$ = "<="; } 
-| TGREATEREQUAL     { $$ = ">="; } 
-| TLESS             { $$ = "<"; } 
-| TGREATER          { $$ = ">"; } 
-| TPLUS             { $$ = "+"; } 
-| TMINUS            { $$ = "-"; } 
-| TSTAR             { $$ = "*"; } 
-| TDIVIDE           { $$ = "/"; } 
-| TSHIFTLEFT        { $$ = "<<"; }
-| TSHIFTRIGHT       { $$ = ">>"; }
-| TMOD              { $$ = "%"; } 
-| TEXP              { $$ = "**"; } 
-| TNOT              { $$ = "!"; }
-| TBY               { $$ = "by"; } 
-| THASH             { $$ = "#"; }
+fn_ident:
+  ident
+| TBNOT ident    { $$ = astr("~", $2); }
+| TASSIGN        { $$ = "="; } 
+| TBAND          { $$ = "&"; } 
+| TBOR           { $$ = "|"; } 
+| TBXOR          { $$ = "^"; } 
+| TBNOT          { $$ = "~"; } 
+| TEQUAL         { $$ = "=="; } 
+| TNOTEQUAL      { $$ = "!="; } 
+| TLESSEQUAL     { $$ = "<="; } 
+| TGREATEREQUAL  { $$ = ">="; } 
+| TLESS          { $$ = "<"; } 
+| TGREATER       { $$ = ">"; } 
+| TPLUS          { $$ = "+"; } 
+| TMINUS         { $$ = "-"; } 
+| TSTAR          { $$ = "*"; } 
+| TDIVIDE        { $$ = "/"; } 
+| TSHIFTLEFT     { $$ = "<<"; }
+| TSHIFTRIGHT    { $$ = ">>"; }
+| TMOD           { $$ = "%"; } 
+| TEXP           { $$ = "**"; } 
+| TNOT           { $$ = "!"; }
+| TBY            { $$ = "by"; } 
+| THASH          { $$ = "#"; }
 ;
 
 opt_formal_ls:
@@ -615,9 +482,9 @@ formal_ls:
 ;
 
 formal:
-  opt_intent_tag identifier opt_formal_type opt_init_expr
+  opt_intent_tag ident opt_formal_type opt_init_expr
     { $$ = buildArgDefExpr($1, $2, $3, $4, NULL); }
-| opt_intent_tag identifier opt_formal_type var_arg_expr
+| opt_intent_tag ident opt_formal_type var_arg_expr
     { $$ = buildArgDefExpr($1, $2, $3, NULL, $4); }
 ;
 
@@ -631,7 +498,7 @@ opt_intent_tag:
 | TTYPE   { $$ = INTENT_TYPE; }
 ;
 
-opt_return_tag:
+opt_ret_tag:
             { $$ = RET_VALUE; }
 | TCONST    { $$ = RET_VALUE; }
 | TVAR      { $$ = RET_VAR; }
@@ -641,11 +508,11 @@ opt_return_tag:
 
 function_body_stmt:
   block_stmt
-| return_stmt { $$ = new BlockStmt($1); }
+| return_stmt  { $$ = new BlockStmt($1); }
 ;
 
 query_expr:
-  TQUESTION identifier
+  TQUESTION ident
     { $$ = new DefExpr(new VarSymbol($2)); }
 | TQUESTION
     { $$ = new DefExpr(new VarSymbol(astr("chpl__query", istr(query_uid++)))); }
@@ -661,8 +528,8 @@ opt_where_part:
 | TWHERE expr  { $$ = $2; }
 ;
 
-mod_decl_stmt:
-  TMODULE identifier TLCBR stmt_ls TRCBR
+module_decl_stmt:
+  TMODULE ident TLCBR stmt_ls TRCBR
     { $$ = buildChapelStmt(new DefExpr(buildModule($2, $4, yyfilename))); }
 ;
 
@@ -671,14 +538,14 @@ type_alias_decl_stmt:
 ;
 
 type_alias_decl_stmt_inner:
-  identifier opt_init_type
+  ident opt_init_type
     {
       VarSymbol* var = new VarSymbol($1);
       var->addFlag(FLAG_TYPE_VARIABLE);
       DefExpr* def = new DefExpr(var, $2);
       $$ = buildChapelStmt(def);
     }
-| identifier opt_init_type TCOMMA type_alias_decl_stmt_inner
+| ident opt_init_type TCOMMA type_alias_decl_stmt_inner
     {
       VarSymbol* var = new VarSymbol($1);
       var->addFlag(FLAG_TYPE_VARIABLE);
@@ -717,37 +584,33 @@ var_decl_stmt_inner_ls:
 ;
 
 var_decl_stmt_inner:
-  identifier opt_type opt_init_expr
+  ident opt_type opt_init_expr
     {
       VarSymbol* var = new VarSymbol($1);
       $$ = buildChapelStmt(new DefExpr(var, $3, $2));
     }
-| identifier opt_domain alias_expr
+| ident opt_domain TALIAS expr
     {
       VarSymbol* var = new VarSymbol($1);
       var->addFlag(FLAG_ARRAY_ALIAS);
-      $$ = buildChapelStmt(new DefExpr(var, $3, $2));
+      $$ = buildChapelStmt(new DefExpr(var, $4, $2));
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     { $$ = buildTupleVarDeclStmt($2, $4, $5); }
 ;
 
 tuple_var_decl_stmt_inner_ls:
-  identifier
+  ident
     { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1))); }
 | TLP tuple_var_decl_stmt_inner_ls TRP
     { $$ = buildChapelStmt($2); }
-| tuple_var_decl_stmt_inner_ls TCOMMA identifier
+| tuple_var_decl_stmt_inner_ls TCOMMA ident
     { $1->insertAtTail(new DefExpr(new VarSymbol($3))); }
 | tuple_var_decl_stmt_inner_ls TCOMMA TLP tuple_var_decl_stmt_inner_ls TRP
     { $1->insertAtTail($4); }
 ;
 
 /** TYPES ********************************************************************/
-
-alias_expr:
-  TALIAS expr  { $$ = $2; }
-;
 
 opt_init_expr:
                 { $$ = NULL; }
@@ -756,7 +619,7 @@ opt_init_expr:
 
 opt_domain:
     { $$ = NULL; }
-| TCOLON TLSBR nonempty_expr_ls TRSBR
+| TCOLON TLSBR expr_ls TRSBR
     { $$ = new CallExpr("chpl__buildDomainExpr", $3); }
 ;
 
@@ -767,10 +630,10 @@ opt_type:
 ;
 
 array_type:
-  TLSBR nonempty_expr_ls TRSBR expr
+  TLSBR expr_ls TRSBR expr
     { $$ = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__buildDomainExpr", $2), $4); }
-| TLSBR nonempty_expr_ls TIN expr TRSBR expr
+| TLSBR expr_ls TIN expr TRSBR expr
     { 
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
@@ -791,10 +654,10 @@ formal_array_type:
     { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $3); }
 | TLSBR query_expr TRSBR opt_formal_array_elt_type
     { $$ = new CallExpr("chpl__buildArrayRuntimeType", $2, $4); }
-| TLSBR nonempty_expr_ls TRSBR opt_formal_array_elt_type
+| TLSBR expr_ls TRSBR opt_formal_array_elt_type
     { $$ = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__buildDomainExpr", $2), $4); }
-| TLSBR nonempty_expr_ls TIN expr TRSBR opt_formal_array_elt_type
+| TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type
     { 
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
@@ -805,77 +668,65 @@ formal_array_type:
 ;
 
 opt_formal_type:
-  /* nothing */
-    { $$ = NULL; }
-| TCOLON type_level_expr
-    { $$ = $2; }
-| TCOLON query_expr
-    { $$ = $2; }
-| TCOLON TDOMAIN
-    { $$ = new UnresolvedSymExpr("_domain"); }
-| TCOLON TSINGLE
-    { $$ = new UnresolvedSymExpr( "_singlevar"); }
-| TCOLON TSYNC
-    { $$ = new UnresolvedSymExpr( "_syncvar"); }
-| TCOLON formal_array_type
-    { $$ = $2; }
+                            { $$ = NULL; }
+| TCOLON type_level_expr    { $$ = $2; }
+| TCOLON query_expr         { $$ = $2; }
+| TCOLON TDOMAIN            { $$ = new UnresolvedSymExpr("_domain"); }
+| TCOLON TSINGLE            { $$ = new UnresolvedSymExpr( "_singlevar"); }
+| TCOLON TSYNC              { $$ = new UnresolvedSymExpr( "_syncvar"); }
+| TCOLON formal_array_type  { $$ = $2; }
 ;
 
 /** EXPRESSIONS **************************************************************/
 
 expr_ls:
-                    { $$ = new CallExpr(PRIM_ACTUALS_LIST); }
-| nonempty_expr_ls
-;
-
-nonempty_expr_ls:
   expr                          { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
-| nonempty_expr_ls TCOMMA expr  { $1->insertAtTail($3); }
+| expr_ls TCOMMA expr  { $1->insertAtTail($3); }
 ;
 
-actual_expr_ls:
-                           { $$ = new CallExpr(PRIM_ACTUALS_LIST); }
-| nonempty_actual_expr_ls
+opt_actual_ls:
+             { $$ = new CallExpr(PRIM_ACTUALS_LIST); }
+| actual_ls
 ;
 
-nonempty_actual_expr_ls:
+actual_ls:
   actual_expr
     { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
-| nonempty_actual_expr_ls TCOMMA actual_expr
+| actual_ls TCOMMA actual_expr
     { $1->insertAtTail($3); }
 ;
 
 actual_expr:
-  identifier TASSIGN query_expr  { $$ = new NamedExpr($1, $3); }
-| identifier TASSIGN expr        { $$ = new NamedExpr($1, $3); }
+  ident TASSIGN query_expr  { $$ = new NamedExpr($1, $3); }
+| ident TASSIGN expr        { $$ = new NamedExpr($1, $3); }
 | query_expr                     { $$ = $1; }
 | expr
 ;
 
 expr:
   type_level_expr
-| TLSBR nonempty_expr_ls TRSBR %prec TFOR
+| TLSBR expr_ls TRSBR %prec TFOR
     { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
-| TLSBR nonempty_expr_ls TIN expr TRSBR expr %prec TFOR
+| TLSBR expr_ls TIN expr TRSBR expr %prec TFOR
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
       $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $6, NULL, true);
     }
-| TLSBR nonempty_expr_ls TRSBR expr %prec TFOR
+| TLSBR expr_ls TRSBR expr %prec TFOR
     {
       if ($2->argList.length > 1)
         $$ = buildForallLoopExpr(NULL, new CallExpr("chpl__buildDomainExpr", $2), $4, NULL, true);
       else
         $$ = buildForallLoopExpr(NULL, $2->get(1)->remove(), $4, NULL, true);
     }
-| TLSBR nonempty_expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
+| TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
       $$ = buildForallLoopExpr($2->get(1)->remove(), $4, $9, $7);
     }
-| TLSBR nonempty_expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE
+| TLSBR expr_ls TRSBR TIF expr TTHEN expr %prec TNOELSE
     {
       if ($2->argList.length > 1)
         $$ = buildForallLoopExpr(NULL, new CallExpr("chpl__buildDomainExpr", $2), $7, $5);
@@ -911,15 +762,15 @@ type_level_expr:
 stmt_level_expr: 
   binary_op_expr
 | literal_expr
-| lvalue_expr
+| lhs_expr
 | unary_op_expr
-| TDOMAIN TLP actual_expr_ls TRP
+| TDOMAIN TLP opt_actual_ls TRP
     { $$ = new CallExpr("chpl__buildDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), $3); }
-| TSUBDOMAIN TLP actual_expr_ls TRP
+| TSUBDOMAIN TLP opt_actual_ls TRP
     { $$ = new CallExpr("chpl__buildSubDomainType", $3); }
-| TSPARSE TSUBDOMAIN TLP actual_expr_ls TRP
+| TSPARSE TSUBDOMAIN TLP opt_actual_ls TRP
     { $$ = new CallExpr("chpl__buildSparseDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), $4); }
-| TINDEX TLP expr_ls TRP
+| TINDEX TLP opt_actual_ls TRP
     { $$ = new CallExpr("chpl__buildIndexType", $3); }
 | TSINGLE expr
     { $$ = new CallExpr( "_singlevar", $2); }
@@ -979,31 +830,27 @@ unary_op_expr:
 | TBNOT expr                      { $$ = new CallExpr("~", $2); }
 ;
 
-lvalue_expr:
-  identifier         { $$ = new UnresolvedSymExpr($1); }
+lhs_expr:
+  ident         { $$ = new UnresolvedSymExpr($1); }
 | call_expr
 | dot_expr
 | parenthesized_expr
 ;
 
-identifier:
-  TIDENT  { $$ = astr(yytext); }
-;
-
 call_expr:
-  expr TLP actual_expr_ls TRP      { $$ = new CallExpr($1, $3); }
-| expr TLSBR actual_expr_ls TRSBR  { $$ = buildSquareCallExpr($1, $3); }
-| TPRIMITIVE TLP expr_ls TRP       { $$ = buildPrimitiveExpr($3); }
+  expr TLP opt_actual_ls TRP        { $$ = new CallExpr($1, $3); }
+| expr TLSBR opt_actual_ls TRSBR    { $$ = buildSquareCallExpr($1, $3); }
+| TPRIMITIVE TLP opt_actual_ls TRP  { $$ = buildPrimitiveExpr($3); }
 ;
 
 dot_expr:
-  expr TDOT identifier  { $$ = buildDotExpr($1, $3); }
-| expr TDOT TTYPE       { $$ = new CallExpr(PRIM_TYPEOF, $1); }
-| expr TDOT TDOMAIN     { $$ = buildDotExpr($1, "_dom"); }
+  expr TDOT ident    { $$ = buildDotExpr($1, $3); }
+| expr TDOT TTYPE    { $$ = new CallExpr(PRIM_TYPEOF, $1); }
+| expr TDOT TDOMAIN  { $$ = buildDotExpr($1, "_dom"); }
 ;
 
 parenthesized_expr:
-  TLP nonempty_expr_ls TRP  { $$ = buildParenExpr($2); }
+  TLP expr_ls TRP  { $$ = buildParenExpr($2); }
 ;
 
 literal_expr:
