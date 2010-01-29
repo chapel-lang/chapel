@@ -259,6 +259,8 @@ def isArithmeticDom(d: domain) param {
   return isArithmeticDomClass(d._value);
 }
 
+def isArithmeticArr(a: []) param return isArithmeticDom(a.domain);
+
 def isAssociativeDom(d: domain) param {
   def isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
   def isAssociativeDomClass(dc) param return false;
@@ -268,6 +270,8 @@ def isAssociativeDom(d: domain) param {
 def isEnumDom(d: domain) param {
   return isAssociativeDom(d) && __primitive("isEnumType", d._value.idxType);
 }
+
+def isEnumArr(a: []) param return isEnumDom(a.domain);
 
 def isOpaqueDom(d: domain) param {
   def isOpaqueDomClass(dc: BaseOpaqueDom) param return true;
@@ -958,8 +962,36 @@ pragma "inline" def =(a: [], b) {
   return a;
 }
 
-def =(a: [], b: _tuple) {
-  a._value.tupleInit(b);
+def =(a: [], b: _tuple) where isEnumArr(a) || isArithmeticArr(a) {
+  if isEnumArr(a) {
+    if b.size != a.numElements then
+      halt("tuple array initializer size mismatch");
+    for (i,j) in (chpl_enumerate(index(a.domain)), 1..) {
+      a(i) = b(j);
+    }
+  } else {
+    def chpl__tupleInit(j, param rank: int, b: _tuple) {
+      if rank == 1 {
+        for param i in 1..b.size {
+          j(a.rank-rank+1) = a.domain.dim(a.rank-rank+1).low + i - 1;
+          a(j) = b(i);
+        }
+      } else {
+        for param i in 1..b.size {
+          j(a.rank-rank+1) = a.domain.dim(a.rank-rank+1).low + i - 1;
+          chpl__tupleInit(j, rank-1, b(i));
+        }
+      }
+    }
+
+    if a.rank == 1 {
+      for param i in 1..b.size do
+        a(a.domain.dim(1).low + i - 1) = b(i);
+    } else {
+      var j: a.rank*int;
+      chpl__tupleInit(j, a.rank, b);
+    }
+  }
   return a;
 }
 

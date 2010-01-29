@@ -100,10 +100,6 @@ class DefaultOpaqueArr: BaseArr {
     for e in anarray.dsiSorted() do
       yield e;
   }
-
-  def tupleInit(b: _tuple) {
-    anarray.tupleInit(b);
-  }
 }
 
 def DefaultOpaqueDom.dsiRemove(idx: idxType) {

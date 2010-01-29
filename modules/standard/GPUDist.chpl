@@ -479,30 +479,6 @@ class GPUArithmeticArr: BaseArr {
       halt("illegal reallocation");
     }
   }
-
-  def tupleInit(b: _tuple) {
-    def _tupleInitHelp(j, param rank: int, b: _tuple) {
-      if rank == 1 {
-        for param i in 1..b.size {
-          j(this.rank-rank+1) = dom.dsiDim(this.rank-rank+1).low + i - 1;
-          this(j) = b(i);
-        }
-      } else {
-        for param i in 1..b.size {
-          j(this.rank-rank+1) = dom.dsiDim(this.rank-rank+1).low + i - 1;
-          _tupleInitHelp(j, rank-1, b(i));
-        }
-      }
-    }
-
-    if rank == 1 {
-      for param i in 1..b.size do
-        this(this.dom.dsiDim(1).low + i - 1) = b(i);
-    } else {
-      var j: rank*int;
-      _tupleInitHelp(j, rank, b);
-    }
-  }
 }
 
 def GPUArithmeticDom.dsiSerialWrite(f: Writer) {

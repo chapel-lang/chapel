@@ -383,14 +383,6 @@ class DefaultAssociativeArr: BaseArr {
   def _destroySortedTmpTable() {
     tmpDom = [0..-1:chpl_table_index_type];
   }
-
-  def tupleInit(t: _tuple) where _isEnumeratedType(idxType) {
-    if t.size != dom.dsiNumIndices then
-      halt("tuple array initializer size mismatch");
-    for (i,j) in (chpl_enumerate(idxType), 1..) {
-      dsiAccess(i) = t(j);
-    }
-  }
 }
 
 

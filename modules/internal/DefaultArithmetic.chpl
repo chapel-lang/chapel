@@ -562,31 +562,6 @@ class DefaultArithmeticArr: BaseArr {
       halt("illegal reallocation");
     }
   }
-
-  // move into ChapelArray and handle by calling accessor function on array
-  def tupleInit(b: _tuple) {
-    def _tupleInitHelp(j, param rank: int, b: _tuple) {
-      if rank == 1 {
-        for param i in 1..b.size {
-          j(this.rank-rank+1) = dom.dsiDim(this.rank-rank+1).low + i - 1;
-          dsiAccess(j) = b(i);
-        }
-      } else {
-        for param i in 1..b.size {
-          j(this.rank-rank+1) = dom.dsiDim(this.rank-rank+1).low + i - 1;
-          _tupleInitHelp(j, rank-1, b(i));
-        }
-      }
-    }
-
-    if rank == 1 {
-      for param i in 1..b.size do
-        dsiAccess(this.dom.dsiDim(1).low + i - 1) = b(i);
-    } else {
-      var j: rank*int;
-      _tupleInitHelp(j, rank, b);
-    }
-  }
 }
 
 def DefaultArithmeticDom.dsiSerialWrite(f: Writer) {
