@@ -216,6 +216,14 @@ def Block.ind2locInd(ind: rank*idxType) where rank != 1 {
   return locInd;
 }
 
+def Block.dsiCreateReindexDist(newSpace) {
+  var d = [(...newSpace)];
+  if rank != d.rank then
+    compilerError("illegal implicit rank change");
+  var newDist = new Block(rank, idxType, d, targetLocs, tasksPerLocale);
+  return newDist;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Block Local Distribution Class
@@ -761,6 +769,33 @@ def BlockArr.localSlice(ranges) {
   }
   var A => locArr(dom.dist.ind2locInd(low)).myElems((...ranges));
   return A;
+}
+
+def BlockArr.dsiReindex(d: BlockDom) {
+  if rank != d.rank then
+    compilerError("illegal implicit rank change");
+  for param i in 1..rank do
+    if d.dsiDim(i).length != dom.dsiDim(i).length then
+      halt("extent in dimension ", i, " does not match actual");
+
+  var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
+                           stridable=d.stridable, dom=d);
+
+  var thisid = this.locale.uid;
+  coforall i in d.dist.targetLocDom {
+    on d.dist.targetLocs(i) {
+      const locDom = d.getLocDom(i);
+      alias.locArr[i] = new LocBlockArr(eltType=eltType,
+                                        rank=rank, idxType=d.idxType,
+                                        stridable=d.stridable,
+                                        locDom=locDom);
+      alias.locArr[i].myElems => locArr[i].myElems;
+      if thisid == here.uid then
+        alias.myLocArr = alias.locArr[i];
+    }
+  }
+
+  return alias;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
