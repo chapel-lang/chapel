@@ -5,8 +5,7 @@
 
 
 SymbolMapCacheEntry::SymbolMapCacheEntry(FnSymbol* ifn, SymbolMap* imap) :
-  fn(ifn), map(*imap) {
-}
+  fn(ifn), map(*imap) { }
 
 
 void
@@ -25,16 +24,12 @@ addCache(SymbolMapCache& cache, FnSymbol* oldFn, FnSymbol* fn, SymbolMap* map) {
 
 static bool
 isCacheEntryMatch(SymbolMap* s1, SymbolMap* s2) {
-  if (s1->n != s2->n)
-    return false;
-  for(int i = 0; i < s1->n; i++) {
-    if (s1->v[i].key || s2->v[i].key) {
-      if (s1->v[i].key != s2->v[i].key)
-        return false;
-      if (s1->v[i].value != s2->v[i].value)
-        return false;
-    }
-  }
+  form_Map(SymbolMapElem, e, *s1)
+    if (s2->get(e->key) != e->value)
+      return false;
+  form_Map(SymbolMapElem, e, *s2)
+    if (s1->get(e->key) != e->value)
+      return false;
   return true;
 }
 
