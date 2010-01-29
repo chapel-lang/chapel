@@ -1,4 +1,4 @@
-bug: instantiation over runtime type loses runtime info 
+bug: type composed of runtime type is not a runtime type
 
 Was:
 

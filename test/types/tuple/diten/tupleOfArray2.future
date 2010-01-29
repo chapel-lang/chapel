@@ -1,3 +1,7 @@
+bug: type composed of runtime type is not a runtime type
+
+was:
+
 bug: array types can only be declared in type contexts
 
 There is an ambiguity between arrays and forall expressions that is not yet
