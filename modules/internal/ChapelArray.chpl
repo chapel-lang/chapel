@@ -214,19 +214,31 @@ def chpl__distributed(d: _distribution, ranges: range(?) ...?rank) {
   return chpl__distributed(d, chpl__buildDomainExpr((...ranges)));
 }
 
+def chpl__isArithmeticDomType(type domainType) param {
+  var dom: domainType;
+  return isArithmeticDom(dom);
+}
+
+def chpl__isSparseDomType(type domainType) param {
+  var dom: domainType;
+  return isSparseDom(dom);
+}
+
 def chpl__distributed(d: _distribution, type domainType) type {
-  //
-  // this "no auto destroy" pragma is necessary as of 1/20 because
-  // otherwise the parentDom gets destroyed in the sparse case; see
-  // sparse/bradc/CSR/sparse.chpl as an example
-  //
-  pragma "no auto destroy" var dom: domainType;
-  if isArithmeticDom(dom) {
+  if chpl__isArithmeticDomType(domainType) {
+    var dom: domainType;
     return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
                                         dom._value.stridable);
-  } else if isSparseDom(dom) {
+  } else if chpl__isSparseDomType(domainType) {
+    //
+    // this "no auto destroy" pragma is necessary as of 1/20 because
+    // otherwise the parentDom gets destroyed in the sparse case; see
+    // sparse/bradc/CSR/sparse.chpl as an example
+    //
+    pragma "no auto destroy" var dom: domainType;
     return chpl__buildSparseDomainRuntimeType(d, dom._value.parentDom);
   } else {
+    var dom: domainType;
     return chpl__buildDomainRuntimeType(d, dom._value.idxType);
   }
 }
