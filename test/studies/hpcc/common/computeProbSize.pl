@@ -7,7 +7,7 @@ $hplMemoryTarget = $memoryInBytes / 2;
 
 $streamProbSize = int($memoryTarget / (3*8));
 $raProbSize = int($memoryTarget / (1*8));
-$fftProbSize = int($memoryTarget / (2*8));
+$fftProbSize = int($memoryTarget / (2*16));
 $hplProbSize = int($hplMemoryTarget / (1*8));
 
 printf "For default settings:\n";
@@ -30,7 +30,7 @@ while (($streamPow2ProbSize == 0) || ($raPow2ProbSize == 0) || ($fftPow2ProbSize
     if (($pow2ProbSize*1*8 > $memoryTarget) && ($raPow2ProbSize == 0)) {
         $raPow2ProbSize = $pow2ProbSize;
     }
-    if (($pow2ProbSize*2*8 > $memoryTarget) && ($fftPow2ProbSize == 0)) {
+    if (($pow2ProbSize*2*16 > $memoryTarget) && ($fftPow2ProbSize == 0)) {
         $fftPow2ProbSize = $pow2ProbSize;
     }
     if (($pow2ProbSize*1*8 > $hplMemoryTarget) && ($hplPow2ProbSize == 0)) {
