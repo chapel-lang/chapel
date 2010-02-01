@@ -1,3 +1,4 @@
+use DSIUtil;
 config param debugChapelRange = false;
 
 //
@@ -414,7 +415,7 @@ def range.these(param tag: iterator) where tag == iterator.leader {
     yield tuple(0..v-1);
   } else {
     coforall chunk in 0..numChunks-1 {
-      const (lo,hi) = _computeMyChunk(v, v-1, numChunks, chunk);
+      const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
       yield tuple(lo..hi);
     }
   }
@@ -613,32 +614,3 @@ pragma "inline" def string.substring(s: range(?e,?b,?st)) {
     return __primitive("string_select", this, s.low, s.high);
 }
 
-//
-// helper function for blocking index ranges
-// - based on _computeBlock() but specialized for cases
-//   where the low bound is always zero
-//
-def _computeMyChunk(numelems, wayhi, numblocks, blocknum) {
-  if debugChapelRange then
-    writeln("in _computeMyChunk: numelems=",  numelems, " wayhi=", wayhi,
-	    " numblocks=", numblocks, " blocknum=", blocknum);
-  /*
-  if numblocks == 1 then
-    return (0:wayhi.type, numelems:wayhi.type-1);
-  */
-
-  if numelems == 0 then
-    return (1:wayhi.type, 0:wayhi.type);
-
-  def procToData(x)
-    return x:wayhi.type + (x:real != x:int:real):wayhi.type;
-
-  const blo =
-    if blocknum == 0 then 0
-      else procToData((numelems:real * blocknum) / numblocks);
-  const bhi =
-    if blocknum == numblocks - 1 then wayhi
-      else procToData((numelems:real * (blocknum+1)) / numblocks) - 1;
-
-  return (blo, bhi);
-}

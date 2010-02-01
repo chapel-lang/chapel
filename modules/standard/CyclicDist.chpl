@@ -1,34 +1,4 @@
-//
-// naive routine for dividing numLocales into rank factors
-//
-def _factor(param rank: int, value) {
-  var factors: rank*int;
-  for param i in 1..rank do
-    factors(i) = 1;
-  if value >= 1 {
-    var iv = value;
-    var factor = 1;
-    while iv > 1 {
-      for i in 2..iv {
-        if iv % i == 0 {
-          var j = 1;
-          for i in 2..rank {
-            if factors(i) < factors(j) then
-              j = i;
-          }
-          factors(j) *= i;
-          iv = iv / i;
-          break;
-        }
-      }
-    }
-  }
-  for i in 1..rank do
-    for j in i+1..rank do
-      if factors(i) < factors(j) then
-        factors(i) <=> factors(j);
-  return factors;
-}
+use DSIUtil;
 
 def _tupleOfZero(param size: int, type t) {
   var tmp: size * t;
@@ -312,9 +282,8 @@ def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
       coforall taskid in 0..#numTasks {
         var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
         const low = result(1).low, high = result(1).high;
-        const (lo,hi) = _computeBlock(low, high - low + 1,
-                                      low, high,
-                                      numTasks, taskid);
+        const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
+                                      high, low, low);
         splitRanges(1) = result(1)(lo..hi);
         if debugCyclicDist then
           writeln(here.id, ": leader whole: ", whole,
@@ -399,20 +368,6 @@ class LocCyclicDom {
 // Added as a performance stopgap to avoid returning a domain
 //
 def LocCyclicDom.member(i) return myBlock.member(i);
-
-def _computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
-  def procToData(x, lo)
-    return lo + (x:lo.type) + (x:real != x:int:real):lo.type;
- 
-  const blo =
-    if blocknum == 0 then waylo
-      else procToData((numelems:real * blocknum) / numblocks, lo);
-  const bhi =
-    if blocknum == numblocks - 1 then wayhi
-      else procToData((numelems:real * (blocknum+1)) / numblocks, lo) - 1;
-
-  return (blo, bhi);
-}
 
 
 class CyclicArr: BaseArr {
@@ -530,9 +485,8 @@ def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
       coforall taskid in 0..#numTasks {
         var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
         const low = result(1).low, high = result(1).high;
-        const (lo,hi) = _computeBlock(low, high - low + 1,
-                                      low, high,
-                                      numTasks, taskid);
+        const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
+                                      high, low, low);
         splitRanges(1) = result(1)(lo..hi);
         if debugCyclicDist then
           writeln(here.id, ": leader whole: ", dom.whole,

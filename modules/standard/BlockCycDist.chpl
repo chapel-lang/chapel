@@ -6,6 +6,8 @@
 //   LocBlock    LocBlockDom  LocBlockArr
 //
 
+use DSIUtil;
+
 //
 // TODO List
 //
@@ -895,6 +897,8 @@ def LocBlockCyclicArr.writeThis(x: Writer) {
   x.write(myElems);
 }
 
+// sungeun: This doesn't appear to be used yet, so I left it, but it
+//  might be useful to others.  Consider putting it in DSIUtil.chpl.
 
 //
 // helper function for blocking index ranges
@@ -911,39 +915,4 @@ def _computeBlockCyclic(waylo, numelems, lo, wayhi, numblocks, blocknum) {
       else procToData((numelems:real * (blocknum+1)) / numblocks, lo) - 1;
 
   return (blo, bhi);
-}
-
-
-// BLC: Common code, factor out
-
-//
-// naive routine for dividing numLocales into rank factors
-//
-def _factor(param rank: int, value) {
-  var factors: rank*int;
-  for param i in 1..rank do
-    factors(i) = 1;
-  if value >= 1 {
-    var iv = value;
-    var factor = 1;
-    while iv > 1 {
-      for i in 2..iv {
-        if iv % i == 0 {
-          var j = 1;
-          for i in 2..rank {
-            if factors(i) < factors(j) then
-              j = i;
-          }
-          factors(j) *= i;
-          iv = iv / i;
-          break;
-        }
-      }
-    }
-  }
-  for i in 1..rank do
-    for j in i+1..rank do
-      if factors(i) < factors(j) then
-        factors(i) <=> factors(j);
-  return factors;
 }

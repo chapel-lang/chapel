@@ -1,3 +1,4 @@
+use DSIUtil;
 config param debugDefaultDist = false;
 
 class DefaultDist: BaseDist {
@@ -133,8 +134,8 @@ class DefaultArithmeticDom: BaseArithmeticDom {
 	writeln("*** DI: locBlock = ", locBlock);
       coforall chunk in 0..numChunks-1 {
 	var tuple: rank*range(idxType) = locBlock;
-	const (lo,hi) = _computeMyChunk(locBlock(1).length, locBlock(1).high,
-                                        numChunks, chunk);
+	const (lo,hi) = _computeBlock(locBlock(1).length, numChunks, chunk,
+                                      locBlock(1).high);
 	tuple(1) = lo..hi;
 	if debugDefaultDist then
 	  writeln("*** DI: tuple = ", tuple);
@@ -374,8 +375,8 @@ class DefaultArithmeticArr: BaseArr {
 	writeln("*** AI: locBlock = ", locBlock);
       coforall chunk in 0..numChunks-1 {
 	var tuple: rank*range(idxType) = locBlock;
-	const (lo,hi) = _computeMyChunk(locBlock(1).length, locBlock(1).high,
-                                        numChunks, chunk);
+	const (lo,hi) = _computeBlock(locBlock(1).length, numChunks, chunk,
+                                      locBlock(1).high);
 	tuple(1) = lo..hi;
 	if debugDefaultDist then
 	  writeln("*** AI: tuple = ", tuple);
@@ -595,39 +596,4 @@ def DefaultArithmeticArr.dsiSerialWrite(f: Writer) {
       break;
     }
   }
-}
-
-//
-// this should be unified with versions in BlockDist and ChapelRange,
-// use the one in BlockDist because it is correct, where should it go?
-// ChapelRange or ChapelArray?  ChapelRange is more of a root.
-//
-//
-// helper function for blocking index ranges
-// - based on _computeBlock() but specialized for cases
-//   where the low bound is always zero
-//
-def _computeMyChunk(numelems, wayhi, numblocks, blocknum) {
-  if debugDefaultDist then
-    writeln("in _computeMyChunk: numelems=",  numelems, " wayhi=", wayhi,
-	    " numblocks=", numblocks, " blocknum=", blocknum);
-  /*
-  if numblocks == 1 then
-    return (0:wayhi.type, numelems:wayhi.type-1);
-  */
-
-  if numelems == 0 then
-    return (1:wayhi.type, 0:wayhi.type);
-
-  def procToData(x)
-    return x:wayhi.type + (x:real != x:int:real):wayhi.type;
-
-  const blo =
-    if blocknum == 0 then 0
-      else procToData((numelems:real * blocknum) / numblocks);
-  const bhi =
-    if blocknum == numblocks - 1 then wayhi
-      else procToData((numelems:real * (blocknum+1)) / numblocks) - 1;
-
-  return (blo, bhi);
 }

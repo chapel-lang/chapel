@@ -6,6 +6,8 @@
 //   LocBlock    LocBlockDom  LocBlockArr
 //
 
+use DSIUtil;
+
 //
 // Limitations
 //
@@ -254,8 +256,8 @@ class LocBlock {
       const hi = boundingBox(1).high;
       const numelems = hi - lo + 1;
       const numlocs = targetLocBox(1).length;
-      const (blo, bhi) = _computeBlock(min(idxType), numelems, lo,
-                                       max(idxType), numlocs, locid);
+      const (blo, bhi) = _computeBlock(numelems, numlocs, locid,
+                                       max(idxType), min(idxType), lo);
       myChunk = [blo..bhi];
     } else {
       var tuple: rank*range(idxType);
@@ -264,8 +266,8 @@ class LocBlock {
         const hi = boundingBox(i).high;
         const numelems = hi - lo + 1;
         const numlocs = targetLocBox(i).length;
-        const (blo, bhi) = _computeBlock(min(idxType), numelems, lo,
-                                         max(idxType), numlocs, locid(i));
+        const (blo, bhi) = _computeBlock(numelems, numlocs, locid(i),
+                                         max(idxType), min(idxType), lo);
         tuple(i) = blo..bhi;
       }
       myChunk = [(...tuple)];
@@ -339,9 +341,9 @@ def BlockDom.these(param tag: iterator) where tag == iterator.leader {
     } else {
       coforall taskid in 0..#numTasks {
         var tuple: rank*range(idxType) = locBlock;
-        const (lo,hi) = _computeBlock(locBlock(1).low, locBlock(1).length,
-                                      locBlock(1).low, locBlock(1).high,
-                                      numTasks, taskid);
+        const (lo,hi) = _computeBlock(locBlock(1).length, numTasks, taskid,
+                                      locBlock(1).high,
+                                      locBlock(1).low, locBlock(1).low);
         tuple(1) = lo..hi;
         yield tuple;
       }
@@ -650,9 +652,9 @@ def BlockArr.these(param tag: iterator) where tag == iterator.leader {
     } else {
       coforall taskid in 0..#numTasks {
         var tuple: rank*range(idxType) = locBlock;
-        const (lo,hi) = _computeBlock(locBlock(1).low, locBlock(1).length,
-                                      locBlock(1).low, locBlock(1).high,
-                                      numTasks, taskid);
+        const (lo,hi) = _computeBlock(locBlock(1).length, numTasks, taskid,
+                                      locBlock(1).high,
+                                      locBlock(1).low, locBlock(1).low);
           
         tuple(1) = lo..hi;
         yield tuple;
@@ -836,54 +838,3 @@ def LocBlockArr.writeThis(x: Writer) {
   x.write(myElems);
 }
 
-//
-// helper function for blocking index ranges
-//
-// 12/8/09 note: move this for sharing with forall over default
-//               arrays, etc.
-//
-def _computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
-  def intCeilXDivByY(x, y) return ((x + (y-1)) / y);
-
-  const blo =
-    if blocknum == 0 then waylo
-    else lo + intCeilXDivByY(numelems * blocknum:lo.type, numblocks:lo.type);
-  const bhi =
-    if blocknum == numblocks - 1 then wayhi
-    else lo + intCeilXDivByY(numelems * (blocknum+1):lo.type, numblocks:lo.type) - 1;
-
-  return (blo, bhi);
-}
-
-//
-// naive routine for dividing numLocales into rank factors
-//
-// move somewhere and share.
-def _factor(param rank: int, value) {
-  var factors: rank*int;
-  for param i in 1..rank do
-    factors(i) = 1;
-  if value >= 1 {
-    var iv = value;
-    var factor = 1;
-    while iv > 1 {
-      for i in 2..iv {
-        if iv % i == 0 {
-          var j = 1;
-          for i in 2..rank {
-            if factors(i) < factors(j) then
-              j = i;
-          }
-          factors(j) *= i;
-          iv = iv / i;
-          break;
-        }
-      }
-    }
-  }
-  for i in 1..rank do
-    for j in i+1..rank do
-      if factors(i) < factors(j) then
-        factors(i) <=> factors(j);
-  return factors;
-}
