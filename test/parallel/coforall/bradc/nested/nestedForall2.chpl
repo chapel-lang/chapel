@@ -1,5 +1,3 @@
-use BlockDist;
-
 config const numTasks=4;
 
 def iterate() {
