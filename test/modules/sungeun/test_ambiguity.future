@@ -1,4 +1,0 @@
-bug: Function name ambiguity not detected
-
-This should result in an ambiguity at compile time.
-

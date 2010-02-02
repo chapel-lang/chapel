@@ -958,12 +958,18 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
 
 static BlockStmt*
 getParentBlock(Expr* expr) {
-  BlockStmt* block = toBlockStmt(expr);
-  while (expr && !block) {
-    expr = expr->parentExpr;
-    block = toBlockStmt(expr);
+  for (Expr* tmp = expr->parentExpr; tmp; tmp = tmp->parentExpr) {
+    if (BlockStmt* block = toBlockStmt(tmp))
+      return block;
   }
-  return block;
+  if (expr->parentSymbol) {
+    FnSymbol* parentFn = toFnSymbol(expr->parentSymbol);
+    if (parentFn && parentFn->instantiationPoint)
+      return parentFn->instantiationPoint;
+    else if (expr->parentSymbol->defPoint)
+      return getParentBlock(expr->parentSymbol->defPoint);
+  }
+  return NULL;
 }
 
 
@@ -1035,7 +1041,10 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
   // call helper function with visited set to avoid infinite recursion
   //
   Vec<BlockStmt*> visited;
-  return isMoreVisibleInternal(getParentBlock(expr), fn1, fn2, visited);
+  BlockStmt* block = toBlockStmt(expr);
+  if (!block)
+    block = getParentBlock(expr);
+  return isMoreVisibleInternal(block, fn1, fn2, visited);
 }
 
 
