@@ -1,3 +1,7 @@
+bug: type composed of runtime type is not a runtime type
+
+was:
+
 bug: tuple of array return type
 
 Was:
