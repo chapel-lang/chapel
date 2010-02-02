@@ -118,10 +118,10 @@ assignment-operator: one of
    = += -= *= /= %= **= &= |= ^= &&= ||= <<= >>=
 \end{syntax}
 
-The expression on the right-hand side of the assignment operator is
-evaluated first; it can be any expression.  The expression on the left
-hand side must be a valid lvalue~(\rsec{lvalue}).  It is evaluated
-second and then assigned the value.
+The expression on the left-hand side of the assignment operator must
+be a valid lvalue~(\rsec{lvalue}).  It is evaluated before the
+expression on the right-hand side of the assignment operator, which
+can be any expression.
 
 The assignment operators that contain a binary operator as a prefix is
 a short-hand for applying the binary operator to the left and

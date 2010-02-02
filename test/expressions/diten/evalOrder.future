@@ -1,4 +1,0 @@
-bug: evaluation order of assignment statement is wrong
-
-Section 11.3 of the spec states that the rhs of an assignment is evaluated
-before the lhs.
