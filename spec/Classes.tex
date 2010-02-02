@@ -47,6 +47,7 @@ class-statement:
   type-declaration-statement
   function-declaration-statement
   variable-declaration-statement
+  empty-statement
 \end{syntax}
 A \sntx{class-declaration-statement} defines a new type symbol
 specified by the identifier.  Classes inherit data and functionality
@@ -55,7 +56,8 @@ Inheritance is described in~\rsec{Inheritance}.
 
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
-field), a function (called a method), or a type.
+field), a function (called a method), or a type.  In addition, empty
+statements are allowed in class declarations, and they have no effect.
 
 If a class contains a variable without a specified type or
 initialization expression, a type alias or a parameter, the class is

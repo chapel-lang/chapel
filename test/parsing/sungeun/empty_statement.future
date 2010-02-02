@@ -1,6 +1,0 @@
-error message: Empty statements in class definition (i.e., where only declarations are allowed) leads to unclear syntax error.
-
-It would be nice to have a clearer error/warning message (or maybe no
-error at all?)
-
-   empty_statement.chpl:2 syntax error: near ';'
