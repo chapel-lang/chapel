@@ -143,7 +143,7 @@
 %type <ptype> class_tag
 %type <penumtype> enum_ls
 
-%type <pexpr> opt_ret_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
+%type <pexpr> call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> literal_expr opt_where_part
 %type <pexpr> stmt_level_expr type_level_expr
@@ -195,7 +195,7 @@ stmt:
 | TSERIAL expr do_stmt       { $$ = buildSerialStmt($2, $3); }
 | TSYNC stmt                 { $$ = buildSyncStmt($2); }
 | TUSE expr_ls TSEMI         { $$ = buildUseStmt($2); }
-| TYIELD opt_ret_expr TSEMI  { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
+| TYIELD expr TSEMI          { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
 | error                      { printf("syntax error"); clean_exit(1); }
 ;
 
@@ -237,12 +237,8 @@ do_stmt:
 ;
 
 return_stmt:
-  TRETURN opt_ret_expr TSEMI  { $$ = buildPrimitiveStmt(PRIM_RETURN, $2); }
-;
-
-opt_ret_expr:
-        { $$ = new SymExpr(gVoid); }
-| expr  { $$ = $1; }
+  TRETURN TSEMI       { $$ = buildPrimitiveStmt(PRIM_RETURN, new SymExpr(gVoid)); }
+| TRETURN expr TSEMI  { $$ = buildPrimitiveStmt(PRIM_RETURN, $2); }
 ;
 
 class_level_stmt:
