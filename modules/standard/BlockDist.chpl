@@ -800,6 +800,20 @@ def BlockArr.dsiReindex(d: BlockDom) {
   return alias;
 }
 
+def BlockArr.dsiReallocate(d: domain) {
+  //
+  // For the default arithmetic array, this function changes the data
+  // vector in the array class so that it is setup once the default
+  // arithmetic domain is changed.  For this distributed array class,
+  // we don't need to do anything, because changing the domain will
+  // change the domain in the local array class which will change the
+  // data in the local array class.  This will only work if the domain
+  // we are reallocating to has the same distribution, but domain
+  // assignment is defined so that only the indices are transferred.
+  // The distribution remains unchanged.
+  //
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Block Local Array Class
 //
