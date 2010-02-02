@@ -1,5 +1,0 @@
-bug: incorrect warning: control reaches end of function that returns a value
-
-A function that has an explicit sync return type and has only one path through
-it and ends by returning a sync variable gets a compiler warning about control
-reaching the end of the function. 

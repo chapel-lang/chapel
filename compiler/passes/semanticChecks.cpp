@@ -140,7 +140,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret) {
   if (!expr)
     return 0;
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isPrimitive(PRIM_MOVE))
+    if (call->isPrimitive(PRIM_MOVE) || call->isNamed("="))
       if (SymExpr* lhs = toSymExpr(call->get(1)))
         if (lhs->var == ret)
           return 1 + isDefinedAllPaths(expr->next, ret);
@@ -182,8 +182,16 @@ checkReturnPaths(FnSymbol* fn) {
     if (var->immediate)
       return;
   int result = isDefinedAllPaths(fn->body, ret);
-  if (!(result > 1 ||
-        (!fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE) && result > 0)))
+
+  //
+  // Issue a warning if there is a path that has zero definitions or
+  // there is a path that has one definition and the function has a
+  // specified return type; we care about there being a specified
+  // return type because this specified return type is used to
+  // initialize the return symbol but we don't want that to count as a
+  // definition of a return value.
+  //
+  if (result == 0 || result == 1 && fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE))
     USR_WARN(fn->body, "control reaches end of function that returns a value");
 }
 
