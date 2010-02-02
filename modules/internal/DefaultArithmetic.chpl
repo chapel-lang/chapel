@@ -230,9 +230,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
 
   def dsiBuildArray(type eltType) {
     return new DefaultArithmeticArr(eltType=eltType, rank=rank, idxType=idxType,
-                                  /*stridable=stridable, reindexed=false, */
-                                    stridable=stridable, reindexed=true,
-                                    dom=this);
+                                    stridable=stridable, dom=this);
   }
 
   def dsiRankChange(param rank: int, param stridable: bool, args) {
@@ -266,8 +264,6 @@ class DefaultArithmeticArr: BaseArr {
   param rank : int;
   type idxType;
   param stridable: bool;
-  //param reindexed: bool = false; // may have blk(rank) != 1
-  param reindexed: bool = true; // may have blk(rank) != 1
 
   var dom : DefaultArithmeticDom(rank=rank, idxType=idxType,
                                          stridable=stridable);
@@ -427,14 +423,8 @@ class DefaultArithmeticArr: BaseArr {
       for param i in 1..rank do
         sum += (ind(i) - off(i)) * blk(i) / str(i):idxType;
     } else {
-      if reindexed {
-        for param i in 1..rank do
-          sum += ind(i) * blk(i);
-      } else {
-        for param i in 1..rank-1 do
-          sum += ind(i) * blk(i);
-        sum += ind(rank);
-      }
+      for param i in 1..rank do
+        sum += ind(i) * blk(i);
       sum -= factoredOffs;
     }
     return sum;
@@ -462,7 +452,7 @@ class DefaultArithmeticArr: BaseArr {
     var alias = new DefaultArithmeticArr(eltType=eltType, rank=d.rank,
                                          idxType=d.idxType,
                                          stridable=d.stridable,
-                                         reindexed=true, dom=d, noinit=true);
+                                         dom=d, noinit=true);
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
@@ -486,7 +476,6 @@ class DefaultArithmeticArr: BaseArr {
     var alias = new DefaultArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
-                                         reindexed=reindexed,
                                          dom=d, noinit=true);
     alias.data = data;
     alias.size = size;
@@ -521,7 +510,7 @@ class DefaultArithmeticArr: BaseArr {
 
     var alias = new DefaultArithmeticArr(eltType=eltType, rank=newRank,
                                          idxType=idxType,
-                                         stridable=newStridable, reindexed=true,
+                                         stridable=newStridable,
                                          dom=d, noinit=true);
     alias.data = data;
     alias.size = size;
@@ -547,7 +536,7 @@ class DefaultArithmeticArr: BaseArr {
       var copy = new DefaultArithmeticArr(eltType=eltType, rank=rank,
                                           idxType=idxType,
                                           stridable=d._value.stridable,
-                                          reindexed=reindexed, dom=d._value);
+                                          dom=d._value);
       for i in d((...dom.ranges)) do
         copy.dsiAccess(i) = dsiAccess(i);
       off = copy.off;

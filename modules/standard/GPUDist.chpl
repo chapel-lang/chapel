@@ -299,7 +299,6 @@ class GPUArithmeticArr: BaseArr {
   param rank : int;
   type idxType;
   param stridable: bool;
-  param reindexed: bool = true; // may have blk(rank) != 1
 
   var dom : GPUArithmeticDom(rank=rank, idxType=idxType,
                                          stridable=stridable);
@@ -389,8 +388,7 @@ class GPUArithmeticArr: BaseArr {
         halt("extent in dimension ", i, " does not match actual");
     var alias = new GPUArithmeticArr(eltType=eltType, rank=d.rank,
                                      idxType=d.idxType,
-                                     stridable=d.stridable,
-                                     reindexed=true, dom=d);
+                                     stridable=d.stridable, dom=d);
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
@@ -412,7 +410,6 @@ class GPUArithmeticArr: BaseArr {
     var alias = new GPUArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
-                                         reindexed=reindexed,
                                          dom=d);
     alias.data = data;
     alias.size = size;
@@ -441,8 +438,7 @@ class GPUArithmeticArr: BaseArr {
 
     var alias = new GPUArithmeticArr(eltType=eltType, rank=newRank,
                                          idxType=idxType,
-                                         stridable=newStridable, reindexed=true,
-                                         dom=d);
+                                         stridable=newStridable, dom=d);
     alias.data = data;
     alias.size = size;
     var i = 1;
@@ -464,7 +460,7 @@ class GPUArithmeticArr: BaseArr {
       var copy = new GPUArithmeticArr(eltType=eltType, rank=rank,
                                           idxType=idxType,
                                           stridable=d._value.stridable,
-                                          reindexed=reindexed, dom=d._value);
+                                          dom=d._value);
       for i in d((...dom.ranges)) do
         copy(i) = dsiAccess(i);
       off = copy.off;
