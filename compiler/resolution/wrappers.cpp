@@ -62,7 +62,8 @@ isShadowedField(ArgSymbol* formal) {
 
 static void
 insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
-  if (fn->getReturnSymbol() == gVoid) {
+  if (!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid ||
+      fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid) {
     wrapper->insertAtTail(call);
   } else {
     Symbol* tmp = newTemp();
