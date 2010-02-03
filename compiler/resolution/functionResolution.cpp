@@ -1551,8 +1551,8 @@ resolveCall(CallExpr* call, bool errorCheck) {
           printResolutionError("unresolved", visibleFns, &info);
       }
     } else {
-      best = defaultWrap(best, actualFormals, call->square);
-      best = orderWrap(best, actualFormals, call->square);
+      best = defaultWrap(best, actualFormals, &info);
+      best = orderWrap(best, actualFormals, &info);
       best = coercionWrap(best, &info);
       best = promotionWrap(best, &info);
     }

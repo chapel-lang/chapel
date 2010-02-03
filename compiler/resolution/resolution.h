@@ -26,8 +26,8 @@ void resolveFormals(FnSymbol* fn);
 void resolveCall(CallExpr* call, bool errorCheck = true);
 void resolveBlock(Expr* body);
 
-FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals, bool isSquare);
-FnSymbol* orderWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals, bool isSquare);
+FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
+FnSymbol* orderWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
 FnSymbol* coercionWrap(FnSymbol* fn, CallInfo* info);
 FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 

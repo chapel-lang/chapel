@@ -10,7 +10,7 @@
 
 
 static FnSymbol*
-buildEmptyWrapper(FnSymbol* fn) {
+buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   FnSymbol* wrapper = new FnSymbol(fn->name);
   wrapper->addFlag(FLAG_WRAPPER);
   wrapper->addFlag(FLAG_INVISIBLE_FN);
@@ -24,7 +24,7 @@ buildEmptyWrapper(FnSymbol* fn) {
   }
   if (fn->hasFlag(FLAG_METHOD))
     wrapper->addFlag(FLAG_METHOD);
-  wrapper->instantiationPoint = fn->instantiationPoint;
+  wrapper->instantiationPoint = getVisibilityBlock(info->call);
   wrapper->addFlag(FLAG_TEMP);
   return wrapper;
 }
@@ -87,11 +87,11 @@ static FnSymbol*
 buildDefaultWrapper(FnSymbol* fn,
                     Vec<Symbol*>* defaults,
                     SymbolMap* paramMap,
-                    bool isSquare) {
+                    CallInfo* info) {
   if (FnSymbol* cached = checkCache(defaultsCache, fn, defaults))
     return cached;
   SET_LINENO(fn);
-  FnSymbol* wrapper = buildEmptyWrapper(fn);
+  FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   if (!fn->hasFlag(FLAG_ITERATOR_FN))
     wrapper->retType = fn->retType;
   wrapper->cname = astr("_default_wrap_", fn->cname);
@@ -116,7 +116,7 @@ buildDefaultWrapper(FnSymbol* fn,
     wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
   }
   CallExpr* call = new CallExpr(fn);
-  call->square = isSquare;
+  call->square = info->call->square;
   for_formals(formal, fn) {
     SET_LINENO(formal);
     if (!defaults->in(formal)) {
@@ -248,7 +248,7 @@ buildDefaultWrapper(FnSymbol* fn,
 FnSymbol*
 defaultWrap(FnSymbol* fn,
             Vec<ArgSymbol*>* actualFormals,
-            bool isSquare) {
+            CallInfo* info) {
   FnSymbol* wrapper = fn;
   int num_actuals = actualFormals->n;
   int num_formals = fn->numFormals();
@@ -263,7 +263,7 @@ defaultWrap(FnSymbol* fn,
       if (!used)
         defaults.add(formal);
     }
-    wrapper = buildDefaultWrapper(fn, &defaults, &paramMap, isSquare);
+    wrapper = buildDefaultWrapper(fn, &defaults, &paramMap, info);
     resolveFormals(wrapper);
 
     // update actualFormals for use in orderWrap
@@ -290,15 +290,15 @@ defaultWrap(FnSymbol* fn,
 static FnSymbol*
 buildOrderWrapper(FnSymbol* fn,
                   SymbolMap* order_map,
-                  bool isSquare) {
+                  CallInfo* info) {
   // return cached if we already created this order wrapper
   if (FnSymbol* cached = checkCache(ordersCache, fn, order_map))
     return cached;
   SET_LINENO(fn);
-  FnSymbol* wrapper = buildEmptyWrapper(fn);
+  FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->cname = astr("_order_wrap_", fn->cname);
   CallExpr* call = new CallExpr(fn);
-  call->square = isSquare;
+  call->square = info->call->square;
   SymbolMap copy_map;
   for_formals(formal, fn) {
     SET_LINENO(formal);
@@ -325,7 +325,7 @@ buildOrderWrapper(FnSymbol* fn,
 FnSymbol*
 orderWrap(FnSymbol* fn,
           Vec<ArgSymbol*>* actualFormals,
-          bool isSquare) {
+          CallInfo* info) {
   bool order_wrapper_required = false;
   SymbolMap formals_to_formals;
   int i = 0;
@@ -343,7 +343,7 @@ orderWrap(FnSymbol* fn,
     }
   }
   if (order_wrapper_required) {
-    fn = buildOrderWrapper(fn, &formals_to_formals, isSquare);
+    fn = buildOrderWrapper(fn, &formals_to_formals, info);
     resolveFormals(fn);
   }
   return fn;
@@ -359,13 +359,13 @@ static FnSymbol*
 buildCoercionWrapper(FnSymbol* fn,
                      SymbolMap* coercion_map,
                      Map<ArgSymbol*,bool>* coercions,
-                     bool isSquare) {
+                     CallInfo* info) {
   // return cached if we already created this coercion wrapper
   if (FnSymbol* cached = checkCache(coercionsCache, fn, coercion_map))
     return cached;
 
   SET_LINENO(fn);
-  FnSymbol* wrapper = buildEmptyWrapper(fn);
+  FnSymbol* wrapper = buildEmptyWrapper(fn, info);
 
   //
   // stopgap: important for, for example, --no-local on
@@ -378,7 +378,7 @@ buildCoercionWrapper(FnSymbol* fn,
 
   wrapper->cname = astr("_coerce_wrap_", fn->cname);
   CallExpr* call = new CallExpr(fn);
-  call->square = isSquare;
+  call->square = info->call->square;
   for_formals(formal, fn) {
     SET_LINENO(formal);
     ArgSymbol* wrapperFormal = copyFormalForWrapper(formal);
@@ -447,7 +447,7 @@ coercionWrap(FnSymbol* fn, CallInfo* info) {
     }
   }
   if (coerce) {
-    fn = buildCoercionWrapper(fn, &subs, &coercions, info->call->square);
+    fn = buildCoercionWrapper(fn, &subs, &coercions, info);
     resolveFormals(fn);
   }
   return fn;  
@@ -474,7 +474,7 @@ buildPromotionWrapper(FnSymbol* fn,
     return cached;
 
   SET_LINENO(fn);
-  FnSymbol* wrapper = buildEmptyWrapper(fn);
+  FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
@@ -581,7 +581,6 @@ buildPromotionWrapper(FnSymbol* fn,
   }
   fn->defPoint->insertBefore(new DefExpr(wrapper));
   normalize(wrapper);
-  wrapper->instantiationPoint = getVisibilityBlock(info->call);
   addCache(promotionsCache, fn, wrapper, &map);
   return wrapper;
 }
