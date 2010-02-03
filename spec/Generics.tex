@@ -43,6 +43,9 @@ The following code defines a function that takes two types at the call
 site and returns a 2-tuple where the types of the components of the
 tuple are defined by the two type arguments and the values are
 specified by the types default values.
+\begin{chapelpre}
+% test_build2tuple.chpl
+\end{chapelpre}
 \begin{chapel}
 def build2Tuple(type t, type tt) {
   var x1: t;
@@ -56,6 +59,12 @@ where the arguments are types:
 var t2 = build2Tuple(int, string);
 t2 = (1, "hello");
 \end{chapel}
+\begin{chapelpost}
+writeln(t2);
+\end{chapelpost}
+\begin{chapeloutput}
+(1, hello)
+\end{chapeloutput}
 \end{example}
 
 \subsubsection{Formal Parameter Arguments}
@@ -72,6 +81,9 @@ The following code defines a function that takes an integer parameter
 integer type \chpl{x}.  The function returns a homogeneous tuple of
 size \chpl{p} where each component in the tuple has the value of
 \chpl{x}.
+\begin{chapelpre}
+% test_fillTuple.chpl
+\end{chapelpre}
 \begin{chapel}
 def fillTuple(param p: int, x: int) {
   var result: p*int;
@@ -80,6 +92,12 @@ def fillTuple(param p: int, x: int) {
   return result;
 }
 \end{chapel}
+\begin{chapelpost}
+writeln(fillTuple(3,3));
+\end{chapelpost}
+\begin{chapeloutput}
+(3, 3, 3)
+\end{chapeloutput}
 The function call \chpl{fillTuple(3, 3)} returns a 3-tuple where each
 component contains the value \chpl{3}.
 \end{example}
@@ -98,6 +116,9 @@ a parameter as well as the actual argument that is passed to it by
 omitting the type of the formal argument \chpl{x}.  The following code
 defines a function that returns a homogeneous tuple of size \chpl{p}
 where each component in the tuple is initialized to \chpl{x}:
+\begin{chapelpre}
+% test_fillTuple2.chpl
+\end{chapelpre}
 \begin{chapel}
 def fillTuple(param p: int, x) {
   var result: p*x.type;
@@ -106,6 +127,15 @@ def fillTuple(param p: int, x) {
   return result;
 }
 \end{chapel}
+\begin{chapelpost}
+var x = fillTuple(3, 3.14);
+writeln(x);
+writeln(typeToString(x.type));
+\end{chapelpost}
+\begin{chapeloutput}
+(3.14, 3.14, 3.14)
+3*real
+\end{chapeloutput}
 In this function, the type of the tuple is taken to be the type of the
 actual argument.  The call \chpl{fillTuple(3, 3.14)} returns a 3-tuple
 of real values \chpl{(3.14, 3.14, 3.14)}.  The return type is
@@ -124,6 +154,9 @@ type has the semantics of a type alias.
 \begin{example}
 The example from the previous section can be rewritten to use a
 queried type for clarity:
+\begin{chapelpre}
+% test_fillTuple3.chpl
+\end{chapelpre}
 \begin{chapel}
 def fillTuple(param p: int, x: ?t) {
   var result: p*t;
@@ -132,6 +165,15 @@ def fillTuple(param p: int, x: ?t) {
   return result;
 }
 \end{chapel}
+\begin{chapelpost}
+var x = fillTuple(3, 3.14);
+writeln(x);
+writeln(typeToString(x.type));
+\end{chapelpost}
+\begin{chapeloutput}
+(3.14, 3.14, 3.14)
+3*real
+\end{chapeloutput}
 \end{example}
 
 \subsubsection{Formal Arguments of Generic Type}
@@ -204,6 +246,9 @@ module exists at the call site.
 \begin{example}
 Consider the following code which defines a generic
 function \chpl{bar}:
+\begin{chapelpre}
+% test_point_of_instantiation.chpl
+\end{chapelpre}
 \begin{chapel}
 module M1 {
   record R {
@@ -226,6 +271,8 @@ module M3 {
   }
 }
 \end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
 In the function \chpl{main}, the variable \chpl{r} is declared to be
 of type \chpl{R} defined in module \chpl{M1} and a call is made to the
 generic function \chpl{bar} which is defined in module \chpl{M2}.
@@ -292,6 +339,9 @@ type alias is set to be the type passed to the default constructor.
 The following code defines a class called \chpl{Node} that implements
 a linked list data structure.  It is generic over the type of the
 element contained in the linked list.
+\begin{chapelpre}
+% test_NodeClass.chpl
+\end{chapelpre}
 \begin{chapel}
 class Node {
   type eltType;
@@ -299,6 +349,17 @@ class Node {
   var next: Node(eltType);
 }
 \end{chapel}
+\begin{chapelpost}
+var n: Node(real) = new Node(real, 3.14);
+writeln(n.data);
+writeln(n.next);
+writeln(typeToString(n.next.type));
+\end{chapelpost}
+\begin{chapeloutput}
+3.14
+nil
+Node(real)
+\end{chapeloutput}
 The call \chpl{new Node(real, 3.14)} creates a node in the linked list
 that contains the value \chpl{3.14}.  The \chpl{next} field is set to
 nil.  The type specifier \chpl{Node} is a generic type and cannot be
@@ -329,12 +390,22 @@ passed to the default constructor.
 The following code defines a class called \chpl{IntegerTuple} that is
 generic over an integer parameter which defines the number of
 components in the class.
+\begin{chapelpre}
+% test_IntegerTuple.chpl
+\end{chapelpre}
 \begin{chapel}
 class IntegerTuple {
   param size: int;
   var data: size*int;
 }
 \end{chapel}
+\begin{chapelpost}
+var x = new IntegerTuple(3);
+writeln(x.data);
+\end{chapelpost}
+\begin{chapeloutput}
+(0, 0, 0)
+\end{chapeloutput}
 The call \chpl{new IntegerTuple(3)} creates an instance of the
 \chpl{IntegerTuple} class that is instantiated over parameter
 \chpl{3}.  The field \chpl{data} becomes a 3-tuple of integers.  The
@@ -363,10 +434,13 @@ implements a linked list data structure.  It is generic over the type
 of the element contained in the linked list.  This code does not
 specify the element type directly in the class as a type alias but
 rather omits the type from the \chpl{data} field.
+\begin{chapelpre}
+% test_fieldWithoutType.chpl
+\end{chapelpre}
 \begin{chapel}
 class Node {
   var data;
-  var next: Node(data) = nil;
+  var next: Node(data.type) = nil;
 }
 \end{chapel}
 A node with integer element type can be defined in the call to the
@@ -376,6 +450,14 @@ value \chpl{1}.  The code
 var list = new Node(1);
 list.next = new Node(2);
 \end{chapel}
+\begin{chapelpost}
+writeln(list.data);
+writeln(list.next.data);
+\end{chapelpost}
+\begin{chapeloutput}
+1
+2
+\end{chapeloutput}
 defines a two-element list with nodes containing the values \chpl{1}
 and \chpl{2}.  The type of each class could be specified
 as \chpl{Node(int)}.
@@ -402,10 +484,21 @@ function is not a possible candidate for function resolution.
 Otherwise, the function is instantiated.
 \begin{example}
 Given two overloaded function definitions
+\begin{chapelpre}
+% test_whereClause.chpl
+\end{chapelpre}
 \begin{chapel}
-def foo(x) where x.type == int { $\ldots$ }
-def foo(x) where x.type == real { $\ldots$ }
+def foo(x) where x.type == int { writeln("int"); }
+def foo(x) where x.type == real { writeln("real"); }
 \end{chapel}
+\begin{chapelpost}
+foo(3);
+foo(3.14);
+\end{chapelpost}
+\begin{chapeloutput}
+int
+real
+\end{chapeloutput}
 the call foo(3) resolves to the first definition because when the
 second function is instantiated the where clause evaluates to false.
 \end{example}
@@ -439,7 +532,9 @@ compiler diagnostic statements.
 \begin{example}
 The following code shows an example of using user-defined compiler
 diagnostics to generate warnings and errors:
-
+\begin{chapelpre}
+% test_compilerDiagnostics.chpl
+\end{chapelpre}
 \begin{chapel}
 def foo(x, y) {
   if (x.type != y.type) then
@@ -453,6 +548,21 @@ def foo(x) {
   writeln("In generic foo!");
 }
 \end{chapel}
+\begin{chapelpost}
+foo(3.4);
+foo("hi");
+foo(1, 2);
+foo(1.2, 3.4);
+foo("hi", "bye");
+\end{chapelpost}
+\begin{chapeloutput}
+test_compilerDiagnostics.chpl:12: warning: 1-argument version of foo called
+In generic foo!
+In generic foo!
+In 2-argument foo...
+In 2-argument foo...
+In 2-argument foo...
+\end{chapeloutput}
 
 The first routine generates a compiler error whenever the compiler
 encounters a call to it where the two arguments have different types.
@@ -484,7 +594,9 @@ foo.chpl:6: error: foo() called with non-matching types: int != real
 
 \subsection{Example: A Generic Stack}
 \label{Example_Generic_Stack}
-
+\begin{chapelpre}
+% test_genericStack.chpl
+\end{chapelpre}
 \begin{chapel}
 class MyNode {
   type itemType;              // type of item
@@ -511,3 +623,16 @@ record Stack {
   def isEmpty return top == nil;
 }
 \end{chapel}
+\begin{chapelpost}
+var s: Stack(int);
+s.push(1);
+s.push(2);
+s.push(3);
+while !s.isEmpty do
+  writeln(s.pop());
+\end{chapelpost}
+\begin{chapeloutput}
+3
+2
+1
+\end{chapeloutput}
