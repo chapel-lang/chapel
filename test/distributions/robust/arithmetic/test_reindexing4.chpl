@@ -28,7 +28,7 @@ def dit(D, TD: domain, A:[D]) {
 }
 
 const TD1D: domain(1) = Space1 - (o5);
-for e in A2D do e = next();
+for e in A1D do e = next();
 writeln("A1D: ", dit(Dom1D, TD1D, A1D), " errors");
 
 const TD2D: domain(2) = Space2 - (o5, o5);
