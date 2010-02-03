@@ -1,9 +1,0 @@
-bug: extern functions don't get coercion wrappers
-
-It seems that extern functions don't get coercion wrappers built
-for them, which causes an "unknown return type" style message
-when they are called with arguments that require coercions.
-This test demonstrates that.  This makes externs a bit fragile
-in general.  For example, sqrt(4) wouldn't work if sqrt was
-declared as an extern (and if there was no real(32) version that
-caught the integer first?) because the coercion would be needed.
