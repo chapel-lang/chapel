@@ -1,1 +1,1 @@
-typeIterator.chpl:2: error: iterators can not yield types
+typeIterator.chpl:1: error: iterators may not yield or return types

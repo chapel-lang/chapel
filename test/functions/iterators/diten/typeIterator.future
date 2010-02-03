@@ -1,3 +1,0 @@
-error message: iterator yielding types causes assertion failure, not clean error
-
-Iterators that yield types should result in a descriptive compiler error.

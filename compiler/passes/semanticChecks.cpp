@@ -120,6 +120,10 @@ checkNormalized(void) {
           USR_FATAL(formal, "formal argument of iterator cannot have intent");
         }
       }
+      if (fn->retTag == RET_TYPE)
+        USR_FATAL(fn, "iterators may not yield or return types");
+      if (fn->retTag == RET_PARAM)
+        USR_FATAL(fn, "iterators may not yield or return parameters");
     } else if (!strncmp(fn->name, "_construct_", 11) &&
                !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
       for_formals(formal, fn) {
