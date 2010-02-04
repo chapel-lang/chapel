@@ -220,8 +220,6 @@ def Block.ind2locInd(ind: rank*idxType) where rank != 1 {
 
 def Block.dsiCreateReindexDist(newSpace) {
   var d = [(...newSpace)];
-  if rank != d.rank then
-    compilerError("illegal implicit rank change");
   var newDist = new Block(rank, idxType, d, targetLocs, tasksPerLocale);
   return newDist;
 }
@@ -777,12 +775,6 @@ def BlockArr.localSlice(ranges) {
 }
 
 def BlockArr.dsiReindex(d: BlockDom) {
-  if rank != d.rank then
-    compilerError("illegal implicit rank change");
-  for param i in 1..rank do
-    if d.dsiDim(i).length != dom.dsiDim(i).length then
-      halt("extent in dimension ", i, " does not match actual");
-
   var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
                            stridable=d.stridable, dom=d);
 

@@ -1,0 +1,2 @@
+invalid_reindex1.chpl:6: In function 'foo':
+invalid_reindex1.chpl:6: error: illegal implicit rank change

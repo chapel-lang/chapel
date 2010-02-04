@@ -1,0 +1,1 @@
+invalid_reindex3.chpl:10: error: halt reached - invalid reindex using a distributed domain

@@ -801,6 +801,14 @@ record _array {
   }
 
   def reindex(d: domain) {
+    if rank != d.rank then
+      compilerError("illegal implicit rank change");
+    for param i in 1..rank do
+      if d.dim(i).length != _value.dom.dsiDim(i).length then
+        halt("extent in dimension ", i, " does not match actual");
+    if !_isDefaultDist(d) then
+      halt("invalid reindex using a distributed domain");
+
     var newDist = new dist(_value.dom.dist.dsiCreateReindexDist(d.dims()));
     var newDom = [(...d.dims())] distributed newDist;
     var x = _value.dsiReindex(newDom._value);
@@ -1342,4 +1350,9 @@ def chpl__initCopy(ir: _iteratorRecord) {
   }
   D = [1..i-1];
   return A;
+}
+
+def _isDefaultDist(D) {
+  if D.dist == defaultDist then return true;
+  else return false;
 }

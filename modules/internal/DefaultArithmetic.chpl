@@ -444,11 +444,6 @@ class DefaultArithmeticArr: BaseArr {
   }
 
   def dsiReindex(d: DefaultArithmeticDom) {
-    if rank != d.rank then
-      compilerError("illegal implicit rank change");
-    for param i in 1..rank do
-      if d.dsiDim(i).length != dom.dsiDim(i).length then
-        halt("extent in dimension ", i, " does not match actual");
     var alias = new DefaultArithmeticArr(eltType=eltType, rank=d.rank,
                                          idxType=d.idxType,
                                          stridable=d.stridable,
