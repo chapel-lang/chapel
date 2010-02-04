@@ -50,12 +50,26 @@ var A3D: [Dom3D] int;
 var A4D: [Dom4D] int;
 var A2D64: [Dom2D64] int;
 
+var R1D: [Dom1D] real;
+var R2D: [Dom2D] real;
+var R3D: [Dom3D] real;
+var R4D: [Dom4D] real;
+var R2D64: [Dom2D64] real;
+
 def outputArrays() {
   write("A1D  :"); for i in Space1 do write(" ", A1D[i]); writeln();
   write("A2D  :"); for i in Space2 do write(" ", A2D[i]); writeln();
   write("A3D  :"); for i in Space3 do write(" ", A3D[i]); writeln();
   write("A4D  :"); for i in Space4 do write(" ", A4D[i]); writeln();
   write("A2D64:"); for i in Space2D64 do write(" ", A2D64[i]); writeln();
+}
+
+def outputRealArrays() {
+  write("R1D  :"); for i in Space1 do write(" ", R1D[i]); writeln();
+  write("R2D  :"); for i in Space2 do write(" ", R2D[i]); writeln();
+  write("R3D  :"); for i in Space3 do write(" ", R3D[i]); writeln();
+  write("R4D  :"); for i in Space4 do write(" ", R4D[i]); writeln();
+  write("R2D64:"); for i in Space2D64 do write(" ", R2D64[i]); writeln();
 }
 
 //

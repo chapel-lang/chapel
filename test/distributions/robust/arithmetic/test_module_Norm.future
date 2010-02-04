@@ -1,0 +1,1 @@
+bug: Auto-destroy of 4D array causes seg fault.

@@ -1,0 +1,18 @@
+Sort array
+	QuickSort: 0 errors
+	InsertionSort: 0 errors
+Sort aliased array
+	QuickSort: 0 errors
+	InsertionSort: 0 errors
+Sort reindexed array
+	QuickSort: 0 errors
+	InsertionSort: 0 errors
+Sort rank changed array (2D->1D)
+	QuickSort: 0 errors
+	InsertionSort: 0 errors
+Sort rank changed array (3D->1D)
+	QuickSort: 0 errors
+	InsertionSort: 0 errors
+Sort rank changed array (4D->1D)
+	QuickSort: 0 errors
+	InsertionSort: 0 errors
