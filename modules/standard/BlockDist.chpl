@@ -754,10 +754,13 @@ def BlockArr.dsiCheckSlice(ranges) {
 
 def BlockArr.dsiSlice(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
-  for i in dom.dist.targetLocDom {
-    on dom.dist.targetLocs(i) {
+  var thisid = this.locale.uid;
+  coforall i in d.dist.targetLocDom {
+    on d.dist.targetLocs(i) {
       alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i]);
       alias.locArr[i].myElems => locArr[i].myElems[alias.locArr[i].locDom.myBlock];
+      if thisid == here.uid then
+        alias.myLocArr = alias.locArr[i];
     }
   }
 
