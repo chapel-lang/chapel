@@ -31,6 +31,11 @@ third-party: FORCE
 test: FORCE
 	cd test && start_test
 
+SPECTEST_DIR = ./test/spec/autogen
+spectests: FORCE
+	rm -rf $(SPECTEST_DIR)
+	util/extract_tests.py -o $(SPECTEST_DIR) spec/*.tex
+
 clean: FORCE
 	cd compiler && $(MAKE) clean
 	cd runtime && $(MAKE) clean
