@@ -220,11 +220,6 @@ compiler will issue an error.  Explicit naming can be used to
 disambiguated the symbols in this case.
 
 \begin{example}
-%
-% 1/7/10: This is currently a bug (does not cause compiler error).
-%
-% This example code is in test/modules/sungeun/test_ambiguity.chpl
-%
 In the following example,
 \begin{chapelpre}
 % test_ambiguity.chpl
@@ -268,13 +263,11 @@ module M3 {
   }
 }
 \end{chapel}
-\begin{chapelfuture}
-bug: Function name ambiguity not detected
-
-This should result in an ambiguity at compile time.
-\end{chapelfuture}
 \begin{chapeloutput}
-THIS SHOULD BE CHANGED WHEN BUG IS FIXED.
+test_ambiguity.chpl:22: In function 'main':
+test_ambiguity.chpl:27: error: ambiguous call 'printY()'
+test_ambiguity.chpl:34: note: candidates are: printY()
+test_ambiguity.chpl:7: note:                 printY()
 \end{chapeloutput}
 The call to printX() is not ambiguous because M2's definition shadows
 that of M1.  On the other hand, the call to printY() is ambiguous
