@@ -340,7 +340,7 @@ if ($svnroot eq "") {
 }
 $readonlydirname = "chapel-cron-$user-readonly";
 $readonlydir = "$basetmpdir/$readonlydirname";
-#print "testing $readonlydir\n";
+# print "testing $readonlydir\n";
 if (! (-r $readonlydir && -d $readonlydir)) {
     print "The SVN directory has not been checked out yet\n";
     mysystem("cd $basetmpdir && svn checkout -q $svnrevopt $svnroot $readonlydirname", "svn checkout", 1, 1);
@@ -365,7 +365,7 @@ if ($hostplatform eq "cygwin") {
 #
 # auto generate tests from the Chapel Spec
 #
-mysystem("cd $chapeldir && util/extract_tests.py -o test/spec/autogen spec/\*.tex", "Generating test programs from the Chapel Spec");
+mysystem("cd $chapeldir && make spectests", "Generating test programs from the Chapel Spec");
 
 #
 # build stuff
