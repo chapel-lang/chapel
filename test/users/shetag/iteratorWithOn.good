@@ -1,11 +1,2 @@
-0:i=0
-1:i=1
-2:i=2
-3:i=3
-4:i=4
-0:i=5
-1:i=6
-2:i=7
-3:i=8
-4:i=9
-0:i=10
+iteratorWithOn.chpl:3: In iterator 'g':
+iteratorWithOn.chpl:6: error: invalid use of 'on' in serial iterator
