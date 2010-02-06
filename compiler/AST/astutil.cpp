@@ -182,10 +182,11 @@ static int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     if (call->isPrimitive(PRIM_MOVE) && call->get(1) == se) {
       return 1;
-    } else if (call->isResolved()) {
+    } else if (FnSymbol* fn = call->isResolved()) {
       ArgSymbol* arg = actual_to_formal(se);
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
+          (!strcmp(fn->name, "=") && fn->getFormal(1) == arg && isRecord(arg->type)) ||
           arg->type->symbol->hasFlag(FLAG_ARRAY) || // pass by reference
           arg->type->symbol->hasFlag(FLAG_DOMAIN)) { // pass by reference
         return 3;
