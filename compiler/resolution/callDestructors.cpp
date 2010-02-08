@@ -30,15 +30,15 @@ insertAutoDestroyTemps() {
       // find variables that should be destroyed before exiting block
       //
       if (DefExpr* def = toDefExpr(stmt))
-        if (VarSymbol* var = toVarSymbol(def->sym)) {
+        if (VarSymbol* var = toVarSymbol(def->sym))
           if (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
               (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) &&
                !var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                !var->type->symbol->hasFlag(FLAG_ARRAY) &&
                !var->type->symbol->hasFlag(FLAG_DISTRIBUTION) &&
                !var->type->symbol->hasFlag(FLAG_DOMAIN)))
-            vars.add(var);
-        }
+            if (!var->hasFlag(FLAG_TYPE_VARIABLE))
+              vars.add(var);
 
       //
       // find 'may' exit points and insert autoDestroy calls
@@ -326,7 +326,7 @@ static void insertGlobalAutoDestroyCalls() {
     if (isModuleSymbol(def->parentSymbol))
       if (def->parentSymbol != rootModule)
         if (VarSymbol* var = toVarSymbol(def->sym))
-          if (!var->isParameter())
+          if (!var->isParameter() && !var->hasFlag(FLAG_TYPE_VARIABLE))
             if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
               if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type))
                 fn->insertAtTail(new CallExpr(autoDestroy, var));

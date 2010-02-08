@@ -248,12 +248,12 @@ def chpl__distributed(d: _distribution, type domainType) type {
 //
 def chpl__buildIndexType(param rank: int, type idxType) type where rank == 1 {
   var x: idxType;
-  return x;
+  return x.type;
 }
 
 def chpl__buildIndexType(param rank: int, type idxType) type where rank > 1 {
   var x: rank*idxType;
-  return x;
+  return x.type;
 }
 
 def chpl__buildIndexType(param rank: int) type

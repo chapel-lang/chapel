@@ -607,6 +607,16 @@ fix_def_expr(VarSymbol* var) {
   }
 
   //
+  // handle type aliases
+  //
+  if (var->hasFlag(FLAG_TYPE_VARIABLE)) {
+    INT_ASSERT(init);
+    INT_ASSERT(!type);
+    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__typeAliasInit", init->remove())));
+    return;
+  }
+
+  //
   // handle var ... : ... => ...;
   //
   if (var->hasFlag(FLAG_ARRAY_ALIAS)) {

@@ -1199,6 +1199,9 @@ printResolutionError(const char* error,
     if (info->actuals.v[0] && !info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
         info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL(call, "illegal assignment of type to value");
+    } else if (info->actuals.v[0] && info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
+               info->actuals.v[1] && !info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL(call, "illegal assignment of value to type");
     } else if (info->actuals.v[1]->type == dtNil) {
       USR_FATAL(call, "type mismatch in assignment from nil to %s",
                 toString(info->actuals.v[0]->type));
@@ -1431,6 +1434,30 @@ isTypeExpr(Expr* expr) {
   } else if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_TYPEOF))
       return true;
+    if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+        call->isPrimitive(PRIM_GET_MEMBER)) {
+      ClassType* ct = toClassType(call->get(1)->typeInfo());
+      INT_ASSERT(ct);
+      if (ct->symbol->hasFlag(FLAG_REF))
+        ct = toClassType(ct->getValType());
+      SymExpr* left = toSymExpr(call->get(1));
+      SymExpr* right = toSymExpr(call->get(2));
+      INT_ASSERT(left && right);
+      VarSymbol* var = toVarSymbol(right->var);
+      INT_ASSERT(var);
+      if (var->immediate) {
+        const char* name = var->immediate->v_string;
+        for_fields(field, ct) {
+          if (!strcmp(field->name, name))
+            if (field->hasFlag(FLAG_TYPE_VARIABLE))
+              return true;
+        }
+      } else if (var->hasFlag(FLAG_TYPE_VARIABLE))
+        return true;
+      if (left->var->type->symbol->hasFlag(FLAG_TUPLE) &&
+          left->var->hasFlag(FLAG_TYPE_VARIABLE))
+        return true;
+    }
     if (FnSymbol* fn = call->isResolved())
       if (fn->retTag == RET_TYPE)
         return true;
@@ -1756,12 +1783,11 @@ resolveCall(CallExpr* call, bool errorCheck) {
     FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
     if (lhs->hasFlag(FLAG_TYPE_VARIABLE) && !isTypeExpr(rhs)) {
-      if (!fn || fn->_this == lhs) { // ignore type constructor
-        if (lhs == fn->getReturnSymbol()) {
+      if (lhs == fn->getReturnSymbol()) {
+        if (!fn->hasFlag(FLAG_HAS_RUNTIME_TYPE))
           USR_FATAL(call, "illegal return of value where type is expected");
-        } else {
-          USR_FATAL(call, "illegal assignment of value to type");
-        }
+      } else {
+        USR_FATAL(call, "illegal assignment of value to type");
       }
     }
 
@@ -2763,7 +2789,11 @@ postFold(Expr* expr) {
       Type* baseType = call->get(1)->getValType();
       const char* memberName = get_string(call->get(2));
       Symbol* sym = baseType->getField(memberName);
-      if (sym->isParameter()) {
+      SymExpr* left = toSymExpr(call->get(1));
+      if (left && left->var->hasFlag(FLAG_TYPE_VARIABLE)) {
+        result = new SymExpr(sym->type->symbol);
+        call->replace(result);
+      } else if (sym->isParameter()) {
         Vec<Symbol*> keys;
         baseType->substitutions.get_keys(keys);
         forv_Vec(Symbol, key, keys) {

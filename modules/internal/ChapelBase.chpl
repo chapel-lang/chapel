@@ -1171,6 +1171,11 @@ pragma "inline" def _chpl_swap(inout x, inout y) {
   x = t;
 }
 
+pragma "inline" def chpl__typeAliasInit(type t) type return t;
+pragma "inline" def chpl__typeAliasInit(v) {
+  compilerError("illegal assignment of value to type");
+}
+
 pragma "dont disable remote value forwarding"
 pragma "inline" def _createFieldDefault(type t, init) {
   pragma "no auto destroy" var x: t;

@@ -10,7 +10,7 @@ def *(param p: int, type t) type {
   }
   if p <= 0 then
     compilerError("tuple must have positive size");
-  return _fill(p, oneTuple);
+  return _fill(p, oneTuple).type;
 }
 
 

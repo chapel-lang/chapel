@@ -1,9 +1,0 @@
-bug: odd type name due to partial instantiation
-
-Was:
-
-bug: generic class is instantiated twice, causing a strange name
-
-This class has 3 parameter fields. In this error message, the class is
-instantiated first for its first two fields, then again for its last field.
-This makes the type name: "C(1,1)(3)"

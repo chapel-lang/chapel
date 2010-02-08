@@ -492,15 +492,6 @@ static void resolveEnumeratedTypes() {
 }
 
 
-static bool
-isTypeAlias(Symbol* sym) {
-  return
-    isVarSymbol(sym) &&
-    sym->hasFlag(FLAG_TYPE_VARIABLE) &&
-    isFnSymbol(sym->defPoint->parentSymbol);
-}
-
-
 /********* build constructor ***************/
 static void build_type_constructor(ClassType* ct) {
   if (ct->defaultTypeConstructor)
@@ -1162,21 +1153,6 @@ void scopeResolve(void) {
         symExpr = new SymExpr(sym);
         unresolvedSymExpr->replace(symExpr);
       }
-      if (isTypeAlias(sym)) {
-        Expr* init = sym->defPoint->init->copy();
-
-        // detect recursively defined type aliases
-        Vec<BaseAST*> asts;
-        collect_asts(init, asts);
-        forv_Vec(BaseAST, ast, asts) {
-          if (SymExpr* se = toSymExpr(ast))
-            if (isTypeAlias(se->var))
-              USR_FATAL(sym, "type alias is recursive");
-        }
-
-        symExpr->replace(init);
-        continue;
-      }
     }
 
     // Apply 'this' and 'outer' in methods where necessary
@@ -1305,11 +1281,6 @@ void scopeResolve(void) {
   }
 
   resolveEnumeratedTypes();
-
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (isTypeAlias(def->sym))
-      def->remove();
-  }
 
   destroyTable();
 

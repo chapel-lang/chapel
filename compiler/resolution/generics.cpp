@@ -290,7 +290,17 @@ checkInstantiationLimit(FnSymbol* fn) {
 
 static void
 renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
-  sym->name = astr(sym->name, "(");
+  if (sym->name[strlen(sym->name)-1] == ')') {
+    // avoid "strange" instantiated type names based on partial instantiation
+    //  instead of C(int,real)(imag) this results in C(int,real,imag)
+    char* buf = (char*)malloc(strlen(sym->name));
+    memcpy(buf, sym->name, strlen(sym->name));
+    buf[strlen(sym->name)-1] = '\0';
+    sym->name = astr(buf, ",");
+    free(buf);
+  } else {
+    sym->name = astr(sym->name, "(");
+  }
   sym->cname = astr(sym->cname, "_");
   bool first = false;
   for_formals(formal, fn) {

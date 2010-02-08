@@ -1,6 +1,6 @@
 class C {
   var x: int;
-  def foo(y: int = 2) type return x + y;
+  def foo(y: int = 2) type return (x + y).type;
 }
 
 var c = new C();
