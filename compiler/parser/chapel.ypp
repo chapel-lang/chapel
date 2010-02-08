@@ -149,7 +149,7 @@
 %type <pexpr> stmt_level_expr type_level_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr opt_init_type var_arg_expr
 %type <pdefexpr> formal enum_item
-%type <pdefexpr> query_expr
+%type <pdefexpr> query_expr opt_query_expr
 
 %type <pcallexpr> opt_inherit expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
@@ -514,9 +514,14 @@ query_expr:
     { $$ = new DefExpr(new VarSymbol(astr("chpl__query", istr(query_uid++)))); }
 ;
 
+opt_query_expr:
+    { $$ = new DefExpr(new VarSymbol(astr("chpl__query", istr(query_uid++)))); }
+| query_expr
+;
+
 var_arg_expr:
-  TDOTDOTDOT expr        { $$ = $2; }
-| TDOTDOTDOT query_expr  { $2->sym->addFlag(FLAG_PARAM); $$ = $2; }
+  TDOTDOTDOT expr            { $$ = $2; }
+| TDOTDOTDOT opt_query_expr  { $2->sym->addFlag(FLAG_PARAM); $$ = $2; }
 ;
 
 opt_where_part:
