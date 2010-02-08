@@ -15,6 +15,7 @@ $componly = 0;
 $suppressions = "";
 $parnodefile = "";
 $nolocal = 0;
+$dist = "";
 
 $svntoday = `date +%F`; chomp($svntoday);
 $svnrevdate = `date -d"$svntoday PST" +"%F %R %z"`; chomp($svnrevdate);
@@ -46,6 +47,8 @@ while (@ARGV) {
         $performance = 1;
     } elsif ($flag eq "-baseline") {
         $baseline = 1;
+    } elsif ($flag eq "-dist") {
+        $dist = shift @ARGV;
     } elsif ($flag eq "-suppress") {
         $suppressions = shift @ARGV;
     } elsif ($flag eq "-componly") {
@@ -86,6 +89,7 @@ if ($printusage == 1) {
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
     print "\t-baseline    : run baseline tests\n";
+    print "\t-dist <dist> : run distribution robustness tests\n";
     print "\t-no-local    : run tests using --no-local\n";
     print "\t-componly    : only run the compiler, not the generated binary\n";
     print "\t-parnodefile : specify a node file to use for parallel testing\n";
@@ -230,6 +234,8 @@ if ($performance == 1) {
     $subjectid = " Perf";
 } elsif ($baseline == 1) {
     $subjectid = " Baseline";
+} elsif (!($dist eq "")) {
+    $subjectid = " Dist $dist";
 } elsif ($nolocal == 1) {
     $subjectid = " No-local";
 } elsif ($runtests == 0) {
@@ -266,6 +272,9 @@ if ($valgrind == 1) {
     } elsif ($baseline == 1) {
         $threechars = "vgn";
         $morechars = "baseline+vgrnd";
+    } elsif (!($dist eq "")) {
+        $threechars = "vgrdist$dist";
+        $morechars = "dist-$dist+vgrnd";
     } elsif ($nolocal == 1) {
         $threechars = "vnl";
         $morechars = "no-inline+vgrnd";
@@ -282,6 +291,9 @@ if ($valgrind == 1) {
 } elsif ($baseline == 1) {
     $threechars = "npt";
     $morechars = "baseline";
+} elsif (!($dist eq "")) {
+    $threechars = "dist$dist";
+    $morechars = "dist-$dist";
 } elsif ($nolocal == 1) {
     $threechars = "nlc";
     $morechars = "nolocal";
@@ -439,6 +451,9 @@ if ($examples == 1) {
         $testflags = "$testflags -dirfile DIRFILE";
     }
 }
+if (!($dist eq "")) {
+    $testflags = "$testflags distributions/robust/arithmetic";
+}
 if ($parnodefile eq "") {
 } else {
     if ($gasnet == 1) {
@@ -461,6 +476,9 @@ if ($performance == 1) {
 }
 if ($baseline == 1) {
     $testflags = "$testflags -compopts --baseline";
+}
+if (!($dist eq "")) {
+    $testflags = "$testflags -compopts -sdistString=$dist";
 }
 if ($nolocal == 1) {
     $testflags = "$testflags -compopts --no-local";
