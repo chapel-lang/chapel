@@ -494,9 +494,10 @@ class DefaultArithmeticArr: BaseArr {
     def isRange(r) param return 0;
 
     for param i in 1..args.size do
-      if isRange(args(i)) then
+//      if isRange(args(i)) then
         if !dom.dsiDim(i).boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
+
   }
 
   def dsiRankChange(d, param newRank: int, param newStridable: bool, args) {

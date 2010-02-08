@@ -516,6 +516,9 @@ def range.boundsCheck(other: range(?e,?b,?s)) {
   return (boundedOther.length == 0) || (this(boundedOther) == boundedOther);
 }
 
+def range.boundsCheck(other: eltType)
+  return member(other);
+
 
 //
 // returns true if every i in other is in this range

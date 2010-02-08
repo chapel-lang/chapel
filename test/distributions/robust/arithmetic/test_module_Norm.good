@@ -63,24 +63,4 @@ Vector norm reindexed arrays
 	infinity norm OK
 	frobenius norm OK
 Vector norm rank changed arrays (baseline)
-	rcR1D:
-	1-norm: 11.0939
-	2-norm: 2.80731
-	infinity norm: 0.927517
-	frobenius norm: 2.80731
-	rcR2D:
-	1-norm: 2.81516
-	2-Norm not yet implemented for rank=2
-	infinity norm: 3.1996
-	frobenius norm: 2.81071
-Vector norm rank changed arrays
-	rcR1D:
-	1-norm OK
-	2-norm OK
-	infinity norm OK
-	frobenius norm OK
-	rcR2D:
-	1-norm OK
-	2-Norm not yet implemented for rank=2
-	infinity norm OK
-	frobenius norm OK
+test_module_Norm.chpl:115: error: halt reached - array slice out of bounds in dimension 3: 12
