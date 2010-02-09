@@ -17,6 +17,7 @@ class DefaultDist: BaseDist {
   def dsiClone() return this;
 
   def dsiCreateReindexDist(newSpace) return this;
+  def dsiCreateRankChangeDist(param newRank, args) return this;
 }
 
 //
@@ -231,21 +232,6 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   def dsiBuildArray(type eltType) {
     return new DefaultArithmeticArr(eltType=eltType, rank=rank, idxType=idxType,
                                     stridable=stridable, dom=this);
-  }
-
-  def dsiRankChange(param rank: int, param stridable: bool, args) {
-    def isRange(r: range(?)) param return true;
-    def isRange(r) param return false;
-
-    var d = new DefaultArithmeticDom(rank, idxType, stridable, dist);
-    var i = 1;
-    for param j in 1..args.size {
-      if isRange(args(j)) {
-        d.ranges(i) = dsiDim(j)(args(j));
-        i += 1;
-      }
-    }
-    return d;
   }
 
   def dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
@@ -483,21 +469,6 @@ class DefaultArithmeticArr: BaseArr {
     }
     alias.computeFactoredOffs();
     return alias;
-  }
-
-  // pull out into ChapelArray
-  // define isRange as isCollapsedDimension (define in ChapelArray
-  // too) and call this from within distribution classes in their
-  // dsiRankChange implementations
-  def checkRankChange(args) {
-    def isRange(r: range(?e,?b,?s)) param return 1;
-    def isRange(r) param return 0;
-
-    for param i in 1..args.size do
-//      if isRange(args(i)) then
-        if !dom.dsiDim(i).boundsCheck(args(i)) then
-          halt("array slice out of bounds in dimension ", i, ": ", args(i));
-
   }
 
   def dsiRankChange(d, param newRank: int, param newStridable: bool, args) {

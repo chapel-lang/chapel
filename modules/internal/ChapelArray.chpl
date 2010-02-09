@@ -11,6 +11,7 @@ def _newPrivatizedClass(value) {
   const privatizeData = value.dsiGetPrivatizeData();
   on Realms(0) do
     _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
+
   def _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
     var newValue = originalValue;
     if hereID != here.uid {
@@ -30,6 +31,7 @@ def _newPrivatizedClass(value) {
           _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
     }
   }
+
   privatizeLock$.readFE();
   return n;
 }
@@ -483,11 +485,22 @@ record _domain {
 
   def this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
     var ranges = _getRankChangeRanges(args);
-    param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-    var d = _value.dsiRankChange(rank, stridable, args);
-    if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
-    return _newDomain(d);
+    param newRank = ranges.size, stridable = chpl__anyStridable(ranges);
+    var newRanges: newRank*range(eltType=_value.idxType, stridable=stridable);
+    var newDistVal = _value.dist.dsiCreateRankChangeDist(newRank, args);
+    var newDist = _getNewDist(newDistVal);
+    var j = 1;
+    for param i in 1..rank {
+      if !isCollapsedDimension(args(i)) {
+        newRanges(j) = dim(i)(args(i));
+        j += 1;
+      } else {
+        if !dim(i).member(args(i)) then
+          halt("index out of bounds in dimension ", i, ": ", args(i));
+      }
+    }
+    var d = [(...newRanges)] distributed newDist;
+    return d;
   }
 
   def dims() return _value.dsiDims();
@@ -658,6 +671,10 @@ record _domain {
   }
 }
 
+def _getNewDist(value) {
+  return new dist(value);
+}
+
 def +(d: domain, i: index(d)) {
   return d.translate(i);
 }
@@ -765,15 +782,23 @@ record _array {
 
   def this(args ...rank) var where _validRankChangeArgs(args, _value.idxType) {
     if boundsChecking then
-      _value.checkRankChange(args);
+      checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-    var d = _value.dom.dsiRankChange(rank, stridable, args);
-    d._domCnt$ += 1;
-    var a = _value.dsiRankChange(d, rank, stridable, args);
+    var newDistVal = _value.dom.dist.dsiCreateRankChangeDist(rank, args);
+    var newDist = new dist(newDistVal);
+    var d = _dom((...args));//[(...ranges)] distributed newDist;
+    d._value._domCnt$ += 1;
+    var a = _value.dsiRankChange(d._value, rank, stridable, args);
     a._arrAlias = _value;
     a._arrAlias._arrCnt$ += 1;
     return _newArray(a);
+  }
+
+  def checkRankChange(args) {
+    for param i in 1..args.size do
+      if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
+        halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
   def localSlice(r: range(?)... rank) {
@@ -844,6 +869,10 @@ record _array {
 //
 // Helper functions
 //
+
+def isCollapsedDimension(r: range(?e,?b,?s)) param return false;
+def isCollapsedDimension(r) param return true;
+
 
 // computes || reduction over stridable of ranges
 def chpl__anyStridable(ranges, param d: int = 1) param {

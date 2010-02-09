@@ -224,7 +224,6 @@ def Block.dsiCreateReindexDist(newSpace) {
   return newDist;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Block Local Distribution Class
 //
@@ -317,6 +316,36 @@ def BlockDom.dsiDim(d: int) return whole.dim(d);
 
 // stopgap to avoid accessing locDoms field (and returning an array)
 def BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
+
+def Block.dsiCreateRankChangeDist(param newRank: int, args) {
+  var collapsedDimLocs: rank*int;
+
+  for param i in 1..rank {
+    if isCollapsedDimension(args(i)) {
+      collapsedDimLocs(i) = args(i);
+    } else {
+      collapsedDimLocs(i) = 0;
+    }
+  }
+  const collapsedLocInd = ind2locInd(collapsedDimLocs);
+  var collapsedBbox: args.type;
+  var collapsedLocs: args.type;
+
+  for param i in 1..rank {
+    if isCollapsedDimension(args(i)) {
+      collapsedBbox(i) = args(i);
+      collapsedLocs(i) = collapsedLocInd(i);
+    } else {
+      collapsedBbox(i) = boundingBox.dim(i);
+      collapsedLocs(i) = targetLocDom.dim(i);
+    }
+  }
+  const newBbox = boundingBox((...collapsedBbox));
+  const newTargetLocs = targetLocs((...collapsedLocs));
+  return new Block(rank=newRank, idxType=idxType, bbox=newBbox,
+                   targetLocales=newTargetLocs,
+                   tasksPerLocale=tasksPerLocale);
+}
 
 def BlockDom.these() {
   for i in whole do
@@ -426,11 +455,6 @@ def BlockDom.dsiGetIndices() {
 // remove all instances of getDist
 def BlockDom.getDist(): Block(idxType) {
   return dist;
-}
-
-def BlockDom.dsiRankChange(param rank: int, param stridable: bool, args) {
-  halt("BlockDom.dsiRankChange not implemented");
-  return new BlockDom(rank=args.size, idxType=idxType, stridable=stridable, dist=dist);
 }
 
 // dsiLocalSlice
@@ -772,6 +796,87 @@ def BlockArr.localSlice(ranges) {
   }
   var A => locArr(dom.dist.ind2locInd(low)).myElems((...ranges));
   return A;
+}
+
+def _extendTuple(type t, idx: _tuple, args) {
+  var tup: args.size*t;
+  var j: int = 1;
+  
+  for param i in 1..args.size {
+    if isCollapsedDimension(args(i)) then
+      tup(i) = args(i);
+    else {
+      tup(i) = idx(j);
+      j += 1;
+    }
+  }
+  return tup;
+}
+
+def _extendTuple(type t, idx, args) {
+  var tup: args.size*t;
+  var idxTup = tuple(idx);
+  var j: int = 1;
+
+  for param i in 1..args.size {
+    if isCollapsedDimension(args(i)) then
+      tup(i) = args(i);
+    else {
+      tup(i) = idxTup(j);
+      j += 1;
+    }
+  }
+  return tup;
+}
+
+
+def BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
+  var tup: rank*int;
+  for param i in 1..rank {
+    if isCollapsedDimension(args(i)) {
+      tup(i) = args(i);
+    } else {
+      tup(i) = 0;
+    }
+  }
+
+  var locInd = dom.dist.ind2locInd(tup);
+  var locsArgs = args;
+  var j: int = 1;
+
+  for param i in 1..rank {
+    if isCollapsedDimension(args(i)) {
+      locsArgs(i) = locInd(i);
+    } else {
+      locsArgs(i) = d.dist.targetLocDom.dim(j);
+      j += 1;
+    }
+  }
+
+  var locs = dom.dist.targetLocs((...locsArgs));
+
+  var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
+  var thisid = this.locale.uid;
+  coforall i in d.dist.targetLocDom {
+    on d.dist.targetLocs(i) {
+      const locDom = d.getLocDom(i);
+      var locSlice = args;
+      var k = 1;
+      for param j in 1..args.size {
+        if isCollapsedDimension(args(j)) then
+          locSlice(j) = args(j);
+        else {
+          locSlice(j) = args(j)(locDom.myBlock.dim(k));
+          k += 1;
+        }
+      }
+      alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=newRank, idxType=d.idxType, stridable=d.stridable, locDom=locDom);
+      alias.locArr[i].myElems => locArr[(..._extendTuple(idxType, i, locsArgs))].myElems[(...locSlice)];
+      if thisid == here.uid then
+        alias.myLocArr = alias.locArr[i];
+    }
+  }
+  return alias;
 }
 
 def BlockArr.dsiReindex(d: BlockDom) {
