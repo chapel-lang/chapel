@@ -1974,14 +1974,14 @@ static void fold_param_for(CallExpr* loop) {
   SymExpr* hse = toSymExpr(loop->get(3));
   SymExpr* sse = toSymExpr(loop->get(4));
   if (!block || !lse || !hse || !sse)
-    INT_FATAL(loop, "bad param loop primitive");
+    USR_FATAL(loop, "param for loop must be defined over a param range");
   VarSymbol* lvar = toVarSymbol(lse->var);
   VarSymbol* hvar = toVarSymbol(hse->var);
   VarSymbol* svar = toVarSymbol(sse->var);
   if (!lvar || !hvar || !svar)
-    INT_FATAL(loop, "bad param loop primitive");
+    USR_FATAL(loop, "param for loop must be defined over a param range");
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
-    INT_FATAL(loop, "bad param loop primitive");
+    USR_FATAL(loop, "param for loop must be defined over a param range");
   Expr* index_expr = loop->get(1);
   Type* formalType = param_for_index_type(loop);
   IF1_int_type idx_size;
