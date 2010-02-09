@@ -938,11 +938,7 @@ process_import_expr(CallExpr* call) {
     enclosingModule->modUseSet.set_add(mod);
     enclosingModule->modUseList.add(mod);
   }
-  if (strcmp(mod->name, "ChapelStandard")) {
-    BlockStmt* thenBlock = new BlockStmt();
-    call->getStmtExpr()->insertBefore(thenBlock);
-  }
-  if (call->getFunction() == call->getModule()->initFn)
+  if (call->getStmtExpr()->parentExpr == call->getModule()->initFn->body)
     call->getModule()->block->addUse(mod);
   else
     getVisibilityBlock(call)->addUse(mod);
