@@ -948,7 +948,7 @@ process_import_expr(CallExpr* call) {
 //
 // Compute dispatchParents and dispatchChildren vectors; add base
 // class fields to subclasses; identify cyclic or illegal class or
-// record hierarchies; add dummy field to empty records and unions
+// record hierarchies
 //
 static void
 add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
@@ -1052,24 +1052,6 @@ void scopeResolve(void) {
   //
   forv_Vec(ClassType, ct, gClassTypes) {
     add_class_to_hierarchy(ct);
-
-    //
-    // add field to empty records and unions
-    //
-    if (!isClass(ct)) {
-      bool isEmpty = true;
-      for_fields(field, ct) {
-        if (ct->symbol->hasFlag(FLAG_TUPLE) ||
-            (!field->hasFlag(FLAG_PARAM) &&
-             !field->hasFlag(FLAG_TYPE_VARIABLE)))
-          isEmpty = false;
-      }
-      if (isEmpty)
-        ct->fields.insertAtHead(
-          new DefExpr(
-            new VarSymbol("emptyRecordPlaceholder"),
-            new SymExpr(new_IntSymbol(0))));
-    }
   }
 
   //
