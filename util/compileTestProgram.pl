@@ -35,7 +35,11 @@ while (@ARGV) {
 
         foreach $compopt (@compopts) {
             if ($compopt =~ m/\./) {
-                $command .= "$path";
+                if ($compopt =~ m/\-M(.*)/) {
+                    $compopt = "-M$path$1";
+                } else {
+                    $compopt = "$path$compopt";
+                }
             }
             $command .= "$compopt ";
         }
