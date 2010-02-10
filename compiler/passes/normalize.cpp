@@ -927,10 +927,8 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
 }
 
 static void
-replace_query_uses(ArgSymbol* formal, DefExpr* def, ArgSymbol* arg,
+replace_query_uses(ArgSymbol* formal, DefExpr* def, CallExpr* query,
                    Vec<SymExpr*>& symExprs) {
-  if (!arg->hasFlag(FLAG_TYPE_VARIABLE) && arg->intent != INTENT_PARAM)
-    USR_FATAL(def, "query variable is not type or parameter: %s", arg->name);
   forv_Vec(SymExpr, se, symExprs) {
     if (se->var == def->sym) {
       if (formal->variableExpr) {
@@ -939,31 +937,36 @@ replace_query_uses(ArgSymbol* formal, DefExpr* def, ArgSymbol* arg,
           USR_FATAL(se, "illegal access to query type or parameter");
         se->replace(new SymExpr(formal));
         parent->replace(se);
-        se->replace(new CallExpr(".", parent, new_StringSymbol(arg->name)));
+        CallExpr* myQuery = query->copy();
+        myQuery->insertAtHead(parent);
+        se->replace(myQuery);
       } else {
-        se->replace(new CallExpr(".", formal, new_StringSymbol(arg->name)));
+        CallExpr* myQuery = query->copy();
+        myQuery->insertAtHead(formal);
+        se->replace(myQuery);
       }
     }
   }
 }
 
 static void
-add_to_where_clause(ArgSymbol* formal, Expr* expr, ArgSymbol* arg) {
-  if (!arg->hasFlag(FLAG_TYPE_VARIABLE) && arg->intent != INTENT_PARAM)
-    USR_FATAL(expr, "type actual is not type or parameter");
+add_to_where_clause(ArgSymbol* formal, Expr* expr, CallExpr* query) {
   FnSymbol* fn = formal->defPoint->getFunction();
   if (!fn->where) {
     fn->where = new BlockStmt(new SymExpr(gTrue));
     insert_help(fn->where, NULL, fn);
   }
   Expr* where = fn->where->body.tail;
-  Expr* clause;
-  if (formal->variableExpr)
-    clause = new CallExpr(PRIM_TUPLE_AND_EXPAND, formal,
-                          new_StringSymbol(arg->name), expr->copy());
-  else
-    clause = new CallExpr("==", expr->copy(),
-               new CallExpr(".", formal, new_StringSymbol(arg->name)));
+  CallExpr* clause;
+  query->insertAtHead(formal);
+  if (formal->variableExpr) {
+    clause = new CallExpr(PRIM_TUPLE_AND_EXPAND);
+    while (query->numActuals())
+      clause->insertAtTail(query->get(1)->remove());
+    clause->insertAtTail(expr->copy());
+  } else {
+    clause = new CallExpr("==", expr->copy(), query);
+  }
   where->replace(new CallExpr("&", where->copy(), clause));
 }
 
@@ -1034,40 +1037,29 @@ fixup_query_formals(FnSymbol* fn) {
         TypeSymbol* ts = toTypeSymbol(base->var);
         if (!ts)
           USR_FATAL(base, "illegal queried type expression");
-        Vec<ArgSymbol*> args;
-        for_formals(arg, ts->type->defaultTypeConstructor) {
-          args.add(arg);
-        }
+        CallExpr* positionQueryTemplate = new CallExpr(PRIM_QUERY);
         for_actuals(actual, call) {
           if (NamedExpr* named = toNamedExpr(actual)) {
-            for (int i = 0; i < args.n; i++) {
-              if (args.v[i]) {
-                if (!strcmp(named->name, args.v[i]->name)) {
-                  if (DefExpr* def = toDefExpr(named->actual)) {
-                    replace_query_uses(formal, def, args.v[i], symExprs);
-                  } else {
-                    add_to_where_clause(formal, named->actual, args.v[i]);
-                  }
-                  args.v[i] = NULL;
-                  break;
-                }
-              }
+            positionQueryTemplate->insertAtTail(new_StringSymbol(named->name));
+            CallExpr* nameQuery = new CallExpr(PRIM_QUERY, new_StringSymbol(named->name));
+            if (DefExpr* def = toDefExpr(named->actual)) {
+              replace_query_uses(formal, def, nameQuery, symExprs);
+            } else {
+              add_to_where_clause(formal, named->actual, nameQuery);
             }
           }
         }
+        int position = 1;
         for_actuals(actual, call) {
           if (!toNamedExpr(actual)) {
-            for (int i = 0; i < args.n; i++) {
-              if (args.v[i]) {
-                if (DefExpr* def = toDefExpr(actual)) {
-                  replace_query_uses(formal, def, args.v[i], symExprs);
-                } else {
-                  add_to_where_clause(formal, actual, args.v[i]);
-                }
-                args.v[i] = NULL;
-                break;
-              }
+            CallExpr* positionQuery = positionQueryTemplate->copy();
+            positionQuery->insertAtTail(new_IntSymbol(position));
+            if (DefExpr* def = toDefExpr(actual)) {
+              replace_query_uses(formal, def, positionQuery, symExprs);
+            } else {
+              add_to_where_clause(formal, actual, positionQuery);
             }
+            position++;
           }
         }
         formal->typeExpr->remove();

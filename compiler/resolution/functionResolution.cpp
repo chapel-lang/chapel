@@ -333,6 +333,67 @@ protoIteratorClass(FnSymbol* fn) {
 }
 
 
+//
+// returns true if the field was instantiated
+//
+static bool
+isInstantiatedField(Symbol* field) {
+  TypeSymbol* ts = toTypeSymbol(field->defPoint->parentSymbol);
+  INT_ASSERT(ts);
+  ClassType* ct = toClassType(ts->type);
+  INT_ASSERT(ct);
+  for_formals(formal, ct->defaultTypeConstructor) {
+    if (!strcmp(field->name, formal->name))
+      if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+        return true;
+  }
+  return false;
+}
+
+
+//
+// determine field associated with query expression
+//
+static Symbol*
+determineQueriedField(CallExpr* call) {
+  ClassType* ct = toClassType(call->get(1)->getValType());
+  INT_ASSERT(ct);
+  SymExpr* last = toSymExpr(call->get(call->numActuals()));
+  INT_ASSERT(last);
+  VarSymbol* var = toVarSymbol(last->var);
+  INT_ASSERT(var && var->immediate);
+  if (var->immediate->const_kind == CONST_KIND_STRING) {
+    // field queried by name
+    return ct->getField(var->immediate->v_string, false);
+  } else {
+    // field queried by position
+    int position = var->immediate->int_value();
+    Vec<ArgSymbol*> args;
+    for_formals(arg, ct->defaultTypeConstructor) {
+      args.add(arg);
+    }
+    for (int i = 2; i < call->numActuals(); i++) {
+      SymExpr* actual = toSymExpr(call->get(i));
+      INT_ASSERT(actual);
+      VarSymbol* var = toVarSymbol(actual->var);
+      INT_ASSERT(var && var->immediate && var->immediate->const_kind == CONST_KIND_STRING);
+      for (int j = 0; j < args.n; j++) {
+        if (args.v[j] && !strcmp(args.v[j]->name, var->immediate->v_string))
+          args.v[j] = NULL;
+      }
+    }
+    forv_Vec(ArgSymbol, arg, args) {
+      if (arg) {
+        if (position == 1)
+          return ct->getField(arg->name, false);
+        position--;
+      }
+    }
+  }
+  return NULL;
+}
+
+
 static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
   resolveBlock(fn->retExprType);
@@ -1633,18 +1694,17 @@ resolveCall(CallExpr* call, bool errorCheck) {
       }
     }
   } else if (call->isPrimitive(PRIM_TUPLE_AND_EXPAND)) {
-    SymExpr* sym = toSymExpr(call->get(1));
+    SymExpr* se = toSymExpr(call->get(1));
     int size = 0;
-    for (int i = 0; i < sym->var->type->substitutions.n; i++) {
-      if (sym->var->type->substitutions.v[i].key) {
-        if (!strcmp("size", sym->var->type->substitutions.v[i].key->name)) {
-          size = toVarSymbol(sym->var->type->substitutions.v[i].value)->immediate->int_value();
+    for (int i = 0; i < se->var->type->substitutions.n; i++) {
+      if (se->var->type->substitutions.v[i].key) {
+        if (!strcmp("size", se->var->type->substitutions.v[i].key->name)) {
+          size = toVarSymbol(se->var->type->substitutions.v[i].value)->immediate->int_value();
           break;
         }
       }
     }
-    if (size == 0)
-      INT_FATAL(call, "Invalid tuple expand primitive");
+    INT_ASSERT(size);
     CallExpr* noop = new CallExpr(PRIM_NOOP);
     call->getStmtExpr()->insertBefore(noop);
     VarSymbol* tmp = gTrue;
@@ -1667,10 +1727,11 @@ resolveCall(CallExpr* call, bool errorCheck) {
       call->getStmtExpr()->insertBefore(new DefExpr(tmp4));
       call->getStmtExpr()->insertBefore(
         new CallExpr(PRIM_MOVE, tmp1,
-          new CallExpr(sym->copy(), new_IntSymbol(i))));
-      call->getStmtExpr()->insertBefore(
-        new CallExpr(PRIM_MOVE, tmp2,
-          new CallExpr(get_string(call->get(2)), gMethodToken, tmp1)));
+          new CallExpr(se->copy(), new_IntSymbol(i))));
+      CallExpr* query = new CallExpr(PRIM_QUERY, tmp1);
+      for (int i = 2; i < call->numActuals(); i++)
+        query->insertAtTail(call->get(i)->copy());
+      call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp2, query));
       call->getStmtExpr()->insertBefore(
         new CallExpr(PRIM_MOVE, tmp3,
           new CallExpr("==", tmp2, call->get(3)->copy())));
@@ -2249,6 +2310,19 @@ preFold(Expr* expr) {
         result = new CallExpr("chpl__convertValueToRuntimeType", call->get(1)->remove());
         call->replace(result);
       }
+    } else if (call->isPrimitive(PRIM_QUERY)) {
+      Symbol* field = determineQueriedField(call);
+      if (field && (field->hasFlag(FLAG_PARAM) || field->hasFlag(FLAG_TYPE_VARIABLE))) {
+        result = new CallExpr(field->name, gMethodToken, call->get(1)->remove());
+        call->replace(result);
+      } else if (isInstantiatedField(field)) {
+        VarSymbol* tmp = newTemp();
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        result = new CallExpr(field->name, gMethodToken, call->get(1)->remove());
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, result));
+        call->replace(new CallExpr(PRIM_TYPEOF, tmp));
+      } else
+        USR_FATAL(call, "invalid query -- queried field must be a type of parameter");
     } else if (call->isNamed("chpl__initCopy") ||
                call->isNamed("chpl__autoCopy")) {
       if (call->numActuals() == 1) {

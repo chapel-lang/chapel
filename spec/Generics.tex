@@ -206,6 +206,50 @@ Note that generic types which have default values for all of their
 generic fields, \emph{e.g. range}, are not generic when simply
 specified and require a query to mark the argument as generic.  For
 simplicity, the identifier may be omitted.
+\begin{example}
+The following code defines a class with a type field that has a
+default value.  Function \chpl{f} is defined to take an argument of
+this class type where the type field is instantiated to the default.
+Function \chpl{g}, on the other hand, is generic on its argument
+because of the use of the question mark.
+\begin{chapel}
+class C {
+  type t = int;
+}
+def f(c: C) {
+  // c.type is always int
+}
+def g(c: C(?)) {
+  // c.type may not be int
+}
+\end{chapel}
+\end{example}
+
+\index{where@\chpl{where}!implicit}
+The generic type may be specified with some queries and some exact
+values.  Thesse exact values result in \emph{implicit where clauses}
+for the purpose of function resolution.
+\begin{example}
+Given the class definition
+\begin{chapel}
+class C {
+  type t;
+  type tt;
+}
+\end{chapel}
+then the function definition
+\begin{chapel}
+def f(c: C(?t,real)) {
+  // body
+}
+\end{chapel}
+is equivalent to
+\begin{chapel}
+def f(c: C(?t,?tt)) where tt == real {
+  // body
+}
+\end{chapel}
+\end{example}
 
 \index{integral@\chpl{integral}}
 \index{numeric@\chpl{numeric}}

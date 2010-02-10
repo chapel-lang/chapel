@@ -54,6 +54,7 @@ enum PrimitiveTag {
   PRIM_NEW,                       // new keyword
   PRIM_GET_REAL,                  // get complex real component
   PRIM_GET_IMAG,                  // get complex imag component
+  PRIM_QUERY,                     // query expression primitive
 
   PRIM_INIT_REF, // initialize reference to NULL
   PRIM_SET_REF,  // set a reference to a value
