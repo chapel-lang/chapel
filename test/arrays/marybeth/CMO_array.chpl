@@ -1,7 +1,11 @@
 class CMODist : BaseDist {
   def dsiNewArithmeticDom(param rank: int, type dimensional_index_type, param stridable: bool, param alias: bool=false) {
-    return new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable, alias=alias);
+    return new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable, alias=alias, dist=this);
   }
+  def dsiCreateRankChangeDist(param newRank, args) {
+    return this;
+  }
+  def dsiClone() return this;
 }
 
 class CMODom: BaseArithmeticDom {
