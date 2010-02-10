@@ -16,6 +16,10 @@
 general regressions
 ===================
 
+rank change interface failure (02/10/10)
+----------------------------------------
+[Error matching compiler output for arrays/marybeth/CMO_array]
+
 spurious failure
 ----------------
 [Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
@@ -31,12 +35,12 @@ spurious verification failures on RA (probably due to intentional races)
 spurious compilation timeouts
 ----------------------------
 [Error: Timed out compilation for classes/deitz/infer/infer_field3] (e.g., 01/11/10)
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 12/06/09, 12/25/09, 12/31/09, 01/02/10, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10 -- esp. gasnet, intel)
-[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 12/06/09, 12/31/09, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10 -- esp. gasnet, intel)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 12/06/09, 12/25/09, 12/31/09, 01/02/10, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10, 01/27/10, 01/30/10, 02/01/10, 02/05/10, 02/10/10 -- esp. gasnet, intel)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 12/06/09, 12/31/09, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10, 01/26/10, 01/27/10, 01/30/10, 02/10/10 -- esp. gasnet, intel)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 01/05/10 -- esp. intel)
-[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 01/14/10, 01/17/10, 01/20/10)
-[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09, 12/20/09, 12/24/09, 01/10/10, 01/14/10)
-[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09, 12/07/09, 12/15/09, 12/22/09, 12/24/09, 01/05/10, 01/08/10, 01/10/10, 01/18/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 01/14/10, 01/17/10, 01/20/10, 01/24/10, 01/28/10, 02/02/10, 02/07/10, 02/09/10)
+[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09, 12/20/09, 12/24/09, 01/10/10, 01/14/10, 01/28/10, 02/02/10, 02/08/10)
+[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09, 12/07/09, 12/15/09, 12/22/09, 12/24/09, 01/05/10, 01/08/10, 01/10/10, 01/18/10, 01/22/10, 01/28/10, 02/07/10)
 
 
 =================
@@ -69,6 +73,10 @@ maxThreads is 300, but can't create more than 254 threads
 ================================
 performance-specific regressions
 ================================
+
+error matching performance keys (01/29/10)
+------------------------------------------
+Error matching performance keys for studies/shootout/nbody/nbody_record_domain_2a]
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -109,6 +117,15 @@ timeouts due to removal of -O
 no-local regressions
 ====================
 
+internal error SYM0172 (02/09/10)
+---------------------------------
+[Error matching compiler output for arrays/deitz/test_array_type_alias]
+[Error matching compiler output for arrays/jplevyak/simple-4]
+
+illegal use of on in serial iterator error (02/06/10)
+-----------------------------------------------------
+[Error matching compiler output for users/shetag/iteratorWithOn]
+
 not freeing heap-allocated globals (08/29/09)
 ---------------------------------------------
 [Error matching program output for classes/figueroa/RecordDestructor1]
@@ -145,12 +162,12 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09, 12/16/09, 12/19/09, 12/25/09, 12/29/09, 01/07/10, 01/08/10, 01/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10)
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09)
+[Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09, 12/16/09, 12/19/09, 12/25/09, 12/29/09, 01/07/10, 01/08/10, 01/10/10, 01/23/10, 02/08/10, 02/10/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09, 02/02/10)
 [Error: Timed out executing program users/agnieszka/test1] (e.g., 01/08/10)
-[Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09, 12/15/09, 12/18/09, 12/21/09, 12/25/09, 01/04/10, 01/05/10, 01/06/10, 01/10/10)
+[Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09, 12/15/09, 12/18/09, 12/21/09, 12/25/09, 01/04/10, 01/05/10, 01/06/10, 01/10/10, 01/24/10, 01/29/10)
 
 
 ==============================================
@@ -222,11 +239,12 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 38)
+(Full run: 64)
 
-some spurious cases:
---------------------
-[Error matching program output for studies/lu/marybeth/pivlublock-alias] (--baseline --optimize-loop-iterators)
+general failures
+----------------
+[Error: Timed out executing program users/franzf/v1/chpl/main]
+[Error: Timed out executing program users/franzf/v2/chpl/main]
 
 --no-dead-code-elimination
 --------------------------
@@ -255,6 +273,7 @@ some spurious cases:
 --baseline --scalar-replacement
 ------------------------------------
 [Error matching program output for classes/figueroa/RecordConstructor2]
+[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings --baseline --copy-propagation  ) (0-2)]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
@@ -264,10 +283,13 @@ some spurious cases:
 
 --baseline --no-local
 ------------------------------------
-[Error matching program output for classes/figueroa/RecordConstructor2]
 [Error matching program output for classes/figueroa/RecordDestructor1]
+[Error matching program output for classes/figueroa/RecordConstructor2]
+[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader3]
+[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings --baseline --no-local  ) (0-2)]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
+[Error matching compiler output for users/shetag/iteratorWithOn]
 
 
 =======================
@@ -279,10 +301,6 @@ spurious timeout
 [Error: Timed out executing program release/examples/hello-module] (e.g., 10/14/09, 10/30/09)
 [Error: Timed out executing program release/examples/hello-multiloc] (e.g., 10/30/09)
 [Error: Timed out executing program release/examples/hello] (e.g., 10/30/09)
-
-use-before-def problem (02/18/09)
----------------------------------
-[Error matching program output for release/examples/tutorials/reductions]
 
 threads-none causes serial iterator to be used rather than follower (11/25/08)
 ------------------------------------------------------------------------------
@@ -348,9 +366,9 @@ numerical accuracy issue
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 
 
-==============================
-cray-/cce-specific regressions
-==============================
+=====================================
+cray-xt-cray/cce-specific regressions
+=====================================
 
 all compilations break due to missing -lalpslli (12/15/09)
 ----------------------------------------------------------
@@ -489,6 +507,11 @@ exp2 not supported:
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
+compilation timeouts (02/07/10)
+-------------------------------
+[Error: Timed out compilation for trivial/deitz/test_param_fold5]
+[Error: Timed out compilation for trivial/marybeth/select1]
+
 spurious double free or corruption
 ----------------------------------
 [Error matching program output for stress/deitz/test_10k_coforall] (e.g., 10/03/09, 10/18/09)
@@ -556,6 +579,11 @@ sig_send: wait for sig_complete event failed
 ========================
 xmt-specific regressions
 ========================
+
+unreachable line error
+----------------------
+[Error matching program output for release/examples/hpcc/fft]
+[Error matching program output for release/examples/tutorials/slices]
 
 spurious out-of-bounds index (0) at line 100
 --------------------------------------------
