@@ -69,9 +69,22 @@ The following declaration declares a variable \chpl{r}
 of range type that can represent ranges of 64-bit integers, with both
 high and low bounds specified, and the ability to have a stride other
 than 1.
+\begin{chapelpre}
+% test_rangeVariable.chpl
+\end{chapelpre}
 \begin{chapel}
 var r: range(int(64), BoundedRangeType.bounded, stridable=true);
 \end{chapel}
+\begin{chapelpost}
+writeln(r);
+var i64: int(64) = 3;
+r = i64..13 by 3;
+writeln(r);
+\end{chapelpost}
+\begin{chapeloutput}
+1..0
+3..12 by 3
+\end{chapeloutput}
 \end{example}
 
 The default value for a range is \chpl{1..0}.
@@ -130,10 +143,19 @@ Unbounded ranges can be iterated over with zipper iteration
 other iterators they are being iterated over with.
 \begin{example}
 The code
+\begin{chapelpre}
+% test_zipWithUnbounded.chpl
+\end{chapelpre}
 \begin{chapel}
 for i in (1..5, 3..) do
   write(i, "; ");
 \end{chapel}
+\begin{chapelpost}
+writeln();
+\end{chapelpost}
+\begin{chapeloutput}
+(1, 3); (2, 4); (3, 5); (4, 6); (5, 7); 
+\end{chapeloutput}
 produces the output ``(1, 3); (2, 4); (3, 5); (4, 6); (5, 7); ''.
 \end{example}
 
@@ -181,10 +203,21 @@ stride whose value is the product of the two strides.
 In the following declarations, range \chpl{r1} represents the odd integers
 between 1 and 20. Range \chpl{r2} strides \chpl{r1} by two and represents
 every other odd integer between 1 and 20: 1, 5, 9, ...
+\begin{chapelpre}
+% test_rangeByOperator.chpl
+\end{chapelpre}
 \begin{chapel}
 var r1 = 1..20 by 2;
 var r2 = r1 by 2;
 \end{chapel}
+\begin{chapelpost}
+writeln(r1);
+writeln(r2);
+\end{chapelpost}
+\begin{chapeloutput}
+1..19 by 2
+1..17 by 4
+\end{chapeloutput}
 \end{example}
 
 \begin{rationale}
@@ -230,12 +263,23 @@ It is an error to apply the count operator to a
 
 \begin{example}
 The following declarations result in equivalent ranges.
+\begin{chapelpre}
+% test_rangeCountOperator.chpl
+\end{chapelpre}
 \begin{chapel}
 var r1 = 2.. by -2 # 3;
 var r2 = ..6 by -2 # 3;
 var r3 = 0..6 by -2 # 3;
 var r4 = 1..#6 by -2;
 \end{chapel}
+\begin{chapelpost}
+writeln(r1 == r2 \&\& r2 == r3 \&\& r3 == r4);
+writeln((r1, r2, r3, r4));
+\end{chapelpost}
+\begin{chapeloutput}
+true
+(2..6 by -2, 2..6 by -2, 2..6 by -2, 2..6 by -2)
+\end{chapeloutput}
 Each of these ranges represents the ordered set of three values: 6, 4, 2.
 \end{example}
 
@@ -266,10 +310,19 @@ which has an element type of \chpl{int} representing the values ${0,
 create a second range \chpl{r2} representing the values ${1, 2, 3,
   4}$.  The \chpl{r2} range is bounded, non-stridable, and represents
 values of type \chpl{int}.
+\begin{chapelpre}
+% test_rangeAdd.chpl
+\end{chapelpre}
 \begin{chapel}
 var r = 0..3;
 var r2 = r + 1;
 \end{chapel}
+\begin{chapelpost}
+writeln((r, r2));
+\end{chapelpost}
+\begin{chapeloutput}
+(0..3, 1..4)
+\end{chapeloutput}
 \end{example}
 
 
@@ -290,12 +343,21 @@ In the following example, \chpl{r} represents the integers from 1 to
 slices and represent the indices from 3 to 20 and the odd integers
 between 1 and 20 respectively. Range \chpl{r4} represents the odd
 integers between 1 and 20 that are also divisible by 3.
+\begin{chapelpre}
+% test_rangeSlicing.chpl
+\end{chapelpre}
 \begin{chapel}
 var r = 1..20;
 var r2 = r[3..];
 var r3 = r[1.. by 2];
 var r4 = r3[0.. by 3];
 \end{chapel}
+\begin{chapelpost}
+writeln((r, r2, r3, r4));
+\end{chapelpost}
+\begin{chapeloutput}
+(1..20, 3..20, 1..19 by 2, 3..15 by 6)
+\end{chapeloutput}
 \end{example}
 
 \subsection{Predefined Functions and Methods on Ranges}

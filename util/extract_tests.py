@@ -29,6 +29,7 @@
 #      '//' becomes '/'
 #      '/#' becomes '#'
 #      '/_' becomes '_'
+#      '/&' becomes '&'
 #
 #   If this becomes too unwieldy, we'll probably have to find a better
 #   way to do it.
@@ -72,6 +73,7 @@ def GetTestName(line):
 # Helper functions for de-LaTeX-ifying output line
 def RemoveLaTeXFormatting(line, nlrepl):
     dline = line.replace('\\#', '#')
+    dline = dline.replace('\\&', '&')
     dline = dline.replace('\\_', '_')
     dline = dline.replace('\\\\', nlrepl)
     return dline
