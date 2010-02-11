@@ -828,13 +828,14 @@ record _array {
   def reindex(d: domain) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
+    if !_isDefaultDist(d) then
+      halt("invalid reindex using a distributed domain");
     for param i in 1..rank do
       if d.dim(i).length != _value.dom.dsiDim(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    if !_isDefaultDist(d) then
-      halt("invalid reindex using a distributed domain");
 
-    var newDist = new dist(_value.dom.dist.dsiCreateReindexDist(d.dims()));
+    var newDist = new dist(_value.dom.dist.dsiCreateReindexDist(d.dims(),
+                                                                _value.dom.dsiDims()));
     var newDom = [(...d.dims())] distributed newDist;
     var x = _value.dsiReindex(newDom._value);
     x._arrAlias = _value;
