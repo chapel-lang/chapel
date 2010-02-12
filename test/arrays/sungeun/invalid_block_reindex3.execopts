@@ -1,0 +1,5 @@
+--bbLow=-1 # invalid_block_reindex3.good
+--bbLow=1  # invalid_block_reindex3.good
+--bbLow=0  # invalid_block_reindex3.good
+--bbLow=2147483647  # invalid_block_reindex3.OKmax.good
+--bbLow=-2147483648 # invalid_block_reindex3.OKmin.good

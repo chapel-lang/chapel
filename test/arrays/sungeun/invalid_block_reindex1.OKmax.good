@@ -1,0 +1,1 @@
+We should not get here unless bbHigh==max(int) [true] || bbHigh==min(int) [false]

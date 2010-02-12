@@ -1,0 +1,5 @@
+--bbHigh=-1 # invalid_block_reindex1.good
+--bbHigh=1  # invalid_block_reindex1.good
+--bbHigh=0  # invalid_block_reindex1.good
+--bbHigh=2147483647  # invalid_block_reindex1.OKmax.good
+--bbHigh=-2147483648 # invalid_block_reindex1.OKmin.good

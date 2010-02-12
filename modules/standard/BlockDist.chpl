@@ -277,7 +277,7 @@ def Block.dsiCreateReindexDist(newSpace, oldSpace) {
             // OK
           } else if myNewBbox(r).low <= 0 {
             halt("invalid reindex for Block: distribution bounding box (low) out of range in dimension ", r);
-          } else if myNewBbox(r).low < newLow-minIdxType {
+          } else if oldLow-myNewBbox(r).low > newLow-minIdxType {
             halt("invalid reindex for Block: distribution bounding box (low) out of range in dimension ", r);
           }
         } else {
@@ -286,7 +286,7 @@ def Block.dsiCreateReindexDist(newSpace, oldSpace) {
             // OK
           } else if myNewBbox(r).high >= 0 {
             halt("invalid reindex for Block: distribution bounding box (high) out of range in dimension ", r);
-          } else if myNewBbox(r).high > newHigh-maxIdxType {
+          } else if oldHigh-myNewBbox(r).high < newHigh-maxIdxType {
             halt("invalid reindex for Block: distribution bounding box (high) out of range in dimension ", r);
           }
         }
