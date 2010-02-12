@@ -1,0 +1,36 @@
+Distribution Representation
+
+boundingBox = [1..4, 1..4]
+targetLocDom = [0..1, 0..1]
+targetLocs = 0 1 2 3
+tasksPerLocale = 2
+locDist[(0, 0)].myChunk = [-2147483648..2, -2147483648..2]
+locDist[(0, 1)].myChunk = [-2147483648..2, 3..2147483647]
+locDist[(1, 0)].myChunk = [3..2147483647, -2147483648..2]
+locDist[(1, 1)].myChunk = [3..2147483647, 3..2147483647]
+
+Domain
+
+[1..4, 1..4]
+
+Domain Representation
+
+whole = [1..4, 1..4]
+locDoms[(0, 0)].myBlock = [1..2, 1..2]
+locDoms[(0, 1)].myBlock = [1..2, 3..4]
+locDoms[(1, 0)].myBlock = [3..4, 1..2]
+locDoms[(1, 1)].myBlock = [3..4, 3..4]
+
+Array
+
+0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0
+
+Array Representation
+
+locArr[(0, 0)].myElems = 0.0 0.0 0.0 0.0
+locArr[(0, 1)].myElems = 0.0 0.0 0.0 0.0
+locArr[(1, 0)].myElems = 0.0 0.0 0.0 0.0
+locArr[(1, 1)].myElems = 0.0 0.0 0.0 0.0

@@ -419,6 +419,8 @@ record _distribution {
   def writeThis(x: Writer) {
     _value.writeThis(x);
   }
+
+  def displayRepresentation() { _value.dsiDisplayRepresentation(); }
 }
 
 
@@ -669,6 +671,8 @@ record _domain {
       yield i;
     }
   }
+
+  def displayRepresentation() { _value.dsiDisplayRepresentation(); }
 }
 
 def _getNewDist(value) {
@@ -865,6 +869,8 @@ record _array {
       yield i;
     }
   }
+
+  def displayRepresentation() { _value.dsiDisplayRepresentation(); }
 }
 
 //

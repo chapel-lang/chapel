@@ -103,6 +103,15 @@ class Block : BaseDist {
   }
 }
 
+def Block.dsiDisplayRepresentation() {
+  writeln("boundingBox = ", boundingBox);
+  writeln("targetLocDom = ", targetLocDom);
+  writeln("targetLocs = ", for tl in targetLocs do tl.id);
+  writeln("tasksPerLocale = ", tasksPerLocale);
+  for tli in targetLocDom do
+    writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
+}
+
 def Block.dsiSupportsPrivatization() param return true;
 
 def Block.dsiGetPrivatizeData() {
@@ -380,6 +389,12 @@ class BlockDom: BaseArithmeticDom {
   var pid: int = -1; // privatized object id
 
   def getBaseDist() return dist;
+}
+
+def BlockDom.dsiDisplayRepresentation() {
+  writeln("whole = ", whole);
+  for tli in dist.targetLocDom do
+    writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
 }
 
 def BlockDom.dsiDims() return whole.dims();
@@ -661,6 +676,11 @@ class BlockArr: BaseArr {
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
 
   var pid: int = -1; // privatized object id
+}
+
+def BlockArr.dsiDisplayRepresentation() {
+  for tli in dom.dist.targetLocDom do
+    writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
 }
 
 def BlockArr.dsiGetBaseDom() return dom;
