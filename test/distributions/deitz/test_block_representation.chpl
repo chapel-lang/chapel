@@ -1,6 +1,6 @@
 use BlockDist;
 
-var A: [[1..4, 1..4] distributed Block(2,bbox=[1..4,1..4])] real;
+var A: [[1..4, 1..4] distributed Block(2,bbox=[1..4,1..4],tasksPerLocale=2)] real;
 
 writeln("Distribution Representation");
 writeln();
