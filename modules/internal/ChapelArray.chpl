@@ -492,13 +492,20 @@ record _domain {
     var newDistVal = _value.dist.dsiCreateRankChangeDist(newRank, args);
     var newDist = _getNewDist(newDistVal);
     var j = 1;
+    var makeEmpty = false;
+
     for param i in 1..rank {
       if !isCollapsedDimension(args(i)) {
         newRanges(j) = dim(i)(args(i));
         j += 1;
       } else {
         if !dim(i).member(args(i)) then
-          halt("index out of bounds in dimension ", i, ": ", args(i));
+          makeEmpty = true;
+      }
+    }
+    if makeEmpty {
+      for param i in 1..newRank {
+        newRanges(i) = 1..0;
       }
     }
     var d = [(...newRanges)] distributed newDist;
@@ -789,9 +796,7 @@ record _array {
       checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-    var newDistVal = _value.dom.dist.dsiCreateRankChangeDist(rank, args);
-    var newDist = new dist(newDistVal);
-    var d = _dom((...args));//[(...ranges)] distributed newDist;
+    var d = _dom((...args));
     d._value._domCnt$ += 1;
     var a = _value.dsiRankChange(d._value, rank, stridable, args);
     a._arrAlias = _value;

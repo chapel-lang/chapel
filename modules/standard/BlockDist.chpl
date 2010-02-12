@@ -404,8 +404,34 @@ def BlockDom.dsiDim(d: int) return whole.dim(d);
 // stopgap to avoid accessing locDoms field (and returning an array)
 def BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
+
+//
+// Given a tuple of scalars of type t or range(t) match the shape but
+// using types rangeType and scalarType e.g. the call:
+// _matchArgsShape(range(int), int, (1:int(64), 1:int(64)..5, 1:int(64)..5))
+// returns the type: (int, range(int), range(int))
+//
+def _matchArgsShape(type rangeType, type scalarType, args) type {
+  def tuple(type t ...) type return t;
+  def helper(param i: int) type {
+    if i == args.size {
+      if isCollapsedDimension(args(i)) then
+        return tuple(scalarType);
+      else
+        return tuple(rangeType);
+    } else {
+      if isCollapsedDimension(args(i)) then
+        return (scalarType, (... helper(i+1)));
+      else
+        return (rangeType, (... helper(i+1)));
+    }
+  }
+  return helper(1);
+}
+
+
 def Block.dsiCreateRankChangeDist(param newRank: int, args) {
-  var collapsedDimLocs: rank*int;
+  var collapsedDimLocs: rank*idxType;
 
   for param i in 1..rank {
     if isCollapsedDimension(args(i)) {
@@ -415,8 +441,8 @@ def Block.dsiCreateRankChangeDist(param newRank: int, args) {
     }
   }
   const collapsedLocInd = ind2locInd(collapsedDimLocs);
-  var collapsedBbox: args.type;
-  var collapsedLocs: args.type;
+  var collapsedBbox: _matchArgsShape(range(eltType=idxType), idxType, args);
+  var collapsedLocs: _matchArgsShape(range(eltType=int), int, args);
 
   for param i in 1..rank {
     if isCollapsedDimension(args(i)) {
@@ -427,6 +453,7 @@ def Block.dsiCreateRankChangeDist(param newRank: int, args) {
       collapsedLocs(i) = targetLocDom.dim(i);
     }
   }
+
   const newBbox = boundingBox((...collapsedBbox));
   const newTargetLocs = targetLocs((...collapsedLocs));
   return new Block(rank=newRank, idxType=idxType, bbox=newBbox,
@@ -923,49 +950,34 @@ def _extendTuple(type t, idx, args) {
 
 
 def BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
-  var tup: rank*int;
-  for param i in 1..rank {
-    if isCollapsedDimension(args(i)) {
-      tup(i) = args(i);
-    } else {
-      tup(i) = 0;
-    }
-  }
-
-  var locInd = dom.dist.ind2locInd(tup);
-  var locsArgs = args;
-  var j: int = 1;
-
-  for param i in 1..rank {
-    if isCollapsedDimension(args(i)) {
-      locsArgs(i) = locInd(i);
-    } else {
-      locsArgs(i) = d.dist.targetLocDom.dim(j);
-      j += 1;
-    }
-  }
-
-  var locs = dom.dist.targetLocs((...locsArgs));
-
   var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
   var thisid = this.locale.uid;
-  coforall i in d.dist.targetLocDom {
-    on d.dist.targetLocs(i) {
-      const locDom = d.getLocDom(i);
+  coforall ind in d.dist.targetLocDom {
+    on d.dist.targetLocs(ind) {
+      const locDom = d.getLocDom(ind);
       var locSlice = args;
-      var k = 1;
-      for param j in 1..args.size {
-        if isCollapsedDimension(args(j)) then
-          locSlice(j) = args(j);
-        else {
-          locSlice(j) = args(j)(locDom.myBlock.dim(k));
-          k += 1;
+      var j = 1;
+      var locArrInd: rank*int;
+      var collapsedDims: rank*idxType;
+
+      for param i in 1..args.size {
+        if isCollapsedDimension(args(i)) {
+          locSlice(i) = args(i);
+          collapsedDims(i) = args(i);
+        } else {
+          locSlice(i) = locDom.myBlock.dim(j)(args(i));
+          collapsedDims(i) = 0;
+          j += 1;
         }
       }
-      alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=newRank, idxType=d.idxType, stridable=d.stridable, locDom=locDom);
-      alias.locArr[i].myElems => locArr[(..._extendTuple(idxType, i, locsArgs))].myElems[(...locSlice)];
+      locArrInd = dom.dist.ind2locInd(collapsedDims);
+      alias.locArr[ind] = new LocBlockArr(eltType=eltType, rank=newRank, idxType=d.idxType, stridable=d.stridable, locDom=locDom);
+      
+      alias.locArr[ind].myElems =>
+        locArr[(...locArrInd)].
+        myElems[(...locSlice)];
       if thisid == here.uid then
-        alias.myLocArr = alias.locArr[i];
+        alias.myLocArr = alias.locArr[ind];
     }
   }
   return alias;
