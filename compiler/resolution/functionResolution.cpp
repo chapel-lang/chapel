@@ -2318,7 +2318,10 @@ preFold(Expr* expr) {
       } else if (isInstantiatedField(field)) {
         VarSymbol* tmp = newTemp();
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        result = new CallExpr(field->name, gMethodToken, call->get(1)->remove());
+        if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_TUPLE) && field->name[0] == 'x')
+          result = new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(1)->remove(), new_StringSymbol(field->name));
+        else
+          result = new CallExpr(field->name, gMethodToken, call->get(1)->remove());
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, result));
         call->replace(new CallExpr(PRIM_TYPEOF, tmp));
       } else

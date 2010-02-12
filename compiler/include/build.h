@@ -11,6 +11,7 @@ BlockStmt* buildPragmaStmt(BlockStmt*, Vec<const char*>*, BlockStmt*);
 Expr* buildParenExpr(CallExpr* call);
 
 Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
+Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index = NULL);
 
 Expr* buildIntLiteral(const char* pch);
 Expr* buildRealLiteral(const char* pch);

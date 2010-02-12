@@ -171,6 +171,7 @@ TYPE_EXTERN ClassType* dtWriter;
 TYPE_EXTERN ClassType* dtBaseArr;
 TYPE_EXTERN ClassType* dtBaseDom;
 TYPE_EXTERN ClassType* dtDist;
+TYPE_EXTERN ClassType* dtTuple;
 
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference

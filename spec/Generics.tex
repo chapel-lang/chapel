@@ -250,6 +250,23 @@ def f(c: C(?t,?tt)) where tt == real {
 }
 \end{chapel}
 \end{example}
+For tuples with query arguments, an implicit where clause is always
+created to ensure that the size of the actual tuple matches the
+implicitly specified size of the formal tuple.
+\begin{example}
+The function definition
+\begin{chapel}
+def f(tuple: (?t,real)) {
+  // body
+}
+\end{chapel}
+is equivalent to
+\begin{chapel}
+def f(tuple: (?t,?tt)) where tuple.size == 2 && tt == real {
+  // body
+}
+\end{chapel}
+\end{example}
 
 \index{integral@\chpl{integral}}
 \index{numeric@\chpl{numeric}}

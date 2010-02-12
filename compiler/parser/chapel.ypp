@@ -653,19 +653,10 @@ opt_formal_array_elt_type:
 formal_array_type:
   TLSBR TRSBR opt_formal_array_elt_type
     { $$ = new CallExpr("chpl__buildArrayRuntimeType", gNil, $3); }
-| TLSBR query_expr TRSBR opt_formal_array_elt_type
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType", $2, $4); }
 | TLSBR expr_ls TRSBR opt_formal_array_elt_type
-    { $$ = new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__buildDomainExpr", $2), $4); }
+    { $$ = buildFormalArrayType($2, $4); }
 | TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type
-    { 
-      if ($2->argList.length != 1)
-        USR_FATAL($4, "invalid index expression");
-      $$ = new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__buildDomainExpr", $4), $6, $2->get(1)->remove(),
-             new CallExpr("chpl__buildDomainExpr", $4->copy()));
-    }
+    { $$ = buildFormalArrayType($4, $6, $2); }
 ;
 
 opt_formal_type:
@@ -681,8 +672,10 @@ opt_formal_type:
 /** EXPRESSIONS **************************************************************/
 
 expr_ls:
-  expr                          { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
-| expr_ls TCOMMA expr  { $1->insertAtTail($3); }
+  expr                       { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| query_expr                 { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| expr_ls TCOMMA expr        { $1->insertAtTail($3); }
+| expr_ls TCOMMA query_expr  { $1->insertAtTail($3); }
 ;
 
 opt_actual_ls:

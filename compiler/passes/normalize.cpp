@@ -1029,14 +1029,14 @@ fixup_query_formals(FnSymbol* fn) {
             queried = true;
       }
       if (queried) {
+        bool isTupleType = false;
         Vec<SymExpr*> symExprs;
         collectSymExprs(fn, symExprs);
-        SymExpr* base = toSymExpr(call->baseExpr);
-        if (!base)
-          USR_FATAL(call, "illegal queried type expression");
-        TypeSymbol* ts = toTypeSymbol(base->var);
-        if (!ts)
-          USR_FATAL(base, "illegal queried type expression");
+        if (call->isNamed("_build_tuple")) {
+          add_to_where_clause(formal, new SymExpr(new_IntSymbol(call->numActuals())), new CallExpr(PRIM_QUERY, new_StringSymbol("size")));
+          call->baseExpr->replace(new SymExpr(dtTuple->symbol));
+          isTupleType = true;
+        }
         CallExpr* positionQueryTemplate = new CallExpr(PRIM_QUERY);
         for_actuals(actual, call) {
           if (NamedExpr* named = toNamedExpr(actual)) {
@@ -1049,7 +1049,7 @@ fixup_query_formals(FnSymbol* fn) {
             }
           }
         }
-        int position = 1;
+        int position = (isTupleType) ? 2 : 1; // size is first for tuples
         for_actuals(actual, call) {
           if (!toNamedExpr(actual)) {
             CallExpr* positionQuery = positionQueryTemplate->copy();
@@ -1062,8 +1062,7 @@ fixup_query_formals(FnSymbol* fn) {
             position++;
           }
         }
-        formal->typeExpr->remove();
-        formal->type = ts->type;
+        formal->typeExpr->replace(new BlockStmt(call->baseExpr->remove()));
         formal->markedGeneric = true;
       }
     }

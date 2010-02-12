@@ -107,6 +107,26 @@ Expr* buildSquareCallExpr(Expr* base, CallExpr* args) {
 }
 
 
+Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
+  if (index) {
+    CallExpr* indexCall = toCallExpr(index);
+    INT_ASSERT(indexCall);
+    if (indexCall->numActuals() != 1)
+      USR_FATAL(iterator, "invalid index expression");
+    return new CallExpr("chpl__buildArrayRuntimeType",
+             new CallExpr("chpl__buildDomainExpr", iterator),
+             eltType, indexCall->get(1)->remove(),
+             new CallExpr("chpl__buildDomainExpr", iterator->copy()));
+  } else {
+    CallExpr* call = toCallExpr(iterator);
+    if (call->numActuals() == 1 && isDefExpr(call->get(1))) {
+      return new CallExpr("chpl__buildArrayRuntimeType", call->get(1)->remove(), eltType);
+    } else
+      return new CallExpr("chpl__buildArrayRuntimeType",
+               new CallExpr("chpl__buildDomainExpr", iterator), eltType);
+  }
+}
+
 Expr* buildIntLiteral(const char* pch) {
   uint64_t ull;
   if (!strncmp("0b", pch, 2))
