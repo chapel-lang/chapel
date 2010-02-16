@@ -50,3 +50,63 @@ class _stack {
     for i in 0..top-1 do f.write(" ", data[i]);
   }
 }
+
+// true iff an overflow would occur for a + b
+//
+// This can be written as:
+//   return if a < 0 then b < min(t) - a else b > max(t) - a;
+// but I found it easier to convince myself it was right as is.
+//
+def addOverflowsType(a: ?t, b: t) {
+  if a < 0 {
+    if b > 0 {
+      return false;
+    } else {
+      if b < min(t) - a {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  } else {
+    if b < 0 {
+      return false;
+    } else {
+      if b > max(t) - a {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+}
+
+// true iff an overflow would occur for a - b
+//
+// This can be written as:
+//   return if a > 0 then b < min(t) + a else b > max(t) + a;
+// but I found it easier to convince myself it was right as is.
+//
+def subUnderflowsType(a: ?t, b: t) {
+  if a > 0 {
+    if b > 0 {
+      return false;
+    } else {
+      if b < min(t) + a {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  } else {
+    if b < 0 {
+      return false;
+    } else {
+      if b > max(t) + a {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+}

@@ -7,6 +7,7 @@
 //
 
 use DSIUtil;
+use ChapelUtil;
 
 //
 // Limitations
@@ -229,81 +230,87 @@ def Block.ind2locInd(ind: rank*idxType) where rank != 1 {
 
 
 def Block.dsiCreateReindexDist(newSpace, oldSpace) {
-  if newSpace(1).low.type != oldSpace(1).low.type then
-    halt("index type of reindex domain must match that of original domain");
-  var myNewBbox = boundingBox.getIndices();
-  var minIdxType = min(myNewBbox(1).low.type);
-  var maxIdxType = max(myNewBbox(1).high.type);
-  // will start underflow if subtracting offset
-  def willUnderflow(start, offset) {
-    if start <= 0 then
-      return start-minIdxType < offset;
-    return false;
+  // Should this error be in ChapelArray or not an error at all?
+  if newSpace(1).eltType != oldSpace(1).eltType then
+    compilerError("index type of reindex domain must match that of original domain");
+  /* To shift the bounding box, we must perform the following operation for
+   *  each dimension:
+   *
+   *   bbox(r).low - (oldSpace(r).low - newSpace(r).low)
+   *   bbox(r).high - (oldSpace(r).low - newSpace(r).low)
+   *
+   * The following is guaranteed on entry:
+   *
+   *   oldSpace(r).low-newSpace(r).low = oldSpace(r).high-newSpace(r).high
+   *
+   * We need to be able to do this without going out of range of the index
+   *  type.  The approach we take is to check if there is a way to perform
+   *  the calculation without having any of the intermediate results go out
+   *  of range.
+   *
+   *    newBblow = bbLow - oldLow + newLow
+   *
+   * Can be performed as:
+   *
+   *    t = bbLow-oldLow;
+   *    newBbLow = t+newLow;
+   * or
+   *    t = oldLow-newLow;
+   *    newBbLow = t+bbLow;
+   * or
+   *    t = bbLow+newLow;
+   *    newBbLow = t-oldLow;
+   *
+   */
+  def adjustBound(bbound, oldBound, newBound) {
+    var t: bbound.type;
+    if !subUnderflowsType(bbound, oldBound) {
+      t = bbound-oldBound;
+      if !addOverflowsType(t, newBound) {
+        return (t+newBound, true);
+      }
+    }
+    if !subUnderflowsType(oldBound, newBound) {
+      t = oldBound-newBound;
+      if !addOverflowsType(t, bbound) {
+        return (t+bbound, true);
+      }
+    }
+    if !addOverflowsType(bbound, newBound) {
+      t = bbound+newBound;
+      if !subUnderflowsType(t, oldBound) {
+        return(t-oldBound, true);
+      }
+    }
+    return (bbound, false);
   }
-  // will start overflow if adding offset
-  def willOverflow(start, offset) {
-    if start >= 0 then
-      return maxIdxType-start < offset;
-    return false;
-  }
+
+  var myNewBbox = boundingBox.dims();
   for param r in 1..rank {
     var oldLow = oldSpace(r)._low;
     var newLow = newSpace(r)._low;
-    if (oldLow != newLow) {
-      // This assume min(idxType) == max(idxType)-1
-      var sameSign = ((oldLow<=0)&&(newLow<=0)) || ((oldLow>0)&&(newLow>0));
-      var offset = oldLow-newLow;
-      // Check for over/underflow (assumes over/underflow results in wrap-around)
-      if ((sameSign && (oldLow<0)) ||
-          (!sameSign && (oldLow>newLow) && (offset>0))) {
-        // shifting "down"
-        if willUnderflow(myNewBbox(r).low, oldLow-newLow) {
-          halt("invalid reindex for Block: distribution bounding box (low) out of range in dimension ", r);
-        }
-      }
-      else if ((sameSign && (oldLow>0)) ||
-               (!sameSign && (oldLow<newLow) && (offset<0))) {
-        // shifting "up"
-        if willOverflow(myNewBbox(r).low, abs(oldLow-newLow)) {
-          halt("invalid reindex for Block: distribution bounding box (hi) out of range in dimension ", r);
-        }
-      } else {
-        var oldHigh = oldSpace(r)._high;
-        var newHigh = newSpace(r)._high;
-        // At this point we know that oldLow and newLow have different signs and neither is zero
-        if oldLow > newLow {
-          // shifting "down"
-          if myNewBbox(r).low >= oldLow {
-            // OK
-          } else if myNewBbox(r).low <= 0 {
-            halt("invalid reindex for Block: distribution bounding box (low) out of range in dimension ", r);
-          } else if oldLow-myNewBbox(r).low > newLow-minIdxType {
-            halt("invalid reindex for Block: distribution bounding box (low) out of range in dimension ", r);
-          }
-        } else {
-          // shifting "up"
-          if myNewBbox(r).high <= oldHigh {
-            // OK
-          } else if myNewBbox(r).high >= 0 {
-            halt("invalid reindex for Block: distribution bounding box (high) out of range in dimension ", r);
-          } else if oldHigh-myNewBbox(r).high < newHigh-maxIdxType {
-            halt("invalid reindex for Block: distribution bounding box (high) out of range in dimension ", r);
-          }
-        }
-      }
+    var oldHigh = oldSpace(r)._high;
+    var newHigh = newSpace(r)._high;
+    var valid: bool;
+    if oldLow != newLow {
+      (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
+      if !valid then // try with high
+        (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
+      if !valid then
+        halt("invalid reindex for Block: distribution bounding box (low) out of range in dimension ", r);
 
-      // do this is 2 steps to avoid over/underflow
-      // will this help?
-      myNewBbox(r)._low -= oldLow;
-      myNewBbox(r)._high -= oldLow;
-      myNewBbox(r)._low += newLow;
-      myNewBbox(r)._high += newLow;
+      (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
+      if !valid then
+        (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
+      if !valid then // try with low
+        halt("invalid reindex for Block: distribution bounding box (high) out of range in dimension ", r);
     }
   }
   var d = [(...myNewBbox)];
   var newDist = new Block(rank, idxType, d, targetLocs, tasksPerLocale);
   return newDist;
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Block Local Distribution Class
