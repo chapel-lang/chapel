@@ -1,5 +1,5 @@
 use driver;
-config const shift = o5+66;
+config const shift = o5-1;
 
 const TDom1D: domain(1) distributed Dist1D = Space1 - (shift);
 const TDom2D: domain(2) distributed Dist2D = Space2 - (shift,shift);
