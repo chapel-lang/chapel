@@ -34,7 +34,7 @@ spurious compilation timeouts
 [Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 12/06/09, 12/25/09, 12/31/09, 01/02/10, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10, 01/27/10, 01/30/10, 02/01/10, 02/05/10, 02/10/10, 02/11/10, 02/12/10 -- esp. gasnet, intel)
 [Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 12/06/09, 12/31/09, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10, 01/26/10, 01/27/10, 01/30/10, 02/10/10, 02/11/10, 02/12/10 -- esp. gasnet, intel)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 01/05/10 -- esp. intel)
-[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 01/14/10, 01/17/10, 01/20/10, 01/24/10, 01/28/10, 02/02/10, 02/07/10, 02/09/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 01/14/10, 01/17/10, 01/20/10, 01/24/10, 01/28/10, 02/02/10, 02/07/10, 02/09/10, 02/15/10)
 [Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09, 12/20/09, 12/24/09, 01/10/10, 01/14/10, 01/28/10, 02/02/10, 02/08/10)
 [Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09, 12/07/09, 12/15/09, 12/22/09, 12/24/09, 01/05/10, 01/08/10, 01/10/10, 01/18/10, 01/22/10, 01/28/10, 02/07/10, 02/11/10)
 
@@ -150,24 +150,9 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-incorrect output (02/12/10)
----------------------------
-[Error matching program output for distributions/deitz/test_block_representation]
-
-array indexing errors (02/12/10)
---------------------------------
-[Error matching program output for arrays/sungeun/invalid_block_reindex1 --bbHigh=-1 -nl 4 (--cc-warnings  ) (0-1)]
-[Error matching program output for arrays/sungeun/invalid_block_reindex1 --bbHigh=0 -nl 4 (--cc-warnings  ) (0-3)]
-[Error matching program output for arrays/sungeun/invalid_block_reindex1 --bbHigh=1 -nl 4 (--cc-warnings  ) (0-2)]
-[Error matching program output for arrays/sungeun/invalid_block_reindex3 --bbLow=2147483647 -nl 4 (--cc-warnings  ) (0-4)]
-[Error matching program output for arrays/sungeun/multilocale/weird_bbox_block  --bbLow=-1 -nl 4 (--cc-warnings) (0-2)]
-[Error matching program output for arrays/sungeun/multilocale/weird_bbox_block  --bbLow=-1000000 -nl 4 (--cc-warnings  ) (0-8)]
-[Error matching program output for arrays/sungeun/multilocale/weird_bbox_block  --bbLow=-255 -nl 4 (--cc-warnings  ) (0-6)]
-[Error matching program output for arrays/sungeun/multilocale/weird_bbox_block  --bbLow=-5 -nl 4 (--cc-warnings) (0-4)]
-[Error matching program output for arrays/sungeun/multilocale/weird_bbox_block  --bbLow=1 -nl 4 (--cc-warnings) (0-1)]
-[Error matching program output for arrays/sungeun/multilocale/weird_bbox_block  --bbLow=1000000 -nl 4 (--cc-warnings  ) (0-7)]
-[Error matching program output for arrays/sungeun/multilocale/weird_bbox_block  --bbLow=255 -nl 4 (--cc-warnings) (0-5)]
-[Error matching program output for arrays/sungeun/multilocale/weird_bbox_block  --bbLow=5 -nl 4 (--cc-warnings) (0-3)]
+spurious got wrong answer
+-------------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/dist/test_private_space] (e.g., 02/14/10)
 
 spurious failure -- different numerical result
 ----------------------------------------------
@@ -192,11 +177,11 @@ times out fairly consistently
 times out spuriously
 --------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09, 12/16/09, 12/19/09, 12/25/09, 12/29/09, 01/07/10, 01/08/10, 01/10/10, 01/23/10, 02/08/10, 02/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10, 02/11/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10, 02/11/10, 02/16/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10, 02/14/10, 02/15/10)
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09, 02/02/10)
 [Error: Timed out executing program users/agnieszka/test1] (e.g., 01/08/10)
-[Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09, 12/15/09, 12/18/09, 12/21/09, 12/25/09, 01/04/10, 01/05/10, 01/06/10, 01/10/10, 01/24/10, 01/29/10)
+[Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09, 12/15/09, 12/18/09, 12/21/09, 12/25/09, 01/04/10, 01/05/10, 01/06/10, 01/10/10, 01/24/10, 01/29/10, 02/14/10, 02/16/10)
 
 
 ==============================================
@@ -546,10 +531,21 @@ exp2 not supported:
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
-compilation timeouts (02/07/10)
+Duplicate symbol declaration (02/13/10)
+---------------------------------------
+[Error matching compiler output for associative/waynew/indef2]
+
+Compilation timeouts (02/13/10)
 -------------------------------
-[Error: Timed out compilation for trivial/deitz/test_param_fold5]
-[Error: Timed out compilation for trivial/marybeth/select1]
+[Error: Timed out compilation for release/examples/tutorials/opaque]
+[Error: Timed out compilation for sparse/bradc/growEmpty]
+[Error: Timed out compilation for trivial/waynew/simple]
+[Error: Timed out compilation for types/complex/bradc/negateimaginary]
+
+spurious compilation timeouts
+-----------------------------
+[Error: Timed out compilation for trivial/deitz/test_param_fold5] (e.g., 02/07/10)
+[Error: Timed out compilation for trivial/marybeth/select1] (e.g., 02/07/10)
 
 spurious double free or corruption
 ----------------------------------
