@@ -2332,6 +2332,23 @@ get_int(Expr *e, long *i) {
 }
 
 bool 
+get_uint(Expr *e, unsigned long *i) {
+  if (e) {
+    if (SymExpr *l = toSymExpr(e)) {
+      if (VarSymbol *v = toVarSymbol(l->var)) {
+        if (v->immediate) {
+          if (v->immediate->const_kind == NUM_KIND_UINT) {
+            *i = v->immediate->uint_value();
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool 
 get_string(Expr *e, const char **s) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {

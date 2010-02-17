@@ -2270,14 +2270,25 @@ preFold(Expr* expr) {
           if (call->numActuals() != 3)
             USR_FATAL(call, "illegal tuple indexing expression");
           Type* indexType = call->get(3)->getValType();
-          if (!is_int_type(indexType))
+          if (!is_int_type(indexType) && !is_uint_type(indexType))
             USR_FATAL(call, "tuple indexing expression is not of integral type");
           long index;
+          unsigned long uindex;
           if (get_int(call->get(3), &index)) {
             char field[8];
             sprintf(field, "x%ld", index);
             if (index <= 0 || index >= toClassType(t)->fields.length)
               USR_FATAL(call, "tuple index out-of-bounds error (%ld)", index);
+            if (toClassType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
+              result = new CallExpr(PRIM_GET_MEMBER_VALUE, base->var, new_StringSymbol(field));
+            else
+              result = new CallExpr(PRIM_GET_MEMBER, base->var, new_StringSymbol(field));
+            call->replace(result);
+          } else if (get_uint(call->get(3), &uindex)) {
+            char field[8];
+            sprintf(field, "x%lu", uindex);
+            if (uindex <= 0 || uindex >= (unsigned long)toClassType(t)->fields.length)
+              USR_FATAL(call, "tuple index out-of-bounds error (%lu)", uindex);
             if (toClassType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
               result = new CallExpr(PRIM_GET_MEMBER_VALUE, base->var, new_StringSymbol(field));
             else

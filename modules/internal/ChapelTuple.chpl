@@ -24,7 +24,7 @@ def _isStarTupleType(x: _tuple) param
 pragma "tuple" record _tuple {
   param size : int;
 
-  def this(i : int) var {
+  def this(i : integral) var {
     if !_isStarTupleType(this) then
       compilerError("cannot index into non-homogeneous tuples with non-parameter value");
     if boundsChecking then
