@@ -5,9 +5,9 @@
 
 
 // type (and default value) used to communicate thread identifiers
-// between C code and Chapel code in the runtime.
-typedef pthread_t chpl_threadID_t;
-#define chpl_nullThreadID 0
+// between the threading layer and its users.
+typedef pthread_t threadlayer_threadID_t;
+#define threadlayer_nullThreadID 0
 
 
 // Mutexes

@@ -1,11 +1,2 @@
-#!/bin/csh -f
-set testname = $1
-set outfile  = $2
-set tmpfile = $outfile.prediff.tmp
-
-# Replace threads IDS with "ID"
-sed 's/on [0-9]*/on ID/g' $outfile > $tmpfile
-
-# Sort output
-sort $tmpfile > $outfile
-
+#! /bin/sh
+sort < $2 > $2.prediff.tmp && mv $2.prediff.tmp $2

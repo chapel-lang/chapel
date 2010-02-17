@@ -143,7 +143,13 @@ void CHPL_FREE_TASK_LIST(chpl_task_list_p task_list) { }
 void CHPL_BEGIN(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
                 chpl_bool serial_state, chpl_task_list_p task_list_entry) {
   if (!ignore_serial && CHPL_GET_SERIAL()) {
+    //
+    // save and restore current task's serial state before and after
+    // invoking new task
+    //
+    chpl_bool saved_serial_state = CHPL_GET_SERIAL();
     (*fp)(a);
+    CHPL_SET_SERIAL(saved_serial_state);
   } else {
     // create a task from the given function pointer and arguments
     // and append it to the end of the task pool for later execution
@@ -168,6 +174,8 @@ void CHPL_BEGIN(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
   }
 }
 
+chpl_taskID_t CHPL_TASK_ID(void) { return 0; }
+
 void CHPL_TASK_SLEEP(int secs) {
   sleep(secs);
 }
@@ -189,6 +197,8 @@ int32_t  CHPL_NUMBLOCKEDTASKS(void) { return 0; }
 
 static chpl_bool
 launch_next_task(void) {
+  chpl_bool saved_serial_state;
+
   if (task_pool_head) {
     // retrieve the first task from the task pool
     chpl_task_pool_p task = task_pool_head;
@@ -202,10 +212,16 @@ launch_next_task(void) {
     //
     // reset serial state
     //
+    saved_serial_state = CHPL_GET_SERIAL();
     CHPL_SET_SERIAL(task->serial_state);
 
     (*task->fun)(task->arg);
     chpl_free(task, 0, 0);
+
+    //
+    // restore serial state
+    //
+    CHPL_SET_SERIAL(saved_serial_state);
 
     return true;
   } else {
@@ -223,13 +239,3 @@ int32_t CHPL_THREADS_MAXTHREADSLIMIT(void) { return 1; }
 uint32_t CHPL_NUMTHREADS(void) { return 1; }
 
 uint32_t CHPL_NUMIDLETHREADS(void) { return 0; }
-
-chpl_threadID_t CHPL_THREAD_ID(void) { return 0; }
-
-void CHPL_THREAD_CANCEL(chpl_threadID_t threadID) {
-  chpl_internal_error("CHPL_THREAD_CANCEL() shouldn't be called in threads-none");
-}
-
-void CHPL_THREAD_JOIN(chpl_threadID_t threadID) {
-  chpl_internal_error("CHPL_THREAD_JOIN() shouldn't be called in threads-none");
-}

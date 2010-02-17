@@ -1,9 +1,10 @@
 
-- reportsManyThreads.chpl:11 on ID
-- reportsManyThreads.chpl:17 on ID
-- reportsManyThreads.chpl:3 on ID
-- reportsManyThreads.chpl:4 on ID
-- reportsManyThreads.chpl:5 on ID
+- main program:0 is active
+- reportsManyThreads.chpl:11 is active
+- reportsManyThreads.chpl:17 is active
+- reportsManyThreads.chpl:3 is active
+- reportsManyThreads.chpl:4 is active
+- reportsManyThreads.chpl:5 is active
 --------------------------------
 Executing tasks:
 Pending tasks:

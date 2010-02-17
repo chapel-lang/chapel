@@ -30,6 +30,7 @@
 typedef struct task_pool_struct* task_pool_p;
 
 typedef struct task_pool_struct {
+  chpl_taskID_t    id;           // task identifier
   chpl_fn_p        fun;          // function to call for task
   void*            arg;          // argument to the function
   chpl_bool        serial_state; // whether new tasks can be created while executing fun
@@ -56,17 +57,26 @@ struct chpl_task_list {
 };
 
 
+// This constitutes one entry on our list of threads.
+typedef struct thread_list* thread_list_p;
+struct thread_list {
+  threadlayer_threadID_t thread;
+  thread_list_p          next;
+};
+
+
 typedef struct lockReport {
   const char*        filename;
   int                lineno;
-  chpl_bool          maybeLocked, maybeDeadlocked;
+  uint64_t           prev_progress_cnt;
+  chpl_bool          maybeLocked;
   struct lockReport* next;
 } lockReport_t;
 
 
 // This is the data that is private to each thread.
 typedef struct {
-  chpl_bool     serial_state;
+  task_pool_p   ptask;
   lockReport_t* lockRprt;
 } thread_private_data_t;
 
@@ -78,6 +88,9 @@ static chpl_mutex_t     extra_task_lock;    // critical section lock
 static chpl_mutex_t     task_list_lock;     // critical section lock
 static task_pool_p      task_pool_head;     // head of task pool
 static task_pool_p      task_pool_tail;     // tail of task pool
+static chpl_mutex_t     thread_list_lock;   // critical section lock
+static thread_list_p    thread_list_head;   // head of thread_list
+static thread_list_p    thread_list_tail;   // tail of thread_list
 static int              queued_cnt;         // number of tasks in the task pool
 static int              waking_cnt;         // number of threads signaled to wakeup
 static int              running_cnt;        // number of running threads 
@@ -85,7 +98,8 @@ static int              threads_cnt;        // number of threads (total)
 static int              blocked_thread_cnt; // number of threads waiting for something
 static int              idle_cnt;           // number of threads that are idle
 static int64_t          extra_task_cnt;     // number of threads executing more than one task
-static chpl_bool*       maybe_deadlocked;   // whether all existing threads are blocked
+static uint64_t         progress_cnt;       // counts unblock operations, as a
+                                            //   proxy for progress
 static chpl_mutex_t     report_lock;        // critical section lock
 
 static lockReport_t* lockReportHead = NULL;
@@ -93,21 +107,26 @@ static lockReport_t* lockReportTail = NULL;
 
 static chpl_string idleTaskName = "|idle|";
 
-static void        report_locked_threads(void);
-static void        report_all_tasks(void);
-static void        SIGINT_handler(int sig);
-static void        initializeLockReportForThread(void);
-static chpl_bool   set_block_loc(int, chpl_string);
-static void        unset_block_loc(void);
-static void        check_for_deadlock(void);
-static void        remove_begun_tasks_from_pool (void);
-static void*       chpl_begin_helper(void*);
-static void        launch_next_task_in_new_thread(void);
-static void        schedule_next_task(int);
-static task_pool_p add_to_task_pool(chpl_fn_p,
-                                    void*,
-                                    chpl_bool,
-                                    chpl_task_list_p);
+static chpl_taskID_t           get_next_task_id(void);
+static thread_private_data_t*  get_thread_private_data(void);
+static task_pool_p             get_current_ptask(void);
+static void                    set_current_ptask(task_pool_p);
+static void                    add_me_to_thread_list(void);
+static void                    report_locked_threads(void);
+static void                    report_all_tasks(void);
+static void                    SIGINT_handler(int sig);
+static void                    initializeLockReportForThread(void);
+static chpl_bool               set_block_loc(int, chpl_string);
+static void                    unset_block_loc(void);
+static void                    check_for_deadlock(void);
+static void                    remove_begun_tasks_from_pool (void);
+static void*                   chpl_begin_helper(void*);
+static void                    launch_next_task_in_new_thread(void);
+static void                    schedule_next_task(int);
+static task_pool_p             add_to_task_pool(chpl_fn_p,
+                                                void*,
+                                                chpl_bool,
+                                                chpl_task_list_p);
 
 
 // Mutexes
@@ -161,6 +180,9 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
     }
     unset_block_loc();
   }
+
+  if (blockreport)
+    progress_cnt++;
 }
 
 void CHPL_SYNC_LOCK(chpl_sync_aux_t *s) {
@@ -250,6 +272,9 @@ void CHPL_SINGLE_WAIT_FULL(chpl_single_aux_t *s,
     }
     unset_block_loc();
   }
+
+  if (blockreport)
+    progress_cnt++;
 }
 
 void CHPL_SINGLE_MARK_AND_SIGNAL_FULL(chpl_single_aux_t *s) {
@@ -291,16 +316,38 @@ void CHPL_TASKING_INIT(void) {
   blocked_thread_cnt = 0;
   idle_cnt = 0;
   extra_task_cnt = 0;
-  maybe_deadlocked = NULL;
   task_pool_head = task_pool_tail = NULL;
 
   threadlayer_init();
 
-  tp = chpl_alloc(sizeof(thread_private_data_t), CHPL_RT_MD_THREAD_PRIVATE_DATA, 0, 0);
+  tp = (thread_private_data_t*) chpl_alloc(sizeof(thread_private_data_t),
+                                           CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                           0, 0);
+
+  tp->ptask = (task_pool_p) chpl_alloc(sizeof(task_pool_t),
+                                       CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                       0, 0);
+  tp->ptask->id           = get_next_task_id();
+  tp->ptask->fun          = NULL;
+  tp->ptask->arg          = NULL;
+  tp->ptask->serial_state = false;
+  tp->ptask->begun        = true;
+  tp->ptask->ltask        = NULL;
+  tp->ptask->filename     = "main program";
+  tp->ptask->lineno       = 0;
+  tp->ptask->next         = NULL;
+
   threadlayer_set_thread_private_data(tp);
-  tp->serial_state = false;
+
+  if(taskreport) {
+    chpldev_taskTable_add(tp->ptask->id,
+                          tp->ptask->lineno, tp->ptask->filename,
+                          (uint64_t) (intptr_t) tp->ptask);
+    chpldev_taskTable_set_active(tp->ptask->id);
+  }
 
   if (blockreport) {
+    progress_cnt = 0;
     CHPL_MUTEX_INIT(&report_lock);
     initializeLockReportForThread();
   }
@@ -326,8 +373,11 @@ void CHPL_TASKING_EXIT(void) {
   remove_begun_tasks_from_pool();
   CHPL_MUTEX_UNLOCK(&threading_lock);
 
-  // calls CHPL_THREAD_CANCEL() and CHPL_THREAD_JOIN() for all threads
-  chpldev_endAllThreads(); 
+  // shut down all threads
+  for (thread_list_p tlp = thread_list_head; tlp != NULL; tlp = tlp->next)
+    threadlayer_thread_cancel(tlp->thread);
+  for (thread_list_p tlp = thread_list_head; tlp != NULL; tlp = tlp->next)
+    threadlayer_thread_join(tlp->thread);
 
   threadlayer_exit();
 }
@@ -342,7 +392,7 @@ void CHPL_ADD_TO_TASK_LIST(chpl_fn_int_t fid, void* arg,
   if (task_list_locale == chpl_localeID) {
     chpl_task_list_p ltask;
 
-    ltask =  (chpl_task_list_p)chpl_alloc(sizeof(struct chpl_task_list),
+    ltask = (chpl_task_list_p) chpl_alloc(sizeof(struct chpl_task_list),
                                           CHPL_RT_MD_TASK_LIST_DESCRIPTOR,
                                           0, 0);
     ltask->filename = filename;
@@ -387,7 +437,9 @@ void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is
   // actually the first element on the list.
   chpl_task_list_p ltask = task_list, next_task;
-  chpl_bool serial = CHPL_GET_SERIAL();
+  task_pool_p curr_ptask;
+  task_pool_t nested_task;
+
   // This function is not expected to be called if a cobegin contains fewer
   // than two statements; a coforall, however, may generate just one task,
   // or even none at all.
@@ -396,32 +448,15 @@ void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
   assert(ltask->next);
   next_task = ltask->next;  // next_task now points to the head of the list
 
-  if (serial)
+  curr_ptask = get_current_ptask();
+
+  if (curr_ptask->serial_state) {
     do {
       ltask = next_task;
-
-      if(taskreport) {
-          CHPL_MUTEX_LOCK(&threading_lock);
-          chpldev_taskTable_add(CHPL_THREAD_ID(), ltask->lineno,
-                                ltask->filename);
-          CHPL_MUTEX_UNLOCK(&threading_lock);
-      }
-
-      if (blockreport)
-        initializeLockReportForThread();
-
       (*ltask->fun)(ltask->arg);
-
-      if(taskreport) {
-          CHPL_MUTEX_LOCK(&threading_lock);
-          chpldev_taskTable_remove(CHPL_THREAD_ID());
-          CHPL_MUTEX_UNLOCK(&threading_lock);
-      }
-
       next_task = ltask->next;
     } while (ltask != task_list);
-
-  else {
+  } else {
     int task_cnt = 0;
     chpl_task_list_p first_task = next_task;
     next_task = next_task->next;
@@ -434,7 +469,8 @@ void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
 
       do {
         ltask = next_task;
-        ltask->ptask = add_to_task_pool(ltask->fun, ltask->arg, serial, ltask);
+        ltask->ptask = add_to_task_pool(ltask->fun, ltask->arg,
+                                        curr_ptask->serial_state, ltask);
         assert(ltask->ptask == NULL
                || ltask->ptask->ltask == ltask);
         next_task = ltask->next;
@@ -449,12 +485,23 @@ void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
 
     // Execute the first task on the list, since it has to run to completion
     // before continuing beyond the cobegin or coforall it's in.
+    nested_task.id       = get_next_task_id();
+    nested_task.fun      = first_task->fun;
+    nested_task.arg      = first_task->arg;
+    nested_task.ltask    = first_task;
+    nested_task.filename = first_task->filename;
+    nested_task.lineno   = first_task->lineno;
+    set_current_ptask(&nested_task);
 
     if(taskreport) {
-        CHPL_MUTEX_LOCK(&threading_lock);
-        chpldev_taskTable_add(CHPL_THREAD_ID(), first_task->lineno,
-                              first_task->filename);
-        CHPL_MUTEX_UNLOCK(&threading_lock);
+      CHPL_MUTEX_LOCK(&threading_lock);
+      chpldev_taskTable_add(nested_task.id,
+                            nested_task.lineno, nested_task.filename,
+                            (uint64_t) (intptr_t) &nested_task);
+      CHPL_MUTEX_UNLOCK(&threading_lock);
+
+      chpldev_taskTable_set_suspended(curr_ptask->id);
+      chpldev_taskTable_set_active(nested_task.id);
     }
 
     // begin critical section
@@ -479,10 +526,14 @@ void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
     CHPL_MUTEX_UNLOCK(&extra_task_lock);
 
     if(taskreport) {
-        CHPL_MUTEX_LOCK(&threading_lock);
-        chpldev_taskTable_remove(CHPL_THREAD_ID());
-        CHPL_MUTEX_UNLOCK(&threading_lock);
+      chpldev_taskTable_set_active(curr_ptask->id);
+
+      CHPL_MUTEX_LOCK(&threading_lock);
+      chpldev_taskTable_remove(nested_task.id);
+      CHPL_MUTEX_UNLOCK(&threading_lock);
     }
+
+    set_current_ptask(curr_ptask);
   }
 }
 
@@ -508,8 +559,10 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
     // don't lock unless it looks like we will find a task to execute
     // if we do so
     if (ltask->ptask) {
-      chpl_fn_p task_to_run_fun = NULL;
-      void* task_to_run_arg = NULL;
+      task_pool_p  curr_ptask;
+      task_pool_p  nested_ptask;
+      chpl_fn_p    task_to_run_fun = NULL;
+      void*        task_to_run_arg = NULL;
 
       // begin critical section
       CHPL_MUTEX_LOCK(&threading_lock);
@@ -523,6 +576,7 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
         // there is no longer any need to access the corresponding task
         // pool entry so avoid any potential of accessing a node that
         // will eventually be freed
+        nested_ptask = ltask->ptask;
         ltask->ptask = NULL;
         if (waking_cnt > 0)
           waking_cnt--;
@@ -534,6 +588,9 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
       CHPL_MUTEX_UNLOCK(&threading_lock);
 
       if (task_to_run_fun) {
+        curr_ptask = get_current_ptask();
+        set_current_ptask(nested_ptask);
+
         // begin critical section
         CHPL_MUTEX_LOCK(&extra_task_lock);
 
@@ -542,10 +599,23 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
         // end critical section
         CHPL_MUTEX_UNLOCK(&extra_task_lock);
 
+        if(taskreport) {
+          chpldev_taskTable_set_suspended(curr_ptask->id);
+          chpldev_taskTable_set_active(nested_ptask->id);
+        }
+
         if (blockreport)
           initializeLockReportForThread();
 
         (*task_to_run_fun)(task_to_run_arg);
+
+        if(taskreport) {
+          chpldev_taskTable_set_active(curr_ptask->id);
+
+          CHPL_MUTEX_LOCK(&threading_lock);
+          chpldev_taskTable_remove(nested_ptask->id);
+          CHPL_MUTEX_UNLOCK(&threading_lock);
+        }
 
         // begin critical section
         CHPL_MUTEX_LOCK(&extra_task_lock);
@@ -554,6 +624,8 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
 
         // end critical section
         CHPL_MUTEX_UNLOCK(&extra_task_lock);
+
+        set_current_ptask(curr_ptask);
       }
     }
 
@@ -615,29 +687,22 @@ void CHPL_BEGIN(chpl_fn_p fp, void* a,
 }
 
 
+chpl_taskID_t CHPL_TASK_ID(void) {
+  return get_current_ptask()->id;
+}
+
+
 void CHPL_TASK_SLEEP(int secs) {
   sleep(secs);
 }
 
 
 chpl_bool CHPL_GET_SERIAL(void) {
-  thread_private_data_t* tp;
-
-  tp = (thread_private_data_t*) threadlayer_get_thread_private_data();
-  if (tp == NULL)
-    chpl_internal_error("no thread private data");
-
-  return tp->serial_state;
+  return get_thread_private_data()->ptask->serial_state;
 }
 
 void CHPL_SET_SERIAL(chpl_bool state) {
-  thread_private_data_t* tp;
-
-  tp = (thread_private_data_t*) threadlayer_get_thread_private_data();
-  if (tp == NULL)
-    chpl_internal_error("no thread private data");
-
-  tp->serial_state = state;
+  get_thread_private_data()->ptask->serial_state = state;
 }
 
 
@@ -683,6 +748,81 @@ int32_t  CHPL_NUMBLOCKEDTASKS(void) {
 
 
 // Internal utility functions for task management
+
+//
+// Get a new task ID.
+//
+static chpl_taskID_t get_next_task_id(void) {
+  static chpl_taskID_t    id = 0;
+  static chpl_mutex_t     id_lock;
+
+  chpl_taskID_t           next_id;
+
+  if (id == 0)
+    CHPL_MUTEX_INIT(&id_lock);
+
+  CHPL_MUTEX_LOCK(&id_lock);
+  next_id = id++;
+  CHPL_MUTEX_UNLOCK(&id_lock);
+
+  return next_id;
+}
+
+
+//
+// Get the the thread private data pointer for my thread.
+//
+static thread_private_data_t* get_thread_private_data(void) {
+  thread_private_data_t* tp;
+
+  tp = (thread_private_data_t*) threadlayer_get_thread_private_data();
+  if (tp == NULL)
+    chpl_internal_error("no thread private data");
+
+  return tp;
+}
+
+
+//
+// Set the descriptor for the task now running on my thread.
+//
+static task_pool_p get_current_ptask(void) {
+  return get_thread_private_data()->ptask;
+}
+
+
+//
+// Set the descriptor for the task now running on my thread.
+//
+static void set_current_ptask(task_pool_p ptask) {
+  get_thread_private_data()->ptask = ptask;
+}
+
+
+//
+// Add the current thread (which is new) to our list of active threads.
+//
+static void add_me_to_thread_list(void) {
+    thread_list_p tlp;
+
+    tlp = (thread_list_p) chpl_alloc(sizeof(struct thread_list),
+                                     CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
+
+    tlp->thread = threadlayer_thread_id();
+    tlp->next   = NULL;
+
+    if (thread_list_head == NULL)
+      CHPL_MUTEX_INIT(&thread_list_lock);
+
+    CHPL_MUTEX_LOCK(&thread_list_lock);
+    if (thread_list_head == NULL)
+      thread_list_head = tlp;
+    else
+      thread_list_tail->next = tlp;
+    thread_list_tail = tlp;
+    CHPL_MUTEX_UNLOCK(&thread_list_lock);
+}
+
 
 //
 // Walk over the linked list of thread states and print the ones that
@@ -766,18 +906,14 @@ static void SIGINT_handler(int sig) {
 //
 static void initializeLockReportForThread(void) {
   lockReport_t* newLockReport;
-  thread_private_data_t* tp;
 
-  newLockReport = chpl_alloc(sizeof(lockReport_t), CHPL_RT_MD_LOCK_REPORT_DATA,
-                             0, 0);
+  newLockReport = (lockReport_t*) chpl_alloc(sizeof(lockReport_t),
+                                             CHPL_RT_MD_LOCK_REPORT_DATA,
+                                             0, 0);
   newLockReport->next = NULL;
   newLockReport->maybeLocked = false;
-  newLockReport->maybeDeadlocked = false;
 
-  tp = (thread_private_data_t*) threadlayer_get_thread_private_data();
-  if (tp == NULL)
-    chpl_internal_error("no thread private data");
-  tp->lockRprt = newLockReport;
+  get_thread_private_data()->lockRprt = newLockReport;
 
   // Begin critical section
   CHPL_MUTEX_LOCK(&report_lock);
@@ -812,11 +948,10 @@ static chpl_bool set_block_loc(int lineno, chpl_string filename) {
 
   isLastUnblockedThread = false;
 
-  tp = (thread_private_data_t*) threadlayer_get_thread_private_data();
-  if (tp == NULL)
-    chpl_internal_error("no thread private data");
+  tp = get_thread_private_data();
   tp->lockRprt->filename = filename;
   tp->lockRprt->lineno = lineno;
+  tp->lockRprt->prev_progress_cnt = progress_cnt;
   tp->lockRprt->maybeLocked = true;
 
   // Begin critical section
@@ -825,10 +960,6 @@ static chpl_bool set_block_loc(int lineno, chpl_string filename) {
   blocked_thread_cnt++;
   if (blocked_thread_cnt > threads_cnt) {
     isLastUnblockedThread = true;
-    tp->lockRprt->maybeDeadlocked = true;
-    if (maybe_deadlocked)
-      *maybe_deadlocked = false;
-    maybe_deadlocked = &(tp->lockRprt->maybeDeadlocked);
   }
 
   // End critical section
@@ -842,23 +973,15 @@ static chpl_bool set_block_loc(int lineno, chpl_string filename) {
 // Inform task management that the thread (task) is no longer suspended.
 //
 static void unset_block_loc(void) {
-  thread_private_data_t* tp;
-
   if (!blockreport)
     return;
 
-  tp = (thread_private_data_t*) threadlayer_get_thread_private_data();
-  if (tp == NULL)
-    chpl_internal_error("no thread private data");
-  tp->lockRprt->maybeLocked = false;
+  get_thread_private_data()->lockRprt->maybeLocked = false;
 
   // Begin critical section
   CHPL_MUTEX_LOCK(&report_lock);
 
   blocked_thread_cnt--;
-  if (maybe_deadlocked)
-    *maybe_deadlocked = false;
-  maybe_deadlocked = NULL;
 
   // End critical section
   CHPL_MUTEX_UNLOCK(&report_lock);
@@ -869,19 +992,13 @@ static void unset_block_loc(void) {
 // Check for and report deadlock, when a suspension deadline passes.
 //
 static void check_for_deadlock(void) {
-  thread_private_data_t* tp;
-
-  // Blockreport should be true here here, because this can't be
-  // called unless set_block_loc() returns true, and it can't do that
-  // unless blockreport is true.  So this is just a check for ongoing
+  // Blockreport should be true here, because this can't be called
+  // unless set_block_loc() returns true, and it can't do that unless
+  // blockreport is true.  So this is just a check for ongoing
   // internal consistency.
   assert(blockreport);
 
-  tp = (thread_private_data_t*) threadlayer_get_thread_private_data();
-  if (tp == NULL)
-    chpl_internal_error("no thread private data");
-
-  if (!tp->lockRprt->maybeDeadlocked)
+  if (get_thread_private_data()->lockRprt->prev_progress_cnt < progress_cnt)
     return;
 
   fflush(stdout);
@@ -920,26 +1037,29 @@ chpl_begin_helper(void* ptask_void) {
   task_pool_p ptask = (task_pool_p) ptask_void;
   thread_private_data_t *tp;
 
-  tp = chpl_alloc(sizeof(thread_private_data_t),
-                  CHPL_RT_MD_THREAD_PRIVATE_DATA, 0, 0);
+  tp = (thread_private_data_t*) chpl_alloc(sizeof(thread_private_data_t),
+                                           CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                           0, 0);
   threadlayer_set_thread_private_data(tp);
 
+  // add new thread to our thread list
+  add_me_to_thread_list();
+
+  // Lock report initialization has to be done before we do the taskTable
+  // add, because that can block on a sync var and thus reference the lock
+  // report data.
+  if (blockreport)
+    initializeLockReportForThread();
+
   // add incoming task to task-table structure in ChapelRuntime
-  if(taskreport) {
-      CHPL_MUTEX_LOCK(&threading_lock);
-      chpldev_taskTable_add(
-        CHPL_THREAD_ID(), ptask->lineno, ptask->filename);
-      CHPL_MUTEX_UNLOCK(&threading_lock);
-  }
+  if(taskreport)
+    chpldev_taskTable_set_active(ptask->id);
 
   while (true) {
     //
-    // reset serial state
+    // Set current task on this thread.
     //
-    tp->serial_state = ptask->serial_state;
-
-    if (blockreport)
-      initializeLockReportForThread();
+    tp->ptask = ptask;
 
     (*ptask->fun)(ptask->arg);
 
@@ -950,16 +1070,16 @@ chpl_begin_helper(void* ptask_void) {
     // We have to wait to free the ptask until we hold the lock, in
     // order to make sure launch_next_task_in_new_thread() is done
     // manipulating the ptask before anyone else could re-allocate it.
-    // If we want to do the free before grabbing the lock then we'll
-    // have to arrange for launch_next_task_in_new_thread() to do the
-    // pool manipulations before calling threadlayer_thread_create(),
-    // but then we'll also have to be prepared to undo all those
-    // manipulations if we cannot create a thread.
+    // We could do the free before grabbing the lock if we arranged for
+    // launch_next_task_in_new_thread() to do the pool manipulations
+    // before calling threadlayer_thread_create(), but then we would
+    // also have to be prepared to undo all those manipulations if we
+    // were unable to create a thread.
     //
     chpl_free(ptask, 0, 0);
 
     if(taskreport) {
-        chpldev_taskTable_remove(CHPL_THREAD_ID());
+      chpldev_taskTable_remove(ptask->id);
     }
 
     //
@@ -1007,6 +1127,9 @@ chpl_begin_helper(void* ptask_void) {
       remove_begun_tasks_from_pool();
     } while (!task_pool_head);
 
+    if (blockreport)
+      progress_cnt++;
+
     assert(task_pool_head && !task_pool_head->begun);
 
     if (waking_cnt > 0)
@@ -1031,10 +1154,8 @@ chpl_begin_helper(void* ptask_void) {
       ptask->ltask = NULL;
     }
     ptask->begun = true;
-    if(taskreport) {
-        chpldev_taskTable_add(CHPL_THREAD_ID(), ptask->lineno,
-                              ptask->filename);
-    }
+    if(taskreport)
+      chpldev_taskTable_set_active(ptask->id);
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
       task_pool_tail = NULL;
@@ -1063,9 +1184,9 @@ chpl_begin_helper(void* ptask_void) {
 //
 static void
 launch_next_task_in_new_thread(void) {
-  task_pool_p      ptask;
-  static chpl_bool warning_issued = false;
-  chpl_threadID_t  thread;
+  task_pool_p             ptask;
+  static chpl_bool        warning_issued = false;
+  threadlayer_threadID_t  thread;
 
   if (warning_issued)  // If thread creation failed previously, don't try again
     return;
@@ -1089,10 +1210,6 @@ launch_next_task_in_new_thread(void) {
     } else {
       assert(queued_cnt > 0);
       queued_cnt--;
-
-      // remember thread ID for later use
-      chpldev_taskTable_addThread(thread); // requires threading lock
-
       threads_cnt++;
       running_cnt++;
       if (ptask->ltask) {
@@ -1146,9 +1263,16 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
                                     void* a,
                                     chpl_bool serial,
                                     chpl_task_list_p ltask) {
-  task_pool_p ptask = (task_pool_p)chpl_alloc(sizeof(task_pool_t),
-                                              CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
-                                              0, 0);
+  task_pool_p ptask = (task_pool_p) chpl_alloc(sizeof(task_pool_t),
+                                               CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                               0, 0);
+  ptask->id = get_next_task_id();
+  ptask->fun = fp;
+  ptask->arg = a;
+  ptask->serial_state = serial;
+  ptask->ltask = ltask;
+  ptask->begun = false;
+
   if (ltask) {
     ptask->filename = ltask->filename;
     ptask->lineno = ltask->lineno;
@@ -1156,11 +1280,7 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
     ptask->filename = "<unknown>";
     ptask->lineno = 0;
   }
-  ptask->fun = fp;
-  ptask->arg = a;
-  ptask->serial_state = serial;
-  ptask->ltask = ltask;
-  ptask->begun = false;
+
   ptask->next = NULL;
 
   if (task_pool_tail)
@@ -1170,6 +1290,10 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   task_pool_tail = ptask;
 
   queued_cnt++;
+
+  chpldev_taskTable_add(ptask->id,
+                        ptask->lineno, ptask->filename,
+                        (uint64_t) (intptr_t) ptask);
 
   return ptask;
 }

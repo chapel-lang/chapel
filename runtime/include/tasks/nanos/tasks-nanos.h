@@ -6,14 +6,13 @@
 
 
 //
-// The NANOS implementation of tasking is derived directly from the FIFO
-// implementation, and so has the same threading layer interface (although
-// at present it doesn't use all of it).
+// The NANOS implementation of tasking is derived directly from the
+// FIFO implementation, and so has nearly the same threading layer
+// interface (although at present it doesn't use all of it).
 //
-// The threading layer only has to supply a small amount of support:
-// mutexes, functions to retrieve thread identifiers and to cancel and
-// join with specific threads, and some supplementary types and callback
-// functions.  The complete list is:
+// The threading layer only has to supply a small amount of support in
+// the form of supplementary types and callback functions.  The
+// complete list is:
 //
 // For mutexes
 //   type(s)
@@ -29,9 +28,7 @@
 //   type(s)
 //     <none>
 //   functions
-//     CHPL_THREAD_ID()
-//     CHPL_THREAD_CANCEL()
-//     CHPL_THREAD_JOIN()
+//     threadlayer_thread_id()
 //
 // For sync variables
 //   type(s)
@@ -62,17 +59,24 @@
 //     threadlayer_get_thread_private_data()
 //     threadlayer_set_thread_private_data()
 //
-// The thread management functions are fundamental and are declared in
-// chpltasks.h.  The other types are declared in the threads-*.h file
-// for each specific threading layer, and the callback functions are
-// declared here.  The interfaces and requirements for these other
-// types and callback functions are described elsewhere in this file.
+// The types are declared in the threads-*.h file for each specific
+// threading layer, and the callback functions are declared here.  The
+// interfaces and requirements for these other types and callback
+// functions are described elsewhere in this file.
 //
 // Although the above list may seem long, in practice many of the
 // functions are quite simple, and with luck also easily extrapolated
 // from what is done for other threading layers.  For an example of an
 // implementation, see "pthreads" threading.
 //
+
+
+//
+// Type (and default value) used to communicate task identifiers
+// between C code and Chapel code in the runtime.
+//
+typedef void* chpl_taskID_t;
+#define chpl_nullTaskID 0
 
 
 //

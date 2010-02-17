@@ -96,7 +96,7 @@ pragma "inline" def =(a: complex(?w), b: complex(w)) return b;
 pragma "inline" def =(a: string, b: string) return __primitive("string_copy", b);
 pragma "inline" def =(a, b) return b;
 
-pragma "inline" def ==(a: chpl_threadID_t, b: chpl_threadID_t) return __primitive("==", a, b);
+pragma "inline" def ==(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("==", a, b);
 
 //
 // equality comparison on primitive types
@@ -1054,7 +1054,7 @@ pragma "inline" def _cast(type t, x: int(?w)) where _isPrimitiveType(t)
 pragma "inline" def _cast(type t, x: uint(?w)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: chpl_threadID_t) where _isPrimitiveType(t)
+pragma "inline" def _cast(type t, x: chpl_taskID_t) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
 pragma "inline" def _cast(type t, x: real(?w)) where _isPrimitiveType(t)

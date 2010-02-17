@@ -68,6 +68,7 @@ const char* chpl_rt_memDescs[] = {
   "arrays for localesPerRealm",
   "thread private data",
   "thread callee function pointer and argument"
+  "thread list descriptor",
 };
 #endif
 typedef enum {
@@ -115,6 +116,7 @@ typedef enum {
   CHPL_RT_MD_LOCALES_PER_REALM,
   CHPL_RT_MD_THREAD_PRIVATE_DATA,
   CHPL_RT_MD_THREAD_CALLEE,
+  CHPL_RT_MD_THREAD_LIST_DESCRIPTOR,
   CHPL_RT_MD_NUM
 } chpl_rt_enum_memDescs;
 extern const char* chpl_memDescs[];

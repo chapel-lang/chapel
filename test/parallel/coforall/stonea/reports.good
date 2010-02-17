@@ -1,15 +1,16 @@
 
-- reports.chpl:3 on ID
-- reports.chpl:7 on ID
-- reports.chpl:7 on ID
-- reports.chpl:7 on ID
-- reports.chpl:7 on ID
-- reports.chpl:7 on ID
-- reports.chpl:7 on ID
-- reports.chpl:7 on ID
-- reports.chpl:7 on ID
-- reports.chpl:7 on ID
-- reports.chpl:7 on ID
+- main program:0 is suspended
+- reports.chpl:3 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
 --------------------------------
 Executing tasks:
 Pending tasks:

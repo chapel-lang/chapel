@@ -216,10 +216,21 @@ void CHPL_BEGIN(chpl_fn_p fp, void* a,
 
 
 //TODO
+chpl_taskID_t CHPL_TASK_ID(void) {
+  return 0;
+}
+
+//TODO
+void CHPL_TASK_SLEEP(int secs) {
+  sleep(secs);
+}
+
+//TODO
 chpl_bool CHPL_GET_SERIAL(void) {
   return 0;
 }
 
+//TODO
 void CHPL_SET_SERIAL(chpl_bool state) {
 }
 

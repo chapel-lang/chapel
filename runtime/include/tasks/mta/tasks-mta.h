@@ -3,20 +3,36 @@
 
 #include <stdint.h>
 
-// mutex type
+// type (and default value) used to communicate task identifiers
+// between C code and Chapel code in the runtime.
+typedef int64_t chpl_taskID_t;
+#define chpl_nullTaskID 0
+
+//
+// Mutexes
+//
 typedef int chpl_mutex_t;
 
+//
+// Sync variables
+//
 typedef struct {
   sync int64_t is_full;      // also serves as lock - need to acquire before accessing corresponding _syncvar
   sync int64_t signal_full;  // wait for full; signal this when full
   sync int64_t signal_empty; // wait for empty; signal this when empty
 } chpl_sync_aux_t;
 
+//
+// Single variables
+//
 typedef struct {
   sync int64_t is_full;      // also serves as lock - need to acquire before writing to corresponding _singlevar
   sync int64_t signal_full;  // wait for full; signal this when full
 } chpl_single_aux_t;
 
+//
+// Architectural intrinsics
+//
 #define chpl_read_FE(x) readfe(&((x)->value))
 #define chpl_read_FF(x) readff(&((x)->value))
 #define chpl_read_XX(x) readxx(&((x)->value))
@@ -29,10 +45,5 @@ typedef struct {
 #define chpl_single_read_XX(x) readxx(&((x)->value))
 #define chpl_single_write_EF(x,y) writeef(&((x)->value), (y))
 #define chpl_single_reset(x) purge(&((x)->value))
-
-// type (and default value) used to communicate thread identifiers
-// between C code and Chapel code in the runtime.
-typedef int64_t chpl_threadID_t;
-#define chpl_nullThreadID 0
 
 #endif

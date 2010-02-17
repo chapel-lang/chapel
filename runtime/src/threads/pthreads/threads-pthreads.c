@@ -19,7 +19,7 @@
 #include <pthread.h>
 #include <inttypes.h>
 #include <sys/time.h>
-
+#include <sched.h>
 
 typedef struct {
   void* (*fn)(void*);
@@ -31,6 +31,7 @@ static pthread_cond_t wakeup_cond = PTHREAD_COND_INITIALIZER;
 static pthread_key_t  thread_private_key;
 
 static chpl_condvar_t* chpl_condvar_new(void);
+static void*           initial_pthread_func(void*);
 static void            destroy_thread_private_data(void*);
 static void*           pthread_func(void*);
 static void            pool_suspend_cancel_cleanup(void*);
@@ -65,14 +66,14 @@ void threadlayer_mutex_unlock(threadlayer_mutex_p mutex) {
 
 // Thread id
 
-chpl_threadID_t CHPL_THREAD_ID(void) {
-  return (chpl_threadID_t) pthread_self();
+threadlayer_threadID_t threadlayer_thread_id(void) {
+  return (threadlayer_threadID_t) pthread_self();
 }
 
 
 // Thread cancellation
 
-void CHPL_THREAD_CANCEL(chpl_threadID_t thread) {
+void threadlayer_thread_cancel(threadlayer_threadID_t thread) {
   if (0 != pthread_cancel((pthread_t) thread)) {
     chpl_internal_error("thread cancel failed");
   }
@@ -81,7 +82,7 @@ void CHPL_THREAD_CANCEL(chpl_threadID_t thread) {
 
 // Thread join (wait for completion)
 
-void CHPL_THREAD_JOIN(chpl_threadID_t thread) {
+void threadlayer_thread_join(threadlayer_threadID_t thread) {
   if (0 != pthread_join((pthread_t) thread, NULL)) {
     chpl_internal_error("thread join failed");
   }
@@ -92,7 +93,8 @@ void CHPL_THREAD_JOIN(chpl_threadID_t thread) {
 
 static chpl_condvar_t* chpl_condvar_new(void) {
   chpl_condvar_t* cv;
-  cv = (chpl_condvar_t*) chpl_alloc(sizeof(chpl_condvar_t), CHPL_RT_MD_COND_VAR, 0, 0);
+  cv = (chpl_condvar_t*) chpl_alloc(sizeof(chpl_condvar_t),
+                                    CHPL_RT_MD_COND_VAR, 0, 0);
   if (pthread_cond_init(cv, NULL))
     chpl_internal_error("pthread_cond_init() failed");
   return cv;
@@ -170,6 +172,36 @@ void threadlayer_single_destroy(chpl_single_aux_t *s) {
 void threadlayer_init(void) {
   if (pthread_key_create(&thread_private_key, destroy_thread_private_data))
     chpl_internal_error("pthread_key_create failed");
+
+  //
+  // This is something of a hack, but it makes us a bit more resilient
+  // if we're out of memory or near to it at shutdown time.  Launch,
+  // cancel, and join with an initial pthread, forcing initialization
+  // needed by any of those activities.  (In particular we have found
+  // that cancellation needs to dlopen(3) a shared object, which fails
+  // if we are out of memory.  Doing it now means that shared object is
+  // already available when we need it later.)
+  //
+  {
+    pthread_t initial_pthread;
+
+    if (!pthread_create(&initial_pthread, NULL, initial_pthread_func, NULL)) {
+      (void) pthread_cancel(initial_pthread);
+      (void) pthread_join(initial_pthread, NULL);
+    }
+  }
+}
+
+//
+// The initial pthread just waits to be canceled.  See the comment in
+// threadlayer_init() for the purpose of this.
+//
+static void* initial_pthread_func(void* ignore) {
+  while (1) {
+    pthread_testcancel();
+    sched_yield();
+  }
+  return NULL;
 }
 
 static void destroy_thread_private_data(void* p) {
@@ -181,7 +213,7 @@ void threadlayer_exit(void) {
   (void) pthread_key_delete(thread_private_key);
 }
 
-int threadlayer_thread_create(void* thread,
+int threadlayer_thread_create(threadlayer_threadID_t* thread,
                               void*(*fn)(void*), void* arg) {
   thread_func_t* f;
   pthread_t pthread;
@@ -193,7 +225,7 @@ int threadlayer_thread_create(void* thread,
   if (pthread_create(&pthread, NULL, pthread_func, f))
     return -1;
   if (thread != NULL)
-    *(chpl_threadID_t*) thread = (chpl_threadID_t) (intptr_t) pthread;
+    *thread = (threadlayer_threadID_t) pthread;
   return 0;
 }
 

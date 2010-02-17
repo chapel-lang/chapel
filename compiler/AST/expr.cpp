@@ -1519,15 +1519,6 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, "*");
       gen(outfile, "%A, %A, %A)", get(1), get(2), get(3));
       break;
-    case PRIM_THREAD_ID:
-      fprintf(outfile, "CHPL_THREAD_ID()");
-      break;
-    case PRIM_GET_SERIAL:
-      fprintf(outfile, "CHPL_GET_SERIAL()");
-      break;
-    case PRIM_SET_SERIAL:
-      gen(outfile, "CHPL_SET_SERIAL(%A)", get(1));
-      break;
     case PRIM_SYNC_INIT:
     case PRIM_SYNC_DESTROY:
       fprintf( outfile, primitive->tag == PRIM_SYNC_INIT ?
@@ -1766,10 +1757,19 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen( outfile);
       fputc( ')', outfile);
       break;
+    case PRIM_TASK_ID:
+      fprintf(outfile, "CHPL_TASK_ID()");
+      break;
     case PRIM_TASK_SLEEP:
       fputs( "CHPL_TASK_SLEEP(", outfile);
       get(1)->codegen( outfile);
       fputc( ')', outfile);
+      break;
+    case PRIM_GET_SERIAL:
+      fprintf(outfile, "CHPL_GET_SERIAL()");
+      break;
+    case PRIM_SET_SERIAL:
+      gen(outfile, "CHPL_SET_SERIAL(%A)", get(1));
       break;
     case PRIM_INIT_TASK_LIST:
       fprintf( outfile, "NULL");
@@ -1849,7 +1849,7 @@ void CallExpr::codegen(FILE* outfile) {
       Type* src = get(2)->typeInfo();
       if (dst == src) {
         get(2)->codegen(outfile);
-      } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtThreadID) {
+      } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtTaskID) {
           fprintf(outfile, "((");
           typeInfo()->codegen(outfile);
           fprintf(outfile, ") (intptr_t) (");

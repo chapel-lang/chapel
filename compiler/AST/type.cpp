@@ -613,8 +613,8 @@ void initPrimitiveTypes(void) {
   dtTimer = createPrimitiveType("_timervalue", "_timervalue");
   CREATE_DEFAULT_SYMBOL(dtTimer, gTimer, "_new_timer()");
 
-  dtThreadID = createPrimitiveType("chpl_threadID_t", "chpl_threadID_t");
-  CREATE_DEFAULT_SYMBOL(dtThreadID, gThreadID, "chpl_nullThreadID");
+  dtTaskID = createPrimitiveType("chpl_taskID_t", "chpl_taskID_t");
+  CREATE_DEFAULT_SYMBOL(dtTaskID, gTaskID, "chpl_nullTaskID");
 
   dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");
   CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");

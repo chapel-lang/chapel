@@ -10,10 +10,9 @@
 // version whose purpose is to minimize the work needed to get Chapel
 // tasking working on top of some new threading layer.
 //
-// The threading layer only has to supply a small amount of support:
-// mutexes, functions to retrieve thread identifiers and to cancel and
-// join with specific threads, and some supplementary types and callback
-// functions.  The complete list is:
+// The threading layer only has to supply a small amount of support in
+// the form of supplementary types and callback functions.  The
+// complete list is:
 //
 // For mutexes
 //   type(s)
@@ -29,9 +28,9 @@
 //   type(s)
 //     <none>
 //   functions
-//     CHPL_THREAD_ID()
-//     CHPL_THREAD_CANCEL()
-//     CHPL_THREAD_JOIN()
+//     threadlayer_thread_id()
+//     threadlayer_thread_cancel()
+//     threadlayer_thread_join()
 //
 // For sync variables
 //   type(s)
@@ -62,11 +61,10 @@
 //     threadlayer_get_thread_private_data()
 //     threadlayer_set_thread_private_data()
 //
-// The thread management functions are fundamental and are declared in
-// chpltasks.h.  The other types are declared in the threads-*.h file
-// for each specific threading layer, and the callback functions are
-// declared here.  The interfaces and requirements for these other
-// types and callback functions are described elsewhere in this file.
+// The types are declared in the threads-*.h file for each specific
+// threading layer, and the callback functions are declared here.  The
+// interfaces and requirements for these other types and callback
+// functions are described elsewhere in this file.
 //
 // Although the above list may seem long, in practice many of the
 // functions are quite simple, and with luck also easily extrapolated
@@ -76,9 +74,25 @@
 
 
 //
+// Type (and default value) used to communicate task identifiers
+// between C code and Chapel code in the runtime.
+//
+typedef uint64_t chpl_taskID_t;
+#define chpl_nullTaskID 0
+
+
+//
 // Mutexes
 //
 typedef threadlayer_mutex_t chpl_mutex_t;
+
+
+//
+// Thread management
+//
+threadlayer_threadID_t threadlayer_thread_id(void);
+void threadlayer_thread_cancel(threadlayer_threadID_t);
+void threadlayer_thread_join(threadlayer_threadID_t);
 
 
 //
@@ -229,7 +243,8 @@ void threadlayer_single_destroy(chpl_single_aux_t *s);
 // The interface for thread creation may need to be extended eventually
 // to allow for specifying such things as stack sizes and/or locations.
 //
-int threadlayer_thread_create(void*, void*(*)(void*), void*);
+int threadlayer_thread_create(threadlayer_threadID_t*, void*(*)(void*), void*);
+
 
 //
 // Threadlayer_pool_suspend() is called when a thread finds nothing in

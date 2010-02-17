@@ -47,18 +47,14 @@
 
 #define CHPL_BEGIN                       _TFN(chpl_begin)
 
+#define CHPL_TASK_ID                     _TFN(chpl_task_id)
 #define CHPL_TASK_SLEEP                  _TFN(chpl_task_sleep)
-
 #define CHPL_GET_SERIAL                  _TFN(chpl_get_serial)
 #define CHPL_SET_SERIAL                  _TFN(chpl_set_serial)
 
 #define CHPL_NUMQUEUEDTASKS              _TFN(chpl_numQueuedTasks)
 #define CHPL_NUMRUNNINGTASKS             _TFN(chpl_numRunningTasks)
 #define CHPL_NUMBLOCKEDTASKS             _TFN(chpl_numBlockedTasks)
-
-#define CHPL_THREAD_ID                   _TFN(chpl_thread_id)
-#define CHPL_THREAD_CANCEL               _TFN(chpl_thread_cancel)
-#define CHPL_THREAD_JOIN                 _TFN(chpl_thread_join)
 
 #define CHPL_THREADS_GETMAXTHREADS       _TFN(chpl_threads_getMaxThreads)
 #define CHPL_THREADS_MAXTHREADSLIMIT     _TFN(chpl_threads_maxThreadsLimit)

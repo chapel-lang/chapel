@@ -62,10 +62,6 @@ enum PrimitiveTag {
 
   PRIM_LOCAL_CHECK,          // assert that a wide ref is on this locale
 
-  PRIM_THREAD_ID,
-  PRIM_GET_SERIAL,                // get serial state
-  PRIM_SET_SERIAL,                // set serial state to true or false
-
   PRIM_SYNC_INIT,                
   PRIM_SYNC_DESTROY,                
   PRIM_SYNC_LOCK,                
@@ -103,7 +99,10 @@ enum PrimitiveTag {
   PRIM_EXECUTE_TASKS_IN_LIST,
   PRIM_FREE_TASK_LIST,
 
+  PRIM_TASK_ID,
   PRIM_TASK_SLEEP,
+  PRIM_GET_SERIAL,                // get serial state
+  PRIM_SET_SERIAL,                // set serial state to true or false
 
   PRIM_CHPL_ALLOC,
   PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_alloc wrapper that permits size 0

@@ -435,7 +435,7 @@ def chpl__defaultHash(c: complex): int(64) {
 }
 
 pragma "inline"
-def chpl__defaultHash(u: chpl_threadID_t): int(64) {
+def chpl__defaultHash(u: chpl_taskID_t): int(64) {
   return _gen_key(u:int(64));
 }
 

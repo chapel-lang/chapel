@@ -54,8 +54,8 @@ returnInfoReal64(CallExpr* call) {
 }
 
 static Type*
-returnInfoThreadID(CallExpr* call) {
-  return dtThreadID;
+returnInfoTaskID(CallExpr* call) {
+  return dtTaskID;
 }
 
 static Type*
@@ -352,11 +352,6 @@ initPrimitive() {
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
 
-  // thread primitives
-  prim_def(PRIM_THREAD_ID, "thread_id", returnInfoThreadID);
-  prim_def(PRIM_GET_SERIAL, "thread_get_serial", returnInfoBool);
-  prim_def(PRIM_SET_SERIAL, "thread_set_serial", returnInfoVoid, true);
-
   // operations on sync/single vars
   prim_def(PRIM_SYNC_INIT, "init_sync_aux", returnInfoVoid, true);
   prim_def(PRIM_SYNC_DESTROY, "destroy_sync_aux", returnInfoVoid, true);
@@ -396,7 +391,11 @@ initPrimitive() {
   prim_def(PRIM_EXECUTE_TASKS_IN_LIST, "execute tasks in list", returnInfoVoid, true);
   prim_def(PRIM_FREE_TASK_LIST, "free task list", returnInfoVoid, true);
 
+  // task primitives
+  prim_def(PRIM_TASK_ID, "task_id", returnInfoTaskID);
   prim_def(PRIM_TASK_SLEEP, "task sleep", returnInfoVoid, true);
+  prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
+  prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
 
   prim_def(PRIM_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIM_CHPL_ALLOC_PERMIT_ZERO, "chpl_alloc_permit_zero",

@@ -1440,10 +1440,6 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_INIT_REF:
   case PRIM_SET_REF:
 
-#ifdef BLAH
-  case PRIM_THREAD_ID:
-#endif
-
   case PRIM_INIT_FIELDS:
   case PRIM_PTR_EQUAL:
   case PRIM_PTR_NOTEQUAL:

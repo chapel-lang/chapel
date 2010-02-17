@@ -90,6 +90,11 @@ void CHPL_BEGIN(
          chpl_task_list_p);
 
 //
+// Get ID.
+//
+chpl_taskID_t CHPL_TASK_ID(void);
+
+//
 // Suspend.
 //
 void CHPL_TASK_SLEEP(int);
@@ -128,12 +133,6 @@ int32_t CHPL_NUMBLOCKEDTASKS(void);
 
 
 // Threads
-
-chpl_threadID_t  CHPL_THREAD_ID(void);                // caller's thread id
-
-void             CHPL_THREAD_CANCEL(chpl_threadID_t); // ask thread to quit
-
-void             CHPL_THREAD_JOIN(chpl_threadID_t);   // wait for thread quit
 
 //
 // returns the default maximum number of threads that can be handled by this

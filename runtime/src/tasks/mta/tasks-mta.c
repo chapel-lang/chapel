@@ -1,4 +1,6 @@
-// MTA implementation
+//
+// MTA implementation of Chapel tasking interface
+//
 
 #include "chplrt.h"
 #include "chpltasks.h"
@@ -185,6 +187,10 @@ CHPL_BEGIN(chpl_fn_p fp, void* arg, chpl_bool ignore_serial,
   }
 }
 
+chpl_taskID_t CHPL_TASK_ID(void) {
+  return (chpl_taskID_t) mta_get_threadid(); 
+}
+
 void CHPL_TASK_SLEEP(int secs) {
   sleep(secs);
 }
@@ -223,18 +229,6 @@ int32_t  CHPL_NUMBLOCKEDTASKS(void) { return -1; }
 
 
 // Threads
-
-chpl_threadID_t CHPL_THREAD_ID(void) {
-  return (chpl_threadID_t) mta_get_threadid(); 
-}
-
-void CHPL_THREAD_CANCEL(chpl_threadID_t threadID) {
-  chpl_internal_error("CHPL_THREAD_CANCEL() shouldn't be called in threads-mta");
-}
-
-void CHPL_THREAD_JOIN(chpl_threadID_t threadID) {
-  chpl_internal_error("CHPL_THREAD_JOIN() shouldn't be called in threads-mta");
-}
 
 int32_t CHPL_THREADS_GETMAXTHREADS(void) {
   return chpl_coresPerLocale() * 100;
