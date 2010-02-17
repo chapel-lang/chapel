@@ -446,13 +446,6 @@ class DefaultArithmeticArr: BaseArr {
     return alias;
   }
 
-  // can this be put into ChapelArray.chpl and shared amongst all?
-  def dsiCheckSlice(ranges) {
-    for param i in 1..rank do
-      if !dom.dsiDim(i).boundsCheck(ranges(i)) then
-        halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
-  }
-
   def dsiSlice(d: DefaultArithmeticDom) {
     var alias = new DefaultArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,

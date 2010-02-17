@@ -400,12 +400,6 @@ class GPUArithmeticArr: BaseArr {
     return alias;
   }
 
-  def dsiCheckSlice(ranges) {
-    for param i in 1..rank do
-      if !dom.dsiDim(i).boundsCheck(ranges(i)) then
-        halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
-  }
-
   def dsiSlice(d: GPUArithmeticDom) {
     var alias = new GPUArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,

@@ -776,9 +776,15 @@ record _array {
   def this(d: domain) var where d.rank == rank
     return this((...d.getIndices()));
 
+  def checkSlice(ranges: range(?) ...rank) {
+    for param i in 1.._value.rank do
+      if !_value.dom.dsiDim(i).boundsCheck(ranges(i)) then
+        halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
+  }
+
   def this(ranges: range(?) ...rank) var {
     if boundsChecking then
-      _value.dsiCheckSlice(ranges);
+      checkSlice((... ranges));
     var d = _dom((...ranges));
     var a = _value.dsiSlice(d._value);
     a._arrAlias = _value;

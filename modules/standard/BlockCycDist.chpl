@@ -757,15 +757,6 @@ def BlockCyclicArr.dsiSerialWrite(f: Writer) {
   }
 }
 
-def BlockCyclicArr.dsiCheckSlice(ranges) {
-  for param i in 1..rank do
-    if !dom.dim(i).boundsCheck(ranges(i)) then {
-      writeln(dom.dim(i), " ", ranges(i), " ", dom.dim(i).boundsCheck(ranges(i)));
-      halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
-    }
-}
-
-
 def BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
   var alias = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
   for i in dom.dist.targetLocDom {

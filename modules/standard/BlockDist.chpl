@@ -891,15 +891,6 @@ def BlockArr.dsiSerialWrite(f: Writer) {
   }
 }
 
-def BlockArr.dsiCheckSlice(ranges) {
-  for param i in 1..rank do
-    if !dom.dsiDim(i).boundsCheck(ranges(i)) then {
-      writeln(dom.dsiDim(i), " ", ranges(i), " ", dom.dsiDim(i).boundsCheck(ranges(i)));
-      halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
-    }
-}
-
-
 def BlockArr.dsiSlice(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
   var thisid = this.locale.uid;

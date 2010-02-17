@@ -382,15 +382,6 @@ class CyclicArr: BaseArr {
   var pid: int = -1;
 }
 
-def CyclicArr.dsiCheckSlice(ranges) {
-  for param i in 1..rank {
-    if !dom.dsiDim(i).boundsCheck(ranges(i)) {
-      writeln(dom.dsiDim(i), " ", ranges(i), " ", dom.dsiDim(i).boundsCheck(ranges(i)));
-      halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
-    }
-  }
-}
-
 def CyclicArr.dsiSlice(d: CyclicDom) {
   var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
   for i in dom.dist.targetLocDom {
