@@ -94,6 +94,9 @@ primitive-type:
 
 primitive-type-parameter-part:
   ( integer-parameter-expression )
+
+integer-parameter-expression:
+  expression
 \end{syntax}
 
 
@@ -335,7 +338,6 @@ Like classes and records, unions may also define methods.  Unions are
 defined in~\rsec{Unions}.
 
 \subsubsection{Tuple Types}
-\label{Tuple_Types}
 
 A tuple is a light-weight record that consists of one or more
 anonymous fields.  If all the fields are of the same type, the tuple

@@ -21,22 +21,27 @@ variable-kind: one of
 
 variable-declaration-list:
   variable-declaration
-  variable-declaration , variable-declaration-list
+  variable-declaration-list , variable-declaration
 
 variable-declaration:
   identifier-list type-part[OPT] initialization-part
   identifier-list type-part
   array-alias-declaration
 
-identifier-list:
-  identifier
-  identifier , identifier-list
-
 type-part:
   : type-specifier
 
 initialization-part:
   = expression
+
+identifier-list:
+  identifier-list , tuple-grouped-identifier-list
+  identifier-list , identifier
+  tuple-grouped-identifier-list
+  identifier
+
+tuple-grouped-identifier-list:
+  ( identifier-list )
 \end{syntax}
 A \sntx{variable-declaration-statement} is used to define one or more
 variables.  If the statement is a top-level module statement, the
@@ -69,6 +74,9 @@ Multiple variables can be defined in the
 same \sntx{variable-declaration-list}.  The semantics of declaring
 multiple variables that share a \sntx{initialization-part}
 and/or \sntx{type-part} is defined in~\rsec{Multiple_Variable_Declarations}.
+
+Multiple variables can be grouped together using a tuple notation as
+described in~\rsec{Variable_Declarations_in_a_Tuple}.
 
 The \sntx{array-alias-declaration} is defined
 in~\rsec{Domains_and_Arrays}.

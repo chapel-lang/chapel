@@ -34,6 +34,8 @@ formals:
 formal:
   formal-tag identifier formal-type[OPT] default-expression[OPT]
   formal-tag identifier formal-type[OPT] variable-argument-expression
+  formal-tag tuple-grouped-identifier-list formal-type[OPT] default-expression[OPT]
+  formal-tag tuple-grouped-identifier-list formal-type[OPT] variable-argument-expression
 
 formal-type:
   : type-specifier
@@ -79,6 +81,9 @@ in~\rsec{Generics}.
 Default expressions allow for the omission of actual arguments at the
 call site, resulting in the implicit passing of a default value.
 Default values are discussed in~\rsec{Default_Values}.
+
+Formal arguments can be grouped together using a tuple notation as
+described in~\rsec{Formal_Argument_Declarations_in_a_Tuple}.
 
 Functions do not require parentheses if they have no arguments.  Such
 functions are described in~\rsec{Functions_without_Parentheses}.
@@ -672,14 +677,3 @@ passed one actual, it builds a 1-tuple which is different than the
 evaluation of the parenthesized expression.  Thus the
 expressions \chpl{tuple(1)} and \chpl{(1)} are not equivalent.
 \end{example}
-
-A tuple of variables arguments can be passed to a function that takes
-variable arguments by destructuring the tuple in a tuple destructuring
-expression.  The syntax of this expression is given by
-\begin{syntax}
-tuple-destructuring-expression:
-  ( ... expression )
-\end{syntax}
-In this expression, the tuple defined by \sntx{expression} is expanded
-in place to represent its components.  This allows for the forwarding
-of variable arguments as variable arguments.

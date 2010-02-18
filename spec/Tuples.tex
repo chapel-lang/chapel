@@ -3,19 +3,102 @@
 \index{tuples}
 
 A tuple is an ordered set of components that allows for the
-specification of a light-weight record with anonymous fields.
+specification of a light-weight collection of values.  As the examples
+in this chapter illustrate, tuples are a boon to the Chapel
+programmer.  In addition to making it easy to return multiple values
+from a function, tuples help to support multi-dimensional indices, to
+group arguments to functions, and to specify mathematical concepts.
 
-\subsection{Tuple Expressions}
-\label{Tuple_Expressions}
+\subsection{Tuple Types}
+\label{Tuple_Types}
+\index{tuples!types}
 
-A tuple expression is a comma-separated list of at least two
-expressions that is enclosed in parentheses.  The number of
-expressions is the size of the tuple and the types of the expressions
-determine the component types of the tuple.  A single expression in
-parentheses is a \sntx{parenthesized-expression} discussed
-in~\rsec{Parenthesized_Expressions}.  A 1-tuple expression can be
-created by defining a function that takes a variable number of
-arguments as described in~\rsec{Variable_Length_Argument_Lists}.
+A tuple type is defined by a fixed number (a compile-time constant) of
+component types.  It can be specified by a parenthesized,
+comma-separated list of types.  The number of types in the list
+defines the size of the tuple; the types themselves specify the
+component types.
+
+The syntax of a tuple type is given by:
+\begin{syntax}
+tuple-type:
+  ( type-specifier , type-list )
+
+type-list:
+  type-specifier
+  type-specifier , type-list
+\end{syntax}
+
+\index{tuples!homogeneous}
+\index{* (tuples)@\chpl{*} tuples}
+A homogeneous tuple is a special-case of a general tuple where the
+types of the components are identical.  Homogeneous tuples have fewer
+restrictions for how they can be indexed~(\rsec{Tuple_Indexing}).
+Homogeneous tuple types can be defined using the above syntax, or they
+can be defined as a product of an integral parameter (a compile-time
+constant integer) and a type.  This latter specification is
+implemented by overloading \chpl{*} with the following prototype:
+\begin{chapel}
+def *(param p: int, type t) type
+\end{chapel}
+
+\begin{rationale}
+Homogeneous tuples require the size to be specified as a parameter
+(compile-time constant).  This avoids any overhead associated with
+storing the runtime size in the tuple.  It also avoids the question as
+to whether a non-parameter size should be part of the type of the
+tuple.  If a programmer requires a non-parameter value to define a
+data structure, an array may be a better choice.
+\end{rationale}
+
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The statement
+\begin{chapel}
+var x1: (string, real),
+    x2: (int, int, int),
+    x3: 3*int;
+\end{chapel}
+defines three variables.  Variable \chpl{x1} is a 2-tuple with
+component types \chpl{string} and \chpl{real}.  Variables \chpl{x2}
+and \chpl{x3} are homogeneous 3-tuples with component type \chpl{int}.
+The types of \chpl{x2} and \chpl{x3} are identical even though they
+are specified in different ways.
+\begin{chapelpost}
+writeln((x1,x2,x3));
+\end{chapelpost}
+\begin{chapeloutput}
+((, 0.0), (0, 0, 0), (0, 0, 0))
+\end{chapeloutput}
+\end{example}
+
+Note that if a single type is delimited by parentheses, the
+parentheses only impact precedence.  Thus \chpl{(int)} is equivalent
+to \chpl{int}.  Nevertheless, tuple types with a single component type
+are legal and useful.  One way to specify a 1-tuple is to use the
+overloaded \chpl{*} operator since every 1-tuple is trivially a
+homogeneous tuple.
+
+\begin{rationale}
+Like parentheses around expressions, parentheses around types are
+necessary for grouping in order to avoid the default precedence of the
+grammar.  Thus it is not the case that we would always want to create
+a tuple.  The type \chpl{3*(3*int)} specifies a 3-tuple of 3-tuples of
+integers rather than a 3-tuple of 1-tuples of 3-tuples of integers.
+The type \chpl{3*3*int}, on the other hand, specifies a 9-tuple of
+integers.
+\end{rationale}
+
+\subsection{Tuple Values}
+\label{Tuple_Values}
+\index{tuples!values}
+
+A value of a tuple type attaches a value to each component type.
+Tuple values can be specified by a parenthesized, comma-separated list
+of expressions.  The number of expressions in the list defines the
+size of the tuple; the types of these expressions specify the
+component types of the tuple.
 
 The syntax of a tuple expression is given by:
 \begin{syntax}
@@ -28,196 +111,551 @@ expression-list:
 \end{syntax}
 
 \begin{example}
+\begin{chapelpre}
+\end{chapelpre}
 The statement
 \begin{chapel}
-var x = (1, 2);
+var x1: (string, real) = ("hello", 3.14),
+    x2: (int, int, int) = (1, 2, 3),
+    x3: 3*int = (4, 5, 6);
 \end{chapel}
-defines a variable \chpl{x} that is a 2-tuple containing the values
-\chpl{1} and \chpl{2}.
+defines three variables.  Variable \chpl{x1} is a 2-tuple with
+component types \chpl{string} and \chpl{real}.  It is initialized such
+that the first component is \chpl{"hello"} and the second
+component is \chpl{3.14}.  Variables \chpl{x2} and \chpl{x3} are
+homogeneous 3-tuples with component type \chpl{int}.  Their
+initialization expressions specify 3-tuples of integers.
+\begin{chapelpost}
+writeln((x1,x2,x3));
+\end{chapelpost}
+\begin{chapeloutput}
+((hello, 3.14), (1, 2, 3), (4, 5, 6))
+\end{chapeloutput}
 \end{example}
 
-\subsection{Tuple Type Definitions}
-\label{Tuple_Type_Definitions}
-\index{tuples!types}
-
-A tuple type is a comma-separated list of at least two types.  The
-number of types in the list defines the size of the tuple, which is
-part of the tuple's type.  The syntax of a tuple type is given by:
-\begin{syntax}
-tuple-type:
-  ( type-specifier , type-list )
-  homogeneous-tuple-type
-
-type-list:
-  type-specifier
-  type-specifier , type-list
-\end{syntax}
+\index{tuple@\chpl{tuple}}
+The function
+\begin{chapel}
+def tuple(x...) return x;
+\end{chapel}
+is defined in the standard context to create arbitrary tuples.
 
 \begin{example}
-Given a tuple expression \chpl{(1, 2)}, the type of the tuple value is
-\chpl{(int, int)}, referred to as a 2-tuple of integers.
-\end{example}
+\begin{chapelpre}
+\end{chapelpre}
+The statement
+\begin{chapel}
+var x1 =      ("hello", 3.14),
+    x2 = tuple("hello", 3.14),
+    x3 = tuple(1);
+\end{chapel}
+creates two identical tuples \chpl{x1} and \chpl{x2}, and a 1-tuple of
+an integer \chpl{x3} with its component initialized to \chpl{1}.
+\begin{chapelpost}
+writeln((x1,x2,x3));
+\end{chapelpost}
+\begin{chapeloutput}
+((hello, 3.14), (hello, 3.14), (1))
+\end{chapeloutput}
+\end{example}.
 
-The \sntx{homogeneous-tuple-type} specifies a tuple type where all of
-the type components are identical.  This special syntax is described
-in~\rsec{Homogeneous_Tuples}.
-
-If one type is delimited by parentheses, the parentheses are ignored.
-Specifying a 1-tuple type can be accomplished using the syntax for
-homogeneous tuples in~\rsec{Homogeneous_Tuples} by specifying 1 for
-the integral parameter.
+Note that if a single expression is delimited by parentheses, the
+parentheses only impact precedence.  Thus \chpl{(1)} is equivalent
+to \chpl{1}.  Tuple expressions with a single component are legal and
+useful.  As seen in the example above, one way to specify a 1-tuple is
+to use the standard \chpl{tuple} function.
 
 \subsection{Tuple Assignment}
 \label{Tuple_Assignment}
 \index{assignment!tuples}
 \index{tuples!assignment}
 
-In tuple assignment, the components of the tuple on the left-hand
-side of the assignment operator are each assigned the components of
-the tuple on the right-hand side of the assignment.  The assignments
-are simultaneous so that each component expression on the right-hand
-side is fully evaluated before being assigned to the left-hand side.
-
-\subsection{Tuple Operators}
-\label{Tuple_Operators}
-\index{tuples!operators}
-
-The arithmetic ~(\rsec{Arithmetic_Operators}), bitwise
-~(\rsec{Bitwise_Operators}), shift ~(\rsec{Shift_Operators}), and
-relational ~(\rsec{Relational_Operators}) operators are also defined
-over tuples.
-
-With the exception of relational operators, operations applied to two
-tuples result in element-by-element application of the operation.
-
-Relational operators over tuples apply in an "alphabetical" manner.
-Each component is compared to the corresponding component or to the
-scalar value until the relation is found to be true or false.
-
-\begin{example}
-In the code:
-\begin{chapel}
-var x = ("c", "h", "p", "l") > ("c", "h", "a", "t"); 
-\end{chapel}
-The value of \chpl{x} is \chpl{true}. After comparing \chpl{"c"} to
-\chpl{"c"}, and \chpl{"h"} to \chpl{"h"}, \chpl{"p"} is found to be
-greater than \chpl{"a"}, so the expression is \chpl{true}. 
-\end{example}
+In tuple assignment, the components of the tuple on the left-hand side
+of the assignment operator are each assigned the components of the
+tuple on the right-hand side of the assignment.  These assignments
+occur in component order (component one followed by component two,
+etc.).
 
 \subsection{Tuple Destructuring}
 \label{Tuple_Destructuring}
 \index{tuples!destructuring}
 
-When a tuple expression appears on the left-hand side of an assignment
-statement, the expression on the right-hand side is said to be {\em
-destructured}.  The components of the tuple on the right-hand side are
-assigned to each of the component expressions on the left-hand side.
-This assignment is simultaneous in that the right-hand side is
-evaluated before the assignments are made.
+Tuples can be split into their components in four ways:
+\begin{itemize}
+\item In assignment where multiple expression on the left-hand side of
+the assignment operator are grouped using tuple notation.
+\item In variable declarations where multiple variables in a
+declaration are grouped using tuple notation.
+\item In function calls where multiple formal arguments in a function
+declaration are grouped using tuple notation.
+\item In an expression context that accepts a comma-separated list of
+expressions where a tuple expression is expanded in place using the
+tuple expansion expression.
+\end{itemize}
+
+\subsubsection{Splitting a Tuple with Assignment}
+
+When multiple expression on the left-hand side of an assignment
+operator are grouped using tuple notation, the tuple on the right-hand
+side is split into its components.  The number of grouped expressions
+must be equal to the size of the tuple on the right-hand side.  In
+addition to the usual assignment evaluation order of left to right,
+the assignment is evaluated in component order.
+
 \begin{example}
-Given two variables of the same type, x and y, they can be swapped by
-the following single assignment statement:
+\begin{chapelpre}
+\end{chapelpre}
+The code
+\begin{chapel}
+var a, b, c: int;
+(a, (b, c)) = (1, (2, 3));
+\end{chapel}
+defines three integer variables \chpl{a}, \chpl{b}, and \chpl{c}.  The
+second line then splits the tuple \chpl{(1, (2, 3))} such that \chpl{1}
+is assigned to \chpl{a}, \chpl{2} is assigned to \chpl{b},
+and \chpl{3} is assigned to \chpl{c}.
+\begin{chapelpost}
+writeln((a, b, c));
+\end{chapelpost}
+\begin{chapeloutput}
+(1, 2, 3)
+\end{chapeloutput}
+\end{example}
+
+\begin{example}
+\begin{chapelpre}
+var x = 1, y = 2;
+\end{chapelpre}
+Given two variables of the same type, x and y, the statement
 \begin{chapel}
 (x, y) = (y, x);
 \end{chapel}
+assigns \chpl{y} to \chpl{x} and then \chpl{x} (already
+assigned \chpl{y}) to \chpl{y}.
+\begin{chapelfuture}
+bug: order of tuple destructuring
+\end{chapelfuture}
+\begin{chapelpost}
+writeln((x, y));
+\end{chapelpost}
+\begin{chapeloutput}
+(2, 2)
+\end{chapeloutput}
 \end{example}
 
-\subsubsection{Variable Declarations in a Tuple}
-\label{Variable_Declarations_in_a_Tuple}
-\index{tuples!variable declarations}
-
-Variables can be defined in a tuple to facilitate capturing the values
-from a function that returns a tuple.  The extension to the syntax of
-variable declarations is as follows:
-\begin{syntax}
-tuple-variable-declaration-statement:
-  `config'[OPT] variable-kind tuple-variable-declaration ;
-
-tuple-variable-declaration:
-  ( tuple-identifier-list ) type-part[OPT] initialization-part
-  ( tuple-identifier-list ) type-part
-
-tuple-identifier-list:
-  tuple-identifier
-  tuple-identifier , tuple-identifier-list
-
-tuple-identifier:
-  identifier
-  ( tuple-identifier-list )
-\end{syntax}
-The identifiers defined within the \sntx{tuple-identifier-list} are declared
-to be new variables in the scope of the statement.  The
-\sntx{type-part} and/or \sntx{initialization-part} defines a tuple
-that is destructured when assigned to the new variables. The shape of the
-\sntx{tuple-identifier-list} must match the shape of any specified
-\sntx{type-part} or \sntx{initialization-part}.
-
-\subsubsection{Ignoring Values with Underscore}
-\label{Ignoring_Values_with_Underscore}
 \index{_@\chpl{_}}
-
 If an underscore appears as a component in a tuple expression in a
 destructuring context, the expression on the right-hand side is
 ignored, though it is still evaluated.
 
-\subsection{Homogeneous Tuples}
-\label{Homogeneous_Tuples}
-\index{tuples!homogeneous}
+\subsubsection{Splitting a Tuple into Variable Declarations}
+\label{Variable_Declarations_in_a_Tuple}
+\index{tuples!variable declarations grouped as}
 
-A homogeneous tuple is a special-case of a general tuple where the
-types of the components are identical.  Homogeneous tuples have fewer
-restrictions for how they can be indexed~(\rsec{Tuple_Indexing}).
+When multiple variables in a declaration are grouped using tuple
+notation, the tuple type and/or tuple initialization expression are
+split into their components.  The number of grouped variables must be
+equal to the size of the tuple type and/or tuple initialization
+expression.  The variables are initialized in component order.
 
-\subsubsection{Declaring Homogeneous Tuples}
-\label{Declaring_Homogeneous_Tuples}
+The syntax of grouped variable declarations is defined
+in~\rsec{Variable_Declarations}.
 
-\index{* (tuples)@\chpl{*} tuples}
-
-A homogeneous tuple type may be specified with the following syntax:
-\begin{syntax}
-homogeneous-tuple-type:
-  integer-parameter-expression * type-specifier
-
-integer-parameter-expression:
-  expression
-\end{syntax}
-The homogeneous tuple type specification is syntactic sugar for the
-type explicitly replicated a number of times equal to the
-\sntx{integer-parameter-expression}.
 \begin{example}
-The following types are equivalent:
-\begin{center}
-\chpl{3*int} \hspace{2pc} \chpl{(int, int, int)}
-\end{center}
+\begin{chapelpre}
+\end{chapelpre}
+The code
+\begin{chapel}
+var (a, (b, c)) = (1, (2, 3));
+\end{chapel}
+defines three integer variables \chpl{a}, \chpl{b}, and \chpl{c}.  It
+plits the tuple \chpl{(1, (2, 3))} such that \chpl{1}
+initializes \chpl{a}, \chpl{2} initializes \chpl{b}, and \chpl{3}
+initializes \chpl{c}.
+\begin{chapelpost}
+writeln((a, b, c));
+\end{chapelpost}
+\begin{chapeloutput}
+(1, 2, 3)
+\end{chapeloutput}
+\end{example}
+
+Grouping variable declarations using tuple notation allows a 1-tuple
+to be destructured by enclosing a single variable declaration in
+parentheses.
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The code
+\begin{chapel}
+var (a) = tuple(1);
+\end{chapel}
+initialize the new variable \chpl{a} to 1.
+\begin{chapelpost}
+writeln(a);
+\end{chapelpost}
+\begin{chapeloutput}
+1
+\end{chapeloutput}
+\end{example}
+
+\subsubsection{Splitting a Tuple into Formal Arguments}
+\label{Formal_Argument_Declarations_in_a_Tuple}
+\index{tuples!formal arguments grouped as}
+
+When multiple formal arguments in a function declaration are grouped
+using tuple notation, the actual expression is split into its
+components during a function call.  The number of grouped formal
+arguments must be equal to the size of the actual tuple expression.
+The actual arguments are passed in component order to the formal
+arguments.
+
+The syntax of grouped formal arguments is defined
+in~\rsec{Function_Definitions}.
+
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The function
+\begin{chapel}
+def f(x: int, (y, z): (int, int)) {
+  // body
+}
+\end{chapel}
+is defined to take an integer value and a 2-tuple of integer values.
+The 2-tuple is split when the function is called into two formals.  A
+call may look like the following:
+\begin{chapel}
+f(1, (2, 3));
+\end{chapel}
+\begin{chapelfuture}
+bug: type of tuple grouped formals
+\end{chapelfuture}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{example}
+
+Grouping formal arguments using tuple notation allows a 1-tuple to be
+destructured by enclosing a single formal argument in parentheses.
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The empty function
+\begin{chapel}
+def f((x)) { }
+\end{chapel}
+accepts a 1-tuple actual with any component type.
+\begin{chapelpost}
+f(tuple(1));
+var y: 1*real;
+f(y);
+\end{chapelpost}
+\begin{chapeloutput}
+\end{chapeloutput}
+\end{example}
+
+\subsubsection{Splitting a Tuple via Tuple Expansion}
+\label{Tuple_Expansion}
+\index{... tuple expansion@\chpl{...} tuple expansion}
+\index{tuples!expanding in place}
+
+Tuples can be expanded in place using the following syntax:
+\begin{syntax}
+tuple-expand-expression:
+  ( ... expression )
+\end{syntax}
+In this expression, the tuple defined by \sntx{expression} is expanded
+in place to represent its components.  This can only be used in a
+context where a comma-separated list of components is valid.
+
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+Given two 2-tuples
+\begin{chapel}
+var x1 = (1, 2.0), x2 = ("three", "four");
+\end{chapel}
+the following statement
+\begin{chapel}
+var x3 = ((...x1), (...x2));
+\end{chapel}
+creates the 4-tuple \chpl{x3} with the value \chpl{(1, 2.0, "three",
+"four")}.
+\begin{chapelpost}
+writeln(x3);
+\end{chapelpost}
+\begin{chapeloutput}
+(1, 2.0, three, four)
+\end{chapeloutput}
+\end{example}
+
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The following code defines two functions, a function \chpl{first} that
+returns the first component of a tuple and a function \chpl{rest} that
+returns a tuple containing all of the components of a tuple except for
+the first:
+\begin{chapel}
+def first(t) where isTuple(t) {
+  return t(1);
+}
+def rest(t) where isTuple(t) {
+  def helper(first, rest...)
+    return rest;
+  return helper((...t));
+}
+\end{chapel}
+\begin{chapelpost}
+writeln(first((1, 2, 3)));
+writeln(rest((1, 2, 3)));
+\end{chapelpost}
+\begin{chapeloutput}
+1
+(2, 3)
+\end{chapeloutput}
 \end{example}
 
 \subsection{Tuple Indexing}
 \label{Tuple_Indexing}
 \index{tuples!indexing}
 
-A tuple may be indexed into by an integer.  Indexing a tuple is
-accomplished by treating the tuple as a function and passing an
-integer to it as an argument.
+A tuple may be accessed by an integral parameter (compile-time
+constant) as if it were an array.  Tuples are \emph{1-based} so the
+first component in the tuple is accessed by the value \chpl{1}, and so
+forth.
 
-The result of indexing a tuple by integer $k$ is the value of the
-$k$th component.  If the tuple is not homogeneous, the tuple can only
-be indexed by an integer parameter.  This ensures that the type of the
-indexing expression is statically known.
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The loop
+\begin{chapel}
+var tuple = (1, 2.0, "three");
+for param i in 1..3 do
+  writeln(tuple(i));
+\end{chapel}
+uses a param loop to output the components of a tuple.
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+1
+2.0
+three
+\end{chapeloutput}
+\end{example}
 
-\subsection{Formal Arguments of Tuple Type}
-\label{Formal_Arguments_of_Tuple_Type}
+Homogeneous tuples may be accessed by integral values that are not
+necessarily compile-time constants.
 
-\index{formal arguments!tuples}
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The loop
+\begin{chapel}
+var tuple = (1, 2, 3);
+for i in 1..3 do
+  writeln(tuple(i));
+\end{chapel}
+uses a serial loop to output the components of a homogeneous tuple.
+Since the index is not a compile-time constant, this would result in
+an error were tuple not homogeneous.
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+1
+2
+3
+\end{chapeloutput}
+\end{example}
 
-This section of the specification is forthcoming.  In particular, it
-is expected that tuple arguments will allow for implicit conversions
-on the components rather than treating the arguments as if they are
-records.
+\begin{rationale}
+Non-homogeneous tuples can only be accessed by compile-time constants
+so that the type of the expression is statically known.
+\end{rationale}
 
-\subsubsection{Formal Argument Declarations in a Tuple}
-\label{Formal_Argument_Declarations_in_a_Tuple}
-\index{formal arguments!tuples}
+\subsection{Tuple Operators}
+\label{Tuple_Operators}
+\index{tuples!operators}
 
-Formal argument declarations can be grouped into a tuple similarly to
-variable declarations to facilitate passing the result of a function that
-returns a tuple directly to another function.
+The unary operators \chpl{\+}, \chpl{\-}, \chpl{\~}, and \chpl{\!} are
+overloaded on tuples as defined by the following code
+\begin{chapel}
+def $\oplus$(a) where isTuple(a)
+  if a.size == 1 then
+    return tuple($\oplus$a(1));
+  else
+    return ($\oplus$a(1), (...$\oplus$rest(a)));
+\end{chapel}
+where $\oplus$ is replaced by the unary operator and \chpl{rest} is
+defined as follows:
+\begin{chapelpre}
+\end{chapelpre}
+\begin{chapel}
+def rest(t) {
+  def helper(first, rest...)
+    return rest;
+  return helper((...t));
+}
+\end{chapel}
+\begin{chapelpost}
+writeln(rest((1, 2, 3)));
+\end{chapelpost}
+\begin{chapeloutput}
+(2, 3)
+\end{chapeloutput}
+
+The \chpl{rest} function takes a tuple and returns a tuple of all of
+the components in the argument except the first one.
+
+The binary operators \chpl{\+}, \chpl{\-}, \chpl{\*}, \chpl{\/}, \chpl{\%},
+\chpl{\*\*}, \chpl{\&}, \chpl{\|}, \chpl{\^}, \chpl{\<\<}, and \chpl{\>\>}
+are overloaded on tuples as defined by the following code
+\begin{chapel}
+def $\oplus$(a, b) where isTuple(a) && isTuple(b) {
+  if a.size != b.size then
+    compilerError("tuple operands to $\oplus$ have different sizes");
+  if a.size == 1 then
+    return tuple(a(1)$\oplus$b(1));
+  else
+    return (a(1)$\oplus$b(1), (...rest(a)$\oplus$rest(b)));
+}
+\end{chapel}
+where $\oplus$ is replaced by the binary operator and \chpl{rest} is
+defined as above.
+
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The code
+\begin{chapel}
+var x = (1, 1.0) + (2.0, 2);
+\end{chapel}
+creates a 2-tuple of reals with the value \chpl{(2.0, 2.0)}.
+\begin{chapelpost}
+writeln(x);
+\end{chapelpost}
+\begin{chapeloutput}
+(3.0, 3.0)
+\end{chapeloutput}
+\end{example}
+
+The relational operators~(\rsec{Relational_Operators}) are defined
+over tuples so that the comparison starts with the first component,
+and continues to each next component until it can be decided whether
+the relation holds or not.  Specifically, these operators are defined
+as follows:
+\begin{chapel}
+def >(a, b) where isTuple(a) && isTuple(b) {
+  if a.size != b.size then
+    compilerError("tuple operands to > have different sizes");
+  for param i in 1..a.size do
+    if a(i) > b(i) then
+      return true;
+    else if a(i) < b(i) then
+      return false;
+  return false;
+}
+
+def >=(a, b) where isTuple(a) && isTuple(b) {
+  if a.size != b.size then
+    compilerError("tuple operands to >= have different sizes");
+  for param i in 1..a.size do
+    if a(i) > b(i) then
+      return true;
+    else if a(i) < b(i) then
+      return false;
+  return true;
+}
+
+def <(a, b) where isTuple(a) && isTuple(b) {
+  if a.size != b.size then
+    compilerError("tuple operands to < have different sizes");
+  for param i in 1..a.size do
+    if a(i) < b(i) then
+      return true;
+    else if a(i) > b(i) then
+      return false;
+  return false;
+}
+
+def <=(a, b) where isTuple(a) && isTuple(b) {
+  if a.size != b.size then
+    compilerError("tuple operands to <= have different sizes");
+  for param i in 1..a.size do
+    if a(i) < b(i) then
+      return true;
+    else if a(i) > b(i) then
+      return false;
+  return true;
+}
+
+def ==(a, b) where isTuple(a) && isTuple(b) {
+  if a.size != b.size then
+    return false;
+  for param i in 1..a.size do
+    if a(i) != b(i) then
+      return false;
+  return true;
+}
+
+def !=(a, b) where isTuple(a) && isTuple(b) {
+  if a.size != b.size then
+    return true;
+  for param i in 1..a.size do
+    if a(i) != b(i) then
+      return true;
+  return false;
+}
+\end{chapel}
+
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The code
+\begin{chapel}
+var x = (1, 1, 0) > (1, 0, 1);
+\end{chapel}
+creates a variable initialized to \chpl{true}.  After comparing the
+first components and determining they are equal, the second components
+are compared to determine that the first tuple is greater than the
+second tuple.
+\begin{chapelpost}
+writeln(x);
+\end{chapelpost}
+\begin{chapeloutput}
+true
+\end{chapeloutput}
+\end{example}
+
+\begin{note}
+The overloaded operators above define the semantics of these operators
+on tuples, but a Chapel implementation can use alternative but
+semantically equivalent definitions.  Indeed, it may be beneficial to
+specialize the functions to homogeneous tuples to avoid code bloat.
+\end{note}
+
+\subsection{Predefined Functions and Methods on Tuples}
+\index{tuples!predefined functions}
+
+\begin{protohead}
+def $Tuple$.size param
+\end{protohead}
+\begin{protobody}
+Returns the size of the tuple.
+\end{protobody}
+
+\begin{protohead}
+def isHomogeneousTuple(t: $Tuple$) param
+\end{protohead}
+\begin{protobody}
+Returns true if \chpl{t} is a homogeneous tuple; otherwise false.
+\end{protobody}
+
+\begin{protohead}
+def isTuple(t: $Tuple$) param
+\end{protohead}
+\begin{protobody}
+Returns true if \chpl{t} is a tuple; otherwise false.
+\end{protobody}
