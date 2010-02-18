@@ -331,8 +331,8 @@ void CHPL_TASKING_INIT(void) {
   tp->ptask->fun          = NULL;
   tp->ptask->arg          = NULL;
   tp->ptask->serial_state = false;
-  tp->ptask->begun        = true;
   tp->ptask->ltask        = NULL;
+  tp->ptask->begun        = true;
   tp->ptask->filename     = "main program";
   tp->ptask->lineno       = 0;
   tp->ptask->next         = NULL;
@@ -485,12 +485,14 @@ void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
 
     // Execute the first task on the list, since it has to run to completion
     // before continuing beyond the cobegin or coforall it's in.
-    nested_task.id       = get_next_task_id();
-    nested_task.fun      = first_task->fun;
-    nested_task.arg      = first_task->arg;
-    nested_task.ltask    = first_task;
-    nested_task.filename = first_task->filename;
-    nested_task.lineno   = first_task->lineno;
+    nested_task.id           = get_next_task_id();
+    nested_task.fun          = first_task->fun;
+    nested_task.arg          = first_task->arg;
+    nested_task.serial_state = false;
+    nested_task.ltask        = first_task;
+    nested_task.begun        = true;
+    nested_task.filename     = first_task->filename;
+    nested_task.lineno       = first_task->lineno;
     set_current_ptask(&nested_task);
 
     if(taskreport) {
@@ -1266,12 +1268,12 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   task_pool_p ptask = (task_pool_p) chpl_alloc(sizeof(task_pool_t),
                                                CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
                                                0, 0);
-  ptask->id = get_next_task_id();
-  ptask->fun = fp;
-  ptask->arg = a;
+  ptask->id           = get_next_task_id();
+  ptask->fun          = fp;
+  ptask->arg          = a;
   ptask->serial_state = serial;
-  ptask->ltask = ltask;
-  ptask->begun = false;
+  ptask->ltask        = ltask;
+  ptask->begun        = false;
 
   if (ltask) {
     ptask->filename = ltask->filename;
