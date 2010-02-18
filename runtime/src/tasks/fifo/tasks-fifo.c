@@ -339,7 +339,7 @@ void CHPL_TASKING_INIT(void) {
 
   threadlayer_set_thread_private_data(tp);
 
-  if(taskreport) {
+  if (taskreport) {
     chpldev_taskTable_add(tp->ptask->id,
                           tp->ptask->lineno, tp->ptask->filename,
                           (uint64_t) (intptr_t) tp->ptask);
@@ -495,7 +495,7 @@ void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
     nested_task.lineno       = first_task->lineno;
     set_current_ptask(&nested_task);
 
-    if(taskreport) {
+    if (taskreport) {
       CHPL_MUTEX_LOCK(&threading_lock);
       chpldev_taskTable_add(nested_task.id,
                             nested_task.lineno, nested_task.filename,
@@ -527,7 +527,7 @@ void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
     // end critical section
     CHPL_MUTEX_UNLOCK(&extra_task_lock);
 
-    if(taskreport) {
+    if (taskreport) {
       chpldev_taskTable_set_active(curr_ptask->id);
 
       CHPL_MUTEX_LOCK(&threading_lock);
@@ -601,7 +601,7 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
         // end critical section
         CHPL_MUTEX_UNLOCK(&extra_task_lock);
 
-        if(taskreport) {
+        if (taskreport) {
           chpldev_taskTable_set_suspended(curr_ptask->id);
           chpldev_taskTable_set_active(nested_ptask->id);
         }
@@ -611,7 +611,7 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
 
         (*task_to_run_fun)(task_to_run_arg);
 
-        if(taskreport) {
+        if (taskreport) {
           chpldev_taskTable_set_active(curr_ptask->id);
 
           CHPL_MUTEX_LOCK(&threading_lock);
@@ -887,7 +887,7 @@ static void SIGINT_handler(int sig) {
   if (blockreport)
     report_locked_threads();
 
-  if(taskreport)
+  if (taskreport)
     report_all_tasks();
 
   chpl_exit_any(1);
@@ -1008,7 +1008,7 @@ static void check_for_deadlock(void) {
 
   report_locked_threads();
 
-  if(taskreport)
+  if (taskreport)
     report_all_tasks();
 
   chpl_exit_any(1);
@@ -1054,7 +1054,7 @@ chpl_begin_helper(void* ptask_void) {
     initializeLockReportForThread();
 
   // add incoming task to task-table structure in ChapelRuntime
-  if(taskreport)
+  if (taskreport)
     chpldev_taskTable_set_active(ptask->id);
 
   while (true) {
@@ -1080,9 +1080,8 @@ chpl_begin_helper(void* ptask_void) {
     //
     chpl_free(ptask, 0, 0);
 
-    if(taskreport) {
+    if (taskreport)
       chpldev_taskTable_remove(ptask->id);
-    }
 
     //
     // finished task; decrement running count and increment idle count
@@ -1156,7 +1155,7 @@ chpl_begin_helper(void* ptask_void) {
       ptask->ltask = NULL;
     }
     ptask->begun = true;
-    if(taskreport)
+    if (taskreport)
       chpldev_taskTable_set_active(ptask->id);
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
@@ -1293,9 +1292,10 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
 
   queued_cnt++;
 
-  chpldev_taskTable_add(ptask->id,
-                        ptask->lineno, ptask->filename,
-                        (uint64_t) (intptr_t) ptask);
+  if (taskreport)
+    chpldev_taskTable_add(ptask->id,
+                          ptask->lineno, ptask->filename,
+                          (uint64_t) (intptr_t) ptask);
 
   return ptask;
 }
