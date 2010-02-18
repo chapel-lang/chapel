@@ -13,6 +13,11 @@ Operators
 * clarify definition of %
 * consider supporting other modulus operators/functions as well?
 
+Functions
+---------
+* define semantics of passing tuples to functions
+* define semantics of creating tuples with array components, etc.
+
 Locales and Affinity
 --------------------
 * add statement that global non-distributed constants are replicated
