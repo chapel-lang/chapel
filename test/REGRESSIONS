@@ -16,6 +16,17 @@
 general regressions
 ===================
 
+regressed due to task ID refactoring
+------------------------------------
+[Error matching program output for release/examples/tutorials/taskParallel]
+[Error: Timed out executing program multilocale/deitz/needMultiLocales/test_large_nb_fork_bug_diten]
+[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings  ) (0-2)]
+[Error: Timed out executing program parallel/begin/waynew/simple2]
+
+???
+---
+[Error matching program output for memory/shannon/printMemTable]
+
 spurious failure
 ----------------
 [Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
@@ -35,7 +46,7 @@ spurious compilation timeouts
 [Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 12/06/09, 12/31/09, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10, 01/26/10, 01/27/10, 01/30/10, 02/10/10, 02/11/10, 02/12/10 -- esp. gasnet, intel)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 01/05/10 -- esp. intel)
 [Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 01/14/10, 01/17/10, 01/20/10, 01/24/10, 01/28/10, 02/02/10, 02/07/10, 02/09/10, 02/15/10)
-[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09, 12/20/09, 12/24/09, 01/10/10, 01/14/10, 01/28/10, 02/02/10, 02/08/10)
+[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09, 12/20/09, 12/24/09, 01/10/10, 01/14/10, 01/28/10, 02/02/10, 02/08/10, 02/18/10)
 [Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09, 12/07/09, 12/15/09, 12/22/09, 12/24/09, 01/05/10, 01/08/10, 01/10/10, 01/18/10, 01/22/10, 01/28/10, 02/07/10, 02/11/10)
 
 
@@ -113,14 +124,22 @@ timeouts due to removal of -O
 distribution regressions
 ========================
 
+regressions due to rank change changes (02/13/10)
+-------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/collapsing/test_array_rank_change1]
+[Error matching program output for distributions/robust/arithmetic/composite/test_composite1]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Random]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Search]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Sort]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
+[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing1]
+[Error matching program output for distributions/robust/arithmetic/slicing/test_strided_slice2]
+
 ???
 ---
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Norm]
 [Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias4]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
-[Error matching compiler output for distributions/robust/arithmetic/slicing/test_strided_slice2]
 [Error matching program output for distributions/robust/arithmetic/composite/test_composite2]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_reindexing5]
 
 
 ====================
@@ -176,9 +195,9 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09, 12/16/09, 12/19/09, 12/25/09, 12/29/09, 01/07/10, 01/08/10, 01/10/10, 01/23/10, 02/08/10, 02/10/10)
+[Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09, 12/16/09, 12/19/09, 12/25/09, 12/29/09, 01/07/10, 01/08/10, 01/10/10, 01/23/10, 02/08/10, 02/10/10, 02/18/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10, 02/11/10, 02/16/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10, 02/14/10, 02/15/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10, 02/14/10, 02/15/10, 02/17/10)
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09, 02/02/10)
 [Error: Timed out executing program users/agnieszka/test1] (e.g., 01/08/10)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09, 12/15/09, 12/18/09, 12/21/09, 12/25/09, 01/04/10, 01/05/10, 01/06/10, 01/10/10, 01/24/10, 01/29/10, 02/14/10, 02/16/10)
@@ -239,6 +258,11 @@ new homogenous tuple seems to break --gen-communicated-structures
 =======================
 baseline-specific tests
 =======================
+
+regressed during threadID -> taskID change (02/18/10)
+-----------------------------------------------------
+[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings --baseline  ) (0-3)]
+[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings --baseline  ) (0-4)]
 
 timeouts due to removal of -O
 -----------------------------
