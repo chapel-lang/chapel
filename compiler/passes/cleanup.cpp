@@ -72,36 +72,59 @@ static void normalize_nested_function_expressions(DefExpr* def) {
 }
 
 
-/*** destructure_tuple
- ***
- ***   (i,j) = expr;    ==>    i = expr(1);
- ***                           j = expr(2);
- ***
- ***   NOTE: handles recursive tuple destructuring, (i,(j,k)) = ...
- ***/
-static void destructure_tuple(CallExpr* call) {
-  CallExpr* parent = toCallExpr(call->parentExpr);
-  if (!parent || !parent->isNamed("=") || parent->get(1) != call)
-    return;
-  Expr* stmt = parent->getStmtExpr();
-  VarSymbol* temp = newTemp();
-  stmt->insertBefore(new DefExpr(temp));
-  stmt = new CallExpr(PRIM_MOVE, temp, new CallExpr("chpl__initCopy", parent->get(2)->remove()));
-  parent->replace(stmt);
-  stmt->insertAfter(new CallExpr("chpl__autoDestroy", temp));
-  int i = 1;
-  for_actuals(expr, call) {
-    Expr *removed_expr = expr->remove();
-    if (UnresolvedSymExpr *sym_expr = toUnresolvedSymExpr(removed_expr)) {
-      if (!strcmp(sym_expr->unresolved, "_")) {
-        i++;
+//
+// recursive helper function for destructureTuple below
+//
+static void
+insertDestructureStatements(Expr* S1, Expr* S2, CallExpr* lhs, Expr* rhs) {
+  int i = 0;
+  for_actuals(expr, lhs) {
+    i++;
+    expr->remove();
+    if (UnresolvedSymExpr* se = toUnresolvedSymExpr(expr)) {
+      if (!strcmp(se->unresolved, "_")) {
         continue;
       }
     }
-    stmt->insertAfter(
-      new CallExpr("=", removed_expr,
-        new CallExpr(temp, new_IntSymbol(i))));
-    i++;
+    CallExpr* nextLHS = toCallExpr(expr);
+    Expr* nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(i));
+    if (nextLHS && nextLHS->isNamed("_build_tuple")) {
+      insertDestructureStatements(S1, S2, nextLHS, nextRHS);
+    } else {
+      VarSymbol* ltmp = newTemp();
+      ltmp->addFlag(FLAG_MAYBE_PARAM);
+      S1->insertBefore(new DefExpr(ltmp));
+      S1->insertBefore(new CallExpr(PRIM_MOVE, ltmp,
+                         new CallExpr(PRIM_SET_REF, expr)));
+      S2->insertBefore(new CallExpr("=", ltmp, nextRHS));
+    }
+  }
+}
+
+
+//
+// destructureTupleAssignment
+//
+//   (i,j) = expr;    ==>    i = expr(1);
+//                           j = expr(2);
+//
+//   note: handles recursive tuple destructuring, (i,(j,k)) = ...
+//
+static void
+destructureTupleAssignment(CallExpr* call) {
+  CallExpr* parent = toCallExpr(call->parentExpr);
+  if (parent && parent->isNamed("=") && parent->get(1) == call) {
+    VarSymbol* rtmp = newTemp();
+    rtmp->addFlag(FLAG_EXPR_TEMP);
+    rtmp->addFlag(FLAG_MAYBE_TYPE);
+    rtmp->addFlag(FLAG_MAYBE_PARAM);
+    Expr* S1 = new CallExpr(PRIM_MOVE, rtmp, parent->get(2)->remove());
+    Expr* S2 = new CallExpr(PRIM_NOOP);
+    call->getStmtExpr()->replace(S1);
+    S1->insertAfter(S2);
+    S1->insertBefore(new DefExpr(rtmp));
+    insertDestructureStatements(S1, S2, call, new SymExpr(rtmp));
+    S2->remove();
   }
 }
 
@@ -156,7 +179,7 @@ void cleanup(void) {
         flatten_scopeless_block(block);
     } else if (CallExpr* call = toCallExpr(ast)) {
       if (call->isNamed("_build_tuple"))
-        destructure_tuple(call);
+        destructureTupleAssignment(call);
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         flatten_primary_methods(fn);

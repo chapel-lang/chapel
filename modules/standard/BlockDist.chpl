@@ -1003,6 +1003,10 @@ def BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
   return alias;
 }
 
+def BlockArr.dsiCreateAlias(A: BlockArr) {
+  halt("uh oh");
+}
+
 def BlockArr.dsiReindex(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
                            stridable=d.stridable, dom=d);
