@@ -453,7 +453,8 @@ def Block.dsiCreateRankChangeDist(param newRank: int, args) {
 
   for param i in 1..rank {
     if isCollapsedDimension(args(i)) {
-      collapsedBbox(i) = args(i);
+      // set indicies that are out of bounds to the bounding box low or high.
+      collapsedBbox(i) = if args(i) < boundingBox.dim(i).low then boundingBox.dim(i).low else if args(i) > boundingBox.dim(i).high then boundingBox.dim(i).high else args(i);
       collapsedLocs(i) = collapsedLocInd(i);
     } else {
       collapsedBbox(i) = boundingBox.dim(i);
@@ -461,7 +462,7 @@ def Block.dsiCreateRankChangeDist(param newRank: int, args) {
     }
   }
 
-  const newBbox = boundingBox((...collapsedBbox));
+  const newBbox = boundingBox[(...collapsedBbox)];
   const newTargetLocs = targetLocs((...collapsedLocs));
   return new Block(rank=newRank, idxType=idxType, bbox=newBbox,
                    targetLocales=newTargetLocs,
@@ -953,27 +954,48 @@ def BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
   coforall ind in d.dist.targetLocDom {
     on d.dist.targetLocs(ind) {
       const locDom = d.getLocDom(ind);
-      var locSlice = args;
-      var j = 1;
-      var locArrInd: rank*int;
+      // locSlice is a tuple of ranges and scalars. It will match the basic
+      // shape of the args argument. 
+      var locSlice: _matchArgsShape(range(eltType=idxType, stridable=stridable), idxType, args);
+      // collapsedDims stores the value any collapsed dimension is down to.
+      // For any non-collapsed dimension, that position is ignored.
+      // This tuple is then passed to the ind2LocInd function to build up a
+      // partial index into this.targetLocDom with correct values set for all
+      // collapsed dimensions. The rest of the dimensions get their values from
+      // ind - an index into the new rank changed targetLocDom.
       var collapsedDims: rank*idxType;
+      var locArrInd: rank*int;
 
+      var j = 1;
       for param i in 1..args.size {
         if isCollapsedDimension(args(i)) {
           locSlice(i) = args(i);
           collapsedDims(i) = args(i);
         } else {
           locSlice(i) = locDom.myBlock.dim(j)(args(i));
-          collapsedDims(i) = 0;
           j += 1;
         }
       }
       locArrInd = dom.dist.ind2locInd(collapsedDims);
+      j = 1;
+      // Now that the locArrInd values are known for the collapsed dimensions
+      // Pull the rest of the dimensions values from ind
+      for param i in 1..args.size {
+        if !isCollapsedDimension(args(i)) {
+          if newRank > 1 then
+            locArrInd(i) = ind(j);
+          else
+            locArrInd(i) = ind;
+          j += 1;
+        }
+      }
+
       alias.locArr[ind] = new LocBlockArr(eltType=eltType, rank=newRank, idxType=d.idxType, stridable=d.stridable, locDom=locDom);
-      
+      // Set the local portion of the new array to alias to a rank changed slice
+      // of the local portion of this
       alias.locArr[ind].myElems =>
-        locArr[(...locArrInd)].
-        myElems[(...locSlice)];
+        locArr[(...locArrInd)].myElems[(...locSlice)];
+
       if thisid == here.uid then
         alias.myLocArr = alias.locArr[ind];
     }
