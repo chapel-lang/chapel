@@ -1377,76 +1377,76 @@ buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* 
 }
 
 
-/* Destructure tuple function arguments.  Add to the function's where clause
-   to match the shape of the tuple being destructured. */
-Expr*
-buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base) {
-  static int uid = 1;
-  int count = 0;
-  bool outermost = false;
-  Expr* where = NULL;
+//
+// create a single argument and store the tuple-grouped args in the
+// variable argument list; these will be moved out of the variable
+// argument list in the call to destructureTupleGroupedArgs when the
+// formals are added to the formals list in the function (in
+// buildFunctionFormal)
+//
+DefExpr*
+buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init) {
+  ArgSymbol* arg = new ArgSymbol(tag, "chpl__tuple_arg_temp", dtUnknown,
+                                 type, init, tuple);
+  arg->addFlag(FLAG_TEMP);
+  if (arg->intent != INTENT_BLANK)
+    USR_FATAL(tuple, "intents on tuple-grouped arguments are not yet supported");
+  if (!type)
+    arg->type = dtTuple;
+  return new DefExpr(arg);
+}
 
-  if (!base) {
-    /* This is the top-level call to buildTupleArg */
-    Expr* tupleType = new UnresolvedSymExpr("_tuple");
-    ArgSymbol* argSymbol = new ArgSymbol(INTENT_BLANK,
-                                         astr("_tuple_arg_tmp", istr(uid++)),
-                                         dtUnknown, tupleType);
-    argSymbol->addFlag(FLAG_TEMP);
-    argSymbol->addFlag(FLAG_MAYBE_PARAM);
-    fn->insertFormalAtTail(new DefExpr(argSymbol));
-    base = new SymExpr(argSymbol);
-    outermost = true;
-  }
 
-  for_alist(expr, tupledefs->body) {
-    count++;
+//
+// Destructure tuple function arguments.  Add to the function's where
+// clause to match the shape of the tuple being destructured.
+//
+static void
+destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
+  int i = 0;
+  for_alist(expr, tuple->body) {
+    i++;
     if (DefExpr* def = toDefExpr(expr)) {
-      def->init = new CallExpr(base->copy(), new_IntSymbol(count));
-      if (strcmp(def->sym->name, "_")) {
-        fn->insertAtHead(def->remove());
-      } else {
-        // Ignore values in places marked with an underscore
+      def->init = new CallExpr(base->copy(), new_IntSymbol(i));
+      if (!strcmp(def->sym->name, "_")) {
         def->remove();
-      }
-    } else if (BlockStmt* subtuple = toBlockStmt(expr)) {
-      /* newClause is:
-         (& IS_TUPLE(base(count)) (buildTupleArg's where clause)) */
-      Expr* newClause = buildLogicalAndExpr(
-                          new CallExpr(PRIM_IS_TUPLE,
-                            new CallExpr(base->copy(),
-                              new_IntSymbol(count))),
-                          buildTupleArg(fn, subtuple,
-                            new CallExpr(base, new_IntSymbol(count))));
-      if (where) {
-        // unexecuted none/gasnet on 4/25/08
-        where = buildLogicalAndExpr(where, newClause);
       } else {
-        where = newClause;
+        fn->insertAtHead(def->remove());
       }
+    } else if (BlockStmt* inner = toBlockStmt(expr)) {
+      destructureTupleGroupedArgs(fn, inner, new CallExpr(base->copy(), new_IntSymbol(i)));
     }
   }
 
-  CallExpr* sizeClause = new CallExpr("==", new_IntSymbol(count),
-                                      new CallExpr(".", base->copy(),
-                                                   new_StringSymbol("size")));
-  if (where) {
-    where = buildLogicalAndExpr(sizeClause, where);
+  Expr* where =
+    buildLogicalAndExpr(
+      new CallExpr(PRIM_IS_TUPLE, base->copy()),
+      new CallExpr("==", new_IntSymbol(i),
+        new CallExpr(".", base->copy(), new_StringSymbol("size"))));
+
+  if (fn->where) {
+    where = buildLogicalAndExpr(fn->where->body.head->remove(), where);
+    fn->where->body.insertAtHead(where);
   } else {
-    where = sizeClause;
+    fn->where = new BlockStmt(where);
   }
+}
 
-  if (outermost) {
-    /* Only the top-level call to this function should modify the actual
-       function where clause. */
-    if (fn->where) {
-      where = buildLogicalAndExpr(fn->where->body.head->remove(), where);
-      fn->where->body.insertAtHead(where);
-    } else {
-      fn->where = new BlockStmt(where);
-    }
+
+FnSymbol*
+buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
+  if (!fn)
+    fn = new FnSymbol("_");
+  if (!def)
+    return fn;
+  ArgSymbol* arg = toArgSymbol(def->sym);
+  INT_ASSERT(arg);
+  fn->insertFormalAtTail(def);
+  if (!strcmp(arg->name, "chpl__tuple_arg_temp")) {
+    destructureTupleGroupedArgs(fn, arg->variableExpr, new SymExpr(arg));
+    arg->variableExpr = NULL;
   }
-  return where;
+  return fn;
 }
 
 

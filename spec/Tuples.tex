@@ -356,12 +356,47 @@ call may look like the following:
 \begin{chapel}
 f(1, (2, 3));
 \end{chapel}
-\begin{chapelfuture}
-bug: type of tuple grouped formals
-\end{chapelfuture}
 \begin{chapelpost}
 \end{chapelpost}
 \begin{chapeloutput}
+\end{chapeloutput}
+\end{example}
+
+An implicit where clause is created when arguments are grouped using a
+tuple notation to ensure that the function is called with an actual
+tuple of the correct size.  Grouping arguments in tuples may be
+arbitrarily nested.  Functions with tuple-grouped arguments may not be
+called using named-argument passing on the tuple-grouped arguments.
+In addition, tuple-grouped arguments may not be specified individually
+with types or default values (only in aggregate).  They may not be
+specified with any qualifier appearing before the group of arguments
+(or individual arguments) such as \chpl{inout} or \chpl{type}.  They
+may not be followed by \chpl{...} to indicate that there are a
+variable number of them.
+
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The function \chpl{f} defined as
+\begin{chapel}
+def f((x, (y, z))) {
+  writeln((x, y, z));
+}
+\end{chapel}
+is equivalent to the function \chpl{g} defined as
+\begin{chapel}
+def g(t) where isTuple(t) && t.size == 2 && isTuple(t(2)) && t(2).size == 2 {
+  writeln((t(1), t(2)(1), t(2)(2)));
+}
+\end{chapel}
+except without the definition of the argument name \chpl{t}.
+\begin{chapelpost}
+f((1, (2, 3)));
+g((1, (2, 3)));
+\end{chapelpost}
+\begin{chapeloutput}
+(1, 2, 3)
+(1, 2, 3)
 \end{chapeloutput}
 \end{example}
 

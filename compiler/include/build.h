@@ -75,7 +75,8 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, bool isConfig, bool isParam, bool isC
 
 DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, bool isExtern);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
-Expr* buildTupleArg(FnSymbol* fn, BlockStmt* tupledefs, Expr* base);
+DefExpr* buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
+FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
 
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
