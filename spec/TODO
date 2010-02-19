@@ -30,6 +30,8 @@ Standard Modules
 Domains and Arrays
 ------------------
 
+* add description of expand, etc.
+
 * clarify distinction between sparse domains and associative domains
   of integers?
 
