@@ -16,17 +16,6 @@
 general regressions
 ===================
 
-regressed due to task ID refactoring
-------------------------------------
-[Error matching program output for release/examples/tutorials/taskParallel]
-[Error: Timed out executing program multilocale/deitz/needMultiLocales/test_large_nb_fork_bug_diten]
-[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings  ) (0-2)]
-[Error: Timed out executing program parallel/begin/waynew/simple2]
-
-???
----
-[Error matching program output for memory/shannon/printMemTable]
-
 spurious failure
 ----------------
 [Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
@@ -67,37 +56,51 @@ there were no faliures, sometimes the script would just die so I don't
 think I got a million times in.  Possibly these were due to the coding
 frenzy before SC09.
 
-
 spurious system fork failure
 ----------------------------
 [Error matching compiler output for studies/hpcc/RA/diten/ra] (e.g., 10/15/09)
 
-maxThreads is 300, but can't create more than 254 threads
----------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/ManyThreads]
+
+==============================================
+linux64 regressions (in addition to the above)
+==============================================
+
+??? (02/19/10)
+--------------
+[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings  ) (0-3)]
+[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings  ) (0-4)]
+
+
+==============================================
+linux32 regressions (in addition to the above)
+==============================================
+
+need to set up machine parameter files for stemp7
+-------------------------------------------------
+[Error matching program output for modules/standard/machine/numCores]
+[Error matching program output for modules/standard/memory/countMemory/countMemory]
+[Error matching program output for studies/hpcc/2008/testProbSize]
+[Error matching program output for studies/hpcc/common/testProbSize]
+[Error: Timed out executing program npb/cg/bradc/cg-sparse]
 
 
 ================================
 performance-specific regressions
 ================================
 
-error matching performance keys (01/29/10)
-------------------------------------------
-Error matching performance keys for studies/shootout/nbody/nbody_record_domain_2a]
-
 execution timeouts (08/29/09)
 -----------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3]
-[Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
 [Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
-[Error: Timed out executing program studies/shootout/nbody/nbody_record_domain_2a]
-[Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
 [Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
 
 
 =============================
 valgrind-specific regressions
 =============================
+
+new uninitialized value (02/18/10)
+----------------------------------
+***nearly all***
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
@@ -124,22 +127,9 @@ timeouts due to removal of -O
 distribution regressions
 ========================
 
-regressions due to rank change changes (02/13/10)
--------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/collapsing/test_array_rank_change1]
-[Error matching program output for distributions/robust/arithmetic/composite/test_composite1]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Random]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Search]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Sort]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
-[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing1]
-[Error matching program output for distributions/robust/arithmetic/slicing/test_strided_slice2]
-
-???
----
+need to resolve distributed array aliasing semantics (02/19/10)
+---------------------------------------------------------------
 [Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias4]
-[Error matching program output for distributions/robust/arithmetic/composite/test_composite2]
 
 
 ====================
@@ -259,10 +249,17 @@ new homogenous tuple seems to break --gen-communicated-structures
 baseline-specific tests
 =======================
 
-regressed during threadID -> taskID change (02/18/10)
------------------------------------------------------
-[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings --baseline  ) (0-3)]
-[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings --baseline  ) (0-4)]
+??? (02/19/10)
+--------------
+[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings --baseline  ) (0-2)]
+
+execution timeout
+-----------------
+[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings --baseline  ) (0-2)]
+
+???
+---
+[Error matching program output for classes/figueroa/RecordConstructor2]
 
 timeouts due to removal of -O
 -----------------------------
