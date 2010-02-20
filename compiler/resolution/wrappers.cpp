@@ -509,7 +509,8 @@ buildPromotionWrapper(FnSymbol* fn,
   Expr* indices = indicesCall;
   if (indicesCall->numActuals() == 1)
     indices = indicesCall->get(1)->remove();
-  if (fn->getReturnSymbol() == gVoid) {
+  if (!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid ||
+      fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid) {
     if (fSerial || fSerialForall)
       wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(actualCall))));
     else
