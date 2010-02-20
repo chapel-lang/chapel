@@ -1,0 +1,6 @@
+bug: external functions are not properly promotable
+
+Similar to the earlier future in this directory externCoerce, it seems
+that external functions cannot be promoted currently.  The error
+message is similar -- claiming that the external routine has no return
+type.
