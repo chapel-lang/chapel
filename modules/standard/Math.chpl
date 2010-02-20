@@ -4,147 +4,43 @@ pragma "inline" def abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
 
 pragma "inline" def conjg(a: complex(?w)) return (a.re, -a.im):complex;
 
-pragma "inline" def isnan(x: real(64)) {
-  _extern def isnan(x: real(64)): bool;
-  return isnan(x);
-}
-pragma "inline" def acos(x : real(64)) {
-  _extern def acos(x: real(64)): real(64);
-  return acos(x);
-}
-pragma "inline" def acosh(x : real(64)) {
-  _extern def acosh(x: real(64)): real(64);
-  return acosh(x);
-}
-pragma "inline" def asin(x : real(64)) {
-  _extern def asin(x: real(64)): real(64);
-  return asin(x);
-}
-pragma "inline" def asinh(x : real(64)) {
-  _extern def asinh(x: real(64)): real(64);
-  return asinh(x);
-}
-pragma "inline" def atan(x : real(64)) {
-  _extern def atan(x: real(64)): real(64);
-  return atan(x);
-}
-pragma "inline" def atan2(y: real(64), x: real(64)) {
-  _extern def atan2(y: real(64), x: real(64)): real(64);
-  return atan2(y, x);
-}
-pragma "inline" def atanh(x : real(64)) {
-  _extern def atanh(x: real(64)): real(64);
-  return atanh(x);
-}
-pragma "inline" def cbrt(x : real(64)) {
-  _extern def cbrt(x: real(64)): real(64);
-  return cbrt(x);
-}
-pragma "inline" def ceil(x : real(64)) {
-  _extern def ceil(x: real(64)): real(64);
-  return ceil(x);
-}
-pragma "inline" def cos(x : real(64)) {
-  _extern def cos(x: real(64)): real(64);
-  return cos(x);
-}
-pragma "inline" def cosh(x : real(64)) {
-  _extern def cosh(x: real(64)): real(64);
-  return cosh(x);
-}
-pragma "inline" def erf(x : real(64)) {
-  _extern def erf(x: real(64)): real(64);
-  return erf(x);
-}
-pragma "inline" def erfc(x : real(64)) {
-  _extern def erfc(x: real(64)): real(64);
-  return erfc(x);
-}
-pragma "inline" def exp(x : real(64)) {
-  _extern def exp(x: real(64)): real(64);
-  return exp(x);
-}
-pragma "inline" def exp2(x : real(64)) {
-  _extern def exp2(x: real(64)): real(64);
-  return exp2(x);
-}
-pragma "inline" def expm1(x : real(64)) {
-  _extern def expm1(x: real(64)): real(64);
-  return expm1(x);
-}
-pragma "inline" def abs(x : real(64)) {
-  _extern def fabs(x: real(64)): real(64);
-  return fabs(x);
-}
-pragma "inline" def floor(x : real(64)) {
-  _extern def floor(x: real(64)): real(64);
-  return floor(x);
-}
-pragma "inline" def lgamma(x : real(64)) {
-  _extern def lgamma(x: real(64)): real(64);
-  return lgamma(x);
-}
-pragma "inline" def log(x : real(64)) {
-  _extern def log(x: real(64)): real(64);
-  return log(x);
-}
-pragma "inline" def log2(x : real(64)) {
-  _extern def log2(x: real(64)): real(64);
-  return log2(x);
-}
-pragma "inline" def log10(x : real(64)) {
-  _extern def log10(x: real(64)): real(64);
-  return log10(x);
-}
-pragma "inline" def log1p(x : real(64)) {
-  _extern def log1p(x: real(64)): real(64);
-  return log1p(x);
-}
-pragma "inline" def nearbyint(x : real(64)) {
-  _extern def nearbyint(x: real(64)): real(64);
-  return nearbyint(x);
-}
-pragma "inline" def rint(x : real(64)) {
-  _extern def rint(x: real(64)): real(64);
-  return rint(x);
-}
-pragma "inline" def round(x : real(64)) {
-  _extern def round(x: real(64)): real(64);
-  return round(x);
-}
-pragma "inline" def sin(x: real(64)) {
-  _extern def sin(x: real(64)): real(64);
-  return sin(x);
-}
-pragma "inline" def sinh(x : real(64)) {
-  _extern def sinh(x: real(64)): real(64);
-  return sinh(x);
-}
-pragma "inline" def sqrt(x : real(64)) {
-  _extern def sqrt(x: real(64)): real(64);
-  return sqrt(x);
-}
-pragma "inline" def tan(x : real(64)) {
-  _extern def tan(x: real(64)): real(64);
-  return tan(x);
-}
-pragma "inline" def tanh(x : real(64)) {
-  _extern def tanh(x: real(64)): real(64);
-  return tanh(x);
-}
-pragma "inline" def tgamma(x : real(64)) {
-  _extern def tgamma(x: real(64)): real(64);
-  return tgamma(x);
-}
-pragma "inline" def trunc(x : real(64)) {
-  _extern def trunc(x: real(64)): real(64);
-  return trunc(x);
-}
+_extern def isnan(x: real(64)): bool;
+_extern def isnan(x: real(32)): bool;
 
-pragma "inline" def isnan(x: real(32)) {
-  _extern def isnan(x: real(32)): bool;
-  return isnan(x);
-}
+_extern def acos(x: real(64)): real(64);
+_extern def acosh(x: real(64)): real(64);
+_extern def asin(x: real(64)): real(64);
+_extern def asinh(x: real(64)): real(64);
+_extern def atan(x: real(64)): real(64);
+_extern def atan2(y: real(64), x: real(64)): real(64);
+_extern def atanh(x: real(64)): real(64);
+_extern def cbrt(x: real(64)): real(64);
+_extern def ceil(x: real(64)): real(64);
+_extern def cos(x: real(64)): real(64);
+_extern def cosh(x: real(64)): real(64);
+_extern def erf(x: real(64)): real(64);
+_extern def erfc(x: real(64)): real(64);
+_extern def exp(x: real(64)): real(64);
+_extern def exp2(x: real(64)): real(64);
+_extern def expm1(x: real(64)): real(64);
+_extern def fabs(x: real(64)): real(64);
+_extern def floor(x: real(64)): real(64);
+_extern def lgamma(x: real(64)): real(64);
+_extern def log(x: real(64)): real(64);
+_extern def log2(x: real(64)): real(64);
+_extern def log10(x: real(64)): real(64);
+_extern def log1p(x: real(64)): real(64);
+_extern def nearbyint(x: real(64)): real(64);
+_extern def rint(x: real(64)): real(64);
+_extern def round(x: real(64)): real(64);
+_extern def sin(x: real(64)): real(64);
+_extern def sinh(x: real(64)): real(64);
+_extern def sqrt(x: real(64)): real(64);
+_extern def tan(x: real(64)): real(64);
+_extern def tanh(x: real(64)): real(64);
+_extern def tgamma(x: real(64)): real(64);
+_extern def trunc(x: real(64)): real(64);
+
 pragma "inline" def acos(x : real(32)) {
   _extern def acosf(x: real(32)): real(32);
   return acosf(x);
@@ -257,7 +153,7 @@ pragma "inline" def sinh(x : real(32)) {
   _extern def sinhf(x: real(32)): real(32);
   return sinhf(x);
 }
-pragma "inline" def sqrt(x : real(32)) {
+pragma "inline" def sqrt(x : real(32)): real(32) {
   _extern def sqrtf(x: real(32)): real(32);
   return sqrtf(x);
 }
