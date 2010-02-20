@@ -257,7 +257,7 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
   int count = 1;
   for_alist(expr, decls->body) {
     if (DefExpr* def = toDefExpr(expr)) {
-      if (strcmp(def->sym->name, "_")) {
+      if (strcmp(def->sym->name, "chpl__tuple_blank")) {
         def->init = new CallExpr(base->copy(), new_IntSymbol(count));
         insertPoint->insertBefore(def->remove());
       } else {
@@ -281,7 +281,7 @@ buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   int count = 1;
   for_alist(expr, tupleBlock->body) {
     if (DefExpr* def = toDefExpr(expr)) {
-      if (strcmp(def->sym->name, "_")) {
+      if (strcmp(def->sym->name, "chpl__tuple_blank")) {
         def->init = new CallExpr(tmp, new_IntSymbol(count));
       } else {
         def->remove();
@@ -528,7 +528,7 @@ destructureIndices(BlockStmt* block,
       int i = 1;
       for_actuals(actual, call) {
         if (UnresolvedSymExpr* use = toUnresolvedSymExpr(actual)) {
-          if (!strcmp(use->unresolved, "_")) {
+          if (!strcmp(use->unresolved, "chpl__tuple_blank")) {
             i++;
             continue;
           }
@@ -1408,7 +1408,7 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
     i++;
     if (DefExpr* def = toDefExpr(expr)) {
       def->init = new CallExpr(base->copy(), new_IntSymbol(i));
-      if (!strcmp(def->sym->name, "_")) {
+      if (!strcmp(def->sym->name, "chpl__tuple_blank")) {
         def->remove();
       } else {
         fn->insertAtHead(def->remove());

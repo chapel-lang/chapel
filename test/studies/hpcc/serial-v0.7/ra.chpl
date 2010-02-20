@@ -34,7 +34,7 @@ def main() {
 
   [i in TableSpace] T(i) = i;
 
-  forall (_, r) in (UpdateSpace, RAStream()) do
+  forall ( , r) in (UpdateSpace, RAStream()) do
     T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;

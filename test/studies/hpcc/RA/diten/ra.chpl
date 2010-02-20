@@ -111,13 +111,13 @@ def main() {
   //
   // The main computation: Iterate over the set of updates and the
   // stream of random values in a parallel, zippered manner, dropping
-  // the update index on the ground ("_") and storing the random value
+  // the update index on the ground and storing the random value
   // in r.  Cache up to maxLookahead updates so larger blocks can be
   // updated at once. When maxLookahead updates are cached, choose the
   // locale with the most pending updates, and do all of the updates
   // pending for that locale.
   //
-  forall (_, r) in (Updates, RAStream()) {
+  forall ( , r) in (Updates, RAStream()) {
     var loc = T.domain.dist.ind2loc(r&indexMask);
     if loc == here {
       T(r&indexMask) ^= r;
@@ -178,7 +178,7 @@ def verifyResults() {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  forall (_, r) in (Updates, RAStream()) do
+  forall ( , r) in (Updates, RAStream()) do
     on T.domain.dist.ind2loc(r & indexMask) do
       atomic T(r & indexMask) ^= r;
 

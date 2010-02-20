@@ -151,7 +151,7 @@
 %type <pdefexpr> formal enum_item
 %type <pdefexpr> query_expr opt_query_expr
 
-%type <pcallexpr> opt_inherit expr_ls
+%type <pcallexpr> opt_inherit expr_ls tuple_expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls
@@ -592,10 +592,13 @@ var_decl_stmt_inner:
 ;
 
 tuple_var_decl_stmt_inner_ls:
-  ident
+    { $$ = buildChapelStmt(new DefExpr(new VarSymbol("chpl__tuple_blank"))); }
+| ident
     { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1))); }
 | TLP tuple_var_decl_stmt_inner_ls TRP
     { $$ = buildChapelStmt($2); }
+| tuple_var_decl_stmt_inner_ls TCOMMA
+    { $1->insertAtTail(new DefExpr(new VarSymbol("chpl__tuple_blank"))); }
 | tuple_var_decl_stmt_inner_ls TCOMMA ident
     { $1->insertAtTail(new DefExpr(new VarSymbol($3))); }
 | tuple_var_decl_stmt_inner_ls TCOMMA TLP tuple_var_decl_stmt_inner_ls TRP
@@ -667,6 +670,17 @@ expr_ls:
 | query_expr                 { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
 | expr_ls TCOMMA expr        { $1->insertAtTail($3); }
 | expr_ls TCOMMA query_expr  { $1->insertAtTail($3); }
+;
+
+tuple_expr_ls:
+                                   { $$ = new CallExpr(PRIM_ACTUALS_LIST,
+                                            new UnresolvedSymExpr("chpl__tuple_blank")); }
+| expr                             { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| query_expr                       { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| tuple_expr_ls TCOMMA             { $1->insertAtTail(
+                                           new UnresolvedSymExpr("chpl__tuple_blank")); }
+| tuple_expr_ls TCOMMA expr        { $1->insertAtTail($3); }
+| tuple_expr_ls TCOMMA query_expr  { $1->insertAtTail($3); }
 ;
 
 opt_actual_ls:
@@ -835,7 +849,7 @@ dot_expr:
 ;
 
 parenthesized_expr:
-  TLP expr_ls TRP  { $$ = buildParenExpr($2); }
+  TLP tuple_expr_ls TRP  { $$ = buildParenExpr($2); }
 ;
 
 literal_expr:

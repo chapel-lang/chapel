@@ -191,6 +191,8 @@ Tuples can be split into their components in four ways:
 the assignment operator are grouped using tuple notation.
 \item In variable declarations where multiple variables in a
 declaration are grouped using tuple notation.
+\item In for, forall, and coforall loops (statements and expressions)
+where multiple indices in a loop are grouped using tuple notation.
 \item In function calls where multiple formal arguments in a function
 declaration are grouped using tuple notation.
 \item In an expression context that accepts a comma-separated list of
@@ -271,12 +273,36 @@ call), the values are squashed.  Line 4 outputs \chpl{3 4 3 4}.
 \end{chapeloutput}
 \end{example}
 
-\index{_@\chpl{_}}
-If an underscore appears as a component in a tuple expression in a
-destructuring context, the expression on the right-hand side is
-ignored, though it is still evaluated.
+\index{tuples!eliding components}
+When splitting a tuple with assignment, the expressions that are
+grouped using the tuple notation may be elided.  In this case, the
+expression on the right-hand side of the assignment operator is
+evaluated, but its value is not assigned.
 
-\subsubsection{Splitting a Tuple into Variable Declarations}
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The code
+\begin{chapel}
+def f()
+  return (1, 2);
+
+var x: int;
+(x, ) = f();
+\end{chapel}
+defines a function that returns a 2-tuple, declares an integer
+variable \chpl{x}, calls the function, assigns the first component in
+the returned tuple to \chpl{x}, and ignores the second component in
+the returned tuple.  The value of \chpl{x} becomes \chpl{1}.
+\begin{chapelpost}
+writeln(x);
+\end{chapelpost}
+\begin{chapeloutput}
+1
+\end{chapeloutput}
+\end{example}
+
+\subsubsection{Splitting a Tuple into Multiple Variables}
 \label{Variable_Declarations_in_a_Tuple}
 \index{tuples!variable declarations grouped as}
 
@@ -327,7 +353,73 @@ writeln(a);
 \end{chapeloutput}
 \end{example}
 
-\subsubsection{Splitting a Tuple into Formal Arguments}
+\index{tuples!eliding components}
+When splitting a tuple into multiple variable declarations, the
+variables that are grouped using the tuple notation may be elided.  In
+this case, a variable is not defined for any elided component.
+
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The code
+\begin{chapel}
+def f()
+  return (1, 2);
+
+var (x, ) = f();
+\end{chapel}
+defines a function that returns a 2-tuple, calls the function,
+declares and initializes variable \chpl{x} to the first component in
+the returned tuple, and ignores the second component in the returned
+tuple.  The value of \chpl{x} is initialized to \chpl{1}.
+\begin{chapelpost}
+writeln(x);
+\end{chapelpost}
+\begin{chapeloutput}
+1
+\end{chapeloutput}
+\end{example}
+
+\subsubsection{Splitting a Tuple into Mutiple Indices}
+\label{Indices_in_a_Tuple}
+\index{tuples!indices grouped as}
+
+When multiple indices in a loop are grouped using tuple notation, the
+values returned by the iterator are split into their components.  The
+number of grouped indices must be equal to the size of the tuple
+returned by the iterator.
+
+\begin{example}
+\begin{chapelpre}
+\end{chapelpre}
+The code
+\begin{chapel}
+def bar() {
+  yield (1, 1);
+  yield (2, 2);
+}
+
+for (i,j) in bar() do
+  writeln(i+j);
+\end{chapel}
+defines a simple iterator that yields two 2-tuples before completing.
+The for-loop uses a tuple notation to group two indices that take
+their values from the iterator.
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+2
+4
+\end{chapeloutput}
+\end{example}
+
+\index{tuples!eliding components}
+When splitting a tuple into multiple indices, the indices that are
+grouped using the tuple notation may be elided.  In this case, a new
+index is not defined for any elided component.  The iterator is
+evaluated as if an index were defined.
+
+\subsubsection{Splitting a Tuple into Multiple Formal Arguments}
 \label{Formal_Argument_Declarations_in_a_Tuple}
 \index{tuples!formal arguments grouped as}
 
@@ -418,6 +510,12 @@ f(y);
 \begin{chapeloutput}
 \end{chapeloutput}
 \end{example}
+
+\index{tuples!eliding components}
+When splitting a tuple into multiple formal arguments, the arguments
+that are grouped using the tuple notation may be elided.  In this
+case, a new argument is not defined for any elided component.  The
+call is evaluated as if an argument were defined.
 
 \subsubsection{Splitting a Tuple via Tuple Expansion}
 \label{Tuple_Expansion}

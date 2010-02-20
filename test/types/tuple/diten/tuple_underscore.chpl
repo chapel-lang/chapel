@@ -6,6 +6,6 @@ def foo(n: int) {
 def main() {
   var a, b: int;
 
-  (a, (_, b)) = (1, (foo(2), foo(3)));
+  (a, (, b)) = (1, (foo(2), foo(3)));
   writeln(a, " ", b);
 }

@@ -82,7 +82,7 @@ insertDestructureStatements(Expr* S1, Expr* S2, CallExpr* lhs, Expr* rhs) {
     i++;
     expr->remove();
     if (UnresolvedSymExpr* se = toUnresolvedSymExpr(expr)) {
-      if (!strcmp(se->unresolved, "_")) {
+      if (!strcmp(se->unresolved, "chpl__tuple_blank")) {
         continue;
       }
     }

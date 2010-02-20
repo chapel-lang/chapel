@@ -3,6 +3,6 @@ def foo(i) {
   return i;
 }
 
-var (a, _) = (foo(1), foo(2));
+var (a,) = (foo(1),foo(2));
 
 writeln(a);

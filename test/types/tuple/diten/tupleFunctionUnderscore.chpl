@@ -1,4 +1,4 @@
-def foo(a, (_, b, _), c, (d, (e, _))) {
+def foo(a, (, b, ), c, (d, (e, ))) {
   writeln((a, b, c, d, e));
 }
 

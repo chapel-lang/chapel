@@ -85,17 +85,14 @@ checkParsed(void) {
   }
 
   forv_Vec(DefExpr, def, gDefExprs) {
-      if (!strcmp(def->sym->name, "_")) {
-        USR_FATAL("Symbol cannot be named \"_\"");
-      } else if (toVarSymbol(def->sym)) {
-        if (!def->init && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
-          if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
-            if (def->parentExpr != rootModule->block)
-              if (!def->sym->hasFlag(FLAG_INDEX_VAR))
-                USR_FATAL_CONT(def->sym,
-                               "Variable '%s' is not initialized or has no type",
-                               def->sym->name);
-      }
+    if (toVarSymbol(def->sym))
+      if (!def->init && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
+        if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
+          if (def->parentExpr != rootModule->block)
+            if (!def->sym->hasFlag(FLAG_INDEX_VAR))
+              USR_FATAL_CONT(def->sym,
+                             "Variable '%s' is not initialized or has no type",
+                             def->sym->name);
   }
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
