@@ -16,6 +16,12 @@
 general regressions
 ===================
 
+reports tests failing spuriously (02/19/10)
+-------------------------------------------
+[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings  ) (0-3)]
+[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings  ) (0-4)]
+[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings --baseline  ) (0-2)]
+
 spurious failure
 ----------------
 [Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
@@ -34,9 +40,9 @@ spurious compilation timeouts
 [Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 12/06/09, 12/25/09, 12/31/09, 01/02/10, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10, 01/27/10, 01/30/10, 02/01/10, 02/05/10, 02/10/10, 02/11/10, 02/12/10 -- esp. gasnet, intel)
 [Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 12/06/09, 12/31/09, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10, 01/26/10, 01/27/10, 01/30/10, 02/10/10, 02/11/10, 02/12/10 -- esp. gasnet, intel)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 01/05/10 -- esp. intel)
-[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 01/14/10, 01/17/10, 01/20/10, 01/24/10, 01/28/10, 02/02/10, 02/07/10, 02/09/10, 02/15/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 01/14/10, 01/17/10, 01/20/10, 01/24/10, 01/28/10, 02/02/10, 02/07/10, 02/09/10, 02/15/10, 02/21/10)
 [Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09, 12/20/09, 12/24/09, 01/10/10, 01/14/10, 01/28/10, 02/02/10, 02/08/10, 02/18/10)
-[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09, 12/07/09, 12/15/09, 12/22/09, 12/24/09, 01/05/10, 01/08/10, 01/10/10, 01/18/10, 01/22/10, 01/28/10, 02/07/10, 02/11/10)
+[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09, 12/07/09, 12/15/09, 12/22/09, 12/24/09, 01/05/10, 01/08/10, 01/10/10, 01/18/10, 01/22/10, 01/28/10, 02/07/10, 02/11/10, 02/20/10, 02/22/10)
 
 
 =================
@@ -65,28 +71,28 @@ spurious system fork failure
 linux64 regressions (in addition to the above)
 ==============================================
 
-??? (02/19/10)
---------------
-[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings  ) (0-3)]
-[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings  ) (0-4)]
-
-
 ==============================================
 linux32 regressions (in addition to the above)
 ==============================================
 
-need to set up machine parameter files for stemp7
--------------------------------------------------
-[Error matching program output for modules/standard/machine/numCores]
-[Error matching program output for modules/standard/memory/countMemory/countMemory]
-[Error matching program output for studies/hpcc/2008/testProbSize]
-[Error matching program output for studies/hpcc/common/testProbSize]
+times out fairly regularly (since moving to stemp7)
+---------------------------------------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
 
 
 ================================
 performance-specific regressions
 ================================
+
+spurious execution timeouts (used to be less spurious) (02/??/10)
+-----------------------------------------------------------------
+--- New Errors (performance) -----------------------------------------
+[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3]
+[Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
+[Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
+[Error: Timed out executing program studies/shootout/nbody/nbody_record_domain_2a]
+[Error: Timed out executing program studies/shootout/nbody/nbody_record_domain_2a]
+[Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -98,9 +104,12 @@ execution timeouts (08/29/09)
 valgrind-specific regressions
 =============================
 
-new uninitialized value (02/18/10)
-----------------------------------
-***nearly all***
+invalid read in task code (02/??/10)
+------------------------------------
+[Error matching program output for parallel/cobegin/diten/cobeginRace]
+[Error matching program output for studies/uts/uts_rec  -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5 (-O --no-checks brg_sha1.c brg_sha1.h --cc-warnings -sparallel=true) (0-1)]
+[Error matching program output for studies/uts/uts_rec  -stestMode=true -sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5 (-O --no-checks brg_sha1.c brg_sha1.h --cc-warnings -sparallel=true) (0-2)]
+[Error matching program output for users/shetag/fock/fock-1-latest]
 
 spurious 'the impossible has happened' problems (starting 08/26/09)
 -------------------------------------------------------------------
@@ -185,9 +194,9 @@ times out fairly consistently
 
 times out spuriously
 --------------------
-[Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09, 12/16/09, 12/19/09, 12/25/09, 12/29/09, 01/07/10, 01/08/10, 01/10/10, 01/23/10, 02/08/10, 02/10/10, 02/18/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10, 02/11/10, 02/16/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10, 02/14/10, 02/15/10, 02/17/10)
+[Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09, 12/16/09, 12/19/09, 12/25/09, 12/29/09, 01/07/10, 01/08/10, 01/10/10, 01/23/10, 02/08/10, 02/10/10, 02/18/10, 02/20/10, 02/22/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10, 02/11/10, 02/16/10, 02/22/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10, 02/14/10, 02/15/10, 02/17/10, 02/20/10, 02/22/10)
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09, 02/02/10)
 [Error: Timed out executing program users/agnieszka/test1] (e.g., 01/08/10)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09, 12/15/09, 12/18/09, 12/21/09, 12/25/09, 01/04/10, 01/05/10, 01/06/10, 01/10/10, 01/24/10, 01/29/10, 02/14/10, 02/16/10)
@@ -248,10 +257,6 @@ new homogenous tuple seems to break --gen-communicated-structures
 =======================
 baseline-specific tests
 =======================
-
-??? (02/19/10)
---------------
-[Error matching program output for parallel/coforall/stonea/reports  -b -t (--cc-warnings --baseline  ) (0-2)]
 
 execution timeout
 -----------------
