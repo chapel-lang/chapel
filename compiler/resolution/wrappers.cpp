@@ -62,8 +62,8 @@ isShadowedField(ArgSymbol* formal) {
 
 static void
 insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
-  if (!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid ||
-      fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid) {
+  if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
+      (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
     wrapper->insertAtTail(call);
   } else {
     Symbol* tmp = newTemp();
@@ -509,8 +509,8 @@ buildPromotionWrapper(FnSymbol* fn,
   Expr* indices = indicesCall;
   if (indicesCall->numActuals() == 1)
     indices = indicesCall->get(1)->remove();
-  if (!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid ||
-      fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid) {
+  if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
+      (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
     if (fSerial || fSerialForall)
       wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(actualCall))));
     else

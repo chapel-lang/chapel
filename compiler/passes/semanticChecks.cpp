@@ -192,7 +192,7 @@ checkReturnPaths(FnSymbol* fn) {
   // initialize the return symbol but we don't want that to count as a
   // definition of a return value.
   //
-  if (result == 0 || result == 1 && fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE))
+  if (result == 0 || (result == 1 && fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE)))
     USR_WARN(fn->body, "control reaches end of function that returns a value");
 }
 

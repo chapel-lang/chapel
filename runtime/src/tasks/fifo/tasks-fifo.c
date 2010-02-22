@@ -362,6 +362,7 @@ void CHPL_TASKING_INIT(void) {
 
 void CHPL_TASKING_EXIT(void) {
   chpl_bool debug = false;
+  thread_list_p tlp;
 
   if (!initialized)
     return;
@@ -374,9 +375,9 @@ void CHPL_TASKING_EXIT(void) {
   CHPL_MUTEX_UNLOCK(&threading_lock);
 
   // shut down all threads
-  for (thread_list_p tlp = thread_list_head; tlp != NULL; tlp = tlp->next)
+  for (tlp = thread_list_head; tlp != NULL; tlp = tlp->next)
     threadlayer_thread_cancel(tlp->thread);
-  for (thread_list_p tlp = thread_list_head; tlp != NULL; tlp = tlp->next)
+  for (tlp = thread_list_head; tlp != NULL; tlp = tlp->next)
     threadlayer_thread_join(tlp->thread);
 
   threadlayer_exit();
