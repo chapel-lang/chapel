@@ -1,4 +1,4 @@
-use BlockDist;
+use BlockDist, CyclicDist, BlockCycDist;
 
 config param distString: string = 'default';
 
@@ -32,6 +32,24 @@ def setupDistributions() {
             new dist(new Block(rank=3, bbox=Space3)),
             new dist(new Block(rank=4, bbox=Space4)),
             new dist(new Block(rank=2, idxType=int(64), bbox=Space2D64))
+           );
+  }
+  if distString == 'cyclic' {
+    return (
+            new dist(new Cyclic(rank=1, idxType=int)),
+            new dist(new Cyclic(rank=2, idxType=int)),
+            new dist(new Cyclic(rank=3, idxType=int)),
+            new dist(new Cyclic(rank=4, idxType=int)),
+            new dist(new Cyclic(rank=2, idxType=int(64)))
+           );
+  }
+  if distString == 'blockcyclic' {
+    return (
+            new dist(new BlockCyclic(rank=1, idxType=int, low=tuple(0), blk=tuple(3))),
+            new dist(new BlockCyclic(rank=2, idxType=int, low=(0,0), blk=(3,3))),
+            new dist(new BlockCyclic(rank=3, idxType=int, low=(0,0,0), blk=(3,3,3))),
+            new dist(new BlockCyclic(rank=4, idxType=int, low=(0,0,0,0), blk=(3,3,3,3))),
+            new dist(new BlockCyclic(rank=2, idxType=int(64), low=(0:int(64),0:int(64)), blk=(2,3)))
            );
   }
 }
