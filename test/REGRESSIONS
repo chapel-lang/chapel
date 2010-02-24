@@ -40,7 +40,7 @@ spurious compilation timeouts
 [Error: Timed out compilation for users/franzf/v0/chpl/main] (e.g., 12/06/09, 12/25/09, 12/31/09, 01/02/10, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10, 01/27/10, 01/30/10, 02/01/10, 02/05/10, 02/10/10, 02/11/10, 02/12/10, 02/23/10 -- esp. gasnet, intel)
 [Error: Timed out compilation for users/franzf/v1/chpl/main] (e.g., 12/06/09, 12/31/09, 01/05/10, 01/07/10, 01/08/10, 01/11/10, 01/15/10, 01/26/10, 01/27/10, 01/30/10, 02/10/10, 02/11/10, 02/12/10, 02/23/10 -- esp. gasnet, intel)
 [Error: Timed out compilation for users/franzf/v2/chpl/main] (e.g., 01/05/10 -- esp. intel)
-[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 01/14/10, 01/17/10, 01/20/10, 01/24/10, 01/28/10, 02/02/10, 02/07/10, 02/09/10, 02/15/10, 02/21/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (e.g., 10/12/09, 10/17/09, 10/19/09, 11/10/09:new version, 11/14/09, 11/15/09, 11/17/09, 11/22/09, 12/06/09, 12/15/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 01/14/10, 01/17/10, 01/20/10, 01/24/10, 01/28/10, 02/02/10, 02/07/10, 02/09/10, 02/15/10, 02/21/10, 02/24/10)
 [Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (e.g., 11/03/09, 11/14/09, 11/15/09, 11/17/09, 11/20/09, 11/23/09, 12/20/09, 12/24/09, 01/10/10, 01/14/10, 01/28/10, 02/02/10, 02/08/10, 02/18/10)
 [Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (e.g., 11/14/09, 11/15/09, 11/20/09, 11/22/09, 11/24/09, 12/07/09, 12/15/09, 12/22/09, 12/24/09, 01/05/10, 01/08/10, 01/10/10, 01/18/10, 01/22/10, 01/28/10, 02/07/10, 02/11/10, 02/20/10, 02/22/10)
 
@@ -165,6 +165,14 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+spurious mutex assertion failure (02/24/10)
+-------------------------------------------
+[Error matching program output for demo/review_060130/iterators]
+
+Notes: pthread_mutex_lock.c:80: __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
+> *** Caught a fatal signal: SIGABRT(6) on node 0/1
+> NOTICE: Before reporting bugs, run with GASNET_BACKTRACE=1 in the environment to generate a backtrace.
+
 spurious got wrong answer
 -------------------------
 [Error matching program output for multilocale/deitz/needMultiLocales/dist/test_private_space] (e.g., 02/14/10)
@@ -249,7 +257,13 @@ new homogenous tuple seems to break --gen-communicated-structures
 [Error matching compiler output for release/examples/tutorials/variables]
 
 
+=====================
+mpi-specific failures
+=====================
 
+internal error SYM0172 (from first test)
+----------------------------------------
+*184 tests*
 
 =======================
 baseline-specific tests
@@ -276,12 +290,13 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 64)
+(Full run: 78)
 
 general failures
 ----------------
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
++ various reports failures
 
 --no-dead-code-elimination
 --------------------------
