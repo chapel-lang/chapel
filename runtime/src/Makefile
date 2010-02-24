@@ -12,6 +12,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 include common-chpl/Makefile.include
 include tasks/Makefile.include
 include threads/Makefile.include
+include timers/Makefile.include
 
 COMMON_OBJDIR = $(RUNTIME_OBJDIR)
 COMMON_LAUNCHER_OBJDIR = $(LAUNCHER_OBJDIR)
@@ -22,12 +23,14 @@ TARGETS = \
 	$(COMMON_OBJS) \
 	$(MAIN_OBJS) \
 	$(TASKS_OBJS) \
-	$(THREADS_OBJS) \
+        $(THREADS_OBJS) \
+        $(TIMERS_OBJS) \
 
 SUBDIRS = \
 	common-chpl \
 	tasks \
 	threads \
+        timers \
 
 else
 TARGETS = \

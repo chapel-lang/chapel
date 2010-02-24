@@ -156,6 +156,5 @@ int32_t _now_year(void);
 int32_t _now_month(void);
 int32_t _now_day(void);
 int32_t _now_dow(void);
-_real64 _now_time(void);
 
 #endif

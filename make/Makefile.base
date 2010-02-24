@@ -26,6 +26,10 @@ ifndef CHPL_MAKE_THREADS
 include $(CHAPEL_ROOT)/make/Makefile.threads
 endif
 
+ifndef CHPL_MAKE_TIMERS
+include $(CHAPEL_ROOT)/make/Makefile.timers
+endif
+
 ifndef CHPL_MAKE_COMM
 include $(CHAPEL_ROOT)/make/Makefile.comm
 endif
@@ -127,6 +131,7 @@ printplatform:
 	@echo "CHPL_MAKE_TARGET_PLATFORM = $(CHPL_MAKE_TARGET_PLATFORM)"
 	@echo "CHPL_MAKE_COMPILER        = $(CHPL_MAKE_COMPILER)"
 	@echo "CHPL_MAKE_THREADS         = $(CHPL_MAKE_THREADS)"
+	@echo "CHPL_MAKE_TIMERS          = $(CHPL_MAKE_TIMERS)"
 	@echo "CHPL_MAKE_COMM            = $(CHPL_MAKE_COMM)"
 	@echo "CHPL_MAKE_COMM_SUBSTRATE  = $(CHPL_MAKE_COMM_SUBSTRATE)"    
 	@echo "CHPL_MAKE_LAUNCHER        = $(CHPL_MAKE_LAUNCHER)"

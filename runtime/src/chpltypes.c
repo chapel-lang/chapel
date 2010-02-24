@@ -10,6 +10,7 @@
 #include <chplfp.h>
 #include "chpl_mem.h"
 #include "chplrt.h"
+#include "chpltimers.h"
 #include "chpltypes.h"
 #include "chplcomm.h"
 #include "error.h"
@@ -210,16 +211,4 @@ int32_t _now_dow(void) {
   gettimeofday(&t, NULL);
   now = localtime(&t.tv_sec);
   return now->tm_wday;
-}
-
-
-_real64 _now_time(void) {
-  struct tm * now;
-  _timervalue t;
-  gettimeofday(&t, NULL);
-  now = localtime(&t.tv_sec);
-  return (_real64)(now->tm_hour)*3600.0e+6 +
-    (_real64)(now->tm_min)*60.0e+6 +
-    (_real64)(now->tm_sec)*1.0e+6 +
-    (_real64)(t.tv_usec);
 }

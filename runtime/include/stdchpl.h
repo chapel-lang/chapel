@@ -30,6 +30,7 @@
 #include "chplrt.h"
 #include "chplsys.h"
 #include "chpltasks.h"
+#include "chpltimers.h"
 #include "chpltypes.h"
 #include "chplgpu.h"
 #include "error.h"
