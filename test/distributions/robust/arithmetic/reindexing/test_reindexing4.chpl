@@ -1,5 +1,5 @@
 // Check for memory leaks
-use driver;
+use driver_arrays;
 config const iters = 10;
 
 def foo(TD: domain, A: [TD] int, TA, iter: int) {

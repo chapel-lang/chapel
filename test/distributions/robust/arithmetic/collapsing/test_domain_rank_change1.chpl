@@ -1,4 +1,4 @@
-use driver;
+use driver_domains;
 
 writeln(Dom2D(10..30, 2));
 for i in Dom3D(2..4, 4..6, 1) do

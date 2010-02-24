@@ -1,4 +1,4 @@
-use driver;
+use driver_domains;
 
 var A, B, C: [Dom2D] real;
 

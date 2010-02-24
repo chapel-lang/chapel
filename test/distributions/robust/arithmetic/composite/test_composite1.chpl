@@ -1,4 +1,4 @@
-use driver;
+use driver_arrays;
 
 var S: [1..n3, 1..n3] string;
 

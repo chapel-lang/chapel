@@ -1,4 +1,4 @@
-use driver;
+use driver_domains;
 
 writeln(Dom1D.exterior(1));
 writeln(Dom1D.exterior(-1));

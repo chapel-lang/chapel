@@ -1,4 +1,4 @@
-use driver;
+use driver_arrays;
 
 def foo(Dom, Arr) {
   for e in Arr do

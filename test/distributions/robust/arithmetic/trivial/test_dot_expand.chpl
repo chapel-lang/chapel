@@ -1,4 +1,4 @@
-use driver;
+use driver_domains;
 
 def foo(Dom, Dist) {
   writeln(Dom.expand(1));

@@ -1,4 +1,4 @@
-use driver;
+use driver_domains;
 
 writeln(Dom1D.dims());
 writeln(Dom2D.dims());

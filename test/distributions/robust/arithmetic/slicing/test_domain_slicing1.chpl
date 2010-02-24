@@ -1,4 +1,4 @@
-use driver;
+use driver_domains;
 
 writeln(Dom1D(-1..20));
 writeln(Dom2D(10..30, -1..10));

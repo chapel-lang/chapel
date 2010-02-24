@@ -1,6 +1,6 @@
 // Test the standard module Sort
 
-use driver;
+use driver_real_arrays;
 use Random;
 use Sort;
 

@@ -1,4 +1,4 @@
-use driver;
+use driver_arrays;
 
 var x1: index(Dom1D);
 var x2: index(Dom2D);

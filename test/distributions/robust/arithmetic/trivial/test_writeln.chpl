@@ -1,4 +1,4 @@
-use driver;
+use driver_arrays;
 
 writeln(Dom1D);
 writeln(Dom2D);

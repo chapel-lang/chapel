@@ -1,4 +1,4 @@
-use driver;
+use driver_domains;
 
 record R { var x: int; var y: real; }
 

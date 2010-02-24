@@ -1,4 +1,4 @@
-use driver;
+use driver_arrays;
 
 def foo(TD: domain, A: [TD] int, TA) {
   var errs = 0;

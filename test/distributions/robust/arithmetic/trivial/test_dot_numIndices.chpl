@@ -1,4 +1,4 @@
-use driver;
+use driver_arrays;
 
 writeln(Dom1D.numIndices);
 writeln(Dom2D.numIndices);

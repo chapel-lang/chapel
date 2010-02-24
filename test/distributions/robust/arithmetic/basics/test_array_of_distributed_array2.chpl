@@ -1,4 +1,4 @@
-use driver;
+use driver_domains;
 
 var A1DAA1D: [Dom1D] [1..3] [Dom1D] real;
 

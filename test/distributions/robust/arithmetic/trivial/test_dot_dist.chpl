@@ -1,4 +1,4 @@
-use driver;
+use driver_domains;
 
 writeln(Dom1D.dist == Dist1D);
 writeln(Dom2D.dist == Dist2D);

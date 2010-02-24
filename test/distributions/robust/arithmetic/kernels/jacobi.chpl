@@ -6,7 +6,7 @@
  *
  */
 
-use driver;
+use driver_domains;
 
 // Configuration variables for program:
 config var epsilon = 0.00001,           // convergence tolerance

@@ -1,6 +1,6 @@
 // Test the standard module Search
 
-use driver;
+use driver_real_arrays;
 use Random;
 use Sort;
 use Search;

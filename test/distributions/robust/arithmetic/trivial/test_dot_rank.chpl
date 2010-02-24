@@ -1,4 +1,4 @@
-use driver;
+use driver_arrays;
 
 writeln(Dom1D.rank);
 writeln(Dom2D.rank);

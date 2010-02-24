@@ -1,4 +1,4 @@
-use driver;
+use driver_arrays;
 
 writeln(A1D.domain);
 writeln(A2D.domain);

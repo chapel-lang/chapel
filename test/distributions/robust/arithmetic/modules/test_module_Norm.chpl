@@ -1,6 +1,6 @@
 // Test the standard module Norm
 
-use driver;
+use driver_real_arrays;
 use Random;
 use Norm;
 

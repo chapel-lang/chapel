@@ -1,4 +1,4 @@
-use driver;
+use driver_arrays;
 
 A1D[5] = -1;
 A2D[4,4] = -2;

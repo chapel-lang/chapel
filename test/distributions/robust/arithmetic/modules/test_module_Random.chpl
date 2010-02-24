@@ -1,6 +1,6 @@
 // Test the standard module Random
 
-use driver;
+use driver_real_arrays;
 use Random;
 
 config const printRefArrays = true;
