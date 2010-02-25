@@ -69,6 +69,8 @@ if ($ENV{'CHPL_COMM'} eq "gasnet") {
     $gasnet = 1;
 } elsif ($ENV{'CHPL_COMM'} eq "pvm") {
     $pvm = 1;
+} elsif ($ENV{'CHPL_COMM'} eq "mpi") {
+    $mpi = 1;
 }
 
 $statdate = `date +%D`; chomp($statdate);
@@ -460,6 +462,8 @@ if ($parnodefile eq "") {
         $testflags = "$testflags -comm gasnet";
     } elsif ($pvm == 1) {
         $testflags = "$testflags -comm pvm";
+    } elsif ($mpi == 1) {
+        $testflags = "$testflags -comm mpi";
     }
 }
     
@@ -761,7 +765,7 @@ sub ensureSummaryExists {
     $summary = $_[0];
     if (! -r $summary) {
         print "Creating $summary\n";
-        `echo \"[Summary: #Successes = 0 | #Failures = 0 | #Futures = 0]\" > $summary"`
+        `echo "[Summary: #Successes = 0 | #Failures = 0 | #Futures = 0]" > $summary`
     }
 }
 
