@@ -34,9 +34,9 @@ include src/common-chpl/Makefile.include
 include src/tasks/$(CHPL_MAKE_TASKS)/Makefile.include
 include src/threads/$(CHPL_MAKE_THREADS)/Makefile.include
 include src/timers/$(CHPL_MAKE_TIMERS)/Makefile.include
-include comm-$(CHPL_MAKE_COMM)/Makefile.include
-include launch-$(CHPL_MAKE_LAUNCHER)/Makefile.include
-include mem-$(CHPL_MAKE_MEM)/Makefile.include
+include src/comm/$(CHPL_MAKE_COMM)/Makefile.include
+include src/launch/$(CHPL_MAKE_LAUNCHER)/Makefile.include
+include src/mem/$(CHPL_MAKE_MEM)/Makefile.include
 
 
 #
@@ -46,14 +46,14 @@ include mem-$(CHPL_MAKE_MEM)/Makefile.include
 ifeq ($(MAKE_LAUNCHER),0)
 SUBDIRS = \
 	src \
-	comm-$(CHPL_MAKE_COMM) \
-	mem-$(CHPL_MAKE_MEM)
+	src/comm/$(CHPL_MAKE_COMM) \
+	src/mem/$(CHPL_MAKE_MEM)
 
 else
 SUBDIRS = \
 	src \
-	comm-$(CHPL_MAKE_COMM) \
-	launch-$(CHPL_MAKE_LAUNCHER)
+	src/comm/$(CHPL_MAKE_COMM) \
+	src/launch/$(CHPL_MAKE_LAUNCHER)
 
 endif
 
