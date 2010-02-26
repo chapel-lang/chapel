@@ -1,106 +1,237 @@
 //
-// Block Distribution
-// 
-//      Block       BlockDom     BlockArr
+// The Block distribution is defined with six classes:
 //
-//   LocBlock    LocBlockDom  LocBlockArr
+//   Block       : distribution class
+//   BlockDom    : domain class
+//   BlockArr    : array class
+//   LocBlock    : local distribution class (per-locale instances)
+//   LocBlockDom : local domain class (per-locale instances)
+//   LocBlockArr : local array class (per-locale instances)
+//
+// When a distribution, domain, or array class instance is created, a
+// correponding local class instance is created on each locale that is
+// mapped to by the distribution.
+//
+
+//
+// TO DO List
+//
+// 1. refactor pid fields from distribution, domain, and array classes
 //
 
 use DSIUtil;
 use ChapelUtil;
 
 //
-// Limitations
+// These flags are used to output debug information and run extra
+// checks when using Block.  Should these be promoted so that they can
+// be used across all distributions?  This can be done by turning them
+// into compiler flags or adding config parameters to the internal
+// modules, perhaps called debugDists and checkDists.
 //
-// 1. Changes to Block.tasksPerLocale are not made in privatized
-//    copies of this distribution.
+config param debugBlockDist = false;
+config param sanityCheckDistribution = false;
+
 //
-
-config param debugBlockDist = false; // internal development flag (debugging)
-config param sanityCheckDistribution = false; // ditto; should promote to compiler flag
-
-////////////////////////////////////////////////////////////////////////////////
 // Block Distribution Class
+//
+//   The field Block.tasksPerLocale can be changed, but changes are
+//   not reflected in privatized copies of this distribution.  Perhaps
+//   this is a feature, not a bug?!
+//
+// rank : generic rank that must match the rank of domains and arrays
+//        declared over this distribution
+//
+// idxType: generic index type that must match the index type of
+//          domains and arrays declared over this distribution
+//
+// boundingBox: a non-distributed domain defining a bounding box used
+//              to partition the space of all indices across the array
+//              of target locales; the indices inside the bounding box
+//              are partitioned "evenly" across the locales and
+//              indices outside the bounding box are mapped to the
+//              same locale as the nearest index inside the bounding
+//              box
+//
+// targetLocDom: a non-distributed domain over which the array of
+//               target locales and the array of local distribution
+//               classes are defined
+//
+// targetLocs: a non-distributed array containing the target locales
+//             to which this distribution partitions indices and data
+//
+// locDist: a non-distributed array of local distribution classes
+//
+// tasksPerLocale: an integer that specifies the number of tasks to
+//                 use on each locale when iterating in parallel over
+//                 a Block-distributed domain or array
 //
 class Block : BaseDist {
   param rank: int;
   type idxType = int;
-
   const boundingBox: domain(rank, idxType);
   const targetLocDom: domain(rank);
   const targetLocs: [targetLocDom] locale;
   const locDist: [targetLocDom] LocBlock(rank, idxType);
+  var tasksPerLocale: int;
+  var pid: int = -1; // privatized object id (this should be factored out)
+}
 
-  var tasksPerLocale: int; // tasks per locale for forall iteration
+//
+// Local Block Distribution Class
+//
+// rank : generic rank that matches Block.rank
+// idxType: generic index type that matches Block.idxType
+// myChunk: a non-distributed domain that defines this locale's indices
+//
+class LocBlock {
+  param rank: int;
+  type idxType;
+  const myChunk: domain(rank, idxType);
+}
 
-  var pid: int = -1; // privatized object id
+//
+// Block Domain Class
+//
+// rank:      generic domain rank
+// idxType:   generic domain index type
+// stridable: generic domain stridable parameter
+// dist:      reference to distribution class
+// locDoms:   a non-distributed array of local domain classes
+// whole:     a non-distributed domain that defines the domain's indices
+//
+class BlockDom: BaseArithmeticDom {
+  param rank: int;
+  type idxType;
+  param stridable: bool;
+  const dist: Block(rank, idxType);
+  var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
+  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  var pid: int = -1; // privatized object id (this should be factored out)
+}
 
-  def Block(param rank: int,
-            type idxType = int,
-            bbox: domain(rank, idxType),
-            targetLocales: [] locale = thisRealm.Locales, 
-            tasksPerLocale = 0) {
-    boundingBox = bbox;
-    if rank != 1 && targetLocales.rank == 1 {
-      const factors = _factor(rank, targetLocales.numElements);
-      var ranges: rank*range;
-      for param i in 1..rank do
-        ranges(i) = 0..#factors(i);
-      targetLocDom = [(...ranges)];
-      targetLocs = reshape(targetLocales, targetLocDom);
-    } else {
-      if targetLocales.rank != rank then
-	compilerError("targetLocales rank must equal distribution rank or one");
+//
+// Local Block Domain Class
+//
+// rank: generic domain rank
+// idxType: generic domain index type
+// stridable: generic domain stridable parameter
+// myBlock: a non-distributed domain that defines the local indices
+//
+class LocBlockDom {
+  param rank: int;
+  type idxType;
+  param stridable: bool;
+  var myBlock: domain(rank, idxType, stridable);
+}
 
-      var ranges: rank*range;
-      for param i in 1..rank do
-	ranges(i) = 0..#targetLocales.domain.dim(i).length;
+//
+// Block Array Class
+//
+// eltType: generic array element type
+// rank: generic array rank
+// idxType: generic array index type
+// stridable: generic array stridable parameter
+// dom: reference to domain class
+// locArr: a non-distributed array of local array classes
+// myLocArr: optimized reference to here's local array class (or nil)
+//
+class BlockArr: BaseArr {
+  type eltType;
+  param rank: int;
+  type idxType;
+  param stridable: bool;
+  var dom: BlockDom(rank, idxType, stridable);
+  var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
+  var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
+  var pid: int = -1; // privatized object id (this should be factored out)
+}
 
-      targetLocDom = [(...ranges)];
-      targetLocs = targetLocales;
-    }
+//
+// Local Block Array Class
+//
+// eltType: generic array element type
+// rank: generic array rank
+// idxType: generic array index type
+// stridable: generic array stridable parameter
+// locDom: reference to local domain class
+// myElems: a non-distributed array of local elements
+//
+class LocBlockArr {
+  type eltType;
+  param rank: int;
+  type idxType;
+  param stridable: bool;
+  const locDom: LocBlockDom(rank, idxType, stridable);
+  var myElems: [locDom.myBlock] eltType;
+}
 
-    if debugBlockDist {
-      writeln(targetLocDom);
-      writeln(targetLocs);
-    }
 
-    const boundingBoxDims = boundingBox.dims();
-    const targetLocDomDims = targetLocDom.dims();
-    coforall locid in targetLocDom do
-      on targetLocs(locid) do
-        locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
-                                       targetLocDomDims);
-
-    if tasksPerLocale == 0 then
-      this.tasksPerLocale = min reduce targetLocs.numCores;
-    else
-      this.tasksPerLocale = tasksPerLocale;
-
-    if debugBlockDist then
-      for loc in locDist do writeln(loc);
+def Block.Block(param rank: int,
+                type idxType = int,
+                bbox: domain(rank, idxType),
+                targetLocales: [] locale = thisRealm.Locales, 
+                tasksPerLocale = 0) {
+  boundingBox = bbox;
+  if rank != 1 && targetLocales.rank == 1 {
+    const factors = _factor(rank, targetLocales.numElements);
+    var ranges: rank*range;
+    for param i in 1..rank do
+      ranges(i) = 0..#factors(i);
+    targetLocDom = [(...ranges)];
+    targetLocs = reshape(targetLocales, targetLocDom);
+  } else {
+    if targetLocales.rank != rank then
+      compilerError("targetLocales rank must equal distribution rank or one");
+    
+    var ranges: rank*range;
+    for param i in 1..rank do
+      ranges(i) = 0..#targetLocales.domain.dim(i).length;
+    
+    targetLocDom = [(...ranges)];
+    targetLocs = targetLocales;
   }
 
-  // copy constructor for privatization
-  def Block(param rank: int, type idxType, other: Block(rank, idxType), privateData) {
-    boundingBox = [(...privateData(1))];
-    targetLocDom = [(...privateData(2))];
-    tasksPerLocale = privateData(3);
-    for i in targetLocDom {
-      targetLocs(i) = other.targetLocs(i);
-      locDist(i) = other.locDist(i);
-    }
+  if debugBlockDist {
+    writeln(targetLocDom);
+    writeln(targetLocs);
   }
 
-  def dsiClone() {
-    return new Block(rank, idxType, boundingBox, targetLocs, tasksPerLocale);
-  }
+  const boundingBoxDims = boundingBox.dims();
+  const targetLocDomDims = targetLocDom.dims();
+  coforall locid in targetLocDom do
+    on targetLocs(locid) do
+      locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
+                                     targetLocDomDims);
 
-  def dsiDestroyDistClass() {
-    coforall ld in locDist do {
-      on ld do
-        delete ld;
-    }
+  if tasksPerLocale == 0 then
+    this.tasksPerLocale = min reduce targetLocs.numCores;
+  else
+    this.tasksPerLocale = tasksPerLocale;
+  
+  if debugBlockDist then
+    for loc in locDist do writeln(loc);
+}
+
+// copy constructor for privatization
+def Block.Block(param rank: int, type idxType, other: Block(rank, idxType), privateData) {
+  boundingBox = [(...privateData(1))];
+  targetLocDom = [(...privateData(2))];
+  tasksPerLocale = privateData(3);
+  for i in targetLocDom {
+    targetLocs(i) = other.targetLocs(i);
+    locDist(i) = other.locDist(i);
+  }
+}
+
+def Block.dsiClone() {
+  return new Block(rank, idxType, boundingBox, targetLocs, tasksPerLocale);
+}
+
+def Block.dsiDestroyDistClass() {
+  coforall ld in locDist do {
+    on ld do
+      delete ld;
   }
 }
 
@@ -312,54 +443,33 @@ def Block.dsiCreateReindexDist(newSpace, oldSpace) {
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Block Local Distribution Class
-//
-class LocBlock {
-  param rank: int;
-  type idxType;
-
-  //
-  // This stores the piece of the global bounding box owned by
-  // the locale.  Note that my original guess that we'd want
-  // to use lclIdxType here is wrong since we're talking about
-  // the section of the global index space owned by the locale.
-  //
-  const myChunk: domain(rank, idxType);
-
-  //
-  // Constructor computes what chunk of index(1) is owned by the
-  // current locale
-  //
-  def LocBlock(param rank: int,
-               type idxType, 
-               locid,   // the locale index from the target domain
-               boundingBox: rank*range(idxType),
-               targetLocBox: rank*range) {
-    if rank == 1 {
-      const lo = boundingBox(1).low;
-      const hi = boundingBox(1).high;
+def LocBlock.LocBlock(param rank: int,
+                      type idxType, 
+                      locid, // the locale index from the target domain
+                      boundingBox: rank*range(idxType),
+                      targetLocBox: rank*range) {
+  if rank == 1 {
+    const lo = boundingBox(1).low;
+    const hi = boundingBox(1).high;
+    const numelems = hi - lo + 1;
+    const numlocs = targetLocBox(1).length;
+    const (blo, bhi) = _computeBlock(numelems, numlocs, locid,
+                                     max(idxType), min(idxType), lo);
+    myChunk = [blo..bhi];
+  } else {
+    var tuple: rank*range(idxType);
+    for param i in 1..rank {
+      const lo = boundingBox(i).low;
+      const hi = boundingBox(i).high;
       const numelems = hi - lo + 1;
-      const numlocs = targetLocBox(1).length;
-      const (blo, bhi) = _computeBlock(numelems, numlocs, locid,
+      const numlocs = targetLocBox(i).length;
+      const (blo, bhi) = _computeBlock(numelems, numlocs, locid(i),
                                        max(idxType), min(idxType), lo);
-      myChunk = [blo..bhi];
-    } else {
-      var tuple: rank*range(idxType);
-      for param i in 1..rank {
-        const lo = boundingBox(i).low;
-        const hi = boundingBox(i).high;
-        const numelems = hi - lo + 1;
-        const numlocs = targetLocBox(i).length;
-        const (blo, bhi) = _computeBlock(numelems, numlocs, locid(i),
-                                         max(idxType), min(idxType), lo);
-        tuple(i) = blo..bhi;
-      }
-      myChunk = [(...tuple)];
+      tuple(i) = blo..bhi;
     }
+    myChunk = [(...tuple)];
   }
 }
-
 
 def LocBlock.writeThis(x:Writer) {
   var localeid: int;
@@ -370,33 +480,7 @@ def LocBlock.writeThis(x:Writer) {
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Block Domain Class
-//
-class BlockDom: BaseArithmeticDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
-  //
-  // LEFT LINK: a pointer to the parent distribution
-  //
-  const dist: Block(rank, idxType);
-
-  //
-  // DOWN LINK: an array of local domain class descriptors -- set up in
-  // setup() below
-  //
-  var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
-
-  //
-  // a domain describing the complete domain
-  //
-  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-
-  var pid: int = -1; // privatized object id
-
-  def getBaseDist() return dist;
-}
+def BlockDom.getBaseDist() return dist;
 
 def BlockDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
@@ -588,7 +672,7 @@ def BlockDom.setup() {
   if locDoms(dist.targetLocDom.low) == nil {
     coforall localeIdx in dist.targetLocDom do {
       on dist.targetLocs(localeIdx) do
-        locDoms(localeIdx) = new LocBlockDom(rank, idxType, stridable, this, 
+        locDoms(localeIdx) = new LocBlockDom(rank, idxType, stridable,
                                              dist.getChunk(whole, localeIdx));
     }
   } else {
@@ -651,29 +735,6 @@ def BlockDom.dsiBuildArithmeticDom(param rank: int, type idxType,
   return dom;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Block Local Domain Class
-//
-class LocBlockDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
-
-  //
-  // UP LINK: a reference to the parent global domain class
-  //
-  const wholeDom: BlockDom(rank, idxType, stridable);
-
-  //
-  // a local domain describing the indices owned by this locale
-  //
-  // NOTE: I used to use a local index type for this, but that would
-  // require a glbIdxType offset in order to get from the global
-  // indices back to the local index type.
-  //
-  var myBlock: domain(rank, idxType, stridable);
-}
-
 //
 // output local domain piece
 //
@@ -685,33 +746,6 @@ def LocBlockDom.writeThis(x:Writer) {
 // Added as a performance stopgap to avoid returning a domain
 //
 def LocBlockDom.member(i) return myBlock.member(i);
-
-////////////////////////////////////////////////////////////////////////////////
-// Block Array Class
-//
-class BlockArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
-
-  //
-  // LEFT LINK: the global domain descriptor for this array
-  //
-  var dom: BlockDom(rank, idxType, stridable);
-
-  //
-  // DOWN LINK: an array of local array classes
-  //
-  var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
-
-  //
-  // optimized reference to a local LocBlockArr instance (or nil)
-  //
-  var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
-
-  var pid: int = -1; // privatized object id
-}
 
 def BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom do
@@ -1034,29 +1068,6 @@ def BlockArr.dsiReallocate(d: domain) {
   // assignment is defined so that only the indices are transferred.
   // The distribution remains unchanged.
   //
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Block Local Array Class
-//
-class LocBlockArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
-
-  //
-  // LEFT LINK: a reference to the local domain class for this array and locale
-  //
-  const locDom: LocBlockDom(rank, idxType, stridable);
-
-
-  // STATE:
-
-  //
-  // the block of local array data
-  //
-  var myElems: [locDom.myBlock] eltType;
 }
 
 //
