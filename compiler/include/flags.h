@@ -60,6 +60,7 @@ enum Flag {
   FLAG_HEAP,
   FLAG_HEAP_ALLOCATE,
   FLAG_STAR_TUPLE, // mark tuple types as star tuple types
+  FLAG_IMPLICIT_ALIAS_FIELD,
   FLAG_INDEX_VAR,
   FLAG_INLINE,
   FLAG_INLINE_ITERATOR, // iterators that are always inlined, e.g., leaders

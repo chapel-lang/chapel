@@ -11,6 +11,10 @@ BlockStmt* buildPragmaStmt(BlockStmt*, Vec<const char*>*, BlockStmt*);
 Expr* buildParenExpr(CallExpr* call);
 
 Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
+
+Expr* buildNamedActual(const char* name, Expr* expr);
+Expr* buildNamedAliasActual(const char* name, Expr* expr);
+
 Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index = NULL);
 
 Expr* buildIntLiteral(const char* pch);
@@ -63,7 +67,6 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* bloc
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op = NULL);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs);
-BlockStmt* buildAliasStmt(Expr* lhs, Expr* rhs);
 BlockStmt* buildSwapStmt(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
 BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);

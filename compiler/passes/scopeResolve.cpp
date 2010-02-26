@@ -40,6 +40,13 @@ static Map<BlockStmt*,Vec<ModuleSymbol*>*> moduleUsesCache;
 static bool enableModuleUsesCache = false;
 
 //
+// The aliasFieldSet is a set of names of fields for which arrays may
+// be passed in by named argument as aliases, as in new C(A=>GA) (see 
+// test/arrays/deitz/test_array_alias_field.chpl).
+//
+static Vec<const char*> aliasFieldSet;
+
+//
 // getScope returns the BaseAST that corresponds to the scope where
 // 'ast' exists; 'ast' must be an Expr or a Symbol.  Note that if you
 // pass this a BaseAST that defines a scope, the BaseAST that defines
@@ -1052,6 +1059,36 @@ void scopeResolve(void) {
   //
   forv_Vec(ClassType, ct, gClassTypes) {
     add_class_to_hierarchy(ct);
+  }
+
+  //
+  // determine fields (by name) that may be passed in arrays to alias
+  //
+  forv_Vec(NamedExpr, ne, gNamedExprs) {
+    if (!strncmp(ne->name, "chpl__aliasField_", 17)) {
+      CallExpr* pne = toCallExpr(ne->parentExpr);
+      CallExpr* ppne = (pne) ? toCallExpr(pne->parentExpr) : NULL;
+      if (!ppne || !ppne->isPrimitive(PRIM_NEW))
+        USR_FATAL(ne, "alias-named-argument passing can only be used in constructor calls");
+      aliasFieldSet.set_add(astr(&ne->name[17]));
+    }
+  }
+
+  //
+  // add implicit fields for implementing alias-named-argument passing
+  //
+  forv_Vec(ClassType, ct, gClassTypes) {
+    for_fields(field, ct) {
+      if (aliasFieldSet.set_in(field->name)) {
+        Symbol* aliasField = new VarSymbol(astr("chpl__aliasField_", field->name));
+        aliasField->addFlag(FLAG_CONST);
+        aliasField->addFlag(FLAG_IMPLICIT_ALIAS_FIELD);
+        DefExpr* def = new DefExpr(aliasField);
+        def->init = new UnresolvedSymExpr("false");
+        def->exprType = new UnresolvedSymExpr("bool");
+        ct->fields.insertAtTail(def);
+      }
+    }
   }
 
   //

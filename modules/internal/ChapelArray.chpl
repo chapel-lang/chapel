@@ -173,6 +173,17 @@ def chpl__buildArrayRuntimeType(dom: domain, type eltType) type
 def chpl__convertValueToRuntimeType(arr: []) type
   return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
+def chpl__getDomainFromArrayType(type arrayType) {
+  var A: arrayType;
+  pragma "no copy" var D = A.domain;
+  pragma "dont disable remote value forwarding"
+  def help() {
+    D._value._domCnt$ += 1;
+  }
+  help();
+  return D;
+}
+
 //
 // Support for subdomain types
 //
@@ -708,23 +719,6 @@ record _array {
   var _value;     // stores array class, may be privatized
   var _valueType; // stores type of privatized arrays
   var _promotionType: _value.eltType;
-
-  def makeAlias(A: []) {
-    if _value._arrAlias {
-      on _value._arrAlias {
-        var cnt = _value._arrAlias.destroyArr();
-        if cnt == 0 then
-          delete _value._arrAlias;
-      }
-    }
-    _value.dsiCreateAlias(A._value);
-    _value._arrAlias = A._value;
-    pragma "dont disable remote value forwarding"
-    def help() {
-      _value._arrAlias._arrCnt$ += 1;
-    }
-    help();
-  }
 
   pragma "inline"
   def _value {

@@ -107,6 +107,18 @@ Expr* buildSquareCallExpr(Expr* base, CallExpr* args) {
 }
 
 
+Expr* buildNamedActual(const char* name, Expr* expr) {
+  return new NamedExpr(name, expr);
+}
+
+
+Expr* buildNamedAliasActual(const char* name, Expr* expr) {
+  return new CallExpr(PRIM_ACTUALS_LIST,
+           new NamedExpr(name, expr),
+           new NamedExpr(astr("chpl__aliasField_", name), new SymExpr(gTrue)));
+}
+
+
 Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
   if (index) {
     CallExpr* indexCall = toCallExpr(index);
@@ -1045,13 +1057,6 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
   stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_SET_REF, lhs)));
   stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalOrExpr(ltmp, rhs)));
   return stmt;
-}
-
-
-BlockStmt* buildAliasStmt(Expr* lhs, Expr* rhs) {
-  return buildChapelStmt(
-           new CallExpr(
-             new CallExpr(".", lhs, new_StringSymbol("makeAlias")), rhs));
 }
 
 BlockStmt* buildSwapStmt(Expr* lhs, Expr* rhs) {

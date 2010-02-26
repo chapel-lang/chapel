@@ -146,8 +146,24 @@ buildDefaultWrapper(FnSymbol* fn,
         for_alist(expr, typeExpr->body) {
           wrapper->insertAtTail(expr->remove());
         }
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, wrapper->body->body.tail->remove())));
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("=", temp, wrapper_formal)));
+        bool isArrayAliasField = false;
+        const char* aliasFieldArg = astr("chpl__aliasField_", formal->name);
+        for_formals(formal, fn)
+          if (formal->name == aliasFieldArg && !defaults->set_in(formal))
+            isArrayAliasField = true;
+        if (isArrayAliasField) {
+          Expr* arrayTypeExpr = wrapper->body->body.tail->remove();
+          Symbol* arrayTypeTmp = newTemp();
+          arrayTypeTmp->addFlag(FLAG_MAYBE_TYPE);
+          arrayTypeTmp->addFlag(FLAG_EXPR_TEMP);
+          temp->addFlag(FLAG_EXPR_TEMP);
+          wrapper->insertAtTail(new DefExpr(arrayTypeTmp));
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, arrayTypeTmp, arrayTypeExpr));
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("reindex", gMethodToken, wrapper_formal, new CallExpr("chpl__getDomainFromArrayType", arrayTypeTmp))));
+        } else {
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, wrapper->body->body.tail->remove())));
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("=", temp, wrapper_formal)));
+        }
       } else
         temp = wrapper_formal;
       copy_map.put(formal, temp);

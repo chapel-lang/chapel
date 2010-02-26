@@ -761,8 +761,7 @@ def BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
   var alias = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
   for i in dom.dist.targetLocDom {
     on dom.dist.targetLocs(i) {
-      alias.locArr[i] = new LocBlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i]);
-      alias.locArr[i].myElems => locArr[i].myElems[alias.locArr[i].locDom.myStarts];
+      alias.locArr[i] = new LocBlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[alias.locArr[i].locDom.myStarts]);
     }
   }
 

@@ -70,26 +70,13 @@ class realm {
   const LocaleSpace: domain(1);
   const Locales: [LocaleSpace] locale;
 
-  def realm(id: int = -1, init_rtype: string, init_numLocales: int, 
-            baseID: int(32)) {
+  def initialize() {
     if doneCreatingLocales {
       halt("realms cannot be created");
     }
-    chpl_id = id;
-    rtype = init_rtype;
-    numLocales = init_numLocales;
-    LocaleSpace = [0..numLocales-1];
-    Locales => AllLocales[baseID..#numLocales];
-    forall (loc, id) in (Locales, 0..) do on loc {
-      loc.myRealm = this;
-      loc.chpl_id = id;
-      chpl_thisRealm = this;
-    }
   }
 
-  def id {
-    return chpl_id;
-  }
+  def id return chpl_id;
 
   def writeThis(x:Writer) {
     x.write("{id = ", id, ", rtype = ", rtype, ", numLocales = ", numLocales, ", LocaleSpace = ", LocaleSpace, ", Locales = ", Locales, "}");
@@ -102,7 +89,12 @@ def chpl_setupRealm(id, numLocales, baseID) {
     if (defaultDist._value == nil) {
       defaultDist = new dist(new DefaultDist());
     }
-    tmp = new realm(id, chpl_getRealmType(id), numLocales, baseID);
+    tmp = new realm(id, chpl_getRealmType(id), numLocales, [0..numLocales-1], Locales=>AllLocales[baseID..#numLocales]);
+    forall (loc, id) in (tmp.Locales, 0..) do on loc {
+      loc.myRealm = tmp;
+      loc.chpl_id = id;
+      chpl_thisRealm = tmp;
+    }
   }
   return tmp;
 }

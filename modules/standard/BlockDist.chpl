@@ -897,8 +897,7 @@ def BlockArr.dsiSlice(d: BlockDom) {
   var thisid = this.locale.uid;
   coforall i in d.dist.targetLocDom {
     on d.dist.targetLocs(i) {
-      alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i]);
-      alias.locArr[i].myElems => locArr[i].myElems[alias.locArr[i].locDom.myBlock];
+      alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
       if thisid == here.uid then
         alias.myLocArr = alias.locArr[i];
     }
@@ -990,21 +989,16 @@ def BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
         }
       }
 
-      alias.locArr[ind] = new LocBlockArr(eltType=eltType, rank=newRank, idxType=d.idxType, stridable=d.stridable, locDom=locDom);
-      // Set the local portion of the new array to alias to a rank changed slice
-      // of the local portion of this
-      alias.locArr[ind].myElems =>
-        locArr[(...locArrInd)].myElems[(...locSlice)];
+      alias.locArr[ind] =
+        new LocBlockArr(eltType=eltType, rank=newRank, idxType=d.idxType,
+                        stridable=d.stridable, locDom=locDom,
+                        myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
 
       if thisid == here.uid then
         alias.myLocArr = alias.locArr[ind];
     }
   }
   return alias;
-}
-
-def BlockArr.dsiCreateAlias(A: BlockArr) {
-  halt("uh oh");
 }
 
 def BlockArr.dsiReindex(d: BlockDom) {
@@ -1018,8 +1012,8 @@ def BlockArr.dsiReindex(d: BlockDom) {
       alias.locArr[i] = new LocBlockArr(eltType=eltType,
                                         rank=rank, idxType=d.idxType,
                                         stridable=d.stridable,
-                                        locDom=locDom);
-      alias.locArr[i].myElems => locArr[i].myElems;
+                                        locDom=locDom,
+                                        myElems=>locArr[i].myElems);
       if thisid == here.uid then
         alias.myLocArr = alias.locArr[i];
     }

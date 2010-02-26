@@ -39,12 +39,14 @@ void buildDefaultFunctions(void) {
     if (TypeSymbol* type = toTypeSymbol(ast)) {
       if (ClassType* ct = toClassType(type->type)) {
         for_fields(field, ct) {
-          if (isVarSymbol(field)) {
-            if (strcmp(field->name, "_promotionType")) {
+          if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+            if (isVarSymbol(field)) {
+              if (strcmp(field->name, "_promotionType")) {
+                build_getter(ct, field);
+              }
+            } else if (isEnumType(field->type)) {
               build_getter(ct, field);
             }
-          } else if (isEnumType(field->type)) {
-            build_getter(ct, field);
           }
         }
       }
@@ -352,10 +354,12 @@ static void build_record_equality_function(ClassType* ct) {
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
   for_fields(tmp, ct) {
-    if (strcmp(tmp->name, "_promotionType")) {
-      Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-      Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIM_RETURN, gFalse)));
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+      if (strcmp(tmp->name, "_promotionType")) {
+        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
+        fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIM_RETURN, gFalse)));
+      }
     }
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
@@ -378,10 +382,12 @@ static void build_record_inequality_function(ClassType* ct) {
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
   for_fields(tmp, ct) {
-    if (strcmp(tmp->name, "_promotionType")) {
-      Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-      Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIM_RETURN, gTrue)));
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+      if (strcmp(tmp->name, "_promotionType")) {
+        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
+        fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIM_RETURN, gTrue)));
+      }
     }
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
@@ -522,8 +528,10 @@ static void build_record_assignment_function(ClassType* ct) {
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
   for_fields(tmp, ct) {
-    if (!tmp->hasFlag(FLAG_TYPE_VARIABLE) && !tmp->isParameter() && strcmp(tmp->name, "_promotionType"))
-      fn->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+      if (!tmp->hasFlag(FLAG_TYPE_VARIABLE) && !tmp->isParameter() && strcmp(tmp->name, "_promotionType"))
+        fn->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
+    }
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
@@ -567,15 +575,16 @@ static void build_union_assignment_function(ClassType* ct) {
   fn->retType = dtUnknown;
   fn->insertAtTail(new CallExpr(PRIM_UNION_SETID, arg1, new_IntSymbol(0)));
   for_fields(tmp, ct)
-    if (!tmp->hasFlag(FLAG_TYPE_VARIABLE))
-      fn->insertAtTail(
-        new CondStmt(
-          new CallExpr("==",
-            new CallExpr(PRIM_UNION_GETID, arg2),
-            new_IntSymbol(tmp->id)),
-          new CallExpr("=",
-            new CallExpr(".", arg1, new_StringSymbol(tmp->name)),
-            new CallExpr(".", arg2, new_StringSymbol(tmp->name)))));
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
+      if (!tmp->hasFlag(FLAG_TYPE_VARIABLE))
+        fn->insertAtTail(
+          new CondStmt(
+            new CallExpr("==",
+              new CallExpr(PRIM_UNION_GETID, arg2),
+              new_IntSymbol(tmp->id)),
+            new CallExpr("=",
+              new CallExpr(".", arg1, new_StringSymbol(tmp->name)),
+              new CallExpr(".", arg2, new_StringSymbol(tmp->name)))));
   fn->insertAtTail(new CallExpr(PRIM_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
@@ -596,8 +605,9 @@ static void build_record_copy_function(ClassType* ct) {
   fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultConstructor);
   for_fields(tmp, ct) {
-    if (strcmp("_promotionType", tmp->name))
-      call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringSymbol(tmp->name))));
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
+      if (strcmp("_promotionType", tmp->name))
+        call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringSymbol(tmp->name))));
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   DefExpr* def = new DefExpr(fn);
@@ -623,17 +633,19 @@ static void build_record_hash_function(ClassType *ct) {
     CallExpr *call = NULL;
     bool first = true;
     for_fields(field, ct) {
-      CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg); 
-      if (first) {
-        call = new CallExpr("chpl__defaultHash", field_access);
-        first = false;
-      } else {
-        call = new CallExpr("^", 
-                            new CallExpr("chpl__defaultHash",
-                                         field_access),
-                            new CallExpr("<<",
-                                         call,
-                                         new_IntSymbol(17)));
+      if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+        CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg); 
+        if (first) {
+          call = new CallExpr("chpl__defaultHash", field_access);
+          first = false;
+        } else {
+          call = new CallExpr("^", 
+                              new CallExpr("chpl__defaultHash",
+                                           field_access),
+                              new CallExpr("<<",
+                                           call,
+                                           new_IntSymbol(17)));
+        }
       }
     }
     fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
@@ -673,6 +685,8 @@ static void buildDefaultReadFunction(ClassType* ct) {
   body->insertAtTail(readErrorCond);
   bool first = true;
   for_fields(tmp, ct) {
+    if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
+      continue;
     if (tmp->hasFlag(FLAG_TYPE_VARIABLE) || tmp->hasFlag(FLAG_SUPER_CLASS))
       continue;
     if (!first) {
@@ -754,6 +768,8 @@ static bool buildWriteSuperClass(ArgSymbol* fileArg, FnSymbol* fn, Expr* dot, Ty
   if (!ct)
     return false; // Maybe error out?
   for_fields(tmp, ct) {
+    if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
+      continue;
     if (tmp->hasFlag(FLAG_TYPE_VARIABLE))
       continue;
     if (tmp->hasFlag(FLAG_SUPER_CLASS)) {
@@ -796,6 +812,8 @@ static void buildDefaultWriteFunction(ClassType* ct) {
   if (isUnion(ct)) {
     CondStmt* cond = NULL;
     for_fields(tmp, ct) {
+      if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
+        continue;
       BlockStmt* writeFieldBlock = new BlockStmt();
       writeFieldBlock->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(tmp->name)));
       writeFieldBlock->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(" = ")));
@@ -807,6 +825,8 @@ static void buildDefaultWriteFunction(ClassType* ct) {
   } else {
     bool first = true;
     for_fields(tmp, ct) {
+      if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
+        continue;
       if (tmp->hasFlag(FLAG_TYPE_VARIABLE))
         continue;
       if (!strcmp("outer", tmp->name))

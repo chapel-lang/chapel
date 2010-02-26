@@ -318,16 +318,6 @@ class GPUArithmeticArr: BaseArr {
     delete data;
   }
 
-  def dsiCreateAlias(B: GPUArithmeticArr) {
-    var A = B.reindex(dom);
-    off = A.off;
-    blk = A.blk;
-    str = A.str;
-    factoredOffs = A.factoredOffs;
-    data = A.data;
-    delete A;
-  }
-
   def these() var {
     for i in dom do
       yield dsiAccess(i);

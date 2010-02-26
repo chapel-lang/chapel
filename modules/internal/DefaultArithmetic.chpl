@@ -288,17 +288,6 @@ class DefaultArithmeticArr: BaseArr {
     delete data;
   }
 
-  def dsiCreateAlias(B: DefaultArithmeticArr) {
-    var A = B.dsiReindex(dom);
-    off = A.off;
-    blk = A.blk;
-    str = A.str;
-    origin = A.origin;
-    factoredOffs = A.factoredOffs;
-    data = A.data;
-    delete A;
-  }
-
   def these() var {
     if rank == 1 {
       var first = getDataIndex(dom.dsiLow);

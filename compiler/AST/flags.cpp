@@ -55,6 +55,7 @@ initFlags() {
   defineFlag(FLAG_HEAP, "heap");
   defineFlag(FLAG_HEAP_ALLOCATE, "heap allocate");
   defineFlag(FLAG_STAR_TUPLE, "star tuple");
+  defineFlag(FLAG_IMPLICIT_ALIAS_FIELD, "implicit alias field");
   defineFlag(FLAG_INDEX_VAR, "index var");
   defineFlag(FLAG_INLINE, "inline");
   defineFlag(FLAG_INLINE_ITERATOR, "inline iterator");
