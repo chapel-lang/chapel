@@ -166,7 +166,9 @@ class LocBlockArr {
   var myElems: [locDom.myBlock] eltType;
 }
 
-
+//
+// Block constructor for clients of the Block distribution
+//
 def Block.Block(param rank: int,
                 type idxType = int,
                 bbox: domain(rank, idxType),
@@ -192,11 +194,6 @@ def Block.Block(param rank: int,
     targetLocs = targetLocales;
   }
 
-  if debugBlockDist {
-    writeln(targetLocDom);
-    writeln(targetLocs);
-  }
-
   const boundingBoxDims = boundingBox.dims();
   const targetLocDomDims = targetLocDom.dims();
   coforall locid in targetLocDom do
@@ -209,18 +206,9 @@ def Block.Block(param rank: int,
   else
     this.tasksPerLocale = tasksPerLocale;
   
-  if debugBlockDist then
-    for loc in locDist do writeln(loc);
-}
-
-// copy constructor for privatization
-def Block.Block(param rank: int, type idxType, other: Block(rank, idxType), privateData) {
-  boundingBox = [(...privateData(1))];
-  targetLocDom = [(...privateData(2))];
-  tasksPerLocale = privateData(3);
-  for i in targetLocDom {
-    targetLocs(i) = other.targetLocs(i);
-    locDist(i) = other.locDist(i);
+  if debugBlockDist {
+    writeln("Creating new Block distribution:");
+    dsiDisplayRepresentation();
   }
 }
 
@@ -244,29 +232,8 @@ def Block.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
-def Block.dsiSupportsPrivatization() param return true;
-
-def Block.dsiGetPrivatizeData() {
-  return (boundingBox.dims(), targetLocDom.dims(), tasksPerLocale);
-}
-
-def Block.dsiPrivatize(privatizeData) {
-  return new Block(rank=rank, idxType=idxType, this, privatizeData);
-}
-
-def Block.dsiReprivatize(other) {
-  boundingBox = other.boundingBox;
-  targetLocDom = other.targetLocDom;
-  targetLocs = other.targetLocs;
-  locDist = other.locDist;
-  tasksPerLocale = other.tasksPerLocale;
-}
-
-//
-// create a new arithmetic domain over this distribution
-//
 def Block.dsiNewArithmeticDom(param rank: int, type idxType,
-                           param stridable: bool) {
+                              param stridable: bool) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then
@@ -274,6 +241,10 @@ def Block.dsiNewArithmeticDom(param rank: int, type idxType,
   
   var dom = new BlockDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
   dom.setup();
+  if debugBlockDist {
+    writeln("Creating new Block domain:");
+    dom.dsiDisplayRepresentation();
+  }
   return dom;
 }
 
@@ -288,7 +259,7 @@ def Block.writeThis(x:Writer) {
   x.writeln("indexed via: ", targetLocDom);
   x.writeln("resulting in: ");
   for locid in targetLocDom do
-    x.writeln("  [", locid, "] ", locDist(locid));
+    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id, " owns chunk: ", locDist(locid).myChunk);
 }
 
 //
@@ -471,15 +442,6 @@ def LocBlock.LocBlock(param rank: int,
   }
 }
 
-def LocBlock.writeThis(x:Writer) {
-  var localeid: int;
-  on this {
-    localeid = here.uid;
-  }
-  x.write("locale ", localeid, " owns chunk: ", myChunk);
-}
-
-
 def BlockDom.getBaseDist() return dist;
 
 def BlockDom.dsiDisplayRepresentation() {
@@ -640,6 +602,10 @@ def BlockDom.dsiSetIndices(x: domain) {
     compilerError("index type mismatch in domain assignment");
   whole = x;
   setup();
+  if debugBlockDist {
+    writeln("Setting indices of Block domain:");
+    dsiDisplayRepresentation();
+  }
 }
 
 def BlockDom.dsiSetIndices(x) {
@@ -652,6 +618,10 @@ def BlockDom.dsiSetIndices(x) {
   //
   whole.setIndices(x);
   setup();
+  if debugBlockDist {
+    writeln("Setting indices of Block domain:");
+    dsiDisplayRepresentation();
+  }
 }
 
 def BlockDom.dsiGetIndices() {
@@ -681,31 +651,6 @@ def BlockDom.setup() {
         locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
     }
   }
-  if debugBlockDist then
-    for loc in dist.targetLocDom do writeln(loc, " owns ", locDoms(loc));
-}
-
-def BlockDom.dsiSupportsPrivatization() param return true;
-
-def BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
-
-def BlockDom.dsiPrivatize(privatizeData) {
-  var distpid = privatizeData(1);
-  var thisdist = dist;
-  var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
-  var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
-  for i in c.dist.targetLocDom do
-    c.locDoms(i) = locDoms(i);
-  c.whole = [(...privatizeData(2))];
-  return c;
-}
-
-def BlockDom.dsiGetReprivatizeData() return whole.dims();
-
-def BlockDom.dsiReprivatize(other, reprivatizeData) {
-  for i in dist.targetLocDom do
-    locDoms(i) = other.locDoms(i);
-  whole = [(...reprivatizeData)];
 }
 
 def BlockDom.dsiMember(i) {
@@ -736,13 +681,6 @@ def BlockDom.dsiBuildArithmeticDom(param rank: int, type idxType,
 }
 
 //
-// output local domain piece
-//
-def LocBlockDom.writeThis(x:Writer) {
-  x.write(myBlock);
-}
-
-//
 // Added as a performance stopgap to avoid returning a domain
 //
 def LocBlockDom.member(i) return myBlock.member(i);
@@ -764,23 +702,6 @@ def BlockArr.setup() {
         myLocArr = locArr(localeIdx);
     }
   }
-}
-
-def BlockArr.dsiSupportsPrivatization() param return true;
-
-def BlockArr.dsiGetPrivatizeData() return dom.pid;
-
-def BlockArr.dsiPrivatize(privatizeData) {
-  var dompid = privatizeData;
-  var thisdom = dom;
-  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
-  var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
-  for localeIdx in c.dom.dist.targetLocDom {
-    c.locArr(localeIdx) = locArr(localeIdx);
-    if c.locArr(localeIdx).locale.uid == here.uid then
-      c.myLocArr = c.locArr(localeIdx);
-  }
-  return c;
 }
 
 //
@@ -1078,10 +999,72 @@ def LocBlockArr.this(i) var {
 }
 
 //
-// output local array piece
+// Privatization
 //
-def LocBlockArr.writeThis(x: Writer) {
-  // note on this fails; see writeThisUsingOn.chpl
-  x.write(myElems);
+def Block.Block(param rank: int, type idxType, other: Block(rank, idxType), privateData) {
+  boundingBox = [(...privateData(1))];
+  targetLocDom = [(...privateData(2))];
+  tasksPerLocale = privateData(3);
+  for i in targetLocDom {
+    targetLocs(i) = other.targetLocs(i);
+    locDist(i) = other.locDist(i);
+  }
 }
 
+def Block.dsiSupportsPrivatization() param return true;
+
+def Block.dsiGetPrivatizeData() {
+  return (boundingBox.dims(), targetLocDom.dims(), tasksPerLocale);
+}
+
+def Block.dsiPrivatize(privatizeData) {
+  return new Block(rank=rank, idxType=idxType, this, privatizeData);
+}
+
+def Block.dsiReprivatize(other) {
+  boundingBox = other.boundingBox;
+  targetLocDom = other.targetLocDom;
+  targetLocs = other.targetLocs;
+  locDist = other.locDist;
+  tasksPerLocale = other.tasksPerLocale;
+}
+
+def BlockDom.dsiSupportsPrivatization() param return true;
+
+def BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
+
+def BlockDom.dsiPrivatize(privatizeData) {
+  var distpid = privatizeData(1);
+  var thisdist = dist;
+  var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
+  var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
+  for i in c.dist.targetLocDom do
+    c.locDoms(i) = locDoms(i);
+  c.whole = [(...privatizeData(2))];
+  return c;
+}
+
+def BlockDom.dsiGetReprivatizeData() return whole.dims();
+
+def BlockDom.dsiReprivatize(other, reprivatizeData) {
+  for i in dist.targetLocDom do
+    locDoms(i) = other.locDoms(i);
+  whole = [(...reprivatizeData)];
+}
+
+def BlockArr.dsiSupportsPrivatization() param return true;
+
+def BlockArr.dsiGetPrivatizeData() return dom.pid;
+
+def BlockArr.dsiPrivatize(privatizeData) {
+  var dompid = privatizeData;
+  var thisdom = dom;
+  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+  var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  for localeIdx in c.dom.dist.targetLocDom {
+    c.locArr(localeIdx) = locArr(localeIdx);
+    if c.locArr(localeIdx).locale.uid == here.uid then
+      c.myLocArr = c.locArr(localeIdx);
+  }
+  return c;
+}
