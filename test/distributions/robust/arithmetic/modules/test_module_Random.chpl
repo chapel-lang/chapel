@@ -101,9 +101,9 @@ writeln("\tR2D64: ", checkRNG(R2D64, T2D64), " errors");
 
 
 writeln("fillRandom() rank changed arrays");
-var rcT1D => T2D(Dom2D.dim(1), n2-o5);
-var rcT2D => T3D(Dom3D.dim(1), Dom3D.dim(2), n2-o5);
-var rcT3D => T4D(Dom4D.dim(1), Dom4D.dim(2), Dom4D.dim(3), n2-o5);
+var rcT1D => T2D(Dom2D.dim(1), n2/2);
+var rcT2D => T3D(Dom3D.dim(1), Dom3D.dim(2), n3/2);
+var rcT3D => T4D(Dom4D.dim(1), Dom4D.dim(2), Dom4D.dim(3), n4/2);
 const rcDom1D: domain(1) distributed Dist1D = Dom2D.dim(1);
 const rcDom2D: domain(2) distributed Dist2D = [Dom3D.dim(1), Dom3D.dim(2)];
 const rcDom3D: domain(3) distributed Dist3D = [Dom4D.dim(1), Dom4D.dim(2), Dom4D.dim(3)];
