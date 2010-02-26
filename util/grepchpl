@@ -2,7 +2,7 @@
 
 utildir=`dirname $0`
 
-$utildir/grepcomp $@
-$utildir/greprt $@
-$utildir/grepmod $@
-$utildir/grepmake $@
+$utildir/grepcomp "$@"
+$utildir/greprt "$@"
+$utildir/grepmod "$@"
+$utildir/grepmake "$@"
