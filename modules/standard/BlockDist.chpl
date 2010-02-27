@@ -350,15 +350,16 @@ def Block.dsiCreateReindexDist(newSpace, oldSpace) {
    *  the calculation without having any of the intermediate results go out
    *  of range.
    *
-   *    newBblow = bbLow - oldLow + newLow
+   *    newBbLow = bbLow - (oldLow - newLow)
+   *    newBbLow = bbLow - oldLow + newLow
    *
    * Can be performed as:
    *
+   *    t = oldLow-newLow;
+   *    newBbLow = bbLow-t;
+   * or
    *    t = bbLow-oldLow;
    *    newBbLow = t+newLow;
-   * or
-   *    t = oldLow-newLow;
-   *    newBbLow = t+bbLow;
    * or
    *    t = bbLow+newLow;
    *    newBbLow = t-oldLow;
@@ -366,21 +367,21 @@ def Block.dsiCreateReindexDist(newSpace, oldSpace) {
    */
   def adjustBound(bbound, oldBound, newBound) {
     var t: bbound.type;
-    if !subUnderflowsType(bbound, oldBound) {
+    if safeSub(oldBound, newBound) {
+      t = oldBound-newBound;
+      if safeSub(bbound, t) {
+        return (bbound-t, true);
+      }
+    }
+    if safeSub(bbound, oldBound) {
       t = bbound-oldBound;
-      if !addOverflowsType(t, newBound) {
+      if safeAdd(t, newBound) {
         return (t+newBound, true);
       }
     }
-    if !subUnderflowsType(oldBound, newBound) {
-      t = oldBound-newBound;
-      if !addOverflowsType(t, bbound) {
-        return (t+bbound, true);
-      }
-    }
-    if !addOverflowsType(bbound, newBound) {
+    if safeAdd(bbound, newBound) {
       t = bbound+newBound;
-      if !subUnderflowsType(t, oldBound) {
+      if safeSub(t, oldBound) {
         return(t-oldBound, true);
       }
     }

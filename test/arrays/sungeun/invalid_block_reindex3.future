@@ -1,6 +1,6 @@
-bug: For some reason this test gets SIGFPE sometimes when exiting.
+bug: SIGFPE for --bbLow=max(int)
 
-I've only seen this fail with gasnet for multiple locales.  It doesn't
-do it all the time, and it more reliably happens when running within
-the test system.
+I've only seen the SIGFPE fail with gasnet for even numbers of locales > 2.
+I think this related to the array index out of bound problem of
+invalid_block_reindex1.future.
 

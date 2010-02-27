@@ -51,61 +51,57 @@ class _stack {
   }
 }
 
-// true iff an overflow would occur for a + b
 //
-// This can be written as:
-//   return if a < 0 then b < min(t) - a else b > max(t) - a;
-// but I found it easier to convince myself it was right as is.
+// safeAdd: If a and b are of type t, return true iff no
+//  overflow/underflow would occur for a + b
 //
-def addOverflowsType(a: ?t, b: t) {
+def safeAdd(a: ?t, b: t) {
   if a < 0 {
-    if b > 0 {
-      return false;
+    if b >= 0 {
+      return true;
     } else {
-      if b < min(t) - a {
-        return true;
-      } else {
+      if b <= min(t) - a {
         return false;
+      } else {
+        return true;
       }
     }
   } else {
-    if b < 0 {
-      return false;
+    if b <= 0 {
+      return true;
     } else {
-      if b > max(t) - a {
-        return true;
-      } else {
+      if b >= max(t) - a {
         return false;
+      } else {
+        return true;
       }
     }
   }
 }
 
-// true iff an overflow would occur for a - b
 //
-// This can be written as:
-//   return if a > 0 then b < min(t) + a else b > max(t) + a;
-// but I found it easier to convince myself it was right as is.
+// safeSub: If a and b are of type t, return true iff no
+//  underflow/overflow would occur for a - b
 //
-def subUnderflowsType(a: ?t, b: t) {
-  if a > 0 {
-    if b > 0 {
-      return false;
+def safeSub(a: ?t, b: t) {
+  if a < 0 {
+    if b <= 0 {
+      return true;
     } else {
-      if b < min(t) + a {
-        return true;
-      } else {
+      if b >= max(t) + a {
         return false;
+      } else {
+        return true;
       }
     }
   } else {
-    if b < 0 {
-      return false;
+    if b >= 0 {
+      return true;
     } else {
-      if b > max(t) + a {
-        return true;
-      } else {
+      if b <= min(t) + a {
         return false;
+      } else {
+        return true;
       }
     }
   }
