@@ -920,6 +920,7 @@ static void handleLocalBlocks() {
             call->baseExpr->replace(new SymExpr(local));
             queue.add(local->body);
             cache.put(fn, local);
+            cache.put(local, local); // to handle recursion
             if (local->retType->symbol->hasFlag(FLAG_WIDE)) {
               CallExpr* ret = toCallExpr(local->body->body.tail);
               INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
