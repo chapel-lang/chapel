@@ -160,11 +160,11 @@ def Cyclic.ind2locInd(ind: rank*idxType) {
     return x;
 }
 
-def Cyclic.ind2loc(i: idxType) where rank == 1 {
+def Cyclic.dsiIndexLocale(i: idxType) where rank == 1 {
   return targetLocs(ind2locInd(i));
 }
 
-def Cyclic.ind2loc(i: rank*idxType) {
+def Cyclic.dsiIndexLocale(i: rank*idxType) {
   return targetLocs(ind2locInd(i));
 }
 

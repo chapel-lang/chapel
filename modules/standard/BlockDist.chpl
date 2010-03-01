@@ -262,17 +262,12 @@ def Block.writeThis(x:Writer) {
     x.writeln("  [", locid, "] locale ", locDist(locid).locale.id, " owns chunk: ", locDist(locid).myChunk);
 }
 
-//
-// convert an index into a locale value
-//
-// dsiIndexLocale
-//  note - we only need the second one
-def Block.ind2loc(ind: idxType) where rank == 1 {
-  return targetLocs(ind2locInd(ind));
+def Block.dsiIndexLocale(ind: idxType) where rank == 1 {
+  return targetLocs(targetLocsIdx(ind));
 }
 
-def Block.ind2loc(ind: rank*idxType) {
-  return targetLocs(ind2locInd(ind));
+def Block.dsiIndexLocale(ind: rank*idxType) where rank > 1 {
+  return targetLocs(targetLocsIdx(ind));
 }
 
 //
@@ -290,46 +285,32 @@ def Block.getChunk(inds, locid) {
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
     if chunk.numIndices > 0 {
-      if ind2locInd(chunk.low) != locid then
+      if targetLocsIdx(chunk.low) != locid then
         writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
-                ind2locInd(chunk.low));
-      if ind2locInd(chunk.high) != locid then
+                targetLocsIdx(chunk.low));
+      if targetLocsIdx(chunk.high) != locid then
         writeln("[", here.id, "] ", chunk.high, " is in my chunk but maps to ",
-                ind2locInd(chunk.high));
+                targetLocsIdx(chunk.high));
     }
   return chunk;
 }
 
 //
-// determine which locale owns a particular index
+// get the index into the targetLocs array for a given distributed index
 //
-// TODO: I jotted down a note during the code review asking whether
-// targetLocs.numElements and boundingbox.numIndices should be
-// captured locally, or captured in the default dom/array implementation
-// or inlined.  Not sure what that point was anymore, though.  Maybe
-// someone else can help me remember it (since it was probably someone
-// else's suggestion).
-//
-def Block.ind2locInd(ind: idxType) where rank == 1 {
-  const ind0 = ind - boundingBox.low;
-  const locInd = (ind0 * targetLocs.numElements:idxType) / boundingBox.numIndices;
-  return max(0, min(locInd:int, (targetLocDom.dim(1).length-1):int));
+def Block.targetLocsIdx(ind: idxType) where rank == 1 {
+  return targetLocsIdx(tuple(ind));
 }
 
-def Block.ind2locInd(ind: rank*idxType) where rank == 1 {
-  return ind2locInd(ind(1));
+def Block.targetLocsIdx(ind: rank*idxType) {
+  var result: rank*int;
+  for param i in 1..rank do
+    result(i) = max(0, min((targetLocDom.dim(i).length-1):int,
+                           (((ind(i) - boundingBox.dim(i).low) *
+                             targetLocDom.dim(i).length:idxType) /
+                            boundingBox.dim(i).length):int));
+  return if rank == 1 then result(1) else result;
 }
-
-def Block.ind2locInd(ind: rank*idxType) where rank != 1 {
-  var locInd: rank*int;
-  for param i in 1..rank {
-    const ind0 = ind(i) - boundingBox.low(i);
-    const dimLocInd = (ind0 * targetLocDom.dim(i).length:idxType) / boundingBox.dim(i).length;
-    locInd(i) = max(0, min(dimLocInd:int, (targetLocDom.dim(i).length-1):int));
-  }
-  return locInd;
-}
-
 
 def Block.dsiCreateReindexDist(newSpace, oldSpace) {
   // Should this error be in ChapelArray or not an error at all?
@@ -494,7 +475,7 @@ def Block.dsiCreateRankChangeDist(param newRank: int, args) {
       collapsedDimLocs(i) = 0;
     }
   }
-  const collapsedLocInd = ind2locInd(collapsedDimLocs);
+  const collapsedLocInd = targetLocsIdx(collapsedDimLocs);
   var collapsedBbox: _matchArgsShape(range(eltType=idxType), idxType, args);
   var collapsedLocs: _matchArgsShape(range(eltType=int), int, args);
 
@@ -708,14 +689,14 @@ def BlockArr.setup() {
 //
 // the global accessor for the array
 //
-// TODO: Do we need a global bounds check here or in ind2locind?
+// TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
 def BlockArr.dsiAccess(i: idxType) var where rank == 1 {
   if myLocArr then local {
     if myLocArr.locDom.member(i) then
       return myLocArr.this(i);
   }
-  return locArr(dom.dist.ind2locInd(i))(i);
+  return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
 def BlockArr.dsiAccess(i: rank*idxType) var {
@@ -726,7 +707,7 @@ def BlockArr.dsiAccess(i: rank*idxType) var {
       if myLocArr.locDom.member(i) then
         return myLocArr.this(i);
     }
-    return locArr(dom.dist.ind2locInd(i))(i);
+    return locArr(dom.dist.targetLocsIdx(i))(i);
   }
 }
 
@@ -789,7 +770,7 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
   // distributing across the entire Locales array.  I still think the
   // locArr/locDoms arrays should be associative over locale values.
   //
-  var arrSection = locArr(dom.dist.ind2locInd(lowIdx));
+  var arrSection = locArr(dom.dist.targetLocsIdx(lowIdx));
   if aligned {
     //
     // if arrSection is not local and we're aligned, it means that
@@ -867,7 +848,7 @@ def BlockArr.localSlice(ranges) {
   for param i in 1..rank {
     low(i) = ranges(i).low;
   }
-  var A => locArr(dom.dist.ind2locInd(low)).myElems((...ranges));
+  var A => locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
   return A;
 }
 
@@ -914,7 +895,7 @@ def BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
       var locSlice: _matchArgsShape(range(eltType=idxType, stridable=stridable), idxType, args);
       // collapsedDims stores the value any collapsed dimension is down to.
       // For any non-collapsed dimension, that position is ignored.
-      // This tuple is then passed to the ind2LocInd function to build up a
+      // This tuple is then passed to the targetLocsIdx function to build up a
       // partial index into this.targetLocDom with correct values set for all
       // collapsed dimensions. The rest of the dimensions get their values from
       // ind - an index into the new rank changed targetLocDom.
@@ -931,7 +912,7 @@ def BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
           j += 1;
         }
       }
-      locArrInd = dom.dist.ind2locInd(collapsedDims);
+      locArrInd = dom.dist.targetLocsIdx(collapsedDims);
       j = 1;
       // Now that the locArrInd values are known for the collapsed dimensions
       // Pull the rest of the dimensions values from ind

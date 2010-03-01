@@ -145,11 +145,11 @@ def BlockCyclic.writeThis(x:Writer) {
 //
 // convert an index into a locale value
 //
-def BlockCyclic.ind2loc(ind: idxType) where rank == 1 {
+def BlockCyclic.dsiIndexLocale(ind: idxType) where rank == 1 {
   return targetLocs(ind2locInd(ind));
 }
 
-def BlockCyclic.ind2loc(ind: rank*idxType) {
+def BlockCyclic.dsiIndexLocale(ind: rank*idxType) {
   return targetLocs(ind2locInd(ind));
 }
 
