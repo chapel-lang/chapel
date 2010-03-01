@@ -57,6 +57,7 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
        "util/setchplenv.sh",
        "util/tasks.pl",
        "util/threads.pl",
+       "util/timers.pl",
        "util/updateBuildVersion.pl"
 );
 
@@ -114,14 +115,14 @@ print "Removing compiler directories that are not intended for release...\n";
 system("cd chapel/compiler/include && rm -r sunos_old");
 
 print "Removing runtime directories that are not ready for release...\n";
-system("cd chapel/runtime && rm -r comm-armci");
-system("cd chapel/runtime && rm -r comm-mpi");
-system("cd chapel/runtime && rm -r launch-apsim");
-system("cd chapel/runtime && rm -r launch-dummy");
-system("cd chapel/runtime && rm -r launch-mpirun");
-system("cd chapel/runtime && rm -r launch-zebra");
-system("cd chapel/runtime && rm -r include/tasks/nanos");
-system("cd chapel/runtime && rm -r src/tasks/nanos");
+system("cd chapel/runtime/src/comm && rm -r armci");
+system("cd chapel/runtime/src/comm && rm -r mpi");
+system("cd chapel/runtime/src/launch && rm -r apsim");
+system("cd chapel/runtime/src/launch && rm -r dummy");
+system("cd chapel/runtime/src/launch && rm -r mpirun");
+system("cd chapel/runtime/src/launch && rm -r zebra");
+system("cd chapel/runtime/include/tasks && rm -r nanos");
+system("cd chapel/runtime/src/tasks && rm -r nanos");
 system("cd chapel/runtime/include && rm -r sunos_old");
 
 foreach $file (@files) {
