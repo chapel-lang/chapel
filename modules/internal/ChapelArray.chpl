@@ -1394,6 +1394,6 @@ def chpl__initCopy(ir: _iteratorRecord) {
 }
 
 def _isDefaultDist(D) {
-  if D.dist == defaultDist then return true;
+  if D.dist.type == defaultDist.type then return true;
   else return false;
 }
