@@ -52,3 +52,25 @@ def _factor(param rank: int, value) {
   return factors;
 }
 
+//
+// setupTargetLocalesArray
+//
+def setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {
+  param rank = targetLocDom.rank;
+  if rank != 1 && specifiedLocArr.rank == 1 {
+    const factors = _factor(rank, specifiedLocArr.numElements);
+    var ranges: rank*range;
+    for param i in 1..rank do
+      ranges(i) = 0..#factors(i);
+    targetLocDom = [(...ranges)];
+    targetLocArr = reshape(specifiedLocArr, targetLocDom);
+  } else {
+    if specifiedLocArr.rank != rank then
+      compilerError("specified target array of locales must equal 1 or distribution rank");
+    var ranges: rank*range;
+    for param i in 1..rank do
+      ranges(i) = 0..#specifiedLocArr.domain.dim(i).length;
+    targetLocDom = [(...ranges)];
+    targetLocArr = specifiedLocArr;
+  }
+}

@@ -175,24 +175,8 @@ def Block.Block(param rank: int,
                 targetLocales: [] locale = thisRealm.Locales, 
                 tasksPerLocale = 0) {
   boundingBox = bbox;
-  if rank != 1 && targetLocales.rank == 1 {
-    const factors = _factor(rank, targetLocales.numElements);
-    var ranges: rank*range;
-    for param i in 1..rank do
-      ranges(i) = 0..#factors(i);
-    targetLocDom = [(...ranges)];
-    targetLocs = reshape(targetLocales, targetLocDom);
-  } else {
-    if targetLocales.rank != rank then
-      compilerError("targetLocales rank must equal distribution rank or one");
-    
-    var ranges: rank*range;
-    for param i in 1..rank do
-      ranges(i) = 0..#targetLocales.domain.dim(i).length;
-    
-    targetLocDom = [(...ranges)];
-    targetLocs = targetLocales;
-  }
+
+  setupTargetLocalesArray(targetLocDom, targetLocs, targetLocales);
 
   const boundingBoxDims = boundingBox.dims();
   const targetLocDomDims = targetLocDom.dims();
