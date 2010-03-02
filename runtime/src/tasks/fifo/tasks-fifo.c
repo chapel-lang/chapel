@@ -100,7 +100,8 @@ static int              idle_cnt;           // number of threads that are idle
 static int64_t          extra_task_cnt;     // number of threads executing more than one task
 static uint64_t         progress_cnt;       // counts unblock operations, as a
                                             //   proxy for progress
-static chpl_mutex_t     report_lock;        // critical section lock
+static chpl_mutex_t     block_report_lock;  // critical section lock
+static chpl_mutex_t     taskTable_lock;     // critical section lock
 
 static lockReport_t* lockReportHead = NULL;
 static lockReport_t* lockReportTail = NULL;
@@ -132,19 +133,19 @@ static task_pool_p             add_to_task_pool(chpl_fn_p,
 // Mutexes
 
 void CHPL_MUTEX_INIT(chpl_mutex_p m) {
-    threadlayer_mutex_init((threadlayer_mutex_p) m);
+  threadlayer_mutex_init((threadlayer_mutex_p) m);
 }
 
 chpl_mutex_p CHPL_MUTEX_NEW(void) {
-    return (chpl_mutex_p) threadlayer_mutex_new();
+  return (chpl_mutex_p) threadlayer_mutex_new();
 }
 
 void CHPL_MUTEX_LOCK(chpl_mutex_p m) {
-    threadlayer_mutex_lock((threadlayer_mutex_p) m);
+  threadlayer_mutex_lock((threadlayer_mutex_p) m);
 }
 
 void CHPL_MUTEX_UNLOCK(chpl_mutex_p m) {
-    threadlayer_mutex_unlock((threadlayer_mutex_p) m);
+  threadlayer_mutex_unlock((threadlayer_mutex_p) m);
 }
 
 
@@ -340,6 +341,7 @@ void CHPL_TASKING_INIT(void) {
   threadlayer_set_thread_private_data(tp);
 
   if (taskreport) {
+    CHPL_MUTEX_INIT(&taskTable_lock);
     chpldev_taskTable_add(tp->ptask->id,
                           tp->ptask->lineno, tp->ptask->filename,
                           (uint64_t) (intptr_t) tp->ptask);
@@ -348,7 +350,7 @@ void CHPL_TASKING_INIT(void) {
 
   if (blockreport) {
     progress_cnt = 0;
-    CHPL_MUTEX_INIT(&report_lock);
+    CHPL_MUTEX_INIT(&block_report_lock);
     initializeLockReportForThread();
   }
 
@@ -497,14 +499,13 @@ void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
     set_current_ptask(&nested_task);
 
     if (taskreport) {
-      CHPL_MUTEX_LOCK(&threading_lock);
+      CHPL_MUTEX_LOCK(&taskTable_lock);
       chpldev_taskTable_add(nested_task.id,
                             nested_task.lineno, nested_task.filename,
                             (uint64_t) (intptr_t) &nested_task);
-      CHPL_MUTEX_UNLOCK(&threading_lock);
-
       chpldev_taskTable_set_suspended(curr_ptask->id);
       chpldev_taskTable_set_active(nested_task.id);
+      CHPL_MUTEX_UNLOCK(&taskTable_lock);
     }
 
     // begin critical section
@@ -529,11 +530,10 @@ void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
     CHPL_MUTEX_UNLOCK(&extra_task_lock);
 
     if (taskreport) {
+      CHPL_MUTEX_LOCK(&taskTable_lock);
       chpldev_taskTable_set_active(curr_ptask->id);
-
-      CHPL_MUTEX_LOCK(&threading_lock);
       chpldev_taskTable_remove(nested_task.id);
-      CHPL_MUTEX_UNLOCK(&threading_lock);
+      CHPL_MUTEX_UNLOCK(&taskTable_lock);
     }
 
     set_current_ptask(curr_ptask);
@@ -603,8 +603,10 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
         CHPL_MUTEX_UNLOCK(&extra_task_lock);
 
         if (taskreport) {
+          CHPL_MUTEX_LOCK(&taskTable_lock);
           chpldev_taskTable_set_suspended(curr_ptask->id);
           chpldev_taskTable_set_active(nested_ptask->id);
+          CHPL_MUTEX_UNLOCK(&taskTable_lock);
         }
 
         if (blockreport)
@@ -613,11 +615,10 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
         (*task_to_run_fun)(task_to_run_arg);
 
         if (taskreport) {
+          CHPL_MUTEX_LOCK(&taskTable_lock);
           chpldev_taskTable_set_active(curr_ptask->id);
-
-          CHPL_MUTEX_LOCK(&threading_lock);
           chpldev_taskTable_remove(nested_ptask->id);
-          CHPL_MUTEX_UNLOCK(&threading_lock);
+          CHPL_MUTEX_UNLOCK(&taskTable_lock);
         }
 
         // begin critical section
@@ -734,12 +735,12 @@ int32_t  CHPL_NUMBLOCKEDTASKS(void) {
 
     // begin critical section
     CHPL_MUTEX_LOCK(&threading_lock);
-    CHPL_MUTEX_LOCK(&report_lock);
+    CHPL_MUTEX_LOCK(&block_report_lock);
 
     numBlockedTasks = blocked_thread_cnt - idle_cnt;
 
     // end critical section
-    CHPL_MUTEX_UNLOCK(&report_lock);
+    CHPL_MUTEX_UNLOCK(&block_report_lock);
     CHPL_MUTEX_UNLOCK(&threading_lock);
 
     assert(numBlockedTasks >= 0);
@@ -874,7 +875,7 @@ static void report_all_tasks(void) {
     printf("\n");
     
     // print out running tasks
-    printf("Executing tasks:\n");
+    printf("Known tasks:\n");
     chpldev_taskTable_print();
 }
 
@@ -913,13 +914,13 @@ static void initializeLockReportForThread(void) {
   newLockReport = (lockReport_t*) chpl_alloc(sizeof(lockReport_t),
                                              CHPL_RT_MD_LOCK_REPORT_DATA,
                                              0, 0);
-  newLockReport->next = NULL;
   newLockReport->maybeLocked = false;
+  newLockReport->next = NULL;
 
   get_thread_private_data()->lockRprt = newLockReport;
 
   // Begin critical section
-  CHPL_MUTEX_LOCK(&report_lock);
+  CHPL_MUTEX_LOCK(&block_report_lock);
   if (lockReportHead) {
     lockReportTail->next = newLockReport;
     lockReportTail = newLockReport;
@@ -928,7 +929,7 @@ static void initializeLockReportForThread(void) {
     lockReportTail = newLockReport;
   }
   // End critical section
-  CHPL_MUTEX_UNLOCK(&report_lock);
+  CHPL_MUTEX_UNLOCK(&block_report_lock);
 }
 
 
@@ -958,7 +959,7 @@ static chpl_bool set_block_loc(int lineno, chpl_string filename) {
   tp->lockRprt->maybeLocked = true;
 
   // Begin critical section
-  CHPL_MUTEX_LOCK(&report_lock);
+  CHPL_MUTEX_LOCK(&block_report_lock);
 
   blocked_thread_cnt++;
   if (blocked_thread_cnt > threads_cnt) {
@@ -966,7 +967,7 @@ static chpl_bool set_block_loc(int lineno, chpl_string filename) {
   }
 
   // End critical section
-  CHPL_MUTEX_UNLOCK(&report_lock);
+  CHPL_MUTEX_UNLOCK(&block_report_lock);
 
   return isLastUnblockedThread;
 }
@@ -982,12 +983,12 @@ static void unset_block_loc(void) {
   get_thread_private_data()->lockRprt->maybeLocked = false;
 
   // Begin critical section
-  CHPL_MUTEX_LOCK(&report_lock);
+  CHPL_MUTEX_LOCK(&block_report_lock);
 
   blocked_thread_cnt--;
 
   // End critical section
-  CHPL_MUTEX_UNLOCK(&report_lock);
+  CHPL_MUTEX_UNLOCK(&block_report_lock);
 }
 
 
@@ -1043,28 +1044,32 @@ chpl_begin_helper(void* ptask_void) {
   tp = (thread_private_data_t*) chpl_alloc(sizeof(thread_private_data_t),
                                            CHPL_RT_MD_THREAD_PRIVATE_DATA,
                                            0, 0);
+  tp->ptask = ptask;
   threadlayer_set_thread_private_data(tp);
 
   // add new thread to our thread list
   add_me_to_thread_list();
 
-  // Lock report initialization has to be done before we do the taskTable
-  // add, because that can block on a sync var and thus reference the lock
-  // report data.
+  // the chpldev_taskTable_set_active() call can end up temporarily
+  // waiting on a sync var, so if deadlock detection is enabled we
+  // have to set that up first
   if (blockreport)
     initializeLockReportForThread();
 
-  // add incoming task to task-table structure in ChapelRuntime
-  if (taskreport)
-    chpldev_taskTable_set_active(ptask->id);
-
   while (true) {
-    //
-    // Set current task on this thread.
-    //
-    tp->ptask = ptask;
+    if (taskreport) {
+      CHPL_MUTEX_LOCK(&taskTable_lock);
+      chpldev_taskTable_set_active(ptask->id);
+      CHPL_MUTEX_UNLOCK(&taskTable_lock);
+    }
 
     (*ptask->fun)(ptask->arg);
+
+    if (taskreport) {
+      CHPL_MUTEX_LOCK(&taskTable_lock);
+      chpldev_taskTable_remove(ptask->id);
+      CHPL_MUTEX_UNLOCK(&taskTable_lock);
+    }
 
     // begin critical section
     CHPL_MUTEX_LOCK(&threading_lock);
@@ -1080,9 +1085,6 @@ chpl_begin_helper(void* ptask_void) {
     // were unable to create a thread.
     //
     chpl_free(ptask, 0, 0);
-
-    if (taskreport)
-      chpldev_taskTable_remove(ptask->id);
 
     //
     // finished task; decrement running count and increment idle count
@@ -1155,9 +1157,8 @@ chpl_begin_helper(void* ptask_void) {
       // will eventually be freed
       ptask->ltask = NULL;
     }
+    tp->ptask = ptask;
     ptask->begun = true;
-    if (taskreport)
-      chpldev_taskTable_set_active(ptask->id);
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
       task_pool_tail = NULL;
@@ -1293,10 +1294,13 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
 
   queued_cnt++;
 
-  if (taskreport)
+  if (taskreport) {
+    CHPL_MUTEX_LOCK(&taskTable_lock);
     chpldev_taskTable_add(ptask->id,
                           ptask->lineno, ptask->filename,
                           (uint64_t) (intptr_t) ptask);
+    CHPL_MUTEX_UNLOCK(&taskTable_lock);
+  }
 
   return ptask;
 }

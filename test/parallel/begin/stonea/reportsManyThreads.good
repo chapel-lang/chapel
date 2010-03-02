@@ -6,7 +6,7 @@
 - reportsManyThreads.chpl:4 is active
 - reportsManyThreads.chpl:5 is active
 --------------------------------
-Executing tasks:
+Known tasks:
 Pending tasks:
 Program is deadlocked!
 Task report
