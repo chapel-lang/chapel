@@ -5,6 +5,7 @@ CHPL_FLAGS = --fast
 
 TARGETS = \
 	stream \
+	stream-ep \
 	ra \
 	fft \
 	hpl \
@@ -18,16 +19,19 @@ all: $(TARGETS)
 clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 
-stream: HPCCProblemSize.chpl stream.chpl
+stream: stream.chpl HPCCProblemSize.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
-ra: HPCCProblemSize.chpl RARandomStream.chpl ra.chpl
+stream-ep: stream-ep.chpl HPCCProblemSize.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
-fft: HPCCProblemSize.chpl fft.chpl
+ra: ra.chpl HPCCProblemSize.chpl RARandomStream.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
-hpl: HPCCProblemSize.chpl hpl.chpl
+fft: fft.chpl HPCCProblemSize.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+hpl: hpl.chpl HPCCProblemSize.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 FORCE:
