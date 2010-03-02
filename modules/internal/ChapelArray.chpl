@@ -310,6 +310,8 @@ def isSparseDom(d: domain) param {
   return isSparseDomClass(d._value);
 }
 
+def isSparseArr(a: []) param return isSparseDom(a.domain);
+
 //
 // Support for distributions
 //
@@ -747,16 +749,16 @@ record _array {
   def rank param return this.domain.rank;
 
   pragma "inline"
-  def this(i: rank*_value.idxType) var where rank > 1
-    return _value.dsiAccess(i);
+  def this(i: rank*_value.idxType) var {
+    if isArithmeticArr(this) || isSparseArr(this) then
+      return _value.dsiAccess(i);
+    else
+      return _value.dsiAccess(i(1));
+  }
 
   pragma "inline"
-  def this(i: _value.idxType ...rank) var where rank > 1
-    return _value.dsiAccess(i);
-
-  pragma "inline"
-  def this(i: _value.idxType) var where rank == 1
-    return _value.dsiAccess(i);
+  def this(i: _value.idxType ...rank) var
+    return this(i);
 
   //
   // requires dense domain implementation that returns a tuple of

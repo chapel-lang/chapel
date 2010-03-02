@@ -227,6 +227,21 @@ Arithmetic arrays also support indexing over the components of their
 indices for multidimensional arithmetic domains (where the indices are
 tuples), as described in~\rsec{Arithmetic_Array_Indexing}.
 
+One-dimensional arrays may be indexed by 1-tuples of their index
+types.
+\begin{example}
+The code
+\begin{chapel}
+def f(A: [], is...)
+  return A(is);
+\end{chapel}
+defines a function that takes an array as the first argument and a
+variable-length argument list.  It then indexes into the array using
+the tuple that captures the actual arguments.  This function works
+even for one-dimensional arrays because one-dimensional arrays can be
+indexed into by 1-tuples.
+\end{example}
+
 \subsubsection{Array Slicing}
 \label{Array_Slicing}
 \index{arrays!slicing}

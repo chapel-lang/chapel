@@ -61,7 +61,15 @@ class DefaultSparseDom: BaseSparseDom {
 
   // private
   def find(ind) {
-    return BinarySearch(indices, ind, 1, nnz);
+    //
+    // sjd: unfortunate specialization for rank == 1
+    // sjd: would it be better if indices were an array of rank*idxType?
+    // sjd: isn't it a bug as is because the idxType may not match index(rank)?
+    //
+    if rank == 1 && isTuple(ind) && ind.size == 1 then
+      return BinarySearch(indices, ind(1), 1, nnz);
+    else
+      return BinarySearch(indices, ind, 1, nnz);
   }
 
   def dsiMember(ind) { // ind should be verified to be index type
