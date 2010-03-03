@@ -675,7 +675,7 @@ def BlockArr.setup() {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
-def BlockArr.dsiAccess(i: idxType) var where rank == 1 {
+def BlockArr.dsiAccess(i: rank*idxType) var {
   if myLocArr then local {
     if myLocArr.locDom.member(i) then
       return myLocArr.this(i);
@@ -683,17 +683,8 @@ def BlockArr.dsiAccess(i: idxType) var where rank == 1 {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
-def BlockArr.dsiAccess(i: rank*idxType) var {
-  if rank == 1 {
-    return dsiAccess(i(1));
-  } else {
-    if myLocArr then local {
-      if myLocArr.locDom.member(i) then
-        return myLocArr.this(i);
-    }
-    return locArr(dom.dist.targetLocsIdx(i))(i);
-  }
-}
+def BlockArr.dsiAccess(i: idxType...rank) var
+  return dsiAccess(i);
 
 def BlockArr.these() var {
   for i in dom do
