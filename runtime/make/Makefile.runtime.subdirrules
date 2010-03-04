@@ -12,3 +12,4 @@ depend: $(DEPENDSUBDIRS) echoruntimedir $(DEPEND_STAMP) $(DEPEND_DEPS)
 SVN_DEPS= $(SVN_SRCS:%.c=%.depend)
 
 filedepend: $(SVN_DEPS)
+	@true
