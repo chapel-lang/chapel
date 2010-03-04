@@ -504,6 +504,7 @@ static const char* searchPath(Vec<const char*> path, const char* filename,
 
 static Vec<const char*> intModPath;
 static Vec<const char*> stdModPath;
+static Vec<const char*> distModPath;
 static Vec<const char*> usrModPath;
 static Vec<const char*> fileModPath;
 static Vec<const char*> fileModPathSet;
@@ -511,6 +512,7 @@ static Vec<const char*> fileModPathSet;
 void setupModulePaths(void) {
   intModPath.add(astr(CHPL_HOME, "/modules/internal"));
   stdModPath.add(astr(CHPL_HOME, "/modules/standard"));
+  distModPath.add(astr(CHPL_HOME, "/modules/distributions"));
   const char* envvarpath = getenv("CHPL_MODULE_PATH");
   if (envvarpath) {
     char path[FILENAME_MAX+1];
@@ -578,6 +580,7 @@ const char* modNameToFilename(const char* modName, bool isInternal,
     fullfilename = searchPath(usrModPath, filename, fullfilename);
     *isStandard = (fullfilename == NULL);
     fullfilename = searchPath(stdModPath, filename, fullfilename);
+    fullfilename = searchPath(distModPath, filename, fullfilename);
   }
   return  fullfilename;
 }
@@ -586,7 +589,13 @@ const char* stdModNameToFilename(const char* modName) {
   const char* fullfilename = searchPath(stdModPath, astr(modName, ".chpl"), 
                                         NULL);
   if (fullfilename == NULL) {
-    INT_FATAL("Can't find standard module %s\n", modName);
+    const char* fullfilename = searchPath(distModPath, astr(modName, ".chpl"), 
+                                          NULL);
+    if (fullfilename == NULL) {
+      INT_FATAL("Can't find standard module %s\n", modName);
+    }
+
+    return fullfilename;
   }
   return fullfilename;
 }
@@ -603,5 +612,6 @@ void printModuleSearchPath(void) {
   helpPrintPath(fileModPath);
   helpPrintPath(usrModPath);
   helpPrintPath(stdModPath);
+  helpPrintPath(distModPath);
   fprintf(stderr, "end of module search dirs\n");
 }
