@@ -102,6 +102,9 @@ def PrivateArr.dsiAccess(i: idxType) var {
   }
 }
 
+def PrivateArr.dsiAccess(i: 1*idxType) var
+  return dsiAccess(i(1));
+
 def PrivateArr.these() var {
   for i in dom do
     yield dsiAccess(i);
