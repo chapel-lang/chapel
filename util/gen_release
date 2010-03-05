@@ -44,6 +44,7 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
        "util/check-tasks-threads-compatibility.pl",
        "util/chpl-multirealm",
        "util/chplmake",
+       "util/chplmpi.pl",
        "util/comm.pl",
        "util/commSegment.pl",
        "util/commSubstrate.pl",

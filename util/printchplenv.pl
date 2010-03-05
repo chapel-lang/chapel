@@ -32,6 +32,12 @@ if ($comm eq "none") {
 } else {
     $commsubstrate = `$utildirname/commSubstrate.pl`; chomp($commsubstrate);
     print "  CHPL_COMM_SUBSTRATE: $commsubstrate\n";
+    if (($comm eq "armci" && $commsubstrate eq "mpi") ||
+        ($comm eq "gasnet" && $commsubstrate eq "mpi") ||
+        ($comm eq "mpi")) {
+        $mpiver = `$utildirname/chplmpi.pl`; chomp($mpiver);
+        print "  CHPL_MPI_VERSION: $mpiver\n";
+    }
     if ($comm eq "gasnet") {
         $commsegment = `$utildirname/commSegment.pl`; chomp($commsegment);
         print "  CHPL_GASNET_SEGMENT: $commsegment\n";a
@@ -44,6 +50,8 @@ $threads = `$utildirname/threads.pl`; chomp($threads);
 print "CHPL_THREADS: $threads\n";
 $launcher = `$utildirname/launcher.pl`; chomp($launcher);
 print "CHPL_LAUNCHER: $launcher\n";
+$timer = `$utildirname/timers.pl`; chomp($timer);
+print "CHPL_TIMERS: $timer\n";
 $mem = `$utildirname/mem.pl`; chomp($mem);
 print "CHPL_MEM: $mem\n";
 $make = `$utildirname/chplmake`; chomp($make);

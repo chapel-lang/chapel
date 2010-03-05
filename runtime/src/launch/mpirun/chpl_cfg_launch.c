@@ -5,10 +5,6 @@
 #include "error.h"
 
 
-// TODO: Un-hard-code this stuff:
-static const char* mpirunPath = "$CHPL_HOME/third-party/openmpi/install/linux64-gnu/bin/";
-static const char* mpirunExtraOptions = "--mca mpi_yield_when_idle 1";
-
 static char* chpl_launch_create_command(int argc, char* argv[], 
                                         int32_t numLocales) {
   int i;
@@ -18,9 +14,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   chpl_compute_real_binary_name(argv[0]);
 
-  sprintf(baseCommand, "mpirun -np %d %s %s", numLocales, mpirunExtraOptions, chpl_get_real_binary_name());
+  sprintf(baseCommand, "mpirun -np %d %s %s", numLocales, MPIRUN_XTRA_OPTS, 
+          chpl_get_real_binary_name());
 
-  size = strlen(mpirunPath) + strlen(baseCommand) + 1;
+  size = strlen(MPIRUN_PATH) + 1 + strlen(baseCommand) + 1;
 
   for (i=1; i<argc; i++) {
     size += strlen(argv[i]) + 3;
@@ -28,7 +25,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   command = chpl_malloc(size, sizeof(char*), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
   
-  sprintf(command, "%s%s", mpirunPath, baseCommand);
+  sprintf(command, "%s/%s", MPIRUN_PATH, baseCommand);
   for (i=1; i<argc; i++) {
     strcat(command, " '");
     strcat(command, argv[i]);
