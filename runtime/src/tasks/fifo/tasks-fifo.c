@@ -563,7 +563,7 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
     // if we do so
     if (ltask->ptask) {
       task_pool_p  curr_ptask;
-      task_pool_p  nested_ptask;
+      task_pool_p  nested_ptask = NULL;
       chpl_fn_p    task_to_run_fun = NULL;
       void*        task_to_run_arg = NULL;
 
