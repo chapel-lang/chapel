@@ -15,19 +15,13 @@
 // this really an issue and why? Our default is to set it based on the
 // current time of day, incrementing this value by one if it is even.
 //
-// 2. The getNext, skipToNth, and getNth methods are not
-// parallel-safe. How should we handle this? When used in a serial
-// context, we don't want to pay the overhead of locking.  We could
-// parameterize the class and/or these methods over a param bool
-// parallelSafe.
-//
-// 3. We would like to support general serial and parallel iterators
+// 2. We would like to support general serial and parallel iterators
 // on the RandomStream class, but the update to the shared cursor and
 // count is not possible with our current parallel iterators because
 // there is no way to mark its completion.  See Mar 2010 code review
 // notes.
 //
-// 4. The fillRandom function currently only fills arrays of 64-bit
+// 3. The fillRandom function currently only fills arrays of 64-bit
 // real or 128-bit complex values.  When we have a general iterator
 // above, the user will be able to coerce the values returned by
 // RandomStream to any type.  Is it a good idea to also allow this
@@ -45,15 +39,17 @@ def getRandomStreamClockSeed() {
 def fillRandom(x:[], seed: int(64) = getRandomStreamClockSeed()) {
   if x.eltType != complex && x.eltType != real then
     compilerError("Random.fillRandom is only defined for real/complex arrays");
-  var randNums = new RandomStream(seed);
+  var randNums = new RandomStream(seed, parSafe=false);
   randNums.fillRandom(x);
   delete randNums;
 }
 
 class RandomStream {
+  param parSafe: bool = true;
   const seed: int(64);
 
-  def RandomStream(seed: int(64) = getRandomStreamClockSeed()) {
+  def RandomStream(seed: int(64) = getRandomStreamClockSeed(),
+                   param parSafe: bool = true) {
     if seed % 2 == 0 then
       writeln("Warning: RandomStream seed is not an odd number.");
     this.seed = seed;
@@ -61,32 +57,49 @@ class RandomStream {
     RandomStreamPrivate_count = 1;
   }
 
-  def getNext() {
+  def getNext(parSafe = this.parSafe) {
+    if parSafe then
+      RandomStreamPrivate_lock$ = true;
     RandomStreamPrivate_count += 1;
-    return RandomPrivate_randlc(RandomStreamPrivate_cursor);
+    const result = RandomPrivate_randlc(RandomStreamPrivate_cursor);
+    if parSafe then
+      RandomStreamPrivate_lock$;
+    return result;
   }
 
-  def skipToNth(n: integral) {
+  def skipToNth(n: integral, parSafe = this.parSafe) {
     if (n <= 0) then
       halt("RandomStream.skipToNth(n) called with non-positive 'n' value", n);
+    if parSafe then
+      RandomStreamPrivate_lock$ = true;
     RandomStreamPrivate_count = n;
     RandomPrivate_randlc_skipto(RandomStreamPrivate_cursor, seed, n);
+    if parSafe then
+      RandomStreamPrivate_lock$;
   }
 
-  def getNth(n: integral) {
+  def getNth(n: integral, parSafe = this.parSafe) {
     if (n <= 0) then 
       halt("RandomStream.getNth(n) called with non-positive 'n' value", n);
-    skipToNth(n);
-    return getNext();
+    if parSafe then
+      RandomStreamPrivate_lock$ = true;
+    skipToNth(n, parSafe=false);
+    const result = getNext(parSafe=false);
+    if parSafe then
+      RandomStreamPrivate_lock$;
+    return result;
   }
 
-  def fillRandom(X: []) where X.eltType == complex || X.eltType == real {
+  def fillRandom(X: [], parSafe = this.parSafe)
+        where X.eltType == complex || X.eltType == real {
     param cplxMultiplier = if X.eltType == complex then 2 else 1;
-    RandomStreamPrivate_lock$ = true;
+    if parSafe then
+      RandomStreamPrivate_lock$ = true;
     const startCount = RandomStreamPrivate_count;
     RandomStreamPrivate_count += cplxMultiplier * X.numElements;
-    skipToNth(RandomStreamPrivate_count);
-    RandomStreamPrivate_lock$;
+    skipToNth(RandomStreamPrivate_count, parSafe=false);
+    if parSafe then
+      RandomStreamPrivate_lock$;
 
     forall (x, r) in (X, RandomStreamPrivate_iterate(startCount, X)) do
       x = r:X.eltType;
