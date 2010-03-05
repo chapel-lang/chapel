@@ -4,7 +4,7 @@ config var n = 100;
 
 var randStr1 = new RandomStream(314159265);
 var randStr2 = new RandomStream(314159265);
-var randStr3 = new RandomStream(314159264);
+var randStr3 = new RandomStream(314159265);
 
 for i in 1..n {
   const r1 = randStr1.getNext();

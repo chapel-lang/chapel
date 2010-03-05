@@ -53,6 +53,24 @@ def _factor(param rank: int, value) {
 }
 
 //
+// Returns a new default arithmetic domain of the same rank, index
+// type, and shape of 'dom' but for which the indices in each
+// dimension start at zero and have unit stride.
+//
+def computeZeroBasedDomain(dom: domain) {
+  def helper(first, rest...) {
+    if rest.size > 1 then
+      return (0..#first.length, (...helper((...rest))));
+    else
+      return (0..#first.length, 0..#rest(1).length);
+  }
+  if dom.rank > 1 then
+    return [(...helper((...dom.dims())))];
+  else
+    return [0..#dom.dim(1).length];
+}
+
+//
 // setupTargetLocalesArray
 //
 def setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {

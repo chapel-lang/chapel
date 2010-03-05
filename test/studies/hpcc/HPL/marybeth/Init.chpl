@@ -184,7 +184,7 @@ def init(A:[?D]) {
   var n = D.dim(1).length;
   var Asquare => A(..,1..n);
   var b => A(..,n+1);
-  var rstream = new RandomStream(seed=1234567890);
+  var rstream = new RandomStream(seed=1234567891);
 
   rstream.fillRandom(Asquare);
   rstream.fillRandom(b);

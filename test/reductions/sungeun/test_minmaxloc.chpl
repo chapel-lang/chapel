@@ -42,7 +42,7 @@ class lastminloc: ReduceScanOp {
   def generate() return value;
 }
 
-config const seed = 888;
+config const seed = 889;
 config const sigfigs = 1;
 config const n = 1000000;
 config const debug = false;

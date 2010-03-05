@@ -15,7 +15,7 @@ use BFS;
 config const n_nodes = 100000, max_edges = 10;
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.clockMS else 7402943902;
+             seed = if useRandomSeed then getRandomStreamClockSeed() else 7402943902;
 
 
 

@@ -16,7 +16,7 @@ config const epsilon = 2.0 ** -51.0,
              threshold = 16.0;
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.clockMS else 314159265;
+             seed = if useRandomSeed then getRandomStreamClockSeed() else 314159265;
 
 config const printParams = true,
              printArrays = false,

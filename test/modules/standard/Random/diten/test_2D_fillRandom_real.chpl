@@ -1,7 +1,7 @@
 use Random;
 
 config const n = 10;
-config const seed = 12;
+config const seed = 13;
 
 def main(){
   var x: [0..n-1, 0..n-1] real; 

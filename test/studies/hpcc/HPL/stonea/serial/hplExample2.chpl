@@ -543,7 +543,7 @@ def main() {
     numPassed = 0;
     write("test_LUFactorize: ");
     for i in 1..1000 do
-        numPassed += test_LUFactorize(rprt=false, i * 1000);
+        numPassed += test_LUFactorize(rprt=false, i * 1000 + 1);
     writeln(numPassed, " PASSED, ", 1000-numPassed, " FAILED");
 }
 

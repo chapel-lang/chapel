@@ -16,7 +16,7 @@ config const printRandomNumbers: bool = true, // print random numbers to screen
 
 // seed the random stream with something reproducable?
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.clockMS else 314159265;
+             seed = if useRandomSeed then getRandomStreamClockSeed() else 314159265;
 
 // global variables
 var X: [1..numNumbers] real, // array of random numbers
