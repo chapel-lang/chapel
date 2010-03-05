@@ -57,8 +57,11 @@ void deadExpressionElimination(FnSymbol* fn) {
   Vec<BaseAST*> asts;
   collect_asts(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
+    Expr *expr = toExpr(ast);
+    if (expr && expr->parentExpr == NULL) // expression already removed
+      continue;
     if (SymExpr* expr = toSymExpr(ast)) {
-      if (expr->parentExpr && expr == expr->getStmtExpr())
+      if (expr == expr->getStmtExpr())
         expr->remove();
     } else if (CallExpr* expr = toCallExpr(ast)) {
       if (expr->isPrimitive(PRIM_CAST) ||
@@ -66,7 +69,7 @@ void deadExpressionElimination(FnSymbol* fn) {
           expr->isPrimitive(PRIM_GET_MEMBER) ||
           expr->isPrimitive(PRIM_GET_REF) ||
           expr->isPrimitive(PRIM_SET_REF))
-        if (expr->parentExpr && expr == expr->getStmtExpr())
+        if (expr == expr->getStmtExpr())
           expr->remove();
       if (expr->isPrimitive(PRIM_MOVE))
         if (SymExpr* lhs = toSymExpr(expr->get(1)))
