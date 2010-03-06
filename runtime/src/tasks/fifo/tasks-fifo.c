@@ -39,6 +39,7 @@ typedef struct task_pool_struct {
   chpl_string      filename;
   int              lineno;
   task_pool_p      next;
+  task_pool_p      prev;
 } task_pool_t;
 
 
@@ -120,7 +121,6 @@ static void                    initializeLockReportForThread(void);
 static chpl_bool               set_block_loc(int, chpl_string);
 static void                    unset_block_loc(void);
 static void                    check_for_deadlock(void);
-static void                    remove_begun_tasks_from_pool (void);
 static void*                   chpl_begin_helper(void*);
 static void                    launch_next_task_in_new_thread(void);
 static void                    schedule_next_task(int);
@@ -372,10 +372,6 @@ void CHPL_TASKING_EXIT(void) {
   if (debug)
     fprintf(stderr, "A total of %d threads were created; waking_cnt = %d\n", threads_cnt, waking_cnt);
 
-  CHPL_MUTEX_LOCK(&threading_lock);
-  remove_begun_tasks_from_pool();
-  CHPL_MUTEX_UNLOCK(&threading_lock);
-
   // shut down all threads
   for (tlp = thread_list_head; tlp != NULL; tlp = tlp->next)
     threadlayer_thread_cancel(tlp->thread);
@@ -585,6 +581,19 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
           waking_cnt--;
         assert(queued_cnt > 0);
         queued_cnt--;
+	if (nested_ptask->prev == NULL) {
+	  if ((task_pool_head = nested_ptask->next) == NULL)
+	    task_pool_tail = NULL;
+	  else
+	    task_pool_head->prev = NULL;
+	}
+	else {
+	  nested_ptask->prev->next = nested_ptask->next;
+	  if (nested_ptask->next == NULL)
+	    task_pool_tail = nested_ptask->prev;
+	  else
+	    nested_ptask->next->prev = nested_ptask->prev;
+	}
       }
 
       // end critical section
@@ -630,6 +639,7 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
         CHPL_MUTEX_UNLOCK(&extra_task_lock);
 
         set_current_ptask(curr_ptask);
+	chpl_free(nested_ptask, 0, 0);
       }
     }
 
@@ -1018,21 +1028,6 @@ static void check_for_deadlock(void) {
 
 
 //
-// This function removes tasks at the beginning of the task pool
-// that have already started executing.
-// assumes threading_lock has already been acquired!
-//
-static void remove_begun_tasks_from_pool (void) {
-  while (task_pool_head && task_pool_head->begun) {
-    task_pool_p ptask = task_pool_head;
-    task_pool_head = task_pool_head->next;
-    chpl_free(ptask, 0, 0);
-    if (task_pool_head == NULL)  // task pool is now empty
-      task_pool_tail = NULL;
-  }
-}
-
-//
 // When we create a thread it runs this wrapper function, which just
 // executes tasks out of the pool as they become available.
 //
@@ -1084,6 +1079,7 @@ chpl_begin_helper(void* ptask_void) {
     // also have to be prepared to undo all those manipulations if we
     // were unable to create a thread.
     //
+    tp->ptask = NULL;
     chpl_free(ptask, 0, 0);
 
     //
@@ -1128,7 +1124,6 @@ chpl_begin_helper(void* ptask_void) {
       }
 
       // remove any tasks that have already started executing
-      remove_begun_tasks_from_pool();
     } while (!task_pool_head);
 
     if (blockreport)
@@ -1162,15 +1157,18 @@ chpl_begin_helper(void* ptask_void) {
     task_pool_head = task_pool_head->next;
     if (task_pool_head == NULL)  // task pool is now empty
       task_pool_tail = NULL;
-    else if (waking_cnt > 0)
-      // Our technique for informing the threading layer that there is
-      // nothing, and then something, to do is inherently racy.  If we
-      // have more to do than just this one task, tell the threading
-      // layer so.  This may result in the threading layer being overly
-      // optimistic about the amount of available work, but if so that
-      // will correct itself, and we certainly don't want the threading
-      // layer failing to pick up work when we have it.
-      threadlayer_pool_awaken();
+    else {
+      task_pool_head->prev = NULL;
+      if (waking_cnt > 0)
+	// Our technique for informing the threading layer that there is
+	// nothing, and then something, to do is inherently racy.  If we
+	// have more to do than just this one task, tell the threading
+	// layer so.  This may result in the threading layer being overly
+	// optimistic about the amount of available work, but if so that
+	// will correct itself, and it is better than activating too few
+	// threads to do the available work.
+	threadlayer_pool_awaken();
+    }
 
     // end critical section
     CHPL_MUTEX_UNLOCK(&threading_lock);
@@ -1193,9 +1191,6 @@ launch_next_task_in_new_thread(void) {
 
   if (warning_issued)  // If thread creation failed previously, don't try again
     return;
-
-  // remove any tasks that have already started executing
-  remove_begun_tasks_from_pool();
 
   if ((ptask = task_pool_head)) {
     if (threadlayer_thread_create(&thread, chpl_begin_helper, ptask)) {
@@ -1226,6 +1221,8 @@ launch_next_task_in_new_thread(void) {
       task_pool_head = task_pool_head->next;
       if (task_pool_head == NULL)  // task pool is now empty
         task_pool_tail = NULL;
+      else
+	task_pool_head->prev = NULL;
     }
   }
 }
@@ -1290,6 +1287,7 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
     task_pool_tail->next = ptask;
   else
     task_pool_head = ptask;
+  ptask->prev = task_pool_tail;
   task_pool_tail = ptask;
 
   queued_cnt++;
