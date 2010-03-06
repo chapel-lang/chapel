@@ -581,19 +581,19 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
           waking_cnt--;
         assert(queued_cnt > 0);
         queued_cnt--;
-	if (nested_ptask->prev == NULL) {
-	  if ((task_pool_head = nested_ptask->next) == NULL)
-	    task_pool_tail = NULL;
-	  else
-	    task_pool_head->prev = NULL;
-	}
-	else {
-	  nested_ptask->prev->next = nested_ptask->next;
-	  if (nested_ptask->next == NULL)
-	    task_pool_tail = nested_ptask->prev;
-	  else
-	    nested_ptask->next->prev = nested_ptask->prev;
-	}
+        if (nested_ptask->prev == NULL) {
+          if ((task_pool_head = nested_ptask->next) == NULL)
+            task_pool_tail = NULL;
+          else
+            task_pool_head->prev = NULL;
+        }
+        else {
+          nested_ptask->prev->next = nested_ptask->next;
+          if (nested_ptask->next == NULL)
+            task_pool_tail = nested_ptask->prev;
+          else
+            nested_ptask->next->prev = nested_ptask->prev;
+        }
       }
 
       // end critical section
@@ -639,7 +639,7 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
         CHPL_MUTEX_UNLOCK(&extra_task_lock);
 
         set_current_ptask(curr_ptask);
-	chpl_free(nested_ptask, 0, 0);
+        chpl_free(nested_ptask, 0, 0);
       }
     }
 
@@ -1160,14 +1160,14 @@ chpl_begin_helper(void* ptask_void) {
     else {
       task_pool_head->prev = NULL;
       if (waking_cnt > 0)
-	// Our technique for informing the threading layer that there is
-	// nothing, and then something, to do is inherently racy.  If we
-	// have more to do than just this one task, tell the threading
-	// layer so.  This may result in the threading layer being overly
-	// optimistic about the amount of available work, but if so that
-	// will correct itself, and it is better than activating too few
-	// threads to do the available work.
-	threadlayer_pool_awaken();
+        // Our technique for informing the threading layer that there is
+        // nothing, and then something, to do is inherently racy.  If we
+        // have more to do than just this one task, tell the threading
+        // layer so.  This may result in the threading layer being overly
+        // optimistic about the amount of available work, but if so that
+        // will correct itself, and it is better than activating too few
+        // threads to do the available work.
+        threadlayer_pool_awaken();
     }
 
     // end critical section
@@ -1222,7 +1222,7 @@ launch_next_task_in_new_thread(void) {
       if (task_pool_head == NULL)  // task pool is now empty
         task_pool_tail = NULL;
       else
-	task_pool_head->prev = NULL;
+        task_pool_head->prev = NULL;
     }
   }
 }
