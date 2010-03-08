@@ -1,9 +1,9 @@
 COMM_LAUNCHER_SRCS = \
-        chpl_cfg_comm_locales.c \
+        comm-none_locales.c \
 
 COMM_SRCS = \
 	$(COMM_LAUNCHER_SRCS) \
-	chpl_cfg_comm.c \
+	comm-none.c \
 
 SVN_SRCS = $(COMM_SRCS)
 SRCS = $(SVN_SRCS)

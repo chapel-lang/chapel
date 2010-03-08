@@ -1,5 +1,5 @@
 LAUNCHER_SRCS = \
-        chpl_cfg_launch.c \
+        launch-amudprun.c \
 
 #
 # is this the right time to set this variable?  Or is user code

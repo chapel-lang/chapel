@@ -1,4 +1,4 @@
-MEM_SRCS = chpl_dlmalloc_mem.c
+MEM_SRCS = mem-dlmalloc.c
 
 SVN_SRCS = $(MEM_SRCS)
 SRCS = $(SVN_SRCS)

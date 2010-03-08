@@ -1,5 +1,5 @@
 LAUNCHER_SRCS = \
-        chpl_cfg_launch.c \
+        launch-loadleveler.c \
 
 SVN_SRCS = $(LAUNCHER_SRCS)
 SRCS = $(SVN_SRCS)

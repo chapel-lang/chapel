@@ -1,11 +1,10 @@
 COMM_LAUNCHER_SRCS = \
-        chpl_cfg_comm_locales.c \
+        comm-armci_locales.c \
 
 COMM_SRCS = \
 	$(COMM_LAUNCHER_SRCS) \
-	chpl_cfg_comm.c \
+        comm-armci.c \
 
-SVN_SRCS = $(COMM_SRCS)
 SRCS = $(SVN_SRCS)
 
 COMM_OBJS = \
