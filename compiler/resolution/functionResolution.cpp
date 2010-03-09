@@ -49,6 +49,20 @@ static void resolveFns(FnSymbol* fn);
 
 static void pruneResolvedTree();
 
+void printCallStack();
+
+//
+// Print the module name, line number, and function signature of each function
+// on the call stack. This can be called from a debugger to to see what the
+// call chain looks like e.g. after a resolution error.
+//
+void printCallStack() {
+  for (int i = callStack.n-1; i >= 0; i--) {
+    CallExpr* call = callStack.v[i];
+    FnSymbol* fn = call->getFunction();
+    printf("%s:%d: %s\n", call->getModule()->name, call->lineno, toString(fn));
+  }
+}
 
 //
 // build reference type
@@ -1250,6 +1264,8 @@ printResolutionError(const char* error,
     USR_FATAL(call, "cannot iterate over values of type %s",
               toString(info->actuals.v[1]->type));
   } else if (!strcmp("_type_construct__tuple", info->name)) {
+    if (info->call->argList.length == 0)
+      USR_FATAL(call, "tuple size must be specified");
     SymExpr* sym = toSymExpr(info->call->get(1));
     if (!sym || !sym->var->isParameter()) {
       USR_FATAL(call, "tuple size must be static");
