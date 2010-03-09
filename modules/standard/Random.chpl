@@ -1,43 +1,55 @@
 //
 // Random Module
 //
-// This standard module currently contains a single random number
-// generator based on the one used in the NPB benchmarks.  It's a
-// linear congruential generator with:
+// This standard module contains a random number generator based on
+// the one used in the NPB benchmarks.  Tailoring the NPB comments to
+// this code, we can say the following:
 //
-//   m = 2^46 (the modulus)
-//   a = 1220703125.0 (the multiplier)
-//   c = 0 (the increment)
+//   This generator returns uniform pseudorandom real values in the
+//   range (0, 1) by using the linear congruential generator
+//
+//     x_{k+1} = a x_k  (mod 2**46)
+//
+//   where 0 < x_k < 2**46 and 0 < a < 2**46.  This scheme generates
+//   2**44 numbers before repeating.  The seed value must be an odd
+//   64-bit integer in the range (1, 2^46).  The generated values are
+//   normalized to be between 0 and 1, i.e., 2**(-46) * x_k.
+//
+//   This generator should produce the same results on any computer
+//   with at least 48 mantissa bits for real(64) data.
 //
 // Open Issues
 //
-// 1. We issue a warning if the seed is set to an even integer. Is
-// this really an issue and why? Our default is to set it based on the
-// current time of day, incrementing this value by one if it is even.
-//
-// 2. We would like to support general serial and parallel iterators
+// 1. We would like to support general serial and parallel iterators
 // on the RandomStream class, but the update to the shared cursor and
 // count is not possible with our current parallel iterators because
 // there is no way to mark its completion.  See Mar 2010 code review
 // notes.
 //
-// 3. The fillRandom function currently only fills arrays of 64-bit
-// real or 128-bit complex values.  When we have a general iterator
-// above, the user will be able to coerce the values returned by
-// RandomStream to any type.  Is it a good idea to also allow this
-// class to be parameterized on a primitive type so that it could
-// return values of that primitive type?  We would have to implement
-// other algorithms to support other types.
+// 2. The fillRandom function currently only fills arrays of 64-bit
+// real, 64-bit imag, or 128-bit complex values.  When we have a
+// general iterator above, the user will be able to coerce the values
+// returned by RandomStream to any type.  Is it a good idea to also
+// allow this class to be parameterized on a primitive type so that it
+// could return values of that primitive type?  We would have to
+// implement other algorithms to support other types.
 //
+// Note on Private
+//
+// It is the intent that once Chapel supports the notion of 'private',
+// everything prefixed with RandomPrivate_ will be made private to
+// this module and everything prefixed with RandomStreamPrivate_ will
+// be made private to the RandomStream class.
+// 
 
 def getRandomStreamClockSeed() {
   use Time;
   const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
-  return if seed % 2 == 0 then seed+1 else seed;
+  return (if seed % 2 == 0 then seed+1 else seed) % (1:int(64)<<46);
 }
 
 def fillRandom(x:[], seed: int(64) = getRandomStreamClockSeed()) {
-  if x.eltType != complex && x.eltType != real then
+  if x.eltType != complex && x.eltType != real && x.eltType != imag then
     compilerError("Random.fillRandom is only defined for real/complex arrays");
   var randNums = new RandomStream(seed, parSafe=false);
   randNums.fillRandom(x);
@@ -50,14 +62,14 @@ class RandomStream {
 
   def RandomStream(seed: int(64) = getRandomStreamClockSeed(),
                    param parSafe: bool = true) {
-    if seed % 2 == 0 then
-      writeln("Warning: RandomStream seed is not an odd number.");
+    if seed % 2 == 0 || seed < 1 || seed > 1:int(64)<<46 then
+      halt("RandomStream seed must be an odd integer between 0 and 2**46");
     this.seed = seed;
     RandomStreamPrivate_cursor = seed;
     RandomStreamPrivate_count = 1;
   }
 
-  def getNext(parSafe = this.parSafe) {
+  def getNext(param parSafe = this.parSafe) {
     if parSafe then
       RandomStreamPrivate_lock$ = true;
     RandomStreamPrivate_count += 1;
@@ -67,8 +79,8 @@ class RandomStream {
     return result;
   }
 
-  def skipToNth(n: integral, parSafe = this.parSafe) {
-    if (n <= 0) then
+  def skipToNth(n: integral, param parSafe = this.parSafe) {
+    if n <= 0 then
       halt("RandomStream.skipToNth(n) called with non-positive 'n' value", n);
     if parSafe then
       RandomStreamPrivate_lock$ = true;
@@ -78,7 +90,7 @@ class RandomStream {
       RandomStreamPrivate_lock$;
   }
 
-  def getNth(n: integral, parSafe = this.parSafe) {
+  def getNth(n: integral, param parSafe = this.parSafe) {
     if (n <= 0) then 
       halt("RandomStream.getNth(n) called with non-positive 'n' value", n);
     if parSafe then
@@ -90,73 +102,44 @@ class RandomStream {
     return result;
   }
 
-  def fillRandom(X: [], parSafe = this.parSafe)
-        where X.eltType == complex || X.eltType == real {
-    param cplxMultiplier = if X.eltType == complex then 2 else 1;
+  def fillRandom(X: [], param parSafe = this.parSafe) {
+    if X.eltType != complex && X.eltType != real && X.eltType != imag then
+      compilerError("RandomStream.fillRandom called on array with unsupported element type");
+    forall (x, r) in (X, iterate(X.domain, X.eltType, parSafe)) do
+      x = r;
+  }
+
+  def iterate(D: domain, type resultType=real, param parSafe = this.parSafe) {
+    if resultType != complex && resultType != real && resultType != imag then
+      compilerError("unsupported resultType for RandomStream.iterate");
+    param cplxMultiplier = if resultType == complex then 2 else 1;
     if parSafe then
       RandomStreamPrivate_lock$ = true;
-    const startCount = RandomStreamPrivate_count;
-    RandomStreamPrivate_count += cplxMultiplier * X.numElements;
+    const start = RandomStreamPrivate_count;
+    RandomStreamPrivate_count += cplxMultiplier * D.numIndices;
     skipToNth(RandomStreamPrivate_count, parSafe=false);
     if parSafe then
       RandomStreamPrivate_lock$;
-
-    forall (x, r) in (X, RandomStreamPrivate_iterate(startCount, X)) do
-      x = r:X.eltType;
+    return RandomPrivate_iterate(resultType, D, seed, start);
   }
 
   ///////////////////////////////////////////////////////////// CLASS PRIVATE //
   //
-  // It is the intention that everything in this class declared below
-  // this line is private to this class, but Chapel does not yet
-  // support such enforcements.
+  // It is the intent that once Chapel supports the notion of
+  // 'private', everything in this class declared below this line will
+  // be made private to this class.
   //
 
   var RandomStreamPrivate_lock$: sync bool;
   var RandomStreamPrivate_cursor: real;
   var RandomStreamPrivate_count: int(64);
-
-  def RandomStreamPrivate_iterate(startAt: int(64), A: []) {
-    param cplxMultiplier = if A.eltType == complex then 2 else 1;
-    var cursor: real;
-    RandomPrivate_randlc_skipto(cursor, seed, startAt);
-    for i in 1..A.numElements do
-      yield RandomPrivate_randlc_tuple(cplxMultiplier, cursor);
-  }
-
-  def RandomStreamPrivate_iterate(param tag: iterator,
-                                  follower,
-                                  startAt: int(64),
-                                  A: []) where tag == iterator.follower {
-    param cplxMultiplier = if A.eltType == complex then 2 else 1;
-    const D = computeZeroBasedDomain(A.domain);
-    const innerRange = follower(D.rank);
-    var cursor: real;
-    for outer in RandomPrivate_outer(follower) {
-      var myStart = startAt;
-      if D.rank > 1 then
-        myStart += cplxMultiplier * D.indexOrder(((...outer), innerRange.low));
-      else
-        myStart += cplxMultiplier * D.indexOrder(innerRange.low);
-      if !innerRange.stridable {
-        RandomPrivate_randlc_skipto(cursor, seed, myStart);
-        for i in innerRange do
-          yield RandomPrivate_randlc_tuple(cplxMultiplier, cursor);
-      } else {
-        for i in innerRange {
-          RandomPrivate_randlc_skipto(cursor, seed, myStart + i * cplxMultiplier);
-          yield RandomPrivate_randlc_tuple(cplxMultiplier, cursor);
-        }
-      }
-    }
-  }
 }
 
 ////////////////////////////////////////////////////////////// MODULE PRIVATE //
 //
-// It is the intention that everything declared below this line is
-// private to this module, but Chapel does not yet support such
-// enforcements.
+// It is the intent that once Chapel supports the notion of 'private',
+// everything declared below this line will be made private to this
+// module.
 //
 
 //
@@ -191,7 +174,7 @@ def RandomPrivate_randlc(inout x: real, a: real = RandomPrivate_arand) {
 //
 // Skip to the nth random value and set a cursor.
 //
-def RandomPrivate_randlc_skipto(out cursor: real, seed: real, in n: integral) {
+def RandomPrivate_randlc_skipto(out cursor: real, seed: int(64), in n: integral) {
   cursor = seed:real;
   n -= 1;
   var t = RandomPrivate_arand;
@@ -236,5 +219,50 @@ def RandomPrivate_outer(ranges, param dim: int = 1) {
         yield (i, (...j));
   } else {
     yield 0; // 1D case is a noop
+  }
+}
+
+//
+// RandomStream iterator implementation
+//
+def RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+                          start: int(64)) {
+  param cplxMultiplier = if resultType == complex then 2 else 1;
+  var cursor: real;
+  RandomPrivate_randlc_skipto(cursor, seed, start);
+  for i in D do
+    yield RandomPrivate_randlc_tuple(cplxMultiplier, cursor):resultType;
+}
+
+def RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+                          start: int(64), param tag: iterator)
+      where tag == iterator.leader {
+  for block in D._value.these(tag=iterator.leader) do
+    yield block;
+}
+
+def RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+                          start: int(64), param tag: iterator, follower)
+      where tag == iterator.follower {
+  param cplxMultiplier = if resultType == complex then 2 else 1;
+  const ZD = computeZeroBasedDomain(D);
+  const innerRange = follower(ZD.rank);
+  var cursor: real;
+  for outer in RandomPrivate_outer(follower) {
+    var myStart = start;
+    if ZD.rank > 1 then
+      myStart += cplxMultiplier * ZD.indexOrder(((...outer), innerRange.low));
+    else
+      myStart += cplxMultiplier * ZD.indexOrder(innerRange.low);
+    if !innerRange.stridable {
+      RandomPrivate_randlc_skipto(cursor, seed, myStart);
+      for i in innerRange do
+        yield RandomPrivate_randlc_tuple(cplxMultiplier, cursor):resultType;
+    } else {
+      for i in innerRange {
+        RandomPrivate_randlc_skipto(cursor, seed, myStart + i * cplxMultiplier);
+        yield RandomPrivate_randlc_tuple(cplxMultiplier, cursor):resultType;
+      }
+    }
   }
 }
