@@ -259,6 +259,7 @@ def RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
       for i in innerRange do
         yield RandomPrivate_randlc_tuple(cplxMultiplier, cursor):resultType;
     } else {
+      myStart -= innerRange.low;
       for i in innerRange {
         RandomPrivate_randlc_skipto(cursor, seed, myStart + i * cplxMultiplier);
         yield RandomPrivate_randlc_tuple(cplxMultiplier, cursor):resultType;
