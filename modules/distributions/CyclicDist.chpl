@@ -104,6 +104,15 @@ def Cyclic.getChunk(inds, locid) {
   //return inds((...distWhole));
 }
 
+def Cyclic.dsiDisplayRepresentation() {
+  writeln("lowIdx = ", lowIdx);
+  writeln("targetLocDom = ", targetLocDom);
+  writeln("targetLocs = ", for tl in targetLocs do tl.id);
+  writeln("tasksPerLocale = ", tasksPerLocale);
+  for tli in targetLocDom do
+    writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
+}
+
 def Cyclic.dsiSupportsPrivatization() param return true;
 
 def Cyclic.dsiGetPrivatizeData() return 0;
@@ -131,6 +140,68 @@ def Cyclic.dsiNewArithmeticDom(param rank: int, type idxType, param stridable: b
   dom.setup();
   return dom;
 } 
+
+def Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
+  var newLow: rank*idxType;
+  for param i in 1..rank {
+    const oldDist = (oldSpace(i).low - lowIdx(i)) / oldSpace(i).stride;
+    newLow(i) = newSpace(i).low - (newSpace(i).stride * oldDist);
+  }
+  var newDist = new Cyclic(rank=rank, idxType=idxType, low=newLow, targetLocales=targetLocs, tasksPerLocale=tasksPerLocale);
+  return newDist;
+}
+
+//
+// Given a tuple of scalars of type t or range(t) match the shape but
+// using types rangeType and scalarType e.g. the call:
+// _matchArgsShape(range(int), int, (1:int(64), 1:int(64)..5, 1:int(64)..5))
+// returns the type: (int, range(int), range(int))
+//
+def _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
+  def tuple(type t ...) type return t;
+  def helper(param i: int) type {
+    if i == args.size {
+      if isCollapsedDimension(args(i)) then
+        return tuple(scalarType);
+      else
+        return tuple(rangeType);
+    } else {
+      if isCollapsedDimension(args(i)) then
+        return (scalarType, (... helper(i+1)));
+      else
+        return (rangeType, (... helper(i+1)));
+    }
+  }
+  return helper(1);
+}
+
+def Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
+  var collapsedDimInds: rank*idxType;
+  var collapsedLocs: _cyclic_matchArgsShape(range(int), int, args);
+  var newLow: newRank*idxType;
+
+  var j: int = 1;
+  for param i in 1..args.size {
+    if isCollapsedDimension(args(i)) then
+      collapsedDimInds(i) = args(i);
+    else {
+      newLow(j) = lowIdx(i);
+      j += 1;
+    }
+  }
+  const partialLocIdx = ind2locInd(collapsedDimInds);
+
+
+  for param i in 1..args.size {
+    if isCollapsedDimension(args(i)) {
+      collapsedLocs(i) = partialLocIdx(i);
+} else {
+      collapsedLocs(i) = targetLocDom.dim(i);
+    }
+  }
+  var newTargetLocales = targetLocs[(...collapsedLocs)];
+  return new Cyclic(rank=newRank, idxType=idxType, low=newLow, targetLocales=newTargetLocales);
+}
 
 def Cyclic.writeThis(x: Writer) {
   x.writeln(typeToString(this.type));
@@ -215,8 +286,8 @@ class CyclicDom : BaseArithmeticDom {
 def CyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom {
     on dist.targetLocs(localeIdx) {
-      locDoms(localeIdx) = new LocCyclicDom(rank, idxType, stridable, this,
-                                            dist.getChunk(whole, localeIdx));
+      var chunk = dist.getChunk(whole, localeIdx);
+      locDoms(localeIdx) = new LocCyclicDom(rank, idxType, stridable, chunk);
     }
   }
 }
@@ -227,8 +298,36 @@ def CyclicDom.dsiBuildArray(type eltType) {
   return arr;
 }
 
+def CyclicDom.dsiDisplayRepresentation() {
+  writeln("whole = ", whole);
+  for tli in dist.targetLocDom do
+    writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
+  dist.dsiDisplayRepresentation();
+}
+
+def CyclicDom.dsiLow return whole.low;
+
+def CyclicDom.dsiHigh return whole.high;
+
+def CyclicDom.dsiMember(i) return whole.member(i);
+
+def CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);
+
+def CyclicDom.dsiDims() return whole.dims();
+
+def CyclicDom.dsiDim(d: int) return whole.dim(d);
+
+def CyclicDom.getLocDom(localeIdx) return locDoms(localeIdx);
+
+
+
 def CyclicDom.dsiGetIndices() {
   return whole.getIndices();
+}
+
+def CyclicDom.dsiSetIndices(x: domain) {
+  whole = x;
+  setup();
 }
 
 def CyclicDom.dsiSetIndices(x) {
@@ -238,8 +337,8 @@ def CyclicDom.dsiSetIndices(x) {
 
 def CyclicDom.dsiSerialWrite(x: Writer) {
   if verboseCyclicDistWriters {
-    writeln(typeToString(this.type));
-    writeln("------");
+    x.writeln(typeToString(this.type));
+    x.writeln("------");
     for loc in dist.targetLocDom {
       x.writeln("[", loc, "=", dist.targetLocs(loc), "] owns ", locDoms(loc).myBlock);
     }
@@ -315,6 +414,8 @@ def CyclicDom.dsiSupportsPrivatization() param return true;
 def CyclicDom.dsiGetPrivatizeData() return 0;
 
 def CyclicDom.dsiPrivatize(privatizeData) {
+  // These two variables are actually necessary even though it looks like
+  // dist and dist.pid could be passed to the primitive directly.
   var distpid = dist.pid;
   var thisdist = dist;
   var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
@@ -330,8 +431,6 @@ def CyclicDom.dsiReprivatize(other, reprivatizeData) {
   locDoms = other.locDoms;
   whole = other.whole;
 }
-
-def CyclicDom.dsiDim(d: int) return whole.dim(d);
 
 def CyclicDom.dsiBuildArithmeticDom(param rank, type idxType,
                                     param stridable: bool,
@@ -360,7 +459,6 @@ class LocCyclicDom {
   type idxType;
   param stridable: bool;
 
-  const wholeDom: CyclicDom(rank, idxType, stridable);
   var myBlock: domain(rank, idxType, true);
 }
 
@@ -383,11 +481,78 @@ class CyclicArr: BaseArr {
 }
 
 def CyclicArr.dsiSlice(d: CyclicDom) {
-  var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
+  var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType,
+                            stridable=d.stridable, dom=d, pid=pid);
+  var thisid = this.locale.uid;
   for i in dom.dist.targetLocDom {
     on dom.dist.targetLocs(i) {
-      alias.locArr[i] = new LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[alias.locArr[i].locDom.myBlock]);
-      alias.myLocArr = alias.locArr[i];
+      alias.locArr[i] =
+        new LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType,
+                         stridable=d.stridable, locDom=d.locDoms[i],
+                         myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
+      if thisid == here.uid then
+        alias.myLocArr = alias.locArr[i];
+    }
+  }
+  return alias;
+}
+
+def CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
+  var alias = new CyclicArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom = d);
+  var thisid = this.locale.uid;
+  coforall ind in d.dist.targetLocDom {
+    on d.dist.targetLocs(ind) {
+      const locDom = d.getLocDom(ind);
+      var collapsedDims: rank*idxType;
+      var locSlice: _cyclic_matchArgsShape(range(eltType=idxType, stridable=true), idxType, args);
+      var locArrInd: rank*int;
+      var j = 1;
+      for param i in 1..args.size {
+        if isCollapsedDimension(args(i)) {
+          locSlice(i) = args(i);
+          collapsedDims(i) = args(i);
+        } else {
+          locSlice(i) = locDom.myBlock.dim(j)(args(i));
+          j += 1;
+        }
+      }
+      locArrInd = dom.dist.ind2locInd(collapsedDims);
+      j = 1;
+      // Now that the locArrInd values are known for the collapsed dimensions
+      // Pull the rest of the dimensions values from ind
+      for param i in 1..args.size {
+        if !isCollapsedDimension(args(i)) {
+          if newRank > 1 then
+            locArrInd(i) = ind(j);
+          else
+            locArrInd(i) = ind;
+          j += 1;
+        }
+      }
+      alias.locArr[ind] =
+        new LocCyclicArr(eltType=eltType, rank=newRank, idxType=d.idxType,
+                         stridable=d.stridable, locDom=locDom,
+                         myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
+      if here.uid == thisid then
+        alias.myLocArr = alias.locArr[ind];
+    }
+  }
+  return alias;
+}
+
+def CyclicArr.dsiReindex(d: CyclicDom) {
+  var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=d.idxType,
+                            stridable=d.stridable, dom=d);
+  var thisid = this.locale.uid;
+  coforall i in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(i) {
+      const locDom = d.getLocDom(i);
+      const locAlias => locArr[i].myElems;
+      alias.locArr[i] = new LocCyclicArr(eltType=eltType, idxType=idxType,
+                                         locDom=locDom, stridable=d.stridable,
+                                         rank=rank, myElems=>locAlias);
+      if thisid == here.uid then
+        alias.myLocArr = alias.locArr[i];
     }
   }
   return alias;
@@ -401,6 +566,12 @@ def CyclicArr.localSlice(ranges) {
 
   var A => locArr(dom.dist.ind2locInd(low)).myElems((...ranges));
   return A;
+}
+
+def CyclicArr.dsiDisplayRepresentation() {
+  for tli in dom.dist.targetLocDom do
+    writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
+  dom.dsiDisplayRepresentation();
 }
 
 def CyclicArr.dsiGetBaseDom() return dom;
@@ -420,6 +591,8 @@ def CyclicArr.dsiSupportsPrivatization() param return true;
 def CyclicArr.dsiGetPrivatizeData() return 0;
 
 def CyclicArr.dsiPrivatize(privatizeData) {
+  // These two variables are actually necessary even though it looks like
+  // dist and dist.pid could be passed to the primitive directly.
   var dompid = dom.pid;
   var thisdom = dom;
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
@@ -433,7 +606,7 @@ def CyclicArr.dsiPrivatize(privatizeData) {
 
 def CyclicArr.dsiAccess(i: idxType) var where rank == 1 {
   local {
-    if myLocArr.locDom.myBlock.member(i) then
+    if myLocArr != nil && myLocArr.locDom.myBlock.member(i) then
       return myLocArr.this(i);
   }
   return locArr(dom.dist.ind2locInd(i))(i);
