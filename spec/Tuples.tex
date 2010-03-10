@@ -264,7 +264,9 @@ creates a non-distributed, one-dimensional array containing the four
 integers from \chpl{1} to \chpl{4}.  Line 2 outputs \chpl{1 2 3 4}.
 Line 3 does what appears to be a swap of array slices.  However,
 because the tuple is created with array aliases (like a function
-call), the values are squashed.  Line 4 outputs \chpl{3 4 3 4}.
+call), the assignment to the second component uses the values just
+overwritten in the assignment to the first component.  Line 4
+outputs \chpl{3 4 3 4}.
 \begin{chapelpost}
 \end{chapelpost}
 \begin{chapeloutput}
