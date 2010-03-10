@@ -1,1 +1,0 @@
-invalid_block_reindex1.chpl:19: error: halt reached - invalid reindex for Block: distribution bounding box (low) out of range in dimension 1

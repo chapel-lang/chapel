@@ -1,6 +1,0 @@
-bug: SIGFPE for --bbLow=max(int)
-
-I've only seen the SIGFPE fail with gasnet for even numbers of locales > 2.
-I think this related to the array index out of bound problem of
-invalid_block_reindex1.future.
-
