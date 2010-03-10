@@ -15,6 +15,7 @@ $componly = 0;
 $suppressions = "";
 $parnodefile = "";
 $nolocal = 0;
+$combinedir = 0;
 $dist = "";
 
 $svntoday = `date +%F`; chomp($svntoday);
@@ -57,6 +58,8 @@ while (@ARGV) {
         $parnodefile = shift @ARGV;
     } elsif ($flag eq "-no-local") {
         $nolocal = 1;
+    } elsif ($flag eq "-combinedir") {
+      $combinedir = 1;
     } elsif ($flag eq "-r") {
         $svnrevopt = "-r " . shift @ARGV;
     } else {
@@ -193,9 +196,17 @@ if ($mailer eq "") {
 # directory variables
 #
 if ($debug == 1) {
-    $tmpdir = "$basetmpdir/chapel-debug-$fullplatform-$user";
+    if ($combinedir == 1) {
+        $tmpdir = "$basetmpdir/chapel-debug-combined-$user";
+    } else {
+        $tmpdir = "$basetmpdir/chapel-debug-$fullplatform-$user";
+    }
 } else {
-    $tmpdir = "$basetmpdir/chapel-cron-$fullplatform-$user";
+    if ($combinedir == 1) {
+        $tmpdir = "$basetmpdir/chapel-cron-combined-$user";
+    } else {
+        $tmpdir = "$basetmpdir/chapel-cron-$fullplatform-$user";
+    }
 }
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
