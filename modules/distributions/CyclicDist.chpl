@@ -284,10 +284,17 @@ class CyclicDom : BaseArithmeticDom {
 
 
 def CyclicDom.setup() {
-  coforall localeIdx in dist.targetLocDom {
-    on dist.targetLocs(localeIdx) {
-      var chunk = dist.getChunk(whole, localeIdx);
-      locDoms(localeIdx) = new LocCyclicDom(rank, idxType, stridable, chunk);
+  if locDoms(dist.targetLocDom.low) == nil {
+    coforall localeIdx in dist.targetLocDom {
+      on dist.targetLocs(localeIdx) do
+        locDoms(localeIdx) = new LocCyclicDom(rank, idxType, stridable, dist.getChunk(whole, localeIdx));
+    }
+  } else {
+    coforall localeIdx in dist.targetLocDom {
+      on dist.targetLocs(localeIdx) {
+        var chunk = dist.getChunk(whole, localeIdx);
+        locDoms(localeIdx).myBlock = chunk;
+      }
     }
   }
 }
@@ -720,6 +727,11 @@ def CyclicArr.dsiSerialWrite(f: Writer) {
       break;
     }
   }
+}
+
+def CyclicArr.dsiReallocate(d: domain) {
+  // The reallocation happens when the LocCyclicDom.myBlock field is changed
+  // in CyclicDom.setup(). Nothing more needs to happen here.
 }
 
 
