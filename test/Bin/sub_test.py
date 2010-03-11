@@ -860,7 +860,9 @@ for testname in testsrc:
                 sys.stdout.write('[Executing PREDIFF]\n')
                 sys.stdout.flush()
                 sys.stdout.write(subprocess.Popen(['./PREDIFF',
-                                                   execname,execlog,compiler],
+                                                   execname,execlog,compiler,
+                                                   ' '.join(globalCompopts)+compopts,
+                                                   ' '.join(args)],
                                                   stdout=subprocess.PIPE).
                                  communicate()[0])
 
@@ -868,7 +870,9 @@ for testname in testsrc:
                 sys.stdout.write('[Executing %s.prediff]\n'%(execname))
                 sys.stdout.flush()
                 sys.stdout.write(subprocess.Popen(['./'+execname+'.prediff',
-                                                   execname,execlog,compiler],
+                                                   execname,execlog,compiler,
+                                                   ' '.join(globalCompopts)+compopts,
+                                                   ' '.join(args)],
                                                   stdout=subprocess.PIPE).
                                  communicate()[0])
 
