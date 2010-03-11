@@ -3,7 +3,7 @@ use BlockDist;
 var myLocalesDom = [0..2];
 var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales);
 
-const ProblemDist = new dist(new Block(rank=1, idxType=int, bbox=[1..10], targetLocales=myLocales));
+const ProblemDist = new dist(new Block(rank=1, idxType=int, bbox=[1..10], targetLocales=myLocales, tasksPerLocale=1));
 
 const Dom1: domain(1) distributed(ProblemDist) = [0..11],
       Dom2: domain(1) distributed(ProblemDist) = [1..12],
