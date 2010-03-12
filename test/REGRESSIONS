@@ -16,10 +16,6 @@
 general regressions
 ===================
 
-on some platforms, gets mismatch on tasksPerLocale (02/27/10)
--------------------------------------------------------------
-[Error matching program output for studies/hpcc/common/bradc/unit/multipleDomains2]
-
 spurious failure
 ----------------
 [Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
@@ -83,16 +79,13 @@ times out fairly regularly (since moving to stemp7)
 performance-specific regressions
 ================================
 
-spurious execution timeouts (used to be less spurious) (02/??/10)
------------------------------------------------------------------
+execution timeouts (08/29/09)
+-----------------------------
 [Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3]
 [Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
 [Error: Timed out executing program studies/shootout/nbody/nbody_record_domain_2a]
 [Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
 [Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
-
-execution timeouts (08/29/09)
------------------------------
 [Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
 
 
@@ -125,50 +118,27 @@ timeouts due to removal of -O
 block distribution regressions
 ==============================
 
+timeouts
+--------
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
+
+
 ===============================
 cyclic distribution regressions
 ===============================
 
-missing certain interfaces
---------------------------
-[Error matching compiler output for distributions/robust/arithmetic/basics/test_infer_domain_type]
-[Error matching compiler output for distributions/robust/arithmetic/collapsing/test_array_rank_change1]
-[Error matching compiler output for distributions/robust/arithmetic/collapsing/test_array_rank_change2]
-[Error matching compiler output for distributions/robust/arithmetic/collapsing/test_array_rank_change3]
-[Error matching compiler output for distributions/robust/arithmetic/collapsing/test_array_rank_change4]
-[Error matching compiler output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1]
-[Error matching compiler output for distributions/robust/arithmetic/composite/test_composite1]
-[Error matching compiler output for distributions/robust/arithmetic/composite/test_composite2]
-[Error matching compiler output for distributions/robust/arithmetic/kernels/hpl]
-[Error matching compiler output for distributions/robust/arithmetic/kernels/jacobi]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Norm]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Random]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Search]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Sort]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias1]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias2]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias3]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias4]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing1]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing2]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing3]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing4]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing5]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
-[Error matching compiler output for distributions/robust/arithmetic/slicing/test_array_slicing1]
-[Error matching compiler output for distributions/robust/arithmetic/slicing/test_strided_slice1]
-[Error matching compiler output for distributions/robust/arithmetic/slicing/test_strided_slice2]
-[Error matching compiler output for distributions/robust/arithmetic/trivial/test_domain_plus_minus_index]
-[Error matching compiler output for distributions/robust/arithmetic/trivial/test_dot_dims]
-[Error matching compiler output for distributions/robust/arithmetic/trivial/test_dot_expand]
-[Error matching compiler output for distributions/robust/arithmetic/trivial/test_dot_exterior]
-[Error matching compiler output for distributions/robust/arithmetic/trivial/test_dot_interior]
-[Error matching compiler output for distributions/robust/arithmetic/trivial/test_dot_member]
-[Error matching compiler output for distributions/robust/arithmetic/trivial/test_dot_translate]
-[Error matching program output for distributions/robust/arithmetic/resizing/test_domain_resize1]
-[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing2]
+have never worked
+-----------------
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
+[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Random]
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl]
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
+
+
 
 ====================
 no-local regressions
@@ -196,6 +166,20 @@ memory stuff in flux (05/28/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+new timeouts with SLED11 upgrade (03/12/10)
+-------------------------------------------
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3c]
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3d]
+[Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d]
+[Error: Timed out executing program studies/hpcc/RA/marybeth/ra3]
+[Error: Timed out executing program studies/madness/common/test_likepy]
+
+available memory on chap10 changed (03/12/10)
+---------------------------------------------
+[Error matching program output for modules/standard/memory/countMemory/countMemory]
+[Error matching program output for studies/hpcc/2008/testProbSize]
+[Error matching program output for studies/hpcc/common/testProbSize]
 
 spurious glibc corruption error (03/01/10)
 ------------------------------------------
@@ -239,7 +223,7 @@ times out spuriously
 --------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09, 12/16/09, 12/19/09, 12/25/09, 12/29/09, 01/07/10, 01/08/10, 01/10/10, 01/23/10, 02/08/10, 02/10/10, 02/18/10, 02/20/10, 02/22/10, 02/26/10, 03/08/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10, 02/11/10, 02/16/10, 02/22/10, 03/08/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10, 02/14/10, 02/15/10, 02/17/10, 02/20/10, 02/22/10, 02/25/10, 02/27/10, 03/04/10, 03/06/10, 03/08/10, 03/09/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10, 02/14/10, 02/15/10, 02/17/10, 02/20/10, 02/22/10, 02/25/10, 02/27/10, 03/04/10, 03/06/10, 03/08/10, 03/09/10, 03/11/10, 03/12/10)
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09, 02/02/10)
 [Error: Timed out executing program users/agnieszka/test1] (e.g., 01/08/10)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09, 12/15/09, 12/18/09, 12/21/09, 12/25/09, 01/04/10, 01/05/10, 01/06/10, 01/10/10, 01/24/10, 01/29/10, 02/14/10, 02/16/10)
@@ -332,6 +316,8 @@ opts-specific tests
 ===================
 
 (Example runs: 0)
+
+*** everything failed 03/12/10 due to a .so problem ***
 
 
 (Full run: 66)
@@ -744,7 +730,7 @@ spurious out-of-bounds index (0) at line 100
 
 spurious compilation timeout
 ----------------------------
-[Error: Timed out compilation for release/examples/hello] (e.g., 12/15/09)
+[Error: Timed out compilation for release/examples/hello] (e.g., 12/15/09, 03/11/10)
 [Error: Timed out compilation for release/examples/tutorials/variables] (e.g., 12/28/09)
 
 use-before-def + ra traps with poison
