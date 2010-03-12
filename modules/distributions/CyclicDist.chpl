@@ -144,8 +144,7 @@ def Cyclic.dsiNewArithmeticDom(param rank: int, type idxType, param stridable: b
 def Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
   var newLow: rank*idxType;
   for param i in 1..rank {
-    const oldDist = (oldSpace(i).low - lowIdx(i)) / oldSpace(i).stride;
-    newLow(i) = newSpace(i).low - (newSpace(i).stride * oldDist);
+    newLow(i) = newSpace(i).low - oldSpace(i).low + lowIdx(i);
   }
   var newDist = new Cyclic(rank=rank, idxType=idxType, low=newLow, targetLocales=targetLocs, tasksPerLocale=tasksPerLocale);
   return newDist;
@@ -554,7 +553,7 @@ def CyclicArr.dsiReindex(d: CyclicDom) {
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocs(i) {
       const locDom = d.getLocDom(i);
-      const locAlias => locArr[i].myElems;
+      const locAlias: [locDom.myBlock] => locArr[i].myElems;
       alias.locArr[i] = new LocCyclicArr(eltType=eltType, idxType=idxType,
                                          locDom=locDom, stridable=d.stridable,
                                          rank=rank, myElems=>locAlias);

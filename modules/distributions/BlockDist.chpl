@@ -921,11 +921,12 @@ def BlockArr.dsiReindex(d: BlockDom) {
   coforall i in d.dist.targetLocDom {
     on d.dist.targetLocs(i) {
       const locDom = d.getLocDom(i);
+      var locAlias: [locDom.myBlock] => locArr[i].myElems;
       alias.locArr[i] = new LocBlockArr(eltType=eltType,
                                         rank=rank, idxType=d.idxType,
                                         stridable=d.stridable,
                                         locDom=locDom,
-                                        myElems=>locArr[i].myElems);
+                                        myElems=>locAlias);
       if thisid == here.uid then
         alias.myLocArr = alias.locArr[i];
     }
