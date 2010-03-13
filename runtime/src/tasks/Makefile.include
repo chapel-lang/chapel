@@ -1,3 +1,0 @@
-TASKS_SUBDIR = src/tasks
-
-include $(RUNTIME_ROOT)/$(TASKS_SUBDIR)/Makefile.share

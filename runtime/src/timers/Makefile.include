@@ -1,3 +1,0 @@
-TIMERS_SUBDIR = src/timers
-
-include $(RUNTIME_ROOT)/$(TIMERS_SUBDIR)/Makefile.share

@@ -1,5 +1,5 @@
 RUNTIME_ROOT = ../..
-RUNTIME_SUBDIR = src/timers
+RUNTIME_SUBDIR = src/launch
 
 #
 # standard header
@@ -8,7 +8,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
 TARGETS =
 
-SUBDIRS = $(CHPL_MAKE_TIMERS)
+SUBDIRS = $(CHPL_MAKE_LAUNCHER)
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.emptydirrules
 

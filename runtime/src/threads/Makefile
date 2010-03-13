@@ -6,18 +6,11 @@ RUNTIME_SUBDIR = src/threads
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-#
-# include source subdirectories here
-#
-include $(CHPL_MAKE_THREADS)/Makefile.include
-
-include Makefile.share
-
 TARGETS =
 
 SUBDIRS = $(CHPL_MAKE_THREADS)
 
-include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
+include $(RUNTIME_ROOT)/make/Makefile.runtime.emptydirrules
 
 FORCE:
 

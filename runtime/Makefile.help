@@ -43,19 +43,8 @@ include src/mem/$(CHPL_MAKE_MEM)/Makefile.include
 # subdirectories and false subdirectory-oriented targets to force recursion
 #
 
-ifeq ($(MAKE_LAUNCHER),0)
 SUBDIRS = \
 	src \
-	src/comm/$(CHPL_MAKE_COMM) \
-	src/mem/$(CHPL_MAKE_MEM)
-
-else
-SUBDIRS = \
-	src \
-	src/comm/$(CHPL_MAKE_COMM) \
-	src/launch/$(CHPL_MAKE_LAUNCHER)
-
-endif
 
 SVN_SRCS = 
 
