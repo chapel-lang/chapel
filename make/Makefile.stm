@@ -1,0 +1,9 @@
+#
+# CHPL_MAKE_STM
+#
+#
+#
+
+CHPL_MAKE_STM = $(shell $(CHAPEL_ROOT)/util/stm.pl $(CHPL_MAKE_HOST_TARGET))
+LIBATOMIC_INSTALL_DIR = $(shell $(CHAPEL_ROOT)/util/libatomics.pl)
+
