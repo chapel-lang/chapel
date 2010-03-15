@@ -118,6 +118,10 @@ timeouts due to removal of -O
 block distribution regressions
 ==============================
 
+spurious timeouts
+-----------------
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl] (e.g., 03/13/10)
+
 timeouts
 --------
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
@@ -131,7 +135,7 @@ cyclic distribution regressions
 
 have never worked
 -----------------
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex2]
 [Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Random]
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl]
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
@@ -167,19 +171,22 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+new spurious timeouts with SLED11 upgrade
+-----------------------------------------
+[Error: Timed out compilation for modules/standard/math/lg] (e.g., 03/13/10)
+[Error: Timed out compilation for modules/standard/math/atan2] (e.g., 03/13/10)
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3c] (e.g., 03/13/10)
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3c] (e.g., 03/12/10)
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3d] (e.g., 03/12/10, 03/13/10)
+[Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d] (e.g., 03/12/10)
+
 new timeouts with SLED11 upgrade (03/12/10)
 -------------------------------------------
-[Error: Timed out compilation for multilocale/deitz/linked/test_linked3c]
-[Error: Timed out compilation for multilocale/deitz/linked/test_linked3d]
-[Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d]
 [Error: Timed out executing program studies/hpcc/RA/marybeth/ra3]
 [Error: Timed out executing program studies/madness/common/test_likepy]
 
 available memory on chap10 changed (03/12/10)
 ---------------------------------------------
-[Error matching program output for modules/standard/memory/countMemory/countMemory]
-[Error matching program output for studies/hpcc/2008/testProbSize]
-[Error matching program output for studies/hpcc/common/testProbSize]
 
 spurious glibc corruption error (03/01/10)
 ------------------------------------------
@@ -693,44 +700,13 @@ sig_send: wait for sig_complete event failed
 xmt-specific regressions
 ========================
 
-new unreachable line errors (02/27/10)
---------------------------------------
-[Error matching program output for release/examples/hello]
-[Error matching program output for release/examples/hello-module]
-[Error matching program output for release/examples/hello-multiloc]
-[Error matching program output for release/examples/hpcc/stream-ep]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for release/examples/programs/beer]
-[Error matching program output for release/examples/programs/genericStack]
-[Error matching program output for release/examples/programs/jacobi]
-[Error matching program output for release/examples/programs/linkedList]
-[Error matching program output for release/examples/programs/norm]
-[Error matching program output for release/examples/programs/tree]
-[Error matching program output for release/examples/tutorials/arrays]
-[Error matching program output for release/examples/tutorials/block2D]
-[Error matching program output for release/examples/tutorials/classes]
-[Error matching program output for release/examples/tutorials/fileIO]
-[Error matching program output for release/examples/tutorials/genericClasses]
-[Error matching program output for release/examples/tutorials/iterators]
-[Error matching program output for release/examples/tutorials/multilocale]
-[Error matching program output for release/examples/tutorials/opaque]
-[Error matching program output for release/examples/tutorials/ranges]
-[Error matching program output for release/examples/tutorials/reductions]
-[Error matching program output for release/examples/tutorials/varargs]
-[Error matching program output for release/examples/tutorials/variables]
-
-unreachable line error
-----------------------
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/tutorials/slices]
-
-spurious out-of-bounds index (0) at line 100
---------------------------------------------
+out-of-bounds index (0) at line 100
+-----------------------------------
 [Error matching program output for release/examples/tutorials/sparse] (e.g., 01/16/10)
 
 spurious compilation timeout
 ----------------------------
-[Error: Timed out compilation for release/examples/hello] (e.g., 12/15/09, 03/11/10)
+[Error: Timed out compilation for release/examples/hello] (e.g., 12/15/09, 03/11/10, 03/13/10)
 [Error: Timed out compilation for release/examples/tutorials/variables] (e.g., 12/28/09)
 
 use-before-def + ra traps with poison
