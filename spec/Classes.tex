@@ -81,12 +81,17 @@ define the storage associated with a class.
 
 \begin{example}
 The code
+\begin{chapelpre}
+% test_defineActor.chpl
+\end{chapelpre}
 \begin{chapel}
 class Actor {
   var name: string;
   var age: uint;
 }
 \end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
 defines a new class type called \chpl{Actor} that has two fields: the
 string field \chpl{name} and the unsigned integer field \chpl{age}.
 \end{example}
@@ -102,10 +107,21 @@ the assignment is a member access.
 \begin{example}
 Given a variable \chpl{anActor} of type \chpl{Actor}, defined above,
 the code
+\begin{chapelpre}
+% test_useActor1.chpl
+use test\_defineActor;
+var anActor = new Actor(name="Tommy", age=26);
+\end{chapelpre}
 \begin{chapel}
 var s: string = anActor.name;
 anActor.age = 27;
 \end{chapel}
+\begin{chapelpost}
+writeln((s, anActor));
+\end{chapelpost}
+\begin{chapeloutput}
+(Tommy, {name = Tommy, age = 27})
+\end{chapeloutput}
 reads the field \chpl{name} and assigns the value to the variable
 \chpl{s}, and assigns the storage location in the object
 \chpl{anActor} associated with the field \chpl{age} the value
@@ -146,11 +162,22 @@ the name of the method.
 \begin{example}
 A method to output information about an instance of the \chpl{Actor}
 class can be defined as follows:
+\begin{chapelpre}
+% test_defineMethod.chpl
+use test\_useActor1;
+\end{chapelpre}
 \begin{chapel}
 def Actor.print() {
   writeln("Actor ", name, " is ", age, " years old");
 }
 \end{chapel}
+\begin{chapelpost}
+anActor.print();
+\end{chapelpost}
+\begin{chapeloutput}
+(Tommy, {name = Tommy, age = 27})
+Actor Tommy is 27 years old
+\end{chapeloutput}
 This method can be called on an instance of the \chpl{Actor}
 class, \chpl{anActor}, by writing \chpl{anActor.print()}.
 \end{example}
@@ -167,14 +194,24 @@ which the method is called.
 \begin{example}
 Let class \chpl{C}, method \chpl{foo}, and function \chpl{bar} be
 defined as
+\begin{chapelpre}
+% test_implicitThis.chpl
+\end{chapelpre}
 \begin{chapel}
 class C {
   def foo() {
     bar(this);
   }
 }
-def bar(c: C) { }
+def bar(c: C) { writeln(c); }
 \end{chapel}
+\begin{chapelpost}
+var c: C = new C();
+c.foo();
+\end{chapelpost}
+\begin{chapeloutput}
+{}
+\end{chapeloutput}
 Then given an instance of \chpl{C} called \chpl{c}, the method
 call \chpl{c.foo()} results in a call to \chpl{bar} where the argument
 is \chpl{c}.
@@ -196,6 +233,9 @@ parentheses even if the argument list is empty.
 In the following code, the \chpl{this} method is used to create a
 class that acts like a simple array that contains three integers
 indexed by 1, 2, and 3.
+\begin{chapelpre}
+% test_thisMethod.chpl
+\end{chapelpre}
 \begin{chapel}
 class ThreeArray {
   var x1, x2, x3: int;
@@ -209,6 +249,21 @@ class ThreeArray {
   }
 }
 \end{chapel}
+\begin{chapelpost}
+var ta = new ThreeArray();
+ta(1) = 1;
+ta(2) = 2;
+ta(3) = 3;
+for i in 1..3 do
+  writeln(ta(i));
+ta(4) = 4;
+\end{chapelpost}
+\begin{chapeloutput}
+1
+2
+3
+test\_thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
+\end{chapeloutput}
 \end{example}
 
 \subsubsection{The {\em these} Method}
@@ -226,6 +281,9 @@ a method on the class named \chpl{these}.
 In the following code, the \chpl{these} method is used to create a
 class that acts like a simple array that can be iterated over and
 contains three integers.
+\begin{chapelpre}
+% test_theseIterator.chpl
+\end{chapelpre}
 \begin{chapel}
 class ThreeArray {
   var x1, x2, x3: int;
@@ -236,6 +294,20 @@ class ThreeArray {
   }
 }
 \end{chapel}
+\begin{chapelpost}
+var ta = new ThreeArray();
+for (i, j) in (ta, 1..) do
+  i = j;
+
+for i in ta do
+  writeln(i);
+\end{chapelpost}
+\begin{chapeloutput}
+1
+2
+3
+\end{chapeloutput}
+
 \end{example}
 
 \subsection{Class Constructors}
@@ -263,13 +335,26 @@ call if no default is specified.
 
 \begin{example}
 Given the class
+\begin{chapelpre}
+% test_defaultConstructor.chpl
+\end{chapelpre}
 \begin{chapel}
 class C {
-  def x: int;
-  def y: real = 3.14;
-  def z: string = "Hello, World!";
+  var x: int;
+  var y: real = 3.14;
+  var z: string = "Hello, World!";
 }
 \end{chapel}
+\begin{chapelpost}
+var c1 = new C();
+var c2 = new C(2);
+var c3 = new C(z="");
+var c4 = new C(0,0.0, "");
+writeln((c1, c2, c3, c4));
+\end{chapelpost}
+\begin{chapeloutput}
+({x = 0, y = 3.14, z = Hello, World!}, {x = 2, y = 3.14, z = Hello, World!}, {x = 0, y = 3.14, z = }, {x = 0, y = 0.0, z = })
+\end{chapeloutput}
 then instances of the class can be created by calling the default
 constructor as follows:
 \begin{itemize}
@@ -292,6 +377,9 @@ field if the user does not define their own.
 
 \begin{example}
 In the code
+\begin{chapelpre}
+% test_getterSetter.chpl
+\end{chapelpre}
 \begin{chapel}
 class C {
   var setCount: int;
@@ -303,6 +391,22 @@ class C {
   }
 }
 \end{chapel}
+\begin{chapelpost}
+var c = new C();
+c.x = 1;
+writeln(c.x);
+c.x = 2;
+writeln(c.x);
+c.x = 3;
+writeln(c.x);
+writeln(c.setCount);
+\end{chapelpost}
+\begin{chapeloutput}
+1
+2
+3
+3
+\end{chapeloutput}
 an explicit variable getter method is defined for field \chpl{x}.  It
 returns the field \chpl{x} and increments another field that records
 the number of times x was assigned a value.
@@ -405,10 +509,32 @@ keyword.
 \begin{example}
 The following example allocates a new object \chpl{c} of class type \chpl{C}
 and then deletes it.
+\begin{chapelpre}
+% test_delete.chpl
+class C {
+  var i,j,k: int;
+}
+\end{chapelpre}
 \begin{chapel}
 var c = new C();
 delete c;
 \end{chapel}
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapelexecopts}
+--memLeaks
+\end{chapelexecopts}
+\begin{chapeloutput}
+
+====================
+Leaked Memory Report
+==============================================================
+Number of leaked allocations
+           Total leaked memory (bytes)
+                      Description of allocation
+==============================================================
+==============================================================
+\end{chapeloutput}
 \end{example}
 
 \begin{openissue}
