@@ -501,7 +501,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     const char **slaveargv = (const char**)AMUDP_malloc(sizeof(const char*)*((*argc)+3+gdbargs));
     int slaveargc = (*argc)+2+gdbargs;
     if (gdbargs) {
-      slaveargv[0] = "/usr/X11R6/bin/xterm";
+      slaveargv[0] = "/usr/bin/xterm";
       slaveargv[1] = "-e";
       slaveargv[2] = "gdb";
       slaveargv[3] = "--args";
