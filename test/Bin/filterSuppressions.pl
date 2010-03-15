@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 $suppressions = $ARGV[0];
 $summaryfile = $ARGV[1];

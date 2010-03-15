@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 if ($#ARGV != 2) {
     print"Content-type: text/html\n\n";

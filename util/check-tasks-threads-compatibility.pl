@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 @ARGV == 2 or die "usage: $0 task-model-name threads-model-name\n";
 

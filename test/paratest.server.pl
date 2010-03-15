@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 # Usage: paratest.server.pl [-compopts] [-dirfile d] [-filedist] [-futures] 
 #                            [-help|-h] [-nodefile n] [-logfile l] [-valgrind]

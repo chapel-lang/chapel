@@ -1,3 +1,5 @@
+#!/usr/bin/env perl
+
 @files = `find . -name "*.cpp"`;
 
 foreach $oldfile (@files) {

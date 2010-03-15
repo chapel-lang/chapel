@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 print "Launch requested on $ARGV[1] locales\n";
 print "Launch command: @ARGV[2..$#ARGV]\n";

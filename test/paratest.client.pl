@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 # Client-side of the parallel testing script, paratest.server.pl.
 # Used remotely by paratest.server.pl to run start_test locally.

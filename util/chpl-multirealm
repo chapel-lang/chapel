@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ x"$1" = x"-h" -o x"$1" = x"-help" -o x"$1" = x"--h" -o x"$1" = x"--help" ]; then
     echo "Run chpl-multirealm like you would run chpl."

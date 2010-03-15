@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 $timestamp = "Time-stamp: <Mon, 13 Sep 1999, 14:25:33 PDT  tilo>";
 $timestamp =~ s/.+: <(\d+) (\w+) (\d+) ([0-9:]+) (\w+)>/$1 $2 $3  $4  by $5/;
