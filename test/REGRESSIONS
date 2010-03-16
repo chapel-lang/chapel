@@ -120,13 +120,13 @@ block distribution regressions
 
 spurious timeouts
 -----------------
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl] (e.g., 03/13/10)
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl] (e.g., 03/13/10, 03/16/10)
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (e.g., 03/12/10)
 
 timeouts
 --------
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
 
 
 ===============================
@@ -174,15 +174,14 @@ gasnet-everything regressions (other than the above)
 new spurious timeouts with SLED11 upgrade
 -----------------------------------------
 [Error: Timed out compilation for modules/standard/math/lg] (e.g., 03/13/10)
-[Error: Timed out compilation for modules/standard/math/atan2] (e.g., 03/13/10)
-[Error: Timed out compilation for multilocale/deitz/linked/test_linked3c] (e.g., 03/13/10)
-[Error: Timed out compilation for multilocale/deitz/linked/test_linked3c] (e.g., 03/12/10)
-[Error: Timed out compilation for multilocale/deitz/linked/test_linked3d] (e.g., 03/12/10, 03/13/10)
+[Error: Timed out compilation for modules/standard/math/atan2] (e.g., 03/13/10, 03/15/10, 03/16/10)
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3c] (e.g., 03/12/10, 03/13/10, 03/15/10)
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3d] (e.g., 03/12/10, 03/13/10, 03/16/10)
 [Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d] (e.g., 03/12/10)
+[Error: Timed out executing program studies/hpcc/RA/marybeth/ra3] (e.g., 03/12/10, 03/15/10)
 
 new timeouts with SLED11 upgrade (03/12/10)
 -------------------------------------------
-[Error: Timed out executing program studies/hpcc/RA/marybeth/ra3]
 [Error: Timed out executing program studies/madness/common/test_likepy]
 
 available memory on chap10 changed (03/12/10)
