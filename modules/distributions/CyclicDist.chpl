@@ -400,7 +400,7 @@ def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
   }
 }
 
-def CyclicDom.these(param tag: iterator, follower, param aligned: bool = false) where tag == iterator.follower {
+def CyclicDom.these(param tag: iterator, follower) where tag == iterator.follower {
   var t: rank*range(idxType, stridable=true);
   if debugCyclicDist then
     writeln(here.id, ": follower whole is: ", whole,
@@ -667,9 +667,16 @@ def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
   }
 }
 
-def CyclicArr.dsiSupportsAlignedFollower() param return true;
+def CyclicArr.dsiStaticFastFollowCheck(type leadType) param
+  return leadType == this.type || leadType == this.dom.type;
 
-def CyclicArr.these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
+def CyclicArr.dsiDynamicFastFollowCheck(lead: [])
+  return lead.domain.dist._value == this.dom.dist;
+
+def CyclicArr.dsiDynamicFastFollowCheck(lead: domain)
+  return lead.dist._value == this.dom.dist;
+
+def CyclicArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
   var t: rank*range(eltType=idxType, stridable=true);
   for param i in 1..rank {
     const wholestride = dom.whole.dim(i).stride;
@@ -677,7 +684,7 @@ def CyclicArr.these(param tag: iterator, follower, param aligned: bool = false) 
   }
   const followThis = [(...t)];
   const arrSection = locArr(dom.dist.ind2locInd(followThis.low));
-  if aligned {
+  if fast {
     local {
       for i in followThis {
         yield arrSection.this(i);

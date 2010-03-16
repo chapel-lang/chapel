@@ -2441,3 +2441,106 @@ Expr* getNextExpr(Expr* expr) {
     return expr->parentExpr;
   return NULL;
 }
+
+static bool
+isFirstIdentifierChar(const char c) {
+  return ((c >= 'a' && c <= 'z') ||
+          (c >= 'A' && c <= 'Z') ||
+          (c == '$') ||
+          (c == '_'));
+}
+
+static bool
+isIdentifierChar(const char c) {
+  return ((c >= 'a' && c <= 'z') ||
+          (c >= 'A' && c <= 'Z') ||
+          (c >= '0' && c <= '9') ||
+          (c == '$') ||
+          (c == '_'));
+}
+
+Expr*
+new_Expr(const char* format, ...) {
+  va_list vl;
+  va_start(vl, format);
+  Expr* result = new_Expr(format, vl);
+  va_end(vl);
+  return result;
+}
+
+Expr*
+new_Expr(const char* format, va_list vl) {
+  Vec<Expr*> stack;
+
+  for (int i = 0; format[i] != '\0'; i++) {
+    if (isFirstIdentifierChar(format[i])) {
+      int n = 1;
+      while (isIdentifierChar(format[i+n]))
+        n++;
+      const char* str = asubstr(&format[i], &format[i+n]);
+      i += n-1;
+      if (!strcmp(str, "TYPE")) {
+        BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+        INT_ASSERT(block);
+        block->blockTag = BLOCK_TYPE;
+      } else {
+        stack.add(new UnresolvedSymExpr(str));
+      }
+    } else if (format[i] == '\'') {
+      int n = 1;
+      while (format[i+n] != '\'')
+        n++;
+      const char* str = asubstr(&format[i+1], &format[i+n]);
+      i += n;
+      if (format[i+1] == '(') {
+        PrimitiveOp* prim = primitives_map.get(str);
+        INT_ASSERT(prim);
+        stack.add(new CallExpr(prim));
+        i++;
+      } else {
+        stack.add(new SymExpr(new_StringSymbol(str)));
+      }
+    } else if (format[i] == '%') {
+      i++;
+      if (format[i] == 'S')
+        stack.add(new SymExpr(va_arg(vl, Symbol*)));
+      else if (format[i] == 'E')
+        stack.add(va_arg(vl, Expr*));
+      else
+        INT_FATAL("unknown format specifier in new_Expr");
+    } else if (format[i] == '(') {
+      Expr* expr = stack.pop();
+      INT_ASSERT(expr);
+      stack.add(new CallExpr(expr));
+    } else if (format[i] == ',') {
+      Expr* expr = stack.pop();
+      INT_ASSERT(expr);
+      CallExpr* call = toCallExpr(stack.v[stack.n-1]);
+      INT_ASSERT(call);
+      call->insertAtTail(expr);
+    } else if (format[i] == ')') {
+      Expr* expr = stack.pop();
+      INT_ASSERT(expr);
+      CallExpr* call = toCallExpr(stack.v[stack.n-1]);
+      INT_ASSERT(call);
+      call->insertAtTail(expr);
+    } else if (format[i] == '{') {
+      stack.add(new BlockStmt());
+    } else if (format[i] == ';') {
+      Expr* expr = stack.pop();
+      INT_ASSERT(expr);
+      BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+      INT_ASSERT(block);
+      block->insertAtTail(expr);
+    } else if (format[i] == '}') {
+      Expr* expr = stack.pop();
+      INT_ASSERT(expr);
+      BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+      INT_ASSERT(block);
+      block->insertAtTail(expr);
+    }
+  }
+
+  INT_ASSERT(stack.n == 1);
+  return stack.v[0];
+}

@@ -51,6 +51,7 @@ bool fNoScalarReplacement = false;
 bool fNoRemoteValueForwarding = false;
 bool fNoRemoveCopyCalls = false;
 bool fNoOptimizeLoopIterators = false;
+bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
 bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
@@ -317,6 +318,7 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   fieeefloat = false;
   fNoCopyPropagation = false;
   fNoDeadCodeElimination = false;
+  fNoFastFollowers = false;
   fNoInline = false;
   fNoInlineIterators = false;
   fNoOptimizeLoopIterators = false;
@@ -340,6 +342,7 @@ static void setBaselineFlag(ArgumentState* arg, char* unused) {
   fBaseline = true;
   fNoCopyPropagation = true;
   fNoDeadCodeElimination = true;
+  fNoFastFollowers = true;
   fNoInline = true;
   fNoInlineIterators = true;
   fNoLiveAnalysis = true;
@@ -394,6 +397,7 @@ static ArgumentDescription arg_desc[] = {
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
  {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
+ {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
  {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},

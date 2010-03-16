@@ -33,6 +33,14 @@ config param debugBlockDist = false;
 config param sanityCheckDistribution = false;
 
 //
+// If the testFastFollowerOptimization flag is set to true, the
+// follower will write output to indicate whether the fast follower is
+// used or not.  This is used in regression testing to ensure that the
+// 'fast follower' optimization is working.
+//
+config param testFastFollowerOptimization = false;
+
+//
 // Block Distribution Class
 //
 //   The field Block.tasksPerLocale can be changed, but changes are
@@ -725,9 +733,19 @@ def BlockArr.these(param tag: iterator) where tag == iterator.leader {
   }
 }
 
-def BlockArr.dsiSupportsAlignedFollower() param return true;
+def BlockArr.dsiStaticFastFollowCheck(type leadType) param
+  return leadType == this.type || leadType == this.dom.type;
 
-def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
+def BlockArr.dsiDynamicFastFollowCheck(lead: [])
+  return lead.domain.dist._value == this.dom.dist;
+
+def BlockArr.dsiDynamicFastFollowCheck(lead: domain)
+  return lead.dist._value == this.dom.dist;
+
+def BlockArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
+  if testFastFollowerOptimization then
+    writeln((if fast then "fast" else "regular") + " follower invoked for Block array");
+
   var followThis: rank*range(eltType=idxType, stridable=stridable);
   var lowIdx: rank*idxType;
 
@@ -746,11 +764,11 @@ def BlockArr.these(param tag: iterator, follower, param aligned: bool = false) v
   // locArr/locDoms arrays should be associative over locale values.
   //
   var arrSection = locArr(dom.dist.targetLocsIdx(lowIdx));
-  if aligned {
+  if fast {
     //
-    // if arrSection is not local and we're aligned, it means that
-    // followThisDom is empty; make arrSection local so that we can
-    // use the local block below
+    // if arrSection is not local and we're using the fast follower,
+    // it means that followThisDom is empty; make arrSection local so
+    // that we can use the local block below
     //
     if arrSection.locale.uid != here.uid then
       arrSection = myLocArr;

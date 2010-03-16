@@ -2579,32 +2579,10 @@ preFold(Expr* expr) {
         followerCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
       if (call->numActuals() > 1) {
-        CallExpr* alignedFollowerCall = followerCall->copy();
-        alignedFollowerCall->insertAtTail(new NamedExpr("aligned", call->get(2)->remove()));
-        call->replace(followerCall);
-        CallExpr* move = toCallExpr(followerCall->parentExpr);
-        INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-        VarSymbol* tmp = newTemp();
-        tmp->addFlag(FLAG_MAYBE_PARAM);
-        move->insertBefore(new DefExpr(tmp));
-        CallExpr* hasAlignedFollower = new CallExpr("_callSupportsAlignedFollower");
-        for_formals(formal, iterator) {
-          if (!strcmp(formal->name, "this"))
-            hasAlignedFollower->insertAtTail(new SymExpr(formal));
-        }
-        move->insertBefore(new CallExpr(PRIM_MOVE, tmp, hasAlignedFollower));
-        result = hasAlignedFollower;
-        move->insertBefore(
-          new CondStmt(new SymExpr(tmp),
-                       new CallExpr(PRIM_MOVE, move->get(1)->copy(),
-                                    alignedFollowerCall),
-                       new CallExpr(PRIM_MOVE, move->get(1)->copy(),
-                                    followerCall->remove())));
-        move->remove();
-      } else {
-        call->replace(followerCall);
-        result = followerCall;
+        followerCall->insertAtTail(new NamedExpr("fast", call->get(2)->remove()));
       }
+      call->replace(followerCall);
+      result = followerCall;
     } else if (call->isPrimitive(PRIM_NEXT_UINT32)) {
       static unsigned int next_region_id = 0;
       result = new SymExpr(new_UIntSymbol(next_region_id, INT_SIZE_32));

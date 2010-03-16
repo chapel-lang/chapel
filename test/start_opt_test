@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # by default: run tests on release/examples directory with
 #             combinations of optimization flags listed in

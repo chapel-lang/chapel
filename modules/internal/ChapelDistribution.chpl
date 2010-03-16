@@ -157,6 +157,8 @@ class BaseArr {
   var _arrCnt$: sync int = 0; // array reference count (and eventually lock)
   var _arrAlias: BaseArr;     // reference to base array if an alias
 
+  def dsiStaticFastFollowCheck(type leadType) param return false;
+
   def canCopyFromDevice param return false;
   def canCopyFromHost param return false;
 

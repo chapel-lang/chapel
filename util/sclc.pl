@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 #
 # sclc -- source code line counter (actually it counts more than just lines)
 #

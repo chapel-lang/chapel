@@ -681,10 +681,7 @@ def BlockCyclicArr.these(param tag: iterator) where tag == iterator.leader {
   }
 }
 
-// TODO: add support for an aligned follower; the default one fails
-def BlockCyclicArr.supportsAlignedFollower() param return false;
-
-def BlockCyclicArr.these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
+def BlockCyclicArr.these(param tag: iterator, follower) var where tag == iterator.follower {
   var followThis: rank*range(eltType=idxType, stridable=stridable);
   var lowIdx: rank*idxType;
 
@@ -703,28 +700,21 @@ def BlockCyclicArr.these(param tag: iterator, follower, param aligned: bool = fa
   // locArr/locDoms arrays should be associative over locale values.
   //
   const myLocArr = locArr(dom.dist.ind2locInd(lowIdx));
-  if aligned {
-    /* TODO: reenable */ /*  local */ {
-      for i in followThisDom {
-        yield myLocArr.this(i);
-      }
-    }
-  } else {
-    //
-    // we don't own all the elements we're following
-    //
-    def accessHelper(i) var {
+
+  //
+  // we don't own all the elements we're following
+  //
+  def accessHelper(i) var {
 //      if myLocArr.locale == here {
 //	local {
 //          if myLocArr.locDom.myStarts.member(i) then
 //            return myLocArr.this(i);
 //        }
 //      }
-      return dsiAccess(i);
-    }
-    for i in followThisDom {
-      yield accessHelper(i);
-    }
+    return dsiAccess(i);
+  }
+  for i in followThisDom {
+    yield accessHelper(i);
   }
 }
 

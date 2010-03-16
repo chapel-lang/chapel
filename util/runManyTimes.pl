@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # runManyTimes.pl <NT> <NIPT> [<COMMAND>]
 #

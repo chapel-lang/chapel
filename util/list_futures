@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 $home = $ENV{'CHPL_HOME'};
 

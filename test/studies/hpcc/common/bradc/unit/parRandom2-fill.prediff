@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 # args: test name, output to diff against, compiler
 $outfile = $ARGV[1];

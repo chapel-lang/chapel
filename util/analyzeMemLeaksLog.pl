@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 while (<>) {
     if (m/Compiler Command : .*\s(.*\.chpl)$/) {

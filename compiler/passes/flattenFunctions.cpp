@@ -56,6 +56,8 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
           if (se->var == sym) {
             if (!strcmp(fn->name, "_toFollower") ||
                 !strcmp(fn->name, "_toFollowerHelp") ||
+                !strcmp(fn->name, "_toFastFollower") ||
+                !strcmp(fn->name, "_toFastFollowerHelp") ||
                 !strcmp(fn->name, "_toLeader")) {
               se->var = arg;
             } else {

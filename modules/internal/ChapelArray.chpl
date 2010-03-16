@@ -954,6 +954,9 @@ def _getRankChangeRanges(args) {
 def chpl__isDomain(x: domain) param return true;
 def chpl__isDomain(x) param return false;
 
+def chpl__isArray(x: []) param return true;
+def chpl__isArray(x) param return false;
+
 //
 // Assignment of domains and arrays
 //
@@ -1118,15 +1121,6 @@ def linearize(Xs) {
   for x in Xs do yield x;
 }
 
-def _callSupportsAlignedFollower(A) param where A: BaseArr
-  return A.dsiSupportsAlignedFollower();
-
-def _callSupportsAlignedFollower(A) param
-  return false;
-
-def _callSupportsAlignedFollower() param
-  return false;
-
 //
 // module support for iterators
 //
@@ -1243,6 +1237,61 @@ pragma "inline"
 def _toLeader(x)
   return _toLeader(x.these());
 
+//
+// returns lead entity
+//
+def chpl__lead(x: _tuple) return chpl__lead(x(1));
+def chpl__lead(x) return x;
+
+//
+// return true if any iterator supports fast followers
+//
+def chpl__staticFastFollowCheck(x) param {
+  const lead = chpl__lead(x);
+  if chpl__isDomain(lead) || chpl__isArray(lead) then
+    return chpl__staticFastFollowCheck(x, lead);
+  else
+    return false;
+}  
+
+def chpl__staticFastFollowCheck(x: _tuple, lead, param dim = 1) param {
+  if x.size == dim then
+    return chpl__staticFastFollowCheck(x(dim), lead);
+  else
+    return chpl__staticFastFollowCheck(x(dim), lead) || chpl__staticFastFollowCheck(x, lead, dim+1);
+}
+
+def chpl__staticFastFollowCheck(x, lead) param {
+  return false;
+}
+
+def chpl__staticFastFollowCheck(x: [], lead) param {
+  return x._value.dsiStaticFastFollowCheck(lead._value.type);
+}
+
+//
+// return true if all iterators that support fast followers can use
+// their fast followers
+//
+def chpl__dynamicFastFollowCheck(x) {
+  return chpl__dynamicFastFollowCheck(x, chpl__lead(x));
+}
+
+def chpl__dynamicFastFollowCheck(x: _tuple, lead, param dim = 1) {
+  if x.size == dim then
+    return chpl__dynamicFastFollowCheck(x(dim), lead);
+  else
+    return chpl__dynamicFastFollowCheck(x(dim), lead) && chpl__dynamicFastFollowCheck(x, lead, dim+1);
+}
+
+def chpl__dynamicFastFollowCheck(x, lead) {
+  return true;
+}
+
+def chpl__dynamicFastFollowCheck(x: [], lead) {
+  return x._value.dsiDynamicFastFollowCheck(lead);
+}
+
 pragma "inline"
 pragma "no implicit copy"
 def _toFollower(iterator: _iteratorClass, leaderIndex)
@@ -1256,36 +1305,9 @@ def _toFollower(ir: _iteratorRecord, leaderIndex) {
   return follower;
 }
 
-
-
-//
-// If aligned is passed as an argument (true from alignment version of
-// _toFollower on tuple) then grab the aligned version of the array's
-// iterator if the array supports aligned followers
-//
-pragma "inline"
-pragma "no implicit copy"
-def _toFollower(iterator: _iteratorClass, leaderIndex, param aligned: bool) {
-  return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex, aligned));
-}
-
-pragma "inline"
-def _toFollower(ir: _iteratorRecord, leaderIndex, param aligned: bool) {
-  pragma "no copy" var ic = _getIterator(ir);
-  pragma "no copy" var follower = _toFollower(ic, leaderIndex, aligned);
-  _freeIterator(ic);
-  return follower;
-}
-
-
 pragma "inline"
 def _toFollower(x, leaderIndex) {
   return _toFollower(x.these(), leaderIndex);
-}
-
-pragma "inline"
-def _toFollower(x, leaderIndex, param aligned: bool) {
-  return _toFollower(x.these(), leaderIndex, aligned);
 }
 
 pragma "inline"
@@ -1303,44 +1325,52 @@ def _toFollower(x: _tuple, leaderIndex) {
   return _toFollowerHelp(x, leaderIndex, 1);
 }
 
-//
-// The alignment version uses a compiler analysis to pass a tuple of
-// types according to whether the arrays in the tuple x have the same
-// distribution as the leader or not.  If they do, the component type
-// is passed as BaseDist, otherwise as BaseArr.
-//
-pragma "inline" def _toFollowerHelp(x: _tuple, leaderIndex, type alignment, param dim: int) {
-  if dim == x.size-1 {
-    type tdim = alignment(dim);
-    type tdimp1 = alignment(dim+1);
-    if tdim == BaseDist & tdimp1 == BaseDist {
-      return (_toFollower(x(dim), leaderIndex, true),
-              _toFollower(x(dim+1), leaderIndex, true));
-    } else if tdim == BaseDist {
-      return (_toFollower(x(dim), leaderIndex, true),
-              _toFollower(x(dim+1), leaderIndex));
-    } else if tdimp1 == BaseDist {
-      return (_toFollower(x(dim), leaderIndex),
-              _toFollower(x(dim+1), leaderIndex, true));
-    } else {
-      return (_toFollower(x(dim), leaderIndex),
-              _toFollower(x(dim+1), leaderIndex));
-    }
-  } else {
-    type tdim = alignment(dim);
-    if tdim == BaseDist {
-      return (_toFollower(x(dim), leaderIndex, true),
-              (..._toFollowerHelp(x, leaderIndex, alignment, dim+1)));
-    } else {
-      return (_toFollower(x(dim), leaderIndex),
-              (..._toFollowerHelp(x, leaderIndex, alignment, dim+1)));
-    }
-  }
+pragma "inline"
+pragma "no implicit copy"
+def _toFastFollower(iterator: _iteratorClass, leaderIndex, fast: bool) {
+  return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex, true));
 }
 
 pragma "inline"
-def _toFollower(x: _tuple, leaderIndex, type alignment) {
-  return _toFollowerHelp(x, leaderIndex, alignment, 1);
+def _toFastFollower(ir: _iteratorRecord, leaderIndex, fast: bool) {
+  pragma "no copy" var ic = _getIterator(ir);
+  pragma "no copy" var follower = _toFastFollower(ic, leaderIndex, fast=true);
+  _freeIterator(ic);
+  return follower;
+}
+
+pragma "inline"
+pragma "no implicit copy"
+def _toFastFollower(iterator: _iteratorClass, leaderIndex) {
+  return _toFollower(iterator, leaderIndex);
+}
+
+pragma "inline"
+def _toFastFollower(ir: _iteratorRecord, leaderIndex) {
+  return _toFollower(ir, leaderIndex);
+}
+
+pragma "inline"
+def _toFastFollower(x, leaderIndex) {
+  if chpl__staticFastFollowCheck(x) then
+    return _toFastFollower(x.these(), leaderIndex, fast=true);
+  else
+    return _toFollower(x.these(), leaderIndex);
+}
+
+pragma "inline"
+def _toFastFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
+  if dim == x.size-1 then
+    return (_toFastFollower(x(dim), leaderIndex),
+            _toFastFollower(x(dim+1), leaderIndex));
+  else
+    return (_toFastFollower(x(dim), leaderIndex),
+            (..._toFastFollowerHelp(x, leaderIndex, dim+1)));
+}
+
+pragma "inline"
+def _toFastFollower(x: _tuple, leaderIndex) {
+  return _toFastFollowerHelp(x, leaderIndex, 1);
 }
 
 def chpl__initCopy(a: _distribution) {
@@ -1392,4 +1422,3 @@ def chpl__initCopy(ir: _iteratorRecord) {
   D = [1..i-1];
   return A;
 }
-

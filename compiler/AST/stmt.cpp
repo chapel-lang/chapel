@@ -63,6 +63,8 @@ BlockStmt::copyInner(SymbolMap* map) {
     _this->insertAtTail(COPY_INT(expr));
   _this->blockInfo = COPY_INT(blockInfo);
   _this->modUses = COPY_INT(modUses);
+  _this->breakLabel = breakLabel;
+  _this->continueLabel = continueLabel;
   return _this;
 }
 
@@ -121,6 +123,26 @@ BlockStmt::insertAtHead(Expr* ast) {
 void
 BlockStmt::insertAtTail(Expr* ast) {
   body.insertAtTail(ast);
+}
+
+
+void
+BlockStmt::insertAtHead(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  insertAtHead(new_Expr(format, args));
+  va_end(args);
+}
+
+
+void
+BlockStmt::insertAtTail(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  insertAtTail(new_Expr(format, args));
+  va_end(args);
 }
 
 
