@@ -1,0 +1,1 @@
+bug: <global var>.locale.id evaluates to current locale
