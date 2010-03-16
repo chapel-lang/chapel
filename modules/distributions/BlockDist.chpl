@@ -251,7 +251,7 @@ def Block.writeThis(x:Writer) {
   x.writeln("indexed via: ", targetLocDom);
   x.writeln("resulting in: ");
   for locid in targetLocDom do
-    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id, " owns chunk: ", locDist(locid).myChunk);
+    x.writeln("  [", locid, "] locale ", locDist(locid).locale.uid, " owns chunk: ", locDist(locid).myChunk);
 }
 
 def Block.dsiIndexLocale(ind: idxType) where rank == 1 {
