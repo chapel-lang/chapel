@@ -24,6 +24,7 @@ Optimization Control Options:
       --[no-]copy-propagation            Enable [disable] copy propagation
       --[no-]dead-code-elimination       Enable [disable] dead code
                                          elimination
+      --[no-]fast-followers              Enable [disable] fast followers
       --[no-]inline                      Enable [disable] function inlining
       --[no-]inline-iterators            Enable [disable] iterator inlining
       --[no-]live-analysis               Enable [disable] live variable

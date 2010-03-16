@@ -133,6 +133,10 @@ OPTIONS
 
   --[no-]dead-code-elimination   Enable [disable] dead code elimination.
 
+  --[no-]fast-followers   Enable [disable] the fast follower
+                    optimization in which fast implementations of
+                    followers will be invoked for specific leaders.
+
   --[no-]inline     Enable [disable] function inlining.
 
   --[no-]inline-iterators   Enable [disable] iterator inlining. When

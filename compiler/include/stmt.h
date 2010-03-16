@@ -34,6 +34,8 @@ class BlockStmt : public Expr {
 
   void insertAtHead(Expr* ast);
   void insertAtTail(Expr* ast);
+  void insertAtHead(const char* format, ...);
+  void insertAtTail(const char* format, ...);
   void insertAtTailBeforeGoto(Expr* ast);
 
   bool isLoop(void);

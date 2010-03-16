@@ -575,7 +575,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   fn->addFlag(FLAG_MAYBE_TYPE);
   bool hasSpecifiedIndices = !!indices;
   if (!hasSpecifiedIndices)
-    indices = new UnresolvedSymExpr("_elided_index");
+    indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndices(indices);
 
   //
@@ -772,7 +772,7 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   // insert temporary index when elided by user
   //
   if (!indices)
-    indices = new UnresolvedSymExpr("_elided_index");
+    indices = new UnresolvedSymExpr("chpl__elidedIdx");
 
   checkIndices(indices);
 
@@ -808,60 +808,89 @@ BlockStmt* buildForLoopStmt(Expr* indices,
 }
 
 
-BlockStmt* buildForallLoopStmt(Expr* indices,
-                               Expr* iteratorExpr,
-                               BlockStmt* body) {
-  checkControlFlow(body, "forall statement");
+static BlockStmt*
+buildFollowLoop(Symbol* iter, Symbol* leadIdxCopy, Symbol* followIter,
+                Symbol* followIdx, Expr* indices, BlockStmt* loopBody,
+                bool fast) {
+  BlockStmt* followBlock = new BlockStmt();
+  followBlock->insertAtTail(new DefExpr(followIter));
+  if (fast)
+    followBlock->insertAtTail("'move'(%S, _getIterator(_toFastFollower(%S, %S)))", followIter, iter, leadIdxCopy);
+  else
+    followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))", followIter, iter, leadIdxCopy);
+  followBlock->insertAtTail(new DefExpr(followIdx));
+  followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
+  BlockStmt* followBody = new BlockStmt();
+  followBody->insertAtTail(loopBody);
+  destructureIndices(followBody, indices, new SymExpr(followIdx), false);
+  followBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, followIdx, followIter);
+  followBlock->insertAtTail(followBody);
+  followBlock->insertAtTail(new CallExpr("_freeIterator", followIter));
+  return followBlock;
+}
+
+
+BlockStmt*
+buildForallLoopStmt(Expr* indices, Expr* iterExpr, BlockStmt* loopBody) {
+  checkControlFlow(loopBody, "forall statement");
 
   if (fSerial || fSerialForall)
-    return buildForLoopStmt(indices, iteratorExpr, body);
+    return buildForLoopStmt(indices, iterExpr, loopBody);
 
   //
   // insert temporary index when elided by user
   //
   if (!indices)
-    indices = new UnresolvedSymExpr("_elided_index");
+    indices = new UnresolvedSymExpr("chpl__elidedIdx");
 
   checkIndices(indices);
 
-  BlockStmt* leaderBlock = buildChapelStmt();
-  VarSymbol* iterator = newTemp("_iterator");
-  iterator->addFlag(FLAG_EXPR_TEMP);
-  leaderBlock->insertAtTail(new DefExpr(iterator));
-  leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
-  VarSymbol* leaderIndex = newTemp("_leaderIndex");
-  leaderBlock->insertAtTail(new DefExpr(leaderIndex));
-  VarSymbol* leaderIterator = newTemp("_leaderIterator");
-  leaderBlock->insertAtTail(new DefExpr(leaderIterator));
-  VarSymbol* leaderIndexCopy = newTemp("_leaderIndexCopy");
-  leaderIndexCopy->addFlag(FLAG_INDEX_VAR);
-  leaderIndexCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_getIterator", new CallExpr("_toLeader", iterator))));
-  BlockStmt* followerBlock = new BlockStmt();
-  VarSymbol* followerIndex = newTemp("_followerIndex");
-  followerBlock->insertAtTail(new DefExpr(followerIndex));
-  VarSymbol* followerIterator = newTemp("_followerIterator");
-  followerBlock->insertAtTail(new DefExpr(followerIterator));
-  followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_getIterator", new CallExpr("_toFollower", iterator, leaderIndexCopy))));
-  followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIM_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
-  BlockStmt* followerBody = new BlockStmt(body);
-  destructureIndices(followerBody, indices, new SymExpr(followerIndex), false);
-  followerBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, followerIndex, followerIterator);
-  followerBlock->insertAtTail(followerBody);
-  followerBlock->insertAtTail(new CallExpr("_freeIterator", followerIterator));
+  VarSymbol* iter = newTemp("chpl__iter");
+  VarSymbol* leadIdx = newTemp("chpl__leadIdx");
+  VarSymbol* leadIter = newTemp("chpl__leadIter");
+  VarSymbol* leadIdxCopy = newTemp("chpl__leadIdxCopy");
+  VarSymbol* fastFollowIdx = newTemp("chpl__fastFollowIdx");
+  VarSymbol* fastFollowIter = newTemp("chpl__fastFollowIter");
+  VarSymbol* followIdx = newTemp("chpl__followIdx");
+  VarSymbol* followIter = newTemp("chpl__followIter");
+  iter->addFlag(FLAG_EXPR_TEMP);
+  leadIdxCopy->addFlag(FLAG_INDEX_VAR);
+  leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
-  BlockStmt* beginBlock = new BlockStmt();
-  beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
-  beginBlock->insertAtTail(new CallExpr(PRIM_MOVE, leaderIndexCopy, leaderIndex));
-  beginBlock->insertAtTail(followerBlock);
+  Symbol* T1 = newTemp(); T1->addFlag(FLAG_EXPR_TEMP); T1->addFlag(FLAG_MAYBE_PARAM);
+  Symbol* T2 = newTemp(); T2->addFlag(FLAG_EXPR_TEMP); T2->addFlag(FLAG_MAYBE_PARAM);
 
-  BlockStmt* leaderBody = new BlockStmt(beginBlock);
-  leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIM_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
-  leaderBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
-  leaderBlock->insertAtTail(leaderBody);
-  leaderBlock->insertAtTail(new CallExpr("_freeIterator", leaderIterator));
+  BlockStmt* leadBlock = buildChapelStmt();
+  leadBlock->insertAtTail(new DefExpr(iter));
+  leadBlock->insertAtTail(new DefExpr(leadIdx));
+  leadBlock->insertAtTail(new DefExpr(leadIter));
+  leadBlock->insertAtTail("'move'(%S, _checkIterator(%E))",
+                          iter, iterExpr);
+  leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))",
+                          leadIter, iter);
+  leadBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }",
+                          leadIdx, leadIter);
+  BlockStmt* leadBody = new BlockStmt();
+  leadBody->insertAtTail(new DefExpr(leadIdxCopy));
+  leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
+  BlockStmt* followBlock = buildFollowLoop(iter, leadIdxCopy, followIter, followIdx, indices, loopBody->copy(), false);
+  if (!fNoFastFollowers) {
+    leadBody->insertAtTail(new DefExpr(T1));
+    leadBody->insertAtTail(new DefExpr(T2));
+    leadBody->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))", T1, iter);
+    leadBody->insertAtTail(new CondStmt(new SymExpr(T1),
+                             new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))", T2, iter),
+                             new_Expr("'move'(%S, %S)", T2, gFalse)));
+    BlockStmt* fastFollowBlock = buildFollowLoop(iter, leadIdxCopy, fastFollowIter, fastFollowIdx, indices, loopBody, true);
+    leadBody->insertAtTail(new CondStmt(new SymExpr(T2), fastFollowBlock, followBlock));
+  } else {
+    leadBody->insertAtTail(followBlock);
+  }
+  leadBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, leadIdx, leadIter);
+  leadBlock->insertAtTail(leadBody);
+  leadBlock->insertAtTail("_freeIterator(%S)", leadIter);
 
-  return leaderBlock;
+  return leadBlock;
 }
 
 
@@ -875,7 +904,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
   // insert temporary index when elided by user
   //
   if (!indices)
-    indices = new UnresolvedSymExpr("_elided_index");
+    indices = new UnresolvedSymExpr("chpl__elidedIdx");
 
   checkIndices(indices);
 

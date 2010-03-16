@@ -151,4 +151,7 @@ VarSymbol *get_constant(Expr *e);
 Expr* getFirstExpr(Expr* expr);
 Expr* getNextExpr(Expr* expr);
 
+Expr* new_Expr(const char* format, ...);
+Expr* new_Expr(const char* format, va_list vl);
+
 #endif

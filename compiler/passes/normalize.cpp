@@ -136,73 +136,7 @@ insertUseForExplicitModuleCalls(void) {
 }
 
 
-static void
-markAlignedArrays() {
-  Map<Symbol*,Symbol*> domDistMap;
-  Map<Symbol*,Symbol*> arrDomMap;
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (CallExpr* call = toCallExpr(def->exprType)) {
-      if (call->isNamed("chpl__buildDomainRuntimeType")) {
-        if (SymExpr* se = toSymExpr(call->get(1))) {
-          domDistMap.put(def->sym, se->var);
-        }
-      } else if (call->isNamed("chpl__buildArrayRuntimeType")) {
-        if (CallExpr* dcall = toCallExpr(call->get(1))) {
-          if (dcall->isNamed("chpl__buildDomainExpr")) {
-            if (SymExpr* se = toSymExpr(dcall->get(1))) {
-              arrDomMap.put(def->sym, se->var);
-            }
-          }
-        }
-      }        
-    }
-  }
-  Map<Symbol*,CallExpr*> iteratorTupleMap;
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isNamed("_checkIterator")) {
-      if (CallExpr* tuple = toCallExpr(call->get(1))) {
-        if (tuple->isNamed("_build_tuple")) {
-          CallExpr* move = toCallExpr(call->parentExpr);
-          INT_ASSERT(move);
-          if (!move->isPrimitive(PRIM_MOVE))
-            if (move->isNamed("chpl__autoCopy"))
-              move = toCallExpr(move->parentExpr);
-          INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-          SymExpr* se = toSymExpr(move->get(1));
-          INT_ASSERT(se);
-          iteratorTupleMap.put(se->var, tuple);
-        }
-      }
-    } else if (call->isNamed("_toFollower")) {
-      if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (CallExpr* tuple = iteratorTupleMap.get(se->var)) {
-          SymExpr* se = toSymExpr(tuple->get(1));
-          Symbol* leaderDom = (se) ? arrDomMap.get(se->var) : NULL;
-          Symbol* leaderDist = (leaderDom) ? domDistMap.get(leaderDom) : NULL;
-          CallExpr* alignment = new CallExpr("_build_tuple");
-          bool first = true;
-          for_actuals(actual, tuple) {
-            SymExpr* se = toSymExpr(actual);
-            Symbol* dom = (se) ? arrDomMap.get(se->var) : NULL;
-            Symbol* dist = (dom) ? domDistMap.get(dom) : NULL;
-            if (first || (leaderDist && leaderDist == dist)) {
-              alignment->insertAtTail(dtDist->symbol);
-            } else {
-              alignment->insertAtTail(dtBaseArr->symbol);
-            }
-            first = false;
-          }
-          call->insertAtTail(alignment);
-        }
-      }
-    }
-  }
-}
-
-
 void normalize(void) {
-  markAlignedArrays();
-
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
