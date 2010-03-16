@@ -2,6 +2,7 @@
 
 use File::Basename;
 use Cwd;
+use Sys::Hostname;
 
 $valgrind = 0;
 $interpret = 0;
@@ -19,7 +20,7 @@ $combinedir = 0;
 $dist = "";
 
 $svntoday = `date +%F`; chomp($svntoday);
-$svnrevdate = `date -d"$svntoday PST" +"%F %R %z"`; chomp($svnrevdate);
+$svnrevdate = `date -d"$svntoday PGT" +"%F %R %z"`; chomp($svnrevdate);
 if ($debug == 0) {
     $svnrevopt = "-r'{$svnrevdate}'"
 }
@@ -134,8 +135,14 @@ if ($make eq "") {
     $make = "make";
 }
 $cronlogdir = $ENV{'CHPL_NIGHTLY_CRON_LOGDIR'};
+
+$host = hostname;
 if ($cronlogdir eq "") {
-    $cronlogdir = "/data/sea/cascade/chapel/Nightly";
+    if ($performance == 1) {
+        $cronlogdir = "/data/sea/cascade/chapel/NightlyPerformance/$host";
+    } else {
+        $cronlogdir = "/data/sea/cascade/chapel/Nightly";
+    }
 }
 $logdir = $ENV{'CHPL_NIGHTLY_LOGDIR'};
 if ($debug == 1 && $logdir eq "") {
