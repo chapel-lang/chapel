@@ -1,0 +1,4 @@
+(x, x.locale.uid) = (1, 0)
+(x, x.locale.uid) = (2, 0)
+(y, y.locale.uid) = (3, 1)
+(x, x.locale.uid) = (3, 0)
