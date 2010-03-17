@@ -2,7 +2,7 @@ use GPUDist, Random;
 
 config const threadsPerBlock = 16;
 config const useRandomSeed = true,
-             seed = if useRandomSeed then getRandomStreamClockSeed() else 314159265;
+             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
 
 var m = 64: int(64);
 

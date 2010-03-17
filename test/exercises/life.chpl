@@ -16,7 +16,7 @@ config const printGenerations: bool = true, // print grid at each iteration
 
 // seed the random stream with something reproducable?
 config const useRandomSeed = true,
-             seed = if useRandomSeed then getRandomStreamClockSeed() else 314159265;
+             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
 
 // global constants and variables
 const BigD = [0..n+1, 0..n+1], // domain of grid with border cells

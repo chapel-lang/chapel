@@ -40,7 +40,7 @@ config const tasksPerLocale = here.numCores;
 // specify the fixed seed explicitly
 //
 config const useRandomSeed = true,
-             seed = if useRandomSeed then getRandomStreamClockSeed() else 314159265;
+             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
 
 //
 // Configuration constants to control what's printed -- benchmark
