@@ -18,12 +18,7 @@ $parnodefile = "";
 $nolocal = 0;
 $combinedir = 0;
 $dist = "";
-
-$svntoday = `date +%F`; chomp($svntoday);
-$svnrevdate = `date -d"$svntoday PGT" +"%F %R %z"`; chomp($svnrevdate);
-if ($debug == 0) {
-    $svnrevopt = "-r'{$svnrevdate}'"
-}
+$svnrevopt = "";
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -67,6 +62,11 @@ while (@ARGV) {
         $printusage = 1;
         last;
     }
+}
+
+$svntoday = `date +%F`; chomp($svntoday);
+if ($debug == 0 && $svnrevopt eq "") {
+    $svnrevopt = "-r'{$svntoday 00:00 -0700}'";
 }
 
 if ($ENV{'CHPL_COMM'} eq "gasnet") {
