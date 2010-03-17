@@ -93,10 +93,19 @@ execution timeouts (08/29/09)
 valgrind-specific regressions
 =============================
 
-spurious 'the impossible has happened' problems (starting 08/26/09)
--------------------------------------------------------------------
-12/03/09: This is due to a Linux kernel bug.  Sent mail to crayhelp
-requesting the build machines be upgraded.
+chap09 memory size changed (03/17/10 -- after OS upgrade)
+---------------------------------------------------------
+[Error matching program output for modules/standard/memory/countMemory/countMemory]
+[Error matching program output for studies/hpcc/2008/testProbSize]
+[Error matching program output for studies/hpcc/common/testProbSize]
+
+numerical accuracy issue (03/17/10 -- after OS upgrade)
+-------------------------------------------------------
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+
+malloc out of memory causes problem (03/17/10 -- after OS upgrade)
+------------------------------------------------------------------
+[Error matching compiler output for memory/shannon/outofmemory/mallocOutOfMemory]
 
 times out fairly consistently
 -----------------------------
@@ -121,7 +130,7 @@ block distribution regressions
 spurious timeouts
 -----------------
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl] (e.g., 03/13/10, 03/16/10)
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (e.g., 03/12/10)
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (e.g., 03/12/10, 03/17/10)
 
 timeouts
 --------
@@ -173,7 +182,8 @@ gasnet-everything regressions (other than the above)
 
 new spurious timeouts with SLED11 upgrade
 -----------------------------------------
-[Error: Timed out compilation for modules/standard/math/lg] (e.g., 03/13/10)
+[Error: Timed out compilation for modules/standard/math/lg] (e.g., 03/13/10, 03/17/10)
+[Error: Timed out compilation for multilocale/deitz/needMultiLocales/diagnostics/test_remote_value_forwarding3] (e.g., 03/17/10)
 [Error: Timed out compilation for modules/standard/math/atan2] (e.g., 03/13/10, 03/15/10, 03/16/10)
 [Error: Timed out compilation for multilocale/deitz/linked/test_linked3c] (e.g., 03/12/10, 03/13/10, 03/15/10)
 [Error: Timed out compilation for multilocale/deitz/linked/test_linked3d] (e.g., 03/12/10, 03/13/10, 03/16/10)
