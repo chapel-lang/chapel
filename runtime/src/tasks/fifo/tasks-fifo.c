@@ -375,8 +375,12 @@ void CHPL_TASKING_EXIT(void) {
   // shut down all threads
   for (tlp = thread_list_head; tlp != NULL; tlp = tlp->next)
     threadlayer_thread_cancel(tlp->thread);
-  for (tlp = thread_list_head; tlp != NULL; tlp = tlp->next)
-    threadlayer_thread_join(tlp->thread);
+  while (thread_list_head != NULL) {
+    threadlayer_thread_join(thread_list_head->thread);
+    tlp = thread_list_head;
+    thread_list_head = thread_list_head->next;
+    chpl_free(tlp, 0, 0);
+  }
 
   threadlayer_exit();
 }
