@@ -1,21 +1,26 @@
-\sekshun{Locality and Distribution}
+\sekshun{Locales and Distributions}
 \label{Locality_and_Distribution}
 
 Chapel provides high-level abstractions that allow programmers to
-exploit locality by defining the affinity of data and tasks.  This is
-accomplished by associating both data objects and tasks with abstract
-{\em locales}. To provide a higher-level mechanism, Chapel allows a
-mapping from domain indices to locales to be specified. This mapping
-is called a {\em distribution} and it guides the placement of elements
-within arrays and the placement of tasks over domains.
+exploit locality by controlling the affinity of both data and tasks to
+abstract units of processing and storage capabilities
+called \emph{locales}.  The \emph{on-statement} allows for the
+migration of tasks to \emph{remote} locales.
 
 \index{local}
 \index{remote}
-Throughout this section, the term {\em local} refers to data that is
-associated with the locale that a task is running on and {\em remote}
-refers to data that is not. We assume that there is some execution
-overhead associated with accessing data that may be remote compared to
-data known to be local.
+Throughout this section, the term \emph{local} will be used to
+describe the locale on which a task is running, the data located on
+this locale, and any tasks running on this locale.  The
+term \emph{remote} will be used to describe another locale, the data
+on another locale, and the tasks running on another locale.
+
+Although data of any type can be associated with locales, the {\em
+distribution} construct supports partitioning the indices of domains
+and the elements of arrays across a set of locales.  In addition to
+defining how such data partitioning is done, distributions define the
+implementation of data parallelism across the set of locales including
+the placement of tasks.
 
 \subsection{Locales}
 \label{Locales}
@@ -31,7 +36,7 @@ nodes or SMPs would typically define each node to be a locale.  In
 contrast a pure shared memory machine would be defined as a single
 locale.
 
-\subsubsection{The Locale Type}
+\subsubsection{Locale Types}
 \label{The_Locale_Type}
 \index{locale@\chpl{locale}}
 
@@ -71,7 +76,7 @@ terms of the specified memory units (Bytes, KB, MB, or GB) using a
 value of the specified return type.
 \end{protobody}
 
-\subsubsection{Predefined Locales Array}
+\subsubsection{The Predefined Locales Array}
 \label{Predefined_Locales_Array}
 \index{Locales@\chpl{Locales}}
 \index{numLocales@\chpl{numLocales}}
@@ -188,20 +193,13 @@ value semantics.  It exists on \chpl{Locales(1)} even though it is
 assigned a value on a remote locale.
 \end{example}
 
-\subsection{Invoking Remote Tasks}
-\label{Specifying_Locales}
-
-When execution is proceeding on some locale, a task can be associated
-with a different locale in two ways: via distributions as discussed
-in~\rsec{Distributions} or with an \sntx{on-statement} as discussed
-below.
-
-\subsubsection{The On Statement}
+\subsection{The On Statement}
 \label{On}
 \index{on@\chpl{on}}
 
-The on statement controls on which locale tasks should be executed or
-data should be placed.  The syntax of the on statement is given by
+The on statement controls on which locale a block of code should be
+executed or data should be placed.  The syntax of the on statement is
+given by
 \begin{syntax}
 on-statement:
   `on' expression `do' statement
@@ -271,12 +269,47 @@ remote-variable-declaration-statement:
 \label{Distributions}
 \index{distributions}
 
-\begin{openissue}
-This section is largely forthcoming.
-\end{openissue}
-
 A mapping from domain index values to locales is called a {\em
 distribution}.
+
+\subsubsection{Distribution Types}
+\label{Distribution_Types}
+
+Distribution types are defined by the type of a distribution class
+that derives from BaseDist and is typically generic.  They are
+distinct from the distribution class type.  Typically, the
+distribution class type is only used on its own in defining the
+distribution itself~\rsec{User_Defined_Distributions}.
+
+Defining a distribution type involves specifying a distribution class
+type and wrapping this in a distribution type \chpl{dist}.
+\begin{example}
+The code
+\begin{chapel}
+use BlockDist;
+var MyBlockDist: dist(Block(rank=2));
+\end{chapel}
+defines a Block distribution called \chpl{MyBlockDist} with rank 2 and
+a default index type that can be used to distribute 2-dimensional
+arithmetic domains.  The Block distribution is described in more
+detail in~\rsec{Block_Dist}.
+\end{example}
+
+\subsubsection{Distribution Values}
+\label{Distribution_Values}
+
+Constructing a distribution involves calling the constructor of a
+distribution class and defining a new distribution type \chpl{dist}.
+\begin{example}
+The code
+\begin{chapel}
+use BlockDist;
+var MyBlockDist = new dist(new Block(rank=2, bbox=[1..n,1..n]));
+\end{chapel}
+constructs a Block distribution that partitions the index space
+specified by \chpl{[1..n, 1..n]} over all of the locales.  The Block
+distribution is described in more detail in~\rsec{Block_Dist}.
+\end{example}
 
 \subsubsection{Distributed Domains}
 \label{Distributed_Domains}
@@ -284,8 +317,54 @@ distribution}.
 \index{domains!distributed}
 A domain for which a distribution is specified is referred to as a
 {\em distributed domain}.
-%A domain supports a method, \chpl{locale}, that maps index values in
-%the domain to locales that correspond to the domain's distribution.
+
+\begin{rationale}
+Should this be? A domain supports a method, \chpl{locale}, that maps
+index values in the domain to locales that correspond to the domain's
+distribution.
+\end{rationale}
+
+The syntax to create a distributed domain type is the same as the
+syntax to create a distributed domain value:
+\begin{syntax}
+distributed-domain-type:
+  domain-type `distributed' distribution-expression
+
+distributed-domain-expression:
+  domain-expression `distributed' distribution-expression
+
+distribution-expression:
+  expression
+\end{syntax}
+
+\begin{example}
+The code
+\begin{chapel}
+use BlockDist;
+var MyBlockDist = new dist(new Block(rank=2, bbox=[1..n,1..n]));
+var Dom: domain(2) distributed MyBlockDist =
+           [1..n, 1..n] distributed MyBlockDist;
+\end{chapel}
+defines a new domain that is distributed by \chpl{MyBlockDist}.  Note
+that, as usual, the type does not need to be specified if the variable
+is initialized.
+\end{example}
+
+When defining a new distribution inline with the \chpl{distributed}
+keyword, a syntactic sugar is supported in which the ``new dist new''
+characters may be omitted.
+\begin{example}
+The code
+\begin{chapel}
+use BlockDist;
+var D = [1..n, 1..n] distributed new dist(new Block(rank=2, bbox=[1..n,1..n]));
+\end{chapel}
+is equivalent to
+\begin{chapel}
+use BlockDist;
+var D = [1..n, 1..n] distributed Block(rank=2, bbox=[1..n,1..n]);
+\end{chapel}
+\end{example}
 
 Iteration over a distributed domain implicitly executes the controlled
 task in the domain of the associated locale.  Similarly, when
@@ -331,12 +410,66 @@ Standard distributions include the following:
 \item The block distribution \chpl{Block}
 \item The cyclic distribution \chpl{Cyclic}
 \item The block-cyclic distribution \chpl{BlockCyclic}
-\item The cut distribution \chpl{Cut}
 \end{itemize}
 
-A design goal is that all standard distributions are defined with the
-same mechanisms that user-defined
-distributions~(\rsec{User_Defined_Distributions}) are defined with.
+\begin{openissue}
+There is an expectation that the number of standard distributions will
+grow dramatically.
+\end{openissue}
+
+A design goal is that all standard distributions are defined using the
+same mechanisms available to Chapel programmers wishing to define
+their own distributions~(\rsec{User_Defined_Distributions}).
+
+\subsubsection{The Standard Block Distribution}
+\label{Block_Dist}
+
+The standard Block distribution is defined in the module
+called \chpl{BlockDist}.  This module must be explicitly used.
+
+The Block distribution is parameterized by the rank and index type of
+the domains for which it will support.  Thus domains of different
+ranks or different index types must be distributed with different
+distributions.
+
+The Block class constructor is defined as follows:
+\begin{chapel}
+def Block(param rank: int,
+          type idxType = int,
+          bbox: domain(rank, idxType),
+          targetLocales: [] locale = thisRealm.Locales, 
+          tasksPerLocale: int = 0) {
+}
+\end{chapel}
+
+The argument \chpl{bbox} is a non-distributed domain defining a
+bounding box used to partition the space of all indices across the
+array of target locales.  The indices inside the bounding box are
+partitioned ``evenly'' across the locales and indices outside the
+bounding box are mapped to the same locale as the nearest index inside
+the bounding box.
+
+The argument \chpl{targetLocales} is a non-distributed array
+containing the target locales to which this distribution partitions
+indices and data.  The rank of \chpl{targetLocales} must match the
+rank of the distribution, or be one.  If the rank
+of \chpl{targetLocales} is one, it will be factored and reshaped so
+that it matches the rank of the distribution.  A greedy heuristic is
+used to ``evenly'' do the factoring.
+
+The argument \chpl{tasksPerLocale} is an integer that specifies the
+number of tasks to use on each locale when iterating in parallel over
+a Block-distributed domain or array.
+
+\subsubsection{The Standard Cyclic Distribution}
+\label{Cyclic_Dist}
+
+This section is forthcoming.
+
+\subsubsection{The Standard Block-Cyclic Distribution}
+\label{Block_Cyclic_Dist}
+
+This section is forthcoming.
 
 \subsection{User-Defined Distributions}
 \label{User_Defined_Distributions}
