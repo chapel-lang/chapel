@@ -381,24 +381,7 @@ def range.these(param tag: iterator) where tag == iterator.leader {
   if boundedType == BoundedRangeType.boundedNone then
     halt("iteration over a range with no bounds");
   if debugChapelRange then
-    writeln("*** In range leader: ", this);
-  var numCores = here.numCores;
-  var runningTasks = here.runningTasks();
-  if debugChapelRange then
-    writeln("    numCores=", numCores, ", runningTasks=", runningTasks());
-  var numChunks: uint(64) =
-  if (runningTasks >= numCores) then 1
-  else if maxChunks == -1 then
-    if maxThreads == 0 then (numCores-runningTasks+1):uint(64)
-    else (min(numCores-runningTasks+1, maxThreads)):uint(64)
-  else if maxThreads == 0 then (min(numCores-runningTasks+1, maxChunks)):uint(64)
-    else (min(numCores-runningTasks+1, min(maxThreads, maxChunks))):uint(64);
-
-  var numelems: uint(64) = if stridable then (abs(high-low)/stride):uint(64)
-    else abs(high-low):uint(64);
-
-  if debugChapelRange then
-    writeln("*** RI: numelems=", numelems, " numChunks=", numChunks);
+    writeln("*** In range leader:"); // ", this);
 
   var v: eltType;
   if stride > 0 then
@@ -408,14 +391,24 @@ def range.these(param tag: iterator) where tag == iterator.leader {
   if v < 0 then
     v = 0;
 
-  if (numelems <= minElemsPerChunk*numChunks) || (numChunks == 1) {
-    if debugChapelRange then
-      writeln("*** minElemsPerChunk*numChunks = ",
-              minElemsPerChunk*numChunks, ", using 1 chunk");
+  var maxTasks = if maxDataParallelism>0 then maxDataParallelism
+                 else here.numCores;
+  var limitTasks = limitDataParallelism;
+  var minIndicesPerTask = minDataParallelismSize;
+
+  var numChunks = _computeNumChunks(maxTasks, limitTasks, minIndicesPerTask, v);
+  if debugChapelRange then
+    writeln("*** RI: length=", v, " numChunks=", numChunks);
+
+  if debugChapelRange then
+    writeln("*** RI: Using ", numChunks, " chunk(s)");
+  if numChunks == 1 {
     yield tuple(0..v-1);
   } else {
     coforall chunk in 0..numChunks-1 {
       const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
+      if debugChapelRange then
+        writeln("*** RI: tuple = ", tuple(lo..hi));
       yield tuple(lo..hi);
     }
   }
@@ -426,6 +419,8 @@ def range.these(param tag: iterator, follower) where tag == iterator.follower {
     halt("iteration over a range with no bounds");
   if follower.size != 1 then
     halt("iteration over a range with multi-dimensional iterator");
+  if debugChapelRange then
+    writeln("In range follower code: Following ", follower);
   var followThis = follower(1);
   if stridable {
     var r = if stride > 0 then

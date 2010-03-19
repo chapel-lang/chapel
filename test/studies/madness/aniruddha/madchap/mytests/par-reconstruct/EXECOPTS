@@ -1,1 +1,1 @@
---maxChunks=1
+--maxDataParallelism=1

@@ -2,4 +2,6 @@ def foo(i: integral, j: int) {
   writeln((i,j));
 }
 
-foo(1..3, 4..6);
+serial true {
+  foo(1..3, 4..6);
+}

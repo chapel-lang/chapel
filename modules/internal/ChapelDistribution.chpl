@@ -1,7 +1,8 @@
 use List;
 
-config const minElemsPerChunk: uint(64) = 1;
-config const maxChunks: int = -1;
+config const maxDataParallelism = 0;
+config const limitDataParallelism = true;
+config const minDataParallelismSize: uint(64) = 0;
 
 //
 // Abstract distribution class

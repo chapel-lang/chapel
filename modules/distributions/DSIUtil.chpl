@@ -1,6 +1,60 @@
 // Useful functions for implementing distributions
 
 //
+// helper functions for determining the number of chunks and the
+//   dimension to chunk over
+//
+def _computeChunkStuff(maxTasks, limitTasks, minSize, ranges, param rank) {
+  // is there a way to avoid passing in rank?
+  var numElems: uint(64) = 1;
+  for param i in 1..rank do {
+    numElems *= ranges(i).length:uint(64);
+  }
+
+  var numChunks = _computeNumChunks(maxTasks, limitTasks, minSize, numElems);
+
+  // Dimension to parallelize (eventually should "block" thespace)
+  var parDim = -1;
+  var maxDim = -1;
+  var maxElems = min(uint(64));
+  // break/continue don't work with param loops (known future)
+  for /* param */ i in 1..rank do {
+    if ranges(i).length:uint(64) >= numChunks {
+      parDim = i;
+      break;
+    }
+    if ranges(i).length:uint(64) > maxElems {
+      maxElems = ranges(i).length:uint(64);
+      maxDim = i;
+    }
+  }
+  if parDim == -1 then
+    parDim = maxDim;
+
+  return (numChunks, parDim);
+}
+
+def _computeNumChunks(maxTasks, limitTasks, minSize, numElems) {
+  const runningTasks = here.runningTasks();
+  var numChunks: uint(64) =
+    if !limitTasks then maxTasks:uint(64)
+    else if runningTasks-1 < maxTasks // don't include self
+      then (maxTasks-runningTasks+1):uint(64)
+      else 1:uint(64);
+
+  if minSize > 0 then
+    // This is approximate
+    while (numElems:uint(64) < minSize:uint(64)*numChunks) && (numChunks > 1) {
+        numChunks -= 1;
+    }
+
+  if numChunks > numElems:uint(64) then numChunks = numElems:uint(64);
+
+  return numChunks;
+}
+
+
+//
 // helper function for blocking index ranges
 //
 def _computeBlock(numelems, numblocks, blocknum, wayhi,

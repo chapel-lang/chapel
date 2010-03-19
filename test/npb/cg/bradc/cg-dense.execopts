@@ -1,1 +1,1 @@
---n=8 --zetaVerifyValue=0.0 --printTiming=false --maxChunks=1
+--n=8 --zetaVerifyValue=0.0 --printTiming=false --maxDataParallelism=1
