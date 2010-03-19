@@ -1,0 +1,8 @@
+bug: Range length can overflow the index type.
+
+Sung is working on changing length to an unsigned type (lowish
+priority).
+
+Eventually, Brad would like to see a "capacity" type for all lengths
+(and has admitted to failing to implement it in 20 minutes of his
+copious spare time).
