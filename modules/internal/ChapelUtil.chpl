@@ -60,7 +60,7 @@ def safeAdd(a: ?t, b: t) {
     if b >= 0 {
       return true;
     } else {
-      if b <= min(t) - a {
+      if b < min(t) - a {
         return false;
       } else {
         return true;
@@ -70,7 +70,7 @@ def safeAdd(a: ?t, b: t) {
     if b <= 0 {
       return true;
     } else {
-      if b >= max(t) - a {
+      if b > max(t) - a {
         return false;
       } else {
         return true;
@@ -88,7 +88,15 @@ def safeSub(a: ?t, b: t) {
     if b <= 0 {
       return true;
     } else {
-      if b >= max(t) + a {
+      // This assumes min(t) = -max(t)+1 (as per the Chapel spec)
+      if b > max(t) + a {
+        if safeAdd(max(t)+a, 1) {
+          if b > max(t) + a + 1 {
+            return false;
+          } else {
+            return true;
+          }
+        }
         return false;
       } else {
         return true;
@@ -106,3 +114,4 @@ def safeSub(a: ?t, b: t) {
     }
   }
 }
+
