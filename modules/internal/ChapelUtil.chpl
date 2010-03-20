@@ -56,6 +56,8 @@ class _stack {
 //  overflow/underflow would occur for a + b
 //
 def safeAdd(a: ?t, b: t) {
+  if !_isIntegralType(t) then
+    compilerError("Values must be of integral type.");
   if a < 0 {
     if b >= 0 {
       return true;
@@ -84,11 +86,16 @@ def safeAdd(a: ?t, b: t) {
 //  underflow/overflow would occur for a - b
 //
 def safeSub(a: ?t, b: t) {
+  if !_isIntegralType(t) then
+    compilerError("Values must be of integral type.");
   if a < 0 {
     if b <= 0 {
       return true;
     } else {
       // This assumes min(t) = -max(t)+1 (as per the Chapel spec)
+      // The reason you need to do this is b/c what you really want to say
+      //  is b > abs(min(t)-a), but you can't be guaranteed tha abs()
+      //  results is in range of t
       if b > max(t) + a {
         if safeAdd(max(t)+a, 1) {
           if b > max(t) + a + 1 {
@@ -104,6 +111,8 @@ def safeSub(a: ?t, b: t) {
     }
   } else {
     if b >= 0 {
+      if _isUnsignedType(t) then
+        if b>a then return false;
       return true;
     } else {
       if b <= min(t) + a {
@@ -114,4 +123,3 @@ def safeSub(a: ?t, b: t) {
     }
   }
 }
-

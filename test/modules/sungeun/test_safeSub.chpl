@@ -35,3 +35,15 @@ testSafeSub(-1, min(int), true);
 testSafeSub(min(int)+1, 1, true);
 testSafeSub(1, min(int)+1, false);
 
+testSafeSub(max(uint), min(uint), true);
+testSafeSub(min(uint), max(uint), false);
+
+testSafeSub(min(uint), 0:uint, true);
+testSafeSub(0:uint, min(uint), true);
+
+testSafeSub(max(uint), 1:uint, true);
+testSafeSub(1:uint, max(uint), false);
+
+testSafeSub(min(uint), 1:uint, false);
+testSafeSub(1:uint, min(uint), true);
+

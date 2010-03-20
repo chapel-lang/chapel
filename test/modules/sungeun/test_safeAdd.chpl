@@ -35,3 +35,9 @@ testSafeAdd(-1, min(int), false);
 testSafeAdd(min(int)+1, -1, true);
 testSafeAdd(-1, min(int)+1, true);
 
+testSafeAdd(min(uint), max(uint), true);
+testSafeAdd(max(uint), min(uint), true);
+
+testSafeAdd(min(uint)+1, max(uint), false);
+testSafeAdd(max(uint), min(uint)+1, false);
+
