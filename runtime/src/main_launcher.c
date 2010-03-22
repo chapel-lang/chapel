@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <sys/stat.h>
-#include <chplio_md.h>
+#include <comm_printf_macros.h>
 #include "chplcgfns.h"
 #include "chplcomm_locales.h"
 #include "chpllaunch.h"

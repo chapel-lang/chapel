@@ -13,7 +13,7 @@
 #include <sys/time.h>
 
 #include <chpl_md.h>
-#include <chplio_md.h>
+#include <comm_printf_macros.h>
 
 #include "arg.h"
 #include "config.h"

@@ -4,7 +4,7 @@
 #ifndef LAUNCHER
 
 #include <stdint.h>
-#include <chplcomm_comm_md.h>
+#include <comm_heap_macros.h>
 #include <chplcomm_plat_md.h>
 #include "chplcomm_locales.h"
 #include "chpltypes.h"
@@ -320,10 +320,6 @@ extern void* const chpl_private_broadcast_table[];
     if ((wide).locale != chpl_localeID)                                 \
       chpl_error("cannot access remote data in local block", ln, fn);   \
   } while (0)
-
-#ifndef CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA
-#define CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, wide)
-#endif
 
 #define CHPL_HEAP_REGISTER_GLOBAL_VAR(i, wide)            \
   do {                                                    \
