@@ -1,4 +1,4 @@
-#!/usr/bin/tcsh
+#!/usr/bin/env tcsh
 source ~/.chapelcshrc-cron
 $CHPL_HOME/test/Bin/nightly -debug -examples -componly
 setenv CHPL_HOST_PLATFORM $CHPL_TARGET_PLATFORM

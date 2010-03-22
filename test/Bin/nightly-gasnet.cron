@@ -1,4 +1,4 @@
-#!/usr/bin/tcsh
+#!/usr/bin/env tcsh
 
 #
 # Test a GASNet compile using the default segment (everything for linux)

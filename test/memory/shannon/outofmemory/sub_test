@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/bin/csh -f
 
 limit vmemoryuse 256M
 
