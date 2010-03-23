@@ -518,7 +518,7 @@ if (!($dist eq "")) {
     $testflags = "$testflags -compopts -sdistString=$dist";
 }
 if (!($memleaks eq "")) {
-    $testflags = "$testflags -memleaks $memleaks";
+    $testflags = "$testflags -memleaks /tmp/$memleaks";
 }
 if ($nolocal == 1) {
     $testflags = "$testflags -compopts --no-local";
@@ -700,6 +700,13 @@ if ($runtests == 0) {
     }
     `echo "$statdate\t-\t$testcol\t$col\t$vgrcol" >> $statfile`;
     commitstats();
+
+#
+# analyze memory leaks tests
+#
+    if (!($memleaks eq "")) {
+        mysystem("$chapeldir/util/analyzeMemLeaksLog.pl /tmp/$memleaks > $logdir/$memleaks");
+    }
 }
 
 exit 0;
