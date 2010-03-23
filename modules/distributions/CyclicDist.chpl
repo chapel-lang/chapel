@@ -19,14 +19,19 @@ class Cyclic: BaseDist {
 
   const locDist: [targetLocDom] LocCyclic(rank, idxType);
 
-  const tasksPerLocale = 1;
+  var maxDataParallelism: int;
+  var limitDataParallelism: bool;
+  var minDataParallelismSize: uint(64);
+
   var pid: int = -1;
 
   def Cyclic(param rank: int,
              type idxType = int(64),
              low: rank*idxType = _tupleOfZero(rank, idxType),
              targetLocales: [] locale = thisRealm.Locales,
-             tasksPerLocale=0) {
+             maxDataParallelism=getMaxDataParallelism(),
+             limitDataParallelism=getLimitDataParallelism(),
+             minDataParallelismSize=getMinDataParallelismSize()) {
     if rank == 1  {
       targetLocDom = [0..#targetLocales.numElements];
       targetLocs = targetLocales;
@@ -55,10 +60,13 @@ class Cyclic: BaseDist {
     for param i in 1..rank do
       lowIdx(i) = mod(low(i), targetLocDom.dim(i).length);
 
-    if tasksPerLocale == 0 then
-      this.tasksPerLocale = min reduce targetLocales.numCores;
+    if maxDataParallelism == 0 then
+      this.maxDataParallelism = min reduce targetLocales.numCores;
     else
-      this.tasksPerLocale = tasksPerLocale;
+      this.maxDataParallelism = maxDataParallelism;
+    this.limitDataParallelism = limitDataParallelism;
+    this.minDataParallelismSize = minDataParallelismSize;
+
     coforall locid in targetLocDom {
       on targetLocs(locid) {
         locDist(locid) = new LocCyclic(rank, idxType, locid, this);
@@ -73,7 +81,9 @@ class Cyclic: BaseDist {
     targetLocs = other.targetLocs;
     lowIdx = other.lowIdx;
     locDist = other.locDist;
-    tasksPerLocale = other.tasksPerLocale;
+    maxDataParallelism = other.maxDataParallelism;
+    limitDataParallelism = other.limitDataParallelism;
+    minDataParallelismSize = other.minDataParallelismSize;
   }
 
   def dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);
@@ -108,7 +118,9 @@ def Cyclic.dsiDisplayRepresentation() {
   writeln("lowIdx = ", lowIdx);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocs = ", for tl in targetLocs do tl.id);
-  writeln("tasksPerLocale = ", tasksPerLocale);
+  writeln("maxDataParallelism = ", maxDataParallelism);
+  writeln("limitDataParallelism = ", limitDataParallelism);
+  writeln("minDataParallelismSize = ", minDataParallelismSize);
   for tli in targetLocDom do
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
@@ -128,7 +140,9 @@ def Cyclic.dsiReprivatize(other, reprivatizeData) {
   targetLocs = other.targetLocs;
   locDist = other.locDist;
   lowIdx = other.lowIdx;
-  tasksPerLocale = other.tasksPerLocale;
+  maxDataParallelism = other.maxDataParallelism;
+  limitDataParallelism = other.limitDataParallelism;
+  minDataParallelismSize = other.minDataParallelismSize;
 }
 
 def Cyclic.dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
@@ -146,7 +160,11 @@ def Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
   for param i in 1..rank {
     newLow(i) = newSpace(i).low - oldSpace(i).low + lowIdx(i);
   }
-  var newDist = new Cyclic(rank=rank, idxType=idxType, low=newLow, targetLocales=targetLocs, tasksPerLocale=tasksPerLocale);
+  var newDist = new Cyclic(rank=rank, idxType=idxType, low=newLow,
+                           targetLocales=targetLocs,
+                           maxDataParallelism=maxDataParallelism,
+                           limitDataParallelism=limitDataParallelism,
+                           minDataParallelismSize=minDataParallelismSize);
   return newDist;
 }
 
@@ -361,10 +379,13 @@ def CyclicDom.these() {
 }
 
 def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
-  const wholeLow = whole.low,
-        precomputedNumTasks = dist.tasksPerLocale;
+  const maxTasks = dist.maxDataParallelism;
+  const limitTasks = dist.limitDataParallelism;
+  const minSize = dist.minDataParallelismSize;
+  const wholeLow = whole.low;
   coforall locDom in locDoms do on locDom {
-    const numTasks = precomputedNumTasks;
+    const (numTasks, parDim) = _computeChunkStuff(maxTasks, limitTasks, minSize,
+                                                  locDom.myBlock.dims(), rank);
 
     var result: rank*range(eltType=idxType, stridable=true);
     var zeroedLocalPart = whole((...locDom.myBlock.getIndices())) - whole.low;
@@ -384,12 +405,12 @@ def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
       yield result;
     } else {
 
-      coforall taskid in 0..#numTasks {
+      coforall taskid in 0:uint(64)..#numTasks {
         var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
-        const low = result(1).low, high = result(1).high;
+        const low = result(parDim).low, high = result(parDim).high;
         const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
                                       high, low, low);
-        splitRanges(1) = result(1)(lo..hi);
+        splitRanges(parDim) = result(parDim)(lo..hi);
         if debugCyclicDist then
           writeln(here.id, ": leader whole: ", whole,
                            " result: ", result,
@@ -628,10 +649,13 @@ def CyclicArr.these() var {
 }
 
 def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
-  const wholeLow = dom.whole.low,
-        precomputedNumTasks = dom.dist.tasksPerLocale;
+  const maxTasks = dom.dist.maxDataParallelism;
+  const limitTasks = dom.dist.limitDataParallelism;
+  const minSize = dom.dist.minDataParallelismSize;
+  const wholeLow = dom.whole.low;
   coforall locDom in dom.locDoms do on locDom {
-    const numTasks = precomputedNumTasks;
+    const (numTasks, parDim) = _computeChunkStuff(maxTasks, limitTasks, minSize,
+                                                  locDom.myBlock.dims(), rank);
 
     var result: rank*range(eltType=idxType, stridable=true);
     var zeroedLocalPart = dom.whole((...locDom.myBlock.getIndices())) - wholeLow;
@@ -651,12 +675,12 @@ def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
       yield result;
     } else {
 
-      coforall taskid in 0..#numTasks {
+      coforall taskid in 0:uint(64)..#numTasks {
         var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
-        const low = result(1).low, high = result(1).high;
+        const low = result(parDim).low, high = result(parDim).high;
         const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
                                       high, low, low);
-        splitRanges(1) = result(1)(lo..hi);
+        splitRanges(parDim) = result(parDim)(lo..hi);
         if debugCyclicDist then
           writeln(here.id, ": leader whole: ", dom.whole,
                            " result: ", result,

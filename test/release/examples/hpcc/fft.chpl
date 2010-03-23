@@ -110,7 +110,8 @@ def main() {
   // phases.
   //
   const CycDist = new dist(new Cyclic(1, idxType, 
-                                      tasksPerLocale=tasksPerLocale));
+                                      maxDataParallelism=tasksPerLocale,
+                                      limitDataParallelism=false));
   const CycDom: domain(1, idxType) distributed CycDist = ProblemSpace;
   var Zcyc: [CycDom] elemType;
 
