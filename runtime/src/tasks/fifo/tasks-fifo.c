@@ -1126,8 +1126,6 @@ chpl_begin_helper(void* ptask_void) {
         }
         unset_block_loc();
       }
-
-      // remove any tasks that have already started executing
     } while (!task_pool_head);
 
     if (blockreport)
