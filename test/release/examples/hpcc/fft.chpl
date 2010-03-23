@@ -97,7 +97,8 @@ def main() {
   // half of the FFT phases).
   //
   const BlkDist = new dist(new Block(1, idxType, bbox=ProblemSpace, 
-                                              tasksPerLocale=tasksPerLocale));
+                                     maxDataParallelism=tasksPerLocale,
+                                     limitDataParallelism=false));
   const BlkDom: domain(1, idxType) distributed BlkDist = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
@@ -109,7 +110,7 @@ def main() {
   // phases.
   //
   const CycDist = new dist(new Cyclic(1, idxType, 
-                                               tasksPerLocale=tasksPerLocale));
+                                      tasksPerLocale=tasksPerLocale));
   const CycDom: domain(1, idxType) distributed CycDist = ProblemSpace;
   var Zcyc: [CycDom] elemType;
 

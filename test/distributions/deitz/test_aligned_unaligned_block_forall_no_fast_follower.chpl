@@ -2,8 +2,8 @@ use BlockDist;
 
 config var n: int = 32;
 
-var BD1 = new dist(new Block(1,bbox=[1..n],tasksPerLocale=1));
-var BD2 = new dist(new Block(1,bbox=[1..n/2],tasksPerLocale=1));
+var BD1 = new dist(new Block(1,bbox=[1..n],maxDataParallelism=1));
+var BD2 = new dist(new Block(1,bbox=[1..n/2],maxDataParallelism=1));
 
 var A: [[1..n] distributed BD1] real;
 var B: [[1..n] distributed BD1] real;

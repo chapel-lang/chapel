@@ -1,5 +1,20 @@
 // Useful functions for implementing distributions
 
+pragma "inline"
+def getMaxDataParallelism() {
+  return maxDataParallelism;
+}
+
+pragma "inline"
+def getLimitDataParallelism() {
+  return limitDataParallelism;
+}
+
+pragma "inline"
+def getMinDataParallelismSize() {
+  return minDataParallelismSize;
+}
+
 //
 // helper functions for determining the number of chunks and the
 //   dimension to chunk over

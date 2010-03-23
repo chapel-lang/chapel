@@ -70,7 +70,10 @@ def main() {
   // from 0 to m-1.  It is distributes the vectors Z and z across the
   // locales using the Block distribution.
   //
-  const BlkDist = new dist(new Block(rank=1, idxType=int(64), bbox=[0..m-1], targetLocales=Locales, tasksPerLocale=tasksPerLocale));
+  const BlkDist = new dist(new Block(rank=1, idxType=int(64), bbox=[0..m-1],
+                                     targetLocales=Locales,
+                                     maxDataParallelism=tasksPerLocale,
+                                     limitDataParallelism=false));
   const BlkDom: domain(1, int(64)) distributed BlkDist = [0..m-1];
   var Z, z: [BlkDom] elemType;
 

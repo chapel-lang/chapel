@@ -8,7 +8,9 @@ config const tasksPerLocale = 1;
 config const verbose: bool = false;
 
 def main() {
-  const Dist = new dist(new Block(rank=1,idxType=int(64),bbox=[1..m],tasksPerLocale=tasksPerLocale));
+  const Dist = new dist(new Block(rank=1,idxType=int(64),bbox=[1..m],
+                                  maxDataParallelism=tasksPerLocale,
+                                  limitDataParallelism=false));
   const ProblemSpace: domain(1, int(64)) distributed Dist = [1..m];
   var A, B, C: [ProblemSpace] elemType;
 

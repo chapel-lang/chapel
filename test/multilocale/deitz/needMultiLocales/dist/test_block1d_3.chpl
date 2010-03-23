@@ -2,7 +2,7 @@ use BlockDist;
 
 config var n = 8, tpl=1;
 
-var Dist = new dist(new Block(rank=1, bbox=[2..n-1],tasksPerLocale=tpl));
+var Dist = new dist(new Block(rank=1, bbox=[2..n-1],maxDataParallelism=tpl));
 var Dom: domain(1) distributed Dist = [-n..n];
 var A: [Dom] real;
 writeln(Dom);

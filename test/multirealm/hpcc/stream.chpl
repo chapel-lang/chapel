@@ -60,8 +60,10 @@ def main() {
   // BlockDist is a 1D block distribution that is computed by blocking
   // the bounding box 1..m across the set of locales
   //
-  const BlockDist = new dist(new Block(rank=1,idxType=int(64),bbox=[1..m],tasksPerLocale=tasksPerLocale,targetLocales=AllLocales));
-
+  const BlockDist = new dist(new Block(rank=1,idxType=int(64),bbox=[1..m],
+                                       maxDataParallelism=tasksPerLocale,
+                                       limitDataParallelism=false,
+                                       targetLocales=AllLocales));
   //
   // ProblemSpace describes the index set for the three vectors.  It
   // is a 1D domain storing 64-bit ints and is distributed according
