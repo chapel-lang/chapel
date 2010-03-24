@@ -9,9 +9,9 @@ my $flag = $ARGV[0];
 $preset_launcher=$ENV{'CHPL_LAUNCHER'};
 
 if ($preset_launcher eq "") {
-    $comm = `$utildirname/comm.pl --target`; chomp($comm);
-    $substrate = `$utildirname/commSubstrate.pl`; chomp($substrate);
-    $platform = `$utildirname/platform.pl --target`; chomp($platform);
+    $comm = `$utildirname/comm --target`; chomp($comm);
+    $substrate = `$utildirname/commSubstrate`; chomp($substrate);
+    $platform = `$utildirname/platform --target`; chomp($platform);
 
     $launcher = "none";
     if ($comm eq "gasnet") {

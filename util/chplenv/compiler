@@ -3,7 +3,7 @@
 use File::Basename;
 
 $utildirname = dirname($0);
-$platformscript = "$utildirname/platform.pl";
+$platformscript = "$utildirname/platform";
 
 my $flag = $ARGV[0];
 

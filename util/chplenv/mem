@@ -12,10 +12,10 @@ if ($#ARGV != -1) {
 }
 
 if ($preset_mem eq "") {
-  $comm = `$utildirname/comm.pl`;
+  $comm = `$utildirname/comm`;
   chomp($comm);
   if ($comm eq "gasnet") {
-    $segment = `$utildirname/commSegment.pl`;
+    $segment = `$utildirname/commSegment`;
     chomp($segment);
 
     if ($segment eq "none" ||

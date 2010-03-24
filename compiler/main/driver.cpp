@@ -139,12 +139,12 @@ static void setupOrderedGlobals(void) {
   setupChplHome();
   
   // Then CHPL_* variables
-  SETUP_ENV_VAR(CHPL_HOST_PLATFORM, "platform.pl --host");
-  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "platform.pl --target");
-  SETUP_ENV_VAR(CHPL_HOST_COMPILER, "compiler.pl --host");
-  SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "compiler.pl --target");
-  SETUP_ENV_VAR(CHPL_TASKS, "tasks.pl");
-  SETUP_ENV_VAR(CHPL_COMM, "comm.pl");
+  SETUP_ENV_VAR(CHPL_HOST_PLATFORM, "chplenv/platform --host");
+  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "chplenv/platform --target");
+  SETUP_ENV_VAR(CHPL_HOST_COMPILER, "chplenv/compiler --host");
+  SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/compiler --target");
+  SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
+  SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");

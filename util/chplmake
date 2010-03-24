@@ -2,11 +2,11 @@
 
 use File::Basename;
 
-$utildirname = dirname($0);
+$utildirname = dirname($0)."/chplenv";
 
 $preset_chplmake=$ENV{'CHPL_MAKE'};
 if ($preset_chplmake eq "") {
-    $platform = `$utildirname/platform.pl`;
+    $platform = `$utildirname/platform`;
     chomp($platform);
     if ($platform eq "cygwin" || $platform eq "darwin") {
         $chplmake = "make";

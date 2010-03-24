@@ -7,8 +7,8 @@ $utildirname = dirname($0);
 $preset_substrate=$ENV{'CHPL_COMM_SUBSTRATE'};
 
 if ($preset_substrate eq "") {
-    $comm = `$utildirname/comm.pl --target`; chomp($comm);
-    $platform = `$utildirname/platform.pl --target`; chomp($platform);
+    $comm = `$utildirname/comm --target`; chomp($comm);
+    $platform = `$utildirname/platform --target`; chomp($platform);
 
     if ($comm eq "gasnet") {
         if ($platform eq "xt-cle") {

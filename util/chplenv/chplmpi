@@ -3,7 +3,7 @@
 use File::Basename;
 
 $utildirname = dirname($0);
-$commscript = "$utildirname/comm.pl";
+$commscript = "$utildirname/comm";
 
 $preset_mpi = $ENV{'CHPL_MPI_VERSION'};
 

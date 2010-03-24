@@ -13,7 +13,7 @@ if ($preset_tasks eq "") {
     } elsif ($preset_threads eq "dev-threads-1") {
 	$tasks = "dev-tasks-1";
     } elsif ($preset_threads eq "") {
-	$platform = `$utildirname/platform.pl --target`;
+	$platform = `$utildirname/platform --target`;
 	chomp($platform);
 	if ($platform =~ /^(mta|xmt(-sim)?)$/) {
 	    $tasks = "mta";
@@ -30,7 +30,7 @@ if ($preset_tasks eq "") {
 }
 
 if ($preset_threads ne "") {
-  system("$utildirname/check-tasks-threads-compatibility.pl",
+  system("$utildirname/check-tasks-threads-compatibility",
 	 "$tasks",
 	 "$preset_threads") == 0 or exit(1);
 }

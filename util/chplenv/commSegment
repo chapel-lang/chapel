@@ -3,13 +3,13 @@ use File::Basename;
 
 $utildirname = dirname($0);
 
-$comm = `$utildirname/comm.pl`;
+$comm = `$utildirname/comm`;
 chomp($comm);
 
 if ($comm eq "gasnet") {
   $preset_segment = $ENV{'CHPL_GASNET_SEGMENT'};
   if ($preset_segment eq "") {
-    $substrate = `$utildirname/commSubstrate.pl`;
+    $substrate = `$utildirname/commSubstrate`;
     chomp($substrate);
 
     if ($substrate eq "portals") {
