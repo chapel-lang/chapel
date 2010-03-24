@@ -271,6 +271,8 @@ extern Symbol *gCLine, *gCFile;
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
+extern Symbol *gTransaction;
+extern Symbol *gTxEnv;
 extern Symbol *gTaskList;
 
 extern Map<FnSymbol*,int> ftableMap;

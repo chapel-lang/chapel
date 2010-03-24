@@ -161,6 +161,8 @@ TYPE_EXTERN PrimitiveType* dtTaskID;
 TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtTaskList;
+TYPE_EXTERN PrimitiveType* dtTransaction;
+TYPE_EXTERN PrimitiveType* dtTxEnv;
 
 //
 // standard module types

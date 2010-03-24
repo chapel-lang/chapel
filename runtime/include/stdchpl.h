@@ -33,6 +33,7 @@
 #include "chpltimers.h"
 #include "chpltypes.h"
 #include "chplgpu.h"
+#include "chplstm.h"
 #include "error.h"
 
 #endif

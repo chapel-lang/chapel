@@ -9,6 +9,7 @@
 #include "chpltasks.h"
 #include "error.h"
 #include "gasnet.h"
+#include "comm-gasnet.h"
 
 #ifdef GASNET_NEEDS_MAX_SEGSIZE
 #define CHPL_COMM_GASNET_SETENV chpl_comm_gasnet_set_max_segsize();
@@ -22,22 +23,6 @@ static int chpl_comm_puts = 0;
 static int chpl_comm_forks = 0;
 static int chpl_comm_nb_forks = 0;
 static int chpl_comm_no_debug_private = 0;
-
-//
-// The following macro is from the GASNet test.h distribution
-//
-#define GASNET_Safe(fncall) do {                                        \
-    int _retval;                                                        \
-    if ((_retval = fncall) != GASNET_OK) {                              \
-      fprintf(stderr, "ERROR calling: %s\n"                             \
-              " at: %s:%i\n"                                            \
-              " error: %s (%s)\n",                                      \
-              #fncall, __FILE__, __LINE__,                              \
-              gasnet_ErrorName(_retval), gasnet_ErrorDesc(_retval));    \
-      fflush(stderr);                                                   \
-      gasnet_exit(_retval);                                             \
-    }                                                                   \
-  } while(0)
 
 typedef struct {
   int           caller;
@@ -60,20 +45,6 @@ typedef struct {
   int offset;    // offset of piece of data
   char data[0];  // data
 } priv_bcast_large_t;
-
-//
-// AM functions
-//
-#define FORK          128 // synchronous fork
-#define FORK_LARGE    129 // synchronous fork with a huge argument
-#define FORK_NB       130 // non-blocking fork 
-#define FORK_NB_LARGE 131 // non-blocking fork with a huge argument
-#define FORK_FAST     132 // run the function in the handler (use with care)
-#define SIGNAL        133 // ack of synchronous fork
-#define PRIV_BCAST    134 // put data at addr (used for private broadcast)
-#define PRIV_BCAST_LARGE 135 // put data at addr (used for private broadcast)
-#define FREE          136 // free data at addr
-#define EXIT_ANY      137 // free data at addr
 
 static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = buf;
@@ -204,19 +175,6 @@ static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
   // here we basically need to call chpl_exit_all, but we need to
   // ensure only one thread calls chpl_exit_all on this locale.
 }
-
-static gasnet_handlerentry_t ftable[] = {
-  {FORK,          AM_fork},
-  {FORK_LARGE,    AM_fork_large},
-  {FORK_NB,       AM_fork_nb},
-  {FORK_NB_LARGE, AM_fork_nb_large},
-  {FORK_FAST,     AM_fork_fast},
-  {SIGNAL,        AM_signal},
-  {PRIV_BCAST,    AM_priv_bcast},
-  {PRIV_BCAST_LARGE, AM_priv_bcast_large},
-  {FREE,          AM_free},
-  {EXIT_ANY,      AM_exit_any}
-};
 
 static gasnet_seginfo_t* seginfo_table;
 

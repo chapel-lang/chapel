@@ -26,6 +26,7 @@ void flattenFunctions();
 void gpuFlattenArgs();
 void inlineFunctions();
 void insertLineNumbers();
+void insertTransactions();
 void insertWideReferences();
 void optimizeOnClauses();
 void lowerIterators();

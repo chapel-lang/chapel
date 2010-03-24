@@ -365,7 +365,6 @@ codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
   }
 }
 
-
 static void
 codegenExprMinusOne(FILE* outfile, Expr* expr) {
   long i;
@@ -2008,6 +2007,223 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIM_WARNING:
       // warning issued, continue codegen
+      break;
+    case PRIM_TX_BEGIN: {
+      gen(outfile, "CHPL_STM_TX_BEGIN(%A, %A)", get(1), get(2));
+      break;
+    }
+    case PRIM_TX_COMMIT: {
+      gen(outfile, "CHPL_STM_TX_COMMIT(%A)", get(1));
+      break;
+    }
+    case PRIM_TX_ARRAY_SET: {
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        Type* classType = get(2)->typeInfo()->getField("addr")->type;
+        Type* elementType = getDataClassType(classType->symbol)->type;
+        Type* wideElementType = wideRefMap.get(elementType->refType);
+	gen(outfile, "CHPL_STM_COMM_WIDE_ARRAY_SET_VALUE");
+        gen(outfile, "(%A, %A, %A, %A, _data, %A, %A, %A, %A)",
+	    get(1), wideElementType, get(2), get(3), classType,
+	    elementType, get(4), get(5), get(6));
+      } else {
+	Type *type = get(2)->typeInfo();
+	registerTypeToStructurallyCodegen(type->symbol);
+	gen(outfile, "CHPL_STM_ARRAY_STORE(%A, %A, %A, %A, %A, %A)",
+	    get(1), get(2), get(3), get(4), type, get(5), get(6));
+      }
+      break;
+    }
+    case PRIM_TX_LOAD_LOCALEID: {
+      gen(outfile, "CHPL_STM_LOAD_LOCALEID(%A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), get(4), get(5));      
+      break;
+    }
+    case PRIM_TX_LOAD: {
+      Type *type = get(2)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "CHPL_STM_LOAD(%A, %A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), type, get(4), get(5));
+      break;    
+    }
+    case PRIM_TX_LOAD_REF: {
+      Type *type = get(2)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "CHPL_STM_LOAD_REF(%A, %A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), type, get(4), get(5));
+      break;    
+    }
+    case PRIM_TX_LOAD_MEMBER_VALUE: {
+      Type *type = get(2)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "/* load member value */\n");
+      gen(outfile, "CHPL_STM_LOAD(%A, %A, (", get(1), get(2));
+      codegen_member(outfile, get(3), get(4));
+      gen(outfile, "), %A, %A, %A)", type, get(5), get(6));      
+      break;
+    }
+    case PRIM_TX_LOAD_SVEC_MEMBER_VALUE: {
+      Type *type = get(2)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "/* load svec member value */\n");
+      gen(outfile, "CHPL_STM_LOAD(%A, %A, (", get(1), get(2));
+      codegenTupleMember(outfile, get(3), get(4));
+      gen(outfile, "), %A, %A, %A)", type, get(5), get(6));
+      break;    
+    }
+    case PRIM_TX_ARRAY_LOAD: {
+      Type *type = get(2)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "/* array load */\n");
+      gen(outfile, "CHPL_STM_ARRAY_LOAD(%A, %A, %A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), get(4), type, get(5), get(6));
+      break;
+    }
+    case PRIM_TX_LOAD_TESTCID: {
+      gen(outfile, "CHPL_STM_CLASS_LOAD_TEST_CID(%A, %A, ", get(1), get(2));
+      gen(outfile, "((object)%A)->chpl__cid, ", get(3));
+      gen(outfile, "chpl__cid_%A, %A, %A)", 
+	  get(4)->typeInfo()->symbol->cname, get(5), get(6));
+      break;
+    }
+    case PRIM_TX_GET_LOCALEID: {
+      gen(outfile, "CHPL_STM_COMM_WIDE_GET_LOCALEID(%A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), get(4), get(5));      
+      break;
+    } 
+    case PRIM_TX_GET_REF: {
+      Type *type = get(2)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "CHPL_STM_COMM_WIDE_GET(%A, %A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), type, get(4), get(5));
+      break;
+    }
+    case PRIM_TX_GET_MEMBER_VALUE: {
+      Type *type = get(2)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      Type *stype = get(3)->typeInfo()->getField("addr")->type;
+      registerTypeToStructurallyCodegen(stype->symbol);
+      gen(outfile, "CHPL_STM_COMM_WIDE_GET_FIELD_VALUE");
+      gen(outfile, "(%A, %A, %A, %A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), stype, get(4), type, get(5), get(6));
+      break;
+    }
+    case PRIM_TX_ARRAY_GET: {
+      Type *type = get(2)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      Type *stype = get(3)->typeInfo()->getField("addr")->type;
+      registerTypeToStructurallyCodegen(stype->symbol);
+      gen(outfile, "CHPL_STM_COMM_WIDE_ARRAY_GET");
+      gen(outfile, "(%A, %A, %A, %A, %A, _data, %A, %A, %A)",
+	  get(1), get(2), get(3), get(4), stype, type, get(5), get(6));
+      break;
+    }
+    case PRIM_TX_GET_TESTCID: {
+      gen(outfile, "CHPL_STM_COMM_WIDE_CLASS_GET_TEST_CID");
+      gen(outfile, "(%A, %A, %A, chpl__cid_%A, object, chpl__cid, %A, %A)", 
+	  get(1), get(2), get(3), get(4)->typeInfo(), get(5), get(6));	  
+      break;
+    }
+    case PRIM_TX_STORE: {
+      Type *type = get(3)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "CHPL_STM_STORE(%A, %A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), type, get(4), get(5));
+      break;
+    }
+    case PRIM_TX_STORE_REF: {
+      Type *type = get(3)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "CHPL_STM_STORE_REF(%A, %A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), type, get(4), get(5));
+      break;
+    }
+    case PRIM_TX_STORECID: {
+      gen(outfile, "CHPL_STM_STORE");
+      gen(outfile, "(%A, ((object)%A)->chpl__cid, ", get(1), get(2));
+      fprintf(outfile, "chpl__cid_%s, chpl__class_id, ",
+	      get(2)->typeInfo()->getField("addr")->type->symbol->cname);
+      gen(outfile, "%A, %A)", get(3), get(4));
+      break;
+    }
+    case PRIM_TX_STORE_SVEC_MEMBER: {
+      Type *type = get(4)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "/* store svec member */\n");
+      gen(outfile, "CHPL_STM_STORE(%A, ", get(1));
+      codegenTupleMember(outfile, get(2), get(3));
+      gen(outfile, ", %A, %A, %A, %A)", get(4), type, get(5), get(6));
+      break;
+    }
+    case PRIM_TX_STORE_MEMBER: {
+      Type *type = get(4)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "/* store member */\n");
+      gen(outfile, "CHPL_STM_STORE(%A, ", get(1));
+      codegen_member(outfile, get(2), get(3));
+      gen(outfile, ", %A, %A, %A, %A)", get(4), type, get(5), get(6));
+      break;
+    }
+    case PRIM_TX_PUT: {
+      Type *type = get(3)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "CHPL_STM_COMM_WIDE_PUT(%A, %A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), type, get(4), get(5));
+      break;
+    }
+    case PRIM_TX_SETCID: {
+      gen(outfile, "CHPL_STM_COMM_WIDE_SET_FIELD_VALUE");
+      gen(outfile, "(%A, %A, ", get(1), get(2));
+      fprintf(outfile, "chpl__cid_%s, object, chpl__cid, chpl__class_id, ",
+	      get(2)->typeInfo()->getField("addr")->type->symbol->cname);
+      gen(outfile, "%A, %A)", get(3), get(4));
+      break;
+    }
+    case PRIM_TX_SET_SVEC_MEMBER: {
+      Type* stype = get(2)->getValType();
+      Type* type = stype->getField("x1")->type;
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "CHPL_STM_COMM_WIDE_SET_TUPLE_COMPONENT_VALUE");
+      gen(outfile, "(%A, %A, %A, %A, ", get(1), get(2), get(4), stype);
+      codegenExprMinusOne(outfile, get(3));
+      gen(outfile, ", %A, %A, %A)", type, get(5), get(6));
+      break;
+    }   
+    case PRIM_TX_SET_MEMBER: {
+      Type *type = get(3)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      if (type->symbol->hasFlag(FLAG_STAR_TUPLE))
+	gen(outfile, "CHPL_STM_COMM_WIDE_SET_FIELD_VALUE_SVEC");
+      else
+	gen(outfile, "CHPL_STM_COMM_WIDE_SET_FIELD_VALUE");
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+	Type* stype = get(2)->typeInfo()->getField("addr")->type;
+	gen(outfile, "(%A, %A, %A, %A, %A, %A, %A, %A)",
+	    get(1), get(2), get(4), stype, get(3), type, get(5), get(6));
+      } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+	Type* stype = get(2)->getValType();
+	INT_ASSERT(!isUnion(stype));
+	gen(outfile, "(%A, %A, %A, %A*, %A, %A, %A, %A)",
+	    get(1), get(2), get(4), stype, get(3), type, get(5), get(6));
+      }
+      break;
+    }
+    case PRIM_TX_ARRAY_ALLOC: {
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        gen(outfile, "_TX_WIDE_ARRAY_ALLOC(%A, %A, %A, %A, %A)", get(1), get(2),
+            getDataClassType(get(2)->typeInfo()->getField("addr")->type->symbol),
+            get(4), get(5), get(6));
+      } else {
+        gen(outfile, "_TX_ARRAY_ALLOC(%A, %A, %A, %A, %A)", get(1), get(2),
+            getDataClassType(get(2)->typeInfo()->symbol),
+            get(4), get(5), get(6));
+      }
+      break;
+    }
+    case PRIM_TX_RT_ERROR:
+      codegenBasicPrimitive(outfile, this);
+      break;
+    case PRIM_COUNT_NUM_REALMS:
+      INT_FATAL(this, "count num realms primitive should no longer be in AST");
       break;
     case PRIM_FTABLE_CALL:
       //

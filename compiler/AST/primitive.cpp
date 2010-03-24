@@ -266,25 +266,30 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
   name(aname),
   returnInfo(areturnInfo),
   isEssential(false),
-  passLineno(false)
+  passLineno(false),
+  isAtomicSafe(false)
 {
   primitives_map.put(name, this);
 }
 
 static void
 prim_def(PrimitiveTag tag, const char* name, Type *(*returnInfo)(CallExpr*),
-         bool isEssential = false, bool passLineno = false) {
+         bool isEssential = false, bool passLineno = false,
+	 bool isAtomicSafe = false) {
   primitives[tag] = new PrimitiveOp(tag, name, returnInfo);
   primitives[tag]->isEssential = isEssential;
   primitives[tag]->passLineno = passLineno;
+  primitives[tag]->isAtomicSafe = isAtomicSafe;
 }
 
 static void
 prim_def(const char* name, Type *(*returnInfo)(CallExpr*),
-         bool isEssential = false, bool passLineno = false) {
+         bool isEssential = false, bool passLineno = false,
+	 bool isAtomicSafe = false) {
   PrimitiveOp* prim = new PrimitiveOp(PRIM_UNKNOWN, name, returnInfo);
   prim->isEssential = isEssential;
   prim->passLineno = passLineno;
+  prim->isAtomicSafe = isAtomicSafe;
 }
 
 
@@ -449,6 +454,54 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_ON_NB, "non-blocking on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);
 
+  prim_def(PRIM_BLOCK_ATOMIC, "atomic block", returnInfoVoid); // this will create problems in nested transactions.
+  prim_def(PRIM_TX_BEGIN, "tx begin", returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_COMMIT, "tx commit", returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_LOAD_LOCALEID, "tx load locale is", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_LOAD, "tx load", returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_LOAD_REF, "tx load ref", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_LOAD_MEMBER_VALUE, "tx load member value", 
+	   returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_LOAD_SVEC_MEMBER_VALUE, "tx load svec member value", 
+	   returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_ARRAY_LOAD, "tx array load", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_LOAD_TESTCID, "tx load and test cid", 
+	   returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_GET_REF, "tx get ref", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_GET_MEMBER_VALUE, "tx get member value", 
+	   returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_ARRAY_GET, "tx array get", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_GET_TESTCID, "tx get and test cid", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_STORE, "tx store", returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_STORE_REF, "tx store ref", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_STORECID, "tx store cid", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_STORE_SVEC_MEMBER, "tx store svec member", 
+	   returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_STORE_MEMBER, "tx store member", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_PUT, "tx put", returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_SETCID, "tx set cid", returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_SET_SVEC_MEMBER, "tx set svec member", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_SET_MEMBER, "tx set member", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_ARRAY_ALLOC, "tx array alloc", returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_CHPL_ALLOC, "tx chpl alloc", returnInfoChplAlloc, 
+	   true, true, true);
+  prim_def(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO, "tx chpl alloc permit zero",
+           returnInfoChplAlloc, true, true, true);
+  prim_def(PRIM_TX_RT_ERROR, "chpl_stm_error", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_BLOCK_ATOMIC_IGNORE, "atomic block ignore", returnInfoVoid);
+ 
   prim_def(PRIM_TO_LEADER, "to leader", returnInfoVoid);
   prim_def(PRIM_TO_FOLLOWER, "to follower", returnInfoVoid);
 
@@ -494,11 +547,11 @@ initPrimitive() {
   prim_def("_format", returnInfoString);
   prim_def("chpl_string_compare", returnInfoInt32, true);
   prim_def("string_contains", returnInfoBool, true);
-  prim_def("string_concat", returnInfoString, true, true);
+  prim_def("string_concat", returnInfoString, true, true, true);
   prim_def("string_length", returnInfoInt32);
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoString, true, true);
-  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true);
+  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true, true);
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);
   prim_def("sleep", returnInfoVoid, true);

@@ -103,6 +103,7 @@
   div
   max
   min
+  assert
 
   // symbols in stdint.h
   int8_t

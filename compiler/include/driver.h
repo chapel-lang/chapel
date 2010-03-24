@@ -43,6 +43,7 @@ extern const char* CHPL_HOST_COMPILER;
 extern const char* CHPL_TARGET_COMPILER;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_COMM;
+extern const char* CHPL_STM;
 
 extern char chplmake[256];
 extern char fExplainCall[256];
@@ -95,5 +96,7 @@ extern char compileVersion[64];
 
 int32_t getNumRealms(void);
 extern Vec<const char*> realms;
+
+extern bool ignore_atomic;
 
 #endif

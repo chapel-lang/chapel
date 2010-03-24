@@ -6,6 +6,7 @@
 #include "chpl_mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
+#include "chplstm.h"
 #include "gdb.h"
 
 #undef exit
@@ -22,8 +23,10 @@ static void chpl_exit_common(int status, int all) {
     if (!_runInGDB())
       chpl__autoDestroyRuntimeGlobals();
     chpl_reportMemInfo();
+    chpl_stm_exit();                   // Terminate STM layer
     chpl_comm_exit_all(status);
   } else {
+    chpl_stm_exit();                   // Terminate STM layer
     chpl_comm_exit_any(status);
   }
   exit(status);

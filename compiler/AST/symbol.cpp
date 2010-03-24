@@ -32,6 +32,8 @@ Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;
 Symbol *gSyncVarAuxFields = NULL;
 Symbol *gSingleVarAuxFields = NULL;
+Symbol *gTransaction = NULL;
+Symbol *gTxEnv = NULL;
 Symbol *gTaskList = NULL;
 
 VarSymbol *gTrue = NULL;

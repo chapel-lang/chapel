@@ -10,6 +10,7 @@ PASSES_SRCS = \
         flattenFunctions.cpp \
         insertDestructors.cpp \
         insertLineNumbers.cpp \
+        insertTransactions.cpp \
         normalize.cpp \
         parallel.cpp \
         returnStarTuplesByRefArgs.cpp \

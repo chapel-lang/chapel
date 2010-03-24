@@ -455,6 +455,8 @@ def range.length {
 //
 // returns true if i is in this range
 //
+// SS: setting this to pragma "inline"
+pragma "inline"
 def range.member(i: eltType) {
   if stridable {
     if boundedType == BoundedRangeType.bounded {

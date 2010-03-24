@@ -50,6 +50,7 @@ PassInfo passlist[] = {
 
   RUN(insertWideReferences), // inserts wide references for on clauses
   RUN(optimizeOnClauses),    // Optimize on clauses
+  RUN(insertTransactions), // replaces atomic blocks with transaction primitives
   // AST to C
   RUN(insertLineNumbers), // insert line numbers for error messages
   RUN(codegen),           // generate C code

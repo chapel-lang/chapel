@@ -334,6 +334,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "const char* CHPL_TARGET_COMPILER    = \"%s\";\n", CHPL_TARGET_COMPILER);
     fprintf(hdrfile, "const char* CHPL_TASKS              = \"%s\";\n", CHPL_TASKS);
     fprintf(hdrfile, "const char* CHPL_COMM               = \"%s\";\n", CHPL_COMM);
+    fprintf(hdrfile, "const char* CHPL_STM               = \"%s\";\n", CHPL_STM);
     if (fGPU) {
       fprintf(hdrfile, "#else\n");
       fprintf(hdrfile, "extern const char* chpl_compileCommand;\n");

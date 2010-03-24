@@ -569,6 +569,8 @@ record _domain {
   def low return _value.dsiLow;
   def high return _value.dsiHigh;
 
+  // SS: adding pragma inline 
+  pragma "inline"
   def member(i) {
     if isArithmeticDom(this) then
       return _value.dsiMember(_makeIndexTuple(rank, i));

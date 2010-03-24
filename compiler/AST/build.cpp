@@ -7,7 +7,9 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "misc.h" // FIXME: should we just include driver.h instead ?? 
 
+bool fOnClause = false; // Drops on clause if set to false
 
 static void
 checkControlFlow(Expr* expr, const char* context) {
@@ -1557,7 +1559,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
       tmp = NULL;
   }
 
-  if (fLocal) {
+  if (fLocal || !fOnClause) {
     BlockStmt* block = new BlockStmt(stmt);
     block->insertAtHead(onExpr); // evaluate the expression for side effects
     return buildChapelStmt(block);
@@ -1702,12 +1704,31 @@ BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1, Expr* e2) {
 BlockStmt*
 buildAtomicStmt(Expr* stmt) {
   static bool atomic_warning = false;
-
-  if (!atomic_warning) {
-    atomic_warning = true;
-    USR_WARN(stmt, "atomic keyword is ignored (not implemented)");
+  BlockStmt* block = buildChapelStmt();
+  BlockStmt* atomicBlock = new BlockStmt(stmt);
+  if(ignore_atomic) {
+    if (!atomic_warning)
+      atomic_warning = true;
+    atomicBlock->blockInfo = new CallExpr(PRIM_BLOCK_ATOMIC_IGNORE);
+  } else {
+    atomicBlock->blockInfo = new CallExpr(PRIM_BLOCK_ATOMIC);
   }
-  return buildChapelStmt(new BlockStmt(stmt));
+  block->insertAtTail(atomicBlock);
+  return block;
+
+  /*  // if atomic keyword is ignored then return the following block statment
+  // as is. If not, identify it using PRIM_BLOCK_ATOMIC. 
+  if(ignore_atomic) {
+    if (!atomic_warning)
+      atomic_warning = true;
+    return buildChapelStmt(new BlockStmt(stmt));
+  } else {
+    BlockStmt* block = buildChapelStmt();
+    BlockStmt* atomicBlock = new BlockStmt(stmt);
+    atomicBlock->blockInfo = new CallExpr(PRIM_BLOCK_ATOMIC);
+    block->insertAtTail(atomicBlock);
+    return block;
+    } */
 }
 
 

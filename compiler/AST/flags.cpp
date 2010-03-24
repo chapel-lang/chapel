@@ -73,6 +73,7 @@ initFlags() {
   defineFlag(FLAG_MAYBE_PARAM, "maybe param");
   defineFlag(FLAG_MAYBE_TYPE, "maybe type");
   defineFlag(FLAG_METHOD, "method");
+  defineFlag(FLAG_NO_ATOMIC_CLONE, "no atomic clone");
   defineFlag(FLAG_NO_AUTO_DESTROY, "no auto destroy");
   defineFlag(FLAG_NO_COPY, "no copy");
   defineFlag(FLAG_NO_DEFAULT_FUNCTIONS, "no default functions");

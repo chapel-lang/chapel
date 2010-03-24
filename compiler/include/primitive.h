@@ -153,6 +153,36 @@ enum PrimitiveTag {
   PRIM_BLOCK_ON_NB,           // BlockStmt::blockInfo - non-blocking on block
   PRIM_BLOCK_LOCAL,           // BlockStmt::blockInfo - local block
 
+  PRIM_BLOCK_ATOMIC,          // SS: Atomic block primitive
+  PRIM_TX_BEGIN,
+  PRIM_TX_COMMIT,
+  PRIM_TX_LOAD_LOCALEID,
+  PRIM_TX_LOAD,               // Transactional load -- local
+  PRIM_TX_LOAD_REF,           // Transactional load from reference -- local
+  PRIM_TX_LOAD_MEMBER_VALUE,
+  PRIM_TX_LOAD_SVEC_MEMBER_VALUE,
+  PRIM_TX_ARRAY_LOAD,
+  PRIM_TX_LOAD_TESTCID,
+  PRIM_TX_GET_LOCALEID,
+  PRIM_TX_GET_REF,            // Transactional load -- local/remote 
+  PRIM_TX_GET_MEMBER_VALUE,
+  PRIM_TX_ARRAY_GET,
+  PRIM_TX_GET_TESTCID,
+  PRIM_TX_STORE,              // Transactional store --local
+  PRIM_TX_STORE_REF,          // Transactional store to reference -- local 
+  PRIM_TX_STORECID,
+  PRIM_TX_STORE_SVEC_MEMBER,
+  PRIM_TX_STORE_MEMBER,
+  PRIM_TX_PUT,                // Transactional store -- local/remote
+  PRIM_TX_SETCID,
+  PRIM_TX_SET_SVEC_MEMBER,
+  PRIM_TX_SET_MEMBER,
+  PRIM_TX_ARRAY_ALLOC,
+  PRIM_TX_CHPL_ALLOC,
+  PRIM_TX_CHPL_ALLOC_PERMIT_ZERO,
+  PRIM_TX_RT_ERROR,
+  PRIM_BLOCK_ATOMIC_IGNORE,   // Atomic block when --ignore-atomic is set
+
   PRIM_TO_LEADER,
   PRIM_TO_FOLLOWER,
 
@@ -223,7 +253,7 @@ class PrimitiveOp { public:
   Type *(*returnInfo)(CallExpr*);
   bool isEssential; // has effects visible outside of the function
   bool passLineno; // pass line number and filename to this primitive
-
+  bool isAtomicSafe; // allowed to be used in atomic block
   PrimitiveOp(PrimitiveTag atag, const char *aname, Type *(*areturnInfo)(CallExpr*));
 };
 

@@ -6,6 +6,7 @@ define hook-run
     end
   end
   set $forcecmd = 0
+  source gdb.commands.srini
 end
 define hook-quit
   if ($forcecmd != 1)
@@ -38,4 +39,69 @@ end
 define flags
   call viewFlags($arg0)
 end
+## SS additions
+set $stmvar = 0
+# extending nview to print tag info
+define sview
+  call nprint_view_noline($arg0)
+  p $arg0->primitive->tag
+end
+# printing just the tag
+define tag
+  p $arg0->primitive->tag
+end
+# toggling stmvar 
+define togstm
+  if ($stmvar != 1) 
+    set $stmvar = 1
+  else
+    set $stmvar = 0
+  end
+end
+# print loc information
+define loc
+  p $arg0->getModule()->cname
+  p $arg0->getFunction()->cname 
+  p $arg0->lineno
+  p $arg0->getFunction()->id
+end
+# set loc information to be used in locb
+define setloc
+  loc $arg0
+  set $fnid = $arg0->getFunction()->id
+  set $lineno = $arg0->lineno
+end  
+
 break gdbShouldBreakHere
+commands
+  bt
+  frame 3
+  nview call
+end
+
+break txUnknownPrimitive
+commands
+  tag call
+  loc call
+  if ($stmvar == 1)
+    c
+  end
+  nview call
+end
+
+break insertTransactions.cpp:48
+commands
+  tag call
+  tag rhs
+  loc call
+  if ($stmvar == 1) 
+    c
+  end
+  nview call
+end
+
+define locb
+  set $fnid = $arg1->getFunction()->id
+  set $lineno = $arg1->lineno
+  cond $arg0 ($arg1->getFunction()->id==$fnid && $arg1->lineno==$lineno)
+end

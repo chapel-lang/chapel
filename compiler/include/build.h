@@ -90,4 +90,6 @@ BlockStmt* buildAtomicStmt(Expr* stmt);
 void createInitFn(ModuleSymbol* mod);
 CallExpr* buildPreDecIncWarning(Expr* expr, char sign);
 
+BlockStmt* buildAtomicStmt(Expr* stmt); // SS: atomic block statement
+
 #endif

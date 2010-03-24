@@ -627,6 +627,14 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL (dtTaskList, gTaskList, "_nullTaskList");
   gTaskList->cname = "NULL";
 
+  dtTransaction = createPrimitiveType("chpl_stm_tx_p", "chpl_stm_tx_p");
+  CREATE_DEFAULT_SYMBOL(dtTransaction, gTransaction, "chpl_stm_null_tx_p");
+  gTransaction->cname = "NULL";
+
+  dtTxEnv = createPrimitiveType("chpl_stm_tx_env_p", "chpl_stm_tx_env_p");
+  CREATE_DEFAULT_SYMBOL(dtTxEnv, gTxEnv, "chpl_stm_null_tx_env_p");
+  gTxEnv->cname = "NULL";
+
   dtAny = createPrimitiveType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
   dtIntegral = createPrimitiveType ("integral", "integral");

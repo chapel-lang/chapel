@@ -1,0 +1,7 @@
+STM_SUBDIR = src/stm/$(CHPL_MAKE_STM)
+
+STM_OBJDIR = $(RUNTIME_ROOT)/$(STM_SUBDIR)/$(RUNTIME_OBJDIR)
+
+ALL_SRCS += $(CURDIR)/$(STM_SUBDIR)/*.c
+
+include $(RUNTIME_ROOT)/$(STM_SUBDIR)/Makefile.share

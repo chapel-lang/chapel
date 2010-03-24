@@ -1,3 +1,6 @@
+//use STMUtil;
+config param atomicSupport: bool = false;
+
 config param CHPL_HOST_PLATFORM: string = "unset";
 config param CHPL_TARGET_PLATFORM: string = "unset";
 if (CHPL_HOST_PLATFORM == "unset") {
@@ -24,6 +27,11 @@ if (CHPL_TASKS == "unset") {
 config param CHPL_COMM: string = "unset";
 if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");
+}
+
+config param CHPL_STM: string = "unset";
+if (CHPL_STM == "unset") {
+  compilerWarning("CHPL_STM not set");
 }
 
 pragma "inline" def +(s: string, x: numeric)
@@ -668,13 +676,18 @@ class _syncvar {
   // Ideally, the definition of this class should be target and base_type dependent,
   // since not all targets need to have a sync_aux field if base_type is sufficiently simple.
 
-  def ~_syncvar() { __primitive("destroy_sync_aux", this); }
+  def ~_syncvar() {
+    if atomicSupport then
+      __primitive("destroy_sync_aux", this); 
+  }
 
   def initialize() {
-    __primitive("init_sync_aux", this);
-    if (isSimpleSyncBaseType(this.base_type)) {
-      // The sync_aux field might not be used on some targets!
-      __primitive("sync_reset", this);
+    if atomicSupport {
+      __primitive("init_sync_aux", this);
+      if (isSimpleSyncBaseType(this.base_type)) {
+	// The sync_aux field might not be used on some targets!
+	__primitive("sync_reset", this);
+      }
     }
   }
 }
@@ -691,10 +704,12 @@ class _syncvar {
 //  isFull - query whether it is full
 
 // This is the default read on sync vars. Wait for full, set and signal empty.
+
 def _syncvar.readFE(): base_type {
   var ret: base_type;
-  on this {
-    var localRet: base_type;
+  if atomicSupport {
+    on this {
+      var localRet: base_type;
     if isSimpleSyncBaseType(base_type) then
       localRet = __primitive("read_FE", localRet, this);
     else {
@@ -702,24 +717,28 @@ def _syncvar.readFE(): base_type {
       localRet = value;
       __primitive("sync_mark_and_signal_empty", this);
     }
-    ret = localRet;
+      ret = localRet;
+    }
   }
   return ret;
 }
 
 // Wait for full, set and signal full.
+pragma "no atomic clone"
 def _syncvar.readFF() {
   var ret: base_type;
-  on this {
-    var localRet: base_type;
-    if isSimpleSyncBaseType(base_type) then
-      localRet = __primitive("read_FF", localRet, this);
-    else {
-      __primitive("sync_wait_full_and_lock", this);
-      localRet = value;
-      __primitive("sync_mark_and_signal_full", this); // in case others are waiting
+  if atomicSupport {
+    on this {
+      var localRet: base_type;
+      if isSimpleSyncBaseType(base_type) then
+	localRet = __primitive("read_FF", localRet, this);
+      else {
+	__primitive("sync_wait_full_and_lock", this);
+	localRet = value;
+	__primitive("sync_mark_and_signal_full", this); // in case others are waiting
+      }
+      ret = localRet;
     }
-    ret = localRet;
   }
   return ret;
 }
@@ -727,29 +746,33 @@ def _syncvar.readFF() {
 // Ignore F/E.  Read value.  No state change or signals.
 def _syncvar.readXX() {
   var ret: base_type;
-  on this {
-    var localRet: base_type;
-    if isSimpleSyncBaseType(base_type) then
-      localRet = __primitive("read_XX", localRet, this);
-    else {
-      __primitive("sync_lock", this);
-      localRet = value;
-      __primitive("sync_unlock", this);
+  if atomicSupport {
+    on this {
+      var localRet: base_type;
+      if isSimpleSyncBaseType(base_type) then
+	localRet = __primitive("read_XX", localRet, this);
+      else {
+	__primitive("sync_lock", this);
+	localRet = value;
+	__primitive("sync_unlock", this);
+      }
+      ret = localRet;
     }
-    ret = localRet;
   }
   return ret;
 }
 
 // This is the default write on sync vars. Wait for empty, set and signal full.
 def _syncvar.writeEF(val:base_type) {
-  on this {
-    if isSimpleSyncBaseType(base_type) then
-      __primitive("write_EF", this, val);
-    else {
-      __primitive("sync_wait_empty_and_lock", this);
-      value = val;
-      __primitive("sync_mark_and_signal_full", this);
+  if atomicSupport {
+    on this {
+      if isSimpleSyncBaseType(base_type) then
+	__primitive("write_EF", this, val);
+      else {
+	__primitive("sync_wait_empty_and_lock", this);
+	value = val;
+	__primitive("sync_mark_and_signal_full", this);
+      }
     }
   }
 }
@@ -786,23 +809,27 @@ def _syncvar.writeXF(val:base_type) {
 
 // Ignore F/E, set to zero or default value and signal empty.
 def _syncvar.reset() {
-  on this {
-    if isSimpleSyncBaseType(base_type) then
-      // Reset this's value to zero.
-      __primitive("sync_reset", this);
-    else {
-      const default_value: base_type;
-      __primitive("sync_lock", this);
-      value = default_value;
-      __primitive("sync_mark_and_signal_empty", this);
+  if atomicSupport {
+    on this {
+      if isSimpleSyncBaseType(base_type) then
+	// Reset this's value to zero.
+	__primitive("sync_reset", this);
+      else {
+	const default_value: base_type;
+	__primitive("sync_lock", this);
+	value = default_value;
+	__primitive("sync_mark_and_signal_empty", this);
+      }
     }
   }
 }
 
 def _syncvar.isFull {
   var b: bool;
-  on this {
-    b = __primitive("sync_is_full", this, isSimpleSyncBaseType(base_type));
+  if atomicSupport {
+    on this {
+      b = __primitive("sync_is_full", this, isSimpleSyncBaseType(base_type));
+    }
   }
   return b;
 }

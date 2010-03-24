@@ -3,6 +3,8 @@
 //  chapel-level implementations of read, write, writeln
 //  chapel-level implementations of assert, halt
 
+//use STMUtil;
+
 enum FileAccessMode { read, write };
 
 //
@@ -74,7 +76,11 @@ class file: Writer {
 
   def isOpen: bool {
     var openStatus: bool = false;
-    if (_fp != __primitive("get_nullfile")) {
+    if atomicSupport {
+      if (_fp != __primitive("get_nullfile")) {
+	openStatus = true;
+      }
+    } else {
       openStatus = true;
     }
     return openStatus;
@@ -270,20 +276,22 @@ def chpl_taskID_t.writeThis(f: Writer) {
 }
 
 def file.writeIt(s: string) {
-  if !isOpen then
-    _checkOpen(this, isRead = false);
-  if mode != FileAccessMode.write then
-    halt("***Error: ", path, "/", filename, " not open for writing***");
-  var status = __primitive("fprintf", _fp, "%s", s);
-  if status < 0 {
-    const err = __primitive("get_errno");
-    halt("***Error: Write failed: ", err, "***");
+  if atomicSupport {
+    if !isOpen then
+      _checkOpen(this, isRead = false);
+    if mode != FileAccessMode.write then
+      halt("***Error: ", path, "/", filename, " not open for writing***");
+    var status = __primitive("fprintf", _fp, "%s", s);
+    if status < 0 {
+      const err = __primitive("get_errno");
+      halt("***Error: Write failed: ", err, "***");
+    }
   }
 }
 
 class StringClass: Writer {
   var s: string;
-  def writeIt(s: string) { this.s += s; }
+  def writeIt(s: string) { if atomicSupport then this.s += s; }
 }
 
 pragma "ref this" pragma "dont disable remote value forwarding"
@@ -415,7 +423,10 @@ def halt() {
 }
 
 def halt(args ...?numArgs) {
-  __primitive("chpl_error", "halt reached - "+_tuple2string(args));
+  if atomicSupport then
+    __primitive("chpl_error", "halt reached - "+_tuple2string(args));
+  else
+    __primitive("chpl_stm_error");
 }
 
 def _debugWrite(args...?n) {

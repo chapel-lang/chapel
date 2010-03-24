@@ -314,6 +314,8 @@ def Block.getChunk(inds, locid) {
 //
 // get the index into the targetLocales array for a given distributed index
 //
+// SS: setting this to pragma "inline"
+// pragma "inline"
 def Block.targetLocsIdx(ind: idxType) where rank == 1 {
   return targetLocsIdx(tuple(ind));
 }
@@ -687,6 +689,8 @@ def BlockDom.dsiBuildArithmeticDom(param rank: int, type idxType,
 //
 // Added as a performance stopgap to avoid returning a domain
 //
+// SS: setting this to pragma "inline"
+pragma "inline"
 def LocBlockDom.member(i) return myBlock.member(i);
 
 def BlockArr.dsiDisplayRepresentation() {
@@ -713,6 +717,8 @@ def BlockArr.setup() {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
+// SS: setting this to pragma "inline"
+pragma "inline"
 def BlockArr.dsiAccess(i: rank*idxType) var {
   if myLocArr then local {
     if myLocArr.locDom.member(i) then
@@ -721,6 +727,8 @@ def BlockArr.dsiAccess(i: rank*idxType) var {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
+// SS: setting this to pragma "inline"
+pragma "inline"
 def BlockArr.dsiAccess(i: idxType...rank) var
   return dsiAccess(i);
 
@@ -1005,6 +1013,8 @@ def BlockArr.dsiReallocate(d: domain) {
 //
 // the accessor for the local array -- assumes the index is local
 //
+// SS: setting this to pragma "inline"
+pragma "inline"
 def LocBlockArr.this(i) var {
   return myElems(i);
 }

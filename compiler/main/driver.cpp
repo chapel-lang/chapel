@@ -27,6 +27,7 @@ const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_TASKS = NULL;
 const char* CHPL_COMM = NULL;
+const char* CHPL_STM = NULL;
 
 int fdump_html = 0;
 static char libraryFilename[FILENAME_MAX] = "";
@@ -111,6 +112,7 @@ static bool printSettingsHelp = false;
 static bool printLicense = false;
 static bool printVersion = false;
 
+bool ignore_atomic = false;
 
 static void setupChplHome(void) {
   const char* chpl_home = getenv("CHPL_HOME");
@@ -145,6 +147,7 @@ static void setupOrderedGlobals(void) {
   SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "compiler.pl --target");
   SETUP_ENV_VAR(CHPL_TASKS, "tasks.pl");
   SETUP_ENV_VAR(CHPL_COMM, "comm.pl");
+  SETUP_ENV_VAR(CHPL_STM, "stm.pl");
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
@@ -473,6 +476,7 @@ static ArgumentDescription arg_desc[] = {
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {"gen-communicated-structures", ' ', NULL, "Generate type/offset information for potential use in communications", "N", &genCommunicatedStructures, NULL, NULL},
+  {"ignore-atomic", ' ', NULL, "[Don't] Ignore the atomic keyword", "N", &ignore_atomic, "CHPL_IGNORE_ATOMIC", NULL},
  {0}
 };
 

@@ -78,6 +78,7 @@ enum Flag {
   FLAG_MAYBE_PARAM, // symbol can resolve to a param
   FLAG_MAYBE_TYPE, // symbol can resolve to a type
   FLAG_METHOD, // function that is a method
+  FLAG_NO_ATOMIC_CLONE,
   FLAG_NO_AUTO_DESTROY,
   FLAG_NO_COPY, // do not apply chpl__initCopy to initialization of a variable
   FLAG_NO_DEFAULT_FUNCTIONS,

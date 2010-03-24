@@ -1,0 +1,9 @@
+STM_SRCS = \
+	 stm-none.c \
+
+SVN_SRCS = $(STM_SRCS)
+SRCS = $(SVN_SRCS)
+
+STM_OBJS = \
+	$(STM_SRCS:%.c=$(STM_OBJDIR)/%.o)
+

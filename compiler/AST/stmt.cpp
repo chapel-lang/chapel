@@ -93,6 +93,10 @@ void BlockStmt::codegen(FILE* outfile) {
       fprintf(outfile, "for (;");
       blockInfo->get(1)->codegen(outfile);
       fprintf(outfile, ";) ");
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC)) { 
+      INT_FATAL(this, "primitive should no longer be in the AST");
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC_IGNORE)) {
+      fprintf(outfile, "/* atomic block -- begin */ ");
     }
   }
 
@@ -105,12 +109,14 @@ void BlockStmt::codegen(FILE* outfile) {
     fprintf(outfile, "} while (");
     blockInfo->get(1)->codegen(outfile);
     fprintf(outfile, ");\n");
+  } else if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC_IGNORE)) {
+    fprintf(outfile, "} /* atomic block -- end */\n");
   } else if (this != getFunction()->body) {
     fprintf(outfile, "}");
     CondStmt* cond = toCondStmt(parentExpr);
     if (!cond || !(cond->thenStmt == this && cond->elseStmt))
       fprintf(outfile, "\n");
-  }
+  } 
 }
 
 
