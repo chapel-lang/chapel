@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Set the CONFIGFILE to be whatever's in the first argument.
 # If no argument is passed in, then simply use the file CONFIG.

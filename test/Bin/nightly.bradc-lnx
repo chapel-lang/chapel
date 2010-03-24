@@ -1,4 +1,4 @@
-#!/usr/bin/tcsh
+#!/usr/bin/env tcsh
 source ~bradc/.chapelcshrc-cron-testRelease && ~bradc/chapel/util/testRelease -cron >& ~bradc/tmp/nightly.testRelease.out
 source ~bradc/.chapelcshrc-cron && ~bradc/chapel/test/Bin/nightly -cron -performance >& ~bradc/tmp/nightly-perf.linux.out
 source ~bradc/.chapelcshrc-cron && ~bradc/chapel/util/tokencount/tokctnightly -cron >& ~bradc/tmp/tokctnightly.out

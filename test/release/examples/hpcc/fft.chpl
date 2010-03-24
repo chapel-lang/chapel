@@ -49,7 +49,7 @@ config const epsilon = 2.0 ** -51.0,
 // specify the fixed seed explicitly
 //
 config const useRandomSeed = true,
-             seed = if useRandomSeed then getRandomStreamClockSeed() else 314159265;
+             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -78,7 +78,7 @@ def main() {
   // to m/4-1 stored using the block distribution TwiddleDist.
   // Twiddles is the vector of twiddle values.
   //
-  const TwiddleDist = new dist(new Block(1, idxType, bbox=[0..m/4-1]));
+  const TwiddleDist = new dist(new Block(boundingBox=[0..m/4-1]));
   const TwiddleDom: domain(1, idxType) distributed TwiddleDist = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
@@ -96,8 +96,9 @@ def main() {
   // z (used to store the input vector) and ZBlk (used for the first
   // half of the FFT phases).
   //
-  const BlkDist = new dist(new Block(1, idxType, bbox=ProblemSpace, 
-                                              tasksPerLocale=tasksPerLocale));
+  const BlkDist = new dist(new Block(boundingBox=ProblemSpace, 
+                                     maxDataParallelism=tasksPerLocale,
+                                     limitDataParallelism=false));
   const BlkDom: domain(1, idxType) distributed BlkDist = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
@@ -109,7 +110,8 @@ def main() {
   // phases.
   //
   const CycDist = new dist(new Cyclic(1, idxType, 
-                                               tasksPerLocale=tasksPerLocale));
+                                      maxDataParallelism=tasksPerLocale,
+                                      limitDataParallelism=false));
   const CycDom: domain(1, idxType) distributed CycDist = ProblemSpace;
   var Zcyc: [CycDom] elemType;
 

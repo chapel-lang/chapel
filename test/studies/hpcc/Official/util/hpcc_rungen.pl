@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 #
 # HPCC rungen script developed by Steve Whalen, Cray Inc.

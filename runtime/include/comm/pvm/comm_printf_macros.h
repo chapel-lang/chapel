@@ -1,5 +1,5 @@
-#ifndef CHPLIO_MD_H
-#define CHPLIO_MD_H
+#ifndef _comm_printf_macros_h_
+#define _comm_printf_macros_h_
 
 #ifndef LAUNCHER
 

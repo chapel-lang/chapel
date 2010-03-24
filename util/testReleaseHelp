@@ -1,4 +1,4 @@
-#!/usr/bin/csh
+#!/bin/csh
 
 #
 # unsetenv normal Chapel environment variables

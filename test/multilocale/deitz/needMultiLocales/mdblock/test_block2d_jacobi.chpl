@@ -4,7 +4,7 @@ config var n : int = 5;
 config var epsilon : real = 0.00001;
 config var verbose : bool = false;
 
-const Dist = new dist(new Block(2,int,[1..n,1..n],tasksPerLocale=1));
+const Dist = new dist(new Block([1..n,1..n],maxDataParallelism=1));
 
 var R : domain(2) distributed Dist = [1..n, 1..n];
 writeln(R);

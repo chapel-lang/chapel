@@ -38,7 +38,7 @@ config const epsilon = 2.0 ** -51.0,
 // specify the fixed seed explicitly
 //
 config const useRandomSeed = false,
-             seed = if useRandomSeed then getRandomStreamClockSeed() else 314159265;
+             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -60,7 +60,7 @@ def main() {
   // to m/4-1.  Twiddles is the vector of twiddle values.
   //
   //const TwiddleDist = new dist(new Cyclic(rank=1, idxType=int(64), tasksPerLocale=tasksPerLocale));
-  const TwiddleDist = new dist(new Block(rank=1, idxType=int(64), bbox=[0..m/4-1], targetLocales=Locales));
+  const TwiddleDist = new dist(new Block(rank=1, idxType=int(64), boundingBox=[0..m/4-1], targetLocales=Locales));
   const TwiddleDom: domain(1, int(64)) distributed TwiddleDist = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
@@ -70,11 +70,16 @@ def main() {
   // from 0 to m-1.  It is distributes the vectors Z and z across the
   // locales using the Block distribution.
   //
-  const BlkDist = new dist(new Block(rank=1, idxType=int(64), bbox=[0..m-1], targetLocales=Locales, tasksPerLocale=tasksPerLocale));
+  const BlkDist = new dist(new Block(rank=1, idxType=int(64), boundingBox=[0..m-1],
+                                     targetLocales=Locales,
+                                     maxDataParallelism=tasksPerLocale,
+                                     limitDataParallelism=false));
   const BlkDom: domain(1, int(64)) distributed BlkDist = [0..m-1];
   var Z, z: [BlkDom] elemType;
 
-  const CycDist = new dist(new Cyclic(rank=1, idxType=int(64), targetLocales=Locales, tasksPerLocale=tasksPerLocale));
+  const CycDist = new dist(new Cyclic(rank=1, idxType=int(64), targetLocales=Locales,
+                                      maxDataParallelism=tasksPerLocale,
+                                      limitDataParallelism=false));
   const CycDom: domain(1, int(64)) distributed CycDist = [0..m-1];
   var Zcyc: [CycDom] elemType;
 

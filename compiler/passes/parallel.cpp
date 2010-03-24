@@ -529,6 +529,7 @@ makeHeapAllocations() {
           }
         } else if ((call->isPrimitive(PRIM_GET_MEMBER) ||
                    call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                   call->isPrimitive(PRIM_GET_LOCALEID) ||
                    call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
           VarSymbol* tmp = newTemp(var->type->refType);

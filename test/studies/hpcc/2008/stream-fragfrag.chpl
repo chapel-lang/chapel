@@ -17,7 +17,7 @@ config const numTrials = 10,
 config const tasksPerLocale = min reduce Locales.numCores;
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then getRandomStreamClockSeed() else 314159265;
+             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
 
 config const printParams = true,
              printArrays = false,

@@ -14,7 +14,7 @@ config const numTrials = 10,
              epsilon = 0.0;
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then getRandomStreamClockSeed() else 314159265;
+             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
 
 config const printParams = true,
              printArrays = false,
@@ -24,7 +24,7 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const BlockDist = new dist(new Block(rank=1, bbox=[1..m], targetLocales=Locales, idxType=int(64)));
+  const BlockDist = new dist(new Block(rank=1, boundingBox=[1..m], targetLocales=Locales, idxType=int(64)));
   const ProblemSpace: domain(1, int(64)) distributed BlockDist = [1..m];
   var A, B, C: [ProblemSpace] elemType;
 

@@ -92,33 +92,30 @@ class DefaultArithmeticDom: BaseArithmeticDom {
 
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
-      writeln("*** In domain leader code: this = ", this);
-    var numCores = here.numCores;
-    var runningTasks = here.runningTasks();
-    if debugDefaultDist then
-      writeln("    numCores=", numCores, ", runningTasks=", runningTasks);
-
-    var numChunks: uint(64) =
-    if (runningTasks >= numCores) then 1
-    else if maxChunks == -1 then
-      if maxThreads == 0 then (numCores-runningTasks+1):uint(64)
-      else (min(numCores-runningTasks+1, maxThreads)):uint(64)
-    else if maxThreads == 0 then (min(numCores-runningTasks+1, maxChunks)):uint(64)
-      else (min(numCores-runningTasks+1, min(maxThreads, maxChunks))):uint(64);
-
-    var numelems: uint(64) = 1;
-    for param i in 1..rank do
-      numelems *= ranges(i).length:uint(64);
+      writeln("*** In domain leader code:"); // this = ", this);
+    // For now we have to set this default here rather than as the
+    //  default value in the constructor because we need to create
+    //  an array to store the locales (and hence 'here')
+    var maxTasks = if maxDataParallelism>0 then maxDataParallelism
+                   else here.numCores;
+    var limitTasks = limitDataParallelism;
+    var minIndicesPerTask = minDataParallelismSize;
 
     if debugDefaultDist then
-      writeln("*** DI: rank=", rank, " numelems=", numelems, " numChunks=", numChunks, " ranges(1).length=", ranges(1).length);
+      writeln("    maxTasks=", maxTasks, " (", limitTasks,
+              "), minIndicesPerTask=", minIndicesPerTask);
 
-    if ((numelems <= minElemsPerChunk*numChunks) ||
-        ((ranges(1).length):uint(64) < numChunks) ||
-        (numChunks == 1)) {
-      if debugDefaultDist then
-	writeln("*** minElemsPerChunk*numChunks = ",
-		minElemsPerChunk*numChunks, ", using 1 chunk");
+    var (numChunks, parDim) = _computeChunkStuff(maxTasks, limitTasks,
+                                                 minIndicesPerTask,
+                                                 ranges, rank);
+    if debugDefaultDist then
+      writeln("    numChunks=", numChunks, " parDim=", parDim,
+              " ranges(", parDim, ").length=", ranges(parDim).length);
+
+    if debugDefaultDist then
+      writeln("*** DI: Using ", numChunks, " chunk(s)");
+
+    if numChunks == 1 {
       if rank == 1 {
 	yield tuple(0..ranges(1).length-1);
       } else {
@@ -135,11 +132,12 @@ class DefaultArithmeticDom: BaseArithmeticDom {
 	writeln("*** DI: locBlock = ", locBlock);
       coforall chunk in 0..numChunks-1 {
 	var tuple: rank*range(idxType) = locBlock;
-	const (lo,hi) = _computeBlock(locBlock(1).length, numChunks, chunk,
-                                      locBlock(1).high);
-	tuple(1) = lo..hi;
-	if debugDefaultDist then
-	  writeln("*** DI: tuple = ", tuple);
+	const (lo,hi) = _computeBlock(locBlock(parDim).length,
+                                      numChunks, chunk,
+                                      locBlock(parDim).high);
+	tuple(parDim) = lo..hi;
+        if debugDefaultDist then
+          writeln("*** DI: tuple = ", tuple);
 	yield tuple;
       }
     }
@@ -304,32 +302,30 @@ class DefaultArithmeticArr: BaseArr {
 
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
-      writeln("*** In array leader code: [\n", this, "]");
-    var numCores = here.numCores;
-    var runningTasks = here.runningTasks();
-    if debugDefaultDist then
-      writeln("    numCores=", numCores, ", runningTasks=", runningTasks());
-    var numChunks: uint(64) =
-    if (runningTasks >= numCores) then 1
-    else if maxChunks == -1 then
-      if maxThreads == 0 then (numCores-runningTasks+1):uint(64)
-      else (min(numCores-runningTasks+1, maxThreads)):uint(64)
-    else if maxThreads == 0 then (min(numCores-runningTasks+1, maxChunks)):uint(64)
-      else (min(numCores-runningTasks+1, min(maxThreads, maxChunks))):uint(64);
-
-    var numelems: uint(64) = 1;
-    for param i in 1..rank do
-      numelems *= dom.ranges(i).length:uint(64);
+      writeln("*** In array leader code:");// [\n", this, "]");
+    // For now we have to set this default here rather than as the
+    //  default value in the constructor because we need to create
+    //  an array to store the locales (and hence 'here')
+    var maxTasks = if maxDataParallelism>0 then maxDataParallelism
+                   else here.numCores;
+    var limitTasks = limitDataParallelism;
+    var minElemsPerTask = minDataParallelismSize;
 
     if debugDefaultDist then
-      writeln("*** AI: rank=", rank, " numelems=", numelems, " numChunks=", numChunks, " dom.ranges(1).length=", dom.ranges(1).length);
+      writeln("    maxTasks=", maxTasks, " (", limitTasks,
+              "), minElemsPerTask=", minElemsPerTask);
 
-    if ((numelems <= minElemsPerChunk*numChunks) ||
-        ((dom.ranges(1).length):uint(64) < numChunks) ||
-        (numChunks == 1)) {
-      if debugDefaultDist then
-	writeln("*** minElemsPerChunk*numChunks = ",
-		minElemsPerChunk*numChunks, ", using 1 chunk");
+    var (numChunks, parDim) = _computeChunkStuff(maxTasks, limitTasks,
+                                                 minElemsPerTask,
+                                                 dom.ranges, rank);
+    if debugDefaultDist then
+      writeln("    numChunks=", numChunks, " parDim=", parDim,
+              " ranges(", parDim, ").length=", dom.ranges(parDim).length);
+
+    if debugDefaultDist then
+      writeln("*** AI: Using ", numChunks, " chunk(s)");
+
+    if numChunks == 1 {
       if rank == 1 {
 	yield tuple(0..dom.ranges(1).length-1);
       } else {
@@ -346,9 +342,10 @@ class DefaultArithmeticArr: BaseArr {
 	writeln("*** AI: locBlock = ", locBlock);
       coforall chunk in 0..numChunks-1 {
 	var tuple: rank*range(idxType) = locBlock;
-	const (lo,hi) = _computeBlock(locBlock(1).length, numChunks, chunk,
-                                      locBlock(1).high);
-	tuple(1) = lo..hi;
+	const (lo,hi) = _computeBlock(locBlock(parDim).length,
+                                      numChunks, chunk,
+                                      locBlock(parDim).high);
+	tuple(parDim) = lo..hi;
 	if debugDefaultDist then
 	  writeln("*** AI: tuple = ", tuple);
 	yield tuple;
@@ -358,7 +355,7 @@ class DefaultArithmeticArr: BaseArr {
 
   def these(param tag: iterator, follower) var where tag == iterator.follower {
     if debugDefaultDist then
-      writeln("*** In array follower code: [\n", this, "]");
+      writeln("*** In array follower code:"); // [\n", this, "]");
     for i in dom.these(tag=iterator.follower, follower) do
       yield dsiAccess(i);
   }

@@ -1,4 +1,4 @@
-#!/bin/bash -v
+#!/usr/bin/env bash
 #PBS -N "ra"
 #PBS -j oe
 #PBS -l walltime=1:00:00

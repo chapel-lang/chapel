@@ -4,7 +4,9 @@ def foo(x: integral = 1..3) {
 
 foo(1);
 writeln();
-foo();
+serial true {
+  foo();
+}
 writeln();
 serial true {
   foo(1..4);

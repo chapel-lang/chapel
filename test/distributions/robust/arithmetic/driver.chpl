@@ -27,11 +27,11 @@ def setupDistributions() {
   }
   if distString == 'block' {
     return (
-            new dist(new Block(rank=1, bbox=Space1)),
-            new dist(new Block(rank=2, bbox=Space2)),
-            new dist(new Block(rank=3, bbox=Space3)),
-            new dist(new Block(rank=4, bbox=Space4)),
-            new dist(new Block(rank=2, idxType=int(64), bbox=Space2D64))
+            new dist(new Block(rank=1, boundingBox=Space1)),
+            new dist(new Block(rank=2, boundingBox=Space2)),
+            new dist(new Block(rank=3, boundingBox=Space3)),
+            new dist(new Block(rank=4, boundingBox=Space4)),
+            new dist(new Block(rank=2, idxType=int(64), boundingBox=Space2D64))
            );
   }
   if distString == 'cyclic' {

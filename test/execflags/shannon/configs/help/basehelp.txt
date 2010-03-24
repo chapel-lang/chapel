@@ -18,22 +18,17 @@ CONFIG VAR FLAGS:
 CONFIG VARS:
 ============
 Built-in config vars:
-        numLocales: int (configured to 1)
-        maxThreads: int
-  minElemsPerChunk: uint(64)
-         maxChunks: int
-          memTrack: bool
-          memStats: bool
-          memLeaks: bool
-     memLeaksTable: bool
-            memMax: uint(64)
-      memThreshold: uint(64)
-            memLog: string
-       memLeaksLog: string
+              numLocales: int (configured to 1)
+              maxThreads: int
+      maxDataParallelism: int
+    limitDataParallelism: bool
+  minDataParallelismSize: uint(64)
+                memTrack: bool
+                memStats: bool
+                memLeaks: bool
+           memLeaksTable: bool
+                  memMax: uint(64)
+            memThreshold: uint(64)
+                  memLog: string
+             memLeaksLog: string
 
-module1 config vars:
-                 x: int (configured to 999)
-
-module2 config vars:
-                 x: int
-                 z: real (configured to 8888.88)

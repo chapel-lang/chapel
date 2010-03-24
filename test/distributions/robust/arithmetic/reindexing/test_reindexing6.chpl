@@ -1,9 +1,9 @@
 use driver_domains;
 config const shift = 100;
-var s1 = shift+1;
-var s2 = shift+1;
-var s3 = shift+1;
-var s4 = shift+1;
+var s1 = shift;
+var s2 = shift;
+var s3 = shift;
+var s4 = shift;
 
 const MySpace4 = Space4 + fill(4,shift);
 const MyDom4D: domain(4) distributed Dist4D = MySpace4;
@@ -38,11 +38,11 @@ def dit() {
 }
 
 dit();
-s4 = shift;
+s4 = shift-1;
 dit();
-s3 = shift;
+s3 = shift-1;
 dit();
-s2 = shift;
+s2 = shift-1;
 dit();
-s1 = shift;
+s1 = shift-1;
 dit();

@@ -67,8 +67,8 @@ const char* chpl_rt_memDescs[] = {
   "task list descriptor",
   "arrays for localesPerRealm",
   "thread private data",
-  "thread callee function pointer and argument"
-  "thread list descriptor",
+  "thread callee function pointer and argument",
+  "thread list descriptor"
 };
 #endif
 typedef enum {

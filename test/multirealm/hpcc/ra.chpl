@@ -58,12 +58,14 @@ config const printParams = true,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new dist(new Block(1, indexType, bbox=[0..m-1], 
-                                              tasksPerLocale=tasksPerLocale,
-                                              targetLocales=AllLocales)),
-      UpdateDist = new dist(new Block(1, indexType, bbox=[0..N_U-1],
-                                               tasksPerLocale=tasksPerLocale,
-                                               targetLocales=AllLocales));
+const TableDist = new dist(new Block(boundingBox=[0..m-1], 
+                                     maxDataParallelism=tasksPerLocale,
+                                     limitDataParallelism=false,
+                                     targetLocales=AllLocales)),
+      UpdateDist = new dist(new Block(boundingBox=[0..N_U-1],
+                                      maxDataParallelism=tasksPerLocale,
+                                      limitDataParallelism=false,
+                                      targetLocales=AllLocales));
 
 //
 // TableSpace describes the index set for the table.  It is a 1D

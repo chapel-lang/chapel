@@ -1,0 +1,5 @@
+CONFIG VARS:
+============
+  Thursday: night (default:  "Rain and snow.")
+  Possible: snow (default:  "accumulation")
+     ofOne: "inch."

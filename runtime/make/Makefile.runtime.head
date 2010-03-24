@@ -30,8 +30,15 @@ RUNTIME_CFLAGS += \
 	-DCHPL_TASKS_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
 	-DCHPL_THREADS=$(CHPL_MAKE_THREADS_UBAR) \
         -DCHPL_THREADS_H=\"threads-$(CHPL_MAKE_THREADS).h\" \
-	-DCHPL_STM=$(CHPL_MAKE_STM) \
 	-DCHPL_STM_H=\"stm-$(CHPL_MAKE_STM).h\" 
+
+#
+# SS: temporary fix until we find a good resting place for 
+# gasnet AM calls
+#
+ifeq ($(CHPL_MAKE_STM), gtm)
+RUNTIME_CFLAGS += -DCHPL_STM_GTM
+endif
 
 RUNTIME_INCLS = \
 	-I. \

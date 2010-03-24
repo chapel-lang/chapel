@@ -26,6 +26,7 @@ SUBDIRS = \
 	tasks \
 	threads \
         timers \
+	stm \
 
 else
 TARGETS = \

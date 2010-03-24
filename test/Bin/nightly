@@ -18,12 +18,8 @@ $parnodefile = "";
 $nolocal = 0;
 $combinedir = 0;
 $dist = "";
-
-$svntoday = `date +%F`; chomp($svntoday);
-$svnrevdate = `date -d"$svntoday PGT" +"%F %R %z"`; chomp($svnrevdate);
-if ($debug == 0) {
-    $svnrevopt = "-r'{$svnrevdate}'"
-}
+$memleaks = "";
+$svnrevopt = "";
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -51,6 +47,8 @@ while (@ARGV) {
         $baseline = 1;
     } elsif ($flag eq "-dist") {
         $dist = shift @ARGV;
+    } elsif ($flag eq "-memleaks") {
+        $memleaks = shift @ARGV;
     } elsif ($flag eq "-suppress") {
         $suppressions = shift @ARGV;
     } elsif ($flag eq "-componly") {
@@ -67,6 +65,11 @@ while (@ARGV) {
         $printusage = 1;
         last;
     }
+}
+
+$svntoday = `date +%F`; chomp($svntoday);
+if ($debug == 0 && $svnrevopt eq "") {
+    $svnrevopt = "-r'{$svntoday 00:00 -0700}'";
 }
 
 if ($ENV{'CHPL_COMM'} eq "gasnet") {
@@ -96,6 +99,7 @@ if ($printusage == 1) {
     print "\t-performance : run performance tests\n";
     print "\t-baseline    : run baseline tests\n";
     print "\t-dist <dist> : run distribution robustness tests\n";
+    print "\t-memleaks <log> : run memleaks tests\n";
     print "\t-no-local    : run tests using --no-local\n";
     print "\t-componly    : only run the compiler, not the generated binary\n";
     print "\t-parnodefile : specify a node file to use for parallel testing\n";
@@ -256,6 +260,8 @@ if ($performance == 1) {
     $subjectid = " Baseline";
 } elsif (!($dist eq "")) {
     $subjectid = " Dist $dist";
+} elsif (!($memleaks eq "")) {
+    $subjectid = " Memory-Leaks";
 } elsif ($nolocal == 1) {
     $subjectid = " No-local";
 } elsif ($runtests == 0) {
@@ -295,6 +301,9 @@ if ($valgrind == 1) {
     } elsif (!($dist eq "")) {
         $threechars = "vgrdist$dist";
         $morechars = "dist-$dist+vgrnd";
+    } elsif (!($memleaks eq "")) {
+        $threechars = "vgrmem";
+        $morechars = "mem+vgrnd";
     } elsif ($nolocal == 1) {
         $threechars = "vnl";
         $morechars = "no-inline+vgrnd";
@@ -314,6 +323,9 @@ if ($valgrind == 1) {
 } elsif (!($dist eq "")) {
     $threechars = "dist$dist";
     $morechars = "dist-$dist";
+} elsif (!($memleaks eq "")) {
+    $threechars = "mem";
+    $morechars = "memoryleaks";
 } elsif ($nolocal == 1) {
     $threechars = "nlc";
     $morechars = "nolocal";
@@ -474,6 +486,9 @@ if ($examples == 1) {
 if (!($dist eq "")) {
     $testflags = "$testflags distributions/robust/arithmetic";
 }
+if (!($memleaks eq "")) {
+    $testflags = "$testflags release/examples";
+}
 if ($parnodefile eq "") {
 } else {
     if ($gasnet == 1) {
@@ -501,6 +516,9 @@ if ($baseline == 1) {
 }
 if (!($dist eq "")) {
     $testflags = "$testflags -compopts -sdistString=$dist";
+}
+if (!($memleaks eq "")) {
+    $testflags = "$testflags -memleaks /tmp/$memleaks";
 }
 if ($nolocal == 1) {
     $testflags = "$testflags -compopts --no-local";
@@ -682,6 +700,13 @@ if ($runtests == 0) {
     }
     `echo "$statdate\t-\t$testcol\t$col\t$vgrcol" >> $statfile`;
     commitstats();
+
+#
+# analyze memory leaks tests
+#
+    if (!($memleaks eq "")) {
+        mysystem("$chapeldir/util/analyzeMemLeaksLog.pl /tmp/$memleaks > $logdir/$memleaks");
+    }
 }
 
 exit 0;
