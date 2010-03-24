@@ -23,10 +23,10 @@ Recommended Settings
 
 2) Set the CHPL_HOST_PLATFORM environment variable to represent the
    platform on which you're working.  For standard UNIX workstations,
-   this can be done by running the $CHPL_HOME/util/platform.pl script.
-   For example:
+   this can be done by running the $CHPL_HOME/util/chplenv/platform
+   script.  For example:
 
-        setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/platform.pl`
+        setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/chplenv/platform`
 
    For other platforms that appear very similar to a UNIX workstation
    from the shell prompt (e.g., a Cray XT or CX1), the value may need
@@ -36,7 +36,7 @@ Recommended Settings
         cx1-linux : Cray CX1 running Linux
         cygwin    : Cygwin (Windows) platforms
         darwin    : Macintosh OS X platforms
-        linux     : 32-bit Linux platforms
+        linux32   : 32-bit Linux platforms
         linux64   : 64-bit Linux platforms
         pwr5      : IBM Power5 SMP cluster
         pwr6      : IBM Power6 SMP cluster
@@ -135,11 +135,11 @@ Optional Settings
    invoke when compiling the generated C code.  If not set, this will
    default to a value based on $CHPL_HOST_PLATFORM:
 
-        platform            make utility
-        --------            ------------
-        cygwin, darwin  ->  make
-        linux, linux64  ->  gmake if available, otherwise make
-        other           ->  gmake
+        platform              make utility
+        --------              ------------
+        cygwin, darwin    ->  make
+        linux32, linux64  ->  gmake if available, otherwise make
+        other             ->  gmake
         
 
 4) Optionally, set the CHPL_TASKS and/or CHPL_THREADS environment

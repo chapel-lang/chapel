@@ -147,11 +147,11 @@ To compile a Chapel program for multiple realms using GASNet, set up
 your environment variables as usual and then compile using a
 command-line like:
 
-  chpl ...normal arguments... -srealmTypes="linux linux linux"
+  chpl ...normal arguments... -srealmTypes="linux32 linux32 linux32"
 
 The -srealmTypes flag says to set the config param "realmTypes" to the
-specified value.  Here, the mention of linux three times indicates our
-desire to run on three realms, each one a linux platform (due to
+specified value.  Here, the mention of linux32 three times indicates our
+desire to run on three realms, each one a 32-bit linux platform (due to
 GASNet's homogeneous assumptions).
 
 Then, to run the program, use a command-line like:
@@ -198,7 +198,7 @@ Set CHPL_COMM to pvm, cd to $CHPL_HOME/third-party, and make pvm:
 Then build the Chapel compiler and runtime as you normally would.
 Repeat these steps for each host type you wish to use (See note above
 regarding the location of CHPL_HOME).  A machine's host type can be
-found by running '$CHPL_HOME/util/platform.pl --host'.
+found by running '$CHPL_HOME/util/chplenv/platform --host'.
 
 
 SETTING UP YOUR ENVIRONMENT TO USE PVM:
@@ -288,10 +288,10 @@ realmTypes to be set to a quoted list of host types to build for:
 For example, to compile $CHPL_HOME/examples/tutorials/multirealm.chpl
 to run between a Mac running darwin and a Linux host, you would use:
 
-  % chpl-multirealm -srealmTypes='darwin linux' -o multirealm multirealm.chpl
+  % chpl-multirealm -srealmTypes='darwin linux32' -o multirealm multirealm.chpl
 
 Assuming the first entry in your hostfile.darwin is
-'darwinchapel.cray.com' and the first entry in your hostfile.linux is
+'darwinchapel.cray.com' and the first entry in your hostfile.linux32 is
 'linuxchapel.cray.com', the above invocation of chpl-multirealm will
 use ssh to launch a remote compilation of multirealm.chpl on
 darwinchapel.cray.com, generating the binaries multirealm_darwin and
@@ -299,13 +299,13 @@ multirealm_darwin_real.  The location of these files will depend
 either on the environment variable CHPL_MULTIREALM_LAUNCH_DIR_darwin,
 if specified or the current working directory if not.  It will then
 use ssh to launch a remote compilation of multirealm.chpl on
-linuxchapel.cray.com, generating the binaries multirealm_linux and
-multirealm_linux_real.  The location of these files will depend either
-on the environment variable CHPL_MULTIREALM_LAUNCH_DIR_linux, if
+linuxchapel.cray.com, generating the binaries multirealm_linux32 and
+multirealm_linux32_real.  The location of these files will depend either
+on the environment variable CHPL_MULTIREALM_LAUNCH_DIR_linux32, if
 specified, or the current working directory if not.
 
 The binaries ending with '_real' are the actual Chapel program and
-multirealm_darwin and multirealm_linux are the launcher programs.  The
+multirealm_darwin and multirealm_linux32 are the launcher programs.  The
 program may be started using either of the two launchers from the
 corresponding host type.
 
@@ -331,31 +331,31 @@ For the example above, assume the following environment variables are
 set:
 
   CHPL_MULTIREALM_LAUNCH_DIR_darwin = /home/chapel/bin/darwin
-  CHPL_MULTIREALM_LAUNCH_DIR_linux  = /home/chapel/bin/linux
+  CHPL_MULTIREALM_LAUNCH_DIR_linux32  = /home/chapel/bin/linux32
 
 Assume the file multirealm_darwin_real is in the directory
-/home/chapel/bin/darwin on darwinchapel.cray.com.  Assume the file
-multirealm_linux_real is in the directory /home/chapel/bin/linux on
-linuxchapel.cray.com.
+/home/chapel/bin/darwin on the darwin machine and that the file
+multirealm_linux32_real is in the directory /home/chapel/bin/linux32
+on the linux32 machine.
 
 You can launch the multirealm program from either a darwin host or a
-linux host.  For example,
+linux32 host.  For example,
 
-On linuxchapel.cray.com, run:
+On the linux32 machine, run:
 
-  % multirealm_linux --localesPerRealm='2 1'
+  % multirealm_linux32 --localesPerRealm='2 1'
 
 This command will launch multirealm_darwin_real on the first two hosts
-specified in $CHPL_HOME/hostfile.darwin and multirealm_linux_real on
-the first host specified in $CHPL_HOME/hostfile.linux.
+specified in $CHPL_HOME/hostfile.darwin and multirealm_linux32_real on
+the first host specified in $CHPL_HOME/hostfile.linux32.
 
 On darwinchapel.cray.con, run:
 
   % multirealm_darwin --localesPerRealm='2 4'
 
 This command will launch multirealm_darwin_real on the first two hosts
-specified in $CHPL_HOME/hostfile.darwin and multirealm_linux_real on
-the first four hosts specified in $CHPL_HOME/hostfile.linux.
+specified in $CHPL_HOME/hostfile.darwin and multirealm_linux32_real on
+the first four hosts specified in $CHPL_HOME/hostfile.linux32.
 
 
 -------------------
