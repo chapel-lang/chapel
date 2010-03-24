@@ -21,7 +21,7 @@ def main()
 
   var ByteDist = new dist(new Block(rank=2,idxType=int(64),
                                     targetLocales=reshape(myLocales, [1..#(bytesRequired:int), 1..1]),
-                                    bbox=[sizeRange, byteRange]));
+                                    boundingBox=[sizeRange, byteRange]));
 
   var ByteDom: domain(2, int(64)) distributed ByteDist = [sizeRange, byteRange];
   var bytes : [ByteDom] uint(8);

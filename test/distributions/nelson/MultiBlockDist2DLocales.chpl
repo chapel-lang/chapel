@@ -8,7 +8,7 @@ const sizeRange = 0..#(size : int(64));
 def printBlockLocaleAssignments(locs) {
   const blockDist = new dist(new Block(rank=2, idxType=int(64),
                                                 targetLocales=locs,
-                                                bbox=[sizeRange, sizeRange]));
+                                                boundingBox=[sizeRange, sizeRange]));
   const blockDom : domain(2, int(64)) distributed blockDist = [sizeRange, sizeRange];
 
   var array : [blockDom] int;

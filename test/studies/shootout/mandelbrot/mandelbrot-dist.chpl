@@ -11,7 +11,7 @@ config const iter : uint = 50;
 const sizeRange = 0..#size;
 const iterRange = 0..#iter;
 
-var Dist = new dist (new Block(rank=2, idxType=int(64), bbox=[sizeRange, sizeRange]));
+var Dist = new dist (new Block(rank=2, idxType=int(64), boundingBox=[sizeRange, sizeRange]));
 var Dom: domain(2, int(64)) distributed Dist = [sizeRange, sizeRange];
 var Bitmap: [Dom] bool;
 
@@ -39,7 +39,7 @@ def work(x, y) : bool {
 
 const byteRange = 0..#(size/8);
 
-var ByteDist = new dist(new Block(rank=2, idxType=int(64), bbox=[byteRange, sizeRange]));
+var ByteDist = new dist(new Block(rank=2, idxType=int(64), boundingBox=[byteRange, sizeRange]));
 var ByteDom: domain(2, int(64)) distributed ByteDist = [byteRange, sizeRange];
 var OutputArray: [ByteDom] uint(8);
 

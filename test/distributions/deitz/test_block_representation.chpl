@@ -1,6 +1,6 @@
 use BlockDist;
 
-var A: [[1..4, 1..4] distributed Block(2,bbox=[1..4,1..4],
+var A: [[1..4, 1..4] distributed Block(boundingBox=[1..4,1..4],
                                        maxDataParallelism=2,
                                        limitDataParallelism=false)] real;
 

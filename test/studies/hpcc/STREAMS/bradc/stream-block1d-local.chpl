@@ -24,7 +24,7 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const BlockDist = new dist(new Block(rank=1, idxType=int(64), bbox=[1..m], targetLocales=Locales));
+  const BlockDist = new dist(new Block(rank=1, idxType=int(64), boundingBox=[1..m], targetLocales=Locales));
 
   const ProblemSpace: domain(1, int(64)) distributed BlockDist = [1..m];
 

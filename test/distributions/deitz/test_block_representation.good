@@ -2,7 +2,7 @@ Distribution Representation
 
 boundingBox = [1..4, 1..4]
 targetLocDom = [0..1, 0..1]
-targetLocs = 0 1 2 3
+targetLocales = 0 1 2 3
 maxDataParallelism = 2
 limitDataParallelism = false
 minDataParallelismSize = 0

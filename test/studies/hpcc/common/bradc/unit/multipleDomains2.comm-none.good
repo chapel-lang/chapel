@@ -1,7 +1,7 @@
 Creating new Block distribution:
 boundingBox = [1..10]
 targetLocDom = [0..2]
-targetLocs = 0 0 0
+targetLocales = 0 0 0
 maxDataParallelism = 1
 limitDataParallelism = true
 minDataParallelismSize = 0
@@ -11,7 +11,7 @@ locDist[2].myChunk = [8..2147483647]
 Creating new Block distribution:
 boundingBox = [1..10]
 targetLocDom = [0..2]
-targetLocs = 0 0 0
+targetLocales = 0 0 0
 maxDataParallelism = 1
 limitDataParallelism = true
 minDataParallelismSize = 0

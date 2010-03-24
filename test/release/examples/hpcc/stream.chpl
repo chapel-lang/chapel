@@ -60,7 +60,7 @@ def main() {
   // BlockDist is a 1D block distribution that is computed by blocking
   // the bounding box 1..m across the set of locales
   //
-  const BlockDist = new dist(new Block(rank=1,idxType=int(64),bbox=[1..m],
+  const BlockDist = new dist(new Block(boundingBox=[1..m],
                                        maxDataParallelism=tasksPerLocale,
                                        limitDataParallelism=false));
 
