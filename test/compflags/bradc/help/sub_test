@@ -2,4 +2,4 @@
 
 unsetenv CHPL_UNOPTIMIZED
 
-source ../../../Bin/sub_test
+../../../Bin/sub_test $1

@@ -761,24 +761,7 @@ endif
 mv $logtmp $logfile
 
 
-# Find sub_test
-if (-x $testdir/Bin/sub_test.py) then
-    set gsub_test = $testdir/Bin/sub_test.py
-    # simple check for python
-    set py_executable = `head -1 $gsub_test | sed 's/^..//'`
-    if (! -x "$py_executable") then
-        if ("$py_executable" == "/usr/bin/env python") then
-            $py_executable -V >& /dev/null
-            if ( $? != 0 ) then
-                set gsub_test = $testdir/Bin/sub_test
-            endif
-        else
-            set gsub_test = $testdir/Bin/sub_test
-        endif
-    endif
-else
-    set gsub_test = $testdir/Bin/sub_test
-endif
+set gsub_test = $testdir/Bin/sub_test
 
 
 #

@@ -2,4 +2,4 @@
 
 setenv CHPL_MODULE_PATH subdir3:subdir4/subdir
 
-source ../../../Bin/sub_test
+../../../Bin/sub_test $1
