@@ -191,7 +191,7 @@ gasnet-everything regressions (other than the above)
 new spurious timeouts with SLED11 upgrade
 -----------------------------------------
 [Error: Timed out compilation for modules/standard/math/atanh_asymptote] (e.g., 03/22/10)
-[Error: Timed out compilation for modules/standard/math/log1p] (e.g., 03/20/10, 03/21/10, 03/23/10)
+[Error: Timed out compilation for modules/standard/math/log1p] (e.g., 03/20/10, 03/21/10, 03/23/10, 03/24/10)
 [Error: Timed out compilation for modules/standard/math/asinh] (e.g., 03/18/10)
 [Error: Timed out compilation for modules/standard/math/lg] (e.g., 03/13/10, 03/17/10)
 [Error: Timed out compilation for multilocale/deitz/needMultiLocales/diagnostics/test_remote_value_forwarding3] (e.g., 03/17/10)
@@ -263,7 +263,7 @@ gasnet-fast regressions (other than the above)
 
 spurious recursive failures in AMUDP_SPMDShutdown
 -------------------------------------------------
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5] (e.g., 03/23/10
+[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5] (e.g., 03/23/10)
 
 GASNet unable to start polling thread
 -------------------------------------
@@ -328,6 +328,10 @@ missing 1-tuple acccessor (03/03/10)
 =======================
 baseline-specific tests
 =======================
+
+spurious timeout
+----------------
+[Error: Timed out executing program studies/hpcc/RA/marybeth/ra3] (e.g., 03/24/10)
 
 numerical accuracy issue
 ------------------------
