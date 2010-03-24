@@ -30,6 +30,8 @@ if ($preset_platform eq "") {
             } else {
                 $platform = "linux64";
             }
+        } else {
+            $platform = "linux32";
         }
     }
 } else {

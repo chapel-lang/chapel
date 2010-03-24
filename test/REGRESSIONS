@@ -1,15 +1,14 @@
 # USAGE: the intent of this file is to keep track of current
-# regressions and to keep notes about why they are failing.  Since
-# linux is our main platform, linux regressions are listed first, and
-# are typically assumed to apply to all other platforms as well (other
-# failures that apply to most platforms other than linux can be listed
-# there as well).  Other platforms/settings that are currently causing
-# regressions are listed afterwards in some approximation to priority
-# order.  Formatting for each entry can be loose, but should roughly
-# follow the format of brief note on why the test is failing followed
-# by a list of tests that are failing for that reason.  If someone
-# owns a particular regression, their name can be added to the
-# description as well.
+# regressions and to keep notes about why they are failing.  We start
+# with general regressions that are seen across a wide variety of
+# platforms, and then move onto linux64 regressions since those are
+# our main development platform.  Other platforms/settings that are
+# currently causing regressions are listed afterwards in some
+# approximation to priority order.  Formatting for each entry can be
+# loose, but should roughly follow the format of brief note on why the
+# test is failing followed by a list of tests that are failing for
+# that reason.  If someone owns a particular regression, their name
+# can be added to the description as well.
 
 
 ===================

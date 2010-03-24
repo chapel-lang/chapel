@@ -760,7 +760,7 @@ sub commitstats {
     if (! -x $makeplot) {
         print "skipping makeplot step\n";
     } else {
-        if ($hostplatform eq "linux") {
+        if ($hostplatform eq "linux64") {
             `cd $statdir && ./makeplot`;
         }
     }

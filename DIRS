@@ -12,7 +12,6 @@ chapel/
     Makefile.platform -- infers what platform we're making from
     Makefile.cygwin   -- platform-specific Makefile settings
     Makefile.freebsd  -- "
-    Makefile.linux    -- "
     Makefile.sun      -- "
     Makefile.unknown  -- generates error message when platform isn't recognized
     Makefile.gnu      -- gnu-specific settings
@@ -29,11 +28,11 @@ chapel/
       gc6.2/	      -- the unpacked GC source directories
         cygwin/	      -- platform-specific installations
         freebsd/      -- "
-        linux/        -- "
+        linux64/      -- "
         sun/          -- "
     dparser/          -- D Parser distribution
       d/              -- the unpacked d parser source directories
         cygwin/	      -- platform-specific installations
         freebsd/      -- "
-        linux/        -- "
+        linux64/      -- "
         sun/          -- "

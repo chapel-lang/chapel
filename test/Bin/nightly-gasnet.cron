@@ -1,7 +1,7 @@
 #!/usr/bin/env tcsh
 
 #
-# Test a GASNet compile using the default segment (everything for linux)
+# Test a GASNet compile using the default segment (everything for linux64)
 #
 source ~/.chapelcshrc-cron-gasnet
 setenv CHPL_GASNET_SEGMENT everything

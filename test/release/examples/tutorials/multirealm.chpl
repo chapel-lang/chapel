@@ -10,8 +10,8 @@
  * documented in README.multirealm.  When invoking the executable, use
  * the flag "--localesPerRealm='# #...'" to specify the number of
  * locales on each realm.  For example, if you compiled your app using
- * -srealmTypes='linux darwin,' and you want to run with 2 Linux nodes
- * and 3 Macs, run "a.out --localesPerRealm='2 3'".
+ * -srealmTypes='linux32 darwin,' and you want to run with 2 32-bit Linux
+ * nodes and 3 Macs, run "a.out --localesPerRealm='2 3'".
  */
 
 // First, let's define our message to print from all locales:
