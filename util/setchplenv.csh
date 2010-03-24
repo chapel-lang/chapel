@@ -12,7 +12,7 @@ setenv CHPL_HOME "$cwd"
 echo "to $CHPL_HOME"
 
 echo -n "Setting CHPL_HOST_PLATFORM "
-setenv CHPL_HOST_PLATFORM `"$CHPL_HOME/util/platform.pl"`
+setenv CHPL_HOST_PLATFORM `"$CHPL_HOME/util/chplenv/platform"`
 echo "to $CHPL_HOST_PLATFORM"
 
 echo -n "Updating PATH "
