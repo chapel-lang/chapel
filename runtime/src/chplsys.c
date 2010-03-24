@@ -41,6 +41,12 @@ uint64_t chpl_bytesPerLocale(void) {
   return membytes;
 #elif defined _AIX
   return _system_configuration.physmem;
+#elif defined __NetBSD__
+  uint64_t membytes;
+  size_t len = sizeof(membytes);
+  if (sysctlbyname("hw.usermem", &membytes, &len, NULL, 0))
+    chpl_internal_error("query of physical memory failed");
+  return membytes;
 #else
   long int numPages, pageSize;
   numPages = sysconf(_SC_PHYS_PAGES);
