@@ -45,7 +45,7 @@ clean: FORCE
 # compilation for each target architecture.  See
 # $CHPL_HOME/doc/technotes/README.multirealm for more details.
 #
-CHPL_TARGET_PLATFORM = $(shell $(CHPL_HOME)/util/platform.pl --target)
+CHPL_TARGET_PLATFORM = $(shell $(CHPL_HOME)/util/chplenv/platform --target)
 #
 multirealm: multirealm.chpl
 	$(CHPL) -o $@ $< -srealmTypes="$(CHPL_TARGET_PLATFORM) $(CHPL_TARGET_PLATFORM)"
