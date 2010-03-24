@@ -156,7 +156,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
             ranges(i).high+follower(i).high*ranges(i).stride:ranges(i).eltType..ranges(i).high+follower(i).low*ranges(i).stride:ranges(i).eltType by ranges(i).stride;
     } else {
       for  param i in 1..rank do
-        block(i) = follower(i) + ranges(i).low;
+        block(i) = ranges(i).low+follower(i).low:ranges(i).eltType..ranges(i).low+follower(i).high:ranges(i).eltType;
     }
     if rank == 1 {
       for i in block do

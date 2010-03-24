@@ -998,25 +998,39 @@ def =(a: domain, b) {  // b is iteratable
 }
 
 pragma "inline" def =(a: [], b : []) where (a._value.canCopyFromHost && b._value.canCopyFromHost) {
-	compilerError("GPU to GPU transfers not yet implemented");
+  if a.rank != b.rank then
+    compilerError("rank mismatch in array assignment");
+  compilerError("GPU to GPU transfers not yet implemented");
 }
 
 pragma "inline" def =(a: [], b : []) where (a._value.canCopyFromDevice && b._value.canCopyFromHost) {
-	__primitive("copy_gpu_to_host", 
-			a._value.data, b._value.data, b._value.eltType, b._value.size);
-	return a;
+  if a.rank != b.rank then
+    compilerError("rank mismatch in array assignment");
+  __primitive("copy_gpu_to_host", 
+              a._value.data, b._value.data, b._value.eltType, b._value.size);
+  return a;
 }
 
 pragma "inline" def =(a: [], b : []) where (a._value.canCopyFromHost && b._value.canCopyFromDevice) {
-	__primitive("copy_host_to_gpu", 
-			a._value.data, b._value.data, b._value.eltType, b._value.size);
-	return a;
+  if a.rank != b.rank then
+    compilerError("rank mismatch in array assignment");
+  __primitive("copy_host_to_gpu", 
+              a._value.data, b._value.data, b._value.eltType, b._value.size);
+  return a;
 }
 
 pragma "inline" def =(a: [], b: []) where (a._value.canCopyFromDevice && b._value.canCopyFromDevice) {
-  if b._value != nil then
-    for (aa,bb) in (a,b) do
-      aa = bb;
+  if a.rank != b.rank then
+    compilerError("rank mismatch in array assignment");
+  if b._value != nil {
+    if isArithmeticArr(a) && isArithmeticArr(b) {
+      forall (aa,bb) in (a,b) do
+        aa = bb;
+    } else {
+      for (aa,bb) in (a,b) do
+        aa = bb;
+    }
+  }
   return a;
 }
 
@@ -1070,8 +1084,13 @@ def _desync(type t) {
 }
 
 def =(a: [], b: _desync(a.eltType)) {
-  for i in a._dom do
-    a(i) = b;
+  if isArithmeticArr(a) {
+    forall e in a do
+      e = b;
+  } else {
+    for e in a do
+      e = b;
+  }
   return a;
 }
 
@@ -1247,7 +1266,7 @@ def chpl__lead(x) return x;
 // return true if any iterator supports fast followers
 //
 def chpl__staticFastFollowCheck(x) param {
-  const lead = chpl__lead(x);
+  pragma "no copy" const lead = chpl__lead(x);
   if chpl__isDomain(lead) || chpl__isArray(lead) then
     return chpl__staticFastFollowCheck(x, lead);
   else
