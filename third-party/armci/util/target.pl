@@ -3,12 +3,12 @@
 use File::Basename;
 
 $armciutildirname = dirname($0);
-$utildirname = "$armciutildirname/../../../util";
+$utildirname = "$armciutildirname/../../../util/chplenv";
 
 $preset_target = $ENV{'CHPL_ARMCI_PLATFORM'};
 
 if ($preset_target eq "") {
-    $platform = `$utildirname/platform.pl --target`;
+    $platform = `$utildirname/platform --target`;
     chomp($platform);
     if ($platform eq "cygwin") {
         $target = "CYGWIN";
