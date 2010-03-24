@@ -9,6 +9,7 @@ test             Primary features it was designed to demonstrate
 ---------------+---------------------------------------------------------------
 hello          : write() function; string literals; unstructured coding
 hello-module   : configuration vars; module structure; main() entry point
+hello-multicore: coforall loop
 hello-multiloc : coforalls, on clauses, locales
 arrays         : arithmetic domains and arrays; slicing; iteration; reallocation
 beer           : 1D domains and arrays; string manipulation; generic functions
@@ -64,6 +65,7 @@ test           | read  | write | files | halt  | wrths | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |   *   |       |       |       |       |       |
 hello-module   |       |   *   |       |       |       |       |       |
+hello-multicore|       |   *   |       |       |       |       |       |
 hello-multiloc |       |   x   |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |       |       |
 beer           |       |   *   |       |       |       |       |       |
@@ -113,7 +115,8 @@ test           | modls | stdmd | main  | funcs | iters | confg | these | vrarg
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   *   |       |   *   |       |       |   *   |       |
-hello-multiloc |       |       |       |       |       |       |       |
+hello-multicore|       |       |       |       |       |   x   |       |
+hello-multiloc |       |       |       |       |       |   x   |       |
 arrays         |       |       |       |   x   |       |   x   |       |
 beer           |       |       |   x   |   *   |       |   x   |       |
 block2D        |       |   x   |       |       |       |       |       |
@@ -165,6 +168,7 @@ test           | strng | tuple | recrd | class | gener | infer | query | enum
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |   x   |       |       |       |       |   x   |       |
+hello-multicore|   x   |       |       |       |       |   x   |       |
 hello-multiloc |   x   |       |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |   x   |   *   |
 beer           |   *   |       |       |       |       |   *   |       |
@@ -215,6 +219,7 @@ test           | arith | spars | enum  | assoc | opque | subdm | index | reall
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+hello-multicore|       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   *   |       |       |       |       |       |       |   *
 beer           |   x   |       |       |       |       |       |       |
@@ -265,6 +270,7 @@ test           | frall | prmte | slice | reind | reduc | scan  | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+hello-multicore|       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   x   |   *   |   *   |       |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
@@ -314,6 +320,7 @@ test           | begin | cobeg | cofor | srial | sync  | atomc | sncst | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+hello-multicore|       |       |   X   |       |       |       |       |
 hello-multiloc |       |       |   x   |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
@@ -365,6 +372,7 @@ test           | nmloc | locle | LocSp | Lcles |  on   | .locl | here  | realm
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+hello-multicore|       |       |       |       |       |       |       |
 hello-multiloc |   *   |       |       |   *   |   *   |       |   *   |   
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
@@ -417,6 +425,7 @@ test           | distr | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+hello-multicore|       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
@@ -460,6 +469,7 @@ test           | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
+hello-multicore|       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |

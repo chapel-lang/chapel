@@ -6,6 +6,7 @@ CHPL = chpl
 TARGETS = \
 	hello \
 	hello-module \
+	hello-multicore \
 	hello-multiloc \
 
 REALS = $(TARGETS:%=%_real)

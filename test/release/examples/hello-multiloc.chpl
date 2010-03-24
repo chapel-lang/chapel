@@ -1,13 +1,12 @@
-config const message = "Hello, world!",
-             printLocaleName = true;
+config const printLocaleName = true;
              
 
 coforall loc in Locales {
   on loc {
-    var myMessage = message + " (from locale " + here.id + " of " + numLocales;
-    if (printLocaleName) then myMessage += " named " + loc.name;
-    myMessage += ")";
+    var message = "Hello, world! (from locale " + here.id + " of " + numLocales;
+    if (printLocaleName) then message += " named " + loc.name;
+    message += ")";
 
-    writeln(myMessage);
+    writeln(message);
   }
 }
