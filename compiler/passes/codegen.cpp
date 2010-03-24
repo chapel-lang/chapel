@@ -90,7 +90,7 @@ static void legalizeName(Symbol* sym) {
     default: break;
     }
   }
-  if ((!strncmp("chpl_", sym->cname, 5) && strcmp("chpl_main", sym->cname) && sym->cname[5] != '_') ||
+  if ((!strncmp("chpl_", sym->cname, 5) && (strcmp("chpl_main", sym->cname) && strcmp("chpl_user_main", sym->cname))  && sym->cname[5] != '_') ||
       (sym->cname[0] == '_' && (sym->cname[1] == '_' || (sym->cname[1] >= 'A' && sym->cname[1] <= 'Z')))) {
     sym->cname = astr("chpl__", sym->cname);
   }
@@ -201,8 +201,6 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn == chpl_main)
-      fn->cname = astr("chpl_main");
     legalizeName(fn);
     functions.add(fn);
   }

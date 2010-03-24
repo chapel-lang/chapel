@@ -7,7 +7,7 @@
 #include "symbol.h"
 
 
-static void build_chpl_main(void);
+static void build_chpl_entry_points(void);
 static void build_getter(ClassType* ct, Symbol* field);
 static void build_union_assignment_function(ClassType* ct);
 static void build_enum_assignment_function(EnumType* et);
@@ -31,7 +31,7 @@ static void buildDefaultDestructor(ClassType* ct);
 
 
 void buildDefaultFunctions(void) {
-  build_chpl_main();
+  build_chpl_entry_points();
 
   Vec<BaseAST*> asts;
   collect_asts(rootModule, asts);
@@ -277,18 +277,22 @@ static BlockStmt* createModuleInitBlock(ModuleSymbol* startModule) {
 }
 
 
-static void build_chpl_main(void) {
+static void build_chpl_entry_points(void) {
   ModuleSymbol* mainModule = NULL;
-  chpl_main = chpl_main_exists();
+
+  //                                                                          
+  // chpl_user_main is the (user) programmatic portion of the app             
+  //                                                                          
+  FnSymbol* chpl_user_main = chpl_main_exists();                              
 
   if (fRuntime) {
-    if (chpl_main)
-      INT_FATAL(chpl_main, "'main' found when compiling runtime file");
+    if (chpl_user_main)                                                       
+      INT_FATAL(chpl_user_main, "'main' found when compiling runtime file");
     if (mainModules.n != 1)
       INT_FATAL("expected one module when compiling runtime file");
   }
 
-  if (!chpl_main) {
+  if (!chpl_user_main) {
     if (strlen(mainModuleName) != 0) {
       forv_Vec(ModuleSymbol, mod, userModules) {
         if (!strcmp(mod->name, mainModuleName))
@@ -313,17 +317,39 @@ static void build_chpl_main(void) {
       }
     }
     SET_LINENO(mainModule);
-    chpl_main = new FnSymbol("main");
-    chpl_main->retType = dtVoid;
-    mainModule->block->insertAtTail(new DefExpr(chpl_main));
-    normalize(chpl_main);
+    chpl_user_main = new FnSymbol("main");
+    chpl_user_main->retType = dtVoid;
+    chpl_user_main->addFlag(FLAG_TEMP);
+    mainModule->block->insertAtTail(new DefExpr(chpl_user_main));
+    normalize(chpl_user_main);
   } else {
-    if (!isModuleSymbol(chpl_main->defPoint->parentSymbol)) {
-      USR_FATAL(chpl_main, "main function must be defined at module scope");
+    if (!isModuleSymbol(chpl_user_main->defPoint->parentSymbol)) {
+      USR_FATAL(chpl_user_main, "main function must be defined at module scope");
     }
-    mainModule = chpl_main->getModule();
+    mainModule = chpl_user_main->getModule();
   }
-  SET_LINENO(chpl_main);
+
+  if (!fRuntime) {
+    SET_LINENO(chpl_user_main);
+    chpl_user_main->cname = "chpl_user_main";
+  }
+
+  //
+  // chpl_main accounts for the initialization and memory tracking of
+  // the code
+  //
+  chpl_main = new FnSymbol("chpl_main");
+  chpl_main->cname = "chpl_main";
+  chpl_main->retType = dtVoid;
+  chpl_main->addFlag(FLAG_TEMP);
+  mainModule->block->insertAtTail(new DefExpr(chpl_main));
+  normalize(chpl_main);
+
+  if (!fRuntime) {
+    SET_LINENO(chpl_main);
+    chpl_main->insertAtHead(new CallExpr("main"));
+  }
+
   BlockStmt* stdInits = createModuleInitBlock(standardModule);
   BlockStmt* usrInits = createModuleInitBlock(mainModule);
   chpl_main->insertAtHead(usrInits);
@@ -340,7 +366,6 @@ static void build_chpl_main(void) {
   theProgram->initFn->insertAtHead(stdInits);
   chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
 }
-
 
 static void build_record_equality_function(ClassType* ct) {
   if (function_exists("==", 2, ct))
