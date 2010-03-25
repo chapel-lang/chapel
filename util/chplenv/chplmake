@@ -10,7 +10,7 @@ if ($preset_chplmake eq "") {
     chomp($platform);
     if ($platform eq "cygwin" || $platform eq "darwin") {
         $chplmake = "make";
-    } elsif ($platform eq "linux" || $platform eq "linux64") {
+    } elsif ($platform eq "linux32" || $platform eq "linux") {
         $whichgmake = system("which gmake > /dev/null 2>&1");
         if ($whichgmake == 0) {
             $chplmake = "gmake";
