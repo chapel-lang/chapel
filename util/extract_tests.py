@@ -19,6 +19,7 @@
 # - chapelfuture
 # - chapelcompopts
 # - chapelexecopts
+# - chapelprediff
 # - chapeloutput|chapelprintoutput (REQUIRED)
 #
 # GENERAL CAVEATS:
@@ -30,6 +31,7 @@
 #      '/#' becomes '#'
 #      '/_' becomes '_'
 #      '/&' becomes '&'
+#      '$\mbox{{\bf \$}}$' becomes '$'
 #
 #   If this becomes too unwieldy, we'll probably have to find a better
 #   way to do it.
@@ -76,6 +78,7 @@ def RemoveLaTeXFormatting(line, nlrepl):
     dline = dline.replace('\\&', '&')
     dline = dline.replace('\\_', '_')
     dline = dline.replace('\\\\', nlrepl)
+    dline = dline.replace('$\\mbox{{\\bf \\$}}$', '$')
     return dline
 
 # Helper for writing test files
@@ -153,6 +156,14 @@ def OutputTest(lineno, seenChapelPre, seenChapelOutput):
             fh = open(testName+'.execopts', 'w')
             WriteTestFile(fh, chapelexecopts)
 
+	# write out the .prediff file
+	if len(chapelprediff) > 0:
+	    if options.debug:
+		sys.stdout.write('Opening %s\n'%(testName+'.prediff'))
+	    fh = open(testName+'.prediff', 'w')
+	    WriteTestFile(fh, chapelprediff)
+	    os.chmod(testName+'.prediff', 0755)
+
         # write out .good files
         if len(chapeloutput) > 0 or len(chapelprintoutput) > 0:
             WriteGoodFile(fh, chapeloutput, testName)
@@ -178,6 +189,7 @@ def OutputTest(lineno, seenChapelPre, seenChapelOutput):
     del chapelfuture[:]
     del chapelcompopts[:]
     del chapelexecopts[:]
+    del chapelprediff[:]
     del chapeloutput[:]
     del chapelprintoutput[:]
 
@@ -198,6 +210,7 @@ chapelpost = list()
 chapelfuture = list()
 chapelcompopts = list()
 chapelexecopts = list()
+chapelprediff = list()
 chapeloutput = list()
 chapelprintoutput = list()
 current = None
@@ -315,6 +328,9 @@ for infile in args:
             elif line.find('execopts}', pos) == pos:
                 printToOutfile = True
                 current = chapelexecopts;
+	    elif line.find('prediff}', pos) == pos:
+		printToOutfile = True
+		current = chapelprediff;
 
             elif line.find('output}', pos) == pos:
                 printToOutfile = True
