@@ -2,7 +2,7 @@
 
 use File::Basename;
 
-$utildirname = dirname($0)."/chplenv";
+$utildirname = dirname($0);
 
 $preset_chplmake=$ENV{'CHPL_MAKE'};
 if ($preset_chplmake eq "") {
