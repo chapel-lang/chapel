@@ -144,6 +144,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }
 
   def these(param tag: iterator, follower) where tag == iterator.follower {
+    chpl__testPar("default arithmetic domain follower invoked on ", follower);
     if debugDefaultDist then
       writeln("In domain follower code: Following ", follower);
     var block: ranges.type;
