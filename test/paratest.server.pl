@@ -381,7 +381,7 @@ sub main {
     local ($id, $synchfile);
     
     $user = `whoami`; chomp $user;
-    $platform = `../util/platform.pl`; chomp $platform;
+    $platform = `../util/chplenv/platform`; chomp $platform;
     $fin_logfile = "$logdir/$user.$platform.log";      # final log file name
     # $fin_logfile = "$logdir/$user.$platform.log";
     unlink $fin_logfile if (-e $fin_logfile);          # remove final log file

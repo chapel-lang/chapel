@@ -65,7 +65,7 @@ sub main {
     }
     print "\n* $node up @ $workingdir *\n";
 
-    $platform = `../util/platform.pl`; chomp $platform;
+    $platform = `../util/chplenv/platform`; chomp $platform;
     $compiler = "../bin/$platform/chpl";
     unless (-e $compiler) {
         print "Error: cannot find chpl as '$compiler'\n";
