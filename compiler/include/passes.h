@@ -28,6 +28,7 @@ void inlineFunctions();
 void insertLineNumbers();
 void insertWideReferences();
 void optimizeOnClauses();
+void localizeGlobals();
 void lowerIterators();
 void makeBinary();
 void normalize();

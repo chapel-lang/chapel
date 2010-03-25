@@ -6,6 +6,7 @@ OPTIMIZATIONS_SRCS = \
 	gpuFlattenArgs.cpp \
 	inlineFunctions.cpp \
 	liveVariableAnalysis.cpp \
+	localizeGlobals.cpp \
 	reachingDefinitionsAnalysis.cpp \
 	remoteValueForwarding.cpp \
 	removeUnnecessaryAutoCopyCalls.cpp \
