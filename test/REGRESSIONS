@@ -273,41 +273,22 @@ GASNet unable to start polling thread
 pvm-specific tests
 ==================
 
-new homogenous tuple seems to break --gen-communicated-structures
------------------------------------------------------------------
-[Error matching compiler output for release/examples/hello-module]
-[Error matching compiler output for release/examples/hello-multiloc]
-[Error matching compiler output for release/examples/hello]
-[Error matching compiler output for release/examples/hpcc/fft]
-[Error matching compiler output for release/examples/hpcc/hpl]
-[Error matching compiler output for release/examples/hpcc/ra]
-[Error matching compiler output for release/examples/hpcc/stream-ep]
-[Error matching compiler output for release/examples/hpcc/stream]
-[Error matching compiler output for release/examples/programs/beer]
-[Error matching compiler output for release/examples/programs/genericStack]
-[Error matching compiler output for release/examples/programs/jacobi]
+timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
+----------------------------------------------------------------------
+[Error: Timed out executing program release/examples/hello-multiloc]
+[Error: Timed out executing program release/examples/hpcc/fft]
+[Error: Timed out executing program release/examples/hpcc/ra]
+[Error: Timed out executing program release/examples/hpcc/stream-ep]
+[Error: Timed out executing program release/examples/hpcc/stream]
+[Error: Timed out executing program release/examples/tutorials/block2D]
+[Error: Timed out executing program release/examples/tutorials/multilocale]
+[Error: Timed out executing program release/examples/tutorials/multirealm]
+
+some types not getting --gen-communicated-structures'ed  (as of 03/25/10 ")
+---------------------------------------------------------------------------
 [Error matching compiler output for release/examples/programs/linkedList]
-[Error matching compiler output for release/examples/programs/norm]
-[Error matching compiler output for release/examples/programs/prodCons]
 [Error matching compiler output for release/examples/programs/quicksort]
-[Error matching compiler output for release/examples/programs/tree]
-[Error matching compiler output for release/examples/tutorials/arrays]
-[Error matching compiler output for release/examples/tutorials/block2D]
-[Error matching compiler output for release/examples/tutorials/classes]
-[Error matching compiler output for release/examples/tutorials/fileIO]
-[Error matching compiler output for release/examples/tutorials/genericClasses]
 [Error matching compiler output for release/examples/tutorials/iterators]
-[Error matching compiler output for release/examples/tutorials/multilocale]
-[Error matching compiler output for release/examples/tutorials/multirealm]
-[Error matching compiler output for release/examples/tutorials/opaque]
-[Error matching compiler output for release/examples/tutorials/ranges]
-[Error matching compiler output for release/examples/tutorials/reductions]
-[Error matching compiler output for release/examples/tutorials/slices]
-[Error matching compiler output for release/examples/tutorials/sparse]
-[Error matching compiler output for release/examples/tutorials/taskParallel]
-[Error matching compiler output for release/examples/tutorials/timers]
-[Error matching compiler output for release/examples/tutorials/varargs]
-[Error matching compiler output for release/examples/tutorials/variables]
 
 
 =====================
@@ -448,6 +429,10 @@ spurious compilation timeouts
 ===========================
 darwin-specific regressions
 ===========================
+
+using gmake rather than make (03/25/10)
+---------------------------------------
+*all*
 
 numerical accuracy issue
 ------------------------
