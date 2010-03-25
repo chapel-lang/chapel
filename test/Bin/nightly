@@ -177,12 +177,12 @@ $utildir = "$testbindirname/../../util";
 #
 # platform variables
 #
-$hostplatform = `$utildir/platform.pl --host`; chomp($hostplatform);
-$targetplatform = `$utildir/platform.pl --target`; chomp($targetplatform);
-$hostcompiler = `$utildir/compiler.pl --host`; chomp($hostcompiler);
-$targetcompiler = `$utildir/compiler.pl --target`; chomp($targetcompiler);
-$threads = `$utildir/threads.pl`; chomp($threads);
-$comm = `$utildir/comm.pl`; chomp($comm);
+$hostplatform = `$utildir/chplenv/platform --host`; chomp($hostplatform);
+$targetplatform = `$utildir/chplenv/platform --target`; chomp($targetplatform);
+$hostcompiler = `$utildir/chplenv/compiler --host`; chomp($hostcompiler);
+$targetcompiler = `$utildir/chplenv/compiler --target`; chomp($targetcompiler);
+$threads = `$utildir/chplenv/threads`; chomp($threads);
+$comm = `$utildir/chplenvcomm`; chomp($comm);
 if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
     $comm = "$comm-$ENV{'CHPL_GASNET_SEGMENT'}";
 }
