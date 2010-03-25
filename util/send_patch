@@ -1,7 +1,5 @@
 #!/bin/csh
 
-which svn
-
 set patchdir="~/patches"
 set patchfile="$patchdir/$1.patch"
 
