@@ -260,6 +260,19 @@ times out spuriously
 gasnet-fast regressions (other than the above)
 ==============================================
 
+execution timeout (03/26/10)
+----------------------------
+[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 -nl 1 (--cc-warnings  ) (0-2)]
+[Error: Timed out executing program studies/sudoku/dinan/sudoku]
+
+output out of order (03/26/10)
+------------------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/dist/test_private_space]
+
+unresolved call iterator(tag=iterator) (03/26/10)
+-------------------------------------------------
+[Error matching compiler output for spec/autogen/Parallelism_and_Synchronization.tex.tests/test_serialStmt2]
+
 spurious recursive failures in AMUDP_SPMDShutdown
 -------------------------------------------------
 [Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5] (e.g., 03/23/10)
