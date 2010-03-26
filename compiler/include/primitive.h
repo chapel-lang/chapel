@@ -156,30 +156,33 @@ enum PrimitiveTag {
   PRIM_BLOCK_ATOMIC,          // SS: Atomic block primitive
   PRIM_TX_BEGIN,
   PRIM_TX_COMMIT,
+  PRIM_TX_ARRAY_SET,
+  PRIM_TX_ARRAY_ALLOC,
+  PRIM_TX_ARRAY_FREE,
+  PRIM_TX_GET_LOCALEID,
   PRIM_TX_LOAD_LOCALEID,
-  PRIM_TX_LOAD,               // Transactional load -- local
+  PRIM_TX_GET_REF,            // Transactional load -- local/remote 
   PRIM_TX_LOAD_REF,           // Transactional load from reference -- local
+  PRIM_TX_GET_MEMBER_VALUE,
   PRIM_TX_LOAD_MEMBER_VALUE,
   PRIM_TX_LOAD_SVEC_MEMBER_VALUE,
-  PRIM_TX_ARRAY_LOAD,
-  PRIM_TX_LOAD_TESTCID,
-  PRIM_TX_GET_LOCALEID,
-  PRIM_TX_GET_REF,            // Transactional load -- local/remote 
-  PRIM_TX_GET_MEMBER_VALUE,
   PRIM_TX_ARRAY_GET,
-  PRIM_TX_GET_TESTCID,
-  PRIM_TX_STORE,              // Transactional store --local
-  PRIM_TX_STORE_REF,          // Transactional store to reference -- local 
-  PRIM_TX_STORECID,
-  PRIM_TX_STORE_SVEC_MEMBER,
-  PRIM_TX_STORE_MEMBER,
-  PRIM_TX_PUT,                // Transactional store -- local/remote
-  PRIM_TX_SETCID,
-  PRIM_TX_SET_SVEC_MEMBER,
-  PRIM_TX_SET_MEMBER,
-  PRIM_TX_ARRAY_ALLOC,
+  PRIM_TX_ARRAY_LOAD,
+  PRIM_TX_ARRAY_GET_VALUE,
+  PRIM_TX_ARRAY_LOAD_VALUE,
+  PRIM_TX_GET_TEST_CID,
+  PRIM_TX_LOAD_TEST_CID,
   PRIM_TX_CHPL_ALLOC,
   PRIM_TX_CHPL_ALLOC_PERMIT_ZERO,
+  PRIM_TX_PUT,                // Transactional store -- local/remote
+  PRIM_TX_STORE,              // Transactional store --local
+  PRIM_TX_STORE_REF,          // Transactional store to reference -- local 
+  PRIM_TX_SET_CID,
+  PRIM_TX_STORE_CID,
+  PRIM_TX_SET_SVEC_MEMBER,
+  PRIM_TX_STORE_SVEC_MEMBER,
+  PRIM_TX_SET_MEMBER,
+  PRIM_TX_STORE_MEMBER,
   PRIM_TX_RT_ERROR,
   PRIM_BLOCK_ATOMIC_IGNORE,   // Atomic block when --ignore-atomic is set
 

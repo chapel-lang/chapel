@@ -419,7 +419,10 @@ def assert(test: bool, args ...?numArgs) {
 }
 
 def halt() {
-  __primitive("chpl_error", "halt reached");
+  if atomicSupport then
+    __primitive("chpl_error", "halt reached");
+  else
+    __primitive("chpl_stm_error");
 }
 
 def halt(args ...?numArgs) {

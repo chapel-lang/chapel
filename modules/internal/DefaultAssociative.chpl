@@ -165,8 +165,13 @@ class DefaultAssociativeDom: BaseAssociativeDom {
       numEntries += 1;
     } else {
       if (slotNum < 0) {
-        halt("couldn't add ", idx, " -- ", numEntries, " / ", tableSize, " taken");
-        return -1;
+	if atomicSupport {
+	  halt("couldn't add ", idx, " -- ", numEntries, " / ", tableSize, " taken");
+	  return -1;
+	} else {
+	  halt();
+	  return -1;
+	}
       }
       // otherwise, re-adding an index that's already in there
     }

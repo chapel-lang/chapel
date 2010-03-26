@@ -7,6 +7,8 @@ if ($chplhome eq "") {
     exit(0);
 }
 
+$chplsvn = "https://chapel.svn.sourceforge.net/svnroot/chapel";
+
 $svnlogfile = "$chplhome/RSVNLOG";
 $svnnumfile = "$chplhome/.RSVNLOG-revnum";
 $completelog = 0;
@@ -38,26 +40,26 @@ if ($update_to_users_local_version == 0) {
     $svninfoflags = "-rHEAD";
 }
 
-$revline = `svn info $svninfoflags $chplhome | grep Revision`;
+$revline = `svn info $svninfoflags $chplsvn | grep Revision`;
 chomp($revline);
 
 if ($revline =~ m/Revision: (\d*)/) {
     $currentrevnum = $1;
 } else {
-    print "ERROR: couldn't determine revision number of $chplhome\n";
+    print "ERROR: couldn't determine revision number of $chplsvn\n";
     exit(1);
 }
 
 if ($completelog == 1) {
     print "RSVNLOG being recomputed from scratch\n";
-    `cd $chplhome && svn log --verbose --incremental -r$currentrevnum:1 > RSVNLOG`;
+    `cd $chplhome && svn log --verbose --incremental -r$currentrevnum:1 $chplsvn > RSVNLOG`;
 } else {
     if ($revnum eq $currentrevnum) {
         print "RSVNLOG is already up-to-date\n";
     } else {
         $revnum += 1;
         print "RSVNLOG being updated from $revnum to $currentrevnum\n";
-        `cd $chplhome && svn log --verbose --incremental -r$currentrevnum:$revnum > .RSVNLOGtmp`;
+        `cd $chplhome && svn log --verbose --incremental -r$currentrevnum:$revnum $chplsvn > .RSVNLOGtmp`;
 	`cd $chplhome && cat RSVNLOG >> .RSVNLOGtmp`;
 	`cd $chplhome && mv .RSVNLOGtmp RSVNLOG`;
     }

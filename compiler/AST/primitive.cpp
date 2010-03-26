@@ -454,50 +454,61 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_ON_NB, "non-blocking on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);
 
-  prim_def(PRIM_BLOCK_ATOMIC, "atomic block", returnInfoVoid); // this will create problems in nested transactions.
+  prim_def(PRIM_BLOCK_ATOMIC, "atomic block", returnInfoVoid, 
+	   false, false, true);
   prim_def(PRIM_TX_BEGIN, "tx begin", returnInfoVoid, true, true, true);
   prim_def(PRIM_TX_COMMIT, "tx commit", returnInfoVoid, true, true, true);
-  prim_def(PRIM_TX_LOAD_LOCALEID, "tx load locale is", returnInfoVoid, 
+  prim_def(PRIM_TX_ARRAY_SET, "tx array set", returnInfoVoid, 
 	   true, true, true);
-  prim_def(PRIM_TX_LOAD, "tx load", returnInfoVoid, true, true, true);
-  prim_def(PRIM_TX_LOAD_REF, "tx load ref", returnInfoVoid, 
+  prim_def(PRIM_TX_ARRAY_ALLOC, "tx array alloc", returnInfoVoid, 
 	   true, true, true);
-  prim_def(PRIM_TX_LOAD_MEMBER_VALUE, "tx load member value", 
-	   returnInfoVoid, true, true, true);
-  prim_def(PRIM_TX_LOAD_SVEC_MEMBER_VALUE, "tx load svec member value", 
-	   returnInfoVoid, true, true, true);
-  prim_def(PRIM_TX_ARRAY_LOAD, "tx array load", returnInfoVoid, 
+  prim_def(PRIM_TX_ARRAY_FREE, "tx array free", returnInfoVoid,
 	   true, true, true);
-  prim_def(PRIM_TX_LOAD_TESTCID, "tx load and test cid", 
-	   returnInfoVoid, true, true, true);
-  prim_def(PRIM_TX_GET_REF, "tx get ref", returnInfoVoid, 
-	   true, true, true);
+  prim_def(PRIM_TX_GET_LOCALEID, "tx get locale", returnInfoInt32, 
+	   false, true, true);
+  prim_def(PRIM_TX_LOAD_LOCALEID, "tx load locale is", returnInfoInt32, 
+	   false, true, true);
+  prim_def(PRIM_TX_GET_REF, "tx get ref", returnInfoVal, 
+	   false, true, true);
+  prim_def(PRIM_TX_LOAD_REF, "tx load ref", returnInfoVal, 
+	   false, true, true);
   prim_def(PRIM_TX_GET_MEMBER_VALUE, "tx get member value", 
-	   returnInfoVoid, true, true, true);
-  prim_def(PRIM_TX_ARRAY_GET, "tx array get", returnInfoVoid, 
-	   true, true, true);
-  prim_def(PRIM_TX_GET_TESTCID, "tx get and test cid", returnInfoVoid, 
-	   true, true, true);
-  prim_def(PRIM_TX_STORE, "tx store", returnInfoVoid, true, true, true);
-  prim_def(PRIM_TX_STORE_REF, "tx store ref", returnInfoVoid, 
-	   true, true, true);
-  prim_def(PRIM_TX_STORECID, "tx store cid", returnInfoVoid, 
-	   true, true, true);
-  prim_def(PRIM_TX_STORE_SVEC_MEMBER, "tx store svec member", 
-	   returnInfoVoid, true, true, true);
-  prim_def(PRIM_TX_STORE_MEMBER, "tx store member", returnInfoVoid, 
-	   true, true, true);
-  prim_def(PRIM_TX_PUT, "tx put", returnInfoVoid, true, true, true);
-  prim_def(PRIM_TX_SETCID, "tx set cid", returnInfoVoid, true, true, true);
-  prim_def(PRIM_TX_SET_SVEC_MEMBER, "tx set svec member", returnInfoVoid, 
-	   true, true, true);
-  prim_def(PRIM_TX_SET_MEMBER, "tx set member", returnInfoVoid, 
-	   true, true, true);
-  prim_def(PRIM_TX_ARRAY_ALLOC, "tx array alloc", returnInfoVoid, true, true, true);
+	   returnInfoGetMember, false, true, true);
+  prim_def(PRIM_TX_LOAD_MEMBER_VALUE, "tx load member value", 
+	   returnInfoGetMember, false, true, true);
+  prim_def(PRIM_TX_LOAD_SVEC_MEMBER_VALUE, "tx load svec member value", 
+	   returnInfoGetTupleMember, false, true, true);
+  prim_def(PRIM_TX_ARRAY_GET, "tx array get", returnInfoArrayIndex, 
+	   false, true, true);
+  prim_def(PRIM_TX_ARRAY_LOAD, "tx array load", returnInfoArrayIndex, 
+	   false, true, true);
+  prim_def(PRIM_TX_ARRAY_GET_VALUE, "tx array get value", 
+	   returnInfoArrayIndexValue, false, true, true);
+  prim_def(PRIM_TX_ARRAY_LOAD_VALUE, "tx array load value", 
+ 	   returnInfoArrayIndexValue, false, true, true);
+  prim_def(PRIM_TX_GET_TEST_CID, "tx get and test cid", returnInfoBool, 
+	   false, true, true);
+  prim_def(PRIM_TX_LOAD_TEST_CID, "tx load and test cid", returnInfoBool, 
+	   false, true, true);
   prim_def(PRIM_TX_CHPL_ALLOC, "tx chpl alloc", returnInfoChplAlloc, 
 	   true, true, true);
   prim_def(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO, "tx chpl alloc permit zero",
            returnInfoChplAlloc, true, true, true);
+  prim_def(PRIM_TX_PUT, "tx put", returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_STORE_REF, "tx store ref", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_STORE, "tx store", returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_SET_CID, "tx set cid", returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_STORE_CID, "tx store cid", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_SET_SVEC_MEMBER, "tx set svec member", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_STORE_SVEC_MEMBER, "tx store svec member", 
+	   returnInfoVoid, true, true, true);
+  prim_def(PRIM_TX_SET_MEMBER, "tx set member", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_STORE_MEMBER, "tx store member", returnInfoVoid, 
+	   true, true, true);
   prim_def(PRIM_TX_RT_ERROR, "chpl_stm_error", returnInfoVoid, 
 	   true, true, true);
   prim_def(PRIM_BLOCK_ATOMIC_IGNORE, "atomic block ignore", returnInfoVoid);

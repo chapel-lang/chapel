@@ -50,23 +50,27 @@ void txUnknownMovePrimitive(CallExpr* call, CallExpr* rhs) {
 void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
   switch (call->primitive->tag) {
   case PRIM_ARRAY_SET:
-  case PRIM_ARRAY_SET_FIRST:
+  case PRIM_ARRAY_SET_FIRST: {
     SymExpr *se1 = toSymExpr(call->get(1));
     SymExpr *se2 = toSymExpr(call->get(2));
     SymExpr *se3 = toSymExpr(call->get(3));
     call->replace(new CallExpr(PRIM_TX_ARRAY_SET,
 			       tx, se1->var, se2->var, se3->var));
     break;
-  case PRIM_ARRAY_ALLOC:
+  }
+  case PRIM_ARRAY_ALLOC: {
     SymExpr *se1 = toSymExpr(call->get(1));
     SymExpr *se2 = toSymExpr(call->get(2));
     SymExpr *se3 = toSymExpr(call->get(3));
     call->replace(new CallExpr(PRIM_TX_ARRAY_ALLOC,
 			       tx, se1->var, se2->var, se3->var));
     break;
-  case PRIM_ARRAY_FREE:
-    txUnknownPrimitive(call);
+  }
+  case PRIM_ARRAY_FREE: {
+    SymExpr *se = toSymExpr(call->get(1));
+    call->replace(new CallExpr(PRIM_TX_ARRAY_FREE, tx, se->var));
     break;
+  }
   case PRIM_MOVE: {
     SymExpr* lhs = toSymExpr(call->get(1));
     INT_ASSERT(lhs);  
@@ -184,6 +188,8 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       if (rhs->isPrimitive(PRIM_ARRAY_GET)) {
         SymExpr* se1 = toSymExpr(rhs->get(1));
         SymExpr* se2 = toSymExpr(rhs->get(2));
+	INT_ASSERT(se1);
+	INT_ASSERT(se2);
         if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           INT_ASSERT(lhs->getValType() == rhs->getValType());
           call->replace(new CallExpr(PRIM_TX_ARRAY_GET, tx, 
@@ -196,14 +202,18 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         break;
       }
       if (rhs->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
-        SymExpr* se1 = toSymExpr(rhs->get(1));
-        if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-	  USR_WARN("FIXME: ARRAY_GET_VALUE WIDE CLASS");  
-	} else {
-	  USR_WARN("FIXME: ARRAY_GET_VALUE !WIDE CLASS");
-	}
-	
-	break;
+         SymExpr* se1 = toSymExpr(rhs->get(1));
+	 SymExpr* se2 = toSymExpr(rhs->get(2));
+	 INT_ASSERT(se1);
+	 INT_ASSERT(se2);
+         if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+	   call->replace(new CallExpr(PRIM_TX_ARRAY_GET_VALUE,
+				      tx, lhs->var, se1->var, se2->var)); 
+	 } else {
+	   call->replace(new CallExpr(PRIM_TX_ARRAY_LOAD_VALUE,
+				      tx, lhs->var, se1->var, se2->var)); 
+	 }
+      	break;
       }
       if (rhs->isPrimitive(PRIM_TESTCID)) {
         SymExpr* se1 = toSymExpr(rhs->get(1));
@@ -211,10 +221,10 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se1);
 	INT_ASSERT(se2);
 	if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-	  call->replace(new CallExpr(PRIM_TX_GET_TESTCID, 
+	  call->replace(new CallExpr(PRIM_TX_GET_TEST_CID, 
 				     tx, lhs->var, se1->var, se2->var));
 	} else {
-	  call->replace(new CallExpr(PRIM_TX_LOAD_TESTCID, 
+	  call->replace(new CallExpr(PRIM_TX_LOAD_TEST_CID, 
 				     tx, lhs->var, se1->var, se2->var));
 	}
 	break;
@@ -252,20 +262,20 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  rhs->isPrimitive(PRIM_MAX)) {
         break;
       } 
-      if (rhs->isPrimitive(PRIM_CHPL_ALLOC)) {
-	//	call->replace(new
-	txUnknownMovePrimitive(call, rhs);
-      }
-      if (rhs->isPrimitive(PRIM_CHPL_ALLOC_PERMIT_ZERO)) {
-	//	call->replace(new CallExpr(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO));
-	USR_WARN(call, "Must generate STM_ALLOC here."); 
-	txUnknownMovePrimitive(call, rhs);
-	break;
-      }
-      if (rhs->isPrimitive(PRIM_SYNC_ISFULL)) {
-	call->remove();
-	break;
-      }
+      // if (rhs->isPrimitive(PRIM_CHPL_ALLOC)) {
+      // 	//	call->replace(new
+      // 	txUnknownMovePrimitive(call, rhs);
+      // }
+      // if (rhs->isPrimitive(PRIM_CHPL_ALLOC_PERMIT_ZERO)) {
+      // 	//	call->replace(new CallExpr(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO));
+      // 	USR_WARN(call, "Must generate STM_ALLOC here."); 
+      // 	txUnknownMovePrimitive(call, rhs);
+      // 	break;
+      // }
+      // if (rhs->isPrimitive(PRIM_SYNC_ISFULL)) {
+      // 	call->remove();
+      // 	break;
+      // }
       if (rhs->isPrimitive(PRIM_TASK_ID))
 	break; 
       if (rhs->primitive == NULL) 
@@ -318,7 +328,6 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  call->replace(new CallExpr(PRIM_TX_STORE, tx, lhs->var, rhs->var));
       }
     }
-    /* RADHE RADHE */
     break;
   }
   case PRIM_ARRAY_GET:
@@ -333,9 +342,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
   case PRIM_SETCID: {
     SymExpr* se = toSymExpr(call->get(1));
     if (se->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) 
-      call->replace(new CallExpr(PRIM_TX_SETCID, tx, se->var));
+      call->replace(new CallExpr(PRIM_TX_SET_CID, tx, se->var));
     else 
-      call->replace(new CallExpr(PRIM_TX_STORECID, tx, se->var));
+      call->replace(new CallExpr(PRIM_TX_STORE_CID, tx, se->var));
     break;
   }
   case PRIM_SET_SVEC_MEMBER: {
@@ -352,6 +361,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
   }
   case PRIM_GET_MEMBER:
   case PRIM_GET_SVEC_MEMBER:
+    break;
   case PRIM_SET_MEMBER: {
     SymExpr* se1 = toSymExpr(call->get(1));
     SymExpr* se2 = toSymExpr(call->get(2));
@@ -372,19 +382,19 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
   case PRIM_CHECK_NIL:
   case PRIM_LOCAL_CHECK:
     break;
-  case PRIM_SYNC_INIT:
-  case PRIM_SYNC_DESTROY:
-  case PRIM_SYNC_LOCK:
-  case PRIM_SYNC_UNLOCK:
-  case PRIM_SYNC_WAIT_FULL:
-  case PRIM_SYNC_WAIT_EMPTY:
-  case PRIM_SYNC_SIGNAL_FULL:
-  case PRIM_SYNC_SIGNAL_EMPTY:
-  case PRIM_SYNC_ISFULL:
-    call->remove();
-    break;
+  // case PRIM_SYNC_INIT:
+  // case PRIM_SYNC_DESTROY:
+  // case PRIM_SYNC_LOCK:
+  // case PRIM_SYNC_UNLOCK:
+  // case PRIM_SYNC_WAIT_FULL:
+  // case PRIM_SYNC_WAIT_EMPTY:
+  // case PRIM_SYNC_SIGNAL_FULL:
+  // case PRIM_SYNC_SIGNAL_EMPTY:
+  // case PRIM_SYNC_ISFULL:
+  //   call->remove();
+  //   break;
   case PRIM_CHPL_FREE:
-    USR_WARN(call, "Must generated STM_FREE here");
+    USR_WARN(call, "Generate CHPL_STM_FREE here!");
     break;
   case PRIM_CAST:
   case PRIM_BLOCK_LOCAL:
