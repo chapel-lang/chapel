@@ -182,7 +182,7 @@ $targetplatform = `$utildir/chplenv/platform --target`; chomp($targetplatform);
 $hostcompiler = `$utildir/chplenv/compiler --host`; chomp($hostcompiler);
 $targetcompiler = `$utildir/chplenv/compiler --target`; chomp($targetcompiler);
 $threads = `$utildir/chplenv/threads`; chomp($threads);
-$comm = `$utildir/chplenvcomm`; chomp($comm);
+$comm = `$utildir/chplenv/comm`; chomp($comm);
 if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
     $comm = "$comm-$ENV{'CHPL_GASNET_SEGMENT'}";
 }
