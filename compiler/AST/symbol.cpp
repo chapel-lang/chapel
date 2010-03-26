@@ -631,6 +631,26 @@ FnSymbol::insertAtTail(Expr* ast) {
 }
 
 
+void
+FnSymbol::insertAtHead(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  insertAtHead(new_Expr(format, args));
+  va_end(args);
+}
+
+
+void
+FnSymbol::insertAtTail(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  insertAtTail(new_Expr(format, args));
+  va_end(args);
+}
+
+
 Symbol*
 FnSymbol::getReturnSymbol() {
   CallExpr* ret = toCallExpr(body->body.last());

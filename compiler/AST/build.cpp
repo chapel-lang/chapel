@@ -405,6 +405,7 @@ FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
     USR_FATAL("if-then expressions currently require an else-clause");
 
   FnSymbol* ifFn = new FnSymbol(astr("_if_fn", istr(uid++)));
+  ifFn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   ifFn->addFlag(FLAG_INLINE);
   VarSymbol* tmp1 = newTemp();
   VarSymbol* tmp2 = newTemp();
@@ -436,6 +437,7 @@ FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(astr("_let_fn", istr(uid++)));
+  fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   fn->addFlag(FLAG_INLINE);
   fn->insertAtTail(decls);
   fn->insertAtTail(new CallExpr(PRIM_RETURN, expr));
@@ -1203,132 +1205,114 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
 }
 
 
-static CallExpr*
-buildReduceScanExpr(Expr* op, Expr* dataExpr, bool isScan) {
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(op)) {
+static void
+buildReduceScanPreface(FnSymbol* fn, Symbol* data, Symbol* eltType, Symbol* globalOp,
+                       Expr* opExpr, Expr* dataExpr) {
+  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(opExpr)) {
     if (!strcmp(sym->unresolved, "max"))
       sym->unresolved = astr("MaxReduceScanOp");
     else if (!strcmp(sym->unresolved, "min"))
       sym->unresolved = astr("MinReduceScanOp");
   }
+
+  data->addFlag(FLAG_EXPR_TEMP);
+  eltType->addFlag(FLAG_MAYBE_TYPE);
+
+  fn->insertAtTail(new DefExpr(data));
+  fn->insertAtTail(new DefExpr(eltType));
+  fn->insertAtTail(new DefExpr(globalOp));
+  fn->insertAtTail("'move'(%S, %E)", data, dataExpr);
+  fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)))))}", eltType, data);
+  fn->insertAtTail("'move'(%S, 'new'(%E(%E)))", globalOp, opExpr, new NamedExpr("eltType", new SymExpr(eltType)));
+}
+
+
+CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr) {
   static int uid = 1;
-  FnSymbol* fn = new FnSymbol(astr("_reduce_scan", istr(uid++)));
+
+  FnSymbol* fn = new FnSymbol(astr("chpl__reduce", istr(uid++)));
+  fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   fn->addFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING);
   fn->addFlag(FLAG_INLINE);
+
   VarSymbol* data = newTemp();
-  data->addFlag(FLAG_EXPR_TEMP);
-  fn->insertAtTail(new DefExpr(data));
-  fn->insertAtTail(new CallExpr(PRIM_MOVE, data, dataExpr));
   VarSymbol* eltType = newTemp();
-  eltType->addFlag(FLAG_MAYBE_TYPE);
-  fn->insertAtTail(new DefExpr(eltType));
-  fn->insertAtTail(
-    new BlockStmt(
-      new CallExpr(PRIM_MOVE, eltType,
-        new CallExpr(PRIM_TYPEOF,
-          new CallExpr("chpl__initCopy",
-            new CallExpr("iteratorIndex",
-              new CallExpr("_getIterator", data))))),
-      BLOCK_TYPE));
   VarSymbol* globalOp = newTemp();
-  fn->insertAtTail(new DefExpr(globalOp));
-  fn->insertAtTail(
-    new CallExpr(PRIM_MOVE, globalOp,
-      new CallExpr(PRIM_NEW,
-        new CallExpr(op,
-          new NamedExpr("eltType", new SymExpr(eltType))))));
-  if (isScan) {
-    VarSymbol* tmp = newTemp();
-    tmp->addFlag(FLAG_EXPR_TEMP);
-    fn->insertAtTail(new DefExpr(tmp));
-    fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("_scan", globalOp, data)));
-    fn->insertAtTail(new CallExpr(PRIM_DELETE, globalOp));
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+
+  buildReduceScanPreface(fn, data, eltType, globalOp, opExpr, dataExpr);
+
+  BlockStmt* serialBlock = buildChapelStmt();
+  VarSymbol* index = newTemp("_index");
+  serialBlock->insertAtTail(new DefExpr(index));
+  serialBlock->insertAtTail(buildForLoopStmt(new SymExpr(index), new SymExpr(data), new BlockStmt(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("accumulate")), index))));
+
+  if (fSerial || fSerialForall) {
+    fn->insertAtTail(serialBlock);
   } else {
-    if (fSerial || fSerialForall) {
-      VarSymbol* index = newTemp("_index");
-      fn->insertAtTail(new DefExpr(index));
-      fn->insertAtTail(buildForLoopStmt(new SymExpr(index), new SymExpr(data), new BlockStmt(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("accumulate")), index))));
-    } else {
-
-      BlockStmt* serialBlock = buildChapelStmt();
-      VarSymbol* index = newTemp("_index");
-      serialBlock->insertAtTail(new DefExpr(index));
-      serialBlock->insertAtTail(buildForLoopStmt(new SymExpr(index), new SymExpr(data), new BlockStmt(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("accumulate")), index))));
-
-      BlockStmt* leaderBlock = buildChapelStmt();
-      VarSymbol* leaderIndex = newTemp("_leaderIndex");
-      leaderBlock->insertAtTail(new DefExpr(leaderIndex));
-      VarSymbol* leaderIterator = newTemp("_leaderIterator");
-      leaderIterator->addFlag(FLAG_EXPR_TEMP);
-      leaderBlock->insertAtTail(new DefExpr(leaderIterator));
-
-      VarSymbol* leaderIndexCopy = newTemp("_leaderIndexCopy");
-      leaderIndexCopy->addFlag(FLAG_INDEX_VAR);
-      leaderIndexCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-      leaderBlock->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_getIterator", new CallExpr("_toLeader", data))));
-
-      BlockStmt* followerBlock = new BlockStmt();
-      VarSymbol* followerIndex = newTemp("_followerIndex");
-      followerBlock->insertAtTail(new DefExpr(followerIndex));
-      VarSymbol* followerIterator = newTemp("_followerIterator");
-      followerIterator->addFlag(FLAG_EXPR_TEMP);
-      followerBlock->insertAtTail(new DefExpr(followerIterator));
-
-      followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_getIterator", new CallExpr("_toFollower", data, leaderIndexCopy))));
-
-      followerBlock->insertAtTail(new BlockStmt(new CallExpr(PRIM_MOVE, followerIndex, new CallExpr("iteratorIndex", followerIterator)), BLOCK_TYPE));
-
-      VarSymbol* localOp = newTemp();
-      followerBlock->insertAtTail(new DefExpr(localOp));
-      followerBlock->insertAtTail(
-        new CallExpr(PRIM_MOVE, localOp,
-          new CallExpr(PRIM_NEW,
-            new CallExpr(op->copy(),
-              new NamedExpr("eltType", new SymExpr(eltType))))));
-
-      BlockStmt* followerBody =new BlockStmt(new CallExpr(new CallExpr(".", localOp, new_StringSymbol("accumulate")), followerIndex));
-      
-      followerBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, followerIndex, followerIterator);
-      followerBlock->insertAtTail(followerBody);
-      BlockStmt* combineBlock = new BlockStmt();
-      combineBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("lock"))));
-      combineBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("combine")), localOp));
-      combineBlock->insertAtTail(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("unlock"))));
-      followerBlock->insertAtTail(buildOnStmt(new SymExpr(globalOp), combineBlock));
-      followerBlock->insertAtTail(new CallExpr(PRIM_DELETE, localOp));
-      followerBlock->insertAtTail(new CallExpr("_freeIterator", followerIterator));
-
-      BlockStmt* beginBlock = new BlockStmt();
-      beginBlock->insertAtTail(new DefExpr(leaderIndexCopy));
-      beginBlock->insertAtTail(new CallExpr(PRIM_MOVE, leaderIndexCopy, leaderIndex));
-      beginBlock->insertAtTail(followerBlock);
-
-      BlockStmt* leaderBody = new BlockStmt(beginBlock);
-      leaderBlock->insertAtTail(new BlockStmt(new CallExpr(PRIM_MOVE, leaderIndex, new CallExpr("iteratorIndex", leaderIterator)), BLOCK_TYPE));
-      leaderBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, leaderIndex, leaderIterator);
-      leaderBlock->insertAtTail(leaderBody);
-      leaderBlock->insertAtTail(new CallExpr("_freeIterator", leaderIterator));
-
-      fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leaderBlock, serialBlock));
-    }
-    VarSymbol* result = new VarSymbol("result");
-    fn->insertAtTail(new DefExpr(result, new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("generate")))));
-    fn->insertAtTail(new CallExpr(PRIM_DELETE, globalOp));
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, result));
+    VarSymbol* leadIdx = newTemp("chpl__leadIdx");
+    VarSymbol* leadIter = newTemp("chpl__leadIter");
+    VarSymbol* leadIdxCopy = newTemp("chpl__leadIdxCopy");
+    VarSymbol* followIdx = newTemp("chpl__followIdx");
+    VarSymbol* followIter = newTemp("chpl__followIter");
+    VarSymbol* localOp = newTemp();
+    leadIdxCopy->addFlag(FLAG_INDEX_VAR);
+    leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    BlockStmt* followBody = new BlockStmt();
+    followBody->insertAtTail(".(%S, 'accumulate')(%S)", localOp, followIdx);
+    followBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, followIdx, followIter);
+    BlockStmt* combineBlock = new BlockStmt();
+    combineBlock->insertAtTail(".(%S, 'lock')()", globalOp);
+    combineBlock->insertAtTail(".(%S, 'combine')(%S)", globalOp, localOp);
+    combineBlock->insertAtTail(".(%S, 'unlock')()", globalOp);
+    BlockStmt* followBlock = new BlockStmt();
+    followBlock->insertAtTail(new DefExpr(followIter));
+    followBlock->insertAtTail(new DefExpr(followIdx));
+    followBlock->insertAtTail(new DefExpr(localOp));
+    followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))", followIter, data, leadIdxCopy);
+    followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", followIdx, followIter);
+    followBlock->insertAtTail("'move'(%S, 'new'(%E(%E)))", localOp, opExpr->copy(), new NamedExpr("eltType", new SymExpr(eltType)));
+    followBlock->insertAtTail(followBody);
+    followBlock->insertAtTail(buildOnStmt(new SymExpr(globalOp), combineBlock));
+    followBlock->insertAtTail("'delete'(%S)", localOp);
+    followBlock->insertAtTail("_freeIterator(%S)", followIter);
+    BlockStmt* leadBody = new BlockStmt();
+    leadBody->insertAtTail(new DefExpr(leadIdxCopy));
+    leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
+    leadBody->insertAtTail(followBlock);
+    leadBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, leadIdx, leadIter);
+    BlockStmt* leadBlock = buildChapelStmt();
+    leadBlock->insertAtTail(new DefExpr(leadIdx));
+    leadBlock->insertAtTail(new DefExpr(leadIter));
+    leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))", leadIter, data);
+    leadBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", leadIdx, leadIter);
+    leadBlock->insertAtTail(leadBody);
+    leadBlock->insertAtTail("_freeIterator(%S)", leadIter);
+    fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leadBlock, serialBlock));
   }
+
+  VarSymbol* result = new VarSymbol("result");
+  fn->insertAtTail(new DefExpr(result, new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("generate")))));
+  fn->insertAtTail("'delete'(%S)", globalOp);
+  fn->insertAtTail("'return'(%S)", result);
   return new CallExpr(new DefExpr(fn));
 }
 
 
-CallExpr* buildReduceExpr(Expr* op, Expr* data) {
-  return buildReduceScanExpr(op, data, false);
-}
+CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr) {
+  static int uid = 1;
 
+  FnSymbol* fn = new FnSymbol(astr("chpl__scan", istr(uid++)));
+  fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
 
-CallExpr* buildScanExpr(Expr* op, Expr* data) {
-  return buildReduceScanExpr(op, data, true);
+  VarSymbol* data = newTemp();
+  VarSymbol* eltType = newTemp();
+  VarSymbol* globalOp = newTemp();
+
+  buildReduceScanPreface(fn, data, eltType, globalOp, opExpr, dataExpr);
+
+  fn->insertAtTail("'return'(chpl__scanIterator(%S, %S))", globalOp, data);
+
+  return new CallExpr(new DefExpr(fn));
 }
 
 

@@ -175,6 +175,8 @@ class FnSymbol : public Symbol {
 
   void insertAtHead(Expr* ast);
   void insertAtTail(Expr* ast);
+  void insertAtHead(const char* format, ...);
+  void insertAtTail(const char* format, ...);
 
   void insertBeforeReturn(Expr* ast);
   void insertBeforeReturnAfterLabel(Expr* ast);

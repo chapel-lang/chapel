@@ -37,6 +37,7 @@ initFlags() {
   defineFlag(FLAG_COBEGIN_OR_COFORALL, "cobegin or coforall");
   defineFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK, "cobegin or coforall block");
   defineFlag(FLAG_COMMAND_LINE_SETTING, "command line setting");
+  defineFlag(FLAG_COMPILER_NESTED_FUNCTION, "compiler nested function");
   defineFlag(FLAG_CONCURRENTLY_ACCESSED, "concurrently accessed");
   defineFlag(FLAG_CONFIG, "config");
   defineFlag(FLAG_CONST, "const");
