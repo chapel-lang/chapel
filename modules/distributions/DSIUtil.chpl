@@ -33,7 +33,7 @@ def _computeChunkStuff(maxTasks, limitTasks, minSize, ranges, param rank) {
   var maxDim = -1;
   var maxElems = min(uint(64));
   // break/continue don't work with param loops (known future)
-  for /* param */ i in 1..rank do {
+  for /* param */ i in 1..rank by -1 do {
     if ranges(i).length:uint(64) >= numChunks {
       parDim = i;
       break;
