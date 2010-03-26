@@ -45,7 +45,6 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
        "third-party/Makefile",
        "third-party/README",
        "util/chpl-multirealm",
-       "util/chplmake",
        "util/printchplenv",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
