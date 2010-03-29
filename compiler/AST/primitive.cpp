@@ -490,10 +490,6 @@ initPrimitive() {
 	   false, true, true);
   prim_def(PRIM_TX_LOAD_TEST_CID, "tx load and test cid", returnInfoBool, 
 	   false, true, true);
-  prim_def(PRIM_TX_CHPL_ALLOC, "tx chpl alloc", returnInfoChplAlloc, 
-	   true, true, true);
-  prim_def(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO, "tx chpl alloc permit zero",
-           returnInfoChplAlloc, true, true, true);
   prim_def(PRIM_TX_PUT, "tx put", returnInfoVoid, true, true, true);
   prim_def(PRIM_TX_STORE_REF, "tx store ref", returnInfoVoid, 
 	   true, true, true);
@@ -508,6 +504,12 @@ initPrimitive() {
   prim_def(PRIM_TX_SET_MEMBER, "tx set member", returnInfoVoid, 
 	   true, true, true);
   prim_def(PRIM_TX_STORE_MEMBER, "tx store member", returnInfoVoid, 
+	   true, true, true);
+  prim_def(PRIM_TX_CHPL_ALLOC, "tx chpl alloc", returnInfoChplAlloc, 
+	   true, true, true);
+  prim_def(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO, "tx chpl alloc permit zero", 
+	   returnInfoChplAlloc, true, true, true);
+  prim_def(PRIM_TX_CHPL_FREE, "chpl_stm_tx_free", returnInfoVoid, 
 	   true, true, true);
   prim_def(PRIM_TX_RT_ERROR, "chpl_stm_error", returnInfoVoid, 
 	   true, true, true);
@@ -643,6 +645,7 @@ initPrimitive() {
 }
 
 Map<const char*, VarSymbol*> memDescsMap;
+Map<VarSymbol*, const char*> memDescsNameMap;
 Vec<const char*> memDescsVec;
 
 VarSymbol* newMemDesc(const char* str) {
@@ -653,5 +656,6 @@ VarSymbol* newMemDesc(const char* str) {
   VarSymbol* memDescVar = new_IntSymbol(memDescInt++, INT_SIZE_16);
   memDescsMap.put(s, memDescVar);
   memDescsVec.add(s);
+  memDescsNameMap.put(memDescVar, s);
   return memDescVar;
 }

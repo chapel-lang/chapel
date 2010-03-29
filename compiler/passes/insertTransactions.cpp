@@ -236,6 +236,29 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         // in CHPL_STM_WIDE_GET_FIELD
         break;
       }
+      if (rhs->isPrimitive(PRIM_CHPL_ALLOC)) {
+        SymExpr* se1 = toSymExpr(rhs->get(1));
+	SymExpr* se2 = toSymExpr(rhs->get(2));
+	INT_ASSERT(se1);
+	INT_ASSERT(se2);
+	INT_ASSERT(toVarSymbol(se2->var));
+	const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
+	rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC, se1->var, tx, 
+				  newMemDesc(astr("stm ", memDescStr))));
+      	break;
+      }
+      if (rhs->isPrimitive(PRIM_CHPL_ALLOC_PERMIT_ZERO)) {
+        SymExpr* se1 = toSymExpr(rhs->get(1));
+	SymExpr* se2 = toSymExpr(rhs->get(2));
+	INT_ASSERT(se1);
+	INT_ASSERT(se2);
+	INT_ASSERT(toVarSymbol(se2->var));
+	const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
+	rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO, 
+				  se1->var, tx,
+				  newMemDesc(astr("stm ", memDescStr))));
+      	break;
+      }
       if (rhs->isPrimitive(PRIM_UNARY_MINUS)    ||
           rhs->isPrimitive(PRIM_UNARY_PLUS)     ||
 	  rhs->isPrimitive(PRIM_UNARY_NOT)      ||
@@ -259,27 +282,15 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
           rhs->isPrimitive(PRIM_OR)             ||
           rhs->isPrimitive(PRIM_XOR)            ||
           rhs->isPrimitive(PRIM_POW)            ||
-	  rhs->isPrimitive(PRIM_MAX)) {
+	  rhs->isPrimitive(PRIM_MAX)            ||
+	  rhs->isPrimitive(PRIM_TASK_ID)        ||
+	  rhs->primitive == NULL) {
         break;
       } 
-      // if (rhs->isPrimitive(PRIM_CHPL_ALLOC)) {
-      // 	//	call->replace(new
-      // 	txUnknownMovePrimitive(call, rhs);
-      // }
-      // if (rhs->isPrimitive(PRIM_CHPL_ALLOC_PERMIT_ZERO)) {
-      // 	//	call->replace(new CallExpr(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO));
-      // 	USR_WARN(call, "Must generate STM_ALLOC here."); 
-      // 	txUnknownMovePrimitive(call, rhs);
-      // 	break;
-      // }
       // if (rhs->isPrimitive(PRIM_SYNC_ISFULL)) {
       // 	call->remove();
       // 	break;
       // }
-      if (rhs->isPrimitive(PRIM_TASK_ID))
-	break; 
-      if (rhs->primitive == NULL) 
-        break;
       txUnknownMovePrimitive(call, rhs);
     }
     if (SymExpr* rhs = toSymExpr(call->get(2))) {
@@ -382,20 +393,23 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
   case PRIM_CHECK_NIL:
   case PRIM_LOCAL_CHECK:
     break;
-  // case PRIM_SYNC_INIT:
-  // case PRIM_SYNC_DESTROY:
-  // case PRIM_SYNC_LOCK:
-  // case PRIM_SYNC_UNLOCK:
-  // case PRIM_SYNC_WAIT_FULL:
-  // case PRIM_SYNC_WAIT_EMPTY:
-  // case PRIM_SYNC_SIGNAL_FULL:
-  // case PRIM_SYNC_SIGNAL_EMPTY:
-  // case PRIM_SYNC_ISFULL:
-  //   call->remove();
-  //   break;
-  case PRIM_CHPL_FREE:
-    USR_WARN(call, "Generate CHPL_STM_FREE here!");
+  case PRIM_SYNC_INIT:
+  case PRIM_SYNC_DESTROY:
+  case PRIM_SYNC_LOCK:
+  case PRIM_SYNC_UNLOCK:
+  case PRIM_SYNC_WAIT_FULL:
+  case PRIM_SYNC_WAIT_EMPTY:
+  case PRIM_SYNC_SIGNAL_FULL:
+  case PRIM_SYNC_SIGNAL_EMPTY:
+  case PRIM_SYNC_ISFULL:
+    call->remove();
     break;
+  case PRIM_CHPL_FREE: {
+    SymExpr* se = toSymExpr(call->get(1));
+    INT_ASSERT(se);
+    call->replace(new CallExpr(PRIM_TX_CHPL_FREE, tx, se->var));
+    break;
+  }
   case PRIM_CAST:
   case PRIM_BLOCK_LOCAL:
   case PRIM_BLOCK_ATOMIC:

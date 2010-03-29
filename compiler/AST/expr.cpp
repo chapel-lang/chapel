@@ -2241,6 +2241,62 @@ void CallExpr::codegen(FILE* outfile) {
       gen(outfile, ", %A, %A, %A, %A)", get(4), type, get(5), get(6));
       break;
     }
+    case PRIM_TX_CHPL_ALLOC: 
+    case PRIM_TX_CHPL_ALLOC_PERMIT_ZERO: {
+      bool is_struct = false;
+      // Type* type = get(2)->typeInfo();
+      // registerTypeToStructurallyCodegen(type->symbol);
+
+      // if Chapel class or record
+      if (TypeSymbol *t = toTypeSymbol(typeInfo()->symbol)) {
+        if (toClassType(t->type)) {
+          is_struct = true;
+        }
+      }
+
+      // pointer cast
+      fprintf( outfile, "(");
+      typeInfo()->symbol->codegen(outfile);
+      if (!is_struct) {
+        fprintf( outfile, "*");
+      } 
+      fprintf( outfile, ")");
+
+      // target: void* chpl_stm_tx_alloc(chpl_stm_tx_t tx, size_t size, 
+      //                                 char* description);
+      fprintf(outfile, "%s(",
+              (primitive->tag == PRIM_TX_CHPL_ALLOC ?
+               "chpl_stm_tx_alloc" : 
+               "CHPL_STM_TX_ALLOC_PERMIT_ZERO"));
+      gen(outfile, "%A, sizeof(", get(2));    // insert tx descriptor
+      if (is_struct) fprintf(outfile, "_");   // need struct of class
+      typeInfo()->symbol->codegen(outfile);
+      fprintf( outfile, "), ");
+      if (fRuntime) {
+        fprintf(outfile, "CHPL_RT_MD_CHAPEL_STM_CODE");
+      } else {
+        get(3)->codegen( outfile);
+        fprintf(outfile, " + CHPL_RT_MD_NUM");
+      }
+      gen(outfile, ", %A, %A)", get(4), get(5));
+      break;
+    }
+    case PRIM_TX_CHPL_FREE: {
+      if (fNoMemoryFrees)
+        break;
+      INT_ASSERT(numActuals() == 4);
+      fprintf(outfile, "%s", this->primitive->name);
+      gen(outfile, "(%A, (void*)", get(1));
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+	  get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+	fputc('*', outfile);
+      get(2)->codegen(outfile);
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+	  get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+	fputs(".addr", outfile);     
+      gen(outfile, ", %A, %A)", get(3), get(4));
+      break;
+    }
     case PRIM_TX_RT_ERROR:
       codegenBasicPrimitive(outfile, this);
       break;

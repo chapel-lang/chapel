@@ -172,8 +172,6 @@ enum PrimitiveTag {
   PRIM_TX_ARRAY_LOAD_VALUE,
   PRIM_TX_GET_TEST_CID,
   PRIM_TX_LOAD_TEST_CID,
-  PRIM_TX_CHPL_ALLOC,
-  PRIM_TX_CHPL_ALLOC_PERMIT_ZERO,
   PRIM_TX_PUT,                // Transactional store -- local/remote
   PRIM_TX_STORE,              // Transactional store --local
   PRIM_TX_STORE_REF,          // Transactional store to reference -- local 
@@ -183,6 +181,9 @@ enum PrimitiveTag {
   PRIM_TX_STORE_SVEC_MEMBER,
   PRIM_TX_SET_MEMBER,
   PRIM_TX_STORE_MEMBER,
+  PRIM_TX_CHPL_ALLOC,
+  PRIM_TX_CHPL_ALLOC_PERMIT_ZERO,
+  PRIM_TX_CHPL_FREE,
   PRIM_TX_RT_ERROR,
   PRIM_BLOCK_ATOMIC_IGNORE,   // Atomic block when --ignore-atomic is set
 
@@ -268,6 +269,7 @@ void initPrimitive();
 
 extern Map<const char*, VarSymbol*> memDescsMap;
 extern Vec<const char*> memDescsVec;
+extern Map<VarSymbol*, const char*> memDescsNameMap;
 
 VarSymbol* newMemDesc(const char* str);
 

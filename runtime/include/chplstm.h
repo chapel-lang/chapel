@@ -23,14 +23,14 @@ typedef chpl_stm_tx_t* chpl_stm_tx_p;
 typedef jmp_buf* chpl_stm_tx_env_p;
 typedef int32_t proc_t;
 
-#define CHPL_STM_ALLOC_PERMIT_ZERO(s,d,l,f)		\
-  ((s == 0) ? NULL : chpl_stm_tx_alloc(s,d,l,f))
+#define CHPL_STM_ALLOC_PERMIT_ZERO(tx, size , description, ln, fn)	\
+  ((s == 0) ? NULL : chpl_stm_tx_alloc(tx, size, description, ln, fn))
 
 #define chpl_stm_tx_alloc(tx, size, description, ln, fn)	\
   chpl_stm_tx_malloc(tx, 1, size, description, ln, fn)
 
 #define _TX_ARRAY_ALLOC(tx, x, type, size, ln, fn)			\
-  ((size == 0) ? (void*)(0x0) : chpl_stm_tx_malloc(tx, (x)->_data, size, sizeof(type), CHPL_RT_MD_STM_ARRAY_ELEMENTS, ln, fn))
+  (x)->_data = (size == 0) ? (void*)(0x0) : chpl_stm_tx_malloc(tx, size, sizeof(type), CHPL_RT_MD_STM_ARRAY_ELEMENTS, ln, fn)
 
 #define _TX_WIDE_ARRAY_ALLOC(tx, x, type, size, ln, fn)			\
   do {									\
@@ -331,7 +331,7 @@ void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, proc_t locale, void* dstad
 //
 // transactional malloc
 //
-void chpl_stm_tx_malloc(chpl_stm_tx_p tx, void* memaddr, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn);
+void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn);
 
 void chpl_stm_tx_free(chpl_stm_tx_p tx, void* ptr, int32_t ln, chpl_string fn);
 

@@ -49,8 +49,8 @@ void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, proc_t locale, void* dstad
   chpl_comm_put(srcaddr, locale, dstaddr, size, lineno, filename);
 }
 
-void chpl_stm_tx_malloc(chpl_stm_tx_p tx, void* ptr, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename) { 
-  ptr = chpl_malloc(number, size, CHPL_RT_MD_STM_TX_MALLOC, lineno, filename);
+void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename) { 
+  return chpl_malloc(number, size, CHPL_RT_MD_STM_TX_MALLOC, lineno, filename);
 }
 
 void chpl_stm_tx_free(chpl_stm_tx_p tx, void* ptr, int32_t lineno, chpl_string filename) { 
