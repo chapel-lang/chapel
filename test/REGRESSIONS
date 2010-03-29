@@ -15,6 +15,15 @@
 general regressions
 ===================
 
+times out fairly consistently (03/27/10)
+----------------------------------------
+[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings  ) (0-2)]
+[Error: Timed out executing program studies/sudoku/dinan/sudoku]
+
+unresolved call iterator(tag=iterator) (03/26/10)
+-------------------------------------------------
+[Error matching compiler output for spec/autogen/Parallelism_and_Synchronization.tex.tests/test_serialStmt2]
+
 spurious failure
 ----------------
 [Error matching program output for types/tuple/bradc/homogTupleArr] (e.g., 10/03/09:cray, 11/17/09:gasnet-fast)
@@ -65,6 +74,11 @@ spurious system fork failure
 linux64 regressions (in addition to the above)
 ==============================================
 
+out of memory in string copies
+------------------------------
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
+
+
 ==============================================
 linux32 regressions (in addition to the above)
 ==============================================
@@ -80,7 +94,7 @@ performance-specific regressions
 
 spurious execution timeouts
 ---------------------------
-[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2] (e.g., 03/23/10)
+[Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2] (e.g., 03/23/10, 03/27/10)
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -114,10 +128,6 @@ malloc out of memory causes problem (03/17/10 -- after OS upgrade)
 ------------------------------------------------------------------
 [Error matching compiler output for memory/shannon/outofmemory/mallocOutOfMemory]
 
-times out fairly consistently
------------------------------
-[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings  ) (0-2)]
-
 internal valgrind stuff 'the impossible has happened'
 -----------------------------------------------------
 [Error matching program output for parallel/begin/dinan/mvm_coforall]
@@ -136,8 +146,8 @@ block distribution regressions
 
 spurious timeouts
 -----------------
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl] (e.g., 03/13/10, 03/16/10, 03/20/10)
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (e.g., 03/12/10, 03/17/10, 03/20/10)
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl] (e.g., 03/13/10, 03/16/10, 03/20/10, 03/27/10)
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (e.g., 03/12/10, 03/17/10, 03/20/10, 03/27/10)
 
 timeouts
 --------
@@ -148,6 +158,12 @@ timeouts
 ===============================
 cyclic distribution regressions
 ===============================
+
+spurious timeouts
+-----------------
+[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Norm] (e.g., 03/27/10)
+[Error: Timed out compilation for distributions/robust/arithmetic/reindexing/test_array_alias4] (e.g., 03/27/10)
+[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_writeln] (e.g., 03/27/10)
 
 have never worked
 -----------------
@@ -166,7 +182,7 @@ no-local regressions
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
-[Error matching compiler output for arrays/deitz/test_array_type_alias]
+[Error matching compiler output for arrays/deitz/part4/test_array_type_alias]
 [Error matching compiler output for arrays/jplevyak/simple-4]
 
 illegal use of on in serial iterator error (02/06/10)
@@ -189,16 +205,16 @@ gasnet-everything regressions (other than the above)
 
 new spurious timeouts with SLED11 upgrade
 -----------------------------------------
-[Error: Timed out compilation for modules/standard/math/atanh_asymptote] (e.g., 03/22/10)
-[Error: Timed out compilation for modules/standard/math/log1p] (e.g., 03/20/10, 03/21/10, 03/23/10, 03/24/10)
+[Error: Timed out compilation for modules/standard/math/atanh_asymptote] (e.g., 03/22/10, 03/27/10)
+[Error: Timed out compilation for modules/standard/math/log1p] (e.g., 03/20/10, 03/21/10, 03/23/10, 03/24/10, 03/28/10)
 [Error: Timed out compilation for modules/standard/math/asinh] (e.g., 03/18/10)
 [Error: Timed out compilation for modules/standard/math/lg] (e.g., 03/13/10, 03/17/10)
 [Error: Timed out compilation for multilocale/deitz/needMultiLocales/diagnostics/test_remote_value_forwarding3] (e.g., 03/17/10)
 [Error: Timed out compilation for modules/standard/math/atan2] (e.g., 03/13/10, 03/15/10, 03/16/10)
 [Error: Timed out compilation for multilocale/deitz/linked/test_linked3a] (e.g., 03/20/10)
 [Error: Timed out compilation for multilocale/deitz/linked/test_linked3c] (e.g., 03/12/10, 03/13/10, 03/15/10, 03/18/10)
-[Error: Timed out compilation for multilocale/deitz/linked/test_linked3d] (e.g., 03/12/10, 03/13/10, 03/16/10)
-[Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d] (e.g., 03/12/10, 03/18/10, 03/20/10, 03/22/10, 03/23/10)
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3d] (e.g., 03/12/10, 03/13/10, 03/16/10, 03/29/10)
+[Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d] (e.g., 03/12/10, 03/18/10, 03/20/10, 03/22/10, 03/23/10, 03/27/10, 03/27/10)
 [Error: Timed out executing program studies/hpcc/RA/marybeth/ra3] (e.g., 03/12/10, 03/15/10, 03/23/10)
 
 new timeouts with SLED11 upgrade (03/12/10)
@@ -250,7 +266,7 @@ times out spuriously
 --------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09, 12/16/09, 12/19/09, 12/25/09, 12/29/09, 01/07/10, 01/08/10, 01/10/10, 01/23/10, 02/08/10, 02/10/10, 02/18/10, 02/20/10, 02/22/10, 02/26/10, 03/08/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10, 02/11/10, 02/16/10, 02/22/10, 03/08/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10, 02/14/10, 02/15/10, 02/17/10, 02/20/10, 02/22/10, 02/25/10, 02/27/10, 03/04/10, 03/06/10, 03/08/10, 03/09/10, 03/11/10, 03/12/10, 03/19/10, 03/20/10, 03/22/10, 03/23/10, 03/23/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10, 02/14/10, 02/15/10, 02/17/10, 02/20/10, 02/22/10, 02/25/10, 02/27/10, 03/04/10, 03/06/10, 03/08/10, 03/09/10, 03/11/10, 03/12/10, 03/19/10, 03/20/10, 03/22/10, 03/23/10, 03/23/10, 03/27/10)
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09, 02/02/10)
 [Error: Timed out executing program users/agnieszka/test1] (e.g., 01/08/10)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09, 12/15/09, 12/18/09, 12/21/09, 12/25/09, 01/04/10, 01/05/10, 01/06/10, 01/10/10, 01/24/10, 01/29/10, 02/14/10, 02/16/10)
@@ -260,18 +276,9 @@ times out spuriously
 gasnet-fast regressions (other than the above)
 ==============================================
 
-execution timeout (03/26/10)
-----------------------------
-[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 -nl 1 (--cc-warnings  ) (0-2)]
-[Error: Timed out executing program studies/sudoku/dinan/sudoku]
-
-output out of order (03/26/10)
-------------------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/dist/test_private_space]
-
-unresolved call iterator(tag=iterator) (03/26/10)
--------------------------------------------------
-[Error matching compiler output for spec/autogen/Parallelism_and_Synchronization.tex.tests/test_serialStmt2]
+spurious output out of order output
+-----------------------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/dist/test_private_space] (e.g., 03/26/10)
 
 spurious recursive failures in AMUDP_SPMDShutdown
 -------------------------------------------------
@@ -322,6 +329,10 @@ missing 1-tuple acccessor (03/03/10)
 baseline-specific tests
 =======================
 
+output incorrect
+----------------
+[Error matching program output for memory/figueroa/LeakedMemory2]
+
 spurious timeout
 ----------------
 [Error: Timed out executing program studies/hpcc/RA/marybeth/ra3] (e.g., 03/24/10)
@@ -329,10 +340,6 @@ spurious timeout
 numerical accuracy issue
 ------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-
-execution timeout
------------------
-[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings --baseline  ) (0-2)]
 
 ???
 ---
@@ -475,6 +482,10 @@ spurious sprintf not thread-safe
 ========================
 xt-cle-specific failures
 ========================
+
+-target=linux unrecognized
+--------------------------
+*all*
 
 numerical accuracy issue
 ------------------------
