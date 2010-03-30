@@ -163,6 +163,14 @@ def Cyclic.dsiNewArithmeticDom(param rank: int, type idxType, param stridable: b
 } 
 
 def Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
+  def anyStridable(space, param i=1) param
+    return if i == space.size
+      then space(i).stridable
+      else space(i).stridable || anyStridable(space, i+1);
+
+  if anyStridable(newSpace) || anyStridable(oldSpace) then
+    compilerWarning("reindexing stridable Cyclic arrays is not yet fully supported");
+
   var newLow: rank*idxType;
   for param i in 1..rank {
     newLow(i) = newSpace(i).low - oldSpace(i).low + lowIdx(i);
