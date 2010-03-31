@@ -12,6 +12,7 @@
 #include "../ifa/prim_data.h"
 
 bool resolved = false;
+bool inDynamicDispatchResolution = false;
 
 SymbolMap paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
@@ -40,8 +41,21 @@ static Map<Type*,Type*> runtimeTypeMap; // map static types to runtime types
 static Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
 static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
 
+// map of compiler warnings that may need to be reissued for repeated
+// calls; the inner compiler warning map is from the compilerWarning
+// function; the outer compiler warning map is from the function
+// containing the compilerWarning function
+// to do: this needs to be a map from functions to multiple strings in
+//        order to support multiple compiler warnings are allowed to
+//        be in a single function
+static Map<FnSymbol*,const char*> innerCompilerWarningMap;
+static Map<FnSymbol*,const char*> outerCompilerWarningMap;
+
 Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
 Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
+
+Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
+Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
 
 static Type* resolve_type_expr(Expr* expr);
 
@@ -1334,6 +1348,70 @@ printResolutionError(const char* error,
   }
 }
 
+static void issueCompilerError(CallExpr* call) {
+  //
+  // Disable compiler warnings in internal modules that are triggered
+  // within a dynamic dispatch context because of potential user
+  // confusion.  Removed the following code and See the following
+  // tests:
+  //
+  //   test/arrays/bradc/workarounds/arrayOfSpsArray.chpl
+  //   test/arrays/deitz/part4/test_array_of_associative_arrays.chpl
+  //   test/classes/bradc/arrayInClass/genericArrayInClass-otharrs.chpl
+  //
+  if (call->isPrimitive(PRIM_WARNING))
+    if (inDynamicDispatchResolution)
+      if (call->getModule()->modTag == MOD_INTERNAL &&
+          callStack.v[0]->getModule()->modTag == MOD_INTERNAL)
+        return;
+
+  CallExpr* from = NULL;
+  for (int i = callStack.n-2; i >= 0; i--) {
+    from = callStack.v[i];
+    if (from->lineno > 0 && 
+        from->getModule()->modTag != MOD_INTERNAL &&
+        !from->getFunction()->hasFlag(FLAG_TEMP))
+      break;
+  }
+  const char* str = "";
+  FnSymbol* fn = toFnSymbol(call->parentSymbol);
+  for_formals(arg, fn) {
+    VarSymbol* var = toVarSymbol(paramMap.get(arg));
+    INT_ASSERT(var && var->immediate && var->immediate->const_kind == CONST_KIND_STRING);
+    str = astr(str, var->immediate->v_string);
+  }
+  if (call->isPrimitive(PRIM_ERROR)) {
+    USR_FATAL(from, "%s", str);
+  } else {
+    USR_WARN(from, "%s", str);
+  }
+  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-1]->isResolved()))
+    innerCompilerWarningMap.put(fn, str);
+  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
+    outerCompilerWarningMap.put(fn, str);
+}
+
+static void reissueCompilerWarning(const char* str, int offset) {
+  //
+  // Disable compiler warnings in internal modules that are triggered
+  // within a dynamic dispatch context because of potential user
+  // confusion.  See note in 'issueCompileError' above.
+  //
+  if (inDynamicDispatchResolution)
+    if (callStack.v[callStack.n-1]->getModule()->modTag == MOD_INTERNAL &&
+        callStack.v[0]->getModule()->modTag == MOD_INTERNAL)
+      return;
+
+  CallExpr* from = NULL;
+  for (int i = callStack.n-offset; i >= 0; i--) {
+    from = callStack.v[i];
+    if (from->lineno > 0 && 
+        from->getModule()->modTag != MOD_INTERNAL &&
+        !from->getFunction()->hasFlag(FLAG_TEMP))
+      break;
+  }
+  USR_WARN(from, "%s", str);
+}
 
 class VisibleFunctionBlock {
  public:
@@ -1709,6 +1787,15 @@ resolveCall(CallExpr* call, bool errorCheck) {
         }
       }
     }
+
+    if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
+      reissueCompilerWarning(str, 2);
+      if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
+        outerCompilerWarningMap.put(fn, str);
+    }
+    if (const char* str = outerCompilerWarningMap.get(resolvedFn))
+      reissueCompilerWarning(str, 1);
+
   } else if (call->isPrimitive(PRIM_TUPLE_AND_EXPAND)) {
     SymExpr* se = toSymExpr(call->get(1));
     int size = 0;
@@ -2563,7 +2650,11 @@ preFold(Expr* expr) {
       }
     } else if (call->isPrimitive(PRIM_TO_LEADER)) {
       FnSymbol* iterator = call->get(1)->typeInfo()->defaultConstructor->getFormal(1)->type->defaultConstructor;
-      CallExpr* leaderCall = new CallExpr(iterator->name);
+      CallExpr* leaderCall;
+      if (FnSymbol* leader = iteratorLeaderMap.get(iterator))
+        leaderCall = new CallExpr(leader);
+      else
+        leaderCall = new CallExpr(iterator->name);
       leaderCall->insertAtTail(new NamedExpr("tag", new SymExpr(gLeaderTag)));
       for_formals(formal, iterator) {
         leaderCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
@@ -2572,7 +2663,11 @@ preFold(Expr* expr) {
       result = leaderCall;
     } else if (call->isPrimitive(PRIM_TO_FOLLOWER)) {
       FnSymbol* iterator = call->get(1)->typeInfo()->defaultConstructor->getFormal(1)->type->defaultConstructor;
-      CallExpr* followerCall = new CallExpr(iterator->name);
+      CallExpr* followerCall;
+      if (FnSymbol* follower = iteratorFollowerMap.get(iterator))
+        followerCall = new CallExpr(follower);
+      else
+        followerCall = new CallExpr(iterator->name);
       followerCall->insertAtTail(new NamedExpr("tag", new SymExpr(gFollowerTag)));
       followerCall->insertAtTail(new NamedExpr("follower", call->get(2)->remove()));
       for_formals(formal, iterator) {
@@ -3108,29 +3203,6 @@ postFold(Expr* expr) {
 }
 
 
-static void issueCompilerError(CallExpr* call) {
-  CallExpr* from = NULL;
-  for (int i = callStack.n-2; i >= 0; i--) {
-    from = callStack.v[i];
-    if (from->lineno > 0 && 
-        from->getModule()->modTag != MOD_INTERNAL &&
-        !from->getFunction()->hasFlag(FLAG_TEMP))
-      break;
-  }
-  const char* str = "";
-  FnSymbol* fn = toFnSymbol(call->parentSymbol);
-  for_formals(arg, fn) {
-    VarSymbol* var = toVarSymbol(paramMap.get(arg));
-    INT_ASSERT(var && var->immediate && var->immediate->const_kind == CONST_KIND_STRING);
-    str = astr(str, var->immediate->v_string);
-  }
-  if (call->isPrimitive(PRIM_ERROR)) {
-    USR_FATAL(from, "%s", str);
-  } else {
-    USR_WARN(from, "%s", str);
-  }
-}
-
 void
 resolveBlock(Expr* body) {
   FnSymbol* fn = toFnSymbol(body->parentSymbol);
@@ -3173,11 +3245,17 @@ resolveBlock(Expr* body) {
         resolveFns(call->isResolved());
       if (tryFailure) {
         if (tryStack.v[tryStack.n-1]->parentSymbol == fn) {
+          while (callStack.v[callStack.n-1]->isResolved() != tryStack.v[tryStack.n-1]->elseStmt->parentSymbol) {
+            callStack.pop();
+            if (callStack.n == 1)
+              INT_FATAL(call, "unable to roll back stack due to try block failure");
+          }
           BlockStmt* block = tryStack.v[tryStack.n-1]->elseStmt;
           tryStack.v[tryStack.n-1]->replace(block->remove());
           tryStack.pop();
+          if (!block->prev)
+            block->insertBefore(new CallExpr(PRIM_NOOP));
           expr = block->prev;
-          USR_WARN(block->body.head, "reduction will be executed serially");
           tryFailure = false;
           continue;
         } else {
@@ -3846,6 +3924,7 @@ resolve() {
     }
   }
 
+  inDynamicDispatchResolution = true;
   int num_types;
   do {
     num_types = gTypeSymbols.n;
@@ -3916,6 +3995,7 @@ resolve() {
       }
     }
   }
+  inDynamicDispatchResolution = false;
 
   if (fPrintDispatch) {
     printf("Dynamic dispatch table:\n");

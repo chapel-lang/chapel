@@ -1,6 +1,6 @@
 def linearize(Xs) {for x in Xs do yield x;}
 
-var S = [0..8,0..8], A: [S] int = [S] read(int);
+var S = [0..8,0..8], A: [S] int = for S do read(int);
 
 def R {
   for ((i,j),k) in [S,1..9] {

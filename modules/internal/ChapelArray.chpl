@@ -914,9 +914,10 @@ def _validRankChangeArgs(args, type idxType) param {
   return help(1);
 }
 
+def chpl__isRange(r: range(?)) param return true;
+def chpl__isRange(r) param return false;
+
 def _getRankChangeRanges(args) {
-  def isRange(r: range(?)) param return 1;
-  def isRange(r) param return 0;
   def _tupleize(x) {
     var y: 1*x.type;
     y(1) = x;
@@ -925,7 +926,7 @@ def _getRankChangeRanges(args) {
   def collectRanges(param dim: int) {
     if dim > args.size then
       compilerError("domain slice requires a range in at least one dimension");
-    if isRange(args(dim)) then
+    if chpl__isRange(args(dim)) then
       return collectRanges(dim+1, _tupleize(args(dim)));
     else
       return collectRanges(dim+1);
@@ -934,12 +935,12 @@ def _getRankChangeRanges(args) {
     if dim > args.size {
       return x;
     } else if dim < args.size {
-      if isRange(args(dim)) then
+      if chpl__isRange(args(dim)) then
         return collectRanges(dim+1, ((...x), args(dim)));
       else
         return collectRanges(dim+1, x);
     } else {
-      if isRange(args(dim)) then
+      if chpl__isRange(args(dim)) then
         return ((...x), args(dim));
       else
         return x;
@@ -1019,24 +1020,29 @@ pragma "inline" def =(a: [], b : []) where (a._value.canCopyFromHost && b._value
   return a;
 }
 
-pragma "inline" def =(a: [], b: []) where (a._value.canCopyFromDevice && b._value.canCopyFromDevice) {
-  if a.rank != b.rank then
-    compilerError("rank mismatch in array assignment");
-  if b._value != nil {
-    if isArithmeticArr(a) && isArithmeticArr(b) {
-      forall (aa,bb) in (a,b) do
-        aa = bb;
-    } else {
-      for (aa,bb) in (a,b) do
-        aa = bb;
-    }
-  }
-  return a;
+def chpl__serializeAssignment(a: [], b) param {
+  if a.rank != 1 && chpl__isRange(b) then
+    return true;
+  return false;
 }
 
 pragma "inline" def =(a: [], b) {
-  for (aa,bb) in (a,b) do
-    aa = bb;
+  if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
+    compilerError("rank mismatch in array assignment");
+  if chpl__isArray(b) && b._value == nil then
+    return a;
+  if chpl__serializeAssignment(a, b) {
+    compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+    for (aa,bb) in (a,b) do
+      aa = bb;
+  } else if chpl__tryToken { // try to parallelize using leader and follower iterators
+    forall (aa,bb) in (a,b) do
+      aa = bb;
+  } else {
+    compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+    for (aa,bb) in (a,b) do
+      aa = bb;
+  }
   return a;
 }
 
@@ -1088,6 +1094,7 @@ def =(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e = b;
   } else {
+    compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for e in a do
       e = b;
   }

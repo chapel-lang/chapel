@@ -6,6 +6,14 @@ def chpl__scanIterator(op, data) {
   delete op;
 }
 
+def chpl__reduceCombine(globalOp, localOp) {
+  on globalOp {
+    globalOp.lock();
+    globalOp.combine(localOp);
+    globalOp.unlock();
+  }
+}
+
 def chpl__sumType(type eltType) type {
   var x: eltType;
   return (x + x).type;

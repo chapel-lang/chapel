@@ -339,6 +339,9 @@ buildLabelStmt(const char* name, Expr* stmt) {
 
 BlockStmt*
 buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
+  if (UnresolvedSymExpr* use = toUnresolvedSymExpr(condExpr))
+    if (!strcmp(use->unresolved, gTryToken->name))
+      return buildChapelStmt(new CondStmt(condExpr, thenExpr, elseExpr));
   return buildChapelStmt(new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
 }
 
@@ -1260,10 +1263,6 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr) {
     BlockStmt* followBody = new BlockStmt();
     followBody->insertAtTail(".(%S, 'accumulate')(%S)", localOp, followIdx);
     followBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, followIdx, followIter);
-    BlockStmt* combineBlock = new BlockStmt();
-    combineBlock->insertAtTail(".(%S, 'lock')()", globalOp);
-    combineBlock->insertAtTail(".(%S, 'combine')(%S)", globalOp, localOp);
-    combineBlock->insertAtTail(".(%S, 'unlock')()", globalOp);
     BlockStmt* followBlock = new BlockStmt();
     followBlock->insertAtTail(new DefExpr(followIter));
     followBlock->insertAtTail(new DefExpr(followIdx));
@@ -1272,7 +1271,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr) {
     followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", followIdx, followIter);
     followBlock->insertAtTail("'move'(%S, 'new'(%E(%E)))", localOp, opExpr->copy(), new NamedExpr("eltType", new SymExpr(eltType)));
     followBlock->insertAtTail(followBody);
-    followBlock->insertAtTail(buildOnStmt(new SymExpr(globalOp), combineBlock));
+    followBlock->insertAtTail("chpl__reduceCombine(%S, %S)", globalOp, localOp);
     followBlock->insertAtTail("'delete'(%S)", localOp);
     followBlock->insertAtTail("_freeIterator(%S)", followIter);
     BlockStmt* leadBody = new BlockStmt();
@@ -1287,6 +1286,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr) {
     leadBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", leadIdx, leadIter);
     leadBlock->insertAtTail(leadBody);
     leadBlock->insertAtTail("_freeIterator(%S)", leadIter);
+    serialBlock->insertAtHead("compilerWarning('reduce has been serialized (see note in $CHPL_HOME/STATUS)')");
     fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leadBlock, serialBlock));
   }
 
@@ -1309,6 +1309,9 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr) {
   VarSymbol* globalOp = newTemp();
 
   buildReduceScanPreface(fn, data, eltType, globalOp, opExpr, dataExpr);
+
+  if (!fSerial && !fSerialForall)
+    fn->insertAtTail("compilerWarning('scan has been serialized (see note in $CHPL_HOME/STATUS)')");
 
   fn->insertAtTail("'return'(chpl__scanIterator(%S, %S))", globalOp, data);
 

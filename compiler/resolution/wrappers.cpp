@@ -537,6 +537,7 @@ buildPromotionWrapper(FnSymbol* fn,
     if (!fSerial && !fSerialForall) {
       SymbolMap leaderMap;
       FnSymbol* lifn = wrapper->copy(&leaderMap);
+      iteratorLeaderMap.put(wrapper,lifn);
       lifn->body = new BlockStmt(); // indices are not used in leader
       form_Map(SymbolMapElem, e, leaderMap) {
         if (Symbol* s = paramMap.get(e->key))
@@ -557,11 +558,11 @@ buildPromotionWrapper(FnSymbol* fn,
       lifn->insertAtTail(loop);
       theProgram->block->insertAtTail(new DefExpr(lifn));
       normalize(lifn);
-      lifn->removeFlag(FLAG_INVISIBLE_FN);
       lifn->instantiationPoint = getVisibilityBlock(info->call);
 
       SymbolMap followerMap;
       FnSymbol* fifn = wrapper->copy(&followerMap);
+      iteratorFollowerMap.put(wrapper,fifn);
       form_Map(SymbolMapElem, e, followerMap) {
         if (Symbol* s = paramMap.get(e->key))
           paramMap.put(e->value, s);
@@ -584,7 +585,6 @@ buildPromotionWrapper(FnSymbol* fn,
       fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock));
       theProgram->block->insertAtTail(new DefExpr(fifn));
       normalize(fifn);
-      fifn->removeFlag(FLAG_INVISIBLE_FN);
       fifn->addFlag(FLAG_GENERIC);
       fifn->instantiationPoint = getVisibilityBlock(info->call);
     }

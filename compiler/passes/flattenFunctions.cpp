@@ -26,7 +26,7 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 // finds outer vars directly used in a function
 //
 static void
-findOuterVars(FnSymbol* fn, Vec<Symbol*>* uses) {
+findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   Vec<BaseAST*> asts;
   collect_asts(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
@@ -34,45 +34,51 @@ findOuterVars(FnSymbol* fn, Vec<Symbol*>* uses) {
       Symbol* sym = symExpr->var;
       if (toVarSymbol(sym) || toArgSymbol(sym))
         if (isOuterVar(sym, fn))
-          uses->add_exclusive(sym);
+          uses->put(sym,gNil);
     }
   }
 }
 
 
 static void
-addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
-  Vec<BaseAST*> asts;
-  collect_asts(fn->body, asts);
-  forv_Vec(Symbol, sym, *vars) {
-    if (sym) {
+addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
+  form_Map(SymbolMapElem, e, *vars) {
+    if (Symbol* sym = e->key) {
       Type* type = sym->type;
       if (type->refType)
         type = type->refType;
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
       fn->insertFormalAtTail(new DefExpr(arg));
+      vars->put(sym, arg);
+    }
+  }
+}
+
+static void
+replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
+  Vec<BaseAST*> asts;
+  collect_asts(fn->body, asts);
+  form_Map(SymbolMapElem, e, *vars) {
+    if (Symbol* sym = e->key) {
+      ArgSymbol* arg = toArgSymbol(e->value);
+      Type* type = arg->type;
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (se->var == sym) {
-            if (!strcmp(fn->name, "_toFollower") ||
-                !strcmp(fn->name, "_toFollowerHelp") ||
-                !strcmp(fn->name, "_toFastFollower") ||
-                !strcmp(fn->name, "_toFastFollowerHelp") ||
-                !strcmp(fn->name, "_toLeader")) {
+            if (type == sym->type) {
               se->var = arg;
             } else {
               CallExpr* call = toCallExpr(se->parentExpr);
-              if (type == sym->type ||
-                  (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
-                  (call && call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
-                  (call && call->isPrimitive(PRIM_GET_MEMBER)) ||
-                  (call && call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
-                  //
-                  // let GET_LOCALE work apply to the reference
-                  //
-                  (call && call->isPrimitive(PRIM_GET_LOCALEID))) {
-                se->var = arg;
-              } else if (call && call->isPrimitive(PRIM_SET_REF)) {
+              INT_ASSERT(call);
+              FnSymbol* fn = call->isResolved();
+              if ((call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
+                  (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
+                  (call->isPrimitive(PRIM_GET_MEMBER)) ||
+                  (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
+                  (call->isPrimitive(PRIM_GET_LOCALEID)) ||
+                  (fn && arg->type == actual_to_formal(se)->type)) {
+                se->var = arg; // do not dereference argument in these cases
+              } else if (call->isPrimitive(PRIM_SET_REF)) {
                 SET_LINENO(se);
                 call->replace(new SymExpr(arg));
               } else {
@@ -80,7 +86,7 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
                 VarSymbol* tmp = newTemp(sym->type);
                 se->getStmtExpr()->insertBefore(new DefExpr(tmp));
                 se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, arg)));
-              se->var = tmp;
+                se->var = tmp;
               }
             }
           }
@@ -92,21 +98,14 @@ addVarsToFormals(FnSymbol* fn, Vec<Symbol*>* vars) {
 
 
 static void
-addVarsToActuals(CallExpr* call, Vec<Symbol*>* vars, bool outerCall) {
-  forv_Vec(Symbol, sym, *vars) {
-    if (sym) {
-      if (!isReferenceType(sym->type) && !outerCall) {
-        if (sym->type->refType) {
-          VarSymbol* tmp = newTemp(sym->type->refType);
-          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, sym)));
-          call->insertAtTail(tmp);
-        } else {
-          VarSymbol* tmp = newTemp(sym->type);
-          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, sym));
-          call->insertAtTail(tmp);
-        }
+addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
+  form_Map(SymbolMapElem, e, *vars) {
+    if (Symbol* sym = e->key) {
+      if (!outerCall && sym->type->refType) {
+        VarSymbol* tmp = newTemp(sym->type->refType);
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, sym)));
+        call->insertAtTail(tmp);
       } else {
         call->insertAtTail(sym);
       }
@@ -123,9 +122,9 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   forv_Vec(FnSymbol, fn, nestedFunctions)
     nestedFunctionSet.set_add(fn);
 
-  Map<FnSymbol*,Vec<Symbol*>*> args_map;
+  Map<FnSymbol*,SymbolMap*> args_map;
   forv_Vec(FnSymbol, fn, nestedFunctions) {
-    Vec<Symbol*>* uses = new Vec<Symbol*>();
+    SymbolMap* uses = new SymbolMap();
     findOuterVars(fn, uses);
     args_map.put(fn, uses);
   }
@@ -138,17 +137,18 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
     forv_Vec(FnSymbol, fn, nestedFunctions) {
       Vec<BaseAST*> asts;
       collect_top_asts(fn, asts);
-      Vec<Symbol*>* uses = args_map.get(fn);
+      SymbolMap* uses = args_map.get(fn);
       forv_Vec(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isResolved()) {
             if (FnSymbol* fcall = call->findFnSymbol()) {
-              Vec<Symbol*>* call_uses = args_map.get(fcall);
+              SymbolMap* call_uses = args_map.get(fcall);
               if (call_uses) {
-                forv_Vec(Symbol, sym, *call_uses) {
-                  if (isOuterVar(sym, fn))
-                    if (uses->add_exclusive(sym))
-                      change = true;
+                form_Map(SymbolMapElem, e, *call_uses) {
+                  if (isOuterVar(e->key, fn) && !uses->get(e->key)) {
+                    uses->put(e->key, gNil);
+                    change = true;
+                  }
                 }
               }
             }
@@ -163,7 +163,7 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   // updated with the outer var functions when the formals are updated
   // (in nested functions that call one another)
   forv_Vec(FnSymbol, fn, nestedFunctions) {
-    Vec<Symbol*>* uses = args_map.get(fn);
+    SymbolMap* uses = args_map.get(fn);
     forv_Vec(CallExpr, call, *fn->calledBy) {
 
       //
@@ -172,17 +172,18 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
       bool outerCall = false;
       if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
         if (!nestedFunctionSet.set_in(parent)) {
-          forv_Vec(Symbol, use, *uses) {
-            if (use->defPoint->parentSymbol != parent &&
-                !isOuterVar(use, parent))
+          form_Map(SymbolMapElem, use, *uses) {
+            if (use->key->defPoint->parentSymbol != parent &&
+                !isOuterVar(use->key, parent))
               outerCall = true;
           }
           if (outerCall) {
             nestedFunctionSet.set_add(parent);
             nestedFunctions.add(parent);
-            Vec<Symbol*>* usesCopy = new Vec<Symbol*>();
-            forv_Vec(Symbol, use, *uses)
-              usesCopy->add(use);
+            SymbolMap* usesCopy = new SymbolMap();
+            form_Map(SymbolMapElem, use, *uses) {
+              usesCopy->put(use->key, gNil);
+            }
             args_map.put(parent, usesCopy);
           }
         }
@@ -203,10 +204,12 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   }
 
   // add extra formals to nested functions
-  forv_Vec(FnSymbol, fn, nestedFunctions) {
-    Vec<Symbol*>* uses = args_map.get(fn);
-    addVarsToFormals(fn, uses);
-  }
+  forv_Vec(FnSymbol, fn, nestedFunctions)
+    addVarsToFormals(fn, args_map.get(fn));
+
+  // replace outer variable uses with added formals
+  forv_Vec(FnSymbol, fn, nestedFunctions)
+    replaceVarUsesWithFormals(fn, args_map.get(fn));
 
   //
   // remove types from functions
