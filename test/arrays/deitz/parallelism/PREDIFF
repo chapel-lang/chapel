@@ -12,17 +12,22 @@ while ($line = <INFILE>) {
     if ($line =~ m/^CHPL TEST/) {
         push(@testLines, $line);
     } else {
-        if ($#testLines > 0) {
-            @sortedTestLines = sort @testLines;
-            foreach $testLine (@sortedTestLines) {
-                print OUTFILE $testLine;
-            }
-            @testLines = ();
-        }
-        print OUTFILE $line;
+        printTestLines();
     }
 }
+printTestLines();
 
 close(OUTFILE);
 close(INFILE);
 system("rm $file.tmp");
+
+sub printTestLines() {
+    if ($#testLines > 0) {
+        @sortedTestLines = sort @testLines;
+        foreach $testLine (@sortedTestLines) {
+            print OUTFILE $testLine;
+        }
+        @testLines = ();
+    }
+    print OUTFILE $line;
+}

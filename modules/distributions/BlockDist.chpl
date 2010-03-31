@@ -571,6 +571,7 @@ def BlockDom.these(param tag: iterator) where tag == iterator.leader {
 // stencil communication will be done on a per-locale basis.
 //
 def BlockDom.these(param tag: iterator, follower) where tag == iterator.follower {
+  chpl__testPar("Block domain follower invoked on ", follower);
   var t: rank*range(idxType, stridable=stridable);
   for param i in 1..rank {
     var stride = whole.dim(i).stride: idxType;
@@ -786,6 +787,11 @@ def BlockArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead.dist._value == this.dom.dist;
 
 def BlockArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
+  if fast then
+    chpl__testPar("Block array fast follower invoked on ", follower);
+  else
+    chpl__testPar("Block array non-fast follower invoked on ", follower);
+
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Block array");
 
