@@ -970,11 +970,34 @@ def =(a: _distribution, b: _distribution) {
 }
 
 def =(a: domain, b: domain) {
-  var bc = b;
-  for e in a._value._arrs do {
-    on e do e.dsiReallocate(bc);
+  if isArithmeticDom(a) && isArithmeticDom(b) {
+    var bc = b;
+    for e in a._value._arrs do {
+      on e do e.dsiReallocate(bc);
+    }
+    a.setIndices(bc.getIndices());
+  } else {
+    //
+    // BLC: It's tempting to do a clear + add here, but because
+    // we need to preserve array values that are in the intersection
+    // between the old and new index sets, we use the following
+    // instead.
+    //
+    // TODO: These should eventually become forall loops, hence the
+    // warning
+    //
+    compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+    for i in a {
+      if !b.member(i) {
+        a.remove(i);
+      }
+    }
+    for i in b {
+      if !a.member(i) {
+        a.add(i);
+      }
+    }
   }
-  a.setIndices(bc.getIndices());
   return a;
 }
 
@@ -1409,7 +1432,16 @@ def chpl__initCopy(a: _distribution) {
 
 def chpl__initCopy(a: domain) {
   var b: a.type;
-  b.setIndices(a.getIndices());
+  if isArithmeticDom(a) && isArithmeticDom(b) {
+    b.setIndices(a.getIndices());
+  } else {
+    // TODO: These should eventually become forall loops, hence the
+    // warning
+    //
+    //    compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+    for i in a do
+      b.add(i);
+  }
   return b;
 }
 

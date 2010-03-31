@@ -56,42 +56,6 @@ class DefaultAssociativeDom: BaseAssociativeDom {
                                      dom=this); 
   }
 
-  def dsiGetIndices()
-    return this;
-
-  def dsiSetIndices(b: DefaultAssociativeDom) {
-    // store cache of old domain/arrays
-    _backupArrays();
-    tmpDom = tableDom;
-    tmpTable = table;
-
-    // clear out old table
-    numEntries = 0;
-    tableDom = [0..-1:chpl_table_index_type];
-
-    // choose new table size
-    for primeNum in 1..chpl__primes.size {
-      if (b.numEntries * 2 < chpl__primes(primeNum)) {
-        tableSizeNum = primeNum;
-        break;
-      }
-    }
-    tableSize = chpl__primes(tableSizeNum);
-    tableDom = [0..tableSize-1];
-
-    // add indices and copy array data over
-    for idx in b {
-      const newSlotNum = dsiAdd(idx);
-      const (foundit, slot) = _findFilledSlot(idx, tmpTable);
-      if (foundit) {
-        _preserveArrayElement(oldslot=slot, newslot=newSlotNum);
-      }
-    }
-    tmpDom = [0..-1:chpl_table_index_type];
-    tmpDom2 = [0..-1:chpl_table_index_type];
-    _removeArrayBackups();
-  }
-  
   def dsiSerialWrite(f: Writer) {
     var first = true;
     f.write("[");
@@ -176,6 +140,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   def dsiRemove(idx: idxType) {
     const (foundSlot, slotNum) = _findFilledSlot(idx);
     if (foundSlot) {
+      for a in _arrs do
+        a.clearEntry(idx);
       table(slotNum).status = chpl__hash_status.deleted;
       numEntries -= 1;
     } else {
@@ -297,8 +263,9 @@ class DefaultAssociativeArr: BaseArr {
 
   def dsiGetBaseDom() return dom;
 
-  def dsiReallocate(d: domain) {
-    // reallocation is done in the setIndices function
+  def clearEntry(idx: idxType) {
+    const initval: eltType;
+    dsiAccess(idx) = initval;
   }
 
   def dsiAccess(idx : idxType) var : eltType {

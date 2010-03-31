@@ -24,14 +24,6 @@ class DefaultSparseDom: BaseSparseDom {
 
   def dsiNumIndices return nnz;
 
-  // This isn't what getIndices/setIndices are supposed to do, but
-  // this interface doesn't really make sense for sparse domains.
-  // Doing the one piece that is easy to do -- copying the parent
-  // domain over.
-  def dsiGetIndices() { return parentDom; }
-  def dsiSetIndices(x) { parentDom = x; }
-
-
   def dsiBuildArray(type eltType)
     return new DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
                                 dom=this);
@@ -112,12 +104,56 @@ class DefaultSparseDom: BaseSparseDom {
     }
   }
 
+  def rem_help(ind) {
+    // find position in nnzDom to insert new index
+    const (found, insertPt) = find(ind);
+
+    // if the index already existed, then return
+    if (!found) then return;
+
+    // increment number of nonzeroes
+    nnz -= 1;
+
+    // TODO: should halve nnzDom if we've outgrown it; grab current
+    // size otherwise
+    /*
+    var oldNNZDomSize = nnzDomSize;
+    if (nnz > nnzDomSize) {
+      nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
+      nnzDom = [1..nnzDomSize];
+    }
+    */
+    // shift indices up
+    for i in insertPt..nnz-1 {
+      indices(i) = indices(i+1);
+    }
+
+    // shift all of the arrays up and initialize nonzeroes if
+    // necessary 
+    //
+    // BLC: Note: if arithmetic arrays had a user-settable
+    // initialization value, we could set it to be the IRV and skip
+    // this second initialization of any new values in the array.
+    // we could also eliminate the oldNNZDomSize variable
+    for a in _arrs {
+      a.sparseShiftArrayBack(insertPt..nnz-1);
+    }
+  }
+
   def dsiAdd(ind: idxType) where rank == 1 {
     add_help(ind);
   }
 
+  def dsiRemove(ind: idxType) where rank == 1 {
+    rem_help(ind);
+  }
+
   def dsiAdd(ind: rank*idxType) {
     add_help(ind);
+  }
+
+  def dsiRemove(ind: rank*idxType) {
+    rem_help(ind);
   }
 
   def dsiClear() {
@@ -193,6 +229,12 @@ class DefaultSparseArr: BaseArr {
       data(i+1) = data(i);
     }
     data(shiftrange.low) = irv;
+  }
+
+  def sparseShiftArrayBack(shiftrange) {
+    for i in shiftrange {
+      data(i) = data(i+1);
+    }
   }
 }
 

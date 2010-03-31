@@ -1,3 +1,6 @@
+solver.chpl:62: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+solver.chpl:158: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+solver.chpl:159: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 The Puzzle to Solve is:
 
 0 0 0 4 3 7 0 0 0
