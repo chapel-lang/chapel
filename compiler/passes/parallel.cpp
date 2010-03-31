@@ -225,7 +225,9 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         if (useMap.get(v)) {
           forv_Vec(SymExpr, se, *useMap.get(v)) {
             if (CallExpr* call = toCallExpr(se->parentExpr)) {
-              if (call->isPrimitive(PRIM_SET_REF) || call->isPrimitive(PRIM_GET_MEMBER) ||
+              if (call->isPrimitive(PRIM_SET_REF) ||
+                  call->isPrimitive(PRIM_GET_MEMBER) ||
+                  call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                   call->isPrimitive(PRIM_GET_LOCALEID))
                 call = toCallExpr(call->parentExpr);
               if (call->isPrimitive(PRIM_MOVE))
@@ -405,7 +407,9 @@ makeHeapAllocations() {
                   varVec.add(se->var);
                 }
               } else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
-                         rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+                         rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                         rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                         rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
                 SymExpr* se = toSymExpr(rhs->get(1));
                 INT_ASSERT(se);
                 if (se->var->type->symbol->hasFlag(FLAG_REF)) {
@@ -528,9 +532,12 @@ makeHeapAllocations() {
             use->replace(new SymExpr(tmp));
           }
         } else if ((call->isPrimitive(PRIM_GET_MEMBER) ||
-                   call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                   call->isPrimitive(PRIM_GET_LOCALEID) ||
-                   call->isPrimitive(PRIM_SET_MEMBER)) &&
+                    call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                    call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                    call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
+                    call->isPrimitive(PRIM_GET_LOCALEID) ||
+                    call->isPrimitive(PRIM_SET_SVEC_MEMBER) ||
+                    call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
           VarSymbol* tmp = newTemp(var->type->refType);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -801,7 +808,10 @@ static void localizeCall(CallExpr* call) {
             }
           }
           break;
-        } else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+        } else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
+                   rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                   rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                   rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             SymExpr* sym = toSymExpr(rhs->get(2));
@@ -836,7 +846,8 @@ static void localizeCall(CallExpr* call) {
             insertLocalTemp(rhs->get(1));
           }
           break;
-        } else if (rhs->isPrimitive(PRIM_TESTCID)) {
+        } else if (rhs->isPrimitive(PRIM_TESTCID) ||
+                   rhs->isPrimitive(PRIM_GETCID)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             insertLocalTemp(rhs->get(1));
           }
@@ -862,7 +873,7 @@ static void localizeCall(CallExpr* call) {
           toSymExpr(call->get(1))->var->type = call->get(1)->typeInfo()->getField("addr")->type;
         }
       }
-    break;
+      break;
     case PRIM_SETCID:
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         insertLocalTemp(call->get(1));
@@ -874,6 +885,7 @@ static void localizeCall(CallExpr* call) {
       }
       break;
     case PRIM_SET_MEMBER:
+    case PRIM_SET_SVEC_MEMBER:
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
           call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         insertLocalTemp(call->get(1));
@@ -1432,6 +1444,7 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_LXOR_ID:
 
   case PRIM_GET_MEMBER:
+  case PRIM_GET_SVEC_MEMBER:
   case PRIM_GET_PRIV_CLASS:
 
   case PRIM_CHECK_NIL:
@@ -1481,15 +1494,30 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_GET_USER_FILE:
   
   case PRIM_COUNT_NUM_REALMS:
+#ifdef DEBUG
+    printf(" *** OK (default): %s\n", call->primitive->name);
+#endif
     return true;
 
   case PRIM_MOVE:
+    if (call->get(1)->typeInfo() == dtVoid) {
+#ifdef DEBUG
+      printf(" *** OK (PRIM_MOVE 0): %s\n", call->primitive->name);
+#endif
+      return true;
+    }
     if (!isCallExpr(call->get(2))) {
       if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
             !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
             !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)))
+#ifdef DEBUG
+        printf(" *** OK (PRIM_MOVE 1): %s\n", call->primitive->name);
+#endif
         return true;
     } else {
+#ifdef DEBUG
+      printf(" *** OK (PRIM_MOVE 3): %s\n", call->primitive->name);
+#endif
       return true;
     }
     break;
@@ -1501,6 +1529,9 @@ isFastPrimitive(CallExpr *call) {
          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) ||
         (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
          !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
+#ifdef DEBUG
+      printf(" *** OK (PRIM_GET_LOCALEID %s\n", call->primitive->name);
+#endif
       return true;
     }
     break;
@@ -1508,8 +1539,13 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_UNION_SETID:
   case PRIM_UNION_GETID:
   case PRIM_GET_MEMBER_VALUE:
-    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+  case PRIM_GET_SVEC_MEMBER_VALUE:
+    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
       return true;
+#ifdef DEBUG
+      printf(" *** OK (PRIM_GET_UNION, etc.): %s\n", call->primitive->name);
+#endif
+    }
     break;
 
   case PRIM_ARRAY_SET:
@@ -1519,15 +1555,24 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_ARRAY_GET_VALUE:
   case PRIM_TESTCID:
   case PRIM_DYNAMIC_CAST:
-    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+#ifdef DEBUG
+      printf(" *** OK (PRIM_ARRAY_SET, etc.): %s\n", call->primitive->name);
+#endif
       return true;
+    }
     break;
 
   case PRIM_GET_REF:
   case PRIM_SET_MEMBER:
+  case PRIM_SET_SVEC_MEMBER:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-        !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+#ifdef DEBUG
+      printf(" *** OK (PRIM_GET_REF, etc.): %s\n", call->primitive->name);
+#endif
       return true;
+    }
     break;
   default:
     break;
@@ -1603,7 +1648,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 #endif
     } else {
 #ifdef DEBUG
-      printf(" (non-FAST primitive CALL)\n");
+      printf("%d: FAILED (non-FAST primitive CALL: %s)\n", recurse-1, call->primitive->name);
 #endif
       return false;
     }
@@ -1628,7 +1673,9 @@ optimizeOnClauses(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ON_BLOCK)) {
 #ifdef DEBUG
-      printf("%p: FLAG_ON_BLOCK (block=%p, id=%d)\n", fn, fn->body, fn->id);
+      printf("%p (%s in %s:%d): FLAG_ON_BLOCK (block=%p, id=%d)\n",
+             fn, fn->cname, toModuleSymbol(fn->defPoint->parentSymbol)->filename,
+             fn->lineno, fn->body, fn->id);
       printf("\tlength=%d\n", fn->body->length());
 #endif
       Vec<FnSymbol*> visited;
