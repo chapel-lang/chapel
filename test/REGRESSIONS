@@ -15,12 +15,36 @@
 general regressions
 ===================
 
+??? -- gets warning: 1-argument version of foo called (04/01/10)
+----------------------------------------------------------------
+[Error matching program output for spec/autogen/Generics.tex.tests/test_compilerDiagnostics]
+
+bradc forgot to implement dsiIndsIterSafeForRemoving for associative (04/01/10)
+-------------------------------------------------------------------------------
+[Error matching compiler output for arrays/deitz/part4/test_array_of_associative_domains]
+[Error matching compiler output for associative/waynew/indef7]
+[Error matching compiler output for associative/waynew/indef9]
+[Error matching compiler output for associative/waynew/indef9a]
+[Error matching compiler output for studies/590o/kfm/solver-blc]
+[Error matching compiler output for studies/590o/kfm/solver]
+[Error matching compiler output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
+[Error matching compiler output for studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching compiler output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching compiler output for studies/madness/common/test_gaxpy]
+[Error matching compiler output for studies/madness/common/test_likepy]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching compiler output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching compiler output for users/jglewis/badGetModule]
+[Error matching compiler output for users/shetag/assocInRecord-blc]
+[Error matching compiler output for users/shetag/assocInRecord]
+[Error matching program output for spec/autogen/Generics.tex.tests/test_compilerDiagnostics]
+
 spuriously runs out of memory due to something other than threads
 -----------------------------------------------------------------
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (e.g., 03/31/10)
 
-times out fairly consistently (03/27/10)
-----------------------------------------
+times out consistently (03/27/10)
+---------------------------------
 [Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings  ) (0-2)]
 [Error: Timed out executing program studies/sudoku/dinan/sudoku]
 
@@ -79,6 +103,10 @@ linux64 regressions (in addition to the above)
 linux32 regressions (in addition to the above)
 ==============================================
 
+numerical accuracy issue (04/01/10)
+-----------------------------------
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+
 times out fairly regularly (since moving to stemp7)
 ---------------------------------------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
@@ -87,6 +115,10 @@ times out fairly regularly (since moving to stemp7)
 ================================
 performance-specific regressions
 ================================
+
+internal error EXP0187 (04/01/10)
+---------------------------------
+[Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
 
 spurious execution timeouts
 ---------------------------
@@ -156,10 +188,13 @@ cyclic distribution regressions
 
 spurious timeouts
 -----------------
+[Error: Timed out compilation for distributions/robust/arithmetic/basics/test_array_assignment]
+[Error: Timed out compilation for distributions/robust/arithmetic/basics/test_infer_array_type]
+[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_tuple_to_array]
 [Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_dot_numIndices] (e.g., 03/31/10)
 [Error: Timed out compilation for distributions/robust/arithmetic/basics/test_zipper_default] (e.g., 03/30/10)
 [Error: Timed out compilation for distributions/robust/arithmetic/composite/test_composite1] (e.g., 03/30/10)
-[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_tuple_to_array] (e.g., 03/30/10)
+[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_tuple_to_array] (e.g., 03/30/10, 04/01/10)
 [Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Norm] (e.g., 03/27/10)
 [Error: Timed out compilation for distributions/robust/arithmetic/reindexing/test_array_alias4] (e.g., 03/27/10)
 [Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_writeln] (e.g., 03/27/10)
@@ -174,6 +209,10 @@ have never worked
 ====================
 no-local regressions
 ====================
+
+internal error EXP0187 (04/01/10)
+---------------------------------
+[Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -216,9 +255,6 @@ new timeouts with SLED11 upgrade (03/12/10)
 -------------------------------------------
 [Error: Timed out executing program studies/madness/common/test_likepy]
 
-available memory on chap10 changed (03/12/10)
----------------------------------------------
-
 spurious glibc corruption error (03/01/10)
 ------------------------------------------
 [Error matching program output for studies/hpcc/RA/marybeth/ra3]
@@ -253,8 +289,6 @@ verbose output now shows launch command (10/31/08) (bradc)
 times out fairly consistently
 -----------------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy]
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul]
 
 times out spuriously
@@ -330,11 +364,9 @@ output incorrect
 
 spurious timeout
 ----------------
+[Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7] (e.g., 04/01/10)
+[Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6] (e.g., 04/01/10)
 [Error: Timed out executing program studies/hpcc/RA/marybeth/ra3] (e.g., 03/24/10)
-
-numerical accuracy issue
-------------------------
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 
 ???
 ---
@@ -444,10 +476,6 @@ spurious compilation timeouts
 ===========================
 darwin-specific regressions
 ===========================
-
-numerical accuracy issue
-------------------------
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 
 spurious failures on Sam's machine
 ----------------------------------
