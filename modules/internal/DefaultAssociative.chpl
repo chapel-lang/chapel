@@ -77,6 +77,11 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     return numEntries;
   }
 
+  def dsiIndsIterSafeForRemoving() {
+    for i in this.these() do
+      yield i;
+  }
+
   def these() {
     if !_isEnumeratedType(idxType) {
       for slot in _fullSlots() {
