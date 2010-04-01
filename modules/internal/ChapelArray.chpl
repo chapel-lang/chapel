@@ -1438,7 +1438,7 @@ def chpl__initCopy(a: domain) {
     // TODO: These should eventually become forall loops, hence the
     // warning
     //
-    //    compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+    compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for i in a do
       b.add(i);
   }
