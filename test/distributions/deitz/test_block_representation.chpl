@@ -1,8 +1,8 @@
 use BlockDist;
 
 var A: [[1..4, 1..4] distributed Block(boundingBox=[1..4,1..4],
-                                       maxDataParallelism=2,
-                                       limitDataParallelism=false)] real;
+                                       dataParTasksPerLocale=2,
+                                       dataParIgnoreRunningTasks=true)] real;
 
 writeln("Distribution Representation");
 writeln();

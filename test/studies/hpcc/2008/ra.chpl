@@ -59,11 +59,11 @@ config const printParams = true,
 // across the locales.
 //
 const TableDist = new dist(new Block(boundingBox=[0..m-1], 
-                                     maxDataParallelism=tasksPerLocale,
-                                     limitDataParallelism=false)),
+                                     dataParTasksPerLocale=tasksPerLocale,
+                                     dataParIgnoreRunningTasks=true)),
       UpdateDist = new dist(new Block(boundingBox=[0..N_U-1],
-                                      maxDataParallelism=tasksPerLocale,
-                                      limitDataParallelism=false));
+                                      dataParTasksPerLocale=tasksPerLocale,
+                                      dataParIgnoreRunningTasks=true));
 
 //
 // TableSpace describes the index set for the table.  It is a 1D

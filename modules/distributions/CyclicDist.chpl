@@ -26,9 +26,9 @@ class Cyclic: BaseDist {
 
   const locDist: [targetLocDom] LocCyclic(rank, idxType);
 
-  var maxDataParallelism: int;
-  var limitDataParallelism: bool;
-  var minDataParallelismSize: uint(64);
+  var dataParTasksPerLocale: int;
+  var dataParIgnoreRunningTasks: bool;
+  var dataParMinGranularity: uint(64);
 
   var pid: int = -1;
 
@@ -36,9 +36,9 @@ class Cyclic: BaseDist {
              type idxType = int(64),
              low: rank*idxType = _tupleOfZero(rank, idxType),
              targetLocales: [] locale = thisRealm.Locales,
-             maxDataParallelism=getMaxDataParallelism(),
-             limitDataParallelism=getLimitDataParallelism(),
-             minDataParallelismSize=getMinDataParallelismSize()) {
+             dataParTasksPerLocale=getDataParTasksPerLocale(),
+             dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+             dataParMinGranularity=getDataParMinGranularity()) {
     if rank == 1  {
       targetLocDom = [0..#targetLocales.numElements];
       targetLocs = targetLocales;
@@ -67,12 +67,9 @@ class Cyclic: BaseDist {
     for param i in 1..rank do
       lowIdx(i) = mod(low(i), targetLocDom.dim(i).length);
 
-    if maxDataParallelism == 0 then
-      this.maxDataParallelism = min reduce targetLocales.numCores;
-    else
-      this.maxDataParallelism = maxDataParallelism;
-    this.limitDataParallelism = limitDataParallelism;
-    this.minDataParallelismSize = minDataParallelismSize;
+    this.dataParTasksPerLocale = dataParTasksPerLocale;
+    this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
+    this.dataParMinGranularity = dataParMinGranularity;
 
     coforall locid in targetLocDom {
       on targetLocs(locid) {
@@ -88,9 +85,9 @@ class Cyclic: BaseDist {
     targetLocs = other.targetLocs;
     lowIdx = other.lowIdx;
     locDist = other.locDist;
-    maxDataParallelism = other.maxDataParallelism;
-    limitDataParallelism = other.limitDataParallelism;
-    minDataParallelismSize = other.minDataParallelismSize;
+    dataParTasksPerLocale = other.dataParTasksPerLocale;
+    dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
+    dataParMinGranularity = other.dataParMinGranularity;
   }
 
   def dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);
@@ -125,9 +122,9 @@ def Cyclic.dsiDisplayRepresentation() {
   writeln("lowIdx = ", lowIdx);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocs = ", for tl in targetLocs do tl.id);
-  writeln("maxDataParallelism = ", maxDataParallelism);
-  writeln("limitDataParallelism = ", limitDataParallelism);
-  writeln("minDataParallelismSize = ", minDataParallelismSize);
+  writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
+  writeln("dataParIgnoreRunningTasks = ", dataParIgnoreRunningTasks);
+  writeln("dataParMinGranularity = ", dataParMinGranularity);
   for tli in targetLocDom do
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
@@ -147,9 +144,9 @@ def Cyclic.dsiReprivatize(other, reprivatizeData) {
   targetLocs = other.targetLocs;
   locDist = other.locDist;
   lowIdx = other.lowIdx;
-  maxDataParallelism = other.maxDataParallelism;
-  limitDataParallelism = other.limitDataParallelism;
-  minDataParallelismSize = other.minDataParallelismSize;
+  dataParTasksPerLocale = other.dataParTasksPerLocale;
+  dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
+  dataParMinGranularity = other.dataParMinGranularity;
 }
 
 def Cyclic.dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
@@ -177,9 +174,9 @@ def Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
   }
   var newDist = new Cyclic(rank=rank, idxType=idxType, low=newLow,
                            targetLocales=targetLocs,
-                           maxDataParallelism=maxDataParallelism,
-                           limitDataParallelism=limitDataParallelism,
-                           minDataParallelismSize=minDataParallelismSize);
+                           dataParTasksPerLocale=dataParTasksPerLocale,
+                           dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
+                           dataParMinGranularity=dataParMinGranularity);
   return newDist;
 }
 
@@ -394,12 +391,13 @@ def CyclicDom.these() {
 }
 
 def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
-  const maxTasks = dist.maxDataParallelism;
-  const limitTasks = dist.limitDataParallelism;
-  const minSize = dist.minDataParallelismSize;
+  const maxTasks = dist.dataParTasksPerLocale;
+  const ignoreRunning = dist.dataParIgnoreRunningTasks;
+  const minSize = dist.dataParMinGranularity;
   const wholeLow = whole.low;
   coforall locDom in locDoms do on locDom {
-    const (numTasks, parDim) = _computeChunkStuff(maxTasks, limitTasks, minSize,
+    const (numTasks, parDim) = _computeChunkStuff(maxTasks, ignoreRunning,
+                                                  minSize,
                                                   locDom.myBlock.dims(), rank);
 
     var result: rank*range(eltType=idxType, stridable=true);
@@ -664,12 +662,13 @@ def CyclicArr.these() var {
 }
 
 def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
-  const maxTasks = dom.dist.maxDataParallelism;
-  const limitTasks = dom.dist.limitDataParallelism;
-  const minSize = dom.dist.minDataParallelismSize;
+  const maxTasks = dom.dist.dataParTasksPerLocale;
+  const ignoreRunning = dom.dist.dataParIgnoreRunningTasks;
+  const minSize = dom.dist.dataParMinGranularity;
   const wholeLow = dom.whole.low;
   coforall locDom in dom.locDoms do on locDom {
-    const (numTasks, parDim) = _computeChunkStuff(maxTasks, limitTasks, minSize,
+    const (numTasks, parDim) = _computeChunkStuff(maxTasks, ignoreRunning,
+                                                  minSize,
                                                   locDom.myBlock.dims(), rank);
 
     var result: rank*range(eltType=idxType, stridable=true);

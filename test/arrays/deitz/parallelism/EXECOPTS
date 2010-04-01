@@ -1,1 +1,1 @@
---maxDataParallelism=2 --limitDataParallelism=false
+--dataParTasksPerLocale=2 --dataParIgnoreRunningTasks=true

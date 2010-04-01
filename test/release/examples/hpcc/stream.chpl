@@ -30,11 +30,6 @@ config const numTrials = 10,
              epsilon = 0.0;
 
 //
-// The number of tasks to use per Chapel locale
-//
-config const tasksPerLocale = here.numCores;
-
-//
 // Configuration constants to indicate whether or not to use a
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
@@ -60,9 +55,7 @@ def main() {
   // BlockDist is a 1D block distribution that is computed by blocking
   // the bounding box 1..m across the set of locales
   //
-  const BlockDist = new dist(new Block(boundingBox=[1..m],
-                                       maxDataParallelism=tasksPerLocale,
-                                       limitDataParallelism=false));
+  const BlockDist = new dist(new Block(boundingBox=[1..m]));
 
   //
   // ProblemSpace describes the index set for the three vectors.  It
@@ -104,7 +97,7 @@ def main() {
 //
 def printConfiguration() {
   if (printParams) {
-    if (printStats) then printLocalesTasks(tasksPerLocale);
+    if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numVectors, m);
     writeln("Number of trials = ", numTrials, "\n");
   }

@@ -43,8 +43,8 @@ config param testFastFollowerOptimization = false;
 //
 // Block Distribution Class
 //
-//   The fields maxDataParallelism, limitDataParallism, and
-//   minDataParallelismSize can be changed, but changes are
+//   The fields dataParTasksPerLocale, dataParIgnoreRunningTasks, and
+//   dataParMinGranularity can be changed, but changes are
 //   not reflected in privatized copies of this distribution.  Perhaps
 //   this is a feature, not a bug?!
 //
@@ -72,16 +72,16 @@ config param testFastFollowerOptimization = false;
 //
 // locDist: a non-distributed array of local distribution classes
 //
-// minDataParallelism: an integer that specifies the number of tasks to
-//                     use on each locale when iterating in parallel over
-//                     a Block-distributed domain or array
+// dataParTasksPerLocale: an integer that specifies the number of tasks to
+//                        use on each locale when iterating in parallel over
+//                        a Block-distributed domain or array
 //
-// limitDataParallelism: a boolean what dictates whether the number of
-//                       task use on each locale should be limited
-//                       by the available parallelism
+// dataParIgnoreRunningTasks: a boolean what dictates whether the number of
+//                            task use on each locale should be limited
+//                            by the available parallelism
 //
-// minDataParallelismSize: the minimum required number of elements per
-//                         task created
+// dataParMinGranularity: the minimum required number of elements per
+//                        task created
 //
 class Block : BaseDist {
   param rank: int;
@@ -90,9 +90,9 @@ class Block : BaseDist {
   const targetLocDom: domain(rank);
   const targetLocales: [targetLocDom] locale;
   const locDist: [targetLocDom] LocBlock(rank, idxType);
-  var maxDataParallelism: int;
-  var limitDataParallelism: bool;
-  var minDataParallelismSize: uint(64);
+  var dataParTasksPerLocale: int;
+  var dataParIgnoreRunningTasks: bool;
+  var dataParMinGranularity: uint(64);
   var pid: int = -1; // privatized object id (this should be factored out)
 }
 
@@ -190,9 +190,9 @@ class LocBlockArr {
 //
 def Block.Block(boundingBox: domain,
                 targetLocales: [] locale = thisRealm.Locales,
-                maxDataParallelism=getMaxDataParallelism(),
-                limitDataParallelism=getLimitDataParallelism(),
-                minDataParallelismSize=getMinDataParallelismSize(),
+                dataParTasksPerLocale=getDataParTasksPerLocale(),
+                dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                dataParMinGranularity=getDataParMinGranularity(),
                 param rank = boundingBox.rank,
                 type idxType = boundingBox.dim(1).eltType) {
   if rank != boundingBox.rank then
@@ -211,12 +211,9 @@ def Block.Block(boundingBox: domain,
       locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
                                      targetLocDomDims);
 
-  if maxDataParallelism == 0 then
-    this.maxDataParallelism = min reduce this.targetLocales.numCores;
-  else
-    this.maxDataParallelism = maxDataParallelism;
-  this.limitDataParallelism = limitDataParallelism;
-  this.minDataParallelismSize = minDataParallelismSize;
+  this.dataParTasksPerLocale = dataParTasksPerLocale;
+  this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
+  this.dataParMinGranularity = dataParMinGranularity;
   
   if debugBlockDist {
     writeln("Creating new Block distribution:");
@@ -226,8 +223,8 @@ def Block.Block(boundingBox: domain,
 
 def Block.dsiClone() {
   return new Block(boundingBox, targetLocales,
-                   maxDataParallelism, limitDataParallelism,
-                   minDataParallelismSize);
+                   dataParTasksPerLocale, dataParIgnoreRunningTasks,
+                   dataParMinGranularity);
 }
 
 def Block.dsiDestroyDistClass() {
@@ -241,9 +238,9 @@ def Block.dsiDisplayRepresentation() {
   writeln("boundingBox = ", boundingBox);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocales = ", for tl in targetLocales do tl.id);
-  writeln("maxDataParallelism = ", maxDataParallelism);
-  writeln("limitDataParallelism = ", limitDataParallelism);
-  writeln("minDataParallelismSize = ", minDataParallelismSize);
+  writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
+  writeln("dataParIgnoreRunningTasks = ", dataParIgnoreRunningTasks);
+  writeln("dataParMinGranularity = ", dataParMinGranularity);
   for tli in targetLocDom do
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
@@ -416,8 +413,8 @@ def Block.dsiCreateReindexDist(newSpace, oldSpace) {
   }
   var d = [(...myNewBbox)];
   var newDist = new Block(d, targetLocales, 
-                          maxDataParallelism, limitDataParallelism,
-                          minDataParallelismSize);
+                          dataParTasksPerLocale, dataParIgnoreRunningTasks,
+                          dataParMinGranularity);
   return newDist;
 }
 
@@ -519,8 +516,8 @@ def Block.dsiCreateRankChangeDist(param newRank: int, args) {
   const newBbox = boundingBox[(...collapsedBbox)];
   const newTargetLocs = targetLocales((...collapsedLocs));
   return new Block(newBbox, newTargetLocs,
-                   maxDataParallelism, limitDataParallelism,
-                   minDataParallelismSize);
+                   dataParTasksPerLocale, dataParIgnoreRunningTasks,
+                   dataParMinGranularity);
 }
 
 def BlockDom.these() {
@@ -529,14 +526,14 @@ def BlockDom.these() {
 }
 
 def BlockDom.these(param tag: iterator) where tag == iterator.leader {
-  const maxTasks = dist.maxDataParallelism;
-  const limitTasks = dist.limitDataParallelism;
-  const minSize = dist.minDataParallelismSize;
+  const maxTasks = dist.dataParTasksPerLocale;
+  const ignoreRunning = dist.dataParIgnoreRunningTasks;
+  const minSize = dist.dataParMinGranularity;
   const precomputedWholeLow = whole.low;
   coforall locDom in locDoms do on locDom {
     var tmpBlock = locDom.myBlock - precomputedWholeLow;
     const (numTasks, parDim) =
-      _computeChunkStuff(maxTasks, limitTasks, minSize,
+      _computeChunkStuff(maxTasks, ignoreRunning, minSize,
                          locDom.myBlock.dims(), rank);
     var locBlock: rank*range(idxType);
     for param i in 1..tmpBlock.rank {
@@ -744,14 +741,14 @@ def BlockArr.these() var {
 // somehow?
 //
 def BlockArr.these(param tag: iterator) where tag == iterator.leader {
-  const maxTasks = dom.dist.maxDataParallelism;
-  const limitTasks = dom.dist.limitDataParallelism;
-  const minSize = dom.dist.minDataParallelismSize;
+  const maxTasks = dom.dist.dataParTasksPerLocale;
+  const ignoreRunning = dom.dist.dataParIgnoreRunningTasks;
+  const minSize = dom.dist.dataParMinGranularity;
   const precomputedWholeLow = dom.whole.low;
   coforall locDom in dom.locDoms do on locDom {
     var tmpBlock = locDom.myBlock - precomputedWholeLow;
     const (numTasks, parDim) =
-      _computeChunkStuff(maxTasks, limitTasks, minSize,
+      _computeChunkStuff(maxTasks, ignoreRunning, minSize,
                          locDom.myBlock.dims(), rank);
     var locBlock: rank*range(idxType);
     for param i in 1..tmpBlock.rank {
@@ -1031,9 +1028,9 @@ def Block.Block(other: Block, privateData,
                 type idxType = other.idxType) {
   boundingBox = [(...privateData(1))];
   targetLocDom = [(...privateData(2))];
-  maxDataParallelism = privateData(3);
-  limitDataParallelism = privateData(4);
-  minDataParallelismSize = privateData(5);
+  dataParTasksPerLocale = privateData(3);
+  dataParIgnoreRunningTasks = privateData(4);
+  dataParMinGranularity = privateData(5);
 
   for i in targetLocDom {
     targetLocales(i) = other.targetLocales(i);
@@ -1045,7 +1042,7 @@ def Block.dsiSupportsPrivatization() param return true;
 
 def Block.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
-          maxDataParallelism, limitDataParallelism, minDataParallelismSize);
+          dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
 }
 
 def Block.dsiPrivatize(privatizeData) {
@@ -1057,9 +1054,9 @@ def Block.dsiReprivatize(other) {
   targetLocDom = other.targetLocDom;
   targetLocales = other.targetLocales;
   locDist = other.locDist;
-  maxDataParallelism = other.maxDataParallelism;
-  limitDataParallelism = other.limitDataParallelism;
-  minDataParallelismSize = other.minDataParallelismSize;
+  dataParTasksPerLocale = other.dataParTasksPerLocale;
+  dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
+  dataParMinGranularity = other.dataParMinGranularity;
 }
 
 def BlockDom.dsiSupportsPrivatization() param return true;

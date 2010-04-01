@@ -51,14 +51,6 @@ config const numTrials = 10,
              epsilon = 0.0;
 
 //
-// *** There isn't (yet) a way to set the number of tasks to use for
-// *** implementing a forall loop over a default array.  When there is
-// *** such a way, we will want to set it via this configuration
-// *** constant to get functionality like we have with stream.chpl.
-//
-// config const tasksPerLocale = here.numCores;
-
-//
 // Configuration constants to indicate whether or not to use a
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly

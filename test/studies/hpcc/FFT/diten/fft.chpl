@@ -72,14 +72,14 @@ def main() {
   //
   const BlkDist = new dist(new Block(rank=1, idxType=int(64), boundingBox=[0..m-1],
                                      targetLocales=Locales,
-                                     maxDataParallelism=tasksPerLocale,
-                                     limitDataParallelism=false));
+                                     dataParTasksPerLocale=tasksPerLocale,
+                                     dataParIgnoreRunningTasks=true));
   const BlkDom: domain(1, int(64)) distributed BlkDist = [0..m-1];
   var Z, z: [BlkDom] elemType;
 
   const CycDist = new dist(new Cyclic(rank=1, idxType=int(64), targetLocales=Locales,
-                                      maxDataParallelism=tasksPerLocale,
-                                      limitDataParallelism=false));
+                                      dataParTasksPerLocale=tasksPerLocale,
+                                      dataParIgnoreRunningTasks=true));
   const CycDom: domain(1, int(64)) distributed CycDist = [0..m-1];
   var Zcyc: [CycDom] elemType;
 

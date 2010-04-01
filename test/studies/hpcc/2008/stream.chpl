@@ -61,8 +61,8 @@ def main() {
   // the bounding box 1..m across the set of locales
   //
   const BlockDist = new dist(new Block(rank=1, idxType=int(64), boundingBox=[1..m],
-                                       maxDataParallelism=tasksPerLocale,
-                                       limitDataParallelism=false));
+                                       dataParTasksPerLocale=tasksPerLocale,
+                                       dataParIgnoreRunningTasks=true));
 
   //
   // ProblemSpace describes the index set for the three vectors.  It

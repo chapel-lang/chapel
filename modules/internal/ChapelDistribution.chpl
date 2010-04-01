@@ -1,8 +1,8 @@
 use List;
 
-config const maxDataParallelism = 0;
-config const limitDataParallelism = true;
-config const minDataParallelismSize: uint(64) = 0;
+config const dataParTasksPerLocale = __primitive("chpl_coresPerLocale");
+config const dataParIgnoreRunningTasks = true;
+config const dataParMinGranularity: uint(64) = 0;
 
 //
 // Abstract distribution class

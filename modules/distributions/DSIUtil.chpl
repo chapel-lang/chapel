@@ -1,32 +1,32 @@
 // Useful functions for implementing distributions
 
 pragma "inline"
-def getMaxDataParallelism() {
-  return maxDataParallelism;
+def getDataParTasksPerLocale() {
+  return dataParTasksPerLocale;
 }
 
 pragma "inline"
-def getLimitDataParallelism() {
-  return limitDataParallelism;
+def getDataParIgnoreRunningTasks() {
+  return dataParIgnoreRunningTasks;
 }
 
 pragma "inline"
-def getMinDataParallelismSize() {
-  return minDataParallelismSize;
+def getDataParMinGranularity() {
+  return dataParMinGranularity;
 }
 
 //
 // helper functions for determining the number of chunks and the
 //   dimension to chunk over
 //
-def _computeChunkStuff(maxTasks, limitTasks, minSize, ranges, param rank) {
+def _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges, param rank) {
   // is there a way to avoid passing in rank?
   var numElems: uint(64) = 1;
   for param i in 1..rank do {
     numElems *= ranges(i).length:uint(64);
   }
 
-  var numChunks = _computeNumChunks(maxTasks, limitTasks, minSize, numElems);
+  var numChunks = _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems);
 
   // Dimension to parallelize (eventually should "block" thespace)
   var parDim = -1;
@@ -49,10 +49,10 @@ def _computeChunkStuff(maxTasks, limitTasks, minSize, ranges, param rank) {
   return (numChunks, parDim);
 }
 
-def _computeNumChunks(maxTasks, limitTasks, minSize, numElems) {
+def _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
   const runningTasks = here.runningTasks();
   var numChunks: uint(64) =
-    if !limitTasks then maxTasks:uint(64)
+    if ignoreRunning then maxTasks:uint(64)
     else if runningTasks-1 < maxTasks // don't include self
       then (maxTasks-runningTasks+1):uint(64)
       else 1:uint(64);

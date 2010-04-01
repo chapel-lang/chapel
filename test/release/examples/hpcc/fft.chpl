@@ -32,11 +32,6 @@ config const n = computeProblemSize(numVectors, elemType, returnLog2 = true);
 const m = 2**n;
 
 //
-// The number of tasks to use per Chapel locale in parallel loops
-//
-config const tasksPerLocale = here.numCores;
-
-//
 // Configuration constants defining the epsilon and threshold values
 // used to verify the result
 //
@@ -96,9 +91,7 @@ def main() {
   // z (used to store the input vector) and ZBlk (used for the first
   // half of the FFT phases).
   //
-  const BlkDist = new dist(new Block(boundingBox=ProblemSpace, 
-                                     maxDataParallelism=tasksPerLocale,
-                                     limitDataParallelism=false));
+  const BlkDist = new dist(new Block(boundingBox=ProblemSpace));
   const BlkDom: domain(1, idxType) distributed BlkDist = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
@@ -109,9 +102,7 @@ def main() {
   // to define the Zcyc vector, used for the second half of the FFT
   // phases.
   //
-  const CycDist = new dist(new Cyclic(1, idxType, 
-                                      maxDataParallelism=tasksPerLocale,
-                                      limitDataParallelism=false));
+  const CycDist = new dist(new Cyclic(1, idxType));
   const CycDom: domain(1, idxType) distributed CycDist = ProblemSpace;
   var Zcyc: [CycDom] elemType;
 
@@ -257,7 +248,7 @@ def genDFTStrideSpan(numElements, cyclicPhase) {
 //
 def printConfiguration() {
   if (printParams) {
-    if (printStats) then printLocalesTasks(tasksPerLocale=tasksPerLocale);
+    if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numVectors, m);
   }
 }
