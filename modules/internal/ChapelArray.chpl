@@ -987,7 +987,7 @@ def =(a: domain, b: domain) {
     // warning
     //
     compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-    for i in a {
+    for i in a._value.dsiIndsIterSafeForRemoving() {
       if !b.member(i) {
         a.remove(i);
       }

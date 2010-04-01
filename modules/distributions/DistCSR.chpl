@@ -6,31 +6,39 @@ class CSR: BaseDist {
   def dsiClone() return new CSR();
 }
 
-use Search;
-
 class CSRDom: BaseSparseDom {
   param rank : int;
   type idxType;
   var dist: CSR;
   var parentDom: domain(rank, idxType);
-  var nnz = 0;  // intention is that user might specify this to avoid reallocs
+  var nnz: idxType;  // intention is that user might specify this to avoid reallocs
   //  type idxType = rank*idxType;
 
-  var rowRange = parentDom.dim(1);
-  var colRange = parentDom.dim(2);
+  var rowRange: range(idxType);
+  var colRange: range(idxType);
 
-  const rowDom = [rowRange.low..rowRange.high+1];
-  var nnzDomSize = nnz;
-  var nnzDom = [1..nnzDomSize];
+  const rowDom: domain(1, idxType);
+  var nnzDomSize: idxType;
+  var nnzDom: domain(1, nnz.type);
 
   var rowStart: [rowDom] idxType;      // would like index(nnzDom)
   var colIdx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
   def getBaseDist() return dist;
 
-  def initialize() {
+  def CSRDom(param rank, type idxType, 
+                               dist: CSR,
+                               parentDom: domain(rank, idxType)) {
     if (rank != 2) then
-      compilerError("Only 2D sparse domains are supported presently");
+      compilerError("Only 2D sparse domains are supported by the CSR distribution");
+    this.dist = dist;
+    this.parentDom = parentDom;
+    nnz = 0;
+    rowRange = parentDom.dim(1);
+    colRange = parentDom.dim(2);
+    rowDom = [rowRange.low..rowRange.high+1];
+    nnzDomSize = nnz;
+    nnzDom = [1..nnzDomSize];
     dsiClear();
   }
 
@@ -41,6 +49,16 @@ class CSRDom: BaseSparseDom {
 
   def dsiBuildArray(type eltType)
     return new CSRArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
+
+  def dsiIndsIterSafeForRemoving() {
+    var cursorRow = rowRange.high;
+    for i in 1..nnz by -1 {
+      while (rowStart(cursorRow) > i) {
+        cursorRow -= 1;
+      }
+      yield (cursorRow, colIdx(i));
+    }
+  }
 
   def these() {
     var cursorRow = rowRange.low;
@@ -83,6 +101,8 @@ class CSRDom: BaseSparseDom {
   }
 
   def find(ind: rank*idxType) {
+    use Search;
+
     const (row, col) = ind;
 
     return BinarySearch(colIdx, col, rowStart(row), rowStop(row));
@@ -134,6 +154,50 @@ class CSRDom: BaseSparseDom {
     // we could also eliminate the oldNNZDomSize variable
     for a in _arrs {
       a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDomSize);
+    }
+  }
+
+  def dsiRemove(ind: rank*idxType) {
+    // find position in nnzDom to remove old index
+    const (found, insertPt) = find(ind);
+
+    // if the index doesn't already exist, then return
+    if (!found) then return;
+
+    // increment number of nonzeroes
+    nnz -= 1;
+
+    // TODO: should halve nnzDom if we've outgrown it...
+    /*
+    var oldNNZDomSize = nnzDomSize;
+    if (nnz > nnzDomSize) {
+      nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
+
+      nnzDom = [1..nnzDomSize];
+    }
+    */
+
+    const (row,col) = ind;
+
+    // shift column indices down
+    for i in insertPt..nnz {
+      colIdx(i) = colIdx(i+1);
+    }
+
+    // bump the rowStart counts
+    for r in row+1..rowDom.high {  // want rowDom[row+1..]
+      rowStart(r) -= 1;
+    }
+
+    // shift all of the arrays up and initialize nonzeroes if
+    // necessary 
+    //
+    // BLC: Note: if arithmetic arrays had a user-settable
+    // initialization value, we could set it to be the IRV and skip
+    // this second initialization of any new values in the array.
+    // we could also eliminate the oldNNZDomSize variable
+    for a in _arrs {
+      a.sparseShiftArrayBack(insertPt..nnz-1);
     }
   }
 
@@ -198,6 +262,12 @@ class CSRArr: BaseArr {
       data(i+1) = data(i);
     }
     data(shiftrange.low) = irv;
+  }
+
+  def sparseShiftArrayBack(shiftrange) {
+    for i in shiftrange {
+      data(i) = data(i+1);
+    }
   }
 }
 

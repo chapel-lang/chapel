@@ -28,6 +28,12 @@ class DefaultSparseDom: BaseSparseDom {
     return new DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
                                 dom=this);
 
+  def dsiIndsIterSafeForRemoving() {
+    for i in 1..nnz by -1 {
+      yield indices(i);
+    }
+  }
+
   def these() {
     for i in 1..nnz {
       yield indices(i);
@@ -124,7 +130,7 @@ class DefaultSparseDom: BaseSparseDom {
     }
     */
     // shift indices up
-    for i in insertPt..nnz-1 {
+    for i in insertPt..nnz {
       indices(i) = indices(i+1);
     }
 
