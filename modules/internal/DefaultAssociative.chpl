@@ -97,6 +97,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
+    compilerWarning("parallel iteration over associative domain has been serialized (see note in $CHPL_HOME/STATUS)");
     yield 0..dsiNumIndices-1;
   }
 
@@ -290,6 +291,7 @@ class DefaultAssociativeArr: BaseArr {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
+    compilerWarning("parallel iteration over associative array has been serialized (see note in $CHPL_HOME/STATUS)");
     for block in dom.these(tag=iterator.leader) do
       yield block;
   }

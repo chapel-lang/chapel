@@ -41,6 +41,7 @@ class DefaultSparseDom: BaseSparseDom {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
+    compilerWarning("parallel iteration over sparse domain has been serialized (see note in $CHPL_HOME/STATUS)");
     yield true;
   }
 

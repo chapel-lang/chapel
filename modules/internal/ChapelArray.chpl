@@ -1046,6 +1046,13 @@ pragma "inline" def =(a: [], b : []) where (a._value.canCopyFromHost && b._value
 def chpl__serializeAssignment(a: [], b) param {
   if a.rank != 1 && chpl__isRange(b) then
     return true;
+
+  // Sparse, Associative, Opaque do not yet support parallel iteration.  We
+  // could let them fall through, but then we get multiple warnings for a
+  // single assignment statement which feels like overkill
+  //
+  if (!isArithmeticArr(a) || (chpl__isArray(b) && !isArithmeticArr(b))) then
+    return true;
   return false;
 }
 

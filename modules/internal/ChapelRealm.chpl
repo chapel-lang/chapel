@@ -30,7 +30,9 @@ forall loc in AllLocaleSpace do
   AllLocales(loc) = chpl_setupLocale(loc);
 
 const Realms: [RealmSpace] realm;
-forall r in RealmSpace do
+// TODO: Will eventually want to make this parallel, but it causes a warning
+// today
+for r in RealmSpace do
   Realms(r) = chpl_setupRealm(r, chpl_numLocales(r), chpl_baseLocaleID(r));
 
 doneCreatingLocales = true;

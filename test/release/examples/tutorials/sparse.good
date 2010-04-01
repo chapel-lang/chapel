@@ -1,4 +1,5 @@
 sparse.chpl:156: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
+sparse.chpl:180: warning: parallel iteration over sparse domain has been serialized (see note in $CHPL_HOME/STATUS)
 Initially, spsDom is: [
 ]
 
