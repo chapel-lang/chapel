@@ -6,7 +6,7 @@ class BlockCyclicDist {
   const localeDomain: domain(nDims);
   const locales: [localeDomain] locale;
 
-  def ind2locInd(ind: idxType...nDims) {
+  def idxToLocaleInd(ind: idxType...nDims) {
     var locInd: nDims*idxType;
     for i in 1..nDims {
       locInd(i) = (startLoc(i) + (ind(i)-1)/blockSize(i)) % localeDomain.dim(i).length;
@@ -14,8 +14,8 @@ class BlockCyclicDist {
     return locInd;
   }
 
-  def ind2loc(ind: idxType...nDims) {
-    return locales(ind2locInd((...ind)));
+  def idxToLocale(ind: idxType...nDims) {
+    return locales(idxToLocaleInd((...ind)));
   }
   def getBlock(ind: idxType...nDims) {
     var locInd: nDims*idxType;
@@ -117,7 +117,7 @@ class BlockCyclicArr {
     }
   }
   def this(ind:idxType...nDims) var {
-    return locArrs(dom.dist.ind2locInd((...ind))).arr(dom.dist.getLocalPosition((...ind)));
+    return locArrs(dom.dist.idxToLocaleInd((...ind))).arr(dom.dist.getLocalPosition((...ind)));
   }
 }
 

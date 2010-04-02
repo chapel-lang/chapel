@@ -120,7 +120,7 @@ def main() {
   // pending for that locale.
   //
   forall ( , r) in (Updates, RAStream()) {
-    var loc = T.domain.dist.ind2loc(r&indexMask);
+    var loc = T.domain.dist.idxToLocale(r&indexMask);
     if loc == here {
       T(r&indexMask) ^= r;
     } else {
@@ -181,7 +181,7 @@ def verifyResults() {
   // atomic statement to ensure no conflicting updates
   //
   forall ( , r) in (Updates, RAStream()) do
-    on T.domain.dist.ind2loc(r & indexMask) do
+    on T.domain.dist.idxToLocale(r & indexMask) do
       atomic T(r & indexMask) ^= r;
 
   //

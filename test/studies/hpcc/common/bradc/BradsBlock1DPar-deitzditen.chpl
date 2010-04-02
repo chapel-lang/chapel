@@ -86,7 +86,7 @@ class Block1DDist {
   //
   // TODO: Is this correct if targetLocs doesn't start with 0?
   //
-  def ind2loc(ind: glbIdxType) {
+  def idxToLocale(ind: glbIdxType) {
     return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
   }
 }
@@ -389,7 +389,7 @@ class Block1DArr {
   // the global accessor for the array
   //
   def this(i: glbIdxType) var {
-    return locArr(dom.dist.ind2loc(i))(i);
+    return locArr(dom.dist.idxToLocale(i))(i);
   }
 
   //

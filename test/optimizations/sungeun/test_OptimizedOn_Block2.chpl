@@ -10,7 +10,7 @@ record R {
 var A: [Dom] R;
 A.r = 1;
 
-on Dist.ind2loc(l) do {
+on Dist.idxToLocale(l) do {
   local {
     A(l).r = l;
   }

@@ -160,7 +160,7 @@ def dfft(A: [?ADom], W, cyclicPhase) {
       //       lo.. by str #num == lo, lo+str, lo+2*str, ... lo+(num-1)*str
       //
       forall lo in bankStart..#str do
-        on ADom.dist.ind2loc(lo) do
+        on ADom.dist.idxToLocale(lo) do
           local butterfly(wk1, wk2, wk3, A.localSlice(lo..by str #radix));
 
       //
@@ -175,7 +175,7 @@ def dfft(A: [?ADom], W, cyclicPhase) {
       // loop in parallel over the high bank, computing butterflies
       //
       forall lo in bankStart+span..#str do
-        on ADom.dist.ind2loc(lo) do
+        on ADom.dist.idxToLocale(lo) do
           local butterfly(wk1, wk2, wk3, A.localSlice(lo.. by str #radix));
     }
   }
@@ -191,7 +191,7 @@ def dfft(A: [?ADom], W, cyclicPhase) {
     //
     if (str*radix == numElements) {
       forall lo in 0..#str do
-        on ADom.dist.ind2loc(lo) do
+        on ADom.dist.idxToLocale(lo) do
           local butterfly(1.0, 1.0, 1.0, A.localSlice(lo.. by str # radix));
     }
     //
@@ -199,7 +199,7 @@ def dfft(A: [?ADom], W, cyclicPhase) {
     //
     else
       forall lo in 0..#str do
-        on ADom.dist.ind2loc(lo) do
+        on ADom.dist.idxToLocale(lo) do
           local {
             const a = A(lo),
                   b = A(lo+str);

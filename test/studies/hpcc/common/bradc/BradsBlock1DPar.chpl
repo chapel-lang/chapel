@@ -105,8 +105,8 @@ class Block1DDist {
   //
   // convert an index into a locale value
   //
-  def ind2loc(ind: idxType) {
-    return targetLocs(ind2locInd(ind));
+  def idxToLocale(ind: idxType) {
+    return targetLocs(idxToLocaleInd(ind));
   }
 
 
@@ -137,7 +137,7 @@ class Block1DDist {
   // someone else can help me remember it (since it was probably someone
   // else's suggestion).
   //
-  def ind2locInd(ind: idxType) {
+  def idxToLocaleInd(ind: idxType) {
     const ind0 = ind - boundingBox.low;
     const locInd = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
     return locInd: index(targetLocDom);
@@ -536,10 +536,10 @@ class Block1DArr {
   //
   // the global accessor for the array
   //
-  // TODO: Do we need a global bounds check here or in ind2locind?
+  // TODO: Do we need a global bounds check here or in idxToLocaleind?
   //
   def this(i: idxType) var {
-    return locArr(dom.dist.ind2locInd(i))(i);
+    return locArr(dom.dist.idxToLocaleInd(i))(i);
   }
 
   //

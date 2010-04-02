@@ -427,7 +427,7 @@ record _distribution {
     return x;
   }
 
-  def ind2loc(ind) return _value.dsiIndexLocale(ind);
+  def idxToLocale(ind) return _value.dsiIndexLocale(ind);
 
   def writeThis(x: Writer) {
     _value.writeThis(x);

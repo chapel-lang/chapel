@@ -99,7 +99,7 @@ def main() {
   //
   startCommDiagnostics();
   forall (_, r) in (Updates, RAStream()) do
-    on TableDist.ind2loc(r & indexMask) do
+    on TableDist.idxToLocale(r & indexMask) do
       T(r & indexMask) ^= r;
   stopCommDiagnostics();
 
@@ -139,7 +139,7 @@ def verifyResults() {
   // atomic statement to ensure no conflicting updates
   //
   forall (_, r) in (Updates, RAStream()) do
-    on TableDist.ind2loc(r & indexMask) do
+    on TableDist.idxToLocale(r & indexMask) do
       atomic T(r & indexMask) ^= r;
 
   //

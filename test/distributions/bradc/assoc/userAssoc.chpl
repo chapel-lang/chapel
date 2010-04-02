@@ -1,7 +1,7 @@
 use UserMapAssoc;
 
 class myMapper : AbstractMapper {
-  def ind2locInd(ind: real, numlocs: int) {
+  def idxToLocaleInd(ind: real, numlocs: int) {
     const indAsInt = ind: int;
     return indAsInt % numlocs;
   }

@@ -98,7 +98,7 @@ def main() {
   // index and as the update value.
   //
   forall ( , r) in (Updates, RAStream()) do
-    on TableDist.ind2loc(r & indexMask) do {
+    on TableDist.idxToLocale(r & indexMask) do {
       const myR = r;
       local {
         T(myR & indexMask) ^= myR;
@@ -136,7 +136,7 @@ def verifyResults() {
   // atomic statement to ensure no conflicting updates
   //
   forall ( , r) in (Updates, RAStream()) do
-    on TableDist.ind2loc(r & indexMask) do
+    on TableDist.idxToLocale(r & indexMask) do
       atomic T(r & indexMask) ^= r;
 
   //

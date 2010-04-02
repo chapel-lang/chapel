@@ -146,11 +146,11 @@ def BlockCyclic.writeThis(x:Writer) {
 // convert an index into a locale value
 //
 def BlockCyclic.dsiIndexLocale(ind: idxType) where rank == 1 {
-  return targetLocs(ind2locInd(ind));
+  return targetLocs(idxToLocaleInd(ind));
 }
 
 def BlockCyclic.dsiIndexLocale(ind: rank*idxType) {
-  return targetLocs(ind2locInd(ind));
+  return targetLocs(idxToLocaleInd(ind));
 }
 
 //
@@ -201,17 +201,17 @@ def BlockCyclic.getStarts(inds, locid) {
 // someone else can help me remember it (since it was probably someone
 // else's suggestion).
 //
-def BlockCyclic.ind2locInd(ind: idxType) where rank == 1 {
+def BlockCyclic.idxToLocaleInd(ind: idxType) where rank == 1 {
   const ind0 = ind - lowIdx(1);
   //  compilerError(typeToString((ind0/blocksize(1)%targetLocDom.dim(1).type));
   return (ind0 / blocksize(1)) % targetLocDom.dim(1).length;
 }
 
-def BlockCyclic.ind2locInd(ind: rank*idxType) where rank == 1 {
-  return ind2locInd(ind(1));
+def BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank == 1 {
+  return idxToLocaleInd(ind(1));
 }
 
-def BlockCyclic.ind2locInd(ind: rank*idxType) where rank != 1 {
+def BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   var locInd: rank*int;
   for param i in 1..rank {
     const ind0 = ind(i) - lowIdx(i);
@@ -614,18 +614,18 @@ def BlockCyclicArr.dsiPrivatize(privatizeData) {
 //
 // the global accessor for the array
 //
-// TODO: Do we need a global bounds check here or in ind2locind?
+// TODO: Do we need a global bounds check here or in idxToLocaleind?
 //
 def BlockCyclicArr.dsiAccess(i: idxType) var where rank == 1 {
   if myLocArr then /* TODO: reenable */ /* local */ {
     if myLocArr.locDom.myStarts.member(i) then
       return myLocArr.this(i);
   }
-  //  var loci = dom.dist.ind2locInd(i);
+  //  var loci = dom.dist.idxToLocaleInd(i);
   //  compilerError(typeToString(loci.type));
   //  var desc = locArr(loci);
   //  return locArr(loci)(i);
-  return locArr(dom.dist.ind2locInd(i))(i);
+  return locArr(dom.dist.idxToLocaleInd(i))(i);
 }
 
 def BlockCyclicArr.dsiAccess(i: rank*idxType) var {
@@ -637,7 +637,7 @@ def BlockCyclicArr.dsiAccess(i: rank*idxType) var {
   if rank == 1 {
     return dsiAccess(i(1));
   } else {
-    return locArr(dom.dist.ind2locInd(i))(i);
+    return locArr(dom.dist.idxToLocaleInd(i))(i);
   }
 }
 
@@ -699,7 +699,7 @@ def BlockCyclicArr.these(param tag: iterator, follower) var where tag == iterato
   // distributing across the entire Locales array.  I still think the
   // locArr/locDoms arrays should be associative over locale values.
   //
-  const myLocArr = locArr(dom.dist.ind2locInd(lowIdx));
+  const myLocArr = locArr(dom.dist.idxToLocaleInd(lowIdx));
 
   //
   // we don't own all the elements we're following

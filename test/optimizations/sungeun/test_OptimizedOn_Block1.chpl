@@ -6,7 +6,7 @@ var Dist = new dmap(new Block(boundingBox=[1..n]));
 var Dom: domain (1) dmapped Dist = [1..n];
 var A: [Dom] int = 1;
 
-on Dist.ind2loc(l) do {
+on Dist.idxToLocale(l) do {
   local {
     A(l) = l;
   }

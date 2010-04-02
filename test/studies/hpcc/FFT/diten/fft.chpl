@@ -133,7 +133,7 @@ def dfft(A: [?ADom], W, phase) {
       //       lo.. by str #num == lo, lo+str, lo+2*str, ... lo+(num-1)*str
       //
       forall lo in bankStart..#str {
-        on ADom.dist.ind2loc(lo) {
+        on ADom.dist.idxToLocale(lo) {
           local {
             butterfly(wk1, wk2, wk3, A.localSlice(lo..by str #radix));
           }
@@ -151,7 +151,7 @@ def dfft(A: [?ADom], W, phase) {
       // loop in parallel over the high bank, computing butterflies
       //
       forall lo in bankStart+span..#str {
-        on ADom.dist.ind2loc(lo) {
+        on ADom.dist.idxToLocale(lo) {
           local {
             butterfly(wk1, wk2, wk3, A.localSlice(lo.. by str #radix));
           }
@@ -347,5 +347,5 @@ def tmp_localSlice(A, rng) {
   for param i in 1..A.rank {
     low(i) = rng.low;
   }
-  return A._value.locArr(A._value.dom.dist.ind2locInd(low)).myElems(rng);
+  return A._value.locArr(A._value.dom.dist.idxToLocaleInd(low)).myElems(rng);
 }

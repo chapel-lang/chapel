@@ -100,7 +100,7 @@ def main() {
   // index and as the update value.
   //
   forall (_, r) in (Updates, RAStream()) do
-    on TableDist.ind2loc(r & indexMask) do
+    on TableDist.idxToLocale(r & indexMask) do
       T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -134,7 +134,7 @@ def verifyResults() {
   // atomic statement to ensure no conflicting updates
   //
   forall (_, r) in (Updates, RAStream()) do
-    on TableDist.ind2loc(r & indexMask) do
+    on TableDist.idxToLocale(r & indexMask) do
       atomic T(r & indexMask) ^= r;
 
   //

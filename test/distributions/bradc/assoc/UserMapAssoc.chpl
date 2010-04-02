@@ -17,7 +17,7 @@ config param debugUserMapAssoc = false;
 
 // TODO: Need to make this generic
 class AbstractMapper {
-  def ind2locInd(ind, numlocs: int) {
+  def idxToLocaleInd(ind, numlocs: int) {
     return 0;
   }
 }
@@ -134,12 +134,12 @@ class UserMapAssoc : BaseDist {
   //
   // convert an index into a locale value
   //
-  def ind2loc(ind: idxType) {
-    return targetLocs(ind2locInd(ind));
+  def idxToLocale(ind: idxType) {
+    return targetLocs(idxToLocaleInd(ind));
   }
 
-  def ind2locInd(ind: idxType) {
-    return mapper.ind2locInd(ind, targetLocDom.numIndices);
+  def idxToLocaleInd(ind: idxType) {
+    return mapper.idxToLocaleInd(ind, targetLocDom.numIndices);
   }
 }
 
@@ -245,7 +245,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // GLOBAL DOMAIN INTERFACE:
 
   def dsiAdd(i: idxType) {
-    locDoms(dist.ind2locInd(i)).add(i);
+    locDoms(dist.idxToLocaleInd(i)).add(i);
   }
 
   //
@@ -568,7 +568,7 @@ class UserMapAssocArr: BaseArr {
   //
   // the global accessor for the array
   //
-  // TODO: Do we need a global bounds check here or in ind2locind?
+  // TODO: Do we need a global bounds check here or in idxToLocaleind?
   //
   def dsiAccess(i: idxType) var {
     const myLocArr = locArrs(here.id);
@@ -576,7 +576,7 @@ class UserMapAssocArr: BaseArr {
       if myLocArr.locDom.myInds.member(i) then
         return myLocArr.this(i);
     }
-    return locArrs(dom.dist.ind2locInd(i))(i);
+    return locArrs(dom.dist.idxToLocaleInd(i))(i);
   }
 
   //

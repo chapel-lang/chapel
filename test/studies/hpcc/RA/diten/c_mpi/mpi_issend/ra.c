@@ -23,7 +23,7 @@ int doneWithRecvs = 0;
 rndtype* A;
 
 /* Given a global index, return the process rank it is local to */
-int ind2loc(unsigned long long ind) {
+int idxToLocale(unsigned long long ind) {
   return nprocs*ind / m;
 }
 
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
     locEnd = locStart+locN_U;
     r = getNthRandom(locStart);
     for (i=locStart; i < locEnd; i++) {
-      int loc = ind2loc(r & idxMask);
+      int loc = idxToLocale(r & idxMask);
       if (loc < 0 || loc > nprocs-1) {
         printf("error: r=%llu, r&mask=%llu, loc=%d\n", r, r&idxMask, loc);
       }
