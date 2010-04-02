@@ -86,10 +86,10 @@ config param testFastFollowerOptimization = false;
 class Block : BaseDist {
   param rank: int;
   type idxType = int;
-  const boundingBox: domain(rank, idxType);
-  const targetLocDom: domain(rank);
-  const targetLocales: [targetLocDom] locale;
-  const locDist: [targetLocDom] LocBlock(rank, idxType);
+  var boundingBox: domain(rank, idxType);
+  var targetLocDom: domain(rank);
+  var targetLocales: [targetLocDom] locale;
+  var locDist: [targetLocDom] LocBlock(rank, idxType);
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: uint(64);
@@ -219,6 +219,24 @@ def Block.Block(boundingBox: domain,
     writeln("Creating new Block distribution:");
     dsiDisplayRepresentation();
   }
+}
+
+def Block.dsiAssign(other: this.type) {
+  coforall locid in targetLocDom do
+    on targetLocales(locid) do
+      delete locDist(locid);
+  boundingBox = other.boundingBox;
+  targetLocDom = other.targetLocDom;
+  targetLocales = other.targetLocales;
+  dataParTasksPerLocale = other.dataParTasksPerLocale;
+  dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
+  dataParMinGranularity = other.dataParMinGranularity;
+  const boundingBoxDims = boundingBox.dims();
+  const targetLocDomDims = targetLocDom.dims();
+  coforall locid in targetLocDom do
+    on targetLocales(locid) do
+      locDist(locid) = new LocBlock(rank, idxType, locid, boundingBoxDims,
+                                    targetLocDomDims);
 }
 
 def Block.dsiClone() {
@@ -1049,8 +1067,10 @@ def Block.dsiPrivatize(privatizeData) {
   return new Block(this, privatizeData);
 }
 
-def Block.dsiReprivatize(other) {
-  boundingBox = other.boundingBox;
+def Block.dsiGetReprivatizeData() return boundingBox.dims();
+
+def Block.dsiReprivatize(other, reprivatizeData) {
+  boundingBox = [(...reprivatizeData)];
   targetLocDom = other.targetLocDom;
   targetLocales = other.targetLocales;
   locDist = other.locDist;

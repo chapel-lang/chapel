@@ -962,10 +962,17 @@ def chpl__isArray(x) param return false;
 // Assignment of domains and arrays
 //
 def =(a: _distribution, b: _distribution) {
-  if a._value == nil then
+  if a._value == nil {
     return chpl__autoCopy(b.clone());
-  else
-    halt("distribution assignment is not yet supported");
+  } else if a._value._doms.length == 0 {
+    if a._value.type != b._value.type then
+      compilerError("type mismatch in distribution assignment");
+    a._value.dsiAssign(b._value);
+    if _isPrivatized(a._value) then
+      _reprivatize(a._value);
+  } else {
+    halt("assignment to distributions with declared domains is not yet supported");
+  }
   return a;
 }
 

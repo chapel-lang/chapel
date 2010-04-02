@@ -17,14 +17,14 @@ config param verboseCyclicDistWriters = false;
 config param testFastFollowerOptimization = false;
 
 class Cyclic: BaseDist {
-  param rank: int = 1;
-  type idxType = int(64);
+  param rank: int;
+  type idxType = int;
 
-  const lowIdx: rank*idxType;
-  const targetLocDom: domain(rank);
-  const targetLocs: [targetLocDom] locale;
+  var lowIdx: rank*idxType;
+  var targetLocDom: domain(rank);
+  var targetLocs: [targetLocDom] locale;
 
-  const locDist: [targetLocDom] LocCyclic(rank, idxType);
+  var locDist: [targetLocDom] LocCyclic(rank, idxType);
 
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
@@ -33,7 +33,7 @@ class Cyclic: BaseDist {
   var pid: int = -1;
 
   def Cyclic(param rank: int,
-             type idxType = int(64),
+             type idxType = int,
              low: rank*idxType = _tupleOfZero(rank, idxType),
              targetLocales: [] locale = thisRealm.Locales,
              dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -88,6 +88,21 @@ class Cyclic: BaseDist {
     dataParTasksPerLocale = other.dataParTasksPerLocale;
     dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
     dataParMinGranularity = other.dataParMinGranularity;
+  }
+
+  def dsiAssign(other: this.type) {
+    coforall locid in targetLocDom do
+      on targetLocs(locid) do
+        delete locDist(locid);
+    lowIdx = other.lowIdx;
+    targetLocDom = other.targetLocDom;
+    targetLocs = other.targetLocs;
+    dataParTasksPerLocale = other.dataParTasksPerLocale;
+    dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
+    dataParMinGranularity = other.dataParMinGranularity;
+    coforall locid in targetLocDom do
+      on targetLocs(locid) do
+        locDist(locid) = new LocCyclic(rank, idxType, locid, this);
   }
 
   def dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);

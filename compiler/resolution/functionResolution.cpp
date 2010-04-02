@@ -4050,6 +4050,19 @@ resolve() {
         } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
           // why??  --sjd
           init->replace(init->get(1)->remove());
+        } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+          Symbol* tmp = newTemp();
+          init->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->defaultConstructor);
+          CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
+          init->getStmtExpr()->insertBefore(move);
+          resolveCall(classCall);
+          resolveFns(classCall->isResolved());
+          resolveCall(move);
+          CallExpr* distCall = new CallExpr("chpl__buildDistValue", tmp);
+          init->replace(distCall);
+          resolveCall(distCall);
+          resolveFns(distCall->isResolved());
         } else {
           INT_ASSERT(type->defaultConstructor);
           CallExpr* call = new CallExpr(type->defaultConstructor);

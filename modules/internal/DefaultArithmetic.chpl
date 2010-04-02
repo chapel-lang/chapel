@@ -16,6 +16,8 @@ class DefaultDist: BaseDist {
 
   def dsiClone() return this;
 
+  def dsiAssign(other: this.type) { }
+
   def dsiCreateReindexDist(newSpace, oldSpace) return this;
   def dsiCreateRankChangeDist(param newRank, args) return this;
 }
