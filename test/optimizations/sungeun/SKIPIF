@@ -1,0 +1,2 @@
+# Tests in this directory are only meaningful for multiple locales
+CHPL_COMM == none

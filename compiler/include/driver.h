@@ -76,6 +76,7 @@ extern bool ignore_errors;
 extern int squelch_header_errors;
 
 extern bool fWarnPromotion;
+extern bool fReportOptimizedOn;
 
 extern bool debugCCode, optimizeCCode;
 
