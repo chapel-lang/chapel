@@ -448,6 +448,7 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_ON_NB, "non-blocking on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);
+  prim_def(PRIM_BLOCK_UNLOCAL, "unlocal block", returnInfoVoid);
 
   prim_def(PRIM_TO_LEADER, "to leader", returnInfoVoid);
   prim_def(PRIM_TO_FOLLOWER, "to follower", returnInfoVoid);
