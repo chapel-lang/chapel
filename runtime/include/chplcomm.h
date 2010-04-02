@@ -337,10 +337,11 @@ extern void* const chpl_private_broadcast_table[];
 
 //
 // returns the default maximum number of threads that can be handled by this
-// communication layer (initial value of maxThreads); use the sentinel value 0
+// communication layer (initial value of maxThreadsPerLocale); use the sentinel value 0
 // if the maximum number of threads is limited only by the system's available
 // resources.
 //
+
 int32_t chpl_comm_getMaxThreads(void);
 
 //

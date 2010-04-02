@@ -18,7 +18,7 @@
 
 // Defined in the generated Chapel code:
 
-extern int32_t maxThreads;
+extern int32_t maxThreadsPerLocale;
 
 
 // Mutexes
@@ -136,7 +136,7 @@ int32_t CHPL_NUMBLOCKEDTASKS(void);
 
 //
 // returns the default maximum number of threads that can be handled by this
-// threading layer (initial value of maxThreads); use the sentinel value 0
+// threading layer (initial value of maxThreadsPerLocale); use the sentinel value 0
 // if the maximum number of threads is limited only by the system's available
 // resources.
 //

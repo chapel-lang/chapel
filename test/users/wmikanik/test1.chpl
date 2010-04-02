@@ -28,6 +28,6 @@ var elLeft : index ([elIdx_r]);
 //print information regarding number of locales and number of cores
 //writeln ("numLocales ", numLocales);
 //writeln ("total Cores ", + reduce ([i in LocaleSpace] Locales[i].numCores));
-//writeln ("maxThreads ", maxThreads);
+//writeln ("maxThreadsPerLocale ", maxThreadsPerLocale);
 writeln("test1");
 

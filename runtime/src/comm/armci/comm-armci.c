@@ -8,6 +8,7 @@
 #include <strings.h>
 
 #include "chplcomm.h"
+#include "comm_heap_macros.h"
 #include "chpl_mem.h"
 #include "chplrt.h"
 #include "error.h"
@@ -181,7 +182,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 }
 
 typedef struct __broadcast_private_helper {
-  void *addr;
+  int locid;
   void *raddr;
   int locale;
   size_t size;
@@ -190,7 +191,7 @@ typedef struct __broadcast_private_helper {
 static void _broadcastPrivateHelperFn(struct __broadcast_private_helper *arg);
 
 void _broadcastPrivateHelperFn(struct __broadcast_private_helper *arg) {
-  chpl_comm_get(arg->addr, arg->locale, arg->raddr, arg->size, 0, "");
+  chpl_comm_get(chpl_private_broadcast_table[arg->locid], arg->locale, arg->raddr, arg->size, 0, "");
 }
 
 void chpl_comm_broadcast_private(int id, int size) {
@@ -202,17 +203,12 @@ void chpl_comm_broadcast_private(int id, int size) {
   bcopy(chpl_private_broadcast_table[id], heapAddr, size);
   for (i = 0; i < chpl_numLocales; i++)
     if (i != chpl_localeID) {
-      bph.addr = chpl_private_broadcast_table[id];
+      bph.locid = id;
       bph.raddr = heapAddr;
       bph.locale = chpl_localeID;
       bph.size = size;
 
-      // expected build error - this needs to be modified since fork
-      // takes an fn id, not a function
-
-      // This needs to be updated since chpl_comm_fork expects a fn id
-      // instead of a function pointer
-      chpl_comm_fork(i, _broadcastPrivateHelperFn, &bph, sizeof(_broadcast_private_helper));
+      chpl_comm_fork(i, -1, &bph, sizeof(_broadcast_private_helper));
     }
 }
 
@@ -332,7 +328,11 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   volatile int *done;
 
   if (chpl_localeID == locale) {
-    (*chpl_ftable[fid])(arg);
+    if (fid == -1) {
+      _broadcastPrivateHelperFn(arg);
+    } else {
+      (*chpl_ftable[fid])(arg);
+    }
     return;
   }
 
@@ -464,7 +464,9 @@ void _gpc_thread_handler(void *arg)
   *done = 0;
   ginfo = (gpc_info_t *)arg;
 
-  if (ginfo->info->arg_size)
+  if (ginfo->info->fid == -1)
+    _broadcastPrivateHelperFn((struct __broadcast_private_helper*)(ginfo->info->arg));
+  else if (ginfo->info->arg_size)
     (*chpl_ftable[ginfo->info->fid])(ginfo->info->arg);
   else
     (*chpl_ftable[ginfo->info->fid])(0);
@@ -479,3 +481,10 @@ void _gpc_thread_handler(void *arg)
   chpl_free(ginfo->info, 0, 0);
   chpl_free(ginfo, 0, 0);
 } /* _gpc_thread_handler */
+
+
+void chpl_comm_armci_help_register_global_var(int i, void* addr) {
+  if (chpl_localeID == 0) {
+    globalPtrs[i] = addr;
+  }
+}

@@ -295,7 +295,7 @@ class Function {
             sumC[child(2)] = sc[k..2*k-1];
             
             // sub-trees can be done in parallel
-            if ( n+1 < log2(maxThreads) ) then
+            if ( n+1 < log2(maxThreadsPerLocale) ) then
                 cobegin {
                     on sumC.node2loc(child(1)) do reconstruct(child(1));
                     on sumC.node2loc(child(2)) do reconstruct(child(2));

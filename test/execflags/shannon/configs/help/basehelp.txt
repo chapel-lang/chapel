@@ -19,7 +19,7 @@ CONFIG VARS:
 ============
 Built-in config vars:
                  numLocales: int (configured to 1)
-                 maxThreads: int
+        maxThreadsPerLocale: int
             dataParTasksPerLocale: int
   dataParIgnoreRunningTasks: bool
       dataParMinGranularity: uint(64)
