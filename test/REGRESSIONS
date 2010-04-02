@@ -15,38 +15,9 @@
 general regressions
 ===================
 
-??? -- gets warning: 1-argument version of foo called (04/01/10)
-----------------------------------------------------------------
-[Error matching program output for spec/autogen/Generics.tex.tests/test_compilerDiagnostics]
-
-bradc forgot to implement dsiIndsIterSafeForRemoving for associative (04/01/10)
--------------------------------------------------------------------------------
-[Error matching compiler output for arrays/deitz/part4/test_array_of_associative_domains]
-[Error matching compiler output for associative/waynew/indef7]
-[Error matching compiler output for associative/waynew/indef9]
-[Error matching compiler output for associative/waynew/indef9a]
-[Error matching compiler output for studies/590o/kfm/solver-blc]
-[Error matching compiler output for studies/590o/kfm/solver]
-[Error matching compiler output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
-[Error matching compiler output for studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching compiler output for studies/madness/aniruddha/madchap/test_likepy]
-[Error matching compiler output for studies/madness/common/test_gaxpy]
-[Error matching compiler output for studies/madness/common/test_likepy]
-[Error matching compiler output for studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching compiler output for studies/madness/dinan/mad_chapel/test_likepy]
-[Error matching compiler output for users/jglewis/badGetModule]
-[Error matching compiler output for users/shetag/assocInRecord-blc]
-[Error matching compiler output for users/shetag/assocInRecord]
-[Error matching program output for spec/autogen/Generics.tex.tests/test_compilerDiagnostics]
-
 spuriously runs out of memory due to something other than threads
 -----------------------------------------------------------------
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (e.g., 03/31/10)
-
-times out consistently (03/27/10)
----------------------------------
-[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings  ) (0-2)]
-[Error: Timed out executing program studies/sudoku/dinan/sudoku]
 
 spurious failure
 ----------------
@@ -168,19 +139,9 @@ timeouts due to removal of -O
 block distribution regressions
 ==============================
 
-.good file needs updating to reflect warning? (03/31/10)
---------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex2]
-
-
 ===============================
 cyclic distribution regressions
 ===============================
-
-.good file needs updating to reflect warning? (03/31/10)
---------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
 
 spurious timeouts
 -----------------
@@ -208,6 +169,7 @@ no-local regressions
 
 internal error EXP0187 (04/01/10)
 ---------------------------------
+[Error matching compiler output for studies/hpcc/2008/stream-fragmented]
 [Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
 
 internal error SYM0172 (02/09/10)
@@ -233,9 +195,9 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-new whole-array assignment has been serialized regression (04/01/10)
---------------------------------------------------------------------
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock3]
+execution timeout (didn't get fixed with the others 04/02/10)
+-------------------------------------------------------------
+[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 -nl 1 (--cc-warnings  ) (0-2)]
 
 new spurious timeouts with SLED11 upgrade
 -----------------------------------------
@@ -250,6 +212,11 @@ new spurious timeouts with SLED11 upgrade
 [Error: Timed out compilation for multilocale/deitz/linked/test_linked3d] (e.g., 03/12/10, 03/13/10, 03/16/10, 03/29/10)
 [Error: Timed out compilation for multilocale/deitz/needMultiLocales/dist/test_block1d] (e.g., 03/12/10, 03/18/10, 03/20/10, 03/22/10, 03/23/10, 03/27/10, 03/27/10)
 [Error: Timed out executing program studies/hpcc/RA/marybeth/ra3] (e.g., 03/12/10, 03/15/10, 03/23/10, 03/29/10)
+
+new execution timeouts (04/02/10)
+---------------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
 
 new timeouts with SLED11 upgrade (03/12/10)
 -------------------------------------------
@@ -294,9 +261,9 @@ times out fairly consistently
 times out spuriously
 --------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09, 12/16/09, 12/19/09, 12/25/09, 12/29/09, 01/07/10, 01/08/10, 01/10/10, 01/23/10, 02/08/10, 02/10/10, 02/18/10, 02/20/10, 02/22/10, 02/26/10, 03/08/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10, 02/11/10, 02/16/10, 02/22/10, 03/08/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10, 02/11/10, 02/16/10, 02/22/10, 03/08/10, 04/02/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10, 02/14/10, 02/15/10, 02/17/10, 02/20/10, 02/22/10, 02/25/10, 02/27/10, 03/04/10, 03/06/10, 03/08/10, 03/09/10, 03/11/10, 03/12/10, 03/19/10, 03/20/10, 03/22/10, 03/23/10, 03/23/10, 03/27/10)
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09, 02/02/10, 04/01/10)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09, 02/02/10, 04/01/10, 04/02/10)
 [Error: Timed out executing program users/agnieszka/test1] (e.g., 01/08/10)
 [Error: Timed out executing program users/agnieszka/test2] (e.g., 10/22/09, 11/12/09, 12/05/09, 12/09/09, 12/15/09, 12/18/09, 12/21/09, 12/25/09, 01/04/10, 01/05/10, 01/06/10, 01/10/10, 01/24/10, 01/29/10, 02/14/10, 02/16/10)
 
@@ -323,6 +290,11 @@ GASNet unable to start polling thread
 ==================
 pvm-specific tests
 ==================
+
+(spurious?) "address already in use" failures (04/02/10)
+--------------------------------------------------------
+[Error matching program output for release/examples/tutorials/opaque]
+[Error matching program output for release/examples/tutorials/timers]
 
 timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 ----------------------------------------------------------------------
@@ -359,6 +331,15 @@ missing 1-tuple acccessor (03/03/10)
 =======================
 baseline-specific tests
 =======================
+
+execution timeout (didn't get fixed with the others 04/02/10)
+-------------------------------------------------------------
+[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 -nl 1 (--cc-warnings  ) (0-2)]
+
+output incorrect (noticed 04/02/10, but was already unresolved)
+---------------------------------------------------------------
+[Error matching program output for arrays/deitz/parallelism/test_stream_is_parallel]
+[Error matching program output for arrays/deitz/part7/test_descriptor_frees]
 
 output incorrect
 ----------------
