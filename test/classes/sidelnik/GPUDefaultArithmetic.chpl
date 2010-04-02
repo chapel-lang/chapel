@@ -591,7 +591,7 @@ def GPUArithmeticArr.writeThis(f: Writer) {
 
 def main() {
 	const GPUBlockDist = new GPUDist();
-	const space : domain(1) distributed GPUBlockDist = [1..100];
+	const space : domain(1) dmapped GPUBlockDist = [1..100];
 
 	var A, B : [space] int;
 }

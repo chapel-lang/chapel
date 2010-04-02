@@ -11,7 +11,7 @@ var alpha = 3.0;
 //const GPUBlockDist = new GPUDist(rank=1,bbox=[1..m], threadsPerBlock=threadsPerBlock);
 const GPUBlockDist = new GPUDist(rank=1, threadsPerBlock=threadsPerBlock);
 
-const space: domain(1, int(64)) distributed GPUBlockDist = [1..m];
+const space: domain(1, int(64)) dmapped GPUBlockDist = [1..m];
 
 var A, B, C : [space] real;
 

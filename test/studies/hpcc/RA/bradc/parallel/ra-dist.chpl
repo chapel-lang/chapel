@@ -26,13 +26,13 @@ config const printParams = true,
 def main() {
   printConfiguration();
 
-  const TableDist = new dist(new Block(rank=1, idxType=indexType, boundingBox=[0..m-1], targetLocales=Locales)),
-       UpdateDist = new dist(new Block(rank=1, idxType=indexType, boundingBox=[0..N_U-1], targetLocales=Locales));
+  const TableDist = new dmap(new Block(rank=1, idxType=indexType, boundingBox=[0..m-1], targetLocales=Locales)),
+       UpdateDist = new dmap(new Block(rank=1, idxType=indexType, boundingBox=[0..N_U-1], targetLocales=Locales));
 
-  const TableSpace: domain(1, indexType) distributed TableDist = [0..m-1];
+  const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1];
   var T: [TableSpace] elemType;
 
-  const UpdateSpace: domain(1, indexType) distributed UpdateDist = [0..N_U-1];
+  const UpdateSpace: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
 
   const startTime = getCurrentTime();
 

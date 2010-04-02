@@ -47,7 +47,7 @@ if verbose then writeln(A2D64);
 writeln("alias1 2D64: ", errs, " errors");
 
 
-const TD1D: domain(1) distributed Dist1D = Space1 - (o5);
+const TD1D: domain(1) dmapped Dist1D = Space1 - (o5);
 var TA1D: [TD1D] int;
 var AA11 => TA1D;
 AA11 = c1;
@@ -57,7 +57,7 @@ for i in TD1D do
 if verbose then writeln(TA1D);
 writeln("alias2: ", errs, " errors");
 
-const TD2D: domain(2) distributed Dist2D = Space2 - (o5, o5);
+const TD2D: domain(2) dmapped Dist2D = Space2 - (o5, o5);
 var TA2D: [TD2D] int;
 var AA22 => TA2D;
 AA22 = c2;
@@ -67,7 +67,7 @@ for i in TD2D do
 if verbose then writeln(TA2D);
 writeln("alias2 2D: ", errs, " errors");
 
-const TD3D: domain(3) distributed Dist3D = Space3 - (o5, o5, o5);
+const TD3D: domain(3) dmapped Dist3D = Space3 - (o5, o5, o5);
 var TA3D: [TD3D] int;
 var AA33 => TA3D;
 AA33 = c3;
@@ -77,7 +77,7 @@ for i in TD3D do
 if verbose then writeln(TA3D);
 writeln("alias2 3D: ", errs, " errors");
 
-const TD4D: domain(4) distributed Dist4D = Space4 - (o5, o5, o5, o5);
+const TD4D: domain(4) dmapped Dist4D = Space4 - (o5, o5, o5, o5);
 var TA4D: [TD4D] int;
 var AA44 => TA4D;
 AA44 = c4;
@@ -87,7 +87,7 @@ for i in TD4D do
 if verbose then writeln(TA4D);
 writeln("alias2 4D: ", errs, " errors");
 
-const TD2D64: domain(2, int(64)) distributed Dist2D64 = Space2D64 - (o5:int(64), o5:int(64));
+const TD2D64: domain(2, int(64)) dmapped Dist2D64 = Space2D64 - (o5:int(64), o5:int(64));
 var TA2D64: [TD2D64] int;
 var AA22D64 => TA2D64;
 AA22D64 = c2d64;

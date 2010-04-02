@@ -1,11 +1,11 @@
 use driver;
 config const shift = o5-1;
 
-const TDom1D: domain(1) distributed Dist1D = Space1 - (shift);
-const TDom2D: domain(2) distributed Dist2D = Space2 - (shift,shift);
-const TDom3D: domain(3) distributed Dist3D = Space3 - (shift,shift,shift);
-const TDom4D: domain(4) distributed Dist4D = Space4 - (shift,shift,shift,shift);
-const TDom2D64: domain(2,int(64)) distributed Dist2D64 = Space2D64 - (shift:int(64),shift:int(64));
+const TDom1D: domain(1) dmapped Dist1D = Space1 - (shift);
+const TDom2D: domain(2) dmapped Dist2D = Space2 - (shift,shift);
+const TDom3D: domain(3) dmapped Dist3D = Space3 - (shift,shift,shift);
+const TDom4D: domain(4) dmapped Dist4D = Space4 - (shift,shift,shift,shift);
+const TDom2D64: domain(2,int(64)) dmapped Dist2D64 = Space2D64 - (shift:int(64),shift:int(64));
 
 var TA1D: [TDom1D] int;
 var TA2D: [TDom2D] int;

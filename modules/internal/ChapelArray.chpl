@@ -215,10 +215,10 @@ def chpl__buildDomainExpr(ranges: range(?) ...?rank) {
 //
 def chpl__distributed(d: _distribution, dom: domain) {
   if isArithmeticDom(dom) {
-    var distDom: domain(dom.rank, dom._value.idxType, dom._value.stridable) distributed d = dom;
+    var distDom: domain(dom.rank, dom._value.idxType, dom._value.stridable) dmapped d = dom;
     return distDom;
   } else {
-    var distDom: domain(dom._value.idxType) distributed d = dom;
+    var distDom: domain(dom._value.idxType) dmapped d = dom;
     return distDom;
   }
 }
@@ -316,7 +316,7 @@ def isSparseArr(a: []) param return isSparseDom(a.domain);
 // Support for distributions
 //
 pragma "syntactic distribution"
-record dist { }
+record dmap { }
 
 def chpl__buildDistType(type t) type where t: BaseDist {
   var x: t;
@@ -521,7 +521,7 @@ record _domain {
         newRanges(i) = 1..0;
       }
     }
-    var d = [(...newRanges)] distributed newDist;
+    var d = [(...newRanges)] dmapped newDist;
     return d;
   }
 
@@ -696,7 +696,7 @@ record _domain {
 }
 
 def _getNewDist(value) {
-  return new dist(value);
+  return new dmap(value);
 }
 
 def +(d: domain, i: index(d)) {
@@ -843,9 +843,9 @@ record _array {
       if d.dim(i).length != _value.dom.dsiDim(i).length then
         halt("extent in dimension ", i, " does not match actual");
 
-    var newDist = new dist(_value.dom.dist.dsiCreateReindexDist(d.dims(),
+    var newDist = new dmap(_value.dom.dist.dsiCreateReindexDist(d.dims(),
                                                                 _value.dom.dsiDims()));
-    var newDom = [(...d.dims())] distributed newDist;
+    var newDom = [(...d.dims())] dmapped newDist;
     var x = _value.dsiReindex(newDom._value);
     x._arrAlias = _value;
     pragma "dont disable remote value forwarding"

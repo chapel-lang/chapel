@@ -1,6 +1,6 @@
 //
 // This is a copy of the version in release/examples as of the 1.0.2 release
-//  with the arrays distributed by Dist2D and the local block removed in
+//  with the arrays domain mapped by Dist2D and the local block removed in
 //  schurComplement.
 //
 use driver;
@@ -64,9 +64,9 @@ def main() {
   // subdomain that is created by slicing into MatVectSpace,
   // inheriting all of its rows and its low column bound.  As our
   // standard distribution library is filled out, MatVectSpace will be
-  // distributed using a BlockCyclic(blkSize) distribution.
+  // domain mapped using a BlockCyclic(blkSize) distribution.
   //
-  const MatVectSpace: domain(2, indexType) distributed Dist2D = [1..n, 1..n+1],
+  const MatVectSpace: domain(2, indexType) dmapped Dist2D = [1..n, 1..n+1],
         MatrixSpace = MatVectSpace[.., ..n];
 
   var Ab : [MatVectSpace] elemType,  // the matrix A and vector b
@@ -194,11 +194,11 @@ def schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
   // they look something like the following:
   //
   //var replAbD: domain(2) 
-  //            distributed new Dimensional(BlkCyc(blkSize), Replicated)) 
+  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) 
   //          = AbD[ptSol.., 1..#blkSize];
   //
-  const replAD: domain(2) distributed Dist2D = AbD[ptSol.., ptOp..#blkSize],
-        replBD: domain(2) distributed Dist2D = AbD[ptOp..#blkSize, ptSol..];
+  const replAD: domain(2) dmapped Dist2D = AbD[ptSol.., ptOp..#blkSize],
+        replBD: domain(2) dmapped Dist2D = AbD[ptOp..#blkSize, ptSol..];
     
   const replA : [replAD] elemType = Ab[ptSol.., ptOp..#blkSize],
         replB : [replBD] elemType = Ab[ptOp..#blkSize, ptSol..];
@@ -245,7 +245,7 @@ def dgemm(p: indexType,       // number of rows in A
 // pivot vector accordingly
 //
 def panelSolve(Ab: [] ?t,
-               panel: domain(2, indexType) distributed Dist2D,
+               panel: domain(2, indexType) dmapped Dist2D,
                piv: [] indexType) {
   const pnlRows = panel.dim(1),
         pnlCols = panel.dim(2);
@@ -294,7 +294,7 @@ def panelSolve(Ab: [] ?t,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-def updateBlockRow(Ab: [] ?t, tl: domain(2) distributed Dist2D, tr: domain(2) distributed Dist2D) {
+def updateBlockRow(Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) dmapped Dist2D) {
   const tlRows = tl.dim(1),
         tlCols = tl.dim(2),
         trRows = tr.dim(1),

@@ -1,7 +1,7 @@
 use driver;
 
 def foo(param rank, type idxType, Dist, extent) {
-  const D: domain(rank, idxType) distributed Dist = rankDomain(rank, extent);
+  const D: domain(rank, idxType) dmapped Dist = rankDomain(rank, extent);
   var A: [D] real;
 
   for i in rankDomain(rank, extent) do

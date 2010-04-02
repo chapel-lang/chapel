@@ -6,10 +6,10 @@ const sizeRange = 0..#(size : int(64));
 
 
 def printBlockLocaleAssignments(locs) {
-  const blockDist = new dist(new Block(rank=2, idxType=int(64),
+  const blockDist = new dmap(new Block(rank=2, idxType=int(64),
                                                 targetLocales=locs,
                                                 boundingBox=[sizeRange, sizeRange]));
-  const blockDom : domain(2, int(64)) distributed blockDist = [sizeRange, sizeRange];
+  const blockDom : domain(2, int(64)) dmapped blockDist = [sizeRange, sizeRange];
 
   var array : [blockDom] int;
 

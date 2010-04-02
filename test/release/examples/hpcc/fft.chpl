@@ -73,8 +73,8 @@ def main() {
   // to m/4-1 stored using the block distribution TwiddleDist.
   // Twiddles is the vector of twiddle values.
   //
-  const TwiddleDist = new dist(new Block(boundingBox=[0..m/4-1]));
-  const TwiddleDom: domain(1, idxType) distributed TwiddleDist = [0..m/4-1];
+  const TwiddleDist = new dmap(new Block(boundingBox=[0..m/4-1]));
+  const TwiddleDom: domain(1, idxType) dmapped TwiddleDist = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
   //
@@ -91,8 +91,8 @@ def main() {
   // z (used to store the input vector) and ZBlk (used for the first
   // half of the FFT phases).
   //
-  const BlkDist = new dist(new Block(boundingBox=ProblemSpace));
-  const BlkDom: domain(1, idxType) distributed BlkDist = ProblemSpace;
+  const BlkDist = new dmap(new Block(boundingBox=ProblemSpace)); 
+  const BlkDom: domain(1, idxType) dmapped BlkDist = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
   //
@@ -102,8 +102,8 @@ def main() {
   // to define the Zcyc vector, used for the second half of the FFT
   // phases.
   //
-  const CycDist = new dist(new Cyclic(1, idxType));
-  const CycDom: domain(1, idxType) distributed CycDist = ProblemSpace;
+  const CycDist = new dmap(new Cyclic(1, idxType)); 
+  const CycDom: domain(1, idxType) dmapped CycDist = ProblemSpace;
   var Zcyc: [CycDom] elemType;
 
   initVectors(Twiddles, z);            // initialize twiddles and input vector z

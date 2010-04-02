@@ -187,7 +187,7 @@ def schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
   // they look something like the following:
   //
   //var replAbD: domain(2) 
-  //            distributed new Dimensional(BlkCyc(blkSize), Replicated)) 
+  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) 
   //          = AbD[ptSol.., 1..#blkSize];
   //
   const replAD: domain(2) = AbD[ptSol.., ptOp..#blkSize],

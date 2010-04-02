@@ -1,10 +1,10 @@
 def _domain.callNewDist() {
-  var x = new dist(defaultDist._value);
+  var x = new dmap(defaultDist._value);
   return x;
 }
 
 def callNewDistOutsideDomain(val) {
-  var x = new dist(val);
+  var x = new dmap(val);
   return x;
 }
 

@@ -2,14 +2,14 @@
 // privateSpace.chpl: This example demonstrates the use of PrivateSpace to
 // create an array with a single element per locale.  Using comm diagnostics,
 // we'll see how to compute each locale's local sum of all the elements in a
-// Block-distributed array on every locale without communication.
+// Block-dmapped array on every locale without communication.
 //
 use BlockDist, PrivateDist;
 
 config var n: int = 8;
 
 var P: [PrivateSpace] int;
-var D: domain(1) distributed new dist(new Block(boundingBox=[1..n])) = [1..n];
+var D: domain(1) dmapped new dmap(new Block(boundingBox=[1..n])) = [1..n];
 var A: [D] int;
 
 startCommDiagnostics();

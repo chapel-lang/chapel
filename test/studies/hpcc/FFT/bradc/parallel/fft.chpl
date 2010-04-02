@@ -27,11 +27,11 @@ def main() {
   printConfiguration();
 
   const TwiddleDist = new Block1D(bbox=[0..m/4-1]);
-  const TwiddleDom: domain(1, int(64)) distributed TwiddleDist = [0..m/4-1];
+  const TwiddleDom: domain(1, int(64)) dmapped TwiddleDist = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
   const BlockDist = new Block1D(bbox=[0..m-1]);
-  const ProblemDom: domain(1, int(64)) distributed BlockDist = [0..m-1];
+  const ProblemDom: domain(1, int(64)) dmapped BlockDist = [0..m-1];
   var Z, z: [ProblemDom] elemType;
 
   initVectors(Twiddles, z);

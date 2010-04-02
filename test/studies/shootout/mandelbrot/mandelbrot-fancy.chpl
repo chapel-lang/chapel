@@ -19,11 +19,11 @@ def main()
     myLocales(loc) = Locales(loc % numLocales);
   }
 
-  var ByteDist = new dist(new Block(rank=2,idxType=int(64),
+  var ByteDist = new dmap(new Block(rank=2,idxType=int(64),
                                     targetLocales=reshape(myLocales, [1..#(bytesRequired:int), 1..1]),
                                     boundingBox=[sizeRange, byteRange]));
 
-  var ByteDom: domain(2, int(64)) distributed ByteDist = [sizeRange, byteRange];
+  var ByteDom: domain(2, int(64)) dmapped ByteDist = [sizeRange, byteRange];
   var bytes : [ByteDom] uint(8);
 
 

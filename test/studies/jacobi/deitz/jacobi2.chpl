@@ -3,7 +3,7 @@ config const epsilon = 1.0e-5;
 
 const stencil = makeList((-1, 0), (1, 0), (0, -1), (0, 1));
 
-const D = [1..n, 1..n] distributed(block);
+const D = [1..n, 1..n] dmapped(block);
 const BigD = D.expand(1);
 const SouthD = D.exterior(1, 0);
 
