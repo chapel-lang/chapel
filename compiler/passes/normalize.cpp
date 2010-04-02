@@ -174,8 +174,13 @@ void normalize(void) {
   insertUseForExplicitModuleCalls();
 
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol && call->isPrimitive(PRIM_NEW))
+    if (call->parentSymbol && call->isPrimitive(PRIM_NEW)) {
+      if (CallExpr* classCall = toCallExpr(call->get(1)))
+        if (UnresolvedSymExpr* use = toUnresolvedSymExpr(classCall->baseExpr))
+          if (isalpha(use->unresolved[0]))
+            USR_FATAL(call, "invalid use of 'new' on %s", use->unresolved);
       USR_FATAL(call, "invalid use of 'new'");
+    }
   }
 
   // handle side effects on sync/single variables
