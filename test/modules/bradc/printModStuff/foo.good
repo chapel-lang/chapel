@@ -6,7 +6,7 @@ module search dirs:
   subdir3
   subdir4/subdir
   $CHPL_HOME/modules/standard
-  $CHPL_HOME/modules/distributions
+  $CHPL_HOME/modules/dmaps
 end of module search dirs
 Parsing module files:
   subdir/bar.chpl
@@ -19,7 +19,7 @@ Parsing module files:
   ./bah.chpl
   $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/Math.chpl
-  $CHPL_HOME/modules/distributions/DSIUtil.chpl
+  $CHPL_HOME/modules/dmaps/DSIUtil.chpl
   $CHPL_HOME/modules/standard/List.chpl
   $CHPL_HOME/modules/standard/Sort.chpl
   $CHPL_HOME/modules/standard/Search.chpl

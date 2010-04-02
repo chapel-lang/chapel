@@ -233,7 +233,7 @@ def Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
       j += 1;
     }
   }
-  const partialLocIdx = idxToLocaleInd(collapsedDimInds);
+  const partialLocIdx = ind2locInd(collapsedDimInds);
 
 
   for param i in 1..args.size {
@@ -254,7 +254,7 @@ def Cyclic.writeThis(x: Writer) {
     x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ", locDist(locid).myChunk); 
 }
 
-def Cyclic.idxToLocaleInd(i: idxType) {
+def Cyclic.ind2locInd(i: idxType) {
   const numLocs:idxType = targetLocDom.numIndices:idxType;
   // this is wrong if i is less than lowIdx
   //return ((i - lowIdx(1)) % numLocs):int;
@@ -262,7 +262,7 @@ def Cyclic.idxToLocaleInd(i: idxType) {
   return mod(mod(i, numLocs) - mod(lowIdx(1), numLocs), numLocs):int;
 }
 
-def Cyclic.idxToLocaleInd(ind: rank*idxType) {
+def Cyclic.ind2locInd(ind: rank*idxType) {
   var x: rank*int;
   for param i in 1..rank {
     var dimLen = targetLocDom.dim(i).length;
@@ -276,11 +276,11 @@ def Cyclic.idxToLocaleInd(ind: rank*idxType) {
 }
 
 def Cyclic.dsiIndexLocale(i: idxType) where rank == 1 {
-  return targetLocs(idxToLocaleInd(i));
+  return targetLocs(ind2locInd(i));
 }
 
 def Cyclic.dsiIndexLocale(i: rank*idxType) {
-  return targetLocs(idxToLocaleInd(i));
+  return targetLocs(ind2locInd(i));
 }
 
 
@@ -571,7 +571,7 @@ def CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
           j += 1;
         }
       }
-      locArrInd = dom.dist.idxToLocaleInd(collapsedDims);
+      locArrInd = dom.dist.ind2locInd(collapsedDims);
       j = 1;
       // Now that the locArrInd values are known for the collapsed dimensions
       // Pull the rest of the dimensions values from ind
@@ -619,7 +619,7 @@ def CyclicArr.localSlice(ranges) {
     low(i) = ranges(i).low;
   }
 
-  var A => locArr(dom.dist.idxToLocaleInd(low)).myElems((...ranges));
+  var A => locArr(dom.dist.ind2locInd(low)).myElems((...ranges));
   return A;
 }
 
@@ -664,11 +664,11 @@ def CyclicArr.dsiAccess(i: idxType) var where rank == 1 {
     if myLocArr != nil && myLocArr.locDom.myBlock.member(i) then
       return myLocArr.this(i);
   }
-  return locArr(dom.dist.idxToLocaleInd(i))(i);
+  return locArr(dom.dist.ind2locInd(i))(i);
 }
 
 def CyclicArr.dsiAccess(i:rank*idxType) var {
-  return locArr(dom.dist.idxToLocaleInd(i))(i);
+  return locArr(dom.dist.ind2locInd(i))(i);
 }
 
 def CyclicArr.these() var {
@@ -739,7 +739,7 @@ def CyclicArr.these(param tag: iterator, follower, param fast: bool = false) var
     t(i) = ((follower(i).low*wholestride)..(follower(i).high*wholestride) by (follower(i).stride*wholestride)) + dom.whole.dim(i).low;
   }
   const followThis = [(...t)];
-  const arrSection = locArr(dom.dist.idxToLocaleInd(followThis.low));
+  const arrSection = locArr(dom.dist.ind2locInd(followThis.low));
   if fast {
     local {
       for e in arrSection.myElems(followThis) do
