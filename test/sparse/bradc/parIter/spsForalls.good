@@ -1,0 +1,22 @@
+spsForalls.chpl:12: warning: parallel iteration over sparse domain has been serialized (see note in $CHPL_HOME/STATUS)
+spsForalls.chpl:17: warning: parallel iteration over sparse array has been serialized (see note in $CHPL_HOME/STATUS)
+A is: 1.1
+2.2
+3.3
+4.4
+5.5
+6.6
+7.7
+8.8
+9.9
+
+A is: -1.1
+-2.2
+-3.3
+-4.4
+-5.5
+-6.6
+-7.7
+-8.8
+-9.9
+

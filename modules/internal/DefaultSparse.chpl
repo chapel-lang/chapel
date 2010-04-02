@@ -42,10 +42,13 @@ class DefaultSparseDom: BaseSparseDom {
 
   def these(param tag: iterator) where tag == iterator.leader {
     compilerWarning("parallel iteration over sparse domain has been serialized (see note in $CHPL_HOME/STATUS)");
-    yield true;
+    yield this;
   }
 
-  def these(param tag: iterator, follower: bool) where tag == iterator.follower {
+  def these(param tag: iterator, follower: DefaultSparseDom) where tag == iterator.follower {
+    if (follower != this) then
+      halt("Sparse domains can't be zippered with anything other than themselves");
+
     for i in 1..nnz do
       yield indices(i);
   }
@@ -222,6 +225,22 @@ class DefaultSparseArr: BaseArr {
 
   def these() var {
     for e in data[1..dom.nnz] do yield e;
+  }
+
+  def these(param tag: iterator) where tag == iterator.leader {
+    compilerWarning("parallel iteration over sparse array has been serialized (see note in $CHPL_HOME/STATUS)");
+    yield this;
+  }
+
+  def these(param tag: iterator, follower: DefaultSparseArr) var where tag == iterator.follower {
+    if (follower != this) then
+      halt("Sparse domains can't be zippered with anything other than themselves");
+
+    for e in data[1..dom.nnz] do yield e;
+  }
+
+  def these(param tag: iterator, follower) where tag == iterator.follower {
+    compilerError("Sparse iterators can't yet be zippered with others");
   }
 
   def IRV var {
