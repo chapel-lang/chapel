@@ -403,11 +403,11 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
 
 
 //
-// return true if expr is in more local blocks than unlocal blocks,
+// return the number of local blocks that lexically enclose 'expr',
 // stopping the search outward when encountering the outer block
 //
-static bool
-isInLocal(Expr* expr, BlockStmt* outer = NULL) {
+static int
+countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
   int count = 0;
   for (Expr* tmp = expr; tmp && tmp != outer; tmp = tmp->parentExpr) {
     if (BlockStmt* blk = toBlockStmt(tmp)) {
@@ -417,7 +417,7 @@ isInLocal(Expr* expr, BlockStmt* outer = NULL) {
         count--;
     }
   }
-  return count >= 1;
+  return count;
 }
 
 
@@ -551,9 +551,13 @@ expandIteratorInline(CallExpr* call) {
             call->insertBefore(new DefExpr(yieldedIndex));
             call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
             Expr* loopBodyFnArgCall = new CallExpr(PRIM_FTABLE_CALL, loopBodyFnArg, yieldedIndex, loopBodyFnArgArgs);
-            if (isInLocal(call)) {
+            if (int count = countEnclosingLocalBlocks(call)) {
               BlockStmt* blk = new BlockStmt(loopBodyFnArgCall);
               blk->blockInfo = new CallExpr(PRIM_BLOCK_UNLOCAL);
+              for (int i = 1; i < count; i++) {
+                blk = new BlockStmt(blk);
+                blk->blockInfo = new CallExpr(PRIM_BLOCK_UNLOCAL);
+              }
               call->replace(blk);
             } else
               call->replace(loopBodyFnArgCall);
@@ -596,9 +600,11 @@ expandIteratorInline(CallExpr* call) {
         map.put(index, yieldedIndex);
         BlockStmt* bodyCopy = body->copy(&map);
 
-        if (isInLocal(call, ibody)) {
-          bodyCopy = new BlockStmt(bodyCopy);
-          bodyCopy->blockInfo = new CallExpr(PRIM_BLOCK_UNLOCAL);
+        if (int count = countEnclosingLocalBlocks(call, ibody)) {
+          for (int i = 0; i < count; i++) {
+            bodyCopy = new BlockStmt(bodyCopy);
+            bodyCopy->blockInfo = new CallExpr(PRIM_BLOCK_UNLOCAL);
+          }
         }
 
         Symbol* yieldedSymbol = toSymExpr(call->get(1))->var;
