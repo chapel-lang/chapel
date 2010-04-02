@@ -205,33 +205,36 @@ void insertLineNumbers() {
         (fn->numFormals() > 1 && fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) ||
         (fn->numFormals() > 1 && fn->hasFlag(FLAG_BEGIN_BLOCK))) {
 
-      DefExpr* filenameFormal = toDefExpr(fn->formals.tail);
-      filenameFormal->remove();
-      DefExpr* linenoFormal = toDefExpr(fn->formals.tail);
-      linenoFormal->remove();
-      DefExpr* argClassFormal = toDefExpr(fn->formals.tail);
+      DefExpr* fileArg = toDefExpr(fn->formals.tail);
+      fileArg->remove();
+      DefExpr* lineArg = toDefExpr(fn->formals.tail);
+      lineArg->remove();
+      DefExpr* bundleArg = toDefExpr(fn->formals.tail);
+
+      ClassType* bundleType = toClassType(bundleArg->sym->typeInfo());
+      VarSymbol* lineField = newTemp("_ln", lineArg->sym->typeInfo());
+      bundleType->fields.insertAtTail(new DefExpr(lineField));
+      VarSymbol* fileField = newTemp("_fn", fileArg->sym->typeInfo());
+      bundleType->fields.insertAtTail(new DefExpr(fileField));
+
+      VarSymbol* fileLocal = newTemp("_fn", fileArg->sym->typeInfo());
+      VarSymbol* lineLocal = newTemp("_ln", lineArg->sym->typeInfo());
+      fn->insertAtHead("'move'(%S, '.v'(%S, %S))", fileLocal, bundleArg->sym, fileField);
+      fn->insertAtHead(new DefExpr(fileLocal));
+      fn->insertAtHead("'move'(%S, '.v'(%S, %S))", lineLocal, bundleArg->sym, lineField);
+      fn->insertAtHead(new DefExpr(lineLocal));
+
+      SymbolMap update;
+      update.put(fileArg->sym, fileLocal);
+      update.put(lineArg->sym, lineLocal);
+      update_symbols(fn->body, &update);
 
       forv_Vec(CallExpr, call, *fn->calledBy) {
-        Expr* filename = call->argList.tail->remove();
-        Expr* lineno = call->argList.tail->remove();
-        Expr* argClass = call->argList.tail;
-        ClassType* ct = toClassType(argClass->typeInfo());
-        VarSymbol* linenoField = newTemp("_ln", lineno->typeInfo());
-        ct->fields.insertAtTail(new DefExpr(linenoField));
-        VarSymbol* filenameField = newTemp("_fn", filename->typeInfo());
-        ct->fields.insertAtTail(new DefExpr(filenameField));
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, argClass->copy(), linenoField, lineno));
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, argClass->copy(), filenameField, filename));
-        VarSymbol* filenameLocal = newTemp("_fn", filename->typeInfo());
-        VarSymbol* linenoLocal = newTemp("_ln", lineno->typeInfo());
-        fn->insertAtHead(new CallExpr(PRIM_MOVE, filenameLocal, new CallExpr(PRIM_GET_MEMBER_VALUE, argClassFormal->sym, filenameField)));
-        fn->insertAtHead(new DefExpr(filenameLocal));
-        fn->insertAtHead(new CallExpr(PRIM_MOVE, linenoLocal, new CallExpr(PRIM_GET_MEMBER_VALUE, argClassFormal->sym, linenoField)));
-        fn->insertAtHead(new DefExpr(linenoLocal));
-        SymbolMap update;
-        update.put(filenameFormal->sym, filenameLocal);
-        update.put(linenoFormal->sym, linenoLocal);
-        update_symbols(fn->body, &update);
+        Expr* fileActual = call->argList.tail->remove();
+        Expr* lineActual = call->argList.tail->remove();
+        Expr* bundleActual = call->argList.tail;
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(), lineField, lineActual));
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(), fileField, fileActual));
       }
     }
   }
