@@ -54,7 +54,7 @@ config const printParams = true,
 // across the locales.
 //
 const TableDist = new dist(new Block(boundingBox=[0..m-1])),
-      UpdateDist = new dist(new Block(boundingBox=[0..N_U-1]);
+      UpdateDist = new dist(new Block(boundingBox=[0..N_U-1]));
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
