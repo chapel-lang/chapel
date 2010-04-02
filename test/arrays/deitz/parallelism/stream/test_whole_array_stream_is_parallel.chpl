@@ -21,12 +21,12 @@ def main() {
   chpl__testParStart();
   for trial in 1..numTrials {
     writeln("BEGIN TRIAL ", trial);
-    forall (a, b, c) in (A, B, C) do
-      a = b + alpha * c;
+    A = B + alpha * C;
     writeln("END TRIAL ", trial);
   }
   chpl__testParStop();
 }
+
 
 //
 // Initialize vectors B and C using a random stream of values and
