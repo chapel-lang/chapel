@@ -11,6 +11,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <setjmp.h>
 
 #include <chpl_md.h>
 #include <comm_printf_macros.h>

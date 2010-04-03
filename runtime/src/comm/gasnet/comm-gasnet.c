@@ -46,7 +46,7 @@ typedef struct {
   char data[0];  // data
 } priv_bcast_large_t;
 
-static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
+void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = buf;
 
   if (chpl_verbose_comm) {
@@ -80,7 +80,7 @@ static void fork_wrapper(fork_t *f) {
   chpl_free(f, 0, 0);
 }
 
-static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
+void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = (fork_t*)chpl_malloc(nbytes, sizeof(char), CHPL_RT_MD_AM_FORK_DATA, 0, 0);
   memcpy(f, buf, nbytes);
   CHPL_BEGIN((chpl_fn_p)fork_wrapper, (void*)f, true, f->serial_state, NULL);
@@ -102,7 +102,7 @@ static void fork_large_wrapper(fork_t* f) {
 ////GASNET - can we send as much of user data as possible initially
 ////           hide data copy by making get non-blocking
 ////GASNET - can we allocate f big enough so as not to need malloc in wrapper
-static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
+void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_malloc(1, nbytes, CHPL_RT_MD_AM_FORK_LARGE_DATA, 0, 0);
   memcpy(f, buf, nbytes);
   CHPL_BEGIN((chpl_fn_p)fork_large_wrapper, (void*)f,
@@ -117,7 +117,7 @@ static void fork_nb_wrapper(fork_t *f) {
   chpl_free(f, 0, 0);
 }
 
-static void AM_fork_nb(gasnet_token_t  token,
+void AM_fork_nb(gasnet_token_t  token,
                         void           *buf,
                         size_t          nbytes) {
   fork_t *f = (fork_t*)chpl_malloc(nbytes, sizeof(char),
@@ -140,36 +140,36 @@ static void fork_nb_large_wrapper(fork_t* f) {
   chpl_free(arg, 0, 0);
 }
 
-static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
+void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_malloc(1, nbytes, CHPL_RT_MD_AM_NB_FORK_LARGE_DATA, 0, 0);
   memcpy(f, buf, nbytes);
   CHPL_BEGIN((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
              true, f->serial_state, NULL);
 }
 
-static void AM_signal(gasnet_token_t token, void* buf, size_t nbytes) {
+void AM_signal(gasnet_token_t token, void* buf, size_t nbytes) {
   int **done = (int**)buf;
   **done = 1;
 }
 
-static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
+void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_t* pbp = buf;
   memcpy(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
 }
 
-static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) {
+void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_large_t* pblp = buf;
   memcpy((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
 }
 
-static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
+void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_free(*(void**)(*(fork_t**)buf)->arg, 0, 0);
   chpl_free(*(void**)buf, 0, 0);
 }
 
 // this is currently unused; it's intended to be used to implement
 // exit_any with cleanup on all nodes. 
-static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
+void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
   int **status = (int**)buf;
   chpl_internal_error("clean exit_any is not implemented.");
   // here we basically need to call chpl_exit_all, but we need to

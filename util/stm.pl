@@ -7,7 +7,7 @@ $utildirname = dirname($0);
 $preset_stm=$ENV{'CHPL_STM'};
 
 if ($preset_stm eq "") {
-    $stm = "none";
+    $stm = "gtm";
 } else {
     $stm = $preset_stm;
 }

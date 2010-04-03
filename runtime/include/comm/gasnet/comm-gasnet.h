@@ -31,16 +31,16 @@
 #define FREE          136 // free data at addr
 #define EXIT_ANY      137 // free data at addr
 
-static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes);
-static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes);
-static void AM_fork_nb(gasnet_token_t token, void* buf, size_t nbytes);
-static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes);
-static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes);
-static void AM_signal(gasnet_token_t token, void* buf, size_t nbytes);
-static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes);
-static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes);
-static void AM_free(gasnet_token_t token, void* buf, size_t nbytes);
-static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_fork(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_fork_nb(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_signal(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_free(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes);
 
 
 #ifdef CHPL_STM_GTM

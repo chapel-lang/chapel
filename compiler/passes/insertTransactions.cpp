@@ -348,7 +348,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     break;
   case PRIM_RETURN:
     // FIXME: make sure we are doing transactional scoping right
-    call->insertBefore(new CallExpr(PRIM_TX_COMMIT, tx));
+    //    call->insertBefore(new CallExpr(PRIM_TX_COMMIT, tx));
     break;
   case PRIM_SETCID: {
     SymExpr* se = toSymExpr(call->get(1));

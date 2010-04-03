@@ -1,5 +1,5 @@
 //use STMUtil;
-config param atomicSupport: bool = false;
+config param atomicSupport: bool = true;
 
 config param CHPL_HOST_PLATFORM: string = "unset";
 config param CHPL_TARGET_PLATFORM: string = "unset";

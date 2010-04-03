@@ -1,13 +1,4 @@
 //
-// chplstm.h
-// This is the highest-level STM interface file. 
-//
-// TODO:
-//   add comments
-//   ensure load/store/get/put interface works for: none, gtm-stm (multicore/dist)
-//   load/store call the appropriate comm interface      
-//   do we need separate versions for start/commit/abort: ie. local vs global ?
-//
 // LESSONS LEARNT: no point fixing interfaces to early.
 //
 
@@ -16,12 +7,10 @@
 
 #ifndef LAUNCHER
 
-#include <setjmp.h>
 #include CHPL_STM_H
 
 typedef chpl_stm_tx_t* chpl_stm_tx_p;
-typedef jmp_buf* chpl_stm_tx_env_p;
-typedef int32_t proc_t;
+typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;
 
 #define CHPL_STM_ALLOC_PERMIT_ZERO(tx, size , description, ln, fn)	\
   ((s == 0) ? NULL : chpl_stm_tx_alloc(tx, size, description, ln, fn))
@@ -30,7 +19,7 @@ typedef int32_t proc_t;
   chpl_stm_tx_malloc(tx, 1, size, description, ln, fn)
 
 #define _TX_ARRAY_ALLOC(tx, x, type, size, ln, fn)			\
-  (x)->_data = (size == 0) ? (void*)(0x0) : chpl_stm_tx_malloc(tx, size, sizeof(type), CHPL_RT_MD_STM_ARRAY_ELEMENTS, ln, fn)
+  (x)->_data = (size == 0) ? (void*)(0x0) : chpl_stm_tx_malloc(tx, size, sizeof(type), CHPL_RT_MD_STM_TX_ARRAY_ELEMENTS, ln, fn)
 
 #define _TX_WIDE_ARRAY_ALLOC(tx, x, type, size, ln, fn)			\
   do {									\
@@ -49,24 +38,15 @@ typedef int32_t proc_t;
     _TX_ARRAY_FREE(tx, (x).addr, lineno, fn);				\
   } while (0)
 
-//
-// FIXME: we don't want to be creating/destroying a new transaction descriptor
-// for each transaction.
-//
-#define CHPL_STM_TX_BEGIN(tx, env)  tx = chpl_stm_tx_create();	env = chpl_stm_tx_get_env(tx);	if (!env) goto tx123; setjmp(*env); tx123:; chpl_stm_tx_begin(tx);
+#define CHPL_STM_TX_BEGIN(tx, txenvptr)					\
+  tx = chpl_stm_tx_create();						\
+  txenvptr = chpl_stm_tx_get_env(tx);					\
+  if (txenvptr)								\
+    chpl_stm_setjmp(*txenvptr);						\
+  chpl_stm_tx_begin(tx)
 
-/*  do {						\
-    tx = chpl_stm_tx_create();				\
-    if (tx != NULL) {					\
-      env = chpl_stm_tx_get_env(tx);			\
-      if (env != NULL) setjmp(*env);			\
-      chpl_stm_tx_begin(tx);				\
-    }							\
-    } while(0) */
-
-#define CHPL_STM_TX_COMMIT(tx)	chpl_stm_tx_commit(tx);
-
-//chpl_stm_tx_destroy(tx);
+#define CHPL_STM_TX_COMMIT(tx)			\
+  chpl_stm_tx_commit(tx); chpl_stm_tx_destroy(tx)
 
 #define CHPL_STM_COMM_WIDE_GET(tx, ldst, rwide, type, ln, fn)		\
   do {									\
@@ -135,15 +115,15 @@ typedef int32_t proc_t;
     (rwide).addr += ind;						\
   } while (0)
 
-#define CHPL_STM_ARRAY_LOAD(tx, dst, src, ind, type, ln, fn)	\
+#define CHPL_STM_COMM_WIDE_ARRAY_GET_SVEC(tx, rwide, cls, ind, stype, sfield, etype, ln, fn) \
+  CHPL_STM_COMM_WIDE_ARRAY_GET(tx, rwide, cls, ind, stype, sfield, etype, ln, fn)
+
+#define CHPL_STM_ARRAY_LOAD(tx, dst, src, ind, type, ln, fn)		\
   do {									\
-    chpl_stm_tx_load(tx, &dst, &((src)->_data[ind]),			\
+    chpl_stm_tx_load(tx, &dst, &((src)->_data),				\
 		     SPECIFY_SIZE(type), ln, fn);			\
     dst += ind;								\
   } while(0)
-
-#define CHPL_STM_COMM_WIDE_ARRAY_GET_SVEC(tx, rwide, cls, ind, stype, sfield, etype, ln, fn) \
-  CHPL_STM_COMM_WIDE_ARRAY_GET(tx, rwide, cls, ind, stype, sfield, etype, ln, fn)
 
 #define CHPL_STM_COMM_WIDE_ARRAY_GET_VALUE(tx, ldst, rwide_type, cls, ind, stype, sfield, etype, etype2, ln, fn) \
   do {                                                                  \
@@ -283,50 +263,30 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx);
 // was called if called inside a nested transaction, returns NULL 
 // (flat nesting)
 // 
-jmp_buf *chpl_stm_tx_get_env(chpl_stm_tx_p tx);
-
-//
-// similar to the global calls, except when we know all operations inside the
-// transaction are local
-// 
-chpl_stm_tx_p chpl_stm_tx_create_local(void);
-void chpl_stm_tx_destroy_local(chpl_stm_tx_p tx);
-void chpl_stm_tx_begin_local(chpl_stm_tx_p tx);
-void chpl_stm_tx_commit_local(chpl_stm_tx_p tx);
-void chpl_stm_tx_abort_local(chpl_stm_tx_p tx);
-
-// FIXME: Basically we need to deal with the size issue. There are two issues here. 1st deal with smaller words. 2nd deal with larger words
+chpl_stm_tx_env_p chpl_stm_tx_get_env(chpl_stm_tx_p tx);
 
 // 
 // transactional load 'size' bytes of data from 'srcaddr' to addr at 'dstaddr'
-// FIXME: size   
 //
 void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size, int ln, chpl_string fn);
 
 // 
 // transactional store 'size' bytes of data at 'dstaddr' from data at 
 // 'srcaddr'  
-// FIXME: size   
 //
 void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size, int ln, chpl_string fn);
 
 // 
 // transactional load 'size' bytes of remote data at 'srcaddr' 
-// on 'locale' to local addr at 'dstaddr'
-// notes:
-//   internally check if the operation is local
-// FIXME: size   
+// on 'srclocale' to local addr at 'dstaddr'
 //
-void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, proc_t locale, void* srcaddr, size_t size, int ln, chpl_string fn);
+void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size, int ln, chpl_string fn);
 
 // 
 // transactional store 'size' bytes of local data at 'srcaddr' to 
-// remote data at 'dstaddr' on 'locale' 
-// notes:
-//   internally check if the operation is local
-// FIXME: size
+// remote data at 'dstaddr' on 'dstlocale' 
 //
-void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, proc_t locale, void* dstaddr, size_t size, int ln, chpl_string fn);
+void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size, int ln, chpl_string fn);
 
 //
 // transactional malloc

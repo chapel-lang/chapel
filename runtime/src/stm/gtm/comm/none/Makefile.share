@@ -1,0 +1,8 @@
+STM_COMM_SRCS = \
+	stm-gtm-comm-none.c \
+
+SVN_SRCS = $(STM_COMM_SRCS)
+SRCS = $(SVN_SRCS)
+
+STM_COMM_OBJS = \
+	$(STM_COMM_SRCS:%.c=$(STM_COMM_OBJDIR)/%.o)

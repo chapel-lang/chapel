@@ -2,5 +2,7 @@
 # Copyright (c) 2004-2008 Cray Inc.  (See LICENSE file for more details)
 #
 
+GEN_CFLAGS += -DCHPL_STM_GTM
+
 LIBS += -L$(LIBATOMIC_INSTALL_DIR)/lib -latomic_ops
 

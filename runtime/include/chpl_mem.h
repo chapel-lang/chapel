@@ -70,8 +70,13 @@ const char* chpl_rt_memDescs[] = {
   "thread callee function pointer and argument",
   "thread list descriptor",
   "stm chapel runtime code data",
+  "stm tx descriptor create",
+  "stm tx descriptor create local descriptor",
+  "stm tx descriptor remote procs",
+  "stm tx descriptor read set",
+  "stm tx descriptor write set",
   "stm tx array elements",
-  "stm tx malloc", 
+  "stm tx malloc ",
   "stm tx active message tx abort data",
   "stm tx active message abort arg",
   "stm tx active message commit ph1 data",
@@ -85,14 +90,8 @@ const char* chpl_rt_memDescs[] = {
   "stm tx active message put data",
   "stm tx active message put arg",
   "stm tx active message put source data",
-  "stm tx descriptor remote procs",
-  "stm tx descriptor read set",
-  "stm tx descriptor write set",
-  "stm tx descriptor create",
   "stm init shared proc descriptor",
   "stm init shared tx inuse array",
-  "stm tx descriptor create local descriptor",
-  "stm op descriptor create"
 };
 #endif
 typedef enum {
@@ -142,7 +141,12 @@ typedef enum {
   CHPL_RT_MD_THREAD_CALLEE,
   CHPL_RT_MD_THREAD_LIST_DESCRIPTOR,
   CHPL_RT_MD_STM_CHAPEL_CODE,
-  CHPL_RT_MD_STM_ARRAY_ELEMENTS,
+  CHPL_RT_MD_STM_TX_CREATE_TD,
+  CHPL_RT_MD_STM_TX_CREATE_LOCALTD,
+  CHPL_RT_MD_STM_TX_REMLOCALES,
+  CHPL_RT_MD_STM_TX_READSET,
+  CHPL_RT_MD_STM_TX_WRITESET,
+  CHPL_RT_MD_STM_TX_ARRAY_ELEMENTS,
   CHPL_RT_MD_STM_TX_MALLOC,
   CHPL_RT_MD_STM_AM_ABORT_DATA,
   CHPL_RT_MD_STM_AM_ABORT_ARG,
@@ -157,14 +161,8 @@ typedef enum {
   CHPL_RT_MD_STM_AM_PUT_DATA,
   CHPL_RT_MD_STM_AM_PUT_ARG,
   CHPL_RT_MD_STM_AM_PUT_SRCDATA,
-  CHPL_RT_MD_STM_TX_INIT_REMPROCS,
-  CHPL_RT_MD_STM_TX_INIT_READSET,
-  CHPL_RT_MD_STM_TX_INIT_WRITESET,
-  CHPL_RT_MD_STM_TX_CREATE_TD,
   CHPL_RT_MD_STM_INIT_PROCDESC,
   CHPL_RT_MD_STM_INIT_TXINUSE,
-  CHPL_RT_MD_STM_TX_CREATE_LOCALTD,
-  CHPL_RT_MD_STM_OP_CREATE,
   CHPL_RT_MD_NUM
 } chpl_rt_enum_memDescs;
 extern const char* chpl_memDescs[];
