@@ -131,4 +131,4 @@ def PrivateArr.dsiSerialWrite(x: Writer) {
   }
 }
 
-const PrivateSpace: domain(1) distributed new dist(new Private());
+const PrivateSpace: domain(1) dmapped new dmap(new Private());
