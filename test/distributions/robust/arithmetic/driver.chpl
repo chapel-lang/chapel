@@ -36,11 +36,11 @@ def setupDistributions() {
   }
   if distString == 'cyclic' {
     return (
-            new dmap(new Cyclic(rank=1, idxType=int)),
-            new dmap(new Cyclic(rank=2, idxType=int)),
-            new dmap(new Cyclic(rank=3, idxType=int)),
-            new dmap(new Cyclic(rank=4, idxType=int)),
-            new dmap(new Cyclic(rank=2, idxType=int(64)))
+            new dmap(new Cyclic(startIdx=0)),
+            new dmap(new Cyclic(startIdx=(0,0))),
+            new dmap(new Cyclic(startIdx=(0,0,0))),
+            new dmap(new Cyclic(startIdx=(0,0,0,0))),
+            new dmap(new Cyclic(startIdx=(0:int(64), 0:int(64))))
            );
   }
   if distString == 'blockcyclic' {

@@ -59,7 +59,7 @@ def main() {
   // twiddle values and is a 1D domain indexed by 64-bit ints from 0
   // to m/4-1.  Twiddles is the vector of twiddle values.
   //
-  //const TwiddleDist = new dmap(new Cyclic(rank=1, idxType=int(64), tasksPerLocale=tasksPerLocale));
+  //const TwiddleDist = new dmap(new Cyclic(startIdx=0:idxType, tasksPerLocale=tasksPerLocale));
   const TwiddleDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[0..m/4-1], targetLocales=Locales));
   const TwiddleDom: domain(1, int(64)) dmapped TwiddleDist = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
@@ -77,7 +77,7 @@ def main() {
   const BlkDom: domain(1, int(64)) dmapped BlkDist = [0..m-1];
   var Z, z: [BlkDom] elemType;
 
-  const CycDist = new dmap(new Cyclic(rank=1, idxType=int(64), targetLocales=Locales,
+  const CycDist = new dmap(new Cyclic(startIdx=0:idxType, targetLocales=Locales,
                                       dataParTasksPerLocale=tasksPerLocale,
                                       dataParIgnoreRunningTasks=true));
   const CycDom: domain(1, int(64)) dmapped CycDist = [0..m-1];

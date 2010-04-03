@@ -1,8 +1,11 @@
 use DSIUtil;
 
-def _tupleOfZero(param size: int, type t) {
-  var tmp: size * t;
-  return tmp;
+def _determineRankFromStartIdx(startIdx) param {
+  return if isTuple(startIdx) then startIdx.size else 1;
+}
+
+def _determineIdxTypeFromStartIdx(startIdx) type {
+  return if isTuple(startIdx) then startIdx(1).type else startIdx.type;
 }
 
 config param debugCyclicDist = false;
@@ -20,7 +23,7 @@ class Cyclic: BaseDist {
   param rank: int;
   type idxType = int;
 
-  var lowIdx: rank*idxType;
+  var startIdx: rank*idxType;
   var targetLocDom: domain(rank);
   var targetLocs: [targetLocDom] locale;
 
@@ -32,13 +35,17 @@ class Cyclic: BaseDist {
 
   var pid: int = -1;
 
-  def Cyclic(param rank: int,
-             type idxType = int,
-             low: rank*idxType = _tupleOfZero(rank, idxType),
+  def Cyclic(startIdx,
              targetLocales: [] locale = thisRealm.Locales,
              dataParTasksPerLocale=getDataParTasksPerLocale(),
              dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
-             dataParMinGranularity=getDataParMinGranularity()) {
+             dataParMinGranularity=getDataParMinGranularity(),
+             param rank: int = _determineRankFromStartIdx(startIdx),
+             type idxType = _determineIdxTypeFromStartIdx(startIdx)) 
+    where isTuple(startIdx) || _isIntegralType(startIdx.type) {
+    var tupleStartIdx: rank*idxType;
+    if isTuple(startIdx) then tupleStartIdx = startIdx;
+                         else tupleStartIdx(1) = startIdx;
     if rank == 1  {
       targetLocDom = [0..#targetLocales.numElements];
       targetLocs = targetLocales;
@@ -65,7 +72,7 @@ class Cyclic: BaseDist {
     }
 
     for param i in 1..rank do
-      lowIdx(i) = mod(low(i), targetLocDom.dim(i).length);
+      this.startIdx(i) = mod(tupleStartIdx(i), targetLocDom.dim(i).length);
 
     this.dataParTasksPerLocale = dataParTasksPerLocale;
     this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
@@ -83,7 +90,7 @@ class Cyclic: BaseDist {
   def Cyclic(param rank, type idxType, other: Cyclic(rank, idxType)) {
     targetLocDom = other.targetLocDom;
     targetLocs = other.targetLocs;
-    lowIdx = other.lowIdx;
+    startIdx = other.startIdx;
     locDist = other.locDist;
     dataParTasksPerLocale = other.dataParTasksPerLocale;
     dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
@@ -94,7 +101,7 @@ class Cyclic: BaseDist {
     coforall locid in targetLocDom do
       on targetLocs(locid) do
         delete locDist(locid);
-    lowIdx = other.lowIdx;
+    startIdx = other.startIdx;
     targetLocDom = other.targetLocDom;
     targetLocs = other.targetLocs;
     dataParTasksPerLocale = other.dataParTasksPerLocale;
@@ -118,7 +125,7 @@ def Cyclic.getChunk(inds, locid) {
     locidtup = locid;
   for param i in 1..rank {
     var distStride = targetLocDom.dim(i).length;
-    var loclowidx = mod(lowIdx(i) + locidtup(i), distStride);
+    var loclowidx = mod(startIdx(i) + locidtup(i), distStride);
     var lowmod = mod(inds.dim(i).low, distStride);
     var offset = loclowidx - lowmod;
     if offset < 0 then
@@ -134,7 +141,7 @@ def Cyclic.getChunk(inds, locid) {
 }
 
 def Cyclic.dsiDisplayRepresentation() {
-  writeln("lowIdx = ", lowIdx);
+  writeln("startIdx = ", startIdx);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocs = ", for tl in targetLocs do tl.id);
   writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
@@ -158,7 +165,7 @@ def Cyclic.dsiReprivatize(other, reprivatizeData) {
   targetLocDom = other.targetLocDom;
   targetLocs = other.targetLocs;
   locDist = other.locDist;
-  lowIdx = other.lowIdx;
+  startIdx = other.startIdx;
   dataParTasksPerLocale = other.dataParTasksPerLocale;
   dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
   dataParMinGranularity = other.dataParMinGranularity;
@@ -185,9 +192,9 @@ def Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
 
   var newLow: rank*idxType;
   for param i in 1..rank {
-    newLow(i) = newSpace(i).low - oldSpace(i).low + lowIdx(i);
+    newLow(i) = newSpace(i).low - oldSpace(i).low + startIdx(i);
   }
-  var newDist = new Cyclic(rank=rank, idxType=idxType, low=newLow,
+  var newDist = new Cyclic(rank=rank, idxType=idxType, startIdx=newLow,
                            targetLocales=targetLocs,
                            dataParTasksPerLocale=dataParTasksPerLocale,
                            dataParIgnoreRunningTasks=dataParIgnoreRunningTasks,
@@ -229,7 +236,7 @@ def Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
     if isCollapsedDimension(args(i)) then
       collapsedDimInds(i) = args(i);
     else {
-      newLow(j) = lowIdx(i);
+      newLow(j) = startIdx(i);
       j += 1;
     }
   }
@@ -244,7 +251,7 @@ def Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
     }
   }
   var newTargetLocales = targetLocs[(...collapsedLocs)];
-  return new Cyclic(rank=newRank, idxType=idxType, low=newLow, targetLocales=newTargetLocales);
+  return new Cyclic(rank=newRank, idxType=idxType, startIdx=newLow, targetLocales=newTargetLocales);
 }
 
 def Cyclic.writeThis(x: Writer) {
@@ -256,18 +263,18 @@ def Cyclic.writeThis(x: Writer) {
 
 def Cyclic.idxToLocaleInd(i: idxType) {
   const numLocs:idxType = targetLocDom.numIndices:idxType;
-  // this is wrong if i is less than lowIdx
-  //return ((i - lowIdx(1)) % numLocs):int;
-  // this works even if i is less than lowIdx
-  return mod(mod(i, numLocs) - mod(lowIdx(1), numLocs), numLocs):int;
+  // this is wrong if i is less than startIdx
+  //return ((i - startIdx(1)) % numLocs):int;
+  // this works even if i is less than startIdx
+  return mod(mod(i, numLocs) - mod(startIdx(1), numLocs), numLocs):int;
 }
 
 def Cyclic.idxToLocaleInd(ind: rank*idxType) {
   var x: rank*int;
   for param i in 1..rank {
     var dimLen = targetLocDom.dim(i).length;
-    //x(i) = ((ind(i) - lowIdx(i)) % dimLen):int;
-    x(i) = mod(mod(ind(i), dimLen) - mod(lowIdx(i), dimLen), dimLen):int;
+    //x(i) = ((ind(i) - startIdx(i)) % dimLen):int;
+    x(i) = mod(mod(ind(i), dimLen) - mod(startIdx(i), dimLen), dimLen):int;
   }
   if rank == 1 then
     return x(1);
@@ -292,7 +299,7 @@ class LocCyclic {
 
   def LocCyclic(param rank, type idxType, locid, dist: Cyclic(rank, idxType)) {
     var locidx: rank*int;
-    var lowIdx = dist.lowIdx;
+    var startIdx = dist.startIdx;
 
     if rank == 1 then
       locidx(1) = locid;
@@ -302,8 +309,8 @@ class LocCyclic {
     var tuple: rank*range(idxType, stridable=true);
 
     for param i in 1..rank {
-      const lower = min(idxType)..(lowIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length;
-      const upper = (lowIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length;
+      const lower = min(idxType)..(startIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length;
+      const upper = (startIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length;
       const lo = lower.low, hi = upper.high;
       tuple(i) = lo..hi by dist.targetLocDom.dim(i).length;
     }

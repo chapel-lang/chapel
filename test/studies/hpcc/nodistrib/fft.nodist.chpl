@@ -108,7 +108,7 @@ def main() {
   // to define the Zcyc vector, used for the second half of the FFT
   // phases.
   //
-//  const CycDist = new dmap(new Cyclic(1, idxType, 
+//  const CycDist = new dmap(new Cyclic(startIdx=0:idxType, 1, idxType, 
 //                                               tasksPerLocale=tasksPerLocale));
   const CycDom: domain(1, idxType) = ProblemSpace;
   var Zcyc: [CycDom] elemType;
