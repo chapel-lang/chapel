@@ -41,6 +41,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   var tmpTable: [tmpDom] chpl_TableEntry(idxType);
   var tmpDom2 = [0..-1:chpl_table_index_type];
   var tmpTable2: [tmpDom2] idxType;
+  var postponeResize = false;
 
   def linksDistribution() param return false;
 
@@ -78,8 +79,13 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   def dsiIndsIterSafeForRemoving() {
+    postponeResize = true;
     for i in this.these() do
       yield i;
+    postponeResize = false;
+    if (numEntries*8 < tableSize && tableSizeNum > 1) {
+      _resize(grow=false);
+    }
   }
 
   def these() {
@@ -185,6 +191,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   def _resize(grow:bool) {
+    if postponeResize then return;
     // back up the arrays
     _backupArrays();
 
