@@ -15,6 +15,10 @@
 general regressions
 ===================
 
+refers to undeclared symbol idxType
+-----------------------------------
+[Error matching compiler output for studies/hpcc/FFT/diten/fft]
+
 spuriously runs out of memory due to something other than threads
 -----------------------------------------------------------------
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (e.g., 03/31/10)
@@ -87,10 +91,6 @@ times out fairly regularly (since moving to stemp7)
 performance-specific regressions
 ================================
 
-internal error EXP0187 (04/01/10)
----------------------------------
-[Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
-
 spurious execution timeouts
 ---------------------------
 [Error: Timed out executing program studies/shootout/spectral-norm/spectralnorm_2] (e.g., 03/23/10, 03/27/10, 03/30/10)
@@ -113,11 +113,20 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
-chap09 memory size changed (03/17/10 -- after OS upgrade)
----------------------------------------------------------
-[Error matching program output for modules/standard/memory/countMemory/countMemory]
-[Error matching program output for studies/hpcc/2008/testProbSize]
-[Error matching program output for studies/hpcc/common/testProbSize]
+execution timeout (didn't get fixed with the others 04/02/10)
+-------------------------------------------------------------
+[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 -nl 1 (--cc-warnings  ) (0-2)]
+
+spurious compilation timeouts (04/02/10)
+----------------------------------------
+[Error: Timed out compilation for types/tuple/deitz/test_tuple_simple2]
+[Error: Timed out compilation for types/type_variables/deitz/part2/test_typevar_class10]
+[Error: Timed out compilation for types/type_variables/deitz/part3/test_instantiate_clone1]
+[Error: Timed out compilation for types/type_variables/deitz/part4/test_paramvar_class1]
+[Error: Timed out compilation for users/shetag/condarr-blc2]
+[Error: Timed out compilation for users/shetag/fock/fock-2]
+[Error: Timed out compilation for users/shetag/fock/fock-stc-1]
+[Error: Timed out compilation for users/thom/class-override]
 
 malloc out of memory causes problem (03/17/10 -- after OS upgrade)
 ------------------------------------------------------------------
@@ -145,6 +154,8 @@ cyclic distribution regressions
 
 spurious timeouts
 -----------------
+[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_dot_numIndices]
+[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_writeln]
 [Error: Timed out compilation for distributions/robust/arithmetic/basics/test_array_assignment]
 [Error: Timed out compilation for distributions/robust/arithmetic/basics/test_infer_array_type]
 [Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_tuple_to_array]
@@ -166,11 +177,6 @@ have never worked
 ====================
 no-local regressions
 ====================
-
-internal error EXP0187 (04/01/10)
----------------------------------
-[Error matching compiler output for studies/hpcc/2008/stream-fragmented]
-[Error matching compiler output for studies/hpcc/STREAMS/diten/stream-fragmented-local]
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -194,6 +200,15 @@ memory stuff in flux (05/28/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+didn't update Cyclic constructor call (04/03/10)
+-------------------------------------
+[Error matching compiler output for distributions/deitz/test_distribution_syntax2]
+
+syntax error (04/03/10)
+-----------------------
+[Error matching compiler output for multilocale/deitz/needMultiLocales/dist/test_private_space]
+[Error matching compiler output for multilocale/deitz/needMultiLocales/mdblock/test_block1d]
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -261,7 +276,7 @@ times out fairly consistently
 times out spuriously
 --------------------
 [Error: Timed out executing program npb/cg/bradc/cg-sparse] (e.g., 10/25/09, 11/04/09, 11/15/09, 11/19/09, 12/16/09, 12/19/09, 12/25/09, 12/29/09, 01/07/10, 01/08/10, 01/10/10, 01/23/10, 02/08/10, 02/10/10, 02/18/10, 02/20/10, 02/22/10, 02/26/10, 03/08/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10, 02/11/10, 02/16/10, 02/22/10, 03/08/10, 04/02/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (e.g., 10/02/09, 10/04/09, 10/07/09, 10/10/09, 10/14/09, 10/24/09, 10/29/09, 10/31/09, 11/02/09, 11/03/09, 11/04/09, 11/10/09, 11/12/09, 11/20/09, 12/06/09, 12/07/09, 12/08/09, 12/17/09, 12/26/09, 01/07/10, 01/23/10, 01/27/10, 02/01/10, 02/09/10, 02/11/10, 02/16/10, 02/22/10, 03/08/10, 04/02/10, 04/03/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (e.g., 10/04/09, 10/09/09, 10/14/09, 10/15/09, 10/17/09, 10/21/09, 10/22/09, 10/26/09, 11/02/09, 11/04/09, 11/06/09, 11/09/09, 11/11/09, 11/16/09, 11/21/09, 11/24/09, 12/04/09, 12/06/09, 12/08/09, 12/09/09, 12/13/09, 12/15/09, 12/16/09, 12/17/09, 12/18/09, 12/22/09, 12/24/09, 12/26/09, 12/27/09, 12/30/09, 01/03/10, 01/05/10, 01/06/10, 01/08/10, 01/09/10, 01/15/10, 01/24/10, 01/27/10, 01/28/10, 01/29/10, 01/31/10, 02/02/10, 02/03/10, 02/04/10, 02/06/10, 02/07/10, 02/08/10, 02/10/10, 02/12/10, 02/14/10, 02/15/10, 02/17/10, 02/20/10, 02/22/10, 02/25/10, 02/27/10, 03/04/10, 03/06/10, 03/08/10, 03/09/10, 03/11/10, 03/12/10, 03/19/10, 03/20/10, 03/22/10, 03/23/10, 03/23/10, 03/27/10)
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (e.g., 10/04/09, 10/12/09, 10/13/09, 10/20/09, 11/10/09, 11/18/09, 11/21/09, 12/04/09, 02/02/10, 04/01/10, 04/02/10)
 [Error: Timed out executing program users/agnieszka/test1] (e.g., 01/08/10)
@@ -271,8 +286,6 @@ times out spuriously
 ==============================================
 gasnet-fast regressions (other than the above)
 ==============================================
-
-
 
 spurious output out of order output
 -----------------------------------
@@ -332,13 +345,17 @@ missing 1-tuple acccessor (03/03/10)
 baseline-specific tests
 =======================
 
+incorrect output -- expected? (04/03/10)
+----------------------------------------
+[Error matching program output for arrays/deitz/parallelism/stream/test_stream_is_parallel]
+[Error matching program output for arrays/deitz/parallelism/stream/test_whole_array_stream_is_parallel]
+
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
 [Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 -nl 1 (--cc-warnings  ) (0-2)]
 
 output incorrect (noticed 04/02/10, but was already unresolved)
 ---------------------------------------------------------------
-[Error matching program output for arrays/deitz/parallelism/test_stream_is_parallel]
 [Error matching program output for arrays/deitz/part7/test_descriptor_frees]
 
 output incorrect
