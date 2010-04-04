@@ -11,6 +11,7 @@ use HPCCProblemSize;
 const radix = 4;               // the radix of this FFT implementation
 
 const numVectors = 2;          // the number of vectors to be stored
+type idxType = int(64);        // the type to use as the index to the domains
 type elemType = complex(128);  // the element type of the vectors
 
 //
@@ -60,7 +61,7 @@ def main() {
   // to m/4-1.  Twiddles is the vector of twiddle values.
   //
   //const TwiddleDist = new dmap(new Cyclic(startIdx=0:idxType, tasksPerLocale=tasksPerLocale));
-  const TwiddleDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[0..m/4-1], targetLocales=Locales));
+  const TwiddleDist = new dmap(new Block(rank=1, idxType=idxType, boundingBox=[0..m/4-1], targetLocales=Locales));
   const TwiddleDom: domain(1, int(64)) dmapped TwiddleDist = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
@@ -70,7 +71,7 @@ def main() {
   // from 0 to m-1.  It is distributes the vectors Z and z across the
   // locales using the Block distribution.
   //
-  const BlkDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[0..m-1],
+  const BlkDist = new dmap(new Block(rank=1, idxType=idxType, boundingBox=[0..m-1],
                                      targetLocales=Locales,
                                      dataParTasksPerLocale=tasksPerLocale,
                                      dataParIgnoreRunningTasks=true));
