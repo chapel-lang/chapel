@@ -1,0 +1,32 @@
+spsZipper.chpl:12: warning: parallel iteration over sparse array has been serialized (see note in $CHPL_HOME/STATUS)
+spsZipper.chpl:17: warning: parallel iteration over sparse domain has been serialized (see note in $CHPL_HOME/STATUS)
+A is: 1.1
+2.2
+3.3
+4.4
+5.5
+6.6
+7.7
+8.8
+9.9
+
+A2 is: -1.1
+-2.2
+-3.3
+-4.4
+-5.5
+-6.6
+-7.7
+-8.8
+-9.9
+
+Zippering, A and A2 are: 
+(1.1, -1.1)
+(2.2, -2.2)
+(3.3, -3.3)
+(4.4, -4.4)
+(5.5, -5.5)
+(6.6, -6.6)
+(7.7, -7.7)
+(8.8, -8.8)
+(9.9, -9.9)
