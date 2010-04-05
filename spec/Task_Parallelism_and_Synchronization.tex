@@ -1,5 +1,5 @@
 \sekshun{Parallelism and Synchronization}
-\label{Parallelism_and_Synchronization}
+\label{Task_Parallelism_and_Synchronization}
 
 Chapel is an {\em explicitly} parallel programming language.  The
 programmer introduces parallelism into a program
@@ -33,7 +33,7 @@ unstructured mechanism for synchronizing a program.
 describes the cobegin- and coforall-statement, structured ways to
 introduce concurrency into a program, and the sync- and
 serial-statement, structured ways to control and suppress parallelism.
-\item \rsec{data_parallelism}
+\item \rsec{Data_Parallelism}
 describes the forall-statement and -expression, constructs for
 explicit data parallelism.
 \item \rsec{atomicity}
@@ -738,136 +738,6 @@ writeln();
 \end{chapeloutput}
 because the expression evaluated to determine whether to serialize
 always evaluates to true.
-\end{example}
-
-\subsection{Data-Parallel Constructs}
-\label{data_parallelism}
-
-Chapel provides two explicit data-parallel constructs: the
-forall-statement and the forall-expression.  In addition, promotion
-over arrays, domains, ranges, and iterators results in data-parallel
-tasks.
-
-\subsubsection{The Forall Loop}
-\label{Forall}
-\index{forall@\chpl{forall}}
-\index{forall loops}
-
-The forall loop is a variant of the for loop that allows for the
-concurrent execution of the loop body. The for loop is described
-in~\rsec{The_For_Loop}. The syntax for the forall loop is given by
-\begin{syntax}
-forall-statement:
-  `forall' loop-control-part loop-body-part
-  [loop-control-part] statement
-\end{syntax}
-The second form of the loop is a syntactic convenience.
-
-The forall loop evaluates the loop body once for each element in
-the \sntx{iterator-expression}.  Each instance of the forall loop's
-statement may be executed concurrently with each other, but this is
-not guaranteed.  The definition of the iterator determines the actual
-concurrency based on the specification of the iterator of the loop.
-
-This differs from the semantics of the \chpl{coforall} loop, discussed
-in~\rsec{Coforall}, where each iteration is guaranteed to run
-concurrently.  The \chpl{coforall} loop thus has potentially higher
-overhead than a forall loop, but in cases where concurrency is
-required for correctness, it is essential.
-
-Control continues with the statement following the forall loop only
-after each iteration has been completely evaluated.
-
-The following statements may not be lexically enclosed in
-forall-statements: break-statements, continue-statements,
-yield-statements, and return-statements.
-
-\begin{openissue}
-Whether to allow yield-statements in forall-statements is an open
-issue; see note in~\rsec{Begin}.
-\end{openissue}
-
-\begin{example}
-In the code
-\begin{chapelpre}
-% test_forallStmt.chpl
-config const N = 5;
-var a: [1..N] int;
-var b = [i in 1..N] i;
-\end{chapelpre}
-\begin{chapel}
-forall i in 1..N do
-  a(i) = b(i);
-\end{chapel}
-the user has stated that the element-wise assignments can execute
-concurrently.  This loop may be performed serially, with maximum
-concurrency where each loop body iteration instance is executed in a
-separate task, or somewhere in between.  This loop can also be written
-as
-\begin{chapel}
-[i in 1..N] a(i) = b(i);
-\end{chapel}
-\begin{chapelpost}
-writeln(a);
-\end{chapelpost}
-\begin{chapeloutput}
-1 2 3 4 5
-\end{chapeloutput}
-\end{example}
-
-\subsubsection{The Forall Expression}
-\label{Forall_Expressions}
-\index{forall expressions}
-
-A forall expression can be used to enable concurrent evaluation of
-sub-expressions.  The sub-expressions are evaluated once for each
-element in the iterator expression.  The syntax of a forall expression
-is given by
-\begin{syntax}
-forall-expression:
-  `forall' loop-control-part `do' expression
-  [loop-control-part] expression
-\end{syntax}
-
-\begin{example}
-The code
-\begin{chapelpre}
-% test_forallExpr.chpl
-\end{chapelpre}
-\begin{chapel}
-writeln(+ reduce [i in 1..10] i**2);
-\end{chapel}
-\begin{chapeloutput}
-385
-\end{chapeloutput}
-applies a reduction to a forall-expression that evaluates the square
-of the indices in the range \chpl{1..10}.
-\end{example}
-
-\subsubsection{Filtering Predicates in Forall Expressions}
-\label{Filtering_Predicates_Forall}
-\index{forall expressions!and conditional expressions}
-
-An if expression that is immediately enclosed by a forall expression
-does not require an else part.
-\begin{example}
-The following expression returns every other element starting with the
-first:
-\begin{chapelpre}
-% test_forallFilter.chpl
-var s: [1..10] int = [i in 1..10] i;
-var result =
-\end{chapelpre}
-\begin{chapel}
-[i in 1..s.numElements] if i % 2 == 1 then s(i)
-\end{chapel}
-\begin{chapelpost}
-;
-writeln(result);
-\end{chapelpost}
-\begin{chapeloutput}
-1 3 5 7 9
-\end{chapeloutput}
 \end{example}
 
 \subsection{Atomic Statements}

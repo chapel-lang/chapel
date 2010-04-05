@@ -1,0 +1,67 @@
+\sekshun{Standard Distributions}
+\label{Standard_Distributions}
+
+Standard distributions include the following:
+\begin{itemize}
+\item The block distribution \chpl{Block}
+\item The cyclic distribution \chpl{Cyclic}
+\item The block-cyclic distribution \chpl{BlockCyclic}
+\end{itemize}
+
+\begin{openissue}
+There is an expectation that the number of standard distributions will
+grow dramatically.
+\end{openissue}
+
+A design goal is that all standard distributions are defined using the
+same mechanisms available to Chapel programmers wishing to define
+their own distributions~(\rsec{User_Defined_Domain_Maps}).
+
+\subsubsection{The Standard Block Distribution}
+\label{Block_Dist}
+
+The standard Block distribution is defined in the module
+called \chpl{BlockDist}.  This module must be explicitly used.
+
+The Block distribution is parameterized by the rank and index type of
+the domains for which it will support.  Thus domains of different
+ranks or different index types must be distributed with different
+distributions.
+
+The Block class constructor is defined as follows:
+\begin{chapel}
+def Block(param rank: int,
+          type idxType = int,
+          bbox: domain(rank, idxType),
+          targetLocales: [] locale = thisRealm.Locales, 
+          tasksPerLocale: int = 0)
+\end{chapel}
+
+The argument \chpl{bbox} is a non-distributed domain defining a
+bounding box used to partition the space of all indices across the
+array of target locales.  The indices inside the bounding box are
+partitioned ``evenly'' across the locales and indices outside the
+bounding box are mapped to the same locale as the nearest index inside
+the bounding box.
+
+The argument \chpl{targetLocales} is a non-distributed array
+containing the target locales to which this distribution partitions
+indices and data.  The rank of \chpl{targetLocales} must match the
+rank of the distribution, or be one.  If the rank
+of \chpl{targetLocales} is one, it will be factored and reshaped so
+that it matches the rank of the distribution.  A greedy heuristic is
+used to ``evenly'' do the factoring.
+
+The argument \chpl{tasksPerLocale} is an integer that specifies the
+number of tasks to use on each locale when iterating in parallel over
+a Block-distributed domain or array.
+
+\subsubsection{The Standard Cyclic Distribution}
+\label{Cyclic_Dist}
+
+This section is forthcoming.
+
+\subsubsection{The Standard Block-Cyclic Distribution}
+\label{Block_Cyclic_Dist}
+
+This section is forthcoming.
