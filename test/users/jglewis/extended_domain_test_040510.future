@@ -1,0 +1,4 @@
+code presently references "nil" while attempting to initialize the
+border cells in an extended domain.
+
+runs on one node, fails on two.
