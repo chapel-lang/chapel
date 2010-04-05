@@ -19,8 +19,8 @@ CHPL_TASKS == fifo, CHPL_THREADS == pthreads
 
 FIFO tasking and POSIX threads (or pthreads) is the default tasking
 implementation for all platforms other than the Cray XMT.  It is
-attractive in its portability, though it may be somewhat heavier-weight
-on some platforms than necessary for Chapel's purposes.
+attractive in its portability, though on some platforms it may be
+somewhat heavier weight than necessary for Chapel's purposes.
 
 In the current implementation, Chapel tasks are mapped to pthreads
 such that each task is executed by a single thread and is run to
@@ -78,8 +78,8 @@ blocked threads may not consume the CPU's cycles.
 
 Note that setting maxThreadsPerLocale too low can also result in
 program deadlock.  For example, for programs written with an
-assumption that a larger number of tasks are executing concurrently,
-setting maxThreadsPerLocale too low can result in deadlock if there
+assumption that some minimum number of tasks are executing concurrently,
+setting maxThreadsPerLocale lower than this can result in deadlock if there
 are not enough threads to implement all of the required tasks.  The
 -b/--blockreport flag can help debug programs like this that appear to
 be deadlocked.
