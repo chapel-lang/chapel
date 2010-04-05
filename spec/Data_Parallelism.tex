@@ -1,49 +1,46 @@
-\subsection{Data-Parallel Constructs}
+\sekshun{Data Parallelism}
 \label{Data_Parallelism}
 
-Chapel provides two explicit data-parallel constructs: the
-forall-statement and the forall-expression.  In addition, promotion
-over arrays, domains, ranges, and iterators results in data-parallel
-tasks.
+Chapel provides two explicit data-parallel constructs (the
+forall-statement and the forall-expression) and several idioms that
+support data parallelism implicitly (whole-array assignment, function
+and operator promotion, reductions, and scans).
 
-\subsubsection{The Forall Loop}
+\subsection{The Forall Statement}
 \label{Forall}
 \index{forall@\chpl{forall}}
 \index{forall loops}
 
-The forall loop is a variant of the for loop that allows for the
-concurrent execution of the loop body. The for loop is described
-in~\rsec{The_For_Loop}. The syntax for the forall loop is given by
+The forall statement is a concurrent variant of the for statement
+described in~\rsec{The_For_Loop}. The syntax for the
+\sntx{forall-statement} is given by
 \begin{syntax}
 forall-statement:
   `forall' loop-control-part loop-body-part
-  [loop-control-part] statement
+  [ loop-control-part ] statement
 \end{syntax}
 The second form of the loop is a syntactic convenience.
 
-The forall loop evaluates the loop body once for each element in
-the \sntx{iterator-expression}.  Each instance of the forall loop's
+The forall loop evaluates the loop body once for each element in the
+\sntx{iterator-expression}.  Each instance of the forall loop's
 statement may be executed concurrently with each other, but this is
-not guaranteed.  The definition of the iterator determines the actual
-concurrency based on the specification of the iterator of the loop.
+not guaranteed.  The loop must be serializable.  The definition of the
+iterator determines the actual concurrency based on the specification
+of the iterator of the loop.
 
 This differs from the semantics of the \chpl{coforall} loop, discussed
-in~\rsec{Coforall}, where each iteration is guaranteed to run
-concurrently.  The \chpl{coforall} loop thus has potentially higher
+in~\rsec{Coforall}, where each iteration is guaranteed to run using
+distinct tasks.  The \chpl{coforall} loop thus has potentially higher
 overhead than a forall loop, but in cases where concurrency is
 required for correctness, it is essential.
 
 Control continues with the statement following the forall loop only
-after each iteration has been completely evaluated.
+after every iteration has been completely evaluated.
 
-The following statements may not be lexically enclosed in
-forall-statements: break-statements, continue-statements,
-yield-statements, and return-statements.
-
-\begin{openissue}
-Whether to allow yield-statements in forall-statements is an open
-issue; see note in~\rsec{Begin}.
-\end{openissue}
+The following statements may not be lexically enclosed in forall
+statements: break statements, continue statements, and return
+statements.  Yield statement may only be lexically enclosed in forall
+statements in parallel iterators~\rsec{Parallel_Iterators}.
 
 \begin{example}
 In the code
@@ -58,10 +55,10 @@ forall i in 1..N do
   a(i) = b(i);
 \end{chapel}
 the user has stated that the element-wise assignments can execute
-concurrently.  This loop may be performed serially, with maximum
-concurrency where each loop body iteration instance is executed in a
-separate task, or somewhere in between.  This loop can also be written
-as
+concurrently.  This loop may be executed serially, using a distinct
+task for ever iteration, or somewhere in between (using a number of
+tasks where each task executes a number of iterations).  This loop can
+also be written as
 \begin{chapel}
 [i in 1..N] a(i) = b(i);
 \end{chapel}
@@ -73,7 +70,7 @@ writeln(a);
 \end{chapeloutput}
 \end{example}
 
-\subsubsection{The Forall Expression}
+\subsection{The Forall Expression}
 \label{Forall_Expressions}
 \index{forall expressions}
 
@@ -128,6 +125,129 @@ writeln(result);
 \end{chapeloutput}
 \end{example}
 
+\subsection{Whole Array Assignment}
+
+\subsection{Promotion}
+\label{Promotion}
+
+A function requires scalar promotion if an iterator (or array, domain,
+or range) is passed to a formal argument with a type that allows the
+yielded type of the iterator to dispatch to the formal argument.  In
+the case of arrays, the yielded type is the element type.  In the case
+of domains and ranges, the yielded type is the index type.  The rules
+of when an overloaded function is promoted are discussed
+in~\rsec{Function_Resolution}.  If a promoted function returns a
+value, the promoted function becomes an iterator that is controlled by
+a loop over the iterator (or array, domain, or range) that it is
+promoted by.  If the function does not return a value, the function is
+controlled by a loop over the iterator that it is promoted by, but the
+promotion does not become an iterator.
+
+In addition to scalar promotion of functions, operators and casts are
+also promoted.
+
+\begin{example}
+Given an iterator
+\begin{chapel}
+def oneToFive() {
+  for i in 1..5 do
+    yield i;
+}
+\end{chapel}
+and a function
+\begin{chapel}
+def square(x: int) return x**2;
+\end{chapel}
+then the call \chpl{square(oneToFive())} results in the promotion of
+the \chpl{square} function over the values returned by
+the \chpl{oneToFive} iterator.  The result is an iterator that returns
+the values \chpl{1}, \chpl{4}, \chpl{9}, \chpl{16}, and \chpl{25}.
+Instead of using the \chpl{oneToFive} iterator to promote
+the \chpl{square} function, the range \chpl{1..5} could be used
+directly as in \chpl{square(1..5)}.  Also note that operator
+invocations are treated as function calls in terms of promotion
+so \chpl{(1..5)**2} is also equivalent.
+\end{example}
+
+\subsubsection{Zipper Promotion}
+\label{Zipper_Promotion}
+\index{scalar promotion!zipper iteration}
+
+Consider a function \chpl{f} with formal
+arguments \chpl{s1}, \chpl{s2},~... that are promoted and formal
+arguments \chpl{a1}, \chpl{a2},~... that are not promoted.  The call
+\begin{chapel}
+f(s1, s2, ..., a1, a2, ...)
+\end{chapel}
+is equivalent to
+\begin{chapel}
+[(e1, e2, ...) in (s1, s2, ...)] f(e1, e2, ..., a1, a2, ...)
+\end{chapel}
+The usual constraints of zipper iteration apply to zipper promotion so
+the promoted actuals must have the same shape.
+
+\begin{example}
+Given a function defined as
+\begin{chapel}
+def foo(i: int, j: int) {
+  write(i, " ", j, " ");
+}
+\end{chapel}
+and a call to this function written
+\begin{chapel}
+foo(1..3, 4..6);
+\end{chapel}
+then the output is ``1 4 2 5 3 6 ''.
+\end{example}
+
+\subsubsection{Tensor Product Promotion}
+\label{Tensor_Product_Promotion}
+\index{scalar promotion!tensor product iteration}
+
+If the function \chpl{f} were called by using square brackets instead
+of parentheses, the equivalent rewrite would be
+\begin{chapel}
+[(e1, e2, ...) in [s1, s2, ...]] f(e1, e2, ..., a1, a2, ...)
+\end{chapel}
+There are no constraints on tensor product promotion.
+
+\begin{example}
+Given a function defined as
+\begin{chapel}
+def foo(i: int, j: int) {
+  write(i, " ", j, " ");
+}
+\end{chapel}
+and a call to this function written
+\begin{chapel}
+foo[1..3, 4..6];
+\end{chapel}
+then the output is ``1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 ''.
+\end{example}
+
+\subsubsection{Promotion and Evaluation Order}
+
+The evaluation of an iterator is interleaved with the evaluation of
+the promoted expression or function.  The values produced by the
+iterator are not evaluated first.  This means that the array semantics
+of array programming languages are not maintained.
+
+\begin{example}
+If \chpl{A} is an array declared over the indices \chpl{1..5}, then
+the following codes are not equivalent:
+\begin{chapel}
+A[2..4] = A[1..3] + A[3..5];
+\end{chapel}
+and
+\begin{chapel}
+var T = A[1..3] + A[3..5];
+A[2..4] = T;
+\end{chapel}
+This follows because, in the former code, some of the new values that
+are assigned to \chpl{A} may be read to compute the sum depending on
+the amount of concurrency in the promotion.
+\end{example}
+
 \subsection{Reductions and Scans}
 \label{Reductions_and_Scans}
 
@@ -143,7 +263,7 @@ scans result in efficient parallel implementations, and enjoy
 syntactic support to make them easy to use.
 
 
-\subsection{Reduction Expressions}
+\subsubsection{Reduction Expressions}
 \label{reduce}
 
 A reduction expression applies a reduction operator to an aggregate
@@ -199,7 +319,7 @@ User-defined reductions are specified by preceding the
 keyword \chpl{reduce} by the class type that implements the reduction
 interface as described in~\rsec{User_Defined_Reductions_and_Scans}.
 
-\subsection{Scan Expressions}
+\subsubsection{Scan Expressions}
 \label{scan}
 
 A scan expression applies a scan operator to an aggregate expression,
@@ -240,3 +360,5 @@ output is
 1 2 3
 \end{chapel}
 \end{example}
+
+\subsection{Knobs for Default Data Parallelism}

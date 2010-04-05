@@ -2,11 +2,11 @@
 \label{Domain_Maps}
 \index{domain maps}
 
-A mapping from domain index values to locales is called a {\em
-distribution}.
+A mapping from domain index values to locales is called a \emph{domain
+map}.
 
-\subsubsection{Distribution Types}
-\label{Distribution_Types}
+\subsection{Domain Map Types}
+\label{Domain_Map_Types}
 
 Distribution types are defined by the type of a distribution class
 that derives from BaseDist and is typically generic.  They are
@@ -28,8 +28,8 @@ arithmetic domains.  The Block distribution is described in more
 detail in~\rsec{Block_Dist}.
 \end{example}
 
-\subsubsection{Distribution Values}
-\label{Distribution_Values}
+\subsection{Domain Map Values}
+\label{Domain_Map_Values}
 
 Constructing a distribution involves calling the constructor of a
 distribution class and defining a new distribution type \chpl{dist}.
@@ -44,8 +44,8 @@ specified by \chpl{[1..n, 1..n]} over all of the locales.  The Block
 distribution is described in more detail in~\rsec{Block_Dist}.
 \end{example}
 
-\subsubsection{Distributed Domains}
-\label{Distributed_Domains}
+\subsection{Mapped Domains and Arrays}
+\label{Mapped_Domains_and_Arrays}
 
 \index{domains!distributed}
 A domain for which a distribution is specified is referred to as a
@@ -118,17 +118,7 @@ the body of the loop is executed in the locale where the
 index \chpl{d} maps to by the distribution of \chpl{D}.
 \end{example}
 
-\subsubsection{Distributed Arrays}
-\label{Distributed_Arrays}
-\index{arrays!distributed}
-
-Arrays defined over a distributed domain will have the element
-variables stored on the locale determined by the distribution.  Thus,
-if \chpl{d} is an index of distributed domain \chpl{D} and \chpl{A} is
-an array defined over that domain, then \chpl{A(d).locale} is the
-locale to which \chpl{d} maps to according to \chpl{D}.
-
-\subsubsection{Undistributed Domains and Arrays}
+\subsection{Undistributed Domains and Arrays}
 \label{Undistributed_Domains_and_Arrays}
 
 If a domain or an array does not have a distributed part, the domain
