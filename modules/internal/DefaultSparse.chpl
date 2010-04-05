@@ -46,8 +46,7 @@ class DefaultSparseDom: BaseSparseDom {
   }
 
   def these(param tag: iterator, follower: DefaultSparseDom) where tag == iterator.follower {
-    var sameDomain = (follower == this);
-    if (!sameDomain) then
+    if (follower != this) then
       halt("Sparse domains can't be zippered with anything other than themselves and their arrays");
 
     for i in 1..nnz do
@@ -55,10 +54,7 @@ class DefaultSparseDom: BaseSparseDom {
   }
 
   def these(param tag: iterator, follower: DefaultSparseArr) where tag == iterator.follower {
-    var sameDomain = false;
-    for a in _arrs do
-      if (follower == a) then sameDomain = true;
-    if (!sameDomain) then
+    if (follower.dom != this) then
       halt("Sparse domains can't be zippered with anything other than themselves and their arrays");
 
     for i in 1..nnz do
