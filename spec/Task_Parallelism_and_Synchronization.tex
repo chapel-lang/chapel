@@ -26,18 +26,18 @@ that may be running concurrently.
 This section is divided into five parts:
 \begin{itemize}
 \item \rsec{unstructured_task_parallelism}
-describes the begin-statement, an unstructured way to introduce
+describes the begin statement, an unstructured way to introduce
 concurrency into a program, and synchronization variables, an
 unstructured mechanism for synchronizing a program.
 \item \rsec{structured_task_parallelism}
-describes the cobegin- and coforall-statement, structured ways to
+describes the cobegin and coforall statement, structured ways to
 introduce concurrency into a program, and the sync- and
-serial-statement, structured ways to control and suppress parallelism.
+serial statement, structured ways to control and suppress parallelism.
 \item \rsec{Data_Parallelism}
-describes the forall-statement and -expression, constructs for
+describes the forall statement and -expression, constructs for
 explicit data parallelism.
 \item \rsec{atomicity}
-describes the atomic-statement, a construct to support atomic
+describes the atomic statement, a construct to support atomic
 transactions.
 \item \rsec{Memory_Consistency}
 describes the memory consistency model.
@@ -46,7 +46,7 @@ describes the memory consistency model.
 \subsection{Unstructured Task-Parallel Constructs}
 \label{unstructured_task_parallelism}
 
-Chapel provides a simple construct, the begin-statement, to spawn
+Chapel provides a simple construct, the begin statement, to spawn
 tasks, thus introducing concurrency into a program in an unstructured
 way.  In addition, Chapel introduces two type qualifiers, \chpl{sync}
 and \chpl{single}, for synchronization of tasks.
@@ -61,8 +61,8 @@ this section.
 \label{Begin}
 \index{begin@\chpl{begin}}
 
-The begin-statement spawns a task to execute a statement.  The
-begin-statement is thus an unstructured way to create a new task that
+The begin statement spawns a task to execute a statement.  The
+begin statement is thus an unstructured way to create a new task that
 is executed only for its side-effects.  The syntax for the begin
 statement is given by
 \begin{syntax}
@@ -70,7 +70,7 @@ begin-statement:
   `begin' statement
 \end{syntax}
 Control continues concurrently with the statement following the
-begin-statement.
+begin statement.
 
 \begin{example}
 The code
@@ -95,7 +95,7 @@ output from spawned task
 executes two \chpl{writeln} statements that output the strings to the
 terminal, but the ordering is purposely unspecified.  There is no
 guarantee as to which statement will execute first.  When the
-begin-statement is executed, a new task is created that will execute
+begin statement is executed, a new task is created that will execute
 the \chpl{writeln} statement within it.  However, execution will
 continue immediately with the next statement.
 In~\rsec{Sync_Variables}, this same example will be synchronized so
@@ -103,16 +103,8 @@ that the output from the spawned task always happens second.
 \end{example}
 
 The following statements may not be lexically enclosed in
-begin-statements: break-statements, continue-statements,
-yield-statements, and return-statements.
-\begin{openissue}
-It is undecided whether yield-statement should be allowed inside the
-following parallel statements: cobegin, coforall, and forall.  The
-design of parallel iterators is currently ongoing.  If simple
-iterators with yield-statements in parallel statements are allowed,
-there would be an issue on how such iterators could be zippered.  This
-issue is a high priority and there are a number of ideas on the table.
-\end{openissue}
+begin statements: break statements, continue statements,
+yield statements, and return statements.
 
 \subsubsection{Sync Variables}
 \label{Sync_Variables}
@@ -418,11 +410,11 @@ writeln((x$\mbox{{\bf \$}}$, y));
 \subsection{Structured Task-Parallel Constructs}
 \label{structured_task_parallelism}
 
-Chapel provides two constructs, the cobegin- and coforall-statements,
+Chapel provides two constructs, the cobegin and coforall statements,
 to introduce concurrency in a more structured way.  These constructs
 spawn multiple tasks but do not continue until the tasks have
 completed.  In addition, Chapel provides two constructs, the sync- and
-serial-statements, to suppress parallelism and insert synchronization.
+serial statements, to suppress parallelism and insert synchronization.
 All four of these constructs can be implemented through judicious uses
 of the unstructured task-parallel constructs described in the previous
 section.
@@ -442,16 +434,12 @@ is considered a separate task.  Control continues when all of the
 tasks have finished.
 
 The following statements may not be lexically enclosed in
-cobegin-statements: break-statements, continue-statements,
-yield-statements, and return-statements.
-
-\begin{openissue}
-Whether to allow yield-statements in cobegin-statements is an open
-issue; see note in~\rsec{Begin}.
-\end{openissue}
+cobegin statements: break statements, continue statements, and
+return statements.  Yield statement may only be lexically enclosed in
+cobegin statements in parallel iterators~\rsec{Parallel_Iterators}.
 
 \begin{example}
-The cobegin-statement
+The cobegin statement
 \begin{chapelpre}
 % test_cobeginAndEquivalent.chpl
 var s1, s2: sync int;
@@ -466,7 +454,7 @@ cobegin {
   stmt3();
 }
 \end{chapel}
-is equivalent to the following code that uses only begin-statements
+is equivalent to the following code that uses only begin statements
 and single variables to introduce concurrency and synchronize:
 \begin{chapel}
 var s1$\mbox{{\bf \$}}$, s2$\mbox{{\bf \$}}$, s3$\mbox{{\bf \$}}$: single bool;
@@ -477,7 +465,7 @@ s1$\mbox{{\bf \$}}$; s2$\mbox{{\bf \$}}$; s3$\mbox{{\bf \$}}$;
 \end{chapel}
 \begin{chapeloutput}
 \end{chapeloutput}
-Each begin-statement is executed concurrently but control does not
+Each begin statement is executed concurrently but control does not
 continue past the final line above until each of the single variables
 is written, thereby ensuring that each of the functions has finished.
 \end{example}
@@ -491,7 +479,10 @@ The coforall loop is a variant of the cobegin statement and a loop.
 The syntax for the coforall loop is given by
 \begin{syntax}
 coforall-statement:
-  `coforall' loop-control-part loop-body-part
+  `coforall' index-var-declaration `in' iterator-expression `do' statement
+  `coforall' index-var-declaration `in' iterator-expression block-statement
+  `coforall' iterator-expression `do' statement
+  `coforall' iterator-expression block-statement
 \end{syntax}
 
 The semantics of the \chpl{coforall} loop are identical to
@@ -502,16 +493,12 @@ Control continues with the statement following the \chpl{coforall}
 loop only after all iterations have been completely evaluated.
 
 The following statements may not be lexically enclosed in
-coforall-statements: break-statements, continue-statements,
-yield-statements, and return-statements.
-
-\begin{openissue}
-Whether to allow yield-statements in coforall-statements is an open
-issue; see note in~\rsec{Begin}.
-\end{openissue}
+coforall statements: break statements, continue statements, and
+return statements.  Yield statement may only be lexically enclosed in
+coforall statements in parallel iterators~\rsec{Parallel_Iterators}.
 
 \begin{example}
-The coforall-statement
+The coforall statement
 \begin{chapelpre}
 % test_coforallAndEquivalent.chpl
 def iterator() { for i in 1..3 do yield i; }
@@ -522,7 +509,7 @@ coforall i in iterator() {
   body();
 }
 \end{chapel}
-is equivalent to the following code that uses only begin-statements
+is equivalent to the following code that uses only begin statements
 and sync and single variables to introduce concurrency and
 synchronize:
 \begin{chapel}
@@ -545,7 +532,7 @@ finished$\mbox{{\bf \$}}$;
 \begin{chapeloutput}
 \end{chapeloutput}
 Each call to \chpl{body()} executes concurrently because it is in a
-begin-statement.  The sync
+begin statement.  The sync
 variable \chpl{runningCount$\mbox{{\bf \$}}$} is used to keep track of
 the number of executing tasks plus one for the main task.  When this
 variable reaches zero, the single
@@ -566,8 +553,9 @@ sync-statement:
   `sync' statement
 \end{syntax}
 The following statements may not be lexically enclosed in
-sync-statements: break-statements, continue-statements,
-yield-statements, and return-statements.
+sync statements: break statements, continue statements, and
+return statements.  Yield statement may only be lexically enclosed in
+sync statements in parallel iterators~\rsec{Parallel_Iterators}.
 
 \begin{example}
 The sync statement can be used to wait for many dynamically spawned
@@ -634,9 +622,9 @@ cobegin {
 \end{chapel}
 \begin{chapeloutput}
 \end{chapeloutput}
-except that if begin-statements are dynamically encountered
+except that if begin statements are dynamically encountered
 when \chpl{stmt1()} or \chpl{stmt2()} are executed, then the former
-code will wait for these begin-statements to complete whereas the
+code will wait for these begin statements to complete whereas the
 latter code will not.
 \end{example}
 
@@ -692,7 +680,7 @@ writeln(tree.sum());
 8
 \end{chapeloutput}
 defines a function \chpl{concurrentUpdate} that recursively walks over
-a tree using cobegin-statements to update the left and right subtrees
+a tree using cobegin statements to update the left and right subtrees
 in parallel.  The serial statement inhibits concurrent execution on
 the tree for nodes that are deeper than four levels in the tree.  This
 constrains the number of tasks that will be used for the update.
@@ -870,7 +858,7 @@ guarantees are made.  In this design choice, Chapel differs from Java
 because the set of dynamic security concerns is different.
 
 Writing and reading \chpl{sync} and \chpl{single} variables as well as
-executing atomic-statements are the only ways in Chapel to correctly
+executing atomic statements are the only ways in Chapel to correctly
 synchronize a program.  It is an error to write to the same memory
 location or read from and write to the same memory location in two
 different tasks without any intervening synchronization.
@@ -901,8 +889,8 @@ cobegin {
 \end{chapel}
 \begin{chapeloutput}
 \end{chapeloutput}
-In this code, the first statement in the cobegin-statement executes a
+In this code, the first statement in the cobegin statement executes a
 loop until the variable is set to one.  The second statement in the
-cobegin-statement sets the variable to one.  Neither of these
+cobegin statement sets the variable to one.  Neither of these
 statements block.
 \end{example}

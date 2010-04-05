@@ -12,17 +12,27 @@ and operator promotion, reductions, and scans).
 \index{forall loops}
 
 The forall statement is a concurrent variant of the for statement
-described in~\rsec{The_For_Loop}. The syntax for the
-\sntx{forall-statement} is given by
+described in~\rsec{The_For_Loop}.
+
+\subsubsection{Syntax}
+\label{forall_syntax}
+
+The syntax of the forall statement is given by
 \begin{syntax}
 forall-statement:
-  `forall' loop-control-part loop-body-part
-  [ loop-control-part ] statement
+  `forall' index-var-declaration `in' iterator-expression `do' statement
+  `forall' index-var-declaration `in' iterator-expression block-statement
+  `forall' iterator-expression `do' statement
+  `forall' iterator-expression block-statement
+  [ index-var-declaration `in' iterator-expression ] statement
+  [ iterator-expression ] statement
 \end{syntax}
-The second form of the loop is a syntactic convenience.
+The bracketed form of the loop is a syntactic convenience.
 
-The forall loop evaluates the loop body once for each element in the
-\sntx{iterator-expression}.  Each instance of the forall loop's
+\subsubsection{Execution and Serializability}
+
+The forall statement evaluates the loop body once for each element in
+the \sntx{iterator-expression}.  Each instance of the forall loop's
 statement may be executed concurrently with each other, but this is
 not guaranteed.  The loop must be serializable.  The definition of the
 iterator determines the actual concurrency based on the specification
@@ -80,8 +90,10 @@ element in the iterator expression.  The syntax of a forall expression
 is given by
 \begin{syntax}
 forall-expression:
-  `forall' loop-control-part `do' expression
-  [loop-control-part] expression
+  `forall' index-var-declaration `in' iterator-expression `do' expression
+  `forall' iterator-expression `do' expression
+  [ index-var-declaration `in' iterator-expression ] expression
+  [ iterator-expression ] expression
 \end{syntax}
 
 \begin{example}

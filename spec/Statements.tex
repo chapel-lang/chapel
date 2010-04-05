@@ -324,31 +324,27 @@ class that implements an iterator named \chpl{these}.  The syntax of
 the for loop is given by:
 \begin{syntax}
 for-statement:
-  `for' loop-control-part loop-body-part
+  `for' index-var-declaration `in' iterator-expression `do' statement
+  `for' index-var-declaration `in' iterator-expression block-statement
+  `for' iterator-expression `do' statement
+  `for' iterator-expression block-statement
 
-loop-control-part:
-  index-expression `in' iterator-expression
-  iterator-expression
-
-loop-body-part:
-  `do' statement
-  block-statement
-
-index-expression:
-  expression
+index-var-declaration:
+  identifier
+  tuple-grouped-identifier-list
 
 iterator-expression:
   expression
 \end{syntax}
 
-The index-expression declares new variables for the scope of the loop.
-It may specify a new identifier.  Alternatively, the index-expression
-may specify multiple identifiers grouped using a tuple notation in
-order to destructure the values returned by the iterator expression,
-as described in~\rsec{Indices_in_a_Tuple}.
+The \sntx{index-var-declaration} declares new variables for the scope
+of the loop.  It may specify a new identifier or may specify multiple
+identifiers grouped using a tuple notation in order to destructure the
+values returned by the iterator expression, as described
+in~\rsec{Indices_in_a_Tuple}.
 
-The index-expression is optional and may be omitted if the indices do
-not need to be referenced in the loop.
+The \sntx{index-var-declaration} is optional and may be omitted if the
+indices do not need to be referenced in the loop.
 
 If the iterator-expression is a tuple delimited by parentheses, the
 components of the tuple must support iteration, e.g., a tuple of
