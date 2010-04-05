@@ -13,7 +13,7 @@ get started with Chapel program structure:
 It also contains subdirectories that contain more interesting
 examples:
 
-     tutorials/             : introduce Chapel concepts using a narrative flow
+     primers/               : introduce Chapel concepts using a narrative flow
      programs/              : demonstrate Chapel using small programs
      hpcc/                  : implementations of the HPC Challenge benchmarks
 
