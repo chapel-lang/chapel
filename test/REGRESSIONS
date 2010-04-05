@@ -1,4 +1,4 @@
-# USAGE: the intent of this file is to keep track of current
+ # USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.  We start
 # with general regressions that are seen across a wide variety of
 # platforms, and then move onto linux64 regressions since those are
@@ -15,13 +15,9 @@
 general regressions
 ===================
 
-refers to undeclared symbol idxType
------------------------------------
-[Error matching compiler output for studies/hpcc/FFT/diten/fft]
-
 spuriously runs out of memory due to something other than threads
 -----------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (e.g., 03/31/10)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (e.g., 03/31/10, 04/04/10)
 
 spurious failure
 ----------------
@@ -113,20 +109,19 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
+spurious execution timeouts
+---------------------------
+[Error: Timed out executing program users/shetag/fock/fock-1] (e.g., 04/03/10)
+[Error: Timed out executing program users/shetag/fock/fock-2] (e.g., 04/03/10)
+
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
 [Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 -nl 1 (--cc-warnings  ) (0-2)]
-
-spurious compilation timeouts (04/02/10)
-----------------------------------------
-[Error: Timed out compilation for types/tuple/deitz/test_tuple_simple2]
-[Error: Timed out compilation for types/type_variables/deitz/part2/test_typevar_class10]
-[Error: Timed out compilation for types/type_variables/deitz/part3/test_instantiate_clone1]
-[Error: Timed out compilation for types/type_variables/deitz/part4/test_paramvar_class1]
-[Error: Timed out compilation for users/shetag/condarr-blc2]
-[Error: Timed out compilation for users/shetag/fock/fock-2]
-[Error: Timed out compilation for users/shetag/fock/fock-stc-1]
-[Error: Timed out compilation for users/thom/class-override]
+[Error: Timed out executing program studies/sudoku/dinan/sudoku]
+[Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
+[Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
+[Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
+[Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
 
 malloc out of memory causes problem (03/17/10 -- after OS upgrade)
 ------------------------------------------------------------------
@@ -200,15 +195,6 @@ memory stuff in flux (05/28/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
-
-didn't update Cyclic constructor call (04/03/10)
--------------------------------------
-[Error matching compiler output for distributions/deitz/test_distribution_syntax2]
-
-syntax error (04/03/10)
------------------------
-[Error matching compiler output for multilocale/deitz/needMultiLocales/dist/test_private_space]
-[Error matching compiler output for multilocale/deitz/needMultiLocales/mdblock/test_block1d]
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -304,10 +290,11 @@ GASNet unable to start polling thread
 pvm-specific tests
 ==================
 
-(spurious?) "address already in use" failures (04/02/10)
---------------------------------------------------------
-[Error matching program output for release/examples/tutorials/opaque]
-[Error matching program output for release/examples/tutorials/timers]
+(spurious?) "address already in use" failures
+---------------------------------------------
+[Error matching program output for release/examples/tutorials/opaque] (e.g., 04/02/10)
+[Error matching program output for release/examples/tutorials/timers] (e.g., 04/02/10, 04/04/10)
+[Error matching program output for release/examples/tutorials/genericClasses] (e.g., 04/03/10)
 
 timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 ----------------------------------------------------------------------
@@ -502,10 +489,6 @@ spurious sprintf not thread-safe
 xt-cle-specific failures
 ========================
 
--target=linux unrecognized
---------------------------
-*all*
-
 numerical accuracy issue
 ------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
@@ -532,9 +515,9 @@ consistent compilation timeout
 ------------------------------
 [Error: Timed out compilation for arrays/deitz/many/test_many_arrays_of_records]
 
-
 spurious compilation timeouts
 -----------------------------
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3] (e.g., 04/03/10, 04/04/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (e.g., 12/07/09)
 [Error: Timed out compilation for release/examples/programs/norm] (e.g., 12/07/09)
 [Error: Timed out compilation for release/examples/tutorials/arrays] (e.g., 12/07/09)
@@ -554,17 +537,17 @@ spurious compilation timeouts
 [Error: Timed out compilation for studies/madness/aniruddha/madchap/recordBug/test_likepy] (e.g., 12/06/09)
 [Error: Timed out compilation for studies/madness/aniruddha/madchap/test_diff] (e.g., 12/06/09)
 [Error: Timed out compilation for studies/madness/aniruddha/madchap/test_gaxpy] (e.g., 12/06/09)
-[Error: Timed out compilation for studies/madness/aniruddha/madchap/test_likepy] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/test_likepy] (e.g., 12/06/09, 04/03/10, 04/04/10)
 [Error: Timed out compilation for studies/madness/aniruddha/madchap/test_mul] (e.g., 12/06/09)
 [Error: Timed out compilation for studies/madness/aniruddha/madchap/test_showboxes] (e.g., 12/06/09)
 [Error: Timed out compilation for studies/madness/common/test_diff] (e.g., 12/06/09)
 [Error: Timed out compilation for studies/madness/common/test_gaxpy] (e.g., 12/06/09)
-[Error: Timed out compilation for studies/madness/common/test_likepy] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/common/test_likepy] (e.g., 12/06/09, 04/03/10, 04/04/10)
 [Error: Timed out compilation for studies/madness/common/test_mul] (e.g., 12/06/09)
 [Error: Timed out compilation for studies/madness/common/test_showboxes] (e.g., 12/06/09)
 [Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_diff] (e.g., 12/06/09)
 [Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_gaxpy] (e.g., 12/06/09)
-[Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_likepy] (e.g., 12/06/09)
+[Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_likepy] (e.g., 12/06/09, 04/03/10, 04/04/10)
 [Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_mul] (e.g., 12/06/09)
 
 spurious timeout
@@ -601,13 +584,10 @@ precision issues (?) -- is there a floating point flag we need to throw?
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 [Error matching program output for studies/madness/aniruddha/madchap/test_diff]
 [Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
-[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
 [Error matching program output for studies/madness/common/test_diff]
 [Error matching program output for studies/madness/common/test_gaxpy]
-[Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
 
 
 =============================================================
@@ -671,6 +651,12 @@ exp2 not supported:
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
+spurious seg fault in sh (?) (04/04/10)
+---------------------------------------
+[Error matching program output for studies/uts/uts_deq  -stestMode=true
+-sdistrib=Geometric -sgeoDist=GeoFixed -sSEED=19 -sB_0=4 -sMAX_DEPTH=5 (-O
+--no-checks brg_sha1.c brg_sha1.h --cc-warnings  ) (0-1)]
+
 Duplicate symbol declaration (02/13/10)
 ---------------------------------------
 [Error matching compiler output for associative/waynew/indef2]
@@ -707,6 +693,10 @@ Numerical accuracy issues (08/29/09)
 ========================
 xt-gnu specific failures
 ========================
+
+warning in supplied header files (05/05/10)
+-------------------------------------------
+*** 31 failures ***
 
 warning in supplied header files (03/30/10)
 -------------------------------------------
