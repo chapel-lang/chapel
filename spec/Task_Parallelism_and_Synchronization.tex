@@ -1,29 +1,8 @@
 \sekshun{Task Parallelism and Synchronization}
 \label{Task_Parallelism_and_Synchronization}
 
-Chapel is an {\em explicitly} parallel programming language.  The
-programmer introduces parallelism into a program
-via \sntx{parallel-statements} and \sntx{parallel-expressions}:
-\begin{syntax}
-parallel-statement:
-  forall-statement
-  cobegin-statement
-  coforall-statement
-  begin-statement
-  sync-statement
-  serial-statement
-  atomic-statement
-
-parallel-expression:
-  forall-expression
-\end{syntax}
-
-In addition, some operations on arrays and domains, as well as
-invocations of promotion, are executed in parallel.  The
-term \emph{task} is used to refer to a distinct context of execution
-that may be running concurrently.
-
-This section is divided into five parts:
+Chapel supports both task parallelism and data parallelism, and the
+mixing thereof.  This chapter details tasks parallelism in four parts:
 \begin{itemize}
 \item \rsec{unstructured_task_parallelism}
 describes the begin statement, an unstructured way to introduce
@@ -33,15 +12,15 @@ unstructured mechanism for synchronizing a program.
 describes the cobegin and coforall statement, structured ways to
 introduce concurrency into a program, and the sync- and
 serial statement, structured ways to control and suppress parallelism.
-\item \rsec{Data_Parallelism}
-describes the forall statement and -expression, constructs for
-explicit data parallelism.
 \item \rsec{atomicity}
 describes the atomic statement, a construct to support atomic
 transactions.
 \item \rsec{Memory_Consistency}
 describes the memory consistency model.
 \end{itemize}
+
+The term \emph{task} is used to refer to a distinct context of
+execution that may be running concurrently.
 
 \subsection{Unstructured Task-Parallel Constructs}
 \label{unstructured_task_parallelism}

@@ -21,6 +21,9 @@ statement:
   break-statement
   continue-statement
   param-for-statement
+  use-statement
+  type-select-statement
+  empty-statement
   return-statement
   yield-statement
   module-declaration-statement
@@ -29,30 +32,28 @@ statement:
   type-declaration-statement
   variable-declaration-statement
   remote-variable-declaration-statement
-  use-statement
-  type-select-statement
-  empty-statement
-  parallel-statement
   on-statement
+  cobegin-statement
+  coforall-statement
+  begin-statement
+  sync-statement
+  serial-statement
+  atomic-statement
+  forall-statement
 \end{syntax}
 
-The declaration statements are discussed in the sections that define
-what they declare.  Module declaration statements are defined
-in~\rsec{Modules}.  Function declaration statements are defined
-in~\rsec{Functions}.  Method declaration statements are defined
-in~\rsec{Class_Methods}.  Type declaration statements are defined
-in~\rsec{Types}.  Variable declaration statements are defined
-in~\rsec{Variables}.  Remote variable declaration statements are
-defined in~\rsec{remote_variable_declarations}.  Tuple variable
-declaration statements are defined
-in~\rsec{Variable_Declarations_in_a_Tuple}.  Return statements are
-defined in~\rsec{The_Return_Statement}.  Yield statements are defined
-in~\rsec{The_Yield_Statement}.  The \sntx{parallel-statement} consists
-of statements that create or limit parallelism.  These statements are
-described in~\rsec{Task_Parallelism_and_Synchronization}
-and~\rsec{Data_Parallelism}.  The \sntx{on-statement} is defined
-in~\rsec{On}.  The compiler error statement is defined
-in~\rsec{User_Defined_Compiler_Errors}.
+Return statements are defined in~\rsec{The_Return_Statement}.  Yield
+statements are defined in~\rsec{The_Yield_Statement}.  Module
+declaration statements are defined in~\rsec{Modules}.  Function
+declaration statements are defined in~\rsec{Functions}.  Method
+declaration statements are defined in~\rsec{Class_Methods}.  Type
+declaration statements are defined in~\rsec{Types}.  Variable
+declaration statements are defined in~\rsec{Variables}.  Remote
+variable declaration statements are defined
+in~\rsec{remote_variable_declarations}.  On statements are defined
+in~\rsec{On}.  Cobegin, coforall, begin, sync, serial and atomic
+statements are defined in~\rsec{Task_Parallelism_and_Synchronization}.
+Forall statements are defined in~\rsec{Data_Parallelism}.
 
 \subsection{Blocks}
 \label{Blocks}

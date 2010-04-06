@@ -1,8 +1,13 @@
 \sekshun{Expressions}
 \label{Expressions}
 
-This section defines expressions in Chapel.  Forall expressions are
-described in~\rsec{Forall_Expressions}.
+This section defines expressions in Chapel with the following
+exceptions: The forall expression, reduce expressions, and scan
+expressions are defined in~\rsec{Data_Parallelism}.  Module access
+expressions are defined in~\rsec{Explicit_Naming}.  Tuple expressions
+and tuple expand expressions are defined in~\rsec{Tuples}.  Locale
+access expressions are defined
+in~\rsec{Querying_the_Locale_of_a_Variable}.
 
 The syntax for an expression is given by:
 \begin{syntax}
@@ -21,7 +26,7 @@ expression:
   let-expression
   if-expression
   for-expression
-  parallel-expression
+  forall-expression
   reduce-expression
   scan-expression
   module-access-expression
@@ -29,21 +34,6 @@ expression:
   tuple-expand-expression
   locale-access-expression
 \end{syntax}
-
-The expressions that create and limit
-parallelism, \sntx{parallel-expression}, are discussed
-in~\rsec{Task_Parallelism_and_Synchronization}
-and~\rsec{Data_Parallelism}.  Reductions and
-scans, \sntx{reduce-expression} and \sntx{scan-expression}, are
-defined in~\rsec{Reductions_and_Scans}.  Module access
-expressions, \sntx{module-access-expression}, are defined
-in~\rsec{Explicit_Naming}.  Tuple
-expressions, \sntx{tuple-expression}, are defined
-in~\rsec{Tuple_Values}.  Tuple expand
-expressions, \sntx{tuple-expand-expression}, are defined
-in~\rsec{Tuple_Expansion}.  Locale access
-expressions, \sntx{locale-access-expression}, are defined
-in~\rsec{Querying_the_Locale_of_a_Variable}.
 
 \subsection{Literal Expressions}
 \label{Literal_Expressions}
