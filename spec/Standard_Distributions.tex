@@ -1,67 +1,139 @@
 \sekshun{Standard Distributions}
 \label{Standard_Distributions}
 
-Standard distributions include the following:
-\begin{itemize}
-\item The block distribution \chpl{Block}
-\item The cyclic distribution \chpl{Cyclic}
-\item The block-cyclic distribution \chpl{BlockCyclic}
-\end{itemize}
+The following table lists distributions standard to the Chapel
+language:
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+{\bf Distribution} & {\bf Module} & {\bf Supported Domain Types} \\
+\hline
+\chpl{Block} & \chpl{BlockDist} & Arithmetic \\
+\chpl{Cyclic} & \chpl{CyclicDist} & Arithmetic \\
+\hline
+\end{tabular}
+\end{center}
 
-\begin{openissue}
-There is an expectation that the number of standard distributions will
-grow dramatically.
-\end{openissue}
-
-A design goal is that all standard distributions are defined using the
-same mechanisms available to Chapel programmers wishing to define
-their own distributions~(\rsec{User_Defined_Domain_Maps}).
+\begin{rationale}
+Why supply any standard distributions?  A main design goal of Chapel
+requires that the standard distributions be defined using the same
+mechanisms available to Chapel programmers wishing to define their own
+distributions or layouts~(\rsec{User_Defined_Domain_Maps}).  That way
+there shouldn't be a necessary performance cost associated with
+user-defined domain maps.  Nevertheless, distributions are an integral
+part of the Chapel language which would feel incomplete without a good
+set of standard distributions.  It is hoped that many distributions
+will begin as user-defined domain maps and later become part of the
+standard set of distributions.
+\end{rationale}
 
 \subsection{The Standard Block Distribution}
 \label{Block_Dist}
 
-The standard Block distribution is defined in the module
-called \chpl{BlockDist}.  This module must be explicitly used.
-
-The Block distribution is parameterized by the rank and index type of
-the domains for which it will support.  Thus domains of different
-ranks or different index types must be distributed with different
+The standard Block distribution is defined in the module called
+\chpl{BlockDist}.  It is parameterized by the rank and index type of
+the domains that it can support.  Thus domains of different ranks or
+different index types must be distributed with different Block
 distributions.
 
 The Block class constructor is defined as follows:
 \begin{chapel}
-def Block(param rank: int,
-          type idxType = int,
-          bbox: domain(rank, idxType),
-          targetLocales: [] locale = thisRealm.Locales, 
-          tasksPerLocale: int = 0)
+def Block(boundingBox: domain,
+          targetLocales: [] locale = Locales, 
+          dataParTasksPerLocale = $\mbox{{\it value in global config const of the same name}}$,
+          dataParIgnoreRunningTasks = $\mbox{{\it value in global config const of the same name}}$,
+          dataParMinGranularity = $\mbox{{\it value in global config const of the same name}}$,
+          param rank = boundingBox.rank,
+          type idxType = int)
 \end{chapel}
 
-The argument \chpl{bbox} is a non-distributed domain defining a
-bounding box used to partition the space of all indices across the
-array of target locales.  The indices inside the bounding box are
-partitioned ``evenly'' across the locales and indices outside the
-bounding box are mapped to the same locale as the nearest index inside
-the bounding box.
+The argument \chpl{boundingBox} is a non-distributed domain defining a
+bounding box used to partition the space of all indices across an
+array of target locales.  For Block distributions of rank $d$, given
+a bounding box
+\begin{chapel}
+[$l_1$..$h_1$, $\ldots$, $l_d$..$h_d$]
+\end{chapel}
+and an array of target locales defined over the domain
+\begin{chapel}
+[$0$..$n_1$, $\ldots$, $0$..$n_d$]
+\end{chapel}
+then a Block distribution maps an index $i$ to a locale by the
+following formula which computes the $k$\emph{th} component of an
+index into the array of target locales from the $k$\emph{th} component
+of $i$:
+\[
+\left\{
+  \begin{array}{ll}
+    0 & \mbox{if $i_k < l_k$} \\
+    \left\lfloor\dfrac{n_k (i_k - l_k)}{h_k - l_k + 1}\right\rfloor & \mbox{if $i_k \geq l_k$ and $i_k \leq h_k$} \\
+    n_k-1 & \mbox{if $i_k > h_k$} \\
+  \end{array}
+\right.
+\]
 
 The argument \chpl{targetLocales} is a non-distributed array
 containing the target locales to which this distribution partitions
 indices and data.  The rank of \chpl{targetLocales} must match the
-rank of the distribution, or be one.  If the rank
-of \chpl{targetLocales} is one, it will be factored and reshaped so
-that it matches the rank of the distribution.  A greedy heuristic is
-used to ``evenly'' do the factoring.
+rank of the distribution, or be one.  If the rank of
+\chpl{targetLocales} is one, a greedy heuristic is used to reshape the
+array of target locales so that it matches the rank of the
+distribution and each dimension contains an approximately equal number
+of indices.
 
-The argument \chpl{tasksPerLocale} is an integer that specifies the
-number of tasks to use on each locale when iterating in parallel over
-a Block-distributed domain or array.
+The arguments \chpl{dataParTasksPerLocale},
+\chpl{dataParIgnoreRunningTasks}, and \chpl{dataParMinGranularity} set
+the knobs that are used to control intra-locale data parallelism for
+Block-distributed domains and arrays in the same way that the global
+configuration constants of these names control data parallelism for
+ranges and default-distributed domains and
+arrays~\rsec{data_parallel_knobs}.
+
+The rank and index type of the Block distribution are inferred from
+the \chpl{boundingBox} argument unless explicitly set.
+
+\begin{example}
+The following code sets the elements of a Block-distributed array of
+integers to the ID of the locale on which each element exists.
+%\begin{chapelpre}
+%\end{chapelpre}
+\begin{chapel}
+use BlockDist;
+
+const Space = [1..8, 1..8];
+const MyBlock: dmap(Block(rank=2)) = new dmap(new Block(boundingBox=Space));
+const D: domain(2) dmapped MyBlock = Space;
+var A: [D] int;
+
+forall a in A do
+  a = a.locale.id;
+
+writeln(A);
+\end{chapel}
+The Block distribution \chpl{MyBlock} is specified with an explicit
+type that sets the rank of the distribution to two and uses the
+default dimensional index type \chpl{int}.  It is initialized by
+setting the bounding box to the value of the non-distributed domain
+\chpl{Space}.  Note that the named arguments \chpl{rank} and
+\chpl{boundingBox} are used only for clarity and may be omitted.
+
+Domains \chpl{D} and \chpl{A} are distributed via \chpl{MyBlock}.  The
+computation occurs in the forall loop where each array element is set
+to the ID of the locale on which that element exists.  When run on 6
+locales, the output of this code is:
+\begin{chapel}
+0 0 0 0 1 1 1 1
+0 0 0 0 1 1 1 1
+0 0 0 0 1 1 1 1
+2 2 2 2 3 3 3 3
+2 2 2 2 3 3 3 3
+2 2 2 2 3 3 3 3
+4 4 4 4 5 5 5 5
+4 4 4 4 5 5 5 5
+\end{chapel}
+\end{example}
 
 \subsection{The Standard Cyclic Distribution}
 \label{Cyclic_Dist}
-
-This section is forthcoming.
-
-\subsection{The Standard Block-Cyclic Distribution}
-\label{Block_Cyclic_Dist}
 
 This section is forthcoming.

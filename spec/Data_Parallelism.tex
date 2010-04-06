@@ -27,9 +27,14 @@ forall-statement:
   [ index-var-declaration `in' iterator-expression ] statement
   [ iterator-expression ] statement
 \end{syntax}
+As with the for statement, the indices may be omitted if they are
+unnecessary and the \chpl{do} keyword may be omitted before a block
+statement.
+
 The bracketed form of the loop is a syntactic convenience.
 
 \subsubsection{Execution and Serializability}
+\label{forall_semantics}
 
 The forall statement evaluates the loop body once for each element in
 the \sntx{iterator-expression}.  Each instance of the forall loop's
@@ -79,6 +84,17 @@ writeln(a);
 1 2 3 4 5
 \end{chapeloutput}
 \end{example}
+
+\subsubsection{Parallelism}
+\label{forall_parallelism}
+
+\subsubsection{Zipper Iteration}
+\label{forall_zipper}
+
+\subsubsection{Tensor Product Iteration}
+\label{forall_tensor}
+
+
 
 \subsection{The Forall Expression}
 \label{Forall_Expressions}
@@ -374,3 +390,4 @@ output is
 \end{example}
 
 \subsection{Knobs for Default Data Parallelism}
+\label{data_parallel_knobs}
