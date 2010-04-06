@@ -1,0 +1,1 @@
+multipleHalts.chpl:2: error: halt reached - This should only get printed once
