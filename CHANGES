@@ -2,6 +2,228 @@
 Release Changes List
 ====================
 
+***stopped at r16767***
+
+===========
+version 1.1
+===========
+
+Fourth public release of Chapel, April 15, 2009
+
+High-Level Themes:
+------------------
+- single- and multi-locale task parallelism
+- single- and multi-locale data parallelism
+- improved completeness and stability of Block and Cyclic distributions
+- bug fixes
+
+License Changes:
+----------------
+
+Packaging Changes:
+------------------
+
+Environment Changes:
+--------------------
+- added CHPL_TASKS to select the tasking layer to use (was CHPL_THREADS)
+- CHPL_THREADS now describes lower-level threading and is typically inferred
+- CHPL_TIMERS now describes which timer implementation you want to use
+
+Changes to Chapel Language:
+---------------------------
+- changed resolution to favor functions with where clauses over those without
+  (e.g., for 'foo(3)', 'foo(x)' is not as good a match as 'foo(x) where x:int')
+- redefined enumerated domains to be a special case of associative domains
+- replaced placeholder 'distributionType'/'distributionValue' syntax with 'dmap'
+  (e.g., 'const D = distributionValue(...)' => 'const D = new dmap(...)'
+- added the ability to query the types of tuple components
+  (e.g., 'def f(t: (real, ?t)) { ... }')
+- removed the ability to assign array aliases to normal array variables
+  (e.g., 'var A => B;' is legal but 'var A: [1..n] real;  A => B;' is not)
+- added initial support for passing array aliases to class constructors
+  (e.g., 'class C {var X: [1..n] int;} var A: [1..n] int; var c = new C(X=>A);')
+
+Newly Implemented Features:
+---------------------------
+- can now apply 'dmapped' to expressions other than domain literals
+  (e.g., 'const Dom1 = [1..5], Dom2 = Dom1 dmapped ...')
+- added support for declaring tuple arguments of tuple types
+  (e.g., 'def f((x, y): (int, real)) { ... }')
+
+Portability of code base:
+-------------------------
+- added parentheses around some expressions to avoid compiler warnings
+
+Platform-specific notes:
+------------------------
+- on the Cray XMT we now use a platform-specific timing routine (mta_get_clock)
+
+Semantic Changes:
+-----------------
+- made the minloc/maxloc reductions return the first matching location
+- made int(32) the default idxType for standard distributions like Block
+- made iteration over enumerated domains/arrays use the enum's declaration order
+- defined reindexing to ignore the distribution of the indexing domain
+- changed assignment statements to evaluate the left-hand side before the right
+- type aliases may now only be used after they are defined
+  (e.g., 'var x: t; type t = int;' is now illegal)
+- added support for indexing into tuples using any integral type, not just 'int'
+- added support for 1-tuple style variable declarations for completeness
+  (e.g., def (x): (int);
+- improved the order-of-evaluation for tuple assignments to remove array temps
+
+Syntactic/Naming Changes:
+-------------------------
+- added a syntactic sugar to drop 'new dmap(new' for anonymous distributions
+  (e.g., '...dmapped new dmap(new Block(...))...' => '...dmapped Block(...)')
+- renamed "distributions" as "domain maps" (or 'dmap's in Chapel syntax)
+- renamed single-locale/degenerate distributions "layouts"
+- renamed multi-locale distributions simply "distributions"
+- improved orthogonality of parsing type expressions in expression contexts
+- added support for empty (no-op) statements within a class declaration
+- added ability to elide the # of arguments specification/query from varargs fns
+  (e.g., can now do 'def f(x...)' in addition to 'def f(x...?n)'/'def f(x...n)')
+- replaced the use of underscore (_) to ignore things to leaving the space blank
+  (e.g., '(_, x) = getTuple()' => '( , x) = getTuple()')
+- made underscore (_) a legal identifier
+
+Documentation:
+--------------
+- improved the consistency of prototypes in the Standard Modules section of spec
+- made the specification's description of function resolution more accurate
+- minor improvements to the Modules chapter of the specification
+- updated READMEs based on task/thread changes (see
+- fixed some bugs in example codes within the specification
+- made major improvements to the Tuples chapter
+- updated the Chapel URL to http://chapel.cray.com on the quick reference card
+- attempted to clarify the wording in the Scope chapter of the specification
+- added a publication date to the title page of the specification
+
+Example Codes:
+--------------
+- added a new example to (hello-multicore.chpl) to show simple multitasking
+- updated comments in ra-randstream.chpl, quicksort.chpl
+- stopped unrolling a loop in computeM2Vals
+- renamed helper files in hpcc/ subdirectory to match the modules they define
+- updated hpcc/ tests to reflect that int(32) is now the default index size
+- updated examples to reflect new dmap/dmapped syntax for distributions
+- updated examples to remove reliance on the A: [i in D] real sugar
+- updated examples to remove the use of underscore to ignore detupled value
+- added hpcc/stream-ep to the Makefile and README
+- updated examples to track new Random module interface
+- updated examples to reflect the new controls for data parallelism
+- updated to reflect the new argument order for Block, Cyclic distributions
+- updated examples to reflect renaming of ind2loc to idxToLocale
+
+Compiler Changes:
+-----------------
+
+Runtime Library Changes:
+------------------------
+- broke the threading layer of the runtime into tasking and threading layers
+- renamed most external tasking/threading routines in the runtime
+- reorganized the runtime directories to use better hierarchies
+  (e.g., 'runtime/foo-bar' => 'runtime/src/foo/bar'
+- exposed sleep() calls to the tasking layer
+- renamed chapel_code.chpl to chpl_rt_utils.chpl
+- added support for different timer implementations and platform-specific timers
+
+Launcher-specific notes:
+------------------------
+
+Standard Modules:
+-----------------
+
+Standard Domain Maps:
+---------------------
+- factored common routines for arithmetic domains out of the implementations
+  e.g., nothing about exterior() is specific to a domain map's implementation
+- the Block and Cyclic distributed domain maps are now feature-complete
+- refactored helper functions for distributions into a new file: DSIUtil.chpl
+- added reindexing and rank change operations to the Block distribution
+
+Compiler Flags:
+---------------
+- --conditional-dynamic-dispatch-limit flag for using vtables vs. conditionals
+
+Generated Code Flags:
+---------------------
+
+Interoperability Changes:
+-------------------------
+- added initial support for declaring external C struct types
+  (see doc/technotes/README.extern for details)
+
+Bug Fixes/New Semantic Checks (for old semantics):
+--------------------------------------------------
+- added a check that tuple assignments are between tuples of matching size
+- fixed a race condition in the runtime tasking layer
+- added a check that config param enums are set to a legal value for the enum
+- fixed a bug in which "false" where clauses were counted as instantiations
+- fixed bugs in function resolution that led to choosing a poorer match
+- fixed bugs in which argument coercion and promotion broke extern functions
+- fixed a bug in which a class' type declaration could not define multiple types
+- fixed a bug in which a shared initializer was evaluated multiple times
+  (e.g., 'var x, y, z = foo()' called foo() three times rather than one)
+- fixed a bug in which yield statements could omit the expression to yield
+  (i.e., 'yield;' is not a legal statement in Chapel)
+- fixed a bug where returning a sync var was flagged as not returning anything
+- added a check that iterators are not defined to yield types or params
+- fixed the instantiation point for compiler-introduced wrapper functions
+- removed the ability to assign values to types
+- fixed implementation of type aliases to evaluate them during fn resolution
+- fixed a bug in which a 'use' in a module-level non-function scope leaked names
+- added an error message for param for loops that iterate over non-param ranges
+- fixed a bug in which generic class member types could not be queried
+- fixed a bug in which printing an empty record would print an internal field
+- fixed an integer overflow problem in the locale.physicalMemory() query
+- fixed a bug in which recursive fns in local blocks led to infinite compilation
+
+Error Message Improvements:
+---------------------------
+- squashed "too many instantiation" error messages for internal types/functions
+
+Compiler Analysis and Optimizations/Performance of Generated Code:
+------------------------------------------------------------------
+- added the ability to use a virtual method table for dynamic dispatch
+- turned on optimizations of on-clauses by default (--optimize-on-clauses)
+- re-implemented homogenous tuples to use C arrays rather than structs
+
+Compiler Performance and Cleanup:
+---------------------------------
+- changed implementation of dynamic dispatch to use cond stmts rather than exprs
+- reordered compiler optimizations to improve performance
+- removed a quadratic aspect of copy propagation
+- improved performance of the reaching definitions analysis
+- improved performance of function resolution
+
+Cleanup of Generated Code:
+--------------------------
+- made generated code less sensitive to small changes to better support diffs
+
+Testing system:
+---------------
+- changed sub_test script to use Python for better flexibility/maintainability
+- added ability to test properly formatted codes embedded in the specification
+
+Internal:
+---------
+- refactored CallExpr::codegen()
+- added a new helper function gen() that serves as a printf for codegen
+- added getValType(), getRefType(), getWideRefType() helper functions
+- added support for _isSignedType() and isUnsignedType() helper param functions
+- reimplemented Math.chpl routines using _extern rather than primitives
+- reimplemented most Memory.chpl routines using _extern rather than primitives
+- refactored parser to treat types and expressions more uniformly
+- added the "dsi" prefix to methods that are part of the dmap standard interface
+- refactored parsing of serial and parallel loops to share more code
+- removed the unused 'reindexed' param from default arithmetic arrays
+- moved the implementation of queries in formal types to function resolution
+- added a displayRepresentation method to dmap, domain, and array classes
+- better distinguished between thread and task IDs
+- simplified the implementation of operator overloading on tuples
+
+
 ============
 version 1.02
 ============
