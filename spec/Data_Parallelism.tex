@@ -29,9 +29,7 @@ forall-statement:
 \end{syntax}
 As with the for statement, the indices may be omitted if they are
 unnecessary and the \chpl{do} keyword may be omitted before a block
-statement.
-
-The bracketed form of the loop is a syntactic convenience.
+statement.  The bracketed form is a syntactic convenience.
 
 \subsubsection{Execution and Serializability}
 \label{forall_semantics}
@@ -88,22 +86,50 @@ writeln(a);
 \subsubsection{Parallelism}
 \label{forall_parallelism}
 
+The iterator expression determines the number of tasks that implement
+a forall loop as well as which iterations each task computes.  For
+ranges, default domains, and default arrays, these values can be
+controlled via configuration constants~(\rsec{data_parallel_knobs}).
+
+Additionally, the iterator expression can determine the locales on
+which the tasks should execute its loop iterations.  For ranges,
+default domains, and default arrays, all tasks are executed on the
+current locale.  Domains and arrays that are distributed across
+multiple locales will typically implement forall loops with multiple
+tasks on multiple locales.
+
 \subsubsection{Zipper Iteration}
 \label{forall_zipper}
+\index{zipper iteration}
+
+Zipper iteration has the same semantics as described
+in~\rsec{Zipper_Iteration}.  With respect to parallelism, the
+left-most iterator expression determines the number of tasks, the
+iterations each task executes, and the locales on which these tasks
+execute.
 
 \subsubsection{Tensor Product Iteration}
 \label{forall_tensor}
+\index{tensor product iteration}
 
-
+Tensor product iteration has the same semantics as described
+in~\rsec{Tensor_Product_Iteration}.  All iteration expressions impact
+parallelism as tensor product iteration is equivalent to nested forall
+loops.  The degree of nested parallelism for ranges, default domains,
+and default arrays can be controlled via the configuration
+constant \chpl{dataParIgnoreRunningTasks}~(\rsec{data_parallel_knobs}).
 
 \subsection{The Forall Expression}
 \label{Forall_Expressions}
 \index{forall expressions}
 
-A forall expression can be used to enable concurrent evaluation of
-sub-expressions.  The sub-expressions are evaluated once for each
-element in the iterator expression.  The syntax of a forall expression
-is given by
+The forall expression is a concurrent variant of the for expression
+described in~\rsec{For_Expressions}.
+
+\subsubsection{Syntax}
+\label{forall_expr_syntax}
+
+The syntax of a forall expression is given by
 \begin{syntax}
 forall-expression:
   `forall' index-var-declaration `in' iterator-expression `do' expression
@@ -111,6 +137,22 @@ forall-expression:
   [ index-var-declaration `in' iterator-expression ] expression
   [ iterator-expression ] expression
 \end{syntax}
+As with the for expression, the indices may be omitted if they are
+unnecessary.  The \chpl{do} keyword is always required.  The bracketed
+form is a syntactic convenience.
+
+\subsubsection{Execution, Serializability, and Parallelism}
+
+As with the forall statement, the forall expression must be
+serializable.  In addition, the iterator expression determines the
+number of tasks, the iterations each task executes, and the locales on
+which these tasks execute.  When multiple iterator expressions are
+used in a zipper context, the left-most iterator determines the number
+of tasks, the iterations each task executes, and the locales on which
+these tasks execute.
+
+The semantics are equivalent to calling a parallel iterator where the
+loop expression is yielded~(\rsec{Parallel_Iterators}).
 
 \begin{example}
 The code
@@ -155,47 +197,52 @@ writeln(result);
 
 \subsection{Whole Array Assignment}
 
+Whole array assignment is implicitly parallel.  The assignment
+statement
+\begin{chapel}
+LHS = RHS;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+forall (e1,e2) in (LHS,RHS) do
+  e1 = e2;
+\end{chapel}
+
 \subsection{Promotion}
 \label{Promotion}
 
-A function requires scalar promotion if an iterator (or array, domain,
-or range) is passed to a formal argument with a type that allows the
-yielded type of the iterator to dispatch to the formal argument.  In
-the case of arrays, the yielded type is the element type.  In the case
-of domains and ranges, the yielded type is the index type.  The rules
-of when an overloaded function is promoted are discussed
-in~\rsec{Function_Resolution}.  If a promoted function returns a
-value, the promoted function becomes an iterator that is controlled by
-a loop over the iterator (or array, domain, or range) that it is
-promoted by.  If the function does not return a value, the function is
-controlled by a loop over the iterator that it is promoted by, but the
-promotion does not become an iterator.
+A function that expects one or more scalar argument but is called with
+one or more arrays, domains, ranges, or iterators is promoted if the
+element types of the arrays, the index types of the domains and/or
+ranges, and the yielded types of the iterators can resolve to the
+scalar type of the argument.  The rules of when an overloaded function
+is promoted are discussed in~\rsec{Function_Resolution}.
+
+If a promoted function returns a value, the promoted function becomes
+an iterator that is controlled by a loop over the iterator (or array,
+domain, or range) that it is promoted by.  If the function does not
+return a value, the function is controlled by a loop over the iterator
+that it is promoted by, but the promotion does not become an iterator.
 
 In addition to scalar promotion of functions, operators and casts are
 also promoted.
 
 \begin{example}
-Given an iterator
+Given the array
 \begin{chapel}
-def oneToFive() {
-  for i in 1..5 do
-    yield i;
-}
+var A: [1..5] int = [i in 1..5] i;
 \end{chapel}
-and a function
+and the function
 \begin{chapel}
 def square(x: int) return x**2;
 \end{chapel}
-then the call \chpl{square(oneToFive())} results in the promotion of
-the \chpl{square} function over the values returned by
-the \chpl{oneToFive} iterator.  The result is an iterator that returns
-the values \chpl{1}, \chpl{4}, \chpl{9}, \chpl{16}, and \chpl{25}.
-Instead of using the \chpl{oneToFive} iterator to promote
-the \chpl{square} function, the range \chpl{1..5} could be used
-directly as in \chpl{square(1..5)}.  Also note that operator
-invocations are treated as function calls in terms of promotion
-so \chpl{(1..5)**2} is also equivalent.
+then the call \chpl{square(A)} results in the promotion of
+the \chpl{square} function over the values in the array \chpl{A}.  The
+result is an iterator that returns the
+values \chpl{1}, \chpl{4}, \chpl{9}, \chpl{16}, and \chpl{25}.
 \end{example}
+
+Whole array operations are a form of promotion.
 
 \subsubsection{Zipper Promotion}
 \label{Zipper_Promotion}
@@ -253,29 +300,6 @@ foo[1..3, 4..6];
 then the output is ``1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 ''.
 \end{example}
 
-\subsubsection{Promotion and Evaluation Order}
-
-The evaluation of an iterator is interleaved with the evaluation of
-the promoted expression or function.  The values produced by the
-iterator are not evaluated first.  This means that the array semantics
-of array programming languages are not maintained.
-
-\begin{example}
-If \chpl{A} is an array declared over the indices \chpl{1..5}, then
-the following codes are not equivalent:
-\begin{chapel}
-A[2..4] = A[1..3] + A[3..5];
-\end{chapel}
-and
-\begin{chapel}
-var T = A[1..3] + A[3..5];
-A[2..4] = T;
-\end{chapel}
-This follows because, in the former code, some of the new values that
-are assigned to \chpl{A} may be read to compute the sum depending on
-the amount of concurrency in the promotion.
-\end{example}
-
 \subsection{Reductions and Scans}
 \label{Reductions_and_Scans}
 
@@ -286,10 +310,8 @@ expressions compute an aggregate of results where each result value
 stores the result of a reduction applied to all of the elements in the
 aggregate up to that expression.  Chapel provides a number of built-in
 reduction and scan operators, and also supports a mechanism for the
-user to define additional reductions and scans.  Chapel reductions and
-scans result in efficient parallel implementations, and enjoy
-syntactic support to make them easy to use.
-
+user to define additional reductions and
+scans~(\rsec{User_Defined_Reductions_and_Scans}).
 
 \subsubsection{Reduction Expressions}
 \label{reduce}
@@ -389,5 +411,64 @@ output is
 \end{chapel}
 \end{example}
 
+\subsection{Data Parallelism and Evaluation Order}
+
+Temporary arrays are never inserted by the Chapel compiler.  The
+semantics of whole array assignment, promotion, etc., are thus
+different than in array programming languages.
+
+\begin{example}
+If \chpl{A} is an array declared over the indices \chpl{1..5}, then
+the following codes are not equivalent:
+\begin{chapel}
+A[2..4] = A[1..3] + A[3..5];
+\end{chapel}
+and
+\begin{chapel}
+var T = A[1..3] + A[3..5];
+A[2..4] = T;
+\end{chapel}
+This follows because, in the former code, some of the new values that
+are assigned to \chpl{A} may be read to compute the sum depending on
+the number of tasks used to implement the data parallel statement.
+\end{example}
+
 \subsection{Knobs for Default Data Parallelism}
 \label{data_parallel_knobs}
+
+The following configuration constants are provided to control the
+degree of data parallelism over ranges, default domains, and default
+arrays:
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+{\bf Config Const} & {\bf Type} & {\bf Default} \\
+\hline
+\chpl{dataParTasksPerLocale} & \chpl{int} & Number of cores per locale \\
+\chpl{dataParIgnoreRunningTasks} & \chpl{bool} & \chpl{true} \\
+\chpl{dataParMinGranularity} & \chpl{uint(64)} & \chpl{0} \\
+\hline
+\end{tabular}
+\end{center}
+
+The configuration constant \chpl{dataParTasksPerLocale} specifies the
+number of tasks to use when executing a forall loop over a range,
+default domain, or default array.  The actual number of tasks may be
+fewer depending on the two other configuration constants.  For
+distributed domains and arrays that use these same knobs, this value
+controls the parallelism within each locale.
+
+The configuration constant \chpl{dataParIgnoreRunningTasks}, when
+true, has no effect on the number of tasks to use to execute the
+forall loop.  When false, the number of tasks per locale is decreased
+by the number of tasks that are already running on the locale.
+
+The configuration constant \chpl{dataParMinGranularity}, when zero,
+has no effect on the number of tasks to use to execute the forall
+loop.  When greater than zero, the number of tasks is decreased so
+that the number of iterations per task is never less than the
+specified value.
+
+For some distributions (\eg, Block and Cyclic), these same global
+configuration constants are used to specify their default behavior.
