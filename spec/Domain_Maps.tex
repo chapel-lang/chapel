@@ -2,28 +2,37 @@
 \label{Domain_Maps}
 \index{domain maps}
 
-A mapping from domain index values to locales is called a \emph{domain
-map}.
+\emph{Domain maps} specify the implementation of domains and, in turn,
+arrays by defining the mapping from indices in domains to memory
+locations within or across locales.  The term \emph{layout} is used to
+describe a domain map that describes domains and arrays that exist on
+a single locale.  The term \emph{distribution} is used to describe a
+domain map that describes domains and arrays that are partitioned
+across multiple locales.
+
+The domain map abstraction is not only used to define this mapping,
+but rather is used to define the implementation of domains and arrays
+including their accessors and iterators.
 
 \subsection{Domain Map Types}
 \label{Domain_Map_Types}
 
-Distribution types are defined by the type of a distribution class
-that derives from BaseDist and is typically generic.  They are
-distinct from the distribution class type.  Typically, the
-distribution class type is only used on its own in defining the
-distribution itself~\rsec{User_Defined_Domain_Maps}
+Domain map types are defined by the type of the implementing domain
+class, but are distinct from the class type.  Typically, the domain
+map class type is only used on its own in defining the domain map
+itself.  Defining a domain map is discussed
+in~\rsec{User_Defined_Domain_Maps}.
 
-Defining a distribution type involves specifying a distribution class
-type and wrapping this in a distribution type \chpl{dist}.
+Specifying a domain map type involves specifying a domain map class
+type and wrapping it by the domain map specifier \chpl{dmap}.
 \begin{example}
 The code
 \begin{chapel}
 use BlockDist;
-var MyBlockDist: dist(Block(rank=2));
+var MyBlockDist: dmap(Block(rank=2));
 \end{chapel}
-defines a Block distribution called \chpl{MyBlockDist} with rank 2 and
-a default index type that can be used to distribute 2-dimensional
+creates a uninitialized two-dimensional Block distribution
+called \chpl{MyBlockDist} that can be used to distribute 2-dimensional
 arithmetic domains.  The Block distribution is described in more
 detail in~\rsec{Block_Dist}.
 \end{example}
@@ -31,42 +40,36 @@ detail in~\rsec{Block_Dist}.
 \subsection{Domain Map Values}
 \label{Domain_Map_Values}
 
-Constructing a distribution involves calling the constructor of a
-distribution class and defining a new distribution type \chpl{dist}.
+Constructing a domain map value involves calling the constructor of a
+domain map class and defining a new domain map type \chpl{dmap}.
 \begin{example}
 The code
 \begin{chapel}
 use BlockDist;
-var MyBlockDist = new dist(new Block(rank=2, bbox=[1..n,1..n]));
+var MyBlockDist: dmap(Block(rank=2)) = new dmap(new Block([1..n,1..n]));
 \end{chapel}
-constructs a Block distribution that partitions the index space
-specified by \chpl{[1..n, 1..n]} over all of the locales.  The Block
-distribution is described in more detail in~\rsec{Block_Dist}.
+creates an initialized two-dimensional Block distribution with a
+bounding box of \chpl{[1..n, 1..n]} over all of the locales.  The
+Block distribution is described in more detail in~\rsec{Block_Dist}.
 \end{example}
 
 \subsection{Mapped Domains and Arrays}
 \label{Mapped_Domains_and_Arrays}
 
-\index{domains!distributed}
-A domain for which a distribution is specified is referred to as a
-{\em distributed domain}.
+\index{domains!mapped}
+A domain for which a domain map is specified is referred to as a {\em
+mapped domain}.
 
-\begin{rationale}
-Should this be? A domain supports a method, \chpl{locale}, that maps
-index values in the domain to locales that correspond to the domain's
-distribution.
-\end{rationale}
-
-The syntax to create a distributed domain type is the same as the
-syntax to create a distributed domain value:
+The syntax to create a mapped domain type is the same as the syntax to
+create a mapped domain value:
 \begin{syntax}
-distributed-domain-type:
-  domain-type `distributed' distribution-expression
+mapped-domain-type:
+  domain-type `dmapped' domain-map-expression
 
-distributed-domain-expression:
-  domain-expression `distributed' distribution-expression
+mapped-domain-expression:
+  domain-expression `dmapped' domain-map-expression
 
-distribution-expression:
+domain-map-expression:
   expression
 \end{syntax}
 
@@ -74,53 +77,31 @@ distribution-expression:
 The code
 \begin{chapel}
 use BlockDist;
-var MyBlockDist = new dist(new Block(rank=2, bbox=[1..n,1..n]));
-var Dom: domain(2) distributed MyBlockDist =
-           [1..n, 1..n] distributed MyBlockDist;
+var MyBlockDist = new dmap(new Block([1..n,1..n]));
+var Dom: domain(2) dmapped MyBlockDist = [1..n, 1..n];
 \end{chapel}
-defines a new domain that is distributed by \chpl{MyBlockDist}.  Note
-that, as usual, the type does not need to be specified if the variable
-is initialized.
+defines a new Block-distributed domain, mapped via \chpl{MyBlockDist}.
 \end{example}
 
-When defining a new distribution inline with the \chpl{distributed}
-keyword, a syntactic sugar is supported in which the ``new dist new''
-characters may be omitted.
+When defining a new domain map inline with the \chpl{dmapped} keyword,
+a syntactic sugar is supported in which the ``new dmap(new''
+characters (along with the closing parenthesis) may be omitted.
 \begin{example}
 The code
 \begin{chapel}
 use BlockDist;
-var D = [1..n, 1..n] distributed new dist(new Block(rank=2, bbox=[1..n,1..n]));
+var D = [1..n, 1..n] dmapped new dmap(new Block([1..n,1..n]));
 \end{chapel}
 is equivalent to
 \begin{chapel}
 use BlockDist;
-var D = [1..n, 1..n] distributed Block(rank=2, bbox=[1..n,1..n]);
+var D = [1..n, 1..n] dmapped Block([1..n,1..n]);
 \end{chapel}
 \end{example}
 
-Iteration over a distributed domain implicitly executes the controlled
-task in the domain of the associated locale.  Similarly, when
-iterating over the elements of an array defined over a distributed
-domain, the controlled tasks are determined by the distribution of the
-domain.  If there are conflicting distributions in product iterations,
-the locale of a task is taken to be the first component in the
-product.
+\subsection{Default Mapped Domains and Arrays}
+\label{Default_Mapped_Domains_and_Arrays}
 
-\begin{example}
-If \chpl{D} is a distributed domain, then in the code
-\begin{chapel}
-forall d in D {
-  // body
-}
-\end{chapel}
-the body of the loop is executed in the locale where the
-index \chpl{d} maps to by the distribution of \chpl{D}.
-\end{example}
-
-\subsection{Undistributed Domains and Arrays}
-\label{Undistributed_Domains_and_Arrays}
-
-If a domain or an array does not have a distributed part, the domain
-or array is not distributed and exists only on the locale on which it
-is defined.
+If a domain is not mapped via the \chpl{dmapped} keyword, it is
+implicitly mapped by a default layout to the locale on which it is
+declared.
