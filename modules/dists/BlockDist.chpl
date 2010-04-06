@@ -845,7 +845,7 @@ def BlockArr.these(param tag: iterator, follower, param fast: bool = false) var 
     // we don't own all the elements we're following
     //
     def accessHelper(i) var {
-      local {
+      if myLocArr then local {
         if myLocArr.locDom.member(i) then
           return myLocArr.this(i);
       }
