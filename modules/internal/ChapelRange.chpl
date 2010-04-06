@@ -423,9 +423,9 @@ def range.these(param tag: iterator, follower) where tag == iterator.follower {
   var followThis = follower(1);
   if stridable {
     var r = if stride > 0 then
-        low+followThis.low*stride:eltType..low+followThis.high*stride:eltType by stride
+        low+followThis.low*stride:eltType..low+followThis.high*stride:eltType by stride by followThis.stride
       else
-        high+followThis.high*stride:eltType..high+followThis.low*stride:eltType by stride;
+        high+followThis.high*stride:eltType..high+followThis.low*stride:eltType by stride by followThis.stride;
     for i in r do
       yield i;
   } else {

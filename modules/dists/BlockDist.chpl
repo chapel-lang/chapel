@@ -345,9 +345,8 @@ def Block.targetLocsIdx(ind: rank*idxType) {
 
 def Block.dsiCreateReindexDist(newSpace, oldSpace) {
   def anyStridable(space, param i=1) param
-    return if i == space.size
-      then space(i).stridable
-      else space(i).stridable || anyStridable(space, i+1);
+    return if i == space.size then space(i).stridable
+           else space(i).stridable || anyStridable(space, i+1);
 
   // Should this error be in ChapelArray or not an error at all?
   if newSpace(1).eltType != oldSpace(1).eltType then
@@ -586,13 +585,17 @@ def BlockDom.these(param tag: iterator) where tag == iterator.leader {
 // stencil communication will be done on a per-locale basis.
 //
 def BlockDom.these(param tag: iterator, follower) where tag == iterator.follower {
+  def anyStridable(rangeTuple, param i: int = 1) param
+      return if i == rangeTuple.size then rangeTuple(i).stridable
+             else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
+
   chpl__testPar("Block domain follower invoked on ", follower);
-  var t: rank*range(idxType, stridable=stridable);
+  var t: rank*range(idxType, stridable=stridable||anyStridable(follower));
   for param i in 1..rank {
     var stride = whole.dim(i).stride: idxType;
     var low = stride * follower(i).low;
     var high = stride * follower(i).high;
-    t(i) = (low..high by stride:int) + whole.dim(i).low;
+    t(i) = (low..high by stride:int) + whole.dim(i).low by follower(i).stride;
   }
   for i in [(...t)] {
     yield i;
@@ -802,6 +805,10 @@ def BlockArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead.dist._value == this.dom.dist;
 
 def BlockArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
+  def anyStridable(rangeTuple, param i: int = 1) param
+      return if i == rangeTuple.size then rangeTuple(i).stridable
+             else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
+
   if fast then
     chpl__testPar("Block array fast follower invoked on ", follower);
   else
@@ -810,14 +817,14 @@ def BlockArr.these(param tag: iterator, follower, param fast: bool = false) var 
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Block array");
 
-  var followThis: rank*range(eltType=idxType, stridable=stridable);
+  var followThis: rank*range(eltType=idxType, stridable=stridable || anyStridable(follower));
   var lowIdx: rank*idxType;
 
   for param i in 1..rank {
     var stride = dom.whole.dim(i).stride;
     var low = follower(i).low * stride;
     var high = follower(i).high * stride;
-    followThis(i) = (low..high by stride) + dom.whole.dim(i).low;
+    followThis(i) = (low..high by stride) + dom.whole.dim(i).low by follower(i).stride;
     lowIdx(i) = followThis(i).low;
   }
   const followThisDom = [(...followThis)];
