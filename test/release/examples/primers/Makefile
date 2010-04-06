@@ -17,6 +17,7 @@ TARGETS = \
 	reductions \
 	slices \
 	sparse \
+	taskParallel \
 	timers \
 	varargs \
 	variables \
