@@ -147,26 +147,10 @@ block distribution regressions
 cyclic distribution regressions
 ===============================
 
-spurious timeouts
------------------
-[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_dot_numIndices]
-[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_writeln]
-[Error: Timed out compilation for distributions/robust/arithmetic/basics/test_array_assignment]
-[Error: Timed out compilation for distributions/robust/arithmetic/basics/test_infer_array_type]
-[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_tuple_to_array]
-[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_dot_numIndices] (e.g., 03/31/10)
-[Error: Timed out compilation for distributions/robust/arithmetic/basics/test_zipper_default] (e.g., 03/30/10)
-[Error: Timed out compilation for distributions/robust/arithmetic/composite/test_composite1] (e.g., 03/30/10)
-[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_tuple_to_array] (e.g., 03/30/10, 04/01/10)
-[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Norm] (e.g., 03/27/10)
-[Error: Timed out compilation for distributions/robust/arithmetic/reindexing/test_array_alias4] (e.g., 03/27/10)
-[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_writeln] (e.g., 03/27/10)
-
 have never worked
 -----------------
+[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_default]
 [Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex2]
-[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Random]
-
 
 
 ====================
@@ -195,6 +179,10 @@ memory stuff in flux (05/28/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+spurious execution timeouts
+---------------------------
+[Error: Timed out executing program users/franzf/v1/chpl/main] (e.g., 04/06/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -292,9 +280,9 @@ pvm-specific tests
 
 (spurious?) "address already in use" failures
 ---------------------------------------------
-[Error matching program output for release/examples/tutorials/opaque] (e.g., 04/02/10)
-[Error matching program output for release/examples/tutorials/timers] (e.g., 04/02/10, 04/04/10)
-[Error matching program output for release/examples/tutorials/genericClasses] (e.g., 04/03/10)
+[Error matching program output for release/examples/primers/opaque] (e.g., 04/02/10)
+[Error matching program output for release/examples/primers/timers] (e.g., 04/02/10, 04/04/10)
+[Error matching program output for release/examples/primers/genericClasses] (e.g., 04/03/10)
 
 timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 ----------------------------------------------------------------------
@@ -303,15 +291,15 @@ timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 [Error: Timed out executing program release/examples/hpcc/ra]
 [Error: Timed out executing program release/examples/hpcc/stream-ep]
 [Error: Timed out executing program release/examples/hpcc/stream]
-[Error: Timed out executing program release/examples/tutorials/block2D]
-[Error: Timed out executing program release/examples/tutorials/multilocale]
-[Error: Timed out executing program release/examples/tutorials/multirealm]
+[Error: Timed out executing program release/examples/primers/block2D]
+[Error: Timed out executing program release/examples/primers/multilocale]
+[Error: Timed out executing program release/examples/primers/multirealm]
 
 some types not getting --gen-communicated-structures'ed  (as of 03/25/10 ")
 ---------------------------------------------------------------------------
 [Error matching compiler output for release/examples/programs/linkedList]
 [Error matching compiler output for release/examples/programs/quicksort]
-[Error matching compiler output for release/examples/tutorials/iterators]
+[Error matching compiler output for release/examples/primers/iterators]
 
 
 =====================
@@ -440,7 +428,7 @@ threads-none causes serial iterator to be used rather than follower (11/25/08)
 
 no warning generated because of threads-none? (11/11/08)
 --------------------------------------------------------
-[Error matching program output for release/examples/tutorials/sparse]
+[Error matching program output for release/examples/primers/sparse]
 
 
 ==========================
@@ -520,8 +508,8 @@ spurious compilation timeouts
 [Error: Timed out compilation for multilocale/deitz/linked/test_linked3] (e.g., 04/03/10, 04/04/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (e.g., 12/07/09)
 [Error: Timed out compilation for release/examples/programs/norm] (e.g., 12/07/09)
-[Error: Timed out compilation for release/examples/tutorials/arrays] (e.g., 12/07/09)
-[Error: Timed out compilation for release/examples/tutorials/opaque] (e.g., 12/07/09)
+[Error: Timed out compilation for release/examples/primers/arrays] (e.g., 12/07/09)
+[Error: Timed out compilation for release/examples/primers/opaque] (e.g., 12/07/09)
 [Error: Timed out compilation for arrays/deitz/jacobi-no-inline] (e.g., 12/06/09)
 [Error: Timed out compilation for arrays/deitz/jacobi-unoptimized] (e.g., 12/06/09)
 [Error: Timed out compilation for arrays/deitz/jacobi5-no-local] (e.g., 12/06/09)
@@ -756,12 +744,12 @@ xmt-specific regressions
 
 out-of-bounds index (0) at line 100
 -----------------------------------
-[Error matching program output for release/examples/tutorials/sparse] (e.g., 01/16/10)
+[Error matching program output for release/examples/primers/sparse] (e.g., 01/16/10)
 
 spurious compilation timeout
 ----------------------------
 [Error: Timed out compilation for release/examples/hello] (e.g., 12/15/09, 03/11/10, 03/13/10)
-[Error: Timed out compilation for release/examples/tutorials/variables] (e.g., 12/28/09)
+[Error: Timed out compilation for release/examples/primers/variables] (e.g., 12/28/09)
 
 use-before-def + ra traps with poison
 -------------------------------------
@@ -772,5 +760,4 @@ execution timeouts
 [Error: Timed out executing program release/examples/hpcc/hpl]
 [Error: Timed out executing program release/examples/programs/prodCons]
 [Error: Timed out executing program release/examples/programs/quicksort]
-[Error: Timed out executing program release/examples/tutorials/taskParallel]
-[Error: Timed out executing program release/examples/tutorials/timers]
+[Error: Timed out executing program release/examples/primers/timers]
