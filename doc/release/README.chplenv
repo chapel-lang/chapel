@@ -38,6 +38,7 @@ Recommended Settings
         darwin    : Macintosh OS X platforms
         linux32   : 32-bit Linux platforms
         linux64   : 64-bit Linux platforms
+        netbsd    : NetBSD platforms
         pwr5      : IBM Power5 SMP cluster
         pwr6      : IBM Power6 SMP cluster
         sunos     : SunOS platforms
@@ -199,6 +200,23 @@ Optional Settings
    If unset, CHPL_COMM defaults to "default" unless CHPL_COMM is
    gasnet and you are using the fast or large segments.  See
    README.multilocale for more information on GASNet segments.
+
+
+7) Optionally, the CHPL_LAUNCHER environment variable can be used to
+   select a launcher to get your program up and running.  See
+   README.launcher for more information on this variable's default and
+   possible settings.
+
+
+8) Optionally, the CHPL_TIMERS environment variable can be used to
+   select an implementation for Chapel's timers.  Current options are:
+
+        generic : use a gettimeofday()-based implementation
+        mta     : use an mta_get_clock()-based implementation (Cray XMT only)
+
+   If unset, CHPL_TIMERS defaults to "generic" unless
+   CHPL_TARGET_PLATFORM is set to "xmt" in which case it defaults to
+   "mta".
 
 
 -------------------------------------

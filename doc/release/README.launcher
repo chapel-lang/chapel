@@ -36,6 +36,7 @@ Currently-supported launchers include:
   aprun         : Cray XT application launcher using aprun
   gasnetrun_ibv : GASNet launcher for programs running over Infiniband
   loadleveler   : launch using IBM loadleveler (still needs refining)
+  mtarun        : Cray XMT application launcher using mtarun
   pbs-aprun     : Cray XT application launcher using PBS (qsub) + aprun
   none          : do not use a launcher
 
@@ -48,6 +49,7 @@ environment variable.  If left unset, a default is picked as follows:
     (otherwise)                 -> gasnetrun_ibv
   + CHPL_COMM_SUBSTRATE=portals -> aprun
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
+  CHPL_PLATFORM=xmt             -> mtarun
   (otherwise)                   -> none
 
 If the launcher binary does not work for your system (due to an
