@@ -873,7 +873,8 @@ for testname in testsrc:
                 sys.stdout.flush()
                 sys.stdout.write(subprocess.Popen(['./PREDIFF',
                                                    execname,execlog,compiler,
-                                                   ' '.join(globalCompopts)+compopts,
+                                                   ' '.join(globalCompopts)+
+                                                   ' '+compopts,
                                                    ' '.join(args)],
                                                   stdout=subprocess.PIPE).
                                  communicate()[0])
@@ -883,7 +884,8 @@ for testname in testsrc:
                 sys.stdout.flush()
                 sys.stdout.write(subprocess.Popen(['./'+execname+'.prediff',
                                                    execname,execlog,compiler,
-                                                   ' '.join(globalCompopts)+compopts,
+                                                   ' '.join(globalCompopts)+
+                                                   ' '+compopts,
                                                    ' '.join(args)],
                                                   stdout=subprocess.PIPE).
                                  communicate()[0])
