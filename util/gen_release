@@ -44,12 +44,12 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
        "man/man1/chpl.1",
        "third-party/Makefile",
        "third-party/README",
+       "util/README",
        "util/chpl-multirealm",
        "util/printchplenv",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
-       "util/setchplenv.sh",
-       "util/updateBuildVersion.pl"
+       "util/setchplenv.sh"
 );
 
 # C/C++ sources
