@@ -135,5 +135,86 @@ locales, the output of this code is:
 
 \subsection{The Standard Cyclic Distribution}
 \label{Cyclic_Dist}
+The standard Cyclic distribution is defined in the module \chpl{CyclicDist}.
+The Cyclic distribution is parameterized by the rank and index type of
+the domains it supports. The Cyclic distribution deals indices to locales
+in a round robin fashion.
 
-This section is forthcoming.
+The Cyclic class constructor is defined as:
+\begin{chapel}
+def Cyclic(startIdx,
+           targetLocales: [] locale = Locales,
+           dataParTasksPerLocale = $\mbox{{\it value in global config const of the same name}}$,
+           dataParIgnoreRunningTasks = $\mbox{{\it value in global config const of the same name}}$,
+           dataParMinGranularity = $\mbox{{\it value in global config const of the same name}}$,
+           param rank: int = startIdx.size,
+           type idxType = startIdx(1).type)
+\end{chapel}
+
+The argument \chpl{startIdx} is a tuple of integers defining an index that
+will be distributed to the first locale in \chpl{targetLocales}. For a single
+dimensional distribution \chpl{startIdx} can be an integer or a tuple with a
+single element.
+
+The argument \chpl{targetLocales} is an array containing the locales over
+which indices are to be distributed.  The rank of the \chpl{targetLocales} array
+must be 1 or match the rank of the distribution. If the rank of \chpl{targetLocales} is one, it is reshaped to match the rank of the distribution.
+
+The arguments \chpl{dataParTasksPerLocale}, \chpl{dataParIgnoreRunningTasks},
+and \chpl{dataParMinGranularity} set the knobs that are used to control
+intra-locale data parallelism for Cyclic-distributed domains and arrays in
+the same way that the global configuration constants of these names control
+data parallelism for ranges and default-distributed domains and arrays
+~\rsec{data_parallel_knobs}.
+
+The \chpl{rank} and \chpl{idxType} arguments are inferred from the
+\chpl{startIdx} argument unless explicitly set.
+
+For cyclic distributions of rank $d$, given a start index
+
+\begin{chapel}
+($s_1$, $\ldots$, $s_d$)
+\end{chapel}
+
+and an array of target locales defined over the domain
+
+\begin{chapel}
+[$0$..$n_1$, $\ldots$, $0$..$n_d$]
+\end{chapel}
+
+then a Cyclic distribution maps index $i$ to a locale by computing
+the $k$\emph{th} component of an index into the array of target locales
+from the $k$\emph{th} component of $i$:
+
+($i_k$ - $s_k$) \% ($n_k$ + 1)
+
+\begin{example}
+The following code declares a Cyclic distribution with a \chpl{startIdx} of
+(1, 1) and declares an array, \chpl{A}, over the cyclic distribution. The
+computation in the \chpl{forall} loop sets each array element to the ID of the
+locale it exists on.
+\begin{chapel}
+use CyclicDist;
+
+const Space = [1..8, 1..8];
+const MyCyclic: dmap(Cyclic(rank=2)) = new dmap(new Cyclic(startIdx=(1,1)));
+const D: domain(2) dmapped MyCyclic = Space;
+var A: [D] int;
+
+forall a in A do
+  a = a.locale.id;
+
+writeln(A);
+\end{chapel}
+When run on 6 locales, the output of this is:
+\begin{chapel}
+0 1 0 1 0 1 0 1
+2 3 2 3 2 3 2 3
+4 5 4 5 4 5 4 5
+0 1 0 1 0 1 0 1
+2 3 2 3 2 3 2 3
+4 5 4 5 4 5 4 5
+0 1 0 1 0 1 0 1
+2 3 2 3 2 3 2 3
+\end{chapel}
+\end{example}
