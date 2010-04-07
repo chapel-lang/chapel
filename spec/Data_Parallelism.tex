@@ -1,5 +1,6 @@
 \sekshun{Data Parallelism}
 \label{Data_Parallelism}
+\index{data parallelism}
 
 Chapel provides two explicit data-parallel constructs (the
 forall-statement and the forall-expression) and several idioms that
@@ -196,6 +197,7 @@ writeln(result);
 \end{example}
 
 \subsection{Whole Array Assignment}
+\index{whole array assignment}
 
 Whole array assignment is implicitly parallel.  The assignment
 statement
@@ -210,6 +212,7 @@ forall (e1,e2) in (LHS,RHS) do
 
 \subsection{Promotion}
 \label{Promotion}
+\index{promotion}
 
 A function that expects one or more scalar argument but is called with
 one or more arrays, domains, ranges, or iterators is promoted if the
@@ -246,7 +249,7 @@ Whole array operations are a form of promotion.
 
 \subsubsection{Zipper Promotion}
 \label{Zipper_Promotion}
-\index{scalar promotion!zipper iteration}
+\index{promotion!zipper iteration}
 
 Consider a function \chpl{f} with formal
 arguments \chpl{s1}, \chpl{s2},~... that are promoted and formal
@@ -277,7 +280,7 @@ then the output is ``1 4 2 5 3 6 ''.
 
 \subsubsection{Tensor Product Promotion}
 \label{Tensor_Product_Promotion}
-\index{scalar promotion!tensor product iteration}
+\index{promotion!tensor product iteration}
 
 If the function \chpl{f} were called by using square brackets instead
 of parentheses, the equivalent rewrite would be
@@ -302,6 +305,8 @@ then the output is ``1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 ''.
 
 \subsection{Reductions and Scans}
 \label{Reductions_and_Scans}
+\index{reductions}
+\index{scans}
 
 Chapel provides reduction and scan expressions that apply operators to
 aggregate expressions in stylized ways.  Reduction expressions
@@ -315,6 +320,7 @@ scans~(\rsec{User_Defined_Reductions_and_Scans}).
 
 \subsubsection{Reduction Expressions}
 \label{reduce}
+\index{reduction expressions}
 
 A reduction expression applies a reduction operator to an aggregate
 expression, collapsing the aggregate's dimensions down into a result
@@ -336,7 +342,13 @@ Chapel's built-in reduction operators are defined
 by \sntx{reduce-scan-operator} above.  In order, they are: sum,
 product, logical-and, logical-or, bitwise-and, bitwise-or,
 bitwise-exclusive-or, minimum, maximum, minimum-with-location, and
-maximum-with-location.
+maximum-with-location.  The minimum reduction returns the minimum
+value as defined by the \verb@<@ operator.  The maximum reduction
+returns the maximum value as defined by the \verb@>@ operator.  The
+minimum-with-location reduction returns the lowest index position with
+the minimum value (as defined by the \verb@<@ operator).  The
+maximum-with-location reduction returns the lowest index position with
+the maximum value (as defined by the \verb@>@ operator).
 
 The expression on the right-hand side of the \chpl{reduce} keyword
 can be of any type that can be iterated over and to which the
@@ -371,6 +383,7 @@ interface as described in~\rsec{User_Defined_Reductions_and_Scans}.
 
 \subsubsection{Scan Expressions}
 \label{scan}
+\index{scan expressions}
 
 A scan expression applies a scan operator to an aggregate expression,
 resulting in an aggregate expression of the same size and shape.  The
@@ -412,6 +425,7 @@ output is
 \end{example}
 
 \subsection{Data Parallelism and Evaluation Order}
+\index{data parallelism!and evaluation order}
 
 Temporary arrays are never inserted by the Chapel compiler.  The
 semantics of whole array assignment, promotion, etc., are thus
@@ -435,6 +449,7 @@ the number of tasks used to implement the data parallel statement.
 
 \subsection{Knobs for Default Data Parallelism}
 \label{data_parallel_knobs}
+\index{data parallelism!knobs for default data parallelism}
 
 The following configuration constants are provided to control the
 degree of data parallelism over ranges, default domains, and default
@@ -455,9 +470,7 @@ arrays:
 The configuration constant \chpl{dataParTasksPerLocale} specifies the
 number of tasks to use when executing a forall loop over a range,
 default domain, or default array.  The actual number of tasks may be
-fewer depending on the two other configuration constants.  For
-distributed domains and arrays that use these same knobs, this value
-controls the parallelism within each locale.
+fewer depending on the two other configuration constants.
 
 The configuration constant \chpl{dataParIgnoreRunningTasks}, when
 true, has no effect on the number of tasks to use to execute the
@@ -470,5 +483,7 @@ loop.  When greater than zero, the number of tasks is decreased so
 that the number of iterations per task is never less than the
 specified value.
 
-For some distributions (\eg, Block and Cyclic), these same global
-configuration constants are used to specify their default behavior.
+For distributed domains and arrays that have these same knobs (\eg,
+using the Block and Cyclic distributions), these same global
+configuration constants are used to specify their default behavior
+within each locale.
