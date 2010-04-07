@@ -1,5 +1,5 @@
 RUNTIME_ROOT = ../../../
-RUNTIME_SUBDIR = src/launch/mta/
+RUNTIME_SUBDIR = src/launch/mtarun/
 
 #
 # standard header

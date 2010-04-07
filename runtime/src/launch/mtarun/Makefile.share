@@ -1,5 +1,5 @@
-AUNCHER_SRCS = \
-        launch-mta.c \
+LAUNCHER_SRCS = \
+        launch-mtarun.c \
 
 SVN_SRCS = $(LAUNCHER_SRCS)
 SRCS = $(SVN_SRCS)

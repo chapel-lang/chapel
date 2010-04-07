@@ -71,7 +71,7 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     numTeams = atoi(argv[argNum+1]);
     maxTeams = atoi(argv[argNum+1]);
     return 2;
-  } else if (strcmp(argv[argNum], "--numTeams") == 0) {
+  } else if (strcmp(argv[argNum], "--numInitialTeams") == 0) {
     numTeams = atoi(argv[argNum+1]);
     return 2;
   } else if (strcmp(argv[argNum], "--maxTeams") == 0) {
