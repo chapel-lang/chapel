@@ -93,6 +93,7 @@ $(BUILD_VERSION_FILE): CheckForStandardCHeaders
 	@$(CHAPEL_ROOT)/util/updateBuildVersion.pl $(CHAPEL_ROOT)/compiler/main
 else
 $(BUILD_VERSION_FILE):
+	@echo -999 > $@
 endif
 
 
