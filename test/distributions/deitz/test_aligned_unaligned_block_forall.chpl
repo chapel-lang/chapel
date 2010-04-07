@@ -5,9 +5,12 @@ config var n: int = 32;
 var BD1 = new dmap(new Block(boundingBox=[1..n], dataParTasksPerLocale=1));
 var BD2 = new dmap(new Block(boundingBox=[1..n/2], dataParTasksPerLocale=1));
 
-var A: [[1..n] dmapped BD1] real;
-var B: [[1..n] dmapped BD1] real;
-var C: [[1..n] dmapped BD2] real;
+var D1 = [1..n] dmapped BD1;
+var D2 = [1..n] dmapped BD2;
+
+var A: [D1] real;
+var B: [D1] real;
+var C: [D2] real;
 
 for i in 1..n do
   A(i) = i;

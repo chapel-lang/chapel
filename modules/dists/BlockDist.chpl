@@ -799,10 +799,10 @@ def BlockArr.dsiStaticFastFollowCheck(type leadType) param
   return leadType == this.type || leadType == this.dom.type;
 
 def BlockArr.dsiDynamicFastFollowCheck(lead: [])
-  return lead.domain.dist._value == this.dom.dist;
+  return lead.domain._value == this.dom;
 
 def BlockArr.dsiDynamicFastFollowCheck(lead: domain)
-  return lead.dist._value == this.dom.dist;
+  return lead._value == this.dom;
 
 def BlockArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
   def anyStridable(rangeTuple, param i: int = 1) param
