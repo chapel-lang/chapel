@@ -1,7 +1,6 @@
-\sekshun{Domains and Arrays}
-\label{Domains_and_Arrays}
+\sekshun{Domains}
+\label{Domains}
 \index{domains}
-\index{arrays}
 
 A \emph{domain} describes a collection of names for data.  These names
 are referred to as the \emph{indices} of the domain.  All indices for
@@ -9,21 +8,14 @@ a particular domain are values with some common type.  Valid types for
 indices are primitive types and class references or unions, tuples or
 records whose fields are valid types for indices.  This excludes
 ranges, domains, and arrays.  Domains have a rank and a total order on
-their elements.  An \emph{array} is a map from a domain's indices to a
-collection of variables.  Chapel supports a variety of kinds of
-domains and arrays defined over those domains as well as a mechanism
-to allow application-specific implementations of arrays.
+their elements.
 
-Arrays abstract mappings from sets of values to variables.  This key
-use of data structures coupled with the generic syntactic support for
-array usage increases software reusability.  By separating the sets of
-values into their own abstraction, \emph{i.e.}, domains, distributions
-can be associated with sets rather than variables.  This enables the
-orthogonality of data distributions.  Distributions are discussed
-in~\rsec{Domain_Maps}.
+Chapel supports a variety of kinds of domains and arrays defined over
+those domains as well as a mechanism to allow application-specific
+implementations of arrays.
 
 \subsection{Domains}
-\label{Domains}
+%\label{Domains}
 
 Domains are first-class ordered sets of indices.  There are five kinds
 of domains:
@@ -158,263 +150,10 @@ A = D;
 \end{chapel}
 \end{example}
 
-\subsection{Arrays}
-\label{Arrays}
-\index{arrays}
 
-Arrays associate variables or elements with the sets of indices in a
-domain.  Arrays must be declared over domains and have a specified
-element type.
-
-\subsubsection{Array Types}
-\label{Array_Types}
-\index{arrays!types}
-
-The type of an array is parameterized by the type of the domain that
-it is declared over and the element type of the array.  Array types
-are given by the following syntax:
-\begin{syntax}
-array-type:
-  [ domain-expression ] type-specifier
-
-domain-expression:
-  expression
-\end{syntax}
-The \sntx{domain-expression} must specify a domain that the array can
-be declared over.  This can be a domain literal.  If it is a domain
-literal, the square brackets around the domain literal can be omitted.
-
-\begin{example}
-In the code
-\begin{chapel}
-var A: [D] real;
-\end{chapel}
-\chpl{A} is declared to be an array over domain \chpl{D} with
-elements of type \chpl{real}.
-\end{example}
-
-An array's element type can be referred to using the member symbol
-\chpl{eltType}.
-
-\begin{example}
-In the following example, \chpl{x} is declared to be of type
-\chpl{real} since that is the element type of array \chpl{A}.
-\begin{chapel}
-var A: [D] real;
-var x: A.eltType;
-\end{chapel}
-\end{example}
-
-\subsubsection{Array Indexing}
-\label{Array_Indexing}
-\index{arrays!indexing}
-
-Arrays can be indexed by indices in the domain they are declared over.
-The indexing results in an access of the element that is mapped by
-this index.
-
-\begin{example}
-If \chpl{A} is an array with element type \chpl{real} declared over a
-one-dimensional arithmetic domain \chpl{[1..n]}, then the first
-element in \chpl{A} can be accessed via the expression \chpl{A(1)} and
-set to zero via the assignment \chpl{A(1) = 0.0}.
-\end{example}
-
-Indexing into an array with a domain is call array slicing and is
-discussed in the next section.
-
-Arithmetic arrays also support indexing over the components of their
-indices for multidimensional arithmetic domains (where the indices are
-tuples), as described in~\rsec{Arithmetic_Array_Indexing}.
-
-One-dimensional arrays may be indexed by 1-tuples of their index
-types.
-\begin{example}
-The code
-\begin{chapel}
-def f(A: [], is...)
-  return A(is);
-\end{chapel}
-defines a function that takes an array as the first argument and a
-variable-length argument list.  It then indexes into the array using
-the tuple that captures the actual arguments.  This function works
-even for one-dimensional arrays because one-dimensional arrays can be
-indexed into by 1-tuples.
-\end{example}
-
-\subsubsection{Array Slicing}
-\label{Array_Slicing}
-\index{arrays!slicing}
-
-An array can be indexed by a domain that has the same type as the
-domain which the array was declared over.  Indexing in this manner has
-the effect of array slicing.  The result is a new array declared over
-the indexing domain where the elements in the array alias the elements
-in the array being indexed.
-
-\begin{example}
-Given the definitions
-\begin{chapel}
-var OuterD: domain(2) = [0..n+1, 0..n+1];
-var InnerD: domain(2) = [1..n, 1..n];
-var A, B: [OuterD] real;
-\end{chapel}
-the assignment given by
-\begin{chapel}
-A(InnerD) = B(InnerD);
-\end{chapel}
-assigns the elements in the interior of \chpl{B} to the elements in
-the interior of \chpl{A}.
-\end{example}
-
-Arithmetic arrays also support slicing by indexing into them with
-ranges or tuples of ranges as described
-in~\rsec{Arithmetic_Array_Slicing}.
-
-\subsubsection{Array Assignment}
-\label{Array_Assignment}
-\index{arrays!assignment}
-
-Array assignment is by value.  Arrays can be assigned arrays, ranges,
-domains, iterators, or tuples.  If \chpl{A} is an lvalue of array type
-and \chpl{B} is an expression of either array, range, or domain type,
-or an iterator, then the assignment
-\begin{chapel}
-A = B;
-\end{chapel}
-is equivalent to
-\begin{chapel}
-forall (i,e) in (A.domain,B) do
-  A(i) = e;
-\end{chapel}
-If the zipper iteration is illegal, then the assignment is illegal.
-Notice that the assignment is implemented with the semantics of
-a \chpl{forall} loop.
-
-Arrays can be assigned tuples of values of their element type if the
-tuple contains the same number of elements as the array.  For
-multidimensional arrays, the tuple must be a nested tuple such that
-the nesting depth is equal to the rank of the array and the shape of
-this nested tuple must match the shape of the array.  The values are
-assigned element-wise.
-
-Arrays can also be assigned single values of their element type.  In
-this case, each element in the array is assigned this value.
-If \chpl{e} is an expression of the element type of the array or a
-type that can be implicitly converted to the element type of the
-array, then the assignment
-\begin{chapel}
-A = e;
-\end{chapel}
-is equivalent to
-\begin{chapel}
-forall i in A.domain do
-  A(i) = e;
-\end{chapel}
-
-\subsubsection{Formal Arguments of Array Type}
-\label{Formal_Arguments_of_Array_Type}
-\index{arrays!as formal arguments}
-
-Arrays are passed to functions by reference.  Formal arguments that
-receive arrays are aliases of the actual arguments.  The ordinary rule
-that disallows assignment to formal arguments of blank intent does not
-apply to arrays.
-
-When a formal argument has array type, the element type of the array
-can be omitted and/or the domain of the array can be queried or
-omitted.  In such cases, the argument is generic and is discussed
-in~\rsec{Formal_Arguments_of_Generic_Array_Types}.
-
-If a non-queried domain is specified in the array type of a formal
-argument, the domain must match the domain of the actual argument.
-This is verified at runtime.  There is an exception if the domain is
-an arithmetic domain; it is described
-in~\rsec{Formal_Arguments_of_Arithmetic_Array_Type}.
-
-\subsubsection{Iteration over Arrays}
-\label{Iteration_over_Arrays}
-
-All arrays support iteration via forall and for loops over the
-elements mapped to by the indices in the array's domain.
-
-\subsubsection{Array Promotion of Scalar Functions}
-\label{Array_Promotion_of_Scalar_Functions}
-\index{arrays!promotion}
-
-Array promotion of a scalar function is defined over the array type
-and the element type of the array.  The domain of the returned array,
-if an array is captured by the promotion, is the domain of the array
-that promoted the function.  In the event of zipper promotion over
-multiple arrays, the promoted function returns an array with a domain
-that is equal to the domain of the first argument to the function that
-enables promotion.  If the first argument is an iterator or a range,
-the result is a one-based one-dimensional array.
-
-\begin{example}
-Whole array operations is a special case of array promotion of scalar
-functions.  In the code
-\begin{chapel}
-A = B + C;
-\end{chapel}
-if \chpl{A}, \chpl{B}, and \chpl{C} are arrays, this code assigns each
-element in \chpl{A} the element-wise sum of the elements in \chpl{B}
-and \chpl{C}.
-\end{example}
-
-\subsubsection{Array Initialization}
-\label{Array_Initialization}
-\index{arrays!initialization}
-
-By default, the elements in an array are initialized to the default
-values associated with the element type of the array.  There is an
-expectation that this default initialization can be overridden for
-performance reasons by explicitly marking the array type or variable.
-
-\subsubsection{Array Aliases}
-\label{Array_Aliases}
-\index{=>@\chpl{=>}}
-
-Array slices alias the data in arrays rather than copying it.  Such
-array aliases can be captured and optionally reindexed with the array
-alias operator \chpl{=>}.  The syntax for capturing an alias to an
-array requires a new variable declaration:
-\begin{syntax}
-array-alias-declaration:
-  identifier reindexing-expression[OPT] => array-expression ;
-
-reindexing-expression:
-  [ domain-expression ]
-
-array-expression:
-  expression
-\end{syntax}
-The identifier is an alias to the array specified in
-the \sntx{array-expression}.
-
-The optional \sntx{reindexing-expression} allows the domain of the
-array alias to be reindexed.  The shape of the domain in
-the \sntx{reindexing-expression} must match the shape of the domain of
-the \sntx{array-expression}.  Indexing via the alias is governed by
-the new indices.
-
-\begin{example}
-In the code
-\begin{chapel}
-var A: [1..5, 1..5] int;
-var AA: [0..2, 0..2] => A[2..4, 2..4];
-\end{chapel}
-an array alias \chpl{AA} is created to alias the interior of
-array \chpl{A} given by the slice \chpl{A[2..4, 2..4]}.  The
-reindexing expression changes the indices defined by the domain of the
-alias to be zero-based in both dimensions.  Thus \chpl{AA(1,1)} is
-equivalent to \chpl{A(3,3)}.
-\end{example}
-
-\subsection{Arithmetic Domains and Arrays}
-\label{Arithmetic_Domains_and_Arrays}
+\subsection{Arithmetic Domains}
+\label{Arithmetic_Domains}
 \index{domains!arithmetic}
-\index{arrays!arithmetic}
 
 An arithmetic domain is a rectilinear set of Cartesian indices.
 Arithmetic domains are specified as a tuple of ranges enclosed in
@@ -459,9 +198,8 @@ type \chpl{domain(2, int, false)}.
 \end{example}
 
 \subsubsection{Strided Arithmetic Domains}
-\label{Strided_Arithmetic_Domains_and_Arrays}
+\label{Strided_Arithmetic_Domains}
 \index{domains!arithmetic, strided}
-\index{arrays!arithmetic, strided}
 
 If the ranges that define an arithmetic domain are strided, then the
 arithmetic domain is said to be strided and the stridable parameter
@@ -515,92 +253,9 @@ const D: domain(2) = [1..n, 1..n],
 \end{example}
 
 
-\subsubsection{Arithmetic Array Indexing}
-\label{Arithmetic_Array_Indexing}
-
-In addition to being indexed by indices defined by their arithmetic
-domains, arithmetic arrays can be indexed directly by values of the
-dimensional index type where the number of values is equal to the rank
-of the array.  This has the semantics of first moving the values into
-a tuple and then indexing into the array.  The index represented by
-the tuple must be an element of the array's domain or an out-of-bounds
-error will occur.
-
-\begin{example}
-Given the definition
-\begin{chapel}
-  var ij = (i,j);
-\end{chapel}
-the indexing expressions \chpl{A(ij)} and \chpl{A(i,j)} are
-equivalent.
-\end{example}
-
-\subsubsection{Arithmetic Array Slicing}
-\label{Arithmetic_Array_Slicing}
-\index{arrays!slice}
-
-An arithmetic array can be sliced by any arithmetic domain that is a
-subdomain of the array's defining domain.  If the subdomain
-relationship is not met, an out-of-bounds error will occur.  The
-result is a subarray whose indices are those of the slicing domain and
-whose elements are an alias of the original array's.  If the indices
-in the slicing
-
-Arithmetic arrays also support slicing by ranges directly.  If each
-dimension is indexed by a range, this is equivalent to slicing the
-array by the arithmetic domain defined by those ranges.
-
-For multi-dimensional arithmetic arrays, slicing with a rank change is
-supported by substituting integral values within a dimension's range
-for an actual range.  The resulting array will have a rank less than
-the arithmetic array's rank and equal to the number of ranges that are
-passed in to take the slice.
-
-\begin{example}
-Given an array
-\begin{chapel}
-var A: [1..n, 1..n] int;
-\end{chapel}
-the slice \chpl{A[1..n, 1]} is a one-dimensional array whose elements
-are the first column of \chpl{A}.
-\end{example}
-
-Array slices may also be expressed using partially unbounded or
-completely unbounded ranges.  This is equivalent to slicing the
-array's defining domain by the specified ranges to create a subdomain
-as described in~\rsec{Arithmetic_Domain_Slicing} and then using that
-subdomain to slice the array.
-
-\subsubsection{Formal Arguments of Arithmetic Array Type}
-\label{Formal_Arguments_of_Arithmetic_Array_Type}
-\index{formal arguments!arithmetic arrays}
-\index{arrays!as formal arguments}
-
-Formal arguments of arithmetic array type allow an arithmetic domain
-to be specified that does not match the arithmetic domain of the
-actual arithmetic array that is passed to the formal argument.  In
-this case, the shape (size in each dimension and rank) of the domain
-of the actual array must match the shape of the domain of the formal
-array.  The indices are translated in the formal array, which is a
-reference to the actual array.
-
-\begin{example}
-In the code
-\begin{chapel}
-def foo(X: [1..5] int) { ... }
-var A: [1..10 by 2] int;
-foo(A);
-\end{chapel}
-the array \chpl{A} is strided and its elements can be indexed by the
-odd integers between one and nine.  In the function \chpl{foo}, the
-array \chpl{X} references array \chpl{A} and the same elements can be
-indexed by the integers between one and five.
-\end{example}
-
-\subsection{Sparse Domains and Arrays}
-\label{Sparse_Domains_and_Arrays}
+\subsection{Sparse Domains}
+\label{Sparse_Domains}
 \index{domains!sparse}
-\index{arrays!sparse}
 
 Sparse domains are used in Chapel to describe irregular index subsets
 and to define sparse arrays.  Sparse arrays are typically used to
@@ -710,53 +365,9 @@ As with other methods and operators, the \chpl{add}, \chpl{remove},
 by specifying an aggregate of indices rather than a single index at a
 time.
 
-\subsubsection{Sparse Arrays}
-
-An array declared over a sparse domain can be indexed using all of the
-indices in the domain's parent domain.  If it is read using an index
-that is not part of the sparse domain's index set, the IRV value is
-returned.  Otherwise, the array's unique value corresponding to the
-index is returned.
-
-Sparse arrays can only be written at locations corresponding to
-indices in their domain's index set.  In general, writing to other
-locations will result in a runtime error.
-
-By default a sparse array's IRV is defined as the default value for
-the array's element type.  The IRV can be set to any value of the
-array's element type by assigning to a pseudo-field named ``IRV'' in
-the array.  It is an error to assign a value to the IRV by assigning
-to an array element whose index is not described by the sparse domain.
-
-\begin{example}
-The following code example declares a sparse array, \chpl{SpsA} using
-the sparse domain \chpl{SpsD} (For this example, assume that
-\chpl{n}$>$1).  Lines 2 assigns two indices to \chpl{SpsD}'s index set
-and then lines 3--4 store the values 1.1 and 9.9 to the corresponding
-values of \chpl{SpsA}.  The IRV of \chpl{SpsA} will initially be 0.0
-since its element type is \chpl{real}.  However, the fifth line sets
-the IRV to be the value 5.5, causing \chpl{SpsA} to represent the
-value 1.1 in its low corner, 9.9 in its high corner, and 5.5
-everywhere else.  The final statement is an error since it attempts to
-assign to \chpl{SpsA} at an index not described by its domain,
-\chpl{SpsD}.
-
-\begin{chapel}
-var SpsA: [SpsD] real;
-SpsD = ((1,1), (n,n));
-SpsA(1,1) = 1.1;
-SpsA(n,n) = 9.9;
-SpsA.IRV = 5.5;
-SpsA(1,n) = 0.0;  // ERROR!
-\end{chapel}
-\end{example}
-
-
-
-\subsection{Associative Domains and Arrays}
-\label{Associative_Domains_and_Arrays}
+\subsection{Associative Domains}
+\label{Associative_Domains}
 \index{domains!associative}
-\index{arrays!associative}
 
 An associative domain type can be defined over any scalar type and is
 given by the following syntax:
@@ -770,7 +381,7 @@ scalar-type:
 A scalar type is any primitive type, tuple of scalar types, or class,
 record, or union where all of the fields have scalar types.
 Enumerated types are scalar types but domains declared over enumerated
-types are described in~\rsec{Enumerated_Domains_and_Arrays}.  Arrays
+types are described in~\rsec{Enumerated_Domains}.  Arrays
 declared over associative domains are dictionaries mapping from values
 to variables.
 
@@ -823,10 +434,9 @@ whether a particular value is part of the index set. It
 returns \chpl{true} if the index is in the associative domain and
 otherwise returns \chpl{false}.
 
-\subsection{Opaque Domains and Arrays}
-\label{Opaque_Domains_and_Arrays}
+\subsection{Opaque Domains}
+\label{Opaque_Domains}
 \index{domains!opaque}
-\index{arrays!opaque}
 
 An opaque domain is a form of associative domain where there is no
 algebra on the types of the indices.  The indices are, in essence,
@@ -844,10 +454,9 @@ Opaque domains permit more efficient implementations than associative
 domains under the assumption that creation of new domain index values
 is rare.
 
-\subsection{Enumerated Domains and Arrays}
-\label{Enumerated_Domains_and_Arrays}
+\subsection{Enumerated Domains}
+\label{Enumerated_Domains}
 \index{domains!enumerated}
-\index{arrays!enumerated}
 
 Enumerated domains are a special case of associative domains where the
 indices are the constants defined by an enumerated type.  The syntax
@@ -863,54 +472,6 @@ defined in the enumerated type they are declared over.
 An enumerated domain is specified identically to the associative
 domain type, except that the type is an enumerated type rather than
 some other value type.
-
-\subsection{Association of Arrays to Domains}
-\label{Association_of_Arrays_to_Domains}
-\index{domains!association to arrays}
-\index{arrays!association to domains}
-
-When an array is declared, it is linked during execution to the domain
-over which it was declared.  This linkage is constant and cannot be
-changed.
-
-When indices are added or removed from a domain, the change impacts
-the arrays declared over this particular domain.  In the case of
-adding an index, an element is added to the array and initialized to
-the default value associated with the element type.  In the case of
-removing an index, the element in the array is removed.
-
-When a domain is reassigned a new value, the array is also impacted.
-Values that could be indexed by both the old domain and the new domain
-are preserved in the array.  Values that could only be indexed by the
-old domain are lost.  Values that can only be indexed by the new
-domain have elements added to the new array and initialized to the
-default value associated with their type.
-
-For performance reasons, there is an expectation that a method will be
-added to domains to allow non-preserving assignment, \emph{i.e.}, all
-values in the arrays associated with the assigned domain will be lost.
-
-An array's domain can only be modified directly, via the domain's name
-or an alias created by passing it to a function via blank intent.  In
-particular, the domain may not be modified via the array's
-\chpl{.domain} method, nor by using the domain query syntax on a
-function's formal array argument
-(\rsec{Formal_Arguments_of_Generic_Array_Types}).
-
-\begin{rationale}
-When multiple arrays are declared using a single domain, modifying the
-domain affects all of the arrays.  Allowing an array's domain to be
-queried and then modified suggests that the change should only affect
-that array.  By requiring the domain to be modified directly, the user
-is encouraged to think in terms of the domain distinctly from a
-particular array.
-
-In addition, this choice has the beneficial effect that arrays
-declared via an anonymous domain have a constant domain.  Constant
-domains are considered a common case and have potential compilation
-benefits such as eliminating bounds checks.  Therefore making this
-convenient syntax support a common, optimizable case seems prudent.
-\end{rationale}
 
 \subsection{Subdomains}
 \label{Subdomains}
@@ -1029,49 +590,3 @@ the domain.
 \end{protobody}
 
 
-\subsection{Predefined Functions and Methods on Arrays}
-\index{arrays!predefined functions}
-
-There is an expectation that this list of predefined functions and
-methods will grow.
-
-\begin{protohead}
-def $Array$.eltType type
-\end{protohead}
-\begin{protobody}
-Returns the element type of the array.
-\end{protobody}
-
-\begin{protohead}
-def $Array$.rank param
-\end{protohead}
-\begin{protobody}
-Returns the rank of the array.
-\end{protobody}
-
-\begin{protohead}
-def $Array$.domain: this.domain
-\end{protohead}
-\begin{protobody}
-Returns the domain of the given array.  This domain is constant,
-implying that the domain cannot be resized by assigning to its domain
-field, only by modifying the domain directly.
-\end{protobody}
-
-\begin{protohead}
-def $Array$.numElements: this.domain.dim_type
-\end{protohead}
-\begin{protobody}
-Returns the number of elements in the array.
-\end{protobody}
-
-\begin{protohead}
-def reshape(A: $Array$, D: $Domain$): $Array$
-\end{protohead}
-\begin{protobody}
-Returns a copy of the array containing the same values but in the
-shape of the new domain.  The number of indices in the domain must
-equal the number of elements in the array.  The elements of the array
-are copied into the new array using the default iteration orders over
-both arrays.
-\end{protobody}
