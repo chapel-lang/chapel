@@ -251,45 +251,89 @@ lvalue-expression:
 The syntax is less restrictive than the definition above.  For
 example, not all \sntx{call-expression}s are lvalues.
 
-\subsection{Operator Precedence and Associativity}
+\subsection{Precedence and Associativity}
 \label{Operator_Precedence_and_Associativity}
 \index{operators!precedence}
 \index{operators!associativity}
+\index{expressions!precedence}
+\index{expressions!associativity}
 
-The following table summarizes the precedence of operators and their
-associativity.  Operators listed earlier have higher precedence than
-those listed later.
+The following table summarizes operator and expression precedence and
+associativity.  Operators and expressions listed earlier have higher
+precedence than those listed later.
 \begin{center}
 \begin{tabular}{|l|l|l|}
 \hline
-{\bf operators} & {\bf associativity} & {\bf use} \\
+{\bf Operator} & {\bf Associativity} & {\bf Use} \\
 \hline
-\verb@. () []@ & left & member access, function call, index expression \\
-\verb@:@ & left & cast\\
+\verb@.@ & \multirow{3}{*}{left} & member access \\
+\verb@()@ & & function call or access (zipper) \\
+\verb@[]@ & & function call or access (tensor) \\
+\hline
+\verb@new@ & right & constructor call \\
+\hline
+\verb@:@ & left & cast \\
+\hline
 \verb@**@ & right & exponentiation \\
-\verb@reduce scan@ & left & reduction and scan\\
-\verb@! ~@ & right & logical and bitwise negation \\
-\verb@* / %@ & left & multiplication, division, and modulus \\
-unary \verb@+ -@ & right & positive identity and negation \\
-\verb@+ -@ & left & addition and subtraction \\
-\verb@<< >>@ & left & shift left and shift right \\
-\verb@<= >= < >@ & left & ordered comparison \\
-\verb@== !=@ & left & equality comparison \\
+\hline
+\verb@reduce@ & \multirow{3}{*}{left} & reduction \\
+\verb@scan@ & & scan \\
+\verb@dmapped@ & & domain map application \\
+\hline
+\verb@!@ & \multirow{2}{*}{right} & logical negation \\
+\verb@~@ & & bitwise negation \\
+\hline
+\verb@*@ & \multirow{3}{*}{left} & multiplication \\
+\verb@/@ & & division \\
+\verb@%@ & & modulus \\
+\hline
+unary \verb@+@ & \multirow{2}{*}{right} & positive identity \\
+unary \verb@-@ & & negation \\
+\hline
+\verb@+@ & \multirow{2}{*}{left} & addition \\
+\verb@-@ & & subtraction \\
+\hline
+\verb@<<@ & \multirow{2}{*}{left} & left shift \\
+\verb@>>@ & & right shift \\
+\hline
+\verb@<=@ & \multirow{4}{*}{left} & less-than-or-equal-to comparison \\
+\verb@>=@ & & greater-than-or-equal-to comparison \\
+\verb@<@ & & less-than comparison \\
+\verb@>@ & & greater-than comparison \\
+\hline
+\verb@==@ & \multirow{2}{*}{left} & equal-to comparison \\
+\verb@!=@ & & not-equal-to comparison \\
+\hline
 \verb@&@ & left & bitwise/logical and \\
+\hline
 \verb@^@ & left & bitwise/logical xor \\
+\hline
 \verb@|@ & left & bitwise/logical or \\
+\hline
 \verb@&&@ & left & short-circuiting logical and \\
+\hline
 \verb@||@ & left & short-circuiting logical or \\
+\hline
 \verb@..@ & left & range construction \\
+\hline
 \verb@in@ & left & forall expression \\
-\verb@by #@ & left & striding ranges and domains, counting ranges \\
-\verb@if...then...[else]@ & left & conditional expressions \\
-\verb@forall...in@ & left & parallel iteration expressions \\
-\verb@for...in@ & left & serial iteration expressions \\
+\hline
+\verb@by@ & \multirow{2}{*}{left} & range/domain stride application \\
+\verb@#@ & & range count application \\
+\hline
+\verb@if then else@ & \multirow{5}{*}{left} & conditional expression \\
+\verb@forall do@ & & forall expression \\
+\verb@[ ]@ & & forall expression \\
+\verb@for do@ & & for expression \\
+\verb@sync single@ & & sync and single type \\
+\hline
 \verb@,@ & left & comma separated expressions \\
 \hline
 \end{tabular}
 \end{center}
+
+(forall i in - ~ + reduce new C.type:D**2 * 4 + 5 << 2 <= 4 == false & b1 | b2 && b3 || b4 .. 5 by 2 do i, 0)
+
 
 \begin{rationale}
 In general, our operator precedence is based on that of the C family
