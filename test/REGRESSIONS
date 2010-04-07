@@ -111,7 +111,7 @@ valgrind-specific regressions
 
 spurious execution timeouts
 ---------------------------
-[Error: Timed out executing program users/shetag/fock/fock-1] (e.g., 04/03/10)
+[Error: Timed out executing program users/shetag/fock/fock-1] (e.g., 04/03/10, 04/06/10)
 [Error: Timed out executing program users/shetag/fock/fock-2] (e.g., 04/03/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
@@ -147,9 +147,16 @@ block distribution regressions
 cyclic distribution regressions
 ===============================
 
+AMUDP overflow-style issue (04/07/10)
+-------------------------------------
+[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_distributed_array1]
+
+"may be used initialized warning (04/07/10)
+-------------------------------------------
+[Error matching compiler output for distributions/robust/arithmetic/kernels/hpl]
+
 have never worked
 -----------------
-[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_default]
 [Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex2]
 
 
@@ -750,10 +757,6 @@ spurious compilation timeout
 ----------------------------
 [Error: Timed out compilation for release/examples/hello] (e.g., 12/15/09, 03/11/10, 03/13/10)
 [Error: Timed out compilation for release/examples/primers/variables] (e.g., 12/28/09)
-
-use-before-def + ra traps with poison
--------------------------------------
-[Error matching program output for release/examples/hpcc/ra]
 
 execution timeouts
 ------------------
