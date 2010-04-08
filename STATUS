@@ -114,6 +114,8 @@ Locales and Domain Maps
   E.g., on Locales(1) var x: real;
 - String assignment across locales is by reference rather than value.
 - The default value for locale types is incorrect.
+- Domain maps may be prematurely freed.
+  Workaround: This may be in the declaration. Try eliding the type.
 
 User-Defined Reductions and Scans and User-Defined Domain Maps
 --------------------------------------------------------------
