@@ -27,18 +27,23 @@ The goals of the launcher binary are:
     bogged down in questions of numbers of nodes, numbers of cores per
     node, numbers of program instances to start up, etc.
 
+(4) if necessary, to coordinate runtime functional activity, such as
+    I/O. 
+
 Executing a Chapel program using the verbose (-v) flag will typically
 print out the command(s) used to launch the program.  
 
 Currently-supported launchers include:
 
-  amudprun      : GASNet launcher for programs running over UDP
-  aprun         : Cray XT application launcher using aprun
-  gasnetrun_ibv : GASNet launcher for programs running over Infiniband
-  loadleveler   : launch using IBM loadleveler (still needs refining)
-  mtarun        : Cray XMT application launcher using mtarun
-  pbs-aprun     : Cray XT application launcher using PBS (qsub) + aprun
-  none          : do not use a launcher
+  amudprun          : GASNet launcher for programs running over UDP
+  aprun             : Cray XT application launcher using aprun
+  gasnetrun_ibv     : GASNet launcher for programs running over Infiniband
+  loadleveler       : launch using IBM loadleveler (still needs refining)
+  mtarun            : Cray XMT application launcher using mtarun
+  pbs-aprun         : Cray XT application launcher using PBS (qsub) + aprun
+  pbs-gasnetrun_ibv : GASNet launcher using PBS (qsub) + aprun over Infiniband
+  pvm               : PVM launcher using pvm_spawn
+  none              : do not use a launcher
 
 A specific launcher can be requested by setting the CHPL_LAUNCHER
 environment variable.  If left unset, a default is picked as follows:
@@ -49,6 +54,7 @@ environment variable.  If left unset, a default is picked as follows:
     (otherwise)                 -> gasnetrun_ibv
   + CHPL_COMM_SUBSTRATE=portals -> aprun
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
+  CHPL_COMM=pvm                 -> pvm
   CHPL_PLATFORM=xmt             -> mtarun
   (otherwise)                   -> none
 
