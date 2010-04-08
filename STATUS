@@ -2,233 +2,146 @@
 Chapel Implementation Status
 ============================
 
-This file contains a list of unimplemented features and known bugs in
-the Chapel implementation.  If you find additional bugs and
-unimplemented features, or if you would like to request prioritization
-of items in this file, please let us know at
-chapel-bugs@lists.sourceforge.net or chapel_info@cray.com.  Please
-feel encouraged to err on the side of mailing us with any issues you
-run into.
+This file contains a list of unimplemented features and known bugs in the
+Chapel implementation.  If you find additional bugs and unimplemented features,
+or if you would like to request prioritization of items in this file, please
+let us know at chapel-bugs@lists.sourceforge.net or chapel_info@cray.com.
+Please feel encouraged to err on the side of mailing us with any issues you run
+into.
 
-
-----------------------------------------------------------------
 General (see also portability section at the bottom of this file)
-----------------------------------------------------------------
-
-- Some error messages continue to be confusing/unhelpful
-  Workaround: Please ask us for help interpreting any that you struggle with
-- Compiler and runtime errors don't always report useful line numbers
-  Workaround: Please ask us for help finding the correct error location
-- Names in a Chapel program can collide with names used internally
+-----------------------------------------------------------------
+- Some error messages are confusing or unhelpful.
+  Workaround: Please ask us for help with interpreting the message.
+- Compiler and runtime errors don't always report useful line numbers.
+  Workaround: Please ask us for help finding the line in question.
+- Names in a Chapel program can collide with names used internally.
   Workaround: Avoid using chpl_ or chpl__ as prefixes to symbol names
+- There are several internal memory leaks including the following:
+  1. All strings are leaked.
+  2. Privatized domains and arrays (Block, Cyclic) are leaked.
+  3. Data associated with iterators may be leaked.
+  4. Data accessed in 'on' and/or 'begin' statements may be leaked.
+  Workaround: Use memory tracking facilities (see README.executing).
+  Workaround: Please ask us for help with your particular problem.
 
+Types, Variables, Conversions, Expressions, and Statements
+----------------------------------------------------------
+- Configuration parameters are not type-checked in the command line.
+- Unlabeled break and continue statements fail to compile in param for loops.
 
---------------------------------
-Variables, Types and Expressions
---------------------------------
+Modules and Functions
+---------------------
+- Programs requiring non-linear function resolution may fail to compile.
+  E.g., mutual module uses that access variables across both modules
+- Variable functions that return local data may not result in an error.
 
-Unimplemented Features:
+Tuples, Classes, Records, and Unions
+------------------------------------
+- Multiple inheritance is not implemented.
+- Type select on unions is not implemented.
+- User-defined constructors are not robust.
+- Constant checking for fields of constant records is incomplete.
+- Constant checking for constant fields of records or classes is incomplete.
+- Constant checking for components of constant tuples is incomplete.
 
-Bugs:
-- Constant arrays, domains, records, and tuples can be modified (without error)
-- Array types cannot be specified in expressions, tuple types, or return types
-- Indices over parameter for loops are changed to values of 'int' type
-- Types and values can be compared (without error)
-    e.g., "int == 2"
-- Configuration parameters are not type-checked when on the command line
-
-
--------
-Modules
--------
-
-Unimplemented Features:
-
-Bugs:
-- There is an odd case where a function call can resolve to a function in a
-  different module if a use of that module exists in an inner scope (without
-  error)
-
-
----------
-Functions
----------
-
-Unimplemented Features:
-
-Bugs:
-- Programs requiring non-linear function resolution may not work, resulting 
-  in an internal failure with code CAL0035
-    e.g., mutual module uses that access variables across both modules
-- Variable functions can return local data through an lvalue that is not a
-  simple identifier
-
-
-----------------------------
-Classes, Records, and Unions
-----------------------------
-
-Unimplemented Features:
-- Multiple inheritance is not supported
-- Type select on unions is not implemented
-
-Bugs:
-- Constant fields can be modified (without error)
-- User-defined constructors are not robust
-- Constructors with side effects may be invoked when their type is declared
-- The default output function for empty records and classes may display a
-  place-holder field which is an artifact of our implementation
-
-
------------------------------
-Tuples, Ranges, and Iterators
------------------------------
-
-Unimplemented Features:
-
-Bugs:
-- Nested var iterators may not work correctly
-- The implicit 'setter' argument does not work in var iterators
-- Iterators in records cannot change fields in that record
-
-
+Ranges, Domains, and Arrays
 ---------------------------
-Ranges, Arrays, and Domains
----------------------------
-
-Unimplemented Features:
-- Array promotion/forall/for/scan expressions always evaluate to 1D arrays
-    e.g., foo(A) where A promotes foo() should result in an array of type:
-          [A.domain] foo(A(i)).type but instead results in a 1D array
-    e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
-          but instead results in a 1D array
-- Arrays of arrays where the inner arrays vary in size are not supported
-- Sparse domain/array slicing is not supported
-- There are no bounds checks on index types
-- There are no subset checks on subdomains
-
-Bugs:
-- Constant domains can be modified if passed to functions
-- Records with array members of recursive types do not work
-- Arrays and domains of different ranks can be zippered serially
-- Domains/arrays of different index types cannot be zippered in parallel
-- Array and domain runtime information is not preserved through generic types
-- Array aliases cannot be declared as fields without an element type
-- Range operations can result in overflow
+- Arrays of arrays where the inner arrays vary in size are not supported.
+- Sparse domain/array slicing is not supported.
+- Constant checking for domains and arrays is incomplete.
+- There are no bounds checks on index types.
+- There are no subset checks on subdomains.
+- Array promotion/forall/for/scan expressions always evaluate to 1D arrays.
+  E.g., f(A) where A promotes f() should result in an array of type:
+    [A.domain] f(A(i)).type but instead results in a 1D array
+  E.g., [i in D] f(i) should result in an array of type: [D] f(i).type
+    but instead results in a 1D array
+- Recursive records with array members (empty domains) fail to compile.
+- Arrays and domains of different ranks can be zippered serially.
+- Array and domain runtime type information is not preserved through
+  generic instantiation.
+- Array aliases cannot be declared as fields without an element type.
+- Range operations can result in overflow.
     e.g., (0:uint..5 by -1).length
-- Arrays declared over domains with negative strides may not work
+- Arrays declared over domains with negative strides may result in errors.
+- Array type aliases may fail to compile for multiple locales.
+- Array type alias fields may fail to compile.
 
---------
-Generics
---------
+Iterators and Generics
+----------------------
+- Nested 'var' iterators may not work correctly.
+- The implicit 'setter' argument does not work in var iterators.
+- Iterators in records cannot change fields in that record.
+- Subclassing uninstantiated generic classes should be prohibited but is not.
+- Errors from calls to 'compilerError' may be incorrect due to dynamic dispatch.
+- Records cannot be generic over real parameters.
+- Type and parameter functions are not checked for side effects.
 
-Unimplemented Features:
-
-Bugs:
-- Subclassing uninstantiated generic classes should be prohibited but is not
-- Compiler errors via the compilerError function may be issued too eagerly in
-  the presence of dynamic dispatch
-- Generic type names can sometimes contain extra parentheses especially in the
-  presence of parameters with default values
-- Records cannot be generic over real parameters
-- Type and parameter functions are not checked for side effects
-
-
--------------------------------
-Parallelism and Synchronization
--------------------------------
-
-Unimplemented Features:
-- Atomic statements are not implemented
-- Whole array assignment is serialized
-
-Bugs:
-- Deadlocks are possible if the system has too few threads or maxThreads is set
-  too low
-- Array elements accessed via references in begin statements in which the array
-  is not also accessed may outlive the existence of the array
-
-
---------------------
-Reductions and Scans
---------------------
-
-Unimplemented Features:
-- User-defined reductions and scans are not yet implemented
-
-Bugs:
-- Reductions and scans do not work when their element type is itself an array
-- Scans are serial
-
-
---------------------------
-Locality and Distributions
---------------------------
-
-Unimplemented Features:
-- On statement variable declarations are not yet supported
-    e.g., on Locales(1) var x: real;
-- Support for multi-locale distributed domains and arrays is limited
-- The Block distribution does not support array resizing
-- The Cyclic and BlockCyclic distributions are not yet complete
-
-Bugs:
-- String assignment across locales is by reference rather than value
-- The locale type has a default value of 'nil'
-
-
-----------------
 Input and Output
 ----------------
-
-Unimplemented Features:
-- Format control for the output precision/width of scalar values
+- Binary I/O is not implemented.
+- Format control for precision/width is lacking.
   Workaround: see doc/technotes/README.format
-- Input of whole arrays, e.g., read(A);
-  Workaround: use a loop and read in the elements one at a time
-    e.g., for i in A.domain do read(A(i));
+- Input of whole arrays is not implemented.
+  Workaround: use a loop, e.g., for e in A do read(e);
+- Using 'on' in a writeThis method can lead to a deadlock.
 
-Bugs:
-- Specifying a writeThis method for user-defined output of records or classes
-  with an on-statement can lead to a deadlock
+Task Parallelism and Synchronization
+------------------------------------
+- Atomic statements are not implemented.
+- Deadlocks may occur due to an insufficient number of threads.
+- Arrays may not be move to the heap due to indirect array element accesses.
 
+Data Parallelism
+----------------
+- Reductions and scans of arrays of arrays may result in errors.
+- Some data parallel statements that should be parallelized are
+  serialized with a warning message "X has been serialized".  In some
+  case, this can be fixed in the program.
+  E.g., Change '+ reduce for i in 1..n do i**2' to
+                 '+ reduce forall i in 1..n do i**2' to avoid a
+  warning that the reduce has been serialized.  In other cases, this
+  is a current limitation:
+  1. Scans are always serialized.
+  2. Assignments from ranges to multi-dimensional arrays are always serialized.
+  3. Assignment, reductions, and parallel iteration over associative
+     and sparse domains and arrays are always serialized.
 
------------------
-Standard Library
------------------
+Locales and Domain Maps
+-----------------------
+- On statement variable declarations are not yet supported.
+  E.g., on Locales(1) var x: real;
+- String assignment across locales is by reference rather than value.
+- The default value for locale types is incorrect.
 
-Unimplemented Features:
-- On some platforms, the Math module is limited by C support
+User-Defined Reductions and Scans and User-Defined Domain Maps
+--------------------------------------------------------------
+- User-defined reductions and scans are not yet implemented.
+- User-defined domain maps are not yet implemented.
 
-Bugs:
+Standard Modules, Standard Distributions, and Standard Layouts
+--------------------------------------------------------------
+- On some platforms, the Math module is limited by C support.
+- The BlockCyclic distribution is incomplete.
+- Block and Cyclic domains containing indices near the minimum or
+  maximum integral type may overflow.
+- Array slicing on Block and Cyclic arrays is not supported in some
+  cases.
 
-
------------------
-Memory Management
------------------
-
-Status:
-- Strings are leaked
-- Distributed privatized domains and arrays are leaked
-- Data associated with iterators may be leaked
-- Some data that the compiler moves to the heap are leaked
-
-
------------
 Portability
 -----------
-
 Cray XT:
-- The memory limit for Chapel programs may need to be set manually --
-  see doc/platforms/README.xt-cle for details
+- The memory limit for Chapel programs may need to be set manually.
+  See doc/platforms/README.xt-cle for details.
 
 Cray CX1:
-- We currently only support CX1s running Linux
+- Support is only provided using Linux.
 
 IBM Power5/Power6 systems:
-- we have had some initial successes executing Chapel on these machines --
-  see doc/platforms/README.ibm for details
+- There has been some initial success, but testing is incomplete.
+  See doc/platforms/README.ibm for details.
 
 PGI compilers (and possibly others):
-- Identifiers in the generated code may exceed the back-end compiler's limit
-- Floating point literals of -0.0 may not work as intended
+- Identifiers in the generated code may exceed the back-end compiler's limit.
+- Floating point literals of -0.0 may not work as intended.
