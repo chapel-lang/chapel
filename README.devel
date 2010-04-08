@@ -17,6 +17,7 @@ same place for developers and end users:
   README.files     : the end user's guide to the directory structure
   CHANGES          : the end user's list of changes since the previous release
   CONTRIBUTORS     : the end user's list of contributors to Chapel
+  CONTRIBUTORS.devel : contributors to code base not distributed in the release
   COPYRIGHT        : the end user's copyright information for Chapel
   LICENSE          : the end user's licensing agreement for Chapel
   STATUS           : the end user's status description of a release
