@@ -104,8 +104,7 @@ to which it is mapped.
 use BlockDist;
 
 const Space = [1..8, 1..8];
-const MyBlock = new dmap(new Block(boundingBox=Space));
-const D: domain(2) dmapped MyBlock = Space;
+const D: domain(2) dmapped Block(boundingBox=Space) = Space;
 var A: [D] int;
 
 forall a in A do
@@ -195,8 +194,7 @@ mapped.
 use CyclicDist;
 
 const Space = [1..8, 1..8];
-const MyCyclic = new dmap(new Cyclic(startIdx=(1,1)));
-const D: domain(2) dmapped MyCyclic = Space;
+const D: domain(2) dmapped Cyclic(startIdx=Space.low) = Space;
 var A: [D] int;
 
 forall a in A do
