@@ -53,7 +53,7 @@ For more detailed information about...      refer to...
   ...executing programs on multiple locales  ...doc/README.multilocale
   ...how Chapel tasks are mapped to threads  ...doc/README.tasks
 
-  ...using Chapel on a Cray XT (CLE)         ...doc/platforms/README.xt-cle
+  ...using Chapel on a Cray XT (TM) (CLE)    ...doc/platforms/README.xt-cle
 
   ...calling C routines from Chapel          ...doc/technotes/README.extern
   ...formatting value-to-string conversions  ...doc/technotes/README.format
