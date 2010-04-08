@@ -113,11 +113,16 @@ in~\rsec{Subdomain_Types}.
 \subsubsection{Domain Values}
 \label{Domain_Values}
 \index{domains!values}
+\index{domains!ordered}
+\index{domains!unordered}
 
-A domain's value is the index set that it represents.  The domain
-values for the root domain types are defined in~\rsec{Domain_Values}.
-The domain values for sparse subdomain types are defined
-in~\rsec{Sparse_Domain_Values}.
+A domain's value is the index set that it represents.  A domain's
+index set can be considered either \emph{ordered} or \emph{unordered},
+indicating whether or not there is a well-defined order defined for
+its indices for the purposes of things like serial iteration and I/O.
+The domain values for the root domain types are defined
+in~\rsec{Domain_Values}.  The domain values for sparse subdomain types
+are defined in~\rsec{Sparse_Domain_Values}.
 
 \subsubsection{Domain Identity}
 \label{Domain_Identity}
@@ -264,7 +269,8 @@ An arithmetic domain's value is represented as \chpl{rank} ranges of
  stridable)}.  The index set for a rank~1 domain is the set of indices
  described by its singleton range.  The index set for a rank~$n$
  domain is the set of all \chpl{n*idxType} tuples described by the
- tensor product of its ranges.
+ tensor product of its ranges.  Arithmetic domain indices are ordered
+ according to the lexicographic order of their values.
 
 \index{arithmetic domains!literals}
 
@@ -335,8 +341,11 @@ values for type \chpl{range(idxType,} \chpl{ BoundedRangeType.bounded,}
 \label{Associative_Domain_Values}
 \index{associative domains!values}
 
-An associative domain's value is simply the unordered set of all index
-values that the domain describes.
+An associative domain's value is simply the set of all index values
+that the domain describes.  The indices of an associative domains are
+typically unordered.  The only exception is associative domains over
+enumerated types which are ordered according to the order in which the
+enumeration's identifiers were declared.
 
 \index{associative domains!literals, lack thereof}
 \index{associative domains!initializations}
@@ -634,19 +643,25 @@ All domains support iteration via standard for, forall, and coforall
 loops.  These loops iterate over all of the indices that the domain
 describes.  The type of the iterator variable for an iteration over a
 domain named \chpl{D} is that domain's index type, \chpl{index(D)}.
+If the domain's indices are ordered, a for loop will traverse the
+indices in order.
 
 
 \subsection{Slicing}
 \label{Slicing}
 \index{slicing}
+
+In Chapel, slicing is the application of an index set to another
+variable using either parentheses or square brackets.
+
+% TODO: syntax diagram?!?
+
+\subsubsection{Domain-based Slicing}
 \index{slicing!domains}
 \index{domains!slicing}
 
-In Chapel, slicing is the application of an index set to another
-variable using either parentheses or square brackets.  This index set
-can be represented using a domain expression.
-
-% TODO: syntax diagram?!?
+The index set used to express a slice can be represented using a
+domain value.
 
 Slicing an array results in an alias to a subset of the array's
 elements as described in~\rsec{Array_Slicing}.
@@ -713,12 +728,15 @@ a \chpl{rank} equal to the number of dimensions that were sliced by
 ranges rather than integers.
 
 
-\subsection{Domain Function Arguments}
-\label{Domain_Function Arguments}
+\subsection{Domain Arguments to Functions}
+\label{Domain_Arguments_to_Functions}
 \index{domains!function arguments}
 \index{function arguments!domains}
 
-\subsection{Formal Arguments of Domain Type}
+This section describes the semantics of passing domains as arguments
+to functions.
+
+\subsubsection{Formal Arguments of Domain Type}
 
 When a domain value is passed to a formal argument of compatible
 domain type by blank intent, it is passed by reference in order to
@@ -727,7 +745,7 @@ preserve the domain's identity.
 % Need some syntax diagrams here maybe?
 
 
-\subsection{Domain Promotion of Scalar Functions}
+\subsubsection{Domain Promotion of Scalar Functions}
 \label{Domain_Promotion_of_Scalar_Functions}
 \index{domains!promotion}
 
@@ -761,7 +779,7 @@ forall (a,i) in (A,D) do
 
 \subsection{Domain Operators}
 
-\subsection{By Operator}
+\subsubsection{By Operator}
 \label{By_Operator_For_Domains}
 \index{by@\chpl{by}!on arithmetic domains}
 
