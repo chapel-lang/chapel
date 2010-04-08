@@ -51,6 +51,7 @@ literal-expression:
   imaginary-literal
   string-literal
   range-literal
+  domain-literal
 \end{syntax}
 
 \subsection{Variable Expressions}
@@ -1109,19 +1110,15 @@ string literal.  If \chpl{i} is \chpl{3}, then the resulting string
 would be \chpl{"result: 3"}.
 \end{example}
 
-\subsubsection{The Arithmetic Domain By Operator}
-\label{The_Arithmetic_Domain_By_Operator}
+\subsubsection{The By Operator}
+\label{The_By_Operator}
+\index{arithmetic domains!strided}
+\index{arithmetic domains!by operator}
 \index{by@\chpl{by}}
 
-The operator \chpl{by} is predefined on arithmetic domains.  It is
-described in~\rsec{Strided_Arithmetic_Domains}.
-
-\subsubsection{The Range By Operator}
-\label{The_Range_By_Operator}
-\index{by@\chpl{by}}
-
-The operator \chpl{by} is predefined on ranges.  It is
-described in~\rsec{Strided_Ranges}.
+The operator \chpl{by} is predefined on ranges and arithmetic domains.
+It is described in~\rsec{By_Operator_For_Ranges} for ranges
+and~\rsec{By_Operator_For_Domains} for domains.
 
 \subsubsection{The Range Count Operator}
 \label{The_Range_Count_Operator}

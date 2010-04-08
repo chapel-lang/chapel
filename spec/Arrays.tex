@@ -33,6 +33,7 @@ array-type:
   [ domain-expression ] type-specifier
 
 domain-expression:
+  domain-literal
   expression
 \end{syntax}
 The \sntx{domain-expression} must specify a domain that the array can
@@ -416,40 +417,8 @@ SpsA(1,n) = 0.0;  // ERROR!
 \label{Associative_Arrays}
 \index{arrays!associative}
 
-An associative domain type can be defined over any scalar type and is
-given by the following syntax:
-\begin{syntax}
-associative-domain-type:
-  `domain' ( scalar-type )
-
-scalar-type:
-  type-specifier
-\end{syntax}
-A scalar type is any primitive type, tuple of scalar types, or class,
-record, or union where all of the fields have scalar types.
-Enumerated types are scalar types but domains declared over enumerated
-types are described in~\rsec{Enumerated_Arrays}.  Arrays
-declared over associative domains are dictionaries mapping from values
-to variables.
-
-\subsection{Enumerated Arrays}
-\label{Enumerated_Arrays}
-\index{arrays!enumerated}
-
-Enumerated domains are a special case of associative domains where the
-indices are the constants defined by an enumerated type.  The syntax
-of an enumerated domain type is summarized as follows:
-\begin{syntax}
-enumerated-domain-type:
-  `domain' ( enum-type )
-\end{syntax}
-
-Enumerated domains are initialized with indices for each constant
-defined in the enumerated type they are declared over.
-
-An enumerated domain is specified identically to the associative
-domain type, except that the type is an enumerated type rather than
-some other value type.
+Arrays declared over associative domains are dictionaries mapping from
+values to variables.
 
 \subsection{Association of Arrays to Domains}
 \label{Association_of_Arrays_to_Domains}

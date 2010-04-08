@@ -2,112 +2,296 @@
 \label{Domains}
 \index{domains}
 
-A \emph{domain} describes a collection of names for data.  These names
-are referred to as the \emph{indices} of the domain.  All indices for
-a particular domain are values with some common type.  Valid types for
-indices are primitive types and class references or unions, tuples or
-records whose fields are valid types for indices.  This excludes
-ranges, domains, and arrays.  Domains have a rank and a total order on
-their elements.
+A \emph{domain} is a first-class representation of an index set.
+Domains are used to specify iteration spaces, to define the size and
+shape of arrays, and to specify operations on data aggregates like
+slicing.  The indices described by a domain may be regular and
+structured or they may less regular and unstructured.  Chapel also
+supports the ability to create \emph{subdomains} and \emph{sparse
+subdomains} to represent subsets of a domain's index set.  A domain's
+indices may potentially be distributed across multiple locales as
+described in~\rsec{Domain_Maps}, supporting global-view data
+structures in Chapel.
 
-Chapel supports a variety of kinds of domains and arrays defined over
-those domains as well as a mechanism to allow application-specific
-implementations of arrays.
 
-\subsection{Domains}
-%\label{Domains}
+\subsection{Domain Type Categories}
+\label{Domain_Type_Categories}
+\index{domains!type categories}
 
-Domains are first-class ordered sets of indices.  There are five kinds
-of domains:
-\begin{itemize}
-\item
-Arithmetic domains are rectilinear sets of Cartesian indices that can
-have an arbitrary rank.
-\item
-Sparse domains are subdomains that support a notion of an implicit
-``zero element'' for array elements described by its base domain but
-not the domain itself.
-\item
-Associative domains are sets of indices where the type of the index is
-some type that is not an array, domain, or range.  Associative domains
-define dictionaries or associative arrays implemented via hash tables.
-\item
-Enumerated domains are a special case of associative domains where the
-indices are defined by an enumerated type.
-\item
-Opaque domains are sets of anonymous indices.  Opaque domains define
-graphs and unspecified sets.
-\end{itemize}
+This section describes Chapel's taxonomy of domain types.
 
-\subsubsection{Domain Types}
+\subsubsection{Root Domains and Subdomains}
+
+A domain is either a \emph{root domain} or a \emph{subdomain}.  A root
+domain has no parent domain and can represent an arbitrary set of
+indices of its index type.  A subdomain has an associated parent
+domain and is constrained to only store indices that are also
+described by its parent domain.  This is represented as follows:
+
+\begin{syntax}
+domain-type:
+  root-domain-type
+  subdomain-type
+\end{syntax}
+
+ \noindent Most of this chapter describes root domains.  Subdomains
+ are described in ~\rsec{Subdomains}
+
+
+\subsubsection{Regular and Irregular Domain Types}
+
+Domain types can be thought of as falling into two major categories:
+regular and irregular.  This is represented for root domain types as
+follows:
+
+\begin{syntax}
+root-domain-type:
+  regular-domain-type
+  irregular-domain-type
+\end{syntax}
+
+Regular domains, known as \emph{arithmetic domains}, describe
+multidimensional rectangular index sets.  They are characterized by a
+tensor product of ranges and represent indices that are tuples of an
+integral type.  Regular domains can be represented using $O(1)$ space.
+They are used to represent standard multidimensional rectangular index
+sets and arrays.
+
+% TODO: Do we depend on the term arithmetic anywhere in the spec or
+% code?
+
+An irregular domain can store an arbitrary set of indices of an
+arbitrary but homogenous index type.  Irregular domains typically
+require space proportional to the number of indices being
+representeed.
+
+The two major classes of irregular domains in Chapel are associative
+domains and opaque domains.
+
+\begin{syntax}
+irregular-domain-type:
+  associative-domain-type
+  opaque-domain-type
+\end{syntax}
+
+\noindent Associative domains represent an arbitrary set of indices
+of a given type and can be used to describe sets or to create
+dictionary-style arrays.  Opaque domains are those for which the
+indices have no inherent logical names and are therefore anonymous.
+They are useful for creating sets and for building unstructured
+arrays, similar to pointer-based data structures in conventional
+languages.
+
+Sparse subdomains, described in~\rsec{Sparse_Subdomains}, are also
+considered to be irregular domains.  A non-sparse subdomain inherits
+the regularity or irregularity of its parent domain.
+
+
+
+\subsection{Domain Types}
 \label{Domain_Types}
 \index{domains!types}
 
-Domain types vary based on the kind of the domain.  The type of an
-arithmetic domain is parameterized by the rank of the domain and the
-integral type of the indices.  The type of a sparse domain is
-parameterized by the type of the domain that defines its bounding
-index set.  The type of an associative domain is parameterized by the
-type of the index.  The type of an opaque domain is unique.  The type
-of an enumerated domain is parameterized by the enumerated type.
+All domain types are characterized by the type of indices that they
+store (see~\rsec{Index_Types} below).  The way in which these index
+types are specified in the domain's type signature varies across
+domain types.
 
-The syntax of a domain type is summarized as follows:
+\subsubsection{Arithmetic Domain Types}
+
+Arithmetic domains are parameterized by three things:
+\begin{itemize}
+
+ \item \chpl{rank}, a positive \chpl{int} value indicating the number
+of dimensions that the domain represents;
+
+ \item \chpl{idxType}, a type member representing the index type for
+each dimension.  If unspecified, \chpl{idxType} defaults
+to \chpl{int}.
+
+% BLC: we should potentially rename idxType to idxDimType to make it
+% more consistent with the irregular case
+
+ \item \chpl{stridable}, a \chpl{bool} value indicating whether or not
+any of the domain's dimensions will be characterized by a strided
+range.  If unspecified, \chpl{stridable} defaults to \chpl{false}.
+
+\end{itemize}
+
+If \chpl{rank} is $1$, the index type represented by an arithmetic
+domain is \chpl{idxType}.  Otherwise, the index type is the homogenous
+tuple type \chpl{rank*idxType}.
+
+% BLC: longer-term, we've talked about potentially making it be
+% rank*idxType even if rank is 1.
+
+The syntax of an arithmetic domain type is summarized as follows:
+
 \begin{syntax}
-domain-type:
-  arithmetic-domain-type
-  associative-domain-type
-  opaque-domain-type
-  enumerated-domain-type
-  sparse-domain-type
-  subdomain-type
-\end{syntax}  
-
-\begin{example}
-In the code
-\begin{chapel}
-var D: domain(2) = [1..n, 1..n];
-\end{chapel}
-\chpl{D} is defined as a two-dimensional arithmetic domain and is
-initialized to contain the set of indices $(i,j)$ for all $i$ and $j$
-such that $i \in {1, 2, \ldots, n}$ and $j \in {1, 2, \ldots, n}$.
-\end{example}
-
-\subsubsection{Index Types}
-\label{Index_Types}
-\index{domains!index types}
-
-Each domain has a corresponding \emph{index} type which is the type of
-the domain's indices qualified by its status as an index.  Variables
-of this type can be declared using the following syntax:
-\begin{syntax}
-index-type:
-  `index' ( domain-expression )
+regular-domain-type:
+  `domain' ( named-expression-list )
 \end{syntax}
-If the type of the indices of the domain is \chpl{int}, then the index
-type can be converted into this type.
 
-A value with a type that is the same as the type of the indices in a
-domain but is not the index type can be converted into the index type
-using a special ``method'' called \chpl{index}.
+\noindent where \sntx{named-expression-list} permits the values of
+\chpl{rank}, \chpl{idxType}, and \chpl{stridable} to be specified
+using standard function call syntax.
 
 \begin{example}
-In the code
-\begin{chapel}
-var j = D.index(i);
-\end{chapel}
-the type of the variable \chpl{j} is the index type of
-domain \chpl{D}.  The variable \chpl{i}, which must have the same type
-as the underlying type of the indices of \chpl{D}, is verified to be
-in domain \chpl{D} before it is assigned to \chpl{j}.
+%
+% PLACEHOLDER: INSERT EXAMPLE HERE
+%
 \end{example}
 
-Values of index type are known to be valid and may have specialized
-representations to facilitate accessing arrays defined for that
-domain. It may therefore be less expensive to access arrays using
-values of appropriate index type rather than values of the more
-general type the domain is defined over.
 
-\subsubsection{Domain Assignment}
+\subsubsection{Associative Domain Types}
+\label{Associative_Domain_Types}
+\index{domain types!associative}
+
+An associative domain type is parameterized by \chpl{idxType}, the
+type of the index that it stores.  The syntax is as follows:
+
+\begin{syntax}
+associative-domain-type:
+  `domain' ( associative-index-type )
+
+associative-index-type:
+  type-specifier
+\end{syntax}
+
+%
+% should there be an opt_idxTypeEquals in the domain type above?
+%
+
+
+If the \sntx{associative-index-type} is an enumerated type, the
+associative domain is considered to be an \emph{enumerated domain
+type} which differs in some key ways, described in subsequent
+sections.
+
+% TODO: is there a more explicit reference I could put here?
+
+\subsubsection{Opaque Domain Types}
+
+An opaque domain type is parameterized by the type \chpl{opaque},
+indicating that the index values are anonymous and have no obvious
+representational value.  The opaque domain type is given by the
+following syntax:
+
+\begin{syntax}
+opaque-domain-type:
+  `domain' ( `opaque' )
+\end{syntax}
+
+Opaque domains permit more efficient implementations than associative
+domains under the assumption that creation of new domain index values
+is rare.
+
+
+\subsection{Domain Values}
+
+This section describes the values and literal formats (if any) for
+each root domain type.
+
+\subsubsection{Arithmetic Domain Values}
+
+An arithmetic domain's value is represented as \chpl{rank} ranges of
+ type \chpl{range(idxType, BoundedRangeType.bounded, stridable)}.  The
+ index set for a \chpl{rank}~1 domain is the set of indices described
+ by its singleton range.  The index set for a \chpl{rank}-$n$ domain
+ is the set of all \chpl{n*idxType} tuples described by the tensor
+ product of its ranges.
+
+Literal arithmetic domain values are represented by a comma-separated
+list of range expressions of matching idxType surrounded by square
+brackets:
+
+%
+% TODO: Is it correct that they must be matching?
+%
+
+\begin{syntax}
+domain-literal:
+  [ range-expression-list ]
+
+range-expression-list:
+  range-expression
+  range-expression, range-expression-list
+
+range-expression:
+  expression
+\end{syntax}
+
+\noindent The type of an arithmetic domain literal is defined as follows:
+
+\begin{itemize}
+
+\item \chpl{rank} = the number of range expressions in the literal
+
+\item \chpl{idxType} = the idxType of the range expressions
+
+\item \chpl{stridable} = \chpl{true} if any of the range expressions
+are stridable, otherwise false
+
+\end{itemize}
+
+\begin{example}
+The expression \chpl{[1..5, 1..5]} defines an arithmetic domain with
+type \chpl{domain(rank=2, idxType=int, strided=false)}.
+\end{example}
+
+\begin{example}
+The expression \chpl{[1..5, 1..5]} defines a $5 \times 5$ arithmetic
+domain with the indices $(1, 1), (1, 2), \ldots, (5, 5)$.
+\end{example}
+
+The default value of a range type is the \chpl{rank} default range
+values for type \chpl{range(idxType, BoundedRangeType.bounded,
+stridable)}.
+
+% TODO: example here
+
+\subsubsection{Associative Domain Values}
+
+An associative domain's value is simply the unordered set of all index
+values that the domain describes.
+
+There is no literal syntax for an associative domain, though a tuple
+of values of type \chpl{idxType} can be used to initialize a variable
+of associative domain type.
+
+% TODO: assign too?
+
+The default value for an associative domain is the empty set unless
+\chpl{idxType} is an enumerated type in which case the default value
+is the set of all identifiers in the enumeration.
+
+\begin{rationale}
+
+The decision to have enumerated domains start fully populated was
+based on the observation that enumerations have a finite, typically
+small number of elements and that it would be common to declare arrays
+with values corresponding to each identifier in the enumeration.
+
+Moreover, we believe that constant enumerated domains will be amenable
+to compiler optimization, particularly if the numeric values of the
+enumeration are consecutive.
+\end{rationale}
+
+
+\subsubsection{Opaque Domain Values}
+
+An opaque domain's value is simply the unordered set of anonymous
+indices that the domain describes.
+
+There is no literal syntax for an opaque domain due to the fact that
+the indices have no inherent names.
+
+The default value for an opaque domain is the empty set.
+
+
+%%% STOPPED HERE
+
+\subsection{Domain Assignment}
 \label{Domain_Assignment}
 \index{domains!assignment}
 
@@ -116,107 +300,16 @@ domain assignment impacts these arrays as discussed
 in~\rsec{Association_of_Arrays_to_Domains}, but the arrays remain
 associated with the same domain regardless of the assignment.
 
-\subsubsection{Formal Arguments of Domain Type}
-\label{Formal_Arguments_of_Domain_Type}
-\index{formal arguments!domains}
-\index{domains!as formal arguments}
 
-Domains are passed to functions by reference.  Formal arguments that
-receive domains are aliases of the actual arguments.  It is a
-compile-time error to pass a domain to a formal argument that has a
-non-blank intent.
-
-\subsubsection{Iteration over Domains}
+\subsection{Iteration over Domains}
 \label{Iteration_over_Domains}
 
 All domains support iteration via forall and for loops over the
 indices in the set that the domain defines.  The type of the indices
 returned by iterating over a domain is the index type of the domain.
 
-\subsubsection{Domain Promotion of Scalar Functions}
-\label{Domain_Promotion_of_Scalar_Functions}
-\index{domains!promotion}
 
-Domain promotion of a scalar function is defined over the domain type
-and the type of the indices of the domain (not the index type).
-
-\begin{example}
-Given an array \chpl{A} with element type \chpl{int} declared over a
-one-dimensional domain \chpl{D} with integral type \chpl{int}, then
-the array can be assigned the values given by the indices in the
-domain by writing
-\begin{chapel}
-A = D;
-\end{chapel}
-\end{example}
-
-
-\subsection{Arithmetic Domains}
-\label{Arithmetic_Domains}
-\index{domains!arithmetic}
-
-An arithmetic domain is a rectilinear set of Cartesian indices.
-Arithmetic domains are specified as a tuple of ranges enclosed in
-square brackets.
-
-\subsubsection{Arithmetic Domain Literals}
-\label{Arithmetic_Domain_Literals}
-\index{domains!arithmetic literals}
-
-An arithmetic domain literal is a square tuple of ranges.
-\begin{example}
-The expression \chpl{[1..5, 1..5]} defines a $5 \times 5$ arithmetic
-domain with the indices $(1, 1), (1, 2), \ldots, (5, 5)$.
-\end{example}
-
-\subsubsection{Arithmetic Domain Types}
-\label{Arithmetic_Domain_Types}
-
-The type of an arithmetic domain is determined by three components:
-(1) the rank of the arithmetic domain (the number of ranges that
-define it); (2) an underlying integral type called the
-\emph{dimensional index type} which must be identical to each of the
-integral element types of the ranges that define the arithmetic
-domain; (3) a boolean value indicating whether any of the ranges that
-define the domain are stridable or not.  By default, the dimensional
-index type of an arithmetic domain is \chpl{int} and the stridability
-value is set to false.
-
-The arithmetic domain type is specified by the syntax of a function
-call to the keyword \chpl{domain} that takes at least an argument
-called \chpl{rank} that is a parameter of type \chpl{int} and
-optionally an integral type named \chpl{dim_type} and a boolean value
-named \chpl{stridable}.  Its syntax is summarized as follows:
-\begin{syntax}
-arithmetic-domain-type:
-  `domain' ( named-expression-list )
-\end{syntax}
-
-\begin{example}
-The expression \chpl{[1..5, 1..5]} defines an arithmetic domain with
-type \chpl{domain(2, int, false)}.
-\end{example}
-
-\subsubsection{Strided Arithmetic Domains}
-\label{Strided_Arithmetic_Domains}
-\index{domains!arithmetic, strided}
-
-If the ranges that define an arithmetic domain are strided, then the
-arithmetic domain is said to be strided and the stridable parameter
-must be set to true.  For domains with inferred type, if the
-initializing expression uses stridable ranges, the domain will be
-inferred to have a stridable parameter of true.
-
-The \chpl{by} operator can be applied to any arithmetic domain to
-create a strided arithmetic domain.  It is predefined over an
-arithmetic domain and an integer or a tuple of integers.  In the
-integer case, the ranges in each dimension are strided by the integer.
-In the tuple of integers case, the size of the tuple must match the
-rank of the domain; the integers stride each dimension of the domain.
-If the ranges are already strided, the strides applied by
-the \chpl{by} operator are multiplied to the strides of the ranges.
-
-\subsubsection{Arithmetic Domain Slicing}
+\subsection{Arithmetic Domain Slicing}
 \label{Arithmetic_Domain_Slicing}
 
 Arithmetic domains support slicing by indexing into them specifying a
@@ -253,9 +346,169 @@ const D: domain(2) = [1..n, 1..n],
 \end{example}
 
 
-\subsection{Sparse Domains}
-\label{Sparse_Domains}
+\subsection{Domain Promotion of Scalar Functions}
+\label{Domain_Promotion_of_Scalar_Functions}
+\index{domains!promotion}
+
+Domain promotion of a scalar function is defined over the domain type
+and the type of the indices of the domain (not the index type).
+
+\begin{example}
+Given an array \chpl{A} with element type \chpl{int} declared over a
+one-dimensional domain \chpl{D} with integral type \chpl{int}, then
+the array can be assigned the values given by the indices in the
+domain by writing
+\begin{chapel}
+A = D;
+\end{chapel}
+\end{example}
+
+
+\subsection{Domain Operators}
+
+\subsubsection{Changing the Indices in Associative Domains}
+
+As with sparse domains, indices can be added or removed to associative
+domains.  Associative domains support a method \chpl{add} that takes
+an index and adds this index to the associative domain.  All arrays
+declared over this associative domain can now access elements
+corresponding to this index.
+
+Associative domains support a method \chpl{remove} that takes an index
+and removes this index from the associative domain.  The values in the
+arrays indexed by the removed index are lost.
+
+The operators \chpl{+=} and \chpl{-=} have special semantics for
+associative domains; they are interpreted as calls to the \chpl{add}
+and \chpl{remove} methods respectively.  The statement
+\begin{chapel}
+D += i;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+D.add(i);
+\end{chapel}
+Similarly, the statement
+\begin{chapel}
+D -= i;
+\end{chapel}
+is equivalent to
+\begin{chapel}
+D.remove(i);
+\end{chapel}
+
+Like sparse domains, associative domains can be emptied by using a
+method \chpl{clear} that clears out its index set.
+
+\begin{example}
+The following call will cause the associative domain \chpl{HashD} to
+describe an empty set of indices as it was when initially declared.
+\begin{chapel}
+HashD.clear();
+\end{chapel}
+\end{example}
+
+\subsubsection{Testing Membership in Associative Domains}
+
+An associative domain supports a \chpl{member} method that can test
+whether a particular value is part of the index set. It
+returns \chpl{true} if the index is in the associative domain and
+otherwise returns \chpl{false}.
+
+
+\subsection{By Operator}
+\label{By_Operator_For_Domains}
+
+The \chpl{by} operator can be applied to any arithmetic domain to
+create a strided arithmetic domain.  It is predefined over an
+arithmetic domain and an integer or a tuple of integers.  In the
+integer case, the ranges in each dimension are strided by the integer.
+In the tuple of integers case, the size of the tuple must match the
+rank of the domain; the integers stride each dimension of the domain.
+If the ranges are already strided, the strides applied by
+the \chpl{by} operator are multiplied to the strides of the ranges.
+
+
+\begin{example}
+In the code
+\begin{chapel}
+var D: domain(2) = [1..n, 1..n];
+\end{chapel}
+\chpl{D} is defined as a two-dimensional arithmetic domain and is
+initialized to contain the set of indices $(i,j)$ for all $i$ and $j$
+such that $i \in {1, 2, \ldots, n}$ and $j \in {1, 2, \ldots, n}$.
+\end{example}
+
+
+\subsection{Formal Arguments of Domain Type}
+\label{Formal_Arguments_of_Domain_Type}
+\index{formal arguments!domains}
+\index{domains!as formal arguments}
+
+Domains are passed to functions by reference.  Formal arguments that
+receive domains are aliases of the actual arguments.  It is a
+compile-time error to pass a domain to a formal argument that has a
+non-blank intent.
+
+\subsection{Index Types}
+\label{Index_Types}
+\index{domains!index types}
+
+Each domain has a corresponding \emph{index} type which is the type of
+the domain's indices qualified by its status as an index.  Variables
+of this type can be declared using the following syntax:
+\begin{syntax}
+index-type:
+  `index' ( domain-expression )
+\end{syntax}
+If the type of the indices of the domain is \chpl{int}, then the index
+type can be converted into this type.
+
+A value with a type that is the same as the type of the indices in a
+domain but is not the index type can be converted into the index type
+using a special ``method'' called \chpl{index}.
+
+\begin{example}
+In the code
+\begin{chapel}
+var j = D.index(i);
+\end{chapel}
+the type of the variable \chpl{j} is the index type of
+domain \chpl{D}.  The variable \chpl{i}, which must have the same type
+as the underlying type of the indices of \chpl{D}, is verified to be
+in domain \chpl{D} before it is assigned to \chpl{j}.
+\end{example}
+
+Values of index type are known to be valid and may have specialized
+representations to facilitate accessing arrays defined for that
+domain. It may therefore be less expensive to access arrays using
+values of appropriate index type rather than values of the more
+general type the domain is defined over.
+
+\subsection{Subdomains}
+\label{Subdomains}
+\index{subdomains}
+\index{domains!subdomains}
+
+A subdomain is a domain whose indices are a subset of those described
+by a \emph{base domain}.  A subdomain is specified by the following
+syntax:
+\begin{syntax}
+subdomain-type:
+  `subdomain' ( domain-expression )
+  sparse-subdomain-type
+\end{syntax}
+The ordering of the indices in the subdomain is consistent with the
+ordering of the indices in the base domain.
+
+Subdomains are verified during execution even as domains are
+reassigned.  The indices in a subdomain are known to be indices in a
+domain, allowing for fast bounds-checking.
+
+\subsection{Sparse Subdomains}
+\label{Sparse_Subdomains}
 \index{domains!sparse}
+\index{subdomains!sparse}
 
 Sparse domains are used in Chapel to describe irregular index subsets
 and to define sparse arrays.  Sparse arrays are typically used to
@@ -269,7 +522,7 @@ may be a value other than zero.
 
 A sparse domain type is specified by the syntax
 \begin{syntax}
-sparse-domain-type:
+sparse-subdomain-type:
   `sparse' `subdomain' ( domain-expression )
 \end{syntax}
 This syntax specifies that the domain is a sparse subset of the
@@ -364,133 +617,6 @@ As with other methods and operators, the \chpl{add}, \chpl{remove},
 \chpl{+=}, and \chpl{-=} operators can be invoked in a promoted manner
 by specifying an aggregate of indices rather than a single index at a
 time.
-
-\subsection{Associative Domains}
-\label{Associative_Domains}
-\index{domains!associative}
-
-An associative domain type can be defined over any scalar type and is
-given by the following syntax:
-\begin{syntax}
-associative-domain-type:
-  `domain' ( scalar-type )
-
-scalar-type:
-  type-specifier
-\end{syntax}
-A scalar type is any primitive type, tuple of scalar types, or class,
-record, or union where all of the fields have scalar types.
-Enumerated types are scalar types but domains declared over enumerated
-types are described in~\rsec{Enumerated_Domains}.  Arrays
-declared over associative domains are dictionaries mapping from values
-to variables.
-
-\subsubsection{Changing the Indices in Associative Domains}
-
-As with sparse domains, indices can be added or removed to associative
-domains.  Associative domains support a method \chpl{add} that takes
-an index and adds this index to the associative domain.  All arrays
-declared over this associative domain can now access elements
-corresponding to this index.
-
-Associative domains support a method \chpl{remove} that takes an index
-and removes this index from the associative domain.  The values in the
-arrays indexed by the removed index are lost.
-
-The operators \chpl{+=} and \chpl{-=} have special semantics for
-associative domains; they are interpreted as calls to the \chpl{add}
-and \chpl{remove} methods respectively.  The statement
-\begin{chapel}
-D += i;
-\end{chapel}
-is equivalent to
-\begin{chapel}
-D.add(i);
-\end{chapel}
-Similarly, the statement
-\begin{chapel}
-D -= i;
-\end{chapel}
-is equivalent to
-\begin{chapel}
-D.remove(i);
-\end{chapel}
-
-Like sparse domains, associative domains can be emptied by using a
-method \chpl{clear} that clears out its index set.
-
-\begin{example}
-The following call will cause the associative domain \chpl{HashD} to
-describe an empty set of indices as it was when initially declared.
-\begin{chapel}
-HashD.clear();
-\end{chapel}
-\end{example}
-
-\subsubsection{Testing Membership in Associative Domains}
-
-An associative domain supports a \chpl{member} method that can test
-whether a particular value is part of the index set. It
-returns \chpl{true} if the index is in the associative domain and
-otherwise returns \chpl{false}.
-
-\subsection{Opaque Domains}
-\label{Opaque_Domains}
-\index{domains!opaque}
-
-An opaque domain is a form of associative domain where there is no
-algebra on the types of the indices.  The indices are, in essence,
-opaque.  The opaque domain type is given by the following syntax:
-\begin{syntax}
-opaque-domain-type:
-  `domain' ( `opaque' )
-\end{syntax}
-
-New index values for opaque domains are explicitly requested via a
-method called \chpl{create}.  Indices can be removed by a method
-called \chpl{remove}.
-
-Opaque domains permit more efficient implementations than associative
-domains under the assumption that creation of new domain index values
-is rare.
-
-\subsection{Enumerated Domains}
-\label{Enumerated_Domains}
-\index{domains!enumerated}
-
-Enumerated domains are a special case of associative domains where the
-indices are the constants defined by an enumerated type.  The syntax
-of an enumerated domain type is summarized as follows:
-\begin{syntax}
-enumerated-domain-type:
-  `domain' ( enum-type )
-\end{syntax}
-
-Enumerated domains are initialized with indices for each constant
-defined in the enumerated type they are declared over.
-
-An enumerated domain is specified identically to the associative
-domain type, except that the type is an enumerated type rather than
-some other value type.
-
-\subsection{Subdomains}
-\label{Subdomains}
-\index{subdomains}
-\index{domains!subdomains}
-
-A subdomain is a domain whose indices are a subset of those described
-by a \emph{base domain}.  A subdomain is specified by the following
-syntax:
-\begin{syntax}
-subdomain-type:
-  `subdomain' ( domain-expression )
-\end{syntax}
-The ordering of the indices in the subdomain is consistent with the
-ordering of the indices in the base domain.
-
-Subdomains are verified during execution even as domains are
-reassigned.  The indices in a subdomain are known to be indices in a
-domain, allowing for fast bounds-checking.
 
 \subsection{Predefined Functions and Methods on Domains}
 \index{domains!predefined functions}
@@ -590,3 +716,7 @@ the domain.
 \end{protobody}
 
 
+%
+% TODO: 
+% Storage format
+% Index entries
