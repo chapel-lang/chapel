@@ -80,15 +80,33 @@ threads that may be used per locale to implement the program.  See
 README.tasks for more information on the role of this variable in
 creating threads and executing tasks.
 
-Additionally, the default distribution and Chapel ranges support
-parallel execution for forall loops.  The iterations are divided up
-into "chunks" which are executed by threads.  The maximum number of
-chunks can be specified by the built-in configuration constant
-maxChunks.  By default maxChunks is set to the minimum of
-maxThreadsPerLocale (if it is specified) and the number of cores on
-the CPU.  Another built-in configuration constant called
-minElemsPerChunk specifies the minimum number of elements in a chunk
-(default 1).
+-------------------------------------
+Controlling single locale parallelism
+-------------------------------------
+
+Data parallel operations over ranges, default domains, and default
+arrays support single locale parallelism via the following built-in
+configuration constants:
+
+ --dataParTasksPerLocale      Number of Chapel tasks to use to execute
+                              forall loops (default: number of cores on
+                              the CPU).
+ --dataParIgnoreRunningTasks  If true, always use dataParTasksPerLocale
+                              tasks to execute forall loops.  If false,
+                              reduce the number of tasks used by the
+                              number of running tasks (default: true).
+ --dataParMinGranularity      When greater than zero, the number of
+                              tasks used to execute forall loops may be
+                              reduced such that the number of iterations
+                              per task is never less than the specified
+                              value (default: zero).
+
+The Chapel standard distributions Block and Cyclic also use
+identically named constructor arguments to to control parallelism
+within a locale.  The default values for these arguments are set to
+their corresponding configuration constants for default data
+parallelism.
+
 
 -----------------------------------------
 Controlling the amount of non-user output
