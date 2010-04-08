@@ -1,6 +1,6 @@
-==========================
-Using Chapel on a Cray CX1
-==========================
+===============================
+Using Chapel on a Cray CX1 (TM)
+===============================
 
 The following information is assembled to help users get up and
 running on multiple nodes of a Cray CX1 running Linux.  If you are not
@@ -22,9 +22,9 @@ instructions in the top-level README to get started with the language.
    multiple locales and GASNet.
 
 
-3) If your CX1 uses PBS for scheduling jobs between multiple users,
-   you can have Chapel take care of the details for you by setting
-   CHPL_LAUNCHER to pbs-gasnetrun_ibv.  For example:
+3) If your Cray CX1 uses PBS for scheduling jobs between multiple
+   users, you can have Chapel take care of the details for you by
+   setting CHPL_LAUNCHER to pbs-gasnetrun_ibv.  For example:
 
      setenv CHPL_LAUNCHER pbs-gasnetrun_ibv
 
@@ -32,11 +32,11 @@ instructions in the top-level README to get started with the language.
    on your behalf and then launch your program using the gasnetrun_ibv
    launcher.
 
-   If your CX1 does not use PBS, you do not need to set CHPL_LAUNCHER,
-   in which case it will default to gasnetrun_ibv (a GASNet launch
-   script for Infiniband networks.  In this case, you will need to set
-   GASNET_SSH_SERVERS to list the names of the compute nodes on your
-   system.  For example:
+   If your Cray CX1 does not use PBS, you do not need to set
+   CHPL_LAUNCHER, in which case it will default to gasnetrun_ibv (a
+   GASNet launch script for Infiniband networks.  In this case, you
+   will need to set GASNET_SSH_SERVERS to list the names of the
+   compute nodes on your system.  For example:
 
      setenv GASNET_SSH_SERVERS 'compute-0-0.local compute-0-1.local'
 
@@ -44,9 +44,10 @@ instructions in the top-level README to get started with the language.
    capabilities.
 
 
-4) By default, Chapel will use gcc as the compiler for a CX1.  If you
-   want to override this choice, you can select another compiler using
-   the CHPL_HOST_COMPILER variable.  See README.chplenv for options.
+4) By default, Chapel will use gcc as the compiler for a Cray CX1.  If
+   you want to override this choice, you can select another compiler
+   using the CHPL_HOST_COMPILER variable.  See README.chplenv for
+   options.
 
 
 5) Make sure you're in the top-level chapel/ directory:
@@ -70,8 +71,7 @@ instructions in the top-level README to get started with the language.
    hello-multiloc_real).  The first binary contains code to launch the
    Chapel program onto the compute nodes, as specified by your
    CHPL_LAUNCHER setting.  The second contains the program code
-   itself.  You can use the -v flag to see the commands used to launch
-   your program.  See README.launcher for further details.
+   itself.
 
 
 9) Multi-locale executions require the number of locales to be
@@ -79,3 +79,7 @@ instructions in the top-level README to get started with the language.
    Chapel program as usual.  For example:
 
      ./hello-multiloc -nl 2
+
+   You can use the -v flag to see the commands used to launch your
+   program.  See README.launcher for further details.
+
