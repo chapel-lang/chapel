@@ -7,7 +7,7 @@ are strongly recommended for effective use of the release, and a few
 other optional settings that are useful for cross-compiling or
 overriding the default settings.  To check the values of the Chapel
 environment variables that were set and inferred, run the script:
-$CHPL_HOME/util/printchplenv.pl
+$CHPL_HOME/util/printchplenv
 
 
 --------------------
