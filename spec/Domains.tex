@@ -4,14 +4,14 @@
 
 A \emph{domain} is a first-class representation of an index set.
 Domains are used to specify iteration spaces, to define the size and
-shape of arrays, and to specify operations on data aggregates like
-slicing.  The indices described by a domain may be regular and
-structured or they may less regular and unstructured.  Chapel also
+shape of arrays (\rsec{Arrays}), and to specify aggregate operations
+like slicing.  The indices described by a domain may be regular and
+structured or they may be irregular and unstructured.  Chapel also
 supports the ability to create \emph{subdomains} and \emph{sparse
 subdomains} to represent subsets of a domain's index set.  A domain's
 indices may potentially be distributed across multiple locales as
 described in~\rsec{Domain_Maps}, supporting global-view data
-structures in Chapel.
+structures.
 
 
 \subsection{Domain Type Categories}
@@ -22,11 +22,12 @@ This section describes Chapel's taxonomy of domain types.
 
 \subsubsection{Root Domains and Subdomains}
 
-A domain is either a \emph{root domain} or a \emph{subdomain}.  A root
-domain has no parent domain and can represent an arbitrary set of
-indices of its index type.  A subdomain has an associated parent
-domain and is constrained to only store indices that are also
-described by its parent domain.  This is represented as follows:
+% could also call root domains base domains, except that we currently
+% use that term for subdomains -- a place where it seems natural, but
+% where we could also lean more heavily on parent domain...
+
+A domain is either a \emph{root domain} or a \emph{subdomain}.  This
+is represented as follows:
 
 \begin{syntax}
 domain-type:
@@ -34,8 +35,13 @@ domain-type:
   subdomain-type
 \end{syntax}
 
- \noindent Most of this chapter describes root domains.  Subdomains
- are described in ~\rsec{Subdomains}
+ \noindent A root domain has no parent domain and can represent an
+arbitrary set of indices of its index type.  A subdomain has an
+associated parent domain value and is constrained to only store
+indices that are also described by its parent domain.
+
+The bulk of this chapter describes root domains.  Subdomains are
+described in ~\rsec{Subdomains}
 
 
 \subsubsection{Regular and Irregular Domain Types}
@@ -54,7 +60,7 @@ Regular domains, known as \emph{arithmetic domains}, describe
 multidimensional rectangular index sets.  They are characterized by a
 tensor product of ranges and represent indices that are tuples of an
 integral type.  Regular domains can be represented using $O(1)$ space.
-They are used to represent standard multidimensional rectangular index
+They are useful for representing multidimensional rectangular index
 sets and arrays.
 
 % TODO: Do we depend on the term arithmetic anywhere in the spec or
@@ -66,7 +72,7 @@ require space proportional to the number of indices being
 representeed.
 
 The two major classes of irregular domains in Chapel are associative
-domains and opaque domains.
+domains and opaque domains:
 
 \begin{syntax}
 irregular-domain-type:
@@ -77,10 +83,9 @@ irregular-domain-type:
 \noindent Associative domains represent an arbitrary set of indices
 of a given type and can be used to describe sets or to create
 dictionary-style arrays.  Opaque domains are those for which the
-indices have no inherent logical names and are therefore anonymous.
-They are useful for creating sets and for building unstructured
-arrays, similar to pointer-based data structures in conventional
-languages.
+indices have no inherent names and are therefore anonymous.  They can
+be used for representing sets and for building unstructured arrays,
+similar to pointer-based data structures in conventional languages.
 
 Sparse subdomains, described in~\rsec{Sparse_Subdomains}, are also
 considered to be irregular domains.  A non-sparse subdomain inherits
@@ -99,7 +104,7 @@ domain types.
 
 \subsubsection{Arithmetic Domain Types}
 
-Arithmetic domains are parameterized by three things:
+Arithmetic domain types are parameterized by three things:
 \begin{itemize}
 
  \item \chpl{rank}, a positive \chpl{int} value indicating the number
@@ -136,11 +141,11 @@ regular-domain-type:
 \chpl{rank}, \chpl{idxType}, and \chpl{stridable} to be specified
 using standard function call syntax.
 
-\begin{example}
+%\begin{example}
 %
 % PLACEHOLDER: INSERT EXAMPLE HERE
 %
-\end{example}
+%\end{example}
 
 
 \subsubsection{Associative Domain Types}
@@ -164,9 +169,9 @@ associative-index-type:
 
 
 If the \sntx{associative-index-type} is an enumerated type, the
-associative domain is considered to be an \emph{enumerated domain
-type} which differs in some key ways, described in subsequent
-sections.
+associative domain is called an \emph{enumerated domain type}---a
+variant of associative domain types that has some distinct
+characteristics, described in subsequent sections.
 
 % TODO: is there a more explicit reference I could put here?
 
@@ -174,36 +179,32 @@ sections.
 
 An opaque domain type is parameterized by the type \chpl{opaque},
 indicating that the index values are anonymous and have no obvious
-representational value.  The opaque domain type is given by the
-following syntax:
+representational name or value.  The opaque domain type is given by
+the following syntax:
 
 \begin{syntax}
 opaque-domain-type:
   `domain' ( `opaque' )
 \end{syntax}
 
-Opaque domains permit more efficient implementations than associative
-domains under the assumption that creation of new domain index values
-is rare.
-
 
 \subsection{Domain Values}
 
-This section describes the values and literal formats (if any) for
-each root domain type.
+This section describes the values, literal formats (if any), and
+default values for each root domain type.
 
 \subsubsection{Arithmetic Domain Values}
 
 An arithmetic domain's value is represented as \chpl{rank} ranges of
- type \chpl{range(idxType, BoundedRangeType.bounded, stridable)}.  The
- index set for a \chpl{rank}~1 domain is the set of indices described
- by its singleton range.  The index set for a \chpl{rank}-$n$ domain
- is the set of all \chpl{n*idxType} tuples described by the tensor
- product of its ranges.
+ type \chpl{range(idxType,} \chpl{ BoundedRangeType.bounded,} \chpl{
+ stridable)}.  The index set for a rank~1 domain is the set of indices
+ described by its singleton range.  The index set for a rank~$n$
+ domain is the set of all \chpl{n*idxType} tuples described by the
+ tensor product of its ranges.
 
 Literal arithmetic domain values are represented by a comma-separated
-list of range expressions of matching idxType surrounded by square
-brackets:
+list of range expressions of matching \chpl{idxType} enclosed in
+square brackets:
 
 %
 % TODO: Is it correct that they must be matching?
@@ -230,23 +231,23 @@ range-expression:
 \item \chpl{idxType} = the idxType of the range expressions
 
 \item \chpl{stridable} = \chpl{true} if any of the range expressions
-are stridable, otherwise false
+are stridable, otherwise \chpl{false}
 
 \end{itemize}
 
 \begin{example}
 The expression \chpl{[1..5, 1..5]} defines an arithmetic domain with
-type \chpl{domain(rank=2, idxType=int, strided=false)}.
+type \chpl{domain(rank=2,} \chpl{ idxType=int,} \chpl{ strided=false)}.
 \end{example}
 
 \begin{example}
 The expression \chpl{[1..5, 1..5]} defines a $5 \times 5$ arithmetic
-domain with the indices $(1, 1), (1, 2), \ldots, (5, 5)$.
+domain with the indices $(1, 1), (1, 2), \ldots, (1, 5), (2, 5), \ldots (5, 5)$.
 \end{example}
 
 The default value of a range type is the \chpl{rank} default range
-values for type \chpl{range(idxType, BoundedRangeType.bounded,
-stridable)}.
+values for type \chpl{range(idxType,} \chpl{ BoundedRangeType.bounded,}
+\chpl{stridable)}.
 
 % TODO: example here
 
@@ -271,10 +272,13 @@ The decision to have enumerated domains start fully populated was
 based on the observation that enumerations have a finite, typically
 small number of elements and that it would be common to declare arrays
 with values corresponding to each identifier in the enumeration.
+Furthermore, we considered it simpler to clear a fully-populated
+domain than to fully populate an empty one.
 
-Moreover, we believe that constant enumerated domains will be amenable
-to compiler optimization, particularly if the numeric values of the
-enumeration are consecutive.
+In addition, we believe that fully-populated constant enumerated
+domains are an important case for compiler optimizations, particularly
+if the numeric values of the enumeration are consecutive.
+
 \end{rationale}
 
 
@@ -288,6 +292,16 @@ the indices have no inherent names.
 
 The default value for an opaque domain is the empty set.
 
+
+\subsection{Runtime Representation of Domaain Values}
+
+While domains are a high-level abstraction, users have control over
+the runtime representation of a domain's index set through Chapel's
+support for domain maps~(\rsec{Domain_Maps}), both
+standard~(\rsec{Standard_Layouts} and \rsec{Standard_Distributions})
+and user-defined~(\rsec{User_Defined_Domain_Maps}).  Chapel
+implementations should also document their choice of implicit domain
+maps (used to implement domains with no domain map specifiers).
 
 %%% STOPPED HERE
 
