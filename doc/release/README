@@ -16,11 +16,13 @@ This directory contains the following documentation:
   README.threads     : explains how Chapel tasks are implemented using threads
 
   platforms/         : platform-specific notes
-    README.cx1-linux : notes for CX1 users running Linux
+    README.cx1-linux : notes for Cray CX1 (TM) users running Linux
     README.cygwin    : notes for Cygwin users
     README.ibm       : notes for IBM users
     README.macosx    : notes for Mac users
-    README.xt-cle    : notes for Cray XT users running CLE
+    README.xmt       : notes for Cray XMT (TM) users
+    README.xt-cle    : notes for Cray XT (TM) users running the Cray Linux
+                       Environment (TM) (CLE)
 
   chapelLanguageSpec.pdf : the current draft of the Chapel language
                            specification

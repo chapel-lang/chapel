@@ -29,9 +29,9 @@ Recommended Settings
         setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/chplenv/platform`
 
    For other platforms that appear very similar to a UNIX workstation
-   from the shell prompt (e.g., a Cray XT or CX1), the value may need
-   to be set explicitly.  The strings for our currently-supported host
-   platforms are as follows:
+   from the shell prompt (e.g., a Cray XT or Cray CX1), the value may
+   need to be set explicitly.  The strings for our currently-supported
+   host platforms are as follows:
 
         cx1-linux : Cray CX1 running Linux
         cygwin    : Cygwin (Windows) platforms
@@ -42,7 +42,7 @@ Recommended Settings
         pwr5      : IBM Power5 SMP cluster
         pwr6      : IBM Power6 SMP cluster
         sunos     : SunOS platforms
-        xt-cle    : Cray XT running Cray Linux Environment (CLE)
+        xt-cle    : Cray XT running the Cray Linux Environment (CLE)
 
    See README.cx1-linux, README.cygwin, README.macosx, README.ibm, and
    README.xt-cle for specific notes for each of these platforms.
@@ -86,9 +86,9 @@ Optional Settings
    variable to describe that platform.  Currently supported
    cross-compilation target platforms include:
 
-        x1  : Cray X1
-        x2  : Cray X2
-        xmt : Cray XMT
+        x1  : Cray X1 (TM)
+        x2  : Cray X2 (TM)
+        xmt : Cray XMT (TM)
 
    If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
    the same value as $CHPL_HOST_PLATFORM.
@@ -149,7 +149,7 @@ Optional Settings
 
    CHPL_TASKS:
         fifo     : run tasks to completion, in FIFO order
-        mta      : each task runs on a Cray MTA/XMT thread
+        mta      : each task runs on a Cray XMT thread
         none     : do not support multiple tasks
 
    CHPL_THREADS:

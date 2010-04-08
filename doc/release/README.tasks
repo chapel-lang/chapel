@@ -132,7 +132,7 @@ by compiling them down to the "future" construct supported by the
 platform's dialect of C.
 
 This tasking model has been implemented, but has not yet been
-extensively used, so users with access to an XMT are likely to be
+extensively used, so users with access to a Cray XMT are likely to be
 exploring uncharted areas.  We'd be curious to hear about any
 experiences you have at chapel_info@cray.com.
 
