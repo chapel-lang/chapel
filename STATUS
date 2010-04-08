@@ -104,7 +104,7 @@ Data Parallelism
   warning that the reduce has been serialized.  In other cases, this
   is a current limitation:
   1. Scans are always serialized.
-  2. Assignments from ranges to multi-dimensional arrays are always serialized.
+  2. Assignments from ranges to multidimensional arrays are always serialized.
   3. Assignment, reductions, and parallel iteration over associative
      and sparse domains and arrays are always serialized.
 
