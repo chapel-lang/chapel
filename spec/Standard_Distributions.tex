@@ -30,11 +30,34 @@ standard set of distributions.
 \subsection{The Standard Block Distribution}
 \label{Block_Dist}
 
-The standard Block distribution is defined in the module called
-\chpl{BlockDist}.  It is parameterized by the rank and index type of
-the domains that it can support.  Thus domains of different ranks or
-different index types must be distributed with different Block
-distributions.
+The standard Block distribution, defined in the
+module \chpl{BlockDist}, maps indices to locales by partitioning the
+indices into blocks according to a \emph{bounding box} argument.  It
+is parameterized by the rank and index type of the domains it
+supports.  Thus domains of different ranks or different index types
+must be distributed with different Block distributions.
+
+For Block distributions of rank $d$, given a bounding box
+\begin{chapel}
+[$l_1$..$h_1$, $\ldots$, $l_d$..$h_d$]
+\end{chapel}
+and an array of target locales defined over the domain
+\begin{chapel}
+[$0$..$n_1$-1, $\ldots$, $0$..$n_d-1$-1]
+\end{chapel}
+then a Block distribution maps an index $i$ to a locale by computing
+the $k$\emph{th} component of an index $j$ into the array of target
+locales from the $k$\emph{th} component of $i$ using the following
+formula:
+\[
+j_k = \left\{
+  \begin{array}{ll}
+    0 & \mbox{if $i_k < l_k$} \\
+    \left\lfloor\dfrac{n_k (i_k - l_k)}{h_k - l_k + 1}\right\rfloor & \mbox{if $i_k \geq l_k$ and $i_k \leq h_k$} \\
+    n_k-1 & \mbox{if $i_k > h_k$} \\
+  \end{array}
+\right.
+\]
 
 The Block class constructor is defined as follows:
 \begin{chapel}
@@ -44,64 +67,44 @@ def Block(boundingBox: domain,
           dataParIgnoreRunningTasks = $\mbox{{\it value in global config const of the same name}}$,
           dataParMinGranularity = $\mbox{{\it value in global config const of the same name}}$,
           param rank = boundingBox.rank,
-          type idxType = int)
+          type idxType = boundingBox.dim(1).eltType)
 \end{chapel}
 
 The argument \chpl{boundingBox} is a non-distributed domain defining a
 bounding box used to partition the space of all indices across an
-array of target locales.  For Block distributions of rank $d$, given
-a bounding box
-\begin{chapel}
-[$l_1$..$h_1$, $\ldots$, $l_d$..$h_d$]
-\end{chapel}
-and an array of target locales defined over the domain
-\begin{chapel}
-[$0$..$n_1$, $\ldots$, $0$..$n_d$]
-\end{chapel}
-then a Block distribution maps an index $i$ to a locale by the
-following formula which computes the $k$\emph{th} component of an
-index into the array of target locales from the $k$\emph{th} component
-of $i$:
-\[
-\left\{
-  \begin{array}{ll}
-    0 & \mbox{if $i_k < l_k$} \\
-    \left\lfloor\dfrac{n_k (i_k - l_k)}{h_k - l_k + 1}\right\rfloor & \mbox{if $i_k \geq l_k$ and $i_k \leq h_k$} \\
-    n_k-1 & \mbox{if $i_k > h_k$} \\
-  \end{array}
-\right.
-\]
+array of target locales.
 
 The argument \chpl{targetLocales} is a non-distributed array
-containing the target locales to which this distribution partitions
-indices and data.  The rank of \chpl{targetLocales} must match the
-rank of the distribution, or be one.  If the rank of
+containing the target locales to which this distribution maps indices
+and data.  The rank of \chpl{targetLocales} must match the rank of the
+distribution, or be one.  If the rank of
 \chpl{targetLocales} is one, a greedy heuristic is used to reshape the
 array of target locales so that it matches the rank of the
 distribution and each dimension contains an approximately equal number
 of indices.
 
-The arguments \chpl{dataParTasksPerLocale},
-\chpl{dataParIgnoreRunningTasks}, and \chpl{dataParMinGranularity} set
-the knobs that are used to control intra-locale data parallelism for
-Block-distributed domains and arrays in the same way that the global
-configuration constants of these names control data parallelism for
-ranges and default-distributed domains and
-arrays~\rsec{data_parallel_knobs}.
+The
+arguments \chpl{dataParTasksPerLocale}, \chpl{dataParIgnoreRunningTasks},
+and \chpl{dataParMinGranularity} set the knobs that are used to
+control intra-locale data parallelism for Block-distributed domains
+and arrays in the same way that the global configuration constants of
+these names control data parallelism for ranges and
+default-distributed domains and arrays~\rsec{data_parallel_knobs}.
 
-The rank and index type of the Block distribution are inferred from
-the \chpl{boundingBox} argument unless explicitly set.
+The \chpl{rank} and \chpl{idxType} arguments are inferred from the
+\chpl{boundingBox} argument unless explicitly set.
 
 \begin{example}
-The following code sets the elements of a Block-distributed array of
-integers to the ID of the locale on which each element exists.
-%\begin{chapelpre}
-%\end{chapelpre}
+The following code declares a Block distribution with a bounding box
+equal to the domain \chpl{Space} and declares an array, \chpl{A}, over
+a domain declared over this distribution.  The computation in
+the \chpl{forall} loop sets each array element to the ID of the locale
+to which it is mapped.
 \begin{chapel}
 use BlockDist;
 
 const Space = [1..8, 1..8];
-const MyBlock: dmap(Block(rank=2)) = new dmap(new Block(boundingBox=Space));
+const MyBlock = new dmap(new Block(boundingBox=Space));
 const D: domain(2) dmapped MyBlock = Space;
 var A: [D] int;
 
@@ -110,17 +113,7 @@ forall a in A do
 
 writeln(A);
 \end{chapel}
-The Block distribution \chpl{MyBlock} is specified with an explicit
-type that sets the rank of the distribution to two and uses the
-default dimensional index type \chpl{int}.  It is initialized by
-setting the bounding box to the value of the non-distributed domain
-\chpl{Space}.  Note that the named arguments \chpl{rank} and
-\chpl{boundingBox} are used only for clarity and may be omitted.
-
-Domains \chpl{D} and \chpl{A} are distributed via \chpl{MyBlock}.  The
-computation occurs in the forall loop where each array element is set
-to the ID of the locale on which that element exists.  When run on 6
-locales, the output of this code is:
+When run on 6 locales, the output is:
 \begin{chapel}
 0 0 0 0 1 1 1 1
 0 0 0 0 1 1 1 1
@@ -135,20 +128,36 @@ locales, the output of this code is:
 
 \subsection{The Standard Cyclic Distribution}
 \label{Cyclic_Dist}
-The standard Cyclic distribution is defined in the module \chpl{CyclicDist}.
-The Cyclic distribution is parameterized by the rank and index type of
-the domains it supports. The Cyclic distribution deals indices to locales
-in a round robin fashion.
+The standard Cyclic distribution, defined in the
+module \chpl{CyclicDist}, maps indices to locales in a round-robin
+pattern according to a \emph{start index} argument.  It is
+parameterized by the rank and index type of the domains it supports.
+Thus domains of different ranks or different index types must be
+distributed with different Cyclic distributions.
 
-The Cyclic class constructor is defined as:
+For cyclic distributions of rank $d$, given a start index
+\begin{chapel}
+($s_1$, $\ldots$, $s_d$)
+\end{chapel}
+and an array of target locales defined over the domain
+\begin{chapel}
+[$0$..$n_1$-1, $\ldots$, $0$..$n_d$-1]
+\end{chapel}
+then a Cyclic distribution maps an index $i$ to a locale by computing
+the $k$\emph{th} component of an index $j$ into the array of target
+locales from the $k$\emph{th} component of $i$ using the following
+formula:
+\[j_k = i_k - s_k \pmod{n_k}\]
+
+The Cyclic class constructor is defined as follows:
 \begin{chapel}
 def Cyclic(startIdx,
            targetLocales: [] locale = Locales,
            dataParTasksPerLocale = $\mbox{{\it value in global config const of the same name}}$,
            dataParIgnoreRunningTasks = $\mbox{{\it value in global config const of the same name}}$,
            dataParMinGranularity = $\mbox{{\it value in global config const of the same name}}$,
-           param rank: int = startIdx.size,
-           type idxType = startIdx(1).type)
+           param rank: int = $\mbox{{\it rank inferred from startIdx}}$,
+           type idxType = $\mbox{{\it index type inferred from startIdx}}$)
 \end{chapel}
 
 The argument \chpl{startIdx} is a tuple of integers defining an index that
@@ -156,48 +165,37 @@ will be distributed to the first locale in \chpl{targetLocales}. For a single
 dimensional distribution \chpl{startIdx} can be an integer or a tuple with a
 single element.
 
-The argument \chpl{targetLocales} is an array containing the locales over
-which indices are to be distributed.  The rank of the \chpl{targetLocales} array
-must be 1 or match the rank of the distribution. If the rank of \chpl{targetLocales} is one, it is reshaped to match the rank of the distribution.
+The argument \chpl{targetLocales} is a non-distributed array
+containing the target locales to which this distribution maps indices
+and data.  The rank of \chpl{targetLocales} must match the rank of the
+distribution, or be one.  If the rank of
+\chpl{targetLocales} is one, a greedy heuristic is used to reshape the
+array of target locales so that it matches the rank of the
+distribution and each dimension contains an approximately equal number
+of indices.
 
-The arguments \chpl{dataParTasksPerLocale}, \chpl{dataParIgnoreRunningTasks},
-and \chpl{dataParMinGranularity} set the knobs that are used to control
-intra-locale data parallelism for Cyclic-distributed domains and arrays in
-the same way that the global configuration constants of these names control
-data parallelism for ranges and default-distributed domains and arrays
-~\rsec{data_parallel_knobs}.
+The
+arguments \chpl{dataParTasksPerLocale}, \chpl{dataParIgnoreRunningTasks},
+and \chpl{dataParMinGranularity} set the knobs that are used to
+control intra-locale data parallelism for Cyclic-distributed domains
+and arrays in the same way that the global configuration constants of
+these names control data parallelism for ranges and
+default-distributed domains and arrays ~\rsec{data_parallel_knobs}.
 
 The \chpl{rank} and \chpl{idxType} arguments are inferred from the
 \chpl{startIdx} argument unless explicitly set.
 
-For cyclic distributions of rank $d$, given a start index
-
-\begin{chapel}
-($s_1$, $\ldots$, $s_d$)
-\end{chapel}
-
-and an array of target locales defined over the domain
-
-\begin{chapel}
-[$0$..$n_1$, $\ldots$, $0$..$n_d$]
-\end{chapel}
-
-then a Cyclic distribution maps index $i$ to a locale by computing
-the $k$\emph{th} component of an index into the array of target locales
-from the $k$\emph{th} component of $i$:
-
-($i_k$ - $s_k$) \% ($n_k$ + 1)
-
 \begin{example}
-The following code declares a Cyclic distribution with a \chpl{startIdx} of
-(1, 1) and declares an array, \chpl{A}, over the cyclic distribution. The
-computation in the \chpl{forall} loop sets each array element to the ID of the
-locale it exists on.
+The following code declares a Cyclic distribution with a start index
+of \chpl{(1,1)} and declares an array, \chpl{A}, over a domain
+declared over this distribution.  The computation in the \chpl{forall}
+loop sets each array element to the ID of the locale to which it is
+mapped.
 \begin{chapel}
 use CyclicDist;
 
 const Space = [1..8, 1..8];
-const MyCyclic: dmap(Cyclic(rank=2)) = new dmap(new Cyclic(startIdx=(1,1)));
+const MyCyclic = new dmap(new Cyclic(startIdx=(1,1)));
 const D: domain(2) dmapped MyCyclic = Space;
 var A: [D] int;
 
@@ -206,7 +204,7 @@ forall a in A do
 
 writeln(A);
 \end{chapel}
-When run on 6 locales, the output of this is:
+When run on 6 locales, the output is:
 \begin{chapel}
 0 1 0 1 0 1 0 1
 2 3 2 3 2 3 2 3
