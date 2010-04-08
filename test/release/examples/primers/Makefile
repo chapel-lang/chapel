@@ -5,8 +5,8 @@ CHPL = chpl
 
 TARGETS = \
 	arrays \
-	block2D \
 	classes \
+	distributions \
 	fileIO \
 	genericClasses \
 	iterators \
