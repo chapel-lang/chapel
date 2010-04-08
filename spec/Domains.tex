@@ -130,8 +130,8 @@ are defined in~\rsec{Sparse_Domain_Values}.
 
 In addition to storing a value, domain variables have an identity that
 distinguishes them from other domains of the same type with the same
-value.  This identity is used to defines the domain's relationship
-with subdomains~(\rsec{Subdomains}, index types~(\rsec{Index_Types}),
+value.  This identity is used to define the domain's relationship
+with subdomains~(\rsec{Subdomains}), index types~(\rsec{Index_Types}),
 and arrays~(\rsec{Association_of_Arrays_to_Domains}).  The identity of
 a domain is represented by its name.
 
@@ -300,7 +300,7 @@ range-expression:
 
 \item \chpl{rank} = the number of range expressions in the literal
 
-\item \chpl{idxType} = the idxType of the range expressions
+\item \chpl{idxType} = the type of the range expressions
 
 \item \chpl{stridable} = \chpl{true} if any of the range expressions
 are stridable, otherwise \chpl{false}
@@ -342,7 +342,7 @@ values for type \chpl{range(idxType,} \chpl{ BoundedRangeType.bounded,}
 \index{associative domains!values}
 
 An associative domain's value is simply the set of all index values
-that the domain describes.  The indices of an associative domains are
+that the domain describes.  The indices of an associative domain are
 typically unordered.  The only exception is associative domains over
 enumerated types which are ordered according to the order in which the
 enumeration's identifiers were declared.
@@ -715,7 +715,7 @@ array-based slicing.
 
 For multi-dimensional arithmetic domains and arrays, substituting
 integral values for one or more of the ranges in a range-based slice
-will result in a value of lower rank.  
+will result in domain or array of lower rank.
 
 The result of a rank-change slice on an array is an alias to a subset
 of the array's elements as described
@@ -784,7 +784,7 @@ forall (a,i) in (A,D) do
 \index{by@\chpl{by}!on arithmetic domains}
 
 The \chpl{by} operator can be applied to an arithmetic domain value in
-order to create a strided arithmetic domain value.  The righ-hand
+order to create a strided arithmetic domain value.  The right-hand
 operand to the \chpl{by} operator can either be an integral value or
 an integral tuple whose size matches the domain's rank.
 
@@ -866,7 +866,47 @@ Returns the high index of the domain as a value of the domain's index
 type.
 \end{protobody}
 
-% TODO: Need to define exterior, interior, etc.
+\begin{protohead}
+def $Domain$.translate(off: integral): domain
+def $Domain$.translate(off: rank*integral): domain
+\end{protohead}
+\begin{protobody}
+Returns a new domain that is the current domain translated
+by \chpl{off} or \chpl{off(d)} for each dimension \chpl{d}.
+\end{protobody}
+
+\begin{protohead}
+def $Domain$.expand(off: integral): domain
+def $Domain$.expand(off: rank*integral): domain
+\end{protohead}
+\begin{protobody}
+Returns a new domain that is the current domain adjusted by \chpl{off}
+or \chpl{off(d)} for each dimension \chpl{d}.
+\end{protobody}
+
+\begin{protohead}
+def $Domain$.exterior(off: integral): domain
+def $Domain$.exterior(off: rank*integral): domain
+\end{protohead}
+\begin{protobody}
+Returns a new domain that is the exterior portion of the domain
+with \chpl{off} or \chpl{off(d)} indices for each dimension \chpl{d}.
+If \chpl{off} or \chpl{off(d)} is negative, compute the exterior from
+the low bound of the dimension; if positive, compute the exterior from
+the high bound.
+\end{protobody}
+
+\begin{protohead}
+def $Domain$.interior(off: integral): domain
+def $Domain$.interior(off: rank*integral): domain
+\end{protohead}
+\begin{protobody}
+Returns a new domain that is the interior portion of the domain
+with \chpl{off} or \chpl{off(d)} indices for each dimension \chpl{d}.
+If \chpl{off} or \chpl{off(d)} is negative, compute the interior from
+the low bound of the dimension; if positive, compute the interior from
+the high bound.
+\end{protobody}
 
 %% \begin{protohead} **/
 %% def $Domain$.position(i: index($Domain$)): rank*dim_type **/
