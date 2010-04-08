@@ -87,6 +87,7 @@ For more detailed information about...      refer to...
   ...using Chapel on a Cray XMT (TM)         ...doc/platforms/README.xmt
   ...using Chapel with Cygwin over Windows   ...doc/platforms/README.cygwin
   ...using Chapel on an IBM system           ...doc/platforms/README.ibm
+  ...using Chapel on an SGI Altix system     ...doc/platforms/README.sgi
 
   ...calling C routines from Chapel          ...doc/technotes/README.extern
   ...formatting value-to-string conversions  ...doc/technotes/README.format

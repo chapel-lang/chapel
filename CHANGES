@@ -170,6 +170,7 @@ Documentation
   - updated the description of the Random number module to reflect changes
   - fixed several bugs in example codes within the specification
 - added doc/platforms/README.xmt to describe the use of Chapel on a Cray XMT
+- added doc/platforms/README.sgi to describe the use of Chapel on an SGI Altix
 - updated READMEs based on task/thread change
   (see doc/README.tasks and doc/README.executing)
 - added a README to the $CHPL_HOME/util directory to describe its contents

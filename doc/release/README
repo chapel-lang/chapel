@@ -20,6 +20,7 @@ This directory contains the following documentation:
     README.cygwin    : notes for Cygwin users
     README.ibm       : notes for IBM users
     README.macosx    : notes for Mac users
+    README.sgi       : notes for SGI Altix users
     README.xmt       : notes for Cray XMT (TM) users
     README.xt-cle    : notes for Cray XT (TM) users running the Cray Linux
                        Environment (TM) (CLE)
