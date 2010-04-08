@@ -17,6 +17,10 @@ Functions
 ---------
 * define semantics of passing tuples to functions
 * define semantics of creating tuples with array components, etc.
+* add type functions
+* need to specify that finding a common type across return statements
+  for inferred return types is only for those returns that are live
+  after generic instantiation, conditional folding, etc.
 
 Locales and Affinity
 --------------------
