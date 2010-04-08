@@ -17,6 +17,7 @@ following files may also exist:
      foo.numlocales     : number of locales on which to test foo.chpl
      foo.perfkeys       : indicates keys that are used to identify values of
                           interest in performance-oriented runs
+     foo.prediff        : script that is run before test output is compared
      foo.skipif         : conditions under which this test should be skipped
      foo.timeout        : kill the test if this much time passes
 

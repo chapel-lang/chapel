@@ -41,3 +41,4 @@ contain.
   runtime/          : source code for Chapel's runtime libraries
   third-party/      : third-party software used by Chapel
   util/             : utility scripts
+    chplenv/        : scripts used to query and set your Chapel environment
