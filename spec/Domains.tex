@@ -127,7 +127,7 @@ In addition to storing a value, domain variables have an identity that
 distinguishes them from other domains of the same type with the same
 value.  This identity is used to defines the domain's relationship
 with subdomains~(\rsec{Subdomains}, index types~(\rsec{Index_Types}),
-and arrays~(\rsec{Association_Of_Arrays_To_Domains}).  The identity of
+and arrays~(\rsec{Association_of_Arrays_to_Domains}).  The identity of
 a domain is represented by its name.
 
 \begin{openissue}
@@ -415,12 +415,12 @@ away bounds checks for array accesses.
 A subdomain type is specified using the following syntax:
 \begin{syntax}
 subdomain-type:
-  'sparse'[OPT] `subdomain' ( domain-expression )
+  `sparse'[OPT] `subdomain' ( domain-expression )
 \end{syntax}
 This declares that \sntx{domain-expression} is the parent domain of
 this subdomain type.  The subdomain type has the same type as its
 parent domain.  By default it will share the parent domain's domain
-map.  The optional \syntx{sparse} keyword permits the ability to
+map.  The optional \sntx{sparse} keyword permits the ability to
 create sparse subdomains described in ~\rsec{Sparse_Subdomains}.
 
 \begin{openissue}
@@ -582,7 +582,7 @@ member of the domain's index set.
 
 Every domain type supports a \chpl{clear()} method that resets a
 domain's index set to its default value as specified
-in~\rsec{Default_Domain_Values}.
+in~\rsec{Root_Default_Domain_Values}.
 
 \begin{example}
 The following call will cause the sparse domain \chpl{SpsD} to
@@ -622,7 +622,7 @@ to the domain's index set.
 
 As with normal domain assignments, arrays declared in terms of a
 domain being modified in this way will be reallocated as discussed
-in~\rsec{Association_Of_Arrays_To_Domains}.
+in~\rsec{Association_of_Arrays_to_Domains}.
 
 
 
@@ -703,8 +703,8 @@ integral values for one or more of the ranges in a range-based slice
 will result in a value of lower rank.  
 
 The result of a rank-change slice on an array is an alias to a subset
-of the array's elements as described in~\rsec{Array Rank-Change
-Slicing}.
+of the array's elements as described
+in~\rsec{Arithmetic_Array_Slicing}.
 
 The result of rank-change slice on a domain is a subdomain of the
 domain being sliced, as described in~\rsec{Subdomains}.  The resulting
