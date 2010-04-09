@@ -17,7 +17,7 @@ general regressions
 
 spuriously runs out of memory due to something other than threads
 -----------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (e.g., 03/31/10, 04/04/10)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (e.g., 03/31/10, 04/04/10, 04/09/10)
 
 spurious failure
 ----------------
@@ -73,6 +73,10 @@ linux64 regressions (in addition to the above)
 ==============================================
 linux32 regressions (in addition to the above)
 ==============================================
+
+spurious mutex assertion failure: 'mutex->__data.__owner == 0' failed
+---------------------------------------------------------------------
+[Error matching program output for studies/beer/bradc/beer-promoted-infer-explicit]
 
 numerical accuracy issue (04/01/10)
 -----------------------------------
@@ -280,6 +284,7 @@ pvm-specific tests
 
 (spurious?) "address already in use" failures
 ---------------------------------------------
+[Error matching program output for release/examples/hello-module] (e.g., 04/09/10)
 [Error matching program output for release/examples/primers/opaque] (e.g., 04/02/10)
 [Error matching program output for release/examples/primers/timers] (e.g., 04/02/10, 04/04/10)
 [Error matching program output for release/examples/primers/genericClasses] (e.g., 04/03/10)
@@ -291,7 +296,7 @@ timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 [Error: Timed out executing program release/examples/hpcc/ra]
 [Error: Timed out executing program release/examples/hpcc/stream-ep]
 [Error: Timed out executing program release/examples/hpcc/stream]
-[Error: Timed out executing program release/examples/primers/block2D]
+[Error: Timed out executing program release/examples/primers/distributions]
 [Error: Timed out executing program release/examples/primers/multilocale]
 [Error: Timed out executing program release/examples/primers/multirealm]
 
