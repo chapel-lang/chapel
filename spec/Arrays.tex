@@ -144,7 +144,7 @@ error will occur, halting the program.
 Since the indices for multidimensional arithmetic domains are tuples,
 for convenience, arithmetic arrays can be indexed using the list of
 integer values that make up the tuple index.  This is semantically
-equivalen to creating a tuple value out of the integer values and
+equivalent to creating a tuple value out of the integer values and
 using that tuple value to index the array.  For symmetry,
 1-dimensional arithmetic arrays can be accessed using 1-tuple indices
 even though their index type is an integral value.  This is
@@ -522,7 +522,7 @@ new domain are preserved in the arrays.  Values that could only be
 indexed by the old domain are lost.  Values that can only be indexed
 by the new domain have elements added to the new array, initialized to
 the IRV for sparse arrays, and to the element type's default value for
-othe array types.
+other array types.
 
 For performance reasons, there is an expectation that a method will be
 added to domains to allow non-preserving assignment, \emph{i.e.}, all

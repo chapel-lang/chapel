@@ -69,7 +69,7 @@ sets and arrays.
 An irregular domain can store an arbitrary set of indices of an
 arbitrary but homogenous index type.  Irregular domains typically
 require space proportional to the number of indices being
-representeed.
+represented.
 
 \index{domains!associative}
 \index{domains!opaque}
@@ -408,7 +408,7 @@ support subdomains.
 
 \begin{rationale}
 Subdomains are provided in Chapel for a number of reasons: to
-faciliate the ability of the compiler or a reader to reason about the
+facilitate the ability of the compiler or a reader to reason about the
 inter-relationship of distinct domain variables; to support the
 author's ability to elide redundant domain mapping specifications; to
 support the compiler's ability to reason about the relative alignment
@@ -481,10 +481,10 @@ to initialize a variable of sparse domain type.
 The default value for a sparse subdomain value is the empty set.
 
 \begin{example}
-The following code declares a 2D dense domain \chpl{D}, followed by a
-2D sparse subdomain of \chpl{D} named \chpl{SpsD}.  Since \chpl{SpsD}
-is uninitialized, it will initially describe the empty set of indices
-from \chpl{D}.
+The following code declares a two-dimensional dense domain \chpl{D},
+followed by a two dimensional sparse subdomain of \chpl{D}
+named \chpl{SpsD}.  Since \chpl{SpsD} is uninitialized, it will
+initially describe the empty set of indices from \chpl{D}.
 \begin{chapel}
 const D: domain(2) = [1..n, 1..n];
 var SpsD: sparse subdomain(D);
@@ -678,16 +678,17 @@ The type and domain map of the result match the domain being sliced.
 \label{Range_Based_Slicing}
 \index{slicing!range-based}
 \index{range-based slicing}
-When slicing arithmetic domains or arrrays, the slice can be expressed
+When slicing arithmetic domains or arrays, the slice can be expressed
 as a list of \chpl{rank} ranges.  These ranges can either be bounded
 or unbounded.  When unbounded, they inherit their bounds from the
 domain or array being sliced.
 
 \begin{example}
-The following code declares a 2D arithmetic domain \chpl{D}, and then
-a number of subdomains of \chpl{D} by slicing into \chpl{D} using
-bounded and unbounded ranges.  The \chpl{InnerD} domain describes the
-inner indices of D, \chpl{Col2OfD} describes the 2nd column of
+The following code declares a two dimensional arithmetic
+domain \chpl{D}, and then a number of subdomains of \chpl{D} by
+slicing into \chpl{D} using bounded and unbounded ranges.
+The \chpl{InnerD} domain describes the inner indices of
+D, \chpl{Col2OfD} describes the 2nd column of
 \chpl{D}, and \chpl{AllButLastRow} describes all of \chpl{D} except
 for the last row.
 
@@ -880,8 +881,10 @@ def $Domain$.expand(off: integral): domain
 def $Domain$.expand(off: rank*integral): domain
 \end{protohead}
 \begin{protobody}
-Returns a new domain that is the current domain adjusted by \chpl{off}
-or \chpl{off(d)} for each dimension \chpl{d}.
+Returns a new domain that is the current domain expanded in
+dimension \chpl{d} if \chpl{off} or \chpl{off(d)} is positive or
+contracted in dimension \chpl{d} if \chpl{off} or \chpl{off(d)} is
+negative.
 \end{protobody}
 
 \begin{protohead}
@@ -889,11 +892,11 @@ def $Domain$.exterior(off: integral): domain
 def $Domain$.exterior(off: rank*integral): domain
 \end{protohead}
 \begin{protobody}
-Returns a new domain that is the exterior portion of the domain
-with \chpl{off} or \chpl{off(d)} indices for each dimension \chpl{d}.
-If \chpl{off} or \chpl{off(d)} is negative, compute the exterior from
-the low bound of the dimension; if positive, compute the exterior from
-the high bound.
+Returns a new domain that is the exterior portion of the current
+domain with \chpl{off} or \chpl{off(d)} indices for each
+dimension \chpl{d}.  If \chpl{off} or \chpl{off(d)} is negative,
+compute the exterior from the low bound of the dimension; if positive,
+compute the exterior from the high bound.
 \end{protobody}
 
 \begin{protohead}
@@ -901,11 +904,11 @@ def $Domain$.interior(off: integral): domain
 def $Domain$.interior(off: rank*integral): domain
 \end{protohead}
 \begin{protobody}
-Returns a new domain that is the interior portion of the domain
-with \chpl{off} or \chpl{off(d)} indices for each dimension \chpl{d}.
-If \chpl{off} or \chpl{off(d)} is negative, compute the interior from
-the low bound of the dimension; if positive, compute the interior from
-the high bound.
+Returns a new domain that is the interior portion of the current
+domain with \chpl{off} or \chpl{off(d)} indices for each
+dimension \chpl{d}.  If \chpl{off} or \chpl{off(d)} is negative,
+compute the interior from the low bound of the dimension; if positive,
+compute the interior from the high bound.
 \end{protobody}
 
 %% \begin{protohead} **/
