@@ -2,9 +2,6 @@
 Release Changes List
 ====================
 
-***started at r16423***
-***stopped at r17063***
-
 ===========
 version 1.1
 ===========
@@ -14,8 +11,10 @@ Fourth public release of Chapel, April 15, 2009
 High-Level Themes
 -----------------
 - single- and multi-locale task parallelism
-- single- and multi-locale data parallelism
-- improved completeness and stability of Block and Cyclic distributions
+- improved single- and multi-locale data parallelism
+  - all data parallel operations on arithmetic arrays are now parallelized
+  - improved control over task quantity and granularity for data parallelism
+  - improved completeness and stability of Block and Cyclic distributions
 - bug fixes
 
 Environment Changes
@@ -59,7 +58,7 @@ Syntactic/Naming Changes
 Semantic Changes/Changes to Chapel Language
 -------------------------------------------
 - added config consts to control the number of tasks used for data parallelism
-  (see 'Data Parallelism' chapter of specification)
+  (see README.executing and 'Data Parallelism' chapter of specification)
 - redefined enumerated domains to be a special case of associative domains
   (see 'Domains' chapter of specification)
 - made iteration over enumerated domains/arrays use the enum's declaration order
@@ -141,6 +140,7 @@ Portability of code base
 
 Documentation
 -------------
+- updated the STATUS file
 - added the first description of using domain maps to the specification
   (see 'Domain Maps')
 - performed a major restructuring of the language specification:
@@ -165,7 +165,7 @@ Documentation
   - minor improvements to the 'Modules' chapter of the specification
   - made major improvements to the 'Tuples' chapter
   - improved the accuracy of the description of function resolution
-  - rewrote the 'Domains' and 'Arrays' chapters of the spec (more work remains)
+  - reorganized/rewrote the 'Domains' and 'Arrays' chapters (more remains)
   - improved the consistency of prototypes in the 'Standard Modules' chapter
   - updated the description of the Random number module to reflect changes
   - fixed several bugs in example codes within the specification
@@ -176,10 +176,12 @@ Documentation
 - added a README to the $CHPL_HOME/util directory to describe its contents
 - updated READMEs for clarity and accuracy
 - reformatted the CONTRIBUTORS file to reflect contributors to a given release
-- updated the quick reference card to refer to http://chapel.cray.com
+- updated the quick reference card's contents
 
 Example Codes
 -------------
+- added a new example 'distributions.chpl showing use of Block and Cyclic
+- removed 'block2D.chpl' example, considered redundant with the above
 - added a new example to show simple multitasking (hello-multicore.chpl)
 - renamed the 'examples/tutorials' directory 'examples/primers'
 - rewrote the taskParallel.chpl primer example program
@@ -227,9 +229,6 @@ Compiler Flags
 --------------
 - --conditional-dynamic-dispatch-limit flag for using vtables vs. conditionals
 - --[no-]fast-followers to control optimization of aligned parallel iterators
-
-Generated Code Flags
---------------------
 
 Interoperability Changes
 ------------------------
