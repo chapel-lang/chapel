@@ -201,6 +201,7 @@ Example Codes
 
 Packaging Changes
 -----------------
+- pushed tarball directory structure down one level (i.e., chapel-1.1/chapel)
 - moved non-user scripts from $CHPL_HOME/util/ to $CHPL_HOME/util/chplenv/
 
 Compiler Changes
