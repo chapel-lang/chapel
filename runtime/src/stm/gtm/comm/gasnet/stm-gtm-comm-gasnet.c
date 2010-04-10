@@ -37,18 +37,24 @@ void AM_tx_get (gasnet_token_t token, void* buf, size_t nbytes) {
 
 }
 
-
 void AM_tx_put (gasnet_token_t token, void* buf, size_t nbytes) {
 
 }
 
-void gtm_comm_tx_abort(chpl_stm_tx_p tx, int32_t tgtlocale) { }
+void gtm_comm_tx_abort(chpl_stm_tx_p tx) { }
 
-void gtm_comm_tx_commitPh1(chpl_stm_tx_p tx, int32_t tgtlocale) { }
+int gtm_comm_tx_commitPh1(chpl_stm_tx_p tx) { 
+  return SUCCESS;}
 
-void gtm_comm_tx_commitPh2(chpl_stm_tx_p tx, int32_t tgtlocale) { }
+int gtm_comm_tx_commitPh2(chpl_stm_tx_p tx) { 
+  return SUCCESS;
+}
 
-int gtm_comm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t tgtlocale, void* srcaddr, size_t size) { return 0; }
+int gtm_comm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t tgtlocale, void* srcaddr, size_t size) { 
+  return SUCCESS; 
+}
 
-int gtm_comm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t tgtlocale, void* dstddr, size_t size) { return 0; }
+int gtm_comm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t tgtlocale, void* dstddr, size_t size) { 
+  return SUCCESS; 
+}
 

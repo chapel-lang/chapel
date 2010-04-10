@@ -560,11 +560,11 @@ initPrimitive() {
   prim_def("_format", returnInfoString);
   prim_def("chpl_string_compare", returnInfoInt32, true);
   prim_def("string_contains", returnInfoBool, true);
-  prim_def("string_concat", returnInfoString, true, true, true);
+  prim_def("string_concat", returnInfoString, true, true, true); // isAtomicSafe set
   prim_def("string_length", returnInfoInt32);
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoString, true, true);
-  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true, true);
+  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true, true); // isAtomicSafe set
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);
   prim_def("sleep", returnInfoVoid, true);

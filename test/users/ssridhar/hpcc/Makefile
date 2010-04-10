@@ -2,11 +2,11 @@ CHPL = chpl
 
 ifeq ($(CHPL_DEVELOPER), true)
 
-FLAGS = --gen-ids --gdb -g --no-checks --print-commands --print-passes -satomicSupport=true
+FLAGS = $(F) --gen-ids -g --no-checks --print-commands --print-passes
 
 else
 
-FLAGS = -O --fast --no-checks --print-commands --print-passes
+FLAGS = $(F) -O --fast --no-checks --print-commands --print-passes
 
 endif
 
@@ -60,6 +60,9 @@ ra-ladg: probSize.chpl ra-randstream.chpl ra-lad.chpl
 
 rag: probSize.chpl ra-randstream.chpl ra.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec g_ra $^
+
+ragia: probSize.chpl ra-randstream.chpl ra.chpl
+	$(CHPL) -o $@ $(FLAGS) --savec g_ra-ia --ignore-atomic $^
 
 ragtmg: probSize.chpl ra-randstream.chpl ragtm.chpl
 	$(CHPL) -o $@ $(GTMG_FLAGS) $^

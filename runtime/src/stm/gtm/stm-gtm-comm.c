@@ -21,6 +21,3 @@ void gtm_comm_exit(void) {
 
 }
 
-void gtm_comm_tx_initialize() {
-
-}

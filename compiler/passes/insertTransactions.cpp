@@ -24,27 +24,19 @@ bool isOnStack(SymExpr* se) {
   return 0;
 }
 
-void txUnknownPrimitive(CallExpr *call) {
-}
+void txUnknownPrimitive(CallExpr *call) { /* gdb use only */ }
 
 void txUnknownMovePrimitive(CallExpr* call, CallExpr* rhs) {    
-      // FIXME: remove following warnings, make sure those cases are
-      // handled correctly. 
-      if (rhs->primitive->isAtomicSafe) {
-	USR_WARN(call, "isAtomicSafe primitive skipped");
-      } else {
-	USR_WARN(call, "isAtomicSafe is not set");
-      }
-      if (rhs->numActuals() >= 1)
-	if (SymExpr* se = toSymExpr(rhs->get(1))) {
-	  if (!isOnStack(se)) 
-	    USR_WARN(call, "Heap load not being tracked");       
-	}
-      if (rhs->numActuals() >= 2) 
-        if (SymExpr* se = toSymExpr(rhs->get(2))) {
-          if (!isOnStack(se)) 
-            USR_WARN(call, "Heap load not being tracked");
-        }
+  if (rhs->numActuals() >= 1)
+    if (SymExpr* se = toSymExpr(rhs->get(1))) {
+      if (!isOnStack(se)) 
+	USR_WARN(call, "Heap load not being tracked");       
+    }
+  if (rhs->numActuals() >= 2) 
+    if (SymExpr* se = toSymExpr(rhs->get(2))) {
+      if (!isOnStack(se)) 
+	USR_WARN(call, "Heap load not being tracked");
+    }
 }
 
 void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
@@ -75,6 +67,13 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     SymExpr* lhs = toSymExpr(call->get(1));
     INT_ASSERT(lhs);  
     if (CallExpr* rhs = toCallExpr(call->get(2))) { 
+      if (rhs->isPrimitive(PRIM_UNKNOWN)) {
+	if (!rhs->primitive->isAtomicSafe) {
+	  if (strcmp(rhs->primitive->name, "fprintf"))
+	    call->remove();
+	}
+	break;
+      }
       if (rhs->isPrimitive(PRIM_GET_LOCALEID)) {
 	SymExpr *se = toSymExpr(rhs->get(1));
 	INT_ASSERT(se);

@@ -3,26 +3,32 @@
 
 #include <setjmp.h> 
 
-#ifdef GTM_DEBUG
-#define PRINT_DEBUG(...)  printf(__VA_ARGS__); fflush(NULL)
-#else 
-#define PRINT_DEBUG(...)
-#endif
+//
+// GTM specific macros
+//
 
-#define SUCCESS 1
-#define FAILED  0
+#define TX_OK 1
+#define TX_FAIL 0
 
-#define RW_SET_SIZE 4096
+#define GTM_Safe(tmptx, fncall) do {		\
+    if (fncall != TX_OK) {			\
+      chpl_stm_tx_abort(tmptx);			\
+    }						\
+  } while (0)
 
-enum { TX_IDLE = 0, TX_EMPTY, TX_ACTIVE };
+#define RWSETSIZE 4096
 
-enum { LOC_UNKNOWN = -1, LOC_SELF, LOC_REM }; 
+#define NOLOCALE -1
+
+enum { TX_IDLE = 0, TX_ACTIVE, TX_COMMIT };
 
 extern int32_t chpl_localeID, chpl_numLocales;   // see src/chplcomm.c
-#define MYLOC chpl_localeID
-#define NLOCS chpl_numLocales
+#define MYLOCALE chpl_localeID
+#define NLOCALES chpl_numLocales
 
-typedef uintptr_t chpl_stm_word_t;
+typedef uintptr_t gtm_word_t;
+typedef gtm_word_t* gtm_word_p;
+#define GTMWORDSIZE sizeof(gtm_word_t)
 
 typedef jmp_buf chpl_stm_tx_env_t;
 #define chpl_stm_setjmp(txenv) setjmp(txenv)
@@ -32,8 +38,8 @@ typedef jmp_buf chpl_stm_tx_env_t;
 //
 
 typedef struct __readEntry_t {
-  chpl_stm_word_t version;
-  chpl_stm_word_t *lock;
+  gtm_word_t version;
+  gtm_word_p lock;
 } read_entry_t;
 
 typedef struct __readSet_t {
@@ -48,10 +54,10 @@ typedef struct __readSet_t {
 //
 
 typedef struct __writeEntry_t {
-  volatile chpl_stm_word_t *addr;
-  chpl_stm_word_t value;
-  chpl_stm_word_t version;
-  volatile chpl_stm_word_t *lock;
+  volatile gtm_word_p addr;
+  gtm_word_t value;
+  gtm_word_t version;
+  volatile gtm_word_p lock;
   struct __writeEntry_t *next;
 } write_entry_t;
 
@@ -66,18 +72,17 @@ typedef struct __writeSet_t {
 // transaction descriptor
 //
 
-typedef struct __stmtxdesc_t {
+typedef struct __chpl_stm_tx_t {
+  int32_t status;            // TX_IDLE, TX_LACTIVE, etc.
+  int32_t nestlevel;         // flat nesting  
   int32_t srclocale;         // locale that called tx_create 
   int32_t txlocale;          // locale that called outermost tx_begin
-  int32_t *remlocales;       // locales on which tx has state
-  int32_t txid;
-  int status;                // TX_IDLE, TX_LACTIVE, etc.
-  int nestlevel;             // flat nesting  
-  read_set_t readset;           
+  int32_t numremlocales;     // number of remote locales tx has state
+  int32_t* remlocales;       // list of locales on which tx has state
+  read_set_t readset;               
   write_set_t writeset;
-  chpl_stm_word_t timestamp;
+  gtm_word_t timestamp;
   chpl_stm_tx_env_t env;     // stores program execution state
-  // sigjmp_buf *jmp;           // pointer to program execution state
 } chpl_stm_tx_t;
 
 
@@ -88,33 +93,48 @@ typedef struct __stmtxdesc_t {
 #define LOCK_GET_OWNED(lock)   (lock & OWNED_MASK)
 #define LOCK_ARRAY_SIZE        (1 << 20)            // 2^20 = 1M 
 #define LOCK_MASK              (LOCK_ARRAY_SIZE - 1)
-#define LOCK_SHIFT             ((sizeof(chpl_stm_word_t) == 4) ? 2 : 3)
-#define LOCK_IDX(addr)         (((chpl_stm_word_t)addr >> LOCK_SHIFT) & LOCK_MASK)
-#define GET_LOCK(addr)         ((chpl_stm_word_t*) &locks[LOCK_IDX(addr)])
+#define LOCK_SHIFT             ((sizeof(gtm_word_t) == 4) ? 2 : 3)
+#define LOCK_IDX(addr)         (((gtm_word_t)addr >> LOCK_SHIFT) & LOCK_MASK)
+#define GET_LOCK(addr)         ((gtm_word_p) &locks[LOCK_IDX(addr)])
 #define CLOCK                  (gclock)
 #define GET_CLOCK              ATOMIC_LOAD_MB(&CLOCK)
 #define FETCH_AND_INC_CLOCK    ATOMIC_FETCH_AND_INC_MB(&CLOCK)
 
-static volatile chpl_stm_word_t locks[LOCK_ARRAY_SIZE];
+static volatile gtm_word_t locks[LOCK_ARRAY_SIZE];
 
-static volatile chpl_stm_word_t gclock;
+static volatile gtm_word_t gclock;
+
+//
+//  stm wrapper functionality
+// 
+typedef union __wrap64_t {
+  uint64_t u64;
+  uint32_t u32[2];
+} wrap64_t;
 
 //
 // internal interface
 //
-chpl_stm_tx_t* gtm_tx_create(int32_t srclocale, int32_t txid);
+
 void gtm_tx_initialize(chpl_stm_tx_t* tx, int32_t srclocale);
-void gtm_tx_abort(chpl_stm_tx_t* tx);
-int gtm_tx_twoPhaseCommit(void);
+void gtm_tx_cleanup(chpl_stm_tx_t* tx);
+
 int gtm_tx_commitPh1(chpl_stm_tx_t* tx);
 int gtm_tx_commitPh2(chpl_stm_tx_t* tx);
+void gtm_tx_abort(chpl_stm_tx_t* tx);
+
+int gtm_tx_load_word(chpl_stm_tx_t* tx, gtm_word_p dstaddr, gtm_word_p srcaddr);
 int gtm_tx_load(chpl_stm_tx_t* tx, void* dstaddr, void* srcaddr, size_t size);
-int gtm_tx_store (chpl_stm_tx_t* tx, void* dstaddr, size_t size, void* srcaddr);
+int gtm_tx_store_word(chpl_stm_tx_t* tx, gtm_word_p srcaddr, gtm_word_p dstaddr);
+int gtm_tx_store(chpl_stm_tx_t* tx, void* srcaddr, void* dstaddr, size_t size);
+
 void gtm_comm_init(void);
 void gtm_comm_exit(void);
-void gtm_comm_tx_abort(chpl_stm_tx_t* tx, int32_t tgtlocale);
-void gtm_comm_tx_commitPh1(chpl_stm_tx_t* tx, int32_t tgtlocale);
-void gtm_comm_tx_commitPh2(chpl_stm_tx_t* tx, int32_t locale);
+
+int gtm_comm_tx_commitPh1(chpl_stm_tx_t* tx);
+int gtm_comm_tx_commitPh2(chpl_stm_tx_t* tx);
+void gtm_comm_tx_abort(chpl_stm_tx_t* tx);
+
 int gtm_comm_tx_get(chpl_stm_tx_t* tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size);
 int gtm_comm_tx_put(chpl_stm_tx_t* tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size);
 
