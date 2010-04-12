@@ -710,6 +710,13 @@ endif
 if ("$dirlist" == "" && "$testlist" == "") then
     pushd $CHPL_HOME >& /dev/null
     set chplhome = $cwd
+    echo \[Generating tests from the Chapel Spec in $chplhome/spec\]
+    set autogen=`make spectests`
+    set exitval = $?
+    if ( $exitval != 0 ) then
+        echo \[Error generating Spec tests.  Run \'make spectests\' in $chplhome for more info\]
+        exit $exitval
+    endif
     popd >& /dev/null
     if ("$cwd" == "$chplhome") then
         set dirlist = "test"
