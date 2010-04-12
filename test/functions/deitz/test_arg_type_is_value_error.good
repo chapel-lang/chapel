@@ -1,0 +1,2 @@
+test_arg_type_is_value_error.chpl:3: In function 'f':
+test_arg_type_is_value_error.chpl:3: error: invalid type specification for argument 'x'

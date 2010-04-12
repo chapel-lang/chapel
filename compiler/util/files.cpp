@@ -339,7 +339,7 @@ void makeBinary(void) {
     return;
 
   if (chplmake[0] == '\0') {
-    strncpy(chplmake, runUtilScript("chplmake"), 256);
+    strncpy(chplmake, runUtilScript("chplenv/chplmake"), 256);
   }
   const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
   const char* command = astr(astr(chplmake, " "), makeflags, intDirName, 

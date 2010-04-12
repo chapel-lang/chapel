@@ -14,7 +14,9 @@ class Doppelganger {
 var prepre = memoryUsed();
 
 // Create an array to pass to the constructor
-var x: [1..M] int = 1;
+var x: [1..M] int;
+
+for xx in x do xx = 1;
 
 var pre  = memoryUsed() - prepre;
 var y    = new Doppelganger(x);

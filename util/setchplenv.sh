@@ -14,7 +14,7 @@ if [ "$path_tail" != "chapel" ]
       echo " "
 
       echo "Setting CHPL_HOST_PLATFORM..."
-      CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/platform.pl`
+      CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/platform`
       export CHPL_HOST_PLATFORM
       echo "                        ...to $CHPL_HOST_PLATFORM"
       echo " "

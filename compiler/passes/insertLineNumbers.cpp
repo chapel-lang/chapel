@@ -86,6 +86,7 @@ insertLineNumber(CallExpr* call) {
     }
   } else if (!strcmp(fn->name, "chpl__heapAllocateGlobals") ||
              !strcmp(fn->name, "chpl__initModuleGuards") ||
+             !strcmp(fn->name, "chpl_main") ||
              ((mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) && 
               !fn->hasFlag(FLAG_TEMP) && !fn->hasFlag(FLAG_INLINE)) ||
              (developer == true && strcmp(fn->name, "halt"))) {

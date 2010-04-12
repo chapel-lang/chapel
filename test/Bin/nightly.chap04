@@ -1,0 +1,2 @@
+#!/bin/tcsh
+source ~bradc/.chapelcshrc-intel-cron && ~bradc/chapel/test/Bin/nightly -cron >& ~bradc/tmp/nightly-intel.out

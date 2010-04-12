@@ -52,6 +52,7 @@ bool fNoScalarReplacement = false;
 bool fNoRemoteValueForwarding = false;
 bool fNoRemoveCopyCalls = false;
 bool fNoOptimizeLoopIterators = false;
+bool fNoGlobalConstOpt = true;
 bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
 bool fNoLiveAnalysis = false;
@@ -141,12 +142,12 @@ static void setupOrderedGlobals(void) {
   setupChplHome();
   
   // Then CHPL_* variables
-  SETUP_ENV_VAR(CHPL_HOST_PLATFORM, "platform.pl --host");
-  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "platform.pl --target");
-  SETUP_ENV_VAR(CHPL_HOST_COMPILER, "compiler.pl --host");
-  SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "compiler.pl --target");
-  SETUP_ENV_VAR(CHPL_TASKS, "tasks.pl");
-  SETUP_ENV_VAR(CHPL_COMM, "comm.pl");
+  SETUP_ENV_VAR(CHPL_HOST_PLATFORM, "chplenv/platform --host");
+  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM, "chplenv/platform --target");
+  SETUP_ENV_VAR(CHPL_HOST_COMPILER, "chplenv/compiler --host");
+  SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/compiler --target");
+  SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
+  SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
   SETUP_ENV_VAR(CHPL_STM, "stm.pl");
 
   // These depend on the environment variables being set
@@ -470,6 +471,7 @@ static ArgumentDescription arg_desc[] = {
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
+  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},

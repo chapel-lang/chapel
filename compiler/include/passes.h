@@ -29,6 +29,7 @@ void insertLineNumbers();
 void insertTransactions();
 void insertWideReferences();
 void optimizeOnClauses();
+void localizeGlobals();
 void lowerIterators();
 void makeBinary();
 void normalize();

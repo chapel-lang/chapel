@@ -15,7 +15,7 @@ def foo () {
 var sum = -3;
 
 var m1 = memoryUsed();
-sum += foo();
+serial true do sum += foo();
 var m2 = memoryUsed();
 
 writeln("Amount of leaked memory after calling foo(): ", m2-m1);

@@ -43,6 +43,8 @@ if ($platform eq "linux") {
     chomp($machine);
     if ($machine eq "x86_64") {
         $platform = "linux64";
+    } else {
+        $platform = "linux32";
     }
 } elsif ($platform eq "cygwin_nt-5.1") {
     $platform = "cygwin";

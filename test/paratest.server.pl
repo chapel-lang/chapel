@@ -31,7 +31,7 @@
 #  - Be able to run start_test remotely. This may include the following:
 #    - Chapel built without node-specific local temporary directories.
 #        Nodes must be able to execute start_test. For example, the
-#        start_test script may invoke the compiler as ../bin/linux/chpl.
+#        start_test script may invoke the compiler as ../bin/linux64/chpl.
 #        If Chapel is built with CHPLDEVTMP defined to a machine-specific local
 #        tmp directory (e.g., /ptmp), the script may not be able to execute
 #        chpl on a different machine. A good check is to run start_test with 
@@ -84,7 +84,7 @@ sub collect_logs {
 
     print "collecting logs\n" if $debug;
 
-    if ($platform eq "linux") {
+    if ($platform eq "linux32") {
         $head_opts = "-q";                     # quiet mode
     }
 
@@ -381,7 +381,7 @@ sub main {
     local ($id, $synchfile);
     
     $user = `whoami`; chomp $user;
-    $platform = `../util/platform.pl`; chomp $platform;
+    $platform = `../util/chplenv/platform`; chomp $platform;
     $fin_logfile = "$logdir/$user.$platform.log";      # final log file name
     # $fin_logfile = "$logdir/$user.$platform.log";
     unlink $fin_logfile if (-e $fin_logfile);          # remove final log file

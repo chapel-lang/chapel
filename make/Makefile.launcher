@@ -3,4 +3,4 @@
 #
 #
 #
-CHPL_MAKE_LAUNCHER = $(shell $(CHAPEL_ROOT)/util/launcher.pl)
+CHPL_MAKE_LAUNCHER = $(shell $(CHAPEL_ROOT)/util/chplenv/launcher)

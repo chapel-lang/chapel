@@ -364,12 +364,43 @@ int ClassType::codegenStructure(FILE* outfile, const char* baseoffset) {
 
 // BLC: I'm not understanding why special cases would need to be called
 // out here
-static bool genUnderscore(Symbol* sym) {
+static const char* genUnderscore(Symbol* sym) {
   ClassType* classtype = toClassType(sym->type);
-  return (classtype && classtype->classTag == CLASS_CLASS && 
-          !sym->hasFlag(FLAG_REF));
+  if (classtype && classtype->classTag == CLASS_CLASS && 
+      !sym->hasFlag(FLAG_REF)) {
+    return "_";
+  } else {
+    return "";
+  }
 }
 
+
+static const char* genChplTypeEnumString(TypeSymbol* typesym) {
+  return astr("chpl_rt_type_id_", genUnderscore(typesym), typesym->cname);
+}
+
+
+static const char* genSizeofStr(TypeSymbol* typesym) {
+  return astr("sizeof(", genUnderscore(typesym), typesym->cname, ")");
+}
+
+
+static const char* genNewBaseOffsetString(TypeSymbol* typesym, int fieldnum,
+                                          const char* baseoffset, Symbol* field,
+                                          ClassType* classtype) {
+  if (classtype->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    char fieldnumstr[64];
+    sprintf(fieldnumstr, "%d", fieldnum);
+    return astr(baseoffset, " + (", fieldnumstr, "* ", 
+                genSizeofStr(field->type->symbol), ")");
+  } else {
+    return astr(baseoffset, " + offsetof(", 
+                genUnderscore(classtype->symbol),
+                classtype->symbol->cname, ", ", 
+                classtype->classTag == CLASS_UNION ? "_u." : "",
+                field->cname, ")");
+  }
+}
 
 int ClassType::codegenFieldStructure(FILE* outfile, bool nested, 
                                      const char* baseoffset) {
@@ -381,15 +412,15 @@ int ClassType::codegenFieldStructure(FILE* outfile, bool nested,
   }
 
   int totfields = 0;
+  int locfieldnum = 0;
   for_fields(field, this) {
-    const char* newbaseoffset = astr(baseoffset, " + offsetof(", 
-                                     genUnderscore(this->symbol) ? "_" : " ",
-                                     this->symbol->cname, ", ", 
-                                     this->classTag == CLASS_UNION ? "_u." : "",
-                                     field->cname, ")");
+    const char* newbaseoffset = genNewBaseOffsetString(symbol, locfieldnum,
+                                                       baseoffset, field,
+                                                       this);
     int numfields = field->type->codegenStructure(outfile, newbaseoffset);
     fprintf(outfile, " /* %s */\n", field->name);
     totfields += numfields;
+    locfieldnum++;
   }
   if (!nested) {
     fprintf(outfile, "{CHPL_TYPE_DONE, -1}\n");
@@ -811,10 +842,17 @@ void codegenTypeStructures(FILE* hdrfile) {
   openCFile(&typeStructFile, TYPE_STRUCTURE_FILE);
   FILE* outfile = typeStructFile.fptr;
 
+  fprintf(outfile, "typedef enum {\n");
+  forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegenList) {
+    fprintf(outfile, "%s,\n", genChplTypeEnumString(typesym));
+  }
+  fprintf(outfile, "chpl_num_rt_type_ids\n");
+  fprintf(outfile, "} chpl_rt_types;\n\n");
+
   fprintf(outfile, "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
             
-  int num = 0;
   qsort(typesToStructurallyCodegenList.v, typesToStructurallyCodegenList.n, sizeof(typesToStructurallyCodegenList.v[0]), compareCnames);
+  int num = 0;
   forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegenList) {
     if (num) {
       fprintf(outfile, ",\n");
@@ -834,20 +872,6 @@ void codegenTypeStructures(FILE* hdrfile) {
     num++;
   }
   fprintf(outfile, "};\n");
-  fprintf(outfile, "typedef enum {\n");
-  num = 0;
-  forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegenList) {
-    fprintf(outfile, "chpl_rt_type_id_");
-    ClassType* classtype = toClassType(typesym->type);
-    if (classtype && classtype->classTag == CLASS_CLASS && 
-        !typesym->hasFlag(FLAG_REF)) {
-      fprintf(outfile, "_");
-    }
-    typesym->codegen(outfile);
-    fprintf(outfile, ",\n");
-  }
-  fprintf(outfile, "chpl_num_rt_type_ids\n");
-  fprintf(outfile, "} chpl_rt_types;\n\n");
 
   fprintf(outfile, "size_t chpl_sizeType[] = {\n");
   num = 0;
@@ -855,13 +879,7 @@ void codegenTypeStructures(FILE* hdrfile) {
     if (num) {
       fprintf(outfile, ",\n");
     }
-    fprintf(outfile, "sizeof(");
-    ClassType* classtype = toClassType(typesym->type);
-    if (classtype && classtype->classTag == CLASS_CLASS &&
-        !typesym->hasFlag(FLAG_REF)) {
-      fprintf(outfile, "_");
-    }
-    fprintf(outfile, "%s)", typesym->cname);
+    fprintf(outfile, "%s", genSizeofStr(typesym));
     num++;
   }
   fprintf(outfile, "};\n\n");

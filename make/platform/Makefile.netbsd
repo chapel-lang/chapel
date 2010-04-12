@@ -1,0 +1,2 @@
+# use this shell in order to get an "echo" that supports -n
+SHELL=/bin/sh

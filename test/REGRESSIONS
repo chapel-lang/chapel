@@ -1,15 +1,14 @@
 # USAGE: the intent of this file is to keep track of current
-# regressions and to keep notes about why they are failing.  Since
-# linux is our main platform, linux regressions are listed first, and
-# are typically assumed to apply to all other platforms as well (other
-# failures that apply to most platforms other than linux can be listed
-# there as well).  Other platforms/settings that are currently causing
-# regressions are listed afterwards in some approximation to priority
-# order.  Formatting for each entry can be loose, but should roughly
-# follow the format of brief note on why the test is failing followed
-# by a list of tests that are failing for that reason.  If someone
-# owns a particular regression, their name can be added to the
-# description as well.
+# regressions and to keep notes about why they are failing.  We start
+# with general regressions that are seen across a wide variety of
+# platforms, and then move onto linux64 regressions since those are
+# our main development platform.  Other platforms/settings that are
+# currently causing regressions are listed afterwards in some
+# approximation to priority order.  Formatting for each entry can be
+# loose, but should roughly follow the format of brief note on why the
+# test is failing followed by a list of tests that are failing for
+# that reason.  If someone owns a particular regression, their name
+# can be added to the description as well.
 
 
 ===================
@@ -191,7 +190,7 @@ gasnet-everything regressions (other than the above)
 new spurious timeouts with SLED11 upgrade
 -----------------------------------------
 [Error: Timed out compilation for modules/standard/math/atanh_asymptote] (e.g., 03/22/10)
-[Error: Timed out compilation for modules/standard/math/log1p] (e.g., 03/20/10, 03/21/10, 03/23/10)
+[Error: Timed out compilation for modules/standard/math/log1p] (e.g., 03/20/10, 03/21/10, 03/23/10, 03/24/10)
 [Error: Timed out compilation for modules/standard/math/asinh] (e.g., 03/18/10)
 [Error: Timed out compilation for modules/standard/math/lg] (e.g., 03/13/10, 03/17/10)
 [Error: Timed out compilation for multilocale/deitz/needMultiLocales/diagnostics/test_remote_value_forwarding3] (e.g., 03/17/10)
@@ -263,7 +262,7 @@ gasnet-fast regressions (other than the above)
 
 spurious recursive failures in AMUDP_SPMDShutdown
 -------------------------------------------------
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5] (e.g., 03/23/10
+[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5] (e.g., 03/23/10)
 
 GASNet unable to start polling thread
 -------------------------------------
@@ -274,41 +273,22 @@ GASNet unable to start polling thread
 pvm-specific tests
 ==================
 
-new homogenous tuple seems to break --gen-communicated-structures
------------------------------------------------------------------
-[Error matching compiler output for release/examples/hello-module]
-[Error matching compiler output for release/examples/hello-multiloc]
-[Error matching compiler output for release/examples/hello]
-[Error matching compiler output for release/examples/hpcc/fft]
-[Error matching compiler output for release/examples/hpcc/hpl]
-[Error matching compiler output for release/examples/hpcc/ra]
-[Error matching compiler output for release/examples/hpcc/stream-ep]
-[Error matching compiler output for release/examples/hpcc/stream]
-[Error matching compiler output for release/examples/programs/beer]
-[Error matching compiler output for release/examples/programs/genericStack]
-[Error matching compiler output for release/examples/programs/jacobi]
+timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
+----------------------------------------------------------------------
+[Error: Timed out executing program release/examples/hello-multiloc]
+[Error: Timed out executing program release/examples/hpcc/fft]
+[Error: Timed out executing program release/examples/hpcc/ra]
+[Error: Timed out executing program release/examples/hpcc/stream-ep]
+[Error: Timed out executing program release/examples/hpcc/stream]
+[Error: Timed out executing program release/examples/tutorials/block2D]
+[Error: Timed out executing program release/examples/tutorials/multilocale]
+[Error: Timed out executing program release/examples/tutorials/multirealm]
+
+some types not getting --gen-communicated-structures'ed  (as of 03/25/10 ")
+---------------------------------------------------------------------------
 [Error matching compiler output for release/examples/programs/linkedList]
-[Error matching compiler output for release/examples/programs/norm]
-[Error matching compiler output for release/examples/programs/prodCons]
 [Error matching compiler output for release/examples/programs/quicksort]
-[Error matching compiler output for release/examples/programs/tree]
-[Error matching compiler output for release/examples/tutorials/arrays]
-[Error matching compiler output for release/examples/tutorials/block2D]
-[Error matching compiler output for release/examples/tutorials/classes]
-[Error matching compiler output for release/examples/tutorials/fileIO]
-[Error matching compiler output for release/examples/tutorials/genericClasses]
 [Error matching compiler output for release/examples/tutorials/iterators]
-[Error matching compiler output for release/examples/tutorials/multilocale]
-[Error matching compiler output for release/examples/tutorials/multirealm]
-[Error matching compiler output for release/examples/tutorials/opaque]
-[Error matching compiler output for release/examples/tutorials/ranges]
-[Error matching compiler output for release/examples/tutorials/reductions]
-[Error matching compiler output for release/examples/tutorials/slices]
-[Error matching compiler output for release/examples/tutorials/sparse]
-[Error matching compiler output for release/examples/tutorials/taskParallel]
-[Error matching compiler output for release/examples/tutorials/timers]
-[Error matching compiler output for release/examples/tutorials/varargs]
-[Error matching compiler output for release/examples/tutorials/variables]
 
 
 =====================
@@ -328,6 +308,10 @@ missing 1-tuple acccessor (03/03/10)
 =======================
 baseline-specific tests
 =======================
+
+spurious timeout
+----------------
+[Error: Timed out executing program studies/hpcc/RA/marybeth/ra3] (e.g., 03/24/10)
 
 numerical accuracy issue
 ------------------------
@@ -445,6 +429,10 @@ spurious compilation timeouts
 ===========================
 darwin-specific regressions
 ===========================
+
+using gmake rather than make (03/25/10)
+---------------------------------------
+*all*
 
 numerical accuracy issue
 ------------------------

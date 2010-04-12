@@ -1,1 +1,1 @@
-probSize.chpl ra-randstream.chpl --no-warnings -O -srealmTypes='linux linux'
+probSize.chpl ra-randstream.chpl --no-warnings -O -srealmTypes='linux64 linux64'

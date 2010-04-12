@@ -69,7 +69,7 @@
 #   -valgrind
 #   -valgrindexe
 #   -notee
-#   -comm [none|gasnet|pvm]           $CHPL_HOME/util/comm.pl
+#   -comm [none|gasnet|pvm]           $CHPL_HOME/util/chplenv/comm
 #   -suppress <suppression file>
 #   -interpret (DEPRECATED)
 #   -logfile   <log filename>         $testdir/Logs/<username>.<platform>.log
@@ -398,31 +398,31 @@ endif
 # if they are not
 #
 if ($?CHPL_HOST_PLATFORM == 0) then
-    setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/platform.pl --host`
+    setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/chplenv/platform --host`
 endif
 
 if ($?CHPL_TARGET_PLATFORM == 0) then
-    setenv CHPL_TARGET_PLATFORM `$CHPL_HOME/util/platform.pl --target`
+    setenv CHPL_TARGET_PLATFORM `$CHPL_HOME/util/chplenv/platform --target`
 endif
 
 if ($?CHPL_HOST_COMPILER == 0) then
-    setenv CHPL_HOST_COMPILER `$CHPL_HOME/util/compiler.pl --host`
+    setenv CHPL_HOST_COMPILER `$CHPL_HOME/util/chplenv/compiler --host`
 endif
 
 if ($?CHPL_TARGET_COMPILER == 0) then
-    setenv CHPL_TARGET_COMPILER `$CHPL_HOME/util/compiler.pl --target`
+    setenv CHPL_TARGET_COMPILER `$CHPL_HOME/util/chplenv/compiler --target`
 endif
 
 if ($?CHPL_TASKS == 0) then
-    setenv CHPL_TASKS `$CHPL_HOME/util/tasks.pl`
+    setenv CHPL_TASKS `$CHPL_HOME/util/chplenv/tasks`
 endif
 
 if ($?CHPL_THREADS == 0) then
-    setenv CHPL_THREADS `$CHPL_HOME/util/threads.pl`
+    setenv CHPL_THREADS `$CHPL_HOME/util/chplenv/threads`
 endif
 
 if ($?CHPL_COMM == 0) then
-    setenv CHPL_COMM `$CHPL_HOME/util/comm.pl`
+    setenv CHPL_COMM `$CHPL_HOME/util/chplenv/comm`
 endif
 
 set testdir = "$CHPL_HOME/test"
@@ -442,7 +442,7 @@ endif
 
 
 
-set platform = `$CHPL_HOME/util/platform.pl`
+set platform = `$CHPL_HOME/util/chplenv/platform`
 
 #
 # some sets to get locale, environment reasonable
@@ -471,7 +471,7 @@ set testnotests = 0
 set recurse = 1
 set tee = "tee"
 set numlocales = 0
-set comm = `$CHPL_HOME/util/comm.pl`
+set comm = `$CHPL_HOME/util/chplenv/comm`
 set suppressions = ""
 
 while ( $#argv > 0 )
@@ -761,24 +761,7 @@ endif
 mv $logtmp $logfile
 
 
-# Find sub_test
-if (-x $testdir/Bin/sub_test.py) then
-    set gsub_test = $testdir/Bin/sub_test.py
-    # simple check for python
-    set py_executable = `head -1 $gsub_test | sed 's/^..//'`
-    if (! -x "$py_executable") then
-        if ("$py_executable" == "/usr/bin/env python") then
-            $py_executable -V >& /dev/null
-            if ( $? != 0 ) then
-                set gsub_test = $testdir/Bin/sub_test
-            endif
-        else
-            set gsub_test = $testdir/Bin/sub_test
-        endif
-    endif
-else
-    set gsub_test = $testdir/Bin/sub_test
-endif
+set gsub_test = $testdir/Bin/sub_test
 
 
 #

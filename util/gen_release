@@ -16,8 +16,11 @@ if ($basetmpdir eq "") {
     $basetmpdir = "/tmp";
 }
 $tmpdir = "$basetmpdir/chapel-release.$user.$pid.deleteme";
-$chapeldir = "$tmpdir/chapel";
+$chapeldir = "$tmpdir/chapel-gen_release";
 $svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
+if ($svnroot eq "") {
+    $svnroot = "https://chapel.svn.sourceforge.net/svnroot/chapel/trunk";
+}
 system("mkdir $tmpdir > /dev/null");
 print "Checking out the sources...\n";
 system("cd $tmpdir && svn export -q $svnroot chapel");
@@ -41,24 +44,12 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
        "man/man1/chpl.1",
        "third-party/Makefile",
        "third-party/README",
-       "util/check-tasks-threads-compatibility.pl",
        "util/chpl-multirealm",
        "util/chplmake",
-       "util/chplmpi.pl",
-       "util/comm.pl",
-       "util/commSegment.pl",
-       "util/commSubstrate.pl",
-       "util/compiler.pl",
-       "util/launcher.pl",
-       "util/mem.pl",
-       "util/platform.pl",
-       "util/printchplenv.pl",
+       "util/printchplenv",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
        "util/setchplenv.sh",
-       "util/tasks.pl",
-       "util/threads.pl",
-       "util/timers.pl",
        "util/updateBuildVersion.pl"
 );
 
@@ -79,7 +70,8 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
     "runtime",
     "third-party/dlmalloc",
     "third-party/gasnet",
-    "third-party/pvm"
+    "third-party/pvm",
+    "util/chplenv"
 );
 
 
@@ -99,7 +91,7 @@ system("cd chapel && rm -r examples");
 system("cd chapel && cp -r test/release/examples .");
 system("cd chapel/util && cp start_test ../examples/");
 system("cd chapel/examples && mkdir Bin");
-system("cd chapel/test/Bin && cp timedexec sub_test sub_test.py sub_clean computePerfStats.pl filterSuppressions.pl testEnv.pl ../../examples/Bin/");
+system("cd chapel/test/Bin && cp timedexec sub_test sub_clean computePerfStats.pl filterSuppressions.pl testEnv.pl ../../examples/Bin/");
 
 print "Building the man page...\n";
 system("cd chapel && make man");

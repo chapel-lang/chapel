@@ -3112,7 +3112,9 @@ static void issueCompilerError(CallExpr* call) {
   CallExpr* from = NULL;
   for (int i = callStack.n-2; i >= 0; i--) {
     from = callStack.v[i];
-    if (from->lineno > 0 && from->getModule()->modTag != MOD_INTERNAL)
+    if (from->lineno > 0 && 
+        from->getModule()->modTag != MOD_INTERNAL &&
+        !from->getFunction()->hasFlag(FLAG_TEMP))
       break;
   }
   const char* str = "";

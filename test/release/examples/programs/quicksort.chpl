@@ -10,7 +10,6 @@ var timer: Timer; // to time the sort
 
 config var n: int = 2**15;      // the size of the array to be sorted
 config var thresh: int = 1;     // the recursive depth to serialize
-                                //  use --thresh=-1 for unlimited threads
 config var verbose: int = 0;    // print out this many elements in array
 config var timing: bool = true; // set timing to false to disable timer
 
