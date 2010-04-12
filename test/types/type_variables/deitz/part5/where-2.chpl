@@ -1,8 +1,8 @@
-def foo(x) where (x == int) | (x == real) {
+def foo(x) where (x.type == int) | (x.type == real) {
   writeln("int or real = ", x);
 }
 
-def foo(x) where (x == complex) | (x == bool) {
+def foo(x) where (x.type == complex) | (x.type == bool) {
   writeln("complex or bool = ", x);
 }
 

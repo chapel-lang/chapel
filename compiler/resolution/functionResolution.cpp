@@ -2521,7 +2521,7 @@ preFold(Expr* expr) {
         }
       }
     } else if (call->isNamed("==")) {
-      if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
+      if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
         Type* lt = call->get(1)->getValType();
         Type* rt = call->get(2)->getValType();
         if (lt != dtUnknown && rt != dtUnknown &&
@@ -2532,7 +2532,7 @@ preFold(Expr* expr) {
         }
       }
     } else if (call->isNamed("!=")) {
-      if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
+      if (isTypeExpr(call->get(1)) && isTypeExpr(call->get(2))) {
         Type* lt = call->get(1)->getValType();
         Type* rt = call->get(2)->getValType();
         if (lt != dtUnknown && rt != dtUnknown &&
