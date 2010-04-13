@@ -1,6 +1,6 @@
 use driver;
 
-var Dom: domain(2) distributed Dist2D = Space2;
+var Dom: domain(2) dmapped Dist2D = Space2;
 
 var A, B: [Dom] int;
 

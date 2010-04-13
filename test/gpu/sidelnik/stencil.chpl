@@ -10,8 +10,8 @@ def main() {
 
 const GPUBlockDist = new GPUDist(rank=1, threadsPerBlock=threadsPerBlock);
 
-const space: domain(1, int(64)) distributed GPUBlockDist = [1..m];
-const subspace: domain(1, int(64)) distributed GPUBlockDist = [2..m-1];
+const space: domain(1, int(64)) dmapped GPUBlockDist = [1..m];
+const subspace: domain(1, int(64)) dmapped GPUBlockDist = [2..m-1];
 
 var gpuA, gpuB : [space] real;
 

@@ -30,35 +30,35 @@ program's lifetime, threads are created and then kept around to
 execute other tasks later.
 
 The number of threads per locale used to implement a Chapel program is
-controlled by a configuration constant named maxThreads.  If
-maxThreads has a value of 0, the Chapel program will create as many
-threads as it needs to execute the program, up to any system- or
-library-defined limits.  (The program will generate a runtime warning
-if it ever tries to create a thread and the system prevents it from
-doing so, due to resource limitations for example.)
+controlled by a configuration constant named maxThreadsPerLocale.  If
+maxThreadsPerLocale has a value of 0, the Chapel program will create
+as many threads as it needs to execute the program, up to any system-
+or library-defined limits.  (The program will generate a runtime
+warning if it ever tries to create a thread and the system prevents it
+from doing so, due to resource limitations for example.)
 
-If maxThreads has a non-zero value, that value specifies the maximum
-number of threads per locale that will be created to execute the
-Chapel program.  If the system or libraries have stricter constraints
-on maxThreads than this value, a warning will be generated when no
-more threads can be created.
+If maxThreadsPerLocale has a non-zero value, that value specifies the
+maximum number of threads per locale that will be created to execute
+the Chapel program.  If the system or libraries have stricter
+constraints on maxThreadsPerLocale than this value, a warning will be
+generated when no more threads can be created.
 
-The user can set maxThreads just like any other configuration
-variable, using --maxThreads=# or -smaxThreads=# on the generated
-executable's command-line.
+The user can set maxThreadsPerLocale just like any other configuration
+variable, using --maxThreadsPerLocale=# or -smaxThreadsPerLocale=# on
+the generated executable's command-line.
 
-If not set by the user, maxThreads typically defaults to 0 (an
-unbounded number of threads).  The main exception to this is when
+If not set by the user, maxThreadsPerLocale typically defaults to 0
+(an unbounded number of threads).  The main exception to this is when
 executing programs compiled using CHPL_COMM = gasnet, in which case
-maxThreads is set to a smaller number (e.g., 127 or 255) due to
-assumptions made in the GASNet implementation.  (There are ways to
+maxThreadsPerLocale is set to a smaller number (e.g., 127 or 255) due
+to assumptions made in the GASNet implementation.  (There are ways to
 work around this assumption on certain platforms -- please contact us
 at chapel_info@cray.com or peruse the GASNet documentation if you need
 to do so.)
 
-When the maximum number of threads (specified by maxThreads or the
-system limit) has been reached, any additional tasks are added to a
-task pool in the Chapel runtime, waiting for a thread to become
+When the maximum number of threads (specified by maxThreadsPerLocale
+or the system limit) has been reached, any additional tasks are added
+to a task pool in the Chapel runtime, waiting for a thread to become
 available.  When an existing thread completes execution of its task,
 it will go to the task pool to select a new task for execution.
 
@@ -66,21 +66,23 @@ Generally speaking, the Chapel programmer can make no assumptions
 about the scheduling of threads or the mapping of tasks to threads,
 apart from those semantics defined by the language specification.
 
-The value of maxThreads can have a major impact on performance.  For
-programs with low inter-task dependences and high computational
-intensity, setting maxThreads roughly equal to the number of cores on
-each locale can lead to near-optimal performance.  However, for
-programs with lots of fine-grain synchronization in which tasks
-frequently block on synchronization/single variables, maxThreads can
-often exceed the number of cores without an adverse effect on
-performance since blocked threads may not consume the CPU's cycles.
+The value of maxThreadsPerLocale can have a major impact on
+performance.  For programs with low inter-task dependences and high
+computational intensity, setting maxThreadsPerLocale roughly equal to
+the number of cores on each locale can lead to near-optimal
+performance.  However, for programs with lots of fine-grain
+synchronization in which tasks frequently block on
+synchronization/single variables, maxThreadsPerLocale can often exceed
+the number of cores without an adverse effect on performance since
+blocked threads may not consume the CPU's cycles.
 
-Note that setting maxThreads too low can also result in program
-deadlock.  For example, for programs written with an assumption that a
-larger number of tasks are executing concurrently, setting maxThreads
-too low can result in deadlock if there are not enough threads to
-implement all of the required tasks.  The -b/--blockreport flag can
-help debug programs like this that appear to be deadlocked.
+Note that setting maxThreadsPerLocale too low can also result in
+program deadlock.  For example, for programs written with an
+assumption that a larger number of tasks are executing concurrently,
+setting maxThreadsPerLocale too low can result in deadlock if there
+are not enough threads to implement all of the required tasks.  The
+-b/--blockreport flag can help debug programs like this that appear to
+be deadlocked.
 
 Several methods on the locale type are available to query the state of
 the task pool and threads:

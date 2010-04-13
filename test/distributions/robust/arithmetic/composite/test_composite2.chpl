@@ -3,7 +3,7 @@
 
 use driver;
 
-var MyA3D: [[10001..10005, 10001..10005, 10001..10005] distributed Dist3D] int;
+var MyA3D: [[10001..10005, 10001..10005, 10001..10005] dmapped Dist3D] int;
 
 var S: [1..n3, 1..n3] string;
 

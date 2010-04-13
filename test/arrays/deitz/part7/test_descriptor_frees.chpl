@@ -1,5 +1,7 @@
 use Memory;
 
+config const serially = true;
+
 var D: domain(1) = [1..10];
 var A: [D] real;
 
@@ -10,7 +12,7 @@ def foo() {
 
 var mem = memoryUsed();
 
-foo();
+serial serially do foo();
 
 mem = memoryUsed() - mem;
 

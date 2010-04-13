@@ -1,7 +1,7 @@
 config const n = 4;
 config const epsilon = 1.0e-5;
 
-const D = [1..n,1..n] distributed(block);
+const D = [1..n,1..n] dmapped(block);
 
 var A, Temp : [D.expand(1)] real;
 

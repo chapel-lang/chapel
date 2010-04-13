@@ -1,1 +1,1 @@
---maxDataParallelism=4 --limitDataParallelism=false
+--dataParTasksPerLocale=4

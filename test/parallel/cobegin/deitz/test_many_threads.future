@@ -3,7 +3,7 @@ unimplemented feature: task pool with repooling on waits
 These are the emails I sent out when I think I figured out the issue:
 
 I think I figured it out right after I hit 'send' (go figure).  I think   
-the problem is that the recursion is greater than the maxThreads so all of
+the problem is that the recursion is greater than the maxThreadsPerLocale so all of
 the threads are waiting on the threads generated for the recursive calls     
 to finish.  For this test to work, we would need to requeue tasks that are
 waiting on sync variables (in this case, the sync var used with the
@@ -47,16 +47,16 @@ On Tue, 25 Mar 2008, Steve Deitz wrote:
 > 
 >  writeln(A);
 > 
-> The problem is that it doesn't seem to make progress after maxThreads has
+> The problem is that it doesn't seem to make progress after maxThreadsPerLocale has
 > been reached.  So on my desktop, I see the warning
 > 
->  warning: maxThreads is unbounded, but unable to create more than 305
+>  warning: maxThreadsPerLocale is unbounded, but unable to create more than 305
 > threads
 > 
-> and it stops working at 305.  When I explicitly set maxThreads, it stops
+> and it stops working at 305.  When I explicitly set maxThreadsPerLocale, it stops
 > working at one less than whatever that value is.  So
 > 
->  $ a.out --maxThreads=4
+>  $ a.out --maxThreadsPerLocale=4
 >  wrote 1
 >  wrote 2
 >  wrote 3

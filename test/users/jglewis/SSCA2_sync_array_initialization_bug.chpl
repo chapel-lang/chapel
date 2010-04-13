@@ -16,7 +16,7 @@ module SSCA2_sync_array_initialization_bug
     const d = 2**SCALE;
   
     const vertex_domain = [ Torus_Base_Index..#d ]
-      distributed Block ( [Torus_Base_Index..#d] ); 
+      dmapped Block ( [Torus_Base_Index..#d] ); 
   
     var G = new torus_fully_implicit_stencil_graph ( vertex_domain );
     var good_initialization : [G.vertices] bool;

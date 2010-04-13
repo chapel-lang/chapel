@@ -1,6 +1,6 @@
 // This test is intended to ensure that a warning message is emitted when
-// the specified value of maxThreads is higher than the system supports
-// (256 for gasnet, for example).
+// the specified value of maxThreadsPerLocale is higher than the
+// system supports (256 for gasnet, for example).
 
 use Time;
 

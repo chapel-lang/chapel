@@ -63,12 +63,12 @@ config const printParams = true,
 // across the locales.
 //
 const
-  TableDist = new dist(new Block(boundingBox=[0..m-1],
-                                 maxDataParallelism=tasksPerLocale,
-                                 limitDataParallelism=false)),
-  UpdateDist = new dist(new Block(boundingBox=[0..N_U-1],
-                                  maxDataParallelism=tasksPerLocale,
-                                  limitDataParallelism=false));
+  TableDist = new dmap(new Block(boundingBox=[0..m-1],
+                                 dataParTasksPerLocale=tasksPerLocale,
+                                 dataParIgnoreRunningTasks=true)),
+  UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1],
+                                  dataParTasksPerLocale=tasksPerLocale,
+                                  dataParIgnoreRunningTasks=true));
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -78,8 +78,8 @@ const
 // It is distributed according to UpdateDist and contains the
 // indices 0..N_U-1.
 //
-const TableSpace: domain(1, indexType) distributed TableDist = [0..m-1],
-      Updates: domain(1, indexType) distributed UpdateDist = [0..N_U-1];
+const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
+      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
 
 //
 // T is the distributed table itself, storing a variable of type
@@ -120,7 +120,7 @@ def main() {
   // pending for that locale.
   //
   forall ( , r) in (Updates, RAStream()) {
-    var loc = T.domain.dist.ind2loc(r&indexMask);
+    var loc = T.domain.dist.idxToLocale(r&indexMask);
     if loc == here {
       T(r&indexMask) ^= r;
     } else {
@@ -181,7 +181,7 @@ def verifyResults() {
   // atomic statement to ensure no conflicting updates
   //
   forall ( , r) in (Updates, RAStream()) do
-    on T.domain.dist.ind2loc(r & indexMask) do
+    on T.domain.dist.idxToLocale(r & indexMask) do
       atomic T(r & indexMask) ^= r;
 
   //

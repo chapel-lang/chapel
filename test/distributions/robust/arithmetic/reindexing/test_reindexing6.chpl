@@ -6,7 +6,7 @@ var s3 = shift;
 var s4 = shift;
 
 const MySpace4 = Space4 + fill(4,shift);
-const MyDom4D: domain(4) distributed Dist4D = MySpace4;
+const MyDom4D: domain(4) dmapped Dist4D = MySpace4;
 
 def foo(TD: domain, A: [TD] int, TA, offset) {
   var errs = 0;

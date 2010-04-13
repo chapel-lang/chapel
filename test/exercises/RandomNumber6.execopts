@@ -1,1 +1,1 @@
---quiet --maxThreads=100
+--quiet --maxThreadsPerLocale=100

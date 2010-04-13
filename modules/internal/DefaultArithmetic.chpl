@@ -16,6 +16,8 @@ class DefaultDist: BaseDist {
 
   def dsiClone() return this;
 
+  def dsiAssign(other: this.type) { }
+
   def dsiCreateReindexDist(newSpace, oldSpace) return this;
   def dsiCreateRankChangeDist(param newRank, args) return this;
 }
@@ -24,7 +26,7 @@ class DefaultDist: BaseDist {
 // Note that the replicated copies are set up in ChapelLocale on the
 // other locales.  This just sets it up on this locale.
 //
-pragma "private" var defaultDist = new dist(new DefaultDist());
+pragma "private" var defaultDist = new dmap(new DefaultDist());
 
 class DefaultArithmeticDom: BaseArithmeticDom {
   param rank : int;
@@ -93,19 +95,15 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In domain leader code:"); // this = ", this);
-    // For now we have to set this default here rather than as the
-    //  default value in the constructor because we need to create
-    //  an array to store the locales (and hence 'here')
-    var maxTasks = if maxDataParallelism>0 then maxDataParallelism
-                   else here.numCores;
-    var limitTasks = limitDataParallelism;
-    var minIndicesPerTask = minDataParallelismSize;
+    const numTasks = dataParTasksPerLocale;
+    const ignoreRunning = dataParIgnoreRunningTasks;
+    const minIndicesPerTask = dataParMinGranularity;
 
     if debugDefaultDist then
-      writeln("    maxTasks=", maxTasks, " (", limitTasks,
+      writeln("    numTasks=", numTasks, " (", ignoreRunning,
               "), minIndicesPerTask=", minIndicesPerTask);
 
-    var (numChunks, parDim) = _computeChunkStuff(maxTasks, limitTasks,
+    var (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
                                                  minIndicesPerTask,
                                                  ranges, rank);
     if debugDefaultDist then
@@ -306,19 +304,15 @@ class DefaultArithmeticArr: BaseArr {
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In array leader code:");// [\n", this, "]");
-    // For now we have to set this default here rather than as the
-    //  default value in the constructor because we need to create
-    //  an array to store the locales (and hence 'here')
-    var maxTasks = if maxDataParallelism>0 then maxDataParallelism
-                   else here.numCores;
-    var limitTasks = limitDataParallelism;
-    var minElemsPerTask = minDataParallelismSize;
+    const numTasks = dataParTasksPerLocale;
+    const ignoreRunning = dataParIgnoreRunningTasks;
+    const minElemsPerTask = dataParMinGranularity;
 
     if debugDefaultDist then
-      writeln("    maxTasks=", maxTasks, " (", limitTasks,
+      writeln("    numTasks=", numTasks, " (", ignoreRunning,
               "), minElemsPerTask=", minElemsPerTask);
 
-    var (numChunks, parDim) = _computeChunkStuff(maxTasks, limitTasks,
+    var (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
                                                  minElemsPerTask,
                                                  dom.ranges, rank);
     if debugDefaultDist then

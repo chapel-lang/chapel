@@ -11,6 +11,7 @@ use HPCCProblemSize;
 const radix = 4;               // the radix of this FFT implementation
 
 const numVectors = 2;          // the number of vectors to be stored
+type idxType = int(64);        // the type to use as the index to the domains
 type elemType = complex(128);  // the element type of the vectors
 
 //
@@ -59,9 +60,9 @@ def main() {
   // twiddle values and is a 1D domain indexed by 64-bit ints from 0
   // to m/4-1.  Twiddles is the vector of twiddle values.
   //
-  //const TwiddleDist = new dist(new Cyclic(rank=1, idxType=int(64), tasksPerLocale=tasksPerLocale));
-  const TwiddleDist = new dist(new Block(rank=1, idxType=int(64), boundingBox=[0..m/4-1], targetLocales=Locales));
-  const TwiddleDom: domain(1, int(64)) distributed TwiddleDist = [0..m/4-1];
+  //const TwiddleDist = new dmap(new Cyclic(startIdx=0:idxType, tasksPerLocale=tasksPerLocale));
+  const TwiddleDist = new dmap(new Block(rank=1, idxType=idxType, boundingBox=[0..m/4-1], targetLocales=Locales));
+  const TwiddleDom: domain(1, int(64)) dmapped TwiddleDist = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
   //
@@ -70,17 +71,17 @@ def main() {
   // from 0 to m-1.  It is distributes the vectors Z and z across the
   // locales using the Block distribution.
   //
-  const BlkDist = new dist(new Block(rank=1, idxType=int(64), boundingBox=[0..m-1],
+  const BlkDist = new dmap(new Block(rank=1, idxType=idxType, boundingBox=[0..m-1],
                                      targetLocales=Locales,
-                                     maxDataParallelism=tasksPerLocale,
-                                     limitDataParallelism=false));
-  const BlkDom: domain(1, int(64)) distributed BlkDist = [0..m-1];
+                                     dataParTasksPerLocale=tasksPerLocale,
+                                     dataParIgnoreRunningTasks=true));
+  const BlkDom: domain(1, int(64)) dmapped BlkDist = [0..m-1];
   var Z, z: [BlkDom] elemType;
 
-  const CycDist = new dist(new Cyclic(rank=1, idxType=int(64), targetLocales=Locales,
-                                      maxDataParallelism=tasksPerLocale,
-                                      limitDataParallelism=false));
-  const CycDom: domain(1, int(64)) distributed CycDist = [0..m-1];
+  const CycDist = new dmap(new Cyclic(startIdx=0:idxType, targetLocales=Locales,
+                                      dataParTasksPerLocale=tasksPerLocale,
+                                      dataParIgnoreRunningTasks=true));
+  const CycDom: domain(1, int(64)) dmapped CycDist = [0..m-1];
   var Zcyc: [CycDom] elemType;
 
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
@@ -133,7 +134,7 @@ def dfft(A: [?ADom], W, phase) {
       //       lo.. by str #num == lo, lo+str, lo+2*str, ... lo+(num-1)*str
       //
       forall lo in bankStart..#str {
-        on ADom.dist.ind2loc(lo) {
+        on ADom.dist.idxToLocale(lo) {
           local {
             butterfly(wk1, wk2, wk3, A.localSlice(lo..by str #radix));
           }
@@ -151,7 +152,7 @@ def dfft(A: [?ADom], W, phase) {
       // loop in parallel over the high bank, computing butterflies
       //
       forall lo in bankStart+span..#str {
-        on ADom.dist.ind2loc(lo) {
+        on ADom.dist.idxToLocale(lo) {
           local {
             butterfly(wk1, wk2, wk3, A.localSlice(lo.. by str #radix));
           }
@@ -347,5 +348,5 @@ def tmp_localSlice(A, rng) {
   for param i in 1..A.rank {
     low(i) = rng.low;
   }
-  return A._value.locArr(A._value.dom.dist.ind2locInd(low)).myElems(rng);
+  return A._value.locArr(A._value.dom.dist.idxToLocaleInd(low)).myElems(rng);
 }

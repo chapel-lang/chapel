@@ -57,6 +57,9 @@ Section~\ref{Functions}, Functions, describes functions and function
 resolution in Chapel.
 
 \item
+Section~\ref{Tuples}, Tuples, describes tuples in Chapel.
+
+\item
 Section~\ref{Classes}, Classes, describes reference classes in Chapel.
 
 \item
@@ -65,9 +68,6 @@ Chapel.
 
 \item
 Section~\ref{Unions}, Unions, describes unions in Chapel.
-
-\item
-Section~\ref{Tuples}, Tuples, describes tuples in Chapel.
 
 \item
 Section~\ref{Ranges}, Ranges, describes ranges in Chapel.
@@ -79,31 +79,56 @@ arrays in many other languages.  Domains are index sets, an
 abstraction that is typically not distinguished from arrays.
 
 \item
-Section~\ref{Iterators}, Iterators, describes iterator functions and
-promotion.
+Section~\ref{Iterators}, Iterators, describes iterator functions.
 
 \item
 Section~\ref{Generics}, Generics, describes Chapel's support for
 generic functions and types.
 
 \item
-Section~\ref{Parallelism_and_Synchronization}, Parallelism and
-Synchronization, describes parallel expressions and statements in
-Chapel as well as synchronization constructs and atomic sections.
+Section~\ref{Task_Parallelism_and_Synchronization}, Task Parallelism
+and Synchronization, describes task-parallel expressions and
+statements in Chapel as well as synchronization constructs, atomic
+sections, and memory consistency.
 
 \item
-Section~\ref{Locality_and_Distribution}, Locality and Distribution,
-describes constructs for managing locality and distributing data in
-Chapel.
+Section~\ref{Data_Parallelism}, Data Parallelism, describes
+data-parallel expressions and statements in Chapel including
+reductions and scans, whole array assignment, and promotion.
 
 \item
-Section~\ref{Reductions_and_Scans}, Reductions and Scans, describes
-the built-in reductions and scans as well as structural interfaces to
-support user-defined reductions and scans.
+Section~\ref{User_Defined_Reductions_and_Scans}, User-Defined
+Reductions and Scans, describes how Chapel programmers can define
+their own reduction and scan operators.
+
+\item
+Section~\ref{Locales}, Locales, describes constructs for managing
+locality and executing Chapel programs on distributed-memory systems.
+
+\item
+Section~\ref{Domain_Maps}, Domain Maps, describes
+Chapel's \emph{domain map} construct for defining the layout of
+domains and arrays within a single locale and/or the distribution of
+domains and arrays across multiple locales.
+
+\item
+Section~\ref{User_Defined_Domain_Maps}, User-Defined Domain Maps,
+describes how Chapel programmers can define their own domain maps to
+implement domains and arrays.
 
 \item
 Section~\ref{Input_and_Output}, Input and Output, describes support
 for input and output in Chapel, including file input and output..
+
+\item
+Section~\ref{Standard_Distributions}, Standard Distributions,
+describes the standard distributions (multi-locale domain maps) that
+are provided with the Chapel language.
+
+\item
+Section~\ref{Standard_Layouts}, Standard Layouts, describes the
+standard layouts (single locale domain maps) that are provided with
+the Chapel language.
 
 \item
 Section~\ref{Standard_Modules}, Standard Modules, describes the

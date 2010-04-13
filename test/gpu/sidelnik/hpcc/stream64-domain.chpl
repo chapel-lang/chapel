@@ -67,7 +67,7 @@ def main() {
   // is a 1D domain storing 64-bit ints and is distributed according
   // to BlockDist.  It contains the indices 1..m.
   //
-  const ProblemSpace: domain(1, int(64)) distributed GPUBlockDist = [1..m];
+  const ProblemSpace: domain(1, int(64)) dmapped GPUBlockDist = [1..m];
 
   //
   // A, B, and C are the three distributed vectors, declared to store

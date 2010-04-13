@@ -75,19 +75,20 @@ Limiting the number of threads
 ------------------------------
 
 For multithreaded Chapel executions, a built-in configuration constant
-named maxThreads is used to control the maximum number of threads that
-may be used per locale to implement the program.  See README.threads
-for more information on the role of this variable in creating threads
-and executing tasks.
+named maxThreadsPerLocale is used to control the maximum number of
+threads that may be used per locale to implement the program.  See
+README.tasks for more information on the role of this variable in
+creating threads and executing tasks.
 
 Additionally, the default distribution and Chapel ranges support
 parallel execution for forall loops.  The iterations are divided up
 into "chunks" which are executed by threads.  The maximum number of
 chunks can be specified by the built-in configuration constant
-maxChunks.  By default maxChunks is set to the minimum of maxThreads
-(if it is specified) and the number of cores on the CPU.  Another
-built-in configuration constant called minElemsPerChunk specifies the
-minimum number of elements in a chunk (default 1).
+maxChunks.  By default maxChunks is set to the minimum of
+maxThreadsPerLocale (if it is specified) and the number of cores on
+the CPU.  Another built-in configuration constant called
+minElemsPerChunk specifies the minimum number of elements in a chunk
+(default 1).
 
 -----------------------------------------
 Controlling the amount of non-user output

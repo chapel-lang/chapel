@@ -41,6 +41,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   var tmpTable: [tmpDom] chpl_TableEntry(idxType);
   var tmpDom2 = [0..-1:chpl_table_index_type];
   var tmpTable2: [tmpDom2] idxType;
+  var postponeResize = false;
 
   def linksDistribution() param return false;
 
@@ -56,42 +57,6 @@ class DefaultAssociativeDom: BaseAssociativeDom {
                                      dom=this); 
   }
 
-  def dsiGetIndices()
-    return this;
-
-  def dsiSetIndices(b: DefaultAssociativeDom) {
-    // store cache of old domain/arrays
-    _backupArrays();
-    tmpDom = tableDom;
-    tmpTable = table;
-
-    // clear out old table
-    numEntries = 0;
-    tableDom = [0..-1:chpl_table_index_type];
-
-    // choose new table size
-    for primeNum in 1..chpl__primes.size {
-      if (b.numEntries * 2 < chpl__primes(primeNum)) {
-        tableSizeNum = primeNum;
-        break;
-      }
-    }
-    tableSize = chpl__primes(tableSizeNum);
-    tableDom = [0..tableSize-1];
-
-    // add indices and copy array data over
-    for idx in b {
-      const newSlotNum = dsiAdd(idx);
-      const (foundit, slot) = _findFilledSlot(idx, tmpTable);
-      if (foundit) {
-        _preserveArrayElement(oldslot=slot, newslot=newSlotNum);
-      }
-    }
-    tmpDom = [0..-1:chpl_table_index_type];
-    tmpDom2 = [0..-1:chpl_table_index_type];
-    _removeArrayBackups();
-  }
-  
   def dsiSerialWrite(f: Writer) {
     var first = true;
     f.write("[");
@@ -113,6 +78,16 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     return numEntries;
   }
 
+  def dsiIndsIterSafeForRemoving() {
+    postponeResize = true;
+    for i in this.these() do
+      yield i;
+    postponeResize = false;
+    if (numEntries*8 < tableSize && tableSizeNum > 1) {
+      _resize(grow=false);
+    }
+  }
+
   def these() {
     if !_isEnumeratedType(idxType) {
       for slot in _fullSlots() {
@@ -128,6 +103,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
+    compilerWarning("parallel iteration over associative domain has been serialized (see note in $CHPL_HOME/STATUS)");
     yield 0..dsiNumIndices-1;
   }
 
@@ -181,6 +157,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   def dsiRemove(idx: idxType) {
     const (foundSlot, slotNum) = _findFilledSlot(idx);
     if (foundSlot) {
+      for a in _arrs do
+        a.clearEntry(idx);
       table(slotNum).status = chpl__hash_status.deleted;
       numEntries -= 1;
     } else {
@@ -218,6 +196,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   def _resize(grow:bool) {
+    if postponeResize then return;
     // back up the arrays
     _backupArrays();
 
@@ -302,8 +281,9 @@ class DefaultAssociativeArr: BaseArr {
 
   def dsiGetBaseDom() return dom;
 
-  def dsiReallocate(d: domain) {
-    // reallocation is done in the setIndices function
+  def clearEntry(idx: idxType) {
+    const initval: eltType;
+    dsiAccess(idx) = initval;
   }
 
   def dsiAccess(idx : idxType) var : eltType {
@@ -323,6 +303,7 @@ class DefaultAssociativeArr: BaseArr {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
+    compilerWarning("parallel iteration over associative array has been serialized (see note in $CHPL_HOME/STATUS)");
     for block in dom.these(tag=iterator.leader) do
       yield block;
   }

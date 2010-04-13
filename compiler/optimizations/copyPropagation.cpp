@@ -445,6 +445,8 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             addUse(useMap, se);
           } else if (parent &&
                      (parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                      parent->isPrimitive(PRIM_GET_MEMBER) ||
+                      parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                       parent->isPrimitive(PRIM_GET_MEMBER))) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
@@ -476,17 +478,24 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
           var->defPoint->remove();
           defMap.get(var)->v[0]->getStmtExpr()->remove();
         }
-      } else if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
+      } else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
+                 rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
         bool stillAlive = false;
+        bool isSvec = rhs->isPrimitive(PRIM_GET_SVEC_MEMBER);
         for_uses(se, useMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
           SET_LINENO(se);
           if (parent && parent->isPrimitive(PRIM_GET_REF)) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
-            parent->replace(new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                         se,
-                                         rhs->get(2)->copy()));
+            if (!isSvec)
+              parent->replace(new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                           se,
+                                           rhs->get(2)->copy()));
+            else
+              parent->replace(new CallExpr(PRIM_GET_SVEC_MEMBER_VALUE,
+                                           se,
+                                           rhs->get(2)->copy()));
             addUse(useMap, se);
           } else if (parent && parent->isPrimitive(PRIM_MOVE)) {
             CallExpr* rhsCopy = rhs->copy();
@@ -506,10 +515,16 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             if (SymExpr* rtmp = toSymExpr(parent->get(2))) {
               SymExpr* se = toSymExpr(rhs->get(1)->copy());
               INT_ASSERT(se);
-              parent->replace(new CallExpr(PRIM_SET_MEMBER,
-                                           se,
-                                           rhs->get(2)->copy(),
-                                           rtmp->remove()));
+              if (!isSvec)
+                parent->replace(new CallExpr(PRIM_SET_MEMBER,
+                                             se,
+                                             rhs->get(2)->copy(),
+                                             rtmp->remove()));
+              else
+                parent->replace(new CallExpr(PRIM_SET_SVEC_MEMBER,
+                                             se,
+                                             rhs->get(2)->copy(),
+                                             rtmp->remove()));
               addUse(useMap, se);
             } else {
               VarSymbol* tmp = newTemp(parent->get(2)->typeInfo());
@@ -517,10 +532,16 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
               parent->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, parent->get(2)->remove()));
               SymExpr* se = toSymExpr(rhs->get(1)->copy());
               INT_ASSERT(se);
-              parent->replace(new CallExpr(PRIM_SET_MEMBER,
-                                           se,
-                                           rhs->get(2)->copy(),
-                                           tmp));
+              if (!isSvec)
+                parent->replace(new CallExpr(PRIM_SET_MEMBER,
+                                             se,
+                                             rhs->get(2)->copy(),
+                                             tmp));
+              else
+                parent->replace(new CallExpr(PRIM_SET_MEMBER,
+                                             se,
+                                             rhs->get(2)->copy(),
+                                             tmp));
               addUse(useMap, se);
             }
           } else

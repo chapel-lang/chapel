@@ -1,2 +1,2 @@
---maxThreads=257 --quiet
+--maxThreadsPerLocale=257 --quiet
 

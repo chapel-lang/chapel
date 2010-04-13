@@ -410,7 +410,7 @@ def _intersect(a: CMODom, b: CMODom) {
 def main() {
   param n = 5;
   const D = [1..n,1..n];
-  const D2: domain(2) distributed new dist(new CMODist()) = [1..n,1..n];
+  const D2: domain(2) dmapped new dmap(new CMODist()) = [1..n,1..n];
   var A: [D2] real = [ij in D2] ij(1) + (ij(2) - 1)*n;
   var B: [D] real = [ij in D] ij(2) + (ij(1) - 1)*n;
 

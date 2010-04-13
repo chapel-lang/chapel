@@ -391,12 +391,11 @@ def range.these(param tag: iterator) where tag == iterator.leader {
   if v < 0 then
     v = 0;
 
-  var maxTasks = if maxDataParallelism>0 then maxDataParallelism
-                 else here.numCores;
-  var limitTasks = limitDataParallelism;
-  var minIndicesPerTask = minDataParallelismSize;
+  const numTasks = dataParTasksPerLocale;
+  const ignoreRunning = dataParIgnoreRunningTasks;
+  const minIndicesPerTask = dataParMinGranularity;
 
-  var numChunks = _computeNumChunks(maxTasks, limitTasks, minIndicesPerTask, v);
+  var numChunks = _computeNumChunks(numTasks, ignoreRunning, minIndicesPerTask, v);
   if debugChapelRange then
     writeln("*** RI: length=", v, " numChunks=", numChunks);
 

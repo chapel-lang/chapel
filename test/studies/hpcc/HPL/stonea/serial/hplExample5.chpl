@@ -74,7 +74,7 @@ def schurComplement(
     // Copy data into replicated array so every processor has a local copy
     // of the data it will need to perform a local matrix-multiply.
 
-    //var replAD : domain(2) distributed(
+    //var replAD : domain(2) dmapped(
     //    Dimensional(BlkCyc(k), Replicated)) = AD[ptSol.., 1..#blkSize];
     const replAD : domain(2) = AD[ptSol.., ptOp..#blkSize];
     const replBD : domain(2) = AD[ptOp..#blkSize, ptSol..];

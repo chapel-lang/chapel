@@ -1,8 +1,8 @@
 use List;
 
-config const maxDataParallelism = 0;
-config const limitDataParallelism = true;
-config const minDataParallelismSize: uint(64) = 0;
+config const dataParTasksPerLocale = __primitive("chpl_coresPerLocale");
+config const dataParIgnoreRunningTasks = true;
+config const dataParMinGranularity: uint(64) = 0;
 
 //
 // Abstract distribution class
@@ -209,11 +209,28 @@ class BaseArr {
     halt("resizing not supported for this array type");
   }
 
+  //
+  // Ultimately, these routines should not appear here; instead, we'd
+  // like to do a dynamic cast in the sparse array class(es) that call
+  // these routines in order to call them directly and avoid the
+  // dynamic dispatch and leaking of this name to the class.  In order
+  // to do this we'd need to hoist eltType to the base class, which
+  // would require better subclassing of generic classes.  A good
+  // summer project for Jonathan?
+  //
   def sparseShiftArray(shiftrange, initrange) {
     halt("sparseGrowDomain not supported for non-sparse arrays");
   }
 
+  def sparseShiftArrayBack(shiftrange) {
+    halt("sparseShiftArrayBack not supported for non-sparse arrays");
+  }
+
   // methods for associative arrays
+  def clearEntry(idx) {
+    halt("clearEntry() not supported for non-associative arrays");
+  }
+
   def _backupArray() {
     halt("_backupArray() not supported for non-associative arrays");
   }

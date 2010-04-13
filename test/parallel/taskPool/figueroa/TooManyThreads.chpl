@@ -1,7 +1,8 @@
 // This test is intended to ensure that a warning message is emitted when the
 // system is unable to create as many threads as requested.  (On most platforms,
-// the default value of maxThreads is unbounded, but usually the system runs out
-// of resources after two or three thousand threads have been created.)
+// the default value of maxThreadsPerLocale is unbounded, but usually
+// the system runs out of resources after two or three thousand
+// threads have been created.)
 
 // This test also makes sure that regardless of whether the system runs out of
 // resources, tasks can be placed in the task pool, and these tasks are

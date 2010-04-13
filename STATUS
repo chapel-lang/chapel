@@ -103,7 +103,7 @@ Unimplemented Features:
     e.g., [i in D] foo(i) should result in an array of type: [D] foo(i).type
           but instead results in a 1D array
 - Arrays of arrays where the inner arrays vary in size are not supported
-- Sparse domain/array assignment, slicing, and index removal is not supported
+- Sparse domain/array slicing is not supported
 - There are no bounds checks on index types
 - There are no subset checks on subdomains
 

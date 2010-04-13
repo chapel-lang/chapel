@@ -1,15 +1,15 @@
 use UserMapAssoc;
 
 class myMapper : AbstractMapper {
-  def ind2locInd(ind: real, numlocs: int) {
+  def idxToLocaleInd(ind: real, numlocs: int) {
     const indAsInt = ind: int;
     return indAsInt % numlocs;
   }
 }
 
-var newDist = new dist(new UserMapAssoc(idxType=real, initMapper=new myMapper()));
+var newDist = new dmap(new UserMapAssoc(idxType=real, initMapper=new myMapper()));
 
-var D: domain(real) distributed newDist;
+var D: domain(real) dmapped newDist;
 
 D += 1.3;
 D += 2.4;

@@ -4,7 +4,8 @@
 use Memory;
 
 const N = 5;
-var A: [1..N] int = 7;
+var A: [1..N] int;
+serial true do A = 7;
 var sum = -3;
 
 def foo (X) {
@@ -22,5 +23,7 @@ bar();
 var m2 = memoryUsed();
 
 writeln("Amount of leaked memory after calling bar(): ", m2:int - m1:int);
+if m2 -m1 != 0 then
+  writeln((m2, m1));
 writeln("sum is ", sum);
 writeln(A);

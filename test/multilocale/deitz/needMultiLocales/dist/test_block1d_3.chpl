@@ -2,9 +2,10 @@ use BlockDist;
 
 config var n = 8, tpl=1;
 
-var Dist = new dist(new Block(rank=1, boundingBox=[2..n-1],maxDataParallelism=tpl));
-var Dom: domain(1) distributed Dist = [-n..n];
+var Dist = new dmap(new Block(rank=1, boundingBox=[2..n-1],dataParTasksPerLocale=tpl));
+var Dom: domain(1) dmapped Dist = [-n..n];
 var A: [Dom] real;
+
 writeln(Dom);
 writeln(A);
 writeln();

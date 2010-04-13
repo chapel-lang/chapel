@@ -152,6 +152,7 @@ enum PrimitiveTag {
   PRIM_BLOCK_ON,              // BlockStmt::blockInfo - on block
   PRIM_BLOCK_ON_NB,           // BlockStmt::blockInfo - non-blocking on block
   PRIM_BLOCK_LOCAL,           // BlockStmt::blockInfo - local block
+  PRIM_BLOCK_UNLOCAL,         // BlockStmt::blockInfo - unlocal local block
 
   PRIM_BLOCK_ATOMIC,          // SS: Atomic block primitive
   PRIM_TX_BEGIN,

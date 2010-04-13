@@ -17,7 +17,7 @@ int doneCount = 0;
 MPI_Request recvReq;
 u64 recvBuf[2];
 
-static int ind2loc(u64 ind);
+static int idxToLocale(u64 ind);
 static int ind2localIdx(u64 ind);
 static void tryRecv(void);
 static void doSend(int dest, u64 val, u64 finish);
@@ -25,7 +25,7 @@ static void doSend(int dest, u64 val, u64 finish);
 u64* A;
 
 /* Given a global index, return the process rank it is local on */
-static int ind2loc(u64 ind) {
+static int idxToLocale(u64 ind) {
   return nprocs*ind / m;
 }
 
@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
     r = getNthRandom(locStart);
 
     for (i=locStart; i < locEnd; i++) {
-      int loc = ind2loc(r & idxMask);
+      int loc = idxToLocale(r & idxMask);
       tryRecv();
       if (loc == rank) {
         A[ind2localIdx(r & idxMask)] ^= r;

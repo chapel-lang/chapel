@@ -150,15 +150,15 @@ class Block1DDist {
   //
   // Determine which locale owns a particular index
   //
-  def ind2locInd(ind: glbIdxType) {
+  def idxToLocaleInd(ind: glbIdxType) {
     const ind0 = ind - boundingBox.low;
     const loc0 = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
     const locInd = loc0: index(targetLocs.domain) + targetLocs.domain.low;
     return locInd;
   }
 
-  def ind2loc(ind: glbIdxType) {
-    return targetLocs(ind2locInd(ind));
+  def idxToLocale(ind: glbIdxType) {
+    return targetLocs(idxToLocaleInd(ind));
   }
 }
 
@@ -470,7 +470,7 @@ class Block1DArr {
   // the global accessor for the array
   //
   def this(i: glbIdxType) var {
-    return locArr(dom.dist.ind2locInd(i))(i);
+    return locArr(dom.dist.idxToLocaleInd(i))(i);
   }
 
   //

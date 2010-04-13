@@ -1197,13 +1197,13 @@ launch_next_task_in_new_thread(void) {
   if ((ptask = task_pool_head)) {
     if (threadlayer_thread_create(&thread, chpl_begin_helper, ptask)) {
       char msg[256];
-      if (maxThreads)
+      if (maxThreadsPerLocale)
         sprintf(msg,
-                "maxThreads is %"PRId32", but unable to create more than %d threads",
-                maxThreads, threads_cnt);
+                "maxThreadsPerLocale is %"PRId32", but unable to create more than %d threads",
+                maxThreadsPerLocale, threads_cnt);
       else
         sprintf(msg,
-                "maxThreads is unbounded, but unable to create more than %d threads",
+                "maxThreadsPerLocale is unbounded, but unable to create more than %d threads",
                 threads_cnt);
       chpl_warning(msg, 0, 0);
       warning_issued = true;
@@ -1253,7 +1253,7 @@ static void schedule_next_task(int howMany) {
     threadlayer_pool_awaken();
   }
 
-  for (; howMany && (maxThreads == 0 || threads_cnt + 1 < maxThreads); howMany--)
+  for (; howMany && (maxThreadsPerLocale == 0 || threads_cnt + 1 < maxThreadsPerLocale); howMany--)
     launch_next_task_in_new_thread();
 }
 

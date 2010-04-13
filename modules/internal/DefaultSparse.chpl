@@ -24,17 +24,15 @@ class DefaultSparseDom: BaseSparseDom {
 
   def dsiNumIndices return nnz;
 
-  // This isn't what getIndices/setIndices are supposed to do, but
-  // this interface doesn't really make sense for sparse domains.
-  // Doing the one piece that is easy to do -- copying the parent
-  // domain over.
-  def dsiGetIndices() { return parentDom; }
-  def dsiSetIndices(x) { parentDom = x; }
-
-
   def dsiBuildArray(type eltType)
     return new DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
                                 dom=this);
+
+  def dsiIndsIterSafeForRemoving() {
+    for i in 1..nnz by -1 {
+      yield indices(i);
+    }
+  }
 
   def these() {
     for i in 1..nnz {
@@ -43,10 +41,14 @@ class DefaultSparseDom: BaseSparseDom {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-    yield true;
+    compilerWarning("parallel iteration over sparse domain has been serialized (see note in $CHPL_HOME/STATUS)");
+    yield this;
   }
 
-  def these(param tag: iterator, follower: bool) where tag == iterator.follower {
+  def these(param tag: iterator, follower: DefaultSparseDom) where tag == iterator.follower {
+    if (follower != this) then
+      halt("Sparse domains can't be zippered with anything other than themselves");
+
     for i in 1..nnz do
       yield indices(i);
   }
@@ -112,12 +114,56 @@ class DefaultSparseDom: BaseSparseDom {
     }
   }
 
+  def rem_help(ind) {
+    // find position in nnzDom to insert new index
+    const (found, insertPt) = find(ind);
+
+    // if the index already existed, then return
+    if (!found) then return;
+
+    // increment number of nonzeroes
+    nnz -= 1;
+
+    // TODO: should halve nnzDom if we've outgrown it; grab current
+    // size otherwise
+    /*
+    var oldNNZDomSize = nnzDomSize;
+    if (nnz > nnzDomSize) {
+      nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
+      nnzDom = [1..nnzDomSize];
+    }
+    */
+    // shift indices up
+    for i in insertPt..nnz {
+      indices(i) = indices(i+1);
+    }
+
+    // shift all of the arrays up and initialize nonzeroes if
+    // necessary 
+    //
+    // BLC: Note: if arithmetic arrays had a user-settable
+    // initialization value, we could set it to be the IRV and skip
+    // this second initialization of any new values in the array.
+    // we could also eliminate the oldNNZDomSize variable
+    for a in _arrs {
+      a.sparseShiftArrayBack(insertPt..nnz-1);
+    }
+  }
+
   def dsiAdd(ind: idxType) where rank == 1 {
     add_help(ind);
   }
 
+  def dsiRemove(ind: idxType) where rank == 1 {
+    rem_help(ind);
+  }
+
   def dsiAdd(ind: rank*idxType) {
     add_help(ind);
+  }
+
+  def dsiRemove(ind: rank*idxType) {
+    rem_help(ind);
   }
 
   def dsiClear() {
@@ -181,6 +227,22 @@ class DefaultSparseArr: BaseArr {
     for e in data[1..dom.nnz] do yield e;
   }
 
+  def these(param tag: iterator) where tag == iterator.leader {
+    compilerWarning("parallel iteration over sparse array has been serialized (see note in $CHPL_HOME/STATUS)");
+    yield this;
+  }
+
+  def these(param tag: iterator, follower: DefaultSparseArr) var where tag == iterator.follower {
+    if (follower != this) then
+      halt("Sparse domains can't be zippered with anything other than themselves");
+
+    for e in data[1..dom.nnz] do yield e;
+  }
+
+  def these(param tag: iterator, follower) where tag == iterator.follower {
+    compilerError("Sparse iterators can't yet be zippered with others");
+  }
+
   def IRV var {
     return irv;
   }
@@ -193,6 +255,12 @@ class DefaultSparseArr: BaseArr {
       data(i+1) = data(i);
     }
     data(shiftrange.low) = irv;
+  }
+
+  def sparseShiftArrayBack(shiftrange) {
+    for i in shiftrange {
+      data(i) = data(i+1);
+    }
   }
 }
 

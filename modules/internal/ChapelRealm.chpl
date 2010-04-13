@@ -30,7 +30,9 @@ forall loc in AllLocaleSpace do
   AllLocales(loc) = chpl_setupLocale(loc);
 
 const Realms: [RealmSpace] realm;
-forall r in RealmSpace do
+// TODO: Will eventually want to make this parallel, but it causes a warning
+// today
+for r in RealmSpace do
   Realms(r) = chpl_setupRealm(r, chpl_numLocales(r), chpl_baseLocaleID(r));
 
 doneCreatingLocales = true;
@@ -87,7 +89,7 @@ def chpl_setupRealm(id, numLocales, baseID) {
   var tmp: realm;
   on __primitive("chpl_on_locale_num", baseID) {
     if (defaultDist._value == nil) {
-      defaultDist = new dist(new DefaultDist());
+      defaultDist = new dmap(new DefaultDist());
     }
     tmp = new realm(id, chpl_getRealmType(id), numLocales, [0..numLocales-1], Locales=>AllLocales[baseID..#numLocales]);
     forall (loc, id) in (tmp.Locales, 0..) do on loc {

@@ -119,7 +119,7 @@ mysystem("cd $tmpdir/chapel/runtime && $tokctr $allcppfiles > runtime.ntoks", "c
 
 mysystem("cd $chapeldir && make comprt", "making compiler", 1, 1);
 $ENV{'CHPL_HOME'} = $chapeldir;
-mysystem("$bindir/chpl --count-tokens $chapeldir/modules/standard/*.chpl $chapeldir/modules/internal/*.chpl $chapeldir/modules/distributions/*.chpl >& $compdir/chpcode.ntoks", "counting module tokens", 1, 1);
+mysystem("$bindir/chpl --count-tokens $chapeldir/modules/standard/*.chpl $chapeldir/modules/internal/*.chpl $chapeldir/modules/dists/*.chpl $chapeldir/modules/layouts/*.chpl >& $compdir/chpcode.ntoks", "counting module tokens", 1, 1);
 
 $asttoks = `cat $compdir/AST.ntoks`; chomp($asttoks);
 $adttoks = `cat $compdir/adt.ntoks`; chomp($adttoks);

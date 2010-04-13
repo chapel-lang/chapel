@@ -453,6 +453,7 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_ON_NB, "non-blocking on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);
+  prim_def(PRIM_BLOCK_UNLOCAL, "unlocal block", returnInfoVoid);
 
   prim_def(PRIM_BLOCK_ATOMIC, "atomic block", returnInfoVoid, 
 	   false, false, true);

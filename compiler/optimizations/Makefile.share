@@ -7,6 +7,7 @@ OPTIMIZATIONS_SRCS = \
 	inlineFunctions.cpp \
 	liveVariableAnalysis.cpp \
 	localizeGlobals.cpp \
+	optimizeOnClauses.cpp \
 	reachingDefinitionsAnalysis.cpp \
 	remoteValueForwarding.cpp \
 	removeUnnecessaryAutoCopyCalls.cpp \

@@ -8,9 +8,9 @@ var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales)
 //
 //   const ProblemDist = new Block1DDist(bbox=[1..10], targetLocales=myLocales);
 //
-//   const Dom1: domain(1) distributed(ProblemDist) = [0..11],
-//         Dom2: domain(1) distributed(ProblemDist) = [1..12],
-//         Dom3: domain(1) distributed(ProblemDist) = [-1..10];
+//   const Dom1: domain(1) dmapped(ProblemDist) = [0..11],
+//         Dom2: domain(1) dmapped(ProblemDist) = [1..12],
+//         Dom3: domain(1) dmapped(ProblemDist) = [-1..10];
 //
 // TODO: The following cast to int(64) is really unfortunate.  We
 // really need param domains and ranges and the obvious conversions

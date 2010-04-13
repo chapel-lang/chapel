@@ -33,11 +33,6 @@ config const numTrials = 10,
              epsilon = 0.0;
 
 //
-// The number of tasks to use per Chapel locale
-//
-config const tasksPerLocale = here.numCores;
-
-//
 // Configuration constants to indicate whether or not to use a
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
@@ -64,7 +59,7 @@ def main() {
   // is a 1D domain storing 64-bit ints and is distributed according
   // to Dist1D.  It contains the indices 1..m.
   //
-  const ProblemSpace: domain(1, idxType) distributed Dist1D = [1..m:idxType];
+  const ProblemSpace: domain(1, idxType) dmapped Dist1D = [1..m:idxType];
 
   //
   // A, B, and C are the three distributed vectors, declared to store
@@ -99,7 +94,7 @@ def main() {
 //
 def printConfiguration() {
   if (printParams) {
-    if (printStats) then printLocalesTasks(tasksPerLocale);
+    if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numVectors, m);
     writeln("Number of trials = ", numTrials, "\n");
   }

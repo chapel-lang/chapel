@@ -70,7 +70,7 @@ const           processToken(TCONST);
 continue        processToken(TCONTINUE);
 def             processToken(TDEF);
 delete          processToken(TDELETE);
-distributed     processToken(TDISTRIBUTED);
+dmapped         processToken(TDMAPPED);
 do              processToken(TDO);
 domain          processToken(TDOMAIN);
 else            processToken(TELSE);

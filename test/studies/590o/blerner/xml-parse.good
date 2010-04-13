@@ -46,3 +46,5 @@ Start and end tags disagree : 'n' <=> 'a'
 [1,27] = 
 [1-27] = ELEMENT(a)
 [4-15] = ELEMENT(ii)
+xml-parse.chpl:72: In function 'hasIndex':
+xml-parse.chpl:73: warning: parallel iteration over sparse domain has been serialized (see note in $CHPL_HOME/STATUS)

@@ -60,7 +60,7 @@ def main() {
   // BlockDist is a 1D block distribution that is computed by blocking
   // the bounding box 1..m across the set of locales
   //
-  //const BlockDist = new dist(new Block(rank=1,boundingBox=[1..m],tasksPerLocale=tasksPerLocale));
+  //const BlockDist = new dmap(new Block(rank=1,boundingBox=[1..m],tasksPerLocale=tasksPerLocale));
 
   //
   // ProblemSpace describes the index set for the three vectors.  It

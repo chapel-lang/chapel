@@ -1,3 +1,5 @@
+CMO_array.chpl:410: In function 'main':
+CMO_array.chpl:414: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
 A by columns
 1.0 2.0 3.0 4.0 5.0
 6.0 7.0 8.0 9.0 10.0

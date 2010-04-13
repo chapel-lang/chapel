@@ -778,6 +778,26 @@ foreach test ($testlist)
 
     pushd $basedir >& /dev/null
     echo " " |& $tee -a $logfile
+    echo "[Cleaning file $test]" |& $tee -a $logfile
+
+    if (-x ./Bin/sub_clean) then
+        set sub_clean = ./Bin/sub_clean
+    else
+        set sub_clean = $testdir/Bin/sub_clean
+    endif
+    echo "[Starting $sub_clean `date`]" |& $tee -a $logfile
+
+    $sub_clean |& $tee -a $logfile
+
+    popd >& /dev/null
+end
+
+foreach test ($testlist)
+    set basedir = `dirname $test`
+    set testname = `basename $test`
+
+    pushd $basedir >& /dev/null
+    echo " " |& $tee -a $logfile
     echo "[Working on file $test]" |& $tee -a $logfile
 
     if (-x ./sub_test) then
@@ -786,11 +806,6 @@ foreach test ($testlist)
         set sub_test = $gsub_test
     endif
 
-    if (-x ./Bin/sub_clean) then
-        set sub_clean = ./Bin/sub_clean
-    else
-        set sub_clean = $testdir/Bin/sub_clean
-    endif
     setenv COMPOPTS "$compopts"
     setenv EXECOPTS "$execopts"
     setenv NUMLOCALES "$numlocales"
@@ -798,7 +813,6 @@ foreach test ($testlist)
     setenv CHPL_ONETEST "$testname"
     echo "[Starting $sub_test `date`]" |& $tee -a $logfile
 
-    $sub_clean |& $tee -a $logfile
     $sub_test "$compiler" |& $tee -a $logfile
 
     unsetenv CHPL_ONETEST

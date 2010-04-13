@@ -143,7 +143,7 @@ class Cyclic1DDist {
   //
   // Determine which locale owns a particular index
   //
-  def ind2locInd(ind: glbIdxType) {
+  def idxToLocaleInd(ind: glbIdxType) {
     def mod(a, b) {
       if (a >= 0) then
         return a % b;
@@ -155,8 +155,8 @@ class Cyclic1DDist {
                numlocs) + targetLocDom.low):index(targetLocs.domain);
   }
 
-  def ind2loc(ind: glbIdxType) {
-    return targetLocs(ind2locInd(ind));
+  def idxToLocale(ind: glbIdxType) {
+    return targetLocs(idxToLocaleInd(ind));
   }
 }
 
@@ -460,7 +460,7 @@ class Cyclic1DArr {
   // the global accessor for the array
   //
   def this(i: glbIdxType) var {
-    return locArr(dom.dist.ind2locInd(i))(i);
+    return locArr(dom.dist.idxToLocaleInd(i))(i);
   }
 
   //

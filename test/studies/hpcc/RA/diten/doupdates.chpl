@@ -13,7 +13,7 @@ def doUpdates(A, nu) {
         t(i) = A(start+i-1);
       }
     }
-    on T.domain.dist.ind2loc(t(1) & indexMask) {
+    on T.domain.dist.idxToLocale(t(1) & indexMask) {
       var tt = t;
       local {
         for i in 1..nu {

@@ -1,4 +1,4 @@
-sparse.chpl:158: warning: reduction will be executed serially
+sparse.chpl:158: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
 Initially, spsDom is: [
 ]
 

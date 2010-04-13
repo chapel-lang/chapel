@@ -32,11 +32,6 @@ config const n = computeProblemSize(numVectors, elemType, returnLog2 = true);
 const m = 2**n;
 
 //
-// The number of tasks to use per Chapel locale in parallel loops
-//
-config const tasksPerLocale = here.numCores;
-
-//
 // Configuration constants defining the epsilon and threshold values
 // used to verify the result
 //
@@ -78,8 +73,8 @@ def main() {
   // to m/4-1 stored using the block distribution TwiddleDist.
   // Twiddles is the vector of twiddle values.
   //
-  const TwiddleDist = new dist(new Block(boundingBox=[0..m/4-1]));
-  const TwiddleDom: domain(1, idxType) distributed TwiddleDist = [0..m/4-1];
+  const TwiddleDist = new dmap(new Block(boundingBox=[0..m/4-1]));
+  const TwiddleDom: domain(1, idxType) dmapped TwiddleDist = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
   //
@@ -96,10 +91,8 @@ def main() {
   // z (used to store the input vector) and ZBlk (used for the first
   // half of the FFT phases).
   //
-  const BlkDist = new dist(new Block(boundingBox=ProblemSpace, 
-                                     maxDataParallelism=tasksPerLocale,
-                                     limitDataParallelism=false));
-  const BlkDom: domain(1, idxType) distributed BlkDist = ProblemSpace;
+  const BlkDist = new dmap(new Block(boundingBox=ProblemSpace)); 
+  const BlkDom: domain(1, idxType) dmapped BlkDist = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
   //
@@ -109,10 +102,8 @@ def main() {
   // to define the Zcyc vector, used for the second half of the FFT
   // phases.
   //
-  const CycDist = new dist(new Cyclic(1, idxType, 
-                                      maxDataParallelism=tasksPerLocale,
-                                      limitDataParallelism=false));
-  const CycDom: domain(1, idxType) distributed CycDist = ProblemSpace;
+  const CycDist = new dmap(new Cyclic(startIdx=0:idxType)); 
+  const CycDom: domain(1, idxType) dmapped CycDist = ProblemSpace;
   var Zcyc: [CycDom] elemType;
 
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
@@ -169,7 +160,7 @@ def dfft(A: [?ADom], W, cyclicPhase) {
       //       lo.. by str #num == lo, lo+str, lo+2*str, ... lo+(num-1)*str
       //
       forall lo in bankStart..#str do
-        on ADom.dist.ind2loc(lo) do
+        on ADom.dist.idxToLocale(lo) do
           local butterfly(wk1, wk2, wk3, A.localSlice(lo..by str #radix));
 
       //
@@ -184,7 +175,7 @@ def dfft(A: [?ADom], W, cyclicPhase) {
       // loop in parallel over the high bank, computing butterflies
       //
       forall lo in bankStart+span..#str do
-        on ADom.dist.ind2loc(lo) do
+        on ADom.dist.idxToLocale(lo) do
           local butterfly(wk1, wk2, wk3, A.localSlice(lo.. by str #radix));
     }
   }
@@ -200,7 +191,7 @@ def dfft(A: [?ADom], W, cyclicPhase) {
     //
     if (str*radix == numElements) {
       forall lo in 0..#str do
-        on ADom.dist.ind2loc(lo) do
+        on ADom.dist.idxToLocale(lo) do
           local butterfly(1.0, 1.0, 1.0, A.localSlice(lo.. by str # radix));
     }
     //
@@ -208,7 +199,7 @@ def dfft(A: [?ADom], W, cyclicPhase) {
     //
     else
       forall lo in 0..#str do
-        on ADom.dist.ind2loc(lo) do
+        on ADom.dist.idxToLocale(lo) do
           local {
             const a = A(lo),
                   b = A(lo+str);
@@ -257,7 +248,7 @@ def genDFTStrideSpan(numElements, cyclicPhase) {
 //
 def printConfiguration() {
   if (printParams) {
-    if (printStats) then printLocalesTasks(tasksPerLocale=tasksPerLocale);
+    if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numVectors, m);
   }
 }

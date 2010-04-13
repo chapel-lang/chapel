@@ -1,1 +1,1 @@
--q --maxThreads=255
+-q --maxThreadsPerLocale=255
