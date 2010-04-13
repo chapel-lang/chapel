@@ -331,9 +331,17 @@ def Block.targetLocsIdx(ind: rank*idxType) {
 }
 
 def Block.dsiCreateReindexDist(newSpace, oldSpace) {
+  def anyStridable(space, param i=1) param
+    return if i == space.size
+      then space(i).stridable
+      else space(i).stridable || anyStridable(space, i+1);
+
   // Should this error be in ChapelArray or not an error at all?
   if newSpace(1).eltType != oldSpace(1).eltType then
     compilerError("index type of reindex domain must match that of original domain");
+  if anyStridable(newSpace) || anyStridable(oldSpace) then
+    compilerWarning("reindexing stridable Block arrays is not yet fully supported");
+
   /* To shift the bounding box, we must perform the following operation for
    *  each dimension:
    *

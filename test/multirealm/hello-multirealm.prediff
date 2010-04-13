@@ -1,6 +1,6 @@
 #!/bin/sh
 export target=$1;
-export comm=`$CHPL_HOME/util/comm.pl`;
+export comm=`$CHPL_HOME/util/chplenv/comm`;
 if [[ $comm == 'none' ]]; then export target=$1.comm-$comm; fi
 cat $target.startgood > $1.good
 $CHPL_HOME/util/chplenv/platform --target | tr -d '\n' >> $1.good

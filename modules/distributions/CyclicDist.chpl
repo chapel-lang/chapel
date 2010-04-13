@@ -8,6 +8,13 @@ def _tupleOfZero(param size: int, type t) {
 config param debugCyclicDist = false;
 config param verboseCyclicDistWriters = false;
 
+//
+// If the testFastFollowerOptimization flag is set to true, the
+// follower will write output to indicate whether the fast follower is
+// used or not.  This is used in regression testing to ensure that the
+// 'fast follower' optimization is working.
+//
+config param testFastFollowerOptimization = false;
 
 class Cyclic: BaseDist {
   param rank: int = 1;
@@ -156,6 +163,14 @@ def Cyclic.dsiNewArithmeticDom(param rank: int, type idxType, param stridable: b
 } 
 
 def Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
+  def anyStridable(space, param i=1) param
+    return if i == space.size
+      then space(i).stridable
+      else space(i).stridable || anyStridable(space, i+1);
+
+  if anyStridable(newSpace) || anyStridable(oldSpace) then
+    compilerWarning("reindexing stridable Cyclic arrays is not yet fully supported");
+
   var newLow: rank*idxType;
   for param i in 1..rank {
     newLow(i) = newSpace(i).low - oldSpace(i).low + lowIdx(i);
@@ -701,6 +716,9 @@ def CyclicArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead.dist._value == this.dom.dist;
 
 def CyclicArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
+  if testFastFollowerOptimization then
+    writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
+
   var t: rank*range(eltType=idxType, stridable=true);
   for param i in 1..rank {
     const wholestride = dom.whole.dim(i).stride;
@@ -710,9 +728,8 @@ def CyclicArr.these(param tag: iterator, follower, param fast: bool = false) var
   const arrSection = locArr(dom.dist.ind2locInd(followThis.low));
   if fast {
     local {
-      for i in followThis {
-        yield arrSection.this(i);
-      }
+      for e in arrSection.myElems(followThis) do
+        yield e;
     }
   } else {
     def accessHelper(i) var {

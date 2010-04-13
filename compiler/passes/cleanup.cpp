@@ -38,10 +38,7 @@ static void normalize_nested_function_expressions(DefExpr* def) {
       (!strncmp("_seqloopexpr", def->sym->name, 12)) ||
       (!strncmp("_forallexpr", def->sym->name, 11)) ||
       (!strncmp("_forallinit", def->sym->name, 11)) ||
-      (!strncmp("_let_fn", def->sym->name, 7)) ||
-      (!strncmp("_if_fn", def->sym->name, 6)) ||
-      (!strncmp("_reduce_scan", def->sym->name, 12)) ||
-      (!strncmp("_forif_fn", def->sym->name, 9))) {
+      def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
     Expr* stmt = def->getStmtExpr();
     if (!stmt) {
       if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {

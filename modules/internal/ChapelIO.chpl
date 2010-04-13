@@ -502,3 +502,29 @@ def _getoutputformat(s: string):string {
   return("%" + sn + "." + dplaces + "f");
 }
 
+//
+// When this flag is used during compilation, calls to chpl__testPar
+// will output a message to indicate that a portion of the code has been
+// parallelized.
+//
+config param chpl__testParFlag = false;
+var chpl__testParOn = false;
+
+def chpl__testParStart() {
+  chpl__testParOn = true;
+}
+
+def chpl__testParStop() {
+  chpl__testParOn = false;
+}
+
+pragma "inline"
+def chpl__testPar(args...) where chpl__testParFlag == false { }
+
+def chpl__testPar(args...) where chpl__testParFlag == true {
+  if chpl__testParFlag && chpl__testParOn {
+    const file : string = __primitive("_get_user_file");
+    const line : int = __primitive("_get_user_line");
+    writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
+  }
+}

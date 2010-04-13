@@ -1,23 +1,14 @@
-def _scan(r, s) {
-  var i=1, size=4;
-  var D = [1..size];
-  var A: [D] r.eltType;
-  for e in s {
-    if i > size {
-      size = size * 2;
-      D = [1..size];
-    }
-    r.accumulate(e);
-    A(i) = r.generate();
-    i = i + 1;
+def chpl__scanIterator(op, data) {
+  for e in data {
+    op.accumulate(e);
+    yield op.generate();
   }
-  D = [1..i-1];
-  return A;
+  delete op;
 }
 
-def _sum_type(type eltType) {
+def chpl__sumType(type eltType) type {
   var x: eltType;
-  return x + x;
+  return (x + x).type;
 }
 
 class ReduceScanOp {
@@ -32,7 +23,7 @@ class ReduceScanOp {
 
 class SumReduceScanOp: ReduceScanOp {
   type eltType;
-  var value : _sum_type(eltType).type;
+  var value: chpl__sumType(eltType);
   def accumulate(x) {
     value = value + x;
   }

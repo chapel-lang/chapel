@@ -42,6 +42,7 @@ enum Flag {
   FLAG_COBEGIN_OR_COFORALL,
   FLAG_COBEGIN_OR_COFORALL_BLOCK,
   FLAG_COMMAND_LINE_SETTING,
+  FLAG_COMPILER_NESTED_FUNCTION,
   FLAG_CONCURRENTLY_ACCESSED, // local variables accessed by multiple threads
   FLAG_CONFIG, // config variable, constant, or parameter
   FLAG_CONST, // constant

@@ -177,7 +177,7 @@ def matrixMult(
 {
     C = 0;
 
-    forall (i,j,k) in [C.domain.dim(1), C.domain.dim(2), 1..p] {
+    for (i,j,k) in [C.domain.dim(1), C.domain.dim(2), 1..p] {
         C[i,j] += A[i,k] * B[k,j];
     }
 }

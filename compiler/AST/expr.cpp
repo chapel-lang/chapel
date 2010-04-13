@@ -2737,20 +2737,12 @@ Expr* getNextExpr(Expr* expr) {
 }
 
 static bool
-isFirstIdentifierChar(const char c) {
-  return ((c >= 'a' && c <= 'z') ||
-          (c >= 'A' && c <= 'Z') ||
-          (c == '$') ||
-          (c == '_'));
-}
-
-static bool
 isIdentifierChar(const char c) {
   return ((c >= 'a' && c <= 'z') ||
           (c >= 'A' && c <= 'Z') ||
           (c >= '0' && c <= '9') ||
           (c == '$') ||
-          (c == '_'));
+          (c == '_') || (c == '.'));
 }
 
 Expr*
@@ -2767,7 +2759,7 @@ new_Expr(const char* format, va_list vl) {
   Vec<Expr*> stack;
 
   for (int i = 0; format[i] != '\0'; i++) {
-    if (isFirstIdentifierChar(format[i])) {
+    if (isIdentifierChar(format[i])) {
       int n = 1;
       while (isIdentifierChar(format[i+n]))
         n++;
@@ -2806,6 +2798,8 @@ new_Expr(const char* format, va_list vl) {
       Expr* expr = stack.pop();
       INT_ASSERT(expr);
       stack.add(new CallExpr(expr));
+      if (format[i+1] == ')') // handle empty calls
+        i++;
     } else if (format[i] == ',') {
       Expr* expr = stack.pop();
       INT_ASSERT(expr);

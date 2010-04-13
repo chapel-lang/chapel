@@ -1310,7 +1310,10 @@ def chpl__dynamicFastFollowCheck(x, lead) {
 }
 
 def chpl__dynamicFastFollowCheck(x: [], lead) {
-  return x._value.dsiDynamicFastFollowCheck(lead);
+  if chpl__staticFastFollowCheck(x, lead) then
+    return x._value.dsiDynamicFastFollowCheck(lead);
+  else
+    return false;
 }
 
 pragma "inline"
