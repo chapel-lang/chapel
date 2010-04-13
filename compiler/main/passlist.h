@@ -43,6 +43,7 @@ PassInfo passlist[] = {
   RUN(copyPropagation),     // copy propagation
   RUN(deadCodeElimination), // eliminate dead code
   RUN(removeWrapRecords),   // remove _array and _domain records
+  RUN(removeEmptyRecords),  // remove empty records
   RUN(localizeGlobals),     // pull out global constants from loop runs
   RUN(prune),               // prune AST of dead functions and types again
 

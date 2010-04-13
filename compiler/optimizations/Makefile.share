@@ -10,6 +10,7 @@ OPTIMIZATIONS_SRCS = \
 	optimizeOnClauses.cpp \
 	reachingDefinitionsAnalysis.cpp \
 	remoteValueForwarding.cpp \
+	removeEmptyRecords.cpp \
 	removeUnnecessaryAutoCopyCalls.cpp \
 	removeUnnecessaryGotos.cpp \
 	removeWrapRecords.cpp \
