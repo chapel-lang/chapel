@@ -1,7 +1,9 @@
 
 CHPL = chpl
 
-CHPL_FLAGS = --fast
+VIVEKA_FLAGS = --ignore-atomic --savec gen_c
+
+CHPL_FLAGS = $(VIVEKA_FLAGS)
 
 TARGETS = \
 	stream \

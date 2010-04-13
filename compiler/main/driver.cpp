@@ -149,7 +149,7 @@ static void setupOrderedGlobals(void) {
   SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/compiler --target");
   SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
   SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
-  SETUP_ENV_VAR(CHPL_STM, "stm.pl");
+  SETUP_ENV_VAR(CHPL_STM, "chplenv/stm");
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");

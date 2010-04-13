@@ -39,11 +39,6 @@ const m = 2**n,
 config const errorTolerance = 1e-2;
 
 //
-// The number of tasks to use per Chapel locale
-//
-config const tasksPerLocale = here.numCores;
-
-//
 // Configuration constants to control what's printed -- benchmark
 // parameters, input and output arrays, and/or statistics
 //
@@ -58,12 +53,8 @@ config const printParams = true,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new dist(new Block(boundingBox=[0..m-1], 
-				     maxDataParallelism=tasksPerLocale,
-				     limitDataParallelism=false)),
-  UpdateDist = new dist(new Block(boundingBox=[0..N_U-1],
-				  maxDataParallelism=tasksPerLocale,
-				  limitDataParallelism=false));
+const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
+  UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1]));
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -73,8 +64,8 @@ const TableDist = new dist(new Block(boundingBox=[0..m-1],
 // It is distributed according to UpdateDist and contains the
 // indices 0..N_U-1.
 //
-const TableSpace: domain(1, indexType) distributed TableDist = [0..m-1],
-      Updates: domain(1, indexType) distributed UpdateDist = [0..N_U-1];
+const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
+      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
 
 //
 // T is the distributed table itself, storing a variable of type
@@ -102,17 +93,17 @@ def main() {
   //
   // The main computation: Iterate over the set of updates and the
   // stream of random values in a parallel, zippered manner, dropping
-  // the update index on the ground ("_") and storing the random value
+  // the update index on the ground and storing the random value
   // in r.  Use an on-clause to force the table update to be executed on
   // the locale which owns the table element in question to minimize
   // communications.  Compute the update using r both to compute the
   // index and as the update value.
   //
   forall ( , r) in (Updates, RAStream()) {
-    on T.domain.dist.ind2loc(r & indexMask) {
+    on TableDist.idxToLocale(r & indexMask) {
       const myR = r;
       local {
-	T(r & indexMask) ^= r;
+	atomic T(r & indexMask) ^= r;
       }
     }
   }
@@ -133,7 +124,7 @@ def main() {
 //
 def printConfiguration() {
   if (printParams) {
-    if (printStats) then printLocalesTasks(tasksPerLocale);
+    if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numTables, m);
     writeln("Number of updates = ", N_U, "\n");
   }
@@ -155,7 +146,7 @@ def verifyResults() {
   // atomic statement to ensure no conflicting updates
   //
   forall ( , r) in (Updates, RAStream()) { 
-    on T.domain.dist.ind2loc(r & indexMask) {
+    on TableDist.idxToLocale(r & indexMask) {
       var myR = r;
       local {
 	atomic T(r & indexMask) ^= myR;

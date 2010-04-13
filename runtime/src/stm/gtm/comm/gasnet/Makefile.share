@@ -11,15 +11,15 @@ SRCS = $(SVN_SRCS)
 STM_COMM_OBJS = \
 	$(STM_COMM_SRCS:%.c=$(STM_COMM_OBJDIR)/%.o)
 
-ifneq ($(MAKE_LAUNCHER), 1)
-ifneq ($(CHPL_MAKE_RULE),clean)
-ifneq ($(CHPL_MAKE_RULE),clobber)
--include $(GASNET_INC_MAKEFILE)
-endif
-endif
-# FIXME: fix warnings and remove -Wno-error
+#ifneq ($(MAKE_LAUNCHER), 1)
+#ifneq ($(CHPL_MAKE_RULE),clean)
+#ifneq ($(CHPL_MAKE_RULE),clobber)
+#-include $(GASNET_INC_MAKEFILE)
+#endif
+#endif
+## FIXME: fix warnings and remove -Wno-error
 GASNET_RUNTIME_CFLAGS = $(RUNTIME_CFLAGS) -Wno-error $(GASNET_CPPFLAGS) $(GASNET_CFLAGS) $(SUPPORT_SETENV_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
-endif
+#endif
 
 $(RUNTIME_OBJ_DIR)/stm-gtm-comm-gasnet.o: stm-gtm-comm-gasnet.c $(RUNTIME_OBJ_DIR_STAMP)
 	$(ENSURE_GASNET_COMPATIBLE_COMPILER) $(CC) -c $(GASNET_RUNTIME_CFLAGS) $(RUNTIME_INCLS) -o $@ $<

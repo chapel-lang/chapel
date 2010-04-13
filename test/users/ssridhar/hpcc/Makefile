@@ -34,49 +34,49 @@ all: $(TARGETS)
 clean: FORCE
 	rm -f $(TARGETS)
 
-ran: probSize.chpl ra-randstream-new.chpl ra.chpl
+ran: HPCCProblemSize.chpl RARandomStream-new.chpl ra.chpl
 	$(CHPL) -o $@ $(FLAGS) $^
 
-ral: probSize.chpl ra-randstream.chpl ra.chpl
+ral: HPCCProblemSize.chpl RARandomStream.chpl ra.chpl
 	$(CHPL) -o $@ $(LOCAL_FLAGS) $^
 
-ragtml: probSize.chpl ra-randstream.chpl ra.chpl
+ragtml: HPCCProblemSize.chpl RARandomStream.chpl ra.chpl
 	$(CHPL) -o $@ $(GTML_FLAGS) $^
 
-ra-lockl: probSize.chpl ra-randstream.chpl ra-lock.chpl
+ra-lockl: HPCCProblemSize.chpl RARandomStream.chpl ra-lock.chpl
 	$(CHPL) -o $@ $(LOCKL_FLAGS) $^ 
 
-ra-lockg: probSize.chpl ra-randstream.chpl ra-lock.chpl
+ra-lockg: HPCCProblemSize.chpl RARandomStream.chpl ra-lock.chpl
 	$(CHPL) -o $@ $(LOCKG_FLAGS) $^
 
-ra-lplg: probSize.chpl ra-randstream.chpl ra-lpl.chpl
+ra-lplg: HPCCProblemSize.chpl RARandomStream.chpl ra-lpl.chpl
 	$(CHPL) -o $@ $(FLAGS) $^
 
-ra-lpeg: probSize.chpl ra-randstream.chpl ra-lpe.chpl
+ra-lpeg: HPCCProblemSize.chpl RARandomStream.chpl ra-lpe.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec lpeg-ra $^
 
-ra-ladg: probSize.chpl ra-randstream.chpl ra-lad.chpl
+ra-ladg: HPCCProblemSize.chpl RARandomStream.chpl ra-lad.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec ladg-ra $^
 
-rag: probSize.chpl ra-randstream.chpl ra.chpl
+rag: HPCCProblemSize.chpl RARandomStream.chpl ra.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec g_ra $^
 
-ragia: probSize.chpl ra-randstream.chpl ra.chpl
+ragia: HPCCProblemSize.chpl RARandomStream.chpl ra.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec g_ra-ia --ignore-atomic $^
 
-ragtmg: probSize.chpl ra-randstream.chpl ragtm.chpl
+ragtmg: HPCCProblemSize.chpl RARandomStream.chpl ragtm.chpl
 	$(CHPL) -o $@ $(GTMG_FLAGS) $^
 
-ra-stm: probSize.chpl ra-randstream.chpl ChapelSTM.chpl ra-stm.chpl 
+ra-stm: HPCCProblemSize.chpl RARandomStream.chpl ChapelSTM.chpl ra-stm.chpl 
 	$(CHPL) -o $@ $(FLAGS) --savec stm_ra $^
 
-ra-atomic: probSize.chpl ra-randstream.chpl ChapelSTM.chpl ra-atomic.chpl
+ra-atomic: HPCCProblemSize.chpl RARandomStream.chpl ChapelSTM.chpl ra-atomic.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec atomic_ra $^
 
-ra-mutexg: probSize.chpl ra-randstream.chpl ChapelLock.chpl lock.h ra-mutex.chpl
+ra-mutexg: HPCCProblemSize.chpl RARandomStream.chpl ChapelLock.chpl lock.h ra-mutex.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec mutex_ra $^ 
 
-ra-mplg: probSize.chpl ra-randstream.chpl ChapelLock.chpl lock.h ra-mpl.chpl
+ra-mplg: HPCCProblemSize.chpl RARandomStream.chpl ChapelLock.chpl lock.h ra-mpl.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec mpl_ra $^
 
 FORCE:

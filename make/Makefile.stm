@@ -3,7 +3,6 @@
 #
 #
 #
-
-CHPL_MAKE_STM = $(shell $(CHAPEL_ROOT)/util/stm.pl $(CHPL_MAKE_HOST_TARGET))
-LIBATOMIC_INSTALL_DIR = $(shell $(CHAPEL_ROOT)/util/libatomics.pl)
+CHPL_MAKE_STM := $(shell $(CHAPEL_ROOT)/util/chplenv/stm)
+LIBATOMIC_INSTALL_DIR := $(shell $(CHAPEL_ROOT)/util/chplenv/libatomics)
 
