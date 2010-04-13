@@ -157,7 +157,8 @@ int gtm_tx_load(chpl_stm_tx_t* tx, void* dstaddr, void* srcaddr, size_t size) {
 
   if ((mask  = (gtm_word_t) srcaddr & (GTMWORDSIZE - 1)) != 0) {
     saddr = (gtm_word_p) ((gtm_word_t) srcaddr & ~(gtm_word_t) (GTMWORDSIZE - 1));
-    gtm_tx_load_word(tx, &sval.w, saddr); 
+    if (gtm_tx_load_word(tx, &sval.w, saddr))
+      return TX_FAIL; 
     dbyteaddr = (uint8_t*) dstaddr;
     for (; mask < sizeof(gtm_word_t) && size > 0; mask++, size--)
       *dbyteaddr++ = sval.b[mask];
@@ -169,12 +170,14 @@ int gtm_tx_load(chpl_stm_tx_t* tx, void* dstaddr, void* srcaddr, size_t size) {
   }
 
   while (size >= GTMWORDSIZE) { 
-    gtm_tx_load_word(tx, daddr++, saddr++);
+    if (gtm_tx_load_word(tx, daddr++, saddr++) == TX_FAIL) 
+      return TX_FAIL;
     size -= GTMWORDSIZE;
   }
 
   if (size > 0) {
-    gtm_tx_load_word(tx, &sval.w, saddr); 
+    if (gtm_tx_load_word(tx, &sval.w, saddr)) 
+      return TX_FAIL; 
     dbyteaddr = (uint8_t*) daddr;
     for (mask = 0; size > 0; mask++, size--)
       *dbyteaddr++ = sval.b[mask];
