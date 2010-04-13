@@ -11,18 +11,18 @@ TARGETS = \
 
 REALS = $(TARGETS:%=%_real)
 
-default: all tutorials programs hpcc 
+default: all primers programs hpcc 
 
 all: $(TARGETS)
 
 clean: FORCE
 	rm -f $(TARGETS) $(REALS)
-	cd tutorials && $(MAKE) clean
+	cd primers && $(MAKE) clean
 	cd programs && $(MAKE) clean
 	cd hpcc && $(MAKE) clean
 
-tutorials: FORCE
-	cd tutorials && $(MAKE) all
+primers: FORCE
+	cd primers && $(MAKE) all
 
 programs: FORCE
 	cd programs && $(MAKE) all

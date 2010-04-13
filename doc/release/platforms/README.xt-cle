@@ -1,16 +1,16 @@
-=========================
-Using Chapel on a Cray XT
-=========================
+==============================
+Using Chapel on a Cray XT (TM)
+==============================
 
 The following information is assembled to help users get up and
 running on multiple nodes of a Cray XT running the Cray Linux
-Environment (CLE).  If you are not familiar with Chapel, it is
+Environment (TM) (CLE).  If you are not familiar with Chapel, it is
 recommended that you try the instructions in the top-level README
 first to get started with the language.
 
-If you are an XT user on an NCCS machine, please see the special notes
-at the bottom of this file.  If you have any troubles, please let us
-know at chapel_info@cray.com.
+If you are a Cray XT user on an NCCS machine, please see the special
+notes at the bottom of this file.  If you have any troubles, please
+let us know at chapel_info@cray.com.
 
 
 1) Set CHPL_HOME and MANPATH as usual.  See README.chplenv for
@@ -27,9 +27,9 @@ know at chapel_info@cray.com.
    multiple locales and GASNet.
 
 
-3) If your XT requires PBS/qsub to launch jobs onto the compute nodes
-   (or you simply want to use it as your job launch mechanism), set
-   CHPL_LAUNCHER to 'pbs-aprun'.  For example:
+3) If your Cray XT requires PBS/qsub to launch jobs onto the compute
+   nodes (or you simply want to use it as your job launch mechanism),
+   set CHPL_LAUNCHER to 'pbs-aprun'.  For example:
 
      setenv CHPL_LAUNCHER pbs-aprun
 
@@ -40,10 +40,10 @@ know at chapel_info@cray.com.
    launcher capabilities.
 
 
-4) If your XT has compute nodes with varying numbers of cores, you
-   will need to select a number of cores per node using the variable
-   CHPL_LAUNCHER_CORES_PER_LOCALE.  For example, to use quad-core
-   nodes, you might use:
+4) If your Cray XT has compute nodes with varying numbers of cores,
+   you will need to select a number of cores per node using the
+   variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For example, to use
+   quad-core nodes, you might use:
 
      setenv CHPL_LAUNCHER_CORES_PER_LOCALE 4
 
@@ -101,13 +101,11 @@ know at chapel_info@cray.com.
       chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
 
 
-11) When you compile a Chapel program for the XT, you should see two
-    binaries (e.g., hello-multiloc and hello-multiloc_real).  The first
-    binary contains code to launch the Chapel program onto the compute
-    nodes, as specified by your CHPL_LAUNCHER setting.  The second
-    contains the program code itself.  You can use the -v flag to see
-    the commands used to launch your program.  See README.launcher for
-    further details.
+11) When you compile a Chapel program for the Cray XT, you should see
+    two binaries (e.g., hello-multiloc and hello-multiloc_real).  The
+    first binary contains code to launch the Chapel program onto the
+    compute nodes, as specified by your CHPL_LAUNCHER setting.  The
+    second contains the program code itself.
 
 
 12) Multi-locale executions require the number of locales to be
@@ -116,21 +114,24 @@ know at chapel_info@cray.com.
 
       ./hello-multiloc -nl 2
 
+   You can use the -v flag to see the commands used to launch your
+   program.  See README.launcher for further details.
 
-------------------------------------
-XT File Systems and Chapel execution
-------------------------------------
+
+-----------------------------------------
+Cray XT File Systems and Chapel execution
+-----------------------------------------
 
 * For best results, it is recommended that you execute your Chapel
-  program on a Lustre file system for the XT, as this will provide the
-  greatest amount of transparency between the login nodes and compute
-  nodes.  In some cases, running a Chapel program from a non-Lustre
-  file system will make it impossible to launch onto the compute
-  nodes.  In other cases, the launch will succeed, but any files read
-  or written by the Chapel program will opened relative to the compute
-  node's file system rather than the login node's.  To avoid wrestling
-  with such issues, we recommend executing Chapel programs from a
-  Lustre file system directory.
+  program on a Lustre file system for the Cray XT, as this will
+  provide the greatest amount of transparency between the login nodes
+  and compute nodes.  In some cases, running a Chapel program from a
+  non-Lustre file system will make it impossible to launch onto the
+  compute nodes.  In other cases, the launch will succeed, but any
+  files read or written by the Chapel program will opened relative to
+  the compute node's file system rather than the login node's.  To
+  avoid wrestling with such issues, we recommend executing Chapel
+  programs from a Lustre file system directory.
 
 
 --------------------------
@@ -138,7 +139,7 @@ Memory limits using GASNet
 --------------------------
 
 * The amount of memory that is available to a Chapel program running
-  over GASNet+portals on the XT is constrained by an environment
+  over GASNet+portals on the Cray XT is constrained by an environment
   variable named GASNET_MAX_SEGSIZE.  If the user has not set this
   variable, we heuristically set it for each compute node to be 90% of
   the MemTotal value reported by /proc/meminfo.  If GASNET_MAX_SEGSIZE
@@ -168,9 +169,9 @@ Memory limits using GASNet
 NCCS user notes
 ---------------
 
-* NCCS XT machines use a different qsub mechanism in order to enforce
-  their queuing policies.  We have attempted to make our pbs-aprun
-  launch code work with this version of qsub, but require a
+* NCCS Cray XT machines use a different qsub mechanism in order to
+  enforce their queuing policies.  We have attempted to make our
+  pbs-aprun launch code work with this version of qsub, but require a
   CHPL_LAUNCHER_ACCOUNT environment variable to be set to specify your
   NCCS account name.  For example:
 

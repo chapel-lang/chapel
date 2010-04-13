@@ -47,7 +47,15 @@ class DefaultSparseDom: BaseSparseDom {
 
   def these(param tag: iterator, follower: DefaultSparseDom) where tag == iterator.follower {
     if (follower != this) then
-      halt("Sparse domains can't be zippered with anything other than themselves");
+      halt("Sparse domains can't be zippered with anything other than themselves and their arrays");
+
+    for i in 1..nnz do
+      yield indices(i);
+  }
+
+  def these(param tag: iterator, follower: DefaultSparseArr) where tag == iterator.follower {
+    if (follower.dom != this) then
+      halt("Sparse domains can't be zippered with anything other than themselves and their arrays");
 
     for i in 1..nnz do
       yield indices(i);
@@ -232,9 +240,16 @@ class DefaultSparseArr: BaseArr {
     yield this;
   }
 
+  def these(param tag: iterator, follower: DefaultSparseDom) var where tag == iterator.follower {
+    if (follower != this.dom) then
+      halt("Sparse arrays can't be zippered with anything other than their domains and sibling arrays");
+
+    for e in data[1..dom.nnz] do yield e;
+  }
+
   def these(param tag: iterator, follower: DefaultSparseArr) var where tag == iterator.follower {
-    if (follower != this) then
-      halt("Sparse domains can't be zippered with anything other than themselves");
+    if (follower.dom != this.dom) then
+      halt("Sparse arrays can't be zippered with anything other than their domains and siblings arrays");
 
     for e in data[1..dom.nnz] do yield e;
   }

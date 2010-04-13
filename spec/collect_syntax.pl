@@ -9,12 +9,14 @@ foreach $tex (@texs) {
     $readSyntax = 0;
     $rule = "";
     @lines = `cat $tex`;
+    $linenumber = 0;
     foreach $line (@lines) {
+        $linenumber += 1;
         if ($line =~ /^\\begin\{syntax\}/) {
-            die "unmatched begin of syntax block" if ($readSyntax == 1);
+            die "$tex:$linenumber: unmatched begin of syntax block" if ($readSyntax == 1);
             $readSyntax = 1;
         } elsif ($line =~ /^\\end\{syntax\}/) {
-            die "unmatched end of syntax block" if ($readSyntax == 0);
+            die "$tex:$linenumber: unmatched end of syntax block" if ($readSyntax == 0);
             $readSyntax = 0;
             if ($tex eq "Lexical_Structure.tex") {
                 $lexes{$i++} = $rule;

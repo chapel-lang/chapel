@@ -142,20 +142,34 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }
 
   def these(param tag: iterator, follower) where tag == iterator.follower {
+    def anyStridable(rangeTuple, param i: int = 1) param
+      return if i == rangeTuple.size then rangeTuple(i).stridable
+             else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
+
     chpl__testPar("default arithmetic domain follower invoked on ", follower);
     if debugDefaultDist then
       writeln("In domain follower code: Following ", follower);
-    var block: ranges.type;
+    param stridable = this.stridable || anyStridable(follower);
+    var block: rank*range(stridable=stridable, eltType=idxType);
     if stridable {
-      for param i in 1..rank do
-        block(i) =
-          if ranges(i).stride > 0 then
-            ranges(i).low+follower(i).low*ranges(i).stride:ranges(i).eltType..ranges(i).low+follower(i).high*ranges(i).stride:ranges(i).eltType by ranges(i).stride
-          else
-            ranges(i).high+follower(i).high*ranges(i).stride:ranges(i).eltType..ranges(i).high+follower(i).low*ranges(i).stride:ranges(i).eltType by ranges(i).stride;
+      for param i in 1..rank {
+        const rStride = ranges(i).stride:idxType,
+              fStride = follower(i).stride:idxType;
+        if ranges(i).stride > 0 {
+          const low = ranges(i).low + follower(i).low*rStride,
+                high = ranges(i).low + follower(i).high*rStride,
+                stride = (rStride * fStride):int;
+          block(i) = low..high by stride;
+        } else {
+          const low = ranges(i).high + follower(i).high*rStride,
+                high = ranges(i).high + follower(i).low*rStride,
+                stride = (rStride * fStride): int;
+          block(i) = low..high by stride;
+        }
+      }
     } else {
       for  param i in 1..rank do
-        block(i) = ranges(i).low+follower(i).low:ranges(i).eltType..ranges(i).low+follower(i).high:ranges(i).eltType;
+        block(i) = ranges(i).low+follower(i).low:idxType..ranges(i).low+follower(i).high:idxType;
     }
     if rank == 1 {
       for i in block do

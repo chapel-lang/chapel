@@ -1,4 +1,6 @@
 \documentclass[10pt,twoside,titlepage]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{color}
 \usepackage{times}
 \usepackage{fullpage}
@@ -6,6 +8,7 @@
 \usepackage{listings}
 \usepackage{longtable}
 \usepackage[nottoc]{tocbibind}
+\usepackage{multirow}
 \input{chapel_testing}
 \input{chapel_listing}
 \input{syntax_listing}
@@ -102,7 +105,7 @@
 \textheight 8.5in
 
 \makeindex
-\title{Chapel Language Specification 0.785\\\large~\\\large October 8, 2009}
+\title{Chapel Language Specification 0.795\\\large~\\\large April 15, 2010}
 
 \author{Cray Inc\\
 901 Fifth Avenue, Suite 1000\\
@@ -179,31 +182,33 @@ Seattle, WA 98164}
 \cleardoublepage
 \input{Ranges}
 \cleardoublepage
-\input{Domains_and_Arrays}
+\input{Domains}
+\cleardoublepage
+\input{Arrays}
 \cleardoublepage
 \input{Iterators}
 \cleardoublepage
 \input{Generics}
 \cleardoublepage
+\input{Input_and_Output}
+\cleardoublepage
 \input{Task_Parallelism_and_Synchronization}
 \cleardoublepage
 \input{Data_Parallelism}
-\cleardoublepage
-\input{User_Defined_Reductions_and_Scans}
 \cleardoublepage
 \input{Locales}
 \cleardoublepage
 \input{Domain_Maps}
 \cleardoublepage
+\input{User_Defined_Reductions_and_Scans}
+\cleardoublepage
 \input{User_Defined_Domain_Maps}
 \cleardoublepage
-\input{Input_and_Output}
+\input{Standard_Modules}
 \cleardoublepage
 \input{Standard_Distributions}
 \cleardoublepage
 \input{Standard_Layouts}
-\cleardoublepage
-\input{Standard_Modules}
 \cleardoublepage
 \appendix
 \input{Syntax}

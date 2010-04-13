@@ -28,6 +28,8 @@ contain.
     vim/            : vim mode for Chapel
   examples/         : example Chapel codes
     hpcc/           : source code for HPC Challenge benchmarks
+    primers/        : examples designed to teach about Chapel features
+    programs/       : simple parallel programs
   lib/              : stores the runtime and launcher libraries, once built:
     $CHPL_TARGET_PLATFORM/
       $CHPL_TARGET_COMPILER/

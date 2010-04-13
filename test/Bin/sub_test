@@ -189,6 +189,13 @@ def KillProc(p, timeout):
     subprocess.Popen(['kill','-9', str(p.pid)])
     return
 
+# clean up after the test has been built
+def cleanup(execname):
+    if os.path.isfile(execname):
+        os.unlink(execname)
+    if os.path.isfile(execname+'_real'):
+        os.unlink(execname+'_real')
+    return
 
 #
 # Start of sub_test proper
@@ -632,6 +639,7 @@ for testname in testsrc:
                 if len(compoptslist) > 1:
                     sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
                 sys.stdout.write(']\n')
+                cleanup(execname)
                 continue # on to next compopts
             
         else:
@@ -648,6 +656,7 @@ for testname in testsrc:
                     sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
                 sys.stdout.write(']\n')
                 KillProc(p, killtimeout)
+                cleanup(execname)
                 continue # on to next compopts
 
             status = p.returncode
@@ -700,6 +709,7 @@ for testname in testsrc:
                 sys.stdout.write('[Error cannot locate compiler output comparison file %s]\n'%(checkfile))
                 sys.stdout.write('[Compiler output was as follows:]\n')
                 sys.stdout.write(origoutput)
+                cleanup(execname)
                 continue # on to next compopts
 
             result = DiffFiles(checkfile, complog)
@@ -714,6 +724,7 @@ for testname in testsrc:
                 sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
             sys.stdout.write(']\n')
 
+            cleanup(execname)
             continue # on to next compopts
         else:
             compoutput = output # save for diff
@@ -726,6 +737,7 @@ for testname in testsrc:
 
         if os.getenv('CHPL_COMPONLY'):
             sys.stdout.write('[Note: Not executing or comparing the output due to -noexec flags]\n')
+            cleanup(execname)
             continue # on to next compopts
 
         if os.access(execname+'.stdin', os.R_OK):
@@ -861,7 +873,8 @@ for testname in testsrc:
                 sys.stdout.flush()
                 sys.stdout.write(subprocess.Popen(['./PREDIFF',
                                                    execname,execlog,compiler,
-                                                   ' '.join(globalCompopts)+compopts,
+                                                   ' '.join(globalCompopts)+
+                                                   ' '+compopts,
                                                    ' '.join(args)],
                                                   stdout=subprocess.PIPE).
                                  communicate()[0])
@@ -871,7 +884,8 @@ for testname in testsrc:
                 sys.stdout.flush()
                 sys.stdout.write(subprocess.Popen(['./'+execname+'.prediff',
                                                    execname,execlog,compiler,
-                                                   ' '.join(globalCompopts)+compopts,
+                                                   ' '.join(globalCompopts)+
+                                                   ' '+compopts,
                                                    ' '.join(args)],
                                                   stdout=subprocess.PIPE).
                                  communicate()[0])
@@ -951,10 +965,7 @@ for testname in testsrc:
                                       compoptsnum, execoptsnum))
                 sys.stdout.write(']\n')
 
-        if os.path.isfile(execname):
-            os.unlink(execname)
-        if os.path.isfile(execname+'_real'):
-            os.unlink(execname+'_real')
+        cleanup(execname)
 
     del execoptslist
     del compoptslist

@@ -13,13 +13,18 @@ The directory structure of the runtime/ directory is as follows:
 ./
   Makefile          : Makefile for the runtime
   README            : this file
-  comm-gasnet/      : source code for GASNet communication layer
-  comm-none/        : source code for no communication layer (1 locale only)
   etc/              : Makefiles for compiler-generated code
   include/          : header files for the runtime
+    comm/           : header files for the runtime's communication layers
     tasks/          : header files for the runtime's tasking layers
     threads/        : header files for the runtime's threading layers
   make/             : Makefiles for the runtime sources
   src/              : source code for the runtime
+    comm/           : source code for the runtime's communication layers
+    common-chpl/    : Chapel source code for the runtime
+    launch/         : source code for Chapel program launchers
+    mem/            : source code for memory allocators
     tasks/          : source code for the runtime's tasking layers
     threads/        : source code for the runtime's threading layers
+    timers/         : source code for timers
+

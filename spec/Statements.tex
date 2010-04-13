@@ -21,6 +21,9 @@ statement:
   break-statement
   continue-statement
   param-for-statement
+  use-statement
+  type-select-statement
+  empty-statement
   return-statement
   yield-statement
   module-declaration-statement
@@ -29,30 +32,28 @@ statement:
   type-declaration-statement
   variable-declaration-statement
   remote-variable-declaration-statement
-  use-statement
-  type-select-statement
-  empty-statement
-  parallel-statement
   on-statement
+  cobegin-statement
+  coforall-statement
+  begin-statement
+  sync-statement
+  serial-statement
+  atomic-statement
+  forall-statement
 \end{syntax}
 
-The declaration statements are discussed in the sections that define
-what they declare.  Module declaration statements are defined
-in~\rsec{Modules}.  Function declaration statements are defined
-in~\rsec{Functions}.  Method declaration statements are defined
-in~\rsec{Class_Methods}.  Type declaration statements are defined
-in~\rsec{Types}.  Variable declaration statements are defined
-in~\rsec{Variables}.  Remote variable declaration statements are
-defined in~\rsec{remote_variable_declarations}.  Tuple variable
-declaration statements are defined
-in~\rsec{Variable_Declarations_in_a_Tuple}.  Return statements are
-defined in~\rsec{The_Return_Statement}.  Yield statements are defined
-in~\rsec{The_Yield_Statement}.  The \sntx{parallel-statement} consists
-of statements that create or limit parallelism.  These statements are
-described in~\rsec{Task_Parallelism_and_Synchronization}
-and~\rsec{Data_Parallelism}.  The \sntx{on-statement} is defined
-in~\rsec{On}.  The compiler error statement is defined
-in~\rsec{User_Defined_Compiler_Errors}.
+Return statements are defined in~\rsec{The_Return_Statement}.  Yield
+statements are defined in~\rsec{The_Yield_Statement}.  Module
+declaration statements are defined in~\rsec{Modules}.  Function
+declaration statements are defined in~\rsec{Functions}.  Method
+declaration statements are defined in~\rsec{Class_Methods}.  Type
+declaration statements are defined in~\rsec{Types}.  Variable
+declaration statements are defined in~\rsec{Variables}.  Remote
+variable declaration statements are defined
+in~\rsec{remote_variable_declarations}.  On statements are defined
+in~\rsec{On}.  Cobegin, coforall, begin, sync, serial and atomic
+statements are defined in~\rsec{Task_Parallelism_and_Synchronization}.
+Forall statements are defined in~\rsec{Data_Parallelism}.
 
 \subsection{Blocks}
 \label{Blocks}
@@ -324,31 +325,27 @@ class that implements an iterator named \chpl{these}.  The syntax of
 the for loop is given by:
 \begin{syntax}
 for-statement:
-  `for' loop-control-part loop-body-part
+  `for' index-var-declaration `in' iterator-expression `do' statement
+  `for' index-var-declaration `in' iterator-expression block-statement
+  `for' iterator-expression `do' statement
+  `for' iterator-expression block-statement
 
-loop-control-part:
-  index-expression `in' iterator-expression
-  iterator-expression
-
-loop-body-part:
-  `do' statement
-  block-statement
-
-index-expression:
-  expression
+index-var-declaration:
+  identifier
+  tuple-grouped-identifier-list
 
 iterator-expression:
   expression
 \end{syntax}
 
-The index-expression declares new variables for the scope of the loop.
-It may specify a new identifier.  Alternatively, the index-expression
-may specify multiple identifiers grouped using a tuple notation in
-order to destructure the values returned by the iterator expression,
-as described in~\rsec{Indices_in_a_Tuple}.
+The \sntx{index-var-declaration} declares new variables for the scope
+of the loop.  It may specify a new identifier or may specify multiple
+identifiers grouped using a tuple notation in order to destructure the
+values returned by the iterator expression, as described
+in~\rsec{Indices_in_a_Tuple}.
 
-The index-expression is optional and may be omitted if the indices do
-not need to be referenced in the loop.
+The \sntx{index-var-declaration} is optional and may be omitted if the
+indices do not need to be referenced in the loop.
 
 If the iterator-expression is a tuple delimited by parentheses, the
 components of the tuple must support iteration, e.g., a tuple of
@@ -382,7 +379,7 @@ is ``1 4 2 5 3 6 ''.
 
 \subsubsection{Tensor Product Iteration}
 \label{Tensor_Product_Iteration}
-\index{tensor product iterator}
+\index{tensor product iteration}
 When multiple iterators are iterated over in a tensor product context,
 they are iterated over as if they were nested in distinct for loops.
 There is no constraint on the iterators as there is in the zipper

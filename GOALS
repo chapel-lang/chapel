@@ -1,6 +1,6 @@
-===================================
-Chapel Public Release (v1.02) Goals
-===================================
+==================================
+Chapel Public Release (v1.1) Goals
+==================================
 
 The goals of this release are as follows:
 
@@ -10,18 +10,19 @@ The goals of this release are as follows:
   multi-locale setting
 
 * to demonstrate Chapel's data parallel features via a combination of
-  (i)   a multi-threaded, single-locale implementation for ranges, and
-        non-distributed arithmetic domains and arrays;
-  (ii)  a single-threaded, single-locale reference implementation for
-        sparse, associative, and opaque domains and arrays; and
-  (iii) a preliminary multi-threaded, multi-locale implementation for
-        distributed arithmetic domains and arrays
 
-* to provide an initial prototype of Chapel's support for multirealm
-  computation, supporting heterogeneous, loosely-coupled architectures
+  (i) a multi-threaded implementation of ranges and non-distributed
+      arithmetic domains and arrays;
+
+  (ii) a multi-threaded, multi-locale implementation of arithmetic
+       domains and arrays via standard Block and Cyclic distributions;
+
+  (iii) a single-threaded, non-distributed reference implementation
+        for sparse, associative, and opaque domains and arrays.
 
 * to give the general public an opportunity to see the state and
   evolution of the Chapel implementation first-hand
 
 * to get feedback on the Chapel language and its ongoing
   implementation (please direct to chapel_info@cray.com)
+

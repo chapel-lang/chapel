@@ -731,10 +731,10 @@ def CyclicArr.dsiStaticFastFollowCheck(type leadType) param
   return leadType == this.type || leadType == this.dom.type;
 
 def CyclicArr.dsiDynamicFastFollowCheck(lead: [])
-  return lead.domain.dist._value == this.dom.dist;
+  return lead.domain._value == this.dom;
 
 def CyclicArr.dsiDynamicFastFollowCheck(lead: domain)
-  return lead.dist._value == this.dom.dist;
+  return lead._value == this.dom;
 
 def CyclicArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
   if testFastFollowerOptimization then

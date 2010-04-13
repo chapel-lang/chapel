@@ -15,13 +15,6 @@ this locale, and any tasks running on this locale.  The
 term \emph{remote} will be used to describe another locale, the data
 on another locale, and the tasks running on another locale.
 
-Although data of any type can be associated with locales, the {\em
-distribution} construct supports partitioning the indices of domains
-and the elements of arrays across a set of locales.  In addition to
-defining how such data partitioning is done, distributions define the
-implementation of data parallelism across the set of locales including
-the placement of tasks.
-
 \subsection{Locales}
 \index{locales}
 
@@ -209,45 +202,9 @@ in~\rsec{Querying_the_Locale_of_a_Variable}.  Execution of the
 statement occurs on this specified locale and then continues after
 the \chpl{on-statement}.
 
-The following statements may not be lexically enclosed in
-on-statements: yield-statements and return-statements.
-
-\begin{openissue}
-It may be worthwhile to allow yields in on-statments such that when a
-loop iterates over an iterator, on-statements inside the iterator
-control where the corresponding loop body is executed.  For example,
-an iterator over a distributed tree might include an iterator over the
-nodes as defined in the following code:
-\begin{chapel}
-class Tree {
-  var left, right: Tree;
-  def nodes {
-    on this do yield this;
-    if left then
-      for t in left.nodes do
-        yield t;
-    if right then
-      for t in right.nodes do
-        yield t;
-  }
-}
-\end{chapel}
-Given this code and a binary tree of type \chpl{Tree} stored in
-variable \chpl{tree}, then we can use the \chpl{nodes} iterator to
-iterate over the tree with the following code:
-\begin{chapel}
-for t in tree.nodes {
-  // body executed on t as specified in nodes
-}
-\end{chapel}
-Here, each instance of the body of the \chpl{forall} loop is executed
-on the locale where the corresponding object \chpl{t} is located.
-This is specified in the \chpl{nodes} iterator where the \chpl{on}
-keyword is used.  In the case of zipper or tensor product iteration,
-the location of execution is taken from the first iterator.  This can
-be overridden by explicitly using \chpl{on} in the body of the loop or
-by reordering the product of iteration.
-\end{openissue}
+Return statements may not be lexically enclosed in on statements.
+Yield statement may only be lexically enclosed in on statements in
+parallel iterators~\rsec{Parallel_Iterators}.
 
 \subsubsection{Remote Variable Declarations}
 \label{remote_variable_declarations}
@@ -263,4 +220,3 @@ by:
 remote-variable-declaration-statement:
   `on' expression variable-declaration-statement
 \end{syntax}
-

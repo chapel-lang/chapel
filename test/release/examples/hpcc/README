@@ -2,12 +2,10 @@
 Chapel HPC Challenge Codes
 ==========================
 
-This directory contains Chapel versions of three HPC Challenge
+This directory contains Chapel versions of the HPC Challenge
 benchmarks (http://icl.cs.utk.edu/hpcc/) and a Makefile to help build
-them.  These codes were the basis for our 2008 HPC Challenge
-submission for class 2 ("most productivity").  For a detailed
-explanation of these benchmarks, please refer to the hpccOverview.pdf
-and hpccTutorial.pdf papers in the doc/ directory.
+them.  For a detailed explanation of these benchmarks, please visit
+the Chapel web site at http://chapel.cray.com.
 
 The main files for these benchmarks are as follows:
 

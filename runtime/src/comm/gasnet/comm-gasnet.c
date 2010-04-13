@@ -352,13 +352,18 @@ void chpl_comm_barrier(const char *msg) {
 
 static void chpl_comm_exit_common(int status) {
   int* ack = &done;
+  static int loopback = 0;
 
   if (chpl_localeID == 0) {
     GASNET_Safe(gasnet_AMRequestMedium0(chpl_localeID,
                                         SIGNAL,
                                         &ack,
                                         sizeof(ack)));
+    if (loopback) {
+      gasnet_exit(2);
+    }
     if ( pthread_join(polling_thread, NULL ) ) { // cleanup 
+      loopback = 1;
       chpl_internal_error("Polling thread join failed.");
     } 
   }
@@ -377,13 +382,18 @@ void chpl_comm_exit_any_dirty(int status) {
   // clean up nothing; just ask GASNet to exit
   // GASNet will then kill all other locales.
   int* ack = &done;
+  static int loopback = 0;
 
   if (chpl_localeID == 0) {
     GASNET_Safe(gasnet_AMRequestMedium0(chpl_localeID,
                                         SIGNAL,
                                         &ack,
                                         sizeof(ack)));
+    if (loopback) {
+      gasnet_exit(2);
+    }
     if ( pthread_join(polling_thread, NULL ) ) { // cleanup 
+      loopback = 1;
       chpl_internal_error("Polling thread join failed.");
     } 
   }

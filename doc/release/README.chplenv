@@ -7,7 +7,7 @@ are strongly recommended for effective use of the release, and a few
 other optional settings that are useful for cross-compiling or
 overriding the default settings.  To check the values of the Chapel
 environment variables that were set and inferred, run the script:
-$CHPL_HOME/util/printchplenv.pl
+$CHPL_HOME/util/printchplenv
 
 
 --------------------
@@ -29,19 +29,20 @@ Recommended Settings
         setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/chplenv/platform`
 
    For other platforms that appear very similar to a UNIX workstation
-   from the shell prompt (e.g., a Cray XT or CX1), the value may need
-   to be set explicitly.  The strings for our currently-supported host
-   platforms are as follows:
+   from the shell prompt (e.g., a Cray XT or Cray CX1), the value may
+   need to be set explicitly.  The strings for our currently-supported
+   host platforms are as follows:
 
         cx1-linux : Cray CX1 running Linux
         cygwin    : Cygwin (Windows) platforms
         darwin    : Macintosh OS X platforms
         linux32   : 32-bit Linux platforms
         linux64   : 64-bit Linux platforms
+        netbsd    : NetBSD platforms
         pwr5      : IBM Power5 SMP cluster
         pwr6      : IBM Power6 SMP cluster
         sunos     : SunOS platforms
-        xt-cle    : Cray XT running Cray Linux Environment (CLE)
+        xt-cle    : Cray XT running the Cray Linux Environment (CLE)
 
    See README.cx1-linux, README.cygwin, README.macosx, README.ibm, and
    README.xt-cle for specific notes for each of these platforms.
@@ -85,9 +86,9 @@ Optional Settings
    variable to describe that platform.  Currently supported
    cross-compilation target platforms include:
 
-        x1  : Cray X1
-        x2  : Cray X2
-        xmt : Cray XMT
+        x1  : Cray X1 (TM)
+        x2  : Cray X2 (TM)
+        xmt : Cray XMT (TM)
 
    If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
    the same value as $CHPL_HOST_PLATFORM.
@@ -148,7 +149,7 @@ Optional Settings
 
    CHPL_TASKS:
         fifo     : run tasks to completion, in FIFO order
-        mta      : each task runs on a Cray MTA/XMT thread
+        mta      : each task runs on a Cray XMT thread
         none     : do not support multiple tasks
 
    CHPL_THREADS:
@@ -199,6 +200,23 @@ Optional Settings
    If unset, CHPL_COMM defaults to "default" unless CHPL_COMM is
    gasnet and you are using the fast or large segments.  See
    README.multilocale for more information on GASNet segments.
+
+
+7) Optionally, the CHPL_LAUNCHER environment variable can be used to
+   select a launcher to get your program up and running.  See
+   README.launcher for more information on this variable's default and
+   possible settings.
+
+
+8) Optionally, the CHPL_TIMERS environment variable can be used to
+   select an implementation for Chapel's timers.  Current options are:
+
+        generic : use a gettimeofday()-based implementation
+        mta     : use an mta_get_clock()-based implementation (Cray XMT only)
+
+   If unset, CHPL_TIMERS defaults to "generic" unless
+   CHPL_TARGET_PLATFORM is set to "xmt" in which case it defaults to
+   "mta".
 
 
 -------------------------------------

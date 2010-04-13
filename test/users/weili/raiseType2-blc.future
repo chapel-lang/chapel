@@ -1,0 +1,6 @@
+bug: comparing types to values permitted
+
+While we've tightened up our ability to intermix types and values,
+this seems like a case that's still slipping through.  I think the
+comparison of the value x to the types bool/int should result in an
+error.

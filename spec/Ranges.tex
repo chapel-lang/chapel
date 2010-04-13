@@ -112,7 +112,7 @@ bounded-range-literal:
 The first expression is taken to be the lower bound $l$ and the second
 expression is taken to be the upper bound $h$.  The stride of the
 range is 1 and can be modified with the \chpl{by} operator as described
-in~\rsec{Strided_Ranges}.
+in~\rsec{By_Operator_For_Ranges}.
 
 \index{ranges!integral element type}
 The element type of the range type is determined by the type of the
@@ -188,9 +188,10 @@ range unless the stridable range has a stride value of 1.
 \index{ranges!operators}
 
 \subsubsection{By Operator}
-\label{Strided_Ranges}
+\label{By_Operator_For_Ranges}
 \index{ranges!strided}
 \index{ranges!by operator}
+\index{by@\chpl{by}}
 
 The \chpl{by} operator can be applied to any range to create a strided
 range.

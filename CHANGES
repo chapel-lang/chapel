@@ -2,6 +2,332 @@
 Release Changes List
 ====================
 
+===========
+version 1.1
+===========
+
+Fourth public release of Chapel, April 15, 2009
+
+High-Level Themes
+-----------------
+- single- and multi-locale task parallelism
+- improved single- and multi-locale data parallelism
+  - all data parallel operations on arithmetic arrays are now parallelized
+  - improved control over task quantity and granularity for data parallelism
+  - improved completeness and stability of Block and Cyclic distributions
+- bug fixes
+
+Environment Changes
+-------------------
+- added CHPL_TASKS to select the tasking layer to use (was CHPL_THREADS)
+  (see doc/README.chplenv and doc/README.tasks for details)
+- CHPL_THREADS now describes lower-level threading and is typically inferred
+  (see doc/README.tasks)
+- changed the name of the default tasking layer from 'default' to 'fifo'
+  (see doc/README.chplenv and doc/README.tasks)
+- added CHPL_TIMERS to select between timer implementations
+  (see doc/README.chplenv)
+- changed the CHPL_*_PLATFORM string for 32-bit linux from 'linux' to 'linux32'
+  (see doc/README.chplenv)
+
+Syntactic/Naming Changes
+------------------------
+- several changes related to the naming and syntax of distributions:
+  - renamed "distributions" to "domain maps" (or 'dmap's in Chapel syntax)
+  - redefined the term "distributions" to refer to multi-locale domain maps
+  - defined the term "layouts" to refer to single-locale domain maps
+  - replaced placeholder 'distributionType'/'distributionValue' with 'dmap'
+    (e.g., 'const D = distributionValue(...)' => 'const D = new dmap(...)'
+  - changed the 'distributed' keyword to 'dmapped'
+  - added a syntactic sugar to drop 'new dmap(new' for anonymous domain maps
+    (e.g., '...dmapped new dmap(new Block(...))...' => '...dmapped Block(...)')
+  (see 'Domain Maps' chapter of language specification for more information)
+- renamed maxThreads to maxThreadsPerLocale (see README.tasks)
+- renamed the 'ind2loc' method on domain maps to 'idxToLocale'
+- renamed the Cyclic constructor 'low' argument to 'startIdx'
+  (see 'Standard Distributions' chapter of the specification)
+- replaced the use of underscore (_) to ignore things to leaving the space blank
+  (e.g., '(_, x) = getTuple()' => '( , x) = getTuple()')
+- made underscore (_) a legal identifier
+- changed name of the Random module's SeedGenerator from clockMS to currentTime
+  (see 'Standard Modules' chapter of the specification)
+- added support for empty (no-op) statements within a class declaration
+- added ability to elide the # of arguments specification/query from varargs fns
+  (e.g., can now do 'def f(x...)' in addition to 'def f(x...?n)'/'def f(x...n)')
+
+Semantic Changes/Changes to Chapel Language
+-------------------------------------------
+- added config consts to control the number of tasks used for data parallelism
+  (see README.executing and 'Data Parallelism' chapter of specification)
+- redefined enumerated domains to be a special case of associative domains
+  (see 'Domains' chapter of specification)
+- made iteration over enumerated domains/arrays use the enum's declaration order
+  (see 'Domains' chapter of the specification)
+- removed the ability to assign array aliases to normal array variables
+  (e.g., 'var A => B;' is legal but 'var A: [1..n] real;  A => B;' is not)
+- added initial support for passing array aliases to default class constructors
+  (e.g., 'class C {var X: [1..n] int;} var A: [1..n] int; var c = new C(X=>A);')
+- removed the sugar for declaring array types with forall expressions:
+  (e.g., 'var A:[i in 1..n] real =...' => 'var A:[1..n] real = [i in 1..n] ...')
+- defined reindexing to ignore the domain map of the indexing domain
+- specified that minloc/maxloc reductions return the lowest matching index
+  (e.g., 'minloc (A, 1..3)' for A = '5 0 0' would return (0, 2))
+- type aliases may now only be used after they are defined
+  (e.g., 'var x: t; type t = int;' is now illegal)
+- changed resolution to favor functions with where clauses over those without
+  (e.g., for 'foo(3)', 'foo(x)' is not as good a match as 'foo(x) where x:int')
+  (see 'Function Resolution' section of the specification)
+- added the ability to index into 1-dimensional arithmetic arrays using 1-tuples
+  (e.g., 'var i: 1*int;  ...  A(i)' where A is a 1D arithmetic array)
+- added the ability to query the component types of formal tuple arguments
+  (e.g., 'def f(t: (real, ?t)) { ... }')
+- redefined order-of-evaluation of tuple assignments to avoid array temps
+  (see 'Tuples' chapter of specification)
+- added support for indexing into tuples using any integral type, not just 'int'
+  (e.g., given a tuple variable t, 'var i = 1:uint; ...t(i)...' is now legal)
+- added support for 1-tuple detupled variable declarations for completeness
+  (e.g., in 'var (x): 1*int;', x is of type 'int')
+- redefined assignments to evaluate the left-hand side before the right
+  (e.g., in 'x = y;', x is evaluted first and then y)
+
+Newly Implemented Features
+--------------------------
+- whole-array assignment now results in parallel execution for arithmetic arrays
+  (e.g., 'A = B; and 'A = B + alpha * C' now result in parallel execution)
+  (see 'Data Parallelism' chapter for details)
+- added support for assigning to a variable of dmap type if it has no domains
+  (e.g., 'var myMap: dmap(Block(2)); myMap = new dmap(new Block([1..10]));')
+- can now apply domain maps to domain values rather than simply domain types
+  (e.g., 'const Dom1 = [1..10] dmapped ...')
+- added support for sparse domain assignment (executed serially with a warning)
+- added support for removing indices from a sparse domain (not thread-safe)
+- added support for declaring formal tuple arguments of explicit tuple types
+  (e.g., 'def f((x, y): (int, real)) { ... }')
+- improved support for zippering domains/arrays with distinct domain maps
+
+Standard Domain Maps
+--------------------
+- the Block and Cyclic distributed domain maps are now feature-complete
+- added reindexing and rank change operations to the Block distribution
+- reordered Block's constructor args so that rank and idxType can be inferred
+  (e.g., 'new Block(rank=1, idxType=int(64), [1..n])' => 'new Block([1..n])')
+- similarly reordered Cyclic's constructor args and renamed 'low' to 'startIdx'
+- made int(32) the default idxType for standard distributions like Block
+- moved all standard domain maps into modules/layouts/ and .../distributions/
+- factored common routines for arithmetic domains into ChapelArray.chpl
+  (e.g., nothing about exterior() is specific to a domain map's implementation)
+- refactored helper functions for distributions into a new file: DSIUtil.chpl
+
+Standard Modules
+----------------
+- refactored the code in the Random module and improved the implementation
+- changed the Random module's SeedGenerator to an enumerated type
+- added support for filling random vectors of imaginary types
+
+Platform-specific notes
+-----------------------
+- added an mtarun launcher for the Cray XMT
+  (see README.launcher)
+- on the Cray XMT added support for platform-specific timing routines
+  (see README.chplenv)
+- for the Cray XMT, fixed a bug with uninitialized variables and poison bits
+
+Portability of code base
+------------------------
+- ported code base to recent versions of NetBSD (thanks to Phil Nelson)
+- removed hard-coded paths to perl and bash in scripts, relying on /usr/bin/env
+- added parentheses around some expressions to avoid compiler warnings
+
+Documentation
+-------------
+- updated the STATUS file
+- added the first description of using domain maps to the specification
+  (see 'Domain Maps')
+- performed a major restructuring of the language specification:
+  - split the 'Domains and Arrays' chapter into two distinct chapters
+    (see the 'Domains' and 'Arrays' chapters)
+  - split the 'Parallelism and Synchronization' chapter of the spec into two
+    (see 'Task Parallelism and Synchronization' and 'Data Parallelism')
+  - moved the 'Reductions and Scans' chapter of the spec into 'Data Parallelism'
+  - moved discussion of promotion into the 'Data Parallelism' chapter
+  - split the 'Locales and Distributions' chapter of the spec into three
+    (see 'Locales', 'Domain Maps', and 'User-Defined Domain Maps')
+  - reordered the chapters of the specification for clarity
+  - added a placeholder chapter to the specification for user-defined reductions
+    (see 'User-Defined Reductions and Scans')
+  - added a 'Standard Distributions' chapter that describes Block and Cyclic
+  - added a placeholder chapter for 'Standard Layouts'
+- improved the specification:
+  - added a publication date to the title page of the specification
+  - updated the operator precedence table in the specification
+    (see 'Lexical Structure' chapter)
+  - improved the specification's syntax diagrams for [co]for[all] loops
+  - minor improvements to the 'Modules' chapter of the specification
+  - made major improvements to the 'Tuples' chapter
+  - improved the accuracy of the description of function resolution
+  - reorganized/rewrote the 'Domains' and 'Arrays' chapters (more remains)
+  - improved the consistency of prototypes in the 'Standard Modules' chapter
+  - updated the description of the Random number module to reflect changes
+  - fixed several bugs in example codes within the specification
+- added doc/platforms/README.xmt to describe the use of Chapel on a Cray XMT
+- added doc/platforms/README.sgi to describe the use of Chapel on an SGI Altix
+- updated READMEs based on task/thread change
+  (see doc/README.tasks and doc/README.executing)
+- added a README to the $CHPL_HOME/util directory to describe its contents
+- updated READMEs for clarity and accuracy
+- reformatted the CONTRIBUTORS file to reflect contributors to a given release
+- updated the quick reference card's contents
+
+Example Codes
+-------------
+- added a new example 'distributions.chpl showing use of Block and Cyclic
+- removed 'block2D.chpl' example, considered redundant with the above
+- added a new example to show simple multitasking (hello-multicore.chpl)
+- renamed the 'examples/tutorials' directory 'examples/primers'
+- rewrote the taskParallel.chpl primer example program
+- updated all examples to reflect language changes:
+  - to reflect new dmap/dmapped syntax for specifying domain maps
+  - the change of Block and Cyclic's default idxType to int(32)
+  - to remove reliance on the 'A:[i in ...]' syntactic sugar for array decls
+  - to remove the use of underscores to represent ignored values
+  - to track the changes to the Random module interface
+  - to reflect the new controls for specifying degree of data parallelism
+  - to reflect the new constructor argument orders for Block and Cyclic
+  - to reflect the renaming of ind2loc to idxToLocale
+- renamed helper files in hpcc/ subdirectory to match the modules they define
+- updated comments in ra-randstream.chpl, quicksort.chpl
+- stopped unrolling a loop in ra-randstream.chpl's computeM2Vals routine
+- added hpcc/stream-ep to the Makefile and README (overlooked in last release)
+
+Packaging Changes
+-----------------
+- pushed tarball directory structure down one level (i.e., chapel-1.1/chapel)
+- moved non-user scripts from $CHPL_HOME/util/ to $CHPL_HOME/util/chplenv/
+
+Compiler Changes
+----------------
+- added warnings for most serialized data parallel operations
+- added warnings for array reindexings using strided ranges/domains
+- improved orthogonality of parsing type expressions in expression contexts
+- turned off optimizations by default for CHPL_COMM=gasnet; use -O to enable
+- reimplemented scans to remove the creation of a temporary array
+
+Runtime Library Changes
+-----------------------
+- reorganized the runtime directories to use better hierarchies
+  (e.g., 'runtime/foo-bar' => 'runtime/src/foo/bar'
+- broke the threading layer of the runtime into tasking and threading layers
+- renamed most external tasking/threading routines in the runtime interface
+- added support for different timer implementations and platform-specific timers
+- renamed chapel_code.chpl to chpl_rt_utils.chpl
+- exposed sleep() calls to the tasking layer
+
+Launcher-specific notes
+-----------------------
+- added an mtarun launcher for the Cray XMT
+
+Compiler Flags
+--------------
+- --conditional-dynamic-dispatch-limit flag for using vtables vs. conditionals
+- --[no-]fast-followers to control optimization of aligned parallel iterators
+
+Interoperability Changes
+------------------------
+- added initial support for declaring external C struct types
+  (see doc/technotes/README.extern for details)
+
+Bug Fixes/New Semantic Checks (for old semantics)
+-------------------------------------------------
+- removed the ability to assign values to types
+- added a check that config param enums are set to a legal value for the enum
+- added a check that tuple assignments are between tuples of matching size
+- added a check that iterators are not defined to yield types or params
+- added a check to ensure zippered sparse domains/arrays share the same domain
+- added an error message for param for loops that iterate over non-param ranges
+- fixed a bug in which a shared initializer was evaluated multiple times
+  (e.g., 'var x, y, z = foo()' called foo() three times rather than one)
+- fixed a bug in which yield statements could omit the expression to yield
+  (i.e., 'yield;' is not a legal statement in Chapel)
+- fixed a bug in which applying .locale to a global variable always returned #0
+- fixed a few race conditions in the runtime tasking layer
+- fixed an integer overflow problem in the locale.physicalMemory() query
+- fixed a runaway recursive error message in erroneous CHPL_COMM=gasnet exits
+- fixed a bug in associative domains in which stale array values were not reset
+- fixed bugs in which argument coercion and promotion broke extern functions
+- fixed a bug in which a 'use' in a module-level non-function scope leaked names
+- fixed a bug where returning a sync var was flagged as not returning anything
+- fixed a bug in which generic class member types could not be queried
+- fixed a bug in which a class' type declaration could not define multiple types
+- fixed a bug in which printing an empty record would print an internal field
+- fixed a bug in which recursive fns in local blocks led to infinite compilation
+- fixed bugs in function resolution that led to choosing a poorer match
+- fixed implementation of type aliases to evaluate them during fn resolution
+- fixed a bug in the visibility of parallel iterators in promotion wrappers
+- fixed a bug in dead code elimination considered already eliminated code
+- fixed a bug in which compiler warnings were sometimes not generated
+- fixed a bug in which standalone forall loops incorrectly localized references
+- fixed a bug in flattening nested functions that removed non-dead references
+- fixed a bug in which the compiler would incorrectly drop line#/filename info
+- fixed a bug in which duplicating a loop would not update its labels
+- fixed the instantiation point for compiler-introduced wrapper functions
+- fixed a bug in which "false" where clauses were counted as instantiations
+
+Error Message Improvements
+--------------------------
+- squashed "too many instantiation" error messages for internal types/functions
+- somewhat improved the error message for applying 'new' to a non-class
+
+Compiler Analysis and Optimizations/Performance of Generated Code
+-----------------------------------------------------------------
+- turned on optimizations of on-clauses by default (--optimize-on-clauses)
+- re-implemented homogenous tuples to use C arrays rather than structs
+- generated new loop idioms to replace fragile static alignment analysis
+- Cyclic distributions now result in similar performance to Block for e.p. codes
+- added the ability to use a virtual method table for dynamic dispatch
+
+Compiler Performance and Cleanup
+--------------------------------
+- reordered compiler optimizations to improve performance
+- rewrote copy propagation to remove a quadratic aspect of the algorithm
+- changed conditional-based dynamic dispatch to use statements rather than exprs
+- improved performance of function resolution
+- improved performance of the reaching definitions analysis
+
+Cleanup of Generated Code
+-------------------------
+- made generated code less sensitive to small changes to better support diffs
+- broke user code within chpl_main() into its own function: chpl_user_main()
+
+Testing system
+--------------
+- added ability to test properly formatted codes embedded in the specification
+- changed sub_test script to use Python for better flexibility/maintainability
+- fixed the redundant cleaning of directories when tests are explicitly named
+- made sub_test clean up executables for .noexec tests
+
+Internal
+--------
+- added a developer optimization to localize global constants (off by default)
+- added a new helper function gen() that serves as a printf for codegen
+- added a debugging function printCallStack() for use during function resolution
+- added a new mechanism for building the IR after parsing, before normalization
+- refactored parser to treat types and expressions more uniformly
+- refactored parsing of serial and parallel loops to share more code
+- simplified the implementation of operator overloading on tuples
+- cleaned up the implementation of reductions
+- reimplemented Math.chpl routines using _extern rather than primitives
+- reimplemented most Memory.chpl routines using _extern rather than primitives
+- generalized a mechanism for soft-resolving a possibly erroneous function call
+- added a displayRepresentation method to dmap, domain, and array classes
+- removed the unused 'reindexed' param from default arithmetic arrays
+- added the "dsi" prefix to methods that are part of the dmap standard interface
+- better distinguished between thread and task IDs
+- added getValType(), getRefType(), getWideRefType() helper functions
+- added support for _isSignedType() and isUnsignedType() helper param functions
+- moved the implementation of queries in formal types to function resolution
+- simplified the generation of BUILD_VERSION for non-developers
+
+
 ============
 version 1.02
 ============
@@ -9,61 +335,61 @@ version 1.02
 Update to third public release of Chapel, November 12, 2009
 (see also changes below for version 1.01 and 1.0)
 
-High-Level Themes:
-------------------
+High-Level Themes
+-----------------
 - single- and multi-locale task parallelism
 - single- and multi-locale data parallelism
 - improved performance and scalability
 - bug fixes
 
-Packaging Changes:
-------------------
+Packaging Changes
+-----------------
 - added GASNet 1.14.0 to third-party/ though 1.12.0 is still the default
   (see third-party/gasnet/README)
 
-Runtime Library Changes:
-------------------------
+Runtime Library Changes
+-----------------------
 - vastly improved the performance of CHPL_COMM=pvm, esp. when oversubscribing
 
-Documentation:
---------------
+Documentation
+-------------
 - removed the HPCC-related PDFs from doc/ as they seem better suited for the web
 
-Example Codes:
---------------
+Example Codes
+-------------
 - added an EP version of stream to showcase Chapel in an SPMD-like mode
   (see $CHPL_HOME/examples/hpcc/stream-ep.chpl)
 - added local blocks to ra.chpl and fft.chpl to assert regions of locality
 - changed fft.chpl to use both Block and Cyclic arrays to optimize for locality
 
-Standard Distributions:
------------------------
+Standard Distributions
+----------------------
 - optimized the Block distribution via privatization and remote value forwarding
 - added support for a .localSlice() operation for Block and Cyclic array
 - optimized away some extraneous copies from standard distributions
 
-Compiler Flags:
----------------
+Compiler Flags
+--------------
 - added --[no-]optimize-on-clauses and --optimize-on-clause-limit
 
-Bug Fixes/New Semantic Checks (for old semantics):
---------------------------------------------------
+Bug Fixes/New Semantic Checks (for old semantics)
+-------------------------------------------------
 - fixed a bug in which wide references weren't removed from local blocks
 - fixed a bug in which range slicing resulted in divide-by-zero due to overflow
 - fixed a bug in which Block misdistributed indices at sufficiently large sizes
 - fixed a bug in which multirealm PVM runs could set up locales in wrong order
 
-Error Message Improvements:
----------------------------
+Error Message Improvements
+--------------------------
 - improved the error messages for failed pvm launches
 
-Compiler Analysis and Optimizations/Performance of Generated Code:
-------------------------------------------------------------------
+Compiler Analysis and Optimizations/Performance of Generated Code
+-----------------------------------------------------------------
 - added an optimization to execute on-clauses using a remote locale's listener
   (see --[no-]optimize-on-clauses and --optimize-on-clause-limit)
 
-Internal:
----------
+Internal
+--------
 - added initial support for recursive leader iterators
 - added support for generating Chapel errors in terms of C line/file
 - refactored and cleaned code in PVM launcher and comm layer (more remains)
@@ -77,52 +403,52 @@ version 1.01
 Update to third public release of Chapel, October 30, 2009
 (see also changes for version 1.0)
 
-High-Level Themes:
-------------------
+High-Level Themes
+-----------------
 - multi-locale task parallelism
 - support for single- and multi-locale data parallelism
 - improved scalability and stability
 - prototype implementation of realms for hybrid computing in Chapel
   (see doc/technotes/README.multirealm)
 
-Packaging Changes:
-------------------
+Packaging Changes
+-----------------
 - added a utility script, chpl-multirealm, to help with multi-realm compilation
 - added PVM to the third-party directory to support multi-realm computation
 
-Newly Implemented Features:
----------------------------
+Newly Implemented Features
+--------------------------
 - added support for multi-realm features to support heterogeneous computation
 - extended replication of global constants to include record types
 
-Platform-specific notes:
-------------------------
+Platform-specific notes
+-----------------------
 - made XT GASNet compiles use "cc" without the full path discovered by GASNet
 
-Documentation:
---------------
+Documentation
+-------------
 - updated .emacs excerpts in etc/emacs/README to use more modern idioms
 
-Example Codes:
---------------
+Example Codes
+-------------
 - added an example demonstrating multirealm computation features
 - cleaned up RA to refer to TableDist in on-clauses rather than T.domain.dist
 
-Standard Distributions:
------------------------
+Standard Distributions
+----------------------
 - made the default distributions throttle parallelism based on #tasks running
 - improved the Cyclic distribution to support strides and slicing
 - added initial support for a "Private" distribution with one index per locale
 
-Bug Fixes/New Semantic Checks (for old semantics):
---------------------------------------------------
+Bug Fixes/New Semantic Checks (for old semantics)
+-------------------------------------------------
 - fixed a bug in which distributions deadlocked when numLocales > maxThreads
 - fixed a bug with parallel iteration when problem size ~= #cores
 - fixed some bugs with slicing and querying the length of degenerate ranges
 - fixed some bugs in distributions when iterating over degenerate ranges
 
-Compiler Analysis and Optimizations/Performance of Generated Code:
-------------------------------------------------------------------
+Compiler Analysis and Optimizations/Performance of Generated Code
+-----------------------------------------------------------------
 - reduced the number of communications required to set up distributions
 - reduced the time required to set up Block distributions
 - reduced the time required to create privatized data structures
@@ -130,12 +456,12 @@ Compiler Analysis and Optimizations/Performance of Generated Code:
 - optimized the expression .locale.uid to avoid communication
 - optimized .dist methods on default domains to return the private distribution
 
-Testing system:
----------------
+Testing system
+--------------
 - softened the signal used by our timeout script from -9 to -15
 
-Internal:
----------
+Internal
+--------
 - fixed some const char* issues in strstr, strchr, strrchr calls
 - added verification that gotos are in same functions as their labels
 
@@ -146,46 +472,46 @@ version 1.0
 
 Third public release of Chapel compiler, October 15, 2009
 
-High-Level Themes:
-------------------
+High-Level Themes
+-----------------
 - multi-locale task parallelism
 - improved support for single- and multi-locale data parallelism
 - improved stability and portability
 - improved memory utilization of compiler-generated code
 - target audience: general public
 
-Environment Changes:
---------------------
+Environment Changes
+-------------------
 - added emacs/vim modes to release -- see $CHPL_HOME/etc/README
 
-Changes to Chapel Language:
----------------------------
+Changes to Chapel Language
+--------------------------
 - removed implicit coercions from primitive types to strings to avoid confusion
 - a default array variable can now be made to alias another via the => operator
 - accesses to variable x in module M using 'M.x' must now follow a 'use M'
 
-Newly Implemented Features:
----------------------------
+Newly Implemented Features
+--------------------------
 - forall loops over ranges & arithmetic domains/arrays are now parallelized
 - improved support for and correctness of record and class destructors
 - array declaration+initialization syntax now results in parallel evaluation
   e.g., var A: [i in D] real = foo(i);  will be evaluated in parallel
 - added == and != for imag and complex types; added >, >=, <, <= for imag types
 
-Portability of code base:
--------------------------
+Portability of code base
+------------------------
 - improved support for the Cray compiler on XT systems (cray-xt-cray)
 - reduced warnings for gcc > 4.3
 - improved portability with respect to Intel icc/icpc v11.x
 - removed outdated assumptions about Sun compiler environments
 - removed the makechpl script for Mac users because of portability issues
 
-Platform-specific notes:
-------------------------
+Platform-specific notes
+-----------------------
 - added a PBS launcher for the Cray CX1 named pbs-gasnetrun_ibv
 
-Launcher-specific notes:
-------------------------
+Launcher-specific notes
+-----------------------
 - several improvements to the pbs launcher (see README.launcher/README.xt-cle)
   - environment variables are now propagated to the application
   - a queue can be specified via the CHPL_LAUNCHER_QUEUE environment variable
@@ -193,8 +519,8 @@ Launcher-specific notes:
   - the NCCS pbs launcher no longer uses the debug queue by default
 - added support for CHPL_LAUNCHER_SUFFIX to launch a file other than ..._real
 
-Semantic Changes:
------------------
+Semantic Changes
+----------------
 - changed distributions from having class/reference semantics to value semantics
 - made module initialization occur at program startup rather than use statements
 - only modules specified on the command-line are candidates for the main module
@@ -202,28 +528,28 @@ Semantic Changes:
 - changed interpretation of method definitions on scalar types
   e.g., 'def int.foo()' now defines foo() for default-sized ints, not all ints
 
-Syntactic/Naming Changes:
--------------------------
+Syntactic/Naming Changes
+------------------------
 - renamed MultiBlockDist.chpl to BlockDist.chpl
 - removed the Block1D distribution since Block subsumed it
 - added placeholder notation for creating new distribution values
   e.g., new Block(...) => distributionValue(new Block(...))
 - renamed the pbs launcher for Cray XT to pbs-aprun since it wraps both packages
 
-Compiler Changes:
------------------
+Compiler Changes
+----------------
 - improved support for slicing [strided] domains/arrays with [strided] slices
 - improved flushing of writeln() statements to the file being written to
 - removed support for goto from the compiler's front-end
 
-Runtime Library Changes:
-------------------------
+Runtime Library Changes
+-----------------------
 - improved pthread setup, termination, and cleanup for non-erroneous exits
 - refactored threading runtime to support code reuse for pthread-like threads
 - added support for memory tracking for multi-locale executions
 
-Documentation:
---------------
+Documentation
+-------------
 - improved the Types, Modules, and Ranges chapters of the language specification
 - added mention of 'delete' to language specification
 - improved the Label, Break, and Continue subsection of the language spec
@@ -231,8 +557,8 @@ Documentation:
 - updated README.xt-cle and README.launcher to reflect new pbs features
 - updated the various READMEs to reflect minor changes and wording
 
-Example Codes:
---------------
+Example Codes
+-------------
 - changed fft to use a Block distribution
 - changed reference to MultiBlockDist module in block2D.chpl to BlockDist
 - changed distributions to use the placeholder value type notation
@@ -242,15 +568,15 @@ Example Codes:
 - deleted classes in example programs to reclaim memory
 - increased problem size for reductions.chpl to avoid bug w/ 5+ cores per locale
 
-Standard Modules:
------------------
+Standard Modules
+----------------
 - added printMemStat() to the standard Memory module; improved printMemTable()
 - added start/stopVerboseMem[Here]() to the Memory module for tracing memory use
 - improved reference counting of domains and arrays
 - removed the (undocumented) Schedules module
 
-Standard Distributions:
------------------------
+Standard Distributions
+----------------------
 - merged Block1D and Block since the latter subsumed the former
 - removed the default rank of 1 for the Block distribution
 - added support for a multidimensional target array of locales to Block
@@ -263,15 +589,15 @@ Standard Distributions:
 - unified leader/follower iterators to always work on tuples of ranges
 - removed subBlocks() from the standard distribution interface
 
-Compiler Flags:
----------------
+Compiler Flags
+--------------
 - added support for a module path flag (-M) to search for modules via filenames
 - added a flag to print the module search path (--print-search-dirs)
 - added a flag to print module files being parsed (--print-module-files)
 - added support for a -I flag to specify a search directory for C headers
 
-Generated Code Flags:
----------------------
+Generated Code Flags
+--------------------
 - added support for specifying configuration variables/constants without =
   e.g., you can now use './a.out --n 4' in addition to ./a.out --n=4'
 - improved flags for tracking memory utilization (see README.executing)
@@ -279,8 +605,8 @@ Generated Code Flags:
 - made compiler-generated generic type names deterministic
 - improved robustness of --numLocales flag
 
-Bug Fixes/New Semantic Checks (for old semantics):
---------------------------------------------------
+Bug Fixes/New Semantic Checks (for old semantics)
+-------------------------------------------------
 - added an error for using => on non-array types
 - added an error for using (...x) on non-tuple types
 - added a semantic check against tuples sized by 0 or a negative value
@@ -303,28 +629,28 @@ Bug Fixes/New Semantic Checks (for old semantics):
 - fixed deletion of list elements in List module
 - added support for generating the implicit Program module in --html view
 
-Error Message Improvements:
----------------------------
+Error Message Improvements
+--------------------------
 - fixed line numbers in errors involving dynamic dispatch and [con/de]structors
 
-Compiler Analysis and Optimizations/Performance of Generated Code:
-------------------------------------------------------------------
+Compiler Analysis and Optimizations/Performance of Generated Code
+-----------------------------------------------------------------
 - vastly reduced amount of memory leaked due to compiler-allocated data
 - improved performance of loops using Block distributions
 - improved performance and reduced memory requirements for memory tracking
 
-Cleanup of Generated Code:
---------------------------
+Cleanup of Generated Code
+-------------------------
 - embedded information about compilation options to the generated code
 
-Testing system:
----------------
+Testing system
+--------------
 - improved precedence of execution options specified via .execopts or EXECOPTS
 - made parallel testint place -nl x flags at the end of the command line
 - added support for PVM-based testing to the test script
 
-Internal:
----------
+Internal
+--------
 - replaced uses of "[unsigned] long long" with [u]int64_t for sane portability
 - some unification of reserved names, though more remains
 - improved Chapel's launcher runtime interface to be more general
@@ -367,15 +693,15 @@ version 0.9
 
 Second public release of Chapel compiler, April 16, 2009
 
-High-Level Themes:
-------------------
+High-Level Themes
+-----------------
 - multi-locale task parallelism
 - very initial/limited support for data parallelism, distributed arrays
 - improved stability, portability, and performance
 - target audience: general public
 
-Environment Changes:
---------------------
+Environment Changes
+-------------------
 - added a script to print out set and inferred CHPL env vars
   (see util/printchplenv.pl)
 - added support for the IBM xlc/xlC compilers by setting CHPL_*_COMPILER to ibm
@@ -385,12 +711,12 @@ Environment Changes:
   (see doc/platforms/README.xt-cle)
 - improved the logic for inferring host and target compilers for xt-cle
 
-Changes to Chapel Language:
----------------------------
+Changes to Chapel Language
+--------------------------
 - added a typeToString() function for converting a static type into a string
 
-Newly Implemented Features:
----------------------------
+Newly Implemented Features
+--------------------------
 - added queries for task/thread counts per locale for CHPL_THREADS=pthreads
   (see doc/README.threads)
 - added a printMemTable() routine to the Memory module for use in Chapel
@@ -398,8 +724,8 @@ Newly Implemented Features:
 - added a prototype multidimensional Block distribution: MultiBlockDist.chpl
   (see examples/tutorials/block2D.chpl)
 
-Portability of code base:
--------------------------
+Portability of code base
+------------------------
 - improved our general method of building and using GASNet for portability
 - improved portability of GASNet configure + build steps for xt-cle
 - improved the heuristic for setting GASNET_MAX_SEGSIZE for xt-cle
@@ -412,39 +738,39 @@ Portability of code base:
 - added a -d option to our use of aprun in the aprun and pbs launchers
 - removed the assumption that function pointers are identical between nodes
 
-Syntactic/Naming Changes:
--------------------------
+Syntactic/Naming Changes
+------------------------
 - disallowed identifiers that start with $
 - removed compilerError and compilerWarning as keywords
 - permitted binary and hex literals to be written using uppercase B/X
 - renamed classes used for defining distributions
 
-Runtime Library Changes:
-------------------------
+Runtime Library Changes
+-----------------------
 - added support for communication diagnostics and debugging
   (see doc/technotes/README.comm-diagnostics)
 
-Documentation:
---------------
+Documentation
+-------------
 - added a new ACKNOWLEDGEMENTS file for financial and machine time support
 - refactored the doc directory, pushing platform & technical notes into subdirs
 - minor changes and improvements to the language specification
 - minor edits to many of the README files
 - updated the man page
 
-Example Codes:
---------------
+Example Codes
+-------------
 - pushed most top-level examples into tutorials/ and programs/ subdirectories
 - added new tutorial examples for variables, ranges, classes, generic classes
 - added new tutorial examples for timers and the prototype Block distribution
 - changed quicksort to ensure levels beyond thresh do not re-enable parallelism
 
-Compiler Flags:
----------------
+Compiler Flags
+--------------
 - added a flag to disable/enable the remote value forwarding optimization
 
-Bug Fixes/New Semantic Checks (for old semantics):
---------------------------------------------------
+Bug Fixes/New Semantic Checks (for old semantics)
+-------------------------------------------------
 - fixed a number of spurious errors caused by how we were using GASNet
 - fixed problems in how we terminated multithreaded GASNet programs
 - added the ability for _chpl_comm_fork[_nb] to handle large arguments
@@ -463,12 +789,12 @@ Bug Fixes/New Semantic Checks (for old semantics):
 - fixed a bug with accidentally shared state during parallel iterations
 - fixed a bug related to reductions involving forall expressions
 
-Error Message Improvements:
----------------------------
+Error Message Improvements
+--------------------------
 - added a runtime error message if the launcher binary can't find the _real one
 
-Compiler Analysis and Optimizations/Performance of Generated Code:
-------------------------------------------------------------------
+Compiler Analysis and Optimizations/Performance of Generated Code
+-----------------------------------------------------------------
 - improved the correctness and effectiveness of remote value forwarding
 - optimized performance of local communications
 - optimized parallel iteration for Block1D to minimize remote references
@@ -480,18 +806,18 @@ Compiler Analysis and Optimizations/Performance of Generated Code:
 - privatized the default distribution object
 - removed array/domain wrapper records
 
-Compiler Performance and Cleanup:
----------------------------------
+Compiler Performance and Cleanup
+--------------------------------
 - removed hand-baked and occasionally incorrect integer types int32, int64
 - fixed an infinite loop when inlining recursive iterators
 - fixed cases in which compiler temps were used outside the variable's scope
 
-Cleanup of Generated Code:
---------------------------
+Cleanup of Generated Code
+-------------------------
 - removed redundant reference types from the generated code
 
-Internal:
----------
+Internal
+--------
 - switched iterator implementation to use records rather than classes
 - improved the naming of identifiers in the runtime and generated code
 - removed compiler support for (undocumented) anonymous record types
@@ -503,26 +829,26 @@ version 0.8
 
 First public release of Chapel compiler, November 14, 2008
 
-High-Level Themes:
-------------------
+High-Level Themes
+-----------------
 - multi-locale task parallelism
 - improved task parallel correctness, features, thread management
 - improved stability of core features
 - very initial/limited support for data parallelism, distributed arrays
 - target audience: general public
 
-License Changes:
-----------------
+License Changes
+---------------
 - switched from MIT to BSD license (see LICENSE)
 - updated user agreement text (see AGREEMENT)
 
-Environment Changes:
---------------------
+Environment Changes
+-------------------
 - changed the identifier for the Cray XT platform from xt-cnl to xt-cle
 - added a CHPL_MEM setting to select memory allocators (see README.chplenv)
 
-Changes to Chapel Language:
----------------------------
+Changes to Chapel Language
+--------------------------
 - changed operator precedence for : vs. **, bitwise ops, reduce, !, unary +/-
 - added destructors and a 'delete' keyword for destroying class instances
 - removed open interval syntax in which [0..n) == 0..n-1
@@ -547,27 +873,27 @@ Changes to Chapel Language:
 - added initial support for distributed domains and arrays using a Block1d class
 - added initial support for parallel reductions and forall expressions
 
-Newly Implemented Features:
----------------------------
+Newly Implemented Features
+--------------------------
 - added support for tuples of lvalues
   e.g., "for (a,b) in (A,B)" where A and B are arrays
 - array initializer expressions can now be used for array class members
 - added support for user-defined constructors for generic classes
 - added support for overriding methods using subtype return types
-- added support for querying the eltType of an array:
+- added support for querying the eltType of an array
   e.g., def foo(A: [D] ?t) { ... }
 - added support for .remove() on opaque domains
 - added support for explicitly naming a function's module at the callsite
 - added support for freeing compiler-introduced heap-allocated variables
 - added initial support for freeing value type memory (records, arrays, domains)
 
-Portability of code base:
--------------------------
+Portability of code base
+------------------------
 - added support for the Cray CX1 platform running Linux  (see README.cx1-linux)
 - improved level of support for the Cray XT platform (see README.xt-cle)
 
-Semantic Changes:
------------------
+Semantic Changes
+----------------
 - disallowed calling a method on a nil reference as previously permitted
 - changed the instantiation point for dynamically-dispatched methods
 - permitted partially-bounded out-of-bounds degenerate ranges to be legal, empty
@@ -578,8 +904,8 @@ Semantic Changes:
 - added support for casting an integer to a string at compile time
 - made the implicit 'setter' argument in var functions constant and foldable
 
-Syntactic/Naming Changes:
--------------------------
+Syntactic/Naming Changes
+------------------------
 - all non-compound single-statement conditionals/loops now require then/do
 - functions now require a block statement unless they only contain a return stmt
 - added support for a single-statement serial statement
@@ -587,34 +913,34 @@ Syntactic/Naming Changes:
 - removed "opaque" from the list of reserved words--it is now a type like "int"
 - 'distributed' clauses no longer require parenthesis
 
-Compiler Changes:
------------------
+Compiler Changes
+----------------
 - the compiler now requires CHPL_HOME to be set
 - added support for opaque types for use when interfacing with extern functions
 
-Third Party Changes:
---------------------
+Third Party Changes
+-------------------
 - updated GASNet version to GASNet 1.12.0
 - added support for using dlmalloc as a memory allocator
 
-Runtime Library Changes:
-------------------------
+Runtime Library Changes
+-----------------------
 - all tasks in a cobegin are now set up before any start executing for pthreads
 - made the task that starts a cobegin/coforall help execute the component tasks
 - made the task that enters a sync statement help execute the component tasks
 - added "launcher" capability to wrap job launch mechanism (see README.launcher)
 - improved the thread-safety of declaring arrays over a domain
 
-Documentation:
---------------
+Documentation
+-------------
 - improved the --help descriptions of --[no-] flags
 - updated and improved the language specification
   - improved the specification of instantiated fns: visibility & point-of-inst.
 - updated the various README files
 - updated the man page
 
-Example Codes:
---------------
+Example Codes
+-------------
 - added a hello-multiloc example to run a "Hello, world!" on multiple locales
 - improved hpcc codes from our 2008 HPC Challenge entry and added HPL (hpl.chpl)
 - made the stream.chpl and ra.chpl benchmarks use Block1D-distributed domains
@@ -622,15 +948,15 @@ Example Codes:
 - improved the verification step of stream.chpl to make it stronger
 - improved the taskParallel example to reduce the likelihood of races
 
-Standard Modules:
------------------
+Standard Modules
+----------------
 - added a Norm module for computing vector and matrix norms
 - added a Containers module for standard container classes
 - added a day of week enumeration and getCurrentDayOfWeek() to the Time module
 - fillRandom() calls in the Random module now fill Block1D arrays in parallel
 
-Compiler Flags:
----------------
+Compiler Flags
+--------------
 - improved the parsing of single-dash compiler flags to avoid common errors
   e.g., -abcd != -a -b -c -d; -hepl != -h -e -p -l
 - renamed --no-expand-iterators-inline-opt to --[no-]inline-iterators
@@ -641,15 +967,15 @@ Compiler Flags:
 - added --[no-]dead-code-elimination to turn dead-code elimination off/on
 - added --[no-]live-analysis to turn live variable analysis off/on
 
-Generated Code Flags:
----------------------
+Generated Code Flags
+--------------------
 - added a -b/--blockreport flag to help debug deadlocked 1-locale programs
 - added a -t/--taskreport flag to print a list of tasks for 1-locale programs
 - made the -v flag print node names for locales on which code is executing
 - made the -v flag print the commands used by the launcher
 
-Bug Fixes/New Semantic Checks (for old semantics):
---------------------------------------------------
+Bug Fixes/New Semantic Checks (for old semantics)
+-------------------------------------------------
 - fixed some subtle race conditions in the pthreads version of the runtime
 - fixed a bug in which write statements would not print atomically as intended
 - fixed a bug in which multidimensional tuple-to-array assignment was failing
@@ -662,16 +988,16 @@ Bug Fixes/New Semantic Checks (for old semantics):
 - fixed a bug related to iterating over a single iterator class multiple times
 - fixed a bug in which param functions with multiple returns corrupted constants
 
-Error Message Improvements:
----------------------------
+Error Message Improvements
+--------------------------
 - improved an error message related to illegal assignments of domains to arrays
 - added an error check to prevent iteration over a type
 - improved error messages related to bad tuple index types
 - improved error messages related to iterators and promoted expressions
 - added a warning about cobegin statements with fewer than two statements
 
-Compiler Analysis and Optimizations/Performance of Generated Code:
-------------------------------------------------------------------
+Compiler Analysis and Optimizations/Performance of Generated Code
+-----------------------------------------------------------------
 - made "here" into a per-locale variable, reducing communication
 - optimized read-only non-local accesses to value types
 - added initial support for privatizing global domain/array descriptors
@@ -679,8 +1005,8 @@ Compiler Analysis and Optimizations/Performance of Generated Code:
 - optimized coforall...on and begin...on idioms to reduce thread requirements
 - added reference counting to domain classes to aid in freeing them
 
-Compiler Performance and Cleanup:
----------------------------------
+Compiler Performance and Cleanup
+--------------------------------
 - rewrote the compiler's symboltable
 - added support for a BitVec class to save space and time
 - tightened up memory leaks in the compiler
@@ -700,15 +1026,15 @@ Compiler Performance and Cleanup:
 - improved the set of live references added/omitted from iterator classes
 - eliminated lots of dead code
 
-Testing System:
----------------
+Testing System
+--------------
 - made the test system execute .numlocales tests on 1 locale for CHPL_COMM=none
 - made the testing system set the CHPL_* environment variables if they aren't
 - made the test system generate its output using relative paths
 - fixed a bug in the testing system's "skipif" capability
 
-Internal:
----------
+Internal
+--------
 - added support for dynamically turning on/off communication and memory tracing
 - improved debug output for the gasnet communication layer
 - reorganized abstract distribution, domain, array classes
@@ -752,15 +1078,15 @@ version 0.7
 
 Fourth preliminary release of Chapel Compiler, March 31, 2008
 
-High-Level Themes:
-------------------
+High-Level Themes
+-----------------
 - multi-locale task parallelism
 - improved task parallel correctness, features, thread management
 - improved stability of core features
 - target audience: HPCS mission partners, select HPC/academic/industry users
 
-Changes to Chapel Language:
----------------------------
+Changes to Chapel Language
+--------------------------
 - added "new" keyword to invoke class/record constructors
   e.g., "class C { ... }  var myC = C(...);" => "... var myC = new C(...);"
 - enumerated types now require the type to be named before a component symbol
@@ -784,8 +1110,8 @@ Changes to Chapel Language:
 - removed the "of" keyword
 - removed the "ordered" keyword and concept
 
-Newly Implemented Features:
----------------------------
+Newly Implemented Features
+--------------------------
 - execution using multiple locales (see: doc/README.multilocale)
 - use of on clauses taking locale/lvalue expressions to generate remote tasks
   e.g., "on Locales(i) do ...",  "var x = ...;  ...  on x do ..."
@@ -801,26 +1127,26 @@ Newly Implemented Features:
 - added support for tuples of sync variables
 - added support for declaring enumerations within classes
 
-Portability of code base:
--------------------------
+Portability of code base
+------------------------
 - removed a number of warnings specific to particular compilers/platforms
 
-Semantic Changes:
------------------
+Semantic Changes
+----------------
 - in a type context, (int) is no longer a 1-tuple of type int; use 1*int instead
 - Chapel now parses types in the same way that it parses general expressions
 
-Syntactic/Naming Changes:
--------------------------
+Syntactic/Naming Changes
+------------------------
 - renamed opaque domain's .new() method to .create()
 - renamed the (undocumented) Locales domain from LocalesDomain to LocaleSpace
 
-Documentation:
---------------
-- new README files in the doc/ directory:
+Documentation
+-------------
+- new README files in the doc/ directory
   - README.multilocale file explains how to execute using multiple locales
   - README.threads explains how tasks are implemented using threads
-- language specification revisions:
+- language specification revisions
   - greatly improved the "Parallelism and Synchronization" chapter
   - greatly improved the "Locality and Distribution" chapter
   - made other updates to reflect other changes mentioned in this file
@@ -829,13 +1155,13 @@ Documentation:
 - updated HPCC documents to reflect "new" keyword and enumerated type qualifiers
 - generally refreshed the README, CHANGES, STATUS files
 
-Example Codes:
---------------
-- added new example codes:
+Example Codes
+-------------
+- added new example codes
   - multilocale.chpl to serve as a multi-locale execution tutorial
   - taskParallel.chpl to serve as an introduction to task-parallel concepts
   - varargs.chpl to demonstrate the user of variable argument functions
-- updated existing examples to reflect language changes:
+- updated existing examples to reflect language changes
   - added "new" keyword to tests that create class instances
   - for tests that use files, changed access mode from string to enum
   - added enumeration type qualifiers to uses of enumerated types
@@ -843,29 +1169,29 @@ Example Codes:
 - changed blockLU's input data to improve stability across compilers
 - made automated testing of opaque.chpl deterministic
 
-Standard Modules:
------------------
+Standard Modules
+----------------
 - added a skipToNth() method to the RandomStream class
 
-Compiler Flags:
----------------
-- changed flags to have a --no-... variation (see chpl man page for details):
+Compiler Flags
+--------------
+- changed flags to have a --no-... variation (see chpl man page for details)
   --local => --[no-]local where the default is based on CHPL_COMM
   --serial => --[no-]serial where the default is based on CHPL_THREADS
-- added new flags (see chpl man page for details):
+- added new flags (see chpl man page for details)
   --[no-]ieee-float controls the strictness of IEEE floating point operations
   --fast flag turns on optimizations & disables runtime checks and IEEE floats
   --explain-instantiation describes the instantations of functions/types
 
-Generated Code Flags:
----------------------
+Generated Code Flags
+--------------------
 - added a config const "maxThreads" to limit the number of threads per locale
   (see doc/README.threads for more information)
 - made --help flag list built-in config consts/vars (numLocales, maxThreads)
 - added a --quiet/-q flag to suppress runtime warnings
 
-Bug Fixes/New Semantic Checks (for old semantics):
---------------------------------------------------
+Bug Fixes/New Semantic Checks (for old semantics)
+-------------------------------------------------
 - fixed support for arrays of arrays and arrays of syncs within classes
 - fixed several bugs in the implementation of associative/opaque domains/arrays
 - improved composability of forall expressions and coforall statements
@@ -883,20 +1209,20 @@ Bug Fixes/New Semantic Checks (for old semantics):
 - removed instantiation limit error messages generated by tuples
 - fixed a bug with the --cpp-line flag for long generated C lines
 
-Error Message Improvements:
----------------------------
+Error Message Improvements
+--------------------------
 - improved error messages for generic type specifiers
 
-Compiler Analysis and Optimizations/Performance of Generated Code:
-------------------------------------------------------------------
+Compiler Analysis and Optimizations/Performance of Generated Code
+-----------------------------------------------------------------
 (no significant ones in this release)
 
-Compiler Performance and Cleanup:
----------------------------------
+Compiler Performance and Cleanup
+--------------------------------
 - reduced memory footprint of certain compiler IR classes
 
-Generated Code:
----------------
+Generated Code
+--------------
 - changed implementation of subclasses
 - added support for remote references and remote classes
 - improved line number reporting for certain functions
@@ -905,8 +1231,8 @@ Generated Code:
 - changed integer type aliases to use stdint.h types
 - turned up C compilation warning levels for developers
 
-Testing System:
----------------
+Testing System
+--------------
 - added support for listing any number of tests and directories on command-line
 - removed -onetest and -startdir flags due to above support
 - allowed start_test to be run from any directory
@@ -914,8 +1240,8 @@ Testing System:
 - removed start_clean script
 - added "skipif" support for skipping a test or directory based on env vars
 
-Internal:
----------
+Internal
+--------
 - unified implementation of cobegin/coforall to use begins
 - use endCounts to implement cobegins/coforalls rather than syncStacks
 - improved runtime TAGS file and added TAGS file for generated code
@@ -932,8 +1258,8 @@ version 0.6
 
 Third preliminary release of Chapel Compiler, December 21, 2007
 
-High-Level Themes:
-------------------
+High-Level Themes
+-----------------
 - single-locale, multiple threads
 - improved stability of core features
 - support for additional serial features
@@ -944,8 +1270,8 @@ High-Level Themes:
 - support for cross-compilation environments
 - target audience: HPCS mission partners, select HPC users and centers
 
-Changes to Chapel Language:
----------------------------
+Changes to Chapel Language
+--------------------------
 - added support for defining type functions
   e.g., def myint(param x: bool) type { return if x then int(32) else int(64);}
 - changed routines supported on sync/single variables and made them methods
@@ -964,8 +1290,8 @@ Changes to Chapel Language:
 - added support for bitwise operators on int/uint pairs of the same size
   e.g., int(32) & uint(32) => uint(32)
 
-Newly Implemented Features:
----------------------------
+Newly Implemented Features
+--------------------------
 - added support for arrays of arrays whose inner arrays are of uniform size
 - added support for arrays of domains
 - added support for instantiating types/functions using array types
@@ -995,8 +1321,8 @@ Newly Implemented Features:
 - improved tuple type orthogonality; they can now be used in most type contexts
 - added support for strided param for loops
 
-Portability of code base:
--------------------------
+Portability of code base
+------------------------
 - added support for compiling with Intel, PGI, Pathscale, and Cray compilers
 - added initial support for compiling for Cray MTA/XMT, X1s, and XTs
 - improved portability of source and generated codes across compilers/platforms
@@ -1005,8 +1331,8 @@ Portability of code base:
 - added mechanisms for selecting threading/communication libraries -- see "
 - added native support for task parallelism on Cray MTA/XMT platforms
 
-Semantic Changes:
------------------
+Semantic Changes
+----------------
 - removed implicit coercions from integer types to real(32)
 - made queries of an array's domain via A.domain or A:[?D] constant
 - removed dynamic dispatch on method calls with no parenthesis
@@ -1017,16 +1343,16 @@ Semantic Changes:
 - function resolution now favors non-promoted functions as a tie-breaker
 - better defined casts between complex, imaginary, real, and integral types
 
-Syntactic/Naming Changes:
--------------------------
+Syntactic/Naming Changes
+------------------------
 - added support for $ in identifier names; used by convention to identify syncs
 - allow floating point literals with an exponent to use an integral base
   e.g., can now write 1e4 rather than 1.0e4
 - changed locale array name from Locale to Locales (as described in spec)
 - added ability to tag a function as returning a const value for documentation
 
-Documentation:
---------------
+Documentation
+-------------
 - updates to the language specification
 - updated CHANGES and STATUS files
 - refreshed READMEs
@@ -1034,20 +1360,20 @@ Documentation:
 - added AGREEMENT file listing user agreement
 - refreshed and refactored CONTRIBUTORS file
 
-Example Codes:
---------------
+Example Codes
+-------------
 - added tutorial example for using arithmetic arrays (arrays.chpl)
 - added tutorial example for using opaque arrays (opaque.chpl)
 - converted all HPCC example codes to use 64-bit indices for their domains
 - fixed a bug in the HPCC FFT calculation of GFlop/s
 - renamed sync vars to use $ naming convention
 
-Standard Modules:
------------------
+Standard Modules
+----------------
 - added support for 32-bit math routines
 
-Compiler Flags:
----------------
+Compiler Flags
+--------------
 - added new flags:
   --help-env : prints environment variables for each compiler flag
   --help-settings : prints current setting of each compiler flag
@@ -1067,16 +1393,16 @@ Compiler Flags:
 - compiler now parses all flags before any significant ones are acted upon
 - better error checking for parsing config param values
 
-Generated Code Flags:
----------------------
+Generated Code Flags
+--------------------
 - added new flags:
   -nl #/--numLocales=# flags for specifying the number of locales to use
   -v/--verbose flags for increasing the verbosity of the generated code
 - improved error-reporting for incorrect flags
 - improved parsing of config const/var values
 
-Bug Fixes/New Semantic Checks (for old semantics):
---------------------------------------------------
+Bug Fixes/New Semantic Checks (for old semantics)
+-------------------------------------------------
 - whole-array assignment of arrays of sync variables now works correctly
 - += and -= are now supported on sync variables
 - fixed bugs in sync variable read/write functions
@@ -1106,34 +1432,34 @@ Bug Fixes/New Semantic Checks (for old semantics):
 - improved error checks for legal expressions to iterate over
 - added semantic check for degenerate rank-change slicing
 
-Error Message Improvements:
----------------------------
+Error Message Improvements
+--------------------------
 - added filename/line# information to many error messages
 - improved notation for types in error messages from ": t" to "type t"
 - added warning when C-style ++ or -- are used; these are duplicated unary ops
 - improved clarity of function prototypes in function resolution errors
 - improved clarity of error for creating a domain with mixed integral types
 
-Compiler Analysis and Optimizations/Performance of Generated Code:
-------------------------------------------------------------------
+Compiler Analysis and Optimizations/Performance of Generated Code
+-----------------------------------------------------------------
 - improved performance for codes using type "complex"
 - removed extraneous threads created by uses of the begin statement
 - improved the performance of the bitMatMultOr routine in the BitOps module
 - added strength reduction for ** with an exponent of 0-6 or 8
 - added strength reduction for certain comparisons between uints and 0
 
-Compiler Performance and Cleanup:
----------------------------------
+Compiler Performance and Cleanup
+--------------------------------
 - improved performance of scalar replacement, copy propagation passes
 - improved performance of compiling codes using type "complex"
 - reduced memory requirements of compiler
 
-Generated Code:
----------------
+Generated Code
+--------------
 - added support for generating code using short variable names (--short-names)
 
-Testing System:
----------------
+Testing System
+--------------
 - added support for Makefile-driven testing within a subdirectory
 - added support for testing on multiple locales
 - added support for "compilation only" testing to avoid running executables
@@ -1141,8 +1467,8 @@ Testing System:
 - added the ability to suppress tests that are expected to fail
 - added support for communication-layer-specific .good files
 
-Internal:
----------
+Internal
+--------
 - support for array type descriptor at runtime
 - many refactorings and improvements to the compiler and runtime sources
 
@@ -1152,8 +1478,8 @@ version 0.5
 ===========
 Second preliminary release of Chapel Compiler, June 29, 2007
 
-High-Level Themes:
-------------------
+High-Level Themes
+-----------------
 - single-locale, multiple threads
 - support for additional serial features
 - improved single-threaded performance, memory utilization
@@ -1161,8 +1487,8 @@ High-Level Themes:
 - target audience: HPLS evaluation team, HPCS mission partners, 
   select HPC users and centers
 
-Changes to Chapel Language:
----------------------------
+Changes to Chapel Language
+--------------------------
 - eliminated Chapel's sequence type
   - in the future, a standard List library will provide similar functionality
   - removed # and #= operators, since they were designed for sequences
@@ -1215,8 +1541,8 @@ Changes to Chapel Language:
 - added support for reading a value of a specified type from a file
   e.g., "var myint = infile.read(int);"
 
-Newly Implemented Features:
----------------------------
+Newly Implemented Features
+--------------------------
 - support for sparse domains/arrays
   - assignment of aggregate index expressions to sparse domains
   - accumulation of indices into sparse domains using +=
@@ -1239,8 +1565,8 @@ Newly Implemented Features:
 - subdomain keyword is now supported, though subset relationship is not checked
 - initial support for specifying a distribution class; interface still in flux
 
-Syntactic/Naming Changes:
--------------------------
+Syntactic/Naming Changes
+------------------------
 - removed support for using "?" in identifier names
   - changed standard method member? to member
   - changed standard method true? to isTrue
@@ -1250,8 +1576,8 @@ Syntactic/Naming Changes:
 - made file open/close methods take parenthesis
 - renamed "indefinite domains/arrays" to "associative domains/arrays"
 
-Semantic Changes:
------------------
+Semantic Changes
+----------------
 - changed relative precedence of casts and unary +/- (unary +/- is now tighter)
   e.g., -2:uint(32) is equivalent to (-2):uint(32) rather than -(2:uint(32))
 - for/forall loops over arrays now result in references to elements, not copies
@@ -1269,8 +1595,8 @@ Semantic Changes:
 - compilerError() can now take multiple arguments like a halt()
 - replaced setter/getter functions with richer support for var functions
 
-Documentation:
---------------
+Documentation
+-------------
 - added man page for Chapel compiler (chpl)
 - added CHANGES file
 - added Quick Reference document
@@ -1279,8 +1605,8 @@ Documentation:
 - updated STATUS file
 - cleaned up README files a bit
 
-Example Codes:
---------------
+Example Codes
+-------------
 - added README.features file to map Chapel features to examples that use them
 - several improvements to the HPCC benchmarks due to bug fixes, new features
 - added several new examples:
@@ -1299,15 +1625,15 @@ Example Codes:
 - combined the two genericStack examples into a single file
 - added performance testing support for stream.chpl and ra.chpl
 
-Standard Modules:
------------------
+Standard Modules
+----------------
 - Search: new standard module
 - Sort: new standard module
 - Types: numBits() and numBytes() are now param functions
 - Random: fillRandom() routines now work for arrays of arbitrary rank
 
-Compiler Flags:
----------------
+Compiler Flags
+--------------
 - improved the formatting of the --help message
 - added -g flag for debugging generated code; turns on --cpp-lines by default
 - added -O flag for optimizing generated code
@@ -1322,12 +1648,12 @@ Compiler Flags:
 - removed --cg-chpl-lineno flag; this capability is now always on
 - removed --no-gc used for a stopgap reference counting scheme
 
-Generated Code Flags:
----------------------
+Generated Code Flags
+--------------------
 -- added a --gdb flag to make it easier to debug generated code
 
-Bug Fixes/New Semantic Checks (for old Semantics):
---------------------------------------------------
+Bug Fixes/New Semantic Checks (for old Semantics)
+-------------------------------------------------
 - test expressions in loops/conditionals restricted to bools, classes, integers
 - runtime checks added to ensure that zippered iterations are of equal size
 - fixed portability issues in flex lexer file, chapel.lex
@@ -1356,8 +1682,8 @@ Bug Fixes/New Semantic Checks (for old Semantics):
 - better semantic checking of legal l-values
 - fixed an infinite loop bug in associative domains/arrays
 
-Error Message Improvements:
----------------------------
+Error Message Improvements
+--------------------------
 - added message to compiler warning that "atomic" is unimplemented when used
 - caused compiler to complain about non-module scope configuration variables
 - unified runtime and compiler error message formats
@@ -1369,8 +1695,8 @@ Error Message Improvements:
 - better error checking of legal vs. illegal casts
 - generally improved quality of compiler error messages
 
-Compiler Analysis and Optimizations/Performance of Generated Code:
-------------------------------------------------------------------
+Compiler Analysis and Optimizations/Performance of Generated Code
+-----------------------------------------------------------------
 - removed the insertion of all large sequence/array temporaries
 - extensive optimizations of iterators and loop generation
 - global/local copy propagation
@@ -1380,8 +1706,8 @@ Compiler Analysis and Optimizations/Performance of Generated Code:
 - reaching definitions analysis
 - def-use and use-def chains
 
-Compiler Performance and Cleanup:
----------------------------------
+Compiler Performance and Cleanup
+--------------------------------
 - improvements to function resolution, vararg function instantiation
 - made compiler build with debugging off/optimizations on for non-developers
 - removed unused scalar replacement code
@@ -1389,8 +1715,8 @@ Compiler Performance and Cleanup:
 - removed old reference counting code
 - optimized several passes to improve compile time
 
-Generated Code:
----------------
+Generated Code
+--------------
 - now generating structured loops rather than gotos and labels
 - large reduction in lines of generated code
   e.g., ~40% reduction in lines of code for jacobi example (13275 -> 7753)
@@ -1400,12 +1726,12 @@ Generated Code:
 - using pragmas, generated code has been shown to vectorize on X1/thread on MTA
 - initial support for cross-compiling to the XT
 
-Testing System:
----------------
+Testing System
+--------------
 - added support for doing performance-tracking experiments
 
-Internal:
----------
+Internal
+--------
 - new IR traversal mechanisms
 - flow analysis optimization framework
 - vararg functions handled within function resolution
@@ -1424,7 +1750,8 @@ version 0.4
 ===========
 Preliminary release of Chapel Compiler, December 15, 2006
 
-High-Level Themes:
+High-Level Themes
+----------------
 - single-locale, multiple threads
 - support for base language features
 - designed for correctness over performance

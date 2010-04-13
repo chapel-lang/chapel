@@ -13,8 +13,8 @@ hello-multicore: coforall loop
 hello-multiloc : coforalls, on clauses, locales
 arrays         : arithmetic domains and arrays; slicing; iteration; reallocation
 beer           : 1D domains and arrays; string manipulation; generic functions
-block2D        : distributions; Block distribution
 classes        : classes and objects; dynamic dispatch; 'this' and 'these'
+distributions  : distributions; Block; Cyclic
 fileIO         : file I/O of scalars and arrays
 genericClasses : generic classes and objects; generic types
 genericStack   : generic classes; nested classes; array reallocation
@@ -31,7 +31,7 @@ ranges         : ranges; .., #, by operators; range iteration; range slicing
 reductions     : minloc, maxloc, + and && array reductions
 slices         : array slicing and reindexing; iterators
 sparse         : sparse domains and arrays; operations on them
-taskParallel   : begin, cobegin, coforall, sync statements, sync variables
+taskParallel   : begin, cobegin, coforall
 timers         : Timer record in Time module
 tree           : unbounded task parallelism using cobegin
 varargs        : variable argument functions, tuples
@@ -69,8 +69,8 @@ hello-multicore|       |   *   |       |       |       |       |       |
 hello-multiloc |       |   x   |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |       |       |
 beer           |       |   *   |       |       |       |       |       |
-block2D        |       |   x   |       |       |       |       |       |
 classes        |       |   x   |       |       |       |       |       |
+distributions  |       |   x   |       |       |       |       |       |
 fileIO         |   *   |   *   |   *   |       |       |       |       |
 genericClasses |       |   x   |       |       |       |       |       |
 genericStack   |       |   x   |       |   x   |       |       |       |
@@ -119,8 +119,8 @@ hello-multicore|       |       |       |       |       |   x   |       |
 hello-multiloc |       |       |       |       |       |   x   |       |
 arrays         |       |       |       |   x   |       |   x   |       |
 beer           |       |       |   x   |   *   |       |   x   |       |
-block2D        |       |   x   |       |       |       |       |       |
 classes        |       |       |       |   x   |   x   |       |   *   |
+distributions  |       |   x   |       |       |       |       |       |
 fileIO         |       |       |   x   |   x   |       |   x   |       |
 genericClasses |       |       |       |   x   |       |       |       |
 genericStack   |       |       |       |   x   |       |       |       |
@@ -137,7 +137,7 @@ ranges         |       |       |       |   x   |       |       |       |
 reductions     |       |   *   |       |       |       |   x   |       |
 slices         |       |       |   x   |   x   |   x   |   x   |       |
 sparse         |       |       |       |   x   |   x   |   x   |       |
-taskParallel   |       |   x   |       |   x   |       |       |       |
+taskParallel   |       |       |       |       |       |   x   |       |
 timers         |       |   x   |       |       |       |   x   |       |
 tree           |       |       |   x   |   x   |       |   x   |       |
 varargs        |       |       |       |   x   |       |       |   *   |   *
@@ -172,8 +172,8 @@ hello-multicore|   x   |       |       |       |       |   x   |       |
 hello-multiloc |   x   |       |       |       |       |       |       |
 arrays         |       |   x   |       |       |       |   x   |   *   |
 beer           |   *   |       |       |       |       |   *   |       |
-block2D        |       |       |       |       |       |       |       |
 classes        |       |       |       |   *   |       |   x   |       |
+distributions  |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |   x   |       |
 genericClasses |       |   x   |       |   x   |   *   |   x   |       |
 genericStack   |   x   |       |   *   |   *   |   *   |   x   |       |
@@ -190,7 +190,7 @@ ranges         |       |   x   |       |       |       |   x   |       |
 reductions     |       |       |       |       |       |   x   |       |
 slices         |       |       |       |       |       |   *   |       |
 sparse         |       |       |       |       |       |   x   |       |
-taskParallel   |       |       |       |       |       |   x   |       |   x
+taskParallel   |       |       |       |       |       |       |       |
 timers         |       |       |       |       |       |       |       |
 tree           |       |       |       |   x   |       |   x   |       |
 varargs        |       |   x   |       |       |       |   x   |   x   |
@@ -223,8 +223,8 @@ hello-multicore|       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   *   |       |       |       |       |       |       |   *
 beer           |   x   |       |       |       |       |       |       |
-block2D        |   x   |       |       |       |       |       |       |
 classes        |       |       |       |       |       |       |       |
+distributions  |   x   |       |       |       |       |       |       |
 fileIO         |   x   |       |       |       |       |       |       |
 genericClasses |       |       |       |       |       |       |       |
 genericStack   |   x   |       |       |       |       |       |   x   |   x
@@ -241,7 +241,7 @@ ranges         |   x   |       |       |       |       |       |       |
 reductions     |   x   |       |       |       |       |       |       |
 slices         |   x   |       |       |       |       |       |       |
 sparse         |   x   |   *   |       |       |       |       |       |   x
-taskParallel   |   x   |       |       |       |       |       |       |
+taskParallel   |       |       |       |       |       |       |       |
 timers         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
@@ -274,8 +274,8 @@ hello-multicore|       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |   x   |   *   |   *   |       |       |       |       |
 beer           |   x   |       |       |       |       |       |       |
-block2D        |   x   |       |       |       |       |       |       |
 classes        |       |       |       |       |       |       |       |
+distributions  |   x   |       |       |       |       |       |       |
 fileIO         |       |       |       |       |   x   |       |       |
 genericClasses |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
@@ -324,8 +324,8 @@ hello-multicore|       |       |   X   |       |       |       |       |
 hello-multiloc |       |       |   x   |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
-block2D        |       |       |       |       |       |       |       |
 classes        |       |       |       |       |       |       |       |
+distributions  |       |       |       |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
 genericClasses |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
@@ -342,7 +342,7 @@ ranges         |       |       |       |       |       |       |       |
 reductions     |       |       |       |       |       |       |       |
 slices         |       |       |       |       |       |       |       |
 sparse         |       |       |       |       |       |       |       |
-taskParallel   |   *   |   *   |   *   |       |   *   |       |   *   |
+taskParallel   |   *   |   *   |   *   |       |       |       |       |
 timers         |       |       |       |       |       |       |       |
 tree           |       |   x   |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
@@ -376,8 +376,8 @@ hello-multicore|       |       |       |       |       |       |       |
 hello-multiloc |   *   |       |       |   *   |   *   |       |   *   |   
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
-block2D        |       |       |       |       |       |   x   |       |
 classes        |       |       |       |       |       |       |       |
+distributions  |       |       |       |       |       |   x   |       |
 fileIO         |       |       |       |       |       |       |       |
 genericClasses |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
@@ -421,7 +421,7 @@ key:
 -------------------------------------------------------------------------------
                |                   DISTRIBUTIONS
                |
-test           | distr | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
+test           | distr | block | cycli | xxxxx | xxxxx | xxxxx | xxxxx | xxxxx
 ---------------+-------+-------+-------+-------+-------+-------+-------+-------
 hello          |       |       |       |       |       |       |       |
 hello-module   |       |       |       |       |       |       |       |
@@ -429,8 +429,8 @@ hello-multicore|       |       |       |       |       |       |       |
 hello-multiloc |       |       |       |       |       |       |       |
 arrays         |       |       |       |       |       |       |       |
 beer           |       |       |       |       |       |       |       |
-block2D        |   *   |       |       |       |       |       |       |
 classes        |       |       |       |       |       |       |       |
+distributions  |   *   |   *   |   *   |       |       |       |       |
 fileIO         |       |       |       |       |       |       |       |
 genericClasses |       |       |       |       |       |       |       |
 genericStack   |       |       |       |       |       |       |       |
@@ -452,13 +452,15 @@ timers         |       |       |       |       |       |       |       |
 tree           |       |       |       |       |       |       |       |
 varargs        |       |       |       |       |       |       |       |
 variables      |       |       |       |       |       |       |       |
-hpcc/stream    |   x   |       |       |       |       |       |       |
-hpcc/ra        |   x   |       |       |       |       |       |       |
-hpcc/fft       |   x   |       |       |       |       |       |       |
+hpcc/stream    |   x   |   x   |       |       |       |       |       |
+hpcc/ra        |   x   |   x   |       |       |       |       |       |
+hpcc/fft       |   x   |   x   |   x   |       |       |       |       |
 hpcc/hpl       |       |       |       |       |       |       |       |
 -------------------------------------------------------------------------------
 key:
   distr = uses distributed domains/arrays
+  block = uses the Block distribution
+  cycli = uses the Cyclic distribution
 -------------------------------------------------------------------------------
 
 
