@@ -9,7 +9,7 @@ use Random;
 
 //
 // Declare command-line configuration constants for:
-//   n: the number of iterations
+//   n: the number of random points to generate
 //   seed: the random number generator seed
 //   tasks: the number of tasks to parallelize the computation
 //
@@ -20,7 +20,7 @@ config const seed = 314159265;
 //
 // Output simulation setup.
 //
-writeln("Number of iterations = ", n);
+writeln("Number of points     = ", n);
 writeln("Random number seed   = ", seed);
 writeln("Number of tasks      = ", tasks);
 
@@ -37,7 +37,7 @@ coforall task in 1..tasks {
   var rs = new RandomStream(seed + task*2, parSafe=false);
   var count = 0;
   for i in (task-1)*n/tasks+1..task*n/tasks do
-    count += rs.getNext()**2 + rs.getNext()**2 < 1.0;
+    count += rs.getNext()**2 + rs.getNext()**2 <= 1.0;
   delete rs;
   counts[task] = count;
 }

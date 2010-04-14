@@ -9,7 +9,7 @@ use Random;
 
 //
 // Declare command-line configuration constants for:
-//   n: the number of iterations
+//   n: the number of random points to generate
 //   seed: the random number generator seed
 //   tasks: the number of tasks to parallelize the computation (per locale)
 //
@@ -21,7 +21,7 @@ config const seed = 314159265;
 // Output simulation setup.
 //
 writeln("Number of locales    = ", numLocales);
-writeln("Number of iterations = ", n);
+writeln("Number of points     = ", n);
 writeln("Random number seed   = ", seed);
 writeln("Number of tasks      = ", tasks, " (per locale)");
 
@@ -40,7 +40,7 @@ coforall loc in Locales do on loc {
     var rs = new RandomStream(seed + loc.id*tasks*2 + task*2, parSafe=false);
     var count = 0;
     for i in (task-1)*myN/tasks+1..task*myN/tasks do
-      count += rs.getNext()**2 + rs.getNext()**2 < 1.0;
+      count += rs.getNext()**2 + rs.getNext()**2 <= 1.0;
     delete rs;
     counts[loc.id][task] = count;
   }

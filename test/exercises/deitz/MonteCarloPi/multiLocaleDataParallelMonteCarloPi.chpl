@@ -10,7 +10,7 @@ use Random, BlockDist;
 
 //
 // Declare command-line configuration constants for:
-//   n: the number of iterations
+//   n: the number of random points to generate
 //   seed: the random number generator seed
 //
 config const n = 100000;
@@ -20,7 +20,7 @@ config const seed = 314159265;
 // Output simulation setup.
 //
 writeln("Number of locales     = ", numLocales);
-writeln("Number of iterations  = ", n);
+writeln("Number of points      = ", n);
 writeln("Random number seed    = ", seed);
 writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
 
@@ -32,10 +32,10 @@ writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
 var rs = new RandomStream(seed, parSafe=false);
 
 //
-// Create a domain over the number of iterations.  Since there is no
-// array, the memory required is O(1) in terms of the number of
-// iterations.  Distributed across all the locales using the Block
-// distribution.
+// Create a domain over the number of random points to generate.
+// Since there is no array, the memory required is O(1) in terms of
+// the number of points.  Distributed across all the locales using
+// the Block distribution.
 //
 var D = [1..n] dmapped Block([1..n]);
 
@@ -45,7 +45,7 @@ var D = [1..n] dmapped Block([1..n]);
 // zippers two iterators over the RandomStream object (the second call
 // to iterate starts at the point after the first iterator finishes).
 //
-var count = + reduce [(x,y) in (rs.iterate(D),rs.iterate(D))] x**2 + y**2 < 1.0;
+var count = + reduce [(x,y) in (rs.iterate(D),rs.iterate(D))] x**2+y**2 <= 1.0;
 
 //
 // Delete the Random Stream object.
