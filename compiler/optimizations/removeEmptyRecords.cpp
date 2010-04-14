@@ -14,15 +14,34 @@ removeEmptyRecords() {
   int numEmptyRecordTypes = 0;
   Vec<Symbol*> emptyRecordSymbolSet;
 
-  forv_Vec(ClassType, ct, gClassTypes) {
-    if (isRecord(ct) && ct->fields.length == 0) {
-      emptyRecordTypeSet.set_add(ct);
-      numEmptyRecordTypes++;
-      ct->symbol->defPoint->remove();
-      if (ct->refType) {
-        emptyRecordTypeSet.set_add(ct->refType);
-        numEmptyRecordTypes++;
-        ct->refType->symbol->defPoint->remove();
+  //
+  // Iteratively identify all empty record types (knowing that a
+  // record is empty if all of its fields are empty records (and will
+  // therefore be removed)
+  //
+  bool change = true;
+  while (change) {
+    change = false;
+    forv_Vec(ClassType, ct, gClassTypes) {
+      if (isRecord(ct) && ct->symbol->defPoint->parentSymbol) {
+        bool empty = true;
+        for_fields(field, ct) {
+          if (!emptyRecordTypeSet.set_in(field->type)) {
+            empty = false;
+            break;
+          }
+        }
+        if (empty) {
+          change = true;
+          emptyRecordTypeSet.set_add(ct);
+          numEmptyRecordTypes++;
+          ct->symbol->defPoint->remove();
+          if (ct->refType) {
+            emptyRecordTypeSet.set_add(ct->refType);
+            numEmptyRecordTypes++;
+            ct->refType->symbol->defPoint->remove();
+          }
+        }
       }
     }
   }
