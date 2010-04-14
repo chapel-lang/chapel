@@ -20,10 +20,10 @@ config const seed = 314159265;
 //
 // Output simulation setup.
 //
-writeln("Number of locales    = ", numLocales);
-writeln("Number of points     = ", n);
-writeln("Random number seed   = ", seed);
-writeln("Number of tasks      = ", tasks, " (per locale)");
+writeln("Number of locales   = ", numLocales);
+writeln("Number of points    = ", n);
+writeln("Random number seed  = ", seed);
+writeln("Number of tasks     = ", tasks, " (per locale)");
 
 //
 // On each locale, for each task on that locale, construct a
@@ -57,4 +57,4 @@ for loc in Locales do
 //
 // Output the approximation of PI.
 //
-writeln("Approximation of PI  = ", format("#.#######", count * 4.0 / n));
+writeln("Approximation of PI = ", format("#.#######", count * 4.0 / n));

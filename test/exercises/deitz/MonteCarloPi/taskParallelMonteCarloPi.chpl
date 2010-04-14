@@ -20,9 +20,9 @@ config const seed = 314159265;
 //
 // Output simulation setup.
 //
-writeln("Number of points     = ", n);
-writeln("Random number seed   = ", seed);
-writeln("Number of tasks      = ", tasks);
+writeln("Number of points    = ", n);
+writeln("Random number seed  = ", seed);
+writeln("Number of tasks     = ", tasks);
 
 //
 // For each task, construct a RandomStream object, run the Monte Carlo
@@ -52,4 +52,4 @@ for task in 1..tasks do
 //
 // Output the approximation of PI.
 //
-writeln("Approximation of PI  = ", format("#.#######", count * 4.0 / n));
+writeln("Approximation of PI = ", format("#.#######", count * 4.0 / n));
