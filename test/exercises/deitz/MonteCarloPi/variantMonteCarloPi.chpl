@@ -12,13 +12,18 @@ use Random;
 //   n: the number of random points to generate
 //   seed: the random number generator seed
 //
-config const n = 100000;
+config const epsilon = 0.0000001;
 config const seed = 314159265;
+
+//
+// Declare a constant for pi that is "precise enough."
+//
+const pi = 3.14159265358979323846;
 
 //
 // Output simulation setup.
 //
-writeln("Number of points    = ", n);
+writeln("Epsilon             = ", format("#.#################", epsilon));
 writeln("Random number seed  = ", seed);
 
 //
@@ -29,11 +34,14 @@ writeln("Random number seed  = ", seed);
 var rs = new RandomStream(seed, parSafe=false);
 
 //
-// Run the Monte Carlo simulation.
+// Run the Monte Carlo simulation until the approximation of PI is
+// within epsilon of the "precise enough" constant.
 //
-var count = 0;
-for i in 1..n do
+var n = 0, count = 0;
+do {
+  n += 1;
   count += rs.getNext()**2 + rs.getNext()**2 <= 1.0;
+} while abs(count * 4.0 / n - pi) > epsilon;
 
 //
 // Delete the Random Stream object.
@@ -43,4 +51,5 @@ delete rs;
 //
 // Output the approximation of PI.
 //
-writeln("Approximation of PI = ", format("#.#######", count * 4.0 / n));
+writeln("Approximation of PI = ", format("#.###############", count * 4.0 / n));
+writeln("Number of points    = ", count);
