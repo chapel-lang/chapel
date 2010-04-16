@@ -25,7 +25,7 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10)
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -144,15 +144,15 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-seg fault (04/14/10)
---------------------
-[Error matching program output for arrays/deitz/part7/test_out_array]
+nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
+-----------------------------------------------------------------------------
+[Error matching program output for arrays/deitz/part7/test_out_array] (04/14/10)
 
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program users/agnieszka/test2] (04/13/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -226,7 +226,7 @@ mpi-specific failures
 
 MPI_ABORT issue (when not timing out in compilation)
 ----------------------------------------------------
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock3] (04/14/10)
+[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock3] (04/14/10, 04/15/10)
 [Error matching program output for studies/590o/alaska/graph] (04/14/10)
 
 memory corruption (when not timing out in execution)
@@ -247,7 +247,7 @@ nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for studies/590o/blerner/nilClassCheck] (04/14/10)
 [Error: Timed out compilation for users/shetag/assocInRecord] (04/14/10)
-[Error: Timed out compilation for multilocale/diten/localBlock/needMultiLocales/localBlock3] (04/13/10)
+[Error: Timed out compilation for multilocale/diten/localBlock/needMultiLocales/localBlock3] (04/13/10, 04/15/10)
 [Error: Timed out compilation for studies/590o/alaska/graph] (04/13/10)
 [Error: Timed out compilation for users/shetag/assocDomOfRecord] (04/13/10)
 
@@ -268,21 +268,6 @@ missing 1-tuple acccessor (03/03/10)
 =======================
 baseline-specific tests
 =======================
-
-internal error TYP0456 (04/14/10)
----------------------------------
-[Error matching compiler output for classes/deitz/infer/infer_field2]
-[Error matching compiler output for classes/deitz/infer/infer_field2a]
-[Error matching compiler output for classes/deitz/infer/infer_field2b]
-[Error matching compiler output for classes/deitz/infer/infer_field2c]
-[Error matching compiler output for classes/diten/paramRecordInBegin]
-[Error matching compiler output for
-functions/deitz/iterators/test_instantiate_iterator1]
-[Error matching compiler output for functions/deitz/test_iterator1]
-[Error matching compiler output for functions/deitz/test_iterator6]
-[Error matching compiler output for functions/waynew/iterator7]
-[Error matching compiler output for puzzles/deitz/puzzle080117]
-[Error matching compiler output for types/seq/deitz/test_seq_tuple3]
 
 incorrect output -- expected? (04/03/10)
 ----------------------------------------
