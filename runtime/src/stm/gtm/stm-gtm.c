@@ -109,7 +109,7 @@ void chpl_stm_tx_commit(chpl_stm_tx_p tx) {
     }
     GTM_Safe(tx, gtm_tx_commitPh1(tx));
 
-    // commit phase 2
+    // commit phase 2 -- will always return success.
     if (tx->numremlocales > -1) { 
       GTM_Safe(tx, gtm_comm_tx_commitPh2(tx));
     }
@@ -128,9 +128,9 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx) {
   if (tx->status == TX_ACTIVE || tx->status == TX_COMMIT) {
     assert(tx->srclocale == tx->txlocale && tx->srclocale == MYLOCALE);
 
-    // aborts always succeed
+    // aborts always succeeds, local or otherwise. 
     if (tx->numremlocales > -1) { 
-      gtm_comm_tx_abort(tx);
+      gtm_comm_tx_abort(tx); 
     }
     gtm_tx_abort(tx);
 
@@ -138,33 +138,33 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx) {
     if (tx->env != NULL) {
       chpl_stm_tx_env_p txenvptr = &tx->env;
       gtm_tx_cleanup(tx); 
-      longjmp(*txenvptr, 1);
+      longjmp(tx->env, 1);
     }
   }
   chpl_error("STM Error: cannot abort transaction.", 0, 0);
 }
 
-typedef struct __convert_t {
+typedef union __wrapper_t {
   gtm_word_t w;
+  uint32_t hw[2];
   uint8_t b[GTMWORDSIZE];
-} convert_t;
+} wrapper_t;
 
 int gtm_tx_load(chpl_stm_tx_t* tx, void* dstaddr, void* srcaddr, size_t size) {
-  int mask;
+  int align;
   gtm_word_p saddr, daddr;
-  convert_t sval;
+  wrapper_t dval;
   uint8_t* dbyteaddr;
 
-  if ((mask  = (gtm_word_t) srcaddr & (GTMWORDSIZE - 1)) != 0) {
+  if ((align  = (gtm_word_t) srcaddr & (GTMWORDSIZE - 1)) != 0) {
     saddr = (gtm_word_p) ((gtm_word_t) srcaddr & ~(gtm_word_t) (GTMWORDSIZE - 1));
-    if (gtm_tx_load_word(tx, &sval.w, saddr))
+    if (gtm_tx_load_word(tx, &dval.w, saddr) == TX_FAIL)
       return TX_FAIL; 
     dbyteaddr = (uint8_t*) dstaddr;
-    for (; mask < sizeof(gtm_word_t) && size > 0; mask++, size--)
-      *dbyteaddr++ = sval.b[mask];
+    for (; align < sizeof(gtm_word_t) && size > 0; align++, size--)
+      *dbyteaddr++ = dval.b[align];
     daddr = (gtm_word_p) dbyteaddr;
   } else {
-    assert(mask == 0);
     saddr = (gtm_word_p) srcaddr;
     daddr = (gtm_word_p) dstaddr; 
   }
@@ -176,13 +176,36 @@ int gtm_tx_load(chpl_stm_tx_t* tx, void* dstaddr, void* srcaddr, size_t size) {
   }
 
   if (size > 0) {
-    if (gtm_tx_load_word(tx, &sval.w, saddr)) 
+    if (gtm_tx_load_word(tx, &dval.w, saddr) == TX_FAIL) 
       return TX_FAIL; 
     dbyteaddr = (uint8_t*) daddr;
-    for (mask = 0; size > 0; mask++, size--)
-      *dbyteaddr++ = sval.b[mask];
+    for (align = 0; size > 0; align++, size--)
+      *dbyteaddr++ = dval.b[align];
   }
   return TX_OK;
+} 
+
+int gtm_tx_load_wrap(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size) {
+  if (size >= GTMWORDSIZE) {
+    return gtm_tx_load(tx, dstaddr, srcaddr, size); 
+  } else if (size == 4 && ((gtm_word_t) srcaddr & (gtm_word_t) 0x03) != 0) {
+    chpl_error("STM error: unaligned 32-bit load", 0, 0);
+  } else if (size == 4) {
+    wrapper_t dval;
+    int status; 
+    dval.w = 0;
+    // attempting a 4-byte load operation. first, read in the entire 
+    // 8-byte word by aligning the srcaddr to the nearest 8-byte word 
+    // boundary. we do this by masking the lower order three bits from
+    // srcaddr. next, determine which half-word was originally requested 
+    // by using bit 3 of the address and return its value. 
+    status = gtm_tx_load_word(tx, &dval.w, (void*) ((gtm_word_t) srcaddr & ~(gtm_word_t) 0x07));
+    *(gtm_word_p)dstaddr = dval.hw[((gtm_word_t) srcaddr & (gtm_word_t) 0x04) >> 2];
+    return status; 
+  } else {
+    chpl_error("STM error: tx load must be multiple of 4 or 8 bytes", 0, 0);
+  }
+  return TX_FAIL;
 } 
 
 void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size, int ln, chpl_string fn) {
@@ -191,11 +214,50 @@ void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t siz
 
   if (size == 0) return;
   
-  GTM_Safe(tx, gtm_tx_load(tx, dstaddr, srcaddr, size));
+  GTM_Safe(tx, gtm_tx_load_wrap(tx, dstaddr, srcaddr, size));
 }
 
 int gtm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size) {
+  int align;
+  gtm_word_p saddr, daddr;
+
+  if ((align  = (gtm_word_t) dstaddr & (GTMWORDSIZE - 1)) != 0) {   
+    chpl_error("STM Error: write underflow error", 0, 0);
+  } else {
+    saddr = (gtm_word_p) srcaddr;
+    daddr = (gtm_word_p) dstaddr; 
+  }
+
+  while (size >= GTMWORDSIZE) { 
+    if (gtm_tx_store_word(tx, saddr++, daddr++, ~(gtm_word_t) 0) == TX_FAIL) 
+      return TX_FAIL;
+    size -= GTMWORDSIZE;
+  }
+
+  if (size > 0) {
+    chpl_error("STM Error: write overflow error", 0, 0);
+  }
+
   return TX_OK;
+}
+
+int gtm_tx_store_wrap(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size) {
+  if (size >= GTMWORDSIZE) {
+    return gtm_tx_store(tx, srcaddr, dstaddr, size); 
+  } else if (size == 4 && ((gtm_word_t) dstaddr & (gtm_word_t) 0x03) != 0) {
+    chpl_error("STM error: unaligned 32-bit store", 0, 0);
+  } else if (size == 4) {
+    wrapper_t sval, mask;
+    int status;
+    sval.w = mask.w = 0;
+    sval.hw[((gtm_word_t) dstaddr & (gtm_word_t) 0x04) >> 2] = *(uint32_t*) srcaddr;
+    mask.hw[((gtm_word_t) dstaddr & (gtm_word_t) 0x04) >> 2] = ~(uint32_t) 0;
+    status = gtm_tx_store_word(tx, &sval.w, (void*) ((gtm_word_t) dstaddr & ~(gtm_word_t) 0x07), mask.w);      
+    return status; 
+  } else {
+    chpl_error("STM error: tx store must be multiple of 4 or 8 bytes", 0, 0);
+  }
+  return TX_FAIL;
 }
 
 void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size, int ln, chpl_string fn) {
@@ -203,10 +265,8 @@ void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t si
   assert(dstaddr != NULL && srcaddr != NULL && size != 0);
   
   if (size == 0) return;
-  
-  memcpy(dstaddr, srcaddr, size);
 
-  //  GTM_Safe(tx, gtm_tx_store(tx, srcaddr, dstaddr, size));
+  GTM_Safe(tx, gtm_tx_store_wrap(tx, srcaddr, dstaddr, size));
 }
 
 void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size, int ln, chpl_string fn) {

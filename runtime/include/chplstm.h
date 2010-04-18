@@ -64,9 +64,6 @@ typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;
 #define CHPL_STM_LOAD(tx, dst, src, type, ln, fn)		\
   chpl_stm_tx_load(tx, &dst, &src, SPECIFY_SIZE(type), ln, fn)
 
-#define CHPL_STM_ELOAD(tx, dst, src)			\
-  chpl_stm_tx_load(tx, &dst, &src, sizeof(dst), 0, 0)
-
 #define CHPL_STM_COMM_WIDE_GET_LOCALE(tx, ldst, rwide, ln, fn)		\
   do {                                                                  \
     if (chpl_localeID == (rwide).locale)				\
@@ -132,16 +129,6 @@ typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;
 				 sfield, etype, ln, fn);		\
     CHPL_STM_COMM_WIDE_GET(tx, ldst, chpl_macro_tmp, etype2, ln, fn);	\
   } while (0)
-
-// FIXME -- no guarantee rwide WILL be wide. Deprecated already ?
-#define CHPL_STM_COMM_WIDE_EPUT(tx, rwide, lsrc)			\
-  do {									\
-    if (chpl_localeID == (rwide).locale)				\
-      chpl_stm_tx_store(tx, &lsrc, (rwide).addr, sizeof(lsrc), 0, 0);	\
-    else 								\
-      chpl_stm_tx_put(tx, &lsrc, (rwide).locale, (rwide).addr,		\
-		      sizeof(lsrc), 0, 0);				\
-  } while(0)
 
 #define CHPL_STM_COMM_WIDE_PUT(tx, rwide, lsrc, type, ln, fn)		\
   do {									\

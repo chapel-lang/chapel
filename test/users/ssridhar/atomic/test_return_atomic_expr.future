@@ -1,0 +1,4 @@
+test_return_expr_atomic.chpl:12 syntax error: near 'atomic'
+
+feature request: atomic expressions are not yet supported. 
+

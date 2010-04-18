@@ -64,6 +64,7 @@ def _reprivatize(value) {
 // tuple. If the value is not a tuple and expand is true, copy the value into
 // a rank-tuple. If the value is a scalar and rank is 1, copy it into a 1-tuple.
 //
+pragma "inline"
 def _makeIndexTuple(param rank, t: _tuple, param expand: bool=false) where rank == t.size {
   return t;
 }
@@ -529,6 +530,7 @@ record _domain {
 
   def dim(d : int) return _value.dsiDim(d);
 
+  pragma "inline"
   def dim(param d : int) return _value.dsiDim(d);
 
   def dimIter(param d, ind) {

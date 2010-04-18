@@ -209,6 +209,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
 
   // optional, is this necesary? probably not now that
   // homogeneous tuples are implemented as C vectors.
+  pragma "inline"
   def dsiDim(param d : int)
     return ranges(d);
 

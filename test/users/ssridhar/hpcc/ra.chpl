@@ -102,9 +102,9 @@ def main() {
   forall ( , r) in (Updates, RAStream()) {
     on TableDist.idxToLocale(r & indexMask) {
       const myR = r;
-      local {
-	atomic T(r & indexMask) ^= r;
-      }
+      //      local {
+	atomic T(myR & indexMask) ^= myR;
+	//      }
     }
   }
 
@@ -148,9 +148,9 @@ def verifyResults() {
   forall ( , r) in (Updates, RAStream()) { 
     on TableDist.idxToLocale(r & indexMask) {
       var myR = r;
-      local {
-	atomic T(r & indexMask) ^= myR;
-      }
+      //      local {
+	atomic T(myR & indexMask) ^= myR;
+	//      }
     }
   }
 

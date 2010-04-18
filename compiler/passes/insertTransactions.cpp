@@ -148,12 +148,14 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  // currently assuming its on the stack and not passed around. 
 	  if (!isOnStack(se1)) 
 	    USR_WARN(call, "Heap load not being tracked (GET_MEMBER)");
+	  else 
+	    
 	  break;
 	} else if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
 	  USR_FATAL(call, "FIXME: GET_MEMBER FLAG_WIDE");
 	} else if (rhs->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
 	  USR_FATAL(call, "FIXME: GET_MEMBER FLAG_STAR_TUPLE");
-	}
+	} 
       }
       if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
 	SymExpr* se1 = toSymExpr(rhs->get(1));

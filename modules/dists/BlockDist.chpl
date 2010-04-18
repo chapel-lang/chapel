@@ -333,6 +333,7 @@ def Block.targetLocsIdx(ind: idxType) where rank == 1 {
   return targetLocsIdx(tuple(ind));
 }
 
+pragma "inline"
 def Block.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 1..rank do
@@ -714,6 +715,7 @@ def BlockDom.dsiBuildArithmeticDom(param rank: int, type idxType,
 //
 // Added as a performance stopgap to avoid returning a domain
 //
+pragma "inline"
 def LocBlockDom.member(i) return myBlock.member(i);
 
 def BlockArr.dsiDisplayRepresentation() {
@@ -740,6 +742,7 @@ def BlockArr.setup() {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
+pragma "inline"
 def BlockArr.dsiAccess(i: rank*idxType) var {
   if myLocArr then local {
     if myLocArr.locDom.member(i) then
@@ -1041,6 +1044,7 @@ def BlockArr.dsiReallocate(d: domain) {
 //
 // the accessor for the local array -- assumes the index is local
 //
+pragma "inline"
 def LocBlockArr.this(i) var {
   return myElems(i);
 }

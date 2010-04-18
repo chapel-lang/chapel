@@ -4,7 +4,8 @@ def main {
   var y: int(64);
   coforall i in 1..10 do
     y = foo;
-  writeln(x, y);
+  writeln("x = ", x);
+  writeln("y = ", y);
 }
 
 def foo: int(64) {

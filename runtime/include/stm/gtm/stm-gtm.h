@@ -57,6 +57,7 @@ typedef struct __writeEntry_t {
   volatile gtm_word_p addr;
   gtm_word_t value;
   gtm_word_t version;
+  gtm_word_t mask;
   volatile gtm_word_p lock;
   struct __writeEntry_t *next;
 } write_entry_t;
@@ -80,8 +81,8 @@ typedef struct __chpl_stm_tx_t {
   int32_t numremlocales;     // number of remote locales tx has state
   int32_t* remlocales;       // list of locales on which tx has state
   read_set_t readset;               
-  write_set_t writeset;
-  gtm_word_t timestamp;
+  write_set_t writeset;      
+  gtm_word_t timestamp;      // commit timestamp
   chpl_stm_tx_env_t env;     // stores program execution state
 } chpl_stm_tx_t;
 
@@ -105,14 +106,6 @@ static volatile gtm_word_t locks[LOCK_ARRAY_SIZE];
 static volatile gtm_word_t gclock;
 
 //
-//  stm wrapper functionality
-// 
-typedef union __wrap64_t {
-  uint64_t u64;
-  uint32_t u32[2];
-} wrap64_t;
-
-//
 // internal interface
 //
 
@@ -123,10 +116,13 @@ int gtm_tx_commitPh1(chpl_stm_tx_t* tx);
 int gtm_tx_commitPh2(chpl_stm_tx_t* tx);
 void gtm_tx_abort(chpl_stm_tx_t* tx);
 
-int gtm_tx_load_word(chpl_stm_tx_t* tx, gtm_word_p dstaddr, gtm_word_p srcaddr);
 int gtm_tx_load(chpl_stm_tx_t* tx, void* dstaddr, void* srcaddr, size_t size);
-int gtm_tx_store_word(chpl_stm_tx_t* tx, gtm_word_p srcaddr, gtm_word_p dstaddr);
+int gtm_tx_load_wrap(chpl_stm_tx_t* tx, void* dstaddr, void* srcaddr, size_t size);
+int gtm_tx_load_word(chpl_stm_tx_t* tx, gtm_word_p dstaddr, gtm_word_p srcaddr);
+
 int gtm_tx_store(chpl_stm_tx_t* tx, void* srcaddr, void* dstaddr, size_t size);
+int gtm_tx_store_wrap(chpl_stm_tx_t* tx, void* srcaddr, void*  dstaddr, size_t size);
+int gtm_tx_store_word(chpl_stm_tx_t* tx, gtm_word_p srcaddr, gtm_word_p dstaddr, gtm_word_t mask);
 
 void gtm_comm_init(void);
 void gtm_comm_exit(void);
