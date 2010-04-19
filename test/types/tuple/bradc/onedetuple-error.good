@@ -1,0 +1,1 @@
+onetuple-error.chpl:1: error: attempting to de-tuple non-tuple type 'int'

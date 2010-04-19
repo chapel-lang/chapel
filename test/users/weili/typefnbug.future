@@ -1,0 +1,9 @@
+bug: failure to unify return types for type function (?)
+
+I'm not quite sure what's going wrong in this test, but my
+best guess would be that the logic we use to unify inferred
+return types might be trying to be applied to type functions
+as well.  That's just a wild guess, though.
+
+Also of interest, the small rewrite captured in typefnbug-works.chpl
+(adding an else clause) causes this to work.

@@ -33,6 +33,7 @@ extern bool fNoScalarReplacement;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
+extern bool fNoRemoveEmptyRecords;
 extern int optimize_on_clause_limit;
 
 extern bool report_inlining;

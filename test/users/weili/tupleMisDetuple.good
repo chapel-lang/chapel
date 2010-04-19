@@ -1,0 +1,2 @@
+tupleMisDetuple.chpl:1: size mismatch in de-tuple operation (2 != 4)
+tupleMisDetuple.chpl:2: size mismatch in de-tuple operation (4 != 2)

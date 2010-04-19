@@ -22,6 +22,7 @@
 # distribution of more work.
 #
 # Requirements:
+#  - $CHPL_HOME environment variable is set
 #  - paratest.server.pl is run in $CHPL_HOME/test.
 #  - Chapel compiler bin as $CHPL_HOME/bin/"platform"/chpl.
 #  - Scripts start_test and paratest.client.pl in the same directory
@@ -494,13 +495,19 @@ sub main {
             }
         }
     } else { # else, current working dir
+        use Cwd;
+        my $cwd = &Cwd::cwd();
+        print "[Generating tests from the Chapel Spec in $ENV{CHPL_HOME}/spec]\n";
+        chdir $ENV{CHPL_HOME} or die "Can't cd to $ENV{CHPL_HOME}: $!\n";
+        my $autogen=`make spectests`;
+        die "Error generating Spec tests in $ENV{CHPL_HOME}/spec\n" unless $? == 0;
+        chdir $cwd;
         if ($filedist) {
             @testdir_list = find_files (".", 0, !$incl_futures, 1);
         } else {
             @testdir_list = find_subdirs (".", 0);
         }
     }
-
 
     unless (-e $logdir) {
         print "Error: log directory $logdir does not exist\n";

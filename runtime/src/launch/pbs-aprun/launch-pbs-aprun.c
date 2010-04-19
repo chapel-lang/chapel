@@ -10,11 +10,9 @@
 #include "error.h"
 
 
-#define basePBSFilename ".chpl-pbs-qsub-"
 #define baseExpectFilename ".chpl-expect-"
 #define baseSysFilename ".chpl-sys-"
 
-char pbsFilename[FILENAME_MAX];
 char expectFilename[FILENAME_MAX];
 char sysFilename[FILENAME_MAX];
 
@@ -90,31 +88,46 @@ static int getNumCoresPerLocale(void) {
   return numCores;
 }
 
-static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub, 
-                                 int32_t numLocales,
-                                 int32_t numCoresPerLocale) {
+static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion qsub, 
+                            int32_t numLocales, int32_t numCoresPerLocale) {
+  const size_t maxOptLength = 256;
   char* queue = getenv("CHPL_LAUNCHER_QUEUE");
   char* walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  char* optionString = chpl_malloc(maxOptLength, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  int length = 0;
 
-  if (queue)
-    fprintf(pbsFile, "#PBS -q %s\n", queue);
-  if (walltime) 
-    fprintf(pbsFile, "#PBS -l walltime=%s\n", walltime);
+  length += snprintf(optionString + length, maxOptLength - length,
+                     "-z -V -I -N Chpl-%.10s", genFilename);
+
+  if (projectString && strlen(projectString) != 0) {
+    length += snprintf(optionString + length, maxOptLength - length,
+                       " -A %s", projectString);
+  }
+  if (queue) {
+    length += snprintf(optionString + length, maxOptLength - length,
+                       " -q %s", queue);
+  }
+  if (walltime) {
+    length += snprintf(optionString + length, maxOptLength - length,
+                       " -l walltime=%s", walltime);
+  }
   switch (qsub) {
   case pbspro:
   case unknown:
-    fprintf(pbsFile, "#PBS -l mppwidth=%d\n", numLocales);
-    fprintf(pbsFile, "#PBS -l mppnppn=%d\n", procsPerNode);
-    fprintf(pbsFile, "#PBS -l mppdepth=%d\n", numCoresPerLocale);
+    length += snprintf(optionString + length, maxOptLength - length,
+                       " -l mppwidth=%d -l mppnppn=%d -l mppdepth=%d",
+                       numLocales, procsPerNode, numCoresPerLocale);
     break;
   case nccs:
     if (!queue && !walltime)
       chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
                  "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
                  "environment variables", 0, 0);
-    fprintf(pbsFile, "#PBS -l size=%d\n", numCoresPerLocale*numLocales);
+    length += snprintf(optionString + length, maxOptLength - length,
+                       " -l size=%d\n", numCoresPerLocale*numLocales);
     break;
   }
+  return optionString;
 }
 
 static char* chpl_launch_create_command(int argc, char* argv[], 
@@ -123,9 +136,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   int size;
   char baseCommand[256];
   char* command;
-  FILE* pbsFile, *expectFile;
+  FILE* expectFile;
   char* projectString = getenv(launcherAccountEnvvar);
   char* basenamePtr = strrchr(argv[0], '/');
+  char* qsubOptions;
   pid_t mypid;
   int numCoresPerLocale;
 
@@ -143,17 +157,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 #endif
   sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
-  sprintf(pbsFilename, "%s%d", basePBSFilename, (int)mypid);
 
   numCoresPerLocale = getNumCoresPerLocale();
 
-  pbsFile = fopen(pbsFilename, "w");
-  fprintf(pbsFile, "#!/bin/sh\n\n");
-  fprintf(pbsFile, "#PBS -N Chpl-%.10s\n", basenamePtr);
-  genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales, numCoresPerLocale);
-  if (projectString && strlen(projectString) > 0)
-    fprintf(pbsFile, "#PBS -A %s\n", projectString);
-  fclose(pbsFile);
+  qsubOptions = genQsubOptions(basenamePtr, projectString, determineQsubVersion(),
+                               numLocales, numCoresPerLocale);
 
   expectFile = fopen(expectFilename, "w");
   if (verbosity < 2) {
@@ -182,9 +190,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(expectFile, "}\n");
     fprintf(expectFile, "send \"exit\\n\"\n");
   }
-  fprintf(expectFile, "spawn qsub -z ");
-  fprintf(expectFile, "-V "); // pass through all environment variables
-  fprintf(expectFile, "-I %s\n", pbsFilename);
+  fprintf(expectFile, "spawn qsub %s\n", qsubOptions);
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"A project was not specified\" {send_user "
           "\"error: A project account must be specified via \\$" 
@@ -233,9 +239,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 static void chpl_launch_cleanup(void) {
 #ifndef DEBUG_LAUNCH
   char command[1024];
-
-  sprintf(command, "rm %s", pbsFilename);
-  system(command);
 
   sprintf(command, "rm %s", expectFilename);
   system(command);

@@ -407,11 +407,6 @@ if ($hostplatform eq "cygwin") {
 
 
 #
-# auto generate tests from the Chapel Spec
-#
-mysystem("cd $chapeldir && make spectests", "Generating test programs from the Chapel Spec");
-
-#
 # build stuff
 #
 

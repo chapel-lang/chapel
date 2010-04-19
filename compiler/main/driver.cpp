@@ -63,6 +63,7 @@ bool fNoChecks = false;
 bool fNoInline = false;
 bool fNoPrivatization = false;
 bool fNoOptimizeOnClauses = false;
+bool fNoRemoveEmptyRecords = false;
 int optimize_on_clause_limit = 20;
 bool fGenIDS = false;
 bool fSerialForall = false;
@@ -477,6 +478,7 @@ static ArgumentDescription arg_desc[] = {
   {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
+ {"remove-empty-records", ' ', NULL, "Enable [disable] removal of empty records", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},

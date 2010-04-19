@@ -1,3 +1,7 @@
+error message: prune candidate function list
+
+was:
+
 bug: comparing types to values permitted
 
 While we've tightened up our ability to intermix types and values,

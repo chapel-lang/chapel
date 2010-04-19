@@ -37,6 +37,7 @@ void parallel();
 void parse();
 void prune();
 void refPropagation();
+void removeEmptyRecords();
 void removeUnnecessaryAutoCopyCalls();
 void removeWrapRecords();
 void returnStarTuplesByRefArgs();
