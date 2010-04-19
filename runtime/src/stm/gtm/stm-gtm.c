@@ -136,7 +136,6 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx) {
 
     // rollback to last checkpoint
     if (tx->env != NULL) {
-      chpl_stm_tx_env_p txenvptr = &tx->env;
       gtm_tx_cleanup(tx); 
       longjmp(tx->env, 1);
     }

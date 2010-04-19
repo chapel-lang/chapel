@@ -16,8 +16,10 @@
 static inline
 write_entry_t* gtm_tx_has_write_entry(chpl_stm_tx_p tx, volatile gtm_word_p lock) {
   write_entry_t* wentry;  
+  int i;
+
   wentry = tx->writeset.entries;
-  for (int i = tx->writeset.numentries; i > 0; i--, wentry++) {
+  for (i = tx->writeset.numentries; i > 0; i--, wentry++) {
     if (wentry->lock == lock) 
       return wentry;
   }
@@ -27,8 +29,10 @@ write_entry_t* gtm_tx_has_write_entry(chpl_stm_tx_p tx, volatile gtm_word_p lock
 static inline
 read_entry_t* gtm_tx_has_read_entry(chpl_stm_tx_p tx, volatile gtm_word_p lock) {
   read_entry_t* rentry;  
+  int i;
+
   rentry = tx->readset.entries;
-  for (int i = tx->readset.numentries; i > 0; i--, rentry++) {
+  for (i = tx->readset.numentries; i > 0; i--, rentry++) {
     if (rentry->lock == lock) 
       return rentry;
   }
@@ -39,9 +43,10 @@ static inline
 int gtm_tx_readset_validate(chpl_stm_tx_p tx) {
   read_entry_t* rentry;
   gtm_word_t lockval;
-  
+  int i;
+
   rentry = tx->readset.entries;
-  for (int i = tx->readset.numentries; i > 0; i--, rentry++) {
+  for (i = tx->readset.numentries; i > 0; i--, rentry++) {
     lockval = ATOMIC_LOAD_MB(rentry->lock);
     if (LOCK_GET_OWNED(lockval)) {
       if (gtm_tx_has_write_entry(tx, rentry->lock) == NULL) {
@@ -86,10 +91,12 @@ int gtm_tx_commitPh1(chpl_stm_tx_t* tx) {
 int gtm_tx_commitPh2(chpl_stm_tx_t* tx) {
   write_entry_t* wentry;
   gtm_word_t commitstamp;
+  int i;
+
   if (tx->writeset.numentries) {
     commitstamp = tx->timestamp;
     wentry = tx->writeset.entries;
-    for (int i = tx->writeset.numentries; i > 0; i--, wentry++) {
+    for (i = tx->writeset.numentries; i > 0; i--, wentry++) {
       ATOMIC_STORE(wentry->addr, wentry->value);
       if (wentry->next == NULL)
   	ATOMIC_STORE_MB(wentry->lock, LOCK_SET_TIMESTAMP(commitstamp));
@@ -101,9 +108,10 @@ int gtm_tx_commitPh2(chpl_stm_tx_t* tx) {
 void gtm_tx_abort(chpl_stm_tx_t* tx) {
   write_entry_t* wentry;
   gtm_word_t version;
+  int i;
   
   wentry = tx->writeset.entries;
-  for (int i = tx->writeset.numentries; i > 0; i--, wentry++) {
+  for (i = tx->writeset.numentries; i > 0; i--, wentry++) {
     assert(i > 0);
     version = LOCK_SET_TIMESTAMP(wentry->version);
     if (i == 1)

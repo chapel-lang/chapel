@@ -56,3 +56,5 @@ $mem = `$utildirname/mem`; chomp($mem);
 print "CHPL_MEM: $mem\n";
 $make = `$utildirname/chplmake`; chomp($make);
 print "CHPL_MAKE: $make\n";
+$stm = `$utildirname/stm`; chomp($stm);
+print "CHPL_STM: $stm\n";
