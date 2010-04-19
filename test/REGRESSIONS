@@ -22,6 +22,9 @@ nondet. compilation timeouts
 nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 ----------------------------------------------------------------------------
 [Error matching program output for spec/autogen/Data_Parallelism.tex.tests/test_forallFilter] (04/11/10)
+[Error matching program output for release/examples/programs/jacobi] (04/18/10)
+[Error matching program output for arrays/bradc/slices/sliceArray] (04/18/10)
+[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_rank] (04/18/10)
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
@@ -73,6 +76,10 @@ memory leaks regressions
 =============================
 valgrind-specific regressions
 =============================
+
+nondet. "vg_alloc_ThreadState: no free slots available" error
+-------------------------------------------------------------
+[Error matching program output for users/shetag/fock/fock-3] (04/16/10)
 
 spurious execution timeouts
 ---------------------------
@@ -150,9 +157,9 @@ nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
