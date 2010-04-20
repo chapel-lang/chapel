@@ -15,6 +15,15 @@
 general regressions
 ===================
 
+warnings cause failure for new tests (04/20/10)
+-----------------------------------------------
+[Error matching program output for users/jglewis/ssca2_version2/SSCA2_main
+(--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl
+-sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false ) (1-1)]
+[Error matching program output for users/jglewis/ssca2_version2/SSCA2_main
+(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl
+-sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false ) (2-1)]
+
 nondet. compilation timeouts
 ----------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10)
@@ -25,10 +34,11 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 [Error matching program output for release/examples/programs/jacobi] (04/18/10)
 [Error matching program output for arrays/bradc/slices/sliceArray] (04/18/10)
 [Error matching program output for distributions/robust/arithmetic/trivial/test_dot_rank] (04/18/10)
+[Error matching program output for reductions/bradc/minmaxlocscan] (04/20/10)
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10)
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -151,13 +161,18 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+timeouts for new tests (04/20/10)
+---------------------------------
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false ) (1-1)]
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false ) (2-1)]
+
 nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 -----------------------------------------------------------------------------
 [Error matching program output for arrays/deitz/part7/test_out_array] (04/14/10)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10)
 
@@ -230,6 +245,11 @@ some types not getting --gen-communicated-structures'ed  (as of 03/25/10 ")
 =====================
 mpi-specific failures
 =====================
+
+execution timeouts for new tests (04/20/10)
+-------------------------------------------
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false )]
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false ) (2-1)]
 
 MPI_ABORT issue (when not timing out in compilation)
 ----------------------------------------------------
