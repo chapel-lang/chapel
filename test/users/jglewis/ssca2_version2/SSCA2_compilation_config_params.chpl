@@ -24,6 +24,7 @@ module SSCA2_compilation_config_params
 // |                                                                          |
 // |  "DISTRIBUTION_TYPE" selects among different distribution possiblities.  |
 // |  At present, only "BLOCK" distributions are supported in the compiler.   |
+// |  The only alternative to "BLOCK" is "none" (undistributed).              |
 // |  Only the vertex domain is distributed in this current code.             |
 // +==========================================================================+
 
