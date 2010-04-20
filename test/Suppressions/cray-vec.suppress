@@ -1,3 +1,2 @@
 # Because pthreads aren't implemented in the simulator
 release/examples/programs/prodCons
-release/examples/primers/taskParallel
