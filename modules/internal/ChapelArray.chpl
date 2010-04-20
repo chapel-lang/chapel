@@ -769,7 +769,7 @@ record _array {
   // ranges, but in the sparse case, is there a general
   // representation?
   //
-  def this(d: domain) var where d.rank == rank
+  def this(d: domain) where d.rank == rank
     return this((...d.getIndices()));
 
   def checkSlice(ranges: range(?) ...rank) {
@@ -778,7 +778,7 @@ record _array {
         halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
 
-  def this(ranges: range(?) ...rank) var {
+  def this(ranges: range(?) ...rank) {
     if boundsChecking then
       checkSlice((... ranges));
     var d = _dom((...ranges));
@@ -793,7 +793,7 @@ record _array {
     return _newArray(a);
   }
 
-  def this(args ...rank) var where _validRankChangeArgs(args, _value.idxType) {
+  def this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
     if boundsChecking then
       checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
