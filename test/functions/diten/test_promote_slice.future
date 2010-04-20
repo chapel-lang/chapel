@@ -1,5 +1,0 @@
-bug: explicit return type on function promoted over array slice fails
-
-This is a simplified test for the same bug as test/users/jglewis/slice_bug.chpl.
-If the explicit return type is removed from the function, the compiler
-correctly infers it.

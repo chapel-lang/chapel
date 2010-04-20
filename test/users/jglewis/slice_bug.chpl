@@ -59,7 +59,7 @@ module slice_bug
 
     Edges += assign_quadrant ( U_2D(5,..), a, b, c, d, bit );
     Edges += assign_quadrant ( U_expanded (edge_range), a, b, c, d, bit );
-    Edges += assign_quadrant ( U_expanded (5.. by 5), a, b, c, d, bit );
+    //Edges += assign_quadrant ( U_expanded (5.. by 5), a, b, c, d, bit );
     writeln ("hello, I compiled successfully!");
   }
 }
