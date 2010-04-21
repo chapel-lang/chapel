@@ -15,14 +15,9 @@
 general regressions
 ===================
 
-warnings cause failure for new tests (04/20/10)
------------------------------------------------
-[Error matching program output for users/jglewis/ssca2_version2/SSCA2_main
-(--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl
--sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false ) (1-1)]
-[Error matching program output for users/jglewis/ssca2_version2/SSCA2_main
-(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl
--sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false ) (2-1)]
+missing newline since unfuturized (04/21/10)
+--------------------------------------------
+[Error matching program output for users/jglewis/slice_bug]
 
 nondet. compilation timeouts
 ----------------------------
@@ -89,7 +84,7 @@ valgrind-specific regressions
 
 nondet. "vg_alloc_ThreadState: no free slots available" error
 -------------------------------------------------------------
-[Error matching program output for users/shetag/fock/fock-3] (04/16/10)
+[Error matching program output for users/shetag/fock/fock-3] (04/16/10, 04/21/10)
 
 spurious execution timeouts
 ---------------------------
@@ -138,6 +133,10 @@ timeout for new test (04/08/10)
 no-local regressions
 ====================
 
+can't find float.h?! (04/21/10)
+-------------------------------
+[Error matching compiler output for arrays/dinan/init_arraymember/test7]
+
 internal error SYM0172 (02/09/10)
 ---------------------------------
 [Error matching compiler output for arrays/deitz/part4/test_array_type_alias]
@@ -163,8 +162,8 @@ gasnet-everything regressions (other than the above)
 
 timeouts for new tests (04/20/10)
 ---------------------------------
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false ) (1-1)]
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false ) (2-1)]
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings ) (1-1)]
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings ) (2-1)]
 
 nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 -----------------------------------------------------------------------------
