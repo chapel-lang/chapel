@@ -57,7 +57,7 @@ writeln("4: ### The coforall statement ###");
 // Similar to the cobegin statement, every iteration of the coforall
 // loop is a separate task and the main thread of execution does not
 // continue until every iteration is complete.
-coforall i in [1..n] {
+coforall i in 1..n {
   writeln("4: output from spawned task 1 (iteration ", i, ")");
   writeln("4: output from spawned task 2 (iteration ", i, ")");
 }
@@ -75,7 +75,7 @@ writeln("5: ### The coforall statement with nested begin statements ###");
 // As with the cobegin statement, any begin statements spawned within
 // a coforall loop are not guaranteed to be complete before the main
 // thread of execution continues.
-coforall i in [1..n] {
+coforall i in 1..n {
   begin writeln("5: output from spawned task 1 (iteration ", i, ")");
   begin writeln("5: output from spawned task 2 (iteration ", i, ")");
 }
