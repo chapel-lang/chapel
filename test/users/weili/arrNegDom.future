@@ -1,0 +1,7 @@
+bug: arrays with negative stride don't work
+
+I've taken my best guess as to what ought to happen with this test,
+although I could also imagine the second and third lines being swapped
+potentially (the question being whether an array over a negative
+stride affects the order in which its writeln'd).  In any case, the
+compiler doesn't do anything useful with it at present.
