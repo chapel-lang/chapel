@@ -1,0 +1,1 @@
+error: stride type mismatch in 'by' on range with int and int(64)
