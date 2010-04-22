@@ -15,13 +15,9 @@
 general regressions
 ===================
 
-missing newline since unfuturized (04/21/10)
---------------------------------------------
-[Error matching program output for users/jglewis/slice_bug]
-
 nondet. compilation timeouts
 ----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10)
 
 nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 ----------------------------------------------------------------------------
@@ -33,7 +29,7 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10)
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -133,9 +129,9 @@ timeout for new test (04/08/10)
 no-local regressions
 ====================
 
-can't find float.h?! (04/21/10)
--------------------------------
-[Error matching compiler output for arrays/dinan/init_arraymember/test7]
+nondet. can't find float.h?!
+----------------------------
+[Error matching compiler output for arrays/dinan/init_arraymember/test7] (04/21/10)
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -171,7 +167,7 @@ nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10)
 
@@ -331,13 +327,24 @@ opts-specific tests
 *** everything failed 03/12/10 due to a .so problem ***
 
 
-(Full run: 66)
+(Full run: 122)
 
 general failures
 ----------------
+[Error: Timed out executing program users/franzf/v0/chpl/main]
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
-+ various reports failures
+[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings --no-inline  ) (0-2)]
+[Error matching program output for arrays/deitz/part7/test_descriptor_frees]
+
+--no-dead-code-elimination
+--------------------------
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/common/test_mul]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_mul]
 
 --no-inline
 --no-scalar-replacement --no-inline
@@ -347,10 +354,14 @@ general failures
 
 --no-inline-iterators
 --no-scalar-replacement
+---------------------------------------------------------------------
+[Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+
 --no-optimize-loop-iterators --no-inline-iterators
 --no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
 ---------------------------------------------------------------------
 [Error matching program output for functions/deitz/nested/test_nested_var_iterator2]
+[Error matching compiler output for npb/ft/ft-serial]
 
 --baseline --copy-propagation
 --baseline --dead-code-elimination
@@ -359,35 +370,54 @@ general failures
 --baseline --optimize-loop-iterators
 --baseline --scalar-replacement
 ------------------------------------
+[Error matching program output for arrays/deitz/parallelism/stream/test_whole_array_stream_is_parallel]
+[Error matching program output for arrays/deitz/parallelism/stream/test_stream_is_parallel]
 [Error matching program output for classes/figueroa/RecordConstructor2]
-[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings --baseline --copy-propagation  ) (0-2)]
+[Error matching compiler output for npb/ft/ft-serial]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 --baseline --inline
 -------------------
+[Error matching program output for arrays/deitz/parallelism/stream/test_whole_array_stream_is_parallel]
+[Error matching program output for arrays/deitz/parallelism/stream/test_stream_is_parallel]
 [Error matching program output for classes/figueroa/RecordConstructor2]
 
 --baseline --no-local
 ------------------------------------
-[Error matching compiler output for arrays/deitz/test_array_type_alias]
+[Error matching program output for arrays/deitz/parallelism/stream/test_whole_array_stream_is_parallel]
+[Error matching program output for arrays/deitz/parallelism/stream/test_stream_is_parallel]
+[Error matching compiler output for arrays/deitz/part4/test_array_type_alias]
 [Error matching compiler output for arrays/jplevyak/simple-4]
 [Error matching program output for classes/figueroa/RecordDestructor1]
 [Error matching program output for classes/figueroa/RecordConstructor2]
 [Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader3]
-[Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings --baseline --no-local  ) (0-2)]
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
+[Error matching compiler output for users/shetag/iteratorWithOn]
+
+--gen-communicated-structures --no-local
+----------------------------------------
+[Error matching compiler output for arrays/deitz/part4/test_array_type_alias]
+[Error matching compiler output for arrays/jplevyak/simple-4]
+[Error matching compiler output for classes/bradc/writeunion]
+[Error matching compiler output for classes/bradc/writeunion-workaround]
+[Error matching compiler output for classes/bradc/unions/twounions]
+[Error matching compiler output for classes/bradc/unions/assign]
+[Error matching compiler output for classes/bradc/unions/writeunion]
+[Error matching program output for classes/figueroa/RecordDestructor1]
+[Error matching compiler output for portability/boolSizes]
+[Error matching compiler output for types/scalar/bradc/overloadbools4]
+[Error matching compiler output for types/scalar/bradc/bools]
+[Error matching compiler output for types/scalar/bradc/overloadbools]
+[Error matching compiler output for types/scalar/bradc/bools2]
 [Error matching compiler output for users/shetag/iteratorWithOn]
 
 
 =======================
 x2-specific regressions
 =======================
-
-missing suppression due to directory renaming
----------------------------------------------
-[Error: didn't find expected suppression release/examples/tutorials/taskParallel]
 
 compilation timeouts
 --------------------
