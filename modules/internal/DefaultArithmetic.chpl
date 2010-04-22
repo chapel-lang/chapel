@@ -266,7 +266,7 @@ class DefaultArithmeticArr: BaseArr {
                                          stridable=stridable);
   var off: rank*idxType;
   var blk: rank*idxType;
-  var str: rank*int;
+  var str: rank*typeToSignedType(idxType);
   var origin: idxType;
   var factoredOffs: idxType;
   var size : idxType;

@@ -1030,6 +1030,20 @@ def _isRealType(type t) param return
 def _isImagType(type t) param return
   (t == imag(32)) | (t == imag(64));
 
+def typeToSignedType(type t) type {
+  if (t == uint(8)) {
+    return int(8);
+  } else if (t == uint(16)) {
+    return int(16);
+  } else if (t == uint(32)) {
+    return int(32);
+  } else if (t == uint(64)) {
+    return int(64);
+  } else {
+    return t;
+  }
+}
+
 pragma "command line setting"
 def _command_line_cast(param s: string, type t, x) return _cast(t, x);
 

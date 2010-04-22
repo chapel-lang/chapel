@@ -16,7 +16,7 @@ record range {
   param stridable: bool = false;                 // range can be strided
   var _low: eltType = 1;                         // lower bound
   var _high: eltType = 0;                        // upper bound
-  var _stride: int = 1;                          // integer stride of range
+  var _stride: typeToSignedType(eltType) = 1;    // signed stride of range
   var _promotionType : eltType;                  // enables promotion
 
   pragma "inline" def low return _low;       // public getter for low bound
@@ -59,12 +59,12 @@ def _build_range(param bt: BoundedRangeType)
 //
 // syntax function for by-expressions
 //
-def by(r : range(?), i : int) {
-  if i == 0 then
+def by(r : range(?), str : integral) {
+  if str == 0 then
     halt("range cannot be strided by zero");
   if r.boundedType == BoundedRangeType.boundedNone then
     halt("unbounded range cannot be strided");
-  var result = new range(r.eltType, r.boundedType, true, r.low, r.high, r.stride*i);
+  var result = new range(r.eltType, r.boundedType, true, r.low, r.high, r.stride*(str: r.stride.type));
   if r.low > r.high then
     return result;
   if result.stride < 0 then
@@ -242,8 +242,7 @@ def =(r1: range(stridable=?s1), r2: range(stridable=?s2)) {
 //
 // return the intersection of this and other
 //
-def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
-
+def range.this(other: range(?eltType2, ?boundedType, ?stridable)) {
   //
   // determine boundedType of result
   //
@@ -266,13 +265,23 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
   //
   // source: Knuth Volume 2 --- Section 4.5.2
   //
-  def extendedEuclid(u: int, v: int) {
-    var U = (1, 0, u);
-    var V = (0, 1, v);
+  def extendedEuclidHelp(u, v) {
+    var zero: u.type = 0;
+    var one: u.type = 1;
+    var U = (one, zero, u);
+    var V = (zero, one, v);
     while V(3) != 0 {
       (U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
     }
     return (U(3), U(1));
+  }
+    
+  def extendedEuclid(u:int, v:int) {
+    return extendedEuclidHelp(u,v);
+  }
+
+  def extendedEuclid(u:int(64), v:int(64)) {
+    return extendedEuclidHelp(u,v);
   }
 
   var lo1 = if _hasLow() then this.low:eltType else other.low;
@@ -290,16 +299,16 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
   var result = new range(eltType,
                          computeBoundedType(this, other),
                          this.stridable | other.stridable,
-                         max(lo1, lo2),
-                         min(hi1, hi2),
-                         st1 * (st2 / g));
+                         max(lo1, lo2):eltType,
+                         min(hi1, hi2):eltType,
+                         (st1 * (st2 / g)):typeToSignedType(eltType));
   if lo1 > hi1 || lo2 > hi2 {
     // empty intersection
     if result.low < result.high then
       result._low <=> result._high;
     else if result.high == result.low then
       (result._low, result._high) = (1:eltType, 0:eltType);
-    var al = al1 + (al2 - al1) * x:eltType * st1:eltType / g:eltType;
+    var al = al1 + (al2:eltType - al1) * x:eltType * st1:eltType / g:eltType;
     result._alignLow(al);
     result._alignHigh(al);
   } else if abs(lo1 - lo2) % g:eltType != 0 {
@@ -311,7 +320,7 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
     if other.stride < 0 then
       result._stride = -result.stride;
 
-    var al = al1 + (al2 - al1) * x:eltType * st1:eltType / g:eltType;
+    var al = al1 + (al2:eltType - al1) * x:eltType * st1:eltType / g:eltType;
 
     result._alignLow(al);
     result._alignHigh(al);
@@ -497,7 +506,7 @@ def range.boundsCheck(other: range(?e,?b,?s)) where b == BoundedRangeType.bounde
 
 
 def range.boundsCheck(other: range(?e,?b,?s)) {
-  var boundedOther: range(e,BoundedRangeType.bounded,s||this.stridable);
+  var boundedOther: range(eltType,BoundedRangeType.bounded,s||this.stridable);
   if other._hasLow() then
     boundedOther._low = other.low;
   else
@@ -507,6 +516,7 @@ def range.boundsCheck(other: range(?e,?b,?s)) {
   else
     boundedOther._high = high;
   boundedOther._stride = other.stride;
+
   return (boundedOther.length == 0) || (this(boundedOther) == boundedOther);
 }
 
