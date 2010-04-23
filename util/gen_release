@@ -5,6 +5,18 @@ if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
     exit(1);
 }
 
+$version = "";
+
+while (@ARGV) {
+    $version = shift @ARGV;
+    last;
+}
+
+if ($version eq "") {
+} else {
+    $version = "-$version";
+}
+
 # check out a clean copy of the sources into a temporary directory
 $pid = getpgrp();
 $user = `whoami`;
@@ -16,14 +28,15 @@ if ($basetmpdir eq "") {
     $basetmpdir = "/tmp";
 }
 $tmpdir = "$basetmpdir/chapel-release.$user.$pid.deleteme";
-$chapeldir = "$tmpdir/chapel-gen_release";
+$reldir = "chapel$version";
+$rootdir = "$tmpdir/$reldir";
 $svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
 if ($svnroot eq "") {
     $svnroot = "https://chapel.svn.sourceforge.net/svnroot/chapel/trunk";
 }
-system("mkdir $tmpdir > /dev/null");
+system("mkdir --parents $rootdir > /dev/null");
 print "Checking out the sources...\n";
-system("cd $tmpdir && svn export -q $svnroot chapel");
+system("cd $rootdir && svn export -q $svnroot chapel");
 
 
 # explicit files to include
@@ -74,7 +87,7 @@ system("cd $tmpdir && svn export -q $svnroot chapel");
 );
 
 
-chdir "$tmpdir";
+chdir "$rootdir";
 
 print "Tagging the files with copyright messages...\n";
 system("cd chapel && make -f make/Makefile.release");
@@ -117,8 +130,10 @@ system("cd chapel/runtime/include/tasks && rm -r nanos");
 system("cd chapel/runtime/src/tasks && rm -r nanos");
 system("cd chapel/runtime/include && rm -r sunos_old");
 
+chdir "$tmpdir";
+
 foreach $file (@files) {
-    $dfile = "chapel/$file";
+    $dfile = "$reldir/chapel/$file";
     if (!(-e $dfile)) {
         print "$dfile does not exist\n";
         exit( 9);
@@ -127,7 +142,7 @@ foreach $file (@files) {
 }
 
 foreach $dir (@code_dirs) {
-    @filelist = `find chapel/$dir`;
+    @filelist = `find $reldir/chapel/$dir`;
     foreach $fullpath (@filelist) {
         chomp $fullpath;
         $file = $fullpath;
@@ -140,7 +155,7 @@ foreach $dir (@code_dirs) {
 }
 
 foreach $dir (@complete_dirs) {
-    push @tarfiles, "chapel\/$dir";
+    push @tarfiles, "$reldir\/chapel\/$dir";
 }
 
 
@@ -151,10 +166,10 @@ if (defined($ENV{"CHPL_HOME"})) {
     $resultdir = $basetmpdir;
 }
 
-$cmd = "tar -cz -f $resultdir/chapel.tar.gz @tarfiles";
+$cmd = "tar -cz -f $resultdir/$reldir.tar.gz @tarfiles";
 #print "$cmd\n";
 system ($cmd);
 
-print "Left result in $resultdir/chapel.tar.gz\n";
+print "Left result in $resultdir/$reldir.tar.gz\n";
 
 system("rm -r $tmpdir");

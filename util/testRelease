@@ -88,20 +88,22 @@ mysystem("rm -rf $tmpdir", "removing previous tmp dir", 1, 1);
 mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
 
 
+mysystem("cd $chplhome/tar && rm -f chapel-test.tar.gz", "deleting previous tarball", 0, 0);
+
 #
 # make release
 #
-mysystem("$chplhome/util/gen_release", "creating release", 1, 1);
+mysystem("$chplhome/util/gen_release test", "creating release", 1, 1);
 
 
 #
 # copy release to temp directory, unpack, and run tests
 #
-mysystem("cp $chplhome/tar/chapel.tar.gz $tmpdir", "copying release", 1, 1);
-mysystem("cd $tmpdir && gunzip chapel.tar.gz", "unzipping release", 1, 1);
-mysystem("cd $tmpdir && tar xf chapel.tar", "untarring release", 1, 1);
-mysystem("cp $chplhome/util/testReleaseHelp $tmpdir/chapel", "copying testReleaseHelp script", 1, 1);
-$teststatus = mysystem("cd $tmpdir/chapel && testReleaseHelp `$chplhome/util/chplenv/chplmake`", "running testReleaseHelp script", 1, 1);
+mysystem("cp $chplhome/tar/chapel-test.tar.gz $tmpdir", "copying release", 1, 1);
+mysystem("cd $tmpdir && gunzip chapel-test.tar.gz", "unzipping release", 1, 1);
+mysystem("cd $tmpdir && tar xf chapel-test.tar", "untarring release", 1, 1);
+mysystem("cp $chplhome/util/testReleaseHelp $tmpdir/chapel-test/chapel", "copying testReleaseHelp script", 1, 1);
+$teststatus = mysystem("cd $tmpdir/chapel-test/chapel && testReleaseHelp `$chplhome/util/chplenv/chplmake`", "running testReleaseHelp script", 1, 1);
 
 
 #
