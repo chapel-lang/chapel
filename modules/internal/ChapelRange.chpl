@@ -99,10 +99,8 @@ def by(r : range(?), str) {
   } else if (argType == idxType || chpl__legalIntCoerce(argType, strType)) {
     return chpl__byHelp(r, str:strType);
   } else {
-    compilerError("applying 'by' to 'range(", typeToString(idxType), ")'",
-                  " requires a value of '", 
-                  typeToString(strType), "' type (got '",
-                  typeToString(argType), "')");
+    compilerError("type mismatch applying 'by' to range(", 
+                  typeToString(idxType), ") with ", typeToString(argType));
   }
 }
 
