@@ -1,5 +1,0 @@
-bug: function resolution error
-
-In this test, it seems that querying the eltType/idxType of a range
-and using it to constrain the second argument is not correctly being
-identified as the best match for this function overload.

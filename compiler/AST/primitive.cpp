@@ -14,6 +14,11 @@ returnInfoVoid(CallExpr* call) {
 }
 
 static Type*
+returnInfoUnknown(CallExpr* call) {
+  return dtUnknown;
+}
+
+static Type*
 returnInfoFile(CallExpr* call) {
   return dtFile;
 }
@@ -343,7 +348,7 @@ initPrimitive() {
   prim_def(PRIM_NEW, "new", returnInfoFirst);
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
-  prim_def(PRIM_QUERY, "query", returnInfoVoid);
+  prim_def(PRIM_QUERY, "query", returnInfoUnknown);
 
   prim_def(PRIM_INIT_REF, "init ref", returnInfoVoid, true);
   prim_def(PRIM_SET_REF, "set ref", returnInfoRef);
