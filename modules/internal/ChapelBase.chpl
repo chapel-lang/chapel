@@ -1030,7 +1030,7 @@ def _isRealType(type t) param return
 def _isImagType(type t) param return
   (t == imag(32)) | (t == imag(64));
 
-def typeToSignedType(type t) type {
+def chpl__idxTypeToStrType(type t) type {
   if (t == uint(8)) {
     return int(8);
   } else if (t == uint(16)) {
@@ -1039,8 +1039,10 @@ def typeToSignedType(type t) type {
     return int(32);
   } else if (t == uint(64)) {
     return int(64);
-  } else {
+  } else if (t == int(8) || t == int(16) || t == int(32) || t == int(64)) {
     return t;
+  } else {
+    compilerError("range idxType is non-integral: ", typeToString(t));
   }
 }
 

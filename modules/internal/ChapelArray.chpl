@@ -200,12 +200,12 @@ def chpl__buildDomainExpr(x: domain)
 
 def chpl__buildDomainExpr(ranges: range(?) ...?rank) {
   for param i in 2..rank {
-    if ranges(1).eltType != ranges(i).eltType then
+    if ranges(1).idxType != ranges(i).idxType then
       compilerError("domain has mixed dimensional type");
     if ranges(i).boundedType != BoundedRangeType.bounded then
       compilerError("domain has dimension of unbounded range");
   }
-  var d: domain(rank, ranges(1).eltType, chpl__anyStridable(ranges));
+  var d: domain(rank, ranges(1).idxType, chpl__anyStridable(ranges));
   d.setIndices(ranges);
   return d;
 }
@@ -501,7 +501,7 @@ record _domain {
   def this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
     var ranges = _getRankChangeRanges(args);
     param newRank = ranges.size, stridable = chpl__anyStridable(ranges);
-    var newRanges: newRank*range(eltType=_value.idxType, stridable=stridable);
+    var newRanges: newRank*range(idxType=_value.idxType, stridable=stridable);
     var newDistVal = _value.dist.dsiCreateRankChangeDist(newRank, args);
     var newDist = _getNewDist(newDistVal);
     var j = 1;

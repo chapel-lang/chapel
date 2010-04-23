@@ -21,7 +21,7 @@ class CMODom: BaseArithmeticDom {
   def dsiSetIndices(x) {
     if ranges.size != x.size then
       compilerError("rank mismatch in domain assignment");
-    if ranges(1).eltType != x(1).eltType then
+    if ranges(1).idxType != x(1).idxType then
       compilerError("index type mismatch in domain assignment");
     ranges = x;
   }

@@ -53,7 +53,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   def dsiSetIndices(x) {
     if ranges.size != x.size then
       compilerError("rank mismatch in domain assignment");
-    if ranges(1).eltType != x(1).eltType then
+    if ranges(1).idxType != x(1).idxType then
       compilerError("index type mismatch in domain assignment");
     ranges = x;
   }
@@ -150,7 +150,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     if debugDefaultDist then
       writeln("In domain follower code: Following ", follower);
     param stridable = this.stridable || anyStridable(follower);
-    var block: rank*range(stridable=stridable, eltType=idxType);
+    var block: rank*range(stridable=stridable, idxType=idxType);
     if stridable {
       for param i in 1..rank {
         const rStride = ranges(i).stride:idxType,
@@ -266,7 +266,7 @@ class DefaultArithmeticArr: BaseArr {
                                          stridable=stridable);
   var off: rank*idxType;
   var blk: rank*idxType;
-  var str: rank*typeToSignedType(idxType);
+  var str: rank*chpl__idxTypeToStrType(idxType);
   var origin: idxType;
   var factoredOffs: idxType;
   var size : idxType;
@@ -303,7 +303,7 @@ class DefaultArithmeticArr: BaseArr {
     if rank == 1 {
       var first = getDataIndex(dom.dsiLow);
       var second = getDataIndex(dom.dsiLow+dom.ranges(1).stride:idxType);
-      var step = (second-first):int;
+      var step = (second-first):chpl__idxTypeToStrType(idxType);
       var last = first + (dom.dsiNumIndices-1) * step:idxType;
       for i in first..last by step do
         yield data(i);

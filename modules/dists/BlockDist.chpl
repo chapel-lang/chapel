@@ -194,10 +194,10 @@ def Block.Block(boundingBox: domain,
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
                 dataParMinGranularity=getDataParMinGranularity(),
                 param rank = boundingBox.rank,
-                type idxType = boundingBox.dim(1).eltType) {
+                type idxType = boundingBox.dim(1).idxType) {
   if rank != boundingBox.rank then
     compilerError("specified Block rank != rank of specified bounding box");
-  if idxType != boundingBox.dim(1).eltType then
+  if idxType != boundingBox.dim(1).idxType then
     compilerError("specified Block index type != index type of specified bounding box");
 
   this.boundingBox = boundingBox;
@@ -516,8 +516,8 @@ def Block.dsiCreateRankChangeDist(param newRank: int, args) {
     }
   }
   const collapsedLocInd = targetLocsIdx(collapsedDimLocs);
-  var collapsedBbox: _matchArgsShape(range(eltType=idxType), idxType, args);
-  var collapsedLocs: _matchArgsShape(range(eltType=int), int, args);
+  var collapsedBbox: _matchArgsShape(range(idxType=idxType), idxType, args);
+  var collapsedLocs: _matchArgsShape(range(idxType=int), int, args);
 
   for param i in 1..rank {
     if isCollapsedDimension(args(i)) {
@@ -642,7 +642,7 @@ def BlockDom.dsiSetIndices(x: domain) {
 def BlockDom.dsiSetIndices(x) {
   if x.size != rank then
     compilerError("rank mismatch in domain assignment");
-  if x(1).eltType != idxType then
+  if x(1).idxType != idxType then
     compilerError("index type mismatch in domain assignment");
   //
   // TODO: This seems weird:
@@ -817,7 +817,7 @@ def BlockArr.these(param tag: iterator, follower, param fast: bool = false) var 
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Block array");
 
-  var followThis: rank*range(eltType=idxType, stridable=stridable || anyStridable(follower));
+  var followThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(follower));
   var lowIdx: rank*idxType;
 
   for param i in 1..rank {
@@ -956,7 +956,7 @@ def BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
       const locDom = d.getLocDom(ind);
       // locSlice is a tuple of ranges and scalars. It will match the basic
       // shape of the args argument. 
-      var locSlice: _matchArgsShape(range(eltType=idxType, stridable=stridable), idxType, args);
+      var locSlice: _matchArgsShape(range(idxType=idxType, stridable=stridable), idxType, args);
       // collapsedDims stores the value any collapsed dimension is down to.
       // For any non-collapsed dimension, that position is ignored.
       // This tuple is then passed to the targetLocsIdx function to build up a
