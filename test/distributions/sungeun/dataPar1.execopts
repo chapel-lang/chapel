@@ -1,0 +1,6 @@
+--dataParTasksPerLocale=0
+--dataParTasksPerLocale=20
+--dataParIgnoreRunningTasks=false
+--dataParMinGranularity=20
+--dataParTasksPerLocale=-1 # dataPar1.badTasksPerLocale.good
+--dataParMinGranularity=-1 # dataPar1.badMinGranularity.good

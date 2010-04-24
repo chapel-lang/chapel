@@ -1,0 +1,1 @@
+dataPar1.chpl:1: error: halt reached - dataParTasksPerLocale must be >= 0

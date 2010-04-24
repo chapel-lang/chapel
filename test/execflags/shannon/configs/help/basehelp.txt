@@ -22,7 +22,7 @@ Built-in config vars:
         maxThreadsPerLocale: int
             dataParTasksPerLocale: int
   dataParIgnoreRunningTasks: bool
-      dataParMinGranularity: uint(64)
+      dataParMinGranularity: int 
                    memTrack: bool
                    memStats: bool
                    memLeaks: bool

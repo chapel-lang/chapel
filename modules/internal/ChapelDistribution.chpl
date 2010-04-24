@@ -1,8 +1,8 @@
 use List;
 
-config const dataParTasksPerLocale = __primitive("chpl_coresPerLocale");
+config const dataParTasksPerLocale = 0;
 config const dataParIgnoreRunningTasks = true;
-config const dataParMinGranularity: uint(64) = 0;
+config const dataParMinGranularity: int = 0;
 
 //
 // Abstract distribution class

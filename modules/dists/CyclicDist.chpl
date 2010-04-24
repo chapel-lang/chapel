@@ -31,7 +31,7 @@ class Cyclic: BaseDist {
 
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
-  var dataParMinGranularity: uint(64);
+  var dataParMinGranularity: int;
 
   var pid: int = -1;
 
@@ -74,7 +74,10 @@ class Cyclic: BaseDist {
     for param i in 1..rank do
       this.startIdx(i) = mod(tupleStartIdx(i), targetLocDom.dim(i).length);
 
-    this.dataParTasksPerLocale = dataParTasksPerLocale;
+    if dataParTasksPerLocale<0 then halt("CyclicDist: dataParTasksPerLocale must be >= 0");
+    if dataParMinGranularity<0 then halt("CyclicDist: dataParMinGranularity must be >= 0");
+    this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
+                                 else dataParTasksPerLocale;
     this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
     this.dataParMinGranularity = dataParMinGranularity;
 

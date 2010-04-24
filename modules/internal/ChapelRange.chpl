@@ -430,11 +430,15 @@ def range.these(param tag: iterator) where tag == iterator.leader {
   if v < 0 then
     v = 0;
 
-  const numTasks = dataParTasksPerLocale;
+  if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
+  if dataParMinGranularity<0 then halt("dataParMinGranularity must be >= 0");
+  const numTasks = if dataParTasksPerLocale==0 then here.numCores
+                   else dataParTasksPerLocale;
   const ignoreRunning = dataParIgnoreRunningTasks;
   const minIndicesPerTask = dataParMinGranularity;
 
-  var numChunks = _computeNumChunks(numTasks, ignoreRunning, minIndicesPerTask, v);
+  var numChunks = _computeNumChunks(numTasks, ignoreRunning,
+                                    minIndicesPerTask, tuple(this));
   if debugChapelRange then
     writeln("*** RI: length=", v, " numChunks=", numChunks);
 

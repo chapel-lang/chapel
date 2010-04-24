@@ -26,7 +26,11 @@ def chpl_computeTotNumLocalesWithoutWarning() {
 const totNumLocales = chpl_computeTotNumLocalesWithoutWarning();
 const AllLocaleSpace = [0..#totNumLocales];
 const AllLocales: [AllLocaleSpace] locale;
-forall loc in AllLocaleSpace do
+// We cannot use a forall here because the default leader iterator will
+// access data structures that are not yet initialized (i.e., Locales
+// array/here).  An alternative would be to use a coforall+on and refactor
+// chpl_setupLocale().
+for loc in AllLocaleSpace do
   AllLocales(loc) = chpl_setupLocale(loc);
 
 const Realms: [RealmSpace] realm;

@@ -92,7 +92,7 @@ class Block : BaseDist {
   var locDist: [targetLocDom] LocBlock(rank, idxType);
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
-  var dataParMinGranularity: uint(64);
+  var dataParMinGranularity: int;
   var pid: int = -1; // privatized object id (this should be factored out)
 }
 
@@ -211,7 +211,10 @@ def Block.Block(boundingBox: domain,
       locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
                                      targetLocDomDims);
 
-  this.dataParTasksPerLocale = dataParTasksPerLocale;
+  if dataParTasksPerLocale<0 then halt("BlockDist: dataParTasksPerLocale must be >= 0");
+  if dataParMinGranularity<0 then halt("BlockDist: dataParMinGranularity must be >= 0");
+  this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
+                               else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
   
