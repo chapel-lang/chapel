@@ -15,9 +15,19 @@
 general regressions
 ===================
 
+illegal cast from 1*range(int,bounded,0) to uint(64) in DSIUtil.chpl
+--------------------------------------------------------------------
+*104 standard errors*
+*18 block dist failures*
+*5 memleaks failures*
+*5 xmt failures*
+*4 performance failures*
+*5 cyclic dist failures*
+*126 gasnet failures*
+
 nondet. compilation timeouts
 ----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10)
 
 nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 ----------------------------------------------------------------------------
@@ -26,6 +36,7 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 [Error matching program output for arrays/bradc/slices/sliceArray] (04/18/10)
 [Error matching program output for distributions/robust/arithmetic/trivial/test_dot_rank] (04/18/10)
 [Error matching program output for reductions/bradc/minmaxlocscan] (04/20/10)
+[Error matching program output for studies/hpcc/serial-v0.7/ra] (04/23/10)
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
@@ -78,9 +89,13 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
+nondet. "stdarg.h" missing error
+--------------------------------
+[Error matching compiler output for functions/deitz/varargs/test_varargs7] (04/23/10)
+
 nondet. "vg_alloc_ThreadState: no free slots available" error
 -------------------------------------------------------------
-[Error matching program output for users/shetag/fock/fock-3] (04/16/10, 04/21/10)
+[Error matching program output for users/shetag/fock/fock-3] (04/16/10, 04/21/10, 04/23/10)
 
 spurious execution timeouts
 ---------------------------
@@ -169,7 +184,7 @@ nondet. execution timeout
 -------------------------
 [Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -243,8 +258,8 @@ mpi-specific failures
 
 execution timeouts for new tests (04/20/10)
 -------------------------------------------
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false )]
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false ) (2-1)]
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings ) (1-1)]
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings ) (2-1)]
 
 MPI_ABORT issue (when not timing out in compilation)
 ----------------------------------------------------
@@ -262,11 +277,12 @@ seg fault (when not timing out in execution)
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (04/14/10)
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (04/14/10)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (04/14/10, 04/23/10)
 [Error: Timed out executing program users/agnieszka/test2] (04/14/10)
 
 nondet. compilation timeout
 ---------------------------
+[Error: Timed out compilation for studies/590o/alexco/AverageFiles] (04/23/10)
 [Error: Timed out compilation for studies/590o/blerner/nilClassCheck] (04/14/10)
 [Error: Timed out compilation for users/shetag/assocInRecord] (04/14/10)
 [Error: Timed out compilation for multilocale/diten/localBlock/needMultiLocales/localBlock3] (04/13/10, 04/15/10)
