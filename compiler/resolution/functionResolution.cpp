@@ -1972,8 +1972,17 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
     Type* rhsType = rhs->typeInfo();
 
-    if (rhsType == dtVoid)
-      USR_FATAL(userCall(call), "illegal use of function that does not return a value");
+    if (rhsType == dtVoid) {
+      if (CallExpr* rhsFn = toCallExpr(rhs)) {
+        if (FnSymbol* rhsFnSym = rhsFn->isResolved()) {
+          USR_FATAL(userCall(call), 
+                    "illegal use of function that does not return a value: '%s'", 
+                    rhsFnSym->name);
+        }
+      }
+      USR_FATAL(userCall(call), 
+                "illegal use of function that does not return a value");
+    }
 
     if (lhs->type == dtUnknown || lhs->type == dtNil)
       lhs->type = rhsType;
