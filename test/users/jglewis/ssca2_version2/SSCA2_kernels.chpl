@@ -66,7 +66,7 @@ module SSCA2_kernels
       //        	                         [ w in G.edge_weight (s) ] w;
 
       forall s in G.vertices do
-	for w in G.edge_weight (s) do
+	for w in G.edge_weight (s) do // eventually forall
 	  heaviest_edge_weight$ = max ( w, heaviest_edge_weight$ );
 
       // ---------------------------------------------

@@ -5,7 +5,8 @@ module SSCA2_kernels_atomic
 //  | As of March, 2010, the atomic keyword is NOT supported in Chapel.        |
 //  | This code, therefore, is only a sketch, which can only be executed       |
 //  | sequentially.  All potential parallel loops are instantiated as          |
-//  | "for" loops, with "forall" in comments.                                  |
+//  | "forall" loops, so execution will fail unless the code is compiled with  |
+//  | the "--serial" flag.                                                     |
 //  |                                                                          |
 //  | This code has NOT been tested running in parallel.  See the sync         |
 //  | variable version for a mostly parallel implementation.                   |
@@ -76,8 +77,8 @@ module SSCA2_kernels_atomic
       //       heaviest_edge_weight = max reduce [ s in G.vertices ] 
       //        	                         [ w in G.edge_weight (s) ] w;
 
-      for s in G.vertices do // forall
-	for w in G.edge_weight (s) do
+      forall s in G.vertices do
+	for w in G.edge_weight (s) do // eventually forall
 	  atomic heaviest_edge_weight = max ( w, heaviest_edge_weight );
 
       // ---------------------------------------------
@@ -85,7 +86,7 @@ module SSCA2_kernels_atomic
       // of all edges  matching the heaviest weight
       // ---------------------------------------------
 
-      for s in G.vertices do // forall
+      forall s in G.vertices do
 	for (t, w) in ( G.Neighbors (s), G.edge_weight (s) )  do
 
 	  // should be forall, requires a custom parallel iterator in the 
@@ -148,7 +149,7 @@ module SSCA2_kernels_atomic
 
       const vertex_domain = G.vertices;
        
-      for ( x, y ) in Heavy_Edge_List do { // forall
+      forall ( x, y ) in Heavy_Edge_List do {
 	var Active_Level, Next_Level : domain ( index (vertex_domain) );
 	var min_distance             : [vertex_domain] int = -1;
 	  
@@ -166,9 +167,9 @@ module SSCA2_kernels_atomic
   
 	for path_length in 1 .. max_path_length do {
 	    
-	  for v in Active_Level do { // forall
+	  forall v in Active_Level do {
 
-	    for w in G.Neighbors (v) do {
+	    for w in G.Neighbors (v) do { // eventually, will be forall
 
 	      atomic if min_distance (w) < 0 then {
 		Next_Level.add (w);
@@ -262,8 +263,10 @@ module SSCA2_kernels_atomic
       Between_Cent = 0.0;
       Sum_Min_Dist = 0.0;
 
-      for s in starting_vertices do { // forall
+      forall s in starting_vertices do {
   
+	if DEBUG_KERNEL4 then writeln ( "expanding from starting node ", s );
+
 	// --------------------------------------------------
 	// all locally declared variables become private data 
 	// for each instance of the parallel for loop
@@ -305,7 +308,7 @@ module SSCA2_kernels_atomic
       
 	    current_distance += 1;
 
-	    for u in Active_Level.Members  do { // forall
+	    forall u in Active_Level.Members  do {
 
 	      for (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do {
 
@@ -355,6 +358,10 @@ module SSCA2_kernels_atomic
 
 	var graph_diameter = current_distance - 1;
 
+	if DEBUG_KERNEL4 then 
+	  writeln ( " graph diameter from starting node ", s, 
+		    "  is ", graph_diameter );
+
 	delete Next_Level;	               // it's empty
 	Next_Level   = Active_Level.previous;  // back up to last level
 	delete Active_Level;
@@ -369,7 +376,7 @@ module SSCA2_kernels_atomic
 	  // inner reduction should parallelize eventually; compiler
 	  // serializes it today (and warns us that it did)
 
-	  for u in Active_Level.Members do // forall
+	  forall u in Active_Level.Members do
 	    {
 	      depend (u) = + reduce 
 		[ (v, w)  in ( G.Neighbors (u), G.edge_weight (u) ) ]
