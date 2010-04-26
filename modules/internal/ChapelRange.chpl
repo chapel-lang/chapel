@@ -438,7 +438,7 @@ def range.these(param tag: iterator) where tag == iterator.leader {
   const minIndicesPerTask = dataParMinGranularity;
 
   var numChunks = _computeNumChunks(numTasks, ignoreRunning,
-                                    minIndicesPerTask, tuple(this));
+                                    minIndicesPerTask, v);
   if debugChapelRange then
     writeln("*** RI: length=", v, " numChunks=", numChunks);
 
