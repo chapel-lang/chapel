@@ -1,4 +1,4 @@
-module SSCA2_kernels_atomic
+module SSCA2_kernels
 
 //  +==========================================================================+
 //  | VERSION USING ATOMIC OPERATIONS:                                         |
