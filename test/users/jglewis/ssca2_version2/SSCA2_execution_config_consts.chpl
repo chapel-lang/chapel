@@ -1,4 +1,4 @@
-module SSCA2_execution_config_params
+module SSCA2_execution_config_consts
 {
   // +======================================================+
   // |  Execution time constants control                    |
@@ -17,11 +17,11 @@ module SSCA2_execution_config_params
   // Problem Size:
   // -------------
 
-  config const SCALE = 6;
+  config const SCALE = 12;
 
-  config const TOP_APPROX_SCALE = min ( SCALE, 10 );
+  config const TOP_APPROX_SCALE = 6;
 
-  config const LOW_APPROX_SCALE = 4;
+  config const LOW_APPROX_SCALE = 6;
 
   const N_VERTICES = 2**SCALE;
     

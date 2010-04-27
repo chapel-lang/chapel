@@ -8,7 +8,7 @@ module analyze_torus_graphs {
 
 
   use SSCA2_compilation_config_params, 
-      SSCA2_execution_config_params,
+      SSCA2_execution_config_consts,
       SSCA2_driver, 
       array_rep_torus_graph_generator,
       torus_graph_generator_utilities, 

@@ -69,7 +69,7 @@ module SSCA2_main
 // |                      graph representations                                |
 // |   SSCA2_compilation_config_params.chpl -- parameters that control         |
 // |                      conditional compilation.                             |
-// |   SSCA2_execution_config_params.chpl -- defaults for execution time       |
+// |   SSCA2_execution_config_consts.chpl -- defaults for execution time       |
 // |                      problem size parameters                              |
 // |   SSCA2_driver.chpl -- code for problem set up, execution timing and      |
 // |                      documenting results                                  |
@@ -107,7 +107,7 @@ module SSCA2_main
   def main () {
 
     use SSCA2_compilation_config_params, 
-        SSCA2_execution_config_params,
+        SSCA2_execution_config_consts,
         analyze_torus_graphs,
         analyze_RMAT_graph_associative_array,
         BlockDist;
