@@ -15,16 +15,6 @@
 general regressions
 ===================
 
-illegal cast from 1*range(int,bounded,0) to uint(64) in DSIUtil.chpl
---------------------------------------------------------------------
-*104 standard errors*
-*18 block dist failures*
-*5 memleaks failures*
-*5 xmt failures*
-*4 performance failures*
-*5 cyclic dist failures*
-*126 gasnet failures*
-
 nondet. compilation timeouts
 ----------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10)
@@ -40,7 +30,7 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10)
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -131,9 +121,38 @@ timeouts due to removal of -O
 block distribution regressions
 ==============================
 
+failures due to range.eltType -> range.idxType renaming
+-------------------------------------------------------
+[Error cannot locate compiler output comparison file test_reindexing6.good]
+[Error cannot locate compiler output comparison file test_strided_reindex2.good]
+[Error matching compiler output for distributions/robust/arithmetic/composite/test_composite1]
+[Error matching compiler output for distributions/robust/arithmetic/composite/test_composite2]
+[Error matching compiler output for distributions/robust/arithmetic/kernels/hpl]
+[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Norm]
+[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Random]
+[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Search]
+[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Sort]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias1]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias2]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing1]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing2]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing3]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing4]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing5]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
+
+
 ===============================
 cyclic distribution regressions
 ===============================
+
+execution timeouts (possibly due to sched_yield issue and numLocales == 4)
+--------------------------------------------------------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl]
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
+[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
 
 timeout for new test (04/08/10)
 -------------------------------
@@ -182,9 +201,9 @@ nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -323,6 +342,7 @@ output incorrect (noticed 04/02/10, but was already unresolved)
 output incorrect
 ----------------
 [Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
 
 ???
 ---
