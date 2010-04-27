@@ -110,7 +110,7 @@ $teststatus = mysystem("cd $tmpdir/chapel-test/chapel && testReleaseHelp `$chplh
 # send mail
 #
 if ($teststatus == 0) {
-    $failures = `grep Error $tmpdir/chapel/examples/Logs/testReleaseHelp.log | wc -l`; chomp($failures);
+    $failures = `grep Error $tmpdir/chapel-test/chapel/examples/Logs/testReleaseHelp.log | wc -l`; chomp($failures);
     if ($failures == "0") {
         $shortstatus = "Passed";
     } else {
@@ -133,7 +133,7 @@ if ($debug == 1) {
     
 open(MAIL, $mailcommand);
 
-print MAIL `cat $tmpdir/chapel/examples/Logs/testReleaseHelp.log.summary`;
+print MAIL `cat $tmpdir/chapel-test/chapel/examples/Logs/testReleaseHelp.log.summary`;
     
 close(MAIL);
     
