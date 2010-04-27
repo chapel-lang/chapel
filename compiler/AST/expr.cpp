@@ -879,9 +879,18 @@ void CallExpr::codegen(FILE* outfile) {
             codegen_member(outfile, call->get(1), call->get(2));
             gen(outfile, ")");
           } else {
-            gen(outfile, "%A = (", get(1));
-            codegen_member(outfile, call->get(1), call->get(2));
-            gen(outfile, ")");
+            SymExpr* se = toSymExpr(call->get(2));
+            INT_ASSERT(se);
+            if (se->var->hasFlag(FLAG_SUPER_CLASS) &&
+                get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+              gen(outfile, "CHPL_WIDEN(%A, ", get(1));
+              codegen_member(outfile, call->get(1), call->get(2));
+              gen(outfile, ")");
+            } else {
+              gen(outfile, "%A = (", get(1));
+              codegen_member(outfile, call->get(1), call->get(2));
+              gen(outfile, ")");
+            }
           }
           break;
         }
