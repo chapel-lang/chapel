@@ -74,8 +74,9 @@ class Cyclic: BaseDist {
     for param i in 1..rank do
       this.startIdx(i) = mod(tupleStartIdx(i), targetLocDom.dim(i).length);
 
-    if dataParTasksPerLocale<0 then halt("CyclicDist: dataParTasksPerLocale must be >= 0");
-    if dataParMinGranularity<0 then halt("CyclicDist: dataParMinGranularity must be >= 0");
+    // NOTE: When these knobs stop using the global defaults, we will need
+    // to add checks to make sure dataParTasksPerLocale<0 and
+    // dataParMinGranularity<0
     this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
                                  else dataParTasksPerLocale;
     this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;

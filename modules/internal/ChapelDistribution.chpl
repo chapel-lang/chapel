@@ -4,6 +4,10 @@ config const dataParTasksPerLocale = 0;
 config const dataParIgnoreRunningTasks = true;
 config const dataParMinGranularity: int = 0;
 
+// NOTE: If module initialization order changes, this may be affected
+if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
+if dataParMinGranularity<0 then halt("dataParMinGranularity must be >= 0");
+
 //
 // Abstract distribution class
 //

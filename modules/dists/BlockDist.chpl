@@ -211,8 +211,9 @@ def Block.Block(boundingBox: domain,
       locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
                                      targetLocDomDims);
 
-  if dataParTasksPerLocale<0 then halt("BlockDist: dataParTasksPerLocale must be >= 0");
-  if dataParMinGranularity<0 then halt("BlockDist: dataParMinGranularity must be >= 0");
+  // NOTE: When these knobs stop using the global defaults, we will need
+  // to add checks to make sure dataParTasksPerLocale<0 and
+  // dataParMinGranularity<0
   this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
                                else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;

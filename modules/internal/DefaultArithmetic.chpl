@@ -96,8 +96,6 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In domain leader code:"); // this = ", this);
-    if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
-    if dataParMinGranularity<0 then halt("dataParMinGranularity must be >= 0");
     const numTasks = if dataParTasksPerLocale==0 then here.numCores
                      else dataParTasksPerLocale;
     const ignoreRunning = dataParIgnoreRunningTasks;
@@ -324,8 +322,6 @@ class DefaultArithmeticArr: BaseArr {
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In array leader code:");// [\n", this, "]");
-    if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
-    if dataParMinGranularity<0 then halt("dataParMinGranularity must be >= 0");
     const numTasks = if dataParTasksPerLocale==0 then here.numCores
                      else dataParTasksPerLocale;
     const ignoreRunning = dataParIgnoreRunningTasks;
