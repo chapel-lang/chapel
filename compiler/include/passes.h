@@ -30,7 +30,6 @@ void insertWideReferences();
 void localizeGlobals();
 void lowerIterators();
 void makeBinary();
-void narrowWideReferences();
 void normalize();
 void optimizeOnClauses();
 void parallel();

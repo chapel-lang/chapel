@@ -954,62 +954,6 @@ static void handleLocalBlocks() {
 }
 
 
-static void
-narrowReferences() {
-  Vec<Symbol*> wideSet;
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (isVarSymbol(def->sym) && isFnSymbol(def->parentSymbol)) {
-      if (def->sym->type->symbol->hasFlag(FLAG_WIDE)) {
-        wideSet.set_add(def->sym);
-      }
-    }
-  }
-
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(wideSet, defMap, useMap);
-
-  forv_Vec(Symbol, sym, wideSet) if (sym) {
-    bool narrow = true;
-
-    for_defs(def, defMap, sym) {
-      bool narrowDef = false;
-      if (CallExpr* move = toCallExpr(def->parentExpr)) {
-        if (move->isPrimitive(PRIM_MOVE)) {
-          if (CallExpr* rhs = toCallExpr(move->get(2))) {
-            if (FnSymbol* fn = rhs->isResolved())
-              if (fn->retType->symbol->hasFlag(FLAG_REF))
-                narrowDef = true;
-          } else if (SymExpr* rhs = toSymExpr(move->get(2))) {
-            if (!rhs->var->type->symbol->hasFlag(FLAG_REF) &&
-                !rhs->var->type->symbol->hasFlag(FLAG_WIDE))
-              narrowDef = true;
-          }
-        }
-      }
-      if (!narrowDef)
-        narrow = false;
-    }
-
-    for_uses(use, useMap, sym) {
-      bool narrowUse = false;
-      if (CallExpr* call = toCallExpr(use->parentExpr)) {
-        if (call->isPrimitive(PRIM_GET_REF))
-          narrowUse = true;
-      }
-      if (!narrowUse)
-        narrow = false;
-    }
-
-    if (narrow) {
-      sym->type = sym->type->getField("addr")->type;
-    }
-  }
-
-  freeDefUseMaps(defMap, useMap);
-}
-
-
 //
 // change all classes into wide classes
 // change all references into wide references
@@ -1395,7 +1339,23 @@ insertWideReferences(void) {
   numGlobalsOnHeap = i;
 
   handleLocalBlocks();
-  narrowReferences();
+  narrowWideReferences();
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_MOVE)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+          call->get(2)->typeInfo() == call->get(1)->getValType()->getField("addr")->type) {
+        //
+        // widen rhs class
+        //
+        VarSymbol* tmp = newTemp(call->get(1)->getValType());
+        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
+        call->insertAtTail(tmp);
+      }
+    }
+  }
 }
 
 

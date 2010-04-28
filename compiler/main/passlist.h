@@ -51,7 +51,6 @@ PassInfo passlist[] = {
   RUN(gpuFlattenArgs),      // Flatten out arguments used to call in gpu kernel
 
   RUN(insertWideReferences), // inserts wide references for on clauses
-  RUN(narrowWideReferences), // remove wide references if possible
   RUN(optimizeOnClauses),    // Optimize on clauses
   // AST to C
   RUN(insertLineNumbers), // insert line numbers for error messages
