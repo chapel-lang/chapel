@@ -15,9 +15,18 @@
 general regressions
 ===================
 
+missing .notest (04/28/10)
+--------------------------
+[Error cannot locate program output comparison file SSCA2_execution_config_consts.good]
+
+output mismatch (04/28/10)
+--------------------------
+[Error matching program output for users/jglewis/ssca2_version2/SSCA2_main (--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast ) (1-1)]
+[Error matching program output for users/jglewis/ssca2_version2/SSCA2_main (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast ) (2-1)]
+
 nondet. compilation timeouts
 ----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10)
 
 nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 ----------------------------------------------------------------------------
@@ -79,17 +88,21 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
+invalid write (noticed for the first time 04/27/10)
+---------------------------------------------------
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-bradc]
+
 nondet. "stdarg.h" missing error
 --------------------------------
 [Error matching compiler output for functions/deitz/varargs/test_varargs7] (04/23/10)
 
 nondet. "vg_alloc_ThreadState: no free slots available" error
 -------------------------------------------------------------
-[Error matching program output for users/shetag/fock/fock-3] (04/16/10, 04/21/10, 04/23/10)
+[Error matching program output for users/shetag/fock/fock-3] (04/16/10, 04/21/10, 04/23/10, 04/27/10)
 
 spurious execution timeouts
 ---------------------------
-[Error: Timed out executing program users/shetag/fock/fock-1] (04/11/10, 04/12/10, 04/14/10)
+[Error: Timed out executing program users/shetag/fock/fock-1] (04/11/10, 04/12/10, 04/14/10, 04/27/10)
 [Error: Timed out executing program users/shetag/fock/fock-2] (04/09/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
@@ -121,26 +134,6 @@ timeouts due to removal of -O
 block distribution regressions
 ==============================
 
-failures due to range.eltType -> range.idxType renaming
--------------------------------------------------------
-[Error cannot locate compiler output comparison file test_reindexing6.good]
-[Error cannot locate compiler output comparison file test_strided_reindex2.good]
-[Error matching compiler output for distributions/robust/arithmetic/composite/test_composite1]
-[Error matching compiler output for distributions/robust/arithmetic/composite/test_composite2]
-[Error matching compiler output for distributions/robust/arithmetic/kernels/hpl]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Norm]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Random]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Search]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Sort]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias1]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias2]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing1]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing2]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing3]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing4]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing5]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
-
 
 ===============================
 cyclic distribution regressions
@@ -162,6 +155,11 @@ timeout for new test (04/08/10)
 ====================
 no-local regressions
 ====================
+
+incompatible type in gen'd clearEntry (due to adding --fast?) (04/28/10)
+------------------------------------------------------------------------
+[Error matching compiler output for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )]
+[Error matching compiler output for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )]
 
 nondet. can't find float.h?!
 ----------------------------
@@ -298,6 +296,8 @@ nondet. execution timeout
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (04/14/10)
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (04/14/10, 04/23/10)
 [Error: Timed out executing program users/agnieszka/test2] (04/14/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/28/10)
+
 
 nondet. compilation timeout
 ---------------------------
@@ -305,12 +305,10 @@ nondet. compilation timeout
 [Error: Timed out compilation for studies/590o/blerner/nilClassCheck] (04/14/10)
 [Error: Timed out compilation for users/shetag/assocInRecord] (04/14/10)
 [Error: Timed out compilation for multilocale/diten/localBlock/needMultiLocales/localBlock3] (04/13/10, 04/15/10)
-[Error: Timed out compilation for studies/590o/alaska/graph] (04/13/10)
-[Error: Timed out compilation for users/shetag/assocDomOfRecord] (04/13/10)
-
-compilation timeout (04/10/10)
-------------------------------
-[Error: Timed out compilation for statements/sungeun/break_label]
+[Error: Timed out compilation for studies/590o/alaska/graph] (04/13/10, 04/28/10)
+[Error: Timed out compilation for users/shetag/assocDomOfRecord] (04/13/10, 04/28/10)
+[Error: Timed out compilation for studies/590o/blucia/img_proc] (04/28/10)
+[Error: Timed out compilation for statements/sungeun/break_label] (04/10/10)
 
 missing 1-tuple acccessor (03/03/10)
 ------------------------------------
