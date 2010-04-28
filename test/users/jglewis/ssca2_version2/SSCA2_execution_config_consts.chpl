@@ -17,11 +17,11 @@ module SSCA2_execution_config_consts
   // Problem Size:
   // -------------
 
-  config const SCALE = 12;
+  config const SCALE = 6;
 
   config const TOP_APPROX_SCALE = 6;
 
-  config const LOW_APPROX_SCALE = 6;
+  config const LOW_APPROX_SCALE = 4;
 
   const N_VERTICES = 2**SCALE;
     
