@@ -15,14 +15,9 @@
 general regressions
 ===================
 
-missing .notest (04/28/10)
---------------------------
-[Error cannot locate program output comparison file SSCA2_execution_config_consts.good]
-
-output mismatch (04/28/10)
---------------------------
-[Error matching program output for users/jglewis/ssca2_version2/SSCA2_main (--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast ) (1-1)]
-[Error matching program output for users/jglewis/ssca2_version2/SSCA2_main (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast ) (2-1)]
+output needed updating (04/29/10)
+---------------------------------
+[Error matching program output for distributions/deitz/test_block_representation]
 
 nondet. compilation timeouts
 ----------------------------
@@ -88,6 +83,18 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
+spurious problems due to NFS issue? (04/29/10)
+----------------------------------------------
+[Error: Timed out compilation for types/seq/deitz/test_seq_arg]
+[Error: Timed out compilation for types/seq/deitz/test_seq_record1]
+[Error: Timed out compilation for types/tuple/bradc/oneTuple]
+[Error: Timed out compilation for types/tuple/bradc/returnTuple]
+[Error: Timed out compilation for types/tuple/deitz/test_tuple_assignment_order2]
+[Error: Timed out compilation for types/tuple/deitz/test_tuple_function2]
+[Error: Timed out compilation for types/tuple/dinan/oobIndex]
+[Error: Timed out compilation for types/tuple/dinan/pining_for_lisp]
+[Error: Timed out executing program users/shetag/fock/fock-1]
+
 invalid write (noticed for the first time 04/27/10)
 ---------------------------------------------------
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-bradc]
@@ -102,7 +109,7 @@ nondet. "vg_alloc_ThreadState: no free slots available" error
 
 spurious execution timeouts
 ---------------------------
-[Error: Timed out executing program users/shetag/fock/fock-1] (04/11/10, 04/12/10, 04/14/10, 04/27/10)
+[Error: Timed out executing program users/shetag/fock/fock-1] (04/11/10, 04/12/10, 04/14/10, 04/27/10, 04/29/10)
 [Error: Timed out executing program users/shetag/fock/fock-2] (04/09/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
@@ -156,10 +163,10 @@ timeout for new test (04/08/10)
 no-local regressions
 ====================
 
-incompatible type in gen'd clearEntry (due to adding --fast?) (04/28/10)
-------------------------------------------------------------------------
-[Error matching compiler output for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )]
-[Error matching compiler output for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )]
+timeouts for new tests (04/20/10)
+---------------------------------
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings ) (1-1)]
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings ) (2-1)]
 
 nondet. can't find float.h?!
 ----------------------------
@@ -188,18 +195,13 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-timeouts for new tests (04/20/10)
----------------------------------
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings ) (1-1)]
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings ) (2-1)]
-
 nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 -----------------------------------------------------------------------------
 [Error matching program output for arrays/deitz/part7/test_out_array] (04/14/10)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10)
 
@@ -246,6 +248,40 @@ GASNet unable to start polling thread
 ==================
 pvm-specific tests
 ==================
+
+failures to compile (possibly due to wide reference narrowing?)
+---------------------------------------------------------------
+[Error matching compiler output for release/examples/hello-module]
+[Error matching compiler output for release/examples/hello-multicore]
+[Error matching compiler output for release/examples/hello-multiloc]
+[Error matching compiler output for release/examples/hello]
+[Error matching compiler output for release/examples/hpcc/fft]
+[Error matching compiler output for release/examples/hpcc/hpl]
+[Error matching compiler output for release/examples/hpcc/ra]
+[Error matching compiler output for release/examples/hpcc/stream-ep]
+[Error matching compiler output for release/examples/hpcc/stream]
+[Error matching compiler output for release/examples/primers/arrays]
+[Error matching compiler output for release/examples/primers/classes]
+[Error matching compiler output for release/examples/primers/distributions]
+[Error matching compiler output for release/examples/primers/fileIO]
+[Error matching compiler output for release/examples/primers/genericClasses]
+[Error matching compiler output for release/examples/primers/multilocale]
+[Error matching compiler output for release/examples/primers/multirealm]
+[Error matching compiler output for release/examples/primers/opaque]
+[Error matching compiler output for release/examples/primers/ranges]
+[Error matching compiler output for release/examples/primers/reductions]
+[Error matching compiler output for release/examples/primers/slices]
+[Error matching compiler output for release/examples/primers/sparse]
+[Error matching compiler output for release/examples/primers/taskParallel]
+[Error matching compiler output for release/examples/primers/timers]
+[Error matching compiler output for release/examples/primers/varargs]
+[Error matching compiler output for release/examples/primers/variables]
+[Error matching compiler output for release/examples/programs/beer]
+[Error matching compiler output for release/examples/programs/genericStack]
+[Error matching compiler output for release/examples/programs/jacobi]
+[Error matching compiler output for release/examples/programs/norm]
+[Error matching compiler output for release/examples/programs/prodCons]
+[Error matching compiler output for release/examples/programs/tree]
 
 spurious "address already in use" failures
 ------------------------------------------
