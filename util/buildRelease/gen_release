@@ -1,10 +1,5 @@
 #!/usr/bin/env perl
 
-if (!defined $ENV{'CHPL_HOME_REPOSITORY'}) {
-    print "ERROR: CHPL_HOME_REPOSITORY must be set to use gen_release\n";
-    exit(1);
-}
-
 $version = "";
 
 while (@ARGV) {

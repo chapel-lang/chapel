@@ -93,7 +93,7 @@ mysystem("cd $chplhome/tar && rm -f chapel-test.tar.gz", "deleting previous tarb
 #
 # make release
 #
-mysystem("$chplhome/util/gen_release test", "creating release", 1, 1);
+mysystem("$chplhome/util/buildRelease/gen_release test", "creating release", 1, 1);
 
 
 #
@@ -102,8 +102,8 @@ mysystem("$chplhome/util/gen_release test", "creating release", 1, 1);
 mysystem("cp $chplhome/tar/chapel-test.tar.gz $tmpdir", "copying release", 1, 1);
 mysystem("cd $tmpdir && gunzip chapel-test.tar.gz", "unzipping release", 1, 1);
 mysystem("cd $tmpdir && tar xf chapel-test.tar", "untarring release", 1, 1);
-mysystem("cp $chplhome/util/testReleaseHelp $tmpdir/chapel-test/chapel", "copying testReleaseHelp script", 1, 1);
-$teststatus = mysystem("cd $tmpdir/chapel-test/chapel && testReleaseHelp `$chplhome/util/chplenv/chplmake`", "running testReleaseHelp script", 1, 1);
+mysystem("cp $chplhome/util/buildRelease/testReleaseHelp $tmpdir/chapel-test/chapel", "copying testReleaseHelp script", 1, 1);
+$teststatus = mysystem("cd $tmpdir/chapel-test/chapel && ./testReleaseHelp `$chplhome/util/chplenv/chplmake`", "running testReleaseHelp script", 1, 1);
 
 
 #
@@ -178,7 +178,8 @@ sub mysystem {
 	    open(MAIL, $mailcommand);
 	    print MAIL "=== Summary ===================================================\n";
 	    print MAIL "ERROR $_[1]: $status\n";
-	    print MAIL "(workspace left at $tmpdir)\n";
+            $host = `hostname`; chomp($host);
+	    print MAIL "(workspace left at $host:$tmpdir)\n";
 	    print MAIL "===============================================================\n";
 	    close(MAIL);
 	}
