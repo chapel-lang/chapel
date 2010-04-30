@@ -15,10 +15,6 @@
 general regressions
 ===================
 
-output needed updating (04/29/10)
----------------------------------
-[Error matching program output for distributions/deitz/test_block_representation]
-
 nondet. compilation timeouts
 ----------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10)
@@ -34,7 +30,7 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10, 04/30/10)
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -146,17 +142,15 @@ block distribution regressions
 cyclic distribution regressions
 ===============================
 
-execution timeouts (possibly due to sched_yield issue and numLocales == 4)
---------------------------------------------------------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl]
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
-[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
+seg fault (04/30/10 -- after sched_yield policy change removed timeout)
+-----------------------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/kernels/hpl]
 
-timeout for new test (04/08/10)
--------------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
+execution timeouts (04/30/10 -- after sched_yield polcy change)
+---------------------------------------------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_of_distributed_array2]
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
 
 
 ====================
@@ -203,7 +197,7 @@ nondet. execution timeout
 -------------------------
 [Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -316,8 +310,8 @@ execution timeouts for new tests (04/20/10)
 
 MPI_ABORT issue (when not timing out in compilation)
 ----------------------------------------------------
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock3] (04/14/10, 04/15/10)
-[Error matching program output for studies/590o/alaska/graph] (04/14/10)
+[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock3] (04/14/10, 04/15/10, 04/30/10)
+[Error matching program output for studies/590o/alaska/graph] (04/14/10, 04/30/10)
 
 memory corruption (when not timing out in execution)
 ----------------------------------------------------
@@ -330,8 +324,8 @@ seg fault (when not timing out in execution)
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (04/14/10)
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (04/14/10, 04/23/10)
-[Error: Timed out executing program users/agnieszka/test2] (04/14/10)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (04/14/10, 04/23/10, 04/30/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/14/10, 04/30/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/28/10)
 
 
