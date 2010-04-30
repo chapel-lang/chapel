@@ -852,6 +852,7 @@ void CallExpr::codegen(FILE* outfile) {
                   get(1), call->get(1));
             } else {
               Type* fieldType = call->get(2)->typeInfo();
+              registerTypeToStructurallyCodegen(fieldType->symbol);
               if (fieldType->symbol->hasFlag(FLAG_STAR_TUPLE))
                 fprintf(outfile, "CHPL_COMM_WIDE_GET_FIELD_VALUE_SVEC");
               else
@@ -928,6 +929,7 @@ void CallExpr::codegen(FILE* outfile) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             Type* valueType = call->get(1)->getValType();
             Type* fieldType = valueType->getField("x1")->type;
+            registerTypeToStructurallyCodegen(fieldType->symbol);
             if (fieldType->symbol->hasFlag(FLAG_STAR_TUPLE))
               fprintf(outfile, "CHPL_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE_SVEC");
             else
