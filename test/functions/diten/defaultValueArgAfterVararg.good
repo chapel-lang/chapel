@@ -1,0 +1,6 @@
+s = (one, two, three)
+n = 3
+i = 4
+s = (one, two, three)
+n = 3
+i = 1

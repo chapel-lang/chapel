@@ -273,7 +273,7 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
         def->init = new CallExpr(base->copy(), new_IntSymbol(count));
         insertPoint->insertBefore(def->remove());
       } else {
-        def->remove(); // unexecuted none/gasnet on 4/25/08
+        def->remove();
       }
     } else if (BlockStmt* blk = toBlockStmt(expr)) {
       buildTupleVarDeclHelp(new CallExpr(base, new_IntSymbol(count)),
@@ -303,6 +303,12 @@ buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
     }
     count++;
   }
+  //
+  // Add compiler errors if tmp is not a tuple or if tmp.size is not the
+  // same as the number of variables.  These checks will get inserted in
+  // buildVarDecls after it asserts that only DefExprs are in this block.
+  //
+  tupleBlock->blockInfo = new CallExpr("_check_tuple_var_decl", tmp, new_IntSymbol(count-1));
   tupleBlock->insertAtHead(new DefExpr(tmp, init, type));
   return tupleBlock;
 }
@@ -1365,6 +1371,28 @@ buildVarDecls(BlockStmt* stmts, bool isConfig, bool isParam, bool isConst) {
     INT_FATAL(stmt, "Major error in setVarSymbolAttributes");
   }
   backPropagateInitsTypes(stmts);
+  //
+  // If blockInfo is set, this is a tuple variable declaration.
+  // Add checks that the expression on the right is a tuple and that
+  // the tuple size matches the number of variables. If not, issue
+  // compilerErrors. blockInfo has the form:
+  // call("_check_tuple_var_decl", rhsTuple, numVars)
+  //
+  if (stmts->blockInfo) {
+    INT_ASSERT(stmts->blockInfo->isNamed("_check_tuple_var_decl"));
+    SymExpr* tuple = toSymExpr(stmts->blockInfo->get(1));
+    Expr* varCount = stmts->blockInfo->get(2);
+    tuple->var->defPoint->insertAfter(
+      buildIfStmt(new CallExpr("!=", new CallExpr(".", tuple->remove(),
+                                                  new_StringSymbol("size")),
+                               varCount->remove()),
+                  new CallExpr("compilerError", new_StringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
+
+    tuple->var->defPoint->insertAfter(
+      buildIfStmt(new CallExpr("!", new CallExpr("isTuple", tuple->copy())),
+                  new CallExpr("compilerError", new_StringSymbol("illegal tuple variable declaration with non-tuple initializer"), new_IntSymbol(0))));
+    stmts->blockInfo = NULL;
+  }
   return stmts;
 }
 

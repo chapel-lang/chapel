@@ -1364,18 +1364,43 @@ static void issueCompilerError(CallExpr* call) {
       if (call->getModule()->modTag == MOD_INTERNAL &&
           callStack.v[0]->getModule()->modTag == MOD_INTERNAL)
         return;
-
+  //
+  // If an errorDepth was specified, report a diagnostic about the call
+  // that deep into the callStack. The default depth is 1.
+  //
+  FnSymbol* fn = toFnSymbol(call->parentSymbol);
+  VarSymbol* depthParam = toVarSymbol(paramMap.get(toDefExpr(fn->formals.tail)->sym));
+  int64_t depth;
+  bool foundDepthVal;
+  if (depthParam && depthParam->immediate &&
+      depthParam->immediate->const_kind == NUM_KIND_INT) {
+    depth = depthParam->immediate->int_value();
+    foundDepthVal = true;
+  } else {
+    depth = 1;
+    foundDepthVal = false;
+  }
+  if (depth+1 > callStack.n) {
+    USR_WARN(call, "compiler diagnostic depth value exceeds call stack depth");
+    depth = callStack.n - 1;
+  }
+  if (depth < 0) {
+    USR_WARN(call, "compiler diagnostic depth value can not be negative");
+    depth = 1;
+  }
   CallExpr* from = NULL;
-  for (int i = callStack.n-2; i >= 0; i--) {
+  for (int i = callStack.n-(1+depth); i >= 0; i--) {
     from = callStack.v[i];
     if (from->lineno > 0 && 
         from->getModule()->modTag != MOD_INTERNAL &&
         !from->getFunction()->hasFlag(FLAG_TEMP))
       break;
   }
+
   const char* str = "";
-  FnSymbol* fn = toFnSymbol(call->parentSymbol);
   for_formals(arg, fn) {
+    if (foundDepthVal && arg->defPoint == fn->formals.tail)
+      continue;
     VarSymbol* var = toVarSymbol(paramMap.get(arg));
     INT_ASSERT(var && var->immediate && var->immediate->const_kind == CONST_KIND_STRING);
     str = astr(str, var->immediate->v_string);
@@ -1387,7 +1412,7 @@ static void issueCompilerError(CallExpr* call) {
   }
   if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-1]->isResolved()))
     innerCompilerWarningMap.put(fn, str);
-  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
+  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-(1+depth)]->isResolved()))
     outerCompilerWarningMap.put(fn, str);
 }
 

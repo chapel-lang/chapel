@@ -69,11 +69,19 @@ def _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
 }
 
-def compilerError(param x ...?n) {
+def compilerError(param x:string ...?n, param errorDepth:int) {
   __primitive("error", (...x));
 }
 
-def compilerWarning(param x ...?n) {
+def compilerError(param x:string ...?n) {
+  __primitive("error", (...x));
+}
+
+def compilerWarning(param x:string ...?n, param errorDepth:int) {
+  __primitive("warning", (...x));
+}
+
+def compilerWarning(param x:string ...?n) {
   __primitive("warning", (...x));
 }
 
