@@ -58,7 +58,7 @@ extern bool fSerialForall;
 extern bool fSerial;
 extern bool fLocal;
 extern bool fGPU;
-extern bool genCommunicatedStructures;
+extern bool fHeterogeneous;
 extern bool fieeefloat;
 
 extern int debugParserLevel;

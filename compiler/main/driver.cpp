@@ -68,7 +68,7 @@ bool fGenIDS = false;
 bool fSerialForall = false;
 bool fSerial;  // initialized in setupOrderedGlobals() below
 bool fLocal;   // initialized in setupOrderedGlobals() below
-bool genCommunicatedStructures; // initialized in setupOrderedGlobals() below
+bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
 bool fGPU;
 bool fieeefloat = true;
 bool report_inlining = false;
@@ -157,7 +157,7 @@ static void setupOrderedGlobals(void) {
   // Eventually, we should only generate structural definitions when
   // doing multirealm compilations.  However, we don't have the mechanism
   // in place to support two communication interfaces yet...
-  genCommunicatedStructures = (strcmp(CHPL_COMM, "pvm") == 0);
+  fHeterogeneous = (strcmp(CHPL_COMM, "pvm") == 0);
 }
 
 
@@ -470,7 +470,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Misc. Developer Flags", NULL, NULL, NULL, NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
- {"gen-communicated-structures", ' ', NULL, "Generate type/offset information for potential use in communications", "N", &genCommunicatedStructures, NULL, NULL},
+ {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
   {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},

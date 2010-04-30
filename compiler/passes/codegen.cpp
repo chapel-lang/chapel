@@ -668,6 +668,12 @@ void codegen(void) {
   openCFile(&mainfile, "_main", "c");
   fprintf(mainfile.fptr, "#include \"chpl__header.h\"\n");
 
+  if (fHeterogeneous) {
+    fprintf(hdrfile.fptr, "#ifndef CHPL_COMM_HETEROGENEOUS\n");
+    fprintf(hdrfile.fptr, "#define CHPL_COMM_HETEROGENEOUS\n");
+    fprintf(hdrfile.fptr, "#endif\n");
+  }
+
   if (fGPU) {
     openCFile(&gpusrcfile, "chplGPU", "cu");
     forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -697,7 +703,7 @@ void codegen(void) {
   if (!fRuntime)
     codegen_config(mainfile.fptr);
 
-  if (genCommunicatedStructures)
+  if (fHeterogeneous)
     codegenTypeStructureInclude(mainfile.fptr);
 
   ChainHashMap<char*, StringHashFns, int> filenames;
@@ -747,7 +753,7 @@ void codegen(void) {
     fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
   }
 
-  if (genCommunicatedStructures) 
+  if (fHeterogeneous) 
     codegenTypeStructures(hdrfile.fptr);
 
   if (fRuntime) {
