@@ -57,8 +57,15 @@ system("cd $rootdir && svn export -q $svnroot chapel");
        "util/printchplenv",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
-       "util/setchplenv.sh"
+       "util/setchplenv.sh",
+       "util/test/timedexec",
+       "util/test/sub_test",
+       "util/test/sub_clean",
+       "util/test/computePerfStats",
+       "util/test/filterSuppressions",
+       "util/test/testEnv"
 );
+
 
 # C/C++ sources
 @code_dirs = (
@@ -97,8 +104,6 @@ print "Creating the examples directory...\n";
 system("cd chapel && rm -r examples");
 system("cd chapel && cp -r test/release/examples .");
 system("cd chapel/util && cp start_test ../examples/");
-system("cd chapel/examples && mkdir Bin");
-system("cd chapel/util/test && cp timedexec sub_test sub_clean computePerfStats filterSuppressions testEnv ../../examples/Bin/");
 
 print "Building the man page...\n";
 system("cd chapel && make man");
