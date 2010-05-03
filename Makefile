@@ -34,7 +34,7 @@ test: FORCE
 SPECTEST_DIR = ./test/spec/autogen
 spectests: FORCE
 	rm -rf $(SPECTEST_DIR)
-	util/extract_tests.py -o $(SPECTEST_DIR) spec/*.tex
+	util/test/extract_tests -o $(SPECTEST_DIR) spec/*.tex
 
 clean: FORCE
 	cd compiler && $(MAKE) clean

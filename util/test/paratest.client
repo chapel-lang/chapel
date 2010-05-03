@@ -1,11 +1,11 @@
 #!/usr/bin/env perl
 
-# Client-side of the parallel testing script, paratest.server.pl.
-# Used remotely by paratest.server.pl to run start_test locally.
+# Client-side of the parallel testing script, paratest.server.
+# Used remotely by paratest.server to run start_test locally.
 #
-# Usage: paratest.client.pl id chapeltestdir testdir distmode futures valgrind [compopts] [comm]
+# Usage: paratest.client id chapeltestdir testdir distmode futures valgrind [compopts] [comm]
 #  
-#  id - used to create a file to synchronize with paratest.server.pl
+#  id - used to create a file to synchronize with paratest.server
 #  chapeltestdir - root dir of Chapel test infrastructure
 #  testdir - directory to run start_test on
 #  distmode - work distribution mode (0=directory, 1=file)
@@ -13,6 +13,8 @@
 #  valgrind - run valgrind (0=no, 1=yes)
 #  compopts - optional Chapel compiler options
 #  comm - optional Chapel CHPL_COMM setting
+#
+# NOTE: Assumes paratest.client is run from $CHPL_HOME/test
 # 
 
 $debug = 0; # set $verbose=1 in server
@@ -36,7 +38,7 @@ sub main {
 
     if ($#ARGV < 4) {
         print "@ARGV\n";
-        print "usage: paratest.client.pl id chapeltestdir testdir futures valgrind memleaks [compopts] [execopts] [comm]\n";
+        print "usage: paratest.client id chapeltestdir testdir futures valgrind memleaks [compopts] [execopts] [comm]\n";
         exit (3);
     }
 

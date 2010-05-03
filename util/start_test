@@ -426,6 +426,12 @@ if ($?CHPL_COMM == 0) then
     setenv CHPL_COMM `$CHPL_HOME/util/chplenv/comm`
 endif
 
+set utildir = "$CHPL_HOME/util/test"
+if (! -d $utildir || ! -x $utildir) then
+    echo "Error: Cannot find $CHPL_HOME/test/util"
+    exit 1
+endif
+
 set testdir = "$CHPL_HOME/test"
 if (! -d $testdir || ! -x $testdir) then
     set testdir = "$CHPL_HOME/examples"
@@ -568,7 +574,7 @@ while ( $#argv > 0 )
         case -notee:
         case --notee:
                 shift
-                set tee = "$testdir/Bin/cat2File"
+                set tee = "$utildir/cat2File"
                 breaksw
         case -comm:
         case --comm:
@@ -590,6 +596,7 @@ while ( $#argv > 0 )
         case --help
 		echo Usage and defaults\:
 		echo "     start_test <file list> <directory list>"
+                echo "          -clean-only"
 		echo "          -compiler <path>     (currently: $CHPL_HOME/bin/$platform/chpl)"
 		echo "          -compopts <options>  (currently: '--cc-warnings')"
 		echo "          -execopts <options>  (currently: '')"
@@ -777,7 +784,7 @@ endif
 mv $logtmp $logfile
 
 
-set gsub_test = $testdir/Bin/sub_test
+set gsub_test = $utildir/sub_test
 
 
 #
@@ -799,7 +806,7 @@ foreach test ($testlist)
     if (-x ./Bin/sub_clean) then
         set sub_clean = ./Bin/sub_clean
     else
-        set sub_clean = $testdir/Bin/sub_clean
+        set sub_clean = $utildir/sub_clean
     endif
     echo "[Starting $sub_clean `date`]" |& $tee -a $logfile
 
@@ -905,7 +912,7 @@ foreach absdir ($absdirs)
 	set numtests = `(ls *.{chpl,v} |& grep -v "No match" | wc -l)`
 
         if (-e ./SKIPIF) then
-            set skiptest = `$testdir/Bin/testEnv.pl ./SKIPIF`
+            set skiptest = `$utildir/testEnv ./SKIPIF`
             if ($skiptest == 1) then
                 echo "[Skipping directory based on SKIPIF environment settings]"
                 continue
@@ -922,7 +929,7 @@ foreach absdir ($absdirs)
             if (-x ./Bin/sub_clean) then
                 set sub_clean = ./Bin/sub_clean
             else
-                set sub_clean = $testdir/Bin/sub_clean
+                set sub_clean = $utildir/sub_clean
             endif
 	    $sub_clean |& $tee -a $logfile
 
@@ -959,7 +966,7 @@ echo \[Test Summary - $datestr\] |& $tee $logfile.summary
 if ($clean_only == 0) then
     grep "$errormarker" $logfile |& $tee -a $logfile.summary
     if ($suppressions != "") then
-    $testdir/Bin/filterSuppressions.pl $suppressions $logfile.summary
+    $utildir/filterSuppressions $suppressions $logfile.summary
     endif
     grep "$futuremarker" $logfile |& $tee -a $logfile.summary
 

@@ -223,6 +223,15 @@ chpl_home=os.getenv('CHPL_HOME', chpl_base);
 chpl_home=os.path.normpath(chpl_home)
 # sys.stdout.write('CHPL_HOME='+chpl_home+'\n');
 
+# Find the test util directory
+utildir=chpl_home+'/util/test'
+if os.path.isdir(utildir)==0:
+    sys.stdout.write('Error: Cannot find '+chpl_home+'/util/test\n')
+    sys.exit(0)
+# Needed for MacOS mount points
+testdir = os.path.realpath(utildir)
+# sys.stdout.write('utildir='+utildir+'\n');
+
 # Find the test directory
 testdir=chpl_home+'/test'
 if os.path.isdir(testdir)==0:
@@ -239,7 +248,7 @@ testdir = os.path.realpath(testdir)
 #  subprocess doesn't quite cut is for this kind of stuff
 useTimedExec=True
 if useTimedExec:
-    timedexec=testdir+'/Bin/timedexec'
+    timedexec=utildir+'/timedexec'
     if not os.access(timedexec,os.R_OK|os.X_OK):
         sys.stdout.write('[Cannot execute timedexec script \"%s\"]\n'%(timedexec))
         sys.exit(-1)
@@ -495,7 +504,7 @@ for testname in testsrc:
 
         elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
-            skiptest=subprocess.Popen([testdir+'/Bin/testEnv.pl', './'+f], stdout=subprocess.PIPE).communicate()[0]
+            skiptest=subprocess.Popen([utildir+'/testEnv', './'+f], stdout=subprocess.PIPE).communicate()[0]
             if int(skiptest):
                 sys.stdout.write('[Skipping %s based on .skipif environment settings]\n'%(f))
                 do_not_test=True
@@ -944,7 +953,7 @@ for testname in testsrc:
                     break # on to next compopts
                 sys.stdout.write('[Executing checkKeys %s %s]\n'%(execname, perfdir))
                 sys.stdout.flush()
-                p = subprocess.Popen([testdir+'/Bin/computePerfStats.pl',
+                p = subprocess.Popen([utildir+'/computePerfStats',
                                       execname, perfdir],
                                      stdout=subprocess.PIPE)
                 sys.stdout.write('%s'%(p.communicate()[0]))
