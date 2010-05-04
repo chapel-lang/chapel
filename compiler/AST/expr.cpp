@@ -836,6 +836,9 @@ void CallExpr::codegen(FILE* outfile) {
             gen(outfile, "%A, %A)", call->get(2), call->get(3));
           } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
             gen(outfile, "CHPL_ASSIGN_SVEC(%A, *(%A))", get(1), call->get(1));
+          } else if (call->get(1)->typeInfo() == dtString) {
+            // this should be illegal when wide strings are fixed
+            gen(outfile, "%A = %A", get(1), call->get(1));
           } else {
             gen(outfile, "%A = *(%A)", get(1), call->get(1));
           }
@@ -1057,10 +1060,12 @@ void CallExpr::codegen(FILE* outfile) {
           }
         }
         if (call->isPrimitive(PRIM_GET_PRIV_CLASS)) {
-          if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+          if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             gen(outfile, "CHPL_WIDE_GET_PRIVATIZED_CLASS(%A, %A)", get(1), call->get(2));
-            break;
+          } else {
+            gen(outfile, "%A = chpl_getPrivatizedClass(%A)", get(1), call->get(2));
           }
+          break;
         }
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
