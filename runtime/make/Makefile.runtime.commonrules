@@ -9,3 +9,5 @@ cleandeps: $(CLEANSUBDIRDEPS) echoruntimedir
 
 clobber: $(CLOBBERSUBDIRS) echoruntimedir
 	rm -rf ./$(CLOBBER_TARGS)
+
+norecurse: echoruntimedir $(TARGETS)

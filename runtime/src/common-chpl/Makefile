@@ -27,7 +27,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
 
-$(RUNTIME_OBJ_DIR)/chpl_rt_utils.o: chpl_rt_utils.c $(RUNTIME_OBJ_DIR_STAMP) $(RUNTIME_INCLUDE_ROOT)/chpl_rt_utils.h $(RUNTIME_INCLUDE_ROOT)/stdchpl.h
+$(RUNTIME_OBJ_DIR)/chpl_rt_utils.o: chpl_rt_utils.c ../../include/chpl_rt_utils_static.h $(RUNTIME_OBJ_DIR_STAMP) $(RUNTIME_INCLUDE_ROOT)/chpl_rt_utils.h $(RUNTIME_INCLUDE_ROOT)/stdchpl.h
 	$(CC) -c $(RUNTIME_GEN_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
 
 $(RUNTIME_INCLUDE_ROOT)/chpl_rt_utils.h: chpl_rt_utils.h
@@ -35,7 +35,7 @@ $(RUNTIME_INCLUDE_ROOT)/chpl_rt_utils.h: chpl_rt_utils.h
 	touch -r $< $@
 
 chpl_rt_utils.c chpl_rt_utils.h: chpl_rt_utils.chpl $(CHPL) $(CHAPEL_ROOT)/modules/internal/*.chpl
-	export CHPL_HOME && CHPL_HOME=$(CHAPEL_ROOT) && $(CHPL) $(RUNTIME_CHPL_FLAGS) $<
+	export CHPL_HOME && CHPL_HOME=$(CHAPEL_ROOT) && $(CHPL) $(RUNTIME_CHPL_FLAGS) ../../include/chpl_rt_utils_static.h $<
 
 OTHER_DEPEND_RULES = \
 	@test -r $(RUNTIME_INCLUDE_ROOT)/chpl_rt_utils.h || (echo "/* PLACEHOLDER HEADER */\n\#include \"stdchpl_rt_utils.h\"" > $(RUNTIME_INCLUDE_ROOT)/chpl_rt_utils.h; touch chpl_rt_utils.chpl); \

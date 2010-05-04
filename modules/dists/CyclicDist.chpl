@@ -31,7 +31,7 @@ class Cyclic: BaseDist {
 
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
-  var dataParMinGranularity: uint(64);
+  var dataParMinGranularity: int;
 
   var pid: int = -1;
 
@@ -74,7 +74,11 @@ class Cyclic: BaseDist {
     for param i in 1..rank do
       this.startIdx(i) = mod(tupleStartIdx(i), targetLocDom.dim(i).length);
 
-    this.dataParTasksPerLocale = dataParTasksPerLocale;
+    // NOTE: When these knobs stop using the global defaults, we will need
+    // to add checks to make sure dataParTasksPerLocale<0 and
+    // dataParMinGranularity<0
+    this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
+                                 else dataParTasksPerLocale;
     this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
     this.dataParMinGranularity = dataParMinGranularity;
 
@@ -117,7 +121,7 @@ class Cyclic: BaseDist {
 
 
 def Cyclic.getChunk(inds, locid) {
-  var sliceBy: rank*range(eltType=idxType, stridable=true);
+  var sliceBy: rank*range(idxType=idxType, stridable=true);
   var locidtup: rank*int;
   if rank == 1 then
     locidtup(1) = locid;
@@ -422,7 +426,7 @@ def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
                                                   minSize,
                                                   locDom.myBlock.dims(), rank);
 
-    var result: rank*range(eltType=idxType, stridable=true);
+    var result: rank*range(idxType=idxType, stridable=true);
     var zeroedLocalPart = whole((...locDom.myBlock.getIndices())) - whole.low;
     for param i in 1..rank {
       var dim = zeroedLocalPart.dim(i);
@@ -441,7 +445,7 @@ def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
     } else {
 
       coforall taskid in 0:uint(64)..#numTasks {
-        var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
+        var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
         const low = result(parDim).low, high = result(parDim).high;
         const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
                                       high, low, low);
@@ -566,7 +570,7 @@ def CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
     on d.dist.targetLocs(ind) {
       const locDom = d.getLocDom(ind);
       var collapsedDims: rank*idxType;
-      var locSlice: _cyclic_matchArgsShape(range(eltType=idxType, stridable=true), idxType, args);
+      var locSlice: _cyclic_matchArgsShape(range(idxType=idxType, stridable=true), idxType, args);
       var locArrInd: rank*int;
       var j = 1;
       for param i in 1..args.size {
@@ -693,7 +697,7 @@ def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
                                                   minSize,
                                                   locDom.myBlock.dims(), rank);
 
-    var result: rank*range(eltType=idxType, stridable=true);
+    var result: rank*range(idxType=idxType, stridable=true);
     var zeroedLocalPart = dom.whole((...locDom.myBlock.getIndices())) - wholeLow;
     for param i in 1..rank {
       var dim = zeroedLocalPart.dim(i);
@@ -712,7 +716,7 @@ def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
     } else {
 
       coforall taskid in 0:uint(64)..#numTasks {
-        var splitRanges: rank*range(eltType=idxType, stridable=true) = result;
+        var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
         const low = result(parDim).low, high = result(parDim).high;
         const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
                                       high, low, low);
@@ -740,7 +744,7 @@ def CyclicArr.these(param tag: iterator, follower, param fast: bool = false) var
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
 
-  var t: rank*range(eltType=idxType, stridable=true);
+  var t: rank*range(idxType=idxType, stridable=true);
   for param i in 1..rank {
     const wholestride = dom.whole.dim(i).stride;
     t(i) = ((follower(i).low*wholestride)..(follower(i).high*wholestride) by (follower(i).stride*wholestride)) + dom.whole.dim(i).low;

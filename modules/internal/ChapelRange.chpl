@@ -11,13 +11,13 @@ enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 
 pragma "range"
 record range {
-  type eltType = int;                            // element type
+  type idxType = int;                            // element type
   param boundedType: BoundedRangeType = BoundedRangeType.bounded; // bounded or not
   param stridable: bool = false;                 // range can be strided
-  var _low: eltType = 1;                         // lower bound
-  var _high: eltType = 0;                        // upper bound
-  var _stride: int = 1;                          // integer stride of range
-  var _promotionType : eltType;                  // enables promotion
+  var _low: idxType = 1;                         // lower bound
+  var _high: idxType = 0;                        // upper bound
+  var _stride: chpl__idxTypeToStrType(idxType) = 1;    // signed stride of range
+  var _promotionType : idxType;                  // enables promotion
 
   pragma "inline" def low return _low;       // public getter for low bound
   pragma "inline" def high return _high;     // public getter for high bound
@@ -59,12 +59,12 @@ def _build_range(param bt: BoundedRangeType)
 //
 // syntax function for by-expressions
 //
-def by(r : range(?), i : int) {
-  if i == 0 then
+def chpl__byHelp(r : range(?et, ?bt, ?sbl), str : chpl__idxTypeToStrType(et)) {
+  if str == 0 then
     halt("range cannot be strided by zero");
   if r.boundedType == BoundedRangeType.boundedNone then
     halt("unbounded range cannot be strided");
-  var result = new range(r.eltType, r.boundedType, true, r.low, r.high, r.stride*i);
+  var result = new range(r.idxType, r.boundedType, true, r.low, r.high, r.stride*str);
   if r.low > r.high then
     return result;
   if result.stride < 0 then
@@ -72,6 +72,36 @@ def by(r : range(?), i : int) {
   else
     result._alignHigh(result.low);
   return result;
+}
+
+def chpl__legalIntCoerce(type t1, type t2) param {
+  if (_isSignedType(t2)) {
+    if (_isSignedType(t1)) {
+      return (numBits(t1) <= numBits(t2));
+    } else {
+      return (numBits(t1) < numBits(t2));
+    }
+  } else {
+    if (_isSignedType(t1)) {
+      return false;
+    } else {
+      return (numBits(t1) <= numBits(t2));
+    }
+  }
+}
+
+def by(r : range(?), str) {
+  type idxType = r.idxType;
+  type strType = chpl__idxTypeToStrType(idxType);
+  type argType = str.type;
+  if (argType == strType) {
+    return chpl__byHelp(r, str);
+  } else if (argType == idxType || chpl__legalIntCoerce(argType, strType)) {
+    return chpl__byHelp(r, str:strType);
+  } else {
+    compilerError("type mismatch applying 'by' to range(", 
+                  typeToString(idxType), ") with ", typeToString(argType));
+  }
 }
 
 //
@@ -83,14 +113,14 @@ def #(r:range(?), i:integral)
   if i < 0 then
     halt("range cannot have a negative number of elements");
   if i == 0 then
-    return new range(eltType = resultType,
+    return new range(idxType = resultType,
                      boundedType = BoundedRangeType.bounded,
                      stridable = r.stridable,
                      _low = r.low + 1,
                      _high = r.low,
                      _stride = r.stride);
 
-  return new range(eltType = resultType,
+  return new range(idxType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
                    _low = r.low,
@@ -104,14 +134,14 @@ def #(r:range(?), i:integral)
   if i < 0 then
     halt("range cannot have a negative number of elements");
   if i == 0 then
-    return new range(eltType = resultType,
+    return new range(idxType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
                    _low = r.high,
                    _high = r.high - 1,
                    _stride = r.stride);
 
-  return new range(eltType = resultType,
+  return new range(idxType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
                    _low = r.high - (i-1)*abs(r.stride):resultType,
@@ -127,14 +157,14 @@ def #(r:range(?), i:integral)
   if i > r.length then
     halt("bounded range is too small to access ", i, " elements");
   if i == 0 then
-    return new range(eltType = resultType,
+    return new range(idxType = resultType,
                      boundedType = BoundedRangeType.bounded,
                      stridable = r.stridable,
                      _low = r.high,
                      _high = r.low,
                      _stride = r.stride);
 
-  return new range(eltType = resultType,
+  return new range(idxType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
                    _low = if r.stride < 0 then r.high + (i-1)*r.stride:resultType else r.low,
@@ -180,17 +210,17 @@ def mod(a:integral, b:integral) {
 //
 // align low bound of this range to an alignment; snap up
 //
-def range._alignLow(alignment: eltType) {
-  var s = abs(stride):eltType;
+def range._alignLow(alignment: idxType) {
+  var s = abs(stride):idxType;
   // The following is equivalent to var d = abs(alignment - low) % s;
   // except that it avoids problems with an overflow in the subtraction.
   // It uses the fact that if a1 == b1 mod n and a2 == b2 mod n then
   // a1 - a2 == b1 - b2 mod n and the fact that abs(a-b) is a-b if a > b
   // and is b-a when b >= a.
   var d = if(alignment > low) then
-    mod(mod(alignment,s):int - mod(low,s):int, s):eltType
+    mod(mod(alignment,s):int - mod(low,s):int, s):idxType
   else
-    mod(mod(low,s):int - mod(alignment, s):int, s):eltType;
+    mod(mod(low,s):int - mod(alignment, s):int, s):idxType;
   if d != 0 {
     if low < alignment then
       _low += d;
@@ -203,14 +233,14 @@ def range._alignLow(alignment: eltType) {
 //
 // align high bound of this range to an alignment; snap down
 //
-def range._alignHigh(alignment: eltType) {
-  var s = abs(stride):eltType;
+def range._alignHigh(alignment: idxType) {
+  var s = abs(stride):idxType;
   // See the note about this declaration in range._alignLow. It is like
   // var d = abs(alignment - high) % s; but avoids overflow problems.
   var d = if(alignment > high) then
-    mod(mod(alignment,s):int - mod(high,s):int, s):eltType
+    mod(mod(alignment,s):int - mod(high,s):int, s):idxType
   else
-    mod(mod(high,s):int - mod(alignment,s):int,s):eltType;
+    mod(mod(high,s):int - mod(alignment,s):int,s):idxType;
   if d != 0 {
     if high > alignment then
       _high -= d;
@@ -242,8 +272,7 @@ def =(r1: range(stridable=?s1), r2: range(stridable=?s2)) {
 //
 // return the intersection of this and other
 //
-def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
-
+def range.this(other: range(?idxType2, ?boundedType, ?stridable)) {
   //
   // determine boundedType of result
   //
@@ -266,43 +295,53 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
   //
   // source: Knuth Volume 2 --- Section 4.5.2
   //
-  def extendedEuclid(u: int, v: int) {
-    var U = (1, 0, u);
-    var V = (0, 1, v);
+  def extendedEuclidHelp(u, v) {
+    var zero: u.type = 0;
+    var one: u.type = 1;
+    var U = (one, zero, u);
+    var V = (zero, one, v);
     while V(3) != 0 {
       (U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
     }
     return (U(3), U(1));
   }
+    
+  def extendedEuclid(u:int, v:int) {
+    return extendedEuclidHelp(u,v);
+  }
 
-  var lo1 = if _hasLow() then this.low:eltType else other.low;
-  var hi1 = if _hasHigh() then this.high:eltType else other.high;
+  def extendedEuclid(u:int(64), v:int(64)) {
+    return extendedEuclidHelp(u,v);
+  }
+
+  var lo1 = if _hasLow() then this.low:idxType else other.low;
+  var hi1 = if _hasHigh() then this.high:idxType else other.high;
   var st1 = abs(this.stride);
   var al1 = if this.stride < 0 then hi1 else lo1;
 
-  var lo2 = if other._hasLow() then other.low else this.low:eltType;
-  var hi2 = if other._hasHigh() then other.high else this.high:eltType;
+  var lo2 = if other._hasLow() then other.low else this.low:idxType;
+  var hi2 = if other._hasHigh() then other.high else this.high:idxType;
   var st2 = abs(other.stride);
   var al2 = if this.stride < 0 then hi2 else lo2;
 
   var (g, x) = extendedEuclid(st1, st2);
 
-  var result = new range(eltType,
+  var result = new range(idxType,
                          computeBoundedType(this, other),
                          this.stridable | other.stridable,
-                         max(lo1, lo2),
-                         min(hi1, hi2),
-                         st1 * (st2 / g));
+                         max(lo1, lo2):idxType,
+                         min(hi1, hi2):idxType,
+                         (st1 * (st2 / g)):chpl__idxTypeToStrType(idxType));
   if lo1 > hi1 || lo2 > hi2 {
     // empty intersection
     if result.low < result.high then
       result._low <=> result._high;
     else if result.high == result.low then
-      (result._low, result._high) = (1:eltType, 0:eltType);
-    var al = al1 + (al2 - al1) * x:eltType * st1:eltType / g:eltType;
+      (result._low, result._high) = (1:idxType, 0:idxType);
+    var al = al1 + (al2:idxType - al1) * x:idxType * st1:idxType / g:idxType;
     result._alignLow(al);
     result._alignHigh(al);
-  } else if abs(lo1 - lo2) % g:eltType != 0 {
+  } else if abs(lo1 - lo2) % g:idxType != 0 {
     // empty intersection, return degenerate result
     result._low <=> result._high;
   } else {
@@ -311,7 +350,7 @@ def range.this(other: range(?eltType, ?boundedType, ?stridable)) {
     if other.stride < 0 then
       result._stride = -result.stride;
 
-    var al = al1 + (al2 - al1) * x:eltType * st1:eltType / g:eltType;
+    var al = al1 + (al2:idxType - al1) * x:idxType * st1:idxType / g:idxType;
 
     result._alignLow(al);
     result._alignHigh(al);
@@ -338,7 +377,7 @@ def range.these() {
       var i = if stride > 0 then low else high;
       while true {
         yield i;
-        i = i + stride:eltType;
+        i = i + stride:idxType;
       }
     } else {
       if boundedType == BoundedRangeType.boundedHigh then
@@ -350,18 +389,18 @@ def range.these() {
       }
     }
   } else {
-    var i, last: eltType;
+    var i, last: idxType;
     if stridable {
       if stride > 0 {
         i = low;
-        last = if i > high then low else high + stride:eltType;
+        last = if i > high then low else high + stride:idxType;
       } else {
         i = high;
-        last = if i < low then high else low + stride:eltType;
+        last = if i < low then high else low + stride:idxType;
       }
       while i != last {
         yield i;
-        i = i + stride:eltType;
+        i = i + stride:idxType;
       }
     } else {
       i = low;
@@ -383,19 +422,21 @@ def range.these(param tag: iterator) where tag == iterator.leader {
   if debugChapelRange then
     writeln("*** In range leader:"); // ", this);
 
-  var v: eltType;
+  var v: idxType;
   if stride > 0 then
-    v = (high - low) / stride:eltType + 1;
+    v = (high - low) / stride:idxType + 1;
   else
-    v = (low - high) / stride:eltType + 1;
+    v = (low - high) / stride:idxType + 1;
   if v < 0 then
     v = 0;
 
-  const numTasks = dataParTasksPerLocale;
+  const numTasks = if dataParTasksPerLocale==0 then here.numCores
+                   else dataParTasksPerLocale;
   const ignoreRunning = dataParIgnoreRunningTasks;
   const minIndicesPerTask = dataParMinGranularity;
 
-  var numChunks = _computeNumChunks(numTasks, ignoreRunning, minIndicesPerTask, v);
+  var numChunks = _computeNumChunks(numTasks, ignoreRunning,
+                                    minIndicesPerTask, v);
   if debugChapelRange then
     writeln("*** RI: length=", v, " numChunks=", numChunks);
 
@@ -423,9 +464,9 @@ def range.these(param tag: iterator, follower) where tag == iterator.follower {
   var followThis = follower(1);
   if stridable {
     var r = if stride > 0 then
-        low+followThis.low*stride:eltType..low+followThis.high*stride:eltType by stride by followThis.stride
+        low+followThis.low*stride:idxType..low+followThis.high*stride:idxType by stride by followThis.stride
       else
-        high+followThis.high*stride:eltType..high+followThis.low*stride:eltType by stride by followThis.stride;
+        high+followThis.high*stride:idxType..high+followThis.low*stride:idxType by stride by followThis.stride;
     for i in r do
       yield i;
   } else {
@@ -444,10 +485,10 @@ def range.length {
   if boundedType != BoundedRangeType.bounded then
     compilerError("unbounded range has infinite length");
   if low > high then
-    return 0:eltType;
+    return 0:idxType;
   const retVal = if stride > 0
-               then (high - low) / stride:eltType + 1
-               else (low - high) / stride:eltType + 1;
+               then (high - low) / stride:idxType + 1
+               else (low - high) / stride:idxType + 1;
   return if (retVal < 0) then 0 else retVal;
 }
 
@@ -457,14 +498,14 @@ def range.length {
 //
 // SS: setting this to pragma "inline"
 pragma "inline"
-def range.member(i: eltType) {
+def range.member(i: idxType) {
   if stridable {
     if boundedType == BoundedRangeType.bounded {
-      return i >= low && i <= high && (i - low) % abs(stride):eltType == 0;
+      return i >= low && i <= high && (i - low) % abs(stride):idxType == 0;
     } else if boundedType == BoundedRangeType.boundedLow {
-      return i >= low && (i - low) % abs(stride):eltType == 0;
+      return i >= low && (i - low) % abs(stride):idxType == 0;
     } else if boundedType == BoundedRangeType.boundedHigh {
-      return i <= high && (high - i) % abs(stride):eltType == 0;
+      return i <= high && (high - i) % abs(stride):idxType == 0;
     } else {
       return true;
     }
@@ -481,8 +522,8 @@ def range.member(i: eltType) {
   }
 }
 
-def range.indexOrder(i: eltType) {
-  if (!member(i)) then return (-1):eltType;
+def range.indexOrder(i: idxType) {
+  if (!member(i)) then return (-1):idxType;
   return (i-low)/abs(stride);
 }
 
@@ -500,7 +541,7 @@ def range.boundsCheck(other: range(?e,?b,?s)) where b == BoundedRangeType.bounde
 
 
 def range.boundsCheck(other: range(?e,?b,?s)) {
-  var boundedOther: range(e,BoundedRangeType.bounded,s||this.stridable);
+  var boundedOther: range(idxType,BoundedRangeType.bounded,s||this.stridable);
   if other._hasLow() then
     boundedOther._low = other.low;
   else
@@ -510,10 +551,11 @@ def range.boundsCheck(other: range(?e,?b,?s)) {
   else
     boundedOther._high = high;
   boundedOther._stride = other.stride;
+
   return (boundedOther.length == 0) || (this(boundedOther) == boundedOther);
 }
 
-def range.boundsCheck(other: eltType)
+def range.boundsCheck(other: idxType)
   return member(other);
 
 
@@ -541,13 +583,13 @@ def range.writeThis(f: Writer) {
 //
 // translate the indices in this range by i
 //
-def range.translate(i: eltType)
+def range.translate(i: idxType)
   return this + i;
 
 //
 // intended for internal use only:
 //
-def range.chpl__unTranslate(i: eltType) {
+def range.chpl__unTranslate(i: idxType) {
   return this - i;
 }
 
@@ -555,38 +597,38 @@ def range.chpl__unTranslate(i: eltType) {
 //
 // return an interior portion of this range
 //
-def range.interior(i: eltType) {
+def range.interior(i: idxType) {
   if boundedType != BoundedRangeType.bounded then
     compilerError("interior is not supported on unbounded ranges");
   if i == 0 then
     return this;
   else if i < 0 then
-    return new range(eltType, boundedType, stridable, low, low-1-i, stride);
+    return new range(idxType, boundedType, stridable, low, low-1-i, stride);
   else
-    return new range(eltType, boundedType, stridable, high+1-i, high, stride);
+    return new range(idxType, boundedType, stridable, high+1-i, high, stride);
 }
 
 
 //
 // return an exterior portion of this range
 //
-def range.exterior(i: eltType) {
+def range.exterior(i: idxType) {
   if boundedType != BoundedRangeType.bounded then
     compilerError("exterior is not supported on unbounded ranges");
   if i == 0 then
     return this;
   else if i < 0 then
-    return new range(eltType, boundedType, stridable, low+i, low-1, stride);
+    return new range(idxType, boundedType, stridable, low+i, low-1, stride);
   else
-    return new range(eltType, boundedType, stridable, high+1, high+i, stride);
+    return new range(idxType, boundedType, stridable, high+1, high+i, stride);
 }
 
 
 //
 // returns an expanded range, or a contracted range if i < 0
 //
-def range.expand(i: eltType)
-  return new range(eltType, boundedType, stridable, low-i, high+i, stride);
+def range.expand(i: idxType)
+  return new range(idxType, boundedType, stridable, low-i, high+i, stride);
 
 
 //

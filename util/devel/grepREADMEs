@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+if [ ! -z "$CHPL_HOME" ] ; then
+    chapelDir="$CHPL_HOME"
+else
+    chapelDir="./"
+fi
+
+pushd $chapelDir > /dev/null
+
+find . -name .svn -prune -o \( -name test -prune \) -o \( -name third-party -prune \) -o -iname README\* -print0 | xargs -0 grep -H "$@"
+find test/release/examples -name .svn -prune -o -iname README\* -print0 | xargs -0 grep -H "$@"
+
+popd > /dev/null

@@ -88,4 +88,5 @@ endif
 endif
 ifdef CHPL_COMM_DEBUG
 CHPL_GASNET_MORE_CFLAGS += -O0
+CHPL_GASNET_MORE_GEN_CFLAGS += -Wno-uninitialized
 endif

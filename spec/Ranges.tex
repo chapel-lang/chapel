@@ -28,7 +28,7 @@ The type of a range is characterized by three things:
 the range, and (3)~whether or not the range is \emph{stridable}.
 
 The type of the range's values is represented using a type parameter
-named \emph{eltType}.  This must be one of the \chpl{int} or
+named \emph{idxType}.  This must be one of the \chpl{int} or
 \chpl{uint} types.  The default type is \chpl{int}.
 
 \begin{openissue}
@@ -48,8 +48,9 @@ are omitted, respectively.  The default value is \chpl{bounded}.
 
 The stridability of a range is represented by a boolean parameter
 named \emph{stridable}.  If this parameter is set to true, the range's
-stride can take on any \chpl{int} value except 0.  If set to false,
-the range's stride is fixed to 1.  The default value is \chpl{false}.
+stride can take on any signed integer value other than 0 of the same
+bit-width as \chpl{idxType}.  If set to false, the range's stride is
+fixed to 1.  The default value is \chpl{false}.
 
 \begin{rationale}
 The \emph{boundedType} and \emph{stridable} values of a range are used
@@ -196,9 +197,12 @@ range unless the stridable range has a stride value of 1.
 The \chpl{by} operator can be applied to any range to create a strided
 range.
 
-The \chpl{by} operator takes a range and an integer to yield a new range that
-is strided by the integer.  Striding a strided range results in a
-stride whose value is the product of the two strides.
+The \chpl{by} operator takes a range and an integer value to yield a
+new range that is strided by the integer.  Striding a strided range
+results in a stride whose value is the product of the two strides.
+The stride argument can either be of type \chpl{idxType} or some other
+integer value that can coerce to a signed integer value of the same
+bit-width as \chpl{idxType}.
 
 \begin{example}
 In the following declarations, range \chpl{r1} represents the odd integers
@@ -241,9 +245,9 @@ a low bound, or both.
 The \chpl{#} operator takes a range and an integral count and creates
 a new range with \emph{count} elements. The stride of the resulting range is
 the same as that of the initial range. It is an error for the count to
-be negative.  The \emph{eltType} of the resulting range is the same
+be negative.  The \emph{idxType} of the resulting range is the same
 type that would be obtained by adding the integral count value to a value
-with the range's \emph{eltType}.
+with the range's \emph{idxType}.
 
 When applied to a \chpl{BoundedRangeType.bounded} range with a positive
 stride, \emph{count} elements are taken starting from the low
@@ -364,35 +368,35 @@ writeln((r, r2, r3, r4));
 \subsection{Predefined Functions and Methods on Ranges}
 \index{ranges!predefined functions}
 \begin{protohead}
-def $range$.low : eltType
+def $range$.low : idxType
 \end{protohead}
 \begin{protobody}
 Returns the low bound of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.high : eltType
+def $range$.high : idxType
 \end{protohead}
 \begin{protobody}
 Returns the high bound of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.stride : int
+def $range$.stride : int(numBits(idxType))
 \end{protohead}
 \begin{protobody}
 Returns the stride of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.length : eltType
+def $range$.length : idxType
 \end{protohead}
 \begin{protobody}
 Returns the number of elements in the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.member(i: eltType): bool
+def $range$.member(i: idxType): bool
 \end{protohead}
 \begin{protobody}
 Returns whether or not \chpl{i} is in the range.
@@ -406,12 +410,12 @@ Returns whether or not every element in other is also in this.
 \end{protobody}
 
 \begin{protohead}
-def $range$.order(i: eltType): eltType
+def $range$.order(i: idxType): idxType
 \end{protohead}
 \begin{protobody}
 If \chpl{i} is a member of the range, returns an integer value giving
 the ordinal value of \chpl{i} within the range using 0-based indexing.
-Otherwise, it returns \chpl{(-1):eltType}.
+Otherwise, it returns \chpl{(-1):idxType}.
 \end{protobody}
 
 \begin{example}

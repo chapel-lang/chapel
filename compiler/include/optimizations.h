@@ -37,4 +37,7 @@ freeDefUseChains(Map<SymExpr*,Vec<SymExpr*>*>& DU,
 void
 remoteValueForwarding(Vec<FnSymbol*>& fns);
 
+void
+narrowWideReferences();
+
 #endif

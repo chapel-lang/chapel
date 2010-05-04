@@ -1,9 +1,0 @@
-error message: de-tupling a non-tuple type
-
-This test is incorrect by our current language definition in that
-(int) is simply 'int' rather than '1-tuple of int' so it should not be
-allowed to be de-tuplified as (x) suggests.  However, it should not
-result in this error message, but rather something like:
-
-onetuple-error.chpl:1: error: attempting to de-tuple non-tuple type 'int'
-

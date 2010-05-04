@@ -1,0 +1,5 @@
+#!/usr/bin/env perl
+
+$test = "$ARGV[0]";
+$test =~ s/^test\///;
+system("cd $ENV{'CHPL_HOME'}/test; $ENV{'CHPL_HOME'}/util/start_test $test");

@@ -462,7 +462,7 @@ arrays:
 \hline
 \chpl{dataParTasksPerLocale} & \chpl{int} & Number of cores per locale \\
 \chpl{dataParIgnoreRunningTasks} & \chpl{bool} & \chpl{true} \\
-\chpl{dataParMinGranularity} & \chpl{uint(64)} & \chpl{0} \\
+\chpl{dataParMinGranularity} & \chpl{int} & \chpl{1} \\
 \hline
 \end{tabular}
 \end{center}
@@ -470,18 +470,18 @@ arrays:
 The configuration constant \chpl{dataParTasksPerLocale} specifies the
 number of tasks to use when executing a forall loop over a range,
 default domain, or default array.  The actual number of tasks may be
-fewer depending on the two other configuration constants.
+fewer depending on the two other configuration constants.  A value of
+zero results in using the default value.
 
 The configuration constant \chpl{dataParIgnoreRunningTasks}, when
 true, has no effect on the number of tasks to use to execute the
 forall loop.  When false, the number of tasks per locale is decreased
 by the number of tasks that are already running on the locale.
 
-The configuration constant \chpl{dataParMinGranularity}, when zero,
-has no effect on the number of tasks to use to execute the forall
-loop.  When greater than zero, the number of tasks is decreased so
-that the number of iterations per task is never less than the
-specified value.
+The configuration constant \chpl{dataParMinGranularity} specifies the
+minimum number of iterations per task created.  The number of tasks is
+decreased so that the number of iterations per task is never less than
+the specified value.
 
 For distributed domains and arrays that have these same knobs (\eg,
 using the Block and Cyclic distributions), these same global

@@ -57,6 +57,7 @@
 #   ---------  ---------------------  -------------
 #              [list of directories]  "test" if in $CHPL_HOME, "." otherwise
 #              [list of tests]        ""
+#   -clean-only
 #   -compiler  <compiler executable>  $CHPL_HOME/bin/<platform>/chpl
 #   -compopts  <option list>          "--cc-warnings"
 #   -execopts  <option list>          ""
@@ -425,6 +426,12 @@ if ($?CHPL_COMM == 0) then
     setenv CHPL_COMM `$CHPL_HOME/util/chplenv/comm`
 endif
 
+set utildir = "$CHPL_HOME/util/test"
+if (! -d $utildir || ! -x $utildir) then
+    echo "Error: Cannot find $CHPL_HOME/test/util"
+    exit 1
+endif
+
 set testdir = "$CHPL_HOME/test"
 if (! -d $testdir || ! -x $testdir) then
     set testdir = "$CHPL_HOME/examples"
@@ -454,6 +461,7 @@ endif
 limit stacksize 8192k
 
 
+set clean_only = 0
 set execopts = ""
 set compiler = ""
 set compopts = "--cc-warnings"
@@ -494,6 +502,11 @@ while ( $#argv > 0 )
                 set launchcmd = "$argv[1]"
                 shift
                 breaksw
+	case -clean-only:
+	case --clean-only:
+		shift
+		set clean_only = 1
+		breaksw
 	case -compopts:
 	case --compopts:
 		shift
@@ -561,7 +574,7 @@ while ( $#argv > 0 )
         case -notee:
         case --notee:
                 shift
-                set tee = "$testdir/Bin/cat2File"
+                set tee = "$utildir/cat2File"
                 breaksw
         case -comm:
         case --comm:
@@ -583,6 +596,7 @@ while ( $#argv > 0 )
         case --help
 		echo Usage and defaults\:
 		echo "     start_test <file list> <directory list>"
+                echo "          -clean-only"
 		echo "          -compiler <path>     (currently: $CHPL_HOME/bin/$platform/chpl)"
 		echo "          -compopts <options>  (currently: '--cc-warnings')"
 		echo "          -execopts <options>  (currently: '')"
@@ -710,12 +724,14 @@ endif
 if ("$dirlist" == "" && "$testlist" == "") then
     pushd $CHPL_HOME >& /dev/null
     set chplhome = $cwd
-    echo \[Generating tests from the Chapel Spec in $chplhome/spec\]
-    set autogen=`make spectests`
-    set exitval = $?
-    if ( $exitval != 0 ) then
-        echo \[Error generating Spec tests.  Run \'make spectests\' in $chplhome for more info\]
-        exit $exitval
+    if (("$invocationDir" == "$CHPL_HOME" || "$invocationDir" == "$CHPL_HOME/test") && ($clean_only == 0)) then
+        echo \[Generating tests from the Chapel Spec in $chplhome/spec\]
+        set autogen=`make spectests`
+        set exitval = $?
+        if ( $exitval != 0 ) then
+            echo \[Error generating Spec tests.  Run \'make spectests\' in $chplhome for more info\]
+            exit $exitval
+        endif
     endif
     popd >& /dev/null
     if ("$cwd" == "$chplhome") then
@@ -768,7 +784,7 @@ endif
 mv $logtmp $logfile
 
 
-set gsub_test = $testdir/Bin/sub_test
+set gsub_test = $utildir/sub_test
 
 
 #
@@ -790,7 +806,7 @@ foreach test ($testlist)
     if (-x ./Bin/sub_clean) then
         set sub_clean = ./Bin/sub_clean
     else
-        set sub_clean = $testdir/Bin/sub_clean
+        set sub_clean = $utildir/sub_clean
     endif
     echo "[Starting $sub_clean `date`]" |& $tee -a $logfile
 
@@ -799,18 +815,20 @@ foreach test ($testlist)
     popd >& /dev/null
 end
 
-foreach test ($testlist)
-    set basedir = `dirname $test`
-    set testname = `basename $test`
+
+if ($clean_only == 0) then
+    foreach test ($testlist)
+        set basedir = `dirname $test`
+        set testname = `basename $test`
 
     pushd $basedir >& /dev/null
     echo " " |& $tee -a $logfile
     echo "[Working on file $test]" |& $tee -a $logfile
 
     if (-x ./sub_test) then
-        set sub_test = ./sub_test
+	set sub_test = ./sub_test
     else
-        set sub_test = $gsub_test
+	set sub_test = $gsub_test
     endif
 
     setenv COMPOPTS "$compopts"
@@ -825,7 +843,8 @@ foreach test ($testlist)
     unsetenv CHPL_ONETEST
 
     popd >& /dev/null
-end
+    end
+endif
 
 
 #
@@ -893,7 +912,7 @@ foreach absdir ($absdirs)
 	set numtests = `(ls *.{chpl,v} |& grep -v "No match" | wc -l)`
 
         if (-e ./SKIPIF) then
-            set skiptest = `$testdir/Bin/testEnv.pl ./SKIPIF`
+            set skiptest = `$utildir/testEnv ./SKIPIF`
             if ($skiptest == 1) then
                 echo "[Skipping directory based on SKIPIF environment settings]"
                 continue
@@ -910,16 +929,18 @@ foreach absdir ($absdirs)
             if (-x ./Bin/sub_clean) then
                 set sub_clean = ./Bin/sub_clean
             else
-                set sub_clean = $testdir/Bin/sub_clean
+                set sub_clean = $utildir/sub_clean
             endif
-	    setenv COMPOPTS "$compopts"
-            setenv EXECOPTS "$execopts"
-            setenv NUMLOCALES "$numlocales"
-            setenv LAUNCHCMD "$launchcmd"
-	    echo "[Starting $sub_test `date`]" |& $tee -a $logfile
-
 	    $sub_clean |& $tee -a $logfile
-	    $sub_test "$compiler" |& $tee -a $logfile
+
+            if ($clean_only == 0)  then
+                setenv COMPOPTS "$compopts"
+                setenv EXECOPTS "$execopts"
+                setenv NUMLOCALES "$numlocales"
+                setenv LAUNCHCMD "$launchcmd"
+                echo "[Starting $sub_test `date`]" |& $tee -a $logfile
+                $sub_test "$compiler" |& $tee -a $logfile
+            endif
 	else
 	    echo \["No tests in directory " $dir\] |& $tee -a $logfile
 	endif
@@ -942,20 +963,24 @@ else
 endif
 
 echo \[Test Summary - $datestr\] |& $tee $logfile.summary
-grep "$errormarker" $logfile |& $tee -a $logfile.summary
-if ($suppressions != "") then
-    $testdir/Bin/filterSuppressions.pl $suppressions $logfile.summary
+if ($clean_only == 0) then
+    grep "$errormarker" $logfile |& $tee -a $logfile.summary
+    if ($suppressions != "") then
+    $utildir/filterSuppressions $suppressions $logfile.summary
+    endif
+    grep "$futuremarker" $logfile |& $tee -a $logfile.summary
+
+    set successes = `grep "$successmarker" $logfile | wc -l`
+
+    # count failures from the summary file rather than the log file because
+    # it's already have its suppressions removed => better count
+    set failures = `grep "$errormarker" $logfile.summary | wc -l`
+    set futures = `grep "$futuremarker" $logfile | wc -l`
+
+    echo \[\Summary: \#Successes = $successes \| \#Failures = $failures \| \#Futures = $futures\] |& $tee -a $logfile.summary
+else
+    echo \[Summary: CLEAN ONLY\] |& $tee $logfile.summary
 endif
-grep "$futuremarker" $logfile |& $tee -a $logfile.summary
-
-set successes = `grep "$successmarker" $logfile | wc -l`
-
-# count failures from the summary file rather than the log file because
-# it's already have its suppressions removed => better count
-set failures = `grep "$errormarker" $logfile.summary | wc -l`
-set futures = `grep "$futuremarker" $logfile | wc -l`
-
-echo \[\Summary: \#Successes = $successes \| \#Failures = $failures \| \#Futures = $futures\] |& $tee -a $logfile.summary
 
 echo \[END\] |& $tee -a $logfile.summary
 cat $logfile.summary >> $logfile

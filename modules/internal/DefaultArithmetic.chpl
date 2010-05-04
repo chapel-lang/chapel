@@ -1,5 +1,6 @@
 use DSIUtil;
 config param debugDefaultDist = false;
+config param debugDataPar = false;
 
 class DefaultDist: BaseDist {
   def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool)
@@ -53,7 +54,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   def dsiSetIndices(x) {
     if ranges.size != x.size then
       compilerError("rank mismatch in domain assignment");
-    if ranges(1).eltType != x(1).eltType then
+    if ranges(1).idxType != x(1).idxType then
       compilerError("index type mismatch in domain assignment");
     ranges = x;
   }
@@ -95,9 +96,15 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In domain leader code:"); // this = ", this);
-    const numTasks = dataParTasksPerLocale;
+    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+                     else dataParTasksPerLocale;
     const ignoreRunning = dataParIgnoreRunningTasks;
     const minIndicesPerTask = dataParMinGranularity;
+    if debugDataPar {
+      writeln("### numTasks = ", numTasks);
+      writeln("### ignoreRunning = ", ignoreRunning);
+      writeln("### minIndicesPerTask = ", minIndicesPerTask);
+    }
 
     if debugDefaultDist then
       writeln("    numTasks=", numTasks, " (", ignoreRunning,
@@ -110,8 +117,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
       writeln("    numChunks=", numChunks, " parDim=", parDim,
               " ranges(", parDim, ").length=", ranges(parDim).length);
 
-    if debugDefaultDist then
-      writeln("*** DI: Using ", numChunks, " chunk(s)");
+    if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
 
     if numChunks == 1 {
       if rank == 1 {
@@ -135,7 +141,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
                                       locBlock(parDim).high);
 	tuple(parDim) = lo..hi;
         if debugDefaultDist then
-          writeln("*** DI: tuple = ", tuple);
+          writeln("*** DI[", chunk, "]: tuple = ", tuple);
 	yield tuple;
       }
     }
@@ -150,7 +156,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     if debugDefaultDist then
       writeln("In domain follower code: Following ", follower);
     param stridable = this.stridable || anyStridable(follower);
-    var block: rank*range(stridable=stridable, eltType=idxType);
+    var block: rank*range(stridable=stridable, idxType=idxType);
     if stridable {
       for param i in 1..rank {
         const rStride = ranges(i).stride:idxType,
@@ -269,7 +275,7 @@ class DefaultArithmeticArr: BaseArr {
                                          stridable=stridable);
   var off: rank*idxType;
   var blk: rank*idxType;
-  var str: rank*int;
+  var str: rank*chpl__idxTypeToStrType(idxType);
   var origin: idxType;
   var factoredOffs: idxType;
   var size : idxType;
@@ -306,7 +312,7 @@ class DefaultArithmeticArr: BaseArr {
     if rank == 1 {
       var first = getDataIndex(dom.dsiLow);
       var second = getDataIndex(dom.dsiLow+dom.ranges(1).stride:idxType);
-      var step = (second-first):int;
+      var step = (second-first):chpl__idxTypeToStrType(idxType);
       var last = first + (dom.dsiNumIndices-1) * step:idxType;
       for i in first..last by step do
         yield data(i);
@@ -319,9 +325,15 @@ class DefaultArithmeticArr: BaseArr {
   def these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In array leader code:");// [\n", this, "]");
-    const numTasks = dataParTasksPerLocale;
+    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+                     else dataParTasksPerLocale;
     const ignoreRunning = dataParIgnoreRunningTasks;
     const minElemsPerTask = dataParMinGranularity;
+    if debugDataPar {
+      writeln("### numTasks = ", numTasks);
+      writeln("### ignoreRunning = ", ignoreRunning);
+      writeln("### minElemsPerTask = ", minElemsPerTask);
+    }
 
     if debugDefaultDist then
       writeln("    numTasks=", numTasks, " (", ignoreRunning,
@@ -334,8 +346,7 @@ class DefaultArithmeticArr: BaseArr {
       writeln("    numChunks=", numChunks, " parDim=", parDim,
               " ranges(", parDim, ").length=", dom.ranges(parDim).length);
 
-    if debugDefaultDist then
-      writeln("*** AI: Using ", numChunks, " chunk(s)");
+    if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
 
     if numChunks == 1 {
       if rank == 1 {
@@ -359,7 +370,7 @@ class DefaultArithmeticArr: BaseArr {
                                       locBlock(parDim).high);
 	tuple(parDim) = lo..hi;
 	if debugDefaultDist then
-	  writeln("*** AI: tuple = ", tuple);
+          writeln("*** AI[", chunk, "]: tuple = ", tuple);
 	yield tuple;
       }
     }

@@ -1,8 +1,12 @@
 use List;
 
-config const dataParTasksPerLocale = __primitive("chpl_coresPerLocale");
+config const dataParTasksPerLocale = 0;
 config const dataParIgnoreRunningTasks = true;
-config const dataParMinGranularity: uint(64) = 0;
+config const dataParMinGranularity: int = 1;
+
+// NOTE: If module initialization order changes, this may be affected
+if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
+if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
 //
 // Abstract distribution class

@@ -30,12 +30,12 @@ void txUnknownMovePrimitive(CallExpr* call, CallExpr* rhs) {
   if (rhs->numActuals() >= 1)
     if (SymExpr* se = toSymExpr(rhs->get(1))) {
       if (!isOnStack(se)) 
-	USR_WARN(call, "Heap load not being tracked");       
+	USR_WARN(call, "Heap load not instrumented.");       
     }
   if (rhs->numActuals() >= 2) 
     if (SymExpr* se = toSymExpr(rhs->get(2))) {
       if (!isOnStack(se)) 
-	USR_WARN(call, "Heap load not being tracked");
+	USR_WARN(call, "Heap load not instrumented.");
     }
 }
 
@@ -143,19 +143,24 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se2);
 	INT_ASSERT(lhs->getValType() == se2->getValType());
 	if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+  
 	  // generate CHPL_STM_WIDE_GET_FIELD -- requires STM tracking if 
 	  // (A) its on the heap (B) its on the stack and passed around.
 	  // currently assuming its on the stack and not passed around. 
 	  if (!isOnStack(se1)) 
-	    USR_WARN(call, "Heap load not being tracked (GET_MEMBER)");
-	  else 
-	    
+	    USR_WARN(call, "Heap load not instrumented (GET_MEMBER)");    
 	  break;
 	} else if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-	  USR_FATAL(call, "FIXME: GET_MEMBER FLAG_WIDE");
+	  if (!isOnStack(se1)) 
+	    USR_WARN(call, "Heap load not instrumented (GET_MEMBER)");
+	  break;
 	} else if (rhs->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
 	  USR_FATAL(call, "FIXME: GET_MEMBER FLAG_STAR_TUPLE");
-	} 
+	} else {
+	  if (!isOnStack(se1))
+	    USR_WARN(call, "Heap load not instrumented (GET_MEMBER)"); 
+	  break;
+	}
       }
       if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
 	SymExpr* se1 = toSymExpr(rhs->get(1));
@@ -166,6 +171,10 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  // generate CHPL_STM_WIDE_GET_TUPLE_COMPONENT
 	  // same reasoning as in CHPL_STM_WIDE_GET_FIELD
 	  if (!isOnStack(se1)) 
+	    USR_WARN(call, "Heap load not being tracked (GET_SVEC_MEMBER)");
+	  break;
+	} else {
+	  if (!isOnStack(se1))
 	    USR_WARN(call, "Heap load not being tracked (GET_SVEC_MEMBER)");
 	  break;
 	}

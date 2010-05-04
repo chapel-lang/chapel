@@ -90,7 +90,7 @@ CheckForStandardCHeaders:
 	  exit 1; \
 	fi
 $(BUILD_VERSION_FILE): CheckForStandardCHeaders
-	@$(CHAPEL_ROOT)/util/updateBuildVersion.pl $(CHAPEL_ROOT)/compiler/main
+	@$(CHAPEL_ROOT)/util/buildRelease/updateBuildVersion $(CHAPEL_ROOT)/compiler/main
 else
 $(BUILD_VERSION_FILE):
 	@echo -999 > $@

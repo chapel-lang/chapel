@@ -89,7 +89,7 @@ documentation of the options.  The most important is whether the betweenness
 centrality algorithm filters edges or not.  These default "params" can be
 changed on the compilation command line.
 
-SSCA2_execution_config_params.chpl contains execution time "const"'s, which
+SSCA2_execution_config_consts.chpl contains execution time "const"'s, which
 specify the size of the graphs to analyze, together with certain other algorithm
 parameters.  The type of graphs to test, among five choices (RMAT and four
 dimensions of tori) are also controlled by this file.  These defaults can all be
@@ -101,7 +101,7 @@ CHAPEL FILES IN THIS DISTRIBUTION:
 SSCA2_main.chpl                            top level driver files
 SSCA2_driver.chpl
 SSCA2_compilation_config_params.chpl
-SSCA2_execution_config_params.chpl
+SSCA2_execution_config_consts.chpl
 
 SSCA2_kernels.chpl                         two versions of the algorithms
 SSCA2_kernels_atomic.chpl

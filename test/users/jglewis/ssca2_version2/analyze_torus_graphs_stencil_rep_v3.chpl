@@ -13,7 +13,7 @@ module analyze_torus_graphs {
 
 
   use SSCA2_compilation_config_params, 
-      SSCA2_execution_config_params,
+      SSCA2_execution_config_consts,
       SSCA2_driver, 
       torus_graph_generator_utilities,
       BlockDist;

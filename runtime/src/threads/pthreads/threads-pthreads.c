@@ -7,7 +7,7 @@
 #define NDEBUG
 #endif
 
-#include "chpl_rt_utils.h"
+#include <errno.h>
 #include "chpl_mem.h"
 #include "chplrt.h"
 #include "chpltasks.h"

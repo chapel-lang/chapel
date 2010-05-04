@@ -77,11 +77,19 @@ def _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
 }
 
-def compilerError(param x ...?n) {
+def compilerError(param x:string ...?n, param errorDepth:int) {
   __primitive("error", (...x));
 }
 
-def compilerWarning(param x ...?n) {
+def compilerError(param x:string ...?n) {
+  __primitive("error", (...x));
+}
+
+def compilerWarning(param x:string ...?n, param errorDepth:int) {
+  __primitive("warning", (...x));
+}
+
+def compilerWarning(param x:string ...?n) {
   __primitive("warning", (...x));
 }
 
@@ -1056,6 +1064,22 @@ def _isRealType(type t) param return
 
 def _isImagType(type t) param return
   (t == imag(32)) | (t == imag(64));
+
+def chpl__idxTypeToStrType(type t) type {
+  if (t == uint(8)) {
+    return int(8);
+  } else if (t == uint(16)) {
+    return int(16);
+  } else if (t == uint(32)) {
+    return int(32);
+  } else if (t == uint(64)) {
+    return int(64);
+  } else if (t == int(8) || t == int(16) || t == int(32) || t == int(64)) {
+    return t;
+  } else {
+    compilerError("range idxType is non-integral: ", typeToString(t));
+  }
+}
 
 pragma "command line setting"
 def _command_line_cast(param s: string, type t, x) return _cast(t, x);

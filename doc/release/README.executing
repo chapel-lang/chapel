@@ -95,11 +95,10 @@ configuration constants:
                                 tasks to execute forall loops.  If false,
                                 reduce the number of tasks used by the
                                 number of running tasks (default: true).
- --dataParMinGranularity      : When greater than zero, the number of
-                                tasks used to execute forall loops may be
-                                reduced such that the number of iterations
-                                per task is never less than the specified
-                                value (default: zero).
+ --dataParMinGranularity      : The number of tasks used to execute forall
+                                loops may be reduced such that the number
+                                of iterations per task is never less than
+                                the specified value (default: one).
 
 The Chapel standard distributions Block and Cyclic also use
 identically named constructor arguments to to control parallelism

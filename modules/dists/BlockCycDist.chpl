@@ -394,7 +394,7 @@ def BlockCyclicDom.dsiSetIndices(x: domain) {
 def BlockCyclicDom.dsiSetIndices(x) {
   if x.size != rank then
     compilerError("rank mismatch in domain assignment");
-  if x(1).eltType != idxType then
+  if x(1).idxType != idxType then
     compilerError("index type mismatch in domain assignment");
   //
   // TODO: This seems weird:
@@ -682,7 +682,7 @@ def BlockCyclicArr.these(param tag: iterator) where tag == iterator.leader {
 }
 
 def BlockCyclicArr.these(param tag: iterator, follower) var where tag == iterator.follower {
-  var followThis: rank*range(eltType=idxType, stridable=stridable);
+  var followThis: rank*range(idxType=idxType, stridable=stridable);
   var lowIdx: rank*idxType;
 
   for param i in 1..rank {

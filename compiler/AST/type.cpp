@@ -811,7 +811,7 @@ static Vec<TypeSymbol*> typesToStructurallyCodegenList;
 
 void registerTypeToStructurallyCodegen(TypeSymbol* type) {
   //  printf("registering chpl_rt_type_id_%s\n", type->cname);
-  if (genCommunicatedStructures) {
+  if (fHeterogeneous) {
     if (!typesToStructurallyCodegen.set_in(type)) {
       typesToStructurallyCodegenList.add(type);
       typesToStructurallyCodegen.set_add(type);

@@ -1,7 +1,0 @@
-bug: de-tupling permits size mismatch
-
-Our current de-tupling implementation seems to permit size mismatches
-which in one case cause elements to be dropped on the floor and in
-another cases causes an out-of-bounds indexing error.  This is
-somewhat similar to the onetuple-error.chpl test I filed earlier
-today.

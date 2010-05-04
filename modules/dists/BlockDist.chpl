@@ -92,7 +92,7 @@ class Block : BaseDist {
   var locDist: [targetLocDom] LocBlock(rank, idxType);
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
-  var dataParMinGranularity: uint(64);
+  var dataParMinGranularity: int;
   var pid: int = -1; // privatized object id (this should be factored out)
 }
 
@@ -194,10 +194,10 @@ def Block.Block(boundingBox: domain,
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
                 dataParMinGranularity=getDataParMinGranularity(),
                 param rank = boundingBox.rank,
-                type idxType = boundingBox.dim(1).eltType) {
+                type idxType = boundingBox.dim(1).idxType) {
   if rank != boundingBox.rank then
     compilerError("specified Block rank != rank of specified bounding box");
-  if idxType != boundingBox.dim(1).eltType then
+  if idxType != boundingBox.dim(1).idxType then
     compilerError("specified Block index type != index type of specified bounding box");
 
   this.boundingBox = boundingBox;
@@ -211,7 +211,11 @@ def Block.Block(boundingBox: domain,
       locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
                                      targetLocDomDims);
 
-  this.dataParTasksPerLocale = dataParTasksPerLocale;
+  // NOTE: When these knobs stop using the global defaults, we will need
+  // to add checks to make sure dataParTasksPerLocale<0 and
+  // dataParMinGranularity<0
+  this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
+                               else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
   
@@ -350,7 +354,7 @@ def Block.dsiCreateReindexDist(newSpace, oldSpace) {
            else space(i).stridable || anyStridable(space, i+1);
 
   // Should this error be in ChapelArray or not an error at all?
-  if newSpace(1).eltType != oldSpace(1).eltType then
+  if newSpace(1).idxType != oldSpace(1).idxType then
     compilerError("index type of reindex domain must match that of original domain");
   if anyStridable(newSpace) || anyStridable(oldSpace) then
     compilerWarning("reindexing stridable Block arrays is not yet fully supported");
@@ -517,8 +521,8 @@ def Block.dsiCreateRankChangeDist(param newRank: int, args) {
     }
   }
   const collapsedLocInd = targetLocsIdx(collapsedDimLocs);
-  var collapsedBbox: _matchArgsShape(range(eltType=idxType), idxType, args);
-  var collapsedLocs: _matchArgsShape(range(eltType=int), int, args);
+  var collapsedBbox: _matchArgsShape(range(idxType=idxType), idxType, args);
+  var collapsedLocs: _matchArgsShape(range(idxType=int), int, args);
 
   for param i in 1..rank {
     if isCollapsedDimension(args(i)) {
@@ -643,7 +647,7 @@ def BlockDom.dsiSetIndices(x: domain) {
 def BlockDom.dsiSetIndices(x) {
   if x.size != rank then
     compilerError("rank mismatch in domain assignment");
-  if x(1).eltType != idxType then
+  if x(1).idxType != idxType then
     compilerError("index type mismatch in domain assignment");
   //
   // TODO: This seems weird:
@@ -820,7 +824,7 @@ def BlockArr.these(param tag: iterator, follower, param fast: bool = false) var 
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Block array");
 
-  var followThis: rank*range(eltType=idxType, stridable=stridable || anyStridable(follower));
+  var followThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(follower));
   var lowIdx: rank*idxType;
 
   for param i in 1..rank {
@@ -959,7 +963,7 @@ def BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
       const locDom = d.getLocDom(ind);
       // locSlice is a tuple of ranges and scalars. It will match the basic
       // shape of the args argument. 
-      var locSlice: _matchArgsShape(range(eltType=idxType, stridable=stridable), idxType, args);
+      var locSlice: _matchArgsShape(range(idxType=idxType, stridable=stridable), idxType, args);
       // collapsedDims stores the value any collapsed dimension is down to.
       // For any non-collapsed dimension, that position is ignored.
       // This tuple is then passed to the targetLocsIdx function to build up a

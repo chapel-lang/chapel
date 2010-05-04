@@ -4,14 +4,17 @@ class locale {
   const myRealm: realm;
   const chpl_id: int;
   const chpl_uid: int;
+  const myNumCores: int;
 
-  def locale(r: realm = nil, id = -1, uid = -1) {
+  def locale(r: realm = nil, id = -1, uid = -1,
+             numCores = __primitive("chpl_coresPerLocale")) {
     if doneCreatingLocales {
       halt("locales cannot be created");
     }
     myRealm = r;
     chpl_id = id;
     chpl_uid = uid;
+    myNumCores = numCores;
   }
 
   def id {
@@ -50,9 +53,7 @@ def chpl_setupLocale(uid) {
 }
 
 def locale.numCores {
-  var numCores: int;
-  on this do numCores = __primitive("chpl_coresPerLocale");
-  return numCores;
+  return myNumCores;
 }
 
 def chpl_int_to_locale(in id) {

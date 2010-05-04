@@ -1,0 +1,3 @@
+--n=5 --N_U=1024 --printStats=false
+--n=6 --N_U=1024 --printStats=false
+--n=10 --printStats=false

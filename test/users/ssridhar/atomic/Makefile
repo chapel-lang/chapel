@@ -6,7 +6,7 @@ FLAGS = $(F) --devel --gen-ids -g --no-checks --print-commands --print-passes
 
 else 
 
-FLAGS = $(F) --nodevel -O --fast --no-checks --print-commands --print-passes
+FLAGS = $(F) --no-devel -O --fast --no-checks --print-commands --print-passes
 
 endif
 
@@ -19,6 +19,8 @@ TARGETS = \
 	test_fn_arg_inout_intent \
 	test_fn_arg_global_var \
 	test_fn_with_multiple_atomic \
+	test_get_member_value \
+	test_trigger_get_member \
 	test_return_atomic_expr \
 	atomic_arithmetic_operators_local_var \
 	atomic_call_function_return_value \

@@ -1,0 +1,1 @@
+invalid_config_vals.chpl:1: error: halt reached - maxThreadsPerLocale must be >= 0

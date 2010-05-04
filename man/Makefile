@@ -1,7 +1,7 @@
 CHAPEL_ROOT = ..
 
 PROGRAM = chpl
-VERSION = $(shell $(CHAPEL_ROOT)/util/compVersion.pl)
+VERSION = $(shell $(CHAPEL_ROOT)/util/buildRelease/compVersion)
 
 MANPAGE = man1/$(PROGRAM).1
 TARGETS = $(MANPAGE) $(PROGRAM).pdf $(PROGRAM).html

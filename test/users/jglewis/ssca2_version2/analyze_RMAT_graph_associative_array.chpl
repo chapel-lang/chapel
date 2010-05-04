@@ -17,7 +17,7 @@ module analyze_RMAT_graph_associative_array {
     // torus cases.
     // -----------------------------------------------------------------
 
-    use SSCA2_compilation_config_params, SSCA2_execution_config_params;
+    use SSCA2_compilation_config_params, SSCA2_execution_config_consts;
   
     use SSCA2_driver, SSCA2_RMAT_graph_generator;
 

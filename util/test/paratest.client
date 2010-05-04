@@ -1,0 +1,104 @@
+#!/usr/bin/env perl
+
+# Client-side of the parallel testing script, paratest.server.
+# Used remotely by paratest.server to run start_test locally.
+#
+# Usage: paratest.client id chapeltestdir testdir distmode futures valgrind [compopts] [comm]
+#  
+#  id - used to create a file to synchronize with paratest.server
+#  chapeltestdir - root dir of Chapel test infrastructure
+#  testdir - directory to run start_test on
+#  distmode - work distribution mode (0=directory, 1=file)
+#  futures - include .future tests (0=no, 1=yes)
+#  valgrind - run valgrind (0=no, 1=yes)
+#  compopts - optional Chapel compiler options
+#  comm - optional Chapel CHPL_COMM setting
+#
+# NOTE: Assumes paratest.client is run from $CHPL_HOME/test
+# 
+
+$debug = 0; # set $verbose=1 in server
+$logdir = "Logs";
+$synchdir = "Logs/.synch";
+$testcmd = "nice ../util/start_test";
+$publish_delay = 2;
+
+sub systemd {
+    my ($cmd) = @_;
+    print "$cmd\n" if ($debug);
+    system ($cmd);
+}
+
+
+sub main {
+    my ($logfile, $synchfile, $workingdir, $testdir, $compiler, $platform);
+    my ($node) = `uname -n`;
+    chomp $node;
+    ($node, $junk) = split (/\./, $node, 2);
+
+    if ($#ARGV < 4) {
+        print "@ARGV\n";
+        print "usage: paratest.client id chapeltestdir testdir futures valgrind memleaks [compopts] [execopts] [comm]\n";
+        exit (3);
+    }
+
+    $id = $ARGV[0];
+    $workingdir = $ARGV[1];
+    $testdir = $ARGV[2];
+    $incl_futures = ($ARGV[3] == 1) ? "-futures" : "" ;
+    $valgrind = ($ARGV[4] == 1) ? "-valgrind" : "";
+
+    print "$id $workingdir $testdir $incl_futures $valgrind" if $debug;
+    if ($#ARGV>=6) {
+        $compopts = "-compopts \"" . $ARGV[6] . "\"";
+    }
+    if ($#ARGV>=7) {
+        $execopts = "-execopts \"" . $ARGV[7] . "\"";
+    }
+    if ($#ARGV>=8) {
+        $comm = "-comm \"" . $ARGV[8] . "\"";
+    }
+
+    $synchfile = "$synchdir/$node.$id";
+
+    unless (chdir ($workingdir)) {
+        print "Error: cannot change to directory $workingdir\n";
+        exit (2);
+    }
+    print "\n* $node up @ $workingdir *\n";
+
+    $platform = `../util/chplenv/platform`; chomp $platform;
+    $compiler = "../bin/$platform/chpl";
+    unless (-e $compiler) {
+        print "Error: cannot find chpl as '$compiler'\n";
+        exit (2);
+    }
+
+    unless (-e $synchdir and -d $synchdir) {
+        print "Error: synch directory $synchdir does not exist\n";
+        exit (2);
+    }
+
+    print "$node $workingdir $testdir $compiler\n";
+
+    $dirfname = $testdir;
+    $dirfname =~ s/\//-/g;
+    $logfile = "$logdir/$dirfname.$node.log";
+    unlink $logfile if (-e $logfile);
+
+    $memleaks = ($ARGV[5] == 1) ? "-memleaks $logdir/tmp.$dirfname.$node.memleaks" : "";
+
+    $testarg = "-compiler $compiler -logfile $logfile $incl_futures $valgrind $compopts $execopts $comm $memleaks";
+    $testarg = "$testarg $testdir -norecurse";
+    $chplhome = `cd .. && pwd && cd test`; chomp $chplhome;
+    $ENV{'CHPL_HOME'} = $chplhome;
+    
+    systemd ("$testcmd $testarg");
+
+    sleep $publish_delay;
+
+    systemd ("echo feed me > $synchfile");  # signal ready for more
+}
+
+
+main ();

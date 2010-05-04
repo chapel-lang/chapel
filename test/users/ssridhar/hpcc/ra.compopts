@@ -1,0 +1,4 @@
+--print-passes --print-commands
+--print-passes --print-commands --ignore-atomic
+--no-warnings -O
+

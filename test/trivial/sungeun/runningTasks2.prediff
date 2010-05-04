@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+sort -r -n $1.exec.out.tmp > $1.good

@@ -1,5 +1,5 @@
 #include "arg.h"
-#include "chpl_rt_utils.h"
+#include "chpl_rt_utils_static.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
 #include "chplcomm.h"
