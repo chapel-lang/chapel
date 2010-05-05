@@ -107,6 +107,8 @@ if ($printusage == 1) {
 }
 
 
+$ENV{'CHPL_DEVELOPER'} = "true";
+
 #
 # get uniquifiers
 #
@@ -549,8 +551,8 @@ if ($runtests == 0) {
         $status = mysystem("cd $testdir && ../util/start_test $testflags", "running standard tests", 0, 0);
     } else {
         mysystem("cp $parnodefile $testdir/", "copying parallel node file", 1, 1);
-        print "about to execute: cd $testdir && ./paratest.server.pl -nodefile $parnodefile $testflags\n";
-        $status = mysystem("cd $testdir && ./paratest.server.pl -nodefile $parnodefile $testflags", "running parallel tests", 0, 0);
+        print "about to execute: cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags\n";
+        $status = mysystem("cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags", "running parallel tests", 0, 0);
     }
 
 
