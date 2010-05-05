@@ -702,7 +702,7 @@ if ($runtests == 0) {
 # analyze memory leaks tests
 #
     if (!($memleaks eq "")) {
-        mysystem("$chapeldir/util/analyzeMemLeaksLog.pl /tmp/$memleaks > $logdir/$memleaks");
+        mysystem("$chapeldir/util/devel/analyzeMemLeaksLog /tmp/$memleaks > $logdir/$memleaks");
     }
 }
 
