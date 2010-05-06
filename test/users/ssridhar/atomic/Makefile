@@ -11,31 +11,31 @@ FLAGS = $(F) --no-devel -O --fast --no-checks --print-commands --print-passes
 endif
 
 TARGETS = \
-	test_local_var_int32 \
-	test_local_var_int32_wo \
-	test_local_var_int64 \
-	test_local_var_uint64 \
-	test_global_var_uint64 \
-	test_fn_arg_inout_intent \
+	test_associative_domain.chpl \
+	test_array_local_uint64 \
+	test_atomic_expr_in_return_stmt \
+	test_atomic_stmt_in_on_stmt \
+	test_fail_type_mismatch_in_atomic \
 	test_fn_arg_global_var \
+	test_fn_arg_inout_intent \
+	test_fn_arg_inout_intent_recursive \
+	test_fn_return_value \
 	test_fn_with_multiple_atomic \
-	test_get_member_value \
-	test_trigger_get_member \
-	test_return_atomic_expr \
+	test_prim_get_member \
+	test_prim_get_member_value \
+	test_stmt_return_in_atomic \
+	test_var_global_uint64 \
+	test_var_local_int32 \
+	test_var_local_int32_wo \
+	test_var_local_int64 \
+	test_var_local_uint64 \
 	atomic_arithmetic_operators_local_var \
-	atomic_call_function_return_value \
 	atomic_class_member_class_access \
 	atomic_dynamic_dispatch \
 	atomic_incr_cobegin_sync \
-	atomic_incr_local_array \
-	atomic_incr_local_array_in_on \
-	atomic_recursive_function2 \
-	atomic_recursive_function \
-	atomic_return_stmt \
 	atomic_stack_vs_heap_tracking \
 	atomic_swap \
 	atomic_trigger_dynamic_dispatch \
-	atomic_type_mismatch_unit64_int \
 	simple_fn2 \
 	simple_fn3 \
 	simple_fn4 \
@@ -51,7 +51,7 @@ all: $(TARGETS)
 	$(CHPL) --savec c_$@ $(FLAGS) -o $@ $^
 
 clean: 
-	rm -f $(TARGETS) *_real
+	rm -f $(TARGETS) *_real 
 
 clobber: clean
 	rm -rf *_c c_*

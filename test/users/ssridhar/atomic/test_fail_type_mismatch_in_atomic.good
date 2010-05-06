@@ -1,0 +1,2 @@
+test_fail_type_mismatch_in_atomic.chpl:2: In function 'main':
+test_fail_type_mismatch_in_atomic.chpl:7: error: type mismatch in assignment from uint(64) to int

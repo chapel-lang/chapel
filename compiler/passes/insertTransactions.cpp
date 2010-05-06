@@ -69,11 +69,12 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     if (CallExpr* rhs = toCallExpr(call->get(2))) { 
       if (rhs->isPrimitive(PRIM_UNKNOWN)) {
 	if (!rhs->primitive->isAtomicSafe) {
-	  if (strcmp(rhs->primitive->name, "fprintf"))
-	    call->remove();
+	  if (strcmp(rhs->primitive->name, "fprintf")) {
+	    call->remove(); 
+	    break;
+	  }
 	}
-	break;
-      }
+      } 
       if (rhs->isPrimitive(PRIM_GET_LOCALEID)) {
 	SymExpr *se = toSymExpr(rhs->get(1));
 	INT_ASSERT(se);
@@ -105,11 +106,12 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	    call->replace(new CallExpr(PRIM_TX_GET_REF, 
 				       tx, lhs->var, se->var));
 	  else
-	    break;
-	} else {
-	  INT_ASSERT(lhs->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) ||
-		     se->typeInfo()->symbol->hasFlag(FLAG_REF));
+	    USR_WARN(call, "FIXME: string type (FLAG_WIDE GET_REF)");
+	} else if (lhs->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) ||
+		   se->typeInfo()->symbol->hasFlag(FLAG_REF)) {
 	  call->replace(new CallExpr(PRIM_TX_LOAD_REF, tx, lhs->var, se->var));
+	} else {
+	  USR_WARN(call, "FIXME: string type (GET_REF)");
 	} 
 	break;
       } 
@@ -292,8 +294,10 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
           rhs->isPrimitive(PRIM_OR)             ||
           rhs->isPrimitive(PRIM_XOR)            ||
           rhs->isPrimitive(PRIM_POW)            ||
+	  rhs->isPrimitive(PRIM_MIN)            ||
 	  rhs->isPrimitive(PRIM_MAX)            ||
 	  rhs->isPrimitive(PRIM_TASK_ID)        ||
+	  rhs->isPrimitive(PRIM_STRING_COPY)    ||
 	  rhs->primitive == NULL) {
         break;
       } 

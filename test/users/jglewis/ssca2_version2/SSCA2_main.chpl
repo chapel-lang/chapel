@@ -170,7 +170,7 @@ module SSCA2_main
 	    // vertices, then execute Kernels 2, 3 and 4 of SSCA #2
 	    // ----------------------------------------------------
 	  
-	    generate_and_analyze_1D_torus;
+	    if TEST_TORUS_1D then generate_and_analyze_1D_torus;
 
 
 	  when graph_type.Torus_2D do
@@ -181,7 +181,7 @@ module SSCA2_main
 	    // execute Kernels 2, 3 and 4 of SSCA #2
 	    // ----------------------------------------------
 
-	    generate_and_analyze_2D_torus;
+	    if TEST_TORUS_2D then generate_and_analyze_2D_torus;
 
 
 	  when graph_type.Torus_3D do
@@ -192,7 +192,7 @@ module SSCA2_main
   	    // execute Kernels 2, 3 and 4 of SSCA #2
   	    // -----------------------------------------------
   	  
-	    generate_and_analyze_3D_torus;
+	    if TEST_TORUS_3D then generate_and_analyze_3D_torus;
 
 
 	  when graph_type.Torus_4D do
@@ -202,7 +202,7 @@ module SSCA2_main
   	    // 2^SCALE vertices, then execute Kernels 2, 3 and 4 of SSCA #2
   	    // ------------------------------------------------------------
   
-	    generate_and_analyze_4D_torus;
+	    if TEST_TORUS_4D then generate_and_analyze_4D_torus;
 
 
 	  when graph_type.RMAT_associative do
@@ -215,8 +215,7 @@ module SSCA2_main
 	    // of SSCA #2, using identically the same code as in the various
 	    // torus cases.
 	    // -----------------------------------------------------------------
-	    if TEST_RMAT_ASSOCIATIVE then
-	      generate_and_analyze_associative_array_RMAT_graph_representation;
+	    if TEST_RMAT_ASSOCIATIVE then generate_and_analyze_associative_array_RMAT_graph_representation;
 
 	  } // end select 
 
