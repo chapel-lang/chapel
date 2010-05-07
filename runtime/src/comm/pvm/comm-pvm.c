@@ -1794,6 +1794,10 @@ int32_t chpl_numCommForks(void) {
   return chpl_comm_forks;
 }
 
+int32_t chpl_numCommFastForks(void) {
+  return 0;
+}
+
 int32_t chpl_numCommNBForks(void) {
   return chpl_comm_nb_forks;
 }

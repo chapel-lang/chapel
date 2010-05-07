@@ -1,2 +1,2 @@
 results = (3, 6, 3, 3)
-diagnostics = (0, 0, 0, 0) (0, 1, 0, 0)
+diagnostics = (0, 0, 0, 0, 0) (0, 1, 0, 0, 0)

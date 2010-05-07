@@ -486,6 +486,7 @@ void chpl_stopCommDiagnosticsHere(void);
 int32_t chpl_numCommGets(void);
 int32_t chpl_numCommPuts(void);
 int32_t chpl_numCommForks(void);
+int32_t chpl_numCommFastForks(void);
 int32_t chpl_numCommNBForks(void);
 
 #else // LAUNCHER

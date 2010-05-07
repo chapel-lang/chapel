@@ -509,6 +509,7 @@ void chpl_stopCommDiagnosticsHere() { }
 int32_t chpl_numCommGets(void) { return -1; }
 int32_t chpl_numCommPuts(void) { return -1; }
 int32_t chpl_numCommForks(void) { return -1; }
+int32_t chpl_numCommFastForks(void) { return -1; }
 int32_t chpl_numCommNBForks(void) { return -1; }
 
 

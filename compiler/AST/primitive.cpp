@@ -566,6 +566,7 @@ initPrimitive() {
   prim_def("chpl_numCommGets", returnInfoInt32);
   prim_def("chpl_numCommPuts", returnInfoInt32);
   prim_def("chpl_numCommForks", returnInfoInt32);
+  prim_def("chpl_numCommFastForks", returnInfoInt32);
   prim_def("chpl_numCommNBForks", returnInfoInt32);
   
   prim_def(PRIM_NEXT_UINT32, "_next_uint32", returnInfoUInt32);

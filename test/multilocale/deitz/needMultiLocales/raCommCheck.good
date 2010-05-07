@@ -3,9 +3,9 @@ Bytes per array = 8192
 Total memory required (GB) = 7.62939e-06
 Number of updates = 4096
 
-Locale: (gets, puts, forks, non-blocking forks)
-1: (0, 0, 212, 3)
-2: (0, 0, 850, 0)
-3: (0, 0, 873, 0)
-4: (0, 0, 838, 0)
+Locale: (gets, puts, forks, fast forks, non-blocking forks)
+1: (0, 0, 212, 0, 3)
+2: (0, 0, 850, 0, 0)
+3: (0, 0, 873, 0, 0)
+4: (0, 0, 838, 0, 0)
 Validation: SUCCESS
