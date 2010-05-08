@@ -14,7 +14,7 @@ if ($preset_stm eq "gtm" || $preset_stm eq "now") {
 	if ($peenv eq "PGI") {
 	    $libatomics="/ccs/home/ssridhar/research/TM/libatomic_ops-1.2-pgi/jaguar";
 	} else {
-	    $libatomics="/ccs/home/ssridhar/research/TM/libatomic_ops-1.2-gcc/jaguar";
+	    $libatomics="/ccs/home/ssridhar/research/TM/libatomic_ops-1.2-gcc/jaguarpf";
 	}
     }
 } else {

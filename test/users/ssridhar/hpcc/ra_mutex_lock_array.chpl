@@ -10,6 +10,11 @@ use BlockDist, Time;
 use HPCCProblemSize, RARandomStream;
 
 //
+// Extern declarations for mutex routines
+//
+use MutexLock;
+
+//
 // The number of tables as well as the element and index types of
 // that table
 //
@@ -74,9 +79,14 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 var T: [TableSpace] elemType;
 
 //
-// config param to choose whether update loops need to be protected
-// declared as param to avoid the additional check at runtime 
+// Array of locks
 //
+ var TLock: [TableSpace] elemType;
+
+ //
+ // config param to choose whether update loops need to be protected
+ // declared as param to avoid the additional check at runtime 
+ //
 config param updateLock: bool = false;
 
 //
@@ -90,7 +100,11 @@ def main() {
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
-  [i in TableSpace] T(i) = i;
+  [i in TableSpace] { 
+    T(i) = i;
+    TLock(i) = 0;
+    mutex_init(TLock(i));
+  }
 
   const startTime = getCurrentTime();              // capture the start time
 
@@ -105,10 +119,9 @@ def main() {
   //
   forall ( , r) in (Updates, RAStream()) do
     on TableDist.idxToLocale(r & indexMask) {
-      if updateLock then
-	atomic T(r & indexMask) ^= r;
-      else 
-	T(r & indexMask) ^= r;
+      if updateLock then mutex_lock(TLock(r&indexMask));
+      T(r & indexMask) ^= r;
+      if updateLock then mutex_unlock(TLock(r&indexMask));
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -144,8 +157,11 @@ def verifyResults() {
   // atomic statement to ensure no conflicting updates
   //
   forall ( , r) in (Updates, RAStream()) do
-    on TableDist.idxToLocale(r & indexMask) do
-	atomic T(r & indexMask) ^= r;
+    on TableDist.idxToLocale(r & indexMask) {
+      mutex_lock(TLock(r&indexMask));
+      T(r & indexMask) ^= r;
+      mutex_unlock(TLock(r&indexMask));
+    }
 
   const verifyTime = getCurrentTime() - startTime;
 

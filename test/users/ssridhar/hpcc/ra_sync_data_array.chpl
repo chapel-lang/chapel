@@ -71,7 +71,7 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 // T is the distributed table itself, storing a variable of type
 // elemType for each index in TableSpace.
 //
-var T: [TableSpace] elemType;
+var T$: [TableSpace] sync elemType;
 
 //
 // config param to choose whether update loops need to be protected
@@ -90,7 +90,7 @@ def main() {
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
-  [i in TableSpace] T(i) = i;
+  [i in TableSpace] T$(i).writeXF(i);
 
   const startTime = getCurrentTime();              // capture the start time
 
@@ -106,9 +106,9 @@ def main() {
   forall ( , r) in (Updates, RAStream()) do
     on TableDist.idxToLocale(r & indexMask) {
       if updateLock then
-	atomic T(r & indexMask) ^= r;
-      else 
-	T(r & indexMask) ^= r;
+	T$(r & indexMask) ^= r; 
+      else
+	T$(r & indexMask).writeXF(T$(r & indexMask).readXX() ^ r);
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -135,7 +135,7 @@ def verifyResults() {
   //
   // Print the table, if requested
   //
-  if (printArrays) then writeln("After updates, T is: ", T, "\n");
+  if (printArrays) then writeln("After updates, T is: ", T$.readXX(), "\n");
 
   var startTime = getCurrentTime();
 
@@ -145,21 +145,21 @@ def verifyResults() {
   //
   forall ( , r) in (Updates, RAStream()) do
     on TableDist.idxToLocale(r & indexMask) do
-	atomic T(r & indexMask) ^= r;
+      T$(r & indexMask) ^= r; 
 
   const verifyTime = getCurrentTime() - startTime;
 
   //
   // Print the table again after the updates have been reversed
   //
-  if (printArrays) then writeln("After verification, T is: ", T, "\n");
+  if (printArrays) then writeln("After verification, T is: ", T$.readXX(), "\n");
 
   //
   // Compute the number of table positions that weren't reverted
   // correctly.  This is an indication of the number of conflicting
   // updates.
   //
-  const numErrors = + reduce [i in TableSpace] (T(i) != i);
+  const numErrors = + reduce [i in TableSpace] (T$(i) != i);
   if (printStats) {
     writeln("Number of errors is: ", numErrors, "\n");
     writeln("Verification time = ", verifyTime);
