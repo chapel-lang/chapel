@@ -41,7 +41,7 @@ def min(type t) where _isComplexType(t) {
 }
 
 //
-// min(type) -- returns the maximum value a type can store
+// max(type) -- returns the maximum value a type can store
 //
 
 def max(type t) where _isIntegralType(t) || _isFloatType(t)
