@@ -53,7 +53,7 @@ pragma "inline" def tuple(x ...?size)
   return x;
 
 //
-// isTuple and isHomogeneousTuple param functions
+// isTuple, isTupleType and isHomogeneousTuple param functions
 //
 def isTuple(x: _tuple) param
   return true;
@@ -63,6 +63,11 @@ def isTuple(x) param
 
 def isHomogeneousTuple(x: _tuple) param
   return __primitive("is star tuple type", x);
+
+def isTupleType(type t) param {
+  const a: t;
+  return isTuple(a);
+}
 
 //
 // tuple assignment
@@ -151,6 +156,25 @@ pragma "inline" def !(a: _tuple) {
     return tuple(!a(1));
   else
     return tuple(!a(1), (...!chpl__tupleRest(a)));
+}
+
+//
+// Return a tuple of type t with all values set to the max/min for that type
+//
+def max(type t): t where isTupleType(t) {
+  var result: t;
+  for param i in 1..result.size {
+    result(i) = max(t(i));
+  }
+  return result;
+}
+
+def min(type t): t where isTupleType(t) {
+  var result: t;
+  for param i in 1..result.size {
+    result(i) = min(t(i));
+  }
+  return result;
 }
 
 //
