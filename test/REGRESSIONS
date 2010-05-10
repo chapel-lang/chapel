@@ -17,7 +17,7 @@ general regressions
 
 nondet. compilation timeouts
 ----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10)
 
 nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 ----------------------------------------------------------------------------
@@ -27,10 +27,11 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 [Error matching program output for distributions/robust/arithmetic/trivial/test_dot_rank] (04/18/10)
 [Error matching program output for reductions/bradc/minmaxlocscan] (04/20/10)
 [Error matching program output for studies/hpcc/serial-v0.7/ra] (04/23/10)
+[Error matching program output for studies/hpcc/RA/bradc/ra-bradc-old2] (05/01/10)
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10, 04/30/10)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10, 04/30/10, 05/01/10, 05/02/10)
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -79,18 +80,6 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
-spurious problems due to NFS issue? (04/29/10)
-----------------------------------------------
-[Error: Timed out compilation for types/seq/deitz/test_seq_arg]
-[Error: Timed out compilation for types/seq/deitz/test_seq_record1]
-[Error: Timed out compilation for types/tuple/bradc/oneTuple]
-[Error: Timed out compilation for types/tuple/bradc/returnTuple]
-[Error: Timed out compilation for types/tuple/deitz/test_tuple_assignment_order2]
-[Error: Timed out compilation for types/tuple/deitz/test_tuple_function2]
-[Error: Timed out compilation for types/tuple/dinan/oobIndex]
-[Error: Timed out compilation for types/tuple/dinan/pining_for_lisp]
-[Error: Timed out executing program users/shetag/fock/fock-1]
-
 invalid write (noticed for the first time 04/27/10)
 ---------------------------------------------------
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-bradc]
@@ -101,7 +90,7 @@ nondet. "stdarg.h" missing error
 
 nondet. "vg_alloc_ThreadState: no free slots available" error
 -------------------------------------------------------------
-[Error matching program output for users/shetag/fock/fock-3] (04/16/10, 04/21/10, 04/23/10, 04/27/10)
+[Error matching program output for users/shetag/fock/fock-3] (04/16/10, 04/21/10, 04/23/10, 04/27/10, 05/03/10)
 
 spurious execution timeouts
 ---------------------------
@@ -141,6 +130,10 @@ block distribution regressions
 ===============================
 cyclic distribution regressions
 ===============================
+
+extent mismatch (05/01/10 -- after Norm changed from reindex to slice)
+----------------------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
 
 seg fault (04/30/10 -- after sched_yield policy change removed timeout)
 -----------------------------------------------------------------------
@@ -195,9 +188,9 @@ nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
