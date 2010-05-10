@@ -15,6 +15,10 @@
 general regressions
 ===================
 
+output mismatch (due to race?) (05/08/10)
+-----------------------------------------
+[Error matching program output for trivial/sungeun/runningTasks2] (05/08/10 xt-pgi, 05/09/10 valgrind)
+
 nondet. compilation timeouts
 ----------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10)
@@ -31,7 +35,7 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10, 04/30/10, 05/01/10, 05/02/10)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10, 04/30/10, 05/01/10, 05/02/10, 05/06/10, 05/07/10, 05/08/10)
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -90,7 +94,7 @@ nondet. "stdarg.h" missing error
 
 nondet. "vg_alloc_ThreadState: no free slots available" error
 -------------------------------------------------------------
-[Error matching program output for users/shetag/fock/fock-3] (04/16/10, 04/21/10, 04/23/10, 04/27/10, 05/03/10)
+[Error matching program output for users/shetag/fock/fock-3] (04/16/10, 04/21/10, 04/23/10, 04/27/10, 05/03/10, 05/08/10, 05/10/10)
 
 spurious execution timeouts
 ---------------------------
@@ -152,8 +156,8 @@ no-local regressions
 
 timeouts for new tests (04/20/10)
 ---------------------------------
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings ) (1-1)]
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings ) (2-1)]
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)]
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)]
 
 nondet. can't find float.h?!
 ----------------------------
@@ -182,15 +186,27 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+seg fault (05/10/10)
+--------------------
+[Error matching program output for distributions/deitz/test_block_representation]
+
+nondet. execution timeout
+-------------------------
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main   -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast) (2-1)] (05/06/10, 05/07/10)
+
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10)
+
 nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 -----------------------------------------------------------------------------
 [Error matching program output for arrays/deitz/part7/test_out_array] (04/14/10)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -226,10 +242,6 @@ times out fairly consistently
 ==============================================
 gasnet-fast regressions (other than the above)
 ==============================================
-
-GASNet unable to start polling thread
--------------------------------------
-[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
 
 
 ==================
@@ -296,6 +308,19 @@ some types not getting --gen-communicated-structures'ed  (as of 03/25/10 ")
 mpi-specific failures
 =====================
 
+nondet. memory corruption
+-------------------------
+[Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist] (05/10/10)
+
+nondet. seg fault (when not timing out below)
+---------------------------------------------
+[Error matching program output for users/agnieszka/multiArrayI10] (05/08/10)
+[Error matching program output for users/agnieszka/test2] (05/08/10)
+
+nondet. out-of-memory error
+---------------------------
+[Error matching program output for parallel/begin/dinan/mvm_coforall] (05/06/10)
+
 execution timeouts for new tests (04/20/10)
 -------------------------------------------
 [Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings ) (1-1)]
@@ -316,9 +341,10 @@ seg fault (when not timing out in execution)
 
 nondet. execution timeout
 -------------------------
+[Error: Timed out executing program users/shetag/fock/fock-stc-1] (05/09/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (04/14/10)
-[Error: Timed out executing program users/agnieszka/multiArrayI10] (04/14/10, 04/23/10, 04/30/10)
-[Error: Timed out executing program users/agnieszka/test2] (04/14/10, 04/30/10)
+[Error: Timed out executing program users/agnieszka/multiArrayI10] (04/14/10, 04/23/10, 04/30/10, 05/09/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/14/10, 04/30/10, 05/09/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/28/10)
 
 
@@ -384,7 +410,7 @@ opts-specific tests
 *** everything failed 03/12/10 due to a .so problem ***
 
 
-(Full run: 122)
+(Full run: 136)
 
 general failures
 ----------------
@@ -452,23 +478,38 @@ general failures
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --baseline --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)]
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --baseline --no-local analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)]
 [Error matching compiler output for users/shetag/iteratorWithOn]
 
---gen-communicated-structures --no-local
-----------------------------------------
+--no-local --heterogeneous
+--------------------------
+[Error matching compiler output for arrays/bradc/workarounds/arrayOfArray-workaround]
+[Error matching program output for arrays/deitz/test_block_array_of_syncs]
 [Error matching compiler output for arrays/deitz/part4/test_array_type_alias]
+[Error matching program output for arrays/deitz/part6/test_block_reduce]
 [Error matching compiler output for arrays/jplevyak/simple-4]
-[Error matching compiler output for classes/bradc/writeunion]
-[Error matching compiler output for classes/bradc/writeunion-workaround]
-[Error matching compiler output for classes/bradc/unions/twounions]
-[Error matching compiler output for classes/bradc/unions/assign]
-[Error matching compiler output for classes/bradc/unions/writeunion]
 [Error matching program output for classes/figueroa/RecordDestructor1]
+[Error matching program output for distributions/sungeun/dataPar1 --dataParTasksPerLocale=0 (--cc-warnings --no-local --heterogeneous  ) (0-1)]
+[Error matching program output for distributions/sungeun/dataPar1 --dataParTasksPerLocale=20 (--cc-warnings --no-local --heterogeneous  ) (0-2)]
+[Error matching program output for distributions/sungeun/dataPar1 --dataParIgnoreRunningTasks=false (--cc-warnings --no-local --heterogeneous  )
+(0-3)]
+[Error matching program output for distributions/sungeun/dataPar1 --dataParMinGranularity=20 (--cc-warnings --no-local --heterogeneous  ) (0-4)]
+[Error matching compiler output for functions/deitz/test_no_where_precedence]
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 [Error matching compiler output for portability/boolSizes]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-promote]
+[Error matching program output for studies/hpcc/common/bradc/unit/parBlock1Da]
+[Error matching program output for studies/hpcc/common/bradc/unit/leadFollowOpt]
+[Error matching program output for studies/hpcc/common/bradc/unit/parBlock1D]
 [Error matching compiler output for types/scalar/bradc/overloadbools4]
 [Error matching compiler output for types/scalar/bradc/bools]
 [Error matching compiler output for types/scalar/bradc/overloadbools]
 [Error matching compiler output for types/scalar/bradc/bools2]
+[Error matching program output for users/jglewis/SSCA2_sync_array_initialization_bug]
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local --heterogeneous analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)]
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local --heterogeneous analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)]
 [Error matching compiler output for users/shetag/iteratorWithOn]
 
 
@@ -512,14 +553,30 @@ execution timeout (10/05/09)
 xt-cle-specific failures
 ========================
 
-numerical accuracy issue
-------------------------
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
+output being treated as binary causing diff message to change (05/08/10)
+------------------------------------------------------------------------
+[Error matching program output for compflags/bradc/html/testit]
+
+flag -target=linux not recognized (05/06-06/10)
+-----------------------------------------------
+*all*
 
 
 =====================================
 cray-xt-cray/cce-specific regressions
 =====================================
+
+gdb output difference (05/09/10)
+--------------------------------
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+
+compilation timeout (05/09/10)
+------------------------------
+[Error: Timed out compilation for classes/bradc/arrayInClass/genericArrayInClass-otharrs]
+[Error: Timed out compilation for studies/hpcc/FFT/diten/fft]
+[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4]
+[Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_mul]
+[Error: Timed out compilation for users/franzf/v0/chpl/main]
 
 redeclaration of identifier in scope (02/27/10, but hadn't run well in awhile)
 ------------------------------------------------------------------------------
@@ -572,10 +629,6 @@ precision issues (?) -- is there a floating point flag we need to throw?
 =============================================================
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
-
-numerical accuracy issues
--------------------------
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 
 float.h missing (03/02/10)
 --------------------------
@@ -634,6 +687,18 @@ exp2 not supported:
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
+compilation timeouts (05/09/10)
+-------------------------------
+[Error: Timed out compilation for classes/deitz/test_method2]
+[Error: Timed out compilation for classes/deitz/test_method_call1]
+[Error: Timed out compilation for classes/deitz/test_mf_record]
+[Error: Timed out compilation for classes/deitz/test_nested_record2]
+[Error: Timed out compilation for classes/diten/returnMultipleTypes]
+[Error: Timed out compilation for classes/diten/test_nested_method]
+[Error: Timed out compilation for classes/diten/test_shadowing]
+[Error: Timed out compilation for studies/lu/marybeth/lu1]
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/test_showboxes]
+
 Duplicate symbol declaration (02/13/10)
 ---------------------------------------
 [Error matching compiler output for associative/waynew/indef2]
@@ -669,10 +734,6 @@ warning in supplied header files (05/05/10)
 warning in supplied header files (03/30/10)
 -------------------------------------------
 [Error matching program output for release/examples/hpcc/ra]
-
-numerical accuracy issue
-------------------------
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
 
 The C compiler issues a warning when time.h and pthread.h are both
 included and the C code is compiled with -std=c99.
