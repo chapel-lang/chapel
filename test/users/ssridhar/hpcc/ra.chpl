@@ -105,10 +105,13 @@ def main() {
   //
   forall ( , r) in (Updates, RAStream()) do
     on TableDist.idxToLocale(r & indexMask) {
-      if updateLock then
-	atomic T(r & indexMask) ^= r;
-      else 
-	T(r & indexMask) ^= r;
+      const myR = r;
+      local {
+	if updateLock then
+	  atomic T(myR & indexMask) ^= myR;
+	else 
+	  T(myR & indexMask) ^= myR;
+      }
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -144,8 +147,12 @@ def verifyResults() {
   // atomic statement to ensure no conflicting updates
   //
   forall ( , r) in (Updates, RAStream()) do
-    on TableDist.idxToLocale(r & indexMask) do
-	atomic T(r & indexMask) ^= r;
+    on TableDist.idxToLocale(r & indexMask) {
+      const myR = r;
+      local {
+	atomic T(myR & indexMask) ^= myR;
+      }
+    }
 
   const verifyTime = getCurrentTime() - startTime;
 

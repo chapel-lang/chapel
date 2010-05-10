@@ -2094,6 +2094,13 @@ void CallExpr::codegen(FILE* outfile) {
 	  get(1), get(2), get(3), type, get(4), get(5));
       break;    
     }
+    case PRIM_TX_LOAD: {
+      Type *type = get(2)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      gen(outfile, "CHPL_STM_LOAD(%A, %A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), type, get(4), get(5));
+      break;    
+    }
     case PRIM_TX_GET_MEMBER_VALUE: {
       Type *type = get(2)->typeInfo();
       registerTypeToStructurallyCodegen(type->symbol);
@@ -2105,21 +2112,25 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIM_TX_LOAD_MEMBER_VALUE: {
-      Type *type = get(2)->typeInfo();
+      Type *type = get(2)->typeInfo();      
+      SymExpr* member = toSymExpr(get(4));
       registerTypeToStructurallyCodegen(type->symbol);
       gen(outfile, "/* load member value */\n");
-      gen(outfile, "CHPL_STM_LOAD(%A, %A, (", get(1), get(2));
+      if (member->var->hasFlag(FLAG_SUPER_CLASS)) 
+	gen(outfile, "CHPL_STM_LOAD_REF(%A, %A, ", get(1), get(2));
+      else 
+	gen(outfile, "CHPL_STM_LOAD(%A, %A, ", get(1), get(2));
       codegen_member(outfile, get(3), get(4));
-      gen(outfile, "), %A, %A, %A)", type, get(5), get(6));      
+      gen(outfile, ", %A, %A, %A)", type, get(5), get(6));      
       break;
     }
     case PRIM_TX_LOAD_SVEC_MEMBER_VALUE: {
       Type *type = get(2)->typeInfo();
       registerTypeToStructurallyCodegen(type->symbol);
       gen(outfile, "/* load svec member value */\n");
-      gen(outfile, "CHPL_STM_LOAD(%A, %A, (", get(1), get(2));
+      gen(outfile, "CHPL_STM_LOAD(%A, %A, ", get(1), get(2));
       codegenTupleMember(outfile, get(3), get(4));
-      gen(outfile, "), %A, %A, %A)", type, get(5), get(6));
+      gen(outfile, ", %A, %A, %A)", type, get(5), get(6));
       break;    
     }
     case PRIM_TX_ARRAY_GET: {
@@ -2176,21 +2187,33 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_TX_PUT: {
       Type *type = get(3)->typeInfo();
       registerTypeToStructurallyCodegen(type->symbol);
-      gen(outfile, "CHPL_STM_COMM_WIDE_PUT(%A, %A, %A, %A, %A, %A)",
+      if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) 
+	gen(outfile, "CHPL_STM_COMM_WIDE_PUT_SVEC");
+      else 
+	gen(outfile, "CHPL_STM_COMM_WIDE_PUT");
+      gen(outfile, "(%A, %A, %A, %A, %A, %A)",
 	  get(1), get(2), get(3), type, get(4), get(5));
       break;
     }
     case PRIM_TX_STORE_REF: {
       Type *type = get(3)->typeInfo();
       registerTypeToStructurallyCodegen(type->symbol);
-      gen(outfile, "CHPL_STM_STORE_REF(%A, %A, %A, %A, %A, %A)",
+      if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) 
+	gen(outfile, "CHPL_STM_STORE_REF_SVEC");
+      else
+	gen(outfile, "CHPL_STM_STORE_REF");
+      gen(outfile, "(%A, %A, %A, %A, %A, %A)",
 	  get(1), get(2), get(3), type, get(4), get(5));
       break;
     }
     case PRIM_TX_STORE: {
       Type *type = get(3)->typeInfo();
       registerTypeToStructurallyCodegen(type->symbol);
-      gen(outfile, "CHPL_STM_STORE(%A, %A, %A, %A, %A, %A)",
+      if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) 
+	gen(outfile, "CHPL_STM_STORE_SVEC"); 
+      else 
+	gen(outfile, "CHPL_STM_STORE");
+      gen(outfile, "(%A, %A, %A, %A, %A, %A)",
 	  get(1), get(2), get(3), type, get(4), get(5));
       break;
     }
@@ -2206,7 +2229,7 @@ void CallExpr::codegen(FILE* outfile) {
       gen(outfile, "CHPL_STM_STORE");
       gen(outfile, "(%A, ((object)%A)->chpl__cid, ", get(1), get(2));
       fprintf(outfile, "chpl__cid_%s, chpl__class_id, ",
-	      get(2)->typeInfo()->getField("addr")->type->symbol->cname);
+	      get(2)->typeInfo()->symbol->cname);
       gen(outfile, "%A, %A)", get(3), get(4));
       break;
     }
@@ -2252,7 +2275,11 @@ void CallExpr::codegen(FILE* outfile) {
       Type *type = get(4)->typeInfo();
       registerTypeToStructurallyCodegen(type->symbol);
       gen(outfile, "/* store member */\n");
-      gen(outfile, "CHPL_STM_STORE(%A, ", get(1));
+      if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+	gen(outfile, "CHPL_STM_STORE_SVEC(%A, ", get(1));
+      } else {
+	gen(outfile, "CHPL_STM_STORE(%A, ", get(1));
+      }
       codegen_member(outfile, get(2), get(3));
       gen(outfile, ", %A, %A, %A, %A)", get(4), type, get(5), get(6));
       break;

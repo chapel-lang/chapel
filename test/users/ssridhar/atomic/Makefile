@@ -1,20 +1,24 @@
 CHPL = chpl
 
+FLAGS += --conditional-dynamic-dispatch-limit 100
+
 ifeq ($(CHPL_DEVELOPER), true)
 
-FLAGS = $(F) --devel --gen-ids -g --no-checks --print-commands --print-passes
+FLAGS += $(F) --devel --gen-ids -g --no-checks --print-commands --print-passes
 
 else 
 
-FLAGS = $(F) --no-devel -O --fast --no-checks --print-commands --print-passes
+FLAGS += $(F) --no-devel -O --fast --no-checks --print-commands --print-passes
 
 endif
 
 TARGETS = \
-	test_associative_domain.chpl \
 	test_array_local_uint64 \
+	test_associative_domain \
 	test_atomic_expr_in_return_stmt \
+	test_atomic_stmt_in_local_block \
 	test_atomic_stmt_in_on_stmt \
+	test_class_var_atomic_access \
 	test_fail_type_mismatch_in_atomic \
 	test_fn_arg_global_var \
 	test_fn_arg_inout_intent \
@@ -25,6 +29,7 @@ TARGETS = \
 	test_prim_get_member_value \
 	test_stmt_return_in_atomic \
 	test_var_global_uint64 \
+	test_var_local_bool8 \
 	test_var_local_int32 \
 	test_var_local_int32_wo \
 	test_var_local_int64 \

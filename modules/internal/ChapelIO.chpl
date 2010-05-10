@@ -76,13 +76,13 @@ class file: Writer {
 
   def isOpen: bool {
     var openStatus: bool = false;
-    if atomicSupport {
+    //    if atomicSupport {
       if (_fp != __primitive("get_nullfile")) {
 	openStatus = true;
       }
-    } else {
-      openStatus = true;
-    }
+      //    } else {
+      //      openStatus = true;
+      //    }
     return openStatus;
   }
   
@@ -276,7 +276,7 @@ def chpl_taskID_t.writeThis(f: Writer) {
 }
 
 def file.writeIt(s: string) {
-  if atomicSupport {
+  //  if atomicSupport {
     if !isOpen then
       _checkOpen(this, isRead = false);
     if mode != FileAccessMode.write then
@@ -286,12 +286,12 @@ def file.writeIt(s: string) {
       const err = __primitive("get_errno");
       halt("***Error: Write failed: ", err, "***");
     }
-  }
+    //  }
 }
 
 class StringClass: Writer {
   var s: string;
-  def writeIt(s: string) { if atomicSupport then this.s += s; }
+  def writeIt(s: string) { this.s += s; }
 }
 
 pragma "ref this" pragma "dont disable remote value forwarding"

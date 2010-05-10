@@ -164,6 +164,7 @@ enum PrimitiveTag {
   PRIM_TX_LOAD_LOCALEID,
   PRIM_TX_GET_REF,            // Transactional load -- local/remote 
   PRIM_TX_LOAD_REF,           // Transactional load from reference -- local
+  PRIM_TX_LOAD,
   PRIM_TX_GET_MEMBER_VALUE,
   PRIM_TX_LOAD_MEMBER_VALUE,
   PRIM_TX_LOAD_SVEC_MEMBER_VALUE,

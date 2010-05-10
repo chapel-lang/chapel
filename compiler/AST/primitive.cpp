@@ -478,6 +478,7 @@ initPrimitive() {
 	   false, true, true);
   prim_def(PRIM_TX_LOAD_REF, "tx load ref", returnInfoVal, 
 	   false, true, true);
+  prim_def(PRIM_TX_LOAD, "tx load", returnInfoVal, false, true, true);
   prim_def(PRIM_TX_GET_MEMBER_VALUE, "tx get member value", 
 	   returnInfoGetMember, false, true, true);
   prim_def(PRIM_TX_LOAD_MEMBER_VALUE, "tx load member value", 

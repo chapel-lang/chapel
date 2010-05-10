@@ -187,22 +187,35 @@ int gtm_tx_load(chpl_stm_tx_t* tx, void* dstaddr, void* srcaddr, size_t size) {
 int gtm_tx_load_wrap(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size) {
   if (size >= GTMWORDSIZE) {
     return gtm_tx_load(tx, dstaddr, srcaddr, size); 
-  } else if (size == 4 && ((gtm_word_t) srcaddr & (gtm_word_t) 0x03) != 0) {
-    chpl_error("STM error: unaligned 32-bit load", 0, 0);
   } else if (size == 4) {
-    wrapper_t dval;
-    int status; 
-    dval.w = 0;
-    // attempting a 4-byte load operation. first, read in the entire 
-    // 8-byte word by aligning the srcaddr to the nearest 8-byte word 
-    // boundary. we do this by masking the lower order three bits from
-    // srcaddr. next, determine which half-word was originally requested 
-    // by using bit 3 of the address and return its value. 
-    status = gtm_tx_load_word(tx, &dval.w, (void*) ((gtm_word_t) srcaddr & ~(gtm_word_t) 0x07));
-    *(gtm_word_p)dstaddr = dval.hw[((gtm_word_t) srcaddr & (gtm_word_t) 0x04) >> 2];
-    return status; 
+    if (((gtm_word_t) srcaddr & (gtm_word_t) 0x03) != 0) {
+      chpl_error("STM error: unaligned 32-bit load", 0, 0);
+    } else {
+      wrapper_t dval;
+      int status; 
+      dval.w = 0;
+      // attempting a 4-byte load operation. first, read in the entire 
+      // 8-byte word by aligning the srcaddr to the nearest 8-byte word 
+      // boundary. we do this by masking the lower order three bits from
+      // srcaddr. next, determine which half-word was originally requested 
+      // by using bit 3 of the address and return its value. 
+      status = gtm_tx_load_word(tx, &dval.w, (void*) ((gtm_word_t) srcaddr & ~(gtm_word_t) 0x07));
+      *(gtm_word_p)dstaddr = dval.hw[((gtm_word_t) srcaddr & (gtm_word_t) 0x04) >> 2];
+      return status; 
+    }
+  } else if (size == 1) {
+    if (((gtm_word_t) srcaddr & (gtm_word_t) 0x07) != 0) {
+      chpl_error("STM error: unaligned 1-byte load", 0, 0);
+    } else {
+      wrapper_t dval;
+      int status;
+      dval.w = 0;
+      status = gtm_tx_load_word(tx, &dval.w, (void*) ((gtm_word_t) srcaddr & ~(gtm_word_t) 0x07));
+      *(gtm_word_p)dstaddr = dval.b[(gtm_word_t) srcaddr & (gtm_word_t) 0x07];
+      return status;
+    }
   } else {
-    chpl_error("STM error: tx load must be multiple of 4 or 8 bytes", 0, 0);
+    chpl_error("STM error: tx load size not supported", 0, 0);
   }
   return TX_FAIL;
 } 
@@ -243,18 +256,28 @@ int gtm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size) {
 int gtm_tx_store_wrap(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size) {
   if (size >= GTMWORDSIZE) {
     return gtm_tx_store(tx, srcaddr, dstaddr, size); 
-  } else if (size == 4 && ((gtm_word_t) dstaddr & (gtm_word_t) 0x03) != 0) {
-    chpl_error("STM error: unaligned 32-bit store", 0, 0);
   } else if (size == 4) {
+    if (((gtm_word_t) dstaddr & (gtm_word_t) 0x03) != 0) {
+      chpl_error("STM error: unaligned 32-bit store", 0, 0);
+    } else {
+      wrapper_t sval, mask;
+      int status;
+      sval.w = mask.w = 0;
+      sval.hw[((gtm_word_t) dstaddr & (gtm_word_t) 0x04) >> 2] = *(uint32_t*) srcaddr;
+      mask.hw[((gtm_word_t) dstaddr & (gtm_word_t) 0x04) >> 2] = ~(uint32_t) 0;
+      status = gtm_tx_store_word(tx, &sval.w, (void*) ((gtm_word_t) dstaddr & ~(gtm_word_t) 0x07), mask.w);      
+      return status;
+    }
+  } else if (size == 1) {
     wrapper_t sval, mask;
     int status;
     sval.w = mask.w = 0;
-    sval.hw[((gtm_word_t) dstaddr & (gtm_word_t) 0x04) >> 2] = *(uint32_t*) srcaddr;
-    mask.hw[((gtm_word_t) dstaddr & (gtm_word_t) 0x04) >> 2] = ~(uint32_t) 0;
+    sval.b[(gtm_word_t) dstaddr & (gtm_word_t) 0x07] = *(uint8_t*) srcaddr;
+    mask.b[(gtm_word_t) dstaddr & (gtm_word_t) 0x07] = ~(uint8_t) 0;
     status = gtm_tx_store_word(tx, &sval.w, (void*) ((gtm_word_t) dstaddr & ~(gtm_word_t) 0x07), mask.w);      
-    return status; 
+    return status;   
   } else {
-    chpl_error("STM error: tx store must be multiple of 4 or 8 bytes", 0, 0);
+    chpl_error("STM error: tx store size not supported", 0, 0);
   }
   return TX_FAIL;
 }

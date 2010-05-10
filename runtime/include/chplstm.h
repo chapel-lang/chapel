@@ -141,6 +141,16 @@ typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while(0)
 
+#define CHPL_STM_COMM_WIDE_PUT_SVEC(tx, rwide, lsrc, type, ln, fn)	\
+  do {									\
+    if (chpl_localeID == (rwide).locale)				\
+      chpl_stm_tx_store(tx, &lsrc, (rwide).addr,			\
+			SPECIFY_SIZE(type), ln, fn);			\
+    else 								\
+      chpl_stm_tx_put(tx, &lsrc, (rwide).locale, (rwide).addr,		\
+		      SPECIFY_SIZE(type), ln, fn);			\
+  } while(0)
+
 #define CHPL_STM_STORE_REF(tx, dst, src, type, ln, fn)			\
   do {									\
     type chpl_macro_tmp = src;						\
@@ -148,12 +158,18 @@ typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while (0)
 
+#define CHPL_STM_STORE_REF_SVEC(tx, dst, src, type, ln, fn)		\
+  chpl_stm_tx_store(tx, &src, dst, SPECIFY_SIZE(type), ln, fn);
+
 #define CHPL_STM_STORE(tx, dst, src, type, ln, fn)			\
   do {									\
     type chpl_macro_tmp = src;						\
     chpl_stm_tx_store(tx, &chpl_macro_tmp, &dst,			\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while (0)
+
+#define CHPL_STM_STORE_SVEC(tx, dst, src, type, ln, fn)			\
+  chpl_stm_tx_store(tx, &src, &dst, SPECIFY_SIZE(type), ln, fn);
 
 #define CHPL_STM_COMM_WIDE_SET_TUPLE_COMPONENT_VALUE(tx, rwide, lsrc, stype, index, type, ln, fn) \
   do {                                                                  \
