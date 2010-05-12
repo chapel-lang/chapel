@@ -32,6 +32,7 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 [Error matching program output for reductions/bradc/minmaxlocscan] (04/20/10)
 [Error matching program output for studies/hpcc/serial-v0.7/ra] (04/23/10)
 [Error matching program output for studies/hpcc/RA/bradc/ra-bradc-old2] (05/01/10)
+[Error matching program output for trivial/marybeth/select1] (05/12/10)
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
@@ -192,7 +193,7 @@ nondet. execution timeout
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10)
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10, 05/12/10)
 
 nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 -----------------------------------------------------------------------------
@@ -201,7 +202,7 @@ nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10, 05/11/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10, 05/11/10, 05/12/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10)
 
