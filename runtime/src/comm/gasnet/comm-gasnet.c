@@ -21,6 +21,7 @@ static chpl_mutex_t chpl_comm_diagnostics_lock;
 static int chpl_comm_gets = 0;
 static int chpl_comm_puts = 0;
 static int chpl_comm_forks = 0;
+static int chpl_comm_fast_forks = 0;
 static int chpl_comm_nb_forks = 0;
 static int chpl_comm_no_debug_private = 0;
 
@@ -551,10 +552,11 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
 
 // GASNET - should only be called for "small" functions
 void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+  char infod[gasnet_AMMaxMedium()];
   fork_t* info;
-  int     info_size;
+  int     info_size = sizeof(fork_t) + arg_size;
   int     done;
-  int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
+  int     passArg = info_size <= gasnet_AMMaxMedium();
 
   if (chpl_localeID == locale) {
     (*chpl_ftable[fid])(arg);
@@ -565,12 +567,11 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size
                chpl_localeID, locale);
       if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
         CHPL_MUTEX_LOCK(&chpl_comm_diagnostics_lock);
-        chpl_comm_forks++;
+        chpl_comm_fast_forks++;
         CHPL_MUTEX_UNLOCK(&chpl_comm_diagnostics_lock);
       }
+      info = (fork_t *) &infod;
 
-      info_size = sizeof(fork_t) + arg_size;
-      info = (fork_t*)chpl_malloc(1, info_size, CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
       info->caller = chpl_localeID;
       info->ack = &done;
       info->serial_state = CHPL_GET_SERIAL();
@@ -584,7 +585,6 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_FAST, info, info_size));
 
       // GASNET_BLOCKUNTIL(1==done);
-      chpl_free(info, 0, 0);
     } else {
       // Call the normal chpl_comm_fork()
       chpl_comm_fork(locale, fid, arg, arg_size);
@@ -642,6 +642,10 @@ int32_t chpl_numCommGets(void) {
 
 int32_t chpl_numCommPuts(void) {
   return chpl_comm_puts;
+}
+
+int32_t chpl_numCommFastForks(void) {
+  return chpl_comm_fast_forks;
 }
 
 int32_t chpl_numCommForks(void) {

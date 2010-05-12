@@ -106,7 +106,7 @@ def main() {
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
   var Diagnostics = getCommDiagnostics();
-  writeln("Locale: (gets, puts, forks, non-blocking forks)");
+  writeln("Locale: (gets, puts, forks, fast forks, non-blocking forks)");
   for (lid, diagnostics) in (1..,Diagnostics) do
     writeln(lid, ": ", diagnostics);
 

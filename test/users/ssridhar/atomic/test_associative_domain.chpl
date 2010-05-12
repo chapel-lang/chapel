@@ -7,3 +7,4 @@ a(1) = 7.2;
 
 writeln("domain d = ", d);
 writeln("array a = ", a);
+

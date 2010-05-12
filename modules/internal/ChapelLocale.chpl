@@ -125,14 +125,15 @@ def stopCommDiagnosticsHere() { __primitive("chpl_stopCommDiagnosticsHere"); }
 // TODO: generalize this for multiple realms by returning a manhattan
 // array
 def getCommDiagnostics(realmID: int(32) = 0) {
-  var D: [Realms(realmID).LocaleSpace] 4*int;
+  var D: [Realms(realmID).LocaleSpace] 5*int;
   const r = Realms(realmID);
   for loc in r.Locales do on loc {
     const gets = __primitive("chpl_numCommGets");
     const puts = __primitive("chpl_numCommPuts");
     const forks = __primitive("chpl_numCommForks");
+    const fforks = __primitive("chpl_numCommFastForks");
     const nbforks = __primitive("chpl_numCommNBForks");
-    D(loc.id) = (gets, puts, forks, nbforks);
+    D(loc.id) = (gets, puts, forks, fforks, nbforks);
   }
   return D;
 }

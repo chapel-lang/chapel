@@ -801,3 +801,27 @@ def isTuple(t: $Tuple$) param
 \begin{protobody}
 Returns true if \chpl{t} is a tuple; otherwise false.
 \end{protobody}
+
+\begin{protohead}
+def isTupleType(type t) param
+\end{protohead}
+\begin{protobody}
+Returns true if \chpl{t} is a tuple of types; otherwise false.
+\end{protobody}
+
+\begin{protohead}
+def max(type t) where isTupleType(t)
+\end{protohead}
+\begin{protobody}
+Returns a tuple of type \chpl{t} with each component set to the maximum
+value that can be stored in its position.
+\end{protobody}
+
+\begin{protohead}
+def min(type t) where isTupleType(t)
+\end{protohead}
+\begin{protobody}
+Returns a tuple of type \chpl{t} with each component set to the minimum
+value that can be stored in its position.
+\end{protobody}
+

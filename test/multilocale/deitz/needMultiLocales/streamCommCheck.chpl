@@ -26,28 +26,33 @@ def main() {
   writeln("A: ", A);
 
   var Diagnostics = getCommDiagnostics();
-  var (gets, puts, forks, nbforks) = + reduce Diagnostics;
+  var (gets, puts, forks, fforks, nbforks) = + reduce Diagnostics;
 
   if verbose then
-    writeln((gets, puts, forks, nbforks));
+    writeln((gets, puts, forks, fforks, nbforks));
 
   if gets != 0 {
-    writeln((gets, puts, forks, nbforks));
+    writeln((gets, puts, forks, fforks, nbforks));
     halt("comm unexpected number of gets");
   }
 
   if puts != 0 {
-    writeln((gets, puts, forks, nbforks));
+    writeln((gets, puts, forks, fforks, nbforks));
     halt("comm unexpected number of puts");
   }
 
   if forks != 1 {
-    writeln((gets, puts, forks, nbforks));
+    writeln((gets, puts, forks, fforks, nbforks));
     halt("comm unexpected number of forks");
   }
 
+  if fforks != 0 {
+    writeln((gets, puts, forks, fforks, nbforks));
+    halt("comm unexpected number of fast forks");
+  }
+
   if nbforks != 1 {
-    writeln((gets, puts, forks, nbforks));
+    writeln((gets, puts, forks, fforks, nbforks));
     halt("comm unexpected number of non-blocking forks");
   }
 }
