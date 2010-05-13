@@ -17,7 +17,7 @@ general regressions
 
 nondet. output mismatch (due to race?)
 --------------------------------------
-[Error matching program output for trivial/sungeun/runningTasks2] (05/08/10 xt-pgi, 05/09/10 valgrind)
+[Error matching program output for trivial/sungeun/runningTasks2] (05/08/10 xt-pgi, 05/09/10 valgrind, 05/13/10 valgrind)
 
 nondet. compilation timeouts
 ----------------------------
@@ -204,7 +204,7 @@ nondet. execution timeout
 -------------------------
 [Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10, 05/11/10, 05/12/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10, 05/13/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -408,7 +408,7 @@ opts-specific tests
 *** everything failed 03/12/10 due to a .so problem ***
 
 
-(Full run: 136)
+(Full run: 173)
 
 general failures
 ----------------
@@ -417,6 +417,26 @@ general failures
 [Error: Timed out executing program users/franzf/v2/chpl/main]
 [Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings --no-inline  ) (0-2)]
 [Error matching program output for arrays/deitz/part7/test_descriptor_frees]
+
+--no-copy-propagation
+---------------------
+[Error matching compiler output for arrays/deitz/jacobi5-no-local]
+[Error matching compiler output for arrays/deitz/jacobi-no-local]
+[Error matching compiler output for classes/diten/dynamic_cast_instantiated_generic]
+[Error matching compiler output for functions/iterators/bradc/iterWithOnInGenericConstr]
+[Error matching compiler output for functions/iterators/bradc/leadFollow/localfollow2]
+[Error matching compiler output for functions/iterators/bradc/leadFollow/localfollow]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalArray]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalRecordMember]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalTuple]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/defaultValueGlobalTuple]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/recordFieldDefaultGlobalTuple]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/simpleDefaultValueGlobal]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalClassMember]
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented]
+[Error matching compiler output for trivial/bradc/wideref2string]
+[Error matching compiler output for trivial/diten/classRef2string-nolocal]
 
 --no-dead-code-elimination
 --------------------------
@@ -460,9 +480,28 @@ general failures
 
 --baseline --inline
 -------------------
+[Error matching compiler output for arrays/deitz/jacobi5-no-local]
+[Error matching compiler output for arrays/deitz/jacobi-no-local]
 [Error matching program output for arrays/deitz/parallelism/stream/test_whole_array_stream_is_parallel]
 [Error matching program output for arrays/deitz/parallelism/stream/test_stream_is_parallel]
+[Error matching program output for arrays/deitz/part7/test_descriptor_frees]
+[Error matching compiler output for classes/diten/dynamic_cast_instantiated_generic]
 [Error matching program output for classes/figueroa/RecordConstructor2]
+[Error matching compiler output for functions/iterators/bradc/iterWithOnInGenericConstr]
+[Error matching compiler output for functions/iterators/bradc/leadFollow/localfollow2]
+[Error matching compiler output for functions/iterators/bradc/leadFollow/localfollow]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalArray]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalRecordMember]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalTuple]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/defaultValueGlobalTuple]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/recordFieldDefaultGlobalTuple]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/simpleDefaultValueGlobal]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalClassMember]
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented]
+[Error matching compiler output for trivial/bradc/wideref2string]
+[Error matching compiler output for trivial/diten/classRef2string-nolocal]
+
 
 --baseline --no-local
 ------------------------------------
@@ -473,6 +512,10 @@ general failures
 [Error matching program output for classes/figueroa/RecordDestructor1]
 [Error matching program output for classes/figueroa/RecordConstructor2]
 [Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader3]
+[Error matching compiler output for studies/hpcc/RA/diten/ra]
+[Error matching compiler output for studies/uts/uts_deq_seq]
+[Error matching compiler output for studies/uts/dequeue]
+[Error matching compiler output for studies/uts/uts_deq]
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
