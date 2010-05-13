@@ -1343,7 +1343,8 @@ insertWideReferences(void) {
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_MOVE)) {
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+      if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+           call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) &&
           call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           call->get(2)->typeInfo() == call->get(1)->getValType()->getField("addr")->type) {
         //

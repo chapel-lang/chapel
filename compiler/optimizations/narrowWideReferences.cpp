@@ -2,7 +2,7 @@
 #include "expr.h"
 #include "passes.h"
 #include "stmt.h"
-//#include "view.h"
+#include "view.h"
 
 
 //#define PRINT_NARROW_EFFECT
@@ -108,6 +108,12 @@ narrowSym(Symbol* sym) {
   Vec<SymExpr*> actuals;
 
   //
+  // vector of calls that will need to be removed if this symbol is
+  // narrowed
+  //
+  Vec<CallExpr*> callsToRemove;
+
+  //
   // if symbol is returned, mark function to update return type
   //
   FnSymbol* narrowedFn = NULL;
@@ -140,6 +146,10 @@ narrowSym(Symbol* sym) {
         actuals.add(use);
         continue;
       }
+      if (call->isPrimitive(PRIM_LOCAL_CHECK)) {
+        callsToRemove.add(call);
+        continue;
+      }
       if (call->isPrimitive(PRIM_RETURN)) {
         narrowedFn = toFnSymbol(call->parentSymbol);
         INT_ASSERT(narrowedFn);
@@ -156,10 +166,14 @@ narrowSym(Symbol* sym) {
   }
 
   //
-  // if this symbol can be narrowed, add this actual
+  // if this symbol can be narrowed, add this actual to the widen map
   //
   forv_Vec(SymExpr, actual, actuals) {
     widenMap.put(actual, sym->type);
+  }
+
+  forv_Vec(CallExpr, call, callsToRemove) {
+    call->remove();
   }
 
   if (narrowedFn) {
