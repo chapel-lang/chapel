@@ -9,7 +9,7 @@
 #include "type.h"
 #include "misc.h" // FIXME: should we just include driver.h instead ?? 
 
-bool fOnClause = false; // Drops on clause if set to false
+bool fAtomicOnClause = false; // Drops on clause if set to false
 
 static void
 checkControlFlow(Expr* expr, const char* context) {
@@ -1574,7 +1574,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
       tmp = NULL;
   }
 
-  if (fLocal || !fOnClause) {
+  if (fLocal) { // SS: || !fAtomicOnClause 
     BlockStmt* block = new BlockStmt(stmt);
     block->insertAtHead(onExpr); // evaluate the expression for side effects
     return buildChapelStmt(block);

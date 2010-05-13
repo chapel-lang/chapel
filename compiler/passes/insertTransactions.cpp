@@ -158,8 +158,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se2);
 	INT_ASSERT(lhs->getValType() == se2->getValType());
 	if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-  
-	  // generate CHPL_STM_WIDE_GET_FIELD -- requires STM tracking if 
+  	  // generate CHPL_STM_WIDE_GET_FIELD -- requires STM tracking if 
 	  // (A) its on the heap (B) its on the stack and passed around.
 	  // currently assuming its on the stack and not passed around. 
 	  if (!isOnStack(se1)) 
@@ -321,9 +320,10 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     }
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
 	!call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      INT_ASSERT(call->get(2)->typeInfo() != dtString); 
-      if (!isOnStack(lhs)) 
+      if (!isOnStack(lhs)) { 
+	INT_ASSERT(call->get(2)->typeInfo() != dtString); 
 	USR_WARN(call, "Write case 1 not instrumented");
+      }
       break;
     }
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
@@ -446,6 +446,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
   case PRIM_SYNC_SIGNAL_FULL:
   case PRIM_SYNC_SIGNAL_EMPTY:
   case PRIM_SYNC_ISFULL:
+    USR_WARN(call, "Ignoring SYNC_* primitivies");
     //    call->remove();
     break;
   case PRIM_CHPL_FREE: {
@@ -460,6 +461,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     break;
   case PRIM_BLOCK_WHILEDO_LOOP:
   case PRIM_BLOCK_FOR_LOOP:
+    break;
+  case PRIM_CHPL_NUMRUNNINGTASKS:
+    USR_WARN(call, "Ignoring CHPL_NUM_RUNNINGTASKS primitive");
     break;
   case PRIM_RT_ERROR:
     call->replace(new CallExpr(PRIM_TX_RT_ERROR));
@@ -506,13 +510,17 @@ insertSTMCalls() {
 	  // since fn doesn't have a clone yet, so create one and cache it. 
 	  // don't insert it into the IR yet. 
 	  // also create a new transaction descriptor for this atomic block  
-	  FnSymbol* fnTxClone = createTxFnClone(fn);
-	  fnCache.put(fn, fnTxClone); 
-	  tx = newTemp("tx", dtTransaction);
-	  block->insertAtHead(new DefExpr(tx));
-	  env = newTemp("local_env", dtTxEnv);
-	  block->insertAtHead(new DefExpr(env));
-	} 
+	 
+	  if (!strstr(fn->name, "halt")) {
+
+	    //	  FnSymbol* fnTxClone = createTxFnClone(fn);
+	    //	  fnCache.put(fn, fnTxClone); 
+	    tx = newTemp("tx", dtTransaction);
+	    block->insertAtHead(new DefExpr(tx));
+	    env = newTemp("local_env", dtTxEnv);
+	    block->insertAtHead(new DefExpr(env));
+	  } 
+	}
       } else {
 	USR_FATAL(block, "Cannot deal with indirect or external functions");
       }
@@ -535,6 +543,8 @@ insertSTMCalls() {
       } else if (FnSymbol* fn = call->isResolved()) {
 	INT_ASSERT(fn);
 	
+	if (strstr(fn->name, "halt")) break;
+
 	FnSymbol* fnTxClone = fnCache.get(fn);
 	
 	if (!fnTxClone) {
@@ -554,7 +564,6 @@ insertSTMCalls() {
 	// ALL Type I functions as Type III functions. So we don't want to 
 	// inspect some of those functions that are truly Type I. 
 	if (!queue.in(fnTxClone->body)) {
-	    // && !(strstr(fnTxClone->name, "tx_clone_halt") ||
 	    //   strstr(fnTxClone->name, "tx_clone_readFE") ||
 	    //   strstr(fnTxClone->name, "_syncvar") ||
 	    //   strstr(fnTxClone->name, "tx_clone_writeEF") ||

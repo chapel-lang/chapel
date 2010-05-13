@@ -15,8 +15,8 @@
 general regressions
 ===================
 
-output mismatch (due to race?) (05/08/10)
------------------------------------------
+nondet. output mismatch (due to race?)
+--------------------------------------
 [Error matching program output for trivial/sungeun/runningTasks2] (05/08/10 xt-pgi, 05/09/10 valgrind)
 
 nondet. compilation timeouts
@@ -32,10 +32,11 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 [Error matching program output for reductions/bradc/minmaxlocscan] (04/20/10)
 [Error matching program output for studies/hpcc/serial-v0.7/ra] (04/23/10)
 [Error matching program output for studies/hpcc/RA/bradc/ra-bradc-old2] (05/01/10)
+[Error matching program output for trivial/marybeth/select1] (05/12/10)
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10, 04/30/10, 05/01/10, 05/02/10, 05/06/10, 05/07/10, 05/08/10)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10, 04/30/10, 05/01/10, 05/02/10, 05/06/10, 05/07/10, 05/08/10, 05/11/10)
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -186,27 +187,24 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-seg fault (05/10/10)
---------------------
-[Error matching program output for distributions/deitz/test_block_representation]
-
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main   -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast) (2-1)] (05/06/10, 05/07/10)
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main   -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast) (2-1)] (05/06/10, 05/07/10, 05/11/10)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10)
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10, 05/12/10)
 
 nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 -----------------------------------------------------------------------------
-[Error matching program output for arrays/deitz/part7/test_out_array] (04/14/10)
+[Error matching program output for arrays/deitz/part7/test_out_array] (04/14/10, maybe related to another bug on 04/14/10 fixed 04/15/10)
+[Error matching program output for distributions/deitz/test_block_representation] (05/10/10)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10, 05/11/10, 05/12/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -556,10 +554,6 @@ xt-cle-specific failures
 output being treated as binary causing diff message to change (05/08/10)
 ------------------------------------------------------------------------
 [Error matching program output for compflags/bradc/html/testit]
-
-flag -target=linux not recognized (05/06-06/10)
------------------------------------------------
-*all*
 
 
 =====================================

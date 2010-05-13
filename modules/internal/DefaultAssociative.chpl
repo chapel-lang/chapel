@@ -128,11 +128,15 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     return _findFilledSlot(idx)(1);
   }
 
+  pragma "inline" 
   def dsiAdd(idx: idxType): index(tableDom) {
     if ((numEntries+1)*2 > tableSize) {
       // TODO: should also make sure that we don't exceed the maximum table
       // size
-      _resize(grow=true);
+      if atomicSupport then
+	_resize(grow=true);
+      else
+	halt("manually increase size of table");
     }
     const (foundSlot, slotNum) = _findEmptySlot(idx);
     if (foundSlot) {
@@ -141,13 +145,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
       numEntries += 1;
     } else {
       if (slotNum < 0) {
-	if atomicSupport {
-	  halt("couldn't add ", idx, " -- ", numEntries, " / ", tableSize, " taken");
-	  return -1;
-	} else {
-	  halt();
-	  return -1;
-	}
+	halt("couldn't add ", idx, " -- ", numEntries, " / ", tableSize, " taken");
+	return -1;
       }
       // otherwise, re-adding an index that's already in there
     }

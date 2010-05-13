@@ -27,6 +27,7 @@ TARGETS = \
 	test_fn_with_multiple_atomic \
 	test_prim_get_member \
 	test_prim_get_member_value \
+	test_stmt_on_in_atomic \
 	test_stmt_return_in_atomic \
 	test_var_global_uint64 \
 	test_var_local_bool8 \
