@@ -18,6 +18,8 @@ TARGETS = \
 	test_atomic_expr_in_return_stmt \
 	test_atomic_stmt_in_local_block \
 	test_atomic_stmt_in_on_stmt \
+	test_atomic_on_clause \
+	test_atomic_on_clause_in_coforall \
 	test_class_var_atomic_access \
 	test_fail_type_mismatch_in_atomic \
 	test_fn_arg_global_var \
@@ -27,7 +29,6 @@ TARGETS = \
 	test_fn_with_multiple_atomic \
 	test_prim_get_member \
 	test_prim_get_member_value \
-	test_stmt_on_in_atomic \
 	test_stmt_return_in_atomic \
 	test_var_global_uint64 \
 	test_var_local_bool8 \

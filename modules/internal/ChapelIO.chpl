@@ -3,8 +3,6 @@
 //  chapel-level implementations of read, write, writeln
 //  chapel-level implementations of assert, halt
 
-//use STMUtil;
-
 enum FileAccessMode { read, write };
 
 //
@@ -419,17 +417,11 @@ def assert(test: bool, args ...?numArgs) {
 }
 
 def halt() {
-  if atomicSupport then
-    __primitive("chpl_error", "halt reached");
-  else
-    __primitive("chpl_stm_error");
+  __primitive("chpl_error", "halt reached");
 }
 
 def halt(args ...?numArgs) {
-  if atomicSupport then
-    __primitive("chpl_error", "halt reached - "+_tuple2string(args));
-  else
-    __primitive("chpl_stm_error");
+  __primitive("chpl_error", "halt reached - "+_tuple2string(args));
 }
 
 def _debugWrite(args...?n) {

@@ -337,7 +337,8 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	!call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       SymExpr* rhs = toSymExpr(call->get(2));
       INT_ASSERT(rhs);
-      INT_ASSERT(isOnStack(rhs));
+      if (!isOnStack(rhs))
+	USR_WARN(call, "rhs is not on stack");
       call->replace(new CallExpr(PRIM_TX_PUT, tx, lhs->var, rhs->var));
       break;
     }
@@ -544,6 +545,10 @@ insertSTMCalls() {
 	INT_ASSERT(fn);
 	
 	if (strstr(fn->name, "halt")) break;
+	// if (strstr(fn->name, "readFE"))
+	//   break;
+	// if (strstr(fn->name, "writeEF"))
+	//   break;
 
 	FnSymbol* fnTxClone = fnCache.get(fn);
 	

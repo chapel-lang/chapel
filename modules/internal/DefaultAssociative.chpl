@@ -145,8 +145,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
       numEntries += 1;
     } else {
       if (slotNum < 0) {
-	halt("couldn't add ", idx, " -- ", numEntries, " / ", tableSize, " taken");
-	return -1;
+        halt("couldn't add ", idx, " -- ", numEntries, " / ", tableSize, " taken");
+        return -1;
       }
       // otherwise, re-adding an index that's already in there
     }
@@ -164,7 +164,10 @@ class DefaultAssociativeDom: BaseAssociativeDom {
       halt("index not in domain: ", idx);
     }
     if (numEntries*8 < tableSize && tableSizeNum > 1) {
-      _resize(grow=false);
+      if atomicSupport then
+	_resize(grow=false);
+      else
+	halt("manually increase size of table");
     }
   }
 

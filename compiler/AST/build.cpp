@@ -1574,7 +1574,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
       tmp = NULL;
   }
 
-  if (fLocal) { // SS: || !fAtomicOnClause 
+  if (fLocal || !fAtomicOnClause) {
     BlockStmt* block = new BlockStmt(stmt);
     block->insertAtHead(onExpr); // evaluate the expression for side effects
     return buildChapelStmt(block);

@@ -186,7 +186,6 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  // SS: setting this to pragma "inline"
   pragma "inline"
   def dsiMember(ind: rank*idxType) {
     for param i in 1..rank do
