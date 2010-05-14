@@ -477,7 +477,8 @@ def numBits(type t) param : int
 \end{protohead}
 \begin{protobody}
 Returns the number of bits used to store the values of type \chpl{t}.
-This is implemented for all numeric types and \chpl{bool}.
+This is implemented for all numeric types and fixed-width \chpl{bool} types.
+It is not implemented for default-width \chpl{bool}.
 \end{protobody}
 
 
@@ -486,7 +487,8 @@ def numBytes(type t) param : int
 \end{protohead}
 \begin{protobody}
 Returns the number of bytes used to store the values of type \chpl{t}.
-This is implemented for all numeric types and \chpl{bool}.
+This is implemented for all numeric types and fixed-width \chpl{bool} types.
+It is not implemented for default-width \chpl{bool}.
 \end{protobody}
 
 \begin{protohead}

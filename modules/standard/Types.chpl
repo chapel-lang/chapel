@@ -2,7 +2,13 @@
 // numBits(type) -- returns the number of bits in a type
 //
 
-def numBits(type t) param where t == bool return 1;
+def numBits(type t) param where t == bool {
+  compilerError("default-width 'bool' does not have a well-defined size");
+}
+def numBits(type t) param where t == bool(8) return 8;
+def numBits(type t) param where t == bool(16) return 16;
+def numBits(type t) param where t == bool(32) return 32;
+def numBits(type t) param where t == bool(64) return 64;
 def numBits(type t) param where t == int(8) return 8;
 def numBits(type t) param where t == int(16) return 16;
 def numBits(type t) param where t == int(32) return 32;
