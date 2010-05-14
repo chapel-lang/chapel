@@ -1,0 +1,13 @@
+bug: param function returns variable
+
+This show codes that we currently permit a parameter function to
+return a runtime variable value -- the code compiles and executes,
+returning 0.0 from the param function.  This should generate a
+compile-time error message as suggested in the .good file.  
+
+Steve and I talked about whether or not using variables in param
+functions should simply be illegal but decided that there was no harm
+in it per se, so long as the correct functioning of the routine did
+not rely on that variable's runtime value (e.g., relying on its type
+or rank in the case of an array variable would be reasonable).  This
+could stand to be re-evaluated if it becomes problemsome, however.
