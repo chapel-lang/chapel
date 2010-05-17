@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/internal/ChapelDistribution.chpl:175: In function '__tx_clone_destroyArr':
+$CHPL_HOME/modules/internal/ChapelDistribution.chpl:183: error: number of actuals does not match number of formals [expr.cpp:510]

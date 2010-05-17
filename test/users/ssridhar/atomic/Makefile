@@ -36,6 +36,7 @@ TARGETS = \
 	test_var_local_int32_wo \
 	test_var_local_int64 \
 	test_var_local_uint64 \
+	test_whole_array_assign_in_atomic \
 	atomic_arithmetic_operators_local_var \
 	atomic_class_member_class_access \
 	atomic_dynamic_dispatch \

@@ -259,6 +259,8 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         // in CHPL_STM_WIDE_GET_FIELD
         break;
       }
+      if (rhs->isPrimitive(PRIM_GET_SERIAL))  // serial clause in atomic
+	break;
       if (rhs->isPrimitive(PRIM_CHPL_ALLOC)) {
         SymExpr* se1 = toSymExpr(rhs->get(1));
 	SymExpr* se2 = toSymExpr(rhs->get(2));
@@ -266,6 +268,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se2);
 	INT_ASSERT(toVarSymbol(se2->var));
 	const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
+	USR_WARN(call, "FIXME: PRIM_TX_CHPL_ALLOC");
 	rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC, se1->var, tx, 
 				  newMemDesc(astr("stm ", memDescStr))));
       	break;
@@ -312,10 +315,14 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  rhs->primitive == NULL) {
         break;
       } 
-      // if (rhs->isPrimitive(PRIM_SYNC_ISFULL)) {
-      // 	call->remove();
-      // 	break;
-      // }
+      if (rhs->isPrimitive(PRIM_CHPL_NUMRUNNINGTASKS)) {
+	USR_WARN(call, "Ignoring CHPL_NUM_RUNNINGTASKS primitive");
+	break;
+      }
+      if (rhs->isPrimitive(PRIM_SYNC_ISFULL)) {
+	USR_WARN(call, "Ignoring PRIM_SYNC_ISFULL primitive");
+      	break;
+      }
       txUnknownMovePrimitive(call, rhs);
     }
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
@@ -438,21 +445,26 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
   case PRIM_CHECK_NIL:
   case PRIM_LOCAL_CHECK:
     break;
-  case PRIM_SYNC_INIT:
-  case PRIM_SYNC_DESTROY:
+  case PRIM_SYNC_DESTROY:      // ChapelBase.chpl ~_syncvar
+  case PRIM_SYNC_INIT:         // ChapelBase.chpl initialize()       
+  case PRIM_SYNC_WAIT_FULL:    // ChapelBase.chpl readFE()
+  case PRIM_SYNC_SIGNAL_EMPTY: // ChapelBase.chpl readFE()
+  case PRIM_SYNC_WAIT_EMPTY:   // ChapelBase.chpl writeEF()    
+  case PRIM_SYNC_SIGNAL_FULL:  // ChapelBase.chpl writeEF()
+    // remove these primitives only if they are used to implement locks
+    call->remove();
+    break;
   case PRIM_SYNC_LOCK:
   case PRIM_SYNC_UNLOCK:
-  case PRIM_SYNC_WAIT_FULL:
-  case PRIM_SYNC_WAIT_EMPTY:
-  case PRIM_SYNC_SIGNAL_FULL:
-  case PRIM_SYNC_SIGNAL_EMPTY:
   case PRIM_SYNC_ISFULL:
     USR_WARN(call, "Ignoring SYNC_* primitivies");
-    //    call->remove();
+    break;
+  case PRIM_SET_SERIAL:        // serial keyword in atomic
     break;
   case PRIM_CHPL_FREE: {
     SymExpr* se = toSymExpr(call->get(1));
     INT_ASSERT(se);
+    USR_WARN(call, "FIXME: PRIM_TX_CHPL_FREE");
     call->replace(new CallExpr(PRIM_TX_CHPL_FREE, tx, se->var));
     break;
   }
@@ -462,9 +474,6 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     break;
   case PRIM_BLOCK_WHILEDO_LOOP:
   case PRIM_BLOCK_FOR_LOOP:
-    break;
-  case PRIM_CHPL_NUMRUNNINGTASKS:
-    USR_WARN(call, "Ignoring CHPL_NUM_RUNNINGTASKS primitive");
     break;
   case PRIM_RT_ERROR:
     call->replace(new CallExpr(PRIM_TX_RT_ERROR));
@@ -511,16 +520,13 @@ insertSTMCalls() {
 	  // since fn doesn't have a clone yet, so create one and cache it. 
 	  // don't insert it into the IR yet. 
 	  // also create a new transaction descriptor for this atomic block  
-	 
-	  if (!strstr(fn->name, "halt")) {
-
-	    //	  FnSymbol* fnTxClone = createTxFnClone(fn);
-	    //	  fnCache.put(fn, fnTxClone); 
-	    tx = newTemp("tx", dtTransaction);
-	    block->insertAtHead(new DefExpr(tx));
-	    env = newTemp("local_env", dtTxEnv);
-	    block->insertAtHead(new DefExpr(env));
-	  } 
+	  USR_WARN(fn, "Adding clone for Type I");
+	  //	  FnSymbol* fnTxClone = createTxFnClone(fn);
+	  //	  fnCache.put(fn, fnTxClone); 
+	  tx = newTemp("tx", dtTransaction);
+	  block->insertAtHead(new DefExpr(tx));
+	  env = newTemp("local_env", dtTxEnv);
+	  block->insertAtHead(new DefExpr(env));
 	}
       } else {
 	USR_FATAL(block, "Cannot deal with indirect or external functions");
@@ -545,10 +551,8 @@ insertSTMCalls() {
 	INT_ASSERT(fn);
 	
 	if (strstr(fn->name, "halt")) break;
-	// if (strstr(fn->name, "readFE"))
-	//   break;
-	// if (strstr(fn->name, "writeEF"))
-	//   break;
+	//	if (strstr(fn->name, "readFE") || strstr(fn->name, "writeEF")) 
+	//	  USR_WARN(call, "trying to clone atomic unsafe function");
 
 	FnSymbol* fnTxClone = fnCache.get(fn);
 	
