@@ -96,7 +96,7 @@ class BaseDom {
       arr._removeArrayBackup();
   }
 
-  def _preserveArrayElement(oldslot, newslot) {
+  def _preserveArrayElements(oldslot, newslot) {
     for arr in _arrs do
       arr._preserveArrayElement(oldslot, newslot);
   }
