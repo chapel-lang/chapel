@@ -1092,26 +1092,23 @@ def =(a: [], b: _tuple) where isEnumArr(a) || isArithmeticArr(a) {
     }
   } else {
     def chpl__tupleInit(j, param rank: int, b: _tuple) {
+      const stride = a.domain.dim(a.rank-rank+1).stride,
+            start = if stride > 0 then a.domain.dim(a.rank-rank+1).low
+                                  else a.domain.dim(a.rank-rank+1).high;
       if rank == 1 {
         for param i in 1..b.size {
-          j(a.rank-rank+1) = a.domain.dim(a.rank-rank+1).low + i - 1;
+          j(a.rank-rank+1) = start + (i-1)*stride;
           a(j) = b(i);
         }
       } else {
         for param i in 1..b.size {
-          j(a.rank-rank+1) = a.domain.dim(a.rank-rank+1).low + i - 1;
+          j(a.rank-rank+1) = start + (i-1)*stride;
           chpl__tupleInit(j, rank-1, b(i));
         }
       }
     }
-
-    if a.rank == 1 {
-      for param i in 1..b.size do
-        a(a.domain.dim(1).low + i - 1) = b(i);
-    } else {
-      var j: a.rank*int;
-      chpl__tupleInit(j, a.rank, b);
-    }
+    var j: a.rank*int;
+    chpl__tupleInit(j, a.rank, b);
   }
   return a;
 }
