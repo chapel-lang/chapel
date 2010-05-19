@@ -1,0 +1,6 @@
+bug: iterator causes unchecked nil dereference
+
+This test is a minimized example of the bug currently (rev 17223) showing up in
+the associative array dsiSorted() iterator. The bug only happens when some
+optimizations are disabled. See the .compopts file for an example of some
+options that exhibit the bug.
