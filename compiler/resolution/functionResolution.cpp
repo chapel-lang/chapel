@@ -2326,7 +2326,7 @@ preFold(Expr* expr) {
                     case 32:  tsize = dtReal[FLOAT_SIZE_32]->symbol;  break;
                     case 64:  tsize = dtReal[FLOAT_SIZE_64]->symbol;  break;
                     default:
-                      USR_FATAL( call, "illegal size %d for imag", size);
+                      USR_FATAL( call, "illegal size %d for real", size);
                     }
                     result = new SymExpr(tsize);
                     call->replace(result);
