@@ -32,15 +32,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   var tableDom = [0..tableSize-1];
   var table: [tableDom] chpl_TableEntry(idxType);
 
-
-  // Temporary arrays for side computations:
-  // TODO: Slosh back and forth between two tables rather than copying back
-  // TODO: This ugly [0..-1] domain appears several times in the code --
+  // TODO: An ugly [0..-1] domain appears several times in the code --
   //       replace with a named constant/param?
-  var tmpDom = [0..-1:chpl_table_index_type];
-  var tmpTable: [tmpDom] chpl_TableEntry(idxType);
-  var tmpDom2 = [0..-1:chpl_table_index_type];
-  var tmpTable2: [tmpDom2] idxType;
   var postponeResize = false;
 
   def linksDistribution() param return false;
@@ -172,39 +165,28 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   def dsiSorted() {
-    _createSortedTmpTable2();
-    for ind in tmpTable2 do
+    var tableCopy: [0..#numEntries] idxType;
+
+    for (tmp, slot) in (tableCopy, _fullSlots()) do
+      tmp = table(slot).idx;
+
+    QuickSort(tableCopy);
+
+    for ind in tableCopy do
       yield ind;
-    _destroySortedTmpTable2();
   }
 
   //
   // Internal interface (private)
   //
-  def _createSortedTmpTable2() {
-    // TODO: should assert that tmpDom2 is non-empty to avoid conflicting
-    // calls? Or not -- to support early exit from iterator?
-    tmpDom2 = [0..numEntries-1];
-    var count: chpl_table_index_type = 0;
-    for slot in _fullSlots() {
-      tmpTable2(count) = table(slot).idx;
-      count += 1;
-    }
-    QuickSort(tmpTable2);
-  }
-
-  def _destroySortedTmpTable2() {
-    tmpDom2 = [0..-1:chpl_table_index_type];
-  }
-
   def _resize(grow:bool) {
     if postponeResize then return;
     // back up the arrays
     _backupArrays();
 
     // copy the table (TODO: could use swap between two versions)
-    tmpDom = tableDom;
-    tmpTable = table;
+    var copyDom = tableDom;
+    var copyTable: [copyDom] chpl_TableEntry(idxType) = table;
 
     // grow original table
     tableDom = [0..-1:chpl_table_index_type]; // non-preserving resize
@@ -214,13 +196,11 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     tableDom = [0..tableSize-1];
 
     // insert old data into newly resized table
-    for slot in _fullSlots(tmpTable) {
-      const newslot = dsiAdd(tmpTable(slot).idx);
-      _preserveArrayElement(oldslot=slot, newslot=newslot);
+    for slot in _fullSlots(copyTable) {
+      const newslot = dsiAdd(copyTable(slot).idx);
+      _preserveArrayElements(oldslot=slot, newslot=newslot);
     }
     
-    // deallocate tmpTable
-    tmpDom = [0..-1:chpl_table_index_type];
     _removeArrayBackups();
   }
 
@@ -332,10 +312,14 @@ class DefaultAssociativeArr: BaseArr {
   //
 
   def dsiSorted() {
-    _createSortedTmpTable();
-    for elem in tmpTable do
+    var tableCopy: [0..dom.dsiNumIndices-1] eltType;
+    for (copy, slot) in (tableCopy, dom._fullSlots()) do
+      copy = data(slot);
+
+    QuickSort(tableCopy);
+
+    for elem in tableCopy do
       yield elem;
-    _destroySortedTmpTable();
   }
 
 
@@ -354,22 +338,6 @@ class DefaultAssociativeArr: BaseArr {
 
   def _preserveArrayElement(oldslot, newslot) {
     data(newslot) = tmpTable(oldslot);
-  }
-
-  // private internal interface
-
-  def _createSortedTmpTable() {
-    tmpDom = [0..dom.dsiNumIndices-1];
-    var count: chpl_table_index_type = 0;
-    for slot in dom._fullSlots() {
-      tmpTable(count) = data(slot);
-      count += 1;
-    }
-    QuickSort(tmpTable);
-  }
-
-  def _destroySortedTmpTable() {
-    tmpDom = [0..-1:chpl_table_index_type];
   }
 }
 

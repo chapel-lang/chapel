@@ -2036,8 +2036,10 @@ resolveCall(CallExpr* call, bool errorCheck) {
       USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
                 toString(rhsType), toString(lhsType));
     if (rhsType != lhsType && isDispatchParent(rhsBaseType, lhsBaseType)) {
-      rhs->remove();
-      call->insertAtTail(new CallExpr(PRIM_CAST, lhsBaseType->symbol, rhs));
+      Symbol* tmp = newTemp(rhsType);
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->remove()));
+      call->insertAtTail(new CallExpr(PRIM_CAST, lhsBaseType->symbol, tmp));
     }
   } else if (call->isPrimitive(PRIM_INIT)) {
     resolveDefaultGenericType(call);
@@ -2324,7 +2326,7 @@ preFold(Expr* expr) {
                     case 32:  tsize = dtReal[FLOAT_SIZE_32]->symbol;  break;
                     case 64:  tsize = dtReal[FLOAT_SIZE_64]->symbol;  break;
                     default:
-                      USR_FATAL( call, "illegal size %d for imag", size);
+                      USR_FATAL( call, "illegal size %d for real", size);
                     }
                     result = new SymExpr(tsize);
                     call->replace(result);

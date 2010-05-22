@@ -1,4 +1,5 @@
 record R {
+  var n: int;
   param a = 1.0;
 }
 

@@ -309,12 +309,18 @@ class DefaultArithmeticArr: BaseArr {
 
   def these() var {
     if rank == 1 {
-      var first = getDataIndex(dom.dsiLow);
-      var second = getDataIndex(dom.dsiLow+dom.ranges(1).stride:idxType);
-      var step = (second-first):chpl__idxTypeToStrType(idxType);
-      var last = first + (dom.dsiNumIndices-1) * step:idxType;
-      for i in first..last by step do
-        yield data(i);
+      const stride = dom.ranges(1).stride: idxType,
+            start  = if stride > 0 then dom.dsiLow else dom.dsiHigh,
+            first  = getDataIndex(start),
+            second = getDataIndex(start + stride),
+            step   = (second-first):chpl__idxTypeToStrType(idxType),
+            last   = first + (dom.dsiNumIndices-1) * step:idxType;
+      if step > 0 then
+        for i in first..last by step do
+          yield data(i);
+      else
+        for i in last..first by step do
+          yield data(i);
     } else {
       for i in dom do
         yield dsiAccess(i);
@@ -415,7 +421,7 @@ class DefaultArithmeticArr: BaseArr {
     var sum = origin;
     if stridable {
       for param i in 1..rank do
-        sum += (ind(i) - off(i)) * blk(i) / str(i):idxType;
+        sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
     } else {
       for param i in 1..rank do
         sum += ind(i) * blk(i);
@@ -530,27 +536,27 @@ def DefaultArithmeticDom.dsiSerialWrite(f: Writer) {
 }
 
 def DefaultArithmeticArr.dsiSerialWrite(f: Writer) {
-  if dom.dsiNumIndices == 0 then return;
-  var i : rank*idxType;
-  for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim)._low;
-  label next while true {
-    f.write(dsiAccess(i));
-    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
-      f.write(" ");
-      i(rank) += dom.dsiDim(rank)._stride:idxType;
-    } else {
-      for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
-          i(dim) += dom.dsiDim(dim)._stride:idxType;
-          for dim2 in dim+1..rank {
-            f.writeln();
-            i(dim2) = dom.dsiDim(dim2)._low;
-          }
-          continue next;
-        }
+  def recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
+    var makeStridePositive = if dom.ranges(dim).stride > 0 then 1 else -1;
+    if dim == rank {
+      var first = true;
+      for j in dom.ranges(dim) by makeStridePositive {
+        if first then first = false; else f.write(" ");
+        idx(dim) = j;
+        f.write(dsiAccess(idx));
       }
-      break;
+    } else {
+      for j in dom.ranges(dim) by makeStridePositive {
+        var lastIdx = if dom.ranges(dim).stride > 0 then dom.ranges(dim).high
+                                                    else dom.ranges(dim).low;
+        idx(dim) = j;
+        recursiveArrayWriter(idx, dim=dim+1,
+                             last=(last || dim == 1) && (j == lastIdx));
+      }
     }
+    if !last && dim != 1 then
+      f.writeln();
   }
+  const zeroTup: rank*idxType;
+  recursiveArrayWriter(zeroTup);
 }

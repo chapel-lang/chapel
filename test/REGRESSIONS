@@ -15,10 +15,6 @@
 general regressions
 ===================
 
-nondet. output mismatch (due to race?)
---------------------------------------
-[Error matching program output for trivial/sungeun/runningTasks2] (05/08/10 xt-pgi, 05/09/10 valgrind, 05/13/10 valgrind)
-
 nondet. compilation timeouts
 ----------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10)
@@ -33,10 +29,11 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 [Error matching program output for studies/hpcc/serial-v0.7/ra] (04/23/10)
 [Error matching program output for studies/hpcc/RA/bradc/ra-bradc-old2] (05/01/10)
 [Error matching program output for trivial/marybeth/select1] (05/12/10)
+[Error matching program output for exercises/histogram2] (05/17/10 -- gasnet)
 
 nondet. runs out of memory due to something other than threads
 --------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10, 04/30/10, 05/01/10, 05/02/10, 05/06/10, 05/07/10, 05/08/10, 05/11/10)
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10, 04/30/10, 05/01/10, 05/02/10, 05/06/10, 05/07/10, 05/08/10, 05/11/10, 05/13/10, 05/16/10)
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -85,6 +82,16 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
+couldn't open default suppressions file (due to OS patch upgrade?) (05/17/10)
+-----------------------------------------------------------------------------
+[Error matching program output for functions/deitz/nested/test_nested_var_iterator]
+
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for trivial/deitz/test_bpop2] (05/15/10)
+[Error: Timed out compilation for types/scalar/bradc/piVals1a] (05/15/10)
+[Error: Timed out compilation for types/seq/deitz/test_seq3] (05/15/10)
+
 invalid write (noticed for the first time 04/27/10)
 ---------------------------------------------------
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-bradc]
@@ -99,7 +106,7 @@ nondet. "vg_alloc_ThreadState: no free slots available" error
 
 spurious execution timeouts
 ---------------------------
-[Error: Timed out executing program users/shetag/fock/fock-1] (04/11/10, 04/12/10, 04/14/10, 04/27/10, 04/29/10)
+[Error: Timed out executing program users/shetag/fock/fock-1] (04/11/10, 04/12/10, 04/14/10, 04/27/10, 04/29/10, 05/14/10)
 [Error: Timed out executing program users/shetag/fock/fock-2] (04/09/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
@@ -189,11 +196,11 @@ gasnet-everything regressions (other than the above)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main   -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast) (2-1)] (05/06/10, 05/07/10, 05/11/10)
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main   -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast) (2-1)] (05/06/10, 05/07/10, 05/11/10, 05/16/10)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10, 05/12/10)
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10, 05/12/10, 05/17/10)
 
 nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 -----------------------------------------------------------------------------
@@ -202,9 +209,9 @@ nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10, 05/11/10, 05/12/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10, 05/11/10, 05/12/10, 05/15/10, 05/17/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10, 05/13/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10, 05/13/10, 05/16/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -317,7 +324,7 @@ nondet. seg fault (when not timing out below)
 
 nondet. out-of-memory error
 ---------------------------
-[Error matching program output for parallel/begin/dinan/mvm_coforall] (05/06/10)
+[Error matching program output for parallel/begin/dinan/mvm_coforall] (05/06/10, 05/13/10)
 
 execution timeouts for new tests (04/20/10)
 -------------------------------------------
@@ -339,7 +346,7 @@ seg fault (when not timing out in execution)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/shetag/fock/fock-stc-1] (05/09/10)
+[Error: Timed out executing program users/shetag/fock/fock-stc-1] (05/09/10, 05/14/10)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (04/14/10)
 [Error: Timed out executing program users/agnieszka/multiArrayI10] (04/14/10, 04/23/10, 04/30/10, 05/09/10)
 [Error: Timed out executing program users/agnieszka/test2] (04/14/10, 04/30/10, 05/09/10)
@@ -724,17 +731,25 @@ exp2 not supported:
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
-compilation timeouts (05/09/10)
+nondet. compilation timeouts
 -------------------------------
-[Error: Timed out compilation for classes/deitz/test_method2]
-[Error: Timed out compilation for classes/deitz/test_method_call1]
-[Error: Timed out compilation for classes/deitz/test_mf_record]
-[Error: Timed out compilation for classes/deitz/test_nested_record2]
-[Error: Timed out compilation for classes/diten/returnMultipleTypes]
-[Error: Timed out compilation for classes/diten/test_nested_method]
-[Error: Timed out compilation for classes/diten/test_shadowing]
-[Error: Timed out compilation for studies/lu/marybeth/lu1]
-[Error: Timed out compilation for studies/madness/aniruddha/madchap/test_showboxes]
+[Error: Timed out compilation for classes/deitz/suite1/test2] (05/16/10)
+[Error: Timed out compilation for classes/deitz/suite1/test3] (05/16/10)
+[Error: Timed out compilation for classes/deitz/suite1/test4] (05/16/10)
+[Error: Timed out compilation for classes/deitz/test_record3] (05/16/10)
+[Error: Timed out compilation for classes/deitz/test_record_field1] (05/16/10)
+[Error: Timed out compilation for classes/deitz/test_type_in_class2] (05/16/10)
+[Error: Timed out compilation for parallel/single/waynew/simple0] (05/16/10)
+[Error: Timed out compilation for parallel/sync/bradc/simplereadSync] (05/16/10)
+[Error: Timed out compilation for classes/deitz/test_method2] (05/09/10)
+[Error: Timed out compilation for classes/deitz/test_method_call1] (05/09/10)
+[Error: Timed out compilation for classes/deitz/test_mf_record] (05/09/10)
+[Error: Timed out compilation for classes/deitz/test_nested_record2] (05/09/10)
+[Error: Timed out compilation for classes/diten/returnMultipleTypes] (05/09/10)
+[Error: Timed out compilation for classes/diten/test_nested_method] (05/09/10)
+[Error: Timed out compilation for classes/diten/test_shadowing] (05/09/10)
+[Error: Timed out compilation for studies/lu/marybeth/lu1] (05/09/10)
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/test_showboxes] (05/09/10)
 
 Duplicate symbol declaration (02/13/10)
 ---------------------------------------
