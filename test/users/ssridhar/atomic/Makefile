@@ -16,6 +16,7 @@ TARGETS = \
 	test_array_local_uint64 \
 	test_associative_domain \
 	test_atomic_expr_in_return_stmt \
+	test_atomic_multiloc_simple \
 	test_atomic_stmt_in_local_block \
 	test_atomic_stmt_in_on_stmt \
 	test_atomic_on_clause \
@@ -25,11 +26,15 @@ TARGETS = \
 	test_fn_arg_global_var \
 	test_fn_arg_inout_intent \
 	test_fn_arg_inout_intent_recursive \
+	recursiveFns \
+	serializeWholeArrayAssignment \
 	test_fn_return_value \
 	test_fn_with_multiple_atomic \
 	test_prim_get_member \
 	test_prim_get_member_value \
+	test_serial_stmt_in_atomic \
 	test_stmt_return_in_atomic \
+	test_sync_lock_in_atomic \
 	test_var_global_uint64 \
 	test_var_local_bool8 \
 	test_var_local_int32 \

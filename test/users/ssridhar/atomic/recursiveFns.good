@@ -1,0 +1,3 @@
+In main before foo x = 0
+In main after foo x = 5
+

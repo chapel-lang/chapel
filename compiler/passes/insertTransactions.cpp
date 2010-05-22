@@ -119,9 +119,6 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  INT_ASSERT(valueType == lhs->typeInfo());
 	  if (valueType == dtString)
 	    USR_WARN(call, "FIXME: string type (FLAG_WIDE GET_REF)");
-	  else if ()
-	    call->replace(new CallExpr(PRIM_TX_GET_REF, 
-				       tx, lhs->var, se->var));
 	  else
 	    call->replace(new CallExpr(PRIM_TX_GET_REF, 
 				       tx, lhs->var, se->var));
@@ -583,9 +580,9 @@ insertSTMCalls() {
       } else if (FnSymbol* fn = call->isResolved()) {
 	INT_ASSERT(fn);
 	
-	if (strstr(fn->name, "halt") || 
-	    strstr(fn->name, "wrapon_fn") ||
-	    strstr(fn->name, "wrapcoforall_fn")) {
+	if (strstr(fn->name, "halt")) {// || 
+	    //	    strstr(fn->name, "wrapon_fn") ||
+	    //	    strstr(fn->name, "wrapcoforall_fn")) {
 	  USR_WARN(call, "No transactional clone generated for %s", fn->name);
 	  continue;
 	}
