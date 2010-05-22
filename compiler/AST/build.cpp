@@ -9,8 +9,6 @@
 #include "type.h"
 #include "misc.h" // FIXME: should we just include driver.h instead ?? 
 
-bool fAtomicOnClause = false; // Drops on clause if set to false
-
 static void
 checkControlFlow(Expr* expr, const char* context) {
   Vec<const char*> labelSet; // all labels in expr argument
@@ -1574,7 +1572,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
       tmp = NULL;
   }
 
-  if (fLocal || !fAtomicOnClause) {
+  if (fLocal) {
     BlockStmt* block = new BlockStmt(stmt);
     block->insertAtHead(onExpr); // evaluate the expression for side effects
     return buildChapelStmt(block);

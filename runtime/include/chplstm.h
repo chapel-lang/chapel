@@ -12,8 +12,8 @@
 typedef chpl_stm_tx_t* chpl_stm_tx_p;
 typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;
 
-#define CHPL_STM_ALLOC_PERMIT_ZERO(tx, size , description, ln, fn)	\
-  ((s == 0) ? NULL : chpl_stm_tx_alloc(tx, size, description, ln, fn))
+#define CHPL_STM_TX_ALLOC_PERMIT_ZERO(tx, size , description, ln, fn)	\
+  ((size == 0) ? NULL : chpl_stm_tx_alloc(tx, size, description, ln, fn))
 
 #define chpl_stm_tx_alloc(tx, size, description, ln, fn)	\
   chpl_stm_tx_malloc(tx, 1, size, description, ln, fn)
@@ -64,18 +64,18 @@ typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;
 #define CHPL_STM_LOAD(tx, dst, src, type, ln, fn)		\
   chpl_stm_tx_load(tx, &dst, &src, SPECIFY_SIZE(type), ln, fn)
 
-#define CHPL_STM_COMM_WIDE_GET_LOCALE(tx, ldst, rwide, ln, fn)		\
+#define CHPL_STM_COMM_WIDE_GET_LOCALEID(tx, ldst, rwide, ln, fn)	\
   do {                                                                  \
     if (chpl_localeID == (rwide).locale)				\
-      chpl_stm_tx_load(tx, &ldst, &(rwide).addr->locale,		\
+      chpl_stm_tx_load(tx, &ldst, &((rwide).addr->locale),		\
 		       SPECIFY_SIZE(int32_t), ln, fn);			\
     else                                                                \
-      chpl_stm_tx_get(tx, &(ldst), &(rwide).locale, (rwide).addr,	\
+      chpl_stm_tx_get(tx, &(ldst), (rwide).locale, (rwide).addr,	\
 		      SPECIFY_SIZE(int32_t), ln, fn);			\
   } while (0)
 
 #define CHPL_STM_LOAD_LOCALEID(tx, ldst, lwide, ln, fn)			\
-  chpl_stm_tx_load(tx, &ldst, &(lwide).addr->locale, SPECIFY_SIZE(int32_t), ln, fn);
+  chpl_stm_tx_load(tx, &ldst, &(lwide).locale, SPECIFY_SIZE(int32_t), ln, fn);
 
 #define CHPL_STM_COMM_WIDE_GET_FIELD_VALUE(tx, ldst, rwide, stype, sfield, type, ln, fn) \
   do {                                                                  \

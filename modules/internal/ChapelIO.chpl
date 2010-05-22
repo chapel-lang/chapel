@@ -74,13 +74,9 @@ class file: Writer {
 
   def isOpen: bool {
     var openStatus: bool = false;
-    //    if atomicSupport {
-      if (_fp != __primitive("get_nullfile")) {
-	openStatus = true;
-      }
-      //    } else {
-      //      openStatus = true;
-      //    }
+    if (_fp != __primitive("get_nullfile")) {
+      openStatus = true;
+    }
     return openStatus;
   }
   
@@ -274,17 +270,15 @@ def chpl_taskID_t.writeThis(f: Writer) {
 }
 
 def file.writeIt(s: string) {
-  //  if atomicSupport {
-    if !isOpen then
-      _checkOpen(this, isRead = false);
-    if mode != FileAccessMode.write then
-      halt("***Error: ", path, "/", filename, " not open for writing***");
-    var status = __primitive("fprintf", _fp, "%s", s);
-    if status < 0 {
-      const err = __primitive("get_errno");
-      halt("***Error: Write failed: ", err, "***");
-    }
-    //  }
+  if !isOpen then
+    _checkOpen(this, isRead = false);
+  if mode != FileAccessMode.write then
+    halt("***Error: ", path, "/", filename, " not open for writing***");
+  var status = __primitive("fprintf", _fp, "%s", s);
+  if status < 0 {
+    const err = __primitive("get_errno");
+    halt("***Error: Write failed: ", err, "***");
+  }
 }
 
 class StringClass: Writer {

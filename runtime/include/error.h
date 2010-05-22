@@ -7,7 +7,6 @@
 extern int verbosity;
 
 void chpl_warning(const char* message, int32_t lineno, chpl_string filename);
-void chpl_stm_error(int32_t lineno, chpl_string filename);
 void chpl_error(const char* message, int32_t lineno, chpl_string filename);
 void chpl_internal_error(const char* message);
 #undef printf

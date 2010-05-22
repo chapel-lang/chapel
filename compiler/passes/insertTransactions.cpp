@@ -20,9 +20,14 @@ static
 bool isOnStack(SymExpr* se) {
   if(se->var->defPoint->parentSymbol == se->parentSymbol)
     return 1;
-    // &&  !se->var->hasFlag(FLAG_CONST)) 
   return 0;
 }
+
+// static
+// bool isConst(SymExpr* se) {
+//   if (se->var->hasFlag(FLAG_CONST)) return 1;
+//   return 0;
+// }
 
 void txUnknownPrimitive(CallExpr *call) { /* gdb use only */ }
 
@@ -51,16 +56,18 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     break;
   }
   case PRIM_ARRAY_ALLOC: {
-    SymExpr *se1 = toSymExpr(call->get(1));
-    SymExpr *se2 = toSymExpr(call->get(2));
-    SymExpr *se3 = toSymExpr(call->get(3));
-    call->replace(new CallExpr(PRIM_TX_ARRAY_ALLOC,
-			       tx, se1->var, se2->var, se3->var));
+    // SymExpr *se1 = toSymExpr(call->get(1));
+    // SymExpr *se2 = toSymExpr(call->get(2));
+    // SymExpr *se3 = toSymExpr(call->get(3));
+    // call->replace(new CallExpr(PRIM_TX_ARRAY_ALLOC,
+    // 			       tx, se1->var, se2->var, se3->var));
+    USR_WARN(call, "Ignoring ARRAY_ALLOC primitive");
     break;
   }
   case PRIM_ARRAY_FREE: {
-    SymExpr *se = toSymExpr(call->get(1));
-    call->replace(new CallExpr(PRIM_TX_ARRAY_FREE, tx, se->var));
+    // SymExpr *se = toSymExpr(call->get(1));
+    // call->replace(new CallExpr(PRIM_TX_ARRAY_FREE, tx, se->var));
+    USR_WARN(call, "Ignoring ARRAY_FREE primitive");
     break;
   }
   case PRIM_MOVE: {
@@ -69,13 +76,14 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     if (CallExpr* rhs = toCallExpr(call->get(2))) { 
       if (rhs->isPrimitive(PRIM_UNKNOWN)) {
 	if (rhs->primitive->isAtomicSafe) {
-	  if (strstr(rhs->primitive->name, "string_concat")) 
+	  if (strstr(rhs->primitive->name, "string_concat")) {
+	    USR_WARN("Ignoring string_concat primitive, leaks memory");
 	    break;
+	  }
 	}
 	if (!rhs->primitive->isAtomicSafe) {
 	  if (strstr(rhs->primitive->name, "fprintf")) {
-	    if (strstr(rhs->getFunction()->name, "tx_clone_halt"))
-	      break;
+	    USR_FATAL("I/O operations are not permitted in atomic blocks.");
 	  }
 	}
       } 
@@ -86,12 +94,15 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  if (se->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) 
 	    call->replace(new CallExpr(PRIM_TX_GET_LOCALEID, 
 				       tx, lhs->var, se->var));
-	  else
+	  else {
+	    if (!isOnStack(se))
+	      call->replace(new CallExpr(PRIM_TX_LOAD_LOCALEID, 
+					 tx, lhs->var, se->var));
+	  }
+	} else if (se->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) { 
+	  if (!isOnStack(se))
 	    call->replace(new CallExpr(PRIM_TX_LOAD_LOCALEID, 
 				       tx, lhs->var, se->var));
-	} else if (se->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) { 
-	  call->replace(new CallExpr(PRIM_TX_GET_LOCALEID, 
-				     tx, lhs->var, se->var));
 	} 	
 	break;
       }
@@ -106,12 +117,14 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  else
 	    valueType = se->typeInfo()->getField("addr")->type;
 	  INT_ASSERT(valueType == lhs->typeInfo());
-	  if (valueType == dtString) {
+	  if (valueType == dtString)
 	    USR_WARN(call, "FIXME: string type (FLAG_WIDE GET_REF)");
-	  } else {
+	  else if ()
 	    call->replace(new CallExpr(PRIM_TX_GET_REF, 
 				       tx, lhs->var, se->var));
-	  }
+	  else
+	    call->replace(new CallExpr(PRIM_TX_GET_REF, 
+				       tx, lhs->var, se->var));
 	} else if (se->typeInfo() == dtString) {
 	  USR_WARN(call, "FIXME: string type (GET_REF)");
 	} else {
@@ -259,18 +272,21 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         // in CHPL_STM_WIDE_GET_FIELD
         break;
       }
-      if (rhs->isPrimitive(PRIM_GET_SERIAL))  // serial clause in atomic
+      if (rhs->isPrimitive(PRIM_GET_SERIAL)) { 
+	// indicates the use of serial clause in atomic
+	// thread-local storage so no STM instrumentation required
 	break;
+      }
       if (rhs->isPrimitive(PRIM_CHPL_ALLOC)) {
         SymExpr* se1 = toSymExpr(rhs->get(1));
 	SymExpr* se2 = toSymExpr(rhs->get(2));
 	INT_ASSERT(se1);
 	INT_ASSERT(se2);
 	INT_ASSERT(toVarSymbol(se2->var));
-	const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
-	USR_WARN(call, "FIXME: PRIM_TX_CHPL_ALLOC");
-	rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC, se1->var, tx, 
-				  newMemDesc(astr("stm ", memDescStr))));
+	// const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
+	// rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC, se1->var, tx, 
+	// 			  newMemDesc(astr("stm ", memDescStr))));
+	USR_WARN(call, "Ignoring CHPL_ALLOC primitive");
       	break;
       }
       if (rhs->isPrimitive(PRIM_CHPL_ALLOC_PERMIT_ZERO)) {
@@ -279,10 +295,10 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se1);
 	INT_ASSERT(se2);
 	INT_ASSERT(toVarSymbol(se2->var));
-	const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
-	rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO, 
-				  se1->var, tx,
-				  newMemDesc(astr("stm ", memDescStr))));
+	// const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
+	// rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO, se1->var, 
+	// 			  tx, newMemDesc(astr("stm ", memDescStr))));
+	USR_WARN(call, "Ignoring CHPL_ALLOC_PERMIT_ZERO primitive");
       	break;
       }
       if (rhs->isPrimitive(PRIM_UNARY_MINUS)    ||
@@ -310,11 +326,19 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
           rhs->isPrimitive(PRIM_POW)            ||
 	  rhs->isPrimitive(PRIM_MIN)            ||
 	  rhs->isPrimitive(PRIM_MAX)            ||
-	  rhs->isPrimitive(PRIM_TASK_ID)        ||
-	  rhs->isPrimitive(PRIM_STRING_COPY)    ||
 	  rhs->primitive == NULL) {
+	// Operates on stack variables, no STM instrumentation required
         break;
       } 
+      if (rhs->isPrimitive(PRIM_TASK_ID)        ||
+	  rhs->isPrimitive(PRIM_GET_SERIAL)) {
+	// Reads thread-local storage, no STM instrumentation required
+	break;
+      }
+      if (rhs->isPrimitive(PRIM_STRING_COPY)) {
+	USR_WARN(call, "Ignoring STRING_COPY primitive");
+	break;
+      }
       if (rhs->isPrimitive(PRIM_CHPL_NUMRUNNINGTASKS)) {
 	USR_WARN(call, "Ignoring CHPL_NUM_RUNNINGTASKS primitive");
 	break;
@@ -376,6 +400,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	if (isOnStack(rhs) && !isOnStack(lhs)) {
 	  call->replace(new CallExpr(PRIM_TX_STORE, tx, lhs->var, rhs->var));
 	}
+	break;
       }
     } 
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_REF) && 
@@ -390,8 +415,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       INT_ASSERT(rhs);
       if (isOnStack(rhs) && !isOnStack(lhs)) 
 	call->replace(new CallExpr(PRIM_TX_STORE, tx, lhs->var, rhs->var));
+          break;
     }
-    break;
+    txUnknownPrimitive(call);    
   }
   case PRIM_ARRAY_GET:
     // access to 1D arrays without the enclosing PRIM_MOVE can be
@@ -406,8 +432,10 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     SymExpr* se = toSymExpr(call->get(1));
     if (se->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) 
       call->replace(new CallExpr(PRIM_TX_SET_CID, tx, se->var));
-    else 
-      call->replace(new CallExpr(PRIM_TX_STORE_CID, tx, se->var));
+    else {
+      if (!isOnStack(se)) 
+	call->replace(new CallExpr(PRIM_TX_STORE_CID, tx, se->var));
+    }
     break;
   }
   case PRIM_SET_SVEC_MEMBER: {
@@ -417,9 +445,11 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE))
       call->replace(new CallExpr(PRIM_TX_SET_SVEC_MEMBER,
 				 tx, se1->var, se2->var, se3->var));
-    else 
-      call->replace(new CallExpr(PRIM_TX_STORE_SVEC_MEMBER,
-				 tx, se1->var, se2->var, se3->var));
+    else {
+      if (!isOnStack(se1)) 
+	call->replace(new CallExpr(PRIM_TX_STORE_SVEC_MEMBER,
+				   tx, se1->var, se2->var, se3->var));
+    }
     break;
   }
   case PRIM_GET_MEMBER:
@@ -437,48 +467,51 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       call->replace(new CallExpr(PRIM_TX_SET_MEMBER,
 				 tx, se1->var, se2->var, se3->var));      
     } else {
-      call->replace(new CallExpr(PRIM_TX_STORE_MEMBER,
-				 tx, se1->var, se2->var, se3->var));
+      if (!isOnStack(se1)) 
+	call->replace(new CallExpr(PRIM_TX_STORE_MEMBER,
+				   tx, se1->var, se2->var, se3->var));
     }
     break;
   }
   case PRIM_CHECK_NIL:
   case PRIM_LOCAL_CHECK:
     break;
-  case PRIM_SYNC_DESTROY:      // ChapelBase.chpl ~_syncvar
-  case PRIM_SYNC_INIT:         // ChapelBase.chpl initialize()       
-  case PRIM_SYNC_WAIT_FULL:    // ChapelBase.chpl readFE()
-  case PRIM_SYNC_SIGNAL_EMPTY: // ChapelBase.chpl readFE()
-  case PRIM_SYNC_WAIT_EMPTY:   // ChapelBase.chpl writeEF()    
-  case PRIM_SYNC_SIGNAL_FULL:  // ChapelBase.chpl writeEF()
-    // remove these primitives only if they are used to implement locks
-    call->remove();
-    break;
+  case PRIM_SYNC_DESTROY:
+  case PRIM_SYNC_INIT:
+  case PRIM_SYNC_WAIT_FULL:
+  case PRIM_SYNC_SIGNAL_EMPTY:
+  case PRIM_SYNC_WAIT_EMPTY:
+  case PRIM_SYNC_SIGNAL_FULL:
   case PRIM_SYNC_LOCK:
   case PRIM_SYNC_UNLOCK:
   case PRIM_SYNC_ISFULL:
-    USR_WARN(call, "Ignoring SYNC_* primitivies");
+    USR_FATAL(call, "Sync operations are not permitted in atomic blocks.");
     break;
-  case PRIM_SET_SERIAL:        // serial keyword in atomic
+  case PRIM_PROCESS_TASK_LIST:
+    USR_WARN("Ignoring PROCESS_TASK_LIST primitive");
+    break;
+  case PRIM_EXECUTE_TASKS_IN_LIST:
+    USR_WARN("Ignoring EXECUTE_TASKS_IN_LIST primitive");
+    break;
+  case PRIM_FREE_TASK_LIST:
+    USR_WARN("Ignoring FREE_TASK_LIST primitive");
+    break;
+  case PRIM_SET_SERIAL:
+    // Writes thread-local storage, no STM instrumentation required
     break;
   case PRIM_CHPL_FREE: {
     SymExpr* se = toSymExpr(call->get(1));
     INT_ASSERT(se);
-    USR_WARN(call, "FIXME: PRIM_TX_CHPL_FREE");
-    call->replace(new CallExpr(PRIM_TX_CHPL_FREE, tx, se->var));
+    //    call->replace(new CallExpr(PRIM_TX_CHPL_FREE, tx, se->var));
+    USR_WARN(call, "Ignoring CHPL_FREE primitive");
     break;
   }
   case PRIM_CAST:
   case PRIM_BLOCK_LOCAL:
   case PRIM_BLOCK_ATOMIC:
-    break;
   case PRIM_BLOCK_WHILEDO_LOOP:
   case PRIM_BLOCK_FOR_LOOP:
-    break;
   case PRIM_RT_ERROR:
-    call->replace(new CallExpr(PRIM_TX_RT_ERROR));
-    break;
-  case PRIM_TX_RT_ERROR:
     break;
   default:
     txUnknownPrimitive(call);
@@ -550,14 +583,16 @@ insertSTMCalls() {
       } else if (FnSymbol* fn = call->isResolved()) {
 	INT_ASSERT(fn);
 	
-	if (strstr(fn->name, "halt")) break;
-	//	if (strstr(fn->name, "readFE") || strstr(fn->name, "writeEF")) 
-	//	  USR_WARN(call, "trying to clone atomic unsafe function");
+	if (strstr(fn->name, "halt") || 
+	    strstr(fn->name, "wrapon_fn") ||
+	    strstr(fn->name, "wrapcoforall_fn")) {
+	  USR_WARN(call, "No transactional clone generated for %s", fn->name);
+	  continue;
+	}
 
 	FnSymbol* fnTxClone = fnCache.get(fn);
 	
-	if (!fnTxClone) {
-	  // create clone only if fn is already not a clone 
+	if (!fnTxClone) {  // create clone if doesn't already exist
 	  INT_ASSERT(!strstr(fn->name, "__tx_clone_"));
 	  fnTxClone = createTxFnClone(fn);
 	  fnCache.put(fn, fnTxClone);
@@ -573,22 +608,13 @@ insertSTMCalls() {
 	// ALL Type I functions as Type III functions. So we don't want to 
 	// inspect some of those functions that are truly Type I. 
 	if (!queue.in(fnTxClone->body)) {
-	    //   strstr(fnTxClone->name, "tx_clone_readFE") ||
-	    //   strstr(fnTxClone->name, "_syncvar") ||
-	    //   strstr(fnTxClone->name, "tx_clone_writeEF") ||
-	    //   strstr(fnTxClone->name, "tx_clone_initialize") ||
-	    //   strstr(fnTxClone->name, "tx_clone_isFull") ||
-	    //   strstr(fnTxClone->name, "tx_clone_readXX") ||
-	    //   strstr(fnTxClone->name, "tx_clone_halt") ||
-	    //   strstr(fnTxClone->name, "tx_clone_writeIt"))) {
 	  queue.add(fnTxClone->body);
 	  // insert fnTxClone's function definition
 	  fn->defPoint->insertBefore(new DefExpr(fnTxClone));
 	}
-	
 	// replace the function call at the callsite 
-	call->baseExpr->replace(new SymExpr(fnTxClone));
 	// insert 'tx' into actual argument list
+	call->baseExpr->replace(new SymExpr(fnTxClone));
 	call->insertAtHead(tx);
       } else
 	USR_FATAL(call, "Not a primitve, not a function");

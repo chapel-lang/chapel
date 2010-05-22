@@ -186,7 +186,6 @@ enum PrimitiveTag {
   PRIM_TX_CHPL_ALLOC,
   PRIM_TX_CHPL_ALLOC_PERMIT_ZERO,
   PRIM_TX_CHPL_FREE,
-  PRIM_TX_RT_ERROR,
   PRIM_BLOCK_ATOMIC_IGNORE,   // Atomic block when --ignore-atomic is set
 
   PRIM_TO_LEADER,

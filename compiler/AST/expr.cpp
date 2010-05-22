@@ -2209,7 +2209,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_TX_STORE: {
       Type *type = get(3)->typeInfo();
       registerTypeToStructurallyCodegen(type->symbol);
-      if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) 
+      if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) 
 	gen(outfile, "CHPL_STM_STORE_SVEC"); 
       else 
 	gen(outfile, "CHPL_STM_STORE");
@@ -2247,9 +2247,12 @@ void CallExpr::codegen(FILE* outfile) {
       Type *type = get(4)->typeInfo();
       registerTypeToStructurallyCodegen(type->symbol);
       gen(outfile, "/* store svec member */\n");
-      gen(outfile, "CHPL_STM_STORE(%A, ", get(1));
-      codegenTupleMember(outfile, get(2), get(3));
-      gen(outfile, ", %A, %A, %A, %A)", get(4), type, get(5), get(6));
+      if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) 
+	gen(outfile, "CHPL_STM_STORE_SVEC(%A, ", get(1));
+      else 
+	gen(outfile, "CHPL_STM_STORE(%A, ", get(1));
+      gen(outfile, "(%A, %A, %A, %A, %A, %A)",
+	  get(1), get(2), get(3), type, get(4), get(5));
       break;
     }
     case PRIM_TX_SET_MEMBER: {
@@ -2275,7 +2278,7 @@ void CallExpr::codegen(FILE* outfile) {
       Type *type = get(4)->typeInfo();
       registerTypeToStructurallyCodegen(type->symbol);
       gen(outfile, "/* store member */\n");
-      if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+      if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
 	gen(outfile, "CHPL_STM_STORE_SVEC(%A, ", get(1));
       } else {
 	gen(outfile, "CHPL_STM_STORE(%A, ", get(1));
@@ -2340,9 +2343,6 @@ void CallExpr::codegen(FILE* outfile) {
       gen(outfile, ", %A, %A)", get(3), get(4));
       break;
     }
-    case PRIM_TX_RT_ERROR:
-      codegenBasicPrimitive(outfile, this);
-      break;
     case PRIM_COUNT_NUM_REALMS:
       INT_FATAL(this, "count num realms primitive should no longer be in AST");
       break;

@@ -518,8 +518,6 @@ initPrimitive() {
 	   returnInfoChplAlloc, true, true, true);
   prim_def(PRIM_TX_CHPL_FREE, "chpl_stm_tx_free", returnInfoVoid, 
 	   true, true, true);
-  prim_def(PRIM_TX_RT_ERROR, "chpl_stm_error", returnInfoVoid, 
-	   true, true, true);
   prim_def(PRIM_BLOCK_ATOMIC_IGNORE, "atomic block ignore", returnInfoVoid);
  
   prim_def(PRIM_TO_LEADER, "to leader", returnInfoVoid);

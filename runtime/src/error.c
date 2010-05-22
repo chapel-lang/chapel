@@ -22,11 +22,6 @@ void chpl_warning(const char* message, int32_t lineno, chpl_string filename) {
     fprintf(stderr, "warning: %s\n", message);
 }
 
-void chpl_stm_error(int32_t lineno, chpl_string filename) {
-  fflush(stdout);
-  chpl_exit_any(1);
-}
-
 void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
   fflush(stdout);
   if (lineno > 0)

@@ -247,9 +247,15 @@ int gtm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size) {
   }
 
   if (size > 0) {
-    chpl_error("STM Error: write overflow error", 0, 0);
+    wrapper_t sval, mask;
+    sval.w = mask.w = 0;   
+    for (align = 0; size > 0; align++, size--) {
+      sval.b[align] = *(uint32_t*) saddr;
+      mask.b[align] = 0xFF;
+    }
+    if (gtm_tx_store_word(tx, &sval.w, daddr, mask.w) == TX_FAIL) 
+      return TX_FAIL;
   }
-
   return TX_OK;
 }
 
