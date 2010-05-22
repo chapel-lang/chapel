@@ -13,18 +13,21 @@ if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 //
 pragma "base dist"
 class BaseDist {
-  var _distCnt$: sync int = 0; // distribution reference count and lock
+  var _distCnt: int = 0; // distribution reference count
   var _doms: list(BaseDom);    // arrays declared over this domain
 
   pragma "dont disable remote value forwarding"
   def destroyDist(dom: BaseDom = nil) {
-    var cnt = _distCnt$ - 1;
-    if cnt < 0 then
-      halt("distribution reference count is negative!");
-    if dom then
-      on dom do
-        _doms.remove(dom);
-    _distCnt$ = cnt;
+    var cnt: int;
+    atomic {
+      cnt = _distCnt - 1;
+      if cnt < 0 then
+	halt("distribution reference count is negative!");
+      if dom then
+	on dom do
+	  _doms.remove(dom);
+      _distCnt = cnt;
+    }
     return cnt;
   }
 
@@ -58,7 +61,7 @@ class BaseDist {
 // Abstract domain classes
 //
 class BaseDom {
-  var _domCnt$: sync int = 0; // domain reference count and lock
+  var _domCnt: int = 0; // domain reference count
   var _arrs: list(BaseArr);   // arrays declared over this domain
 
   def getBaseDist(): BaseDist {
@@ -67,13 +70,16 @@ class BaseDom {
 
   pragma "dont disable remote value forwarding"
   def destroyDom(arr: BaseArr = nil) {
-    var cnt = _domCnt$ - 1;
-    if cnt < 0 then
-      halt("domain reference count is negative!");
-    if arr then
-      on arr do
-        _arrs.remove(arr);
-    _domCnt$ = cnt;
+    var cnt: int;
+    atomic {
+      cnt = _domCnt - 1;
+      if cnt < 0 then
+	halt("domain reference count is negative!");
+      if arr then
+	on arr do
+	  _arrs.remove(arr);
+      _domCnt = cnt;
+    }
     if cnt == 0 {
       var dist = getBaseDist();
       if dist then on dist {
@@ -159,7 +165,7 @@ class BaseOpaqueDom : BaseDom {
 //
 pragma "base array"
 class BaseArr {
-  var _arrCnt$: sync int = 0; // array reference count (and eventually lock)
+  var _arrCnt: int = 0; // array reference count
   var _arrAlias: BaseArr;     // reference to base array if an alias
 
   def dsiStaticFastFollowCheck(type leadType) param return false;
@@ -173,10 +179,13 @@ class BaseArr {
 
   pragma "dont disable remote value forwarding"
   def destroyArr(): int {
-    var cnt = _arrCnt$ - 1;
-    if cnt < 0 then
-      halt("array reference count is negative!");
-    _arrCnt$ = cnt;
+    var cnt: int;
+    atomic {
+      cnt = _arrCnt - 1;
+      if cnt < 0 then
+	halt("array reference count is negative!");
+      _arrCnt = cnt;
+    }
     if cnt == 0 {
       if _arrAlias {
         on _arrAlias {

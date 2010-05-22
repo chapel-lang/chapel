@@ -179,7 +179,7 @@ def chpl__getDomainFromArrayType(type arrayType) {
   pragma "no copy" var D = A.domain;
   pragma "dont disable remote value forwarding"
   def help() {
-    D._value._domCnt$ += 1;
+    atomic D._value._domCnt += 1;
   }
   help();
   return D;
@@ -378,9 +378,11 @@ record _distribution {
   def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     var x = _value.dsiNewArithmeticDom(rank, idxType, stridable);
     if x.linksDistribution() {
-      var cnt = _value._distCnt$;
-      _value._doms.append(x);
-      _value._distCnt$ = cnt + 1;
+      atomic {
+	var cnt = _value._distCnt;
+	_value._doms.append(x);
+	_value._distCnt = cnt + 1;
+      }
     }
     return x;
   }
@@ -388,9 +390,11 @@ record _distribution {
   def newAssociativeDom(type idxType) {
     var x = _value.dsiNewAssociativeDom(idxType);
     if x.linksDistribution() {
-      var cnt = _value._distCnt$;
-      _value._doms.append(x);
-      _value._distCnt$ = cnt + 1;
+      atomic {
+	var cnt = _value._distCnt;
+	_value._doms.append(x);
+	_value._distCnt = cnt + 1;
+      }
     }
     return x;
   }
@@ -398,9 +402,11 @@ record _distribution {
   def newAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
     var x = _value.dsiNewAssociativeDom(idxType);
     if x.linksDistribution() {
-      var cnt = _value._distCnt$;
-      _value._doms.append(x);
-      _value._distCnt$ = cnt + 1;
+      atomic {
+	var cnt = _value._distCnt;
+	_value._doms.append(x);
+	_value._distCnt = cnt + 1;
+      }
     }
     const enumTuple = _enum_enumerate(idxType);
     for param i in 1..enumTuple.size do
@@ -411,9 +417,11 @@ record _distribution {
   def newOpaqueDom(type idxType) {
     var x = _value.dsiNewOpaqueDom(idxType);
     if x.linksDistribution() {
-      var cnt = _value._distCnt$;
-      _value._doms.append(x);
-      _value._distCnt$ = cnt + 1;
+      atomic {
+	var cnt = _value._distCnt;
+	_value._doms.append(x);
+	_value._distCnt = cnt + 1;
+      }
     }
     return x;
   }
@@ -421,9 +429,11 @@ record _distribution {
   def newSparseDom(param rank: int, type idxType, dom: domain) {
     var x = _value.dsiNewSparseDom(rank, idxType, dom);
     if x.linksDistribution() {
-      var cnt = _value._distCnt$;
-      _value._doms.append(x);
-      _value._distCnt$ = cnt + 1;
+      atomic {
+	var cnt = _value._distCnt;
+	_value._doms.append(x);
+	_value._distCnt = cnt + 1;
+      }
     }
     return x;
   }
@@ -495,7 +505,7 @@ record _domain {
     }
     var d = _value.dsiBuildArithmeticDom(rank, _value.idxType, stridable, r);
     if d.linksDistribution() then
-      d.dist._distCnt$ += 1;
+      atomic d.dist._distCnt += 1;
     return _newDomain(d);
   }
 
@@ -541,9 +551,11 @@ record _domain {
     var x = _value.dsiBuildArray(eltType);
     pragma "dont disable remote value forwarding"
     def help() {
-      var cnt = _value._domCnt$; // lock
-      _value._arrs.append(x);
-      _value._domCnt$ = cnt + 1; // unlock
+      atomic {
+	var cnt = _value._domCnt;
+	_value._arrs.append(x);
+	_value._domCnt = cnt + 1;
+      }
     }
     help();
     return _newArray(x);
@@ -602,7 +614,7 @@ record _domain {
     var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
                                          _value.stridable, ranges);
     if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+      atomic d.dist._distCnt += 1;
     return _newDomain(d);
   }
   def expand(off: _value.idxType) where rank > 1 {
@@ -612,7 +624,7 @@ record _domain {
     var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
                                          _value.stridable, ranges);
     if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+      atomic d.dist._distCnt += 1;
     return _newDomain(d);
   }
 
@@ -624,7 +636,7 @@ record _domain {
     var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
                                          _value.stridable, ranges);
     if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+      atomic d.dist._distCnt += 1;
     return _newDomain(d);
    }
                   
@@ -641,7 +653,7 @@ record _domain {
     var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
                                          _value.stridable, ranges);
     if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+      atomic d.dist._distCnt += 1;
     return _newDomain(d);
    }
 
@@ -653,7 +665,7 @@ record _domain {
     var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
                                          _value.stridable, ranges);
     if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+      atomic d.dist._distCnt += 1;
     return _newDomain(d);
    }
 
@@ -665,7 +677,7 @@ record _domain {
     var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
                                          _value.stridable, ranges);
     if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+      atomic d.dist._distCnt += 1;
     return _newDomain(d);
    }
 
@@ -789,8 +801,8 @@ record _array {
     a._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     def help() {
-      d._value._domCnt$ += 1;
-      a._arrAlias._arrCnt$ += 1;
+      atomic d._value._domCnt += 1;
+      atomic a._arrAlias._arrCnt += 1;
     }
     help();
     return _newArray(a);
@@ -802,10 +814,10 @@ record _array {
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
     var d = _dom((...args));
-    d._value._domCnt$ += 1;
+    atomic d._value._domCnt += 1;
     var a = _value.dsiRankChange(d._value, rank, stridable, args);
     a._arrAlias = _value;
-    a._arrAlias._arrCnt$ += 1;
+    atomic a._arrAlias._arrCnt += 1;
     return _newArray(a);
   }
 
@@ -832,8 +844,8 @@ record _array {
     x._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     def help() {
-      _value.dom._domCnt$ += 1;
-      x._arrAlias._arrCnt$ += 1;
+      atomic _value.dom._domCnt += 1;
+      atomic x._arrAlias._arrCnt += 1;
     }
     help();
     return _newArray(x);
@@ -853,8 +865,8 @@ record _array {
     x._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     def help() {
-      newDom._value._domCnt$ += 1;
-      x._arrAlias._arrCnt$ += 1;
+      atomic newDom._value._domCnt += 1;
+      atomic x._arrAlias._arrCnt += 1;
     }
     help();
     return _newArray(x);
@@ -1147,7 +1159,7 @@ def by(a: domain, b) {
     r(i) = a.dim(i) by t(i);
   var d = a._value.dsiBuildArithmeticDom(a.rank, a._value.idxType, true, r);
   if (d.linksDistribution()) then
-    d.dist._distCnt$ += 1;
+    atomic d.dist._distCnt += 1;
   return _newDomain(d);
 }
 
