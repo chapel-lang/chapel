@@ -147,9 +147,12 @@ seg fault (04/30/10 -- after sched_yield policy change removed timeout)
 -----------------------------------------------------------------------
 [Error matching program output for distributions/robust/arithmetic/kernels/hpl]
 
+nondet. execution timeouts
+--------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_of_distributed_array2] (04/30/10)
+
 execution timeouts (04/30/10 -- after sched_yield polcy change)
 ---------------------------------------------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_of_distributed_array2]
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
 
@@ -315,7 +318,7 @@ mpi-specific failures
 
 nondet. exec timeout
 --------------------
-[Error: Timed out executing program users/shetag/fock/fock-stc-1]
+[Error: Timed out executing program users/shetag/fock/fock-stc-1] (05/24/10)
 
 nondet. memory corruption
 -------------------------
@@ -323,8 +326,9 @@ nondet. memory corruption
 
 nondet. seg fault (when not timing out below)
 ---------------------------------------------
+[Error matching program output for users/agnieszka/multiArrayI] (05/25/10)
 [Error matching program output for users/agnieszka/multiArrayI10] (05/08/10)
-[Error matching program output for users/agnieszka/test2] (05/08/10)
+[Error matching program output for users/agnieszka/test2] (05/08/10, 05/25/10)
 
 nondet. out-of-memory error
 ---------------------------
