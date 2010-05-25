@@ -3086,7 +3086,7 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        result = new SymExpr(new_IntSymbol(strlen(str), INT_SIZE_64));
+	result = new SymExpr(new_IntSymbol(strlen(str), INT_SIZE_32));    
         call->replace(result);
       }
     } else if (call->isPrimitive("ascii")) {
