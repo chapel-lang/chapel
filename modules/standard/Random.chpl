@@ -62,31 +62,24 @@ def fillRandom(x:[]) {
   delete randNums;
 }
 
-enum SeedGenerator { currentTime };
+record SeedGenerators {
+  def currentTime {
+    use Time;
+    const seed: int(64) = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+    return (if seed % 2 == 0 then seed + 1 else seed) % (1:int(64) << 46);
+  }
+};
+
+const SeedGenerator: SeedGenerators;
 
 class RandomStream {
   param parSafe: bool = true;
   const seed: int(64);
 
-  def RandomStream(seed: int(64), param parSafe: bool = true) {
+  def RandomStream(seed: int(64) = SeedGenerator.currentTime,
+                   param parSafe: bool = true) {
     if seed % 2 == 0 || seed < 1 || seed > 1:int(64)<<46 then
       halt("RandomStream seed must be an odd integer between 0 and 2**46");
-    RandomStreamPrivate_init(seed);
-  }
-
-  def RandomStream(seedGenerator: SeedGenerator = SeedGenerator.currentTime,
-                   param parSafe: bool = true) {
-    var seed: int(64);
-    select seedGenerator {
-      when SeedGenerator.currentTime {
-        use Time;
-        seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
-      }
-      otherwise halt("Invalid SeedGenerator '", seedGenerator,
-                     "' passed to RandomStream constructor");
-    }
-    seed = if seed % 2 == 0 then seed + 1 else seed;
-    seed = seed % (1:int(64)<<46);
     RandomStreamPrivate_init(seed);
   }
 
