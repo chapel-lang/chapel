@@ -1,5 +1,0 @@
-unimplemented feature: Allow param methods.
-
-Allow the use of param style this pointers for methods of built-in types, for example:
-
-def string.length param { }
