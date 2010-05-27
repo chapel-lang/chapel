@@ -62,7 +62,7 @@ module RARandomStream {
 
   //
   // A helper function for advancing a value from the random stream,
-  // x, to the next value
+0  // x, to the next value
   //
   def getNextRandom(inout x) {
     param POLY = 0x7;
@@ -84,4 +84,17 @@ module RARandomStream {
     }
     return m2tmp;
   }
+
+  /* def HPCC_starts_LCG(n) { */
+  /*   var mul_k, add_k, ran, un: randType; */
+  /*   param lcg_mul64 = 6364136223846793005;  */
+  /*   param lcg_add64 = 1; */
+
+  /*   mul_k = lcg_mul64; */
+  /*   add_k = lcg_add64; */
+
+  /*   ran = 1; */
+  /*   for  */
+
+  /* } */
 }

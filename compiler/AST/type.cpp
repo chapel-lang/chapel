@@ -241,7 +241,7 @@ addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
   if (FnSymbol* fn = toFnSymbol(def->sym)) {
     ct->methods.add(fn);
     INT_ASSERT(!fn->_this);
-    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+    fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
     fn->insertFormalAtHead(new DefExpr(fn->_this));
     fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
     fn->addFlag(FLAG_METHOD);

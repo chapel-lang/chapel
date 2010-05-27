@@ -310,6 +310,7 @@ void CHPL_TASKING_INIT(void) {
   CHPL_MUTEX_INIT(&threading_lock);
   CHPL_MUTEX_INIT(&extra_task_lock);
   CHPL_MUTEX_INIT(&task_list_lock);
+  CHPL_MUTEX_INIT(&thread_list_lock);
   queued_cnt = 0;
   running_cnt = 0;                     // only main thread running
   waking_cnt = 0;
@@ -318,6 +319,7 @@ void CHPL_TASKING_INIT(void) {
   idle_cnt = 0;
   extra_task_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
+  thread_list_head = thread_list_tail = NULL;
 
   threadlayer_init();
 
@@ -828,9 +830,6 @@ static void add_me_to_thread_list(void) {
 
     tlp->thread = threadlayer_thread_id();
     tlp->next   = NULL;
-
-    if (thread_list_head == NULL)
-      CHPL_MUTEX_INIT(&thread_list_lock);
 
     CHPL_MUTEX_LOCK(&thread_list_lock);
     if (thread_list_head == NULL)

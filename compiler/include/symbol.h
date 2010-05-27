@@ -146,6 +146,7 @@ class FnSymbol : public Symbol {
   BlockStmt* where;
   BlockStmt* retExprType;
   BlockStmt* body;
+  IntentTag thisTag;
   RetTag retTag;
   IteratorInfo* iteratorInfo;
   Symbol* _this;

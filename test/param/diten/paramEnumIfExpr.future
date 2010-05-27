@@ -1,0 +1,5 @@
+bug: incorrect warning: "control reaches end of function that returns value"
+
+The function warned about is a compiler generated function created for a
+conditional expression. It returns an enum value on the only control path that
+exists after constant folding.

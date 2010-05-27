@@ -447,6 +447,7 @@ FnSymbol::FnSymbol(const char* initName) :
   where(NULL),
   retExprType(NULL),
   body(new BlockStmt()),
+  thisTag(INTENT_BLANK),
   retTag(RET_VALUE),
   iteratorInfo(NULL),
   _this(NULL),
@@ -514,6 +515,7 @@ FnSymbol::copyInner(SymbolMap* map) {
   copy->retType = retType;
   copy->where = COPY_INT(where);
   copy->body = COPY_INT(body);
+  copy->thisTag = thisTag;
   copy->retTag = retTag;
   copy->retExprType = COPY_INT(retExprType);
   copy->cname = cname;
