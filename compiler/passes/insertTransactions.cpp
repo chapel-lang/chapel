@@ -83,7 +83,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	}
 	if (!rhs->primitive->isAtomicSafe) {
 	  if (strstr(rhs->primitive->name, "fprintf")) {
-	    USR_FATAL("I/O operations are not permitted in atomic blocks.");
+	    USR_FATAL("I/O operations are not permitted in atomic.");
 	  }
 	}
       } 
@@ -155,8 +155,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 					    tx, tmp, se1->var, se2->var));
 	    rhs->replace(new SymExpr(tmp)); 
 	  } else {
-	    call->replace(new CallExpr(PRIM_TX_LOAD_MEMBER_VALUE, 
-	    			       tx, lhs->var, se1->var, se2->var));
+	    if (!isOnStack(se1)) 
+	      call->replace(new CallExpr(PRIM_TX_LOAD_MEMBER_VALUE, 
+					 tx, lhs->var, se1->var, se2->var));
 	  }
 	}
 	break;
@@ -388,7 +389,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	SymExpr* rhs = toSymExpr(call->get(2));
 	INT_ASSERT(rhs);
 	INT_ASSERT(isOnStack(rhs));
-	call->replace(new CallExpr(PRIM_TX_STORE_REF, tx, lhs->var, rhs->var));
+	if (isOnStack(rhs) && !isOnStack(lhs))
+	  call->replace(new CallExpr(PRIM_TX_STORE_REF,
+				     tx, lhs->var, rhs->var));
 	break;
       } else {
 	USR_FATAL(call, "STAR TUPLE in store case");
@@ -405,7 +408,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       SymExpr* rhs = toSymExpr(call->get(2));
       INT_ASSERT(rhs);
       INT_ASSERT(isOnStack(rhs));
-      call->replace(new CallExpr(PRIM_TX_STORE_REF, tx, lhs->var, rhs->var));
+      if (isOnStack(rhs) && !isOnStack(lhs))
+	call->replace(new CallExpr(PRIM_TX_STORE_REF,
+				   tx, lhs->var, rhs->var));
       break;
     } else {
       SymExpr* rhs = toSymExpr(call->get(2));
@@ -482,7 +487,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
   case PRIM_SYNC_LOCK:
   case PRIM_SYNC_UNLOCK:
   case PRIM_SYNC_ISFULL:
-    USR_FATAL(call, "Sync operations are not permitted in atomic blocks.");
+    USR_FATAL(call, "Sync operations are not permitted in atomic.");
     break;
   case PRIM_PROCESS_TASK_LIST:
     USR_WARN("Ignoring PROCESS_TASK_LIST primitive");
@@ -526,6 +531,43 @@ createTxFnClone(FnSymbol* fn) {
   ArgSymbol* formalTxDesc = new ArgSymbol(INTENT_BLANK, "tx", dtTransaction);
   fnTxClone->insertFormalAtHead(formalTxDesc);
   return fnTxClone;
+}
+
+void handleFunctionCalls(BlockStmt* block, CallExpr* call, FnSymbol* fn, Symbol* tx) {
+  if (strstr(fn->name, "halt")) return;
+
+  if (strstr(fn->name, "__tx_clone")) return;
+
+  FnSymbol* fnTxClone = fnCache.get(fn);
+  
+  // create clone if one doesn't already exist
+  if (!fnTxClone) {
+    INT_ASSERT(!strstr(fn->name, "__tx_clone_"));
+    fnTxClone = createTxFnClone(fn);
+    fnCache.put(fn, fnTxClone);
+    fnCache.put(fnTxClone, fnTxClone);
+  }
+   
+  if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
+    USR_FATAL("begin statements not permitted in atomic.");
+  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
+    USR_FATAL("cobegin/coforall statements not permitted in atomic.");
+  } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
+    fnTxClone->removeFlag(FLAG_ON_BLOCK);
+    fnTxClone->addFlag(FLAG_TX_ON_BLOCK);
+  } 
+
+  // add clone to queue if not already done so
+  if (!queue.in(fnTxClone->body)) { 
+    queue.add(fnTxClone->body);
+    // insert fnTxClone's function definition
+    fn->defPoint->insertBefore(new DefExpr(fnTxClone));
+  }
+
+  // replace the function call at the callsite 
+  call->baseExpr->replace(new SymExpr(fnTxClone));
+  // insert 'tx' into actual argument list
+  call->insertAtHead(tx);
 }
 
 static void
@@ -577,44 +619,10 @@ insertSTMCalls() {
 	  handleMemoryOperations(block, call, tx);
 	  continue;
 	}
-      } else if (FnSymbol* fn = call->isResolved()) {
-	INT_ASSERT(fn);
-	
-	if (strstr(fn->name, "halt")) {// || 
-	    //	    strstr(fn->name, "wrapon_fn") ||
-	    //	    strstr(fn->name, "wrapcoforall_fn")) {
-	  USR_WARN(call, "No transactional clone generated for %s", fn->name);
-	  continue;
-	}
-
-	FnSymbol* fnTxClone = fnCache.get(fn);
-	
-	if (!fnTxClone) {  // create clone if doesn't already exist
-	  INT_ASSERT(!strstr(fn->name, "__tx_clone_"));
-	  fnTxClone = createTxFnClone(fn);
-	  fnCache.put(fn, fnTxClone);
-	  fnCache.put(fnTxClone, fnTxClone);
-	}
-	
-	if(fnTxClone->hasFlag(FLAG_NO_ATOMIC_CLONE)) {
-	  // function has pragma "no atomic clone" set
-	} 
-
-	// in some cases, we might have created a clone, but not yet inserted
-	// the clone for further inspection. That is because we are treating
-	// ALL Type I functions as Type III functions. So we don't want to 
-	// inspect some of those functions that are truly Type I. 
-	if (!queue.in(fnTxClone->body)) {
-	  queue.add(fnTxClone->body);
-	  // insert fnTxClone's function definition
-	  fn->defPoint->insertBefore(new DefExpr(fnTxClone));
-	}
-	// replace the function call at the callsite 
-	// insert 'tx' into actual argument list
-	call->baseExpr->replace(new SymExpr(fnTxClone));
-	call->insertAtHead(tx);
-      } else
-	USR_FATAL(call, "Not a primitve, not a function");
+      }
+      FnSymbol* fn = call->isResolved();
+      INT_ASSERT(fn);
+      handleFunctionCalls(block, call, fn, tx);
     }
   }
 }
@@ -632,12 +640,6 @@ insertTransactions(void) {
 
   insertSTMCalls();
 
-  // FIXME: Can we remove this earlier ? 
-  // cannot do it when collecting atomic blocks above because
-  // cloned version of the function must have the this attribute
-  // we cannot remove it after we create a clone because not all functions
-  // will have a clone. what about functions that don't have clones ?
-  // is there any reason to just leave it as it is ? 
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->parentSymbol)
       if (block->blockInfo) 

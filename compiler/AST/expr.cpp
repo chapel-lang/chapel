@@ -2328,7 +2328,7 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIM_TX_CHPL_FREE: {
-      if (fNoMemoryFrees)
+      if (fNoMemoryFrees || 1)
         break;
       INT_ASSERT(numActuals() == 4);
       fprintf(outfile, "%s", this->primitive->name);
@@ -2530,6 +2530,22 @@ void CallExpr::codegen(FILE* outfile) {
     fprintf(outfile, ", /* %s */ %d, ", fn->cname, ftableMap.get(fn));
     get(2)->codegen(outfile);
     TypeSymbol* argType = toTypeSymbol(get(2)->typeInfo()->symbol);
+    if (argType == NULL) {
+      INT_FATAL("typeInfo() didn't return a type symbol");
+    }
+    registerTypeToStructurallyCodegen(argType);
+    fprintf(outfile, ", ");
+    fprintf(outfile, "SPECIFY_SIZE(");
+    fprintf(outfile, "_");
+    argType->codegen(outfile);
+    fprintf(outfile, ")");
+    fprintf(outfile, ");\n");
+    return;
+  } else if (fn->hasFlag(FLAG_TX_ON_BLOCK)) {
+    gen(outfile, "chpl_stm_tx_fork(%A, %A", get(1), get(2));
+    fprintf(outfile, ", /* %s */ %d, ", fn->cname, txftableMap.get(fn));
+    get(3)->codegen(outfile);
+    TypeSymbol* argType = toTypeSymbol(get(3)->typeInfo()->symbol);
     if (argType == NULL) {
       INT_FATAL("typeInfo() didn't return a type symbol");
     }

@@ -41,20 +41,31 @@ void AM_tx_put (gasnet_token_t token, void* buf, size_t nbytes) {
 
 }
 
-void gtm_comm_tx_abort(chpl_stm_tx_p tx) { }
+void gtm_comm_tx_abort(chpl_stm_tx_p tx) { 
+  chpl_error("FIXME: gtm_comm_tx_abort", 0, 0);
+}
 
 int gtm_comm_tx_commitPh1(chpl_stm_tx_p tx) { 
-  return TX_OK;}
-
-int gtm_comm_tx_commitPh2(chpl_stm_tx_p tx) { 
+  chpl_error("FIXME: gtm_comm_tx_commitPh1", 0, 0);
   return TX_OK;
 }
 
-int gtm_comm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t tgtlocale, void* srcaddr, size_t size) { 
+int gtm_comm_tx_commitPh2(chpl_stm_tx_p tx) { 
+  chpl_error("FIXME: gtm_comm_tx_commitPh2", 0, 0);
+  return TX_OK;
+}
+
+int gtm_comm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size) { 
+  chpl_error("FIXME: gtm_comm_tx_get", 0, 0);
   return TX_OK; 
 }
 
-int gtm_comm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t tgtlocale, void* dstddr, size_t size) { 
+int gtm_comm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* dstddr, size_t size) { 
+  chpl_error("FIXME: gtm_comm_tx_put", 0, 0);
   return TX_OK; 
 }
 
+int gtm_comm_tx_fork(chpl_stm_tx_p tx, int tgtlocale, chpl_fn_int_t fid, void *arg, int arg_size) {
+  chpl_error("FIXME: gtm_comm_tx_fork", 0, 0);
+  return TX_OK;
+}

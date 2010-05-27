@@ -134,4 +134,6 @@ void gtm_comm_tx_abort(chpl_stm_tx_t* tx);
 int gtm_comm_tx_get(chpl_stm_tx_t* tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size);
 int gtm_comm_tx_put(chpl_stm_tx_t* tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size);
 
+int gtm_comm_tx_fork(chpl_stm_tx_t* tx, int tgtlocale, chpl_fn_int_t fid, void *arg, int arg_size);
+
 #endif

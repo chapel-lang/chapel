@@ -1,16 +1,17 @@
-//
-// LESSONS LEARNT: no point fixing interfaces to early.
-//
-
 #ifndef _chplstm_h_
 #define _chplstm_h_
 
 #ifndef LAUNCHER
 
+#include "chpltypes.h"
 #include CHPL_STM_H
 
 typedef chpl_stm_tx_t* chpl_stm_tx_p;
 typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;
+
+typedef void (*chpl_txfn_p)(chpl_stm_tx_p, void*);
+typedef int16_t chpl_txfn_int_t;
+extern chpl_txfn_p chpl_txftable[];
 
 #define CHPL_STM_TX_ALLOC_PERMIT_ZERO(tx, size , description, ln, fn)	\
   ((size == 0) ? NULL : chpl_stm_tx_alloc(tx, size, description, ln, fn))
@@ -54,7 +55,7 @@ typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;
       chpl_stm_tx_load(tx, &ldst, (rwide).addr,				\
 		       SPECIFY_SIZE(type), ln, fn);			\
     else 								\
-      chpl_stm_tx_get(tx, &ldst, (rwide).locale, (rwide).addr,		\
+      chpl_stm_tx_get(tx, &ldst, (rwide).locale, (rwide).addr,	\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while(0)
 
@@ -124,7 +125,7 @@ typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;
 
 #define CHPL_STM_COMM_WIDE_ARRAY_GET_VALUE(tx, ldst, rwide_type, cls, ind, stype, sfield, etype, etype2, ln, fn) \
   do {                                                                  \
-    rwide_type chpl_macro_tmp;                                           \
+    rwide_type chpl_macro_tmp;						\
     CHPL_STM_COMM_WIDE_ARRAY_GET(tx, chpl_macro_tmp, cls, ind, stype,	\
 				 sfield, etype, ln, fn);		\
     CHPL_STM_COMM_WIDE_GET(tx, ldst, chpl_macro_tmp, etype2, ln, fn);	\
@@ -290,6 +291,11 @@ void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* s
 // remote data at 'dstaddr' on 'dstlocale' 
 //
 void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size, int ln, chpl_string fn);
+
+//
+// transactional version of chpl_comm_fork
+//
+void chpl_stm_tx_fork(chpl_stm_tx_p tx, int locale, chpl_fn_int_t fid, void *arg, int arg_size);
 
 //
 // transactional malloc

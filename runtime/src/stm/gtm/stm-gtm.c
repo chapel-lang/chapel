@@ -298,11 +298,30 @@ void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t si
 }
 
 void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size, int ln, chpl_string fn) {
-  chpl_error("FIXME: chpl_stm_tx_get", ln, fn);
+  assert(tx != NULL);
+  assert(srclocale != MYLOCALE);
+
+  if (size == 0) return;
+  
+  GTM_Safe(tx, gtm_comm_tx_get(tx, dstaddr, srclocale, srcaddr, size));
 }
 
 void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size, int ln, chpl_string fn) {
-  chpl_error("FIXME: chpl_stm_tx_put", ln, fn);
+  assert(tx != NULL);
+  assert(dstlocale != MYLOCALE);
+  
+  if (size == 0) return;
+  
+  GTM_Safe(tx, gtm_comm_tx_put(tx, srcaddr, dstlocale, dstaddr, size));
+}
+
+void chpl_stm_tx_fork(chpl_stm_tx_p tx, int tgtlocale, chpl_fn_int_t fid, void *arg, int arg_size) {
+  assert(tx != NULL);
+
+  if (tgtlocale == MYLOCALE) {
+    (*chpl_txftable[fid])(tx, arg);
+  } else 
+    GTM_Safe(tx, gtm_comm_tx_fork(tx, tgtlocale, fid, arg, arg_size));
 }
 
 void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) { 

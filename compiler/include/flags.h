@@ -79,7 +79,6 @@ enum Flag {
   FLAG_MAYBE_PARAM, // symbol can resolve to a param
   FLAG_MAYBE_TYPE, // symbol can resolve to a type
   FLAG_METHOD, // function that is a method
-  FLAG_NO_ATOMIC_CLONE,
   FLAG_NO_AUTO_DESTROY,
   FLAG_NO_COPY, // do not apply chpl__initCopy to initialization of a variable
   FLAG_NO_DEFAULT_FUNCTIONS,
@@ -92,6 +91,7 @@ enum Flag {
   FLAG_FAST_ON, // with FLAG_ON/FLAG_ON_BLOCK, use fast spawning option (if available)
   FLAG_OBJECT_CLASS,
   FLAG_OMIT_FROM_CONSTRUCTOR,
+  FLAG_OMIT_ELSE_FROM_ATOMIC, // drop else part if in atomic block  
   FLAG_GPU_ON, // Flag to mark GPU device kernel
   FLAG_GPU_CALL, // Flag to mark caller of GPU kernel
   FLAG_ON,
@@ -113,6 +113,7 @@ enum Flag {
   FLAG_SYNTACTIC_DISTRIBUTION,
   FLAG_TEMP, // compiler-inserted temporary
   FLAG_TUPLE,
+  FLAG_TX_ON_BLOCK, // atomic equivalent of FLAG_ON_BLOCK
   FLAG_TYPE_CONSTRUCTOR,
   FLAG_TYPE_VARIABLE, // contains a type instead of a value
   FLAG_VIRTUAL,

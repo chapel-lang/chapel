@@ -493,6 +493,25 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       fprintf(hdrfile, "extern chpl_fn_p chpl_ftable[];\n");
       fprintf(hdrfile, "#endif\n");
     }
+
+    fprintf(hdrfile, "\n/*** Transactional Function Pointer Table ***/\n\n");
+    fprintf(hdrfile, "chpl_txfn_p chpl_txftable[] = {\n");
+    forv_Vec(FnSymbol, fn, functions) {
+      if (fn->hasFlag(FLAG_TX_ON_BLOCK)) {
+	txftableVec.add(fn);
+	txftableMap.put(fn, txftableVec.n-1);
+      }
+    }
+    first = true;
+    forv_Vec(FnSymbol, fn, txftableVec) {
+      if (!first)
+        fprintf(hdrfile, ",\n");
+      fprintf(hdrfile, "(chpl_txfn_p)%s", fn->cname);
+      first = false;
+    }
+    if (txftableVec.n == 0)
+      fprintf(hdrfile, "(chpl_txfn_p)0");
+    fprintf(hdrfile, "\n};\n");
   }
 
   fprintf(hdrfile, "\n/*** Virtual Method Table ***/\n\n");

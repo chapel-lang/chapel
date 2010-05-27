@@ -280,6 +280,9 @@ extern Symbol *gTaskList;
 extern Map<FnSymbol*,int> ftableMap;
 extern Vec<FnSymbol*> ftableVec;
 
+extern Map<FnSymbol*,int> txftableMap;
+extern Vec<FnSymbol*> txftableVec;
+
 //
 // The virtualMethodTable maps types to their arrays of methods.  The
 // virtualMethodMap maps methods to their indexes into these arrays.

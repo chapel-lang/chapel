@@ -48,6 +48,9 @@ Symbol *gCFile = NULL;
 Map<FnSymbol*,int> ftableMap;
 Vec<FnSymbol*> ftableVec;
 
+Map<FnSymbol*,int> txftableMap;
+Vec<FnSymbol*> txftableVec;
+
 Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
 Map<FnSymbol*,int> virtualMethodMap;
 Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;

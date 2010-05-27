@@ -74,7 +74,6 @@ initFlags() {
   defineFlag(FLAG_MAYBE_PARAM, "maybe param");
   defineFlag(FLAG_MAYBE_TYPE, "maybe type");
   defineFlag(FLAG_METHOD, "method");
-  defineFlag(FLAG_NO_ATOMIC_CLONE, "no atomic clone");
   defineFlag(FLAG_NO_AUTO_DESTROY, "no auto destroy");
   defineFlag(FLAG_NO_COPY, "no copy");
   defineFlag(FLAG_NO_DEFAULT_FUNCTIONS, "no default functions");
@@ -85,6 +84,7 @@ initFlags() {
   defineFlag(FLAG_NO_WIDE_CLASS, "no wide class");
   defineFlag(FLAG_NON_BLOCKING, "non blocking");
   defineFlag(FLAG_OBJECT_CLASS, "object class");
+  defineFlag(FLAG_OMIT_ELSE_FROM_ATOMIC, "omit else from atomic");
   defineFlag(FLAG_OMIT_FROM_CONSTRUCTOR, "omit from constructor");
   defineFlag(FLAG_ON, "on");
   defineFlag(FLAG_ON_BLOCK, "on block");
@@ -105,6 +105,7 @@ initFlags() {
   defineFlag(FLAG_SYNTACTIC_DISTRIBUTION, "syntactic distribution");
   defineFlag(FLAG_TEMP, "temp");
   defineFlag(FLAG_TUPLE, "tuple");
+  defineFlag(FLAG_TX_ON_BLOCK, "transactional on block");
   defineFlag(FLAG_TYPE_CONSTRUCTOR, "type constructor");
   defineFlag(FLAG_TYPE_VARIABLE, "type variable");
   defineFlag(FLAG_VIRTUAL, "virtual");

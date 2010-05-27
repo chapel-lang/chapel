@@ -724,7 +724,6 @@ def _syncvar.readFE(): base_type {
 }
 
 // Wait for full, set and signal full.
-pragma "no atomic clone"
 def _syncvar.readFF() {
   var ret: base_type;
   on this {

@@ -13,6 +13,9 @@ FLAGS += $(F) --no-devel -O --fast --no-checks --print-commands --print-passes
 endif
 
 TARGETS = \
+	omitElseCondUsingAtomicFlag \
+	recursiveFns \
+	serializeWholeArrayAssignment \
 	test_array_local_uint64 \
 	test_associative_domain \
 	test_atomic_expr_in_return_stmt \
@@ -26,8 +29,6 @@ TARGETS = \
 	test_fn_arg_global_var \
 	test_fn_arg_inout_intent \
 	test_fn_arg_inout_intent_recursive \
-	recursiveFns \
-	serializeWholeArrayAssignment \
 	test_fn_return_value \
 	test_fn_with_multiple_atomic \
 	test_prim_get_member \
