@@ -4099,6 +4099,8 @@ resolve() {
           init->replace(distCall);
           resolveCall(distCall);
           resolveFns(distCall->isResolved());
+        } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
+          init->replace(init->get(1)->remove());
         } else {
           INT_ASSERT(type->defaultConstructor);
           CallExpr* call = new CallExpr(type->defaultConstructor);

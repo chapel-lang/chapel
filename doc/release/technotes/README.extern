@@ -208,6 +208,25 @@ expects a pointer-to-struct of that type:
     operateOnStructPtr(structPtr);
 
 
+Referring to External C Types
+-----------------------------
+
+You can refer to external types defined in C using _extern plus the
+normal type alias keyword.  By leaving off any sort of type
+definition, you are telling the Chapel compiler that it can't assume
+it knows anything about how the type is represented or how to operate
+on it.  Effectively, it defines a new primitive type in Chapel.  For
+example, the following declaration says that there is an external type
+named 'foo':
+
+    _extern type foo;
+
+This permits you to declare variables of type 'foo' and to declare
+external functions that accept or return arguments of type 'foo'.
+Over time we will also add support for describing things about
+external types, but at present that support is incomplete.
+
+
 Future Directions
 -----------------
 

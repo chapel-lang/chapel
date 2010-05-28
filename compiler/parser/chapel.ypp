@@ -532,7 +532,10 @@ module_decl_stmt:
 ;
 
 type_alias_decl_stmt:
-  TTYPE type_alias_decl_stmt_inner TSEMI  { $$ = $2; }
+  TTYPE type_alias_decl_stmt_inner TSEMI 
+    { $$ = $2; }
+| TEXTERN TTYPE type_alias_decl_stmt_inner TSEMI 
+    { $$ = convertTypesToExtern($3); }
 ;
 
 type_alias_decl_stmt_inner:

@@ -89,5 +89,6 @@ BlockStmt* buildCobeginStmt(BlockStmt* block);
 BlockStmt* buildAtomicStmt(Expr* stmt);
 void createInitFn(ModuleSymbol* mod);
 CallExpr* buildPreDecIncWarning(Expr* expr, char sign);
+BlockStmt* convertTypesToExtern(BlockStmt*);
 
 #endif
