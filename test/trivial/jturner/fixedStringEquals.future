@@ -1,3 +1,5 @@
 bug: There is a double-free case when we use an '=' instead of a normal function.
 
 In the generated C code, this sample will double free the contained string at the end of the function generated to handle the '=' function.  By commending out this free, or using a non-'=' function, we can avoid the error.
+
+Please note: this requires patching the canCoerce to allow '=' to work between string and the fixed string.  
