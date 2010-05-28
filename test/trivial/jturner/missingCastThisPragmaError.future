@@ -1,0 +1,3 @@
+bug: Incorrect error when indexing into a class that has a pragma attached to it.
+
+In the given case, we get an _cast error message when accessing the object view the indexing method "this", which does not exist.
