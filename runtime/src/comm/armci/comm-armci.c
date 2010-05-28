@@ -486,6 +486,6 @@ void _gpc_thread_handler(void *arg)
 
 void chpl_comm_armci_help_register_global_var(int i, void* addr) {
   if (chpl_localeID == 0) {
-    globalPtrs[i] = addr;
+    ((void **)globalPtrs[0])[i] = addr;
   }
 }
