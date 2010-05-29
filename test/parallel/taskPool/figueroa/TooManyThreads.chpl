@@ -10,7 +10,10 @@
 
 use Time;
 
+_extern def setThreadLimit(l: int(32));
+
 config const numThreads = 6000;
+config const threadLimit = 1000;
 var total: int,
     count: int = numThreads,
      done: sync bool,
@@ -26,6 +29,9 @@ def foo (x) {
   }
     
 }
+
+// Set the system limit on processes artificially low
+setThreadLimit(threadLimit);
 
 writeln ("need a short nap ...");
 begin
