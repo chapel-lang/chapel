@@ -675,8 +675,14 @@ fix_def_expr(VarSymbol* var) {
     } else {
       if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
         stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, new CallExpr(PRIM_TYPEOF, typeTemp)));
-      else
-        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+      else {
+        CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
+        Expr* newExpr = moveToConst;
+        if (constTemp->hasFlag(FLAG_EXTERN)) {
+          newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
+        }
+        stmt->insertAfter(newExpr);
+      }
     }
 
   } else {

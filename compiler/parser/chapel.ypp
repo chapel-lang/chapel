@@ -48,6 +48,7 @@
   Type* ptype;
   EnumType* penumtype;
   FnSymbol* pfnsymbol;
+  Flag flag;
 };
 
 //
@@ -109,7 +110,8 @@
 %right TNEW
 %left TDOT TLP TLSBR
 
-%type <b> opt_config opt_extern
+%type <flag> opt_config
+%type <b> opt_extern
  
 %type <pt> opt_intent_tag opt_this_intent_tag
 
@@ -563,16 +565,17 @@ opt_init_type:
 
 var_decl_stmt:
   opt_config TPARAM var_decl_stmt_inner_ls TSEMI
-    { $$ = buildVarDecls($3, $1, true, false); }
+    { $$ = buildVarDecls($3, $1, FLAG_PARAM); }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
-    { $$ = buildVarDecls($3, $1, false, true); }
+    { $$ = buildVarDecls($3, $1, FLAG_CONST); }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
-    { $$ = buildVarDecls($3, $1, false, false); }
+    { $$ = buildVarDecls($3, $1, FLAG_UNKNOWN); }
 ;
 
 opt_config:
-           { $$ = false; }
-| TCONFIG  { $$ = true; }
+           { $$ = FLAG_UNKNOWN; }
+| TCONFIG  { $$ = FLAG_CONFIG; }
+| TEXTERN  { $$ = FLAG_EXTERN; }
 ;
  
 var_decl_stmt_inner_ls:

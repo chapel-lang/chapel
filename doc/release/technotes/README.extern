@@ -227,6 +227,18 @@ Over time we will also add support for describing things about
 external types, but at present that support is incomplete.
 
 
+Referring to External C Variables
+---------------------------------
+
+Similarly, an external variable or constant can be referred to within
+Chapel by prefixing its declaration with the _extern keyword.  For
+example:
+
+    _extern var bar: foo;
+
+would refer to an external variable defined in the C code of type foo.
+
+
 Future Directions
 -----------------
 

@@ -1355,16 +1355,14 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 
 
 BlockStmt*
-buildVarDecls(BlockStmt* stmts, bool isConfig, bool isParam, bool isConst) {
+buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        if (isConfig)
-          var->addFlag(FLAG_CONFIG);
-        if (isParam)
-          var->addFlag(FLAG_PARAM);
-        if (isConst)
-          var->addFlag(FLAG_CONST);
+        if (externconfig != FLAG_UNKNOWN)
+          var->addFlag(externconfig);
+        if (varconst != FLAG_UNKNOWN)
+          var->addFlag(varconst);
         continue;
       }
     }

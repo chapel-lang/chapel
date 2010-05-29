@@ -249,6 +249,9 @@ static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
 
 
 void VarSymbol::codegenDef(FILE* outfile) {
+  if (this->hasFlag(FLAG_EXTERN)) {
+    return;
+  }
   if (type == dtVoid)
     return;
   if (this->hasFlag(FLAG_SUPER_CLASS))

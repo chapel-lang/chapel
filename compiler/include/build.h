@@ -74,7 +74,7 @@ BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 CallExpr* buildReduceExpr(Expr* op, Expr* data);
 CallExpr* buildScanExpr(Expr* op, Expr* data);
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, bool isConfig, bool isParam, bool isConst);
+BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst);
 
 DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, bool isExtern);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
