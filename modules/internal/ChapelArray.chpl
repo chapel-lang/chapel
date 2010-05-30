@@ -876,6 +876,15 @@ record _array {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+  def readBinArray(f : file) {
+    _value.readBinArray(f);
+  }
+
+  def writeBinArray(f : file) {
+    _value.writeBinArray(f);
+  }
+
 }
 
 //
