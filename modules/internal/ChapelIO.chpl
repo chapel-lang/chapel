@@ -3,7 +3,7 @@
 //  chapel-level implementations of read, write, writeln
 //  chapel-level implementations of assert, halt
 
-enum FileAccessMode { read, write };
+enum FileAccessMode { read, write, append ,readwrite };
 
 //
 // functions on _file primitive type, the C file pointer type
@@ -37,6 +37,8 @@ class file: Writer {
       select mode {
         when FileAccessMode.read  do modestring = "r";
         when FileAccessMode.write do modestring = "w";
+        when FileAccessMode.append do modestring = "a";
+        when FileAccessMode.readwrite do modestring = "r+";
       }
       _fp = __primitive("fopen", filename, modestring);
 
@@ -248,6 +250,24 @@ def file.read(type t) {
   return val;
 }
 
+def file.seekset(offset: int(64)) {
+  on this {
+    if !isOpen then
+      _checkOpen(this, isRead=(FileAccessMode.read==mode));
+        // SEEK_SET is 0
+    __primitive("fseek", _fp, offset, 0);
+  }
+}
+
+def file.seek(offset: int(64)) {
+  on this {
+    if !isOpen then
+      _checkOpen(this, isRead=(FileAccessMode.read==mode));
+        // SEEK_CUR is 1
+    __primitive("fseek", _fp, offset, 1);
+  }
+}
+
 def string.writeThis(f: Writer) {
   f.writeIt(this);
 }
@@ -272,9 +292,30 @@ def chpl_taskID_t.writeThis(f: Writer) {
 def file.writeIt(s: string) {
   if !isOpen then
     _checkOpen(this, isRead = false);
-  if mode != FileAccessMode.write then
+  if ( mode != FileAccessMode.write &&
+       mode != FileAccessMode.append && 
+       mode != FileAccessMode.readwrite ) then
     halt("***Error: ", path, "/", filename, " not open for writing***");
   var status = __primitive("fprintf", _fp, "%s", s);
+  if status < 0 {
+    const err = __primitive("get_errno");
+    halt("***Error: Write failed: ", err, "***");
+  }
+}
+
+def file.writeIt(s: int) {
+  if !isOpen then
+    _checkOpen(this, isRead = false);
+  if ( mode != FileAccessMode.write &&
+       mode != FileAccessMode.append &&
+       mode != FileAccessMode.readwrite ) then
+    halt("***Error: ", path, "/", filename, " not open for writing***");
+
+  var status=0;
+  if this == stdin || this == stdout || this == stderr then
+    status = __primitive("fprintf", _fp, "%i", s);
+  else
+    status = __primitive("fprintf", _fp, "%.9i", s);
   if status < 0 {
     const err = __primitive("get_errno");
     halt("***Error: Write failed: ", err, "***");
@@ -309,6 +350,7 @@ def file.unlockWrite() {
 
 class Writer {
   def writeIt(s: string) { }
+  def writeIt(s: int) { }
   def lockWrite() return false;
   def unlockWrite() { }
   def write(args ...?n) {
@@ -352,6 +394,15 @@ def writeln() {
   stdout.writeln();
   stdout.flush();
 }
+
+def file.read(val: []) {
+  val.readBinArray(this);
+}
+
+def file.write(val: []) {
+  val.writeBinArray(this);
+}
+
 
 def read(inout args ...?n) {
   stdin.read((...args));
