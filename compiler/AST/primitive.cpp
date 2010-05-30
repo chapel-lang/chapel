@@ -489,11 +489,14 @@ initPrimitive() {
 
   prim_def("fopen", returnInfoFile, true);
   prim_def("fclose", returnInfoInt32, true);
+  prim_def("fseek", returnInfoInt64, true);
+  prim_def("write", returnInfoInt64, true);
   prim_def("fprintf", returnInfoInt32, true);
   prim_def("fflush", returnInfoInt32, true);
   prim_def("_fscan_literal", returnInfoBool, true, true);
   prim_def("_fscan_string", returnInfoString, true, true);
   prim_def("_fscan_int32", returnInfoInt32, true, true);
+  prim_def("_fscan_int64", returnInfoInt64, true, true);
   prim_def("_fscan_uint32", returnInfoUInt32, true, true);
   prim_def("_fscan_real64", returnInfoReal64, true, true);
   prim_def("_readToEndOfLine", returnInfoVoid, true);
