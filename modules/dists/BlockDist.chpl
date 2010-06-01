@@ -797,27 +797,24 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
   var status= 0:int(64);
   var err= 0:int;
   var numbytespn=8:int(64);
-//  var offset=(numbytespn*rank*3)+numbytespn:int(64);
   var nbyteslin=numbytespn*((1+dom.dsiDim(1)._high-dom.dsiDim(1)._low)/dom.dsiDim(1)._stride);
   var pos=0:int(64);
   var oldpos=-1:int(64);
   var timer: Timer;
   timer.start();
   var to,from, numelem,tmp=0:int(64);
-//var indice=locArr(localeIdx).locDom.myBlock(1);
-//  var outfile = new file(f.filename+"_"+here.id, FileAccessMode.write);
   var outfile = new file(f.filename, FileAccessMode.readwrite);
   outfile.open();
 
-  if debugBlockDist then writeln("BlockArr.writeBinArray in ",here.id," myblock:",locArr(localeIdx).locDom.myBlock.numIndices);
+  if debugBlockDist then writeln("BlockArr.writeBinLocalArray in ",here.id," myblock:",locArr(localeIdx).locDom.myBlock.numIndices);
   var ind=privarr.locArr(localeIdx).locDom.myBlock.low;
-  if debugBlockDist then writeln("BlockArr.writeBinArray  create ind:",ind);
+  if debugBlockDist then writeln("BlockArr.writeBinLocalArray  create ind:",ind);
 
   for idx in locArr(localeIdx).locDom.myBlock.low(1)..locArr(localeIdx).locDom.myBlock.high(1)  {
 
     from=privarr.locArr(localeIdx).locDom.myBlock.low(2):int(64);
     to=privarr.locArr(localeIdx).locDom.myBlock.high(2):int(64);
-   if debugBlockDist then writeln("BlockArr.writeBinArray  from:",from," to: ",to," line:",idx, " numbytespn:",numbytespn," ",dom.dsiDim(1)._high," ",dom.dsiDim(1)._low," ",dom.dsiDim(1)._stride);
+    if debugBlockDist then writeln("BlockArr.writeBinLocalArray  from:",from," to: ",to," line:",idx, " numbytespn:",numbytespn," ",dom.dsiDim(1)._high," ",dom.dsiDim(1)._low," ",dom.dsiDim(1)._stride);
 
     ind(1)=idx:int;
     ind(2)=from:int;
@@ -825,13 +822,9 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
 
     pos=((idx-1))*nbyteslin+(from-1)*numbytespn+offset;
     if (pos!=(oldpos+numelem*numbytespn)) then {
-      if debugBlockDist then writeln("BlockArr.writeBinArray in ",here.id," line:",idx," to seek to pos:(",from," ",to,") ",pos," old pos:",oldpos+numelem*numbytespn," elapsed:",timer.elapsed(TimeUnits.microseconds));
+//      if debugBlockDist then writeln("BlockArr.writeBinLocalArray in ",here.id," line:",idx," to seek to pos:(",from," ",to,") ",pos," old pos:",oldpos+numelem*numbytespn," elapsed:",timer.elapsed(TimeUnits.microseconds));
       outfile.fseekset(pos);
-      var posact=outfile.chpl_ftell();
-//      writeln("**************** posact:",posact);
     }
-
-//    if debugBlockDist then writeln("BlockArr.writeBinArray ",here.id," loc:",localeIdx," idx:",idx," range: ",ind," pos:",pos," old pos:",oldpos);
 
     oldpos=pos;
     binfwrite(privarr.locArr(localeIdx)(ind),numbytespn,numelem,outfile._fp, status, err);
@@ -840,8 +833,8 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
     }
   }
   timer.stop();
-if debugBlockDist then
-    writeln("BlockArr.writeBinArray time to write in locale ",here.id,": ",timer.elapsed(TimeUnits.microseconds));
+  if debugBlockDist then
+    writeln("BlockArr.writeLocalBinArray time to write in locale ",here.id,": ",timer.elapsed(TimeUnits.microseconds));
   pos=outfile.chpl_ftell();
   outfile.close();
   return pos;
@@ -872,6 +865,8 @@ def BlockArr.writeBinArray(f: file) {
     }
   }
   timer.stop();
+  if debugBlockDist then
+    writeln("BlockArr.writeBinArray time to write:",timer.elapsed(TimeUnits.microseconds));
 
   f.open();
   f.fseekset(gotoPos);
