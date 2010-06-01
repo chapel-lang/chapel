@@ -490,6 +490,7 @@ initPrimitive() {
   prim_def("fopen", returnInfoFile, true);
   prim_def("fclose", returnInfoInt32, true);
   prim_def("fseek", returnInfoInt64, true);
+  prim_def("ftell", returnInfoInt64, true);
   prim_def("write", returnInfoInt64, true);
   prim_def("fprintf", returnInfoInt32, true);
   prim_def("fflush", returnInfoInt32, true);
