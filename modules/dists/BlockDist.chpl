@@ -19,6 +19,7 @@
 // 1. refactor pid fields from distribution, domain, and array classes
 //
 
+use Time;
 use DSIUtil;
 use ChapelUtil;
 
@@ -29,7 +30,7 @@ use ChapelUtil;
 // into compiler flags or adding config parameters to the internal
 // modules, perhaps called debugDists and checkDists.
 //
-config param debugBlockDist = false;
+config param debugBlockDist = true;
 config param sanityCheckDistribution = false;
 
 //
@@ -519,7 +520,7 @@ def Block.dsiCreateRankChangeDist(param newRank: int, args) {
       collapsedDimLocs(i) = 0;
     }
   }
-  const collapsedLocInd = targetLocsIdx(collapsedDimLocs);
+  const collapsedLocInd = gargetLocsIdx(collapsedDimLocs);
   var collapsedBbox: _matchArgsShape(range(idxType=idxType), idxType, args);
   var collapsedLocs: _matchArgsShape(range(idxType=int), int, args);
 
@@ -715,6 +716,30 @@ def BlockDom.dsiBuildArithmeticDom(param rank: int, type idxType,
   return dom;
 }
 
+def BlockDom.writeBinDom_real(f: file, in rank : int, in whole:domain) {
+
+  var gres=0:int(64);
+  var gerr=0:int;
+  binfwrite(rank,4,1,f._fp,gres,gerr);
+
+  for dim in 1..rank do {
+    binfwrite(whole.dim(dim)._low,4,1,f._fp,gres,gerr);
+    binfwrite(whole.dim(dim)._high,4,1,f._fp,gres,gerr);
+    binfwrite(whole.dim(dim)._stride,4,1,f._fp,gres,gerr);
+    if debugBlockDist then {
+		writeln("Writting Dom dim:",dim," : ",whole.dim(dim)._low);
+		writeln("Writting Dom dim:",dim," : ",whole.dim(dim)._high);
+		writeln("Writting Dom dim:",dim," : ",whole.dim(dim)._stride);
+    }
+  }
+
+}
+
+
+def BlockDom.writeBinDom(f: file) {
+   writeBinDom_real(f,rank,whole);
+}
+
 //
 // Added as a performance stopgap to avoid returning a domain
 //
@@ -758,6 +783,105 @@ def BlockArr.dsiAccess(i: idxType...rank) var
 def BlockArr.these() var {
   for i in dom do
     yield dsiAccess(i);
+}
+
+_extern def binfwrite (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfwrite (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfwrite (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+
+
+def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
+{
+  const privarr=this.dsiPrivatize(dom.pid);
+
+  var status= 0:int(64);
+  var err= 0:int;
+  var numbytespn=8:int(64);
+//  var offset=(numbytespn*rank*3)+numbytespn:int(64);
+  var nbyteslin=numbytespn*((1+dom.dsiDim(1)._high-dom.dsiDim(1)._low)/dom.dsiDim(1)._stride);
+  var pos=0:int(64);
+  var oldpos=-1:int(64);
+  var timer: Timer;
+  timer.start();
+  var to,from, numelem,tmp=0:int(64);
+//var indice=locArr(localeIdx).locDom.myBlock(1);
+//  var outfile = new file(f.filename+"_"+here.id, FileAccessMode.write);
+  var outfile = new file(f.filename, FileAccessMode.readwrite);
+  outfile.open();
+
+  if debugBlockDist then writeln("BlockArr.writeBinArray in ",here.id," myblock:",locArr(localeIdx).locDom.myBlock.numIndices);
+  var ind=privarr.locArr(localeIdx).locDom.myBlock.low;
+  if debugBlockDist then writeln("BlockArr.writeBinArray  create ind:",ind);
+
+//for idx in locArr(localeIdx).locDom.myBlock(1) {
+  for idx in locArr(localeIdx).locDom.myBlock.low(1)..locArr(localeIdx).locDom.myBlock.high(1)  {
+
+    from=privarr.locArr(localeIdx).locDom.myBlock.low(2):int(64);
+    to=privarr.locArr(localeIdx).locDom.myBlock.high(2):int(64);
+   if debugBlockDist then writeln("BlockArr.writeBinArray  from:",from," to: ",to," line:",idx, " numbytespn:",numbytespn," ",dom.dsiDim(1)._high," ",dom.dsiDim(1)._low," ",dom.dsiDim(1)._stride);
+
+    ind(1)=idx:int;
+    ind(2)=from:int;
+    numelem=to-from+1;
+
+    pos=((idx-1))*nbyteslin+(from-1)*numbytespn+offset;
+    if (pos!=(oldpos+numelem*numbytespn)) then {
+      if debugBlockDist then writeln("BlockArr.writeBinArray in ",here.id," line:",idx," to seek to pos:(",from," ",to,") ",pos," old pos:",oldpos+numelem*numbytespn," elapsed:",timer.elapsed(TimeUnits.microseconds));
+      outfile.fseekset(pos);
+      var posact=outfile.chpl_ftell();
+//      writeln("**************** posact:",posact);
+    }
+
+//    if debugBlockDist then writeln("BlockArr.writeBinArray ",here.id," loc:",localeIdx," idx:",idx," range: ",ind," pos:",pos," old pos:",oldpos);
+
+    oldpos=pos;
+    binfwrite(privarr.locArr(localeIdx)(ind),numbytespn,numelem,outfile._fp, status, err);
+    if status < 0 {
+      halt("***Error: Write failed: ", err, "***");
+    }
+  }
+  timer.stop();
+if debugBlockDist then
+    writeln("BlockArr.writeBinArray time to write in locale ",here.id,": ",timer.elapsed(TimeUnits.microseconds));
+  outfile.close();
+}
+
+def BlockArr.writeBinArray(f: file) {
+//  var ind=privarr.locArr(thislocal).locDom.myBlock.low;
+  writeln("BlockArr.writeBinArray");
+
+  if debugBlockDist then writeln("Going to call the real write ");
+  var timer: Timer;
+  timer.start();
+
+  var outfile:file;
+  if debugBlockDist then writeln("writeArray: offset_in == 0");
+  outfile= new file(f.filename, FileAccessMode.write);
+  outfile.open();
+  outfile.fseekset(0);
+  f.close();
+
+  if debugBlockDist then writeln("BlockArr.writeArray 1st closened in ",here.id);
+  for i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
+    for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
+      on dom.dist.targetLocales((i1,i2)) {
+        if debugBlockDist then writeln("Inside: ",here.id," idx:",i1,",",i2, " low:",dom.dist.targetLocDom.dim(1)._low, " high:",dom.dist.targetLocDom.dim(1)._high);
+        writeBinLocalArray((i1,i2),0,f);
+      }
+    }
+  }
+/*
+  on dom.dist.targetLocsIdx((1,1)) {
+    writeBinLocalArray((1,1),f);
+  }
+*/
+  timer.stop();
+
+f.open();
+
+
+
+
 }
 
 //
