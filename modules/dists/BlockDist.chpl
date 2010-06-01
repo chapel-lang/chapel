@@ -813,7 +813,6 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
   var ind=privarr.locArr(localeIdx).locDom.myBlock.low;
   if debugBlockDist then writeln("BlockArr.writeBinArray  create ind:",ind);
 
-//for idx in locArr(localeIdx).locDom.myBlock(1) {
   for idx in locArr(localeIdx).locDom.myBlock.low(1)..locArr(localeIdx).locDom.myBlock.high(1)  {
 
     from=privarr.locArr(localeIdx).locDom.myBlock.low(2):int(64);
@@ -843,45 +842,39 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
   timer.stop();
 if debugBlockDist then
     writeln("BlockArr.writeBinArray time to write in locale ",here.id,": ",timer.elapsed(TimeUnits.microseconds));
+  pos=outfile.chpl_ftell();
   outfile.close();
+  return pos;
 }
 
 def BlockArr.writeBinArray(f: file) {
-//  var ind=privarr.locArr(thislocal).locDom.myBlock.low;
-  writeln("BlockArr.writeBinArray");
-
-  if debugBlockDist then writeln("Going to call the real write ");
   var timer: Timer;
   timer.start();
+  var fpos=f.chpl_ftell();
 
-  var outfile:file;
-  if debugBlockDist then writeln("writeArray: offset_in == 0");
-  outfile= new file(f.filename, FileAccessMode.write);
-  outfile.open();
-  outfile.fseekset(0);
+  // lastPos and gotoPos used for going to the end of the writes at the end.
+  var lastPos=fpos;
+  var gotoPos=fpos; 
+
+  if debugBlockDist then writeln("BlockArr.writeBinArray Going to call the real write ");
+
+  // We close the file so it is not opened from different locales.
+  // It will be opened again after writting, at the right position
   f.close();
 
-  if debugBlockDist then writeln("BlockArr.writeArray 1st closened in ",here.id);
   for i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
     for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
       on dom.dist.targetLocales((i1,i2)) {
         if debugBlockDist then writeln("Inside: ",here.id," idx:",i1,",",i2, " low:",dom.dist.targetLocDom.dim(1)._low, " high:",dom.dist.targetLocDom.dim(1)._high);
-        writeBinLocalArray((i1,i2),0,f);
+        lastPos=writeBinLocalArray((i1,i2),fpos,f);
+	if ( gotoPos < lastPos ) then gotoPos=lastPos;
       }
     }
   }
-/*
-  on dom.dist.targetLocsIdx((1,1)) {
-    writeBinLocalArray((1,1),f);
-  }
-*/
   timer.stop();
 
-f.open();
-
-
-
-
+  f.open();
+  f.fseekset(gotoPos);
 }
 
 //
