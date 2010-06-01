@@ -250,22 +250,36 @@ def file.read(type t) {
   return val;
 }
 
-def file.seekset(offset: int(64)) {
+def file.fseekset(offset: int(64)) {
+  var pos : int(64) = 5;
   on this {
     if !isOpen then
       _checkOpen(this, isRead=(FileAccessMode.read==mode));
         // SEEK_SET is 0
-    __primitive("fseek", _fp, offset, 0);
+    pos = __primitive("fseek", _fp, offset, 0) : int(64);
   }
+  return pos;
 }
 
-def file.seek(offset: int(64)) {
+def file.fseek(offset: int(64)) {
+  var pos : int(64) = 5;
   on this {
     if !isOpen then
       _checkOpen(this, isRead=(FileAccessMode.read==mode));
         // SEEK_CUR is 1
-    __primitive("fseek", _fp, offset, 1);
+    pos  =  __primitive("fseek", _fp, offset, 1) : int(64);
   }
+  return pos;
+}
+
+def file.chpl_ftell() {
+  var pos : int(64) = 5;
+  on this {
+    if !isOpen then
+      _checkOpen(this, isRead=(FileAccessMode.read==mode));
+    pos  =  __primitive("ftell", _fp) : int(64);
+  }
+  return pos;
 }
 
 def string.writeThis(f: Writer) {
@@ -401,6 +415,10 @@ def file.read(val: []) {
 
 def file.write(val: []) {
   val.writeBinArray(this);
+}
+
+def file.write(val: domain) {
+  val.writeBinDom(this);
 }
 
 

@@ -693,6 +693,15 @@ record _domain {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+  def readBinDom(f : file) {
+    _value.readBinDom(f);
+  }
+
+  def writeBinDom(f : file) {
+    _value.writeBinDom(f);
+  }
+
 }
 
 def _getNewDist(value) {
