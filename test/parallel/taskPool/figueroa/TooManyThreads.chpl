@@ -14,7 +14,7 @@ _extern def setThreadLimit(l: int(32));
 _extern def setStackLimit(l: int(32));
 
 config const numThreads = 6000;
-config const threadLimit = 1000;
+config const threadLimit = 500;
 config const stackLimit = 8192;
 var total: int,
     count: int = numThreads,
