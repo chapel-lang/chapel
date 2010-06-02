@@ -459,6 +459,11 @@ makeHeapAllocations() {
   forv_Vec(Symbol, var, varVec) {
     INT_ASSERT(!var->type->symbol->hasFlag(FLAG_REF));
 
+    if (var->hasFlag(FLAG_EXTERN)) {
+      // don't widen external variables
+      continue;
+    }
+
     if (ArgSymbol* arg = toArgSymbol(var)) {
       VarSymbol* tmp = newTemp(var->type);
       varSet.set_add(tmp);
