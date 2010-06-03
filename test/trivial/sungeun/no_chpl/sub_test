@@ -22,15 +22,18 @@ for f in $files; do
     echo "[Executing $1 $COMPOPTS $f]"
     $1 $COMPOPTS $f 2>&1 | tee $f.comp.out.tmp
     diff $f.comp.out.tmp $f.good
+    retval=$?
 
-    if [ $? = 0 ]; then
-        rm $f.comp.out.tmp
-        s="[Success"
-    else
-        s="[Error"
-    fi
     if [ "$futuretest" != "" ]; then
-        s="$s Future ($futuretest)"
+        s="Future ($futuretest) "
+    else
+        s=""
+    fi
+    if [ $retval = 0 ]; then
+        rm $f.comp.out.tmp
+        s="$s[Success"
+    else
+        s="$s[Error"
     fi
         
     echo "$s matching compiler output for $localdir/$f]"
