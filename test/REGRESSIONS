@@ -15,9 +15,16 @@
 general regressions
 ===================
 
+sub_test-generated Future message followed wrong format (06/03/10)
+------------------------------------------------------------------
+[Error Future (bug: Seg fault in build_chpl_entry_points()) matching compiler
+output for ./test/trivial/sungeun/no_chpl/blah.c]
+[Error Future (bug: Seg fault in build_chpl_entry_points()) matching compiler
+output for ./test/trivial/sungeun/no_chpl/blah.h]
+
 nondet. compilation timeouts
 ----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10, 05/21/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10, 05/21/10, 05/27/10)
 
 nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 ----------------------------------------------------------------------------
@@ -30,10 +37,6 @@ nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 [Error matching program output for studies/hpcc/RA/bradc/ra-bradc-old2] (05/01/10)
 [Error matching program output for trivial/marybeth/select1] (05/12/10)
 [Error matching program output for exercises/histogram2] (05/17/10 -- gasnet)
-
-nondet. runs out of memory due to something other than threads
---------------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads] (04/09/10, 04/10/10, 04/11/10, 04/16/10, 04/20/10, 04/22/10, 04/27/10, 04/30/10, 05/01/10, 05/02/10, 05/06/10, 05/07/10, 05/08/10, 05/11/10, 05/13/10, 05/16/10, 05/20/10, 05/22/10, 05/24/10)
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -102,7 +105,7 @@ nondet. "vg_alloc_ThreadState: no free slots available" error
 
 spurious execution timeouts
 ---------------------------
-[Error: Timed out executing program users/shetag/fock/fock-1] (04/11/10, 04/12/10, 04/14/10, 04/27/10, 04/29/10, 05/14/10)
+[Error: Timed out executing program users/shetag/fock/fock-1] (04/11/10, 04/12/10, 04/14/10, 04/27/10, 04/29/10, 05/14/10, 05/25/10, 05/27/10, 06/01/10)
 [Error: Timed out executing program users/shetag/fock/fock-2] (04/09/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
@@ -149,7 +152,7 @@ seg fault (04/30/10 -- after sched_yield policy change removed timeout)
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_of_distributed_array2] (04/30/10)
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_of_distributed_array2] (04/30/10, 05/26/10)
 
 execution timeouts (04/30/10 -- after sched_yield polcy change)
 ---------------------------------------------------------------
@@ -193,28 +196,34 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+nondet. execution failures
+--------------------------
+[Error: Timed out executing program users/franzf/v1/chpl/main] (05/26/10)
+[Error: Timed out executing program users/franzf/v2/chpl/main] (05/26/10)
+
 nondet. access of remote data in local block
 --------------------------------------------
 [Error matching program output for multilocale/local/diten/test_local2] (05/18/10)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main   -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast) (2-1)] (05/06/10, 05/07/10, 05/11/10, 05/16/10, 05/18/10, 05/21/10, 05/24/10)
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main   -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast) (2-1)] (05/06/10, 05/07/10, 05/11/10, 05/16/10, 05/18/10, 05/21/10, 05/24/10, 05/27/10, 06/03/10)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10, 05/12/10, 05/17/10, 05/18/10)
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10, 05/12/10, 05/17/10, 05/18/10, 05/26/10, 06/03/10)
 
-nondet. seg fault -- or maybe related to another bug on 04/14/10 fixed 04/15?
------------------------------------------------------------------------------
+nondet. seg fault
+-----------------
 [Error matching program output for arrays/deitz/part7/test_out_array] (04/14/10, maybe related to another bug on 04/14/10 fixed 04/15/10)
 [Error matching program output for distributions/deitz/test_block_representation] (05/10/10)
+[Error matching program output for arrays/deitz/jacobi2] (05/26/10)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10, 05/11/10, 05/12/10, 05/15/10, 05/17/10, 05/18/10, 05/19/10, 05/22/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10, 05/11/10, 05/12/10, 05/15/10, 05/17/10, 05/18/10, 05/19/10, 05/22/10, 05/28/10, 06/03/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10, 05/13/10, 05/16/10, 05/18/10, 05/19/10, 05/22/10, 05/24/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10, 05/13/10, 05/16/10, 05/18/10, 05/19/10, 05/22/10, 05/24/10, 06/03/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -318,7 +327,7 @@ mpi-specific failures
 
 nondet. exec timeout
 --------------------
-[Error: Timed out executing program users/shetag/fock/fock-stc-1] (05/24/10)
+[Error: Timed out executing program users/shetag/fock/fock-stc-1] (05/24/10, 05/26/10)
 
 nondet. memory corruption
 -------------------------
@@ -326,9 +335,9 @@ nondet. memory corruption
 
 nondet. seg fault (when not timing out below)
 ---------------------------------------------
-[Error matching program output for users/agnieszka/multiArrayI] (05/25/10)
+[Error matching program output for users/agnieszka/multiArrayI] (05/25/10, 05/30/10)
 [Error matching program output for users/agnieszka/multiArrayI10] (05/08/10)
-[Error matching program output for users/agnieszka/test2] (05/08/10, 05/25/10)
+[Error matching program output for users/agnieszka/test2] (05/08/10, 05/25/10, 05/26/10)
 
 nondet. out-of-memory error
 ---------------------------
@@ -386,39 +395,6 @@ missing 1-tuple acccessor (03/03/10)
 baseline-specific tests
 =======================
 
-???--related to diten's removal of temps from DefaultAssociative? (05/19/10)
-----------------------------------------------------------------------------
-[Error matching program output for arrays/deitz/opaque/test_opaque2]
-[Error matching program output for arrays/diten/enumArrayMethods]
-[Error matching program output for arrays/diten/nestSortedIter]
-[Error matching program output for associative/bradc/assocRecord]
-[Error matching program output for associative/bradc/removeResizeViaAssign]
-[Error matching program output for associative/deitz/arrays/test_indefinite1]
-[Error matching program output for associative/deitz/arrays/test_indefinite2]
-[Error matching program output for associative/deitz/arrays/test_indefinite3]
-[Error matching program output for associative/deitz/arrays/test_indefinite4]
-[Error matching program output for associative/deitz/arrays/test_indefinite5]
-[Error matching program output for associative/deitz/arrays/test_indefinite6]
-[Error matching program output for associative/deitz/arrays/test_indefinite7]
-[Error matching program output for associative/deitz/arrays/test_indefinite8]
-[Error matching program output for associative/deitz/domains/test_indefinite1]
-[Error matching program output for associative/deitz/domains/test_indefinite_domain_of_tuple]
-[Error matching program output for associative/deitz/domains/test_indefinite_remove2]
-[Error matching program output for associative/deitz/domains/test_indefinite_remove]
-[Error matching program output for associative/diten/enumArrays]
-[Error matching program output for associative/waynew/indef6]
-[Error matching program output for associative/waynew/indef7]
-[Error matching program output for associative/waynew/indef8-fail2]
-[Error matching program output for associative/waynew/indef8]
-[Error matching program output for associative/waynew/indef9]
-[Error matching program output for associative/waynew/indef9a]
-[Error matching program output for functions/deitz/iterators/leader_follower/test_neg_stride_range_leader_follower]
-[Error matching program output for release/examples/primers/opaque]
-[Error matching program output for studies/590o/alaska/graph]
-[Error matching program output for studies/madness/common/test_showboxes]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_showboxes]
-[Error matching program output for types/enum/diten/enumDom]
-
 incorrect output -- expected? (04/03/10)
 ----------------------------------------
 [Error matching program output for arrays/deitz/parallelism/stream/test_stream_is_parallel]
@@ -451,20 +427,10 @@ timeouts due to removal of -O
 opts-specific tests
 ===================
 
-(Example runs: 7)
-
---baseline --copy-propagation
---baseline --dead-code-elimination
---baseline --inline
---baseline --optimize-loop-iterators
---baseline --scalar-replacement
---no-optimize-loop-iterators --no-inline-iterators --no-live-analysis
---baseline --no-local
----------------------------------------------------------------------
-[Error matching program output for release/examples/primers/opaque]
+(Example runs: 0)
 
 
-(Full run: 136)
+(Full run: 348 -- too lazy to enumerate)
 
 general failures
 ----------------
@@ -634,12 +600,15 @@ nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main] (05/09/10, 05/23/10)
 [Error: Timed out compilation for classes/bradc/arrayInClass/genericArrayInClass-otharrs] (05/09/10)
-[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (05/09/10)
+[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (05/09/10, 05/31/10)
 [Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_mul] (05/24/10)
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3b] (05/30/10)
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3a] (08/30/09)
+[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (05/09/10)
 
 nondet. gdb output difference
 -----------------------------
-[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig] (05/23/10)
+[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig] (05/23/10, 05/31/10)
 
 gdb output difference (05/09/10)
 --------------------------------
@@ -647,7 +616,6 @@ gdb output difference (05/09/10)
 
 compilation timeout (05/09/10)
 ------------------------------
-[Error: Timed out compilation for studies/hpcc/FFT/diten/fft]
 [Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_mul]
 
 redeclaration of identifier in scope (02/27/10, but hadn't run well in awhile)
@@ -671,8 +639,6 @@ new timeouts (08/30/09)
 -----------------------
 [Error: Timed out compilation for classes/bradc/arrayInClass/genericArrayInClass-otharrs]
 [Error: Timed out compilation for multilocale/deitz/linked/test_linked3]
-[Error: Timed out compilation for multilocale/deitz/linked/test_linked3a]
-[Error: Timed out compilation for multilocale/deitz/linked/test_linked3b]
 
 wrong result -- bug in compiler?
 --------------------------------
