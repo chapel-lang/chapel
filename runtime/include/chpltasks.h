@@ -21,16 +21,6 @@
 extern int32_t maxThreadsPerLocale;
 
 
-// Mutexes
-
-typedef chpl_mutex_t* chpl_mutex_p;
-
-void CHPL_MUTEX_INIT(chpl_mutex_p);
-chpl_mutex_p CHPL_MUTEX_NEW(void);
-void CHPL_MUTEX_LOCK(chpl_mutex_p);
-void CHPL_MUTEX_UNLOCK(chpl_mutex_p);
-
-
 // Sync variables
 
 void      CHPL_SYNC_LOCK(chpl_sync_aux_t *);
@@ -162,12 +152,8 @@ uint32_t CHPL_NUMIDLETHREADS(void);
 
 #else // LAUNCHER
 
-#define CHPL_MUTEX_INIT(x)
-#define CHPL_MUTEX_LOCK(x)
-#define CHPL_MUTEX_UNLOCK(x)
 typedef void chpl_sync_aux_t;
 typedef void chpl_single_aux_t;
-typedef int chpl_mutex_t;
 #define CHPL_TASKING_EXIT()
 
 #endif // LAUNCHER

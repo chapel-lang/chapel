@@ -82,12 +82,6 @@ typedef uint64_t chpl_taskID_t;
 
 
 //
-// Mutexes
-//
-typedef threadlayer_mutex_t chpl_mutex_t;
-
-
-//
 // Thread management
 //
 threadlayer_threadID_t threadlayer_thread_id(void);
@@ -105,7 +99,7 @@ void threadlayer_thread_join(threadlayer_threadID_t);
 //
 typedef struct {
   volatile chpl_bool is_full;
-  chpl_mutex_t* lock;
+  threadlayer_mutex_t* lock;
   threadlayer_sync_aux_t tl_aux;
 } chpl_sync_aux_t;
 
@@ -120,7 +114,7 @@ typedef struct {
 //
 typedef struct {
   volatile chpl_bool is_full;
-  chpl_mutex_t* lock;
+  threadlayer_mutex_t* lock;
   threadlayer_single_aux_t tl_aux;
 } chpl_single_aux_t;
 
@@ -275,7 +269,7 @@ int threadlayer_thread_create(threadlayer_threadID_t*, void*(*)(void*), void*);
 // which the suspend callback can use to tell when the pool becomes
 // nonempty.
 //
-chpl_bool threadlayer_pool_suspend(chpl_mutex_t*, struct timeval*);
+chpl_bool threadlayer_pool_suspend(threadlayer_mutex_t*, struct timeval*);
 void threadlayer_pool_awaken(void);
 
 

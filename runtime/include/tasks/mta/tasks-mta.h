@@ -9,11 +9,6 @@ typedef int64_t chpl_taskID_t;
 #define chpl_nullTaskID 0
 
 //
-// Mutexes
-//
-typedef int chpl_mutex_t;
-
-//
 // Sync variables
 //
 typedef struct {

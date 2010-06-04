@@ -30,12 +30,6 @@ static int                  queued_cnt;     // number of tasks in the task pool
 static chpl_bool launch_next_task(void);
 
 
-// Mutex
-void CHPL_MUTEX_INIT(chpl_mutex_p mutex) { }
-void CHPL_MUTEX_LOCK(chpl_mutex_p mutex) { }
-void CHPL_MUTEX_UNLOCK(chpl_mutex_p mutex) { }
-
-
 // Sync variables
 
 void CHPL_SYNC_LOCK(chpl_sync_aux_t *s) { }

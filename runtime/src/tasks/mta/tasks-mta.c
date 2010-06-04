@@ -18,21 +18,6 @@ static int64_t          chpl_begin_cnt;      // number of unjoined threads
 static sync int64_t     chpl_can_exit;       // can main thread exit?
 
 
-// Mutex
-
-void CHPL_MUTEX_INIT(chpl_mutex_p mutex) {
-  purge(mutex);                     // set to zero and mark empty
-}
-
-void CHPL_MUTEX_LOCK(chpl_mutex_p mutex) {
-  writeef(mutex, 1);                // set to one and mark full
-}
-
-void CHPL_MUTEX_UNLOCK(chpl_mutex_p mutex) {
-  CHPL_MUTEX_INIT(mutex);
-}
-
-
 // Sync variables
 
 void CHPL_SYNC_LOCK(chpl_sync_aux_t *s) {

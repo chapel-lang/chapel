@@ -243,7 +243,7 @@ static void* pthread_func(void* void_f) {
   return (*(fn))(arg);
 }
 
-chpl_bool threadlayer_pool_suspend(chpl_mutex_p lock,
+chpl_bool threadlayer_pool_suspend(threadlayer_mutex_p lock,
                                    struct timeval *deadline) {
   int last_cancel_state;
   chpl_bool res;
@@ -273,7 +273,7 @@ chpl_bool threadlayer_pool_suspend(chpl_mutex_p lock,
 }
 
 static void pool_suspend_cancel_cleanup(void* void_lock) {
-  CHPL_MUTEX_UNLOCK((chpl_mutex_p) void_lock);
+  threadlayer_mutex_unlock((threadlayer_mutex_p) void_lock);
 }
 
 void threadlayer_pool_awaken(void) {
