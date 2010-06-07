@@ -99,7 +99,7 @@ void threadlayer_thread_join(threadlayer_threadID_t);
 //
 typedef struct {
   volatile chpl_bool is_full;
-  threadlayer_mutex_t* lock;
+  threadlayer_mutex_t lock;
   threadlayer_sync_aux_t tl_aux;
 } chpl_sync_aux_t;
 
@@ -114,7 +114,7 @@ typedef struct {
 //
 typedef struct {
   volatile chpl_bool is_full;
-  threadlayer_mutex_t* lock;
+  threadlayer_mutex_t lock;
   threadlayer_single_aux_t tl_aux;
 } chpl_single_aux_t;
 

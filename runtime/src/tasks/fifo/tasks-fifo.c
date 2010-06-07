@@ -135,7 +135,7 @@ static task_pool_p             add_to_task_pool(chpl_fn_p,
 static void sync_wait_and_lock(chpl_sync_aux_t *s,
                                chpl_bool want_full,
                                int32_t lineno, chpl_string filename) {
-  threadlayer_mutex_lock(s->lock);
+  threadlayer_mutex_lock(&s->lock);
   while (s->is_full != want_full) {
     if (set_block_loc(lineno, filename)) {
       // all other tasks appear to be blocked
@@ -168,11 +168,11 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
 }
 
 void CHPL_SYNC_LOCK(chpl_sync_aux_t *s) {
-  threadlayer_mutex_lock(s->lock);
+  threadlayer_mutex_lock(&s->lock);
 }
 
 void CHPL_SYNC_UNLOCK(chpl_sync_aux_t *s) {
-  threadlayer_mutex_unlock(s->lock);
+  threadlayer_mutex_unlock(&s->lock);
 }
 
 void CHPL_SYNC_WAIT_FULL_AND_LOCK(chpl_sync_aux_t *s,
@@ -205,12 +205,11 @@ chpl_bool CHPL_SYNC_IS_FULL(void *val_ptr,
 
 void CHPL_SYNC_INIT_AUX(chpl_sync_aux_t *s) {
   s->is_full = false;
-  s->lock = threadlayer_mutex_new();
+  threadlayer_mutex_init(&s->lock);
   threadlayer_sync_init(s);
 }
 
 void CHPL_SYNC_DESTROY_AUX(chpl_sync_aux_t *s) {
-  chpl_free(s->lock, 0, 0);
   threadlayer_sync_destroy(s);
 }
 
@@ -218,16 +217,16 @@ void CHPL_SYNC_DESTROY_AUX(chpl_sync_aux_t *s) {
 // Single variables
 
 void CHPL_SINGLE_LOCK(chpl_single_aux_t *s) {
-  threadlayer_mutex_lock(s->lock);
+  threadlayer_mutex_lock(&s->lock);
 }
 
 void CHPL_SINGLE_UNLOCK(chpl_single_aux_t *s) {
-  threadlayer_mutex_unlock(s->lock);
+  threadlayer_mutex_unlock(&s->lock);
 }
 
 void CHPL_SINGLE_WAIT_FULL(chpl_single_aux_t *s,
                            int32_t lineno, chpl_string filename) {
-  threadlayer_mutex_lock(s->lock);
+  threadlayer_mutex_lock(&s->lock);
   while (!s->is_full) {
     if (set_block_loc(lineno, filename)) {
       // all other tasks appear to be blocked
@@ -273,12 +272,11 @@ chpl_bool CHPL_SINGLE_IS_FULL(void *val_ptr,
 
 void CHPL_SINGLE_INIT_AUX(chpl_single_aux_t *s) {
   s->is_full = false;
-  s->lock = threadlayer_mutex_new();
+  threadlayer_mutex_init(&s->lock);
   threadlayer_single_init(s);
 }
 
 void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) {
-  chpl_free(s->lock, 0, 0);
   threadlayer_single_destroy(s);
 }
 
