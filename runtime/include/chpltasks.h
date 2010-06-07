@@ -5,8 +5,9 @@
 
 #include <stdint.h>
 #include "arg.h"
+#ifdef CHPL_TASKS_H
 #include CHPL_TASKS_H
-
+#endif
 
 //
 // Define the (uppercase) function names in the interface, that is,

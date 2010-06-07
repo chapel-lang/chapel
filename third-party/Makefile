@@ -23,6 +23,9 @@ gasnet: FORCE
 mpich1: FORCE
 	cd mpich1 && $(MAKE)
 
+nanox: FORCE
+	cd nanox && $(MAKE)
+
 pvm: FORCE
 	cd pvm && $(MAKE)
 
