@@ -491,7 +491,7 @@ makeHeapAllocations() {
     if (!isModuleSymbol(var->defPoint->parentSymbol) &&
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
-      var->defPoint->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
+      var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
       heapAllocatedVars.add(var);
     }
 
