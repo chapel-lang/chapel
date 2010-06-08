@@ -579,12 +579,12 @@ pragma "inline" def _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
 // primitive string functions and methods
 //
 pragma "inline" def ascii(a: string) return __primitive("ascii", a);
-pragma "inline" def length(a: string) return __primitive("string_length", a);
+pragma "inline" def string.length return __primitive("string_length", this);
 pragma "inline" def string.substring(i: int) return __primitive("string_index", this, i);
 pragma "inline" def _string_contains(a: string, b: string) return __primitive("string_contains", a, b);
 
 pragma "inline" def ascii(param a: string) param return __primitive("ascii", a);
-pragma "inline" def length(param a: string) param return __primitive("string_length", a);
+pragma "inline" def param string.length param return __primitive("string_length", this);
 pragma "inline" def _string_contains(param a: string, param b: string) param return __primitive("string_contains", a, b);
 
 //

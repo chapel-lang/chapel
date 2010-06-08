@@ -17,8 +17,8 @@ def main() {
   var len1, len2: int;
 
   get_strings(s1, s2);
-  len1 = length(s1);
-  len2 = length(s2);
+  len1 = (s1.length);
+  len2 = (s2.length);
 
   var b: [0..len1, 0..len2] (int, int);
   var c: [0..len1, 0..len2] int;
@@ -44,8 +44,8 @@ def lcs_length(s1: string, s2: string, b, c) {
      to s1(i), s2(j).  B contains directions to follow back to
      within the one of the strings to build an actual LCS.
   */
-  var m = length(s1);
-  var n = length(s2);
+  var m = (s1.length);
+  var n = (s2.length);
   for i in 1..m {
     for j in 1..n {
       if s1.substring(i) == s2.substring(j) {

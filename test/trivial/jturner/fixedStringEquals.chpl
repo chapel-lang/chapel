@@ -13,6 +13,7 @@ def =(a:fixed_length_string, param b:string) {
   return fixed_string(b);
 }
 
-var x:fixed_length_string(5) = "sally";
+var x:fixed_length_string(5);
+x = "sally";
 writeln(x);
 

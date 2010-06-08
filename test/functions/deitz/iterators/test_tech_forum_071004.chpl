@@ -1,5 +1,5 @@
 def iter_string_chars(s: string) {
-  var i = 1, limit = length(s);
+  var i = 1, limit = s.length;
   while i <= limit {
     yield s.substring(i);
     i += 1;
@@ -46,7 +46,7 @@ def IC.next() {
 def IC.next() {
   if cursor == 1 {
     i = 1;
-    limit = length(s);
+    limit = s.length;
     if i <= limit {
       value = s.substring(i);
       cursor = 2;
@@ -66,7 +66,7 @@ def IC.next() {
 def special_fun_string_chars(s: string) {
   var ic = new IC(cursor=1, s=s);
   ic.i = 1;
-  ic.limit = length(ic.s);
+  ic.limit = ic.s.length;
   ic.cursor = ic.i <= ic.limit;
   if ic.cursor then
     ic.value = ic.s.substring(ic.i);

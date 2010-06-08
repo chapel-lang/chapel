@@ -53,7 +53,7 @@ def infix2postfix(str: string) {
   var post: string = "";
   var stack: Stack;
 
-  for i in 1..length(str) {
+  for i in 1..(str.length) {
     var ch: string;
     var s = str.substring(i);
     select s {
@@ -95,7 +95,7 @@ def infix2postfix(str: string) {
 
 def postfixEval(str: string) {
   var stack: Stack;
-  for i in 1..length(str) {
+  for i in 1..(str.length) {
     var s: string = str.substring(i);
     select s {
       when "0","1","2","3","4","5","6","7","8","9" {

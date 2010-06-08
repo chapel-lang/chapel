@@ -477,7 +477,7 @@ def format(fmt: string, x: ?t) {
 }
 
 def _getoutputformat(s: string):string {
-  var sn = length(s);
+  var sn = s.length;
   var afterdot = false;
   var dplaces = 0;
   for i in 1..sn {
