@@ -30,7 +30,7 @@ typedef struct {
 static pthread_cond_t wakeup_cond = PTHREAD_COND_INITIALIZER;
 static pthread_key_t  thread_private_key;
 
-static chpl_condvar_t* chpl_condvar_new(void);
+static void            threadlayer_condvar_init(threadlayer_condvar_t*);
 static void*           initial_pthread_func(void*);
 static void            destroy_thread_private_data(void*);
 static void*           pthread_func(void*);
@@ -91,13 +91,9 @@ void threadlayer_thread_join(threadlayer_threadID_t thread) {
 
 // Condition variables
 
-static chpl_condvar_t* chpl_condvar_new(void) {
-  chpl_condvar_t* cv;
-  cv = (chpl_condvar_t*) chpl_alloc(sizeof(chpl_condvar_t),
-                                    CHPL_RT_MD_COND_VAR, 0, 0);
-  if (pthread_cond_init(cv, NULL))
+static void threadlayer_condvar_init(threadlayer_condvar_t* cv) {
+  if (pthread_cond_init((pthread_cond_t*) cv, NULL))
     chpl_internal_error("pthread_cond_init() failed");
-  return cv;
 }
 
 
@@ -105,8 +101,8 @@ static chpl_condvar_t* chpl_condvar_new(void) {
 
 chpl_bool threadlayer_sync_suspend(chpl_sync_aux_t *s,
                                    struct timeval *deadline) {
-  chpl_condvar_t* cond;
-  cond = s->is_full ? s->tl_aux.signal_empty : s->tl_aux.signal_full;
+  threadlayer_condvar_t* cond;
+  cond = s->is_full ? &s->tl_aux.signal_empty : &s->tl_aux.signal_full;
 
   if (deadline == NULL) {
     (void) pthread_cond_wait(cond, (pthread_mutex_t*) &s->lock);
@@ -123,26 +119,23 @@ chpl_bool threadlayer_sync_suspend(chpl_sync_aux_t *s,
 
 void threadlayer_sync_awaken(chpl_sync_aux_t *s) {
   if (pthread_cond_signal(s->is_full ?
-                          s->tl_aux.signal_full : s->tl_aux.signal_empty))
+                          &s->tl_aux.signal_full : &s->tl_aux.signal_empty))
     chpl_internal_error("pthread_cond_signal() failed");
 }
 
 void threadlayer_sync_init(chpl_sync_aux_t *s) {
-  s->tl_aux.signal_full = chpl_condvar_new();
-  s->tl_aux.signal_empty = chpl_condvar_new();
+  threadlayer_condvar_init(&s->tl_aux.signal_full);
+  threadlayer_condvar_init(&s->tl_aux.signal_empty);
 }
 
-void threadlayer_sync_destroy(chpl_sync_aux_t *s) {
-  chpl_free(s->tl_aux.signal_full, 0, 0);
-  chpl_free(s->tl_aux.signal_empty, 0, 0);
-}
+void threadlayer_sync_destroy(chpl_sync_aux_t *s) { }
 
 // Single variable callbacks for the FIFO tasking layer
 
 chpl_bool threadlayer_single_suspend(chpl_single_aux_t *s,
                                      struct timeval *deadline) {
   if (deadline == NULL) {
-    (void) pthread_cond_wait(s->tl_aux.signal_full,
+    (void) pthread_cond_wait(&s->tl_aux.signal_full,
 			     (pthread_mutex_t*) &s->lock);
     return false;
   }
@@ -150,24 +143,22 @@ chpl_bool threadlayer_single_suspend(chpl_single_aux_t *s,
     struct timespec ts;
     ts.tv_sec  = deadline->tv_sec;
     ts.tv_nsec = deadline->tv_usec * 1000UL;
-    return (pthread_cond_timedwait(s->tl_aux.signal_full,
+    return (pthread_cond_timedwait(&s->tl_aux.signal_full,
 				   (pthread_mutex_t*) &s->lock, &ts)
 	    == ETIMEDOUT);
   }
 }
 
 void threadlayer_single_awaken(chpl_single_aux_t *s) {
-  if (pthread_cond_signal(s->tl_aux.signal_full))
+  if (pthread_cond_signal(&s->tl_aux.signal_full))
     chpl_internal_error("pthread_cond_signal() failed");
 }
 
 void threadlayer_single_init(chpl_single_aux_t *s) {
-  s->tl_aux.signal_full = chpl_condvar_new();
+  threadlayer_condvar_init(&s->tl_aux.signal_full);
 }
 
-void threadlayer_single_destroy(chpl_single_aux_t *s) {
-  chpl_free(s->tl_aux.signal_full, 0, 0);
-}
+void threadlayer_single_destroy(chpl_single_aux_t *s) { }
 
 
 // Thread callbacks for the FIFO tasking layer
