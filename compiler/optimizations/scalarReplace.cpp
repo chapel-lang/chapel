@@ -319,14 +319,14 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
   for_defs(se, defMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call) {
-        assert(call->isPrimitive(PRIM_MOVE));
+        INT_ASSERT(call->isPrimitive(PRIM_MOVE));
         Symbol *rhs;
         if (isSymExpr(call->get(2))) {
           rhs = toSymExpr(call->get(2))->var;
         } else if (isCallExpr(call->get(2))) {
           // rhs is a tuple in a record
           CallExpr* oldrhs = toCallExpr(call->get(2));
-          assert(toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE));
+          INT_ASSERT(toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE));
           SymExpr *a1 = toSymExpr(oldrhs->get(1))->copy();
           SymExpr *a2 = toSymExpr(oldrhs->get(2))->copy();
 
@@ -344,7 +344,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
           addDef(defMap, a3);
         } else {
           rhs = NULL; // to silence compiler warnings
-          assert(true);
+          INT_ASSERT(false);
         }
         for_fields(field, ct) {
           SymExpr* rhsCopy = new SymExpr(rhs);
