@@ -35,6 +35,7 @@ extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
 extern int optimize_on_clause_limit;
+extern int scalar_replace_limit;
 
 extern bool report_inlining;
 extern char CHPL_HOME[FILENAME_MAX];
@@ -78,6 +79,7 @@ extern int squelch_header_errors;
 
 extern bool fWarnPromotion;
 extern bool fReportOptimizedOn;
+extern bool fReportScalarReplace;
 
 extern bool debugCCode, optimizeCCode;
 
