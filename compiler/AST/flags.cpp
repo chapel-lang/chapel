@@ -52,6 +52,7 @@ initFlags() {
   defineFlag(FLAG_EXPORT, "export");
   defineFlag(FLAG_EXPR_TEMP, "expr temp");
   defineFlag(FLAG_EXTERN, "extern");
+  defineFlag(FLAG_FIXED_STRING, "fixed string");
   defineFlag(FLAG_GENERIC, "generic");
   defineFlag(FLAG_HEAP, "heap");
   defineFlag(FLAG_HEAP_ALLOCATE, "heap allocate");

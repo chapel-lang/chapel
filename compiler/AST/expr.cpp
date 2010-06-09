@@ -834,7 +834,8 @@ void CallExpr::codegen(FILE* outfile) {
               fprintf(outfile, ", ");
             }
             gen(outfile, "%A, %A)", call->get(2), call->get(3));
-          } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+          } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) ||
+                     get(1)->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING)) {
             gen(outfile, "CHPL_ASSIGN_SVEC(%A, *(%A))", get(1), call->get(1));
           } else if (call->get(1)->typeInfo() == dtString) {
             // this should be illegal when wide strings are fixed
@@ -1105,7 +1106,7 @@ void CallExpr::codegen(FILE* outfile) {
         gen(outfile, "CHPL_NARROW(%A, %A)", get(1), get(2));
         break;
       }
-      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+      if ((get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) || (get(2)->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING))) {
         if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
           gen(outfile, "CHPL_ASSIGN_SVEC(*%A, %A)", get(1), get(2));
         else
@@ -2244,6 +2245,8 @@ void CallExpr::codegen(FILE* outfile) {
     else
       fprintf(outfile, ", ");
     if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+      fprintf(outfile, "(");
+    else if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING))
       fprintf(outfile, "(");
     else if (formal->requiresCPtr() && !actual->typeInfo()->symbol->hasFlag(FLAG_REF))
       fprintf(outfile, "&(");

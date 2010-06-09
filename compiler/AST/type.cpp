@@ -282,6 +282,11 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "[%d];\n\n", fields.length);
     return;
   }
+  else if (symbol->hasFlag(FLAG_FIXED_STRING)) {
+    int size = toVarSymbol(symbol->type->substitutions.v[0].value)->immediate->int_value();
+    fprintf(outfile, "typedef char %s[%i];\n", symbol->cname, size);
+    return;
+  }
 
   fprintf(outfile, "typedef struct __");
   symbol->codegen(outfile);
