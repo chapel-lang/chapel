@@ -13,6 +13,15 @@ files="blah.c blah.h blah.chpl"
 
 for f in $files; do
 
+    if [ -e $f.future ] && [ "$CHPL_TEST_FUTURES" -eq "0" ]; then
+        echo "[Skipping future test: $localdir/$f]"
+        continue
+    fi
+
+    if [ ! -e $f.future ] && [ "$CHPL_TEST_FUTURES" -eq "2" ]; then
+        continue
+    fi
+
     if [ -e $f.future ]; then
         futuretest=`head -n 1 $f.future`
     else
