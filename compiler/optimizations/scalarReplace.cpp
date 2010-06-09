@@ -343,6 +343,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
           addUse(useMap, a2);
           addDef(defMap, a3);
         } else {
+          rhs = NULL; // to silence compiler warnings
           assert(true);
         }
         for_fields(field, ct) {
