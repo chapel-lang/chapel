@@ -174,7 +174,7 @@ def #(r:range(?), i:integral)
 
 def #(r:range(?), i:integral)
   where r.boundedType == BoundedRangeType.boundedNone {
-  halt("cannot use # operator on an unbounded range");
+  compilerError("count operator is not defined for unbounded ranges");
 }
 
 
