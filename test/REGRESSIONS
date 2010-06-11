@@ -15,13 +15,6 @@
 general regressions
 ===================
 
-sub_test-generated Future message followed wrong format (06/03/10)
-------------------------------------------------------------------
-[Error Future (bug: Seg fault in build_chpl_entry_points()) matching compiler
-output for ./test/trivial/sungeun/no_chpl/blah.c]
-[Error Future (bug: Seg fault in build_chpl_entry_points()) matching compiler
-output for ./test/trivial/sungeun/no_chpl/blah.h]
-
 nondet. compilation timeouts
 ----------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10, 05/21/10, 05/27/10)
@@ -105,7 +98,7 @@ nondet. "vg_alloc_ThreadState: no free slots available" error
 
 spurious execution timeouts
 ---------------------------
-[Error: Timed out executing program users/shetag/fock/fock-1] (04/11/10, 04/12/10, 04/14/10, 04/27/10, 04/29/10, 05/14/10, 05/25/10, 05/27/10, 06/01/10)
+[Error: Timed out executing program users/shetag/fock/fock-1] (04/11/10, 04/12/10, 04/14/10, 04/27/10, 04/29/10, 05/14/10, 05/25/10, 05/27/10, 06/01/10, 06/08/10, 06/11/10)
 [Error: Timed out executing program users/shetag/fock/fock-2] (04/09/10)
 
 execution timeout (didn't get fixed with the others 04/02/10)
@@ -152,7 +145,7 @@ seg fault (04/30/10 -- after sched_yield policy change removed timeout)
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_of_distributed_array2] (04/30/10, 05/26/10)
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_of_distributed_array2] (04/30/10, 05/26/10, 06/11/10)
 
 execution timeouts (04/30/10 -- after sched_yield polcy change)
 ---------------------------------------------------------------
@@ -164,10 +157,10 @@ execution timeouts (04/30/10 -- after sched_yield polcy change)
 no-local regressions
 ====================
 
-timeouts for new tests (04/20/10)
----------------------------------
+nondet. compilation timeouts for new tests
+------------------------------------------
 [Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)]
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)]
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 06/11/10)
 
 nondet. can't find float.h?!
 ----------------------------
@@ -196,10 +189,14 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-nondet. execution failures
+cannot find module 'ra' (06/10/10)
+----------------------------------
+[Error matching compiler output for optimizations/sungeun/optimized-on/test_OptimizedOn_RA]
+
+nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program users/franzf/v1/chpl/main] (05/26/10)
-[Error: Timed out executing program users/franzf/v2/chpl/main] (05/26/10)
+[Error: Timed out executing program users/franzf/v1/chpl/main] (05/26/10, 06/06/10)
+[Error: Timed out executing program users/franzf/v2/chpl/main] (05/26/10, 06/06/10)
 
 nondet. access of remote data in local block
 --------------------------------------------
@@ -207,11 +204,11 @@ nondet. access of remote data in local block
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main   -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast) (2-1)] (05/06/10, 05/07/10, 05/11/10, 05/16/10, 05/18/10, 05/21/10, 05/24/10, 05/27/10, 06/03/10)
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main   -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast) (2-1)] (05/06/10, 05/07/10, 05/11/10, 05/16/10, 05/18/10, 05/21/10, 05/24/10, 05/27/10, 06/03/10, 06/05/10, 06/09/10, 06/10/10)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10, 05/12/10, 05/17/10, 05/18/10, 05/26/10, 06/03/10)
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10, 05/12/10, 05/17/10, 05/18/10, 05/26/10, 06/03/10, 06/04/10, 06/08/10, 06/10/10)
 
 nondet. seg fault
 -----------------
@@ -221,9 +218,10 @@ nondet. seg fault
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10, 05/11/10, 05/12/10, 05/15/10, 05/17/10, 05/18/10, 05/19/10, 05/22/10, 05/28/10, 06/03/10)
+[Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10, 05/11/10, 05/12/10, 05/15/10, 05/17/10, 05/18/10, 05/19/10, 05/22/10, 05/28/10, 06/03/10, 06/04/10, 06/06/10, 06/07/10, 06/08/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10, 05/13/10, 05/16/10, 05/18/10, 05/19/10, 05/22/10, 05/24/10, 06/03/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10, 05/13/10, 05/16/10, 05/18/10, 05/19/10, 05/22/10, 05/24/10, 06/03/10, 06/04/10, 06/07/10, 06/10/10, 06/11/10)
+[Error: Timed out executing program distributions/bradc/extremeBlock]
 
 execution timeout (didn't get fixed with the others 04/02/10)
 -------------------------------------------------------------
@@ -325,6 +323,10 @@ some types not getting --gen-communicated-structures'ed  (as of 03/25/10 ")
 mpi-specific failures
 =====================
 
+cannot find module 'ra' (06/10/10)
+----------------------------------
+[Error matching compiler output for optimizations/sungeun/optimized-on/test_OptimizedOn_RA]
+
 nondet. exec timeout
 --------------------
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (05/24/10, 05/26/10)
@@ -395,6 +397,13 @@ missing 1-tuple acccessor (03/03/10)
 baseline-specific tests
 =======================
 
+incorrect output (06/10/10)
+---------------------------
+[Error matching program output for optimizations/sungeun/scalar-replace/record_star_tuple   (--cc-warnings --baseline --report-scalar-replace -ss=20 --scalar-replace-limit=20) (2-0)]
+[Error matching program output for optimizations/sungeun/scalar-replace/record_star_tuple   (--cc-warnings --baseline --report-scalar-replace -ss=20) (1-0)]
+[Error matching program output for optimizations/sungeun/scalar-replace/star_tuple (--cc-warnings --baseline --report-scalar-replace -ss=20 --scalar-replace-limit=20) (2-0)]
+[Error matching program output for optimizations/sungeun/scalar-replace/star_tuple (--cc-warnings --baseline --report-scalar-replace -ss=20) (1-0)]
+
 incorrect output -- expected? (04/03/10)
 ----------------------------------------
 [Error matching program output for arrays/deitz/parallelism/stream/test_stream_is_parallel]
@@ -430,7 +439,12 @@ opts-specific tests
 (Example runs: 0)
 
 
-(Full run: 348 -- too lazy to enumerate)
+(Full run: 196)
+
+futures for local sub_test run but shouldn't have been
+------------------------------------------------------
+Future (bug: Seg fault in build_chpl_entry_points()) [Error matching compiler output for ./test/trivial/sungeun/no_chpl/blah.c]
+Future (bug: Seg fault in build_chpl_entry_points()) [Error matching compiler output for ./test/trivial/sungeun/no_chpl/blah.h]
 
 general failures
 ----------------
@@ -439,9 +453,7 @@ general failures
 [Error: Timed out executing program users/franzf/v2/chpl/main]
 [Error: Timed out executing program studies/shootout/fannkuch/fannkuch --N=10 (--cc-warnings --no-inline  ) (0-2)]
 [Error matching program output for arrays/deitz/part7/test_descriptor_frees]
-
---no-copy-propagation
----------------------
+[Error matching program output for classes/dinan/array_passed_to_constructor]
 
 --no-dead-code-elimination
 --------------------------
@@ -498,6 +510,7 @@ general failures
 [Error matching program output for classes/figueroa/RecordDestructor1]
 [Error matching program output for classes/figueroa/RecordConstructor2]
 [Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader3]
+[Error matching program output for parallel/begin/dinan/mvm_coforall]
 [Error matching program output for parallel/taskPool/figueroa/TooManyThreads]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report]
@@ -513,11 +526,6 @@ general failures
 [Error matching program output for arrays/deitz/part6/test_block_reduce]
 [Error matching compiler output for arrays/jplevyak/simple-4]
 [Error matching program output for classes/figueroa/RecordDestructor1]
-[Error matching program output for distributions/sungeun/dataPar1 --dataParTasksPerLocale=0 (--cc-warnings --no-local --heterogeneous  ) (0-1)]
-[Error matching program output for distributions/sungeun/dataPar1 --dataParTasksPerLocale=20 (--cc-warnings --no-local --heterogeneous  ) (0-2)]
-[Error matching program output for distributions/sungeun/dataPar1 --dataParIgnoreRunningTasks=false (--cc-warnings --no-local --heterogeneous  )
-(0-3)]
-[Error matching program output for distributions/sungeun/dataPar1 --dataParMinGranularity=20 (--cc-warnings --no-local --heterogeneous  ) (0-4)]
 [Error matching compiler output for functions/deitz/test_no_where_precedence]
 [Error matching compiler output for portability/boolSizes]
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-block1d-dom]
@@ -587,6 +595,30 @@ execution timeout (10/05/09)
 xt-cle-specific failures
 ========================
 
+failures due to Greg's checkin (should be resolved next weekend) (06/05/10)
+---------------------------------------------------------------------------
+[Error matching program output for arrays/deitz/part7/test_descriptor_frees]
+[Error matching program output for classes/dinan/array_passed_to_constructor]
+[Error matching program output for memory/bradc/memmax]
+[Error matching program output for memory/deitz/test_leaked_array]
+[Error matching program output for memory/deitz/test_leaked_array_in_record]
+[Error matching program output for memory/diten/freeNil]
+[Error matching program output for memory/diten/reallocNil]
+[Error matching program output for memory/diten/reallocToZero]
+[Error matching program output for memory/figueroa/LeakedMemory1]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory3]
+[Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
+[Error matching program output for memory/figueroa/printFinalMemStat]
+[Error matching program output for memory/shannon/freedMalloc]
+[Error matching program output for memory/shannon/memmaxExceedsLineno2]
+[Error matching program output for memory/shannon/memmaxExceeds]
+[Error matching program output for memory/shannon/memstatPrint]
+[Error matching program output for memory/shannon/printFinalMemStat]
+[Error matching program output for memory/shannon/printMemTable]
+[Error matching program output for memory/shannon/reallocZeroSize]
+[Error matching program output for spec/autogen/Classes.tex.tests/test_delete]
+
 output being treated as binary causing diff message to change (05/08/10)
 ------------------------------------------------------------------------
 [Error matching program output for compflags/bradc/html/testit]
@@ -599,12 +631,13 @@ cray-xt-cray/cce-specific regressions
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main] (05/09/10, 05/23/10)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (06/06/10)
 [Error: Timed out compilation for classes/bradc/arrayInClass/genericArrayInClass-otharrs] (05/09/10)
 [Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (05/09/10, 05/31/10)
-[Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_mul] (05/24/10)
+[Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_mul] (05/24/10, 06/06/10, 06/07/10)
 [Error: Timed out compilation for multilocale/deitz/linked/test_linked3b] (05/30/10)
-[Error: Timed out compilation for multilocale/deitz/linked/test_linked3a] (08/30/09)
-[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (05/09/10)
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3a] (08/30/09, 06/06/10)
+[Error: Timed out compilation for studies/hpcc/FFT/diten/fft] (05/09/10, 06/06/10)
 
 nondet. gdb output difference
 -----------------------------
@@ -668,9 +701,9 @@ precision issues (?) -- is there a floating point flag we need to throw?
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
 
-float.h missing (03/02/10)
---------------------------
-** everything **
+problem compiling chplmemtrack.c using -O2 (06/04/10)
+-----------------------------------------------------
+*everything*
 
 internal failure MIS0216 (02/28/10 -- but first PGI runs in ages)
 -----------------------------------------------------------------
@@ -816,6 +849,11 @@ sig_send: wait for sig_complete event failed
 ========================
 xmt-specific regressions
 ========================
+
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
+[Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
 
 out-of-bounds index (0) at line 100
 -----------------------------------
