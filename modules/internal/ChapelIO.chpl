@@ -417,8 +417,20 @@ def file.write(val: []) {
   val.writeBinArray(this);
 }
 
+def file.read(val: domain) {
+  val.readBinDom(this);
+}
+
 def file.write(val: domain) {
   val.writeBinDom(this);
+}
+
+def file.read(val: _distribution) {
+  val.readBinBlock(this);
+}
+
+def file.write(val: _distribution) {
+  val.writeBinBlock(this);
 }
 
 

@@ -434,6 +434,15 @@ record _distribution {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+  def readBinBlock(f : file) {
+    _value.readBinBlock(f);
+  }
+
+  def writeBinBlock(f : file) {
+    _value.writeBinBlock(f);
+  }
+
 }
 
 
