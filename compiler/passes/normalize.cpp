@@ -594,13 +594,13 @@ fix_def_expr(VarSymbol* var) {
           new CallExpr("_command_line_cast",
                        new SymExpr(new_StringSymbol(var->name)),
                        new CallExpr(PRIM_TYPEOF, constTemp),
-                       new CallExpr(primitives_map.get("_config_get_value"),
+                       new CallExpr("chpl_config_get_value",
                                     new_StringSymbol(var->name),
                                     module_name));
         stmt->insertAfter(
           new CondStmt(
             new CallExpr("!",
-                         new CallExpr(primitives_map.get("_config_has_value"),
+                         new CallExpr("chpl_config_has_value",
                                       new_StringSymbol(var->name),
                                       module_name)),
             noop,

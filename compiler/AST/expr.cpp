@@ -2020,9 +2020,6 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_NUM_PRIV_CLASSES:
       fprintf(outfile, "chpl_numPrivatizedClasses()");
       break;
-    case PRIM_GET_ERRNO:
-      fprintf(outfile, "get_errno()");
-      break;
     case PRIM_WARNING:
       // warning issued, continue codegen
       break;

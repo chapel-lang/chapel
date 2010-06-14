@@ -94,8 +94,6 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_LOCALE_ID:
   case PRIM_NUM_LOCALES:
 
-  case PRIM_GET_ERRNO:
-
   case PRIM_STRING_COPY:
 
   case PRIM_NEXT_UINT32:

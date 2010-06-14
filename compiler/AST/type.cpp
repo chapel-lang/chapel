@@ -647,7 +647,7 @@ void initPrimitiveTypes(void) {
   gOpaque->cname = "NULL";
 
   dtTimer = createPrimitiveType("_timervalue", "_timervalue");
-  CREATE_DEFAULT_SYMBOL(dtTimer, gTimer, "_new_timer()");
+  CREATE_DEFAULT_SYMBOL(dtTimer, gTimer, "chpl_new_timer()");
 
   dtTaskID = createPrimitiveType("chpl_taskID_t", "chpl_taskID_t");
   CREATE_DEFAULT_SYMBOL(dtTaskID, gTaskID, "chpl_nullTaskID");

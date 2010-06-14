@@ -15,11 +15,15 @@ extern char* _default_format_write_complex128;
 
 #define _default_string_length             256
 
-#define get_errno() (strerror(errno))
-#define get_stdin() (stdin)
-#define get_stdout() (stdout)
-#define get_stderr() (stderr)
-#define get_nullfile() (0)
+#define chpl_cstdin() (stdin)
+#define chpl_cstdout() (stdout)
+#define chpl_cstderr() (stderr)
+#define chpl_cerrno() (strerror(errno))
+#define chpl_cnullfile() (0)
+#define chpl_fopen(filename, modestring) fopen(filename, modestring)
+#define chpl_fclose(file) fclose(file)
+#define chpl_fflush(file) fflush(file)
+#define chpl_fprintf(file, s) fprintf(file, "%s", s)
 
 typedef FILE* _cfile;
 

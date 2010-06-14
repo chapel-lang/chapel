@@ -45,7 +45,7 @@ char* chpl_glom_strings(int numstrings, ...) {
 }
 
 
-chpl_string _format(chpl_string format, ...) {
+chpl_string chpl_format(chpl_string format, ...) {
   va_list ap;
   char z[128];
 
@@ -175,13 +175,13 @@ object2int( _chpl_object o) {
 }
 
 
-_timervalue* _now_timer_help(_timervalue* time) {
+_timervalue* chpl_now_timer_help(_timervalue* time) {
   gettimeofday(time, NULL);
   return time;
 }
-_timervalue _default_timer;
+_timervalue chpl_default_timer;
 
-int32_t _now_year(void) {
+int32_t chpl_now_year(void) {
   struct tm * now;
   _timervalue t;
   gettimeofday(&t, NULL);
@@ -189,7 +189,7 @@ int32_t _now_year(void) {
   return now->tm_year;
 }
 
-int32_t _now_month(void) {
+int32_t chpl_now_month(void) {
   struct tm * now;
   _timervalue t;
   gettimeofday(&t, NULL);
@@ -197,7 +197,7 @@ int32_t _now_month(void) {
   return now->tm_mon;
 }
 
-int32_t _now_day(void) {
+int32_t chpl_now_day(void) {
   struct tm * now;
   _timervalue t;
   gettimeofday(&t, NULL);
@@ -205,7 +205,7 @@ int32_t _now_day(void) {
   return now->tm_mday;
 }
 
-int32_t _now_dow(void) {
+int32_t chpl_now_dow(void) {
   struct tm * now;
   _timervalue t;
   gettimeofday(&t, NULL);

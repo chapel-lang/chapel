@@ -183,8 +183,6 @@ enum PrimitiveTag {
 
   PRIM_INT_ERROR,
 
-  PRIM_GET_ERRNO,
-
   PRIM_STRING_COPY,
 
   PRIM_CHPL_NUMTHREADS,

@@ -1,3 +1,6 @@
+_extern def chpl_config_has_value(name, module_name): bool;
+_extern def chpl_config_get_value(name, module_name): string;
+
 config param CHPL_HOST_PLATFORM: string = "unset";
 config param CHPL_TARGET_PLATFORM: string = "unset";
 if (CHPL_HOST_PLATFORM == "unset") {

@@ -3181,13 +3181,8 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIM_CHPL_FREE) ||
                (call->primitive && 
                 (!strncmp("_fscan", call->primitive->name, 6) ||
-                 !strcmp("fprintf", call->primitive->name) ||
-                 !strcmp("fopen", call->primitive->name) ||
-                 !strcmp("fclose", call->primitive->name) ||
-                 !strcmp("fflush", call->primitive->name) ||
                  !strcmp("_readToEndOfLine", call->primitive->name) ||
-                 !strcmp("_now_timer", call->primitive->name) ||
-                 !strcmp("_format", call->primitive->name)))) {
+                 !strcmp("_now_timer", call->primitive->name)))) {
       //
       // these primitives require temps to dereference actuals
       //   why not do this to all primitives?

@@ -19,16 +19,6 @@ returnInfoUnknown(CallExpr* call) {
 }
 
 static Type*
-returnInfoFile(CallExpr* call) {
-  return dtFile;
-}
-
-static Type*
-returnInfoTimer(CallExpr* call) {
-  return dtTimer;
-}
-
-static Type*
 returnInfoString(CallExpr* call) {
   return dtString;
 }
@@ -46,11 +36,6 @@ returnInfoInt64(CallExpr* call) {
 static Type*
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
-}
-
-static Type*
-returnInfoUInt64(CallExpr* call) {
-  return dtUInt[INT_SIZE_64];
 }
 
 static Type*
@@ -484,13 +469,6 @@ initPrimitive() {
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
-  prim_def("_config_has_value", returnInfoBool);
-  prim_def("_config_get_value", returnInfoString);
-
-  prim_def("fopen", returnInfoFile, true);
-  prim_def("fclose", returnInfoInt32, true);
-  prim_def("fprintf", returnInfoInt32, true);
-  prim_def("fflush", returnInfoInt32, true);
   prim_def("_fscan_literal", returnInfoBool, true, true);
   prim_def("_fscan_string", returnInfoString, true, true);
   prim_def("_fscan_int32", returnInfoInt32, true, true);
@@ -515,22 +493,6 @@ initPrimitive() {
   prim_def("complex_set_real", returnInfoVoid, true);
   prim_def("complex_set_imag", returnInfoVoid, true);
 
-  prim_def("get_stdin", returnInfoFile);
-  prim_def("get_stdout", returnInfoFile);
-  prim_def("get_stderr", returnInfoFile);
-  prim_def("get_nullfile", returnInfoFile);
-  prim_def(PRIM_GET_ERRNO, "get_errno", returnInfoString);
-
-  prim_def("_init_timer", returnInfoVoid, true);
-  prim_def("_now_timer", returnInfoTimer, true);
-  prim_def("_seconds_timer", returnInfoReal64, true);
-  prim_def("_microseconds_timer", returnInfoReal64, true);
-  prim_def("_now_year", returnInfoInt32, true);
-  prim_def("_now_month", returnInfoInt32, true);
-  prim_def("_now_day", returnInfoInt32, true);
-  prim_def("_now_dow", returnInfoInt32, true);
-  prim_def("_now_time", returnInfoReal64, true);
-
   prim_def("chpl_coresPerLocale", returnInfoInt32);
   prim_def("chpl_localeName", returnInfoString);
   prim_def("chpl_maxThreads", returnInfoInt32);
@@ -541,9 +503,6 @@ initPrimitive() {
   prim_def(PRIM_CHPL_NUMRUNNINGTASKS, "chpl_numRunningTasks", returnInfoUInt32);
   prim_def(PRIM_CHPL_NUMBLOCKEDTASKS, "chpl_numBlockedTasks", returnInfoInt32);
 
-  prim_def("chpl_printMemTable", returnInfoVoid, true, true);
-  prim_def("chpl_printMemStat", returnInfoVoid, true, true);
-  prim_def("chpl_memoryUsed", returnInfoUInt64, false, true);
   prim_def("chpl_setMemFlags", returnInfoVoid, true);
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);

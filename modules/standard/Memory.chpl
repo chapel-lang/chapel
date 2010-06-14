@@ -1,7 +1,15 @@
+pragma "insert line file info" _extern def chpl_printMemTable(thresh);
+pragma "insert line file info" _extern def chpl_printMemStat();
+_extern def chpl_startVerboseMem();
+_extern def chpl_stopVerboseMem();
+_extern def chpl_startVerboseMemHere();
+_extern def chpl_stopVerboseMemHere();
+_extern def chpl_bytesPerLocale(): uint(64);
+pragma "insert line file info" _extern def chpl_memoryUsed(): uint(64);
+
 enum MemUnits {Bytes, KB, MB, GB};
 
 def locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
-  _extern def chpl_bytesPerLocale(): uint(64);
   var bytesInLocale: uint(64);
 
   on this do bytesInLocale = chpl_bytesPerLocale();
@@ -18,34 +26,29 @@ def locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
 }
 
 def memoryUsed() {
-  _extern def chpl_memoryUsed(lineno: int(32), filename: string): uint(64);
-  return __primitive("chpl_memoryUsed");
+  return chpl_memoryUsed();
 }
 
 def printMemTable(thresh=0) {
-  __primitive("chpl_printMemTable", thresh);
+  chpl_printMemTable(thresh);
 }
 
 def printMemStat() {
-  __primitive("chpl_printMemStat");
+  chpl_printMemStat();
 }
 
 def startVerboseMem() { 
-  _extern def chpl_startVerboseMem();
   chpl_startVerboseMem();
 }
 
 def stopVerboseMem() {
-  _extern def chpl_stopVerboseMem();
   chpl_stopVerboseMem();
 }
 
 def startVerboseMemHere() {
-  _extern def chpl_startVerboseMemHere();
   chpl_startVerboseMemHere();
 }
 
 def stopVerboseMemHere() {
-  _extern def chpl_stopVerboseMemHere();
   chpl_stopVerboseMemHere();
 }
