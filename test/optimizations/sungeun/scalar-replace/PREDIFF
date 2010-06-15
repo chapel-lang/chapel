@@ -18,7 +18,12 @@ import sys, os, shutil, string, re
 
 testname=sys.argv[1]
 testout=sys.argv[2]
+compopts=sys.argv[4]
 savefile=testname+'.save'
+
+if (compopts.find('--baseline')!=-1) or (compopts.find('--no-scalar-replacement')!=-1):
+    # do nothing
+    sys.exit(0)
 
 def saveTestOut(testoutsave):
     shutil.copy(testout, testoutsave)
