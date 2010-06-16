@@ -250,6 +250,8 @@ def file.read(type t) {
   return val;
 }
 
+// fseekset moves the position on the file offset bytes relative to the beggining
+// of the file
 def file.fseekset(offset: int(64)) {
   var pos : int(64) = 5;
   on this {
@@ -261,6 +263,8 @@ def file.fseekset(offset: int(64)) {
   return pos;
 }
 
+// fseek moves the position on the file offset bytes relative to the current
+// position
 def file.fseek(offset: int(64)) {
   var pos : int(64) = 5;
   on this {
