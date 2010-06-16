@@ -30,7 +30,8 @@ use ChapelUtil;
 // into compiler flags or adding config parameters to the internal
 // modules, perhaps called debugDists and checkDists.
 //
-config param debugBlockDist = true;
+config param debugBlockDist = false;
+config param debugBlockDistBenchmark = false;
 config param sanityCheckDistribution = false;
 
 //
@@ -720,6 +721,10 @@ def BlockDom.writeBinDom_real(f: file, in rank : int, in whole:domain) {
 
   var gres=0:int(64);
   var gerr=0:int;
+  var fpos=f.chpl_ftell();
+  if debugBlockDist then writeln("writeBinDom, ftell:",fpos);
+
+
   binfwrite(rank,4,1,f._fp,gres,gerr);
 
   for dim in 1..rank do {
@@ -739,6 +744,43 @@ def BlockDom.writeBinDom_real(f: file, in rank : int, in whole:domain) {
 def BlockDom.writeBinDom(f: file) {
    writeBinDom_real(f,rank,whole);
 }
+
+
+def BlockDom.readBinDom_real(f: file, in rank : int, in whole:domain) {
+
+  var gres=0:int(64);
+  var gerr=0:int;
+  for dim in 1..rank do {
+    if debugBlockDist then {
+                writeln("before read Dom dim:",dim," : ",whole.dim(dim)._low);
+                writeln("before read Dom dim:",dim," : ",whole.dim(dim)._high);
+                writeln("before read Dom dim:",dim," : ",whole.dim(dim)._stride);
+    }
+  }
+  var fpos=f.chpl_ftell();
+  if debugBlockDist then writeln("readBinDom, ftell:",fpos);
+
+  binfread(rank,4,1,f._fp,gres,gerr);
+
+  var rr:int;
+  for dim in 1..rank do {
+    binfread(whole.dim(dim)._low,4,1,f._fp,gres,gerr);
+    binfread(whole.dim(dim)._high,4,1,f._fp,gres,gerr);
+    binfread(whole.dim(dim)._stride,4,1,f._fp,gres,gerr);
+    if debugBlockDist then {
+                writeln("Read Dom dim:",dim," : ",whole.dim(dim)._low," rr:",rr);
+                writeln("Read Dom dim:",dim," : ",whole.dim(dim)._high);
+                writeln("Read Dom dim:",dim," : ",whole.dim(dim)._stride);
+    }
+  }
+
+}
+
+
+def BlockDom.readBinDom(f: file) {
+   readBinDom_real(f,rank,whole);
+}
+
 
 //
 // Added as a performance stopgap to avoid returning a domain
@@ -789,6 +831,10 @@ _extern def binfwrite (inout ptr:int(64), size:int(64) , nelm:int(64), file:_fil
 _extern def binfwrite (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 _extern def binfwrite (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 
+_extern def binfread (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfread (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfread (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+
 
 def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
 {
@@ -822,7 +868,7 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
 
     pos=((idx-1))*nbyteslin+(from-1)*numbytespn+offset;
     if (pos!=(oldpos+numelem*numbytespn)) then {
-//      if debugBlockDist then writeln("BlockArr.writeBinLocalArray in ",here.id," line:",idx," to seek to pos:(",from," ",to,") ",pos," old pos:",oldpos+numelem*numbytespn," elapsed:",timer.elapsed(TimeUnits.microseconds));
+//      if debugBlockDistBenchmark then writeln("BlockArr.writeBinLocalArray in ",here.id," line:",idx," to seek to pos:(",from," ",to,") ",pos," old pos:",oldpos+numelem*numbytespn," elapsed:",timer.elapsed(TimeUnits.seconds));
       outfile.fseekset(pos);
     }
 
@@ -832,31 +878,36 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
       halt("***Error: Write failed: ", err, "***");
     }
   }
-  timer.stop();
-  if debugBlockDist then
-    writeln("BlockArr.writeLocalBinArray time to write in locale ",here.id,": ",timer.elapsed(TimeUnits.microseconds));
   pos=outfile.chpl_ftell();
   outfile.close();
+  timer.stop();
+  if debugBlockDist then writeln("BlockArr.writeLocalBinArray locale ",here.id," ftell at the end:",pos);
+  if debugBlockDistBenchmark then
+    writeln("BlockArr.writeLocalBinArray time to write in locale ",here.id,": ",timer.elapsed(TimeUnits.seconds));
   return pos;
 }
 
-def BlockArr.writeBinArray(f: file) {
+def BlockArr.writeBinArray(f: file) 
+{
   var timer: Timer;
   timer.start();
   var fpos=f.chpl_ftell();
+
+  if debugBlockDist then writeln("writeBinArray beginning, ftell:",fpos);
 
   // lastPos and gotoPos used for going to the end of the writes at the end.
   var lastPos=fpos;
   var gotoPos=fpos; 
 
-  if debugBlockDist then writeln("BlockArr.writeBinArray Going to call the real write ");
+  if debugBlockDist then writeln("BlockArr.writeBinArray Going to call the real write ,pos:",fpos);
 
   // We close the file so it is not opened from different locales.
   // It will be opened again after writting, at the right position
   f.close();
 
-  for i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
-    for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
+//  for i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
+  for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
+    coforall i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
       on dom.dist.targetLocales((i1,i2)) {
         if debugBlockDist then writeln("Inside: ",here.id," idx:",i1,",",i2, " low:",dom.dist.targetLocDom.dim(1)._low, " high:",dom.dist.targetLocDom.dim(1)._high);
         lastPos=writeBinLocalArray((i1,i2),fpos,f);
@@ -865,12 +916,102 @@ def BlockArr.writeBinArray(f: file) {
     }
   }
   timer.stop();
-  if debugBlockDist then
-    writeln("BlockArr.writeBinArray time to write:",timer.elapsed(TimeUnits.microseconds));
+  if debugBlockDistBenchmark then
+    writeln("BlockArr.writeBinArray time to write:",timer.elapsed(TimeUnits.seconds));
 
   f.open();
   f.fseekset(gotoPos);
+  if debugBlockDist then writeln("writeBinArray, at end :",gotoPos);
 }
+
+
+// read binary array
+def BlockArr.readBinArray(f: file) {
+//  if dom.dsiNumIndices == 0 then return;
+  var rango:int;
+  var gerr:int;
+  var gres:int(64);
+  var timer: Timer;
+  timer.start();
+
+  var fpos=f.chpl_ftell();
+  var gotoPos=fpos; 
+
+//  var i : rank*idxType;
+  if debugBlockDist then writeln("readBinArray enter locales, ftell:",fpos);
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocales(localeIdx) {
+//startCommDiagnosticsHere();
+        var infile = new file(f.filename, FileAccessMode.read);
+//stopCommDiagnosticsHere();
+        const privarr=this.dsiPrivatize(dom.pid);
+
+        infile.open();
+
+
+       var order=here.id*100000;
+        var status= 0:int(64);
+        var err= 0:int;
+// num of bytes per number
+        var numbytespn=8:int(64);
+// For now, one for the rank and one for each dimension
+        var offset=fpos;
+        var nbyteslin=numbytespn*((1+dom.dsiDim(1)._high-dom.dsiDim(1)._low)/dom.dsiDim(1)._stride);
+
+        var pos=0:int(64);
+        var oldpos=0:int(64);
+        var t_write = getCurrentTime();
+        var to,from, numelem,tmp=0:int(64);
+        var t_read = getCurrentTime();
+        var thislocal=localeIdx;
+        if debugBlockDist then writeln("BlockArr.readBinArray in ",here.id," myblock.low:",locArr(localeIdx).locDom.myBlock.low);
+        var ind=privarr.locArr(localeIdx).locDom.myBlock.low;
+        if debugBlockDist then writeln("BlockArr.readBinArray  create ind:",ind," offset:",offset);
+        for idx in locArr(localeIdx).locDom.myBlock.low(1)..locArr(localeIdx).locDom.myBlock.high(1)  {
+          from=privarr.locArr(localeIdx).locDom.myBlock.low(2);
+          to=privarr.locArr(localeIdx).locDom.myBlock.high(2);
+          if debugBlockDist then {
+            writeln("BlockArr.readBinArray  from:",from," to: ",to," line:",idx);
+          }
+          ind(1)=idx:int;
+          ind(2)=from:int;
+          numelem=to-from+1;
+	  pos=((idx-1))*nbyteslin+(from-1)*numbytespn+offset;
+
+	  if (pos!=(oldpos+numelem*numbytespn)) then {
+		  infile.fseekset(pos);
+	  }
+	  oldpos=pos;
+	  if debugBlockDist then writeln("binfread ",here.id,numbytespn,"numelem:",numelem," pos:",pos );
+	  binfread(privarr.locArr(thislocal)(ind),numbytespn,numelem,infile._fp, status, err);
+	  if status < 0 {
+		  const err = __primitive("get_errno");
+		  halt("***Error: Write failed: ", err, "***");
+	  }
+
+	}
+        infile.close();
+        if debugBlockDistBenchmark then
+          writeln("BlockArr.readBinArray time to read in locale ",here.id,": ",getCurrentTime() - t_read);
+    }
+  }
+
+// Updates the file position, so it can continue to be used as if it had
+// been read sequentially.
+
+  var numbytespn=8:int(64);
+  var nbyteslin=numbytespn*((1+dom.dsiDim(1)._high-dom.dsiDim(1)._low)/dom.dsiDim(1)._stride);
+  gotoPos=(((dom.dsiDim(2)._high)-dom.dsiDim(2)._low+1)/dom.dsiDim(2)._stride)*nbyteslin+fpos;
+
+  f.fseekset(gotoPos);
+  timer.stop();
+  if debugBlockDistBenchmark then
+    writeln("BlockArr.readBinArray time to read:",timer.elapsed(TimeUnits.seconds));
+
+
+// End of parallel read
+}
+
 
 //
 // TODO: Rewrite this to reuse more of the global domain iterator
@@ -1201,6 +1342,75 @@ def Block.dsiReprivatize(other, reprivatizeData) {
   dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
   dataParMinGranularity = other.dataParMinGranularity;
 }
+
+def Block.writeBinBlock_real(f: file, in rank : int) {
+
+  var gres=0:int(64);
+  var gerr=0:int;
+  var fpos=f.chpl_ftell();
+  if debugBlockDist then writeln("writeBinBlock, ftell:",fpos);
+
+  binfwrite(rank,4,1,f._fp,gres,gerr);
+
+  for dim in 1..rank do {
+    binfwrite(boundingBox.dim(dim)._low,4,1,f._fp,gres,gerr);
+    binfwrite(boundingBox.dim(dim)._high,4,1,f._fp,gres,gerr);
+    binfwrite(boundingBox.dim(dim)._stride,4,1,f._fp,gres,gerr);
+    if debugBlockDist then {
+                writeln("Writting Dom dim:",dim," : ",boundingBox.dim(dim)._low);
+                writeln("Writting Dom dim:",dim," : ",boundingBox.dim(dim)._high);
+                writeln("Writting Dom dim:",dim," : ",boundingBox.dim(dim)._stride);
+    }
+  }
+
+}
+
+
+def Block.writeBinBlock(f: file) {
+   writeBinBlock_real(f,rank);
+}
+
+def Block.readBinBlock_real(f: file, in rank : int) {
+
+  var gres=0:int(64);
+  var gerr=0:int;
+  for dim in 1..rank do {
+    if debugBlockDist then {
+                writeln("before read Block dim:",dim," : ",boundingBox.dim(dim)._low);
+                writeln("before read Block dim:",dim," : ",boundingBox.dim(dim)._high);
+                writeln("before read Block dim:",dim," : ",boundingBox.dim(dim)._stride);
+    }
+  }
+  var fpos=f.chpl_ftell();
+  if debugBlockDist then writeln("readBinBlock begin, ftell:",fpos);
+
+  binfread(rank,4,1,f._fp,gres,gerr);
+  if debugBlockDist then writeln("Read Block rank:",rank);
+
+  var rr:int;
+  for dim in 1..rank do {
+    binfread(boundingBox.dim(dim)._low,4,1,f._fp,gres,gerr);
+    binfread(boundingBox.dim(dim)._high,4,1,f._fp,gres,gerr);
+    binfread(boundingBox.dim(dim)._stride,4,1,f._fp,gres,gerr);
+    if debugBlockDist then {
+                writeln("Read Block dim:",dim," : ",boundingBox.dim(dim)._low," rr:",rr);
+                writeln("Read Block dim:",dim," : ",boundingBox.dim(dim)._high);
+                writeln("Read Block dim:",dim," : ",boundingBox.dim(dim)._stride);
+    }
+  }
+  fpos=f.chpl_ftell();
+  if debugBlockDist then writeln("readBinDom end, ftell:",fpos);
+
+
+}
+
+
+def Block.readBinBlock(f: file) {
+   readBinBlock_real(f,rank);
+}
+
+
+
 
 def BlockDom.dsiSupportsPrivatization() param return true;
 
