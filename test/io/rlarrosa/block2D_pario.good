@@ -1,0 +1,19 @@
+/export/home_users/home/admin/rafael/.profile: line 3: /usr/local/bin/chequea_quota_user.sh: No existe el fichero o el directorio
+Domain
+[1..8, 1..8]
+
+ww1, ftell:28
+ww2, ftell:56 A
+ww3, ftell:568 Dom
+ww4, ftell:596
+ww5, ftell:624
+ww6, ftell:1136
+Zeroed via parallel iteration over the array
+rr1, ftell:28
+rr2, ftell:56 A
+rr3, ftell:568 Dom
+rr4, ftell:596 Dis
+rr5, ftell:624 A
+[1..5, 1..5]
+rr6, ftell:1136
+Zeroed via parallel iteration over the array

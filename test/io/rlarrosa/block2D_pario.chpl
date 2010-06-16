@@ -20,6 +20,8 @@ use BlockDist;
 // Size of each dimension of our domain.
 //
 config const n = 8;
+config param debugInfo = true;
+
 
 var numloc:int(32)=numLocales;
 config const filename:string="Arr_Bin_"+numloc+"_"+n+".dat";
@@ -91,22 +93,22 @@ outfile.open();
 // write out the array itself
 outfile.write(Dist);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("ww1, ftell:",fpos);
+if debugInfo then writeln("ww1, ftell:",fpos);
 outfile.write(Dom);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("ww2, ftell:",fpos," A");
+if debugInfo then writeln("ww2, ftell:",fpos," A");
 outfile.write(A);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("ww3, ftell:",fpos," Dom");
+if debugInfo then writeln("ww3, ftell:",fpos," Dom");
 outfile.write(Dom);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("ww4, ftell:",fpos);
+if debugInfo then writeln("ww4, ftell:",fpos);
 outfile.write(Dist);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("ww5, ftell:",fpos);
+if debugInfo then writeln("ww5, ftell:",fpos);
 outfile.write(A);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("ww6, ftell:",fpos);
+if debugInfo then writeln("ww6, ftell:",fpos);
 
 // close the file
 outfile.close();
@@ -125,23 +127,23 @@ var Dom2: domain(2) dmapped Distrib = [1..5,1..5];
 outfile.open();
 outfile.read(Distrib);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("rr1, ftell:",fpos);
+if debugInfo then writeln("rr1, ftell:",fpos);
 
 // writeln(Distrib);
 outfile.read(Dom2);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("rr2, ftell:",fpos," A");
+if debugInfo then writeln("rr2, ftell:",fpos," A");
 // writeln(Dom2);
 outfile.read(A);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("rr3, ftell:",fpos," Dom");
+if debugInfo then writeln("rr3, ftell:",fpos," Dom");
 // writeln(A);
 outfile.read(Dom2);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("rr4, ftell:",fpos," Dis");
+if debugInfo then writeln("rr4, ftell:",fpos," Dis");
 outfile.read(Distrib);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("rr5, ftell:",fpos," A");
+if debugInfo then writeln("rr5, ftell:",fpos," A");
 
 forall a in A do {
   a = 0;
@@ -149,7 +151,7 @@ forall a in A do {
 writeln(Dom2);
 outfile.read(A);
 fpos=outfile.chpl_ftell();
-if debugBlockDist then writeln("rr6, ftell:",fpos);
+if debugInfo then writeln("rr6, ftell:",fpos);
 // writeln(A);
 outfile.close();
 
