@@ -112,9 +112,6 @@ void buildDefUseSets(Vec<Symbol*>& syms,
                      Vec<SymExpr*>& defSet,
                      Vec<SymExpr*>& useSet);
 
-// update symbols in ast with map
-void update_symbols(BaseAST* ast, SymbolMap* map);
-
 // replace symbol use with another
 void subSymbol(BaseAST* ast, Symbol* oldSym, Symbol* newSym);
 
