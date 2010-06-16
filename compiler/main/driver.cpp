@@ -63,6 +63,7 @@ bool fNoInline = false;
 bool fNoPrivatization = false;
 bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = false;
+bool fNoRepositionDefExpr = true;
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
 bool fGenIDS = false;
@@ -480,6 +481,7 @@ static ArgumentDescription arg_desc[] = {
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
  {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"remove-empty-records", ' ', NULL, "Enable [disable] removal of empty records", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
+ {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},

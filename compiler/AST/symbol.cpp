@@ -608,17 +608,20 @@ void FnSymbol::codegenDef(FILE* outfile) {
   codegenHeader(outfile);
 
   fprintf(outfile, " {\n");
-  Vec<BaseAST*> asts;
-  collect_top_asts(body, asts);
+  if (fNoRepositionDefExpr) {
+    Vec<BaseAST*> asts;
+    collect_top_asts(body, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast))
-      if (!toTypeSymbol(def->sym)) {
-        if (fGenIDS && isVarSymbol(def->sym))
-          fprintf(outfile, "/* %7d */ ", def->sym->id);
-        def->sym->codegenDef(outfile);
-      }
+    forv_Vec(BaseAST, ast, asts) {
+      if (DefExpr* def = toDefExpr(ast))
+        if (!toTypeSymbol(def->sym)) {
+          if (fGenIDS && isVarSymbol(def->sym))
+            fprintf(outfile, "/* %7d */ ", def->sym->id);
+          def->sym->codegenDef(outfile);
+        }
+    }
   }
+
   body->codegen(outfile);
   fprintf(outfile, "}\n\n");
 }

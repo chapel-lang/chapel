@@ -12,6 +12,7 @@ PASSES_SRCS = \
         insertLineNumbers.cpp \
         normalize.cpp \
         parallel.cpp \
+        repositionDefExpressions.cpp \
         returnStarTuplesByRefArgs.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp

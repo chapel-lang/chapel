@@ -54,6 +54,7 @@ PassInfo passlist[] = {
   RUN(optimizeOnClauses),    // Optimize on clauses
   // AST to C
   RUN(insertLineNumbers), // insert line numbers for error messages
+  RUN(repositionDefExpressions), // put defPoints just before first usage
   RUN(codegen),           // generate C code
   RUN(makeBinary),        // invoke underlying C compiler
   LAST

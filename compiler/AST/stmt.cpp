@@ -99,6 +99,22 @@ void BlockStmt::codegen(FILE* outfile) {
   if (this != getFunction()->body)
     fprintf(outfile, "{\n");
 
+  if (!(fNoRepositionDefExpr)) {
+    Vec<BaseAST*> asts;
+    collect_top_asts(this, asts);
+    forv_Vec(BaseAST, ast, asts) {
+      if (DefExpr* def = toDefExpr(ast)) {
+        if (def->parentExpr == this) {
+          if (!toTypeSymbol(def->sym)) {
+            if (fGenIDS && isVarSymbol(def->sym))
+              fprintf(outfile, "/* %7d */ ", def->sym->id);
+            def->sym->codegenDef(outfile);
+          }
+        }
+      }
+    }
+  }
+
   body.codegen(outfile, "");
 
   if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
