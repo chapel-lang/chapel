@@ -275,7 +275,6 @@ class DefaultArithmeticArr: BaseArr {
   var str: rank*chpl__idxTypeToStrType(idxType);
   var origin: idxType;
   var factoredOffs: idxType;
-  var size : idxType;
   var data : _ddata(eltType);
   var noinit: bool = false;
 
@@ -405,7 +404,7 @@ class DefaultArithmeticArr: BaseArr {
     for param dim in 1..rank-1 by -1 do
       blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
     computeFactoredOffs();
-    size = blk(1) * dom.dsiDim(1).length;
+    var size = blk(1) * dom.dsiDim(1).length;
     data = new _ddata(eltType);
     data.init(size);
   }
@@ -447,7 +446,6 @@ class DefaultArithmeticArr: BaseArr {
                                          stridable=d.stridable,
                                          dom=d, noinit=true);
     alias.data = data;
-    alias.size = size: d.idxType;
     for param i in 1..rank {
       alias.off(i) = d.dsiDim(i)._low;
       alias.blk(i) = (blk(i) * dom.dsiDim(i)._stride / str(i)) : d.idxType;
@@ -464,7 +462,6 @@ class DefaultArithmeticArr: BaseArr {
                                          stridable=d.stridable,
                                          dom=d, noinit=true);
     alias.data = data;
-    alias.size = size;
     alias.blk = blk;
     alias.str = str;
     alias.origin = origin;
@@ -485,7 +482,6 @@ class DefaultArithmeticArr: BaseArr {
                                          stridable=newStridable,
                                          dom=d, noinit=true);
     alias.data = data;
-    alias.size = size;
     var i = 1;
     alias.origin = origin;
     for param j in 1..args.size {
@@ -516,7 +512,6 @@ class DefaultArithmeticArr: BaseArr {
       str = copy.str;
       origin = copy.origin;
       factoredOffs = copy.factoredOffs;
-      size = copy.size;
       dsiDestroyData();
       data = copy.data;
       delete copy;
