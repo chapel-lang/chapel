@@ -451,7 +451,6 @@ initPrimitive() {
   prim_def(PRIM_GC_DELETE_ROOT, "_deleteRoot", returnInfoVoid);
   prim_def(PRIM_GC_CLEANUP, "_chpl_gc_cleanup", returnInfoVoid);
 
-  prim_def(PRIM_IS_ENUM, "isEnumType", returnInfoBool);
   prim_def(PRIM_IS_TUPLE, "isTupleType", returnInfoBool);
   prim_def(PRIM_CALL_DESTRUCTOR, "call destructor", returnInfoVoid, true);
 

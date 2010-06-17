@@ -88,7 +88,6 @@ isFastPrimitive(CallExpr *call) {
 
   case PRIM_DELETE:
 
-  case PRIM_IS_ENUM:
   case PRIM_IS_TUPLE:
 
   case PRIM_LOCALE_ID:

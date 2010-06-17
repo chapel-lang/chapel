@@ -3038,23 +3038,6 @@ postFold(Expr* expr) {
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
       call->get(1)->replace(new SymExpr(t->symbol));
-    } else if (call->isPrimitive(PRIM_IS_ENUM)) {
-      // Replace the "isEnumType" primitive with true if the type is
-      // an enum, otherwise with false
-      bool is_enum = false;
-      CallExpr* c;
-      SymExpr* symExpr;
-      if ((c = toCallExpr(call->get(1))) &&
-          (c->isPrimitive(PRIM_TYPEOF))) {
-        symExpr = toSymExpr(c->get(1));
-      } else {
-        symExpr = toSymExpr(call->get(1));
-      }
-      if (symExpr && toEnumType(symExpr->var->type)) {
-        is_enum = true;
-      }
-      result = (is_enum) ? new SymExpr(gTrue) : new SymExpr(gFalse);
-      call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_TUPLE)) {
       Type* type = call->get(1)->getValType();
       bool is_tuple = type->symbol->hasFlag(FLAG_TUPLE);

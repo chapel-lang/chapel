@@ -436,7 +436,7 @@ def _debugWrite(args...?n) {
        t == uint(8) || t == uint(16) || t == uint(32) || t == uint(64) ||
        t == real(32) || t == real(64) || t == imag(32) || t == imag(64) ||
        t == complex(64) || t == complex(128) ||
-       t == bool || t == string || __primitive("isEnumType", t) then
+       t == bool || t == string || _isEnumeratedType(t) then
       return a:string;
     else 
       compilerError("Cannot call _debugWrite on value of type ",

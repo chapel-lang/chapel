@@ -293,7 +293,7 @@ def isAssociativeDom(d: domain) param {
 }
 
 def isEnumDom(d: domain) param {
-  return isAssociativeDom(d) && __primitive("isEnumType", d._value.idxType);
+  return isAssociativeDom(d) && _isEnumeratedType(d._value.idxType);
 }
 
 def isEnumArr(a: []) param return isEnumDom(a.domain);
@@ -394,7 +394,7 @@ record _distribution {
     return x;
   }
 
-  def newAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
+  def newAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
     var x = _value.dsiNewAssociativeDom(idxType);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;

@@ -165,7 +165,6 @@ enum PrimitiveTag {
   PRIM_GC_DELETE_ROOT,   // Remove a root variable for garbage collection
   PRIM_GC_CLEANUP,       // Free GC heaps
 
-  PRIM_IS_ENUM,   // True if argument is an enum
   PRIM_IS_TUPLE,  // True if argument is a tuple
   PRIM_CALL_DESTRUCTOR, // call destructor on type (do not free)
 
