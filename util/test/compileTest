@@ -33,15 +33,34 @@ while (@ARGV) {
 
         @compopts = split / /, $compopts;
 
+        $foundheader = 0;
+
         foreach $compopt (@compopts) {
-            if ($compopt =~ m/\./) {
-                if ($compopt =~ m/\-M(.*)/) {
-                    $compopt = "-M$path$1";
+            if ($compopt =~ m/\-M(.*)/) {
+                # preserve -M flags with or without spaces
+                if ($compopt eq "-M") {
                 } else {
-                    $compopt = "$path$compopt";
+                    $compopt = "-M$path$1";
                 }
+            } elsif ($compopt =~ m/-I(.*)/) {
+                # preserve -I flags with or without spaces
+                if ($compopt eq "-I") {
+                } else {
+                    $compopt = "-I$path$1";
+                }
+            } elsif ($compopt =~ m/\.h$/) {
+                # don't add relative paths to .h files -- -I should suffice
+                $foundheader = 1;
+            } elsif ($compopt =~ m/^\-/) {
+                # don't add relative paths to flags
+            } else {
+                # add the relative path in the default case
+                $compopt = "$path$compopt";
             }
             $command .= "$compopt ";
+        }
+        if ($foundheader) {
+            $command .= "-I$path ";
         }
         $command .= "$path$filename ";
     } else {
