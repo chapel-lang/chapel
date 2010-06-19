@@ -51,8 +51,10 @@ type  c_int =  int(32),
        long =  int(64),
       ulong = uint(64);
 
-_extern type mpf_t;
-_extern type mpz_t;
+_extern type __mpf_struct;
+_extern type mpf_t = 1*__mpf_struct;
+_extern type __mpz_struct;
+_extern type mpz_t = 1*__mpz_struct;
 
 _extern def mpz_init(X: mpz_t);
 _extern def mpz_set_ui(ROP: mpz_t, OP: ulong);
