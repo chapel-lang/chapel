@@ -823,14 +823,47 @@ The fields in GotoStmt are:
 \subsection{Traversing the AST}
 \label{sec:traverse}
 
+The AST is a graph that the compiler traverses in a number of ways.
+The core traversal mechanism is implemented by the macro
+\cc{AST_CHILDREN_CALL}.  This macro takes as arguments a BaseAST
+pointer, a C function call, and a list of arguments that should be
+passed to the C function call.  This macro should be used in a
+recursive function that takes an instance of the BaseAST class and any
+number of arguments.  The arguments to the macro must be the BaseAST
+instance, the name of the recursive function, and arguments that
+should be passed to recursive calls of the function on the child nodes
+of the AST.  A good example of using this macro is in the function
+\cc{collectDefExprs} which collects all the DefExprs that should be
+traversed from any AST node, for example, a FnSymbol.  In this
+example, we would capture all of the local variable definitions in the
+function.
+
+The definition of \cc{AST_CHILDREN_CALL} must be updated whenever the
+AST is modified, either by adding fields or new classes.  The
+implementation of this macro captures the structure of the graph.
+Notice that when traversing a CallExpr, we traverse its baseExpr
+(\cc{baseExpr}) and its list of actuals (\cc{argList}).
+
+The graph structure (omitting leaf nodes like UnresolvedSymExpr) is
+illustrated in Figure~\ref{fig:ast}.  One interesting point to note in
+this figure is that once we traverse into any Expr node, we only
+traverse Expr nodes unless we traverse a DefExpr node.
+\begin{figure}[htb]
+\includegraphics[angle=270,scale=0.5]{AST.ps}
+\caption{The AST graph structure, as it is traversed, omitting leaf nodes.}
+\label{fig:ast}
+\end{figure}
+
+\subsection{AST Functions and Methods}
+
+
+
 \subsection{Primitives}
 \label{sec:primitives}
 
 \subsection{Pragmas}
 \label{sec:flags}
 \label{sec:pragmas}
-
-\subsection{AST Functions and Methods}
 
 \section{Passes}
 \label{sec:passes}

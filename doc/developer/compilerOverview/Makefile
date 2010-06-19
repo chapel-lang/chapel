@@ -1,5 +1,6 @@
 all:
 	latex compiler
+	latex compiler
 	dvipdfm compiler
 
 clean:
