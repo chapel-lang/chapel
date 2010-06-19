@@ -49,7 +49,7 @@ def CHECK_MEMUSAGE {
 type  c_int =  int(32),
      c_uint = uint(32),
        long =  int(64),
-      ulong = uint(64);
+      c_ulong = uint(64);
 
 _extern type __mpf_struct;
 _extern type mpf_t = 1*__mpf_struct;
@@ -57,22 +57,22 @@ _extern type __mpz_struct;
 _extern type mpz_t = 1*__mpz_struct;
 
 _extern def mpz_init(X: mpz_t);
-_extern def mpz_set_ui(ROP: mpz_t, OP: ulong);
-_extern def mpz_mul_ui(ROP: mpz_t, OP1: mpz_t, OP2: ulong);
-_extern def mpz_add_ui(ROP: mpz_t, OP1: mpz_t, OP2: ulong);
+_extern def mpz_set_ui(ROP: mpz_t, OP: c_ulong);
+_extern def mpz_mul_ui(ROP: mpz_t, OP1: mpz_t, OP2: c_ulong);
+_extern def mpz_add_ui(ROP: mpz_t, OP1: mpz_t, OP2: c_ulong);
 _extern def mpz_mul(ROP: mpz_t, OP1: mpz_t, OP2: mpz_t);
 _extern def mpz_neg(ROP: mpz_t, OP: mpz_t);
 _extern def mpz_clear(X: mpz_t);
 _extern def mpz_tdiv_q(Q: mpz_t, N: mpz_t, D: mpz_t);
 _extern def mpz_add(ROP: mpz_t, OP1: mpz_t, OP2: mpz_t);
 
-_extern type mp_bitcnt_t = ulong;
+_extern type mp_bitcnt_t = c_ulong;
 _extern type size_t = int(64);
 
 _extern def mpf_set_default_prec(PREC: mp_bitcnt_t);
 _extern def mpz_sizeinbase(OP: mpz_t, BASE: c_int): size_t;
 
-_extern def mpz_addmul_ui(ROP: mpz_t, OP1: mpz_t, OPT2: ulong);
+_extern def mpz_addmul_ui(ROP: mpz_t, OP1: mpz_t, OPT2: c_ulong);
 
 _extern type double = real(64);
 
@@ -82,12 +82,12 @@ _extern def mpf_get_prec(OP: mpf_t): mp_bitcnt_t;
 _extern def mpf_get_d(OP: mpf_t): double;
 _extern def mpf_set_d(ROP: mpf_t, OP: double);
 _extern def mpf_set_prec_raw(ROP: mpf_t, PREC: mp_bitcnt_t);
-_extern def mpf_ui_div(ROP: mpf_t, OP1: ulong, OP2: mpf_t);
+_extern def mpf_ui_div(ROP: mpf_t, OP1: c_ulong, OP2: mpf_t);
 _extern def mpf_mul(ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
-_extern def mpf_ui_sub(ROP: mpf_t, OP1: ulong, OP2: mpf_t);
+_extern def mpf_ui_sub(ROP: mpf_t, OP1: c_ulong, OP2: mpf_t);
 _extern def mpf_add(ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
 _extern def mpf_sub(ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
-_extern def mpf_mul_ui(ROP: mpf_t, OP1: mpf_t, OP2: ulong);
+_extern def mpf_mul_ui(ROP: mpf_t, OP1: mpf_t, OP2: c_ulong);
 _extern def mpf_div_2exp(ROP: mpf_t, OP1: mpf_t, OP2: mp_bitcnt_t);
 _extern def mpf_out_str(STREAM: _file, BASE: c_int, N_DIGITS: size_t, OP: mpf_t);
 _extern def mpf_clear(X: mpf_t);
@@ -106,7 +106,7 @@ const terms   = (d/DIGITS_PER_ITER): long,
 record fac_t {
   var num_facs: long;
   const sdom: domain(1, idxType=long);
-  var fac, pow: [sdom] ulong;
+  var fac, pow: [sdom] c_ulong;
 
   def this(i) var {
     return this;
@@ -175,7 +175,7 @@ def main() {
     mpz_set_ui(q2,0);
     mpz_set_ui(g2,1);
   } else {
-    bs(0, terms: ulong, 0, 0);
+    bs(0, terms: c_ulong, 0, 0);
   }
 
   const mid1 = getCurrentTime() - mid0;
@@ -309,7 +309,7 @@ def build_sieve(s) {
 }
 
 
-def my_sqrt_ui(r: mpf_t, x: ulong) {
+def my_sqrt_ui(r: mpf_t, x: c_ulong) {
   const prec0 = mpf_get_prec(r);
 
   if (prec0 <= DOUBLE_PREC) {
@@ -317,7 +317,7 @@ def my_sqrt_ui(r: mpf_t, x: ulong) {
     return;
   }
 
-  var bits: ulong = 0,
+  var bits: c_ulong = 0,
       prec = prec0;
   while (prec > DOUBLE_PREC) {
     const bit = prec&1;
@@ -368,7 +368,7 @@ def my_div(r, y, x: mpf_t) {
     return;
   }
 
-  var bits: ulong = 0,
+  var bits: c_ulong = 0,
       prec = prec0;
   while (prec > DOUBLE_PREC) {
     const bit = prec&1;
@@ -446,8 +446,8 @@ def fac_resize(f: fac_t, s: long)
 }
 
 // BLC: unfortunate -- original GMP took advantage of long/ulong conversions
-def fac_set_bp(f: fac_t, base: ulong, pow: long) {
-  assert (base < max(long): ulong);
+def fac_set_bp(f: fac_t, base: c_ulong, pow: long) {
+  assert (base < max(long): c_ulong);
   fac_set_bp(f, base: long, pow: long);
 }
 
@@ -457,8 +457,8 @@ def fac_set_bp(f: fac_t, in base: long, pow: long) {
   var i: long;
   base /= 2;
   while (base > 0) {
-    f[0].fac[i] = (sieve[base].fac): ulong;
-    f[0].pow[i] = (sieve[base].pow*pow): ulong;
+    f[0].fac[i] = (sieve[base].fac): c_ulong;
+    f[0].pow[i] = (sieve[base].pow*pow): c_ulong;
     base = sieve[base].nxt;
     i += 1;
   }
@@ -513,8 +513,8 @@ def fac_mul(f: fac_t, g: fac_t) {
 }
 
 // BLC: unfortunate -- original GMP took advantage of long/ulong conversions
-def fac_mul_bp(f: fac_t, base: ulong, pow: long) {
-  assert (base < max(long): ulong);
+def fac_mul_bp(f: fac_t, base: c_ulong, pow: long) {
+  assert (base < max(long): c_ulong);
   fac_mul_bp(ftmp, base:long, pow);
 }
 
@@ -566,7 +566,7 @@ def bs_mul(r: mpz_t, a: long, b: long) {
 // f /= gcd(f,g), g /= gcd(f,g)
 def fac_remove_gcd(p: mpz_t, fp: fac_t, g: mpz_t, fg: fac_t) {
   var i, j, k: long;
-  var c: ulong;
+  var c: c_ulong;
   fac_resize(fmul, min(fp.num_facs, fg.num_facs));
   while (i < fp.num_facs && j < fg.num_facs) {
     if (fp.fac[i] == fg.fac[j]) {
@@ -621,7 +621,7 @@ def fg2 return fgstack[top+1];
 var progress = 0.0;
 
 // binary splitting
-def bs(a: ulong, b: ulong, gflag: c_uint, level: long) {
+def bs(a: c_ulong, b: c_ulong, gflag: c_uint, level: long) {
   if (b-a==1) {
     /*
       g(b-1,b) = (6b-5)(2b-1)(6b-1)
@@ -655,7 +655,7 @@ def bs(a: ulong, b: ulong, gflag: c_uint, level: long) {
     fac_mul_bp(fg1, 6*b-1, 1);   // 6b-1
     fac_mul_bp(fg1, 6*b-5, 1);   // 6b-5
 
-    if (b > (progress:ulong)) {
+    if (b > (progress:c_ulong)) {
       write(".");
       progress += percent*2;
     }
@@ -666,7 +666,7 @@ def bs(a: ulong, b: ulong, gflag: c_uint, level: long) {
       g(a,b) = g(a,m) * g(m,b)
       q(a,b) = q(a,m) * p(m,b) + q(m,b) * g(a,m)
     */
-    const mid = (a+(b-a)*0.5224): ulong;     // tuning parameter
+    const mid = (a+(b-a)*0.5224): c_ulong;     // tuning parameter
     bs(a, mid, 1, level+1);
 
     top += 1;

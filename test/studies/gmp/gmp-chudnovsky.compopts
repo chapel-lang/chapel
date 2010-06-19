@@ -1,1 +1,1 @@
-gmp.h -I $CHPL_HOME/third-party/gmp/gmp-5.0.1/ -L $CHPL_HOME/third-party/gmp/gmp-5.0.1 -lgmp
+gmp.h -I $CHPL_HOME/third-party/gmp/gmp-5.0.1/ -L $CHPL_HOME/third-party/gmp/gmp-5.0.1 -lgmp --ccflags -std=gnu89 --no-cc-warnings
