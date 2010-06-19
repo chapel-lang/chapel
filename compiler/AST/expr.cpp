@@ -2233,6 +2233,7 @@ void CallExpr::codegen(FILE* outfile) {
   bool first_actual = true;
   int count = 0;
   for_formals_actuals(formal, actual, this) {
+    bool passByAddr = false;
     if (fn->hasFlag(FLAG_GPU_ON) && count < 2) {
       count++;
       continue; // do not print nBlocks and numThreadsPerBlock
@@ -2245,8 +2246,12 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "(");
     else if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING))
       fprintf(outfile, "(");
-    else if (formal->requiresCPtr() && !actual->typeInfo()->symbol->hasFlag(FLAG_REF))
+    else if (formal->requiresCPtr() && 
+             !actual->typeInfo()->symbol->hasFlag(FLAG_REF) && 
+             !fn->hasFlag(FLAG_EXTERN)) {
       fprintf(outfile, "&(");
+      passByAddr = true;
+    }
     if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo() == dtString)
       fprintf(outfile, "((char*)");
     SymExpr* se = toSymExpr(actual);
@@ -2257,7 +2262,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
     if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
       fprintf(outfile, ").addr");
-    else if (formal->requiresCPtr() && !actual->typeInfo()->symbol->hasFlag(FLAG_REF))
+    else if (passByAddr)
       fprintf(outfile, ")");
   }
   fprintf(outfile, ")");
