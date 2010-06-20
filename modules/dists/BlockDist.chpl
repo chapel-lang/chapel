@@ -31,7 +31,7 @@ use ChapelUtil;
 // modules, perhaps called debugDists and checkDists.
 //
 config param debugBlockDist = false;
-config param debugBlockDistBenchmark = false;
+config param debugBlockDistBenchmark = true;
 config param sanityCheckDistribution = false;
 
 //
@@ -850,6 +850,7 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
   timer.start();
   var to,from, numelem,tmp=0:int(64);
   var outfile = new file(f.filename, FileAccessMode.readwrite);
+  var bytes_written=0:int(64);
   outfile.open();
 
   if debugBlockDist then writeln("BlockArr.writeBinLocalArray in ",here.id," myblock:",locArr(localeIdx).locDom.myBlock.numIndices);
@@ -874,6 +875,7 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
 
     oldpos=pos;
     binfwrite(privarr.locArr(localeIdx)(ind),numbytespn,numelem,outfile._fp, status, err);
+    bytes_written=bytes_written+(numbytespn*numelem);
     if status < 0 {
       halt("***Error: Write failed: ", err, "***");
     }
@@ -883,7 +885,7 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
   timer.stop();
   if debugBlockDist then writeln("BlockArr.writeLocalBinArray locale ",here.id," ftell at the end:",pos);
   if debugBlockDistBenchmark then
-    writeln("BlockArr.writeLocalBinArray time to write in locale ",here.id,": ",timer.elapsed(TimeUnits.seconds));
+    writeln("BlockArr.writeLocalBinArray time to write in locale ",here.id,": ",timer.elapsed(TimeUnits.seconds)," bandwitdh: ",bytes_written/timer.elapsed(TimeUnits.seconds)/(1000*1000)," MiB/s");
   return pos;
 }
 
@@ -917,7 +919,7 @@ def BlockArr.writeBinArray(f: file)
   }
   timer.stop();
   if debugBlockDistBenchmark then
-    writeln("BlockArr.writeBinArray time to write:",timer.elapsed(TimeUnits.seconds));
+    writeln("BlockArr.writeBinArray time to write:",timer.elapsed(TimeUnits.seconds)," bandwitdh: ",(gotoPos-fpos)/timer.elapsed(TimeUnits.seconds)/(1000*1000)," MiB/s");
 
   f.open();
   f.fseekset(gotoPos);
@@ -937,6 +939,7 @@ def BlockArr.readBinArray(f: file) {
   var fpos=f.chpl_ftell();
   var gotoPos=fpos; 
 
+
 //  var i : rank*idxType;
   if debugBlockDist then writeln("readBinArray enter locales, ftell:",fpos);
   coforall localeIdx in dom.dist.targetLocDom {
@@ -949,7 +952,8 @@ def BlockArr.readBinArray(f: file) {
         infile.open();
 
 
-       var order=here.id*100000;
+  	var bytes_read=0:int(64);
+        var order=here.id*100000;
         var status= 0:int(64);
         var err= 0:int;
 // num of bytes per number
@@ -960,9 +964,7 @@ def BlockArr.readBinArray(f: file) {
 
         var pos=0:int(64);
         var oldpos=0:int(64);
-        var t_write = getCurrentTime();
         var to,from, numelem,tmp=0:int(64);
-        var t_read = getCurrentTime();
         var thislocal=localeIdx;
         if debugBlockDist then writeln("BlockArr.readBinArray in ",here.id," myblock.low:",locArr(localeIdx).locDom.myBlock.low);
         var ind=privarr.locArr(localeIdx).locDom.myBlock.low;
@@ -984,6 +986,7 @@ def BlockArr.readBinArray(f: file) {
 	  oldpos=pos;
 	  if debugBlockDist then writeln("binfread ",here.id,numbytespn,"numelem:",numelem," pos:",pos );
 	  binfread(privarr.locArr(thislocal)(ind),numbytespn,numelem,infile._fp, status, err);
+	  bytes_read=bytes_read+numbytespn*numelem;
 	  if status < 0 {
 		  const err = __primitive("get_errno");
 		  halt("***Error: Write failed: ", err, "***");
@@ -992,7 +995,7 @@ def BlockArr.readBinArray(f: file) {
 	}
         infile.close();
         if debugBlockDistBenchmark then
-          writeln("BlockArr.readBinArray time to read in locale ",here.id,": ",getCurrentTime() - t_read);
+          writeln("BlockArr.readBinArray time to read in locale ",here.id,": ",timer.elapsed(TimeUnits.seconds)," bandwitdh: ",bytes_read/timer.elapsed(TimeUnits.seconds)/(1000*1000)," MiB/s");
     }
   }
 
@@ -1001,12 +1004,13 @@ def BlockArr.readBinArray(f: file) {
 
   var numbytespn=8:int(64);
   var nbyteslin=numbytespn*((1+dom.dsiDim(1)._high-dom.dsiDim(1)._low)/dom.dsiDim(1)._stride);
-  gotoPos=(((dom.dsiDim(2)._high)-dom.dsiDim(2)._low+1)/dom.dsiDim(2)._stride)*nbyteslin+fpos;
+  var bytes_read=(((dom.dsiDim(2)._high)-dom.dsiDim(2)._low+1)/dom.dsiDim(2)._stride)*nbyteslin:int(64);
+  gotoPos=bytes_read+fpos;
 
   f.fseekset(gotoPos);
   timer.stop();
   if debugBlockDistBenchmark then
-    writeln("BlockArr.readBinArray time to read:",timer.elapsed(TimeUnits.seconds));
+    writeln("BlockArr.readBinArray time to read:",timer.elapsed(TimeUnits.seconds)," bandwitdh: ",bytes_read/timer.elapsed(TimeUnits.seconds)/(1000*1000)," MiB/s");
 
 
 // End of parallel read
