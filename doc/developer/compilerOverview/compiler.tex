@@ -39,6 +39,11 @@
 Chapel compiler works.  It is most certainly incomplete and wrong.
 \end{quote}
 
+{
+  \footnotesize
+  \tableofcontents
+}
+
 \section{Introduction}
 
 This document contains rough notes about the state of the compiler in
@@ -576,7 +581,8 @@ be manipulated because inserting and removing Expr nodes from the AST
 should be done via the functions \cc{insertAtHead}, \cc{insertAtTail},
 \cc{insertBefore}, \cc{insertAfter}, \cc{replace}, and \cc{remove}.
 These functions will also update the back pointers \cc{parentExpr} and
-\cc{parentSymbol}, which should never be set elsewhere.
+\cc{parentSymbol}, which should never be set elsewhere.  These
+functions are described in Section~\ref{sec:inserts}.
 
 The subclasses of Expr include the following:
 \begin{itemize}
@@ -824,6 +830,9 @@ The fields in GotoStmt are:
 \label{sec:traverse}
 
 The AST is a graph that the compiler traverses in a number of ways.
+
+\subsubsection{The Core Traversal (With a Figure of the AST Graph)}
+
 The core traversal mechanism is implemented by the macro
 \cc{AST_CHILDREN_CALL}.  This macro takes as arguments a BaseAST
 pointer, a C function call, and a list of arguments that should be
@@ -845,31 +854,718 @@ Notice that when traversing a CallExpr, we traverse its baseExpr
 (\cc{baseExpr}) and its list of actuals (\cc{argList}).
 
 The graph structure (omitting leaf nodes like UnresolvedSymExpr) is
-illustrated in Figure~\ref{fig:ast}.  One interesting point to note in
-this figure is that once we traverse into any Expr node, we only
-traverse Expr nodes unless we traverse a DefExpr node.
+illustrated in Figure~\ref{fig:ast}.  Every subclass of Symbol, Type,
+and Expr is represented if that subclass may not be a leaf in the
+traversal of the graph.  For example, both SymExpr and
+UnresolvedSymExpr are leaves when traversing.  The \cc{var} field of
+SymExpr is not traversed.  (Since we only want to traverse every
+Symbol once, we do it via the DefExpr.  More than one SymExpr node can
+point to the same Symbol, and that is to be expected.)
+
 \begin{figure}[htb]
 \includegraphics[angle=270,scale=0.5]{AST.ps}
 \caption{The AST graph structure, as it is traversed, omitting leaf nodes.}
 \label{fig:ast}
 \end{figure}
 
+Although there are cycles in Figure~\ref{fig:ast} in terms of classes,
+there are no cycles in terms of instances of classes.  That is, even
+though we can traverse from DefExpr to FnSymbol and back to DefExpr,
+the next DefExpr will definitely be a different instance, and that in
+turn will go to a different instance of Symbol.  Another important
+point to note is that we only traverse back to either Symbol or Type
+from Expr nodes via the \cc{sym} field of the DefExpr node.
+
+In these data structures, the only other field that points to an Expr
+node is the \cc{parentExpr} field.  This is a back pointer and so is
+not traversed when visiting the nodes via the traversal mechanism.
+
+There are a number of fields that store pointers to symbols.  Some of
+these are back pointers, like \cc{parentSymbol} in Expr, but some are
+not, like \cc{var} in SymExpr.  Pointers to the same Symbol and Type
+instances can appear more than once in this IR, but only once via a
+DefExpr, which roots it in the Chapel program.
+
+A number of collection routines are implemented that use the traversal
+mechanism to collect a vector of nodes.  These routines are sometimes
+more convenient or more efficient to use, depending on the particular
+analysis or transform being implemented.  The following list captures
+the current implementation:
+\begin{clang}
+void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts);
+void collect_asts_postorder(BaseAST*, Vec<BaseAST*>& asts);
+void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts);
+void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts);
+void collectDefExprs(BaseAST* ast, Vec<DefExpr*>& defExprs);
+void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs);
+void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts);
+void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs);
+void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols);
+void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls);
+\end{clang}
+
+Except for \cc{collectFnCalls} and \cc{collect_top_asts}, these
+routines traverse the AST in total from a given AST node \cc{ast}, and
+collect the nodes of a given type into a vector, the second argument.
+The function \cc{collectFnCalls} collects all CallExprs that are not
+to primitives.  The function \cc{collect_top_asts} collects all nodes
+that are ``top-level'' where that is defined as not traversing into a
+Symbol via a DefExpr.  Thus before the pass that flattens nested
+functions, this function is useful if we don't want to collect the
+nodes in a nested function when traversing the outer function.
+
+The collect routines are sometimes useful and efficient, but for
+time-critical sections of code, it is sometimes better to define a
+recursive function that calls the traversal macro
+\cc{AST_CHILDREN_CALL} directly.
+
+\subsubsection{The \cc{getFirstExpr} and \cc{getnextExpr} Methods}
+
+The stylized loop \cc{for_exprs_postorder} uses the functions
+\begin{clang}
+Expr* getFirstExpr(Expr* expr);
+Expr* getNextExpr(Expr* expr);
+\end{clang}
+to iterate over an expression.  This iteration technique is only used
+in function resolution to date.
+
+The function \cc{getFirstExpr} returns the first expression that would
+be returned in a postorder traversal of the Expr node that is passed
+to this function.  Then given any Expr node in this traversal, the
+function \cc{getNextExpr} returns the next expression in the postorder
+traversal.  This functionality can only be used on ``top-level'' Expr
+nodes, \ie, Expr nodes that have a null parentExpr field.  Otherwise,
+we would traverse up into the parent.
+
+This style of iteration is used in function resolution when walking
+through a BlockStmt and resolving types and function calls.
+
 \subsection{AST Functions and Methods}
 
+This section details implemented functions and methods pertaining to
+the AST.
 
+\subsubsection{Methods for Insertion, Replacement, and Removal}
+\label{sec:inserts}
+
+For changing the IR, these methods should always be used as they
+update back pointers and enforce some constraints.
+
+\begin{clang}
+void FnSymbol::insertAtHead(Expr* ast);
+void FnSymbol::insertAtTail(Expr* ast);
+void CallExpr::insertAtHead(BaseAST* ast);
+void CallExpr::insertAtTail(BaseAST* ast);
+void BlockStmt::insertAtHead(Expr* ast);
+void BlockStmt::insertAtTail(Expr* ast);
+\end{clang}
+\begin{quote}
+The \cc{insertAtHead} and \cc{insertAtTail} function insert new
+Expr nodes at the beginning or end of a list of Exprs.  When using
+these methods on FnSymbol, the list is the \cc{body} field in the
+\cc{BlockStmt::body} field of the FnSymbol.  When using these methods
+on BlockStmt, the list is the \cc{body} field of the BlockStmt.
+
+When using these methods on CallExpr, the list is the \cc{argList}
+field, the list of actual expressions passed to the CallExpr.  Notice
+that these methods takes any BaseAST, rather than Expr.  This allows
+Symbol nodes to be passed to these methods directly.  The methods
+insert a SymExpr around such Symbol nodes.  This is important for
+keeping the code more readable.  For example, one can write
+\begin{clang}
+call->insertAtHead(gMethodToken)
+\end{clang}
+instead of
+\begin{clang}
+call->insertAtHead(new SymExpr(gMethodToken))
+\end{clang}
+Such simplifications are important for readability.  They also help
+move towards the day when the SymExpr node can be removed.
+\end{quote}
+
+\begin{clang}
+void Expr::insertBefore(Expr* new_ast);
+void Expr::insertAfter(Expr* new_ast);
+\end{clang}
+\begin{quote}
+These methods insert new Expr nodes before or after another Expr node
+that is already in a list.  This could be an actual in a CallExpr, a
+statement in a BlockStmt, a formal argument in a function, a field in
+a class, ...
+\end{quote}
+
+\begin{clang}
+void Expr::replace(Expr* new_ast);
+\end{clang}
+\begin{quote}
+This method replaces one expression that is in the AST (has a
+parentSymbol) with another one that is not in the AST.  It is
+implemented on each node type via the internal helper method called
+\cc{replaceChild}.  You cannot call replace a NULL field.  To handle
+that case, we sometimes use the \cc{insert_help} function discussed
+below.
+\end{quote}
+
+\begin{clang}
+Expr* Expr::remove(void);
+\end{clang}
+\begin{quote}
+This method removes an Expr node from the AST and updates all forward
+and backward pointers in the removed expression and what is left.
+Expr nodes can be removed from lists.  They can also be removed even
+if they are not in lists.  In this case, the field that was pointing
+to this expression is set to NULL.  For example, calling
+\cc{block->blockInfo->remove()} will remove the CallExpr node pointed
+to by the \cc{blockInfo} field from the AST (making all of its
+\cc{parentSymbol} fields \cc{NULL}, etc.).  In addition, the
+\cc{blockInfo} field will be set to NULL.  This uses the same
+\cc{replaceChild} method to get to this parent pointer from within the
+call to this method.
+\end{quote}
+
+\begin{clang}
+void FnSymbol::insertBeforeReturn(Expr* ast);
+void FnSymbol::insertBeforeReturnAfterLabel(Expr* ast);
+\end{clang}
+\begin{quote}
+These special-purpose insert routines also update back pointers, etc.
+The methods \cc{insertBeforeReturn} and
+\cc{insertBeforeReturnAfterLabel} insert code in a function just
+before the return statement.  The ``after label'' modifier is
+important if want this code to execute even if we jump to this point
+in the code to exit (as is done after the return statements are
+normalized by the normalize pass).
+\end{quote}
+
+\begin{clang}
+void FnSymbol::insertFormalAtHead(BaseAST* ast);
+void FnSymbol::insertFormalAtTail(BaseAST* ast);
+\end{clang}
+\begin{quote}
+These methods insert formal arguments at the beginning or end of the
+formal arguments list of a function.  The formal arguments list is a
+list of DefExpr nodes.  To improve readability, an ArgSymbol may be
+passed to these methods.  The DefExpr node is then inserted within
+these methods.
+\end{quote}
+
+\begin{clang}
+void insert_help(BaseAST* ast, Expr* parentExpr, Symbol* parentSymbol);
+void remove_help(BaseAST* ast, int dummy=0); // dummy is never used
+void parent_insert_help(BaseAST* parent, Expr* ast);
+void sibling_insert_help(BaseAST* sibling, BaseAST* ast);
+\end{clang}
+\begin{quote}
+These functions are used to set the back pointers after an insertion,
+removal, or replacement.  When replacing NULL fields, it is sometimes
+useful to just assign them the nodes that are not yet in the AST, and
+then call the \cc{insert_help} function directly.  In general though,
+these are not meant to be called outside of the methods discussed
+above.
+\end{quote}
+
+\subsubsection{Constructors and \cc{new_Expr}}
+\label{sec:constructors}
+
+As with the insertion methods discussed, constructors will also
+automatically insert SymExpr wrapper nodes to make for more readable
+code.  The following is a list of such simplifications:
+\begin{itemize}
+\item The DefExpr constructor will automatically insert SymExpr nodes
+  around symbols passed to initialize the \cc{init} and \cc{exprType}
+  fields.
+\item The CallExpr constructor will automatically insert a SymExpr
+  node around a Symbol passed to initialized the baseExpr field.
+\item The CallExpr constructor can take up to four arguments to fill
+  out the \cc{argList} field.  If these arguments are Symbol nodes,
+  they will be wrapped by SymExpr nodes.
+\item The CondStmt constructor can take non-block expressions to
+  initialize the \cc{thenStmt} and \cc{elseStmt} blocks, in which case
+  a new BlockStmt node will be created to wrap these expressions.  In
+  addition, if the BlockStmt nodes passed to this constructor are not
+  regular (have \cc{blockInfo} or \cc{blockTag} set, then a new
+  BlockStmt will be created.
+\end{itemize}
+
+The CallExpr constructor deserves extra mention.  It is overloaded so
+that the first argument can either be a Symbol or an Expr (to
+initialize the \cc{baseExpr} field, or it can be a PrimitiveOp or
+PrimitiveTag (to initialize the \cc{primitive} field, or it can be a
+character strings (to initialize the \cc{baseExpr} field as an
+unresolved call using an UnresolvedSymExpr).
+
+A relatively new way of creating Expr nodes is to use the
+\cc{new_Expr} functions.
+\begin{clang}
+Expr* new_Expr(const char* format, ...);
+Expr* new_Expr(const char* format, va_list vl);
+\end{clang}
+These functions take a format string and a variable list of arguments
+and builds up an Expr node.  It is meant to be used early in
+compilation.
+
+Primitives can be created by delimiting the name of a primitive in the
+format string followed by parentheses, with the arguments to the
+primitive in the parentheses.  Unresolved function calls (to be
+resolved in function resolution) can be specified by writing the name
+of the function followed by parentheses, with the arguments to the
+function in the parentheses.  BlockStmts can be created by delimiting
+the format string with curly braces.  \cc{BLOCK_TYPE} BlockStmts can
+be created by delimiting the format string with curly braces where the
+word \cc{TYPE} appears immediately inside the curly brace.
+
+Expressions and Symbols can be added to the variable list of arguments
+by using the specifiers \cc{\%E} and \cc{\%S} respectively.
+
+For example, the code
+\begin{clang}
+new_Expr("'move'(%S, foo(%S))", x, gFalse)))
+\end{clang}
+is equivalent to
+\begin{clang}
+new CallExpr(PRIM_MOVE, T2, new CallExpr("foo", gFalse))
+\end{clang}
+This is often more readable for long sequences of expressions or
+statements, but not much rewriting has been done to date.
+
+The extensions to the \cc{insertAtHead} and \cc{insertAtTail} methods,
+as given by
+\begin{clang}
+void FnSymbol::insertAtHead(const char* format, ...);
+void FnSymbol::insertAtTail(const char* format, ...);
+void BlockStmt::insertAtHead(const char* format, ...);
+void BlockStmt::insertAtTail(const char* format, ...);
+\end{clang}
+make use of the \cc{new_Expr} functionality above to avoid the
+explicit call to \cc{new_Expr}.
+
+\subsubsection{BaseAST Functions and Methods}
+
+\begin{clang}
+virtual void BaseAST::verify() = 0;
+\end{clang}
+\begin{quote}
+This method is called between passes to verify that this AST node,
+which is still in the AST, is valid.  It checks to make sure
+assumptions are valid.
+\end{quote}
+
+\begin{clang}
+virtual BaseAST* BaseAST::copy(SymbolMap* map = NULL, bool internal = false) = 0;
+\end{clang}
+\begin{quote}
+This method is used to copy an Expr, Symbol, or Type node.  It is
+implemented in such a way so that if you copy a BlockStmt that
+contains a DefExpr of some Symbol node, then that Symbol node will be
+copied and all uses of it (via SymExpr, etc.) will be updated to point
+to the new one.  This update is done via a call to \cc{update_symbols}
+as described below.  The map that is used by \cc{update_symbols} can
+be passed to the copy function.  If none is passed, a new one will be
+created.  This map, from original symbols to copied symbols, will be
+constructed during the copy process.  It is sometimes useful to
+capture this map when calling copy.
+
+The argument \cc{internal} should never be passed, except internal to
+the implementation of \cc{copy}.  The implementation of \cc{copy} on a
+particular node is implemented via the method \cc{copyInner} which is
+also called by all recursive copies via the macro \cc{COPY_INT}.
+\end{quote}
+
+\begin{clang}
+virtual void BaseAST::codegen(FILE* outfile) = 0;
+\end{clang}
+\begin{quote}
+This method is used to implement the code generation pass.  Although
+originally designed for before the AST is normalized (and there was
+more nesting of expressions as well as more Expr nodes), it still
+works fairly well today.  This code might benefit from a revamp with
+the assumpttion of normalization, unless there remains a desire to
+unnormalize so as to generate C expressions.
+\end{quote}
+
+\begin{clang}
+ModuleSymbol* BaseAST::getModule();
+FnSymbol* BaseAST::getFunction();
+\end{clang}
+\begin{quote}
+These methods return the module/function that a given AST node resides
+in, by tracking back up the back pointers.  In many cases within the
+compiler, we make the assumption that \cc{parentSymbol} points to a
+function and avoid the need to call \cc{getFunction}.
+\end{quote}
+
+\begin{clang}
+virtual Type* BaseAST::typeInfo(void) = 0;
+Type* BaseAST::getValType();
+Type* BaseAST::getRefType();
+Type* BaseAST::getWideRefType();
+\end{clang}
+\begin{quote}
+The method \cc{typeInfo} returns the type of any expression or symbol,
+  though before function resolution, this is likely to be the
+  unresolved type \cc{dtUnknown}.  The method \cc{getValType} returns
+  the value type of the expression or symbol.  That is, if the type
+  evaluates to a reference or wide reference type, the value type is
+  returned.  If the type evaluates to a value type, it is returned.
+  The methods \cc{getRefType} and \cc{getWideRefType} return reference
+  or wide reference types.
+\end{quote}
+
+\begin{clang}
+void update_symbols(BaseAST* ast, SymbolMap* map);
+\end{clang}
+\begin{quote}
+This function replaces all occurrences of the key symbols in \cc{map}
+with the value symbols in \cc{map}.
+\end{quote}
+
+\subsubsection{Symbol Functions and Methods}
+
+\begin{clang}
+Symbol* FnSymbol::getReturnSymbol();
+\end{clang}
+\begin{quote}
+This method can be used after normalization to find the symbol that a
+function returns.  After normalization, there is only one such symbol,
+and it is returned by the last statement in the function.
+\end{quote}
+
+\begin{clang}
+int FnSymbol::numFormals();
+ArgSymbol* FnSymbol::getFormal(int i);
+\end{clang}
+\begin{quote}
+These methods return the number of formal arguments to a function and
+the \cc{i}th formal argument.
+\end{quote}
+
+\begin{clang}
+VarSymbol *new_StringSymbol(const char *s);
+VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
+VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_32);
+VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_32);
+VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
+VarSymbol *new_ImmediateSymbol(Immediate *imm);
+\end{clang}
+\begin{quote}
+These functions build new symbols to represent immediate or literal
+values.  A cache is used so that we never have two different symbols
+represent identical literal values.
+\end{quote}
+
+\subsubsection{Type Functions and Methods}
+
+\begin{clang}
+Symbol* ClassType::getField(const char* name, bool fatal=true);
+Symbol* ClassType::getField(int i);
+\end{clang}
+\begin{quote}
+These methods return a field in a class, record, or union either by
+matching a string name or finding the \cc{i}th field by declaration
+order.  The argument \cc{fatal} can be set to false to return NULL
+rather than issue an internal error.
+\end{quote}
+
+\begin{clang}
+bool is_bool_type(Type*);
+bool is_int_type(Type*);
+bool is_uint_type(Type*);
+bool is_real_type(Type*);
+bool is_imag_type(Type*);
+bool is_complex_type(Type*);
+bool is_enum_type(Type*);
+bool isClass(Type* t);
+bool isRecord(Type* t);
+bool isUnion(Type* t);
+bool isReferenceType(Type* t);
+\end{clang}
+\begin{quote}
+These functions return true if the Type node represents a Chapel type
+of the named category.  In addition, a macro \cc{is_arithmetic_type}
+wraps calls to the numeric type query functions above.
+\end{quote}
+
+\begin{clang}
+int get_width(Type*);
+\end{clang}
+\begin{quote}
+This function returns the number of bits in a type.
+\end{quote}
+
+\subsubsection{Expr Functions and Methods}
+
+\begin{clang}
+Expr* getStmtExpr();
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+FnSymbol* CallExpr::isResolved(void);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+bool CallExpr::isNamed(const char*);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+int CallExpr::numActuals();
+Expr* CallExpr::get(int index);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+bool CallExpr::isPrimitive(PrimitiveTag primitiveTag);
+bool CallExpr::isPrimitive(const char* primitiveName);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+
+\begin{clang}
+bool get_int(Expr *e, long *i); // false is failure
+bool get_uint(Expr *e, unsigned long *i); // false is failure
+bool get_string(Expr *e, const char **s); // false is failure
+const char* get_string(Expr* e); // fatal on failure
+VarSymbol *get_constant(Expr *e);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\subsubsection{Miscellaneous AST Utility Functions}
+
+\begin{clang}
+ArgSymbol* actual_to_formal( Expr *a);
+Expr* formal_to_actual(CallExpr* call, Symbol* formal);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void subSymbol(BaseAST* ast, Symbol* oldSym, Symbol* newSym);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+BlockStmt* getVisibilityBlock(Expr* expr);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void reset_line_info(BaseAST* baseAST, int lineno);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\subsubsection{Compilation Utility Routines}
+
+\begin{clang}
+void compute_call_sites();
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+void buildDefUseMaps(FnSymbol* fn,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+void buildDefUseMaps(Vec<Symbol*>& symSet,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+void buildDefUseMaps(Vec<Symbol*>& symSet,
+                     Vec<SymExpr*>& symExprs,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+void freeDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                    Map<Symbol*,Vec<SymExpr*>*>& useMap);
+void addDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, SymExpr* def);
+void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use);
+\end{clang}
+\begin{quote}
+TODO
+
+Two stylized loop macros allow for iteration over the defs and uses.
+The macro \cc{for_defs(def, defMap, sym)} declares a new SymExpr for
+the \cc{def} argument and iterates over the vector of definitions for
+the symbol \cc{sym} given by the map \cc{defMap}.  The macro
+\cc{for_uses(use, useMap, sym)} is comparable, but for uses.
+\end{quote}
+
+\begin{clang}
+void collectSymbolSetSymExprVec(BaseAST* ast,
+                                Vec<Symbol*>& symSet,
+                                Vec<SymExpr*>& symExprs);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void buildDefUseSets(Vec<Symbol*>& syms,
+                     FnSymbol* fn,
+                     Vec<SymExpr*>& defSet,
+                     Vec<SymExpr*>& useSet);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\subsubsection{Optimizations and Analyses}
+
+\begin{clang}
+void collapseBlocks(BlockStmt* block);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void removeUnnecessaryGotos(FnSymbol* fn);
+void removeUnusedLabels(FnSymbol* fn);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void localCopyPropagation(FnSymbol* fn);
+void globalCopyPropagation(FnSymbol* fn);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void localReferencePropagation(FnSymbol* fn);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                                        Map<Symbol*,Vec<SymExpr*>*>& useMap,
+                                        Symbol* var);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void singleAssignmentRefPropagation(FnSymbol* fn);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void deadVariableElimination(FnSymbol* fn);
+void deadExpressionElimination(FnSymbol* fn);
+void deadCodeElimination(FnSymbol* fn);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void liveVariableAnalysis(FnSymbol* fn,
+                          Vec<Symbol*>& locals,
+                          Map<Symbol*,int>& localID,
+                          Vec<SymExpr*>& useSet,
+                          Vec<SymExpr*>& defSet,
+                          Vec<BitVec*>& OUT);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+void buildDefUseChains(FnSymbol* fn,
+                       Map<SymExpr*,Vec<SymExpr*>*>& DU,
+                       Map<SymExpr*,Vec<SymExpr*>*>& UD);
+void freeDefUseChains(Map<SymExpr*,Vec<SymExpr*>*>& DU,
+                      Map<SymExpr*,Vec<SymExpr*>*>& UD);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\subsubsection{Stmt (Expr) Functions and Methods}
+
+\begin{clang}
+bool BlockStmt::isLoop(void);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+int BlockStmt::length(void);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
+\begin{clang}
+Expr* CondStmt::fold_cond_stmt();
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
 
 \subsection{Primitives}
 \label{sec:primitives}
+
+TODO
 
 \subsection{Pragmas}
 \label{sec:flags}
 \label{sec:pragmas}
 
+The flags are manipulated via the following methods on Symbol:
+\begin{clang}
+bool Symbol::hasFlag(Flag flag);
+void Symbol::addFlag(Flag flag);
+void Symbol::addFlags(Vec<const char*>* strs);
+void Symbol::copyFlags(Symbol* other);
+void Symbol::removeFlag(Flag flag);
+\end{clang}
+These functions check to see if a flag applies to a symbol (the symbol
+has a flag), add flags to a symbol (\cc{addFlags} takes the flags as
+pragmas (strings) and is used in the parser), copy flags (also used in
+the parser), and remove flags from a symbol.
+
+TODO
+
 \section{Passes}
 \label{sec:passes}
 
 The compiler is organized as a set of passes, each of which is a
-function.
+function.  Compilation proceeds by calling each of these functions in
+turn.  Between each pass, a number of verification and cleanup tasks
+are completed, as explained in Section~\ref{sec:betweenpasses}.
 
 \subsection{parse}
 
@@ -880,44 +1576,168 @@ There are relatively few assumptions that can be made about the AST at
 this point in compilation, other than those enforced by the type
 system.
 
+TODO
+
 \subsection{checkParsed}
+
+TODO
+
 \subsection{cleanup}
+
+TODO
+
 \subsection{scopeResolve}
+
+TODO
+
 \subsection{flattenClasses}
+
+TODO
+
 \subsection{normalize}
+
+TODO
+
+\begin{clang}
+void normalize(BaseAST* base);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
 \subsection{checkNormalized}
+
+TODO
+
 \subsection{buildDefaultFunctions}
+
+TODO
+
 \subsection{resolve}
+
+TODO
+
 \subsection{checkResolved}
+
+TODO
+
 \subsection{flattenFunctions}
+
+TODO
+
+\begin{clang}
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+\end{clang}
+\begin{quote}
+TODO
+\end{quote}
+
 \subsection{cullOverReferences}
+
+TODO
+
 \subsection{callDestructors}
+
+TODO
+
 \subsection{lowerIterators}
 \label{sec:lowerIterators}
+
+TODO
+
 \subsection{parallel}
+
+TODO
+
 \subsection{prune}
+
+TODO
+
 \subsection{complex2record}
+
+TODO
+
 \subsection{removeUnnecessaryAutoCopyCalls}
+
+TODO
+
 \subsection{inlineFunctions}
+
+TODO
+
 \subsection{scalarReplace}
+
+TODO
+
 \subsection{refPropagation}
+
+TODO
+
 \subsection{copyPropagation}
+
+TODO
+
 \subsection{deadCodeElimination}
+
+TODO
+
 \subsection{removeWrapRecords}
+
+TODO
+
 \subsection{removeEmptyRecords}
+
+TODO
+
 \subsection{localizeGlobals}
+
+TODO
+
 \subsection{prune}
+
+TODO
+
 \subsection{returnStarTuplesByRefArgs}
+
+TODO
+
 \subsection{gpuFlattenArgs}
+
+TODO
+
 \subsection{insertWideReferences}
+
+TODO
+
 \subsection{optimizeOnClauses}
+
+TODO
+
 \subsection{insertLineNumbers}
+
+TODO
+
 \subsection{repositionDefExpressions}
+
+TODO
+
 \subsection{codegen}
+
+TODO
+
 \subsection{makeBinary}
+
+TODO
+
+\subsection{What Happens Between Passes?}
+\label{sec:betweenpasses}
+
+TODO
 
 \section{Miscellaneous}
 \label{sec:misc}
+
+TODO
 
 \subsection{Compiler Strings}
 \label{sec:strings}
