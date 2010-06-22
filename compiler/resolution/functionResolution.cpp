@@ -4386,8 +4386,10 @@ pruneResolvedTree() {
           if (formal->type == dtMethodToken ||
               formal->instantiatedParam ||
               (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-               !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)))
+               !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
+               !fn->hasFlag(FLAG_EXTERN))) {
             call->get(i)->remove();
+          }
         }
       }
     } else if (NamedExpr* named = toNamedExpr(ast)) {
@@ -4450,7 +4452,8 @@ pruneResolvedTree() {
         if (formal->type == dtMethodToken || formal->instantiatedParam)
           formal->defPoint->remove();
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-            !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+            (!formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
+             !fn->hasFlag(FLAG_EXTERN))) {
           formal->defPoint->remove();
           VarSymbol* tmp = newTemp(formal->type);
           fn->insertAtHead(new DefExpr(tmp));
