@@ -1168,6 +1168,64 @@ void scopeResolve(void) {
         symExpr = new SymExpr(sym);
         unresolvedSymExpr->replace(symExpr);
       }
+
+      else if (isFnSymbol(sym)) {
+        FnSymbol* fn = toFnSymbol(sym);
+
+        Expr *parent = unresolvedSymExpr->parentExpr;
+        if (parent) {
+          CallExpr *call = toCallExpr(parent);
+          if (((call) && (call->baseExpr != unresolvedSymExpr)) || (!call)) {
+            BlockStmt *block = new BlockStmt();
+
+            ClassType *classType = new ClassType(CLASS_CLASS);
+            DefExpr* de = buildClassDefExpr("chpl__fcfun", classType , new CallExpr(PRIM_ACTUALS_LIST),
+                block, false);
+            add_class_to_hierarchy(classType);
+
+            FnSymbol* meth = new FnSymbol("this");
+            ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", classType);
+            meth->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+            meth->insertFormalAtTail(_this);
+
+	    //Add in the actual arguments as well, we got those from the fn's actuals
+	    CallExpr *innerCall = new CallExpr(sym);
+	    for_alist(formalExpr, fn->formals) {
+	      DefExpr* dExp = toDefExpr(formalExpr);
+	      ArgSymbol* fArg = toArgSymbol(dExp->sym);
+
+	      if (fArg->defaultExpr) {
+		USR_FATAL_CONT(fArg, "Default arguments not allowed in first class functions");
+	      }		
+	      ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
+	      if (fArg->typeExpr) 
+		newFormal->typeExpr = fArg->typeExpr->copy();
+	      SymExpr* argSym = new SymExpr(newFormal);
+	      innerCall->insertAtHead(argSym);
+	      
+	      meth->insertFormalAtTail(newFormal);
+	    }
+            meth->where = block;
+            meth->_this = de->sym;
+
+            meth->body->insertAtTail(buildPrimitiveStmt(PRIM_RETURN, innerCall));
+
+            DefExpr *meth_expr = new DefExpr(meth);
+
+            FnSymbol* fn = toFnSymbol(sym);
+            fn->defPoint->insertAfter(de);
+            fn->defPoint->insertAfter(meth_expr);
+
+            build_constructor(classType);
+            build_type_constructor(classType);
+
+            CallExpr *prim_new_replace = new CallExpr(PRIM_NEW, new CallExpr(de->sym));
+            unresolvedSymExpr->replace(prim_new_replace);
+
+            continue;
+          }
+        }
+      }
     }
 
     // Apply 'this' and 'outer' in methods where necessary
