@@ -44,6 +44,7 @@ int countBlocks(Vec<BlockStmt*>& check_vec_block, VarSymbol* var) {
     forv_Vec(SymExpr, symbol, symbols) {
       if (toVarSymbol(symbol->var) == var) {
         answer++;
+        break;
       }
     }
 
@@ -62,6 +63,15 @@ Vec<BlockStmt*> getChildBlocks(BlockStmt* check_block) {
   for_alist(expr, check_block->body) {
     if (BlockStmt* block = toBlockStmt(expr)) {
       answer.add(block);
+    } else {
+      if (CondStmt* cond = toCondStmt(expr)) {
+        if (BlockStmt* thenclause = toBlockStmt(cond->thenStmt)) {
+          answer.add(thenclause);
+        }
+        if (BlockStmt* elseclause = toBlockStmt(cond->elseStmt)) {
+          answer.add(elseclause);
+        }
+      }
     }
   }
 
@@ -73,10 +83,10 @@ Vec<BlockStmt*> getChildBlocks(BlockStmt* check_block) {
 BlockStmt* getUniqueBlock(Vec<BlockStmt*>& check_vec_block, VarSymbol* var) {
   forv_Vec(BlockStmt*, block, check_vec_block) {
 
-    Vec<Symbol*> symbols;
-    collectSymbols(block, symbols);
-    forv_Vec(Symbol, symbol, symbols) {
-      if (toVarSymbol(symbol) == var) {
+    Vec<SymExpr*> symbols;
+    collectSymExprs(block, symbols);
+    forv_Vec(SymExpr, symbol, symbols) {
+      if (symbol->var == var) {
         return block;
       }
     }
@@ -93,13 +103,20 @@ BlockStmt* getUniqueBlock(Vec<BlockStmt*>& check_vec_block, VarSymbol* var) {
 // z.
 bool isTopDecl(BlockStmt* check_block, VarSymbol* var) {
   for_alist(expr, check_block->body) {
-    if (!(toBlockStmt(expr))) {
-      Vec<Symbol*> syms;
-      collectSymbols(expr, syms);
-      forv_Vec(Symbol, sym, syms) {
-        if (toVarSymbol(sym) == var)
-          return true;
+    Vec<SymExpr*> syms;
+    if ( (!(toBlockStmt(expr))) &&
+         (!(toCondStmt(expr))) ) {
+      collectSymExprs(expr, syms);
+    } else if (BlockStmt* new_block = toBlockStmt(expr)) {
+      if (new_block->blockInfo) {
+        collectSymExprs(new_block->blockInfo, syms);
       }
+    } else if (CondStmt* new_cond = toCondStmt(expr)) {
+      collectSymExprs(new_cond->condExpr, syms);
+    }
+    forv_Vec(SymExpr, sym, syms) {
+      if (sym->var == var)
+        return true;
     }
   }
   return false;
@@ -143,6 +160,7 @@ void repositionDefExpressions(void) {
             break;
           } else {
             current_block = getUniqueBlock(childBlocks, var);
+            if (!current_block) break;
           }
         }
       }
