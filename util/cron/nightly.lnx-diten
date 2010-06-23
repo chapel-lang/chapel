@@ -1,4 +1,4 @@
-CRONDIR=`dirname "$0`
+CRONDIR=`dirname $0`
 
 $CRONDIR/nightly.lnx-diten.x2
 $CRONDIR/nightly.lnx-diten.cyclic
