@@ -338,9 +338,10 @@ The fields of FnSymbol include the following:
   each analysis.
 \item \cc{Vec<CallExpr*>* calledBy} points to all of the CallExprs
   that call this function.  These vectors are computed by
-  \chpl{compute_call_sites}, but are not mainted when CallExprs are
-  changed.  This field could be removed if this function were to build
-  a Map from FnSymbols to a vector of CallExprs.
+  \chpl{compute_call_sites} (Section~\ref{sec:util}), but are not
+  mainted when CallExprs are changed.  This field could be removed if
+  this function were to build a Map from FnSymbols to a vector of
+  CallExprs.
 \item \cc{const char* userString} is set during parsing so that we can
   store the prototype of the function and issue error messages to the
   user that display function candidates just as they are written in
@@ -1300,21 +1301,36 @@ This function returns the number of bits in a type.
 Expr* getStmtExpr();
 \end{clang}
 \begin{quote}
-TODO
+This method returns a statement-level expression given an expression
+nested in another.  A statement-level expression is an expression that
+is a statement or an expression whose parent is a statement.  A
+statement is a BlockStmt, a GotoStmt, or a CondStmt.  Back in the day,
+the Chapel IR used to distinguish between expressions and statements,
+even going so far as having a statement called ExprStmt.  When working
+on the compiler, it is worth keeping in mind that our intermediate
+representation has been greatly simplified over time.  Thus some code
+that may seem like it should have been simplified from when it was
+first written could not have been, but it is probably worthwhile
+simplifying now.  That is to say, if something seems more complicated
+than it needs to be, it is quite possible that it is more complicated
+than it needs to be now.  Therefore, simplify!
 \end{quote}
 
 \begin{clang}
 FnSymbol* CallExpr::isResolved(void);
 \end{clang}
 \begin{quote}
-TODO
+This method returns the FnSymbol that a CallExpr has been resolved to.
+This method tends to be called extensively after function resolution.
+For primitives and unresolved symbols, \cc{NULL} is returned.
 \end{quote}
 
 \begin{clang}
 bool CallExpr::isNamed(const char*);
 \end{clang}
 \begin{quote}
-TODO
+This method returns true if the name of the function call (be it
+resolved or unresolved) matches the string argument.
 \end{quote}
 
 \begin{clang}
@@ -1322,7 +1338,9 @@ int CallExpr::numActuals();
 Expr* CallExpr::get(int index);
 \end{clang}
 \begin{quote}
-TODO
+The method \cc{numActuals} returns the number of actual expressions
+passed to this call.  The method \cc{get} returns the \cc{index}th
+actual expression passed to this call.
 \end{quote}
 
 \begin{clang}
@@ -1330,19 +1348,62 @@ bool CallExpr::isPrimitive(PrimitiveTag primitiveTag);
 bool CallExpr::isPrimitive(const char* primitiveName);
 \end{clang}
 \begin{quote}
-TODO
+These methods return true if this call is a primitive that matches the
+enumeration or string argument.
 \end{quote}
 
-
 \begin{clang}
-bool get_int(Expr *e, long *i); // false is failure
-bool get_uint(Expr *e, unsigned long *i); // false is failure
-bool get_string(Expr *e, const char **s); // false is failure
-const char* get_string(Expr* e); // fatal on failure
+bool get_int(Expr *e, long *i);
+bool get_uint(Expr *e, unsigned long *i);
+bool get_string(Expr *e, const char **s);
+const char* get_string(Expr* e);
 VarSymbol *get_constant(Expr *e);
 \end{clang}
 \begin{quote}
-TODO
+These functions evaluate an expression and return (or return in the
+reference argument) the value of the compile-time constant that the
+expression evaluates to.  In the event that the expression is not a
+compile-time constant, the function either returns false
+(\cc{get_int}, \cc{get_uint}, the first \cc{get_string}), issues an
+error (the second \cc{get_string}), or returns NULL
+(\cc{get_constant}).
+\end{quote}
+
+\subsubsection{Stmt (Expr) Functions and Methods}
+
+\begin{clang}
+bool BlockStmt::isLoop(void);
+\end{clang}
+\begin{quote}
+This method returns true if this BlockStmt node is a loop.  This
+method is safe during the scopeResolve pass and before.  Use of this
+method should probably be discouraged at or after function resolution
+when there are more loop types and basic blocks can be used for such
+control flow analyses.
+\end{quote}
+
+\begin{clang}
+int BlockStmt::length(void);
+\end{clang}
+\begin{quote}
+This method returns the number of Expr nodes top-level to a block.
+How long is this block?  This may not be very applicable as all
+expressions are counted (including DefExpr nodes) so what exactly is
+this doing?  This method is used during parsing and also appears to be
+used during the fast and short on-statement optimization.
+\end{quote}
+
+\begin{clang}
+Expr* CondStmt::fold_cond_stmt();
+\end{clang}
+\begin{quote}
+This method folds a conditional statement if the expression that
+evaluates to true or false can do so at compilation time.  This is
+used during function resolution to fold parameter conditionals.  It is
+also used after function resolution if new parameter conditionals are
+introduced.  Such new parameter conditionals show up if a value is
+changed to true or false after function resolution.  Currently, this
+definitely does happen on occasion.
 \end{quote}
 
 \subsubsection{Miscellaneous AST Utility Functions}
@@ -1352,37 +1413,54 @@ ArgSymbol* actual_to_formal( Expr *a);
 Expr* formal_to_actual(CallExpr* call, Symbol* formal);
 \end{clang}
 \begin{quote}
-TODO
+The function \cc{actual_to_formal} finds the formal argument from an
+actual argument (expression).  The function \cc{formal_to_actual}
+finds the actual argument in the specified call from a formal
+argument.
 \end{quote}
 
 \begin{clang}
 void subSymbol(BaseAST* ast, Symbol* oldSym, Symbol* newSym);
 \end{clang}
 \begin{quote}
-TODO
+This function replaces all occurences of symbol \cc{oldSym} in
+\cc{ast} with \cc{newSym} by traversing \cc{ast}.  This is a special
+case of \cc{update_symbols} which takes a map of old symbols to new
+symbols.
 \end{quote}
 
 \begin{clang}
 BlockStmt* getVisibilityBlock(Expr* expr);
 \end{clang}
 \begin{quote}
-TODO
+This function returns the innermost block that could contain
+definitions that may be resolved to during scope resolution or
+function resolution.  From this block, it is a matter of searching
+into outer blocks, or module blocks used by this block or outer
+blocks, etc.
 \end{quote}
 
 \begin{clang}
 void reset_line_info(BaseAST* baseAST, int lineno);
 \end{clang}
 \begin{quote}
-TODO
+This helper function resets the line number in baseAST and all AST
+nodes traversed from this node.
 \end{quote}
 
 \subsubsection{Compilation Utility Routines}
+\label{sec:util}
 
 \begin{clang}
 void compute_call_sites();
 \end{clang}
 \begin{quote}
-TODO
+This function builds the call graph for the entire program represented
+by the AST.  Each FnSymbol has a field \cc{calledBy} that is a vector
+of CallExprs.  After this function is called, these vectors are filled
+with every CallExpr that may call this function.  This includes
+dynamically dispatched calls.  This function can be used more than
+once; the vectors are cleared at the beginning of the call.
 \end{quote}
 
 \begin{clang}
@@ -1404,7 +1482,21 @@ void addDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, SymExpr* def);
 void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use);
 \end{clang}
 \begin{quote}
-TODO
+The overloaded functions called \cc{buildDefUseMaps} build def and use
+maps for all symbols in the entire program, for the variables in a
+particular function, for the symbols in a set, or for the symbols in a
+set and the defs and uses in a vector (respectively).
+
+The defs and uses are store in vectors of SymExprs.  Both defs and
+uses are SymExprs.  Whether a particular SymExpr is one or the other
+depends on where it occurs, \eg, the left or right hand side of a move
+primitive.
+
+The function \cc{freeDefUseMaps} frees these maps.
+
+The functions \cc{addDef} and \cc{addUse} can be used to add defs and
+uses to these maps incrementally, to avoid recomputing when changing
+the AST.  These maps are not maintained in general.
 
 Two stylized loop macros allow for iteration over the defs and uses.
 The macro \cc{for_defs(def, defMap, sym)} declares a new SymExpr for
@@ -1419,7 +1511,12 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<SymExpr*>& symExprs);
 \end{clang}
 \begin{quote}
-TODO
+This function traverses the \cc{ast} and fills a set of Symbol nodes
+and a vector of SymExpr nodes with all encountered Symbol and SymExpr
+nodes.  This set and vector can be passed to one of the above
+functions that build def and use maps.  Sometimes it is useful to
+compute these separately so that they can be reused (rather than have
+them computed in a different function that builds def and use maps).
 \end{quote}
 
 \begin{clang}
@@ -1429,7 +1526,12 @@ void buildDefUseSets(Vec<Symbol*>& syms,
                      Vec<SymExpr*>& useSet);
 \end{clang}
 \begin{quote}
-TODO
+This function builds the def and use sets for a vector of symbols as
+they occur in the specified function \cc{fn}.  The set \cc{defSet}
+contains all the defs.  The set \cc{useSet} contains all the uses.
+This data structure is used during copy propagation, reaching
+definitions analysis, and live variable analysis to make it fast to
+determine whether a given SymExpr is a def or a use or both.
 \end{quote}
 
 \subsubsection{Optimizations and Analyses}
@@ -1438,7 +1540,8 @@ TODO
 void collapseBlocks(BlockStmt* block);
 \end{clang}
 \begin{quote}
-TODO
+This function collapses all blocks that are unnecessary, including
+blocks that may introduce new scopes.
 \end{quote}
 
 \begin{clang}
@@ -1446,7 +1549,10 @@ void removeUnnecessaryGotos(FnSymbol* fn);
 void removeUnusedLabels(FnSymbol* fn);
 \end{clang}
 \begin{quote}
-TODO
+The function \cc{removeUnnecessaryGotos} removes unnecessary goto
+statements, \ie, goto statements that immediately precede the label to
+which they go to.  The function \cc{removeUnusedLabels} removes labels
+that are not targeted by any goto statements.
 \end{quote}
 
 \begin{clang}
@@ -1454,39 +1560,21 @@ void localCopyPropagation(FnSymbol* fn);
 void globalCopyPropagation(FnSymbol* fn);
 \end{clang}
 \begin{quote}
-TODO
-\end{quote}
-
-\begin{clang}
-void localReferencePropagation(FnSymbol* fn);
-\end{clang}
-\begin{quote}
-TODO
+These functions implement local and global copy propagation.  This
+code is based on the algorithm described in ``Advanced Compiler Design
+and Implementation'' by Steven Muchnick.
 \end{quote}
 
 \begin{clang}
 void eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                         Map<Symbol*,Vec<SymExpr*>*>& useMap,
                                         Symbol* var);
-\end{clang}
-\begin{quote}
-TODO
-\end{quote}
-
-\begin{clang}
 void singleAssignmentRefPropagation(FnSymbol* fn);
 \end{clang}
 \begin{quote}
-TODO
-\end{quote}
-
-\begin{clang}
-void deadVariableElimination(FnSymbol* fn);
-void deadExpressionElimination(FnSymbol* fn);
-void deadCodeElimination(FnSymbol* fn);
-\end{clang}
-\begin{quote}
-TODO
+These functions attempt to eliminate references in a similar fashion
+to the way copy propagation tries to eliminate variables, except this
+function limits itself to references that are assigned only once.
 \end{quote}
 
 \begin{clang}
@@ -1498,7 +1586,11 @@ void liveVariableAnalysis(FnSymbol* fn,
                           Vec<BitVec*>& OUT);
 \end{clang}
 \begin{quote}
-TODO
+This function computes a live variable analysis on a function.  The
+code is based on the algorithm described in ``Advanced Compiler Design
+and Implementation'' by Steven Muchnick.  Live variable analysis is
+used when lowering iterators---The iterator class only needs to store
+the local variables in the iterator that are live.
 \end{quote}
 
 \begin{clang}
@@ -1507,32 +1599,39 @@ void buildDefUseChains(FnSymbol* fn,
                        Map<SymExpr*,Vec<SymExpr*>*>& UD);
 void freeDefUseChains(Map<SymExpr*,Vec<SymExpr*>*>& DU,
                       Map<SymExpr*,Vec<SymExpr*>*>& UD);
+void reachingDefinitionsAnalysis(FnSymbol* fn,
+                                 Vec<SymExpr*>& defs,
+                                 Map<SymExpr*,int>& defMap,
+                                 Vec<SymExpr*>& useSet,
+                                 Vec<SymExpr*>& defSet,
+                                 Vec<BitVec*>& IN);
 \end{clang}
 \begin{quote}
-TODO
-\end{quote}
-
-\subsubsection{Stmt (Expr) Functions and Methods}
-
-\begin{clang}
-bool BlockStmt::isLoop(void);
-\end{clang}
-\begin{quote}
-TODO
-\end{quote}
-
-\begin{clang}
-int BlockStmt::length(void);
-\end{clang}
-\begin{quote}
-TODO
+The first two functions build and free def-use (DU) and use-def (UD)
+chains.  This code is based on the algorithm described in ``Advanced
+Compiler Design and Implementation'' by Steven Muchnick.  To build
+these chains, the compiler completes a reaching definitions analysis,
+the code of which is based on the algorithm described in this same
+book.
 \end{quote}
 
 \begin{clang}
-Expr* CondStmt::fold_cond_stmt();
+void deadVariableElimination(FnSymbol* fn);
+void deadExpressionElimination(FnSymbol* fn);
+void deadCodeElimination(FnSymbol* fn);
 \end{clang}
 \begin{quote}
-TODO
+These functions eliminate dead code.  The function
+\cc{deadVariableElimination} eliminates variables that are not used
+and otherwise unnecessary.  The function
+\cc{deadExpressionElimination} eliminates expressions that do not need
+to be evaluated because they neither produce values nor have side
+effects.  For example, a statement consisting only of a SymExpr never
+needs to be evaluated---why codegen \cc{x;}.
+
+The function \cc{deadCodeElimination} is based on the algorithm
+described in ``Advanced Compiler Design and Implementation'' by Steven
+Muchnick.  This uses def-use and use-def chains.
 \end{quote}
 
 \subsection{Primitives}
