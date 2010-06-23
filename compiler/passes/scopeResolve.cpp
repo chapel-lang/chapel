@@ -1208,8 +1208,31 @@ void scopeResolve(void) {
             meth->where = block;
             meth->_this = de->sym;
 
-            meth->body->insertAtTail(buildPrimitiveStmt(PRIM_RETURN, innerCall));
+	    int hasReturnValues = false;
 
+	    Vec<CallExpr*> calls;
+	    collectCallExprs(fn, calls);
+	    forv_Vec(CallExpr, cl, calls) {
+	      if (cl->isPrimitive(PRIM_RETURN)) {
+		if (cl->argList.length > 0) {
+		  SymExpr* retSym = toSymExpr(cl->get(1));
+		  bool returns_void = retSym && retSym->var == gVoid;
+
+		  if (!returns_void)
+		    hasReturnValues = true;
+		}
+	      }
+	      else if (cl->isPrimitive(PRIM_YIELD)) {
+		USR_FATAL_CONT(cl, "Interators not allowed in first class functions");
+	      }
+	    }
+
+	    if (!hasReturnValues) {
+	      meth->body->insertAtTail(innerCall);
+	    }
+	    else {
+	      meth->body->insertAtTail(buildPrimitiveStmt(PRIM_RETURN, innerCall));
+	    }
             DefExpr *meth_expr = new DefExpr(meth);
 
             FnSymbol* fn = toFnSymbol(sym);
