@@ -2233,7 +2233,7 @@ void CallExpr::codegen(FILE* outfile) {
   bool first_actual = true;
   int count = 0;
   for_formals_actuals(formal, actual, this) {
-    bool passByAddr = false;
+    bool closeDeRefParens = false;
     if (fn->hasFlag(FLAG_GPU_ON) && count < 2) {
       count++;
       continue; // do not print nBlocks and numThreadsPerBlock
@@ -2246,11 +2246,17 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "(");
     else if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING))
       fprintf(outfile, "(");
-    else if (formal->requiresCPtr() && 
-             !actual->typeInfo()->symbol->hasFlag(FLAG_REF) && 
-             !fn->hasFlag(FLAG_EXTERN)) {
+    else if (fn->hasFlag(FLAG_EXTERN)) {
+      if (formal->type->symbol->hasFlag(FLAG_REF) &&
+          formal->type->symbol->getValType()->symbol->hasFlag(FLAG_STAR_TUPLE) &&
+          actual->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+        fprintf(outfile, "*(");
+        closeDeRefParens = true;
+      }
+    } else if (formal->requiresCPtr() && 
+               !actual->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       fprintf(outfile, "&(");
-      passByAddr = true;
+      closeDeRefParens = true;
     }
     if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo() == dtString)
       fprintf(outfile, "((char*)");
@@ -2262,7 +2268,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
     if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
       fprintf(outfile, ").addr");
-    else if (passByAddr)
+    else if (closeDeRefParens)
       fprintf(outfile, ")");
   }
   fprintf(outfile, ")");

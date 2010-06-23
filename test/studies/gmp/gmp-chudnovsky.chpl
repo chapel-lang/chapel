@@ -56,15 +56,15 @@ _extern type mpf_t = 1*__mpf_struct;
 _extern type __mpz_struct;
 _extern type mpz_t = 1*__mpz_struct;
 
-_extern def mpz_init(X: mpz_t);
-_extern def mpz_set_ui(ROP: mpz_t, OP: c_ulong);
-_extern def mpz_mul_ui(ROP: mpz_t, OP1: mpz_t, OP2: c_ulong);
-_extern def mpz_add_ui(ROP: mpz_t, OP1: mpz_t, OP2: c_ulong);
-_extern def mpz_mul(ROP: mpz_t, OP1: mpz_t, OP2: mpz_t);
-_extern def mpz_neg(ROP: mpz_t, OP: mpz_t);
+_extern def mpz_init(inout X: mpz_t);
+_extern def mpz_set_ui(inout ROP: mpz_t, OP: c_ulong);
+_extern def mpz_mul_ui(inout ROP: mpz_t, OP1: mpz_t, OP2: c_ulong);
+_extern def mpz_add_ui(inout ROP: mpz_t, OP1: mpz_t, OP2: c_ulong);
+_extern def mpz_mul(inout ROP: mpz_t, OP1: mpz_t, OP2: mpz_t);
+_extern def mpz_neg(inout ROP: mpz_t, OP: mpz_t);
 _extern def mpz_clear(X: mpz_t);
-_extern def mpz_tdiv_q(Q: mpz_t, N: mpz_t, D: mpz_t);
-_extern def mpz_add(ROP: mpz_t, OP1: mpz_t, OP2: mpz_t);
+_extern def mpz_tdiv_q(inout Q: mpz_t, N: mpz_t, D: mpz_t);
+_extern def mpz_add(inout ROP: mpz_t, OP1: mpz_t, OP2: mpz_t);
 
 _extern type mp_bitcnt_t = c_ulong;
 _extern type size_t = int(64);
@@ -76,21 +76,23 @@ _extern def mpz_addmul_ui(ROP: mpz_t, OP1: mpz_t, OPT2: c_ulong);
 
 _extern type double = real(64);
 
-_extern def mpf_init(X: mpf_t);
-_extern def mpf_set_z(ROP: mpf_t, OP: mpz_t);
+_extern def mpf_init(inout X: mpf_t);
+_extern def mpf_set_z(inout ROP: mpf_t, OP: mpz_t);
 _extern def mpf_get_prec(OP: mpf_t): mp_bitcnt_t;
 _extern def mpf_get_d(OP: mpf_t): double;
-_extern def mpf_set_d(ROP: mpf_t, OP: double);
-_extern def mpf_set_prec_raw(ROP: mpf_t, PREC: mp_bitcnt_t);
-_extern def mpf_ui_div(ROP: mpf_t, OP1: c_ulong, OP2: mpf_t);
-_extern def mpf_mul(ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
-_extern def mpf_ui_sub(ROP: mpf_t, OP1: c_ulong, OP2: mpf_t);
-_extern def mpf_add(ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
-_extern def mpf_sub(ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
-_extern def mpf_mul_ui(ROP: mpf_t, OP1: mpf_t, OP2: c_ulong);
-_extern def mpf_div_2exp(ROP: mpf_t, OP1: mpf_t, OP2: mp_bitcnt_t);
+_extern def mpf_set_d(inout ROP: mpf_t, OP: double);
+_extern def mpf_set_prec_raw(inout ROP: mpf_t, PREC: mp_bitcnt_t);
+_extern def mpf_ui_div(inout ROP: mpf_t, OP1: c_ulong, OP2: mpf_t);
+_extern def mpf_mul(inout ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
+_extern def mpf_ui_sub(inout ROP: mpf_t, OP1: c_ulong, OP2: mpf_t);
+_extern def mpf_add(inout ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
+_extern def mpf_sub(inout ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
+_extern def mpf_mul_ui(inout ROP: mpf_t, OP1: mpf_t, OP2: c_ulong);
+_extern def mpf_div_2exp(inout ROP: mpf_t, OP1: mpf_t, OP2: mp_bitcnt_t);
 _extern def mpf_out_str(STREAM: _file, BASE: c_int, N_DIGITS: size_t, OP: mpf_t);
 _extern def mpf_clear(X: mpf_t);
+
+_extern def gmp_printf(fmt: string, arg: mpz_t);
 
 var t1, t2: mpf_t;
 
@@ -309,7 +311,7 @@ def build_sieve(s) {
 }
 
 
-def my_sqrt_ui(r: mpf_t, x: c_ulong) {
+def my_sqrt_ui(inout r: mpf_t, x: c_ulong) {
   const prec0 = mpf_get_prec(r);
 
   if (prec0 <= DOUBLE_PREC) {
@@ -360,7 +362,7 @@ def my_sqrt_ui(r: mpf_t, x: c_ulong) {
 
 
 // r = y/x   WARNING: r cannot be the same as y.
-def my_div(r, y, x: mpf_t) {
+def my_div(inout r, y, x: mpf_t) {
   const prec0 = mpf_get_prec(r);
 
   if (prec0<=DOUBLE_PREC) {
@@ -540,7 +542,7 @@ def fac_compact(f: fac_t) {
 }
 
 // convert factorized form to number
-def bs_mul(r: mpz_t, a: long, b: long) {
+def bs_mul(inout r: mpz_t, a: long, b: long) {
   if (b-a <= 32) {
     mpz_set_ui(r, 1);
     for i in a..b-1 do
@@ -564,7 +566,7 @@ def bs_mul(r: mpz_t, a: long, b: long) {
 //#endif
 
 // f /= gcd(f,g), g /= gcd(f,g)
-def fac_remove_gcd(p: mpz_t, fp: fac_t, g: mpz_t, fg: fac_t) {
+def fac_remove_gcd(inout p: mpz_t, fp: fac_t, inout g: mpz_t, fg: fac_t) {
   var i, j, k: long;
   var c: c_ulong;
   fac_resize(fmul, min(fp.num_facs, fg.num_facs));
@@ -603,17 +605,17 @@ def fac_remove_gcd(p: mpz_t, fp: fac_t, g: mpz_t, fg: fac_t) {
 
 var top: long = 0;
 
-def p1  return  pstack[top];
-def q1  return  qstack[top];
-def g1  return  gstack[top];
-def fp1 return fpstack[top];
-def fg1 return fgstack[top];
+def p1  var return  pstack[top];
+def q1  var return  qstack[top];
+def g1  var return  gstack[top];
+def fp1 var return fpstack[top];
+def fg1 var return fgstack[top];
 
-def p2  return  pstack[top+1];
-def q2  return  qstack[top+1];
-def g2  return  gstack[top+1];
-def fp2 return fpstack[top+1];
-def fg2 return fgstack[top+1];
+def p2  var return  pstack[top+1];
+def q2  var return  qstack[top+1];
+def g2  var return  gstack[top+1];
+def fp2 var return fpstack[top+1];
+def fg2 var return fgstack[top+1];
 
 //////////////////////////////////////////////////////////////////////
 //////
