@@ -3,7 +3,11 @@
   fannkuch benchmark from The Computer Language Benchmarks Game
   http://shootout.alioth.debian.org/
 
-  Written by: Sung-Eun Choi (sungeun@cray.com)
+  fannkuch.chpl (original) 
+  	by: Sung-Eun Choi (sungeun@cray.com)
+  fannkuch-redux.chpl (copied and edited from original) 
+  	by: Hannah Hemmaplardh (hannah@cray.com) 
+	
 
   Based on the C version by Eckehard Berns which was "Based on code by
   Heiner Marxen and the ATS version by Hongwei Xi".  The spirit of the
@@ -22,7 +26,6 @@
     * Count the number of flips, here 5.
     * Do this for all n! permutations, and record the maximum number
       of flips needed for any permutation.
-    * Write the first 30 permutations and the number of flips.
 
   The conjecture is that this maximum count is approximated by n*log(n)
   when n goes to infinity.
@@ -42,30 +45,12 @@ def main() {
 
   begin maxflips = fannkuch();
 
-  // Print out the first num2print permutations
-  print_perms();
-
   writeln("Pfannkuchen(", N, ") = ", maxflips);
 
 }
 
 def fannkuch() {
   return max reduce ([i in P] do_fannkuch(i));
-}
-
-def print_perms() {
-  var p: [P] int;
-  var count: [P] int;
-  var r: int = N;
-  var print_perm: int = num2print;
-
-  for p in gen_perms(N) {
-    if ((print_perm > 0) || (print_perm == -1)) {
-      for x in p do write(x);
-      writeln();
-      print_perm -= 1;
-    } else break;
-  }
 }
 
 def do_fannkuch(pos: int):int {
