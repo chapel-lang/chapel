@@ -1,0 +1,1 @@
+source ~chapelu/.cron.bashrc && ~chapelu/chapel/util/cron/nightly -cron -suppress Suppressions/darwin.suppress >& ~chapelu/nightly.out
