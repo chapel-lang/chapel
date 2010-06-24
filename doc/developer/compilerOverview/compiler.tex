@@ -1666,87 +1666,460 @@ function.  Compilation proceeds by calling each of these functions in
 turn.  Between each pass, a number of verification and cleanup tasks
 are completed, as explained in Section~\ref{sec:betweenpasses}.
 
+As the passes proceed, the assumptions about what the AST looks like
+change.  The passes that impact these assumptions are:
+\begin{itemize}
+\item \cc{parse}
+\item \cc{cleanup}
+\item \cc{scopeResolve}
+\item \cc{flattenClasses}
+\item \cc{normalize}
+\item \cc{resolve}
+\item \cc{flattenFunctions}
+\item \cc{cullOverReferences}
+\item \cc{lowerIterators}
+\item \cc{parallel}
+\end{itemize}
+Notice these are all early passes.  There are two major shifts and it
+is sometimes useful to think of the three phases of compilation.
+These phases are ``before normalization'' (before \cc{normalize}),
+``after normalization'' (after \cc{normalize}), and ``after function
+resolution'' (after \cc{parallel}).  The descriptions of the changing
+assumptions are in the subsections related to the passes where the
+assumptions change.
+
 \subsection{parse}
 
 The parse pass reads the Chapel code from a file and builds up the AST
-(alternatively called the IR or intermediate representation).
+(alternatively called the IR or intermediate representation).  This
+pass issues syntax errors.
 
 There are relatively few assumptions that can be made about the AST at
 this point in compilation, other than those enforced by the type
 system.
 
-TODO
-
 \subsection{checkParsed}
 
-TODO
+This pass checks the semantics of the Chapel code as parsed.  Although
+we can't do all the checks now, we can do a few.  This pass,
+\cc{checkNormalized} and \cc{checkResolved} were meant to complete all
+of the necessary checks.  However, many user errors are issued from
+other passes, and that was the case before and after these passes were
+introduced.
+
+This pass checks the following:
+\begin{itemize}
+\item Are explicit argument names repeated in the same function call?
+\item Do any variables omit both a type and an initializer?
+\item Are parameters left uninitialized?
+\item Are configuration variables, constants, and parameters not at module scope?
+\item Do 'this' and 'these' methods omit parentheses?
+\item Is a return statement outside of a function?
+\item Do some returns in a function not return a value while others do?
+\end{itemize}
 
 \subsection{cleanup}
 
-TODO
+This pass is meant to clean up the AST as it is parsed.  It mostly
+does things that can't be done while parsing but can be done before
+scope resolution.  It does the following:
+\begin{itemize}
+\item Moves all function definitions that may appear in CallExprs to
+  statement level (as defined by \cc{getStmtExpr}.  Prior to this,
+  function definitions may appear in call statements for the nested
+  functions that the compiler inserts (such as the functions for
+  conditional expressions).  With support for anonymous functions,
+  this functionality could be generalized.  The iterators that are
+  built up for sequential and parallel loop expressions are
+  special-cased so that they are pulled further out.
+\item Removes all scopeless blocks, blocks that simply group multiple
+  statements together so that the parser can return multiple
+  statements when parsing a single Chapel statement.
+\item Destructures tuples used on the left-hand side of an assignment
+  statement recursively, transforming the single assignment into one
+  assignment per tuple component using calls to the tuple access
+  function.
+\item Move primary methods out of the type so that they appear as
+  siblings to the type.
+\item Change cast expressions in where clauses to be true or false
+  expressions involving the \cc{ISSUBTYPE} primitive.
+\end{itemize}
 
 \subsection{scopeResolve}
 
-TODO
+The primary purpose of this pass is to resolve occurrences of names to
+symbols for variables, arguments, types, etc.  After this pass, the
+only remaining UnresolvedSymExpr nodes are for unresolved functions,
+which are resolved during function resolution.
+
+Scope resolution is a two step process.  Between these steps, a number
+of miscellaneous actions are taken.
+
+In the first step, the compiler constructs a symbol table that roots
+the declarations of symbols to a particular point in the AST (either a
+BlockStmt, a TypeSymbol (for fields and methods), or a FnSymbol (for
+arguments or query identifiers).  Multiple definition errors are
+encountered at this point.  The function \cc{lookup} looks for a name
+in a scope and returns a symbol.  Module uses are taken into account,
+including cyclic module uses.
+
+Then before the second step, the following actions are taken:
+\begin{itemize}
+\item All ``use'' statements are analyzed.  The modules being used
+  have to be looked up before we lookup general names, because this
+  can impact the mapping of names to symbols.
+\item The class hierarchy is constructed (\cc{dispatchParents} and
+  \cc{dispatchChildren}).  This has to be done before we can lookup
+  names of symbols, since we need to be able to find occurrences of
+  fields in super classes from within methods.
+\item All named arguments using the array alias syntax are marked.
+\item Constructors and type constructors are built.  The default
+  constructor is used during function resolution even if user-defined
+  constructors will shadow it.  This helps to determine the types of
+  fields.  The type constructor is used to resolve types.
+  Instantiating a generic type looks like a call to the constructor in
+  terms of the generic arguments, and the type constructor is used to
+  resolve such types using the mechanisms of function resolution.
+\item The type associated with methods is resolved before resolving
+  all other symbols because we need to know the type associated with a
+  method for resolving fields.
+\item The labels associated with goto statements are resolved.  In
+  addition, unlabeled break and continue statements are resolved to
+  the label associated with the innermost loop.
+\end{itemize}
+
+In the second step, the compiler tries to resolve UnresolvedSymExpr
+nodes by looking up their name (\cc{unresolved}) in the symbol table
+that was created in the first step.  Function calls without
+parentheses are handled now, but function calls with arguments and
+method invocations are handled during function resolution following a
+different algorithm that allows for overloading.
+
+Lastly, enumerated types are resolved and the symbol table is
+destroyed.
 
 \subsection{flattenClasses}
 
-TODO
+This pass moves the declarations of nested classes to module scope.
+This functionality could probably be slipped into the \cc{normalize}
+pass.  It just isn't doing much of anything.
 
 \subsection{normalize}
-
-TODO
 
 \begin{clang}
 void normalize(BaseAST* base);
 \end{clang}
-\begin{quote}
+
 TODO
-\end{quote}
 
 \subsection{checkNormalized}
 
-TODO
+This semantic checks pass flags errors if any of the following
+statements are true:
+\begin{itemize}
+\item Arguments to iterators have intents.
+\item Iterators return types or parameters.
+\item A constructor accesses a member in the type or default value for
+  any argument.
+\end{itemize}
 
 \subsection{buildDefaultFunctions}
 
-TODO
+This pass creates many methods, functions, and operators to support
+functionality, mainly on records and classes, if the user does not
+supply this functionality, \eg, a \chpl{writeThis} method for a class.
+In many places, the normalize function is called on the functions that
+are created here.  We don't do this before normalization because it is
+more difficult to determine if the user has created a function that
+should replace the compiler-generated default.
+
+In addition, this pass creates a \emph{main} function if none exists.
+
+The following functions, methods, and/or operators are created (some
+of which may not be overwritten by the programmer according to Chapel
+semantics):
+\begin{itemize}
+\item Getter methods for every field or enumeration constant.
+\item Destructors for every class and record.
+\item Default read functions for enumerations, classes, and records.
+\item Default cast to string functions for enumerations.
+\item Default write functions for classes and records.
+\item Equality and inequality operators for records.
+\item Assignment functions for records, unions, and enumerations.
+\item Cast functions for records and enumerations.
+\item Copy functions for records (for use when initializing variables
+  without a specified type).
+\item Hash functions for records (for use with associative domains).
+\item Functions that return a tuple of enumeration constants for
+  enumerations.
+\end{itemize}
 
 \subsection{resolve}
 
 TODO
 
+\subsubsection{Iterator Handling During Resolution}
+
+The iterator is resolved as if it is a normal function where the yield
+statements are treated identically to return statements in terms of
+resolving the return type.  In addition, the \cc{iteratorInfo} field
+is created, as are stubs for the iterator class, the iterator record,
+and the methods and functions.  These are described in more detail in
+Section~\ref{sec:lowerIterators}, which also describes the
+\cc{lowerIterators} pass.
+
+A function \cc{_getIterator} is created during function resolution
+that takes as an argument the iterator record and returns the iterator
+class.  Such functions are resolved when actually iterating over a
+loop.  In short, the reason to have both an iterator record and an
+iterator class is to make memory management simpler.  It is easier to
+free the iterator classes since we just allocate them at the beginning
+of the loop.  Iterator records are copied as necessary.  The semantics
+of invoking an iterator multiple times after the iterator record has
+been created is ill-defined---this happens when an iterator is passed
+to a generic function and the captured argument is iterated over
+twice.  When iterators are assigned to variables, an array is created.
+When iterators are passed to generic arguments, the iterator record is
+captured.
+
+The links to the leader and follower iterators are created during
+function resolution by creating a function that calls the leader or
+follower from the \cc{TO_LEADER} and \cc{TO_FOLLOWER} primitives.
+
 \subsection{checkResolved}
 
-TODO
+This semantic checks pass flags errors if any of the following
+statements are true:
+\begin{itemize}
+\item Control may reach the end of a function that returns values.
+\item Functions return nested iterators (perhaps loop expressions).
+\item An enumeration constant is not a compile-time constant.
+\end{itemize}
 
 \subsection{flattenFunctions}
 
-TODO
+This pass collects all nested functions (the DefExpr of the FnSymbol
+is in another function, \ie, the \cc{parentSymbol} of the
+\cc{defPoint} of the FnSymbol is another FnSymbol) into a vector of
+nested functions that is then passed to the following function:
 
 \begin{clang}
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 \end{clang}
-\begin{quote}
-TODO
-\end{quote}
+
+This function denests all of the functions in the vector argument.
+Outer variables are identified and passed to the nested functions by
+reference.  This is done in total because one nested function could
+call another nested function that needs additional outer variable
+references.
+
+This functionality is encapsulated so that it can be used elsewhere.
+In particular, this function is also called when inlining a loop body
+into a recursive iterator to flatten the nested function that
+implements the loop body during the \cc{lowerIterators} pass.  Also,
+this function is also called during the \cc{parallel} pass when nested
+functions are created to implement \emph{begin}, \emph{cobegin},
+\emph{coforall}, and \emph{on} statements.
 
 \subsection{cullOverReferences}
 
-TODO
+This pass has two distinct but related purposes.  The first purpose is
+to replace all calls to the reference version of \emph{var functions}
+that do not need the reference into calls to the value version of the
+same function.  The value version can be arbitrarily different due to
+the existence of the implicit ``setter'' argument that is true if the
+var function is used as an lvalue and false otherwise.  Therefore, it
+is essential that this transformation be correct---it is not merely an
+optimization.
+
+The implementation of the code that completes this first purpose
+relies on def and use maps to let the compiler determine if a
+reference really needs to be a reference.
+
+The second purpose is to remove all references of array wrapper
+records, domain wrapper records, and iterator records.  This is
+essential since returning such a reference could result in a reference
+to something that is not on the stack.  Meanwhile, we do not want to
+put these things on the heap since the classes within the wrapper
+records are already on the heap.
 
 \subsection{callDestructors}
 
-TODO
+The primary purpose of this pass is to insert calls to destructors for
+values when they go out of scope, including records, arrays, and
+domains.
+
+The first thing this pass does is to call \cc{fixupDestructors}.  This
+function inserts functionality into destructors.  It inserts calls to
+the destructors of all value fields (because these should be called
+automatically).  It also inserts calls to the destructor of the parent
+class.
+
+The function \cc{insertAutoDestroyTemps} inserts the calls to
+destructors for variables when control exits their declaration scope.
+This requires an analysis to determine if control may or must exit the
+scope.
+
+A large amount of code handles functions that return records because
+the compiler wants to insert code to free the record when it goes out
+of scope but the record is going to return it to the callsite.  This
+is handled by returning records through reference arguments.  Then the
+compiler can free the record if it is assigned by value.
+
+Lastly, this function builds up a function to call destructors on
+global variables.
 
 \subsection{lowerIterators}
 \label{sec:lowerIterators}
 
-TODO
+In summary terms, this pass lowers an iterator, be it a serial
+iterator or a follower (leaders are always inlined), into a class with
+methods where these methods can be called in a loop to implement the
+functionality of this iterator.  Before each iteration, a ``has more''
+method can be called to see if the iterator is finished.  If there are
+more values to be iterated over, an ``advance'' method can be called
+to get to the next value and a ``get value'' method can be called to
+get the particular value.  The class is used to save state.  Both the
+``has more'' and ``get value'' methods are very simple.  The
+``advance'' method looks like the original iterator function, but
+there is a jump table at the beginning to return to the points in the
+code that immediately follow yield statements, and fields in the class
+store state for repeated calls to this function.
+
+For each resolved iterator in the Chapel program, including each
+instantiation of every generic iterator and each iterator that
+implements a particular promotion wrapper, a class called
+\cc{IteratorInfo} is created.  This class has the following fields:
+\begin{itemize}
+\item \cc{IteratorTag tag} identifies whether this iterator is a
+  serial iterator, a leader iterator, or a follower iterator.
+\item \cc{FnSymbol* iterator} points to the original iterator
+  function.  During this pass, this original function is transformed
+  into a function that returns an instance of the iterator record.
+\item \cc{FnSymbol* getIterator} points to the \cc{_getIterator}
+  function created during function resolution that takes an iterator
+  record and returns an iterator class.
+\item \cc{ClassType* iclass} points to this iterator's implementing
+  class.  This class is created during this pass.  The iterator class
+  is only instantiated when using the iterator in a loop.  It is
+  destroyed when the loop completes.
+\item \cc{ClassType* irecord} points to this iterator's implementing
+  record.  This record is created during this pass.  The record is
+  constructed by the \cc{getIterator} function.  The distinction
+  between the iterator record and the iterator class makes it easier
+  to free memory optimally because only the iterator record is bandied
+  about.  The iterator class is used in a much more structured way.
+\item \cc{FnSymbol* advance} is a method on the iterator class that
+  updates the state of the iterator so that calls to the \cc{getValue}
+  method can return the next value.
+\item \cc{FnSymbol* zip1}, \cc{FnSymbol* zip2}, \cc{FnSymbol* zip3},
+  and \cc{FnSymbol* zip4} are methods that implement code specialized
+  for iterators with a single yield in a single loop.
+\item \cc{FnSymbol* hasMore} returns true if the iterator is not
+  finished.
+\item \cc{FnSymbol* getValue} returns the value that the iterator is
+  currently ready to return.
+\end{itemize}
+
+If iterators are not zipped and are not recursive and have a single
+yield statement, we implement them with straightforward inlining.
+That is, inline the iterator in place of the loop, and replacing the
+yield and return statements with copies of the loop body.
+
+\subsubsection{Single Loop Iterator Optimization}
+
+The single loop iterator optimization is important for generating code
+with optimal control flow when a common class of simple iterators are
+zippered together in a loop, or when inlining is not done.  This
+common class of simple iterators can be described as any iterator with
+a single yield statement that is immediately in a single loop
+statement that is immediately in the iterator function.  Without this
+optimization, goto statements will be used with the control flow to
+implement the jump table.  This optimization creates zip methods,
+labeled \cc{zip1} through \cc{zip4}, that implement the functionality
+of the sections of code marked in the following code:
+\begin{chapel}
+def iterator() {
+  // zip 1
+  loop {
+    // zip 2
+    yield value;
+    // zip 3
+  }
+  //zip 4
+}
+\end{chapel}
+
+\subsubsection{Recursive Iterators}
+
+Recursive iterators are identified.  We used to avoid inlining
+recursive functions altogether, but the compiler now has initial
+capability to inline the loop body into the recursive function at the
+yield points.  This could be especially clean with function pointers,
+but we currently inline the loop body, and move the iterator so that
+it is a nested function.
+
+In making the recursive function call, care is taken to avoid inlining
+the function again at the place where the loop is invoked.
+
+Recursive iterators with on-statements, perhaps a common case one day,
+require careful coding in order to avoid superfluous remote
+references.  The arguments passed to the recursive call are copied
+locally.
+
+\subsubsection{Iterators and Local Blocks}
+
+Inlining iterators is a bit tricky in the presence of \emph{local}
+blocks which impose restrictions to the code lexically with the local
+block.  To ensure that the body of the loop is not restricted to local
+functionality, the compiler counts the number of local blocks around
+\cc{yield} statements before inlining, and then inserts a
+corresponding number of \emph{unlocal} blocks around the loop body.
+
+When not inlining, the local blocks also need to be handled with care.
+To do this, the compiler fragments the local blocks within an iterator
+so that control flow constructs do not appear within the local blocks.
+That is, a single local block may be split into multiple local blocks
+to avoid having control flow within the local block.
+
+\subsubsection{Miscellaneous Notes}
+
+A few notes about the implementation:
+\begin{itemize}
+\item When iterators are being lowered, the compiler inserts coded,
+  but bogus, \cc{GET_MEMBER} primitives to access the fields of the
+  iterator class.  These bogus primitives use numbers instead of
+  fields because the fields have not yet been created.  This impacts
+  functionality during this time since we cannot determine the type of
+  such primitive expressions.
+\item The compiler uses live variable analysis to determine what local
+  variables are live at the points where the iterator yields values.
+  Only these variables need to be represented by fields in the
+  iterator class.  If live variable analysis is not used, the compiler
+  creates a field for every local variable.
+\end{itemize}
 
 \subsection{parallel}
 
-TODO
+This pass originally transformed the code to interface with the
+tasking runtime (steps 1 and 6 below), and that was all.  From a
+historical perspective, this pass enabled multithreading (before its
+introduction, execution was serial), hence its name.  That said, this
+pass has a terrible name.
+
+The current implementation of this pass takes the following actions in
+the following order:
+\begin{enumerate}
+\item All begin, cobegin, coforall, and on blocks are transformed into
+  nested functions and flattened.  Prior to this pass, these
+  constructs are represented as BlockStmts with a primitive
+  \cc{blockInfo} field.
+\item TODO remote value forwarding
+\item TODO reprivatize iterators
+\item TODO heap allocate variables
+\item TODO handle EndCount code
+\item TODO bundle arguments to nested functions
+\end{enumerate}
 
 \subsection{prune}
 
