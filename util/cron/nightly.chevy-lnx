@@ -3,9 +3,9 @@
 
 # run block dist regressions
 system("rm -f /tmp/nightly.block.out");
-system("source ~chapelu/.chplcron.dists.bashrc && ~chapelu/chapel/test/Bin/nightly -cron -dist block >& /tmp/nightly.block.out");
+system("source ~chapelu/.chplcron.dists.bashrc && ~chapelu/chapel/util/cron/nightly -cron -dist block >& /tmp/nightly.block.out");
 
 # run memleaks regressions
 $date = `date +%F`; chomp $date;
 system("rm -f /tmp/nightly.memleaks.out");
-system("source ~chapelu/.chplcron.memleaks.bashrc && ~chapelu/chapel/test/Bin/nightly -cron -memleaks memleaks-$date.nightly.log >& /tmp/nightly.memleaks.out");
+system("source ~chapelu/.chplcron.memleaks.bashrc && ~chapelu/chapel/util/cron/nightly -cron -memleaks memleaks-$date.nightly.log >& /tmp/nightly.memleaks.out");
