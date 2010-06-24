@@ -1,5 +1,5 @@
 _extern type smallCArr = 3*int(32);
-_extern def initCArr(x: smallCArr);
+_extern def initCArr(inout x: smallCArr);
 
 var x: smallCArr;
 
