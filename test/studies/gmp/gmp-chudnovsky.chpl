@@ -40,8 +40,10 @@ param BITS_PER_DIGIT  = 3.32192809488736234787,
 
 config param HAVE_DIVEXACT_PREINV = false;
 
+config param debugSieve = false;
+
 def CHECK_MEMUSAGE {
-  writeln("CHECK_MEM_USAGE not implemented yet");  
+  //  writeln("CHECK_MEM_USAGE not implemented yet");  
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -58,48 +60,49 @@ _extern type mpz_t = 1*__mpz_struct;
 
 _extern def mpz_init(inout X: mpz_t);
 _extern def mpz_set_ui(inout ROP: mpz_t, OP: c_ulong);
-_extern def mpz_mul_ui(inout ROP: mpz_t, OP1: mpz_t, OP2: c_ulong);
-_extern def mpz_add_ui(inout ROP: mpz_t, OP1: mpz_t, OP2: c_ulong);
-_extern def mpz_mul(inout ROP: mpz_t, OP1: mpz_t, OP2: mpz_t);
-_extern def mpz_neg(inout ROP: mpz_t, OP: mpz_t);
-_extern def mpz_clear(X: mpz_t);
-_extern def mpz_tdiv_q(inout Q: mpz_t, N: mpz_t, D: mpz_t);
-_extern def mpz_add(inout ROP: mpz_t, OP1: mpz_t, OP2: mpz_t);
+_extern def mpz_mul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+_extern def mpz_add_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+_extern def mpz_mul(inout ROP: mpz_t, inout OP1: mpz_t, OP2: mpz_t);
+_extern def mpz_neg(inout ROP: mpz_t, inout OP: mpz_t);
+_extern def mpz_clear(inout X: mpz_t);
+_extern def mpz_tdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
+_extern def mpz_add(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
 
 _extern type mp_bitcnt_t = c_ulong;
 _extern type size_t = int(64);
 
 _extern def mpf_set_default_prec(PREC: mp_bitcnt_t);
-_extern def mpz_sizeinbase(OP: mpz_t, BASE: c_int): size_t;
+_extern def mpz_sizeinbase(inout OP: mpz_t, BASE: c_int): size_t;
 
-_extern def mpz_addmul_ui(ROP: mpz_t, OP1: mpz_t, OPT2: c_ulong);
+_extern def mpz_addmul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OPT2: c_ulong);
 
 _extern type double = real(64);
 
 _extern def mpf_init(inout X: mpf_t);
 _extern def mpf_set_z(inout ROP: mpf_t, OP: mpz_t);
-_extern def mpf_get_prec(OP: mpf_t): mp_bitcnt_t;
-_extern def mpf_get_d(OP: mpf_t): double;
+_extern def mpf_get_prec(inout OP: mpf_t): mp_bitcnt_t;
+_extern def mpf_get_d(inout OP: mpf_t): double;
 _extern def mpf_set_d(inout ROP: mpf_t, OP: double);
 _extern def mpf_set_prec_raw(inout ROP: mpf_t, PREC: mp_bitcnt_t);
-_extern def mpf_ui_div(inout ROP: mpf_t, OP1: c_ulong, OP2: mpf_t);
-_extern def mpf_mul(inout ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
-_extern def mpf_ui_sub(inout ROP: mpf_t, OP1: c_ulong, OP2: mpf_t);
-_extern def mpf_add(inout ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
-_extern def mpf_sub(inout ROP: mpf_t, OP1: mpf_t, OP2: mpf_t);
-_extern def mpf_mul_ui(inout ROP: mpf_t, OP1: mpf_t, OP2: c_ulong);
-_extern def mpf_div_2exp(inout ROP: mpf_t, OP1: mpf_t, OP2: mp_bitcnt_t);
-_extern def mpf_out_str(STREAM: _file, BASE: c_int, N_DIGITS: size_t, OP: mpf_t);
-_extern def mpf_clear(X: mpf_t);
+_extern def mpf_ui_div(inout ROP: mpf_t, OP1: c_ulong, inout OP2: mpf_t);
+_extern def mpf_mul(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
+_extern def mpf_ui_sub(inout ROP: mpf_t, OP1: c_ulong, inout OP2: mpf_t);
+_extern def mpf_add(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
+_extern def mpf_sub(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
+_extern def mpf_mul_ui(inout ROP: mpf_t, inout OP1: mpf_t, OP2: c_ulong);
+_extern def mpf_div_2exp(inout ROP: mpf_t, inout OP1: mpf_t, OP2: mp_bitcnt_t);
+_extern def mpf_out_str(STREAM: _file, BASE: c_int, N_DIGITS: size_t, inout OP: mpf_t);
+_extern def mpf_clear(inout X: mpf_t);
 
-_extern def gmp_printf(fmt: string, arg: mpz_t);
+_extern def gmp_printf(fmt: string, arg...);
+_extern def gmp_fprintf(fp: _file, fmt: string, arg...);
 
 var t1, t2: mpf_t;
 
 config param do_gcd_time = false;
 
 config const   d: long = 100,
-             _out: c_int = 0;
+             _out: c_int = 1;
 
 const terms   = (d/DIGITS_PER_ITER): long,
       percent = terms/100.0;
@@ -120,7 +123,7 @@ record sieve_t {
 };
 
 const sieve_size = max(3*5*23*29+1, terms*6): long;
-var sievedom = [0: long..#sieve_size];
+var sievedom = [0: long..#(sieve_size/2)];
 var sieve: [sievedom] sieve_t;
 
 var ftmp, fmul: fac_t;
@@ -144,14 +147,22 @@ var gstack: [stackdom1] mpz_t,
     pstack, qstack: [stackdom2] mpz_t;
 
 
+var top: long = 0;
+
+
 def main() {
 
   writeln("#terms=", terms, ", depth=", depth);
 
   const start = getCurrentTime();
-  writeln("sieve   ");
+  write("sieve   ");
 
   build_sieve(sieve);
+  if debugSieve {
+    writeln("sieve is: ");
+    for s in sieve do
+      writeln(s);
+  }
 
   const mid0 = getCurrentTime() - start;
   writeln("time = ", mid0);
@@ -186,22 +197,30 @@ def main() {
 
   //writeln("misc    ");
 
+  //  writeln("top = ", top);
+
+  //  gmp_printf("p1 = %Zd\n", p1);
+  //  gmp_printf("q1 = %Zd\n", q1);
+
   /* free some resources */
   sievedom = [0..-1: long];
 
   if HAVE_DIVEXACT_PREINV then
     mpz_clear(mgcd);
+
   mpz_clear(gcd);
   fac_clear(ftmp);
   fac_clear(fmul);
 
-  for i in 1..depth {
+  //  writeln("Entering loop");
+  for i in 1..depth-1 {
     mpz_clear(pstack[i]);
     mpz_clear(qstack[i]);
     mpz_clear(gstack[i]);
     fac_clear(fpstack[i]);
     fac_clear(fgstack[i]);
   }
+  //  writeln("Exiting loop");
 
   mpz_clear(gstack[0]);
   fac_clear(fpstack[0]);
@@ -218,10 +237,16 @@ def main() {
 	     (q+A*p)
   */
 
+  //  gmp_printf("p1 = %Zd\n", p1);
+  //  gmp_printf("q1 = %Zd\n", q1);
   const psize = mpz_sizeinbase(p1,10),
         qsize = mpz_sizeinbase(q1,10);
 
+  gmp_printf("p1 = %Zd\n", p1);
+  gmp_printf("q1 = %Zd\n", q1);
+  writeln("A is: ", A);
   mpz_addmul_ui(q1, p1, A);
+  gmp_printf("q1 = %Zd\n", q1);
   mpz_mul_ui(p1, p1, C/D);
 
   var pi, qi: mpf_t;
@@ -231,8 +256,11 @@ def main() {
   mpz_clear(p1);
 
   mpf_init(qi);
+  gmp_printf("q1 = %Zd\n", q1);
   mpf_set_z(qi, q1);
   mpz_clear(q1);
+  gmp_printf("pi = %Ff\n", pi);
+  gmp_printf("qi = %Ff\n", qi);
 
   stackdom2 = [0..-1: long];
 
@@ -245,27 +273,32 @@ def main() {
   //mpf_set_prec_raw(t1, mpf_get_prec(pi));
 
   /* final step */
-  writeln("div     ");
+  write("div     ");
+  gmp_printf("pi = %Ff\n", pi);
+  gmp_printf("qi = %Ff\n", qi);
   my_div(qi, pi, qi);
   const mid3 = getCurrentTime() - mid2;
   writeln("time = ", mid3);
 
-  writeln("sqrt    ");
+  write("sqrt    ");
   my_sqrt_ui(pi, C);
   const mid4 = getCurrentTime() - mid3;
   writeln("time = ", mid4);
 
-  writeln("mul     ");
+  write("mul     ");
+  gmp_printf("pi = %Ff\n", pi);
+  gmp_printf("qi = %Ff\n", qi);
   mpf_mul(qi, qi, pi);
   const end = getCurrentTime();
   writeln("time = ", end - mid4);
 
   writeln("total   time = ", end - start);
 
-  writeln("   P size = ", psize, " digits (", psize:real/d, ")\n",
-          "   Q size = ", qsize, " digits (", qsize:real/d, ")");
+  writeln("   P size=", psize, " digits (", format("%f", psize:real/d), ")\n",
+          "   Q size=", qsize, " digits (", format("%f", qsize:real/d), ")");
 
   /* output Pi and timing statistics */
+  gmp_printf("qi = %Ff\n", qi);
   if (_out&1)  {
     writeln("pi(0,", terms, ")=");
     mpf_out_str(stdout._fp, 10, d+2, qi);
@@ -281,8 +314,8 @@ def main() {
 }
 
 
-def build_sieve(s) {
-  const n = s.numElements,
+def build_sieve(s: [] sieve_t) {
+  const n = s.numElements*2,
         m = sqrt(n): long;
 
   s[1/2].fac = 1;
@@ -290,10 +323,12 @@ def build_sieve(s) {
 
   for i in 3..n by 2 {
     if (s[i/2].fac == 0) {
+      //      writeln("writing to s[", i/2, "]");
       s[i/2].fac = i;
       s[i/2].pow = 1;
       if (i<=m) {
         for (j,k) in (i*i..n by i+i, i/2..) {
+          //          writeln("writing to s[", j/2, "]");
 	  if (s[j/2].fac==0) {
 	    s[j/2].fac = i;
 	    if (s[k].fac == i) {
@@ -362,7 +397,7 @@ def my_sqrt_ui(inout r: mpf_t, x: c_ulong) {
 
 
 // r = y/x   WARNING: r cannot be the same as y.
-def my_div(inout r, y, x: mpf_t) {
+def my_div(inout r: mpf_t, inout y: mpf_t, in x: mpf_t) {
   const prec0 = mpf_get_prec(r);
 
   if (prec0<=DOUBLE_PREC) {
@@ -409,19 +444,19 @@ def my_div(inout r, y, x: mpf_t) {
 }
 
 def fac_show(f: fac_t) {
-  for i in 0..f[0].num_facs do
+  for i in 0..#f[0].num_facs do
     if (f[0].pow[i]==1) then
       write(f[0].fac[i], " ");
     else
-      write(f[0].fac[i], "^", f[0].pow[i]);
+      write(f[0].fac[i], "^", f[0].pow[i], " ");
   writeln();
 }
 
-def fac_reset(f: fac_t) {
+def fac_reset(inout f: fac_t) {
   f[0].num_facs = 0;
 }
 
-def fac_init_size(f: fac_t, in s: long) {
+def fac_init_size(inout f: fac_t, in s: long) {
   if (s<INIT_FACS) then
     s=INIT_FACS;
 
@@ -430,16 +465,16 @@ def fac_init_size(f: fac_t, in s: long) {
   fac_reset(f);
 }
 
-def fac_init(f: fac_t) {
+def fac_init(inout f: fac_t) {
   fac_init_size(f, INIT_FACS);
 }
 
 
-def fac_clear(f: fac_t) {
+def fac_clear(inout f: fac_t) {
   f.sdom = [0..-1:long];
 }
 
-def fac_resize(f: fac_t, s: long)
+def fac_resize(inout f: fac_t, s: long)
 {
   if (f[0].sdom.numIndices < s) {
     fac_clear(f);
@@ -448,14 +483,16 @@ def fac_resize(f: fac_t, s: long)
 }
 
 // BLC: unfortunate -- original GMP took advantage of long/ulong conversions
-def fac_set_bp(f: fac_t, base: c_ulong, pow: long) {
+def fac_set_bp(inout f: fac_t, base: c_ulong, pow: long) {
   assert (base < max(long): c_ulong);
   fac_set_bp(f, base: long, pow: long);
 }
 
 // f = base^pow
-def fac_set_bp(f: fac_t, in base: long, pow: long) {
+def fac_set_bp(inout f: fac_t, in base: long, pow: long) {
   assert(base < sieve_size);
+  //  write("fac_set_bp = ");
+  //  fac_show(f);
   var i: long;
   base /= 2;
   while (base > 0) {
@@ -465,13 +502,16 @@ def fac_set_bp(f: fac_t, in base: long, pow: long) {
     i += 1;
   }
   f[0].num_facs = i;
+  //  write("fac_set_bp (out) = ");
+  //  fac_show(f);
   assert(i<=f[0].sdom.numIndices);
 }
 
 // r = f*g
-def fac_mul2(r: fac_t, f: fac_t, g: fac_t) {
+def fac_mul2(inout r: fac_t, f: fac_t, g: fac_t) {
 
   var i, j, k: long;
+  //  writeln("f[0].num_facs = ", f[0].num_facs, ", g[0].num_facs = ", g[0].num_facs);
   while (i<f[0].num_facs & j<g[0].num_facs) {
     if (f[0].fac[i] == g[0].fac[j]) {
       r[0].fac[k] = f[0].fac[i];
@@ -487,47 +527,68 @@ def fac_mul2(r: fac_t, f: fac_t, g: fac_t) {
       j += 1;
     }
     k += 1;
+    //    write("r is: ");
+    //    fac_show(r);
   }
   while (i < f[0].num_facs) {
     r[0].fac[k] = f[0].fac[i];
     r[0].pow[k] = f[0].pow[i];
     i += 1;
     k += 1;
+    //    write("r (2) is: ");
+    //    fac_show(r);
   }
   while (j < g[0].num_facs) {
     r[0].fac[k] = g[0].fac[j];
     r[0].pow[k] = g[0].pow[j];
     j += 1;
     k += 1;
+    //    write("r (3) is: ");
+    //    fac_show(r);
   }
   r[0].num_facs = k;
   assert(k<=r[0].sdom.numIndices);
 }
 
 // f *= g
-def fac_mul(f: fac_t, g: fac_t) {
+def fac_mul(inout f: fac_t, g: fac_t) {
   var tmp: fac_t;
   fac_resize(fmul, f[0].num_facs + g[0].num_facs);
+  //  write("fmul: ");
+  //  fac_show(fmul);
+  //  write("f: ");
+  //  fac_show(f);
+  //  write("g: ");
+  //  fac_show(g);
   fac_mul2(fmul, f, g);
+  //  write("fmul: ");
+  //  fac_show(fmul);
+  // BLC: use swap?
   tmp[0]  = f[0];
   f[0]    = fmul[0];
   fmul[0] = tmp[0];
 }
 
 // BLC: unfortunate -- original GMP took advantage of long/ulong conversions
-def fac_mul_bp(f: fac_t, base: c_ulong, pow: long) {
+def fac_mul_bp(inout f: fac_t, base: c_ulong, pow: long) {
   assert (base < max(long): c_ulong);
-  fac_mul_bp(ftmp, base:long, pow);
+  fac_mul_bp(f, base:long, pow);
 }
 
 // f *= base^pow
-def fac_mul_bp(f: fac_t, base: long, pow: long) {
+def fac_mul_bp(inout f: fac_t, base: long, pow: long) {
+  //  write("f (0): ");
+  //  fac_show(f);
   fac_set_bp(ftmp, base, pow);
+  //  write("ftmp: ");
+  //  fac_show(ftmp);
   fac_mul(f, ftmp);
+  //  write("f: ");
+  //  fac_show(f);
 }
 
 // remove factors of power 0
-def fac_compact(f: fac_t) {
+def fac_compact(inout f: fac_t) {
   var j: long;
   for i in 0..f[0].num_facs {
     if (f[0].pow[i]>0) {
@@ -566,7 +627,7 @@ def bs_mul(inout r: mpz_t, a: long, b: long) {
 //#endif
 
 // f /= gcd(f,g), g /= gcd(f,g)
-def fac_remove_gcd(inout p: mpz_t, fp: fac_t, inout g: mpz_t, fg: fac_t) {
+def fac_remove_gcd(inout p: mpz_t, inout fp: fac_t, inout g: mpz_t, inout fg: fac_t) {
   var i, j, k: long;
   var c: c_ulong;
   fac_resize(fmul, min(fp.num_facs, fg.num_facs));
@@ -603,8 +664,6 @@ def fac_remove_gcd(inout p: mpz_t, fp: fac_t, inout g: mpz_t, fg: fac_t) {
 }
 
 
-var top: long = 0;
-
 def p1  var return  pstack[top];
 def q1  var return  qstack[top];
 def g1  var return  gstack[top];
@@ -622,9 +681,25 @@ def fg2 var return fgstack[top+1];
 
 var progress = 0.0;
 
+/*
+def mpz_t.writeThis(f) {
+  var outfile = f: file;
+    gmp_fprintf(outfile._fp, "%Zd", this);
+  if (outfile) then
+}
+*/
+
 // binary splitting
 def bs(a: c_ulong, b: c_ulong, gflag: c_uint, level: long) {
+  //  writeln("In bs(", a, ", ", b, ", ", gflag, ", ", level, ")");
   if (b-a==1) {
+    //    gmp_printf("...p1 = %Zd\n", p1);
+    //    gmp_printf("...g1 = %Zd\n", g1);
+    //    gmp_printf("...q1 = %Zd\n", q1);
+    //    write("fp1 = ");
+    //    fac_show(fp1);
+    //    write("fg1 = ");
+    //    fac_show(fg1);
     /*
       g(b-1,b) = (6b-5)(2b-1)(6b-1)
       p(b-1,b) = b^3 * C^3 / 24
@@ -650,18 +725,36 @@ def bs(a: c_ulong, b: c_ulong, gflag: c_uint, level: long) {
     var i = b;
     while ((i&1)==0) do i>>=1;
     fac_set_bp(fp1, i, 3);    // b^3
+    //    write("fp1 = ");
+    //    fac_show(fp1);
+    //    writeln("i = ", i);
+    //    writeln("b = ", b);
     fac_mul_bp(fp1, 3*5*23*29, 3);
     fp1[0].pow[0]-=1;
 
     fac_set_bp(fg1, 2*b-1, 1);   // 2b-1
+    //    write("fg1 (*) = ");
+    //    fac_show(fg1);
     fac_mul_bp(fg1, 6*b-1, 1);   // 6b-1
+    //    write("fg1 = ");
+    //    fac_show(fg1);
     fac_mul_bp(fg1, 6*b-5, 1);   // 6b-5
+    //    write("fg1 = ");
+    //    fac_show(fg1);
 
     if (b > (progress:c_ulong)) {
       write(".");
       progress += percent*2;
     }
 
+    //    gmp_printf("...p1 = %Zd\n", p1);
+    //    gmp_printf("...g1 = %Zd\n", g1);
+    //    gmp_printf("...q1 = %Zd\n", q1);
+    //    write("fp1 = ");
+    //    fac_show(fp1);
+    //    write("fg1 = ");
+    //    fac_show(fg1);
+    //    writeln();
   } else {
     /*
       p(a,b) = p(a,m) * p(m,b)
@@ -695,14 +788,22 @@ def bs(a: c_ulong, b: c_ulong, gflag: c_uint, level: long) {
     if (ccc) then CHECK_MEMUSAGE;
     mpz_mul(p1, p1, p2);
 
+    gmp_printf("p2 = %Zd\n", p2);
     if (ccc) then CHECK_MEMUSAGE;
     mpz_mul(q1, q1, p2);
+    gmp_printf("q1 = %Zd\n", q1);
 
     if (ccc) then CHECK_MEMUSAGE;
     mpz_mul(q2, q2, g1);
 
+    writeln("top = ", top);
+    gmp_printf("q1 = %Zd\n", q1);
+    gmp_printf("q2 = %Zd\n", q2);
     if (ccc) then CHECK_MEMUSAGE;
     mpz_add(q1, q1, q2);
+    gmp_printf("q1 (*) = %Zd\n", q1);
+    gmp_printf("q2 = %Zd\n", q2);
+
 
     if (ccc) then CHECK_MEMUSAGE;
     fac_mul(fp1, fp2);
@@ -716,10 +817,9 @@ def bs(a: c_ulong, b: c_ulong, gflag: c_uint, level: long) {
   if (_out&2) {
     write("p(", a, ",", b, ")=");
     fac_show(fp1);
-    if (gflag) {
+    if (gflag) then
       write("g(", a, ",", b, ")=");
-      fac_show(fg1);
-    }
+    fac_show(fg1);
   }
 }
 
