@@ -14,25 +14,15 @@ clean: FORCE
 clobber: FORCE
 	cd gasnet && $(MAKE) clobber
 
-armci: FORCE
-	cd armci && $(MAKE)
-
 gasnet: FORCE
 	cd gasnet && $(MAKE)
-
-mpich1: FORCE
-	cd mpich1 && $(MAKE)
-
-nanox: FORCE
-	cd nanox && $(MAKE)
 
 pvm: FORCE
 	cd pvm && $(MAKE)
 
-openmpi: FORCE
-	cd openmpi && $(MAKE)
-
-libdlmalloc: FORCE
+dlmalloc: FORCE
 	cd dlmalloc && $(MAKE)
+
+-include Makefile.devel
 
 FORCE:
