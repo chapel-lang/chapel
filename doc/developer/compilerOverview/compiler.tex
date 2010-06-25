@@ -1535,6 +1535,7 @@ determine whether a given SymExpr is a def or a use or both.
 \end{quote}
 
 \subsubsection{Optimizations and Analyses}
+\label{sec:opts}
 
 \begin{clang}
 void collapseBlocks(BlockStmt* block);
@@ -1631,7 +1632,8 @@ needs to be evaluated---why codegen \cc{x;}.
 
 The function \cc{deadCodeElimination} is based on the algorithm
 described in ``Advanced Compiler Design and Implementation'' by Steven
-Muchnick.  This uses def-use and use-def chains.
+Muchnick.  This uses def-use and use-def chains.  This function calls
+the other two.
 \end{quote}
 
 \subsection{Primitives}
@@ -1897,6 +1899,7 @@ statements are true:
 \end{itemize}
 
 \subsection{flattenFunctions}
+\label{sec:flattenFunctions}
 
 This pass collects all nested functions (the DefExpr of the FnSymbol
 is in another function, \ie, the \cc{parentSymbol} of the
@@ -2102,82 +2105,244 @@ A few notes about the implementation:
 \subsection{parallel}
 
 This pass originally transformed the code to interface with the
-tasking runtime (steps 1 and 6 below), and that was all.  From a
-historical perspective, this pass enabled multithreading (before its
-introduction, execution was serial), hence its name.  That said, this
-pass has a terrible name.
+tasking runtime (the first and last steps below), and that was all.
+From a historical perspective, this pass enabled multithreading
+(before its introduction, execution was serial), hence its name.  That
+said, this pass has a terrible name.
 
 The current implementation of this pass takes the following actions in
 the following order:
 \begin{enumerate}
-\item All begin, cobegin, coforall, and on blocks are transformed into
-  nested functions and flattened.  Prior to this pass, these
+\item Transform all begin, cobegin, coforall, and on blocks into
+  nested functions and flatten them.  Prior to this pass, these
   constructs are represented as BlockStmts with a primitive
   \cc{blockInfo} field.
-\item TODO remote value forwarding
-\item TODO reprivatize iterators
-\item TODO heap allocate variables
-\item TODO handle EndCount code
-\item TODO bundle arguments to nested functions
+
+\item Run the optimization called remote value forwarding on all
+  flattened nested functions created above.  This optimization looks
+  for functions that take references and replaces them with values if
+  possible.  Flattening of nested functions introduces reference
+  arguments to handle the outer variables (as described in
+  Section~\ref{sec:flattenFunctions}).  Thus the function created to
+  handle an on-statement will take reference arguments to any
+  variables declared outside of the on-statement.  
+
+  This optimization is currently much more conservative than it should
+  be.  A reference argument is changed into a value argument if the
+  reference is never written to and if there are no calls to any
+  functions involving synchronization within the body of the function.
+  These are flow-insensitive checks, but this optimization could
+  benefit from being flow-sensitive.  For example, it may be
+  worthwhile to pass in both the reference and the value if it is read
+  before it is written.  In addition, if the reference is read before
+  any call to a synchronizing functions, it can be passed as a value.
+  Essentially what this optimization is doing is to move the read up
+  to the point where the function is called (or where the on-statement
+  is executed).  This optimization uses def and use maps as well as
+  the call graph.
+
+\item Reprivatize privatized-object fields (array and domain
+  descriptors may be privatized) in Iterator classes
+  (\cc{reprivatizeIterators}).  That is, code is inserted when
+  accessing such fields to get the local private copy.  This is not
+  necessary with arbitrary classes and records because their fields
+  will never capture privatized objects.  Instead, they will always
+  capture privatized IDs which can then be changed into objects at the
+  point they are used.  The IDs map to the privatized copy of a class
+  on any given locale.  Iterator classes, on the other hand, are built
+  up by the compiler.  If the privatized object (as opposed to the ID)
+  is added to the class, then we may be pointing at a remote object
+  when there is a local object that we could be pointing at.
+
+\item Move stack-allocated data onto the heap as necessary
+  (\cc{makeHeapAllocations}).  This function uses def and use maps to
+  trace references through begin- and on-statements (or rather the
+  functions that implement them).  The data that such references point
+  to needs to be put on the heap.  For begin-statements, this has to
+  happen because the begin-statement can return before the function
+  completes.  For on-statements, this has to happen because remote
+  communication can only involve data on the heap.
+
+  This function also takes care of inserting code to broadcast the
+  values in global constants so that each locale can access these
+  values directly.  Other globals are put on the heap and set up so
+  that the references on every locale other than locale 0 points to
+  the heap on locale 0.
+
+  At the end of the function \cc{makeHeapAllocations} there is a call
+  to \cc{freeHeapAllocatedVars} that duplicates some functionality in
+  an effort to free such heap-allocated structures.  This code is
+  incomplete in a number of ways.  A noticeable limitation is that we
+  won't be able to free heap-allocated structures completely until the
+  compiler inserts code to reference count the number of tasks that
+  can access such structures.  This should probably not be universal
+  since there will be simple cases where the reference count will not
+  be necessary and where the performance hit (time and space) should
+  be avoided.
+
+\item Handle the implementation of the \chpl{EndCount} class used to
+  implement sync statements, including the implicit sync statement
+  around \cc{main}.  Accesses to this class are implemented via
+  primitives \cc{GET_END_COUNT} and \cc{SET_END_COUNT} up to this
+  point.  The compiler threads \chpl{EndCount} variables through
+  functions by adding arguments to these functions.
+
+\item Bundle arguments to functions that implement begin, cobegin,
+  coforall, and on statements.  The tasking runtime invokes such
+  functions via a pointer to a function that expects one argument.
+  Thus the compiler changes these functions so that they expect only
+  one argument.  Structs are created to capture the multiple
+  arguments.
 \end{enumerate}
 
 \subsection{prune}
 
-TODO
+The \cc{prune} pass, run again after the pass called
+\cc{localizeGlobals}, has a narrow focus.  During this pass, the
+compiler identifies unused functions and types, and removes them from
+the AST.
 
 \subsection{complex2record}
 
-TODO
+This pass replaces the primitive complex types \cc{dtComplex} with
+records composed of two floating-point values, one for the real part
+and the other for the imaginary part.  All occurrences of the
+primitive types are replaced with the new records.  The primitives
+\cc{GET_REAL} and \cc{GET_IMAG} are replaced with the primitive
+\cc{GET_MEMBER}.  Henceforth in compilation, the primitive complex
+type is of no concern.
 
 \subsection{removeUnnecessaryAutoCopyCalls}
 
-TODO
+This optimization pass removes redundant calls to the auto copy
+mechanism used to implement memory freeing on values, including arrays
+and domains.  This pass attempts to match calls to the ``auto copy''
+function with calls to the ``auto destroy'' function and cancel them
+out.  Since the ``auto copy'' and ``auto destroy'' functions may
+increment and decrement sync variables for reference counting arrays
+and domains, this optimization can significantly improve performance.
 
 \subsection{inlineFunctions}
 
-TODO
+This optimization pass inlines all functions that are marked by the
+``inline'' flag.  Line numbers are updated to the call site.  Before a
+particular function is inlined, optimizations like copy propagation
+are called on that function to try to reduce the amount of code that
+has to be replicated.
+
+This pass also calls the \cc{collapseBlocks} and
+\cc{removeUnnecessaryGotos} functions on every function.  These
+functions are described in Section~\ref{sec:opts}.
 
 \subsection{scalarReplace}
 
-TODO
+This optimization pass replaces some variables of some record types by
+multiple variables, one for each field in the record.  The order of
+replacement is based on a topological sort of the types to avoid
+replacing variables assigned to fields.
+
+This pass calls \cc{eliminateSingleAssignmentReference}, described in
+Section~\ref{sec:opts}, to eliminate a case that would otherwise
+disable this optimization.
+
+In addition to the fairly straightforward code needed to scalar
+replace records, this pass also tries to scalar replace classes that
+are used in a stylized way.  In particular, this pass tries to scalar
+replace iterator classes.  In general, scalar replacing classes would
+not work since they are references and not values.  For iterators,
+this is an important step in enabling many of the more traditional
+optimizations run later.
 
 \subsection{refPropagation}
 
-TODO
+This optimization pass calls \cc{singleAssignmentRefPropagation}, as
+described in Section~\ref{sec:opts}, on every function.
 
 \subsection{copyPropagation}
 
-TODO
+This optimization pass calls \cc{localCopyPropagation},
+\cc{deadVariableElimination}, and \cc{globalCopyPropagation} in that
+order on every function.  These functions are described in
+Section~\ref{sec:opts}.
 
 \subsection{deadCodeElimination}
 
-TODO
+This optimization pass calls \cc{deadCodeElimination}, as described in
+Section~\ref{sec:opts}, on every function.
 
 \subsection{removeWrapRecords}
 
-TODO
+This optimization pass runs a variation of scalar replacement on the
+wrapper records for arrays and domains.  Since these records only have
+one field, they can be removed completely and all uses of these types
+can be replaced by the field type.  Unlike in scalar replacement where
+a type may have multiple fields, variables are replaced by only one
+other value by this optimization.  The field in question is
+\cc{_value}.
+
+This is more involved because these wrapper records also contain a
+field called \cc{_valueType}.  However, this field is only used for
+type information during function resolution (since privatization
+changes the \cc{_value} field into an integer).  Therefore, before
+doing the replacement described above, references to \cc{_valueType}
+are first eliminated.  This code relies on dead code elimination,
+inlining, and copy propagation, so if any of these optimizations are
+disabled, this pass is skipped.
 
 \subsection{removeEmptyRecords}
 
-TODO
+This optimization pass removes all empty record types, and all
+variables and arguments with these types.
 
 \subsection{localizeGlobals}
+\label{sec:pruneagain}
 
-TODO
+This optimization pass creates temporaries at the top of functions to
+capture global constants.  This optimization was especially important
+on the Cray XMT (TM).  In any event, since constants in Chapel cannot
+be identified as constants in C, this seems like a worthwhile
+optimization.  This optimization does not handle the case where a
+function that reads a global constant is called from another function
+in a critical loop.
 
-\subsection{prune}
-
-TODO
+This optimization is a good one for the argument against
+source-to-source compilation, or at least source-to-source compilation
+to C.  If the compiler did handle the above case (a function called in
+a critical loop), it would have to pass the constant into the function
+as an argument.  Thus all constants may be passed around to functions,
+but that is clearly not optimal either.  Such thinking must be weighed
+against the advantages of source-to-source compilation, namely
+portability.
 
 \subsection{returnStarTuplesByRefArgs}
 
-TODO
-
-\subsection{gpuFlattenArgs}
-
-TODO
+This pass changes all functions that return star tuples into function
+that take, as arguments, references to these star tuples and assign
+the values into these references.  This pass also changes all
+\cc{SET_MEMBER}, \cc{GET_MEMBER}, and \cc{GET_MEMBER_VALUE} primitives
+into \cc{PRIM_SET_SVEC_MEMBER}, \cc{PRIM_GET_SVEC_MEMBER}, and
+\cc{PRIM_GET_SVEC_MEMBER_VALUE} primitives.  These are used on star
+tuples.  The other primitives were used on star tuples which are
+stored as records with fields in the AST.
 
 \subsection{insertWideReferences}
+
+This pass introduces wide references and wide classes into the AST.  A
+wide reference is a reference to something that may exist on a
+different locale.  It is generated as a struct with two fields: a
+locale number and an address.  In the AST, wide references are
+represented as records with two fields: a locale number and a
+reference.  Since classes are references, they too can be wide.  A
+wide class is represented as a record with two fields: a locale number
+and a class.  In both cases, the address or class reference is only
+valid on the locale indicated by the locale number.
+
+In this pass, the compiler creates a wide reference type for every
+type and a wide class for every class.  This includes both wide
+references to classes and wide references to wide classes.
+Fortunately, there are no references to references, references to wide
+references, wide references to references, or wide references to wide
+references.  Because enough is enough!
 
 TODO
 
@@ -2187,11 +2352,35 @@ TODO
 
 \subsection{insertLineNumbers}
 
-TODO
+This pass inserts line numbers and filenames into functions and calls
+to these functions so that errors that show up in the internal modules
+will pinpoint code that the Chapel programmer should know something
+about.  That is, if a primitive is called in an internal module, then
+this pass will add two arguments to the function containing the
+primitive call.  If the callsite to this function is in user code,
+that line number and filename will be added to the call.  Otherwise,
+the compiler recurses to the function that that function is called in.
+
+The compiler takes care to pass line number and filename information
+through argument bundles created during the \cc{parallel} pass for
+functions called indirectly in the runtime.
 
 \subsection{repositionDefExpressions}
 
-TODO
+This pass moves DefExpr nodes into the innermost BlockStmt nodes that
+they can legally be declared within.  This decreases the scope of the
+declaration.  This is essential for compiling with certain pragmas on
+the Cray XMT (TM) where declarations must be inside a parallel loop to
+avoid races due to assigning values to variables shared between
+iterations.
+
+This optimization currently looks at all occurrences of local
+variables in a function and determines what block these variables
+should be declared within based on these occurrences.  This may be
+insufficient if the compiler ever generates code where a variable may
+be live in a block outside of any of its uses.  With the iterator
+transforms, and its loops and goto statements, this may indeed be
+possible.
 
 \subsection{codegen}
 
