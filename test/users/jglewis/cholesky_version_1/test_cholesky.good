@@ -1,7 +1,8 @@
 Cholesky Factorization Tests
-   Matrix Dimension:59
-   Block Size      :13
-    indexing base   :-7
+   Matrix Dimension: 59
+   Block Size      : 13
+   Indexing Base   : -7
+
 scalar outer product cholesky factorization 
 factorization successful
 
