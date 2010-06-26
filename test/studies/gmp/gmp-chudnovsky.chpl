@@ -112,13 +112,11 @@ def main() {
   else
     writeln();
 
-  for i in 0..#depth {
-    mpz_init(pstack[i]);
-    mpz_init(qstack[i]);
-    mpz_init(gstack[i]);
-    fac_init(fpstack[i]);
-    fac_init(fgstack[i]);
-  }
+  mpz_init(pstack);
+  mpz_init(qstack);
+  mpz_init(gstack);
+  fac_init(fpstack);
+  fac_init(fgstack);
   mpz_init(gcd);
 
   if HAVE_DIVEXACT_PREINV then
@@ -500,7 +498,7 @@ def fac_mul_bp(inout f: fac_t, base: long, pow: long) {
 // remove factors of power 0
 def fac_compact(inout f: fac_t) {
   var j: long;
-  for i in 0..f.num_facs {
+  for i in 0..#f.num_facs {
     if (f.pow[i]>0) {
       if (j<i) {
 	f.fac[j] = f.fac[i];
@@ -517,7 +515,7 @@ def bs_mul(inout r: mpz_t, a: long, b: long) {
   if (b-a <= 32) {
     mpz_set_ui(r, 1);
     for i in a..b-1 do
-      for j in 0..fmul.pow[i] do
+      for j in 0..fmul.pow[i]-1 do  // BLC: would like to use # here
 	mpz_mul_ui(r, r, fmul.fac[i]);
   } else {
     var r2: mpz_t;
