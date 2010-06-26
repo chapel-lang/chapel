@@ -64,10 +64,6 @@ record fac_t {
   var num_facs: long;
   const sdom: domain(1, idxType=long);
   var fac, pow: [sdom] c_ulong;
-
-  def this(i) var {
-    return this;
-  }
 };
 
 record sieve_t {
@@ -103,7 +99,6 @@ var top: long = 0;
 
 
 def main() {
-
   writeln("#terms=", terms, ", depth=", depth);
 
   const start = getCurrentTime();
@@ -156,7 +151,7 @@ def main() {
   //writeln("misc    ");
 
   /* free some resources */
-  sievedom = [0..-1: long];
+  sievedom.clear();
 
   if HAVE_DIVEXACT_PREINV then
     mpz_clear(mgcd);
@@ -177,7 +172,7 @@ def main() {
   fac_clear(fpstack[0]);
   fac_clear(fgstack[0]);
 
-  stackdom1 = [0..-1: long];
+  stackdom1.clear();
 
   /* prepare to convert integers to floats */
   mpf_set_default_prec((d*BITS_PER_DIGIT+16): mp_bitcnt_t);
@@ -204,7 +199,7 @@ def main() {
   mpf_set_z(qi, q1);
   mpz_clear(q1);
 
-  stackdom2 = [0..-1: long];
+  stackdom2.clear();
 
   const mid2 = getCurrentTime() - mid1;
 
@@ -388,23 +383,23 @@ def my_div(inout r: mpf_t, inout y: mpf_t, in x: mpf_t) {
 }
 
 def fac_show(f: fac_t) {
-  for i in 0..#f[0].num_facs do
-    if (f[0].pow[i]==1) then
-      write(f[0].fac[i], " ");
+  for i in 0..#f.num_facs do
+    if (f.pow[i]==1) then
+      write(f.fac[i], " ");
     else
-      write(f[0].fac[i], "^", f[0].pow[i], " ");
+      write(f.fac[i], "^", f.pow[i], " ");
   writeln();
 }
 
 def fac_reset(inout f: fac_t) {
-  f[0].num_facs = 0;
+  f.num_facs = 0;
 }
 
 def fac_init_size(inout f: fac_t, in s: long) {
   if (s<INIT_FACS) then
     s=INIT_FACS;
 
-  f[0].sdom = [0..#s];
+  f.sdom = [0..#s];
 
   fac_reset(f);
 }
@@ -415,12 +410,12 @@ def fac_init(inout f: fac_t) {
 
 
 def fac_clear(inout f: fac_t) {
-  f.sdom = [0..-1:long];
+  f.sdom.clear();
 }
 
 def fac_resize(inout f: fac_t, s: long)
 {
-  if (f[0].sdom.numIndices < s) {
+  if (f.sdom.numIndices < s) {
     fac_clear(f);
     fac_init_size(f, s);
   }
@@ -438,60 +433,56 @@ def fac_set_bp(inout f: fac_t, in base: long, pow: long) {
   var i: long;
   base /= 2;
   while (base > 0) {
-    f[0].fac[i] = (sieve[base].fac): c_ulong;
-    f[0].pow[i] = (sieve[base].pow*pow): c_ulong;
+    f.fac[i] = (sieve[base].fac): c_ulong;
+    f.pow[i] = (sieve[base].pow*pow): c_ulong;
     base = sieve[base].nxt;
     i += 1;
   }
-  f[0].num_facs = i;
-  assert(i<=f[0].sdom.numIndices);
+  f.num_facs = i;
+  assert(i<=f.sdom.numIndices);
 }
 
 // r = f*g
 def fac_mul2(inout r: fac_t, f: fac_t, g: fac_t) {
 
   var i, j, k: long;
-  while (i<f[0].num_facs & j<g[0].num_facs) {
-    if (f[0].fac[i] == g[0].fac[j]) {
-      r[0].fac[k] = f[0].fac[i];
-      r[0].pow[k] = f[0].pow[i] + g[0].pow[j];
+  while (i<f.num_facs & j<g.num_facs) {
+    if (f.fac[i] == g.fac[j]) {
+      r.fac[k] = f.fac[i];
+      r.pow[k] = f.pow[i] + g.pow[j];
       i += 1; j += 1;
-    } else if (f[0].fac[i] < g[0].fac[j]) {
-      r[0].fac[k] = f[0].fac[i];
-      r[0].pow[k] = f[0].pow[i];
+    } else if (f.fac[i] < g.fac[j]) {
+      r.fac[k] = f.fac[i];
+      r.pow[k] = f.pow[i];
       i += 1;
     } else {
-      r[0].fac[k] = g[0].fac[j];
-      r[0].pow[k] = g[0].pow[j];
+      r.fac[k] = g.fac[j];
+      r.pow[k] = g.pow[j];
       j += 1;
     }
     k += 1;
   }
-  while (i < f[0].num_facs) {
-    r[0].fac[k] = f[0].fac[i];
-    r[0].pow[k] = f[0].pow[i];
+  while (i < f.num_facs) {
+    r.fac[k] = f.fac[i];
+    r.pow[k] = f.pow[i];
     i += 1;
     k += 1;
   }
-  while (j < g[0].num_facs) {
-    r[0].fac[k] = g[0].fac[j];
-    r[0].pow[k] = g[0].pow[j];
+  while (j < g.num_facs) {
+    r.fac[k] = g.fac[j];
+    r.pow[k] = g.pow[j];
     j += 1;
     k += 1;
   }
-  r[0].num_facs = k;
-  assert(k<=r[0].sdom.numIndices);
+  r.num_facs = k;
+  assert(k<=r.sdom.numIndices);
 }
 
 // f *= g
 def fac_mul(inout f: fac_t, g: fac_t) {
-  var tmp: fac_t;
-  fac_resize(fmul, f[0].num_facs + g[0].num_facs);
+  fac_resize(fmul, f.num_facs + g.num_facs);
   fac_mul2(fmul, f, g);
-  // BLC: use swap?
-  tmp[0]  = f[0];
-  f[0]    = fmul[0];
-  fmul[0] = tmp[0];
+  f <=> fmul;
 }
 
 // BLC: unfortunate -- original GMP took advantage of long/ulong conversions
@@ -509,16 +500,16 @@ def fac_mul_bp(inout f: fac_t, base: long, pow: long) {
 // remove factors of power 0
 def fac_compact(inout f: fac_t) {
   var j: long;
-  for i in 0..f[0].num_facs {
-    if (f[0].pow[i]>0) {
+  for i in 0..f.num_facs {
+    if (f.pow[i]>0) {
       if (j<i) {
-	f[0].fac[j] = f[0].fac[i];
-	f[0].pow[j] = f[0].pow[i];
+	f.fac[j] = f.fac[i];
+	f.pow[j] = f.pow[i];
       }
       j += 1;
     }
   }
-  f[0].num_facs = j;
+  f.num_facs = j;
 }
 
 // convert factorized form to number
@@ -526,8 +517,8 @@ def bs_mul(inout r: mpz_t, a: long, b: long) {
   if (b-a <= 32) {
     mpz_set_ui(r, 1);
     for i in a..b-1 do
-      for j in 0..fmul[0].pow[i] do
-	mpz_mul_ui(r, r, fmul[0].fac[i]);
+      for j in 0..fmul.pow[i] do
+	mpz_mul_ui(r, r, fmul.fac[i]);
   } else {
     var r2: mpz_t;
     mpz_init(r2);
@@ -637,7 +628,7 @@ def bs(a: c_ulong, b: c_ulong, gflag: c_uint, level: long) {
     while ((i&1)==0) do i>>=1;
     fac_set_bp(fp1, i, 3);    // b^3
     fac_mul_bp(fp1, 3*5*23*29, 3);
-    fp1[0].pow[0]-=1;
+    fp1.pow[0]-=1;
 
     fac_set_bp(fg1, 2*b-1, 1);   // 2b-1
     fac_mul_bp(fg1, 6*b-1, 1);   // 6b-1
