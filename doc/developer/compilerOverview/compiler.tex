@@ -70,7 +70,7 @@ exception of a CallExpr that represents the MOVE primitive (C
 assignment).)  The BaseAST, Symbol, Type, and Expr classes are never
 instantiated.
 
-This graph is rooted at the module rootModule which contains DefExprs
+This graph is rooted at the module cc{rootModule} which contains DefExprs
 of all the modules in the program, as well as literals and other
 global entities.
 
@@ -244,13 +244,13 @@ functions.  The fields of the ArgSymbol include the following:
 \label{sec:typesymbol}
 
 The TypeSymbol class is used for types.  The subclasses of Type can be
-thought of as storing auxillary information about types.  There is a
+thought of as storing auxiliary information about types.  There is a
 one-to-one mapping between TypeSymbols and Types.  So the \cc{type}
 field of TypeSymbol points to a subclass of Type, and the \cc{symbol}
 field of this type class will point back at the TypeSymbol.
 
 A good refactoring would probably be to use TypeSymbol everywhere that
-Type is used.  Then a field in TypeSymbol could point to its auxillary
+Type is used.  Then a field in TypeSymbol could point to its auxiliary
 information, but we would never have to point back.  This refactoring
 would require changing, for example, the \cc{type} field of Symbol
 from Type to TypeSymbol.
@@ -339,7 +339,7 @@ The fields of FnSymbol include the following:
 \item \cc{Vec<CallExpr*>* calledBy} points to all of the CallExprs
   that call this function.  These vectors are computed by
   \chpl{compute_call_sites} (Section~\ref{sec:util}), but are not
-  mainted when CallExprs are changed.  This field could be removed if
+  maintained when CallExprs are changed.  This field could be removed if
   this function were to build a Map from FnSymbols to a vector of
   CallExprs.
 \item \cc{const char* userString} is set during parsing so that we can
@@ -413,7 +413,7 @@ following:
 \subsection{Type}
 
 Type is basically a class that is associated with TypeSymbols in a
-one-to-one mapping and stores auxillary information relevant to the
+one-to-one mapping and stores auxiliary information relevant to the
 particular kind of type.
 
 The fields in Type are:
@@ -481,7 +481,7 @@ The subclasses of Type include the following:
 
 The PrimitiveType class is used to represent nodes that are primitive
 types such as integers, reals, strings, C files, a timer type, some
-auxillary types for sync and single variables, etc.
+auxiliary types for sync and single variables, etc.
 
 This class has no fields, inheriting all of the information it needs
 from the Type class.
@@ -489,7 +489,7 @@ from the Type class.
 \subsubsection{EnumType}
 \label{sec:enumtype}
 
-The EnumeratedType class contains auxillary information for enumerated
+The EnumeratedType class contains auxiliary information for enumerated
 types, basically a list of EnumSymbol constants.  The fields in
 EnumType are:
 \begin{itemize}
@@ -500,7 +500,7 @@ EnumType are:
 \subsubsection{ClassType}
 \label{sec:classtype}
 
-The ClassType class contains auxillary information for classes,
+The ClassType class contains auxiliary information for classes,
 records, and unions.  The fields of ClassType are:
 \begin{itemize}
 \item \cc{ClassTag classTag} is an enumeration to identify whether
@@ -705,14 +705,14 @@ The fields in CallExpr are:
   the Chapel code given by \chpl{x.y()} by marking this case.  We have
   to deal with two situations.  The first is where we are invoking a
   method \chpl{y}.  The second is where we are invoking a
-  parenthesesless method (possibly a getter for a field) that returns
+  parentheses-less method (possibly a getter for a field) that returns
   a class instance with a \chpl{this} method, and then we are invoking
   the \chpl{this} method.  So in the latter case, we invoke two
   functions, while in the former case, we invoke just one.  This code
   is represented as a nested CallExpr, and the inner CallExpr is
   marked with this tag after normalization.
 \item \cc{bool methodTag} marks basic method invocations, even if they
-  are parenthesesless.  For example, with \chpl{x.y}, the method call
+  are parentheses-less.  For example, with \chpl{x.y}, the method call
   of \chpl{y} after normalization will be mark this flag true, but
   \cc{partialTag} will not be marked true.  There are no nested call
   expressions.  It seems that if \cc{partialTag} is set, then
@@ -806,7 +806,7 @@ Section~\ref{sec:lowerIterators}.
 
 The fields in GotoStmt are:
 \begin{itemize}
-\item \cc{GotoTag gotoTag} marks teh type of the goto statement.  This
+\item \cc{GotoTag gotoTag} marks the type of the goto statement.  This
   distinguishes breaks and continues from normal gotos.  After scope
   resolution, there are no more break or continues.  Note that for
   certain simple cases, we could use break and continue statements
@@ -921,6 +921,7 @@ recursive function that calls the traversal macro
 \cc{AST_CHILDREN_CALL} directly.
 
 \subsubsection{The \cc{getFirstExpr} and \cc{getnextExpr} Methods}
+\label{sec:resolveiteration}
 
 The stylized loop \cc{for_exprs_postorder} uses the functions
 \begin{clang}
@@ -1180,7 +1181,7 @@ This method is used to implement the code generation pass.  Although
 originally designed for before the AST is normalized (and there was
 more nesting of expressions as well as more Expr nodes), it still
 works fairly well today.  This code might benefit from a revamp with
-the assumpttion of normalization, unless there remains a desire to
+the assumption of normalization, unless there remains a desire to
 unnormalize so as to generate C expressions.
 \end{quote}
 
@@ -1247,7 +1248,8 @@ VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_32);
 VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_32);
 VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
 VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
+                             IF1_complex_type size=COMPLEX_SIZE_128);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 \end{clang}
 \begin{quote}
@@ -1472,7 +1474,7 @@ void buildDefUseMaps(FnSymbol* fn,
 void buildDefUseMaps(Vec<Symbol*>& symSet,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
-void buildDefUseMaps(Vec<Symbol*>& symSet,
+voi buildDefUseMaps(Vec<Symbol*>& symSet,
                      Vec<SymExpr*>& symExprs,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
@@ -1858,9 +1860,185 @@ semantics):
 
 \subsection{resolve}
 
+The main purpose of this pass is to resolve function calls and types.
+After this pass, there are no more UnresolvedSymExpr nodes.
+
+This pass is complicated by the vagaries of the Chapel language, for
+better and for worse.
+
+The algorithm for this pass is summarized as follows:
+\begin{enumerate}
+\item Mark generic functions as generic and identify arguments that
+  are generic even though the generic type of the argument has default
+  values for all of its generic fields, \eg, \chpl{range(?)}.
+\item Call \cc{resolveFns} (See Section~\ref{sec:resolveFns}.) on
+  \cc{chpl_main}, the main function in the program, either generated
+  by the compiler during \cc{buildDefaultFunctions} or written by the
+  Chapel programmer.
+\item If we are compiling the runtime, which has entries other than
+  through \cc{main}, the resolve the formal arguments of these entry
+  points via \cc{resolveFormals} and the functions via
+  \cc{resolveFns}.
+\item Build the virtual method table and resolve methods that are only
+  dynamically dispatched.  This work is done in a loop to handle the
+  case where a method that is only resolved via a dynamic dispatch
+  creates a new instantiation of a generic class and this generic
+  class results in a new method that needs to be added to the virtual
+  method table, and then resolving this new method results in another
+  generic class, etc.
+\item Resolve calls to \chpl{chpl__convertValueToRuntimeType} on any
+  runtime type.  Resolve \chpl{autoCopy} and \chpl{autoDestroy} calls.
+  Resolve record initialization.
+\item Replace calls to potentially dynamically dispatched methods with
+  calls via the virtual method table or with conditionals (if there
+  are fewer than some threshold number of such calls).
+\item Clean-up the AST by inserting return temporaries for functions
+  that return values, but which are not captured, and by pruning the
+  AST, including eliminating unused functions and types, eliminating
+  method tokens, etc.
+\end{enumerate}
+
+\subsubsection{\cc{resolveFns(fn)}}
+\label{sec:resolveFns}
+
+This function resolves the interior of FnSymbol node \cc{fn}.  When
+resolving, recursive calls are made to \cc{resolveFns} in order to
+resolve other functions that are called.  Since \cc{resolveFns} is
+recursive, we use a set to avoid resolving a function that we have
+already resolved or started to resolve.  The algorithmic flow of
+\cc{resolveFns(fn)} is as follows:
+\begin{enumerate}
+\item If \cc{fn} has already been resolved or is being resolved, stop.
+\item If this is a var function, build a value function and resolve
+  the value function with the setter argument set to false.  Set the
+  setter argument to true and continue resolving the var function.
+\item Insert temporaries for formal arguments to implement copy semantics.
+\item Call \cc{resolveBlock} (See Section~\ref{sec:resolveBlock}.) to
+  resolve the body of this function.
+\item Determine the return type of this function by examining all of
+  the writes to the returned symbol.  If there is no best type (a type
+  the others can dispatch to), flag an error.  Otherwise set the
+  \cc{retType} field of \cc{fn}.
+\item Insert casts on any \cc{MOVE} primitive that requires it.
+\item If \cc{fn} is resolved as an iterator, prototype iterator
+  records, classes, and methods.  (See Section~\ref{sec:resolveiter}.)
+\item If \cc{fn} is resolved as a type constructor, identify the type.
+  Resolve the type constructors of the parent type and all field
+  types.  Also resolve the default constructor with no arguments and
+  the destructor.
+\end{enumerate}
+
+\subsubsection{\cc{resolveBlock(fn)}}
+\label{sec:resolveBlock}
+
+This function resolves the body of FnSymbol node \cc{fn}.  It uses the
+traversal described in Section~\ref{sec:resolveiteration} to iterate
+over the Expr nodes in the body.  For each Expr node \cc{expr}, the
+following actions are taken:
+\begin{enumerate}
+\item If \cc{expr} is a SymExpr node, create a reference type for the
+  type of the symbol if it doesn't yet exist.
+\item Call \cc{preFold} on \cc{expr} to handle cases before we resolve
+  further.  This may change the node to which \cc{expr} points.  For
+  example, if this is a call to the primitive \cc{GET_REF}, then the
+  compiler sees if the argument to the call is already a value.  If it
+  is, then the call is replaced by the argument and \cc{expr} is
+  updated to point to the argument.  Numerous transformations are done
+  during this step.
+\item Resolve returned values of parameter functions.
+\item Issue compiler errors when encountering the primitives wrapped
+  by \chpl{compilerError} and \chpl{compilerWarning}.
+\item If \cc{expr} is a CallExpr node, update the resolution call
+  stack and call \cc{resolveCall} on \cc{expr} (See
+  Section~\ref{sec:resolveCall}.)  If the call resolves to a function,
+  then call \cc{resolveFns} on that function.
+\item Call \cc{postFold} on \cc{expr} to handle cases before we
+  resolve further.  This does many transformations on the AST and,
+  like \cc{preFold}, may change the node to which \cc{expr} points,
+  which will impact the traversal (the next node to which \cc{expr}
+  points).
+\end{enumerate}
+
+\subsubsection{\cc{resolveCall(call)}}
+\label{sec:resolveCall}
+
+This function resolves the CallExpr node \cc{call}.  If the call is to
+an unresolved function, the algorithm proceeds as described in the
+language specification, more or less.  If the call is to a primitive,
+transformations may be done on the AST similar to those done in
+\cc{preFold}.  In addition, the \cc{MOVE} primitive is ``resolved'' in
+order to determine the type of any symbol on the left-hand side, or to
+do type checking if this symbol has already been resolved.
+
+\subsubsection{Wrappers}
+
+When resolving function calls, the actual arguments may not match the
+formal arguments in a one-to-one mapping with exact type matches.
+Such cases occur with implicit coercions, with default values for
+arguments, with named-argument passing, and with scalar promotion.  To
+handle these cases, wrappers are created during function resolution,
+and marked with the ``inline'' flag.  The wrappers are created using
+caches to ensure we don't create the same wrapper multiple times.
+This is necessary to avoid creating multiple instances of a type when
+there should just be a single type.
+
+The default wrapper calls a function after inserting extra actual
+arguments into the call.  The order wrapper calls a function after
+rearranging the arguments which can be in the wrong order due to
+named-argument passing.  The coercion wrapper calls a function after
+casting arguments to other types.  This includes dereferencing an
+actual argument that is a reference and reading the value in a sync or
+single type.  The calls to \chpl{readFE} and \chpl{readFF} may be
+inserted in coercion wrappers.  The promotion wrapper calls a function
+within a loop.  The promotion wrapper is implemented as an iterator.
+Parallel promotion is handled by creating leader and follower
+iterators.
+
+\subsubsection{Generic Instantiation}
+
+Generic instantiation of functions occurs during function resolution.
+Calls to functions that are generic are resolved at the same time as
+calls that are not generic.  When a generic call becomes a candidate
+for function resolution, it is instantiated and its where clause is
+evaluated.  If it is selected, then it is resolved.  This means, among
+other things, that calls in the where clause may be resolved even if
+the function is ultimately not resolved.
+
+\subsubsection{Runtime Types}
+
 TODO
 
+\subsubsection{Scalar Promotion Types}
+
+Scalar promotion keys off a type field of a class that identifies the
+type of scalar over which an aggregate promotes.  During function
+resolution, this type is identified and then used when selecting
+candidates during overload resolution.
+
+The implementation relies on a field called \chpl{_promotionType} in
+the Chapel type.  For this reason, the implementation can easily be
+extended to user-defined types should the language be changed to
+expose such functionality to a user-defined class.
+
+\subsubsection{Conditional Resolution and Try Tokens}
+
+Function resolution can be done conditionally based on a ``try token''
+called \cc{gTryToken}.  This global symbol can be used in the
+conditional expression of a conditional statement.  When encountered
+by function resolution, the compiler will try to resolve the
+then-statement.  If this is successful, the conditional statement will
+be replaced by the body of the then-statement.  If not, the
+conditional statement will be replaced by the body of the
+else-statement, and resolution will continue on the else-statement as
+normal.
+
+This is used to attempt to parallelize reductions.  The parallel
+iterator is called in the then block.  In the else block, the serial
+iterator is called and a compilerWarning call is made to indicate that
+the reduction has been serialized.
+
 \subsubsection{Iterator Handling During Resolution}
+\label{sec:resolveiter}
 
 The iterator is resolved as if it is a normal function where the yield
 statements are treated identically to return statements in terms of
@@ -1887,6 +2065,48 @@ captured.
 The links to the leader and follower iterators are created during
 function resolution by creating a function that calls the leader or
 follower from the \cc{TO_LEADER} and \cc{TO_FOLLOWER} primitives.
+
+\subsubsection{The Dream of Out-of-Order Resolution}
+
+There are a number of non-working tests (futures) that are expected to
+work should function resolution work if the strict ordering constraint
+on it now is removed.  The dream is that the compiler could have a
+queue of functions that need to be resolved.  Then if it fails for any
+reason, it could continue on the other functions.  There are a number
+of places where odd calls to \cc{resolveFns} or \cc{resolveCall} could
+be removed.
+
+This would be especially useful with code like:
+\begin{chapel}
+module M1 {
+  use M2;
+  var a = 1;
+  var b = c;
+}
+
+module M2 {
+  use M1;
+  var c = 2;
+  var d = a;
+}
+\end{chapel}
+In this example, the compiler is going to try and fail to resolve one
+of the module initialization functions first.  If it could start
+resolving one, and then switch to the next when failing to resolve the
+type of either \chpl{b} or \chpl{d}, then it would be able to finish
+resolving the first later.
+
+\subsubsection{The Dream of Combined Scope and Function Resolution}
+
+In order to be able to declare variables or use modules in conditional
+statements where the conditional is a parameter such that the variable
+or module is visible in the outer scope, scope resolution and function
+resolution would have to be done at the same time.  This would involve
+maintaining a symbol table while resolving function calls and types.
+It would also involve a bit of rearrangement of the compiler since
+there are a number of things that are done on the whole program
+between scope resolution and calls to \cc{resolveFns} on particular
+functions.
 
 \subsection{checkResolved}
 
@@ -2337,18 +2557,42 @@ wide class is represented as a record with two fields: a locale number
 and a class.  In both cases, the address or class reference is only
 valid on the locale indicated by the locale number.
 
-In this pass, the compiler creates a wide reference type for every
-type and a wide class for every class.  This includes both wide
-references to classes and wide references to wide classes.
-Fortunately, there are no references to references, references to wide
-references, wide references to references, or wide references to wide
-references.  Because enough is enough!
+This pass consists of the following steps:
+\begin{enumerate}
+\item Create a wide reference type for every type and a wide class for
+  every class.  This includes both wide references to classes and wide
+  references to wide classes.  Fortunately, there are no references to
+  references, references to wide references, wide references to
+  references, or wide references to wide references.  Because enough
+  is enough!
 
-TODO
+\item Change all occurrences of references into wide references.  The
+  primitives do not have to change in substantial ways in that the
+  primitives that work over references also work over wide references.
+  There are some simplifications that are necessary, however.  For
+  example, the compiler inserts code to dereference wide references to
+  wide classes in some primitives so that the double remote access
+  will not happen in the same primitive.
+
+\item Create a function to allocate all global variables on the heap
+  on locale 0 and set up wide references to these global variables on
+  other locales.
+
+\item Transform the code in local blocks to check that wide references
+  are local (unless checks are disabled).  TODO
+
+\item Call \cc{narrowWideReferences} to try to eliminate wide
+  references in preference to narrow references if the compiler can
+  prove they are local.  TODO
+\end{enumerate}
 
 \subsection{optimizeOnClauses}
 
-TODO
+This pass marks functions that implement on-statements with the ``fast
+on'' flag if they can be executed directly by the handler on the
+remote locale (rather than being handled by a separate thread on the
+remote locale).  This requires that the code be simple (no
+synchronization, no remote memory accesses, etc.) and relatively fast.
 
 \subsection{insertLineNumbers}
 
@@ -2384,21 +2628,45 @@ possible.
 
 \subsection{codegen}
 
-TODO
+This pass generates C code from the AST.  All declarations, function
+prototypes, etc., are place in single header file called
+\cc{chpl__header.h}.  C code for each module is put into a separate C
+file.  All of these files are included by a file called \cc{_main.c}
+which is compiled in the \cc{makeBinary} pass.
+
+To compile each module, the compiler invokes the \cc{codegenDef}
+method on the ModuleSymbol node.  The recursive functions
+\cc{codegenDef} and \cc{codegen} generate the code.  This design makes
+fewer assumptions about the normalized form than it can.  In
+particular, it assumes there may be deeper recursion than will
+actually occur given normalization.
+
+One of the more elaborate parts of code generation relates to the
+generation of primitives.  This is complicated by the reference
+semantics since the code we generate for many primitives depends on
+whether the type of the argument is a reference or not.
 
 \subsection{makeBinary}
 
-TODO
+This pass invokes the C compiler and linker via the Makefile created
+during the codegen pass.
 
 \subsection{What Happens Between Passes?}
 \label{sec:betweenpasses}
 
-TODO
+There are two main actions that take place between every pass.  First,
+the compiler traverses the AST and the global vectors of all AST
+nodes, and removes all AST nodes that are not in the AST, reclaiming
+the memory.  Second, the compiler verifies, via verify methods on all
+node types, that the AST is in a coherent state.  This could be turned
+off for non-developers to save time.
+
+In addition, each pass is timed and these times are printed if using
+the --print-passes flag and statistics are gathered and printed if
+using the --print-statistics flag.
 
 \section{Miscellaneous}
 \label{sec:misc}
-
-TODO
 
 \subsection{Compiler Strings}
 \label{sec:strings}
@@ -2414,35 +2682,22 @@ completes.
 Additionally, the function \cc{istr} can convert an integer to a
 canonicalized string.
 
-\subsection{To Do List}
+\subsection{Debugging the Compiler}
 
-What are the capabilities and caveats of the param (compile-time) system?
+TODO
 
-How to augment the AST with additional nodes.  Having examples of how
-to create new classes, fields and methods in classes, functions,
-annotations, etc would be super helpful.
+What happens when compiling with the --gdb flag?
 
-What the workflow is for working on the compiler
+What new GDB commands are enabled and what functions are useful?
 
-Compiling with -gdb
+What happens when compiling with the --html (-t) flag?
 
-What new commands gdb has (lv, nv, etc) and how to use them
+\subsection{Possible Compiler Improvements}
 
-Compiling with -html and what it's for
+TODO
 
-Other flags?
+Use multiple intermediate representations!
 
-If you could refactor some part of the compiler, what would it be?  Why?
-
-What parts need to be fleshed out with more functionality?
-
-Is there anything we should scrap/rethink completely?
-
-
-What is \cc{_type_construct_call}?  It seems like it's created and then
-later removed.
-
-What is \cc{_mt} in the "this" method?  Is this an index?
-
+Eliminate the SymExpr node!
 
 \end{document}
