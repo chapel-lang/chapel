@@ -2,8 +2,8 @@
 
  * Copyright 2002, 2005 Hanhong Xue (macroxue at yahoo dot com)
 
- * Slightly modified 2005 by Torbjorn Granlund to allow more than 2G
-   digits to be computed.
+ * Slightly modified 2005 by Torbjorn Granlund (tege at swox dot com) to allow
+   more than 2G digits to be computed.
 
  * Translated into Chapel by Brad Chamberlain, 2009-2010
 
@@ -41,8 +41,6 @@ param BITS_PER_DIGIT  = 3.32192809488736234787,
 config param HAVE_DIVEXACT_PREINV = false;
 
 config param printTimings = true;
-
-config param GMP_MP_RELEASE = 50001;
 
 def CHECK_MEMUSAGE {
   //  writeln("CHECK_MEM_USAGE not implemented yet");  
@@ -292,7 +290,6 @@ def build_sieve(s: [] sieve_t) {
 }
 
 
-// r = sqrt(x)
 def my_sqrt_ui(inout r: mpf_t, x: c_ulong) {
   const prec0 = mpf_get_prec(r);
 
@@ -326,27 +323,25 @@ def my_sqrt_ui(inout r: mpf_t, x: c_ulong) {
       mpf_set_prec_raw(t1, prec);
       mpf_add(t1, t1, t2);
     } else {
+      prec = prec0;
+      /* t2=x*t1, t1 = t2+t1*(x-t2*t2)/2; */
+      mpf_set_prec_raw(t2, prec/2);
+      mpf_mul_ui(t2, t1, x);
+      mpf_mul(r, t2, t2);          // half x half -> full
+      mpf_ui_sub(r, x, r);
+      mpf_mul(t1, t1, r);          // half x half -> half
+      mpf_div_2exp(t1, t1, 1);
+      mpf_add(r, t1, t2);
       break;
     }
     prec -= (bits&1);
     bits /=2;
   }
-  /* t2=x*t1, t1 = t2+t1*(x-t2*t2)/2; */
-  mpf_set_prec_raw(t2, prec0/2);
-  mpf_mul_ui(t2, t1, x);
-  mpf_mul(r, t2, t2);          // half x half -> full
-  mpf_ui_sub(r, x, r);
-  mpf_mul(t1, t1, r);          // half x half -> half
-  mpf_div_2exp(t1, t1, 1);
-  mpf_add(r, t1, t2);
 }
 
 
 // r = y/x   WARNING: r cannot be the same as y.
 def my_div(inout r: mpf_t, inout y: mpf_t, in x: mpf_t) {
-  if GMP_MP_RELEASE >= 50001 then
-    return mpf_div(r, y, x);
-
   const prec0 = mpf_get_prec(r);
 
   if (prec0<=DOUBLE_PREC) {
@@ -579,8 +574,8 @@ def fac_remove_gcd(inout p: mpz_t, inout fp: fac_t, inout g: mpz_t, inout fg: fa
       mpz_divexact_pre (p, p, gcd, mgcd);
       mpz_divexact_pre (g, g, gcd, mgcd);
     } else {
-      mpz_divexact(p, p, gcd);
-      mpz_divexact(g, g, gcd);
+      mpz_tdiv_q(p, p, gcd);
+      mpz_tdiv_q(g, g, gcd);
     }
     fac_compact(fp);
     fac_compact(fg);
