@@ -5,7 +5,8 @@ GTM_CFLAGS += -DSTM_STATS
 
 STM_SRCS = \
 	stm-gtm.c \
-	stm-gtm-comm.c \
+	stm-gtm-desc.c \
+	stm-gtm-memory.c \
 	stm-gtm-$(VER).c \
 	stm-gtm-stats.c \
 	

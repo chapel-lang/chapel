@@ -8,6 +8,7 @@
 #include "error.h"
 #include "stm-gtm.h"
 #include "stm-gtm-atomic.h"
+#include "stm-gtm-memory.h"
 
 #define LOCK_SET_TIMESTAMP(t)       (t << 1)        // Unset WRITE bit
 #define LOCK_GET_TIMESTAMP(lock)    (((unsigned long)lock) >> 1) 
@@ -102,6 +103,8 @@ int gtm_tx_commitPh2(chpl_stm_tx_t* tx) {
   	ATOMIC_STORE_MB(wentry->lock, LOCK_SET_TIMESTAMP(commitstamp));
     }
   }
+  gtm_tx_memset_commit(tx);
+  gtm_tx_cleanup(tx);
   return TX_OK;
 }
 
@@ -119,6 +122,8 @@ void gtm_tx_abort(chpl_stm_tx_t* tx) {
     else
       ATOMIC_STORE(wentry->lock, version);
   }
+  gtm_tx_memset_abort(tx);
+  gtm_tx_cleanup(tx);
 }
 
 int gtm_tx_load_word(chpl_stm_tx_t* tx, gtm_word_p dstaddr, gtm_word_p srcaddr) {

@@ -18,10 +18,21 @@ static Vec<BlockStmt*> queue;  // queue of blocks with PRIM_BLOCK_ATOMIC set
 
 static
 bool isOnStack(SymExpr* se) {
-  if(se->var->defPoint->parentSymbol == se->parentSymbol)
+  if (se->var->defPoint->parentSymbol == se->parentSymbol)
     return 1;
   return 0;
 }
+
+// static
+// bool isFormalArg(SymExpr* se) {
+//   FnSymbol *fn = se->getFunction();
+//   int i; 
+//   for (i = 1; i <= fn->numFormals(); i++) {
+//     if (toVarSymbol(se->var) == toVarSymbol(fn->getFormal(i))) 
+//       return 1;
+//   }
+//   return 0;
+// }
 
 // static
 // bool isConst(SymExpr* se) {
@@ -45,6 +56,12 @@ void txUnknownMovePrimitive(CallExpr* call, CallExpr* rhs) {
 }
 
 void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
+  // For now deal with PRIM_MOVE and not internal primitives directly
+  if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+    if (parent->primitive && parent->primitive->tag == PRIM_MOVE) 
+      return;
+  }
+
   switch (call->primitive->tag) {
   case PRIM_ARRAY_SET:
   case PRIM_ARRAY_SET_FIRST: {
@@ -56,18 +73,16 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     break;
   }
   case PRIM_ARRAY_ALLOC: {
-    // SymExpr *se1 = toSymExpr(call->get(1));
-    // SymExpr *se2 = toSymExpr(call->get(2));
-    // SymExpr *se3 = toSymExpr(call->get(3));
-    // call->replace(new CallExpr(PRIM_TX_ARRAY_ALLOC,
-    // 			       tx, se1->var, se2->var, se3->var));
-    USR_WARN(call, "Ignoring ARRAY_ALLOC primitive");
+    SymExpr *se1 = toSymExpr(call->get(1));
+    SymExpr *se2 = toSymExpr(call->get(2));
+    SymExpr *se3 = toSymExpr(call->get(3));
+    call->replace(new CallExpr(PRIM_TX_ARRAY_ALLOC,
+     			       tx, se1->var, se2->var, se3->var));
     break;
   }
   case PRIM_ARRAY_FREE: {
-    // SymExpr *se = toSymExpr(call->get(1));
-    // call->replace(new CallExpr(PRIM_TX_ARRAY_FREE, tx, se->var));
-    USR_WARN(call, "Ignoring ARRAY_FREE primitive");
+    SymExpr *se = toSymExpr(call->get(1));
+    call->replace(new CallExpr(PRIM_TX_ARRAY_FREE, tx, se->var));
     break;
   }
   case PRIM_MOVE: {
@@ -119,9 +134,10 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  INT_ASSERT(valueType == lhs->typeInfo());
 	  if (valueType == dtString)
 	    USR_WARN(call, "FIXME: string type (FLAG_WIDE GET_REF)");
-	  else
+	  else {
 	    call->replace(new CallExpr(PRIM_TX_GET_REF, 
 				       tx, lhs->var, se->var));
+	  }
 	} else if (se->typeInfo() == dtString) {
 	  USR_WARN(call, "FIXME: string type (GET_REF)");
 	} else {
@@ -155,7 +171,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 					    tx, tmp, se1->var, se2->var));
 	    rhs->replace(new SymExpr(tmp)); 
 	  } else {
-	    if (!isOnStack(se1)) 
+	    //	    if (!isOnStack(se1)) 
+	    // if(!isFormalArg(se1))
+	    if (!strstr(se1->parentExpr->getFunction()->name, "tx_clone_wrapon"))
 	      call->replace(new CallExpr(PRIM_TX_LOAD_MEMBER_VALUE, 
 					 tx, lhs->var, se1->var, se2->var));
 	  }
@@ -175,7 +193,6 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  if (!isOnStack(se1)) 
 	    USR_WARN(call, "Heap load not instrumented (GET_MEMBER)");    
 	  break;
-
 	} else if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
 	  if (!isOnStack(se1)) 
 	    USR_WARN(call, "Heap load not instrumented (GET_MEMBER)");
@@ -214,8 +231,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	} else {
 	  INT_ASSERT(lhs->getValType() == rhs->getValType());
 	  if (!isOnStack(se1))
+	  //	  if (!isFormalArg(se1) || !isOnStack(se1))
 	    call->replace(new CallExpr(PRIM_TX_LOAD_SVEC_MEMBER_VALUE, 
-                                       tx, lhs->var, se1->var, se2->var));
+				       tx, lhs->var, se1->var, se2->var));
         }
         break;
       }
@@ -281,10 +299,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se1);
 	INT_ASSERT(se2);
 	INT_ASSERT(toVarSymbol(se2->var));
-	// const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
-	// rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC, se1->var, tx, 
-	// 			  newMemDesc(astr("stm ", memDescStr))));
-	USR_WARN(call, "Ignoring CHPL_ALLOC primitive");
+	const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
+	rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC, se1->var, tx, 
+	 			  newMemDesc(astr("stm ", memDescStr))));
       	break;
       }
       if (rhs->isPrimitive(PRIM_CHPL_ALLOC_PERMIT_ZERO)) {
@@ -293,10 +310,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se1);
 	INT_ASSERT(se2);
 	INT_ASSERT(toVarSymbol(se2->var));
-	// const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
-	// rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO, se1->var, 
-	// 			  tx, newMemDesc(astr("stm ", memDescStr))));
-	USR_WARN(call, "Ignoring CHPL_ALLOC_PERMIT_ZERO primitive");
+	const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
+	rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO, se1->var, 
+	 			  tx, newMemDesc(astr("stm ", memDescStr))));
       	break;
       }
       if (rhs->isPrimitive(PRIM_UNARY_MINUS)    ||
@@ -385,11 +401,11 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       break;
     }   
     if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      if (lhs->typeInfo()->symbol->hasFlag(FLAG_REF)) {
 	SymExpr* rhs = toSymExpr(call->get(2));
 	INT_ASSERT(rhs);
 	INT_ASSERT(isOnStack(rhs));
-	if (isOnStack(rhs) && !isOnStack(lhs))
+	if (!isOnStack(lhs))
 	  call->replace(new CallExpr(PRIM_TX_STORE_REF,
 				     tx, lhs->var, rhs->var));
 	break;
@@ -397,7 +413,8 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	USR_FATAL(call, "STAR TUPLE in store case");
 	SymExpr* rhs = toSymExpr(call->get(2));
 	INT_ASSERT(rhs);
-	if (isOnStack(rhs) && !isOnStack(lhs)) {
+	INT_ASSERT(isOnStack(rhs));
+	if (!isOnStack(lhs)) {
 	  call->replace(new CallExpr(PRIM_TX_STORE, tx, lhs->var, rhs->var));
 	}
 	break;
@@ -408,16 +425,17 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       SymExpr* rhs = toSymExpr(call->get(2));
       INT_ASSERT(rhs);
       INT_ASSERT(isOnStack(rhs));
-      if (isOnStack(rhs) && !isOnStack(lhs))
-	call->replace(new CallExpr(PRIM_TX_STORE_REF,
-				   tx, lhs->var, rhs->var));
+      if (!isOnStack(lhs))
+	call->replace(new CallExpr(PRIM_TX_STORE_REF, tx, lhs->var, rhs->var));
       break;
     } else {
       SymExpr* rhs = toSymExpr(call->get(2));
       INT_ASSERT(rhs);
       if (isOnStack(rhs) && !isOnStack(lhs)) 
 	call->replace(new CallExpr(PRIM_TX_STORE, tx, lhs->var, rhs->var));
-          break;
+      else if (!isOnStack(rhs) && !isOnStack(lhs))
+	USR_WARN(call, "Write case 7 not instrumented");
+      break;
     }
     txUnknownPrimitive(call);    
   }
@@ -469,7 +487,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       call->replace(new CallExpr(PRIM_TX_SET_MEMBER,
 				 tx, se1->var, se2->var, se3->var));      
     } else {
-      if (!isOnStack(se1)) 
+      //      if (!isOnStack(se1)) 
 	call->replace(new CallExpr(PRIM_TX_STORE_MEMBER,
 				   tx, se1->var, se2->var, se3->var));
     }
@@ -499,18 +517,24 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     USR_WARN("Ignoring FREE_TASK_LIST primitive");
     break;
   case PRIM_SET_SERIAL:
-    // Writes thread-local storage, no STM instrumentation required
+    // Writing thread-local storage, no STM instrumentation required
     break;
   case PRIM_CHPL_FREE: {
     SymExpr* se = toSymExpr(call->get(1));
     INT_ASSERT(se);
-    //    call->replace(new CallExpr(PRIM_TX_CHPL_FREE, tx, se->var));
-    USR_WARN(call, "Ignoring CHPL_FREE primitive");
+    call->replace(new CallExpr(PRIM_TX_CHPL_FREE, tx, se->var));
     break;
   }
   case PRIM_CAST:
   case PRIM_BLOCK_LOCAL:
   case PRIM_BLOCK_ATOMIC:
+    // In original functions that have an atomic block: This has the
+    // straight forward effect of simply skipping the primitive. 
+    // In transactional clones that have an atomic block: We simply
+    // chose to ignore this primitive completeley since the whole
+    // function body has to be processed. In other words, when we
+    // choose to process cloned functions, we add its entire function
+    // body to the queue and not just the atomic blocks within the clone
   case PRIM_BLOCK_WHILEDO_LOOP:
   case PRIM_BLOCK_FOR_LOOP:
   case PRIM_RT_ERROR:
@@ -534,9 +558,13 @@ createTxFnClone(FnSymbol* fn) {
 }
 
 void handleFunctionCalls(BlockStmt* block, CallExpr* call, FnSymbol* fn, Symbol* tx) {
-  if (strstr(fn->name, "halt")) return;
 
-  if (strstr(fn->name, "__tx_clone")) return;
+  if (strstr(fn->name, "halt")) return;
+  if (strstr(fn->name, "compilerWarning")) return;
+  
+  if (strstr(fn->name, "__tx_clone")) {
+    USR_FATAL("Recursive cloning of cloned function %s", fn->name, fn);
+  }
 
   FnSymbol* fnTxClone = fnCache.get(fn);
   
@@ -557,10 +585,13 @@ void handleFunctionCalls(BlockStmt* block, CallExpr* call, FnSymbol* fn, Symbol*
     fnTxClone->addFlag(FLAG_TX_ON_BLOCK);
   } 
 
-  // add clone to queue if not already done so
+  // add clone to queue and insert fnTxClone's function definition
+  // this case is required to deal with functions that were cloned in
+  // but did not get added to the queue since we did not have enough 
+  // information at that time to even determine in such a clone will 
+  // actually be required. 
   if (!queue.in(fnTxClone->body)) { 
     queue.add(fnTxClone->body);
-    // insert fnTxClone's function definition
     fn->defPoint->insertBefore(new DefExpr(fnTxClone));
   }
 
@@ -570,80 +601,75 @@ void handleFunctionCalls(BlockStmt* block, CallExpr* call, FnSymbol* fn, Symbol*
   call->insertAtHead(tx);
 }
 
-static void
-insertSTMCalls() {
+void
+insertTransactions(void) {
   Symbol* tx;
   Symbol* env;
+
+  // collect all explicitly marked atomic blocks
+  forv_Vec(BlockStmt, block, gBlockStmts) 
+    if (block->parentSymbol &&
+	block->blockInfo &&
+	block->blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC)) 
+      queue.add(block);
+  
+  // iteratively process each block in the queue
   forv_Vec(BlockStmt, block, queue) {
     Vec<CallExpr*> calls;
     collectCallExprs(block, calls);  
  
-    if (block->blockInfo && block->blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC)) {
-      if (FnSymbol* fn = block->getFunction()) {
-	if (strstr(fn->name, "__tx_clone_")) {
-	  // fn is a clone, get the tx descriptor from its formal arg list.
-	  // Type I functions will appear here since they don't get added 
-	  // to the queue until they change to Type III. 
-	  INT_ASSERT(queue.in(fn->body));
-	  tx = fn->getFormal(1); 
-	} else {
-	  // fn most probably might be just a Type I function but we are 
-	  // being careful and treating it as a Type III function. 
-	  // since fn doesn't have a clone yet, so create one and cache it. 
-	  // don't insert it into the IR yet. 
-	  // also create a new transaction descriptor for this atomic block  
-	  USR_WARN(fn, "Adding clone for Type I");
-	  //	  FnSymbol* fnTxClone = createTxFnClone(fn);
-	  //	  fnCache.put(fn, fnTxClone); 
-	  tx = newTemp("tx", dtTransaction);
-	  block->insertAtHead(new DefExpr(tx));
-	  env = newTemp("local_env", dtTxEnv);
-	  block->insertAtHead(new DefExpr(env));
-	}
-      } else {
-	USR_FATAL(block, "Cannot deal with indirect or external functions");
-      }
-    }
+    FnSymbol* fn = block->getFunction();
+    INT_ASSERT(fn);
+    // USR_PRINT("Processing function %s %p", fn->name, fn); 
 
-    if (block->blockInfo && block->blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC)) {
+    if (strstr(fn->name, "__tx_clone_")) {
+      // fn is already a transactional clone, get the tx descriptor 
+      // from its formal arg list. Note, we will be processing
+      // the entire function body for cloned functions.
+      tx = fn->getFormal(1); 
+    } else {
+      // fn may be cloned later, but for now we create a clone so 
+      // that we have a "fresh" version of the function. We process
+      // function clones later as and when they are called. Note,
+      // we will be processing only atomic blocks within regular fns.
+      INT_ASSERT(block->blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC));
+      // USR_PRINT("Creating clone for function %s %p", fn->name, fn);
+      FnSymbol* fnTxClone = fnCache.get(fn);
+      if (!fnTxClone) {
+	fnTxClone = createTxFnClone(fn);
+	fnCache.put(fn, fnTxClone);
+	fnCache.put(fnTxClone, fnTxClone);
+      }
+      tx = newTemp("tx", dtTransaction);
+      block->insertAtHead(new DefExpr(tx));
+      env = newTemp("local_env", dtTxEnv);
+      block->insertAtHead(new DefExpr(env));
       block->insertAtHead(new CallExpr(PRIM_TX_BEGIN, tx, env));
       block->insertAtTailBeforeGoto(new CallExpr(PRIM_TX_COMMIT, tx));
-    }
+    }  
 
     forv_Vec(CallExpr, call, calls) {
       if (call->primitive) {
-	if (CallExpr* parent = toCallExpr(call->parentExpr)) {
-	  if (parent->primitive && parent->primitive->tag == PRIM_MOVE) 
-	    continue;
-	} else {
-	  handleMemoryOperations(block, call, tx);
-	  continue;
-	}
+	handleMemoryOperations(block, call, tx);
+	continue;
       }
-      FnSymbol* fn = call->isResolved();
-      INT_ASSERT(fn);
-      handleFunctionCalls(block, call, fn, tx);
+      FnSymbol* cloneFn = call->isResolved();
+      INT_ASSERT(cloneFn);
+      if (strstr(cloneFn->name, "waitEndCount")) 
+	gdbShouldBreakHere();
+      if (strstr(cloneFn->name, "readFE")) 
+	gdbShouldBreakHere();
+      handleFunctionCalls(block, call, cloneFn, tx);
     }
   }
-}
 
-void
-insertTransactions(void) {
-  // collect all explicitly marked atomic blocks
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol)
-      if (block->blockInfo)
-	if (block->blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC)) {
-	  queue.add(block);
-	}
-  }
+  // TODO: Remove functions that are never invoked directly but only
+  // through their clones
 
-  insertSTMCalls();
-
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol)
-      if (block->blockInfo) 
-	if (block->blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC))
-	  block->blockInfo->remove();
-  }
+  // remove all explicitly marked atomic blocks
+  forv_Vec(BlockStmt, block, gBlockStmts) 
+    if (block->parentSymbol &&
+	block->blockInfo &&
+	block->blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC)) 
+      block->blockInfo->remove();
 }

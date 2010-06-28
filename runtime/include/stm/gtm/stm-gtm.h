@@ -1,14 +1,15 @@
 #ifndef _stm_gtm_h_
 #define _stm_gtm_h_
 
+#include <assert.h>
 #include <setjmp.h> 
+#include "stm-gtm-memory.h"
 
 //
 // GTM specific macros
 //
 
-#define TX_OK 1
-#define TX_FAIL 0
+enum {TX_FAIL = 0, TX_OK, TX_BUSY};
 
 #define GTM_Safe(tmptx, fncall) do {		\
     if (fncall != TX_OK) {			\
@@ -20,7 +21,7 @@
 
 #define NOLOCALE -1
 
-enum { TX_IDLE = 0, TX_ACTIVE, TX_COMMIT };
+enum { TX_IDLE = 0, TX_ACTIVE, TX_COMMIT, TX_ABORT, TX_AMACTIVE, TX_AMCOMMIT, TX_AMABORT };
 
 extern int32_t chpl_localeID, chpl_numLocales;   // see src/chplcomm.c
 #define MYLOCALE chpl_localeID
@@ -31,7 +32,8 @@ typedef gtm_word_t* gtm_word_p;
 #define GTMWORDSIZE sizeof(gtm_word_t)
 
 typedef jmp_buf chpl_stm_tx_env_t;
-#define chpl_stm_setjmp(txenv) setjmp(txenv)
+
+#define chpl_stm_tx_set_env(txenv) setjmp(txenv)
 
 //
 // read set entry and read set
@@ -74,16 +76,18 @@ typedef struct __writeSet_t {
 //
 
 typedef struct __chpl_stm_tx_t {
+  int32_t id;
   int32_t status;            // TX_IDLE, TX_LACTIVE, etc.
   int32_t nestlevel;         // flat nesting  
-  int32_t srclocale;         // locale that called tx_create 
-  int32_t txlocale;          // locale that called outermost tx_begin
+  int32_t locale;            // locale that called tx_create 
   int32_t numremlocales;     // number of remote locales tx has state
   int32_t* remlocales;       // list of locales on which tx has state
   read_set_t readset;               
   write_set_t writeset;      
   gtm_word_t timestamp;      // commit timestamp
+  chpl_bool rollback;
   chpl_stm_tx_env_t env;     // stores program execution state
+  memset_t* memset;          // tracks memory allocated / freed 
 } chpl_stm_tx_t;
 
 
@@ -106,34 +110,53 @@ static volatile gtm_word_t locks[LOCK_ARRAY_SIZE];
 static volatile gtm_word_t gclock;
 
 //
-// internal interface
+// internal interface for descriptor management (purely local)
 //
 
-void gtm_tx_initialize(chpl_stm_tx_t* tx, int32_t srclocale);
+void gtm_tx_init(void);
+chpl_stm_tx_t* gtm_tx_create(int32_t txid, int32_t txlocale);
 void gtm_tx_cleanup(chpl_stm_tx_t* tx);
+void gtm_tx_destroy(chpl_stm_tx_t* tx);
+
+chpl_stm_tx_t* gtm_tx_comm_create(int32_t txid, int32_t txlocale, int32_t txstatus); 
+void gtm_tx_comm_register(chpl_stm_tx_t* tx, int32_t dstlocale); 
+void gtm_tx_comm_destroy(chpl_stm_tx_t* tx);
+
+//
+// internal interface for transactional operations (purely local)
+//
 
 int gtm_tx_commitPh1(chpl_stm_tx_t* tx);
 int gtm_tx_commitPh2(chpl_stm_tx_t* tx);
 void gtm_tx_abort(chpl_stm_tx_t* tx);
-
 int gtm_tx_load(chpl_stm_tx_t* tx, void* dstaddr, void* srcaddr, size_t size);
 int gtm_tx_load_wrap(chpl_stm_tx_t* tx, void* dstaddr, void* srcaddr, size_t size);
 int gtm_tx_load_word(chpl_stm_tx_t* tx, gtm_word_p dstaddr, gtm_word_p srcaddr);
-
 int gtm_tx_store(chpl_stm_tx_t* tx, void* srcaddr, void* dstaddr, size_t size);
 int gtm_tx_store_wrap(chpl_stm_tx_t* tx, void* srcaddr, void*  dstaddr, size_t size);
 int gtm_tx_store_word(chpl_stm_tx_t* tx, gtm_word_p srcaddr, gtm_word_p dstaddr, gtm_word_t mask);
 
-void gtm_comm_init(void);
-void gtm_comm_exit(void);
+//
+// internal interface for transactional operations (purely remote)
+//
 
-int gtm_comm_tx_commitPh1(chpl_stm_tx_t* tx);
-int gtm_comm_tx_commitPh2(chpl_stm_tx_t* tx);
-void gtm_comm_tx_abort(chpl_stm_tx_t* tx);
+int gtm_tx_comm_commitPh1(chpl_stm_tx_t* tx);
+int gtm_tx_comm_commitPh2(chpl_stm_tx_t* tx);
+void gtm_tx_comm_abort(chpl_stm_tx_t* tx);
+int gtm_tx_comm_get(chpl_stm_tx_t* tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size);
+int gtm_tx_comm_put(chpl_stm_tx_t* tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size);
+int gtm_tx_comm_fork(chpl_stm_tx_t* tx, int32_t dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize);
 
-int gtm_comm_tx_get(chpl_stm_tx_t* tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size);
-int gtm_comm_tx_put(chpl_stm_tx_t* tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size);
+//
+// internal interface for memory management (purely local)
+//
 
-int gtm_comm_tx_fork(chpl_stm_tx_t* tx, int tgtlocale, chpl_fn_int_t fid, void *arg, int arg_size);
+memset_t* gtm_tx_memset_create(chpl_stm_tx_t* tx);
+void gtm_tx_memset_destroy(chpl_stm_tx_t* tx);
+void gtm_tx_memset_cleanup(chpl_stm_tx_t* tx);
+void* gtm_tx_malloc(chpl_stm_tx_t* tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
+void gtm_tx_free(chpl_stm_tx_t* tx, void* addr, int32_t lineno, chpl_string filename);
+void gtm_tx_memset_commit(chpl_stm_tx_t* tx);
+void gtm_tx_memset_abort(chpl_stm_tx_t* tx);
 
 #endif

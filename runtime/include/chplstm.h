@@ -10,7 +10,6 @@ typedef chpl_stm_tx_t* chpl_stm_tx_p;
 typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;
 
 typedef void (*chpl_txfn_p)(chpl_stm_tx_p, void*);
-typedef int16_t chpl_txfn_int_t;
 extern chpl_txfn_p chpl_txftable[];
 
 #define CHPL_STM_TX_ALLOC_PERMIT_ZERO(tx, size , description, ln, fn)	\
@@ -43,7 +42,7 @@ extern chpl_txfn_p chpl_txftable[];
   tx = chpl_stm_tx_create();						\
   txenvptr = chpl_stm_tx_get_env(tx);					\
   if (txenvptr)								\
-    chpl_stm_setjmp(*txenvptr);						\
+    chpl_stm_tx_set_env(*txenvptr);					\
   chpl_stm_tx_begin(tx)
 
 #define CHPL_STM_TX_COMMIT(tx)			\
@@ -55,7 +54,7 @@ extern chpl_txfn_p chpl_txftable[];
       chpl_stm_tx_load(tx, &ldst, (rwide).addr,				\
 		       SPECIFY_SIZE(type), ln, fn);			\
     else 								\
-      chpl_stm_tx_get(tx, &ldst, (rwide).locale, (rwide).addr,	\
+      chpl_stm_tx_get(tx, &ldst, (rwide).locale, (rwide).addr,		\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while(0)
 
@@ -295,7 +294,7 @@ void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* d
 //
 // transactional version of chpl_comm_fork
 //
-void chpl_stm_tx_fork(chpl_stm_tx_p tx, int locale, chpl_fn_int_t fid, void *arg, int arg_size);
+void chpl_stm_tx_fork(chpl_stm_tx_p tx, int locale, chpl_fn_int_t fid, void *arg, size_t argsize);
 
 //
 // transactional malloc

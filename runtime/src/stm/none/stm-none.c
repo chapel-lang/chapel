@@ -44,7 +44,7 @@ void chpl_stm_tx_fork(chpl_stm_tx_p tx, int locale, chpl_fn_int_t fid, void *arg
 }
 
 void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) { 
-  return chpl_malloc(number, size, CHPL_RT_MD_STM_TX_MALLOC, ln, fn);
+  return chpl_malloc(number, size, description, ln, fn);
 }
 
 void chpl_stm_tx_free(chpl_stm_tx_p tx, void* ptr, int32_t ln, chpl_string fn) { 
