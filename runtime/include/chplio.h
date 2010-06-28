@@ -36,4 +36,7 @@ void _readToEndOfLine(FILE* fp);
 char* chpl_refToString(void* ref);
 char* chpl_wideRefToString(void* wideref);
 
+void binfwrite (const void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, int *err);
+void binfread (void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, int *err);
+
 #endif

@@ -108,3 +108,17 @@ char* chpl_wideRefToString(void* wideref) {
   sprintf(buff, "%" PRId32 ":%p", locale, ref);
   return chpl_glom_strings(1, buff);
 }
+
+void binfwrite (const void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, int *err)
+{
+  *res=fwrite(ptr,size, nmemb, stream);
+  *err=errno;
+}
+
+void binfread (void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, int *err)
+{
+
+  *res=fread(ptr,size, nmemb, stream);
+  *err=errno;
+}
+
