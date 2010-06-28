@@ -16,6 +16,8 @@ config const n = 10,               // the number of points
 
 config const debug = false;        // controls debug printing
 
+config const printTiming = false;  // unused, but should be eventually
+
 
 //
 // make sure k is positive because we divide by it

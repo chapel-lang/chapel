@@ -45,7 +45,7 @@ var counts: [1..k] int = 0;
 var c1:[1..k] Data;
 }
 
-var RO: redObj;
+//var RO: redObj;
 var testRedObj: redObj;
 
 
@@ -71,7 +71,7 @@ for ii in 1..k
 class kmeansReduction : ReduceScanOp{
 
 type eltType;
-//var RO : redObj;
+var RO : redObj;
 
 def accumulate (da: eltType)
 {

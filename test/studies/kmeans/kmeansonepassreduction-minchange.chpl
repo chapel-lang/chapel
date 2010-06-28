@@ -34,21 +34,10 @@ for ii in 1..n do
 }
 
 var c:[1..k] Data;
-var error, old_error, t1: real;
+var old_error, t1: real;
 
 
 /*Reduction Object*/
-
-record redObj{
-var error : real = 0;
-var counts: [1..k] int = 0;
-var c1:[1..k] Data;
-}
-
-var RO: redObj;
-var testRedObj: redObj;
-
-
 
 /*initialization*/
 
@@ -71,7 +60,9 @@ for ii in 1..k
 class kmeansReduction : ReduceScanOp{
 
 type eltType;
-//var RO : redObj;
+var error : real = 0;
+var counts: [1..k] int = 0;
+var c1:[1..k] Data;
 
 def accumulate (da: eltType)
 {
@@ -97,37 +88,35 @@ def accumulate (da: eltType)
 
     //Add the result into reduction object
 
-    RO.error = RO.error + min_distance;
+    error = error + min_distance;
 
     //writeln(min_disposition);
     
-    RO.counts[min_disposition] = RO.counts[min_disposition] + 1;
+    counts[min_disposition] = counts[min_disposition] + 1;
     
     for j in 1..m
     {
-        RO.c1[min_disposition].dim[j] = RO.c1[min_disposition].dim[j] + da.dim[j];
+        c1[min_disposition].dim[j] = c1[min_disposition].dim[j] + da.dim[j];
     }
 }
 
 def combine(km: kmeansReduction(eltType))
 {
-    RO.counts = RO.counts + km.RO.counts;
-    RO.error = RO.error + km.RO.error;
+    counts = counts + km.counts;
+    error = error + km.error;
     
     for i in 1..k
     {
         for j in 1..m
         {
-            RO.c1[i].dim[j] = RO.c1[i].dim[j] + km.RO.c1[i].dim[j];
+            c1[i].dim[j] = c1[i].dim[j] + km.c1[i].dim[j];
         }
     }
 }
 
 def generate()
 {
-    var RO1:redObj;
-    RO1 = RO;
-    return RO1;
+  return (error, counts, c1);
 }
 }
 
@@ -136,14 +125,11 @@ def generate()
 //Main function, in order to make it easier, comment out the outside loop firstly.
 
 //do{
-    old_error = error;
-    error = 0;
 
     //used to identify where should we insert a timer.
     writeln("start reduce");
-    var OnePassRedObj: redObj;
     const startTime = getCurrentTime();
-    OnePassRedObj = kmeansReduction reduce data1;
+    var (error, counts, c1) = kmeansReduction reduce data1;
     const endTime = getCurrentTime() - startTime;
 
     write("finish reduce");
@@ -151,27 +137,21 @@ def generate()
       write(": ", endTime);
      writeln();
 
-    testRedObj = OnePassRedObj;
-    
-
     for ii in 1..k
     {
         for jj in 1..m
         {
-            if(OnePassRedObj.counts[ii] != 0)
+            if(counts[ii] != 0)
             {
-                c[ii].dim[jj] = OnePassRedObj.c1[ii].dim[jj]/OnePassRedObj.counts[ii];
+                c[ii].dim[jj] = c1[ii].dim[jj]/counts[ii];
             }
             else
             {
-                c[ii].dim[jj] = OnePassRedObj.c1[ii].dim[jj];
+                c[ii].dim[jj] = c1[ii].dim[jj];
             }
         }
     }
 
-    error = OnePassRedObj.error;
-
-    
     if(error > old_error)
     {
         t1 = error - old_error;
@@ -180,10 +160,11 @@ def generate()
     {
         t1 = old_error - error;
     }
+    old_error = error;
 //}
 //while (t1 > t);
 
 writeln(c);
-writeln(testRedObj.counts);
-writeln(testRedObj.c1);
-writeln(testRedObj.error);
+writeln(counts);
+writeln(c1);
+writeln(error);
