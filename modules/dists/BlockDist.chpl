@@ -827,14 +827,15 @@ def BlockArr.these() var {
     yield dsiAccess(i);
 }
 
+/*
 _extern def binfwrite (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 _extern def binfwrite (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 _extern def binfwrite (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 
-_extern def binfread (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+extern def binfread (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 _extern def binfread (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 _extern def binfread (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-
+*/
 
 def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
 {
@@ -949,6 +950,8 @@ def BlockArr.readBinArray(f: file) {
 //stopCommDiagnosticsHere();
         const privarr=this.dsiPrivatize(dom.pid);
 
+  	var loc_timer: Timer;
+  	loc_timer.start();
         infile.open();
 
 
@@ -994,8 +997,9 @@ def BlockArr.readBinArray(f: file) {
 
 	}
         infile.close();
+        loc_timer.stop();
         if debugBlockDistBenchmark then
-          writeln("BlockArr.readBinArray time to read in locale ",here.id,": ",timer.elapsed(TimeUnits.seconds)," bandwitdh: ",bytes_read/timer.elapsed(TimeUnits.seconds)/(1000*1000)," MiB/s");
+          writeln("BlockArr.readBinArray time to read in locale ",here.id,": ",loc_timer.elapsed(TimeUnits.seconds)," bandwitdh: ",bytes_read/loc_timer.elapsed(TimeUnits.seconds)/(1000*1000)," MiB/s");
     }
   }
 
