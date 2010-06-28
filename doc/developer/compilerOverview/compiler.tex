@@ -1919,7 +1919,11 @@ already resolved or started to resolve.  The algorithmic flow of
   the writes to the returned symbol.  If there is no best type (a type
   the others can dispatch to), flag an error.  Otherwise set the
   \cc{retType} field of \cc{fn}.
-\item Insert casts on any \cc{MOVE} primitive that requires it.
+\item Insert casts on any \cc{MOVE} primitive that requires it.  This
+  is almost certainly done to handle the case of a function returning
+  different types of values in different return statements.  Now that
+  the return type has been determined, the appropriate cast can be
+  inserted.
 \item If \cc{fn} is resolved as an iterator, prototype iterator
   records, classes, and methods.  (See Section~\ref{sec:resolveiter}.)
 \item If \cc{fn} is resolved as a type constructor, identify the type.
@@ -2006,7 +2010,50 @@ the function is ultimately not resolved.
 
 \subsubsection{Runtime Types}
 
-TODO
+Certain types in Chapel, such as array and domain types, are not
+purely static.  They contain dynamic information.  For example, the
+array type is largely static, being composed of an element type and a
+domain type, but the domain value is also part of the array type.
+This is even suggested by Chapel syntax where the value of the domain
+appears in an array type.
+
+To handle these runtime types, the compiler replaces such types by
+values during function resolution.  Thus if a function has a type
+argument and it is called with an array type, the type argument will
+not be eliminated from the function during function resolution but
+will rather be replaced by a value argument with a type that is the
+type of a runtime type value.
+
+The pragma ``has runtime type'' is used to implement runtime types in
+a fairly general way.  This pragma must be applied to the record type
+that has dynamic information associated with it and with a function
+that builds a value of that record type based on the arguments passed
+to the function.  For example, for arrays, this is applied to a
+function as follows:
+\begin{chapel}
+pragma "has runtime type"
+def chpl__buildArrayRuntimeType(dom: domain, type eltType) type
+  return dom.buildArray(eltType);
+\end{chapel}
+The runtime type is thus composed of two fields: a domain (value) and
+an element type (type).  When creating a value from a runtime type, a
+call to this function will be inserted by the compiler, passing the
+values in the runtime type value to the arguments of this function.
+
+In addition, a function called \chpl{chpl__convertValueToRuntimeType}
+must be defined that takes a value of the record and calls the
+function with the pragma.  When determining the type type of a value
+of the record type, a call to this function will be inserted by the
+compiler.
+
+In Chapel, in addition to arrays, domains have runtime types
+consisting of the value of their distribution.  For sparse domains,
+the dense parent domain is also part of the runtime type.
+
+The compiler does not currently correctly handle records or classes
+composed of fields that have runtime types.  That is, if the type of a
+tuple of an array is passed to a function, the runtime type of the
+array component will be lost, to unfortunate effect.
 
 \subsubsection{Scalar Promotion Types}
 
@@ -2579,11 +2626,18 @@ This pass consists of the following steps:
   other locales.
 
 \item Transform the code in local blocks to check that wide references
-  are local (unless checks are disabled).  TODO
+  are local (unless checks are disabled).  This optimization analyzes
+  the code in local blocks for places where wide references or wide
+  classes are accessed such that remote communication may occur.  In
+  this case, a check is inserted to ensure that the wide referene is
+  local to the current locale, and a narrow reference is inserted to
+  capture the address.  Note that wide references can be moved into
+  other wide references even if they are not local, since this does
+  not require communication.
 
-\item Call \cc{narrowWideReferences} to try to eliminate wide
-  references in preference to narrow references if the compiler can
-  prove they are local.  TODO
+\item Call \cc{narrowWideReferences} to replace wide references and
+  wide classes with narrow references and narrow classes if the
+  compiler can prove that this is legal to do.
 \end{enumerate}
 
 \subsection{optimizeOnClauses}
