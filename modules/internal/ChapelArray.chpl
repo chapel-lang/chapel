@@ -374,7 +374,8 @@ record _distribution {
   def clone() {
     return _newDistribution(_value.dsiClone());
   }
-
+  
+  pragma "inline" // SS: adding inline, stack pointer is passed
   def newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     var x = _value.dsiNewArithmeticDom(rank, idxType, stridable);
     if x.linksDistribution() {
@@ -1140,7 +1141,7 @@ def _desync(type t) {
 
 def =(a: [], b: _desync(a.eltType)) {
   if isArithmeticArr(a) {
-    forall e in a do
+    for e in a do     // SS: changing forall to for
       e = b;
   } else {
     compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");

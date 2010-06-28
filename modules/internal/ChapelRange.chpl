@@ -480,7 +480,7 @@ def range.these(param tag: iterator, follower) where tag == iterator.follower {
 //
 // returns the number of elements in this range
 //
-pragma "inline"
+pragma "inline" // SS:
 def range.length {
   if boundedType != BoundedRangeType.bounded then
     compilerError("unbounded range has infinite length");
@@ -496,7 +496,7 @@ def range.length {
 //
 // returns true if i is in this range
 //
-pragma "inline"
+pragma "inline" // SS:
 def range.member(i: idxType) {
   if stridable {
     if boundedType == BoundedRangeType.bounded {
