@@ -596,6 +596,15 @@ def chpl__testPar(args...) where chpl__testParFlag == true {
   if chpl__testParFlag && chpl__testParOn {
     const file : string = __primitive("_get_user_file");
     const line : int = __primitive("_get_user_line");
-    writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
   }
 }
+
+
+_extern def binfwrite (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfwrite (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfwrite (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+
+_extern def binfread (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfread (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfread (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+
