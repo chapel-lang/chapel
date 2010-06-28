@@ -13,6 +13,9 @@ FLAGS += $(F) --no-devel -O --fast --no-checks --print-commands --print-passes
 endif
 
 TARGETS = \
+	atomicSwap \
+	distributedArrayAtomicGetPut \
+	nestedAtomicWithOnClause \
 	omitElseCondUsingAtomicFlag \
 	recursiveFns \
 	serializeWholeArrayAssignment \

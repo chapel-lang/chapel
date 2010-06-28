@@ -62,7 +62,7 @@ module RARandomStream {
 
   //
   // A helper function for advancing a value from the random stream,
-0  // x, to the next value
+  // x, to the next value
   //
   def getNextRandom(inout x) {
     param POLY = 0x7;
