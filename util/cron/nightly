@@ -331,6 +331,9 @@ if ($valgrind == 1) {
 } elsif ($nolocal == 1) {
     $threechars = "nlc";
     $morechars = "nolocal";
+} elsif ($examples == 1) {
+    $threechars = "exm";
+    $morechars = "examples";
 } else {
     $threechars = "std";
     $morechars = "standard";
