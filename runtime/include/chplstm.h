@@ -294,7 +294,7 @@ void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* d
 //
 // transactional version of chpl_comm_fork
 //
-void chpl_stm_tx_fork(chpl_stm_tx_p tx, int locale, chpl_fn_int_t fid, void *arg, size_t argsize);
+void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize);
 
 //
 // transactional malloc

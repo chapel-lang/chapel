@@ -487,7 +487,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       call->replace(new CallExpr(PRIM_TX_SET_MEMBER,
 				 tx, se1->var, se2->var, se3->var));      
     } else {
-      //      if (!isOnStack(se1)) 
+      if (!isOnStack(se1)) 
 	call->replace(new CallExpr(PRIM_TX_STORE_MEMBER,
 				   tx, se1->var, se2->var, se3->var));
     }

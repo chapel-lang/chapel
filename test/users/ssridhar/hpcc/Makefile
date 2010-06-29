@@ -2,7 +2,7 @@ CHPL = chpl
 
 ifeq ($(CHPL_DEVELOPER), true)
 
-FLAGS = $(F) --devel --gen-ids -g --no-checks --print-commands --print-passes -supdateLock=true
+FLAGS = $(F) --devel --gen-ids -g --print-commands --print-passes -supdateLock=true
 
 else
 

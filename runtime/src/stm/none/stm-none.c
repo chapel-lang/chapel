@@ -39,8 +39,8 @@ void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* d
   chpl_comm_put(srcaddr, dstlocale, dstaddr, size, ln, fn);
 }
 
-void chpl_stm_tx_fork(chpl_stm_tx_p tx, int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
-  chpl_comm_fork(locale, fid, arg, arg_size);
+void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize) {
+  chpl_comm_fork(dstlocale, fid, arg, argsize);
 }
 
 void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) { 
