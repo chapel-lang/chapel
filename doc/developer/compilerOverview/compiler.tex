@@ -1641,11 +1641,27 @@ the other two.
 \subsection{Primitives}
 \label{sec:primitives}
 
-TODO
+Primitives implement the primitive functionality that the Chapel
+compiler can reason about.  For example, the common primitive
+\cc{PRIM_MOVE} or ``move'' implements C-level assignment.  The
+left-hand side, or first actual, is the lvalue and must be a SymExpr.
+The right-hand side can be another SymExpr node or a CallExpr node.
+After normalization, this is the only case of nested call expressions.
 
 \subsection{Pragmas}
 \label{sec:flags}
 \label{sec:pragmas}
+
+Pragmas in internal Chapel code are translated into flags in the
+compiler.  Flags are stored on symbols in a bit vector.  They are
+defined by a large enumerated type where each enumeration constant
+starts with the prefix \cc{FLAG_}.  The name of the flag should match
+the name of the pragma where underscores in the flag are changed to
+spaces in the pragma and uppercase letters in the flag are changed to
+lowercase letters in the pragma.
+
+Flags are an important aspect of the Chapel implementation and the
+compiler often treats constructs specially based on flags.
 
 The flags are manipulated via the following methods on Symbol:
 \begin{clang}
@@ -1659,8 +1675,6 @@ These functions check to see if a flag applies to a symbol (the symbol
 has a flag), add flags to a symbol (\cc{addFlags} takes the flags as
 pragmas (strings) and is used in the parser), copy flags (also used in
 the parser), and remove flags from a symbol.
-
-TODO
 
 \section{Passes}
 \label{sec:passes}
@@ -1810,11 +1824,69 @@ pass.  It just isn't doing much of anything.
 
 \subsection{normalize}
 
+This pass transforms the AST into a normalized form.  The
+transformations can be grouped into two sets, those transforms done in
+the following function and those not:
 \begin{clang}
 void normalize(BaseAST* base);
 \end{clang}
+This particular function is called on functions that the compiler
+creates after this pass but before function resolution completes,
+namely wrapper functions created during function resolution and
+default functions created during \cc{buildDefaultFunctions}.
 
-TODO
+The normalize function makes the following transformations:
+\begin{enumerate}
+\item Handle syntactic sugar for distributions.
+\item Normalize return statements so that each function has a single
+  return statement as the last statement in the function.  Other
+  return statements are replaced by a use of the ``move'' primitive to
+  assign the result to a single return symbol followed by a goto
+  statement to a label immediately before the return statement at the
+  end of the function.
+\item Lower DefExpr statements for variables so that the \cc{init} and
+  \cc{exprType} fields become nil, and ``move'' primitives are used
+  after the DefExpr statement to initialize the value as appropriate.
+\item Lower member invocations so that a method call is transformed
+  into a CallExpr node with a this argument, and a method token
+  argument.
+\item Insert temporaries to avoid any nested CallExpr nodes.  The
+  single exception, and an important and widespread case, is a
+  ``move'' primitive with a CallExpr as the right-hand side argument.
+\item Insert a ``move'' primitive around user-level invocations of
+  assignment.
+\item Call constructors for class type instantiations.
+\end{enumerate}
+
+In addition to calling the normalize function on the AST, the
+normalize pass makes the following transformations:
+\begin{enumerate}
+\item Identify iterator functions based on the existence of yield
+  statements.
+\item Replace ``delete'' primitives with calls to \cc{chpl_destroy}.
+\item Lower array formal arguments to possibly generic array arguments
+  with potential reindexing done within the function.
+\item Clone methods on the complex type to work on all complex sizes.
+\item Lower query identifiers in formal arguments and clone functions
+  on queried primitive types to all sizes.
+\item Identify methods of the name type and change them into
+  constructors.
+\item Call the normalize function on the entire AST.
+\item Check for invalid configuration parameters.
+\item Check for ``use before def'' errors.
+\item Move functions out of a module's initialize function since these
+  are global functions.
+\item Insert ``use'' scoping for functions that are called via an
+  explicit module, \eg, \chpl{M.foo()}.
+\item Check for invalid use of ``new'' keyword.
+\item Insert functions around any statement-level SymExpr to ensure
+  that sync and/or single variables are read.
+\item Resolve simple argument types and set argument types for
+  arguments specified with default values but not types.  The type is
+  taken from the default value.
+\item Check for invalid destructor uses.
+\item Check for invalid operator methods.
+\end{enumerate}
 
 \subsection{checkNormalized}
 
@@ -2735,23 +2807,5 @@ completes.
 
 Additionally, the function \cc{istr} can convert an integer to a
 canonicalized string.
-
-\subsection{Debugging the Compiler}
-
-TODO
-
-What happens when compiling with the --gdb flag?
-
-What new GDB commands are enabled and what functions are useful?
-
-What happens when compiling with the --html (-t) flag?
-
-\subsection{Possible Compiler Improvements}
-
-TODO
-
-Use multiple intermediate representations!
-
-Eliminate the SymExpr node!
 
 \end{document}
