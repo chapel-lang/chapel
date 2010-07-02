@@ -6,14 +6,14 @@ module advection1d_driver {
   config const time_final:       real = 1.0;
   config const velocity:         real = 2.0;
 
-  use grid1d_definitions;
+  use grid_data;
   use clawpack_output_routines;
 
 
   def main {
 
   //---- Initialize the grid ----
-    var grid = new GridData(-1.0, 1.0, num_cells, 2);
+    var grid = new Grid(-1.0, 1.0, num_cells, 2);
 
 
   //===> Initialize solution ===>
@@ -61,27 +61,27 @@ module advection1d_driver {
       while (time < time_out) do {
 
         //---- Adjust time step to hit output time if necessary ----
-	  if (time+dt_target > time_out) then
-	    dt_used = time_out-time;
-	  else
-	    dt_used = dt_target;
+    	  if (time+dt_target > time_out) then
+    	    dt_used = time_out-time;
+    	  else
+    	    dt_used = dt_target;
        
         //---- Define fluxes at each edge ----
-	  for edge in grid.edges do
-	    flux(edge) = velocity * q( grid.cell_left_of(edge) );
+    	  for edge in grid.edges do
+    	    flux(edge) = velocity * q( grid.cell_left_of(edge) );
 
         //---- Update solution on each cell ----
-	  for cell in grid.physical_cells do {
-	    q(cell) = q(cell) - dt_used/grid.dx *
-	              (  flux( grid.edge_right_of(cell) )  -  flux( grid.edge_left_of(cell) )  );
-	  }
+    	  for cell in grid.physical_cells do {
+    	    q(cell) = q(cell) - dt_used/grid.dx *
+    	              (  flux( grid.edge_right_of(cell) )  -  flux( grid.edge_left_of(cell) )  );
+    	  }
 
         //---- Fill in ghost cells for use at next step ----
-	  q(grid.left_ghost_cells)  = q(grid.periodic_image_of_left_ghost_cells);
-	  q(grid.right_ghost_cells) = q(grid.periodic_image_of_right_ghost_cells);
+    	  q(grid.left_ghost_cells)  = q(grid.periodic_image_of_left_ghost_cells);
+    	  q(grid.right_ghost_cells) = q(grid.periodic_image_of_right_ghost_cells);
 
-        //---- Update time ----
-	  time += dt_used;
+      //---- Update time ----
+      time += dt_used;
       }
     //<=== Step to next output time <===
 

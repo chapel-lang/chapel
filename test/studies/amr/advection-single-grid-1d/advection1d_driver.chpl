@@ -6,34 +6,32 @@ module advection1d_driver {
   config const time_final:       real = 1.0;
   config const velocity:         real = 2.0;
 
-  use grid1d_definitions;
+  use grid_data;
   use clawpack_output_routines;
 
 
   def main {
 
-  //---- Initialize the grid ----
-    var grid = new GridData(-1.0, 1.0, num_cells, 2);
+    //---- Initialize the mygrid ----
+    var mygrid = new OneDimensionalGrid(-1.0, 1.0, num_cells, 2);
+    var mygrid2 = new OneDimensionalGrid(-2.0, 1.0, num_cells, 2);    
+    var q2 = new GridFunction(mygrid);
+    
+    mygrid.upwind_constant_advection(q2, 1.0, 2.0);
 
-  //---- Variables for iteration and convenience ----
-/*     var edge_left: int, */
-/*       edge_right: int, */
-/*       i: int; */
+    //===> Initialize solution ===>
+    var x_cell: [mygrid.physical_cells] real;
+    var q:      [mygrid.all_cells] real;
 
-  //===> Initialize solution ===>
-    var x_cell: [grid.physical_cells] real;
-    var q:      [grid.all_cells] real;
-
-    for cell in grid.physical_cells do {
-      x_cell(cell) = grid.x_low + (cell:real - 0.5)*grid.dx;
+    for cell in mygrid.physical_cells do {
+      x_cell(cell) = mygrid.x_low + (cell:real - 0.5)*mygrid.dx;
     }
 
     const pi : real = 4.0*atan(1.0);
-    q(grid.physical_cells)    = sin(pi*x_cell);
-    q(grid.left_ghost_cells)  = q(grid.periodic_image_of_left_ghost_cells);
-    q(grid.right_ghost_cells) = q(grid.periodic_image_of_right_ghost_cells);
-  //<=== Initialize solution <===
-
+    q(mygrid.physical_cells)    = sin(pi*x_cell);
+    q(mygrid.left_ghost_cells)  = q(mygrid.periodic_image_of_left_ghost_cells);
+    q(mygrid.right_ghost_cells) = q(mygrid.periodic_image_of_right_ghost_cells);
+    //<=== Initialize solution <===
 
 
     var time: real = time_initial;
@@ -44,54 +42,53 @@ module advection1d_driver {
       output_times(i) = time_initial + i:real*dt_output;
 
 
-    var dt_target:  real = 0.9*grid.dx/velocity;
+    var dt_target:  real = 0.9*mygrid.dx/velocity;
     var dt_used:    real;
-    var flux: [grid.edges] real;
+    var flux: [mygrid.edges] real;
     var frame_number: int;
 
 
-  //---- Start time ----
+    //---- Start time ----
     time = time_initial;
 
-  //---- Write output at first time ----
+    //---- Write output at first time ----
     frame_number = 0;
-    write_output(frame_number, time, q, grid);
+    write_output(frame_number, time, q, mygrid);
 
-
-  //===> Time-stepping loop ===>
+    //===> Time-stepping loop ===>
     for time_out in output_times do {
 
-    //===> Step to next output time ===>
+      //===> Step to next output time ===>
       while (time < time_out) do {
 
         //---- Adjust time step to hit output time if necessary ----
-	  if (time+dt_target > time_out) then
-	    dt_used = time_out-time;
-	  else
-	    dt_used = dt_target;
+        if (time+dt_target > time_out) then
+          dt_used = time_out-time;
+        else
+          dt_used = dt_target;
        
         //---- Define fluxes at each edge ----
-	  for edge in grid.edges do
-	    flux(edge) = velocity * q( grid.cell_left_of(edge) );
+    	  for edge in mygrid.edges do
+    	    flux(edge) = velocity * q( mygrid.cell_left_of(edge) );
 
         //---- Update solution on each cell ----
-	  for cell in grid.physical_cells do {
-	    q(cell) = q(cell) - dt_used/grid.dx *
-	              (  flux( grid.edge_right_of(cell) )  -  flux( grid.edge_left_of(cell) )  );
-	  }
+    	  for cell in mygrid.physical_cells do {
+    	    q(cell) = q(cell) - dt_used/mygrid.dx *
+    	              (  flux( mygrid.edge_right_of(cell) )  -  flux( mygrid.edge_left_of(cell) )  );
+    	  }
 
         //---- Fill in ghost cells for use at next step ----
-	  q(grid.left_ghost_cells)  = q(grid.periodic_image_of_left_ghost_cells);
-	  q(grid.right_ghost_cells) = q(grid.periodic_image_of_right_ghost_cells);
+    	  q(mygrid.left_ghost_cells)  = q(mygrid.periodic_image_of_left_ghost_cells);
+    	  q(mygrid.right_ghost_cells) = q(mygrid.periodic_image_of_right_ghost_cells);
 
         //---- Update time ----
-	  time += dt_used;
+    	  time += dt_used;
       }
-    //<=== Step to next output time <===
+      //<=== Step to next output time <===
 
-    //---- Write output to file ----
+      //---- Write output to file ----
       frame_number += 1;
-      write_output(frame_number, time, q, grid);
+      write_output(frame_number, time, q, mygrid);
     }
   //<=== Time-stepping loop <===
 

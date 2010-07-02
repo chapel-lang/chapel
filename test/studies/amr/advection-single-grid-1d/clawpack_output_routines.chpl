@@ -1,6 +1,6 @@
 module clawpack_output_routines {
 
-  use grid1d_definitions;
+  use grid_data;
 
   var meqn: int = 1,
     ngrids: int = 1,
@@ -14,7 +14,7 @@ module clawpack_output_routines {
   var sfmt: string = "%16s";
 
 
-  def write_output(frame_number: int, time: real, q: [] real, grid: GridData){
+  def write_output(frame_number: int, time: real, q: [] real, grid: OneDimensionalGrid){
 
     var frame_string: string = format("%04i", frame_number);
     var name_of_time_file: string = "_output/fort.t" + frame_string;

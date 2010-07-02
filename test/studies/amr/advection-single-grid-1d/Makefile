@@ -1,4 +1,4 @@
-CHPLC = $(CHPL_HOME)/bin/linux64/chpl
+CHPLC = $(CHPL_HOME)/bin/darwin/chpl
 
 CLAW_OUTDIR = _output               # Directory for output
 CLAW_setplot_file = setplot.py      # File containing function to set plots
@@ -7,7 +7,7 @@ PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
 
 SOURCES = \
 	advection1d_driver.chpl \
-	grid1d_definitions.chpl \
+	grid_data.chpl \
 	clawpack_output_routines.chpl
 
 
@@ -18,7 +18,7 @@ NUM_OUTPUT = 10
 .PHONY: clean
 
 plots: output $(CLAW_setplot_file)
-	rm _plots/*
+	rm -f _plots/*
 	$(PLOTCMD) $(CLAW_OUTDIR) $(CLAW_PLOTDIR) $(CLAW_setplot_file)
 	@echo $(CLAW_PLOTDIR) > plots
 
