@@ -1,4 +1,4 @@
-CHPLC = $(CHPL_HOME)/bin/linux64/chpl
+CHPLC = chpl
 
 CLAW_OUTDIR = _output               # Directory for output
 CLAW_setplot_file = setplot.py      # File containing function to set plots
@@ -7,13 +7,11 @@ PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
 
 SOURCES = \
 	advection1d_driver.chpl \
-	grid_data.chpl \
-	clawpack_output_routines.chpl
-
+	grid_data.chpl
 
 NUM_CELLS = 50
 NUM_OUTPUT = 10
-
+VELOCITY = -2.0
 
 .PHONY: clean
 
@@ -24,7 +22,7 @@ plots: output $(CLAW_setplot_file)
 
 output: advect1d
 	rm -f _output/fort.*
-	./advect1d --num_cells=$(NUM_CELLS) --num_output_times=$(NUM_OUTPUT)
+	./advect1d --num_cells=$(NUM_CELLS) --num_output_times=$(NUM_OUTPUT) --velocity=$(VELOCITY)
 	@echo "Output generated"
 	@echo $(CLAW_OUTDIR) > output
 

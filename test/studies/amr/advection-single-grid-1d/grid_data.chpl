@@ -58,23 +58,19 @@ module grid_data {
 
       //---- Core domains ----
       physical_cells = [1 .. #num_cells];
-
       all_cells      = [physical_cells.low - num_ghost_cells
                         .. physical_cells.high + num_ghost_cells];
-
       edges          = [edge_right_of(all_cells.low) 
                         .. edge_left_of(all_cells.high)];
 
       //---- Domains for ghost cells and their periodic images ----
       left_ghost_cells  = [physical_cells.low - num_ghost_cells 
                            .. #num_ghost_cells];
-
       right_ghost_cells = [physical_cells.high + 1 
                            .. #num_ghost_cells];
-
+                           
       periodic_image_of_right_ghost_cells = [physical_cells.low 
                                              .. #num_ghost_cells];
-
       periodic_image_of_left_ghost_cells  = [physical_cells.high - num_ghost_cells + 1 
                                              .. #num_ghost_cells];
     }
@@ -89,8 +85,8 @@ module grid_data {
 
       var x: [physical_cells] real;
 
-      for cell in physical_cells do 
-	x(cell) = x_low + (cell:real-0.5)*dx;
+      for cell in physical_cells do
+        x(cell) = x_low + (cell:real-0.5)*dx;
       
       return x;
     }
@@ -127,17 +123,20 @@ module grid_data {
 				  time_requested: real, 
 				  velocity:       real) {
 
+      //---- Make sure that q lives on this grid ----
       assert(q.parent_grid == this && q.time <= time_requested);
 
-      var dt_target: real = 0.9*dx / abs(velocity);
-      var dt_used:   real;
+      
+      //---- Initialize ----
+      var flux: [edges] real,
+          dt_target:    real = 0.9*dx / abs(velocity),
+          dt_used:      real;
 
-      var flux: [edges] real;
       
-      
+      //===> Time-stepping loop ===>
       while (q.time < time_requested) do {
         
-        //---- Adjust time step to hit output time if necessary ----
+        //---- Adjust the time step to hit time_requested if necessary ----
         if (q.time+dt_target > time_requested) then
           dt_used = time_requested - q.time;
         else
@@ -150,21 +149,24 @@ module grid_data {
 
 
         //---- Define fluxes at each edge ----
-        for edge in edges do
-          flux(edge) = velocity * q.value( cell_left_of(edge) );
-
+        for edge in edges do {
+          if (velocity >= 0.0) then
+            flux(edge) = velocity * q.value( cell_left_of(edge) );
+          else
+            flux(edge) = velocity * q.value( cell_right_of(edge) );
+        }
 
         //---- Update solution on each cell ----
-        for cell in physical_cells do {
+        for cell in physical_cells do
           q.value(cell) -= dt_used/dx * ( flux(edge_right_of(cell)) - flux(edge_left_of(cell)) );
-        }
 
 
         //---- Update time ----
         q.time += dt_used;
 
-      } // end while
-      
+      }
+      //<=== Time-stepping loop <===
+
     }    
     //<=== Upwind update of a GridFunction on this grid <===
     //<=====================================================
@@ -174,7 +176,7 @@ module grid_data {
     //=================================================>
     //===> Output a GridFunction in Clawpack format ===>
     def output_in_clawpack_format(q: GridFunction,
-				  frame_number: int) {
+                                  frame_number: int) {
 
       //---- Make sure that q lives on this grid ----
       assert(q.parent_grid == this);
@@ -183,10 +185,10 @@ module grid_data {
       //---- Parameters needed by the output file ----
       var meqn:        int = 1,
        	  ngrids:      int = 1,
-	  maux:        int = 0,
-	  ndim:        int = 1,
-	  grid_number: int = 1,
-	  AMR_level:   int = 1;
+          maux:        int = 0,
+          ndim:        int = 1,
+          grid_number: int = 1,
+          AMR_level:   int = 1;
 
 
       //---- Formatting parameters ----
@@ -197,7 +199,7 @@ module grid_data {
 
       //---- Names of output files ----
       var frame_string:          string = format("%04i", frame_number),
-	  name_of_time_file:     string = "_output/fort.t" + frame_string,
+          name_of_time_file:     string = "_output/fort.t" + frame_string,
           name_of_solution_file: string = "_output/fort.q" + frame_string;
           
 

@@ -12,11 +12,11 @@ module advection1d_driver {
   def main {
 
     //===> Initialize the grid and solution ===>
-    var mygrid = new OneDimensionalGrid(-1.0, 1.0, num_cells, 2);
-    var q = new GridFunction(mygrid);
+    var grid = new OneDimensionalGrid(-1.0, 1.0, num_cells, 2);
+    var q    = new GridFunction(grid);
 
     const pi : real = 4.0*atan(1.0);
-    q.value(mygrid.physical_cells) = sin(pi * mygrid.cell_centers());
+    q.value(grid.physical_cells) = sin(pi * grid.cell_centers());
     //<=== Initialize the grid and solution <===
 
 
@@ -34,7 +34,7 @@ module advection1d_driver {
     //===> Write output at first time ===>
     q.time = time_initial;
     frame_number = 0;
-    mygrid.output_in_clawpack_format(q, frame_number);
+    grid.output_in_clawpack_format(q, frame_number);
     //<=== Write output at first time <===
 
 
@@ -42,12 +42,12 @@ module advection1d_driver {
     for output_time in output_times do {
 
       //---- Advance q to output time ----
-      mygrid.constant_advection_upwind(q, output_time, velocity);
-
+      grid.constant_advection_upwind(q, output_time, velocity);
 
       //---- Write output to file ----
       frame_number += 1;
-      mygrid.output_in_clawpack_format(q, frame_number);
+      grid.output_in_clawpack_format(q, frame_number);
+
     }
     //<=== Time-stepping loop <===
 
