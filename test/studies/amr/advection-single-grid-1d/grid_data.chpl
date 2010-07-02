@@ -235,6 +235,24 @@ module grid_data {
     //<=================================================     
  
 
+
+    //=============================================================>
+    //===> How to set a GridFunction equal to a scalar function ===>
+    def set_GridFunction___to_scalar_function___(q: GridFunction, f){
+
+      //---- Make sure GridFunction lives on this grid ----
+      assert(q.parent_grid == this);
+
+
+      //---- Set q.value ----
+      var x: [physical_cells] real = cell_centers();
+      q.value(physical_cells) = f(x);
+
+    }
+
+
+
+
   }
   //<===============================================
   //<=== Definition of class OneDimensionalGrid <===

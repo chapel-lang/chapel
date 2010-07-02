@@ -1,12 +1,33 @@
 module advection1d_driver {
 
+  //===> Description ===>
+  //
+  // Runs an upwind solver for a simple one-dimensional,
+  // constant-coefficient advection problem.
+  //
+  //<=== Description <===
+
+
+
+  //---- This module defines the OneDimensional Grid ----
+  //---- and GridFunction data structures. -------------- 
+  use grid_data;
+
+
+  //---- Configuration constants control some basic ----
+  //---- setup for the problem. ------------------------
   config const num_cells:        int = 100;
   config const num_output_times: int = 10;
   config const time_initial:     real = 0.0;
   config const time_final:       real = 1.0;
   config const velocity:         real = 2.0;
 
-  use grid_data;
+
+  //---- Initial condition ----
+  const pi : real = 4.0*atan(1.0);
+  def initial_condition (x: real) {
+    return sin(pi*x);
+  }
 
 
   def main {
@@ -15,7 +36,7 @@ module advection1d_driver {
     var grid = new OneDimensionalGrid(-1.0, 1.0, num_cells, 2);
     var q    = new GridFunction(grid);
 
-    const pi : real = 4.0*atan(1.0);
+    grid.set_GridFunction___to_scalar_function___(q, initial_condition);
     q.value(grid.physical_cells) = sin(pi * grid.cell_centers());
     //<=== Initialize the grid and solution <===
 
