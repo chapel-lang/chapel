@@ -14,6 +14,9 @@
 bool resolved = false;
 bool inDynamicDispatchResolution = false;
 
+extern void build_constructor(ClassType* ct);
+extern void build_type_constructor(ClassType* ct);
+
 SymbolMap paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
@@ -2270,6 +2273,79 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
 }
 
 static Expr*
+createFunctionAsValue(CallExpr *call) {
+  UnresolvedSymExpr* use = toUnresolvedSymExpr(call->get(1));
+  INT_ASSERT(use);
+  const char *fname = use->unresolved;
+  ClassType *ct = new ClassType(CLASS_CLASS);
+  TypeSymbol *ts = new TypeSymbol(astr("_fcf_", fname), ct);
+  call->getStmtExpr()->insertBefore(new DefExpr(ts));
+  ct->dispatchParents.add(dtObject);
+  dtObject->dispatchChildren.add(ct);
+  VarSymbol* super = new VarSymbol("super", dtObject);
+  super->addFlag(FLAG_SUPER_CLASS);
+  ct->fields.insertAtHead(new DefExpr(super));
+  build_constructor(ct);
+  build_type_constructor(ct);
+      
+  Vec<FnSymbol*> visibleFns;
+  Vec<BlockStmt*> visited;
+  getVisibleFunctions(getVisibilityBlock(call), fname, visibleFns, visited);
+
+  if (visibleFns.n > 1) {
+    USR_FATAL(call, "Can not capture overloaded functions as values");
+  }
+
+  INT_ASSERT(visibleFns.n == 1);
+      
+  FnSymbol *thisMethod = new FnSymbol("this");
+  thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "this", ct));
+
+  CallExpr *innerCall = new CallExpr(visibleFns.v[0]);
+      
+  for_alist(formalExpr, visibleFns.v[0]->formals) {
+    DefExpr* dExp = toDefExpr(formalExpr);
+    ArgSymbol* fArg = toArgSymbol(dExp->sym);
+
+    if (fArg->defaultExpr) {
+      USR_FATAL(fArg, "Default arguments not allowed in first class functions");
+    }		
+    ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
+    if (fArg->typeExpr) 
+      newFormal->typeExpr = fArg->typeExpr->copy();
+    SymExpr* argSym = new SymExpr(newFormal);
+    innerCall->insertAtHead(argSym);
+	      
+    thisMethod->insertFormalAtTail(newFormal);
+  }
+      
+  Vec<CallExpr*> calls;
+  collectCallExprs(visibleFns.v[0], calls);
+  forv_Vec(CallExpr, cl, calls) {
+    if (cl->isPrimitive(PRIM_YIELD)) {
+      USR_FATAL_CONT(cl, "Interators not allowed in first class functions");
+    }
+  }
+      
+  if (visibleFns.v[0]->retType == dtVoid) {
+    thisMethod->insertAtTail(innerCall);
+  }
+  else {
+    VarSymbol *tmp = newTemp();
+    thisMethod->insertAtTail(new DefExpr(tmp));
+    thisMethod->insertAtTail(new CallExpr(PRIM_MOVE, tmp, innerCall));
+      
+    thisMethod->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+  }
+      
+  call->getStmtExpr()->insertBefore(new DefExpr(thisMethod));
+  ct->methods.add(thisMethod);
+
+  return new CallExpr(ct->defaultConstructor);
+}
+
+static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
   if (CallExpr* call = toCallExpr(expr)) {
@@ -2476,6 +2552,9 @@ preFold(Expr* expr) {
         call->replace(new CallExpr(PRIM_TYPEOF, tmp));
       } else
         USR_FATAL(call, "invalid query -- queried field must be a type of parameter");
+    } else if (call->isPrimitive(PRIM_CAPTURE_FN)) {
+      result = createFunctionAsValue(call);
+      call->replace(result);
     } else if (call->isNamed("chpl__initCopy") ||
                call->isNamed("chpl__autoCopy")) {
       if (call->numActuals() == 1) {

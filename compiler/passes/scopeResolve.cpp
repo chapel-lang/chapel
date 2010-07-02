@@ -500,7 +500,7 @@ static void resolveEnumeratedTypes() {
 
 
 /********* build constructor ***************/
-static void build_type_constructor(ClassType* ct) {
+void build_type_constructor(ClassType* ct) {
   if (ct->defaultTypeConstructor)
     return;
 
@@ -640,7 +640,7 @@ static void build_type_constructor(ClassType* ct) {
 }
 
 
-static void build_constructor(ClassType* ct) {
+void build_constructor(ClassType* ct) {
   if (ct->defaultConstructor)
     return;
 
@@ -1131,6 +1131,7 @@ void scopeResolve(void) {
   // the symbol in module M; for functions, insert a "module=" token
   // that is used to determine visible functions.
   //
+
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     if (skipSet.set_in(unresolvedSymExpr))
       continue;
@@ -1168,83 +1169,15 @@ void scopeResolve(void) {
         symExpr = new SymExpr(sym);
         unresolvedSymExpr->replace(symExpr);
       }
-
       else if (isFnSymbol(sym)) {
-        FnSymbol* fn = toFnSymbol(sym);
-
         Expr *parent = unresolvedSymExpr->parentExpr;
         if (parent) {
           CallExpr *call = toCallExpr(parent);
           if (((call) && (call->baseExpr != unresolvedSymExpr)) || (!call)) {
-            BlockStmt *block = new BlockStmt();
-
-            ClassType *classType = new ClassType(CLASS_CLASS);
-            DefExpr* de = buildClassDefExpr("chpl__fcfun", classType , new CallExpr(PRIM_ACTUALS_LIST),
-                block, false);
-            add_class_to_hierarchy(classType);
-
-            FnSymbol* meth = new FnSymbol("this");
-            ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", classType);
-            meth->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-            meth->insertFormalAtTail(_this);
-
-	    //Add in the actual arguments as well, we got those from the fn's actuals
-	    CallExpr *innerCall = new CallExpr(sym);
-	    for_alist(formalExpr, fn->formals) {
-	      DefExpr* dExp = toDefExpr(formalExpr);
-	      ArgSymbol* fArg = toArgSymbol(dExp->sym);
-
-	      if (fArg->defaultExpr) {
-		USR_FATAL_CONT(fArg, "Default arguments not allowed in first class functions");
-	      }		
-	      ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
-	      if (fArg->typeExpr) 
-		newFormal->typeExpr = fArg->typeExpr->copy();
-	      SymExpr* argSym = new SymExpr(newFormal);
-	      innerCall->insertAtHead(argSym);
-	      
-	      meth->insertFormalAtTail(newFormal);
-	    }
-            meth->where = block;
-            meth->_this = de->sym;
-
-	    int hasReturnValues = false;
-
-	    Vec<CallExpr*> calls;
-	    collectCallExprs(fn, calls);
-	    forv_Vec(CallExpr, cl, calls) {
-	      if (cl->isPrimitive(PRIM_RETURN)) {
-		if (cl->argList.length > 0) {
-		  SymExpr* retSym = toSymExpr(cl->get(1));
-		  bool returns_void = retSym && retSym->var == gVoid;
-
-		  if (!returns_void)
-		    hasReturnValues = true;
-		}
-	      }
-	      else if (cl->isPrimitive(PRIM_YIELD)) {
-		USR_FATAL_CONT(cl, "Interators not allowed in first class functions");
-	      }
-	    }
-
-	    if (!hasReturnValues) {
-	      meth->body->insertAtTail(innerCall);
-	    }
-	    else {
-	      meth->body->insertAtTail(buildPrimitiveStmt(PRIM_RETURN, innerCall));
-	    }
-            DefExpr *meth_expr = new DefExpr(meth);
-
-            FnSymbol* fn = toFnSymbol(sym);
-            fn->defPoint->insertAfter(de);
-            fn->defPoint->insertAfter(meth_expr);
-
-            build_constructor(classType);
-            build_type_constructor(classType);
-
-            CallExpr *prim_new_replace = new CallExpr(PRIM_NEW, new CallExpr(de->sym));
-            unresolvedSymExpr->replace(prim_new_replace);
-
+	    //If the function is being used as a first-class value, handle this with a primitive and unwrap the primitive later in functionResolution
+	    CallExpr *prim_capture_fn = new CallExpr(PRIM_CAPTURE_FN);
+	    unresolvedSymExpr->replace(prim_capture_fn);
+	    prim_capture_fn->insertAtTail(unresolvedSymExpr);
             continue;
           }
         }

@@ -75,7 +75,7 @@ checkUseBeforeDefs() {
           CallExpr* call = toCallExpr(sym->parentExpr);
           if (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == sym)
             continue;
-          if ((!call || call->baseExpr != sym) && sym->unresolved) {
+          if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN))) && sym->unresolved) {
             if (!undeclared.set_in(sym->unresolved)) {
               if (!toFnSymbol(fn->defPoint->parentSymbol)) {
                 USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
