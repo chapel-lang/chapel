@@ -1,4 +1,4 @@
-CHPLC = $(CHPL_HOME)/bin/darwin/chpl
+CHPLC = $(CHPL_HOME)/bin/linux64/chpl
 
 CLAW_OUTDIR = _output               # Directory for output
 CLAW_setplot_file = setplot.py      # File containing function to set plots
