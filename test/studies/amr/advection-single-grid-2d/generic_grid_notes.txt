@@ -16,3 +16,9 @@ to work, which they currently don't appear to.
 
 
 Need a way to take tensor products of domains.
+
+
+p.112 of spec: stridable or strided?
+
+
+Error using -=1 on a single component of a tuple.

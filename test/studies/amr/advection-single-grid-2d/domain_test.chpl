@@ -1,9 +1,14 @@
 module domain_test {
   
-  var D1 = [1..5], D2 = [1..3];
+  var D = [1..10,2..9];
   
-  var A: [D1] 2*real;
+  var offarray: [1..2] int = (4,3);
+  var offtuple: 2*int;
   
-  writeln(A);
+  offtuple = offarray;
+
+  writeln(offtuple);
+  // writeln(D.interior((4,3)));
+
   
 } // end module domain_test
