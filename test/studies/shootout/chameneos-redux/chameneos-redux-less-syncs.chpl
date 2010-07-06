@@ -11,18 +11,21 @@
 
 	- (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
 
-config const numMeetings : int = 100;		// number of meetings to take place
+// -- explore non-deterministic output (maybe have two counts, total meetings, sum of meetings with self , counts*/
+//    non-predictable output guard with a nonfig const, verbose, controls print out of non-det output
+
+config const numMeetings : int = 1;		// number of meetings to take place
 config const numChameneos1 : int = 3;		// size of population 1
 config const numChameneos2 : int = 10;  	// size of population 2
+config const verbose : false;			// if verbose is true, prints out non-det output, otherwise prints det output
 enum color {blue = 0, red = 1, yellow = 2}; 	 
 enum digit {zero, one, two, three, four, 	
 	     five, six, seven, eight, nine};
-config const verbose = false;			// if verbose is true, prints out non-det output, otherwise prints det output
 
 class MeetingPlace {
-	var spotsLeft$ : sync int = 0; 
-	var color1$, color2$: sync color;		
-	var id1$, id2$: sync int;	
+	var spotsLeft$ : sync int; 
+	var color2$: sync color;		
+	var id2$: sync int;	
 
 	/* constructor for MeetingPlace, sets the 
 	   number of meetings to take place */
@@ -42,25 +45,20 @@ class MeetingPlace {
            (denies meetings of 3+ chameneos) */
 	def meet(chameneos : Chameneos) {
 		/* peek at spotsLeft$ */
-		/*		
-		if (spotsLeft$.readFF() == 0) {
-			return (true, chameneos.myColor);
-		}
-		*/
-		var spotsLeft = spotsLeft$; 	
-		var otherColor : color;
-			
-		if (spotsLeft == 0) {
-			spotsLeft$ = 0;
+		if (spotsLeft$.readXX() == 0) {
 			return (true, chameneos.myColor);
 		}
 		
+		var spotsLeft = spotsLeft$; 	
+		var otherColor : color;
+		var color1 : color;
+		var id1 : int;
 		if (spotsLeft % 2 == 0) {	
 			spotsLeft$ = spotsLeft - 1;		
-			color1$ = chameneos.myColor; 
-			id1$ = chameneos.id;
+			color1 = chameneos.myColor; 
+			id1 = chameneos.id;
 			otherColor = color2$;	
-			if (id1$ == id2$) {		
+			if (id1 == id2$) {		
 				halt("halt");
 				chameneos.meetingsWithSelf += 1;			
 			}	
@@ -68,7 +66,7 @@ class MeetingPlace {
 		} else if (spotsLeft % 2 == 1) { 
 			id2$ = chameneos.id;		
 			color2$ = chameneos.myColor;  		
-			otherColor = color1$;
+			otherColor = color1;
 		}
 		chameneos.meetings += 1;
 		return (false, otherColor);
@@ -148,40 +146,46 @@ def populate (size : int) {
    number of times it met with itself, then spells out the total number of times all the Chameneos met
    another Chameneos. */
 def run(population : [] Chameneos, meetingPlace : MeetingPlace) {
-	for i in population { write(" ", i.myColor); }
+	var sumMeetingsWithSelf = 0;
+	
+	if (verbose) { for i in population { write(" ", i.myColor); }}
 	writeln();
 	
 	coforall i in population { i.start(meetingPlace); }
 	meetingPlace.reset();
 
 	for i in population { 
-		write(i.meetings); 
-		spellInt(i.meetingsWithSelf);
+		if (verbose) {
+			write(i.meetings); 
+			spellInt(i.meetingsWithSelf);
+		} else {
+			sumMeetingsWithSelf += i.meetingsWithSelf;
+		}
 	}
 	const totalMeetings = + reduce population.meetings;
-	spellInt(totalMeetings);
-	writeln();
-}
+	if (verbose) {
+		spellInt(totalMeetings);
+	} else {
+		if (totalMeetings == numMeetings*2) {
+			writeln("total meetings passed");
+		} else {
+			writeln("total meetings failed, total meetings expected = ", numMeetings*2, 
+				", total meetings actual = ", totalMeetings);
+		}
 
-def runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
-	coforall i in population { i.start(meetingPlace); }
-	meetingPlace.reset();
-
-	const totalMeetings = + reduce population.meetings;
-	const totalMeetingsWithSelf = + reduce population.meetingsWithSelf;
-	if (totalMeetings == numMeetings*2) { writeln("total meetings PASS"); } 
-	else { writeln("total meetings actual = ", totalMeetings, ", total meetings expected = ", numMeetings*2);}
-
-	if (totalMeetingsWithSelf == 0) { writeln("total meetings with self PASS"); }
-	else { writeln("total meetings with self actual = ", totalMeetingsWithSelf, ", total meetings with self expected = 0");}
-
+		if (sumMeetingsWithSelf == 0) {
+			writeln("no meetings with self passed");
+		} else {
+			writeln(sumMeetingsWithSelf, " total meetings with self");
+		}
+	}
 	writeln();
 }
 
 /* spellInt takes an integer, and spells each of its digits out in English */
 def spellInt(n : int) {
 	var s : string = n:string;
-	for i in 1..s.length {write(" ", (s.substring(i):int + 1):digit);}
+	for i in 1..length(s) {write(" ", (s.substring(i):int + 1):digit);}
 	writeln();
 }
 
@@ -205,13 +209,8 @@ def main() {
 		const population1 = populate(numChameneos1);
 		const population2 = populate(numChameneos2);
 		
-		if (verbose) {
-			run(population1, forest);
-			run(population2, forest);
-		} else {
-			runQuiet(population1, forest);
-			runQuiet(population2, forest);
-		}
+		run(population1, forest);
+		run(population2, forest);
 	}
 }
 

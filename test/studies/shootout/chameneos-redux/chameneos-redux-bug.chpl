@@ -11,6 +11,9 @@
 	- (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
 
 config const N : int = 1;	// specify number of meetings to take place
+config const numChameneos1 : int = 3;
+config const numChameneos2 : int = 10;
+enum color {blue = 0, red = 1, yellow = 2};
 
 class MeetingPlace {
 	var color1$, color2$: sync Color;		
@@ -89,17 +92,19 @@ class Color {
 class Chameneos {
 	var id: int;
 	var meetingPlace: MeetingPlace;
-	var color, otherColor: Color;
+	var color: Color;
 	var meetings: int;
 	var meetingsWithSelf: int;
-	var openToMeet : bool = true;
+//	var openToMeet : bool = true;
 	var result : (bool, Color);
 
 	def start() {
+		var openToMeet : bool = true;
+		var otherColor : Color;
+
+		//writeln("id = ", id);
 		while (openToMeet) {
-			result = meetingPlace.meet(this);		// meet at meeting place
-			openToMeet = result(1);
-			otherColor = result(2);		
+			(openToMeet, otherColor) = meetingPlace.meet(this);		// meet at meeting place
 			color = color.getComplement(otherColor);	// change color
 		} 
 	}
@@ -144,10 +149,13 @@ def main() {
 	printColorChange(forest, yellow, yellow);
 	writeln();
 	
+	const D1 : domain(1) = [1..numChameneos1];
+	const D2 : domain(1) = [1..numChameneos2];
+	
 	/* first run with population size of 3 */
-	const colors1 : [0..2] Color = (blue, red, yellow);
-	const population1 : [0..2] Chameneos;
-	for i in [0..2] {
+	const colors1 : [D1] Color = (blue, red, yellow);
+	const population1 : [D1] Chameneos;
+	for i in [D1] {
 		population1(i) = new Chameneos(i, forest, colors1(i));
 		write(" " + population1(i).color.string());
 	}
@@ -164,10 +172,10 @@ def main() {
 
 	
 	/* second run with population size of 10 */
-	const colors2 : [0..9] Color = (blue, red, yellow, red, yellow, 
+	const colors2 : [D2] Color = (blue, red, yellow, red, yellow, 
 					blue, red, yellow, red, blue);	
-	const population2: [0..9] Chameneos;
-	for i in [0..9] {
+	const population2: [D2] Chameneos;
+	for i in [D2] {
 		population2(i) = new Chameneos(i, forest, colors2(i)); 
 		write(" " + population2(i).color.string());
 	}
