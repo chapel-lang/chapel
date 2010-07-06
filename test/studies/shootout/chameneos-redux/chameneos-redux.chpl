@@ -11,18 +11,22 @@
 
 	- (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
 
-config const numMeetings : int = 100;		// number of meetings to take place
+config const numMeetings : int = 600;		// number of meetings to take place
 config const numChameneos1 : int = 3;		// size of population 1
 config const numChameneos2 : int = 10;  	// size of population 2
 enum color {blue = 0, red = 1, yellow = 2}; 	 
 enum digit {zero, one, two, three, four, 	
 	     five, six, seven, eight, nine};
 config const verbose = false;			// if verbose is true, prints out non-det output, otherwise prints det output
+config const peek = false;			// if peek is true, allows chameneos to peek at spotsLeft$ in MeetingPlace.meet()
+						// then immediately return
 
 class MeetingPlace {
 	var spotsLeft$ : sync int = 0; 
-	var color1$, color2$: sync color;		
-	var id1$, id2$: sync int;	
+	var color2$: sync color;	
+	var color1 : color;
+	var id1 : int;
+	var id2 : int;	
 
 	/* constructor for MeetingPlace, sets the 
 	   number of meetings to take place */
@@ -41,34 +45,34 @@ class MeetingPlace {
 	   otherwise returns the color of the chameneos who arrives 1st
            (denies meetings of 3+ chameneos) */
 	def meet(chameneos : Chameneos) {
-		/* peek at spotsLeft$ */
-		/*		
-		if (spotsLeft$.readFF() == 0) {
-			return (true, chameneos.myColor);
+		/* peek at spotsLeft$ */			
+		if (peek) {	
+			if (spotsLeft$.readXX() == 0) {
+				return (true, chameneos.myColor);
+			}
 		}
-		*/
+		
 		var spotsLeft = spotsLeft$; 	
 		var otherColor : color;
-			
+
 		if (spotsLeft == 0) {
 			spotsLeft$ = 0;
 			return (true, chameneos.myColor);
 		}
-		
-		if (spotsLeft % 2 == 0) {	
+		if (spotsLeft % 2 == 0) {
+			color1 = chameneos.myColor;
+			id1 = chameneos.id;	
 			spotsLeft$ = spotsLeft - 1;		
-			color1$ = chameneos.myColor; 
-			id1$ = chameneos.id;
 			otherColor = color2$;	
-			if (id1$ == id2$) {		
+			if (id1 == id2) {		
 				halt("halt");
 				chameneos.meetingsWithSelf += 1;			
 			}	
 			spotsLeft$ = spotsLeft - 2;			
-		} else if (spotsLeft % 2 == 1) { 
-			id2$ = chameneos.id;		
+		} else if (spotsLeft % 2 == 1) {
+			otherColor = color1;
+			id2 = chameneos.id;
 			color2$ = chameneos.myColor;  		
-			otherColor = color1$;
 		}
 		chameneos.meetings += 1;
 		return (false, otherColor);
