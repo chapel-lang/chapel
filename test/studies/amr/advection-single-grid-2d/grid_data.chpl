@@ -158,7 +158,7 @@ module grid_data {
       //---- Formatting parameters ----
       var efmt:  string = "%16.8e",
           ifmt:  string = "%16i",
-          sfmt:  string = "%16s",
+          sfmt:  string = "%20s",
           linelabel: string;
 
 
@@ -190,20 +190,20 @@ module grid_data {
 
       //---- Write num_cells ----
       for d in dimensions do {
-	linelabel = "num_cells(" + format("%1i",d) + ")";
-	outfile.writeln( format(ifmt, num_cells(d)),  format(sfmt, linelabel));
+        linelabel = "num_cells(" + format("%1i",d) + ")";
+        outfile.writeln( format(ifmt, num_cells(d)),  format(sfmt, linelabel));
       }
 
       //---- Write lower_corner ----
       for d in dimensions do {
-	linelabel = "lower_corner(" + format("%1i",d) + ")";
-	outfile.writeln( format(efmt, lower_corner(d)),  format(sfmt, linelabel));
+        linelabel = "lower_corner(" + format("%1i",d) + ")";
+        outfile.writeln( format(efmt, lower_corner(d)),  format(sfmt, linelabel));
       }
 
       //---- Write dx ----
       for d in dimensions do {
-	linelabel = "dx(" + format("%1i",d) + ")";
-	outfile.writeln( format(efmt, dx(d)),  format(sfmt, linelabel));
+        linelabel = "dx(" + format("%1i",d) + ")";
+        outfile.writeln( format(efmt, dx(d)),  format(sfmt, linelabel));
       }
       outfile.writeln("");
 
@@ -215,15 +215,15 @@ module grid_data {
       physical_cells_transposed = physical_cells_transposed.exterior(shape);
 
       if dimension == 1 then {
-	for cell in physical_cells do
-	  outfile.writeln(format(efmt, q.value(cell)));
+        for cell in physical_cells do
+    	  outfile.writeln(format(efmt, q.value(cell)));
       }
       else {
         var cell: dimension*int;
         for cell_transposed in physical_cells_transposed do {
           [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
           outfile.writeln(format(efmt, q.value(cell)));
-	}
+      	}
       }
 
 
@@ -332,13 +332,13 @@ module grid_data {
 
     if dimension == 1 then {
       for cell in G.physical_cells do
-	writeln(cell);
+      writeln(cell);
     }
     else {
       var cell: dimension*int;
       for cell_transposed in physical_cells_transposed do {
-	[d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
-	writeln(cell);
+        [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
+        writeln(cell);
       }
     }
 
@@ -346,19 +346,25 @@ module grid_data {
     writeln("");
     writeln("Testing function evaluation:");
     writeln("----------------------------");
-    def fcn(x) where x.type==real {
+
+    def fcn1(x: real) {
       return 2.0*x;
     }
-
+    
+    def fcn2((x,y): 2*real) {
+      return 2.0*x + y;
+    }
 
     var coordinates = G.cell_center_coordinates(G.physical_cells);
     var Q: [G.physical_cells] real;
-    [cell in G.physical_cells] Q(cell) = fcn(coordinates(cell));
+    [cell in G.physical_cells] Q(cell) = fcn1(coordinates(cell));
     writeln(Q);
     writeln("");
 
-/*     var q = G.evaluate(initial_condition); */
-/*     writeln(q.value); */
+    var q = G.evaluate(fcn1); 
+    writeln(q.value);
+    
+    G.clawpack_output(q, 0);
 
   } // end main
   
