@@ -1,4 +1,4 @@
-module grid_data {
+module grid_class {
   
   //===> Description ===>
   //
@@ -11,7 +11,7 @@ module grid_data {
   // appropriate to set this external to the grid, as it's inherent
   // to *any* spatial object in the same context. -----------------
   //---------------------------------------------------------------
-  param dimension  = 1;
+  param dimension  = 2;
   const dimensions = [1..dimension];
 
 
@@ -22,12 +22,10 @@ module grid_data {
     
     const dimensions: domain(1) = [1..dimension];
     
-    var lower_corner: [dimensions] real,
-        upper_corner: [dimensions] real,
-        num_cells:    [dimensions] int,
-        num_ghost_cells: int;
+    var lower_corner, upper_corner: dimension*real,
+        num_cells, num_ghost_cells: dimension*int;
 
-    var dx: [dimensions] real;
+    var dx: dimension*real;
             
     var all_cells:      domain(dimension),
         physical_cells: subdomain(all_cells);
@@ -42,10 +40,10 @@ module grid_data {
 
     //===> RectangularGrid constructor ===>
     //====================================>
-    def RectangularGrid(lower_corner_input: dimension*real,
-                           upper_corner_input: dimension*real,
-                           num_cells_input:    dimension*int,
-                           num_ghost_cells_input:        int)
+    def RectangularGrid(lower_corner_input:    dimension*real,
+                        upper_corner_input:    dimension*real,
+                        num_cells_input:       dimension*int,
+                        num_ghost_cells_input: dimension*int)
     {
       //---- Used for modifying domains; needed for
       // dimensionally generic code. --------------
@@ -59,24 +57,23 @@ module grid_data {
       dx              = (upper_corner - lower_corner) / num_cells;
       
       //---- Cell domains ----
-      [d in dimensions] size(d) = num_cells(d);
-      physical_cells = physical_cells.exterior(size);
+      physical_cells = physical_cells.exterior(num_cells);
       all_cells      = physical_cells.expand(num_ghost_cells);
              
 
       //---- Orientation-dependent domains ----    
       for orientation in dimensions do {
         //---- Cell-to-cell interfaces ----
-        [d in dimensions] size(d) = num_cells(d) + 2*num_ghost_cells;
+        [d in dimensions] size(d) = num_cells(d) + 2*num_ghost_cells(d);
         size(orientation) -= 1;
         interfaces(orientation) = all_cells.interior(size);
         
         //---- Ghost cells ----
 	// Note that all ghost cell domains contain the corners.
         [d in dimensions] size(d) = 0;
-        size(orientation) = -num_ghost_cells;
+        size(orientation) = -num_ghost_cells(orientation);
         lower_ghost_cells(orientation) = all_cells.interior(size);
-        size(orientation) = num_ghost_cells;
+        size(orientation) = num_ghost_cells(orientation);
         upper_ghost_cells(orientation) = all_cells.interior(size);
 
       }                            
@@ -89,20 +86,19 @@ module grid_data {
 
     //===> Generate coordinates of cell centers ===>
     //=============================================>
-    def cell_center_coordinates (cells) 
-    where cells.rank == 1 {
-
-      var coordinates: [cells] real;
-      [cell in cells] coordinates(cell) = lower_corner(1) + (cell:real - 0.5)*dx(1);
-      return coordinates;
-    }
-
-    def cell_center_coordinates (cells)
-    where cells.rank == 2 {
+    def cell_center_coordinates (cells: domain(dimension)) {
 
       var coordinates: [cells] dimension*real;
-      forall (cell,d) in [cells,dimensions] do
-        coordinates(cell)(d) = lower_corner(d) + (cell(d):real - 0.5)*dx(d);
+
+      if dimension == 1 then {
+        forall (cell,d) in [cells,dimensions] do
+          coordinates(cell)(d) = lower_corner(d) + (cell:real - 0.5)*dx(d);
+      }
+      else {
+        forall (cell,d) in [cells,dimensions] do
+          coordinates(cell)(d) = lower_corner(d) + (cell(d):real - 0.5)*dx(d);
+      }
+
       return coordinates;
     }
     //<=============================================
@@ -113,12 +109,11 @@ module grid_data {
     //===> Locating interfaces that neighbor a cell, and vice versa ===>
     //=================================================================>
     def lower_interface(cell: dimension*int, d: int) {
-      var interface: dimension*int = cell;
-      return interface;
+      return cell;
     }
 
     def upper_interface(cell: dimension*int, d: int) {
-      var interface: dimension*int = cell;
+      var interface = cell;
       interface(d) += 1;
       return interface;
     }
@@ -130,8 +125,7 @@ module grid_data {
     }
 
     def upper_cell(interface: dimension*int, d: int) {
-      var cell: dimension*int = interface;
-      return cell;
+      return interface;
     }
     //<=================================================================
     //<=== Locating interfaces that neighbor a cell, and vice versa <===
@@ -155,6 +149,7 @@ module grid_data {
           grid_number: int = 1,
           AMR_level:   int = 1;
 
+
       //---- Formatting parameters ----
       var efmt:  string = "%16.8e",
           ifmt:  string = "%16i",
@@ -166,7 +161,6 @@ module grid_data {
       var frame_string:          string = format("%04i", frame_number),
           name_of_time_file:     string = "_output/fort.t" + frame_string,
           name_of_solution_file: string = "_output/fort.q" + frame_string;
-
 
 
       //---- Write time file ----
@@ -188,11 +182,13 @@ module grid_data {
       outfile.writeln( format(ifmt, grid_number), format(sfmt, "grid_number"));
       outfile.writeln( format(ifmt, AMR_level),   format(sfmt, "AMR_level"));
 
+
       //---- Write num_cells ----
       for d in dimensions do {
         linelabel = "num_cells(" + format("%1i",d) + ")";
         outfile.writeln( format(ifmt, num_cells(d)),  format(sfmt, linelabel));
       }
+
 
       //---- Write lower_corner ----
       for d in dimensions do {
@@ -200,12 +196,14 @@ module grid_data {
         outfile.writeln( format(efmt, lower_corner(d)),  format(sfmt, linelabel));
       }
 
+
       //---- Write dx ----
       for d in dimensions do {
         linelabel = "dx(" + format("%1i",d) + ")";
         outfile.writeln( format(efmt, dx(d)),  format(sfmt, linelabel));
       }
       outfile.writeln("");
+
 
       //---- Write solution values ----
       var physical_cells_transposed: domain(dimension),
@@ -253,6 +251,20 @@ module grid_data {
 
 
 
+
+    //===> Upwind update of a GridFunction on this grid ===>
+    //=====================================================>
+    def constant_advection_upwind(q:              GridFunction,
+				  time_requested: real,
+				  velocity:       dimension*real) {
+
+      //---- Make sure q can validly be updated ----
+      assert(q.parent_grid == this  &&  q.time <= time_requested);
+
+
+      //---- Initialize ----
+
+    }
   }
   //<============================================
   //<=== Definition of class RectangularGrid <===
@@ -272,101 +284,7 @@ module grid_data {
   //<=========================================
   //<=== Definition of class GridFunction ====
   //<=========================================
-  
-  
-  
-  def main {
-
-    var lower_corner, upper_corner: dimension*real,
-      num_cells: dimension*int;
-
-    for d in [1..dimension] {
-      lower_corner(d) = 0.0;
-      upper_corner(d) = 1.0;
-      num_cells(d)    = 5; //10 * 2**(d-1);
-    }
-
-    var G = new RectangularGrid(lower_corner, upper_corner, num_cells, 2);
 
 
-    writeln("");
-    writeln("Core parameters:");
-    writeln("----------------");
-    writeln("lower_corner = ", G.lower_corner);
-    writeln("upper_corner = ", G.upper_corner);
-    writeln("num_cells    = ", G.num_cells);
-    writeln("dx           = ", G.dx);
 
-
-    writeln("");
-    writeln("Cell domains:");
-    writeln("-------------");
-    writeln("physical_cells = ", G.physical_cells);
-    writeln("all_cells      = ", G.all_cells);
-
-
-    writeln("");
-    writeln("Interface domains:");
-    writeln("------------------");
-    for d in dimensions do
-      writeln("interfaces(", d, ") = ", G.interfaces(d));
-
-
-    writeln("");
-    writeln("Ghost cell domains:");
-    writeln("-------------------");
-    for d in dimensions do {
-      writeln("lower_ghost_cells(", d, ") = ", G.lower_ghost_cells(d));
-      writeln("upper_ghost_cells(", d, ") = ", G.upper_ghost_cells(d));
-    }
-
-
-    writeln("");
-    writeln("Cell indices in column-major order:");
-    writeln("-----------------------------------");
-    var physical_cells_transposed: domain(dimension),
-        shape: dimension*int;
-      
-    [d in dimensions] shape(d) = G.num_cells(1 + dimension - d);
-    physical_cells_transposed = physical_cells_transposed.exterior(shape);
-
-    if dimension == 1 then {
-      for cell in G.physical_cells do
-      writeln(cell);
-    }
-    else {
-      var cell: dimension*int;
-      for cell_transposed in physical_cells_transposed do {
-        [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
-        writeln(cell);
-      }
-    }
-
-
-    writeln("");
-    writeln("Testing function evaluation:");
-    writeln("----------------------------");
-
-    def fcn1(x: real) {
-      return 2.0*x;
-    }
-    
-    def fcn2((x,y): 2*real) {
-      return 2.0*x + y;
-    }
-
-    var coordinates = G.cell_center_coordinates(G.physical_cells);
-    var Q: [G.physical_cells] real;
-    [cell in G.physical_cells] Q(cell) = fcn1(coordinates(cell));
-    writeln(Q);
-    writeln("");
-
-    var q = G.evaluate(fcn1); 
-    writeln(q.value);
-    
-    G.clawpack_output(q, 0);
-
-  } // end main
-  
-
-} // end module grid_data
+} // end module grid_class
