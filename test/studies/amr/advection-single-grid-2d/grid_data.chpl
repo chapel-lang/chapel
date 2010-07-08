@@ -11,7 +11,7 @@ module grid_class {
   // appropriate to set this external to the grid, as it's inherent
   // to *any* spatial object in the same context. -----------------
   //---------------------------------------------------------------
-  param dimension  = 1;
+  param dimension  = 2;
   const dimensions = [1..dimension];
 
 
@@ -32,10 +32,11 @@ module grid_class {
     
     var interfaces: [dimensions] domain(dimension);
     
-    var lower_ghost_cells: [dimensions] domain(dimension),
-        upper_ghost_cells: [dimensions] domain(dimension);
+    var lower_ghost_cells: [dimensions] subdomain(all_cells),
+        upper_ghost_cells: [dimensions] subdomain(all_cells);
     
-    
+    var periodic_image_of_lower_ghost_cells: [dimensions] subdomain(all_cells),
+        periodic_image_of_upper_ghost_cells: [dimensions] subdomain(all_cells);
 
 
     //===> RectangularGrid constructor ===>
@@ -61,22 +62,32 @@ module grid_class {
       all_cells      = physical_cells.expand(num_ghost_cells);
              
 
-      //---- Orientation-dependent domains ----    
-      for orientation in dimensions do {
+      //===> Orientation-dependent domains ===>
+      for d in dimensions do {
         //---- Cell-to-cell interfaces ----
-        [d in dimensions] size(d) = num_cells(d) + 2*num_ghost_cells(d);
-        size(orientation) -= 1;
-        interfaces(orientation) = all_cells.interior(size);
+        [d_temp in dimensions] size(d_temp) = num_cells(d_temp) + 2*num_ghost_cells(d_temp);
+        size(d) -= 1;
+        interfaces(d) = all_cells.interior(size);
         
         //---- Ghost cells ----
-	// Note that all ghost cell domains contain the corners.
-        [d in dimensions] size(d) = 0;
-        size(orientation) = -num_ghost_cells(orientation);
-        lower_ghost_cells(orientation) = all_cells.interior(size);
-        size(orientation) = num_ghost_cells(orientation);
-        upper_ghost_cells(orientation) = all_cells.interior(size);
+      	// Note that all ghost cell domains contain the corners.
+        [d_temp in dimensions] size(d_temp) = 0;
 
-      }                            
+        size(d) = -num_ghost_cells(d);
+        lower_ghost_cells(d) = all_cells.interior(size);
+
+        size(d) = num_ghost_cells(d);
+        upper_ghost_cells(d) = all_cells.interior(size);
+        
+        size(d) = num_cells(d);
+        periodic_image_of_lower_ghost_cells(d) = lower_ghost_cells(d).translate(size);
+        
+        size(d) = -num_cells(d);
+        periodic_image_of_upper_ghost_cells(d) = upper_ghost_cells(d).translate(size);
+
+      }   
+      //<=== Orientation-dependent domains <===   
+      
     }
     //<====================================
     //<=== RectangularGrid constructor <===
@@ -118,14 +129,16 @@ module grid_class {
       return interface;
     }
 
-    def lower_cell(interface: dimension*int, d: int) {
-      var cell: dimension*int = interface;
-      cell(d) -= 1;
-      return cell;
+    def lower_cell(cell: dimension*int, d: int) {
+      var cell_out: dimension*int = cell;
+      cell_out(d) -= 1;
+      return cell_out;
     }
 
-    def upper_cell(interface: dimension*int, d: int) {
-      return interface;
+    def upper_cell(cell: dimension*int, d: int) {
+      var cell_out: dimension*int = cell;
+      cell_out(d) += 1;
+      return cell_out;
     }
     //<=================================================================
     //<=== Locating interfaces that neighbor a cell, and vice versa <===
@@ -221,6 +234,8 @@ module grid_class {
         for cell_transposed in physical_cells_transposed do {
           [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
           outfile.writeln(format(efmt, q.value(cell)));
+          if cell(1) == physical_cells.dim(1).high then
+            outfile.writeln("");
       	}
       }
 
@@ -255,8 +270,8 @@ module grid_class {
     //===> Upwind update of a GridFunction on this grid ===>
     //=====================================================>
     def constant_advection_upwind(q:              GridFunction,
-				  time_requested: real,
-				  velocity:       dimension*real) {
+                                  time_requested: real,
+                                  velocity:       dimension*real) {
 
       //---- Make sure q can validly be updated ----
       assert(q.parent_grid == this  &&  q.time <= time_requested);
@@ -264,51 +279,68 @@ module grid_class {
 
       //---- Initialize ----
       var cfl: [dimensions] real = dx / velocity,
-          dt_target:        real = 0.45 * max reduce(cfl, dimensions),
+          dt_target:        real,
           dt_used:          real,
-	  flux_lower:       real,
-	  flux_upper:       real;
+          flux_lower:       real,
+          flux_upper:       real;
 
-      var val_old = q.value;
+      var val_old: [all_cells] real;
 
 
+      (dt_target,) = minloc reduce(cfl, dimensions);
+      dt_target *= 0.45;
+
+      
+      
       //===> Time-stepping loop ===>
       while (q.time < time_requested) do {
-
         //---- Adjust the time step to hit time_requested if necessary ----
         if (q.time + dt_target > time_requested) then
-	  dt_used = time_requested - q.time;
-	else
-	  dt_used = dt_target;
+          dt_used = time_requested - q.time;
+        else
+          dt_used = dt_target;
 
-	
-	//---- Fill in ghost cells ----
-	for d in dimensions do {
-	  q.value(lower_ghost_cells(d)) = q.value(periodic_image_of_lower_ghost_cells(d));
-	  q.value(upper_ghost_cells(d)) = q.value(periodic_image_of_upper_ghost_cells(d));
-	}
+      
+        //---- Record q at old time level ----
+        val_old = q.value;
 
 
-	//---- Update solution on each cell ----
-	for d in dimensions {
-	  for cell in physical_cells {
-	    if velocity(d) < 0.0 then {
-	      flux_lower = velocity(d) * val_old(cell);
-	      flux_upper = velocity(d) * val_old(upper_cell(cell,d));
-	    }
-	    else {
-	      flux_lower = velocity(d) * val_old(lower_cell(cell,d));
-	      flux_upper = velocity(d) * val_old(cell);
-	    }
+        //---- Fill in ghost cells ----
+        for d in dimensions do {
+          val_old(lower_ghost_cells(d)) = val_old(periodic_image_of_lower_ghost_cells(d));
+          val_old(upper_ghost_cells(d)) = val_old(periodic_image_of_upper_ghost_cells(d));
+        }
+      
+      
+        //---- Update solution on each cell ----
+        var cell: dimension*int;
+        
 
-	    q.value(cell) -= dt_used/dx(d) * (flux_upper - flux_lower);
-	  }
-	}
-
-
-	//---- Update time ----
-	q.time += dt_used;
-
+        for cell_pretuple in physical_cells {
+          for d in dimensions {
+        
+            if cell_pretuple.type == int then
+              cell(1) = cell_pretuple;
+            else
+              cell = cell_pretuple;
+                          
+            if velocity(d) < 0.0 then {
+              flux_lower = velocity(d) * val_old(cell);
+              flux_upper = velocity(d) * val_old(upper_cell(cell,d));
+            }
+            else {
+              flux_lower = velocity(d) * val_old(lower_cell(cell,d));
+              flux_upper = velocity(d) * val_old(cell);
+            }
+              
+            q.value(cell) -= dt_used/dx(d) * (flux_upper - flux_lower);
+          }
+        }
+      
+      
+        //---- Update time ----
+        q.time += dt_used;
+              
       }
       //<=== Time-stepping loop <===
 

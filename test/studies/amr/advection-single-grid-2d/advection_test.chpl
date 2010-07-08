@@ -7,7 +7,7 @@ module advection_test {
   def main {
     //---- Advection velocity ----
     var velocity: dimension*real;
-    [d in dimensions] velocity(d) = (dimension-d+1):real;
+    [d in dimensions] velocity(d) = 1.0;
 
 
     //---- Initial condition ----
@@ -15,7 +15,7 @@ module advection_test {
     def initial_condition( coords: dimension*real ) {
       var f: real = 1.0;
       for d in dimensions do
-	f *= sin(d*pi*coords(d));
+      	f *= sin(pi*coords(d));
       return f;
     }
 
@@ -28,7 +28,7 @@ module advection_test {
       lower_corner(d)    = -1.0;
       upper_corner(d)    = 1.0;
       num_cells(d)       = 40;
-      num_ghost_cells(d) = 1;
+      num_ghost_cells(d) = 2;
     }
 
     var G = new RectangularGrid(lower_corner, upper_corner,
@@ -57,16 +57,16 @@ module advection_test {
 
 
 
-/*     //---- Output-generation loop ---- */
-/*     for output_time in output_times do { */
+     //---- Output-generation loop ---- 
+     for output_time in output_times do { 
       
-/*       //---- Advance q to output time ---- */
-/*       G.constant_advection_upwind(q, output_time, velocity); */
+       //---- Advance q to output time ---- 
+       G.constant_advection_upwind(q, output_time, velocity); 
 
-/*       //---- Write output to file ---- */
-/*       frame_number += 1; */
-/*       grid.clawpack_output(q, frame_number); */
-/*     } */
+       //---- Write output to file ---- 
+       frame_number += 1; 
+       G.clawpack_output(q, frame_number); 
+     }
 
 
 
