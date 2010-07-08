@@ -28,8 +28,12 @@ VELOCITY = -2.0
 # advect1d: $(SOURCES)
 # 	$(CHPLC) $(SOURCES) -o advect1d
 
+
+advection_test: $(SOURCES) advection_test.chpl
+	chpl $(SOURCES) advection_test.chpl -o advection_test
+
 grid_test: $(SOURCES) grid_test.chpl
 	chpl $(SOURCES) grid_test.chpl -o grid_test
 
 clean:
-	rm -f _output/fort.* _plots/* advect1d output plots pyclaw.log *.pyc
+	rm -f _output/fort.* _plots/* advect1d output plots pyclaw.log *.pyc *~

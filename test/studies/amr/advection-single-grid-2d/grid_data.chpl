@@ -11,7 +11,7 @@ module grid_class {
   // appropriate to set this external to the grid, as it's inherent
   // to *any* spatial object in the same context. -----------------
   //---------------------------------------------------------------
-  param dimension  = 2;
+  param dimension  = 1;
   const dimensions = [1..dimension];
 
 
@@ -263,8 +263,61 @@ module grid_class {
 
 
       //---- Initialize ----
+      var cfl: [dimensions] real = dx / velocity,
+          dt_target:        real = 0.45 * max reduce(cfl, dimensions),
+          dt_used:          real,
+	  flux_lower:       real,
+	  flux_upper:       real;
+
+      var val_old = q.value;
+
+
+      //===> Time-stepping loop ===>
+      while (q.time < time_requested) do {
+
+        //---- Adjust the time step to hit time_requested if necessary ----
+        if (q.time + dt_target > time_requested) then
+	  dt_used = time_requested - q.time;
+	else
+	  dt_used = dt_target;
+
+	
+	//---- Fill in ghost cells ----
+	for d in dimensions do {
+	  q.value(lower_ghost_cells(d)) = q.value(periodic_image_of_lower_ghost_cells(d));
+	  q.value(upper_ghost_cells(d)) = q.value(periodic_image_of_upper_ghost_cells(d));
+	}
+
+
+	//---- Update solution on each cell ----
+	for d in dimensions {
+	  for cell in physical_cells {
+	    if velocity(d) < 0.0 then {
+	      flux_lower = velocity(d) * val_old(cell);
+	      flux_upper = velocity(d) * val_old(upper_cell(cell,d));
+	    }
+	    else {
+	      flux_lower = velocity(d) * val_old(lower_cell(cell,d));
+	      flux_upper = velocity(d) * val_old(cell);
+	    }
+
+	    q.value(cell) -= dt_used/dx(d) * (flux_upper - flux_lower);
+	  }
+	}
+
+
+	//---- Update time ----
+	q.time += dt_used;
+
+      }
+      //<=== Time-stepping loop <===
+
 
     }
+    //<=== Upwind update of a GridFunction on this grid <===
+    //<=====================================================
+
+
   }
   //<============================================
   //<=== Definition of class RectangularGrid <===
