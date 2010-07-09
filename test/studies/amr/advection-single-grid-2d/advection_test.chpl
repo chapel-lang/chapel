@@ -7,7 +7,7 @@ module advection_test {
   def main {
     //---- Advection velocity ----
     var velocity: dimension*real;
-    [d in dimensions] velocity(d) = 1.0;
+    [d in dimensions] velocity(d) = 0.5 + 0.5**d;
 
 
     //---- Initial condition ----
@@ -15,7 +15,7 @@ module advection_test {
     def initial_condition( coords: dimension*real ) {
       var f: real = 1.0;
       for d in dimensions do
-      	f *= sin(pi*coords(d));
+      	f *= exp(-30*coords(d)**2);
       return f;
     }
 
@@ -40,8 +40,8 @@ module advection_test {
 
     //---- Initializations for output ----
     var time_initial: real = 0.0,
-      time_final:     real = 1.0,
-      num_output:     int = 10,
+      time_final:     real = 3.0,
+      num_output:     int = 30,
       output_times:   [1..num_output] real,
       dt_output:      real = (time_final - time_initial) / num_output,
       frame_number:   int = 0;

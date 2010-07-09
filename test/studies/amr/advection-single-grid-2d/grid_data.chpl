@@ -11,7 +11,7 @@ module grid_class {
   // appropriate to set this external to the grid, as it's inherent
   // to *any* spatial object in the same context. -----------------
   //---------------------------------------------------------------
-  param dimension  = 2;
+  param dimension  = 3;
   const dimensions = [1..dimension];
 
 
@@ -164,8 +164,8 @@ module grid_class {
 
 
       //---- Formatting parameters ----
-      var efmt:  string = "%16.8e",
-          ifmt:  string = "%16i",
+      var efmt:  string = "%26.16E",
+          ifmt:  string = "%5i",
           sfmt:  string = "%20s",
           linelabel: string;
 
@@ -179,11 +179,13 @@ module grid_class {
       //---- Write time file ----
       var outfile = new file(name_of_time_file, FileAccessMode.write);
       outfile.open();
-      outfile.writeln( format(efmt, q.time), format(sfmt, "time"));
-      outfile.writeln( format(ifmt, meqn),   format(sfmt, "meqn"));
-      outfile.writeln( format(ifmt, ngrids), format(sfmt, "ngrids"));
-      outfile.writeln( format(ifmt, maux),   format(sfmt, "maux"));
-      outfile.writeln( format(ifmt, dimension),   format(sfmt, "ndim"));
+      outfile.writeln( format(efmt, q.time),    "    time");
+      outfile.writeln( format(ifmt, meqn),      "                 meqn");
+      outfile.writeln( format(ifmt, ngrids),    "                 ngrids");
+      outfile.writeln( format(ifmt, maux),      "                 naux");
+      outfile.writeln( format(ifmt, dimension), "                 ndim");
+      outfile.writeln("");
+      outfile.writeln("");
       outfile.close();
       delete outfile;
 
@@ -192,28 +194,43 @@ module grid_class {
       //---------------------------->
       outfile = new file(name_of_solution_file, FileAccessMode.write);
       outfile.open();
-      outfile.writeln( format(ifmt, grid_number), format(sfmt, "grid_number"));
-      outfile.writeln( format(ifmt, AMR_level),   format(sfmt, "AMR_level"));
+      outfile.writeln( format(ifmt, grid_number), "                 grid_number");
+      outfile.writeln( format(ifmt, AMR_level),   "                 AMR_level");
 
 
       //---- Write num_cells ----
       for d in dimensions do {
-        linelabel = "num_cells(" + format("%1i",d) + ")";
-        outfile.writeln( format(ifmt, num_cells(d)),  format(sfmt, linelabel));
+        select d {
+          when 1 do linelabel = "                 mx";
+          when 2 do linelabel = "                 my";
+          when 3 do linelabel = "                 mz";
+          otherwise linelabel = "                 mx(" + format("%1i",d) + ")";
+        }
+        outfile.writeln( format(ifmt, num_cells(d)),  linelabel);
       }
 
 
       //---- Write lower_corner ----
       for d in dimensions do {
-        linelabel = "lower_corner(" + format("%1i",d) + ")";
-        outfile.writeln( format(efmt, lower_corner(d)),  format(sfmt, linelabel));
+        select d {
+          when 1 do linelabel = "    xlow";
+          when 2 do linelabel = "    ylow";
+          when 3 do linelabel = "    zlow";
+          otherwise linelabel = "    xlow(" + format("%1i",d) + ")";
+        }
+        outfile.writeln( format(efmt, lower_corner(d)),  linelabel);
       }
 
 
       //---- Write dx ----
       for d in dimensions do {
-        linelabel = "dx(" + format("%1i",d) + ")";
-        outfile.writeln( format(efmt, dx(d)),  format(sfmt, linelabel));
+        select d {
+          when 1 do linelabel = "    dx";
+          when 2 do linelabel = "    dy";
+          when 3 do linelabel = "    dz";
+          otherwise linelabel = "    dx(" + format("%1i",d) + ")";
+        }
+        outfile.writeln( format(efmt, dx(d)),  linelabel);
       }
       outfile.writeln("");
 
@@ -234,8 +251,12 @@ module grid_class {
         for cell_transposed in physical_cells_transposed do {
           [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
           outfile.writeln(format(efmt, q.value(cell)));
-          if cell(1) == physical_cells.dim(1).high then
-            outfile.writeln("");
+          for d in dimensions do {
+            if cell(d) == physical_cells.dim(d).high then
+              outfile.writeln("  ");
+            else
+              break;
+          }
       	}
       }
 
@@ -278,7 +299,7 @@ module grid_class {
 
 
       //---- Initialize ----
-      var cfl: [dimensions] real = dx / velocity,
+      var cfl: [dimensions] real,
           dt_target:        real,
           dt_used:          real,
           flux_lower:       real,
@@ -286,7 +307,7 @@ module grid_class {
 
       var val_old: [all_cells] real;
 
-
+      [d in dimensions] cfl(d) = dx(d) / abs(velocity(d));
       (dt_target,) = minloc reduce(cfl, dimensions);
       dt_target *= 0.45;
 
@@ -299,6 +320,7 @@ module grid_class {
           dt_used = time_requested - q.time;
         else
           dt_used = dt_target;
+        writeln("Taking step of size dt=", dt_target, " to time ", q.time+dt_used, ".");
 
       
         //---- Record q at old time level ----
