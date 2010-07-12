@@ -1,3 +1,5 @@
+use Time;
+
 /*	- The Chameneos game is as follows: 
 	  	A population of n chameneos gathers at a common meeting place, where 
 	  	m meetings will take place (n and m may be distinct).  At any time, only one
@@ -14,7 +16,7 @@
 config const numMeetings : int = 600;		// number of meetings to take place
 config const numChameneos1 : int = 3;		// size of population 1
 config const numChameneos2 : int = 10;  	// size of population 2
-enum color {blue = 0, red = 1, yellow = 2}; 	 
+enum color {blue=0, red=1, yellow=2}; 	 
 enum digit {zero, one, two, three, four, 	
 	     five, six, seven, eight, nine};
 config const verbose = false;			// if verbose is true, prints out non-det output, otherwise prints det output
@@ -75,6 +77,7 @@ class MeetingPlace {
 			color2$ = chameneos.myColor;  		
 		}
 		chameneos.meetings += 1;
+		//sleep(10);
 		return (false, otherColor);
 	}
 }
@@ -97,7 +100,7 @@ class Chameneos {
 
 	/* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
 	   with another Chameneos.  If it does, it will get the complement of the color
-	   of the Chameneos it met with, and change to that color. */
+	   of the Chameneos it met with, and change to the complement of that color. */
 	def start(place : MeetingPlace) {
 		var meetingPlace : MeetingPlace = place;
 		var stop : bool = false;
@@ -109,26 +112,15 @@ class Chameneos {
 	}
 }
 
-/* printColorChange takes a MeetingPlace, and two colors.  It generates two chameneos, whose
-   colors are the two passed in, allows them to meet at the MeetingPlace, and prints their
-   starting and ending colors.  */
-def printColorChange(meetingPlace : MeetingPlace, color1 : color,  color2 : color) {
-	var ch1 : Chameneos = new Chameneos(0, color1);
-	var ch2 : Chameneos = new Chameneos(1, color2);
-
-	write(ch1.myColor, " + ",  ch2.myColor,  " -> "); 
-
-	cobegin {
-		ch1.start(meetingPlace);
-		ch2.start(meetingPlace);
+/* printColorChanges prints the result of getComplement for all possible pairs of colors */
+def printColorChanges() {
+	const colors : [1..3] color = (color.blue, color.red, color.yellow);
+	for color1 in colors {
+		for color2 in colors {
+			writeln(color1, " + ", color2, " -> ", getComplement(color1, color2));
+		}
 	}
-	meetingPlace.reset();
-
-	if (ch1.myColor == ch2.myColor) {
-		writeln(ch1.myColor);
-	} else {
-		writeln("unsuccessful color change: ch1 is " + ch1.myColor + ", ch2 is " + ch2.myColor);
-	}
+	writeln();
 }
 
 /* populate takes an parameter of type int, size, and returns a population of chameneos 
@@ -154,17 +146,17 @@ def populate (size : int) {
 def run(population : [] Chameneos, meetingPlace : MeetingPlace) {
 	for i in population { write(" ", i.myColor); }
 	writeln();
-	
+
 	coforall i in population { i.start(meetingPlace); }
 	meetingPlace.reset();
 
-	for i in population { 
-		write(i.meetings); 
-		spellInt(i.meetingsWithSelf);
-	}
-	const totalMeetings = + reduce population.meetings;
-	spellInt(totalMeetings);
-	writeln();
+	//for i in population { 
+	//	write(i.meetings); 
+	//		spellInt(i.meetingsWithSelf);
+	//}
+	//const totalMeetings = + reduce population.meetings;
+	//spellInt(totalMeetings);
+	//writeln();
 }
 
 def runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
@@ -182,6 +174,17 @@ def runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
 	writeln();
 }
 
+def printInfo(population : [] Chameneos) {
+	for i in population {
+		write(i.meetings);
+		spellInt(i.meetingsWithSelf);
+	}
+	// 2 to 1 liner?
+	const totalMeetings = + reduce population.meetings;
+	spellInt(totalMeetings);
+	writeln();
+}
+
 /* spellInt takes an integer, and spells each of its digits out in English */
 def spellInt(n : int) {
 	var s : string = n:string;
@@ -193,28 +196,34 @@ def main() {
 	if (numChameneos1 < 2 || numChameneos2 < 2 || numMeetings < 0) {
 		writeln("Please specify numChameneos1 and numChameneos2 of at least 2, and numMeetings of at least 0.");
 	} else 	{
- 		const forest : MeetingPlace = new MeetingPlace();
+		var start_time = getCurrentTime();
 		
-		printColorChange(forest, color.blue, color.blue);
-		printColorChange(forest, color.blue, color.red);
-		printColorChange(forest, color.blue, color.yellow);
-		printColorChange(forest, color.red, color.blue);
-		printColorChange(forest, color.red, color.red);
-		printColorChange(forest, color.red, color.yellow);
-		printColorChange(forest, color.yellow, color.blue);
-		printColorChange(forest, color.yellow, color.red);
-		printColorChange(forest, color.yellow, color.yellow);
-		writeln();
-		
+		printColorChanges();	
+
+		const forest : MeetingPlace = new MeetingPlace();	
+
 		const population1 = populate(numChameneos1);
 		const population2 = populate(numChameneos2);
 		
 		if (verbose) {
+			var startTime1 = getCurrentTime();
 			run(population1, forest);
+			var endTime1 = getCurrentTime();
+			writeln("time for chameneos1 to meet = ", endTime1 - startTime1);	
+			printInfo(population1);
+
+			var startTime2 = getCurrentTime();
 			run(population2, forest);
+			var endTime2 = getCurrentTime();
+			writeln("time for chameneos2 to meet = ", endTime2 - startTime2);
+			printInfo(population2);
 		} else {
 			runQuiet(population1, forest);
 			runQuiet(population2, forest);
+		}
+		var end_time = getCurrentTime();
+		if (verbose) {
+			writeln("total execution time = ", end_time - start_time);
 		}
 	}
 }
