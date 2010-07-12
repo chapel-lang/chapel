@@ -706,7 +706,6 @@ class _syncvar {
 //  isFull - query whether it is full
 
 // This is the default read on sync vars. Wait for full, set and signal empty.
-
 def _syncvar.readFE(): base_type {
   var ret: base_type;
   on this {
