@@ -3,6 +3,14 @@ module grid_class {
   //===> Description ===>
   //
   // Class definition for a rectangular grid of arbitrary dimension.
+  // This version is based on an underlying mesh of width dx/2, which
+  // contains all cell centers, interface centers, and vertices.  As
+  // a result, the domin of cell centers is strided by 2, corresponding
+  // to jumps of dx.
+  //
+  // Currently, only dimensions 1, 2, and 3 are supported, as a few
+  // parts of the code must be instantiated (look for "select" statements)
+  // until more general constructs are available.
   //
   //<=== Description <===
 
@@ -27,10 +35,10 @@ module grid_class {
 
     var dx: dimension*real;
             
-    var all_cells:      domain(dimension),
+    var all_cells:      domain(dimension, stridable=true),
         physical_cells: subdomain(all_cells);
     
-    var interfaces: [dimensions] domain(dimension);
+    var interfaces: [dimensions] domain(dimension, stridable=true);
     
     var lower_ghost_cells: [dimensions] subdomain(all_cells),
         upper_ghost_cells: [dimensions] subdomain(all_cells);
@@ -59,31 +67,38 @@ module grid_class {
     dx              = (upper_corner - lower_corner) / num_cells;
     
     //---- Cell domains ----
-    physical_cells = physical_cells.exterior(num_cells);
-    all_cells      = physical_cells.expand(num_ghost_cells);
+    select dimension {
+      when 1 do physical_cells = [1..2*num_cells(1)-1 by 2];
+      when 2 do physical_cells = [1..2*num_cells(1)-1 by 2, 1..2*num_cells(2)-1 by 2];
+      when 3 do physical_cells = [1..2*num_cells(1)-1 by 2, 1..2*num_cells(2)-1 by 2, 1..2*num_cells(3) by 2];
+      otherwise assert(0, "dimension>3 not currently allowed");
+    }
+    
+    [d in dimensions] size(d) = 2*num_ghost_cells(d);
+    all_cells = physical_cells.expand(size);
            
 
     //===> Orientation-dependent domains ===>
     for d in dimensions do {
       //---- Cell-to-cell interfaces ----
-      [d_temp in dimensions] size(d_temp) = num_cells(d_temp) + 2*num_ghost_cells(d_temp);
-      size(d) -= 1;
-      interfaces(d) = all_cells.interior(size);
+      [d_temp in dimensions] size(d_temp) = 0;
+      size(d) = -1;
+      interfaces(d) = all_cells.expand(size);
       
       //---- Ghost cells ----
-    	// Note that all ghost cell domains contain the corners.
+      // Note that all ghost cell domains contain the corners.
       [d_temp in dimensions] size(d_temp) = 0;
 
-      size(d) = -num_ghost_cells(d);
+      size(d) = -(2*num_ghost_cells(d) - 1);
       lower_ghost_cells(d) = all_cells.interior(size);
 
-      size(d) = num_ghost_cells(d);
+      size(d) = 2*num_ghost_cells(d) - 1;
       upper_ghost_cells(d) = all_cells.interior(size);
-      
-      size(d) = num_cells(d);
+            
+      size(d) = 2*num_cells(d);
       periodic_image_of_lower_ghost_cells(d) = lower_ghost_cells(d).translate(size);
       
-      size(d) = -num_cells(d);
+      size(d) = -2*num_cells(d);
       periodic_image_of_upper_ghost_cells(d) = upper_ghost_cells(d).translate(size);
 
     }   
@@ -98,19 +113,19 @@ module grid_class {
 
   //===> Generate coordinates of cell centers ===>
   //=============================================>
-  def RectangularGrid.cell_center_coordinates (cells: domain(dimension)) {
-
+  def RectangularGrid.cell_center_coordinates (cells) {
+  
     var coordinates: [cells] dimension*real;
-
+  
     if dimension == 1 then {
       forall (cell,d) in [cells,dimensions] do
-        coordinates(cell)(d) = lower_corner(d) + (cell:real - 0.5)*dx(d);
+        coordinates(cell)(d) = lower_corner(d) + cell*dx(d)/2.0;
     }
     else {
       forall (cell,d) in [cells,dimensions] do
-        coordinates(cell)(d) = lower_corner(d) + (cell(d):real - 0.5)*dx(d);
+        coordinates(cell)(d) = lower_corner(d) + cell(d)*dx(d)/2.0;
     }
-
+  
     return coordinates;
   }
   //<=============================================
@@ -121,24 +136,26 @@ module grid_class {
   //===> Locating interfaces that neighbor a cell, and vice versa ===>
   //=================================================================>
   def RectangularGrid.lower_interface(cell: dimension*int, d: int) {
-    return cell;
+    var interface = cell;
+    interface(d) -= 1;
+    return interface;
   }
-
+  
   def RectangularGrid.upper_interface(cell: dimension*int, d: int) {
     var interface = cell;
     interface(d) += 1;
     return interface;
   }
-
+  
   def RectangularGrid.lower_cell(cell: dimension*int, d: int) {
     var cell_out: dimension*int = cell;
-    cell_out(d) -= 1;
+    cell_out(d) -= 2;
     return cell_out;
   }
-
+  
   def RectangularGrid.upper_cell(cell: dimension*int, d: int) {
     var cell_out: dimension*int = cell;
-    cell_out(d) += 1;
+    cell_out(d) += 2;
     return cell_out;
   }
   //<=================================================================
@@ -150,33 +167,33 @@ module grid_class {
   //===> Output a GridFunction in Clawpack format ===>
   //=================================================>
   def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
-
-
+  
+  
     //---- Make sure that q lives on this grid ----
     assert(q.parent_grid == this);
-
-
+  
+  
     //---- Parameters needed by the output file ----
     var meqn:        int = 1,
-     	  ngrids:      int = 1,
+         ngrids:      int = 1,
         maux:        int = 0,
         grid_number: int = 1,
         AMR_level:   int = 1;
-
-
+  
+  
     //---- Formatting parameters ----
     var efmt:  string = "%26.16E",
         ifmt:  string = "%5i",
         sfmt:  string = "%20s",
         linelabel: string;
-
-
+  
+  
     //---- Names of output files ----
     var frame_string:          string = format("%04i", frame_number),
         name_of_time_file:     string = "_output/fort.t" + frame_string,
         name_of_solution_file: string = "_output/fort.q" + frame_string;
-
-
+  
+  
     //---- Write time file ----
     var outfile = new file(name_of_time_file, FileAccessMode.write);
     outfile.open();
@@ -189,16 +206,16 @@ module grid_class {
     outfile.writeln("");
     outfile.close();
     delete outfile;
-
-
+  
+  
     //---> Write solution file --->
     //---------------------------->
     outfile = new file(name_of_solution_file, FileAccessMode.write);
     outfile.open();
     outfile.writeln( format(ifmt, grid_number), "                 grid_number");
     outfile.writeln( format(ifmt, AMR_level),   "                 AMR_level");
-
-
+  
+  
     //---- Write num_cells ----
     for d in dimensions do {
       select d {
@@ -209,8 +226,8 @@ module grid_class {
       }
       outfile.writeln( format(ifmt, num_cells(d)),  linelabel);
     }
-
-
+  
+  
     //---- Write lower_corner ----
     for d in dimensions do {
       select d {
@@ -221,8 +238,8 @@ module grid_class {
       }
       outfile.writeln( format(efmt, lower_corner(d)),  linelabel);
     }
-
-
+  
+  
     //---- Write dx ----
     for d in dimensions do {
       select d {
@@ -234,20 +251,27 @@ module grid_class {
       outfile.writeln( format(efmt, dx(d)),  linelabel);
     }
     outfile.writeln("");
-
-
+  
+  
     //---- Write solution values ----
-    var physical_cells_transposed: domain(dimension),
+    var physical_cells_transposed: domain(dimension, stridable=true),
         shape: dimension*int;
     
-    [d in dimensions] shape(d) = num_cells(1 + dimension - d);
-    physical_cells_transposed = physical_cells_transposed.exterior(shape);
 
+  
     if dimension == 1 then {
       for cell in physical_cells do
-  	  outfile.writeln(format(efmt, q.value(cell)));
+     outfile.writeln(format(efmt, q.value(cell)));
     }
     else {
+
+      select dimension {
+        when 2 do physical_cells_transposed = [1..2*num_cells(2)-1 by 2, 1..2*num_cells(1)-1 by 2];
+        when 3 do physical_cells_transposed = [1..2*num_cells(3)-1 by 2, 1..2*num_cells(2)-1 by 2, 1..2*num_cells(1) by 2];
+        otherwise assert(0, "dimension <=3 not currently supported by clawpack_output");
+      }
+
+
       var cell: dimension*int;
       for cell_transposed in physical_cells_transposed do {
         [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
@@ -258,16 +282,16 @@ module grid_class {
           else
             break;
         }
-    	}
+     }
     }
-
-
+  
+  
     //---- Finish up ----
     outfile.close();
     delete outfile;
     //<----------------------------
     //<--- Write solution file <---
-
+  
   }
   //<=================================================
   //<=== Output a GridFunction in Clawpack format <===
@@ -293,24 +317,22 @@ module grid_class {
   def RectangularGrid.constant_advection_upwind(q:              GridFunction,
                                 time_requested: real,
                                 velocity:       dimension*real) {
-
+  
     //---- Make sure q can validly be updated ----
     assert(q.parent_grid == this  &&  q.time <= time_requested);
-
-
+  
+  
     //---- Initialize ----
     var cfl: [dimensions] real,
         dt_target:        real,
-        dt_used:          real,
-        flux_lower:       real,
-        flux_upper:       real;
-
+        dt_used:          real;
+  
     var val_old: [all_cells] real;
-
+  
     [d in dimensions] cfl(d) = dx(d) / abs(velocity(d));
     (dt_target,) = minloc reduce(cfl, dimensions);
     dt_target *= 0.45;
-
+  
     
     
     //===> Time-stepping loop ===>
@@ -321,12 +343,12 @@ module grid_class {
       else
         dt_used = dt_target;
       writeln("Taking step of size dt=", dt_target, " to time ", q.time+dt_used, ".");
-
+  
     
       //---- Record q at old time level ----
       val_old = q.value;
-
-
+  
+  
       //---- Fill in ghost cells ----
       for d in dimensions do {
         val_old(lower_ghost_cells(d)) = val_old(periodic_image_of_lower_ghost_cells(d));
@@ -337,15 +359,18 @@ module grid_class {
       //---- Update solution on each cell ----
       var cell: dimension*int;
       
-
-      for cell_pretuple in physical_cells {
+  
+      forall cell_pretuple in physical_cells {
         for d in dimensions {
       
+          
+          var cell: dimension*int;
           if cell_pretuple.type == int then
             cell(1) = cell_pretuple;
           else
             cell = cell_pretuple;
-                        
+          
+          var flux_lower, flux_upper: real;          
           if velocity(d) < 0.0 then {
             flux_lower = velocity(d) * val_old(cell);
             flux_upper = velocity(d) * val_old(upper_cell(cell,d));
@@ -365,12 +390,13 @@ module grid_class {
             
     }
     //<=== Time-stepping loop <===
-
-
+  
+  
   }
   //<=== Upwind update of a GridFunction on this grid <===
   //<=====================================================
-
+  
+  
 
   //<============================================
   //<=== Definition of class RectangularGrid <===

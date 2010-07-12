@@ -4,7 +4,7 @@ CLAW_PLOTDIR = _plots               # Directory for plots
 PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
 
 SOURCES = \
-	grid_data.chpl
+	grid_data_strided.chpl
 
 .PHONY: clean
 
@@ -27,4 +27,4 @@ grid_test: $(SOURCES) grid_test.chpl
 	chpl $(SOURCES) grid_test.chpl -o grid_test
 
 clean:
-	rm -f _output/fort.* _plots/* advect1d output plots pyclaw.log *.pyc *~
+	rm -f _output/fort.* _output/*.png _plots/* advect1d output plots pyclaw.log *.pyc

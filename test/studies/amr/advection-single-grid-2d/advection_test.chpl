@@ -41,7 +41,7 @@ module advection_test {
     //---- Initializations for output ----
     var time_initial: real = 0.0,
       time_final:     real = 3.0,
-      num_output:     int = 30,
+      num_output:     int  = 30,
       output_times:   [1..num_output] real,
       dt_output:      real = (time_final - time_initial) / num_output,
       frame_number:   int = 0;

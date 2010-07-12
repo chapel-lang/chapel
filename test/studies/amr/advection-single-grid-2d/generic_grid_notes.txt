@@ -1,24 +1,9 @@
-How could I create an array of domains, or something to that effect,
-that would let me create a domain "lower_ghost_cells" that would handle
-all dimensions?
-
-I can make a tuple of domains...
-
 Are there plans to enforce subdomains more strictly than at present?
 In particular, is assigning physical_cells before all_cells kosher?
 
 
-
-Looks like the dimension would need to be a compile-time constant.  This
-is reasonable, yes?  But then I'd need expressions like
-    var blah: dim*domain(dim);
-to work, which they currently don't appear to.
+p.112 of spec: "strided" should be "stridable"
 
 
-Need a way to take tensor products of domains.
-
-
-p.112 of spec: stridable or strided?
-
-
-Error using -=1 on a single component of a tuple.
+Can't implement strided version of grid domains with current tools in
+generic dimensions.

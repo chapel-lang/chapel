@@ -32,10 +32,11 @@ module grid_test {
     writeln("");
     writeln("Core parameters:");
     writeln("----------------");
-    writeln("lower_corner = ", G.lower_corner);
-    writeln("upper_corner = ", G.upper_corner);
-    writeln("num_cells    = ", G.num_cells);
-    writeln("dx           = ", G.dx);
+    writeln("lower_corner    = ", G.lower_corner);
+    writeln("upper_corner    = ", G.upper_corner);
+    writeln("num_cells       = ", G.num_cells);
+    writeln("num_ghost_cells = ", G.num_ghost_cells);
+    writeln("dx              = ", G.dx);
 
 
     writeln("");
@@ -53,11 +54,19 @@ module grid_test {
 
 
     writeln("");
-    writeln("Ghost cell domains:");
+    writeln("Ghost cells:");
     writeln("-------------------");
     for d in dimensions do {
       writeln("lower_ghost_cells(", d, ") = ", G.lower_ghost_cells(d));
       writeln("upper_ghost_cells(", d, ") = ", G.upper_ghost_cells(d));
+    }
+
+    writeln("");
+    writeln("Periodic images of ghost cells:");
+    writeln("-------------------");
+    for d in dimensions do {
+      writeln("periodic_image_of_lower_ghost_cells(", d, ") = ", G.periodic_image_of_lower_ghost_cells(d));
+      writeln("periodic_image_of_upper_ghost_cells(", d, ") = ", G.periodic_image_of_upper_ghost_cells(d));
     }
 
 
@@ -112,18 +121,18 @@ module grid_test {
 /*     G.clawpack_output(q, 0); */
 
 
-    def tupleize(dom: domain(dimension)) {
-      var el_tuple: dimension*int;
-
-      for el in dom {
-	if dom.rank == 1 then {
-	  el_tuple(1) = el;
-	  yield el_tuple;
-	}
-	else 
-	  yield el;
-      }
-    }
+  //     def tupleize(dom: domain(dimension)) {
+  //       var el_tuple: dimension*int;
+  // 
+  //       for el in dom {
+  // if dom.rank == 1 then {
+  //   el_tuple(1) = el;
+  //   yield el_tuple;
+  // }
+  // else 
+  //   yield el;
+  //       }
+  //     }
 
     
 /*     writeln(""); */
