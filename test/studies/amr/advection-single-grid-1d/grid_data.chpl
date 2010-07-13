@@ -60,6 +60,7 @@ module grid_data {
       physical_cells = [1 .. #num_cells];
       all_cells      = [physical_cells.low - num_ghost_cells
                         .. physical_cells.high + num_ghost_cells];
+                        
       edges          = [edge_right_of(all_cells.low) 
                         .. edge_left_of(all_cells.high)];
 
@@ -120,8 +121,8 @@ module grid_data {
     //=====================================================>    
     //===> Upwind update of a GridFunction on this grid ===>
     def constant_advection_upwind(q:              GridFunction, 
-				  time_requested: real, 
-				  velocity:       real) {
+                                  time_requested: real, 
+                                  velocity:       real) {
 
       //---- Make sure that q lives on this grid ----
       assert(q.parent_grid == this && q.time <= time_requested);
@@ -163,6 +164,10 @@ module grid_data {
 
         //---- Update time ----
         q.time += dt_used;
+        
+        writeln("time = ", q.time);
+        writeln("------------");
+        writeln(q.value, "\n");
 
       }
       //<=== Time-stepping loop <===
@@ -228,8 +233,6 @@ module grid_data {
         outfile.writeln(format(efmt, q.value(cell)));
       outfile.close();
       delete outfile;
-
-
     }
     //<=== Output a GridFunction in Clawpack format <===
     //<=================================================     
@@ -249,6 +252,8 @@ module grid_data {
       q.value(physical_cells) = f(x);
 
     }
+    //<=== How to set a GridFunction equal to a scalar function ====
+    //<=============================================================
 
 
 

@@ -16,11 +16,11 @@ module advection1d_driver {
 
   //---- Configuration constants control some basic ----
   //---- setup for the problem. ------------------------
-  config const num_cells:        int = 100;
+  config const num_cells:        int = 40;
   config const num_output_times: int = 10;
   config const time_initial:     real = 0.0;
   config const time_final:       real = 1.0;
-  config const velocity:         real = 2.0;
+  config const velocity:         real = 1.0;
 
 
   //---- Initial condition ----

@@ -9,18 +9,18 @@ SOURCES = \
 	advection1d_driver.chpl \
 	grid_data.chpl
 
-NUM_CELLS = 50
+NUM_CELLS = 40
 NUM_OUTPUT = 10
-VELOCITY = -2.0
+VELOCITY = 1.0
 
 .PHONY: clean
 
-plots: output $(CLAW_setplot_file)
+plots: output $(CLAW_setplot_file) Makefile
 	rm -f _plots/*
 	$(PLOTCMD) $(CLAW_OUTDIR) $(CLAW_PLOTDIR) $(CLAW_setplot_file)
 	@echo $(CLAW_PLOTDIR) > plots
 
-output: advect1d
+output: advect1d Makefile
 	rm -f _output/fort.*
 	./advect1d --num_cells=$(NUM_CELLS) --num_output_times=$(NUM_OUTPUT) --velocity=$(VELOCITY)
 	@echo "Output generated"
