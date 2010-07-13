@@ -77,7 +77,12 @@ var T: [TableSpace] elemType;
 // config param to choose whether update loops need to be protected
 // declared as param to avoid the additional check at runtime 
 //
-config param updateLock: bool = false;
+config param safeUpdates: bool = false;
+
+//
+// config param to use the LCG random number generator
+//
+config param useLCG: bool = true;
 
 //
 // The program entry point
@@ -103,16 +108,24 @@ def main() {
   // communications.  Compute the update using r both to compute the
   // index and as the update value.
   //
-  forall ( , r) in (Updates, RAStream()) do
-    on TableDist.idxToLocale(r & indexMask) {
-      const myR = r;
-      //      local {
-	if updateLock then
-	  atomic T(myR & indexMask) ^= myR;
+
+  if useLCG {
+    forall ( , r) in (Updates, LCGRAStream()) do
+      on TableDist.idxToLocale(r >> (64 - n)) {
+	if safeUpdates then
+	  atomic T(r >> (64 - n)) ^= r;
+	else
+	  T(r >> (64 - n)) ^= r;
+      }
+  } else {
+    forall ( , r) in (Updates, RAStream()) do
+      on TableDist.idxToLocale(r & indexMask) {
+	if safeUpdates then
+	  atomic T(r & indexMask) ^= r;
 	else 
-	  T(myR & indexMask) ^= myR;
-      //      }
-    }
+	  T(r & indexMask) ^= r;
+      }
+  }
   
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
@@ -127,6 +140,7 @@ def printConfiguration() {
   if (printParams) {
     if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numTables, m);
+    writeln("Atomic Update = ", safeUpdates);
     writeln("Number of updates = ", N_U, "\n");
   }
 }
@@ -146,13 +160,17 @@ def verifyResults() {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  forall ( , r) in (Updates, RAStream()) do
-    on TableDist.idxToLocale(r & indexMask) {
-      const myR = r;
-      //      local {
-	atomic T(myR & indexMask) ^= myR;
-	//      }
-    }
+  if useLCG {
+    forall ( , r) in (Updates, LCGRAStream()) do
+      on TableDist.idxToLocale(r >> (64 - n)) {
+	atomic T(r >> (64 - n)) ^= r;
+      }
+  } else {
+    forall ( , r) in (Updates, RAStream()) do
+      on TableDist.idxToLocale(r & indexMask) {
+	atomic T(r & indexMask) ^= r;
+      }
+  }
 
   const verifyTime = getCurrentTime() - startTime;
 

@@ -6,6 +6,9 @@ module RARandomStream {
   param randWidth = 64;              // the bit-width of the random numbers
   type randType = uint(randWidth);   // the type of the random numbers
 
+  param LCGMUL64 = 0x5851F42D4C957F2D;
+  param LCGADD64 = 1;
+
   //
   // m2 is a table (tuple) of helper values used to fast-forward
   // through the random stream.
@@ -85,16 +88,55 @@ module RARandomStream {
     return m2tmp;
   }
 
-  /* def HPCC_starts_LCG(n) { */
-  /*   var mul_k, add_k, ran, un: randType; */
-  /*   param lcg_mul64 = 6364136223846793005;  */
-  /*   param lcg_add64 = 1; */
+  //
+  // A serial iterator for the random stream that resets the stream
+  // to its 0th element and yields values endlessly.
+  //
+  def LCGRAStream() {
+    var val = LCGgetNthRandom(0);
+    while (1) {
+      LCGgetNextRandom(val);
+      yield val;
+    }
+  }
 
-  /*   mul_k = lcg_mul64; */
-  /*   add_k = lcg_add64; */
+  def LCGRAStream(param tag: iterator, follower) where tag == iterator.follower {
+    if follower.size != 1 then
+      halt("LCGRAStream cannot use multi-dimensional iterator");
+    var val = LCGgetNthRandom(follower(1).low);
+    for follower {
+      LCGgetNextRandom(val);
+      yield val;
+    }
+  }
 
-  /*   ran = 1; */
-  /*   for  */
+  //
+  // A helper function for advancing a value from the random stream,
+  // x, to the next value
+  //
+  def LCGgetNextRandom(inout x) {
+    x = LCGMUL64 * x + LCGADD64;
+  } 
 
-  /* } */
+  //
+  // A helper function for "fast-forwarding" the LCG random stream to
+  // position n in O(log2(n)) time
+  //
+  def LCGgetNthRandom(in n: randType) {
+    var mulk, addk, ran, un: randType;
+
+    mulk = LCGMUL64;
+    addk = LCGADD64;
+    ran = 1; 
+    un = n;
+
+    while (un > 0) {
+      if (un & 1) then
+	ran = mulk * ran + addk;
+      addk *= mulk + 1;
+      mulk *= mulk;
+      un >>= 1;
+    }
+    return ran;
+  }
 }
