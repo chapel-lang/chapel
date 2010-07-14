@@ -1,2 +1,9 @@
-Chameneos Performance Over Time
-Time (seconds)
+keys: time for chameneos1 to meet, time for chameneos2 to meet
+ylabel: Time (seconds)
+graph_name: chameneos-redux-concurrent
+title: chameneos-redux performance over time - concurrent
+keys: total execution time
+title: chameneos-redux performance over time - total
+graph_name: chameneos-redux-total
+ylabel: Time (seconds)
+
