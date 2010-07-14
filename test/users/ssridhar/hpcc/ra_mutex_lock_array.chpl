@@ -124,10 +124,10 @@ def main() {
   //
   if useLCG {
     forall ( , r) in (Updates, LCGRAStream()) do
-      on TableDist.idxToLocale(r & indexMask) {
-	if safeUpdates then mutex_lock(TLock(r&indexMask));
-	T(r & indexMask) ^= r;
-	if safeUpdates then mutex_unlock(TLock(r&indexMask));
+      on TableDist.idxToLocale(r >> (64 - n)) {
+	if safeUpdates then mutex_lock(TLock(r >> (64 - n)));
+	T(r >> (64 - n)) ^= r;
+	if safeUpdates then mutex_unlock(TLock(r >> (64 - n)));
       }
   } else {
     forall ( , r) in (Updates, RAStream()) do
@@ -171,12 +171,21 @@ def verifyResults() {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  forall ( , r) in (Updates, RAStream()) do
-    on TableDist.idxToLocale(r & indexMask) {
-      mutex_lock(TLock(r&indexMask));
-      T(r & indexMask) ^= r;
-      mutex_unlock(TLock(r&indexMask));
-    }
+  if useLCG {
+    forall ( , r) in (Updates, LCGRAStream()) do
+      on TableDist.idxToLocale(r >> (64 - n)) {
+	mutex_lock(TLock(r >> (64 - n)));
+	T(r >> (64 - n)) ^= r;
+	mutex_unlock(TLock(r >> (64 - n)));
+      }
+  } else {
+    forall ( , r) in (Updates, RAStream()) do
+      on TableDist.idxToLocale(r & indexMask) {
+	mutex_lock(TLock(r&indexMask));
+	T(r & indexMask) ^= r;
+	mutex_unlock(TLock(r&indexMask));
+      }
+  }
 
   const verifyTime = getCurrentTime() - startTime;
 
