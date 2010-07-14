@@ -11,6 +11,7 @@ my $graph_file = "$testname.graph";
 my $gpl_file = "$outputdir/$testname.gpl";
 my $gif_file = "$outputdir/$testname.gif";
 
+# get keys from .perfkeys
 open KEYS, "$key_file" or die "can't open $key_file $!";
 my @keys = <KEYS>;
 close (KEYS);
@@ -18,10 +19,12 @@ foreach my $key (@keys) {
     chomp($key);
 }
 
+# get lines of output file
 open TEST, "$test_output_file" or die "can't open $test_output_file $!";
 my @file_lines = <TEST>;
 close (TEST);
 
+# if this is first performance run, create the .dat
 if (-e "$data_file") {
 } else {
     open STATS, ">$data_file" or die "can't open $data_file for creating $!";
@@ -32,6 +35,8 @@ if (-e "$data_file") {
     print STATS "\n";
     close (STATS);
 }
+
+# write new data to the .dat
 open STATS, ">>$data_file" or die "can't open $data_file for appending $!";
 
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
@@ -39,6 +44,7 @@ my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
 $mon += 1;
 $year -= 100;
 
+# check all output lines for values following keys, write them to the .dat
 my $foundEverything = 1;
 printf STATS "%.2d/%.2d/%.2d ", $mon, $mday, $year;
 foreach my $key (@keys) {
@@ -66,6 +72,7 @@ if ($foundEverything != 1) {
     exit 1;
 } 
 
+# get start date (date of first performance run)
 open STATS, "$data_file" or die "can't open $data_file $!";
 my @stat_lines = <STATS>;
 my $first_line = @stat_lines[1];
@@ -73,24 +80,109 @@ my @first_words = parse_line('\t', 0, $first_line);
 my $start_date = @first_words[0];
 
 if (-e "$gpl_file") {
-    print "existing gpl_file: $gpl_file\n"; 
-    exit 1;
+    exit 0; # should do smthing different?
 } else {
-    open GRAPH_INFO, "$graph_file" or exit 0; #die "can't open $graph_file $!"; 
-    my @graph_info = <GRAPH_INFO>;
-    close (GRAPH_INFO);
-    if (@graph_info != 2) {
-        print "incorrect format for $graph_file\n";
-	print "first line of file should be title of graph\n";
-	print "second line of file should be y-axis label\n";
-    }
+    open GRAPH_LINES, "$graph_file" or exit 0; 
+    my $custom = 0;    
 
-    foreach my $info (@graph_info) {
-        chomp($info);
+    my @keys = @keys;
+    my $graph_name = $testname;
+    my $title = "$testname performance over time";
+    my $ylabel = "--"; 
+  			print "*****\n";
+			print "before processing .graph contents\n";
+			foreach my $key (@keys) {
+				print "key : $key\n";
+			}
+			print "graph_name : $graph_name\n";
+			print "title : $title\n";
+			print "ylabel : $ylabel\n";
+  			print "*****\n";
+    while ($line = <GRAPH_LINES>) {
+	chomp($line);
+        my @words = split(/ /, $line);
+  	if (@words[0] eq "keys:") {
+ 	    print "first word is keys:\n";
+	    my $keys_line = join(" ", @words[1..$#words]);
+	    @keys = split(/,/, $keys_line);
+	    my $nextline = <GRAPH_LINES>;
+	    chomp($nextline);
+            @words = split(/ /, $nextline);
+	    while (@words[0] && @words[0] ne "keys:") {
+           	 if (@words[0] eq "graph_name:") {
+	        	$graph_name = @words[1];
+			print "graph_name is $graph_name\n";
+		 } elsif (@words[0] eq "title:") {
+		        $title = join(" ", @words[1..$#words]);
+			print "title is $title\n";
+	         } elsif (@words[0] eq "ylabel:")  {
+			$ylabel = join(" ", @words[1..$#words]);
+			print "ylabel is $ylabel\n";
+		 } else {
+	       	 	print "usage : \n";
+	         }
+		 $nextline = <GRAPH_LINES>;
+		 chomp($nextline);
+		 @words = split(/ /, $nextline);
+	    }
+	} else {
+	    print "first word is not keys:, word is @words[0]\n";
+	    while (@words[0] && @words[0] ne "keys:") {
+           	 if (@words[0] eq "graph_name:") {
+	        	$graph_name = @words[1];
+			print "graph_name is $graph_name\n";
+		 } elsif (@words[0] eq "title:") {
+		        $title = join(" ", @words[1..$#words]);
+			print "title is $title\n";
+	         } elsif (@words[0] eq "ylabel:")  {
+			$ylabel = join(" ", @words[1..$#words]);
+			print "ylabel is $ylabel\n";
+		 } else {
+	       		print "usage : \n";
+	         }
+		 $nextline = <GRAPH_LINES>;
+		 chomp($nextline);
+		 @words = split(/ /, $nextline);
+	    }
+	}
+  					print "*****\n";
+					print "before calling makeGraph (custom) \n";
+					foreach my $key (@keys) {
+						print "key : $key\n";
+					}
+					print "graph_name : $graph_name\n";
+					print "title : $title\n";
+					print "ylabel : $ylabel\n";
+  					print "*****\n";
+	&makeGraph($graph_name, $title, $ylabel, @keys);
+        $custom = 1;
     }
-    my $title = $graph_info[0];
-    my $y_axis_label = $graph_info[1];
+    if (!$custom) {
+  					print "*****\n";
+					print "before calling makeGraph (not custom)\n";
+					foreach my $key (@keys) {
+						print "key : $key\n";
+					}
+					print "graph_name : $graph_name\n";
+					print "title : $title\n";
+					print "ylabel : $ylabel\n";
+  					print "*****\n";
+    	&makeGraph($graph_name, $title, $ylabel, @keys);
+    }
+}
 
+
+sub makeGraph {
+    my($graph_name, $title, $ylabel, @keys) = @_;
+  			print "*****\n";
+			print "during makeGraph\n";
+			foreach my $key (@keys) {
+				print "key : $key\n";
+			}
+			print "graph_name : $graph_name\n";
+			print "title : $title\n";
+			print "ylabel : $ylabel\n";
+  			print "*****\n";
     open GNUPLOT_COMMANDS, ">$gpl_file" or die "can't open $gpl_file for creating $!";
     print GNUPLOT_COMMANDS "set terminal gif\n"; 
     print GNUPLOT_COMMANDS "set size 1, 1\n";
@@ -99,26 +191,27 @@ if (-e "$gpl_file") {
     print GNUPLOT_COMMANDS "set format x \"%m/%d/%y\"\n";
     print GNUPLOT_COMMANDS "set xlabel \"date (MM/DD/YY)\"\n";
     print GNUPLOT_COMMANDS "set key left\n";
-    print GNUPLOT_COMMANDS "set ylabel \"$y_axis_label\"\n";
+    print GNUPLOT_COMMANDS "set ylabel \"$ylabel\"\n";
     print GNUPLOT_COMMANDS "set xrange [\"$start_date\":*]\n";
     print GNUPLOT_COMMANDS "set yrange [0:*]\n";  
     print GNUPLOT_COMMANDS "set title \"$title\"\n";
-    print GNUPLOT_COMMANDS "set output \"$outputdir/$testname.gif\"\n";
-}
+    print GNUPLOT_COMMANDS "set output \"$outputdir/$graph_name.gif\"\n";
+    print "output graph : \"$outputdir/$graph_name.gif\"\n";
+    print GNUPLOT_COMMANDS "plot \\\n";
 
-print GNUPLOT_COMMANDS "plot \\\n";
-my $i = 2;
-foreach my $key (@keys[0..$#keys-1]) {
-    $key = substr $key, 0, -2;
+    my $i = 2;
+    foreach my $key (@keys[0..$#keys-1]) {
+        $line_type = $i % 9;
+        print GNUPLOT_COMMANDS "\t\"$data_file\" using 1:$i title '$key' with linespoints lt $line_type pt 4, \\\n";
+        $i++;
+    }
     $line_type = $i % 9;
-    print GNUPLOT_COMMANDS "\t\"$data_file\" using 1:$i title '$key' with linespoints lt $line_type pt 4, \\\n";
-    $i++;
-}
-$line_type = $i % 9;
-my $last_key = substr @keys[$#key], 0, -2;
-print GNUPLOT_COMMANDS "\t\"$data_file\" using 1:$i title '$last_key' with linespoints lt $line_type pt 4\n";
+    my $last_key = @keys[$#key];
+    print GNUPLOT_COMMANDS "\t\"$data_file\" using 1:$i title '$last_key' with linespoints lt $line_type pt 4\n";
 
-close(GNUPLOT_COMMANDS);
-system("module load gnuplot");
-system("gnuplot $gpl_file");
-system("rm $gpl_file");
+    close(GNUPLOT_COMMANDS);
+    system("module load gnuplot");
+    system("gnuplot $gpl_file");
+    system("rm $gpl_file");
+    print "at end of makeGraph ... \n";
+}
