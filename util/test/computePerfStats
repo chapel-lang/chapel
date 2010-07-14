@@ -1,11 +1,15 @@
 #!/usr/bin/env perl
 
+use Text::ParseWords;
 $testname = $ARGV[0];
 $outputdir = $ARGV[1];
 
 my $key_file = "$testname.perfkeys";
 my $test_output_file = "$testname.exec.out.tmp";
 my $data_file = "$outputdir/$testname.dat";
+my $graph_file = "$testname.graph";
+my $gpl_file = "$outputdir/$testname.gpl";
+my $gif_file = "$outputdir/$testname.gif";
 
 open KEYS, "$key_file" or die "can't open $key_file $!";
 my @keys = <KEYS>;
@@ -56,10 +60,65 @@ foreach my $key (@keys) {
 }
 print STATS "\n";
 
-if ($foundEverything == 1) {
-    exit 0;
-} else {
+if ($foundEverything != 1) {
     print "output was:\n";
     system("cat $testname.exec.out.tmp");
     exit 1;
+} 
+
+open STATS, "$data_file" or die "can't open $data_file $!";
+my @stat_lines = <STATS>;
+my $first_line = @stat_lines[1];
+my @first_words = parse_line('\t', 0, $first_line);
+my $start_date = @first_words[0];
+
+if (-e "$gpl_file") {
+    print "existing gpl_file: $gpl_file\n"; 
+    exit 1;
+} else {
+    open GRAPH_INFO, "$graph_file" or exit 0; #die "can't open $graph_file $!"; 
+    my @graph_info = <GRAPH_INFO>;
+    close (GRAPH_INFO);
+    if (@graph_info != 2) {
+        print "incorrect format for $graph_file\n";
+	print "first line of file should be title of graph\n";
+	print "second line of file should be y-axis label\n";
+    }
+
+    foreach my $info (@graph_info) {
+        chomp($info);
+    }
+    my $title = $graph_info[0];
+    my $y_axis_label = $graph_info[1];
+
+    open GNUPLOT_COMMANDS, ">$gpl_file" or die "can't open $gpl_file for creating $!";
+    print GNUPLOT_COMMANDS "set terminal gif\n"; 
+    print GNUPLOT_COMMANDS "set size 1, 1\n";
+    print GNUPLOT_COMMANDS "set xdata time\n";
+    print GNUPLOT_COMMANDS "set timefmt \"%m/%d/%y\"\n";
+    print GNUPLOT_COMMANDS "set format x \"%m/%d/%y\"\n";
+    print GNUPLOT_COMMANDS "set xlabel \"date (MM/DD/YY)\"\n";
+    print GNUPLOT_COMMANDS "set key left\n";
+    print GNUPLOT_COMMANDS "set ylabel \"$y_axis_label\"\n";
+    print GNUPLOT_COMMANDS "set xrange [\"$start_date\":*]\n";
+    print GNUPLOT_COMMANDS "set yrange [0:*]\n";  
+    print GNUPLOT_COMMANDS "set title \"$title\"\n";
+    print GNUPLOT_COMMANDS "set output \"$outputdir/$testname.gif\"\n";
 }
+
+print GNUPLOT_COMMANDS "plot \\\n";
+my $i = 2;
+foreach my $key (@keys[0..$#keys-1]) {
+    $key = substr $key, 0, -2;
+    $line_type = $i % 9;
+    print GNUPLOT_COMMANDS "\t\"$data_file\" using 1:$i title '$key' with linespoints lt $line_type pt 4, \\\n";
+    $i++;
+}
+$line_type = $i % 9;
+my $last_key = substr @keys[$#key], 0, -2;
+print GNUPLOT_COMMANDS "\t\"$data_file\" using 1:$i title '$last_key' with linespoints lt $line_type pt 4\n";
+
+close(GNUPLOT_COMMANDS);
+system("module load gnuplot");
+system("gnuplot $gpl_file");
+system("rm $gpl_file");
