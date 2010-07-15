@@ -15,7 +15,9 @@ TARGETS = \
 	ra_mla \
 	ra_sla \
 	ra_sda \
-	testLCG
+	testLCG \
+	testRAR \
+	ra2 \	
 
 default: all
 
@@ -37,6 +39,12 @@ ra_sda: HPCCProblemSize.chpl RARandomStream.chpl ra_sync_data_array.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^ 
 
 testLCG: HPCCProblemSize.chpl RARandomStream.chpl testLCG.chpl
+	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+
+testRAR: HPCCProblemSize.chpl RARandomStream.chpl testLCG.chpl
+	$(CHPL) -o $@ -suseLCG=false $(FLAGS) --savec c_$@ $^
+
+ra2: RARandomStream.chpl ra2.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
 FORCE:

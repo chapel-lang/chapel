@@ -118,6 +118,10 @@ module RARandomStream {
     x = LCGMUL64 * x + LCGADD64;
   } 
 
+  def LCGgetNextRandom(x:randType): randType {
+    return LCGMUL64 * x + LCGADD64; 
+  }
+
   //
   // A helper function for "fast-forwarding" the LCG random stream to
   // position n in O(log2(n)) time
