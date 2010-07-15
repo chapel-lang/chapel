@@ -1,3 +1,6 @@
+#include <sstream>
+#include <map>
+
 #include "astutil.h"
 #include "build.h"
 #include "caches.h"
@@ -43,6 +46,8 @@ static Map<Type*,Type*> runtimeTypeMap; // map static types to runtime types
                                         // e.g. array and domain runtime types
 static Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
 static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
+
+static std::map<std::string, std::pair<ClassType*, FnSymbol*> > functionTypeMap; // lookup table/cache for function types and their representative parents
 
 // map of compiler warnings that may need to be reissued for repeated
 // calls; the inner compiler warning map is from the compilerWarning
@@ -2277,16 +2282,6 @@ createFunctionAsValue(CallExpr *call) {
   UnresolvedSymExpr* use = toUnresolvedSymExpr(call->get(1));
   INT_ASSERT(use);
   const char *fname = use->unresolved;
-  ClassType *ct = new ClassType(CLASS_CLASS);
-  TypeSymbol *ts = new TypeSymbol(astr("_fcf_", fname), ct);
-  call->getStmtExpr()->insertBefore(new DefExpr(ts));
-  ct->dispatchParents.add(dtObject);
-  dtObject->dispatchChildren.add(ct);
-  VarSymbol* super = new VarSymbol("super", dtObject);
-  super->addFlag(FLAG_SUPER_CLASS);
-  ct->fields.insertAtHead(new DefExpr(super));
-  build_constructor(ct);
-  build_type_constructor(ct);
       
   Vec<FnSymbol*> visibleFns;
   Vec<BlockStmt*> visited;
@@ -2297,14 +2292,122 @@ createFunctionAsValue(CallExpr *call) {
   }
 
   INT_ASSERT(visibleFns.n == 1);
-      
-  FnSymbol *thisMethod = new FnSymbol("this");
-  thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "this", ct));
 
-  CallExpr *innerCall = new CallExpr(visibleFns.v[0]);
+  FnSymbol* captured_fn = visibleFns.v[0];
+  resolveFns(captured_fn);
+
+  std::ostringstream oss;
+  oss << "chpl__fcf_type_";
+  
+  if (captured_fn->formals.length == 0) {
+    oss << "void";
+  }
+  else {
+    bool isFirst = true;
+    for_alist(formalExpr, captured_fn->formals) {
+      DefExpr* dExp = toDefExpr(formalExpr);
+      ArgSymbol* fArg = toArgSymbol(dExp->sym);
       
-  for_alist(formalExpr, visibleFns.v[0]->formals) {
+      if (!isFirst)
+	oss << "_";
+    
+      oss << fArg->type->symbol->name;
+    
+      isFirst = false;
+    }
+  }
+  oss << "_";
+  oss << captured_fn->retType->symbol->name;
+  std::string parent_name = oss.str();
+
+  ClassType *parent;
+  FnSymbol *thisParentMethod;
+  
+  if (functionTypeMap.find(parent_name) != functionTypeMap.end()) {
+    std::pair<ClassType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
+    parent = ctfs.first;
+    thisParentMethod = ctfs.second;
+  }
+  else {
+    parent = new ClassType(CLASS_CLASS);
+    TypeSymbol *parent_ts = new TypeSymbol(oss.str().c_str(), parent);
+
+    call->parentSymbol->defPoint->insertBefore(new DefExpr(parent_ts));
+    
+    parent->dispatchParents.add(dtObject);
+    dtObject->dispatchChildren.add(parent);
+    VarSymbol* parent_super = new VarSymbol("super", dtObject);
+    parent_super->addFlag(FLAG_SUPER_CLASS);
+    parent->fields.insertAtHead(new DefExpr(parent_super));
+    build_constructor(parent);
+    build_type_constructor(parent);
+
+    thisParentMethod = new FnSymbol("this");
+    ArgSymbol *thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
+    thisParentMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+    thisParentMethod->insertFormalAtTail(thisParentSymbol);
+    thisParentMethod->_this = thisParentSymbol;
+    
+    for_alist(formalExpr, captured_fn->formals) {
+      DefExpr* dExp = toDefExpr(formalExpr);
+      ArgSymbol* fArg = toArgSymbol(dExp->sym);
+
+      if (fArg->defaultExpr) {
+	USR_FATAL(fArg, "Default arguments not allowed in first class functions");
+      }		
+      ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
+      if (fArg->typeExpr) 
+	newFormal->typeExpr = fArg->typeExpr->copy();
+	      
+      thisParentMethod->insertFormalAtTail(newFormal);
+    }
+
+    if (captured_fn->retType != dtVoid) {
+      VarSymbol *tmp = newTemp(); 
+      thisParentMethod->insertAtTail(new DefExpr(tmp));
+      thisParentMethod->insertAtTail(new CallExpr(PRIM_MOVE, tmp, captured_fn->retType->defaultValue));
+      
+      thisParentMethod->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+    }
+
+    call->parentSymbol->defPoint->insertBefore(new DefExpr(thisParentMethod));
+    
+    normalize(thisParentMethod);
+    
+    parent->methods.add(thisParentMethod);
+    functionTypeMap[parent_name] = std::pair<ClassType*, FnSymbol*>(parent, thisParentMethod);
+  }
+  
+  ClassType *ct = new ClassType(CLASS_CLASS);
+  TypeSymbol *ts = new TypeSymbol(astr("_fcf_", fname), ct);
+
+  call->parentExpr->insertBefore(new DefExpr(ts));
+  
+  ct->dispatchParents.add(parent);
+  parent->dispatchChildren.add(ct);
+  VarSymbol* super = new VarSymbol("super", parent);
+  super->addFlag(FLAG_SUPER_CLASS);
+  ct->fields.insertAtHead(new DefExpr(super));
+
+  build_constructor(ct);
+  build_type_constructor(ct);
+
+  FnSymbol *thisMethod = new FnSymbol("this");
+  ArgSymbol *thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
+  thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  thisMethod->insertFormalAtTail(thisSymbol);
+  thisMethod->_this = thisSymbol;
+
+  CallExpr *innerCall = new CallExpr(captured_fn);
+      
+  int skip = 2;
+  for_alist(formalExpr, thisParentMethod->formals) {
+    //Skip the first two arguments from the parent, which are _mt and this
+    if (skip) {
+      --skip;
+      continue;
+    }
+
     DefExpr* dExp = toDefExpr(formalExpr);
     ArgSymbol* fArg = toArgSymbol(dExp->sym);
 
@@ -2321,14 +2424,14 @@ createFunctionAsValue(CallExpr *call) {
   }
       
   Vec<CallExpr*> calls;
-  collectCallExprs(visibleFns.v[0], calls);
+  collectCallExprs(captured_fn, calls);
   forv_Vec(CallExpr, cl, calls) {
     if (cl->isPrimitive(PRIM_YIELD)) {
       USR_FATAL_CONT(cl, "Interators not allowed in first class functions");
     }
   }
       
-  if (visibleFns.v[0]->retType == dtVoid) {
+  if (captured_fn->retType == dtVoid) {
     thisMethod->insertAtTail(innerCall);
   }
   else {
@@ -2339,10 +2442,20 @@ createFunctionAsValue(CallExpr *call) {
     thisMethod->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   }
       
-  call->getStmtExpr()->insertBefore(new DefExpr(thisMethod));
-  ct->methods.add(thisMethod);
+  call->parentExpr->insertBefore(new DefExpr(thisMethod));
+  normalize(thisMethod);
 
-  return new CallExpr(ct->defaultConstructor);
+  ct->methods.add(thisMethod);
+  
+  FnSymbol *wrapper = new FnSymbol("wrapper");
+  wrapper->addFlag(FLAG_INLINE);
+
+  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, parent->symbol, new CallExpr(ct->defaultConstructor))));
+
+  call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
+  normalize(wrapper);
+
+  return new CallExpr(wrapper);
 }
 
 static Expr*
@@ -4387,7 +4500,7 @@ pruneResolvedTree() {
               !resolvedFns.get(ct->defaultTypeConstructor)) {
             if (ct->symbol->hasFlag(FLAG_OBJECT_CLASS))
               dtObject = NULL;
-            ct->symbol->defPoint->remove();
+	    ct->symbol->defPoint->remove();
           }
   }
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
