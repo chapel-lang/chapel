@@ -71,14 +71,9 @@ def verifyResults() {
   forall ( , r) in (Updates, LCGRAStream()) {
     on TableDist.idxToLocale(r >> (64 - n)) {
       const s = LCGgetNextRandom(r);  
-      if safeUpdates {
-	atomic {
-	  T(r >> (64 - n)) += 1;
-	  T(s >> (64 - n)) -= 1;
-	}
-      } else {
-	  T(r >> (64 - n)) += 1;
-	  T(s >> (64 - n)) -= 1;
+      atomic {
+	T(r >> (64 - n)) += 1;
+	T(s >> (64 - n)) -= 1;
       }
     }
   }
