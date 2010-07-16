@@ -17,7 +17,10 @@ TARGETS = \
 	ra_sda \
 	testLCG \
 	testRAR \
-	ra2 \	
+	ra2 \
+	Svnra Svnra_mla Svnra_sla \
+	SvntestLCG SvntestRAR \
+	Svnra2
 
 default: all
 
@@ -27,24 +30,24 @@ clean: FORCE
 	rm -rf $(TARGETS) *_real c_* 
 
 ra: HPCCProblemSize.chpl RARandomStream.chpl ra.chpl
-	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
 
 ra_mla: HPCCProblemSize.chpl RARandomStream.chpl MutexLock.chpl MutexLock.h ra_mutex_lock_array.chpl
-	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^ 
+	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^ 
 
 ra_sla: HPCCProblemSize.chpl RARandomStream.chpl ra_sync_lock_array.chpl
-	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^ 
+	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^ 
 
 ra_sda: HPCCProblemSize.chpl RARandomStream.chpl ra_sync_data_array.chpl
-	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^ 
+	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^ 
 
 testLCG: HPCCProblemSize.chpl RARandomStream.chpl testLCG.chpl
-	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
 
 testRAR: HPCCProblemSize.chpl RARandomStream.chpl testLCG.chpl
-	$(CHPL) -o $@ -suseLCG=false $(FLAGS) --savec c_$@ $^
+	$(CHPL) -o $(CHPLSVN)$@ -suseLCG=false $(FLAGS) --savec c_$@ $^
 
 ra2: RARandomStream.chpl ra2.chpl
-	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
 
 FORCE:

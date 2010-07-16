@@ -107,7 +107,7 @@ def main() {
   //
   [i in TableSpace] { 
     T(i) = i;
-    TLock$(i) = true;
+    TLock$(i).writeXF(true);
   }
 
   const startTime = getCurrentTime();              // capture the start time
@@ -151,6 +151,7 @@ def printConfiguration() {
     if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numTables, m);
     writeln("Atomic Update = ", safeUpdates);
+    writeln("Use LCG = ", useLCG);
     writeln("Number of updates = ", N_U, "\n");
   }
 }
