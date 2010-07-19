@@ -148,6 +148,16 @@ resolveAutoDestroy(Type* type) {
 }
 
 
+FnSymbol* getAutoCopy(Type *t) {
+  return autoCopyMap.get(t);
+}
+
+
+FnSymbol* getAutoDestroy(Type* t) {
+  return autoDestroyMap.get(t);
+}
+
+
 const char* toString(Type* type) {
   return type->getValType()->symbol->name;
 }

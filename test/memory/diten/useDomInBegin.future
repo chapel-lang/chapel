@@ -1,4 +1,0 @@
-bug: domain used in begin is deleted while still needed
-
-A domain is deleted at the end of the function it was declared in, but it is
-still needed to create the array in the begin.
