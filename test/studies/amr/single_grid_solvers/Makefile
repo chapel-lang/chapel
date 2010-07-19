@@ -3,8 +3,11 @@ CLAW_setplot_file = setplot1d.py      # File containing function to set plots
 CLAW_PLOTDIR = _plots               # Directory for plots
 PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
 
-ADVECTION_SOURCES = \
+UPWIND_ADVECTION_SOURCES = \
 	grid_base_defs.chpl upwind_advection_defs.chpl upwind_advection_driver.chpl
+
+CTU_ADVECTION_SOURCES = \
+	grid_base_defs.chpl ctu_advection_defs.chpl ctu_advection_driver.chpl
 
 FORWARD_EULER_DIFFUSION_SOURCES = \
 	grid_base_defs.chpl \
@@ -19,7 +22,7 @@ BACKWARD_EULER_DIFFUSION_SOURCES = \
 
 .PHONY: clean
 
-plots:
+plots: _output/fort.t0000
 	rm -f _plots/*
 	$(PLOTCMD) $(CLAW_OUTDIR) $(CLAW_PLOTDIR) $(CLAW_setplot_file)
 	@echo $(CLAW_PLOTDIR) > plots
@@ -38,11 +41,17 @@ output_dfe: forward_euler_diffusion.out
 	@echo "Output is in directory _output."
 	@echo $(CLAW_OUTDIR) > output_dfe
 
-output_a: upwind_advection.out
+output_ca: ctu_advection.out
+	rm -f _output/fort.*
+	./ctu_advection.out
+	@echo "Output is in directory _output."
+	@echo $(CLAW_OUTDIR) > output_ca
+
+output_ua: upwind_advection.out
 	rm -f _output/fort.*
 	./upwind_advection.out
 	@echo "Output is in directory _output."
-	@echo $(CLAW_OUTDIR) > output_a
+	@echo $(CLAW_OUTDIR) > output_ua
 
 
 
@@ -52,8 +61,11 @@ backward_euler_diffusion.out: $(BACKWARD_EULER_DIFFUSION_SOURCES)
 forward_euler_diffusion.out: $(FORWARD_EULER_DIFFUSION_SOURCES)
 	chpl $(FORWARD_EULER_DIFFUSION_SOURCES) -o forward_euler_diffusion.out
 
-upwind_advection.out: $(ADVECTION_SOURCES)
-	chpl $(ADVECTION_SOURCES) -o upwind_advection.out
+ctu_advection.out: $(CTU_ADVECTION_SOURCES)
+	chpl $(CTU_ADVECTION_SOURCES) -o ctu_advection.out
+
+upwind_advection.out: $(UPWIND_ADVECTION_SOURCES)
+	chpl $(UPWIND_ADVECTION_SOURCES) -o upwind_advection.out
 
 
 clean:

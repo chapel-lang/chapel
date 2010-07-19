@@ -25,7 +25,8 @@ class RectangularGrid {
   
   const dimensions: domain(1) = [1..dimension];
   
-  var lower_corner, upper_corner: dimension*real,
+  var low_coord, high_coord: dimension*real,
+      low_index, high_index: dimension*int,
       num_cells, num_ghost_cells: dimension*int;
 
   var dx: dimension*real;
@@ -49,8 +50,9 @@ class RectangularGrid {
 
 //===> RectangularGrid constructor ===>
 //====================================>
-def RectangularGrid.RectangularGrid(lower_corner_input:    dimension*real,
-                                    upper_corner_input:    dimension*real,
+def RectangularGrid.RectangularGrid(low_coord_input:       dimension*real,
+                                    high_coord_input:      dimension*real,
+                                    low_index_input:       dimension*int,
                                     num_cells_input:       dimension*int,
                                     num_ghost_cells_input: dimension*int)
 {
@@ -59,11 +61,19 @@ def RectangularGrid.RectangularGrid(lower_corner_input:    dimension*real,
   var size: dimension*int;
 
   //---- Core parameters ----
-  lower_corner    = lower_corner_input;
-  upper_corner    = upper_corner_input;
+  low_coord       = low_coord_input;
+  high_coord      = high_coord_input;
+  for d in dimensions do assert(low_coord(d) < high_coord(d), 
+                                "grid_base_defs.chpl: Error: low_coord exceeds high_coord");
+  
+  low_index       = low_index_input;
   num_cells       = num_cells_input;
   num_ghost_cells = num_ghost_cells_input;
-  dx              = (upper_corner - lower_corner) / num_cells;
+
+  [d in dimensions] high_index(d) = low_index(d) + 2*num_cells(d);
+  dx = (high_coord - low_coord) / num_cells;
+
+
   
   //---- Cell domains ----
   select dimension {
@@ -118,11 +128,11 @@ def RectangularGrid.cell_center_coordinates (cells) {
 
   if dimension == 1 then {
     forall (cell,d) in [cells,dimensions] do
-      coordinates(cell)(d) = lower_corner(d) + cell*dx(d)/2.0;
+      coordinates(cell)(d) = low_coord(d) + cell*dx(d)/2.0;
   }
   else {
     forall (cell,d) in [cells,dimensions] do
-      coordinates(cell)(d) = lower_corner(d) + cell(d)*dx(d)/2.0;
+      coordinates(cell)(d) = low_coord(d) + cell(d)*dx(d)/2.0;
   }
 
   return coordinates;
@@ -228,7 +238,7 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
   }
 
 
-  //---- Write lower_corner ----
+  //---- Write low_coord ----
   for d in dimensions do {
     select d {
       when 1 do linelabel = "    xlow";
@@ -236,7 +246,7 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
       when 3 do linelabel = "    zlow";
       otherwise linelabel = "    xlow(" + format("%1i",d) + ")";
     }
-    outfile.writeln( format(efmt, lower_corner(d)),  linelabel);
+    outfile.writeln( format(efmt, low_coord(d)),  linelabel);
   }
 
 
