@@ -1,8 +1,0 @@
-bug: passing a tuple as an argument in first class function causes compilation issues.
-
-Passing a tuple as an argument causes the following issue:
-
-test/trivial/jturner/fc_fun_tuple.chpl:5: In function 'h':
-test/trivial/jturner/fc_fun_tuple.chpl:11: error: actual type is unknown or generic [callInfo.cpp:35]
-
-

@@ -2305,6 +2305,7 @@ createFunctionAsValue(CallExpr *call) {
   INT_ASSERT(visibleFns.n == 1);
 
   FnSymbol* captured_fn = visibleFns.v[0];
+  resolveFormals(captured_fn);
   resolveFns(captured_fn);
 
   std::ostringstream oss;
