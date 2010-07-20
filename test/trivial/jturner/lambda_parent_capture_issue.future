@@ -1,0 +1,4 @@
+bug: using an overridden method in child class inside of a function with variable capture causes segfault
+
+Creating two classes inside of a function, where one is the sibling of another, causes a segfault when the vtable is used.  For example, when the we create a new child but return it to a variable of the parent type.  
+
