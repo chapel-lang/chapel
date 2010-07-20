@@ -2289,6 +2289,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
 
 static Expr*
 createFunctionAsValue(CallExpr *call) {
+  static int unique_fcf_id = 0;
   UnresolvedSymExpr* use = toUnresolvedSymExpr(call->get(1));
   INT_ASSERT(use);
   const char *fname = use->unresolved;
@@ -2389,7 +2390,10 @@ createFunctionAsValue(CallExpr *call) {
   }
   
   ClassType *ct = new ClassType(CLASS_CLASS);
-  TypeSymbol *ts = new TypeSymbol(astr("_fcf_", fname), ct);
+  std::ostringstream fcf_name;
+  fcf_name << "_chpl_fcf_" << unique_fcf_id++ << "_" << fname;
+  
+  TypeSymbol *ts = new TypeSymbol(astr(fcf_name.str().c_str()), ct);
 
   call->parentExpr->insertBefore(new DefExpr(ts));
   
