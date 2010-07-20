@@ -2,3 +2,22 @@ bug: using an overridden method in child class inside of a function with variabl
 
 Creating two classes inside of a function, where one is the sibling of another, causes a segfault when the vtable is used.  For example, when the we create a new child but return it to a variable of the parent type.  
 
+The issue seems to stem from the fact that capturing a variable changes the signature of the method because the captured variable gets promoted to a formal parameter of the function.  If, for example, you instead do this:
+
+def testme() {
+  var i = 5;
+  class parent {
+    def this() { return i+1; }
+  }
+
+  class fcfun : parent {
+    def this() { return i; }
+  }
+  var f : parent = new fcfun();
+  writeln(f());
+}
+testme();
+
+...then the code will work correctly because both the parent and the child have matching signatures (the parent's method now also reflects the captured i).
+
+Alternately, you can also see the original example work correctly if you avoid using the vtable.  For example, using "--conditional-dynamic-dispatch-limit 20" to avoid the vtable and instead us an inplace if block.
