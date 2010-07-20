@@ -25,8 +25,8 @@ class RectangularGrid {
   
   const dimensions: domain(1) = [1..dimension];
   
-  var low_coord, high_coord: dimension*real,
-      low_index, high_index: dimension*int,
+  var low_coord, high_coord:      dimension*real,
+      low_index, high_index:      dimension*int,
       num_cells, num_ghost_cells: dimension*int;
 
   var dx: dimension*real;
@@ -39,11 +39,22 @@ class RectangularGrid {
   var lower_ghost_cells: [dimensions] subdomain(all_cells),
       upper_ghost_cells: [dimensions] subdomain(all_cells);
   
-  var periodic_image_of_lower_ghost_cells: [dimensions] subdomain(all_cells),
-      periodic_image_of_upper_ghost_cells: [dimensions] subdomain(all_cells);
 }
 //<=== Definition of class RectangularGrid <===
 //<============================================
+
+
+
+
+//===> Definition of class GridFunction ===>
+//=========================================>
+class GridFunction {
+  var parent_grid: RectangularGrid;
+  var value: [parent_grid.all_cells] real;
+  var time: real;
+}
+//<=========================================
+//<=== Definition of class GridFunction ====
 
 
 
@@ -76,11 +87,12 @@ def RectangularGrid.RectangularGrid(low_coord_input:       dimension*real,
 
   
   //---- Cell domains ----
+  assert(dimension<=3, "dimension>3 not currently allowed");
   select dimension {
     when 1 do physical_cells = [1..2*num_cells(1)-1 by 2];
     when 2 do physical_cells = [1..2*num_cells(1)-1 by 2, 1..2*num_cells(2)-1 by 2];
     when 3 do physical_cells = [1..2*num_cells(1)-1 by 2, 1..2*num_cells(2)-1 by 2, 1..2*num_cells(3) by 2];
-    otherwise assert(0, "dimension>3 not currently allowed");
+    //    otherwise assert(false, "dimension>3 not currently allowed");
   }
   
   [d in dimensions] size(d) = 2*num_ghost_cells(d);
@@ -104,12 +116,6 @@ def RectangularGrid.RectangularGrid(low_coord_input:       dimension*real,
     size(d) = 2*num_ghost_cells(d) - 1;
     upper_ghost_cells(d) = all_cells.interior(size);
           
-    size(d) = 2*num_cells(d);
-    periodic_image_of_lower_ghost_cells(d) = lower_ghost_cells(d).translate(size);
-    
-    size(d) = -2*num_cells(d);
-    periodic_image_of_upper_ghost_cells(d) = upper_ghost_cells(d).translate(size);
-
   }   
   //<=== Orientation-dependent domains <===   
   
@@ -122,20 +128,19 @@ def RectangularGrid.RectangularGrid(low_coord_input:       dimension*real,
 
 //===> Generate coordinates of cell centers ===>
 //=============================================>
-def RectangularGrid.cell_center_coordinates (cells) {
+def RectangularGrid.coordinates (point_index: dimension*int) {
 
-  var coordinates: [cells] dimension*real;
+  var coord: dimension*real;
 
   if dimension == 1 then {
-    forall (cell,d) in [cells,dimensions] do
-      coordinates(cell)(d) = low_coord(d) + cell*dx(d)/2.0;
+    coord(1) = low_coord(1) + point_index(1)*dx(1)/2.0;
   }
   else {
-    forall (cell,d) in [cells,dimensions] do
-      coordinates(cell)(d) = low_coord(d) + cell(d)*dx(d)/2.0;
+    forall d in dimensions do
+    coord(d) = low_coord(d) + point_index(d)*dx(d)/2.0;
   }
 
-  return coordinates;
+  return coord;
 }
 //<=============================================
 //<=== Generate coordinates of cell centers <===
@@ -143,33 +148,25 @@ def RectangularGrid.cell_center_coordinates (cells) {
 
 
 
-//===> Locating interfaces that neighbor a cell, and vice versa ===>
-//=================================================================>
-def RectangularGrid.lower_interface(cell: dimension*int, d: int) {
-  var interface = cell;
-  interface(d) -= 1;
-  return interface;
-}
+//===> Evaluating an analytical function on the grid ===>
+//======================================================>
+def RectangularGrid.evaluate(f) {
+  var q = new GridFunction(this);
 
-def RectangularGrid.upper_interface(cell: dimension*int, d: int) {
-  var interface = cell;
-  interface(d) += 1;
-  return interface;
-}
+  if dimension==1 then
+    forall cell in physical_cells {
+      q.value(cell) = f(coordinates(tuple(cell)));
+    }
+  else
+    forall cell in physical_cells {
+      q.value(cell) = f( coordinates(cell) );
+    }
 
-def RectangularGrid.lower_cell(cell: dimension*int, d: int) {
-  var cell_out: dimension*int = cell;
-  cell_out(d) -= 2;
-  return cell_out;
+  return q;
 }
+//<======================================================
+//<=== Evaluating an analytical function on the grid <===
 
-def RectangularGrid.upper_cell(cell: dimension*int, d: int) {
-  var cell_out: dimension*int = cell;
-  cell_out(d) += 2;
-  return cell_out;
-}
-//<=================================================================
-//<=== Locating interfaces that neighbor a cell, and vice versa <===
 
 
 
@@ -278,7 +275,7 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
     select dimension {
       when 2 do physical_cells_transposed = [1..2*num_cells(2)-1 by 2, 1..2*num_cells(1)-1 by 2];
       when 3 do physical_cells_transposed = [1..2*num_cells(3)-1 by 2, 1..2*num_cells(2)-1 by 2, 1..2*num_cells(1) by 2];
-      otherwise assert(0, "dimension <=3 not currently supported by clawpack_output");
+      otherwise assert(false, "dimension >3 not currently supported by clawpack_output");
     }
 
 
@@ -292,7 +289,7 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
         else
           break;
       }
-   }
+    }
   }
 
 
@@ -305,35 +302,3 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
 }
 //<=================================================
 //<=== Output a GridFunction in Clawpack format <===
-
-
-
-
-//===> Evaluating an analytical function on the grid ===>
-//======================================================>
-def RectangularGrid.evaluate(f) {
-  var q = new GridFunction(this);
-  var coordinates = cell_center_coordinates(physical_cells);
-  [cell in physical_cells] q.value(cell) = f(coordinates(cell));
-  return q;
-}
-//<======================================================
-//<=== Evaluating an analytical function on the grid <===
-
-
-
-
-
-
-//===> Definition of class GridFunction ===>
-//=========================================>
-class GridFunction {
-  var parent_grid: RectangularGrid;
-  var value: [parent_grid.all_cells] real;
-  var time: real;
-}
-//<=========================================
-//<=== Definition of class GridFunction ====
-
-
-
