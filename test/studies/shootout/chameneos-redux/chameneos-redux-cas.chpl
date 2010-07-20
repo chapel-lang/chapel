@@ -1,3 +1,7 @@
+
+_extern type volatileint32 = int(32); // uintptr_t volatile
+_extern def __sync_val_compare_and_swap_c(inout state_p : volatileint32, state : volatileint32, xchg : volatileint32) : volatileint32;
+
 use Time;
 
 /*	- The Chameneos game is as follows: 
@@ -24,7 +28,8 @@ config const peek = false;			// if peek is true, allows chameneos to peek at spo
 						// then immediately return
 
 class MeetingPlace {
-	var spotsLeft$ : sync int = 0; // no need to initialize to 0?
+	//var spotsLeft$ : sync int = 0; 
+	var spotsLeft : volatileint32 = 0;
 	var color2$: sync color;	
 	var color1 : color;
 	var id1 : int;
@@ -33,57 +38,59 @@ class MeetingPlace {
 	/* constructor for MeetingPlace, sets the 
 	   number of meetings to take place */
 	def MeetingPlace() {
-		spotsLeft$.writeXF(numMeetings*2);
+		spotsLeft = numMeetings*2;
 	}
 	
 	/* reset must be called after meet, 
 	   to reset numMeetings for a subsequent call of meet */
 	def reset() {
-		spotsLeft$.writeXF(numMeetings*2);
+		spotsLeft = numMeetings*2;
 	}
 
 	/* meet, if called on by the chameneos who arrives 1st, 
 	   returns the color of the chameneos who arrives 2nd,
 	   otherwise returns the color of the chameneos who arrives 1st
            (denies meetings of 3+ chameneos) */
-
-	/* minimize time between entering conditionals and decrementing
-	   spotsLeft */
 	def meet(chameneos : Chameneos) {
-		/* peek at spotsLeft$ */			
+		/*
 		if (peek) {	
 			if (spotsLeft$.readXX() == 0) {
 				return (true, chameneos.myColor);
 			}
 		}
+		*/
 		
-		var spotsLeft = spotsLeft$; 	
+		var spotsLeftTemp = spotsLeft;
+		var prev = __sync_val_compare_and_swap_c(spotsLeft, spotsLeftTemp, spotsLeftTemp + 1); 	
 		var otherColor : color;
-
-		if (spotsLeft == 0) {
-			spotsLeft$ = 0;
-			return (true, chameneos.myColor);
+		if (prev == spotsLeftTemp) {
+			if (spotsLeftTemp == 0) {
+				spotsLeft = 0;
+				return (true, chameneos.myColor);
+			}
+			if (spotsLeftTemp % 2 == 0) {
+				color1 = chameneos.myColor;
+				id1 = chameneos.id;	
+				spotsLeft = spotsLeftTemp - 1;		
+				otherColor = color2$;	
+				if (id1 == id2) {		
+					halt("halt");
+					chameneos.meetingsWithSelf += 1;			
+				}	
+				spotsLeft = spotsLeftTemp - 2;			
+			} else if (spotsLeftTemp % 2 == 1) {
+				otherColor = color1;
+				id2 = chameneos.id;
+				color2$ = chameneos.myColor;  		
+			}
+			chameneos.meetings += 1;
+			//sleep(10);
+			return (false, otherColor);
 		}
-		if (spotsLeft % 2 == 0) {
-			color1 = chameneos.myColor;
-			id1 = chameneos.id;	
-			spotsLeft$ = spotsLeft - 1;		
-			otherColor = color2$;	
-			if (id1 == id2) {		
-				halt("halt: meetingsWithSelf count is nonzero");
-				chameneos.meetingsWithSelf += 1;			
-			}	
-			spotsLeft$ = spotsLeft - 2;			
-		} else if (spotsLeft % 2 == 1) {
-			otherColor = color1;
-			id2 = chameneos.id;
-			color2$ = chameneos.myColor;  		
-		}
-		chameneos.meetings += 1;
-		//sleep(10);
-		return (false, otherColor);
 	}
 }
+	
+
 
 /* getComplement returns the complement of this and another color:
    if this and the other color are of the same value, return own value
@@ -158,7 +165,13 @@ def runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
 
 	const totalMeetings = + reduce population.meetings;
 	const totalMeetingsWithSelf = + reduce population.meetingsWithSelf;
-	printInfoQuiet(totalMeetings, totalMeetingsWithSelf);
+	if (totalMeetings == numMeetings*2) { writeln("total meetings PASS"); } 
+	else { writeln("total meetings actual = ", totalMeetings, ", total meetings expected = ", numMeetings*2);}
+
+	if (totalMeetingsWithSelf == 0) { writeln("total meetings with self PASS"); }
+	else { writeln("total meetings with self actual = ", totalMeetingsWithSelf, ", total meetings with self expected = 0");}
+
+	writeln();
 }
 
 def printInfo(population : [] Chameneos) {
@@ -166,19 +179,9 @@ def printInfo(population : [] Chameneos) {
 		write(i.meetings);
 		spellInt(i.meetingsWithSelf);
 	}
-
+	// 2 to 1 liner?
 	const totalMeetings = + reduce population.meetings;
 	spellInt(totalMeetings);
-	writeln();
-}
-
-def printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
-	if (totalMeetings == numMeetings*2) { writeln("total meetings PASS"); } 
-	else { writeln("total meetings actual = ", totalMeetings, ", total meetings expected = ", numMeetings*2); }
-	
-	if (totalMeetingsWithSelf == 0) { writeln("total meetings with self PASS"); } 
-   	else { writeln("total meetings with self actual = ", totalMeetingsWithSelf, ", total meetings with self expected = 0"); }
-
 	writeln();
 }
 
@@ -192,8 +195,8 @@ def spellInt(n : int) {
 def main() {
 	if (numChameneos1 < 2 || numChameneos2 < 2 || numMeetings < 0) {
 		writeln("Please specify numChameneos1 and numChameneos2 of at least 2, and numMeetings of at least 0.");
-	} else 	{
-		var startTimeTotal = getCurrentTime();
+	} else 	{	
+		var start_time = getCurrentTime();
 		
 		printColorChanges();	
 
@@ -203,24 +206,24 @@ def main() {
 		const population2 = populate(numChameneos2);
 		
 		if (verbose) {
-			var startTime = getCurrentTime();
+			var startTime1 = getCurrentTime();
 			run(population1, forest);
-			var endTime = getCurrentTime();
-			writeln("time for chameneos1 to meet = ", endTime - startTime);	
+			var endTime1 = getCurrentTime();
+			writeln("time for chameneos1 to meet = ", endTime1 - startTime1);	
 			printInfo(population1);
 
-			startTime = getCurrentTime();
+			var startTime2 = getCurrentTime();
 			run(population2, forest);
-			endTime = getCurrentTime();
-			writeln("time for chameneos2 to meet = ", endTime - startTime);
+			var endTime2 = getCurrentTime();
+			writeln("time for chameneos2 to meet = ", endTime2 - startTime2);
 			printInfo(population2);
 		} else {
 			runQuiet(population1, forest);
 			runQuiet(population2, forest);
 		}
-		var endTimeTotal = getCurrentTime();
+		var end_time = getCurrentTime();
 		if (verbose) {
-			writeln("total execution time = ", endTimeTotal - startTimeTotal);
+			writeln("total execution time = ", end_time - start_time);
 		}
 	}
 }
