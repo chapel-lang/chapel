@@ -21,18 +21,18 @@ def RectangularGrid.advance_ctu_advection(q:              GridFunction,
 
 
   //===> Set up periodic images of ghost cells ===>
-  var periodic_image_of_lower_ghost_cells: [dimensions] subdomain(all_cells),
-      periodic_image_of_upper_ghost_cells: [dimensions] subdomain(all_cells);
+  var low_ghost_periodic:  [dimensions] subdomain(all_cells),
+      high_ghost_periodic: [dimensions] subdomain(all_cells);
 
   var size: dimension*int;
   for d in dimensions do {
     [d_temp in dimensions] size(d_temp) = 0;
           
-    size(d) = 2*num_cells(d);
-    periodic_image_of_lower_ghost_cells(d) = lower_ghost_cells(d).translate(size);
+    size(d) = 2*n_cells(d);
+    low_ghost_periodic(d)  = low_ghost_cells(d).translate(size);
     
-    size(d) = -2*num_cells(d);
-    periodic_image_of_upper_ghost_cells(d) = upper_ghost_cells(d).translate(size);
+    size(d) = -2*n_cells(d);
+    high_ghost_periodic(d) = high_ghost_cells(d).translate(size);
   }   
   //<=== Set up periodic images of ghost cells <===
 
@@ -49,8 +49,8 @@ def RectangularGrid.advance_ctu_advection(q:              GridFunction,
   (dt_target,) = minloc reduce(cfl, dimensions);
   dt_target *= 0.95;
   //<=== Initialize <===
-
   
+
   
   //===> Time-stepping loop ===>
   while (q.time < time_requested) do {
@@ -68,8 +68,8 @@ def RectangularGrid.advance_ctu_advection(q:              GridFunction,
 
     //---- Fill in ghost cells ----
     for d in dimensions do {
-      old_value(lower_ghost_cells(d)) = old_value(periodic_image_of_lower_ghost_cells(d));
-      old_value(upper_ghost_cells(d)) = old_value(periodic_image_of_upper_ghost_cells(d));
+      old_value(low_ghost_cells(d))  = old_value(low_ghost_periodic(d));
+      old_value(high_ghost_cells(d)) = old_value(high_ghost_periodic(d));
     }
     
     //-----------------------------------------------------------

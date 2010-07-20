@@ -23,22 +23,78 @@ const dimensions = [1..dimension];
 //============================================>
 class RectangularGrid {
   
-  const dimensions: domain(1) = [1..dimension];
-  
-  var low_coord, high_coord:      dimension*real,
-      low_index, high_index:      dimension*int,
-      num_cells, num_ghost_cells: dimension*int;
+  var low_coord, high_coord:  dimension*real,
+      low_index, high_index:  dimension*int,
+      n_cells, n_ghost_cells: dimension*int;
 
   var dx: dimension*real;
           
   var all_cells:      domain(dimension, stridable=true),
       physical_cells: subdomain(all_cells);
   
-  var interfaces: [dimensions] domain(dimension, stridable=true);
+  var low_ghost_cells:  [dimensions] subdomain(all_cells),
+      high_ghost_cells: [dimensions] subdomain(all_cells);
+
+
+
+  //===> Constructor ===>
+  def RectangularGrid(low_coord_in:     dimension*real,
+		      high_coord_in:    dimension*real,
+		      low_index_in:     dimension*int,
+		      n_cells_in:       dimension*int,
+		      n_ghost_cells_in: dimension*int)
+  {
+
+    //==== Check that coordinate bounds are allowable ====
+    for d in dimensions do 
+      assert(low_coord_in(d) < high_coord_in(d), 
+	     "grid_base_defs.chpl: Error: low_coord exceeds high_coord");
+
+
+    //==== Primary fields ====
+    low_coord     = low_coord_in;
+    high_coord    = high_coord_in;  
+    low_index     = low_index_in;
+    n_cells       = n_cells_in;
+    n_ghost_cells = n_ghost_cells_in;
+
+
+    //==== Derived fields ====
+    [d in dimensions] high_index(d) = low_index(d) + 2*n_cells(d);
+    dx = (high_coord - low_coord) / n_cells;
+
+
+    //==== Physical cells ====
+    var range_tuple: dimension*range(stridable = true);
+    [d in dimensions] 
+      range_tuple(d) = low_index(d)+1..low_index(d)+2*n_cells(d)-1 by 2;
+    physical_cells = [(...range_tuple)];
+
+
+    //==== All cells (including ghost cells) ====
+    var size: dimension*int;
+    [d in dimensions] size(d) = 2*n_ghost_cells(d);
+    all_cells = physical_cells.expand(size);
+         
+
+    //===> Ghost cells ===>
+    //------------------------------------------------------
+    // Note that all ghost cell domains contain the corners.
+    //------------------------------------------------------
+    for d in dimensions do {
+      [d_temp in dimensions] size(d_temp) = 0;
+
+      size(d) = -(2*n_ghost_cells(d) - 1);
+      low_ghost_cells(d) = all_cells.interior(size);
+
+      size(d) = 2*n_ghost_cells(d) - 1;
+      high_ghost_cells(d) = all_cells.interior(size);
+    }   
+    //<=== Ghost cells <===     
+  }
+  //<=== Constructor <===
   
-  var lower_ghost_cells: [dimensions] subdomain(all_cells),
-      upper_ghost_cells: [dimensions] subdomain(all_cells);
-  
+ 
 }
 //<=== Definition of class RectangularGrid <===
 //<============================================
@@ -55,73 +111,6 @@ class GridFunction {
 }
 //<=========================================
 //<=== Definition of class GridFunction ====
-
-
-
-
-//===> RectangularGrid constructor ===>
-//====================================>
-def RectangularGrid.RectangularGrid(low_coord_input:       dimension*real,
-                                    high_coord_input:      dimension*real,
-                                    low_index_input:       dimension*int,
-                                    num_cells_input:       dimension*int,
-                                    num_ghost_cells_input: dimension*int)
-{
-  //---- Used for modifying domains; needed for
-  // dimensionally generic code. --------------
-  var size: dimension*int;
-
-  //---- Core parameters ----
-  low_coord       = low_coord_input;
-  high_coord      = high_coord_input;
-  for d in dimensions do assert(low_coord(d) < high_coord(d), 
-                                "grid_base_defs.chpl: Error: low_coord exceeds high_coord");
-  
-  low_index       = low_index_input;
-  num_cells       = num_cells_input;
-  num_ghost_cells = num_ghost_cells_input;
-
-  [d in dimensions] high_index(d) = low_index(d) + 2*num_cells(d);
-  dx = (high_coord - low_coord) / num_cells;
-
-
-  
-  //---- Cell domains ----
-  assert(dimension<=3, "dimension>3 not currently allowed");
-  select dimension {
-    when 1 do physical_cells = [1..2*num_cells(1)-1 by 2];
-    when 2 do physical_cells = [1..2*num_cells(1)-1 by 2, 1..2*num_cells(2)-1 by 2];
-    when 3 do physical_cells = [1..2*num_cells(1)-1 by 2, 1..2*num_cells(2)-1 by 2, 1..2*num_cells(3) by 2];
-    //    otherwise assert(false, "dimension>3 not currently allowed");
-  }
-  
-  [d in dimensions] size(d) = 2*num_ghost_cells(d);
-  all_cells = physical_cells.expand(size);
-         
-
-  //===> Orientation-dependent domains ===>
-  for d in dimensions do {
-    //---- Cell-to-cell interfaces ----
-    [d_temp in dimensions] size(d_temp) = 0;
-    size(d) = -1;
-    interfaces(d) = all_cells.expand(size);
-    
-    //---- Ghost cells ----
-    // Note that all ghost cell domains contain the corners.
-    [d_temp in dimensions] size(d_temp) = 0;
-
-    size(d) = -(2*num_ghost_cells(d) - 1);
-    lower_ghost_cells(d) = all_cells.interior(size);
-
-    size(d) = 2*num_ghost_cells(d) - 1;
-    upper_ghost_cells(d) = all_cells.interior(size);
-          
-  }   
-  //<=== Orientation-dependent domains <===   
-  
-}
-//<====================================
-//<=== RectangularGrid constructor <===
 
 
 
@@ -148,24 +137,24 @@ def RectangularGrid.coordinates (point_index: dimension*int) {
 
 
 
-//===> Evaluating an analytical function on the grid ===>
-//======================================================>
-def RectangularGrid.evaluate(f) {
-  var q = new GridFunction(this);
+/* //===> Evaluating an analytical function on the grid ===> */
+/* //======================================================> */
+/* def RectangularGrid.evaluate(f) { */
+/*   var q = new GridFunction(this); */
 
-  if dimension==1 then
-    forall cell in physical_cells {
-      q.value(cell) = f(coordinates(tuple(cell)));
-    }
-  else
-    forall cell in physical_cells {
-      q.value(cell) = f( coordinates(cell) );
-    }
+/*   if dimension==1 then */
+/*     forall cell in physical_cells { */
+/*       q.value(cell) = f(coordinates(tuple(cell))); */
+/*     } */
+/*   else */
+/*     forall cell in physical_cells { */
+/*       q.value(cell) = f( coordinates(cell) ); */
+/*     } */
 
-  return q;
-}
-//<======================================================
-//<=== Evaluating an analytical function on the grid <===
+/*   return q; */
+/* } */
+/* //<====================================================== */
+/* //<=== Evaluating an analytical function on the grid <=== */
 
 
 
@@ -223,7 +212,7 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
   outfile.writeln( format(ifmt, AMR_level),   "                 AMR_level");
 
 
-  //---- Write num_cells ----
+  //---- Write n_cells ----
   for d in dimensions do {
     select d {
       when 1 do linelabel = "                 mx";
@@ -231,7 +220,7 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
       when 3 do linelabel = "                 mz";
       otherwise linelabel = "                 mx(" + format("%1i",d) + ")";
     }
-    outfile.writeln( format(ifmt, num_cells(d)),  linelabel);
+    outfile.writeln( format(ifmt, n_cells(d)),  linelabel);
   }
 
 
@@ -261,22 +250,28 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
 
 
   //---- Write solution values ----
-  var physical_cells_transposed: domain(dimension, stridable=true),
-      shape: dimension*int;
-  
-
 
   if dimension == 1 then {
     for cell in physical_cells do
-   outfile.writeln(format(efmt, q.value(cell)));
+      outfile.writeln(format(efmt, q.value(cell)));
   }
   else {
 
-    select dimension {
-      when 2 do physical_cells_transposed = [1..2*num_cells(2)-1 by 2, 1..2*num_cells(1)-1 by 2];
-      when 3 do physical_cells_transposed = [1..2*num_cells(3)-1 by 2, 1..2*num_cells(2)-1 by 2, 1..2*num_cells(1) by 2];
-      otherwise assert(false, "dimension >3 not currently supported by clawpack_output");
-    }
+    //---- Transpose physical_cells; iterating over the transpose
+    //---- in row major order achieves column major order on
+    //---- the original domain. ---------------------------------
+    var range_tuple: dimension*range(stridable=true);
+    [d in dimensions]
+      range_tuple(d) = physical_cells.dim(1 + dimension - d);
+
+    var physical_cells_transposed: domain(dimension, stridable=true);
+    physical_cells_transposed = [(...range_tuple)];
+
+/*     select dimension { */
+/*       when 2 do physical_cells_transposed = [1..2*n_cells(2)-1 by 2, 1..2*n_cells(1)-1 by 2]; */
+/*       when 3 do physical_cells_transposed = [1..2*n_cells(3)-1 by 2, 1..2*n_cells(2)-1 by 2, 1..2*n_cells(1) by 2]; */
+/*       otherwise assert(false, "dimension >3 not currently supported by clawpack_output"); */
+/*     } */
 
 
     var cell: dimension*int;

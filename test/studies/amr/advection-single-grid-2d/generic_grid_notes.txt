@@ -1,9 +1,0 @@
-Are there plans to enforce subdomains more strictly than at present?
-In particular, is assigning physical_cells before all_cells kosher?
-
-
-p.112 of spec: "strided" should be "stridable"
-
-
-Can't implement strided version of grid domains with current tools in
-generic dimensions.
