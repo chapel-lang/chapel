@@ -83,6 +83,7 @@ in              processToken(TIN);
 index           processToken(TINDEX);
 inout           processToken(TINOUT);
 label           processToken(TLABEL);
+lambda          processToken(TLAMBDA);
 let             processToken(TLET);
 local           processToken(TLOCAL);
 module          processToken(TMODULE);

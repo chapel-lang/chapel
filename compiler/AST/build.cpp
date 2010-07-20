@@ -1479,6 +1479,26 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
   }
 }
 
+FnSymbol* buildLambda(FnSymbol *fn) {
+  static int nextId = 0;
+  char buffer[100];
+
+  sprintf(buffer, "_chpl_lambda_%i", nextId++);
+  char *name = (char *)malloc(strlen(buffer) + 1);
+
+  strcpy(name, buffer);
+  
+  if (!fn) {
+    fn = new FnSymbol(astr(name));
+  }
+  else {
+    fn->name = astr(name);
+    fn->cname = fn->name;
+  }
+  fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+  return fn;
+}
+
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
