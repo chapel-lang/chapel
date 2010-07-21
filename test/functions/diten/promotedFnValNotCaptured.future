@@ -1,0 +1,7 @@
+bug: promoted function call is removed when not captured at call site
+
+When a function is promoted over a range and the returned value is not captured
+at the call site, the function ends up not getting called. Capturing the
+returned value into a variable makes the call happen.
+
+This problem also shows up when the domain add method is promoted.
