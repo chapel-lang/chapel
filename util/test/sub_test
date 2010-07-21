@@ -691,7 +691,10 @@ for testname in testsrc:
                 sys.stdout.write('Executing ./PREDIFF\n')
                 sys.stdout.flush()
                 subprocess.Popen(['./PREDIFF',
-                                  execname,complog,compiler]).wait()
+                                  execname,complog,compiler,
+                                  ' '.join(globalCompopts)+
+                                  ' '+compopts,
+                                  ' '.join(args)]).wait()
 
             if prediff:
                 sys.stdout.write('[Executing %s.prediff]\n'%(execname))
