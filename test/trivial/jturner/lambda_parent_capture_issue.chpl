@@ -4,10 +4,10 @@ def testme() {
     def this() { return 0; }
   }
 
-  class fcfun : parent {
+  class child : parent {
     def this() { return i; }
   }
-  var f : parent = new fcfun();
+  var f : parent = new child();
   writeln(f());
 }
 testme();

@@ -25,7 +25,7 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 //
 // finds outer vars directly used in a function
 //
-static void
+void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   Vec<BaseAST*> asts;
   collect_asts(fn, asts);

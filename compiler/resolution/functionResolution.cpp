@@ -19,6 +19,7 @@ bool inDynamicDispatchResolution = false;
 
 extern void build_constructor(ClassType* ct);
 extern void build_type_constructor(ClassType* ct);
+extern void findOuterVars(FnSymbol* fn, SymbolMap* uses);
 
 SymbolMap paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
@@ -4309,7 +4310,29 @@ resolve() {
     SET_LINENO(call);
     FnSymbol* key = call->isResolved();
     Vec<FnSymbol*>* fns = virtualChildrenMap.get(key);
-    if (fns->n + 1 > fConditionalDynamicDispatchLimit) {
+
+    bool referencesOuterVars = false;
+
+    SymbolMap sm;
+
+    //Check to see if any of the overridden methods reference outer variables.  If they do, then when we later change the
+    //signature in flattenFunctions, the vtable style will break (function signatures will no longer match).  To avoid this
+    //we switch to the if-block style in the case where outer variables are discovered.
+    findOuterVars(key, &sm);
+
+    if (sm.n > 0) {
+      referencesOuterVars = true;
+    }
+    
+    for (int i = 0; i < fns->n; ++i) {
+      findOuterVars(fns->v[i], &sm);
+      if (sm.n > 0) {
+	referencesOuterVars = true;
+ 	break;
+      }
+    }
+    
+    if ((fns->n + 1 > fConditionalDynamicDispatchLimit) && (!referencesOuterVars)) {
       //
       // change call of root method into virtual method call; replace
       // method token with function
