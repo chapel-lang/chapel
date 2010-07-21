@@ -19,7 +19,6 @@ bool inDynamicDispatchResolution = false;
 
 extern void build_constructor(ClassType* ct);
 extern void build_type_constructor(ClassType* ct);
-extern void findOuterVars(FnSymbol* fn, SymbolMap* uses);
 
 SymbolMap paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
@@ -2499,6 +2498,67 @@ createFunctionAsValue(CallExpr *call) {
   return new CallExpr(wrapper);
 }
 
+//
+// returns true if the symbol is defined in an outer function to fn
+// third argument not used at call site
+//
+static bool
+isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
+  if (!parent)
+    parent = fn->defPoint->parentSymbol;
+  if (!isFnSymbol(parent))
+    return false;
+  else if (sym->defPoint->parentSymbol == parent)
+    return true;
+  else
+    return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
+}
+
+
+//
+// finds outer vars directly used in a function
+//
+static bool
+usesDeepOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
+  Vec<BaseAST*> asts;
+  collect_asts(fn, asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (toCallExpr(ast)) {
+      CallExpr *call = toCallExpr(ast);
+		
+      //dive into calls
+      Vec<FnSymbol*> visibleFns;
+      Vec<BlockStmt*> visited;
+
+      getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited);
+    
+      forv_Vec(FnSymbol, called_fn, visibleFns) {
+	bool seen_this_fn = false;
+	forv_Vec(FnSymbol, seen_fn, seen) {
+	  if (called_fn == seen_fn) {
+	    seen_this_fn = true;
+	    break;
+	  }
+	}
+	if (!seen_this_fn) {
+	  seen.add(called_fn);
+	  if (usesDeepOuterVars(called_fn, seen)) {
+	    return true;
+	  }
+	}
+      }
+    }
+    if (SymExpr* symExpr = toSymExpr(ast)) {
+      Symbol* sym = symExpr->var;
+      
+      if (toVarSymbol(sym) || toArgSymbol(sym))
+        if (isOuterVar(sym, fn))
+          return true;
+    }
+  }
+  return false;
+}
+
 static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
@@ -4331,24 +4391,22 @@ resolve() {
     FnSymbol* key = call->isResolved();
     Vec<FnSymbol*>* fns = virtualChildrenMap.get(key);
 
-    bool referencesOuterVars = false;
-
-    SymbolMap sm;
-
     //Check to see if any of the overridden methods reference outer variables.  If they do, then when we later change the
     //signature in flattenFunctions, the vtable style will break (function signatures will no longer match).  To avoid this
     //we switch to the if-block style in the case where outer variables are discovered.
-    findOuterVars(key, &sm);
-
-    if (sm.n > 0) {
-      referencesOuterVars = true;
-    }
+    //Note: This is conservative, as we haven't finished resolving functions and calls yet, we check all possibilities. 
     
-    for (int i = 0; i < fns->n; ++i) {
-      findOuterVars(fns->v[i], &sm);
-      if (sm.n > 0) {
-	referencesOuterVars = true;
- 	break;
+    bool referencesOuterVars = false;
+
+    Vec<FnSymbol*> seen;
+    referencesOuterVars = usesDeepOuterVars(key, seen);
+
+    if (!referencesOuterVars) {    
+      for (int i = 0; i < fns->n; ++i) {
+	seen.clear();
+	if ( (referencesOuterVars = usesDeepOuterVars(key, seen)) ) {
+	  break;
+	}
       }
     }
     
