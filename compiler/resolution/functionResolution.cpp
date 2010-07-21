@@ -2519,7 +2519,7 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 // finds outer vars directly used in a function
 //
 static bool
-usesDeepOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
+usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
   Vec<BaseAST*> asts;
   collect_asts(fn, asts);
   forv_Vec(BaseAST, ast, asts) {
@@ -2542,7 +2542,7 @@ usesDeepOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
 	}
 	if (!seen_this_fn) {
 	  seen.add(called_fn);
-	  if (usesDeepOuterVars(called_fn, seen)) {
+	  if (usesOuterVars(called_fn, seen)) {
 	    return true;
 	  }
 	}
@@ -4399,12 +4399,12 @@ resolve() {
     bool referencesOuterVars = false;
 
     Vec<FnSymbol*> seen;
-    referencesOuterVars = usesDeepOuterVars(key, seen);
+    referencesOuterVars = usesOuterVars(key, seen);
 
     if (!referencesOuterVars) {    
       for (int i = 0; i < fns->n; ++i) {
 	seen.clear();
-	if ( (referencesOuterVars = usesDeepOuterVars(key, seen)) ) {
+	if ( (referencesOuterVars = usesOuterVars(key, seen)) ) {
 	  break;
 	}
       }
