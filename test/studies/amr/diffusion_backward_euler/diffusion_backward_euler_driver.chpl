@@ -1,56 +1,72 @@
 //===> Description ===>
 //
-// Driver for an upwind advection example.
+// Driver for an diffusion example, integrated with Backward Euler.
 //
-// The spatial dimension is a parameter defined in grid_base_defs.chpl,
-// and may be set to 1, 2, or 3.
+// The spatial dimension is a parameter defined in grid_base_defs.chpl.
 //
 //<=== Description <===
 
 
-use backward_euler_diffusion_defs;
+use diffusion_backward_euler_defs;
 
 
 def main {
-  //---- Diffusivity ----
+  //==== Diffusivity ====
   var diffusivity = 0.1;
 
 
-  //===> Initial condition ===>
-  const pi = 4.0*atan(1.0);
-  def initial_condition( coords: dimension*real ) {
-    var f: real = 1.0;
-    for d in dimensions do
-    	f *= exp(-30*(coords(d)+0.5)**2);
-    return f;
-  }
-  //<=== Initial condition <===
 
-
-  //===> Initialize grid and solution ===>
-  var lower_corner, upper_corner: dimension*real,
-    num_cells, num_ghost_cells: dimension*int;
+  //===> Initialize grid ===>
+  //---------------------------------------------------
+  // The "_init" on each variable name is unnecessary,
+  // but I find the constructor call to be unsettling
+  // without.
+  //---------------------------------------------------
+  var low_coord_init, high_coord_init:  dimension*real,
+      low_index_init:                   dimension*int,
+      n_cells_init, n_ghost_cells_init: dimension*int;
 
   var N: int;
   if dimension<3 then N=100;
   else N = 50;
 
   for d in dimensions do {
-    lower_corner(d)    = -1.0;
-    upper_corner(d)    = 1.0;
-    num_cells(d)       = N;
-    num_ghost_cells(d) = 2;
+    low_coord_init(d)     = -1.0;
+    high_coord_init(d)    = 1.0;
+    low_index_init(d)     = 0;
+    n_cells_init(d)       = N;
+    n_ghost_cells_init(d) = 2;
   }
 
-  var G = new RectangularGrid(lower_corner, upper_corner,
-			num_cells, num_ghost_cells);
+  var G = new RectangularGrid(low_coord     = low_coord_init,
+			      high_coord    = high_coord_init,
+			      low_index     = low_index_init,
+			      n_cells       = n_cells_init, 
+			      n_ghost_cells = n_ghost_cells_init);
+  //<=== Initialize grid <===
+
+
+
+  //==== Initialize boundary conditions ====
+  var boundary_data = new PeriodicBoundaryData(G);
+
+
+
+  //===> Initialize solution ===>
+  def initial_condition (x: dimension*real) {
+    var f: real = 1.0;
+    for d in dimensions do
+      f *= exp(-30*(x(d)+0.5)**2);
+    return f;
+  }
 
   var q = G.evaluate(initial_condition);
-  //<=== Initialize grid and solution <===
+  //<=== Initialize  solution <===
 
 
 
-  //===> Initializations for output ===>
+
+  //===> Initialize output ===>
   var time_initial: real = 0.0,
     time_final:     real = 1.0,
     num_output:     int  = 20,
@@ -60,21 +76,21 @@ def main {
 
   for i in output_times.domain do
     output_times(i) = time_initial + i * dt_output;
-  //<=== Initializations for output <===
+  //<=== Initialize output <===
 
 
 
   //===> Generate output ===>
-  //---- Initial time ----
+  //==== Initial time ====
   q.time = time_initial;
   G.clawpack_output(q, frame_number);
 
-  //---- Subsequent times ---- 
+  //==== Subsequent times ====
   for output_time in output_times do {
-    //---- Advance q to output time ---- 
-    G.backward_euler_diffusion(q, diffusivity, output_time, 0.05); 
+    //==== Advance q to output time ====
+    G.advance_diffusion_backward_euler(q, diffusivity, output_time, 0.05); 
 
-    //---- Write output to file ---- 
+    //==== Write output to file ====
     frame_number += 1; 
     writeln("Writing frame ", frame_number, ".");
     G.clawpack_output(q, frame_number); 

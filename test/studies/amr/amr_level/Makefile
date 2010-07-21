@@ -1,6 +1,6 @@
 LEVEL_SOURCES = \
-	grid_base_defs.chpl \
-	linked_list_defs.chpl \
+	../lib/grid_base_defs.chpl \
+	../lib/linked_list_defs.chpl \
 	amr_level_defs.chpl
 
 .PHONY: clean

@@ -34,4 +34,4 @@ clean:
 	rm -f _output/fort.* _output/*.png *.out output plots _plots/* pyclaw.log *.pyc
 
 emacs_clean:
-	rm *~
+	rm -f *~

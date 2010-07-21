@@ -8,10 +8,6 @@
 // a result, the domin of cell centers is strided by 2, corresponding
 // to jumps of dx.
 //
-// Currently, only dimensions 1, 2, and 3 are supported, as a few
-// parts of the code must be instantiated (look for "select" statements)
-// until more general constructs are available.
-//
 //<=== Description <===
 
 
@@ -35,33 +31,58 @@ class RectangularGrid {
   var low_ghost_cells:  [dimensions] subdomain(all_cells),
       high_ghost_cells: [dimensions] subdomain(all_cells);
 
+  var boundary_data: BoundaryData;
 
 
-  //===> Constructor ===>
-  def RectangularGrid(low_coord_in:     dimension*real,
-		      high_coord_in:    dimension*real,
-		      low_index_in:     dimension*int,
-		      n_cells_in:       dimension*int,
-		      n_ghost_cells_in: dimension*int)
-  {
+  //===> initialize() method ===>
+  def initialize() {
 
-    //==== Check that coordinate bounds are allowable ====
-    for d in dimensions do 
-      assert(low_coord_in(d) < high_coord_in(d), 
-	     "grid_base_defs.chpl: Error: low_coord exceeds high_coord");
+    sanity_checks();
+
+    set_derived_fields();
+  }
+  //<=== initialize() method <===
 
 
-    //==== Primary fields ====
-    low_coord     = low_coord_in;
-    high_coord    = high_coord_in;  
-    low_index     = low_index_in;
-    n_cells       = n_cells_in;
-    n_ghost_cells = n_ghost_cells_in;
+
+  //===> sanity_checks() method ===>
+  def sanity_checks() {
+    var d_string: string;
+    for d in dimensions do {
+      d_string = format("%i", d);
+
+      assert(low_coord(d) < high_coord(d),
+	     "error: RectangularGrid: low_coord(" + d_string + ") must be strictly less than high_coord(" + d_string + ").");
+
+      assert(n_cells(d) > 0,
+             "error: RectangularGrid: n_cells(" + d_string + ") must be positive.");
+
+      assert(n_ghost_cells(d) > 0,
+	     "error: RectangularGrid: n_ghost_cells(" + d_string + ") must be positive.");
+    }
+  }
+  //<=== sanity_checks() method <===
 
 
-    //==== Derived fields ====
-    [d in dimensions] high_index(d) = low_index(d) + 2*n_cells(d);
+
+  //===> set_derived_fields() method ===>
+  //--------------------------------------------------------------
+  // After low_coord, high_coord, n_cells, and n_ghost_cells have
+  // been provided, calculate:
+  //     dx
+  //     high_index
+  //     physical_cells
+  //     all_cells
+  //     low_ghost_cells
+  //     high_ghost_cells
+  //--------------------------------------------------------------
+  def set_derived_fields() {
+    //==== dx ====
     dx = (high_coord - low_coord) / n_cells;
+
+
+    //==== high_index ====
+    [d in dimensions] high_index(d) = low_index(d) + 2*n_cells(d);
 
 
     //==== Physical cells ====
@@ -91,8 +112,9 @@ class RectangularGrid {
       high_ghost_cells(d) = all_cells.interior(size);
     }   
     //<=== Ghost cells <===     
+
   }
-  //<=== Constructor <===
+  //<=== set_derived_fields() method <===
   
  
 }
@@ -137,24 +159,24 @@ def RectangularGrid.coordinates (point_index: dimension*int) {
 
 
 
-/* //===> Evaluating an analytical function on the grid ===> */
-/* //======================================================> */
-/* def RectangularGrid.evaluate(f) { */
-/*   var q = new GridFunction(this); */
+//===> Evaluating an analytical function on the grid ===>
+//======================================================>
+def RectangularGrid.evaluate(f) {
+  var q = new GridFunction(this);
 
-/*   if dimension==1 then */
-/*     forall cell in physical_cells { */
-/*       q.value(cell) = f(coordinates(tuple(cell))); */
-/*     } */
-/*   else */
-/*     forall cell in physical_cells { */
-/*       q.value(cell) = f( coordinates(cell) ); */
-/*     } */
+  if dimension==1 then
+    forall cell in physical_cells {
+      q.value(cell) = f(coordinates(tuple(cell)));
+    }
+  else
+    forall cell in physical_cells {
+      q.value(cell) = f( coordinates(cell) );
+    }
 
-/*   return q; */
-/* } */
-/* //<====================================================== */
-/* //<=== Evaluating an analytical function on the grid <=== */
+  return q;
+}
+//<======================================================
+//<=== Evaluating an analytical function on the grid <===
 
 
 
@@ -249,17 +271,17 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
   outfile.writeln("");
 
 
-  //---- Write solution values ----
-
+  //===> Write solution values ===>
   if dimension == 1 then {
     for cell in physical_cells do
       outfile.writeln(format(efmt, q.value(cell)));
   }
   else {
-
+    //------------------------------------------------------------
     //---- Transpose physical_cells; iterating over the transpose
-    //---- in row major order achieves column major order on
-    //---- the original domain. ---------------------------------
+    //---- in row major order achieves column major order on the
+    //---- original domain. --------------------------------------
+    //------------------------------------------------------------
     var range_tuple: dimension*range(stridable=true);
     [d in dimensions]
       range_tuple(d) = physical_cells.dim(1 + dimension - d);
@@ -267,13 +289,7 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
     var physical_cells_transposed: domain(dimension, stridable=true);
     physical_cells_transposed = [(...range_tuple)];
 
-/*     select dimension { */
-/*       when 2 do physical_cells_transposed = [1..2*n_cells(2)-1 by 2, 1..2*n_cells(1)-1 by 2]; */
-/*       when 3 do physical_cells_transposed = [1..2*n_cells(3)-1 by 2, 1..2*n_cells(2)-1 by 2, 1..2*n_cells(1) by 2]; */
-/*       otherwise assert(false, "dimension >3 not currently supported by clawpack_output"); */
-/*     } */
-
-
+    //---- Write values ----
     var cell: dimension*int;
     for cell_transposed in physical_cells_transposed do {
       [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
@@ -286,6 +302,7 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
       }
     }
   }
+  //<=== Write solution values <===
 
 
   //---- Finish up ----
@@ -297,3 +314,120 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
 }
 //<=================================================
 //<=== Output a GridFunction in Clawpack format <===
+
+
+
+
+//===> BoundaryData class ===>
+//===========================>
+class BoundaryData {
+
+  var parent: RectangularGrid;
+  
+  //==== fill_ghost_cells() method ====
+  //--------------------------------------------------
+  // This method is empty, and meant to be overridden
+  // by a like-named method for a derived class.
+  //--------------------------------------------------
+  def fill_ghost_cells(value: [parent.all_cells] real) {
+    assert(false, "The fill_ghost_cells() method of class BoundaryData " +
+	   "must be overriddend by a derived class.");
+  }
+}
+//<=== BoundaryData class <===
+//<===========================
+
+
+
+
+//===> PeriodicBoundaryData class ===>
+//===================================>
+class PeriodicBoundaryData: BoundaryData {
+
+  var low_ghost_periodic:  [dimensions] subdomain(parent.all_cells);
+  var high_ghost_periodic: [dimensions] subdomain(parent.all_cells);
+
+
+  //===> initialize() method ===>
+  def initialize() {
+
+    //==== Set parent's boundary data ====
+    parent.boundary_data = this;
+
+
+    //===> Build periodic images of ghost cells ===>
+    var shift: dimension*int;
+    
+    for d in dimensions do {
+      [d_temp in dimensions] shift(d_temp) = 0;
+
+      shift(d) = 2*parent.n_cells(d);
+      low_ghost_periodic(d)  = parent.low_ghost_cells(d).translate(shift);
+
+      shift(d) = -2*parent.n_cells(d);
+      high_ghost_periodic(d) = parent.high_ghost_cells(d).translate(shift);
+    }
+    //<=== Build periodic images of ghost cells <===
+
+  }
+  //<=== initialize() method <===
+
+
+
+  //===> fill_ghost_cells() method ===>
+  def fill_ghost_cells(value: [parent.all_cells] real) {
+    for d in dimensions do {
+      value(parent.low_ghost_cells(d))  = value(low_ghost_periodic(d));
+      value(parent.high_ghost_cells(d)) = value(high_ghost_periodic(d));
+    }
+  }
+  //<=== fill_ghost_cells() method <===
+
+}
+//<===================================
+//<=== PeriodicBoundaryData class <===
+
+
+
+
+
+//===> ZeroOrderExtrapolation class ===>
+//=====================================>
+class ZeroOrderExtrapolation: BoundaryData {
+
+  //===> initialize() method ===>
+  def initialize() {
+
+    //==== Set parent's boundary data ====
+    parent.boundary_data = this;
+
+  }
+  //<=== initialize() method <===
+
+
+
+  //===> fill_ghost_cells() method ===>
+  def fill_ghost_cells(value: [parent.all_cells] real) {
+
+    for d in dimensions do {
+      //==== Low ghost cells ====
+      forall cell in parent.low_ghost_cells(d) {
+	var target_cell = cell;
+	target_cell(d) = parent.physical_cells.dim(d).low;
+	value(cell) = value(target_cell);
+      }
+
+      //==== High ghost cells ====
+      forall cell in parent.high_ghost_cells(d) {
+	var target_cell = cell;
+	target_cell(d) = parent.physical_cells.dim(d).high;
+	value(cell) = value(target_cell);
+      }
+    }
+
+  }
+  //<=== fill_ghost_cells() method <===
+
+}
+//<=====================================
+//<=== ZeroOrderExtrapolation class <===

@@ -1,43 +1,14 @@
 //===> Description ===>
 //
-// Driver for an CTU advection example.
+// Driver for an advection example, integrated with corner transport
+// upwind (CTU).
 //
-// The spatial dimension is a parameter defined in grid_base_defs.chpl,
-// and may be set to 1, 2, or 3.
+// The spatial dimension is a parameter defined in grid_base_defs.chpl.
 //
 //<=== Description <===
 
 
-use ctu_advection_defs;
-
-
-//==== Initial condition method ===>
-//------------------------------------------
-// When first-class functions are available,
-// an "evaluate" method that sets q.value to
-// an analytical function would be nice.
-//------------------------------------------
-def RectangularGrid.initial_condition() {
-
-  def f_initial ( coords: dimension*real ) {
-    var f: real = 1.0;
-    for d in dimensions do
-    	f *= exp(-30*coords(d)**2);
-    return f;
-  }
-
-  var q = new GridFunction(this);
-
-  if dimension==1 then
-    forall cell in physical_cells do
-      q.value(cell) = f_initial(coordinates(tuple(cell)));
-  else
-    forall cell in physical_cells do
-      q.value(cell) = f_initial(coordinates(cell));
-
-  return q;
-}
-//<=== Initial condition method <===
+use advection_ctu_defs;
 
 
 def main {
@@ -50,43 +21,62 @@ def main {
 
 
 
-  //===> Initialize grid and solution ===>
-  var low_coord, high_coord:  dimension*real,
-      low_index:              dimension*int,
-      n_cells, n_ghost_cells: dimension*int;
+  //===> Initialize grid ===>
+  var low_coord_init, high_coord_init:  dimension*real,
+      low_index_init:                   dimension*int,
+      n_cells_init, n_ghost_cells_init: dimension*int;
 
   var N: int;
   if dimension<3 then N=100;
   else N = 50;
 
   for d in dimensions do {
-    low_coord(d)     = -1.0;
-    high_coord(d)    = 1.0;
-    low_index(d)     = 0;
-    n_cells(d)       = N;
-    n_ghost_cells(d) = 2;
+    low_coord_init(d)     = -1.0;
+    high_coord_init(d)    = 1.0;
+    low_index_init(d)     = 0;
+    n_cells_init(d)       = N;
+    n_ghost_cells_init(d) = 2;
   }
 
-  var G = new RectangularGrid(low_coord, high_coord,
-			      low_index,
-			      n_cells, n_ghost_cells);
+  var G = new RectangularGrid(low_coord     = low_coord_init,
+			      high_coord    = high_coord_init,
+			      low_index     = low_index_init,
+			      n_cells       = n_cells_init, 
+			      n_ghost_cells = n_ghost_cells_init);
+  //<=== Initialize grid <===
 
-  var q = G.initial_condition();
-  //<=== Initialize grid and solution <===
+
+
+  //===> Initialize boundary conditions ===>
+  var boundary_data = new ZeroOrderExtrapolation(G);
+  //<=== Initialize boundary conditions <===
 
 
 
-  //===> Initializations for output ===>
+  //===> Initialize solution ===>
+  def initial_condition ( x: dimension*real ) {
+    var f: real = 1.0;
+    for d in dimensions do
+    	f *= exp(-30*x(d)**2);
+    return f;
+  }
+
+  var q = G.evaluate(initial_condition);
+  //<=== Initialize  solution <===
+
+
+
+  //===> Initialize output ===>
   var time_initial: real = 0.0,
-    time_final:     real = 3.0,
-    n_output:       int  = 30,
+    time_final:     real = 2.0,
+    n_output:       int  = 20,
     output_times:   [1..n_output] real,
     dt_output:      real = (time_final - time_initial) / n_output,
     frame_number:   int = 0;
 
   for i in output_times.domain do
     output_times(i) = time_initial + i * dt_output;
-  //<=== Initializations for output <===
+  //<=== Initialize output <===
 
 
 
@@ -98,10 +88,11 @@ def main {
   //---- Subsequent times ----
   for output_time in output_times do {
     //---- Advance q to output time ----
-    G.advance_ctu_advection(q, output_time, velocity);
+    G.advance_advection_ctu(q, velocity, output_time);
 
     //---- Write output to file ----
     frame_number += 1;
+    writeln("Writing frame ", frame_number, ".");
     G.clawpack_output(q, frame_number);
   }
   //<=== Generate output <===

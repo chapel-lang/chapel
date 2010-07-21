@@ -9,33 +9,15 @@
 use grid_base_defs;
 
 
-//===> CTu update of a GridFunction ===>
+//===> CTU update of a GridFunction ===>
 //=====================================>
-def RectangularGrid.advance_ctu_advection(q:              GridFunction,
-                                          time_requested: real,
-                                          velocity:       dimension*real) {
+def RectangularGrid.advance_advection_ctu(q:              GridFunction,
+					  velocity:       dimension*real,
+                                          time_requested: real
+                                          ) {
 
-  //---- Make sure q can validly be updated ----
+  //==== Make sure q can validly be updated ====
   assert(q.parent_grid == this  &&  q.time <= time_requested);
-
-
-
-  //===> Set up periodic images of ghost cells ===>
-  var low_ghost_periodic:  [dimensions] subdomain(all_cells),
-      high_ghost_periodic: [dimensions] subdomain(all_cells);
-
-  var size: dimension*int;
-  for d in dimensions do {
-    [d_temp in dimensions] size(d_temp) = 0;
-          
-    size(d) = 2*n_cells(d);
-    low_ghost_periodic(d)  = low_ghost_cells(d).translate(size);
-    
-    size(d) = -2*n_cells(d);
-    high_ghost_periodic(d) = high_ghost_cells(d).translate(size);
-  }   
-  //<=== Set up periodic images of ghost cells <===
-
 
 
   //===> Initialize ===>
@@ -67,10 +49,8 @@ def RectangularGrid.advance_ctu_advection(q:              GridFunction,
 
 
     //---- Fill in ghost cells ----
-    for d in dimensions do {
-      old_value(low_ghost_cells(d))  = old_value(low_ghost_periodic(d));
-      old_value(high_ghost_cells(d)) = old_value(high_ghost_periodic(d));
-    }
+    boundary_data.fill_ghost_cells(old_value);
+
     
     //-----------------------------------------------------------
     //---- Domain of alignments is [0..1, 0..1, ..., 0..1].
@@ -122,14 +102,6 @@ def RectangularGrid.advance_ctu_advection(q:              GridFunction,
           
         }
 
-          // writeln("");
-          // writeln("dt = ", dt_used);
-          // writeln("velocity = ", velocity);
-          // writeln("cell = ", cell);
-          // writeln("alignment = ", alignment);
-          // writeln("upwind_cell = ", upwind_cell);
-          // writeln("volume fraction = ", volume_fraction);
-          
           
         //---- Update cell value ----
         q.value(cell) += volume_fraction * old_value(upwind_cell);

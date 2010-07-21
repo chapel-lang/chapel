@@ -12,43 +12,44 @@ use grid_base_defs;
 
 //===> Backward Euler/conjugate gradient advancement of a Grid Function ===>
 //=========================================================================>
-def RectangularGrid.backward_euler_diffusion(q:              GridFunction,
-                                             diffusivity:    real,
-                                             time_requested: real,
-                                             dt_max:         real) {
+def RectangularGrid.advance_diffusion_backward_euler(q:              GridFunction,
+						     diffusivity:    real,
+						     time_requested: real,
+						     dt_max:         real) {
                                              
-   //---- Make sure q can validly be updated ----
-   assert(q.parent_grid == this  &&  q.time <= time_requested);
+  //==== Make sure q can validly be updated ====
+  assert(q.parent_grid == this  &&  q.time <= time_requested);
 
 
-   //===> Time-stepping ===>
-   var nsteps = ceil( (time_requested - q.time) / dt_max );
-   var dt_used = (time_requested - q.time) / nsteps;
-   var rhs: [physical_cells] real;
+
+  //===> Time-stepping ===>
+  var n_steps = ceil( (time_requested - q.time) / dt_max );
+  var dt_used = (time_requested - q.time) / n_steps;
+  var rhs: [physical_cells] real;
    
    
-   while (q.time < time_requested) do {
-     //---- Adjust the time step to hit time_requested if necessary ----
-     if (q.time + dt_max > time_requested) then
-       dt_used = time_requested - q.time;
-     else
-       dt_used = dt_max;
-     writeln("Taking step of size dt=", dt_used, " to time ", q.time+dt_used, ".");
+  while (q.time < time_requested) do {
+    //==== Adjust the time step to hit time_requested if necessary ====
+    if (q.time + dt_max > time_requested) then
+      dt_used = time_requested - q.time;
+    else
+      dt_used = dt_max;
+    writeln("Taking step of size dt=", dt_used, " to time ", q.time+dt_used, ".");
 
 
-     //---- Record q at old time level ----
-     rhs = q.value(physical_cells);
+    //==== Record q at old time level ====
+    rhs = q.value(physical_cells);
 
 
-     //---- Update solution ----
-     q.value = conjugate_gradient(rhs, diffusivity, dt_used, dt_used/4.0);
+    //==== Update solution ====
+    q.value = conjugate_gradient(rhs, diffusivity, dt_used, dt_used/4.0);
 
 
-     //---- Update time ----
-     q.time += dt_used;
+    //==== Update time ====
+    q.time += dt_used;
 
-   }
-   //<=== Time-stepping <===
+  }
+  //<=== Time-stepping <===
  
 }
 //<=== Backward Euler/conjugate gradient advancement of a Grid Function <===
@@ -58,22 +59,23 @@ def RectangularGrid.backward_euler_diffusion(q:              GridFunction,
 
 
 
-//===> Backward Euler diffusion operator, L(u) = u - dt*diffusivity*laplacian(u) ===>
-//==================================================================================>
+//===> Backward Euler diffusion operator ===>
+//==========================================>
+//----------------------------------------
+// L(u) = u - dt*diffusivity*laplacian(u) 
+//----------------------------------------
 def RectangularGrid.backward_euler_diffusion_operator(u: [all_cells] real,
                                                       diffusivity:   real,
                                                       dt:            real) {
   
   var Lu: [physical_cells] real;
   
-  //---- Fill in ghost cells for periodic BCs ----
-  for d in dimensions do {
-    u(lower_ghost_cells(d)) = u(periodic_image_of_lower_ghost_cells(d));
-    u(upper_ghost_cells(d)) = u(periodic_image_of_upper_ghost_cells(d));
-  }
+
+  //==== Fill in ghost cells ====
+  boundary_data.fill_ghost_cells(u);
+
   
-  
-  //---- Compute operator ----
+  //===> Compute operator ===>
   forall cell_pretuple in physical_cells {
 
     //===> If dimension==1, the cell index must be tuple-ized ===>
@@ -87,17 +89,20 @@ def RectangularGrid.backward_euler_diffusion_operator(u: [all_cells] real,
 
     Lu(cell) = 0.0;
     for d in dimensions {
-      Lu(cell) += (u(lower_cell(cell,d)) - 2.0*u(cell) + u(upper_cell(cell,d))) / dx(d)**2;
+      var cell_shift: dimension*int;
+      cell_shift(d) = 2;
+      Lu(cell) += (u(cell-cell_shift) - 2.0*u(cell) + u(cell+cell_shift)) / dx(d)**2;
     }
     Lu(cell) *= -dt*diffusivity;
     Lu(cell) += u(cell);
   }
+  //<=== Compute operator <===
   
   return Lu;
   
 }
-//<==================================================================================
-//<=== Backward Euler diffusion operator, L(u) = u - dt*diffusivity*laplacian(u) <===
+//<==========================================
+//<=== Backward Euler diffusion operator <===
 
 
 
