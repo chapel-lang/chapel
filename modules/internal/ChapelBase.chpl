@@ -1057,8 +1057,6 @@ def chpl__idxTypeToStrType(type t) type {
   }
 }
 
-def Func(type arg_type, type ret_type) type return __primitive("create fn type", arg_type, ret_type);
-
 pragma "command line setting"
 def _command_line_cast(param s: string, type t, x) return _cast(t, x);
 
