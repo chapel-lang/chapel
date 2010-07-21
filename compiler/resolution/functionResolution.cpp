@@ -301,6 +301,31 @@ const char* toString(FnSymbol* fn) {
 }
 
 
+static void
+checkResolveRemovedPrims(void) {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->primitive) {
+      switch(call->primitive->tag) {
+        case PRIM_INIT:
+        case PRIM_LOGICAL_FOLDER:
+        case PRIM_TYPEOF:
+        case PRIM_TYPE_TO_STRING:
+        case PRIM_IS_STAR_TUPLE_TYPE:
+        case PRIM_ISSUBTYPE:
+        case PRIM_TUPLE_EXPAND:
+        case PRIM_QUERY:
+        case PRIM_ERROR:
+          if (call->parentSymbol)
+            INT_FATAL("Primitive should no longer be in AST");
+          break;
+        default:
+          break;
+      }
+    }
+  }
+}
+
+
 static FnSymbol*
 protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
   FnSymbol* fn = new FnSymbol(name);
@@ -3246,11 +3271,6 @@ postFold(Expr* expr) {
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
       call->get(1)->replace(new SymExpr(t->symbol));
-    } else if (call->isPrimitive(PRIM_IS_TUPLE)) {
-      Type* type = call->get(1)->getValType();
-      bool is_tuple = type->symbol->hasFlag(FLAG_TUPLE);
-      result = (is_tuple) ? new SymExpr(gTrue) : new SymExpr(gFalse);
-      call->replace(result);
     } else if (call->isPrimitive("chpl_string_compare")) {
       SymExpr* lhs = toSymExpr(call->get(1));
       SymExpr* rhs = toSymExpr(call->get(2));
@@ -4435,6 +4455,8 @@ resolve() {
   }
   visibleFunctionMap.clear();
   visibilityBlockCache.clear();
+
+  checkResolveRemovedPrims();
 
   resolved = true;
 }

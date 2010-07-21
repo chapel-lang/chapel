@@ -1131,13 +1131,6 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_GPU_GET_ARRAY:
       // generated during generation of PRIM_MOVE
       break;
-    case PRIM_INIT_REF:
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-        gen(outfile, "CHPL_WIDEN_NULL(%A)", get(1));
-      } else {
-        gen(outfile, "%A = NULL", get(1));
-      }
-      break;
     case PRIM_SET_REF:
       gen(outfile, "&(%A)", get(1));
       break;
@@ -1787,9 +1780,6 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIM_SET_SERIAL:
       gen(outfile, "CHPL_SET_SERIAL(%A)", get(1));
-      break;
-    case PRIM_INIT_TASK_LIST:
-      fprintf( outfile, "NULL");
       break;
     case PRIM_CHPL_ALLOC:
     case PRIM_CHPL_ALLOC_PERMIT_ZERO: {

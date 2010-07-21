@@ -1467,7 +1467,7 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
 
   Expr* where =
     buildLogicalAndExpr(
-      new CallExpr(PRIM_IS_TUPLE, base->copy()),
+      new CallExpr("isTuple", base->copy()),
       new CallExpr("==", new_IntSymbol(i),
         new CallExpr(".", base->copy(), new_StringSymbol("size"))));
 

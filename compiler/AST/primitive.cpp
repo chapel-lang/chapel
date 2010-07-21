@@ -232,11 +232,6 @@ returnInfoEndCount(CallExpr* call) {
 }
 
 static Type*
-returnInfoTaskList(CallExpr* call) {
-  return dtTaskList;
-}
-
-static Type*
 returnInfoVirtualMethodCall(CallExpr* call) {
   SymExpr* se = toSymExpr(call->get(1));
   INT_ASSERT(se);
@@ -335,7 +330,6 @@ initPrimitive() {
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
 
-  prim_def(PRIM_INIT_REF, "init ref", returnInfoVoid, true);
   prim_def(PRIM_SET_REF, "set ref", returnInfoRef);
   prim_def(PRIM_GET_REF, "get ref", returnInfoVal, false, true);
 
@@ -376,7 +370,6 @@ initPrimitive() {
   prim_def(PRIM_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIM_SET_END_COUNT, "set end count", returnInfoVoid, true);
 
-  prim_def(PRIM_INIT_TASK_LIST, "init to NULL", returnInfoTaskList);
   prim_def(PRIM_PROCESS_TASK_LIST, "process task list", returnInfoVoid, true);
   prim_def(PRIM_EXECUTE_TASKS_IN_LIST, "execute tasks in list", returnInfoVoid, true);
   prim_def(PRIM_FREE_TASK_LIST, "free task list", returnInfoVoid, true);
@@ -453,7 +446,6 @@ initPrimitive() {
   prim_def(PRIM_GC_DELETE_ROOT, "_deleteRoot", returnInfoVoid);
   prim_def(PRIM_GC_CLEANUP, "_chpl_gc_cleanup", returnInfoVoid);
 
-  prim_def(PRIM_IS_TUPLE, "isTupleType", returnInfoBool);
   prim_def(PRIM_CALL_DESTRUCTOR, "call destructor", returnInfoVoid, true);
 
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);

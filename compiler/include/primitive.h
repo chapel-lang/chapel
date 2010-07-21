@@ -56,7 +56,6 @@ enum PrimitiveTag {
   PRIM_GET_IMAG,                  // get complex imag component
   PRIM_QUERY,                     // query expression primitive
 
-  PRIM_INIT_REF, // initialize reference to NULL
   PRIM_SET_REF,  // set a reference to a value
   PRIM_GET_REF,  // dereference a reference
 
@@ -94,7 +93,6 @@ enum PrimitiveTag {
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
 
-  PRIM_INIT_TASK_LIST,
   PRIM_PROCESS_TASK_LIST,
   PRIM_EXECUTE_TASKS_IN_LIST,
   PRIM_FREE_TASK_LIST,
@@ -165,7 +163,6 @@ enum PrimitiveTag {
   PRIM_GC_DELETE_ROOT,   // Remove a root variable for garbage collection
   PRIM_GC_CLEANUP,       // Free GC heaps
 
-  PRIM_IS_TUPLE,  // True if argument is a tuple
   PRIM_CALL_DESTRUCTOR, // call destructor on type (do not free)
 
   PRIM_LOGICAL_FOLDER, // Help fold logical && and ||
