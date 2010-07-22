@@ -1336,6 +1336,11 @@ pragma "inline" def chpl__autoDestroy(x: _singlevar) {
   delete x;
 }
 
+// Type function for representing function types
+def func(type t...?n) type {
+  return __primitive("create fn type", (...t));
+}
+
 //
 // BLC: The inout is used here not because it is necessary, but in
 // order to ensure that the reference to the variable is passed in

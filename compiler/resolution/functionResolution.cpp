@@ -2312,6 +2312,94 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   return result;
 }
 
+static ClassType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call) {
+  ClassType *parent;
+  FnSymbol *parent_method;
+  
+  std::ostringstream oss;
+  oss << "chpl__fcf_type_";
+
+  bool isFirst = true;
+
+  int i = 0, alength = arg_list.length;
+  Type *ret = NULL;
+  
+  for_alist(actualExpr, arg_list) {
+    if (!isFirst)
+      oss << "_";
+
+    SymExpr* sExpr = toSymExpr(actualExpr);
+    
+    if (i == (alength-1)) {
+	ret = sExpr->var->type;
+    }
+    ++i;
+
+    oss << sExpr->var->type->symbol->name;
+     
+    isFirst = false;
+  }
+
+  std::string parent_name = oss.str();
+  
+  if (functionTypeMap.find(parent_name) != functionTypeMap.end()) {
+    std::pair<ClassType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
+    parent = ctfs.first;
+    parent_method = ctfs.second;
+  }
+  else {
+    parent = new ClassType(CLASS_CLASS);
+    TypeSymbol *parent_ts = new TypeSymbol(oss.str().c_str(), parent);
+
+    call->parentSymbol->defPoint->insertBefore(new DefExpr(parent_ts));
+    
+    parent->dispatchParents.add(dtObject);
+    dtObject->dispatchChildren.add(parent);
+    VarSymbol* parent_super = new VarSymbol("super", dtObject);
+    parent_super->addFlag(FLAG_SUPER_CLASS);
+    parent->fields.insertAtHead(new DefExpr(parent_super));
+    build_constructor(parent);
+    build_type_constructor(parent);
+
+    parent_method = new FnSymbol("this");
+    ArgSymbol *thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
+    parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+    parent_method->insertFormalAtTail(thisParentSymbol);
+    parent_method->_this = thisParentSymbol;
+
+    i = 0;
+    
+    for_alist(actualExpr, arg_list) {
+      if (i != (alength-1)) {
+	SymExpr* sExpr = toSymExpr(actualExpr);
+	oss << sExpr->var->type->symbol->name;
+      
+	ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, sExpr->var->type->symbol->name, sExpr->var->type);
+	
+	(parent_method)->insertFormalAtTail(newFormal);
+      }
+      ++i;
+    }
+
+    if (ret != dtVoid) {
+      VarSymbol *tmp = newTemp(); 
+      (parent_method)->insertAtTail(new DefExpr(tmp));
+      (parent_method)->insertAtTail(new CallExpr(PRIM_MOVE, tmp, ret->defaultValue));
+      
+      (parent_method)->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+    }
+
+    call->parentSymbol->defPoint->insertBefore(new DefExpr(parent_method));
+    
+    normalize(parent_method);
+    
+    parent->methods.add(parent_method);
+    functionTypeMap[parent_name] = std::pair<ClassType*, FnSymbol*>(parent, parent_method);
+  }
+
+  return parent;
+}
+
 static Expr*
 createFunctionAsValue(CallExpr *call) {
   static int unique_fcf_id = 0;
@@ -2332,6 +2420,9 @@ createFunctionAsValue(CallExpr *call) {
   FnSymbol* captured_fn = visibleFns.v[0];
   resolveFormals(captured_fn);
   resolveFns(captured_fn);
+
+  ClassType *parent;
+  FnSymbol *thisParentMethod;
 
   std::ostringstream oss;
   oss << "chpl__fcf_type_";
@@ -2356,9 +2447,6 @@ createFunctionAsValue(CallExpr *call) {
   oss << "_";
   oss << captured_fn->retType->symbol->name;
   std::string parent_name = oss.str();
-
-  ClassType *parent;
-  FnSymbol *thisParentMethod;
   
   if (functionTypeMap.find(parent_name) != functionTypeMap.end()) {
     std::pair<ClassType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
@@ -2414,7 +2502,7 @@ createFunctionAsValue(CallExpr *call) {
     parent->methods.add(thisParentMethod);
     functionTypeMap[parent_name] = std::pair<ClassType*, FnSymbol*>(parent, thisParentMethod);
   }
-  
+
   ClassType *ct = new ClassType(CLASS_CLASS);
   std::ostringstream fcf_name;
   fcf_name << "_chpl_fcf_" << unique_fcf_id++ << "_" << fname;
@@ -2768,6 +2856,11 @@ preFold(Expr* expr) {
         USR_FATAL(call, "invalid query -- queried field must be a type of parameter");
     } else if (call->isPrimitive(PRIM_CAPTURE_FN)) {
       result = createFunctionAsValue(call);
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_CREATE_FN_TYPE)) {
+      ClassType *parent = createOrFindFunTypeFromAnnotation(call->argList, call);
+
+      result = new SymExpr(parent->symbol);
       call->replace(result);
     } else if (call->isNamed("chpl__initCopy") ||
                call->isNamed("chpl__autoCopy")) {
