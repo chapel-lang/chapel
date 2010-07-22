@@ -482,10 +482,6 @@ initPrimitive() {
   prim_def("real2int", returnInfoInt64);
   prim_def("object2int", returnInfoInt64);
   prim_def("chpl_exit_any", returnInfoVoid, true);
-
-  prim_def("complex_set_real", returnInfoVoid, true);
-  prim_def("complex_set_imag", returnInfoVoid, true);
-
   prim_def("chpl_coresPerLocale", returnInfoInt32);
   prim_def("chpl_localeName", returnInfoString);
   prim_def("chpl_maxThreads", returnInfoInt32);
@@ -504,22 +500,6 @@ initPrimitive() {
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid, true);
   prim_def(PRIM_NUM_PRIV_CLASSES, "chpl_numPrivatizedClasses", returnInfoInt32);
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
-
-  prim_def("chpl_startVerboseComm", returnInfoVoid, true);
-  prim_def("chpl_stopVerboseComm", returnInfoVoid, true);
-  prim_def("chpl_startVerboseCommHere", returnInfoVoid, true);
-  prim_def("chpl_stopVerboseCommHere", returnInfoVoid, true);
-
-  prim_def("chpl_startCommDiagnostics", returnInfoVoid, true);
-  prim_def("chpl_stopCommDiagnostics", returnInfoVoid, true);
-  prim_def("chpl_startCommDiagnosticsHere", returnInfoVoid, true);
-  prim_def("chpl_stopCommDiagnosticsHere", returnInfoVoid, true);
-
-  prim_def("chpl_numCommGets", returnInfoInt32);
-  prim_def("chpl_numCommPuts", returnInfoInt32);
-  prim_def("chpl_numCommForks", returnInfoInt32);
-  prim_def("chpl_numCommFastForks", returnInfoInt32);
-  prim_def("chpl_numCommNBForks", returnInfoInt32);
   
   prim_def(PRIM_NEXT_UINT32, "_next_uint32", returnInfoUInt32);
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoInt32, true, true);

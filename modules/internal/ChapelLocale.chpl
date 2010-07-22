@@ -111,28 +111,43 @@ def locale.blockedTasks() {
 //
 // multi-locale diagnostics/debugging support
 //
-def startVerboseComm() { __primitive("chpl_startVerboseComm"); }
-def stopVerboseComm() { __primitive("chpl_stopVerboseComm"); }
-def startVerboseCommHere() { __primitive("chpl_startVerboseCommHere"); }
-def stopVerboseCommHere() { __primitive("chpl_stopVerboseCommHere"); }
+_extern def chpl_startVerboseComm();
+_extern def chpl_stopVerboseComm();
+_extern def chpl_startVerboseCommHere();
+_extern def chpl_stopVerboseCommHere();
+_extern def chpl_startCommDiagnostics();
+_extern def chpl_stopCommDiagnostics();
+_extern def chpl_startCommDiagnosticsHere();
+_extern def chpl_stopCommDiagnosticsHere();
 
-def startCommDiagnostics() { __primitive("chpl_startCommDiagnostics"); }
-def stopCommDiagnostics() { __primitive("chpl_stopCommDiagnostics"); }
-def startCommDiagnosticsHere() { __primitive("chpl_startCommDiagnosticsHere"); }
-def stopCommDiagnosticsHere() { __primitive("chpl_stopCommDiagnosticsHere"); }
+def startVerboseComm() { chpl_startVerboseComm(); }
+def stopVerboseComm() { chpl_stopVerboseComm(); }
+def startVerboseCommHere() { chpl_startVerboseCommHere(); }
+def stopVerboseCommHere() { chpl_stopVerboseCommHere(); }
+
+def startCommDiagnostics() { chpl_startCommDiagnostics(); }
+def stopCommDiagnostics() { chpl_stopCommDiagnostics(); }
+def startCommDiagnosticsHere() { chpl_startCommDiagnosticsHere(); }
+def stopCommDiagnosticsHere() { chpl_stopCommDiagnosticsHere(); }
 
 
 // TODO: generalize this for multiple realms by returning a manhattan
 // array
+_extern def chpl_numCommGets(): int(32);
+_extern def chpl_numCommPuts(): int(32);
+_extern def chpl_numCommForks(): int(32);
+_extern def chpl_numCommFastForks(): int(32);
+_extern def chpl_numCommNBForks(): int(32);
+
 def getCommDiagnostics(realmID: int(32) = 0) {
   var D: [Realms(realmID).LocaleSpace] 5*int;
   const r = Realms(realmID);
   for loc in r.Locales do on loc {
-    const gets = __primitive("chpl_numCommGets");
-    const puts = __primitive("chpl_numCommPuts");
-    const forks = __primitive("chpl_numCommForks");
-    const fforks = __primitive("chpl_numCommFastForks");
-    const nbforks = __primitive("chpl_numCommNBForks");
+    const gets = chpl_numCommGets();
+    const puts = chpl_numCommPuts();
+    const forks = chpl_numCommForks();
+    const fforks = chpl_numCommFastForks();
+    const nbforks = chpl_numCommNBForks();
     D(loc.id) = (gets, puts, forks, fforks, nbforks);
   }
   return D;
