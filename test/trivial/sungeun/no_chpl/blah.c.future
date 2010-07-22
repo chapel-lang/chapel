@@ -1,4 +1,0 @@
-bug: Seg fault in build_chpl_entry_points()
-
-No .chpl file is specifed so mainModule is NULL.
-
