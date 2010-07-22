@@ -14,7 +14,8 @@
 #include "version.h"
 #include "log.h"
 #include "primitive.h"
-
+#include "symbol.h"
+#include "config.h"
 
 FILE* html_index_file = NULL;
 
@@ -92,7 +93,6 @@ char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
 
-Map<const char*, const char*> configParamMap;
 bool debugCCode = false;
 bool optimizeCCode = false;
 
@@ -129,7 +129,7 @@ static void setupChplHome(void) {
 
 static const char* setupEnvVar(const char* varname, const char* script) {
   const char* val = runUtilScript(script);
-  configParamMap.put(astr(varname), val);
+  parseCmdLineConfig(varname, astr("\"", val, "\""));
   return val;
 }
 
@@ -164,10 +164,31 @@ static void setupOrderedGlobals(void) {
 }
 
 
+// NOTE: We are leaking memory here by dropping astr() results on the ground.
 static void recordCodeGenStrings(int argc, char* argv[]) {
-  compileCommand = astr("chpl");
+  compileCommand = astr("chpl ");
+  // WARNING: This does not handle arbitrary sequences of escaped characters
+  //  in string arguments
   for (int i = 1; i < argc; i++) {
-    compileCommand = astr(compileCommand, " ", argv[i]);
+    char *arg = argv[i];
+    // Handle " and \" in strings
+    while (char *dq = strchr(arg, '"')) {
+      char targ[strlen(argv[i])+4];
+      memcpy(targ, arg, dq-arg);
+      if ((dq==argv[i]) || ((dq!=argv[i]) && (*(dq-1)!='\\'))) {
+        targ[dq-arg] = '\\';
+        targ[dq-arg+1] = '"';
+        targ[dq-arg+2] = '\0';
+      } else {
+        targ[dq-arg] = '"';
+        targ[dq-arg+1] = '\0';
+      }
+      arg = dq+1;
+      compileCommand = astr(compileCommand, targ);
+      if (arg == NULL) break;
+    }
+    if (arg)
+      compileCommand = astr(compileCommand, arg, " ");
   }
   get_version(compileVersion);
 }
@@ -226,7 +247,7 @@ static void runCompilerInGDB(int argc, char* argv[]) {
 }
 
 
-static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
+static void readConfig(ArgumentState* arg_state, char* arg_unused) {
   // Expect arg_unused to be a string of either of these forms:
   // 1. name=value -- set the config param "name" to "value"
   // 2. name       -- set the boolean config param "name" to NOT("name")
@@ -240,14 +261,14 @@ static void readConfigParam(ArgumentState* arg_state, char* arg_unused) {
     value++;
     if (value[0]) {
       // arg_unused was name=value
-      configParamMap.put(astr(name), value);
+      parseCmdLineConfig(name, value);
     } else {
       // arg_unused was name=  <blank>
       USR_FATAL("Missing config param value");
     }
   } else {
     // arg_unused was just name
-    configParamMap.put(astr(name), "");
+    parseCmdLineConfig(name, "");
   }
 }
 
@@ -264,7 +285,21 @@ int32_t getNumRealms(void) {
 }
 
 static void processRealmArgs(void) {
-  const char* allrealms = configParamMap.get(astr("realmTypes"));
+  const char *allrealms = NULL;
+  if (Expr *al = getCmdLineConfig(astr("realmTypes"))) {
+    if (!isSymExpr(al)) {
+      USR_FATAL("realmTypes must be a string");
+    }
+    VarSymbol *var = toVarSymbol(toSymExpr(al)->var);
+    INT_ASSERT(var);
+    if (!var->isImmediate()) {
+      USR_FATAL("realmTypes must be a string");
+    }
+    if (var->immediate->const_kind!=CONST_KIND_STRING) {
+      USR_FATAL("realmTypes must be a string");
+    }
+    allrealms = var->immediate->v_string;
+  }
   if (allrealms == NULL) {
     realms.add(CHPL_TARGET_PLATFORM);
   } else {
@@ -447,7 +482,7 @@ static ArgumentDescription arg_desc[] = {
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
- {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfigParam},
+ {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
  {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL},
@@ -546,22 +581,24 @@ static void printStuff(void) {
 
 static void
 compile_all(void) {
-  initFlags();
-  initPrimitive();
-  initPrimitiveTypes();
   testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
   runPasses();
 }
 
 int main(int argc, char *argv[]) {
+  startCatchingSignals();
+  initFlags();
+  initChplProgram();
+  initPrimitive();
+  initPrimitiveTypes();
   setupOrderedGlobals();
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
+  initCompilerGlobals(); // must follow argument parsing
   setupDependentVars();
   setupModulePaths();
   recordCodeGenStrings(argc, argv);
-  startCatchingSignals();
   printStuff();
   if (rungdb)
     runCompilerInGDB(argc, argv);

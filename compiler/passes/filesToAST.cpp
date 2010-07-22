@@ -10,6 +10,7 @@
 #include "symbol.h"
 #include "countTokens.h"
 #include "yy.h"
+#include "config.h"
 
 
 static ModuleSymbol* parseInternalModule(const char* name) {
@@ -101,6 +102,8 @@ void parse(void) {
       mod->modUseList.add(standardModule);
     }
   }
+
+  checkConfigs();
 
   baseModule->block->addUse(rootModule);
   finishCountingTokens();

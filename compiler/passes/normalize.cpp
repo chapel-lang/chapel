@@ -13,7 +13,6 @@
 #include <cctype>
 
 bool normalized = false;
-Vec<const char*> usedConfigParams;
 
 static void change_method_into_constructor(FnSymbol* fn);
 static void normalize_returns(FnSymbol* fn);
@@ -26,7 +25,6 @@ static void fix_def_expr(VarSymbol* var);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void fixup_query_formals(FnSymbol* fn);
-static void checkConfigParams();
 
 static void
 checkUseBeforeDefs() {
@@ -168,7 +166,6 @@ void normalize(void) {
 
   normalize(theProgram);
   normalized = true;
-  checkConfigParams();
   checkUseBeforeDefs();
   flattenGlobalFunctions();
   insertUseForExplicitModuleCalls();
@@ -608,41 +605,6 @@ fix_def_expr(VarSymbol* var) {
 
         stmt = noop; // insert regular definition code in then block
       }
-    } else {
-      if (const char* value = configParamMap.get(astr(var->name))) {
-        usedConfigParams.add(astr(var->name));
-        if (SymExpr* symExpr = toSymExpr(init)) {
-          if (VarSymbol* varSymbol = toVarSymbol(symExpr->var)) {
-            if (varSymbol->immediate) {
-              Immediate* imm;
-              if (varSymbol->immediate->const_kind == CONST_KIND_STRING) {
-                imm = new Immediate(value);
-              } else {
-                imm = new Immediate(*varSymbol->immediate);
-                convert_string_to_immediate(value, imm);
-              }
-              init->replace(new SymExpr(new_ImmediateSymbol(imm)));
-              init = var->defPoint->init;
-            }
-          } else if (EnumSymbol* sym = toEnumSymbol(symExpr->var)) {
-            if (EnumType* et = toEnumType(sym->type)) {
-              bool validEnumValue = false;
-              for_enums(constant, et) {
-                if (!strcmp(constant->sym->name, value)) {
-                  init->replace(new SymExpr(constant->sym));
-                  init = var->defPoint->init;
-                  validEnumValue = true;
-                  break;
-                }
-              }
-              if (!validEnumValue) {
-                USR_FATAL(astr("invalid command line setting of config param ",
-                               var->name));
-              }
-            }
-          }
-        }
-      }
     }
   }
 
@@ -708,22 +670,6 @@ fix_def_expr(VarSymbol* var) {
         new CallExpr(PRIM_MOVE, constTemp,
           new CallExpr("chpl__initCopy", init->remove())));
 
-  }
-}
-
-
-static void checkConfigParams() {
-  bool anyBadConfigParams = false;
-  Vec<const char*> configParamSetNames;
-  configParamMap.get_keys(configParamSetNames);
-  forv_Vec(const char, name, configParamSetNames) {
-    if (!usedConfigParams.in(name)) {
-      USR_FATAL_CONT("Trying to set unrecognized config param '%s' via -s flag", name);
-      anyBadConfigParams = true;
-    }
-  }
-  if (anyBadConfigParams) {
-    USR_STOP();
   }
 }
 

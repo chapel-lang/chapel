@@ -1,1 +1,1 @@
-error: invalid command line setting of config param c
+badConfigParamEnum.chpl:1: error: unresolved enumerated type symbol "orange"

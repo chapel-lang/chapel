@@ -7,7 +7,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
-
+#include "config.h"
 
 static void
 checkControlFlow(Expr* expr, const char* context) {
@@ -1363,6 +1363,25 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst) {
           var->addFlag(externconfig);
         if (varconst != FLAG_UNKNOWN)
           var->addFlag(varconst);
+
+        if (var->hasFlag(FLAG_CONFIG)) {
+          if (Expr *configInit = getCmdLineConfig(var->name)) {
+            // config var initialized on the command line
+            if (!isUsedCmdLineConfig(var->name)) {
+              useCmdLineConfig(var->name);
+              // drop the original init expression on the floor
+              if (Expr* a = toExpr(configInit))
+                defExpr->init = a;
+              else if (Symbol* a = toSymbol(configInit))
+                defExpr->init = new SymExpr(a);
+              else
+                INT_FATAL(stmt, "DefExpr initialized with bad exprType config ast");
+            } else {
+              // name is ambiguous, must specify module name
+              USR_FATAL(var, "Ambiguous config param or type name (%s)", var->name);
+            }
+          }
+        }
         continue;
       }
     }
@@ -1768,6 +1787,35 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk) {
         de = newde;
       }           
       de->sym->addFlag(FLAG_EXTERN);
+    } else {
+      INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
+    }
+  }
+  return blk;
+}
+
+BlockStmt* handleConfigTypes(BlockStmt* blk) {
+  for_alist(node, blk->body) {
+    if (DefExpr* defExpr = toDefExpr(node)) {
+      if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
+        var->addFlag(FLAG_CONFIG);
+        if (Expr *configInit = getCmdLineConfig(var->name)) {
+          // config var initialized on the command line
+          if (!isUsedCmdLineConfig(var->name)) {
+            useCmdLineConfig(var->name);
+            // drop the original init expression on the floor
+            if (Expr* a = toExpr(configInit))
+              defExpr->init = a;
+            else if (Symbol* a = toSymbol(configInit))
+              defExpr->init = new SymExpr(a);
+            else
+              INT_FATAL(node, "Type alias initialized to invalid exprType");
+          } else {
+            // name is ambiguous, must specify module name
+            USR_FATAL(var, "Ambiguous config param or type name (%s)", var->name);
+          }
+        }
+      }
     } else {
       INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
     }

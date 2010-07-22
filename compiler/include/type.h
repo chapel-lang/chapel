@@ -176,7 +176,9 @@ TYPE_EXTERN ClassType* dtTuple;
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
 
+void initChplProgram(void);
 void initPrimitiveTypes(void);
+void initCompilerGlobals(void);
 
 bool is_bool_type(Type*);
 bool is_int_type(Type*);

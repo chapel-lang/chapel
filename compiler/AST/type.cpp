@@ -515,7 +515,7 @@ createPrimitiveType(const char *name, const char *cname) {
   primType->defaultValue = gSym
 
 
-void initPrimitiveTypes(void) {
+void initChplProgram(void) {
   // Inititalize the outermost module
   rootModule = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
   rootModule->filename = astr("<internal>");
@@ -523,7 +523,9 @@ void initPrimitiveTypes(void) {
   theProgram = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
   rootModule->block->insertAtTail(new DefExpr(theProgram));
+}
 
+void initPrimitiveTypes(void) {
   dtNil = createPrimitiveType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
 
@@ -572,40 +574,6 @@ void initPrimitiveTypes(void) {
   gTryToken = new VarSymbol("chpl__tryToken", dtBool);
   gTryToken->addFlag(FLAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gTryToken));
-
-  gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
-  gBoundsChecking->addFlag(FLAG_CONST);
-  rootModule->block->insertAtTail(new DefExpr(gBoundsChecking));
-  if (fNoBoundsChecks) {
-    gBoundsChecking->immediate = new Immediate;
-    *gBoundsChecking->immediate = *gFalse->immediate;
-  } else {
-    gBoundsChecking->immediate = new Immediate;
-    *gBoundsChecking->immediate = *gTrue->immediate;
-  }
-
-  gPrivatization = new VarSymbol("_privatization", dtBool);
-  gPrivatization->addFlag(FLAG_PARAM);
-  rootModule->block->insertAtTail(new DefExpr(gPrivatization));
-  if (fNoPrivatization || fLocal) {
-    gPrivatization->immediate = new Immediate;
-    *gPrivatization->immediate = *gFalse->immediate;
-  } else {
-    gPrivatization->immediate = new Immediate;
-    *gPrivatization->immediate = *gTrue->immediate;
-  }
-
-  gLocal = new VarSymbol("_local", dtBool);
-  gLocal->addFlag(FLAG_PARAM);
-  rootModule->block->insertAtTail(new DefExpr(gLocal));
-  if (fLocal) {
-    gLocal->immediate = new Immediate;
-    *gLocal->immediate = *gTrue->immediate;
-  } else {
-    gLocal->immediate = new Immediate;
-    *gLocal->immediate = *gFalse->immediate;
-  }
-
 
   
   INIT_PRIM_BOOL("bool(8)", 8);
@@ -686,6 +654,42 @@ void initPrimitiveTypes(void) {
   dtEnumerated->symbol->addFlag(FLAG_GENERIC);
 }
 
+void initCompilerGlobals(void) {
+
+  gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
+  gBoundsChecking->addFlag(FLAG_CONST);
+  rootModule->block->insertAtTail(new DefExpr(gBoundsChecking));
+  if (fNoBoundsChecks) {
+    gBoundsChecking->immediate = new Immediate;
+    *gBoundsChecking->immediate = *gFalse->immediate;
+  } else {
+    gBoundsChecking->immediate = new Immediate;
+    *gBoundsChecking->immediate = *gTrue->immediate;
+  }
+
+  gPrivatization = new VarSymbol("_privatization", dtBool);
+  gPrivatization->addFlag(FLAG_PARAM);
+  rootModule->block->insertAtTail(new DefExpr(gPrivatization));
+  if (fNoPrivatization || fLocal) {
+    gPrivatization->immediate = new Immediate;
+    *gPrivatization->immediate = *gFalse->immediate;
+  } else {
+    gPrivatization->immediate = new Immediate;
+    *gPrivatization->immediate = *gTrue->immediate;
+  }
+
+  gLocal = new VarSymbol("_local", dtBool);
+  gLocal->addFlag(FLAG_PARAM);
+  rootModule->block->insertAtTail(new DefExpr(gLocal));
+  if (fLocal) {
+    gLocal->immediate = new Immediate;
+    *gLocal->immediate = *gTrue->immediate;
+  } else {
+    gLocal->immediate = new Immediate;
+    *gLocal->immediate = *gFalse->immediate;
+  }
+
+}
 
 bool is_bool_type(Type* t) {
   return 

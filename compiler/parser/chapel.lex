@@ -210,3 +210,14 @@ int getNextYYChar() {
   }
   return retval;
 }
+
+BlockStmt*
+parseString(const char* string, const char* filename) {
+  yyblock = NULL;
+  yyfilename = filename;
+  yy_scan_string(string);
+  yyparse();
+  YY_NEW_FILE; // reset the lexer
+  return yyblock;
+}
+
