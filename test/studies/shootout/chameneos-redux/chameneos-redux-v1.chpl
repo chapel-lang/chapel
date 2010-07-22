@@ -16,14 +16,19 @@ use Time;
 config const numMeetings : int = 6000000;	// number of meetings to take place
 config const numChameneos1 : int = 3;		// size of population 1
 config const numChameneos2 : int = 10;  	// size of population 2
-enum Color {blue=0, red=1, yellow=2}; 	 
-enum Digit {zero, one, two, three, four, 	
+enum color {blue=0, red=1, yellow=2}; 	 
+enum digit {zero, one, two, three, four, 	
 	     five, six, seven, eight, nine};
 config const verbose = false;			// if verbose is true, prints out non-det output, otherwise prints det output
+config const peek = false;			// if peek is true, allows chameneos to peek at spotsLeft$ in MeetingPlace.meet()
+						// then immediately return
 
 class MeetingPlace {
-	var spotsLeft$ : sync int;
-	var partner : Chameneos;
+	var spotsLeft$ : sync int = 0; // no need to initialize to 0?
+	var color2$: sync color;	
+	var color1 : color;
+	var id1 : int;
+	var id2 : int;	
 
 	/* constructor for MeetingPlace, sets the 
 	   number of meetings to take place */
@@ -36,72 +41,79 @@ class MeetingPlace {
 	def reset() {
 		spotsLeft$.writeXF(numMeetings*2);
 	}
+
+	/* meet, if called on by the chameneos who arrives 1st, 
+	   returns the color of the chameneos who arrives 2nd,
+	   otherwise returns the color of the chameneos who arrives 1st
+           (denies meetings of 3+ chameneos) */
+
+	def meet(chameneos : Chameneos) {
+		/* peek at spotsLeft$ */			
+		if (peek) {	
+			if (spotsLeft$.readXX() == 0) {
+				return (true, chameneos.myColor);
+			}
+		}
+		
+		var spotsLeft = spotsLeft$; 	
+		var otherColor : color;
+
+		if (spotsLeft == 0) {
+			spotsLeft$ = 0;
+			return (true, chameneos.myColor);
+		}
+		if (spotsLeft % 2 == 0) {
+			color1 = chameneos.myColor;
+			id1 = chameneos.id;	
+			spotsLeft$ = spotsLeft - 1;		
+			otherColor = color2$;	
+			if (id1 == id2) {		
+				halt("halt: meetingsWithSelf count is nonzero");
+				chameneos.meetingsWithSelf += 1;			
+			}	
+			spotsLeft$ = spotsLeft - 2;			
+		} else if (spotsLeft % 2 == 1) {
+			otherColor = color1;
+			id2 = chameneos.id;
+			color2$ = chameneos.myColor;  		
+		}
+		chameneos.meetings += 1;
+		//sleep(10);
+		return (false, otherColor);
+	}
 }
 
 /* getComplement returns the complement of this and another color:
    if this and the other color are of the same value, return own value
    otherwise return the color that is neither this or the other color */
-def getComplement(myColor : Color, otherColor : Color) {
+def getComplement(myColor : color, otherColor : color) {
 	if (myColor == otherColor) { return myColor; } 
-	return (3 - myColor - otherColor) : Color;
+	return (3 - myColor - otherColor):color;
 }
 
 class Chameneos {
 	var id: int;
-	var color : Color;
-	var meetings : int;
-	var meetingsWithSelf : int;
-	var meetingCompleted$ : sync bool; 
-	
+	var myColor : color;
+	var meetings: int;
+	var meetingsWithSelf: int;
+
 	/* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
 	   with another Chameneos.  If it does, it will get the complement of the color
 	   of the Chameneos it met with, and change to the complement of that color. */
 	def start(place : MeetingPlace) {
 		var meetingPlace : MeetingPlace = place;
 		var stop : bool = false;
+		var otherColor : color;
 		while (!stop) {
-			stop = this.meet(place); 
+			(stop, otherColor) = meetingPlace.meet(this);
+			myColor = getComplement(myColor, otherColor);	
 		} 
-	}
-
-	/* meet, if called on by the chameneos who arrives 1st, 
-	   returns the color of the chameneos who arrives 2nd,
-	   otherwise returns the color of the chameneos who arrives 1st */
-	def meet(place : MeetingPlace) {
-		var partner : Chameneos;
-		var spotsLeft = place.spotsLeft$; 	
-
-		if (spotsLeft == 0) {
-			place.spotsLeft$ = 0;
-			return true;
-		}
-
-		if (spotsLeft % 2 == 0) {		
-			place.partner = this;
-			place.spotsLeft$ = spotsLeft - 1;		
-			meetingCompleted$;
-		} else if (spotsLeft % 2 == 1) {	
-			partner = place.partner;
-			place.spotsLeft$ = spotsLeft - 1;	
-
-			if (id == partner.id) {
-				meetingsWithSelf += 1;
-				halt("halt: chameneos met with self");
-			}
-			var newColor = getComplement(color, partner.color);
-			color = newColor;
-			partner.color = newColor;
-		 	meetings += 1;
-			partner.meetings += 1;
-			partner.meetingCompleted$ = true;
-		}
-		return false;
 	}
 }
 
 /* printColorChanges prints the result of getComplement for all possible pairs of colors */
 def printColorChanges() {
-	const colors : [1..3] Color = (Color.blue, Color.red, Color.yellow);
+	const colors : [1..3] color = (color.blue, color.red, color.yellow);
 	for color1 in colors {
 		for color2 in colors {
 			writeln(color1, " + ", color2, " -> ", getComplement(color1, color2));
@@ -113,15 +125,15 @@ def printColorChanges() {
 /* populate takes an parameter of type int, size, and returns a population of chameneos 
    of that size. if population size is set to 10, will use preset array of colors  */
 def populate (size : int) {
-	const colorsDefault10  = (Color.blue, Color.red, Color.yellow, Color.red, Color.yellow, 
-			      	        Color.blue, Color.red, Color.yellow, Color.red, Color.blue);	
+	const colorsDefault10  = (color.blue, color.red, color.yellow, color.red, color.yellow, 
+			      	        color.blue, color.red, color.yellow, color.red, color.blue);	
 	const D : domain(1) = [1..size];
 	var population : [D] Chameneos;
 
 	if (size == 10) {
 		for i in D {population(i) = new Chameneos(i, colorsDefault10(i));}	
 	} else { 
-		for i in D {population(i) = new Chameneos(i, ((i-1) % 3):Color);}
+		for i in D {population(i) = new Chameneos(i, ((i-1) % 3):color);}
 	}
 	return population;
 }
@@ -131,7 +143,7 @@ def populate (size : int) {
    number of times it met with itself, then spells out the total number of times all the Chameneos met
    another Chameneos. */
 def run(population : [] Chameneos, meetingPlace : MeetingPlace) {
-	for i in population { write(" ", i.color); }
+	for i in population { write(" ", i.myColor); }
 	writeln();
 
 	coforall i in population { i.start(meetingPlace); }
@@ -160,7 +172,7 @@ def printInfo(population : [] Chameneos) {
 
 def printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 	if (totalMeetings == numMeetings*2) { writeln("total meetings PASS"); } 
-	else { writeln("total meetings actual = ", totalMeetings, ", total meetings expectud = ", numMeetings*2); }
+	else { writeln("total meetings actual = ", totalMeetings, ", total meetings expected = ", numMeetings*2); }
 	
 	if (totalMeetingsWithSelf == 0) { writeln("total meetings with self PASS"); } 
    	else { writeln("total meetings with self actual = ", totalMeetingsWithSelf, ", total meetings with self expected = 0"); }
@@ -171,7 +183,7 @@ def printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 /* spellInt takes an integer, and spells each of its digits out in English */
 def spellInt(n : int) {
 	var s : string = n:string;
-	for i in 1..s.length {write(" ", (s.substring(i):int + 1):Digit);}
+	for i in 1..s.length {write(" ", (s.substring(i):int + 1):digit);}
 	writeln();
 }
 

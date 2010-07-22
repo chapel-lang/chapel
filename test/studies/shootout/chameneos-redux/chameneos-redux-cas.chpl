@@ -1,6 +1,6 @@
-
 _extern type volatileint32 = int(32); // uintptr_t volatile
 _extern def __sync_val_compare_and_swap_c(inout state_p : volatileint32, state : volatileint32, xchg : volatileint32) : volatileint32;
+_extern def sched_yield();
 
 use Time;
 
@@ -18,75 +18,34 @@ use Time;
 	- (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
 
 config const numMeetings : int = 6000000;	// number of meetings to take place
+config const spinCount : int = 20000;		// time to spin before calling sched_yield()	
 config const numChameneos1 : int = 3;		// size of population 1
 config const numChameneos2 : int = 10;  	// size of population 2
-enum color {blue=0, red=1, yellow=2}; 	 
-enum digit {zero, one, two, three, four, 	
+enum Color {blue=0, red=1, yellow=2}; 	 
+enum Digit {zero, one, two, three, four, 	
 	     five, six, seven, eight, nine};
 config const verbose = false;			// if verbose is true, prints out non-det output, otherwise prints det output
 config const peek = false;			// if peek is true, allows chameneos to peek at spotsLeft$ in MeetingPlace.meet()
 						// then immediately return
+config const CHAMENEOS_IDX_MASK = 0xFF;
+config const MEET_COUNT_SHIFT = 8;
+
 
 class MeetingPlace {
-	//var spotsLeft$ : sync int = 0; 
-	var spotsLeft : volatileint32 = 0;
-	var color2$: sync color;	
-	var color1 : color;
-	var id1 : int;
-	var id2 : int;	
+	//var spotsLeft : volatileint32;
+	//var partner : Chameneos;
+	var state : volatileint32;
 
 	/* constructor for MeetingPlace, sets the 
 	   number of meetings to take place */
 	def MeetingPlace() {
-		spotsLeft = numMeetings*2;
+		state = numMeetings << MEET_COUNT_SHIFT;
 	}
 	
 	/* reset must be called after meet, 
 	   to reset numMeetings for a subsequent call of meet */
 	def reset() {
-		spotsLeft = numMeetings*2;
-	}
-
-	/* meet, if called on by the chameneos who arrives 1st, 
-	   returns the color of the chameneos who arrives 2nd,
-	   otherwise returns the color of the chameneos who arrives 1st
-           (denies meetings of 3+ chameneos) */
-	def meet(chameneos : Chameneos) {
-		/*
-		if (peek) {	
-			if (spotsLeft$.readXX() == 0) {
-				return (true, chameneos.myColor);
-			}
-		}
-		*/
-		
-		var spotsLeftTemp = spotsLeft;
-		var prev = __sync_val_compare_and_swap_c(spotsLeft, spotsLeftTemp, spotsLeftTemp + 1); 	
-		var otherColor : color;
-		if (prev == spotsLeftTemp) {
-			if (spotsLeftTemp == 0) {
-				spotsLeft = 0;
-				return (true, chameneos.myColor);
-			}
-			if (spotsLeftTemp % 2 == 0) {
-				color1 = chameneos.myColor;
-				id1 = chameneos.id;	
-				spotsLeft = spotsLeftTemp - 1;		
-				otherColor = color2$;	
-				if (id1 == id2) {		
-					halt("halt");
-					chameneos.meetingsWithSelf += 1;			
-				}	
-				spotsLeft = spotsLeftTemp - 2;			
-			} else if (spotsLeftTemp % 2 == 1) {
-				otherColor = color1;
-				id2 = chameneos.id;
-				color2$ = chameneos.myColor;  		
-			}
-			chameneos.meetings += 1;
-			//sleep(10);
-			return (false, otherColor);
-		}
+		state = numMeetings << MEET_COUNT_SHIFT;
 	}
 }
 	
@@ -95,34 +54,113 @@ class MeetingPlace {
 /* getComplement returns the complement of this and another color:
    if this and the other color are of the same value, return own value
    otherwise return the color that is neither this or the other color */
-def getComplement(myColor : color, otherColor : color) {
+def getComplement(myColor : Color, otherColor : Color) {
 	if (myColor == otherColor) { return myColor; } 
-	return (3 - myColor - otherColor):color;
+	return (3 - myColor - otherColor) : Color;
 }
 
 class Chameneos {
 	var id: int;
-	var myColor : color;
-	var meetings: int;
-	var meetingsWithSelf: int;
-
+	var color : Color;
+	var meetings : int;
+	var meetingsWithSelf : int;
+	var meetingCompleted : volatileint32;
+	
 	/* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
 	   with another Chameneos.  If it does, it will get the complement of the color
 	   of the Chameneos it met with, and change to the complement of that color. */
-	def start(place : MeetingPlace) {
-		var meetingPlace : MeetingPlace = place;
-		var stop : bool = false;
-		var otherColor : color;
-		while (!stop) {
-			(stop, otherColor) = meetingPlace.meet(this);
-			myColor = getComplement(myColor, otherColor);	
+	def start(population : [] Chameneos, place : MeetingPlace) {
+		var stateTemp : int;
+		var peer : Chameneos;
+		var peer_idx : int;	
+		var xchg : int;
+		var prev : int;
+		var is_same : int;
+		var newColor : Color;
+
+		stateTemp = place.state;	
+					
+		while (true) {
+			peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
+			if (peer_idx) {
+				xchg = stateTemp - peer_idx - (1 << MEET_COUNT_SHIFT);
+			} else if (stateTemp) {
+				xchg = stateTemp | id;		
+			} else {
+				break;
+			}
+			prev = __sync_val_compare_and_swap_c(place.state, stateTemp, xchg);
+			if (prev == stateTemp) {
+				if (peer_idx) {
+					if (id == peer_idx) {
+						is_same = 1;
+						halt("halt: chameneos met with self");
+					}
+					peer = population[peer_idx];			// or is it peer_idx-1?
+					newColor = getComplement(color, peer.color);
+					peer.color = newColor;
+					peer.meetings += 1;
+					peer.meetingsWithSelf += is_same;
+					peer.meetingCompleted = 1;
+					color = newColor;
+					meetings += 1;
+					meetingsWithSelf += is_same;
+				} else {
+					while (meetingCompleted == 0) {
+						sched_yield();
+					}
+					meetingCompleted = 0;
+					stateTemp = place.state;	
+				}
+			} else {
+				stateTemp = prev; 
+			}
 		} 
+	}
+	
+	def meet(place : MeetingPlace) {
+		var partner : Chameneos;
+		var spotsLeftTemp = place.spotsLeft;
+		var spotsLeftOld : int;	
+
+		if (spotsLeftTemp == 0) {
+			place.spotsLeft = 0;
+			return true;
+		}
+
+		if (spotsLeftTemp % 2 == 0) {
+			place.partner = this;
+			spotsLeftOld = __sync_val_compare_and_swap_c(place.spotsLeft, spotsLeftTemp, spotsLeftTemp - 1);
+
+			if (spotsLeftOld == spotsLeftTemp) {
+				while (meetingCompleted == 0) {
+					sched_yield();
+				}
+				meetingCompleted = 0;
+			}
+		} else if (spotsLeftTemp % 2 == 1) {
+			partner = place.partner;
+		 	spotsLeftOld = __sync_val_compare_and_swap_c(place.spotsLeft, spotsLeftTemp, spotsLeftTemp - 1);					
+			if (spotsLeftOld == spotsLeftTemp) {
+				if (id == partner.id) {
+					meetingsWithSelf += 1;
+					halt("halt: chameneos met with self");
+				}
+				var newColor = getComplement(color, partner.color);
+				partner.color = newColor;
+				partner.meetings += 1;
+				partner.meetingCompleted = 1;
+				color = newColor;	
+				meetings += 1;
+			}
+		}
+		return false;
 	}
 }
 
 /* printColorChanges prints the result of getComplement for all possible pairs of colors */
 def printColorChanges() {
-	const colors : [1..3] color = (color.blue, color.red, color.yellow);
+	const colors : [1..3] Color = (Color.blue, Color.red, Color.yellow);
 	for color1 in colors {
 		for color2 in colors {
 			writeln(color1, " + ", color2, " -> ", getComplement(color1, color2));
@@ -134,15 +172,15 @@ def printColorChanges() {
 /* populate takes an parameter of type int, size, and returns a population of chameneos 
    of that size. if population size is set to 10, will use preset array of colors  */
 def populate (size : int) {
-	const colorsDefault10  = (color.blue, color.red, color.yellow, color.red, color.yellow, 
-			      	        color.blue, color.red, color.yellow, color.red, color.blue);	
+	const colorsDefault10  = (Color.blue, Color.red, Color.yellow, Color.red, Color.yellow, 
+			      	        Color.blue, Color.red, Color.yellow, Color.red, Color.blue);	
 	const D : domain(1) = [1..size];
 	var population : [D] Chameneos;
 
 	if (size == 10) {
 		for i in D {population(i) = new Chameneos(i, colorsDefault10(i));}	
 	} else { 
-		for i in D {population(i) = new Chameneos(i, ((i-1) % 3):color);}
+		for i in D {population(i) = new Chameneos(i, ((i-1) % 3):Color);}
 	}
 	return population;
 }
@@ -152,15 +190,15 @@ def populate (size : int) {
    number of times it met with itself, then spells out the total number of times all the Chameneos met
    another Chameneos. */
 def run(population : [] Chameneos, meetingPlace : MeetingPlace) {
-	for i in population { write(" ", i.myColor); }
+	for i in population { write(" ", i.color); }
 	writeln();
 
-	coforall i in population { i.start(meetingPlace); }
+	coforall i in population { i.start(population, meetingPlace); }
 	meetingPlace.reset();
 }
 
 def runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
-	coforall i in population { i.start(meetingPlace); }
+	coforall i in population { i.start(population, meetingPlace); }
 	meetingPlace.reset();
 
 	const totalMeetings = + reduce population.meetings;
@@ -179,7 +217,6 @@ def printInfo(population : [] Chameneos) {
 		write(i.meetings);
 		spellInt(i.meetingsWithSelf);
 	}
-	// 2 to 1 liner?
 	const totalMeetings = + reduce population.meetings;
 	spellInt(totalMeetings);
 	writeln();
@@ -188,7 +225,7 @@ def printInfo(population : [] Chameneos) {
 /* spellInt takes an integer, and spells each of its digits out in English */
 def spellInt(n : int) {
 	var s : string = n:string;
-	for i in 1..s.length {write(" ", (s.substring(i):int + 1):digit);}
+	for i in 1..s.length {write(" ", (s.substring(i):int + 1):Digit);}
 	writeln();
 }
 

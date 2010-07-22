@@ -1,10 +1,7 @@
 keys: time for chameneos1 to meet =, time for chameneos2 to meet =
+files: chameneos-redux.dat, chameneos-redux.dat
 ylabel: Time (seconds)
 graph_name: chameneos-redux-concurrent
 title: chameneos-redux performance over time - concurrent
 
-keys: total execution time =
-ylabel: Time (seconds)
-graph_name: chameneos-redux-total
-title: chameneos-redux performance over time - total
 
