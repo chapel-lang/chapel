@@ -1,6 +1,8 @@
 use BlockDist, CyclicDist, BlockCycDist;
 
-config param distString: string = 'default';
+enum DistType { default, block, cyclic, blockcyclic };
+
+config param distType: DistType = DistType.default;
 
 config const n1 = 100;
 config const n2 = 20;
@@ -16,7 +18,7 @@ const Space4 = [1..n4, 1..n4, 1..n4, 1..n4];
 const Space2D64 = [n5-o5..n5, n5-o5..n5];
 
 def setupDistributions() {
-  if distString == 'default' {
+  if distType == DistType.default {
     return (
             new dmap(new DefaultDist()),
             new dmap(new DefaultDist()),
@@ -25,7 +27,7 @@ def setupDistributions() {
             new dmap(new DefaultDist())
            );
   }
-  if distString == 'block' {
+  if distType == DistType.block {
     return (
             new dmap(new Block(rank=1, boundingBox=Space1)),
             new dmap(new Block(rank=2, boundingBox=Space2)),
@@ -34,7 +36,7 @@ def setupDistributions() {
             new dmap(new Block(rank=2, idxType=int(64), boundingBox=Space2D64))
            );
   }
-  if distString == 'cyclic' {
+  if distType == DistType.cyclic {
     return (
             new dmap(new Cyclic(startIdx=0)),
             new dmap(new Cyclic(startIdx=(0,0))),
@@ -43,7 +45,7 @@ def setupDistributions() {
             new dmap(new Cyclic(startIdx=(0:int(64), 0:int(64))))
            );
   }
-  if distString == 'blockcyclic' {
+  if distType == DistType.blockcyclic {
     return (
             new dmap(new BlockCyclic(rank=1, idxType=int, low=tuple(0), blk=tuple(3))),
             new dmap(new BlockCyclic(rank=2, idxType=int, low=(0,0), blk=(3,3))),
