@@ -40,6 +40,25 @@ bool isOnStack(SymExpr* se) {
 //   return 0;
 // }
 
+
+//
+// Based on codegen_member in expr.cpp
+//
+static 
+int isBaseOnStack(SymExpr *base) {
+  ClassType* ct = toClassType(base->typeInfo());
+  INT_ASSERT(ct);
+  INT_ASSERT(!isUnion(ct));
+
+  if (ct->symbol->hasFlag(FLAG_REF))
+    return false;
+  if (isClass(ct))
+    return false;
+  if (!isClass(ct) && isOnStack(toSymExpr(base)))
+    return true;
+  return false; 
+}
+
 void txUnknownPrimitive(CallExpr *call) { /* gdb use only */ }
 
 void txUnknownMovePrimitive(CallExpr* call, CallExpr* rhs) {    
@@ -162,21 +181,26 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  INT_ASSERT(!isUnion(se1->getValType()));
 	  call->replace(new CallExpr(PRIM_TX_GET_MEMBER_VALUE,
 				     tx, lhs->var, se1->var, se2->var));
+	} else if (se1->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+	  USR_FATAL(call, "FIXME: GET_MEMBER_VALUE STAR_TUPLE");	  
 	} else {
-	  if(se2->var->hasFlag(FLAG_SUPER_CLASS) &&
+	  if (se2->var->hasFlag(FLAG_SUPER_CLASS) &&
 	     lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-	    VarSymbol *tmp = newTemp(se2->typeInfo());
-	    call->insertBefore(new DefExpr(tmp));
-	    call->insertBefore(new CallExpr(PRIM_TX_LOAD_MEMBER_VALUE,
-					    tx, tmp, se1->var, se2->var));
-	    rhs->replace(new SymExpr(tmp)); 
-	  } else {
-	    //	    if (!isOnStack(se1)) 
-	    // if(!isFormalArg(se1))
-	    if (!strstr(se1->parentExpr->getFunction()->name, "tx_clone_wrapon"))
-	      call->replace(new CallExpr(PRIM_TX_LOAD_MEMBER_VALUE, 
-					 tx, lhs->var, se1->var, se2->var));
+	    // Ignore -- CHPL_WIDEN(lhs, &(se1...))
+	    break;
+	  } else if (se2->var->hasFlag(FLAG_SUPER_CLASS)) {
+	    // Ignore -- lhs = (&(se1...))
+	    break; 
+	  } else if (!isBaseOnStack(se1)) {
+	    call->replace(new CallExpr(PRIM_TX_LOAD_MEMBER_VALUE, 
+				       tx, lhs->var, se1->var, se2->var));
 	  }
+	    //	    if (!isOnStack(se1)) 
+	  //   // if(!isFormalArg(se1))
+	  //   if (!strstr(se1->parentExpr->getFunction()->name, "tx_clone_wrapon"))
+	  //     call->replace(new CallExpr(PRIM_TX_LOAD_MEMBER_VALUE, 
+	  // 				 tx, lhs->var, se1->var, se2->var));
+	  // }
 	}
 	break;
       }

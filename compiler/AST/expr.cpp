@@ -2121,15 +2121,11 @@ void CallExpr::codegen(FILE* outfile) {
     }
     case PRIM_TX_LOAD_MEMBER_VALUE: {
       Type* type = get(2)->typeInfo();      
-      SymExpr* member = toSymExpr(get(4));
       registerTypeToStructurallyCodegen(type->symbol);
       gen(outfile, "/* load member value */\n");
-      if (member->var->hasFlag(FLAG_SUPER_CLASS)) 
-	gen(outfile, "CHPL_STM_LOAD_REF(%A, %A, ", get(1), get(2));
-      else 
-	gen(outfile, "CHPL_STM_LOAD(%A, %A, ", get(1), get(2));
+      gen(outfile, "CHPL_STM_LOAD(%A, %A, (", get(1), get(2));
       codegen_member(outfile, get(3), get(4));
-      gen(outfile, ", %A, %A, %A)", type, get(5), get(6));      
+      gen(outfile, "), %A, %A, %A)", type, get(5), get(6));      
       break;
     }
     case PRIM_TX_LOAD_SVEC_MEMBER_VALUE: {
