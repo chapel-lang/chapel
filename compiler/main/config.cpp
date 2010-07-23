@@ -34,7 +34,7 @@ parseCmdLineConfig(const char *name, const char *value) {
   }
   BlockStmt *b = toBlockStmt(parseString(fake, astr("<command-line config '",
                                                     name, "=", value, "'>"))->body.head);
-  Expr *newExpr;
+  Expr *newExpr=NULL;
   if (CallExpr *c = toCallExpr(b->body.head)) {
     newExpr = c->get(2)->copy();
   } else if (DefExpr *d = toDefExpr(b->body.head)) {
