@@ -19,17 +19,17 @@ const dimensions = [1..dimension];
 //============================================>
 class RectangularGrid {
   
-  var low_coord, high_coord:  dimension*real,
-      low_index, high_index:  dimension*int,
+  var x_low, x_high:          dimension*real,
+      i_low, i_high:          dimension*int,
       n_cells, n_ghost_cells: dimension*int;
 
   var dx: dimension*real;
           
-  var all_cells:      domain(dimension, stridable=true),
-      physical_cells: subdomain(all_cells);
+  var ext_cells:      domain(dimension, stridable=true),
+      cells: subdomain(ext_cells);
   
-  var low_ghost_cells:  [dimensions] subdomain(all_cells),
-      high_ghost_cells: [dimensions] subdomain(all_cells);
+  var low_ghost_cells:  [dimensions] subdomain(ext_cells),
+      high_ghost_cells: [dimensions] subdomain(ext_cells);
 
 
   //===> initialize() method ===>
@@ -49,8 +49,8 @@ class RectangularGrid {
     for d in dimensions do {
       d_string = format("%i", d);
 
-      assert(low_coord(d) < high_coord(d),
-	     "error: RectangularGrid: low_coord(" + d_string + ") must be strictly less than high_coord(" + d_string + ").");
+      assert(x_low(d) < x_high(d),
+	     "error: RectangularGrid: x_low(" + d_string + ") must be strictly less than x_high(" + d_string + ").");
 
       assert(n_cells(d) > 0,
              "error: RectangularGrid: n_cells(" + d_string + ") must be positive.");
@@ -65,35 +65,35 @@ class RectangularGrid {
 
   //===> set_derived_fields() method ===>
   //--------------------------------------------------------------
-  // After low_coord, high_coord, n_cells, and n_ghost_cells have
+  // After x_low, x_high, n_cells, and n_ghost_cells have
   // been provided, calculate:
   //     dx
-  //     high_index
-  //     physical_cells
-  //     all_cells
+  //     i_high
+  //     cells
+  //     ext_cells
   //     low_ghost_cells
   //     high_ghost_cells
   //--------------------------------------------------------------
   def set_derived_fields() {
     //==== dx ====
-    dx = (high_coord - low_coord) / n_cells;
+    dx = (x_high - x_low) / n_cells;
 
 
-    //==== high_index ====
-    [d in dimensions] high_index(d) = low_index(d) + 2*n_cells(d);
+    //==== i_high ====
+    [d in dimensions] i_high(d) = i_low(d) + 2*n_cells(d);
 
 
     //==== Physical cells ====
     var range_tuple: dimension*range(stridable = true);
     [d in dimensions] 
-      range_tuple(d) = low_index(d)+1..low_index(d)+2*n_cells(d)-1 by 2;
-    physical_cells = [(...range_tuple)];
+      range_tuple(d) = i_low(d)+1 .. i_low(d)+2*n_cells(d)-1 by 2;
+    cells = [(...range_tuple)];
 
 
-    //==== All cells (including ghost cells) ====
+    //==== Extended cells (includes ghost cells) ====
     var size: dimension*int;
     [d in dimensions] size(d) = 2*n_ghost_cells(d);
-    all_cells = physical_cells.expand(size);
+    ext_cells = cells.expand(size);
          
 
     //===> Ghost cells ===>
@@ -104,10 +104,10 @@ class RectangularGrid {
       [d_temp in dimensions] size(d_temp) = 0;
 
       size(d) = -(2*n_ghost_cells(d) - 1);
-      low_ghost_cells(d) = all_cells.interior(size);
+      low_ghost_cells(d) = ext_cells.interior(size);
 
       size(d) = 2*n_ghost_cells(d) - 1;
-      high_ghost_cells(d) = all_cells.interior(size);
+      high_ghost_cells(d) = ext_cells.interior(size);
     }   
     //<=== Ghost cells <===     
 
@@ -129,11 +129,11 @@ def RectangularGrid.coordinates (point_index: dimension*int) {
   var coord: dimension*real;
 
   if dimension == 1 then {
-    coord(1) = low_coord(1) + point_index(1)*dx(1)/2.0;
+    coord(1) = x_low(1) + point_index(1)*dx(1)/2.0;
   }
   else {
     forall d in dimensions do
-    coord(d) = low_coord(d) + point_index(d)*dx(d)/2.0;
+    coord(d) = x_low(d) + point_index(d)*dx(d)/2.0;
   }
 
   return coord;
@@ -150,11 +150,11 @@ def RectangularGrid.evaluate(f) {
   var q = new GridFunction(this);
 
   if dimension==1 then
-    forall cell in physical_cells {
+    forall cell in cells {
       q.value(cell) = f(coordinates(tuple(cell)));
     }
   else
-    forall cell in physical_cells {
+    forall cell in cells {
       q.value(cell) = f( coordinates(cell) );
     }
 
@@ -231,7 +231,7 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
   }
 
 
-  //---- Write low_coord ----
+  //---- Write x_low ----
   for d in dimensions do {
     select d {
       when 1 do linelabel = "    xlow";
@@ -239,7 +239,7 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
       when 3 do linelabel = "    zlow";
       otherwise linelabel = "    xlow(" + format("%1i",d) + ")";
     }
-    outfile.writeln( format(efmt, low_coord(d)),  linelabel);
+    outfile.writeln( format(efmt, x_low(d)),  linelabel);
   }
 
 
@@ -258,29 +258,29 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
 
   //===> Write solution values ===>
   if dimension == 1 then {
-    for cell in physical_cells do
+    for cell in cells do
       outfile.writeln(format(efmt, q.value(cell)));
   }
   else {
     //------------------------------------------------------------
-    //---- Transpose physical_cells; iterating over the transpose
+    //---- Transpose cells; iterating over the transpose
     //---- in row major order achieves column major order on the
     //---- original domain. --------------------------------------
     //------------------------------------------------------------
     var range_tuple: dimension*range(stridable=true);
     [d in dimensions]
-      range_tuple(d) = physical_cells.dim(1 + dimension - d);
+      range_tuple(d) = cells.dim(1 + dimension - d);
 
-    var physical_cells_transposed: domain(dimension, stridable=true);
-    physical_cells_transposed = [(...range_tuple)];
+    var cells_transposed: domain(dimension, stridable=true);
+    cells_transposed = [(...range_tuple)];
 
     //---- Write values ----
     var cell: dimension*int;
-    for cell_transposed in physical_cells_transposed do {
+    for cell_transposed in cells_transposed do {
       [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
       outfile.writeln(format(efmt, q.value(cell)));
       for d in dimensions do {
-        if cell(d) == physical_cells.dim(d).high then
+        if cell(d) == cells.dim(d).high then
           outfile.writeln("  ");
         else
           break;
@@ -329,7 +329,7 @@ def RectangularGrid.copy_grid_function(q: GridFunction) {
 //===========================>
 class GridFunction {
   var grid:  RectangularGrid;
-  var value: [grid.all_cells] real;
+  var value: [grid.ext_cells] real;
   var time:  real;
 
   var boundary_manager: BoundaryManager;
@@ -378,8 +378,8 @@ class BoundaryManager {
 //=========================================>
 class PeriodicBoundaryConditions: BoundaryManager {
 
-  var low_ghost_periodic:  [dimensions] subdomain(grid.all_cells);
-  var high_ghost_periodic: [dimensions] subdomain(grid.all_cells);
+  var low_ghost_periodic:  [dimensions] subdomain(grid.ext_cells);
+  var high_ghost_periodic: [dimensions] subdomain(grid.ext_cells);
 
 
   //===> initialize() method ===>
@@ -433,14 +433,14 @@ class ZeroOrderExtrapolation: BoundaryManager {
       //==== Low ghost cells ====
       forall cell in grid.low_ghost_cells(d) {
 	var target_cell = cell;
-	target_cell(d)  = grid.physical_cells.dim(d).low;
+	target_cell(d)  = grid.cells.dim(d).low;
 	q.value(cell)   = q.value(target_cell);
       }
 
       //==== High ghost cells ====
       forall cell in grid.high_ghost_cells(d) {
 	var target_cell = cell;
-	target_cell(d)  = grid.physical_cells.dim(d).high;
+	target_cell(d)  = grid.cells.dim(d).high;
 	q.value(cell)   = q.value(target_cell);
       }
     }

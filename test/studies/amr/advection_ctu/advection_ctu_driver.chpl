@@ -22,27 +22,27 @@ def main {
 
 
   //===> Initialize grid ===>
-  var low_coord_init, high_coord_init:  dimension*real,
-      low_index_init:                   dimension*int,
-      n_cells_init, n_ghost_cells_init: dimension*int;
+  var x_low, x_high:          dimension*real,
+      i_low:                  dimension*int,
+      n_cells, n_ghost_cells: dimension*int;
 
   var N: int;
   if dimension<3 then N=100;
   else N = 50;
 
   for d in dimensions do {
-    low_coord_init(d)     = -1.0;
-    high_coord_init(d)    = 1.0;
-    low_index_init(d)     = 0;
-    n_cells_init(d)       = N;
-    n_ghost_cells_init(d) = 2;
+    x_low(d)         = -1.0;
+    x_high(d)        = 1.0;
+    i_low(d)         = 0;
+    n_cells(d)       = N;
+    n_ghost_cells(d) = 2;
   }
 
-  var G = new RectangularGrid(low_coord     = low_coord_init,
-			      high_coord    = high_coord_init,
-			      low_index     = low_index_init,
-			      n_cells       = n_cells_init, 
-			      n_ghost_cells = n_ghost_cells_init);
+  var G = new RectangularGrid(x_low         = x_low,
+			      x_high        = x_high,
+			      i_low         = i_low,
+			      n_cells       = n_cells, 
+			      n_ghost_cells = n_ghost_cells);
   //<=== Initialize grid <===
 
 

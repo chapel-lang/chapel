@@ -25,7 +25,7 @@ def RectangularGrid.advance_advection_ctu(q:              GridFunction,
       dt_target:        real,
       dt_used:          real;
 
-  var new_value: [all_cells] real;
+  var new_value: [ext_cells] real;
 
   [d in dimensions] cfl(d) = dx(d) / abs(velocity(d));
   (dt_target,) = minloc reduce(cfl, dimensions);
@@ -58,7 +58,7 @@ def RectangularGrid.advance_advection_ctu(q:              GridFunction,
     alignments = alignments.expand(1);
   
     //===> Update solution on each cell ===>
-    forall cell_pretuple in physical_cells {
+    forall cell_pretuple in cells {
 
       //===> If dimension==1, the cell index must be tuple-ized ===>
       var cell: dimension*int;
