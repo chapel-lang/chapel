@@ -1,0 +1,1 @@
+--ccflags -march=native -lpthread volatile-cas-support.c volatile-cas-support.h

@@ -118,44 +118,6 @@ class Chameneos {
 		} 
 	}
 	
-	def meet(place : MeetingPlace) {
-		var partner : Chameneos;
-		var spotsLeftTemp = place.spotsLeft;
-		var spotsLeftOld : int;	
-
-		if (spotsLeftTemp == 0) {
-			place.spotsLeft = 0;
-			return true;
-		}
-
-		if (spotsLeftTemp % 2 == 0) {
-			place.partner = this;
-			spotsLeftOld = __sync_val_compare_and_swap_c(place.spotsLeft, spotsLeftTemp, spotsLeftTemp - 1);
-
-			if (spotsLeftOld == spotsLeftTemp) {
-				while (meetingCompleted == 0) {
-					sched_yield();
-				}
-				meetingCompleted = 0;
-			}
-		} else if (spotsLeftTemp % 2 == 1) {
-			partner = place.partner;
-		 	spotsLeftOld = __sync_val_compare_and_swap_c(place.spotsLeft, spotsLeftTemp, spotsLeftTemp - 1);					
-			if (spotsLeftOld == spotsLeftTemp) {
-				if (id == partner.id) {
-					meetingsWithSelf += 1;
-					halt("halt: chameneos met with self");
-				}
-				var newColor = getComplement(color, partner.color);
-				partner.color = newColor;
-				partner.meetings += 1;
-				partner.meetingCompleted = 1;
-				color = newColor;	
-				meetings += 1;
-			}
-		}
-		return false;
-	}
 }
 
 /* printColorChanges prints the result of getComplement for all possible pairs of colors */
