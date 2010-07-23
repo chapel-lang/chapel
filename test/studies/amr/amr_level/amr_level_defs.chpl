@@ -5,7 +5,6 @@
 //<=== Description <===
 
 use grid_base_defs;
-use linked_list_defs;
 use Random;
 
 
@@ -52,16 +51,11 @@ class AMRLevel {
       n_child_ghost_cells:   dimension*int,
       dx:                    dimension*real;
 
-  var n_grids = 0;
-  var grid_list:    LinkedList(LevelGrid);
-  var grid_numbers: domain(1);
-  var grid_array:   [grid_numbers] LevelGrid;
-
+  var grids: domain(LevelGrid);
 
   //===> initialize() method ===>
   def initialize() {
     dx = (high_coord - low_coord) / n_cells;
-    grid_list = new LinkedList(LevelGrid);
   }
   //<=== initialize() method <===
 
@@ -83,8 +77,7 @@ def AMRLevel.add_grid(low_index:  dimension*int,
 		               low_index  = low_index,
 		               high_index = high_index);
 
-  grid_list.add_node(new_grid);
-  n_grids += 1;
+  grids.add(new_grid);
 }
 //<=====================================
 //<=== Adding a grid to an AMRLevel <===
@@ -92,19 +85,97 @@ def AMRLevel.add_grid(low_index:  dimension*int,
 
 
 
-//===> Move grid_list into grid_array ===>
-//=======================================>
-def AMRLevel.move_list_to_array() {
+//===> LevelFunction class ===>
+//============================>
+class LevelFunction {
+  var level:          AMRLevel;                    // parent level
+  var grid_functions: [level.grids] GridFunction;  // child functions
+  var time:           real;                        // duh
+}
+//<============================
+//<=== LevelFunction class <===
 
-  grid_numbers = [1..n_grids];
-  for n in grid_numbers do
-    grid_array(n) = grid_list.remove_from_head();
+
+
+
+//===> LevelGridBoundaryManager class ===>
+//=======================================>
+class LevelGridBoundaryManager: BoundaryManager {
+
+  var grid: LevelGrid;  // is it worth shadowing the RectangularGrid version?
+  
+  var neighbors:                subdomain(grid.level.grids);
+  var shared_cells: [neighbors] subdomain(grid.all_cells);
+
+
+
+  //===> locate_neighbors method ===>
+  //================================>
+  def locate_neighbors() {
+
+    //==== Stores overlap in each dimension as a range ====
+    var overlap:   dimension*range(stridable=true);
+    var intersect: bool;
+
+    //===> Loop over siblings ===>
+    for g in grid.level.grids {
+
+      //==== Assume g intersects grid ====
+      intersect = true;
+
+
+      //==== Intersect grid.ext_cells with g.cells ====
+      [d in dimensions] {
+	overlap(d) = max(grid.ext_cells.dim(d).low, g.cells.dim(d).low)
+                     .. min(grid.ext_cells.dim(d).high, g.cells.dim(d).high)
+	             by grid.ext_cells.dim(d).stride;
+	if overlap(d).length == 0 then intersect = false;
+      }
+
+      
+      //==== If g==grid, then the intersection is false ====
+      if g == grid then intersect = false;
+
+
+      //==== If g intersects grid, store the overlap ====
+      if intersect then {
+	neighbors.add(g);
+	shared_cells(g) = [(...overlap)];
+      }
+    }
+    //<=== Loop over siblings <===
+    
+  }
+  //<=== locate_neighbors method <===
+  //<================================
+
+
+
+  //===> copy_from_neighbors method ===>
+  //===================================>
+  def copy_from_neighbors(q: GridFunction) {
+
+    //==== Make sure action is valid ====
+    assert(q.grid = grid, 
+	   "error: copy_from_neighbors\n"
+	   + "GridFunction must share parent grid with BoundaryManager.");
+
+    for n in neighbors {
+      //==== Locate sibling function on neighbor ====
+      q_nbr = q.level_function.grid_functions(n);
+
+      //==== Copy values from shared cells ====
+      q.value(shared_cells(n)) = q_nbr.value(shared_cells(n));
+    }
+
+  }
+  //<=== copy_from_neighbors method <===
+  //<===================================
+
 
 }
 //<=======================================
-//<=== Move grid_list into grid_array <===
-
-
+//<=== LevelGridBoundaryManager class <===
 
 
 def main {
@@ -169,34 +240,9 @@ def main {
 
 
 
-
-/*   //===> Write out grid data ===> */
-/*   var node = level.grid_list.head; */
-
-/*   var grid_num = 1; */
-
-/*   while node != nil { */
-/*       writeln(""); */
-/*       writeln("Grid number ", grid_num); */
-/*       writeln("=============="); */
-/*       writeln("low_coord     = ", node.data.low_coord); */
-/*       writeln("high_coord    = ", node.data.high_coord); */
-/*       writeln("n_cells       = ", node.data.n_cells); */
-/*       writeln("n_ghost_cells = ", node.data.n_ghost_cells); */
-
-/*       node = node.next; */
-/*       grid_num += 1; */
-/*   } */
-/*   //<=== Write out grid data <=== */
-
-
-  //===> Move grid_list to grid_array, and write ===>
-  level.move_list_to_array();
-
-  var grid: LevelGrid;
-
-  for grid_num in level.grid_numbers {
-    grid = level.grid_array(grid_num);
+  var grid_num = 0;
+  for grid in level.grids {
+    grid_num += 1;
     writeln("");
     writeln("Grid number ", grid_num);
     writeln("==============");
@@ -205,8 +251,6 @@ def main {
     writeln("n_cells       = ", grid.n_cells);
     writeln("n_ghost_cells = ", grid.n_ghost_cells);
   }
-  //<=== Move grid_list to grid_array, and write <===
-
 
 
 }

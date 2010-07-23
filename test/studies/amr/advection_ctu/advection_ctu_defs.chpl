@@ -17,7 +17,7 @@ def RectangularGrid.advance_advection_ctu(q:              GridFunction,
                                           ) {
 
   //==== Make sure q can validly be updated ====
-  assert(q.parent_grid == this  &&  q.time <= time_requested);
+  assert(q.grid == this  &&  q.time <= time_requested);
 
 
   //===> Initialize ===>
@@ -25,7 +25,7 @@ def RectangularGrid.advance_advection_ctu(q:              GridFunction,
       dt_target:        real,
       dt_used:          real;
 
-  var old_value: [all_cells] real;
+  var new_value: [all_cells] real;
 
   [d in dimensions] cfl(d) = dx(d) / abs(velocity(d));
   (dt_target,) = minloc reduce(cfl, dimensions);
@@ -36,20 +36,16 @@ def RectangularGrid.advance_advection_ctu(q:              GridFunction,
   
   //===> Time-stepping loop ===>
   while (q.time < time_requested) do {
-    //---- Adjust the time step to hit time_requested if necessary ----
+    //==== Adjust the time step to hit time_requested if necessary ====
     if (q.time + dt_target > time_requested) then
       dt_used = time_requested - q.time;
     else
       dt_used = dt_target;
     writeln("Taking step of size dt=", dt_used, " to time ", q.time+dt_used, ".");
 
-  
-    //---- Record q at old time level ----
-    old_value = q.value;
 
-
-    //---- Fill in ghost cells ----
-    boundary_data.fill_ghost_cells(old_value);
+    //==== Fill in ghost cells ====
+    q.boundary_manager.fill_ghost_cells(q);
 
     
     //-----------------------------------------------------------
@@ -72,7 +68,7 @@ def RectangularGrid.advance_advection_ctu(q:              GridFunction,
         cell = cell_pretuple;
       //<=== If dimension==1, the cell index must be tuple-ized <===
 
-      q.value(cell) = 0.0;
+      new_value(cell) = 0.0;
       var volume_fraction: real;
       var upwind_cell: dimension*int;
       for alignment_pretuple in alignments {
@@ -103,8 +99,8 @@ def RectangularGrid.advance_advection_ctu(q:              GridFunction,
         }
 
           
-        //---- Update cell value ----
-        q.value(cell) += volume_fraction * old_value(upwind_cell);
+        //==== Update cell value ====
+        new_value(cell) += volume_fraction * q.value(upwind_cell);
   
       }
     
@@ -113,7 +109,8 @@ def RectangularGrid.advance_advection_ctu(q:              GridFunction,
     
   
   
-    //---- Update time ----
+    //==== Update solution ====
+    q.value = new_value;
     q.time += dt_used;
           
   }

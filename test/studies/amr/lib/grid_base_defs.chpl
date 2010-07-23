@@ -31,8 +31,6 @@ class RectangularGrid {
   var low_ghost_cells:  [dimensions] subdomain(all_cells),
       high_ghost_cells: [dimensions] subdomain(all_cells);
 
-  var boundary_data: BoundaryData;
-
 
   //===> initialize() method ===>
   def initialize() {
@@ -124,19 +122,6 @@ class RectangularGrid {
 
 
 
-//===> Definition of class GridFunction ===>
-//=========================================>
-class GridFunction {
-  var parent_grid: RectangularGrid;
-  var value: [parent_grid.all_cells] real;
-  var time: real;
-}
-//<=========================================
-//<=== Definition of class GridFunction ====
-
-
-
-
 //===> Generate coordinates of cell centers ===>
 //=============================================>
 def RectangularGrid.coordinates (point_index: dimension*int) {
@@ -188,7 +173,7 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
 
 
   //---- Make sure that q lives on this grid ----
-  assert(q.parent_grid == this);
+  assert(q.grid == this);
 
 
   //---- Parameters needed by the output file ----
@@ -318,42 +303,87 @@ def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
 
 
 
-//===> BoundaryData class ===>
-//===========================>
-class BoundaryData {
+//===> copy_grid_function method ===>
+//==================================>
+def RectangularGrid.copy_grid_function(q: GridFunction) {
+  
+  //==== Make sure q lives on this grid ====
+  assert(q.grid == this);
 
-  var parent: RectangularGrid;
+  
+  //==== Copy q ====
+  return new GridFunction(grid             = this,
+			  value            = q.value,
+			  time             = q.time,
+			  boundary_manager = q.boundary_manager);
+
+}
+//<=== copy_grid_function method <===
+//<==================================
+
+
+
+
+
+//===> GridFunction class ===>
+//===========================>
+class GridFunction {
+  var grid:  RectangularGrid;
+  var value: [grid.all_cells] real;
+  var time:  real;
+
+  var boundary_manager: BoundaryManager;
+}
+//<===========================
+//<=== GridFunction class ====
+
+
+
+
+
+
+
+
+
+//===> BoundaryManager class ===>
+//==============================>
+class BoundaryManager {
+
+  //----------------------------------------------------------------
+  // I think two methods are needed -- one for homogeneous BCs, and
+  // one for inhomogeneous BCs.  The homogeneous case is absolutely
+  // mandatory, whereas there could be a dummy routine for the
+  // inhomogeneous case that does nothing.
+  //----------------------------------------------------------------
+
+  var grid: RectangularGrid;
   
   //==== fill_ghost_cells() method ====
   //--------------------------------------------------
   // This method is empty, and meant to be overridden
   // by a like-named method for a derived class.
   //--------------------------------------------------
-  def fill_ghost_cells(value: [parent.all_cells] real) {
-    assert(false, "The fill_ghost_cells() method of class BoundaryData " +
+  def fill_ghost_cells(q: GridFunction) {
+    assert(false, "The fill_ghost_cells() method of class BoundaryManager " +
 	   "must be overriddend by a derived class.");
   }
 }
-//<=== BoundaryData class <===
-//<===========================
+//<=== BoundaryManager class <===
+//<==============================
 
 
 
 
-//===> PeriodicBoundaryData class ===>
-//===================================>
-class PeriodicBoundaryData: BoundaryData {
+//===> PeriodicBoundaryConditions class ===>
+//=========================================>
+class PeriodicBoundaryConditions: BoundaryManager {
 
-  var low_ghost_periodic:  [dimensions] subdomain(parent.all_cells);
-  var high_ghost_periodic: [dimensions] subdomain(parent.all_cells);
+  var low_ghost_periodic:  [dimensions] subdomain(grid.all_cells);
+  var high_ghost_periodic: [dimensions] subdomain(grid.all_cells);
 
 
   //===> initialize() method ===>
   def initialize() {
-
-    //==== Set parent's boundary data ====
-    parent.boundary_data = this;
-
 
     //===> Build periodic images of ghost cells ===>
     var shift: dimension*int;
@@ -361,11 +391,11 @@ class PeriodicBoundaryData: BoundaryData {
     for d in dimensions do {
       [d_temp in dimensions] shift(d_temp) = 0;
 
-      shift(d) = 2*parent.n_cells(d);
-      low_ghost_periodic(d)  = parent.low_ghost_cells(d).translate(shift);
+      shift(d) = 2*grid.n_cells(d);
+      low_ghost_periodic(d)  = grid.low_ghost_cells(d).translate(shift);
 
-      shift(d) = -2*parent.n_cells(d);
-      high_ghost_periodic(d) = parent.high_ghost_cells(d).translate(shift);
+      shift(d) = -2*grid.n_cells(d);
+      high_ghost_periodic(d) = grid.high_ghost_cells(d).translate(shift);
     }
     //<=== Build periodic images of ghost cells <===
 
@@ -375,17 +405,17 @@ class PeriodicBoundaryData: BoundaryData {
 
 
   //===> fill_ghost_cells() method ===>
-  def fill_ghost_cells(value: [parent.all_cells] real) {
+  def fill_ghost_cells(q: GridFunction) {
     for d in dimensions do {
-      value(parent.low_ghost_cells(d))  = value(low_ghost_periodic(d));
-      value(parent.high_ghost_cells(d)) = value(high_ghost_periodic(d));
+      q.value(grid.low_ghost_cells(d))  = q.value(low_ghost_periodic(d));
+      q.value(grid.high_ghost_cells(d)) = q.value(high_ghost_periodic(d));
     }
   }
   //<=== fill_ghost_cells() method <===
 
 }
-//<===================================
-//<=== PeriodicBoundaryData class <===
+//<=========================================
+//<=== PeriodicBoundaryConditions class <===
 
 
 
@@ -393,35 +423,25 @@ class PeriodicBoundaryData: BoundaryData {
 
 //===> ZeroOrderExtrapolation class ===>
 //=====================================>
-class ZeroOrderExtrapolation: BoundaryData {
-
-  //===> initialize() method ===>
-  def initialize() {
-
-    //==== Set parent's boundary data ====
-    parent.boundary_data = this;
-
-  }
-  //<=== initialize() method <===
-
+class ZeroOrderExtrapolation: BoundaryManager {
 
 
   //===> fill_ghost_cells() method ===>
-  def fill_ghost_cells(value: [parent.all_cells] real) {
+  def fill_ghost_cells(q: GridFunction) {
 
     for d in dimensions do {
       //==== Low ghost cells ====
-      forall cell in parent.low_ghost_cells(d) {
+      forall cell in grid.low_ghost_cells(d) {
 	var target_cell = cell;
-	target_cell(d) = parent.physical_cells.dim(d).low;
-	value(cell) = value(target_cell);
+	target_cell(d)  = grid.physical_cells.dim(d).low;
+	q.value(cell)   = q.value(target_cell);
       }
 
       //==== High ghost cells ====
-      forall cell in parent.high_ghost_cells(d) {
+      forall cell in grid.high_ghost_cells(d) {
 	var target_cell = cell;
-	target_cell(d) = parent.physical_cells.dim(d).high;
-	value(cell) = value(target_cell);
+	target_cell(d)  = grid.physical_cells.dim(d).high;
+	q.value(cell)   = q.value(target_cell);
       }
     }
 

@@ -48,7 +48,7 @@ def main {
 
 
   //==== Initialize boundary conditions ====
-  var boundary_data = new PeriodicBoundaryData(G);
+  var boundary_data = new PeriodicBoundaryConditions(parent = G);
 
 
 
@@ -62,7 +62,6 @@ def main {
 
   var q = G.evaluate(initial_condition);
   //<=== Initialize  solution <===
-
 
 
 

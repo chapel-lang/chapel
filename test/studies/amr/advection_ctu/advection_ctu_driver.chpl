@@ -48,7 +48,7 @@ def main {
 
 
   //===> Initialize boundary conditions ===>
-  var boundary_data = new ZeroOrderExtrapolation(G);
+  var boundary_manager = new PeriodicBoundaryConditions(grid = G);
   //<=== Initialize boundary conditions <===
 
 
@@ -62,6 +62,7 @@ def main {
   }
 
   var q = G.evaluate(initial_condition);
+  q.boundary_manager = boundary_manager;
   //<=== Initialize  solution <===
 
 

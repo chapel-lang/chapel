@@ -38,11 +38,11 @@ def RectangularGrid.advance_diffusion_backward_euler(q:              GridFunctio
 
 
     //==== Record q at old time level ====
-    rhs = q.value(physical_cells);
+    q_old = copy_grid_function(q);
 
 
     //==== Update solution ====
-    q.value = conjugate_gradient(rhs, diffusivity, dt_used, dt_used/4.0);
+    q = conjugate_gradient(q_old, diffusivity, dt_used, dt_used/4.0);
 
 
     //==== Update time ====
@@ -64,15 +64,16 @@ def RectangularGrid.advance_diffusion_backward_euler(q:              GridFunctio
 //----------------------------------------
 // L(u) = u - dt*diffusivity*laplacian(u) 
 //----------------------------------------
-def RectangularGrid.backward_euler_diffusion_operator(u: [all_cells] real,
-                                                      diffusivity:   real,
-                                                      dt:            real) {
+def RectangularGrid.backward_euler_diffusion_operator(u:           GridFunction,
+                                                      diffusivity: real,
+                                                      dt:          real
+						     ) {
   
   var Lu: [physical_cells] real;
   
 
   //==== Fill in ghost cells ====
-  boundary_data.fill_ghost_cells(u);
+  u.boundary_manager.fill_ghost_cells(u);
 
   
   //===> Compute operator ===>
@@ -109,52 +110,63 @@ def RectangularGrid.backward_euler_diffusion_operator(u: [all_cells] real,
 
 //===> Conjugate gradient algorithm ===>
 //=====================================>
-def RectangularGrid.conjugate_gradient(rhs: [physical_cells] real, diffusivity: real, dt: real, tolerance: real) {
+def RectangularGrid.conjugate_gradient(rhs:         GridFunction,
+				       diffusivity: real,
+				       dt:          real, 
+				       tolerance:   real
+				      ) {
 
-  // Maximum number of iterations before giving up
+  //==== Maximum number of iterations before giving up ====
   var maxiter = 100;
   
+
+  //==== Initialize solution ====
   var u: [all_cells] real;
   u(physical_cells) = rhs;
 
+
+  //==== Initialize residual ====
   var residual: [physical_cells] real;
   residual = rhs - backward_euler_diffusion_operator(u, diffusivity, dt);
-  
+
+
+  //==== Initialize search direction ====
   var search_direction: [all_cells] real;
   search_direction(physical_cells) = residual;
 
+
+  //==== Initialize residual update direction ====
   var residual_update_direction: [physical_cells] real;
   residual_update_direction = backward_euler_diffusion_operator(search_direction, diffusivity, dt);
 
+
+  //==== Initialize scalars ====
   var residual_norm = +reduce(residual*residual);
   var alpha, beta, residual_norm_old: real;
   
   
+  //===> CG iteration ===>
   for iter in [1..maxiter] {
-    //---- Update the data and residual ----
+    //==== Update the solution and residual ====
     alpha     = +reduce( residual*residual )  /  +reduce( residual_update_direction*search_direction(physical_cells) );
     u        += alpha*search_direction;
     residual -= alpha*residual_update_direction;
 
 
-    //---- Compute norm of residual, and check for convergence ----
+    //==== Compute norm of residual, and check for convergence ====
     residual_norm_old = residual_norm;
-    residual_norm     = +reduce(residual*residual);
-    // writeln("Iteration ", iter, " norm(residual) = ", residual_norm);
+    residual_norm     = +reduce(residual * residual);
     if residual_norm < tolerance then break;
-    // if iter==maxiter then assert(false, "Aborting; conjugate gradient method failed to converge.");
     if iter==maxiter then writeln("Warning: conjugate gradient method failed to converge.");
 
 
-    //---- Update directions for search and residual update ----
+    //==== Update directions for search and residual update ====
     beta                             = residual_norm / residual_norm_old;
     search_direction(physical_cells) = residual + beta*search_direction(physical_cells);
-    // I used to have:
-    //     search_direction(physical_cells) = residual + beta*search_direction;
-    // Why wasn't this flagged as an error?
     residual_update_direction        = backward_euler_diffusion_operator(search_direction, diffusivity, dt);
     
   }
+  //<=== CG iteration <===
   
   return u;
   
