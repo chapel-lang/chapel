@@ -2550,7 +2550,7 @@ createFunctionAsValue(CallExpr *call) {
     if (fArg->typeExpr) 
       newFormal->typeExpr = fArg->typeExpr->copy();
     SymExpr* argSym = new SymExpr(newFormal);
-    innerCall->insertAtHead(argSym);
+    innerCall->insertAtTail(argSym);
 	      
     thisMethod->insertFormalAtTail(newFormal);
   }
