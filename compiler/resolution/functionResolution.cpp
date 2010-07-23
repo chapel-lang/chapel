@@ -2323,6 +2323,10 @@ static ClassType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *c
 
   int i = 0, alength = arg_list.length;
   Type *ret = NULL;
+
+  if (alength == 1) {
+    oss << "void_";
+  }
   
   for_alist(actualExpr, arg_list) {
     if (!isFirst)
