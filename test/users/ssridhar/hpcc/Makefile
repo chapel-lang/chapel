@@ -1,12 +1,14 @@
 CHPL = chpl
 
+FLAGS += --conditional-dynamic-dispatch-limit 100
+
 ifeq ($(CHPL_DEVELOPER), true)
 
-FLAGS = $(F) --devel --gen-ids -g --print-commands --print-passes
+FLAGS += $(F) --devel --gen-ids -g --print-commands --print-passes
 
 else
 
-FLAGS = $(F) --no-devel --fast --print-commands --print-passes
+FLAGS += $(F) --no-devel --fast --print-commands --print-passes
 
 endif
 

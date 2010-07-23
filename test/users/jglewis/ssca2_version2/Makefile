@@ -13,11 +13,11 @@ FLAGS += -sVALIDATE_BC=true -sREPRODUCIBLE_PROBLEMS=true -sDEBUG_KERNEL2=true -s
 
 ifeq ($(CHPL_DEVELOPER), true)
 
-FLAGS += $(F) --devel --gen-ids -g --no-checks --print-commands --print-passes
+FLAGS += $(F) --devel --gen-ids -g --print-commands --print-passes
 
 else
 
-FLAGS += $(F) --no-devel -O --fast --no-checks --print-commands --print-passes
+FLAGS += $(F) --no-devel --fast --print-commands --print-passes
 
 endif
 

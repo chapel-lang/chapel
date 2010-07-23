@@ -42,13 +42,15 @@ def main() {
 	  T(s >> (64 - n)) -= 1;
 	}
       } else {
-	  T(r >> (64 - n)) += 1;
-	  T(s >> (64 - n)) -= 1;
+	T(r >> (64 - n)) += 1;
+	T(s >> (64 - n)) -= 1;
       }
     }
   }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
+
+  writeln("Begin Update"); 
 
   const validAnswer = verifyResults();             // verify the updates
   printResults(validAnswer, execTime);             // print the results}
@@ -72,8 +74,8 @@ def verifyResults() {
     on TableDist.idxToLocale(r >> (64 - n)) {
       const s = LCGgetNextRandom(r);  
       atomic {
-	T(r >> (64 - n)) += 1;
-	T(s >> (64 - n)) -= 1;
+	T(r >> (64 - n)) -= 1;
+	T(s >> (64 - n)) += 1;
       }
     }
   }
