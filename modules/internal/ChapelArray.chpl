@@ -1089,7 +1089,7 @@ pragma "inline" def =(a: [], b) {
     for (aa,bb) in (a,b) do
       aa = bb;
   } else if chpl__tryToken { // try to parallelize using leader and follower iterators
-    forall (aa,bb) in (a,b) do
+    for (aa,bb) in (a,b) do // SS: changed forall to for
       aa = bb;
   } else {
     compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");

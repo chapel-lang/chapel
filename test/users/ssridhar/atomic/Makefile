@@ -2,19 +2,28 @@ CHPL = chpl
 
 FLAGS += --conditional-dynamic-dispatch-limit 100
 
+ifeq ($(F), --ignore-atomic)
+
+IA=-ia
+
+else
+
+IA=""
+
+endif
+
 ifeq ($(CHPL_DEVELOPER), true)
 
-FLAGS += $(F) --devel --gen-ids -g --no-checks --print-commands --print-passes
+FLAGS += $(F) --devel --gen-ids -g --print-commands --print-passes
 
 else 
 
-FLAGS += $(F) --no-devel -O --fast --no-checks --print-commands --print-passes
+FLAGS += $(F) --no-devel --fast --print-commands --print-passes
 
 endif
 
 TARGETS = \
-	atomicSwap \
-	distributedArrayAtomicGetPut \
+	atomicDmappedArrayGetPut\
 	nestedAtomicWithOnClause \
 	omitElseCondUsingAtomicFlag \
 	recursiveFns \
@@ -65,7 +74,7 @@ default: all
 all: $(TARGETS)
 
 %: %.chpl
-	$(CHPL) --savec c_$@ $(FLAGS) -o $@ $^
+	$(CHPL) --savec c_$@$(IA) $(FLAGS) -o $@$(IA) $^
 
 clean: 
 	rm -f $(TARGETS) *_real 
