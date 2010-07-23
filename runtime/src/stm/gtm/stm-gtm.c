@@ -27,7 +27,7 @@ chpl_stm_tx_p chpl_stm_tx_create() {
 }
 
 void chpl_stm_tx_destroy(chpl_stm_tx_p tx) {
-  assert(tx != NULL && tx->status == TX_IDLE);
+  assert(tx != NULL);
   gtm_tx_destroy(tx);
 }
 
@@ -102,6 +102,7 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx) {
     // clone spawned by the fork then rollback to the fork_wrapper.
     // for all other operations, just set the status and return 
     if (tx->env != NULL && tx->rollback) {
+      tx->status = TX_AMABORT;
       longjmp(tx->env, 1);
     } else {
       tx->status = TX_AMABORT; 
@@ -132,23 +133,16 @@ int gtm_tx_load(chpl_stm_tx_t* tx, void* dstaddr, void* srcaddr, size_t size) {
     dbyteaddr = (uint8_t*) dstaddr;
     for (; align < sizeof(gtm_word_t) && size > 0; align++, size--)
       *dbyteaddr++ = dval.b[align];
-    while (size >= GTMWORDSIZE) { 
-      dval.w = 0;
-      if (gtm_tx_load_word(tx, &dval.w, saddr++) == TX_FAIL) 
-	return TX_FAIL; 
-      for (align = 0; size > 0; align++, size--)
-	*dbyteaddr++ = dval.b[align];
-      size -= GTMWORDSIZE;
-    }
     daddr = (gtm_word_p) dbyteaddr;
   } else {
     saddr = (gtm_word_p) srcaddr;
     daddr = (gtm_word_p) dstaddr; 
-    while (size >= GTMWORDSIZE) { 
-      if (gtm_tx_load_word(tx, daddr++, saddr++) == TX_FAIL) 
-	return TX_FAIL;
-      size -= GTMWORDSIZE;
-    }
+  }
+   
+  while (size >= GTMWORDSIZE) { 
+    if (gtm_tx_load_word(tx, daddr++, saddr++) == TX_FAIL) 
+      return TX_FAIL;
+    size -= GTMWORDSIZE;
   }
 
   if (size > 0) {
@@ -199,7 +193,7 @@ int gtm_tx_load_wrap(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size
 
 void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size, int ln, chpl_string fn) {
   assert(tx != NULL);
-  assert(dstaddr != NULL && srcaddr != NULL);
+  assert(dstaddr != NULL && srcaddr != NULL && size > 0);
 
   if (size == 0) return;
   
@@ -222,26 +216,16 @@ int gtm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size) {
     }
     if (gtm_tx_store_word(tx, &sval.w, daddr++, mask.w) == TX_FAIL) 
       return TX_FAIL;
-    while (size >= GTMWORDSIZE) { 
-      sval.w = mask.w = 0;
-      for (align = 0; size > 0; align++, size--) {
-	sval.b[align] = *(uint8_t*) sbyteaddr++;
-	mask.b[align] = 0xFF;
-      }
-      if (gtm_tx_store_word(tx, &sval.w, daddr++, mask.w) == TX_FAIL) 
-	return TX_FAIL;
-      size -= GTMWORDSIZE;
-    }
     saddr = (gtm_word_p) sbyteaddr;
   } else {
     saddr = (gtm_word_p) srcaddr;
     daddr = (gtm_word_p) dstaddr; 
-    while (size >= GTMWORDSIZE) { 
-      if (gtm_tx_store_word(tx, saddr++, daddr++, ~(gtm_word_t) 0) == TX_FAIL) 
-	return TX_FAIL;
-      size -= GTMWORDSIZE;
-    }
   }
+  while (size >= GTMWORDSIZE) { 
+    if (gtm_tx_store_word(tx, saddr++, daddr++, ~(gtm_word_t) 0) == TX_FAIL) 
+      return TX_FAIL;
+    size -= GTMWORDSIZE;
+    }
 
   if (size > 0) {
     sval.w = mask.w = 0;   
@@ -287,27 +271,23 @@ int gtm_tx_store_wrap(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t siz
 
 void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size, int ln, chpl_string fn) {
   assert(tx != NULL);
-  assert(dstaddr != NULL && srcaddr != NULL && size != 0);
+  assert(dstaddr != NULL && srcaddr != NULL && size > 0);
   
-  if (size == 0) return;
-
   GTM_Safe(tx, gtm_tx_store_wrap(tx, srcaddr, dstaddr, size));
 }
 
 void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size, int ln, chpl_string fn) {
   assert(tx != NULL);
   assert(srclocale != MYLOCALE);
-
-  if (size == 0) return;
-  
+  assert(dstaddr != NULL && srcaddr != NULL && size > 0);
+ 
   GTM_Safe(tx, gtm_tx_comm_get(tx, dstaddr, srclocale, srcaddr, size));
 }
 
 void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size, int ln, chpl_string fn) {
   assert(tx != NULL);
   assert(dstlocale != MYLOCALE);
-  
-  if (size == 0) return;
+  assert(dstaddr != NULL && srcaddr != NULL && size > 0);
   
   GTM_Safe(tx, gtm_tx_comm_put(tx, srcaddr, dstlocale, dstaddr, size));
 }

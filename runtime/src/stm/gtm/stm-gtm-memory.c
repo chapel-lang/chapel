@@ -14,7 +14,8 @@
 
 memset_t* gtm_tx_memset_create(chpl_stm_tx_p tx) {
   memset_t* mem  = (memset_t*) chpl_malloc(1, sizeof(memset_t), 
-					   CHPL_RT_MD_STM_TX_MEMSET, 0, 0);
+					   CHPL_RT_MD_STM_TX_MEMSET, 
+					   __LINE__, __FILE__);
   mem->allocated = mem->freed = NULL;
   return mem;
 }

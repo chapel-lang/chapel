@@ -84,9 +84,7 @@ int gtm_tx_commitPh1(chpl_stm_tx_t* tx) {
       chpl_error("STM Error: exceeded maximum version number", 0, 0);
     tx->timestamp = commitstamp;
   }
-  if (gtm_tx_readset_validate(tx) == TX_FAIL)
-    return TX_FAIL;
-  return TX_OK;
+  return gtm_tx_readset_validate(tx);
 }
 
 int gtm_tx_commitPh2(chpl_stm_tx_t* tx) {
@@ -104,7 +102,6 @@ int gtm_tx_commitPh2(chpl_stm_tx_t* tx) {
     }
   }
   gtm_tx_memset_commit(tx);
-  gtm_tx_cleanup(tx);
   return TX_OK;
 }
 

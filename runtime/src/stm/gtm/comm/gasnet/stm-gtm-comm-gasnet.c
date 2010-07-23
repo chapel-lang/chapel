@@ -78,19 +78,25 @@ void tx_abort_wrapper(tx_generic_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
 
-  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+  //chpl_msg(0, "As ");
 
+  // perform the transactional abort
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
   gtm_tx_abort(tx);
 
   GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, TX_SIGNAL,
 				      &(buf->commstatus), sizeof(int*), 
 				      status));
 
-  chpl_free(buf, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
+
+  //chpl_msg(0, "Ae ");
 }
 
 void AM_tx_abort(gasnet_token_t token, void* msg, size_t nbytes) {
-  tx_generic_t *buf = (tx_generic_t*) chpl_malloc(nbytes, sizeof(char), CHPL_RT_MD_STM_AM_GENERIC_T, 0, 0);
+  tx_generic_t *buf = (tx_generic_t*) chpl_malloc(nbytes, sizeof(char),
+						  CHPL_RT_MD_STM_AM_GENERIC_T,
+						  __LINE__, __FILE__);
   memcpy(buf, msg, nbytes);
   CHPL_BEGIN((chpl_fn_p)tx_abort_wrapper, (void*)buf, true, true, NULL);
 }
@@ -101,28 +107,31 @@ void gtm_tx_comm_abort(chpl_stm_tx_p tx) {
   int32_t i; 
   int commstatus = TX_BUSY;
 
-  buf = (tx_generic_t*) chpl_malloc(1, bufsize, CHPL_RT_MD_STM_AM_GENERIC_T, 0, 0);
+  buf = (tx_generic_t*) chpl_malloc(1, bufsize, 
+				    CHPL_RT_MD_STM_AM_GENERIC_T, 
+				    __LINE__, __FILE__);
   buf->txid = tx->id;
   buf->txlocale = tx->locale;
   buf->caller = chpl_localeID;
   buf->txstatus = tx->status;
   buf->commstatus = &commstatus;
-
+  
   for (i = 0; i <= tx->numremlocales; i++) {
     GASNET_Safe(gasnet_AMRequestMedium0(tx->remlocales[i], TX_ABORT, buf, bufsize));
     GASNET_BLOCKUNTIL(commstatus != TX_BUSY);
   }
   
-  chpl_free(buf, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
 }
 
 void tx_commitPh1_wrapper(tx_generic_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
 
+  //chpl_msg(0, "C1s ");
+  
+  // perform the transactional commit
   tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
-
-  assert(tx->status == TX_AMCOMMIT);
   GTM_Safe(tx, gtm_tx_commitPh1(tx));
   if (tx->status == TX_AMABORT)
     status = TX_FAIL;
@@ -131,11 +140,15 @@ void tx_commitPh1_wrapper(tx_generic_t* buf) {
 				      &(buf->commstatus), sizeof(int*), 
 				      status));
 
-  chpl_free(buf, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
+
+  //chpl_msg(0, "C1e ");
 }
 
 void AM_tx_commitPh1(gasnet_token_t token, void* msg, size_t nbytes) {
-  tx_generic_t *buf = (tx_generic_t*) chpl_malloc(nbytes, sizeof(char), CHPL_RT_MD_STM_AM_GENERIC_T, 0, 0);
+  tx_generic_t *buf = (tx_generic_t*) chpl_malloc(nbytes, sizeof(char),
+						  CHPL_RT_MD_STM_AM_GENERIC_T,
+						  __LINE__, __FILE__);
   memcpy(buf, msg, nbytes);
   CHPL_BEGIN((chpl_fn_p)tx_commitPh1_wrapper, (void*)buf, true, true, NULL);
 }
@@ -144,9 +157,11 @@ int gtm_tx_comm_commitPh1(chpl_stm_tx_p tx) {
   tx_generic_t *buf;
   size_t bufsize = sizeof(tx_generic_t);
   int32_t i;
-  int commstatus;
+  int commstatus = TX_BUSY;
 
-  buf = (tx_generic_t*) chpl_malloc(1, bufsize, CHPL_RT_MD_STM_AM_GENERIC_T, 0, 0);
+  buf = (tx_generic_t*) chpl_malloc(1, bufsize,
+				    CHPL_RT_MD_STM_AM_GENERIC_T,
+				    __LINE__, __FILE__);
   buf->txid = tx->id;
   buf->txlocale = tx->locale;
   buf->caller = chpl_localeID;
@@ -157,12 +172,13 @@ int gtm_tx_comm_commitPh1(chpl_stm_tx_p tx) {
     GASNET_Safe(gasnet_AMRequestMedium0(tx->remlocales[i], TX_COMMITPH1, buf, bufsize));
     GASNET_BLOCKUNTIL(commstatus != TX_BUSY);
     if (commstatus == TX_FAIL) {
-      chpl_free(buf, 0, 0);
+      chpl_free(buf, __LINE__, __FILE__);
       return TX_FAIL;
     }
   }
 
-  chpl_free(buf, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
+
   return TX_OK;
 }
 
@@ -170,9 +186,10 @@ void tx_commitPh2_wrapper(tx_generic_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
 
-  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+  //chpl_msg(0, "C2s ");
 
-  assert(tx->status == TX_AMCOMMIT);
+  // perform the transactional commit
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
   GTM_Safe(tx, gtm_tx_commitPh2(tx));
   if (tx->status == TX_AMABORT)
     status = TX_FAIL;
@@ -181,12 +198,17 @@ void tx_commitPh2_wrapper(tx_generic_t* buf) {
 				      &(buf->commstatus), sizeof(int*), 
 				      status));
 
+  // free the transaction descriptor
   gtm_tx_comm_destroy(tx);
-  chpl_free(buf, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
+
+  //chpl_msg(0, "C2e ");
 }
 
 void AM_tx_commitPh2(gasnet_token_t token, void* msg, size_t nbytes) {
-  tx_generic_t *buf = (tx_generic_t*) chpl_malloc(nbytes, sizeof(char), CHPL_RT_MD_STM_AM_GENERIC_T, 0, 0);
+  tx_generic_t *buf = (tx_generic_t*) chpl_malloc(nbytes, sizeof(char), 
+						  CHPL_RT_MD_STM_AM_GENERIC_T,
+						  __LINE__, __FILE__);
   memcpy(buf, msg, nbytes);
   CHPL_BEGIN((chpl_fn_p)tx_commitPh2_wrapper, (void*)buf, true, true, NULL);
 }
@@ -195,9 +217,11 @@ int gtm_tx_comm_commitPh2(chpl_stm_tx_p tx) {
   tx_generic_t *buf;
   size_t bufsize = sizeof(tx_generic_t);
   int32_t i;
-  int commstatus;
+  int commstatus = TX_BUSY;
 
-  buf = (tx_generic_t*) chpl_malloc(1, bufsize, CHPL_RT_MD_STM_AM_GENERIC_T, 0, 0);
+  buf = (tx_generic_t*) chpl_malloc(1, bufsize, 
+				    CHPL_RT_MD_STM_AM_GENERIC_T,
+				    __LINE__, __FILE__);
   buf->txid = tx->id;
   buf->txlocale = tx->locale;
   buf->caller = chpl_localeID;
@@ -207,13 +231,10 @@ int gtm_tx_comm_commitPh2(chpl_stm_tx_p tx) {
   for (i = 0; i <= tx->numremlocales; i++) {
     GASNET_Safe(gasnet_AMRequestMedium0(tx->remlocales[i], TX_COMMITPH2, buf, bufsize));
     GASNET_BLOCKUNTIL(commstatus != TX_BUSY);
-    if (commstatus == TX_FAIL) {
-      chpl_free(buf, 0, 0);
-      return TX_FAIL;
-    }
   }
 
-  chpl_free(buf, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
+
   return TX_OK;
 }
 
@@ -230,17 +251,18 @@ void tx_get_wrapper(tx_get_t* buf) {
   tx_getdata_t* getdata;
   size_t getdatasize = sizeof(tx_getdata_t) + buf->datasize;
 
-  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+  //chpl_msg(0, "Gs ");
 
   // build the return payload
   getdata = (tx_getdata_t*) chpl_malloc(1, getdatasize, 
-					CHPL_RT_MD_STM_AM_GETDATA_T, 0, 0);
+					CHPL_RT_MD_STM_AM_GETDATA_T, 
+					__LINE__, __FILE__);
   getdata->retaddr = buf->retaddr;
   getdata->commstatus = buf->commstatus;
   getdata->datasize = buf->datasize;
 
   // perform transactional load
-  assert(tx->status == TX_AMACTIVE);
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
   GTM_Safe(tx, gtm_tx_load_wrap(tx, &(getdata->data), buf->remaddr, buf->datasize));
   if (tx->status == TX_AMABORT) {
     status = TX_FAIL;
@@ -253,12 +275,16 @@ void tx_get_wrapper(tx_get_t* buf) {
 					getdata, getdatasize, status));
   }
 
-  chpl_free(buf, 0, 0);
-  chpl_free(getdata, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
+  chpl_free(getdata, __LINE__, __FILE__);
+
+  //chpl_msg(0, "Ge ");
 }
  
 void AM_tx_get (gasnet_token_t token, void* msg, size_t nbytes) {
-  tx_get_t *buf = (tx_get_t*) chpl_malloc(nbytes, sizeof(char), CHPL_RT_MD_STM_AM_GET_T, 0, 0);
+  tx_get_t *buf = (tx_get_t*) chpl_malloc(nbytes, sizeof(char), 
+					  CHPL_RT_MD_STM_AM_GET_T, 
+					  __LINE__, __FILE__);
   memcpy(buf, msg, nbytes);
   CHPL_BEGIN((chpl_fn_p)tx_get_wrapper, (void*)buf, true, true, NULL);
 }
@@ -270,9 +296,10 @@ int gtm_tx_comm_get(chpl_stm_tx_p tx, void* addr, int32_t remlocale, void* remad
 
   gtm_tx_comm_register(tx, remlocale);
 
-  if (bufsize > gasnet_AMMaxMedium()) 
-    chpl_error("arg too large for GASNet AM Medium", 0, 0);
-  buf = (tx_get_t*) chpl_malloc(1, bufsize, CHPL_RT_MD_STM_AM_GET_T, 0, 0);
+  assert(bufsize < gasnet_AMMaxMedium()); 
+  buf = (tx_get_t*) chpl_malloc(1, bufsize, 
+				CHPL_RT_MD_STM_AM_GET_T, 
+				__LINE__, __FILE__);
   buf->txid = tx->id;
   buf->txlocale = tx->locale;
   buf->caller = chpl_localeID;
@@ -285,7 +312,8 @@ int gtm_tx_comm_get(chpl_stm_tx_p tx, void* addr, int32_t remlocale, void* remad
   GASNET_Safe(gasnet_AMRequestMedium0(remlocale, TX_GET, buf, bufsize));
   GASNET_BLOCKUNTIL(commstatus != TX_BUSY);
 
-  chpl_free(buf, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
+
   return commstatus;
 }
 
@@ -293,9 +321,9 @@ void tx_put_wrapper(tx_put_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
 
-  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+  //chpl_msg(0, "Ps ");
 
-  assert(tx->status == TX_AMACTIVE);
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
   GTM_Safe(tx, gtm_tx_store_wrap(tx, &(buf->data), buf->remaddr, buf->datasize));
   if (tx->status == TX_AMABORT)
     status = TX_FAIL;
@@ -304,11 +332,15 @@ void tx_put_wrapper(tx_put_t* buf) {
 				      &(buf->commstatus), sizeof(int*), 
 				      status));
 
-  chpl_free(buf, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
+
+  //chpl_msg(0, "Pe ");
 }
 
 void AM_tx_put (gasnet_token_t token, void* msg, size_t nbytes) {
-  tx_put_t *buf = (tx_put_t*) chpl_malloc(nbytes, sizeof(char), CHPL_RT_MD_STM_AM_PUT_T, 0, 0);
+  tx_put_t *buf = (tx_put_t*) chpl_malloc(nbytes, sizeof(char), 
+					  CHPL_RT_MD_STM_AM_PUT_T, 
+					  __LINE__, __FILE__);
   memcpy(buf, msg, nbytes);
   CHPL_BEGIN((chpl_fn_p)tx_put_wrapper, (void*)buf, true, true, NULL);
 }
@@ -320,9 +352,10 @@ int gtm_tx_comm_put(chpl_stm_tx_p tx, void* addr, int32_t remlocale, void* remad
 
   gtm_tx_comm_register(tx, remlocale);
 
-  if (bufsize > gasnet_AMMaxMedium()) 
-    chpl_error("arg too large for GASNet AM Medium", 0, 0);
-  buf = (tx_put_t*) chpl_malloc(1, bufsize, CHPL_RT_MD_STM_AM_PUT_T, 0, 0);
+  assert(bufsize < gasnet_AMMaxMedium()); 
+  buf = (tx_put_t*) chpl_malloc(1, bufsize, 
+				CHPL_RT_MD_STM_AM_PUT_T, 
+				__LINE__, __FILE__);
   buf->txid = tx->id;
   buf->txlocale = tx->locale;
   buf->caller = chpl_localeID;
@@ -335,7 +368,8 @@ int gtm_tx_comm_put(chpl_stm_tx_p tx, void* addr, int32_t remlocale, void* remad
   GASNET_Safe(gasnet_AMRequestMedium0(remlocale, TX_PUT, buf, bufsize));
   GASNET_BLOCKUNTIL(commstatus != TX_BUSY);
 
-  chpl_free(buf, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
+
   return commstatus;
 }
 
@@ -343,9 +377,9 @@ void tx_fork_wrapper(tx_fork_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
 
-  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+  //chpl_msg(0, "Fs ");
 
-  assert(tx->status == TX_AMACTIVE);
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
   tx->rollback = true;
   if (!setjmp(tx->env)) {
     if (buf->argsize) 
@@ -363,11 +397,15 @@ void tx_fork_wrapper(tx_fork_t* buf) {
 				      &(buf->commstatus), sizeof(int*), 
 				      status));
 
-  chpl_free(buf, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
+
+  //chpl_msg(0, "Fe ");
 }
 
 void AM_tx_fork(gasnet_token_t token, void* msg, size_t nbytes) {
-  tx_fork_t *buf = (tx_fork_t*) chpl_malloc(nbytes, sizeof(char), CHPL_RT_MD_STM_AM_FORK_T, 0, 0);
+  tx_fork_t *buf = (tx_fork_t*) chpl_malloc(nbytes, sizeof(char),
+					    CHPL_RT_MD_STM_AM_FORK_T,
+					    __LINE__, __FILE__);
   memcpy(buf, msg, nbytes);
   CHPL_BEGIN((chpl_fn_p)tx_fork_wrapper, (void*)buf, true, true, NULL);
 }
@@ -379,8 +417,10 @@ int gtm_tx_comm_fork(chpl_stm_tx_p tx, int32_t remlocale, chpl_fn_int_t fid, voi
   
   gtm_tx_comm_register(tx, remlocale);
 
-  assert(bufsize <= gasnet_AMMaxMedium()); 
-  buf = (tx_fork_t*) chpl_malloc(1, bufsize, CHPL_RT_MD_STM_AM_FORK_T, 0, 0);
+  assert(bufsize < gasnet_AMMaxMedium()); 
+  buf = (tx_fork_t*) chpl_malloc(1, bufsize,
+				 CHPL_RT_MD_STM_AM_FORK_T,
+				 __LINE__, __FILE__);
   buf->txid = tx->id;
   buf->txlocale = tx->locale;
   buf->caller = chpl_localeID;
@@ -394,6 +434,7 @@ int gtm_tx_comm_fork(chpl_stm_tx_p tx, int32_t remlocale, chpl_fn_int_t fid, voi
   GASNET_Safe(gasnet_AMRequestMedium0(remlocale, TX_FORK, buf, bufsize));
   GASNET_BLOCKUNTIL(commstatus != TX_BUSY);
 
-  chpl_free(buf, 0, 0);
+  chpl_free(buf, __LINE__, __FILE__);
+
   return commstatus;
 }
