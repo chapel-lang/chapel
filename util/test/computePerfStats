@@ -50,8 +50,21 @@ use Text::ParseWords;
 $testname = $ARGV[0];
 $outputdir = $ARGV[1];
 
-my $key_file = "$testname.perfkeys";
-my $test_output_file = "$testname.exec.out.tmp";
+my $argc = @ARGV+1;
+my $key_file;
+if ($argc >= 2) {
+    $key_file = $ARGV[2];
+} else {
+    $key_file = "$testname.perfkeys";
+}
+
+my $test_output_file;
+if ($argc >= 3) {
+    $test_output_file = $ARGV[3];
+} else {
+    $test_output_file = "$testname.exec.out.tmp";
+}
+
 my $data_file = "$outputdir/$testname.dat";
 my $graph_file = "$testname.graph";
 my $gpl_file = "$outputdir/$testname.gpl";
@@ -126,7 +139,7 @@ print STATS "\n";
 
 if ($foundEverything != 1) {
     print "output was:\n";
-    system("cat $testname.exec.out.tmp");
+    system("cat $test_output_file");
     exit 1;
 } 
 
