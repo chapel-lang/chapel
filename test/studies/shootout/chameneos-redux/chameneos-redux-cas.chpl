@@ -1,4 +1,4 @@
-_extern type volatileint32 = int(32); // uintptr_t volatile
+_extern type volatileint32 = uint(32); // uintptr_t volatile
 _extern def __sync_val_compare_and_swap_c(inout state_p : volatileint32, state : volatileint32, xchg : volatileint32) : volatileint32;
 _extern def sched_yield();
 
@@ -39,13 +39,13 @@ class MeetingPlace {
 	/* constructor for MeetingPlace, sets the 
 	   number of meetings to take place */
 	def MeetingPlace() {
-		state = numMeetings << MEET_COUNT_SHIFT;
+		state = (numMeetings << MEET_COUNT_SHIFT) : uint;
 	}
 	
 	/* reset must be called after meet, 
 	   to reset numMeetings for a subsequent call of meet */
 	def reset() {
-		state = numMeetings << MEET_COUNT_SHIFT;
+		state = (numMeetings << MEET_COUNT_SHIFT) : uint;
 	}
 }
 	
@@ -78,7 +78,7 @@ class Chameneos {
 		var is_same : int;
 		var newColor : Color;
 
-		stateTemp = place.state;	
+		stateTemp = place.state:int;	
 					
 		while (true) {
 			peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
@@ -89,7 +89,7 @@ class Chameneos {
 			} else {
 				break;
 			}
-			prev = __sync_val_compare_and_swap_c(place.state, stateTemp, xchg);
+			prev = (__sync_val_compare_and_swap_c(place.state, stateTemp:uint, xchg:uint)):int;
 			if (prev == stateTemp) {
 				if (peer_idx) {
 					if (id == peer_idx) {
@@ -110,10 +110,10 @@ class Chameneos {
 						sched_yield();
 					}
 					meetingCompleted = 0;
-					stateTemp = place.state;	
+					stateTemp = (place.state):int;	
 				}
 			} else {
-				stateTemp = prev; 
+				stateTemp = prev:int; 
 			}
 		} 
 	}
