@@ -1,0 +1,3 @@
+--n=256 --m=256 --printOutput=false --printTiming=true # assign.256.perfkeys
+--n=1024 --m=1024 --printOutput=false --printTiming=true # assign.1024.perfkeys
+
