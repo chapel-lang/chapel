@@ -1,2 +1,2 @@
 #!/bin/tcsh
-source ~bradc/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/chap03 && ~bradc/chapel/test/Bin/nightly -cron -performance >& ~bradc/tmp/nightly-perf.linux64.chap03.out
+source ~bradc/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/chap03 && ~/chapel/test/cron/nightly -cron -performance >&! ~/tmp/nightly-perf.linux64.chap03.out

@@ -6,11 +6,11 @@
 source ~/.chapelcshrc-cron-gasnet
 setenv CHPL_GASNET_SEGMENT everything
 setenv CHPL_GASNET_CFG_OPTIONS --disable-ibv
-$CHPL_HOME/test/Bin/nightly -cron -parnodefile ~bradc/chapel/test/Nodes/CHAP10
+$CHPL_HOME/test/cron/nightly -cron -parnodefile ~bradc/chapel/test/Nodes/CHAP10
 
 
 #
 # Then test one using the other segment (e.g., fast)
 #
 setenv CHPL_GASNET_SEGMENT fast
-$CHPL_HOME/test/Bin/nightly -cron -parnodefile ~bradc/chapel/test/Nodes/CHAP10
+$CHPL_HOME/test/cron/nightly -cron -parnodefile ~bradc/chapel/test/Nodes/CHAP10
