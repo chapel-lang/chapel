@@ -8,6 +8,7 @@
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
+#include "chpltimers.h"
 #include "chplstm.h"
 #include "error.h"
 #include "gasnet.h"
@@ -77,8 +78,10 @@ void AM_tx_signal(gasnet_token_t token, void* buf, size_t nbytes, int status) {
 void tx_abort_wrapper(tx_generic_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
+  _real64 starttime;
 
   //chpl_msg(0, "As ");
+  starttime = _now_time();
 
   // perform the transactional abort
   tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
@@ -90,6 +93,7 @@ void tx_abort_wrapper(tx_generic_t* buf) {
 
   chpl_free(buf, __LINE__, __FILE__);
 
+  gtm_stats_tx_comm_abort(_now_time() - starttime);
   //chpl_msg(0, "Ae ");
 }
 
@@ -127,8 +131,10 @@ void gtm_tx_comm_abort(chpl_stm_tx_p tx) {
 void tx_commitPh1_wrapper(tx_generic_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
+  _real64 starttime;
 
   //chpl_msg(0, "C1s ");
+  starttime = _now_time();
   
   // perform the transactional commit
   tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
@@ -142,6 +148,7 @@ void tx_commitPh1_wrapper(tx_generic_t* buf) {
 
   chpl_free(buf, __LINE__, __FILE__);
 
+  gtm_stats_tx_comm_commitPh1(_now_time() - starttime);
   //chpl_msg(0, "C1e ");
 }
 
@@ -185,8 +192,10 @@ int gtm_tx_comm_commitPh1(chpl_stm_tx_p tx) {
 void tx_commitPh2_wrapper(tx_generic_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
+  _real64 starttime;
 
   //chpl_msg(0, "C2s ");
+  starttime = _now_time();
 
   // perform the transactional commit
   tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
@@ -202,6 +211,7 @@ void tx_commitPh2_wrapper(tx_generic_t* buf) {
   gtm_tx_comm_destroy(tx);
   chpl_free(buf, __LINE__, __FILE__);
 
+  gtm_stats_tx_comm_commitPh2(_now_time() - starttime);
   //chpl_msg(0, "C2e ");
 }
 
@@ -250,8 +260,10 @@ void tx_get_wrapper(tx_get_t* buf) {
   int status = TX_OK;  
   tx_getdata_t* getdata;
   size_t getdatasize = sizeof(tx_getdata_t) + buf->datasize;
+  _real64 starttime;
 
   //chpl_msg(0, "Gs ");
+  starttime = _now_time();
 
   // build the return payload
   getdata = (tx_getdata_t*) chpl_malloc(1, getdatasize, 
@@ -278,6 +290,7 @@ void tx_get_wrapper(tx_get_t* buf) {
   chpl_free(buf, __LINE__, __FILE__);
   chpl_free(getdata, __LINE__, __FILE__);
 
+  gtm_stats_tx_comm_get(_now_time() - starttime);
   //chpl_msg(0, "Ge ");
 }
  
@@ -320,8 +333,10 @@ int gtm_tx_comm_get(chpl_stm_tx_p tx, void* addr, int32_t remlocale, void* remad
 void tx_put_wrapper(tx_put_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
+  _real64 starttime;
 
   //chpl_msg(0, "Ps ");
+  starttime = _now_time();
 
   tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
   GTM_Safe(tx, gtm_tx_store_wrap(tx, &(buf->data), buf->remaddr, buf->datasize));
@@ -334,6 +349,7 @@ void tx_put_wrapper(tx_put_t* buf) {
 
   chpl_free(buf, __LINE__, __FILE__);
 
+  gtm_stats_tx_comm_put(_now_time() - starttime);
   //chpl_msg(0, "Pe ");
 }
 
@@ -376,8 +392,10 @@ int gtm_tx_comm_put(chpl_stm_tx_p tx, void* addr, int32_t remlocale, void* remad
 void tx_fork_wrapper(tx_fork_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
+  _real64 starttime;
 
   //chpl_msg(0, "Fs ");
+  starttime = _now_time();
 
   tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
   tx->rollback = true;
@@ -399,6 +417,7 @@ void tx_fork_wrapper(tx_fork_t* buf) {
 
   chpl_free(buf, __LINE__, __FILE__);
 
+  gtm_stats_tx_comm_fork(_now_time() - starttime);
   //chpl_msg(0, "Fe ");
 }
 

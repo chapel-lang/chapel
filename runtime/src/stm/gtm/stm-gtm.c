@@ -4,11 +4,11 @@
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
+#include "chpltimers.h"
 #include "chplstm.h"
 #include "error.h"
 #include "stm-gtm.h"
 #include "stm-gtm-atomic.h"
-#include "stm-gtm-memory.h"
 
 void chpl_stm_init() { 
   assert(sizeof(gtm_word_t) == sizeof(void*));
@@ -17,9 +17,11 @@ void chpl_stm_init() {
   memset((void *)locks, 0, LOCK_ARRAY_SIZE * sizeof(gtm_word_t));
   CLOCK = 0;
   gtm_tx_init();
+  gtm_stats_init();
 }
 
-void chpl_stm_exit() { 
+void chpl_stm_exit() {
+  gtm_stats_exit();
 }
 
 chpl_stm_tx_p chpl_stm_tx_create() { 
@@ -55,6 +57,8 @@ void chpl_stm_tx_begin(chpl_stm_tx_p tx) {
 }
 
 void chpl_stm_tx_commit(chpl_stm_tx_p tx) { 
+  _real64 starttime;
+
   assert(tx != NULL);
    
   if (tx->status == TX_ACTIVE) {
@@ -63,17 +67,25 @@ void chpl_stm_tx_commit(chpl_stm_tx_p tx) {
     if (--tx->nestlevel > 0) 
       return;
     assert(tx->nestlevel == 0);
+
     tx->status = TX_COMMIT;
+
     // commit phase 1
+    starttime = _now_time();
     if (tx->numremlocales > -1) { 
       GTM_Safe(tx, gtm_tx_comm_commitPh1(tx));
     }
     GTM_Safe(tx, gtm_tx_commitPh1(tx));
+    gtm_stats_tx_commitPh1(_now_time() - starttime);
+
     // commit phase 2
+    starttime = _now_time();
     if (tx->numremlocales > -1) { 
       GTM_Safe(tx, gtm_tx_comm_commitPh2(tx));
     }
     GTM_Safe(tx, gtm_tx_commitPh2(tx));
+    gtm_stats_tx_commitPh2(_now_time() - starttime);
+
     return;
   }
 
@@ -81,26 +93,38 @@ void chpl_stm_tx_commit(chpl_stm_tx_p tx) {
 }
 
 void chpl_stm_tx_abort(chpl_stm_tx_p tx) { 
+  _real64 starttime;
+
   assert(tx != NULL);
 
   if (tx->status == TX_ACTIVE || tx->status == TX_COMMIT) {
+
     assert(tx->locale == MYLOCALE);
-    // aborts always succeeds, local or otherwise. 
+
     tx->status = TX_ABORT;
+
+    // aborts always succeeds, local or otherwise. 
+    starttime = _now_time();
     if (tx->numremlocales > -1) { 
       gtm_tx_comm_abort(tx); 
     }
     gtm_tx_abort(tx);
+    gtm_stats_tx_abort(_now_time() - starttime);
+
     // rollback to last checkpoint
     if (tx->env != NULL) {
       longjmp(tx->env, 1);
     }
+
   } else if (tx->status == TX_AMACTIVE || tx->status == TX_AMCOMMIT) {
+
     assert(tx->locale != MYLOCALE);
+
     // for fork operations, env is set in the fork_wrapper routine in
     // stm-gtm-comm-*.c so if the transaction fails inside a transactional
     // clone spawned by the fork then rollback to the fork_wrapper.
     // for all other operations, just set the status and return 
+
     if (tx->env != NULL && tx->rollback) {
       tx->status = TX_AMABORT;
       longjmp(tx->env, 1);
@@ -108,6 +132,7 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx) {
       tx->status = TX_AMABORT; 
       return;
     }
+
   } 
 
   chpl_error("Transaction abort failed.", __LINE__, __FILE__);
@@ -192,12 +217,16 @@ int gtm_tx_load_wrap(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size
 } 
 
 void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size, int ln, chpl_string fn) {
+  _real64 starttime;
+
   assert(tx != NULL);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
 
   if (size == 0) return;
   
+  starttime = _now_time();
   GTM_Safe(tx, gtm_tx_load_wrap(tx, dstaddr, srcaddr, size));
+  gtm_stats_tx_load(_now_time() - starttime);
 }
 
 int gtm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size) {
@@ -270,35 +299,50 @@ int gtm_tx_store_wrap(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t siz
 }
 
 void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size, int ln, chpl_string fn) {
+  _real64 starttime;
   assert(tx != NULL);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
   
+  starttime = _now_time();
   GTM_Safe(tx, gtm_tx_store_wrap(tx, srcaddr, dstaddr, size));
+  gtm_stats_tx_store(_now_time() - starttime);
 }
 
 void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size, int ln, chpl_string fn) {
+  _real64 starttime;
+
   assert(tx != NULL);
   assert(srclocale != MYLOCALE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
  
+  starttime = _now_time();
   GTM_Safe(tx, gtm_tx_comm_get(tx, dstaddr, srclocale, srcaddr, size));
+  gtm_stats_tx_get(_now_time() - starttime);
 }
 
 void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size, int ln, chpl_string fn) {
+  _real64 starttime;
   assert(tx != NULL);
   assert(dstlocale != MYLOCALE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
   
+  starttime = _now_time();
   GTM_Safe(tx, gtm_tx_comm_put(tx, srcaddr, dstlocale, dstaddr, size));
+  gtm_stats_tx_put(_now_time() - starttime);
 }
 
 void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize) {
+  _real64 starttime;
+
   assert(tx != NULL);
 
   if (dstlocale == MYLOCALE) {
     (*chpl_txftable[fid])(tx, arg);
-  } else 
+  } else {
+    starttime = _now_time();
     GTM_Safe(tx, gtm_tx_comm_fork(tx, dstlocale, fid, arg, argsize));
+    gtm_stats_tx_fork(_now_time() - starttime);
+  }
 }
 
 void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) { 

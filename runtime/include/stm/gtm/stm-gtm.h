@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <setjmp.h> 
 #include "stm-gtm-memory.h"
+#include "stm-gtm-stats.h"
 
 //
 // GTM specific macros

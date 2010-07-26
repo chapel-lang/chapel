@@ -8,15 +8,14 @@
 #include "error.h"
 #include "stm-gtm.h"
 #include "stm-gtm-atomic.h"
-#include "stm-gtm-memory.h"
 
 #define MAXTDS 1024
 chpl_stm_tx_p gtm_tx_array[1024][MAXTDS];
-static chpl_mutex_t txarraylock;
+static chpl_mutex_t gtmTxArrayLock;
 
 void gtm_tx_init() {
   int i, j;
-  CHPL_MUTEX_INIT(&txarraylock);
+  CHPL_MUTEX_INIT(&gtmTxArrayLock);
   for (i = 0; i < NLOCALES; i++) 
     for (j = 0; j < MAXTDS; j++) 
       gtm_tx_array[i][j] = NULL;
@@ -54,9 +53,9 @@ void gtm_tx_destroy(chpl_stm_tx_p tx) {
   if (tx->id != -1 && tx->locale == MYLOCALE) {
     assert(tx->numremlocales >= 0 && tx->remlocales != NULL);
     chpl_free(tx->remlocales, 0, 0);
-    CHPL_MUTEX_LOCK(&txarraylock);
+    CHPL_MUTEX_LOCK(&gtmTxArrayLock);
     gtm_tx_array[tx->locale][tx->id] = NULL; 
-    CHPL_MUTEX_UNLOCK(&txarraylock);
+    CHPL_MUTEX_UNLOCK(&gtmTxArrayLock);
   } else {
     assert(tx->numremlocales == -1 && tx->remlocales == NULL);
   }
@@ -92,14 +91,14 @@ void gtm_tx_comm_register(chpl_stm_tx_p tx, int32_t dstlocale) {
     
     // Get a global id for this transaction
     for (i = 0; i < MAXTDS; i++) {
-      CHPL_MUTEX_LOCK(&txarraylock);
+      CHPL_MUTEX_LOCK(&gtmTxArrayLock);
       if (gtm_tx_array[tx->locale][i] == NULL) {
 	gtm_tx_array[tx->locale][i] = tx;
-	CHPL_MUTEX_UNLOCK(&txarraylock);
+	CHPL_MUTEX_UNLOCK(&gtmTxArrayLock);
 	tx->id = i; 
 	break;
       }
-      CHPL_MUTEX_UNLOCK(&txarraylock);
+      CHPL_MUTEX_UNLOCK(&gtmTxArrayLock);
     }
     if (tx->id == -1) 
       chpl_error("Run out of tx descriptors", 0, 0);
