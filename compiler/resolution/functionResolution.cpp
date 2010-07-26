@@ -4644,7 +4644,9 @@ static void insertReturnTemps() {
   // Insert return temps for functions that return values if no
   // variable captures the result. If the value is a sync var or a
   // reference to a sync var, pass it through the _statementLevelSymbol
-  // function to get the semantics of reading a sync var.
+  // function to get the semantics of reading a sync var. If the value
+  // is an iterator pass it through another overload of
+  // _statementLevelSymbol to iterate through it for side effects.
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
@@ -4655,8 +4657,10 @@ static void insertReturnTemps() {
             VarSymbol* tmp = newTemp(fn->retType);
             DefExpr* def = new DefExpr(tmp);
             call->insertBefore(def);
-            if ((fn->retType->getValType() && fn->retType->getValType()->symbol->hasFlag(FLAG_SYNC)) ||
-                fn->retType->symbol->hasFlag(FLAG_SYNC)) {
+            if ((fn->retType->getValType() &&
+                 fn->retType->getValType()->symbol->hasFlag(FLAG_SYNC)) ||
+                fn->retType->symbol->hasFlag(FLAG_SYNC) ||
+                fn->hasFlag(FLAG_ITERATOR_FN)) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
               call->insertBefore(sls);
               reset_line_info(sls, call->lineno);

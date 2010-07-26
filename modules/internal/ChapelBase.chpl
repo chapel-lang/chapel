@@ -534,6 +534,20 @@ pragma "inline" def _statementLevelSymbol(param a) param { return a; }
 pragma "inline" def _statementLevelSymbol(type a) type { return a; }
 
 //
+// If an iterator is called without capturing the result, iterate over it
+// to ensure any side effects it has will happen.
+//
+pragma "inline" def _statementLevelSymbol(ir: _iteratorRecord) {
+  def _ir_copy_recursive(ir) {
+    for e in ir do
+      yield chpl__initCopy(e);
+  }
+
+  pragma "no copy" var irc = _ir_copy_recursive(ir);
+  for e in irc { }
+}
+
+//
 // _cond_test function supports statement bool conversions and sync
 //   variables in conditional statements; and checks for errors
 // _cond_invalid function checks a conditional expression for
