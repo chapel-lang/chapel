@@ -1336,60 +1336,15 @@ pragma "inline" def chpl__autoDestroy(x: _singlevar) {
   delete x;
 }
 
-// Type function for representing function types
-// We use the fully expanded versions because the automatically expanded ones use temporaries in places that cause us trouble
-/*
-def func(type t...?n) type {
-  return __primitive("create fn type", (...t));
-}
-*/
+// Type functions for representing function types
 def func() type {
   return __primitive("create fn type", void);
 }
-def func(type t1) type { 
-  return __primitive("create fn type", t1);
+def func(type rettype) type {
+  return __primitive("create fn type", rettype);
 }
-def func(type t1, type t2) type { 
-  return __primitive("create fn type", t1, t2);
-}
-def func(type t1, type t2, type t3) type { 
-  return __primitive("create fn type", t1, t2, t3);
-}
-def func(type t1, type t2, type t3, type t4) type { 
-  return __primitive("create fn type", t1, t2, t3, t4);
-}
-def func(type t1, type t2, type t3, type t4, type t5) type { 
-  return __primitive("create fn type", t1, t2, t3, t4, t5);
-}
-def func(type t1, type t2, type t3, type t4, type t5, type t6) type { 
-  return __primitive("create fn type", t1, t2, t3, t4, t5, t6);
-}
-def func(type t1, type t2, type t3, type t4, type t5, type t6, type t7) type { 
-  return __primitive("create fn type", t1, t2, t3, t4, t5, t6, t7);
-}
-def func(type t1, type t2, type t3, type t4, type t5, type t6, type t7, type t8) type { 
-  return __primitive("create fn type", t1, t2, t3, t4, t5, t6, t7, t8);
-}
-def func(type t1, type t2, type t3, type t4, type t5, type t6, type t7, type t8, type t9) type { 
-  return __primitive("create fn type", t1, t2, t3, t4, t5, t6, t7, t8, t9);
-}
-def func(type t1, type t2, type t3, type t4, type t5, type t6, type t7, type t8, type t9, type t10) type { 
-  return __primitive("create fn type", t1, t2, t3, t4, t5, t6, t7, t8, t9, t10);
-}
-def func(type t1, type t2, type t3, type t4, type t5, type t6, type t7, type t8, type t9, type t10, type t11) type { 
-  return __primitive("create fn type", t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11);
-}
-def func(type t1, type t2, type t3, type t4, type t5, type t6, type t7, type t8, type t9, type t10, type t11, type t12) type { 
-  return __primitive("create fn type", t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12);
-}
-def func(type t1, type t2, type t3, type t4, type t5, type t6, type t7, type t8, type t9, type t10, type t11, type t12, type t13) type { 
-  return __primitive("create fn type", t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13);
-}
-def func(type t1, type t2, type t3, type t4, type t5, type t6, type t7, type t8, type t9, type t10, type t11, type t12, type t13, type t14) type { 
-  return __primitive("create fn type", t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14);
-}
-def func(type t1, type t2, type t3, type t4, type t5, type t6, type t7, type t8, type t9, type t10, type t11, type t12, type t13, type t14, type t15) type { 
-  return __primitive("create fn type", t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15);
+def func(type t...?n, type rettype) type {
+  return __primitive("create fn type", (...t), rettype);
 }
 
 //

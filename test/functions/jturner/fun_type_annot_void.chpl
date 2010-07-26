@@ -1,3 +1,6 @@
-var f:func(void,int) = lambda() { return 5; };
+var g : func(void) = lambda() { writeln("hello, world!"); };
+g();
 
-writeln(f());
+var h : func() = lambda() { writeln("hello, world!"); };
+h();
+
