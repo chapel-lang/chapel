@@ -146,6 +146,13 @@ def IsChplSource(f):
     else:
         return False
 
+# return True if f has .graph extension
+def IsGraphFile(f):
+    if ((f.count('.') !=0) and (len(f) > 7) and (len(f)-f.find('.graph')==6)):
+	return True
+    else:
+	return False
+
 # read file with comments
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
     # sys.stdout.write('Opening: %s\n'%(f))
@@ -450,7 +457,8 @@ if onetestsrc==None:
 else:
     testsrc=list()
     testsrc.append(onetestsrc)
-# sys.stdout.write('testsrc=%s\n'%(testsrc))
+
+graphfiles=filter(IsGraphFile, dirlist)
 
 for testname in testsrc:
     sys.stdout.flush()
@@ -994,3 +1002,28 @@ for testname in testsrc:
 
     del execoptslist
     del compoptslist
+
+if perftest: 
+    for graphfile in graphfiles:
+	(root, suffix) = os.path.splitext(graphfile)
+    	graphname=root
+
+ 	sys.stdout.write('[Executing %s/createGraphs for %s.graph in %s]\n'%(utildir, graphname, testdir+'/'+localdir))
+	sys.stdout.flush()
+	
+	if os.path.isfile(utildir+'/createGraphs'):
+   	    p = subprocess.Popen([utildir+'/createGraphs', graphname, perfdir],stdout=subprocess.PIPE)
+   	    sys.stdout.write('%s'%(p.communicate()[0]))
+   	    sys.stdout.flush()
+	else:
+	    sys.stdout.write('cannot find createGraphs\n')
+
+  	status = p.returncode
+  
+   	if status == 0:
+	    sys.stdout.write('[Success')
+        else:
+ 	    sys.stdout.write('[Error')
+        sys.stdout.write(' creating graphs in %s]\n'%(testdir+'/'+localdir))
+
+del graphfiles
