@@ -12,7 +12,7 @@ _extern def mpz_init(inout X: mpz_t);
 _extern def mpz_set_ui(inout ROP: mpz_t, OP: c_ulong);
 _extern def mpz_mul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
 _extern def mpz_add_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
-_extern def mpz_mul(inout ROP: mpz_t, inout OP1: mpz_t, OP2: mpz_t);
+_extern def mpz_mul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
 _extern def mpz_neg(inout ROP: mpz_t, inout OP: mpz_t);
 _extern def mpz_clear(inout X: mpz_t);
 _extern def mpz_tdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
@@ -29,7 +29,7 @@ _extern def mpz_addmul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OPT2: c_ulong);
 _extern type double = real(64);
 
 _extern def mpf_init(inout X: mpf_t);
-_extern def mpf_set_z(inout ROP: mpf_t, OP: mpz_t);
+_extern def mpf_set_z(inout ROP: mpf_t, inout OP: mpz_t);
 _extern def mpf_get_prec(inout OP: mpf_t): mp_bitcnt_t;
 _extern def mpf_get_d(inout OP: mpf_t): double;
 _extern def mpf_set_d(inout ROP: mpf_t, OP: double);
