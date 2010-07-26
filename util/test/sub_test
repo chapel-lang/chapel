@@ -153,6 +153,13 @@ def IsGraphFile(f):
     else:
 	return False
 
+# return True if f has .view extention
+def IsViewFile(f):
+    if ((f.count('.') !=0) and (len(f) > 6) and (len(f)-f.find('.view')==5)):
+	return True
+    else:
+	return False
+
 # read file with comments
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
     # sys.stdout.write('Opening: %s\n'%(f))
@@ -459,6 +466,7 @@ else:
     testsrc.append(onetestsrc)
 
 graphfiles=filter(IsGraphFile, dirlist)
+viewfiles=filter(IsViewFile, dirlist)
 
 for testname in testsrc:
     sys.stdout.flush()
@@ -1026,4 +1034,25 @@ if perftest:
  	    sys.stdout.write('[Error')
         sys.stdout.write(' creating graphs in %s]\n'%(testdir+'/'+localdir))
 
+    for viewfile in viewfiles:
+	sys.stdout.write('[Executing %s/viewGraphs for %s in %s]\n'%(utildir, viewfile, testdir+'/'+localdir))
+	sys.stdout.flush()
+
+	if os.path.isfile(utildir+'/viewGraphs'):
+	    p = subprocess.Popen([utildir+'/viewGraphs', viewfile, perfdir],stdout=subprocess.PIPE)
+	    sys.stdout.write('%s'%(p.communicate()[0]))
+	    sys.stdout.flush()
+        else:
+	    sys.stdout.write('cannot find viewGraphs\n')
+
+        status = p.returncode
+
+	if status==0:
+	    sys.stdout.write('[Success')
+	else:
+	    sys.stdout.write('[Error')
+	sys.stdout.write(' creating html for %s]\n'%(viewfile))
+
+
 del graphfiles
+del viewfiles

@@ -1,0 +1,34 @@
+#!/usr/bin/env perl
+
+print "***** in viewGraphs *****\n";
+
+my $view_file = $ARGV[0];
+my $outputdir = $ARGV[1];
+my $root = substr $view_file, 0, -5;
+my $html_file = "$outputdir/$root.html";
+
+
+print "view_file is $view_file\n";
+print "outputdir is $outputdir\n";
+print "html_file is $html_file\n";
+
+open IMAGES, "$view_file" or die "can't open $view_file $!";
+my @images = <IMAGES>;
+close (IMAGES);
+foreach my $image (@images) {
+    chomp($image);
+}
+
+open HTML, ">$html_file" or die "can't open $html_file for creating $!";
+print HTML "<html>\n";
+print HTML "<body>\n";
+
+my $i = 1;
+foreach my $image (@images) {
+    print HTML "<h$i>$image</h$i>\n";
+    print HTML "<img src=\"$image\" width=\"150\" height=\"150\" />\n";
+    $i++;
+}
+
+print HTML "</body>\n";
+print HTML "</html>\n";
