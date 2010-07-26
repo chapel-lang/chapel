@@ -2376,11 +2376,13 @@ static ClassType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *c
     for_alist(actualExpr, arg_list) {
       if (i != (alength-1)) {
 	SymExpr* sExpr = toSymExpr(actualExpr);
-	oss << sExpr->var->type->symbol->name;
+	if (sExpr->var->type != dtVoid) {
+	  oss << sExpr->var->type->symbol->name;
       
-	ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, sExpr->var->type->symbol->name, sExpr->var->type);
+	  ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, sExpr->var->type->symbol->name, sExpr->var->type);
 	
-	(parent_method)->insertFormalAtTail(newFormal);
+	  (parent_method)->insertFormalAtTail(newFormal);
+	}
       }
       ++i;
     }
@@ -2439,7 +2441,7 @@ createFunctionAsValue(CallExpr *call) {
     for_alist(formalExpr, captured_fn->formals) {
       DefExpr* dExp = toDefExpr(formalExpr);
       ArgSymbol* fArg = toArgSymbol(dExp->sym);
-      
+
       if (!isFirst)
 	oss << "_";
     
@@ -2481,14 +2483,16 @@ createFunctionAsValue(CallExpr *call) {
       DefExpr* dExp = toDefExpr(formalExpr);
       ArgSymbol* fArg = toArgSymbol(dExp->sym);
 
-      if (fArg->defaultExpr) {
-	USR_FATAL(fArg, "Default arguments not allowed in first class functions");
-      }		
-      ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
-      if (fArg->typeExpr) 
-	newFormal->typeExpr = fArg->typeExpr->copy();
-	      
-      thisParentMethod->insertFormalAtTail(newFormal);
+      if (fArg->type != dtVoid) {
+	if (fArg->defaultExpr) {
+	  USR_FATAL(fArg, "Default arguments not allowed in first class functions");
+	}		
+	ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
+	if (fArg->typeExpr) 
+	  newFormal->typeExpr = fArg->typeExpr->copy();
+	
+	thisParentMethod->insertFormalAtTail(newFormal);
+      }
     }
 
     if (captured_fn->retType != dtVoid) {
