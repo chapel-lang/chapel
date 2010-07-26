@@ -1,4 +1,11 @@
-keys: time for chameneos1 to meet =, time for chameneos2 to meet =, total execution time =
-ylabel: Time (seconds)
-graph_name: chameneos-redux-concurrent
-title: chameneos-redux performance over time - concurrent
+perfkeys: time for chameneos1 to meet =, time for chameneos2 to meet =
+graphkeys: time for chameneos 1 to meet, time for chameneos2 to meet
+ylabel: Performance
+graphname: chameneos-redux-concurrent
+graphtitle: chameneos-redux concurrent
+
+perfkeys: total execution time =
+graphkeys: total execution time
+ylabel: Performance
+graphname: chameneos-redux-total
+graphtitle: chameneos-redux total

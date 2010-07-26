@@ -32,8 +32,6 @@ config const MEET_COUNT_SHIFT = 8;
 
 
 class MeetingPlace {
-	//var spotsLeft : volatileint32;
-	//var partner : Chameneos;
 	var state : volatileint32;
 
 	/* constructor for MeetingPlace, sets the 
@@ -69,34 +67,38 @@ class Chameneos {
 	/* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
 	   with another Chameneos.  If it does, it will get the complement of the color
 	   of the Chameneos it met with, and change to the complement of that color. */
-	def start(population : [] Chameneos, place : MeetingPlace) {
-		var stateTemp : int;
+	def start(population : [] Chameneos, inout state : volatileint32) {
+		var stateTemp : uint;
 		var peer : Chameneos;
-		var peer_idx : int;	
-		var xchg : int;
-		var prev : int;
+		var peer_idx : uint;	
+		var xchg : uint;
+		var prev : uint;
 		var is_same : int;
 		var newColor : Color;
 
-		stateTemp = place.state:int;	
+		//writeln("id ", id, ": in start");
+		stateTemp = state;	
 					
 		while (true) {
 			peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
+			writeln("id ", id, ": peer_idx is ", peer_idx);
 			if (peer_idx) {
-				xchg = stateTemp - peer_idx - (1 << MEET_COUNT_SHIFT);
+				xchg = stateTemp - peer_idx - (1 << MEET_COUNT_SHIFT):uint;
 			} else if (stateTemp) {
 				xchg = stateTemp | id;		
 			} else {
 				break;
 			}
-			prev = (__sync_val_compare_and_swap_c(place.state, stateTemp:uint, xchg:uint)):int;
+			//writeln("id ", id, ": xchg is ", xchg);
+			prev = __sync_val_compare_and_swap_c(state, stateTemp, xchg);
 			if (prev == stateTemp) {
 				if (peer_idx) {
+					//writeln("id ", id, ": got here second");
 					if (id == peer_idx) {
 						is_same = 1;
 						halt("halt: chameneos met with self");
 					}
-					peer = population[peer_idx];			// or is it peer_idx-1?
+					peer = population[peer_idx:int];
 					newColor = getComplement(color, peer.color);
 					peer.color = newColor;
 					peer.meetings += 1;
@@ -105,15 +107,19 @@ class Chameneos {
 					color = newColor;
 					meetings += 1;
 					meetingsWithSelf += is_same;
+					//writeln("id ", id, ": exiting");
+
 				} else {
+					//writeln("id ", id, ": got here first");
 					while (meetingCompleted == 0) {
 						sched_yield();
 					}
+					//writeln("id ", id, ": exiting");
 					meetingCompleted = 0;
-					stateTemp = (place.state):int;	
+					stateTemp = state;	
 				}
 			} else {
-				stateTemp = prev:int; 
+				stateTemp = prev; 
 			}
 		} 
 	}
@@ -155,12 +161,12 @@ def run(population : [] Chameneos, meetingPlace : MeetingPlace) {
 	for i in population { write(" ", i.color); }
 	writeln();
 
-	coforall i in population { i.start(population, meetingPlace); }
+	coforall i in population { i.start(population, meetingPlace.state); }
 	meetingPlace.reset();
 }
 
 def runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
-	coforall i in population { i.start(population, meetingPlace); }
+	coforall i in population { i.start(population, meetingPlace.state); }
 	meetingPlace.reset();
 
 	const totalMeetings = + reduce population.meetings;
