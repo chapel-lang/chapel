@@ -58,6 +58,7 @@ enum Flag {
   FLAG_EXPR_TEMP, // temporary that stores the result of an expression
   FLAG_EXTERN, // extern variables, types, and functions
   FLAG_FIXED_STRING, // fixed-length strength
+  FLAG_FUNCTION_CLASS, // first-class function class representation
   FLAG_GENERIC, // generic types and functions
   FLAG_HEAP,
   FLAG_HEAP_ALLOCATE,
