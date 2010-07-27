@@ -431,6 +431,7 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_BEGIN, "begin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COBEGIN, "cobegin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
+  prim_def(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N, "xmt pragma forall i in n", returnInfoVoid);
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_ON_NB, "non-blocking on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);

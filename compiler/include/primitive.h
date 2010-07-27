@@ -147,6 +147,7 @@ enum PrimitiveTag {
   PRIM_BLOCK_BEGIN,           // BlockStmt::blockInfo - begin block
   PRIM_BLOCK_COBEGIN,         // BlockStmt::blockInfo - cobegin block
   PRIM_BLOCK_COFORALL,        // BlockStmt::blockInfo - coforall block
+  PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N, // BlockStmt::blockInfo - xmt prag loop
   PRIM_BLOCK_ON,              // BlockStmt::blockInfo - on block
   PRIM_BLOCK_ON_NB,           // BlockStmt::blockInfo - non-blocking on block
   PRIM_BLOCK_LOCAL,           // BlockStmt::blockInfo - local block

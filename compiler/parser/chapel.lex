@@ -95,6 +95,7 @@ out             processToken(TOUT);
 param           processToken(TPARAM);
 pragma          processToken(TPRAGMA);
 __primitive     processToken(TPRIMITIVE);
+__primitive_loop processToken(TPRIMITIVELOOP);
 record          processToken(TRECORD);
 reduce          processToken(TREDUCE);
 return          processToken(TRETURN);
