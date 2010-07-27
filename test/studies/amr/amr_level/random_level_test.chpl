@@ -1,5 +1,5 @@
 use amr_level_defs;
-
+use Random;
 
 
 def main {

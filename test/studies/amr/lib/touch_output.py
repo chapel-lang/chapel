@@ -21,4 +21,4 @@ for name in timefile_list:
   os.system(cmd)
   print cmd
   
-  time.sleep(.7)
+  time.sleep(.9)

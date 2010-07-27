@@ -61,7 +61,7 @@ def main {
     return f;
   }
 
-  var q = G.evaluate(initial_condition);
+  var q = G.make_grid_function(initial_condition);
   q.boundary_manager = boundary_manager;
   //<=== Initialize  solution <===
 
@@ -94,7 +94,7 @@ def main {
     //---- Write output to file ----
     frame_number += 1;
     writeln("Writing frame ", frame_number, ".");
-    G.clawpack_output(q, frame_number);
+    G.claw_output(q, frame_number);
   }
   //<=== Generate output <===
   

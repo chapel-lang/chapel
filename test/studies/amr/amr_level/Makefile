@@ -1,8 +1,7 @@
 LEVEL_SOURCES = \
 	../lib/grid_base_defs.chpl \
-	../lib/linked_list_defs.chpl \
 	amr_level_defs.chpl \
-	random_level_test.chpl
+	static_function_test.chpl
 
 .PHONY: clean
 
