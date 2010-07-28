@@ -9,6 +9,8 @@ SOURCES = \
 	advection_ctu_driver.chpl
 
 
+DIM = 2
+
 
 .PHONY: clean, emacs_clean
 
@@ -21,7 +23,7 @@ output: advection_ctu.out
 
 
 advection_ctu.out: $(SOURCES)
-	chpl $(SOURCES) -o advection_ctu.out
+	chpl $(SOURCES) -s dimension=$(DIM) -o advection_ctu.out
 
 
 plots: _output/fort.t0000

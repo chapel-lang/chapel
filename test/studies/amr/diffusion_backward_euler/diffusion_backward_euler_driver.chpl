@@ -11,6 +11,7 @@ use diffusion_backward_euler_defs;
 
 
 def main {
+
   //==== Diffusivity ====
   var diffusivity = 0.1;
 
@@ -22,33 +23,33 @@ def main {
   // but I find the constructor call to be unsettling
   // without.
   //---------------------------------------------------
-  var low_coord_init, high_coord_init:  dimension*real,
-      low_index_init:                   dimension*int,
-      n_cells_init, n_ghost_cells_init: dimension*int;
+  var x_low, x_high:           dimension*real,
+      i_low:                   dimension*int,
+      n_cells, n_ghost_cells:  dimension*int;
 
   var N: int;
   if dimension<3 then N=100;
   else N = 50;
 
   for d in dimensions do {
-    low_coord_init(d)     = -1.0;
-    high_coord_init(d)    = 1.0;
-    low_index_init(d)     = 0;
-    n_cells_init(d)       = N;
-    n_ghost_cells_init(d) = 2;
+    x_low(d)         = -1.0;
+    x_high(d)        = 1.0;
+    i_low(d)         = 0;
+    n_cells(d)       = N;
+    n_ghost_cells(d) = 2;
   }
 
-  var G = new RectangularGrid(low_coord     = low_coord_init,
-			      high_coord    = high_coord_init,
-			      low_index     = low_index_init,
-			      n_cells       = n_cells_init, 
-			      n_ghost_cells = n_ghost_cells_init);
+  var G = new RectangularGrid(x_low         = x_low,
+			      x_high        = x_high,
+			      i_low         = i_low,
+			      n_cells       = n_cells, 
+			      n_ghost_cells = n_ghost_cells);
   //<=== Initialize grid <===
 
 
 
   //==== Initialize boundary conditions ====
-  var boundary_data = new PeriodicBoundaryConditions(parent = G);
+  var bc = new PeriodicGridBC(grid = G);
 
 
 
@@ -60,7 +61,7 @@ def main {
     return f;
   }
 
-  var q = G.evaluate(initial_condition);
+  var q = G.initializeGridSolution(initial_condition);
   //<=== Initialize  solution <===
 
 
@@ -82,17 +83,17 @@ def main {
   //===> Generate output ===>
   //==== Initial time ====
   q.time = time_initial;
-  G.clawpack_output(q, frame_number);
+  G.clawOutput(q, frame_number);
 
   //==== Subsequent times ====
   for output_time in output_times do {
     //==== Advance q to output time ====
-    G.advance_diffusion_backward_euler(q, diffusivity, output_time, 0.05); 
+    G.advanceDiffusionBE(q, bc, diffusivity, output_time, 0.05); 
 
     //==== Write output to file ====
     frame_number += 1; 
     writeln("Writing frame ", frame_number, ".");
-    G.clawpack_output(q, frame_number); 
+    G.clawOutput(q, frame_number); 
   }
   //<=== Generate output <===
   

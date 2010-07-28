@@ -34,7 +34,7 @@ def main {
       i_low(d)  = 20;
       i_high(d) = 80;
       
-      x_low(d)  = -0.2;
+      x_low(d)  = -0.1;
       x_high(d) = 0.4;
     }
   }
@@ -57,7 +57,7 @@ def main {
       i_high(d) = 60;
       
       x_low(d)  = -0.4;
-      x_high(d) = 0.2;
+      x_high(d) = 0.1;
     }
   }
   

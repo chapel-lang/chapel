@@ -12,6 +12,7 @@ use advection_ctu_defs;
 
 
 def main {
+
   //==== Advection velocity ====
   //-------------------------------
   // velocity = (1, 3/4, 5/8, ...)
@@ -47,9 +48,8 @@ def main {
 
 
 
-  //===> Initialize boundary conditions ===>
-  var boundary_manager = new PeriodicBoundaryConditions(grid = G);
-  //<=== Initialize boundary conditions <===
+  //==== Initialize boundary conditions ====
+  var bc = new PeriodicGridBC(grid = G);
 
 
 
@@ -61,16 +61,15 @@ def main {
     return f;
   }
 
-  var q = G.make_grid_function(initial_condition);
-  q.boundary_manager = boundary_manager;
+  var q = G.initializeGridSolution(initial_condition);
   //<=== Initialize  solution <===
 
 
 
   //===> Initialize output ===>
   var time_initial: real = 0.0,
-    time_final:     real = 2.0,
-    n_output:       int  = 20,
+    time_final:     real = 1.0,
+    n_output:       int  = 10,
     output_times:   [1..n_output] real,
     dt_output:      real = (time_final - time_initial) / n_output,
     frame_number:   int = 0;
@@ -82,19 +81,19 @@ def main {
 
 
   //===> Generate output ===>
-  //---- Initial time ----
+  //==== Initial time ====
   q.time = time_initial;
-  G.clawpack_output(q, frame_number);
+  G.clawOutput(q, frame_number);
 
-  //---- Subsequent times ----
+  //==== Subsequent times ====
   for output_time in output_times do {
-    //---- Advance q to output time ----
-    G.advance_advection_ctu(q, velocity, output_time);
+    //==== Advance q to output time ====
+    G.AdvanceAdvectionCTU(q, bc, velocity, output_time);
 
-    //---- Write output to file ----
+    //==== Write output to file ====
     frame_number += 1;
     writeln("Writing frame ", frame_number, ".");
-    G.claw_output(q, frame_number);
+    G.clawOutput(q, frame_number);
   }
   //<=== Generate output <===
   

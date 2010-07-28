@@ -9,12 +9,13 @@
 use grid_base_defs;
 
 
-//===> CTU update of a GridFunction ===>
+//===> CTU update of a GridSolution ===>
 //=====================================>
-def RectangularGrid.advance_advection_ctu(q:              GridFunction,
-					  velocity:       dimension*real,
-                                          time_requested: real
-                                          ) {
+def RectangularGrid.AdvanceAdvectionCTU(q:              GridSolution,
+					bc:             GridBC,
+					velocity:       dimension*real,
+                                        time_requested: real
+                                       ) {
 
   //==== Make sure q can validly be updated ====
   assert(q.grid == this  &&  q.time <= time_requested);
@@ -45,7 +46,7 @@ def RectangularGrid.advance_advection_ctu(q:              GridFunction,
 
 
     //==== Fill in ghost cells ====
-    q.boundary_manager.fill_ghost_cells(q);
+    bc.ghostFill(q);
 
     
     //-----------------------------------------------------------
@@ -118,6 +119,6 @@ def RectangularGrid.advance_advection_ctu(q:              GridFunction,
 
 
 }
-//<=== CTU update of a GridFunction <===
+//<=== CTU update of a GridSolution <===
 //<=====================================
 

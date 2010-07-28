@@ -15,8 +15,8 @@ config param dimension = 2;
 const dimensions = [1..dimension];
 
 
-//===> Definition of class RectangularGrid ===>
-//============================================>
+//===> RectangularGrid class ===>
+//==============================>
 class RectangularGrid {
   
   var x_low, x_high:          dimension*real,
@@ -35,16 +35,16 @@ class RectangularGrid {
   //===> initialize() method ===>
   def initialize() {
 
-    sanity_checks();
+    sanityChecks();
 
-    set_derived_fields();
+    setDerivedFields();
   }
   //<=== initialize() method <===
 
 
 
-  //===> sanity_checks() method ===>
-  def sanity_checks() {
+  //===> sanityChecks() method ===>
+  def sanityChecks() {
     var d_string: string;
     for d in dimensions do {
       d_string = format("%i", d);
@@ -59,11 +59,11 @@ class RectangularGrid {
 	     "error: RectangularGrid: n_ghost_cells(" + d_string + ") must be positive.");
     }
   }
-  //<=== sanity_checks() method <===
+  //<=== sanityChecks() method <===
 
 
 
-  //===> set_derived_fields() method ===>
+  //===> setDerivedFields() method ===>
   //--------------------------------------------------------------
   // After x_low, x_high, n_cells, and n_ghost_cells have
   // been provided, calculate:
@@ -74,7 +74,7 @@ class RectangularGrid {
   //     low_ghost_cells
   //     high_ghost_cells
   //--------------------------------------------------------------
-  def set_derived_fields() {
+  def setDerivedFields() {
     //==== dx ====
     dx = (x_high - x_low) / n_cells;
 
@@ -112,19 +112,22 @@ class RectangularGrid {
     //<=== Ghost cells <===     
 
   }
-  //<=== set_derived_fields() method <===
+  //<=== setDerivedFields() method <===
   
  
 }
-//<=== Definition of class RectangularGrid <===
-//<============================================
+//<=== RectangularGrid class <===
+//<==============================
 
 
 
 
-//===> Generate coordinates of cell centers ===>
-//=============================================>
-def RectangularGrid.coordinates (point_index: dimension*int) {
+//===> xValue method ===>
+//======================>
+//---------------------------------------
+// Converts indices to coordinate values.
+//----------------------------------------
+def RectangularGrid.xValue (point_index: dimension*int) {
 
   var coord: dimension*real;
 
@@ -138,8 +141,8 @@ def RectangularGrid.coordinates (point_index: dimension*int) {
 
   return coord;
 }
-//<=============================================
-//<=== Generate coordinates of cell centers <===
+//<======================
+//<=== xValue method <===
 
 
 
@@ -147,73 +150,70 @@ def RectangularGrid.coordinates (point_index: dimension*int) {
 
 
 //=======================================================>
-//==================== GRID FUNCTIONS ===================>
+//==================== GRID SOLUTIONS ===================>
 //=======================================================>
 
 
-//===> GridFunction class ===>
+//===> GridSolution class ===>
 //===========================>
-class GridFunction {
+class GridSolution {
   var grid:  RectangularGrid;
   var value: [grid.ext_cells] real;
   var time:  real;
-
-  var boundary_manager: BoundaryManager;
 }
 //<===========================
-//<=== GridFunction class ====
+//<=== GridSolution class ====
 
 
 
 
-//===> copy_grid_function method ===>
+//===> copyGridSolution method ===>
 //==================================>
-def RectangularGrid.copy_grid_function(q: GridFunction) {
+def RectangularGrid.copyGridSolution(q: GridSolution) {
   
   //==== Make sure q lives on this grid ====
   assert(q.grid == this);
 
   
   //==== Copy q ====
-  return new GridFunction(grid             = this,
-			  value            = q.value,
-			  time             = q.time,
-			  boundary_manager = q.boundary_manager);
+  var q_copy = new GridSolution(grid  = this,
+			        value = q.value,
+			        time  = q.time);
 
 }
-//<=== copy_grid_function method <===
+//<=== copyGridSolution method <===
 //<==================================
 
 
 
 
-//===> make_grid_function method ===>
-//==================================>
+//===> initializeGridSolution method ===>
+//======================================>
 //---------------------------------------------------------------
 // Provided an analytical function, evaluates it on the grid and
-// returns a GridFunction.  As support for first-class functions
+// returns a GridSolution.  As support for first-class functions
 // develops, the input argument will become explicitly typed.
 //---------------------------------------------------------------
-def RectangularGrid.make_grid_function(initial_condition) {
-  var q = new GridFunction(this);
+def RectangularGrid.initializeGridSolution(initial_condition) {
+  var q = new GridSolution(this);
 
   if dimension==1 then
     forall cell in cells {
-      q.value(cell) = initial_condition(coordinates(tuple(cell)));
+      q.value(cell) = initial_condition(xValue(tuple(cell)));
     }
   else
     forall cell in cells {
-      q.value(cell) = initial_condition(coordinates(cell));
+      q.value(cell) = initial_condition(xValue(cell));
     }
 
   return q;
 }
-//<==================================
-//<=== make_grid_function method <===
+//<======================================
+//<=== initializeGridSolution method <===
 
 
 //<=======================================================
-//<=================== GRID FUNCTIONS ====================
+//<=================== GRID SOLUTIONS ====================
 //<=======================================================
 
 
@@ -221,49 +221,38 @@ def RectangularGrid.make_grid_function(initial_condition) {
 
 
 
-//==========================================================>
-//==================== BOUNDARY MANAGERS ===================>
-//==========================================================>
+//============================================================>
+//==================== BOUNDARY CONDITIONS ===================>
+//============================================================>
 
 
-//===> BoundaryManager class ===>
-//==============================>
-class BoundaryManager {
-
-  //----------------------------------------------------------------
-  // I think two methods are needed -- one for homogeneous BCs, and
-  // one for inhomogeneous BCs.  The homogeneous case is absolutely
-  // mandatory, whereas there could be a dummy routine for the
-  // inhomogeneous case that does nothing.
-  //----------------------------------------------------------------
+//===> GridBC class ===>
+//=====================>
+class GridBC {
 
   var grid: RectangularGrid;
+
+  //==== Dummy routines; to be provided in derived classes ====
+  def ghostFill(q: GridSolution){}
+  def homogeneousGhostFill(q: GridSolution){}
   
-  //==== fill_ghost_cells() method ====
-  //--------------------------------------------------
-  // This method is empty, and meant to be overridden
-  // by a like-named method for a derived class.
-  //--------------------------------------------------
-  def fill_ghost_cells(q: GridFunction) {
-    assert(false, "The fill_ghost_cells() method of class BoundaryManager " +
-	   "must be overriddend by a derived class.");
-  }
 }
-//<=== BoundaryManager class <===
-//<==============================
+//<=== GridBC Class <===
+//<=====================
 
 
 
 
-//===> PeriodicBoundaryConditions class ===>
-//=========================================>
-class PeriodicBoundaryConditions: BoundaryManager {
+//===> PeriodicGridBC class ===>
+//=============================>
+class PeriodicGridBC: GridBC {
 
   var low_ghost_periodic:  [dimensions] subdomain(grid.ext_cells);
   var high_ghost_periodic: [dimensions] subdomain(grid.ext_cells);
 
 
   //===> initialize() method ===>
+  //============================>
   def initialize() {
 
     //===> Build periodic images of ghost cells ===>
@@ -281,33 +270,65 @@ class PeriodicBoundaryConditions: BoundaryManager {
     //<=== Build periodic images of ghost cells <===
 
   }
+  //<============================
   //<=== initialize() method <===
 
 
 
-  //===> fill_ghost_cells() method ===>
-  def fill_ghost_cells(q: GridFunction) {
+  //===> ghostFill method ===>
+  //=========================>
+  def ghostFill(q: GridSolution) {
+    //==== Periodic BCs are homogeneous ====
+    homogeneousGhostFill(q);
+  }
+  //<=========================
+  //<=== ghostFill method <===
+
+
+
+  //===> homogeneousGhostFill method ===>
+  //====================================>
+  def homogeneousGhostFill(q: GridSolution) {
+
+    //==== Make sure q lives on the same grid as the BC ====
+    assert(q.grid == grid);
+
+    //==== Copy values into ghost cells from their periodic images ====
     for d in dimensions do {
       q.value(grid.low_ghost_cells(d))  = q.value(low_ghost_periodic(d));
       q.value(grid.high_ghost_cells(d)) = q.value(high_ghost_periodic(d));
     }
   }
-  //<=== fill_ghost_cells() method <===
+  //<====================================
+  //<=== homogeneousGhostFill method <===
+
 
 }
-//<=========================================
-//<=== PeriodicBoundaryConditions class <===
+//<=============================
+//<=== PeriodicGridBC class <===
 
 
 
 
-//===> ZeroOrderExtrapolation class ===>
-//=====================================>
-class ZeroOrderExtrapolation: BoundaryManager {
+//===> ConstantDirichletGridBC class ===>
+//======================================>
+class ConstantDirichletGridBC: GridBC {
 
 
-  //===> fill_ghost_cells() method ===>
-  def fill_ghost_cells(q: GridFunction) {
+  //===> ghostFill method ===>
+  //=========================>
+  def ghostFill(q: GridSolution) {
+    //==== Constant Dirichlet BCs are homogeneous ====
+    homogeneousGhostFill(q);
+  }
+  //<========================
+  //<=== ghostFill method <===
+  
+
+
+  //===> homogeneousGhostFill method ===>
+  //====================================>
+  def homogeneousGhostFill(q: GridSolution) {
 
     for d in dimensions do {
       //==== Low ghost cells ====
@@ -326,16 +347,19 @@ class ZeroOrderExtrapolation: BoundaryManager {
     }
 
   }
-  //<=== fill_ghost_cells() method <===
+  //<====================================
+  //<=== homogeneousGhostFill method <===
+
+
 
 }
-//<=====================================
-//<=== ZeroOrderExtrapolation class <===
+//<======================================
+//<=== ConstantDirichletGridBC class <===
 
 
-//<==========================================================
-//<=================== BOUNDARY MANAGERS ====================
-//<==========================================================
+//<============================================================
+//<=================== BOUNDARY CONDITIONS ====================
+//<============================================================
 
 
 
@@ -347,19 +371,19 @@ class ZeroOrderExtrapolation: BoundaryManager {
 //=======================================================>
 
 
-//===> write_time_file function ===>
+//===> writeTimeFile function =====>
 //=================================>
 //-------------------------------------------------------------
-// Generic routine; meant to be called by output method of any
+// Global routine; meant to be called by output method of any
 // spatial object.  The time file is really simple, and this
 // just formats a few parameters.
 //-------------------------------------------------------------
-def write_time_file(time:    real,
-                    meqn:    int,
-                    ngrids:  int,
-                    naux:    int,
-                    outfile: file
-                   ) {
+def writeTimeFile(time:    real,
+                  meqn:    int,
+                  ngrids:  int,
+                  naux:    int,
+                  outfile: file
+                 ) {
 
 
   //==== Formatting parameters ====
@@ -376,21 +400,21 @@ def write_time_file(time:    real,
   outfile.writeln("");
 
 }
-//<=== write_time_file method <===
+//<=== writeTimeFile method <=====
 //<===============================
 
 
 
 
-//===> claw_output method ===>
-//===========================>
+//===> clawOutput method ===>
+//==========================>
 //-------------------------------------------------------------------
-// Writes Clawpack-formatted output for a GridFunction, at the given 
+// Writes Clawpack-formatted output for a GridSolution, at the given 
 // frame_number.
 //-------------------------------------------------------------------
-def RectangularGrid.claw_output(q:            GridFunction,
-                                frame_number: int
-                               ){
+def RectangularGrid.clawOutput(q:             GridSolution,
+                               frame_number: int
+                              ){
 
   //==== Make sure q lives on this grid ====
   assert(q.grid == this);
@@ -405,7 +429,7 @@ def RectangularGrid.claw_output(q:            GridFunction,
   //==== Time file ====
   var outfile = new file(time_filename, FileAccessMode.write);
   outfile.open();
-  write_time_file(q.time, 1, 1, 0, outfile);
+  writeTimeFile(q.time, 1, 1, 0, outfile);
   outfile.close();
   delete outfile;
   
@@ -413,27 +437,27 @@ def RectangularGrid.claw_output(q:            GridFunction,
   //==== Solution file ====
   outfile = new file(solution_filename, FileAccessMode.write);
   outfile.open();
-  write_solution(q, 1, 1, outfile);
+  writeSolution(q, 1, 1, outfile);
   outfile.close();
   delete outfile;
 
 }
-//<=== claw_output method <===
-//<===========================
+//<=== clawOutput method <===
+//<==========================
 
 
 
 
-//===> write_solution method ===>
+//===> writeSolution method ====>
 //==============================>
 //---------------------------------------------------------
-// Writes the data for a GridFunction living on this grid.
+// Writes the data for a GridSolution living on this grid.
 //---------------------------------------------------------
-def RectangularGrid.write_solution(q:           GridFunction, 
-                                   grid_number: int, 
-                                   AMR_level:   int,
-                                   outfile:     file
-                                  ){
+def RectangularGrid.writeSolution(q:           GridSolution, 
+                                  grid_number: int, 
+                                  AMR_level:   int,
+                                  outfile:     file
+                                 ){
 
   //==== Formatting parameters ====
   var efmt:  string = "%26.16E",
@@ -532,152 +556,8 @@ def RectangularGrid.write_solution(q:           GridFunction,
   //<=== Write solution values <===
   
 }
-//<=== write_solution method <===
-//<===================================
-
-
-
-
-
-
-
-
-
-//---- DEPRECATED; WILL DELETE SOON ----
-//===> Output a GridFunction in Clawpack format ===>
-//=================================================>
-def RectangularGrid.clawpack_output(q: GridFunction, frame_number: int) {
-
-
-  //---- Make sure that q lives on this grid ----
-  assert(q.grid == this);
-
-
-  //---- Parameters needed by the output file ----
-  var meqn:        int = 1,
-      ngrids:      int = 1,
-      maux:        int = 0,
-      grid_number: int = 1,
-      AMR_level:   int = 1;
-
-
-  //---- Formatting parameters ----
-  var efmt:  string = "%26.16E",
-      ifmt:  string = "%5i",
-      sfmt:  string = "%20s",
-      linelabel: string;
-
-
-  //---- Names of output files ----
-  var frame_string:          string = format("%04i", frame_number),
-      name_of_time_file:     string = "_output/fort.t" + frame_string,
-      name_of_solution_file: string = "_output/fort.q" + frame_string;
-
-
-  //---- Write time file ----
-  var outfile = new file(name_of_time_file, FileAccessMode.write);
-  outfile.open();
-  outfile.writeln( format(efmt, q.time),    "    time");
-  outfile.writeln( format(ifmt, meqn),      "                 meqn");
-  outfile.writeln( format(ifmt, ngrids),    "                 ngrids");
-  outfile.writeln( format(ifmt, maux),      "                 naux");
-  outfile.writeln( format(ifmt, dimension), "                 ndim");
-  outfile.writeln("");
-  outfile.writeln("");
-  outfile.close();
-  delete outfile;
-
-
-  //---> Write solution file --->
-  //---------------------------->
-  outfile = new file(name_of_solution_file, FileAccessMode.write);
-  outfile.open();
-  outfile.writeln( format(ifmt, grid_number), "                 grid_number");
-  outfile.writeln( format(ifmt, AMR_level),   "                 AMR_level");
-
-
-  //---- Write n_cells ----
-  for d in dimensions do {
-    select d {
-      when 1 do linelabel = "                 mx";
-      when 2 do linelabel = "                 my";
-      when 3 do linelabel = "                 mz";
-      otherwise linelabel = "                 mx(" + format("%1i",d) + ")";
-    }
-    outfile.writeln( format(ifmt, n_cells(d)),  linelabel);
-  }
-
-
-  //---- Write x_low ----
-  for d in dimensions do {
-    select d {
-      when 1 do linelabel = "    xlow";
-      when 2 do linelabel = "    ylow";
-      when 3 do linelabel = "    zlow";
-      otherwise linelabel = "    xlow(" + format("%1i",d) + ")";
-    }
-    outfile.writeln( format(efmt, x_low(d)),  linelabel);
-  }
-
-
-  //---- Write dx ----
-  for d in dimensions do {
-    select d {
-      when 1 do linelabel = "    dx";
-      when 2 do linelabel = "    dy";
-      when 3 do linelabel = "    dz";
-      otherwise linelabel = "    dx(" + format("%1i",d) + ")";
-    }
-    outfile.writeln( format(efmt, dx(d)),  linelabel);
-  }
-  outfile.writeln("");
-
-
-  //===> Write solution values ===>
-  if dimension == 1 then {
-    for cell in cells do
-      outfile.writeln(format(efmt, q.value(cell)));
-  }
-  else {
-    //------------------------------------------------------------
-    //---- Transpose cells; iterating over the transpose
-    //---- in row major order achieves column major order on the
-    //---- original domain. 
-    //------------------------------------------------------------
-    var range_tuple: dimension*range(stridable=true);
-    [d in dimensions]
-      range_tuple(d) = cells.dim(1 + dimension - d);
-
-    var cells_transposed: domain(dimension, stridable=true);
-    cells_transposed = [(...range_tuple)];
-
-    //---- Write values ----
-    var cell: dimension*int;
-    for cell_transposed in cells_transposed do {
-      [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
-      outfile.writeln(format(efmt, q.value(cell)));
-      for d in dimensions do {
-        if cell(d) == cells.dim(d).high then
-          outfile.writeln("  ");
-        else
-          break;
-      }
-    }
-  }
-  //<=== Write solution values <===
-
-
-  //---- Finish up ----
-  outfile.close();
-  delete outfile;
-  //<----------------------------
-  //<--- Write solution file <---
-
-}
-//<=================================================
-//<=== Output a GridFunction in Clawpack format <===
-
-
+//<=== writeSolution method <===
+//<=============================
 
 
 //<=======================================================
