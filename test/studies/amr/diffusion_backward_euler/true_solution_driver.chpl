@@ -10,6 +10,26 @@
 use diffusion_backward_euler_defs;
 
 
+class Gaussian: TrueSolution {
+
+  const pi = 4.0*atan(1.0);
+  var diffusivity = 0.1;
+  var t0 = 0.1;
+
+  def qTrue(x: dimension*real, t: real) {
+
+    //==== Calculate norm squared of x ====
+    var norm_squared_x = 0.0;
+    for d in dimensions do norm_squared_x += x(d)**2;
+
+    return (4.0 * pi * diffusivity * (t + t0))**(-dimension:real / 2.0)
+      * exp(-norm_squared_x / (4.0 * diffusivity * (t + t0)));
+
+  }
+
+}
+
+
 
 def main {
 
@@ -32,11 +52,11 @@ def main {
   else N = 50;
 
   for d in dimensions do {
-    x_low(d)         = -1.0;
-    x_high(d)        = 1.0;
+    x_low(d)         = -0.1*d;
+    x_high(d)        = x_low(d) + 1.0;
     i_low(d)         = 0;
     n_cells(d)       = N;
-    n_ghost_cells(d) = 2;
+    n_ghost_cells(d) = 1;
   }
 
   var G = new RectangularGrid(x_low         = x_low,
@@ -48,21 +68,22 @@ def main {
 
 
 
-  //==== Initialize boundary conditions ====
-  var bc = new PeriodicGridBC(grid = G);
+  //===> Initialize boundary conditions ===>
+  var true_solution = new Gaussian(diffusivity = diffusivity,
+				   t0 = 0.6);
+
+  var bc = new TrueSolutionDirichletGridBC(grid          = G,
+					   true_solution = true_solution);
+  //<=== Initialize boundary conditions <===
 
 
 
-  //===> Initialize solution ===>
-  def initial_condition (x: dimension*real) {
-    var f: real = 1.0;
-    for d in dimensions do
-      f *= exp(-30*(x(d)+0.5)**2);
-    return f;
+  //==== Initialize solution ====
+  var q = new GridSolution(grid = G);
+  forall precell in G.cells {
+    var cell = tuplify(precell);
+    q.value(cell) = true_solution.qTrue(G.xValue(cell), 0.0);
   }
-
-  var q = G.initializeGridSolution(initial_condition);
-  //<=== Initialize  solution <===
 
 
 

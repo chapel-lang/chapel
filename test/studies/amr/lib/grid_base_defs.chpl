@@ -32,18 +32,18 @@ class RectangularGrid {
       high_ghost_cells: [dimensions] subdomain(ext_cells);
 
 
-  //===> initialize() method ===>
+  //===> initialize method ===>
   def initialize() {
 
     sanityChecks();
 
     setDerivedFields();
   }
-  //<=== initialize() method <===
+  //<=== initialize method <===
 
 
 
-  //===> sanityChecks() method ===>
+  //===> sanityChecks method ===>
   def sanityChecks() {
     var d_string: string;
     for d in dimensions do {
@@ -59,11 +59,11 @@ class RectangularGrid {
 	     "error: RectangularGrid: n_ghost_cells(" + d_string + ") must be positive.");
     }
   }
-  //<=== sanityChecks() method <===
+  //<=== sanityChecks method <===
 
 
 
-  //===> setDerivedFields() method ===>
+  //===> setDerivedFields method ===>
   //--------------------------------------------------------------
   // After x_low, x_high, n_cells, and n_ghost_cells have
   // been provided, calculate:
@@ -112,7 +112,7 @@ class RectangularGrid {
     //<=== Ghost cells <===     
 
   }
-  //<=== setDerivedFields() method <===
+  //<=== setDerivedFields method <===
   
  
 }
@@ -251,7 +251,7 @@ class PeriodicGridBC: GridBC {
   var high_ghost_periodic: [dimensions] subdomain(grid.ext_cells);
 
 
-  //===> initialize() method ===>
+  //===> initialize method ===>
   //============================>
   def initialize() {
 
@@ -271,7 +271,7 @@ class PeriodicGridBC: GridBC {
 
   }
   //<============================
-  //<=== initialize() method <===
+  //<=== initialize method <===
 
 
 
@@ -310,9 +310,9 @@ class PeriodicGridBC: GridBC {
 
 
 
-//===> ConstantDirichletGridBC class ===>
-//======================================>
-class ConstantDirichletGridBC: GridBC {
+//===> ZeroOrderExtrapolationGridBC class ===>
+//===========================================>
+class ZeroOrderExtrapolationGridBC: GridBC {
 
 
   //===> ghostFill method ===>
@@ -355,6 +355,100 @@ class ConstantDirichletGridBC: GridBC {
 }
 //<======================================
 //<=== ConstantDirichletGridBC class <===
+
+
+
+
+
+
+class TrueSolution {
+
+  def qTrue(x: dimension*real, t: real) {
+    return 0.0;
+  }
+
+}
+
+
+//===> TrueSolutionDirichletGridBC class ===>
+//==========================================>
+//----------------------------------------------------------------
+// Provides Dirichlet boundary conditions corresponding to method
+// qTrue.  Derive this class to define qTrue.
+//----------------------------------------------------------------
+class TrueSolutionDirichletGridBC: GridBC {
+
+  var true_solution: TrueSolution;
+
+  //===> ghostFill method ===>
+  //=========================>
+  def ghostFill(q: GridSolution) {
+    
+    for d in dimensions {
+
+      forall precell in grid.low_ghost_cells(d) {
+	var cell = tuplify(precell);
+	q.value(cell) = true_solution.qTrue(grid.xValue(cell), q.time);
+      }
+
+      forall precell in grid.high_ghost_cells(d) {
+	var cell = tuplify(precell);
+	q.value(cell) = true_solution.qTrue(grid.xValue(cell), q.time);
+      }
+    }
+
+  }
+  //<=========================
+  //<=== ghostFill method <===
+
+
+  //===> homogeneousGhostFill method ===>
+  //====================================>
+  //-------------------------------------------------------------------
+  // For homogeneous Dirichlet BCs.  Each ghost cell in the layer
+  // nearest the boundary is filled by reflecting the nearest interior
+  // value about zero.  This corresponds to linear extrapolation
+  // using that interior value, and a value of zero on the boundary.
+  //-------------------------------------------------------------------
+  def homogeneousGhostFill(q: GridSolution) {
+
+    for d in dimensions {
+
+      //==== For shifting cell indices ====
+      var cell_shift: dimension*int;
+      cell_shift(d) = 2;
+
+      //==== Low ghost cells ====
+      forall cell_pretuple in grid.low_ghost_cells(d) {
+	var cell = tuplify(cell_pretuple);
+	if cell(d) == grid.i_low(d)-1 then
+	  q.value(cell) = -q.value(cell + cell_shift);
+      }
+
+      //==== High ghost cells ====
+      forall cell_pretuple in grid.high_ghost_cells(d) {
+	var cell = tuplify(cell_pretuple);
+	if cell(d) == grid.i_high(d)+1 then
+	  q.value(cell) = -q.value(cell - cell_shift);
+      }
+
+    }
+
+  }
+  //<====================================
+  //<=== homogeneousGhostFill method <===
+
+
+  //===> qTrue method ===>
+  //=====================>
+  def qTrue(x: dimension*real, t: real) {
+    return 0.0;
+  }
+
+
+}
+//<==========================================
+//<=== TrueSolutionDirichletGridBC class <===
 
 
 //<============================================================
@@ -563,3 +657,29 @@ def RectangularGrid.writeSolution(q:           GridSolution,
 //<=======================================================
 //<=================== OUTPUT METHODS ====================
 //<=======================================================
+
+
+
+
+
+
+
+
+//==============================================>
+//==================== OTHER ===================>
+//==============================================>
+
+
+//===> Fix for the 1D/tuple problem ===>
+def tuplify(idx) {
+  if isTuple(idx) then
+    return idx;
+  else
+    return tuple(idx);
+}
+//<=== Fix for the 1D/tuple problem <===
+
+
+//<==============================================
+//<=================== OTHER ====================
+//<==============================================

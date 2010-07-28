@@ -44,8 +44,9 @@ def RectangularGrid.advanceDiffusionBE(q:              GridSolution,
     //==== Form rhs for conjugate gradients ====
     q.time += dt_used;  // Use boundary data at t+dt to set flux divergence
     bc.ghostFill(q);
-    rhs = -dt_used * fluxDivergence(q, diffusivity);
-    // writeln("rhs formed");
+    fluxDivergence(rhs,  q, diffusivity);
+    rhs *= -dt_used;
+
 
 
     //==== Update solution ====
@@ -66,50 +67,42 @@ def RectangularGrid.advanceDiffusionBE(q:              GridSolution,
 //===> fluxDivergence method ===>
 //===============================>
 //-----------------------------------------------------------
-// Calculates the flux divergence of q, and returns an array
-// of values on [cells].  Ghost cells must be filled BEFORE
-// CALLING THIS ROUTINE.  Rationale: calculating the flux
-// divergence requires the specification of boundary data,
-// which is done through ghost cells.
-//----------------------------------------------------------
-def RectangularGrid.fluxDivergence(q:           GridSolution,
+// Calculates the flux divergence of q.  Note that the ghost
+// cells of q must be filled beforehand, as in general this
+// may need to be done using either bc.ghostFill or
+// bc.homogeneousGhostFill.
+//-----------------------------------------------------------
+def RectangularGrid.fluxDivergence(flux_div:    [cells] real,
+				   q:           GridSolution,
 				   diffusivity: real
 				  ){
 
-  //writeln("fluxDivergence called");
-
-  var flux_divergence: [cells] real;  // initializes to 0
-
-
-  //===> Compute operator ===>
   forall cell_pretuple in cells {
 
-    //===> If dimension==1, the cell index must be tuple-ized ===>
-    var cell: dimension*int;
-    if cell_pretuple.type == int then
-      cell(1) = cell_pretuple;
-    else
-      cell = cell_pretuple;
-    //<=== If dimension==1, the cell index must be tuple-ized <===
+    //==== 1D/tuple fix ====
+    var cell = tuplify(cell_pretuple);
+
+
+    //==== Initialize to zero ====
+    flux_div(cell) = 0.0;
 
     
     //==== Apply contribution in each dimension ====
     for d in dimensions {
       var cell_shift: dimension*int; // initializes to 0
       cell_shift(d) = 2;
-      flux_divergence(cell) += (     -q.value(cell-cell_shift) 
-				+ 2.0*q.value(cell) 
-				-     q.value(cell+cell_shift)
-			       ) / dx(d)**2;
+      flux_div(cell) += (     -q.value(cell-cell_shift) 
+			 + 2.0*q.value(cell) 
+			 -     q.value(cell+cell_shift)
+			) / dx(d)**2;
     }
 
   }
 
-  flux_divergence *= diffusivity;
-  //<=== Compute operator <===
 
+  //==== Finish by multiplying the whole array by diffusivity ====
+  flux_div *= diffusivity;
 
-  return flux_divergence;
 
 }
 //<==============================
@@ -125,14 +118,14 @@ def RectangularGrid.fluxDivergence(q:           GridSolution,
 //
 // As with FluxDivergence, ghost cells must be filled beforehand.
 //----------------------------------------------------------------
-def RectangularGrid.backwardEulerOperator(q:           GridSolution,
+def RectangularGrid.backwardEulerOperator(Lq:          [cells] real,
+					  q:           GridSolution,
                                           diffusivity: real,
                                           dt:          real
 					 ) {
-  
-  var Lq: [cells] real;
-  Lq = q.value(cells) + dt * fluxDivergence(q, diffusivity);
-  return Lq;
+
+  fluxDivergence(Lq,  q, diffusivity);
+  Lq = q.value(cells) + dt * Lq;
 
 }
 //<==========================================
@@ -161,11 +154,13 @@ def RectangularGrid.conjugateGradient(dq:          GridSolution,
 
   //==== Initialize residual ====
   //------------------------------------------------------------
-  // residual = rhs - (solution + dt*flux_divergence(dq))
+  // residual = rhs - (dq + dt*flux_divergence(dq))
   //------------------------------------------------------------
-  bc.homogeneousGhostFill(dq);
   var residual: [cells] real;
-  residual = rhs - backwardEulerOperator(dq, diffusivity, dt);
+
+  bc.homogeneousGhostFill(dq);
+  backwardEulerOperator(residual,  dq, diffusivity, dt);
+  residual = rhs - residual;
 
 
   //==== Initialize search direction ====
@@ -175,7 +170,6 @@ def RectangularGrid.conjugateGradient(dq:          GridSolution,
   // ghost fill.  Perhaps the flux divergence could take the cell
   // filler as an argument?
   //--------------------------------------------------------------
-  // writeln("Initializing search direction");
   var search_dir = new GridSolution(grid = this);
   search_dir.value(cells) = residual;
 
@@ -184,13 +178,12 @@ def RectangularGrid.conjugateGradient(dq:          GridSolution,
   //-------------------------------------------
   // Initializes to Operator(search_dir)
   //-------------------------------------------
-  // writeln("Initializing residual update direction");
+  var residual_update_dir: [cells] real;
   bc.homogeneousGhostFill(search_dir);
-  var residual_update_dir = backwardEulerOperator(search_dir, diffusivity, dt);
+  backwardEulerOperator(residual_update_dir,  search_dir, diffusivity, dt);
 
 
   //==== Initialize scalars ====
-  // writeln("Initializing scalars");
   var residual_norm = +reduce(residual*residual);
   var alpha, beta, residual_norm_old: real;
   
@@ -199,7 +192,6 @@ def RectangularGrid.conjugateGradient(dq:          GridSolution,
   for iter in [1..maxiter] {
  
     //==== Update the solution and residual ====
-    // writeln("Updating solution and residual");
     alpha = +reduce( residual * residual )  
              / +reduce( residual_update_dir * search_dir.value(cells) );
  
@@ -217,12 +209,11 @@ def RectangularGrid.conjugateGradient(dq:          GridSolution,
 
 
     //==== Update directions for search and residual update ====
-    // writeln("Updating directions");
     beta                      = residual_norm / residual_norm_old;
     search_dir.value(cells)   = residual + beta * search_dir.value(cells);
 
     bc.homogeneousGhostFill(search_dir);
-    residual_update_dir = backwardEulerOperator(search_dir, diffusivity, dt);
+    backwardEulerOperator(residual_update_dir,  search_dir, diffusivity, dt);
     
   }
   //<=== CG iteration <===

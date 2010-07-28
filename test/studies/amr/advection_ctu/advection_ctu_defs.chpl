@@ -61,25 +61,18 @@ def RectangularGrid.AdvanceAdvectionCTU(q:              GridSolution,
     //===> Update solution on each cell ===>
     forall cell_pretuple in cells {
 
-      //===> If dimension==1, the cell index must be tuple-ized ===>
-      var cell: dimension*int;
-      if cell_pretuple.type == int then
-        cell(1) = cell_pretuple;
-      else
-        cell = cell_pretuple;
-      //<=== If dimension==1, the cell index must be tuple-ized <===
+      //==== 1D/tuple fix ====
+      var cell = tuplify(cell_pretuple);
+
 
       new_value(cell) = 0.0;
       var volume_fraction: real;
       var upwind_cell: dimension*int;
       for alignment_pretuple in alignments {
-        //===> If dimension==1, the alignment must be tuple-ized ===>
-        var alignment: dimension*int;
-        if alignment_pretuple.type == int then
-          alignment = tuple(alignment_pretuple);
-        else
-          alignment = alignment_pretuple;
-        //<=== If dimension==1, the alignment must be tuple-ized <===
+
+	//==== 1D/tuple fix ====
+	var alignment = tuplify(alignment_pretuple);
+
         
         volume_fraction = 1.0;
         for d in dimensions {
