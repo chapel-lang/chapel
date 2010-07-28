@@ -7,6 +7,10 @@ my $machine = $ARGV[3];
 my $html_file = "$outputdir/index.html";
 my $image_files = "$outputdir/images.tmp";
 my $currentdir_file = "$outputdir/dir.tmp";
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
+
+$mon += 1;
+$year -= 100;
 
 system("pwd > $currentdir_file");
 open CURRENTDIR, "$currentdir_file" or die "can't open $currentdir_file $!";
@@ -28,15 +32,20 @@ foreach my $image (@images) {
 }
 
 if ($commonperfdir eq "no") {
+    if (-e $html_file) {
+	system("rm $html_file");
+    } 
     open HTML, ">$html_file" or die "can't open $html_file for creating $!";
     print HTML "<html>\n";
     print HTML "<body>\n";
+    print HTML "<p>Performance Graphs as of $mon/$mday/$year</p>\n";
     &appendImageList;
     print HTML "</body>\n";
     print HTML "</html>\n";
     close (HTML);
 } else {
     open HTML, ">>$html_file" or die "can't open $html_file for appending $!";
+    print HTML "<p>Performance Graphs as of $mon/$mday/$year</p>\n";
     &appendImageList;
 }
 

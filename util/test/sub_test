@@ -390,10 +390,10 @@ if os.getenv('CHPL_TEST_PERF')!=None:
     execoptssuffix='.perfexecopts'
     perftest=True
     searchperfdir='./perfdat/'+machine
-    if os.getenv('CHPL_TEST_PERF_DIR')!=None:
+    if (len(os.getenv('CHPL_TEST_PERF_DIR'))!=0):
         perfdir=os.getenv('CHPL_TEST_PERF_DIR')
     else:
-        perfdir=os.getenv('CHPL_TEST_PERF_DIR', './perfdat/'+machine)
+        perfdir='./perfdat/'+machine
 else:
     compoptssuffix='.compopts'
     execoptssuffix='.execopts'
@@ -962,11 +962,12 @@ for testname in testsrc:
                 sys.stdout.write(']\n')
 
             else:
-                if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
-                    os.makedirs(perfdir)
-                if not os.access(perfdir, os.R_OK|os.X_OK):
-                    sys.stdout.write('[Error creating performance test directory %s]\n'%(perfdir))
-                    break # on to next compopts
+		if ((len(os.getenv('CHPL_TEST_PERF_DIR')))!=0):
+                    if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
+                        os.makedirs(perfdir)
+                    if not os.access(perfdir, os.R_OK|os.X_OK):
+                        sys.stdout.write('[Error creating performance test directory %s]\n'%(perfdir))
+                        break # on to next compopts
 
                 if execcheckfile==None:
                     perfexecname = execname
@@ -978,29 +979,49 @@ for testname in testsrc:
                     else:
                         keyfile = execname+'.perfkeys'
 
-                sys.stdout.write('[Executing computePerfStats %s %s %s %s]\n'%(perfexecname, perfdir, keyfile, execlog))
-                sys.stdout.flush()
+		duplicates = 0
+		
+		chpl_test_perf_dir = os.getenv('CHPL_TEST_PERF_DIR')
+		sys.stdout.write('[Executing checkDuplicates %s %s %s %s]\n'%(perfexecname, perfdir, testdir, chpl_test_perf_dir))
+		sys.stdout.flush()
 
-                p = subprocess.Popen([utildir+'/computePerfStats',
-                                      perfexecname, perfdir, keyfile, execlog],
-                                     stdout=subprocess.PIPE)
-                sys.stdout.write('%s'%(p.communicate()[0]))
-                sys.stdout.flush()
+ 		if os.path.isfile(utildir+'/checkDuplicates'):
+   	    	    p = subprocess.Popen([utildir+'/checkDuplicates', perfexecname, perfdir, testdir, chpl_test_perf_dir],stdout=subprocess.PIPE)
+   	    	    sys.stdout.write('%s'%(p.communicate()[0]))
+   	    	    sys.stdout.flush()
+		else:
+	    	    sys.stdout.write('cannot find checkDuplicates\n')
 
-                status = p.returncode
+  		duplicates = p.returncode
+  
 
-                if status == 0:
-                    sys.stdout.write('[Success')
-                else:
-                    sys.stdout.write('[Error')
-                sys.stdout.write(' matching performance keys for %s/%s'%
-                                 (localdir, execname))
-                if status!=0 and not onlyone:
-                    sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                     (' '.join(globalExecopts), execopts,
-                                      ' '.join(globalCompopts),compopts,
-                                      compoptsnum, execoptsnum))
-                sys.stdout.write(']\n')
+		if duplicates==0:
+	    	    sys.stdout.write('[No duplicates found for %s]\n'%(perfexecname))
+                    sys.stdout.write('[Executing computePerfStats %s %s %s %s]\n'%(perfexecname, perfdir, keyfile, execlog))
+                    sys.stdout.flush()
+
+                    p = subprocess.Popen([utildir+'/computePerfStats',
+                                          perfexecname, perfdir, keyfile, execlog],
+                                         stdout=subprocess.PIPE)
+                    sys.stdout.write('%s'%(p.communicate()[0]))
+                    sys.stdout.flush()
+
+                    status = p.returncode
+
+                    if status == 0:
+                        sys.stdout.write('[Success')
+                    else:
+                        sys.stdout.write('[Error')
+                    sys.stdout.write(' matching performance keys for %s/%s'%
+                                     (localdir, execname))
+                    if status!=0 and not onlyone:
+                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                         (' '.join(globalExecopts), execopts,
+                                          ' '.join(globalCompopts),compopts,
+                                          compoptsnum, execoptsnum))
+                    sys.stdout.write(']\n')
+        	else:
+ 	    	    sys.stdout.write('[Duplicates found.  Will not execute computePerfStats on %s]\n'%(perfexecname))
 
         cleanup(execname)
 
@@ -1030,15 +1051,15 @@ if perftest:
  	    sys.stdout.write('[Error')
         sys.stdout.write(' creating graphs in %s]\n'%(testdir+'/'+localdir))
 
-    if os.getenv('CHPL_TEST_PERF_DIR')==None:
-	commonperfdir = "no";
+    if ((len(os.getenv('CHPL_TEST_PERF_DIR')))!=0):
+	commonperfdir = "yes";
     else:
-  	commonperfdir = "yes";
+  	commonperfdir = "no";
 
     if os.path.isfile(utildir+'/viewGraphs'):
         sys.stdout.write('[Executing %s/viewGraphs in %s]\n'%(utildir, testdir+'/'+localdir))
         sys.stdout.flush()
-
+	
 	p = subprocess.Popen([utildir+'/viewGraphs', commonperfdir, perfdir, searchperfdir, machine],stdout=subprocess.PIPE)
 	sys.stdout.write('%s'%(p.communicate()[0]))
 	sys.stdout.flush()
