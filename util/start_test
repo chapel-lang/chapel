@@ -892,6 +892,15 @@ foreach absdir ($absdirs)
         set dirs = (./)
     endif
 
+    if ($?CHPL_TEST_PERF_DIR != 0) then
+	if (-e $CHPL_TEST_PERF_DIR/index.html) then
+	    rm $CHPL_TEST_PERF_DIR/index.html
+        endif
+	touch $CHPL_TEST_PERF_DIR/index.html
+        echo '<html>' >> $CHPL_TEST_PERF_DIR/index.html
+    	echo '<body>' >> $CHPL_TEST_PERF_DIR/index.html	
+    endif   
+ 
     foreach dir ($dirs)
         cd $basedir
 	if ( -x $dir ) then
@@ -945,6 +954,11 @@ foreach absdir ($absdirs)
 	    echo \["No tests in directory " $dir\] |& $tee -a $logfile
 	endif
     end
+
+    if ($?CHPL_TEST_PERF_DIR != 0) then
+	echo '</body>' >> $CHPL_TEST_PERF_DIR/index.html
+	echo '</html>' >> $CHPL_TEST_PERF_DIR/index.html	
+    endif   
 end
 
 # return to where we started

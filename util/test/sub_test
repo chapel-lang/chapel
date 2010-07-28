@@ -153,13 +153,6 @@ def IsGraphFile(f):
     else:
 	return False
 
-# return True if f has .view extention
-def IsViewFile(f):
-    if ((f.count('.') !=0) and (len(f) > 6) and (len(f)-f.find('.view')==5)):
-	return True
-    else:
-	return False
-
 # read file with comments
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
     # sys.stdout.write('Opening: %s\n'%(f))
@@ -396,7 +389,11 @@ if os.getenv('CHPL_TEST_PERF')!=None:
     compoptssuffix='.perfcompopts'
     execoptssuffix='.perfexecopts'
     perftest=True
-    perfdir=os.getenv('CHPL_TEST_PERF_DIR', './perfdat/'+machine)
+    searchperfdir='./perfdat/'+machine
+    if os.getenv('CHPL_TEST_PERF_DIR')!=None:
+        perfdir=os.getenv('CHPL_TEST_PERF_DIR')
+    else:
+        perfdir=os.getenv('CHPL_TEST_PERF_DIR', './perfdat/'+machine)
 else:
     compoptssuffix='.compopts'
     execoptssuffix='.execopts'
@@ -466,7 +463,6 @@ else:
     testsrc.append(onetestsrc)
 
 graphfiles=filter(IsGraphFile, dirlist)
-viewfiles=filter(IsViewFile, dirlist)
 
 for testname in testsrc:
     sys.stdout.flush()
@@ -1034,25 +1030,28 @@ if perftest:
  	    sys.stdout.write('[Error')
         sys.stdout.write(' creating graphs in %s]\n'%(testdir+'/'+localdir))
 
-    for viewfile in viewfiles:
-	sys.stdout.write('[Executing %s/viewGraphs for %s in %s]\n'%(utildir, viewfile, testdir+'/'+localdir))
+    if os.getenv('CHPL_TEST_PERF_DIR')==None:
+	commonperfdir = "no";
+    else:
+  	commonperfdir = "yes";
+
+    if os.path.isfile(utildir+'/viewGraphs'):
+        sys.stdout.write('[Executing %s/viewGraphs in %s]\n'%(utildir, testdir+'/'+localdir))
+        sys.stdout.flush()
+
+	p = subprocess.Popen([utildir+'/viewGraphs', commonperfdir, perfdir, searchperfdir, machine],stdout=subprocess.PIPE)
+	sys.stdout.write('%s'%(p.communicate()[0]))
 	sys.stdout.flush()
+    else:
+	sys.stdout.write('[cannot find viewGraphs]\n')
 
-	if os.path.isfile(utildir+'/viewGraphs'):
-	    p = subprocess.Popen([utildir+'/viewGraphs', viewfile, perfdir],stdout=subprocess.PIPE)
-	    sys.stdout.write('%s'%(p.communicate()[0]))
-	    sys.stdout.flush()
-        else:
-	    sys.stdout.write('cannot find viewGraphs\n')
+    status = p.returncode
 
-        status = p.returncode
-
-	if status==0:
-	    sys.stdout.write('[Success')
-	else:
-	    sys.stdout.write('[Error')
-	sys.stdout.write(' creating html for %s]\n'%(viewfile))
+    if status==0:
+	sys.stdout.write('[Success')
+    else:
+	sys.stdout.write('[Error')
+    sys.stdout.write(' creating html in %s]\n'%(testdir+'/'+localdir))
 
 
 del graphfiles
-del viewfiles

@@ -1,34 +1,51 @@
 #!/usr/bin/env perl
 
-print "***** in viewGraphs *****\n";
-
-my $view_file = $ARGV[0];
+my $commonperfdir = $ARGV[0];
 my $outputdir = $ARGV[1];
-my $root = substr $view_file, 0, -5;
-my $html_file = "$outputdir/$root.html";
+my $searchperfdir = $ARGV[2];
+my $machine = $ARGV[3];
+my $html_file = "$outputdir/index.html";
+my $image_files = "$outputdir/images.tmp";
+my $currentdir_file = "$outputdir/dir.tmp";
 
+system("pwd > $currentdir_file");
+open CURRENTDIR, "$currentdir_file" or die "can't open $currentdir_file $!";
+my $currentdir = <CURRENTDIR>;
+chomp($currentdir);
+close (CURRENTDIR);
+system ("rm $currentdir_file");
 
-print "view_file is $view_file\n";
-print "outputdir is $outputdir\n";
-print "html_file is $html_file\n";
-
-open IMAGES, "$view_file" or die "can't open $view_file $!";
+system("find ./perfdat/$machine -name \*.gif > $image_files");
+open IMAGES, "$image_files" or die "can't open $image_files $!";
 my @images = <IMAGES>;
-close (IMAGES);
+close(IMAGES);
+system("rm $image_files");
+
+
 foreach my $image (@images) {
-    chomp($image);
+    my @image_parts = split(/\//, $image);
+    $image = @image_parts[$#image_parts];
 }
 
-open HTML, ">$html_file" or die "can't open $html_file for creating $!";
-print HTML "<html>\n";
-print HTML "<body>\n";
-
-my $i = 1;
-foreach my $image (@images) {
-    print HTML "<h$i>$image</h$i>\n";
-    print HTML "<img src=\"$image\" width=\"150\" height=\"150\" />\n";
-    $i++;
+if ($commonperfdir eq "no") {
+    open HTML, ">$html_file" or die "can't open $html_file for creating $!";
+    print HTML "<html>\n";
+    print HTML "<body>\n";
+    &appendImageList;
+    print HTML "</body>\n";
+    print HTML "</html>\n";
+    close (HTML);
+} else {
+    open HTML, ">>$html_file" or die "can't open $html_file for appending $!";
+    &appendImageList;
 }
 
-print HTML "</body>\n";
-print HTML "</html>\n";
+sub appendImageList {
+    foreach my $image (@images) {
+        chomp($image);
+        print HTML "\n";
+        print HTML "<h4>$image</h4>\n";
+        print HTML "<img src=\"$image\" width=\"250\" height=\"150\" />\n";
+        print HTML "\n";
+    }
+}
