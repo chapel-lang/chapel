@@ -1,3 +1,0 @@
-bug: Returning a lambda-returning-lambda fails
-
-Since lambdas are first class values it should be possible to return a lambda which itself returns a lambda, but there is some issue with the type system and/or automatic wrapper class generation that prevents this.

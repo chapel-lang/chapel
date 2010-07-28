@@ -2375,7 +2375,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *paren
   }
 
   if (retType != dtVoid) {
-    VarSymbol *tmp = newTemp(); 
+    VarSymbol *tmp = newTemp(retType); 
     parent_method->insertAtTail(new DefExpr(tmp));
     parent_method->insertAtTail(new CallExpr(PRIM_MOVE, tmp, retType->defaultValue));
     parent_method->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
