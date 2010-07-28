@@ -44,8 +44,13 @@ sub appendImageList {
     foreach my $image (@images) {
         chomp($image);
         print HTML "\n";
-        print HTML "<h4>$image</h4>\n";
-        print HTML "<img src=\"$image\" width=\"250\" height=\"150\" />\n";
+        #print HTML "<h4>$image</h4>\n";
+	print HTML "<p>\n";
+	print HTML "$image: <a href=$image>\n";
+        print HTML "<img border=\"0\" alt=\"\" src=\"$image\" title=\"$image\" width=\"600\" />\n"; #height=\"150\" />\n";
+	print HTML "</a>\n";
+	print HTML "</p>\n";
         print HTML "\n";
     }
 }
+

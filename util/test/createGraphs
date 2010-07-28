@@ -97,22 +97,13 @@ my $errors_file = "$outputdir/$format_file_name.errors";
 my $fatal_errors = 0;
 my $custom = 0;  
 my $custom_start_date = 0;
-
-# if root of .graph matches a .chpl in same directory,
-# set defaults for making the .gif
 my $src_file = "$format_file_name.chpl";
 
-if (-e $src_file) {
-    &setDefaults;
-}
-
+# change name of processGraphFile and w/e it calls~~~~~
+# set defaults for making the .gif
 # continue on to process the format file and make the graphs
+&setDefaults;
 &processGraphFile;
-
-
-
-
-
 
 
 # auxilliary functions
@@ -174,22 +165,21 @@ sub getMinDate {
 
 # setting default arguments to makeGraph 
 sub setDefaults {
-    $graph_file_name = $format_file_name;
-    $graph_title = "$graph_name performance over time";
+    if (-e $src_file) {
+        $key_file = "$format_file_name.perfkeys";
+    
+        open KEYS, "$key_file" or die "can't open $key_file $!";
+        my @keys = <KEYS>;
+        close(KEYS);
+        foreach  my $key (@keys) {
+	    chomp($key);
+        }
+
+        @graph_keys = @keys;
+    } 
+    $graph_file_name = $format_file_name;	
+    $graph_title = "$graph_file_name performance over time";
     $graph_ylabel = "performance";
-    
-    $key_file = "$format_file_name.perfkeys";
-    
-    open KEYS, "$key_file" or die "can't open $key_file $!";
-    my @keys = <KEYS>;
-    close(KEYS);
-    foreach  my $key (@keys) {
-	chomp($key);
-    }
-
-    @graph_keys = @keys;
-
-    #$start_date = &getStartDate($data_file);
 }
 
 
@@ -284,7 +274,7 @@ sub makeGraph {
     open GNUPLOT_COMMANDS, ">$gpl_file" or die "can't open $gpl_file for creating $!";
 
     print GNUPLOT_COMMANDS "set terminal gif\n"; 
-    print GNUPLOT_COMMANDS "set size 1, 1\n"; # figure out how to adjust this setting to x-axis range?
+    print GNUPLOT_COMMANDS "set size ratio 0.33\n"; # figure out how to adjust this setting to x-axis range?
     print GNUPLOT_COMMANDS "set xdata time\n";
     print GNUPLOT_COMMANDS "set timefmt \"%m/%d/%y\"\n";
     print GNUPLOT_COMMANDS "set format x \"%m/%d/%y\"\n";
