@@ -4,7 +4,7 @@
 # Test a normal MTA compile + execute using boomer
 #
 #source ~/.chapelcshrc-mta-cron
-#$CHPL_HOME/test/cron/nightly -cron -examples
+#$CHPL_HOME/util/cron/nightly -cron -examples
 
 #
 # Test building the compiler using the MTA compiler, but not the
@@ -13,7 +13,7 @@
 #
 #setenv CHPL_HOST_PLATFORM $CHPL_TARGET_PLATFORM
 #unsetenv CHPL_TARGET_PLATFORM
-#$CHPL_HOME/test/cron/nightly -cron -noruntime
+#$CHPL_HOME/util/cron/nightly -cron -noruntime
 
 #
 # Test the XMT compiler using the zebra simulator
@@ -21,7 +21,7 @@
 source ~/.chapelcshrc-cron-xmt-sim
 
 # XMT cross-compile test
-$CHPL_HOME/test/cron/nightly -cron -examples
+$CHPL_HOME/util/cron/nightly -cron -examples
 
 #
 # Test building the compiler using the XMT compiler, as above
@@ -32,4 +32,4 @@ source ~/.chapelcshrc-cron-xmt
 # 
 setenv CHPL_HOST_PLATFORM $CHPL_TARGET_PLATFORM
 unsetenv CHPL_TARGET_PLATFORM
-$CHPL_HOME/test/cron/nightly -cron -noruntime
+$CHPL_HOME/util/cron/nightly -cron -noruntime
