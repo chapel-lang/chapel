@@ -80,12 +80,13 @@ class RectangularGrid {
 
 
     //==== i_high ====
-    [d in dimensions] i_high(d) = i_low(d) + 2*n_cells(d);
+    for d in dimensions do
+      i_high(d) = i_low(d) + 2*n_cells(d);
 
 
     //==== Physical cells ====
     var range_tuple: dimension*range(stridable = true);
-    [d in dimensions] 
+    for d in dimensions do
       range_tuple(d) = i_low(d)+1 .. i_low(d)+2*n_cells(d)-1 by 2;
     cells = [(...range_tuple)];
 
@@ -101,7 +102,7 @@ class RectangularGrid {
     // Note that all ghost cell domains contain the corners.
     //------------------------------------------------------
     for d in dimensions do {
-      [d_temp in dimensions] size(d_temp) = 0;
+      forall d_size in dimensions do size(d_size) = 0;
 
       size(d) = -(2*n_ghost_cells(d) - 1);
       low_ghost_cells(d) = ext_cells.interior(size);
@@ -136,7 +137,7 @@ def RectangularGrid.xValue (point_index: dimension*int) {
   }
   else {
     forall d in dimensions do
-    coord(d) = x_low(d) + (point_index(d) - i_low(d)) * dx(d)/2.0;
+      coord(d) = x_low(d) + (point_index(d) - i_low(d)) * dx(d)/2.0;
   }
 
   return coord;
@@ -194,20 +195,33 @@ def RectangularGrid.copyGridSolution(q: GridSolution) {
 // returns a GridSolution.  As support for first-class functions
 // develops, the input argument will become explicitly typed.
 //---------------------------------------------------------------
-def RectangularGrid.initializeGridSolution(initial_condition) {
-  var q = new GridSolution(this);
+def RectangularGrid.initializeGridSolution(initial_condition){
 
-  if dimension==1 then
-    forall cell in cells {
-      q.value(cell) = initial_condition(xValue(tuple(cell)));
-    }
-  else
-    forall cell in cells {
-      q.value(cell) = initial_condition(xValue(cell));
-    }
+  var q = new GridSolution(grid = this);
+
+  forall precell in cells {
+    var cell = tuplify(precell);
+    q.value(cell) = initial_condition(xValue(cell));
+  }
 
   return q;
 }
+
+
+//-------------------------------------------------------------------
+// A similar method that does this for a TrueSolution is convenient.
+//-------------------------------------------------------------------
+def RectangularGrid.initializeGridSolution(true_solution: TrueSolution) {
+  var q = new GridSolution(this);
+
+  forall precell in cells {
+    var cell = tuplify(precell);
+    q.value(cell) = true_solution.qTrue(xValue(cell), 0.0);
+  }
+
+  return q;
+}
+
 //<======================================
 //<=== initializeGridSolution method <===
 
@@ -231,6 +245,39 @@ def RectangularGrid.initializeGridSolution(initial_condition) {
 class GridBC {
 
   var grid: RectangularGrid;
+  var low_boundary_faces:  [dimensions] domain(dimension, stridable=true);
+  var high_boundary_faces: [dimensions] domain(dimension, stridable=true);
+  
+
+  //===> setBoundaryFaces method ===>
+  //================================>
+  //------------------------------------------------------
+  // Sets up domains for the low and high boundary faces.
+  //------------------------------------------------------
+  def setBoundaryFaces() {
+
+    var range_tuple: dimension*range(stridable=true);
+
+    for d in dimensions {
+
+      //==== All components except for d will equal grid.cells ====
+      for d_range in dimensions do
+	range_tuple(d_range) = grid.cells.dim(d_range);
+
+      //==== low boundary faces ====
+      range_tuple(d)        = grid.i_low(d) .. grid.i_low(d) by 2;
+      low_boundary_faces(d) = [(...range_tuple)];
+
+
+      //==== high_boundary_faces ====
+      range_tuple(d)         = grid.i_high(d) .. grid.i_high(d) by 2;
+      high_boundary_faces(d) = [(...range_tuple)];
+
+    }
+  }
+  //<================================
+  //<=== setBoundaryFaces method <===
+
 
   //==== Dummy routines; to be provided in derived classes ====
   def ghostFill(q: GridSolution){}
@@ -314,6 +361,15 @@ class PeriodicGridBC: GridBC {
 //===========================================>
 class ZeroOrderExtrapolationGridBC: GridBC {
 
+  //===> initialize method ===>
+  //==========================>
+  def intiialize() {
+    setBoundaryFaces();
+  }
+  //<==========================
+  //<=== initialize method <===
+
+
 
   //===> ghostFill method ===>
   //=========================>
@@ -374,8 +430,21 @@ class TrueSolutionDirichletGridBC: GridBC {
 
   var true_solution: TrueSolution;
 
+  
+  //===> initialize method ===>
+  //==========================>
+  def initialize() {
+    setBoundaryFaces();
+  }
+  //<=== initialize method <===
+  //<==========================
+
+
   //===> ghostFill method ===>
   //=========================>
+  //---------------------------------------------------
+  // Evaluates true_solution.qTrue on each ghost cell.
+  //---------------------------------------------------
   def ghostFill(q: GridSolution) {
     
     for d in dimensions {
@@ -399,34 +468,32 @@ class TrueSolutionDirichletGridBC: GridBC {
 
   //===> homogeneousGhostFill method ===>
   //====================================>
-  //-------------------------------------------------------------------
-  // For homogeneous Dirichlet BCs.  Each ghost cell in the layer
-  // nearest the boundary is filled by reflecting the nearest interior
-  // value about zero.  This corresponds to linear extrapolation
-  // using that interior value, and a value of zero on the boundary.
-  //-------------------------------------------------------------------
+  //------------------------------------------------------------
+  // For homogeneous Dirichlet BCs.  At each boundary face, the 
+  // nearest interior value is reflected about 0 to the nearest 
+  // ghost cell value.
+  //------------------------------------------------------------
   def homogeneousGhostFill(q: GridSolution) {
 
     for d in dimensions {
 
-      //==== For shifting cell indices ====
-      var cell_shift: dimension*int;
-      cell_shift(d) = 2;
+      //==== For shifting from a face to a cell ====
+      var shift: dimension*int;
+      shift(d) = 1;
 
-      //==== Low ghost cells ====
-      forall cell_pretuple in grid.low_ghost_cells(d) {
-        var cell = tuplify(cell_pretuple);
-        if cell(d) == grid.i_low(d)-1 then
-        q.value(cell) = -q.value(cell + cell_shift);
+      
+      //==== Low boundary ====
+      forall preface in low_boundary_faces(d) {
+	var face = tuplify(preface);
+	q.value(face - shift) = -q.value(face + shift);
       }
 
-      //==== High ghost cells ====
-      forall cell_pretuple in grid.high_ghost_cells(d) {
-        var cell = tuplify(cell_pretuple);
-        if cell(d) == grid.i_high(d)+1 then
-        q.value(cell) = -q.value(cell - cell_shift);
-      }
 
+      //==== High boundary ====
+      forall preface in high_boundary_faces(d) {
+	var face = tuplify(preface);
+	q.value(face + shift) = -q.value(face - shift);
+      }
     }
 
   }
@@ -439,51 +506,93 @@ class TrueSolutionDirichletGridBC: GridBC {
 
 
 
-// //===> TrueSolutionNeumannGridBC class ===>
-// //========================================>
-// class TrueSolutionNeumannGridBC: GridBC {
-// 
-//   var true_solution: TrueSolution;
-// 
-//   //===> ghostFill method ===>
-//   //=========================>
-//   def ghostFill(q: GridSolution) {
-//     
-//     for d in dimensions {
-// 
-//     }
-// 
-//   }
-//   //<=========================
-//   //<=== ghostFill method <===
-// 
-// 
-//   //===> homogeneousGhostFill method ===>
-//   //====================================>
-//   def homogeneousGhostFill(q: GridSolution) {
-// 
-//     for d in dimensions do {
-//       //==== Low ghost cells ====
-//       forall cell in grid.low_ghost_cells(d) {
-//         var target_cell = cell;
-//         target_cell(d)  = grid.cells.dim(d).low;
-//         q.value(cell)   = q.value(target_cell);
-//       }
-// 
-//       //==== High ghost cells ====
-//       forall cell in grid.high_ghost_cells(d) {
-//         var target_cell = cell;
-//         target_cell(d)  = grid.cells.dim(d).high;
-//         q.value(cell)   = q.value(target_cell);
-//       }
-//     }
-// 
-//   }
-//   //<====================================
-//   //<=== homogeneousGhostFill method <===
-// }
-// //<========================================
-// //<=== TrueSolutionNeumannGridBC class <===
+//===> TrueSolutionNeumannGridBC class ===>
+//========================================>
+class TrueSolutionNeumannGridBC: GridBC {
+
+  var true_solution: TrueSolution;
+
+
+  //===> initialize method ===>
+  //==========================>
+  def initialize() {
+    setBoundaryFaces();
+  }
+  //<=========================
+  //<=== intialize method <===
+
+
+
+  //===> ghostFill method ===>
+  //=========================>
+  def ghostFill(q: GridSolution) {
+
+    writeln("Start of ghostFill");
+    
+    for d in dimensions {
+
+      //==== dx in this dimension ====
+      var dx = grid.dx(d);
+
+      
+      //==== For shifting faces to cells ====
+      var shift: dimension*int;
+      shift(d) = 1;
+
+
+      //==== Low boundary ====
+      forall preface in low_boundary_faces(d) {
+	var face            = tuplify(preface);
+	var normal_flux     = -true_solution.fluxComponent(grid.xValue(face), q.time, d);
+	q.value(face-shift) = true_solution.normalFluxToGhost(normal_flux, 
+							      q.value(face+shift), 
+							      dx);
+      }
+
+
+      //==== High boundary ====
+      forall preface in high_boundary_faces(d) {
+	var face            = tuplify(preface);
+	var normal_flux     = true_solution.fluxComponent(grid.xValue(face), q.time, d);
+	q.value(face+shift) = true_solution.normalFluxToGhost(normal_flux,
+							      q.value(face-shift),
+							      dx);
+      }
+
+    }
+
+  }
+  //<=========================
+  //<=== ghostFill method <===
+
+
+
+  //===> homogeneousGhostFill method ===>
+  //====================================>
+  def homogeneousGhostFill(q: GridSolution) {
+
+    for d in dimensions do {
+      //==== Low ghost cells ====
+      forall cell in grid.low_ghost_cells(d) {
+        var target_cell = cell;
+        target_cell(d)  = grid.cells.dim(d).low;
+        q.value(cell)   = q.value(target_cell);
+      }
+
+      //==== High ghost cells ====
+      forall cell in grid.high_ghost_cells(d) {
+        var target_cell = cell;
+        target_cell(d)  = grid.cells.dim(d).high;
+        q.value(cell)   = q.value(target_cell);
+      }
+    }
+
+  }
+  //<====================================
+  //<=== homogeneousGhostFill method <===
+}
+//<========================================
+//<=== TrueSolutionNeumannGridBC class <===
 
 
 //<============================================================
@@ -718,12 +827,28 @@ def tuplify(idx) {
 
 //===> TrueSolution class ===>
 //===========================>
+//----------------------------------------------------------------------
+// Create a true solution to a PDE by deriving this class.  In general,
+// it will contain a few parameters in addition to the qTrue method.
+// (Hence, using a class is probably more suitable than a first-class
+// functin.)
+//----------------------------------------------------------------------
 class TrueSolution {
 
   def qTrue(x: dimension*real, t: real) {
     return 0.0;
   }
 
+  def fluxComponent(x: dimension*real, t: real, comp: int) {
+    return 0.0;
+  }
+
+  def normalFluxToGhost(flux: real,
+			inner_value: real,
+			dx: real
+		       ){
+    return 0.0;
+  }
 }
 //<===========================
 //<=== TrueSolution class <===

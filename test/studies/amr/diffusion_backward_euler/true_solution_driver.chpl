@@ -10,12 +10,18 @@
 use diffusion_backward_euler_defs;
 
 
+//===> Gaussian class ===>
+//=======================>
 class Gaussian: TrueSolution {
 
+  //==== Parameters ====
   const pi = 4.0*atan(1.0);
   var diffusivity = 0.1;
   var t0 = 0.1;
 
+
+  //===> qTrue method ===>
+  //=====================>
   def qTrue(x: dimension*real, t: real) {
 
     //==== Calculate norm squared of x ====
@@ -26,8 +32,37 @@ class Gaussian: TrueSolution {
       * exp(-norm_squared_x / (4.0 * diffusivity * (t + t0)));
 
   }
+  //<=====================
+  //<=== qTrue method <===
+
+
+  //===> fluxComponent method ===>
+  //=============================>
+  def fluxComponent(x: dimension*real, t: real, comp: int) {
+    var delta = 1.0e-4;
+    var shift: dimension*real;
+    shift(comp) = delta;
+    return -diffusivity * (qTrue(x+shift,t) - qTrue(x-shift,t))
+           / (2.0 * delta);
+  }
+  //<=============================
+  //<=== fluxComponent method <===
+
+
+  //===> normalFluxToGhost method ===>
+  //=================================>
+  def normalFluxToGhost(flux:        real,
+			inner_value: real,
+			dx:          real) {
+
+    return inner_value - dx/diffusivity * flux;
+  }
+  //<=================================
+  //<=== normalFluxToGhost method <===
 
 }
+//<=======================
+//<=== Gaussian class <===
 
 
 
@@ -72,25 +107,21 @@ def main {
   var true_solution = new Gaussian(diffusivity = diffusivity,
 				   t0 = 0.6);
 
-  var bc = new TrueSolutionDirichletGridBC(grid          = G,
-					   true_solution = true_solution);
+  var bc = new TrueSolutionNeumannGridBC(grid          = G,
+					 true_solution = true_solution);
   //<=== Initialize boundary conditions <===
 
 
 
   //==== Initialize solution ====
-  var q = new GridSolution(grid = G);
-  forall precell in G.cells {
-    var cell = tuplify(precell);
-    q.value(cell) = true_solution.qTrue(G.xValue(cell), 0.0);
-  }
+  var q = G.initializeGridSolution(true_solution);
 
 
 
   //===> Initialize output ===>
   var time_initial: real = 0.0,
-    time_final:     real = 1.0,
-    num_output:     int  = 20,
+    time_final:     real = 0.5,
+    num_output:     int  = 10,
     output_times:   [1..num_output] real,
     dt_output:      real = (time_final - time_initial) / num_output,
     frame_number:   int = 0;
