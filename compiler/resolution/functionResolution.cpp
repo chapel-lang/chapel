@@ -2319,7 +2319,10 @@ static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name
   TypeSymbol *parent_ts = new TypeSymbol(name, parent);
 
   parent_ts->addFlag(FLAG_FUNCTION_CLASS);
-  call->parentSymbol->defPoint->insertBefore(new DefExpr(parent_ts));
+
+  // Because this function type needs to be globally visible (because we don't know the modules it will be passed to), we put
+  // it at the highest scope
+  theProgram->block->body.insertAtTail(new DefExpr(parent_ts));
     
   parent->dispatchParents.add(dtObject);
   dtObject->dispatchChildren.add(parent);
@@ -2382,7 +2385,9 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *paren
     parent_method->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   }
 
-  call->parentSymbol->defPoint->insertBefore(new DefExpr(parent_method));
+  // Because this function type needs to be globally visible (because we don't know the modules it will be passed to), we put
+  // it at the highest scope
+  theProgram->block->body.insertAtTail(new DefExpr(parent_method));
     
   normalize(parent_method);
     
