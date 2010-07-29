@@ -119,30 +119,51 @@ class DefaultArithmeticDom: BaseArithmeticDom {
 
     if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
 
-    if numChunks == 1 {
-      if rank == 1 {
-	yield tuple(0..ranges(1).length-1);
+    if (CHPL_TARGET_PLATFORM != "xmt") {
+      if numChunks == 1 {
+        if rank == 1 {
+          yield tuple(0..ranges(1).length-1);
+        } else {
+          var block: rank*range(idxType);
+          for param i in 1..rank do
+            block(i) = 0..ranges(i).length-1;
+          yield block;
+        }
       } else {
-	var block: rank*range(idxType);
-	for param i in 1..rank do
-	  block(i) = 0..ranges(i).length-1;
-	yield block;
+        var locBlock: rank*range(idxType);
+        for param i in 1..rank do
+          locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
+        if debugDefaultDist then
+          writeln("*** DI: locBlock = ", locBlock);
+        coforall chunk in 0..numChunks-1 {
+          var tuple: rank*range(idxType) = locBlock;
+          const (lo,hi) = _computeBlock(locBlock(parDim).length,
+                                        numChunks, chunk,
+                                        locBlock(parDim).high);
+          tuple(parDim) = lo..hi;
+          if debugDefaultDist then
+            writeln("*** DI[", chunk, "]: tuple = ", tuple);
+          yield tuple;
+        }
       }
     } else {
+
+      var per_stream_i: uint(64) = 0;
+      var total_streams_n: uint(64) = 0;
+
       var locBlock: rank*range(idxType);
       for param i in 1..rank do
-	locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
-      if debugDefaultDist then
-	writeln("*** DI: locBlock = ", locBlock);
-      coforall chunk in 0..numChunks-1 {
-	var tuple: rank*range(idxType) = locBlock;
-	const (lo,hi) = _computeBlock(locBlock(parDim).length,
-                                      numChunks, chunk,
-                                      locBlock(parDim).high);
-	tuple(parDim) = lo..hi;
-        if debugDefaultDist then
-          writeln("*** DI[", chunk, "]: tuple = ", tuple);
-	yield tuple;
+        locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
+
+      __primitive_loop("xmt pragma forall i in n", per_stream_i,
+                       total_streams_n) {
+
+        var tuple: rank*range(idxType) = locBlock;
+        const (lo,hi) = _computeBlock(ranges(parDim).length,
+                                      total_streams_n, per_stream_i,
+                                      (ranges(parDim).length-1));
+        tuple(parDim) = lo..hi;
+        yield tuple;
       }
     }
   }
@@ -350,30 +371,52 @@ class DefaultArithmeticArr: BaseArr {
 
     if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
 
-    if numChunks == 1 {
-      if rank == 1 {
-	yield tuple(0..dom.ranges(1).length-1);
+    if (CHPL_TARGET_PLATFORM != "xmt") {
+
+      if numChunks == 1 {
+        if rank == 1 {
+          yield tuple(0..dom.ranges(1).length-1);
+        } else {
+          var block: rank*range(idxType);
+          for param i in 1..rank do
+            block(i) = 0..dom.ranges(i).length-1;
+          yield block;
+        }
       } else {
-	var block: rank*range(idxType);
-	for param i in 1..rank do
-	  block(i) = 0..dom.ranges(i).length-1;
-	yield block;
+        var locBlock: rank*range(idxType);
+        for param i in 1..rank do
+          locBlock(i) = 0:dom.ranges(i).low.type..#(dom.ranges(i).length);
+        if debugDefaultDist then
+          writeln("*** AI: locBlock = ", locBlock);
+        coforall chunk in 0..numChunks-1 {
+          var tuple: rank*range(idxType) = locBlock;
+          const (lo,hi) = _computeBlock(locBlock(parDim).length,
+                                        numChunks, chunk,
+                                        locBlock(parDim).high);
+          tuple(parDim) = lo..hi;
+          if debugDefaultDist then
+            writeln("*** AI[", chunk, "]: tuple = ", tuple);
+          yield tuple;
+        }
       }
     } else {
+
+      var per_stream_i: uint(64) = 0;
+      var total_streams_n: uint(64) = 0;
+
       var locBlock: rank*range(idxType);
       for param i in 1..rank do
-	locBlock(i) = 0:dom.ranges(i).low.type..#(dom.ranges(i).length);
-      if debugDefaultDist then
-	writeln("*** AI: locBlock = ", locBlock);
-      coforall chunk in 0..numChunks-1 {
-	var tuple: rank*range(idxType) = locBlock;
-	const (lo,hi) = _computeBlock(locBlock(parDim).length,
-                                      numChunks, chunk,
-                                      locBlock(parDim).high);
-	tuple(parDim) = lo..hi;
-	if debugDefaultDist then
-          writeln("*** AI[", chunk, "]: tuple = ", tuple);
-	yield tuple;
+        locBlock(i) = 0:dom.ranges(i).low.type..#(dom.ranges(i).length);
+
+      __primitive_loop("xmt pragma forall i in n", per_stream_i,
+                       total_streams_n) {
+
+        var tuple: rank*range(idxType) = locBlock;
+        const (lo,hi) = _computeBlock(dom.ranges(parDim).length,
+                                      total_streams_n, per_stream_i,
+                                      (dom.ranges(parDim).length-1));
+        tuple(parDim) = lo..hi;
+        yield tuple;
       }
     }
   }
