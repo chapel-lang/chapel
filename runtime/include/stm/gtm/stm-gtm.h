@@ -89,6 +89,7 @@ typedef struct __chpl_stm_tx_t {
   chpl_bool rollback;
   chpl_stm_tx_env_t env;     // stores program execution state
   memset_t* memset;          // tracks memory allocated / freed 
+  stats_t* counters;      // timers and counters
 } chpl_stm_tx_t;
 
 
@@ -116,12 +117,13 @@ static volatile gtm_word_t gclock;
 
 void gtm_tx_init(void);
 chpl_stm_tx_t* gtm_tx_create(int32_t txid, int32_t txlocale);
-void gtm_tx_cleanup(chpl_stm_tx_t* tx);
 void gtm_tx_destroy(chpl_stm_tx_t* tx);
+void gtm_tx_cleanup(chpl_stm_tx_t* tx);
 
 chpl_stm_tx_t* gtm_tx_comm_create(int32_t txid, int32_t txlocale, int32_t txstatus); 
 void gtm_tx_comm_register(chpl_stm_tx_t* tx, int32_t dstlocale); 
 void gtm_tx_comm_destroy(chpl_stm_tx_t* tx);
+void gtm_tx_comm_cleanup(chpl_stm_tx_t* tx);
 
 //
 // internal interface for transactional operations (purely local)
@@ -147,17 +149,5 @@ void gtm_tx_comm_abort(chpl_stm_tx_t* tx);
 int gtm_tx_comm_get(chpl_stm_tx_t* tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size);
 int gtm_tx_comm_put(chpl_stm_tx_t* tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size);
 int gtm_tx_comm_fork(chpl_stm_tx_t* tx, int32_t dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize);
-
-//
-// internal interface for memory management (purely local)
-//
-
-memset_t* gtm_tx_memset_create(chpl_stm_tx_t* tx);
-void gtm_tx_memset_destroy(chpl_stm_tx_t* tx);
-void gtm_tx_memset_cleanup(chpl_stm_tx_t* tx);
-void* gtm_tx_malloc(chpl_stm_tx_t* tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename);
-void gtm_tx_free(chpl_stm_tx_t* tx, void* addr, int32_t lineno, chpl_string filename);
-void gtm_tx_memset_commit(chpl_stm_tx_t* tx);
-void gtm_tx_memset_abort(chpl_stm_tx_t* tx);
 
 #endif

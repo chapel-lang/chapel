@@ -4,7 +4,6 @@
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
-#include "chpltimers.h"
 #include "chplstm.h"
 #include "error.h"
 #include "stm-gtm.h"
@@ -17,11 +16,11 @@ void chpl_stm_init() {
   memset((void *)locks, 0, LOCK_ARRAY_SIZE * sizeof(gtm_word_t));
   CLOCK = 0;
   gtm_tx_init();
-  gtm_stats_init();
+  gtm_init_stats();
 }
 
 void chpl_stm_exit() {
-  gtm_stats_exit();
+  gtm_exit_stats();
 }
 
 chpl_stm_tx_p chpl_stm_tx_create() { 
@@ -46,6 +45,7 @@ void chpl_stm_tx_begin(chpl_stm_tx_p tx) {
     assert(tx->nestlevel == 1);
     tx->status = TX_ACTIVE;
     tx->timestamp = GET_CLOCK;
+    GTM_TX_STATS_START(tx, TX_BEGIN_STATS);
     return;
   } else if (tx->status == TX_ACTIVE) {
     // simple flat nested transaction
@@ -57,7 +57,6 @@ void chpl_stm_tx_begin(chpl_stm_tx_p tx) {
 }
 
 void chpl_stm_tx_commit(chpl_stm_tx_p tx) { 
-  _real64 starttime;
 
   assert(tx != NULL);
    
@@ -70,21 +69,25 @@ void chpl_stm_tx_commit(chpl_stm_tx_p tx) {
 
     tx->status = TX_COMMIT;
 
+    GTM_TX_STATS_START(tx, TX_COMMITPH1_STATS);
+
     // commit phase 1
-    starttime = _now_time();
     if (tx->numremlocales > -1) { 
       GTM_Safe(tx, gtm_tx_comm_commitPh1(tx));
     }
     GTM_Safe(tx, gtm_tx_commitPh1(tx));
-    gtm_stats_tx_commitPh1(_now_time() - starttime);
+
+    GTM_TX_STATS_STOP(tx, TX_COMMITPH1_STATS);
+
+    GTM_TX_STATS_START(tx, TX_COMMITPH2_STATS);
 
     // commit phase 2
-    starttime = _now_time();
     if (tx->numremlocales > -1) { 
       GTM_Safe(tx, gtm_tx_comm_commitPh2(tx));
     }
     GTM_Safe(tx, gtm_tx_commitPh2(tx));
-    gtm_stats_tx_commitPh2(_now_time() - starttime);
+
+    GTM_TX_STATS_STOP(tx, TX_COMMITPH2_STATS);
 
     return;
   }
@@ -93,7 +96,6 @@ void chpl_stm_tx_commit(chpl_stm_tx_p tx) {
 }
 
 void chpl_stm_tx_abort(chpl_stm_tx_p tx) { 
-  _real64 starttime;
 
   assert(tx != NULL);
 
@@ -103,13 +105,17 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx) {
 
     tx->status = TX_ABORT;
 
+    GTM_TX_STATS_START(tx, TX_ABORT_STATS);
+
     // aborts always succeeds, local or otherwise. 
-    starttime = _now_time();
     if (tx->numremlocales > -1) { 
       gtm_tx_comm_abort(tx); 
     }
     gtm_tx_abort(tx);
-    gtm_stats_tx_abort(_now_time() - starttime);
+
+    GTM_TX_STATS_STOP(tx, TX_ABORT_STATS);
+
+    //gtm_tx_cleanup(tx);
 
     // rollback to last checkpoint
     if (tx->env != NULL) {
@@ -217,16 +223,15 @@ int gtm_tx_load_wrap(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size
 } 
 
 void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size, int ln, chpl_string fn) {
-  _real64 starttime;
 
   assert(tx != NULL);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
 
   if (size == 0) return;
   
-  starttime = _now_time();
+  GTM_TX_STATS_START(tx, TX_LOAD_STATS);
   GTM_Safe(tx, gtm_tx_load_wrap(tx, dstaddr, srcaddr, size));
-  gtm_stats_tx_load(_now_time() - starttime);
+  GTM_TX_STATS_STOP(tx, TX_LOAD_STATS);
 }
 
 int gtm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size) {
@@ -299,56 +304,60 @@ int gtm_tx_store_wrap(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t siz
 }
 
 void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size, int ln, chpl_string fn) {
-  _real64 starttime;
+
   assert(tx != NULL);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
   
-  starttime = _now_time();
+  GTM_TX_STATS_START(tx, TX_STORE_STATS);
   GTM_Safe(tx, gtm_tx_store_wrap(tx, srcaddr, dstaddr, size));
-  gtm_stats_tx_store(_now_time() - starttime);
+  GTM_TX_STATS_STOP(tx, TX_STORE_STATS);
 }
 
 void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size, int ln, chpl_string fn) {
-  _real64 starttime;
 
   assert(tx != NULL);
   assert(srclocale != MYLOCALE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
  
-  starttime = _now_time();
+  GTM_TX_STATS_START(tx, TX_GET_STATS);
   GTM_Safe(tx, gtm_tx_comm_get(tx, dstaddr, srclocale, srcaddr, size));
-  gtm_stats_tx_get(_now_time() - starttime);
+  GTM_TX_STATS_STOP(tx, TX_GET_STATS);
 }
 
 void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size, int ln, chpl_string fn) {
-  _real64 starttime;
+
   assert(tx != NULL);
   assert(dstlocale != MYLOCALE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
   
-  starttime = _now_time();
+  GTM_TX_STATS_START(tx, TX_PUT_STATS);
   GTM_Safe(tx, gtm_tx_comm_put(tx, srcaddr, dstlocale, dstaddr, size));
-  gtm_stats_tx_put(_now_time() - starttime);
+  GTM_TX_STATS_STOP(tx, TX_PUT_STATS);
 }
 
 void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize) {
-  _real64 starttime;
 
   assert(tx != NULL);
 
   if (dstlocale == MYLOCALE) {
     (*chpl_txftable[fid])(tx, arg);
   } else {
-    starttime = _now_time();
+    GTM_TX_STATS_START(tx, TX_FORK_STATS);
     GTM_Safe(tx, gtm_tx_comm_fork(tx, dstlocale, fid, arg, argsize));
-    gtm_stats_tx_fork(_now_time() - starttime);
+    GTM_TX_STATS_STOP(tx, TX_FORK_STATS);
   }
 }
 
 void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) { 
-  return gtm_tx_malloc(tx, number, size, description, ln, fn);
+  void *tmp;
+  GTM_TX_STATS_START(tx, TX_MALLOC_STATS);
+  tmp = gtm_tx_malloc_memset(tx, number, size, description, ln, fn);
+  GTM_TX_STATS_STOP(tx, TX_MALLOC_STATS);
+  return tmp;
 }
 
 void chpl_stm_tx_free(chpl_stm_tx_p tx, void* ptr, int32_t ln, chpl_string fn) { 
-  gtm_tx_free(tx, ptr, ln, fn);
+  GTM_TX_STATS_START(tx, TX_FREE_STATS);
+  gtm_tx_free_memset(tx, ptr, ln, fn);
+  GTM_TX_STATS_STOP(tx, TX_FREE_STATS);
 }

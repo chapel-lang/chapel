@@ -26,7 +26,6 @@ static void chpl_exit_common(int status, int all) {
     chpl_reportMemInfo();
     chpl_comm_exit_all(status);
   } else {
-    chpl_stm_exit();
     chpl_comm_exit_any(status);
   }
   exit(status);

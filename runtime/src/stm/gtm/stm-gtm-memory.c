@@ -12,24 +12,28 @@
 #include "stm-gtm.h"
 #include "stm-gtm-memory.h"
 
-memset_t* gtm_tx_memset_create(chpl_stm_tx_p tx) {
+void gtm_tx_create_memset(void* txptr) {
+  chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
   memset_t* mem  = (memset_t*) chpl_malloc(1, sizeof(memset_t), 
 					   CHPL_RT_MD_STM_TX_MEMSET, 
 					   __LINE__, __FILE__);
   mem->allocated = mem->freed = NULL;
-  return mem;
+  tx->memset = mem;
 }
 
-void gtm_tx_memset_destroy(chpl_stm_tx_p tx) {
+void gtm_tx_destroy_memset(void* txptr) {
+  chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
   chpl_free(tx->memset, 0, 0);
 }
 
-void gtm_tx_memset_cleanup(chpl_stm_tx_p tx) {
+void gtm_tx_cleanup_memset(void* txptr) {
+  chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
   assert(tx->memset->allocated == NULL);
   assert(tx->memset->freed == NULL);
 }
 
-void* gtm_tx_malloc(chpl_stm_tx_t* tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) {
+void* gtm_tx_malloc_memset(void* txptr, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) {
+  chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
   memset_entry_t* entry = (memset_entry_t*) chpl_malloc(1, sizeof(memset_entry_t), CHPL_RT_MD_STM_TX_MEMSET_ENTRY, ln, fn);
   entry->addr = (void *) chpl_malloc(number, size, description, ln, fn);
   entry->next = tx->memset->allocated; 
@@ -37,7 +41,8 @@ void* gtm_tx_malloc(chpl_stm_tx_t* tx, size_t number, size_t size, chpl_memDescI
   return entry->addr;
 }
 
-void gtm_tx_free(chpl_stm_tx_t* tx, void* addr, int32_t ln, chpl_string fn) {
+void gtm_tx_free_memset(void* txptr, void* addr, int32_t ln, chpl_string fn) {
+  chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
   memset_entry_t* entry = (memset_entry_t*) chpl_malloc(1, sizeof(memset_entry_t), CHPL_RT_MD_STM_TX_MEMSET_ENTRY, ln, fn);
   
   // Need to write 0s to addr to prevent inconsistent reads,
@@ -48,7 +53,8 @@ void gtm_tx_free(chpl_stm_tx_t* tx, void* addr, int32_t ln, chpl_string fn) {
   tx->memset->freed = entry;
 }
 
-void gtm_tx_memset_commit(chpl_stm_tx_t* tx) {
+void gtm_tx_commit_memset(void* txptr) {
+  chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
   memset_t* memset = tx->memset;
   memset_entry_t* cur;
   memset_entry_t* next;
@@ -75,7 +81,8 @@ void gtm_tx_memset_commit(chpl_stm_tx_t* tx) {
   }
 }
 
-void gtm_tx_memset_abort(chpl_stm_tx_t* tx) {
+void gtm_tx_abort_memset(void* txptr) {
+  chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
   memset_t* memset = tx->memset;
   memset_entry_t* cur;
   memset_entry_t* next;

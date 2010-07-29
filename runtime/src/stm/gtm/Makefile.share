@@ -1,7 +1,7 @@
 VER = RV_EA_WB
 
 GTM_CFLAGS += -DGTM_$(VER)
-GTM_CFLAGS += -DSTM_STATS
+GTM_CFLAGS += -DGTM_STATS
 
 STM_SRCS = \
 	stm-gtm.c \
@@ -9,7 +9,7 @@ STM_SRCS = \
 	stm-gtm-memory.c \
 	stm-gtm-$(VER).c \
 	stm-gtm-stats.c \
-	
+
 SVN_SRCS = $(STM_SRCS)
 SRCS = $(SVN_SRCS)
 

@@ -8,7 +8,6 @@
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
-#include "chpltimers.h"
 #include "chplstm.h"
 #include "error.h"
 #include "gasnet.h"
@@ -77,24 +76,24 @@ void AM_tx_signal(gasnet_token_t token, void* buf, size_t nbytes, int status) {
 
 void tx_abort_wrapper(tx_generic_t* buf) {
   chpl_stm_tx_p tx = NULL;
-  int status = TX_OK;  
-  _real64 starttime;
-
-  //chpl_msg(0, "As ");
-  starttime = _now_time();
+  int status = TX_OK;
 
   // perform the transactional abort
   tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
-  gtm_tx_abort(tx);
 
+  GTM_TX_COMM_STATS_START(tx, TX_COMM_ABORT_STATS);
+
+  gtm_tx_abort(tx);
+  //  gtm_tx_comm_cleanup(tx);
+
+  // send message to caller
   GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, TX_SIGNAL,
 				      &(buf->commstatus), sizeof(int*), 
 				      status));
 
   chpl_free(buf, __LINE__, __FILE__);
 
-  gtm_stats_tx_comm_abort(_now_time() - starttime);
-  //chpl_msg(0, "Ae ");
+  GTM_TX_COMM_STATS_STOP(tx, TX_COMM_ABORT_STATS, status);
 }
 
 void AM_tx_abort(gasnet_token_t token, void* msg, size_t nbytes) {
@@ -121,6 +120,7 @@ void gtm_tx_comm_abort(chpl_stm_tx_p tx) {
   buf->commstatus = &commstatus;
   
   for (i = 0; i <= tx->numremlocales; i++) {
+    commstatus = TX_BUSY;
     GASNET_Safe(gasnet_AMRequestMedium0(tx->remlocales[i], TX_ABORT, buf, bufsize));
     GASNET_BLOCKUNTIL(commstatus != TX_BUSY);
   }
@@ -131,13 +131,12 @@ void gtm_tx_comm_abort(chpl_stm_tx_p tx) {
 void tx_commitPh1_wrapper(tx_generic_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
-  _real64 starttime;
 
-  //chpl_msg(0, "C1s ");
-  starttime = _now_time();
-  
-  // perform the transactional commit
   tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+
+  GTM_TX_COMM_STATS_START(tx, TX_COMM_COMMITPH1_STATS);
+
+  // perform the transactional commit
   GTM_Safe(tx, gtm_tx_commitPh1(tx));
   if (tx->status == TX_AMABORT)
     status = TX_FAIL;
@@ -148,8 +147,7 @@ void tx_commitPh1_wrapper(tx_generic_t* buf) {
 
   chpl_free(buf, __LINE__, __FILE__);
 
-  gtm_stats_tx_comm_commitPh1(_now_time() - starttime);
-  //chpl_msg(0, "C1e ");
+  GTM_TX_COMM_STATS_STOP(tx, TX_COMM_COMMITPH1_STATS, status);
 }
 
 void AM_tx_commitPh1(gasnet_token_t token, void* msg, size_t nbytes) {
@@ -176,43 +174,42 @@ int gtm_tx_comm_commitPh1(chpl_stm_tx_p tx) {
   buf->commstatus = &commstatus;
   
   for (i = 0; i <= tx->numremlocales; i++) {
+    commstatus = TX_BUSY;
     GASNET_Safe(gasnet_AMRequestMedium0(tx->remlocales[i], TX_COMMITPH1, buf, bufsize));
     GASNET_BLOCKUNTIL(commstatus != TX_BUSY);
-    if (commstatus == TX_FAIL) {
-      chpl_free(buf, __LINE__, __FILE__);
-      return TX_FAIL;
-    }
+    if (commstatus == TX_FAIL) 
+      break;
   }
 
   chpl_free(buf, __LINE__, __FILE__);
 
-  return TX_OK;
+  return commstatus;
 }
 
 void tx_commitPh2_wrapper(tx_generic_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
-  _real64 starttime;
 
-  //chpl_msg(0, "C2s ");
-  starttime = _now_time();
-
-  // perform the transactional commit
   tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
-  GTM_Safe(tx, gtm_tx_commitPh2(tx));
-  if (tx->status == TX_AMABORT)
-    status = TX_FAIL;
 
+  GTM_TX_COMM_STATS_START(tx, TX_COMM_COMMITPH2_STATS);
+  
+  // perform the transactional commit
+  GTM_Safe(tx, gtm_tx_commitPh2(tx));
+  
+  if (tx->status == TX_AMABORT) 
+    status = TX_FAIL;
+    
   GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, TX_SIGNAL,
 				      &(buf->commstatus), sizeof(int*), 
 				      status));
 
-  // free the transaction descriptor
-  gtm_tx_comm_destroy(tx);
   chpl_free(buf, __LINE__, __FILE__);
 
-  gtm_stats_tx_comm_commitPh2(_now_time() - starttime);
-  //chpl_msg(0, "C2e ");
+
+  GTM_TX_COMM_STATS_STOP(tx, TX_COMM_COMMITPH2_STATS, status);
+
+  gtm_tx_comm_destroy(tx);
 }
 
 void AM_tx_commitPh2(gasnet_token_t token, void* msg, size_t nbytes) {
@@ -239,13 +236,16 @@ int gtm_tx_comm_commitPh2(chpl_stm_tx_p tx) {
   buf->commstatus = &commstatus;
 
   for (i = 0; i <= tx->numremlocales; i++) {
+    commstatus = TX_BUSY;
     GASNET_Safe(gasnet_AMRequestMedium0(tx->remlocales[i], TX_COMMITPH2, buf, bufsize));
     GASNET_BLOCKUNTIL(commstatus != TX_BUSY);
+    if (commstatus == TX_FAIL) 
+      break;
   }
 
   chpl_free(buf, __LINE__, __FILE__);
 
-  return TX_OK;
+  return commstatus;
 }
 
 void AM_tx_getdata (gasnet_token_t token, void* msg, size_t nbytes, int status) {
@@ -260,10 +260,10 @@ void tx_get_wrapper(tx_get_t* buf) {
   int status = TX_OK;  
   tx_getdata_t* getdata;
   size_t getdatasize = sizeof(tx_getdata_t) + buf->datasize;
-  _real64 starttime;
 
-  //chpl_msg(0, "Gs ");
-  starttime = _now_time();
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+
+  GTM_TX_COMM_STATS_START(tx, TX_COMM_GET_STATS);
 
   // build the return payload
   getdata = (tx_getdata_t*) chpl_malloc(1, getdatasize, 
@@ -274,7 +274,6 @@ void tx_get_wrapper(tx_get_t* buf) {
   getdata->datasize = buf->datasize;
 
   // perform transactional load
-  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
   GTM_Safe(tx, gtm_tx_load_wrap(tx, &(getdata->data), buf->remaddr, buf->datasize));
   if (tx->status == TX_AMABORT) {
     status = TX_FAIL;
@@ -290,8 +289,7 @@ void tx_get_wrapper(tx_get_t* buf) {
   chpl_free(buf, __LINE__, __FILE__);
   chpl_free(getdata, __LINE__, __FILE__);
 
-  gtm_stats_tx_comm_get(_now_time() - starttime);
-  //chpl_msg(0, "Ge ");
+  GTM_TX_COMM_STATS_STOP(tx, TX_COMM_GET_STATS, status);
 }
  
 void AM_tx_get (gasnet_token_t token, void* msg, size_t nbytes) {
@@ -333,15 +331,13 @@ int gtm_tx_comm_get(chpl_stm_tx_p tx, void* addr, int32_t remlocale, void* remad
 void tx_put_wrapper(tx_put_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
-  _real64 starttime;
-
-  //chpl_msg(0, "Ps ");
-  starttime = _now_time();
 
   tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+
+  GTM_TX_COMM_STATS_START(tx, TX_COMM_PUT_STATS);
+
   GTM_Safe(tx, gtm_tx_store_wrap(tx, &(buf->data), buf->remaddr, buf->datasize));
-  if (tx->status == TX_AMABORT)
-    status = TX_FAIL;
+  if (tx->status == TX_AMABORT) status = TX_FAIL; 
 
   GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, TX_SIGNAL,
 				      &(buf->commstatus), sizeof(int*), 
@@ -349,8 +345,7 @@ void tx_put_wrapper(tx_put_t* buf) {
 
   chpl_free(buf, __LINE__, __FILE__);
 
-  gtm_stats_tx_comm_put(_now_time() - starttime);
-  //chpl_msg(0, "Pe ");
+  GTM_TX_COMM_STATS_STOP(tx, TX_COMM_PUT_STATS, status);
 }
 
 void AM_tx_put (gasnet_token_t token, void* msg, size_t nbytes) {
@@ -392,12 +387,11 @@ int gtm_tx_comm_put(chpl_stm_tx_p tx, void* addr, int32_t remlocale, void* remad
 void tx_fork_wrapper(tx_fork_t* buf) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
-  _real64 starttime;
-
-  //chpl_msg(0, "Fs ");
-  starttime = _now_time();
 
   tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+
+  GTM_TX_COMM_STATS_START(tx, TX_COMM_FORK_STATS);
+
   tx->rollback = true;
   if (!setjmp(tx->env)) {
     if (buf->argsize) 
@@ -408,8 +402,7 @@ void tx_fork_wrapper(tx_fork_t* buf) {
     assert(tx->status == TX_AMABORT); 
   }
   tx->rollback = false;
-  if (tx->status == TX_AMABORT)
-    status = TX_FAIL;
+  if (tx->status == TX_AMABORT) status = TX_FAIL;
 
   GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, TX_SIGNAL,
 				      &(buf->commstatus), sizeof(int*), 
@@ -417,8 +410,7 @@ void tx_fork_wrapper(tx_fork_t* buf) {
 
   chpl_free(buf, __LINE__, __FILE__);
 
-  gtm_stats_tx_comm_fork(_now_time() - starttime);
-  //chpl_msg(0, "Fe ");
+  GTM_TX_COMM_STATS_STOP(tx, TX_COMM_FORK_STATS, status);
 }
 
 void AM_tx_fork(gasnet_token_t token, void* msg, size_t nbytes) {

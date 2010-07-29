@@ -10,7 +10,7 @@
 #include "stm-gtm-atomic.h"
 
 #define MAXTDS 1024
-chpl_stm_tx_p gtm_tx_array[1024][MAXTDS];
+chpl_stm_tx_p gtmTxArray[1024][MAXTDS];
 static chpl_mutex_t gtmTxArrayLock;
 
 void gtm_tx_init() {
@@ -18,12 +18,12 @@ void gtm_tx_init() {
   CHPL_MUTEX_INIT(&gtmTxArrayLock);
   for (i = 0; i < NLOCALES; i++) 
     for (j = 0; j < MAXTDS; j++) 
-      gtm_tx_array[i][j] = NULL;
+      gtmTxArray[i][j] = NULL;
 }
 
 chpl_stm_tx_p gtm_tx_create(int32_t txid, int32_t txlocale) {
   chpl_stm_tx_p tx = (chpl_stm_tx_p) chpl_malloc(1, sizeof(chpl_stm_tx_t), 
-				     CHPL_RT_MD_STM_TX_DESCRIPTOR, 0 , 0);
+				     CHPL_RT_MD_STM_TX_DESCRIPTOR, 0, 0);
 
   tx->id = txid;
   tx->locale = txlocale;
@@ -41,24 +41,30 @@ chpl_stm_tx_p gtm_tx_create(int32_t txid, int32_t txlocale) {
   tx->writeset.entries = (write_entry_t*) chpl_malloc(tx->writeset.size, sizeof(write_entry_t), CHPL_RT_MD_STM_TX_WRITESET, 0, 0);
   tx->timestamp = GET_CLOCK;
   tx->rollback = false;
-  tx->memset = gtm_tx_memset_create(tx);
-    
+
+  gtm_tx_create_memset(tx);
+  gtm_tx_create_stats(tx);
+
   return tx;
 }
 
 void gtm_tx_destroy(chpl_stm_tx_p tx) {
   chpl_free(tx->readset.entries, 0, 0);
   chpl_free(tx->writeset.entries, 0, 0);
-  gtm_tx_memset_destroy(tx);
+
+  gtm_tx_destroy_memset(tx);
+  gtm_tx_destroy_stats(tx);
+
   if (tx->id != -1 && tx->locale == MYLOCALE) {
     assert(tx->numremlocales >= 0 && tx->remlocales != NULL);
     chpl_free(tx->remlocales, 0, 0);
     CHPL_MUTEX_LOCK(&gtmTxArrayLock);
-    gtm_tx_array[tx->locale][tx->id] = NULL; 
+    gtmTxArray[tx->locale][tx->id] = NULL; 
     CHPL_MUTEX_UNLOCK(&gtmTxArrayLock);
   } else {
     assert(tx->numremlocales == -1 && tx->remlocales == NULL);
   }
+
   chpl_free(tx, 0, 0);
 }
 
@@ -72,7 +78,8 @@ void gtm_tx_cleanup(chpl_stm_tx_p tx) {
   tx->readset.numentries = 0;
   tx->writeset.numentries = 0;
   tx->rollback = false;
-  gtm_tx_memset_cleanup(tx);
+  gtm_tx_cleanup_memset(tx);
+  gtm_tx_cleanup_stats(tx);
 }
 
 void gtm_tx_comm_register(chpl_stm_tx_p tx, int32_t dstlocale) {
@@ -92,8 +99,8 @@ void gtm_tx_comm_register(chpl_stm_tx_p tx, int32_t dstlocale) {
     // Get a global id for this transaction
     for (i = 0; i < MAXTDS; i++) {
       CHPL_MUTEX_LOCK(&gtmTxArrayLock);
-      if (gtm_tx_array[tx->locale][i] == NULL) {
-	gtm_tx_array[tx->locale][i] = tx;
+      if (gtmTxArray[tx->locale][i] == NULL) {
+	gtmTxArray[tx->locale][i] = tx;
 	CHPL_MUTEX_UNLOCK(&gtmTxArrayLock);
 	tx->id = i; 
 	break;
@@ -119,18 +126,18 @@ chpl_stm_tx_p gtm_tx_comm_create(int32_t txid, int32_t txlocale, int32_t txstatu
   assert(txid >= 0 && txid < MAXTDS);
 
   if (txstatus == TX_ACTIVE) { 
-    if ((tx = gtm_tx_array[txlocale][txid]) == NULL) {
+    if ((tx = gtmTxArray[txlocale][txid]) == NULL) {
       tx = gtm_tx_create(txid, txlocale);
-      gtm_tx_array[txlocale][txid] = tx;
+      gtmTxArray[txlocale][txid] = tx;
     }
     tx->status= TX_AMACTIVE;
   } else if (txstatus == TX_COMMIT) {
-    if ((tx = gtm_tx_array[txlocale][txid]) == NULL) {
+    if ((tx = gtmTxArray[txlocale][txid]) == NULL) {
       chpl_error("Descriptor not found for commit", 0, 0);
     }
     tx->status = TX_AMCOMMIT;
   } else if (txstatus == TX_ABORT) {
-    if ((tx = gtm_tx_array[txlocale][txid]) == NULL) {
+    if ((tx = gtmTxArray[txlocale][txid]) == NULL) {
       chpl_error("Descriptor not found for abort.", 0, 0);
     }
     tx->status = TX_AMABORT;
@@ -145,6 +152,11 @@ chpl_stm_tx_p gtm_tx_comm_create(int32_t txid, int32_t txlocale, int32_t txstatu
 
 void gtm_tx_comm_destroy(chpl_stm_tx_p tx) {
   assert(tx->id != -1 && tx->locale != MYLOCALE);
-  gtm_tx_array[tx->locale][tx->id] = NULL; 
+  gtmTxArray[tx->locale][tx->id] = NULL; 
   gtm_tx_destroy(tx);
+}
+
+void gtm_tx_comm_cleanup(chpl_stm_tx_p tx) {
+  assert(tx->id != -1 && tx->locale != MYLOCALE);
+  gtm_tx_cleanup(tx);
 }
