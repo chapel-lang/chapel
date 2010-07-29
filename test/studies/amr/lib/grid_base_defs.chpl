@@ -333,16 +333,16 @@ class ZeroOrderExtrapolationGridBC: GridBC {
     for d in dimensions do {
       //==== Low ghost cells ====
       forall cell in grid.low_ghost_cells(d) {
-	var target_cell = cell;
-	target_cell(d)  = grid.cells.dim(d).low;
-	q.value(cell)   = q.value(target_cell);
+        var target_cell = cell;
+        target_cell(d)  = grid.cells.dim(d).low;
+        q.value(cell)   = q.value(target_cell);
       }
 
       //==== High ghost cells ====
       forall cell in grid.high_ghost_cells(d) {
-	var target_cell = cell;
-	target_cell(d)  = grid.cells.dim(d).high;
-	q.value(cell)   = q.value(target_cell);
+        var target_cell = cell;
+        target_cell(d)  = grid.cells.dim(d).high;
+        q.value(cell)   = q.value(target_cell);
       }
     }
 
@@ -361,13 +361,7 @@ class ZeroOrderExtrapolationGridBC: GridBC {
 
 
 
-class TrueSolution {
 
-  def qTrue(x: dimension*real, t: real) {
-    return 0.0;
-  }
-
-}
 
 
 //===> TrueSolutionDirichletGridBC class ===>
@@ -387,14 +381,15 @@ class TrueSolutionDirichletGridBC: GridBC {
     for d in dimensions {
 
       forall precell in grid.low_ghost_cells(d) {
-	var cell = tuplify(precell);
-	q.value(cell) = true_solution.qTrue(grid.xValue(cell), q.time);
+        var cell = tuplify(precell);
+        q.value(cell) = true_solution.qTrue(grid.xValue(cell), q.time);
       }
 
       forall precell in grid.high_ghost_cells(d) {
-	var cell = tuplify(precell);
-	q.value(cell) = true_solution.qTrue(grid.xValue(cell), q.time);
+        var cell = tuplify(precell);
+        q.value(cell) = true_solution.qTrue(grid.xValue(cell), q.time);
       }
+
     }
 
   }
@@ -420,16 +415,16 @@ class TrueSolutionDirichletGridBC: GridBC {
 
       //==== Low ghost cells ====
       forall cell_pretuple in grid.low_ghost_cells(d) {
-	var cell = tuplify(cell_pretuple);
-	if cell(d) == grid.i_low(d)-1 then
-	  q.value(cell) = -q.value(cell + cell_shift);
+        var cell = tuplify(cell_pretuple);
+        if cell(d) == grid.i_low(d)-1 then
+        q.value(cell) = -q.value(cell + cell_shift);
       }
 
       //==== High ghost cells ====
       forall cell_pretuple in grid.high_ghost_cells(d) {
-	var cell = tuplify(cell_pretuple);
-	if cell(d) == grid.i_high(d)+1 then
-	  q.value(cell) = -q.value(cell - cell_shift);
+        var cell = tuplify(cell_pretuple);
+        if cell(d) == grid.i_high(d)+1 then
+        q.value(cell) = -q.value(cell - cell_shift);
       }
 
     }
@@ -438,17 +433,57 @@ class TrueSolutionDirichletGridBC: GridBC {
   //<====================================
   //<=== homogeneousGhostFill method <===
 
-
-  //===> qTrue method ===>
-  //=====================>
-  def qTrue(x: dimension*real, t: real) {
-    return 0.0;
-  }
-
-
 }
 //<==========================================
 //<=== TrueSolutionDirichletGridBC class <===
+
+
+
+// //===> TrueSolutionNeumannGridBC class ===>
+// //========================================>
+// class TrueSolutionNeumannGridBC: GridBC {
+// 
+//   var true_solution: TrueSolution;
+// 
+//   //===> ghostFill method ===>
+//   //=========================>
+//   def ghostFill(q: GridSolution) {
+//     
+//     for d in dimensions {
+// 
+//     }
+// 
+//   }
+//   //<=========================
+//   //<=== ghostFill method <===
+// 
+// 
+//   //===> homogeneousGhostFill method ===>
+//   //====================================>
+//   def homogeneousGhostFill(q: GridSolution) {
+// 
+//     for d in dimensions do {
+//       //==== Low ghost cells ====
+//       forall cell in grid.low_ghost_cells(d) {
+//         var target_cell = cell;
+//         target_cell(d)  = grid.cells.dim(d).low;
+//         q.value(cell)   = q.value(target_cell);
+//       }
+// 
+//       //==== High ghost cells ====
+//       forall cell in grid.high_ghost_cells(d) {
+//         var target_cell = cell;
+//         target_cell(d)  = grid.cells.dim(d).high;
+//         q.value(cell)   = q.value(target_cell);
+//       }
+//     }
+// 
+//   }
+//   //<====================================
+//   //<=== homogeneousGhostFill method <===
+// }
+// //<========================================
+// //<=== TrueSolutionNeumannGridBC class <===
 
 
 //<============================================================
@@ -678,6 +713,20 @@ def tuplify(idx) {
     return tuple(idx);
 }
 //<=== Fix for the 1D/tuple problem <===
+
+
+
+//===> TrueSolution class ===>
+//===========================>
+class TrueSolution {
+
+  def qTrue(x: dimension*real, t: real) {
+    return 0.0;
+  }
+
+}
+//<===========================
+//<=== TrueSolution class <===
 
 
 //<==============================================

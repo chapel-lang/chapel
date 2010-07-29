@@ -39,7 +39,7 @@ def main {
     }
   }
   
-  level.add_grid(x_low, x_high);
+  level.addGrid(x_low, x_high);
   //<=== First grid <===
   
   
@@ -61,7 +61,7 @@ def main {
     }
   }
   
-  level.add_grid(x_low, x_high);
+  level.addGrid(x_low, x_high);
   //<=== Second grid <===
   
 
@@ -71,34 +71,34 @@ def main {
   def initial_condition ( x: dimension*real ) {
     var f: real = 1.0;
     for d in dimensions do
-    	f *= exp(-30*x(d)**2);
+     f *= exp(-30*x(d)**2);
     return f;
   }
-
-  var q = level.make_level_function(initial_condition);
+  
+  var q = level.initializeLevelSolution(initial_condition);
   //<=== Initialize  solution <===
-
-
-
+  
+  
+  
   //==== Output ====
-  level.claw_output(q, 0);
-
-
-
-  //==== Print grids ====
-  var grid_num = 0;
-  for grid in level.grids {
-    grid_num += 1;
-    writeln("");
-    writeln("Grid number ", grid_num);
-    writeln("==============");
-    writeln("x_low     = ", grid.x_low);
-    writeln("x_high    = ", grid.x_high);
-    writeln("i_low     = ", grid.i_low);
-    writeln("i_high    = ", grid.i_high);    
-    writeln("n_cells       = ", grid.n_cells);
-    writeln("n_ghost_cells = ", grid.n_ghost_cells);
-  }
+  level.clawOutput(q, 0);
+  // 
+  // 
+  // 
+  // //==== Print grids ====
+  // var grid_num = 0;
+  // for grid in level.grids {
+  //   grid_num += 1;
+  //   writeln("");
+  //   writeln("Grid number ", grid_num);
+  //   writeln("==============");
+  //   writeln("x_low     = ", grid.x_low);
+  //   writeln("x_high    = ", grid.x_high);
+  //   writeln("i_low     = ", grid.i_low);
+  //   writeln("i_high    = ", grid.i_high);    
+  //   writeln("n_cells       = ", grid.n_cells);
+  //   writeln("n_ghost_cells = ", grid.n_ghost_cells);
+  // }
 
 
 }

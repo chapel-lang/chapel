@@ -27,9 +27,9 @@ class LevelGrid: RectangularGrid {
     //<=== Set fields via parent data and index bounds <===
 
 
-    sanity_checks();
+    sanityChecks();
 
-    set_derived_fields();
+    setDerivedFields();
 
   }
   //<=== initialize() method <===
@@ -67,7 +67,7 @@ class AMRLevel {
 
 //===> Adding a grid to an AMRLevel ===>
 //=====================================>
-def AMRLevel.add_grid(i_low:  dimension*int,
+def AMRLevel.addGrid(i_low:  dimension*int,
                       i_high: dimension*int) {
   
   var new_grid = new LevelGrid(level  = this,
@@ -78,7 +78,7 @@ def AMRLevel.add_grid(i_low:  dimension*int,
 }
 
 
-def AMRLevel.add_grid(x_low_grid:  dimension*real,
+def AMRLevel.addGrid(x_low_grid:  dimension*real,
                       x_high_grid: dimension*real
                      ){
 
@@ -113,33 +113,33 @@ def AMRLevel.add_grid(x_low_grid:  dimension*real,
 //========================================================>
 
 
-//===> LevelFunction class ===>
+//===> LevelSolution class ===>
 //============================>
-class LevelFunction {
+class LevelSolution {
   var level:          AMRLevel;                    // parent level
-  var grid_functions: [level.grids] GridFunction;  // child functions
+  var grid_functions: [level.grids] GridSolution;  // child functions
   var time:           real;                        // duh
 }
 //<============================
-//<=== LevelFunction class <===
+//<=== LevelSolution class <===
 
 
 
-//===> make_level_function method ===>
-//===================================>
-def AMRLevel.make_level_function(initial_condition) {
-  var grid_functions: [grids] GridFunction;
+//===> initializeLevelSolution method ===>
+//=======================================>
+def AMRLevel.initializeLevelSolution(initial_condition) {
+  var grid_functions: [grids] GridSolution;
   
   for grid in grids {
-    grid_functions(grid) = grid.make_grid_function(initial_condition);
+    grid_functions(grid) = grid.initializeGridSolution(initial_condition);
   }
   
-  return new LevelFunction(level          = this,
+  return new LevelSolution(level          = this,
                            grid_functions = grid_functions,
                            time           = 0.0);
 }
-//<=== make_level_function method <===
-//<===================================
+//<=== initializeLevelSoution method <===
+//<======================================
 
 //<========================================================
 //<=================== LEVEL FUNCTIONS ====================
@@ -150,96 +150,96 @@ def AMRLevel.make_level_function(initial_condition) {
 
 
 
-//==========================================================>
-//==================== BOUNDARY MANAGERS ===================>
-//==========================================================>
-
-
-//===> LevelGridBoundaryManager class ===>
-//=======================================>
-class LevelGridBoundaryManager: BoundaryManager {
-
-  var grid: LevelGrid;  // is it worth shadowing the RectangularGrid version?
-  
-  var neighbors:                subdomain(grid.level.grids);
-  var shared_cells: [neighbors] subdomain(grid.all_cells);
-
-
-
-  //===> locate_neighbors method ===>
-  //================================>
-  def locate_neighbors() {
-
-    //==== Stores overlap in each dimension as a range ====
-    var overlap:   dimension*range(stridable=true);
-    var intersect: bool;
-
-    //===> Loop over siblings ===>
-    for g in grid.level.grids {
-
-      //==== Assume g intersects grid ====
-      intersect = true;
-
-
-      //==== Intersect grid.ext_cells with g.cells ====
-      forall d in dimensions {
-        overlap(d) = max(grid.ext_cells.dim(d).low, g.cells.dim(d).low)
-                     .. min(grid.ext_cells.dim(d).high, g.cells.dim(d).high)
-                    by grid.ext_cells.dim(d).stride;
-        if overlap(d).length == 0 then intersect = false;
-      }
-
-      
-      //==== If g==grid, then the intersection is false ====
-      if g == grid then intersect = false;
-
-
-      //==== If g intersects grid, store the overlap ====
-      if intersect then {
-        neighbors.add(g);
-        shared_cells(g) = [(...overlap)];
-      }
-    }
-    //<=== Loop over siblings <===
-    
-  }
-  //<=== locate_neighbors method <===
-  //<================================
-
-
-
-  //===> copy_from_neighbors method ===>
-  //===================================>
-  def copy_from_neighbors(q: GridFunction) {
-
-    //==== Make sure action is valid ====
-    assert(q.grid == grid, 
-	   "error: copy_from_neighbors\n"
-	   + "GridFunction must share parent grid with BoundaryManager.");
-
-
-
-    for n in neighbors {
-      //==== Locate sibling function on neighbor ====
-      var q_nbr = q.level_function.grid_functions(n);
-
-      //==== Copy values from shared cells ====
-      q.value(shared_cells(n)) = q_nbr.value(shared_cells(n));
-    }
-
-  }
-  //<=== copy_from_neighbors method <===
-  //<===================================
-
-
-}
-//<=======================================
-//<=== LevelGridBoundaryManager class <===
-
-
-//<==========================================================
-//<=================== BOUNDARY MANAGERS ====================
-//<==========================================================
+// //==========================================================>
+// //==================== BOUNDARY MANAGERS ===================>
+// //==========================================================>
+// 
+// 
+// //===> LevelGridBoundaryManager class ===>
+// //=======================================>
+// class LevelGridBoundaryManager: BoundaryManager {
+// 
+//   var grid: LevelGrid;  // is it worth shadowing the RectangularGrid version?
+//   
+//   var neighbors:                subdomain(grid.level.grids);
+//   var shared_cells: [neighbors] subdomain(grid.all_cells);
+// 
+// 
+// 
+//   //===> locate_neighbors method ===>
+//   //================================>
+//   def locate_neighbors() {
+// 
+//     //==== Stores overlap in each dimension as a range ====
+//     var overlap:   dimension*range(stridable=true);
+//     var intersect: bool;
+// 
+//     //===> Loop over siblings ===>
+//     for g in grid.level.grids {
+// 
+//       //==== Assume g intersects grid ====
+//       intersect = true;
+// 
+// 
+//       //==== Intersect grid.ext_cells with g.cells ====
+//       forall d in dimensions {
+//         overlap(d) = max(grid.ext_cells.dim(d).low, g.cells.dim(d).low)
+//                      .. min(grid.ext_cells.dim(d).high, g.cells.dim(d).high)
+//                     by grid.ext_cells.dim(d).stride;
+//         if overlap(d).length == 0 then intersect = false;
+//       }
+// 
+//       
+//       //==== If g==grid, then the intersection is false ====
+//       if g == grid then intersect = false;
+// 
+// 
+//       //==== If g intersects grid, store the overlap ====
+//       if intersect then {
+//         neighbors.add(g);
+//         shared_cells(g) = [(...overlap)];
+//       }
+//     }
+//     //<=== Loop over siblings <===
+//     
+//   }
+//   //<=== locate_neighbors method <===
+//   //<================================
+// 
+// 
+// 
+//   //===> copy_from_neighbors method ===>
+//   //===================================>
+//   def copy_from_neighbors(q: GridSolution) {
+// 
+//     //==== Make sure action is valid ====
+//     assert(q.grid == grid, 
+//     "error: copy_from_neighbors\n"
+//     + "GridSolution must share parent grid with BoundaryManager.");
+// 
+// 
+// 
+//     for n in neighbors {
+//       //==== Locate sibling function on neighbor ====
+//       var q_nbr = q.level_function.grid_functions(n);
+// 
+//       //==== Copy values from shared cells ====
+//       q.value(shared_cells(n)) = q_nbr.value(shared_cells(n));
+//     }
+// 
+//   }
+//   //<=== copy_from_neighbors method <===
+//   //<===================================
+// 
+// 
+// }
+// //<=======================================
+// //<=== LevelGridBoundaryManager class <===
+// 
+// 
+// //<==========================================================
+// //<=================== BOUNDARY MANAGERS ====================
+// //<==========================================================
 
 
 
@@ -256,9 +256,9 @@ class LevelGridBoundaryManager: BoundaryManager {
 //-----------------------------------------------------------------------
 // Writes both a time file and a solution file for a given frame number.
 //-----------------------------------------------------------------------
-def AMRLevel.claw_output(q:            LevelFunction,
-                         frame_number: int
-                        ){
+def AMRLevel.clawOutput(q:            LevelSolution,
+                        frame_number: int
+                       ){
 
   //==== Make sure q lives on this level ====
   assert(q.level == this);
@@ -276,7 +276,7 @@ def AMRLevel.claw_output(q:            LevelFunction,
 
   var outfile = new file(time_filename, FileAccessMode.write);
   outfile.open();  
-  write_time_file(q.time, 1, n_grids, 0, outfile);
+  writeTimeFile(q.time, 1, n_grids, 0, outfile);
   outfile.close();
   delete outfile;
   
@@ -284,7 +284,7 @@ def AMRLevel.claw_output(q:            LevelFunction,
   //==== Solution file ====
   outfile = new file(solution_filename, FileAccessMode.write);
   outfile.open();
-  write_solution(q, 1, outfile);  // AMR_level=1 for single-level output
+  writeSolution(q, 1, outfile);  // AMR_level=1 for single-level output
   outfile.close();
   delete outfile;
 
@@ -295,26 +295,26 @@ def AMRLevel.claw_output(q:            LevelFunction,
 
 
 
-//===> write_solution method ===>
-//==============================>
+//===> writeSolution method ===>
+//=============================>
 //---------------------------------------------------------
-// Writes the data for a LevelFunction living on this level.
+// Writes the data for a LevelSolution living on this level.
 //---------------------------------------------------------
-def AMRLevel.write_solution(q:           LevelFunction,
-                            AMR_level:   int,
-                            outfile:     file
-                           ){
+def AMRLevel.writeSolution(q:           LevelSolution,
+                           AMR_level:   int,
+                           outfile:     file
+                          ){
 
   var grid_number = 0;
   for grid in grids {
     grid_number += 1;
-    grid.write_solution(q.grid_functions(grid), grid_number, 1, outfile);
+    grid.writeSolution(q.grid_functions(grid), grid_number, 1, outfile);
     outfile.writeln("  ");
   }
   
 }
-//<=== write_solution method <===
-//<==============================
+//<=== writeSolution method <===
+//<=============================
 
 
 //<=======================================================
