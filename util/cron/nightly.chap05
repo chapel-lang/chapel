@@ -1,3 +1,3 @@
 #!/bin/tcsh
-source ~bradc/.chapelcshrc-cron && ~/chapel/test/cron/nightly -cron -no-local >&! ~/tmp/nightly-nolocal.out
+source ~/.chapelcshrc-cron && ~/chapel/test/cron/nightly -cron -no-local >&! ~/tmp/nightly-nolocal.out
 

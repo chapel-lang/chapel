@@ -18,7 +18,7 @@
 #
 # Test the XMT compiler using the zebra simulator
 #
-source ~bradc/.chapelcshrc-xmt-sim-cron
+source ~/.chapelcshrc-cron-xmt-sim
 
 # XMT cross-compile test
 $CHPL_HOME/test/cron/nightly -cron -examples
@@ -27,7 +27,7 @@ $CHPL_HOME/test/cron/nightly -cron -examples
 # Test building the compiler using the XMT compiler, as above
 # for the MTA compiler
 #
-source ~bradc/.chapelcshrc-xmt-cron
+source ~/.chapelcshrc-cron-xmt
 
 # 
 setenv CHPL_HOST_PLATFORM $CHPL_TARGET_PLATFORM

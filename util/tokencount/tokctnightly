@@ -69,14 +69,14 @@ if ($debug == 1) {
 #
 $tmpdir = "/tmp/chapel-tokctnightly-uw.$user.$pid.deleteme";
 $chapeldir = "$tmpdir/chapel";
-$logdir = "~bradc/chapel/test/Logs/Nightly";
+$logdir = "/data/sea/cascade/chapel/Nightly";
 $statdir = "$logdir/Stats";
 if ($debug == 1) {
     $statfile = "$statdir/tokctnightly.debug.dat";
 } else {
     $statfile = "$statdir/tokctnightly.cron.dat";
 }
-$tokctdir = "~bradc/chapel/util/tokencount";
+$tokctdir = "~/chapel/util/tokencount";
 $tokctr = "$tokctdir/tokencount.cron";
 
 

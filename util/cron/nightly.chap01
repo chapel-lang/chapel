@@ -1,2 +1,2 @@
 #!/bin/tcsh
-source ~bradc/.chapelcshrc-cron && ~/chapel/test/cron/nightly -cron >&! ~/tmp/nightly.linux64.out
+source ~/.chapelcshrc-cron && ~/chapel/test/cron/nightly -cron >&! ~/tmp/nightly.linux64.out
