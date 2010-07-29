@@ -2349,9 +2349,6 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *paren
       ArgSymbol* fArg = toArgSymbol(dExp->sym);
 
       if (fArg->type != dtVoid) {
-	if (fArg->defaultExpr) {
-	  USR_FATAL(fArg, "Default arguments not allowed in first class functions");
-	}		
 	ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
 	if (fArg->typeExpr) 
 	  newFormal->typeExpr = fArg->typeExpr->copy();
@@ -2541,9 +2538,6 @@ createFunctionAsValue(CallExpr *call) {
     DefExpr* dExp = toDefExpr(formalExpr);
     ArgSymbol* fArg = toArgSymbol(dExp->sym);
 
-    if (fArg->defaultExpr) {
-      USR_FATAL(fArg, "Default arguments not allowed in first class functions");
-    }		
     ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
     if (fArg->typeExpr) 
       newFormal->typeExpr = fArg->typeExpr->copy();
