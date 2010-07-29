@@ -1351,15 +1351,9 @@ pragma "inline" def chpl__autoDestroy(x: _singlevar) {
 }
 
 // Type functions for representing function types
-def func() type {
-  return __primitive("create fn type", void);
-}
-def func(type rettype) type {
-  return __primitive("create fn type", rettype);
-}
-def func(type t...?n, type rettype) type {
-  return __primitive("create fn type", (...t), rettype);
-}
+pragma "inline" def func() type { return __primitive("create fn type", void); }
+pragma "inline" def func(type rettype) type { return __primitive("create fn type", rettype); }
+pragma "inline" def func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
 
 //
 // BLC: The inout is used here not because it is necessary, but in

@@ -2360,12 +2360,16 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *paren
       }
     }
   }
-  else { 
+  else {
+    char name_buffer[100];
+    int name_index = 0;
+    
     for_alist(actualExpr, arg_list) {
+      sprintf(name_buffer, "name%i", name_index++);
       if (i != (alength-1)) {
 	SymExpr* sExpr = toSymExpr(actualExpr);
 	if (sExpr->var->type != dtVoid) {
-	  ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, sExpr->var->type->symbol->name, sExpr->var->type);
+	  ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, name_buffer, sExpr->var->type);
 	
 	  parent_method->insertFormalAtTail(newFormal);
 	}

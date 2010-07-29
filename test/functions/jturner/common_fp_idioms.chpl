@@ -38,7 +38,7 @@ def filter(arr, op) {
 
 def array(x...?n) {
   var ret : [1..n] x(1).type;
-  forall i in 1..n do
+  for param i in 1..n do
     ret(i) = x(i);
   
   return ret;
@@ -57,6 +57,59 @@ def odd(x:int) {
   return !even(x);
 }
 
+def take(arr, n) {
+  var i = 0;
+  for a in arr {
+    if (i < n) {
+      yield a;
+      i += 1;
+    }
+    else {
+      break;
+    }
+  }
+}
+
+def drop(arr, n) {
+  var i = 0;
+  for a in arr {
+    if (i >= n) {
+      yield a;
+    }
+    i += 1;
+  }
+}
+
+def splitAt(arr, n) {
+  return (take(arr, n), drop(arr, n));
+}
+
+def takeWhile(arr, op) {
+  for a in arr {
+    if (op(a)) {
+      yield a;
+    }
+    else {
+      break;
+    }
+  }
+}
+ 
+def dropWhile(arr, op) {
+  var keepDropping = true;
+  for a in arr {
+    if (keepDropping) {
+      if (!op(a)) {
+	keepDropping = false;
+      }
+      else {
+	continue;
+      }
+    }
+
+    yield a;
+  }
+}
 
 /*
 def reverse(a, l...?n) {
@@ -121,11 +174,17 @@ writeln(fold_left(c, 0, lambda(x:int,y:int) { return x-y; }));
 writeln(fold_right(c, 0, lambda(x:int,y:int) { return x-y; }));
 writeln(filter(c, odd));
 
-/*
 writeln(map(a, lambda(x:int) { return x+1; }));
 writeln(lambda(x:int) { return x+2; }(a));
 writeln(lambda(x:int) { return x+3; }( array(1, 2, 3, 4) ));
-*/
+
+writeln(drop(array(1, 2, 3, 4), 2));
+writeln(take(array(1, 2, 3, 4), 2));
+writeln(splitAt(array(1, 2, 3, 4), 2));
+
+writeln(dropWhile(array(1, 2, 3, 4), lambda(x:int) { return x <= 2; }));
+writeln(takeWhile(array(1, 2, 3, 4), lambda(x:int) { return x <= 2; }));
+
 /*
 writeln("3-D array");
 writeln(a);
@@ -149,3 +208,6 @@ for n in a.domain by -1 {
   writeln(a[n]);
 }
 */
+
+	
+	
