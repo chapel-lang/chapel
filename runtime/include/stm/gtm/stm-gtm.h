@@ -18,7 +18,7 @@ enum {TX_FAIL = 0, TX_OK, TX_BUSY};
     }						\
   } while (0)
 
-#define RWSETSIZE 128
+#define RWSETSIZE 1024
 
 #define NOLOCALE -1
 

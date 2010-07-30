@@ -77,7 +77,7 @@ void chpl_stm_tx_commit(chpl_stm_tx_p tx) {
     }
     GTM_Safe(tx, gtm_tx_commitPh1(tx));
 
-    GTM_TX_STATS_STOP(tx, TX_COMMITPH1_STATS);
+    GTM_TX_STATS_STOP(tx, TX_COMMITPH1_STATS, 0);
 
     GTM_TX_STATS_START(tx, TX_COMMITPH2_STATS);
 
@@ -87,7 +87,7 @@ void chpl_stm_tx_commit(chpl_stm_tx_p tx) {
     }
     GTM_Safe(tx, gtm_tx_commitPh2(tx));
 
-    GTM_TX_STATS_STOP(tx, TX_COMMITPH2_STATS);
+    GTM_TX_STATS_STOP(tx, TX_COMMITPH2_STATS, 0);
 
     return;
   }
@@ -113,9 +113,7 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx) {
     }
     gtm_tx_abort(tx);
 
-    GTM_TX_STATS_STOP(tx, TX_ABORT_STATS);
-
-    //gtm_tx_cleanup(tx);
+    GTM_TX_STATS_STOP(tx, TX_ABORT_STATS, 0);
 
     // rollback to last checkpoint
     if (tx->env != NULL) {
@@ -231,7 +229,7 @@ void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t siz
   
   GTM_TX_STATS_START(tx, TX_LOAD_STATS);
   GTM_Safe(tx, gtm_tx_load_wrap(tx, dstaddr, srcaddr, size));
-  GTM_TX_STATS_STOP(tx, TX_LOAD_STATS);
+  GTM_TX_STATS_STOP(tx, TX_LOAD_STATS, size);
 }
 
 int gtm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size) {
@@ -310,7 +308,7 @@ void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t si
   
   GTM_TX_STATS_START(tx, TX_STORE_STATS);
   GTM_Safe(tx, gtm_tx_store_wrap(tx, srcaddr, dstaddr, size));
-  GTM_TX_STATS_STOP(tx, TX_STORE_STATS);
+  GTM_TX_STATS_STOP(tx, TX_STORE_STATS, size);
 }
 
 void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size, int ln, chpl_string fn) {
@@ -321,7 +319,7 @@ void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* s
  
   GTM_TX_STATS_START(tx, TX_GET_STATS);
   GTM_Safe(tx, gtm_tx_comm_get(tx, dstaddr, srclocale, srcaddr, size));
-  GTM_TX_STATS_STOP(tx, TX_GET_STATS);
+  GTM_TX_STATS_STOP(tx, TX_GET_STATS, size);
 }
 
 void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size, int ln, chpl_string fn) {
@@ -332,7 +330,7 @@ void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* d
   
   GTM_TX_STATS_START(tx, TX_PUT_STATS);
   GTM_Safe(tx, gtm_tx_comm_put(tx, srcaddr, dstlocale, dstaddr, size));
-  GTM_TX_STATS_STOP(tx, TX_PUT_STATS);
+  GTM_TX_STATS_STOP(tx, TX_PUT_STATS, size);
 }
 
 void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize) {
@@ -344,7 +342,7 @@ void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *
   } else {
     GTM_TX_STATS_START(tx, TX_FORK_STATS);
     GTM_Safe(tx, gtm_tx_comm_fork(tx, dstlocale, fid, arg, argsize));
-    GTM_TX_STATS_STOP(tx, TX_FORK_STATS);
+    GTM_TX_STATS_STOP(tx, TX_FORK_STATS, 0);
   }
 }
 
@@ -352,12 +350,12 @@ void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memD
   void *tmp;
   GTM_TX_STATS_START(tx, TX_MALLOC_STATS);
   tmp = gtm_tx_malloc_memset(tx, number, size, description, ln, fn);
-  GTM_TX_STATS_STOP(tx, TX_MALLOC_STATS);
+  GTM_TX_STATS_STOP(tx, TX_MALLOC_STATS, size);
   return tmp;
 }
 
 void chpl_stm_tx_free(chpl_stm_tx_p tx, void* ptr, int32_t ln, chpl_string fn) { 
   GTM_TX_STATS_START(tx, TX_FREE_STATS);
   gtm_tx_free_memset(tx, ptr, ln, fn);
-  GTM_TX_STATS_STOP(tx, TX_FREE_STATS);
+  GTM_TX_STATS_STOP(tx, TX_FREE_STATS, 0);
 }

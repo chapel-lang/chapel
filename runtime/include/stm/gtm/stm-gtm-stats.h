@@ -22,11 +22,14 @@ enum {
 };
 
 typedef struct __stats_t {
-  _real64 starttime;            // time the ongoing started
-  _real64 begintime;            // time the transaction started
-  _real64 lastAbort;            // time of the last abort
+  _real64 createtime;           // time transaction was created
+  _real64 begintime;            // time transaction started
+  _real64 starttime;            // time current operation started
+  _real64 numremlocales;
   unsigned int numAbort;
   _real64 durAbort;
+  unsigned int numMAbort;
+  _real64 durMAbort;
   unsigned int numCommAbort;
   _real64 durCommAbort;
   unsigned int numCommitPh1;
@@ -39,16 +42,22 @@ typedef struct __stats_t {
   _real64 durCommCommitPh2;
   unsigned int numLoad;
   _real64 durLoad;
-  unsigned int sizeReadSet;
+  unsigned int sizeLoad;
+  unsigned int maxLoad;
   unsigned int numGet;
   _real64 durGet;
+  unsigned int sizeGet;
+  unsigned int maxGet;
   unsigned int numCommGet;
   _real64 durCommGet;
   unsigned int numStore;
   _real64 durStore;
-  unsigned int sizeWriteSet;
+  unsigned int sizeStore;
+  unsigned int maxStore;
   unsigned int numPut;
   _real64 durPut;
+  unsigned int sizePut;
+  unsigned int maxPut;
   unsigned int numCommPut;
   _real64 durCommPut;
   unsigned int numFork;
@@ -57,6 +66,8 @@ typedef struct __stats_t {
   _real64 durCommFork;
   unsigned int numMalloc;
   _real64 durMalloc;
+  unsigned int sizeMalloc;
+  unsigned int maxMalloc;
   unsigned int numFree;
   _real64 durFree;
 } stats_t;
@@ -67,15 +78,15 @@ void gtm_tx_create_stats(void*);
 void gtm_tx_destroy_stats(void*);
 void gtm_tx_cleanup_stats(void*);
 void gtm_tx_stats_start(void*, int);
-void gtm_tx_stats_stop(void*, int, int status);
+void gtm_tx_stats_stop(void*, int, int status, int size);
 
 #define GTM_TX_STATS_START(tx, op) \
   gtm_tx_stats_start(tx, op) 
-#define GTM_TX_STATS_STOP(tx, op) \
-  gtm_tx_stats_stop(tx, op, TX_OK)
+#define GTM_TX_STATS_STOP(tx, op, size) \
+  gtm_tx_stats_stop(tx, op, TX_OK, size)
 #define GTM_TX_COMM_STATS_START(tx, op) \
   gtm_tx_stats_start(tx, op) 
 #define GTM_TX_COMM_STATS_STOP(tx, op, status) \
-  gtm_tx_stats_stop(tx, op, status)
+  gtm_tx_stats_stop(tx, op, status, 0)
 
 #endif
