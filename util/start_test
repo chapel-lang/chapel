@@ -893,15 +893,17 @@ foreach absdir ($absdirs)
     endif
 
     if ($performance) then
-        echo $CHPL_TEST_PERF_DIR > chpl_test_perf_dir    
-        if ( `wc -c chpl_test_perf_dir | tr 'a-z_' ' '` != 1 ) then 
+	if ($?CHPL_TEST_PERF_DIR) then
             if (-e $CHPL_TEST_PERF_DIR/index.html) then
                 rm $CHPL_TEST_PERF_DIR/index.html
             endif
             touch $CHPL_TEST_PERF_DIR/index.html
             echo '<html>' >> $CHPL_TEST_PERF_DIR/index.html
             echo '<body>' >> $CHPL_TEST_PERF_DIR/index.html	
-        endif   
+	    echo '<p>Performance Graphs as of ' >> $CHPL_TEST_PERF_DIR/index.html
+	    date '+%D' >> $CHPL_TEST_PERF_DIR/index.html
+	    echo '</p>' >> $CHPL_TEST_PERF_DIR/index.html
+	endif   
     endif
  
     foreach dir ($dirs)
@@ -959,12 +961,10 @@ foreach absdir ($absdirs)
     end
    
     if ($performance) then
-        echo $CHPL_TEST_PERF_DIR > chpl_test_perf_dir
-        if ( `wc -c chpl_test_perf_dir | tr 'a-z_' ' '` != 1 ) then 
+	if ($?CHPL_TEST_PERF_DIR) then
             echo '</body>' >> $CHPL_TEST_PERF_DIR/index.html
             echo '</html>' >> $CHPL_TEST_PERF_DIR/index.html	
         endif   
-        rm chpl_test_perf_dir
     endif
 end
 

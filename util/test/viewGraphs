@@ -19,7 +19,7 @@ chomp($currentdir);
 close (CURRENTDIR);
 system ("rm $currentdir_file");
 
-system("find ./perfdat/$machine -name \*.gif > $image_files");
+system("find $outputdir -name \*.gif > $image_files");
 open IMAGES, "$image_files" or die "can't open $image_files $!";
 my @images = <IMAGES>;
 close(IMAGES);
@@ -45,7 +45,6 @@ if ($commonperfdir eq "no") {
     close (HTML);
 } else {
     open HTML, ">>$html_file" or die "can't open $html_file for appending $!";
-    print HTML "<p>Performance Graphs as of $mon/$mday/$year</p>\n";
     &appendImageList;
 }
 
