@@ -15,6 +15,11 @@ config param dimension = 2;
 const dimensions = [1..dimension];
 
 
+//======================================================================>
+//==================== FUNDAMENTAL GRID DEFINITIONS  ===================>
+//======================================================================>
+
+
 //===> RectangularGrid class ===>
 //==============================>
 class RectangularGrid {
@@ -146,6 +151,10 @@ def RectangularGrid.xValue (point_index: dimension*int) {
 //<=== xValue method <===
 
 
+//<=====================================================================
+//<=================== FUNDAMENTAL GRID DEFINITIONS ====================
+//<=====================================================================
+
 
 
 
@@ -168,9 +177,9 @@ class GridSolution {
 
 
 
-//===> copyGridSolution method ===>
-//==================================>
-def RectangularGrid.copyGridSolution(q: GridSolution) {
+//===> copySolution method ===>
+//============================>
+def RectangularGrid.copySolution(q: GridSolution) {
   
   //==== Make sure q lives on this grid ====
   assert(q.grid == this);
@@ -182,48 +191,52 @@ def RectangularGrid.copyGridSolution(q: GridSolution) {
 			        time  = q.time);
 
 }
-//<=== copyGridSolution method <===
-//<==================================
+//<=== copySolution method <===
+//<============================
 
 
 
 
-//===> initializeGridSolution method ===>
-//======================================>
+//===> initializeSolution method ===>
+//==================================>
 //---------------------------------------------------------------
 // Provided an analytical function, evaluates it on the grid and
 // returns a GridSolution.  As support for first-class functions
 // develops, the input argument will become explicitly typed.
 //---------------------------------------------------------------
-def RectangularGrid.initializeGridSolution(initial_condition){
+def RectangularGrid.initializeSolution(q:                 GridSolution,
+				       initial_condition: func(dimension*real, real)
+				      ){
 
-  var q = new GridSolution(grid = this);
+  //==== Check that q lives on this grid ====
+  assert(q.grid == this);
 
   forall precell in cells {
     var cell = tuplify(precell);
     q.value(cell) = initial_condition(xValue(cell));
   }
 
-  return q;
 }
 
 
 //-------------------------------------------------------------------
 // A similar method that does this for a TrueSolution is convenient.
 //-------------------------------------------------------------------
-def RectangularGrid.initializeGridSolution(true_solution: TrueSolution) {
-  var q = new GridSolution(this);
+def RectangularGrid.initializeSolution(q:             GridSolution,
+				       true_solution: TrueSolution
+				      ){
+
+  q.grid = this;
 
   forall precell in cells {
     var cell = tuplify(precell);
     q.value(cell) = true_solution.qTrue(xValue(cell), 0.0);
   }
 
-  return q;
 }
 
-//<======================================
-//<=== initializeGridSolution method <===
+//<==================================
+//<=== initializeSolution method <===
 
 
 //<=======================================================
@@ -262,7 +275,7 @@ class GridBC {
 
       //==== All components except for d will equal grid.cells ====
       for d_range in dimensions do
-	range_tuple(d_range) = grid.cells.dim(d_range);
+        range_tuple(d_range) = grid.cells.dim(d_range);
 
       //==== low boundary faces ====
       range_tuple(d)        = grid.i_low(d) .. grid.i_low(d) by 2;
@@ -357,9 +370,9 @@ class PeriodicGridBC: GridBC {
 
 
 
-//===> ZeroOrderExtrapolationGridBC class ===>
-//===========================================>
-class ZeroOrderExtrapolationGridBC: GridBC {
+//===> ZeroOrderExtrapGridBC class ===>
+//=====================================>
+class ZeroOrderExtrapGridBC: GridBC {
 
   //===> initialize method ===>
   //==========================>
@@ -387,18 +400,21 @@ class ZeroOrderExtrapolationGridBC: GridBC {
   def homogeneousGhostFill(q: GridSolution) {
 
     for d in dimensions do {
-      //==== Low ghost cells ====
-      forall cell in grid.low_ghost_cells(d) {
-        var target_cell = cell;
-        target_cell(d)  = grid.cells.dim(d).low;
-        q.value(cell)   = q.value(target_cell);
+
+      var shift: dimension*int;
+      shift(d) = 1;
+      
+
+      //==== Low boundary ====
+      forall preface in grid.low_boundary_faces(d) {
+	var face = tuplify(preface);
+	q.value(face-shift) = q.value(face+shift);
       }
 
       //==== High ghost cells ====
-      forall cell in grid.high_ghost_cells(d) {
-        var target_cell = cell;
-        target_cell(d)  = grid.cells.dim(d).high;
-        q.value(cell)   = q.value(target_cell);
+      forall preface in grid.high_boundary_faces(d) {
+	var face = tuplify(preface);
+	q.value(face+shift) = q.value(face-shift);
       }
     }
 
@@ -409,8 +425,8 @@ class ZeroOrderExtrapolationGridBC: GridBC {
 
 
 }
-//<======================================
-//<=== ConstantDirichletGridBC class <===
+//<====================================
+//<=== ZeroOrderExtrapGridBC class <===
 
 
 
@@ -484,15 +500,15 @@ class TrueSolutionDirichletGridBC: GridBC {
       
       //==== Low boundary ====
       forall preface in low_boundary_faces(d) {
-	var face = tuplify(preface);
-	q.value(face - shift) = -q.value(face + shift);
+        var face = tuplify(preface);
+        q.value(face - shift) = -q.value(face + shift);
       }
 
 
       //==== High boundary ====
       forall preface in high_boundary_faces(d) {
-	var face = tuplify(preface);
-	q.value(face + shift) = -q.value(face - shift);
+        var face = tuplify(preface);
+        q.value(face + shift) = -q.value(face - shift);
       }
     }
 
@@ -542,21 +558,21 @@ class TrueSolutionNeumannGridBC: GridBC {
 
       //==== Low boundary ====
       forall preface in low_boundary_faces(d) {
-	var face            = tuplify(preface);
-	var normal_flux     = -true_solution.fluxComponent(grid.xValue(face), q.time, d);
-	q.value(face-shift) = true_solution.normalFluxToGhost(normal_flux, 
-							      q.value(face+shift), 
-							      dx);
+        var face            = tuplify(preface);
+        var normal_flux     = -true_solution.fluxComponent(grid.xValue(face), q.time, d);
+        q.value(face-shift) = true_solution.normalFluxToGhost(normal_flux, 
+                                                              q.value(face+shift), 
+                                                              dx);
       }
 
 
       //==== High boundary ====
       forall preface in high_boundary_faces(d) {
-	var face            = tuplify(preface);
-	var normal_flux     = true_solution.fluxComponent(grid.xValue(face), q.time, d);
-	q.value(face+shift) = true_solution.normalFluxToGhost(normal_flux,
-							      q.value(face-shift),
-							      dx);
+        var face            = tuplify(preface);
+        var normal_flux     = true_solution.fluxComponent(grid.xValue(face), q.time, d);
+        q.value(face+shift) = true_solution.normalFluxToGhost(normal_flux,
+                                                              q.value(face-shift),
+                                                              dx);
       }
 
     }
@@ -844,9 +860,9 @@ class TrueSolution {
   }
 
   def normalFluxToGhost(flux: real,
-			inner_value: real,
-			dx: real
-		       ){
+                        inner_value: real,
+                        dx: real
+                       ){
     return 0.0;
   }
 }

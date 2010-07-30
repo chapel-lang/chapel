@@ -8,23 +8,23 @@
 //<=== Description <===
 
 
-use grid_base_defs;
-use grid_ctu_defs;
+use level_base_defs;
+use level_ctu_defs;
 
 
 
 
 //===> advanceAdvectionCTU routine ===>
 //====================================>
-def advanceAdvectionCTU(grid:           RectangularGrid,
-			sol:            GridSolution,
-			bc:             GridBC,
+def advanceAdvectionCTU(level:          BaseLevel,
+			sol:            LevelSolution,
+			bc:             LevelBC,
 			velocity:       dimension*real,
                         time_requested: real
                        ) {
 
   //==== Make sure the solution can validly be updated ====
-  assert(sol.grid == grid  &&  sol.time <= time_requested);
+  assert(sol.level == level  &&  sol.time <= time_requested);
 
 
   //===> Initialize ===>
@@ -32,7 +32,7 @@ def advanceAdvectionCTU(grid:           RectangularGrid,
       dt_target:        real,
       dt_used:          real;
 
-  [d in dimensions] cfl(d) = grid.dx(d) / abs(velocity(d));
+  [d in dimensions] cfl(d) = level.dx(d) / abs(velocity(d));
   (dt_target,) = minloc reduce(cfl, dimensions);
   dt_target *= 0.95;
   //<=== Initialize <===
@@ -52,8 +52,7 @@ def advanceAdvectionCTU(grid:           RectangularGrid,
 
 
     //==== Update solution ====
-    bc.ghostFill(sol);
-    grid.stepCTU(sol, velocity, dt_used);
+    level.stepCTU(sol, bc, velocity, dt_used);
           
   }
   //<=== Time-stepping loop <===
@@ -80,34 +79,59 @@ def main {
 
 
 
-  //===> Initialize grid ===>
-  var x_low, x_high:          dimension*real,
-      i_low:                  dimension*int,
-      n_cells, n_ghost_cells: dimension*int;
+  //===> Initialize level ===>
+  var x_low, x_high: dimension*real,
+    n_cells, n_ghost: dimension*int;
 
-  var N: int;
-  if dimension<3 then N=100;
-  else N = 50;
 
-  for d in dimensions do {
-    x_low(d)         = -1.0;
-    x_high(d)        = 1.0;
-    i_low(d)         = 0;
-    n_cells(d)       = N;
-    n_ghost_cells(d) = 2;
+  [d in dimensions] {
+    x_low(d)    = -1.0;
+    x_high(d)   =  1.0;
+    n_cells(d)  = 100;
+    n_ghost(d)  = 1;
   }
 
-  var grid = new RectangularGrid(x_low         = x_low,
-		                 x_high        = x_high,
-	                         i_low         = i_low,
-			         n_cells       = n_cells, 
-			         n_ghost_cells = n_ghost_cells);
-  //<=== Initialize grid <===
+  var level = new BaseLevel(x_low               = x_low,
+		            x_high              = x_high,
+			    n_cells             = n_cells,
+			    n_child_ghost_cells = n_ghost);
+  //<=== Initialize level <===
 
 
 
-  //==== Initialize boundary conditions ====
-  var bc = new PeriodicGridBC(grid = grid);
+  //===> Initialize grids ===>
+  //==== Grid 1 ====
+  x_low(1) = -1.0;
+  x_high(1) = 0.0;
+
+  for d in [2..dimension] {
+    x_low(d)  = -1.0;
+    x_high(d) = 0.5;
+  }
+
+  level.addGrid(x_low, x_high);
+
+
+  //==== Grid 2 ====
+  x_low(1) = 0.0;
+  x_high(1) = 1.0;
+
+  for d in [2..dimension] {
+    x_low(d) = -0.5;
+    x_high(d) = 1.0;
+  }
+
+  level.addGrid(x_low, x_high);
+
+
+  //==== Fix the level ====
+  level.fix();
+  //<=== Initialize grids <===
+
+
+
+  //==== Set boundary conditions ====
+  var bc = new ZeroOrderExtrapLevelBC(level = level);
 
 
 
@@ -115,12 +139,12 @@ def main {
   def initial_condition ( x: dimension*real ) {
     var f: real = 1.0;
     for d in dimensions do
-    	f *= exp(-30*x(d)**2);
+      f *= exp(-30 * (x(d) + 0.5)**2);
     return f;
   }
 
-  var sol = new GridSolution(grid = grid);
-  grid.initializeSolution(sol, initial_condition);
+  var sol = new LevelSolution(level = level);
+  level.initializeSolution(sol, initial_condition);
   //<=== Initialize  solution <===
 
 
@@ -142,17 +166,17 @@ def main {
   //===> Generate output ===>
   //==== Initial time ====
   sol.time = time_initial;
-  grid.clawOutput(sol, frame_number);
+  level.clawOutput(sol, frame_number);
 
   //==== Subsequent times ====
   for output_time in output_times do {
     //==== Advance solution to output time ====
-    advanceAdvectionCTU(grid, sol, bc, velocity, output_time);
+    advanceAdvectionCTU(level, sol, bc, velocity, output_time);
 
     //==== Write output to file ====
     frame_number += 1;
     writeln("Writing frame ", frame_number, ".");
-    grid.clawOutput(sol, frame_number);
+    level.clawOutput(sol, frame_number);
   }
   //<=== Generate output <===
   

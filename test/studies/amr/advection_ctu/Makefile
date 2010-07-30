@@ -5,7 +5,7 @@ PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
 
 SOURCES = \
 	../lib/grid_base_defs.chpl \
-	advection_ctu_defs.chpl \
+	../lib/grid_ctu_defs.chpl \
 	advection_ctu_driver.chpl
 
 
