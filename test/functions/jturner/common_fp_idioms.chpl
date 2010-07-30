@@ -24,8 +24,14 @@ def fold_right(arr, init, op) {
   return ret;
 }
 
-def map(arr, op) {
+def map_eager(arr, op) {
   return op(arr);
+}
+
+def map(arr, op) {
+  for a in arr {
+    yield(op(a));
+  }
 }
 
 def filter(arr, op) {
