@@ -45,7 +45,7 @@ bool isOnStack(SymExpr* se) {
 // Based on codegen_member in expr.cpp
 //
 static 
-int isBaseOnStack(SymExpr *base) {
+bool isBaseOnStack(SymExpr* base) {
   ClassType* ct = toClassType(base->typeInfo());
   INT_ASSERT(ct);
   INT_ASSERT(!isUnion(ct));
@@ -54,9 +54,23 @@ int isBaseOnStack(SymExpr *base) {
     return false;
   if (isClass(ct))
     return false;
-  if (!isClass(ct) && isOnStack(toSymExpr(base)))
+  if (!isClass(ct) && isOnStack(base))
     return true;
   return false; 
+}
+
+//
+// Based on codegenTuplemember in expr.cpp
+// 
+static
+bool isTupleBaseOnStack(SymExpr* base) {
+  if (base->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+    USR_WARN(base, "TupleBase has FLAG_REF");
+    return false;
+  }
+  if (!isOnStack(base))
+    return false;
+  return true;
 }
 
 void txUnknownPrimitive(CallExpr *call) { /* gdb use only */ }
@@ -195,12 +209,6 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	    call->replace(new CallExpr(PRIM_TX_LOAD_MEMBER_VALUE, 
 				       tx, lhs->var, se1->var, se2->var));
 	  }
-	    //	    if (!isOnStack(se1)) 
-	  //   // if(!isFormalArg(se1))
-	  //   if (!strstr(se1->parentExpr->getFunction()->name, "tx_clone_wrapon"))
-	  //     call->replace(new CallExpr(PRIM_TX_LOAD_MEMBER_VALUE, 
-	  // 				 tx, lhs->var, se1->var, se2->var));
-	  // }
 	}
 	break;
       }
@@ -211,9 +219,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se2);
 	INT_ASSERT(lhs->getValType() == se2->getValType());
 	if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-  	  // generate CHPL_STM_WIDE_GET_FIELD -- requires STM tracking if 
-	  // (A) its on the heap (B) its on the stack and passed around.
-	  // currently assuming its on the stack and not passed around. 
+	  // Generating the transactional equivalent of CHPL_WIDE_GET_FIELD
+	  // is only necessary if se1 is on the heap (or) falls under one
+	  // of the uncommon cases we need to track stack references.
 	  if (!isOnStack(se1)) 
 	    USR_WARN(call, "Heap load not instrumented (GET_MEMBER)");    
 	  break;
@@ -233,8 +241,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se1);
 	INT_ASSERT(se2);
 	if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-	  // generate CHPL_STM_WIDE_GET_TUPLE_COMPONENT
-	  // same reasoning as in CHPL_STM_WIDE_GET_FIELD
+	  // same reasoning as PRIM_GET_MEMBER
 	  if (!isOnStack(se1)) 
 	    USR_WARN(call, "Heap load not being tracked (GET_SVEC_MEMBER)");
 	  break;
@@ -250,12 +257,10 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se1);
 	INT_ASSERT(se2);
 	if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-	  break;
 	  USR_FATAL(call, "FIXME: GET_SVEC_MEMBER_VALUE FLAG_WIDE");
 	} else {
 	  INT_ASSERT(lhs->getValType() == rhs->getValType());
-	  if (!isOnStack(se1))
-	  //	  if (!isFormalArg(se1) || !isOnStack(se1))
+	  if (!isTupleBaseOnStack(se1))
 	    call->replace(new CallExpr(PRIM_TX_LOAD_SVEC_MEMBER_VALUE, 
 				       tx, lhs->var, se1->var, se2->var));
         }
@@ -550,7 +555,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     break;
   }
   case PRIM_CAST:
+    break;
   case PRIM_BLOCK_LOCAL:
+    break;
   case PRIM_BLOCK_ATOMIC:
     // In original functions that have an atomic block: This has the
     // straight forward effect of simply skipping the primitive. 
