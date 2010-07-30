@@ -892,15 +892,17 @@ foreach absdir ($absdirs)
         set dirs = (./)
     endif
 
-    echo $CHPL_TEST_PERF_DIR > chpl_test_perf_dir    
-    if ( `wc -c chpl_test_perf_dir | tr 'a-z_' ' '` != 1 ) then 
-	if (-e $CHPL_TEST_PERF_DIR/index.html) then
-	    rm $CHPL_TEST_PERF_DIR/index.html
-        endif
-	touch $CHPL_TEST_PERF_DIR/index.html
-        echo '<html>' >> $CHPL_TEST_PERF_DIR/index.html
-    	echo '<body>' >> $CHPL_TEST_PERF_DIR/index.html	
-    endif   
+    if ($performance) then
+        echo $CHPL_TEST_PERF_DIR > chpl_test_perf_dir    
+        if ( `wc -c chpl_test_perf_dir | tr 'a-z_' ' '` != 1 ) then 
+            if (-e $CHPL_TEST_PERF_DIR/index.html) then
+                rm $CHPL_TEST_PERF_DIR/index.html
+            endif
+            touch $CHPL_TEST_PERF_DIR/index.html
+            echo '<html>' >> $CHPL_TEST_PERF_DIR/index.html
+            echo '<body>' >> $CHPL_TEST_PERF_DIR/index.html	
+        endif   
+    endif
  
     foreach dir ($dirs)
         cd $basedir
@@ -956,12 +958,14 @@ foreach absdir ($absdirs)
 	endif
     end
    
-    echo $CHPL_TEST_PERF_DIR > chpl_test_perf_dir
-    if ( `wc -c chpl_test_perf_dir | tr 'a-z_' ' '` != 1 ) then 
-	echo '</body>' >> $CHPL_TEST_PERF_DIR/index.html
-	echo '</html>' >> $CHPL_TEST_PERF_DIR/index.html	
-    endif   
-    rm chpl_test_perf_dir
+    if ($performance) then
+        echo $CHPL_TEST_PERF_DIR > chpl_test_perf_dir
+        if ( `wc -c chpl_test_perf_dir | tr 'a-z_' ' '` != 1 ) then 
+            echo '</body>' >> $CHPL_TEST_PERF_DIR/index.html
+            echo '</html>' >> $CHPL_TEST_PERF_DIR/index.html	
+        endif   
+        rm chpl_test_perf_dir
+    endif
 end
 
 # return to where we started
