@@ -390,7 +390,7 @@ if os.getenv('CHPL_TEST_PERF')!=None:
     execoptssuffix='.perfexecopts'
     perftest=True
     searchperfdir='./perfdat/'+machine
-    if (len(os.getenv('CHPL_TEST_PERF_DIR'))!=0):
+    if os.getenv('CHPL_TEST_PERF_DIR')!=None:
         perfdir=os.getenv('CHPL_TEST_PERF_DIR')
     else:
         perfdir='./perfdat/'+machine
@@ -962,7 +962,7 @@ for testname in testsrc:
                 sys.stdout.write(']\n')
 
             else:
-		if ((len(os.getenv('CHPL_TEST_PERF_DIR')))!=0):
+		if os.getenv('CHPL_TEST_PERF_DIR')!=None:
                     if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
                         os.makedirs(perfdir)
                     if not os.access(perfdir, os.R_OK|os.X_OK):
@@ -980,13 +980,16 @@ for testname in testsrc:
                         keyfile = execname+'.perfkeys'
 
 		duplicates = 0
-		
-		chpl_test_perf_dir = os.getenv('CHPL_TEST_PERF_DIR')
-		sys.stdout.write('[Executing checkDuplicates %s %s %s %s]\n'%(perfexecname, perfdir, testdir, chpl_test_perf_dir))
+	
+		if os.getenv('CHPL_TEST_PERF_DIR')!=None:	
+		    chpl_test_perf_dir = os.getenv('CHPL_TEST_PERF_DIR')
+ 		else:
+		    chpl_test_perf_dir = ""
+		sys.stdout.write('[Executing checkDuplicates %s %s %s]\n'%(perfexecname, perfdir, testdir))
 		sys.stdout.flush()
 
  		if os.path.isfile(utildir+'/checkDuplicates'):
-   	    	    p = subprocess.Popen([utildir+'/checkDuplicates', perfexecname, perfdir, testdir, chpl_test_perf_dir],stdout=subprocess.PIPE)
+   	    	    p = subprocess.Popen([utildir+'/checkDuplicates', perfexecname, perfdir, testdir],stdout=subprocess.PIPE)
    	    	    sys.stdout.write('%s'%(p.communicate()[0]))
    	    	    sys.stdout.flush()
 		else:
@@ -1051,7 +1054,7 @@ if perftest:
  	    sys.stdout.write('[Error')
         sys.stdout.write(' creating graphs in %s]\n'%(testdir+'/'+localdir))
 
-    if ((len(os.getenv('CHPL_TEST_PERF_DIR')))!=0):
+    if (os.getenv('CHPL_TEST_PERF_DIR')!=None):
 	commonperfdir = "yes";
     else:
   	commonperfdir = "no";

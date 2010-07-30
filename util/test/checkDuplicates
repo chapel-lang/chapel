@@ -3,12 +3,8 @@
 my $testname = $ARGV[0];
 my $outputdir = $ARGV[1];
 my $testdir = $ARGV[2];
-my $chpl_test_perf_dir = $ARGV[3];
 my $searchdir = ".";
 
-if (length($chpl_test_perf_dir) > 0) {
-    $searchdir = "$testdir";
-} 
 my $duplicate_src = "$searchdir/dupsrc.tmp";
 system("find $searchdir -name \\$testname.chpl > $duplicate_src");
 open DUPLICATES, "$duplicate_src" or die "can't open $duplicate_src $!";
