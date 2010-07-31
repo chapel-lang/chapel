@@ -764,14 +764,6 @@ sub commitstats {
             `cd $statdir && ./makeplot`;
         }
     }
-  } else {
-      $graphdir = $ENV{'CHPL_TEST_PERF_DIR'};
-      if ($graphdir eq "") {
-          print "Skipping graphs -- CHPL_TEST_PERF_DIR not set\n";
-      } else {
-          print "Making graphs...\n";
-          `cd $graphdir && make`;
-      }
   }
 }
 
