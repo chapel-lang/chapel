@@ -33,7 +33,6 @@ if ($comm eq "none") {
     $commsubstrate = `$utildirname/commSubstrate`; chomp($commsubstrate);
     print "  CHPL_COMM_SUBSTRATE: $commsubstrate\n";
     if (($comm eq "armci" && $commsubstrate eq "mpi") ||
-        ($comm eq "gasnet" && $commsubstrate eq "mpi") ||
         ($comm eq "mpi")) {
         $mpiver = `$utildirname/chplmpi`; chomp($mpiver);
         print "  CHPL_MPI_VERSION: $mpiver\n";
