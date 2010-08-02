@@ -83,59 +83,52 @@ def main {
   var x_low, x_high: dimension*real,
     n_cells, n_ghost: dimension*int;
 
+  var f: file = new file("grids_in.txt", FileAccessMode.read);
+  f.open();
 
-  [d in dimensions] {
-    x_low(d)    = -1.0;
-    x_high(d)   =  1.0;
-    n_cells(d)  = 100;
-    n_ghost(d)  = 1;
-  }
+  f.readln(); // skip number of levels
+  f.readln(); // empty line
+  
+  f.readln((...x_low));
+  f.readln((...x_high));
+  f.readln((...n_cells));
+  f.readln((...n_ghost));
 
   var level = new BaseLevel(x_low               = x_low,
-		            x_high              = x_high,
-			    n_cells             = n_cells,
-			    n_child_ghost_cells = n_ghost);
-  //<=== Initialize level <===
+                            x_high              = x_high,
+                            n_cells             = n_cells,
+                            n_child_ghost_cells = n_ghost);
 
+  f.readln();
+  write("Setting up grids...");
 
-
-  //===> Initialize grids ===>
-  //==== Grid 1 ====
-  x_low(1) = -1.0;
-  x_high(1) = 0.0;
-
-  for d in [2..dimension] {
-    x_low(d)  = -1.0;
-    x_high(d) = 0.5;
+  var n_grids: int;
+  f.readln(n_grids);
+  
+  for i_grid in [1..n_grids] {
+    write(i_grid, "...");
+    f.readln();
+    f.readln((...x_low));
+    f.readln((...x_high));
+    level.addGrid(x_low, x_high);
   }
+  
+  f.close();
 
-  level.addGrid(x_low, x_high);
-
-
-  //==== Grid 2 ====
-  x_low(1) = 0.0;
-  x_high(1) = 1.0;
-
-  for d in [2..dimension] {
-    x_low(d) = -0.5;
-    x_high(d) = 1.0;
-  }
-
-  level.addGrid(x_low, x_high);
-
-
-  //==== Fix the level ====
   level.fix();
+  write("done.\n");
   //<=== Initialize grids <===
 
 
 
   //==== Set boundary conditions ====
+  write("Setting boundary conditions...");
   var bc = new ZeroOrderExtrapLevelBC(level = level);
-
+  write("done.\n");
 
 
   //===> Initialize solution ===>
+  write("Initializing solution...");
   def initial_condition ( x: dimension*real ) {
     var f: real = 1.0;
     for d in dimensions do
@@ -145,15 +138,24 @@ def main {
 
   var sol = new LevelSolution(level = level);
   level.initializeSolution(sol, initial_condition);
+  write("done.\n");
   //<=== Initialize  solution <===
 
 
 
   //===> Initialize output ===>
-  var time_initial: real = 0.0,
-    time_final:     real = 2.0,
-    n_output:       int  = 20,
-    output_times:   [1..n_output] real,
+  f = new file("time_parameters.txt", FileAccessMode.read);
+  f.open();
+  
+  var time_initial, time_final: real;
+  var n_output: int;
+
+  f.readln(time_initial);
+  f.readln(time_final);
+  f.readln(n_output);
+  f.close();
+
+  var output_times:   [1..n_output] real,
     dt_output:      real = (time_final - time_initial) / n_output,
     frame_number:   int = 0;
 
@@ -165,8 +167,10 @@ def main {
 
   //===> Generate output ===>
   //==== Initial time ====
+  write("Writing initial output...");
   sol.time = time_initial;
   level.clawOutput(sol, frame_number);
+  write("done.\n");
 
   //==== Subsequent times ====
   for output_time in output_times do {
@@ -175,8 +179,9 @@ def main {
 
     //==== Write output to file ====
     frame_number += 1;
-    writeln("Writing frame ", frame_number, ".");
+    write("Writing frame ", frame_number, "...");
     level.clawOutput(sol, frame_number);
+    write("done.\n");
   }
   //<=== Generate output <===
   

@@ -1,6 +1,6 @@
 //===> Description ===>
 //
-// Definitions for the BaseLevel class.
+// Definitions for the RefinementLevel class.
 //
 //<=== Description <===
 
@@ -17,9 +17,9 @@ use grid_base_defs;
 //================================>
 class LevelGrid: RectangularGrid {
 
-  var parent: BaseLevel;
+  var level: RefinementLevel;
 
-  var neighbors:    domain(LevelGrid);
+  var neighbors:    domain(LevelGrid); //subdomain(level.grids);
   var shared_cells: [neighbors] subdomain(ext_cells);
 
 
@@ -30,12 +30,12 @@ class LevelGrid: RectangularGrid {
 
     //===> Set fields via parent data and index bounds ===>
     forall d in dimensions {
-      x_low(d)  = parent.x_low(d) + i_low(d)  * parent.dx(d)/2.0;
-      x_high(d) = parent.x_low(d) + i_high(d) * parent.dx(d)/2.0;
+      x_low(d)  = level.x_low(d) + i_low(d)  * level.dx(d)/2.0;
+      x_high(d) = level.x_low(d) + i_high(d) * level.dx(d)/2.0;
       n_cells(d)= (i_high(d) - i_low(d)) / 2;
     }
 
-    n_ghost_cells = parent.n_child_ghost_cells;
+    n_ghost_cells = level.n_child_ghost_cells;
     //<=== Set fields via parent data and index bounds <===
 
 
@@ -49,20 +49,20 @@ class LevelGrid: RectangularGrid {
 
 
 
-  //===> setNeighborData method ===>
-  //=================================>
-  //-------------------------------------------------------------
-  // Locates neighboring grids, and stores the domains that this 
-  // grid's ghost cells share with each neighbor's interior.
-  //-------------------------------------------------------------
-  def setNeighborData() {
+  //===> locateNeighbors method ===>
+  //================================>
+  //-------------------------------------------------------------------
+  // Locates neighboring grids, and stores the domains that his grid's 
+  // ghost cells share with its neighbor's interior.
+  //-------------------------------------------------------------------
+  def locateNeighbors() {
   
     //==== Stores overlap in each dimension as a range ====
     var overlap:   dimension*range(stridable=true);
     var intersect: bool;
   
     //===> Loop over siblings ===>
-    for sib in parent.child_grids {
+    for sib in level.grids {
   
       //==== Assume sib intersects this grid ====
       intersect = true;
@@ -91,8 +91,8 @@ class LevelGrid: RectangularGrid {
     //<=== Loop over siblings <===
     
   }
-  //<=== setNeighborData method <===
-  //<===============================
+  //<=== locateNeighbors method <===
+  //<================================
   
   
   
@@ -102,14 +102,14 @@ class LevelGrid: RectangularGrid {
   // Copies data from q's siblings on neighboring grids into q's
   // ghost values.
   //-------------------------------------------------------------
-  def copyFromNeighbors(q: LevelGridSolution) {
+  def copyFromNeighbors(q: GridSolution) {
   
     //==== Make q lives on this grid ====
     assert(q.grid == this);
   
     for nbr in neighbors {
-      //==== Locate sibling solution on neighbor grid ====
-      var q_sib = q.parent.child_sols(nbr);
+      //==== Locate sibling function on neighbor ====
+      var q_sib = q.level_function.grid_functions(nbr);
   
       //==== Copy values from shared cells ====
       q.value(shared_cells(nbr)) = q_sib.value(shared_cells(nbr));
@@ -127,18 +127,16 @@ class LevelGrid: RectangularGrid {
 
 
 
-//===> Definition of class BaseLevel ===>
+//===> Definition of class RefinementLevel ===>
 //============================================>
-class BaseLevel {
-
-  var fixed: bool = false;
+class RefinementLevel {
   
   var x_low, x_high:       dimension*real,
       n_cells:             dimension*int,
       n_child_ghost_cells: dimension*int,
       dx:                  dimension*real;
 
-  var child_grids: domain(LevelGrid);  // associative domain of LevelGrids
+  var grids: domain(LevelGrid);  // associative domain of LevelGrids
 
   //===> initialize() method ===>
   def initialize() {
@@ -148,28 +146,26 @@ class BaseLevel {
 
 }
 //<============================================
-//<=== Definition of class BaseLevel <===
+//<=== Definition of class RefinementLevel <===
 
 
 
-//===> BaseLevel.addGrid method ===>
+//===> RefinementLevel.addGrid method ===>
 //=======================================>
 //--------------------------------------------------------
 // This version is based on indices, and probably best to
 // use in practice, as integer arithmetic is cleaner than
 // real arithmetic.
 //--------------------------------------------------------
-def BaseLevel.addGrid(i_low:  dimension*int,
-                      i_high: dimension*int
-                     ) {
+def RefinementLevel.addGrid(i_low:  dimension*int,
+                            i_high: dimension*int
+                           ) {
   
-  assert(fixed == false);
+  var new_grid = new LevelGrid(level  = this,
+                               i_low  = i_low,
+                               i_high = i_high);
 
-  var new_grid = new LevelGrid(parent  = this,
-                               i_low   = i_low,
-                               i_high  = i_high);
-
-  child_grids.add(new_grid);
+  grids.add(new_grid);
 }
 
 
@@ -177,56 +173,35 @@ def BaseLevel.addGrid(i_low:  dimension*int,
 // This version takes in real bounds, and snaps them to the
 // level's discretization.  Mostly for testing purposes.
 //----------------------------------------------------------
-def BaseLevel.addGrid(x_low_grid:  dimension*real,
-                      x_high_grid: dimension*real
-                     ){
+def RefinementLevel.addGrid(x_low_grid:  dimension*real,
+                  x_high_grid: dimension*real
+                 ){
 
-  //==== Make sure the level isn't fixed ====
-  assert(fixed == false);
 
+  var i_low, i_high: dimension*int;
 
   //==== Find nearest interfaces to provided coordinates ====
-  var i_low, i_high: dimension*int;
   for d in dimensions {
     i_low(d)  = 2 * round((x_low_grid(d)  - x_low(d)) / dx(d)) : int;
     i_high(d) = 2 * round((x_high_grid(d) - x_low(d)) / dx(d)) : int;
   }
   
+  writeln(i_low);
+  writeln(i_high);
 
   //==== Add grid ====
-  var new_grid = new LevelGrid(parent  = this,
-                               i_low   = i_low,
-                               i_high  = i_high);
-  child_grids.add(new_grid);
+  var new_grid = new LevelGrid(level  = this,
+                               i_low  = i_low,
+                               i_high = i_high);
+  grids.add(new_grid);
 }
-//<=================================
-//<=== BaseLevel.addGrid method <===
+//<=======================================
+//<=== RefinementLevel.addGrid method <===
 
 
-
-
-//===> BaseLevel.fix method ===>
-//=============================>
-//----------------------------------------------------------------
-// This method is meant to be called after all grids are added to
-// the level.  Neighbor data is set on each grid, and other post-
-// processing can be added here as needed.
-//----------------------------------------------------------------
-def BaseLevel.fix() {
-
-  fixed = true;
-
-  coforall grid in child_grids do
-    grid.setNeighborData();
-
-}
-//<=============================
-//<=== BaseLevel.fix method <===
-
-
-//<===============================================================
-//<=================== BASE LEVEL DEFINITIONS ====================
-//<===============================================================
+//<======================================================================
+//<=================== FUNDAMENTAL LEVEL DEFINITIONS ====================
+//<======================================================================
 
 
 
@@ -241,60 +216,53 @@ def BaseLevel.fix() {
 //===> LevelSolution class ===>
 //============================>
 class LevelSolution {
-  var level:      BaseLevel;                              // parent level
-  var child_sols: [level.child_grids] LevelGridSolution;  // child functions
-  var time:       real;                                   // duh
+  var level:          RefinementLevel;             // parent level
+  var grid_solutions: [level.grids] GridSolution;  // child functions
+  var time:           real;                        // duh
 }
 //<============================
 //<=== LevelSolution class <===
 
 
 
+//===> initializSolution method ===>
+//=================================>
 
-//===> LevelGridSolution derived class ===>
-//========================================>
-class LevelGridSolution: GridSolution {
-
-  var parent: LevelSolution;
-
-}
-//<========================================
-//<=== LevelGridSolution derived class <===
-
-
-
-
-//===> BaseLevel.initializSolution method ===>
-//===========================================>
 //--------------------------------------------------------------------
-// The argument 'initializer' can be either a first-class function
-// or a TrueSolution.
+// This version takes in initial_condition as a first-class function.
 //--------------------------------------------------------------------
-def BaseLevel.initializeSolution(q: LevelSolution,
-				 initializer
-				){
+def RefinementLevel.initializeSolution(initial_condition: func(dimension*real,real)) {
 
-  //==== Check that q lives on this level ====
-  assert(q.level == this);
-
-
-  //==== Form LevelGridSolutions ====
-  for grid in child_grids {
-
-    write("Creating new GridSolution...");
-    var grid_sol = new LevelGridSolution(grid   = grid, 
-					 parent = q);
-		write("done.\n");
-
-    grid.initializeSolution(grid_sol, initializer);
-
-    q.child_sols(grid) = grid_sol;
+  var grid_solutions: [grids] GridSolution;
+  
+  for grid in grids {
+    grid_solutions(grid) = grid.initializeSolution(initial_condition);
   }
   
-
+  return new LevelSolution(level          = this,
+                           grid_solutions = grid_solutions,
+                           time           = 0.0);
 }
-//<=== BaseLevel.initializeSoution method <===
-//<===========================================
+
+
+//--------------------------------------------------
+// This version uses a TrueSolution data structure.
+//--------------------------------------------------
+def RefinementLevel.initializeSolution(true_solution: TrueSolution){
+
+  var grid_solutions: [grids] GridSolution;
+
+  for grid in grids {
+    grid_solutions(grid) = grid.initializeSolution(true_solution);
+  }
+
+  return new LevelSolution(level          = this,
+			   grid_solutions = grid_solutions,
+			   time           = 0.0);
+}
+
+//<=== initializeSoution method <===
+//<=================================
 
 
 //<========================================================
@@ -315,8 +283,8 @@ def BaseLevel.initializeSolution(q: LevelSolution,
 //======================>
 class LevelBC {
   
-  var level:     BaseLevel;
-  var child_bcs: [level.child_grids] GridBC;
+  var level:    RefinementLevel;
+  var grid_bcs: [level.grids] GridBC;
 
   //===> ghostFill method ===>
   //=========================>
@@ -325,8 +293,8 @@ class LevelBC {
     //==== Make sure q can validly be filled ====
     assert(q.level == level);
     
-    coforall grid in level.child_grids do
-      child_bcs(grid).ghostFill(q.child_sols(grid));
+    coforall grid in level.grids do
+      grid_bcs(grid).ghostFill(q.grid_solutions(grid));
   }
   //<=== ghostFill method <===
   //<=========================
@@ -343,8 +311,8 @@ class ZeroOrderExtrapLevelBC: LevelBC {
   //==========================>
   def initialize() {
     
-    for grid in level.child_grids {
-      child_bcs(grid) = new ZeroOrderExtrapGridBC(grid = grid);
+    for grid in level.grids {
+      grid_bcs(grid) = new ZeroOrderExtrapGridBC(grid = grid);
     }
     
   }
@@ -375,7 +343,7 @@ class ZeroOrderExtrapLevelBC: LevelBC {
 //-----------------------------------------------------------------------
 // Writes both a time file and a solution file for a given frame number.
 //-----------------------------------------------------------------------
-def BaseLevel.clawOutput(q:            LevelSolution,
+def RefinementLevel.clawOutput(q:            LevelSolution,
                      frame_number: int
                     ){
 
@@ -391,7 +359,7 @@ def BaseLevel.clawOutput(q:            LevelSolution,
 
   //==== Time file ====
   var n_grids = 0;
-  for grid in child_grids do n_grids += 1;
+  for grid in grids do n_grids += 1;
 
   var outfile = new file(time_filename, FileAccessMode.write);
   outfile.open();  
@@ -419,15 +387,15 @@ def BaseLevel.clawOutput(q:            LevelSolution,
 //---------------------------------------------------------
 // Writes the data for a LevelSolution living on this level.
 //---------------------------------------------------------
-def BaseLevel.writeSolution(q:           LevelSolution,
-                            AMR_level:   int,
-                            outfile:     file
-                           ){
+def RefinementLevel.writeSolution(q:           LevelSolution,
+                                  AMR_level:   int,
+                                  outfile:     file
+                                 ){
 
   var grid_number = 0;
-  for grid in child_grids {
+  for grid in grids {
     grid_number += 1;
-    grid.writeSolution(q.child_sols(grid), grid_number, 1, outfile);
+    grid.writeSolution(q.grid_solutions(grid), grid_number, 1, outfile);
     outfile.writeln("  ");
   }
   
@@ -439,3 +407,99 @@ def BaseLevel.writeSolution(q:           LevelSolution,
 //<=======================================================
 //<=================== OUTPUT METHODS ====================
 //<=======================================================
+
+
+
+
+
+
+// //==========================================================>
+// //==================== BOUNDARY MANAGERS ===================>
+// //==========================================================>
+// 
+// 
+// //===> LevelGridBoundaryManager class ===>
+// //=======================================>
+// class LevelGridBoundaryManager: BoundaryManager {
+// 
+//   var grid: LevelGrid;  // is it worth shadowing the RectangularGrid version?
+//   
+//   var neighbors:                subdomain(grid.level.grids);
+//   var shared_cells: [neighbors] subdomain(grid.all_cells);
+// 
+// 
+// 
+//   //===> locate_neighbors method ===>
+//   //================================>
+//   def locate_neighbors() {
+// 
+//     //==== Stores overlap in each dimension as a range ====
+//     var overlap:   dimension*range(stridable=true);
+//     var intersect: bool;
+// 
+//     //===> Loop over siblings ===>
+//     for g in grid.level.grids {
+// 
+//       //==== Assume g intersects grid ====
+//       intersect = true;
+// 
+// 
+//       //==== Intersect grid.ext_cells with g.cells ====
+//       forall d in dimensions {
+//         overlap(d) = max(grid.ext_cells.dim(d).low, g.cells.dim(d).low)
+//                      .. min(grid.ext_cells.dim(d).high, g.cells.dim(d).high)
+//                     by grid.ext_cells.dim(d).stride;
+//         if overlap(d).length == 0 then intersect = false;
+//       }
+// 
+//       
+//       //==== If g==grid, then the intersection is false ====
+//       if g == grid then intersect = false;
+// 
+// 
+//       //==== If g intersects grid, store the overlap ====
+//       if intersect then {
+//         neighbors.add(g);
+//         shared_cells(g) = [(...overlap)];
+//       }
+//     }
+//     //<=== Loop over siblings <===
+//     
+//   }
+//   //<=== locate_neighbors method <===
+//   //<================================
+// 
+// 
+// 
+//   //===> copyFromNeighbors method ===>
+//   //===================================>
+//   def copyFromNeighbors(q: GridSolution) {
+// 
+//     //==== Make sure action is valid ====
+//     assert(q.grid == grid, 
+//     "error: copyFromNeighbors\n"
+//     + "GridSolution must share parent grid with BoundaryManager.");
+// 
+// 
+// 
+//     for n in neighbors {
+//       //==== Locate sibling function on neighbor ====
+//       var q_nbr = q.level_function.grid_functions(n);
+// 
+//       //==== Copy values from shared cells ====
+//       q.value(shared_cells(n)) = q_nbr.value(shared_cells(n));
+//     }
+// 
+//   }
+//   //<=== copyFromNeighbors method <===
+//   //<===================================
+// 
+// 
+// }
+// //<=======================================
+// //<=== LevelGridBoundaryManager class <===
+// 
+// 
+// //<==========================================================
+// //<=================== BOUNDARY MANAGERS ====================
+// //<==========================================================

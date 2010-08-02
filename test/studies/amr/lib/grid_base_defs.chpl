@@ -211,10 +211,12 @@ def RectangularGrid.initializeSolution(q:                 GridSolution,
   //==== Check that q lives on this grid ====
   assert(q.grid == this);
 
+  write("Writing solution on grid...");
   forall precell in cells {
     var cell = tuplify(precell);
     q.value(cell) = initial_condition(xValue(cell));
   }
+  write("done.\n");
 
 }
 
@@ -406,15 +408,15 @@ class ZeroOrderExtrapGridBC: GridBC {
       
 
       //==== Low boundary ====
-      forall preface in grid.low_boundary_faces(d) {
-	var face = tuplify(preface);
-	q.value(face-shift) = q.value(face+shift);
+      forall preface in low_boundary_faces(d) {
+        var face = tuplify(preface);
+        q.value(face-shift) = q.value(face+shift);
       }
 
       //==== High ghost cells ====
-      forall preface in grid.high_boundary_faces(d) {
-	var face = tuplify(preface);
-	q.value(face+shift) = q.value(face-shift);
+      forall preface in high_boundary_faces(d) {
+        var face = tuplify(preface);
+        q.value(face+shift) = q.value(face-shift);
       }
     }
 
