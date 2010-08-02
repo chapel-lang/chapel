@@ -113,7 +113,7 @@ chpl_bool threadlayer_sync_suspend(chpl_sync_aux_t *s,
     ts.tv_sec  = deadline->tv_sec;
     ts.tv_nsec = deadline->tv_usec * 1000UL;
     return (pthread_cond_timedwait(cond, (pthread_mutex_t*) &s->lock, &ts)
-	    == ETIMEDOUT);
+            == ETIMEDOUT);
   }
 }
 
@@ -136,7 +136,7 @@ chpl_bool threadlayer_single_suspend(chpl_single_aux_t *s,
                                      struct timeval *deadline) {
   if (deadline == NULL) {
     (void) pthread_cond_wait(&s->tl_aux.signal_full,
-			     (pthread_mutex_t*) &s->lock);
+                             (pthread_mutex_t*) &s->lock);
     return false;
   }
   else {
@@ -144,8 +144,8 @@ chpl_bool threadlayer_single_suspend(chpl_single_aux_t *s,
     ts.tv_sec  = deadline->tv_sec;
     ts.tv_nsec = deadline->tv_usec * 1000UL;
     return (pthread_cond_timedwait(&s->tl_aux.signal_full,
-				   (pthread_mutex_t*) &s->lock, &ts)
-	    == ETIMEDOUT);
+                                   (pthread_mutex_t*) &s->lock, &ts)
+            == ETIMEDOUT);
   }
 }
 
