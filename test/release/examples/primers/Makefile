@@ -48,7 +48,7 @@ clean: FORCE
 CHPL_TARGET_PLATFORM = $(shell $(CHPL_HOME)/util/chplenv/platform --target)
 #
 multirealm: multirealm.chpl
-	$(CHPL) -o $@ $< -srealmTypes="$(CHPL_TARGET_PLATFORM) $(CHPL_TARGET_PLATFORM)"
+	$(CHPL) -o $@ $< -srealmTypes='"$(CHPL_TARGET_PLATFORM) $(CHPL_TARGET_PLATFORM)"'
 
 %: %.chpl
 	$(CHPL) -o $@ $<
