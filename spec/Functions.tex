@@ -617,6 +617,107 @@ in which they are defined.
 Nested functions may refer to variables defined in the function in
 which they are nested.
 
+\subsection{First-Class Functions}
+\label{First_Class_Functions}
+
+Functions defined with parentheses may be captured as values by referring to them by name without parentheses.  Once captured, these values may be passed around as other value types.
+
+\begin{example}
+\begin{chapelpre}
+% test_first_class_functions.chpl
+\end{chapelpre}
+\begin{chapel}
+def myfunc(x:int) { return x + 1; }
+
+var f = myfunc;
+writeln(f(3)); // writes 4
+\end{chapel}
+\begin{chapeloutput}
+4
+\end{chapeloutput}
+\end{example}
+
+To be captured a function must not be any of the following:
+
+\begin{itemize}
+\item
+  A generic function - all captured functions must be fully-qualified with no generic arguments
+\item
+  A function with special return types (type, param)
+\item
+  An iterator
+\item
+  The method of an object
+\item
+  An operator
+\item
+  An overloaded function
+\end{itemize}
+
+\subsection{Lambda Functions}
+\label{Lambda_Functions}
+
+Anonymous first-class functions, those not formally defined as named functions, are also available using the lambda keyword.
+
+\begin{example}
+\begin{chapelpre}
+% test_lambda.chpl
+\end{chapelpre}
+\begin{chapel}
+var f = lambda(x:int, y:int) { return x + y; };
+writeln(f(1,2));
+\end{chapel}
+\begin{chapeloutput}
+3
+\end{chapeloutput}
+\end{example}
+
+Lambdas can also ``capture'' variables that are defined outside of the lambda by referring to them in the body of the lambda.  These form a closure where modifications to the variables modify the original variables (this is sometimes called capturing the variables by reference).  Because the lambdas refer to variables directly, this type of lambda can not be returned from functions safely and must be used before the function which holds the captured variables exits.
+
+\begin{example}
+For example the following is acceptable:
+\begin{chapelpre}
+% test_lambda_capture.chpl
+\end{chapelpre}
+\begin{chapel}
+def myfunc() {
+  var x = 3;
+  var f = lambda() { x = 4; };
+  f();
+  return x;
+}
+writeln(myfunc());
+\end{chapel}
+\begin{chapeloutput}
+4
+\end{chapeloutput}
+
+But the following is *not* acceptable:
+
+\begin{chapel}
+def myfunc() {
+  var x = 3;
+  var f = lambda() { x = 4; return x; };
+  return f;
+}
+var g = myfunc();
+writeln(g());
+\end{chapel}
+\end{example}
+
+\subsection{Function Type Signatures}
+\label{Function_Type_Signatures}
+
+The type signature for functions captured as first-class value has the following form:
+
+\begin{example}
+\begin{chapel}
+func(arg_types, return_type)
+\end{chapel}
+\end{example}
+
+Where func is a keyword function which takes any number of argument types to the function and finally a type that represents the return type of the function.  Functions which have no arguments drop them from the call to func and supply the return type alone.  A function with no arguments and void return type may use the shortcut \chpl{func()}.
+                          
 \subsection{Variable Length Argument Lists}
 \label{Variable_Length_Argument_Lists}
 \index{functions!variable number of arguments}
