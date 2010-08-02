@@ -79,6 +79,7 @@ if ($debug == 1) {
 $tokctdir = "~/chapel/util/tokencount";
 $tokctr = "$tokctdir/tokencount.cron";
 
+mysystem("cd $tokctdir && make > /dev/null", "building token counter", 1, 1);
 
 $somethingfailed = 0;
 
