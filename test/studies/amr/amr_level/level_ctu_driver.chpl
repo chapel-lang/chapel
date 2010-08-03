@@ -70,50 +70,65 @@ def advanceAdvectionCTU(level:          BaseLevel,
 
 def main {
 
-  //==== Advection velocity ====
-  //-------------------------------
-  // velocity = (1, 3/4, 5/8, ...)
-  //-------------------------------
+
+  //==== Used to check dimension with each input file ====
+  var dim_in: int;
+
+
+
+  //===> Advection velocity ===>
   var velocity: dimension*real;
-  [d in dimensions] velocity(d) = 0.5 + 0.5**d;
+  var phys_file = new file("set_problem/physics.txt", FileAccessMode.read);
+  phys_file.open();
+  phys_file.readln(dim_in);
+  assert(dim_in == dimension, 
+         "error: dimension of physics.txt must equal " + format("%i",dimension));
+  phys_file.readln((...velocity));
+  phys_file.close();
+  //<=== Advection velocity <===
 
 
 
-  //===> Initialize level ===>
+  //===> Initialize space ===>
   var x_low, x_high: dimension*real,
     n_cells, n_ghost: dimension*int;
 
-  var f: file = new file("grids_in.txt", FileAccessMode.read);
-  f.open();
+  var space_file = new file("set_problem/space.txt", FileAccessMode.read);
+  space_file.open();
 
-  f.readln(); // skip number of levels
-  f.readln(); // empty line
+  space_file.readln(dim_in);
+  assert(dim_in == dimension, 
+         "error: dimension of space.txt must equal " + format("%i",dimension));
+  space_file.readln(); // empty line
+
+  space_file.readln(); // skip number of levels
+  space_file.readln(); // empty line
   
-  f.readln((...x_low));
-  f.readln((...x_high));
-  f.readln((...n_cells));
-  f.readln((...n_ghost));
+  space_file.readln((...x_low));
+  space_file.readln((...x_high));
+  space_file.readln((...n_cells));
+  space_file.readln((...n_ghost));
 
   var level = new BaseLevel(x_low               = x_low,
                             x_high              = x_high,
                             n_cells             = n_cells,
                             n_child_ghost_cells = n_ghost);
 
-  f.readln();
+  space_file.readln();
   write("Setting up grids...");
 
   var n_grids: int;
-  f.readln(n_grids);
+  space_file.readln(n_grids);
   
   for i_grid in [1..n_grids] {
     write(i_grid, "...");
-    f.readln();
-    f.readln((...x_low));
-    f.readln((...x_high));
+    space_file.readln();
+    space_file.readln((...x_low));
+    space_file.readln((...x_high));
     level.addGrid(x_low, x_high);
   }
   
-  f.close();
+  space_file.close();
 
   level.fix();
   write("done.\n");
@@ -125,6 +140,7 @@ def main {
   write("Setting boundary conditions...");
   var bc = new ZeroOrderExtrapLevelBC(level = level);
   write("done.\n");
+
 
 
   //===> Initialize solution ===>
@@ -144,16 +160,16 @@ def main {
 
 
   //===> Initialize output ===>
-  f = new file("time_parameters.txt", FileAccessMode.read);
-  f.open();
+  var time_file = new file("set_problem/time.txt", FileAccessMode.read);
+  time_file.open();
   
   var time_initial, time_final: real;
   var n_output: int;
 
-  f.readln(time_initial);
-  f.readln(time_final);
-  f.readln(n_output);
-  f.close();
+  time_file.readln(time_initial);
+  time_file.readln(time_final);
+  time_file.readln(n_output);
+  time_file.close();
 
   var output_times:   [1..n_output] real,
     dt_output:      real = (time_final - time_initial) / n_output,

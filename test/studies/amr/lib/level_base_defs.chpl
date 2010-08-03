@@ -279,7 +279,7 @@ def BaseLevel.initializeSolution(q: LevelSolution,
 
 
   //==== Form LevelGridSolutions ====
-  for grid in child_grids {
+  coforall grid in child_grids {
 
     write("Creating new GridSolution...");
     var grid_sol = new LevelGridSolution(grid   = grid, 
