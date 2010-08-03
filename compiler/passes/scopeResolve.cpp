@@ -1174,10 +1174,10 @@ void scopeResolve(void) {
         if (parent) {
           CallExpr *call = toCallExpr(parent);
           if (((call) && (call->baseExpr != unresolvedSymExpr)) || (!call)) {
-	    //If the function is being used as a first-class value, handle this with a primitive and unwrap the primitive later in functionResolution
-	    CallExpr *prim_capture_fn = new CallExpr(PRIM_CAPTURE_FN);
-	    unresolvedSymExpr->replace(prim_capture_fn);
-	    prim_capture_fn->insertAtTail(unresolvedSymExpr);
+            //If the function is being used as a first-class value, handle this with a primitive and unwrap the primitive later in functionResolution
+            CallExpr *prim_capture_fn = new CallExpr(PRIM_CAPTURE_FN);
+            unresolvedSymExpr->replace(prim_capture_fn);
+            prim_capture_fn->insertAtTail(unresolvedSymExpr);
             continue;
           }
         }

@@ -2352,11 +2352,11 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *paren
       ArgSymbol* fArg = toArgSymbol(dExp->sym);
 
       if (fArg->type != dtVoid) {
-	ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
-	if (fArg->typeExpr) 
-	  newFormal->typeExpr = fArg->typeExpr->copy();
-	
-	parent_method->insertFormalAtTail(newFormal);
+        ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
+        if (fArg->typeExpr)
+          newFormal->typeExpr = fArg->typeExpr->copy();
+
+        parent_method->insertFormalAtTail(newFormal);
       }
     }
   }
@@ -2367,12 +2367,12 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *paren
     for_alist(actualExpr, arg_list) {
       sprintf(name_buffer, "name%i", name_index++);
       if (i != (alength-1)) {
-	SymExpr* sExpr = toSymExpr(actualExpr);
-	if (sExpr->var->type != dtVoid) {
-	  ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, name_buffer, sExpr->var->type);
-	
-	  parent_method->insertFormalAtTail(newFormal);
-	}
+        SymExpr* sExpr = toSymExpr(actualExpr);
+        if (sExpr->var->type != dtVoid) {
+          ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, name_buffer, sExpr->var->type);
+        
+          parent_method->insertFormalAtTail(newFormal);
+        }
       }
       ++i;
     }
@@ -2408,15 +2408,15 @@ static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType
     }
     else {
       for_alist(formalExpr, arg_list) {
-	DefExpr* dExp = toDefExpr(formalExpr);
-	ArgSymbol* fArg = toArgSymbol(dExp->sym);
-	
-	if (!isFirst)
-	  oss << "_";
+        DefExpr* dExp = toDefExpr(formalExpr);
+        ArgSymbol* fArg = toArgSymbol(dExp->sym);
+        
+        if (!isFirst)
+          oss << "_";
     
-	oss << fArg->type->symbol->name;
+        oss << fArg->type->symbol->name;
     
-	isFirst = false;
+        isFirst = false;
       }
     }     
     oss << "_";
@@ -2431,7 +2431,7 @@ static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType
     
     for_alist(actualExpr, arg_list) {
       if (!isFirst)
-	oss << "_";
+        oss << "_";
       
       SymExpr* sExpr = toSymExpr(actualExpr);
       
@@ -2548,7 +2548,7 @@ createFunctionAsValue(CallExpr *call) {
       newFormal->typeExpr = fArg->typeExpr->copy();
     SymExpr* argSym = new SymExpr(newFormal);
     innerCall->insertAtTail(argSym);
-	      
+              
     thisMethod->insertFormalAtTail(newFormal);
   }
       
@@ -2614,7 +2614,7 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
   forv_Vec(BaseAST, ast, asts) {
     if (toCallExpr(ast)) {
       CallExpr *call = toCallExpr(ast);
-		
+                
       //dive into calls
       Vec<FnSymbol*> visibleFns;
       Vec<BlockStmt*> visited;
@@ -2622,19 +2622,19 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
       getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited);
     
       forv_Vec(FnSymbol, called_fn, visibleFns) {
-	bool seen_this_fn = false;
-	forv_Vec(FnSymbol, seen_fn, seen) {
-	  if (called_fn == seen_fn) {
-	    seen_this_fn = true;
-	    break;
-	  }
-	}
-	if (!seen_this_fn) {
-	  seen.add(called_fn);
-	  if (usesOuterVars(called_fn, seen)) {
-	    return true;
-	  }
-	}
+        bool seen_this_fn = false;
+        forv_Vec(FnSymbol, seen_fn, seen) {
+          if (called_fn == seen_fn) {
+            seen_this_fn = true;
+            break;
+          }
+        }
+        if (!seen_this_fn) {
+          seen.add(called_fn);
+          if (usesOuterVars(called_fn, seen)) {
+            return true;
+          }
+        }
       }
     }
     if (SymExpr* symExpr = toSymExpr(ast)) {
@@ -4497,10 +4497,10 @@ resolve() {
 
     if (!referencesOuterVars) {    
       for (int i = 0; i < fns->n; ++i) {
-	seen.clear();
-	if ( (referencesOuterVars = usesOuterVars(key, seen)) ) {
-	  break;
-	}
+        seen.clear();
+        if ( (referencesOuterVars = usesOuterVars(key, seen)) ) {
+          break;
+        }
       }
     }
     
@@ -4716,7 +4716,7 @@ pruneResolvedTree() {
               !resolvedFns.get(ct->defaultTypeConstructor)) {
             if (ct->symbol->hasFlag(FLAG_OBJECT_CLASS))
               dtObject = NULL;
-	    ct->symbol->defPoint->remove();
+            ct->symbol->defPoint->remove();
           }
   }
   forv_Vec(TypeSymbol, type, gTypeSymbols) {

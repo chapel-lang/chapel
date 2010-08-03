@@ -25,7 +25,7 @@ removeEmptyRecords() {
     forv_Vec(ClassType, ct, gClassTypes) {
       if (isRecord(ct) && ct->symbol->defPoint->parentSymbol) {
         bool empty = true;
-	if (ct->symbol->hasFlag(FLAG_FIXED_STRING)) {
+        if (ct->symbol->hasFlag(FLAG_FIXED_STRING)) {
           empty = false;
           break;
         }
