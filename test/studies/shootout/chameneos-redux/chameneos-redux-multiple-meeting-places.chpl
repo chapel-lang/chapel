@@ -13,7 +13,7 @@ use Time;
 
 	- (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
 
-config const numMeetings : int = 6000000;	// number of meetings to take place
+config const numMeetings : int = 100;	// number of meetings to take place
 config const numChameneos1 : int = 3;		// size of population 1
 config const numChameneos2 : int = 10;  	// size of population 2
 enum color {blue = 0, red = 1, yellow = 2}; 	 
