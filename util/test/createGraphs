@@ -273,7 +273,7 @@ sub makeGraph {
 
     open GNUPLOT_COMMANDS, ">$gpl_file" or die "can't open $gpl_file for creating $!";
 
-    print GNUPLOT_COMMANDS "set terminal gif\n"; 
+    print GNUPLOT_COMMANDS "set terminal gif size 1200\n"; 
     print GNUPLOT_COMMANDS "set size ratio 0.33\n"; # figure out how to adjust this setting to x-axis range?
     print GNUPLOT_COMMANDS "set xdata time\n";
     print GNUPLOT_COMMANDS "set timefmt \"%m/%d/%y\"\n";
