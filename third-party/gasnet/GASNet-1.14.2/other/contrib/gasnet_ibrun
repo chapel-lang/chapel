@@ -1,0 +1,45 @@
+#!/bin/bash
+# Thin wrapper around ibrun on Ranger so that it looks enough
+# like an mpirun command to keep gasnetrun_mpi happy (and indirectly
+# gasnetrun_ibv).
+# It is also possible to use this directly as the CONDUIT_RUNCMD
+# for mpi- and ibv-conduits on Ranger, or as the mpi_spawn and
+# ibv_spawn settings with Berkeley UPC.
+# -PHH 2009.03.06
+# $Id: gasnet_ibrun,v 1.6 2009/08/02 05:00:42 phargrov Exp $
+while [ $# -ge 1 ]; do
+  case "$1" in
+    -v) 
+      set -x
+      ;;
+    -h) 
+      # For gasnetrun_mpi's probe
+      echo "wrapper for ibrun"
+      exit 0
+      ;;
+    -np)
+      export MY_NSLOTS=$2
+      shift # Remove argument
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "unknown option $1"
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+  shift
+done
+# Don't yet know why, but this env var fouls up ibrun!
+unset MALLOC_CHECK_
+# Increase the IB-level timeout to match the one TACC uses for MPI
+# This value is a bit-shift, and thus results in a timeout that is
+# 32 times larger than our default value 18.
+export GASNET_QP_TIMEOUT=23
+#
+exec ibrun tacc_affinity "$@"

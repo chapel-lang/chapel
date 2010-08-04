@@ -1,0 +1,590 @@
+GASNet ChangeLog 
+----------------
+$Revision: 1.27.2.6 $
+
+----------------------------------------------------------------------
+05-20-2010 : Release 1.14.2
+
+* General:
+  - Much improved support for heterogenous compilers (CC, CXX and MPI_CC)
+  - Work-around for broken MALLOC_CHECK_ support on some glibc versions
+  - Use MALLOC_OPTIONS variable on *BSD as we use MALLOC_CHECK_ on glibc
+  - Fix parsing of GASNET_{FREEZE,BACKTACE}_SIGNAL env vars
+
+* InfiniBand (vapi- and ibv-conduits):
+  - Fix bug 2079: stack overflow errors when vapi/ibv compiled with pgcc
+
+* Cray-XT series (portals-conduit):
+  - Improved reliability and scalability of job startup and termination code.
+  - Fixed a corner-case bug in AM Medium code
+  - Preliminary work to support PrgEnv-cray (requires CCE 7.2 or newer)
+
+* IBM BlueGene/P (dcmf-conduit):
+  - Fix bug 2756: PAR mode crashes with V1R4M0 drivers
+  - Fix bug 2766: performance problem with loopback AM LongAsnyc
+  - Fix bug 2781 and 2791: deadlocks with some uses of DCMF collectives
+  - Conduit-level support for PSHM (some limitations due to BG/P platform)
+
+* Experimental Process-Shared Memory (PSHM) Support
+  - Shared-memory awarness added to default barrier implementations
+  - Shared-memory awarness added to Extended API and Collectives
+
+* Misc Platform support:
+  - Fix bug 2685: timers broken on variable-frequency x86_64 CPUs
+  - Resolve pthread link problems between Apple's and FSF's compilers
+  - Preliminary work to support build with Open64 compilers from AMD
+  - Preliminary work to support build with GCCFSS compilers from Sun
+
+* Build and configure:
+  - Allow client to control behavior on compiler-mismatch (eg for UPCR+GCCUPC)
+
+----------------------------------------------------------------------
+11-02-2009 : Release 1.14
+
+* IBM BlueGene/P (dcmf-conduit):
+  - Extend support to V1R4M0 driver release
+  - Use native DCMF level collectives for several GASNet collectives
+  - Implement more useful gasnett_gethostname() (previously gave I/O node name)
+  - Minor fix for SEGMENT_EVERYTHING support
+
+* Cray-XT series (portals-conduit):
+  - Extended support to PE 2.1.42 and newer
+  - Extended support to include PrgEnv-Intel
+  - Implement more useful gasnett_gethostname() under Catamount
+  - Spawner defaults to node count given in batch submission when no -N passed
+  - Spawner improvements to deal intelligently with thread/process pinning
+  - Misc. performance and scalability improvements
+  - Several bugs fixed
+    
+* IBM SP (lapi-conduit):
+  - Cleanup tentative definitions to eliminate excessive AIX linker warnings
+  - Implement AIX-specific code for gasnett_set_affinity()
+  - Several bugs fixed
+
+* InfiniBand (vapi- and ibv-conduits):
+  - Correct non-compliant use of offsetof() that broke compilation w/ XLC
+  - Fixes for anomalous performance on ConnectX HCAs (Mellanox MT25418)
+  - Improved performance (and correctness) with segments 2GB and larger
+  - Documented settings to work-around failures seen w/ InfiniPath HCAs
+    see vapi-conduit/README (source) or share/doc/gasnet/README-ibv (installed)
+  - Multiple bugs fixed
+
+* Misc Platform support:
+  - Fix mis-aligned use of x86-64 cmpxchg16b instruction
+  - Atomics work-around for SiCortex ICE9A processor errata
+  - Fixes for aggressive alias analysis in gcc-4.4.x
+  - Improved support for XLC on all platforms
+  - Improved debug info and warning messages with PathScale compilers
+  - Improved gcc TLS support on IA64
+
+* General:
+  - Experimental shared memory support (see README and pshm-design.txt)
+  - Experimental collective autotuner (see README and autotune.txt)
+  - Additional collective algorithms implemented
+  - Fixes to some tests for large message sizes or large iteration counts
+  - Work around sometimes broken UTF-8 support in perl
+  - Improved support for clients with dynamic thread creation
+  - Several minor bug fixes in conduit-independent code
+
+* Build and configure:
+  - Clean up public headers to enable use of -Wstrict-prototypes by clients
+  - More accurate conduit auto-detection (eliminating false-positives)
+  - Allow disabling of conduit auto-detection
+  - Updates to configure for more recent GNU autotools
+  - Better default mpi-conduit configuration on SGI Altix and IRIX
+  - Correction to mechanism for detecting an SMP host under FreeBSD
+
+----------------------------------------------------------------------
+11-03-2008 : Release 1.12
+
+* New conduits added:
+  - dcmf-conduit: High-performance conduit for the IBM BlueGene/P
+    using the DCMF communication interface.
+
+* IBM SP/LAPI:
+  - Fix a bug that prevented the use of unequal segment sizes across 
+    nodes in LAPI-RDMA mode
+  - Fix several exit-time crashes
+  - Remove deprecated support for Federation LAPI version < 2.3.2.0
+  - Lots of misc cleanups and tuning
+
+* Myrinet/GM:
+  - Fix some AM performance and correctness problems, esp with AMLong
+
+* CrayXT/Portals:
+  - Upgrade to cache local memory registration using firehose library
+  - Add GASNET_PORTAL_PUTGET_BOUNCE_LIMIT setting
+
+* InfiniBand/{VAPI,IBV}:
+  - Extend "ibv" (InfiniBand) support to Qlogic's InfiniPath adapters
+
+* Platform support:
+  - Add support for the BlueGene/P architecture (mpi and dcmf)
+  - Add experimental support for ARM processors
+  - Add support for PGI compiler on Mac OSX
+  - Misc improvements and/or fixes for MIPS, Alpha, PPC and SPARC processors
+  - Add Pathscale compilers to supported list for Cray XT machines
+  - Improved support for XLC compilers on Linux
+  - Add/improve support for MIPSEL/Linux platforms, including SiCortex
+  - Add support for the default libpthread on Cray XT CNL 2.1
+  - Add support for Playstation 3 PowerPC
+
+* Configure features:
+  - Add --disable-mmap support to force the use of malloc for the GASNet segment
+  - Add configure option --with-max-pthreads-per-node=N to override the 
+    GASNet default limit of 256 pthreads per node
+  - Add support for autoconf 2.62 and newer
+  - Workaround stability problems in cygwin pthread mutexes (bug 1847)
+
+* GASNet tools:
+  - Upgrades to error reporting in the GASNet debug mallocator
+  - Add GASNET_MALLOCFILE option and corresponding gasnet_trace support
+    to assist in leak detection for libgasnet and apps using debug mallocator
+  - Add "strong" atomics to the GASNet-tools interface
+  - New gasnett_performance_warning_str() returns a string reporting
+    performance-relevant attributes of the current GASNet build
+
+* Misc changes:
+  - Workaround for a gcc 4.x (x<3) optimizer bug has changed
+      We now encourage updating to gcc >= 4.3.0, though our previously
+      documented workarounds remain valid
+  - Minor improvements to the collectives environmental interface
+  - Fix cross-configure detection of stack growth direction
+  - Avoid "capturing" __attribute__ when compiler mismatch is detected
+
+----------------------------------------------------------------------
+10-30-2007 : Release 1.10
+
+* IBM SP/LAPI:
+  - Upgraded lapi-conduit to use RDMA support on LAPI/Federation systems,
+    when available. This provides improved communication performance.
+
+* Myrinet/GM:
+  - Fix a race that could result in lost payload data for heavy AM Long
+    communication in the presence of multiple client threads.
+
+* CrayXT/Portals:
+  - workaround a thread-safety bug in CNL Portals that could result in 
+    crashes for AM-heavy workloads
+
+* InfiniBand/{VAPI,IBV}:
+  - Expose env vars to manipulate hardware-level retransmission parameters.
+
+* Collectives:
+  - Added an initial high-performance implementation of the GASNet 
+    collectives. This provides scalable implementations of all the 
+    data movement collectives, implemented over Active Messages.
+
+* Misc changes:
+  - Improved checking for randomized Linux VM spaces, which inhibit
+    the ability to provide GASNET_ALIGNED_SEGMENTS
+  - Numerous bug fixes, see http://upc-bugs.lbl.gov for details
+
+----------------------------------------------------------------------
+09-13-2007 : Release 1.9.6 (Cray XT only beta release)
+
+* CrayXT/Portals:
+  - portals-conduit is now a fully-native implementation, no longer relies
+    on any MPI calls
+  - support has been added for pthreads on compute-node Linux 
+  - fixes to automatically workaround known problems in various PE versions
+  - removed the 100 MB limit for SEGMENT_FAST on CNL
+
+* Ethernet/UDP:
+  - now supports up to 16K nodes (although buffer utilization remains non-scalable)
+  - fix an exit race that could cause some trailing output to be lost
+
+* InfiniBand/{VAPI,IBV}:
+  - AM-over-RDMA optimization for small AMs now enabled by default
+
+* Misc changes:  
+  - Add node placement support for various job spawners
+  - Fix a crash in gasnett_threadkey for C++ clients
+
+----------------------------------------------------------------------
+02-01-2007 : Release 1.9.2 (Cray XT3 only beta release)
+
+* New conduits added:
+  - ibv-conduit: High-performance conduit using the OpenIB communication
+    interface on InfiniBand hardware.
+
+* New platform support:
+  - New ports: CrayXT/Linux, K42/PPC64, OpenBSD/x86, SunC/Linux
+
+* Misc changes:  
+  - Add backtrace extensibility to GASNet tools
+  - Add new features GASNET_FREEZE_SIGNAL and GASNET_BACKTRACE_SIGNAL
+    which allow a user to asynchronously freeze a process or print a backtrace
+  - Many, many bug fixes, for both specific conduits and general platform
+    portability. See http://upc-bugs.lbl.gov for complete details.    
+
+* InfiniBand/VAPI:
+  - New AM-over-RDMA optimization significantly improves performance of small AMs
+
+* CrayXT/Portals:
+  - portals-conduit now works with PrgEnv-PGI, starting with Cray PE 1.5
+  - support has been added for compute-node Linux 
+
+----------------------------------------------------------------------
+11-02-2006 : Release 1.8
+
+* New conduits added:
+  - portals-conduit: High-performance conduit using the Portals communication
+    interface on the Cray XT-3. Initial implementation uses MPI-based active 
+    messages and a Portals-based extended API.
+
+* New platform support:
+  - New ports: MacOSX/x86, MacOSX/PPC64, Cray XD1 and ucLinux/MicroBlaze
+
+* Misc changes:  
+  - Add --help option to all GASNet tests
+  - Add internal diagnostic tests
+  - Add progress functions
+  - Add --disable-aligned-segments configure flag for clusters with disaligned VM
+  - Fix ansi-aliasing violations on small local put/get copies
+  - Default to allocate-first-touch for segment mmap on Linux and Solaris
+  - Many performance and functionality improvements to the GASNet collectives
+  - Move most config-related defines off compile line into gasnet_config.h
+  - Reorganize source files for faster and more robust builds
+  - Barrier algorithm can now be selected at runtime using GASNET_BARRIER 
+  - Standardize and simplify our preprocessor platform detection logic system-wide
+  - Many, many bug fixes, for both specific conduits and general platform
+    portability. See http://upc-bugs.lbl.gov for complete details.    
+
+* GASNet tools support:
+  - Add a conduit-independent library implementing the GASNet portability tools - 
+    which include portable high-performance timers, atomic operations, memory barriers,
+    C compiler annotations, uniform platform identification macros, reliable 
+    fixed-width integer types, thread-specific data, and other misc tools.
+  - Add Portable Linux Processor Affinity (PLPA) library for gasnett_set_affinity
+  - Implement automatic backtrace generation on crash for several popular debuggers
+  - Change default timer granularity to nanoseconds, adding _ticks_to_ns()
+  - Add __thread (TLS) implementations of gasnett_threadkey
+
+* Expanded local atomic operations support:
+  - Add native support for additional compilers, notably including many C++ compilers
+  - Add fetch-and-add and fetch-and-subtract operations
+  - Add 32-bit and 64-bit fixed-width atomic types
+  - Add explicit control of memory fence behavior
+  - Add constants defining the range of the atomic type
+  - Add uniform support for use of the atomic type for signed values
+
+* General performance improvements:
+  - split-phase barriers on most conduits now make progress during any GASNet call
+  - initial packing implementations of the GASNet non-contiguous (vector, indexed,
+    and strided) put/get functions (currently off by default)
+
+* InfiniBand/VAPI:
+  - Implement multi-port and multi-rail striping support
+  - Improvements to firehose region management heuristics
+  - VAPI recv thread is now disabled by default (but still available via env setting)
+
+* MPI:
+  - Significant performance and stability improvements on mpi-conduit,
+    especially on systems where the MPI-level flow control is lacking or
+    unreliable (eg XT-3, BGL).
+  - Split request/reply traffic onto separate MPI communicators to ensure
+    bounded AMMPI-level buffer space utilization, even for degenerate cases
+  - Added an AMMPI-level token-based flow control solution to prevent the
+    crashes observed under heavy MPI unexpected message loads on various
+    systems (XT3, Altix)
+  - Add workaround for an IBM MPI ordering bug that could cause deadlock
+    under heavy communication patterns.
+  - Other misc tuning along the primary control paths and new tuning knobs
+
+* Ethernet/UDP:
+  - Add cross-platform spawn support for cross-compiled targets
+
+* GASNet spec 1.8:
+  - expose the GASNet release version as public macros:
+    GASNET_RELEASE_VERSION_MAJOR/GASNET_RELEASE_VERSION_MINOR/GASNET_RELEASE_VERSION_PATCH
+  - deprecate GASNET_VERSION in favor of GASNET_SPEC_VERSION_MAJOR/GASNET_SPEC_VERSION_MINOR
+  - minor wording clarifications
+
+----------------------------------------------------------------------
+08-20-2005 : Release 1.6
+
+* New conduits added:
+  - shmem-conduit: High-performance conduit using the shmem communication
+    interface on Cray X1 and SGI Altix. May support targeting other shmem 
+    implementations in the future.
+
+* New platform support:
+    - Add cross-compilation support, specifically including the Cray X-1
+    - Experimental support for the Cray XT3 and IBM Blue Gene/L (contact us
+      for details)
+    - Other new ports: Linux/PowerPC, Cray MTA, NetBSD/x86, Linux/Alpha, 
+        FreeBSD/Alpha, HPUX/Itanium, PathScale & Portland Group compilers
+    - Linux 2.6 kernel support for gm, vapi, shmem
+    
+* General performance improvements:
+    - Replace default barrier implementation on gm, vapi, sci, mpi, udp with a 
+      more scalable barrier implementation.
+    - System-wide performance improvements to AM's
+    - Improve the performance and functionality of gasnet_trace
+                          
+* Misc changes:  
+    - Output improvements to gasnet tests
+    - Added MPI performance tests to the GASNet tests for ease of comparison
+    - Many robustness improvements to job spawning on various conduits and systems
+    - New environment variable GASNET_VERBOSEENV turns on global reporting of 
+      all environment variables in use      
+    - Improve the robustness and quality of GASNet's automatic heap corruption detection 
+    - Many, many bug fixes, for both specific conduits and general platform
+      portability. See http://upc-bugs.lbl.gov for complete details.    
+      
+* Myrinet/GM:
+    - gm-conduit now provides interoperability with MPI.
+    - add support for spawning with mpiexec
+    - several robustness and stability improvements
+    
+* InfiniBand/VAPI:
+    - Use firehose to manage local pinning in SEG_FAST, for performance
+    - Add a stand-alone ssh-based spawner, and MPI is no longer 
+      required to build vapi-conduit.
+    - Numerous performance improvements, especially for AM's, non-bulk puts
+      and large put/gets (>128KB)
+    - Improve firehose region efficiency, improving performance on LARGE/EVERYTHING
+    - Add support for striping and multiplexing communication over multiple 
+      queue pairs
+    - Add options for controlling the vapi progress thread
+    
+* IBM SP/LAPI:
+    - Change the default GASNET_LAPI_MODE to POLLING, which vastly 
+      outperforms INTERRUPT on Power4/Federation
+    - Significant performance improvements to barrier
+    
+* Quadrics/ELAN:
+    - Elan4 functionality and tuning work
+    - add support for SLURM spawner
+    - Improve queue depth, allowing more non-blocking put/gets to be posted without stalling
+    
+* CrayX1 & SGI Altix/SHMEM:
+    - Significant performance improvements to AM's
+    - Many correctness fixes to put/gets and AM's
+    
+* Ethernet/UDP:
+    - Improve the performance of loopback AM's
+    
+----------------------------------------------------------------------
+08-27-2004 : Release 1.4
+
+* New conduits added:
+  - udp-conduit: a portable conduit that implements GASNet over any standard
+    TCP/IP stack. This is the now the recommended conduit for clusters with
+    only ethernet networking hardware (faster than mpi-conduit over TCP-based MPI).
+    See udp-conduit/README for important info on job spawning. Note that
+    udp-conduit requires a working C++ compiler (but when none is available, it can
+    be disabled with --disable-udp).
+  - sci-conduit: an experimental conduit over Dolphin-SCI. Current
+    implementation is core-only, performance improvements are on the way in the
+    next version.
+
+* GASNet2 extended API interface extensions:
+  - Implement reference version of GASNet collective operations
+  - Implement reference version of GASNet vector/indexed/strided put/get operations
+  - updated GASNet 2.0 spec to be released soon
+ 
+* GASNet Spec v1.6: 
+  - Add gasnet_hsl_trylock()
+  - Specify calls to gasnet_hold_interrupts() and gasnet_resume_interrupts()
+    are ignored while holding an HSL.
+  - Clarify the upper limit of in-flight non-blocking operations is 2^16-1
+  - Clarify gasnet_handle_t is a scalar type
+  - Small clarifications and minor editorial corrections
+
+* gm-conduit:
+  - fix thread-safety problems in firehose library that caused stability
+    problems in GASNET_PAR mode
+  - detect versions of GM driver with broken RDMA get support and don't use it
+    there
+  - remove dependency on gethostbyname to improve reliability of static linking
+    on Linux
+  - improvements to gasnetrun-gm
+
+* vapi-conduit:
+  - add SEGMENT_LARGE and SEGMENT_EVERYTHING support
+  - many performance improvements
+
+* lapi-conduit:
+  - add workaround for a recent LAPI performance bug on Federation hardware
+  - gasnet_exit stability improvements
+
+* elan-conduit:
+  - upgrades for recent libelan versions
+
+* Configure changes:
+  - add autodetection of all conduits, whenever possible. On some systems one
+    may still need to  set some environment variables before running configure
+    to indicate the install location of network drivers.
+  - detect and reject the buggy gcc 3.2.0-2 compilers
+  - handle systems lacking pthreads
+  - improved sanity checks for MPI_CFLAGS
+
+* Makefile changes
+  - Add a set of manual-overrides for compilation of the GASNet libraries and
+    tests, ie "make MANUAL_LIBCFLAGS=..." - see README
+  - Fix "gmake prefix=/new/path install" to work correctly, even when it
+    differs from configure-time prefix
+  - Add limited support for parallel make (not recommended for general use)
+
+* GASNet infrastructure ported to Cray X1, AMD Athlon/Opteron, Sun Pro C, HP C
+
+* Add gasnet_trace contributed tool, which automatically parses and summarizes
+  GASNet trace files
+
+* Add an experimental spin-poll throttling feature to reduce lock contention
+  for GASNET_PAR mode, configure --enable-throttle-poll
+
+* Restructure use of local memory barriers to accommodate architectures
+  requiring read memory barriers
+
+* Fix GASNet headers to be C++ friendly
+
+* Many miscellaneous performance, stability and functionality improvements
+
+----------------------------------------------------------------------
+11-10-2003 : Release 1.3
+
+* Added InfiniBand support in vapi-conduit - currently only SEGMENT_FAST is supported
+
+* elan-conduit: 
+  - updated for the most recent version of libelan
+  - fix a few race conditions
+
+* gm-conduit:
+  - updated for GM 2.0, including RDMA get support
+  - Added 64-bit support
+  - Reworked the spawner to work with mpiexec, gexec, MPICH mpirun and a custom spawner
+
+* lapi-conduit:
+  - Fix bugs related to varying LAPI uhdr payload size across systems - this is
+    now queried automatically at runtime
+
+* GASNet spec: 
+  - gasnet_hold_interrupts() and gasnet_resume_interrupts() calls are now
+    required to be ignored by the implementation within an AM handler context.
+  - Added gasnet_set_waitmode() function
+
+* Add a logGP test program for GASNet conduits
+
+* Add a threaded tester for gasnet threaded clients
+
+* Added a GASNet/MPI test that tests the compatibility of a GASNet conduit with
+  MPI calls made by the GASNet client. 
+
+* All GASNet conduits other than gm are now fully compatible with limited MPI
+  calls from the GASNet client code. In order to prevent deadlock and ensure
+  safety, GASNet and MPI communication should be separated by barriers.
+
+* Factor the firehose page registration system into a new, separate firehose
+  library with a public interface, for use by gm-conduit and vapi-conduit
+ 
+* Use "adaptive" pthreads mutexes on Linux (when available), for better SMP performance
+
+* Added support for new platforms: Solaris-SPARC 64-bit 
+  and new compilers:  Portland Group C, SunPro C and Intel C
+
+* Add SIGCONT as an additional option for unfreezing a GASNet application
+  This is a useful option for debugging GASNet apps which lack debugging symbols
+  (but may still have enough info to give you a stack trace, etc) A GASNet app
+  frozen by GASNET_FREEZE can now be unfrozen by sending: "kill -CONT pid"
+  to each process, or on some systems by typing control-Z on the console to
+  suspend the process and then fg to resume it (sends a SIGCONT for you).
+
+* HSL calls now compile away to nothing when HSL's are unnecessary 
+
+* Merged AMMPI v0.8, includes fixes to rare buffer overflows and small memory leaks
+
+* fixed pthread barrier errors caused by a race condition
+
+* Minor semantic change to no-interrupt sections -
+  gasnet_{hold,resume}_interrupts() are now officially ignored within a GASNet
+  handler context (where interrupts are already suspended anyhow). 
+
+* add new function gasnet_set_waitmode() to control waiting behavior
+
+* Use an atexit handler to make sure we finalize the trace/stats file, even 
+  if the client exits without calling gasnet_exit
+
+* Fixes to gasneti_local_membar(), especially for SMP/UNI Linux kernels and PowerPC
+
+* New significant GASNet conduit programming practices:
+  gasneti_{malloc,calloc,free}, gasneti_assert, GASNETI_CLIENT_THREADS,
+  GASNETI_CONDUIT_THREADS, (N)DEBUG -> GASNET_(N)DEBUG, STATS,TRACE ->
+  GASNET_{STATS,TRACE}
+
+* Many minor fixes
+
+----------------------------------------------------------------------
+06-28-2003 : Release 1.2
+
+* Greatly increased the number of platforms supported - notably, this release
+  adds support for FreeBSD, IRIX, HPUX, Solaris, MSWindows-Cygwin and Mac OSX,
+  as well as the SunPro, MIPSPro, Portland Group and Intel C compilers. See the
+  top-level README for the complete list of supported platforms.
+
+* Added the smp-conduit, which implements pure loopback to support GASNet
+  clients on platforms lacking a network.
+
+* Remove 256-node scalability limit - mpi, elan and lapi conduits now
+  theoretically scale to 2^31 nodes. gm conduit scales to 2^16 nodes.
+
+* Merge v0.7 of AMMPI - improved latency performance, better scalability, and
+  fixes for LAM/MPI
+
+* Fix bug 120 - gasnet_exit now reliably kills the entire job on all conduits
+  in various collective and non-collective invocation situations.
+
+* New switches GASNETE_PUTGET_ALWAYSLOCAL and GASNETE_PUTGET_ALWAYSREMOTE which
+  optimize away the locality check for put/gets implemented by
+  gasnete_islocal() 
+
+* Updates to the tracing system - separate statistics from tracing to allow
+  finer user control controlled by new environment variables - GASNET_STATSMASK
+  and GASNET_STATSFILE
+
+* Major cleanup to the gm-conduit bootstrap code
+
+* Internal structural changes to gasnet_extended.h to provide more flexibility
+  for conduit overrides
+
+* Minor wording clarifications to the GASNet spec
+
+* Many minor bug fixes
+
+----------------------------------------------------------------------
+04-17-2003 : Release 1.1
+
+* Added lots of conduit user and design documentation
+* Fix bugs with gasnet_register_value_t functionality, in some cases garbage 
+  was returned by gasnet_get_val() in the upper bytes
+* Fix bug 51 - endianness bugs on gasnet_*_val()
+* Tweak the gcc optimizer settings to ensure that we get full inlining
+* Ensure gasnet_exit() or fatal signals always correctly shut down the global 
+  job (mpi and elan conduits - gm and lapi still have known problems)
+* Add strong configure warnings about using gcc 2.96 - users are highly 
+  recommended to avoid this broken compiler
+* Ensure configure caching is always on
+* Basic infrastructure cleanups to the conduit Makefile fragments
+* Fix a shutdown-time crash when tracing
+* Add GASNET_CONFIG_STRING to spec & implementation and embed it in library
+* Add a number of minor clarifications to the GASNet spec
+* Clean up licensing issues
+
+* elan-conduit: 
+ - fixups for better handling of elan memory exhaustion
+ - preallocate AMLong bounce buffers
+
+* gm-conduit:
+ - various stability fixes
+ - add spawning scripts for gexec and pbs
+
+* mpi-conduit:
+ - add global environment variable exchange to ensure consistent
+   gasnet_getenv() results across nodes
+ - merge AMMPI release 0.6
+
+----------------------------------------------------------------------
+01-29-2003 : Initial Release (1.0)
+
