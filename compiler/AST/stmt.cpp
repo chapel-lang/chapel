@@ -94,11 +94,11 @@ void BlockStmt::codegen(FILE* outfile) {
       blockInfo->get(1)->codegen(outfile);
       fprintf(outfile, ";) ");
     } else if (blockInfo->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N)) {
-      fprintf(outfile, "#pragma mta for all streams ");
+      fprintf(outfile, "_Pragma(\"mta for all streams ");
       blockInfo->get(1)->codegen(outfile);
       fprintf(outfile, " of ");
       blockInfo->get(2)->codegen(outfile);
-      fprintf(outfile, "\n");
+      fprintf(outfile, "\")\n");
     }
   }
 
