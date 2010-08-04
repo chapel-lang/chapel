@@ -778,9 +778,12 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   FnSymbol* lifn = new FnSymbol(iteratorName);
   ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   lifn->insertFormalAtTail(lifnIterator);
-  ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
+  Expr* tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
+                                        "iterator"), "leader");
+  ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
+                                     new CallExpr(PRIM_TYPEOF, tag));
   lifn->insertFormalAtTail(lifnTag);
-  lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
+  lifn->where = new BlockStmt(new CallExpr("==", lifnTag, tag->copy()));
   fn->insertAtHead(new DefExpr(lifn));
   VarSymbol* leaderIterator = newTemp("_leaderIterator");
   leaderIterator->addFlag(FLAG_EXPR_TEMP);
@@ -794,11 +797,15 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   FnSymbol* fifn = new FnSymbol(iteratorName);
   ArgSymbol* fifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   fifn->insertFormalAtTail(fifnIterator);
-  ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
+
+  tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
+                                  "iterator"), "follower");
+  ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
+                                     new CallExpr(PRIM_TYPEOF, tag));
   fifn->insertFormalAtTail(fifnTag);
   ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, "follower", dtAny);
   fifn->insertFormalAtTail(fifnFollower);
-  fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
+  fifn->where = new BlockStmt(new CallExpr("==", fifnTag, tag->copy()));
   fn->insertAtHead(new DefExpr(fifn));
   VarSymbol* followerIterator = newTemp("_followerIterator");
   followerIterator->addFlag(FLAG_EXPR_TEMP);
