@@ -110,7 +110,7 @@ def main() {
   //
 
   if useLCG {
-    forall ( , r) in (Updates, LCGRAStream()) do
+    forall ( , r) in (Updates, LCGRAStream(0)) do
       on TableDist.idxToLocale(r >> (64 - n)) {
 	if safeUpdates then
 	  atomic T(r >> (64 - n)) ^= r;
@@ -162,7 +162,7 @@ def verifyResults() {
   // atomic statement to ensure no conflicting updates
   //
   if useLCG {
-    forall ( , r) in (Updates, LCGRAStream()) do
+    forall ( , r) in (Updates, LCGRAStream(0)) do
       on TableDist.idxToLocale(r >> (64 - n)) {
 	atomic T(r >> (64 - n)) ^= r;
       }

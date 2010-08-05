@@ -123,7 +123,7 @@ def main() {
   // index and as the update value.
   //
   if useLCG {
-    forall ( , r) in (Updates, LCGRAStream()) do
+    forall ( , r) in (Updates, LCGRAStream(0)) do
       on TableDist.idxToLocale(r >> (64 - n)) {
 	if safeUpdates then mutex_lock(TLock(r >> (64 - n)));
 	T(r >> (64 - n)) ^= r;
@@ -173,7 +173,7 @@ def verifyResults() {
   // atomic statement to ensure no conflicting updates
   //
   if useLCG {
-    forall ( , r) in (Updates, LCGRAStream()) do
+    forall ( , r) in (Updates, LCGRAStream(0)) do
       on TableDist.idxToLocale(r >> (64 - n)) {
 	mutex_lock(TLock(r >> (64 - n)));
 	T(r >> (64 - n)) ^= r;

@@ -89,21 +89,20 @@ module RARandomStream {
   }
 
   //
-  // A serial iterator for the random stream that resets the stream
-  // to its 0th element and yields values endlessly.
+  // LCG Random stream algorithm
   //
-  def LCGRAStream() {
-    var val = LCGgetNthRandom(0);
+  def LCGRAStream(seed: randType) {
+    var val = LCGgetNthRandom(seed);
     while (1) {
       LCGgetNextRandom(val);
       yield val;
     }
   }
 
-  def LCGRAStream(param tag: iterator, follower) where tag == iterator.follower {
+  def LCGRAStream(seed: randType, param tag: iterator, follower) where tag == iterator.follower {
     if follower.size != 1 then
       halt("LCGRAStream cannot use multi-dimensional iterator");
-    var val = LCGgetNthRandom(follower(1).low);
+    var val = LCGgetNthRandom(follower(1).low+seed);
     for follower {
       LCGgetNextRandom(val);
       yield val;
@@ -117,10 +116,6 @@ module RARandomStream {
   def LCGgetNextRandom(inout x) {
     x = LCGMUL64 * x + LCGADD64;
   } 
-
-  def LCGgetNextRandom(x:randType): randType {
-    return LCGMUL64 * x + LCGADD64; 
-  }
 
   //
   // A helper function for "fast-forwarding" the LCG random stream to
