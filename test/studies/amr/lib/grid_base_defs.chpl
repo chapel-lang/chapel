@@ -138,6 +138,7 @@ class RectangularGrid {
 	low(d) = new IsolatedArray(dim       = dimension,  
 				   data_type = data_type, 
 				   dom       = low_ghost_cells(d));
+
 	high(d) = new IsolatedArray(dim       = dimension, 
 				    data_type = data_type, 
 				    dom       = high_ghost_cells(d));
@@ -912,7 +913,7 @@ class TrueSolution {
 record IsolatedArray {
   param dim: int;
   type data_type;
-  var dom: domain(dim, stridable=true);
+  var dom: domain(dim,stridable=true);
   var value: [dom] data_type;
 }
 //<=============================
