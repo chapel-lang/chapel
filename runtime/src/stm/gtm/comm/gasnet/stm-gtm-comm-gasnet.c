@@ -84,7 +84,6 @@ void tx_abort_wrapper(tx_generic_t* buf) {
   GTM_TX_COMM_STATS_START(tx, TX_COMM_ABORT_STATS);
 
   gtm_tx_abort(tx);
-  //  gtm_tx_comm_cleanup(tx);
 
   // send message to caller
   GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, TX_SIGNAL,
@@ -205,7 +204,6 @@ void tx_commitPh2_wrapper(tx_generic_t* buf) {
 				      status));
 
   chpl_free(buf, __LINE__, __FILE__);
-
 
   GTM_TX_COMM_STATS_STOP(tx, TX_COMM_COMMITPH2_STATS, status);
 

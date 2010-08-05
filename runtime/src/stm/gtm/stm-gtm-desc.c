@@ -151,9 +151,15 @@ chpl_stm_tx_p gtm_tx_comm_create(int32_t txid, int32_t txlocale, int32_t txstatu
 }
 
 void gtm_tx_comm_destroy(chpl_stm_tx_p tx) {
+  int32_t txid, txlocale;
+
+  assert(tx != NULL); 
   assert(tx->id != -1 && tx->locale != MYLOCALE);
-  gtmTxArray[tx->locale][tx->id] = NULL; 
+
+  txid = tx->id;
+  txlocale = tx->locale;
   gtm_tx_destroy(tx);
+  gtmTxArray[txlocale][txid] = NULL; 
 }
 
 void gtm_tx_comm_cleanup(chpl_stm_tx_p tx) {
