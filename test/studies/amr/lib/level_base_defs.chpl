@@ -22,6 +22,7 @@ class LevelGrid: RectangularGrid {
   var neighbors:    domain(LevelGrid);
   var shared_cells: [neighbors] subdomain(ext_cells);
 
+  var ghost_is_shared: GhostData(bool);
 
 
   //===> initialize method ===>
@@ -37,6 +38,10 @@ class LevelGrid: RectangularGrid {
 
     n_ghost_cells = parent.n_child_ghost_cells;
     //<=== Set fields via parent data and index bounds <===
+
+
+    //==== Shared flags on ghost cells ====
+    ghost_is_shared = new GhostData(bool);
 
 
     sanityChecks();
@@ -57,38 +62,44 @@ class LevelGrid: RectangularGrid {
   //-------------------------------------------------------------
   def setNeighborData() {
   
-    //==== Stores overlap in each dimension as a range ====
-    var overlap:   dimension*range(stridable=true);
-    var intersect: bool;
+    //==== To store intersection on each check ====
+    var intersection: ext_cells.type;
   
-    //===> Loop over siblings ===>
+    //===> Check each sibling for neighbors ===>
     for sib in parent.child_grids {
-  
-      //==== Assume sib intersects this grid ====
-      intersect = true;
-  
-  
-      //==== Intersect ext_cells with sib.cells ====
-      forall d in dimensions {
-        overlap(d) = max(ext_cells.dim(d).low,  sib.cells.dim(d).low)  
-                     ..
-                     min(ext_cells.dim(d).high, sib.cells.dim(d).high)
-                     by ext_cells.dim(d).stride;
-        if overlap(d).length == 0 then intersect = false;
+
+      intersection = intersectDomains(ext_cells, sib.cells);
+
+      //==== If the intersection is nonempty, update neighbor data ====
+      if intersection.dim(1).length > 0 {
+	neighbors.add(sib);
+	shared_cells(sib) = intersection;
       }
-  
-      
-      //==== If sib==grid, then the intersection is false ====
-      if sib == this then intersect = false;
-  
-  
-      //==== If sib intersects grid, store the overlap ====
-      if intersect then {
-        neighbors.add(sib);
-        shared_cells(sib) = [(...overlap)];
-      }
+
     }
-    //<=== Loop over siblings <===
+    //<=== Check each sibling for neighbors <===
+
+
+
+/*     //===> Flag shared cells on each ghost domain ===> */
+/*     for nbr in neighbors { */
+
+/*       for d in dimensions { */
+
+/* 	//==== Low ghost cells ==== */
+/* 	intersection = intersectDomains(low_ghost_cells(d), shared_cells(nbr)); */
+/* 	for cell in intersection do */
+/* 	  ghost_is_shared.low(d).value(cell) = true; */
+
+/* 	//==== High ghost cells ==== */
+/* 	intersection = intersectDomains(high_ghost_cells(d), shared_cells(nbr)); */
+/* 	for cell in intersection do */
+/* 	  ghost_is_shared.high(d).value(cell) = true; */
+
+/*       } */
+/*     } */
+/*     //<=== Flag shared cells on each ghost domain <=== */
+    
     
   }
   //<=== setNeighborData method <===

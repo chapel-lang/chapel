@@ -121,6 +121,34 @@ class RectangularGrid {
   //<=== setDerivedFields method <===
   
  
+
+  //===> GhostData subclass ===>
+  //===========================>
+  //--------------------------------------------------------------
+  // Ideally, the fields low and high would be direct collections
+  // of arrays, but I don't think that's possible at the moment.
+  //--------------------------------------------------------------
+  class GhostData {
+
+    type data_type;
+    var low, high: [dimensions] IsolatedArray(dimension, data_type);
+
+    def initialize() {
+      for d in dimensions {
+	low(d) = new IsolatedArray(dim       = dimension,  
+				   data_type = data_type, 
+				   dom       = low_ghost_cells(d));
+	high(d) = new IsolatedArray(dim       = dimension, 
+				    data_type = data_type, 
+				    dom       = high_ghost_cells(d));
+      }
+
+    }
+  }
+  //<===========================
+  //<=== GhostData subclass <===
+
+
 }
 //<=== RectangularGrid class <===
 //<==============================
@@ -870,6 +898,76 @@ class TrueSolution {
 }
 //<===========================
 //<=== TrueSolution class <===
+
+
+
+//===> IsolatedArray record ===>
+//=============================>
+//-------------------------------------------------------------
+// Contains an array and its domain.  "Isolated" in that the
+// domain will be assigned as a copy.  Not sharp in that sense
+// for my purposes, but needed to dodge the problem of making
+// a tuple of generic length and generic type for now.
+//-------------------------------------------------------------
+record IsolatedArray {
+  param dim: int;
+  type data_type;
+  var dom: domain(dim, stridable=true);
+  var value: [dom] data_type;
+}
+//<=============================
+//<=== IsolatedArray record <===
+
+
+
+//===> intersectDomains routine ===>
+//=================================>
+//--------------------------------------------------------------
+// Determines the intersection of two arithmetic domains of the
+// same type.  Returns the domain of intersection, or an empty
+// domain if the inputs don't intersect.
+//--------------------------------------------------------------
+def intersectDomains(D1, D2) {
+  
+  assert(D1.type == D2.type,
+	 "error: intersectDomains: input domains must be of same type");
+
+
+  //==== Assume the domains intersect ====
+  var intersect = true;
+
+  var overlap: D1.rank*range(stridable=true);
+
+  for d in [1..D1.rank] {
+
+    //==== Check that strides match ====
+    assert(D1.dim(d).stride == D2.dim(d).stride,
+           "error: intersectDomains: domains must have equal stride");
+
+    //==== Compute the overlap in this dimension ====
+    overlap(d) = max(D1.dim(d).low, D2.dim(d).low) 
+                 .. 
+                 min(D1.dim(d).high, D2.dim(d).high) 
+                 by 
+                 D1.dim(d).stride;
+    
+    //==== Check whether this rules out intersection ====
+    if overlap(d).length == 0 then intersect = false;
+  }
+
+
+  //==== Return ====
+  if intersect then
+    return [(...overlap)];
+  else {
+    var empty_domain: D1.type;
+    return empty_domain;
+  }
+
+
+}
+//<=================================
+//<=== intersectDomains routine <===
 
 
 //<==============================================
