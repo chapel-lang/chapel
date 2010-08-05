@@ -114,16 +114,16 @@ void gtm_exit_stats() {
     TOTDUR(numCommPut, durCommPut) +
     TOTDUR(numCommFork, durCommFork);
 
-  fprintf(stdout, "Lo%d %d %.3e %.3e %.3e %.3e %.3e\n", 
-	  MYLOCALE, numSuccess, durSuccess, 
+  fprintf(stdout, "%d-Lo%d %d %.3e %.3e %.3e %.3e %.3e\n", 
+	  NLOCALES, MYLOCALE, numSuccess, durSuccess, 
 	  durFailed, durSum, durCommSum, durSum + durCommSum);
 
-  fprintf(stdout, "Mn%d %8d %8d %8d %8d %8d %8d %8d\n",
-	  MYLOCALE, numLoad, numStore, numMalloc, 
+  fprintf(stdout, "%d-Mn%d %8d %8d %8d %8d %8d %8d %8d\n",
+	  NLOCALES, MYLOCALE, numLoad, numStore, numMalloc, 
 	  numFree, numMCommitPh1, numMCommitPh2, numMAbort);
 
-  fprintf(stdout, "Md%d %.2e %.2e %.2e %.2e %.2e %.2e %.2e\n",
-	  MYLOCALE, TOTDUR(numLoad, durLoad),
+  fprintf(stdout, "%d-Md%d %.2e %.2e %.2e %.2e %.2e %.2e %.2e\n",
+	  NLOCALES, MYLOCALE, TOTDUR(numLoad, durLoad),
 	  TOTDUR(numStore, durStore),
 	  TOTDUR(numMalloc, durMalloc),
 	  TOTDUR(numFree, durFree),
@@ -131,37 +131,45 @@ void gtm_exit_stats() {
           TOTDUR(numMCommitPh2, durMCommitPh2),
 	  TOTDUR(numMAbort, durMAbort));
 
-  fprintf(stdout, "Gn%d %8d %8d %8d %8d %8d %8d\n", 
-	  MYLOCALE, numGet, numPut, numFork, 
+  fprintf(stdout, "%d-Gn%d %8d %8d %8d %8d %8d %8d\n", 
+	  NLOCALES, MYLOCALE, numGet, numPut, numFork, 
 	  numCommitPh1, numCommitPh2, numAbort);
 
-  fprintf(stdout, "Gd%d %.2e %.2e %.2e %.2e %.2e %.2e\n",
-	  MYLOCALE, TOTDUR(numGet, durGet),
+  fprintf(stdout, "%d-Gd%d %.2e %.2e %.2e %.2e %.2e %.2e\n",
+	  NLOCALES, MYLOCALE, TOTDUR(numGet, durGet),
 	  TOTDUR(numPut, durPut),
 	  TOTDUR(numFork, durFork), 
 	  TOTDUR(numCommitPh1, durCommitPh1),
 	  TOTDUR(numCommitPh2, durCommitPh2),
 	  TOTDUR(numAbort, durAbort));
 
-  fprintf(stdout, "Cn%d %8d %8d %8d %8d %8d %8d\n", 
-	  MYLOCALE, numCommGet, numCommPut, numCommFork, 
+  fprintf(stdout, "%d-Cn%d %8d %8d %8d %8d %8d %8d\n", 
+	  NLOCALES, MYLOCALE, numCommGet, numCommPut, numCommFork, 
 	  numCommCommitPh1, numCommCommitPh2, numCommAbort);
 
-  fprintf(stdout, "Cd%d %.2e %.2e %.2e %.2e %.2e %.2e\n",
-	  MYLOCALE, TOTDUR(numCommGet, durCommGet),
+  fprintf(stdout, "%d-Cd%d %.2e %.2e %.2e %.2e %.2e %.2e\n",
+	  NLOCALES, MYLOCALE, TOTDUR(numCommGet, durCommGet),
 	  TOTDUR(numCommPut, durCommPut),
 	  TOTDUR(numCommFork, durCommFork), 
 	  TOTDUR(numCommCommitPh1, durCommCommitPh1),
 	  TOTDUR(numCommCommitPh2, durCommCommitPh2),
 	  TOTDUR(numCommAbort, durCommAbort));
 
-  fprintf(stdout, "Sa%d %8.2f %8.2f %8.2f %8.2f %8.2f %8.2f\n",
-	  MYLOCALE, AVGNUM(numLoad, sizeLoad), AVGNUM(numStore, sizeStore), 
-	  AVGNUM(numMalloc, sizeMalloc), AVGNUM(numGet, sizeGet), 
-	  AVGNUM(numPut, sizePut), AVGNUM(numCommitPh2, numLocales));
+  fprintf(stdout, "%d-Sa%d %8.2f %8.2f %8.2f %8.2f %8.2f %8.2f\n",
+	  NLOCALES, MYLOCALE, AVGNUM(numLoad, sizeLoad), 
+	  AVGNUM(numStore, sizeStore), AVGNUM(numMalloc, sizeMalloc), 
+	  AVGNUM(numGet, sizeGet), AVGNUM(numPut, sizePut), 
+	  AVGNUM(numCommitPh2, numLocales));
 
-  fprintf(stdout, "Sm%d %8d %8d %8d %8d %8d %8d\n",
-	  MYLOCALE, maxLoad, maxStore, maxMalloc, maxGet, maxPut, maxLocales);
+  fprintf(stdout, "%d-Sc%d %8.2f %8.2f %8.2f %8.2f %8.2f %8.2f\n",
+	  NLOCALES, MYLOCALE, AVGNUM(numSuccess, sizeLoad), 
+	  AVGNUM(numSuccess, sizeStore), AVGNUM(numSuccess, sizeMalloc), 
+	  AVGNUM(numSuccess, sizeGet), AVGNUM(numSuccess, sizePut), 
+	  AVGNUM(numCommitPh2, numLocales));
+
+  fprintf(stdout, "%d-Sm%d %8d %8d %8d %8d %8d %8d\n",
+	  NLOCALES, MYLOCALE, maxLoad, maxStore, 
+	  maxMalloc, maxGet, maxPut, maxLocales);
 }
 
 void gtm_tx_create_stats(void* txptr) {
@@ -439,6 +447,6 @@ void gtm_tx_create_stats(void* txpr) { }
 void gtm_tx_destroy_stats(void* txpr)  { }
 void gtm_tx_cleanup_stats(void* txpr) { }
 void gtm_tx_stats_start(void* txpr, int op) { }
-void gtm_tx_stats_stop(void* txpr, int op, int status) { }
+void gtm_tx_stats_stop(void* txpr, int op, int status, int size) { }
 
 #endif
