@@ -7,7 +7,8 @@ config const n: indexType = 4;
 
 const m = 2**n;
 
-config const printArrays = false;
+config const printArrays = false,
+  printStats = true;
 
 const TableDist = new dmap(new Block(boundingBox=[0..m-1]));
 
@@ -22,15 +23,20 @@ def main() {
 
   if (printArrays) then writeln("Before updates T = \n", T);
 
-  forall i in 0..m-1 {
+  const startTime = getCurrentTime();
+
+  for i in 0..m-1 {
     atomic {
       T(i) += 1;
       T((i+1) % m) += 1;
     }
   }
 
+  const endTime = getCurrentTime() - startTime;
+
   if (printArrays) then writeln("After updates T = \n", T);
 
   const numErrors = + reduce [i in TableSpace] (T(i) != (i + 2));
   writeln("Validation: ", if numErrors then "FAILURE" else "SUCCESS");
+  if (printStats) then writeln("Time = ", endTime);
 }

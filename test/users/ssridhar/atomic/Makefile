@@ -23,6 +23,9 @@ FLAGS += $(F) --no-devel --fast --print-commands --print-passes
 endif
 
 TARGETS = \
+	testSuperClass \
+	assocDomainInt \
+	assocDomainTuple \
 	atomicDmappedArrayGetPut\
 	nestedAtomicWithOnClause \
 	omitElseCondUsingAtomicFlag \
