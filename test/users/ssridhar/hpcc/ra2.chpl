@@ -3,7 +3,7 @@ use BlockDist, Time;
 use HPCCProblemSize, RARandomStream; 
 
 type indexType = randType,
-  elemType = int(64);
+  elemType = randType;
 
 config const n: indexType = 10,
   N_U = 2**(n+2);
@@ -25,6 +25,29 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 var T: [TableSpace] elemType;
 
 config param safeUpdates: bool = false;
+config param useOn: bool = true;
+
+pragma "inline"
+def addValues(i: indexType, j: indexType) {
+  T(i) += j;
+  if useOn {
+    on TableDist.idxToLocale(j) do
+      T(j) += i;
+  } else {
+    T(j) += i;
+  }	  
+}
+
+pragma "inline"
+def subValues(i: indexType, j: indexType) {
+  T(i) -= j;
+  if useOn {
+    on TableDist.idxToLocale(j) do
+      T(j) -= i;
+  } else {
+    T(j) -= i;
+  }	  
+}
 
 def main() {
   printConfiguration(); 
@@ -33,24 +56,17 @@ def main() {
  
   const startTime = getCurrentTime();               // capture the start time
 
-  forall ( , r) in (Updates, LCGRAStream()) {
+  forall ( , r, s) in (Updates, LCGRAStream(0), LCGRAStream(1)) {
     on TableDist.idxToLocale(r >> (64 - n)) {
-      const s = LCGgetNextRandom(r);  
       if safeUpdates {
-	atomic {
-	  T(r >> (64 - n)) += 1;
-	  T(s >> (64 - n)) -= 1;
-	}
+  	atomic addValues(r >> (64 - n), s >> (64 - n));
       } else {
-	T(r >> (64 - n)) += 1;
-	T(s >> (64 - n)) -= 1;
+	addValues(r >> (64 - n), s >> (64 - n));
       }
     }
   }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
-
-  writeln("Begin Update"); 
 
   const validAnswer = verifyResults();             // verify the updates
   printResults(validAnswer, execTime);             // print the results}
@@ -61,6 +77,7 @@ def printConfiguration() {
     if (printStats) then writeln("Number of Locales = ", numLocales);
     printProblemSize(elemType, 1, m);
     writeln("Atomic Update = ", safeUpdates);
+    writeln("UseOn = ", useOn);
     writeln("Number of updates = ", N_U, "\n");
   }
 }
@@ -70,13 +87,9 @@ def verifyResults() {
 
   var startTime = getCurrentTime();
 
-  forall ( , r) in (Updates, LCGRAStream()) {
+  forall ( , r, s) in (Updates, LCGRAStream(0), LCGRAStream(1)) {
     on TableDist.idxToLocale(r >> (64 - n)) {
-      const s = LCGgetNextRandom(r);  
-      atomic {
-	T(r >> (64 - n)) -= 1;
-	T(s >> (64 - n)) += 1;
-      }
+      atomic subValues(r >> (64 - n), s >> (64 - n));
     }
   }
 
