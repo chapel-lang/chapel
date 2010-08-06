@@ -212,12 +212,18 @@ int getNextYYChar() {
   return retval;
 }
 
+bool chplParseString;
+const char *chplParseStringMsg = NULL;
 BlockStmt*
-parseString(const char* string, const char* filename) {
+parseString(const char* string, const char* filename, const char* msg) {
   yyblock = NULL;
   yyfilename = filename;
+  chplParseString = true;
+  chplParseStringMsg = msg;
   yy_scan_string(string);
   yyparse();
+  chplParseString = false;
+  chplParseStringMsg = NULL;
   YY_NEW_FILE; // reset the lexer
   return yyblock;
 }

@@ -6,7 +6,7 @@
 static Map<const char *, Expr*> configMap;
 static Vec<const char*> usedConfigParams;
 
-extern BlockStmt *parseString(const char *string, const char *filename);
+extern BlockStmt *parseString(const char *string, const char *filename, const char *msg);
 void
 checkConfigs(void) {
   bool anyBadConfigParams = false;
@@ -26,14 +26,15 @@ checkConfigs(void) {
 
 void
 parseCmdLineConfig(const char *name, const char *value) {
-  const char *fake;
+  const char *fake, *parseFn, *parseMsg;
   if (strcmp(value, "") != 0) {
     fake = astr("dummyConfig=", value, ";");
   } else {
     fake = astr("dummyConfig=true;");
   }
-  BlockStmt *b = toBlockStmt(parseString(fake, astr("<command-line config '",
-                                                    name, "=", value, "'>"))->body.head);
+  parseFn = astr("Command-line arg (", name, ")");
+  parseMsg = astr("parsing '", value, "'");
+  BlockStmt *b = toBlockStmt(parseString(fake, parseFn, parseMsg)->body.head);
   Expr *newExpr=NULL;
   if (CallExpr *c = toCallExpr(b->body.head)) {
     newExpr = c->get(2)->copy();
