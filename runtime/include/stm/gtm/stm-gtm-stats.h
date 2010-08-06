@@ -1,6 +1,8 @@
 #ifndef _stm_gtm_stats_h_
 #define _stm_gtm_stats_h_
 
+int printStmStats;    // hack to print stats only when we collect them
+
 enum {
   TX_BEGIN_STATS = 1,
   TX_COMMITPH1_STATS,
@@ -81,12 +83,15 @@ void gtm_tx_stats_start(void*, int);
 void gtm_tx_stats_stop(void*, int, int status, int size);
 
 #define GTM_TX_STATS_START(tx, op) \
-  gtm_tx_stats_start(tx, op) 
+  if (chpl_stm_stats) gtm_tx_stats_start(tx, op)
+
 #define GTM_TX_STATS_STOP(tx, op, size) \
-  gtm_tx_stats_stop(tx, op, TX_OK, size)
+  if (chpl_stm_stats) gtm_tx_stats_stop(tx, op, TX_OK, size)
+
 #define GTM_TX_COMM_STATS_START(tx, op) \
-  gtm_tx_stats_start(tx, op) 
+  if (chpl_stm_stats) gtm_tx_stats_start(tx, op) 
+
 #define GTM_TX_COMM_STATS_STOP(tx, op, status) \
-  gtm_tx_stats_stop(tx, op, status, 0)
+  if (chpl_stm_stats) gtm_tx_stats_stop(tx, op, status, 0)
 
 #endif

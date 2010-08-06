@@ -18,6 +18,7 @@ void** chpl_privateObjects;
 int chpl_verbose_comm;
 int chpl_comm_diagnostics;
 int chpl_verbose_mem;
+int chpl_stm_stats;
 
 void chpl_newPrivatizedClass(void* v) {
   chpl_numPrivateObjects += 1;

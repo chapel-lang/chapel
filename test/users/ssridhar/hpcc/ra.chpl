@@ -43,8 +43,8 @@ config const errorTolerance = 1e-2;
 // parameters, input and output arrays, and/or statistics
 //
 config const printParams = true,
-             printArrays = false,
-             printStats = true;
+  printArrays = false,
+  printStats = true;
 
 //
 // TableDist is a 1D block distribution for domains storing indices
@@ -78,6 +78,7 @@ var T: [TableSpace] elemType;
 // declared as param to avoid the additional check at runtime 
 //
 config param safeUpdates: bool = false;
+config param stmStats: bool = true;
 
 //
 // config param to use the LCG random number generator
@@ -155,6 +156,8 @@ def verifyResults() {
   //
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
+  if stmStats then startStmStats();
+
   var startTime = getCurrentTime();
 
   //
@@ -164,7 +167,7 @@ def verifyResults() {
   if useLCG {
     forall ( , r) in (Updates, LCGRAStream(0)) do
       on TableDist.idxToLocale(r >> (64 - n)) {
-	atomic T(r >> (64 - n)) ^= r;
+	atomic T(r >> (64 - n)) ^= r;       
       }
   } else {
     forall ( , r) in (Updates, RAStream()) do
@@ -174,6 +177,8 @@ def verifyResults() {
   }
 
   const verifyTime = getCurrentTime() - startTime;
+
+  if stmStats then stopStmStats();
 
   //
   // Print the table again after the updates have been reversed

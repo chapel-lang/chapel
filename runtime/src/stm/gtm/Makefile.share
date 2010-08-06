@@ -2,10 +2,6 @@ VER = RV_EA_WB
 
 GTM_CFLAGS += -DGTM_$(VER)
 
-ifeq ($(CHPL_STM_GTM_STATS), wstats)
-GTM_CFLAGS += -DGTM_STATS
-endif
-
 STM_SRCS = \
 	stm-gtm.c \
 	stm-gtm-desc.c \

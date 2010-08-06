@@ -303,6 +303,9 @@ void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memD
 
 void chpl_stm_tx_free(chpl_stm_tx_p tx, void* ptr, int32_t ln, chpl_string fn);
 
+void chpl_startStmStats(void);
+void chpl_stopStmStats(void);
+
 #else // LAUNCHER
 
 #define chpl_stm_exit()

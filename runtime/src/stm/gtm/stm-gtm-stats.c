@@ -11,8 +11,6 @@
 #include "error.h"
 #include "stm-gtm.h"
 
-#ifdef GTM_STATS
-
 #define TOTDUR(num, dur) (num ? dur / 1.0e+6 : 0)
 #define AVGDUR(num, dur) (num ? dur / (num * 1.0e+6) : 0)
 #define AVGNUM(num, tot) (num ? (tot * 1.0) / (num * 1.0) : 0)
@@ -96,6 +94,8 @@ void gtm_init_stats() {
 void gtm_exit_stats() {
   _real64 durSum, durCommSum;
 
+  if (!printStmStats) return;
+
   durSum = TOTDUR(numAbort, durAbort) + 
     TOTDUR(numCommitPh1, durCommitPh1) + 
     TOTDUR(numCommitPh2, durCommitPh2) + 
@@ -177,6 +177,10 @@ void gtm_tx_create_stats(void* txptr) {
   _timervalue t;
   _real64 nowtime;
 
+  if (!chpl_stm_stats) return;
+
+  printStmStats = 1;
+
   t = _now_timer(t);
   nowtime = t.tv_sec + (t.tv_usec / 1.0e+6);
 
@@ -202,14 +206,20 @@ void gtm_tx_create_stats(void* txptr) {
 
 void gtm_tx_destroy_stats(void* txptr) {
   chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
+
+  if (!chpl_stm_stats) return;
+
   assert(tx->counters != NULL);
   chpl_free(tx->counters, 0, 0);
 }
 
 void gtm_tx_cleanup_stats(void* txptr) {
   chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
-  stats_t* counters = tx->counters;
+  stats_t* counters;
 
+  if (!chpl_stm_stats) return;
+
+  counters = tx->counters;
   assert(counters != NULL);
   counters->numCommitPh1 = 0;
   counters->durCommitPh1 = 0;
@@ -438,15 +448,3 @@ void gtm_tx_stats_stop(void* txptr, int op, int status, int size) {
     chpl_error("STM Error: Timer not defined", 0, 0);
   }
 }
-
-#else
-
-void gtm_init_stats(void) { }
-void gtm_exit_stats(void) { }
-void gtm_tx_create_stats(void* txpr) { }
-void gtm_tx_destroy_stats(void* txpr)  { }
-void gtm_tx_cleanup_stats(void* txpr) { }
-void gtm_tx_stats_start(void* txpr, int op) { }
-void gtm_tx_stats_stop(void* txpr, int op, int status, int size) { }
-
-#endif

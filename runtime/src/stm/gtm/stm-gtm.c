@@ -359,3 +359,13 @@ void chpl_stm_tx_free(chpl_stm_tx_p tx, void* ptr, int32_t ln, chpl_string fn) {
   gtm_tx_free_memset(tx, ptr, ln, fn);
   GTM_TX_STATS_STOP(tx, TX_FREE_STATS, 0);
 }
+
+void chpl_startStmStats() {
+  chpl_stm_stats = 1;
+  chpl_comm_broadcast_private(3 /* &chpl_stm_stats */, sizeof(int));
+}
+
+void chpl_stopStmStats() {
+  chpl_stm_stats = 0;
+  chpl_comm_broadcast_private(3 /* &chpl_stm_stats */, sizeof(int));
+}

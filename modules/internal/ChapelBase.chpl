@@ -1,5 +1,3 @@
-config param atomicSupport: bool = false;
-
 config param CHPL_HOST_PLATFORM: string = "unset";
 config param CHPL_TARGET_PLATFORM: string = "unset";
 if (CHPL_HOST_PLATFORM == "unset") {
@@ -1618,5 +1616,13 @@ pragma "inline" def <=(a: uint(64), param b: int(64)) {
 pragma "inline" def <=(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("<="); else return if a == 0 then true else a:uint(64) <= b;
 }
+
+//
+// STM Statistics and Flags
+//
+config param atomicSupport: bool = false;
+
+def startStmStats() { __primitive("chpl_startStmStats"); }
+def stopStmStats() { __primitive("chpl_stopStmStats"); }
 
 

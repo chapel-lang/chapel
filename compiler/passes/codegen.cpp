@@ -589,7 +589,8 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "&chpl_verbose_comm");
     fprintf(hdrfile, ",\n&chpl_comm_diagnostics");
     fprintf(hdrfile, ",\n&chpl_verbose_mem");
-    int i = 3;
+    fprintf(hdrfile, ",\n&chpl_stm_stats");
+    int i = 4;
     forv_Vec(CallExpr, call, gCallExprs) {
       if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
         SymExpr* se = toSymExpr(call->get(1));
