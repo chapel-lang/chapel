@@ -1020,6 +1020,38 @@ def =(d: domain, r: range(?)) {
   return d;
 }
 
+//
+// Return true if t is a tuple of ranges that is legal to assign to domain d
+//
+def chpl__isLegalRngTupDomAssign(d, t) param {
+  def isRangeTuple(a) param {
+    def isRange(r: range(?e,?b,?s)) param return true;
+    def isRange(r) param return false;
+    def peelArgs(first, rest...) param {
+      return if rest.size > 1 then
+               isRange(first) && peelArgs((...rest))
+             else
+               isRange(first) && isRange(rest(1));
+    }
+    def peelArgs(first) param return isRange(first);
+
+    return if !isTuple(a) then false else peelArgs((...a));
+  }
+
+  def strideSafe(d, rt, param dim: int=1) param {
+    return if dim == d.rank then
+             d.dim(dim).stridable || !rt(dim).stridable
+           else
+             (d.dim(dim).stridable || !rt(dim).stridable) && strideSafe(d, rt, dim+1);
+  }
+  return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
+}
+
+def =(d: domain, rt: _tuple) where chpl__isLegalRngTupDomAssign(d, rt) {
+  d = [(...rt)];
+  return d;
+}
+
 def =(a: domain, b) {  // b is iteratable
   a._value.clearForIteratableAssign();
   for ind in b {
