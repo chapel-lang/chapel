@@ -34,6 +34,92 @@ Automatic modules are used by a Chapel program automatically.  There
 is currently no way to avoid their use by a program though we
 anticipate adding such a capability in the future.
 
+\subsubsection{Functions}
+\label{Functions}
+\index{standard modules!Functions}
+
+The module \chpl{Functions} defines functions (mostly higher-order functions) that 
+commonly occur in functional programming.
+
+\vspace{1pc}
+
+\begin{protohead}
+array(x...?n)
+\end{protohead}
+\begin{protobody}
+A helper function for creating single dimension arrays by using the given values as the initial values.
+\end{protobody}
+
+\begin{protohead}
+drop(arr, n)
+\end{protohead}
+\begin{protobody}
+An iterator which returns elements of a sequence, having dropped the first n
+\end{protobody}
+
+\begin{protohead}
+dropWhile(arr, op)
+\end{protohead}
+\begin{protobody}
+An iterator which returns elements of a sequence, having dropped the first elements which meet the given conditional operator
+\end{protobody}
+
+\begin{protohead}
+filter(arr, op)
+\end{protohead}
+\begin{protobody}
+An iterator which returns only elements in the sequence which meet the given conditional operator
+\end{protobody}
+
+\begin{protohead}
+foldLeft(arr, init, op)
+\end{protohead}
+\begin{protobody}
+Reduces a sequence with an operator pair-wise from the left starting with an initial value.
+\end{protobody}
+
+\begin{protohead}
+foldRight(arr, init, op)
+\end{protohead}
+\begin{protobody}
+Reduces a sequence with an operator pair-wise from the right starting with an initial value.
+\end{protobody}
+
+\begin{protohead}
+map(arr, op)
+\end{protohead}
+\begin{protobody}
+An iterator which returns the result of an operator applied to each element of a sequence
+\end{protobody}
+
+\begin{protohead}
+reverse(arr)
+\end{protohead}
+\begin{protobody}
+An iterator which reverses the sequence given.
+\end{protobody}
+
+\begin{protohead}
+splitAt(arr, n)
+\end{protohead}
+\begin{protobody}
+Returns a tuple splitting a sequence at the position n.
+\end{protobody}
+
+\begin{protohead}
+take(arr, n)
+\end{protohead}
+\begin{protobody}
+An iterator which returns the first n elements of a sequence
+\end{protobody}
+
+\begin{protohead}
+takeWhile(arr, op)
+\end{protohead}
+\begin{protobody}
+An iterator which returns the first elements of a sequence which meet the given conditional operator
+\end{protobody}
+
 \subsubsection{Math}
 \label{Math}
 \index{automatic modules!Math}
