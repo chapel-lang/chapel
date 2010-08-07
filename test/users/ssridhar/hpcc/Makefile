@@ -20,6 +20,8 @@ TARGETS = \
 	testLCG \
 	testRAR \
 	ra2 \
+	ra2_sda \
+	aswap \
 	Svnra Svnra_mla Svnra_sla \
 	SvntestLCG SvntestRAR \
 	Svnra2
@@ -50,6 +52,12 @@ testRAR: HPCCProblemSize.chpl RARandomStream.chpl testLCG.chpl
 	$(CHPL) -o $(CHPLSVN)$@ -suseLCG=false $(FLAGS) --savec c_$@ $^
 
 ra2: RARandomStream.chpl ra2.chpl
+	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
+
+ra2_sla: RARandomStream.chpl ra2_sync_lock_array.chpl
+	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
+
+aswap: HPCCProblemSize.chpl RARandomStream.chpl atomicswap.chpl
 	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
 
 FORCE:

@@ -26,27 +26,26 @@ var T: [TableSpace] elemType;
 
 config param safeUpdates: bool = false;
 config param useOn: bool = true;
+config param trackStmStats = false;
 
 pragma "inline"
 def addValues(i: indexType, j: indexType) {
   T(i) += j;
-  if useOn {
+  if useOn then
     on TableDist.idxToLocale(j) do
       T(j) += i;
-  } else {
-    T(j) += i;
-  }	  
+  else 
+    T(j) += i;	  
 }
 
 pragma "inline"
 def subValues(i: indexType, j: indexType) {
   T(i) -= j;
-  if useOn {
+  if useOn then
     on TableDist.idxToLocale(j) do
       T(j) -= i;
-  } else {
+  else
     T(j) -= i;
-  }	  
 }
 
 def main() {
@@ -56,7 +55,7 @@ def main() {
  
   const startTime = getCurrentTime();               // capture the start time
 
-  forall ( , r, s) in (Updates, LCGRAStream(0), LCGRAStream(1)) {
+  forall ( , r, s) in (Updates, LCGRAStream(0), LCGRAStream(100)) {
     on TableDist.idxToLocale(r >> (64 - n)) {
       if safeUpdates {
   	atomic addValues(r >> (64 - n), s >> (64 - n));
@@ -85,15 +84,19 @@ def printConfiguration() {
 def verifyResults() {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
+  if (trackStmStats) then startStmStats();
+
   var startTime = getCurrentTime();
 
-  forall ( , r, s) in (Updates, LCGRAStream(0), LCGRAStream(1)) {
+  forall ( , r, s) in (Updates, LCGRAStream(0), LCGRAStream(100)) {
     on TableDist.idxToLocale(r >> (64 - n)) {
       atomic subValues(r >> (64 - n), s >> (64 - n));
     }
   }
 
   const verifyTime = getCurrentTime() - startTime; 
+  
+  if trackStmStats then stopStmStats();
 
   if (printArrays) then writeln("After verification, T is: ", T, "\n");
 
