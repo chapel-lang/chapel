@@ -78,12 +78,16 @@ var T: [TableSpace] elemType;
 // declared as param to avoid the additional check at runtime 
 //
 config param safeUpdates: bool = false;
-config param stmStats: bool = true;
 
 //
 // config param to use the LCG random number generator
 //
 config param useLCG: bool = true;
+
+//
+// turn on/off stm statistics collection
+//
+config param trackStmStats = false;
 
 //
 // The program entry point
@@ -156,7 +160,7 @@ def verifyResults() {
   //
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
-  if stmStats then startStmStats();
+  if trackStmStats then startStmStats();
 
   var startTime = getCurrentTime();
 
@@ -178,7 +182,7 @@ def verifyResults() {
 
   const verifyTime = getCurrentTime() - startTime;
 
-  if stmStats then stopStmStats();
+  if trackStmStats then stopStmStats();
 
   //
   // Print the table again after the updates have been reversed

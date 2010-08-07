@@ -95,6 +95,11 @@ config param safeUpdates: bool = false;
 config param useLCG: bool = true;
 
 //
+// turn on/off stm statistics collection
+//
+config param trackStmStats = false;
+
+//
 // The program entry point
 //
 def main() {
@@ -165,6 +170,8 @@ def verifyResults() {
   //
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
+  if trackStmStats then startStmStats();
+
   var startTime = getCurrentTime();
 
   //
@@ -188,6 +195,8 @@ def verifyResults() {
   }
 
   const verifyTime = getCurrentTime() - startTime;
+
+  if trackStmStats then stopStmStats();
 
   //
   // Print the table again after the updates have been reversed
