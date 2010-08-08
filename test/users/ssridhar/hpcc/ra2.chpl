@@ -90,7 +90,14 @@ def verifyResults() {
 
   forall ( , r, s) in (Updates, LCGRAStream(0), LCGRAStream(100)) {
     on TableDist.idxToLocale(r >> (64 - n)) {
-      atomic subValues(r >> (64 - n), s >> (64 - n));
+      atomic {
+	T(r >> (64 - n)) -= (s >> (64 - n));
+	if useOn then
+	  on TableDist.idxToLocale(s >> (64 - n)) do
+	    T(s >> (64 - n)) -= (r >> (64 - n));
+	else
+	  T(s >> (64 - n)) -= (r >> (64 - n));
+      }
     }
   }
 
