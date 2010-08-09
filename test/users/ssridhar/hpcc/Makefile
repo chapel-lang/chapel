@@ -20,7 +20,7 @@ TARGETS = \
 	testLCG \
 	testRAR \
 	ra2 \
-	ra2_sda \
+	ra2SDA \
 	aswap 
 
 default: all
@@ -51,7 +51,7 @@ testRAR: HPCCProblemSize.chpl RARandomStream.chpl testLCG.chpl
 ra2: RARandomStream.chpl ra2.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
-ra2_sla: RARandomStream.chpl ra2_sync_lock_array.chpl
+ra2SDA: RARandomStream.chpl ra2_sync_data_array.chpl
 	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
 
 aswap: HPCCProblemSize.chpl RARandomStream.chpl atomicswap.chpl
