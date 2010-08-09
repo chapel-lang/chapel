@@ -5,9 +5,11 @@ PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
 
 
 SOURCES = \
-	../lib/grid_base_defs.chpl \
-	diffusion_backward_euler_defs.chpl \
-	true_solution_driver.chpl
+	../../lib/grid/grid_base_defs.chpl \
+	../../lib/grid/grid_solution_defs.chpl \
+	../../lib/grid/grid_bc_defs.chpl \
+	grid_diffusion_defs.chpl \
+	grid_diffusion_driver.chpl
 
 DIM = 2
 

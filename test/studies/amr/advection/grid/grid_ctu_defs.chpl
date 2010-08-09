@@ -8,6 +8,7 @@
 
 use grid_base_defs;
 use grid_solution_defs;
+use grid_bc_defs;
 
 
 
@@ -19,14 +20,18 @@ use grid_solution_defs;
 //-------------------------------------------------------------
 def RectangularGrid.stepCTU(
   sol:      ScalarGridSolution,
+  bc:       GridBC,
   velocity: dimension*real,
   dt:       real
 ){
 
+  //==== Fill ghost cells ====
+  bc.ghostFill(sol.space_data(2), sol.time(2));
+
 
   //==== Assign names to solution components ====
-  var q_new     = sol.space_data(1); // getting overwritten
-  var q_current = sol.space_data(2);
+  var q_current => sol.space_data(2);
+  var q_new     => sol.space_data(1); // overwriting old values
   var t_current = sol.time(2);
   var t_new     = sol.time(2) + dt;
   
@@ -94,7 +99,7 @@ def RectangularGrid.stepCTU(
   //==== Update solution structure ====
   sol.time(1) = t_current;
   sol.time(2) = t_new;
-  q.space_data(1) <=> q.space_data(2);
+  sol.space_data(1) <=> sol.space_data(2);
 
 }
 //<=======================================

@@ -3,10 +3,6 @@ use grid_base_defs;
 use grid_solution_defs;
 
 
-//============================================================>
-//==================== BOUNDARY CONDITIONS ===================>
-//============================================================>
-
 
 //===> GridBC class ===>
 //=====================>
@@ -43,13 +39,13 @@ class GridBC {
 
     }
   }
-  //<================================
   //<=== setBoundaryFaces method <===
+  //<================================
 
 
   //==== Dummy routines; to be provided in derived classes ====
-  def ghostFill(q: ScalarSingleTimeGridSolution){}
-  def homogeneousGhostFill(q: ScalarSingleTimeGridSolution){}
+  def ghostFill(q: [grid.ext_cells] real, t: real){}
+  def homogeneousGhostFill(q: [grid.ext_cells] real){}
   
 }
 //<=== GridBC Class <===
@@ -85,37 +81,34 @@ class PeriodicGridBC: GridBC {
     //<=== Build periodic images of ghost cells <===
 
   }
-  //<============================
   //<=== initialize method <===
+  //<==========================
 
 
 
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: ScalarSingleTimeGridSolution) {
+  def ghostFill(q: [grid.ext_cells] real, t: real) {
     //==== Periodic BCs are homogeneous ====
     homogeneousGhostFill(q);
   }
-  //<=========================
   //<=== ghostFill method <===
+  //<=========================
 
 
 
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: ScalarSingleTimeGridSolution) {
-
-    //==== Make sure q lives on the same grid as the BC ====
-    assert(q.grid == grid);
+  def homogeneousGhostFill(q: [grid.ext_cells] real) {
 
     //==== Copy values into ghost cells from their periodic images ====
     for d in dimensions do {
-      q.value(grid.low_ghost_cells(d))  = q.value(low_ghost_periodic(d));
-      q.value(grid.high_ghost_cells(d)) = q.value(high_ghost_periodic(d));
+      q(grid.low_ghost_cells(d))  = q(low_ghost_periodic(d));
+      q(grid.high_ghost_cells(d)) = q(high_ghost_periodic(d));
     }
   }
-  //<====================================
   //<=== homogeneousGhostFill method <===
+  //<====================================
 
 
 }
@@ -131,18 +124,18 @@ class ZeroOrderExtrapGridBC: GridBC {
 
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: ScalarSingleTimeGridSolution) {
+  def ghostFill(q: [grid.ext_cells] real, t: real){
     //==== This type of BC is homogeneous ====
     homogeneousGhostFill(q);
   }
-  //<=========================
   //<=== ghostFill method <===
+  //<=========================
   
 
 
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: ScalarSingleTimeGridSolution) {
+  def homogeneousGhostFill(q: [grid.ext_cells] real) {
 
     for d in dimensions do {
 
@@ -155,7 +148,7 @@ class ZeroOrderExtrapGridBC: GridBC {
         var target_cell: dimension*int;
         for d_cell in dimensions do
           target_cell(d_cell) = max(cell(d_cell), grid.cells.dim(d_cell).low);
-        q.value(cell) = q.value(target_cell);
+        q(cell) = q(target_cell);
       }
       
       
@@ -165,19 +158,19 @@ class ZeroOrderExtrapGridBC: GridBC {
         var target_cell: dimension*int;
         for d_cell in dimensions do
           target_cell(d_cell) = min(cell(d_cell), grid.cells.dim(d_cell).high);
-        q.value(cell) = q.value(target_cell);
+        q(cell) = q(target_cell);
       }
     }
 
   }
-  //<====================================
   //<=== homogeneousGhostFill method <===
-
-
+  //<====================================
 
 }
-//<====================================
 //<=== ZeroOrderExtrapGridBC class <===
+//<====================================
+
+
 
 
 
@@ -187,32 +180,32 @@ class ZeroInflowGridBC: GridBC {
   
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: ScalarSingleTimeGridSolution) {
+  def ghostFill(q: [grid.ext_cells] real, t: real) {
     //==== This type of BC is homogeneous ====
     homogeneousGhostFill(q);
   }
-  //<=========================
   //<=== ghostFill method <===
+  //<=========================
   
   
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: ScalarSingleTimeGridSolution) {
+  def homogeneousGhostFill(q: [grid.ext_cells] real) {
     
     for d in dimensions {
       forall cell in grid.low_ghost_cells(d) do
-        q.value(cell) = 0.0;
+        q(cell) = 0.0;
 
       forall cell in grid.high_ghost_cells(d) do
-        q.value(cell) = 0.0;
+        q(cell) = 0.0;
     }
   }
-  //<====================================
   //<=== homogeneousGhostFill method <===
+  //<====================================
   
 }
-//<===============================
 //<=== ZeroInflowGridBC class <===
+//<===============================
 
 
 
@@ -244,25 +237,25 @@ class TrueDirichletGridBC: GridBC {
   //---------------------------------------------------
   // Evaluates true_solution.qTrue on each ghost cell.
   //---------------------------------------------------
-  def ghostFill(q: ScalarSingleTimeGridSolution) {
+  def ghostFill(q: [grid.ext_cells] real, t: real) {
     
     for d in dimensions {
 
       forall precell in grid.low_ghost_cells(d) {
         var cell = tuplify(precell);
-        q.value(cell) = true_solution.qTrue(grid.xValue(cell), q.time);
+        q(cell) = true_solution.qTrue(grid.xValue(cell), q.time);
       }
 
       forall precell in grid.high_ghost_cells(d) {
         var cell = tuplify(precell);
-        q.value(cell) = true_solution.qTrue(grid.xValue(cell), q.time);
+        q(cell) = true_solution.qTrue(grid.xValue(cell), q.time);
       }
 
     }
 
   }
-  //<=========================
   //<=== ghostFill method <===
+  //<=========================
 
 
   //===> homogeneousGhostFill method ===>
@@ -272,7 +265,7 @@ class TrueDirichletGridBC: GridBC {
   // nearest interior value is reflected about 0 to the nearest 
   // ghost cell value.
   //------------------------------------------------------------
-  def homogeneousGhostFill(q: ScalarSingleTimeGridSolution) {
+  def homogeneousGhostFill(q: [grid.ext_cells] real) {
 
     for d in dimensions {
 
@@ -284,24 +277,24 @@ class TrueDirichletGridBC: GridBC {
       //==== Low boundary ====
       forall preface in low_boundary_faces(d) {
         var face = tuplify(preface);
-        q.value(face - shift) = -q.value(face + shift);
+        q(face - shift) = -q(face + shift);
       }
 
 
       //==== High boundary ====
       forall preface in high_boundary_faces(d) {
         var face = tuplify(preface);
-        q.value(face + shift) = -q.value(face - shift);
+        q(face + shift) = -q(face - shift);
       }
     }
 
   }
-  //<====================================
   //<=== homogeneousGhostFill method <===
+  //<====================================
 
 }
-//<==================================
 //<=== TrueDirichletGridBC class <===
+//<==================================
 
 
 
@@ -317,14 +310,14 @@ class TrueNeumannGridBC: GridBC {
   def initialize() {
     setBoundaryFaces();
   }
-  //<=========================
   //<=== intialize method <===
+  //<=========================
 
 
 
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: ScalarSingleTimeGridSolution) {
+  def ghostFill(q: [grid.ext_cells] real, t: real) {
 
     writeln("Start of ghostFill");
     
@@ -343,8 +336,8 @@ class TrueNeumannGridBC: GridBC {
       forall preface in low_boundary_faces(d) {
         var face            = tuplify(preface);
         var normal_flux     = -true_solution.fluxComponent(grid.xValue(face), q.time, d);
-        q.value(face-shift) = true_solution.normalFluxToGhost(normal_flux, 
-                                                              q.value(face+shift), 
+        q(face-shift) = true_solution.normalFluxToGhost(normal_flux, 
+                                                              q(face+shift), 
                                                               dx);
       }
 
@@ -353,47 +346,44 @@ class TrueNeumannGridBC: GridBC {
       forall preface in high_boundary_faces(d) {
         var face            = tuplify(preface);
         var normal_flux     = true_solution.fluxComponent(grid.xValue(face), q.time, d);
-        q.value(face+shift) = true_solution.normalFluxToGhost(normal_flux,
-                                                              q.value(face-shift),
+        q(face+shift) = true_solution.normalFluxToGhost(normal_flux,
+                                                              q(face-shift),
                                                               dx);
       }
 
     }
 
   }
-  //<=========================
   //<=== ghostFill method <===
+  //<=========================
 
 
 
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: ScalarSingleTimeGridSolution) {
+  def homogeneousGhostFill(q: [grid.ext_cells] real) {
 
     for d in dimensions do {
       //==== Low ghost cells ====
       forall cell in grid.low_ghost_cells(d) {
         var target_cell = cell;
         target_cell(d)  = grid.cells.dim(d).low;
-        q.value(cell)   = q.value(target_cell);
+        q(cell)         = q(target_cell);
       }
 
       //==== High ghost cells ====
       forall cell in grid.high_ghost_cells(d) {
         var target_cell = cell;
         target_cell(d)  = grid.cells.dim(d).high;
-        q.value(cell)   = q.value(target_cell);
+        q(cell)         = q(target_cell);
       }
     }
 
   }
-  //<====================================
   //<=== homogeneousGhostFill method <===
+  //<====================================
 }
-//<================================
 //<=== TrueNeumannGridBC class <===
+//<================================
 
 
-//<============================================================
-//<=================== BOUNDARY CONDITIONS ====================
-//<============================================================

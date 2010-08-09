@@ -56,8 +56,7 @@ def advanceAdvectionCTU(
 
 
     //==== Update solution ====
-    bc.ghostFill(sol.space_data(2), sol.time(2));
-    grid.stepCTU(sol, velocity, dt_used);
+    grid.stepCTU(sol, bc, velocity, dt_used);
           
   }
   //<=== Time-stepping loop <===
@@ -76,15 +75,15 @@ def advanceAdvectionCTU(
 def main {
 
   //===> Initialize output ===>
-  var time_initial: real = 0.0,
-    time_final:     real = 2.0,
+  var initial_time: real = 0.0,
+    final_time:     real = 2.0,
     n_output:       int  = 20,
     output_times:   [1..n_output] real,
-    dt_output:      real = (time_final - time_initial) / n_output,
+    dt_output:      real = (final_time - initial_time) / n_output,
     frame_number:   int = 0;
 
   for i in output_times.domain do
-    output_times(i) = time_initial + i * dt_output;
+    output_times(i) = initial_time + i * dt_output;
   //<=== Initialize output <===
 
 
@@ -137,13 +136,10 @@ def main {
     return f;
   }
 
-  var q = new ScalarMultiTimeGridSolution(grid    = grid,
-                                          n_times = 2);
-                                          
-  grid.initializeSolution(q.time_layers(2), 
-                          initial_condition,
-                          time_initial);
-  //<=== Initialize  solution <===
+  var sol = new ScalarGridSolution(grid);
+
+  grid.initializeSolution(sol, initial_condition, initial_time);
+  //<=== Initialize solution <===
 
 
 
@@ -152,17 +148,17 @@ def main {
 
   //===> Generate output ===>
   //==== Initial time ====
-  grid.clawOutput(q.time_layers(2), frame_number);
+  grid.clawOutput(sol, frame_number);
 
   //==== Subsequent times ====
   for output_time in output_times do {
     //==== Advance solution to output time ====
-    advanceAdvectionCTU(grid, q, bc, velocity, output_time);
+    advanceAdvectionCTU(grid, sol, bc, velocity, output_time);
 
     //==== Write output to file ====
     frame_number += 1;
     writeln("Writing frame ", frame_number, ".");
-    grid.clawOutput(q.time_layers(2), frame_number);
+    grid.clawOutput(sol, frame_number);
   }
   //<=== Generate output <===
   

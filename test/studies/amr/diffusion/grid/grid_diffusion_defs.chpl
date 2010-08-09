@@ -13,29 +13,9 @@ use grid_bc_defs;
 
 
 
-// //==== Form rhs for conjugate gradients ====
-// q.time += dt_used;  // Use boundary data at t+dt to set flux divergence
-// bc.ghostFill(q);
-// fluxDivergence(rhs,  q, diffusivity);
-// rhs *= -dt_used;
-
-
-// //==== Update solution ====
-// conjugateGradient(dq, bc, rhs, diffusivity, dt_used, dt_used/4.0);
-// q.value(cells) += dq.value(cells);
-
-
-
-//===> inverseBEOperator method ===>
-//=================================>
-//--------------------------------------------------------------------------
-// Note that when writing Backward Euler as
-//    (I - dt*A)Q^{n+1} = Q^n + b^n,
-// I'm using "inverse backward Euler operator" to refer to (I - dt*A)^{-1}.
-// My "non-inverse backward Euler operator" would be (I-dt*A), the same way
-// that (I + dt*A) is the forward Euler operator.
-//--------------------------------------------------------------------------
-def RectangularGrid.invHomBEOperator(
+//===> stepBE method ===>
+//======================>
+def RectangularGrid.stepBE(
   sol:         ScalarGridSolution,
   bc:          GridBC,
   diffusivity: real,
@@ -43,18 +23,21 @@ def RectangularGrid.invHomBEOperator(
   tolerance:   real
 ){
 
-  //===> Safety checks ===>
+  //==== Safety check ====
   assert(sol.grid == this);
-  //<=== Safety checks <===
 
 
   //===== Assign names to solution components ====
-  var dq        = sol.space_data(1);  // will eventually be q_new, but is dq until the end
-  var q_current = sol.space_data(2);
+  var dq        => sol.space_data(1);  // will eventually be q_new, but is dq until the end
+  var q_current => sol.space_data(2);
   var t_current = sol.time(2);
   var t_new     = sol.time(2) + dt;
-  
-  
+
+/*   writeln(""); */
+/*   writeln("q"); */
+/*   writeln("--------"); */
+/*   writeln(q_current(cells)); */
+
   //==== Array allocations ====
   var rhs, residual, search_dir, residual_update_dir: [ext_cells] real;
   
@@ -64,10 +47,21 @@ def RectangularGrid.invHomBEOperator(
 
 
   //==== Calculate the rhs for conjugate gradients ====
-  bc.ghostFill(q_current, t_current+dt);
+  //----------------------------------------------------------------------
+  // This is calculated by filling q_current's ghost cells with boundary
+  // data from the *next* time, and then calculating -dt*flux_divergence.
+  // I haven't actually seen this done before, but it makes possible
+  // a clean decoupling of the "ghostFill" and "homogeneousGhostFill"
+  // methods.
+  //----------------------------------------------------------------------
+  bc.ghostFill(q_current, t_new);
   fluxDivergence(rhs, q_current, diffusivity);
   rhs(cells) *= -dt;
-                                            
+                                         
+/*   writeln(""); */
+/*   writeln("rhs"); */
+/*   writeln("--------"); */
+/*   writeln(rhs(cells)); */
 
   //==== Initial guess ====
   dq(cells) = rhs(cells);
@@ -77,25 +71,35 @@ def RectangularGrid.invHomBEOperator(
   //------------------------------------------------------------
   // residual = rhs - (dq + dt*flux_divergence(dq))
   //------------------------------------------------------------
-  bc.homogeneousGhostFill(dq);
-  homBEOperator(residual, dq, diffusivity, dt);
+  homogeneousBEOperator(residual,
+                        dq,
+                        bc, diffusivity, dt);
   residual(cells) = rhs(cells) - residual(cells);
 
+/*   writeln(""); */
+/*   writeln("Initial residual"); */
+/*   writeln("--------"); */
+/*   writeln(residual(cells)); */
 
   //==== Initialize search direction ====
   search_dir(cells) = residual(cells);
 
 
   //==== Initialize residual update direction ====
-  //-------------------------------------------
-  // Initializes to homBEOperator(search_dir)
-  //-------------------------------------------
-  bc.homogeneousGhostFill(search_dir);
-  homBEOperator(residual_update_dir, search_dir, diffusivity, dt);
+  //--------------------------------------------------
+  // Initializes to homogeneousBEOperator(search_dir)
+  //--------------------------------------------------
+  homogeneousBEOperator(residual_update_dir,
+                        search_dir, 
+                        bc, diffusivity, dt);
 
+/*   writeln(""); */
+/*   writeln("Initial residual update direction"); */
+/*   writeln("--------"); */
+/*   writeln(residual_update_dir(cells)); */
 
   //==== Initialize scalars ====
-  var residual_norm = +reduce(residual*residual);
+  var residual_norm = +reduce(residual(cells) * residual(cells));
   var alpha, beta, residual_norm_old: real;
   
   
@@ -103,12 +107,27 @@ def RectangularGrid.invHomBEOperator(
   for iter in [1..maxiter] {
  
     //==== Update the solution and residual ====
-    alpha = +reduce( residual * residual )  
+    alpha = +reduce( residual(cells) * residual(cells) )
              / +reduce( residual_update_dir(cells) * search_dir(cells) );
  
+/*     writeln(""); */
+/*     writeln("alpha, iteration ", iter); */
+/*       writeln("--------"); */
+/*       writeln(alpha); */
+
     dq(cells) += alpha * search_dir(cells);
+
+/*   writeln(""); */
+/*   writeln("dq updated, iteration ", iter); */
+/*   writeln("--------"); */
+/*   writeln(dq(cells)); */
  
     residual(cells) -= alpha * residual_update_dir(cells);
+
+/*   writeln(""); */
+/*   writeln("residual, iteration ", iter); */
+/*   writeln("--------"); */
+/*   writeln(residual(cells)); */
 
 
     //==== Compute norm of residual, and check for convergence ====
@@ -121,10 +140,27 @@ def RectangularGrid.invHomBEOperator(
 
     //==== Update directions for search and residual update ====
     beta                = residual_norm / residual_norm_old;
-    search_dir(cells)   = residual + beta * search_dir(cells);
 
-    bc.homogeneousGhostFill(search_dir);
-    backwardEulerOperator(residual_update_dir,  search_dir, diffusivity, dt);
+/*       writeln(""); */
+/*       writeln("beta, iteration", iter); */
+/*       writeln("--------"); */
+/*       writeln(beta); */
+
+    search_dir(cells)   = residual(cells) + beta * search_dir(cells);
+
+/*   writeln(""); */
+/*   writeln("search direction, iteration ", iter); */
+/*   writeln("--------"); */
+/*   writeln(search_dir(cells));     */
+
+    homogeneousBEOperator(residual_update_dir,
+                          search_dir,
+                          bc, diffusivity, dt);
+
+/*   writeln(""); */
+/*   writeln("resodial update direction, iteration ", iter); */
+/*   writeln("--------"); */
+/*   writeln(residual_update_dir(cells));   */  
     
   }
   //<=== CG iteration <===
@@ -135,12 +171,14 @@ def RectangularGrid.invHomBEOperator(
   // Recalling that dq = q.time_layer(1).value...
   //----------------------------------------------
   dq(cells) += q_current(cells);
-  sol.time_layer(1).time = time_current + dt;
-  sol.time_layer(1) <=> sol.time_layer(2);
-    
+  sol.time(1) = t_current;
+  sol.time(2) = t_current + dt;
+  sol.space_data(1) <=> sol.space_data(2);
+  //sol.space_data(1) = sol.space_data(2);
+  //sol.space_data(2) = q_current + dq;
 }
-//<=== inverseBEOperator method <===
-//<=================================
+//<=== stepBE method <===
+//<======================
 
 
 
@@ -152,13 +190,15 @@ def RectangularGrid.invHomBEOperator(
 //
 // As with FluxDivergence, ghost cells must be filled beforehand.
 //----------------------------------------------------------------
-def RectangularGrid.backwardEulerOperator(
+def RectangularGrid.homogeneousBEOperator(
   Lq:          [ext_cells] real,
   q:           [ext_cells] real,
+  bc:          GridBC,
   diffusivity: real,
   dt:          real
 ){
 
+  bc.homogeneousGhostFill(q);
   fluxDivergence(Lq,  q, diffusivity);
   Lq(cells) = q(cells) + dt * Lq(cells);
 
@@ -197,10 +237,10 @@ def RectangularGrid.fluxDivergence(
     for d in dimensions {
       var cell_shift: dimension*int; // initializes to 0
       cell_shift(d) = 2;  // Use IntVect here?
-      flux_div(cell) += (      -q(cell-cell_shift) 
-			                    + 2.0*q(cell) 
-			                    -     q(cell+cell_shift)
-			                         ) / dx(d)**2;
+      flux_div(cell) += (     -q(cell-cell_shift) 
+                         + 2.0*q(cell) 
+                         -     q(cell+cell_shift)
+                         ) / dx(d)**2;
     }
 
   }
@@ -218,3 +258,6 @@ def RectangularGrid.fluxDivergence(
 
 
 
+def RectangularGrid.innerProduct(u: [ext_cells] real, v: [ext_cells] real){
+  return +reduce( u(cells) * v(cells) );
+}

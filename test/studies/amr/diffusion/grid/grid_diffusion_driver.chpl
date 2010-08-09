@@ -7,44 +7,42 @@
 //<=== Description <===
 
 
-use diffusion_backward_euler_defs;
+use grid_base_defs;
+use grid_solution_defs;
+use grid_bc_defs;
+use grid_diffusion_defs;
 
 
 
 //===> Backward Euler/conjugate gradient advancement of a GridSolution ===>
 //========================================================================>
-def RectangularGrid.advanceDiffusionBE(q:              GridSolution,
+def RectangularGrid.advanceDiffusionBE(sol:            ScalarGridSolution,
                                        bc:             GridBC,
                                        diffusivity:    real,
                                        time_requested: real,
                                        dt_max:         real) {
-                                             
-  //==== Make sure q can validly be updated ====
-  assert(q.grid == this  &&  q.time <= time_requested);
 
-
-  //==== Auxiliary space ====
-  var dq = new GridSolution(grid = this, time = q.time);
-  var rhs: [cells] real;
+  //==== Safety checks ====
+  assert(sol.grid == this);
+  assert(sol.time(2) <= time_requested);
 
 
   //===> Time-stepping ===>
-  var n_steps = ceil( (time_requested - q.time) / dt_max ) : int;
-  var dt_used = (time_requested - q.time) / n_steps;
+  var n_steps = ceil( (time_requested - sol.time(2)) / dt_max ) : int;
+  var dt_used = (time_requested - sol.time(2)) / n_steps;
    
    
-  while (q.time < time_requested) do {
+  while (sol.time(2) < time_requested) {
     //==== Adjust the time step to hit time_requested if necessary ====
-    if (q.time + dt_max > time_requested) then
-      dt_used = time_requested - q.time;
+    if (sol.time(2) + dt_max > time_requested) then
+      dt_used = time_requested - sol.time(2);
     else
       dt_used = dt_max;
-    writeln("Taking step of size dt=", dt_used, " to time ", q.time+dt_used, ".");
+    writeln("Taking step of size dt=", dt_used, " to time ", sol.time(2)+dt_used, ".");
 
 
     //==== Update solution ====
-    grid.invHomBEOperator(q, bc, diffusivity, dt_used, dt_used/4.0);
-
+    stepBE(sol, bc, diffusivity, dt_used, dt_used/4.0);
 
   }
   //<=== Time-stepping <===
@@ -57,6 +55,22 @@ def RectangularGrid.advanceDiffusionBE(q:              GridSolution,
 
 
 def main {
+
+
+  //===> Initialize output ===>
+  var initial_time: real = 0.0,
+    final_time:     real = 1.0,
+    num_output:     int  = 20,
+    output_times:   [1..num_output] real,
+    dt_output:      real = (final_time - initial_time) / num_output,
+    frame_number:   int = 0;
+
+  for i in output_times.domain do
+    output_times(i) = initial_time + i * dt_output;
+  //<=== Initialize output <===
+
+
+
 
   //==== Diffusivity ====
   const diffusivity = 0.1;
@@ -84,17 +98,17 @@ def main {
     n_ghost_cells(d) = 2;
   }
 
-  var G = new RectangularGrid(x_low         = x_low,
-			      x_high        = x_high,
-			      i_low         = i_low,
-			      n_cells       = n_cells, 
-			      n_ghost_cells = n_ghost_cells);
+  var grid = new RectangularGrid(x_low         = x_low,
+		                 x_high        = x_high,
+                                 i_low         = i_low,
+                                 n_cells       = n_cells, 
+                                 n_ghost_cells = n_ghost_cells);
   //<=== Initialize grid <===
 
 
 
   //==== Initialize boundary conditions ====
-  var bc = new PeriodicGridBC(grid = G);
+  var bc = new PeriodicGridBC(grid);
 
 
 
@@ -106,39 +120,28 @@ def main {
     return f;
   }
 
-  var q = G.initializeGridSolution(initial_condition);
+  var sol = new ScalarGridSolution(grid);
+  grid.initializeSolution(sol, initial_condition, initial_time);
   //<=== Initialize  solution <===
 
 
 
-  //===> Initialize output ===>
-  var time_initial: real = 0.0,
-    time_final:     real = 1.0,
-    num_output:     int  = 20,
-    output_times:   [1..num_output] real,
-    dt_output:      real = (time_final - time_initial) / num_output,
-    frame_number:   int = 0;
-
-  for i in output_times.domain do
-    output_times(i) = time_initial + i * dt_output;
-  //<=== Initialize output <===
 
 
 
   //===> Generate output ===>
   //==== Initial time ====
-  q.time = time_initial;
-  G.clawOutput(q, frame_number);
+  grid.clawOutput(sol, frame_number);
 
   //==== Subsequent times ====
   for output_time in output_times do {
     //==== Advance q to output time ====
-    G.advanceDiffusionBE(q, bc, diffusivity, output_time, 0.05);
+    grid.advanceDiffusionBE(sol, bc, diffusivity, output_time, 0.05);
 
     //==== Write output to file ====
     frame_number += 1;
     writeln("Writing frame ", frame_number, ".");
-    G.clawOutput(q, frame_number);
+    grid.clawOutput(sol, frame_number);
   }
   //<=== Generate output <===
   
