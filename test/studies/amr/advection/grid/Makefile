@@ -4,9 +4,11 @@ CLAW_PLOTDIR = _plots               # Directory for plots
 PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
 
 SOURCES = \
-	../lib/grid_base_defs.chpl \
-	../lib/grid_ctu_defs.chpl \
-	advection_ctu_driver.chpl
+	../../lib/grid/grid_base_defs.chpl \
+	../../lib/grid/grid_solution_defs.chpl \
+	../../lib/grid/grid_bc_defs.chpl \
+	grid_ctu_defs.chpl \
+	grid_ctu_driver.chpl
 
 
 DIM = 2
@@ -15,15 +17,15 @@ DIM = 2
 .PHONY: clean, emacs_clean
 
 
-output: advection_ctu.out
+output: grid_ctu.out
 	rm -f _output/fort.*
-	./advection_ctu.out
+	./grid_ctu.out
 	@echo "Output is in directory _output."
 	@echo $(CLAW_OUTDIR) > output
 
 
-advection_ctu.out: $(SOURCES)
-	chpl $(SOURCES) -s dimension=$(DIM) -o advection_ctu.out
+grid_ctu.out: $(SOURCES)
+	chpl $(SOURCES) --set dimension=$(DIM) -o grid_ctu.out
 
 
 plots: _output/fort.t0000

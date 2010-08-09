@@ -1,0 +1,42 @@
+\documentclass[11pt]{article}
+
+
+%===> Packages ===>
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+%<=== Packages <===
+
+
+%===> New commands ===>
+\newcommand{\dx}{\Delta x}
+\newcommand{\dt}{\Delta t}
+\newcommand{\bigoh}{\mathcal{O}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+%<=== New commands <===
+
+
+%===> Formatting ===>
+\setlength{\parskip}{11pt}
+\setlength{\parindent}{0pt}
+%<=== Formatting <===
+
+
+\begin{document}
+
+\section*{Intent}
+\begin{itemize}
+\item Demonstrate Chapel's ability to simplify development of AMR codes.
+\item Write generic-dimensional code whenever possible --- drastically simplifies code base.
+\item (Personal goal) Draft an AMR system where single-grid or single-level problems can be drafted without using unnecessary framework.  Should allow step-wise development of AMR solvers.
+\end{itemize}
+
+\section*{Validation}
+\begin{itemize}
+\item Chombo's \texttt{IntVec}s and \texttt{IntVecSet}s
+\end{itemize}
+
+\section*{Chapel features}
+
+
+\end{document}

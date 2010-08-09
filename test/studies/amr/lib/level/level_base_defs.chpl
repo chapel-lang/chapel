@@ -72,8 +72,8 @@ class LevelGrid: RectangularGrid {
 
       //==== If the intersection is nonempty, update neighbor data ====
       if intersection.dim(1).length > 0 {
-	neighbors.add(sib);
-	shared_cells(sib) = intersection;
+        neighbors.add(sib);
+        shared_cells(sib) = intersection;
       }
 
     }
@@ -81,24 +81,24 @@ class LevelGrid: RectangularGrid {
 
 
 
-/*     //===> Flag shared cells on each ghost domain ===> */
-/*     for nbr in neighbors { */
+    //===> Flag shared cells on each ghost domain ===> 
+    for nbr in neighbors { 
 
-/*       for d in dimensions { */
+      for d in dimensions { 
 
-/* 	//==== Low ghost cells ==== */
-/* 	intersection = intersectDomains(low_ghost_cells(d), shared_cells(nbr)); */
-/* 	for cell in intersection do */
-/* 	  ghost_is_shared.low(d).value(cell) = true; */
+        //==== Low ghost cells ==== 
+        intersection = intersectDomains(low_ghost_cells(d), shared_cells(nbr)); 
+        for cell in intersection do 
+        ghost_is_shared.low(d).value(cell) = true; 
 
-/* 	//==== High ghost cells ==== */
-/* 	intersection = intersectDomains(high_ghost_cells(d), shared_cells(nbr)); */
-/* 	for cell in intersection do */
-/* 	  ghost_is_shared.high(d).value(cell) = true; */
+        //==== High ghost cells ==== 
+        intersection = intersectDomains(high_ghost_cells(d), shared_cells(nbr)); 
+        for cell in intersection do 
+          ghost_is_shared.high(d).value(cell) = true; 
 
-/*       } */
-/*     } */
-/*     //<=== Flag shared cells on each ghost domain <=== */
+      } 
+    } 
+    //<=== Flag shared cells on each ghost domain <=== 
     
     
   }
@@ -317,59 +317,7 @@ def BaseLevel.initializeSolution(q: LevelSolution,
 
 
 
-//============================================================>
-//==================== BOUNDARY CONDITIONS ===================>
-//============================================================>
 
-
-//===> LevelBC class ===>
-//======================>
-class LevelBC {
-  
-  var level:     BaseLevel;
-  var child_bcs: [level.child_grids] GridBC;
-
-  //===> ghostFill method ===>
-  //=========================>
-  def ghostFill(q: LevelSolution) {
-    
-    //==== Make sure q can validly be filled ====
-    assert(q.level == level);
-    
-    coforall grid in level.child_grids do
-      child_bcs(grid).ghostFill(q.child_sols(grid));
-  }
-  //<=== ghostFill method <===
-  //<=========================
-}
-//<======================
-//<=== LevelBC class <===
-
-
-//===> ZeroOrderExtrapLevelBC derived class ===>
-//=============================================>
-class ZeroOrderExtrapLevelBC: LevelBC {
-  
-  //===> initialize method ===>
-  //==========================>
-  def initialize() {
-    
-    for grid in level.child_grids {
-      child_bcs(grid) = new ZeroOrderExtrapGridBC(grid = grid);
-    }
-    
-  }
-  //<=== initialize method <===
-  //<==========================
-  
-}
-//<=============================================
-//<=== ZeroOrderExtrapLevelBC derived class <===
-
-
-//<============================================================
-//<=================== BOUNDARY CONDITIONS ====================
-//<============================================================
 
 
 

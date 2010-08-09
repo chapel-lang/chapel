@@ -11,6 +11,51 @@ use diffusion_backward_euler_defs;
 
 
 
+//===> Backward Euler/conjugate gradient advancement of a GridSolution ===>
+//========================================================================>
+def RectangularGrid.advanceDiffusionBE(q:              GridSolution,
+                                       bc:             GridBC,
+                                       diffusivity:    real,
+                                       time_requested: real,
+                                       dt_max:         real) {
+                                             
+  //==== Make sure q can validly be updated ====
+  assert(q.grid == this  &&  q.time <= time_requested);
+
+
+  //==== Auxiliary space ====
+  var dq = new GridSolution(grid = this, time = q.time);
+  var rhs: [cells] real;
+
+
+  //===> Time-stepping ===>
+  var n_steps = ceil( (time_requested - q.time) / dt_max ) : int;
+  var dt_used = (time_requested - q.time) / n_steps;
+   
+   
+  while (q.time < time_requested) do {
+    //==== Adjust the time step to hit time_requested if necessary ====
+    if (q.time + dt_max > time_requested) then
+      dt_used = time_requested - q.time;
+    else
+      dt_used = dt_max;
+    writeln("Taking step of size dt=", dt_used, " to time ", q.time+dt_used, ".");
+
+
+    //==== Update solution ====
+    grid.invHomBEOperator(q, bc, diffusivity, dt_used, dt_used/4.0);
+
+
+  }
+  //<=== Time-stepping <===
+ 
+}
+//<=== Backward Euler/conjugate gradient advancement of a GridSolution <===
+//<========================================================================
+
+
+
+
 def main {
 
   //==== Diffusivity ====

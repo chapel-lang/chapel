@@ -9,6 +9,8 @@
 
 
 use grid_base_defs;
+use grid_solution_defs;
+use grid_bc_defs;
 use grid_ctu_defs;
 
 
@@ -16,18 +18,20 @@ use grid_ctu_defs;
 
 //===> advanceAdvectionCTU routine ===>
 //====================================>
-def advanceAdvectionCTU(grid:           RectangularGrid,
-			sol:            GridSolution,
-			bc:             GridBC,
-			velocity:       dimension*real,
-                        time_requested: real
-                       ) {
+def advanceAdvectionCTU(
+  grid:           RectangularGrid,
+  sol:            ScalarGridSolution,
+  bc:             GridBC,
+  velocity:       dimension*real,
+  time_requested: real
+){
 
   //==== Make sure the solution can validly be updated ====
-  assert(sol.grid == grid  &&  sol.time <= time_requested);
+  assert(sol.grid == grid);
+  assert(sol.time(2) <= time_requested);
 
 
-  //===> Initialize ===>
+  //===> Calculate dt_target via CFL condition ===>
   var cfl: [dimensions] real,
       dt_target:        real,
       dt_used:          real;
@@ -35,24 +39,24 @@ def advanceAdvectionCTU(grid:           RectangularGrid,
   [d in dimensions] cfl(d) = grid.dx(d) / abs(velocity(d));
   (dt_target,) = minloc reduce(cfl, dimensions);
   dt_target *= 0.95;
-  //<=== Initialize <===
+  //<=== Calculate dt_target via CFL condition <===
   
 
   
   //===> Time-stepping loop ===>
-  while (sol.time < time_requested) do {
+  while (sol.time(2) < time_requested) do {
 
     //==== Adjust the time step to hit time_requested if necessary ====
-    if (sol.time + dt_target > time_requested) then
-      dt_used = time_requested - sol.time;
+    if (sol.time(2) + dt_target > time_requested) then
+      dt_used = time_requested - sol.time(2);
     else
       dt_used = dt_target;
     writeln("Taking step of size dt=", dt_used, 
-	    " to time ", sol.time+dt_used, ".");
+	    " to time ", sol.time(2)+dt_used, ".");
 
 
     //==== Update solution ====
-    bc.ghostFill(sol);
+    bc.ghostFill(sol.space_data(2), sol.time(2));
     grid.stepCTU(sol, velocity, dt_used);
           
   }
@@ -70,6 +74,20 @@ def advanceAdvectionCTU(grid:           RectangularGrid,
 
 
 def main {
+
+  //===> Initialize output ===>
+  var time_initial: real = 0.0,
+    time_final:     real = 2.0,
+    n_output:       int  = 20,
+    output_times:   [1..n_output] real,
+    dt_output:      real = (time_final - time_initial) / n_output,
+    frame_number:   int = 0;
+
+  for i in output_times.domain do
+    output_times(i) = time_initial + i * dt_output;
+  //<=== Initialize output <===
+
+
 
   //==== Advection velocity ====
   //-------------------------------
@@ -98,16 +116,16 @@ def main {
   }
 
   var grid = new RectangularGrid(x_low         = x_low,
-		                 x_high        = x_high,
-	                         i_low         = i_low,
-			         n_cells       = n_cells, 
-			         n_ghost_cells = n_ghost_cells);
+                                 x_high        = x_high,
+                                 i_low         = i_low,
+                                 n_cells       = n_cells, 
+                                 n_ghost_cells = n_ghost_cells);
   //<=== Initialize grid <===
 
 
 
   //==== Initialize boundary conditions ====
-  var bc = new PeriodicGridBC(grid = grid);
+  var bc = new ZeroInflowGridBC(grid = grid);
 
 
 
@@ -119,40 +137,32 @@ def main {
     return f;
   }
 
-  var sol = new GridSolution(grid = grid);
-  grid.initializeSolution(sol, initial_condition);
+  var q = new ScalarMultiTimeGridSolution(grid    = grid,
+                                          n_times = 2);
+                                          
+  grid.initializeSolution(q.time_layers(2), 
+                          initial_condition,
+                          time_initial);
   //<=== Initialize  solution <===
 
 
 
-  //===> Initialize output ===>
-  var time_initial: real = 0.0,
-    time_final:     real = 2.0,
-    n_output:       int  = 20,
-    output_times:   [1..n_output] real,
-    dt_output:      real = (time_final - time_initial) / n_output,
-    frame_number:   int = 0;
-
-  for i in output_times.domain do
-    output_times(i) = time_initial + i * dt_output;
-  //<=== Initialize output <===
 
 
 
   //===> Generate output ===>
   //==== Initial time ====
-  sol.time = time_initial;
-  grid.clawOutput(sol, frame_number);
+  grid.clawOutput(q.time_layers(2), frame_number);
 
   //==== Subsequent times ====
   for output_time in output_times do {
     //==== Advance solution to output time ====
-    advanceAdvectionCTU(grid, sol, bc, velocity, output_time);
+    advanceAdvectionCTU(grid, q, bc, velocity, output_time);
 
     //==== Write output to file ====
     frame_number += 1;
     writeln("Writing frame ", frame_number, ".");
-    grid.clawOutput(sol, frame_number);
+    grid.clawOutput(q.time_layers(2), frame_number);
   }
   //<=== Generate output <===
   
