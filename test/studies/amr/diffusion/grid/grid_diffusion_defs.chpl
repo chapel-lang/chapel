@@ -33,10 +33,6 @@ def RectangularGrid.stepBE(
   var t_current = sol.time(2);
   var t_new     = sol.time(2) + dt;
 
-/*   writeln(""); */
-/*   writeln("q"); */
-/*   writeln("--------"); */
-/*   writeln(q_current(cells)); */
 
   //==== Array allocations ====
   var rhs, residual, search_dir, residual_update_dir: [ext_cells] real;
@@ -57,11 +53,7 @@ def RectangularGrid.stepBE(
   bc.ghostFill(q_current, t_new);
   fluxDivergence(rhs, q_current, diffusivity);
   rhs(cells) *= -dt;
-                                         
-/*   writeln(""); */
-/*   writeln("rhs"); */
-/*   writeln("--------"); */
-/*   writeln(rhs(cells)); */
+
 
   //==== Initial guess ====
   dq(cells) = rhs(cells);
@@ -76,10 +68,6 @@ def RectangularGrid.stepBE(
                         bc, diffusivity, dt);
   residual(cells) = rhs(cells) - residual(cells);
 
-/*   writeln(""); */
-/*   writeln("Initial residual"); */
-/*   writeln("--------"); */
-/*   writeln(residual(cells)); */
 
   //==== Initialize search direction ====
   search_dir(cells) = residual(cells);
@@ -93,10 +81,6 @@ def RectangularGrid.stepBE(
                         search_dir, 
                         bc, diffusivity, dt);
 
-/*   writeln(""); */
-/*   writeln("Initial residual update direction"); */
-/*   writeln("--------"); */
-/*   writeln(residual_update_dir(cells)); */
 
   //==== Initialize scalars ====
   var residual_norm = +reduce(residual(cells) * residual(cells));
@@ -110,24 +94,9 @@ def RectangularGrid.stepBE(
     alpha = +reduce( residual(cells) * residual(cells) )
              / +reduce( residual_update_dir(cells) * search_dir(cells) );
  
-/*     writeln(""); */
-/*     writeln("alpha, iteration ", iter); */
-/*       writeln("--------"); */
-/*       writeln(alpha); */
-
-    dq(cells) += alpha * search_dir(cells);
-
-/*   writeln(""); */
-/*   writeln("dq updated, iteration ", iter); */
-/*   writeln("--------"); */
-/*   writeln(dq(cells)); */
- 
+    dq(cells)       += alpha * search_dir(cells);
     residual(cells) -= alpha * residual_update_dir(cells);
 
-/*   writeln(""); */
-/*   writeln("residual, iteration ", iter); */
-/*   writeln("--------"); */
-/*   writeln(residual(cells)); */
 
 
     //==== Compute norm of residual, and check for convergence ====
@@ -140,28 +109,12 @@ def RectangularGrid.stepBE(
 
     //==== Update directions for search and residual update ====
     beta                = residual_norm / residual_norm_old;
-
-/*       writeln(""); */
-/*       writeln("beta, iteration", iter); */
-/*       writeln("--------"); */
-/*       writeln(beta); */
-
     search_dir(cells)   = residual(cells) + beta * search_dir(cells);
-
-/*   writeln(""); */
-/*   writeln("search direction, iteration ", iter); */
-/*   writeln("--------"); */
-/*   writeln(search_dir(cells));     */
 
     homogeneousBEOperator(residual_update_dir,
                           search_dir,
                           bc, diffusivity, dt);
 
-/*   writeln(""); */
-/*   writeln("resodial update direction, iteration ", iter); */
-/*   writeln("--------"); */
-/*   writeln(residual_update_dir(cells));   */  
-    
   }
   //<=== CG iteration <===
   
@@ -174,8 +127,6 @@ def RectangularGrid.stepBE(
   sol.time(1) = t_current;
   sol.time(2) = t_current + dt;
   sol.space_data(1) <=> sol.space_data(2);
-  //sol.space_data(1) = sol.space_data(2);
-  //sol.space_data(2) = q_current + dq;
 }
 //<=== stepBE method <===
 //<======================

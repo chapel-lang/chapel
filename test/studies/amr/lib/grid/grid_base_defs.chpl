@@ -194,6 +194,20 @@ def RectangularGrid.xValue (point_index: dimension*int) {
 //==============================================>
 
 
+//===> GridArray class ===>
+//========================>
+class GridArray {
+  const grid: RectangularGrid;
+  var value: [grid.ext_cells] real;
+
+  def this(cell: dimension*int) {
+    return value(cell);
+  }
+}
+//<=== GridArray class <===
+//<========================
+
+
 //===> Fix for the 1D/tuple problem ===>
 def tuplify(idx) {
   if isTuple(idx) then
@@ -202,36 +216,6 @@ def tuplify(idx) {
     return tuple(idx);
 }
 //<=== Fix for the 1D/tuple problem <===
-
-
-
-//===> TrueSolution class ===>
-//===========================>
-//----------------------------------------------------------------------
-// Create a true solution to a PDE by deriving this class.  In general,
-// it will contain a few parameters in addition to the qTrue method.
-// (Hence, using a class is probably more suitable than a first-class
-// functin.)
-//----------------------------------------------------------------------
-class TrueSolution {
-
-  def qTrue(x: dimension*real, t: real) {
-    return 0.0;
-  }
-
-  def fluxComponent(x: dimension*real, t: real, comp: int) {
-    return 0.0;
-  }
-
-  def normalFluxToGhost(flux: real,
-                        inner_value: real,
-                        dx: real
-                       ){
-    return 0.0;
-  }
-}
-//<===========================
-//<=== TrueSolution class <===
 
 
 

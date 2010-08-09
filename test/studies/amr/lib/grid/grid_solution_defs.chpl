@@ -29,99 +29,9 @@ class VectorGridSolution {
 
 
 
-/* //===> ScalarSingleTimeGridSolution class ===> */
-/* //===========================================> */
-/* class ScalarSingleTimeGridSolution { */
-/*   const grid: RectangularGrid; */
-  
-/*   var value:  [grid.ext_cells] real; */
-/*   var time:   real; */
-/* } */
-/* //<=== ScalarSingleTimeGridSolution class ==== */
-/* //<=========================================== */
 
-
-
-
-/* //===> ScalarMultiTimeGridSolution class ===> */
-/* //==========================================> */
-/* class ScalarMultiTimeGridSolution { */
-/*   const grid:      RectangularGrid; */
-/*   const n_times:   int; */
-
-/*   var time_layers: [1..n_times] ScalarSingleTimeGridSolution; */
-
-/*   def initialize() { */
-/*     for layer in time_layers do */
-/*       layer = new ScalarSingleTimeGridSolution(grid = grid); */
-/*   } */
-/* } */
-/* //<=== ScalarMultiTimeGridSolution class <=== */
-/* //<========================================== */
-
-
-
-
-/* //===> VectorSingleTimeGridSolution class ===> */
-/* //===========================================> */
-/* class VectorSingleTimeGridSolution { */
-/*   const grid:    RectangularGrid; */
-/*   const n_comps: int; */
-/*   const components = [1..n_comps]; */
-  
-/*   var value: [grid.ext_cells] ([components] real); */
-/*   var time; */
-/* } */
-/* //<=== VectorSingleTimeGridSolution class <=== */
-/* //<=========================================== */
-
-
-
-
-/* //===> VectorMultiTimeGridSolution class ===> */
-/* //======================================> */
-/* class VectorMultiTimeGridSolution { */
-/*   const grid:    RectangularGrid; */
-/*   const n_times: int; */
-/*   const n_comps: int; */
-  
-/*   var time_layers: [1..n_times] ScalarSingleTimeGridSolution; */
-  
-/*   def initialize() { */
-/*     for layer in time_layers do */
-/*       layer = new VectorMultiTimeGridSolution(grid    = grid, */
-/*                                               n_comps = n_comps); */
-/*   } */
-/* } */
-/* //<=== VectorMultiTimeGridSolution class <=== */
-/* //<========================================== */
-
-
-
-
-
-// //===> copySolution method ===>
-// //============================>
-// def RectangularGrid.copySolution(q: GridSolution) {
-//   
-//   //==== Make sure q lives on this grid ====
-//   assert(q.grid == this);
-// 
-//   
-//   //==== Copy q ====
-//   var q_copy = new GridSolution(grid  = this,
-//                                 value = q.value,
-//                                 time  = q.time);
-// 
-// }
-// //<=== copySolution method <===
-// //<============================
-
-
-
-
-//===> initializeSolution method ===>
-//==================================>
+//===> RectangularGrid.initializeSolution method ===>
+//==================================================>
 //---------------------------------------------------------------
 // Provided an analytical function, evaluates it on the grid and
 // returns a GridSolution.  As support for first-class functions
@@ -152,38 +62,8 @@ def RectangularGrid.initializeSolution(
   sol.time = time;
 
 }
-
-
-//-------------------------------------------------------------------
-// A similar method that does this for a TrueSolution is convenient.
-//-------------------------------------------------------------------
-def RectangularGrid.initializeSolution(
-  sol:             ScalarGridSolution,
-  true_solution: TrueSolution,
-  time:          real
-){
-
-  //==== Check that q lives on this grid ====
-  assert(sol.grid == this);
-
-
-  //==== Evaluate and store true_solution at input time ====
-  write("Writing solution on grid...");
-  forall precell in cells {
-    var cell = tuplify(precell);
-    sol.space_data(1)(cell) = true_solution.qTrue(xValue(cell), time);
-    sol.space_data(2)(cell) = sol.space_data(1)(cell);
-  }
-  write("done.\n");
-  
-  
-  //==== Set sol.time (both values) ====
-  sol.time = time;
-
-}
-
-//<==================================
-//<=== initializeSolution method <===
+//<=== RectangularGrid.initializeSolution method <===
+//<==================================================
 
 
 
