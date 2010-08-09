@@ -340,6 +340,7 @@ void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *
   if (dstlocale == MYLOCALE) {
     (*chpl_txftable[fid])(tx, arg);
   } else {
+    assert(tx->status == TX_ACTIVE);
     GTM_TX_STATS_START(tx, TX_FORK_STATS);
     GTM_Safe(tx, gtm_tx_comm_fork(tx, dstlocale, fid, arg, argsize));
     GTM_TX_STATS_STOP(tx, TX_FORK_STATS, 0);

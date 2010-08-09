@@ -65,8 +65,16 @@ void AM_tx_get (gasnet_token_t token, void* buf, size_t nbytes);
 void AM_tx_put (gasnet_token_t token, void* buf, size_t nbytes);
 void AM_tx_fork(gasnet_token_t token, void* buf, size_t nbytes);
 void AM_tx_signal(gasnet_token_t token, void* buf, size_t nbytes, int status);
+void AM_tx_abort_fast(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_tx_commitPh1_fast(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_tx_commitPh2_fast(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_tx_getdata_fast(gasnet_token_t token, void* buf, size_t nbytes, int status);
+void AM_tx_get_fast(gasnet_token_t token, void* buf, size_t nbytes);
+void AM_tx_put_fast(gasnet_token_t token, void* buf, size_t nbytes);
 
-static gasnet_handlerentry_t ftable[] = {
+#if STM_GTM_NOFAST
+
+ static gasnet_handlerentry_t ftable[] = {
   {FORK,          AM_fork},
   {FORK_LARGE,    AM_fork_large},
   {FORK_NB,       AM_fork_nb},
@@ -84,8 +92,33 @@ static gasnet_handlerentry_t ftable[] = {
   {TX_GETDATA,    AM_tx_getdata},
   {TX_PUT,        AM_tx_put},
   {TX_FORK,       AM_tx_fork},
+  {TX_SIGNAL,     AM_tx_signal}
+};
+
+#else 
+
+static gasnet_handlerentry_t ftable[] = {
+  {FORK,          AM_fork},
+  {FORK_LARGE,    AM_fork_large},
+  {FORK_NB,       AM_fork_nb},
+  {FORK_NB_LARGE, AM_fork_nb_large},
+  {FORK_FAST,     AM_fork_fast},
+  {SIGNAL,        AM_signal},
+  {PRIV_BCAST,    AM_priv_bcast},
+  {PRIV_BCAST_LARGE, AM_priv_bcast_large},
+  {FREE,          AM_free},
+  {EXIT_ANY,      AM_exit_any},
+  {TX_ABORT,      AM_tx_abort_fast},
+  {TX_COMMITPH1,  AM_tx_commitPh1_fast},
+  {TX_COMMITPH2,  AM_tx_commitPh2_fast},
+  {TX_GET,        AM_tx_get_fast},
+  {TX_GETDATA,    AM_tx_getdata},
+  {TX_PUT,        AM_tx_put_fast},
+  {TX_FORK,       AM_tx_fork},
   {TX_SIGNAL,     AM_tx_signal}, 
 };
+
+#endif 
 
 #else
 

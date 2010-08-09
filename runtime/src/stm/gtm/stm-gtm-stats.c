@@ -99,6 +99,9 @@ void gtm_exit_stats() {
   durSum = TOTDUR(numAbort, durAbort) + 
     TOTDUR(numCommitPh1, durCommitPh1) + 
     TOTDUR(numCommitPh2, durCommitPh2) + 
+    TOTDUR(numAbort, durMAbort) + 
+    TOTDUR(numCommitPh1, durMCommitPh1) + 
+    TOTDUR(numCommitPh2, durMCommitPh2) + 
     TOTDUR(numLoad, durLoad) + 
     TOTDUR(numStore, durStore) +
     TOTDUR(numGet, durGet) + 
@@ -262,7 +265,7 @@ void gtm_tx_stats_start(void* txptr, int op) {
   _timervalue t;
   _real64 nowtime;
 
-  //  chpl_msg(0, "OpS%d ", op); 
+  chpl_msg(4, "OpS%d ", op); 
 
   t = _now_timer(t);
   nowtime = t.tv_sec + (t.tv_usec / 1.0e+6);
@@ -301,7 +304,7 @@ void gtm_tx_stats_stop(void* txptr, int op, int status, int size) {
   _timervalue t;
   _real64 nowtime;
 
-  //  chpl_msg(0, "OpE%d ", op); 
+  chpl_msg(4, "OpE%d ", op); 
 
   if (status != TX_OK) return;
   
