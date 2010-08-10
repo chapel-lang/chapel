@@ -27,6 +27,7 @@ typedef struct __stats_t {
   _real64 createtime;           // time transaction was created
   _real64 begintime;            // time transaction started
   _real64 starttime;            // time current operation started
+  _real64 durCreate;            // time between createtime and first begin
   _real64 numremlocales;
   unsigned int numAbort;
   _real64 durAbort;

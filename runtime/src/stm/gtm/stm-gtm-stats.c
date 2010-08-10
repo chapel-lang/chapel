@@ -22,6 +22,7 @@ static chpl_mutex_t gtmStatsCommLock;
 unsigned int numSuccess;
 _real64 durSuccess;
 _real64 durFailed;
+_real64 durCreate;
 
 unsigned int maxLocales;
 unsigned int numLocales;
@@ -92,23 +93,24 @@ void gtm_init_stats() {
 }
 
 void gtm_exit_stats() {
-  _real64 durSum, durCommSum;
+  _real64 durMSum, durSum, durCommSum;
 
   if (!printStmStats) return;
+
+  durMSum = TOTDUR(numMAbort, durMAbort) + 
+    TOTDUR(numMCommitPh1, durMCommitPh1) + 
+    TOTDUR(numMCommitPh2, durMCommitPh2) + 
+    TOTDUR(numLoad, durLoad) + 
+    TOTDUR(numStore, durStore) +
+    TOTDUR(numMalloc, durMalloc) +
+    TOTDUR(numFree, durFree);
 
   durSum = TOTDUR(numAbort, durAbort) + 
     TOTDUR(numCommitPh1, durCommitPh1) + 
     TOTDUR(numCommitPh2, durCommitPh2) + 
-    TOTDUR(numAbort, durMAbort) + 
-    TOTDUR(numCommitPh1, durMCommitPh1) + 
-    TOTDUR(numCommitPh2, durMCommitPh2) + 
-    TOTDUR(numLoad, durLoad) + 
-    TOTDUR(numStore, durStore) +
     TOTDUR(numGet, durGet) + 
     TOTDUR(numPut, durPut) + 
-    TOTDUR(numFork, durFork) + 
-    TOTDUR(numMalloc, durMalloc) +
-    TOTDUR(numFree, durFree);
+    TOTDUR(numFork, durFork);
 
   durCommSum = TOTDUR(numCommAbort, durCommAbort) +
     TOTDUR(numCommCommitPh1, durCommCommitPh1) + 
@@ -117,9 +119,10 @@ void gtm_exit_stats() {
     TOTDUR(numCommPut, durCommPut) +
     TOTDUR(numCommFork, durCommFork);
 
-  fprintf(stdout, "%d-Lo%d %d %.3e %.3e %.3e %.3e %.3e\n", 
-	  NLOCALES, MYLOCALE, numSuccess, durSuccess, 
-	  durFailed, durSum, durCommSum, durSum + durCommSum);
+  fprintf(stdout, "%d-Lo%d %d %.2e %.2e %.2e %.2e %.2e %.2e %.2e\n", 
+	  NLOCALES, MYLOCALE, numSuccess, durSuccess,  
+	  durFailed, durCreate, durMSum, durSum, durCommSum, 
+	  durMSum + durSum + durCommSum);
 
   fprintf(stdout, "%d-Mn%d %8d %8d %8d %8d %8d %8d %8d\n",
 	  NLOCALES, MYLOCALE, numLoad, numStore, numMalloc, 
@@ -190,6 +193,7 @@ void gtm_tx_create_stats(void* txptr) {
   tx->counters =  (stats_t*) chpl_malloc(1, sizeof(stats_t), 
 					 CHPL_RT_MD_STM_TX_STATS, 0, 0);
   tx->counters->createtime = nowtime; 
+  tx->counters->durCreate = 0;
   tx->counters->begintime = 0;
   tx->counters->starttime = 0;
   tx->counters->numremlocales = -1;
@@ -273,6 +277,8 @@ void gtm_tx_stats_start(void* txptr, int op) {
   switch(op) {
   case TX_BEGIN_STATS:
     counters->begintime = nowtime;
+    if (counters->durCreate == 0)
+      counters->durCreate = nowtime - counters->createtime;
     break;
   case TX_ABORT_STATS:
     counters->numremlocales = tx->numremlocales;
@@ -335,13 +341,14 @@ void gtm_tx_stats_stop(void* txptr, int op, int status, int size) {
     break;
   case TX_COMMITPH2_STATS:
     CHPL_MUTEX_LOCK(&gtmStatsLock);
-    numSuccess++;
-    durSuccess += nowtime - counters->begintime;
-    durFailed += counters->begintime - counters->createtime;
+
+    // collect abort stats
     numAbort += counters->numAbort;
     durAbort += counters->durAbort;
     numMAbort += counters->numMAbort;
     durMAbort += counters->durMAbort; 
+
+    // collect commit stats
     if (tx->numremlocales > -1) {
       numCommitPh1 += counters->numCommitPh1;
       durCommitPh1 += counters->durCommitPh1;
@@ -353,8 +360,12 @@ void gtm_tx_stats_stop(void* txptr, int op, int status, int size) {
       numMCommitPh2++;
       durMCommitPh2 += nowtime - counters->starttime;
     }
+
+    // collect communication stats
     numLocales += tx->numremlocales + 1;
     maxLocales = MAX(maxLocales, tx->numremlocales+1);
+
+    // collect transactional load/store/get/put stats
     numLoad += counters->numLoad;
     durLoad += counters->durLoad;
     sizeLoad += counters->sizeLoad;
@@ -371,14 +382,25 @@ void gtm_tx_stats_stop(void* txptr, int op, int status, int size) {
     durPut += counters->durPut;
     sizePut += counters->sizePut;
     maxPut = MAX(maxPut, counters->sizePut);
+
+    // collect fork stats
     numFork += counters->numFork;
     durFork += counters->durFork;
+
+    // collect malloc / free stats
     numMalloc += counters->numMalloc;
     durMalloc += counters->durMalloc;
     sizeMalloc += counters->sizeMalloc;
     maxMalloc = MAX(maxMalloc, counters->sizeMalloc);
     numFree += counters->numFree;
     durFree += counters->durFree;
+
+    // collect overall timing stats
+    numSuccess++;
+    durSuccess += nowtime - counters->begintime;
+    durFailed += counters->begintime - counters->createtime - counters->durCreate;
+    durCreate += counters->durCreate;
+
     CHPL_MUTEX_UNLOCK(&gtmStatsLock);
     break;
   case TX_COMM_COMMITPH2_STATS:

@@ -138,7 +138,6 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx) {
     }
 
   } 
-
   chpl_error("Transaction abort failed.", __LINE__, __FILE__);
 }
 
@@ -225,8 +224,6 @@ void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t siz
   assert(tx != NULL);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
 
-  if (size == 0) return;
-  
   GTM_TX_STATS_START(tx, TX_LOAD_STATS);
   GTM_Safe(tx, gtm_tx_load_wrap(tx, dstaddr, srcaddr, size));
   GTM_TX_STATS_STOP(tx, TX_LOAD_STATS, size);
