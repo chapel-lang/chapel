@@ -22,16 +22,78 @@ const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
 const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
       Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
 
-var T$: [TableSpace] sync elemType;
+var T: [TableSpace] elemType;
+var TLock$: [TableSpace] sync bool;
 
 config param safeUpdates: bool = false;
 config param useOn: bool = false;
 config param trackStmStats = false;
 
+pragma "inline"
+def addValues (i:indexType, j:indexType) {
+  if (i < j) {
+    TLock$(i);
+    TLock$(j);
+    T(i) += j;
+    if useOn then
+      on TableDist.idxToLocale(j) do T(j) += i;
+    else
+      T(j) += i;
+    TLock$(j) = true; 
+    TLock$(i) = true; 
+  } else if (i > j) {
+    TLock$(j);
+    TLock$(i);
+    T(i) += j;
+    if useOn then
+      on TableDist.idxToLocale(j) do T(j) += i;
+    else
+      T(j) += i;
+    TLock$(i) = true; 
+    TLock$(j) = true; 
+  } else {
+    TLock$(i);
+    T(i) += (2 * i);
+    TLock$(i) = true; 
+  } 
+}
+
+pragma "inline"
+def subValues (i:indexType, j:indexType) {
+  if (i < j) {
+    TLock$(i);
+    TLock$(j);
+    T(i) -= j;
+    if useOn then
+      on TableDist.idxToLocale(j) do T(j) -= i;
+    else
+      T(j) -= i;
+    TLock$(j) = true; 
+    TLock$(i) = true; 
+  } else if (i > j) {
+    TLock$(j);
+    TLock$(i);
+    T(i) -= j;
+    if useOn then
+      on TableDist.idxToLocale(j) do T(j) -= i;
+    else
+      T(j) -= i;
+    TLock$(i) = true; 
+    TLock$(j) = true; 
+  } else {
+    TLock$(i);
+    T(i) -= (2 * i);
+    TLock$(i) = true; 
+  } 
+}
+
 def main() {
   printConfiguration(); 
   
-  [i in TableSpace] T$(i).writeXF(0);
+  [i in TableSpace] {
+    T(i) = 0;
+    TLock$(i).writeXF(true);
+  }
  
   const startTime = getCurrentTime();               // capture the start time
 
@@ -40,33 +102,17 @@ def main() {
       const i = r >> (64 - n);
       const j = s >> (64 - n);
       if safeUpdates {
-	if (i < j) {
-	  const x = T$(i);
-	  const y = T$(j);
-	  T$(j) = y + i;
-	  T$(i) = x + j;
-	} else if (i > j) {
-	  const y = T$(j);
-	  const x = T$(i);
-	  T$(i) = x + j;
-	  T$(j) = y + i;
-	} else {
-	  T$(i) = T$(i) + (2 * i);
-	}
+	addValues(i, j);
       } else {
-	if (i < j) {
-	  const x = T$(i).readXX();
-	  const y = T$(j).readXX();
-	  T$(j).writeXF(y + i);
-	  T$(i).writeXF(x + j);
-	} else if (i > j) {
-	  const y = T$(j).readXX();
-	  const x = T$(i).readXX();
-	  T$(i).writeXF(x + j);
-	  T$(j).writeXF(y + i);
+	if (i != j) {
+          T(i) += j;
+          if useOn then
+            on TableDist.idxToLocale(j) do T(j) += i;
+          else
+            T(j) += i;
 	} else {
-	  T$(i).writeXF(T$(i).readXX() + (2 * i));
-	}  
+          T(i) += 2*i;
+	}
       }
     }
   }
@@ -88,7 +134,7 @@ def printConfiguration() {
 }
 
 def verifyResults() {
-  if (printArrays) then writeln("After updates, T is: ", T$, "\n");
+  if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   if (trackStmStats) then startStmStats();
 
@@ -98,19 +144,7 @@ def verifyResults() {
     on TableDist.idxToLocale(r >> (64 - n)) {
       const i = r >> (64 - n);
       const j = s >> (64 - n);
-      if (i < j) {
-	const x = T$(i);
-	const y = T$(j);
-	T$(j) = y - i;
-	T$(i) = x - j;
-      } else if (i > j){
-	const y = T$(j);
-	const x = T$(i);
-	T$(i) = x - j;
-	T$(j) = y - i;
-      } else {
-	T$(i) = T$(i) - (2 * i);
-      } 
+      subValues(i, j);
     }
   }
 
@@ -118,9 +152,9 @@ def verifyResults() {
   
   if trackStmStats then stopStmStats();
 
-  if (printArrays) then writeln("After verification, T is: ", T$, "\n");
+  if (printArrays) then writeln("After verification, T is: ", T, "\n");
 
-  const numErrors = + reduce [i in TableSpace] (T$(i) != 0);
+  const numErrors = + reduce [i in TableSpace] (T(i) != 0);
   if (printStats) {
     writeln("Number of errors is: ", numErrors, "\n");
     writeln("Verification time = ", verifyTime);
