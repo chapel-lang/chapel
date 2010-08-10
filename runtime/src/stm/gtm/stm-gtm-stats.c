@@ -11,7 +11,7 @@
 #include "error.h"
 #include "stm-gtm.h"
 
-#define TOTDUR(num, dur) (num ? dur / 1.0e+6 : 0)
+#define TOTDUR(num, dur) (dur) // (num ? dur / 1.0e+6 : 0)
 #define AVGDUR(num, dur) (num ? dur / (num * 1.0e+6) : 0)
 #define AVGNUM(num, tot) (num ? (tot * 1.0) / (num * 1.0) : 0)
 #define MAX(num1,num2)   (((num1) > (num2)) ? (num1) : (num2))
@@ -93,11 +93,16 @@ void gtm_init_stats() {
 }
 
 void gtm_exit_stats() {
+  unsigned int numMSum, numSum, numCommSum; 
   _real64 durMSum, durSum, durCommSum;
 
   if (!printStmStats) return;
 
-  durMSum = TOTDUR(numMAbort, durMAbort) + 
+  numMSum = //numMAbort + 
+    numMCommitPh1 + numMCommitPh2 + 
+    numLoad + numStore + numMalloc + numFree;
+
+  durMSum = //TOTDUR(numMAbort, durMAbort) + 
     TOTDUR(numMCommitPh1, durMCommitPh1) + 
     TOTDUR(numMCommitPh2, durMCommitPh2) + 
     TOTDUR(numLoad, durLoad) + 
@@ -105,24 +110,35 @@ void gtm_exit_stats() {
     TOTDUR(numMalloc, durMalloc) +
     TOTDUR(numFree, durFree);
 
-  durSum = TOTDUR(numAbort, durAbort) + 
+  numSum = //numAbort + 
+    numCommitPh1 + numCommitPh2 + 
+    numGet + numPut + numFork;
+
+  durSum = //TOTDUR(numAbort, durAbort) + 
     TOTDUR(numCommitPh1, durCommitPh1) + 
     TOTDUR(numCommitPh2, durCommitPh2) + 
     TOTDUR(numGet, durGet) + 
     TOTDUR(numPut, durPut) + 
     TOTDUR(numFork, durFork);
 
-  durCommSum = TOTDUR(numCommAbort, durCommAbort) +
+  numCommSum = //numCommAbort + 
+    numCommCommitPh1 + numCommCommitPh2 +
+    numCommGet + numCommPut + numCommFork;
+
+  durCommSum = //TOTDUR(numCommAbort, durCommAbort) +
     TOTDUR(numCommCommitPh1, durCommCommitPh1) + 
     TOTDUR(numCommCommitPh2, durCommCommitPh2) +
     TOTDUR(numCommGet, durCommGet) +
     TOTDUR(numCommPut, durCommPut) +
     TOTDUR(numCommFork, durCommFork);
 
-  fprintf(stdout, "%d-Lo%d %d %.2e %.2e %.2e %.2e %.2e %.2e %.2e\n", 
-	  NLOCALES, MYLOCALE, numSuccess, durSuccess,  
-	  durFailed, durCreate, durMSum, durSum, durCommSum, 
-	  durMSum + durSum + durCommSum);
+  fprintf(stdout, "%d-Ln%d %8d %8d %8d %8d %8d %8d %8d \n",
+	  NLOCALES, MYLOCALE, numSuccess, numAbort + numMAbort, numSuccess,
+	  numMSum, numSum, numCommSum, numMSum + numSum);   
+
+  fprintf(stdout, "%d-Ld%d %.2e %.2e %.2e %.2e %.2e %.2e %.2e\n", 
+	  NLOCALES, MYLOCALE, durSuccess, durFailed, durCreate, 
+	  durMSum, durSum, durCommSum, durMSum + durSum);
 
   fprintf(stdout, "%d-Mn%d %8d %8d %8d %8d %8d %8d %8d\n",
 	  NLOCALES, MYLOCALE, numLoad, numStore, numMalloc, 
@@ -203,12 +219,13 @@ void gtm_tx_create_stats(void* txptr) {
   tx->counters->durMAbort = 0;
   tx->counters->numCommAbort = 0;
   tx->counters->durCommAbort = 0;
+
   tx->counters->maxLoad = 0;
   tx->counters->maxStore = 0;
   tx->counters->maxGet = 0;
   tx->counters->maxPut = 0;
   tx->counters->maxMalloc = 0;
-  gtm_tx_cleanup_stats(tx);
+  gtm_tx_cleanup_stats(tx, 1);
 }
 
 void gtm_tx_destroy_stats(void* txptr) {
@@ -220,7 +237,7 @@ void gtm_tx_destroy_stats(void* txptr) {
   chpl_free(tx->counters, 0, 0);
 }
 
-void gtm_tx_cleanup_stats(void* txptr) {
+void gtm_tx_cleanup_stats(void* txptr, int cleanall) {
   chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
   stats_t* counters;
 
@@ -228,39 +245,40 @@ void gtm_tx_cleanup_stats(void* txptr) {
 
   counters = tx->counters;
   assert(counters != NULL);
+
   counters->numCommitPh1 = 0;
   counters->durCommitPh1 = 0;
   counters->numCommCommitPh1 = 0;
   counters->durCommCommitPh1 = 0;
-  counters->numLoad = 0;
-  counters->durLoad = 0;
+
   counters->sizeLoad = 0;
-  counters->maxLoad = 0;
-  counters->numStore = 0;
-  counters->durStore = 0;
   counters->sizeStore = 0;
-  counters->maxStore = 0;
-  counters->numGet = 0;
-  counters->durGet = 0;
   counters->sizeGet = 0;
-  counters->maxGet = 0;
-  counters->numCommGet = 0;
-  counters->durCommGet = 0;
-  counters->numPut = 0;
-  counters->durPut = 0;
   counters->sizePut = 0;
-  counters->maxPut = 0;
-  counters->numCommPut = 0;
-  counters->durCommPut = 0;
-  counters->numFork = 0;
-  counters->durFork = 0;
-  counters->numCommFork = 0;
-  counters->durCommFork = 0;
-  counters->numMalloc = 0;;
-  counters->durMalloc = 0;
   counters->sizeMalloc = 0;
-  counters->numFree = 0;
-  counters->durFree = 0;
+
+  if (cleanall) {
+    counters->durLoad = 0;
+    counters->durStore = 0;
+    counters->numLoad = 0;
+    counters->numStore = 0;
+    counters->numGet = 0;
+    counters->durGet = 0;
+    counters->numCommGet = 0;
+    counters->durCommGet = 0;
+    counters->numPut = 0;
+    counters->durPut = 0;
+    counters->numCommPut = 0;
+    counters->durCommPut = 0;
+    counters->numFork = 0;
+    counters->durFork = 0;
+    counters->numCommFork = 0;
+    counters->durCommFork = 0;
+    counters->numMalloc = 0;;
+    counters->durMalloc = 0;
+    counters->numFree = 0;
+    counters->durFree = 0;
+  }
 }
 
 void gtm_tx_stats_start(void* txptr, int op) {

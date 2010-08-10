@@ -1,6 +1,7 @@
 VER = RV_EA_WB
 
 GTM_CFLAGS += -DGTM_$(VER)
+GTM_CFLAGS += -DSTM_GTM_COMMIT_STATS
 
 STM_SRCS = \
 	stm-gtm.c \

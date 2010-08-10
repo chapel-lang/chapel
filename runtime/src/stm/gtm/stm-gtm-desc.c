@@ -56,6 +56,7 @@ void gtm_tx_destroy(chpl_stm_tx_p tx) {
   chpl_free(tx->writeset.entries, 0, 0);
 
   gtm_tx_destroy_memset(tx);
+
   gtm_tx_destroy_stats(tx);
 
   if (tx->id != -1 && tx->locale == MYLOCALE) {
@@ -82,7 +83,11 @@ void gtm_tx_cleanup(chpl_stm_tx_p tx) {
   tx->writeset.numentries = 0;
   tx->rollback = false;
   gtm_tx_cleanup_memset(tx);
-  gtm_tx_cleanup_stats(tx);
+#ifdef STM_GTM_COMMIT_STATS
+  gtm_tx_cleanup_stats(tx, 1);
+#else
+  gtm_tx_cleanup_stats(tx, 0);
+#endif
 }
 
 void gtm_tx_comm_register(chpl_stm_tx_p tx, int32_t dstlocale) {

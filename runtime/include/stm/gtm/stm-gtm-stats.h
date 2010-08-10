@@ -79,7 +79,7 @@ void gtm_init_stats(void);
 void gtm_exit_stats(void);
 void gtm_tx_create_stats(void*);
 void gtm_tx_destroy_stats(void*);
-void gtm_tx_cleanup_stats(void*);
+void gtm_tx_cleanup_stats(void*, int);
 void gtm_tx_stats_start(void*, int);
 void gtm_tx_stats_stop(void*, int, int status, int size);
 
