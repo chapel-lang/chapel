@@ -6,26 +6,31 @@ use grid_base_defs;
 class ScalarGridSolution {
   const grid: RectangularGrid;
 
-  var space_data: [1..2] [grid.ext_cells] real;
+  var space_data: [1..2] GridArray;
   var time: [1..2] real;
+
+  def initialize() {
+    for i in [1..2] do
+      space_data(i) = new GridArray(grid);
+  }
 }
 //<=== ScalarGridSolution class <===
 //<=================================
 
 
 
-//===> VectorGridSolution class ===>
-//=================================>
-class VectorGridSolution {
-  param n_comps: int;
-  const grid: RectangularGrid;
-  const components = [1..n_comps];
+/* //===> VectorGridSolution class ===> */
+/* //=================================> */
+/* class VectorGridSolution { */
+/*   param n_comps: int; */
+/*   const grid: RectangularGrid; */
+/*   const components = [1..n_comps]; */
 
-  var space_data: [1..2] [grid.ext_cells] [components] real;
-  var time: [1..2] real;
-}
-//<=== VectorGridSolution class <===
-//<=================================
+/*   var space_data: [1..2] [grid.ext_cells] [components] real; */
+/*   var time: [1..2] real; */
+/* } */
+/* //<=== VectorGridSolution class <=== */
+/* //<================================= */
 
 
 
@@ -51,8 +56,8 @@ def RectangularGrid.initializeSolution(
   write("Writing solution on grid...");
   forall precell in cells {
     var cell = tuplify(precell);
-    sol.space_data(1)(cell) = initial_condition(xValue(cell));
-    sol.space_data(2)(cell) = sol.space_data(1)(cell);
+    sol.space_data(1).value(cell) = initial_condition(xValue(cell));
+    sol.space_data(2).value(cell) = sol.space_data(1).value(cell);
   }
   write("done.\n");
   //<=== Evaluate and store initial_condition <===
@@ -116,7 +121,7 @@ def writeTimeFile(time:    real,
 // Writes Clawpack-formatted output for a GridSolution, at the given 
 // frame_number.
 //-------------------------------------------------------------------
-def RectangularGrid.clawOutput(sol:            ScalarGridSolution,
+def RectangularGrid.clawOutput(sol:          ScalarGridSolution,
                                frame_number: int
                               ){
 
@@ -215,7 +220,7 @@ def RectangularGrid.writeSolution(sol:           ScalarGridSolution,
   //===> Write solution values ===>
   if dimension == 1 then {
     for cell in cells do
-      outfile.writeln(format(efmt, sol.space_data(2)(cell)));
+      outfile.writeln(format(efmt, sol.space_data(2).value(cell)));
   }
   else {
     //------------------------------------------------------------
@@ -235,7 +240,7 @@ def RectangularGrid.writeSolution(sol:           ScalarGridSolution,
 
       //==== Write value ====
       [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
-      outfile.writeln(format(efmt, sol.space_data(2)(cell)));
+      outfile.writeln(format(efmt, sol.space_data(2).value(cell)));
 
       //===> Newlines at the end of each dimension ===>
       //--------------------------------------------------------------

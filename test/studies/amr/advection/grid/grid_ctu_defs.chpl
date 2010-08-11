@@ -25,15 +25,16 @@ def RectangularGrid.stepCTU(
   dt:       real
 ){
 
-  //==== Fill ghost cells ====
-  bc.ghostFill(sol.space_data(2), sol.time(2));
-
 
   //==== Assign names to solution components ====
-  var q_current => sol.space_data(2);
-  var q_new     => sol.space_data(1); // overwriting old values
+  var q_current => sol.space_data(2).value;
+  var q_new     => sol.space_data(1).value; // overwriting old values
   var t_current = sol.time(2);
   var t_new     = sol.time(2) + dt;
+
+
+  //==== Fill ghost cells ====
+  bc.ghostFill(q_current, t_current);
   
 
   //-----------------------------------------------------------

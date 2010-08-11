@@ -28,8 +28,8 @@ def RectangularGrid.stepBE(
 
 
   //===== Assign names to solution components ====
-  var dq        => sol.space_data(1);  // will eventually be q_new, but is dq until the end
-  var q_current => sol.space_data(2);
+  var dq        => sol.space_data(1).value;  // will eventually be q_new, but is dq until the end
+  var q_current => sol.space_data(2).value;
   var t_current = sol.time(2);
   var t_new     = sol.time(2) + dt;
 

@@ -199,10 +199,6 @@ def RectangularGrid.xValue (point_index: dimension*int) {
 class GridArray {
   const grid: RectangularGrid;
   var value: [grid.ext_cells] real;
-
-  def this(cell: dimension*int) {
-    return value(cell);
-  }
 }
 //<=== GridArray class <===
 //<========================

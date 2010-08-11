@@ -132,14 +132,14 @@ class LevelGrid: RectangularGrid {
 
 
 }
-//<================================
 //<=== LevelGrid derived class <===
+//<================================
 
 
 
 
-//===> Definition of class BaseLevel ===>
-//============================================>
+//===> BaseLevel class ===>
+//========================>
 class BaseLevel {
 
   var fixed: bool = false;
@@ -158,13 +158,12 @@ class BaseLevel {
   //<=== initialize() method <===
 
 }
-//<============================================
-//<=== Definition of class BaseLevel <===
-
+//<=== BaseLevel class <===
+//<========================
 
 
 //===> BaseLevel.addGrid method ===>
-//=======================================>
+//=================================>
 //--------------------------------------------------------
 // This version is based on indices, and probably best to
 // use in practice, as integer arithmetic is cleaner than
@@ -210,8 +209,8 @@ def BaseLevel.addGrid(x_low_grid:  dimension*real,
                                i_high  = i_high);
   child_grids.add(new_grid);
 }
-//<=================================
 //<=== BaseLevel.addGrid method <===
+//<=================================
 
 
 
@@ -231,8 +230,8 @@ def BaseLevel.fix() {
     grid.setNeighborData();
 
 }
-//<=============================
 //<=== BaseLevel.fix method <===
+//<=============================
 
 
 
@@ -241,7 +240,7 @@ def BaseLevel.fix() {
 //===> LevelArray class ===>
 //=========================>
 class LevelArray {
-  const parent_level: BaseLevel;
+  const parent: BaseLevel;
 
   var child_arrays: [parent_level.child_grids] GridArray;
 
