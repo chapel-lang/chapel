@@ -1,0 +1,1 @@
+passDomWithInOutIntent.chpl:6 error: Domains cannot be passed to functions with in intent
