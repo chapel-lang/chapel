@@ -31,7 +31,7 @@ if ($matches != 0) {
   close(MAIL);
 } else {
   print "no matches!\n";
-  open(MAIL, "| Mail bradc\@cray.com -s 'Cron Nightly TAB check'");
+  open(MAIL, "| Mail chapelu\@cray.com -s 'Cron Nightly TAB check'");
     print MAIL "no TAB matches tonight";
   close(MAIL);
 }
