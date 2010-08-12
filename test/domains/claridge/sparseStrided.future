@@ -1,0 +1,6 @@
+bug: can't take a sparse subdomain of a strided domain
+
+Trying to do so causes a compile-time error:
+
+sparseStrided.chpl:3: error: unresolved call 'DefaultSparseDom(2, type int, DefaultDist, domain(2,int,1))'
+$CHPL_HOME/modules/internal/DefaultSparse.chpl:17: note: candidates are: DefaultSparseDom(param rank, type idxType, dist: DefaultDist, parentDom: domain(rank, idxType))
