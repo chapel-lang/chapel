@@ -13,9 +13,9 @@ use grid_bc_defs;
 
 
 
-//===> stepBE method ===>
-//======================>
-def RectangularGrid.stepBE(
+//===> BaseGrid.stepBE method ===>
+//===============================>
+def BaseGrid.stepBE(
   sol:         ScalarGridSolution,
   bc:          GridBC,
   diffusivity: real,
@@ -128,8 +128,8 @@ def RectangularGrid.stepBE(
   sol.time(2) = t_current + dt;
   sol.space_data(1) <=> sol.space_data(2);
 }
-//<=== stepBE method <===
-//<======================
+//<=== BaseGrid.stepBE method <===
+//<===============================
 
 
 
@@ -141,7 +141,7 @@ def RectangularGrid.stepBE(
 //
 // As with FluxDivergence, ghost cells must be filled beforehand.
 //----------------------------------------------------------------
-def RectangularGrid.homogeneousBEOperator(
+def BaseGrid.homogeneousBEOperator(
   Lq:          [ext_cells] real,
   q:           [ext_cells] real,
   bc:          GridBC,
@@ -168,7 +168,7 @@ def RectangularGrid.homogeneousBEOperator(
 // may need to be done using either bc.ghostFill or
 // bc.homogeneousGhostFill.
 //-----------------------------------------------------------
-def RectangularGrid.fluxDivergence(
+def BaseGrid.fluxDivergence(
   flux_div:    [ext_cells] real,
   q:           [ext_cells] real,
   diffusivity: real
@@ -209,6 +209,6 @@ def RectangularGrid.fluxDivergence(
 
 
 
-def RectangularGrid.innerProduct(u: [ext_cells] real, v: [ext_cells] real){
+def BaseGrid.innerProduct(u: [ext_cells] real, v: [ext_cells] real){
   return +reduce( u(cells) * v(cells) );
 }

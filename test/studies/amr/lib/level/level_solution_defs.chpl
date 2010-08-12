@@ -11,9 +11,15 @@ use grid_solution_defs;
 //===> LevelSolution class ===>
 //============================>
 class LevelSolution {
-  var level:      BaseLevel;                              // parent level
-  var child_sols: [level.child_grids] LevelGridSolution;  // child functions
-  var time:       real;                                   // duh
+  const level:    BaseLevel;
+
+  var space_data: [1..2] LevelArray;
+  var time:       [1..2] real;
+
+  def initialize() {
+    for i in [1..2] do
+      space_data(i) = new LevelArray(level);
+  }
 }
 //<=== LevelSolution class <===
 //<============================
@@ -21,31 +27,20 @@ class LevelSolution {
 
 
 
-//===> LevelGridSolution derived class ===>
-//========================================>
-class LevelGridSolution: GridSolution {
-
-  var parent: LevelSolution;
-
-}
-//<=== LevelGridSolution derived class <===
-//<========================================
-
-
-
 
 //===> BaseLevel.initializSolution method ===>
 //===========================================>
-//--------------------------------------------------------------------
-// The argument 'initializer' can be either a first-class function
-// or a TrueSolution.
-//--------------------------------------------------------------------
-def BaseLevel.initializeSolution(q: LevelSolution,
-				 initializer
-				){
+//------------------------------------------------------------------
+// The argument 'initializer' can be any object allowable by a used
+// BaseGrid.initializeSolution method.
+//------------------------------------------------------------------
+def BaseLevel.initializeSolution(
+  sol: LevelSolution,
+  initial_condition: func(dimension*real, real)
+){
 
   //==== Check that q lives on this level ====
-  assert(q.level == this);
+  assert(sol.level == this);
 
 
   //==== Form LevelGridSolutions ====

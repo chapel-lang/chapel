@@ -16,7 +16,7 @@ use grid_diffusion_defs;
 
 //===> Backward Euler/conjugate gradient advancement of a GridSolution ===>
 //========================================================================>
-def RectangularGrid.advanceDiffusionBE(sol:            ScalarGridSolution,
+def BaseGrid.advanceDiffusionBE(sol:            ScalarGridSolution,
                                        bc:             GridBC,
                                        diffusivity:    real,
                                        time_requested: real,
@@ -98,11 +98,11 @@ def main {
     n_ghost_cells(d) = 2;
   }
 
-  var grid = new RectangularGrid(x_low         = x_low,
-		                 x_high        = x_high,
-                                 i_low         = i_low,
-                                 n_cells       = n_cells, 
-                                 n_ghost_cells = n_ghost_cells);
+  var grid = new BaseGrid(x_low         = x_low,
+		          x_high        = x_high,
+                          i_low         = i_low,
+                          n_cells       = n_cells, 
+                          n_ghost_cells = n_ghost_cells);
   //<=== Initialize grid <===
 
 

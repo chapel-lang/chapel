@@ -19,7 +19,7 @@ use grid_ctu_defs;
 //===> advanceAdvectionCTU routine ===>
 //====================================>
 def advanceAdvectionCTU(
-  grid:           RectangularGrid,
+  grid:           BaseGrid,
   sol:            ScalarGridSolution,
   bc:             GridBC,
   velocity:       dimension*real,
@@ -114,11 +114,11 @@ def main {
     n_ghost_cells(d) = 2;
   }
 
-  var grid = new RectangularGrid(x_low         = x_low,
-                                 x_high        = x_high,
-                                 i_low         = i_low,
-                                 n_cells       = n_cells, 
-                                 n_ghost_cells = n_ghost_cells);
+  var grid = new BaseGrid(x_low         = x_low,
+                          x_high        = x_high,
+                          i_low         = i_low,
+                          n_cells       = n_cells, 
+                          n_ghost_cells = n_ghost_cells);
   //<=== Initialize grid <===
 
 

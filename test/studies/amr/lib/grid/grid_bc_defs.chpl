@@ -8,7 +8,7 @@ use grid_solution_defs;
 //=====================>
 class GridBC {
 
-  var grid: RectangularGrid;
+  var grid: BaseGrid;
   var low_boundary_faces:  [dimensions] domain(dimension, stridable=true);
   var high_boundary_faces: [dimensions] domain(dimension, stridable=true);
   

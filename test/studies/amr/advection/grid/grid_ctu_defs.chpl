@@ -12,13 +12,13 @@ use grid_bc_defs;
 
 
 
-//===> RectangularGrid.stepCTU method ===>
-//=======================================>
+//===> BaseGrid.stepCTU method ===>
+//================================>
 //-------------------------------------------------------------
 // The output of the oprator will be stored in q.old, and then
 // q.old and q.current will be swapped.
 //-------------------------------------------------------------
-def RectangularGrid.stepCTU(
+def BaseGrid.stepCTU(
   sol:      ScalarGridSolution,
   bc:       GridBC,
   velocity: dimension*real,
@@ -103,5 +103,5 @@ def RectangularGrid.stepCTU(
   sol.space_data(1) <=> sol.space_data(2);
 
 }
-//<=======================================
-//<=== RectangularGrid.stepCTU method <===
+//<================================
+//<=== BaseGrid.stepCTU method <===

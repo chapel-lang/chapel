@@ -20,9 +20,9 @@ const dimensions = [1..dimension];
 //======================================================================>
 
 
-//===> RectangularGrid class ===>
-//==============================>
-class RectangularGrid {
+//===> BaseGrid class ===>
+//=======================>
+class BaseGrid {
   
   var x_low, x_high:          dimension*real,
       i_low, i_high:          dimension*int,
@@ -38,6 +38,7 @@ class RectangularGrid {
 
 
   //===> initialize method ===>
+  //==========================>
   def initialize() {
 
     sanityChecks();
@@ -45,30 +46,34 @@ class RectangularGrid {
     setDerivedFields();
   }
   //<=== initialize method <===
-
+  //<==========================
 
 
   //===> sanityChecks method ===>
+  //============================>
   def sanityChecks() {
     var d_string: string;
     for d in dimensions do {
       d_string = format("%i", d);
 
       assert(x_low(d) < x_high(d),
-	     "error: RectangularGrid: x_low(" + d_string + ") must be strictly less than x_high(" + d_string + ").");
+	     "error: BaseGrid: x_low(" + d_string + ") must be strictly less than x_high(" + d_string + ").");
 
       assert(n_cells(d) > 0,
-             "error: RectangularGrid: n_cells(" + d_string + ") must be positive.");
+             "error: BaseGrid: n_cells(" + d_string + ") must be positive.");
 
       assert(n_ghost_cells(d) > 0,
-	     "error: RectangularGrid: n_ghost_cells(" + d_string + ") must be positive.");
+	     "error: BaseGrid: n_ghost_cells(" + d_string + ") must be positive.");
     }
   }
   //<=== sanityChecks method <===
+  //<============================
+
 
 
 
   //===> setDerivedFields method ===>
+  //================================>
   //--------------------------------------------------------------
   // After x_low, x_high, n_cells, and n_ghost_cells have
   // been provided, calculate:
@@ -93,7 +98,7 @@ class RectangularGrid {
     var range_tuple: dimension*range(stridable = true);
     for d in dimensions do
       range_tuple(d) = i_low(d)+1 .. i_low(d)+2*n_cells(d)-1 by 2;
-    cells = [(...range_tuple)];
+    cells = range_tuple;
 
 
     //==== Extended cells (includes ghost cells) ====
@@ -119,39 +124,40 @@ class RectangularGrid {
 
   }
   //<=== setDerivedFields method <===
+  //<================================
   
  
 
-  //===> GhostData subclass ===>
-  //===========================>
-  //--------------------------------------------------------------
-  // Ideally, the fields low and high would be direct collections
-  // of arrays, but I don't think that's possible at the moment.
-  //--------------------------------------------------------------
-  class GhostData {
+/*   //===> GhostData subclass ===> */
+/*   //===========================> */
+/*   //-------------------------------------------------------------- */
+/*   // Ideally, the fields low and high would be direct collections */
+/*   // of arrays, but I don't think that's possible at the moment. */
+/*   //-------------------------------------------------------------- */
+/*   class GhostData { */
 
-    type data_type;
-    var low, high: [dimensions] IsolatedArray(dimension, data_type);
+/*     type data_type; */
+/*     var low, high: [dimensions] IsolatedArray(dimension, data_type); */
 
-    def initialize() {
-      for d in dimensions {
-	low(d) = new IsolatedArray(dim       = dimension,  
-				   data_type = data_type, 
-				   dom       = low_ghost_cells(d));
+/*     def initialize() { */
+/*       for d in dimensions { */
+/* 	low(d) = new IsolatedArray(dim       = dimension,   */
+/* 				   data_type = data_type,  */
+/* 				   dom       = low_ghost_cells(d)); */
 
-	high(d) = new IsolatedArray(dim       = dimension, 
-				    data_type = data_type, 
-				    dom       = high_ghost_cells(d));
-      }
+/* 	high(d) = new IsolatedArray(dim       = dimension,  */
+/* 				    data_type = data_type,  */
+/* 				    dom       = high_ghost_cells(d)); */
+/*       } */
 
-    }
-  }
-  //<===========================
-  //<=== GhostData subclass <===
+/*     } */
+/*   } */
+/*   //<=========================== */
+/*   //<=== GhostData subclass <=== */
 
 
 }
-//<=== RectangularGrid class <===
+//<=== BaseGrid class <===
 //<==============================
 
 
@@ -162,7 +168,7 @@ class RectangularGrid {
 //---------------------------------------
 // Converts indices to coordinate values.
 //----------------------------------------
-def RectangularGrid.xValue (point_index: dimension*int) {
+def BaseGrid.xValue (point_index: dimension*int) {
 
   var coord: dimension*real;
 
@@ -176,8 +182,8 @@ def RectangularGrid.xValue (point_index: dimension*int) {
 
   return coord;
 }
-//<======================
 //<=== xValue method <===
+//<======================
 
 
 //<=====================================================================
@@ -189,19 +195,259 @@ def RectangularGrid.xValue (point_index: dimension*int) {
 
 
 
+//====================================================>
+//==================== GRID ARRAYS ===================>
+//====================================================>
+
+//===> GridArray class ===>
+//========================>
+class GridArray {
+  const grid: BaseGrid;
+  var value: [grid.ext_cells] real;
+}
+//<=== GridArray class <===
+//<========================
+
+
+
+
+//===> BaseGrid.setGridArray method ===>
+//=====================================>
+def BaseGrid.setGridArray(
+  q: GridArray,
+  f: func(dimension*real, real)
+){
+  //==== Check that q lives on this grid ====
+  assert(q.grid == this);
+
+
+  //==== Evaluate and store f(x) ====
+  forall precell in cells {
+    var cell = tuplify(precell);
+    q.value(cell) = f(xValue(cell));
+  }
+}
+//<=== BaseGrid.setGridArray method <===
+//<=====================================
+
+
+//<====================================================
+//<=================== GRID ARRAYS ====================
+//<====================================================
+
+
+
+
+
+//=======================================================>
+//==================== OUTPUT METHODS ===================>
+//=======================================================>
+
+
+//===> writeTimeFile function =====>
+//=================================>
+//-------------------------------------------------------------
+// Global routine; meant to be called by output method of any
+// spatial object.  The time file is really simple, and this
+// just formats a few parameters.
+//-------------------------------------------------------------
+def writeTimeFile(time:    real,
+                  meqn:    int,
+                  ngrids:  int,
+                  naux:    int,
+                  outfile: file
+                 ) {
+
+
+  //==== Formatting parameters ====
+  var efmt:  string = "%26.16E",
+      ifmt:  string = "%5i";
+
+  //==== Write time file ====
+  outfile.writeln( format(efmt, time),      "    time");
+  outfile.writeln( format(ifmt, meqn),      "                 meqn");
+  outfile.writeln( format(ifmt, ngrids),    "                 ngrids");
+  outfile.writeln( format(ifmt, naux),      "                 naux");
+  outfile.writeln( format(ifmt, dimension), "                 ndim");
+  outfile.writeln("");
+  outfile.writeln("");
+
+}
+//<=== writeTimeFile method <=====
+//<===============================
+
+
+
+
+//===> BaseGrid.writeGridArray method ===>
+//=======================================>
+def BaseGrid.writeGridArray(
+  q:           GridArray,
+  grid_number: int,
+  AMR_level:   int,
+  outfile:     file
+){
+
+  //==== Formatting parameters ====
+  var efmt:  string = "%26.16E",
+      ifmt:  string = "%5i",
+      sfmt:  string = "%20s",
+      linelabel: string;
+
+                                    
+  //==== Header ====
+  outfile.writeln( format(ifmt, grid_number), "                 grid_number");
+  outfile.writeln( format(ifmt, AMR_level),   "                 AMR_level");
+
+
+  //==== Write n_cells ====
+  for d in dimensions do {
+    select d {
+      when 1 do linelabel = "                 mx";
+      when 2 do linelabel = "                 my";
+      when 3 do linelabel = "                 mz";
+      otherwise linelabel = "                 mx(" + format("%1i",d) + ")";
+    }
+    outfile.writeln( format(ifmt, n_cells(d)),  linelabel);
+  }
+
+
+  //==== Write x_low ====
+  for d in dimensions do {
+    select d {
+      when 1 do linelabel = "    xlow";
+      when 2 do linelabel = "    ylow";
+      when 3 do linelabel = "    zlow";
+      otherwise linelabel = "    xlow(" + format("%1i",d) + ")";
+    }
+    outfile.writeln( format(efmt, x_low(d)),  linelabel);
+  }
+
+
+  //==== Write dx ====
+  for d in dimensions do {
+    select d {
+      when 1 do linelabel = "    dx";
+      when 2 do linelabel = "    dy";
+      when 3 do linelabel = "    dz";
+      otherwise linelabel = "    dx(" + format("%1i",d) + ")";
+    }
+    outfile.writeln( format(efmt, dx(d)),  linelabel);
+  }
+  outfile.writeln("");
+
+
+  //===> Write array values ===>
+  if dimension == 1 then {
+    for cell in cells do
+      outfile.writeln(format(efmt, q.value(cell)));
+  }
+  else {
+    //------------------------------------------------------------
+    //---- Transpose cells; iterating over the transpose
+    //---- in row major order achieves column major order on the
+    //---- original domain.
+    //------------------------------------------------------------
+    var range_tuple: dimension*range(stridable=true);
+    [d in dimensions] range_tuple(d) = cells.dim(1 + dimension - d);
+
+    var cells_transposed: domain(dimension, stridable=true);
+    cells_transposed = [(...range_tuple)];
+
+    var cell:       dimension*int;
+    var n_newlines: int;
+    for cell_transposed in cells_transposed do {
+
+      //==== Write value ====
+      [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
+      outfile.writeln(format(efmt, q.value(cell)));
+
+      //===> Newlines at the end of each dimension ===>
+      //--------------------------------------------------------------
+      // There are no newlines at the very end of output.  How that's
+      // handled is up to the main output routine.
+      //--------------------------------------------------------------
+      n_newlines = 0;
+
+      for d in dimensions do {
+        if cell(d) == cells.dim(d).high then
+          n_newlines += 1;
+        else
+          break;
+      }
+
+      if n_newlines == dimension then n_newlines = 0;
+
+      for n in [1..n_newlines] do outfile.writeln("  ");
+      //<=== Newlines at the end of each dimension <===
+    }
+  }
+  //<=== Write array values <===
+  
+}
+//<=== BaseGrid.writeGridArray method <===
+//<=======================================
+
+
+
+
+//===> clawOutput method ===>
+//==========================>
+//-------------------------------------------------------------------
+// Writes Clawpack-formatted output for a GridArray, at the given 
+// time and frame_number.
+//-------------------------------------------------------------------
+def BaseGrid.clawOutput(
+  q:            GridArray,
+  time:         real,
+  frame_number: int
+){
+
+  //==== Make sure solution lives on this grid ====
+  assert(q.grid == this);
+
+
+  //==== Names of output files ====
+  var frame_string:  string = format("%04i", frame_number),
+      time_filename: string = "_output/fort.t" + frame_string,
+      data_filename: string = "_output/fort.q" + frame_string;
+
+
+  //==== Time file ====
+  var outfile = new file(time_filename, FileAccessMode.write);
+  outfile.open();
+  writeTimeFile(time, 1, 1, 0, outfile);
+  outfile.close();
+  delete outfile;
+  
+  
+  //==== Data file ====
+  outfile = new file(data_filename, FileAccessMode.write);
+  outfile.open();
+  writeGridArray(q, 1, 1, outfile);
+  outfile.close();
+  delete outfile;
+
+}
+//<=== clawOutput method <===
+//<==========================
+
+
+//<=======================================================
+//<=================== OUTPUT METHODS ====================
+//<=======================================================
+
+
+
+
+
+
+
 //==============================================>
 //==================== OTHER ===================>
 //==============================================>
 
 
-//===> GridArray class ===>
-//========================>
-class GridArray {
-  const grid: RectangularGrid;
-  var value: [grid.ext_cells] real;
-}
-//<=== GridArray class <===
-//<========================
 
 
 //===> Fix for the 1D/tuple problem ===>
@@ -212,25 +458,6 @@ def tuplify(idx) {
     return tuple(idx);
 }
 //<=== Fix for the 1D/tuple problem <===
-
-
-
-//===> IsolatedArray record ===>
-//=============================>
-//-------------------------------------------------------------
-// Contains an array and its domain.  "Isolated" in that the
-// domain will be assigned as a copy.  Not sharp in that sense
-// for my purposes, but needed to dodge the problem of making
-// a tuple of generic length and generic type for now.
-//-------------------------------------------------------------
-record IsolatedArray {
-  param dim: int;
-  type data_type;
-  var dom: domain(dim,stridable=true);
-  var value: [dom] data_type;
-}
-//<=============================
-//<=== IsolatedArray record <===
 
 
 
@@ -280,8 +507,8 @@ def intersectDomains(D1, D2) {
 
 
 }
-//<=================================
 //<=== intersectDomains routine <===
+//<=================================
 
 
 //<==============================================

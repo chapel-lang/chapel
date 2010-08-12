@@ -19,10 +19,11 @@ class LevelGrid: RectangularGrid {
 
   var parent: BaseLevel;
 
-  var neighbors:    domain(LevelGrid);
-  var shared_cells: [neighbors] subdomain(ext_cells);
+  var level_neighbors: domain(LevelGrid);
 
-  var ghost_is_shared: GhostData(bool);
+  var shared_ghosts:   [level_neighbors] subdomain(ext_cells);
+  var boundary_ghosts: sparse subdomain(ext_cells);
+
 
 
   //===> initialize method ===>
@@ -40,10 +41,6 @@ class LevelGrid: RectangularGrid {
     //<=== Set fields via parent data and index bounds <===
 
 
-    //==== Shared flags on ghost cells ====
-    ghost_is_shared = new GhostData(bool);
-
-
     sanityChecks();
 
     setDerivedFields();
@@ -54,13 +51,22 @@ class LevelGrid: RectangularGrid {
 
 
 
-  //===> setNeighborData method ===>
-  //=================================>
+  //===> partitionGhostCells method ===>
+  //===================================>
   //-------------------------------------------------------------
   // Locates neighboring grids, and stores the domains that this 
   // grid's ghost cells share with each neighbor's interior.
   //-------------------------------------------------------------
-  def setNeighborData() {
+  def partitionGhostCells() {
+
+    //==== Initialize all ghosts as boundary ====
+    for d in dimensions {
+      forall cell in low_ghost_cells(d) do
+	boundary_ghosts.add(cell);
+      forall cell in high_ghost_cells(d) do
+	boundary_ghosts.add(cell);
+    }
+
   
     //==== To store intersection on each check ====
     var intersection: ext_cells.type;
@@ -70,40 +76,26 @@ class LevelGrid: RectangularGrid {
 
       intersection = intersectDomains(ext_cells, sib.cells);
 
-      //==== If the intersection is nonempty, update neighbor data ====
+      //==== Partition based on intersection, if nonempty ====
       if intersection.dim(1).length > 0 {
-        neighbors.add(sib);
-        shared_cells(sib) = intersection;
+
+	//==== Add intersection to shared ghosts ====
+        level_neighbors.add(sib);
+        shared_ghosts(sib) = intersection;
+
+	//==== Remove intersection from boundary ghosts ====
+	forall cell in intersection do
+	  boundary_ghosts.remove(cell);
       }
+
 
     }
     //<=== Check each sibling for neighbors <===
 
 
-
-    //===> Flag shared cells on each ghost domain ===> 
-    for nbr in neighbors { 
-
-      for d in dimensions { 
-
-        //==== Low ghost cells ==== 
-        intersection = intersectDomains(low_ghost_cells(d), shared_cells(nbr)); 
-        for cell in intersection do 
-        ghost_is_shared.low(d).value(cell) = true; 
-
-        //==== High ghost cells ==== 
-        intersection = intersectDomains(high_ghost_cells(d), shared_cells(nbr)); 
-        for cell in intersection do 
-          ghost_is_shared.high(d).value(cell) = true; 
-
-      } 
-    } 
-    //<=== Flag shared cells on each ghost domain <=== 
-    
-    
   }
-  //<=== setNeighborData method <===
-  //<===============================
+  //<=== partitionGhostCells method <===
+  //<===================================
   
   
   
@@ -118,12 +110,12 @@ class LevelGrid: RectangularGrid {
     //==== Make q lives on this grid ====
     assert(q.grid == this);
   
-    for nbr in neighbors {
+    for nbr in level_neighbors {
       //==== Locate sibling solution on neighbor grid ====
       var q_sib = q.parent.child_sols(nbr);
   
       //==== Copy values from shared cells ====
-      q.value(shared_cells(nbr)) = q_sib.value(shared_cells(nbr));
+      q.value(shared_ghosts(nbr)) = q_sib.value(shared_ghosts(nbr));
     }
   
   }
@@ -227,7 +219,7 @@ def BaseLevel.fix() {
   fixed = true;
 
   coforall grid in child_grids do
-    grid.setNeighborData();
+    grid.partitionSharedGhosts();
 
 }
 //<=== BaseLevel.fix method <===
@@ -237,16 +229,28 @@ def BaseLevel.fix() {
 
 
 
+//===> LevelGridArray derived class ===>
+//=====================================>
+class LevelGridArray: GridArray {
+  const parent_array;
+}
+//<=== LevelGridArray derived class <===
+//<=====================================
+
+
+
+
 //===> LevelArray class ===>
 //=========================>
 class LevelArray {
-  const parent: BaseLevel;
+  const level: BaseLevel;
 
   var child_arrays: [parent_level.child_grids] GridArray;
 
   def initialize() {
     for grid in parent_level.child_grids do
-      child_arrays(grid) = new GridArray(grid);
+      child_arrays(grid) = new LevelGridArray(grid         = grid, 
+					      parent_array = this);
   }
 }
 //<=== LevelArray class <===
