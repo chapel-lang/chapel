@@ -3,7 +3,7 @@ use Search;
 class DefaultSparseDom: BaseSparseDom {
   param rank : int;
   type idxType;
-  var parentDom: domain(rank, idxType);
+  var parentDom;
   var dist: DefaultDist;
   var nnz = 0;  // intention is that user might specify this to avoid reallocs
 
@@ -16,7 +16,7 @@ class DefaultSparseDom: BaseSparseDom {
 
   def DefaultSparseDom(param rank, type idxType, 
                                dist: DefaultDist,
-                               parentDom: domain(rank, idxType)) {
+                               parentDom: domain) {
     this.parentDom = parentDom;
     this.dist = dist;
     nnz = 0;
@@ -193,7 +193,7 @@ class DefaultSparseArr: BaseArr {
   param rank : int;
   type idxType;
 
-  var dom : DefaultSparseDom(rank, idxType);
+  var dom; /* : DefaultSparseDom(?); */
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
