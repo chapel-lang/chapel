@@ -48,6 +48,7 @@ static Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
 static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
 
 static std::map<std::string, std::pair<ClassType*, FnSymbol*> > functionTypeMap; // lookup table/cache for function types and their representative parents
+static std::map<FnSymbol*, FnSymbol*> functionCaptureMap; //loopup table/cache for function captures
 
 // map of compiler warnings that may need to be reissued for repeated
 // calls; the inner compiler warning map is from the compilerWarning
@@ -2381,7 +2382,6 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *paren
   if (retType != dtVoid) {
     VarSymbol *tmp = newTemp(retType); 
     parent_method->insertAtTail(new DefExpr(tmp));
-    parent_method->insertAtTail(new CallExpr(PRIM_MOVE, tmp, retType->defaultValue));
     parent_method->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   }
 
@@ -2486,8 +2486,14 @@ createFunctionAsValue(CallExpr *call) {
   }
 
   INT_ASSERT(visibleFns.n == 1);
-
+  
   FnSymbol* captured_fn = visibleFns.v[0];
+
+  //Check to see if we've already cached the capture somewhere
+  if (functionCaptureMap.find(captured_fn) != functionCaptureMap.end()) {
+    return new CallExpr(functionCaptureMap[captured_fn]);
+  }
+
   resolveFormals(captured_fn);
   resolveFns(captured_fn);
 
@@ -2554,9 +2560,10 @@ createFunctionAsValue(CallExpr *call) {
       
   Vec<CallExpr*> calls;
   collectCallExprs(captured_fn, calls);
+
   forv_Vec(CallExpr, cl, calls) {
     if (cl->isPrimitive(PRIM_YIELD)) {
-      USR_FATAL_CONT(cl, "Interators not allowed in first class functions");
+      USR_FATAL_CONT(cl, "Iterators not allowed in first class functions");
     }
   }
       
@@ -2582,9 +2589,13 @@ createFunctionAsValue(CallExpr *call) {
   wrapper->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, parent->symbol, new CallExpr(ct->defaultConstructor))));
 
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
+
   normalize(wrapper);
 
-  return new CallExpr(wrapper);
+  CallExpr *call_wrapper = new CallExpr(wrapper);
+  functionCaptureMap[captured_fn] = wrapper;
+  
+  return call_wrapper;
 }
 
 //
