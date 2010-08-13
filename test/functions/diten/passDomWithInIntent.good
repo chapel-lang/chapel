@@ -1,1 +1,2 @@
-passDomWithInIntent.chpl:6 error: Domains cannot be passed to functions with in intent
+[1..5]
+[1..5]

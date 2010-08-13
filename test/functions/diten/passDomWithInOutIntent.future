@@ -1,3 +1,0 @@
-bug: domains passed to functions with in/out/inout intent is allowed.
-
-The functions/intents section of the spec says this should not be allowed.
