@@ -11,7 +11,7 @@ class ScalarGridSolution {
 
   def initialize() {
     for i in [1..2] do
-      space_data(i) = new GridArray(grid);
+      space_data(i) = new GridArray(grid = grid);
   }
 }
 //<=== ScalarGridSolution class <===

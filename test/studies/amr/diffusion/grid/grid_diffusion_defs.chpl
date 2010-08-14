@@ -171,8 +171,8 @@ def BaseGrid.homogeneousBEOperator(
 def BaseGrid.fluxDivergence(
   flux_div:    [ext_cells] real,
   q:           [ext_cells] real,
-  diffusivity: real
-){
+  diffusivity: real)
+{
 
   forall cell_pretuple in cells {
 

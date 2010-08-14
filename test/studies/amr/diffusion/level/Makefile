@@ -5,8 +5,8 @@ LEVEL_SOURCES = \
 	../../lib/level/level_base_defs.chpl \
 	../../lib/level/level_solution_defs.chpl \
 	../../lib/level/level_bc_defs.chpl \
-	level_ctu_defs.chpl \
-	level_ctu_driver.chpl
+	level_diffusion_defs.chpl \
+	level_diffusion_driver.chpl
 
 
 

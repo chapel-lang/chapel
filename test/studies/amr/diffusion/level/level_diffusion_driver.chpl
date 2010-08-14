@@ -1,7 +1,6 @@
 //===> Description ===>
 //
-// Driver for an advection example, integrated with corner transport
-// upwind (CTU).
+// Driver for a diffusion example, integrated with Backward Euler
 //
 //<=== Description <===
 
@@ -9,64 +8,44 @@
 use level_base_defs;
 use level_solution_defs;
 use level_bc_defs;
-use level_ctu_defs;
+use level_diffusion_defs;
 
 
 
+//===> BaseLevel.advanceDiffusionBE method ===>
+//============================================>
+def BaseLevel.advanceDiffusionBE(sol:            LevelSolution,
+                                 bc:             LevelBC,
+                                 diffusivity:    real,
+                                 time_requested: real,
+                                 dt_max:         real) {
 
-//===> advanceAdvectionCTU routine ===>
-//====================================>
-def advanceAdvectionCTU(
-  sol:            LevelSolution,
-  bc:             LevelBC,
-  velocity:       dimension*real,
-  time_requested: real)
-{
-
-  var level = sol.level;
-
-
-  //==== Safety check ====
+  //==== Safety checks ====
+  assert(sol.level == this);
   assert(sol.time(2) <= time_requested);
 
 
-  //===> Initialize ===>
-  var cfl: [dimensions] real,
-      dt_target:        real,
-      dt_used:          real;
-
-  [d in dimensions] cfl(d) = level.dx(d) / abs(velocity(d));
-  (dt_target,) = minloc reduce(cfl, dimensions);
-  dt_target *= 0.95;
-  //<=== Initialize <===
-  
-
-  
-  //===> Time-stepping loop ===>
-  while (sol.time(2) < time_requested) do {
-
+  //===> Time-stepping ===>
+  var n_steps = ceil( (time_requested - sol.time(2)) / dt_max ) : int;
+  var dt_used = (time_requested - sol.time(2)) / n_steps;
+   
+   
+  while (sol.time(2) < time_requested) {
     //==== Adjust the time step to hit time_requested if necessary ====
-    if (sol.time(2) + dt_target > time_requested) then
+    if (sol.time(2) + dt_max > time_requested) then
       dt_used = time_requested - sol.time(2);
     else
-      dt_used = dt_target;
-    writeln("Taking step of size dt=", dt_used,
-	    " to time ", sol.time(2) + dt_used, ".");
+      dt_used = dt_max;
+    writeln("Taking step of size dt=", dt_used, " to time ", sol.time(2)+dt_used, ".");
 
 
     //==== Update solution ====
-    level.stepAdvectionCTU(sol, bc, velocity, dt_used);
-          
+    stepDiffusionBE(sol, bc, diffusivity, dt_used, dt_used/4.0);
+
   }
-  //<=== Time-stepping loop <===
-
-
+  //<=== Time-stepping <===
+ 
 }
-//<=== advanceAdvectionCTU routine <===
-//<====================================
-
-
-
 
 
 
@@ -92,26 +71,25 @@ def main {
 
   for i in output_times.domain do
     output_times(i) = time_initial + i * dt_output;
+
+  var dt_max = 0.05;
   //<=== Initialize output <===
 
 
 
 
-  //==== Used to check dimension with each input file ====
+  //==== Used to check dimension with relevant input files ====
   var dim_in: int;
 
 
 
-  //===> Advection velocity ===>
-  var velocity: dimension*real;
+  //===> Diffusivity ===>
+  var diffusivity: real;
   var phys_file = new file("set_problem/physics.txt", FileAccessMode.read);
   phys_file.open();
-  phys_file.readln(dim_in);
-  assert(dim_in == dimension, 
-         "error: dimension of physics.txt must equal " + format("%i",dimension));
-  phys_file.readln((...velocity));
+  phys_file.readln(diffusivity);
   phys_file.close();
-  //<=== Advection velocity <===
+  //<=== Diffusivity <===
 
 
 
@@ -186,6 +164,7 @@ def main {
 
 
 
+
   //===> Generate output ===>
   //==== Initial time ====
   write("Writing initial output...");
@@ -195,7 +174,7 @@ def main {
   //==== Subsequent times ====
   for output_time in output_times do {
     //==== Advance solution to output time ====
-    advanceAdvectionCTU(sol, bc, velocity, output_time);
+    level.advanceDiffusionBE(sol, bc, diffusivity, output_time, dt_max);
   
     //==== Write output to file ====
     frame_number += 1;

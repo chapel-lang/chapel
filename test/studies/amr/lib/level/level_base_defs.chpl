@@ -15,13 +15,14 @@ use grid_base_defs;
 
 //===> LevelGrid derived class ===>
 //================================>
-class LevelGrid: RectangularGrid {
+class LevelGrid: BaseGrid {
 
-  var parent: BaseLevel;
+  var parent_level: BaseLevel;
 
   var level_neighbors: domain(LevelGrid);
 
   var shared_ghosts:   [level_neighbors] subdomain(ext_cells);
+
   var boundary_ghosts: sparse subdomain(ext_cells);
 
 
@@ -32,12 +33,12 @@ class LevelGrid: RectangularGrid {
 
     //===> Set fields via parent data and index bounds ===>
     forall d in dimensions {
-      x_low(d)  = parent.x_low(d) + i_low(d)  * parent.dx(d)/2.0;
-      x_high(d) = parent.x_low(d) + i_high(d) * parent.dx(d)/2.0;
+      x_low(d)  = parent_level.x_low(d) + i_low(d)  * parent_level.dx(d)/2.0;
+      x_high(d) = parent_level.x_low(d) + i_high(d) * parent_level.dx(d)/2.0;
       n_cells(d)= (i_high(d) - i_low(d)) / 2;
     }
 
-    n_ghost_cells = parent.n_child_ghost_cells;
+    n_ghost_cells = parent_level.n_child_ghost_cells;
     //<=== Set fields via parent data and index bounds <===
 
 
@@ -61,9 +62,9 @@ class LevelGrid: RectangularGrid {
 
     //==== Initialize all ghosts as boundary ====
     for d in dimensions {
-      forall cell in low_ghost_cells(d) do
+      for cell in low_ghost_cells(d) do
 	boundary_ghosts.add(cell);
-      forall cell in high_ghost_cells(d) do
+      for cell in high_ghost_cells(d) do 
 	boundary_ghosts.add(cell);
     }
 
@@ -72,7 +73,7 @@ class LevelGrid: RectangularGrid {
     var intersection: ext_cells.type;
   
     //===> Check each sibling for neighbors ===>
-    for sib in parent.child_grids {
+    for sib in parent_level.child_grids {
 
       intersection = intersectDomains(ext_cells, sib.cells);
 
@@ -84,7 +85,7 @@ class LevelGrid: RectangularGrid {
         shared_ghosts(sib) = intersection;
 
 	//==== Remove intersection from boundary ghosts ====
-	forall cell in intersection do
+	for cell in intersection do
 	  boundary_ghosts.remove(cell);
       }
 
@@ -99,28 +100,28 @@ class LevelGrid: RectangularGrid {
   
   
   
-  //===> copyFromNeighbors method ===>
-  //=================================>
+  //===> fillSharedGhosts method ===>
+  //================================>
   //-------------------------------------------------------------
   // Copies data from q's siblings on neighboring grids into q's
   // ghost values.
   //-------------------------------------------------------------
-  def copyFromNeighbors(q: LevelGridSolution) {
+  def fillSharedGhosts(q: LevelGridArray) {
   
     //==== Make q lives on this grid ====
     assert(q.grid == this);
   
     for nbr in level_neighbors {
       //==== Locate sibling solution on neighbor grid ====
-      var q_sib = q.parent.child_sols(nbr);
+      var q_sib = q.parent_array.child_arrays(nbr);
   
       //==== Copy values from shared cells ====
       q.value(shared_ghosts(nbr)) = q_sib.value(shared_ghosts(nbr));
     }
   
   }
-  //<=== copyFromNeighbors method <===
-  //<=================================
+  //<=== fillSharedGhosts method <===
+  //<================================
 
 
 }
@@ -167,9 +168,9 @@ def BaseLevel.addGrid(i_low:  dimension*int,
   
   assert(fixed == false);
 
-  var new_grid = new LevelGrid(parent  = this,
-                               i_low   = i_low,
-                               i_high  = i_high);
+  var new_grid = new LevelGrid(parent_level  = this,
+                               i_low         = i_low,
+                               i_high        = i_high);
 
   child_grids.add(new_grid);
 }
@@ -196,9 +197,9 @@ def BaseLevel.addGrid(x_low_grid:  dimension*real,
   
 
   //==== Add grid ====
-  var new_grid = new LevelGrid(parent  = this,
-                               i_low   = i_low,
-                               i_high  = i_high);
+  var new_grid = new LevelGrid(parent_level  = this,
+                               i_low         = i_low,
+                               i_high        = i_high);
   child_grids.add(new_grid);
 }
 //<=== BaseLevel.addGrid method <===
@@ -219,7 +220,7 @@ def BaseLevel.fix() {
   fixed = true;
 
   coforall grid in child_grids do
-    grid.partitionSharedGhosts();
+    grid.partitionGhostCells();
 
 }
 //<=== BaseLevel.fix method <===
@@ -228,11 +229,16 @@ def BaseLevel.fix() {
 
 
 
+//=====================================================>
+//==================== LEVEL ARRAYS ===================>
+//=====================================================>
+
 
 //===> LevelGridArray derived class ===>
 //=====================================>
 class LevelGridArray: GridArray {
-  const parent_array;
+  const level_grid:   LevelGrid;
+  const parent_array: LevelArray;
 }
 //<=== LevelGridArray derived class <===
 //<=====================================
@@ -245,12 +251,17 @@ class LevelGridArray: GridArray {
 class LevelArray {
   const level: BaseLevel;
 
-  var child_arrays: [parent_level.child_grids] GridArray;
+  var child_arrays: [level.child_grids] LevelGridArray;
 
   def initialize() {
-    for grid in parent_level.child_grids do
-      child_arrays(grid) = new LevelGridArray(grid         = grid, 
-					      parent_array = this);
+    for grid in level.child_grids do
+      child_arrays(grid) = new LevelGridArray(grid         = grid,
+                                              level_grid   = grid, 
+                                              parent_array = this);
+  }
+
+  def this(grid: LevelGrid){
+    return child_arrays(grid);
   }
 }
 //<=== LevelArray class <===
@@ -259,15 +270,26 @@ class LevelArray {
 
 
 
+//===> BaseLevel.setLevelArray method ===>
+//=======================================>
+def BaseLevel.setLevelArray(
+  q: LevelArray,
+  f: func(dimension*real, real)
+){
+
+  coforall grid in child_grids {
+    var q_grid = q.child_arrays(grid);
+    grid.setGridArray(q_grid, f);
+  }
+
+}
+//<=== BaseLevel.setLevelArray method ====
+//<=======================================
 
 
-
-
-
-
-
-
-
+//<=====================================================
+//<=================== LEVEL ARRAYS ====================
+//<=====================================================
 
 
 
@@ -284,9 +306,11 @@ class LevelArray {
 //-----------------------------------------------------------------------
 // Writes both a time file and a solution file for a given frame number.
 //-----------------------------------------------------------------------
-def BaseLevel.clawOutput(q:            LevelSolution,
-                     frame_number: int
-                    ){
+def BaseLevel.clawOutput(
+  q:            LevelArray,
+  time:         real,
+  frame_number: int
+){
 
   //==== Make sure q lives on this level ====
   assert(q.level == this);
@@ -304,7 +328,7 @@ def BaseLevel.clawOutput(q:            LevelSolution,
 
   var outfile = new file(time_filename, FileAccessMode.write);
   outfile.open();  
-  writeTimeFile(q.time, 1, n_grids, 0, outfile);
+  writeTimeFile(time, 1, n_grids, 0, outfile);
   outfile.close();
   delete outfile;
   
@@ -312,7 +336,7 @@ def BaseLevel.clawOutput(q:            LevelSolution,
   //==== Solution file ====
   outfile = new file(solution_filename, FileAccessMode.write);
   outfile.open();
-  writeSolution(q, 1, outfile);  // AMR_level=1 for single-level output
+  writeLevelArray(q, 1, outfile);  // AMR_level=1 for single-level output
   outfile.close();
   delete outfile;
 
@@ -323,26 +347,23 @@ def BaseLevel.clawOutput(q:            LevelSolution,
 
 
 
-//===> writeSolution method ===>
-//=============================>
-//---------------------------------------------------------
-// Writes the data for a LevelSolution living on this level.
-//---------------------------------------------------------
-def BaseLevel.writeSolution(q:           LevelSolution,
-                            AMR_level:   int,
-                            outfile:     file
-                           ){
-
+//===> BaseLevel.writeLevelArray method ===>
+//=========================================>
+def BaseLevel.writeLevelArray(
+  q:         LevelArray,
+  AMR_level: int,
+  outfile:   file
+){
   var grid_number = 0;
   for grid in child_grids {
     grid_number += 1;
-    grid.writeSolution(q.child_sols(grid), grid_number, 1, outfile);
+    grid.writeGridArray(q.child_arrays(grid), grid_number, 1, outfile);
     outfile.writeln("  ");
   }
-  
+
 }
-//<=== writeSolution method <===
-//<=============================
+//<=== BaseLevel.writeLevelArray method <===
+//<=========================================
 
 
 //<=======================================================

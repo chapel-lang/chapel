@@ -1,47 +1,129 @@
 //===> Description ===>
 //
 // Definitions for an advection/CTU solver on a
-// RefinementLevel.
+// BaseLevel.
 //
 //<=== Description <===
 
 
-use grid_base_defs;
 use level_base_defs;
-use level_bcs;
-use grid_ctu_defs;
+use level_solution_defs;
+use level_bc_defs;
 
 
-//===> BaseLevel.stepCTU method ===>
-//=================================>
-def BaseLevel.stepCTU(lev_sol:  LevelSolution,
-                      lev_bc:   LevelBC,
-                      velocity: dimension*real,
-                      dt:       real
-                     ){
 
-  //==== Fill ghost cells using boundary condition ====
-  lev_bc.ghostFill(lev_sol);
+//===> BaseLevel.stepAdvectionCTU method ===>
+//==========================================>
+def BaseLevel.stepAdvectionCTU(
+  level_sol:  LevelSolution,
+  bc:         LevelBC,
+  velocity:   dimension*real,
+  dt:         real)
+{
 
-
-  //==== Now fill ghost cells overlapped by neighbor grids ====
-  coforall grid in child_grids {
-    grid.copyFromNeighbors(lev_sol.child_sols(grid));    
-  }
+  //==== Safety check ====
+  assert(level_sol.level == this);
 
 
-  //==== Take a time step on each grid ====
-  coforall grid in child_grids {
-    grid.stepCTU(lev_sol.child_sols(grid),
-                 velocity,
-                 dt);
-  }
+  //==== Assign names to solution components ====
+  var q_current = level_sol.space_data(2);
+  var t_current = level_sol.time(2);
+  var q_new     = level_sol.space_data(1);
+  var t_new     = t_current + dt;
 
 
-  //==== Update time ====
-  lev_sol.time += dt;
+  //==== Fill ghost cells of q_current ====
+  coforall grid in child_grids do
+    bc.ghostFill(q_current(grid), t_current);
+
+
+  //==== Step each grid ====
+  coforall grid in child_grids do
+    grid.stepAdvectionCTU(q_new(grid), q_current(grid), velocity, dt);
+
+
+  //==== Update solution structure ====
+  level_sol.space_data(1) = q_current;
+  level_sol.space_data(2) = q_new;
+  level_sol.time(1) = t_current;
+  level_sol.time(2) = t_new;
 
 
 }
-//<=================================
-//<=== BaseLevel.stepCTU method <===
+//<=== BaseLevel.stepAdvectionCTU method <===
+//<==========================================
+
+
+
+
+//===> LevelGrid.stepAdvectionCTU method ===>
+//==========================================>
+def LevelGrid.stepAdvectionCTU(
+  q_new:     LevelGridArray,
+  q_current: LevelGridArray,
+  velocity:  dimension*real,
+  dt:        real)
+{
+
+  //==== Safety check ====
+  assert(q_new.grid == this);
+  assert(q_current.grid == this);
+
+
+
+  var alignments: domain(dimension);
+  alignments = alignments.expand(1);
+  
+  //===> Calculate new value ===>
+  forall precell in cells {
+
+    //==== 1D/tuple fix ====
+    var cell = tuplify(precell);
+
+
+    q_new.value(cell) = 0.0;
+    var volume_fraction: real;
+    var upwind_cell: dimension*int;
+
+
+    //===> Update for each alignment ===>
+    for prealignment in alignments {
+
+      //==== 1D/tuple fix ====
+      var alignment = tuplify(prealignment);
+
+        
+      volume_fraction = 1.0;
+      for d in dimensions {
+        //-------------------------------------------------------
+        // For each alignment, set the volume fraction and index
+        // of the upwind cell. 
+        //-------------------------------------------------------
+        if alignment(d) == 0 then {
+          volume_fraction *= abs(velocity(d))*dt / dx(d);
+        if velocity(d) < 0.0 then
+          upwind_cell(d) = cell(d)+2;
+        else // the case velocity(d)==0 can refer to any cell
+          upwind_cell(d) = cell(d)-2;
+	      }
+	      else {
+          volume_fraction *= 1.0 - abs(velocity(d))*dt / dx(d);
+          upwind_cell(d) = cell(d);
+        }
+          
+      }
+
+          
+      //==== Update cell value ====
+      q_new.value(cell) += volume_fraction * q_current.value(upwind_cell);
+  
+    }
+    //<=== Update for each alignment <===
+    
+  }
+  //<=== Calculate new value <===
+
+
+}
+//<=== LevelGrid.stepAdvectionCTU method <===
+//<==========================================

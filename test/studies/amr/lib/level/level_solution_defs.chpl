@@ -3,9 +3,7 @@ use level_base_defs;
 use grid_solution_defs;
 
 
-//========================================================>
-//==================== LEVEL SOLUTIONS ===================>
-//========================================================>
+
 
 
 //===> LevelSolution class ===>
@@ -18,7 +16,7 @@ class LevelSolution {
 
   def initialize() {
     for i in [1..2] do
-      space_data(i) = new LevelArray(level);
+      space_data(i) = new LevelArray(level = level);
   }
 }
 //<=== LevelSolution class <===
@@ -35,26 +33,21 @@ class LevelSolution {
 // BaseGrid.initializeSolution method.
 //------------------------------------------------------------------
 def BaseLevel.initializeSolution(
-  sol: LevelSolution,
-  initial_condition: func(dimension*real, real)
+  sol:               LevelSolution,
+  initial_condition: func(dimension*real, real),
+  time:              real
 ){
 
   //==== Check that q lives on this level ====
   assert(sol.level == this);
 
 
-  //==== Form LevelGridSolutions ====
-  coforall grid in child_grids {
-
-    write("Creating new GridSolution...");
-    var grid_sol = new LevelGridSolution(grid   = grid, 
-					 parent = q);
-		write("done.\n");
-
-    grid.initializeSolution(grid_sol, initializer);
-
-    q.child_sols(grid) = grid_sol;
+  //==== Set each LevelArray to the initial condition ====
+  for i in [1..2] {
+    setLevelArray(sol.space_data(i), initial_condition);
+    sol.time(i) = time;
   }
+  //==== Set each LevelArray to the initial condition ====
   
 
 }
@@ -62,3 +55,24 @@ def BaseLevel.initializeSolution(
 //<===========================================
 
 
+
+
+//===> BaseLevel.writeSolution method ===>
+//=======================================>
+//---------------------------------------------------------
+// Writes the data for a LevelSolution living on this level.
+//---------------------------------------------------------
+def BaseLevel.clawOutput(
+  sol:            LevelSolution,
+  frame_number: int
+){
+
+  //==== Make sure solution lives on this level ====
+  assert(sol.level == this);
+
+  //==== Use clawOutput for LevelArray ====
+  clawOutput(sol.space_data(2), sol.time(2), frame_number);
+  
+}
+//<=== BaseLevel.writeSolution method <===
+//<=======================================

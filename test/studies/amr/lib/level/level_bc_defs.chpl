@@ -8,17 +8,48 @@ class LevelBC {
 
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: LevelSolution) {}
+  def ghostFill(grid_array: LevelGridArray, t: real) {
+
+    var grid = grid_array.level_grid;
+    grid.fillSharedGhosts(grid_array);
+    boundaryFill(grid_array, t);
+
+  }
   //<=== ghostFill method <===
   //<=========================
   
   
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: LevelSolution) {}
+  def homogeneousGhostFill(grid_array: LevelGridArray) {
+    
+    var grid = grid_array.level_grid;
+    grid.fillSharedGhosts(grid_array);
+    homogeneousBoundaryFill(grid_array);
+
+  }
   //<=== homogeneousGhostFill method <===
   //<====================================
   
+
+
+ 
+  //===> ghostFill method on LevelGridArrays ===>
+  //============================================>
+  def boundaryFill(grid_array: LevelGridArray, t: real) {}
+  //<=== ghostFill method on LevelGridArrays <===
+  //<============================================
+
+
+
+
+  //===> homogeneousGhostFill method on LevelGridArrays ===>
+  //=======================================================>
+  def homogeneousBoundaryFill(grid_array: LevelGridArray) {}
+  //<=== homogeneousGhostFill method on LevelGridArrays <===
+  //<=======================================================
+
+
 }
 //<=== LevelBC class <===
 //<======================
@@ -29,39 +60,21 @@ class LevelBC {
 //===> ZeroInflowLevelBC derived class ===>
 //========================================>
 class ZeroInflowLevelBC: LevelBC {
-  
-  //===> ghostFill method ===>
-  //=========================>
-  def ghostFill(q: LevelSolution) {
-                  
-    homogeneousGhostFill(q);
-  }
-  //<=== ghostFill method <===
-  //<=========================
-  
-  
-  //===> homogeneousGhostFill method ===>
-  //====================================>
-  def homogeneousGhostFill(q: LevelSolution) {
 
-    coforall grid in level.child_grids {
-      var q_grid = q.child_sols(grid);
-      
-      for d in dimensions {
-        forall cell in grid.low_ghost_cells(d) {
-          if !grid.ghost_is_shared.low(d).value(cell) then
-            q_grid.value(cell) = 0.0;
-        }
-          
-        forall cell in grid.high_ghost_cells(d) {
-          if !grid.ghost_is_shared.high(d).value(cell) then
-            q_grid.value(cell) = 0.0;
-        }
-      }
-    }
+
+  def boundaryFill(grid_array: LevelGridArray, t: real){
+    homogeneousGhostFill(grid_array);
   }
-  //<=== homogeneousGhostFill method <===
-  //<====================================
+
+
+  def homogeneousBoundaryFill(grid_array: LevelGridArray){
+
+    var grid = grid_array.level_grid;
+
+    for cell in grid.boundary_ghosts {
+      grid_array.value(cell) = 0.0;
+    }
+  }  
  
 }
 //<=== ZeroInflowLevelBC derived class <===
