@@ -29,8 +29,7 @@ config const n = computeProblemSize(numTables, elemType,
 // Constants defining the problem size (m) and a bit mask for table
 // indexing
 //
-const m = 2**n,
-      indexMask = m-1;
+const m = 2**n;
 
 //
 // Configuration constant defining the number of errors to allow (as a
@@ -89,6 +88,13 @@ config param useLCG: bool = true;
 //
 config param trackStmStats = false;
 
+def indexMask(r: randType): randType {
+  if useLCG then
+    return r >> (64 - n);
+  else
+    return r & (m - 1);
+}
+
 //
 // The program entry point
 //
@@ -113,24 +119,15 @@ def main() {
   // communications.  Compute the update using r both to compute the
   // index and as the update value.
   //
-
-  if useLCG {
-    forall ( , r) in (Updates, LCGRAStream(0)) do
-      on TableDist.idxToLocale(r >> (64 - n)) {
-	if safeUpdates then
-	  atomic T(r >> (64 - n)) ^= r;
-	else
-	  T(r >> (64 - n)) ^= r;
-      }
-  } else {
-    forall ( , r) in (Updates, RAStream()) do
-      on TableDist.idxToLocale(r & indexMask) {
-	if safeUpdates then
-	  atomic T(r & indexMask) ^= r;
-	else 
-	  T(r & indexMask) ^= r;
-      }
-  }
+  forall ( , r) in (Updates, RAStream(0, useLCG)) do
+    on TableDist.idxToLocale(indexMask(r)) {
+      const myR = r;
+      const myIndex = indexMask(myR);
+      if safeUpdates then 
+	local atomic T(myIndex) ^= myR;
+      else
+	local T(myIndex) ^= myR;
+    }
   
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
@@ -168,17 +165,12 @@ def verifyResults() {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  if useLCG {
-    forall ( , r) in (Updates, LCGRAStream(0)) do
-      on TableDist.idxToLocale(r >> (64 - n)) {
-	atomic T(r >> (64 - n)) ^= r;       
-      }
-  } else {
-    forall ( , r) in (Updates, RAStream()) do
-      on TableDist.idxToLocale(r & indexMask) {
-	atomic T(r & indexMask) ^= r;
-      }
-  }
+  forall ( , r) in (Updates, RAStream(0, useLCG)) do
+    on TableDist.idxToLocale(indexMask(r)) {
+      const myR = r;
+      const myIndex = indexMask(myR);
+	local atomic T(myIndex) ^= myR;
+    }
 
   const verifyTime = getCurrentTime() - startTime;
 

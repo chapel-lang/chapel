@@ -19,11 +19,19 @@ module RARandomStream {
   // A serial iterator for the random stream that resets the stream
   // to its 0th element and yields values endlessly.
   //
-  def RAStream(seed: randType) {
-    var val = getNthRandom(0, seed);
-    while (1) {
-      getNextRandom(val);
-      yield val;
+  def RAStream(seed: randType, lcg: bool) {
+    if lcg {
+      var val = LCGgetNthRandom(0, seed);
+      while (1) {
+	LCGgetNextRandom(val);
+	yield val;
+      }
+    } else {
+      var val = getNthRandom(0, seed);
+      while (1) {
+	getNextRandom(val);
+	yield val;
+      }
     }
   }
 
@@ -33,13 +41,22 @@ module RARandomStream {
   // corresponding to those indices.  Follower iterators like these
   // are required for parallel zippered iteration.
   //
-  def RAStream(seed: randType, param tag: iterator, follower) where tag == iterator.follower {
+  def RAStream(param tag: iterator, follower, seed: randType, lcg: bool) where tag == iterator.follower {
     if follower.size != 1 then
       halt("RAStream cannot use multi-dimensional iterator");
-    var val = getNthRandom(follower(1).low, seed);
-    for follower {
-      getNextRandom(val);
-      yield val;
+
+    if lcg {
+      var val = LCGgetNthRandom(follower(1).low, seed);
+      for follower {
+	LCGgetNextRandom(val);
+	yield val;
+      }
+    } else {
+      var val = getNthRandom(follower(1).low, seed);
+      for follower {
+	getNextRandom(val);
+	yield val;
+      }
     }
   }
 
@@ -56,22 +73,46 @@ module RARandomStream {
     for i in 0..log2(n)-1 by -1 {
       var val: randType = 0;
       for j in 0..#randWidth do
-        if ((ran >> j) & 1) then val ^= m2(j+1);
+	if ((ran >> j) & 1) then val ^= m2(j+1);
       ran = val;
       if ((n >> i) & 1) then getNextRandom(ran);
     }
     return ran;
   }
 
+  def LCGgetNthRandom(in n: uint(64), in seed: randType) {
+    var mulk, addk, un: randType;        
+    var ran: randType = seed;
+
+    mulk = LCGMUL64;
+    addk = LCGADD64;
+    un = n;
+
+    while (un > 0) {
+      if (un & 1) then
+	ran = mulk * ran + addk;
+      addk *= mulk + 1;
+      mulk *= mulk;
+      un >>= 1;
+    }
+
+    return ran;
+  }
+
+
   //
   // A helper function for advancing a value from the random stream,
   // x, to the next value
   //
-  def getNextRandom(inout x) {
+  def getNextRandom(inout x: randType) {  
     param POLY = 0x7;
     param hiRandBit = 0x1:randType << (randWidth-1);
-
+    
     x = (x << 1) ^ (if (x & hiRandBit) then POLY else 0);
+  }
+
+  def LCGgetNextRandom(inout x: randType) {  
+    x = LCGMUL64 * x + LCGADD64;
   }
 
   //
@@ -86,56 +127,5 @@ module RARandomStream {
       getNextRandom(nextVal);
     }
     return m2tmp;
-  }
-
-  //
-  // LCG Random stream algorithm
-  //
-  def LCGRAStream(seed: randType) {
-    var val = LCGgetNthRandom(0, seed);
-    while (1) {
-      LCGgetNextRandom(val);
-      yield val;
-    }
-  }
-
-  def LCGRAStream(seed: randType, param tag: iterator, follower) where tag == iterator.follower {
-    if follower.size != 1 then
-      halt("LCGRAStream cannot use multi-dimensional iterator");
-    var val = LCGgetNthRandom(follower(1).low, seed);
-    for follower {
-      LCGgetNextRandom(val);
-      yield val;
-    }
-  }
-
-  //
-  // A helper function for advancing a value from the random stream,
-  // x, to the next value
-  //
-  def LCGgetNextRandom(inout x) {
-    x = LCGMUL64 * x + LCGADD64;
-  } 
-
-  //
-  // A helper function for "fast-forwarding" the LCG random stream to
-  // position n in O(log2(n)) time
-  //
-  def LCGgetNthRandom(in n: randType, in seed: randType) {
-    var mulk, addk, ran, un: randType;
-
-    mulk = LCGMUL64;
-    addk = LCGADD64;
-    ran = seed; 
-    un = n;
-
-    while (un > 0) {
-      if (un & 1) then
-	ran = mulk * ran + addk;
-      addk *= mulk + 1;
-      mulk *= mulk;
-      un >>= 1;
-    }
-    return ran;
   }
 }

@@ -34,8 +34,7 @@ config const n = computeProblemSize(numTables, elemType,
 // Constants defining the problem size (m) and a bit mask for table
 // indexing
 //
-const m = 2**n,
-      indexMask = m-1;
+const m = 2**n;
 
 //
 // Configuration constant defining the number of errors to allow (as a
@@ -99,6 +98,13 @@ config param useLCG: bool = true;
 //
 config param trackStmStats = false;
 
+def indexMask(r: randType): randType {
+  if useLCG then
+    return r >> (64 - n);
+  else
+    return r & (m - 1);
+}
+
 //
 // The program entry point
 //
@@ -127,21 +133,18 @@ def main() {
   // communications.  Compute the update using r both to compute the
   // index and as the update value.
   //
-  if useLCG {
-    forall ( , r) in (Updates, LCGRAStream(0)) do
-      on TableDist.idxToLocale(r >> (64 - n)) {
-	if safeUpdates then mutex_lock(TLock(r >> (64 - n)));
-	T(r >> (64 - n)) ^= r;
-	if safeUpdates then mutex_unlock(TLock(r >> (64 - n)));
+  forall ( , r) in (Updates, RAStream(0, useLCG)) do
+    on TableDist.idxToLocale(indexMask(r)) {
+      const myR = r;
+      const myIndex = indexMask(myR);
+      local {
+      	if safeUpdates then 
+	  mutex_lock(TLock(myIndex));
+      	T(myIndex) ^= myR;
+      	if safeUpdates then 
+	  mutex_unlock(TLock(myIndex));
       }
-  } else {
-    forall ( , r) in (Updates, RAStream()) do
-      on TableDist.idxToLocale(r & indexMask) {
-	if safeUpdates then mutex_lock(TLock(r&indexMask));
-	T(r & indexMask) ^= r;
-	if safeUpdates then mutex_unlock(TLock(r&indexMask));
-      }
-  }
+    }
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
@@ -179,21 +182,16 @@ def verifyResults() {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  if useLCG {
-    forall ( , r) in (Updates, LCGRAStream(0)) do
-      on TableDist.idxToLocale(r >> (64 - n)) {
-	mutex_lock(TLock(r >> (64 - n)));
-	T(r >> (64 - n)) ^= r;
-	mutex_unlock(TLock(r >> (64 - n)));
+  forall ( , r) in (Updates, RAStream(0, useLCG)) do
+    on TableDist.idxToLocale(indexMask(r)) {
+      const myR = r;
+      const myIndex = indexMask(myR);
+      local {
+	mutex_lock(TLock(myIndex));
+	T(myIndex) ^= myR;
+	mutex_unlock(TLock(myIndex));
       }
-  } else {
-    forall ( , r) in (Updates, RAStream()) do
-      on TableDist.idxToLocale(r & indexMask) {
-	mutex_lock(TLock(r&indexMask));
-	T(r & indexMask) ^= r;
-	mutex_unlock(TLock(r&indexMask));
-      }
-  }
+    }
 
   const verifyTime = getCurrentTime() - startTime;
 

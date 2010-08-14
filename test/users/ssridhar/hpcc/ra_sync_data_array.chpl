@@ -29,8 +29,7 @@ config const n = computeProblemSize(numTables, elemType,
 // Constants defining the problem size (m) and a bit mask for table
 // indexing
 //
-const m = 2**n,
-      indexMask = m-1;
+const m = 2**n;
 
 //
 // Configuration constant defining the number of errors to allow (as a
@@ -89,6 +88,13 @@ config param useLCG: bool = true;
 //
 config param trackStmStats = false;
 
+def indexMask(r: randType): randType {
+  if useLCG then
+    return r >> (64 - n);
+  else
+    return r & (m - 1);
+}
+
 //
 // The program entry point
 //
@@ -113,26 +119,15 @@ def main() {
   // communications.  Compute the update using r both to compute the
   // index and as the update value.
   //
-  if useLCG {
-    forall ( , r) in (Updates, LCGRAStream(0)) do
-      on TableDist.idxToLocale(r >> (64 - n)) {
-	if safeUpdates {
-	  T$(r >> (64 - n)) ^= r; 
-	} else {
-	  T$(r >> (64 - n)).writeXF(T$(r >> (64 - n)).readXX() ^ r);
-	}
-      }
-  } else {
-    forall ( , r) in (Updates, RAStream()) do
-      on TableDist.idxToLocale(r & indexMask) {
-	if safeUpdates {
-	  T$(r & indexMask) ^= r; 
-	} else {
-	  const oldR = T$(r & indexMask).readXX();
-	  T$(r & indexMask).writeXF(oldR ^ r);
-	}
-      }
-  }
+  forall ( , r) in (Updates, RAStream(0, useLCG)) do
+    on TableDist.idxToLocale(indexMask(r)) {
+      const myR = r;
+      const myIndex = indexMask(myR);
+      if safeUpdates then
+	local T$(myIndex) ^= myR; 
+      else 
+	local T$(myIndex).writeXF(T$(myIndex).readXX() ^ myR);
+    }
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
@@ -170,15 +165,12 @@ def verifyResults() {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  if useLCG {
-    forall ( , r) in (Updates, LCGRAStream(0)) do
-      on TableDist.idxToLocale(r >> (64 - n)) do
-	T$(r >> (64 - n)) ^= r;
-  } else {
-    forall ( , r) in (Updates, RAStream()) do
-      on TableDist.idxToLocale(r & indexMask) do
-	T$(r & indexMask) ^= r; 
-  }
+  forall ( , r) in (Updates, RAStream(0, useLCG)) do
+    on TableDist.idxToLocale(indexMask(r)) {
+      const myR = r;
+      const myIndex = indexMask(myR);
+      local T$(myIndex) ^= myR; 
+    }
 
   const verifyTime = getCurrentTime() - startTime;
 
@@ -187,7 +179,8 @@ def verifyResults() {
   //
   // Print the table again after the updates have been reversed
   //
-  if (printArrays) then writeln("After verification, T is: ", T$.readXX(), "\n");
+  if (printArrays) then 
+    writeln("After verification, T is: ", T$.readXX(), "\n");
 
   //
   // Compute the number of table positions that weren't reverted
