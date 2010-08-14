@@ -394,16 +394,14 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     }
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
 	!call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      if (!isOnStack(lhs)) { 
-	INT_ASSERT(call->get(2)->typeInfo() != dtString); 
-	USR_WARN(call, "Write case 1 not instrumented");
-      }
+      INT_ASSERT(isOnStack(lhs)); 
+      // Generates CHPL_WIDEN, no STM instrumentation required
       break;
     }
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-	call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-      if (!isOnStack(lhs)) 
-	USR_WARN(call, "Write case 2 not instrumented");
+	call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {    
+      INT_ASSERT(isOnStack(lhs)); 
+      // Generates CHPL_WIDEN, no STM instrumentation required
       break;
     }
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE) && 
@@ -411,59 +409,45 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	!call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       SymExpr* rhs = toSymExpr(call->get(2));
       INT_ASSERT(rhs);
-      if (!isOnStack(rhs))
-	USR_WARN(call, "rhs is not on stack");
       call->replace(new CallExpr(PRIM_TX_PUT, tx, lhs->var, rhs->var));
       break;
     }
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_REF) &&
 	call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-      if (!isOnStack(lhs)) 
-	USR_WARN(call, "Write case 4 not instrumented");
+      INT_ASSERT(isOnStack(lhs)); 
+      // Generates CHPL_NARROW, no STM instrumentation required
       break;
     }
     if (!lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
 	!lhs->typeInfo()->symbol->hasFlag(FLAG_REF) &&
 	call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      if (!isOnStack(lhs)) 
-	USR_WARN(call, "Write case 5 not instrumented");
+      INT_ASSERT(isOnStack(lhs)); 
+      // Generates CHPL_NARROW, no STM instrumentation required
       break;
     }   
     if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+      SymExpr* rhs = toSymExpr(call->get(2));
+      INT_ASSERT(rhs && isOnStack(rhs));
       if (lhs->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-	SymExpr* rhs = toSymExpr(call->get(2));
-	INT_ASSERT(rhs);
-	INT_ASSERT(isOnStack(rhs));
-	if (!isOnStack(lhs))
-	  call->replace(new CallExpr(PRIM_TX_STORE_REF,
-				     tx, lhs->var, rhs->var));
+	USR_WARN(call, "Instrumenting STORE_REF");
+	call->replace(new CallExpr(PRIM_TX_STORE_REF,
+				   tx, lhs->var, rhs->var));
 	break;
-      } else {
+      } else 
 	USR_FATAL(call, "STAR TUPLE in store case");
-	SymExpr* rhs = toSymExpr(call->get(2));
-	INT_ASSERT(rhs);
-	INT_ASSERT(isOnStack(rhs));
-	if (!isOnStack(lhs)) {
-	  call->replace(new CallExpr(PRIM_TX_STORE, tx, lhs->var, rhs->var));
-	}
-	break;
-      }
     } 
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_REF) && 
 	!call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       SymExpr* rhs = toSymExpr(call->get(2));
-      INT_ASSERT(rhs);
-      INT_ASSERT(isOnStack(rhs));
-      if (!isOnStack(lhs))
-	call->replace(new CallExpr(PRIM_TX_STORE_REF, tx, lhs->var, rhs->var));
+      INT_ASSERT(rhs && isOnStack(rhs));
+      USR_WARN(call, "Instrumenting STORE_REF");
+      call->replace(new CallExpr(PRIM_TX_STORE_REF, tx, lhs->var, rhs->var));
       break;
     } else {
       SymExpr* rhs = toSymExpr(call->get(2));
       INT_ASSERT(rhs);
-      if (isOnStack(rhs) && !isOnStack(lhs)) 
+      if (!isOnStack(lhs)) 
 	call->replace(new CallExpr(PRIM_TX_STORE, tx, lhs->var, rhs->var));
-      else if (!isOnStack(rhs) && !isOnStack(lhs))
-	USR_WARN(call, "Write case 7 not instrumented");
       break;
     }
     txUnknownPrimitive(call);    
@@ -495,9 +479,11 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       call->replace(new CallExpr(PRIM_TX_SET_SVEC_MEMBER,
 				 tx, se1->var, se2->var, se3->var));
     else {
-      if (!isOnStack(se1)) 
+      //      if (!isTupleBaseOnStack(se1)) {
+      if (!isOnStack(se1)) {
 	call->replace(new CallExpr(PRIM_TX_STORE_SVEC_MEMBER,
 				   tx, se1->var, se2->var, se3->var));
+      }
     }
     break;
   }
@@ -516,9 +502,11 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       call->replace(new CallExpr(PRIM_TX_SET_MEMBER,
 				 tx, se1->var, se2->var, se3->var));      
     } else {
-      if (!isOnStack(se1)) 
+      //      if (!isBaseOnStack(se1)) { 
+      if (!isOnStack(se1)) {
 	call->replace(new CallExpr(PRIM_TX_STORE_MEMBER,
 				   tx, se1->var, se2->var, se3->var));
+      }
     }
     break;
   }
