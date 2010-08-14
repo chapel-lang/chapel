@@ -29,8 +29,10 @@ unsigned int numLocales;
 
 unsigned int numAbort;
 _real64 durAbort;
+_real64 durFail;
 unsigned int numMAbort;
 _real64 durMAbort;
+_real64 durMFail;
 unsigned int numCommAbort;
 _real64 durCommAbort;
 
@@ -132,19 +134,20 @@ void gtm_exit_stats() {
     TOTDUR(numCommPut, durCommPut) +
     TOTDUR(numCommFork, durCommFork);
 
-  fprintf(stdout, "%d-Ln%d %8d %8d %8d %8d %8d %8d %8d \n",
-	  NLOCALES, MYLOCALE, numSuccess, numAbort + numMAbort, numSuccess,
-	  numMSum, numSum, numCommSum, numMSum + numSum);   
+  fprintf(stdout, "-%dLn%d- %8d %8d %8d %8d %8d %8d %8d %8d\n",
+	  NLOCALES, MYLOCALE, numSuccess, numSuccess,
+	  numMSum, numSum, numCommSum, 
+	  numMAbort + numAbort, numMAbort, numAbort);   
 
-  fprintf(stdout, "%d-Ld%d %.2e %.2e %.2e %.2e %.2e %.2e %.2e\n", 
-	  NLOCALES, MYLOCALE, durSuccess, durFailed, durCreate, 
-	  durMSum, durSum, durCommSum, durMSum + durSum);
+  fprintf(stdout, "-%dLd%d- %.2e %.2e %.2e %.2e %.2e %.2e %.2e %.2e\n", 
+	  NLOCALES, MYLOCALE, durSuccess, durCreate, 
+	  durMSum, durSum, durCommSum, durFailed, durMFail, durFail);
 
-  fprintf(stdout, "%d-Mn%d %8d %8d %8d %8d %8d %8d %8d\n",
+  fprintf(stdout, "-%dMn%d- %8d %8d %8d %8d %8d %8d %8d\n",
 	  NLOCALES, MYLOCALE, numLoad, numStore, numMalloc, 
 	  numFree, numMCommitPh1, numMCommitPh2, numMAbort);
 
-  fprintf(stdout, "%d-Md%d %.2e %.2e %.2e %.2e %.2e %.2e %.2e\n",
+  fprintf(stdout, "-%dMd%d- %.2e %.2e %.2e %.2e %.2e %.2e %.2e\n",
 	  NLOCALES, MYLOCALE, TOTDUR(numLoad, durLoad),
 	  TOTDUR(numStore, durStore),
 	  TOTDUR(numMalloc, durMalloc),
@@ -153,11 +156,11 @@ void gtm_exit_stats() {
           TOTDUR(numMCommitPh2, durMCommitPh2),
 	  TOTDUR(numMAbort, durMAbort));
 
-  fprintf(stdout, "%d-Gn%d %8d %8d %8d %8d %8d %8d\n", 
+  fprintf(stdout, "-%dGn%d- %8d %8d %8d %8d %8d %8d\n", 
 	  NLOCALES, MYLOCALE, numGet, numPut, numFork, 
 	  numCommitPh1, numCommitPh2, numAbort);
 
-  fprintf(stdout, "%d-Gd%d %.2e %.2e %.2e %.2e %.2e %.2e\n",
+  fprintf(stdout, "-%dGd%d- %.2e %.2e %.2e %.2e %.2e %.2e\n",
 	  NLOCALES, MYLOCALE, TOTDUR(numGet, durGet),
 	  TOTDUR(numPut, durPut),
 	  TOTDUR(numFork, durFork), 
@@ -165,11 +168,11 @@ void gtm_exit_stats() {
 	  TOTDUR(numCommitPh2, durCommitPh2),
 	  TOTDUR(numAbort, durAbort));
 
-  fprintf(stdout, "%d-Cn%d %8d %8d %8d %8d %8d %8d\n", 
+  fprintf(stdout, "-%dCn%d- %8d %8d %8d %8d %8d %8d\n", 
 	  NLOCALES, MYLOCALE, numCommGet, numCommPut, numCommFork, 
 	  numCommCommitPh1, numCommCommitPh2, numCommAbort);
 
-  fprintf(stdout, "%d-Cd%d %.2e %.2e %.2e %.2e %.2e %.2e\n",
+  fprintf(stdout, "-%dCd%d- %.2e %.2e %.2e %.2e %.2e %.2e\n",
 	  NLOCALES, MYLOCALE, TOTDUR(numCommGet, durCommGet),
 	  TOTDUR(numCommPut, durCommPut),
 	  TOTDUR(numCommFork, durCommFork), 
@@ -177,25 +180,26 @@ void gtm_exit_stats() {
 	  TOTDUR(numCommCommitPh2, durCommCommitPh2),
 	  TOTDUR(numCommAbort, durCommAbort));
 
-  fprintf(stdout, "%d-Sa%d %8.2f %8.2f %8.2f %8.2f %8.2f %8.2f\n",
+  fprintf(stdout, "-%dSa%d- %8.2f %8.2f %8.2f %8.2f %8.2f %8.2f\n",
 	  NLOCALES, MYLOCALE, AVGNUM(numLoad, sizeLoad), 
 	  AVGNUM(numStore, sizeStore), AVGNUM(numMalloc, sizeMalloc), 
 	  AVGNUM(numGet, sizeGet), AVGNUM(numPut, sizePut), 
 	  AVGNUM(numCommitPh2, numLocales));
 
-  fprintf(stdout, "%d-Sc%d %8.2f %8.2f %8.2f %8.2f %8.2f %8.2f\n",
+  fprintf(stdout, "-%dSc%d- %8.2f %8.2f %8.2f %8.2f %8.2f %8.2f\n",
 	  NLOCALES, MYLOCALE, AVGNUM(numSuccess, sizeLoad), 
 	  AVGNUM(numSuccess, sizeStore), AVGNUM(numSuccess, sizeMalloc), 
 	  AVGNUM(numSuccess, sizeGet), AVGNUM(numSuccess, sizePut), 
 	  AVGNUM(numCommitPh2, numLocales));
 
-  fprintf(stdout, "%d-Sm%d %8d %8d %8d %8d %8d %8d\n",
+  fprintf(stdout, "-%dSm%d- %8d %8d %8d %8d %8d %8d\n",
 	  NLOCALES, MYLOCALE, maxLoad, maxStore, 
 	  maxMalloc, maxGet, maxPut, maxLocales);
 }
 
 void gtm_tx_create_stats(void* txptr) {
   chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
+  stats_t* counters;
   _timervalue t;
   _real64 nowtime;
 
@@ -208,23 +212,29 @@ void gtm_tx_create_stats(void* txptr) {
 
   tx->counters =  (stats_t*) chpl_malloc(1, sizeof(stats_t), 
 					 CHPL_RT_MD_STM_TX_STATS, 0, 0);
-  tx->counters->createtime = nowtime; 
-  tx->counters->durCreate = 0;
-  tx->counters->begintime = 0;
-  tx->counters->starttime = 0;
-  tx->counters->numremlocales = -1;
-  tx->counters->numAbort = 0;
-  tx->counters->durAbort = 0;
-  tx->counters->numMAbort = 0;
-  tx->counters->durMAbort = 0;
-  tx->counters->numCommAbort = 0;
-  tx->counters->durCommAbort = 0;
+  counters = tx->counters;
+  counters->createtime = nowtime; 
+  counters->durCreate = 0;
+  counters->begintime = 0;
+  counters->starttime = 0;
 
-  tx->counters->maxLoad = 0;
-  tx->counters->maxStore = 0;
-  tx->counters->maxGet = 0;
-  tx->counters->maxPut = 0;
-  tx->counters->maxMalloc = 0;
+  counters->numremlocales = -1;
+
+  counters->numAbort = 0;
+  counters->durAbort = 0;
+  counters->durFail = 0;
+  counters->numMAbort = 0;
+  counters->durMAbort = 0;
+  counters->durMFail = 0;
+  counters->numCommAbort = 0;
+  counters->durCommAbort = 0;
+
+  counters->maxLoad = 0;
+  counters->maxStore = 0;
+  counters->maxGet = 0;
+  counters->maxPut = 0;
+  counters->maxMalloc = 0;
+  
   gtm_tx_cleanup_stats(tx, 1);
 }
 
@@ -246,11 +256,6 @@ void gtm_tx_cleanup_stats(void* txptr, int cleanall) {
   counters = tx->counters;
   assert(counters != NULL);
 
-  counters->numCommitPh1 = 0;
-  counters->durCommitPh1 = 0;
-  counters->numCommCommitPh1 = 0;
-  counters->durCommCommitPh1 = 0;
-
   counters->sizeLoad = 0;
   counters->sizeStore = 0;
   counters->sizeGet = 0;
@@ -258,25 +263,32 @@ void gtm_tx_cleanup_stats(void* txptr, int cleanall) {
   counters->sizeMalloc = 0;
 
   if (cleanall) {
-    counters->durLoad = 0;
-    counters->durStore = 0;
+    counters->numCommitPh1 = 0;
+    counters->numCommCommitPh1 = 0;
+
+    counters->durCommitPh1 = 0;
+    counters->durCommCommitPh1 = 0;
+
     counters->numLoad = 0;
     counters->numStore = 0;
     counters->numGet = 0;
-    counters->durGet = 0;
     counters->numCommGet = 0;
-    counters->durCommGet = 0;
     counters->numPut = 0;
-    counters->durPut = 0;
     counters->numCommPut = 0;
-    counters->durCommPut = 0;
     counters->numFork = 0;
-    counters->durFork = 0;
     counters->numCommFork = 0;
-    counters->durCommFork = 0;
     counters->numMalloc = 0;;
-    counters->durMalloc = 0;
     counters->numFree = 0;
+
+    counters->durLoad = 0;
+    counters->durStore = 0;
+    counters->durGet = 0;
+    counters->durCommGet = 0;
+    counters->durPut = 0;
+    counters->durCommPut = 0;
+    counters->durFork = 0;
+    counters->durCommFork = 0;
+    counters->durMalloc = 0;
     counters->durFree = 0;
   }
 }
@@ -286,8 +298,6 @@ void gtm_tx_stats_start(void* txptr, int op) {
   stats_t* counters = tx->counters;
   _timervalue t;
   _real64 nowtime;
-
-  chpl_msg(4, "OpS%d ", op); 
 
   t = _now_timer(t);
   nowtime = t.tv_sec + (t.tv_usec / 1.0e+6);
@@ -300,7 +310,7 @@ void gtm_tx_stats_start(void* txptr, int op) {
     break;
   case TX_ABORT_STATS:
     counters->numremlocales = tx->numremlocales;
-  case TX_COMM_ABORT_STATS:
+  case TX_COMM_ABORT_STATS:   
   case TX_COMMITPH1_STATS:
   case TX_COMM_COMMITPH1_STATS:
   case TX_COMMITPH2_STATS:
@@ -328,8 +338,6 @@ void gtm_tx_stats_stop(void* txptr, int op, int status, int size) {
   _timervalue t;
   _real64 nowtime;
 
-  chpl_msg(4, "OpE%d ", op); 
-
   if (status != TX_OK) return;
   
   t = _now_timer(t);
@@ -340,9 +348,11 @@ void gtm_tx_stats_stop(void* txptr, int op, int status, int size) {
     if (counters->numremlocales > -1) {
       counters->numAbort++;
       counters->durAbort += nowtime - counters->starttime;   
+      counters->durFail += nowtime - counters->begintime;
     } else { 
       counters->numMAbort++;
       counters->durMAbort += nowtime - counters->starttime;   
+      counters->durMFail += nowtime - counters->begintime;
     }
     break;
   case TX_COMM_ABORT_STATS:
@@ -418,7 +428,8 @@ void gtm_tx_stats_stop(void* txptr, int op, int status, int size) {
     durSuccess += nowtime - counters->begintime;
     durFailed += counters->begintime - counters->createtime - counters->durCreate;
     durCreate += counters->durCreate;
-
+    durFail += counters->durFail; 
+    durMFail += counters->durMFail;
     CHPL_MUTEX_UNLOCK(&gtmStatsLock);
     break;
   case TX_COMM_COMMITPH2_STATS:

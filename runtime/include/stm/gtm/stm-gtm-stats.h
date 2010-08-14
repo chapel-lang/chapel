@@ -10,17 +10,17 @@ enum {
   TX_ABORT_STATS,
   TX_LOAD_STATS,
   TX_STORE_STATS,
+  TX_MALLOC_STATS,
+  TX_FREE_STATS,
   TX_GET_STATS,
   TX_PUT_STATS,
+  TX_FORK_STATS,
   TX_COMM_COMMITPH1_STATS,
   TX_COMM_COMMITPH2_STATS,
   TX_COMM_ABORT_STATS,
   TX_COMM_GET_STATS,
   TX_COMM_PUT_STATS,
-  TX_FORK_STATS,
-  TX_COMM_FORK_STATS,
-  TX_MALLOC_STATS,
-  TX_FREE_STATS
+  TX_COMM_FORK_STATS
 };
 
 typedef struct __stats_t {
@@ -28,11 +28,15 @@ typedef struct __stats_t {
   _real64 begintime;            // time transaction started
   _real64 starttime;            // time current operation started
   _real64 durCreate;            // time between createtime and first begin
+  
   _real64 numremlocales;
+
   unsigned int numAbort;
   _real64 durAbort;
+  _real64 durFail;
   unsigned int numMAbort;
   _real64 durMAbort;
+  _real64 durMFail;
   unsigned int numCommAbort;
   _real64 durCommAbort;
   unsigned int numCommitPh1;
