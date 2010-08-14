@@ -19,8 +19,8 @@ module RARandomStream {
   // A serial iterator for the random stream that resets the stream
   // to its 0th element and yields values endlessly.
   //
-  def RAStream() {
-    var val = getNthRandom(0);
+  def RAStream(seed: randType) {
+    var val = getNthRandom(0, seed);
     while (1) {
       getNextRandom(val);
       yield val;
@@ -33,10 +33,10 @@ module RARandomStream {
   // corresponding to those indices.  Follower iterators like these
   // are required for parallel zippered iteration.
   //
-  def RAStream(param tag: iterator, follower) where tag == iterator.follower {
+  def RAStream(seed: randType, param tag: iterator, follower) where tag == iterator.follower {
     if follower.size != 1 then
       halt("RAStream cannot use multi-dimensional iterator");
-    var val = getNthRandom(follower(1).low);
+    var val = getNthRandom(follower(1).low, seed);
     for follower {
       getNextRandom(val);
       yield val;
@@ -47,12 +47,12 @@ module RARandomStream {
   // A helper function for "fast-forwarding" the random stream to
   // position n in O(log2(n)) time
   //
-  def getNthRandom(in n: uint(64)) {
+  def getNthRandom(in n: uint(64), in seed: randType) {
     param period = 0x7fffffffffffffff/7;
 
     n %= period;
     if (n == 0) then return 0x1;
-    var ran: randType = 0x2;
+    var ran: randType = seed;
     for i in 0..log2(n)-1 by -1 {
       var val: randType = 0;
       for j in 0..#randWidth do
@@ -92,7 +92,7 @@ module RARandomStream {
   // LCG Random stream algorithm
   //
   def LCGRAStream(seed: randType) {
-    var val = LCGgetNthRandom(seed);
+    var val = LCGgetNthRandom(0, seed);
     while (1) {
       LCGgetNextRandom(val);
       yield val;
@@ -102,7 +102,7 @@ module RARandomStream {
   def LCGRAStream(seed: randType, param tag: iterator, follower) where tag == iterator.follower {
     if follower.size != 1 then
       halt("LCGRAStream cannot use multi-dimensional iterator");
-    var val = LCGgetNthRandom(follower(1).low+seed);
+    var val = LCGgetNthRandom(follower(1).low, seed);
     for follower {
       LCGgetNextRandom(val);
       yield val;
@@ -121,12 +121,12 @@ module RARandomStream {
   // A helper function for "fast-forwarding" the LCG random stream to
   // position n in O(log2(n)) time
   //
-  def LCGgetNthRandom(in n: randType) {
+  def LCGgetNthRandom(in n: randType, in seed: randType) {
     var mulk, addk, ran, un: randType;
 
     mulk = LCGMUL64;
     addk = LCGADD64;
-    ran = 1; 
+    ran = seed; 
     un = n;
 
     while (un > 0) {
