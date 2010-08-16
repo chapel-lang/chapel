@@ -1,0 +1,8 @@
+#!/bin/tcsh
+#
+
+# run block dist regressions
+source ~/.chplcron.dists.bashrc && ~/chapel/util/cron/nightly -cron -dist block >&! ~/tmp/nightly.block.out
+
+# run memleaks regressions
+source ~/.chplcron.memleaks.bashrc && ~/chapel/util/cron/nightly -cron -memleaks memleaks-$date.nightly.log >&! ~/tmp/nightly.memleaks.out
