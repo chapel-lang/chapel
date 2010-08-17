@@ -28,13 +28,15 @@ type elemType = randType,
 //
 config const n = computeProblemSize(numTables, elemType,
                                     returnLog2=true, retType=indexType),
-             N_U = 2**(n+2);
+  N_U = 2**(n+2),
+  lockMask: uint(64) = 1;
 
 //
 // Constants defining the problem size (m) and a bit mask for table
 // indexing
 //
-const m = 2**n;
+const m = 2**n, 
+  lk = 2**(n-lockMask);
 
 //
 // Configuration constant defining the number of errors to allow (as a
@@ -58,7 +60,8 @@ config const printParams = true,
 // across the locales.
 //
 const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
-      UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1]));
+  UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1])),
+    LockDist = new dmap(new Block(boundingBox=[0..lk-1]));
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -69,7 +72,8 @@ const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
 // indices 0..N_U-1.
 //
 const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
-      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
+      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1],
+      LockSpace: domain (1, indexType) dmapped LockDist = [0..lk-1];
 
 //
 // T is the distributed table itself, storing a variable of type
@@ -80,7 +84,7 @@ var T: [TableSpace] elemType;
 //
 // Array of locks
 //
-var TLock: [TableSpace] elemType;
+var TLock: [LockSpace] elemType;
 
 //
 // config param to choose whether update loops need to be protected
@@ -116,8 +120,8 @@ def main() {
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
-  [i in TableSpace] { 
-    T(i) = i;
+  [i in TableSpace] T(i) = i;
+  [i in LockSpace] {
     TLock(i) = 0;
     mutex_init(TLock(i));
   }
@@ -137,12 +141,11 @@ def main() {
     on TableDist.idxToLocale(indexMask(r)) {
       const myR = r;
       const myIndex = indexMask(myR);
+      const myLock = myIndex >> lockMask;
       local {
-      	if safeUpdates then 
-	  mutex_lock(TLock(myIndex));
+      	if safeUpdates then mutex_lock(TLock(myLock));
       	T(myIndex) ^= myR;
-      	if safeUpdates then 
-	  mutex_unlock(TLock(myIndex));
+      	if safeUpdates then mutex_unlock(TLock(myLock));
       }
     }
 
@@ -186,10 +189,11 @@ def verifyResults() {
     on TableDist.idxToLocale(indexMask(r)) {
       const myR = r;
       const myIndex = indexMask(myR);
+      const myLock = myIndex >> lockMask;
       local {
-	mutex_lock(TLock(myIndex));
+	mutex_lock(TLock(myLock));
 	T(myIndex) ^= myR;
-	mutex_unlock(TLock(myIndex));
+	mutex_unlock(TLock(myLock));
       }
     }
 
