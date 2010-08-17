@@ -139,7 +139,6 @@ def main() {
       const myR = r;
       const myIndex = indexMask(myR);
       const myLock = myIndex >> lockMask;
-      writeln(myIndex, " ", myIndex >> lockMask);
       local {
 	if safeUpdates then TLock$(myLock);
 	T(myIndex) ^= myR;
