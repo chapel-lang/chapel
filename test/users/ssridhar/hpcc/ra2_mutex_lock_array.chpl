@@ -2,13 +2,17 @@ use BlockDist, Time;
 
 use HPCCProblemSize, RARandomStream; 
 
+use MutexLock;
+
 type indexType = randType,
   elemType = randType;
 
 config const n: indexType = 10,
-  N_U = 2**(n+2);
+  N_U = 2**(n+2),
+  lockMask: uint(64) = 1;
 
-const m = 2**n;
+const m = 2**n,
+  lk = 2**(n-lockMask);
 
 config const errorTolerance = 1e-2;
 
@@ -17,12 +21,15 @@ config const printParams = true,
              printStats = true;
 
 const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
-  UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1]));
+  UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1])),
+  LockDist = new dmap(new Block(boundingBox=[0..lk-1]));
 
 const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
-      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
+  Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1],
+  LockSpace: domain (1, indexType) dmapped LockDist = [0..lk-1];
 
-var T$: [TableSpace] sync elemType;
+var T: [TableSpace] elemType;
+var TLock: [LockSpace] mutex_p;
 
 config param safeUpdates: bool = false;
 config param useOn: bool = false;
@@ -38,57 +45,89 @@ def indexMask(r: randType): randType {
     return r & (m - 1);
 }
 
-def updateValues(myR: indexType, myS: indexType, factor: int(64)) {
+def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
   const myRIdx = indexMask(myR);
   const mySIdx = indexMask(myS);
   const myRVal = myS * factor:uint(64);
   const mySVal = myR * factor:uint(64); 
+  const myRLock = myRIdx >> lockMask;
+  const mySLock = mySIdx >> lockMask;
+  var x: elemType;
 
-  if (myRIdx < mySIdx) {
-    var x: elemType;
+  if (myRLock < mySLock) {
+    // Acquire myRLock
+    local mutex_lock(TLock(myRLock));
 
-    // Acquire myRIdx Lock
-    local x = T$(myRIdx);
+    // Acquire mySIndex Lock, update mySIdx entry
+    if useOn then
+      on TableDist.idxToLocale(mySLock) {
+	const mySIdx1 = mySIdx;
+	const mySVal1 = mySVal;
+	const mySLock1 = mySLock;
+	local {
+	  mutex_lock(TLock(mySLock1));
+	  T(mySIdx1) += mySVal1;
+	}
+      }
+    else {
+      on TableDist.idxToLocale(mySLock) {
+	const mySLock1 = mySLock;
+	local mutex_lock(TLock(mySLock1));
+      }
+      T(mySIdx) += mySVal;
+    }
 
-    // Acquire mySIdx Lock, update mySIdx entry, and release lock   
+    // Update myRIdx
+    local T(myRIdx) += myRVal;
+
+    // Release mySIdx Lock
+    on TableDist.idxToLocale(mySLock) {
+      const mySLock1 = mySLock;
+      local mutex_unlock(TLock(mySLock1));
+    }
+
+    // Release myRLock
+    local mutex_unlock(TLock(myRLock)); 
+
+  } else if (myRLock > mySLock) {
+    // Acquire mySIdx Lock
+    on TableDist.idxToLocale(mySLock) {
+      const mySLock1 = mySLock;
+      local mutex_lock(TLock(mySLock1));
+    }
+    
+    // Acquire myRLock and update myRIdx
+    local {
+      mutex_lock(TLock(myRLock));
+      T(myRIdx) += myRVal;
+    }
+
+    // Update mySIdx
     if useOn then
       on TableDist.idxToLocale(mySIdx) {
 	const mySIdx1 = mySIdx;
 	const mySVal1 = mySVal;
-	local T$(mySIdx1) += mySVal1;
-      }
-    else 
-      T$(mySIdx) += mySVal;	
-
-    // Update myRIdx entry and release lock
-    local T$(myRIdx) = x + myRVal;
-
-  } else if (myRIdx > mySIdx) {
-
-    // Acquire mySIdx Lock
-    if useOn then 
-      on TableDist.idxToLocale(mySIdx) {
-	const mySIdx1 = mySIdx;
-	local T$(mySIdx1);
+	local T(mySIdx1) += mySVal1;
       }
     else
-      T$(mySIdx);
+      T(mySIdx) += mySVal;
 
-    // Acquire myRIdx Lock, update myRIdx entry, and release lock
-    local T$(myRIdx) += myRVal;
+    // Release myRLock
+    local mutex_unlock(TLock(myRLock)); 
 
-    // Update mySIdx entry and release lock
-    if useOn then 
-      on TableDist.idxToLocale(mySIdx) {
-	const mySIdx1 = mySIdx;
-	const mySVal1 = mySVal;
-	local T$(mySIdx1) = T$(mySIdx).readXX() + mySVal1;
-      }
-    else
-      T$(mySIdx) = T$(mySIdx).readXX() + mySVal;
+    // Release mySIdx Lock
+    on TableDist.idxToLocale(mySLock) {
+      const mySLock1 = mySLock;
+      local mutex_unlock(TLock(mySLock1));
+    }
 
   } else {
-    local T$(myRIdx) += (2 * myRVal);
+    local {
+      mutex_lock(TLock(myRLock));
+      T(myRIdx) += myRVal;
+      T(mySIdx) += mySVal;
+      mutex_unlock(TLock(myRLock));
+    } 
   }
 }
 
@@ -99,28 +138,25 @@ def updateValuesNoSync(myR: indexType, myS: indexType) {
   const mySVal = myR;
 
   if (myRIdx != mySIdx) {
-    // Update myRIdx entry
-    local T$(myRIdx).writeXF(T$(myRIdx).readXX() + myRVal);
-
-    // Update mySIdx entry   
+    local T(myRIdx) += myRVal;
     if useOn then
       on TableDist.idxToLocale(mySIdx) {
-	const mySIdx1 = mySIdx;
 	const mySVal1 = mySVal;
-	local T$(mySIdx1).writeXF(T$(mySIdx1).readXX() + mySVal1);
+	const mySIdx1 = mySIdx;
+	local T(mySIdx1) += mySVal1;
       }
     else 
-      T$(mySIdx).writeXF(T$(mySIdx).readXX() + mySVal);
-
+      T(mySIdx) += mySVal;
   } else {
-    local T$(myRIdx).writeXF(T$(myRIdx).readXX() + (2 * myRVal));
+    local T(myRIdx) += (2 * myRVal);
   }
 }
 
 def main() {
   printConfiguration(); 
   
-  [i in TableSpace] T$(i).writeXF(0);
+  [i in TableSpace] T(i) = 0;
+  [i in LockSpace]  mutex_init(TLock(i));
  
   const startTime = getCurrentTime();               // capture the start time
 
@@ -152,7 +188,7 @@ def printConfiguration() {
 }
 
 def verifyResults() {
-  if (printArrays) then writeln("After updates, T is: ", T$, "\n");
+  if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   if (trackStmStats) then startStmStats();
 
@@ -162,16 +198,16 @@ def verifyResults() {
     on TableDist.idxToLocale(indexMask(r)) { 
       const myR = r;
       const myS = s;
-      updateValues(myR, myS, -1);
+	updateValues(myR, myS, -1);
     }
 
   const verifyTime = getCurrentTime() - startTime; 
   
   if trackStmStats then stopStmStats();
 
-  if (printArrays) then writeln("After verification, T is: ", T$, "\n");
+  if (printArrays) then writeln("After verification, T is: ", T, "\n");
 
-  const numErrors = + reduce [i in TableSpace] (T$(i) != 0);
+  const numErrors = + reduce [i in TableSpace] (T(i) != 0);
   if (printStats) {
     writeln("Number of errors is: ", numErrors, "\n");
     writeln("Verification time = ", verifyTime);

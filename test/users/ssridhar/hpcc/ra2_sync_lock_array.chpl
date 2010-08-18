@@ -6,9 +6,11 @@ type indexType = randType,
   elemType = randType;
 
 config const n: indexType = 10,
-  N_U = 2**(n+2);
+  N_U = 2**(n+2),
+  lockMask: uint(64) = 1;
 
-const m = 2**n;
+const m = 2**n,
+  lk = 2**(n-lockMask);
 
 config const errorTolerance = 1e-2;
 
@@ -17,105 +19,160 @@ config const printParams = true,
              printStats = true;
 
 const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
-  UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1]));
+  UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1])),
+  LockDist = new dmap(new Block(boundingBox=[0..lk-1]));
 
 const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
-      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
+  Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1],
+  LockSpace: domain (1, indexType) dmapped LockDist = [0..lk-1];
 
 var T: [TableSpace] elemType;
-var TLock$: [TableSpace] sync bool;
+var TLock$: [LockSpace] sync bool;
 
 config param safeUpdates: bool = false;
 config param useOn: bool = false;
 config param trackStmStats = false;
+config param useLCG: bool = true;
+config param seed1: randType = 0;
+config param seed2: randType = 0x7fffffffffffffff;
 
-pragma "inline"
-def addValues (i:indexType, j:indexType) {
-  if (i < j) {
-    TLock$(i);
-    TLock$(j);
-    T(i) += j;
-    if useOn then
-      on TableDist.idxToLocale(j) do T(j) += i;
-    else
-      T(j) += i;
-    TLock$(j) = true; 
-    TLock$(i) = true; 
-  } else if (i > j) {
-    TLock$(j);
-    TLock$(i);
-    T(i) += j;
-    if useOn then
-      on TableDist.idxToLocale(j) do T(j) += i;
-    else
-      T(j) += i;
-    TLock$(i) = true; 
-    TLock$(j) = true; 
-  } else {
-    TLock$(i);
-    T(i) += (2 * i);
-    TLock$(i) = true; 
-  } 
+def indexMask(r: randType): randType {
+  if useLCG then
+    return r >> (64 - n);
+  else
+    return r & (m - 1);
 }
 
-pragma "inline"
-def subValues (i:indexType, j:indexType) {
-  if (i < j) {
-    TLock$(i);
-    TLock$(j);
-    T(i) -= j;
+def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
+  const myRIdx = indexMask(myR);
+  const mySIdx = indexMask(myS);
+  const myRVal = myS * factor:uint(64);
+  const mySVal = myR * factor:uint(64); 
+  const myRLock = myRIdx >> lockMask;
+  const mySLock = mySIdx >> lockMask;
+  var x: elemType;
+
+  if (myRLock < mySLock) {
+    // Acquire myRLock
+    local TLock$(myRLock);
+
+    // Acquire mySIndex Lock, update mySIdx entry
+    if useOn {
+      on TableDist.idxToLocale(mySLock) {
+	const mySIdx1 = mySIdx;
+	const mySVal1 = mySVal;
+	const mySLock1 = mySLock;
+	local {
+	  TLock$(mySLock1);
+	  T(mySIdx1) += mySVal1;
+	}
+      }
+    } else {
+      TLock$(mySLock);
+      T(mySIdx) += mySVal;
+    } 
+
+    // Update myRIdx
+    local T(myRIdx) += myRVal;
+
+    // Release mySIdx Lock
     if useOn then
-      on TableDist.idxToLocale(j) do T(j) -= i;
-    else
-      T(j) -= i;
-    TLock$(j) = true; 
-    TLock$(i) = true; 
-  } else if (i > j) {
-    TLock$(j);
-    TLock$(i);
-    T(i) -= j;
+      on TableDist.idxToLocale(mySLock) {
+	const mySLock1 = mySLock;
+	local TLock$(mySLock1) = true;
+      }
+    else 
+      TLock$(mySLock) = true;
+
+    // Release myRLock
+    local TLock$(myRLock) = true; 
+  } else if (myRLock > mySLock) {
+    // Acquire mySIdx Lock
     if useOn then
-      on TableDist.idxToLocale(j) do T(j) -= i;
-    else
-      T(j) -= i;
-    TLock$(i) = true; 
-    TLock$(j) = true; 
+      on TableDist.idxToLocale(mySLock) {
+	const mySLock1 = mySLock;
+	local TLock$(mySLock1);
+      }
+    else 
+      TLock$(mySLock);
+
+    // Acquire myRLock and update myRIdx
+    local {
+      TLock$(myRLock);
+      T(myRIdx) += myRVal;
+    }
+
+    // Update mySIdx
+    if useOn then
+      on TableDist.idxToLocale(mySIdx) {
+	const mySIdx1 = mySIdx;
+	const mySVal1 = mySVal;
+	local T(mySIdx1) += mySVal1;
+      }
+    else 
+      T(mySIdx) += mySVal;
+
+    // Release myRLock
+    local TLock$(myRLock) = true; 
+
+    // Release mySIdx Lock
+    if useOn then
+      on TableDist.idxToLocale(mySLock) {
+	const mySLock1 = mySLock;
+	local TLock$(mySLock1) = true;
+      }
+    else 
+      TLock$(mySLock) = true;
+
   } else {
-    TLock$(i);
-    T(i) -= (2 * i);
-    TLock$(i) = true; 
-  } 
+    local {
+      TLock$(myRLock);
+      T(myRIdx) += myRVal;
+      T(mySIdx) += mySVal;
+      TLock$(myRLock) = true; 
+    } 
+  }
+}
+
+def updateValuesNoSync(myR: indexType, myS: indexType) {
+  const myRIdx = indexMask(myR);
+  const mySIdx = indexMask(myS);
+  const myRVal = myS;
+  const mySVal = myR;
+
+  if (myRIdx != mySIdx) {
+    local T(myRIdx) += myRVal;
+    if useOn then
+      on TableDist.idxToLocale(mySIdx) {
+	const mySVal1 = mySVal;
+	const mySIdx1 = mySIdx;
+	local T(mySIdx1) += mySVal1;
+      }
+    else 
+      T(mySIdx) += mySVal;
+  } else {
+    local T(myRIdx) += (2 * myRVal);
+  }
 }
 
 def main() {
   printConfiguration(); 
   
-  [i in TableSpace] {
-    T(i) = 0;
-    TLock$(i).writeXF(true);
-  }
+  [i in TableSpace] T(i) = 0;
+  [i in LockSpace] TLock$(i).writeXF(true);
  
   const startTime = getCurrentTime();               // capture the start time
 
-  forall ( , r, s) in (Updates, LCGRAStream(0), LCGRAStream(1)) {
-    on TableDist.idxToLocale(r >> (64 - n)) {
-      const i = r >> (64 - n);
-      const j = s >> (64 - n);
-      if safeUpdates {
-	addValues(i, j);
-      } else {
-	if (i != j) {
-          T(i) += j;
-          if useOn then
-            on TableDist.idxToLocale(j) do T(j) += i;
-          else
-            T(j) += i;
-	} else {
-          T(i) += 2*i;
-	}
+  forall ( , r, s) in (Updates, RAStream(seed1, useLCG), RAStream(seed2, useLCG)) do
+    on TableDist.idxToLocale(indexMask(r)) { 
+      const myR = r;
+      const myS = s;
+      if safeUpdates then
+	updateValues(myR, myS, 1);
+      else {
+	updateValuesNoSync(myR, myS);
       }
     }
-  }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
 
@@ -140,13 +197,12 @@ def verifyResults() {
 
   var startTime = getCurrentTime();
 
-  forall ( , r, s) in (Updates, LCGRAStream(0), LCGRAStream(1)) {
-    on TableDist.idxToLocale(r >> (64 - n)) {
-      const i = r >> (64 - n);
-      const j = s >> (64 - n);
-      subValues(i, j);
+  forall ( , r, s) in (Updates, RAStream(seed1, useLCG), RAStream(seed2, useLCG)) do
+    on TableDist.idxToLocale(indexMask(r)) { 
+      const myR = r;
+      const myS = s;
+	updateValues(myR, myS, -1);
     }
-  }
 
   const verifyTime = getCurrentTime() - startTime; 
   

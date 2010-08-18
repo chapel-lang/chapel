@@ -25,27 +25,38 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 var T: [TableSpace] elemType;
 
 config param safeUpdates: bool = false;
-config param useOn: bool = true;
+config param useOn: bool = false;
 config param trackStmStats = false;
+config param useLCG: bool = true;
+config param seed1: randType = 0;
+config param seed2: randType = 0x7fffffffffffffff;
 
-pragma "inline"
-def addValues(i: indexType, j: indexType) {
-  T(i) += j;
-  if useOn then
-    on TableDist.idxToLocale(j) do
-      T(j) += i;
-  else 
-    T(j) += i;	  
+def indexMask(r: randType): randType {
+  if useLCG then
+    return r >> (64 - n);
+  else
+    return r & (m - 1);
 }
 
-pragma "inline"
-def subValues(i: indexType, j: indexType) {
-  T(i) -= j;
-  if useOn then
-    on TableDist.idxToLocale(j) do
-      T(j) -= i;
-  else
-    T(j) -= i;
+def updateValues(myR: indexType, myS: indexType, factor: int(64)) {
+  const myRIdx = indexMask(myR);
+  const mySIdx = indexMask(myS);
+  const myRVal = myS * factor:uint(64);
+  const mySVal = myR * factor:uint(64);
+
+  if (myRIdx != mySIdx) {
+    local T(myRIdx) += myRVal;
+    if useOn then
+      on TableDist.idxToLocale(mySIdx) {
+	const mySIdx1 = mySIdx;
+	const mySVal1 = mySVal;
+	local T(mySIdx1) += mySVal1;
+      }
+    else 
+      T(mySIdx) += mySVal;
+  } else {
+    local T(myRIdx) += (2 * myRVal);
+  }
 }
 
 def main() {
@@ -55,15 +66,15 @@ def main() {
  
   const startTime = getCurrentTime();               // capture the start time
 
-  forall ( , r, s) in (Updates, LCGRAStream(0), LCGRAStream(100)) {
-    on TableDist.idxToLocale(r >> (64 - n)) {
-      if safeUpdates {
-  	atomic addValues(r >> (64 - n), s >> (64 - n));
-      } else {
-	addValues(r >> (64 - n), s >> (64 - n));
-      }
+  forall ( , r, s) in (Updates, RAStream(seed1, useLCG), RAStream(seed2, useLCG)) do
+    on TableDist.idxToLocale(indexMask(r)) { 
+      const myR = r;
+      const myS = s;
+      if safeUpdates then
+  	atomic updateValues(myR, myS, 1);
+      else 
+	updateValues(myR, myS, 1);
     }
-  }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
 
@@ -88,18 +99,12 @@ def verifyResults() {
 
   var startTime = getCurrentTime();
 
-  forall ( , r, s) in (Updates, LCGRAStream(0), LCGRAStream(100)) {
-    on TableDist.idxToLocale(r >> (64 - n)) {
-      atomic {
-	T(r >> (64 - n)) -= (s >> (64 - n));
-	if useOn then
-	  on TableDist.idxToLocale(s >> (64 - n)) do
-	    T(s >> (64 - n)) -= (r >> (64 - n));
-	else
-	  T(s >> (64 - n)) -= (r >> (64 - n));
-      }
+  forall ( , r, s) in (Updates, RAStream(seed1, useLCG), RAStream(seed2, useLCG)) do
+    on TableDist.idxToLocale(indexMask(r)) { 
+      const myR = r;
+      const myS = s;
+      atomic updateValues(myR, myS, -1);
     }
-  }
 
   const verifyTime = getCurrentTime() - startTime; 
   

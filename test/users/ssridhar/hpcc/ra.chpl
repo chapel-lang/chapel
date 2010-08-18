@@ -169,7 +169,7 @@ def verifyResults() {
     on TableDist.idxToLocale(indexMask(r)) {
       const myR = r;
       const myIndex = indexMask(myR);
-	local atomic T(myIndex) ^= myR;
+      local atomic T(myIndex) ^= myR;
     }
 
   const verifyTime = getCurrentTime() - startTime;

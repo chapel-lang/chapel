@@ -20,8 +20,9 @@ TARGETS = \
 	testLCG \
 	testRAR \
 	ra2 \
-	ra2SDA \
+	ra2MLA \
 	ra2SLA \
+	ra2SDA \
 	aswap 
 
 default: all
@@ -43,20 +44,23 @@ raSLA: HPCCProblemSize.chpl RARandomStream.chpl ra_sync_lock_array.chpl
 raSDA: HPCCProblemSize.chpl RARandomStream.chpl ra_sync_data_array.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^ 
 
+ra2: RARandomStream.chpl ra2.chpl
+	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+
+ra2MLA: HPCCProblemSize.chpl RARandomStream.chpl MutexLock.chpl MutexLock.h ra2_mutex_lock_array.chpl
+	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+
+ra2SLA: RARandomStream.chpl ra2_sync_lock_array.chpl
+	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
+
+ra2SDA: RARandomStream.chpl ra2_sync_data_array.chpl
+	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
+
 testLCG: HPCCProblemSize.chpl RARandomStream.chpl testLCG.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
 testRAR: HPCCProblemSize.chpl RARandomStream.chpl testLCG.chpl
 	$(CHPL) -o $@ -suseLCG=false $(FLAGS) --savec c_$@ $^
-
-ra2: RARandomStream.chpl ra2.chpl
-	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
-
-ra2SDA: RARandomStream.chpl ra2_sync_data_array.chpl
-	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
-
-ra2SLA: RARandomStream.chpl ra2_sync_lock_array.chpl
-	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
 
 aswap: HPCCProblemSize.chpl RARandomStream.chpl atomicswap.chpl
 	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
