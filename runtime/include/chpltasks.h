@@ -20,6 +20,7 @@
 // Defined in the generated Chapel code:
 
 extern int32_t maxThreadsPerLocale;
+extern uint64_t callStackSize;
 
 
 // Sync variables
@@ -95,6 +96,19 @@ void CHPL_TASK_SLEEP(int);
 //
 chpl_bool CHPL_GET_SERIAL(void);
 void      CHPL_SET_SERIAL(chpl_bool);
+
+//
+// returns the size of a stack (initial value of callStackSize); the sentinel
+// value 0 means that the stack size is limited only by the system's available
+// resources, and implies that a task's stack can be dynamically extended
+//
+uint64_t CHPL_TASK_CALLSTACKSIZE(void);
+
+//
+// returns the upper limit on the size of a stack; the sentinel value 0 means
+// that there is no preexisting limit
+//
+uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void);
 
 //
 // returns the number of tasks that are ready to run on the current locale,

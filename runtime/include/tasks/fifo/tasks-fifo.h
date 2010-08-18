@@ -60,6 +60,8 @@
 //     threadlayer_pool_awaken()
 //     threadlayer_get_thread_private_data()
 //     threadlayer_set_thread_private_data()
+//     threadlayer_call_stack_size()
+//     threadlayer_call_stack_size_limit()
 //
 // The types are declared in the threads-*.h file for each specific
 // threading layer, and the callback functions are declared here.  The
@@ -234,8 +236,7 @@ void threadlayer_single_destroy(chpl_single_aux_t *s);
 //
 
 //
-// The interface for thread creation may need to be extended eventually
-// to allow for specifying such things as stack sizes and/or locations.
+// Create a new thread.
 //
 int threadlayer_thread_create(threadlayer_threadID_t*, void*(*)(void*), void*);
 
@@ -283,5 +284,12 @@ void threadlayer_pool_awaken(void);
 //
 void  threadlayer_set_thread_private_data(void*);
 void* threadlayer_get_thread_private_data(void);
+
+
+//
+// Thread stack sizes
+//
+uint64_t threadlayer_call_stack_size(void);
+uint64_t threadlayer_call_stack_size_limit(void);
 
 #endif

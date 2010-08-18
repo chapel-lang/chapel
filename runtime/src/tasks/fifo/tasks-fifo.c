@@ -705,6 +705,16 @@ void CHPL_SET_SERIAL(chpl_bool state) {
 }
 
 
+uint64_t CHPL_TASK_CALLSTACKSIZE(void) {
+  return threadlayer_call_stack_size();
+}
+
+
+uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) {
+  return threadlayer_call_stack_size_limit();
+}
+
+
 uint32_t CHPL_NUMQUEUEDTASKS(void) { return queued_cnt; }
 
 uint32_t CHPL_NUMRUNNINGTASKS(void) {
