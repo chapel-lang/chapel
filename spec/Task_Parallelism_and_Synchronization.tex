@@ -385,7 +385,7 @@ y$\mbox{{\bf \$}}$.writeEF(6);
 z = x$\mbox{{\bf \$}}$.readFE() + y$\mbox{{\bf \$}}$.readFF();
 \end{chapel}
 \begin{chapelpost}
-writeln((x$\mbox{{\bf \$}}$, y$\mbox{{\bf \$}}$, z));
+writeln((x$\mbox{{\bf \$}}$.readXX(), y$\mbox{{\bf \$}}$, z));
 \end{chapelpost}
 \begin{chapeloutput}
 (5, 6, 11)
