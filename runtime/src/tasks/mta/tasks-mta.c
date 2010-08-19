@@ -3,7 +3,6 @@
 //
 
 #include "chpl_mem.h"
-#include "chplcast.h"
 #include "chplrt.h"
 #include "chpltasks.h"
 #include "config.h"
@@ -11,9 +10,6 @@
 #include <machine/runtime.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
 
 
 // The global vars are to synchronize with threads created with 
@@ -121,43 +117,14 @@ void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) { }
 // Tasks
 
 void CHPL_TASKING_INIT(void) {
-  char* s;
-
   //
-  // If a value was specified for the call stack size config const, use
-  // that (rounded up to a whole number of pages) to set the system
-  // stack limit.
+  // If a value was specified for the call stack size config const, warn
+  // the user that it's ignored on this system.
   //
-  if ((s = chpl_config_get_value("callStackSize", "Built-in")) != NULL) {
-    uint64_t stacksize;
-    int      invalid;
-    char     invalidChars[2] = "\0\0";
-
-    //
-    // We leave it to the Chapel config const initialization code to
-    // emit any official warnings about the syntax or magnitude of the
-    // callStackSize value.  Here we just do some reasonable thing if
-    // there are problems.
-    //
-    stacksize = chpl_string_to_uint64_t_precise(s, &invalid, invalidChars);
-    if (!invalid) {
-      uint64_t      pagesize = (uint64_t) getpagesize();
-      struct rlimit rlim;
-
-      stacksize = (stacksize + pagesize - 1) & ~(pagesize - 1);
-
-      if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-        chpl_internal_error("getrlimit() failed");
-
-      rlim.rlim_cur =
-        (rlim.rlim_max != RLIM_INFINITY && (size_t) rlim.rlim_max < stacksize)
-        ? rlim.rlim_max
-        : stacksize;
-
-      if (setrlimit(RLIMIT_STACK, &rlim) != 0)
-        chpl_internal_error("setrlimit() failed");
-    }
-  }
+  if (chpl_config_get_value("callStackSize", "Built-in") != NULL)
+    chpl_warning("the callStackSize config constant has no effect "
+		 "on XMT systems",
+		 0, NULL);
 
   chpl_begin_cnt = 0;                     // only main thread running
   chpl_can_exit = 1;                      // mark full - no threads created yet
@@ -246,37 +213,9 @@ void CHPL_SET_SERIAL(chpl_bool state) {
     chpl_internal_error("out of memory while creating serial state");
 }
 
-uint64_t CHPL_TASK_CALLSTACKSIZE(void) {
-  struct rlimit rlim;
+uint64_t CHPL_TASK_CALLSTACKSIZE(void) { return 0; }
 
-  //
-  // If there is a soft system stack limit then that's our limit;
-  // otherwise if there is a hard system stack limit then that's
-  // it; otherwise we don't have one.  Note that if the user gave
-  // a value for the call stack size config const on this run, we
-  // have already set the soft system stack limit appropriately,
-  // so our return value will reflect that.
-  //
-  if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-    chpl_internal_error("getrlimit() failed");
-  return ((rlim.rlim_cur == RLIM_INFINITY)
-          ? ((rlim.rlim_max == RLIM_INFINITY)
-             ? 0
-             : (uint64_t) rlim.rlim_max)
-          : (uint64_t) rlim.rlim_cur);
-}
-
-uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) {
-  struct rlimit rlim;
-
-  //
-  // If there is a hard system stack limit then that's our limit;
-  // otherwise we don't have one.
-  //
-  if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-    chpl_internal_error("getrlimit() failed");
-  return (rlim.rlim_max == RLIM_INFINITY) ? 0 : (uint64_t) rlim.rlim_max;
-}
+uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) { return 0; }
 
 // not sure what the correct value should be here!
 uint32_t CHPL_NUMQUEUEDTASKS(void) { return 0; }
