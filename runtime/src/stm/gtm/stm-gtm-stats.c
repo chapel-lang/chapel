@@ -24,15 +24,18 @@ _real64 durSuccess;
 _real64 durFailed;
 _real64 durCreate;
 
+unsigned int numFail;
+_real64 durFail;
+unsigned int numMFail;
+_real64 durMFail;
+
 unsigned int maxLocales;
 unsigned int numLocales;
 
 unsigned int numAbort;
 _real64 durAbort;
-_real64 durFail;
 unsigned int numMAbort;
 _real64 durMAbort;
-_real64 durMFail;
 unsigned int numCommAbort;
 _real64 durCommAbort;
 
@@ -137,7 +140,7 @@ void gtm_exit_stats() {
   fprintf(stdout, "-%dLn%d- %8d %8d %8d %8d %8d %8d %8d %8d\n",
 	  NLOCALES, MYLOCALE, numSuccess, numSuccess,
 	  numMSum, numSum, numCommSum, 
-	  numMAbort + numAbort, numMAbort, numAbort);   
+	  numMAbort + numAbort, numMFail, numFail);   
 
   fprintf(stdout, "-%dLd%d- %.2e %.2e %.2e %.2e %.2e %.2e %.2e %.2e\n", 
 	  NLOCALES, MYLOCALE, durSuccess, durCreate, 
@@ -428,8 +431,11 @@ void gtm_tx_stats_stop(void* txptr, int op, int status, int size) {
     durSuccess += nowtime - counters->begintime;
     durFailed += counters->begintime - counters->createtime - counters->durCreate;
     durCreate += counters->durCreate;
+    numFail += (counters->numAbort) ? 1 : 0; 
     durFail += counters->durFail; 
+    numMFail += (counters->numMAbort) ? 1 : 0; 
     durMFail += counters->durMFail;
+    
     CHPL_MUTEX_UNLOCK(&gtmStatsLock);
     break;
   case TX_COMM_COMMITPH2_STATS:
