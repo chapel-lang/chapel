@@ -82,7 +82,7 @@ def updateValues(myR: indexType, myS: indexType, factor: int(64)) {
       on TableDist.idxToLocale(mySIdx) {
 	const mySIdx1 = mySIdx;
 	const mySVal1 = mySVal;
-	local T$(mySIdx1) = T$(mySIdx).readXX() + mySVal1;
+	local T$(mySIdx1) = T$(mySIdx1).readXX() + mySVal1;
       }
     else
       T$(mySIdx) = T$(mySIdx).readXX() + mySVal;

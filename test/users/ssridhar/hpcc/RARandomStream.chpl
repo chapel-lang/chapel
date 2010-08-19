@@ -41,7 +41,7 @@ module RARandomStream {
   // corresponding to those indices.  Follower iterators like these
   // are required for parallel zippered iteration.
   //
-  def RAStream(param tag: iterator, follower, seed: randType, lcg: bool) where tag == iterator.follower {
+  def RAStream(seed: randType, lcg: bool, param tag: iterator, follower) where tag == iterator.follower {
     if follower.size != 1 then
       halt("RAStream cannot use multi-dimensional iterator");
 

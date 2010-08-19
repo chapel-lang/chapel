@@ -58,7 +58,7 @@ def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
 
     // Acquire mySIndex Lock, update mySIdx entry
     if useOn {
-      on TableDist.idxToLocale(mySLock) {
+      on LockDist.idxToLocale(mySLock) {
 	const mySIdx1 = mySIdx;
 	const mySVal1 = mySVal;
 	const mySLock1 = mySLock;
@@ -77,7 +77,7 @@ def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
 
     // Release mySIdx Lock
     if useOn then
-      on TableDist.idxToLocale(mySLock) {
+      on LockDist.idxToLocale(mySLock) {
 	const mySLock1 = mySLock;
 	local TLock$(mySLock1) = true;
       }
@@ -89,7 +89,7 @@ def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
   } else if (myRLock > mySLock) {
     // Acquire mySIdx Lock
     if useOn then
-      on TableDist.idxToLocale(mySLock) {
+      on LockDist.idxToLocale(mySLock) {
 	const mySLock1 = mySLock;
 	local TLock$(mySLock1);
       }
@@ -117,7 +117,7 @@ def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
 
     // Release mySIdx Lock
     if useOn then
-      on TableDist.idxToLocale(mySLock) {
+      on LockDist.idxToLocale(mySLock) {
 	const mySLock1 = mySLock;
 	local TLock$(mySLock1) = true;
       }
