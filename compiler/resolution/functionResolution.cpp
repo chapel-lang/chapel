@@ -2315,6 +2315,11 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   return result;
 }
 
+/*
+  Creates the parent class which will represent the function's type.  Children of the parent class will capture different functions which
+  happen to share the same function type.  By using the parent class we can assign new values onto variable that match the function type
+  but may currently be pointing at a different function.
+*/
 static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name) {
   ClassType *parent = new ClassType(CLASS_CLASS);
   TypeSymbol *parent_ts = new TypeSymbol(name, parent);
@@ -2336,6 +2341,16 @@ static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name
   return parent;
 }
 
+/*
+  To mimic a function call, we create a .this method for the parent class.  This will allow the object to look and feel like a 
+  first-class function, by both being an object and being invoked using parentheses syntax.  Children of the parent class will
+  override this method and wrap the function that is being used as a first-class value.
+
+  To focus on just the types of the arguments and not their names or default values, we use the parent method's names and types
+  as the basis for all children which override it.  
+
+  The function is put at the highest scope so that all functions of a given type will share the same parent class.
+*/
 static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *parent, AList &arg_list, bool isFormal, Type *retType) {
   FnSymbol *parent_method = new FnSymbol("this");
   ArgSymbol *thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
@@ -2396,6 +2411,9 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *paren
   return parent_method;
 }
 
+/*
+  Builds up the name of the parent for lookup by looking through the types of the arguments, either formal or actual
+*/
 static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType) {
   std::ostringstream oss;
   oss << "chpl__fcf_type_";
@@ -2446,6 +2464,11 @@ static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType
   return oss.str();
 }
 
+/*
+  Helper function for creating or finding the parent class for a given function type specified 
+  by the type signature.  The last type given in the signature is the return type, the remainder
+  represent arguments to the function.
+*/
 static ClassType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call) {
   ClassType *parent;
   FnSymbol *parent_method;
@@ -2470,6 +2493,12 @@ static ClassType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *c
   return parent;
 }
 
+/*
+  Captures a function as a first-class value by creating an object that will represent the function.  The class is 
+  created at the same scope as the function being referenced.  Each class is unique and shared among all 
+  uses of that function as a value.  Once built, the class will override the .this method of the parent and wrap 
+  the call to the function being captured as a value.  Then, an instance of the class is instantiated and returned.
+*/
 static Expr*
 createFunctionAsValue(CallExpr *call) {
   static int unique_fcf_id = 0;
