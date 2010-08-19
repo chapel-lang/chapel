@@ -6,48 +6,48 @@ class LevelBC {
   
   var level: BaseLevel;
 
-  //===> ghostFill method ===>
-  //=========================>
-  def ghostFill(grid_array: LevelGridArray, t: real) {
+  //===> fillGridGhosts method ===>
+  //==============================>
+  def fillGhostCells(grid_array: LevelGridArray, t: real) {
 
     var grid = grid_array.level_grid;
     grid.fillSharedGhosts(grid_array);
-    boundaryFill(grid_array, t);
+    fillBoundaryGhosts(grid_array, t);
 
   }
-  //<=== ghostFill method <===
-  //<=========================
+  //<=== fillGridGhosts method <===
+  //<==============================
   
   
-  //===> homogeneousGhostFill method ===>
-  //====================================>
-  def homogeneousGhostFill(grid_array: LevelGridArray) {
+  //===> fillGridGhostsHomogeneous method ===>
+  //=========================================>
+  def fillGhostCellsHomogeneous(grid_array: LevelGridArray) {
     
     var grid = grid_array.level_grid;
     grid.fillSharedGhosts(grid_array);
-    homogeneousBoundaryFill(grid_array);
+    fillBoundaryGhostsHomogeneous(grid_array);
 
   }
-  //<=== homogeneousGhostFill method <===
-  //<====================================
+  //<=== fillGridGhostsHomogeneous method <===
+  //<=========================================
   
 
 
  
-  //===> ghostFill method on LevelGridArrays ===>
-  //============================================>
-  def boundaryFill(grid_array: LevelGridArray, t: real) {}
-  //<=== ghostFill method on LevelGridArrays <===
-  //<============================================
+  //===> fillBoundaryGhosts method ===>
+  //==================================>
+  def fillBoundaryGhosts(grid_array: LevelGridArray, t: real) {}
+  //<=== fillBoundaryGhosts method <===
+  //<==================================
 
 
 
 
-  //===> homogeneousGhostFill method on LevelGridArrays ===>
-  //=======================================================>
-  def homogeneousBoundaryFill(grid_array: LevelGridArray) {}
-  //<=== homogeneousGhostFill method on LevelGridArrays <===
-  //<=======================================================
+  //===> fillBoundaryGhostsHomogeneous method ===>
+  //=============================================>
+  def fillBoundaryGhostsHomogeneous(grid_array: LevelGridArray) {}
+  //<=== fillBoundaryGhostsHomogeneous method <===
+  //<=============================================
 
 
 }
@@ -57,17 +57,17 @@ class LevelBC {
 
 
 
-//===> ZeroInflowLevelBC derived class ===>
-//========================================>
-class ZeroInflowLevelBC: LevelBC {
+//===> ZeroInflowAdvectionLevelBC derived class ===>
+//=================================================>
+class ZeroInflowAdvectionLevelBC: LevelBC {
 
 
-  def boundaryFill(grid_array: LevelGridArray, t: real){
-    homogeneousGhostFill(grid_array);
+  def fillBoundaryGhosts(grid_array: LevelGridArray, t: real){
+    fillBoundaryGhostsHomogeneous(grid_array);
   }
 
 
-  def homogeneousBoundaryFill(grid_array: LevelGridArray){
+  def fillBoundaryGhostsHomogeneous(grid_array: LevelGridArray){
 
     var grid = grid_array.level_grid;
 
@@ -86,11 +86,11 @@ class ZeroInflowLevelBC: LevelBC {
 //===============================================>
 class ZeroFluxDiffusionLevelBC: LevelBC {
   
-  def boundaryFill(grid_array: LevelGridArray, t: real) {
-    homogeneousGhostFill(grid_array);
+  def fillBoundaryGhosts(grid_array: LevelGridArray, t: real) {
+    fillBoundaryGhostsHomogeneous(grid_array);
   }
   
-  def homogeneousBoundaryFill(grid_array: LevelGridArray) {
+  def fillBoundaryGhostsHomogeneous(grid_array: LevelGridArray) {
     
     var grid = grid_array.level_grid;
     

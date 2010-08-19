@@ -54,7 +54,7 @@ def BaseLevel.stepDiffusionBE(
 
   //==== Set rhs and initial guess ====
   coforall grid in child_grids {
-    bc.ghostFill(q_current(grid), t_new);
+    bc.fillGhostCells(q_current(grid), t_new);
     grid.fluxDivergence(rhs(grid), q_current(grid), diffusivity);
     rhs(grid).value(grid.cells) *= -dt;
 
@@ -91,7 +91,6 @@ def BaseLevel.stepDiffusionBE(
     grid.homogeneousBEOperator(residual_update_dir(grid),
                                search_dir(grid),
                                bc, diffusivity, dt);
-
   }
   //<=== Initialize <===
 
@@ -121,14 +120,6 @@ def BaseLevel.stepDiffusionBE(
     }
     //<=== Update solution and residual <===
 
-    // for grid in child_grids {
-    //   for cell in grid.cells {
-    //     writeln(cell, "  ", dq(grid).value(cell));
-    //     writeln(cell, "  ", residual(grid).value(cell));
-    //   }
-    // }
-    // writeln("alpha = ", alpha);
-    // halt();
 
 
     //==== Update residual norm, and check for convergence ====
@@ -180,8 +171,6 @@ def BaseLevel.stepDiffusionBE(
 //==============================================>
 //----------------------------------------------------------------
 //      L(q) = q + dt*flux_divergence(q), values on [cells]
-//
-// As with FluxDivergence, ghost cells must be filled beforehand.
 //----------------------------------------------------------------
 def LevelGrid.homogeneousBEOperator(
   Lq:          LevelGridArray,
@@ -191,7 +180,7 @@ def LevelGrid.homogeneousBEOperator(
   dt:          real
 ){
 
-  bc.homogeneousGhostFill(q);
+  bc.fillGhostCellsHomogeneous(q);
   fluxDivergence(Lq,  q, diffusivity);
   Lq.value(cells) = q.value(cells) + dt * Lq.value(cells);
 

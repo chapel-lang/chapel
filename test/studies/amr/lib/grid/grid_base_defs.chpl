@@ -111,50 +111,67 @@ class BaseGrid {
     //------------------------------------------------------
     // Note that all ghost cell domains contain the corners.
     //------------------------------------------------------
-    for d in dimensions do {
-      forall d_size in dimensions do size(d_size) = 0;
+    for orientation in dimensions do {
 
-      size(d) = -(2*n_ghost_cells(d) - 1);
-      low_ghost_cells(d) = ext_cells.interior(size);
+      var range_tuple: dimension*range(stridable=true);
 
-      size(d) = 2*n_ghost_cells(d) - 1;
-      high_ghost_cells(d) = ext_cells.interior(size);
+      //===> Set up off-dimensions ===>
+      for d in [1..orientation-1] do
+	range_tuple(d) = cells.dim(d);
+
+      for d in [orientation+1 .. dimension] do
+	range_tuple(d) = ext_cells.dim(d);
+      //<=== Set up off-dimensions <===
+
+
+      //===> Low ghost cells ===>
+      range_tuple(orientation) = ext_cells.dim(orientation).low 
+                                 .. cells.dim(orientation).low-2 
+                                 by 2;
+
+      low_ghost_cells(orientation) = range_tuple;
+      //<=== Low ghost cells <===
+
+
+      //===> High ghost cells ===>
+      range_tuple(orientation) = cells.dim(orientation).high+2
+                                 .. ext_cells.dim(orientation).high
+                                 by 2;
+
+      high_ghost_cells(orientation) = range_tuple;
+      //<=== High ghost cells <===
+
+
+
+/*       forall d_size in dimensions do size(d_size) = 0; */
+
+/*       size(d) = -(2*n_ghost_cells(d) - 1); */
+/*       low_ghost_cells(d) = ext_cells.interior(size); */
+
+/*       size(d) = 2*n_ghost_cells(d) - 1; */
+/*       high_ghost_cells(d) = ext_cells.interior(size); */
     }   
     //<=== Ghost cells <===     
 
   }
   //<=== setDerivedFields method <===
   //<================================
+
+
+
+  //===> ghost_cells iterator ===>
+  //=============================>
+  def ghost_cells {
+    for d in dimensions {
+      for cell in low_ghost_cells(d) do
+	yield cell;
+      for cell in high_ghost_cells(d) do
+	yield cell;
+    }
+  }
+  //<=== ghost_cells iterator <===
+  //<=============================
   
- 
-
-/*   //===> GhostData subclass ===> */
-/*   //===========================> */
-/*   //-------------------------------------------------------------- */
-/*   // Ideally, the fields low and high would be direct collections */
-/*   // of arrays, but I don't think that's possible at the moment. */
-/*   //-------------------------------------------------------------- */
-/*   class GhostData { */
-
-/*     type data_type; */
-/*     var low, high: [dimensions] IsolatedArray(dimension, data_type); */
-
-/*     def initialize() { */
-/*       for d in dimensions { */
-/* 	low(d) = new IsolatedArray(dim       = dimension,   */
-/* 				   data_type = data_type,  */
-/* 				   dom       = low_ghost_cells(d)); */
-
-/* 	high(d) = new IsolatedArray(dim       = dimension,  */
-/* 				    data_type = data_type,  */
-/* 				    dom       = high_ghost_cells(d)); */
-/*       } */
-
-/*     } */
-/*   } */
-/*   //<=========================== */
-/*   //<=== GhostData subclass <=== */
-
 
 }
 //<=== BaseGrid class <===

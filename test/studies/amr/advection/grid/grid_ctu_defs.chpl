@@ -105,3 +105,38 @@ def BaseGrid.stepCTU(
 }
 //<================================
 //<=== BaseGrid.stepCTU method <===
+
+
+
+
+
+
+//===> ZeroInflowAdvectionGridBC class ===>
+//========================================>
+class ZeroInflowAdvectionGridBC: GridBC {
+  
+  
+  //===> ghostFill method ===>
+  //=========================>
+  def ghostFill(q: [grid.ext_cells] real, t: real) {
+    //==== This type of BC is homogeneous ====
+    homogeneousGhostFill(q);
+  }
+  //<=== ghostFill method <===
+  //<=========================
+  
+  
+  //===> homogeneousGhostFill method ===>
+  //====================================>
+  def homogeneousGhostFill(q: [grid.ext_cells] real) {
+
+    for cell in grid.ghost_cells do
+      q(cell) = 0.0;
+    
+  }
+  //<=== homogeneousGhostFill method <===
+  //<====================================
+  
+}
+//<=== ZeroInflowAdvectionGridBC class <===
+//<========================================

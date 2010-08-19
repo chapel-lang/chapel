@@ -124,7 +124,7 @@ def main {
 
 
   //==== Initialize boundary conditions ====
-  var bc = new ZeroInflowGridBC(grid = grid);
+  var bc = new ZeroInflowAdvectionGridBC(grid = grid);
 
 
 

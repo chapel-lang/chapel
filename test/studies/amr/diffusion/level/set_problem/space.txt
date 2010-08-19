@@ -7,7 +7,7 @@
   80   80   n_cells
    1    1   n_ghost_cells
 
-4    number of grids
+5    number of grids
 
 -1.0 -1.0   x_low
  0.0  0.0   x_high
@@ -21,5 +21,5 @@
  0.0 -0.5   x_low
  0.5  0.0   x_high
 
- 0.5 -0.2   x_low
- 0.7  0.0   x_high
+-0.7  0.0   x_low
+-0.5  0.2   x_high

@@ -215,6 +215,43 @@ def BaseGrid.fluxDivergence(
 
 
 
-def BaseGrid.innerProduct(u: [ext_cells] real, v: [ext_cells] real){
-  return +reduce( u(cells) * v(cells) );
+//===> ZeroFluxDiffusionGridBC derived class ===>
+//==============================================>
+class ZeroFluxDiffusionGridBC: GridBC {
+  
+  
+  //===> ghostFill method ===>
+  //=========================>
+  def ghostFill(q: [grid.ext_cells] real, t: real) {
+    homogeneousGhostFill(q);
+  }
+  //<=== ghostFill method <===
+  //<=========================
+
+
+  //===> homogeneousGhostFill method ===>
+  //====================================>
+  def homogeneousGhostFill(q: [grid.ext_cells] real) {
+    
+    for precell in grid.ghost_cells {
+        var cell = tuplify(precell);
+
+	//==== Set target_cell to the nearest interior cell ====
+        var target_cell = cell;
+        for d in dimensions {
+          target_cell(d) = min(target_cell(d), grid.cells.dim(d).high);
+          target_cell(d) = max(target_cell(d), grid.cells.dim(d).low);
+	}
+        
+	//==== Copy target_cell's value to the ghost cell ====
+        q(cell) = q(target_cell);
+    }
+
+  }
+  //<=== homogeneousGhostFill method <===
+  //<====================================
+
+  
 }
+//<=== ZeroFluxDiffusionGridBC derived class <===
+//<==============================================
