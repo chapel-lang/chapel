@@ -142,7 +142,7 @@ def main {
 
   //==== Set boundary conditions ====
   write("Setting boundary conditions...");
-  var bc = new ZeroInflowLevelBC(level = level);
+  var bc = new ZeroFluxDiffusionLevelBC(level = level);
   write("done.\n");
 
 
@@ -152,7 +152,7 @@ def main {
   def initial_condition ( x: dimension*real ) {
     var f: real = 1.0;
     for d in dimensions do
-      f *= exp(-30 * (x(d) + 0.5)**2);
+      f *= exp(-30 * (x(d) + 0.0)**2);
     return f;
   }
 

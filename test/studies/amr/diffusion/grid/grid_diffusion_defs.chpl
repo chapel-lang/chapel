@@ -34,8 +34,10 @@ def BaseGrid.stepBE(
   var t_new     = sol.time(2) + dt;
 
 
-  //==== Array allocations ====
+  //==== Storage allocations ====
   var rhs, residual, search_dir, residual_update_dir: [ext_cells] real;
+  var residual_norm_square, old_residual_norm_square: real;
+  var alpha, beta, inner_product: real;
   
 
   //==== Maximum number of iterations before giving up ====
@@ -67,6 +69,9 @@ def BaseGrid.stepBE(
                         dq,
                         bc, diffusivity, dt);
   residual(cells) = rhs(cells) - residual(cells);
+  residual_norm_square = +reduce(residual(cells)**2);
+  
+  
 
 
   //==== Initialize search direction ====
@@ -80,35 +85,36 @@ def BaseGrid.stepBE(
   homogeneousBEOperator(residual_update_dir,
                         search_dir, 
                         bc, diffusivity, dt);
-
-
-  //==== Initialize scalars ====
-  var residual_norm = +reduce(residual(cells) * residual(cells));
-  var alpha, beta, residual_norm_old: real;
   
   
   //===> CG iteration ===>
   for iter in [1..maxiter] {
  
     //==== Update the solution and residual ====
-    alpha = +reduce( residual(cells) * residual(cells) )
-             / +reduce( residual_update_dir(cells) * search_dir(cells) );
+    inner_product = +reduce( residual_update_dir(cells) * search_dir(cells) );
+    alpha = residual_norm_square / inner_product;
  
     dq(cells)       += alpha * search_dir(cells);
     residual(cells) -= alpha * residual_update_dir(cells);
 
+    // for cell in cells {
+    //   writeln(cell, "  ", dq(cell));
+    //   writeln(cell, "  ", residual(cell));
+    // }
+    // writeln("alpha = ", alpha);
+    // halt();
 
 
     //==== Compute norm of residual, and check for convergence ====
-    residual_norm_old = residual_norm;
-    residual_norm     = +reduce(residual(cells) * residual(cells));
-    writeln("Iteration ", iter, ": residual_norm = ", residual_norm);
-    if residual_norm < tolerance then break;
+    old_residual_norm_square = residual_norm_square;
+    residual_norm_square     = +reduce(residual(cells)**2);
+    writeln("Iteration ", iter, ": residual_norm = ", sqrt(residual_norm_square));
+    if sqrt(residual_norm_square) < tolerance then break;
     if iter==maxiter then writeln("Warning: conjugate gradient method failed to converge.");
 
 
     //==== Update directions for search and residual update ====
-    beta                = residual_norm / residual_norm_old;
+    beta                = residual_norm_square / old_residual_norm_square;
     search_dir(cells)   = residual(cells) + beta * search_dir(cells);
 
     homogeneousBEOperator(residual_update_dir,

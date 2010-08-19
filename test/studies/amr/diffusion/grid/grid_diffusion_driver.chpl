@@ -16,11 +16,13 @@ use grid_diffusion_defs;
 
 //===> Backward Euler/conjugate gradient advancement of a GridSolution ===>
 //========================================================================>
-def BaseGrid.advanceDiffusionBE(sol:            ScalarGridSolution,
-                                       bc:             GridBC,
-                                       diffusivity:    real,
-                                       time_requested: real,
-                                       dt_max:         real) {
+def BaseGrid.advanceDiffusionBE(
+  sol:            ScalarGridSolution,
+  bc:             GridBC,
+  diffusivity:    real,
+  time_requested: real,
+  dt_max:         real)
+{
 
   //==== Safety checks ====
   assert(sol.grid == this);
@@ -108,7 +110,7 @@ def main {
 
 
   //==== Initialize boundary conditions ====
-  var bc = new PeriodicGridBC(grid);
+  var bc = new ZeroFluxDiffusionGridBC(grid = grid);
 
 
 

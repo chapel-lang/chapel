@@ -79,3 +79,32 @@ class ZeroInflowLevelBC: LevelBC {
 }
 //<=== ZeroInflowLevelBC derived class <===
 //<========================================
+
+
+
+//===> ZeroFluxDiffusionLevelBC derived class ===>
+//===============================================>
+class ZeroFluxDiffusionLevelBC: LevelBC {
+  
+  def boundaryFill(grid_array: LevelGridArray, t: real) {
+    homogeneousGhostFill(grid_array);
+  }
+  
+  def homogeneousBoundaryFill(grid_array: LevelGridArray) {
+    
+    var grid = grid_array.level_grid;
+    
+    for cell in grid.boundary_ghosts {
+      var target_cell = cell;
+      for d in dimensions {
+        target_cell(d) = min(target_cell(d), grid.cells.dim(d).high);
+        target_cell(d) = max(target_cell(d), grid.cells.dim(d).low);        
+      }
+      grid_array.value(cell) = grid_array.value(target_cell);
+    }
+    
+  }
+  
+}
+//<=== ZeroFluxDiffusionLevelBC derived class <===
+//<===============================================

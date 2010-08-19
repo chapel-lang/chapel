@@ -178,6 +178,7 @@ class ZeroOrderExtrapGridBC: GridBC {
 //===============================>
 class ZeroInflowGridBC: GridBC {
   
+  
   //===> ghostFill method ===>
   //=========================>
   def ghostFill(q: [grid.ext_cells] real, t: real) {
@@ -209,6 +210,71 @@ class ZeroInflowGridBC: GridBC {
 
 
 
+//===> ZeroFluxDiffusionGridBC derived class ===>
+//==============================================>
+class ZeroFluxDiffusionGridBC: GridBC {
+  
+  def initialize() {
+    setBoundaryFaces();
+  }
+  
+  
+  //===> ghostFill method ===>
+  //=========================>
+  def ghostFill(q: [grid.ext_cells] real, t: real) {
+    //==== This BC is homogeneous ====
+    homogeneousGhostFill(q);
+  }
+  //<=== ghostFill method <===
+  //<=========================
+
+
+  //===> homogeneousGhostFill method ===>
+  //====================================>
+  def homogeneousGhostFill(q: [grid.ext_cells] real) {
+    
+    
+    for d in dimensions {
+      
+      forall precell in grid.low_ghost_cells(d) {
+        var cell = tuplify(precell);
+        var target_cell = cell;
+        target_cell(d) = grid.cells.dim(d).low;
+        
+        q(cell) = q(target_cell);
+      }
+
+      forall precell in grid.high_ghost_cells(d) {
+        var cell = tuplify(precell);
+        var target_cell = cell;
+        target_cell(d) = grid.cells.dim(d).high;
+        
+        q(cell) = q(target_cell);
+      }
+
+      
+      // var shift: dimension*int;
+      // shift(d) = 1;
+      //   
+      // forall preface in low_boundary_faces(d) {
+      //   var face = tuplify(preface);
+      //   q(face-shift) = q(face+shift);
+      // }
+      // 
+      // forall preface in high_boundary_faces(d) {
+      //   var face = tuplify(preface);
+      //   q(face+shift) = q(face-shift);
+      // }
+
+    }
+  }
+  //<=== homogeneousGhostFill method <===
+  //<====================================
+
+  
+}
+//<=== ZeroFluxDiffusionGridBC derived class <===
+//<==============================================
 
 
 

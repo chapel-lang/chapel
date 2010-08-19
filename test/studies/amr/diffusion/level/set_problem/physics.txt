@@ -1,2 +1,1 @@
-2              dimension
-0.75  .625    velocity
+0.1   diffusivity

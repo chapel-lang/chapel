@@ -47,8 +47,8 @@ def BaseLevel.stepDiffusionBE(
 
   //===> Initialize ===>
   var grid_res_norm_squares: [child_grids] real;
-  var grid_alphas: [child_grids] real;
-  var level_alpha, beta, 
+  var grid_inner_products: [child_grids] real;
+  var alpha, beta, 
     level_res_norm_square, old_level_res_norm_square: real;
 
 
@@ -56,9 +56,11 @@ def BaseLevel.stepDiffusionBE(
   coforall grid in child_grids {
     bc.ghostFill(q_current(grid), t_new);
     grid.fluxDivergence(rhs(grid), q_current(grid), diffusivity);
+    rhs(grid).value(grid.cells) *= -dt;
 
     dq(grid).value(grid.cells) = rhs(grid).value(grid.cells);
   }
+  
 
 
   //==== Initialize residual ====
@@ -76,6 +78,8 @@ def BaseLevel.stepDiffusionBE(
   level_res_norm_square = +reduce(grid_res_norm_squares);
 
 
+
+
   //==== Initialize search direction ====
   coforall grid in child_grids {
     search_dir(grid).value(grid.cells) = residual(grid).value(grid.cells);
@@ -89,10 +93,7 @@ def BaseLevel.stepDiffusionBE(
                                bc, diffusivity, dt);
 
   }
-
-  level_res_norm_square = +reduce(grid_res_norm_squares);
   //<=== Initialize <===
-
 
 
   
@@ -104,28 +105,36 @@ def BaseLevel.stepDiffusionBE(
 
     //===> Update solution and residual ===>
     coforall grid in child_grids {
-      grid_alphas(grid) = grid_res_norm_squares(grid)
-                          / +reduce( residual_update_dir(grid).value(grid.cells) 
-                                           * search_dir(grid).value(grid.cells) );
+      grid_inner_products(grid) = +reduce( residual_update_dir(grid).value(grid.cells)
+                                            * search_dir(grid).value(grid.cells) );
     }
 
-    level_alpha = +reduce(grid_alphas);
+    alpha = +reduce(grid_inner_products);
+    alpha = level_res_norm_square / alpha;
 
     coforall grid in child_grids {
-      dq(grid).value(grid.cells) += level_alpha * search_dir(grid).value(grid.cells);
+      dq(grid).value(grid.cells)       += alpha * search_dir(grid).value(grid.cells);
 
-      residual(grid).value(grid.cells) -= level_alpha * residual_update_dir(grid).value(grid.cells);
+      residual(grid).value(grid.cells) -= alpha * residual_update_dir(grid).value(grid.cells);
 
       grid_res_norm_squares(grid) = +reduce( residual(grid).value(grid.cells)**2 );
     }
     //<=== Update solution and residual <===
 
+    // for grid in child_grids {
+    //   for cell in grid.cells {
+    //     writeln(cell, "  ", dq(grid).value(cell));
+    //     writeln(cell, "  ", residual(grid).value(cell));
+    //   }
+    // }
+    // writeln("alpha = ", alpha);
+    // halt();
 
 
     //==== Update residual norm, and check for convergence ====
     old_level_res_norm_square = level_res_norm_square;
-    level_res_norm_square = +reduce(grid_res_norm_squares);
-    writeln("Interation ", iter, ": residual_norm = ", sqrt(level_res_norm_square));
+    level_res_norm_square     = +reduce(grid_res_norm_squares);
+    writeln("Iteration ", iter, ": residual_norm = ", sqrt(level_res_norm_square));
     if sqrt(level_res_norm_square) < tolerance then break;
     if iter == maxiter then writeln("Warning: conjugate gradient method failed to converge.");
 
@@ -137,14 +146,26 @@ def BaseLevel.stepDiffusionBE(
     coforall grid in child_grids {
       search_dir(grid).value(grid.cells) = residual(grid).value(grid.cells)
                                            + beta * search_dir(grid).value(grid.cells);
-
+    }
+    
+    coforall grid in child_grids {
       grid.homogeneousBEOperator(residual_update_dir(grid),
-				 search_dir(grid),
-				 bc, diffusivity, dt);
+                                 search_dir(grid),
+                                 bc, diffusivity, dt);
     }
 
   }
   //<=== CG iteration <===
+
+
+  //===> Update solution ===>
+  coforall grid in child_grids {
+    dq(grid).value(grid.cells) += q_current(grid).value(grid.cells);
+  }
+  level_sol.time(1) = t_current;
+  level_sol.time(2) = t_current + dt;
+  level_sol.space_data(1) <=> level_sol.space_data(2);
+  
 
 }
 //<=== BaseLevel.stepDiffusionBE method <===
