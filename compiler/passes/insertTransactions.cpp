@@ -602,7 +602,7 @@ void handleFunctionCalls(BlockStmt* block, CallExpr* call, FnSymbol* fn, Symbol*
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     fnTxClone->removeFlag(FLAG_ON_BLOCK);
     fnTxClone->addFlag(FLAG_TX_ON_BLOCK);
-  } 
+  }
 
   // add clone to queue and insert fnTxClone's function definition
   // this case is required to deal with functions that were cloned in

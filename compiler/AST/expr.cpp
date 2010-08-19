@@ -2541,7 +2541,11 @@ void CallExpr::codegen(FILE* outfile) {
     fprintf(outfile, ");\n");
     return;
   } else if (fn->hasFlag(FLAG_TX_ON_BLOCK)) {
-    gen(outfile, "chpl_stm_tx_fork(%A, %A", get(1), get(2));
+    if (fn->hasFlag(FLAG_FAST_ON))
+      fprintf(outfile, "chpl_stm_tx_fork_fast(");
+    else
+      fprintf(outfile, "chpl_stm_tx_fork(");
+    gen(outfile, "%A, %A", get(1), get(2));
     fprintf(outfile, ", /* %s */ %d, ", fn->cname, txftableMap.get(fn));
     get(3)->codegen(outfile);
     TypeSymbol* argType = toTypeSymbol(get(3)->typeInfo()->symbol);

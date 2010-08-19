@@ -573,3 +573,67 @@ int gtm_tx_comm_fork(chpl_stm_tx_p tx, int32_t remlocale, chpl_fn_int_t fid, voi
 
   return commstatus;
 }
+
+
+void AM_tx_fork_fast(gasnet_token_t token, void* msg, size_t nbytes) {
+  chpl_stm_tx_p tx = NULL;
+  int status = TX_OK;  
+  tx_fork_t *buf = (tx_fork_t*) msg;
+
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+
+  GTM_TX_COMM_STATS_START(tx, TX_COMM_FORK_STATS);
+
+  tx->rollback = true;
+
+  setjmp(tx->env);
+
+  if (tx->status == TX_AMACTIVE) {
+    if (buf->argsize) 
+      (*chpl_txftable[buf->fid])(tx, &buf->arg);
+    else 
+      (*chpl_txftable[buf->fid])(tx, 0);
+  } else {
+    assert(tx->status == TX_AMABORT); 
+    status = TX_FAIL;
+  }
+
+  tx->rollback = false;
+
+  GASNET_Safe(gasnet_AMReplyMedium1(token, TX_SIGNAL,
+				    &(buf->commstatus), sizeof(int*), 
+				    status));
+  
+  chpl_free(buf, __LINE__, __FILE__);
+
+  GTM_TX_COMM_STATS_STOP(tx, TX_COMM_FORK_STATS, status);
+}
+
+int gtm_tx_comm_fork_fast(chpl_stm_tx_p tx, int32_t remlocale, chpl_fn_int_t fid, void *arg, size_t argsize) {
+  tx_fork_t *buf;
+  size_t bufsize = sizeof(tx_fork_t) + argsize; 
+  int commstatus = TX_BUSY;
+  
+  gtm_tx_comm_register(tx, remlocale);
+
+  assert(bufsize < gasnet_AMMaxMedium()); 
+  buf = (tx_fork_t*) chpl_malloc(1, bufsize,
+				 CHPL_RT_MD_STM_AM_FORK_T,
+				 __LINE__, __FILE__);
+  buf->txid = tx->id;
+  buf->txlocale = tx->locale;
+  buf->caller = chpl_localeID;
+  buf->txstatus = tx->status;
+  buf->commstatus = &commstatus;
+  buf->fid = fid;
+  buf->argsize = argsize;
+  if (argsize)
+    memcpy(&(buf->arg), arg, argsize);
+
+  GASNET_Safe(gasnet_AMRequestMedium0(remlocale, TX_FORK_FAST, buf, bufsize));
+  GASNET_BLOCKUNTIL(commstatus != TX_BUSY);
+
+  chpl_free(buf, __LINE__, __FILE__);
+
+  return commstatus;
+}

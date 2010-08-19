@@ -344,6 +344,20 @@ void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *
   }
 }
 
+void chpl_stm_tx_fork_fast(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize) {
+
+  assert(tx != NULL);
+
+  if (dstlocale == MYLOCALE) {
+    (*chpl_txftable[fid])(tx, arg);
+  } else {
+    assert(tx->status == TX_ACTIVE);
+    GTM_TX_STATS_START(tx, TX_FORK_STATS);
+    GTM_Safe(tx, gtm_tx_comm_fork_fast(tx, dstlocale, fid, arg, argsize));
+    GTM_TX_STATS_STOP(tx, TX_FORK_STATS, 0);
+  }
+}
+
 void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) { 
   void *tmp;
   GTM_TX_STATS_START(tx, TX_MALLOC_STATS);

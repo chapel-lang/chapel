@@ -113,7 +113,7 @@ enum Flag {
   FLAG_SYNTACTIC_DISTRIBUTION,
   FLAG_TEMP, // compiler-inserted temporary
   FLAG_TUPLE,
-  FLAG_TX_ON_BLOCK, // atomic equivalent of FLAG_ON_BLOCK
+  FLAG_TX_ON_BLOCK, // equivalent of FLAG_ON_BLOCK, used inside atomic
   FLAG_TYPE_CONSTRUCTOR,
   FLAG_TYPE_VARIABLE, // contains a type instead of a value
   FLAG_VIRTUAL,

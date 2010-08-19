@@ -292,9 +292,14 @@ void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* s
 void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size, int ln, chpl_string fn);
 
 //
-// transactional version of chpl_comm_fork
+// transactional fork operation, equivalent to chpl_comm_fork
 //
 void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize);
+
+//
+// fast transactional fork
+//
+void chpl_stm_tx_fork_fast(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize);
 
 //
 // transactional malloc
