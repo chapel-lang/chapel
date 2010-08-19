@@ -210,7 +210,7 @@ void threadlayer_init(void) {
         chpl_internal_error("setrlimit() failed");
 
       if (pthread_attr_setstacksize(&thread_attributes, stacksize) != 0)
-	chpl_internal_error("pthread_attr_setstacksize() failed");
+        chpl_internal_error("pthread_attr_setstacksize() failed");
     }
   }
 
