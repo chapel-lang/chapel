@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/bin/bash
 #
 
 # run block dist regressions
