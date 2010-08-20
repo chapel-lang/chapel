@@ -116,6 +116,7 @@ def verifyResults() {
   if (printStats) {
     writeln("Number of errors is: ", numErrors, "\n");
     writeln("Verification time = ", verifyTime);
+    writeln("Verification (GUPS) = ", (N_U / verifyTime) * 1e-9);
   }
 
   return numErrors <= (errorTolerance * N_U);
