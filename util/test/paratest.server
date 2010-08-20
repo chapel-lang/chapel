@@ -257,6 +257,10 @@ sub feed_nodes {
         @readyidv = free_workers ();
     }
 
+    if (-e "PARAHALT" && ($#testdir_list > 0)) {
+        print "\nExiting early due to PARAHALT file\n";
+    }
+
     $endtime = `date`; chomp $endtime;
     if ($memleaksflag) {
         systemd("cat $logdir/tmp.*.memleaks > $memleaks");
