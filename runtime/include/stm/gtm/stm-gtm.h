@@ -5,6 +5,7 @@
 #include <setjmp.h> 
 #include "stm-gtm-memory.h"
 #include "stm-gtm-stats.h"
+#include "stm-gtm-cmgr.h"
 
 //
 // GTM specific macros
@@ -89,7 +90,8 @@ typedef struct __chpl_stm_tx_t {
   chpl_bool rollback;
   chpl_stm_tx_env_t env;     // stores program execution state
   memset_t* memset;          // tracks memory allocated / freed 
-  stats_t* counters;      // timers and counters
+  stats_t* counters;         // timers and counters
+  cmgr_t cmgr;                    
 } chpl_stm_tx_t;
 
 

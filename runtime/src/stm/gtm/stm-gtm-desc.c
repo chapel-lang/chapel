@@ -45,6 +45,7 @@ chpl_stm_tx_p gtm_tx_create(int32_t txid, int32_t txlocale) {
   tx->timestamp = GET_CLOCK;
   tx->rollback = false;
 
+  gtm_tx_create_cmgr(tx);
   gtm_tx_create_memset(tx);
   gtm_tx_create_stats(tx);
 
@@ -56,7 +57,6 @@ void gtm_tx_destroy(chpl_stm_tx_p tx) {
   chpl_free(tx->writeset.entries, 0, 0);
 
   gtm_tx_destroy_memset(tx);
-
   gtm_tx_destroy_stats(tx);
 
   if (tx->id != -1 && tx->locale == MYLOCALE) {

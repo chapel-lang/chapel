@@ -9,6 +9,7 @@ STM_SRCS = \
 	stm-gtm-memory.c \
 	stm-gtm-$(VER).c \
 	stm-gtm-stats.c \
+	stm-gtm-cmgr.c \
 
 SVN_SRCS = $(STM_SRCS)
 SRCS = $(SVN_SRCS)

@@ -106,14 +106,14 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx) {
     tx->status = TX_ABORT;
 
     GTM_TX_STATS_START(tx, TX_ABORT_STATS);
-
     // aborts always succeeds, local or otherwise. 
     if (tx->numremlocales > -1) { 
       gtm_tx_comm_abort(tx); 
     }
     gtm_tx_abort(tx);
-
     GTM_TX_STATS_STOP(tx, TX_ABORT_STATS, 0);
+
+    gtm_tx_abort_cmgr(tx);
 
     // rollback to last checkpoint
     if (tx->env != NULL) {
@@ -128,7 +128,6 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx) {
     // stm-gtm-comm-*.c so if the transaction fails inside a transactional
     // clone spawned by the fork then rollback to the fork_wrapper.
     // for all other operations, just set the status and return 
-
     if (tx->env != NULL && tx->rollback) {
       tx->status = TX_AMABORT;
       longjmp(tx->env, 1);
