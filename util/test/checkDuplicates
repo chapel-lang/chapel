@@ -5,16 +5,16 @@ my $outputdir = $ARGV[1];
 my $testdir = $ARGV[2];
 my $searchdir = ".";
 
-my $duplicate_src = "$searchdir/dupsrc.tmp";
-system("find $searchdir -name \\$testname.chpl > $duplicate_src");
-open DUPLICATES, "$duplicate_src" or die "can't open $duplicate_src $!";
+my $dupkeys = "$searchdir/dupkeys.tmp";
+system("find $searchdir -name \\$testname.perfkeys > $dupkeys");
+open DUPLICATES, "$dupkeys" or die "can't open $dupkeys $!";
 my @duplicates = <DUPLICATES>;
-system("rm $duplicate_src");
+system("rm $dupkeys");
 exit &getNumDuplicates;
 
 sub getNumDuplicates {
     if ($#duplicates > 0) {
-        print "[Error: found $#duplicates src files:";
+        print "[Error: found $#duplicates .perfkey files:";
         foreach my $duplicate(@duplicates) {
             chomp($duplicate);
             print " $duplicate";
