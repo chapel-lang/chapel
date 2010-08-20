@@ -234,3 +234,35 @@ def LevelGrid.fluxDivergence(
 }
 //<=== BaseGrid.fluxDivergence method <===
 //<=======================================
+
+
+
+
+
+
+//===> ZeroFluxDiffusionLevelBC derived class ===>
+//===============================================>
+class ZeroFluxDiffusionLevelBC: LevelBC {
+  
+  def fillBoundaryGhosts(grid_array: LevelGridArray, t: real) {
+    fillBoundaryGhostsHomogeneous(grid_array);
+  }
+  
+  def fillBoundaryGhostsHomogeneous(grid_array: LevelGridArray) {
+    
+    var grid = grid_array.grid : LevelGrid;
+    
+    for cell in grid.boundary_ghosts {
+      var target_cell = cell;
+      for d in dimensions {
+        target_cell(d) = min(target_cell(d), grid.cells.dim(d).high);
+        target_cell(d) = max(target_cell(d), grid.cells.dim(d).low);        
+      }
+      grid_array.value(cell) = grid_array.value(target_cell);
+    }
+    
+  }
+  
+}
+//<=== ZeroFluxDiffusionLevelBC derived class <===
+//<===============================================

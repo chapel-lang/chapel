@@ -164,7 +164,7 @@ def main {
 
   //==== Set boundary conditions ====
   write("Setting boundary conditions...");
-  var bc = new ZeroInflowLevelBC(level = level);
+  var bc = new ZeroInflowAdvectionLevelBC(level = level);
   write("done.\n");
 
 

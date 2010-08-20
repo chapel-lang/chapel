@@ -10,8 +10,9 @@ class LevelBC {
   //==============================>
   def fillGhostCells(grid_array: LevelGridArray, t: real) {
 
-    var grid = grid_array.level_grid;
-    grid.fillSharedGhosts(grid_array);
+    var grid = (grid_array.grid : LevelGrid);
+
+    grid.fillLevelGhosts(grid_array);
     fillBoundaryGhosts(grid_array, t);
 
   }
@@ -23,8 +24,9 @@ class LevelBC {
   //=========================================>
   def fillGhostCellsHomogeneous(grid_array: LevelGridArray) {
     
-    var grid = grid_array.level_grid;
-    grid.fillSharedGhosts(grid_array);
+    var grid = (grid_array.grid : LevelGrid);
+
+    grid.fillLevelGhosts(grid_array);
     fillBoundaryGhostsHomogeneous(grid_array);
 
   }
@@ -32,79 +34,10 @@ class LevelBC {
   //<=========================================
   
 
-
- 
-  //===> fillBoundaryGhosts method ===>
-  //==================================>
+  //==== Dummy methods; provied in derived class ====
   def fillBoundaryGhosts(grid_array: LevelGridArray, t: real) {}
-  //<=== fillBoundaryGhosts method <===
-  //<==================================
-
-
-
-
-  //===> fillBoundaryGhostsHomogeneous method ===>
-  //=============================================>
   def fillBoundaryGhostsHomogeneous(grid_array: LevelGridArray) {}
-  //<=== fillBoundaryGhostsHomogeneous method <===
-  //<=============================================
-
 
 }
 //<=== LevelBC class <===
 //<======================
-
-
-
-
-//===> ZeroInflowAdvectionLevelBC derived class ===>
-//=================================================>
-class ZeroInflowAdvectionLevelBC: LevelBC {
-
-
-  def fillBoundaryGhosts(grid_array: LevelGridArray, t: real){
-    fillBoundaryGhostsHomogeneous(grid_array);
-  }
-
-
-  def fillBoundaryGhostsHomogeneous(grid_array: LevelGridArray){
-
-    var grid = grid_array.level_grid;
-
-    for cell in grid.boundary_ghosts {
-      grid_array.value(cell) = 0.0;
-    }
-  }  
- 
-}
-//<=== ZeroInflowLevelBC derived class <===
-//<========================================
-
-
-
-//===> ZeroFluxDiffusionLevelBC derived class ===>
-//===============================================>
-class ZeroFluxDiffusionLevelBC: LevelBC {
-  
-  def fillBoundaryGhosts(grid_array: LevelGridArray, t: real) {
-    fillBoundaryGhostsHomogeneous(grid_array);
-  }
-  
-  def fillBoundaryGhostsHomogeneous(grid_array: LevelGridArray) {
-    
-    var grid = grid_array.level_grid;
-    
-    for cell in grid.boundary_ghosts {
-      var target_cell = cell;
-      for d in dimensions {
-        target_cell(d) = min(target_cell(d), grid.cells.dim(d).high);
-        target_cell(d) = max(target_cell(d), grid.cells.dim(d).low);        
-      }
-      grid_array.value(cell) = grid_array.value(target_cell);
-    }
-    
-  }
-  
-}
-//<=== ZeroFluxDiffusionLevelBC derived class <===
-//<===============================================

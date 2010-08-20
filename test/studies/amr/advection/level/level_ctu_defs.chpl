@@ -34,7 +34,7 @@ def BaseLevel.stepAdvectionCTU(
 
   //==== Fill ghost cells of q_current ====
   coforall grid in child_grids do
-    bc.ghostFill(q_current(grid), t_current);
+    bc.fillGhostCells(q_current(grid), t_current);
 
 
   //==== Step each grid ====
@@ -127,3 +127,31 @@ def LevelGrid.stepAdvectionCTU(
 }
 //<=== LevelGrid.stepAdvectionCTU method <===
 //<==========================================
+
+
+
+
+
+
+//===> ZeroInflowAdvectionLevelBC derived class ===>
+//=================================================>
+class ZeroInflowAdvectionLevelBC: LevelBC {
+
+
+  def fillBoundaryGhosts(grid_array: LevelGridArray, t: real){
+    fillBoundaryGhostsHomogeneous(grid_array);
+  }
+
+
+  def fillBoundaryGhostsHomogeneous(grid_array: LevelGridArray){
+
+    var grid = (grid_array.grid : LevelGrid);
+
+    for cell in grid.boundary_ghosts {
+      grid_array.value(cell) = 0.0;
+    }
+  }  
+ 
+}
+//<=== ZeroInflowAdvectionLevelBC derived class <===
+//<=================================================

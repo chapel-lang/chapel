@@ -19,7 +19,7 @@ output: level_test.out
 	./level_test.out
 
 level_test.out: $(LEVEL_SOURCES)
-	chpl $(LEVEL_SOURCES) -sdimension=$(DIM) -o level_test.out
+	chpl $(LEVEL_SOURCES) --set dimension=$(DIM) -o level_test.out
 
 clean:
 	rm -f _output/fort.* _output/*.png output_* *.out

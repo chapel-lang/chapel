@@ -141,15 +141,6 @@ class BaseGrid {
       high_ghost_cells(orientation) = range_tuple;
       //<=== High ghost cells <===
 
-
-
-/*       forall d_size in dimensions do size(d_size) = 0; */
-
-/*       size(d) = -(2*n_ghost_cells(d) - 1); */
-/*       low_ghost_cells(d) = ext_cells.interior(size); */
-
-/*       size(d) = 2*n_ghost_cells(d) - 1; */
-/*       high_ghost_cells(d) = ext_cells.interior(size); */
     }   
     //<=== Ghost cells <===     
 

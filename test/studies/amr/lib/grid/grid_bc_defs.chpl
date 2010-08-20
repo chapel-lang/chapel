@@ -9,39 +9,6 @@ use grid_solution_defs;
 class GridBC {
 
   var grid: BaseGrid;
-  var low_boundary_faces:  [dimensions] domain(dimension, stridable=true);
-  var high_boundary_faces: [dimensions] domain(dimension, stridable=true);
-  
-
-  //===> setBoundaryFaces method ===>
-  //================================>
-  //------------------------------------------------------
-  // Sets up domains for the low and high boundary faces.
-  //------------------------------------------------------
-  def setBoundaryFaces() {
-
-    var range_tuple: dimension*range(stridable=true);
-
-    for d in dimensions {
-
-      //==== All components except for d will equal grid.cells ====
-      for d_range in dimensions do
-        range_tuple(d_range) = grid.cells.dim(d_range);
-
-      //==== low boundary faces ====
-      range_tuple(d)        = grid.i_low(d) .. grid.i_low(d) by 2;
-      low_boundary_faces(d) = [(...range_tuple)];
-
-
-      //==== high_boundary_faces ====
-      range_tuple(d)         = grid.i_high(d) .. grid.i_high(d) by 2;
-      high_boundary_faces(d) = [(...range_tuple)];
-
-    }
-  }
-  //<=== setBoundaryFaces method <===
-  //<================================
-
 
   //==== Dummy routines; to be provided in derived classes ====
   def ghostFill(q: [grid.ext_cells] real, t: real){}
