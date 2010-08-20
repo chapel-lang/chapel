@@ -123,8 +123,8 @@ void CHPL_TASKING_INIT(void) {
   //
   if (chpl_config_get_value("callStackSize", "Built-in") != NULL)
     chpl_warning("the callStackSize config constant has no effect "
-		 "on XMT systems",
-		 0, NULL);
+                 "on XMT systems",
+                 0, NULL);
 
   chpl_begin_cnt = 0;                     // only main thread running
   chpl_can_exit = 1;                      // mark full - no threads created yet
