@@ -2122,8 +2122,17 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_TX_LOAD_MEMBER_VALUE: {
       Type* type = get(2)->typeInfo();      
       registerTypeToStructurallyCodegen(type->symbol);
-      gen(outfile, "/* load member value */\n");
-      gen(outfile, "CHPL_STM_LOAD(%A, %A, (", get(1), get(2));
+      fprintf(outfile, "CHPL_STM_LOAD_FIELD_VALUE");
+      gen(outfile, "(%A, %A, (", get(1), get(2));
+      codegen_member(outfile, get(3), get(4));
+      gen(outfile, "), %A, %A, %A)", type, get(5), get(6));      
+      break;
+    }
+    case PRIM_TX_LOAD_MEMBER_VALUE_SVEC: {
+      Type* type = get(2)->typeInfo();      
+      registerTypeToStructurallyCodegen(type->symbol);
+      fprintf(outfile, "CHPL_STM_LOAD_FIELD_VALUE_SVEC");
+      gen(outfile, "(%A, %A, (", get(1), get(2));
       codegen_member(outfile, get(3), get(4));
       gen(outfile, "), %A, %A, %A)", type, get(5), get(6));      
       break;
@@ -2131,8 +2140,17 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_TX_LOAD_SVEC_MEMBER_VALUE: {
       Type* type = get(2)->typeInfo();
       registerTypeToStructurallyCodegen(type->symbol);
-      gen(outfile, "/* load svec member value */\n");
-      gen(outfile, "CHPL_STM_LOAD(%A, %A, ", get(1), get(2));
+      fprintf(outfile, "CHPL_STM_LOAD_TUPLE_COMPONENT_VALUE");
+      gen(outfile, "(%A, %A, ", get(1), get(2));
+      codegenTupleMember(outfile, get(3), get(4));
+      gen(outfile, ", %A, %A, %A)", type, get(5), get(6));
+      break;    
+    }
+    case PRIM_TX_LOAD_SVEC_MEMBER_VALUE_SVEC: {
+      Type* type = get(2)->typeInfo();
+      registerTypeToStructurallyCodegen(type->symbol);
+      fprintf(outfile, "CHPL_STM_LOAD_TUPLE_COMPONENT_VALUE_SVEC");
+      gen(outfile, "(%A, %A, ", get(1), get(2));
       codegenTupleMember(outfile, get(3), get(4));
       gen(outfile, ", %A, %A, %A)", type, get(5), get(6));
       break;    

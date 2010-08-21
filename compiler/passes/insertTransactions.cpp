@@ -195,8 +195,10 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	  INT_ASSERT(!isUnion(se1->getValType()));
 	  call->replace(new CallExpr(PRIM_TX_GET_MEMBER_VALUE,
 				     tx, lhs->var, se1->var, se2->var));
-	} else if (se1->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-	  USR_FATAL(call, "FIXME: GET_MEMBER_VALUE STAR_TUPLE");	  
+	} else if (rhs->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+	  if (!isBaseOnStack(se1))
+	    call->replace(new CallExpr(PRIM_TX_LOAD_MEMBER_VALUE_SVEC, 
+				       tx, lhs->var, se1->var, se2->var));  
 	} else {
 	  if (se2->var->hasFlag(FLAG_SUPER_CLASS) &&
 	     lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -218,16 +220,16 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se1);
 	INT_ASSERT(se2);
 	INT_ASSERT(lhs->getValType() == se2->getValType());
+	// Generating the transactional equivalent of GET_MEMBER
+	// is only necessary if se1 is on the heap (or) falls under one
+	// of the uncommon cases we need to track stack references.
 	if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-	  // Generating the transactional equivalent of CHPL_WIDE_GET_FIELD
-	  // is only necessary if se1 is on the heap (or) falls under one
-	  // of the uncommon cases we need to track stack references.
 	  if (!isOnStack(se1)) 
-	    USR_WARN(call, "Heap load not instrumented (GET_MEMBER)");    
+	    USR_WARN(call, "Heap get not instrumented (GET_MEMBER)");    
 	  break;
 	} else if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
 	  if (!isOnStack(se1)) 
-	    USR_WARN(call, "Heap load not instrumented (GET_MEMBER)");
+	    USR_WARN(call, "Heap get not instrumented (GET_MEMBER)");
 	  break;
 	} else {
 	  if (!isOnStack(se1))
@@ -243,11 +245,11 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
 	  // same reasoning as PRIM_GET_MEMBER
 	  if (!isOnStack(se1)) 
-	    USR_WARN(call, "Heap load not being tracked (GET_SVEC_MEMBER)");
+	    USR_WARN(call, "Heap get not instrumented (GET_SVEC_MEMBER)");
 	  break;
 	} else {
 	  if (!isOnStack(se1))
-	    USR_WARN(call, "Heap load not being tracked (GET_SVEC_MEMBER)");
+	    USR_WARN(call, "Heap load not instrumented (GET_SVEC_MEMBER)");
 	  break;
 	}
       }
@@ -259,11 +261,17 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
 	  USR_FATAL(call, "FIXME: GET_SVEC_MEMBER_VALUE FLAG_WIDE");
 	} else {
+	  Type* tupleType = se1->getValType();
 	  INT_ASSERT(lhs->getValType() == rhs->getValType());
-	  if (!isTupleBaseOnStack(se1))
-	    call->replace(new CallExpr(PRIM_TX_LOAD_SVEC_MEMBER_VALUE, 
-				       tx, lhs->var, se1->var, se2->var));
-        }
+	  if (!isTupleBaseOnStack(se1)) {
+	    if (tupleType->getField("x1")->type->symbol->hasFlag(FLAG_STAR_TUPLE))
+	      call->replace(new CallExpr(PRIM_TX_LOAD_SVEC_MEMBER_VALUE_SVEC, 
+					 tx, lhs->var, se1->var, se2->var));
+	    else
+	      call->replace(new CallExpr(PRIM_TX_LOAD_SVEC_MEMBER_VALUE, 
+					 tx, lhs->var, se1->var, se2->var));
+	  }
+	}
         break;
       }
       if (rhs->isPrimitive(PRIM_ARRAY_GET)) {

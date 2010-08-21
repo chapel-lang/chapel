@@ -64,6 +64,18 @@ extern chpl_txfn_p chpl_txftable[];
 #define CHPL_STM_LOAD(tx, dst, src, type, ln, fn)		\
   chpl_stm_tx_load(tx, &dst, &src, SPECIFY_SIZE(type), ln, fn)
 
+#define CHPL_STM_LOAD_FIELD_VALUE(tx, dst, src, type, ln, fn)		\
+  CHPL_STM_LOAD(tx, dst, src, type, ln, fn);
+
+#define CHPL_STM_LOAD_FIELD_VALUE_SVEC(tx, dst, src, type, ln, fn)	\
+  CHPL_STM_LOAD(tx, dst, src, type, ln, fn);
+
+#define CHPL_STM_LOAD_TUPLE_COMPONENT_VALUE(tx, dst, src, type, ln, fn)	\
+  CHPL_STM_LOAD(tx, dst, src, type, ln, fn);
+
+#define CHPL_STM_LOAD_TUPLE_COMPONENT_VALUE_SVEC(tx, dst, src, type, ln, fn) \
+  CHPL_STM_LOAD(tx, dst, src, type, ln, fn);
+
 #define CHPL_STM_COMM_WIDE_GET_LOCALEID(tx, ldst, rwide, ln, fn)	\
   do {                                                                  \
     if (chpl_localeID == (rwide).locale)				\
