@@ -1035,6 +1035,7 @@ if perftest:
     for graphfile in graphfiles:
 	(root, suffix) = os.path.splitext(graphfile)
     	graphname=root
+	
 
  	sys.stdout.write('[Executing %s/createGraphs for %s.graph in %s]\n'%(utildir, graphname, testdir+'/'+localdir))
 	sys.stdout.flush()
@@ -1054,29 +1055,53 @@ if perftest:
  	    sys.stdout.write('[Error')
         sys.stdout.write(' creating graphs in %s]\n'%(testdir+'/'+localdir))
 
-    if (os.getenv('CHPL_TEST_PERF_DIR')!=None):
-	commonperfdir = "yes";
-    else:
-  	commonperfdir = "no";
     
-    if (len(graphfiles) > 0):
-        if os.path.isfile(utildir+'/viewGraphs'):
-            sys.stdout.write('[Executing %s/viewGraphs in %s]\n'%(utildir, testdir+'/'+localdir))
-            sys.stdout.flush()
+    #if (os.getenv('CHPL_TEST_PERF_DIR')!=None):
+	#commonperfdir = "yes";
+   # else:
+  	#commonperfdir = "no";
+    
+    #if (len(graphfiles) > 0):
+        #if os.path.isfile(utildir+'/viewGraphs'):
+            #sys.stdout.write('[Executing %s/viewGraphs in %s]\n'%(utildir, testdir+'/'+localdir))
+            #sys.stdout.flush()
 	
-	    p = subprocess.Popen([utildir+'/viewGraphs', commonperfdir, perfdir, searchperfdir, machine],stdout=subprocess.PIPE)
-	    sys.stdout.write('%s'%(p.communicate()[0]))
-	    sys.stdout.flush()
-        else:
-	    sys.stdout.write('[cannot find viewGraphs]\n')
+	    #p = subprocess.Popen([utildir+'/viewGraphs', commonperfdir, perfdir, searchperfdir, machine, isfirst, islast],stdout=subprocess.PIPE)
+	    #sys.stdout.write('%s'%(p.communicate()[0]))
+	    #sys.stdout.flush()
+        #else:
+	    #sys.stdout.write('[cannot find viewGraphs]\n')
 
-        status = p.returncode
+        #status = p.returncode
 
-        if status==0:
-	    sys.stdout.write('[Success')
-        else:
-	    sys.stdout.write('[Error')
-        sys.stdout.write(' creating html in %s]\n'%(testdir+'/'+localdir))
+        #if status==0:
+	    #sys.stdout.write('[Success')
+        #else:
+	    #sys.stdout.write('[Error')
+        #sys.stdout.write(' creating html in %s]\n'%(testdir+'/'+localdir))
+
+    
+    if (os.getenv('CHPL_TEST_PERF_DIR')==None) and (len(graphfiles)>0):
+        if (len(graphfiles) > 0):
+            if os.path.isfile(utildir+'/viewGraphs'):
+                sys.stdout.write('[Executing %s/viewGraphs in %s]\n'%(utildir, testdir+'/'+localdir))
+                sys.stdout.flush()
+	
+	        p = subprocess.Popen([utildir+'/viewGraphs', perfdir],stdout=subprocess.PIPE)
+	        sys.stdout.write('%s'%(p.communicate()[0]))
+	        sys.stdout.flush()
+            else:
+	        sys.stdout.write('[cannot find viewGraphs]\n')
+
+            status = p.returncode
+
+            if status==0:
+	        sys.stdout.write('[Success')
+            else:
+	        sys.stdout.write('[Error')
+            sys.stdout.write(' creating html in %s]\n'%(testdir+'/'+localdir))
+
+	
 
 
 del graphfiles

@@ -1,9 +1,6 @@
 #!/usr/bin/env perl
 
-my $commonperfdir = $ARGV[0];
-my $outputdir = $ARGV[1];
-my $searchperfdir = $ARGV[2];
-my $machine = $ARGV[3];
+my $outputdir = $ARGV[0];
 my $html_file = "$outputdir/index.html";
 my $image_files = "$outputdir/images.tmp";
 my $currentdir_file = "$outputdir/dir.tmp";
@@ -25,35 +22,31 @@ my @images = <IMAGES>;
 close(IMAGES);
 system("rm $image_files");
 
-
 foreach my $image (@images) {
     my @image_parts = split(/\//, $image);
     $image = @image_parts[$#image_parts];
 }
 
-if ($commonperfdir eq "no") {
-    if (-e $html_file) {
-	system("rm $html_file");
-    } 
-    open HTML, ">$html_file" or die "can't open $html_file for creating $!";
-    print HTML "<html>\n";
-    print HTML "<body>\n";
-    print HTML "<p>Performance Graphs as of $mon/$mday/$year</p>\n";
-    &appendImageList;
-    print HTML "</body>\n";
-    print HTML "</html>\n";
-    close (HTML);
-} else {
-    open HTML, ">>$html_file" or die "can't open $html_file for appending $!";
-    &appendImageList;
-}
+if (-e $html_file) {
+    system("rm $html_file");
+} 
+open HTML, ">$html_file" or die "can't open $html_file for creating $!";
+print HTML "<html>\n";
+print HTML "<body>\n";
+print HTML "<p>Performance Graphs as of $mon/$mday/$year</p>\n";
+&appendImageList;
+print HTML "</body>\n";
+print HTML "</html>\n";
+close (HTML);
 
 sub appendImageList {
     foreach my $image (@images) {
         chomp($image);
+        my $image_name = substr $image, 0, -4;
         print HTML "\n";
 	print HTML "<p>\n";
-	print HTML "$image: <a href=$image>\n";
+	print HTML "$image_name: <a href=$image>\n";
+	print HTML "<br>\n";
         print HTML "<img border=\"0\" alt=\"\" src=\"$image\" title=\"$image\" width=\"600\" />\n"; #height=\"150\" />\n";
 	print HTML "</a>\n";
 	print HTML "</p>\n";
