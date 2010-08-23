@@ -97,13 +97,14 @@ class BaseGrid {
     //==== Physical cells ====
     var range_tuple: dimension*range(stridable = true);
     for d in dimensions do
-      range_tuple(d) = i_low(d)+1 .. i_low(d)+2*n_cells(d)-1 by 2;
+      range_tuple(d) = i_low(d)+1 .. #2*n_cells(d) by 2;
     cells = range_tuple;
 
 
     //==== Extended cells (includes ghost cells) ====
     var size: dimension*int;
-    [d in dimensions] size(d) = 2*n_ghost_cells(d);
+    for d in dimensions do
+      size(d) = 2*n_ghost_cells(d);
     ext_cells = cells.expand(size);
          
 

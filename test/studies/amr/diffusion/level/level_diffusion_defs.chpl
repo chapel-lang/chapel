@@ -53,22 +53,20 @@ def BaseLevel.stepDiffusionBE(
 
 
   //==== Set rhs and initial guess ====
+  bc.fillGhostCells(q_current, t_new);
+  fluxDivergence(rhs, q_current, diffusivity);
+
   coforall grid in child_grids {
-    bc.fillGhostCells(q_current(grid), t_new);
-    grid.fluxDivergence(rhs(grid), q_current(grid), diffusivity);
     rhs(grid).value(grid.cells) *= -dt;
 
     dq(grid).value(grid.cells) = rhs(grid).value(grid.cells);
   }
   
 
-
   //==== Initialize residual ====
-  coforall grid in child_grids {
-    grid.homogeneousBEOperator(residual(grid), 
-                               dq(grid),
-                               bc, diffusivity, dt);
+  homogeneousBEOperator(residual, dq, bc, diffusivity, dt);
 
+  coforall grid in child_grids {
     residual(grid).value(grid.cells) = rhs(grid).value(grid.cells)
                                        - residual(grid).value(grid.cells);
 
@@ -78,8 +76,6 @@ def BaseLevel.stepDiffusionBE(
   level_res_norm_square = +reduce(grid_res_norm_squares);
 
 
-
-
   //==== Initialize search direction ====
   coforall grid in child_grids {
     search_dir(grid).value(grid.cells) = residual(grid).value(grid.cells);
@@ -87,11 +83,8 @@ def BaseLevel.stepDiffusionBE(
 
 
   //==== Initialize residual update direction ====
-  coforall grid in child_grids {
-    grid.homogeneousBEOperator(residual_update_dir(grid),
-                               search_dir(grid),
-                               bc, diffusivity, dt);
-  }
+  homogeneousBEOperator(residual_update_dir, search_dir, bc, diffusivity, dt);
+
   //<=== Initialize <===
 
 
@@ -139,11 +132,7 @@ def BaseLevel.stepDiffusionBE(
                                            + beta * search_dir(grid).value(grid.cells);
     }
     
-    coforall grid in child_grids {
-      grid.homogeneousBEOperator(residual_update_dir(grid),
-                                 search_dir(grid),
-                                 bc, diffusivity, dt);
-    }
+    homogeneousBEOperator(residual_update_dir, search_dir, bc, diffusivity, dt);
 
   }
   //<=== CG iteration <===
@@ -167,35 +156,59 @@ def BaseLevel.stepDiffusionBE(
 
 
 
-//===> BaseGrid.homogeneousBEOperator method ===>
-//==============================================>
+//===> BaseLevel.homogeneousBEOperator method ===>
+//===============================================>
 //----------------------------------------------------------------
 //      L(q) = q + dt*flux_divergence(q), values on [cells]
 //----------------------------------------------------------------
-def LevelGrid.homogeneousBEOperator(
-  Lq:          LevelGridArray,
-  q:           LevelGridArray,
+def BaseLevel.homogeneousBEOperator(
+  Lq:          LevelArray,
+  q:           LevelArray,
   bc:          LevelBC,
   diffusivity: real,
-  dt:          real
-){
+  dt:          real)
+{
 
   bc.fillGhostCellsHomogeneous(q);
-  fluxDivergence(Lq,  q, diffusivity);
-  Lq.value(cells) = q.value(cells) + dt * Lq.value(cells);
+
+  fluxDivergence(Lq, q, diffusivity);
+
+  coforall grid in child_grids do
+    Lq(grid).value(grid.cells) = q(grid).value(grid.cells) 
+                                  + dt * Lq(grid).value(grid.cells);
 
 }
-//<=== BaseGrid.homogeneousBEOperator method <===
-//<==============================================
+//<=== BaseLevel.homogeneousBEOperator method <===
+//<===============================================
+
+
+
+
+//===> BaseLevel.fluxDivergence method ===>
+//========================================>
+def BaseLevel.fluxDivergence(
+  flux_div:    LevelArray,
+  q:           LevelArray,
+  diffusivity: real)
+{
+
+  coforall grid in child_grids do
+    grid.fluxDivergence(flux_div(grid), q(grid), diffusivity);
+
+}
+//<=== BaseLevel.fluxDivergence method <===
+//<========================================
+
+
 
 
 
 
 //===> BaseGrid.fluxDivergence method ===>
 //=======================================>
-def LevelGrid.fluxDivergence(
-  flux_div:    LevelGridArray,
-  q:           LevelGridArray,
+def BaseGrid.fluxDivergence(
+  flux_div:    GridArray,
+  q:           GridArray,
   diffusivity: real)
 {
 
@@ -244,25 +257,70 @@ def LevelGrid.fluxDivergence(
 //===============================================>
 class ZeroFluxDiffusionLevelBC: LevelBC {
   
-  def fillBoundaryGhosts(grid_array: LevelGridArray, t: real) {
-    fillBoundaryGhostsHomogeneous(grid_array);
+  def fillBoundaryGhosts(q: LevelArray, t: real) {
+    fillBoundaryGhostsHomogeneous(q);
   }
+
   
-  def fillBoundaryGhostsHomogeneous(grid_array: LevelGridArray) {
+  def fillBoundaryGhostsHomogeneous(q: LevelArray) {
     
-    var grid = grid_array.grid : LevelGrid;
+    coforall grid in level.child_grids {
     
-    for cell in grid.boundary_ghosts {
-      var target_cell = cell;
-      for d in dimensions {
-        target_cell(d) = min(target_cell(d), grid.cells.dim(d).high);
-        target_cell(d) = max(target_cell(d), grid.cells.dim(d).low);        
+      for cell in level.boundary_ghosts(grid) {
+	var target_cell = cell;
+	for d in dimensions {
+	  target_cell(d) = min(target_cell(d), grid.cells.dim(d).high);
+	  target_cell(d) = max(target_cell(d), grid.cells.dim(d).low);        
+	}
+	q(grid).value(cell) = q(grid).value(target_cell);
       }
-      grid_array.value(cell) = grid_array.value(target_cell);
     }
-    
   }
-  
+
 }
 //<=== ZeroFluxDiffusionLevelBC derived class <===
 //<===============================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* //===> BaseGrid.homogeneousBEOperator method ===> */
+/* //==============================================> */
+/* //---------------------------------------------------------------- */
+/* //      L(q) = q + dt*flux_divergence(q), values on [cells] */
+/* //---------------------------------------------------------------- */
+/* def BaseGrid.homogeneousBEOperator( */
+/*   Lq:          LevelGridArray, */
+/*   q:           LevelGridArray, */
+/*   bc:          LevelBC, */
+/*   diffusivity: real, */
+/*   dt:          real */
+/* ){ */
+
+/*   bc.fillGhostCellsHomogeneous(q); */
+/*   fluxDivergence(Lq,  q, diffusivity); */
+/*   Lq.value(cells) = q.value(cells) + dt * Lq.value(cells); */
+
+/* } */
+/* //<=== BaseGrid.homogeneousBEOperator method <=== */
+/* //<============================================== */

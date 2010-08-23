@@ -13,134 +13,6 @@ use grid_base_defs;
 //=======================================================================>
 
 
-//===> LevelGrid derived class ===>
-//================================>
-class LevelGrid: BaseGrid {
-
-  var parent_level: BaseLevel;
-
-  var level_neighbors: domain(LevelGrid);
-
-  var level_ghosts:   [level_neighbors] subdomain(ext_cells);
-
-  var boundary_ghosts: sparse subdomain(ext_cells);
-
-
-
-  //===> initialize method ===>
-  //==========================>
-  def initialize() {
-
-    //===> Set fields via parent data and index bounds ===>
-    forall d in dimensions {
-      x_low(d)  = parent_level.x_low(d) + i_low(d)  * parent_level.dx(d)/2.0;
-      x_high(d) = parent_level.x_low(d) + i_high(d) * parent_level.dx(d)/2.0;
-      n_cells(d)= (i_high(d) - i_low(d)) / 2;
-    }
-
-    n_ghost_cells = parent_level.n_child_ghost_cells;
-    //<=== Set fields via parent data and index bounds <===
-
-
-    sanityChecks();
-
-    setDerivedFields();
-
-  }
-  //<==========================
-  //<=== initialize method <===
-
-
-
-  //===> partitionLevelGhosts method ===>
-  //====================================>
-  //--------------------------------------------------------------
-  // Stores domains of ghost cells that represent another cell on
-  // the level, sorted by the neighbor grid to which they belong.
-  //--------------------------------------------------------------
-  def partitionLevelGhosts() {
-  
-    //==== For storing domain intersections ====
-    var intersection: ext_cells.type;
-  
-    //===> Check each sibling for neighbors ===>
-    for sib in parent_level.child_grids {
-
-      intersection = intersectDomains(ext_cells, sib.cells);
-
-      //==== Partition based on intersection, if nonempty ====
-      if intersection.dim(1).length > 0 {
-
-	//==== Add intersection to level ghosts ====
-        level_neighbors.add(sib);
-        level_ghosts(sib) = intersection;
-
-      }
-
-    }
-    //<=== Check each sibling for neighbors <===
-
-  }
-  //<=== partitionLevelGhosts method <===
-  //<====================================
-
-
-
-  //===> partitionBoundaryGhosts method ===>
-  //=======================================>
-  //-------------------------------------------------
-  // Sets up the associative domain boundary_ghosts.
-  //-------------------------------------------------
-  def partitionBoundaryGhosts() {
-
-    //==== Initialize all ghost cells as boundary ====
-    for cell in ghost_cells do
-      boundary_ghosts.add(cell);
-
-
-    //==== Remove those that are level ghosts ====
-    for nbr in level_neighbors {
-      for cell in level_ghosts(nbr) do
-	boundary_ghosts.remove(cell);
-    }
-    
-  }
-  //<=== partitionBoundaryGhosts method <===
-  //<=======================================
-  
-  
-  
-  //===> fillLevelGhosts method ===>
-  //===============================>
-  //-------------------------------------------------------------
-  // Copies data from q's siblings on neighboring grids into q's
-  // ghost values.
-  //-------------------------------------------------------------
-  def fillLevelGhosts(q: LevelGridArray) {
-  
-    //==== Make q lives on this grid ====
-    assert(q.grid == this);
-  
-    for nbr in level_neighbors {
-      //==== Locate sibling solution on neighbor grid ====
-      var q_sib = q.parent_array.child_arrays(nbr);
-  
-      //==== Copy values from level ghosts ====
-      q.value(level_ghosts(nbr)) = q_sib.value(level_ghosts(nbr));
-    }
-  
-  }
-  //<=== fillLevelGhosts method <===
-  //<===============================
-
-
-}
-//<=== LevelGrid derived class <===
-//<================================
-
-
-
-
 //===> BaseLevel class ===>
 //========================>
 class BaseLevel {
@@ -152,12 +24,53 @@ class BaseLevel {
       n_child_ghost_cells: dimension*int,
       dx:                  dimension*real;
 
-  var child_grids: domain(LevelGrid);
+
+  //==== Level cell domains ====
+  //--------------------------------------------------------------------
+  // No plans to iterate over these, but they're nice for the subdomain
+  // declarations below.
+  //--------------------------------------------------------------------
+  var ext_cells: domain(dimension, stridable=true);
+  var cells:     subdomain(ext_cells);
+
+
+  //==== Child grid info ====
+  //---------------------------------------------------------------------
+  // For each child grid, the level stores its list of neighbors, the
+  // ghost cells it shares with its neighbors (one arithmetic domain per
+  // neighbor) and a sparse list of the ghost cells which belong to the
+  // physical boundary.
+  //---------------------------------------------------------------------
+  var child_grids:     domain(BaseGrid);
+  var neighbors:       [child_grids] BaseGrid;
+
+  var shared_ghosts:   [child_grids] [child_grids] subdomain(cells);
+  var boundary_ghosts: [child_grids] sparse subdomain(ext_cells);
+
+  
+
+
 
   //===> initialize method ===>
   //==========================>
+  //--------------------------------------------------------------------
+  // Sets dx and cell domains, based on the mandatory input parameters.
+  //--------------------------------------------------------------------
   def initialize() {
     dx = (x_high - x_low) / n_cells;
+
+
+    //==== Set cell domains ====
+    var range_tuple: dimension*range(stridable = true);
+    for d in dimensions do
+      range_tuple(d) = 1 .. #2*n_cells(d) by 2;
+    cells = range_tuple;
+
+    var size: dimension*int;
+    for d in dimensions do
+      size(d) = 2*n_child_ghost_cells(d);
+    ext_cells = cells.expand(size);
+
   }
   //<=== initialize method <===
   //<==========================
@@ -168,7 +81,7 @@ class BaseLevel {
   //============================>
   //------------------------------------------------------
   // Provided a real coordinate, returns the index of the
-  // nearest vertex.  Useful when defining a LevelGrid by
+  // nearest vertex.  Useful when defining a grid by
   // its real bounds.
   //------------------------------------------------------
   def snapToVertex(x: dimension*real) {
@@ -192,6 +105,8 @@ class BaseLevel {
 
 
 
+
+
 //===> BaseLevel.addGrid method ===>
 //=================================>
 //--------------------------------------------------------
@@ -200,15 +115,31 @@ class BaseLevel {
 // real arithmetic.
 //--------------------------------------------------------
 def BaseLevel.addGrid(
-  i_low:  dimension*int,
-  i_high: dimension*int)
+  i_low_grid:  dimension*int,
+  i_high_grid: dimension*int)
 {
-  
+
+  //==== Safety check ====  
   assert(fixed == false);
 
-  var new_grid = new LevelGrid(parent_level  = this,
-                               i_low         = i_low,
-                               i_high        = i_high);
+
+  //==== Derive grid fields from index bounds and parent (this) info ====
+  var x_low_grid, x_high_grid: dimension*real;
+  var n_cells_grid:            dimension*int;
+
+  for d in dimensions {
+    x_low_grid(d)   = x_low(d) + i_low_grid(d)  * dx(d)/2.0;
+    x_high_grid(d)  = x_low(d) + i_high_grid(d) * dx(d)/2.0;
+    n_cells_grid(d) = (i_high_grid(d) - i_low_grid(d)) / 2;
+  }
+
+
+  //==== Create and add new grid ====
+  var new_grid = new BaseGrid(x_low         = x_low_grid,
+			      x_high        = x_high_grid,
+			      i_low         = i_low_grid,
+			      n_cells       = n_cells_grid,
+			      n_ghost_cells = n_child_ghost_cells);
 
   child_grids.add(new_grid);
 }
@@ -223,15 +154,11 @@ def BaseLevel.addGrid(
   x_high_grid: dimension*real)
 {
 
-  //==== Make sure the level isn't fixed ====
-  assert(fixed == false);
+  var i_low_grid = snapToVertex(x_low_grid);
+  var i_high_grid = snapToVertex(x_high_grid);
 
+  addGrid(i_low_grid, i_high_grid);
 
-  //==== Add grid ====
-  var new_grid = new LevelGrid(parent_level  = this,
-                               i_low         = snapToVertex(x_low_grid),
-                               i_high        = snapToVertex(x_high_grid));
-  child_grids.add(new_grid);
 }
 //<=== BaseLevel.addGrid method <===
 //<=================================
@@ -253,14 +180,86 @@ def BaseLevel.fix() {
   assert(fixed == false);
   fixed = true;
 
-  coforall grid in child_grids {
-    grid.partitionLevelGhosts();
-    grid.partitionBoundaryGhosts();
-  }
+  partitionSharedGhosts();
+  partitionBoundaryGhosts();
 
 }
 //<=== BaseLevel.fix method <===
 //<=============================
+
+
+
+
+
+//===> BaseLevel.partitionSharedGhosts method ===>
+//===============================================>
+//----------------------------------------------------------------------
+// For each child grid 'grid', locates all neighboring grids.  For each 
+// neighbor 'nbr', stores the domain of grid's ghost cells that are
+// shared with nbr's interior.
+//----------------------------------------------------------------------
+def BaseLevel.partitionSharedGhosts() {
+  
+  coforall grid in child_grids {
+
+    //==== Set shared_ghosts for each sibling ====
+    for sib in child_grids do
+      shared_ghosts(grid)(sib) = intersectDomains(grid.ext_cells, sib.cells);
+
+    //==== Need to fix grid's intersection with itself ====
+    var empty_domain: domain(dimension);
+    shared_ghosts(grid)(grid) = empty_domain;
+
+  }
+}
+//<=== BaseLevel.partitionSharedGhosts method <===
+//<===============================================
+
+
+
+
+//===> BaseLevel.partitionBoundaryGhosts method ===>
+//=================================================>
+//-----------------------------------------------------------------------
+// For each child grid, sets up the sparse domain boundary_ghosts(grid).
+//-----------------------------------------------------------------------
+def BaseLevel.partitionBoundaryGhosts() {
+
+  coforall grid in child_grids {
+    
+    //==== Initialize all ghost cells as boundary ====
+    for cell in grid.ghost_cells do
+      boundary_ghosts(grid).add(cell);
+
+
+    //==== Remove ghost cells that are shared ====
+    for sib in child_grids {
+      for cell in shared_ghosts(grid)(sib) do
+	boundary_ghosts(grid).remove(cell);
+    }
+
+  }
+
+}
+//<=== BaseLevel.partitionBoundaryGhosts method <===
+//<=================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -270,31 +269,21 @@ def BaseLevel.fix() {
 //=====================================================>
 
 
-//===> LevelGridArray derived class ===>
-//=====================================>
-class LevelGridArray: GridArray {
-  const parent_array: LevelArray;
-}
-//<=== LevelGridArray derived class <===
-//<=====================================
-
-
-
-
 //===> LevelArray class ===>
 //=========================>
 class LevelArray {
   const level: BaseLevel;
 
-  var child_arrays: [level.child_grids] LevelGridArray;
+  var child_arrays: [level.child_grids] GridArray;
 
   def initialize() {
+
     for grid in level.child_grids do
-      child_arrays(grid) = new LevelGridArray(grid         = grid,
-                                              parent_array = this);
+      child_arrays(grid) = new GridArray(grid = grid);
+                                              
   }
 
-  def this(grid: LevelGrid){
+  def this(grid: BaseGrid){
     return child_arrays(grid);
   }
 }
@@ -312,8 +301,7 @@ def BaseLevel.setLevelArray(
 ){
 
   coforall grid in child_grids {
-    var q_grid = q.child_arrays(grid);
-    grid.setGridArray(q_grid, f);
+    grid.setGridArray(q(grid), f);
   }
 
 }
@@ -321,9 +309,31 @@ def BaseLevel.setLevelArray(
 //<=======================================
 
 
+
+
+//===> BaseLevel.fillSharedGhosts method ===>
+//==========================================>
+def BaseLevel.fillSharedGhosts(q: LevelArray) {
+
+  coforall grid in child_grids {    
+    coforall sib in child_grids {
+
+      var shared_domain = shared_ghosts(grid)(sib);
+      q(grid).value(shared_domain) = q(sib).value(shared_domain);
+
+    }
+  }
+
+}
+//<=== BaseLevel.fillSharedGhosts method <===
+//<==========================================
+
+
+
 //<=====================================================
 //<=================== LEVEL ARRAYS ====================
 //<=====================================================
+
 
 
 

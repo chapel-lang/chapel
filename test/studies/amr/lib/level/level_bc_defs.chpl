@@ -6,37 +6,33 @@ class LevelBC {
   
   var level: BaseLevel;
 
-  //===> fillGridGhosts method ===>
+  //===> fillGhostCells method ===>
   //==============================>
-  def fillGhostCells(grid_array: LevelGridArray, t: real) {
+  def fillGhostCells(q: LevelArray, t: real) {
 
-    var grid = (grid_array.grid : LevelGrid);
-
-    grid.fillLevelGhosts(grid_array);
-    fillBoundaryGhosts(grid_array, t);
+    level.fillSharedGhosts(q);
+    fillBoundaryGhosts(q, t);
 
   }
-  //<=== fillGridGhosts method <===
+  //<=== fillGhostCells method <===
   //<==============================
   
   
-  //===> fillGridGhostsHomogeneous method ===>
+  //===> fillGhostCellsHomogeneous method ===>
   //=========================================>
-  def fillGhostCellsHomogeneous(grid_array: LevelGridArray) {
+  def fillGhostCellsHomogeneous(q: LevelArray) {
     
-    var grid = (grid_array.grid : LevelGrid);
-
-    grid.fillLevelGhosts(grid_array);
-    fillBoundaryGhostsHomogeneous(grid_array);
+    level.fillSharedGhosts(q);
+    fillBoundaryGhostsHomogeneous(q);
 
   }
-  //<=== fillGridGhostsHomogeneous method <===
+  //<=== fillGhostCellsHomogeneous method <===
   //<=========================================
   
 
   //==== Dummy methods; provied in derived class ====
-  def fillBoundaryGhosts(grid_array: LevelGridArray, t: real) {}
-  def fillBoundaryGhostsHomogeneous(grid_array: LevelGridArray) {}
+  def fillBoundaryGhosts(q: LevelArray, t: real) {}
+  def fillBoundaryGhostsHomogeneous(q: LevelArray) {}
 
 }
 //<=== LevelBC class <===
