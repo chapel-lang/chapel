@@ -9,6 +9,7 @@
 
 
 use grid_base_defs;
+use grid_array_defs;
 use grid_solution_defs;
 use grid_bc_defs;
 use grid_ctu_defs;

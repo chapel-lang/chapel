@@ -1,14 +1,9 @@
 LEVEL_SOURCES = \
-	../../lib/grid/grid_base_defs.chpl \
-	../../lib/grid/grid_solution_defs.chpl \
-	../../lib/grid/grid_bc_defs.chpl \
-	../../lib/level/level_base_defs.chpl \
-	../../lib/level/level_solution_defs.chpl \
-	../../lib/level/level_bc_defs.chpl \
 	level_diffusion_defs.chpl \
 	level_diffusion_driver.chpl
 
-
+GRID_LIB = ../../lib/grid
+LEVEL_LIB = ../../lib/level
 
 .PHONY: clean
 
@@ -19,7 +14,7 @@ output: level_test.out
 	./level_test.out
 
 level_test.out: $(LEVEL_SOURCES)
-	chpl $(LEVEL_SOURCES) --set dimension=$(DIM) -o level_test.out
+	chpl $(LEVEL_SOURCES) -M $(GRID_LIB) -M $(LEVEL_LIB) --set dimension=$(DIM) -o level_test.out
 
 clean:
 	rm -f _output/fort.* _output/*.png output_* *.out

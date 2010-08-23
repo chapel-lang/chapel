@@ -1,4 +1,5 @@
 use grid_base_defs;
+use grid_array_defs;
 
 
 //===> ScalarGridSolution class ===>

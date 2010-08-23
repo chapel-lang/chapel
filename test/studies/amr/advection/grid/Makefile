@@ -4,12 +4,10 @@ CLAW_PLOTDIR = _plots               # Directory for plots
 PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
 
 SOURCES = \
-	../../lib/grid/grid_base_defs.chpl \
-	../../lib/grid/grid_solution_defs.chpl \
-	../../lib/grid/grid_bc_defs.chpl \
 	grid_ctu_defs.chpl \
 	grid_ctu_driver.chpl
 
+GRID_LIB = ../../lib/grid
 
 DIM = 2
 
@@ -25,7 +23,7 @@ output: grid_ctu.out
 
 
 grid_ctu.out: $(SOURCES)
-	chpl $(SOURCES) --set dimension=$(DIM) -o grid_ctu.out
+	chpl $(SOURCES) -M $(GRID_LIB) --set dimension=$(DIM) -o grid_ctu.out
 
 
 plots: _output/fort.t0000

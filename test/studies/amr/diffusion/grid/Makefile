@@ -5,11 +5,10 @@ PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
 
 
 SOURCES = \
-	../../lib/grid/grid_base_defs.chpl \
-	../../lib/grid/grid_solution_defs.chpl \
-	../../lib/grid/grid_bc_defs.chpl \
 	grid_diffusion_defs.chpl \
 	grid_diffusion_driver.chpl
+
+GRID_LIB = ../../lib/grid
 
 DIM = 2
 
@@ -27,7 +26,7 @@ output: diffusion_backward_euler.out
 
 
 diffusion_backward_euler.out: $(SOURCES)
-	chpl $(SOURCES) --set dimension=$(DIM) -o diffusion_backward_euler.out
+	chpl $(SOURCES) -M $(GRID_LIB) --set dimension=$(DIM) -o diffusion_backward_euler.out
 
 
 plots: _output/fort.t0000

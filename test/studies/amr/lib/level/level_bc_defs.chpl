@@ -1,4 +1,6 @@
 use level_base_defs;
+use level_array_defs;
+
 
 //===> LevelBC class ===>
 //======================>
