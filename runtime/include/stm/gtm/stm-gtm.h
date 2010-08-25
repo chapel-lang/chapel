@@ -100,7 +100,7 @@ typedef struct __chpl_stm_tx_t {
 //
 #define OWNED_MASK             0x01                 // 1 bit
 #define LOCK_GET_OWNED(lock)   (lock & OWNED_MASK)
-#define LOCK_ARRAY_SIZE        (1 << 20)            // 2^20 = 1M 
+#define LOCK_ARRAY_SIZE        (1 << 24)            // 2^20 = 1M 
 #define LOCK_MASK              (LOCK_ARRAY_SIZE - 1)
 #define LOCK_SHIFT             ((sizeof(gtm_word_t) == 4) ? 2 : 3)
 #define LOCK_IDX(addr)         (((gtm_word_t)addr >> LOCK_SHIFT) & LOCK_MASK)

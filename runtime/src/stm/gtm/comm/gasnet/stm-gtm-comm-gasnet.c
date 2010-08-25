@@ -604,8 +604,6 @@ void AM_tx_fork_fast(gasnet_token_t token, void* msg, size_t nbytes) {
 				    &(buf->commstatus), sizeof(int*), 
 				    status));
   
-  chpl_free(buf, __LINE__, __FILE__);
-
   GTM_TX_COMM_STATS_STOP(tx, TX_COMM_FORK_STATS, status);
 }
 

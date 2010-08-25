@@ -48,13 +48,13 @@ extern chpl_txfn_p chpl_txftable[];
 #define CHPL_STM_TX_COMMIT(tx)			\
   chpl_stm_tx_commit(tx); chpl_stm_tx_destroy(tx)
 
-#define CHPL_STM_COMM_WIDE_GET(tx, ldst, rwide, type, ln, fn)		\
+#define CHPL_STM_COMM_WIDE_GET(tx, ldst, wide, type, ln, fn)		\
   do {									\
-    if (chpl_localeID == (rwide).locale)				\
-      chpl_stm_tx_load(tx, &ldst, (rwide).addr,				\
+    if (chpl_localeID == (wide).locale)					\
+      chpl_stm_tx_load(tx, &ldst, (wide).addr,				\
 		       SPECIFY_SIZE(type), ln, fn);			\
     else 								\
-      chpl_stm_tx_get(tx, &ldst, (rwide).locale, (rwide).addr,		\
+      chpl_stm_tx_get(tx, &ldst, (wide).locale, (wide).addr,		\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while(0)
 
@@ -64,7 +64,7 @@ extern chpl_txfn_p chpl_txftable[];
 #define CHPL_STM_LOAD(tx, dst, src, type, ln, fn)		\
   chpl_stm_tx_load(tx, &dst, &src, SPECIFY_SIZE(type), ln, fn)
 
-#define CHPL_STM_LOAD_FIELD_VALUE(tx, dst, src, type, ln, fn)		\
+#define CHPL_STM_LOAD_FIELD_VALUE(tx, dst, src, type, ln, fn)	\
   CHPL_STM_LOAD(tx, dst, src, type, ln, fn);
 
 #define CHPL_STM_LOAD_FIELD_VALUE_SVEC(tx, dst, src, type, ln, fn)	\
@@ -76,34 +76,37 @@ extern chpl_txfn_p chpl_txftable[];
 #define CHPL_STM_LOAD_TUPLE_COMPONENT_VALUE_SVEC(tx, dst, src, type, ln, fn) \
   CHPL_STM_LOAD(tx, dst, src, type, ln, fn);
 
-#define CHPL_STM_COMM_WIDE_GET_LOCALEID(tx, ldst, rwide, ln, fn)	\
+#define CHPL_STM_COMM_WIDE_GET_LOCALEID(tx, ldst, wide, ln, fn)	\
   do {                                                                  \
-    if (chpl_localeID == (rwide).locale)				\
-      chpl_stm_tx_load(tx, &ldst, &((rwide).addr->locale),		\
+    if (chpl_localeID == (wide).locale)					\
+      chpl_stm_tx_load(tx, &ldst, &((wide).addr->locale),		\
 		       SPECIFY_SIZE(int32_t), ln, fn);			\
     else                                                                \
-      chpl_stm_tx_get(tx, &(ldst), (rwide).locale, (rwide).addr,	\
+      chpl_stm_tx_get(tx, &(ldst), (wide).locale, (wide).addr,		\
 		      SPECIFY_SIZE(int32_t), ln, fn);			\
   } while (0)
 
 #define CHPL_STM_LOAD_LOCALEID(tx, ldst, lwide, ln, fn)			\
   chpl_stm_tx_load(tx, &ldst, &(lwide).locale, SPECIFY_SIZE(int32_t), ln, fn);
 
-#define CHPL_STM_COMM_WIDE_GET_FIELD_VALUE(tx, ldst, rwide, stype, sfield, type, ln, fn) \
+#define CHPL_STM_COMM_WIDE_GET_FIELD_VALUE(tx, ldst, wide, stype, sfield, type, ln, fn) \
   do {                                                                  \
-    if (chpl_localeID == (rwide).locale)				\
-      chpl_stm_tx_load(tx, &ldst, &((stype)((rwide).addr))->sfield,	\
+    if (chpl_localeID == (wide).locale)					\
+      chpl_stm_tx_load(tx, &ldst, &((stype)((wide).addr))->sfield,	\
 		       SPECIFY_SIZE(type), ln, fn);			\
     else								\
-      chpl_stm_tx_get(tx, &ldst, (rwide).locale,			\
-		      &((stype)((rwide).addr))->sfield,			\
+      chpl_stm_tx_get(tx, &ldst, (wide).locale,				\
+		      &((stype)((wide).addr))->sfield,			\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while (0)
 
-#define CHPL_STM_COMM_WIDE_CLASS_GET_TEST_CID(tx, ldst, rwide, cid, stype, sfield, ln, fn) \
+#define CHPL_STM_COMM_WIDE_GET_FIELD_VALUE_SVEC(tx, ldst, wide, stype, sfield, type, ln, fn) \
+  CHPL_STM_COMM_WIDE_GET_FIELD_VALUE(tx, ldst, wide, stype, sfield, type, ln, fn)
+
+#define CHPL_STM_COMM_WIDE_CLASS_GET_TEST_CID(tx, ldst, wide, cid, stype, sfield, ln, fn) \
   do {									\
     chpl__class_id chpl_macro_tmp;					\
-    CHPL_STM_COMM_WIDE_GET_FIELD_VALUE(tx, chpl_macro_tmp, rwide, stype, \
+    CHPL_STM_COMM_WIDE_GET_FIELD_VALUE(tx, chpl_macro_tmp, wide, stype, \
 				       sfield, chpl__class_id, ln, fn);	\
     ldst = chpl_macro_tmp == cid;					\
   } while(0)
@@ -116,16 +119,16 @@ extern chpl_txfn_p chpl_txftable[];
     dst = chpl_macro_tmp == cid;					\
   } while(0)
 
-#define CHPL_STM_COMM_WIDE_ARRAY_GET(tx, rwide, cls, ind, stype, sfield, etype, ln, fn) \
+#define CHPL_STM_COMM_WIDE_ARRAY_GET(tx, wide, cls, ind, stype, sfield, etype, ln, fn) \
   do {                                                                  \
-    (rwide).locale = (cls).locale;					\
-    CHPL_STM_COMM_WIDE_GET_FIELD_VALUE(tx, (rwide).addr, cls, stype,	\
+    (wide).locale = (cls).locale;					\
+    CHPL_STM_COMM_WIDE_GET_FIELD_VALUE(tx, (wide).addr, cls, stype,	\
 				       sfield, etype, ln, fn);		\
-    (rwide).addr += ind;						\
+    (wide).addr += ind;						\
   } while (0)
 
-#define CHPL_STM_COMM_WIDE_ARRAY_GET_SVEC(tx, rwide, cls, ind, stype, sfield, etype, ln, fn) \
-  CHPL_STM_COMM_WIDE_ARRAY_GET(tx, rwide, cls, ind, stype, sfield, etype, ln, fn)
+#define CHPL_STM_COMM_WIDE_ARRAY_GET_SVEC(tx, wide, cls, ind, stype, sfield, etype, ln, fn) \
+  CHPL_STM_COMM_WIDE_ARRAY_GET(tx, wide, cls, ind, stype, sfield, etype, ln, fn)
 
 #define CHPL_STM_ARRAY_LOAD(tx, dst, src, ind, type, ln, fn)		\
   do {									\
@@ -134,32 +137,32 @@ extern chpl_txfn_p chpl_txftable[];
     dst += ind;								\
   } while(0)
 
-#define CHPL_STM_COMM_WIDE_ARRAY_GET_VALUE(tx, ldst, rwide_type, cls, ind, stype, sfield, etype, etype2, ln, fn) \
+#define CHPL_STM_COMM_WIDE_ARRAY_GET_VALUE(tx, ldst, wide_type, cls, ind, stype, sfield, etype, etype2, ln, fn) \
   do {                                                                  \
-    rwide_type chpl_macro_tmp;						\
+    wide_type chpl_macro_tmp;						\
     CHPL_STM_COMM_WIDE_ARRAY_GET(tx, chpl_macro_tmp, cls, ind, stype,	\
 				 sfield, etype, ln, fn);		\
     CHPL_STM_COMM_WIDE_GET(tx, ldst, chpl_macro_tmp, etype2, ln, fn);	\
   } while (0)
 
-#define CHPL_STM_COMM_WIDE_PUT(tx, rwide, lsrc, type, ln, fn)		\
+#define CHPL_STM_COMM_WIDE_PUT(tx, wide, lsrc, type, ln, fn)		\
   do {									\
     type chpl_macro_tmp = lsrc;						\
-    if (chpl_localeID == (rwide).locale)				\
-      chpl_stm_tx_store(tx, &chpl_macro_tmp, (rwide).addr,		\
+    if (chpl_localeID == (wide).locale)					\
+      chpl_stm_tx_store(tx, &chpl_macro_tmp, (wide).addr,		\
 			SPECIFY_SIZE(type), ln, fn);			\
     else 								\
-      chpl_stm_tx_put(tx, &chpl_macro_tmp, (rwide).locale, (rwide).addr, \
+      chpl_stm_tx_put(tx, &chpl_macro_tmp, (wide).locale, (wide).addr,	\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while(0)
 
-#define CHPL_STM_COMM_WIDE_PUT_SVEC(tx, rwide, lsrc, type, ln, fn)	\
+#define CHPL_STM_COMM_WIDE_PUT_SVEC(tx, wide, lsrc, type, ln, fn)	\
   do {									\
-    if (chpl_localeID == (rwide).locale)				\
-      chpl_stm_tx_store(tx, &lsrc, (rwide).addr,			\
+    if (chpl_localeID == (wide).locale)					\
+      chpl_stm_tx_store(tx, &lsrc, (wide).addr,				\
 			SPECIFY_SIZE(type), ln, fn);			\
     else 								\
-      chpl_stm_tx_put(tx, &lsrc, (rwide).locale, (rwide).addr,		\
+      chpl_stm_tx_put(tx, &lsrc, (wide).locale, (wide).addr,		\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while(0)
 
@@ -183,45 +186,45 @@ extern chpl_txfn_p chpl_txftable[];
 #define CHPL_STM_STORE_SVEC(tx, dst, src, type, ln, fn)			\
   chpl_stm_tx_store(tx, &src, &dst, SPECIFY_SIZE(type), ln, fn);
 
-#define CHPL_STM_COMM_WIDE_SET_TUPLE_COMPONENT_VALUE(tx, rwide, lsrc, stype, index, type, ln, fn) \
+#define CHPL_STM_COMM_WIDE_SET_TUPLE_COMPONENT_VALUE(tx, wide, lsrc, stype, index, type, ln, fn) \
   do {                                                                  \
     type chpl_macro_tmp = lsrc;						\
-    if (chpl_localeID == (rwide).locale)				\
-      chpl_stm_tx_store(tx, &chpl_macro_tmp, &(*(rwide).addr)[index],	\
+    if (chpl_localeID == (wide).locale)					\
+      chpl_stm_tx_store(tx, &chpl_macro_tmp, &(*(wide).addr)[index],	\
 			SPECIFY_SIZE(type), ln, fn);			\
     else                                                                \
-      chpl_stm_tx_put(tx, &chpl_macro_tmp, (rwide).locale,		\
-		      &(*(rwide).addr)[index],				\
+      chpl_stm_tx_put(tx, &chpl_macro_tmp, (wide).locale,		\
+		      &(*(wide).addr)[index],				\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while (0)
 
-#define CHPL_STM_COMM_WIDE_SET_FIELD_VALUE(tx, rwide, lsrc, stype, sfield, type, ln, fn) \
+#define CHPL_STM_COMM_WIDE_SET_FIELD_VALUE(tx, wide, lsrc, stype, sfield, type, ln, fn) \
   do {									\
     type chpl_macro_tmp = lsrc;						\
-    if (chpl_localeID == (rwide).locale)				\
+    if (chpl_localeID == (wide).locale)					\
       chpl_stm_tx_store(tx, &chpl_macro_tmp,				\
-			&((stype)((rwide).addr))->sfield,		\
+			&((stype)((wide).addr))->sfield,		\
 			SPECIFY_SIZE(type), ln, fn);			\
     else								\
-      chpl_stm_tx_put(tx, &chpl_macro_tmp, (rwide).locale,		\
-		      &((stype)((rwide).addr))->sfield,			\
+      chpl_stm_tx_put(tx, &chpl_macro_tmp, (wide).locale,		\
+		      &((stype)((wide).addr))->sfield,			\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while (0)
 
-#define CHPL_STM_COMM_WIDE_SET_FIELD_VALUE_SVEC(tx, rwide, lsrc, stype, sfield, type, ln, fn) \
+#define CHPL_STM_COMM_WIDE_SET_FIELD_VALUE_SVEC(tx, wide, lsrc, stype, sfield, type, ln, fn) \
   do {									\
-    if (chpl_localeID == (rwide).locale)				\
-      chpl_stm_tx_store(tx, &lsrc, &((stype)((rwide).addr))->sfield,	\
+    if (chpl_localeID == (wide).locale)					\
+      chpl_stm_tx_store(tx, &lsrc, &((stype)((wide).addr))->sfield,	\
 			SPECIFY_SIZE(type), ln, fn);			\
     else								\
-      chpl_stm_tx_put(tx, &lsrc, (rwide).locale,			\
-		      &((stype)((rwide).addr))->sfield,			\
+      chpl_stm_tx_put(tx, &lsrc, (wide).locale,				\
+		      &((stype)((wide).addr))->sfield,			\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while (0)
 
-#define CHPL_STM_COMM_WIDE_ARRAY_SET_VALUE(tx, rwide_type, cls, ind, stype, sfield, etype, val, ln, fn) \
+#define CHPL_STM_COMM_WIDE_ARRAY_SET_VALUE(tx, wide_type, cls, ind, stype, sfield, etype, val, ln, fn) \
   do {                                                                  \
-    rwide_type chpl_macro_tmp1;						\
+    wide_type chpl_macro_tmp1;						\
     CHPL_STM_COMM_WIDE_ARRAY_GET(tx, chpl_macro_tmp1, cls, ind, stype,	\
 				 sfield, etype, ln, fn);		\
     CHPL_STM_COMM_WIDE_PUT(tx, chpl_macro_tmp1, val, etype, ln, fn);	\
