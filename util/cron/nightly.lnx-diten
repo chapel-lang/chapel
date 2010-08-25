@@ -1,4 +1,16 @@
 CRONDIR=`dirname $0`
+export CHPL_NIGHTLY_TMPDIR=/tmp/`whoami`
+export CHPL_HOME_REPOSITORY="https://chapel.svn.sourceforge.net/svnroot/chapel/trunk"
+
+export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly
+export CHPL_NIGHTLY_STATDIR=/data/sea/cascade/chapel/Nightly/Stats
+export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
+
+export CHPL_HOME="/users/chapelu/chapel"
+export TESTBASE="$CHPL_HOME/test"
+export NIGHTLY="$CHPL_HOME/util/cron/nightly"
+
+mkdir -p $CHPL_NIGHTLY_TMPDIR
 
 $CRONDIR/nightly.lnx-diten.x2
 $CRONDIR/nightly.lnx-diten.cyclic
