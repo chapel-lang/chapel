@@ -33,8 +33,9 @@ class BaseGrid {
   var ext_cells:      domain(dimension, stridable=true),
       cells: subdomain(ext_cells);
   
-  var low_ghost_cells:  [dimensions] subdomain(ext_cells),
-      high_ghost_cells: [dimensions] subdomain(ext_cells);
+  var ghost_cells: GridBoundaryDomain;
+/*   var low_ghost_cells:  [dimensions] subdomain(ext_cells), */
+/*       high_ghost_cells: [dimensions] subdomain(ext_cells); */
 
 
   //===> initialize method ===>
@@ -109,9 +110,8 @@ class BaseGrid {
          
 
     //===> Ghost cells ===>
-    //------------------------------------------------------
-    // Note that all ghost cell domains contain the corners.
-    //------------------------------------------------------
+    ghost_cells = new GridBoundaryDomain(grid = this);
+
     for orientation in dimensions do {
 
       var range_tuple: dimension*range(stridable=true);
@@ -125,21 +125,25 @@ class BaseGrid {
       //<=== Set up off-dimensions <===
 
 
+
       //===> Low ghost cells ===>
-      range_tuple(orientation) = ext_cells.dim(orientation).low 
-                                 .. cells.dim(orientation).low-2 
+      range_tuple(orientation) = ext_cells.low(orientation)
+                                 .. cells.low(orientation) - 2 
                                  by 2;
 
-      low_ghost_cells(orientation) = range_tuple;
+      ghost_cells.low(orientation) = range_tuple;
+
+/*       low_ghost_cells(orientation) = range_tuple; */
       //<=== Low ghost cells <===
 
 
       //===> High ghost cells ===>
-      range_tuple(orientation) = cells.dim(orientation).high+2
-                                 .. ext_cells.dim(orientation).high
+      range_tuple(orientation) = cells.high(orientation) + 2
+                                 .. ext_cells.high(orientation)
                                  by 2;
 
-      high_ghost_cells(orientation) = range_tuple;
+      ghost_cells.high(orientation) = range_tuple;
+/*       high_ghost_cells(orientation) = range_tuple; */
       //<=== High ghost cells <===
 
     }   
@@ -151,23 +155,50 @@ class BaseGrid {
 
 
 
-  //===> ghost_cells iterator ===>
-  //=============================>
-  def ghost_cells {
-    for d in dimensions {
-      for cell in low_ghost_cells(d) do
-	yield cell;
-      for cell in high_ghost_cells(d) do
-	yield cell;
-    }
-  }
-  //<=== ghost_cells iterator <===
-  //<=============================
+/*   //===> ghost_cells iterator ===> */
+/*   //=============================> */
+/*   def ghost_cells { */
+/*     for d in dimensions { */
+/*       for cell in low_ghost_cells(d) do */
+/* 	yield cell; */
+/*       for cell in high_ghost_cells(d) do */
+/* 	yield cell; */
+/*     } */
+/*   } */
+/*   //<=== ghost_cells iterator <=== */
+/*   //<============================= */
   
 
 }
 //<=== BaseGrid class <===
 //<==============================
+
+
+
+//===> GridBoundaryDomain class ===>
+//=================================>
+//------------------------------------------------------------------
+// Sets up a "domain" with a low and high entry for each dimension.
+// Also provides a these() method for use as a (currently serial)
+// iterator.
+//------------------------------------------------------------------
+class GridBoundaryDomain {
+  const grid: BaseGrid;
+  var low:  [dimensions] domain(dimension, stridable=true);
+  var high: [dimensions] domain(dimension, stridable=true);
+
+  def these() {
+    for d in dimensions {
+      for idx in low(d) do
+	yield idx;
+      for idx in high(d) do
+	yield idx;
+    }
+  }
+
+}
+//<=== GridBoundaryDomain class <===
+//<=================================
 
 
 
@@ -249,9 +280,9 @@ def intersectDomains(D1, D2) {
            "error: intersectDomains: domains must have equal stride");
 
     //==== Compute the overlap in this dimension ====
-    overlap(d) = max(D1.dim(d).low, D2.dim(d).low) 
+    overlap(d) = max(D1.low(d), D2.low(d)) 
                  .. 
-                 min(D1.dim(d).high, D2.dim(d).high) 
+                 min(D1.high(d), D2.high(d))
                  by 
                  D1.dim(d).stride;
     

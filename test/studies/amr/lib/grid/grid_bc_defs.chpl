@@ -24,8 +24,8 @@ class GridBC {
 //=============================>
 class PeriodicGridBC: GridBC {
 
-  var low_ghost_periodic:  [dimensions] subdomain(grid.ext_cells);
-  var high_ghost_periodic: [dimensions] subdomain(grid.ext_cells);
+
+  var periodic_ghost_images: GridBoundaryDomain;
 
 
   //===> initialize method ===>
@@ -33,16 +33,19 @@ class PeriodicGridBC: GridBC {
   def initialize() {
 
     //===> Build periodic images of ghost cells ===>
+
+    periodic_ghost_images = new GridBoundaryDomain(grid = grid);
+
     var shift: dimension*int;
     
     for d in dimensions do {
       [d_temp in dimensions] shift(d_temp) = 0;
 
       shift(d) = 2*grid.n_cells(d);
-      low_ghost_periodic(d)  = grid.low_ghost_cells(d).translate(shift);
+      periodic_ghost_images.low(d)  = grid.ghost_cells.low(d).translate(shift);
 
       shift(d) = -2*grid.n_cells(d);
-      high_ghost_periodic(d) = grid.high_ghost_cells(d).translate(shift);
+      periodic_ghost_images.high(d) = grid.ghost_cells.high(d).translate(shift);
     }
     //<=== Build periodic images of ghost cells <===
 
@@ -69,8 +72,8 @@ class PeriodicGridBC: GridBC {
 
     //==== Copy values into ghost cells from their periodic images ====
     for d in dimensions do {
-      q(grid.low_ghost_cells(d))  = q(low_ghost_periodic(d));
-      q(grid.high_ghost_cells(d)) = q(high_ghost_periodic(d));
+      q(grid.ghost_cells.low(d))  = q(periodic_ghost_images.low(d));
+      q(grid.ghost_cells.high(d)) = q(periodic_ghost_images.high(d));
     }
   }
   //<=== homogeneousGhostFill method <===
