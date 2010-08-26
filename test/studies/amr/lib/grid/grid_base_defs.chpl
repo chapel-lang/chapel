@@ -132,8 +132,6 @@ class BaseGrid {
                                  by 2;
 
       ghost_cells.low(orientation) = range_tuple;
-
-/*       low_ghost_cells(orientation) = range_tuple; */
       //<=== Low ghost cells <===
 
 
@@ -143,7 +141,6 @@ class BaseGrid {
                                  by 2;
 
       ghost_cells.high(orientation) = range_tuple;
-/*       high_ghost_cells(orientation) = range_tuple; */
       //<=== High ghost cells <===
 
     }   
@@ -151,27 +148,11 @@ class BaseGrid {
 
   }
   //<=== setDerivedFields method <===
-  //<================================
-
-
-
-/*   //===> ghost_cells iterator ===> */
-/*   //=============================> */
-/*   def ghost_cells { */
-/*     for d in dimensions { */
-/*       for cell in low_ghost_cells(d) do */
-/* 	yield cell; */
-/*       for cell in high_ghost_cells(d) do */
-/* 	yield cell; */
-/*     } */
-/*   } */
-/*   //<=== ghost_cells iterator <=== */
-/*   //<============================= */
-  
+  //<================================  
 
 }
 //<=== BaseGrid class <===
-//<==============================
+//<=======================
 
 
 

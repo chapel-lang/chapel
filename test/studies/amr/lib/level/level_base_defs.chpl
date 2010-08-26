@@ -243,3 +243,33 @@ def BaseLevel.partitionBoundaryGhosts() {
 }
 //<=== BaseLevel.partitionBoundaryGhosts method <===
 //<=================================================
+
+
+
+
+
+//===> LevelBoundaryDomain class ===>
+//==================================>
+//---------------------------------------------------------------------
+// Container class that holds a GridBoundaryDomain for each grid on
+// the level.  Not actually used by default for single-level problems,
+// but it definitely belongs here in the library.  Needed by AMR
+// hierarchies, and may also be useful for certain LevelBCs.
+//---------------------------------------------------------------------
+class LevelBoundaryDomain {
+
+  const level: BaseLevel;
+  var grid_boundary_domains: [level.grids] GridBoundaryDomain;
+
+  def initialize() {
+    coforall grid in level.grids do
+      grid_boundary_domains(grid) = new GridBoundaryDomain(grid = grid);
+  }
+
+  def this(grid: BaseGrid) {
+    return grid_boundary_domains(grid);
+  }
+
+}
+//<=== LevelBoundaryDomain class <===
+//<==================================
