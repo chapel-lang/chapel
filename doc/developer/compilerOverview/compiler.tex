@@ -541,45 +541,87 @@ records, and unions.  The fields of ClassType are:
 \subsection{Expr}
 
 The Expr subclasses represents the structure of the program in the
-AST.  There may be multiple pointers to a given instance of a Symbol
-or Type subclass, but there is only a single pointer
-to an instance of any Expr subclass, with the notable exception of back pointers such
-as \cc{parentExpr} and \cc{defPoint}.  The back pointer
-\cc{parentSymbol} is to a symbol and so is not quite as exceptional.
-An Expr can still be shared by putting it in a temp Symbol and
-having multiple SymExprs reference it.
+AST.  Expression objects (i.e. instances of subclasses of Expr) enjoy
+a very important ``uniqueness'' property: there may be only a single
+instance of a pointer to an instance of any Expr subclass.  (There are
+exceptions -- the ``auxiliary'' fields below.)  In other words, a
+given expression object can be put into the AST only once.  By
+contrast, there may be multiple pointers to a given instance of a
+Symbol or Type subclass.  An Expr can still be shared by assigning it
+to a temp Symbol (using the move primitive,
+Section~\ref{sec:moveprimitive}) and having multiple SymExprs
+reference it.  An Expr can also be replicated, e.g. using the
+\cc{BaseAST::copy} method (Section~\ref{sec:BaseASTutils}).
 
-To elaborate, all occurrences of symbols are wrapped by a unique
-SymExpr instance.  So given a program that contains the calls
+All occurrences of symbols (i.e. pointers to Symbol objects) are
+wrapped by unique SymExpr instances.  Consider, for example,
+a program that contains the following calls:
 \begin{chapel}
 f1(a, b);
 f2(b, c);
 \end{chapel}
-the AST for this portion of the program will be represented
+The AST for this portion of the program will be represented
 (throughout the entire compilation) by two different instances of
 CallExpr.  Each instance will have the \cc{baseExpr} field point to a
-distinct instance of the SymExpr class.  The \cc{var} fields will
+distinct instance of the SymExpr class.  The \cc{var} fields of those SymExprs will
 point to the FnSymbol instances that represent \chpl{f1} and
 \chpl{f2}.  Each instance of CallExpr will have the \cc{argList} field
 point to a list of expressions.  Each list will contain two distinct
 SymExpr instances, for a total of four distinct SymExpr instances.
-The second SymExpr instance in the first CallExpr will set \cc{var} to
+The second SymExpr instance in the first CallExpr will set its \cc{var} to
 point to the Symbol that represents \chpl{b}, as will the first
-SymExpr instance in the second CallExpr.  Thus the symbol pointer
-appears more than once via ``forward'' pointers, but pointers to Expr
-subclasses can appear only once via ``forward'' pointers.
+SymExpr instance in the second CallExpr.
+% Thus the symbol pointer
+% appears more than once via ``forward'' pointers, but pointers to Expr
+% subclasses can appear only once via ``forward'' pointers.
+
+The uniqueness property can be made more precise by categorizing each
+Expr-pointing (or Expr-subclass-pointing) field of an AST class as
+either ``defining'' or ``auxiliary''.  The uniqueness property
+requires that each Expr is pointed to by at most one ``defining'' field.
+In other words, all pointers stored in all ``defining'' fields of all
+AST objects must be distinct.  By contrast, ``auxiliary'' pointers
+are guaranteed to be duplicates of ``defining'' pointers.
+For example, the pointer from an Expr to its child is ``defining'', so
+for a given Expr there is only one parent expression that points to
+it.  The back pointer from an Expr to its parent is ``auxiliary'', so
+multiple children may point back to the same parent expression.
+
+This uniqueness property is useful by allowing us to identify an
+expression's position within the AST given just a pointer to that
+expression node.  For example, just a pointer is sufficient to remove
+the node completely from the AST, updating properly all the
+surrounding auxiliary pointers. Also, uniqueness facilitates
+implementing iterators over the AST that visit each node exactly once.
+When you modify an expression in-place, you are assured that it
+affects the AST only in that one place.
+
+The uniqueness property, like many other assumptions on the AST, holds
+between compiler passes (Section~\ref{sec:passes}).  It might be
+violated temporarily within a pass, e.g. while a node is being added
+to or removed from the AST.
+
+Lists of Exprs are represented in the compiler as doubly-linked lists
+wrapped in \cc{AList} objects.  For Exprs that are list members, the
+uniqueness property is as follows.  Each Expr may occur only on a
+single list and there may be only a single ``defining'' pointer to
+each AList object.  Therefore we will extend the uniqueness property
+and the ``defining'' vs. ``auxiliary'' categories to AList-pointing
+fields.  The forward and back pointers that link Exprs into a list
+could be thought of as ``auxiliary'' if we think of the ``defining''
+pointer to the enclosing AList object as being ``defining'' for all
+the Exprs on that list.
 
 The fields in Expr are:
 \begin{itemize}
-\item \cc{Expr* prev} is a back pointer to the previous expression in
+\item \cc{Expr* prev} is an auxiliary pointer to the previous expression in
   a list, if this expression is in a list.
-\item \cc{Expr* next} is a pointer to the next expression in a list,
-  if this expression is in a list.  It may be useful to think of next
-  as a back pointer if we think of the ``forward'' pointer to the
-  AList as pointing to all of the expressions in the list.
-\item \cc{AList* list} is a back pointer to the list of expressions to
-  which this expression is a part.
-\item \cc{Expr* parentExpr} is a back pointer to the parent
+\item \cc{Expr* next} is an auxiliary pointer to the next expression in a list,
+  if this expression is in a list. (See the discussion of lists of Exprs above.)
+\item \cc{AList* list} is an auxiliary pointer to the AList object
+  whose list contains this expression.  (It is auxiliary because all
+  objects on the same list will have the same \cc{list} pointer.)
+\item \cc{Expr* parentExpr} is an auxiliary pointer to the parent
   expression.  This is set any time an Expr is pointed to by another
   Expr.  For example, a parent CallExpr node points to its children
   via \cc{baseExpr} and \cc{argList}.  The Expr nodes pointed to via
@@ -632,7 +674,7 @@ Section~\ref{sec:traverse}.
 \label{sec:defexpr}
 
 Every symbol, with the exception of \cc{rootModule}, is pointed to by
-a distinct instance of the DefExpr class.  The forward pointer to this
+a distinct instance of the DefExpr class.  The defining pointer to this
 DefExpr locates the declaration of this symbol in the AST.
 
 The fields in DefExpr are:
@@ -729,7 +771,7 @@ The fields in CallExpr are:
   \cc{primitive} field (see below) is used.  So in any case if
   \cc{baseExpr} is not \cc{NULL}, the above invariant of pointing to a
   SymExpr for a FnSymbol is be preserved.
-\item \cc{AList argList} is a pointer to the expression list that
+\item \cc{AList* argList} is a pointer to the expression list that
   makes up the actual arguments to this CallExpr.
 \item \cc{PrimitiveOp* primitive} is a pointer to the primitive.  If
   this field is set, then \cc{baseExpr} will be \cc{NULL}.  It's a
@@ -912,11 +954,11 @@ point to note is that we only traverse back to either Symbol or Type
 from Expr nodes via the \cc{sym} field of the DefExpr node.
 
 In these data structures, the only other field that points to an Expr
-node is the \cc{parentExpr} field.  This is a back pointer and so is
+node is the \cc{parentExpr} field.  This is an auxiliary pointer and so is
 not traversed when visiting the nodes via the traversal mechanism.
 
 There are a number of fields that store pointers to symbols.  Some of
-these are back pointers, like \cc{parentSymbol} in Expr, but some are
+these are auxiliary pointers, like \cc{parentSymbol} in Expr, but some are
 not, like \cc{var} in SymExpr.  Pointers to the same Symbol and Type
 instances can appear more than once in this IR, but only once via a
 DefExpr, which roots it in the Chapel program.
@@ -985,7 +1027,7 @@ the AST.
 \label{sec:inserts}
 
 For changing the IR, these methods should always be used as they
-update back pointers and enforce some constraints.
+update auxiliary pointers and enforce some constraints.
 
 \begin{clang}
 void FnSymbol::insertAtHead(Expr* ast);
@@ -1046,8 +1088,8 @@ below.
 Expr* Expr::remove(void);
 \end{clang}
 \begin{quote}
-This method removes an Expr node from the AST and updates all forward
-and backward pointers in the removed expression and what is left.
+This method removes an Expr node from the AST and updates all auxiliary
+pointers in the removed expression and what is left.
 Expr nodes can be removed from lists.  They can also be removed even
 if they are not in lists.  In this case, the field that was pointing
 to this expression is set to NULL.  For example, calling
@@ -1064,7 +1106,7 @@ void FnSymbol::insertBeforeReturn(Expr* ast);
 void FnSymbol::insertBeforeReturnAfterLabel(Expr* ast);
 \end{clang}
 \begin{quote}
-These special-purpose insert routines also update back pointers, etc.
+These special-purpose insert routines also update auxiliary pointers, etc.
 The methods \cc{insertBeforeReturn} and
 \cc{insertBeforeReturnAfterLabel} insert code in a function just
 before the return statement.  The ``after label'' modifier is
@@ -1092,7 +1134,7 @@ void parent_insert_help(BaseAST* parent, Expr* ast);
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast);
 \end{clang}
 \begin{quote}
-These functions are used to set the back pointers after an insertion,
+These functions are used to set the auxiliary pointers after an insertion,
 removal, or replacement.  When replacing NULL fields, it is sometimes
 useful to just assign them the nodes that are not yet in the AST, and
 then call the \cc{insert_help} function directly.  In general though,
@@ -1178,6 +1220,7 @@ make use of the \cc{new_Expr} functionality above to avoid the
 explicit call to \cc{new_Expr}.
 
 \subsubsection{BaseAST Functions and Methods}
+\label{sec:BaseASTutils}
 
 \begin{clang}
 virtual void BaseAST::verify() = 0;
@@ -1512,7 +1555,7 @@ void buildDefUseMaps(FnSymbol* fn,
 void buildDefUseMaps(Vec<Symbol*>& symSet,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
-voi buildDefUseMaps(Vec<Symbol*>& symSet,
+void buildDefUseMaps(Vec<Symbol*>& symSet,
                      Vec<SymExpr*>& symExprs,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
