@@ -4834,9 +4834,16 @@ pruneResolvedTree() {
           if (formal->type == dtMethodToken ||
               formal->instantiatedParam ||
               (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-               !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
-               !fn->hasFlag(FLAG_EXTERN))) {
-            call->get(i)->remove();
+               !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))) {
+            if (!fn->hasFlag(FLAG_EXTERN)) {
+              call->get(i)->remove();
+            } else {
+              // extern function with a type parameter
+              INT_ASSERT(toSymExpr(call->get(1)));
+              TypeSymbol *ts = toSymExpr(call->get(1))->var->type->symbol;
+              // Remove the tmp and just pass the type through directly
+              call->get(i)->replace(new SymExpr(ts));
+            }
           }
         }
       }

@@ -1,5 +1,5 @@
 config const n = 10;
-type myType = int;
+config type myType = int;
 
 _extern def sizeof(type sizeofType): int(64);
 
