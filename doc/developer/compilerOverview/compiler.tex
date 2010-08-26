@@ -554,7 +554,7 @@ reference it.  An Expr can also be replicated, e.g. using the
 \cc{BaseAST::copy} method (Section~\ref{sec:BaseASTutils}).
 
 All occurrences of symbols (i.e. pointers to Symbol objects) are
-wrapped by unique SymExpr instances.  Consider, for example,
+wrapped by unique Expr instances, often SymExprs.  Consider, for example,
 a program that contains the following calls:
 \begin{chapel}
 f1(a, b);
@@ -574,6 +574,7 @@ SymExpr instance in the second CallExpr.
 % Thus the symbol pointer
 % appears more than once via ``forward'' pointers, but pointers to Expr
 % subclasses can appear only once via ``forward'' pointers.
+These two SymExprs are the unique wrappers around the same Symbol.
 
 The uniqueness property can be made more precise by categorizing each
 Expr-pointing (or Expr-subclass-pointing) field of an AST class as
@@ -597,7 +598,7 @@ When you modify an expression in-place, you are assured that it
 affects the AST only in that one place.
 
 The uniqueness property, like many other assumptions on the AST, holds
-between compiler passes (Section~\ref{sec:passes}).  It might be
+between compiler passes (Section~\ref{sec:passes}).  It may be
 violated temporarily within a pass, e.g. while a node is being added
 to or removed from the AST.
 
@@ -607,9 +608,10 @@ uniqueness property is as follows.  Each Expr may occur only on a
 single list and there may be only a single ``defining'' pointer to
 each AList object.  Therefore we will extend the uniqueness property
 and the ``defining'' vs. ``auxiliary'' categories to AList-pointing
+(or AList-containing)
 fields.  The forward and back pointers that link Exprs into a list
 could be thought of as ``auxiliary'' if we think of the ``defining''
-pointer to the enclosing AList object as being ``defining'' for all
+field for the enclosing AList object as being ``defining'' for all
 the Exprs on that list.
 
 The fields in Expr are:
@@ -696,6 +698,7 @@ The fields in DefExpr are:
   will be expressions added to a default constructor to do the
   initialization.  The code to complete this transformation is in the
   normalize pass.
+  This is a defining field.
 \item \cc{Expr* exprType} is used to capture an expression that is
   used to specify the type.  Before function resolution, the type is
   stored as an expression.  It could be a simple SymExpr if the type
@@ -704,6 +707,7 @@ The fields in DefExpr are:
   type function or an instantiated type such as \chpl{C(int)}.  The
   \cc{exprType} field undergoes similar transformations to the
   \cc{init} field at the same time (normalization).
+  This is a defining field.
 \end{itemize}
 
 \subsubsection{SymExpr}
@@ -762,6 +766,7 @@ The fields in CallExpr are:
   class with a \chpl{this} method, then \cc{baseExpr} will point
   to the CallExpr of \chpl{f()}. After function resolution,
   \cc{baseExpr} will point to the \chpl{this} method, which may be virtual.
+  This is a defining field.
 
   A call to a first-class function will be rewritten as a (possibly
   virtual) call to the \chpl{this} method of a compiler-generated
@@ -773,6 +778,7 @@ The fields in CallExpr are:
   SymExpr for a FnSymbol is be preserved.
 \item \cc{AList* argList} is a pointer to the expression list that
   makes up the actual arguments to this CallExpr.
+  This is a defining field.
 \item \cc{PrimitiveOp* primitive} is a pointer to the primitive.  If
   this field is set, then \cc{baseExpr} will be \cc{NULL}.  It's a
   one-or-the-other situation.
@@ -809,6 +815,7 @@ The fields in NamedExpr are:
   Comparing this field does not require a string comparison as it is
   canonicalized (see note on strings in Section~\ref{sec:strings}).
 \item \cc{Expr* actual} is the actual expression passed to the call.
+  This is a defining field.
 \end{itemize}
 
 \subsubsection{BlockStmt}
@@ -833,11 +840,14 @@ The fields in BlockStmt are:
   resolution and the code represented by this block is not executed.
 \item \cc{AList body} is a list of expressions that form the body of
   this block, the statements within it.
+  This is a defining field, although not a pointer.
 \item \cc{CallExpr* blockInfo} is a call to a primitive that marks
   this block as special in some way, \eg, a while loop.
+  This is a defining field.
 \item \cc{CallExpr* modUses} is a call of ModuleSymbols where each of
   these ModuleSymbols represents a use of a particular module.  This
   list is largely constructed during scope resolution.
+  This is a defining field.
 \item \cc{LabelSymbol* breakLabel} is a pointer to a compiler-inserted
   LabelSymbol that should be the target of a break's GotoStmt.
 \item \cc{LabelSymbol* continueLabel} is a pointer to a
@@ -862,11 +872,14 @@ The fields in CondStmt are:
   normalization, this is a SymExpr.  If this expression evaluates to a
   parameter value during function resolution, the conditional
   statement is folded and removed during function resolution.
+  This is a defining field.
 \item \cc{BlockStmt* thenStmt} points to a block of code that forms
   the true part of this statement.
+  This is a defining field.
 \item \cc{BlockStmt* elseStmt} points to a block of code that forms
   the false part of this statement.  This block can be \cc{NULL} if
   there is no else part.
+  This is a defining field.
 \end{itemize}
 
 \subsubsection{GotoStmt}
@@ -902,6 +915,7 @@ The fields in GotoStmt are:
   name that should eventually resolve to a LabelSymbol.  After scope
   resolution, this field should always point to a SymExpr that wraps a
   LabelSymbol.
+  This is a defining field.
 \end{itemize}
 
 \subsection{Traversing the AST}
