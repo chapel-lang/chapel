@@ -580,7 +580,7 @@ The uniqueness property can be made more precise by categorizing each
 Expr-pointing (or Expr-subclass-pointing) field of an AST class as
 either ``defining'' or ``auxiliary''.  The uniqueness property
 requires that each Expr is pointed to by at most one ``defining'' field.
-In other words, all pointers stored in all ``defining'' fields of all
+In other words, all non-NULL pointers stored in all ``defining'' fields of all
 AST objects must be distinct.  By contrast, ``auxiliary'' pointers
 are guaranteed to be duplicates of ``defining'' pointers.
 For example, the pointer from an Expr to its child is ``defining'', so
@@ -633,7 +633,11 @@ The fields in Expr are:
   pointed at directly from a Symbol or Type node.  For example, via
   the \cc{body} field of a FnSymbol node.
 \item \cc{Symbol* parentSymbol} is a back pointer to the parent
-  symbol.  If this is not set, the node is not considered part of the
+  lexically-enclosing symbol.  For Exprs within a function body,
+  this is the function's FnSymbol.  For Exprs located directly in
+  a module, this is the module's ModuleSymbol.
+
+  If this is not set, the node is not considered part of the
   AST.  When using \cc{remove} to remove an expression from the AST,
   all the Expr nodes that make up that expression are traversed and
   their \cc{parentSymbol} back pointers are set to NULL.  Testing for
@@ -792,10 +796,10 @@ The fields in CallExpr are:
   functions, while in the former case, we invoke just one.  This code
   is represented as a nested CallExpr, and the inner CallExpr is
   marked with this tag after normalization.
-\item \cc{bool methodTag} marks basic method invocations, even if they
+\item \cc{bool methodTag} marks basic (i.e. not partial) method invocations, even if they
   are parentheses-less.  For example, with \chpl{x.y}, the method call
   of \chpl{y} after normalization will have this flag true, but
-  \cc{partialTag} will not be marked true.  There are no nested call
+  \cc{partialTag} will not be marked true, and there will be no nested call
   expressions.  It seems that if \cc{partialTag} is set, then
   \cc{methodTag} is set.
 \item \cc{bool square} marks function calls that are invoked using
@@ -1025,9 +1029,10 @@ The function \cc{getFirstExpr} returns the first expression that would
 be returned in a postorder traversal of the Expr node that is passed
 to this function.  Then given any Expr node in this traversal, the
 function \cc{getNextExpr} returns the next expression in the postorder
-traversal.  This functionality can only be used on ``top-level'' Expr
-nodes, \ie, Expr nodes that have a null parentExpr field.  Otherwise,
-we would traverse up into the parent.
+traversal.  This functionality can only be used on those Expr
+nodes that have a null parentExpr field.  (Otherwise,
+\cc{getNextExpr} would end up traversing up into the parent.)
+(Where do these ``top-level'' nodes occur?)
 
 This style of iteration is used in function resolution when walking
 through a BlockStmt and resolving types and function calls.
@@ -1284,9 +1289,10 @@ FnSymbol* BaseAST::getFunction();
 \end{clang}
 \begin{quote}
 These methods return the module/function that a given AST node resides
-in, by tracking back up the back pointers.  In many cases within the
-compiler, we make the assumption that \cc{parentSymbol} points to a
-function and avoid the need to call \cc{getFunction}.
+in, by tracking back up the back pointers (e.g. \cc{parentExpr} or
+\cc{parentSymbol}).  When iterating over the statements of
+a function body, we can reference the Exprs' \cc{parentSymbol}
+instead of calling \cc{getFunction}.
 \end{quote}
 
 \begin{clang}
@@ -1950,12 +1956,18 @@ the following function and those not:
 \begin{clang}
 void normalize(BaseAST* base);
 \end{clang}
-This particular function is called on functions that the compiler
-creates after this pass but before function resolution completes,
-namely wrapper functions created during function resolution and
-default functions created during \cc{buildDefaultFunctions}.
+The above function is also called when adding things to the AST after
+the normalize pass.  That way the new addition can be created in a
+compiler-writer-friendly manner but still be compliant with the AST
+assumptions -- by invoking \cc{normalize} on the newly-created node
+right after inserting it into the AST.  A common use is within
+\cc{buildDefaultFunctions} and when creating ``wrapper'' functions,
+whose job is to convert arguments from their original type to the
+argument type expected by the user function they are being passed to.
+This happens after the normalize pass but before function resolution
+completes.
 
-The normalize function makes the following transformations:
+The \cc{normalize} function makes the following transformations:
 \begin{enumerate}
 \item Handle syntactic sugar for distributions.
 \item Normalize return statements so that each function has a single
