@@ -93,15 +93,30 @@ class LevelInterface {
   const coarse_level: BaseLevel;
   const fine_level:   BaseLevel;
 
+  const coarse_grids = coarse_level.grids;
+  const fine_grids   = fine_level.grids;
+
   const ref_ratio: dimension*int;
 
-  var f2c_interp_cells: [coarse_level.grids]
-                        [fine_level.grids]
+  var f2c_coarse_cells: [coarse_grids] [fine_grids]
                         subdomain(coarse_level.cells);
+  var f2c_fine_cells:   [coarse_grids] [fine_grids]
+                        subdomain(fine_level.cells);
 
-  var c2f_interp_cells: [fine_level.grids]
-                        [coarse_level.grids]
-                        sparse subdomain(fine_level.cells);
+/*   var c2f_coarse_cells: [coarse_grids] [fine_grids] */
+/*                         sparse subdomain(coarse_level.cells); */
+/*   var c2f_fine_cells:   [coarse_grids] [fine_grids] */
+/*                         sparse subdomain(fine_level.cells); */
+
+  var c2f_clusters: [coarse_grids] [fine_grids] ClusteredCFCells;
+
+
+
+  class CFCluster {
+    var coarse_cells: sparse subdomain(coarse_level.cells);
+    var fine_cells: [coarse_cells] sparse subdomain(fine_level.cells);
+  }
+
 
 }
 //<=== LevelInterface class <===
@@ -118,21 +133,21 @@ class LevelInterface {
 def LevelInterface.refineCells(coarse_cells: subdomain(coarse_level.cells)) {
  
   //=== Index bounds for refined domain ====
-  var low_fine  = coarse_cells.low;
-  var high_fine = coarsecells.high;
+  var fine_cells_low  = coarse_cells.low;
+  var fine_cells_high = coarse_cells.high;
 
   for d in dimensions {
     //==== Move cell centers to vertices ====
-    low_fine(d)  -= 1;
-    high_fine(d) += 1;
+    fine_cells_low(d)  -= 1;
+    fine_cells_high(d) += 1;
 
     //==== Refine ====
-    low_fine(d)  *= ref_ratio;
-    high_fine(d) *= ref_ratio;
+    fine_cells_low(d)  *= ref_ratio;
+    fine_cells_high(d) *= ref_ratio;
 
     //==== Move vertices back to cell centers ====
-    low_fine(d)  += 1;
-    high_fine(d) -= 1;
+    fine_cells_low(d)  += 1;
+    fine_cells_high(d) -= 1;
   }
 
 
@@ -140,7 +155,7 @@ def LevelInterface.refineCells(coarse_cells: subdomain(coarse_level.cells)) {
   var range_tuple: dimension*range(stridable=true);
 
   for d in dimensions do
-    range_tuple(d) = low_fine(d) .. high_fine(d) by 2;
+    range_tuple(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
 
   var fine_cells: subdomain(fine_level.cells) = range_tuple;
   return fine_cells;
@@ -148,6 +163,47 @@ def LevelInterface.refineCells(coarse_cells: subdomain(coarse_level.cells)) {
 }
 //<=== LevelInterface.refineCells method <===
 //<==========================================
+
+
+
+//===> LevelInterface.refineCell method ===>
+//=========================================>
+//---------------------------------------------------------------------
+// Refine a single coarse cell rather than a domain.  No safety check.
+//---------------------------------------------------------------------
+def LevelInterface.refineCell(coarse_cell: dimension*int) {
+
+  var fine_cells_low = coarse_cell;
+  var fine_cells_high = coarse_cell;
+
+  for d in dimensions {
+    //==== Move cell centers to vertices ====
+    fine_cells_low(d)  -= 1;
+    fine_cells_high(d) += 1;
+
+    //==== Refine ====
+    fine_cells_low(d)  *= ref_ratio(d);
+    fine_cells_high(d) *= ref_ratio(d);
+
+    //==== Move vertices back to cell centers ====
+    fine_cells_low(d)  += 1;
+    fine_cells_high(d) -= 1;
+  }
+
+
+  //==== Set and return new domain ====
+  var range_tuple: dimension*range(stridable=true);
+
+  for d in dimensions do
+    range_tuple(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
+
+  var fine_cells: subdomain(fine_level.cells) = range_tuple;
+  return fine_cells;
+
+}
+//<=== LevelInterface.refineCell method <===
+//<=========================================
+
 
 
 
@@ -196,82 +252,123 @@ def LevelInterface.coarsenCells(fine_cells: subdomain(fine_level.cells)) {
 //<======================================
 
 
+//===> LevelInterface.coarsenCell method ===>
+//==========================================>
+//--------------------------------------------------
+// Coarsen a single fine cell rather than a domain.
+//--------------------------------------------------
+def LevelInterface.coarsenCell(fine_cell: dimension*int) {
+
+  var coarse_cell: dimension*int;
+
+  //-------------------------------------------------------------
+  // Dividing by ref_ratio (and throwing away remainder) maps to
+  // lower vertex of the coarse cell.  Adding 1 shifts index to
+  // the cell center.
+  //-------------------------------------------------------------
+  for d in dimensions do
+    coarse_cell(d) = fine_cell(d) / ref_ratio(d) + 1;
+
+  return coarse_cell;
+
+}
+//<=== LevelInterface.coarsenCell method <===
+//<==========================================
 
 
 
-//===> LevelInterface.partitionC2FInterpCells ===>
-//===============================================>
-//----------------------------------------------------------------
-// Identifies fine ghost cells on which function values should be
-// interpolated from the coarse grid.
-//----------------------------------------------------------------
-def partitionC2FInterpCells() {
+
+
+
+//===> LevelInterface.createC2FClusters ===>
+//=========================================>
+//-----------------------------------------------------------------
+// Identifies cells (as associative domains) that will be involved
+// in coarse-to-fine interpolation to fill fine ghost cells on the
+// way down an AMR cycle.
+//-----------------------------------------------------------------
+def partitionC2FCells() {
     
-  for fine_grid in fine_level.grids {
+  for coarse_grid in coarse_grids {
 
-    //==== Nicknamed pointer, for convenience ====
-    var interp_cells => c2f_interp_cells(fine_grid);
+    for fine_grid in fine_grids {
 
-
-    for coarse_grid in coarse_level.grids {
 
       //==== Calculate coarse-fine intersection ====
-      var cf_intersection = intersectDomains(fine_grid.ext_cells, 
-		                             refineCells(coarse_grid.cells));
+      var unclustered_fine_cells: sparse subdomain(fine_grid.ext_cells);
 
-      //===> Populate interp_cells(coarse_grid) ===>
-      if cf_intersection.numIndices > 0 {
 
-	//==== Add all ghost cells in coarse-fine intersection to the temp list ====
+      //===> Populate fine_cell_list ===>
+      var fine_intersection = intersectDomains(fine_grid.ext_cells,
+		                               refineCells(coarse_grid.cells));
+      if fine_intersection.numIndices > 0 {
+
+	//==== Add fine ghost cells in the intersection ====
 	for cell in fine_grid.ghost_cells do
-	  if cf_intersection.member(cell) then 
-	    interp_cells(coarse_grid).add(cell);
+	  if fine_intersection.member(cell) then 
+	    unclustered_fine_cells.add(cell);
 
-      
-	//==== Remove any fine_level.shared_ghosts from the temp list ====
-	for sib in fine_level.grids {
+	//==== Remove any fine_level.shared_ghosts ====
+	for sib in fine_grids {
 	  for cell in fine_level.shared_ghosts(fine_grid)(sib) do
-	    if interp_cells(coarse_grid).member(cell) then 
-	      interp_cells(coarse_grid).remove(cell);
+	    if unclustered_fine_cells.member(cell) then 
+	      unclustered_fine_cells.remove(cell);
 	}
 
       }
-      //<=== Populate interp_cells(coarse_grid) <===
+      //<=== Populate fine_cell_list <===
 
 
-    } // end for coarse_grid in coarse_level.grids
+      //==== Create coarse-fine cluster ===
+      var cluster = new CFCluster();
+      for fine_cell in unclustered_fine_cells {
+	var coarse_cell = coarsen(fine_cell);
 
-  } // end for fine_grid in fine_level.grids
+	//==== Chapel should filter out duplicates... ====	
+	cluster.coarse_cells.add(coarse_cell);
+
+	cluster.fine_cells(coarse_cell).add(fine_cell);
+      }
+
+      //==== Place reference in c2f cluster array ====
+      c2f_clusters(coarse_grid)(fine_grid) = cluster;
+
+
+    } // end for fine_grid in fine_grids
+
+  } // end for coarse_grid in coarse_grids
 
 }
-//<=== LevelInterface.partitionC2FInterpCells method <===
-//<======================================================
+//<=== LevelInterface.createC2FClusters <===
+//<=========================================
 
 
 
 
-//===> LevelInterface.partitionF2CInterpCells method ===>
-//======================================================>
+//===> LevelInterface.partitionF2CCells method ===>
+//================================================>
 //---------------------------------------------------------------------
-// Identifies coarse cells which are shadowed by fine cells, and thus
-// should have their values overwritten by fine grid values on the way
-// back up an AMR cycle.
+// Identifies cells (as arithmetic domains) that will be involved in
+// fine-to-coarse averaging on the way up an AMR cycle.
 //---------------------------------------------------------------------
-def LevelInterface.partitionF2CInterpCells() {
+def LevelInterface.partitionF2CCells() {
 
-  for coarse_grid in coarse_level.grids {
-    for fine_grid in fine_level.grids {
+  for coarse_grid in coarse_grids {
+    for fine_grid in fine_grids {
 
-      f2c_interp_cells(coarse_grid)(fine_grid)
+      f2c_coarse_cells(coarse_grid)(fine_grid)
           = intersectDomains(coarse_grid.cells, 
                              coarsenCells(fine_grid.cells));
+
+      f2c_fine_cells(coarse_grid)(fine_grid)
+          = refineCells( f2c_coarse_cells(coarse_grid)(fine_grid) );
 
     }
   }
 
 }
-//<=== LevelInterface.partitionF2CInterpCells method <===
-//<======================================================
+//<=== LevelInterface.partitionF2CCells method <===
+//<================================================
 
 
 
@@ -288,37 +385,50 @@ def LevelInterface.C2FInterpolator(
   q_fine:   LevelArray,)
 {
 
-  coforall fine_grid in fine_level.grids {
-    for coarse_grid in coarse_level.grids {
+  for coarse_grid in coarse_grids {
+    for fine_grid in fine_grids {
 
-      var c2f_preimage = c2f_coarse_cells(fine_grid)(coarse_grid);
+      var cluster = c2f_clusters(coarse_grid)(fine_grid);
+      var q_coarse_grid = q_coarse(coarse_grid);
 
-      // Compute differentials on the coarse grid's locale
-      var coarse_values = q_coarse(coarse_grid).value(c2f_preimage);
-      var coarse_diffs  = minmodDiffs(q_coarse, c2f_preimage);
 
-      // Send to the fine grid's locale
+      //==== Compute differentials on the coarse grid's locale ====
+      var coarse_values = q_coarse_grid(cluster.coarse_cells);
+      var coarse_diffs  = minmodDiffs(q_coarse_grid, cluster.coarse_cells);
 
-      // Evaluate the interpolant on refined image of each coarse cell
-      forall coarse_cell in c2f_preimage {
-	for fine_cell in refineCell(coarse_cell) {
-	  var fine_disp: real;
+      // Send coarse_values and coarse_diffs to the fine grid's locale
+
+
+      //==== Evaluate the interpolant on refined image of each coarse cell ====
+      forall coarse_cell in cluster.coarse_cells {
+	for fine_cell in cluster.fine_cells(coarse_cell) {
+	  
+	  var fine_displacement: real;
 	  var fine_value = coarse_values(coarse_cell);
 
 	  for d in dimensions {
-	    fine_disp = fine_cell(d) / ref_ratio(d);
-	    fine_disp -= coarse_cell(d);
-	    fine_disp *= 0.5;
+	    //==== Move to coarse indices ====
+	    fine_displacement = fine_cell(d):real / ref_ratio(d):real;
 
-	    fine_value += fine_disp * coarse_diffs(coarse_cell)(d);
+	    //==== Compute displacement ====
+	    fine_displacement -= coarse_cell(d):real;
+
+	    //==== Rescale: One cell occupies 2 indices ====
+	    fine_displacement /= 2.0;
+
+	    //==== Modify fine_value ====
+	    fine_value += fine_displacement * coarse_diffs(coarse_cell)(d);
 	  }
 
+	  //==== Store fine_value ====
 	  q_fine(fine_grid)(fine_cell) = fine_value;
+
 	}
       }
 
-    }
-  }
+
+    } // end for fine_grid in fine_grids
+  } // end for coarse_grid in coarse_grids
 
 }
 //<=== LevelInterface.C2FInterpolator method <===
@@ -326,4 +436,71 @@ def LevelInterface.C2FInterpolator(
 
 
 
-// Next up: change c2f storage; create minmodDiffs method; refineCell method
+// Next up: create minmodDiffs method
+
+
+
+//===> LevelInterface.minmodDiffs ===>
+//===================================>
+//----------------------------------------------------
+//
+//
+def LevelInterface.minmodDiffs(
+  q:     GridArray, 
+  cells: subdomain(coarse_level.cells))
+{
+
+  var differentials: [cells] [dimensions] real;
+
+  forall cell in cells {
+
+    //===> Maximum allowed differential ===>
+    var max_rise = 0.0,
+      max_drop = 0.0;
+
+    //==== First compute the max and min values in the neighborhood ====
+    for nbr in neighborhood(cell,1) {
+      max_rise = max( max_rise, sol.value(nbr) );
+      max_drop = min( max_drop, sol.value(nbr) );
+    }
+
+    //==== Now adjust accordingly to get the diffs ====
+    max_rise = max_rise - sol.value(cell);
+    max_drop = sol.value(cell) - max_drop;
+    var max_allowed_diff = min(max_rise, max_drop);
+    //<=== Maximum allowed differential <===
+
+
+    //==== Estimate differentials with centered differences ====
+    for d in dimensions {
+      var shift: dimension*int;
+      shift(d) = 2;
+      differentials(cell)(d) = (  q.value(cell + shift) 
+		                - q.value(cell - shift)
+		               ) / 2.0;
+    }
+
+    //==== Maximum of centered differentials ====
+    var max_centered_diff = 0.0;
+    for d in dimensions do 
+      max_centered_diff = max(max_centered_diff, 
+                              abs(differentials(cell)(d)));
+
+
+    //==== Compute limiter ====
+    var limiter = 
+      if max_centered_diff > max_allowed_diff then 
+        max_allowed_diff / max_centered_diff
+      else 
+	1;
+
+
+    //==== Limit the estimated differentials ====
+    differentials(cell) *= limiter;
+
+  }
+
+
+}
+//<=== LevelInterface.minmodDiffs <===
+//<===================================
