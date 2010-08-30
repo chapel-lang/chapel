@@ -184,7 +184,6 @@ sub setDefaults {
 
 
 sub processGraphFile {
-
     $format_file = "$format_file_name.graph";
     open FORMAT, "$format_file" or die "can't open $format_file $!";
 
@@ -205,6 +204,8 @@ sub processGraphFile {
 		    $local = 0;
 	            my $data_files_line = join(" ", @words[1..$#words]);
 		    @data_files = split(/, /, $data_files_line);
+	    	    foreach my $data_file (@data_files)  {
+		    }	 
 	        } elsif (@words[0] eq "graphname:") {
 	            $graph_file_name = @words[1];
 	        } elsif (@words[0] eq "graphtitle:") {
@@ -290,15 +291,18 @@ sub makeGraph {
     my $graph_key_index = 0; 
     my $line_type;
     foreach my $graph_key (@graph_keys[0..$#graph_keys]) {
+	my $key_file = $key_file;
 	if ($local == 0) {
 	    # need to re-assign $data_file, $key_file
 	    $data_file = "$outputdir/@data_files[$graph_key_index]";
 
 	    my @data_file_parts = (split /\//, $data_file);
-	    my $data_name = substr "@data_file_parts[$#data_file_parts]", 0, -4;
+	    my @data_name = (split /\./, @data_file_parts[$#data_file_parts]);
+	    my $data_name = @data_name[0];
 	    $key_file = "$data_name.perfkeys";
         }
 
+	
 	open KEYS, "$key_file" or die "can't open $key_file $!";
 	@keys = <KEYS>;
 	close (KEYS);
@@ -337,7 +341,7 @@ sub makeGraph {
 	$fatal_errors++;
     }
 
-    system("rm $gpl_file");
+    #system("rm $gpl_file");
     if ($fatal_errors == 0) {
         print "[No fatal errors, success loading gnuplot]\n";
 	#system("rm $errors_file");
