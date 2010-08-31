@@ -12,7 +12,7 @@ class LevelBC {
   //==============================>
   def fillGhostCells(q: LevelArray, t: real) {
 
-    level.fillSharedGhosts(q);
+    q.fillSharedGhosts();
     fillBoundaryGhosts(q, t);
 
   }
@@ -24,7 +24,7 @@ class LevelBC {
   //=========================================>
   def fillGhostCellsHomogeneous(q: LevelArray) {
     
-    level.fillSharedGhosts(q);
+    q.fillSharedGhosts();
     fillBoundaryGhostsHomogeneous(q);
 
   }

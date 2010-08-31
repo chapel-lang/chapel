@@ -15,7 +15,7 @@ use grid_bc_defs;
 //===> BaseGrid.stepBE method ===>
 //===============================>
 def BaseGrid.stepBE(
-  sol:         ScalarGridSolution,
+  sol:         GridSolution,
   bc:          GridBC,
   diffusivity: real,
   dt:          real, 

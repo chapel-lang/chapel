@@ -113,10 +113,10 @@ def main {
   space_file.readln((...n_cells));
   space_file.readln((...n_ghost));
 
-  var level = new BaseLevel(x_low               = x_low,
-                            x_high              = x_high,
-                            n_cells             = n_cells,
-                            n_child_ghost_cells = n_ghost);
+  var level = new BaseLevel(x_low         = x_low,
+                            x_high        = x_high,
+                            n_cells       = n_cells,
+                            n_ghost_cells = n_ghost);
 
   space_file.readln();
   write("Setting up grids...");
@@ -157,7 +157,7 @@ def main {
   }
 
   var sol = new LevelSolution(level = level);
-  level.initializeSolution(sol, initial_condition, time_initial);
+  sol.setToFunction(initial_condition, time_initial);
   write("done.\n");
   //<=== Initialize  solution <===
 
@@ -168,7 +168,8 @@ def main {
   //===> Generate output ===>
   //==== Initial time ====
   write("Writing initial output...");
-  level.clawOutput(sol, frame_number);
+  frame_number = 0;
+  sol.clawOutput(frame_number);
   write("done.\n");
   
   //==== Subsequent times ====
@@ -179,7 +180,7 @@ def main {
     //==== Write output to file ====
     frame_number += 1;
     write("Writing frame ", frame_number, "...");
-    level.clawOutput(sol, frame_number);
+    sol.clawOutput(frame_number);
     write("done.\n");
   }
   //<=== Generate output <===

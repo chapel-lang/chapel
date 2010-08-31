@@ -2,9 +2,9 @@ use grid_base_defs;
 use grid_array_defs;
 
 
-//===> ScalarGridSolution class ===>
-//=================================>
-class ScalarGridSolution {
+//===> GridSolution class ===>
+//===========================>
+class GridSolution {
   const grid: BaseGrid;
 
   var space_data: [1..2] GridArray;
@@ -15,34 +15,27 @@ class ScalarGridSolution {
       space_data(i) = new GridArray(grid = grid);
   }
 }
-//<=== ScalarGridSolution class <===
-//<=================================
+//<=== GridSolution class <===
+//<===========================
 
 
 
 
-//===> BaseGrid.initializeSolution method ===>
-//===========================================>
+//===> GridSolution.setToFunction method ===>
+//==========================================>
 //---------------------------------------------------------------
-// Provided an analytical function, evaluates it on the grid and
-// returns a GridSolution.  As support for first-class functions
-// develops, the input argument will become explicitly typed.
+// Sets both time levels to a particular analytic function.
 //---------------------------------------------------------------
-def BaseGrid.initializeSolution(
-  sol:               ScalarGridSolution,
+def GridSolution.setToFunction(
   initial_condition: func(dimension*real, real),
-  time:              real
+  time_in:              real
 ){
-
-  //==== Check that q lives on this grid ====
-  assert(sol.grid == this);
-
 
   //===> Evaluate and store initial_condition ===>
   write("Writing solution on grid...");
   for i in [1..2] {
-    setGridArray(sol.space_data(i), initial_condition);
-    sol.time(i) = time;
+    space_data(i).setToFunction(initial_condition);
+    time(i) = time_in;
   }
   write("done.\n");
   //<=== Evaluate and store initial_condition <===
@@ -55,22 +48,19 @@ def BaseGrid.initializeSolution(
 
 
 
-//===> clawOutput method ===>
-//==========================>
+//===> GridSolution.clawOutput method ===>
+//=======================================>
 //-------------------------------------------------------------------
 // Writes Clawpack-formatted output for a GridSolution, at the given
 // frame_number.
 //-------------------------------------------------------------------
-def BaseGrid.clawOutput(
-  sol:          ScalarGridSolution,
+def GridSolution.clawOutput(
   frame_number: int
 ){
 
-  //==== Make sure solution lives on this grid ====
-  assert(sol.grid == this);
-
   //==== Use clawOutput method for GridArray ====
-  clawOutput(sol.space_data(2), sol.time(2), frame_number);
+  space_data(2).clawOutput(time(2), frame_number);
+
 }
-//<=== clawOutput method <===
-//<==========================
+//<=== GridSolution.clawOutput method <===
+//<=======================================

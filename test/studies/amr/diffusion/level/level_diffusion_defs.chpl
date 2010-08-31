@@ -46,8 +46,8 @@ def BaseLevel.stepDiffusionBE(
 
 
   //===> Initialize ===>
-  var grid_res_norm_squares: [child_grids] real;
-  var grid_inner_products: [child_grids] real;
+  var grid_res_norm_squares: [grids] real;
+  var grid_inner_products:   [grids] real;
   var alpha, beta, 
     level_res_norm_square, old_level_res_norm_square: real;
 
@@ -56,7 +56,7 @@ def BaseLevel.stepDiffusionBE(
   bc.fillGhostCells(q_current, t_new);
   fluxDivergence(rhs, q_current, diffusivity);
 
-  coforall grid in child_grids {
+  coforall grid in grids {
     rhs(grid).value(grid.cells) *= -dt;
 
     dq(grid).value(grid.cells) = rhs(grid).value(grid.cells);
@@ -66,7 +66,7 @@ def BaseLevel.stepDiffusionBE(
   //==== Initialize residual ====
   homogeneousBEOperator(residual, dq, bc, diffusivity, dt);
 
-  coforall grid in child_grids {
+  coforall grid in grids {
     residual(grid).value(grid.cells) = rhs(grid).value(grid.cells)
                                        - residual(grid).value(grid.cells);
 
@@ -77,7 +77,7 @@ def BaseLevel.stepDiffusionBE(
 
 
   //==== Initialize search direction ====
-  coforall grid in child_grids {
+  coforall grid in grids {
     search_dir(grid).value(grid.cells) = residual(grid).value(grid.cells);
   }
 
@@ -96,7 +96,7 @@ def BaseLevel.stepDiffusionBE(
 
 
     //===> Update solution and residual ===>
-    coforall grid in child_grids {
+    coforall grid in grids {
       grid_inner_products(grid) = +reduce( residual_update_dir(grid).value(grid.cells)
                                             * search_dir(grid).value(grid.cells) );
     }
@@ -104,7 +104,7 @@ def BaseLevel.stepDiffusionBE(
     alpha = +reduce(grid_inner_products);
     alpha = level_res_norm_square / alpha;
 
-    coforall grid in child_grids {
+    coforall grid in grids {
       dq(grid).value(grid.cells)       += alpha * search_dir(grid).value(grid.cells);
 
       residual(grid).value(grid.cells) -= alpha * residual_update_dir(grid).value(grid.cells);
@@ -127,7 +127,7 @@ def BaseLevel.stepDiffusionBE(
     //==== Update directions for search and residual update ====
     beta = level_res_norm_square / old_level_res_norm_square;
     
-    coforall grid in child_grids {
+    coforall grid in grids {
       search_dir(grid).value(grid.cells) = residual(grid).value(grid.cells)
                                            + beta * search_dir(grid).value(grid.cells);
     }
@@ -139,7 +139,7 @@ def BaseLevel.stepDiffusionBE(
 
 
   //===> Update solution ===>
-  coforall grid in child_grids {
+  coforall grid in grids {
     dq(grid).value(grid.cells) += q_current(grid).value(grid.cells);
   }
   level_sol.time(1) = t_current;
@@ -173,7 +173,7 @@ def BaseLevel.homogeneousBEOperator(
 
   fluxDivergence(Lq, q, diffusivity);
 
-  coforall grid in child_grids do
+  coforall grid in grids do
     Lq(grid).value(grid.cells) = q(grid).value(grid.cells) 
                                   + dt * Lq(grid).value(grid.cells);
 
@@ -192,7 +192,7 @@ def BaseLevel.fluxDivergence(
   diffusivity: real)
 {
 
-  coforall grid in child_grids do
+  coforall grid in grids do
     grid.fluxDivergence(flux_div(grid), q(grid), diffusivity);
 
 }
@@ -264,7 +264,7 @@ class ZeroFluxDiffusionLevelBC: LevelBC {
   
   def fillBoundaryGhostsHomogeneous(q: LevelArray) {
     
-    coforall grid in level.child_grids {
+    coforall grid in level.grids {
     
       for cell in level.boundary_ghosts(grid) {
 	var target_cell = cell;

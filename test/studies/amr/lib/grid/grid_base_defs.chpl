@@ -34,8 +34,6 @@ class BaseGrid {
       cells: subdomain(ext_cells);
   
   var ghost_cells: GridBoundaryDomain;
-/*   var low_ghost_cells:  [dimensions] subdomain(ext_cells), */
-/*       high_ghost_cells: [dimensions] subdomain(ext_cells); */
 
 
   //===> initialize method ===>
@@ -184,6 +182,7 @@ class GridBoundaryDomain {
 
 
 
+
 //===> xValue method ===>
 //======================>
 //---------------------------------------
@@ -210,8 +209,6 @@ def BaseGrid.xValue (point_index: dimension*int) {
 //<=====================================================================
 //<=================== FUNDAMENTAL GRID DEFINITIONS ====================
 //<=====================================================================
-
-
 
 
 

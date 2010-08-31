@@ -19,10 +19,10 @@ class BaseLevel {
 
   var fixed: bool = false;
   
-  var x_low, x_high:       dimension*real,
-      n_cells:             dimension*int,
-      n_child_ghost_cells: dimension*int,
-      dx:                  dimension*real;
+  var x_low, x_high: dimension*real,
+      n_cells:       dimension*int,
+      n_ghost_cells: dimension*int,
+      dx:            dimension*real;
 
 
   //==== Level cell domains ====
@@ -41,11 +41,11 @@ class BaseLevel {
   // neighbor) and a sparse list of the ghost cells which belong to the
   // physical boundary.
   //---------------------------------------------------------------------
-  var child_grids:     domain(BaseGrid);
-  var neighbors:       [child_grids] BaseGrid;
+  var grids:           domain(BaseGrid);
+  var neighbors:       [grids] BaseGrid;
 
-  var shared_ghosts:   [child_grids] [child_grids] subdomain(cells);
-  var boundary_ghosts: [child_grids] sparse subdomain(ext_cells);
+  var shared_ghosts:   [grids] [grids] subdomain(cells);
+  var boundary_ghosts: [grids] sparse subdomain(ext_cells);
 
   
 
@@ -68,7 +68,7 @@ class BaseLevel {
 
     var size: dimension*int;
     for d in dimensions do
-      size(d) = 2*n_child_ghost_cells(d);
+      size(d) = 2*n_ghost_cells(d);
     ext_cells = cells.expand(size);
 
   }
@@ -139,9 +139,9 @@ def BaseLevel.addGrid(
 			      x_high        = x_high_grid,
 			      i_low         = i_low_grid,
 			      n_cells       = n_cells_grid,
-			      n_ghost_cells = n_child_ghost_cells);
+			      n_ghost_cells = n_ghost_cells);
 
-  child_grids.add(new_grid);
+  grids.add(new_grid);
 }
 
 
@@ -200,10 +200,10 @@ def BaseLevel.fix() {
 //----------------------------------------------------------------------
 def BaseLevel.partitionSharedGhosts() {
   
-  coforall grid in child_grids {
+  coforall grid in grids {
 
     //==== Set shared_ghosts for each sibling ====
-    for sib in child_grids do
+    for sib in grids do
       shared_ghosts(grid)(sib) = intersectDomains(grid.ext_cells, sib.cells);
 
     //==== Need to fix grid's intersection with itself ====
@@ -225,7 +225,7 @@ def BaseLevel.partitionSharedGhosts() {
 //-----------------------------------------------------------------------
 def BaseLevel.partitionBoundaryGhosts() {
 
-  coforall grid in child_grids {
+  coforall grid in grids {
     
     //==== Initialize all ghost cells as boundary ====
     for cell in grid.ghost_cells do
@@ -233,7 +233,7 @@ def BaseLevel.partitionBoundaryGhosts() {
 
 
     //==== Remove ghost cells that are shared ====
-    for sib in child_grids {
+    for sib in grids {
       for cell in shared_ghosts(grid)(sib) do
 	boundary_ghosts(grid).remove(cell);
     }

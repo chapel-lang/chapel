@@ -18,7 +18,7 @@ use grid_bc_defs;
 // q.old and q.current will be swapped.
 //-------------------------------------------------------------
 def BaseGrid.stepCTU(
-  sol:      ScalarGridSolution,
+  sol:      GridSolution,
   bc:       GridBC,
   velocity: dimension*real,
   dt:       real

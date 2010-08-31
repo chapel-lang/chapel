@@ -36,7 +36,7 @@ def BaseLevel.stepAdvectionCTU(
 
 
   //==== Step each grid ====
-  coforall grid in child_grids do
+  coforall grid in grids do
     grid.stepAdvectionCTU(q_new(grid), q_current(grid), velocity, dt);
 
 
@@ -143,7 +143,7 @@ class ZeroInflowAdvectionLevelBC: LevelBC {
 
   def fillBoundaryGhostsHomogeneous(q: LevelArray){
 
-    coforall grid in level.child_grids {
+    coforall grid in level.grids {
 
       forall cell in level.boundary_ghosts(grid) do
 	q(grid).value(cell) = 0.0;

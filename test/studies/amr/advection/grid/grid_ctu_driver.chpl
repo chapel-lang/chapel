@@ -15,64 +15,6 @@ use grid_bc_defs;
 use grid_ctu_defs;
 
 
-
-
-//===> advanceAdvectionCTU routine ===>
-//====================================>
-def advanceAdvectionCTU(
-  grid:           BaseGrid,
-  sol:            ScalarGridSolution,
-  bc:             GridBC,
-  velocity:       dimension*real,
-  time_requested: real
-){
-
-  //==== Make sure the solution can validly be updated ====
-  assert(sol.grid == grid);
-  assert(sol.time(2) <= time_requested);
-
-
-  //===> Calculate dt_target via CFL condition ===>
-  var cfl: [dimensions] real,
-      dt_target:        real,
-      dt_used:          real;
-
-  [d in dimensions] cfl(d) = grid.dx(d) / abs(velocity(d));
-  (dt_target,) = minloc reduce(cfl, dimensions);
-  dt_target *= 0.95;
-  //<=== Calculate dt_target via CFL condition <===
-  
-
-  
-  //===> Time-stepping loop ===>
-  while (sol.time(2) < time_requested) do {
-
-    //==== Adjust the time step to hit time_requested if necessary ====
-    if (sol.time(2) + dt_target > time_requested) then
-      dt_used = time_requested - sol.time(2);
-    else
-      dt_used = dt_target;
-    writeln("Taking step of size dt=", dt_used, 
-	    " to time ", sol.time(2)+dt_used, ".");
-
-
-    //==== Update solution ====
-    grid.stepCTU(sol, bc, velocity, dt_used);
-          
-  }
-  //<=== Time-stepping loop <===
-
-
-}
-//<=== advanceAdvectionCTU routine <===
-//<====================================
-
-
-
-
-
-
-
 def main {
 
   //===> Initialize output ===>
@@ -125,8 +67,8 @@ def main {
 
 
   //==== Initialize boundary conditions ====
-  var bc = new ZeroInflowAdvectionGridBC(grid = grid);
-/*   var bc = new PeriodicGridBC(grid = grid); */
+/*   var bc = new ZeroInflowAdvectionGridBC(grid = grid); */
+  var bc = new PeriodicGridBC(grid = grid);
 
 
 
@@ -138,31 +80,83 @@ def main {
     return f;
   }
 
-  var sol = new ScalarGridSolution(grid);
+  var sol = new GridSolution(grid = grid);
 
-  grid.initializeSolution(sol, initial_condition, initial_time);
+  sol.setToFunction(initial_condition, initial_time);
   //<=== Initialize solution <===
-
-
 
 
 
 
   //===> Generate output ===>
   //==== Initial time ====
-  grid.clawOutput(sol, frame_number);
+  frame_number = 0;
+  sol.clawOutput(frame_number);
 
   //==== Subsequent times ====
   for output_time in output_times do {
     //==== Advance solution to output time ====
-    advanceAdvectionCTU(grid, sol, bc, velocity, output_time);
+    grid.advanceAdvectionCTU(sol, bc, velocity, output_time);
 
     //==== Write output to file ====
     frame_number += 1;
     writeln("Writing frame ", frame_number, ".");
-    grid.clawOutput(sol, frame_number);
+    sol.clawOutput(frame_number);
   }
   //<=== Generate output <===
   
 
 } // end main
+
+
+
+
+
+//===> advanceAdvectionCTU routine ===>
+//====================================>
+def BaseGrid.advanceAdvectionCTU(
+  sol:            GridSolution,
+  bc:             GridBC,
+  velocity:       dimension*real,
+  time_requested: real
+){
+
+  //==== Make sure the solution can validly be updated ====
+  assert(sol.grid == this);
+  assert(sol.time(2) <= time_requested);
+
+
+  //===> Calculate dt_target via CFL condition ===>
+  var cfl: [dimensions] real,
+      dt_target:        real,
+      dt_used:          real;
+
+  [d in dimensions] cfl(d) = dx(d) / abs(velocity(d));
+  (dt_target,) = minloc reduce(cfl, dimensions);
+  dt_target *= 0.95;
+  //<=== Calculate dt_target via CFL condition <===
+  
+
+  
+  //===> Time-stepping loop ===>
+  while (sol.time(2) < time_requested) do {
+
+    //==== Adjust the time step to hit time_requested if necessary ====
+    if (sol.time(2) + dt_target > time_requested) then
+      dt_used = time_requested - sol.time(2);
+    else
+      dt_used = dt_target;
+    writeln("Taking step of size dt=", dt_used, 
+	    " to time ", sol.time(2)+dt_used, ".");
+
+
+    //==== Update solution ====
+    stepCTU(sol, bc, velocity, dt_used);
+          
+  }
+  //<=== Time-stepping loop <===
+
+
+}
+//<=== advanceAdvectionCTU routine <===
+//<====================================

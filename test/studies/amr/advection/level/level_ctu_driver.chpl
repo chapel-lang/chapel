@@ -13,64 +13,6 @@ use level_ctu_defs;
 
 
 
-
-//===> advanceAdvectionCTU routine ===>
-//====================================>
-def advanceAdvectionCTU(
-  sol:            LevelSolution,
-  bc:             LevelBC,
-  velocity:       dimension*real,
-  time_requested: real)
-{
-
-  var level = sol.level;
-
-
-  //==== Safety check ====
-  assert(sol.time(2) <= time_requested);
-
-
-  //===> Initialize ===>
-  var cfl: [dimensions] real,
-      dt_target:        real,
-      dt_used:          real;
-
-  [d in dimensions] cfl(d) = level.dx(d) / abs(velocity(d));
-  (dt_target,) = minloc reduce(cfl, dimensions);
-  dt_target *= 0.95;
-  //<=== Initialize <===
-  
-
-  
-  //===> Time-stepping loop ===>
-  while (sol.time(2) < time_requested) do {
-
-    //==== Adjust the time step to hit time_requested if necessary ====
-    if (sol.time(2) + dt_target > time_requested) then
-      dt_used = time_requested - sol.time(2);
-    else
-      dt_used = dt_target;
-    writeln("Taking step of size dt=", dt_used,
-	    " to time ", sol.time(2) + dt_used, ".");
-
-
-    //==== Update solution ====
-    level.stepAdvectionCTU(sol, bc, velocity, dt_used);
-          
-  }
-  //<=== Time-stepping loop <===
-
-
-}
-//<=== advanceAdvectionCTU routine <===
-//<====================================
-
-
-
-
-
-
-
 def main {
 
 
@@ -135,10 +77,10 @@ def main {
   space_file.readln((...n_cells));
   space_file.readln((...n_ghost));
 
-  var level = new BaseLevel(x_low               = x_low,
-                            x_high              = x_high,
-                            n_cells             = n_cells,
-                            n_child_ghost_cells = n_ghost);
+  var level = new BaseLevel(x_low         = x_low,
+                            x_high        = x_high,
+                            n_cells       = n_cells,
+                            n_ghost_cells = n_ghost);
 
   space_file.readln();
   write("Setting up grids...");
@@ -179,7 +121,7 @@ def main {
   }
 
   var sol = new LevelSolution(level = level);
-  level.initializeSolution(sol, initial_condition, time_initial);
+  sol.setToFunction(initial_condition, time_initial);
   write("done.\n");
   //<=== Initialize  solution <===
 
@@ -188,19 +130,20 @@ def main {
 
   //===> Generate output ===>
   //==== Initial time ====
+  frame_number = 0;
   write("Writing initial output...");
-  level.clawOutput(sol, frame_number);
+  sol.clawOutput(frame_number);
   write("done.\n");
   
   //==== Subsequent times ====
   for output_time in output_times do {
     //==== Advance solution to output time ====
-    advanceAdvectionCTU(sol, bc, velocity, output_time);
+    level.advanceAdvectionCTU(sol, bc, velocity, output_time);
   
     //==== Write output to file ====
     frame_number += 1;
     write("Writing frame ", frame_number, "...");
-    level.clawOutput(sol, frame_number);
+    sol.clawOutput(frame_number);
     write("done.\n");
   }
   //<=== Generate output <===
@@ -208,3 +151,56 @@ def main {
   
 
 } // end main
+
+
+
+
+
+//===> BaseLevel.advanceAdvectionCTU method ===>
+//=============================================>
+def BaseLevel.advanceAdvectionCTU(
+  sol:            LevelSolution,
+  bc:             LevelBC,
+  velocity:       dimension*real,
+  time_requested: real)
+{
+
+  //==== Safety check ====
+  assert(sol.level == this);
+  assert(sol.time(2) <= time_requested);
+
+
+  //===> Initialize ===>
+  var cfl: [dimensions] real,
+      dt_target:        real,
+      dt_used:          real;
+
+  [d in dimensions] cfl(d) = dx(d) / abs(velocity(d));
+  (dt_target,) = minloc reduce(cfl, dimensions);
+  dt_target *= 0.95;
+  //<=== Initialize <===
+  
+
+  
+  //===> Time-stepping loop ===>
+  while (sol.time(2) < time_requested) do {
+
+    //==== Adjust the time step to hit time_requested if necessary ====
+    if (sol.time(2) + dt_target > time_requested) then
+      dt_used = time_requested - sol.time(2);
+    else
+      dt_used = dt_target;
+    writeln("Taking step of size dt=", dt_used,
+	    " to time ", sol.time(2) + dt_used, ".");
+
+
+    //==== Update solution ====
+    stepAdvectionCTU(sol, bc, velocity, dt_used);
+          
+  }
+  //<=== Time-stepping loop <===
+
+
+}
+//<=== BaseLevel.advanceAdvectionCTU method <===
+//<=============================================
