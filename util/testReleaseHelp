@@ -63,7 +63,7 @@ if ($tmpstatus != 0) then
     echo "ERROR: cd into examples failed"
     exit($tmpstatus)
 endif
-start_test -logfile Logs/testReleaseHelp.log
+./start_test -logfile Logs/testReleaseHelp.log
 set tmpstatus = $status
 if ($tmpstatus != 0) then
     echo "ERROR: testing of examples failed"

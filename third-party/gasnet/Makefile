@@ -14,6 +14,10 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),power-smp)
 CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
 endif
 
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xe-cle)
+CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=cc --enable-mpi --enable-pthreads
+endif
+
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
 #
 # this conditional should only be necessary for PE <= 2.0 and should
