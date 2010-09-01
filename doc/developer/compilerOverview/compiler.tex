@@ -540,7 +540,7 @@ records, and unions.  The fields of ClassType are:
 
 \subsection{Expr}
 
-The Expr subclasses represents the structure of the program in the
+The Expr subclasses represent the structure of the program in the
 AST.  Expression objects (i.e. instances of subclasses of Expr) enjoy
 a very important ``uniqueness'' property: there may be only a single
 instance of a pointer to an instance of any Expr subclass.  (There are
@@ -553,8 +553,8 @@ Section~\ref{sec:moveprimitive}) and having multiple SymExprs
 reference it.  An Expr can also be replicated, e.g. using the
 \cc{BaseAST::copy} method (Section~\ref{sec:BaseASTutils}).
 
-All occurrences of symbols (i.e. pointers to Symbol objects) are
-wrapped by unique Expr instances, often SymExprs.  Consider, for example,
+All references ot identifiers (i.e. pointers to Symbol objects) are
+represented by unique Expr instances, often SymExprs.  Consider, for example,
 a program that contains the following calls:
 \begin{chapel}
 f1(a, b);
