@@ -219,6 +219,8 @@ static void handleSegFault(int sig) {
 
 void startCatchingSignals(void) {
   signal(SIGINT, handleInterrupt);
+  signal(SIGTERM, handleInterrupt);
+  signal(SIGHUP, handleInterrupt);
   signal(SIGSEGV, handleSegFault);
 }
 
