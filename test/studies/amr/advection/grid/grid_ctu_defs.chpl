@@ -26,8 +26,8 @@ def BaseGrid.stepCTU(
 
 
   //==== Assign names to solution components ====
-  var q_current => sol.space_data(2).value;
-  var q_new     => sol.space_data(1).value; // overwriting old values
+  var q_current = sol.space_data(2);
+  var q_new     = sol.space_data(1); // overwriting old values
   var t_current = sol.time(2);
   var t_new     = sol.time(2) + dt;
 
@@ -42,8 +42,10 @@ def BaseGrid.stepCTU(
   //---- aligned with the cell, and alignment 0 indicates that
   //---- it's upwind.  (What is "it"?)
   //-----------------------------------------------------------
-  var alignments: domain(dimension);
-  alignments = alignments.expand(1);
+  var ranges: dimension*range;
+  for d in dimensions do ranges(d) = 0..1;
+  var alignments: domain(dimension) = ranges;
+
   
   //===> Calculate new value ===>
   forall precell in cells {
@@ -52,7 +54,7 @@ def BaseGrid.stepCTU(
     var cell = tuplify(precell);
 
 
-    q_new(cell) = 0.0;
+    q_new.value(cell) = 0.0;
     var volume_fraction: real;
     var upwind_cell: dimension*int;
 
@@ -86,7 +88,7 @@ def BaseGrid.stepCTU(
 
           
       //==== Update cell value ====
-      q_new(cell) += volume_fraction * q_current(upwind_cell);
+      q_new.value(cell) += volume_fraction * q_current.value(upwind_cell);
   
     }
     //<=== Update for each alignment <===
@@ -117,7 +119,7 @@ class ZeroInflowAdvectionGridBC: GridBC {
   
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: [grid.ext_cells] real, t: real) {
+  def ghostFill(q: GridArray, t: real) {
     //==== This type of BC is homogeneous ====
     homogeneousGhostFill(q);
   }
@@ -127,10 +129,10 @@ class ZeroInflowAdvectionGridBC: GridBC {
   
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: [grid.ext_cells] real) {
+  def homogeneousGhostFill(q: GridArray) {
 
     for cell in grid.ghost_cells do
-      q(cell) = 0.0;
+      q.value(cell) = 0.0;
     
   }
   //<=== homogeneousGhostFill method <===

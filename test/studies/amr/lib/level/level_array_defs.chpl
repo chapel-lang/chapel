@@ -11,8 +11,8 @@ use grid_array_defs;
 //=========================>
 class LevelArray {
   const level: BaseLevel;
-
   var grid_arrays: [level.grids] GridArray;
+  var _promotionType: real;
 
   def initialize() {
 
@@ -24,9 +24,62 @@ class LevelArray {
   def this(grid: BaseGrid){
     return grid_arrays(grid);
   }
+
+
+  //===> these() iterator ===>
+  //---------------------------------------------------------------------
+  // Seems like it would be ideal to chain this with the leader/follower
+  // for GridArrays.
+  //---------------------------------------------------------------------
+  def these() {
+    for grid in level.grids {
+      for cell in grid.cells do
+	yield grid_arrays(grid).value(cell);
+    }
+  }
+
+  def these(param tag: iterator)
+  where tag == iterator.leader {
+/*     coforall grid in level.grids { */
+/*       yield grid; */
+/*     } */
+    yield true;
+  }
+
+  def these(param tag: iterator, follower) var
+  where tag == iterator.follower {
+/*     for cell in follower.cells do */
+/*       yield grid_arrays(follower).value(cell); */
+    for grid in level.grids {
+      for cell in grid.cells do
+	yield grid_arrays(grid).value(cell);
+    }
+
+  }
+  //<=== these() iterator <===
+
 }
 //<=== LevelArray class <===
 //<=========================
+
+
+
+
+//===> LevelArray assignment overloads ===>
+//========================================>
+def =(q: LevelArray, rvalue)
+where rvalue.type != LevelArray && rvalue.type != real
+{
+  forall (x,y) in (q,rvalue) do
+    x = y;
+}
+
+def =(q: LevelArray, rvalue: real) {
+  forall x in q do
+    x = rvalue;
+}
+//<=== LevelArray assignment overloads <===
+//<========================================
 
 
 

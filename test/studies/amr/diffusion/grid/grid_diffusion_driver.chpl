@@ -68,8 +68,8 @@ def main {
 
 
   //==== Initialize boundary conditions ====
-/*   var bc = new ZeroFluxDiffusionGridBC(grid = grid); */
-  var bc = new PeriodicGridBC(grid = grid);
+  var bc = new ZeroFluxDiffusionGridBC(grid = grid);
+/*   var bc = new PeriodicGridBC(grid = grid); */
 
 
   //===> Initialize solution ===>
@@ -146,7 +146,7 @@ def BaseGrid.advanceDiffusionBE(
 
 
     //==== Update solution ====
-    stepBE(sol, bc, diffusivity, dt_used, dt_used/4.0);
+    stepDiffusionBE(sol, bc, diffusivity, dt_used, dt_used/4.0);
 
   }
   //<=== Time-stepping <===

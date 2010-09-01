@@ -12,9 +12,9 @@ use grid_bc_defs;
 
 
 
-//===> BaseGrid.stepBE method ===>
-//===============================>
-def BaseGrid.stepBE(
+//===> BaseGrid.stepDiffusionBE method ===>
+//========================================>
+def BaseGrid.stepDiffusionBE(
   sol:         GridSolution,
   bc:          GridBC,
   diffusivity: real,
@@ -27,14 +27,18 @@ def BaseGrid.stepBE(
 
 
   //===== Assign names to solution components ====
-  var dq        => sol.space_data(1).value;  // will eventually be q_new, but is dq until the end
-  var q_current => sol.space_data(2).value;
+  var dq        = sol.space_data(1);  // will eventually be q_new, but is dq until the end
+  var q_current = sol.space_data(2);
   var t_current = sol.time(2);
   var t_new     = sol.time(2) + dt;
 
 
   //==== Storage allocations ====
-  var rhs, residual, search_dir, residual_update_dir: [ext_cells] real;
+  var rhs                 = new GridArray(grid = this);
+  var residual            = new GridArray(grid = this);
+  var search_dir          = new GridArray(grid = this);
+  var residual_update_dir = new GridArray(grid = this);
+
   var residual_norm_square, old_residual_norm_square: real;
   var alpha, beta, inner_product: real;
   
@@ -53,12 +57,11 @@ def BaseGrid.stepBE(
   //----------------------------------------------------------------------
   bc.ghostFill(q_current, t_new);
   fluxDivergence(rhs, q_current, diffusivity);
-  rhs(cells) *= -dt;
+  rhs *= -dt;
 
 
   //==== Initial guess ====
-  dq(cells) = rhs(cells);
-
+  dq = 1.0 * rhs;
 
   //==== Initialize residual ====
   //------------------------------------------------------------
@@ -67,14 +70,14 @@ def BaseGrid.stepBE(
   homogeneousBEOperator(residual,
                         dq,
                         bc, diffusivity, dt);
-  residual(cells) = rhs(cells) - residual(cells);
-  residual_norm_square = +reduce(residual(cells)**2);
+  residual = rhs - residual;
+  residual_norm_square = +reduce(residual.value(cells)**2);
   
   
 
 
   //==== Initialize search direction ====
-  search_dir(cells) = residual(cells);
+  search_dir.value(cells) = residual.value(cells);
 
 
   //==== Initialize residual update direction ====
@@ -90,23 +93,16 @@ def BaseGrid.stepBE(
   for iter in [1..maxiter] {
  
     //==== Update the solution and residual ====
-    inner_product = +reduce( residual_update_dir(cells) * search_dir(cells) );
+    inner_product = +reduce( residual_update_dir.value(cells) * search_dir.value(cells) );
     alpha = residual_norm_square / inner_product;
  
-    dq(cells)       += alpha * search_dir(cells);
-    residual(cells) -= alpha * residual_update_dir(cells);
-
-    // for cell in cells {
-    //   writeln(cell, "  ", dq(cell));
-    //   writeln(cell, "  ", residual(cell));
-    // }
-    // writeln("alpha = ", alpha);
-    // halt();
+    dq       += alpha * search_dir;
+    residual -= alpha * residual_update_dir;
 
 
     //==== Compute norm of residual, and check for convergence ====
     old_residual_norm_square = residual_norm_square;
-    residual_norm_square     = +reduce(residual(cells)**2);
+    residual_norm_square     = +reduce(residual.value(cells)**2);
     writeln("Iteration ", iter, ": residual_norm = ", sqrt(residual_norm_square));
     if sqrt(residual_norm_square) < tolerance then break;
     if iter==maxiter then writeln("Warning: conjugate gradient method failed to converge.");
@@ -114,7 +110,7 @@ def BaseGrid.stepBE(
 
     //==== Update directions for search and residual update ====
     beta                = residual_norm_square / old_residual_norm_square;
-    search_dir(cells)   = residual(cells) + beta * search_dir(cells);
+    search_dir = residual + beta * search_dir;
 
     homogeneousBEOperator(residual_update_dir,
                           search_dir,
@@ -128,13 +124,13 @@ def BaseGrid.stepBE(
   //----------------------------------------------
   // Recalling that dq = q.time_layer(1).value...
   //----------------------------------------------
-  dq(cells) += q_current(cells);
+  dq += q_current;
   sol.time(1) = t_current;
   sol.time(2) = t_current + dt;
   sol.space_data(1) <=> sol.space_data(2);
 }
-//<=== BaseGrid.stepBE method <===
-//<===============================
+//<=== BaseGrid.stepDiffusionBE method <===
+//<========================================
 
 
 
@@ -147,8 +143,8 @@ def BaseGrid.stepBE(
 // As with FluxDivergence, ghost cells must be filled beforehand.
 //----------------------------------------------------------------
 def BaseGrid.homogeneousBEOperator(
-  Lq:          [ext_cells] real,
-  q:           [ext_cells] real,
+  inout Lq:          GridArray,
+  q:           GridArray,
   bc:          GridBC,
   diffusivity: real,
   dt:          real
@@ -156,7 +152,7 @@ def BaseGrid.homogeneousBEOperator(
 
   bc.homogeneousGhostFill(q);
   fluxDivergence(Lq,  q, diffusivity);
-  Lq(cells) = q(cells) + dt * Lq(cells);
+  Lq = q + dt * Lq;
 
 }
 //<==========================================
@@ -174,8 +170,8 @@ def BaseGrid.homogeneousBEOperator(
 // bc.homogeneousGhostFill.
 //-----------------------------------------------------------
 def BaseGrid.fluxDivergence(
-  flux_div:    [ext_cells] real,
-  q:           [ext_cells] real,
+  inout flux_div:    GridArray,
+  q:           GridArray,
   diffusivity: real)
 {
 
@@ -186,24 +182,24 @@ def BaseGrid.fluxDivergence(
 
 
     //==== Initialize to zero ====
-    flux_div(cell) = 0.0;
+    flux_div.value(cell) = 0.0;
 
     
     //==== Apply contribution in each dimension ====
     for d in dimensions {
       var cell_shift: dimension*int; // initializes to 0
       cell_shift(d) = 2;  // Use IntVect here?
-      flux_div(cell) += (     -q(cell-cell_shift) 
-                         + 2.0*q(cell) 
-                         -     q(cell+cell_shift)
-                         ) / dx(d)**2;
+      flux_div.value(cell) += (     -q.value(cell-cell_shift) 
+                               + 2.0*q.value(cell) 
+                               -     q.value(cell+cell_shift)
+                              ) / dx(d)**2;
     }
 
   }
 
 
   //==== Finish by multiplying the whole array by diffusivity ====
-  flux_div(cells) *= diffusivity;
+  flux_div *= diffusivity;
 
 
 }
@@ -221,7 +217,7 @@ class ZeroFluxDiffusionGridBC: GridBC {
   
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: [grid.ext_cells] real, t: real) {
+  def ghostFill(q: GridArray, t: real) {
     homogeneousGhostFill(q);
   }
   //<=== ghostFill method <===
@@ -230,7 +226,7 @@ class ZeroFluxDiffusionGridBC: GridBC {
 
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: [grid.ext_cells] real) {
+  def homogeneousGhostFill(q: GridArray) {
     
     for precell in grid.ghost_cells {
         var cell = tuplify(precell);
@@ -243,7 +239,7 @@ class ZeroFluxDiffusionGridBC: GridBC {
 	}
         
 	//==== Copy target_cell's value to the ghost cell ====
-        q(cell) = q(target_cell);
+        q.value(cell) = q.value(target_cell);
     }
 
   }

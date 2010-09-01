@@ -2,6 +2,32 @@ use grid_base_defs;
 
 
 
+/* def main { */
+
+/*   var x_low = (0.0,0.0); */
+/*   var x_high = (1.0,1.0); */
+/*   var i_low = (0,0); */
+/*   var n_cells = (4,5); */
+/*   var n_ghost_cells = (1,1); */
+  
+/*   var grid = new BaseGrid(x_low = x_low, x_high = x_high, */
+/* 			  i_low = i_low, n_cells = n_cells, */
+/* 			  n_ghost_cells = n_ghost_cells); */
+
+/*   var q = new GridArray(grid = grid); */
+
+/*   setGridArray(q); */
+
+/*   writeln(q.value); */
+
+/* } */
+
+
+/* def setGridArray(q: GridArray) { */
+/*   q = 1.0; */
+/* } */
+
+
 //====================================================>
 //==================== GRID ARRAYS ===================>
 //====================================================>
@@ -9,11 +35,59 @@ use grid_base_defs;
 //===> GridArray class ===>
 //========================>
 class GridArray {
-  const grid: BaseGrid;
-  var value: [grid.ext_cells] real;
+  const grid:         BaseGrid;
+  var value:          [grid.ext_cells] real;
+  var _promotionType: real;
+
+  //===> these() iterator ===>
+  //--------------------------------------------------------------------
+  // Iterates over interior values.  The aim is to allow arithmetic
+  // operations without directly accessing the 'value' field, such as
+  // q += 2.0, or q = q1 + q2.
+  //--------------------------------------------------------------------
+  // Brad mentioned that there ought to be a way to use the default
+  // leader/follower iterators for arithmetic domains.  For now, though
+  // this is acceptably fast given the simplicity of the code.
+  //--------------------------------------------------------------------
+  def these() {
+    for cell in grid.cells do
+      yield value(cell);
+  }
+
+  def these(param tag: iterator) 
+  where tag == iterator.leader {
+    forall cell in grid.cells do
+      yield cell;
+  }
+
+  def these(param tag: iterator, follower) var
+  where tag == iterator.follower {
+    yield value(follower);
+  }
+  //<=== these() iterator <===
+
 }
 //<=== GridArray class <===
 //<========================
+
+
+
+
+//===> GridArray assignment overloads ===>
+//=======================================>
+def =(q: GridArray, rvalue) 
+where rvalue.type != GridArray && rvalue.type != real
+{
+  forall (x,y) in (q,rvalue) do
+    x = y;
+}
+
+def =(q: GridArray, rvalue: real) {
+  forall x in q do
+    x = rvalue;
+}
+//<=== GridArray assignment overloads <===
+//<=======================================
 
 
 

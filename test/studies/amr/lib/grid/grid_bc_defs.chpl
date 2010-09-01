@@ -10,8 +10,8 @@ class GridBC {
   var grid: BaseGrid;
 
   //==== Dummy routines; to be provided in derived classes ====
-  def ghostFill(q: [grid.ext_cells] real, t: real){}
-  def homogeneousGhostFill(q: [grid.ext_cells] real){}
+  def ghostFill(q: GridArray, t: real){}
+  def homogeneousGhostFill(q: GridArray){}
   
 }
 //<=== GridBC Class <===
@@ -57,7 +57,7 @@ class PeriodicGridBC: GridBC {
 
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: [grid.ext_cells] real, t: real) {
+  def ghostFill(q: GridArray, t: real) {
     //==== Periodic BCs are homogeneous ====
     homogeneousGhostFill(q);
   }
@@ -68,12 +68,12 @@ class PeriodicGridBC: GridBC {
 
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: [grid.ext_cells] real) {
+  def homogeneousGhostFill(q: GridArray) {
 
     //==== Copy values into ghost cells from their periodic images ====
     for d in dimensions do {
-      q(grid.ghost_cells.low(d))  = q(periodic_ghost_images.low(d));
-      q(grid.ghost_cells.high(d)) = q(periodic_ghost_images.high(d));
+      q.value(grid.ghost_cells.low(d))  = q.value(periodic_ghost_images.low(d));
+      q.value(grid.ghost_cells.high(d)) = q.value(periodic_ghost_images.high(d));
     }
   }
   //<=== homogeneousGhostFill method <===
