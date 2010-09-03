@@ -147,8 +147,8 @@ def LevelArray.fillSharedGhosts() {
 //-----------------------------------------------------------------------
 def LevelArray.clawOutput(
   time:         real,
-  frame_number: int
-){
+  frame_number: int)
+{
 
   //==== Names of output files ====
   var frame_string:      string = format("%04i", frame_number),
@@ -169,7 +169,7 @@ def LevelArray.clawOutput(
   //==== Solution file ====
   outfile = new file(solution_filename, FileAccessMode.write);
   outfile.open();
-  write(1, outfile);  // AMR_level=1 for single-level output
+  write(1, 1, outfile);  // AMR_level=1 and base_grid_number=1 for single-level output
   outfile.close();
   delete outfile;
 
@@ -183,14 +183,16 @@ def LevelArray.clawOutput(
 //===> LevelArray.write method ===>
 //================================>
 def LevelArray.write(
-  AMR_level: int,
-  outfile:   file
-){
-  var grid_number = 0;
+  AMR_level:        int,
+  base_grid_number: int,
+  outfile:          file)
+{
+
+  var grid_number = base_grid_number;
   for grid in level.grids {
-    grid_number += 1;
-    grid_arrays(grid).write(grid_number, 1, outfile);
+    grid_arrays(grid).write(grid_number, AMR_level, outfile);
     outfile.writeln("  ");
+    grid_number += 1;
   }
 
 }

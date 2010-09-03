@@ -273,3 +273,48 @@ class LevelBoundaryDomain {
 }
 //<=== LevelBoundaryDomain class <===
 //<==================================
+
+
+
+
+
+//===> levelFromInputFile routine ===>
+//===================================>
+//------------------------------------------------------------------
+// Creates a BaseLevel, provided an input file starting on the line
+// where the level's definition begins.
+//------------------------------------------------------------------
+def levelFromInputFile(input_file: file){
+
+  var x_low, x_high:    dimension*real;
+  var n_cells, n_ghost: dimension*int;
+
+  input_file.readln( (...x_low) );
+  input_file.readln( (...x_high) );
+  input_file.readln( (...n_cells) );
+  input_file.readln( (...n_ghost) );
+
+  var level = new BaseLevel(x_low         = x_low,
+			    x_high        = x_high,
+			    n_cells       = n_cells,
+			    n_ghost_cells = n_ghost);
+
+  input_file.readln();
+
+  var n_grids: int;
+  input_file.readln(n_grids);
+
+  for i_grid in [1..n_grids] {
+    input_file.readln();
+    input_file.readln( (...x_low) );
+    input_file.readln( (...x_high) );
+    level.addGrid(x_low, x_high);
+  }
+
+  level.fix();
+
+  return level;
+
+}
+//<=== levelFromInputFile routine <===
+//<===================================

@@ -58,9 +58,6 @@ def main {
 
 
   //===> Initialize space ===>
-  var x_low, x_high: dimension*real,
-    n_cells, n_ghost: dimension*int;
-
   var space_file = new file("set_problem/space.txt", FileAccessMode.read);
   space_file.open();
 
@@ -72,34 +69,7 @@ def main {
   space_file.readln(); // skip number of levels
   space_file.readln(); // empty line
   
-  space_file.readln((...x_low));
-  space_file.readln((...x_high));
-  space_file.readln((...n_cells));
-  space_file.readln((...n_ghost));
-
-  var level = new BaseLevel(x_low         = x_low,
-                            x_high        = x_high,
-                            n_cells       = n_cells,
-                            n_ghost_cells = n_ghost);
-
-  space_file.readln();
-  write("Setting up grids...");
-
-  var n_grids: int;
-  space_file.readln(n_grids);
-  
-  for i_grid in [1..n_grids] {
-    write(i_grid, "...");
-    space_file.readln();
-    space_file.readln((...x_low));
-    space_file.readln((...x_high));
-    level.addGrid(x_low, x_high);
-  }
-  
-  space_file.close();
-
-  level.fix();
-  write("done.\n");
+  var level = levelFromInputFile(space_file);
   //<=== Initialize space <===
 
 

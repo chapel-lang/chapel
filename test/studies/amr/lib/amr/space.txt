@@ -1,0 +1,26 @@
+2    dimension
+
+-1.0 -1.0   x_low for problem domain
+ 1.0  1.0   x_high
+  40   40   n_coarsest_cells
+   1    1   n_ghost_cells
+
+2    number of levels; note that top level is already defined above (with a single grid)
+
+  3  2    ref_ratio for level 2
+     4    number of grids; grid limits follow
+
+      -1.0 -1.0   x_low
+       0.0  0.0   x_high
+
+       0.0  0.0   x_low
+       1.0  1.0   x_high
+ 
+       0.0 -0.5   x_low
+       0.5  0.0   x_high
+
+       0.5 -0.2   x_low
+       0.7  0.0   x_high
+
+      -0.5  0.0   x_low
+       0.0  0.5   x_high

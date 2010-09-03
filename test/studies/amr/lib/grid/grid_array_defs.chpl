@@ -1,33 +1,6 @@
 use grid_base_defs;
 
 
-
-/* def main { */
-
-/*   var x_low = (0.0,0.0); */
-/*   var x_high = (1.0,1.0); */
-/*   var i_low = (0,0); */
-/*   var n_cells = (4,5); */
-/*   var n_ghost_cells = (1,1); */
-  
-/*   var grid = new BaseGrid(x_low = x_low, x_high = x_high, */
-/* 			  i_low = i_low, n_cells = n_cells, */
-/* 			  n_ghost_cells = n_ghost_cells); */
-
-/*   var q = new GridArray(grid = grid); */
-
-/*   setGridArray(q); */
-
-/*   writeln(q.value); */
-
-/* } */
-
-
-/* def setGridArray(q: GridArray) { */
-/*   q = 1.0; */
-/* } */
-
-
 //====================================================>
 //==================== GRID ARRAYS ===================>
 //====================================================>
