@@ -57,8 +57,10 @@ def AMRArray.clawOutput(
 
 
 
-//===> AMRArray.write method ===>
-//==============================>
+
+//|~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
+//|    AMRArray.write method    >
+//|____________________________/
 //----------------------------------------------------------------
 // Proceeds down the indexed_levels, calling the LevelArray.write
 // method on each corresponding LevelArray.
@@ -75,5 +77,6 @@ def AMRArray.write(outfile: file){
   }
 
 }
-//<=== AMRArray.write method <===
-//<==============================
+// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
+//<    AMRArray.write method     |
+// \_____________________________|
