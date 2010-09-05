@@ -7,8 +7,6 @@
 
 extern FILE* html_index_file;
 
-extern Map<const char*, const char*> configParamMap;
-
 extern int instantiation_limit;
 
 extern int fdump_html;
@@ -29,12 +27,14 @@ extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoRemoteValueForwarding;
 extern bool fNoRemoveCopyCalls;
+extern bool fNoRepositionDefExpr;
 extern bool fNoScalarReplacement;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
 extern int optimize_on_clause_limit;
+extern int scalar_replace_limit;
 
 extern bool report_inlining;
 extern char CHPL_HOME[FILENAME_MAX];
@@ -78,6 +78,7 @@ extern int squelch_header_errors;
 
 extern bool fWarnPromotion;
 extern bool fReportOptimizedOn;
+extern bool fReportScalarReplace;
 
 extern bool debugCCode, optimizeCCode;
 

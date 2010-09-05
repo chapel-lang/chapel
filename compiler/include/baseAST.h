@@ -1,9 +1,28 @@
+//
+// The BaseAST class is the parent class of all AST node types.
+//
+// Notes on adding, removing, or changing AST node types
+// -----------------------------------------------------
+//
+// 1. When adding or removing AST node types, update AstTag and
+//    astTagName so that they are consistent.
+//
+// 2. Update the traversal macros as necessary.  The traversal must be
+//    able to touch all AST nodes when traversing the AST.
+//
+
 #ifndef _BASEAST_H_
 #define _BASEAST_H_
 
 #include "chpl.h"
 #include "stringutil.h"
 
+//
+// foreach_ast_sep: invoke a 'macro' for every AST node type,
+//                  separating invocations by 'sep'
+// foreach_ast: invoke a macro for every AST node type, separating
+//              invocations by ;
+//
 #define foreach_ast_sep(macro, sep)                \
   macro(PrimitiveType) sep                         \
   macro(EnumType) sep                              \
@@ -27,37 +46,37 @@
 #define foreach_ast(macro)                      \
   foreach_ast_sep(macro, ;)
 
-class AList;
+//
+// prototype Symbol, Type, Expr, and all AST node types
+//
 class Symbol;
 class Type;
 class Expr;
-
-//
-// prototype ast classes SymExpr, CallExpr, FnSymbol, ...
-//
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
 #undef proto_classes
 
 //
-// declare global vectors gSymExprs, gCallExprs, gFnSymbols, ...
+// declare global vectors for all AST node types
+//
+// These global vectors, named gSymExprs, gCallExprs, gFnSymbols, ...,
+// contain all existing nodes of the given AST node type; they are
+// updated automatically as new AST nodes are constructed.  Nodes are
+// removed from these vectors between passes.
 //
 #define decl_gvecs(type) extern Vec<type*> g##type##s
 foreach_ast(decl_gvecs);
 #undef decl_gvecs
 
+//
+// type definitions for common maps
+//
 typedef Map<Symbol*,Symbol*> SymbolMap;
 typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
 
-extern void update_symbols(BaseAST* ast, SymbolMap* map);
-
-void cleanAst(void);
-void destroyAst(void);
-void printStatistics(const char* pass);
-
-/**
- **  Note: update AstTag and astTagName together always.
- **/
+//
+// enumerated type of all AST node types (and superclass types)
+//
 enum AstTag {
   E_SymExpr,
   E_UnresolvedSymExpr,
@@ -86,8 +105,19 @@ enum AstTag {
   E_BaseAST
 };
 
+//
+// string names of all AST node types (used for debugging)
+//
 extern const char* astTagName[];
 
+//
+// macros used to define the copy method on all AST node types, and to
+// prototype the copyInner method
+//
+// The copyInner method is used to do the copy specific to any node.
+// The outermost call to copy invokes the copyInner method used to
+// implement the recursive copy.
+//
 #define DECLARE_COPY(type)                                              \
   type* copy(SymbolMap* map = NULL, bool internal = false) {            \
     SymbolMap localMap;                                                 \
@@ -116,8 +146,14 @@ extern const char* astTagName[];
   }                                                                     \
   virtual type* copyInner(SymbolMap* map)
 
+//
+// macro used to call copy from inside the copyInner method
+//
 #define COPY_INT(c) (c ? c->copy(map, true) : NULL)
 
+//
+// abstract parent of all AST node types
+//
 class BaseAST {
  public:
   AstTag astTag; // BaseAST subclass
@@ -142,15 +178,22 @@ class BaseAST {
   Type* getWideRefType();
 };
 
+//
+// macro to update the global line number used to set the line number
+// of an AST node when it is constructed
+//
+// This should be used before constructing new nodes to make sure the
+// line number is correctly set.
+//
+#define SET_LINENO(ast) currentLineno = ast->lineno;
 extern int currentLineno;
 
-#define SET_LINENO(ast) currentLineno = ast->lineno;
-
-extern Vec<ModuleSymbol*> allModules;     // Contains all modules
-extern Vec<ModuleSymbol*> userModules;    // Contains main + user modules
-extern Vec<ModuleSymbol*> mainModules;    // Contains main modules
-
-void registerModule(ModuleSymbol* mod);
+//
+// vectors of modules
+//
+extern Vec<ModuleSymbol*> allModules;  // contains all modules
+extern Vec<ModuleSymbol*> userModules; // contains main + user modules
+extern Vec<ModuleSymbol*> mainModules; // contains main modules
 
 //
 // class test macros: determine the dynamic type of a BaseAST*
@@ -207,6 +250,11 @@ void registerModule(ModuleSymbol* mod);
 
 //
 // traversal macros
+//
+// These macros are used to implement the functions that collect all
+// of the nodes in some part of the AST, e.g., collectSymExprs.  They
+// can also be used to define recursive functions that work over a
+// portion of the AST.  See collectSymExprs for a simple example.
 //
 #define AST_CALL_CHILD(_a, _t, _m, call, ...)                           \
   if (((_t*)_a)->_m) {                                                  \
@@ -274,5 +322,35 @@ void registerModule(ModuleSymbol* mod);
   default:                                                              \
     break;                                                              \
   }
+
+//
+// clean IR between passes by clearing some back pointers to dead AST
+// nodes and removing dead AST nodes from the global vectors of AST
+// nodes
+//
+void cleanAst(void);
+
+//
+// reclaim memory associated with all AST nodes (called at the end)
+//
+void destroyAst(void);
+
+//
+// print memory-related statistics about the IR (called between passes
+// if using --print-statistics)
+//
+void printStatistics(const char* pass);
+
+void registerModule(ModuleSymbol* mod);
+
+//
+// update_symbols: substitute symbol uses in 'ast' using 'map'
+//
+// This function is primarily used when AST::copy is called.  If a
+// Block containing a def and a use of that def is copied, then the
+// def will be copied, and this routine will update the use to the new
+// def.
+//
+void update_symbols(BaseAST* ast, SymbolMap* map);
 
 #endif
