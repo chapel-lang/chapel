@@ -52,6 +52,8 @@ initFlags() {
   defineFlag(FLAG_EXPORT, "export");
   defineFlag(FLAG_EXPR_TEMP, "expr temp");
   defineFlag(FLAG_EXTERN, "extern");
+  defineFlag(FLAG_FIXED_STRING, "fixed string");
+  defineFlag(FLAG_FUNCTION_CLASS, "function class");
   defineFlag(FLAG_GENERIC, "generic");
   defineFlag(FLAG_HEAP, "heap");
   defineFlag(FLAG_HEAP_ALLOCATE, "heap allocate");
@@ -64,6 +66,7 @@ initFlags() {
   defineFlag(FLAG_INSERT_AUTO_COPY, "insert auto copy");
   defineFlag(FLAG_INSERT_AUTO_DESTROY, "insert auto destroy");
   defineFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW, "insert auto destroy for explicit new");
+  defineFlag(FLAG_INSERT_LINE_FILE_INFO, "insert line file info");
   defineFlag(FLAG_IS_MEME, "is meme");
   defineFlag(FLAG_ITERATOR_CLASS, "iterator class");
   defineFlag(FLAG_ITERATOR_FN, "iterator fn");

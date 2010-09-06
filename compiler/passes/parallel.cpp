@@ -12,6 +12,8 @@
 #include "driver.h"
 #include "files.h"
 
+FnSymbol* getAutoCopy(Type* t);
+FnSymbol* getAutoDestroy(Type* t);
 
 // Package args into a class and call a wrapper function with that
 // object. The wrapper function will then call the function
@@ -76,7 +78,43 @@ bundleArgs(CallExpr* fcall) {
     fcall->insertBefore( setc);
     i++;
   }
-  
+
+  // insert autoCopy for array/domain/distribution before begin call
+  // and insert autoDestroy at end of begin function.
+  if (fn->hasFlag(FLAG_BEGIN)) {
+    for_actuals(arg, fcall) {
+      SymExpr* s = toSymExpr(arg);
+      Symbol* var = s->var; // var or arg
+      Type* baseType = arg->typeInfo();
+      if (isReferenceType(baseType)) {
+        baseType = arg->typeInfo()->getField("_val", true)->type;
+      }
+      if (baseType->symbol->hasFlag(FLAG_ARRAY) ||
+          baseType->symbol->hasFlag(FLAG_DOMAIN) ||
+          baseType->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+        FnSymbol* autoCopyFn = getAutoCopy(baseType);
+        FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
+        VarSymbol* valTmp = newTemp(baseType);
+        fcall->insertBefore(new DefExpr(valTmp));
+        if (baseType == arg->typeInfo()) {
+          fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, var));
+        } else {
+          fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_REF, var)));
+        }
+        fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(autoCopyFn, valTmp)));
+        VarSymbol* derefTmp = newTemp(baseType);
+        fn->insertBeforeReturnAfterLabel(new DefExpr(derefTmp));
+        if (baseType == arg->typeInfo()) {
+          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new SymExpr(actual_to_formal(arg))));
+        } else {
+          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_GET_REF, new SymExpr(actual_to_formal(arg)))));
+        }
+        fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, derefTmp));
+      }
+    }
+  }
+
+
   // create wrapper-function that uses the class instance
 
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
@@ -459,6 +497,11 @@ makeHeapAllocations() {
   forv_Vec(Symbol, var, varVec) {
     INT_ASSERT(!var->type->symbol->hasFlag(FLAG_REF));
 
+    if (var->hasFlag(FLAG_EXTERN)) {
+      // don't widen external variables
+      continue;
+    }
+
     if (ArgSymbol* arg = toArgSymbol(var)) {
       VarSymbol* tmp = newTemp(var->type);
       varSet.set_add(tmp);
@@ -486,7 +529,7 @@ makeHeapAllocations() {
     if (!isModuleSymbol(var->defPoint->parentSymbol) &&
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
-      var->defPoint->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
+      var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
       heapAllocatedVars.add(var);
     }
 

@@ -15,6 +15,12 @@
 
 static const bool debugScalarReplacement = false;
 
+// statistics
+static int srClass = 0;
+static int srClassReplaced = 0;
+static int srRecord = 0;
+static int srRecordReplaced = 0;
+
 //
 // typeVec - a vector of candidate types for scalar replacement
 // varSet - a set of candidate variables for scalar replacement
@@ -159,6 +165,7 @@ unifyClassInstances(Symbol* sym) {
 static bool
 scalarReplaceClass(ClassType* ct, Symbol* sym) {
 
+  if (fReportScalarReplace) srClass++;
   //
   // only scalar replace sym if it has exactly one def and that def is
   // an allocation primitive
@@ -189,6 +196,7 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
     }
   }
 
+  if (fReportScalarReplace) srClassReplaced++;
   //
   // okay, let's scalar replace sym; first, create vars for every
   // field in sym and compute fieldMap to map the fields to these new
@@ -256,6 +264,7 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
 static bool
 scalarReplaceRecord(ClassType* ct, Symbol* sym) {
 
+  if (fReportScalarReplace) srRecord++;
   //
   // only scalar replace sym if all of the defs are handled primitives
   //
@@ -264,8 +273,10 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
       CallExpr* call = toCallExpr(se->parentExpr);
       if (!call ||
           !call->isPrimitive(PRIM_MOVE) ||
-          !isSymExpr(call->get(2)))
+          !(isSymExpr(call->get(2)) ||
+            toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE))) {
         return false;
+      }
     }
   }
 
@@ -284,6 +295,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
     }
   }
 
+  if (fReportScalarReplace) srRecordReplaced++;
   //
   // okay, let's scalar replace sym; first, create vars for every
   // field in sym and compute fieldMap to map the fields to these new
@@ -300,17 +312,42 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
       if (Vec<Symbol*>* varVec = typeVarMap.get(fct))
         varVec->add(var);
   }
-  sym->defPoint->remove();
 
   //
   // replace defs of sym with new vars
   //
   for_defs(se, defMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call && call->isPrimitive(PRIM_MOVE)) {
-        SymExpr* rhs = toSymExpr(call->get(2));
+      if (call) {
+        INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+        Symbol *rhs;
+        if (isSymExpr(call->get(2))) {
+          rhs = toSymExpr(call->get(2))->var;
+        } else if (isCallExpr(call->get(2))) {
+          // rhs is a tuple in a record
+          CallExpr* oldrhs = toCallExpr(call->get(2));
+          INT_ASSERT(toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE));
+          SymExpr *a1 = toSymExpr(oldrhs->get(1))->copy();
+          SymExpr *a2 = toSymExpr(oldrhs->get(2))->copy();
+
+          // create a temporary to hold a reference to the tuple field
+          rhs = newTemp(astr(sym->name, "_"),
+                        oldrhs->typeInfo()->symbol->type->refType);
+          sym->defPoint->insertBefore(new DefExpr(rhs));
+
+          // get the reference to the field to use for the rhs
+          SymExpr *a3 = new SymExpr(rhs);
+          call->insertBefore(new CallExpr(PRIM_MOVE, a3,
+                               new CallExpr(PRIM_GET_MEMBER, a1, a2)));
+          addUse(useMap, a1);
+          addUse(useMap, a2);
+          addDef(defMap, a3);
+        } else {
+          rhs = NULL; // to silence compiler warnings
+          INT_ASSERT(false);
+        }
         for_fields(field, ct) {
-          SymExpr* rhsCopy = rhs->copy();
+          SymExpr* rhsCopy = new SymExpr(rhs);
           SymExpr* use = new SymExpr(fieldMap.get(field));
           call->insertBefore(
             new CallExpr(PRIM_MOVE, use,
@@ -322,6 +359,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
       }
     }
   }
+  sym->defPoint->remove();
 
   //
   // replace uses of sym with new vars
@@ -397,7 +435,8 @@ scalarReplace() {
         typeOrder.put(ct, -1);
         if (ts->hasFlag(FLAG_ITERATOR_CLASS) ||
             ts->hasFlag(FLAG_ITERATOR_RECORD) ||
-            ts->hasFlag(FLAG_TUPLE)) {
+            (ts->hasFlag(FLAG_TUPLE) &&
+             (ct->fields.length<=scalar_replace_limit))) {
           typeVec.add(ct);
           typeVarMap.put(ct, new Vec<Symbol*>());
           if (ClassType* rct = toClassType(ct->refType))
@@ -442,6 +481,10 @@ scalarReplace() {
     //
     if (debugScalarReplacement)
       printf("\n");
+    if (fReportScalarReplace) {
+      printf("SCALAR REPLACEMENT (limit=%d): %d types\n",
+             scalar_replace_limit, typeVec.n);
+    }
     forv_Vec(ClassType, ct, typeVec) {
       if (debugScalarReplacement)
         printf("%d: %s:\n", typeOrder.get(ct), ct->symbol->cname);
@@ -491,5 +534,10 @@ scalarReplace() {
     }
     typeVarMap.clear();
     freeDefUseMaps(defMap, useMap);
+
+    if (fReportScalarReplace) {
+      printf("\tReplaced %d of %d records\n", srRecordReplaced, srRecord);
+      printf("\tReplaced %d of %d classes\n", srClassReplaced, srClass);
+    }
   }
 }

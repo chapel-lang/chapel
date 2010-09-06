@@ -182,6 +182,8 @@ checkReturnPaths(FnSymbol* fn) {
   if (VarSymbol* var = toVarSymbol(ret))
     if (var->immediate)
       return;
+  if (isEnumSymbol(ret))
+    return;
   int result = isDefinedAllPaths(fn->body, ret);
 
   //

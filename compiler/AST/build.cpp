@@ -7,7 +7,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
-
+#include "config.h"
 
 static void
 checkControlFlow(Expr* expr, const char* context) {
@@ -407,6 +407,44 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
 }
 
 
+BlockStmt* buildPrimitiveLoopStmt(CallExpr* exprs, BlockStmt* body) {
+  checkControlFlow(body, "xmt pragma forall i in n");
+
+  INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
+  if (exprs->argList.length == 0)
+    INT_FATAL("primitive has no name");
+
+  SymExpr* primname = toSymExpr(exprs->get(1));
+  primname->remove();
+  if (!primname) INT_FATAL(primname, "primitive has no name");
+  VarSymbol* var = toVarSymbol(primname->var);
+  if (!var ||
+      !var->immediate || 
+      var->immediate->const_kind != CONST_KIND_STRING)
+    INT_FATAL(primname, "primitive with non-literal string name");
+  PrimitiveOp* prim = primitives_map.get(var->immediate->v_string);
+  if (!prim) INT_FATAL("primitive not found '%s'", var->immediate->v_string);
+
+  BlockStmt* beginBlk = new BlockStmt();
+  if (!(strcmp(var->immediate->v_string, "xmt pragma forall i in n"))) {
+    // XMT pragma formed via #pragma mta for all streams i of n
+    // 1st argument is the unique ID per_streams_i (from 0 to n-1)
+    Expr* indices = toExpr(exprs->get(1));
+    indices->remove();
+    // 2nd argument is total_streams_n (akin to numChunks)
+    Expr* iterator = toExpr(exprs->get(1));
+    iterator->remove();
+
+    beginBlk->blockInfo = new CallExpr(prim->tag, indices, iterator);
+    beginBlk->insertAtHead(body);
+  } else {
+    INT_FATAL("primitive not yet implemented '%s'", var->immediate->v_string);
+  }
+
+  return beginBlk;
+}
+
+
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
   static int uid = 1;
 
@@ -740,9 +778,12 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   FnSymbol* lifn = new FnSymbol(iteratorName);
   ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   lifn->insertFormalAtTail(lifnIterator);
-  ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
+  Expr* tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
+                                        "iterator"), "leader");
+  ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
+                                     new CallExpr(PRIM_TYPEOF, tag));
   lifn->insertFormalAtTail(lifnTag);
-  lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
+  lifn->where = new BlockStmt(new CallExpr("==", lifnTag, tag->copy()));
   fn->insertAtHead(new DefExpr(lifn));
   VarSymbol* leaderIterator = newTemp("_leaderIterator");
   leaderIterator->addFlag(FLAG_EXPR_TEMP);
@@ -756,11 +797,15 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   FnSymbol* fifn = new FnSymbol(iteratorName);
   ArgSymbol* fifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   fifn->insertFormalAtTail(fifnIterator);
-  ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
+
+  tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
+                                  "iterator"), "follower");
+  ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
+                                     new CallExpr(PRIM_TYPEOF, tag));
   fifn->insertFormalAtTail(fifnTag);
   ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, "follower", dtAny);
   fifn->insertFormalAtTail(fifnFollower);
-  fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
+  fifn->where = new BlockStmt(new CallExpr("==", fifnTag, tag->copy()));
   fn->insertAtHead(new DefExpr(fifn));
   VarSymbol* followerIterator = newTemp("_followerIterator");
   followerIterator->addFlag(FLAG_EXPR_TEMP);
@@ -1355,16 +1400,33 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 
 
 BlockStmt*
-buildVarDecls(BlockStmt* stmts, bool isConfig, bool isParam, bool isConst) {
+buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        if (isConfig)
-          var->addFlag(FLAG_CONFIG);
-        if (isParam)
-          var->addFlag(FLAG_PARAM);
-        if (isConst)
-          var->addFlag(FLAG_CONST);
+        if (externconfig != FLAG_UNKNOWN)
+          var->addFlag(externconfig);
+        if (varconst != FLAG_UNKNOWN)
+          var->addFlag(varconst);
+
+        if (var->hasFlag(FLAG_CONFIG)) {
+          if (Expr *configInit = getCmdLineConfig(var->name)) {
+            // config var initialized on the command line
+            if (!isUsedCmdLineConfig(var->name)) {
+              useCmdLineConfig(var->name);
+              // drop the original init expression on the floor
+              if (Expr* a = toExpr(configInit))
+                defExpr->init = a;
+              else if (Symbol* a = toSymbol(configInit))
+                defExpr->init = new SymExpr(a);
+              else
+                INT_FATAL(stmt, "DefExpr initialized with bad exprType config ast");
+            } else {
+              // name is ambiguous, must specify module name
+              USR_FATAL(var, "Ambiguous config param or type name (%s)", var->name);
+            }
+          }
+        }
         continue;
       }
     }
@@ -1469,7 +1531,7 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
 
   Expr* where =
     buildLogicalAndExpr(
-      new CallExpr(PRIM_IS_TUPLE, base->copy()),
+      new CallExpr("isTuple", base->copy()),
       new CallExpr("==", new_IntSymbol(i),
         new CallExpr(".", base->copy(), new_StringSymbol("size"))));
 
@@ -1479,6 +1541,26 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
   } else {
     fn->where = new BlockStmt(where);
   }
+}
+
+FnSymbol* buildLambda(FnSymbol *fn) {
+  static int nextId = 0;
+  char buffer[100];
+
+  sprintf(buffer, "_chpl_lambda_%i", nextId++);
+  char *name = (char *)malloc(strlen(buffer) + 1);
+
+  strcpy(name, buffer);
+  
+  if (!fn) {
+    fn = new FnSymbol(astr(name));
+  }
+  else {
+    fn->name = astr(name);
+    fn->cname = fn->name;
+  }
+  fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+  return fn;
 }
 
 
@@ -1739,3 +1821,49 @@ CallExpr* buildPreDecIncWarning(Expr* expr, char sign) {
   return NULL;
 }
 
+BlockStmt* convertTypesToExtern(BlockStmt* blk) {
+  for_alist(node, blk->body) {
+    if (DefExpr* de = toDefExpr(node)) {
+      if (!de->init) {
+        Symbol* vs = de->sym;
+        PrimitiveType* pt = new PrimitiveType(NULL);
+        DefExpr* newde = new DefExpr(new TypeSymbol(vs->name, pt));
+        de->replace(newde);
+        de = newde;
+      }           
+      de->sym->addFlag(FLAG_EXTERN);
+    } else {
+      INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
+    }
+  }
+  return blk;
+}
+
+BlockStmt* handleConfigTypes(BlockStmt* blk) {
+  for_alist(node, blk->body) {
+    if (DefExpr* defExpr = toDefExpr(node)) {
+      if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
+        var->addFlag(FLAG_CONFIG);
+        if (Expr *configInit = getCmdLineConfig(var->name)) {
+          // config var initialized on the command line
+          if (!isUsedCmdLineConfig(var->name)) {
+            useCmdLineConfig(var->name);
+            // drop the original init expression on the floor
+            if (Expr* a = toExpr(configInit))
+              defExpr->init = a;
+            else if (Symbol* a = toSymbol(configInit))
+              defExpr->init = new SymExpr(a);
+            else
+              INT_FATAL(node, "Type alias initialized to invalid exprType");
+          } else {
+            // name is ambiguous, must specify module name
+            USR_FATAL(var, "Ambiguous config param or type name (%s)", var->name);
+          }
+        }
+      }
+    } else {
+      INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
+    }
+  }
+  return blk;
+}

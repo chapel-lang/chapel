@@ -8,10 +8,10 @@ PASSES_SRCS = \
         filesToAST.cpp \
         flattenClasses.cpp \
         flattenFunctions.cpp \
-        insertDestructors.cpp \
         insertLineNumbers.cpp \
         normalize.cpp \
         parallel.cpp \
+        repositionDefExpressions.cpp \
         returnStarTuplesByRefArgs.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp

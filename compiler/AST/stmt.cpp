@@ -93,11 +93,33 @@ void BlockStmt::codegen(FILE* outfile) {
       fprintf(outfile, "for (;");
       blockInfo->get(1)->codegen(outfile);
       fprintf(outfile, ";) ");
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N)) {
+      fprintf(outfile, "_Pragma(\"mta for all streams ");
+      blockInfo->get(1)->codegen(outfile);
+      fprintf(outfile, " of ");
+      blockInfo->get(2)->codegen(outfile);
+      fprintf(outfile, "\")\n");
     }
   }
 
   if (this != getFunction()->body)
     fprintf(outfile, "{\n");
+
+  if (!(fNoRepositionDefExpr)) {
+    Vec<BaseAST*> asts;
+    collect_top_asts(this, asts);
+    forv_Vec(BaseAST, ast, asts) {
+      if (DefExpr* def = toDefExpr(ast)) {
+        if (def->parentExpr == this) {
+          if (!toTypeSymbol(def->sym)) {
+            if (fGenIDS && isVarSymbol(def->sym))
+              fprintf(outfile, "/* %7d */ ", def->sym->id);
+            def->sym->codegenDef(outfile);
+          }
+        }
+      }
+    }
+  }
 
   body.codegen(outfile, "");
 

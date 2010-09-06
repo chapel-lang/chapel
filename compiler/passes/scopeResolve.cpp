@@ -500,7 +500,7 @@ static void resolveEnumeratedTypes() {
 
 
 /********* build constructor ***************/
-static void build_type_constructor(ClassType* ct) {
+void build_type_constructor(ClassType* ct) {
   if (ct->defaultTypeConstructor)
     return;
 
@@ -640,7 +640,7 @@ static void build_type_constructor(ClassType* ct) {
 }
 
 
-static void build_constructor(ClassType* ct) {
+void build_constructor(ClassType* ct) {
   if (ct->defaultConstructor)
     return;
 
@@ -1131,6 +1131,7 @@ void scopeResolve(void) {
   // the symbol in module M; for functions, insert a "module=" token
   // that is used to determine visible functions.
   //
+
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     if (skipSet.set_in(unresolvedSymExpr))
       continue;
@@ -1167,6 +1168,19 @@ void scopeResolve(void) {
       if (!isFnSymbol(sym)) {
         symExpr = new SymExpr(sym);
         unresolvedSymExpr->replace(symExpr);
+      }
+      else if (isFnSymbol(sym)) {
+        Expr *parent = unresolvedSymExpr->parentExpr;
+        if (parent) {
+          CallExpr *call = toCallExpr(parent);
+          if (((call) && (call->baseExpr != unresolvedSymExpr)) || (!call)) {
+            //If the function is being used as a first-class value, handle this with a primitive and unwrap the primitive later in functionResolution
+            CallExpr *prim_capture_fn = new CallExpr(PRIM_CAPTURE_FN);
+            unresolvedSymExpr->replace(prim_capture_fn);
+            prim_capture_fn->insertAtTail(unresolvedSymExpr);
+            continue;
+          }
+        }
       }
     }
 

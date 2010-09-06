@@ -4,42 +4,186 @@
 #include "stmt.h"
 #include "view.h"
 
+//
+// For debugging, uncomment the following macros for insights:
+//
+//   PRINT_NARROW_EFFECT_SUMMARY counts the number of references that
+//   have been narrowed, and the number of references that remained
+//   wide.
+//
+//   PRINT_NARROW_EFFECT flags references that could not be narrowed,
+//   and marks the points at which references are narrowed (basically
+//   to debug the process).
+//
 
+//#define PRINT_NARROW_EFFECT_SUMMARY
 //#define PRINT_NARROW_EFFECT
 
-#ifdef PRINT_NARROW_EFFECT
-  int narrowCount = 0, wideCount = 0;
+//
+// Count statistics
+//
+#ifdef PRINT_NARROW_EFFECT_SUMMARY
+int narrowCount = 0, wideCount = 0;
 #endif
 
-Map<Symbol*,Vec<SymExpr*>*> defMap;
-Map<Symbol*,Vec<SymExpr*>*> useMap;
+//
+// A graph to indicate that the symbol 'sym' can be narrowed if
+// 'mustBeWide' is not set and all the symbols listed in inVec are
+// narrowed.  In this algorithm, only outVec is necessary (and is used
+// for the forward propagation).  When development on this pass
+// finishes, inVec should either be removed or conditionally removed
+// on a macro (if it is useful for debug).
+//
+class WideInfo {
+public:
+  Symbol* sym;
+  bool mustBeWide;
+  FnSymbol* fnToNarrow; // function to narrow if sym is narrowed
+  Vec<Symbol*> inVec;   // if the wide references in this vec are
+                        // narrowed, then sym can be narrowed
+  Vec<Symbol*> outVec;  // if sym is not narrowed, then the wide
+                        // references in this vec cannot be narrowed
+  Vec<SymExpr*> exprsToWiden;   // exprs to widen if sym is narrowed
+  Vec<CallExpr*> callsToRemove; // calls to remove if sym is narrowed
 
+  WideInfo(Symbol* isym) : sym(isym), mustBeWide(false), fnToNarrow(NULL) { }
+};
 
 //
-// set of uses that will need to be widened after narrowing
+// Type aliases for maps
 //
-Map<SymExpr*,Type*> widenMap;
+typedef Map<SymExpr*,Type*> SymExprTypeMap;
+typedef MapElem<SymExpr*,Type*> SymExprTypeMapElem;
+typedef Map<Symbol*,WideInfo*> WideInfoMap;
+typedef MapElem<Symbol*,WideInfo*> WideInfoMapElem;
 
+//
+// The map from symbols to wideInfo objects.
+//
+static Map<Symbol*,WideInfo*> wideInfoMap;
 
-Map<Symbol*,Vec<Symbol*>*> narrowDependenceGraph;
+//
+// Set of uses that may need to be widened after narrowing.  This
+// happens, for example, if we widen a reference that has to be passed
+// to a function that expects a wide reference and other calls to that
+// function pass it a wide reference.  Another choice would be to
+// clone the function.
+//
+static SymExprTypeMap widenMap; // could this be a set or vec? we can
+                                // recompute the wide type
 
+//
+// Standard def and use maps
+//
+static Map<Symbol*,Vec<SymExpr*>*> defMap;
+static Map<Symbol*,Vec<SymExpr*>*> useMap;
 
-static void narrowArg(ArgSymbol*);
+//
+// Print routines for debugging and development
+//
+void
+printNode(BaseAST* ast) {
+  Symbol* sym = toSymbol(ast);
+  WideInfo* wi = wideInfoMap.get(sym);
+  printf("%s[%d]\n", sym->cname, sym->id);
+  printf("%s\n", (wi->mustBeWide) ? "WIDE" : "NARROW");
+  printf("IN: ");
+  forv_Vec(Symbol, inSym, wi->inVec)
+    printf("%d ", inSym->id);
+  printf("\n");
+  printf("OUT: ");
+  forv_Vec(Symbol, outSym, wi->outVec)
+    printf("%d ", outSym->id);
+  printf("\n");
+}
 
+void
+printNode(int id) {
+  printNode(aid(id));
+}
 
+//
+// Forward propagation of the "fail to narrow" flag.  If a symbol
+// cannot be narrowed, mark all symbols that cannot be narrowed if
+// this symbol cannot be narrowed.
+//
 static void
-addNarrowDependence(Symbol* from, Symbol* to) {
-  Vec<Symbol*>* v = narrowDependenceGraph.get(from);
-  if (!v) {
-    v = new Vec<Symbol*>();
-    narrowDependenceGraph.put(from, v);
+forwardPropagateFailToNarrow(WideInfo* wi) {
+  forv_Vec(Symbol, outSym, wi->outVec) {
+    WideInfo* nwi = wideInfoMap.get(outSym);
+    if (!nwi->mustBeWide) {
+      nwi->mustBeWide = true;
+      forwardPropagateFailToNarrow(nwi);
+    }
   }
-  v->add(to);
+}
+
+//
+// Add narrowing dependence from one symbol to another to mark that
+// the symbol 'to' cannot be narrowed if the symbol 'from' cannot be
+// narrowed.
+//
+static void
+addNarrowDep(Symbol* from, Symbol* to) {
+  wideInfoMap.get(to)->inVec.add(from);
+  wideInfoMap.get(from)->outVec.add(to);
 }
 
 
-static bool
-narrowSym(Symbol* sym) {
+//
+// Analyze fields to mark them with the "fail to narrow" flag and/or
+// add dependences from other symbols to this field.
+//
+static void
+narrowField(Symbol* field, WideInfo* wi) {
+  TypeSymbol* ts = toTypeSymbol(field->defPoint->parentSymbol);
+  if (!strcmp(ts->name, "_class_localson_fn")) {
+    wi->mustBeWide = true;
+    return;
+  }
+  if (ts->hasFlag(FLAG_REF) ||
+      ts->hasFlag(FLAG_WIDE) ||
+      ts->hasFlag(FLAG_WIDE_CLASS)) {
+    wi->mustBeWide = true;
+    return;
+  }
+
+  INT_ASSERT(defMap.get(field) == NULL);
+
+  //
+  // The following code is a work in progress to try to narrow fields.
+  //
+
+//   for_uses(use, useMap, field) {
+//     if (CallExpr* call = toCallExpr(use->parentExpr)) {
+//       if (call->isPrimitive(PRIM_SET_MEMBER) && call->get(2) == use) {
+//         SymExpr* base = toSymExpr(call->get(1));
+//         SymExpr* rhs = toSymExpr(call->get(3));
+//         if (base->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+//             base->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
+//           addNarrowDep(base->var, field);
+//         if (rhs->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+//             rhs->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
+//           addNarrowDep(rhs->var, field);
+//         continue;
+//       }
+//       if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+//         continue;
+//       }
+//     }
+    wi->mustBeWide = true;
+    return;
+//   }
+}
+
+
+//
+// Analyze symbols (variables and arguments) to mark them with the
+// "fail to narrow" flag and/or add dependences from other symbols to
+// this symbol.
+//
+static void
+narrowSym(Symbol* sym, WideInfo* wi) {
   bool isWideObj = sym->type->symbol->hasFlag(FLAG_WIDE_CLASS);
   bool isWideRef = sym->type->symbol->hasFlag(FLAG_WIDE);
   INT_ASSERT(isWideObj ^ isWideRef);
@@ -57,66 +201,56 @@ narrowSym(Symbol* sym) {
             SymExpr* base = toSymExpr(rhs->get(1));
             if (base->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
                 base->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
-              addNarrowDependence(base->var, sym);
-            else
-              continue;
+              addNarrowDep(base->var, sym);
+            continue;
           }
           if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
             SymExpr* base = toSymExpr(rhs->get(1));
             SymExpr* member = toSymExpr(rhs->get(2));
             if (base->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
                 base->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
-              addNarrowDependence(base->var, sym);
-            else if (member->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
-                     member->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
-              addNarrowDependence(member->var, sym);
-            else
-              continue;
+              addNarrowDep(base->var, sym);
+            if (member->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+                member->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
+              addNarrowDep(member->var, sym);
+            continue;
           }
           if (rhs->isPrimitive(PRIM_STRING_COPY)) {
             SymExpr* se = toSymExpr(rhs->get(1));
             if (se->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
-                se->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              addNarrowDependence(se->var, sym);
-            } else
-              continue;
+                se->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
+              addNarrowDep(se->var, sym);
+            continue;
+          }
+          if (rhs->isPrimitive(PRIM_CAST)) {
+            SymExpr* se = toSymExpr(rhs->get(2));
+            if (se->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+                se->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
+              addNarrowDep(se->var, sym);
+            continue;
           }
           if (FnSymbol* fn = rhs->isResolved()) {
             if ((isWideRef && fn->retType->symbol->hasFlag(FLAG_WIDE)) ||
                 (isWideObj && fn->retType->symbol->hasFlag(FLAG_WIDE_CLASS)))
-              addNarrowDependence(fn, sym);
-            else
-              continue;
+              addNarrowDep(fn->getReturnSymbol(), sym);
+            continue;
           }
         }
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
           if ((isWideRef && rhs->var->type->symbol->hasFlag(FLAG_WIDE)) ||
               (isWideObj && rhs->var->type->symbol->hasFlag(FLAG_WIDE_CLASS)))
-            addNarrowDependence(rhs->var, sym);
-          else
-            continue;
+            addNarrowDep(rhs->var, sym);
+          continue;
         }
       }
     }
-    return false;
+#ifdef PRINT_NARROW_EFFECT
+    printf("%d %s def fail to narrow ", sym->id, sym->cname);
+    print_view(def->getStmtExpr());
+#endif
+    wi->mustBeWide = true;
+    return;
   }
-
-  //
-  // vector of actuals that will need to be added to the widenMap if
-  // this symbol is narrowed
-  //
-  Vec<SymExpr*> actuals;
-
-  //
-  // vector of calls that will need to be removed if this symbol is
-  // narrowed
-  //
-  Vec<CallExpr*> callsToRemove;
-
-  //
-  // if symbol is returned, mark function to update return type
-  //
-  FnSymbol* narrowedFn = NULL;
 
   for_uses(use, useMap, sym) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
@@ -143,108 +277,70 @@ narrowSym(Symbol* sym) {
       if (call->isResolved() ||
           (call->isPrimitive(PRIM_SET_MEMBER) && call->get(3) == use) ||
           (call->isPrimitive(PRIM_SET_SVEC_MEMBER) && call->get(3) == use)) {
-        actuals.add(use);
+        wi->exprsToWiden.add(use);
         continue;
       }
       if (call->isPrimitive(PRIM_LOCAL_CHECK)) {
-        callsToRemove.add(call);
+        wi->callsToRemove.add(call);
         continue;
       }
       if (call->isPrimitive(PRIM_RETURN)) {
-        narrowedFn = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(narrowedFn);
-        forv_Vec(CallExpr*, call, *narrowedFn->calledBy) {
-          if (call->isPrimitive(PRIM_VMT_CALL))
-            return false;
+        wi->fnToNarrow = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(wi->fnToNarrow);
+        forv_Vec(CallExpr*, call, *wi->fnToNarrow->calledBy) {
+          if (call->isPrimitive(PRIM_VMT_CALL)) {
+            wi->mustBeWide = true;
+            return;
+          }
         }
         continue;
       }
     }
-    //    printf("Fail %d: ", sym->id);
-    //    list_view_noline(use->getStmtExpr());
-    return false;
-  }
-
-  //
-  // if this symbol can be narrowed, add this actual to the widen map
-  //
-  forv_Vec(SymExpr, actual, actuals) {
-    widenMap.put(actual, sym->type);
-  }
-
-  forv_Vec(CallExpr, call, callsToRemove) {
-    call->remove();
-  }
-
-  if (narrowedFn) {
-    narrowedFn->retType = narrowedFn->retType->getField("addr")->type;
 #ifdef PRINT_NARROW_EFFECT
-    printf("Narrowed %s(%d)\n", narrowedFn->cname, narrowedFn->id);
+    printf("%d %s use fail to narrow ", sym->id, sym->cname);
+    print_view(use->getStmtExpr());
 #endif
-
-    if (Vec<Symbol*>* v = narrowDependenceGraph.get(narrowedFn)) {
-      forv_Vec(Symbol, vv, *v) {
-        if (ArgSymbol* arg = toArgSymbol(vv))
-          narrowArg(arg);
-        else
-          narrowSym(vv);
-      }
-    }
+    wi->mustBeWide = true;
+    return;
   }
-
-#ifdef PRINT_NARROW_EFFECT
-  narrowCount++;
-#endif
-  sym->type = sym->type->getField("addr")->type;
-
-  if (Vec<Symbol*>* v = narrowDependenceGraph.get(sym)) {
-    forv_Vec(Symbol, vv, *v) {
-      if (ArgSymbol* arg = toArgSymbol(vv))
-        narrowArg(arg);
-      else
-        narrowSym(vv);
-    }
-  }
-
-  return true;
 }
 
 
+//
+// Analyze arguments to mark them with the "fail to narrow" flag
+// and/or add dependences from other symbols to this argument.
+// Piggyback on the analysis of variables.
+//
 static void
-narrowArg(ArgSymbol* arg) {
+narrowArg(ArgSymbol* arg, WideInfo* wi) {
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
   INT_ASSERT(fn);
-  bool candidate = true;
   forv_Vec(FnSymbol, indirectlyCalledFn, ftableVec) {
-    if (fn == indirectlyCalledFn)
-      candidate = false;
+    if (fn == indirectlyCalledFn) {
+      wi->mustBeWide = true;
+      return;
+    }
   }
   forv_Vec(CallExpr, call, *fn->calledBy) {
     if (call->isPrimitive(PRIM_VMT_CALL)) {
-      candidate = false;
+      wi->mustBeWide = true;
+      return;
     } else {
       SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
       INT_ASSERT(actual);
       if (actual->var->type->symbol->hasFlag(FLAG_WIDE) ||
           actual->var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        addNarrowDependence(actual->var, arg);
-        candidate = false;
-        break;
+        addNarrowDep(actual->var, arg);
       }
     }
   }
-  if (candidate) {
-    bool narrowed = narrowSym(arg);
-    if (narrowed) {
-      forv_Vec(CallExpr, call, *fn->calledBy) {
-        SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
-        widenMap.put(actual, NULL);
-      }
-    }
-  }
+  narrowSym(arg, wi);
 }
 
 
+//
+// Replace wide references with non-wide references if possible.
+//
 void
 narrowWideReferences() {
   buildDefUseMaps(defMap, useMap);
@@ -252,19 +348,92 @@ narrowWideReferences() {
   compute_call_sites();
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (isFnSymbol(var->defPoint->parentSymbol) &&
-        (var->type->symbol->hasFlag(FLAG_WIDE) ||
-         var->type->symbol->hasFlag(FLAG_WIDE_CLASS)))
-      narrowSym(var);
+    if (var->type->symbol->hasFlag(FLAG_WIDE) ||
+        var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      wideInfoMap.put(var, new WideInfo(var));
+    }
   }
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->type->symbol->hasFlag(FLAG_WIDE) ||
-        arg->type->symbol->hasFlag(FLAG_WIDE_CLASS))
-      narrowArg(arg);
+        arg->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      wideInfoMap.put(arg, new WideInfo(arg));
+    }
   }
 
+  form_Map(WideInfoMapElem, e, wideInfoMap) {
+    WideInfo* wi = e->value;
+    if (ArgSymbol* arg = toArgSymbol(wi->sym)) {
+      narrowArg(arg, wi);
+    } else if (VarSymbol* var = toVarSymbol(wi->sym)) {
+      if (isFnSymbol(var->defPoint->parentSymbol))
+        narrowSym(var, wi);
+      else if (isTypeSymbol(var->defPoint->parentSymbol))
+        narrowField(var, wi);
+      else
+        wi->mustBeWide = true;
+    }
+  }
+
+  form_Map(WideInfoMapElem, e, wideInfoMap) {
+    WideInfo* wi = e->value;
+    if (wi->mustBeWide)
+      forwardPropagateFailToNarrow(wi);
+  }
+
+  form_Map(WideInfoMapElem, e, wideInfoMap) {
+    WideInfo* wi = e->value;
+    if (!wi->mustBeWide) {
+
+      //
+      // add exprs to widen to the widen map
+      //
+      forv_Vec(SymExpr, actual, wi->exprsToWiden) {
+        widenMap.put(actual, wi->sym->type);
+      }
+
+      //
+      // remove calls to remove
+      //
+      forv_Vec(CallExpr, call, wi->callsToRemove) {
+        call->remove();
+      }
+
+      if (wi->fnToNarrow) {
+        wi->fnToNarrow->retType = wi->fnToNarrow->retType->getField("addr")->type;
 #ifdef PRINT_NARROW_EFFECT
+        printf("%d %s function narrowed\n", wi->fnToNarrow->id, wi->fnToNarrow->cname);
+#endif
+      }
+
+#ifdef PRINT_NARROW_EFFECT_SUMMARY
+      narrowCount++;
+#endif
+#ifdef PRINT_NARROW_EFFECT
+      printf("%d %s narrowed\n", wi->sym->id, wi->sym->cname);
+#endif
+      wi->sym->type = wi->sym->type->getField("addr")->type;
+    }
+  }
+
+  //
+  // Prune the map of expressions to widen because of arguments that
+  // have been narrowed.
+  //
+  form_Map(WideInfoMapElem, e, wideInfoMap) {
+    WideInfo* wi = e->value;
+    if (!wi->mustBeWide) {
+      if (ArgSymbol* arg = toArgSymbol(wi->sym)) {
+        FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+        forv_Vec(CallExpr, call, *fn->calledBy) {
+          SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
+          widenMap.put(actual, NULL);
+        }
+      }
+    }
+  }
+
+#ifdef PRINT_NARROW_EFFECT_SUMMARY
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->type->symbol->hasFlag(FLAG_WIDE) ||
         var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -282,12 +451,15 @@ narrowWideReferences() {
   printf("Narrow count: %d\nWide count: %d\n", narrowCount, wideCount);
 #endif
 
-  Vec<SymExpr*> keys;
-  widenMap.get_keys(keys);
-
-  forv_Vec(SymExpr, key, keys) {
-    if (Type* type = widenMap.get(key)) {
-      Symbol* tmp = newTemp(type);
+  //
+  // Insert a wide reference temporary if we narrowed a wide reference
+  // that is passed to a function that expects a wide reference.
+  //
+  form_Map(SymExprTypeMapElem, e, widenMap) {
+    SymExpr* key = e->key;
+    Type* value = e->value;
+    if (value && key->var->type != value) { // can this be an assert?
+      Symbol* tmp = newTemp(value);
       Expr* stmt = key->getStmtExpr();
       stmt->insertBefore(new DefExpr(tmp));
       key->replace(new SymExpr(tmp));
@@ -295,7 +467,11 @@ narrowWideReferences() {
     }
   }
 
+  //
+  // Free WideInfo class instances and def and use maps.
+  //
+  form_Map(WideInfoMapElem, e, wideInfoMap) {
+    delete e->value;
+  }
   freeDefUseMaps(defMap, useMap);
 }
-
-

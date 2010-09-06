@@ -249,6 +249,9 @@ static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
 
 
 void VarSymbol::codegenDef(FILE* outfile) {
+  if (this->hasFlag(FLAG_EXTERN)) {
+    return;
+  }
   if (type == dtVoid)
     return;
   if (this->hasFlag(FLAG_SUPER_CLASS))
@@ -442,6 +445,7 @@ FnSymbol::FnSymbol(const char* initName) :
   where(NULL),
   retExprType(NULL),
   body(new BlockStmt()),
+  thisTag(INTENT_BLANK),
   retTag(RET_VALUE),
   iteratorInfo(NULL),
   _this(NULL),
@@ -509,6 +513,7 @@ FnSymbol::copyInner(SymbolMap* map) {
   copy->retType = retType;
   copy->where = COPY_INT(where);
   copy->body = COPY_INT(body);
+  copy->thisTag = thisTag;
   copy->retTag = retTag;
   copy->retExprType = COPY_INT(retExprType);
   copy->cname = cname;
@@ -603,17 +608,20 @@ void FnSymbol::codegenDef(FILE* outfile) {
   codegenHeader(outfile);
 
   fprintf(outfile, " {\n");
-  Vec<BaseAST*> asts;
-  collect_top_asts(body, asts);
+  if (fNoRepositionDefExpr) {
+    Vec<BaseAST*> asts;
+    collect_top_asts(body, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast))
-      if (!toTypeSymbol(def->sym)) {
-        if (fGenIDS && isVarSymbol(def->sym))
-          fprintf(outfile, "/* %7d */ ", def->sym->id);
-        def->sym->codegenDef(outfile);
-      }
+    forv_Vec(BaseAST, ast, asts) {
+      if (DefExpr* def = toDefExpr(ast))
+        if (!toTypeSymbol(def->sym)) {
+          if (fGenIDS && isVarSymbol(def->sym))
+            fprintf(outfile, "/* %7d */ ", def->sym->id);
+          def->sym->codegenDef(outfile);
+        }
+    }
   }
+
   body->codegen(outfile);
   fprintf(outfile, "}\n\n");
 }

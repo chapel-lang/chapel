@@ -250,8 +250,12 @@ static bool isObjFile(const char* filename) {
   return checkSuffix(filename, "o");
 }
 
+static bool foundChplSource = false;
+
 bool isChplSource(const char* filename) {
-  return checkSuffix(filename, "chpl");
+  bool retval = checkSuffix(filename, "chpl");
+  if (retval) foundChplSource = true;
+  return retval;
 }
 
 static bool isRecognizedSource(char* filename) {
@@ -284,6 +288,9 @@ void testInputFiles(int numFilenames, char* filename[]) {
     inputFilenames[i] = astr(filename[i]);
   }
   inputFilenames[i] = NULL;
+
+  if (!foundChplSource)
+    USR_FATAL("Command line contains no .chpl source files");
 }
 
 

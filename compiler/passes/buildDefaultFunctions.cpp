@@ -705,7 +705,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
   CallExpr* readOpenBrace = new CallExpr("_readLitChar", fileArgFP, new_StringSymbol("{"), ignoreWhiteSpace);
   body->insertAtTail(new CallExpr("=", matchingCharWasRead, readOpenBrace));
   CallExpr* notRead = new CallExpr("==", matchingCharWasRead, new_IntSymbol(0));
-  Expr* readError = new CallExpr("halt", new_StringSymbol("Read of the class failed: "), new CallExpr(PRIM_GET_ERRNO));
+  Expr* readError = new CallExpr("halt", new_StringSymbol("Read of the class failed: "), new CallExpr("chpl_cerrno"));
   CondStmt* readErrorCond = new CondStmt(notRead, readError);
   body->insertAtTail(readErrorCond);
   bool first = true;
