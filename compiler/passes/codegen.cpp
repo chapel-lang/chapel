@@ -299,7 +299,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     collectDefExprs(fn->body, defs);
     forv_Vec(DefExpr, def, defs) {
       legalizeName(def->sym);
-      if (!strcmp(def->sym->cname, "_tmp"))
+      if (def->sym->hasFlag(FLAG_TEMP) && !strncmp(def->sym->cname, "_tmp", 4))
         def->sym->cname = astr("T");
       def->sym->cname = uniquifyName(def->sym->cname, &local, &cnames);
     }

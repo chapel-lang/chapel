@@ -86,6 +86,8 @@ BlockStmt* buildPragmaStmt(BlockStmt* block,
                            BlockStmt* stmt) {
   if (DefExpr* def = toDefExpr(stmt->body.first()))
     def->sym->addFlags(pragmas);
+  else if (pragmas->n > 0)
+    USR_WARN("Line %d: ignoring preceeding pragmas", stmt->lineno);
   delete pragmas;
   block->insertAtTail(stmt);
   return block;
