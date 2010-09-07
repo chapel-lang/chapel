@@ -14,14 +14,14 @@ endif
 
 TARGETS = \
 	ra \
-	rastm \
+	raSTM \
 	raMLA \
 	raSLA \
 	raSDA \
 	testLCG \
 	testRAR \
 	ra2 \
-	ra2stm \
+	ra2STM \
 	ra2MLA \
 	ra2SLA \
 	ra2SDA \
@@ -37,9 +37,10 @@ clean: FORCE
 ra: HPCCProblemSize.chpl RARandomStream.chpl ra.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
-rastm: HPCCProblemSize.chpl RARandomStream.chpl ra.chpl dummystm.h
+raSTM: HPCCProblemSize.chpl RARandomStream.chpl ra.chpl dummystm.h
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 	sed -i -f dummystm.sed c_$@/ra.c
+	grep LOAD_REF c_$@/ra.c
 	make -f c_$@/Makefile
 
 raMLA: HPCCProblemSize.chpl RARandomStream.chpl MutexLock.chpl MutexLock.h ra_mutex_lock_array.chpl
@@ -54,9 +55,10 @@ raSDA: HPCCProblemSize.chpl RARandomStream.chpl ra_sync_data_array.chpl
 ra2: RARandomStream.chpl ra2.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
-ra2stm: RARandomStream.chpl ra2.chpl dummystm.h
+ra2STM: RARandomStream.chpl ra2.chpl dummystm.h
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 	sed -i -f dummystm.sed c_$@/ra2.c
+	grep -e LOAD_REF -e STM_COMM_WIDE_GET c_$@/ra2.c
 	make -f c_$@/Makefile
 
 ra2MLA: HPCCProblemSize.chpl RARandomStream.chpl MutexLock.chpl MutexLock.h ra2_mutex_lock_array.chpl
