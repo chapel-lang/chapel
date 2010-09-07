@@ -1,0 +1,5 @@
+# put XE cross-compilation gnu-specific settings here
+
+include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xe
+
+GEN_CFLAGS += -std=c99

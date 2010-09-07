@@ -14,3 +14,18 @@ if maxThreadsPerLocaleLimit != 0 {
                 "maxThreadsPerLocale is unbounded; however, the limit is " + maxThreadsPerLocaleLimit);
 }
 
+//
+// the size of a call stack
+//
+config const callStackSize: uint(64) = __primitive("chpl_callStackSize");
+const callStackSizeLimit: uint(64) = __primitive("chpl_callStackSizeLimit");
+
+if callStackSizeLimit != 0 {
+  if (callStackSize > callStackSizeLimit) then
+    __primitive("chpl_warning",
+                "specified value of " + callStackSize
+                  + " for callStackSize is too high; limit is " + callStackSizeLimit);
+  else if (callStackSize == 0) then
+    __primitive("chpl_warning",
+                "callStackSize is unbounded; however, the limit is " + callStackSizeLimit);
+}

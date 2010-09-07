@@ -1,0 +1,129 @@
+\documentclass[11pt]{article}
+
+
+%===> Packages ===>
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+%<=== Packages <===
+
+
+%===> New commands ===>
+\newcommand{\dx}{\Delta x}
+\newcommand{\dt}{\Delta t}
+\newcommand{\bigoh}{\mathcal{O}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\bslash}{\char`\\}
+\newcommand{\uscore}{\char`\_}
+%<=== New commands <===
+
+
+%===> Formatting ===>
+\setlength{\parskip}{11pt}
+\setlength{\parindent}{0pt}
+%<=== Formatting <===
+
+
+\begin{document}
+
+
+\section*{Single grid problems}
+
+\subsection*{Miscellaneous}
+
+\texttt{tuplify} routine
+
+\texttt{intersectDomains} routine
+
+\texttt{GridArray} class
+
+\texttt{IsolatedArray} class
+
+
+
+\subsection*{BaseGrid class}
+
+\subsubsection*{Fields}
+
+\texttt{x\uscore{}low, x\uscore{}high}: coordinate bounds
+
+\texttt{i\uscore{}low, i\uscore{}high}: index bounds
+
+\texttt{dx}: mesh width in each dimension
+
+\texttt{cells}: domain of interior cells
+
+\texttt{ext\uscore{}cells}: \texttt{cells}, plus ghost cells
+
+\texttt{low\uscore{}ghost\uscore{}cells}: Tuple of domains, each specifying the ghost cells at the low end of a dimension.
+
+\texttt{high\uscore{}ghost\uscore{}cells}: Ditto, but for the high end.
+
+
+
+\subsubsection*{Methods}
+
+\texttt{xValue}: Returns coordinates of an index
+
+\texttt{initializeSolution}: Initializes a \texttt{ScalarGridSolution}.
+
+\texttt{clawOutput}: Writes out a \texttt{ScalarGridSolution} in Clawpack format.  \textit{Should this act on an array instead?}
+
+
+
+\subsubsection*{Subclasses}
+
+\texttt{GhostData}: Class for holding data on \textbf{only} the ghost cells.  \textit{Should this be a subclass?}
+
+
+
+
+\subsection*{\texttt{ScalarGridSolution} class}
+
+\subsubsection*{Fields}
+
+\texttt{grid}: \texttt{BaseGrid} on which the solution is defined.
+
+\texttt{space\uscore{}data}: \texttt{[1..2] [grid.ext\uscore{}cells] real}
+Holds two time levels of data on the parent grid
+
+\texttt{time}: \texttt{[1..2] real}  Times at which \texttt{space\uscore{}data} is specified.
+
+
+
+\end{document}
+
+GridBC class:
+=============
+Fields:
+-------
+    grid: Grid on which the BCs are defined.
+    low_boundary_faces: Tuple of domains, each specifying the faces at the low end of a dimension.
+    high_boundary_faces: Ditto, but for the high end.
+
+Methods:
+--------
+    ghostFill: Fills ghost cells at a given time.
+    homogeneousGhostFill: The homogeneous method corresponding to ghostFill.  Necessary for
+        implicit solvers.
+
+
+\end{document}
+
+
+\section*{Intent}
+\begin{itemize}
+\item Demonstrate Chapel's ability to simplify development of AMR codes.
+\item Write generic-dimensional code whenever possible --- drastically simplifies code base.
+\item (Personal goal) Draft an AMR system where single-grid or single-level problems can be drafted without using unnecessary framework.  Should allow step-wise development of AMR solvers.
+\end{itemize}
+
+\section*{Validation}
+\begin{itemize}
+\item Chombo's \texttt{IntVec}s and \texttt{IntVecSet}s
+\end{itemize}
+
+\section*{Chapel features}
+
+
+\end{document}

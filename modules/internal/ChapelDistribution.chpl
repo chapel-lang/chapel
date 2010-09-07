@@ -36,7 +36,7 @@ class BaseDist {
     compilerError("associative domains not supported by this distribution");
   }
 
-  def dsiNewAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
+  def dsiNewAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
     compilerError("enumerated domains not supported by this distribution");
   }
 

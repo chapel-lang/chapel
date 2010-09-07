@@ -5,8 +5,9 @@
 
 #include <stdint.h>
 #include "arg.h"
+#ifdef CHPL_TASKS_H
 #include CHPL_TASKS_H
-
+#endif
 
 //
 // Define the (uppercase) function names in the interface, that is,
@@ -19,16 +20,7 @@
 // Defined in the generated Chapel code:
 
 extern int32_t maxThreadsPerLocale;
-
-
-// Mutexes
-
-typedef chpl_mutex_t* chpl_mutex_p;
-
-void CHPL_MUTEX_INIT(chpl_mutex_p);
-chpl_mutex_p CHPL_MUTEX_NEW(void);
-void CHPL_MUTEX_LOCK(chpl_mutex_p);
-void CHPL_MUTEX_UNLOCK(chpl_mutex_p);
+extern uint64_t callStackSize;
 
 
 // Sync variables
@@ -106,6 +98,19 @@ chpl_bool CHPL_GET_SERIAL(void);
 void      CHPL_SET_SERIAL(chpl_bool);
 
 //
+// returns the size of a stack (initial value of callStackSize); the sentinel
+// value 0 means that the stack size is limited only by the system's available
+// resources, and implies that a task's stack can be dynamically extended
+//
+uint64_t CHPL_TASK_CALLSTACKSIZE(void);
+
+//
+// returns the upper limit on the size of a stack; the sentinel value 0 means
+// that there is no preexisting limit
+//
+uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void);
+
+//
 // returns the number of tasks that are ready to run on the current locale,
 // not including any that have already started running.
 //
@@ -162,12 +167,8 @@ uint32_t CHPL_NUMIDLETHREADS(void);
 
 #else // LAUNCHER
 
-#define CHPL_MUTEX_INIT(x)
-#define CHPL_MUTEX_LOCK(x)
-#define CHPL_MUTEX_UNLOCK(x)
 typedef void chpl_sync_aux_t;
 typedef void chpl_single_aux_t;
-typedef int chpl_mutex_t;
 #define CHPL_TASKING_EXIT()
 
 #endif // LAUNCHER

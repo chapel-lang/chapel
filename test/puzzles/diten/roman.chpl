@@ -8,14 +8,14 @@ def main() {
   var sum = 0;
 
   // Check that all digits are legal
-  [i in 1..length(roman)]
+  [i in 1..(roman.length)]
     select roman.substring(i) {
       when "I","V","X","L","C","D","M" do {}
       otherwise halt("Bad digit: ", roman.substring(i));
     }
 
   do {
-    if (i == length(roman)) {
+    if (i == (roman.length)) {
       sum += roman.substring(i):numeral;
       i += 1;
     } else if (roman.substring(i):numeral < roman.substring(i+1):numeral) {
@@ -27,7 +27,7 @@ def main() {
       sum += roman.substring(i):numeral;
       i += 1;
     }
-  } while i <= length(roman);
+  } while i <= (roman.length);
 
   writeln(roman, " is: ", sum);
 }

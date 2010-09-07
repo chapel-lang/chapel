@@ -20,7 +20,8 @@ CONFIG VARS:
 Built-in config vars:
                  numLocales: int (configured to 1)
         maxThreadsPerLocale: int
-            dataParTasksPerLocale: int
+              callStackSize: uint(64)
+      dataParTasksPerLocale: int
   dataParIgnoreRunningTasks: bool
       dataParMinGranularity: int 
                    memTrack: bool

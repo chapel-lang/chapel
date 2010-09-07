@@ -50,7 +50,7 @@ static size_t totalAllocated = 0; /* total memory allocated */
 static size_t totalFreed = 0;     /* total memory freed */
 static size_t totalEntries = 0;     /* number of entries in hash table */
 
-static chpl_mutex_t memTrack_lock;
+static chpl_sync_aux_t memTrack_sync;
 
 static unsigned hash(void* memAlloc, int hashSize) {
   unsigned hashValue = 0;
@@ -204,7 +204,7 @@ void chpl_setMemFlags(chpl_bool memTrackConfig,
     memTrack = true;
 
   if (memTrack) {
-    CHPL_MUTEX_INIT(&memTrack_lock);
+    CHPL_SYNC_INIT_AUX(&memTrack_sync);
     hashSizeIndex = 0;
     hashSize = hashSizes[hashSizeIndex];
     memTable = calloc(hashSize, sizeof(memTableEntry*));
@@ -224,7 +224,7 @@ void chpl_printMemStat(int32_t lineno, chpl_string filename) {
   if (!memTrack)
     chpl_error("invalid call to printMemStat(); rerun with --memTrack",
                lineno, filename);
-  CHPL_MUTEX_LOCK(&memTrack_lock);
+  CHPL_SYNC_LOCK(&memTrack_sync);
   fprintf(memLogFile, "=================\n");
   fprintf(memLogFile, "Memory Statistics\n");
   if (chpl_numLocales == 1) {
@@ -253,7 +253,7 @@ void chpl_printMemStat(int32_t lineno, chpl_string filename) {
     }
     fprintf(memLogFile, "==============================================================\n");
   }
-  CHPL_MUTEX_UNLOCK(&memTrack_lock);
+  CHPL_SYNC_UNLOCK(&memTrack_sync);
 }
 
 
@@ -432,9 +432,9 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
 void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename) {
   if (chunk > memThreshold) {
     if (memTrack) {
-      CHPL_MUTEX_LOCK(&memTrack_lock);
+      CHPL_SYNC_LOCK(&memTrack_sync);
       addMemTableEntry(memAlloc, number, size, description, lineno, filename);
-      CHPL_MUTEX_UNLOCK(&memTrack_lock);
+      CHPL_SYNC_UNLOCK(&memTrack_sync);
     }
     if (chpl_verbose_mem)
       fprintf(memLogFile, "%"PRId32": %s:%"PRId32": allocate %zuB of %s at %p\n", chpl_localeID, filename, lineno, number*size, chpl_memDescString(description), memAlloc);
@@ -446,14 +446,14 @@ void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename) {
   memTableEntry* memEntry = NULL;
 
   if (memTrack) {
-    CHPL_MUTEX_LOCK(&memTrack_lock);
+    CHPL_SYNC_LOCK(&memTrack_sync);
     memEntry = removeMemTableEntry(memAlloc);
     if (memEntry) {
       if (chpl_verbose_mem)
         fprintf(memLogFile, "%"PRId32": %s:%"PRId32": free %zuB of %s at %p\n", chpl_localeID, filename, lineno, memEntry->number*memEntry->size, chpl_memDescString(memEntry->description), memAlloc);
       free(memEntry);
     }
-    CHPL_MUTEX_UNLOCK(&memTrack_lock);
+    CHPL_SYNC_UNLOCK(&memTrack_sync);
   } else if (chpl_verbose_mem && !memEntry) {
     fprintf(memLogFile, "%"PRId32": %s:%"PRId32": free at %p\n", chpl_localeID, filename, lineno, memAlloc);
   }
@@ -464,13 +464,13 @@ void chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_memDes
   memTableEntry* memEntry = NULL;
 
   if (memTrack && number*size > memThreshold) {
-    CHPL_MUTEX_LOCK(&memTrack_lock);
+    CHPL_SYNC_LOCK(&memTrack_sync);
     if (memAlloc) {
       memEntry = removeMemTableEntry(memAlloc);
       if (memEntry)
         free(memEntry);
     }
-    CHPL_MUTEX_UNLOCK(&memTrack_lock);
+    CHPL_SYNC_UNLOCK(&memTrack_sync);
   }
 }
 
@@ -478,9 +478,9 @@ void chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_memDes
 void chpl_track_realloc2(void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, chpl_memDescInt_t description, int32_t lineno, chpl_string filename) {
   if (newChunk > memThreshold) {
     if (memTrack) {
-      CHPL_MUTEX_LOCK(&memTrack_lock);
+      CHPL_SYNC_LOCK(&memTrack_sync);
       addMemTableEntry(moreMemAlloc, number, size, description, lineno, filename);
-      CHPL_MUTEX_UNLOCK(&memTrack_lock);
+      CHPL_SYNC_UNLOCK(&memTrack_sync);
     }
     if (chpl_verbose_mem)
       fprintf(memLogFile, "%"PRId32": %s:%"PRId32": reallocate %zuB of %s at %p -> %p\n", chpl_localeID, filename, lineno, number*size, chpl_memDescString(description), memAlloc, moreMemAlloc);

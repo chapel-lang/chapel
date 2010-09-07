@@ -1,9 +1,6 @@
 #ifndef _tasks_none_h_
 #define _tasks_none_h_
 
-// bogus mutex type (no mutexes)
-typedef int chpl_mutex_t;
-
 typedef chpl_bool chpl_sync_aux_t; // only needs to store the full/empty bit
 typedef chpl_sync_aux_t chpl_single_aux_t;
 

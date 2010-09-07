@@ -4,8 +4,8 @@ config const s2 = "string 2";
 
 def main(){
   var temp_str = "";
-  var l1 = length(s1);
-  var l2 = length(s2);
+  var l1 = (s1.length);
+  var l2 = (s2.length);
   var minlength : int = min(l1, l2);
   var maxlength : int = max(l1, l2);
 

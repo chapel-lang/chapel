@@ -1,3 +1,6 @@
+_extern def chpl_config_has_value(name, module_name): bool;
+_extern def chpl_config_get_value(name, module_name): string;
+
 config param CHPL_HOST_PLATFORM: string = "unset";
 config param CHPL_TARGET_PLATFORM: string = "unset";
 if (CHPL_HOST_PLATFORM == "unset") {
@@ -295,7 +298,7 @@ pragma "inline" def *(a: int(64), b: int(64)) return __primitive("*", a, b);
 pragma "inline" def *(a: uint(32), b: uint(32)) return __primitive("*", a, b);
 pragma "inline" def *(a: uint(64), b: uint(64)) return __primitive("*", a, b);
 pragma "inline" def *(a: real(?w), b: real(w)) return __primitive("*", a, b);
-pragma "inline" def *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", a, b));
+pragma "inline" def *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
 pragma "inline" def *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex;
 
 pragma "inline" def *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
@@ -531,6 +534,20 @@ pragma "inline" def _statementLevelSymbol(param a) param { return a; }
 pragma "inline" def _statementLevelSymbol(type a) type { return a; }
 
 //
+// If an iterator is called without capturing the result, iterate over it
+// to ensure any side effects it has will happen.
+//
+pragma "inline" def _statementLevelSymbol(ir: _iteratorRecord) {
+  def _ir_copy_recursive(ir) {
+    for e in ir do
+      yield chpl__initCopy(e);
+  }
+
+  pragma "no copy" var irc = _ir_copy_recursive(ir);
+  for e in irc { }
+}
+
+//
 // _cond_test function supports statement bool conversions and sync
 //   variables in conditional statements; and checks for errors
 // _cond_invalid function checks a conditional expression for
@@ -579,12 +596,12 @@ pragma "inline" def _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
 // primitive string functions and methods
 //
 pragma "inline" def ascii(a: string) return __primitive("ascii", a);
-pragma "inline" def length(a: string) return __primitive("string_length", a);
+pragma "inline" def string.length return __primitive("string_length", this);
 pragma "inline" def string.substring(i: int) return __primitive("string_index", this, i);
 pragma "inline" def _string_contains(a: string, b: string) return __primitive("string_contains", a, b);
 
 pragma "inline" def ascii(param a: string) param return __primitive("ascii", a);
-pragma "inline" def length(param a: string) param return __primitive("string_length", a);
+pragma "inline" def param string.length param return __primitive("string_length", this);
 pragma "inline" def _string_contains(param a: string, param b: string) param return __primitive("string_contains", a, b);
 
 //
@@ -1332,6 +1349,11 @@ pragma "inline" def chpl__autoDestroy(x: _syncvar) {
 pragma "inline" def chpl__autoDestroy(x: _singlevar) {
   delete x;
 }
+
+// Type functions for representing function types
+pragma "inline" def func() type { return __primitive("create fn type", void); }
+pragma "inline" def func(type rettype) type { return __primitive("create fn type", rettype); }
+pragma "inline" def func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
 
 //
 // BLC: The inout is used here not because it is necessary, but in

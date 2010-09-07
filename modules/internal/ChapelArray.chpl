@@ -293,7 +293,7 @@ def isAssociativeDom(d: domain) param {
 }
 
 def isEnumDom(d: domain) param {
-  return isAssociativeDom(d) && __primitive("isEnumType", d._value.idxType);
+  return isAssociativeDom(d) && _isEnumeratedType(d._value.idxType);
 }
 
 def isEnumArr(a: []) param return isEnumDom(a.domain);
@@ -394,7 +394,7 @@ record _distribution {
     return x;
   }
 
-  def newAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
+  def newAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
     var x = _value.dsiNewAssociativeDom(idxType);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
@@ -1044,6 +1044,38 @@ def =(a: domain, b: _tuple) {
 
 def =(d: domain, r: range(?)) {
   d = [r];
+  return d;
+}
+
+//
+// Return true if t is a tuple of ranges that is legal to assign to domain d
+//
+def chpl__isLegalRngTupDomAssign(d, t) param {
+  def isRangeTuple(a) param {
+    def isRange(r: range(?e,?b,?s)) param return true;
+    def isRange(r) param return false;
+    def peelArgs(first, rest...) param {
+      return if rest.size > 1 then
+               isRange(first) && peelArgs((...rest))
+             else
+               isRange(first) && isRange(rest(1));
+    }
+    def peelArgs(first) param return isRange(first);
+
+    return if !isTuple(a) then false else peelArgs((...a));
+  }
+
+  def strideSafe(d, rt, param dim: int=1) param {
+    return if dim == d.rank then
+             d.dim(dim).stridable || !rt(dim).stridable
+           else
+             (d.dim(dim).stridable || !rt(dim).stridable) && strideSafe(d, rt, dim+1);
+  }
+  return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
+}
+
+def =(d: domain, rt: _tuple) where chpl__isLegalRngTupDomAssign(d, rt) {
+  d = [(...rt)];
   return d;
 }
 

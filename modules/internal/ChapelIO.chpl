@@ -1,3 +1,14 @@
+_extern def chpl_cstdin(): _file;
+_extern def chpl_cstdout(): _file;
+_extern def chpl_cstderr(): _file;
+_extern def chpl_cerrno(): string;
+_extern def chpl_cnullfile(): _file;
+_extern def chpl_fopen(filename: string, modestring: string): _file;
+_extern def chpl_fclose(file: _file): int;
+_extern def chpl_fflush(file: _file): int;
+_extern def chpl_fprintf(file: _file, s: string): int;
+_extern def chpl_format(fmt: string, x): string;
+
 // class file
 //
 //  chapel-level implementations of read, write, writeln
@@ -15,9 +26,9 @@ pragma "inline" def !=(a: _file, b: _file) return __primitive("!=", a, b);
 pragma "inline" def _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
   return __primitive("_fscan_literal", fp, val, ignoreWhiteSpace);
 
-const stdin  = new file("stdin", FileAccessMode.read, "/dev", __primitive("get_stdin"));
-const stdout = new file("stdout", FileAccessMode.write, "/dev", __primitive("get_stdout"));
-const stderr = new file("stderr", FileAccessMode.write, "/dev", __primitive("get_stderr"));
+const stdin  = new file("stdin", FileAccessMode.read, "/dev", chpl_cstdin());
+const stdout = new file("stdout", FileAccessMode.write, "/dev", chpl_cstdout());
+const stderr = new file("stderr", FileAccessMode.write, "/dev", chpl_cstderr());
 
 class file: Writer {
   var filename : string = "";
@@ -40,10 +51,10 @@ class file: Writer {
         when FileAccessMode.append do modestring = "a";
         when FileAccessMode.readwrite do modestring = "r+";
       }
-      _fp = __primitive("fopen", filename, modestring);
+      _fp = chpl_fopen(filename, modestring);
 
-      if _fp == __primitive("get_nullfile") {
-        const err = __primitive("get_errno");
+      if _fp == chpl_cnullfile() {
+        const err = chpl_cerrno();
         halt("***Error: Unable to open \"", fullFilename, "\": ", err, "***");
       }
     }
@@ -76,7 +87,7 @@ class file: Writer {
 
   def isOpen: bool {
     var openStatus: bool = false;
-    if (_fp != __primitive("get_nullfile")) {
+    if (_fp != chpl_cnullfile()) {
       openStatus = true;
     }
     return openStatus;
@@ -87,19 +98,19 @@ class file: Writer {
       if (this == stdin || this == stdout || this == stderr) {
         halt("***Error: You may not close \"", filename, "\"***");
       }
-      if (_fp == __primitive("get_nullfile")) {
+      if (_fp == chpl_cnullfile()) {
         var fullFilename = path + "/" + filename;
         halt("***Error: Trying to close \"", fullFilename, 
              "\" which isn't open***");
       }
-      var returnVal: int = __primitive("fclose", _fp);
+      var returnVal: int = chpl_fclose(_fp);
       if (returnVal < 0) {
         var fullFilename = path + "/" + filename;
-        const err = __primitive("get_errno");
+        const err = chpl_cerrno();
         halt("***Error: The close of \"", fullFilename, "\" failed: ", err, 
              "***");
       }
-      _fp = __primitive("get_nullfile");
+      _fp = chpl_cnullfile();
     }
   }
 }
@@ -112,7 +123,7 @@ def file.writeThis(f: Writer) {
 }
 
 def file.flush() {
-  on this do __primitive("fflush", _fp);
+  on this do chpl_fflush(_fp);
 }
 
 def _checkOpen(f: file, isRead: bool) {
@@ -314,9 +325,9 @@ def file.writeIt(s: string) {
        mode != FileAccessMode.append && 
        mode != FileAccessMode.readwrite ) then
     halt("***Error: ", path, "/", filename, " not open for writing***");
-  var status = __primitive("fprintf", _fp, "%s", s);
+  var status = chpl_fprintf(_fp, s);
   if status < 0 {
-    const err = __primitive("get_errno");
+    const err = chpl_cerrno();
     halt("***Error: Write failed: ", err, "***");
   }
 }
@@ -335,7 +346,7 @@ def file.writeIt(s: int) {
   else
     status = __primitive("fprintf", _fp, "%.9i", s);
   if status < 0 {
-    const err = __primitive("get_errno");
+    const err = chpl_cerrno();
     halt("***Error: Write failed: ", err, "***");
   }
 }
@@ -510,20 +521,20 @@ def _debugWrite(args...?n) {
        t == uint(8) || t == uint(16) || t == uint(32) || t == uint(64) ||
        t == real(32) || t == real(64) || t == imag(32) || t == imag(64) ||
        t == complex(64) || t == complex(128) ||
-       t == bool || t == string || __primitive("isEnumType", t) then
+       t == bool || t == string || _isEnumeratedType(t) then
       return a:string;
     else 
       compilerError("Cannot call _debugWrite on value of type ",
                     typeToString(t));
   }
   for param i in 1..n {
-    var status = __primitive("fprintf", __primitive("get_stdout"), "%s", getString(args(i)));
+    var status = chpl_fprintf(chpl_cstdout(), getString(args(i)));
     if status < 0 {
-      const err = __primitive("get_errno");
+      const err = chpl_cerrno();
       halt("_debugWrite failed with status ", err);
     }
   }
-  __primitive("fflush", __primitive("get_stdout"));
+  chpl_fflush(chpl_cstdout());
 }
 
 def _debugWriteln(args...?n) {
@@ -542,27 +553,27 @@ def format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
   if fmt.substring(1) == "#" {
     var fmt2 = _getoutputformat(fmt);
     if _isImagType(t) then
-      return (__primitive("_format", fmt2, _i2r(x))+"i");
+      return (chpl_format(fmt2, _i2r(x))+"i");
     else
-      return __primitive("_format", fmt2, x:real);
+      return chpl_format(fmt2, x:real);
   } else 
-    return __primitive("_format", fmt, x);
+    return chpl_format(fmt, x);
 }
 
 def format(fmt: string, x:?t) where _isComplexType(t) {
   if fmt.substring(1) == "#" {
     var fmt2 = _getoutputformat(fmt);
-    return (__primitive("_format", fmt2, x.re)+" + "+ __primitive("_format", fmt2, x.im)+"i");
+    return (chpl_format(fmt2, x.re)+" + "+ chpl_format(fmt2, x.im)+"i");
   } else 
-    return __primitive("_format", fmt, x);
+    return chpl_format(fmt, x);
 }
 
 def format(fmt: string, x: ?t) {
-  return __primitive("_format", fmt, x);
+  return chpl_format(fmt, x);
 }
 
 def _getoutputformat(s: string):string {
-  var sn = length(s);
+  var sn = s.length;
   var afterdot = false;
   var dplaces = 0;
   for i in 1..sn {

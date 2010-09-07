@@ -3,8 +3,8 @@
 
 #include "chpltypes.h"
 
-#define _config_has_value(v,m) (lookupSetValue(v,m) != NULL)
-#define _config_get_value(v, m) (lookupSetValue(v,m))
+#define chpl_config_has_value(v,m) (lookupSetValue(v,m) != NULL)
+#define chpl_config_get_value(v,m) (lookupSetValue(v,m))
 
 void printHelpMessage(void);
 void initConfigVarTable(void);

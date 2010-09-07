@@ -2,13 +2,14 @@
 // MTA implementation of Chapel tasking interface
 //
 
+#include "chpl_mem.h"
 #include "chplrt.h"
 #include "chpltasks.h"
-#include "chpl_mem.h"
+#include "config.h"
 #include "error.h"
-#include <stdlib.h>
-#include <stdint.h>
 #include <machine/runtime.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 
 // The global vars are to synchronize with threads created with 
@@ -16,21 +17,6 @@
 // main thread can call exit for the process.
 static int64_t          chpl_begin_cnt;      // number of unjoined threads 
 static sync int64_t     chpl_can_exit;       // can main thread exit?
-
-
-// Mutex
-
-void CHPL_MUTEX_INIT(chpl_mutex_p mutex) {
-  purge(mutex);                     // set to zero and mark empty
-}
-
-void CHPL_MUTEX_LOCK(chpl_mutex_p mutex) {
-  writeef(mutex, 1);                // set to one and mark full
-}
-
-void CHPL_MUTEX_UNLOCK(chpl_mutex_p mutex) {
-  CHPL_MUTEX_INIT(mutex);
-}
 
 
 // Sync variables
@@ -131,6 +117,15 @@ void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) { }
 // Tasks
 
 void CHPL_TASKING_INIT(void) {
+  //
+  // If a value was specified for the call stack size config const, warn
+  // the user that it's ignored on this system.
+  //
+  if (chpl_config_get_value("callStackSize", "Built-in") != NULL)
+    chpl_warning("the callStackSize config constant has no effect "
+                 "on XMT systems",
+                 0, NULL);
+
   chpl_begin_cnt = 0;                     // only main thread running
   chpl_can_exit = 1;                      // mark full - no threads created yet
 }
@@ -217,6 +212,10 @@ void CHPL_SET_SERIAL(chpl_bool state) {
   } else
     chpl_internal_error("out of memory while creating serial state");
 }
+
+uint64_t CHPL_TASK_CALLSTACKSIZE(void) { return 0; }
+
+uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) { return 0; }
 
 // not sure what the correct value should be here!
 uint32_t CHPL_NUMQUEUEDTASKS(void) { return 0; }

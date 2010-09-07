@@ -1,6 +1,6 @@
 config const sourceText = "<a><ii>end</ii><none /></a>";
-const AllIndices: domain(1) = [1..length(sourceText)];
-const AllPairs: domain(2) = [1..length(sourceText), 1..length(sourceText)];
+const AllIndices: domain(1) = [1..(sourceText.length)];
+const AllPairs: domain(2) = [1..(sourceText.length), 1..(sourceText.length)];
 var StartIndices: sparse subdomain(AllIndices);
 var EndIndices: sparse subdomain(AllIndices);
 var lock: sync int = 0;
@@ -42,7 +42,7 @@ def main {
     else if sourceText.substring[z] == '>' then {
       lock;
       EndIndices += z;
-      if z < length(sourceText) && sourceText.substring[z+1] != "<" then StartIndices += z+1;
+      if z < (sourceText.length) && sourceText.substring[z+1] != "<" then StartIndices += z+1;
       lock = 0;
     }
   }
@@ -74,7 +74,7 @@ def hasIndex(start, stop, indices) {
 }
 
 def hasSpace(str) {
-  for i in [1..length(str)] do
+  for i in [1..(str.length)] do
      if str.substring(i) == " " then return true;
   return false;
 }
@@ -128,7 +128,7 @@ def processTag(i,j) {
     return;
   }
   var tagName = sourceText.substring[stop+2..j-1];
-  var tagLen = length(tagName);
+  var tagLen = tagName.length;
   if (hasSpace(tagName)) {
     parsedElements(i,j) = nil;
     writeln("End tag has spaces in it");

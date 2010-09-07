@@ -908,6 +908,14 @@ def BlockArr.writeBinArray(f: file)
   // It will be opened again after writting, at the right position
   f.close();
 
+  if debugBlockDist then {
+    writeln("Inside: ",here.id," Domain1:",dom.dist.targetLocDom.dim(1));
+    writeln("Inside: ",here.id," Domain2:",dom.dist.targetLocDom.dim(2));
+    for i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high  {
+      for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
+	writeln("Inside: ",here.id," idx:",i1,",",i2, " locale:",dom.dist.targetLocales((i1,i2)));
+  } } }
+
 //  for i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
   for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
     coforall i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {

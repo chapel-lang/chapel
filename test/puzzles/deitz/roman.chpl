@@ -23,7 +23,7 @@ arabicNumerals("M") = 1000;
 
 var n, current, last: int;;
 last = 0;
-for i in 1..length(s) {
+for i in 1..(s.length) {
   current = arabicNumerals(s.substring(i));
   if current > last then
     current -= last;

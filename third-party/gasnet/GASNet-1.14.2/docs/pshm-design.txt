@@ -1,0 +1,178 @@
+GASNet inter-Process SHared Memory (PHSM) design
+---------------------------------------------
+$Revision: 1.2.2.2 $
+
+Document by:
+    Dan Bonachea <bonachea@cs.berkeley.edu>
+    Paul H. Hargrove <PHHargrove@lbl.gov>
+Impelemtation by:
+    Jason Duell
+    Filip Blagojevic <FBlagojevic@lbl.gov>
+    Paul H. Hargrove <PHHargrove@lbl.gov>
+
+Goal:
+
+Provide GASNet with a mechanism to communicate through shared memory among
+processes on the same compute node.  This is expected to be more robust than
+pthreads (which greatly complicate the Berkeley UPC runtime, and which prevent
+linking to any numeric libraries that that are not threadsafe).  It is also
+expected to display lower latency than use of a network API's loopback
+capabilities (though the network hardware might provide other benfits such as
+asynchronous bulk memory copy).
+
+To use:
+
+Configure GASNet and/or Berkeley UPC with --enable-pshm and everything should
+"just work" (but see Known Problems, below).  This is still considered an
+experimental feature, so we'd appreciate your feedback (both positive and
+negative) and would be happy to work with you to improve PSHM.
+
+Scope:
+
+* GASNet segment via PSHM only supported for SEGMENT_FAST or SEGMENT_LARGE
+  (not meaningful for SEGMENT_EVERYTHING mode)
+* May eventually support AM-over-PSHM for SEGMENT_EVERYTHING (but not yet)
+* Applicable both w/ and w/o pthreads
+
+Terminology:
+
+* node: each UNIX process running gasnet
+* supernode: 1 or more nodes with cross-mapped segments using PSHM support
+* supernode peers: nodes which share a supernode
+
+Interface notes:
+
+* All node processes call gasnet_init(), each is a separate GASNet node
+* PSHM is enabled/disabled at configure time and GASNET_PSHM is #defined to
+  either 1 or 0.
+* gasnetc_init() performs super-node discovery, using OS-appropriate (or
+  conduit-specific) mechanisms to figure out which nodes are capable of
+  sharing memory with which other nodes:
+   - unconditionally calls gasneti_nodemapInit() (to drive "discovery")
+   - calls gasneti_pshm_init() only if PSHM support enabled (to setup data)
+* MaxLocal/Global return values reflecting the amount of segment space divided
+  evenly among the supernode peers, and each node passes a size to
+  gasnet_attach reflecting the per-node segment size they want. 
+* gasnet_attach takes care of mapping each processor's segments as usual, but
+  also maps the segments of supernode peers into each nodes VM space using
+  OS-appropriate mechanisms. (only shm_open()+mmap() currently supported).
+* Nodes on a supernode typically have different virtual address map of the
+  segments on that supernode.  They are typically not continguous either.
+* Client calls getSegmentInfo to get the location of his segment and those of
+  other nodes (as always)
+* seginfo_t for node X reflects the shared segment belonging to X, but also
+  includes a supernode identifier (node_info) so nodes can see which nodes
+  share their supernode
+* Client may directly load/store into the segments of any node sharing their
+  supernode (currently implemented in Berkeley UPC runtime library)
+* remotely-addressable segment restrictions on gasnet_put/get/AMLong apply to
+  the individual segments - ie gasnet_put() to an address in the segment of
+  node X must give node X as the target node, not some other supernode peer
+
+Restrictions:
+
+* gasnet_hsl_t's are node-local and while they might reside in the segment,
+  they may not be accessed by more than one node in a supernode
+  - we can/should add a debug-mode check for this (also applies to shmem-conduit)
+* Use of gasnet atomics in the segment is allowed, but they must not be weak
+  atomics (which means using the explicitly "strong" ones in client code).
+
+Closed (previously "Open") questions:
+
+Q1) Do we need a separate build or separate configure of libgasnet and/or
+    libupcr with PSHM enabled/disabled?
+A1) Since the set of conduits supported by PSHM was initially a small subset
+    of the total list, we chose not to complicate the UPC compiler with this.
+    Thus we've chosen to configure everything (UPCR+gasnet) w/ --enable-pshm
+    or w/o.  The list of conduits NOT supporting PSHM is now small and we
+    might revisit this when we are happy w/ PSHM stability.
+
+Q2) If we want to use the same build, then how should GASNET_ALIGNED_SEGMENTS
+    definition behave?  Never true when any supernode contains more than one
+    node, but don't know that until runtime.
+A2) We assume that you don't use PSHM unless also using > 1 proc/node.
+    May also revisit if we don't configure PSHM as a distinct build.
+
+Q3) Can we get away with always connecting segments after all processes are
+    created, or do we need to fork after setting up shared memory segments?
+    Will drivers & spawners even allow that?
+    If we decide that a fork is required after job launch, then it should
+    definitely be done by the conduit, not the client code. But how would the
+    interface look? (this would very likely break MPI interoperability)
+A3) All supported conduits are attaching to segments in gasnet_attach().  We
+    don't need to work about fork() at all (except that smp-conduit now has a
+    fork-based spawner inside gasnetc_init()).
+
+Q4) Does the client code between init/attach need to know the supernode
+    associations? (eg to make segsize decision)
+A4) So far we have not seen a need for this (though internal to GASNet we do).
+
+Q5) Can/do we still get allocate on first write mapping for the segment?
+    - If so, who's responsible for establishing processor/memory affinity
+      with first touch? (probably the client)
+A5) We have each node mmap() its own segment before any cross-mapping is done
+    which should ensure locality if the OS does allocation at mmap() time.
+    We currently have the client doing first-touch to deal with the case that
+    the OS does page frame allocation on touch, rather than mmap().
+
+Open questions:
+
+* How do we handle 8 or 16-way SMPs on 32-bit platforms where VM space is
+  already tight, or OS's where the limit on shareable memory is small? This
+  design would make our per-node segsizes rather small. Do we want a mode
+  where segments are not cross-mapped, but the gasnet_put/get can bypass the
+  NIC using a two-copy scheme through bounce buffers?
+  - This bounce buffer mode could potentially also help for EVERYTHING mode
+    (without pshm segments), although due to attentiveness issues, it may be
+    slower than using loopback RDMA
+  - Is this mode just the extended-ref using AM-over-PSHM?
+* Do we ever want to allow supernodes to share a physical node?
+  (eg to increase segment size or to leverage NUMA affinity)
+  - if so, need an interface to specify this (probably environment variables)
+* Will there be contention with MPI for resources (and should we care)?
+  
+Known Problems / To do:
+
+* The mechanism we are using to probe for maximum segment size works fine on a
+  system with plenty of memory, but dies on systems with less.  The work
+  around is to set the GASNET_MAX_SEGSIZE small enough for a given system.
+* There are still error cases that will leak shared memory.
+
+Status:
+
+* The entire GASNet and Berkeley UPC test suites have been run on the
+  following platforms and there are no known pshm-specific failures:
+    - Linux 2.6/i686      smp, vapi, gm, mpi, udp
+    - Linux 2.6/x86-64    smp, vapi, ibv, elan, mpi, udp
+    - Linux 2.6/ia64      smp
+    - Linux 2.6/ppc64     smp
+    - AIX 5.3/ppc64       smp
+    - Solaris 10/SPARC64  smp, udp
+    - Solaris 10/x86      smp
+    - Solaris 10/x64      smp
+    - OpenSolaris/x86     smp
+    - OpenSolaris/x64     smp
+    - FreeBSD 8/i386      smp
+    - FreeBSD 8/amd64     smp
+    - IBM BG/P            smp, dcmf
+  We have no reason to think that any conduit listed above would NOT support
+  PSHM on any OS/cpu above (assuming the conduit works on that platform at all).
+* IBM BG/P platform-specific notes:
+  - PSHM does not work at all in "SMP" mode, only "DUAL" or "VN"
+  - Currently one must manually set up a few things to use PSHM on BG/P
+    + Shared segment size must be limited to a lower-than-default value
+    + BG_SHAREDMEMPOOLSIZE env var must be set to fit the shared segment plus
+      extra for Active Message buffers
+    + upcrun must be told to propagate BG_ environment vars to the job
+  - Example environment variable settings for 200MB shared heap in VN mode
+      UPC_ENVPREFIX=BG_
+      UPC_SHARED_HEAP_SIZE=200M
+      BG_SHAREDMEMPOOLSIZE=820
+  - Example environment variable settings for 400MB shared heap in DUAL mode
+      UPC_ENVPREFIX=BG_
+      UPC_SHARED_HEAP_SIZE=400M
+      BG_SHAREDMEMPOOLSIZE=810
+* Platforms known NOT to work:
+  - MacOSX is NOT supported because we appear to trigger a kernel memory leak.
+  - CNL (at least at our site) lacks support for shm_open().
+  - Catamount can't share memory (in any way that we know of).

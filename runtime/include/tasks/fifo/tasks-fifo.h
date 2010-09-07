@@ -60,6 +60,8 @@
 //     threadlayer_pool_awaken()
 //     threadlayer_get_thread_private_data()
 //     threadlayer_set_thread_private_data()
+//     threadlayer_call_stack_size()
+//     threadlayer_call_stack_size_limit()
 //
 // The types are declared in the threads-*.h file for each specific
 // threading layer, and the callback functions are declared here.  The
@@ -82,12 +84,6 @@ typedef uint64_t chpl_taskID_t;
 
 
 //
-// Mutexes
-//
-typedef threadlayer_mutex_t chpl_mutex_t;
-
-
-//
 // Thread management
 //
 threadlayer_threadID_t threadlayer_thread_id(void);
@@ -105,7 +101,7 @@ void threadlayer_thread_join(threadlayer_threadID_t);
 //
 typedef struct {
   volatile chpl_bool is_full;
-  chpl_mutex_t* lock;
+  threadlayer_mutex_t lock;
   threadlayer_sync_aux_t tl_aux;
 } chpl_sync_aux_t;
 
@@ -120,7 +116,7 @@ typedef struct {
 //
 typedef struct {
   volatile chpl_bool is_full;
-  chpl_mutex_t* lock;
+  threadlayer_mutex_t lock;
   threadlayer_single_aux_t tl_aux;
 } chpl_single_aux_t;
 
@@ -240,8 +236,7 @@ void threadlayer_single_destroy(chpl_single_aux_t *s);
 //
 
 //
-// The interface for thread creation may need to be extended eventually
-// to allow for specifying such things as stack sizes and/or locations.
+// Create a new thread.
 //
 int threadlayer_thread_create(threadlayer_threadID_t*, void*(*)(void*), void*);
 
@@ -275,7 +270,7 @@ int threadlayer_thread_create(threadlayer_threadID_t*, void*(*)(void*), void*);
 // which the suspend callback can use to tell when the pool becomes
 // nonempty.
 //
-chpl_bool threadlayer_pool_suspend(chpl_mutex_t*, struct timeval*);
+chpl_bool threadlayer_pool_suspend(threadlayer_mutex_t*, struct timeval*);
 void threadlayer_pool_awaken(void);
 
 
@@ -289,5 +284,12 @@ void threadlayer_pool_awaken(void);
 //
 void  threadlayer_set_thread_private_data(void*);
 void* threadlayer_get_thread_private_data(void);
+
+
+//
+// Thread stack sizes
+//
+uint64_t threadlayer_call_stack_size(void);
+uint64_t threadlayer_call_stack_size_limit(void);
 
 #endif

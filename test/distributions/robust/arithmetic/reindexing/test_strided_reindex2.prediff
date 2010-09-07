@@ -6,12 +6,13 @@ testname=sys.argv[1]
 compopts=sys.argv[4]
 dist = 'default'
 
-s = string.rfind(compopts, 'distString')
+searchstring='distType=DistType.'
+s = string.rfind(compopts, searchstring)
 
 print compopts
 
 if s != -1:
-    opt = compopts[s+11:len(compopts)]
+    opt = compopts[s+len(searchstring):len(compopts)]
     dist = opt.split()[0]
 
 print dist

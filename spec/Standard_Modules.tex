@@ -17,7 +17,8 @@ are as follows:
 
 \begin{tabular}{lll}
 \hspace{1pc} & \chpl{BitOps} & Bit manipulation routines \\
-             & \chpl{Norm}   & routines for computing vector and matrix norms \\
+             & \chpl{Functions}   & Common higher-order functions \\
+             & \chpl{Norm}   & Routines for computing vector and matrix norms \\
              & \chpl{Random} & Random number generation routines \\
              & \chpl{Search} & Generic searching routines \\
              & \chpl{Sort} & Generic sorting routines \\
@@ -33,6 +34,248 @@ and that more standard modules will be defined over time.
 Automatic modules are used by a Chapel program automatically.  There
 is currently no way to avoid their use by a program though we
 anticipate adding such a capability in the future.
+
+\subsubsection{Functions}
+\label{Functions}
+\index{standard modules!Functions}
+
+The module \chpl{Functions} defines functions (mostly higher-order functions) that 
+commonly occur in functional programming.
+
+\vspace{1pc}
+
+\begin{protohead}
+array(x...?n)
+\end{protohead}
+\begin{protobody}
+A helper function for creating single dimension arrays by using the given values as the initial values.
+\begin{example}
+\begin{chapelpre}
+% test_array.chpl
+\end{chapelpre}
+\begin{chapel}
+use Functions;
+writeln(array(1, 2, 3, 4));
+// output: 1 2 3 4
+\end{chapel}
+\begin{chapeloutput}
+1 2 3 4
+\end{chapeloutput}
+\end{example}
+\end{protobody}
+
+\begin{protohead}
+drop(arr, n)
+\end{protohead}
+\begin{protobody}
+An iterator which returns elements of a sequence, having dropped the first n
+
+\begin{example}
+\begin{chapelpre}
+% test_drop.chpl
+\end{chapelpre}
+\begin{chapel}
+use Functions;
+var a:[1..4] int = (1, 2, 3, 4);
+writeln(drop(a,2));
+// output: 3 4
+\end{chapel}
+\begin{chapeloutput}
+3 4
+\end{chapeloutput}
+\end{example}
+\end{protobody}
+
+\begin{protohead}
+dropWhile(arr, op)
+\end{protohead}
+\begin{protobody}
+An iterator which returns elements of a sequence, having dropped the first elements which meet the given conditional operator
+\begin{example}
+\begin{chapelpre}
+% test_dropWhile.chpl
+\end{chapelpre}
+\begin{chapel}
+use Functions;
+var a:[1..4] int = (1, 2, 3, 4);
+writeln(dropWhile(a, lambda(x:int) { return x < 3; }));
+// output: 3 4
+\end{chapel}
+\begin{chapeloutput}
+3 4
+\end{chapeloutput}
+\end{example}
+\end{protobody}
+
+\begin{protohead}
+filter(arr, op)
+\end{protohead}
+\begin{protobody}
+An iterator which returns only elements in the sequence which meet the given conditional operator
+\begin{example}
+\begin{chapelpre}
+% test_filter.chpl
+\end{chapelpre}
+\begin{chapel}
+use Functions;
+var a:[1..4] int = (1, 2, 3, 4);
+writeln(filter(a, lambda(x:int) { return x % 2; }));
+// output: 1 3
+\end{chapel}
+\begin{chapeloutput}
+1 3
+\end{chapeloutput}
+\end{example}
+\end{protobody}
+
+\begin{protohead}
+foldLeft(arr, init, op)
+\end{protohead}
+\begin{protobody}
+Reduces a sequence with an operator pair-wise from the left starting with an initial value.
+\begin{example}
+\begin{chapelpre}
+% test_foldLeft.chpl
+\end{chapelpre}
+\begin{chapel}
+use Functions;
+var a:[1..4] int = (1, 2, 3, 4);
+writeln(foldLeft(a, 0, lambda(x:int, y:int) { return x - y; }));
+// computes ((((0 - 1) - 2) - 3) - 4)
+// output: -10
+\end{chapel}
+\begin{chapeloutput}
+-10
+\end{chapeloutput}
+\end{example}
+\end{protobody}
+
+\begin{protohead}
+foldRight(arr, init, op)
+\end{protohead}
+\begin{protobody}
+Reduces a sequence with an operator pair-wise from the right starting with an initial value.
+\begin{example}
+\begin{chapelpre}
+% test_foldRight.chpl
+\end{chapelpre}
+\begin{chapel}
+use Functions;
+var a:[1..4] int = (1, 2, 3, 4);
+writeln(foldRight(a, 0, lambda(x:int, y:int) { return x - y; }));
+// computes ( 1 - (2 - ( 3 - (4 - 0))))
+// output: -2
+\end{chapel}
+\begin{chapeloutput}
+-2
+\end{chapeloutput}
+\end{example}
+\end{protobody}
+
+\begin{protohead}
+map(arr, op)
+\end{protohead}
+\begin{protobody}
+An iterator which returns the result of an operator applied to each element of a sequence
+\begin{example}
+\begin{chapelpre}
+% test_map.chpl
+\end{chapelpre}
+\begin{chapel}
+use Functions;
+var a:[1..4] int = (1, 2, 3, 4);
+writeln(map(a, lambda(x:int) { return x + 1; }));
+// output: 2 3 4 5
+\end{chapel}
+\begin{chapeloutput}
+2 3 4 5
+\end{chapeloutput}
+\end{example}
+\end{protobody}
+
+\begin{protohead}
+reverse(arr)
+\end{protohead}
+\begin{protobody}
+An iterator which reverses the sequence given.
+\begin{example}
+\begin{chapelpre}
+% test_reverse.chpl
+\end{chapelpre}
+\begin{chapel}
+use Functions;
+var a:[1..4] int = (1, 2, 3, 4);
+writeln(reverse(a));
+// output: 4 3 2 1
+\end{chapel}
+\begin{chapeloutput}
+4 3 2 1
+\end{chapeloutput}
+\end{example}
+\end{protobody}
+
+\begin{protohead}
+splitAt(arr, n)
+\end{protohead}
+\begin{protobody}
+Returns a tuple splitting a sequence at the position n.
+\begin{example}
+\begin{chapelpre}
+% test_splitAt.chpl
+\end{chapelpre}
+\begin{chapel}
+use Functions;
+var a:[1..4] int = (1, 2, 3, 4);
+writeln(splitAt(a, 2));
+// output: (1 2, 3 4)
+\end{chapel}
+\begin{chapeloutput}
+(1 2, 3 4)
+\end{chapeloutput}
+\end{example}
+\end{protobody}
+
+\begin{protohead}
+take(arr, n)
+\end{protohead}
+\begin{protobody}
+An iterator which returns the first n elements of a sequence
+\begin{example}
+\begin{chapelpre}
+% test_take.chpl
+\end{chapelpre}
+\begin{chapel}
+use Functions;
+var a:[1..4] int = (1, 2, 3, 4);
+writeln(take(a, 2));
+// output: 1 2
+\end{chapel}
+\begin{chapeloutput}
+1 2
+\end{chapeloutput}
+\end{example}
+\end{protobody}
+
+\begin{protohead}
+takeWhile(arr, op)
+\end{protohead}
+\begin{protobody}
+An iterator which returns the first elements of a sequence which meet the given conditional operator
+\begin{example}
+\begin{chapelpre}
+% test_takeWhile.chpl
+\end{chapelpre}
+\begin{chapel}
+use Functions;
+var a:[1..4] int = (1, 2, 3, 4);
+writeln(takeWhile(a, lambda(x:int) { return x <= 2; }));
+// output: 1 2
+\end{chapel}
+\begin{chapeloutput}
+1 2
+\end{chapeloutput}
+\end{example}
+\end{protobody}
 
 \subsubsection{Math}
 \label{Math}

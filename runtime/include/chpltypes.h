@@ -125,7 +125,7 @@ struct __chpl____wide_chpl_string;
 // stopgap formatting
 //
 #undef printf
-chpl_string _format(chpl_string format, ...)
+chpl_string chpl_format(chpl_string format, ...)
   __attribute__((format(printf, 1, 2)));
 #define printf PRINTF_DEF
 
@@ -145,16 +145,16 @@ int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr
 
 typedef struct timeval _timervalue;
-#define _init_timer(time)
-extern _timervalue* _now_timer_help(_timervalue* time);
-#define _now_timer(time) (*_now_timer_help(&(time)))
-extern _timervalue _default_timer; // hack as a default value
-#define _new_timer() (_default_timer)
-#define _seconds_timer(time) ((_real64)((time).tv_sec))
-#define _microseconds_timer(time) ((_real64)((time).tv_usec))
-int32_t _now_year(void);
-int32_t _now_month(void);
-int32_t _now_day(void);
-int32_t _now_dow(void);
+#define chpl_init_timer(time)
+extern _timervalue* chpl_now_timer_help(_timervalue* time);
+#define chpl_now_timer(time) (*chpl_now_timer_help(&(time)))
+extern _timervalue chpl_default_timer; // hack as a default value
+#define chpl_new_timer() (chpl_default_timer)
+#define chpl_seconds_timer(time) ((_real64)((time).tv_sec))
+#define chpl_microseconds_timer(time) ((_real64)((time).tv_usec))
+int32_t chpl_now_year(void);
+int32_t chpl_now_month(void);
+int32_t chpl_now_day(void);
+int32_t chpl_now_dow(void);
 
 #endif

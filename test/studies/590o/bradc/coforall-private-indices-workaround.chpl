@@ -1,7 +1,7 @@
 config const sourceText = "<a><ii>end</ii><none /></a>";
-const AllIndices: domain(1) = [1..length(sourceText)];
-const AllPairs: domain(2) = [1..length(sourceText),
-                             1..length(sourceText)];
+const AllIndices: domain(1) = [1..(sourceText.length)];
+const AllPairs: domain(2) = [1..(sourceText.length),
+                             1..(sourceText.length)];
 var StartIndices: sparse subdomain(AllIndices);
 var EndIndices: sparse subdomain(AllIndices);
 var lock: sync int = 0;
@@ -18,7 +18,7 @@ def main {
     else if sourceText.substring[z] == '>' then {
       lock;
       EndIndices += z;
-      if z < length(sourceText) &&
+      if z < (sourceText.length) &&
       sourceText.substring[z+1] != "<"  then StartIndices += z+1;
       lock = 0;
     }

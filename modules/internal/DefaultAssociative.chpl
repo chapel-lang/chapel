@@ -160,8 +160,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   def dsiSorted() {
     var tableCopy: [0..#numEntries] idxType;
 
-    for (tmp, slot) in (tableCopy, _fullSlots()) do
-      tmp = table(slot).idx;
+    for (tmp, slot) in (tableCopy.domain, _fullSlots()) do
+      tableCopy(tmp) = table(slot).idx;
 
     QuickSort(tableCopy);
 
@@ -306,8 +306,8 @@ class DefaultAssociativeArr: BaseArr {
 
   def dsiSorted() {
     var tableCopy: [0..dom.dsiNumIndices-1] eltType;
-    for (copy, slot) in (tableCopy, dom._fullSlots()) do
-      copy = data(slot);
+    for (copy, slot) in (tableCopy.domain, dom._fullSlots()) do
+      tableCopy(copy) = data(slot);
 
     QuickSort(tableCopy);
 
@@ -392,7 +392,7 @@ def chpl__defaultHash(u: chpl_taskID_t): int(64) {
 pragma "inline"
 def chpl__defaultHash(x : string): int(64) {
   var hash: int(64) = 0;
-  for c in 1..length(x) {
+  for c in 1..(x.length) {
     hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
   }
   return _gen_key(hash);

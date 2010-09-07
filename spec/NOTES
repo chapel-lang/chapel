@@ -38,4 +38,20 @@ Guidelines for updating the spec:
      covered by the chapter or section
   -  give insights into how the compiler uses the feature(s) in that 
      chapter or section
-  -  state the organization and flow of the chapter or section
+  -  state the organization and flow of the chapter or section (aka roadmap)
+
+[Some general principles highlighted by the spec review 8/10/2010:]
+
+- Group material into chapters by theme.
+  - It is OK to move syntax for a feature (e.g. class types)
+    from the chapter on the enclosing syntactic concept (e.g. type)
+    into the chapter on the enclosing theme (e.g. classes).
+
+- Implementation limitations go into the status file for the release.
+  (And also the "status" environment? - see above.)
+
+- Use examples in lieu of a user's guide/gentle introduction.
+
+- Italicize the term when you are defining it.
+  Be sure to add it to the index.  We want as many things as possible in
+  the index.

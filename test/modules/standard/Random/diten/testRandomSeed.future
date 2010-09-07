@@ -1,5 +1,0 @@
-bug: A common idiom for seeding the random generator isn't working
-
-The conditional expression needs to have a single type, so the enum value is
-coerced to an int. Then, the fillRandom that takes an int(64) seed is called
-instead of the fillRandom that takes a SeedGenerator value.

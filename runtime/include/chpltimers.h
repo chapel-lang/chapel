@@ -3,7 +3,7 @@
 
 #ifndef LAUNCHER
 
-_real64 _now_time(void);
+_real64 chpl_now_time(void);
 
 #endif // LAUNCHER
 

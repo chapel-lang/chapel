@@ -1,3 +1,23 @@
+Classes
+-------
+* add destructors description
+
+Expressions
+-----------
+* move most of 10.5 into chapter 13 and replace with a forward
+  reference to the appropriate section of 13 (see
+  domains/ranges/classes/records for the precedent)
+
+* promote 10.5.1 and 10.5.2 (index expressions and member access
+  expressions) to top-level sections in chapter 10
+
+* the index expressions section should also have a pointer to the
+  section that defines 'this' functions (wherever that is)
+
+* add a syntax production for index-expressions that duplicates the
+  logic of call-expressions
+
+
 Reductions and Scans
 --------------------
 Add *some* reference to reduction and scan to the index.
@@ -15,6 +35,9 @@ Operators
 
 Functions
 ---------
+* tease sections relating to function calls away from those relating
+  to defining functions
+* move oveloading and resolution subsections to the end of the section
 * define semantics of passing tuples to functions
 * define semantics of creating tuples with array components, etc.
 * add type functions

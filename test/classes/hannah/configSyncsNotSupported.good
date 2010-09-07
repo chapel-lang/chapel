@@ -1,0 +1,1 @@
+configSyncNotSupported.chpl:1: error: configs of type sync are not supported

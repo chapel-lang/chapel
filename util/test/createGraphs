@@ -1,0 +1,345 @@
+#!/usr/bin/env perl
+#
+# createGraphs creates the appropriate .gif(s) for every .graph
+# in the current directory.  
+#
+# .graph usage:
+# -- to specify which performance keys are to be graphed,
+#    in .graph should be the line:
+#
+#    perfkeys: key1, key2, key3
+#
+#    where key1, key2 and key3 are all keys in .perfkeys (if in foo.graph,
+#    the script will expect there to be a foo.perfkeys containing the 
+#    listed keys unless see below.)
+#
+# -- if the performance keys specified above come from more than one 
+#    .perfkey, or come from a .perfkey that has its root name different than its 
+#    .graph (e.g. foo.graph's listed perfkeys don't come from foo.perfkey)
+#    specify the different files where the data should come from.
+#     
+#    For example,
+#
+#    files: file1.dat, file2.dat, file3.dat
+#
+#    where file1.dat has key1's data, file2.dat has key2's data, etc.
+#
+# -- if you would like to specify the name of the key to be different
+#    on the graph than it is in .perfkeys, specify the name it should
+#    have:
+#
+#    graphkeys: key11, key12, key13
+#
+#    (this can be useful if you are graphing data across different 
+#    files which have the same keys in .perfkeys, and you want to distinguish
+#    them when viewing the graph.)    
+#
+# -- to specify the name of the output graph,
+#    in .graph should be the line:
+#
+#    graphname: foo
+# 
+#    such that foo.gif will be put in perfdir/<machine> at end of run
+#  
+#    it is necessary to specify graphname, if graphing more than one set of keys
+#    per .graph, or the last set of keys will overwrite all the previous
+# 
+# -- to specify the start date of the graph (the lowest date on the x-axis)
+#    in .graph should be the line:
+#
+#    startdate: 07/08/10
+#   
+#    Format is MM/DD/YY.  If no start date specified, the start date will be the
+#    lowest start date of all data files specified. 
+#
+# -- to specify the title of the graph,
+#    in .graph should be the line:
+#
+#    graphtitle: Title
+#
+# -- to specify the y-axis label of the graph,
+#    in .graph should be the line:
+#    
+#    ylabel: Performance
+#
+# If want to specify more than one set of keys per .graph, such that
+# each set of keys corresponds to its own graph, please specify the perfkeys
+# first, followed by any lines pertaining to the above keys. Then
+# the next set of lines to specify any other set of keys, and so on.
+#
+# Sets of keys can be line separated from another set of keys, but no line separation
+# within a set of keys and its own attributes.
+#
+# An empty .graph will graph all keys in its .perfkeys with default title,
+# name, and y-axis label.
+
+
+
+use Text::ParseWords;
+#use strict;
+my $format_file_name = $ARGV[0]; 
+my $outputdir = $ARGV[1]; 
+
+my $graph_file_name; 
+my $graph_title; 
+my $graph_ylabel; 
+my @graph_keys; 
+my @data_files; 
+my @graph_key_labels;
+my $start_date;
+
+my $key_file = "$format_file_name.perfkeys"; 
+my $data_file = "$outputdir/$format_file_name.dat"; 
+my $format_file = "$format_file_name.graph"; 
+my $gpl_file = "$outputdir/$format_file_name.gpl"; 
+my $gif_file = "$outputdir/$format_file_name.gif"; 
+my $errors_file = "$outputdir/$format_file_name.errors"; 
+my $fatal_errors = 0;
+my $custom = 0;  
+my $custom_start_date = 0;
+my $src_file = "$format_file_name.chpl";
+
+# change name of processGraphFile and w/e it calls~~~~~
+# set defaults for making the .gif
+# continue on to process the format file and make the graphs
+&setDefaults;
+&processGraphFile;
+
+
+# auxilliary functions
+
+# get start date (date of first performance run)
+sub getStartDate {
+    my $data_file_temp = $_[0];
+    open STATS, "$data_file_temp" or die "can't open $data_file_temp $!";
+    my @stat_lines = <STATS>;
+    my $header_line = @stat_lines[1];
+    my @headers = parse_line('\t', 0, $header_line);
+    return @headers[0];
+}
+
+sub getMinDate {
+    my ($date1, $date2) = @_;
+    my ($mon1, $mday1, $year1) = split(/\//, $date1);
+    my ($mon2, $mday2, $year2) = split(/\//, $date2);
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
+    $mon += 1;
+    $year -= 100;
+
+    if ($year1 > $year) {
+	$year1 += 1900;
+    } else {
+	$year1 += 2000;
+    }
+
+    if ($year2 > $year) {
+	$year2 += 1900;
+    } else {
+	$year2 += 2000;
+    }
+
+    my $result;
+
+    if ($year1 < $year2) {
+	$result = $date1;
+    } elsif ($year1 > $year2) {
+	$result = $date2;
+    } else {
+	if ($mon1 < $mon2) {
+	    $result = $date1;
+        } elsif ($mon1 > $mon2) {
+	    $result = $date2;
+   	} else {  
+	    if ($mday1 < $mday2) {
+		$result = $date1;
+	    } else {
+		$result = $date2;
+	    }
+        }
+    }
+
+    return $result;
+
+}
+
+
+# setting default arguments to makeGraph 
+sub setDefaults {
+    if (-e $src_file) {
+        $key_file = "$format_file_name.perfkeys";
+    
+        open KEYS, "$key_file" or die "can't open $key_file $!";
+        my @keys = <KEYS>;
+        close(KEYS);
+        foreach  my $key (@keys) {
+	    chomp($key);
+        }
+
+        @graph_keys = @keys;
+    } 
+    $graph_file_name = $format_file_name;	
+    $graph_title = "$graph_file_name performance over time";
+    $graph_ylabel = "performance";
+}
+
+
+sub processGraphFile {
+
+    $format_file = "$format_file_name.graph";
+    open FORMAT, "$format_file" or die "can't open $format_file $!";
+
+    my $local = 1;
+
+    while ($line = <FORMAT>) {
+        chomp($line);
+        my @words = (split / /, $line);
+        if (@words[0] eq "perfkeys:") {
+	    my $graph_keys_line = join(" ", @words[1..$#words]);
+	    @graph_keys = split(/, /, $graph_keys_line);
+
+    	    $line = <FORMAT>;
+	    chomp($line);
+	    @words = (split / /, $line);
+	    while (@words[0] && (@words[0] ne "perfkeys:")) {
+	        if (@words[0] eq "files:") {
+		    $local = 0;
+	            my $data_files_line = join(" ", @words[1..$#words]);
+		    @data_files = split(/, /, $data_files_line);
+	        } elsif (@words[0] eq "graphname:") {
+	            $graph_file_name = @words[1];
+	        } elsif (@words[0] eq "graphtitle:") {
+		    $graph_title = join(" ", @words[1..$#words]);
+	        } elsif (@words[0] eq "ylabel:")  {
+		    $graph_ylabel = join(" ", @words[1..$#words]);
+	        } elsif (@words[0] eq "graphkeys:") {
+		    my $graph_key_labels_line = join(" ", @words[1..$#words]);
+		    @graph_key_labels = split(/, /, $graph_key_labels_line);
+		} elsif (@words[0] eq "startdate:") {
+		    $custom_start_date = 1;
+		    $start_date = @words[1];
+                } else {
+	 	    print "improper format of $format_file, exiting\n";
+		    exit 1;
+	        } 
+	        $line = <FORMAT>;
+                chomp($line);
+	        @words = (split / /, $line);
+	    }
+        } else {
+	    while (@words[0] && (@words[0] ne "perfkeys:")) {
+                if (@words[0] eq "graphname:") {
+	            $graph_file_name = @words[1];
+	        } elsif (@words[0] eq "graphtitle:") {
+		    $graph_title = join(" ", @words[1..$#words]);
+	        } elsif (@words[0] eq "ylabel:")  {
+	            $graph_ylabel = join(" ", @words[1..$#words]);
+	        } elsif (@words[0] eq "startdate:") {
+		    $custom_start_date = 1;
+		    $start_date = @words[1];
+                } else {
+		    print "improper format of $format_file, exiting\n";
+		    exit 1;
+	        }
+	        $line = <FORMAT>;
+	        chomp($line);
+	        @words = split(/ /, $line);
+	    }
+        }
+        if (($local == 0) && ($#graph_keys != $#data_files)) {
+	    print "[Error: files do not match up with keys, $#graph_keys keys and $#data_files files]\n";
+ 	    exit 1;
+        }
+        $custom = 1;
+        &makeGraph($start_date, $local, $graph_file_name, $graph_title, $graph_ylabel, @graph_keys);
+    }
+    if (!$custom) {
+        &makeGraph($start_date, $local, $graph_file_name, $graph_title, $graph_ylabel, @graph_keys);
+    }
+}
+
+# makeGraph outputs a .gif in perfdir (by default ./perfdat/<machine>) via gnuplot
+sub makeGraph {
+    my ($start_date, $local, $graph_file_name, $graph_title, $graph_ylabel, @graph_keys) = @_;
+    if ($custom_start_date == 0) {
+        if ($local == 0) {
+	    $start_date = &getStartDate("$outputdir/@data_files[0]");
+            foreach my $data_file (@data_files[1..$#data_files]) {
+		$start_date = &getMinDate(&getStartDate("$outputdir/$data_file"), $start_date); 
+	    } 
+        } else {
+	    $start_date = &getStartDate($data_file);
+	}
+    }
+
+    open GNUPLOT_COMMANDS, ">$gpl_file" or die "can't open $gpl_file for creating $!";
+
+    print GNUPLOT_COMMANDS "set terminal gif size 1200\n"; 
+    print GNUPLOT_COMMANDS "set size ratio 0.33\n"; # figure out how to adjust this setting to x-axis range?
+    print GNUPLOT_COMMANDS "set xdata time\n";
+    print GNUPLOT_COMMANDS "set timefmt \"%m/%d/%y\"\n";
+    print GNUPLOT_COMMANDS "set format x \"%m/%d/%y\"\n";
+    print GNUPLOT_COMMANDS "set xlabel \"date (MM/DD/YY)\"\n";
+    print GNUPLOT_COMMANDS "set key left\n";
+    print GNUPLOT_COMMANDS "set ylabel \"$graph_ylabel\"\n";
+    print GNUPLOT_COMMANDS "set xrange [\"$start_date\":*]\n";
+    print GNUPLOT_COMMANDS "set yrange [0:*]\n";  
+    print GNUPLOT_COMMANDS "set title \"$graph_title\"\n";
+    print GNUPLOT_COMMANDS "set output \"$outputdir/$graph_file_name.gif\"\n";
+    print GNUPLOT_COMMANDS "plot \\\n";
+
+    my $graph_key_index = 0; 
+    my $line_type;
+    foreach my $graph_key (@graph_keys[0..$#graph_keys]) {
+	if ($local == 0) {
+	    # need to re-assign $data_file, $key_file
+	    $data_file = "$outputdir/@data_files[$graph_key_index]";
+
+	    my @data_file_parts = (split /\//, $data_file);
+	    my $data_name = substr "@data_file_parts[$#data_file_parts]", 0, -4;
+	    $key_file = "$data_name.perfkeys";
+        }
+
+	open KEYS, "$key_file" or die "can't open $key_file $!";
+	@keys = <KEYS>;
+	close (KEYS);
+	foreach my $key (@keys) {
+	    chomp($key);
+	} 
+
+        $line_type = ($graph_key_index % 8) + 1; 
+        my $key_index = 0;
+ 	while (($key_index <= $#keys) && ($graph_key ne @keys[$key_index])) {
+	    if ($key_index == $#keys) {
+		print "[Error: $graph_key does not match any key in $key_file]\n";
+		exit 1;
+	    }
+            $key_index++;
+	}
+ 	my $column_index = $key_index + 2;
+	
+	if ($#graph_keys == $#graph_key_labels) {
+	    $graph_key = @graph_key_labels[$graph_key_index];
+	}
+
+	if ($graph_key ne @graph_keys[$#graph_keys]) {
+	    print GNUPLOT_COMMANDS "\t\"$data_file\" using 1:$column_index title '$graph_key' with linespoints lt $line_type pt 4, \\\n";
+	} else {
+	    print GNUPLOT_COMMANDS "\t\"$data_file\" using 1:$column_index title '$graph_key' with linespoints lt $line_type pt 4\n";
+	}
+        $graph_key_index++;
+    }
+
+    close(GNUPLOT_COMMANDS);
+    system("module load gnuplot");
+    my $succeed_gnuplot = system("gnuplot $gpl_file");
+    if ($succeed_gnuplot == -1) {
+	print "[failed to load gnuplot module]\n";
+	$fatal_errors++;
+    }
+
+    system("rm $gpl_file");
+    if ($fatal_errors == 0) {
+        print "[No fatal errors, success loading gnuplot]\n";
+	#system("rm $errors_file");
+    }
+}

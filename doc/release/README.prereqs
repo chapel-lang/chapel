@@ -13,7 +13,9 @@ for using Chapel:
   'env' can locate Perl on your system (and Python if you wish to use
   the testing system).
 
-* You have access to gmake or a GNU-compatible version of make.
+* You have access to gmake or a GNU-compatible version of make and awk.
+
+* You have access to flex and bison.
 
 * You have access to standard C and C++ compilers.  We typically
   compile our code using gcc/g++, and have used the following versions

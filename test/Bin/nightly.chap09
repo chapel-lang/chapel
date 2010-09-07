@@ -1,3 +1,0 @@
-#!/usr/bin/tcsh
-
-source ~bradc/.chapelcshrc-cron && ~bradc/chapel/test/Bin/nightly -cron -valgrind -suppress Suppressions/valgrind.suppress -parnodefile ~bradc/chapel/test/Nodes/CHAP9 >& ~bradc/tmp/nightly.valgrind.linux64.out

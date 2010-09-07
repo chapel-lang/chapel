@@ -75,7 +75,7 @@ static int gpc_call_handler(int to, int from, void *hdr, int hlen,
                             void *rdata, int rdlen, int *rdsize,
                             int rtype);
 static int ghndl = -1;
-static chpl_mutex_t armci_lock;
+static chpl_sync_aux_t armci_sync;
 
 int32_t chpl_comm_getMaxThreads(void) {
   return 0; // set to 0 assuming ARMCI does not limit the number of
@@ -123,7 +123,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   int nprocs, me;
   armci_size_t sz;
 
-  CHPL_MUTEX_INIT(&armci_lock);
+  CHPL_SYNC_INIT_AUX(&armci_sync);
 
   MPI_SAFE(MPI_Init(argc_p, argv_p));
   ARMCI_SAFE(ARMCI_Init());
@@ -282,9 +282,9 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
   if (chpl_localeID == locale)
     memmove(raddr, addr, size);
   else {
-    CHPL_MUTEX_LOCK(&armci_lock);
+    CHPL_SYNC_LOCK(&armci_sync);
     ARMCI_SAFE(ARMCI_Put(addr, raddr, size, locale));
-    CHPL_MUTEX_UNLOCK(&armci_lock);
+    CHPL_SYNC_UNLOCK(&armci_sync);
   }
 }
 
@@ -302,9 +302,9 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int l
   if (chpl_localeID == locale)
     memmove(addr, raddr, size);
   else {
-    CHPL_MUTEX_LOCK(&armci_lock);
+    CHPL_SYNC_LOCK(&armci_sync);
     ARMCI_SAFE(ARMCI_Get((void*)raddr, addr, size, locale));
-    CHPL_MUTEX_UNLOCK(&armci_lock);
+    CHPL_SYNC_UNLOCK(&armci_sync);
   }
 }
 
@@ -369,10 +369,10 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   done = rheader;
   *done = 0;
 
-  CHPL_MUTEX_LOCK(&armci_lock);
+  CHPL_SYNC_LOCK(&armci_sync);
   ret = ARMCI_Gpc_exec(ghndl, locale, header, sizeof(void *), info, info_size, (void *)rheader, rhdr_size,
                        rdata, rdlen, NULL);
-  CHPL_MUTEX_UNLOCK(&armci_lock);
+  CHPL_SYNC_UNLOCK(&armci_sync);
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
@@ -486,6 +486,6 @@ void _gpc_thread_handler(void *arg)
 
 void chpl_comm_armci_help_register_global_var(int i, void* addr) {
   if (chpl_localeID == 0) {
-    globalPtrs[i] = addr;
+    ((void **)globalPtrs[0])[i] = addr;
   }
 }

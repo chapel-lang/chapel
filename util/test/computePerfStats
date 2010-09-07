@@ -1,26 +1,66 @@
 #!/usr/bin/env perl
+#
+# computePerfStats is called by sub_test which is called by 
+# start_test, if run with -performance.
+#
+# For every performance run on a particular file, this script 
+# maintains a .dat by searching the output of the run for values 
+# of performance keys specified in .perfkeys. It then writes 
+# these values to the .dat for every run.  
 
+use Text::ParseWords;
+#use strict;
 $testname = $ARGV[0];
 $outputdir = $ARGV[1];
 
-my $key_file = "$testname.perfkeys";
-my $test_output_file = "$testname.exec.out.tmp";
-my $data_file = "$outputdir/$testname.dat";
+my $argc = @ARGV+1;
+my $key_file;
+if ($argc >= 2) {
+    $key_file = $ARGV[2];
+} else {
+    $key_file = "$testname.perfkeys";
+}
 
+my $test_output_file;
+if ($argc >= 3) {
+    $test_output_file = $ARGV[3];
+} else {
+    $test_output_file = "$testname.exec.out.tmp";
+}
+
+my $data_file = "$outputdir/$testname.dat";
+my $graph_file = "$testname.graph";
+my $gpl_file = "$outputdir/$testname.gpl";
+my $gif_file = "$outputdir/$testname.gif";
+my $errors_file = "$outputdir/$testname.errors";
+my $fatal_errors = 0;
+
+# open a fresh .errors file for writing ..
+if (-e "$errors_file") {
+    system("rm $errors_file");
+}
+open ERRORS, ">$errors_file" or die "can't open $errors_file for creating $!";
+
+# get keys from .perfkeys
 open KEYS, "$key_file" or die "can't open $key_file $!";
 my @keys = <KEYS>;
 close (KEYS);
 foreach my $key (@keys) {
     chomp($key);
 }
+print ERRORS "processed $key_file\n";
 
+# get lines from output file
 open TEST, "$test_output_file" or die "can't open $test_output_file $!";
 my @file_lines = <TEST>;
 close (TEST);
+print ERRORS "processed $test_output_file\n";
 
+# if this is first performance run, create the .dat
 if (-e "$data_file") {
 } else {
     open STATS, ">$data_file" or die "can't open $data_file for creating $!";
+    print ERRORS "created $data_file\n";
     print STATS "# Date";
     foreach my $key (@keys) {
         print STATS "\t$key";
@@ -28,13 +68,17 @@ if (-e "$data_file") {
     print STATS "\n";
     close (STATS);
 }
+
+# write new data to the .dat
 open STATS, ">>$data_file" or die "can't open $data_file for appending $!";
+print ERRORS "appending $data_file\n";
 
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
 
 $mon += 1;
 $year -= 100;
 
+# check all output lines for values following keys, values get written to the .dat
 my $foundEverything = 1;
 printf STATS "%.2d/%.2d/%.2d ", $mon, $mday, $year;
 foreach my $key (@keys) {
@@ -56,10 +100,9 @@ foreach my $key (@keys) {
 }
 print STATS "\n";
 
-if ($foundEverything == 1) {
-    exit 0;
-} else {
+if ($foundEverything != 1) {
     print "output was:\n";
-    system("cat $testname.exec.out.tmp");
+    system("cat $test_output_file");
     exit 1;
-}
+} 
+

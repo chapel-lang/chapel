@@ -232,7 +232,6 @@ the function.  This assignment is not reflected back at the call site.
 If an array is passed to a formal argument that has \chpl{in} intent,
 a copy of the array is made via assignment.  Changes to the elements
 within the array are thus not reflected back at the call site.
-Domains cannot be passed to a function via the \chpl{in} intent.
 
 \subsubsection{The Out Intent}
 \label{The_Out_Intent}
@@ -246,8 +245,7 @@ argument must be a valid lvalue.  The formal argument can be assigned
 to and read from within the function.
 
 The formal argument cannot not be generic and is treated as a variable
-declaration.  Domains cannot be passed to a function via
-the \chpl{out} intent.
+declaration.
 
 \subsubsection{The Inout Intent}
 \label{The_Inout_Intent}
@@ -258,7 +256,6 @@ If \chpl{inout} is specified as the intent, the actual argument is
 both passed to the formal argument as if the \chpl{in} intent applied
 and then copied back as if the \chpl{out} intent applied.  The formal
 argument can be generic and takes its type from the actual argument.
-Domains cannot be passed to a function via the \chpl{inout} intent.
 The formal argument can be assigned to and read from within the
 function.
 
@@ -617,6 +614,129 @@ in which they are defined.
 Nested functions may refer to variables defined in the function in
 which they are nested.
 
+\subsection{First-Class Functions}
+\label{First_Class_Functions}
+\index{functions!first-class}
+\index{functions!capture}
+
+Functions defined with parentheses may be captured as values by referring to them by name without parentheses.  Once captured, these values may be passed around as other value types.
+
+\begin{example}
+\begin{chapelpre}
+% test_first_class_functions.chpl
+\end{chapelpre}
+\begin{chapel}
+def myfunc(x:int) { return x + 1; }
+
+var f = myfunc;
+writeln(f(3)); // outputs: 4
+\end{chapel}
+\begin{chapeloutput}
+4
+\end{chapeloutput}
+\end{example}
+
+To be captured, a function must not be any of the following:
+
+\begin{itemize}
+\item
+  A generic function - all captured functions must be fully-qualified with no generic arguments
+\item
+  A function with special return types (type, param)
+\item
+  An iterator
+\item
+  The method of an object
+\item
+  An operator
+\item
+  An overloaded function
+\end{itemize}
+
+\begin{rationale}
+Generic functions are outside of the scope of the current first-class function work.  Functions with compile-time return types like type and param require the ability to have param classes.  Param classes are not currently part of Chapel.  Iterators require a new type of capture, one that works similarly to the current implementation but respects the yielding that occurs inside an interator.  Method capture requires the currying of the object as the first argument to the first-class function.  Operators and overloaded functions require a type-based multiple dispatch mechanism.
+\end{rationale}
+
+\subsection{Lambda Functions}
+\label{Lambda_Functions}
+\index{lambda functions}
+\index{functions!lambdas}
+
+\begin{syntax}
+lambda-declaration-expression:
+  `lambda' argument-list
+    return-type[OPT] function-body
+\end{syntax}
+
+
+Anonymous first-class functions, those not formally defined as named functions, are  available using the lambda keyword.
+
+\begin{example}
+\begin{chapelpre}
+% test_lambda.chpl
+\end{chapelpre}
+\begin{chapel}
+var f = lambda(x:int, y:int) { return x + y; };
+writeln(f(1,2)); // outputs: 3
+\end{chapel}
+\begin{chapeloutput}
+3
+\end{chapeloutput}
+\end{example}
+
+\index{functions!capture variables}
+\index{functions!closures}
+\index{closures}
+
+Lambdas can also \textit{capture} variables that are defined outside of the lambda by referring to them in the body of the lambda.  These form a \textit{closure}, a combination of a function and an associated execution environment.  This closure captures the variables in such a way that modifying them modifies the original variables (this is sometimes called capturing the variables by reference).  
+
+\begin{example}
+For example the following is acceptable:
+\begin{chapelpre}
+% test_lambda_capture.chpl
+\end{chapelpre}
+\begin{chapel}
+def myfunc() {
+  var x = 3;
+  var f = lambda() { x = 4; };
+  f();
+  return x;
+}
+writeln(myfunc()); // outputs: 4
+\end{chapel}
+\begin{chapeloutput}
+4
+\end{chapeloutput}
+\end{example}
+
+\subsection{Function Type Signatures}
+\label{Function_Type_Signatures}
+\index{functions!type signatures}
+
+\begin{syntax}
+function-type:
+  `func'( type-args[OPT] )
+
+type-args:
+  function-return-type
+  type-specifier, function-return-type
+  type-specifier, type-args
+
+function-return-type:
+  type-specifier
+  
+\end{syntax}
+
+\begin{example}
+\begin{chapel}
+var f : func(); // A function with no arguments, returning void
+var g : func(int); // A function with no arguments, returning int
+var h : func(bool, int); // A function with one bool argument, returning int
+\end{chapel}
+\end{example}
+
+Where func is a keyword function which takes any number of argument types to the function and finally a type that represents the return type of the function.  Functions which have no arguments drop them from the call to func and supply the return type alone.  A function with no arguments and void return type may use the shortcut \chpl{func()}.
+                          
 \subsection{Variable Length Argument Lists}
 \label{Variable_Length_Argument_Lists}
 \index{functions!variable number of arguments}

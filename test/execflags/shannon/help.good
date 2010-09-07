@@ -19,6 +19,7 @@ CONFIG VARS:
 ============
                  numLocales: int (configured to 1)
         maxThreadsPerLocale: int
+              callStackSize: uint(64)
       dataParTasksPerLocale: int
   dataParIgnoreRunningTasks: bool
       dataParMinGranularity: int

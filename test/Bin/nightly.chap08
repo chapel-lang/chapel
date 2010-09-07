@@ -1,2 +1,0 @@
-#!/bin/tcsh
-~bradc/chapel/test/Bin/nightly-mta.cron >& ~bradc/tmp/nightly.mta-sanity.out

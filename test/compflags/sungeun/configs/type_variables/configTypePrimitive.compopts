@@ -1,0 +1,3 @@
+-smyIdxType=int(16)
+-smyIdxType=real(32)
+-smyIdxType=uint(8)

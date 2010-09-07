@@ -1,0 +1,26 @@
+#!/usr/bin/env perl
+
+my $testname = $ARGV[0];
+my $outputdir = $ARGV[1];
+my $testdir = $ARGV[2];
+my $searchdir = ".";
+
+my $dupkeys = "$searchdir/dupkeys.tmp";
+system("find $searchdir -name \\$testname.perfkeys > $dupkeys");
+open DUPLICATES, "$dupkeys" or die "can't open $dupkeys $!";
+my @duplicates = <DUPLICATES>;
+system("rm $dupkeys");
+exit &getNumDuplicates;
+
+sub getNumDuplicates {
+    if ($#duplicates > 0) {
+        print "[Error: found $#duplicates .perfkey files:";
+        foreach my $duplicate(@duplicates) {
+            chomp($duplicate);
+            print " $duplicate";
+        }
+        print "]\n";
+    }
+    return $#duplicates;
+}
+
