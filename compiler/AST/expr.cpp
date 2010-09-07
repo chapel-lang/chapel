@@ -2102,7 +2102,10 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_TX_GET_MEMBER_VALUE: {
       Type* fieldType = get(2)->typeInfo();
       registerTypeToStructurallyCodegen(fieldType->symbol);
-      gen(outfile, "CHPL_STM_COMM_WIDE_GET_FIELD_VALUE");
+      if (fieldType->symbol->hasFlag(FLAG_STAR_TUPLE))
+	fprintf(outfile, "CHPL_STM_COMM_WIDE_GET_FIELD_VALUE_SVEC");
+      else
+	fprintf(outfile, "CHPL_STM_COMM_WIDE_GET_FIELD_VALUE");
       if (get(3)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
 	Type* classType = get(3)->typeInfo()->getField("addr")->type;
 	registerTypeToStructurallyCodegen(classType->symbol);
