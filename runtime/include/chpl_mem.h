@@ -75,7 +75,6 @@ const char* chpl_rt_memDescs[] = {
   "stm tx descriptor write set",
   "stm tx descriptor memory set",
   "stm tx descriptor memory set entry",
-  "stm tx descriptor stats",
   "stm tx malloc",
   "stm tx array elements",
   "stm tx active message generic payload",
@@ -83,6 +82,7 @@ const char* chpl_rt_memDescs[] = {
   "stm tx active message get payload",
   "stm tx active message put payload",
   "stm tx active message fork payload",
+  "stm stats",
 };
 #endif
 typedef enum {
@@ -137,7 +137,6 @@ typedef enum {
   CHPL_RT_MD_STM_TX_WRITESET,
   CHPL_RT_MD_STM_TX_MEMSET, 
   CHPL_RT_MD_STM_TX_MEMSET_ENTRY,
-  CHPL_RT_MD_STM_TX_STATS,
   CHPL_RT_MD_STM_TX_MALLOC, 
   CHPL_RT_MD_STM_TX_ARRAY_ELEMENTS,
   CHPL_RT_MD_STM_AM_GENERIC_T,
@@ -145,6 +144,7 @@ typedef enum {
   CHPL_RT_MD_STM_AM_GET_T,
   CHPL_RT_MD_STM_AM_PUT_T,
   CHPL_RT_MD_STM_AM_FORK_T,
+  CHPL_RT_MD_STM_STATS,
   CHPL_RT_MD_NUM
 } chpl_rt_enum_memDescs;
 extern const char* chpl_memDescs[];

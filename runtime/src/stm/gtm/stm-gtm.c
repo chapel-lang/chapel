@@ -16,11 +16,11 @@ void chpl_stm_init() {
   memset((void *)locks, 0, LOCK_ARRAY_SIZE * sizeof(gtm_word_t));
   CLOCK = 0;
   gtm_tx_init();
-  gtm_init_stats();
+  chpl_stm_stats_init();
 }
 
 void chpl_stm_exit() {
-  gtm_exit_stats();
+  chpl_stm_stats_exit();
 }
 
 chpl_stm_tx_p chpl_stm_tx_create() { 
@@ -45,7 +45,7 @@ void chpl_stm_tx_begin(chpl_stm_tx_p tx) {
     assert(tx->nestlevel == 1);
     tx->status = TX_ACTIVE;
     tx->timestamp = GET_CLOCK;
-    GTM_TX_STATS_START(tx, TX_BEGIN_STATS);
+    CHPL_STM_STATS_START(tx->counters, STATS_TX_BEGIN);
     return;
   } else if (tx->status == TX_ACTIVE) {
     // simple flat nested transaction
@@ -57,37 +57,36 @@ void chpl_stm_tx_begin(chpl_stm_tx_p tx) {
 }
 
 void chpl_stm_tx_commit(chpl_stm_tx_p tx) { 
+  int32_t numremlocales = -1; 
 
   assert(tx != NULL);
-   
+  
   if (tx->status == TX_ACTIVE) {
     assert(tx->locale == MYLOCALE);
     // flat nesting, no action required
+
     if (--tx->nestlevel > 0) 
       return;
-    assert(tx->nestlevel == 0);
-
     tx->status = TX_COMMIT;
 
-    GTM_TX_STATS_START(tx, TX_COMMITPH1_STATS);
-
     // commit phase 1
-    if (tx->numremlocales > -1) { 
+    CHPL_STM_STATS_START(tx->counters, STATS_TX_COMMITPH1);
+#ifndef GTM_COMM_COMBINED_COMMIT
+    if (tx->numremlocales > -1) {
       GTM_Safe(tx, gtm_tx_comm_commitPh1(tx));
     }
+#endif
     GTM_Safe(tx, gtm_tx_commitPh1(tx));
-
-    GTM_TX_STATS_STOP(tx, TX_COMMITPH1_STATS, 0);
-
-    GTM_TX_STATS_START(tx, TX_COMMITPH2_STATS);
+    CHPL_STM_STATS_STOP(tx->counters, STATS_TX_COMMITPH1, 0);
 
     // commit phase 2
+    CHPL_STM_STATS_START(tx->counters, STATS_TX_COMMITPH2);
     if (tx->numremlocales > -1) { 
+      numremlocales = tx->numremlocales;
       GTM_Safe(tx, gtm_tx_comm_commitPh2(tx));
     }
     GTM_Safe(tx, gtm_tx_commitPh2(tx));
-
-    GTM_TX_STATS_STOP(tx, TX_COMMITPH2_STATS, 0);
+    CHPL_STM_STATS_STOP(tx->counters, STATS_TX_COMMITPH2, numremlocales);
 
     return;
   }
@@ -96,32 +95,27 @@ void chpl_stm_tx_commit(chpl_stm_tx_p tx) {
 }
 
 void chpl_stm_tx_abort(chpl_stm_tx_p tx) { 
+  int32_t numremlocales = -1; 
 
   assert(tx != NULL);
 
   if (tx->status == TX_ACTIVE || tx->status == TX_COMMIT) {
-
     assert(tx->locale == MYLOCALE);
-
     tx->status = TX_ABORT;
-
-    GTM_TX_STATS_START(tx, TX_ABORT_STATS);
+    CHPL_STM_STATS_START(tx->counters, STATS_TX_ABORT);
     // aborts always succeeds, local or otherwise. 
     if (tx->numremlocales > -1) { 
+      numremlocales = tx->numremlocales;
       gtm_tx_comm_abort(tx); 
     }
     gtm_tx_abort(tx);
-    GTM_TX_STATS_STOP(tx, TX_ABORT_STATS, 0);
-
+    CHPL_STM_STATS_STOP(tx->counters, STATS_TX_ABORT, numremlocales);
     gtm_tx_abort_cmgr(tx);
-
     // rollback to last checkpoint
     if (tx->env != NULL) {
       longjmp(tx->env, 1);
     }
-
   } else if (tx->status == TX_AMACTIVE || tx->status == TX_AMCOMMIT) {
-
     assert(tx->locale != MYLOCALE);
 
     // for fork operations, env is set in the fork_wrapper routine in
@@ -135,7 +129,6 @@ void chpl_stm_tx_abort(chpl_stm_tx_p tx) {
       tx->status = TX_AMABORT; 
       return;
     }
-
   } 
   chpl_error("Transaction abort failed.", __LINE__, __FILE__);
 }
@@ -219,13 +212,15 @@ int gtm_tx_load_wrap(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size
 } 
 
 void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size, int ln, chpl_string fn) {
-
   assert(tx != NULL);
+  if (!(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE)) {
+    chpl_msg(0,"STATUS %d\n", tx->status);
+  }
+  assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
-
-  GTM_TX_STATS_START(tx, TX_LOAD_STATS);
+  CHPL_STM_STATS_START(tx->counters, STATS_TX_LOAD);
   GTM_Safe(tx, gtm_tx_load_wrap(tx, dstaddr, srcaddr, size));
-  GTM_TX_STATS_STOP(tx, TX_LOAD_STATS, size);
+  CHPL_STM_STATS_STOP(tx->counters, STATS_TX_LOAD, size);
 }
 
 int gtm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size) {
@@ -298,85 +293,71 @@ int gtm_tx_store_wrap(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t siz
 }
 
 void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size, int ln, chpl_string fn) {
-
   assert(tx != NULL);
+  assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
-  
-  GTM_TX_STATS_START(tx, TX_STORE_STATS);
+  CHPL_STM_STATS_START(tx->counters, STATS_TX_STORE);
   GTM_Safe(tx, gtm_tx_store_wrap(tx, srcaddr, dstaddr, size));
-  GTM_TX_STATS_STOP(tx, TX_STORE_STATS, size);
+  CHPL_STM_STATS_STOP(tx->counters, STATS_TX_STORE, size);
 }
 
 void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size, int ln, chpl_string fn) {
-
   assert(tx != NULL);
+  assert(tx->status == TX_ACTIVE);
   assert(srclocale != MYLOCALE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
- 
-  GTM_TX_STATS_START(tx, TX_GET_STATS);
+  CHPL_STM_STATS_START(tx->counters, STATS_TX_GET);
   GTM_Safe(tx, gtm_tx_comm_get(tx, dstaddr, srclocale, srcaddr, size));
-  GTM_TX_STATS_STOP(tx, TX_GET_STATS, size);
+  CHPL_STM_STATS_STOP(tx->counters, STATS_TX_GET, size);
 }
 
 void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size, int ln, chpl_string fn) {
-
   assert(tx != NULL);
+  assert(tx->status == TX_ACTIVE);
   assert(dstlocale != MYLOCALE);
-  assert(dstaddr != NULL && srcaddr != NULL && size > 0);
-  
-  GTM_TX_STATS_START(tx, TX_PUT_STATS);
+  assert(dstaddr != NULL && srcaddr != NULL && size > 0); 
+  CHPL_STM_STATS_START(tx->counters, STATS_TX_PUT);
   GTM_Safe(tx, gtm_tx_comm_put(tx, srcaddr, dstlocale, dstaddr, size));
-  GTM_TX_STATS_STOP(tx, TX_PUT_STATS, size);
+  CHPL_STM_STATS_STOP(tx->counters, STATS_TX_PUT, size);
 }
 
 void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize) {
-
   assert(tx != NULL);
-
+  assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   if (dstlocale == MYLOCALE) {
     (*chpl_txftable[fid])(tx, arg);
   } else {
-    assert(tx->status == TX_ACTIVE);
-    GTM_TX_STATS_START(tx, TX_FORK_STATS);
+    CHPL_STM_STATS_START(tx->counters, STATS_TX_FORK);
     GTM_Safe(tx, gtm_tx_comm_fork(tx, dstlocale, fid, arg, argsize));
-    GTM_TX_STATS_STOP(tx, TX_FORK_STATS, 0);
+    CHPL_STM_STATS_STOP(tx->counters, STATS_TX_FORK, 0);
   }
 }
 
 void chpl_stm_tx_fork_fast(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize) {
-
   assert(tx != NULL);
-
+  if (!(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE)) {
+    chpl_msg(0,"STATUS %d\n", tx->status);
+  }
+  assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   if (dstlocale == MYLOCALE) {
     (*chpl_txftable[fid])(tx, arg);
   } else {
-    assert(tx->status == TX_ACTIVE);
-    GTM_TX_STATS_START(tx, TX_FORK_STATS);
+    CHPL_STM_STATS_START(tx->counters, STATS_TX_FORK);
     GTM_Safe(tx, gtm_tx_comm_fork_fast(tx, dstlocale, fid, arg, argsize));
-    GTM_TX_STATS_STOP(tx, TX_FORK_STATS, 0);
+    CHPL_STM_STATS_STOP(tx->counters, STATS_TX_FORK, 0);
   }
 }
 
 void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) { 
   void *tmp;
-  GTM_TX_STATS_START(tx, TX_MALLOC_STATS);
+  CHPL_STM_STATS_START(tx->counters, STATS_TX_MALLOC);
   tmp = gtm_tx_malloc_memset(tx, number, size, description, ln, fn);
-  GTM_TX_STATS_STOP(tx, TX_MALLOC_STATS, size);
+  CHPL_STM_STATS_STOP(tx->counters, STATS_TX_MALLOC, size);
   return tmp;
 }
 
 void chpl_stm_tx_free(chpl_stm_tx_p tx, void* ptr, int32_t ln, chpl_string fn) { 
-  GTM_TX_STATS_START(tx, TX_FREE_STATS);
+  CHPL_STM_STATS_START(tx->counters, STATS_TX_FREE);
   gtm_tx_free_memset(tx, ptr, ln, fn);
-  GTM_TX_STATS_STOP(tx, TX_FREE_STATS, 0);
-}
-
-void chpl_startStmStats() {
-  chpl_stm_stats = 1;
-  chpl_comm_broadcast_private(3 /* &chpl_stm_stats */, sizeof(int));
-}
-
-void chpl_stopStmStats() {
-  chpl_stm_stats = 0;
-  chpl_comm_broadcast_private(3 /* &chpl_stm_stats */, sizeof(int));
+  CHPL_STM_STATS_STOP(tx->counters, STATS_TX_FREE, 0);
 }

@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
   chpl_comm_init(&argc, &argv);
   chpl_comm_init_shared_heap();
   chpl_stm_init();                  // Initialize STM layer
-  
+
   chpl_comm_barrier("about to leave comm init code");
   chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale
   CreateConfigVarTable();      // get ready to start tracking config vars

@@ -15,6 +15,7 @@ COMMON_NOGEN_SRCS = \
 	chplmemtrack.c \
 	chplsys.c \
 	gdb.c \
+	chplstmstats.c \
 
 ifdef NVCC
 CUDA_SRCS = \

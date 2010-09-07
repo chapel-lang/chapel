@@ -28,6 +28,8 @@ chpl_stm_tx_p gtm_tx_create(int32_t txid, int32_t txlocale) {
   chpl_stm_tx_p tx = (chpl_stm_tx_p) chpl_malloc(1, sizeof(chpl_stm_tx_t), 
 				     CHPL_RT_MD_STM_TX_DESCRIPTOR, 0, 0);
 
+  tx->counters = chpl_stm_stats_create();
+
   tx->id = txid;
   tx->locale = txlocale;
   tx->status = TX_IDLE;
@@ -44,10 +46,8 @@ chpl_stm_tx_p gtm_tx_create(int32_t txid, int32_t txlocale) {
   tx->writeset.entries = (write_entry_t*) chpl_malloc(tx->writeset.size, sizeof(write_entry_t), CHPL_RT_MD_STM_TX_WRITESET, 0, 0);
   tx->timestamp = GET_CLOCK;
   tx->rollback = false;
-
   gtm_tx_create_cmgr(tx);
   gtm_tx_create_memset(tx);
-  gtm_tx_create_stats(tx);
 
   return tx;
 }
@@ -55,9 +55,9 @@ chpl_stm_tx_p gtm_tx_create(int32_t txid, int32_t txlocale) {
 void gtm_tx_destroy(chpl_stm_tx_p tx) {
   chpl_free(tx->readset.entries, 0, 0);
   chpl_free(tx->writeset.entries, 0, 0);
-
   gtm_tx_destroy_memset(tx);
-  gtm_tx_destroy_stats(tx);
+
+  chpl_stm_stats_destroy(tx);
 
   if (tx->id != -1 && tx->locale == MYLOCALE) {
     assert(tx->numremlocales >= 0 && tx->remlocales != NULL);
@@ -83,10 +83,10 @@ void gtm_tx_cleanup(chpl_stm_tx_p tx) {
   tx->writeset.numentries = 0;
   tx->rollback = false;
   gtm_tx_cleanup_memset(tx);
-#ifdef STM_GTM_COMMIT_STATS
-  gtm_tx_cleanup_stats(tx, 1);
+#ifdef STM_STATS_CLEAN_ON_ABORT
+  chpl_stm_stats_cleanup(tx, 1);
 #else
-  gtm_tx_cleanup_stats(tx, 0);
+  chpl_stm_stats_cleanup(tx, 0);
 #endif
 }
 
@@ -100,9 +100,7 @@ void gtm_tx_comm_register(chpl_stm_tx_p tx, int32_t dstlocale) {
     // First time we are doing a remote operation
     // Allocate and initialize remote locales array
     assert(tx->numremlocales == -1 && tx->remlocales == NULL);
-    tx->remlocales = (int32_t*) chpl_malloc(NLOCALES, sizeof(int32_t), 
-					    CHPL_RT_MD_STM_TX_REMLOCALES, 
-					    0, 0);
+    tx->remlocales = (int32_t*) chpl_malloc(NLOCALES, sizeof(int32_t), CHPL_RT_MD_STM_TX_REMLOCALES, 0, 0);
     for (i = 0; i < NLOCALES; i++) 
       tx->remlocales[i] = -1;
     
@@ -137,7 +135,6 @@ chpl_stm_tx_p gtm_tx_comm_create(int32_t txid, int32_t txlocale, int32_t txstatu
   assert(txid >= 0 && txid < MAXTDS);
   assert(txlocale != MYLOCALE);
   assert(txstatus != TX_IDLE);
-
   if (txstatus == TX_ACTIVE) { 
     if ((tx = gtmTxArray[txlocale][txid]) == NULL) {
       tx = gtm_tx_create(txid, txlocale);
@@ -158,17 +155,13 @@ chpl_stm_tx_p gtm_tx_comm_create(int32_t txid, int32_t txlocale, int32_t txstatu
     chpl_error("Descriptor setup for comm operation failed.", 0, 0);
   }
 
-  assert(tx->rollback == false);
-
   return tx;
 }
 
 void gtm_tx_comm_destroy(chpl_stm_tx_p tx) {
   int32_t txid, txlocale;
-
   assert(tx != NULL); 
   assert(tx->id != -1 && tx->locale != MYLOCALE);
-
   txid = tx->id;
   txlocale = tx->locale;
   gtm_tx_destroy(tx);

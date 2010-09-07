@@ -1,15 +1,17 @@
 #ifndef _stm_gtm_h_
 #define _stm_gtm_h_
 
-#include <assert.h>
 #include <setjmp.h> 
+
 #include "stm-gtm-memory.h"
-#include "stm-gtm-stats.h"
 #include "stm-gtm-cmgr.h"
+#include "stm-gtm-comm.h"
 
 //
 // GTM specific macros
 //
+
+//#define GTM_COMM_COMBINED_COMMIT 1
 
 enum {TX_FAIL = 0, TX_OK, TX_BUSY};
 
@@ -24,10 +26,6 @@ enum {TX_FAIL = 0, TX_OK, TX_BUSY};
 #define NOLOCALE -1
 
 enum { TX_IDLE = 0, TX_ACTIVE, TX_COMMIT, TX_ABORT, TX_AMACTIVE, TX_AMCOMMIT, TX_AMABORT };
-
-extern int32_t chpl_localeID, chpl_numLocales;   // see src/chplcomm.c
-#define MYLOCALE chpl_localeID
-#define NLOCALES chpl_numLocales
 
 typedef uintptr_t gtm_word_t;
 typedef gtm_word_t* gtm_word_p;
@@ -77,6 +75,18 @@ typedef struct __writeSet_t {
 // transaction descriptor
 //
 
+typedef struct __mfix {
+  read_entry_t rentries[RWSETSIZE];
+  write_entry_t wentries[RWSETSIZE];
+  int32_t remlocales[1024];
+  memset_t memset;
+  tx_generic_t genericbuf;
+  tx_get_t getbuf;
+  tx_getdata_t getdatabuf;
+  tx_put_t putbuf;
+  tx_fork_t forkbuf;
+} mfix_t; 
+
 typedef struct __chpl_stm_tx_t {
   int32_t id;
   int32_t status;            // TX_IDLE, TX_LACTIVE, etc.
@@ -90,8 +100,9 @@ typedef struct __chpl_stm_tx_t {
   chpl_bool rollback;
   chpl_stm_tx_env_t env;     // stores program execution state
   memset_t* memset;          // tracks memory allocated / freed 
-  stats_t* counters;         // timers and counters
-  cmgr_t cmgr;                    
+  chpl_stm_stats_p counters;     // timers and counters
+  cmgr_t cmgr;
+  mfix_t mfix; 
 } chpl_stm_tx_t;
 
 

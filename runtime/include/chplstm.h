@@ -3,8 +3,14 @@
 
 #ifndef LAUNCHER
 
+#include <assert.h>
 #include "chpltypes.h"
+#include "chplstmstats.h"
 #include CHPL_STM_H
+
+extern int32_t chpl_localeID, chpl_numLocales;   // see src/chplcomm.c
+#define MYLOCALE chpl_localeID
+#define NLOCALES chpl_numLocales
 
 typedef chpl_stm_tx_t* chpl_stm_tx_p;
 typedef chpl_stm_tx_env_t* chpl_stm_tx_env_p;

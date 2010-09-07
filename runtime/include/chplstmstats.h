@@ -1,36 +1,34 @@
-#ifndef _stm_gtm_stats_h_
-#define _stm_gtm_stats_h_
+#ifndef _chplstmstats_h_
+#define _chplstmstats_h_
 
-int printStmStats;    // hack to print stats only when we collect them
+#define STM_STATS_CLEAN_ON_ABORT 1
 
 enum {
-  TX_BEGIN_STATS = 1,
-  TX_COMMITPH1_STATS,
-  TX_COMMITPH2_STATS,
-  TX_ABORT_STATS,
-  TX_LOAD_STATS,
-  TX_STORE_STATS,
-  TX_MALLOC_STATS,
-  TX_FREE_STATS,
-  TX_GET_STATS,
-  TX_PUT_STATS,
-  TX_FORK_STATS,
-  TX_COMM_COMMITPH1_STATS,
-  TX_COMM_COMMITPH2_STATS,
-  TX_COMM_ABORT_STATS,
-  TX_COMM_GET_STATS,
-  TX_COMM_PUT_STATS,
-  TX_COMM_FORK_STATS
+  STATS_TX_BEGIN = 1,
+  STATS_TX_COMMITPH1,
+  STATS_TX_COMMITPH2,
+  STATS_TX_ABORT,
+  STATS_TX_LOAD,
+  STATS_TX_STORE,
+  STATS_TX_MALLOC,
+  STATS_TX_FREE,
+  STATS_TX_GET,
+  STATS_TX_PUT,
+  STATS_TX_FORK,
+  STATS_TX_COMM_COMMITPH1,
+  STATS_TX_COMM_COMMITPH2,
+  STATS_TX_COMM_ABORT,
+  STATS_TX_COMM_GET,
+  STATS_TX_COMM_PUT,
+  STATS_TX_COMM_FORK
 };
 
-typedef struct __stats_t {
+typedef struct __chpl_stm_stats_t {
+  void *tx;
   _real64 createtime;           // time transaction was created
   _real64 begintime;            // time transaction started
   _real64 starttime;            // time current operation started
   _real64 durCreate;            // time between createtime and first begin
-  
-  _real64 numremlocales;
-
   unsigned int numAbort;
   _real64 durAbort;
   _real64 durFail;
@@ -77,26 +75,28 @@ typedef struct __stats_t {
   unsigned int maxMalloc;
   unsigned int numFree;
   _real64 durFree;
-} stats_t;
+} chpl_stm_stats_t;
 
-void gtm_init_stats(void);
-void gtm_exit_stats(void);
-void gtm_tx_create_stats(void*);
-void gtm_tx_destroy_stats(void*);
-void gtm_tx_cleanup_stats(void*, int);
-void gtm_tx_stats_start(void*, int);
-void gtm_tx_stats_stop(void*, int, int status, int size);
+typedef chpl_stm_stats_t* chpl_stm_stats_p;
 
-#define GTM_TX_STATS_START(tx, op) \
-  if (chpl_stm_stats) gtm_tx_stats_start(tx, op)
+void chpl_stm_stats_init(void);
+void chpl_stm_stats_exit(void);
+chpl_stm_stats_p chpl_stm_stats_create(void);
+void chpl_stm_stats_destroy(chpl_stm_stats_p);
+void chpl_stm_stats_cleanup(chpl_stm_stats_p, int);
+void chpl_stm_stats_start(chpl_stm_stats_p, int);
+void chpl_stm_stats_stop(chpl_stm_stats_p, int, int status, int size);
 
-#define GTM_TX_STATS_STOP(tx, op, size) \
-  if (chpl_stm_stats) gtm_tx_stats_stop(tx, op, TX_OK, size)
+#define CHPL_STM_STATS_START(sptr, op)			\
+  if (chpl_stm_stats) chpl_stm_stats_start(sptr, op)
 
-#define GTM_TX_COMM_STATS_START(tx, op) \
-  if (chpl_stm_stats) gtm_tx_stats_start(tx, op) 
+#define CHPL_STM_STATS_STOP(sptr, op, value) \
+  if (chpl_stm_stats) chpl_stm_stats_stop(sptr, op, 1, value)
 
-#define GTM_TX_COMM_STATS_STOP(tx, op, status) \
-  if (chpl_stm_stats) gtm_tx_stats_stop(tx, op, status, 0)
+#define CHPL_STM_COMM_STATS_START(sptr, op) \
+  if (chpl_stm_stats) chpl_stm_stats_start(sptr, op) 
+
+#define CHPL_STM_COMM_STATS_STOP(sptr, op, status) \
+  if (chpl_stm_stats) chpl_stm_stats_stop(sptr, op, status, 0)
 
 #endif
