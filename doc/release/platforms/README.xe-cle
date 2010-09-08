@@ -1,58 +1,53 @@
 ==============================
-Using Chapel on a Cray XT (TM)
+Using Chapel on a Cray XE (TM)
 ==============================
 
 The following information is assembled to help users get up and
-running on multiple nodes of a Cray XT running the Cray Linux
+running on multiple nodes of a Cray XE running the Cray Linux
 Environment (TM) (CLE).  If you are not familiar with Chapel, it is
 recommended that you try the instructions in the top-level README
 first to get started with the language.
-
-If you are a Cray XT user on an NCCS machine, please see the special
-notes at the bottom of this file.  If you have any troubles, please
-let us know at chapel_info@cray.com.
-
 
 1) Set CHPL_HOME and MANPATH as usual.  See README.chplenv for
    details.
 
 
-2) Set CHPL_HOST_PLATFORM to xt-cle and CHPL_COMM to gasnet.  For
+2) Set CHPL_HOST_PLATFORM to xe-cle and CHPL_COMM to gasnet.  For
    example:
 
-     setenv CHPL_HOST_PLATFORM xt-cle
+     setenv CHPL_HOST_PLATFORM xe-cle
      setenv CHPL_COMM gasnet
 
    See README.multilocale for further information about running using
    multiple locales and GASNet.
 
 
-3) If your Cray XT requires PBS/qsub to launch jobs onto the compute
+3) If your Cray XE requires PBS/qsub to launch jobs onto the compute
    nodes (or you simply want to use it as your job launch mechanism),
    set CHPL_LAUNCHER to 'pbs-aprun'.  For example:
 
      setenv CHPL_LAUNCHER pbs-aprun
 
-   Otherwise, CHPL_LAUNCHER will default to 'aprun' on xt-cle systems.
+   Otherwise, CHPL_LAUNCHER will default to 'aprun' on xe-cle systems.
    Note that for some system installations, you may need to execute
    'module load pbs' from your shell in order to put PBS/qsub into
    your path.  See README.launcher for more information on Chapel's
    launcher capabilities.
 
 
-4) If your Cray XT has compute nodes with varying numbers of cores,
+4) If your Cray XE has compute nodes with varying numbers of cores,
    you will need to select a number of cores per node using the
    variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For example, to use
-   quad-core nodes, you might use:
+   24-core nodes, you might use:
 
-     setenv CHPL_LAUNCHER_CORES_PER_LOCALE 4
+     setenv CHPL_LAUNCHER_CORES_PER_LOCALE 24
 
 
 5) When using CHPL_LAUNCHER == pbs-aprun, you can optionally specify a
    queue name using the environment variable CHPL_LAUNCHER_QUEUE.  For
    example:
 
-     setenv CHPL_LAUNCHER_QUEUE 64n24h
+     setenv CHPL_LAUNCHER_QUEUE batch
 
    If this variable is left unset, no queue name will be specified.
    You can also optionally set a wall clock time limit for the job
@@ -61,9 +56,6 @@ let us know at chapel_info@cray.com.
 
      setenv CHPL_LAUNCHER_WALLTIME 00:10:00
 
-   NCCS users must specify either a queue or a walltime using the
-   mechanisms above.
-   
 
 6) Ensure that you have one of the following Programming Environment
    modules loaded which will specify the C compiler used to compile
@@ -103,7 +95,7 @@ let us know at chapel_info@cray.com.
       chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
 
 
-11) When you compile a Chapel program for the Cray XT, you should see
+11) When you compile a Chapel program for the Cray XE, you should see
     two binaries (e.g., hello-multiloc and hello-multiloc_real).  The
     first binary contains code to launch the Chapel program onto the
     compute nodes, as specified by your CHPL_LAUNCHER setting.  The
@@ -121,11 +113,11 @@ let us know at chapel_info@cray.com.
 
 
 -----------------------------------------
-Cray XT File Systems and Chapel execution
+Cray XE File Systems and Chapel execution
 -----------------------------------------
 
 * For best results, it is recommended that you execute your Chapel
-  program on a Lustre file system for the Cray XT, as this will
+  program on a Lustre file system for the Cray XE, as this will
   provide the greatest amount of transparency between the login nodes
   and compute nodes.  In some cases, running a Chapel program from a
   non-Lustre file system will make it impossible to launch onto the
@@ -137,59 +129,19 @@ Cray XT File Systems and Chapel execution
 
 
 --------------------------
-Memory limits using GASNet
+Known Constraints and Bugs
 --------------------------
 
-* The amount of memory that is available to a Chapel program running
-  over GASNet+portals on the Cray XT is constrained by an environment
-  variable named GASNET_MAX_SEGSIZE.  If the user has not set this
-  variable, we heuristically set it for each compute node to be 90% of
-  the MemTotal value reported by /proc/meminfo.  If GASNET_MAX_SEGSIZE
-  is set too high, your program may terminate silently, or with the
-  message:
+This is a very preliminary release of Chapel for the Cray XE using
+GASNet over the MPI conduit.  As such, the implementation does not
+take full advantage of some of the high performance hardware
+instructions.
 
-        _pmii_daemon(SIGCHLD): PE 0 exit signal Killed
+There is a known issue with the Cray MPI release for XE systems that
+causes some programs to assert and then hang during exit.  A
+workaround is to set the environment variable, MPICH_GNI_DYNAMIC_CONN
+to 'disabled.'  Setting this environment variable may affect memory
+usage for all MPI programs linked against the Cray MPI release.  In
+addition, an additional performance penalty may be paid at start up
+time for thousands of MPI ranks.
 
-  If running again with -v shows that the cause of the termination
-  was the OOM killer:
-
-    [NID ###] Apid ######: OOM killer terminated this process.
-    Application ###### exit signals: Killed
-
-  then GASNET_MAX_SEGSIZE is set too high.  Set it to a lower value
-  and try re-running your program.  For more information on
-  GASNET_MAX_SEGSIZE, refer to:
-
-    $CHPL_HOME/third-party/gasnet/GASNet-*/portals-conduit/README
-
-  and:
-
-    $CHPL_HOME/third-party/gasnet/GASNet-*/README
-
-
----------------
-NCCS user notes
----------------
-
-* NCCS Cray XT machines use a different qsub mechanism in order to
-  enforce their queuing policies.  We have attempted to make our
-  pbs-aprun launch code work with this version of qsub, but require a
-  CHPL_LAUNCHER_ACCOUNT environment variable to be set to specify your
-  NCCS account name.  For example:
-
-    setenv CHPL_LAUNCHER_ACCOUNT MYACCOUNTID
-
-
-* If our PBS launcher does not work for you, you can fall back on a
-  more manual launch of your program as always, either by:
-
-  - launching the a.out_real binary manually using aprun within a
-    manually-generated qsub script/command
-
-  - setting CHPL_LAUNCHER to aprun, rebuilding the runtime,
-    recompiling your program, and executing the resulting binary
-    within a manually-generated qsub script.
-
-
-* NCCS users either need to specify 'debug' as their queue using the
-  CHPL_LAUNCHER_QUEUE or a walltime using CHPL_LAUNCHER_WALLTIME.
