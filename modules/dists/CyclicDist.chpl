@@ -758,7 +758,7 @@ def CyclicArr.these(param tag: iterator, follower, param fast: bool = false) var
     }
   } else {
     def accessHelper(i) var {
-      local {
+      if myLocArr then local {
         if myLocArr.locDom.member(i) then
           return myLocArr.this(i);
       }
