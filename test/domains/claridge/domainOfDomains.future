@@ -1,0 +1,1 @@
+bug: Associative domain of arithmetic domains crashes at compile time.
