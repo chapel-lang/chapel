@@ -1,0 +1,4 @@
+associativeStridableQuery.chpl:2: error: unresolved call 'DefaultAssociativeDom(int).stridable'
+$CHPL_HOME/modules/internal/ChapelRange.chpl:16: note: candidates are: range.stridable
+$CHPL_HOME/modules/internal/DefaultArithmetic.chpl:35: note:                 DefaultArithmeticDom.stridable
+$CHPL_HOME/modules/internal/DefaultArithmetic.chpl:290: note:                 DefaultArithmeticArr.stridable

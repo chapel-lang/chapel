@@ -1,0 +1,4 @@
+sparseStridableQuery.chpl:3: error: unresolved call 'DefaultSparseDom(1,int,domain(1,int,0)).stridable'
+$CHPL_HOME/modules/internal/ChapelRange.chpl:16: note: candidates are: range.stridable
+$CHPL_HOME/modules/internal/DefaultArithmetic.chpl:35: note:                 DefaultArithmeticDom.stridable
+$CHPL_HOME/modules/internal/DefaultArithmetic.chpl:290: note:                 DefaultArithmeticArr.stridable
