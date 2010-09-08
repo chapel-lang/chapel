@@ -2,7 +2,8 @@ The .good file for this test must be specified on a
 machine-by-machine basis, as the test reports the
 amount of physical memory available on a machine.
 
-If anyone knows of a portable way to determine this
-value from the command-line (such that we can tuck
-it into a prediff script and generate the .good file
-on the fly), that would be very useful.
+The .prediff script can compute the .good file on
+the fly for machines that support /proc/meminfo.
+For other machines, the .prediff script will need
+to be specialized or the .good file hardcoded (or
+the test skipped).
