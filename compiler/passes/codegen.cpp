@@ -299,8 +299,18 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     collectDefExprs(fn->body, defs);
     forv_Vec(DefExpr, def, defs) {
       legalizeName(def->sym);
-      if (def->sym->hasFlag(FLAG_TEMP) && !strncmp(def->sym->cname, "_tmp", 4))
-        def->sym->cname = astr("T");
+      // give temps cnames
+      if (def->sym->hasFlag(FLAG_TEMP)) {
+        if (localTempNames) {
+          // temp name is _tNNN_
+          if (!strncmp(def->sym->cname, "_t", 2))
+            def->sym->cname = astr("T", def->sym->cname + 2);
+        } else {
+          // temp name is _tmp
+          if (!strcmp(def->sym->cname, "_tmp"))
+            def->sym->cname = astr("T");
+        }
+      }
       def->sym->cname = uniquifyName(def->sym->cname, &local, &cnames);
     }
     uniquifyNameCounts.clear();

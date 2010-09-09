@@ -1112,6 +1112,9 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   return s;
 }
 
+// enable locally-unique temp names?
+bool localTempNames = false;
+
 // used to number the temps uniquely to top-level statements
 // (give them smaller numbers, for readability of AST printouts)
 static int tempID = 1;
@@ -1121,8 +1124,12 @@ void resetTempID() {
 }
 
 VarSymbol* newTemp(const char* name, Type* type) {
-  if (!name)
-    name = astr("_tmp", istr(tempID++), "_");
+  if (!name) {
+    if (localTempNames)
+      name = astr("_t", istr(tempID++), "_");
+    else
+      name = "_tmp";
+  }
   VarSymbol* vs = new VarSymbol(name, type);
   vs->addFlag(FLAG_TEMP);
   return vs;
