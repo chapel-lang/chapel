@@ -17,7 +17,7 @@ use grid_base_defs;
 //========================>
 class BaseLevel {
 
-  var fixed: bool = false;
+  var is_complete: bool = false;
   
   var x_low, x_high: dimension*real,
       n_cells:       dimension*int,
@@ -42,7 +42,6 @@ class BaseLevel {
   // physical boundary.
   //---------------------------------------------------------------------
   var grids:           domain(BaseGrid);
-  var neighbors:       [grids] BaseGrid;
 
   var shared_ghosts:   [grids] [grids] subdomain(cells);
   var boundary_ghosts: [grids] sparse subdomain(ext_cells);
@@ -120,7 +119,8 @@ def BaseLevel.addGrid(
 {
 
   //==== Safety check ====  
-  assert(fixed == false);
+  assert(is_complete == false,
+	 "Attempted to add grid to a completed level.");
 
 
   //==== Derive grid fields from index bounds and parent (this) info ====
@@ -168,24 +168,26 @@ def BaseLevel.addGrid(
 
 
 
-//===> BaseLevel.fix method ===>
-//=============================>
+//===> BaseLevel.complete method ===>
+//==================================>
 //----------------------------------------------------------------
 // This method is meant to be called after all grids are added to
 // the level.  Neighbor data is set on each grid, and other post-
 // processing can be added here as needed.
 //----------------------------------------------------------------
-def BaseLevel.fix() {
+def BaseLevel.complete() {
 
-  assert(fixed == false);
-  fixed = true;
+  assert(is_complete == false,
+	 "Attempted to complete a completed level.");
 
   partitionSharedGhosts();
   partitionBoundaryGhosts();
 
+  is_complete = true;
+
 }
-//<=== BaseLevel.fix method <===
-//<=============================
+//<=== BaseLevel.complete method <===
+//<==================================
 
 
 
@@ -311,7 +313,7 @@ def levelFromInputFile(input_file: file){
     level.addGrid(x_low, x_high);
   }
 
-  level.fix();
+  level.complete();
 
   return level;
 

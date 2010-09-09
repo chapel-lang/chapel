@@ -38,24 +38,36 @@ class LevelArray {
     }
   }
 
+
   def these(param tag: iterator)
   where tag == iterator.leader {
-/*     coforall grid in level.grids { */
-/*       yield grid; */
-/*     } */
-    yield true;
+    for grid in level.grids {
+      for cell in grid.cells do
+	yield (grid,cell);
+    }
   }
 
   def these(param tag: iterator, follower) var
   where tag == iterator.follower {
-/*     for cell in follower.cells do */
-/*       yield grid_arrays(follower).value(cell); */
-    for grid in level.grids {
-      for cell in grid.cells do
-	yield grid_arrays(grid).value(cell);
-    }
-
+    //    writeln(follower(2));
+    yield grid_arrays(follower(1)).value(follower(2));
   }
+
+
+/*   def these(param tag: iterator) */
+/*   where tag == iterator.leader { */
+/*     yield true; */
+/*   } */
+
+/*   def these(param tag: iterator, follower) var */
+/*   where tag == iterator.follower { */
+/*     for grid in level.grids { */
+/*       for cell in grid.cells { */
+/* 	//	writeln(cell); */
+/* 	yield grid_arrays(grid).value(cell); */
+/*       } */
+/*     } */
+/*   } */
   //<=== these() iterator <===
 
 }

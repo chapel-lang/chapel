@@ -88,19 +88,42 @@ def AMRSolution.clawOutput(frame_number: int) {
 
 
 
-/* def initial_condition ( x: dimension*real ) { */
-/*   var f: real = 1.0; */
-/*   for d in dimensions do */
-/*     f *= exp(-10 * (x(d) + 0.0)**2); */
-/*   return f; */
-/* } */
+def initial_condition ( x: dimension*real ) {
+  var f: real = 1.0;
+  for d in dimensions do
+    f *= exp(-10 * (x(d) + 0.0)**2);
+  return f;
+}
 
-/* def main { */
+def main {
 
-/*   var hierarchy = hierarchyFromInputFile("space.txt"); */
-/*   var amr_solution = new AMRSolution(hierarchy = hierarchy); */
+  var hierarchy = hierarchyFromInputFile("space.txt");
+  var amr_solution = new AMRSolution(hierarchy = hierarchy);
   
-/*   amr_solution.setToFunction(initial_condition, 0.3); */
-/*   amr_solution.clawOutput(0); */
+  amr_solution.setToFunction(initial_condition, 0.3);
+  amr_solution.clawOutput(0);
 
-/* } */
+
+  //==== Test hierarchy.boundary_ghosts ====
+  var level = hierarchy.bottom_level;
+  for grid in level.grids {
+    writeln("x_low = ", grid.x_low, ",  x_high = ", grid.x_high);
+    writeln("i_low = ", grid.i_low, ",  i_high = ", grid.i_high);
+    for d in dimensions {
+      writeln("Dimension ", d);
+      writeln("-----------");
+      writeln("Low: ",  hierarchy.boundary_ghosts(level)(grid).low(d));
+      writeln("High: ", hierarchy.boundary_ghosts(level)(grid).high(d));
+      writeln("");
+    }
+    writeln("");
+  }
+
+
+
+/*   //==== Test LevelInterface ==== */
+/*   var interface = hierarchy.fine_interfaces(hierarchy.top_level); */
+
+
+
+}

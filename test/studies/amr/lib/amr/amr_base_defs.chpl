@@ -162,6 +162,25 @@ def AMRHierarchy.addGridToLevel(
 
 
 
+//|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
+//|===> AMRHierarchy.completeLevel method ===>
+//|_________________________________________/
+//---------------------------------------------------------------------
+// After all grids have been added to a level, it should be completed. 
+// At this point, it is safe to compute its boundary ghosts, and to
+// complete its coarse interface.
+//---------------------------------------------------------------------
+def AMRHierarchy.completeLevel(level: BaseLevel) {
+  writeln("Completing level ", level_numbers(level));
+  level.complete();
+  partitionBoundaryGhosts(level);
+
+  if level != top_level then
+    coarse_interfaces(level).complete();
+}
+// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
+//<=== AMRHierarchy.completeLevel method <===|
+// \_________________________________________|
 
 
 
@@ -169,64 +188,56 @@ def AMRHierarchy.addGridToLevel(
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
 //===> AMRHierarchy.partitionBoundaryGhosts method ===>
 //___________________________________________________/
-//------------------------------------------------------------------
-// Sets up boundary_ghosts for all grids in the hierarchy.
-//------------------------------------------------------------------
-def AMRHierarchy.partitionBoundaryGhosts() {
+//-------------------------------------------------
+// Sets up boundary_ghosts for a particular level.
+//-------------------------------------------------
+def AMRHierarchy.partitionBoundaryGhosts(level: BaseLevel) {
 
-  var boundary_domain: domain(dimension);
-  var range_tuple:     dimension*range(stridable=true);
+  var boundary_domain: domain(dimension, stridable=true);
+  var ranges:          dimension*range(stridable=true);
 
+  boundary_ghosts(level) = new LevelBoundaryDomain(level = level);
 
-  for level in levels {
+  coforall grid in level.grids {
 
-    boundary_ghosts(level) = new LevelBoundaryDomain(level = level);
+    //===> Set subdomains by orientation ===>
+    for d in dimensions {
 
-    coforall grid in level.grids {
-
-      //===> Set subdomains by orientation ===>
-      for orientation in dimensions {
-
-        //==== Set up off-dimensions ====
-        for d in [1..orientation-1] do
-          range_tuple(d) = level.cells.dim(d);
-
-        for d in [orientation+1 .. dimension] do
-          range_tuple(d) = level.ext_cells.dim(d);
-
-
-        //==== Low end ====
-        range_tuple(orientation) = level.ext_cells.low(orientation)
-                                   .. level.cells.low(orientation) - 2
-                                   by 2;
-
-        boundary_domain = range_tuple;
-
-        boundary_ghosts(level)(grid).low(orientation) 
-          = intersectDomains(low_ghost_cells(orientation), boundary_domain);
+      //==== Set up off-dimensions ====
+      for d_low in [1..d-1] do 
+	ranges(d_low) = level.cells.dim(d_low);
+      for d_high in [d+1..dimension] do 
+ 	ranges(d_high) = level.ext_cells.dim(d_high);
+    
+    
+      //==== Low end ====
+      ranges(d) = level.ext_cells.low(d) .. level.cells.low(d)-2 by 2;
+      boundary_domain = ranges;
+      boundary_ghosts(level)(grid).low(d) 
+	        = intersectDomains(grid.ghost_cells.low(d), boundary_domain);
 
 
-        //==== High end ====
-        range_tuple(orientation) = level.cells.high(orientation) + 2
-                                   .. level.ext_cells.high(orientation)
-                                   by 2;
-
-        boundary_domain = range_tuple;
-
-        boundary_ghosts(level)(grid).high(orientation)
-          = intersectDomains(high_ghost_cells(orientation), boundary_domain);
-      }
-      //<=== Set subdomains by orientation <===
+      //==== High end ====
+      ranges(d) = level.cells.high(d)+2 .. level.ext_cells.high(d) by 2;
+      boundary_domain = ranges;
+      boundary_ghosts(level)(grid).high(d)
+                = intersectDomains(grid.ghost_cells.high(d), boundary_domain);
+    }
+    //<=== Set subdomains by orientation <===
 
 
-    } // end coforall grid in level.grids
-
-  } // end for level in levels
+  } // end coforall grid in level.grids
 
 }
 // /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 //<=== AMRHierarchy.partitionBoundaryGhosts method <===
 // \__________________________________________________|
+
+
+
+
+
+
 
 
 
@@ -242,10 +253,8 @@ class LevelInterface {
   const fine_level:   BaseLevel;
   const ref_ratio:    dimension*int;
 
-
-  var coarse_grids = coarse_level.grids;
-  var fine_grids   = fine_level.grids;
-
+  var coarse_grids: domain(BaseGrid);
+  var fine_grids:   domain(BaseGrid);
 
   var f2c_coarse_cells: [coarse_grids] [fine_grids]
                         subdomain(coarse_level.cells);
@@ -276,6 +285,23 @@ class LevelInterface {
 
 
 
+//|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
+//|===> LevelInterface.complete method ===>
+//|______________________________________/
+def LevelInterface.complete() {
+
+  coarse_grids = coarse_level.grids;
+  fine_grids   = fine_level.grids;
+
+  buildC2FClusters();
+  partitionF2CCells();
+
+}
+// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
+//<=== LevelInterface.complete method <===|
+// \______________________________________|
+
+
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
@@ -296,8 +322,8 @@ def LevelInterface.refine(coarse_cells: subdomain(coarse_level.cells)) {
     fine_cells_high(d) += 1;
 
     //==== Refine ====
-    fine_cells_low(d)  *= ref_ratio;
-    fine_cells_high(d) *= ref_ratio;
+    fine_cells_low(d)  *= ref_ratio(d);
+    fine_cells_high(d) *= ref_ratio(d);
 
     //==== Move vertices back to cell centers ====
     fine_cells_low(d)  += 1;
@@ -306,12 +332,12 @@ def LevelInterface.refine(coarse_cells: subdomain(coarse_level.cells)) {
 
 
   //==== Set and return new domain ====
-  var range_tuple: dimension*range(stridable=true);
+  var ranges: dimension*range(stridable=true);
 
   for d in dimensions do
-    range_tuple(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
+    ranges(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
 
-  var fine_cells: subdomain(fine_level.cells) = range_tuple;
+  var fine_cells: subdomain(fine_level.cells) = ranges;
   return fine_cells;
   
 }
@@ -340,12 +366,12 @@ def LevelInterface.refine(coarse_cell: dimension*int) {
 
 
   //==== Set and return new domain ====
-  var range_tuple: dimension*range(stridable=true);
+  var ranges: dimension*range(stridable=true);
 
   for d in dimensions do
-    range_tuple(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
+    ranges(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
 
-  var fine_cells: subdomain(fine_level.cells) = range_tuple;
+  var fine_cells: subdomain(fine_level.cells) = ranges;
   return fine_cells;
 
 }
@@ -390,12 +416,12 @@ def LevelInterface.coarsen(fine_cells: subdomain(fine_level.cells)) {
 
 
   //==== Set and return new domain ====
-  var range_tuple: dimension*range(stridable=true);
+  var ranges: dimension*range(stridable=true);
 
   for d in dimensions do
-    range_tuple(d) = low_coarse(d) .. coarse(d) by 2;
+    ranges(d) = low_coarse(d) .. high_coarse(d) by 2;
 
-  var coarse_cells: subdomain(coarse_level.cells) = range_tuple;
+  var coarse_cells: subdomain(coarse_level.cells) = ranges;
   return coarse_cells;
   
 }
@@ -413,8 +439,11 @@ def LevelInterface.coarsen(fine_cell: dimension*int) {
   // lower vertex of the coarse cell.  Adding 1 shifts index to
   // the cell center.
   //-------------------------------------------------------------
-  for d in dimensions do
-    coarse_cell(d) = fine_cell(d) / ref_ratio(d) + 1;
+  for d in dimensions {
+    coarse_cell(d) = fine_cell(d) / ref_ratio(d);
+    if coarse_cell(d) % 2 == 0 then
+      coarse_cell(d) += 1;
+  }
 
   return coarse_cell;
 
@@ -449,22 +478,22 @@ def LevelInterface.buildC2FClusters() {
 
       //===> Populate fine cell list ===>
       var fine_intersection = intersectDomains(fine_grid.ext_cells,
-                                            refineCells(coarse_grid.cells));
+                                               refine(coarse_grid.cells));
       if fine_intersection.numIndices > 0 {
 
-     //==== Add fine ghost cells in the intersection ====
-     for cell in fine_grid.ghost_cells {
-       if fine_intersection.member(cell) then
-         unclustered_fine_cells.add(cell);
-     }
+	//==== Add fine ghost cells in the intersection ====
+	for cell in fine_grid.ghost_cells {
+	  if fine_intersection.member(cell) then
+	    unclustered_fine_cells.add(cell);
+	}
 
-     //==== Remove any fine_level.shared_ghosts ====
-     for sib in fine_grids {
-       for cell in fine_level.shared_ghosts(fine_grid)(sib) {
-         if unclustered_fine_cells.member(cell) then
-           unclustered_fine_cells.remove(cell);
-       }
-     }
+	//==== Remove any fine_level.shared_ghosts ====
+	for sib in fine_grids {
+	  for cell in fine_level.shared_ghosts(fine_grid)(sib) {
+	    if unclustered_fine_cells.member(cell) then
+	      unclustered_fine_cells.remove(cell);
+	  }
+	}
 
       }
       //<=== Populate fine cell list <===
@@ -474,12 +503,13 @@ def LevelInterface.buildC2FClusters() {
       var clusters = new CFClusters();
 
       for fine_cell in unclustered_fine_cells {
-     var coarse_cell = coarsen(fine_cell);
+	var coarse_cell = coarsen(fine_cell);
 
-     //==== Chapel should filter out duplicates... ====
-     clusters.coarse_cells.add(coarse_cell);
+	//==== Chapel should filter out duplicates... ====
+	clusters.coarse_cells.add(coarse_cell);
 
-     clusters.fine_cells(coarse_cell).add(fine_cell);
+	
+	clusters.fine_cells(coarse_cell).add(fine_cell);
       }
 
       //==== Place reference in c2f clusters array ====
@@ -496,6 +526,32 @@ def LevelInterface.buildC2FClusters() {
 //<=== LevelInterface.buildC2FClusters <===
 // \______________________________________|
 
+
+
+
+
+//|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
+//|===> LevelInterface.partitionF2CCells method ===>
+//|_______________________________________________/
+//---------------------------------------------------------------------
+// Identifies cells (as arithmetic domains) that will be involved in
+// fine-to-coarse averaging on the way up an AMR cycle.
+//---------------------------------------------------------------------
+def LevelInterface.partitionF2CCells() {
+
+  for coarse_grid in coarse_grids {
+    for fine_grid in fine_grids {
+
+      f2c_coarse_cells(coarse_grid)(fine_grid)
+          = intersectDomains(coarse_grid.cells,
+                             coarsen(fine_grid.cells));
+    }
+  }
+
+}
+// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
+//<=== LevelInterface.partitionF2CCells method <===|
+// \_______________________________________________|
 
 
 
@@ -631,36 +687,14 @@ def LevelInterface.LinearBoundaryInterpolator(
 
 
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
-//===> LevelInterface.partitionF2CCells method ===>
-//_______________________________________________/
-//---------------------------------------------------------------------
-// Identifies cells (as arithmetic domains) that will be involved in
-// fine-to-coarse averaging on the way up an AMR cycle.
-//---------------------------------------------------------------------
-def LevelInterface.partitionF2CCells() {
-
-  for coarse_grid in coarse_grids {
-    for fine_grid in fine_grids {
-
-      f2c_coarse_cells(coarse_grid)(fine_grid)
-          = intersectDomains(coarse_grid.cells,
-                             coarsenCells(fine_grid.cells));
-    }
-  }
-
-}
-// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-//<=== LevelInterface.partitionF2CCells method <===
-// \______________________________________________|
 
 
 
 
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
-//===> LevelInterface.f2cAverage method ===>
-//________________________________________/
+//|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
+//|===> LevelInterface.f2cAverage method ===>
+//|________________________________________/
 //-------------------------------------------------------------------------
 // Conservatively averages data from the fine level onto the coarse level.
 //-------------------------------------------------------------------------
@@ -700,9 +734,9 @@ def LevelInterface.f2cAverage(
   } // end for coarse_grid in coarse_grids
 
 }
-// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-//<=== LevelInterface.f2cAverage method <===
-// \_______________________________________|
+// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
+//<=== LevelInterface.f2cAverage method <===|
+// \________________________________________|
 
 
 
@@ -711,9 +745,9 @@ def LevelInterface.f2cAverage(
 
 
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
-//===> hierarchyFromInputFile routine ===>
-//______________________________________/
+//|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
+//|===> hierarchyFromInputFile routine ===>
+//|______________________________________/
 def hierarchyFromInputFile(file_name: string){
  
   //==== Open input file ====
@@ -739,10 +773,11 @@ def hierarchyFromInputFile(file_name: string){
   input_file.readln(); // skip line
 
   var hierarchy = new AMRHierarchy(x_low = x_low, x_high = x_high,
-				   n_coarsest_cells = n_cells,
-				   n_ghost_cells = n_ghost_cells);
+                                   n_coarsest_cells = n_cells,
+                                   n_ghost_cells = n_ghost_cells);
 
   hierarchy.addGridToLevel(hierarchy.top_level, x_low, x_high);
+  hierarchy.completeLevel(hierarchy.top_level);
   
 
   //===> Refined levels ===>
@@ -769,6 +804,8 @@ def hierarchyFromInputFile(file_name: string){
       hierarchy.addGridToLevel(hierarchy.bottom_level, x_low, x_high);
     }
 
+    hierarchy.completeLevel(hierarchy.bottom_level);
+
   }
   //<=== Refined levels <===
 
@@ -778,9 +815,9 @@ def hierarchyFromInputFile(file_name: string){
   return hierarchy;
 
 }
-// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-//<=== hierarchyFromInputFile routine <===
-// \_____________________________________|
+// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
+//<=== hierarchyFromInputFile routine <===|
+// \______________________________________|
 
 
 
@@ -957,9 +994,9 @@ def hierarchyFromInputFile(file_name: string){
 
 
 /* def neighborhood(cell: dimension*int, k: int) { */
-/*   var range_tuple: dimension*range(stridable=true); */
-/*   for d in dimensions do range_tuple(d) = -2*k..2*k by 2; */
-/*   var shifts = [(...range_tuple)]; */
+/*   var ranges: dimension*range(stridable=true); */
+/*   for d in dimensions do ranges(d) = -2*k..2*k by 2; */
+/*   var shifts = [(...ranges)]; */
 
 /*   for shift in shifts do */
 /*     yield cell + shift; */

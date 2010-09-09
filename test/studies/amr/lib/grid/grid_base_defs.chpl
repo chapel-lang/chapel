@@ -5,7 +5,7 @@
 //
 // This version is based on an underlying mesh of width dx/2, which
 // contains all cell centers, interface centers, and vertices.  As
-// a result, the domin of cell centers is strided by 2, corresponding
+// a result, the domain of cell centers is strided by 2, corresponding
 // to jumps of dx.
 //
 //<=== Description <===
@@ -30,8 +30,8 @@ class BaseGrid {
 
   var dx: dimension*real;
           
-  var ext_cells:      domain(dimension, stridable=true),
-      cells: subdomain(ext_cells);
+  var ext_cells:   domain(dimension, stridable=true),
+      cells:       subdomain(ext_cells);
   
   var ghost_cells: GridBoundaryDomain;
 
@@ -74,7 +74,7 @@ class BaseGrid {
   //===> setDerivedFields method ===>
   //================================>
   //--------------------------------------------------------------
-  // After x_low, x_high, n_cells, and n_ghost_cells have
+  // After x_low, x_high, i_low, n_cells, and n_ghost_cells have
   // been provided, calculate:
   //     dx
   //     i_high
@@ -110,39 +110,28 @@ class BaseGrid {
     //===> Ghost cells ===>
     ghost_cells = new GridBoundaryDomain(grid = this);
 
-    for orientation in dimensions do {
+    for d in dimensions do {
 
       var range_tuple: dimension*range(stridable=true);
 
       //===> Set up off-dimensions ===>
-      for d in [1..orientation-1] do
-	range_tuple(d) = cells.dim(d);
-
-      for d in [orientation+1 .. dimension] do
-	range_tuple(d) = ext_cells.dim(d);
+      for d_low in [1..d-1] do	range_tuple(d) = ext_cells.dim(d);
+      for d_high in [d+1 .. dimension] do range_tuple(d) = ext_cells.dim(d);
       //<=== Set up off-dimensions <===
 
-
-
       //===> Low ghost cells ===>
-      range_tuple(orientation) = ext_cells.low(orientation)
-                                 .. cells.low(orientation) - 2 
-                                 by 2;
-
-      ghost_cells.low(orientation) = range_tuple;
+      range_tuple(d) = ext_cells.low(d) .. cells.low(d)-2 by 2;
+      ghost_cells.low(d) = range_tuple;
       //<=== Low ghost cells <===
 
 
       //===> High ghost cells ===>
-      range_tuple(orientation) = cells.high(orientation) + 2
-                                 .. ext_cells.high(orientation)
-                                 by 2;
-
-      ghost_cells.high(orientation) = range_tuple;
+      range_tuple(d) = cells.high(d)+2 .. ext_cells.high(d) by 2;
+      ghost_cells.high(d) = range_tuple;
       //<=== High ghost cells <===
 
     }   
-    //<=== Ghost cells <===     
+    //<=== Ghost cells <===
 
   }
   //<=== setDerivedFields method <===

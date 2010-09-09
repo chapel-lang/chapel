@@ -7,7 +7,7 @@ use grid_solution_defs;
 //=====================>
 class GridBC {
 
-  var grid: BaseGrid;
+  const grid: BaseGrid;
 
   //==== Dummy routines; to be provided in derived classes ====
   def ghostFill(q: GridArray, t: real){}
@@ -16,6 +16,9 @@ class GridBC {
 }
 //<=== GridBC Class <===
 //<=====================
+
+
+
 
 
 
