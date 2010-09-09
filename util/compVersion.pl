@@ -15,9 +15,6 @@ foreach my $line (@versionLines) {
         print "$2.";
     }
     if ($line =~ m/MINOR_VERSION(\s*)(\S*)/) {
-        print "$2.";
-    }
-    if ($line =~ m/UPDATE_VERSION(\s*)(\S*)/) {
         print "$2\n";
     }
 }
