@@ -202,8 +202,22 @@ stmt:
 | TDELETE expr TSEMI         { $$ = buildPrimitiveStmt(PRIM_DELETE, $2); }
 | stmt_level_expr TSEMI      { $$ = buildChapelStmt($1); }
 | TLABEL ident stmt          { $$ = buildLabelStmt($2, $3); }
-| TLOCAL stmt                { $$ = buildLocalStmt($2); }
-| TON expr do_stmt           { $$ = buildOnStmt($2, $3); }
+| TLOCAL stmt
+    {
+      if (strcmp(CHPL_TARGET_PLATFORM, "xmt")) {
+        $$ = buildLocalStmt($2);
+      } else {
+        $$ = $2;
+      }
+    }
+| TON expr do_stmt
+    {
+      if (strcmp(CHPL_TARGET_PLATFORM, "xmt")) {
+        $$ = buildOnStmt($2, $3);
+      } else {
+        $$ = $3;
+      }
+    }
 | TSERIAL expr do_stmt       { $$ = buildSerialStmt($2, $3); }
 | TSYNC stmt                 { $$ = buildSyncStmt($2); }
 | TUSE expr_ls TSEMI         { $$ = buildUseStmt($2); }
