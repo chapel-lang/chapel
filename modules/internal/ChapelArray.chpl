@@ -434,7 +434,7 @@ record _distribution {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
-}
+}  // record _distribution
 
 
 //
@@ -482,6 +482,11 @@ record _domain {
   def these() {
     return _value.these();
   }
+
+  // see comments for the same method in _array
+  //
+  def this(d: domain) where d.rank == rank
+    return this((...d.getIndices()));
 
   def this(ranges: range(?) ...rank) {
     param stridable = _value.stridable || chpl__anyStridable(ranges);
@@ -693,7 +698,7 @@ record _domain {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
-}
+}  // record _domain
 
 def _getNewDist(value) {
   return new dmap(value);
@@ -876,7 +881,7 @@ record _array {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
-}
+}  // record _array
 
 //
 // Helper functions
