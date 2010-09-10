@@ -8,11 +8,9 @@
 //<=== Description <===
 
 
-use grid_base_defs;
-use grid_array_defs;
 use grid_solution_defs;
 use grid_bc_defs;
-use grid_ctu_defs;
+use grid_advection_defs;
 
 
 def main {
@@ -67,8 +65,8 @@ def main {
 
 
   //==== Initialize boundary conditions ====
-  var bc = new ZeroInflowAdvectionGridBC(grid = grid);
-/*   var bc = new PeriodicGridBC(grid = grid); */
+/*   var bc = new ZeroInflowAdvectionGridBC(grid = grid); */
+  var bc = new PeriodicGridBC(grid = grid);
 
 
 

@@ -6,7 +6,7 @@ use level_array_defs;
 //======================>
 class LevelBC {
   
-  var level: BaseLevel;
+  const level: BaseLevel;
 
   //===> fillGhostCells method ===>
   //==============================>

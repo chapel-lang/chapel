@@ -205,7 +205,7 @@ def AMRHierarchy.partitionBoundaryGhosts(level: BaseLevel) {
 
       //==== Set up off-dimensions ====
       for d_low in [1..d-1] do 
-	ranges(d_low) = level.cells.dim(d_low);
+	ranges(d_low) = level.ext_cells.dim(d_low);
       for d_high in [d+1..dimension] do 
  	ranges(d_high) = level.ext_cells.dim(d_high);
     
@@ -282,6 +282,10 @@ class LevelInterface {
 // /~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 //<=== LevelInterface class <===
 // \___________________________|
+
+
+
+
 
 
 
@@ -392,6 +396,8 @@ def LevelInterface.refine(coarse_cell: dimension*int) {
 //------------------------------------------------------------------
 def LevelInterface.coarsen(fine_cells: subdomain(fine_level.cells)) {
  
+  writeln("### Coarsening domain ", fine_cells);
+
   //=== Index bounds for coarsened domain ====
   var low_coarse  = fine_cells.low;
   var high_coarse = fine_cells.high;
@@ -410,8 +416,8 @@ def LevelInterface.coarsen(fine_cells: subdomain(fine_level.cells)) {
     high_coarse(d) /= ref_ratio(d);
 
     //==== Move vertices back to cell centers ====
-    low_coarse(d)  -= 1;
-    high_coarse(d) += 1;
+    low_coarse(d)  += 1;
+    high_coarse(d) -= 1;
   }
 
 
@@ -422,6 +428,8 @@ def LevelInterface.coarsen(fine_cells: subdomain(fine_level.cells)) {
     ranges(d) = low_coarse(d) .. high_coarse(d) by 2;
 
   var coarse_cells: subdomain(coarse_level.cells) = ranges;
+
+  writeln("### Result is ", coarse_cells);
   return coarse_cells;
   
 }
@@ -543,8 +551,7 @@ def LevelInterface.partitionF2CCells() {
     for fine_grid in fine_grids {
 
       f2c_coarse_cells(coarse_grid)(fine_grid)
-          = intersectDomains(coarse_grid.cells,
-                             coarsen(fine_grid.cells));
+         = intersectDomains(coarse_grid.cells, coarsen(fine_grid.cells));
     }
   }
 

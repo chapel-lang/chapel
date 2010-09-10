@@ -115,8 +115,8 @@ class BaseGrid {
       var range_tuple: dimension*range(stridable=true);
 
       //===> Set up off-dimensions ===>
-      for d_low in [1..d-1] do	range_tuple(d) = ext_cells.dim(d);
-      for d_high in [d+1 .. dimension] do range_tuple(d) = ext_cells.dim(d);
+      for d_low  in [1..d-1]         do range_tuple(d_low) = ext_cells.dim(d_low);
+      for d_high in [d+1..dimension] do range_tuple(d_high) = ext_cells.dim(d_high);
       //<=== Set up off-dimensions <===
 
       //===> Low ghost cells ===>
@@ -136,6 +136,14 @@ class BaseGrid {
   }
   //<=== setDerivedFields method <===
   //<================================  
+
+
+  //===> writeThis method ===>
+  //=========================>
+  def writeThis(w: Writer) {
+    writeln("x_low: ", x_low, ",  x_high: ", x_high);
+    write("i_low: ", i_low, ",  i_high: ", i_high);
+  }
 
 }
 //<=== BaseGrid class <===
