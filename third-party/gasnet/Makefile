@@ -16,6 +16,7 @@ endif
 
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xe-cle)
 CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=cc --enable-mpi --enable-pthreads
+XTRA_POST_INSTALL_COMMAND=$(foreach var,include/mpi-conduit/mpi-par.mak,sed -i -e "s;$(GASNET_INSTALL_DIR);"'$$(GASNET_INSTALL_DIR);g' $(GASNET_INSTALL_DIR)/$(var) &&) true
 endif
 
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
