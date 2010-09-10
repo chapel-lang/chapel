@@ -79,6 +79,7 @@ use Text::ParseWords;
 #use strict;
 my $format_file_name = $ARGV[0]; 
 my $outputdir = $ARGV[1]; 
+my $start_date = $ARGV[2];
 
 my $graph_file_name; 
 my $graph_title; 
@@ -86,7 +87,6 @@ my $graph_ylabel;
 my @graph_keys; 
 my @data_files; 
 my @graph_key_labels;
-my $start_date;
 
 my $key_file = "$format_file_name.perfkeys"; 
 my $data_file = "$outputdir/$format_file_name.dat"; 
@@ -261,7 +261,7 @@ sub processGraphFile {
 # makeGraph outputs a .gif in perfdir (by default ./perfdat/<machine>) via gnuplot
 sub makeGraph {
     my ($start_date, $local, $graph_file_name, $graph_title, $graph_ylabel, @graph_keys) = @_;
-    if ($custom_start_date == 0) {
+    if ($custom_start_date == 0 && !$start_date) {
         if ($local == 0) {
 	    $start_date = &getStartDate("$outputdir/@data_files[0]");
             foreach my $data_file (@data_files[1..$#data_files]) {

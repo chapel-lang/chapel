@@ -1041,7 +1041,8 @@ if perftest:
 	sys.stdout.flush()
 	
 	if os.path.isfile(utildir+'/createGraphs'):
-   	    p = subprocess.Popen([utildir+'/createGraphs', graphname, perfdir],stdout=subprocess.PIPE)
+	    startdate = os.getenv('STARTDATE')
+   	    p = subprocess.Popen([utildir+'/createGraphs', graphname, perfdir, startdate],stdout=subprocess.PIPE)
    	    sys.stdout.write('%s'%(p.communicate()[0]))
    	    sys.stdout.flush()
 	else:
