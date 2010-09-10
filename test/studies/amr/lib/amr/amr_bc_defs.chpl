@@ -10,12 +10,22 @@ class AMRBC {
 
 
 
-  def fillGhostCells(q: LevelArray, t: real) {
+  def fillGhostCells(
+    q:            LevelArray, 
+    amr_solution: AMRSolution, 
+    t:            real) 
+  {
 
-    if q.level != hierarchy.top_level {
-      var coarse_interface = hierarchy.coarse_interfaces(q.level);
-      coarse_interface.LinearBoundaryInterpolate...
+    var level = q.level;
+
+
+    if level != hierarchy.top_level {
+      var coarse_interface = hierarchy.coarse_interfaces(level);
+      var coarse_level     = coarse_interface.coarse_level;
+      var coarse_solution  = amr_solution(coarse_level);
+
     }
+
 
   }
 
