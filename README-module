@@ -22,12 +22,12 @@ Quick Start
 
 2) Compile an example program using:
 
-        chpl -o hello examples/hello.chpl
+        chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
 
 
-3) Execute the resulting executable (on a single locale):
+3) Execute the resulting executable (on four locales):
 
-        ./hello -nl 1
+        ./hello-multiloc -nl 4
 
 
 ------------
