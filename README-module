@@ -25,9 +25,9 @@ Quick Start
         chpl -o hello examples/hello.chpl
 
 
-3) Execute the resulting executable:
+3) Execute the resulting executable (on a single locale):
 
-        ./hello
+        ./hello -nl 1
 
 
 ------------
