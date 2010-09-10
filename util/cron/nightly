@@ -20,6 +20,7 @@ $combinedir = 0;
 $dist = "";
 $memleaks = "";
 $svnrevopt = "";
+$startdate = "-1";
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -43,6 +44,8 @@ while (@ARGV) {
         $examples = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
+    } elsif ($flag eq "-startdate") {
+	$startdate = shift @ARV;
     } elsif ($flag eq "-baseline") {
         $baseline = 1;
     } elsif ($flag eq "-dist") {
@@ -407,6 +410,7 @@ $readonlydir = "$basetmpdir/$readonlydirname";
 # print "testing $readonlydir\n";
 if (! (-r $readonlydir && -d $readonlydir)) {
     print "The SVN directory has not been checked out yet\n";
+    print "***** $svnrevopt $svnroot $readonlydirname *****\n";
     mysystem("cd $basetmpdir && svn checkout -q $svnrevopt $svnroot $readonlydirname", "svn checkout", 1, 1);
 } else {
     print "The SVN directory has already been checked out\n";
@@ -527,8 +531,12 @@ if ($hello == 1) {
 	exit(1);
     }
 }
-if ($performance == 1) {
-    $testflags = "$testflags -performance";
+if ($performance == 1) { 
+    if ($startdate eq "-1") {
+        $testflags = "$testflags -performance";
+    } else {
+        $testflags = "$testflags -performance -startdate $startdate";
+    }
 }
 if ($baseline == 1) {
     $testflags = "$testflags -compopts --baseline";
