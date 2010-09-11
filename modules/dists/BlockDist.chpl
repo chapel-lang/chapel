@@ -625,6 +625,7 @@ def BlockDom.dsiBuildArray(type eltType) {
 def BlockDom.dsiNumIndices return whole.numIndices;
 def BlockDom.dsiLow return whole.low;
 def BlockDom.dsiHigh return whole.high;
+def BlockDom.dsiStride return whole.stride;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for an arithmetic

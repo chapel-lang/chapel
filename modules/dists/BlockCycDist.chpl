@@ -377,6 +377,7 @@ def BlockCyclicDom.dsiBuildArray(type eltType) {
 def BlockCyclicDom.dsiNumIndices return whole.numIndices;
 def BlockCyclicDom.dsiLow return whole.low;
 def BlockCyclicDom.dsiHigh return whole.high;
+def BlockCyclicDom.dsiStride return whole.stride;
 
 //
 // INTERFACE NOTES: Could we make setIndices() for an arithmetic

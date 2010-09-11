@@ -371,6 +371,8 @@ def CyclicDom.dsiLow return whole.low;
 
 def CyclicDom.dsiHigh return whole.high;
 
+def CyclicDom.dsiStride return whole.stride;
+
 def CyclicDom.dsiMember(i) return whole.member(i);
 
 def CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);

@@ -478,6 +478,26 @@ record _domain {
       return 1;
   }
 
+  def stridable param where isArithmeticDom(this) {
+    return _value.stridable;
+  }
+
+  def stridable param where isSparseDom(this) {
+    compilerError("sparse domains do not currently support .stridable");
+  }
+
+  def stridable param where isOpaqueDom(this) {
+    compilerError("opaque domains do not support .stridable");  
+  }
+
+  def stridable param where isEnumDom(this) {
+    compilerError("enumerated domains do not support .stridable");  
+  }
+
+  def stridable param where isAssociativeDom(this) {
+    compilerError("associative domains do not support .stridable");  
+  }
+
   pragma "inline"
   def these() {
     return _value.these();
@@ -573,6 +593,7 @@ record _domain {
   def numIndices return _value.dsiNumIndices;
   def low return _value.dsiLow;
   def high return _value.dsiHigh;
+  def stride return _value.dsiStride;
 
   def member(i) {
     if isArithmeticDom(this) then
