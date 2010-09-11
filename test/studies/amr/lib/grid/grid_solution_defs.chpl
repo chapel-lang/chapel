@@ -2,33 +2,39 @@ use grid_base_defs;
 use grid_array_defs;
 
 
-//===> GridSolution class ===>
-//===========================>
+//|""""""""""""""""""""""""""\
+//|===> GridSolution class ===>
+//|__________________________/
 class GridSolution {
-  const grid: BaseGrid;
 
+  const grid:     Grid;
   var space_data: [1..2] GridArray;
-  var time: [1..2] real;
+  var time:       [1..2] real;
 
-  def initialize() {
+  //==== Constructor ====
+  def GridSolution(grid: Grid) {
+    this.grid = grid;
     for i in [1..2] do
       space_data(i) = new GridArray(grid = grid);
   }
 }
-//<=== GridSolution class <===
-//<===========================
+// /""""""""""""""""""""""""""|
+//<=== GridSolution class <===|
+// \__________________________|
 
 
 
 
+
+//-----------------------------------------*
 //===> GridSolution.setToFunction method ===>
-//==========================================>
-//---------------------------------------------------------------
+//-----------------------------------------*
+//----------------------------------------------------------
 // Sets both time levels to a particular analytic function.
-//---------------------------------------------------------------
+//----------------------------------------------------------
 def GridSolution.setToFunction(
   initial_condition: func(dimension*real, real),
-  time_in:              real
+  time_in:           real
 ){
 
   //===> Evaluate and store initial_condition ===>
@@ -42,8 +48,9 @@ def GridSolution.setToFunction(
 
 
 }
-//<=== BaseGrid.initializeSolution method <===
-//<===========================================
+// *-----------------------------------------|
+//<=== GridSolution.setToFunction method <===|
+// *-----------------------------------------|
 
 
 

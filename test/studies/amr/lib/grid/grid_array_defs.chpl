@@ -5,14 +5,20 @@ use grid_base_defs;
 //==================== GRID ARRAYS ===================>
 //====================================================>
 
-//===> GridArray class ===>
-//========================>
+
+//|"""""""""""""""""""""""\
+//|===> GridArray class ===>
+//|_______________________/
 class GridArray {
-  const grid:         BaseGrid;
+
+  const grid:         Grid;
   var value:          [grid.ext_cells] real;
   var _promotionType: real;
 
-  //===> these() iterator ===>
+
+  //|------------------------*
+  //|===> these() iterator ===>
+  //|------------------------*
   //--------------------------------------------------------------------
   // Iterates over interior values.  The aim is to allow arithmetic
   // operations without directly accessing the 'value' field, such as
@@ -37,36 +43,40 @@ class GridArray {
   where tag == iterator.follower {
     yield value(follower);
   }
-  //<=== these() iterator <===
+  // *------------------------|
+  //<=== these() iterator <===|
+  // *------------------------|
 
 }
-//<=== GridArray class <===
-//<========================
+// /"""""""""""""""""""""""|
+//<=== GridArray class <===|
+// \_______________________|
 
 
 
 
-//===> GridArray assignment overloads ===>
-//=======================================>
+//|--------------------------------------*
+//|===> GridArray assignment overloads ===>
+//|--------------------------------------*
 def =(q: GridArray, rvalue) 
-where rvalue.type != GridArray && rvalue.type != real
+  where rvalue.type != GridArray && rvalue.type != real
 {
-  forall (x,y) in (q,rvalue) do
-    x = y;
+  forall (x,y) in (q,rvalue) do x = y;
 }
 
 def =(q: GridArray, rvalue: real) {
-  forall x in q do
-    x = rvalue;
+  forall x in q do x = rvalue;
 }
-//<=== GridArray assignment overloads <===
-//<=======================================
+// *--------------------------------------|
+//<=== GridArray assignment overloads <===|
+// *--------------------------------------|
 
 
 
 
-//===> GridArray.setToFunction method ===>
-//=======================================>
+//|--------------------------------------*
+//|===> GridArray.setToFunction method ===>
+//|--------------------------------------*
 def GridArray.setToFunction(
   f: func(dimension*real, real)
 ){
@@ -77,8 +87,9 @@ def GridArray.setToFunction(
     value(cell) = f(grid.xValue(cell));
   }
 }
-//<=== BaseGrid.setGridArray method <===
-//<=====================================
+// *--------------------------------------|
+//<=== GridArray.setToFunction method <===|
+// *--------------------------------------|
 
 
 //<====================================================
