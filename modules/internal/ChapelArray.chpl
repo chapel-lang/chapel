@@ -434,7 +434,6 @@ record _distribution {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
-<<<<<<< .copia-de-trabajo
 
   def readBinBlock(f : file) {
     _value.readBinBlock(f);
@@ -444,10 +443,7 @@ record _distribution {
     _value.writeBinBlock(f);
   }
 
-}
-=======
 }  // record _distribution
->>>>>>> .derecha-fusion.r17714
 
 
 //
@@ -732,7 +728,6 @@ record _domain {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
-<<<<<<< .copia-de-trabajo
 
   def readBinDom(f : file) {
     _value.readBinDom(f);
@@ -742,10 +737,7 @@ record _domain {
     _value.writeBinDom(f);
   }
 
-}
-=======
 }  // record _domain
->>>>>>> .derecha-fusion.r17714
 
 def _getNewDist(value) {
   return new dmap(value);
