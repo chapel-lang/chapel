@@ -1000,7 +1000,9 @@ def BlockArr.readBinArray(f: file) {
 	  binfread(privarr.locArr(thislocal)(ind),numbytespn,numelem,infile._fp, status, err);
 	  bytes_read=bytes_read+numbytespn*numelem;
 	  if status < 0 {
-		  const err = __primitive("get_errno");
+		  const err = chpl_cerrno;
+// const err = __primitive("get_errno");
+
 		  halt("***Error: Write failed: ", err, "***");
 	  }
 
