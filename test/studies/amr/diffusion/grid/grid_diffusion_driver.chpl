@@ -13,47 +13,6 @@ use grid_diffusion_defs;
 
 
 
-//===> Backward Euler/conjugate gradient advancement of a GridSolution ===>
-//========================================================================>
-def BaseGrid.advanceDiffusionBE(
-  sol:            ScalarGridSolution,
-  bc:             GridBC,
-  diffusivity:    real,
-  time_requested: real,
-  dt_max:         real)
-{
-
-  //==== Safety checks ====
-  assert(sol.grid == this);
-  assert(sol.time(2) <= time_requested);
-
-
-  //===> Time-stepping ===>
-  var n_steps = ceil( (time_requested - sol.time(2)) / dt_max ) : int;
-  var dt_used = (time_requested - sol.time(2)) / n_steps;
-   
-   
-  while (sol.time(2) < time_requested) {
-    //==== Adjust the time step to hit time_requested if necessary ====
-    if (sol.time(2) + dt_max > time_requested) then
-      dt_used = time_requested - sol.time(2);
-    else
-      dt_used = dt_max;
-    writeln("Taking step of size dt=", dt_used, " to time ", sol.time(2)+dt_used, ".");
-
-
-    //==== Update solution ====
-    stepBE(sol, bc, diffusivity, dt_used, dt_used/4.0);
-
-  }
-  //<=== Time-stepping <===
- 
-}
-//<=== Backward Euler/conjugate gradient advancement of a GridSolution <===
-//<========================================================================
-
-
-
 
 def main {
 
@@ -110,7 +69,7 @@ def main {
 
   //==== Initialize boundary conditions ====
   var bc = new ZeroFluxDiffusionGridBC(grid = grid);
-
+/*   var bc = new PeriodicGridBC(grid = grid); */
 
 
   //===> Initialize solution ===>
@@ -121,8 +80,8 @@ def main {
     return f;
   }
 
-  var sol = new ScalarGridSolution(grid);
-  grid.initializeSolution(sol, initial_condition, initial_time);
+  var sol = new GridSolution(grid);
+  sol.setToFunction(initial_condition, initial_time);
   //<=== Initialize  solution <===
 
 
@@ -132,7 +91,8 @@ def main {
 
   //===> Generate output ===>
   //==== Initial time ====
-  grid.clawOutput(sol, frame_number);
+  frame_number = 0;
+  sol.clawOutput(frame_number);
 
   //==== Subsequent times ====
   for output_time in output_times do {
@@ -142,9 +102,55 @@ def main {
     //==== Write output to file ====
     frame_number += 1;
     writeln("Writing frame ", frame_number, ".");
-    grid.clawOutput(sol, frame_number);
+    sol.clawOutput(frame_number);
   }
   //<=== Generate output <===
   
 
 } // end main
+
+
+
+
+//===> BaseGrid.advanceDiffusionBE method ===>
+//===========================================>
+//----------------------------------------------------------------------
+// Advances a GridSolution to the requested time, stepping forward with
+// diffusion via Backward Euler.
+//----------------------------------------------------------------------
+def BaseGrid.advanceDiffusionBE(
+  sol:            GridSolution,
+  bc:             GridBC,
+  diffusivity:    real,
+  time_requested: real,
+  dt_max:         real)
+{
+
+  //==== Safety checks ====
+  assert(sol.grid == this);
+  assert(sol.time(2) <= time_requested);
+
+
+  //===> Time-stepping ===>
+  var n_steps = ceil( (time_requested - sol.time(2)) / dt_max ) : int;
+  var dt_used = (time_requested - sol.time(2)) / n_steps;
+   
+   
+  while (sol.time(2) < time_requested) {
+    //==== Adjust the time step to hit time_requested if necessary ====
+    if (sol.time(2) + dt_max > time_requested) then
+      dt_used = time_requested - sol.time(2);
+    else
+      dt_used = dt_max;
+    writeln("Taking step of size dt=", dt_used, " to time ", sol.time(2)+dt_used, ".");
+
+
+    //==== Update solution ====
+    stepDiffusionBE(sol, bc, diffusivity, dt_used, dt_used/4.0);
+
+  }
+  //<=== Time-stepping <===
+ 
+}
+//<=== BaseGrid.advanceDiffusionBE method <===
+//<===========================================

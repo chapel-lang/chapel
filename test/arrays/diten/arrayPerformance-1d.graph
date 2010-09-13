@@ -1,0 +1,4 @@
+perfkeys: One Dimensional         :, One Dimensional strided :
+files: arrayPerformance.dat, arrayPerformance.dat
+graphname: arrayPerformance-1d
+

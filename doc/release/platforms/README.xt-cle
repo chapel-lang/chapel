@@ -69,6 +69,7 @@ let us know at chapel_info@cray.com.
    modules loaded which will specify the C compiler used to compile
    Chapel programs for the compute nodes:
 
+     - PrgEnv-cray
      - PrgEnv-gnu
      - PrgEnv-pathscale
      - PrgEnv-pgi
@@ -80,6 +81,7 @@ let us know at chapel_info@cray.com.
    of the following values:
 
      gnu       : the GNU compiler suite -- gcc and g++
+     cray      : the Cray compiler suite -- cc and CC
      intel     : the Intel compiler suite -- icc and icpc
      pathscale : the Pathscale compiler suite -- pathcc and pathCC
      pgi       : the PGI compiler suite -- pgcc and pgCC

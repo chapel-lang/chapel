@@ -1,31 +1,42 @@
 /*** repositionDefExpressions.cpp
  ***
  *** This pass and function moves around the defPoints for variables to
- *** where the first use is.
+ *** where the first parallel (PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N) use is.
  ***
  *** The algorithm: look at a function and collect all the variables. Push
- *** all the variables down into a block if the variable isn't used at the
- *** top level nor is it used in a sibling block. Repeat for each block and
- *** sub-block.
+ *** all the variables down into a parallel block if the variable isn't used
+ *** at the top level nor is it used in a sibling block. Repeat for each block
+ *** and sub-block.
  ***
- *** vars = collectVarsInFun(f);
+ *** vars = collectVarsInFun(f)
  *** for each var in Vars
- ***   current_block = f->body;
+ ***   current_block = f->body
+ ***   top_par_block = current_block
  ***   while (true)
  ***     if isTopDecl(current_block, var)
- ***       declare var in current_block
+ ***       declare var in top_par_block
  ***       break
  ***     else
  ***       childBlocks = getChildBlocks(current_block)
  ***       if countBlocks(childBlocks, var) > 1
- ***         declare var in current_block
+ ***         declare var in top_par_block
  ***         break
  ***       else
  ***         current_block = getUniqueBlock(childBlocks, var)
+ ***         if current_block->blockInfo PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N
+ ***           top_par_block = current_block
  ***
  *** Problem: without live variable analysis, could define variable inside
  ***          block where variable is live going in, thus writing over it
  ***          on each iteration of loop
+ ***
+ *** Note: algorithm changed to only consider parallel construct:
+ ***       PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N. Therefore, this pass is only
+ ***       relevant on an XMT. I've left the old code mostly extant such that
+ ***       if we ever want to go back to declaring variables at the top of
+ ***       every block, if, then, or else clause, it'll be easy.
+ ***
+ ***       The CondStmt code is in getChildBlocks() and isTopDecl().
  ***/
 
 #include "astutil.h"
@@ -139,13 +150,14 @@ void repositionDefExpressions(void) {
 
     forv_Vec(DefExpr*, def, vars) {
       BlockStmt* current_block = fn->body;
+      BlockStmt* top_par_block = current_block;
       VarSymbol* var = toVarSymbol(def->sym);
 
       while (true) {
         if (isTopDecl(current_block, var)) {
           // declare var here
           if (!toTypeSymbol(def->sym)) {
-            current_block->insertAtHead(def->remove());
+            top_par_block->insertAtHead(def->remove());
           }
 
           break;
@@ -154,13 +166,16 @@ void repositionDefExpressions(void) {
           if (countBlocks(childBlocks, var) > 1) {
             // declare var here
             if (!toTypeSymbol(def->sym)) {
-              current_block->insertAtHead(def->remove());
+              top_par_block->insertAtHead(def->remove());
             }
 
             break;
           } else {
             current_block = getUniqueBlock(childBlocks, var);
             if (!current_block) break;
+            if (current_block->blockInfo)
+              if (current_block->blockInfo->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N))
+                top_par_block = current_block;
           }
         }
       }

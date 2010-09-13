@@ -5,7 +5,7 @@
 //
 // This version is based on an underlying mesh of width dx/2, which
 // contains all cell centers, interface centers, and vertices.  As
-// a result, the domin of cell centers is strided by 2, corresponding
+// a result, the domain of cell centers is strided by 2, corresponding
 // to jumps of dx.
 //
 //<=== Description <===
@@ -14,182 +14,206 @@
 config param dimension = 2;
 const dimensions = [1..dimension];
 
-
-//======================================================================>
-//==================== FUNDAMENTAL GRID DEFINITIONS  ===================>
-//======================================================================>
+enum line_position {low=-1, interior=0, high=1};
+const ghost_locations = (line_position.low..line_position.high)**dimension;
 
 
-//===> BaseGrid class ===>
-//=======================>
-class BaseGrid {
+
+
+//|""""""""""""""""""""""""\
+//|===> GhostCells class ===>
+//|________________________/
+class GhostCells {
+
+  const grid:    Grid;
+  const domains: [ghost_locations] domain(dimension, stridable=true);
+
+  //|-------------------->
+  //|===> Constructor ===>
+  //|-------------------->
+  def GhostCells(grid: Grid) {
+
+    this.grid = grid;
+
+    var ranges: dimension*range(stridable=true);
+    var interior_location: dimension*int;
+    for d in dimensions do interior_location(d) = line_position.interior;
+
+    for g_loc in ghost_locations {
+      if g_loc != interior_location {
+	for d in dimensions do ranges(d) = setRange(d,g_loc(d));
+	domains(g_loc) = ranges;
+      }
+    }
+
+  }
+  //<--------------------|
+  //<=== Constructor <===|
+  //<--------------------|
+
+
+
+  //|------------------------>
+  //|===> setRange method ===>
+  //|------------------------>
+  //-----------------------------------------------------------------
+  // Given a dimension and position, sets the corresponding range of
+  // ghost cells.
+  //-----------------------------------------------------------------
+  def setRange(d: int, p: int) {
+    var R: range(stridable=true);
+
+    if p == line_position.low then
+      R = (grid.ext_cells.low(d).. by 2) #grid.n_ghost_cells(d);
+    else if p == line_position.interior then
+      R = grid.cells.dim(d);
+    else
+      R = (..grid.ext_cells.high(d) by 2) #grid.n_ghost_cells(d);
+
+    return R;
+  }
+  //<------------------------|
+  //<=== setRange method <===|
+  //<------------------------|
+
+
+
+  def this(loc: dimension*int) {
+    return domains(loc);
+  }
+
+
+}
+// /""""""""""""""""""""""""|
+//<=== GhostCells class <===|
+// \________________________|
+
+
+
+
+
+
+
+//|""""""""""""""""""\
+//|===> Grid class ===>
+//|__________________/
+class Grid {
   
-  var x_low, x_high:          dimension*real,
-      i_low, i_high:          dimension*int,
-      n_cells, n_ghost_cells: dimension*int;
+  const x_low, x_high:          dimension*real;
+  const i_low, i_high:          dimension*int;
+  const n_cells, n_ghost_cells: dimension*int;
 
-  var dx: dimension*real;
+  const dx: dimension*real;
           
-  var ext_cells:      domain(dimension, stridable=true),
-      cells: subdomain(ext_cells);
+  const ext_cells: domain(dimension, stridable=true);
+  const cells:     subdomain(ext_cells);
   
-  var ghost_cells: GridBoundaryDomain;
-/*   var low_ghost_cells:  [dimensions] subdomain(ext_cells), */
-/*       high_ghost_cells: [dimensions] subdomain(ext_cells); */
+  const ghost_cells: GhostCells;
 
 
-  //===> initialize method ===>
-  //==========================>
-  def initialize() {
+  //|-------------------->
+  //|===> Constructor ===>
+  //|-------------------->
+  def Grid(
+    x_low:         dimension*real,
+    x_high:        dimension*real,
+    i_low:         dimension*int,
+    n_cells:       dimension*int,
+    n_ghost_cells: dimension*int)
+  {
 
+    //==== Assign inputs to fields ====
+    this.x_low         = x_low;
+    this.x_high        = x_high;
+    this.i_low         = i_low;
+    this.n_cells       = n_cells;
+    this.n_ghost_cells = n_ghost_cells;
+
+    //==== Sanity check ====
     sanityChecks();
 
-    setDerivedFields();
+    //==== dx ====
+    dx = (x_high - x_low) / n_cells;
+
+    //==== i_high ====
+    for d in dimensions do
+      i_high(d) = i_low(d) + 2*n_cells(d);
+
+    //==== Physical cells ====
+    var ranges: dimension*range(stridable = true);
+    for d in dimensions do ranges(d) = (i_low(d)+1 .. by 2) #n_cells(d);
+    cells = ranges;
+
+    //==== Extended cells (includes ghost cells) ====
+    var size: dimension*int;
+    for d in dimensions do size(d) = 2*n_ghost_cells(d);
+    ext_cells = cells.expand(size);
+
+    //==== Ghost cells ====
+    ghost_cells = new GhostCells(this);
   }
-  //<=== initialize method <===
-  //<==========================
+  //<--------------------|
+  //<=== Constructor <===|
+  //<--------------------|
 
 
-  //===> sanityChecks method ===>
-  //============================>
+
+  //|---------------------------->
+  //|===> sanityChecks method ===>
+  //|---------------------------->
+  //--------------------------------------------------------------
+  // Performs some basic sanity checks on the constructor inputs.
+  //--------------------------------------------------------------
   def sanityChecks() {
     var d_string: string;
     for d in dimensions do {
       d_string = format("%i", d);
 
       assert(x_low(d) < x_high(d),
-	     "error: BaseGrid: x_low(" + d_string + ") must be strictly less than x_high(" + d_string + ").");
+	     "error: Grid: x_low(" + d_string + ") must be strictly less than x_high(" + d_string + ").");
 
       assert(n_cells(d) > 0,
-             "error: BaseGrid: n_cells(" + d_string + ") must be positive.");
+             "error: Grid: n_cells(" + d_string + ") must be positive.");
 
       assert(n_ghost_cells(d) > 0,
-	     "error: BaseGrid: n_ghost_cells(" + d_string + ") must be positive.");
+	     "error: Grid: n_ghost_cells(" + d_string + ") must be positive.");
     }
   }
-  //<=== sanityChecks method <===
-  //<============================
+  //<----------------------------|
+  //<=== sanityChecks method <===|
+  //<----------------------------|
 
 
 
-
-  //===> setDerivedFields method ===>
-  //================================>
-  //--------------------------------------------------------------
-  // After x_low, x_high, n_cells, and n_ghost_cells have
-  // been provided, calculate:
-  //     dx
-  //     i_high
-  //     cells
-  //     ext_cells
-  //     low_ghost_cells
-  //     high_ghost_cells
-  //--------------------------------------------------------------
-  def setDerivedFields() {
-    //==== dx ====
-    dx = (x_high - x_low) / n_cells;
-
-
-    //==== i_high ====
-    for d in dimensions do
-      i_high(d) = i_low(d) + 2*n_cells(d);
-
-
-    //==== Physical cells ====
-    var range_tuple: dimension*range(stridable = true);
-    for d in dimensions do
-      range_tuple(d) = i_low(d)+1 .. #2*n_cells(d) by 2;
-    cells = range_tuple;
-
-
-    //==== Extended cells (includes ghost cells) ====
-    var size: dimension*int;
-    for d in dimensions do
-      size(d) = 2*n_ghost_cells(d);
-    ext_cells = cells.expand(size);
-         
-
-    //===> Ghost cells ===>
-    ghost_cells = new GridBoundaryDomain(grid = this);
-
-    for orientation in dimensions do {
-
-      var range_tuple: dimension*range(stridable=true);
-
-      //===> Set up off-dimensions ===>
-      for d in [1..orientation-1] do
-	range_tuple(d) = cells.dim(d);
-
-      for d in [orientation+1 .. dimension] do
-	range_tuple(d) = ext_cells.dim(d);
-      //<=== Set up off-dimensions <===
-
-
-
-      //===> Low ghost cells ===>
-      range_tuple(orientation) = ext_cells.low(orientation)
-                                 .. cells.low(orientation) - 2 
-                                 by 2;
-
-      ghost_cells.low(orientation) = range_tuple;
-      //<=== Low ghost cells <===
-
-
-      //===> High ghost cells ===>
-      range_tuple(orientation) = cells.high(orientation) + 2
-                                 .. ext_cells.high(orientation)
-                                 by 2;
-
-      ghost_cells.high(orientation) = range_tuple;
-      //<=== High ghost cells <===
-
-    }   
-    //<=== Ghost cells <===     
-
+  //|------------------------->
+  //|===> writeThis method ===>
+  //|------------------------->
+  def writeThis(w: Writer) {
+    writeln("x_low: ", x_low, ",  x_high: ", x_high);
+    write("i_low: ", i_low, ",  i_high: ", i_high);
   }
-  //<=== setDerivedFields method <===
-  //<================================  
+  //<-------------------------|
+  //<=== writeThis method <===|
+  //<-------------------------|
 
 }
-//<=== BaseGrid class <===
-//<=======================
-
-
-
-//===> GridBoundaryDomain class ===>
-//=================================>
-//------------------------------------------------------------------
-// Sets up a "domain" with a low and high entry for each dimension.
-// Also provides a these() method for use as a (currently serial)
-// iterator.
-//------------------------------------------------------------------
-class GridBoundaryDomain {
-  const grid: BaseGrid;
-  var low:  [dimensions] domain(dimension, stridable=true);
-  var high: [dimensions] domain(dimension, stridable=true);
-
-  def these() {
-    for d in dimensions {
-      for idx in low(d) do
-	yield idx;
-      for idx in high(d) do
-	yield idx;
-    }
-  }
-
-}
-//<=== GridBoundaryDomain class <===
-//<=================================
+// /""""""""""""""""""|
+//<=== Grid class <===|
+// \__________________|
 
 
 
 
-//===> xValue method ===>
-//======================>
-//---------------------------------------
+
+
+
+//|--------------------------->
+//|===> Grid.xValue method ===>
+//|--------------------------->
+//----------------------------------------
 // Converts indices to coordinate values.
 //----------------------------------------
-def BaseGrid.xValue (point_index: dimension*int) {
+def Grid.xValue (point_index: dimension*int) {
 
   var coord: dimension*real;
 
@@ -203,13 +227,9 @@ def BaseGrid.xValue (point_index: dimension*int) {
 
   return coord;
 }
-//<=== xValue method <===
-//<======================
-
-
-//<=====================================================================
-//<=================== FUNDAMENTAL GRID DEFINITIONS ====================
-//<=====================================================================
+//<---------------------------|
+//<=== Grid.xValue method <===|
+//<---------------------------|
 
 
 
@@ -220,72 +240,66 @@ def BaseGrid.xValue (point_index: dimension*int) {
 
 
 
-//==============================================>
-//==================== OTHER ===================>
-//==============================================>
-
-
-//===> Fix for the 1D/tuple problem ===>
+//|------------------------>
+//|===> tuplify routine ===>
+//|------------------------>
+//-----------------------------------------------------------
+// This is used to fix the "1D problem", in that indices of
+// a one-dimensional domain are of type int, whereas for all
+// other dimensions, they're dimension*int.
+//-----------------------------------------------------------
 def tuplify(idx) {
-  if isTuple(idx) then
-    return idx;
-  else
-    return tuple(idx);
+  if isTuple(idx) then return idx;
+  else return tuple(idx);
 }
-//<=== Fix for the 1D/tuple problem <===
+//<------------------------|
+//<=== tuplify routine <===|
+//<------------------------|
 
 
 
-//===> intersectDomains routine ===>
-//=================================>
-//--------------------------------------------------------------
-// Determines the intersection of two arithmetic domains of the
-// same type.  Returns the domain of intersection, or an empty
-// domain if the inputs don't intersect.
-//--------------------------------------------------------------
-def intersectDomains(D1, D2) {
-  
-  assert(D1.type == D2.type,
-	 "error: intersectDomains: input domains must be of same type");
+//|----------------------------*
+//|==== range exponentiation ===>
+//|----------------------------*
+def **(R: range(stridable=?s), param n: int) {
+  var ranges: n*R.type;
+  for i in [1..n] do ranges(i) = R;
+
+  var D: domain(n,stridable=s) = ranges;
+  return D;
+}
+// *----------------------------|
+//<=== range exponentiation <===|
+// *----------------------------|
 
 
-  //==== Assume the domains intersect ====
-  var intersect = true;
-
-  var overlap: D1.rank*range(stridable=true);
-
-  for d in [1..D1.rank] {
-
-    //==== Check that strides match ====
-    assert(D1.dim(d).stride == D2.dim(d).stride,
-           "error: intersectDomains: domains must have equal stride");
-
-    //==== Compute the overlap in this dimension ====
-    overlap(d) = max(D1.low(d), D2.low(d)) 
-                 .. 
-                 min(D1.high(d), D2.high(d))
-                 by 
-                 D1.dim(d).stride;
-    
-    //==== Check whether this rules out intersection ====
-    if overlap(d).length == 0 then intersect = false;
-  }
 
 
-  //==== Return ====
-  if intersect then
-    return [(...overlap)];
-  else {
-    var empty_domain: D1.type;
-    return empty_domain;
-  }
 
+
+
+
+
+def main {
+
+  var x_low = (0.0,1.0);
+  var x_high = (2.0,3.0);
+  var i_low = (0,0);
+  var n_cells = (20,40);
+  var n_ghost_cells = (2,2);
+
+  var grid = new Grid(x_low, x_high, i_low, n_cells, n_ghost_cells);
+
+  writeln(grid);
+  writeln("grid.cells = ", grid.cells);
+  writeln("grid.ext_cells = ", grid.ext_cells);
+
+  writeln("");
+  writeln("Ghost cell domains:");
+  for g_loc in ghost_locations do
+    writeln( grid.ghost_cells(g_loc) );
+
+  writeln("");
+  writeln( grid.ghost_cells.domains.domain );
 
 }
-//<=== intersectDomains routine <===
-//<=================================
-
-
-//<==============================================
-//<=================== OTHER ====================
-//<==============================================

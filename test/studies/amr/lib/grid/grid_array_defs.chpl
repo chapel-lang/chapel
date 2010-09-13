@@ -1,38 +1,95 @@
 use grid_base_defs;
 
 
-
 //====================================================>
 //==================== GRID ARRAYS ===================>
 //====================================================>
 
-//===> GridArray class ===>
-//========================>
+
+//|"""""""""""""""""""""""\
+//|===> GridArray class ===>
+//|_______________________/
 class GridArray {
-  const grid: BaseGrid;
-  var value: [grid.ext_cells] real;
+
+  const grid:         Grid;
+  var value:          [grid.ext_cells] real;
+  var _promotionType: real;
+
+
+  //|------------------------*
+  //|===> these() iterator ===>
+  //|------------------------*
+  //--------------------------------------------------------------------
+  // Iterates over interior values.  The aim is to allow arithmetic
+  // operations without directly accessing the 'value' field, such as
+  // q += 2.0, or q = q1 + q2.
+  //--------------------------------------------------------------------
+  // Brad mentioned that there ought to be a way to use the default
+  // leader/follower iterators for arithmetic domains.  For now, though
+  // this is acceptably fast given the simplicity of the code.
+  //--------------------------------------------------------------------
+  def these() {
+    for cell in grid.cells do
+      yield value(cell);
+  }
+
+  def these(param tag: iterator) 
+  where tag == iterator.leader {
+    forall cell in grid.cells do
+      yield cell;
+  }
+
+  def these(param tag: iterator, follower) var
+  where tag == iterator.follower {
+    yield value(follower);
+  }
+  // *------------------------|
+  //<=== these() iterator <===|
+  // *------------------------|
+
 }
-//<=== GridArray class <===
-//<========================
+// /"""""""""""""""""""""""|
+//<=== GridArray class <===|
+// \_______________________|
 
 
 
 
-//===> GridArray.setToFunction method ===>
-//=======================================>
-def BaseGrid.setGridArray(
-  q: GridArray,
+//|--------------------------------------*
+//|===> GridArray assignment overloads ===>
+//|--------------------------------------*
+def =(q: GridArray, rvalue) 
+  where rvalue.type != GridArray && rvalue.type != real
+{
+  forall (x,y) in (q,rvalue) do x = y;
+}
+
+def =(q: GridArray, rvalue: real) {
+  forall x in q do x = rvalue;
+}
+// *--------------------------------------|
+//<=== GridArray assignment overloads <===|
+// *--------------------------------------|
+
+
+
+
+//|--------------------------------------*
+//|===> GridArray.setToFunction method ===>
+//|--------------------------------------*
+def GridArray.setToFunction(
   f: func(dimension*real, real)
 ){
 
   //==== Evaluate and store f(x) ====
-  forall precell in cells {
+  forall precell in grid.cells {
     var cell = tuplify(precell);
-    q.value(cell) = f(xValue(cell));
+    value(cell) = f(grid.xValue(cell));
   }
 }
-//<=== BaseGrid.setGridArray method <===
-//<=====================================
+// *--------------------------------------|
+//<=== GridArray.setToFunction method <===|
+// *--------------------------------------|
 
 
 //<====================================================
@@ -59,13 +116,13 @@ def BaseGrid.setGridArray(
 // spatial object.  The time file is really simple, and this
 // just formats a few parameters.
 //-------------------------------------------------------------
-def writeTimeFile(time:    real,
-                  meqn:    int,
-                  ngrids:  int,
-                  naux:    int,
-                  outfile: file
-                 ) {
-
+def writeTimeFile(
+  time:    real,
+  meqn:    int,
+  ngrids:  int,
+  naux:    int,
+  outfile: file)
+{
 
   //==== Formatting parameters ====
   var efmt:  string = "%26.16E",
@@ -87,10 +144,9 @@ def writeTimeFile(time:    real,
 
 
 
-//===> BaseGrid.writeGridArray method ===>
-//=======================================>
-def BaseGrid.writeGridArray(
-  q:           GridArray,
+//===> GridArray.write method ===>
+//===============================>
+def GridArray.write(
   grid_number: int,
   AMR_level:   int,
   outfile:     file
@@ -116,7 +172,7 @@ def BaseGrid.writeGridArray(
       when 3 do linelabel = "                 mz";
       otherwise linelabel = "                 mx(" + format("%1i",d) + ")";
     }
-    outfile.writeln( format(ifmt, n_cells(d)),  linelabel);
+    outfile.writeln( format(ifmt, grid.n_cells(d)),  linelabel);
   }
 
 
@@ -128,7 +184,7 @@ def BaseGrid.writeGridArray(
       when 3 do linelabel = "    zlow";
       otherwise linelabel = "    xlow(" + format("%1i",d) + ")";
     }
-    outfile.writeln( format(efmt, x_low(d)),  linelabel);
+    outfile.writeln( format(efmt, grid.x_low(d)),  linelabel);
   }
 
 
@@ -140,24 +196,23 @@ def BaseGrid.writeGridArray(
       when 3 do linelabel = "    dz";
       otherwise linelabel = "    dx(" + format("%1i",d) + ")";
     }
-    outfile.writeln( format(efmt, dx(d)),  linelabel);
+    outfile.writeln( format(efmt, grid.dx(d)),  linelabel);
   }
   outfile.writeln("");
 
 
   //===> Write array values ===>
   if dimension == 1 then {
-    for cell in cells do
-      outfile.writeln(format(efmt, q.value(cell)));
+    for cell in grid.cells do
+      outfile.writeln(format(efmt, value(cell)));
   }
   else {
     //------------------------------------------------------------
-    //---- Transpose cells; iterating over the transpose
-    //---- in row major order achieves column major order on the
-    //---- original domain.
+    // Transpose cells; iterating over the transpose in row major
+    // order achieves column major order on the original domain.
     //------------------------------------------------------------
     var range_tuple: dimension*range(stridable=true);
-    [d in dimensions] range_tuple(d) = cells.dim(1 + dimension - d);
+    [d in dimensions] range_tuple(d) = grid.cells.dim(1 + dimension - d);
 
     var cells_transposed: domain(dimension, stridable=true);
     cells_transposed = [(...range_tuple)];
@@ -168,7 +223,7 @@ def BaseGrid.writeGridArray(
 
       //==== Write value ====
       [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
-      outfile.writeln(format(efmt, q.value(cell)));
+      outfile.writeln(format(efmt, value(cell)));
 
       //===> Newlines at the end of each dimension ===>
       //--------------------------------------------------------------
@@ -178,7 +233,7 @@ def BaseGrid.writeGridArray(
       n_newlines = 0;
 
       for d in dimensions do {
-        if cell(d) == cells.dim(d).high then
+        if cell(d) == grid.cells.high(d) then
           n_newlines += 1;
         else
           break;
@@ -193,27 +248,22 @@ def BaseGrid.writeGridArray(
   //<=== Write array values <===
   
 }
-//<=== BaseGrid.writeGridArray method <===
-//<=======================================
+//<=== GridArray.write method <===
+//<===============================
 
 
 
 
-//===> clawOutput method ===>
-//==========================>
+//===> GridArray.clawOutput method ===>
+//====================================>
 //-------------------------------------------------------------------
 // Writes Clawpack-formatted output for a GridArray, at the given 
 // time and frame_number.
 //-------------------------------------------------------------------
-def BaseGrid.clawOutput(
-  q:            GridArray,
+def GridArray.clawOutput(
   time:         real,
   frame_number: int
 ){
-
-  //==== Make sure solution lives on this grid ====
-  assert(q.grid == this);
-
 
   //==== Names of output files ====
   var frame_string:  string = format("%04i", frame_number),
@@ -232,13 +282,13 @@ def BaseGrid.clawOutput(
   //==== Data file ====
   outfile = new file(data_filename, FileAccessMode.write);
   outfile.open();
-  writeGridArray(q, 1, 1, outfile);
+  write(1, 1, outfile);
   outfile.close();
   delete outfile;
 
 }
-//<=== clawOutput method <===
-//<==========================
+//<=== GridArray.clawOutput method <===
+//<====================================
 
 
 //<=======================================================

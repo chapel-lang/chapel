@@ -6,13 +6,13 @@ use level_array_defs;
 //======================>
 class LevelBC {
   
-  var level: BaseLevel;
+  const level: BaseLevel;
 
   //===> fillGhostCells method ===>
   //==============================>
   def fillGhostCells(q: LevelArray, t: real) {
 
-    level.fillSharedGhosts(q);
+    q.fillSharedGhosts();
     fillBoundaryGhosts(q, t);
 
   }
@@ -24,7 +24,7 @@ class LevelBC {
   //=========================================>
   def fillGhostCellsHomogeneous(q: LevelArray) {
     
-    level.fillSharedGhosts(q);
+    q.fillSharedGhosts();
     fillBoundaryGhostsHomogeneous(q);
 
   }

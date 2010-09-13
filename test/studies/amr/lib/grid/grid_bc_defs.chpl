@@ -3,19 +3,24 @@ use grid_solution_defs;
 
 
 
-//===> GridBC class ===>
-//=====================>
+//|""""""""""""""""""""\
+//|===> GridBC class ===>
+//|____________________/
 class GridBC {
 
-  var grid: BaseGrid;
+  const grid: Grid;
 
-  //==== Dummy routines; to be provided in derived classes ====
-  def ghostFill(q: [grid.ext_cells] real, t: real){}
-  def homogeneousGhostFill(q: [grid.ext_cells] real){}
+  //==== Dummy routines to be provided in derived classes ====
+  def fillGhostCells(q: GridArray, t: real){}
+  def fillGhostCellsHomogeneous(q: GridArray){}
   
 }
-//<=== GridBC Class <===
-//<=====================
+// /""""""""""""""""""""|
+//<=== GridBC Class <===|
+// \____________________|
+
+
+
 
 
 
@@ -25,41 +30,13 @@ class GridBC {
 class PeriodicGridBC: GridBC {
 
 
-  var periodic_ghost_images: GridBoundaryDomain;
-
-
-  //===> initialize method ===>
-  //============================>
-  def initialize() {
-
-    //===> Build periodic images of ghost cells ===>
-
-    periodic_ghost_images = new GridBoundaryDomain(grid = grid);
-
-    var shift: dimension*int;
-    
-    for d in dimensions do {
-      [d_temp in dimensions] shift(d_temp) = 0;
-
-      shift(d) = 2*grid.n_cells(d);
-      periodic_ghost_images.low(d)  = grid.ghost_cells.low(d).translate(shift);
-
-      shift(d) = -2*grid.n_cells(d);
-      periodic_ghost_images.high(d) = grid.ghost_cells.high(d).translate(shift);
-    }
-    //<=== Build periodic images of ghost cells <===
-
-  }
-  //<=== initialize method <===
-  //<==========================
-
 
 
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: [grid.ext_cells] real, t: real) {
+  def fillGhostCells(q: GridArray, t: real) {
     //==== Periodic BCs are homogeneous ====
-    homogeneousGhostFill(q);
+    fillGhostCellsHomogeneous(q);
   }
   //<=== ghostFill method <===
   //<=========================
@@ -68,12 +45,23 @@ class PeriodicGridBC: GridBC {
 
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: [grid.ext_cells] real) {
+  def fillGhostCellsHomogeneous(q: GridArray) {
+
+    var shift: dimension*int;
+
+    for g_loc in ghost_locations {
+      for d in dimensions {
+	if g_loc(d) == line_position.low then
+	  shift(d) = n_cells(d);
+      }
+
+    }
+
 
     //==== Copy values into ghost cells from their periodic images ====
     for d in dimensions do {
-      q(grid.ghost_cells.low(d))  = q(periodic_ghost_images.low(d));
-      q(grid.ghost_cells.high(d)) = q(periodic_ghost_images.high(d));
+      q.value(grid.ghost_cells.low(d))  = q.value(periodic_ghost_images.low(d));
+      q.value(grid.ghost_cells.high(d)) = q.value(periodic_ghost_images.high(d));
     }
   }
   //<=== homogeneousGhostFill method <===

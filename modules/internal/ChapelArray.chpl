@@ -434,6 +434,7 @@ record _distribution {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
+<<<<<<< .copia-de-trabajo
 
   def readBinBlock(f : file) {
     _value.readBinBlock(f);
@@ -444,6 +445,9 @@ record _distribution {
   }
 
 }
+=======
+}  // record _distribution
+>>>>>>> .derecha-fusion.r17714
 
 
 //
@@ -487,10 +491,35 @@ record _domain {
       return 1;
   }
 
+  def stridable param where isArithmeticDom(this) {
+    return _value.stridable;
+  }
+
+  def stridable param where isSparseDom(this) {
+    compilerError("sparse domains do not currently support .stridable");
+  }
+
+  def stridable param where isOpaqueDom(this) {
+    compilerError("opaque domains do not support .stridable");  
+  }
+
+  def stridable param where isEnumDom(this) {
+    compilerError("enumerated domains do not support .stridable");  
+  }
+
+  def stridable param where isAssociativeDom(this) {
+    compilerError("associative domains do not support .stridable");  
+  }
+
   pragma "inline"
   def these() {
     return _value.these();
   }
+
+  // see comments for the same method in _array
+  //
+  def this(d: domain) where d.rank == rank
+    return this((...d.getIndices()));
 
   def this(ranges: range(?) ...rank) {
     param stridable = _value.stridable || chpl__anyStridable(ranges);
@@ -577,6 +606,7 @@ record _domain {
   def numIndices return _value.dsiNumIndices;
   def low return _value.dsiLow;
   def high return _value.dsiHigh;
+  def stride return _value.dsiStride;
 
   def member(i) {
     if isArithmeticDom(this) then
@@ -702,6 +732,7 @@ record _domain {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
+<<<<<<< .copia-de-trabajo
 
   def readBinDom(f : file) {
     _value.readBinDom(f);
@@ -712,6 +743,9 @@ record _domain {
   }
 
 }
+=======
+}  // record _domain
+>>>>>>> .derecha-fusion.r17714
 
 def _getNewDist(value) {
   return new dmap(value);
@@ -894,6 +928,7 @@ record _array {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
+<<<<<<< .copia-de-trabajo
 
   def readBinArray(f : file) {
     _value.readBinArray(f);
@@ -904,6 +939,9 @@ record _array {
   }
 
 }
+=======
+}  // record _array
+>>>>>>> .derecha-fusion.r17714
 
 //
 // Helper functions

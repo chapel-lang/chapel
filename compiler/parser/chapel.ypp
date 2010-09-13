@@ -123,7 +123,7 @@
 
 %type <vpch> pragma_ls
 
-%type <pblockstmt> program stmt_ls block_stmt
+%type <pblockstmt> program toplevel_stmt_ls stmt_ls block_stmt
 %type <pblockstmt> class_level_stmt_ls
 
 %type <pblockstmt> stmt do_stmt
@@ -163,7 +163,15 @@
 %% 
 
 program:
-  stmt_ls  { (void)@1.first_line; yyblock = $$; }
+  toplevel_stmt_ls  { (void)@1.first_line; yyblock = $$; }
+;
+
+// 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
+toplevel_stmt_ls:
+                                   { $$ = new BlockStmt(); resetTempID(); }
+| toplevel_stmt_ls pragma_ls stmt  { $$ = buildPragmaStmt($1, $2, $3);
+                                     resetTempID();
+                                   }
 ;
 
 stmt_ls:

@@ -3,20 +3,24 @@ Release Changes List
 ====================
 
 =============
+version 1.1.2
+=============
+
+Update to fourth public release of Chapel, September, 2010
+(see also changes below for 1.1.1 and 1.1)
+
+Platform-specific notes
+-----------------------
+- added an xe-cle PLATFORM to support the XE6 (currently using GASNet over MPI)
+  (see doc/platforms/README.xe-cle for details)
+
+
+=============
 version 1.1.1
 =============
 
 Update to fourth public release of Chapel, July 8, 2009
 (see also changes below for 1.1)
-
-High-Level Themes
------------------
-- single- and multi-locale task parallelism
-- improved single- and multi-locale data parallelism
-  - all data parallel operations on arithmetic arrays are now parallelized
-  - improved control over task quantity and granularity for data parallelism
-  - improved completeness and stability of Block and Cyclic distributions
-- bug fixes
 
 Platform-specific notes
 -----------------------

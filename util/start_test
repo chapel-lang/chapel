@@ -473,6 +473,7 @@ set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
 set performance = 0
+set startdate = ""
 set testfutures = 0
 set testfuturesonly = 0
 set testnotests = 0
@@ -556,6 +557,12 @@ while ( $#argv > 0 )
                 shift
                 set performance = 1
                 breaksw
+	case --startdate:
+	case -startdate:
+		shift
+		set startdate = $argv[1]
+		shift
+		breaksw
         case -norecurse:
         case --norecurse:
                 shift
@@ -597,13 +604,14 @@ while ( $#argv > 0 )
 		echo Usage and defaults\:
 		echo "     start_test <file list> <directory list>"
                 echo "          -clean-only"
-		echo "          -compiler <path>     (currently: $CHPL_HOME/bin/$platform/chpl)"
-		echo "          -compopts <options>  (currently: '--cc-warnings')"
-		echo "          -execopts <options>  (currently: '')"
-                echo "          -launchcmd <command> (currently: '')"
+		echo "          -compiler <path>      (currently: $CHPL_HOME/bin/$platform/chpl)"
+		echo "          -compopts <options>   (currently: '--cc-warnings')"
+		echo "          -execopts <options>   (currently: '')"
+                echo "          -launchcmd <command>  (currently: '')"
                 echo "          -norecurse"
 		echo "          -componly"
                 echo "          -performance"
+		echo "          -startdate <MM/DD/YY> (currently: '')"
                 echo "          -futures"
                 echo "          -futuresonly"
 		echo "          -valgrind"
@@ -938,6 +946,7 @@ foreach absdir ($absdirs)
                 setenv EXECOPTS "$execopts"
                 setenv NUMLOCALES "$numlocales"
                 setenv LAUNCHCMD "$launchcmd"
+		setenv STARTDATE "$startdate"
                 echo "[Starting $sub_test `date`]" |& $tee -a $logfile
                 $sub_test "$compiler" |& $tee -a $logfile
             endif

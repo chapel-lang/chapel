@@ -17,12 +17,12 @@ use grid_base_defs;
 //========================>
 class BaseLevel {
 
-  var fixed: bool = false;
+  var is_complete: bool = false;
   
-  var x_low, x_high:       dimension*real,
-      n_cells:             dimension*int,
-      n_child_ghost_cells: dimension*int,
-      dx:                  dimension*real;
+  var x_low, x_high: dimension*real,
+      n_cells:       dimension*int,
+      n_ghost_cells: dimension*int,
+      dx:            dimension*real;
 
 
   //==== Level cell domains ====
@@ -41,11 +41,10 @@ class BaseLevel {
   // neighbor) and a sparse list of the ghost cells which belong to the
   // physical boundary.
   //---------------------------------------------------------------------
-  var child_grids:     domain(BaseGrid);
-  var neighbors:       [child_grids] BaseGrid;
+  var grids:           domain(BaseGrid);
 
-  var shared_ghosts:   [child_grids] [child_grids] subdomain(cells);
-  var boundary_ghosts: [child_grids] sparse subdomain(ext_cells);
+  var shared_ghosts:   [grids] [grids] subdomain(cells);
+  var boundary_ghosts: [grids] sparse subdomain(ext_cells);
 
   
 
@@ -68,7 +67,7 @@ class BaseLevel {
 
     var size: dimension*int;
     for d in dimensions do
-      size(d) = 2*n_child_ghost_cells(d);
+      size(d) = 2*n_ghost_cells(d);
     ext_cells = cells.expand(size);
 
   }
@@ -120,7 +119,8 @@ def BaseLevel.addGrid(
 {
 
   //==== Safety check ====  
-  assert(fixed == false);
+  assert(is_complete == false,
+	 "Attempted to add grid to a completed level.");
 
 
   //==== Derive grid fields from index bounds and parent (this) info ====
@@ -139,9 +139,9 @@ def BaseLevel.addGrid(
 			      x_high        = x_high_grid,
 			      i_low         = i_low_grid,
 			      n_cells       = n_cells_grid,
-			      n_ghost_cells = n_child_ghost_cells);
+			      n_ghost_cells = n_ghost_cells);
 
-  child_grids.add(new_grid);
+  grids.add(new_grid);
 }
 
 
@@ -168,24 +168,26 @@ def BaseLevel.addGrid(
 
 
 
-//===> BaseLevel.fix method ===>
-//=============================>
+//===> BaseLevel.complete method ===>
+//==================================>
 //----------------------------------------------------------------
 // This method is meant to be called after all grids are added to
 // the level.  Neighbor data is set on each grid, and other post-
 // processing can be added here as needed.
 //----------------------------------------------------------------
-def BaseLevel.fix() {
+def BaseLevel.complete() {
 
-  assert(fixed == false);
-  fixed = true;
+  assert(is_complete == false,
+	 "Attempted to complete a completed level.");
 
   partitionSharedGhosts();
   partitionBoundaryGhosts();
 
+  is_complete = true;
+
 }
-//<=== BaseLevel.fix method <===
-//<=============================
+//<=== BaseLevel.complete method <===
+//<==================================
 
 
 
@@ -200,10 +202,10 @@ def BaseLevel.fix() {
 //----------------------------------------------------------------------
 def BaseLevel.partitionSharedGhosts() {
   
-  coforall grid in child_grids {
+  coforall grid in grids {
 
     //==== Set shared_ghosts for each sibling ====
-    for sib in child_grids do
+    for sib in grids do
       shared_ghosts(grid)(sib) = intersectDomains(grid.ext_cells, sib.cells);
 
     //==== Need to fix grid's intersection with itself ====
@@ -225,7 +227,7 @@ def BaseLevel.partitionSharedGhosts() {
 //-----------------------------------------------------------------------
 def BaseLevel.partitionBoundaryGhosts() {
 
-  coforall grid in child_grids {
+  coforall grid in grids {
     
     //==== Initialize all ghost cells as boundary ====
     for cell in grid.ghost_cells do
@@ -233,7 +235,7 @@ def BaseLevel.partitionBoundaryGhosts() {
 
 
     //==== Remove ghost cells that are shared ====
-    for sib in child_grids {
+    for sib in grids {
       for cell in shared_ghosts(grid)(sib) do
 	boundary_ghosts(grid).remove(cell);
     }
@@ -273,3 +275,48 @@ class LevelBoundaryDomain {
 }
 //<=== LevelBoundaryDomain class <===
 //<==================================
+
+
+
+
+
+//===> levelFromInputFile routine ===>
+//===================================>
+//------------------------------------------------------------------
+// Creates a BaseLevel, provided an input file starting on the line
+// where the level's definition begins.
+//------------------------------------------------------------------
+def levelFromInputFile(input_file: file){
+
+  var x_low, x_high:    dimension*real;
+  var n_cells, n_ghost: dimension*int;
+
+  input_file.readln( (...x_low) );
+  input_file.readln( (...x_high) );
+  input_file.readln( (...n_cells) );
+  input_file.readln( (...n_ghost) );
+
+  var level = new BaseLevel(x_low         = x_low,
+			    x_high        = x_high,
+			    n_cells       = n_cells,
+			    n_ghost_cells = n_ghost);
+
+  input_file.readln();
+
+  var n_grids: int;
+  input_file.readln(n_grids);
+
+  for i_grid in [1..n_grids] {
+    input_file.readln();
+    input_file.readln( (...x_low) );
+    input_file.readln( (...x_high) );
+    level.addGrid(x_low, x_high);
+  }
+
+  level.complete();
+
+  return level;
+
+}
+//<=== levelFromInputFile routine <===
+//<===================================

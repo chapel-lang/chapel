@@ -24,53 +24,37 @@ class LevelSolution {
 
 
 
-//===> BaseLevel.initializSolution method ===>
+//===> LevelSolution.setToFunction method ===>
 //===========================================>
-//------------------------------------------------------------------
-// The argument 'initializer' can be any object allowable by a used
-// BaseGrid.initializeSolution method.
-//------------------------------------------------------------------
-def BaseLevel.initializeSolution(
-  sol:               LevelSolution,
+def LevelSolution.setToFunction(
   initial_condition: func(dimension*real, real),
-  time:              real
+  time_in:           real
 ){
-
-  //==== Check that q lives on this level ====
-  assert(sol.level == this);
-
 
   //==== Set each LevelArray to the initial condition ====
   for i in [1..2] {
-    setLevelArray(sol.space_data(i), initial_condition);
-    sol.time(i) = time;
+    space_data(i).setToFunction(initial_condition);
+    time(i) = time_in;
   }
-  //==== Set each LevelArray to the initial condition ====
   
 
 }
-//<=== BaseLevel.initializeSoution method <===
+//<=== LevelSolution.setToFunction method <===
 //<===========================================
 
 
 
 
-//===> BaseLevel.writeSolution method ===>
-//=======================================>
-//---------------------------------------------------------
-// Writes the data for a LevelSolution living on this level.
-//---------------------------------------------------------
-def BaseLevel.clawOutput(
-  sol:            LevelSolution,
+//===> LevelSolution.clawOutput method ===>
+//========================================>
+def LevelSolution.clawOutput(
   frame_number: int
 ){
 
-  //==== Make sure solution lives on this level ====
-  assert(sol.level == this);
 
   //==== Use clawOutput for LevelArray ====
-  clawOutput(sol.space_data(2), sol.time(2), frame_number);
+  space_data(2).clawOutput(time(2), frame_number);
   
 }
-//<=== BaseLevel.writeSolution method <===
-//<=======================================
+//<=== LevelSolution.clawOutput method <===
+//<========================================
