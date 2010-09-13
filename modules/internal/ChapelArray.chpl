@@ -920,7 +920,6 @@ record _array {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
-<<<<<<< .copia-de-trabajo
 
   def readBinArray(f : file) {
     _value.readBinArray(f);
@@ -930,10 +929,7 @@ record _array {
     _value.writeBinArray(f);
   }
 
-}
-=======
 }  // record _array
->>>>>>> .derecha-fusion.r17714
 
 //
 // Helper functions
