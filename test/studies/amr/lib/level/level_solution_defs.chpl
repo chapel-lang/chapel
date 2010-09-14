@@ -7,7 +7,7 @@ use level_array_defs;
 //===> LevelSolution class ===>
 //============================>
 class LevelSolution {
-  const level:    BaseLevel;
+  const level:    Level;
 
   var space_data: [1..2] LevelArray;
   var time:       [1..2] real;

@@ -10,8 +10,8 @@ use grid_array_defs;
 //===> LevelArray class ===>
 //=========================>
 class LevelArray {
-  const level: BaseLevel;
-  var grid_arrays: [level.grids] GridArray;
+  const level:        Level;
+  var grid_arrays:    [level.grids] GridArray;
   var _promotionType: real;
 
   def initialize() {
@@ -21,7 +21,7 @@ class LevelArray {
                                               
   }
 
-  def this(grid: BaseGrid){
+  def this(grid: Grid) var {
     return grid_arrays(grid);
   }
 
@@ -111,8 +111,8 @@ def LevelArray.setToFunction(
   }
 
 }
-//<=== BaseLevel.setLevelArray method ====
-//<=======================================
+//<=== LevelArray.setToFunction method ====
+//<========================================
 
 
 

@@ -12,9 +12,9 @@ use level_diffusion_defs;
 
 
 
-//===> BaseLevel.advanceDiffusionBE method ===>
-//============================================>
-def BaseLevel.advanceDiffusionBE(sol:            LevelSolution,
+//===> Level.advanceDiffusionBE method ===>
+//========================================>
+def Level.advanceDiffusionBE(sol:            LevelSolution,
                                  bc:             LevelBC,
                                  diffusivity:    real,
                                  time_requested: real,
@@ -46,7 +46,8 @@ def BaseLevel.advanceDiffusionBE(sol:            LevelSolution,
   //<=== Time-stepping <===
  
 }
-
+//<=== Level.advanceDiffusionBE method <===
+//<========================================
 
 
 
@@ -77,16 +78,11 @@ def main {
 
 
 
-
-  //==== Used to check dimension with relevant input files ====
-  var dim_in: int;
-
-
-
   //===> Diffusivity ===>
   var diffusivity: real;
   var phys_file = new file("set_problem/physics.txt", FileAccessMode.read);
   phys_file.open();
+  var dim_in: int;
   phys_file.readln(diffusivity);
   phys_file.close();
   //<=== Diffusivity <===
@@ -94,49 +90,7 @@ def main {
 
 
   //===> Initialize space ===>
-  var x_low, x_high: dimension*real,
-    n_cells, n_ghost: dimension*int;
-
-  var space_file = new file("set_problem/space.txt", FileAccessMode.read);
-  space_file.open();
-
-  space_file.readln(dim_in);
-  assert(dim_in == dimension, 
-         "error: dimension of space.txt must equal " + format("%i",dimension));
-  space_file.readln(); // empty line
-
-  space_file.readln(); // skip number of levels
-  space_file.readln(); // empty line
-  
-  space_file.readln((...x_low));
-  space_file.readln((...x_high));
-  space_file.readln((...n_cells));
-  space_file.readln((...n_ghost));
-
-  var level = new BaseLevel(x_low         = x_low,
-                            x_high        = x_high,
-                            n_cells       = n_cells,
-                            n_ghost_cells = n_ghost);
-
-  space_file.readln();
-  write("Setting up grids...");
-
-  var n_grids: int;
-  space_file.readln(n_grids);
-  
-  for i_grid in [1..n_grids] {
-    write(i_grid, "...");
-    space_file.readln();
-    space_file.readln((...x_low));
-    space_file.readln((...x_high));
-    level.addGrid(x_low, x_high);
-  }
-  
-  space_file.close();
-
-  level.fix();
-  write("done.\n");
-  //<=== Initialize space <===
+  var level = levelFromInputFile("set_problem/space.txt");
 
 
 

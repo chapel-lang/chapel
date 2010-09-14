@@ -12,9 +12,9 @@ use grid_bc_defs;
 
 
 
-//===> BaseGrid.stepDiffusionBE method ===>
-//========================================>
-def BaseGrid.stepDiffusionBE(
+//===> Grid.stepDiffusionBE method ===>
+//====================================>
+def Grid.stepDiffusionBE(
   sol:         GridSolution,
   bc:          GridBC,
   diffusivity: real,
@@ -55,7 +55,7 @@ def BaseGrid.stepDiffusionBE(
   // a clean decoupling of the "ghostFill" and "homogeneousGhostFill"
   // methods.
   //----------------------------------------------------------------------
-  bc.ghostFill(q_current, t_new);
+  bc.fillGhostCells(q_current, t_new);
   fluxDivergence(rhs, q_current, diffusivity);
   rhs *= -dt;
 
@@ -129,7 +129,7 @@ def BaseGrid.stepDiffusionBE(
   sol.time(2) = t_current + dt;
   sol.space_data(1) <=> sol.space_data(2);
 }
-//<=== BaseGrid.stepDiffusionBE method <===
+//<=== Grid.stepDiffusionBE method <===
 //<========================================
 
 
@@ -142,7 +142,7 @@ def BaseGrid.stepDiffusionBE(
 //
 // As with FluxDivergence, ghost cells must be filled beforehand.
 //----------------------------------------------------------------
-def BaseGrid.homogeneousBEOperator(
+def Grid.homogeneousBEOperator(
   inout Lq:          GridArray,
   q:           GridArray,
   bc:          GridBC,
@@ -150,7 +150,7 @@ def BaseGrid.homogeneousBEOperator(
   dt:          real
 ){
 
-  bc.homogeneousGhostFill(q);
+  bc.fillGhostCellsHomogeneous(q);
   fluxDivergence(Lq,  q, diffusivity);
   Lq = q + dt * Lq;
 
@@ -165,14 +165,12 @@ def BaseGrid.homogeneousBEOperator(
 //===============================>
 //-----------------------------------------------------------
 // Calculates the flux divergence of q.  Note that the ghost
-// cells of q must be filled beforehand, as in general this
-// may need to be done using either bc.ghostFill or
-// bc.homogeneousGhostFill.
+// cells of q must be filled beforehand
 //-----------------------------------------------------------
-def BaseGrid.fluxDivergence(
-  inout flux_div:    GridArray,
-  q:           GridArray,
-  diffusivity: real)
+def Grid.fluxDivergence(
+  inout flux_div:  GridArray,
+  q:               GridArray,
+  diffusivity:     real)
 {
 
   forall cell_pretuple in cells {
@@ -214,37 +212,39 @@ def BaseGrid.fluxDivergence(
 //==============================================>
 class ZeroFluxDiffusionGridBC: GridBC {
   
-  
-  //===> ghostFill method ===>
-  //=========================>
-  def ghostFill(q: GridArray, t: real) {
-    homogeneousGhostFill(q);
+  //===> fillGhostCells method ===>
+  //==============================>
+  def fillGhostCells(q: GridArray, t: real) {
+    fillGhostCellsHomogeneous(q);
   }
-  //<=== ghostFill method <===
-  //<=========================
+  //<=== fillGhostCells method <===
+  //<==============================
 
 
-  //===> homogeneousGhostFill method ===>
-  //====================================>
-  def homogeneousGhostFill(q: GridArray) {
+  //===> fillGhostCellsHomogeneous method ===>
+  //=========================================>
+  def fillGhostCellsHomogeneous(q: GridArray) {
     
-    for precell in grid.ghost_cells {
-        var cell = tuplify(precell);
+    for loc in ghost_locations {
+      var shift: dimension*int;
 
-	//==== Set target_cell to the nearest interior cell ====
-        var target_cell = cell;
-        for d in dimensions {
-          target_cell(d) = min(target_cell(d), grid.cells.dim(d).high);
-          target_cell(d) = max(target_cell(d), grid.cells.dim(d).low);
-	}
-        
-	//==== Copy target_cell's value to the ghost cell ====
-        q.value(cell) = q.value(target_cell);
+      for d in dimensions {
+	if loc(d) == loc1d.low then
+	  shift(d) = 2;
+	else if loc(d) == loc1d.high then
+	  shift(d) = -2;
+      }
+
+      forall precell in grid.ghost_cells(loc) {
+	var cell = tuplify(precell);
+	q.value(cell) = q.value(cell+shift);
+      }
+
     }
 
   }
-  //<=== homogeneousGhostFill method <===
-  //<====================================
+  //<=== fillGhostCellsHomogeneous method <===
+  //<=========================================
 
   
 }

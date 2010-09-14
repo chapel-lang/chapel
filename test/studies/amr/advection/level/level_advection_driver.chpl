@@ -37,16 +37,11 @@ def main {
 
 
 
-
-  //==== Used to check dimension with each input file ====
-  var dim_in: int;
-
-
-
   //===> Advection velocity ===>
   var velocity: dimension*real;
   var phys_file = new file("set_problem/physics.txt", FileAccessMode.read);
   phys_file.open();
+  var dim_in: int;
   phys_file.readln(dim_in);
   assert(dim_in == dimension, 
          "error: dimension of physics.txt must equal " + format("%i",dimension));
@@ -56,20 +51,8 @@ def main {
 
 
 
-  //===> Initialize space ===>
-  var space_file = new file("set_problem/space.txt", FileAccessMode.read);
-  space_file.open();
-
-  space_file.readln(dim_in);
-  assert(dim_in == dimension, 
-         "error: dimension of space.txt must equal " + format("%i",dimension));
-  space_file.readln(); // empty line
-
-  space_file.readln(); // skip number of levels
-  space_file.readln(); // empty line
-  
-  var level = levelFromInputFile(space_file);
-  //<=== Initialize space <===
+  //===> Initialize space ===>  
+  var level = levelFromInputFile("set_problem/space.txt");
 
 
 
@@ -125,9 +108,9 @@ def main {
 
 
 
-//===> BaseLevel.advanceAdvectionCTU method ===>
-//=============================================>
-def BaseLevel.advanceAdvectionCTU(
+//===> Level.advanceAdvectionCTU method ===>
+//=========================================>
+def Level.advanceAdvectionCTU(
   sol:            LevelSolution,
   bc:             LevelBC,
   velocity:       dimension*real,
@@ -171,5 +154,5 @@ def BaseLevel.advanceAdvectionCTU(
 
 
 }
-//<=== BaseLevel.advanceAdvectionCTU method <===
-//<=============================================
+//<=== Level.advanceAdvectionCTU method <===
+//<=========================================

@@ -1,7 +1,7 @@
 //===> Description ===>
 //
 // Defines a time-stepper for diffusion via Backward Euler
-// on a single BaseLevel.
+// on a single Level.
 //
 //<=== Description <===
 
@@ -12,9 +12,9 @@ use level_bc_defs;
 
 
 
-//===> BaseLevel.stepDiffusionBE method ===>
-//=========================================>
-def BaseLevel.stepDiffusionBE(
+//===> Level.stepDiffusionBE method ===>
+//=====================================>
+def Level.stepDiffusionBE(
   level_sol:    LevelSolution,
   bc:           LevelBC,
   diffusivity:  real,
@@ -56,24 +56,24 @@ def BaseLevel.stepDiffusionBE(
   bc.fillGhostCells(q_current, t_new);
   fluxDivergence(rhs, q_current, diffusivity);
 
-/*   rhs *= -dt; */
-/*   dq   = 1.0*rhs; */
 
-  coforall grid in grids {
-    rhs(grid).value(grid.cells) *= -dt;
+  for grid in grids {
+    //    rhs(grid).value(grid.cells) *= -dt;
+    rhs(grid) *= -dt;
 
-    dq(grid).value(grid.cells) = rhs(grid).value(grid.cells);
+    //    dq(grid).value(grid.cells) = rhs(grid).value(grid.cells);
+    dq(grid) = 1.0*rhs(grid);
   }
   
 
   //==== Initialize residual ====
   homogeneousBEOperator(residual, dq, bc, diffusivity, dt);
 
-/*   residual = rhs - residual; */
 
-  coforall grid in grids {
-    residual(grid).value(grid.cells) = rhs(grid).value(grid.cells)
-                                       - residual(grid).value(grid.cells);
+  for grid in grids {
+    //    residual(grid).value(grid.cells) = rhs(grid).value(grid.cells)
+    //                                       - residual(grid).value(grid.cells);
+    residual(grid) = rhs(grid) - residual(grid);			       
 
     grid_res_norm_squares(grid) = +reduce(residual(grid).value(grid.cells)**2);
   }
@@ -85,7 +85,8 @@ def BaseLevel.stepDiffusionBE(
 /*   search_dir = 1.0*residual; */
 
   coforall grid in grids {
-    search_dir(grid).value(grid.cells) = residual(grid).value(grid.cells);
+    //    search_dir(grid).value(grid.cells) = residual(grid).value(grid.cells);
+    search_dir(grid) = 1.0*residual(grid);
   }
 
 
@@ -101,9 +102,8 @@ def BaseLevel.stepDiffusionBE(
   //===> CG iteration ===>
   for iter in [1..maxiter] {
 
-
     //===> Update solution and residual ===>
-    coforall grid in grids {
+    for grid in grids {
       grid_inner_products(grid) = +reduce( residual_update_dir(grid).value(grid.cells)
                                             * search_dir(grid).value(grid.cells) );
     }
@@ -111,13 +111,13 @@ def BaseLevel.stepDiffusionBE(
     alpha = +reduce(grid_inner_products);
     alpha = level_res_norm_square / alpha;
 
-/*     dq += alpha * search_dir; */
-/*     residual -= alpha * residual_update_dir; */
 
-    coforall grid in grids {
-      dq(grid).value(grid.cells)       += alpha * search_dir(grid).value(grid.cells);
+    for grid in grids {
+      //      dq(grid).value(grid.cells)       += alpha * search_dir(grid).value(grid.cells);
+      dq(grid) += alpha * search_dir(grid);
 
-      residual(grid).value(grid.cells) -= alpha * residual_update_dir(grid).value(grid.cells);
+      //      residual(grid).value(grid.cells) -= alpha * residual_update_dir(grid).value(grid.cells);
+      residual(grid) -= alpha * residual_update_dir(grid);
 
       grid_res_norm_squares(grid) = +reduce( residual(grid).value(grid.cells)**2 );
     }
@@ -137,11 +137,11 @@ def BaseLevel.stepDiffusionBE(
     //==== Update directions for search and residual update ====
     beta = level_res_norm_square / old_level_res_norm_square;
     
-/*     search_dir = residual + beta * search_dir; */
+    for grid in grids {
+      //      search_dir(grid).value(grid.cells) = residual(grid).value(grid.cells)
+      //                                   + beta * search_dir(grid).value(grid.cells);
+      search_dir(grid) = residual(grid) + beta*search_dir(grid);
 
-    coforall grid in grids {
-      search_dir(grid).value(grid.cells) = residual(grid).value(grid.cells)
-                                           + beta * search_dir(grid).value(grid.cells);
     }
     
     homogeneousBEOperator(residual_update_dir, search_dir, bc, diffusivity, dt);
@@ -151,8 +151,9 @@ def BaseLevel.stepDiffusionBE(
 
 
   //===> Update solution ===>
-  coforall grid in grids {
-    dq(grid).value(grid.cells) += q_current(grid).value(grid.cells);
+  for grid in grids {
+    //    dq(grid).value(grid.cells) += q_current(grid).value(grid.cells);
+    dq(grid) += q_current(grid);
   }
   level_sol.time(1) = t_current;
   level_sol.time(2) = t_current + dt;
@@ -160,20 +161,20 @@ def BaseLevel.stepDiffusionBE(
   
 
 }
-//<=== BaseLevel.stepDiffusionBE method <===
-//<=========================================
+//<=== Level.stepDiffusionBE method <===
+//<=====================================
 
 
 
 
 
 
-//===> BaseLevel.homogeneousBEOperator method ===>
-//===============================================>
+//===> Level.homogeneousBEOperator method ===>
+//===========================================>
 //----------------------------------------------------------------
 //      L(q) = q + dt*flux_divergence(q), values on [cells]
 //----------------------------------------------------------------
-def BaseLevel.homogeneousBEOperator(
+def Level.homogeneousBEOperator(
   Lq:          LevelArray,
   q:           LevelArray,
   bc:          LevelBC,
@@ -190,15 +191,15 @@ def BaseLevel.homogeneousBEOperator(
                                   + dt * Lq(grid).value(grid.cells);
 
 }
-//<=== BaseLevel.homogeneousBEOperator method <===
-//<===============================================
+//<=== Level.homogeneousBEOperator method <===
+//<===========================================
 
 
 
 
-//===> BaseLevel.fluxDivergence method ===>
-//========================================>
-def BaseLevel.fluxDivergence(
+//===> Level.fluxDivergence method ===>
+//====================================>
+def Level.fluxDivergence(
   flux_div:    LevelArray,
   q:           LevelArray,
   diffusivity: real)
@@ -208,17 +209,17 @@ def BaseLevel.fluxDivergence(
     grid.fluxDivergence(flux_div(grid), q(grid), diffusivity);
 
 }
-//<=== BaseLevel.fluxDivergence method <===
-//<========================================
+//<=== Level.fluxDivergence method <===
+//<====================================
 
 
 
 
 
 
-//===> BaseGrid.fluxDivergence method ===>
-//=======================================>
-def BaseGrid.fluxDivergence(
+//===> Grid.fluxDivergence method ===>
+//===================================>
+def Grid.fluxDivergence(
   flux_div:    GridArray,
   q:           GridArray,
   diffusivity: real)
@@ -257,8 +258,8 @@ def BaseGrid.fluxDivergence(
   flux_div.value(cells) *= diffusivity;
 
 }
-//<=== BaseGrid.fluxDivergence method <===
-//<=======================================
+//<=== Grid.fluxDivergence method <===
+//<===================================
 
 
 
@@ -276,63 +277,24 @@ class ZeroFluxDiffusionLevelBC: LevelBC {
   
   def fillBoundaryGhostsHomogeneous(q: LevelArray) {
     
-    coforall grid in level.grids {
+    for grid in level.grids {
     
-      for cell in level.boundary_ghosts(grid) {
-	var target_cell = cell;
+      for loc in ghost_locations {
+	var shift: dimension*int;
+
 	for d in dimensions {
-	  target_cell(d) = min(target_cell(d), grid.cells.dim(d).high);
-	  target_cell(d) = max(target_cell(d), grid.cells.dim(d).low);        
+	  if loc(d) == loc1d.low then shift(d) = 2;
+	  else if loc(d) == loc1d.high then shift(d) = -2;
 	}
-	q(grid).value(cell) = q(grid).value(target_cell);
+
+	forall cell in grid.ghost_cells(loc) do
+	  q(grid).value(cell) = q(grid).value(cell+shift);
+
       }
+
     }
   }
 
 }
 //<=== ZeroFluxDiffusionLevelBC derived class <===
 //<===============================================
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* //===> BaseGrid.homogeneousBEOperator method ===> */
-/* //==============================================> */
-/* //---------------------------------------------------------------- */
-/* //      L(q) = q + dt*flux_divergence(q), values on [cells] */
-/* //---------------------------------------------------------------- */
-/* def BaseGrid.homogeneousBEOperator( */
-/*   Lq:          LevelGridArray, */
-/*   q:           LevelGridArray, */
-/*   bc:          LevelBC, */
-/*   diffusivity: real, */
-/*   dt:          real */
-/* ){ */
-
-/*   bc.fillGhostCellsHomogeneous(q); */
-/*   fluxDivergence(Lq,  q, diffusivity); */
-/*   Lq.value(cells) = q.value(cells) + dt * Lq.value(cells); */
-
-/* } */
-/* //<=== BaseGrid.homogeneousBEOperator method <=== */
-/* //<============================================== */

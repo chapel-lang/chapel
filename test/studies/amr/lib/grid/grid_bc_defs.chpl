@@ -30,8 +30,6 @@ class GridBC {
 class PeriodicGridBC: GridBC {
 
 
-
-
   //===> ghostFill method ===>
   //=========================>
   def fillGhostCells(q: GridArray, t: real) {
@@ -47,22 +45,22 @@ class PeriodicGridBC: GridBC {
   //====================================>
   def fillGhostCellsHomogeneous(q: GridArray) {
 
-    var shift: dimension*int;
+    for loc in ghost_locations {
+      var shift: dimension*int;
 
-    for g_loc in ghost_locations {
       for d in dimensions {
-	if g_loc(d) == line_position.low then
-	  shift(d) = n_cells(d);
+	if loc(d) == loc1d.low  then 
+	  shift(d) = 2*grid.n_cells(d);
+	else if loc(d) == loc1d.high then 
+	  shift(d) = -2*grid.n_cells(d);
+      }
+
+      forall cell in grid.ghost_cells(loc) {
+	q.value(cell) = q.value(cell+shift);
       }
 
     }
 
-
-    //==== Copy values into ghost cells from their periodic images ====
-    for d in dimensions do {
-      q.value(grid.ghost_cells.low(d))  = q.value(periodic_ghost_images.low(d));
-      q.value(grid.ghost_cells.high(d)) = q.value(periodic_ghost_images.high(d));
-    }
   }
   //<=== homogeneousGhostFill method <===
   //<====================================

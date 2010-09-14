@@ -11,19 +11,18 @@ use grid_bc_defs;
 
 
 
-//===> BaseGrid.stepCTU method ===>
-//================================>
+//===> Grid.stepAdvectionCTU method ===>
+//=====================================>
 //-------------------------------------------------------------
 // The output of the oprator will be stored in q.old, and then
 // q.old and q.current will be swapped.
 //-------------------------------------------------------------
-def BaseGrid.stepCTU(
+def Grid.stepAdvectionCTU(
   sol:      GridSolution,
   bc:       GridBC,
   velocity: dimension*real,
   dt:       real
 ){
-
 
   //==== Assign names to solution components ====
   var q_current = sol.space_data(2);
@@ -33,7 +32,7 @@ def BaseGrid.stepCTU(
 
 
   //==== Fill ghost cells ====
-  bc.ghostFill(q_current, t_current);
+  bc.fillGhostCells(q_current, t_current);
   
 
   //-----------------------------------------------------------
@@ -104,8 +103,8 @@ def BaseGrid.stepCTU(
   sol.space_data(1) <=> sol.space_data(2);
 
 }
-//<================================
-//<=== BaseGrid.stepCTU method <===
+//<=====================================
+//<=== Grid.stepAdvectionCTU method <===
 
 
 
@@ -119,9 +118,9 @@ class ZeroInflowAdvectionGridBC: GridBC {
   
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: GridArray, t: real) {
+  def fillGhostCells(q: GridArray, t: real) {
     //==== This type of BC is homogeneous ====
-    homogeneousGhostFill(q);
+    fillGhostCellsHomogeneous(q);
   }
   //<=== ghostFill method <===
   //<=========================
@@ -129,10 +128,14 @@ class ZeroInflowAdvectionGridBC: GridBC {
   
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: GridArray) {
+  def fillGhostCellsHomogeneous(q: GridArray) {
 
-    for cell in grid.ghost_cells do
-      q.value(cell) = 0.0;
+    for loc in ghost_locations {
+      forall cell in ghost_cells(loc) do
+	q.value(cell) = 0.0;
+    }
+/*     for cell in grid.ghost_cells do */
+/*       q.value(cell) = 0.0; */
     
   }
   //<=== homogeneousGhostFill method <===

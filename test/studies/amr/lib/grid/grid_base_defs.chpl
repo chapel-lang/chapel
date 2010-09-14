@@ -14,10 +14,14 @@
 config param dimension = 2;
 const dimensions = [1..dimension];
 
-enum line_position {low=-1, interior=0, high=1};
-const ghost_locations = (line_position.low..line_position.high)**dimension;
+enum loc1d {low=-1, interior=0, high=1};
+const ghost_locations = (loc1d.low..loc1d.high)**dimension;
 
 
+//==== Helper tuples ====
+const zeros: dimension*int;
+const e: dimension*(dimension*int);
+for d in dimensions do e(d)(d) = 1;
 
 
 //|""""""""""""""""""""""""\
@@ -37,12 +41,12 @@ class GhostCells {
 
     var ranges: dimension*range(stridable=true);
     var interior_location: dimension*int;
-    for d in dimensions do interior_location(d) = line_position.interior;
+    for d in dimensions do interior_location(d) = loc1d.interior;
 
-    for g_loc in ghost_locations {
-      if g_loc != interior_location {
-	for d in dimensions do ranges(d) = setRange(d,g_loc(d));
-	domains(g_loc) = ranges;
+    for loc in ghost_locations {
+      if loc != interior_location {
+	for d in dimensions do ranges(d) = setRange(d,loc(d));
+	domains(loc) = ranges;
       }
     }
 
@@ -63,9 +67,9 @@ class GhostCells {
   def setRange(d: int, p: int) {
     var R: range(stridable=true);
 
-    if p == line_position.low then
+    if p == loc1d.low then
       R = (grid.ext_cells.low(d).. by 2) #grid.n_ghost_cells(d);
-    else if p == line_position.interior then
+    else if p == loc1d.interior then
       R = grid.cells.dim(d);
     else
       R = (..grid.ext_cells.high(d) by 2) #grid.n_ghost_cells(d);
@@ -296,8 +300,8 @@ def main {
 
   writeln("");
   writeln("Ghost cell domains:");
-  for g_loc in ghost_locations do
-    writeln( grid.ghost_cells(g_loc) );
+  for loc in ghost_locations do
+    writeln( grid.ghost_cells(loc) );
 
   writeln("");
   writeln( grid.ghost_cells.domains.domain );

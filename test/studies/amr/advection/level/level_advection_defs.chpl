@@ -1,7 +1,7 @@
 //===> Description ===>
 //
 // Definitions for an advection/CTU solver on a
-// BaseLevel.
+// Level.
 //
 //<=== Description <===
 
@@ -11,9 +11,9 @@ use level_bc_defs;
 
 
 
-//===> BaseLevel.stepAdvectionCTU method ===>
-//==========================================>
-def BaseLevel.stepAdvectionCTU(
+//===> Level.stepAdvectionCTU method ===>
+//======================================>
+def Level.stepAdvectionCTU(
   level_sol:  LevelSolution,
   bc:         LevelBC,
   velocity:   dimension*real,
@@ -48,15 +48,15 @@ def BaseLevel.stepAdvectionCTU(
 
 
 }
-//<=== BaseLevel.stepAdvectionCTU method <===
-//<==========================================
+//<=== Level.stepAdvectionCTU method <===
+//<======================================
 
 
 
 
-//===> BaseGrid.stepAdvectionCTU method ===>
-//==========================================>
-def BaseGrid.stepAdvectionCTU(
+//===> Grid.stepAdvectionCTU method ===>
+//=====================================>
+def Grid.stepAdvectionCTU(
   q_new:     GridArray,
   q_current: GridArray,
   velocity:  dimension*real,
@@ -144,12 +144,15 @@ class ZeroInflowAdvectionLevelBC: LevelBC {
   def fillBoundaryGhostsHomogeneous(q: LevelArray){
 
     coforall grid in level.grids {
+      for loc in ghost_locations {
 
-      forall cell in level.boundary_ghosts(grid) do
-	q(grid).value(cell) = 0.0;
+	forall cell in grid.ghost_cells(loc) do
+	  q(grid).value(cell) = 0.0;
 
+      }
     }
-  }  
+
+  }
  
 }
 //<=== ZeroInflowAdvectionLevelBC derived class <===

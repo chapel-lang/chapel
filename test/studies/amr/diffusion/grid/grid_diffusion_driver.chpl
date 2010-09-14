@@ -16,7 +16,6 @@ use grid_diffusion_defs;
 
 def main {
 
-
   //===> Initialize output ===>
   var initial_time: real = 0.0,
     final_time:     real = 1.0,
@@ -58,7 +57,7 @@ def main {
     n_ghost_cells(d) = 2;
   }
 
-  var grid = new BaseGrid(x_low         = x_low,
+  var grid = new Grid(x_low         = x_low,
 		          x_high        = x_high,
                           i_low         = i_low,
                           n_cells       = n_cells, 
@@ -112,13 +111,13 @@ def main {
 
 
 
-//===> BaseGrid.advanceDiffusionBE method ===>
-//===========================================>
+//===> Grid.advanceDiffusionBE method ===>
+//=======================================>
 //----------------------------------------------------------------------
 // Advances a GridSolution to the requested time, stepping forward with
 // diffusion via Backward Euler.
 //----------------------------------------------------------------------
-def BaseGrid.advanceDiffusionBE(
+def Grid.advanceDiffusionBE(
   sol:            GridSolution,
   bc:             GridBC,
   diffusivity:    real,
@@ -152,5 +151,5 @@ def BaseGrid.advanceDiffusionBE(
   //<=== Time-stepping <===
  
 }
-//<=== BaseGrid.advanceDiffusionBE method <===
-//<===========================================
+//<=== Grid.advanceDiffusionBE method <===
+//<=======================================

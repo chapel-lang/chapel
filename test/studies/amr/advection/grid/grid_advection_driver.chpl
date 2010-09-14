@@ -55,7 +55,7 @@ def main {
     n_ghost_cells(d) = 2;
   }
 
-  var grid = new BaseGrid(x_low         = x_low,
+  var grid = new Grid(x_low         = x_low,
                           x_high        = x_high,
                           i_low         = i_low,
                           n_cells       = n_cells, 
@@ -110,9 +110,9 @@ def main {
 
 
 
-//===> advanceAdvectionCTU routine ===>
-//====================================>
-def BaseGrid.advanceAdvectionCTU(
+//===> Grid.advanceAdvectionCTU method ===>
+//========================================>
+def Grid.advanceAdvectionCTU(
   sol:            GridSolution,
   bc:             GridBC,
   velocity:       dimension*real,
@@ -149,12 +149,12 @@ def BaseGrid.advanceAdvectionCTU(
 
 
     //==== Update solution ====
-    stepCTU(sol, bc, velocity, dt_used);
+    stepAdvectionCTU(sol, bc, velocity, dt_used);
           
   }
   //<=== Time-stepping loop <===
 
 
 }
-//<=== advanceAdvectionCTU routine <===
-//<====================================
+//<=== grid.advanceAdvectionCTU routine <===
+//<=========================================
