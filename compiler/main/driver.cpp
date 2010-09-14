@@ -64,7 +64,7 @@ bool fNoInline = false;
 bool fNoPrivatization = false;
 bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = false;
-bool fNoRepositionDefExpr = true;
+bool fNoRepositionDefExpr = false; // re-initialized in setupOrderedGlobals()
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
 bool fGenIDS = false;
@@ -155,6 +155,7 @@ static void setupOrderedGlobals(void) {
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
   fSerial = !strcmp(CHPL_TASKS, "none"); 
+  fNoRepositionDefExpr = !strcmp(CHPL_TARGET_PLATFORM, "xmt");
   // Enable if we are going to use Nvidia's NVCC compiler
   fGPU = !strcmp(CHPL_TARGET_COMPILER, "nvidia");
   // Eventually, we should only generate structural definitions when
