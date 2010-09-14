@@ -19,7 +19,7 @@ class Board {
   const boardSize: int;
 
   // queenvec(row) is the column the queen is at, 0 if none
-  var queenvec: [1..boardSize] int;  // const? initialization?
+  var queenvec: [1..boardSize] int;
 
   // the largest row that has been filled in, 0 if none
   var lastfilled: int = 0;
@@ -150,7 +150,7 @@ def Board.show(msg...): void {
     for [1..boardSize] do write("-"); writeln((...msg));
     for row in 1..lastfilled {
       for col in 1..boardSize do
-        if (queenvec(row) == col) then write("*"); else write(" ");
+        write(if queenvec(row) == col then "*" else " ");
       writeln();
     }
     if notFilledMsg != "" then writeln(notFilledMsg);
@@ -180,7 +180,8 @@ var taskCount: int = 0;
 
 // parallelization: recurse in parallel once this many rows have been filled
 // (larger parRow makes it create more tasks)
-config var parRow: int = 3;
+// (it is 'const' so we can correctly deallocate boards in tryQueenInNextRow())
+config const parRow: int = 3;
 
 //
 // Given a partially-filled board, we try placing a queen
@@ -224,6 +225,14 @@ def tryQueenInNextRow(board: Board): void {
       board.removeLast(nextRow, col);
     }
   }
+
+  // deallocate the clone board if we are done with it
+  if board.lastfilled == parRow then {
+    pdebug("deallocating board for task #", board.taskNum, "\n");
+    if !(board.taskNum > 0) then
+      halt("should not be deallocating the initial task's board");
+    delete board;
+  }
 }  // tryQueenInNextRow
 
 /////////////////////////////////////////////////////////////////////////////
@@ -240,7 +249,7 @@ def main() {
   writeln("Solving N Queens for N=", N,
 	  " in parallel from level ", parRow, "...");
   sync {
-    tryQueenInNextRow(createBoard(N));
+    tryQueenInNextRow(createBoard(N));   // elide dealloc of this board
   }
   writeln("Found ", solutionCount, " solutions for N=", N);
 }

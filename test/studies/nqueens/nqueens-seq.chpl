@@ -8,7 +8,6 @@
 // Only chess-legal placements are stored.
 //
 // Provides efficient updates in-place (we expect this to be useful).
-// Record-style value copying can be done with Board.clone().
 //
 // Queens must be placed in consecutive rows, starting at row 1.
 // Queens must be removed in the LIFO order.
@@ -19,7 +18,7 @@ class Board {
   const boardSize: int;
 
   // queenvec(row) is the column the queen is at, 0 if none
-  var queenvec: [1..boardSize] int;  // const? initialization?
+  var queenvec: [1..boardSize] int;
 
   // the largest row that has been filled in, 0 if none
   var lastfilled: int = 0;
@@ -81,25 +80,6 @@ def Board.removeLast(row: int, col: int): void {
 }
 
 //
-// Public interface.
-// Return a (newly-created) clone of this board.
-//
-def Board.clone(taskNumArg: int): Board {
-
-  // Linguistic remark: this code looks funny, but it does the following.
-  // It invokes Board's default constructor (since we have not defined any
-  // ourselves) using by-name parameter passing. The names to the
-  // left of the equal signs are the constructor's argument names
-  // (which are the names of Board's fields, by definition).
-  // The names to the right of the equals are the fields of the 'this'
-  // object, which is also a Board.
-  //
-  return new Board(boardSize  = boardSize,
-                   queenvec   = queenvec,
-                   lastfilled = lastfilled);
-}
-
-//
 // Private helper: would the proposed placement be legal?
 // Assume the existing placement is legal.
 //
@@ -142,7 +122,7 @@ def Board.show(msg...): void {
     for [1..boardSize] do write("-"); writeln((...msg));
     for row in 1..lastfilled {
       for col in 1..boardSize do
-        if (queenvec(row) == col) then write("*"); else write(" ");
+        write(if queenvec(row) == col then "*" else " ");
       writeln();
     }
     if notFilledMsg != "" then writeln(notFilledMsg);
@@ -203,6 +183,6 @@ config const N = 8;
 def main() {
   solutionCount = 0;
   writeln("Solving N Queens for N=", N, "...");
-  tryQueenInNextRow(createBoard(N));
+  tryQueenInNextRow(createBoard(N));   // elide dealloc of this board
   writeln("Found ", solutionCount, " solutions for N=", N);
 }
