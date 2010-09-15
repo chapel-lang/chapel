@@ -92,7 +92,6 @@ unsigned int numFree;
 _real64 durFree;
 
 void chpl_startStmStats() {
-  printStmStats = 1;
   chpl_stm_stats = 1;
   chpl_comm_broadcast_private(3 /* &chpl_stm_stats */, sizeof(int));
 }
@@ -186,6 +185,8 @@ chpl_stm_stats_p chpl_stm_stats_create() {
 
   if (!chpl_stm_stats) return;
 
+  printStmStats = 1;
+
   t = _now_timer(t);
   nowtime = t.tv_sec + (t.tv_usec / 1.0e+6);
 
@@ -214,12 +215,12 @@ chpl_stm_stats_p chpl_stm_stats_create() {
   return counters;
 }
 
-void chpl_stm_destroy_stats(chpl_stm_stats_p counters) {
+void chpl_stm_stats_destroy(chpl_stm_stats_p counters) {
   if (!chpl_stm_stats) return;
   chpl_free(counters, 0, 0);
 }
 
-void chpl_stm_cleanup_stats(chpl_stm_stats_p counters, int cleanall) {
+void chpl_stm_stats_cleanup(chpl_stm_stats_p counters, int cleanall) {
   if (!chpl_stm_stats) return;
 
   counters->sizeLoad = 0;

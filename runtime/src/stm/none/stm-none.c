@@ -18,11 +18,12 @@ static stm_none_comm_register(chpl_stm_tx_p tx, int32_t locale) {
 }
 
 void chpl_stm_init() {
-  stm_init_stats();
+  chpl_stm_stats_init();
 }
 
+
 void chpl_stm_exit() { 
-  stm_exit_stats();
+  chpl_stm_stats_exit();
 }
 
 chpl_stm_tx_env_p chpl_stm_tx_get_env(chpl_stm_tx_p tx) { return NULL; } 
@@ -35,7 +36,7 @@ chpl_stm_tx_p chpl_stm_tx_create() {
   tx->remlocales = (int32_t*) chpl_malloc(NLOCALES, sizeof(int32_t), 
 					  CHPL_RT_MD_STM_TX_REMLOCALES, 0, 0);
   tx->numremlocales = -1;
-  tx->counters = chpl_stm_create_stats();
+  tx->counters = chpl_stm_stats_create();
   return tx;
 } 
 

@@ -10,7 +10,7 @@
 #include "stm-gtm-atomic.h"
 
 #define MAXTDS 1024
-chpl_stm_tx_p gtmTxArray[1024][MAXTDS];
+chpl_stm_tx_p gtmTxArray[2048][MAXTDS];
 static chpl_mutex_t gtmTxArrayLock[MAXTDS];
 
 void gtm_tx_init() {
@@ -57,7 +57,7 @@ void gtm_tx_destroy(chpl_stm_tx_p tx) {
   chpl_free(tx->writeset.entries, 0, 0);
   gtm_tx_destroy_memset(tx);
 
-  chpl_stm_stats_destroy(tx);
+  chpl_stm_stats_destroy(tx->counters);
 
   if (tx->id != -1 && tx->locale == MYLOCALE) {
     assert(tx->numremlocales >= 0 && tx->remlocales != NULL);
@@ -84,9 +84,9 @@ void gtm_tx_cleanup(chpl_stm_tx_p tx) {
   tx->rollback = false;
   gtm_tx_cleanup_memset(tx);
 #ifdef STM_STATS_CLEAN_ON_ABORT
-  chpl_stm_stats_cleanup(tx, 1);
+  chpl_stm_stats_cleanup(tx->counters, 1);
 #else
-  chpl_stm_stats_cleanup(tx, 0);
+  chpl_stm_stats_cleanup(tx->counters, 0);
 #endif
 }
 

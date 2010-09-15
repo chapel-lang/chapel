@@ -11,7 +11,7 @@
 // GTM specific macros
 //
 
-//#define GTM_COMM_COMBINED_COMMIT 1
+#define GTM_COMM_COMBINED_COMMIT 1
 
 enum {TX_FAIL = 0, TX_OK, TX_BUSY};
 
