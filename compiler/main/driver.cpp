@@ -155,7 +155,7 @@ static void setupOrderedGlobals(void) {
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
   fSerial = !strcmp(CHPL_TASKS, "none"); 
-  fNoRepositionDefExpr = !strcmp(CHPL_TARGET_PLATFORM, "xmt");
+  fNoRepositionDefExpr = strcmp(CHPL_TARGET_PLATFORM, "xmt");
   // Enable if we are going to use Nvidia's NVCC compiler
   fGPU = !strcmp(CHPL_TARGET_COMPILER, "nvidia");
   // Eventually, we should only generate structural definitions when
