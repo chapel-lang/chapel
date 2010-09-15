@@ -123,8 +123,6 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
   def dsiAdd(idx: idxType): index(tableDom) {
     if ((numEntries+1)*2 > tableSize) {
-      // TODO: should also make sure that we don't exceed the maximum table
-      // size
       _resize(grow=true);
     }
     const (foundSlot, slotNum) = _findEmptySlot(idx);
@@ -185,6 +183,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     tableDom = [0..-1:chpl_table_index_type]; // non-preserving resize
     numEntries = 0; // reset, because the adds below will re-set this
     tableSizeNum += if grow then 1 else -1;
+    if tableSizeNum > chpl__primes.size then halt("associative array exceeds maximum size");
     tableSize = chpl__primes(tableSizeNum);
     tableDom = [0..tableSize-1];
 
@@ -285,7 +284,7 @@ class DefaultAssociativeArr: BaseArr {
 
   def these(param tag: iterator, follower) var where tag == iterator.follower {
     for i in dom.these(tag=iterator.follower, follower) do
-      yield this(i);
+      yield dsiAccess(i);
   }
 
   def dsiSerialWrite(f: Writer) {
