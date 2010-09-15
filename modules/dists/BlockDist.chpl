@@ -250,7 +250,7 @@ def Block.dsiClone() {
 }
 
 def Block.dsiDestroyDistClass() {
-  for ld in locDist do {   // SS: changing coforall to for
+  coforall ld in locDist do {
     on ld do
       delete ld;
   }
