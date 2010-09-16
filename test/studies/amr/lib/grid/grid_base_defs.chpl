@@ -276,6 +276,53 @@ def Grid.xValue (point_index: dimension*int) {
 
 
 
+//|------------------------->
+//|===> readGrid routine ===>
+//|------------------------->
+//---------------------------------------
+// Constructs a grid from an input file.
+//---------------------------------------
+def readGrid(file_name: string) {
+
+  var input_file = new file(file_name, FileAccessMode.read);
+  input_file.open();
+
+  var dim_in: int;
+  input_file.readln(dim_in);
+  assert(dim_in == dimension, 
+         "error: dimension of space.txt must equal " + format("%i",dimension));
+  input_file.readln(); // empty line
+
+  var x_low, x_high:                 dimension*real;
+  var n_cells, n_ghost_cells: dimension*int;
+
+  input_file.readln( (...x_low) );
+  input_file.readln( (...x_high) );
+  input_file.readln( (...n_cells) );
+  input_file.readln( (...n_ghost_cells) );
+
+  input_file.close();
+
+  //==== Set low indices ====
+  //-------------------------------------------------------------
+  // This routine should only be used for a single-grid problem,
+  // so assume lower indicies are all zero.
+  //-------------------------------------------------------------
+  var i_low: dimension*int;
+
+
+  return new Grid(x_low, x_high, i_low, n_cells, n_ghost_cells);
+
+}
+//<-------------------------|
+//<=== readGrid routine <===|
+//<-------------------------|
+
+
+
+
+
+
 
 
 
@@ -353,6 +400,37 @@ where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 //<=== Scalar/tuple arithmetic <===|
 // *-------------------------------|
 
+
+
+
+//|------------------------------*
+//|===> setOutputTimes routine ===>
+//|------------------------------*
+def setOutputTimes(file_name: string) {
+
+  var input_file = new file(file_name, FileAccessMode.read);
+  input_file.open();
+
+  var initial_time, final_time: real;
+  var n_output: int;
+
+  input_file.readln(initial_time);
+  input_file.readln(final_time);
+  input_file.readln(n_output);
+  input_file.close();
+
+  var output_times: [1..n_output] real;
+  var dt_output:    real = (final_time - initial_time) / n_output;
+  
+  for i in [1..n_output] do
+    output_times(i) = initial_time + i*dt_output;
+
+  return output_times;
+
+}
+// *------------------------------|
+//<=== setOutputTimes routine <===|
+// *------------------------------|
 
 
 

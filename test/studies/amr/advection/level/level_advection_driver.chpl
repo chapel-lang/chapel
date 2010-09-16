@@ -15,25 +15,28 @@ use level_advection_defs;
 def main {
 
 
-  //===> Initialize output ===>
-  var time_file = new file("set_problem/time.txt", FileAccessMode.read);
-  time_file.open();
-  
-  var time_initial, time_final: real;
-  var n_output: int;
+  //==== Initialize output ====
+  var output_times = setOutputTimes("set_problem/time.txt");
 
-  time_file.readln(time_initial);
-  time_file.readln(time_final);
-  time_file.readln(n_output);
-  time_file.close();
 
-  var output_times:   [1..n_output] real,
-    dt_output:      real = (time_final - time_initial) / n_output,
-    frame_number:   int = 0;
+  //===> Initialize space ===>  
+  var level = readLevel("set_problem/space.txt");
 
-  for i in output_times.domain do
-    output_times(i) = time_initial + i * dt_output;
-  //<=== Initialize output <===
+
+
+  //===> Initialize solution ===>
+  write("Initializing solution...");
+  def initial_condition ( x: dimension*real ) {
+    var f: real = 1.0;
+    for d in dimensions do
+      f *= exp(-30 * (x(d) + 0.5)**2);
+    return f;
+  }
+
+  var sol = new LevelSolution(level = level);
+  sol.setToFunction(initial_condition, output_times(1));
+  write("done.\n");
+  //<=== Initialize  solution <===
 
 
 
@@ -51,11 +54,6 @@ def main {
 
 
 
-  //===> Initialize space ===>  
-  var level = levelFromInputFile("set_problem/space.txt");
-
-
-
   //==== Set boundary conditions ====
   write("Setting boundary conditions...");
   var bc = new ZeroInflowAdvectionLevelBC(level = level);
@@ -63,26 +61,9 @@ def main {
 
 
 
-  //===> Initialize solution ===>
-  write("Initializing solution...");
-  def initial_condition ( x: dimension*real ) {
-    var f: real = 1.0;
-    for d in dimensions do
-      f *= exp(-30 * (x(d) + 0.5)**2);
-    return f;
-  }
-
-  var sol = new LevelSolution(level = level);
-  sol.setToFunction(initial_condition, time_initial);
-  write("done.\n");
-  //<=== Initialize  solution <===
-
-
-
-
   //===> Generate output ===>
   //==== Initial time ====
-  frame_number = 0;
+  var frame_number: int = 0;
   write("Writing initial output...");
   sol.clawOutput(frame_number);
   write("done.\n");

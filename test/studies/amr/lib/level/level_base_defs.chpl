@@ -97,8 +97,9 @@ class Level {
 
 
 
-//===> Level.addGrid method ===>
-//=============================>
+//|""""""""""""""""""""""""""""\
+//|===> Level.addGrid method ===>
+//|____________________________/
 //--------------------------------------------------------
 // This version is based on indices, and probably best to
 // use in practice, as integer arithmetic is cleaner than
@@ -151,16 +152,17 @@ def Level.addGrid(
   addGrid(i_low_grid, i_high_grid);
 
 }
-//<=== Level.addGrid method <===
-//<=============================
+// /""""""""""""""""""""""""""""|
+//<=== Level.addGrid method <===|
+// \____________________________|
 
 
 
 
 
-
-//===> Level.complete method ===>
-//==============================>
+//|"""""""""""""""""""""""""""""\
+//|===> Level.complete method ===>
+//|_____________________________/
 //----------------------------------------------------------------
 // This method is meant to be called after all grids are added to
 // the level.  Neighbor data is set on each grid, and other post-
@@ -171,26 +173,28 @@ def Level.complete() {
   assert(is_complete == false,
 	 "Attempted to complete a completed level.");
 
-  partitionSharedGhosts();
+  setSharedGhosts();
 
   is_complete = true;
 
 }
-//<=== Level.complete method <===
-//<==============================
+// /"""""""""""""""""""""""""""""|
+//<=== Level.complete method <===|
+// \_____________________________|
 
 
 
 
 
-//===> Level.partitionSharedGhosts method ===>
-//===========================================>
+//|""""""""""""""""""""""""""""""""""""\
+//|===> Level.setSharedGhosts method ===>
+//|____________________________________/
 //----------------------------------------------------------------------
 // For each child grid 'grid', locates all neighboring grids.  For each 
 // neighbor 'nbr', stores the domain of grid's ghost cells that are
 // shared with nbr's interior.
 //----------------------------------------------------------------------
-def Level.partitionSharedGhosts() {
+def Level.setSharedGhosts() {
   
   coforall grid in grids {
 
@@ -204,21 +208,22 @@ def Level.partitionSharedGhosts() {
 
   }
 }
-//<=== Level.partitionSharedGhosts method <===
-//<===========================================
+// /""""""""""""""""""""""""""""""""""""|
+//<=== Level.setSharedGhosts method <===|
+// \____________________________________|
 
 
 
 
 
-
-//===> levelFromInputFile routine ===>
-//===================================>
+//|""""""""""""""""""""""""""""""""""\
+//|===> levelFromInputFile routine ===>
+//|__________________________________/
 //------------------------------------------------------------------
 // Creates a Level, provided an input file starting on the line
 // where the level's definition begins.
 //------------------------------------------------------------------
-def levelFromInputFile(file_name: string){
+def readLevel(file_name: string){
 
   var input_file = new file(file_name, FileAccessMode.read);
   input_file.open();
@@ -259,32 +264,33 @@ def levelFromInputFile(file_name: string){
   return level;
 
 }
-//<=== levelFromInputFile routine <===
-//<===================================
+// /""""""""""""""""""""""""""""""""""|
+//<=== levelFromInputFile routine <===|
+// \__________________________________|
 
 
 
 
 
 
-//|"""""""""""""""""""""""""""""\
-//|===> LevelGhostCells class ===>
-//|_____________________________/
-class LevelGhostCells {
-  const level:             Level;
-  var   grid_ghost_cells: [level.grids] GhostCells;
+/* //|"""""""""""""""""""""""""""""\ */
+/* //|===> LevelGhostCells class ===> */
+/* //|_____________________________/ */
+/* class LevelGhostCells { */
+/*   const level:             Level; */
+/*   var   grid_ghost_cells: [level.grids] GhostCells; */
 
-  def LevelGhostCells(level: Level){
-    this.level = level;
-  }
+/*   def LevelGhostCells(level: Level){ */
+/*     this.level = level; */
+/*   } */
 
-  def this(grid: Grid) var {
-    return grid_ghost_cells(grid);
-  }
-}
-// /"""""""""""""""""""""""""""""|
-//<=== LevelGhostCells class <===|
-// \_____________________________|
+/*   def this(grid: Grid) var { */
+/*     return grid_ghost_cells(grid); */
+/*   } */
+/* } */
+/* // /"""""""""""""""""""""""""""""| */
+/* //<=== LevelGhostCells class <===| */
+/* // \_____________________________| */
 
 
 

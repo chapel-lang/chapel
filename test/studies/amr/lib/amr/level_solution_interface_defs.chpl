@@ -26,7 +26,7 @@ class LevelSolutionInterface {
   }
 
 
-  def correctCoarseSolution_Linear(\
+  def correctCoarseSolution_Linear(
     coarse_sol: LevelSolution,
     fine_sol:   LevelSolution)
   {
