@@ -1,8 +1,8 @@
 SOURCES = \
-	amr_base_defs.chpl \
-	amr_array_defs.chpl \
-	amr_solution_defs.chpl \
-	amr_test.chpl
+	amr_base_defs.chpl
+# 	amr_array_defs.chpl \
+# 	amr_solution_defs.chpl \
+# 	amr_test.chpl
 
 GRID_LIB = ../grid
 LEVEL_LIB = ../level

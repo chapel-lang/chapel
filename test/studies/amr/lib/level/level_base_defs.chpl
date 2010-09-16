@@ -1,6 +1,6 @@
 //===> Description ===>
 //
-// Definitions for the BaseLevel class.
+// Definitions for the Level class.
 //
 //<=== Description <===
 
@@ -8,13 +8,9 @@ use grid_base_defs;
 
 
 
-//=======================================================================>
-//==================== FUNDAMENTAL LEVEL DEFINITIONS  ===================>
-//=======================================================================>
-
-
-//===> Level class ===>
-//====================>
+//|"""""""""""""""""""\
+//|===> Level class ===>
+//|___________________/
 class Level {
 
   var is_complete: bool = false;
@@ -42,11 +38,7 @@ class Level {
   // physical boundary.
   //---------------------------------------------------------------------
   var grids:           domain(Grid);
-
   var shared_ghosts:   [grids] [grids] subdomain(cells);
-/*   var boundary_ghosts: [grids] sparse subdomain(ext_cells); */
-
-  
 
 
 
@@ -96,11 +88,10 @@ class Level {
   //<=== snapToVertex method <===
   //<============================
 
-  
-
 }
-//<=== Level class <===
-//<====================
+// /"""""""""""""""""""|
+//<=== Level class <===|
+// \___________________|
 
 
 
@@ -181,7 +172,6 @@ def Level.complete() {
 	 "Attempted to complete a completed level.");
 
   partitionSharedGhosts();
-/*   partitionBoundaryGhosts(); */
 
   is_complete = true;
 
@@ -217,64 +207,6 @@ def Level.partitionSharedGhosts() {
 //<=== Level.partitionSharedGhosts method <===
 //<===========================================
 
-
-
-
-/* //===> Level.partitionBoundaryGhosts method ===> */
-/* //=================================================> */
-/* //----------------------------------------------------------------------- */
-/* // For each child grid, sets up the sparse domain boundary_ghosts(grid). */
-/* //----------------------------------------------------------------------- */
-/* def Level.partitionBoundaryGhosts() { */
-
-/*   coforall grid in grids { */
-    
-/*     //==== Initialize all ghost cells as boundary ==== */
-/*     for cell in grid.ghost_cells do */
-/*       boundary_ghosts(grid).add(cell); */
-
-
-/*     //==== Remove ghost cells that are shared ==== */
-/*     for sib in grids { */
-/*       for cell in shared_ghosts(grid)(sib) do */
-/* 	boundary_ghosts(grid).remove(cell); */
-/*     } */
-
-/*   } */
-
-/* } */
-/* //<=== Level.partitionBoundaryGhosts method <=== */
-/* //<================================================= */
-
-
-
-
-
-/* //===> LevelBoundaryDomain class ===> */
-/* //==================================> */
-/* //--------------------------------------------------------------------- */
-/* // Container class that holds a GridBoundaryDomain for each grid on */
-/* // the level.  Not actually used by default for single-level problems, */
-/* // but it definitely belongs here in the library.  Needed by AMR */
-/* // hierarchies, and may also be useful for certain LevelBCs. */
-/* //--------------------------------------------------------------------- */
-/* class LevelBoundaryDomain { */
-
-/*   const level: Level; */
-/*   var grid_boundary_domains: [level.grids] GridBoundaryDomain; */
-
-/*   def initialize() { */
-/*     coforall grid in level.grids do */
-/*       grid_boundary_domains(grid) = new GridBoundaryDomain(grid = grid); */
-/*   } */
-
-/*   def this(grid: Grid) { */
-/*     return grid_boundary_domains(grid); */
-/*   } */
-
-/* } */
-/* //<=== LevelBoundaryDomain class <=== */
-/* //<================================== */
 
 
 
@@ -329,3 +261,51 @@ def levelFromInputFile(file_name: string){
 }
 //<=== levelFromInputFile routine <===
 //<===================================
+
+
+
+
+
+
+//|"""""""""""""""""""""""""""""\
+//|===> LevelGhostCells class ===>
+//|_____________________________/
+class LevelGhostCells {
+  const level:             Level;
+  var   grid_ghost_cells: [level.grids] GhostCells;
+
+  def LevelGhostCells(level: Level){
+    this.level = level;
+  }
+
+  def this(grid: Grid) var {
+    return grid_ghost_cells(grid);
+  }
+}
+// /"""""""""""""""""""""""""""""|
+//<=== LevelGhostCells class <===|
+// \_____________________________|
+
+
+
+//|"""""""""""""""""""""""""""""\
+//|===> LevelGhostArray class ===>
+//|_____________________________/
+class LevelGhostArray {
+  const level: Level;
+  var ghost_arrays: [level.grids] GhostArray;
+
+  def LevelGhostArray(level: Level) {
+    this.level = level;
+    
+    for grid in level.grids do
+      ghost_arrays(grid) = new GhostArray(grid);
+  }
+
+  def this(grid: Grid) {
+    return ghost_arrays(grid);
+  }
+}
+// /"""""""""""""""""""""""""""""|
+//<=== LevelGhostArray class <===|
+// \_____________________________|

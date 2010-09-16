@@ -15,14 +15,18 @@ config param dimension = 2;
 const dimensions = [1..dimension];
 
 enum loc1d {low=-1, interior=0, high=1};
+const interior_loc: dimension*int; // since loc1d.interior=0, this initializes correctly
 const ghost_locations = (loc1d.low..loc1d.high)**dimension;
 
 
-//==== Helper tuples ====
-const zeros: dimension*int;
-const e: dimension*(dimension*int);
-for d in dimensions do e(d)(d) = 1;
 
+//==== Helper constants ====
+/* const zeros: dimension*int; */
+/* const e: dimension*(dimension*int); */
+/* for d in dimensions do e(d)(d) = 1; */
+const empty_domain: domain(dimension, stridable=true);
+
+ 
 
 //|""""""""""""""""""""""""\
 //|===> GhostCells class ===>
@@ -30,7 +34,9 @@ for d in dimensions do e(d)(d) = 1;
 class GhostCells {
 
   const grid:    Grid;
-  const domains: [ghost_locations] domain(dimension, stridable=true);
+  // Experimenting with var here, so I can use this class for
+  // a subset of the ghost cells
+  var   domains: [ghost_locations] domain(dimension, stridable=true);
 
   //|-------------------->
   //|===> Constructor ===>
@@ -82,16 +88,46 @@ class GhostCells {
 
 
 
-  def this(loc: dimension*int) {
+  def this(loc: dimension*int) var {
     return domains(loc);
   }
-
 
 }
 // /""""""""""""""""""""""""|
 //<=== GhostCells class <===|
 // \________________________|
 
+
+
+
+
+
+
+//|""""""""""""""""""""""""\
+//|===> GhostArray class ===>
+//|________________________/
+//---------------------------------------------------------------------
+// Creates a set of arrays for storing data on a grid's ghost cells.
+// Note that the IsolatedArray field stores it's data in the 'value'
+// field, so data access should look like ghost_array(loc).value(idx).
+//---------------------------------------------------------------------
+class GhostArray {
+  const grid: Grid;
+  var arrays: [ghost_locations] IsolatedArray;
+
+  def GhostArray(grid: Grid) {
+    this.grid = grid;
+    for loc in ghost_locations do
+      arrays(loc) = new IsolatedArray(grid.ghost_cells(loc));
+  }
+
+  def this(loc: dimension*int) var {
+    return arrays(loc);
+  }
+}
+// /""""""""""""""""""""""""|
+//<=== GhostArray class <===|
+// \________________________|
 
 
 
@@ -278,6 +314,44 @@ def **(R: range(stridable=?s), param n: int) {
 
 
 
+//|---------------------------*
+//|===> IsolatedArray class ===>
+//|---------------------------*
+//-----------------------------------------------------------------------
+// This class defines an "isolated" array in the sense that the object
+// contains its own domain.  This allows arrays of arrays to be created.
+// I'm only creating it for the single type of domain I'm using to store
+// solution data.
+//-----------------------------------------------------------------------
+class IsolatedArray {
+  const dom: domain(dimension, stridable=true);
+  var value: [dom] real;
+}
+// *---------------------------|
+//<=== IsolatedArray class <===|
+// *---------------------------|
+
+
+
+//|-------------------------------*
+//|===> Scalar/tuple arithmetic ===>
+//|-------------------------------*
+def *(a, T)
+where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type {
+  var U: T.type;
+  for i in 1..T.size do
+    U(i) = a*T(i);
+  return U;
+}
+
+def *(T,a)
+where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
+{
+  return a*T;
+}
+// *-------------------------------|
+//<=== Scalar/tuple arithmetic <===|
+// *-------------------------------|
 
 
 
@@ -304,6 +378,11 @@ def main {
     writeln( grid.ghost_cells(loc) );
 
   writeln("");
-  writeln( grid.ghost_cells.domains.domain );
+  var ghost_array = new GhostArray(grid);
+  for loc in ghost_locations {
+    writeln( grid.ghost_cells(loc) );
+    writeln( ghost_array(loc).value);
+    writeln("");
+  }
 
 }

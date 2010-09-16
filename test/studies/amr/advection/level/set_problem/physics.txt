@@ -1,2 +1,2 @@
-3                dimension
-0.5  0.0  0.4    velocity
+2              dimension
+0.75  .625     velocity
