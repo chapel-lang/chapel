@@ -1,9 +1,9 @@
 #!/usr/bin/env perl
 
-$machine=`uname -n | awk 'BEGIN {FS = "."}{print $1}'`; chomp($machine);
+$hostname = `hostname -s`; chomp($hostname);
 
 $countMemoryDir="../../../modules/standard/memory/countMemory";
-$countMemoryFile="$countMemoryDir/countMemory.$machine.good";
+$countMemoryFile="$countMemoryDir/countMemory.$hostname.good";
 
 if (! -r $countMemoryFile) {
         system("cd $countMemoryDir && ./countMemory.prediff");
@@ -22,8 +22,6 @@ foreach my $line (@memLines) {
     }
   }
 }
-
-printf "$MEMINBYTES";
 
 system("./computeProbSize.pl $MEMINBYTES > testProbSize.good");
 
