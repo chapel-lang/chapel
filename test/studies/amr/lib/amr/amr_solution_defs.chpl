@@ -1,11 +1,10 @@
-use amr_base_defs;
 use amr_array_defs;
-use level_solution_defs;
+use cf_solution_interface_defs;
 
 
-//|~~~~~~~~~~~~~~~~~~~~~~~~\
-//|    AMRSolution class    >
-//|________________________/
+//|"""""""""""""""""""""""""\
+//|===> AMRSolution class ===>
+//|_________________________/
 //------------------------------------------------------------------------
 // An AMRSolution is treated as a union of LevelSolutions, each of which
 // represents the PDE solution on a time interval.  Note that AMRArrays
@@ -26,16 +25,16 @@ class AMRSolution {
   }
 
 }
-// /~~~~~~~~~~~~~~~~~~~~~~~|
-//<    AMRSolution class   |
-// \_______________________|
+// /"""""""""""""""""""""""""/
+//<=== AMRSolution class <==<
+// \_________________________\
 
 
 
 
-//|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
-//|    AMRSolution.setToFunction method    >
-//|_______________________________________/
+//|""""""""""""""""""""""""""""""""""""""""\
+//|===> AMRSolution.setToFunction method ===>
+//|________________________________________/
 def AMRSolution.setToFunction(
   initial_condition: func(dimension*real, real),
   time_in:           real
@@ -45,17 +44,17 @@ def AMRSolution.setToFunction(
     level_solutions(level).setToFunction(initial_condition, time_in);
 
 }
-// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-//<    AMRSolution.setToFunction method    |
-// \_______________________________________|
+// /""""""""""""""""""""""""""""""""""""""""/
+//<=== AMRSolution.setToFunction method <==<
+// \________________________________________\
 
 
 
 
 
-//|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
-//|    AMRSolution.clawOutput method    >
-//|____________________________________/
+//|"""""""""""""""""""""""""""""""""""""\
+//|===> AMRSolution.clawOutput method ===>
+//|_____________________________________/
 def AMRSolution.clawOutput(frame_number: int) {
 
   //==== Get final time from coarsest level ====
@@ -78,7 +77,36 @@ def AMRSolution.clawOutput(frame_number: int) {
   //==== Use AMRArray.clawOutput to actually produce data files ====
   amr_array.clawOutput(time, frame_number);
 
+  //==== Clean up ====
+  delete amr_array;
+
 }
-// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-//<    AMRSolution.clawOutput method    |
-// \____________________________________|
+// /"""""""""""""""""""""""""""""""""""""/
+//<=== AMRSolution.clawOutput method <==<
+// \_____________________________________\
+
+
+
+
+
+
+
+
+def main {
+
+  def initial_condition ( x: dimension*real ) {
+    var f: real = 1.0;
+    for d in dimensions do
+      f *= exp(-10 * (x(d) + 0.0)**2);
+    return f;
+  }
+
+
+  var hierarchy    = readHierarchy("input_hierarchy.txt");
+  var amr_solution = new AMRSolution(hierarchy = hierarchy);
+  amr_solution.setToFunction(initial_condition, 0.0);
+
+  amr_solution.clawOutput(0);
+
+
+}

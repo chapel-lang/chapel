@@ -131,11 +131,9 @@ class ZeroInflowAdvectionGridBC: GridBC {
   def fillGhostCellsHomogeneous(q: GridArray) {
 
     for loc in ghost_locations {
-      forall cell in ghost_cells(loc) do
+      forall cell in grid.ghost_domain_set(loc) do
 	q.value(cell) = 0.0;
     }
-/*     for cell in grid.ghost_cells do */
-/*       q.value(cell) = 0.0; */
     
   }
   //<=== homogeneousGhostFill method <===

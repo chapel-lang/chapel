@@ -287,7 +287,7 @@ class ZeroFluxDiffusionLevelBC: LevelBC {
 	  else if loc(d) == loc1d.high then shift(d) = -2;
 	}
 
-	forall cell in grid.ghost_cells(loc) do
+	forall cell in grid.ghost_domain_set(loc) do
 	  q(grid).value(cell) = q(grid).value(cell+shift);
 
       }

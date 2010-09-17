@@ -55,7 +55,7 @@ class PeriodicGridBC: GridBC {
 	  shift(d) = -2*grid.n_cells(d);
       }
 
-      forall cell in grid.ghost_cells(loc) {
+      forall cell in grid.ghost_domain_set(loc) {
 	q.value(cell) = q.value(cell+shift);
       }
 

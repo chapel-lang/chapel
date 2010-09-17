@@ -1,4 +1,4 @@
-use amr_base_defs;
+use amr_hierarchy_defs;
 use level_array_defs;
 
 
@@ -68,7 +68,7 @@ def AMRArray.clawOutput(
 def AMRArray.write(outfile: file){
 
   var base_grid_number = 1;
-  var level: BaseLevel;
+  var level: Level;
   
   for level in hierarchy.ordered_levels {
     level_arrays(level).write(hierarchy.level_numbers(level),
@@ -80,3 +80,32 @@ def AMRArray.write(outfile: file){
 // /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
 //<    AMRArray.write method     |
 // \_____________________________|
+
+
+
+
+
+def main {
+
+  def initial_condition ( x: dimension*real ) {
+    var f: real = 1.0;
+    for d in dimensions do
+      f *= exp(-10 * (x(d) + 0.0)**2);
+    return f;
+  }
+
+
+  var hierarchy = readHierarchy("input_hierarchy.txt");
+  var amr_array = new AMRArray(hierarchy = hierarchy);
+  var level_array: LevelArray;
+
+  for level in hierarchy.levels {
+    level_array = new LevelArray(level = level);
+    level_array.setToFunction(initial_condition);
+    amr_array.level_arrays(level) = level_array;
+  }
+
+  amr_array.clawOutput(0.0, 0);
+
+
+}

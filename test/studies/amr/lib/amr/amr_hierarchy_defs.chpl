@@ -1,5 +1,5 @@
 use level_base_defs;
-use level_interface_defs;
+use cf_level_interface_defs;
 
 
 
@@ -8,7 +8,7 @@ use level_interface_defs;
 //|__________________________/
 class AMRHierarchy {
 
-  const x_low, x_high:                  dimension*real;
+  const x_low, x_high:                   dimension*real;
   const n_coarsest_cells, n_ghost_cells: dimension*int;
 
   var levels:           domain(Level);
@@ -16,10 +16,10 @@ class AMRHierarchy {
   var top_level:        Level;
   var bottom_level:     Level;
   
-  var coarse_interfaces: [levels] LevelInterface;
-  var fine_interfaces:   [levels] LevelInterface;
+  var coarse_interfaces: [levels] CFLevelInterface;
+  var fine_interfaces:   [levels] CFLevelInterface;
 
-  var boundary_ghosts: [levels] LevelGhostCells;
+  var boundary: [levels] LevelBoundary;
 
   def bottom_level_number {
     return level_numbers(bottom_level);
@@ -50,22 +50,92 @@ class AMRHierarchy {
   //<===============================
 
 
-  def initialize() {
+
+  //|-------------------*
+  //|===> Constructor ===>
+  //|-------------------*
+  def AMRHierarchy(
+    x_low:            dimension*real,
+    x_high:           dimension*real,
+    n_coarsest_cells: dimension*int,
+    n_ghost_cells:    dimension*int)
+  {
+
+    this.x_low            = x_low;
+    this.x_high           = x_high;
+    this.n_coarsest_cells = n_coarsest_cells;
+    this.n_ghost_cells    = n_ghost_cells;
+
 
     //==== Create the top level ====
     top_level = new Level(x_low = x_low,  x_high = x_high,
-                              n_cells       = n_coarsest_cells,
-                              n_ghost_cells = n_ghost_cells);
+                          n_cells       = n_coarsest_cells,
+                          n_ghost_cells = n_ghost_cells);
     levels.add(top_level);
     level_numbers(top_level) = 1;
     bottom_level = top_level;
 
   }
+  // *-------------------*
+  //<=== Constructor <==<
+  // *-------------------*
+
 
 }
-// /""""""""""""""""""""""""""|
-//<=== AMRHierarchy class <===|
-// \__________________________|
+// /""""""""""""""""""""""""""/
+//<=== AMRHierarchy class <==<
+// \__________________________\
+
+
+
+
+
+//|"""""""""""""""""""""""""""\
+//|===> LevelBoundary class ===>
+//|___________________________/
+class LevelBoundary {
+  const level:              Level;
+  var grids:                domain(Grid);
+  var boundary_domain_sets: [grids] SparseGhostDomainSet;
+
+
+  def LevelBoundary(level: Level) {
+    for grid in level.grids {
+
+      var boundary_domain_set = new SparseGhostDomainSet(grid);
+      var intersection: domain(dimension, stridable=true);
+
+
+      //===> Check ghost domains for physical boundary ===>
+      //--------------------------------------------------------
+      // Any ghost domain must either be completely interior or 
+      // completely exterior.
+      //--------------------------------------------------------
+      for loc in ghost_locations {
+      
+	intersection = level.cells( grid.ghost_domain_set(loc) );
+	if intersection.numIndices == 0 {
+	  boundary_domain_set.locations.add(loc);
+	  boundary_domain_set.domains(loc) = grid.ghost_domain_set(loc);
+	}
+
+      }
+      //<=== Check ghost domains for physical boundary <===
+
+
+      //==== Add to LevelBoundary if nontrivial ====
+      if boundary_domain_set.locations.numIndices > 0 {
+	grids.add(grid);
+	boundary_domain_sets(grid) = boundary_domain_set;
+      }
+    
+    } // end for grid in level.grids
+    
+  }
+}
+// /"""""""""""""""""""""""""""/
+//<=== LevelBoundary class <==<
+// \___________________________\
 
 
 
@@ -98,22 +168,22 @@ def AMRHierarchy.addRefinedLevel(ref_ratio: dimension*int) {
   bottom_level = new_bottom_level;
 
 
-  //==== Build new LevelInterface ====
+  //==== Build new CFLevelInterface ====
   //----------------------------------------------------------------------
-  // Note that the LevelInterface has some information on grid structure,
+  // Note that the CFLevelInterface has some information on grid structure,
   // which will need to be filled in later.
   //----------------------------------------------------------------------
-  var interface = new LevelInterface(coarse_level = old_bottom_level,
-                                     fine_level   = new_bottom_level,
-                                     ref_ratio    = ref_ratio);
+  var interface = new CFLevelInterface(coarse_level = old_bottom_level,
+                                       fine_level   = new_bottom_level,
+                                       ref_ratio    = ref_ratio);
 
   fine_interfaces(old_bottom_level)    = interface;
   coarse_interfaces(new_bottom_level)  = interface;
 
 }
-// /"""""""""""""""""""""""""""""""""""""""""""|
-//<=== AMRHierarchy.addRefinedLevel method <===|
-// \___________________________________________|
+// /"""""""""""""""""""""""""""""""""""""""""""/
+//<=== AMRHierarchy.addRefinedLevel method <==<
+// \___________________________________________\
 
 
 
@@ -155,9 +225,11 @@ def AMRHierarchy.addGridToLevel(
   level.addGrid(i_low, i_high);
 
 }
-// /""""""""""""""""""""""""""""""""""""""""""|
-//<=== AMRHierarchy.addGridToLevel method <===|
-// \__________________________________________|
+// /""""""""""""""""""""""""""""""""""""""""""/
+//<=== AMRHierarchy.addGridToLevel method <==<
+// \__________________________________________\
+
+
 
 
 
@@ -177,61 +249,14 @@ def AMRHierarchy.completeLevel(level: Level) {
 
   level.complete();
 
-  setBoundaryGhosts(level);
+  boundary(level) = new LevelBoundary(level);
 
   if level != top_level then
     coarse_interfaces(level).complete();
 }
-// /"""""""""""""""""""""""""""""""""""""""""|
-//<=== AMRHierarchy.completeLevel method <===|
-// \_________________________________________|
-
-
-
-
-//"""""""""""""""""""""""""""""""""""""""""""""\
-//===> AMRHierarchy.setBoundaryGhosts method ===>
-//_____________________________________________/
-//-----------------------------------------------------------------
-// Sets up boundary_ghosts for a particular level.  The GhostCells
-// object for a particular grid is only added if it contains
-// nonempty domains.
-//-----------------------------------------------------------------
-def AMRHierarchy.setBoundaryGhosts(level: Level) {
-
-  boundary_ghosts(level) = new LevelGhostCells(level = level);
-
-  for grid in level.grids {
-
-    var ghost_cells = new GhostCells(grid);
-    var has_boundary = false;
-
-    for loc in ghost_locations {
-
-      //==== Check ghost_cells(loc) for physical boundary ====
-      //-----------------------------------------------------------------
-      // Any single ghost cell domain must either be completely interior
-      // or completely exterior.  Hence, it is boundary if and only
-      // if its intersection with level.cells is empty.
-      //-----------------------------------------------------------------
-      if ghost_cells(loc)(level.cells).numIndices == 0 
-	&& loc != interior_loc then
-	has_boundary = true;
-      else
-	ghost_cells(loc) = empty_domain;
-
-    }
-
-    //==== Add to the list if there's a boundary intersection ====
-    if has_boundary then
-      boundary_ghosts(level)(grid) = ghost_cells;
-
-  } // end for grid in level.grids
-
-}
-// /"""""""""""""""""""""""""""""""""""""""""""""|
-//<=== AMRHierarchy.setBoundaryGhosts method <===|
-// \_____________________________________________|
+// /"""""""""""""""""""""""""""""""""""""""""/
+//<=== AMRHierarchy.completeLevel method <==<
+// \_________________________________________\
 
 
 
@@ -242,20 +267,10 @@ def AMRHierarchy.setBoundaryGhosts(level: Level) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-//|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
-//|===> hierarchyFromInputFile routine ===>
-//|______________________________________/
-def hierarchyFromInputFile(file_name: string){
+//|"""""""""""""""""""""""""""""\
+//|===> readHierarchy routine ===>
+//|_____________________________/
+def readHierarchy(file_name: string){
  
   //==== Open input file ====
   var input_file = new file(file_name, FileAccessMode.read);
@@ -322,9 +337,9 @@ def hierarchyFromInputFile(file_name: string){
   return hierarchy;
 
 }
-// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-//<=== hierarchyFromInputFile routine <===|
-// \______________________________________|
+// /"""""""""""""""""""""""""""""/
+//<=== readHierarchy routine <==<
+// \_____________________________\
 
 
 
@@ -335,25 +350,19 @@ def hierarchyFromInputFile(file_name: string){
 
 def main {
 
-  var hierarchy = hierarchyFromInputFile("space.txt");
-  var level: Level;
+  var hierarchy = readHierarchy("space.txt");
+  var level = hierarchy.top_level;
 
-  for i_level in [1..hierarchy.level_numbers(hierarchy.bottom_level)] {
-    
-    level = hierarchy.levelFromNumber(i_level);
+  while level {
+      
     writeln("Level number ", hierarchy.level_numbers(level), ":");
+    writeln(level);
     writeln("");
 
-    for grid in level.grids {
-      writeln("   x_low:   ", grid.x_low);
-      writeln("   x_high:  ", grid.x_high);
-      writeln("   i_low:   ", grid.i_low);
-      writeln("   i_high:  ", grid.i_high);
-      writeln("   n_cells: ", grid.n_cells);
-      writeln("");
-    }
-
-    writeln("");
+    if level != hierarchy.bottom_level then
+      level = hierarchy.fine_interfaces(level).fine_level;
+    else
+      level = nil;
   }
 
 }

@@ -235,7 +235,7 @@ class ZeroFluxDiffusionGridBC: GridBC {
 	  shift(d) = -2;
       }
 
-      forall precell in grid.ghost_cells(loc) {
+      forall precell in grid.ghost_domain_set(loc) {
 	var cell = tuplify(precell);
 	q.value(cell) = q.value(cell+shift);
       }

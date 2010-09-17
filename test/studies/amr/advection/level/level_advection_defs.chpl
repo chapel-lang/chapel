@@ -146,7 +146,7 @@ class ZeroInflowAdvectionLevelBC: LevelBC {
     coforall grid in level.grids {
       for loc in ghost_locations {
 
-	forall cell in grid.ghost_cells(loc) do
+	forall cell in grid.ghost_domain_set(loc) do
 	  q(grid).value(cell) = 0.0;
 
       }

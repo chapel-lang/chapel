@@ -2,10 +2,10 @@ use level_base_defs;
 use level_array_defs;
 
 
-//|""""""""""""""""""""""""""""\
-//|===> LevelInterface class ===>
-//|____________________________/
-class LevelInterface {
+//|""""""""""""""""""""""""""""""\
+//|===> CFLevelInterface class ===>
+//|______________________________/
+class CFLevelInterface {
 
   const coarse_level: Level;
   const fine_level:   Level;
@@ -14,64 +14,48 @@ class LevelInterface {
   var coarse_neighbors: [fine_level.grids] domain(Grid);
   var fine_neighbors:   [coarse_level.grids] domain(Grid);
 
+  def complete() {
+    setNeighbors();
+  }
+
 }
-// /""""""""""""""""""""""""""""|
-//<=== LevelInterface class <===|
-// \____________________________|
+// /""""""""""""""""""""""""""""""/
+//<=== CFLevelInterface class <==<
+// \______________________________\
 
 
 
 
 
 
-//|""""""""""""""""""""""""""""""""""""""""""\
-//|===> LevelInterface.setNeighbors method ===>
-//|__________________________________________/
-def LevelInterface.setNeighbors() {
+//|""""""""""""""""""""""""""""""""""""""""""""\
+//|===> CFLevelInterface.setNeighbors method ===>
+//|____________________________________________/
+def CFLevelInterface.setNeighbors() {
 
   for coarse_grid in coarse_level.grids {
     for fine_grid in fine_level.grids {
 
-      var intersection: domain(dimension, stridabe=true);
+      var intersection: domain(dimension, stridable=true);
 
       intersection = coarse_grid.cells( coarsen(fine_grid.cells) );
       if intersection.numIndices > 0 then
 	fine_neighbors(coarse_grid).add(fine_grid);
 
+      // Technically, this is wrong if the coarse grid covers the
+      // exact same region as the fine grid...but that's pathological,
+      // and should just cause some empty iterations later on.
       intersection = fine_grid.ext_cells( refine(coarse_grid.cells) );
-      if intersection.numIndices > 0 && intersection != fine_grid.cells then
+      if intersection.numIndices > 0 then
 	coarse_neighbors(fine_grid).add(coarse_grid);
 
     }
   }
 
 }
-// /""""""""""""""""""""""""""""""""""""""""""|
-//<=== LevelInterface.setNeighbors method <===|
-// \__________________________________________|
-
-
-
-
-
-
-//|""""""""""""""""""""""""""""""""""""""\
-//|===> LevelInterface.complete method ===>
-//|______________________________________/
-//---------------------------------------------------------------
-// This looks like a pointless method as is, but I want to leave
-// the door open to do other operations here.  If not, I want to
-// keep the name "complete", and I'll just move the setNeighbors
-// code to this method.
-//---------------------------------------------------------------
-def LevelInterface.complete() {
-
-  setNeighbors();
-
-}
-// /""""""""""""""""""""""""""""""""""""""|
-//<=== LevelInterface.complete method <===|
-// \______________________________________|
+// /""""""""""""""""""""""""""""""""""""""""""""/
+//<=== CFLevelInterface.setNeighbors method <==<
+// \____________________________________________\
 
 
 
@@ -79,13 +63,13 @@ def LevelInterface.complete() {
 
 
 
-//""""""""""""""""""""""""""""""""""""\
-//===> LevelInterface.refine method ===>
-//____________________________________/
+//""""""""""""""""""""""""""""""""""""""\
+//===> CFLevelInterface.refine method ===>
+//______________________________________/
 //-----------------------------------------------------------------
-// Refines a domain of cells using the LevelInterface's ref_ratio.
+// Refines a domain of cells using the CFLevelInterface's ref_ratio.
 //-----------------------------------------------------------------
-def LevelInterface.refine(coarse_cells: subdomain(coarse_level.cells)) {
+def CFLevelInterface.refine(coarse_cells: subdomain(coarse_level.cells)) {
  
   //=== Index bounds for refined domain ====
   var fine_cells_low  = coarse_cells.low;
@@ -120,7 +104,7 @@ def LevelInterface.refine(coarse_cells: subdomain(coarse_level.cells)) {
 //---------------------------------------------------------------------
 // Refine a single coarse cell rather than a domain.  No safety check.
 //---------------------------------------------------------------------
-def LevelInterface.refine(coarse_cell: dimension*int) {
+def CFLevelInterface.refine(coarse_cell: dimension*int) {
 
   var fine_cells_low = coarse_cell;
   var fine_cells_high = coarse_cell;
@@ -150,25 +134,23 @@ def LevelInterface.refine(coarse_cell: dimension*int) {
   return fine_cells;
 
 }
-// /"""""""""""""""""""""""""""""""""""|
-//<    LevelInterface.refine method    |
-// \___________________________________|
+// /""""""""""""""""""""""""""""""""""""""/
+//<=== CFLevelInterface.refine method <==<
+// \______________________________________\
 
 
 
 
 
 
-//|""""""""""""""""""""""""""""""""""""\
-//|    LevelInterface.coarsen method    >
-//|____________________________________/
+//|"""""""""""""""""""""""""""""""""""""""\
+//|===> CFLevelInterface.coarsen method ===>
+//|_______________________________________/
 //------------------------------------------------------------------
-// Coarsens a domain of cells using the LevelInterface's ref_ratio.
+// Coarsens a domain of cells using the CFLevelInterface's ref_ratio.
 //------------------------------------------------------------------
-def LevelInterface.coarsen(fine_cells: subdomain(fine_level.cells)) {
+def CFLevelInterface.coarsen(fine_cells: subdomain(fine_level.cells)) {
  
-  writeln("### Coarsening domain ", fine_cells);
-
   //=== Index bounds for coarsened domain ====
   var low_coarse  = fine_cells.low;
   var high_coarse = fine_cells.high;
@@ -200,7 +182,6 @@ def LevelInterface.coarsen(fine_cells: subdomain(fine_level.cells)) {
 
   var coarse_cells: subdomain(coarse_level.cells) = ranges;
 
-  writeln("### Result is ", coarse_cells);
   return coarse_cells;
   
 }
@@ -209,7 +190,7 @@ def LevelInterface.coarsen(fine_cells: subdomain(fine_level.cells)) {
 //--------------------------------------------------
 // Coarsen a single fine cell rather than a domain.
 //--------------------------------------------------
-def LevelInterface.coarsen(fine_cell: dimension*int) {
+def CFLevelInterface.coarsen(fine_cell: dimension*int) {
 
   var coarse_cell: dimension*int;
 
@@ -227,6 +208,6 @@ def LevelInterface.coarsen(fine_cell: dimension*int) {
   return coarse_cell;
 
 }
-// /"""""""""""""""""""""""""""""""""""""|
-//<=== LevelInterface.coarsen method <===|
-// \_____________________________________|
+// /"""""""""""""""""""""""""""""""""""""""/
+//<=== CFLevelInterface.coarsen method <==<
+// \_______________________________________\

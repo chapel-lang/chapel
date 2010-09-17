@@ -88,6 +88,23 @@ class Level {
   //<=== snapToVertex method <===
   //<============================
 
+
+
+
+  def writeThis(w: Writer) {
+    writeln("Level bounds: ", x_low, "  ", x_high);
+    writeln("Number of cells: ", n_cells);
+    writeln("========================================");
+    var grid_number: int = 0;
+    for grid in grids {
+      grid_number += 1;
+      writeln("Grid ", grid_number);
+      writeln(grid);
+      writeln("");
+    }
+    writeln("========================================");
+  }
+
 }
 // /"""""""""""""""""""|
 //<=== Level class <===|
@@ -294,24 +311,51 @@ def readLevel(file_name: string){
 
 
 
-//|"""""""""""""""""""""""""""""\
-//|===> LevelGhostArray class ===>
-//|_____________________________/
-class LevelGhostArray {
+//|""""""""""""""""""""""""""""""""\
+//|===> LevelGhostArraySet class ===>
+//|________________________________/
+class LevelGhostArraySet {
   const level: Level;
-  var ghost_arrays: [level.grids] GhostArray;
+  var ghost_array_sets: [level.grids] GhostArraySet;
 
-  def LevelGhostArray(level: Level) {
-    this.level = level;
-    
+  def initialize() {
     for grid in level.grids do
-      ghost_arrays(grid) = new GhostArray(grid);
+      ghost_array_sets(grid) = new GhostArraySet(grid);
   }
 
   def this(grid: Grid) {
-    return ghost_arrays(grid);
+    return ghost_array_sets(grid);
   }
 }
-// /"""""""""""""""""""""""""""""|
-//<=== LevelGhostArray class <===|
-// \_____________________________|
+// /""""""""""""""""""""""""""""""""/
+//<=== LevelGhostArraySet class <==<
+// \________________________________\
+
+
+
+
+
+
+
+def main {
+
+  var level = readLevel("input_level.txt");
+
+  writeln(level);
+
+  var lga = new LevelGhostArraySet(level = level);
+
+  writeln("");
+
+  for grid in level.grids {
+    writeln("Grid:");
+    writeln(grid);
+
+    for loc in ghost_locations {
+      writeln("Ghost domain at ", loc, ": ", lga(grid)(loc).dom );
+      writeln( lga(grid)(loc).value );
+      writeln("");
+    }
+  }
+
+}
