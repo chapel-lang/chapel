@@ -21,39 +21,60 @@ class AMRHierarchy {
 
   var boundary: [levels] LevelBoundary;
 
-  def bottom_level_number {
-    return level_numbers(bottom_level);
+
+  //|::::::::::::::::::::::::::::::::::::::::::::\
+  //|===> Level-ordering methods and iterators ===>
+  //|::::::::::::::::::::::::::::::::::::::::::::/
+  def finerLevel(level: Level) {
+    var fine_interface = fine_interfaces(level);
+
+    var finer_level: Level = nil;
+    if fine_interface then
+      finer_level = fine_interface.fine_level;
+
+    return finer_level;
+  }
+
+  def coarserLevel(level: Level) {
+    var coarse_interface = coarse_interfaces(level);
+
+    var coarser_level: Level = nil;
+    if coarse_interface then
+      coarser_level = coarse_interface.coarse_level;
+
+    return coarser_level;
+  }
+
+  def coarse_levels {
+    var level = top_level;
+    while level != bottom_level {
+	yield level;
+	level = finerLevel(level);
+    }
+  }
+
+  def fine_levels {
+    var level = top_level;
+    while level != bottom_level {
+	level = finerLevel(level);
+	yield level;
+    }
   }
 
   def ordered_levels {
-    for level_number in [1..bottom_level_number] do
-      yield levelFromNumber(level_number);
+    yield top_level;
+    for level in fine_levels do yield level;
   }
-
-
-  //===> levelFromNumber method ===>
-  //===============================>
-  //---------------------------------------------
-  // Retrieve a level based on its level number.
-  //---------------------------------------------
-  def levelFromNumber(level_number: int) {
-
-    for level in levels {
-      if level_numbers(level) == level_number then
-        return level;
-    }
-
-    halt("levelByNumber: Requested invalid level number.");
-
-  }
-  //<=== levelFromNumber method <===
-  //<===============================
+  // /::::::::::::::::::::::::::::::::::::::::::::/
+  //<=== Level-ordering methods and iterators <==<
+  // \::::::::::::::::::::::::::::::::::::::::::::\
+    
 
 
 
-  //|-------------------*
+  //|:::::::::::::::::::\
   //|===> Constructor ===>
-  //|-------------------*
+  //|:::::::::::::::::::/
   def AMRHierarchy(
     x_low:            dimension*real,
     x_high:           dimension*real,
@@ -76,9 +97,9 @@ class AMRHierarchy {
     bottom_level = top_level;
 
   }
-  // *-------------------*
+  // /:::::::::::::::::::/
   //<=== Constructor <==<
-  // *-------------------*
+  // \:::::::::::::::::::\
 
 
 }

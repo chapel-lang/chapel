@@ -16,12 +16,56 @@ use cf_solution_interface_defs;
 class AMRSolution {
 
   const hierarchy: AMRHierarchy;
+
   var level_solutions: [hierarchy.levels] LevelSolution;
+
+  var coarse_interfaces: [hierarchy.levels] CFSolutionInterface;
+  var fine_interfaces:   [hierarchy.levels] CFSolutionInterface;
+
+
+  def coarserSolution(lev_sol: LevelSolution){
+    var coarser_level = hierarchy.coarserLevel( lev_sol.level );
+
+    var coarser_solution: LevelSolution = nil;
+    if coarser_level then
+      coarser_solution = level_solutions(coarser_level);
+
+    return coarser_solution;
+  }
+
+
+  def finerSolution(lev_sol: LevelSolution){
+    var finer_level = hierarchy.finerLevel( lev_sol.level );
+
+    var finer_solution: LevelSolution = nil;
+    if finer_level then
+      finer_solution = level_solutions(finer_level);
+
+    return finer_solution;
+  }
 
 
   def initialize() {
+    //==== Initialize level solutions ====
     for level in hierarchy.levels do
       level_solutions(level) = new LevelSolution(level = level);
+
+
+    //==== Initialize coarse solution interfaces ====
+    for level in hierarchy.fine_levels {
+      var fine_solution   = level_solutions(level);
+      var coarse_solution = coarserSolution(fine_solution);
+      var level_interface = hierarchy.coarse_interfaces(level);
+
+      coarse_interfaces(level) = new CFSolutionInterface(coarse_solution,
+							 fine_solution,
+							 level_interface);
+    }
+
+    //==== Match fine solution interfaces ====
+    for level in hierarchy.coarse_levels do
+      fine_interfaces(level) = coarse_interfaces(hierarchy.finerLevel(level));
+
   }
 
 }

@@ -58,9 +58,9 @@ def AMRArray.clawOutput(
 
 
 
-//|~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
-//|    AMRArray.write method    >
-//|____________________________/
+//|"""""""""""""""""""""""""""""\
+//|===> AMRArray.write method ===>
+//|_____________________________/
 //----------------------------------------------------------------
 // Proceeds down the indexed_levels, calling the LevelArray.write
 // method on each corresponding LevelArray.
@@ -68,8 +68,7 @@ def AMRArray.clawOutput(
 def AMRArray.write(outfile: file){
 
   var base_grid_number = 1;
-  var level: Level;
-  
+
   for level in hierarchy.ordered_levels {
     level_arrays(level).write(hierarchy.level_numbers(level),
 			      base_grid_number, outfile);
@@ -77,9 +76,9 @@ def AMRArray.write(outfile: file){
   }
 
 }
-// /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-//<    AMRArray.write method     |
-// \_____________________________|
+// /"""""""""""""""""""""""""""""/
+//<=== AMRArray.write method <==<
+// \_____________________________\
 
 
 

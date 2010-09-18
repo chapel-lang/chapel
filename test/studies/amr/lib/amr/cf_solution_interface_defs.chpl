@@ -8,41 +8,49 @@ use level_solution_defs;
 //|_________________________________/
 class CFSolutionInterface {
 
+  const coarse_solution:      LevelSolution;
+  const fine_solution:        LevelSolution;
   const level_interface:      CFLevelInterface;
+
   var level_ghost_array_sets: [1..2] LevelGhostArraySet;
   var time:                   [1..2] real;
 
-  def CFSolutionInterface(level_interface: CFLevelInterface) {
+  def CFSolutionInterface(
+    coarse_solution: LevelSolution,
+    fine_solution:   LevelSolution,
+    level_interface: CFLevelInterface) 
+  {
+    this.coarse_solution = coarse_solution;
+    this.fine_solution   = fine_solution;
     this.level_interface = level_interface;
+
     for i in [1..2] do
       level_ghost_array_sets(i) 
-	= new LevelGhostArraySet(level_interface.fine_level);
+	= new LevelGhostArraySet(fine_solution.level);
   }
 
 
-  def fillGhostArrays_Linear(coarse_sol: LevelSolution) {
+  def fillFineBoundary_Linear() {
     for i in [1..2] {
-      time(i) = coarse_sol.time(i);
-      fine_ghost_arrays(i).interpolateFromCoarse_Linear(coarse_sol.space_data(i));
+      time(i) = coarse_solution.time(i);
+      fine_ghost_arrays(i).interpolateFromCoarse_Linear(coarse_solution.space_data(i));
     }
   }
 
 
-  def correctCoarseSolution_Linear(
-    coarse_sol: LevelSolution,
-    fine_sol:   LevelSolution)
+  def correctCoarseSolution_Linear()
   {
-    assert( abs(coarse_sol.time(2) - fine_sol.time(2)) < 1.0e-8,
+    assert( abs(coarse_solution.time(2) - fine_solution.time(2)) < 1.0e-8,
 	    "Warning: correctCoarseInterior_Linear\n" +
 	    "  Time of fine solution may not agree with time of coarse solution");
 
-    coarse_sol.space_data(2).interpolateFromFine_Linear(fine_sol.space_data(2));
+    coarse_solution.space_data(2).interpolateFromFine_Linear(fine_solution.space_data(2));
   }
 
 }
-// /"""""""""""""""""""""""""""""""""|
-//<=== CFSolutionInterface class <===|
-// \_________________________________|
+// /"""""""""""""""""""""""""""""""""/
+//<=== CFSolutionInterface class <==<
+// \_________________________________\
 
 
 
@@ -51,16 +59,16 @@ class CFSolutionInterface {
 //|"""""""""""""""""""""""""""""""""""""""""""\
 //|===> LevelSolution.interpolateCFBoundary ===>
 //|___________________________________________/
-def LevelSolution.interpolateCFBoundary(
-  interface: CFSolutionInterface,
-  t:         real)
+def LevelSolution.fineBoundaryTimeInterpolation(
+  sol_interface: CFSolutionInterface,
+  t:             real)
 {
 
-  var t1 = interface.time(1);
-  var t2 = interface.time(2);
+  var t1 = sol_interface.time(1);
+  var t2 = sol_interface.time(2);
 
   //==== Safety check the requested time ====
-  assert(t >= interface.time(1) && t <= interface.time(2),
+  assert(t >= sol_interface.time(1) && t <= sol_interface.time(2),
 	 "Warning: LevelSolution.interpolateCFBoundary\n" +
 	 "Requesting time outside of CFSolutionInterface's time interval.");
 
@@ -73,8 +81,8 @@ def LevelSolution.interpolateCFBoundary(
   //===> Interpolate! ===>
   for grid in level.grids {
 
-    var ghost_array_set_1 = interface.level_ghost_array_sets(1)(grid);
-    var ghost_array_set_2 = interface.level_ghost_array_sets(2)(grid);
+    var ghost_array_set_1 = sol_interface.level_ghost_array_sets(1)(grid);
+    var ghost_array_set_2 = sol_interface.level_ghost_array_sets(2)(grid);
 
     for loc in ghost_locations {
       
@@ -165,9 +173,9 @@ def GridArray.extrapolateGhostData() {
   }
 
 }
-// /"""""""""""""""""""""""""""""""""""""""""""""|
-//<=== GridArray.extrapolateGhostData method <===|
-// \_____________________________________________|
+// /"""""""""""""""""""""""""""""""""""""""""""""/
+//<=== GridArray.extrapolateGhostData method <==<
+// \_____________________________________________\
 
 
 
@@ -243,9 +251,9 @@ def GridArray.interpolateToFine_Linear(
   return fine_values;
 
 }
-// /"""""""""""""""""""""""""""""""""""""""""""""""""|
-//<=== GridArray.interpolateToFine_Linear method <===|
-// \_________________________________________________|
+// /"""""""""""""""""""""""""""""""""""""""""""""""""/
+//<=== GridArray.interpolateToFine_Linear method <==<
+// \_________________________________________________\
 
 
 
@@ -267,9 +275,9 @@ def LevelArray.interpolateFromFine_Linear(
     grid_array.interpolateFromFine_Linear(q_fine, interface);
 
 }
-// /"""""""""""""""""""""""""""""""""""""""""""""|
-//<=== LevelArray.interpolateFromFine_Linear <===|
-// \_____________________________________________|
+// /"""""""""""""""""""""""""""""""""""""""""""""/
+//<=== LevelArray.interpolateFromFine_Linear <==<
+// \_____________________________________________\
 
 
 
@@ -292,9 +300,9 @@ def GridArray.interpolateFromFine_Linear(
   }
 
 }
-// /""""""""""""""""""""""""""""""""""""""""""""|
-//<=== GridArray.interpolateFromFine_Linear <===|
-// \____________________________________________|
+// /""""""""""""""""""""""""""""""""""""""""""""/
+//<=== GridArray.interpolateFromFine_Linear <==<
+// \____________________________________________\
 
 
 
@@ -329,9 +337,9 @@ def GridArray.interpolateToCoarse_Linear(
   return coarse_values;
 
 }
-// /""""""""""""""""""""""""""""""""""""""""""""|
-//<=== GridArray.interpolateToCoarse_Linear <===|
-// \____________________________________________|
+// /""""""""""""""""""""""""""""""""""""""""""""/
+//<=== GridArray.interpolateToCoarse_Linear <==<
+// \____________________________________________\
 
 
 
