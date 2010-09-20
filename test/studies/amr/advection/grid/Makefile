@@ -4,8 +4,10 @@ CLAW_PLOTDIR = _plots               # Directory for plots
 PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
 
 SOURCES = \
-	grid_advection_defs.chpl \
-	grid_advection_driver.chpl
+	GridArray_advection.chpl \
+	GridSolution_advection.chpl \
+	GridBC_advection.chpl \
+	Grid_advection_driver.chpl
 
 GRID_LIB = ../../lib/grid
 

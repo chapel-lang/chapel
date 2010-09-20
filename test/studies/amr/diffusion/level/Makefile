@@ -1,6 +1,9 @@
 LEVEL_SOURCES = \
-	level_diffusion_defs.chpl \
-	level_diffusion_driver.chpl
+	../grid/GridArray_diffusion.chpl \
+	LevelArray_diffusion.chpl \
+	LevelBC_diffusion.chpl \
+	LevelSolution_diffusion.chpl \
+	Level_diffusion_driver.chpl
 
 GRID_LIB = ../../lib/grid
 LEVEL_LIB = ../../lib/level

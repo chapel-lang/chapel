@@ -1,4 +1,4 @@
-use grid_base_defs;
+use Grid_def;
 
 
 //====================================================>
@@ -47,6 +47,11 @@ class GridArray {
   //<=== these() iterator <===|
   // *------------------------|
 
+  def this(D: domain) var{
+    var pointer => value(D);
+    return pointer;
+  }
+
 }
 // /"""""""""""""""""""""""|
 //<=== GridArray class <===|
@@ -70,7 +75,6 @@ def =(q: GridArray, rvalue: real) {
 // *--------------------------------------|
 //<=== GridArray assignment overloads <===|
 // *--------------------------------------|
-
 
 
 

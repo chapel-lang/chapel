@@ -1,5 +1,5 @@
-use level_base_defs;
-use grid_array_defs;
+use Level_def;
+use GridArray_def;
 
 
 //=====================================================>
@@ -23,6 +23,14 @@ class LevelArray {
 
   def this(grid: Grid) var {
     return grid_arrays(grid);
+  }
+
+  def this(
+    grid: Grid, 
+    D: domain(dimension, stridable=true)) 
+  var {
+    var pointer => grid_arrays(grid).value(D);
+    return pointer;
   }
 
 

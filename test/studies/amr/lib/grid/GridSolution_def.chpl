@@ -1,5 +1,5 @@
-use grid_base_defs;
-use grid_array_defs;
+use Grid_def;
+use GridArray_def;
 
 
 //|""""""""""""""""""""""""""\
@@ -8,14 +8,18 @@ use grid_array_defs;
 class GridSolution {
 
   const grid:     Grid;
-  var space_data: [1..2] GridArray;
-  var time:       [1..2] real;
+  
+  var old_data:     GridArray;
+  var current_data: GridArray;
+  var old_time:     real;
+  var current_time: real;
+  
 
   //==== Constructor ====
   def GridSolution(grid: Grid) {
     this.grid = grid;
-    for i in [1..2] do
-      space_data(i) = new GridArray(grid = grid);
+    old_data =     new GridArray(grid = grid);
+    current_data = new GridArray(grid = grid);
   }
 }
 // /""""""""""""""""""""""""""|
@@ -39,10 +43,12 @@ def GridSolution.setToFunction(
 
   //===> Evaluate and store initial_condition ===>
   write("Writing solution on grid...");
-  for i in [1..2] {
-    space_data(i).setToFunction(initial_condition);
-    time(i) = time_in;
-  }
+
+  old_data.setToFunction(initial_condition);
+  old_time = time_in;
+  
+  current_data.setToFunction(initial_condition);
+  current_time = time_in;
   write("done.\n");
   //<=== Evaluate and store initial_condition <===
 
@@ -66,7 +72,7 @@ def GridSolution.clawOutput(
 ){
 
   //==== Use clawOutput method for GridArray ====
-  space_data(2).clawOutput(time(2), frame_number);
+  current_data.clawOutput(current_time, frame_number);
 
 }
 //<=== GridSolution.clawOutput method <===

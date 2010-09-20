@@ -1,5 +1,5 @@
-use grid_base_defs;
-use grid_solution_defs;
+use Grid_def;
+use GridSolution_def;
 
 
 
@@ -11,8 +11,8 @@ class GridBC {
   const grid: Grid;
 
   //==== Dummy routines to be provided in derived classes ====
-  def fillGhostCells(q: GridArray, t: real){}
-  def fillGhostCellsHomogeneous(q: GridArray){}
+  def applyBoundaryCondition(q: GridArray, t: real) {}
+  def applyBoundaryConditionHomogeneous(q: GridArray) {}
   
 }
 // /""""""""""""""""""""|
@@ -32,9 +32,9 @@ class PeriodicGridBC: GridBC {
 
   //===> ghostFill method ===>
   //=========================>
-  def fillGhostCells(q: GridArray, t: real) {
+  def applyBoundaryCondition(q: GridArray, t: real) {
     //==== Periodic BCs are homogeneous ====
-    fillGhostCellsHomogeneous(q);
+    applyBoundaryConditionHomogeneous(q);
   }
   //<=== ghostFill method <===
   //<=========================
@@ -43,20 +43,20 @@ class PeriodicGridBC: GridBC {
 
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def fillGhostCellsHomogeneous(q: GridArray) {
+  def applyBoundaryConditionHomogeneous(q: GridArray) {
 
     for loc in ghost_locations {
       var shift: dimension*int;
 
       for d in dimensions {
-	if loc(d) == loc1d.low  then 
-	  shift(d) = 2*grid.n_cells(d);
-	else if loc(d) == loc1d.high then 
-	  shift(d) = -2*grid.n_cells(d);
+	      if loc(d) == loc1d.low  then 
+	      shift(d) = 2*grid.n_cells(d);
+	      else if loc(d) == loc1d.high then 
+	      shift(d) = -2*grid.n_cells(d);
       }
 
       forall cell in grid.ghost_domain_set(loc) {
-	q.value(cell) = q.value(cell+shift);
+	      q.value(cell) = q.value(cell+shift);
       }
 
     }

@@ -1,6 +1,9 @@
 SOURCES = \
-	level_advection_defs.chpl \
-	level_advection_driver.chpl
+	../grid/GridArray_advection.chpl \
+	LevelArray_advection.chpl \
+	LevelSolution_advection.chpl \
+	LevelBC_advection.chpl \
+	Level_advection_driver.chpl
 
 GRID_LIB = ../../lib/grid
 LEVEL_LIB = ../../lib/level

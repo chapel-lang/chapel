@@ -5,16 +5,16 @@ PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
 
 
 SOURCES = \
-	grid_diffusion_defs.chpl \
-	grid_diffusion_driver.chpl
+	GridArray_diffusion.chpl \
+	GridSolution_diffusion.chpl \
+	GridBC_diffusion.chpl \
+	Grid_diffusion_driver.chpl
 
 GRID_LIB = ../../lib/grid
 
 DIM = 2
 
 .PHONY: clean, emacs_clean
-
-
 
 
 

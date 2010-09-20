@@ -1,6 +1,5 @@
-
-use level_base_defs;
-use level_array_defs;
+use Level_def;
+use LevelArray_def;
 
 
 
@@ -9,13 +8,18 @@ use level_array_defs;
 class LevelSolution {
   const level:    Level;
 
-  var space_data: [1..2] LevelArray;
-  var time:       [1..2] real;
+  var old_data:     LevelArray;
+  var current_data: LevelArray;
+  var old_time:     real;
+  var current_time: real;
 
-  def initialize() {
-    for i in [1..2] do
-      space_data(i) = new LevelArray(level = level);
+
+  def LevelSolution(level: Level) {
+    this.level  = level;
+    old_data     = new LevelArray(level = level);
+    current_data = new LevelArray(level = level);
   }
+
 }
 //<=== LevelSolution class <===
 //<============================
@@ -32,11 +36,11 @@ def LevelSolution.setToFunction(
 ){
 
   //==== Set each LevelArray to the initial condition ====
-  for i in [1..2] {
-    space_data(i).setToFunction(initial_condition);
-    time(i) = time_in;
-  }
+  old_data.setToFunction(initial_condition);
+  old_time = time_in;
   
+  current_data.setToFunction(initial_condition);
+  current_time = time_in;
 
 }
 //<=== LevelSolution.setToFunction method <===
@@ -53,7 +57,7 @@ def LevelSolution.clawOutput(
 
 
   //==== Use clawOutput for LevelArray ====
-  space_data(2).clawOutput(time(2), frame_number);
+  current_data.clawOutput(current_time, frame_number);
   
 }
 //<=== LevelSolution.clawOutput method <===
