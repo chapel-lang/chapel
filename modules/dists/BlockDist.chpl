@@ -555,7 +555,7 @@ def BlockDom.these(param tag: iterator) where tag == iterator.leader {
     var tmpBlock = locDom.myBlock - precomputedWholeLow;
     const (numTasks, parDim) =
       _computeChunkStuff(maxTasks, ignoreRunning, minSize,
-                         locDom.myBlock.dims(), rank);
+                         locDom.myBlock.dims());
     var locBlock: rank*range(idxType);
     for param i in 1..tmpBlock.rank {
       locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
@@ -775,7 +775,7 @@ def BlockArr.these(param tag: iterator) where tag == iterator.leader {
     var tmpBlock = locDom.myBlock - precomputedWholeLow;
     const (numTasks, parDim) =
       _computeChunkStuff(maxTasks, ignoreRunning, minSize,
-                         locDom.myBlock.dims(), rank);
+                         locDom.myBlock.dims());
     var locBlock: rank*range(idxType);
     for param i in 1..tmpBlock.rank {
       locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
