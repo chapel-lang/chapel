@@ -111,6 +111,7 @@ type             processToken(TTYPE);
 union            processToken(TUNION);
 use              processToken(TUSE);
 var              processToken(TVAR);
+volatile	 processToken(TVOLATILE);
 when             processToken(TWHEN);
 where            processToken(TWHERE);
 while            processToken(TWHILE);

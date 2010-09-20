@@ -45,7 +45,6 @@ bool Expr::inTree(void) {
     return false;
 }
 
-
 Type* Expr::typeInfo(void) {
   INT_FATAL(this, "Illegal call to Expr::typeInfo()");
   return NULL;
@@ -207,16 +206,15 @@ void SymExpr::codegen(FILE* outfile) {
     fprintf(outfile, ";\n");
 }
 
-
-UnresolvedSymExpr::UnresolvedSymExpr(const char* iunresolved) :
+UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved, bool i_is_volatile) :
   Expr(E_UnresolvedSymExpr),
-  unresolved(astr(iunresolved))
+  unresolved(astr(i_unresolved)),
+  isVolatile(i_is_volatile)
 {
-  if (!iunresolved)
+  if (!i_unresolved)
     INT_FATAL(this, "bad call to UnresolvedSymExpr");
   gUnresolvedSymExprs.add(this);
 }
-
 
 void 
 UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
@@ -233,7 +231,6 @@ UnresolvedSymExpr::verify() {
     INT_FATAL(this, "UnresolvedSymExpr::unresolved is NULL");
 }
 
-
 UnresolvedSymExpr*
 UnresolvedSymExpr::copyInner(SymbolMap* map) {
   return new UnresolvedSymExpr(unresolved);
@@ -243,7 +240,6 @@ UnresolvedSymExpr::copyInner(SymbolMap* map) {
 Type* UnresolvedSymExpr::typeInfo(void) {
   return dtUnknown;
 }
-
 
 void UnresolvedSymExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "UnresolvedSymExpr::codegen called");
@@ -1863,8 +1859,20 @@ void CallExpr::codegen(FILE* outfile) {
           get(2)->codegen(outfile);
           fprintf(outfile, "))");
       } else if (dst == dtString || src == dtString) {
+	const char* dst_cname = dst->symbol->cname;
+	const char* src_cname = src->symbol->cname;
+	if (PrimitiveType* p_dst = toPrimitiveType(dst)) {
+	  if (p_dst->dcopy && !p_dst->vcopy) {
+	    dst_cname = p_dst->dcopy->symbol->cname;  
+	  }
+	}
+	if (PrimitiveType* p_src = toPrimitiveType(src)) {
+	  if (p_src->dcopy && !p_src->vcopy) {
+	    src_cname = p_src->dcopy->symbol->cname;  
+	  }
+	}
         fprintf(outfile, *dst->symbol->cname == '_' ? "%s_to%s(" : "%s_to_%s(",
-                src->symbol->cname, dst->symbol->cname);
+                src_cname, dst_cname);
         get(2)->codegen(outfile);
         if (src == dtString) {
           fprintf(outfile, ", ");

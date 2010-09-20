@@ -118,7 +118,7 @@ static inline bool isAlive(Symbol* symbol) {
   forv_Vec(type, ast, g##type##s) {             \
     if (isAlive(ast)) {                         \
       g##type##s.v[i##type++] = ast;            \
-    } else {                                    \
+    } else {					\
       delete ast;                               \
     }                                           \
   }                                             \

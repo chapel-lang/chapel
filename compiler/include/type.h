@@ -115,6 +115,9 @@ class ClassType : public Type {
 
 class PrimitiveType : public Type {
  public:
+  PrimitiveType* vcopy; 
+  PrimitiveType* dcopy;
+
   PrimitiveType(Symbol *init_defaultVal = NULL);
   void verify(); 
   DECLARE_COPY(PrimitiveType);
@@ -145,7 +148,7 @@ TYPE_EXTERN PrimitiveType* dtTypeDefaultToken;
 TYPE_EXTERN PrimitiveType* dtModuleToken;
 
 // primitive types
-TYPE_EXTERN PrimitiveType* dtBool;
+TYPE_EXTERN PrimitiveType* dtBool;		
 TYPE_EXTERN PrimitiveType* dtBools[BOOL_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtUInt[INT_SIZE_NUM];

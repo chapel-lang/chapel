@@ -643,6 +643,31 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
 //
 bool
 canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes) {
+  PrimitiveType* actualPrimType = toPrimitiveType(actualType);
+  PrimitiveType* formalPrimType = toPrimitiveType(formalType);
+
+  if (actualPrimType && actualPrimType->dcopy) {
+    if (formalPrimType && formalPrimType->dcopy) {
+      if (actualPrimType->dcopy != formalPrimType->dcopy) {
+        return canCoerce(actualPrimType->dcopy, actualPrimType->dcopy->symbol, formalPrimType->dcopy, fn, promotes);
+      } else {
+  	return true;
+      }
+    } else {
+      if (actualPrimType->dcopy != formalType) {
+        return canCoerce(actualPrimType->dcopy, actualPrimType->dcopy->symbol, formalType, fn, promotes);
+      } else {
+	return true;
+      }
+    }
+  } else if (formalPrimType && formalPrimType->dcopy) {
+    if (actualType != formalPrimType->dcopy) {
+      return canCoerce(actualType, actualSym, formalPrimType->dcopy, fn, promotes);
+    } else {
+      return true;
+    }
+  }
+
   if (canParamCoerce(actualType, actualSym, formalType))
     return true;
   if (is_real_type(formalType)) {
@@ -681,6 +706,31 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
 // param is set if the actual is a parameter (compile-time constant).
 bool
 canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes, bool paramCoerce) {
+  PrimitiveType* actualPrimType = toPrimitiveType(actualType);
+  PrimitiveType* formalPrimType = toPrimitiveType(formalType);
+
+  if (actualPrimType && actualPrimType->dcopy) {
+    if (formalPrimType && formalPrimType->dcopy) { 
+      if (actualPrimType->dcopy != formalPrimType->dcopy) {
+        return canDispatch(actualPrimType->dcopy, actualPrimType->dcopy->symbol, formalPrimType->dcopy, fn, promotes, paramCoerce);
+      } else {
+	return true;
+      }
+    } else {
+      if (actualPrimType->dcopy != formalType) {
+        return canDispatch(actualPrimType->dcopy, actualPrimType->dcopy->symbol, formalType, fn, promotes, paramCoerce);
+      } else {
+	return true;
+      }
+    }
+  } else if (formalPrimType && formalPrimType->dcopy) {
+    if (actualType != formalPrimType->dcopy) {
+      return canDispatch(actualType, actualSym, formalPrimType->dcopy, fn, promotes, paramCoerce);
+    } else {
+      return true;
+    }
+  }
+
   if (promotes)
     *promotes = false;
   if (actualType == formalType)
@@ -1720,6 +1770,7 @@ resolveDefaultGenericType(CallExpr* call) {
 
 void
 resolveCall(CallExpr* call, bool errorCheck) {
+  
   if (!call->primitive) {
 
     resolveDefaultGenericType(call);
@@ -1985,15 +2036,31 @@ resolveCall(CallExpr* call, bool errorCheck) {
     for_fields(field, ct) {
       if (!strcmp(field->name, name)) {
         Type* t = call->get(3)->typeInfo();
-        if (t == dtUnknown)
+        if (t == dtUnknown) 
           INT_FATAL(call, "Unable to resolve field type");
         if (t == dtNil && field->type == dtUnknown)
           USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
         if (field->type == dtUnknown)
           field->type = t;
-        if (t != field->type && t != dtNil && t != dtObject)
-          USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s",
-                    toString(t), toString(field->type));
+        
+        if (t != field->type && t != dtNil && t != dtObject) {
+    	  PrimitiveType* fieldPrimType = toPrimitiveType(field->type);
+    	  PrimitiveType* pt = toPrimitiveType(t);
+    	  if ((fieldPrimType && fieldPrimType->dcopy && !fieldPrimType->vcopy) ||
+	      (pt && pt->dcopy && !pt->vcopy)) {
+	    Expr* te = call->get(3)->remove();
+	    Symbol* tmp = newTemp(t);
+	    DefExpr* de = new DefExpr(tmp);
+	    CallExpr* ce1 = new CallExpr(PRIM_MOVE, tmp, te);
+	    CallExpr* ce2 = new CallExpr(PRIM_CAST, field->type->symbol, tmp);
+	    call->insertBefore(de);
+	    call->insertBefore(ce1);
+	    call->insertAtTail(ce2);
+    	  } else {
+            USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s",
+                      toString(t), toString(field->type));
+	  }
+        }
         found = true;
       }
     }
@@ -2074,13 +2141,29 @@ resolveCall(CallExpr* call, bool errorCheck) {
     if (rhsType == dtNil && lhsType != dtNil && !isClass(lhsType))
       USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
                 toString(lhsType));
+
     Type* lhsBaseType = lhsType->getValType();
     Type* rhsBaseType = rhsType->getValType();
-    if (rhsType != dtNil &&
+    if (rhsBaseType != lhsBaseType && rhsBaseType != dtNil && rhsBaseType != dtObject) {
+      PrimitiveType* rhsBasePrimType = toPrimitiveType(rhsBaseType);
+      PrimitiveType* lhsBasePrimType = toPrimitiveType(lhsBaseType);
+      if ((rhsBasePrimType && rhsBasePrimType->dcopy && !rhsBasePrimType->vcopy) ||
+	  (lhsBasePrimType && lhsBasePrimType->dcopy && !lhsBasePrimType->vcopy)) {
+        Expr* te = rhs->remove();
+	Symbol* tmp = newTemp(rhsBasePrimType);
+	DefExpr* de = new DefExpr(tmp);
+	CallExpr* ce1 = new CallExpr(PRIM_MOVE, tmp, te);
+	CallExpr* ce2 = new CallExpr(PRIM_CAST, lhsBasePrimType->symbol, tmp);
+	call->insertBefore(de);
+	call->insertBefore(ce1);
+	call->insertAtTail(ce2);
+      }
+    } else if (rhsType != dtNil &&
         rhsBaseType != lhsBaseType &&
-        !isDispatchParent(rhsBaseType, lhsBaseType))
+        !isDispatchParent(rhsBaseType, lhsBaseType)) {
       USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                toString(rhsType), toString(lhsType));
+              toString(rhsType), toString(lhsType));
+    }
     if (rhsType != lhsType && isDispatchParent(rhsBaseType, lhsBaseType)) {
       Symbol* tmp = newTemp(rhsType);
       call->insertBefore(new DefExpr(tmp));
@@ -2706,6 +2789,10 @@ preFold(Expr* expr) {
                   } else {
                     size = (int)var->immediate->uint_value();
                   }
+		  PrimitiveType* ptype = toPrimitiveType(type->type);
+		  bool volatileType = ptype && ptype->dcopy && !ptype->vcopy;
+	     	  if (volatileType)
+		    type = ptype->dcopy->symbol;
                   TypeSymbol* tsize = NULL;
                   if (type == dtBools[BOOL_SIZE_SYS]->symbol) {
                     switch (size) {
@@ -2716,6 +2803,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for bool", size);
                     }
+		    if (volatileType)
+		      tsize = toPrimitiveType(tsize->type)->vcopy->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtInt[INT_SIZE_32]->symbol) {
@@ -2727,6 +2816,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for int", size);
                     }
+		    if (volatileType)
+		      tsize = toPrimitiveType(tsize->type)->vcopy->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtUInt[INT_SIZE_32]->symbol) {
@@ -2738,6 +2829,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for uint", size);
                     }
+		    if (volatileType)
+		      tsize = toPrimitiveType(tsize->type)->vcopy->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtReal[FLOAT_SIZE_64]->symbol) {
@@ -2747,6 +2840,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for real", size);
                     }
+		    if (volatileType)
+		      tsize = toPrimitiveType(tsize->type)->vcopy->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtImag[FLOAT_SIZE_64]->symbol) {
@@ -2756,6 +2851,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for imag", size);
                     }
+		    if (volatileType)
+		      tsize = toPrimitiveType(tsize->type)->vcopy->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtComplex[COMPLEX_SIZE_128]->symbol) {
@@ -2765,6 +2862,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for complex", size);
                     }
+		    if (volatileType)
+		      tsize = toPrimitiveType(tsize->type)->vcopy->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   }
