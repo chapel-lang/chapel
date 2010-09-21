@@ -1018,7 +1018,7 @@ def _isPrimitiveType(type t) param return
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
   (t == real(32)) | (t == real(64)) |
-  (t == string) | (_isVolatileType(t) && _isPrimitiveType(_volToNon(t)));
+  (t == string);
 
 def _isSimpleScalarType(type t) param return
   _isBooleanType(t) | _isIntegralType(t) | _isFloatType(t);
@@ -1054,74 +1054,6 @@ def _isRealType(type t) param return
 
 def _isImagType(type t) param return
   (t == imag(32)) | (t == imag(64));
-
-def _isVolatileType(type t) param return 
-  (t == volatile int) | (t == volatile uint) | (t == volatile real);
-  /* 
-  (t == volatile bool) | (t == volatile bool(8)) | (t == volatile bool(16)) | 
-  (t == volatile bool(32)) | (t == volatile bool(64)) |
-  (t == volatile int(8)) | (t == volatile int(16)) | (t == volatile int(32)) | (t == volatile int(64)) |
-  (t == volatile uint(8)) | (t == volatile uint(16)) | (t == volatile uint(32)) | (t == volatile uint(64)) |
-  (t == volatile real(32)) | (t == volatile real(64)) |
-  (t == volatile string);
-  */
-
-def _volToNon(type t) type {
-  if (t == volatile int) { 
-    return int(32);
-  } else if (t == volatile int(64)) {
-    return int(64);
-  } else if (t == volatile uint) {
-    return uint(32);
-  } else if (t == volatile uint(8)) {
-    return uint(8);
-  } else if (t == volatile uint(16)) {
-    return uint(16);
-  } else if (t == volatile uint(32)) {
-    return uint(32);
-  } else if (t == volatile uint(64)) {
-    return uint(64); 
-  } else if (t == volatile real) {
-    return real(32);
-  } else {
-    compilerError(typeToString(t), " is not a volatile type");
-  }
-  /*
-  if (t == volatile bool) { 
-    return bool;
-  } else if (t == volatile bool(8)) { 
-    return bool(8);
-  } else if (t == volatile bool(16)) { 
-    return bool(16);
-  } else if (t == volatile bool(32)) { 
-    return bool(32);
-  } else if (t == volatile bool(64)) { 
-    return bool(64);
-  } else if (t == volatile int(8)) {  
-    return int(8);
-  } else if (t == volatile int(16)) {
-    return int(16);
-  } else if (t == volatile int(32)) { 
-    return int(32);
-  } else if (t == volatile int(64)) {
-    return int(64);
-  } else if (t == volatile uint(8)) {
-    return uint(8);
-  } else if (t == volatile uint(16)) {
-    return uint(16);
-  } else if (t == volatile uint(32)) {
-    return uint(32);
-  } else if (t == volatile uint(64)) {
-    return uint(64); 
-  } else if (t == volatile real(32)) {
-    return real(32);
-  } else if (t == volatile real(64)) {
-    return real(64);
-  } else {
-    compilerError(typeToString(t), " is not a volatile type");
-  }
-  */ 
-}
 
 def chpl__idxTypeToStrType(type t) type {
   if (t == uint(8)) {
@@ -1186,15 +1118,6 @@ pragma "inline" def _cast(type t, x) where x:object && t:x && (x.type != t)
 
 pragma "inline" def _cast(type t, x:_nilType) where t == _nilType
   return nil;
-
-pragma "inline" def _cast(type t, x: volatile int) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" def _cast(type t, x: volatile uint) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" def _cast(type t, x: volatile real) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
 
 //
 // casts to complex
