@@ -1166,18 +1166,6 @@ void scopeResolve(void) {
 
     if (sym) {
       if (!isFnSymbol(sym)) {
-	if (unresolvedSymExpr->isVolatile) {
-	  if (TypeSymbol* typeSym = toTypeSymbol(sym)) {
- 	    if (PrimitiveType* primType = toPrimitiveType(typeSym->type)) {
-	      if (!primType->vcopy) {
-	        INT_FATAL("No volatile primitive type exists for %s, %s", typeSym->name);
-	      } 
-	      sym = primType->vcopy->symbol;
-	    } else {
-	      INT_FATAL("Volatile applied to non-type expr");
-	    }
-	  }
-        }
         symExpr = new SymExpr(sym);
         unresolvedSymExpr->replace(symExpr);
       }
