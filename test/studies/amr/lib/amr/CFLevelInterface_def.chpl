@@ -5,6 +5,18 @@ use LevelArray_def;
 //|""""""""""""""""""""""""""""""\
 //|===> CFLevelInterface class ===>
 //|______________________________/
+//------------------------------------------------------------------------
+// The purpose of this class is to manage the spatial relations between
+// two Levels.
+//
+// The "coarse neighbors" of a fine grid are those that overlap its ghost
+// cells.  On the way down an AMR cycle, these will be used to provide
+// its boundary data.
+//
+// The "fine neighbors" of a coarse grid are those that overlap its
+// interior.  On the way up an AMR cycle, these will provide corrections
+// to the coarse data.
+//-----------------------------------------------------------------------
 class CFLevelInterface {
 
   const coarse_level: Level;
@@ -66,43 +78,9 @@ def CFLevelInterface.setNeighbors() {
 //""""""""""""""""""""""""""""""""""""""\
 //===> CFLevelInterface.refine method ===>
 //______________________________________/
-//-----------------------------------------------------------------
-// Refines a domain of cells using the CFLevelInterface's ref_ratio.
-//-----------------------------------------------------------------
-def CFLevelInterface.refine(coarse_cells: subdomain(coarse_level.cells)) {
- 
-  //=== Index bounds for refined domain ====
-  var fine_cells_low  = coarse_cells.low;
-  var fine_cells_high = coarse_cells.high;
-
-  for d in dimensions {
-    //==== Move cell centers to vertices ====
-    fine_cells_low(d)  -= 1;
-    fine_cells_high(d) += 1;
-
-    //==== Refine ====
-    fine_cells_low(d)  *= ref_ratio(d);
-    fine_cells_high(d) *= ref_ratio(d);
-
-    //==== Move vertices back to cell centers ====
-    fine_cells_low(d)  += 1;
-    fine_cells_high(d) -= 1;
-  }
-
-
-  //==== Set and return new domain ====
-  var ranges: dimension*range(stridable=true);
-
-  for d in dimensions do
-    ranges(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
-
-  var fine_cells: subdomain(fine_level.cells) = ranges;
-  return fine_cells;
-  
-}
-
 //---------------------------------------------------------------------
-// Refine a single coarse cell rather than a domain.  No safety check.
+// Refine a single coarse cell using the CFLevelInterface's ref_ratio.
+// Note that the output is a domain of fine cells.
 //---------------------------------------------------------------------
 def CFLevelInterface.refine(coarse_cell: dimension*int) {
 
@@ -134,6 +112,33 @@ def CFLevelInterface.refine(coarse_cell: dimension*int) {
   return fine_cells;
 
 }
+
+
+//------------------------------------------------------------------
+// Refines a domain of coarse cells by refining its lower and upper
+// bounds.
+//------------------------------------------------------------------
+def CFLevelInterface.refine(coarse_cells: subdomain(coarse_level.cells)) {
+ 
+  //=== Index bounds for refined domain ====
+  //------------------------------------------------------------------
+  // Recall that "refine" returns a domain of fine cells, rather than
+  // a single cell.
+  //------------------------------------------------------------------
+  var fine_cells_low  = refine(coarse_cells.low).low;
+  var fine_cells_high = refine(coarse_cells.high).high;
+
+
+  //==== Set and return new domain ====
+  var ranges: dimension*range(stridable=true);
+
+  for d in dimensions do
+    ranges(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
+
+  var fine_cells: subdomain(fine_level.cells) = ranges;
+  return fine_cells;
+  
+}
 // /""""""""""""""""""""""""""""""""""""""/
 //<=== CFLevelInterface.refine method <==<
 // \______________________________________\
@@ -146,9 +151,28 @@ def CFLevelInterface.refine(coarse_cell: dimension*int) {
 //|"""""""""""""""""""""""""""""""""""""""\
 //|===> CFLevelInterface.coarsen method ===>
 //|_______________________________________/
-//------------------------------------------------------------------
-// Coarsens a domain of cells using the CFLevelInterface's ref_ratio.
-//------------------------------------------------------------------
+//--------------------------------------------------------------------
+// Coarsen a single fine cell using the CFLevelInterface's ref_ratio.
+//--------------------------------------------------------------------
+def CFLevelInterface.coarsen(fine_cell: dimension*int) {
+
+  var coarse_cell: dimension*int;
+
+  for d in dimensions {
+    //==== Map to nearest, lower coarse index ====
+    coarse_cell(d) = fine_cell(d) / ref_ratio(d);
+
+    //==== Move index to cell center, if needed ====
+    if coarse_cell(d) % 2 == 0 then coarse_cell(d) += 1;
+  }
+
+  return coarse_cell;
+
+}
+
+//----------------------------------------------------------------------
+// Coarsens a domain of cells by coarsening the lower and upper bounds.
+//----------------------------------------------------------------------
 def CFLevelInterface.coarsen(fine_cells: subdomain(fine_level.cells)) {
  
   //=== Index bounds for coarsened domain ====
@@ -165,29 +189,6 @@ def CFLevelInterface.coarsen(fine_cells: subdomain(fine_level.cells)) {
   var coarse_cells: subdomain(coarse_level.cells) = ranges;
   return coarse_cells;
   
-}
-
-
-//--------------------------------------------------
-// Coarsen a single fine cell rather than a domain.
-//--------------------------------------------------
-def CFLevelInterface.coarsen(fine_cell: dimension*int) {
-
-  var coarse_cell: dimension*int;
-
-  //-------------------------------------------------------------
-  // Dividing by ref_ratio (and throwing away remainder) maps to
-  // lower vertex of the coarse cell.  Adding 1 shifts index to
-  // the cell center.
-  //-------------------------------------------------------------
-  for d in dimensions {
-    coarse_cell(d) = fine_cell(d) / ref_ratio(d);
-    if coarse_cell(d) % 2 == 0 then
-      coarse_cell(d) += 1;
-  }
-
-  return coarse_cell;
-
 }
 // /"""""""""""""""""""""""""""""""""""""""/
 //<=== CFLevelInterface.coarsen method <==<

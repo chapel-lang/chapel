@@ -6,6 +6,39 @@ use LevelSolution_def;
 //|"""""""""""""""""""""""""""""""""\
 //|===> CFSolutionInterface class ===>
 //|_________________________________/
+//------------------------------------------------------------------------
+// Handles interpolation of fine boundary data from the coarse_solution,
+// and correction of the coarse_solution after fine_solution has been
+// advanced.
+//
+// There are three main tasks handled here (they appear in reverse
+// order in the code):
+//
+//    1. Fine-to-coarse spatial interpolation: On the way up an AMR
+//       cycle, coarse data is corrected in locations where fine data
+//       is available.  No special data is required for this.
+//
+//    2. Coarse-to-fine spatial interpolation: On the way down an AMR
+//       cycle, coarse data is transferred to the locations where it will
+//       be needed by the fine level.  The coarse data is available at
+//       two timepoints, and the interpolated fine data is stored in
+//       old_fine_boundary_data and current_fine_boundary_data.  ("Old"
+//       and "current" are in relation to the coarse level.)
+//
+//    3. Fine boundary interpolation in time: Whenever a fine LevelArray
+//       needs boundary data, it will use linear interpolation in time
+//       to obtain this from old_fine_boundary_data and 
+//       current_fine_boundary_data.
+//
+// Note that coarse-to-fine interpolation is currently applied on *all*
+// fine ghost cells (excluding the physical boundary).  These values
+// will later be overwritten on ghost cells that are shared between grids
+// on the fine level.  This currently seems to be an acceptable waste,
+// compared to the effort it would take to perform this process sharply.
+// (Also, in some circumstances, one may want the coarse data in all
+// locations, e.g. for a domain decomposition.)
+//
+//------------------------------------------------------------------------
 class CFSolutionInterface {
 
   const coarse_solution:      LevelSolution;
@@ -17,9 +50,10 @@ class CFSolutionInterface {
   var old_time:     real;
   var current_time: real;
 
-  // var level_ghost_array_sets: [1..2] LevelGhostArraySet;
-  // var time:                   [1..2] real;
 
+  //|:::::::::::::::::::\
+  //|===> Constructor ===>
+  //|:::::::::::::::::::/
   def CFSolutionInterface(
     coarse_solution: LevelSolution,
     fine_solution:   LevelSolution,
@@ -29,14 +63,18 @@ class CFSolutionInterface {
     this.fine_solution   = fine_solution;
     this.level_interface = level_interface;
 
-    // for i in [1..2] do
-    //   level_ghost_array_sets(i) = new LevelGhostArraySet(fine_solution.level);
-    old_fine_boundary_data = new LevelGhostArraySet(fine_solution.level);
+    old_fine_boundary_data     = new LevelGhostArraySet(fine_solution.level);
     current_fine_boundary_data = new LevelGhostArraySet(fine_solution.level);
 
   }
+  // /:::::::::::::::::::/
+  //<=== Constructor <==<
+  // \:::::::::::::::::::\
 
 
+  //|::::::::::::::::::::::::::::::::::::::::::::\
+  //|===> Coarse-to-fine spatial interpolation ===>
+  //|::::::::::::::::::::::::::::::::::::::::::::/
   def fillFineBoundaryData_Linear() {
     old_fine_boundary_data.interpolateFromCoarse_Linear(coarse_solution.old_data, level_interface);
     old_time = coarse_solution.old_time;
@@ -44,8 +82,14 @@ class CFSolutionInterface {
     current_fine_boundary_data.interpolateFromCoarse_Linear(coarse_solution.current_data, level_interface);
     current_time = coarse_solution.current_time;
   }
+  // /::::::::::::::::::::::::::::::::::::::::::::/
+  //<=== Coarse-to-fine spatial interpolation ===<
+  // \::::::::::::::::::::::::::::::::::::::::::::\
 
 
+  //|::::::::::::::::::::::::::::::::::::::::::::\
+  //|===> Fine-to-coarse spatial interpolation ===>
+  //|::::::::::::::::::::::::::::::::::::::::::::/
   def correctCoarseSolution_Linear()
   {
     assert( abs(coarse_solution.current_time - fine_solution.current_time) < 1.0e-8,
@@ -55,6 +99,9 @@ class CFSolutionInterface {
     coarse_solution.current_data.interpolateFromFine_Linear(fine_solution.current_data, 
                                                             level_interface);
   }
+  // /::::::::::::::::::::::::::::::::::::::::::::/
+  //<=== Fine-to-coarse spatial interpolation ===<
+  // \::::::::::::::::::::::::::::::::::::::::::::\
 
 }
 // /"""""""""""""""""""""""""""""""""/
@@ -68,6 +115,10 @@ class CFSolutionInterface {
 //|""""""""""""""""""""""""""""""""""""""""""""""""\
 //|===> LevelArray.fineBoundaryTimeInterpolation ===>
 //|________________________________________________/
+//--------------------------------------------------------------------
+// Interpolates ghost cell data via linear interpolation in time from 
+// old_fine_boundary_data and current_fine_boundary_data.
+//--------------------------------------------------------------------
 def LevelArray.fineBoundaryTimeInterpolation(
   sol_interface: CFSolutionInterface,
   t:             real)
@@ -85,7 +136,7 @@ def LevelArray.fineBoundaryTimeInterpolation(
 
 
   //==== Interpolation parameters ====
-  var a2 = (t - t2) / (t1 - t2);
+  var a2 = (t - t1) / (t2 - t1);
   var a1 = 1 - a2;
 
 
@@ -114,9 +165,14 @@ def LevelArray.fineBoundaryTimeInterpolation(
 
 
 
-//|"""""""""""""""""""""""""""""""""""""""""""""""""""""""\
+
+//|""""""""""""""""""""""""""""""""""""""""""""\
+//|===> Coarse-to-fine spatial interpolation ===>
+//|____________________________________________/
+
+//|'''''''''''''''''''''''''''''''''''''''''''''''''''''''\
 //|===> LevelGhostArraySet.interpolateFromCoarse_Linear ===>
-//|_______________________________________________________/
+//|......................................................./
 def LevelGhostArraySet.interpolateFromCoarse_Linear(
   q_coarse:  LevelArray,
   interface: CFLevelInterface)
@@ -131,17 +187,15 @@ def LevelGhostArraySet.interpolateFromCoarse_Linear(
     ghost_array_sets(grid).interpolateFromCoarse_Linear(q_coarse, interface);
 
 }
-// /"""""""""""""""""""""""""""""""""""""""""""""""""""""""/
+// /:::::::::::::::::::::::::::::::::::::::::::::::::::::::/
 //<=== LevelGhostArraySet.interpolateFromCoarse_Linear <==<
-// \_______________________________________________________\
+// \:::::::::::::::::::::::::::::::::::::::::::::::::::::::\
 
 
 
-
-
-//|"""""""""""""""""""""""""""""""""""""""""""""""""""""""""\
+//|:::::::::::::::::::::::::::::::::::::::::::::::::::::::::\
 //|===> GhostArraySet.interpolateFromCoarse_Linear method ===>
-//|_________________________________________________________/
+//|:::::::::::::::::::::::::::::::::::::::::::::::::::::::::/
 def GhostArraySet.interpolateFromCoarse_Linear(
   q_coarse:  LevelArray,
   interface: CFLevelInterface)
@@ -161,29 +215,21 @@ def GhostArraySet.interpolateFromCoarse_Linear(
   }
 
 }
-// /"""""""""""""""""""""""""""""""""""""""""""""""""""""""""/
+// /:::::::::::::::::::::::::::::::::::::::::::::::::::::::::/
 //<=== GhostArraySet.interpolateFromCoarse_Linear method <==<
-// \_________________________________________________________\
+// \:::::::::::::::::::::::::::::::::::::::::::::::::::::::::\
 
 
 
-
-//|"""""""""""""""""""""""""""""""""""""""""""""""""\
+//|:::::::::::::::::::::::::::::::::::::::::::::::::\
 //|===> GridArray.interpolateToFine_Linear method ===>
-//|_________________________________________________/
+//|:::::::::::::::::::::::::::::::::::::::::::::::::/
 def GridArray.interpolateToFine_Linear(
   fine_cells: domain(dimension, stridable=true),
   interface:  CFLevelInterface)
 {
   
-  // writeln("Coarse grid:");
-  // writeln(grid);
-  // writeln("Refinement ratio: ", interface.ref_ratio);
-  // writeln("Fine cells: ", fine_cells);
-  // writeln("Coarsened fine cells: ", interface.coarsen(fine_cells));
-  
   var coarse_cells  = grid.cells( interface.coarsen(fine_cells) );
-  // writeln("coarse_cells = ", coarse_cells);
   
   var coarse_values = value(coarse_cells);
   var coarse_diffs: [coarse_cells] [dimensions] real;
@@ -244,13 +290,19 @@ def GridArray.interpolateToFine_Linear(
   return fine_values;
 
 }
-// /"""""""""""""""""""""""""""""""""""""""""""""""""/
+// /:::::::::::::::::::::::::::::::::::::::::::::::::/
 //<=== GridArray.interpolateToFine_Linear method <==<
-// \_________________________________________________\
+// \:::::::::::::::::::::::::::::::::::::::::::::::::\
 
 
 
-
+//|::::::::::::::::::::::::::::::::::::\
+//|===> extrapolateGhostData methods ===>
+//|::::::::::::::::::::::::::::::::::::/
+//-----------------------------------------------------------------
+// Fills the first layer of ghost cells with linearly extrapolated
+// data from the interior.
+//-----------------------------------------------------------------
 def LevelArray.extrapolateGhostData() {
   
   for grid_array in grid_arrays do
@@ -259,13 +311,6 @@ def LevelArray.extrapolateGhostData() {
 }
 
 
-//|"""""""""""""""""""""""""""""""""""""""""""""\
-//|===> GridArray.extrapolateGhostData method ===>
-//|_____________________________________________/
-//-----------------------------------------------------------------
-// Fills the first layer of ghost cells with linearly extrapolated
-// data from the interior.
-//-----------------------------------------------------------------
 def GridArray.extrapolateGhostData() {
 
   var shift: dimension*int;
@@ -279,9 +324,13 @@ def GridArray.extrapolateGhostData() {
   }
 
 }
-// /"""""""""""""""""""""""""""""""""""""""""""""/
-//<=== GridArray.extrapolateGhostData method <==<
-// \_____________________________________________\
+// /::::::::::::::::::::::::::::::::::::/
+//<=== extrapolateGhostData methods <==<
+// \::::::::::::::::::::::::::::::::::::\
+
+// /""""""""""""""""""""""""""""""""""""""""""""/
+//<=== Coarse-to-fine spatial interpolation <==<
+// \____________________________________________\
 
 
 
@@ -289,9 +338,13 @@ def GridArray.extrapolateGhostData() {
 
 
 
-//|"""""""""""""""""""""""""""""""""""""""""""""\
+//|"""""""""""""""""""""""""""""""""\
+//|===> Fine-to-coarse correction ===>
+//|_________________________________/
+
+//|:::::::::::::::::::::::::::::::::::::::::::::\
 //|===> LevelArray.interpolateFromFine_Linear ===>
-//|_____________________________________________/
+//|:::::::::::::::::::::::::::::::::::::::::::::/
 def LevelArray.interpolateFromFine_Linear(
   q_fine:    LevelArray,
   interface: CFLevelInterface)
@@ -301,17 +354,15 @@ def LevelArray.interpolateFromFine_Linear(
     grid_array.interpolateFromFine_Linear(q_fine, interface);
 
 }
-// /"""""""""""""""""""""""""""""""""""""""""""""/
+// /:::::::::::::::::::::::::::::::::::::::::::::/
 //<=== LevelArray.interpolateFromFine_Linear <==<
-// \_____________________________________________\
+// \:::::::::::::::::::::::::::::::::::::::::::::\
 
 
 
-
-
-//|""""""""""""""""""""""""""""""""""""""""""""\
+//|::::::::::::::::::::::::::::::::::::::::::::\
 //|===> GridArray.interpolateFromFine_Linear ===>
-//|____________________________________________/
+//|::::::::::::::::::::::::::::::::::::::::::::/
 def GridArray.interpolateFromFine_Linear(
   q:         LevelArray,
   interface: CFLevelInterface)
@@ -326,17 +377,15 @@ def GridArray.interpolateFromFine_Linear(
   }
 
 }
-// /""""""""""""""""""""""""""""""""""""""""""""/
+// /::::::::::::::::::::::::::::::::::::::::::::/
 //<=== GridArray.interpolateFromFine_Linear <==<
-// \____________________________________________\
+// \::::::::::::::::::::::::::::::::::::::::::::\
 
 
 
-
-
-//|""""""""""""""""""""""""""""""""""""""""""""\
+//|::::::::::::::::::::::::::::::::::::::::::::\
 //|===> GridArray.interpolateToCoarse_Linear ===>
-//|____________________________________________/
+//|::::::::::::::::::::::::::::::::::::::::::::/
 def GridArray.interpolateToCoarse_Linear(
   coarse_cells: domain(dimension, stridable=true),
   interface:    CFLevelInterface)
@@ -363,6 +412,10 @@ def GridArray.interpolateToCoarse_Linear(
   return coarse_values;
 
 }
-// /""""""""""""""""""""""""""""""""""""""""""""/
+// /::::::::::::::::::::::::::::::::::::::::::::/
 //<=== GridArray.interpolateToCoarse_Linear <==<
-// \____________________________________________\
+// \::::::::::::::::::::::::::::::::::::::::::::\
+
+// /"""""""""""""""""""""""""""""""""/
+//<=== Fine-to-coarse correction <==<
+// \_________________________________\
