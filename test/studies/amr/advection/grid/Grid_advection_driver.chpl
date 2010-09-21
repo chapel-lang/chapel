@@ -32,7 +32,7 @@ def main {
 
   var sol = new GridSolution(grid = grid);
 
-  sol.setToFunction(initial_condition, output_times(1));
+  sol.setToFunction(initial_condition, output_times(0));
   //<=== Initialize solution <===
 
 
@@ -56,7 +56,7 @@ def main {
   sol.clawOutput(frame_number);
 
   //==== Subsequent times ====
-  for output_time in output_times do {
+  for output_time in output_times(1..) do {
     //==== Advance solution to output time ====
     sol.advance_AdvectionCTU(bc, velocity, output_time);
 
