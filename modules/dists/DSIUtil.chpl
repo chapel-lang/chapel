@@ -118,10 +118,11 @@ def _factor(param rank: int, value) {
     for j in i+1..rank do
       if factors(i) < factors(j) then
         factors(i) <=> factors(j);
-  if rank == 2 {
+/*  if rank == 2 {
     factors(1)=value;
     factors(2)=1;
   }
+*/
   return factors;
 }
 

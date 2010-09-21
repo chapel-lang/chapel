@@ -845,7 +845,7 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
   var status= 0:int(64);
   var err= 0:int;
   var numbytespn=8:int(64);
-  var nbyteslin=numbytespn*((1+dom.dsiDim(1)._high-dom.dsiDim(1)._low)/dom.dsiDim(1)._stride);
+  var nbyteslin=numbytespn*((1+dom.dsiDim(2)._high-dom.dsiDim(2)._low)/dom.dsiDim(2)._stride);
   var pos=0:int(64);
   var oldpos=-1:int(64);
   var timer: Timer;
@@ -863,7 +863,7 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
 
     from=privarr.locArr(localeIdx).locDom.myBlock.low(2):int(64);
     to=privarr.locArr(localeIdx).locDom.myBlock.high(2):int(64);
-    if debugBlockDist then writeln("BlockArr.writeBinLocalArray  from:",from," to: ",to," line:",idx, " numbytespn:",numbytespn," ",dom.dsiDim(1)._high," ",dom.dsiDim(1)._low," ",dom.dsiDim(1)._stride);
+ //   if debugBlockDist then writeln("BlockArr.writeBinLocalArray  from:",from," to: ",to," line:",idx, " numbytespn:",numbytespn," ",dom.dsiDim(1)._high," ",dom.dsiDim(1)._low," ",dom.dsiDim(1)._stride);
 
     ind(1)=idx:int;
     ind(2)=from:int;
@@ -917,15 +917,33 @@ def BlockArr.writeBinArray(f: file)
 	writeln("Inside: ",here.id," idx:",i1,",",i2, " locale:",dom.dist.targetLocales((i1,i2)));
   } } }
 
-//  for i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
-  for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
-    coforall i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
-      on dom.dist.targetLocales((i1,i2)) {
-        if debugBlockDist then writeln("Inside: ",here.id," idx:",i1,",",i2, " low:",dom.dist.targetLocDom.dim(1)._low, " high:",dom.dist.targetLocDom.dim(1)._high);
-        lastPos=writeBinLocalArray((i1,i2),fpos,f);
-	if ( gotoPos < lastPos ) then gotoPos=lastPos;
-      }
-    }
+	writeln("Inside: ",here.id);
+	writeln("high: ",locArr((0,0)).locDom.myBlock.high(1));
+  writeln(" data high:",locArr((0,0)).locDom.myBlock.high(1)-locArr((0,0)).locDom.myBlock.low(1));
+  writeln(" data high(2):",( locArr((0,0)).locDom.myBlock.high(2)-locArr((0,0)).locDom.myBlock.low(2)) );
+  if ( ( (locArr((0,0)).locDom.myBlock.high(1)-locArr((0,0)).locDom.myBlock.low(1))*( locArr((0,0)).locDom.myBlock.high(2)-locArr((0,0)).locDom.myBlock.low(2)) ) < 256000 ) {
+          if debugBlockDist then writeln("Sequential block size:",( ( locArr((0,0)).locDom.myBlock.high(1)-locArr((0,0)).locDom.myBlock.low(1)),( locArr((0,0)).locDom.myBlock.high(2)-locArr((0,0)).locDom.myBlock.low(2)) ));
+	  for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
+	    for i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
+	      on dom.dist.targetLocales((i1,i2)) {
+		if debugBlockDist then writeln("Sequential: Inside: ",here.id," idx:",i1,",",i2, " low:",dom.dist.targetLocDom.dim(1)._low, " high:",dom.dist.targetLocDom.dim(1)._high);
+		lastPos=writeBinLocalArray((i1,i2),fpos,f);
+		if ( gotoPos < lastPos ) then gotoPos=lastPos;
+	      }
+	    }
+	  }
+  }
+  else {
+  	  //  for i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
+	  for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
+	    coforall i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
+	      on dom.dist.targetLocales((i1,i2)) {
+		if debugBlockDist then writeln("Inside: ",here.id," idx:",i1,",",i2, " low:",dom.dist.targetLocDom.dim(1)._low, " high:",dom.dist.targetLocDom.dim(1)._high);
+		lastPos=writeBinLocalArray((i1,i2),fpos,f);
+		if ( gotoPos < lastPos ) then gotoPos=lastPos;
+	      }
+	    }
+	  }
   }
   timer.stop();
   if debugBlockDistBenchmark then
@@ -1001,8 +1019,6 @@ def BlockArr.readBinArray(f: file) {
 	  bytes_read=bytes_read+numbytespn*numelem;
 	  if status < 0 {
 		  const err = chpl_cerrno;
-// const err = __primitive("get_errno");
-
 		  halt("***Error: Write failed: ", err, "***");
 	  }
 
