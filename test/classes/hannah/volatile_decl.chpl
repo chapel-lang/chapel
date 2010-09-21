@@ -1,4 +1,11 @@
 def main() {
+  var b     : volatile bool;
+  var b8    : volatile bool(8);
+  var b16   : volatile bool(16);
+  var b32   : volatile bool(32);
+  var b64   : volatile bool(64);
+  writeln("b = ", b);
+
   // int decls
   var i     : volatile int;
   var i8    : volatile int(8);

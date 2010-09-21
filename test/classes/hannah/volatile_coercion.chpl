@@ -1,19 +1,22 @@
 def main() {
-  var x     : volatile int = 1;
-  var y     : volatile uint = 2;
-  var z     : volatile real = 3.14;
+  var b     : volatile bool = false;
+  var i     : volatile int = 1;
+  var ui    : volatile uint = 2;
+  var r     : volatile real = 3.14;
 
-  writeln("x = ", x);  
-  writeln("y = ", y);  
-  writeln("z = ", z);  
+  writeln("b  = ", b);
+  writeln("i  = ", i);  
+  writeln("ui = ", ui);  
+  writeln("r  = ", r);  
 
-  x = 1.0;
-  y = 2.0;
-  z = 3;
+  b  = 1;
+  i  = 1.0;
+  ui = 2.0;
+  r  = 3;
 
-  writeln("x = ", x);  
-  writeln("y = ", y);  
-  writeln("z = ", z);  
-
+  writeln("b  = ", b);
+  writeln("i  = ", i);  
+  writeln("ui = ", ui);  
+  writeln("r  = ", r);  
 }
 
