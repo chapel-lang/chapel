@@ -1,5 +1,5 @@
-use amr_hierarchy_defs;
-use level_array_defs;
+use AMRHierarchy_def;
+use LevelArray_def;
 
 
 //===> AMRArrayClass ===>

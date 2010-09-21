@@ -1,5 +1,5 @@
-use level_base_defs;
-use level_array_defs;
+use Level_def;
+use LevelArray_def;
 
 
 //|""""""""""""""""""""""""""""""\
@@ -40,14 +40,14 @@ def CFLevelInterface.setNeighbors() {
 
       intersection = coarse_grid.cells( coarsen(fine_grid.cells) );
       if intersection.numIndices > 0 then
-	fine_neighbors(coarse_grid).add(fine_grid);
+        fine_neighbors(coarse_grid).add(fine_grid);
 
       // Technically, this is wrong if the coarse grid covers the
       // exact same region as the fine grid...but that's pathological,
       // and should just cause some empty iterations later on.
       intersection = fine_grid.ext_cells( refine(coarse_grid.cells) );
       if intersection.numIndices > 0 then
-	coarse_neighbors(fine_grid).add(coarse_grid);
+        coarse_neighbors(fine_grid).add(coarse_grid);
 
     }
   }
@@ -152,36 +152,17 @@ def CFLevelInterface.refine(coarse_cell: dimension*int) {
 def CFLevelInterface.coarsen(fine_cells: subdomain(fine_level.cells)) {
  
   //=== Index bounds for coarsened domain ====
-  var low_coarse  = fine_cells.low;
-  var high_coarse = fine_cells.high;
-
-  for d in dimensions do {
-    //==== Move cell centers to vertices ====
-    low_coarse(d)  -= 1;
-    high_coarse(d) += 1;
-
-    //==== Make sure coarsening is valid ====
-    assert(low_coarse(d)  % ref_ratio(d) == 0);
-    assert(high_coarse(d) % ref_ratio(d) == 0);
-
-    //==== Coarsen ====
-    low_coarse(d)  /= ref_ratio(d);
-    high_coarse(d) /= ref_ratio(d);
-
-    //==== Move vertices back to cell centers ====
-    low_coarse(d)  += 1;
-    high_coarse(d) -= 1;
-  }
-
+  var low_coarse  = coarsen(fine_cells.low);
+  var high_coarse = coarsen(fine_cells.high);
+  
 
   //==== Set and return new domain ====
   var ranges: dimension*range(stridable=true);
-
   for d in dimensions do
     ranges(d) = low_coarse(d) .. high_coarse(d) by 2;
 
-  var coarse_cells: subdomain(coarse_level.cells) = ranges;
 
+  var coarse_cells: subdomain(coarse_level.cells) = ranges;
   return coarse_cells;
   
 }

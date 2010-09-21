@@ -1,5 +1,5 @@
-use amr_array_defs;
-use cf_solution_interface_defs;
+use AMRArray_def;
+use CFSolutionInterface_def;
 
 
 //|"""""""""""""""""""""""""\
@@ -21,6 +21,10 @@ class AMRSolution {
 
   var coarse_interfaces: [hierarchy.levels] CFSolutionInterface;
   var fine_interfaces:   [hierarchy.levels] CFSolutionInterface;
+
+  def time {
+    return level_solutions(hierarchy.top_level).current_time;
+  }
 
 
   def coarserSolution(lev_sol: LevelSolution){
@@ -102,7 +106,7 @@ def AMRSolution.setToFunction(
 def AMRSolution.clawOutput(frame_number: int) {
 
   //==== Get final time from coarsest level ====
-  var time = level_solutions(hierarchy.top_level).time(2);
+  var time = level_solutions(hierarchy.top_level).current_time;
 
 
   //==== Create AMRArray to link LevelArrays ====
@@ -110,11 +114,11 @@ def AMRSolution.clawOutput(frame_number: int) {
   for level in hierarchy.levels {
 
     //==== Check that time on this level agrees with coarsest time ====
-    if abs(level_solutions(level).time(2) - time) > 1.0e-8 then
+    if abs(level_solutions(level).current_time - time) > 1.0e-8 then
       writeln("Warning: Possible time inconsistency between levels upon output.");
 
     //==== Place latest space_data in amr_array ====
-    amr_array.level_arrays(level) = level_solutions(level).space_data(2);
+    amr_array.level_arrays(level) = level_solutions(level).current_data;
   }
 
 

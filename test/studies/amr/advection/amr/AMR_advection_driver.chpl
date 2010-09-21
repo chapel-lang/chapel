@@ -1,25 +1,17 @@
-//===> Description ===>
-//
-// Driver for an advection example, integrated with corner transport
-// upwind (CTU).
-//
-//<=== Description <===
-
-
-use LevelSolution_advection;
-use LevelBC_advection;
+use AMRSolution_advection;
+use AMRBC_advection;
 
 
 
 def main {
-
+  
 
   //==== Initialize output ====
   var output_times = setOutputTimes("set_problem/time.txt");
 
 
   //===> Initialize space ===>  
-  var level = readLevel("set_problem/space.txt");
+  var hierarchy = readHierarchy("set_problem/hierarchy.txt");
 
 
 
@@ -32,7 +24,7 @@ def main {
     return f;
   }
 
-  var solution = new LevelSolution(level = level);
+  var solution = new AMRSolution(hierarchy = hierarchy);
   solution.setToFunction(initial_condition, output_times(0));
   write("done.\n");
   //<=== Initialize  solution <===
@@ -55,7 +47,7 @@ def main {
 
   //==== Set boundary conditions ====
   write("Setting boundary conditions...");
-  var bc = new ZeroInflowBC(level = level);
+  var bc = new ZeroInflowBC(hierarchy = hierarchy);
   write("done.\n");
 
 
@@ -67,8 +59,10 @@ def main {
   solution.clawOutput(frame_number);
   write("done.\n");
   
+  writeln("Current time of AMRSolution: " + format("%8.4E",solution.time));
+  
   //==== Subsequent times ====
-  for output_time in output_times do {
+  for output_time in output_times(1..) do {
     //==== Advance solution to output time ====
     solution.advance_AdvectionCTU(bc, velocity, output_time);
   
@@ -81,5 +75,6 @@ def main {
   //<=== Generate output <===
   
   
+}
 
-} // end main
+
