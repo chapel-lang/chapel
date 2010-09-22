@@ -36,7 +36,7 @@ def main {
   }
 
   var solution = new GridSolution(grid);
-  solution.setToFunction(initial_condition, output_times(1));
+  solution.setToFunction(initial_condition, output_times(0));
 
   var dt_max = 0.05;
   //<=== Initialize  solution <===
@@ -55,7 +55,7 @@ def main {
   solution.clawOutput(frame_number);
 
   //==== Subsequent times ====
-  for output_time in output_times do {
+  for output_time in output_times(1..) do {
     //==== Advance q to output time ====
     solution.advance_DiffusionBE(bc, diffusivity, output_time, dt_max);
 

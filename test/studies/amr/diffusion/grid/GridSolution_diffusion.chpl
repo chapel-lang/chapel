@@ -17,7 +17,9 @@ def GridSolution.advance_DiffusionBE(
 {
 
   //==== Safety check ====
-  assert(current_time <= time_requested);
+  assert(current_time <= time_requested,
+	 "error: GridSolution.advance_DiffusionBE\n" +
+	 "GridSolution.current_time > time_requested.");
 
 
   //===> Time-stepping ===>

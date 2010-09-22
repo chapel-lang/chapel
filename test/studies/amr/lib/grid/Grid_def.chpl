@@ -10,13 +10,16 @@
 //
 //<=== Description <===
 
+use DomainSet_def;
+use ArraySet_def;
+
 
 config param dimension = 2;
 const dimensions = [1..dimension];
 
-enum loc1d {low=-1, interior=0, high=1};
+enum loc1d {below=-2, low=-1, inner=0, high=1, above=2};
 const interior_location: dimension*int; // since loc1d.interior=0, this initializes correctly
-const ghost_locations = (loc1d.low..loc1d.high)**dimension;
+const ghost_locations = (loc1d.below .. loc1d.above by 2)**dimension;
 
 
 //==== Helper constants ====
@@ -27,9 +30,9 @@ const ghost_locations = (loc1d.low..loc1d.high)**dimension;
 
 
 
-//|""""""""""""""""""\
-//|===> Grid class ===>
-//|__________________/
+//|\"""""""""""""""""""|\
+//| >    Grid class    | >
+//|/___________________|/
 class Grid {
   
   const x_low, x_high:          dimension*real;
@@ -41,12 +44,13 @@ class Grid {
   const ext_cells: domain(dimension, stridable=true);
   const cells:     subdomain(ext_cells);
   
-  const ghost_domain_set: GhostDomainSet;
+/*   const ghost_domain_set: GhostDomainSet; */
+  const ghost_domain_set: DomainSet(dimension, stridable=true);
 
 
-  //|-------------------->
-  //|===> Constructor ===>
-  //|-------------------->
+  //|\''''''''''''''''''''|\
+  //| >    Constructor    | >
+  //|/....................|/
   def Grid(
     x_low:         dimension*real,
     x_high:        dimension*real,
@@ -83,17 +87,44 @@ class Grid {
     ext_cells = cells.expand(size);
 
     //==== Ghost cells ====
-    ghost_domain_set = new GhostDomainSet(this);
+    ghost_domain_set = new DomainSet(dimension, stridable=true);
+
+    var inner_location: dimension*int;
+    for d in dimensions do interior_location(d) = loc1d.inner;
+
+    var ghost_domain: domain(dimension, stridable=true);
+    for loc in ghost_locations {
+      if loc != inner_location {
+	for d in dimensions do ranges(d) = ghostRange(d,loc(d));
+	ghost_domain = ranges;
+	ghost_domain_set.add(ghost_domain);
+      }
+    }
+
+    def ghostRange(d: int, p: int) {
+      // p = "position"; instance of loc1d
+      var R: range(stridable=true);
+
+      if p == loc1d.below then
+	R = (ext_cells.low(d).. by 2) #n_ghost_cells(d);
+      else if p == loc1d.inner then
+	R = cells.dim(d);
+      else
+	R = (..ext_cells.high(d) by 2) #n_ghost_cells(d);
+
+      return R;
+    }
+
   }
-  //<--------------------|
-  //<=== Constructor <===|
-  //<--------------------|
+  // /|''''''''''''''''''''/|
+  //< |    Constructor    < |
+  // \|....................\|
 
 
 
-  //|---------------------------->
-  //|===> sanityChecks method ===>
-  //|---------------------------->
+  //|\''''''''''''''''''''''''''|\
+  //| >   sanityChecks method   | >
+  //|/..........................|/
   //--------------------------------------------------------------
   // Performs some basic sanity checks on the constructor inputs.
   //--------------------------------------------------------------
@@ -112,22 +143,63 @@ class Grid {
 	     "error: Grid: n_ghost_cells(" + d_string + ") must be positive.");
     }
   }
-  //<----------------------------|
-  //<=== sanityChecks method <===|
-  //<----------------------------|
+  // /|'''''''''''''''''''''''''''/|
+  //< |   sanityChecks method    < |
+  // \|...........................\|
 
 
 
-  //|------------------------->
-  //|===> writeThis method ===>
-  //|------------------------->
+  //|\'''''''''''''''''''''''''''|\
+  //| >    locateIndex method    | >
+  //|/...........................|/
+  def locateIndex(idx: dimension*int) {
+    var loc: dimension*int;
+
+    for d in dimensions {
+           if idx(d) <  i_low(d)  then loc(d) = loc1d.below;
+      else if idx(d) == i_low(d)  then loc(d) = loc1d.low;
+      else if idx(d) <  i_high(d) then loc(d) = loc1d.inner;
+      else if idx(d) == i_high(d) then loc(d) = loc1d.high;
+      else                                 idx(d) = loc1d.above;
+    }
+
+    return loc;
+  }
+  // /|''''''''''''''''''''/|
+  //< |    locateIndex    < |
+  // \|....................\|
+
+
+  //|\'''''''''''''''''''''|\
+  //| >    locateDomain    | >
+  //|/.....................|/
+  def locateDomain(D: domain(dimension, stridable=true)){
+    var loc_low  = locateIndex(D.low);
+    var loc_high = locateIndex(D.high);
+
+    if loc_low == loc_high then
+      return loc_low;
+    else
+      halt("error: Grid.locateDomain\n:" +
+	   "Provided domain spans multiple location categories.");
+  }
+  // /|'''''''''''''''''''''/|
+  //< |    locateDomain    < |
+  // \|.....................\|
+
+
+
+
+  //|\'''''''''''''''''''''''''|\
+  //| >    writeThis method    | >
+  //|/.........................|/
   def writeThis(w: Writer) {
     writeln("x_low: ", x_low, ",  x_high: ", x_high);
     write("i_low: ", i_low, ",  i_high: ", i_high);
   }
-  //<-------------------------|
-  //<=== writeThis method <===|
-  //<-------------------------|
+  // /|'''''''''''''''''''''''''/|
+  //< |    writeThis method    < |
+  // \|.........................\|
 
 }
 // /""""""""""""""""""|
@@ -170,116 +242,116 @@ def Grid.xValue (point_index: dimension*int) {
 
 
 
-//|""""""""""""""""""""""""""""\
-//|===> GhostDomainSet class ===>
-//|____________________________/
-class GhostDomainSet {
+/* //|""""""""""""""""""""""""""""\ */
+/* //|===> GhostDomainSet class ===> */
+/* //|____________________________/ */
+/* class GhostDomainSet { */
 
-  const grid:    Grid;
-  var   domains: [ghost_locations] domain(dimension, stridable=true);
+/*   const grid:    Grid; */
+/*   var   domains: [ghost_locations] domain(dimension, stridable=true); */
 
-  //|-------------------->
-  //|===> Constructor ===>
-  //|-------------------->
-  def GhostDomainSet(grid: Grid) {
+/*   //|--------------------> */
+/*   //|===> Constructor ===> */
+/*   //|--------------------> */
+/*   def GhostDomainSet(grid: Grid) { */
 
-    this.grid = grid;
+/*     this.grid = grid; */
 
-    var ranges: dimension*range(stridable=true);
-    var interior_location: dimension*int;
-    for d in dimensions do interior_location(d) = loc1d.interior;
+/*     var ranges: dimension*range(stridable=true); */
+/*     var interior_location: dimension*int; */
+/*     for d in dimensions do interior_location(d) = loc1d.interior; */
 
-    for loc in ghost_locations {
-      if loc != interior_location {
-	for d in dimensions do ranges(d) = setRange(d,loc(d));
-	domains(loc) = ranges;
-      }
-    }
+/*     for loc in ghost_locations { */
+/*       if loc != interior_location { */
+/* 	for d in dimensions do ranges(d) = setRange(d,loc(d)); */
+/* 	domains(loc) = ranges; */
+/*       } */
+/*     } */
 
-  }
-  //<--------------------|
-  //<=== Constructor <===|
-  //<--------------------|
-
-
-
-  //|------------------------>
-  //|===> setRange method ===>
-  //|------------------------>
-  //-----------------------------------------------------------------
-  // Given a dimension and position, sets the corresponding range of
-  // ghost cells.
-  //-----------------------------------------------------------------
-  def setRange(d: int, p: int) {
-    var R: range(stridable=true);
-
-    if p == loc1d.low then
-      R = (grid.ext_cells.low(d).. by 2) #grid.n_ghost_cells(d);
-    else if p == loc1d.interior then
-      R = grid.cells.dim(d);
-    else
-      R = (..grid.ext_cells.high(d) by 2) #grid.n_ghost_cells(d);
-
-    return R;
-  }
-  //<------------------------|
-  //<=== setRange method <===|
-  //<------------------------|
+/*   } */
+/*   //<--------------------| */
+/*   //<=== Constructor <===| */
+/*   //<--------------------| */
 
 
 
-  def this(loc: dimension*int) var {
-    return domains(loc);
-  }
+/*   //|------------------------> */
+/*   //|===> setRange method ===> */
+/*   //|------------------------> */
+/*   //----------------------------------------------------------------- */
+/*   // Given a dimension and position, sets the corresponding range of */
+/*   // ghost cells. */
+/*   //----------------------------------------------------------------- */
+/*   def setRange(d: int, p: int) { */
+/*     var R: range(stridable=true); */
 
-}
-// /""""""""""""""""""""""""""""/
-//<=== GhostDomainSet class <==<
-// \____________________________\
+/*     if p == loc1d.low then */
+/*       R = (grid.ext_cells.low(d).. by 2) #grid.n_ghost_cells(d); */
+/*     else if p == loc1d.interior then */
+/*       R = grid.cells.dim(d); */
+/*     else */
+/*       R = (..grid.ext_cells.high(d) by 2) #grid.n_ghost_cells(d); */
+
+/*     return R; */
+/*   } */
+/*   //<------------------------| */
+/*   //<=== setRange method <===| */
+/*   //<------------------------| */
 
 
 
+/*   def this(loc: dimension*int) var { */
+/*     return domains(loc); */
+/*   } */
 
-//|""""""""""""""""""""""""""""""""""\
-//|===> SparseGhostDomainSet class ===>
-//|__________________________________/
-class SparseGhostDomainSet {
-  const grid:    Grid;
-  var locations: sparse subdomain(ghost_locations);
-  var domains:   [locations] domain(dimension, stridable=true);
-}
-// /""""""""""""""""""""""""""""""""""/
-//<=== SparseGhostDomainSet class <==<
-// \__________________________________\
+/* } */
+/* // /""""""""""""""""""""""""""""/ */
+/* //<=== GhostDomainSet class <==< */
+/* // \____________________________\ */
 
 
 
 
-//|"""""""""""""""""""""""""""\
-//|===> GhostArraySet class ===>
-//|___________________________/
-//---------------------------------------------------------------------
-// Creates a set of arrays for storing data on a grid's ghost cells.
-// Note that the IsolatedArray field stores it's data in the 'value'
-// field, so data access should look like ghost_array(loc).value(idx).
-//---------------------------------------------------------------------
-class GhostArraySet {
-  const grid: Grid;
-  var arrays: [ghost_locations] IsolatedArray;
+/* //|""""""""""""""""""""""""""""""""""\ */
+/* //|===> SparseGhostDomainSet class ===> */
+/* //|__________________________________/ */
+/* class SparseGhostDomainSet { */
+/*   const grid:    Grid; */
+/*   var locations: sparse subdomain(ghost_locations); */
+/*   var domains:   [locations] domain(dimension, stridable=true); */
+/* } */
+/* // /""""""""""""""""""""""""""""""""""/ */
+/* //<=== SparseGhostDomainSet class <==< */
+/* // \__________________________________\ */
 
-  def GhostArraySet(grid: Grid) {
-    this.grid = grid;
-    for loc in ghost_locations do
-      arrays(loc) = new IsolatedArray(grid.ghost_domain_set(loc));
-  }
 
-  def this(loc: dimension*int) var {
-    return arrays(loc);
-  }
-}
-// /"""""""""""""""""""""""""""/
-//<=== GhostArraySet class <==<
-// \___________________________\
+
+
+/* //|"""""""""""""""""""""""""""\ */
+/* //|===> GhostArraySet class ===> */
+/* //|___________________________/ */
+/* //--------------------------------------------------------------------- */
+/* // Creates a set of arrays for storing data on a grid's ghost cells. */
+/* // Note that the IsolatedArray field stores it's data in the 'value' */
+/* // field, so data access should look like ghost_array(loc).value(idx). */
+/* //--------------------------------------------------------------------- */
+/* class GhostArraySet { */
+/*   const grid: Grid; */
+/*   var arrays: [ghost_locations] IsolatedArray; */
+
+/*   def GhostArraySet(grid: Grid) { */
+/*     this.grid = grid; */
+/*     for loc in ghost_locations do */
+/*       arrays(loc) = new IsolatedArray(grid.ghost_domain_set(loc)); */
+/*   } */
+
+/*   def this(loc: dimension*int) var { */
+/*     return arrays(loc); */
+/*   } */
+/* } */
+/* // /"""""""""""""""""""""""""""/ */
+/* //<=== GhostArraySet class <==< */
+/* // \___________________________\ */
 
 
 
@@ -462,33 +534,33 @@ def main {
   writeln("grid.cells = ", grid.cells);
   writeln("grid.ext_cells = ", grid.ext_cells);
 
-  writeln("");
-  writeln("Ghost cell domains:");
-  for loc in ghost_locations do
-    writeln( grid.ghost_domain_set(loc) );
+/*   writeln(""); */
+/*   writeln("Ghost cell domains:"); */
+/*   for loc in ghost_locations do */
+/*     writeln( grid.ghost_domain_set(loc) ); */
 
-  writeln("");
-  var ghost_array = new GhostArraySet(grid);
-  for loc in ghost_locations {
-    writeln( grid.ghost_domain_set(loc) );
-    writeln( ghost_array(loc).value);
-    writeln("");
-  }
+/*   writeln(""); */
+/*   var ghost_array = new GhostArraySet(grid); */
+/*   for loc in ghost_locations { */
+/*     writeln( grid.ghost_domain_set(loc) ); */
+/*     writeln( ghost_array(loc).value); */
+/*     writeln(""); */
+/*   } */
 
-  var sparse_ghost_set = new SparseGhostDomainSet(grid);
-  for loc in ghost_locations {
-    var ghost_domain = grid.ghost_domain_set(loc);
-    if ghost_domain.high(2) > 40 {
-      sparse_ghost_set.locations.add(loc);
-      sparse_ghost_set.domains(loc) = ghost_domain;
-    }
-  }
+/*   var sparse_ghost_set = new SparseGhostDomainSet(grid); */
+/*   for loc in ghost_locations { */
+/*     var ghost_domain = grid.ghost_domain_set(loc); */
+/*     if ghost_domain.high(2) > 40 { */
+/*       sparse_ghost_set.locations.add(loc); */
+/*       sparse_ghost_set.domains(loc) = ghost_domain; */
+/*     } */
+/*   } */
 
-  for loc in sparse_ghost_set.locations {
-    writeln(loc);
-    writeln(sparse_ghost_set.domains(loc));
-    writeln("");
-  }
+/*   for loc in sparse_ghost_set.locations { */
+/*     writeln(loc); */
+/*     writeln(sparse_ghost_set.domains(loc)); */
+/*     writeln(""); */
+/*   } */
 
 
 }
