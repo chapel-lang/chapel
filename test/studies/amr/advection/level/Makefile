@@ -16,11 +16,16 @@ SOURCES = \
 DIM = 2
 
 
-output: Level_AdvectionCTU.out
+output: _output Level_AdvectionCTU.out
 	./Level_AdvectionCTU.out
 
 Level_AdvectionCTU.out: $(SOURCES)
 	chpl $(SOURCES) -M $(MISC_LIB) -M $(GRID_LIB) -M $(LEVEL_LIB) --set dimension=$(DIM) -o Level_AdvectionCTU.out
 
+_output:
+	mkdir _output
+	cp ../../lib/plot.claw _output
+
 clean:
-	rm -f _output/fort.* _output/*.png output_* *.out
+	rm -rf _output/ *.out
+
