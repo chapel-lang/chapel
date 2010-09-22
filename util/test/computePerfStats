@@ -28,6 +28,12 @@ if ($argc >= 3) {
     $test_output_file = "$testname.exec.out.tmp";
 }
 
+my $exec_time_out;
+if ($argc >= 4) {
+    $exec_time_out = $ARGV[4];
+} else {
+    $exec_time_out = "false";
+}
 my $data_file = "$outputdir/$testname.dat";
 my $graph_file = "$testname.graph";
 my $gpl_file = "$outputdir/$testname.gpl";
@@ -50,11 +56,16 @@ foreach my $key (@keys) {
 }
 print ERRORS "processed $key_file\n";
 
+
 # get lines from output file
-open TEST, "$test_output_file" or die "can't open $test_output_file $!";
-my @file_lines = <TEST>;
-close (TEST);
-print ERRORS "processed $test_output_file\n";
+if ($exec_time_out eq "false") {
+    open TEST, "$test_output_file" or die "can't open $test_output_file $!";
+    my @file_lines = <TEST>;
+    close (TEST);
+    print ERRORS "processed $test_output_file\n";
+} else {
+    print ERRORS "timed out executing $testname, no $test_output_file to process\n";
+}
 
 # if this is first performance run, create the .dat
 if (-e "$data_file") {
@@ -82,25 +93,31 @@ $year -= 100;
 my $foundEverything = 1;
 printf STATS "%.2d/%.2d/%.2d ", $mon, $mday, $year;
 foreach my $key (@keys) {
-    print "Looking for $key...";
-    print STATS "\t";
-    my $found = 0;
-    foreach my $line (@file_lines) {
-        if ($line =~ m/\Q$key\E(\s*)(\S*)/ && $found == 0) {
-            print "found it: $2\n";
-            print STATS "$2";
-            $found = 1;
+    if ($exec_time_out eq "false") {
+        print "Looking for $key...";
+        print STATS "\t";
+        my $found = 0;
+        foreach my $line (@file_lines) {
+            if ($line =~ m/\Q$key\E(\s*)(\S*)/ && $found == 0) {
+                print "found it: $2\n";
+                print STATS "$2";
+                $found = 1;
+            }
         }
-    }
-    if ($found == 0) {
-        print STATS "-";
-        print "didn't find it\n";
-        $foundEverything = 0;
+        if ($found == 0) {
+            print STATS "-";
+            print "didn't find it\n";
+            $foundEverything = 0;
+        }
+    } else {
+	print ERRORS "Printing time out as \"-\" under $key...\n";
+        print STATS "\t";
+        print STATS " ";
     }
 }
 print STATS "\n";
 
-if ($foundEverything != 1) {
+if ($foundEverything != 1 and $exec_time_out eq "false") {
     print "output was:\n";
     system("cat $test_output_file");
     exit 1;
