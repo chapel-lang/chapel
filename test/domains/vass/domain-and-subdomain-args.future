@@ -1,6 +1,6 @@
-bug: subdomain types for formals are not implemented
+feature request: what should happen when passing a wrong subdomain?
 
-The compiler emits "error: 'chpl__buildDomainRuntimeType' undeclared (first use this function) [normalize.cpp:79]" while compiling each of testSubDomain() and testSparseSubDomain().
-
-(I am not sure whether it'd be sufficient to define the function(s) the
-compiler is trying to invoke, or if deeper changes are needed.)
+Specifically, if the formal's type is subdomain(d) and the actual
+is a subdomain(e) where e != d - should this be a compile-time error?
+A run-time error? (In the latter case, should the check be disableable
+with -fast?)

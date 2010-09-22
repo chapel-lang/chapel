@@ -1,9 +1,13 @@
-def testSubDomain(d: domain(?dim), sd: subdomain(d)) { }
-def testSparseSubDomain(d: domain(?dim), sd: sparse subdomain(d)) { }
+def testSubdomain(d: domain, sd: subdomain(d)) { }
+def testSparseSubdomain(d: domain, sd: sparse subdomain(d)) { }
 
+var c: domain(1);
 var d: domain(1);
+
 var sd: subdomain(d);
 var ssd: sparse subdomain(d);
 
-testSubDomain(d, sd);
-testSparseSubDomain(d, ssd);
+testSubdomain(c, sd);
+//this is correctly(?) rejected by the compiler at present:
+// testSubdomain(c, ssd);
+testSparseSubdomain(c, ssd);
