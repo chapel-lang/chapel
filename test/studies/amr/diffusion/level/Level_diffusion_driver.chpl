@@ -31,7 +31,7 @@ def main {
   }
 
   var solution = new LevelSolution(level = level);
-  solution.setToFunction(initial_condition, output_times(1));
+  solution.setToFunction(initial_condition, output_times(0));
 
   //==== Max time step ====
   //--------------------------------------------------------------------
@@ -58,7 +58,7 @@ def main {
 
   //==== Set boundary conditions ====
   write("Setting boundary conditions...");
-  var bc = new ZeroFluxDiffusionLevelBC(level = level);
+  var bc = new ZeroFluxDiffusionBC(level = level);
   write("done.\n");
 
 
@@ -71,7 +71,7 @@ def main {
   write("done.\n");
   
   //==== Subsequent times ====
-  for output_time in output_times do {
+  for output_time in output_times(1..) do {
     //==== Advance solution to output time ====
     solution.advance_DiffusionBE(bc, diffusivity, output_time, dt_max);
   

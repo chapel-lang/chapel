@@ -85,7 +85,7 @@ def GridSolution.step_DiffusionBE(
   // methods.
   //----------------------------------------------------------------------
   var rhs = new GridArray(grid);
-  bc.applyBoundaryCondition(current_data, t_new);
+  bc.apply(current_data, t_new);
   rhs.storeFluxDivergence(current_data, diffusivity);
   rhs(grid.cells) *= -dt;
 
@@ -98,7 +98,7 @@ def GridSolution.step_DiffusionBE(
   // residual = rhs - (dq + dt*flux_divergence(dq))
   //------------------------------------------------------------
   var residual = new GridArray(grid);
-  bc.applyBoundaryConditionHomogeneous(dq);
+  bc.apply_Homogeneous(dq);
   residual.storeBEOperator(dq, diffusivity, dt);
   residual(grid.cells) = rhs(grid.cells) - residual(grid.cells);
   residual_norm_square = +reduce(residual.value(grid.cells)**2);
@@ -114,7 +114,7 @@ def GridSolution.step_DiffusionBE(
   // Initializes to homogeneousBEOperator(search_dir)
   //--------------------------------------------------
   var residual_update = new GridArray(grid);
-  bc.applyBoundaryConditionHomogeneous(search_dir);
+  bc.apply_Homogeneous(search_dir);
   residual_update.storeBEOperator(search_dir, diffusivity, dt);
   
   
@@ -140,7 +140,7 @@ def GridSolution.step_DiffusionBE(
     beta = residual_norm_square / old_residual_norm_square;
     search_dir(grid.cells) = residual(grid.cells) + beta * search_dir(grid.cells);
 
-    bc.applyBoundaryConditionHomogeneous(search_dir);
+    bc.apply_Homogeneous(search_dir);
     residual_update.storeBEOperator(search_dir, diffusivity, dt);
 
   }

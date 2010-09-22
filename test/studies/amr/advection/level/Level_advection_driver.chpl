@@ -68,7 +68,7 @@ def main {
   write("done.\n");
   
   //==== Subsequent times ====
-  for output_time in output_times do {
+  for output_time in output_times(1..) do {
     //==== Advance solution to output time ====
     solution.advance_AdvectionCTU(bc, velocity, output_time);
   

@@ -1,6 +1,6 @@
 use DomainSet_def;
 
-class IsolatedArray {
+class IndependentArray {
   param rank: int;
   param stridable: bool;
   type eltType;
@@ -13,15 +13,18 @@ class IsolatedArray {
 
 class ArraySet {
   
-  const domain_set;
-  type eltType;
+  param rank: int;
+  param stridable: bool;
+  type  eltType;
   
-  var arrays: [domain_set.indices] IsolatedArray(domain_set.rank, domain_set.stridable, eltType);
+  var indices: domain(1) = [1..0];
+  var arrays: [indices] IndependentArray(rank, stridable, eltType);
   
-  def initialize() {
-    for i in domain_set.indices {
-      arrays(i) = new IsolatedArray(domain_set.rank, domain_set.stridable, eltType);
-      arrays(i).dom = domain_set.domains(i);      
+  def allocate(d_set: DomainSet(rank,stridable)) {
+    indices = d_set.indices;
+    for i in indices {
+      arrays(i) = new IndependentArray(rank, stridable, eltType);
+      arrays(i).dom = d_set.domains(i);      
     }
   }
   
@@ -37,7 +40,14 @@ def main {
   var full_D = [1..10, 1..10];
   var d_set = full_D - [3..5, 4..8];
   
-  var array_set = new ArraySet(d_set, int);
+  // var array_set = new ArraySet(d_set, int);
+  var array_set: ArraySet(d_set.rank,d_set.stridable, int);
+  array_set = new ArraySet(d_set.rank, d_set.stridable, int);
+  array_set.allocate(d_set);
+
+  // writeln(array_set);
+
+  
   for array in array_set {
     writeln(array.dom);
     writeln(array.value);

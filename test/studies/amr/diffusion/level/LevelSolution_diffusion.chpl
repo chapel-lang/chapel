@@ -58,7 +58,7 @@ def LevelSolution.step_DiffusionBE(
 
   //==== Set rhs ====
   var rhs = new LevelArray(level = level);
-  bc.applyBoundaryCondition(current_data, current_time+dt);
+  bc.apply(current_data, current_time+dt);
   rhs.storeFluxDivergence(current_data, diffusivity);
   for grid in level.grids do rhs(grid) *= -dt;
 

@@ -41,7 +41,7 @@ def LevelSolution.advance_AdvectionCTU(
 
 
     //==== Update solution ====
-    bc.applyBoundaryCondition(current_data, current_time);
+    bc.apply(current_data, current_time);
     step_AdvectionCTU(velocity, dt);
           
   }

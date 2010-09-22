@@ -3,12 +3,12 @@ use GridBC_def;
 
 //===> ZeroFluxDiffusionGridBC derived class ===>
 //==============================================>
-class ZeroFluxDiffusionGridBC: GridBC {
+class ZeroFluxDiffusionBC: GridBC {
   
   //===> applyBoundaryCondition method ===>
   //==============================>
-  def applyBoundaryCondition(q: GridArray, t: real) {
-    applyBoundaryConditionHomogeneous(q);
+  def apply(q: GridArray, t: real) {
+    apply_Homogeneous(q);
   }
   //<=== applyBoundaryCondition method <===
   //<==============================
@@ -16,14 +16,14 @@ class ZeroFluxDiffusionGridBC: GridBC {
 
   //===> applyBoundaryConditionHomogeneous method ===>
   //=========================================>
-  def applyBoundaryConditionHomogeneous(q: GridArray) {
+  def apply_Homogeneous(q: GridArray) {
 
     for ghost_domain in grid.ghost_domain_set {
-      var loc = grid.locateDomain(ghost_domain);
+      var loc = grid.relativeLocation(ghost_domain);
       var shift = -1*loc;
 
       forall cell in ghost_domain do
-	q.value(cell) = q.value(cell+shift);
+        q.value(cell) = q.value(cell+shift);
 
     }
     

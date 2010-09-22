@@ -44,7 +44,7 @@ def main {
 
 
   //==== Initialize boundary conditions ====
-  var bc = new ZeroFluxDiffusionGridBC(grid = grid);
+  var bc = new ZeroFluxDiffusionBC(grid = grid);
 /*   var bc = new PeriodicGridBC(grid = grid); */
 
 

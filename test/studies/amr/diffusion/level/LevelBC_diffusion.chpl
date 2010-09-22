@@ -1,35 +1,32 @@
 use LevelBC_def;
 
 
-//===> ZeroFluxDiffusionLevelBC derived class ===>
-//===============================================>
-class ZeroFluxDiffusionLevelBC: LevelBC {
+//|\""""""""""""""""""""""""""""""""""""""""""|\
+//| >    ZeroFluxDiffusionBC derived class    | >
+//|/__________________________________________|/
+class ZeroFluxDiffusionBC: LevelBC {
   
-  def applyBoundaryCondition(q: LevelArray, t: real) {
-    applyBoundaryConditionHomogeneous(q);
+  def apply(q: LevelArray, t: real) {
+    apply_Homogeneous(q);
   }
 
   
-  def applyBoundaryConditionHomogeneous(q: LevelArray) {
+  def apply_Homogeneous(q: LevelArray) {
     
     for grid in level.grids {
     
-      for loc in ghost_locations {
-	      var shift: dimension*int;
-
-	      for d in dimensions {
-	        if loc(d) == loc1d.low then shift(d) = 2;
-	        else if loc(d) == loc1d.high then shift(d) = -2;
-	      }
-
-	      forall cell in grid.ghost_domain_set(loc) do
-	        q(grid).value(cell) = q(grid).value(cell+shift);
-
-      } // end for loc in ghost_locations
-
+      for ghost_domain in grid.ghost_domain_set {
+        var loc   = grid.relativeLocation(ghost_domain);
+        var shift = -1*loc;
+        
+        forall cell in ghost_domain do
+          q(grid).value(cell) = q(grid).value(cell+shift);
+      }
+    
     } // end for grid in level.grids
   }
 
 }
-//<=== ZeroFluxDiffusionLevelBC derived class <===
-//<===============================================
+// /|""""""""""""""""""""""""""""""""""""""""""/|
+//< |    ZeroFluxDiffusionBC derived class    < |
+// \|__________________________________________\|

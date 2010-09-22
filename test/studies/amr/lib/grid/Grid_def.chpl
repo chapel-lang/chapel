@@ -106,11 +106,11 @@ class Grid {
       var R: range(stridable=true);
 
       if p == loc1d.below then
-	R = (ext_cells.low(d).. by 2) #n_ghost_cells(d);
+        R = (ext_cells.low(d).. by 2) #n_ghost_cells(d);
       else if p == loc1d.inner then
-	R = cells.dim(d);
+        R = cells.dim(d);
       else
-	R = (..ext_cells.high(d) by 2) #n_ghost_cells(d);
+        R = (..ext_cells.high(d) by 2) #n_ghost_cells(d);
 
       return R;
     }
@@ -149,10 +149,10 @@ class Grid {
 
 
 
-  //|\'''''''''''''''''''''''''''|\
-  //| >    locateIndex method    | >
-  //|/...........................|/
-  def locateIndex(idx: dimension*int) {
+  //|\''''''''''''''''''''''''''''''''|\
+  //| >    relativeLocation method    | >
+  //|/................................|/
+  def relativeLocation(idx: dimension*int) {
     var loc: dimension*int;
 
     for d in dimensions {
@@ -160,22 +160,15 @@ class Grid {
       else if idx(d) == i_low(d)  then loc(d) = loc1d.low;
       else if idx(d) <  i_high(d) then loc(d) = loc1d.inner;
       else if idx(d) == i_high(d) then loc(d) = loc1d.high;
-      else                                 idx(d) = loc1d.above;
+      else                             loc(d) = loc1d.above;
     }
 
     return loc;
   }
-  // /|''''''''''''''''''''/|
-  //< |    locateIndex    < |
-  // \|....................\|
 
-
-  //|\'''''''''''''''''''''|\
-  //| >    locateDomain    | >
-  //|/.....................|/
-  def locateDomain(D: domain(dimension, stridable=true)){
-    var loc_low  = locateIndex(D.low);
-    var loc_high = locateIndex(D.high);
+  def relativeLocation(D: domain(dimension, stridable=true)){
+    var loc_low  = relativeLocation(D.low);
+    var loc_high = relativeLocation(D.high);
 
     if loc_low == loc_high then
       return loc_low;
@@ -183,9 +176,9 @@ class Grid {
       halt("error: Grid.locateDomain\n:" +
 	   "Provided domain spans multiple location categories.");
   }
-  // /|'''''''''''''''''''''/|
-  //< |    locateDomain    < |
-  // \|.....................\|
+  // /|''''''''''''''''''''''''''''''''/|
+  //< |    relativeLocation method    < |
+  // \|................................\|
 
 
 

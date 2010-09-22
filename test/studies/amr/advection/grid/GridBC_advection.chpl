@@ -4,20 +4,20 @@ use GridBC_def;
 
 //===> ZeroInflowAdvectionGridBC class ===>
 //========================================>
-class ZeroInflowAdvectionGridBC: GridBC {
+class ZeroInflowAdvectionBC: GridBC {
   
   
-  def applyBoundaryCondition(q: GridArray, t: real) {
+  def apply(q: GridArray, t: real) {
     //==== This type of BC is homogeneous ====
-    applyBoundaryConditionHomogeneous(q);
+    apply_Homogeneous(q);
   }
   
   
-  def applyBoundaryConditionHomogeneous(q: GridArray) {
+  def apply_Homogeneous(q: GridArray) {
 
     for ghost_domain in grid.ghost_domain_set {
       forall cell in ghost_domain do
-	q.value(cell) = 0.0;
+        q.value(cell) = 0.0;
     }
 
 /*     for loc in ghost_locations { */

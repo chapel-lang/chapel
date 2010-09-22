@@ -1,26 +1,28 @@
 use LevelBC_def;
 
-//===> ZeroInflowAdvectionLevelBC derived class ===>
-//=================================================>
+//|\"""""""""""""""""""""""""""""""""""|\
+//| >    ZeroInflowBC derived class    | >
+//|/___________________________________|/
 class ZeroInflowBC: LevelBC {
 
-
-  def applyBoundaryCondition(q: LevelArray, t: real){
-    applyBoundaryConditionHomogeneous(q);
+  def apply(q: LevelArray, t: real){
+    apply_Homogeneous(q);
   }
 
-
-  def applyBoundaryConditionHomogeneous(q: LevelArray){
+  def apply_Homogeneous(q: LevelArray){
 
     for grid in level.grids {
-      for loc in ghost_locations {
-	      forall cell in grid.ghost_domain_set(loc) do
-	      q(grid).value(cell) = 0.0;
+
+      for ghost_domain in grid.ghost_domain_set {
+        forall cell in ghost_domain do
+          q(grid).value(cell) = 0.0;
       }
+
     }
 
   }
  
 }
-//<=== ZeroInflowAdvectionLevelBC derived class <===
-//<=================================================
+// /|"""""""""""""""""""""""""""""""""""/|
+//< |    ZeroInflowBC derived class    < |
+// \|___________________________________\|

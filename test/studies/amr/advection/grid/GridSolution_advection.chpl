@@ -72,7 +72,7 @@ def GridSolution.step_AdvectionCTU(
 ){
 
   //==== Apply physical BC ====
-  bc.applyBoundaryCondition(current_data, current_time);
+  bc.apply(current_data, current_time);
 
   //==== Update solution data ====
   old_data.storeCTUOperator(current_data, velocity, dt);

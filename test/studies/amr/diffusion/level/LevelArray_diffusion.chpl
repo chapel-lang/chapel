@@ -16,7 +16,7 @@ def LevelArray.storeCGSolution(
   
   //==== Initialize residual ====
   var residual = new LevelArray(level = level);
-  bc.applyBoundaryConditionHomogeneous(this);
+  bc.apply_Homogeneous(this);
   residual.storeBEOperator(this, diffusivity, dt);
   for grid in level.grids do
     residual(grid) = rhs(grid) - residual(grid);			       
@@ -31,7 +31,7 @@ def LevelArray.storeCGSolution(
 
   //==== Initialize residual update direction ====
   var residual_update = new LevelArray(level = level);
-  bc.applyBoundaryConditionHomogeneous(search_dir);
+  bc.apply_Homogeneous(search_dir);
   residual_update.storeBEOperator(search_dir, diffusivity, dt);
 
 
@@ -85,7 +85,7 @@ def LevelArray.storeCGSolution(
       search_dir(grid,grid.cells) = residual(grid,grid.cells) + beta*search_dir(grid,grid.cells);
 
 
-    bc.applyBoundaryConditionHomogeneous(search_dir);
+    bc.apply_Homogeneous(search_dir);
     residual_update.storeBEOperator(search_dir, diffusivity, dt);
 
   }

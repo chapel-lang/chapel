@@ -1,6 +1,3 @@
-SOURCES = \
-	level_advection_defs.chpl \
-	level_advection_driver.chpl
 
 GRID_LIB = ../grid
 
@@ -8,11 +5,18 @@ GRID_LIB = ../grid
 .PHONY: clean
 
 
-level_base_test: level_base_test.out
-	./level_base_test.out
+LevelArraySet_test: LevelArraySet_test.out
+	./LevelArraySet_test.out
 
-level_base_test.out: level_base_defs.chpl
-	chpl level_base_defs.chpl -M $(GRID_LIB) --set dimension=2 -o level_base_test.out
+LevelArraySet_test.out: Level_def.chpl LevelArraySet_def.chpl
+	chpl LevelArraySet_def.chpl Level_def.chpl --main-module=LevelArraySet_def -M $(GRID_LIB) --set dimension=2 -o LevelArraySet_test.out
+
+
+Level_test: Level_test.out
+	./Level_test.out
+
+Level_test.out: Level_def.chpl
+	chpl Level_def.chpl -M $(GRID_LIB) --set dimension=2 -o Level_test.out
 
 clean:
 	rm -f *.out

@@ -94,6 +94,7 @@ class Level {
   def writeThis(w: Writer) {
     writeln("Level bounds: ", x_low, "  ", x_high);
     writeln("Number of cells: ", n_cells);
+    writeln("Number of ghost cells: ", n_ghost_cells);
     writeln("========================================");
     var grid_number: int = 0;
     for grid in grids {
@@ -311,27 +312,25 @@ def readLevel(file_name: string){
 
 
 
-//|""""""""""""""""""""""""""""""""\
-//|===> LevelGhostArraySet class ===>
-//|________________________________/
-class LevelGhostArraySet {
-  const level: Level;
-  var ghost_array_sets: [level.grids] GhostArraySet;
-
-  def initialize() {
-    for grid in level.grids do
-      ghost_array_sets(grid) = new GhostArraySet(grid);
-  }
-
-  def this(grid: Grid) {
-    return ghost_array_sets(grid);
-  }
-}
-// /""""""""""""""""""""""""""""""""/
-//<=== LevelGhostArraySet class <==<
-// \________________________________\
-
-
+// //|""""""""""""""""""""""""""""""""\
+// //|===> LevelGhostArraySet class ===>
+// //|________________________________/
+// class LevelGhostArraySet {
+//   const level: Level;
+//   var ghost_array_sets: [level.grids] GhostArraySet;
+// 
+//   def initialize() {
+//     for grid in level.grids do
+//       ghost_array_sets(grid) = new GhostArraySet(grid);
+//   }
+// 
+//   def this(grid: Grid) {
+//     return ghost_array_sets(grid);
+//   }
+// }
+// // /""""""""""""""""""""""""""""""""/
+// //<=== LevelGhostArraySet class <==<
+// // \________________________________\
 
 
 
@@ -343,19 +342,19 @@ def main {
 
   writeln(level);
 
-  var lga = new LevelGhostArraySet(level = level);
-
-  writeln("");
-
-  for grid in level.grids {
-    writeln("Grid:");
-    writeln(grid);
-
-    for loc in ghost_locations {
-      writeln("Ghost domain at ", loc, ": ", lga(grid)(loc).dom );
-      writeln( lga(grid)(loc).value );
-      writeln("");
-    }
-  }
+  // var lga = new LevelGhostArraySet(level = level);
+  // 
+  // writeln("");
+  // 
+  // for grid in level.grids {
+  //   writeln("Grid:");
+  //   writeln(grid);
+  // 
+  //   for loc in ghost_locations {
+  //     writeln("Ghost domain at ", loc, ": ", lga(grid)(loc).dom );
+  //     writeln( lga(grid)(loc).value );
+  //     writeln("");
+  //   }
+  // }
 
 }
