@@ -10,6 +10,7 @@
 //
 //<=== Description <===
 
+use EnhancedArithmetic;
 use DomainSet_def;
 use ArraySet_def;
 
@@ -450,60 +451,9 @@ def tuplify(idx) {
 
 
 
-//|----------------------------*
-//|==== range exponentiation ===>
-//|----------------------------*
-def **(R: range(stridable=?s), param n: int) {
-  var ranges: n*R.type;
-  for i in [1..n] do ranges(i) = R;
-
-  var D: domain(n,stridable=s) = ranges;
-  return D;
-}
-// *----------------------------|
-//<=== range exponentiation <===|
-// *----------------------------|
 
 
 
-//|---------------------------*
-//|===> IsolatedArray class ===>
-//|---------------------------*
-//-----------------------------------------------------------------------
-// This class defines an "isolated" array in the sense that the object
-// contains its own domain.  This allows arrays of arrays to be created.
-// I'm only creating it for the single type of domain I'm using to store
-// solution data.
-//-----------------------------------------------------------------------
-class IsolatedArray {
-  const dom: domain(dimension, stridable=true);
-  var value: [dom] real;
-}
-// *---------------------------|
-//<=== IsolatedArray class <===|
-// *---------------------------|
-
-
-
-//|-------------------------------*
-//|===> Scalar/tuple arithmetic ===>
-//|-------------------------------*
-def *(a, T)
-where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type {
-  var U: T.type;
-  for i in 1..T.size do
-    U(i) = a*T(i);
-  return U;
-}
-
-def *(T,a)
-where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
-{
-  return a*T;
-}
-// *-------------------------------|
-//<=== Scalar/tuple arithmetic <===|
-// *-------------------------------|
 
 
 

@@ -1,4 +1,4 @@
-use GridArray_diffusion;
+use GridArray_DiffusionBE;
 use LevelArray_def;
 use LevelBC_def;
 

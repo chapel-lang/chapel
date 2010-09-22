@@ -8,8 +8,8 @@
 //<=== Description <===
 
 
-use GridSolution_advection;
-use GridBC_advection;
+use GridSolution_AdvectionCTU;
+use GridBC_AdvectionCTU;
 
 
 def main {

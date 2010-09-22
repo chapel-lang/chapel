@@ -1,15 +1,11 @@
-CLAW_OUTDIR = _output               # Directory for output
-CLAW_setplot_file = setplot1d.py      # File containing function to set plots
-CLAW_PLOTDIR = _plots               # Directory for plots
-PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
+MISC_LIB = ../../lib/misc
+GRID_LIB = ../../lib/grid
 
 SOURCES = \
-	GridArray_advection.chpl \
-	GridSolution_advection.chpl \
-	GridBC_advection.chpl \
-	Grid_advection_driver.chpl
-
-GRID_LIB = ../../lib/grid
+	GridArray_AdvectionCTU.chpl \
+	GridSolution_AdvectionCTU.chpl \
+	GridBC_AdvectionCTU.chpl \
+	Grid_AdvectionCTU_driver.chpl
 
 DIM = 2
 
@@ -17,15 +13,15 @@ DIM = 2
 .PHONY: clean, emacs_clean
 
 
-output: grid_advection.out
+output: Grid_AdvectionCTU.out
 	rm -f _output/fort.*
-	./grid_advection.out
+	./Grid_AdvectionCTU.out
 	@echo "Output is in directory _output."
 	@echo $(CLAW_OUTDIR) > output
 
 
-grid_advection.out: $(SOURCES)
-	chpl $(SOURCES) -M $(GRID_LIB) --set dimension=$(DIM) -o grid_advection.out
+Grid_AdvectionCTU.out: $(SOURCES)
+	chpl $(SOURCES) -M $(MISC_LIB) -M $(GRID_LIB) --set dimension=$(DIM) -o Grid_AdvectionCTU.out
 
 
 plots: _output/fort.t0000

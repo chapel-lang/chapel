@@ -220,10 +220,12 @@ def main {
   var d_set = new DomainSet(2, stridable=false);
   d_set.add(full_D);
   d_set -= [3..5, 4..9];
+  d_set -= full_D;
+  writeln(d_set.domains);
   
-  var A: [full_D] int;
-  for D in d_set do A(D) = 1;
-  
-  writeln(A);
+  // var A: [full_D] int;
+  // for D in d_set do A(D) = 1;
+  // 
+  // writeln(A);
 
 }

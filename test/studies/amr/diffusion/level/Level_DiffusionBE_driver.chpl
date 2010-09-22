@@ -1,24 +1,22 @@
 //===> Description ===>
 //
-// Driver for an advection example, integrated with corner transport
-// upwind (CTU).
+// Driver for a diffusion example, integrated with Backward Euler
 //
 //<=== Description <===
 
 
-use LevelSolution_advection;
-use LevelBC_advection;
-
+use LevelSolution_DiffusionBE;
+use LevelBC_DiffusionBE;
 
 
 def main {
 
 
-  //==== Initialize output ====
+  //==== Output times ====
   var output_times = setOutputTimes("set_problem/time.txt");
 
 
-  //===> Initialize space ===>  
+  //==== Level ====
   var level = readLevel("set_problem/space.txt");
 
 
@@ -34,43 +32,48 @@ def main {
 
   var solution = new LevelSolution(level = level);
   solution.setToFunction(initial_condition, output_times(0));
+
+  //==== Max time step ====
+  //--------------------------------------------------------------------
+  // Once I can make the solution a derived class, this should probably
+  // be a field.
+  //--------------------------------------------------------------------
+  var dt_max = 0.05;
+
   write("done.\n");
   //<=== Initialize  solution <===
 
 
 
-  //===> Advection velocity ===>
-  var velocity: dimension*real;
+  //===> Diffusivity ===>
+  var diffusivity: real;
   var phys_file = new file("set_problem/physics.txt", FileAccessMode.read);
   phys_file.open();
   var dim_in: int;
-  phys_file.readln(dim_in);
-  assert(dim_in == dimension, 
-         "error: dimension of physics.txt must equal " + format("%i",dimension));
-  phys_file.readln((...velocity));
+  phys_file.readln(diffusivity);
   phys_file.close();
-  //<=== Advection velocity <===
+  //<=== Diffusivity <===
 
 
 
   //==== Set boundary conditions ====
   write("Setting boundary conditions...");
-  var bc = new ZeroInflowBC(level = level);
+  var bc = new ZeroFluxDiffusionBC(level = level);
   write("done.\n");
 
 
 
   //===> Generate output ===>
   //==== Initial time ====
-  var frame_number: int = 0;
   write("Writing initial output...");
+  var frame_number: int = 0;
   solution.clawOutput(frame_number);
   write("done.\n");
   
   //==== Subsequent times ====
   for output_time in output_times(1..) do {
     //==== Advance solution to output time ====
-    solution.advance_AdvectionCTU(bc, velocity, output_time);
+    solution.advance_DiffusionBE(bc, diffusivity, output_time, dt_max);
   
     //==== Write output to file ====
     frame_number += 1;
@@ -83,3 +86,7 @@ def main {
   
 
 } // end main
+
+
+
+

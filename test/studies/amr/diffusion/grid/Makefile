@@ -1,32 +1,28 @@
-CLAW_OUTDIR = _output               # Directory for output
-CLAW_setplot_file = setplot1d.py      # File containing function to set plots
-CLAW_PLOTDIR = _plots               # Directory for plots
-PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
+MISC_LIB = ../../lib/misc
+GRID_LIB = ../../lib/grid
 
 
 SOURCES = \
-	GridArray_diffusion.chpl \
-	GridSolution_diffusion.chpl \
-	GridBC_diffusion.chpl \
-	Grid_diffusion_driver.chpl
+	GridArray_DiffusionBE.chpl \
+	GridSolution_DiffusionBE.chpl \
+	GridBC_DiffusionBE.chpl \
+	Grid_DiffusionBE_driver.chpl
 
-GRID_LIB = ../../lib/grid
 
 DIM = 2
 
 .PHONY: clean, emacs_clean
 
 
-
-output: diffusion_backward_euler.out
+output: Grid_DiffusionBE.out
 	rm -f _output/fort.*
-	./diffusion_backward_euler.out
+	./Grid_DiffusionBE.out
 	@echo "Output is in directory _output."
 	@echo $(CLAW_OUTDIR) > output
 
 
-diffusion_backward_euler.out: $(SOURCES)
-	chpl $(SOURCES) -M $(GRID_LIB) --set dimension=$(DIM) -o diffusion_backward_euler.out
+Grid_DiffusionBE.out: $(SOURCES)
+	chpl $(SOURCES) -M $(MISC_LIB) -M $(GRID_LIB) --set dimension=$(DIM) -o Grid_DiffusionBE.out
 
 
 plots: _output/fort.t0000

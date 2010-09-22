@@ -1,4 +1,4 @@
-use GridArray_diffusion;
+use GridArray_DiffusionBE;
 use GridBC_def;
 
 

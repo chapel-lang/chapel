@@ -8,7 +8,7 @@
 
 use GridSolution_def;
 use GridBC_def;
-use GridArray_advection;
+use GridArray_AdvectionCTU;
 
 
 //===> Grid.advance_AdvectionCTU method ===>
