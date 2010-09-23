@@ -41,8 +41,12 @@ Optimization Control Options:
                                          forwarding
       --[no-]remove-copy-calls           Enable [disable] remove copy calls
       --[no-]scalar-replacement          Enable [disable] scalar replacement
-      --scalar-replace-limit <limit>     Limit size of tuples being replaced
-                                         during scalar replacement
+      --scalar-replace-limit <limit>     Limit on the size of tuples being
+                                         replaced during scalar replacement
+      --[no-]tuple-copy-opt              Enable [disable] tuple (memcpy)
+                                         optimization
+      --tuple-copy-limit <limit>         Limit on the size of tuples
+                                         considered for optimization
 
 Run-time Semantic Check Options:
       --no-checks                        Disable all following checks

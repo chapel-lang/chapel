@@ -49,6 +49,7 @@ int fConditionalDynamicDispatchLimit = 0;
 bool fNoCopyPropagation = false;
 bool fNoDeadCodeElimination = false;
 bool fNoScalarReplacement = false;
+bool fNoTupleCopyOpt = false;
 bool fNoRemoteValueForwarding = false;
 bool fNoRemoveCopyCalls = false;
 bool fNoOptimizeLoopIterators = false;
@@ -67,6 +68,7 @@ bool fNoRemoveEmptyRecords = false;
 bool fNoRepositionDefExpr = false; // re-initialized in setupOrderedGlobals()
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
+int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
 bool fSerialForall = false;
 bool fSerial;  // initialized in setupOrderedGlobals() below
@@ -368,6 +370,7 @@ static void setFastFlag(ArgumentState* arg, char* unused) {
   fNoRemoteValueForwarding = false;
   fNoRemoveCopyCalls = false;
   fNoScalarReplacement = false;
+  fNoTupleCopyOpt = false;
   fNoPrivatization = false;
   fNoChecks = true;
   fNoBoundsChecks = true;
@@ -392,6 +395,7 @@ static void setBaselineFlag(ArgumentState* arg, char* unused) {
   fNoRemoteValueForwarding = true;
   fNoRemoveCopyCalls = true;
   fNoScalarReplacement = true;
+  fNoTupleCopyOpt = true;
   fNoPrivatization = true;
   fNoOptimizeOnClauses = true;
   fConditionalDynamicDispatchLimit = 0;
@@ -450,7 +454,9 @@ static ArgumentDescription arg_desc[] = {
  {"remote-value-forwarding", ' ', NULL, "Enable [disable] remote value forwarding", "n", &fNoRemoteValueForwarding, "CHPL_DISABLE_REMOTE_VALUE_FORWARDING", NULL},
  {"remove-copy-calls", ' ', NULL, "Enable [disable] remove copy calls", "n", &fNoRemoveCopyCalls, "CHPL_DISABLE_REMOVE_COPY_CALLS", NULL},
  {"scalar-replacement", ' ', NULL, "Enable [disable] scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
- {"scalar-replace-limit", ' ', "<limit>", "Limit size of tuples being replaced during scalar replacement", "I", &scalar_replace_limit, "CHPL_SCALAR_REPLACE_TUPLE_LIMIT", NULL},
+ {"scalar-replace-limit", ' ', "<limit>", "Limit on the size of tuples being replaced during scalar replacement", "I", &scalar_replace_limit, "CHPL_SCALAR_REPLACE_TUPLE_LIMIT", NULL},
+ {"tuple-copy-opt", ' ', NULL, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", NULL},
+ {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
