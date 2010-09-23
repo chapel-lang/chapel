@@ -917,10 +917,6 @@ def BlockArr.writeBinArray(f: file)
 	writeln("Inside: ",here.id," idx:",i1,",",i2, " locale:",dom.dist.targetLocales((i1,i2)));
   } } }
 
-	writeln("Inside: ",here.id);
-	writeln("high: ",locArr((0,0)).locDom.myBlock.high(1));
-  writeln(" data high:",locArr((0,0)).locDom.myBlock.high(1)-locArr((0,0)).locDom.myBlock.low(1));
-  writeln(" data high(2):",( locArr((0,0)).locDom.myBlock.high(2)-locArr((0,0)).locDom.myBlock.low(2)) );
   if ( ( (locArr((0,0)).locDom.myBlock.high(1)-locArr((0,0)).locDom.myBlock.low(1))*( locArr((0,0)).locDom.myBlock.high(2)-locArr((0,0)).locDom.myBlock.low(2)) ) < 256000 ) {
           if debugBlockDist then writeln("Sequential block size:",( ( locArr((0,0)).locDom.myBlock.high(1)-locArr((0,0)).locDom.myBlock.low(1)),( locArr((0,0)).locDom.myBlock.high(2)-locArr((0,0)).locDom.myBlock.low(2)) ));
 	  for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
