@@ -77,12 +77,7 @@ forall i in Dom do {
 
 var fpos:int(64);
   // Create an output file with the specified filename in write mode
-
 var outfile = new file(filename, FileAccessMode.write);
-outfile.open();
-outfile.close();
-
-outfile = new file(filename, FileAccessMode.readwrite);
 
 // Open the file
 outfile.open();
@@ -124,36 +119,38 @@ forall a in A do {
 var Distrib = new dmap(new Block(rank=2, boundingBox=[1..5, 1..5]));                                          
 var Dom2: domain(2) dmapped Distrib = [1..5,1..5];
 
-outfile.open();
-outfile.read(Distrib);
-fpos=outfile.chpl_ftell();
+var infile = new file(filename, FileAccessMode.read);
+
+infile.open();
+infile.read(Distrib);
+fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr1, ftell:",fpos);
 
 // writeln(Distrib);
-outfile.read(Dom2);
-fpos=outfile.chpl_ftell();
+infile.read(Dom2);
+fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr2, ftell:",fpos," A");
 // writeln(Dom2);
-outfile.read(A);
-fpos=outfile.chpl_ftell();
+infile.read(A);
+fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr3, ftell:",fpos," Dom");
 // writeln(A);
-outfile.read(Dom2);
-fpos=outfile.chpl_ftell();
+infile.read(Dom2);
+fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr4, ftell:",fpos," Dis");
-outfile.read(Distrib);
-fpos=outfile.chpl_ftell();
+infile.read(Distrib);
+fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr5, ftell:",fpos," A");
 
 forall a in A do {
   a = 0;
 }
 writeln(Dom2);
-outfile.read(A);
-fpos=outfile.chpl_ftell();
+infile.read(A);
+fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr6, ftell:",fpos);
 // writeln(A);
-outfile.close();
+infile.close();
 
 //
 // In parallel, subtract one from each element of the array.
