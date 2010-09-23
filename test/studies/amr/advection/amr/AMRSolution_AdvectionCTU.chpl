@@ -4,7 +4,7 @@
 //
 //<=== Description <===
 
-use LevelSolution_advection;
+use LevelSolution_AdvectionCTU;
 use AMRHierarchy_def;
 use AMRSolution_def;
 use AMRBC_def;
@@ -80,7 +80,7 @@ def AMRSolution.stepLevelSolution_AdvectionCTU(
   var t = level_solution.current_time;
 
   //---- Fill ghost cells ----
-  bc.applyBC(level_solution.current_data, t);
+  bc.apply(level_solution.current_data, t);
   if coarse_sol_interface then
     level_solution.current_data.fineBoundaryTimeInterpolation(coarse_sol_interface, t);
 

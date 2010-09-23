@@ -1,6 +1,6 @@
 use CFLevelInterface_def;
 use LevelSolution_def;
-
+use LevelGhostArraySet_def;
 
 
 //|"""""""""""""""""""""""""""""""""\
@@ -45,7 +45,7 @@ class CFSolutionInterface {
   const fine_solution:        LevelSolution;
   const level_interface:      CFLevelInterface;
 
-  var old_fine_boundary_data: LevelGhostArraySet;
+  var old_fine_boundary_data:     LevelGhostArraySet;
   var current_fine_boundary_data: LevelGhostArraySet;
   var old_time:     real;
   var current_time: real;
@@ -62,6 +62,8 @@ class CFSolutionInterface {
     this.coarse_solution = coarse_solution;
     this.fine_solution   = fine_solution;
     this.level_interface = level_interface;
+
+    var fine_level = fine_solution.level;
 
     old_fine_boundary_data     = new LevelGhostArraySet(fine_solution.level);
     current_fine_boundary_data = new LevelGhostArraySet(fine_solution.level);
@@ -143,16 +145,23 @@ def LevelArray.fineBoundaryTimeInterpolation(
   //===> Interpolate! ===>
   for grid in level.grids {
 
-    var old_ghost_array_set     = sol_interface.old_fine_boundary_data(grid);
-    var current_ghost_array_set = sol_interface.current_fine_boundary_data(grid);
+    var old_ghost_arrays     = sol_interface.old_fine_boundary_data(grid);
+    var current_ghost_arrays = sol_interface.current_fine_boundary_data(grid);
 
-    for loc in ghost_locations {
-      
-      var ghost_domain = grid.ghost_domain_set(loc);
+    for (old_array,current_array) in (old_ghost_arrays,current_ghost_arrays) {
+      var ghost_domain = old_array.dom;
+      assert(old_array.dom == current_array.dom);
 
-      this(grid,ghost_domain) = a1 * old_ghost_array_set(loc).value 
-                                  + a2 * current_ghost_array_set(loc).value;
+      this(grid,ghost_domain) = a1 * old_array.value + a2 * current_array.value;
     }
+
+/*     for loc in ghost_locations { */
+      
+/*       var ghost_domain = grid.ghost_domain_set(loc); */
+
+/*       this(grid,ghost_domain) = a1 * old_ghost_array_set(loc).value  */
+/*                                   + a2 * current_ghost_array_set(loc).value; */
+/*     } */
   }
   //<=== Interpolate! <===
 
@@ -201,18 +210,30 @@ def GhostArraySet.interpolateFromCoarse_Linear(
   interface: CFLevelInterface)
 {
   var overlap: domain(dimension, stridable=true);
- 
-  for coarse_grid in interface.coarse_neighbors(this.grid) {
-    for loc in ghost_locations {
-      if loc != interior_location {
-        overlap = grid.ghost_domain_set(loc)( interface.refine(coarse_grid.cells) );
 
-        if overlap.numIndices > 0 then
-          arrays(loc).value(overlap) = 
-            q_coarse(coarse_grid).interpolateToFine_Linear(overlap, interface);
-      }
-    }
-  }
+  for coarse_grid in interface.coarse_neighbors(this.grid) {
+
+    for ghost_array in array_set {
+      var ghost_domain = ghost_array.dom;
+      overlap = ghost_domain( interface.refine(coarse_grid.cells) );
+      
+      if overlap.numIndices > 0 then
+	ghost_array.value(overlap) =
+	  q_coarse(coarse_grid).interpolateToFine_Linear(overlap, interface);
+    } // end for ghost_array in array_set 
+
+/*     for loc in ghost_locations { */
+/*       if loc != interior_location { */
+/*         overlap = grid.ghost_domain_set(loc)( interface.refine(coarse_grid.cells) ); */
+
+/*         if overlap.numIndices > 0 then */
+/*           arrays(loc).value(overlap) =  */
+/*             q_coarse(coarse_grid).interpolateToFine_Linear(overlap, interface); */
+/*       } */
+/*     } */
+
+
+  } // end for coarse_grid in interface.coarse_neighbors(this.grid)
 
 }
 // /:::::::::::::::::::::::::::::::::::::::::::::::::::::::::/
@@ -313,15 +334,23 @@ def LevelArray.extrapolateGhostData() {
 
 def GridArray.extrapolateGhostData() {
 
-  var shift: dimension*int;
+  for ghost_domain in grid.ghost_domain_set {
+    var loc = grid.relativeLocation(ghost_domain);
+    var shift = -1*loc;
 
-  for loc in ghost_locations {
-    //==== Create index pointing towards interior ====
-    shift = -2*loc;
-    
-    forall cell in grid.ghost_domain_set(loc) do
-      value(cell) = 2.0*value(cell+shift) - value(cell+2*shift);    
+    forall cell in ghost_domain do
+      value(cell) = 2.0*value(cell+shift) - value(cell+2*shift);
   }
+
+/*   var shift: dimension*int; */
+
+/*   for loc in ghost_locations { */
+/*     //==== Create index pointing towards interior ==== */
+/*     shift = -2*loc; */
+    
+/*     forall cell in grid.ghost_domain_set(loc) do */
+/*       value(cell) = 2.0*value(cell+shift) - value(cell+2*shift);     */
+/*   } */
 
 }
 // /::::::::::::::::::::::::::::::::::::/

@@ -1,14 +1,15 @@
-SOURCES = \
-	../grid/GridArray_advection.chpl \
-	../level/LevelArray_advection.chpl \
-	../level/LevelSolution_advection.chpl \
-	AMRSolution_advection.chpl \
-	AMRBC_advection.chpl \
-	AMR_advection_driver.chpl
-
+MISC_LIB = ../../lib/misc
 GRID_LIB = ../../lib/grid
 LEVEL_LIB = ../../lib/level
 AMR_LIB = ../../lib/amr
+
+SOURCES = \
+	../grid/GridArray_AdvectionCTU.chpl \
+	../level/LevelArray_AdvectionCTU.chpl \
+	../level/LevelSolution_AdvectionCTU.chpl \
+	AMRSolution_AdvectionCTU.chpl \
+	AMRBC_AdvectionCTU.chpl \
+	AMR_AdvectionCTU_driver.chpl
 
 
 .PHONY: clean
@@ -16,11 +17,15 @@ AMR_LIB = ../../lib/amr
 DIM = 2
 
 
-output: AMR_advection.out
-	./AMR_advection.out
+output: _output AMRAdvectionCTU.out
+	./AMRAdvectionCTU.out
 
-AMR_advection.out: $(SOURCES)
-	chpl $(SOURCES) -M $(GRID_LIB) -M $(LEVEL_LIB) -M $(AMR_LIB) --set dimension=$(DIM) -o AMR_advection.out
+AMRAdvectionCTU.out: $(SOURCES)
+	chpl $(SOURCES) -M $(MISC_LIB) -M $(GRID_LIB) -M $(LEVEL_LIB) -M $(AMR_LIB) --set dimension=$(DIM) -o AMRAdvectionCTU.out
+
+_output:
+	mkdir _output
+	cp ../../lib/plot.claw _output
 
 clean:
-	rm -f _output/fort.* _output/*.png output_* *.out
+	rm -rf _output/ *.out

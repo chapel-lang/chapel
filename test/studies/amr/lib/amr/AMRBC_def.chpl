@@ -8,8 +8,8 @@ class AMRBC {
 
   const hierarchy: AMRHierarchy;
 
-  def applyBC(q: LevelArray, t: real) {}
-  def applyBC_Homogeneous(q: LevelArray) {}
+  def apply(q: LevelArray, t: real) {}
+  def apply_Homogeneous(q: LevelArray) {}
 
 }
 // /"""""""""""""""""""|

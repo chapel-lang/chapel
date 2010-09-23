@@ -111,52 +111,64 @@ class AMRHierarchy {
 
 
 
-//|"""""""""""""""""""""""""""\
-//|===> LevelBoundary class ===>
-//|___________________________/
+//|\"""""""""""""""""""""""""""""\
+//| >    LevelBoundary class    | >
+//|/____________________________|/
 class LevelBoundary {
-  const level:              Level;
-  var grids:                domain(Grid);
-  var boundary_domain_sets: [grids] SparseGhostDomainSet;
-
+  const level:             Level;
+  var grids:               domain(Grid);
+  var domain_sets: [grids] DomainSet(dimension,true);
 
   def LevelBoundary(level: Level) {
     for grid in level.grids {
 
-      var boundary_domain_set = new SparseGhostDomainSet(grid);
-      var intersection: domain(dimension, stridable=true);
+      var boundary_domain_set = new DomainSet(dimension,true);
+      for D in grid.ghost_domain_set do
+	boundary_domain_set.add(D);
 
+      boundary_domain_set -= level.cells;
 
-      //===> Check ghost domains for physical boundary ===>
-      //--------------------------------------------------------
-      // Any ghost domain must either be completely interior or 
-      // completely exterior.
-      //--------------------------------------------------------
-      for loc in ghost_locations {
-      
-	intersection = level.cells( grid.ghost_domain_set(loc) );
-	if intersection.numIndices == 0 {
-	  boundary_domain_set.locations.add(loc);
-	  boundary_domain_set.domains(loc) = grid.ghost_domain_set(loc);
-	}
-
-      }
-      //<=== Check ghost domains for physical boundary <===
-
-
-      //==== Add to LevelBoundary if nontrivial ====
-      if boundary_domain_set.locations.numIndices > 0 {
+      if boundary_domain_set.indices.numIndices > 0 {
 	grids.add(grid);
-	boundary_domain_sets(grid) = boundary_domain_set;
-      }
-    
+	domain_sets(grid) = boundary_domain_set;
+      } 
     } // end for grid in level.grids
-    
+
   }
 }
-// /"""""""""""""""""""""""""""/
-//<=== LevelBoundary class <==<
-// \___________________________\
+
+/*       var intersection: domain(dimension, stridable=true); */
+
+/*       //===> Check ghost domains for physical boundary ===> */
+/*       //-------------------------------------------------------- */
+/*       // Any ghost domain must either be completely interior or */
+/*       // completely exterior. */
+/*       //-------------------------------------------------------- */
+/*       for loc in ghost_locations { */
+      
+/* 	intersection = level.cells( grid.ghost_domain_set(loc) ); */
+/* 	if intersection.numIndices == 0 { */
+/* 	  boundary_domain_set.locations.add(loc); */
+/* 	  boundary_domain_set.domains(loc) = grid.ghost_domain_set(loc); */
+/* 	} */
+
+/*       } */
+/*       //<=== Check ghost domains for physical boundary <=== */
+
+
+/*       //==== Add to LevelBoundary if nontrivial ==== */
+/*       if boundary_domain_set.locations.numIndices > 0 { */
+/* 	grids.add(grid); */
+/* 	boundary_domain_sets(grid) = boundary_domain_set; */
+/*       } */
+    
+
+    
+/*   } */
+/* } */
+// /|""""""""""""""""""""""""""""/|
+//< |    LevelBoundary class    < |
+// \|____________________________\|
 
 
 
@@ -269,6 +281,8 @@ def AMRHierarchy.completeLevel(level: Level) {
   writeln("Completing level ", level_numbers(level));
 
   level.complete();
+
+  //==== Locate boundary grids ====
 
   boundary(level) = new LevelBoundary(level);
 
