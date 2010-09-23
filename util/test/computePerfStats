@@ -32,7 +32,7 @@ my $exec_time_out;
 if ($argc >= 4) {
     $exec_time_out = $ARGV[4];
 } else {
-    $exec_time_out = "false";
+    $exec_time_out = "False";
 }
 my $data_file = "$outputdir/$testname.dat";
 my $graph_file = "$testname.graph";
@@ -58,9 +58,10 @@ print ERRORS "processed $key_file\n";
 
 
 # get lines from output file
-if ($exec_time_out eq "false") {
+my @file_lines;
+if ($exec_time_out eq "False") {
     open TEST, "$test_output_file" or die "can't open $test_output_file $!";
-    my @file_lines = <TEST>;
+    @file_lines = <TEST>;
     close (TEST);
     print ERRORS "processed $test_output_file\n";
 } else {
@@ -93,7 +94,7 @@ $year -= 100;
 my $foundEverything = 1;
 printf STATS "%.2d/%.2d/%.2d ", $mon, $mday, $year;
 foreach my $key (@keys) {
-    if ($exec_time_out eq "false") {
+    if ($exec_time_out eq "False") {
         print "Looking for $key...";
         print STATS "\t";
         my $found = 0;
@@ -112,12 +113,12 @@ foreach my $key (@keys) {
     } else {
 	print ERRORS "Printing time out as \"-\" under $key...\n";
         print STATS "\t";
-        print STATS " ";
+        print STATS "-";
     }
 }
 print STATS "\n";
 
-if ($foundEverything != 1 and $exec_time_out eq "false") {
+if ($foundEverything != 1 and $exec_time_out eq "False") {
     print "output was:\n";
     system("cat $test_output_file");
     exit 1;

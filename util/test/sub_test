@@ -464,6 +464,7 @@ else:
 
 graphfiles=filter(IsGraphFile, dirlist)
 
+exectimeout = False
 for testname in testsrc:
     sys.stdout.flush()
 
@@ -841,7 +842,6 @@ for testname in testsrc:
                              (cmd, ' '.join(args), redirectin))
             sys.stdout.flush()
 
-	    exectimeout = False
             if useTimedExec:
                 wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+' < '+redirectin
                 p = subprocess.Popen([timedexec, str(timeout), wholecmd],
@@ -967,12 +967,11 @@ for testname in testsrc:
                     sys.stdout.write(']\n')
 
             if perftest:
-		if os.getenv('CHPL_TEST_PERF_DIR')!=None:
-                    if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
-                        os.makedirs(perfdir)
-                    if not os.access(perfdir, os.R_OK|os.X_OK):
-                        sys.stdout.write('[Error creating performance test directory %s]\n'%(perfdir))
-                        break # on to next compopts
+                if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
+                    os.makedirs(perfdir)
+                if not os.access(perfdir, os.R_OK|os.X_OK):
+                    sys.stdout.write('[Error creating performance test directory %s]\n'%(perfdir))
+                    break # on to next compopts
 
                 if execcheckfile==None:
                     perfexecname = execname
@@ -986,10 +985,6 @@ for testname in testsrc:
 
 		duplicates = 0
 	
-		if os.getenv('CHPL_TEST_PERF_DIR')!=None:	
-		    chpl_test_perf_dir = os.getenv('CHPL_TEST_PERF_DIR')
- 		else:
-		    chpl_test_perf_dir = ""
 		sys.stdout.write('[Executing checkDuplicates %s %s %s]\n'%(perfexecname, perfdir, testdir))
 		sys.stdout.flush()
 
@@ -1046,8 +1041,8 @@ if perftest:
 	sys.stdout.flush()
 	
 	if os.path.isfile(utildir+'/createGraphs'):
-	    startdate = os.getenv('STARTDATE')
-   	    p = subprocess.Popen([utildir+'/createGraphs', graphname, perfdir, startdate],stdout=subprocess.PIPE)
+	    startdate = os.getenv('STARTDATE', "")
+   	    p = subprocess.Popen([utildir+'/createGraphs', graphname, perfdir, startdate, str(exectimeout)],stdout=subprocess.PIPE)
    	    sys.stdout.write('%s'%(p.communicate()[0]))
    	    sys.stdout.flush()
 	else:

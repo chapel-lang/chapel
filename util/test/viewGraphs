@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 
+
 my $outputdir = $ARGV[0];
 my $html_file = "$outputdir/index.html";
 my $image_files = "$outputdir/images.tmp";
