@@ -1,4 +1,5 @@
 use Search;
+config param debugDefaultSparse = false;
 
 class DefaultSparseDom: BaseSparseDom {
   param rank : int;
@@ -41,23 +42,52 @@ class DefaultSparseDom: BaseSparseDom {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-    compilerWarning("parallel iteration over sparse domain has been serialized (see note in $CHPL_HOME/STATUS)");
-    yield this;
+
+    // copy some machinery from DefaultArithmeticDom
+    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+                     else dataParTasksPerLocale;
+    const ignoreRunning = dataParIgnoreRunningTasks;
+    const minIndicesPerTask = dataParMinGranularity;
+    const numElems = nnz;
+    const numChunks = _computeNumChunks(numTasks, ignoreRunning,
+                                        minIndicesPerTask, numElems)
+                      :numElems.type;
+    if debugDefaultSparse then
+      writeln("DefaultSparseDom leader: ", numChunks, " chunks, ",
+              numElems, " elems");
+
+    // split our numElems elements over numChunks tasks
+    if numChunks <= 1 then
+      // ... except if 1, just use the current thread
+      yield (this, 1, numElems);
+    else
+      coforall chunk in 1..numChunks do {
+        var div = numElems / numChunks;
+        var rem = numElems % numChunks;
+
+        if chunk <= rem then {
+          // (div+1) elements per chunk
+          var endIx = chunk * (div + 1);
+          //writeln("yielding ", endIx - div, "..", endIx);
+          yield (this, endIx - div, endIx);
+        } else {
+          // (div) elements per chunk
+          var startIx1 = numElems - (numChunks - chunk + 1) * div;
+          //writeln("yielding ", startIx1 + 1, "..", startIx1 + div);
+          yield (this, startIx1 + 1, startIx1 + div);
+        }
+      }
   }
 
-  def these(param tag: iterator, follower: DefaultSparseDom) where tag == iterator.follower {
-    if (follower != this) then
+  def these(param tag: iterator, follower:(?,?,?)) where tag == iterator.follower {
+    var (followerDom, startIx, endIx) = follower;
+
+    if (followerDom != this) then
       halt("Sparse domains can't be zippered with anything other than themselves and their arrays");
+    if debugDefaultSparse then
+      writeln("DefaultSparseDom follower: ", startIx, "..", endIx);
 
-    for i in 1..nnz do
-      yield indices(i);
-  }
-
-  def these(param tag: iterator, follower: DefaultSparseArr) where tag == iterator.follower {
-    if (follower.dom != this) then
-      halt("Sparse domains can't be zippered with anything other than themselves and their arrays");
-
-    for i in 1..nnz do
+    for i in startIx..endIx do
       yield indices(i);
   }
 
@@ -236,22 +266,22 @@ class DefaultSparseArr: BaseArr {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-    compilerWarning("parallel iteration over sparse array has been serialized (see note in $CHPL_HOME/STATUS)");
-    yield this;
+    // forward to the leader iterator on our domain
+    for leader in dom.these(tag) do
+      yield leader;
   }
 
-  def these(param tag: iterator, follower: DefaultSparseDom) var where tag == iterator.follower {
-    if (follower != this.dom) then
+  // same as DefaultSparseDom's follower, except here we index into 'data'
+  def these(param tag: iterator, follower:(?,?,?)) var where tag == iterator.follower {
+    var (followerDom, startIx, endIx) = follower;
+
+    if (followerDom != this.dom) then
       halt("Sparse arrays can't be zippered with anything other than their domains and sibling arrays");
+    if debugDefaultSparse then
+      writeln("DefaultSparseArr follower: ", startIx, "..", endIx);
 
-    for e in data[1..dom.nnz] do yield e;
-  }
-
-  def these(param tag: iterator, follower: DefaultSparseArr) var where tag == iterator.follower {
-    if (follower.dom != this.dom) then
-      halt("Sparse arrays can't be zippered with anything other than their domains and siblings arrays");
-
-    for e in data[1..dom.nnz] do yield e;
+    for i in startIx..endIx do
+      yield data(i);
   }
 
   def these(param tag: iterator, follower) where tag == iterator.follower {
