@@ -426,7 +426,7 @@ def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
   coforall locDom in locDoms do on locDom {
     const (numTasks, parDim) = _computeChunkStuff(maxTasks, ignoreRunning,
                                                   minSize,
-                                                  locDom.myBlock.dims(), rank);
+                                                  locDom.myBlock.dims());
 
     var result: rank*range(idxType=idxType, stridable=true);
     var zeroedLocalPart = whole((...locDom.myBlock.getIndices())) - whole.low;
@@ -697,7 +697,7 @@ def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
   coforall locDom in dom.locDoms do on locDom {
     const (numTasks, parDim) = _computeChunkStuff(maxTasks, ignoreRunning,
                                                   minSize,
-                                                  locDom.myBlock.dims(), rank);
+                                                  locDom.myBlock.dims());
 
     var result: rank*range(idxType=idxType, stridable=true);
     var zeroedLocalPart = dom.whole((...locDom.myBlock.getIndices())) - wholeLow;

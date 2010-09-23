@@ -1,85 +1,11 @@
 #!/usr/bin/env perl
-#
-# createGraphs creates the appropriate .gif(s) for every .graph
-# in the current directory.  
-#
-# .graph usage:
-# -- to specify which performance keys are to be graphed,
-#    in .graph should be the line:
-#
-#    perfkeys: key1, key2, key3
-#
-#    where key1, key2 and key3 are all keys in .perfkeys (if in foo.graph,
-#    the script will expect there to be a foo.perfkeys containing the 
-#    listed keys unless see below.)
-#
-# -- if the performance keys specified above come from more than one 
-#    .perfkey, or come from a .perfkey that has its root name different than its 
-#    .graph (e.g. foo.graph's listed perfkeys don't come from foo.perfkey)
-#    specify the different files where the data should come from.
-#     
-#    For example,
-#
-#    files: file1.dat, file2.dat, file3.dat
-#
-#    where file1.dat has key1's data, file2.dat has key2's data, etc.
-#
-# -- if you would like to specify the name of the key to be different
-#    on the graph than it is in .perfkeys, specify the name it should
-#    have:
-#
-#    graphkeys: key11, key12, key13
-#
-#    (this can be useful if you are graphing data across different 
-#    files which have the same keys in .perfkeys, and you want to distinguish
-#    them when viewing the graph.)    
-#
-# -- to specify the name of the output graph,
-#    in .graph should be the line:
-#
-#    graphname: foo
-# 
-#    such that foo.gif will be put in perfdir/<machine> at end of run
-#  
-#    it is necessary to specify graphname, if graphing more than one set of keys
-#    per .graph, or the last set of keys will overwrite all the previous
-# 
-# -- to specify the start date of the graph (the lowest date on the x-axis)
-#    in .graph should be the line:
-#
-#    startdate: 07/08/10
-#   
-#    Format is MM/DD/YY.  If no start date specified, the start date will be the
-#    lowest start date of all data files specified. 
-#
-# -- to specify the title of the graph,
-#    in .graph should be the line:
-#
-#    graphtitle: Title
-#
-# -- to specify the y-axis label of the graph,
-#    in .graph should be the line:
-#    
-#    ylabel: Performance
-#
-# If want to specify more than one set of keys per .graph, such that
-# each set of keys corresponds to its own graph, please specify the perfkeys
-# first, followed by any lines pertaining to the above keys. Then
-# the next set of lines to specify any other set of keys, and so on.
-#
-# Sets of keys can be line separated from another set of keys, but no line separation
-# within a set of keys and its own attributes.
-#
-# An empty .graph will graph all keys in its .perfkeys with default title,
-# name, and y-axis label.
-
-
 
 use Text::ParseWords;
 #use strict;
 my $format_file_name = $ARGV[0]; 
 my $outputdir = $ARGV[1]; 
 my $start_date = $ARGV[2];
+my $exec_time_out = $ARGV[3];
 
 my $graph_file_name; 
 my $graph_title; 
@@ -110,12 +36,14 @@ my $src_file = "$format_file_name.chpl";
 
 # get start date (date of first performance run)
 sub getStartDate {
-    my $data_file_temp = $_[0];
-    open STATS, "$data_file_temp" or die "can't open $data_file_temp $!";
-    my @stat_lines = <STATS>;
-    my $header_line = @stat_lines[1];
-    my @headers = parse_line('\t', 0, $header_line);
-    return @headers[0];
+    if ($exec_time_out eq "False") {
+        my $data_file_temp = $_[0];
+        open STATS, "$data_file_temp" or die "can't open $data_file_temp $!";
+        my @stat_lines = <STATS>;
+        my $header_line = @stat_lines[1];
+        my @headers = parse_line('\t', 0, $header_line);
+        return @headers[0];
+    }  
 }
 
 sub getMinDate {
@@ -261,7 +189,7 @@ sub processGraphFile {
 # makeGraph outputs a .gif in perfdir (by default ./perfdat/<machine>) via gnuplot
 sub makeGraph {
     my ($start_date, $local, $graph_file_name, $graph_title, $graph_ylabel, @graph_keys) = @_;
-    if ($custom_start_date == 0 && !$start_date) {
+    if (($custom_start_date == 0 && !$start_date) || ($start_date eq "")) {
         if ($local == 0) {
 	    $start_date = &getStartDate("$outputdir/@data_files[0]");
             foreach my $data_file (@data_files[1..$#data_files]) {

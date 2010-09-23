@@ -29,12 +29,14 @@ extern bool fNoRemoteValueForwarding;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoRepositionDefExpr;
 extern bool fNoScalarReplacement;
+extern bool fNoTupleCopyOpt;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
 extern int optimize_on_clause_limit;
 extern int scalar_replace_limit;
+extern int tuple_copy_limit;
 
 extern bool report_inlining;
 extern char CHPL_HOME[FILENAME_MAX];

@@ -1,7 +1,5 @@
 3    dimension
 
-1    number of levels
-
 -1.0 -1.0 -1.0   x_low
  1.0  1.0  1.0   x_high
  100  100  100   num_cells

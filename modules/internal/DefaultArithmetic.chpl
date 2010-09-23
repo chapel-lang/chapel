@@ -111,8 +111,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
               "), minIndicesPerTask=", minIndicesPerTask);
 
     var (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
-                                                 minIndicesPerTask,
-                                                 ranges, rank);
+                                                 minIndicesPerTask, ranges);
     if debugDefaultDist then
       writeln("    numChunks=", numChunks, " parDim=", parDim,
               " ranges(", parDim, ").length=", ranges(parDim).length);
@@ -374,8 +373,7 @@ class DefaultArithmeticArr: BaseArr {
               "), minElemsPerTask=", minElemsPerTask);
 
     var (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
-                                                 minElemsPerTask,
-                                                 dom.ranges, rank);
+                                                 minElemsPerTask, dom.ranges);
     if debugDefaultDist then
       writeln("    numChunks=", numChunks, " parDim=", parDim,
               " ranges(", parDim, ").length=", dom.ranges(parDim).length);

@@ -164,6 +164,7 @@ def file.read(inout first, inout rest ...?n) {
   read(first);
   for param i in 1..n do
     read(rest(i));
+
 }
 
 def file.read(inout val: int) {
@@ -173,7 +174,15 @@ def file.read(inout val: int) {
   on this {
     x = __primitive("_fscan_int32", _fp);
   }
+// Added by Rafael
+/*
   val = x;
+  var status = chpl_fprintf(_fp, s);
+  if status < 0 {
+    const err = chpl_cerrno();
+    halt("***Error: Write failed: ", err, "***");
+  }
+*/
 }
 
 def file.read(inout val: uint) {

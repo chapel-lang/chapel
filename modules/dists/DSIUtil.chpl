@@ -19,8 +19,8 @@ def getDataParMinGranularity() {
 // helper functions for determining the number of chunks and the
 //   dimension to chunk over
 //
-def _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges, param rank) {
-  // is there a way to avoid passing in rank?
+def _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges) {
+  param rank=ranges.size;
   var numElems: uint(64) = 1;
   for param i in 1..rank do {
     numElems *= ranges(i).length:uint(64);
@@ -50,6 +50,8 @@ def _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges, param rank) {
 }
 
 def _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
+  assert(numElems >= 0);
+  const unumElems = numElems:uint(64);
   const runningTasks = here.runningTasks();
   var numChunks: uint(64) =
     if ignoreRunning then maxTasks:uint(64)
@@ -59,11 +61,11 @@ def _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
 
   if minSize > 0 then
     // This is approximate
-    while (numElems:uint(64) < minSize:uint(64)*numChunks) && (numChunks > 1) {
+    while (unumElems < minSize:uint(64)*numChunks) && (numChunks > 1) {
         numChunks -= 1;
     }
 
-  if numChunks > numElems:uint(64) then numChunks = numElems:uint(64);
+  if numChunks > unumElems then numChunks = unumElems;
 
   return numChunks;
 }

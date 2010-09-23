@@ -1,39 +1,30 @@
-CLAW_OUTDIR = _output               # Directory for output
-CLAW_setplot_file = setplot1d.py      # File containing function to set plots
-CLAW_PLOTDIR = _plots               # Directory for plots
-PLOTCMD = python $(CLAW)/python/pyclaw/plotters/plotclaw.py
+MISC_LIB = ../../lib/misc
+GRID_LIB = ../../lib/grid
 
 SOURCES = \
-	grid_advection_defs.chpl \
-	grid_advection_driver.chpl
-
-GRID_LIB = ../../lib/grid
+	GridArray_AdvectionCTU.chpl \
+	GridSolution_AdvectionCTU.chpl \
+	GridBC_AdvectionCTU.chpl \
+	Grid_AdvectionCTU_driver.chpl
 
 DIM = 2
 
 
-.PHONY: clean, emacs_clean
+.PHONY: clean
 
 
-output: grid_advection.out
+output: _output Grid_AdvectionCTU.out
 	rm -f _output/fort.*
-	./grid_advection.out
+	./Grid_AdvectionCTU.out
 	@echo "Output is in directory _output."
-	@echo $(CLAW_OUTDIR) > output
 
+Grid_AdvectionCTU.out: $(SOURCES)
+	chpl $(SOURCES) -M $(MISC_LIB) -M $(GRID_LIB) --set dimension=$(DIM) -o Grid_AdvectionCTU.out
 
-grid_advection.out: $(SOURCES)
-	chpl $(SOURCES) -M $(GRID_LIB) --set dimension=$(DIM) -o grid_advection.out
-
-
-plots: _output/fort.t0000
-	rm -f _plots/*
-	$(PLOTCMD) $(CLAW_OUTDIR) $(CLAW_PLOTDIR) $(CLAW_setplot_file)
-	@echo $(CLAW_PLOTDIR) > plots
-
+_output:
+	mkdir _output
+	cp ../../lib/plot.claw _output
 
 clean:
-	rm -f _output/fort.* _output/*.png *.out output plots _plots/* pyclaw.log *.pyc
+	rm -rf _output/ *.out
 
-emacs_clean:
-	rm -f *~

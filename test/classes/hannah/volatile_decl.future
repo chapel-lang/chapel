@@ -1,0 +1,1 @@
+unimplemented feature: variable declarations where symbol is of volatile type (no explicit value is provided at declaration, default values should be inferred from the type instead)

@@ -45,7 +45,7 @@ while (@ARGV) {
     } elsif ($flag eq "-performance") {
         $performance = 1;
     } elsif ($flag eq "-startdate") {
-	$startdate = shift @ARV;
+	$startdate = shift @ARGV;
     } elsif ($flag eq "-baseline") {
         $baseline = 1;
     } elsif ($flag eq "-dist") {
@@ -100,6 +100,7 @@ if ($printusage == 1) {
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
+    print "\t-startdate	  : run performance tests providing a common start date to all the graphs\n";
     print "\t-baseline    : run baseline tests\n";
     print "\t-dist <dist> : run distribution robustness tests\n";
     print "\t-memleaks <log> : run memleaks tests\n";

@@ -1,9 +1,14 @@
-SOURCES = \
-	level_advection_defs.chpl \
-	level_advection_driver.chpl
-
+MISC_LIB = ../../lib/misc
 GRID_LIB = ../../lib/grid
 LEVEL_LIB = ../../lib/level
+
+
+SOURCES = \
+	../grid/GridArray_AdvectionCTU.chpl \
+	LevelArray_AdvectionCTU.chpl \
+	LevelSolution_AdvectionCTU.chpl \
+	LevelBC_AdvectionCTU.chpl \
+	Level_AdvectionCTU_driver.chpl
 
 
 .PHONY: clean
@@ -11,11 +16,16 @@ LEVEL_LIB = ../../lib/level
 DIM = 2
 
 
-output: level_advection.out
-	./level_advection.out
+output: _output Level_AdvectionCTU.out
+	./Level_AdvectionCTU.out
 
-level_advection.out: $(SOURCES)
-	chpl $(SOURCES) -M $(GRID_LIB) -M $(LEVEL_LIB) --set dimension=$(DIM) -o level_advection.out
+Level_AdvectionCTU.out: $(SOURCES)
+	chpl $(SOURCES) -M $(MISC_LIB) -M $(GRID_LIB) -M $(LEVEL_LIB) --set dimension=$(DIM) -o Level_AdvectionCTU.out
+
+_output:
+	mkdir _output
+	cp ../../lib/plot.claw _output
 
 clean:
-	rm -f _output/fort.* _output/*.png output_* *.out
+	rm -rf _output/ *.out
+
