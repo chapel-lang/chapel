@@ -106,6 +106,38 @@ class Level {
     writeln("========================================");
   }
 
+
+  //|\"""""""""""""""""""""""""""""""|\
+  //| >    ordered_grids iterator    | >
+  //|/_______________________________|/
+  def ordered_grids {    
+    var grid_list = grids;
+    
+    while grid_list.numIndices > 0 {
+      var lowest_grid: Grid;
+      var i_lowest = ext_cells.high;
+
+      for grid in grid_list {
+        for d in dimensions {
+          if grid.i_low(d) > i_lowest(d) then
+            break;
+          else if grid.i_low(d) < i_lowest(d) {
+            i_lowest = grid.i_low;
+            lowest_grid = grid;
+            break;
+          }
+          
+        }
+      }
+      
+      yield lowest_grid;
+      grid_list.remove(lowest_grid);
+    }
+  }
+  // /|"""""""""""""""""""""""""""""""/|
+  //< |    ordered_grids iterator    < |
+  // \|_______________________________\|
+
 }
 // /"""""""""""""""""""|
 //<=== Level class <===|

@@ -209,7 +209,7 @@ def LevelArray.write(
 {
 
   var grid_number = base_grid_number;
-  for grid in level.grids {
+  for grid in level.ordered_grids {
     grid_arrays(grid).write(grid_number, AMR_level, outfile);
     outfile.writeln("  ");
     grid_number += 1;
