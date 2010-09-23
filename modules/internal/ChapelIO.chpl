@@ -47,7 +47,14 @@ class file: Writer {
       var modestring: string;
       select mode {
         when FileAccessMode.read  do modestring = "r";
-        when FileAccessMode.write do modestring = "w";
+        when FileAccessMode.write do {
+		modestring = "w";
+		_fp = chpl_fopen(filename, modestring);
+		chpl_fclose(_fp);
+		_fp = chpl_cnullfile();
+		modestring = "r+";
+	 	mode=FileAccessMode.readwrite;
+	}
         when FileAccessMode.append do modestring = "a";
         when FileAccessMode.readwrite do modestring = "r+";
       }
