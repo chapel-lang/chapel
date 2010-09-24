@@ -1,0 +1,8 @@
+recordInClass2 is the same as recordInClass1, but crashes
+on lnx-vass and on chap10.
+
+From Jonathan:
+
+"This should produce a seg fault when it runs.  However, it appears that if you delete any of the characters in the writeln statement, then there’s no seg fault, and the program runs to completion.  As best I can tell, the seg fault depends on having 17 or more characters in the string.
+
+Furthermore, if you remove the writeln statement altogether, the program will hang indefinitely."
