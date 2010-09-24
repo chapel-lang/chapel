@@ -106,9 +106,9 @@ def main() {
 
   build_sieve(sieve);
 
-  const mid0 = getCurrentTime() - start;
+  const mid0 = getCurrentTime();
   if (printTimings) then
-    writeln("time = ", mid0);
+    writeln("time = ", mid0-start);
   else
     writeln();
 
@@ -134,10 +134,10 @@ def main() {
     bs(0, terms: c_ulong, 0, 0);
   }
 
-  const mid1 = getCurrentTime() - mid0;
+  const mid1 = getCurrentTime();
   write("\nbs      ");
   if (printTimings) then
-    writeln("time = ", mid1);
+    writeln("time = ", mid1-mid0);
   else
     writeln();
   write("   gcd  ");
@@ -199,7 +199,7 @@ def main() {
 
   stackdom2.clear();
 
-  const mid2 = getCurrentTime() - mid1;
+  const mid2 = getCurrentTime();
 
   /* initialize temp float variables for sqrt & div */
   mpf_init(t1);
@@ -209,17 +209,17 @@ def main() {
   /* final step */
   write("div     ");
   my_div(qi, pi, qi);
-  const mid3 = getCurrentTime() - mid2;
+  const mid3 = getCurrentTime();
   if (printTimings) then
-    writeln("time = ", mid3);
+    writeln("time = ", mid3-mid2);
   else
     writeln();
 
   write("sqrt    ");
   my_sqrt_ui(pi, C);
-  const mid4 = getCurrentTime() - mid3;
+  const mid4 = getCurrentTime();
   if (printTimings) then
-    writeln("time = ", mid4);
+    writeln("time = ", mid4-mid3);
   else
     writeln();
 
