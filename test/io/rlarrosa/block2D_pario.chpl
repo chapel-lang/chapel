@@ -19,20 +19,21 @@ use BlockDist;
 //
 // Size of each dimension of our domain.
 //
-config const n = 8;
+config const x_len = 8;
+config const y_len = 8;
 config param debugInfo = true;
 
 
 var numloc:int(32)=numLocales;
-config const filename:string="Arr_Bin_"+numloc+"_"+n+".dat";
+config const filename:string="Arr_Bin_"+numloc+"_"+x_len+"_"+y_len+".dat";
 
 //
 // Declare and initialize an instance of the Block distribution Dist,
 // a distributed domain Dom, and a distributed array A.  By default,
 // the Block distribution distributes the domain across all locales.
 //
-var Dist = new dmap(new Block([1..n, 1..n]));
-var Dom: domain(2) dmapped Dist = [1..n, 1..n];
+var Dist = new dmap(new Block([1..x_len, 1..y_len]));                
+var Dom: domain(2) dmapped Dist = [1..x_len, 1..y_len];    
 var A: [Dom] int(64);
 
 //
@@ -70,7 +71,7 @@ writeln();
 //
 var j = 2;
 forall i in Dom do {
-  A(i) = (50+i[2]+(i[1]-1)*n)+1;
+  A(i) = (50+i[2]+(i[1]-1)*y_len)+1;
 }
 //writeln("Initialized array");
 //writeln(A);
