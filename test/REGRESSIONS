@@ -15,19 +15,13 @@
 general regressions
 ===================
 
-problem size tests off due to OS upgrade
-----------------------------------------
-[Error matching program output for modules/standard/memory/countMemory/countMemory]
-[Error matching program output for studies/hpcc/2008/testProbSize]
-[Error matching program output for studies/hpcc/common/testProbSize]
-
 not yet working consistently
 ----------------------------
 [Error: Timed out executing program studies/shootout/chameneos-redux/chameneos-redux-multiple-meeting-places]
 
 nondet. compilation timeouts
 ----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10, 05/21/10, 05/27/10, 06/15/10, 07/01/10, 07/07/10, 07/16/10, 07/20/10, 07/23/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10, 05/21/10, 05/27/10, 06/15/10, 07/01/10, 07/07/10, 07/16/10, 07/20/10, 07/23/10, 09/09/10, 09/10/10)
 
 nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 ----------------------------------------------------------------------------
@@ -214,10 +208,6 @@ extent mismatch (05/01/10 -- after Norm changed from reindex to slice)
 ----------------------------------------------------------------------
 [Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
 
-seg fault (04/30/10 -- after sched_yield policy change removed timeout)
------------------------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/kernels/hpl]
-
 nondet. execution timeouts
 --------------------------
 [Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_assignment] (06/19/10)
@@ -268,6 +258,20 @@ memory stuff in flux (05/28/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+generating pthread join error (never worked since sparse made parallel)
+-----------------------------------------------------------------------
+[Error matching program output for sparse/bradc/parIter/spsZipper2]
+[Error matching program output for sparse/vass/sparse-mismatch-dom-err-arr1dom1dom2]
+[Error matching program output for sparse/vass/sparse-mismatch-dom-err-arr1dom2dom1]
+[Error matching program output for sparse/vass/sparse-mismatch-dom-err-arrarr]
+[Error matching program output for sparse/vass/sparse-mismatch-dom-err-arrdom]
+[Error matching program output for sparse/vass/sparse-mismatch-dom-err-dom1arr1arr2]
+[Error matching program output for sparse/vass/sparse-mismatch-dom-err-dom1arr2arr1]
+[Error matching program output for sparse/vass/sparse-mismatch-dom-err-dom1dom2dom1]
+[Error matching program output for sparse/vass/sparse-mismatch-dom-err-dom1dom2dom2]
+[Error matching program output for sparse/vass/sparse-mismatch-dom-err-domarr]
+[Error matching program output for sparse/vass/sparse-mismatch-dom-err-domdom]
 
 nondet. execution timeouts
 --------------------------
@@ -360,43 +364,13 @@ nondet. compilation timeouts
 pvm-specific tests
 ==================
 
-failures to compile (possibly due to wide reference narrowing?)
----------------------------------------------------------------
-[Error matching compiler output for release/examples/hello-module]
-[Error matching compiler output for release/examples/hello-multicore]
-[Error matching compiler output for release/examples/hello-multiloc]
-[Error matching compiler output for release/examples/hello]
-[Error matching compiler output for release/examples/hpcc/fft]
-[Error matching compiler output for release/examples/hpcc/hpl]
-[Error matching compiler output for release/examples/hpcc/ra]
-[Error matching compiler output for release/examples/hpcc/stream-ep]
-[Error matching compiler output for release/examples/hpcc/stream]
-[Error matching compiler output for release/examples/primers/arrays]
-[Error matching compiler output for release/examples/primers/classes]
-[Error matching compiler output for release/examples/primers/distributions]
-[Error matching compiler output for release/examples/primers/fileIO]
-[Error matching compiler output for release/examples/primers/genericClasses]
-[Error matching compiler output for release/examples/primers/multilocale]
-[Error matching compiler output for release/examples/primers/multirealm]
-[Error matching compiler output for release/examples/primers/opaque]
-[Error matching compiler output for release/examples/primers/ranges]
-[Error matching compiler output for release/examples/primers/reductions]
-[Error matching compiler output for release/examples/primers/slices]
-[Error matching compiler output for release/examples/primers/sparse]
-[Error matching compiler output for release/examples/primers/taskParallel]
-[Error matching compiler output for release/examples/primers/timers]
-[Error matching compiler output for release/examples/primers/varargs]
-[Error matching compiler output for release/examples/primers/variables]
-[Error matching compiler output for release/examples/programs/beer]
-[Error matching compiler output for release/examples/programs/genericStack]
-[Error matching compiler output for release/examples/programs/jacobi]
-[Error matching compiler output for release/examples/programs/norm]
-[Error matching compiler output for release/examples/programs/prodCons]
-[Error matching compiler output for release/examples/programs/tree]
+spurious "pvmd refuses connection" failures
+-------------------------------------------
+*any* (e.g., 09/05/10)
 
 spurious "address already in use" failures
 ------------------------------------------
-[Error matching program output for release/examples/hello-module] (04/09/10)
+*any* (e.g., 04/09/10, 09/02/10, 09/10/10, 09/11/10, 09/12/10, 09/16/10)
 
 timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 ----------------------------------------------------------------------
@@ -408,12 +382,6 @@ timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 [Error: Timed out executing program release/examples/primers/distributions]
 [Error: Timed out executing program release/examples/primers/multilocale]
 [Error: Timed out executing program release/examples/primers/multirealm]
-
-some types not getting --gen-communicated-structures'ed  (as of 03/25/10 ")
----------------------------------------------------------------------------
-[Error matching compiler output for release/examples/programs/linkedList]
-[Error matching compiler output for release/examples/programs/quicksort]
-[Error matching compiler output for release/examples/primers/iterators]
 
 
 =====================
@@ -454,7 +422,7 @@ nondet. seg fault (when not timing out below)
 
 nondet. out-of-memory error
 ---------------------------
-[Error matching program output for parallel/begin/dinan/mvm_coforall] (05/06/10, 05/13/10, 05/19/10)
+[Error matching program output for parallel/begin/dinan/mvm_coforall] (05/06/10, 05/13/10, 05/19/10, 09/07/10)
 
 execution timeouts for new tests (04/20/10)
 -------------------------------------------
@@ -508,6 +476,10 @@ missing 1-tuple acccessor (03/03/10)
 baseline-specific tests
 =======================
 
+has timed out since test was committed (9/14/10)
+------------------------------------------------
+[Error: Timed out executing program studies/hpcc/PTRANS/PTRANS]
+
 incorrect output -- expected? (04/03/10)
 ----------------------------------------
 [Error matching program output for arrays/deitz/parallelism/stream/test_stream_is_parallel]
@@ -547,7 +519,7 @@ prediff problem for --baseline --scalar-replacement
 [Error matching program output for release/examples/primers/taskParallel]
 
 
-(Full run: 134)
+(Full run: 131)
 
 general failures
 ----------------
@@ -658,10 +630,6 @@ threads-none causes serial iterator to be used rather than follower (11/25/08)
 ------------------------------------------------------------------------------
 [Error matching program output for release/examples/hpcc/ra]
 
-no warning generated because of threads-none? (11/11/08)
---------------------------------------------------------
-[Error matching program output for release/examples/primers/sparse]
-
 
 ==========================
 intel-specific regressions
@@ -732,6 +700,10 @@ execution timeout (10/05/09)
 ========================
 xt-cle-specific failures
 ========================
+
+everything failed on linux64 testing once static linking was dropped (09/21/10)
+--------------------------------------------------------------------
+*all*
 
 output being treated as binary causing diff message to change (05/08/10)
 ------------------------------------------------------------------------
@@ -893,6 +865,10 @@ exp2 not supported:
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
+nondet. seg fault
+-----------------
+[Error matching program output for release/examples/hpcc/hpl] (09/10/10, 09/15/10)
+
 wrong sign on imaginary (05/23/10)
 ----------------------------------
 [Error matching program output for types/complex/bradc/negativeimaginaryliteral]
@@ -1022,7 +998,7 @@ nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
-[Error: Timed out compilation for release/examples/hello] (07/11/10, 07/18/10, 07/21/10, 07/25/10, 08/01/10, 08/08/10, 08/13/10)
+[Error: Timed out compilation for release/examples/hello] (07/11/10, 07/18/10, 07/21/10, 07/25/10, 08/01/10, 08/08/10, 08/13/10, 09/20/10)
 
 out-of-bounds index (0) at line 100
 -----------------------------------
