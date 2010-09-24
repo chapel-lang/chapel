@@ -1,3 +1,5 @@
+use Functions;
+
 def testme() {
   return 4;
 }

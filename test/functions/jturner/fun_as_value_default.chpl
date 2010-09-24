@@ -1,3 +1,5 @@
+use Functions;
+
 def testme(i : int = 4) { return i; }
 
 writeln(testme());

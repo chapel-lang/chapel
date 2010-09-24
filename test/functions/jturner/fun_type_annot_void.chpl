@@ -1,3 +1,5 @@
+use Functions;
+
 var g : func(void) = lambda() { writeln("hello, world!"); };
 g();
 
