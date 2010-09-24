@@ -1,7 +1,11 @@
-//===> DomainSet class ===>
+
+//|\""""""""""""""""""""""""|\
+//| >    DomainSet class    | >
+//|/________________________|/
 //-------------------------------------------------------------
-// This class stores a list (associative domain) of arithmetic
-// domains.
+// Stores a list of arithmetic domains.  Allows the subraction
+// of one domain from a collection of other domains.  Useful
+// for dealing with irregular but rectangular geometries.
 //-------------------------------------------------------------
 class DomainSet {
 
@@ -30,14 +34,32 @@ class DomainSet {
     for D in domains do yield D;
   }
 
+
+  def this(D_in: domain)
+    where D_in.rank==rank && D_in.stridable==stridable
+  {
+    var new_set = new DomainSet(rank,stridable);
+
+    for D in domains {
+      var intersection = D(D_in);
+      if intersection.numIndices > 0 then
+	new_set.add(intersection);
+    }
+
+    return new_set;
+  }
+
 }
-//<=== DomainSet class <===
+// /|""""""""""""""""""""""""/|
+//< |    DomainSet class    < |
+// \|________________________\|
 
 
 
-//|""""""""""""""""""""""""""""""""\
-//|===> Multiplication overloads ===>
-//|________________________________/
+
+//|\"""""""""""""""""""""""""""""""""|\
+//| >    Multiplication overloads    | >
+//|/_________________________________|/
 //==== range * domain ====
 def *(R: range(stridable=?s), D: domain)
 {
@@ -74,9 +96,9 @@ def *(R: range(stridable=?s), set: DomainSet)
     new_set.add(R*D);
   return new_set;
 }
-// /""""""""""""""""""""""""""""""""/
-//<=== Multiplication overloads ===<
-// \________________________________\
+// /|"""""""""""""""""""""""""""""""""/|
+//< |    Multiplication overloads    < |
+// \|_________________________________\|
 
 
 
@@ -213,15 +235,20 @@ def -(d_set: DomainSet, E: domain)
 
 
 
+
+
 def main {
   
   var full_D = [1..10, 1..10];
  
-  var d_set = new DomainSet(2, stridable=false);
+  //  var d_set = new DomainSet(2, stridable=false);
+  var d_set = new DomainSet(2, false);
   d_set.add(full_D);
   d_set -= [3..5, 4..9];
-  d_set -= full_D;
   writeln(d_set.domains);
+
+  var new_set = d_set( [2..8,2..8] );
+  writeln(new_set.domains);
   
   // var A: [full_D] int;
   // for D in d_set do A(D) = 1;
