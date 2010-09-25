@@ -11,6 +11,7 @@ class DomainSet {
 
   param rank: int;
   param stridable = false;
+  var stride: rank*int;
 
   var indices = [1..0];
   var domains: [indices] domain(rank, stridable=stridable);
@@ -18,6 +19,19 @@ class DomainSet {
   def add(D: domain) 
     where D.type==domains.eltType
   {
+    if rank==1 {
+      if indices.numIndices==0 then
+	stride = tuple(D.stride);
+      else assert(D.stride == stride(1),
+		  "error: Elements of a DomainSet must have equal stride.");
+    }
+    else {
+      if indices.numIndices==0 then
+	stride = D.stride;
+      else assert(D.stride == stride,
+		  "error: Elements of a DomainSet must have equal stride.");
+    }
+
     var new_high_idx = indices.high + 1;
     indices = [1..new_high_idx];
     domains(new_high_idx) = D;
@@ -47,6 +61,10 @@ class DomainSet {
     }
 
     return new_set;
+  }
+
+  def writeThis(w: Writer){
+    write(domains);
   }
 
 }
@@ -86,6 +104,22 @@ def *(D: domain, R: range(stridable=?s))
   return D_new;
 }
 
+//==== domain*domain ====
+def *(D1: domain, D2: domain)
+{
+  param stridable = D1.stridable || D2.stridable;
+  param rank = D1.rank + D2.rank;
+
+  var ranges: rank*range(stridable=stridable);
+  for i in 1..D1.rank do
+    ranges(i) = D1.dim(i);
+  for i in 1..D2.rank do
+    ranges(D1.rank+i) = D2.dim(i);
+
+  var D_new: domain(rank,stridable=stridable) = ranges;
+  return D_new;
+}
+
 //==== range * DomainSet ====
 def *(R: range(stridable=?s), set: DomainSet) 
 {
@@ -95,6 +129,41 @@ def *(R: range(stridable=?s), set: DomainSet)
   for D in set.domains do
     new_set.add(R*D);
   return new_set;
+}
+
+//==== domain * DomainSet ====
+def *(D: domain, S: DomainSet)
+{
+  param stridable = D.stridable || S.stridable;
+
+  var S_new = new DomainSet(D.rank+S.rank, stridable=stridable);
+  for D2 in S.domains do
+    S_new.add(D*D2);
+
+  return S_new;
+}
+
+//==== DomainSet * domain ====
+def *(S: DomainSet, D: domain)
+{
+  param stridable = S.stridable || D.stridable;
+  var S_new = new DomainSet(S.rank+D.rank, stridable=stridable);
+  for D1 in S.domains do
+    S_new.add(D1*D);
+
+  return S_new;
+}
+
+//==== DomainSet * DomainSet ====
+def *(S1: DomainSet, S2: DomainSet)
+{
+  param stridable = S1.stridable || S2.stridable;
+
+  var S_new = new DomainSet(S1.rank+S2.rank, stridable=stridable);
+  for D1 in S1.domains do
+    S_new.add(D1*S2);
+
+  return S_new;
 }
 // /|"""""""""""""""""""""""""""""""""/|
 //< |    Multiplication overloads    < |
@@ -108,13 +177,13 @@ def *(R: range(stridable=?s), set: DomainSet)
 
 
 
-//|"""""""""""""""""""""""""""""\
-//|===> Subtraction overloads ===>
-//|_____________________________/
+//|\""""""""""""""""""""""""""""""|\
+//| >    Subtraction overloads    | >
+//|/______________________________|/
 
-//|:::::::::::::::::::::::::::::::::::\
-//|===> DomainSet = domain - domain ===>
-//|:::::::::::::::::::::::::::::::::::/
+//|\''''''''''''''''''''''''''''''''''''|\
+//| >    DomainSet = domain - domain    | >
+//|/....................................|/
 def -(D: domain, E: domain) where D.rank == E.rank
 {
   param stridable = D.stridable || E.stridable;
@@ -209,14 +278,14 @@ def -(D: domain, E: domain) where D.rank == E.rank
   return d_set;
 
 }
-// /:::::::::::::::::::::::::::::::::::/
-//<=== DomainSet = domain - domain ===<
-// \:::::::::::::::::::::::::::::::::::\
+// /|''''''''''''''''''''''''''''''''''''/|
+//< |    DomainSet = domain - domain    < |
+// \|....................................\|
 
 
-//|::::::::::::::::::::::::::::::::::::::\
-//|===> DomainSet = DomainSet - domain ===>
-//|::::::::::::::::::::::::::::::::::::::/
+//|\'''''''''''''''''''''''''''''''''''''''|\
+//| >    DomainSet = DomainSet - domain    | >
+//|/.......................................|/
 def -(d_set: DomainSet, E: domain) 
   where d_set.rank==E.rank && d_set.stridable==E.dim(1).stridable
 {
@@ -225,34 +294,72 @@ def -(d_set: DomainSet, E: domain)
   return new_set;
 
 }
-// /::::::::::::::::::::::::::::::::::::::/
-//<=== DomainSet = DomainSet - domain ===<
-// \::::::::::::::::::::::::::::::::::::::\
-
-// /"""""""""""""""""""""""""""""/
-//<=== Subtraction overloads ===<
-// \_____________________________\
+// /|'''''''''''''''''''''''''''''''''''''''/|
+//< |    DomainSet = DomainSet - domain    < |
+// \|.......................................\|
 
 
 
+//|\''''''''''''''''''''''''''''''''''''''''''|\
+//| >    DomainSet = DomainSet - DomainSet    | >
+//|/..........................................|/
+def -(S1: DomainSet, S2: DomainSet)
+  where S1.rank==S2.rank && S1.stridable==S2.stridable
+{
+  var S_new = new DomainSet(S1.rank, S1.stridable);
+
+  for D1 in S1 do S_new.add(D1);
+  for D2 in S2 do S_new -= D2;
+
+  return S_new;
+}
+// /|''''''''''''''''''''''''''''''''''''''''''/|
+//< |    DomainSet = DomainSet - DomainSet    < |
+// \|..........................................\|
+
+
+// /|""""""""""""""""""""""""""""""/|
+//< |    Subtraction overloads    < |
+// \|______________________________\|
+
+
+
+//|\""""""""""""""""""""""""""|\
+//| >    equality overload    | >
+//|/__________________________|/
+def ==(S1: DomainSet, S2: DomainSet) {
+  var S_diff = S1 - S2;
+
+  if S_diff.indices.numIndices==0 then
+    return true;
+  else
+    return false;
+
+}
+// /|""""""""""""""""""""""""""/|
+//< |    equality overload    < |
+// \|__________________________\|
 
 
 def main {
   
   var full_D = [1..10, 1..10];
  
-  //  var d_set = new DomainSet(2, stridable=false);
   var d_set = new DomainSet(2, false);
   d_set.add(full_D);
   d_set -= [3..5, 4..9];
-  writeln(d_set.domains);
+  writeln(d_set);
 
-  var new_set = d_set( [2..8,2..8] );
-  writeln(new_set.domains);
+  var D1 = [1..5 by 2];
+  var D2 = [4..8];
+  writeln(D1*D2);
   
-  // var A: [full_D] int;
-  // for D in d_set do A(D) = 1;
-  // 
-  // writeln(A);
+
+  writeln(D1*d_set);
+
+  writeln(d_set*D2);
+
+  writeln(d_set*d_set);
+
 
 }
