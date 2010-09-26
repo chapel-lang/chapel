@@ -32,8 +32,8 @@ config const filename:string="Arr_Bin_"+numloc+"_"+x_len+"_"+y_len+".dat";
 // a distributed domain Dom, and a distributed array A.  By default,
 // the Block distribution distributes the domain across all locales.
 //
-var Dist = new dmap(new Block([1..x_len, 1..y_len]));                
-var Dom: domain(2) dmapped Dist = [1..x_len, 1..y_len];    
+var Dist = new dmap(new Block([1..x_len, 1..y_len]));
+var Dom: domain(2) dmapped Dist = [1..x_len, 1..y_len];
 var A: [Dom] int(64);
 
 //
@@ -56,8 +56,8 @@ writeln();
 //
 /*
 writeln("Distribution Map");
-for i in 1..n {
-  for j in 1..n {
+for i in 1..x_len {
+  for j in 1..y_len {
     write(A(i,j).locale.id, " ");
   }
   writeln();
@@ -73,35 +73,41 @@ var j = 2;
 forall i in Dom do {
   A(i) = (50+i[2]+(i[1]-1)*y_len)+1;
 }
-//writeln("Initialized array");
-//writeln(A);
+writeln("Initialized array");
+writeln(A);
 
 var fpos:int(64);
   // Create an output file with the specified filename in write mode
+
 var outfile = new file(filename, FileAccessMode.write);
 
 // Open the file
 outfile.open();
 
 // Write the problem size in each dimension to the file
-//  outfile.writeln(n, " ", n);
 
-// write out the array itself
+// write out the Distribution used
 outfile.write(Dist);
 fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww1, ftell:",fpos);
+// write out the Domain, althought only the distribution is used for now 
 outfile.write(Dom);
+// look were we are in the file, so we can see if it works fine
 fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww2, ftell:",fpos," A");
+// write the values of the array
 outfile.write(A);
 fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww3, ftell:",fpos," Dom");
+// write the domain again, to make the file more complicated
 outfile.write(Dom);
 fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww4, ftell:",fpos);
+// write the distribution again, to make the file more complicated
 outfile.write(Dist);
 fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww5, ftell:",fpos);
+// write the array again, to make the file more complicated
 outfile.write(A);
 fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww6, ftell:",fpos);
@@ -110,32 +116,43 @@ if debugInfo then writeln("ww6, ftell:",fpos);
 outfile.close();
 
 writeln("Zeroed via parallel iteration over the array");
-
 forall a in A do {
   a = 0;
 }
 
-// writeln(A);
-//  var Distrib: Dist = [1..5, 1..5];
-var Distrib = new dmap(new Block(rank=2, boundingBox=[1..5, 1..5]));                                          
-var Dom2: domain(2) dmapped Distrib = [1..5,1..5];
-
 var infile = new file(filename, FileAccessMode.read);
-
 infile.open();
-infile.read(Distrib);
+
+// Read the distribution used
+var bb=readDist(infile);
+
+// This must be redone so if the distribution and domains aren't the same it works.
+// I will work on that ASAP.
+
+// Create the original distribution
+var Distrib = new dmap(new Block(rank=2, bb));                                          
+//var Dom2: domain(2) dmapped Distrib;
+// Create the original domain
+var Dom2: domain(2) dmapped Distrib = bb;
+
 fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr1, ftell:",fpos);
 
 // writeln(Distrib);
+// The read doesn't change the already defined values
 infile.read(Dom2);
+writeln("Dom2:");
+writeln(Dom2);
+
+// Creates a new Array to read from the file
+var Aread: [Dom2] int(64);
 fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr2, ftell:",fpos," A");
-// writeln(Dom2);
-infile.read(A);
+infile.read(Aread);
 fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr3, ftell:",fpos," Dom");
-// writeln(A);
+writeln(" The loaded array is:");
+ writeln(Aread);
 infile.read(Dom2);
 fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr4, ftell:",fpos," Dis");
@@ -143,21 +160,21 @@ infile.read(Distrib);
 fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr5, ftell:",fpos," A");
 
-forall a in A do {
+forall a in Aread do {
   a = 0;
 }
 writeln(Dom2);
-infile.read(A);
+infile.read(Aread);
 fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr6, ftell:",fpos);
-// writeln(A);
+// writeln(Aread);
 infile.close();
 
 //
 // In parallel, subtract one from each element of the array.
 //
 forall i in Dom do {
-  A(i) = A(i) - 1;
+  Aread(i) = Aread(i) - 1;
 }
 //writeln("Subtracted 1 via parallel iteration over the domain");
 //writeln(A);
@@ -166,9 +183,47 @@ forall i in Dom do {
 //
 // In parallel, iterate over the array and set each element to 0.
 //
-forall a in A do {
+forall a in Aread do {
   a = 0;
 }
 writeln("Zeroed via parallel iteration over the array");
 //writeln(A);
 
+
+
+// Function to read a distribution from a file
+// 	it will be moved to some common file so it can be called 
+// 	by any program, but I must review its interface and its working
+// 	with the domains a little more.
+
+def readDist(f : file) {
+  var gres=0:int(64);
+  var gerr=0:int;
+  
+  var fpos=f.chpl_ftell();
+  writeln("readBinBlock begin, ftell:",fpos);
+
+  var rank:int;
+  binfread(rank,4,1,f._fp,gres,gerr);
+  writeln("Read Block rank:",rank);
+
+  var rr:int;
+  var bb:domain(2);
+  var low: [1..2] int;
+  var high: [1..2] int;
+  var stride: [1..2] int;
+
+  for dim in 1..rank do {
+    binfread(low[dim],4,1,f._fp,gres,gerr);
+    binfread(high[dim],4,1,f._fp,gres,gerr);
+    binfread(stride[dim],4,1,f._fp,gres,gerr);
+                writeln("Read Block dim:",dim," : ",low[dim]);
+                writeln("Read Block dim:",dim," : ",high[dim]);
+                writeln("Read Block dim:",dim," : ",stride[dim]);
+  }
+  bb=[low[1]..high[1],low[2]..high[2]];
+  writeln("readDist bb:",bb);
+  fpos=f.chpl_ftell();
+  writeln("readBinDom end, ftell:",fpos);
+  return bb;
+}
