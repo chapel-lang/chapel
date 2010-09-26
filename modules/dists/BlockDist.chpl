@@ -31,7 +31,7 @@ use ChapelUtil;
 // modules, perhaps called debugDists and checkDists.
 //
 config param debugBlockDist = false;
-config param debugBlockDistBenchmark = true;
+config param debugBlockDistBenchmark = false;
 config param sanityCheckDistribution = false;
 
 //
@@ -828,16 +828,6 @@ def BlockArr.these() var {
     yield dsiAccess(i);
 }
 
-/*
-_extern def binfwrite (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-_extern def binfwrite (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-_extern def binfwrite (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-
-extern def binfread (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-_extern def binfread (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-_extern def binfread (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-*/
-
 def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
 {
   const privarr=this.dsiPrivatize(dom.pid);
@@ -986,7 +976,7 @@ def BlockArr.readBinArray(f: file) {
         var numbytespn=8:int(64);
 // For now, one for the rank and one for each dimension
         var offset=fpos;
-        var nbyteslin=numbytespn*((1+dom.dsiDim(1)._high-dom.dsiDim(1)._low)/dom.dsiDim(1)._stride);
+        var nbyteslin=numbytespn*((1+dom.dsiDim(2)._high-dom.dsiDim(2)._low)/dom.dsiDim(2)._stride);
 
         var pos=0:int(64);
         var oldpos=0:int(64);
