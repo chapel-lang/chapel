@@ -19,8 +19,8 @@ use BlockDist;
 //
 // Size of each dimension of our domain.
 //
-config const x_len = 8;
-config const y_len = 8;
+config const x_len = 19;
+config const y_len = 13;
 config param debugInfo = true;
 
 
@@ -33,7 +33,11 @@ config const filename:string="Arr_Bin_"+numloc+"_"+x_len+"_"+y_len+".dat";
 // the Block distribution distributes the domain across all locales.
 //
 var Dist = new dmap(new Block([1..x_len, 1..y_len]));
-var Dom: domain(2) dmapped Dist = [1..x_len, 1..y_len];
+
+if ( x_len<10 ) then halt("X size too small, must be at least 10");
+if ( y_len<6 ) then halt("Y size too small, must be at least 6");
+
+var Dom: domain(2) dmapped Dist = [5..(x_len-5), 3..(y_len-3)];
 var A: [Dom] int(64);
 
 //
@@ -42,6 +46,7 @@ var A: [Dom] int(64);
 // Output of arrays are commented so if they are big not a lot of standard
 //   output is done
 //
+
 writeln("Domain");
 writeln(Dom);
 writeln();
@@ -73,11 +78,18 @@ var j = 2;
 forall i in Dom do {
   A(i) = (50+i[2]+(i[1]-1)*y_len)+1;
 }
-writeln("Initialized array");
-writeln(A);
+
+// Print the array if it is not too big
+if ( x_len < 20 ) && ( y_len < 20 ) then {
+  writeln("Initialized array");
+  writeln(A);
+}
+
+
+// Now we are going to write to disk
 
 var fpos:int(64);
-  // Create an output file with the specified filename in write mode
+// Create an output file with the specified filename in write mode
 
 var outfile = new file(filename, FileAccessMode.write);
 
@@ -100,18 +112,16 @@ outfile.write(A);
 fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww3, ftell:",fpos," Dom");
 // write the domain again, to make the file more complicated
+
+Dom = [5..(x_len-3), 3..(y_len-2)];
+
 outfile.write(Dom);
 fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww4, ftell:",fpos);
-// write the distribution again, to make the file more complicated
-outfile.write(Dist);
-fpos=outfile.chpl_ftell();
-if debugInfo then writeln("ww5, ftell:",fpos);
 // write the array again, to make the file more complicated
 outfile.write(A);
 fpos=outfile.chpl_ftell();
-if debugInfo then writeln("ww6, ftell:",fpos);
-
+if debugInfo then writeln("ww5, ftell:",fpos);
 // close the file
 outfile.close();
 
@@ -119,6 +129,9 @@ writeln("Zeroed via parallel iteration over the array");
 forall a in A do {
   a = 0;
 }
+
+
+// Now we are going to read what we have written
 
 var infile = new file(filename, FileAccessMode.read);
 infile.open();
@@ -131,17 +144,18 @@ var bb=readDist(infile);
 
 // Create the original distribution
 var Distrib = new dmap(new Block(rank=2, bb));                                          
-//var Dom2: domain(2) dmapped Distrib;
-// Create the original domain
-var Dom2: domain(2) dmapped Distrib = bb;
-
+//writeln("Distribution read:");
+//writeln(Distrib);
 fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr1, ftell:",fpos);
+// Create the original domain
+bb=readDist(infile);
+var Dom2: domain(2) dmapped Distrib = bb;
 
-// writeln(Distrib);
+
 // The read doesn't change the already defined values
-infile.read(Dom2);
-writeln("Dom2:");
+//infile.read(Dom2);
+writeln("First domain:");
 writeln(Dom2);
 
 // Creates a new Array to read from the file
@@ -151,23 +165,27 @@ if debugInfo then writeln("rr2, ftell:",fpos," A");
 infile.read(Aread);
 fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr3, ftell:",fpos," Dom");
-writeln(" The loaded array is:");
- writeln(Aread);
-infile.read(Dom2);
+if ( x_len < 20 ) && ( y_len < 20 ) then {
+	writeln(" The loaded array is:");
+	writeln(Aread);
+}
+// Read the second domain
+bb=readDist(infile);
+Dom2 = bb;
 fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr4, ftell:",fpos," Dis");
-infile.read(Distrib);
-fpos=infile.chpl_ftell();
-if debugInfo then writeln("rr5, ftell:",fpos," A");
-
 forall a in Aread do {
   a = 0;
 }
+writeln("Second domain:");
 writeln(Dom2);
 infile.read(Aread);
 fpos=infile.chpl_ftell();
-if debugInfo then writeln("rr6, ftell:",fpos);
-// writeln(Aread);
+if debugInfo then writeln("rr5, ftell:",fpos);
+if ( x_len < 20 ) && ( y_len < 20 ) then {
+	writeln(" The loaded array is:");
+	writeln(Aread);
+}
 infile.close();
 
 //
@@ -221,9 +239,9 @@ def readDist(f : file) {
                 writeln("Read Block dim:",dim," : ",high[dim]);
                 writeln("Read Block dim:",dim," : ",stride[dim]);
   }
-  bb=[low[1]..high[1],low[2]..high[2]];
-  writeln("readDist bb:",bb);
+  bb=[low[1]..high[1] by stride[1],low[2]..high[2] by stride[2]];
+  writeln("readBlock bb:",bb);
   fpos=f.chpl_ftell();
-  writeln("readBinDom end, ftell:",fpos);
+  writeln("readBinBlock end, ftell:",fpos);
   return bb;
 }
