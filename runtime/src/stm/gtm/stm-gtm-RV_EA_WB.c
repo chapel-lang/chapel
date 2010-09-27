@@ -128,7 +128,9 @@ int gtm_tx_load_word(chpl_stm_tx_t* tx, gtm_word_p dstaddr, gtm_word_p srcaddr) 
   gtm_word_t lockval, lockval2, version;
   read_entry_t* rentry;
   write_entry_t* wentry;
-  
+
+  assert((!chpl_heapStart && !chpl_heapSize) || ((void*) srcaddr >= chpl_heapStart && (void*) srcaddr <= chpl_heapStart + chpl_heapSize)); 
+
   lock = GET_LOCK(srcaddr);
   lockval = ATOMIC_LOAD_MB(lock);
  restart:
@@ -180,6 +182,8 @@ int gtm_tx_store_word(chpl_stm_tx_t* tx, gtm_word_p srcaddr, gtm_word_p dstaddr,
   read_entry_t* rentry;
   write_entry_t* prev;
   write_entry_t* wentry;
+
+  assert((!chpl_heapStart && !chpl_heapSize) || ((void*) dstaddr >= chpl_heapStart && (void*) dstaddr <= chpl_heapStart + chpl_heapSize));
 
   assert(mask != 0);
   value = *srcaddr; 

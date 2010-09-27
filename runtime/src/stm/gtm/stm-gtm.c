@@ -213,9 +213,6 @@ int gtm_tx_load_wrap(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size
 
 void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t size, int ln, chpl_string fn) {
   assert(tx != NULL);
-  if (!(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE)) {
-    chpl_msg(0,"STATUS %d\n", tx->status);
-  }
   assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
   CHPL_STM_STATS_START(tx->counters, STATS_TX_LOAD);
