@@ -836,6 +836,7 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
   var err= 0:int;
   var numbytespn=8:int(64);
   var nbyteslin=numbytespn*((1+dom.dsiDim(2)._high-dom.dsiDim(2)._low)/dom.dsiDim(2)._stride);
+
   var pos=0:int(64);
   var oldpos=-1:int(64);
   var timer: Timer;
@@ -853,15 +854,15 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
 
     from=privarr.locArr(localeIdx).locDom.myBlock.low(2):int(64);
     to=privarr.locArr(localeIdx).locDom.myBlock.high(2):int(64);
- //   if debugBlockDist then writeln("BlockArr.writeBinLocalArray  from:",from," to: ",to," line:",idx, " numbytespn:",numbytespn," ",dom.dsiDim(1)._high," ",dom.dsiDim(1)._low," ",dom.dsiDim(1)._stride);
+//    if debugBlockDist then writeln("BlockArr.writeBinLocalArray  from:",from," to: ",to," line:",idx, " numbytespn:",numbytespn," ",dom.dsiDim(1)._high," ",dom.dsiDim(1)._low," ",dom.dsiDim(1)._stride);
 
     ind(1)=idx:int;
     ind(2)=from:int;
     numelem=to-from+1;
 
-    pos=((idx-1))*nbyteslin+(from-1)*numbytespn+offset;
+    pos=(idx-dom.dsiDim(1)._low)*nbyteslin+(from-dom.dsiDim(2)._low)*numbytespn+offset;
     if (pos!=(oldpos+numelem*numbytespn)) then {
-//      if debugBlockDistBenchmark then writeln("BlockArr.writeBinLocalArray in ",here.id," line:",idx," to seek to pos:(",from," ",to,") ",pos," old pos:",oldpos+numelem*numbytespn," elapsed:",timer.elapsed(TimeUnits.seconds));
+      if debugBlockDistBenchmark then writeln("BlockArr.writeBinLocalArray in ",here.id," line:",idx," to seek to pos:(",from," ",to,") ",pos," old pos:",oldpos+numelem*numbytespn," elapsed:",timer.elapsed(TimeUnits.seconds));
       outfile.fseekset(pos);
     }
 
@@ -994,7 +995,7 @@ def BlockArr.readBinArray(f: file) {
           ind(1)=idx:int;
           ind(2)=from:int;
           numelem=to-from+1;
-	  pos=((idx-1))*nbyteslin+(from-1)*numbytespn+offset;
+    	  pos=(idx-dom.dsiDim(1)._low)*nbyteslin+(from-dom.dsiDim(2)._low)*numbytespn+offset;
 
 	  if (pos!=(oldpos+numelem*numbytespn)) then {
 		  infile.fseekset(pos);
@@ -1025,6 +1026,8 @@ def BlockArr.readBinArray(f: file) {
   gotoPos=bytes_read+fpos;
 
   f.fseekset(gotoPos);
+  if debugBlockDist then writeln("binfread fseek to :",gotoPos );
+
   timer.stop();
   if debugBlockDistBenchmark then
     writeln("BlockArr.readBinArray time to read:",timer.elapsed(TimeUnits.seconds)," bandwitdh: ",bytes_read/timer.elapsed(TimeUnits.seconds)/(1000*1000)," MiB/s");
