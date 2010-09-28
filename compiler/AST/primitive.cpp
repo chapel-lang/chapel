@@ -485,6 +485,8 @@ initPrimitive() {
 	   returnInfoGetMember, false, true, true);
   prim_def(PRIM_TX_LOAD_MEMBER_VALUE_SVEC, "tx load member value svec", 
 	   returnInfoGetMember, false, true, true);
+  prim_def(PRIM_TX_GET_SVEC_MEMBER_VALUE, "tx get svec member value", 
+	   returnInfoGetTupleMember, false, true, true);
   prim_def(PRIM_TX_LOAD_SVEC_MEMBER_VALUE, "tx load svec member value", 
 	   returnInfoGetTupleMember, false, true, true);
   prim_def(PRIM_TX_LOAD_SVEC_MEMBER_VALUE_SVEC, 

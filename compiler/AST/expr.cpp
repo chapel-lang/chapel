@@ -2123,21 +2123,35 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIM_TX_LOAD_MEMBER_VALUE: {
-      Type* type = get(2)->typeInfo();      
-      registerTypeToStructurallyCodegen(type->symbol);
+      Type* fieldType = get(2)->typeInfo();      
+      registerTypeToStructurallyCodegen(fieldType->symbol);
       fprintf(outfile, "CHPL_STM_LOAD_FIELD_VALUE");
       gen(outfile, "(%A, %A, (", get(1), get(2));
       codegen_member(outfile, get(3), get(4));
-      gen(outfile, "), %A, %A, %A)", type, get(5), get(6));      
+      gen(outfile, "), %A, %A, %A)", fieldType, get(5), get(6));      
       break;
     }
     case PRIM_TX_LOAD_MEMBER_VALUE_SVEC: {
-      Type* type = get(2)->typeInfo();      
-      registerTypeToStructurallyCodegen(type->symbol);
+      Type* fieldType = get(2)->typeInfo();      
+      registerTypeToStructurallyCodegen(fieldType->symbol);
       fprintf(outfile, "CHPL_STM_LOAD_FIELD_VALUE_SVEC");
       gen(outfile, "(%A, %A, (", get(1), get(2));
       codegen_member(outfile, get(3), get(4));
-      gen(outfile, "), %A, %A, %A)", type, get(5), get(6));      
+      gen(outfile, "), %A, %A, %A)", fieldType, get(5), get(6));      
+      break;
+    }
+    case PRIM_TX_GET_SVEC_MEMBER_VALUE: {
+      Type* valueType = get(3)->getValType();
+      Type* fieldType = valueType->getField("x1")->type;
+      registerTypeToStructurallyCodegen(fieldType->symbol);
+      if (fieldType->symbol->hasFlag(FLAG_STAR_TUPLE))
+	fprintf(outfile, "CHPL_STM_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE_SVEC");
+      else
+	fprintf(outfile, "CHPL_STM_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE");
+      gen(outfile, "(%A, %A, %A, ", get(1), get(2), get(3));
+      codegenExprMinusOne(outfile, get(4));
+      gen(outfile, ", %A, %A, %A)",
+	  fieldType, get(5), get(6));
       break;
     }
     case PRIM_TX_LOAD_SVEC_MEMBER_VALUE: {

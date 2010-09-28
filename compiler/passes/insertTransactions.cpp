@@ -259,7 +259,8 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
 	INT_ASSERT(se1);
 	INT_ASSERT(se2);
 	if (se1->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-	  USR_FATAL(call, "FIXME: GET_SVEC_MEMBER_VALUE FLAG_WIDE");
+	  call->replace(new CallExpr(PRIM_TX_GET_SVEC_MEMBER_VALUE,
+				     tx, lhs->var, se1->var, se2->var));
 	} else {
 	  Type* tupleType = se1->getValType();
 	  INT_ASSERT(lhs->getValType() == rhs->getValType());
