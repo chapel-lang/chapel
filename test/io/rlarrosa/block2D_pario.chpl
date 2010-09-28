@@ -130,6 +130,7 @@ fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww4, ftell:",fpos);
 // write the array again, to make the file more complicated
 A[2,5]=1;
+A[(x_len-3),(y_len-1)]=45;
 outfile.write(A);
 fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww5, ftell:",fpos);
