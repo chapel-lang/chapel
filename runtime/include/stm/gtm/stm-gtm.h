@@ -11,9 +11,6 @@
 // GTM specific macros
 //
 
-extern void* chpl_heapStart;   // see src/chpl_mem.c
-extern size_t chpl_heapSize; 
-
 #define GTM_COMM_COMBINED_COMMIT 1
 
 enum {TX_FAIL = 0, TX_OK, TX_BUSY};
