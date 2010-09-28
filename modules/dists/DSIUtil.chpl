@@ -169,3 +169,51 @@ def setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {
   }
 }
 
+// Function to read a 2D block from a file, so it can be used to read a
+// Distribution from file with:
+// 		var bb=read2DBlock(infile);
+//		var Distrib = new dmap(new Block(rank=2, bb));
+//  And latter to read and define a Domain over that distribution from file
+//  with :
+//		bb=read2DBlock(infile);
+//		var Dom2: domain(2) dmapped Distrib = bb;
+//
+// They can be written to file, so they can be read latter, using:
+//		outfile.write(Dist);
+//		outfile.write(Dom);
+
+
+def read2DBlock(f : file) {
+  var gres=0:int(64);
+  var gerr=0:int;
+
+//  var fpos=f.chpl_ftell();
+//  writeln("readBinBlock begin, ftell:",fpos);
+
+  var rank:int;
+  binfread(rank,4,1,f._fp,gres,gerr);
+//  writeln("Read Block rank:",rank);
+
+  var rr:int;
+  var bb:domain(2);
+  var low: [1..2] int;
+  var high: [1..2] int;
+  var stride: [1..2] int;
+
+  for dim in 1..rank do {
+    binfread(low[dim],4,1,f._fp,gres,gerr);
+    binfread(high[dim],4,1,f._fp,gres,gerr);
+    binfread(stride[dim],4,1,f._fp,gres,gerr);
+//    writeln("Read Block dim:",dim," low   : ",low[dim]);
+//    writeln("Read Block dim:",dim," high  : ",high[dim]);
+//    writeln("Read Block dim:",dim," stride: ",stride[dim]);
+  }
+
+// If there is an error reading it will fail when defining the domain.
+  bb=[low[1]..high[1] by stride[1],low[2]..high[2] by stride[2]];
+// writeln("readBlock bb:",bb);
+//  fpos=f.chpl_ftell();
+//  writeln("readBinBlock end, ftell:",fpos);
+  return bb;
+}
+
