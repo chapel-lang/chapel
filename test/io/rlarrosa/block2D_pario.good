@@ -16,29 +16,9 @@ ww1, ftell:28
 ww2, ftell:56 A
 ww3, ftell:696 Dom
 ww4, ftell:724
-ww5, ftell:1588
+ww5, ftell:1684
 Zeroed via parallel iteration over the array
-readBinBlock begin, ftell:0
-Read Block rank:2
-Read Block dim:1 : 1
-Read Block dim:1 : 19
-Read Block dim:1 : 1
-Read Block dim:2 : 1
-Read Block dim:2 : 13
-Read Block dim:2 : 1
-readBlock bb:[1..19, 1..13]
-readBinBlock end, ftell:28
 rr1, ftell:28
-readBinBlock begin, ftell:28
-Read Block rank:2
-Read Block dim:1 : 5
-Read Block dim:1 : 14
-Read Block dim:1 : 1
-Read Block dim:2 : 3
-Read Block dim:2 : 10
-Read Block dim:2 : 1
-readBlock bb:[5..14, 3..10]
-readBinBlock end, ftell:56
 First domain:
 [5..14, 3..10]
 rr2, ftell:56 A
@@ -54,31 +34,24 @@ rr3, ftell:696 Dom
 197 198 199 200 201 202 203 204
 210 211 212 213 214 215 216 217
 223 224 225 226 227 228 229 230
-readBinBlock begin, ftell:696
-Read Block rank:2
-Read Block dim:1 : 5
-Read Block dim:1 : 16
-Read Block dim:1 : 1
-Read Block dim:2 : 3
-Read Block dim:2 : 11
-Read Block dim:2 : 1
-readBlock bb:[5..16, 3..11]
-readBinBlock end, ftell:724
 rr4, ftell:724 Dis
 Second domain:
-[5..16, 3..11]
-rr5, ftell:1588
+[2..16, 5..12]
+rr5, ftell:1684
  The loaded array is:
-106 107 108 109 110 111 112 113 0
-119 120 121 122 123 124 125 126 0
-132 133 134 135 136 137 138 139 0
-145 146 147 148 149 150 151 152 0
-158 159 160 161 162 163 164 165 0
-171 172 173 174 175 176 177 178 0
-184 185 186 187 188 189 190 191 0
-197 198 199 200 201 202 203 204 0
-210 211 212 213 214 215 216 217 0
-223 224 225 226 227 228 229 230 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+108 109 110 111 112 113 0 0
+121 122 123 124 125 126 0 0
+134 135 136 137 138 139 0 0
+147 148 149 150 151 152 0 0
+160 161 162 163 164 165 0 0
+173 174 175 176 177 178 0 0
+186 187 188 189 190 191 0 0
+199 200 201 202 203 204 0 0
+212 213 214 215 216 217 0 0
+225 226 227 228 229 230 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
 Zeroed via parallel iteration over the array

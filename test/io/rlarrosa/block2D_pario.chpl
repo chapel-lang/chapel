@@ -101,19 +101,29 @@ outfile.open();
 // write out the Distribution used
 outfile.write(Dist);
 fpos=outfile.chpl_ftell();
+
+// The position of the file is written so they can be checked against the
+// position when reading the file, when written it is written beginning with ww
+// and when reading with rr, so an egrep "rr[1-9]|ww" file.out shows all the
+// info needed to see if the positions are fine.
+ 
+
 if debugInfo then writeln("ww1, ftell:",fpos);
 // write out the Domain, althought only the distribution is used for now 
 outfile.write(Dom);
-// look were we are in the file, so we can see if it works fine
+// look were we are in the file, so we can see if it works fine, that is, if
+// when we are going to read we are in the right place
 fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww2, ftell:",fpos," A");
-// write the values of the array
+
+// write the values of the array to the file
 outfile.write(A);
 fpos=outfile.chpl_ftell();
 if debugInfo then writeln("ww3, ftell:",fpos," Dom");
-// write the domain again, to make the file more complicated
 
-Dom = [5..(x_len-3), 3..(y_len-2)];
+// write the domain again, to make the file more complicated
+// The size of the domain is modified and then written to file to test it.
+Dom = [2..(x_len-3), 5..(y_len-1)];
 
 outfile.write(Dom);
 fpos=outfile.chpl_ftell();
@@ -137,10 +147,7 @@ var infile = new file(filename, FileAccessMode.read);
 infile.open();
 
 // Read the distribution used
-var bb=readDist(infile);
-
-// This must be redone so if the distribution and domains aren't the same it works.
-// I will work on that ASAP.
+var bb=read2DBlock(infile);
 
 // Create the original distribution
 var Distrib = new dmap(new Block(rank=2, bb));                                          
@@ -149,7 +156,7 @@ var Distrib = new dmap(new Block(rank=2, bb));
 fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr1, ftell:",fpos);
 // Create the original domain
-bb=readDist(infile);
+bb=read2DBlock(infile);
 var Dom2: domain(2) dmapped Distrib = bb;
 
 
@@ -170,7 +177,7 @@ if ( x_len < 20 ) && ( y_len < 20 ) then {
 	writeln(Aread);
 }
 // Read the second domain
-bb=readDist(infile);
+bb=read2DBlock(infile);
 Dom2 = bb;
 fpos=infile.chpl_ftell();
 if debugInfo then writeln("rr4, ftell:",fpos," Dis");
@@ -206,42 +213,3 @@ forall a in Aread do {
 }
 writeln("Zeroed via parallel iteration over the array");
 //writeln(A);
-
-
-
-// Function to read a distribution from a file
-// 	it will be moved to some common file so it can be called 
-// 	by any program, but I must review its interface and its working
-// 	with the domains a little more.
-
-def readDist(f : file) {
-  var gres=0:int(64);
-  var gerr=0:int;
-  
-  var fpos=f.chpl_ftell();
-  writeln("readBinBlock begin, ftell:",fpos);
-
-  var rank:int;
-  binfread(rank,4,1,f._fp,gres,gerr);
-  writeln("Read Block rank:",rank);
-
-  var rr:int;
-  var bb:domain(2);
-  var low: [1..2] int;
-  var high: [1..2] int;
-  var stride: [1..2] int;
-
-  for dim in 1..rank do {
-    binfread(low[dim],4,1,f._fp,gres,gerr);
-    binfread(high[dim],4,1,f._fp,gres,gerr);
-    binfread(stride[dim],4,1,f._fp,gres,gerr);
-                writeln("Read Block dim:",dim," : ",low[dim]);
-                writeln("Read Block dim:",dim," : ",high[dim]);
-                writeln("Read Block dim:",dim," : ",stride[dim]);
-  }
-  bb=[low[1]..high[1] by stride[1],low[2]..high[2] by stride[2]];
-  writeln("readBlock bb:",bb);
-  fpos=f.chpl_ftell();
-  writeln("readBinBlock end, ftell:",fpos);
-  return bb;
-}
