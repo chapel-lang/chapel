@@ -101,13 +101,27 @@ extern chpl_txfn_p chpl_txftable[];
       chpl_stm_tx_load(tx, &ldst, &((stype)((wide).addr))->sfield,	\
 		       SPECIFY_SIZE(type), ln, fn);			\
     else								\
-      chpl_stm_tx_get(tx, &ldst, (wide).locale,				\
-		      &((stype)((wide).addr))->sfield,			\
+      chpl_stm_tx_get(tx, &ldst,					\
+		      (wide).locale, &((stype)((wide).addr))->sfield,	\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while (0)
 
 #define CHPL_STM_COMM_WIDE_GET_FIELD_VALUE_SVEC(tx, ldst, wide, stype, sfield, type, ln, fn) \
   CHPL_STM_COMM_WIDE_GET_FIELD_VALUE(tx, ldst, wide, stype, sfield, type, ln, fn)
+
+#define CHPL_STM_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE(tx, ldst, wide, index, type, ln, fn) \
+  do {                                                                  \
+    if (chpl_localeID == (wide).locale)                                 \
+      chpl_stm_tx_load(tx, &ldst, &(*(wide).addr)[index],		\
+		       SPECIFY_SIZE(type), ln, fn);			\
+    else                                                                \
+      chpl_stm_tx_get(tx, &(ldst),					\
+                    (wide).locale, &(*(wide).addr)[index],		\
+                    SPECIFY_SIZE(type), ln, fn);                        \
+  } while (0)
+
+#define CHPL_STM_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE_SVEC(tx, ldst, wide, index, type, ln, fn) \
+  CHPL_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE(tx, ldst, wide, index, type, ln, fn)
 
 #define CHPL_STM_COMM_WIDE_CLASS_GET_TEST_CID(tx, ldst, wide, cid, stype, sfield, ln, fn) \
   do {									\
