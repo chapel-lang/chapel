@@ -1,4 +1,4 @@
-use DistCSR;
+use LayoutCSR;
 
 config var n = 8;
 
