@@ -63,7 +63,11 @@ class CSRDom: BaseSparseDom {
   }
 
   def these() {
-    var cursorRow = rowRange.low; // _private_findStartRow(rowRange,1) faster?
+    //writeln("serial- rowRange=", rowRange, " colRange=", colRange, "\n",
+    //        "        rowStart=", rowStart, " colIdx=", colIdx);
+
+    // faster to start at _private_findStartRow(1) ?
+    var cursorRow = rowRange.low;
     for i in 1..nnz {
       while (rowStart(cursorRow+1) <= i) {
         cursorRow += 1;
@@ -75,30 +79,39 @@ class CSRDom: BaseSparseDom {
   def these(param tag: iterator) where tag == iterator.leader {
     // same as DefaultSparseDom's leader
     const numElems = nnz;
-    const numChunks = _computeNumChunks(numElems);
-    if debugCSR then
-      writeln("CSRDom leader: ", numChunks, " chunks, ", numElems, " elems");
+    if numElems <= 0 then {
+      if debugCSR then writeln("CSRDom leader: nothing to do (", numElems,
+                               " elements)");
+    } else {
+      const numChunks = _computeNumChunks(numElems);
+      //writeln("leader- rowRange=", rowRange, " colRange=", colRange, "\n",
+      //        "        rowStart=", rowStart, " colIdx=", colIdx);
+      if debugCSR then
+        writeln("CSRDom leader: ", numChunks, " chunks, ", numElems, " elems");
 
-    // split our numElems elements over numChunks tasks
-    if numChunks <= 1 then
-      yield (this, 1, numElems);
-    else
-      coforall chunk in 1..numChunks do
-        yield (this, (..._computeChunkStartEnd(numElems, numChunks, chunk)));
-    // TODO: to handle large numElems and numChunks faster, it would be great
-    // to run the binary search in _private_findStartRow smarter, e.g.
-    // pass to the tasks created in 'coforall' smaller ranges to search over.
+      // split our numElems elements over numChunks tasks
+      if numChunks <= 1 then
+        yield (this, 1, numElems);
+      else
+        coforall chunk in 1..numChunks do
+          yield (this, (..._computeChunkStartEnd(numElems, numChunks, chunk)));
+      // TODO: to handle large numElems and numChunks faster, it would be great
+      // to run the binary search in _private_findStartRow smarter, e.g.
+      // pass to the tasks created in 'coforall' smaller ranges to search over.
+    }  // if numElems
   }
 
   def these(param tag: iterator, follower: (?,?,?)) where tag == iterator.follower {
     var (followerDom, startIx, endIx) = follower;
+    if boundsChecking then
+      assert(startIx <= endIx, "CSRDom follower - got nothing to iterate over");
 
     if (followerDom != this) then
       halt("Sparse domains can't be zippered with anything other than themselves and their arrays (CSR layout)");
 
     // This loop is identical to the serial iterator, except for the iteration
     // space and finding the initial 'cursorRow'.
-    var cursorRow = _private_findStartRow(rowRange, startIx);
+    var cursorRow = _private_findStartRow(startIx);
     if debugCSR then
       writeln("CSRDom follower: ", startIx, "..", endIx,
               "  rowStart(", cursorRow, ")=", rowStart(cursorRow));
@@ -115,26 +128,33 @@ class CSRDom: BaseSparseDom {
 
   // Helper: find 'ix' s.t. rowStart(ix) <= startIx < rowStart(ix+1)
   // or a number at most 'approx' smaller than that.
-  def _private_findStartRow(rRange, startIx) {
+  // There MUST exist a solution within low..high.
+  def _private_findStartRow(startIx) {
+    return _private_findStartRow(startIx, rowDom.low, rowDom.high);
+  }
+  def _private_findStartRow(startIx, low, high) {
     var approx = 2; // Indicates when to switch to linear search.
                     // This number could be tuned for performance.
-    // simple binary search
-    var l = rRange.low, h = rRange.high;
+    // simple binary search (should be fewer comparisons than BinarySearch())
+    var l = low, h = high;
     while h > l + approx {
       var m = (h + l) / 2;
       if rowStart(m) <= startIx then l = m; else h = m;
     }
-    var hh = min(l+approx, rRange.high);
-/*
-    writeln("findStartRow: startIx=", startIx, " l=", l, "(", rRange.low,
-            ") h=", h, "(", rRange.high, ")\n",
-            "              rowStart(", l, ")=", rowStart(l),
-            " rowStart(", hh, ")=", rowStart(hh));
-*/
-    assert(rowStart(l) <= startIx, "CSRDom.findStartRow-1");
-    assert(startIx < rowStart(hh) ||
-           (startIx == rowStart(hh) && hh == rRange.high),
-           "CSRDom.findStartRow-2");
+    var hh = min(l+approx, high);
+
+    //writeln("findStartRow: startIx=", startIx, " l=", l, "(", low,
+    //        ") h=", h, "(", high, ")\n",
+    //        "              rowStart(", l, ")=", rowStart(l),
+    //        " rowStart(", hh, ")=", rowStart(hh));
+
+    if boundsChecking then {
+      assert(rowStart(l) <= startIx, "CSRDom.findStartRow-1");
+      assert(startIx < rowStart(hh), "CSRDom.findStartRow-2");
+      // The second assertion will fail if there is NO solution
+      // within low..high.  For performance,
+      // ensuring existence of a solution is caller responsibility.
+    }
     return l;
   }
 
@@ -144,6 +164,13 @@ class CSRDom: BaseSparseDom {
     } else {
       return colRange;
     }
+  }
+
+  def boundsCheck(ind: rank*idxType):void {
+    if boundsChecking then
+      if !(parentDom.member(ind)) then
+        halt("CSR domain/array index out of bounds: ", ind,
+             " (expected to be within ", parentDom, ")");
   }
 
   def rowStop(row) {
@@ -164,6 +191,8 @@ class CSRDom: BaseSparseDom {
   }
 
   def dsiAdd(ind: rank*idxType) {
+    boundsCheck(ind);
+
     // find position in nnzDom to insert new index
     const (found, insertPt) = find(ind);
 
@@ -282,9 +311,7 @@ class CSRArr: BaseArr {
 
   def dsiAccess(ind: rank*idxType) var {
     // make sure we're in the dense bounding box
-    if boundsChecking then
-      if !((dom.parentDom).member(ind)) then
-        halt("array index out of bounds: ", ind);
+    dom.boundsCheck(ind);
 
     // lookup the index and return the data or IRV
     const (found, loc) = dom.find(ind);
