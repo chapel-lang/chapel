@@ -42,16 +42,8 @@ class DefaultSparseDom: BaseSparseDom {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-
-    // copy some machinery from DefaultArithmeticDom
-    const numTasks = if dataParTasksPerLocale==0 then here.numCores
-                     else dataParTasksPerLocale;
-    const ignoreRunning = dataParIgnoreRunningTasks;
-    const minIndicesPerTask = dataParMinGranularity;
     const numElems = nnz;
-    const numChunks = _computeNumChunks(numTasks, ignoreRunning,
-                                        minIndicesPerTask, numElems)
-                      :numElems.type;
+    const numChunks = _computeNumChunks(numElems);
     if debugDefaultSparse then
       writeln("DefaultSparseDom leader: ", numChunks, " chunks, ",
               numElems, " elems");
@@ -61,22 +53,8 @@ class DefaultSparseDom: BaseSparseDom {
       // ... except if 1, just use the current thread
       yield (this, 1, numElems);
     else
-      coforall chunk in 1..numChunks do {
-        var div = numElems / numChunks;
-        var rem = numElems % numChunks;
-
-        if chunk <= rem then {
-          // (div+1) elements per chunk
-          var endIx = chunk * (div + 1);
-          //writeln("yielding ", endIx - div, "..", endIx);
-          yield (this, endIx - div, endIx);
-        } else {
-          // (div) elements per chunk
-          var startIx1 = numElems - (numChunks - chunk + 1) * div;
-          //writeln("yielding ", startIx1 + 1, "..", startIx1 + div);
-          yield (this, startIx1 + 1, startIx1 + div);
-        }
-      }
+      coforall chunk in 1..numChunks do
+        yield (this, (..._computeChunkStartEnd(numElems, numChunks, chunk)));
   }
 
   def these(param tag: iterator, follower:(?,?,?)) where tag == iterator.follower {
@@ -267,8 +245,8 @@ class DefaultSparseArr: BaseArr {
 
   def these(param tag: iterator) where tag == iterator.leader {
     // forward to the leader iterator on our domain
-    for leader in dom.these(tag) do
-      yield leader;
+    for follower in dom.these(tag) do
+      yield follower;
   }
 
   // same as DefaultSparseDom's follower, except here we index into 'data'
@@ -280,8 +258,7 @@ class DefaultSparseArr: BaseArr {
     if debugDefaultSparse then
       writeln("DefaultSparseArr follower: ", startIx, "..", endIx);
 
-    for i in startIx..endIx do
-      yield data(i);
+    for e in data[startIx..endIx] do yield e;
   }
 
   def these(param tag: iterator, follower) where tag == iterator.follower {

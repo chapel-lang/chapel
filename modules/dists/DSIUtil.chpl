@@ -70,6 +70,38 @@ def _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
   return numChunks;
 }
 
+// How many tasks should be spawned to service numElems elements.
+def _computeNumChunks(numElems) {
+  // copy some machinery from DefaultArithmeticDom
+  var numTasks = if dataParTasksPerLocale==0
+                 then here.numCores
+                 else dataParTasksPerLocale;
+  var ignoreRunning = dataParIgnoreRunningTasks;
+  var minIndicesPerTask = dataParMinGranularity;
+  var numChunks = _computeNumChunks(numTasks, ignoreRunning,
+                                    minIndicesPerTask, numElems)
+                  :numElems.type;
+  return numChunks;
+}
+
+// Divide 1..numElems into (almost) equal numChunk pieces
+// and return myChunk-th piece.
+def _computeChunkStartEnd(numElems, numChunks, myChunk) {
+  var div = numElems / numChunks;
+  var rem = numElems % numChunks;
+
+  if myChunk <= rem then {
+    // (div+1) elements per chunk
+    var endIx = myChunk * (div + 1);
+    //writeln("yielding ", endIx - div, "..", endIx);
+    return (endIx - div, endIx);
+  } else {
+    // (div) elements per chunk
+    var startIx1 = numElems - (numChunks - myChunk + 1) * div;
+    //writeln("yielding ", startIx1 + 1, "..", startIx1 + div);
+    return (startIx1 + 1, startIx1 + div);
+  }
+}
 
 //
 // helper function for blocking index ranges

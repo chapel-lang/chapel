@@ -1,3 +1,5 @@
+config param debugCSR = false;
+
 class CSR: BaseDist {
   def dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
     return new CSRDom(rank=rank, idxType=idxType, dist=this, parentDom=dom);
@@ -61,7 +63,7 @@ class CSRDom: BaseSparseDom {
   }
 
   def these() {
-    var cursorRow = rowRange.low;
+    var cursorRow = rowRange.low; // _private_findStartRow(rowRange,1) faster?
     for i in 1..nnz {
       while (rowStart(cursorRow+1) <= i) {
         cursorRow += 1;
@@ -71,21 +73,69 @@ class CSRDom: BaseSparseDom {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-    yield true;
+    // same as DefaultSparseDom's leader
+    const numElems = nnz;
+    const numChunks = _computeNumChunks(numElems);
+    if debugCSR then
+      writeln("CSRDom leader: ", numChunks, " chunks, ", numElems, " elems");
+
+    // split our numElems elements over numChunks tasks
+    if numChunks <= 1 then
+      yield (this, 1, numElems);
+    else
+      coforall chunk in 1..numChunks do
+        yield (this, (..._computeChunkStartEnd(numElems, numChunks, chunk)));
+    // TODO: to handle large numElems and numChunks faster, it would be great
+    // to run the binary search in _private_findStartRow smarter, e.g.
+    // pass to the tasks created in 'coforall' smaller ranges to search over.
   }
 
-  def these(param tag: iterator, follower: bool) where tag == iterator.follower {
-    var cursorRow = rowRange.low;
-    for i in 1..nnz {
-      while (rowStart(cursorRow+1) <= i) {
-        cursorRow += 1;
-      }
+  def these(param tag: iterator, follower: (?,?,?)) where tag == iterator.follower {
+    var (followerDom, startIx, endIx) = follower;
+
+    if (followerDom != this) then
+      halt("Sparse domains can't be zippered with anything other than themselves and their arrays (CSR layout)");
+
+    // This loop is identical to the serial iterator, except for the iteration
+    // space and finding the initial 'cursorRow'.
+    var cursorRow = _private_findStartRow(rowRange, startIx);
+    if debugCSR then
+      writeln("CSRDom follower: ", startIx, "..", endIx,
+              "  rowStart(", cursorRow, ")=", rowStart(cursorRow));
+
+    for i in startIx..endIx {
+      while (rowStart(cursorRow+1) <= i) do cursorRow += 1;
       yield (cursorRow, colIdx(i));
     }
   }
 
   def these(param tag: iterator, follower) where tag == iterator.follower {
-    compilerError("Sparse iterators can't yet be zippered with others");
+    compilerError("Sparse iterators can't yet be zippered with others (CSR layout)");
+  }
+
+  // Helper: find 'ix' s.t. rowStart(ix) <= startIx < rowStart(ix+1)
+  // or a number at most 'approx' smaller than that.
+  def _private_findStartRow(rRange, startIx) {
+    var approx = 2; // Indicates when to switch to linear search.
+                    // This number could be tuned for performance.
+    // simple binary search
+    var l = rRange.low, h = rRange.high;
+    while h > l + approx {
+      var m = (h + l) / 2;
+      if rowStart(m) <= startIx then l = m; else h = m;
+    }
+    var hh = min(l+approx, rRange.high);
+/*
+    writeln("findStartRow: startIx=", startIx, " l=", l, "(", rRange.low,
+            ") h=", h, "(", rRange.high, ")\n",
+            "              rowStart(", l, ")=", rowStart(l),
+            " rowStart(", hh, ")=", rowStart(hh));
+*/
+    assert(rowStart(l) <= startIx, "CSRDom.findStartRow-1");
+    assert(startIx < rowStart(hh) ||
+           (startIx == rowStart(hh) && hh == rRange.high),
+           "CSRDom.findStartRow-2");
+    return l;
   }
 
   def dsiDim(d : int) {
@@ -248,6 +298,30 @@ class CSRArr: BaseArr {
 
   def these() var {
     for e in data[1..dom.nnz] do yield e;
+  }
+
+  def these(param tag: iterator) where tag == iterator.leader {
+    // forward to the leader iterator on our domain
+    // Note: this is so that arrays can be zippered with domains;
+    // otherwise just chunk up data[1..dom.nnz] a-la DefaultSparseArr.
+    for follower in dom.these(tag) do
+      yield follower;
+  }
+
+  def these(param tag: iterator, follower: (?,?,?)) var where tag == iterator.follower {
+    // simpler than CSRDom's follower - no need to deal with rows (or columns)
+    var (followerDom, startIx, endIx) = follower;
+
+    if (followerDom != this.dom) then
+      halt("Sparse arrays can't be zippered with anything other than their domains and sibling arrays (CSR layout)");
+    if debugCSR then
+      writeln("CSRArr follower: ", startIx, "..", endIx);
+
+    for e in data[startIx..endIx] do yield e;
+  }
+
+  def these(param tag: iterator, follower) where tag == iterator.follower {
+    compilerError("Sparse iterators can't yet be zippered with others (CSR layout)");
   }
 
   def IRV var {

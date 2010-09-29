@@ -430,13 +430,7 @@ def range.these(param tag: iterator) where tag == iterator.leader {
   if v < 0 then
     v = 0;
 
-  const numTasks = if dataParTasksPerLocale==0 then here.numCores
-                   else dataParTasksPerLocale;
-  const ignoreRunning = dataParIgnoreRunningTasks;
-  const minIndicesPerTask = dataParMinGranularity;
-
-  var numChunks = _computeNumChunks(numTasks, ignoreRunning,
-                                    minIndicesPerTask, v);
+  var numChunks = _computeNumChunks(v);
   if debugChapelRange then
     writeln("*** RI: length=", v, " numChunks=", numChunks);
 
