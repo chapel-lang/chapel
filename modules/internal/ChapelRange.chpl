@@ -31,6 +31,7 @@ record range {
 //
 // syntax function for bounded ranges
 //
+pragma "inline" // SS added pragma inline
 def _build_range(low: int, high: int)
   return new range(int, BoundedRangeType.bounded, false, low, high);
 def _build_range(low: uint, high: uint)

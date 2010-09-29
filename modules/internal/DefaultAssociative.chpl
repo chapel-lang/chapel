@@ -77,7 +77,10 @@ class DefaultAssociativeDom: BaseAssociativeDom {
       yield i;
     postponeResize = false;
     if (numEntries*8 < tableSize && tableSizeNum > 1) {
-      _resize(grow=false);
+      if atomicSupport then
+	_resize(grow=true);
+      else
+	halt("manually increase size of table");
     }
   }
 
@@ -218,6 +221,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     return (false, -1);
   }
 
+  pragma "inline" // SS: added inline pragma
   def _findEmptySlot(idx: idxType): (bool, index(tableDom)) {
     for slotNum in _lookForSlots(idx) {
       const slotStatus = table(slotNum).status;

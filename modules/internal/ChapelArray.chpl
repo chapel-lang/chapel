@@ -560,6 +560,7 @@ record _domain {
     return _value.dsiCreate();
   }
 
+  pragma "inline" // SS: added pragma inline
   def add(i) {
     _value.dsiAdd(i);
   }
@@ -749,6 +750,7 @@ record _array {
   }
 
   def eltType type return _value.eltType;
+  pragma "inline" // SS: added pragma inline
   def _dom return _getDomain(_value.dom);
   def rank param return this.domain.rank;
 
