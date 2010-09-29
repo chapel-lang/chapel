@@ -21,7 +21,7 @@ if ($preset_launcher eq "") {
             if (system("which qsub > /dev/null 2>&1")) {
                 $launcher = "aprun";
             } else {
-                $launcher = "qsub-aprun";
+                $launcher = "pbs-aprun";
             }
         }
     } elsif ($comm eq "gasnet") {
