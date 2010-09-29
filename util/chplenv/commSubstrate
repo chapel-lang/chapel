@@ -12,7 +12,7 @@ if ($preset_substrate eq "") {
 
     if ($comm eq "gasnet") {
         if ($platform eq "xt-cle") {
-            $substrate = "portals";
+            $substrate = "mpi";
 	} elsif ($platform eq "xe-cle") {
 	    $substrate = "mpi";
 	} elsif ($platform eq "cx1-linux") {
