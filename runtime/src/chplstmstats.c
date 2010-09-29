@@ -183,7 +183,7 @@ chpl_stm_stats_p chpl_stm_stats_create() {
   _timervalue t;
   _real64 nowtime;
 
-  if (!chpl_stm_stats) return;
+  if (!chpl_stm_stats) return NULL;
 
   printStmStats = 1;
 

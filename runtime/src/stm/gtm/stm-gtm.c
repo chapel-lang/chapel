@@ -330,21 +330,6 @@ void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *
   }
 }
 
-void chpl_stm_tx_fork_fast(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize) {
-  assert(tx != NULL);
-  if (!(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE)) {
-    chpl_msg(0,"STATUS %d\n", tx->status);
-  }
-  assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
-  if (dstlocale == MYLOCALE) {
-    (*chpl_txftable[fid])(tx, arg);
-  } else {
-    CHPL_STM_STATS_START(tx->counters, STATS_TX_FORK);
-    GTM_Safe(tx, gtm_tx_comm_fork_fast(tx, dstlocale, fid, arg, argsize));
-    CHPL_STM_STATS_STOP(tx->counters, STATS_TX_FORK, 0);
-  }
-}
-
 void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) { 
   void *tmp;
   CHPL_STM_STATS_START(tx->counters, STATS_TX_MALLOC);
