@@ -709,7 +709,7 @@ record _domain {
   }
 
   def localSlice(r: range(?)... rank) {
-    return _value.localSlice(chpl__anyStridable(r), r);
+    return _value.dsiLocalSlice(chpl__anyStridable(r), r);
   }
 
   // associative array interface
@@ -841,7 +841,7 @@ record _array {
   }
 
   def localSlice(r: range(?)... rank) {
-    return _value.localSlice(r);
+    return _value.dsiLocalSlice(r);
   }
 
   pragma "inline"

@@ -517,7 +517,7 @@ def CyclicDom.dsiBuildArithmeticDom(param rank, type idxType,
 
 }
 
-def CyclicDom.localSlice(param stridable: bool, ranges) {
+def CyclicDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
 }
 
@@ -626,7 +626,7 @@ def CyclicArr.dsiReindex(d: CyclicDom) {
   return alias;
 }
 
-def CyclicArr.localSlice(ranges) {
+def CyclicArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
     low(i) = ranges(i).low;

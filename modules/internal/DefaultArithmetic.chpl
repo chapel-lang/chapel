@@ -571,6 +571,17 @@ class DefaultArithmeticArr: BaseArr {
       halt("illegal reallocation");
     }
   }
+
+  def dsiLocalSlice(ranges) {
+    if this.locale.uid != here.uid {
+      halt("cannot take local slice on a remote locale");
+    }
+
+    halt("unimplemented code");
+//    var d = new DefaultArithmeticDom(rank, idxType, chpl__anyStridable(ranges), dom.dist);
+//    d.ranges = ranges;
+//    return dsiSlice(d);
+  }
 }
 
 def DefaultArithmeticDom.dsiSerialWrite(f: Writer) {

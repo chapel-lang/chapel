@@ -670,7 +670,7 @@ def BlockDom.getDist(): Block(idxType) {
 }
 
 // dsiLocalSlice
-def BlockDom.localSlice(param stridable: bool, ranges) {
+def BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
 }
 
@@ -912,7 +912,7 @@ def BlockArr.dsiSlice(d: BlockDom) {
   return alias;
 }
 
-def BlockArr.localSlice(ranges) {
+def BlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
     low(i) = ranges(i).low;
