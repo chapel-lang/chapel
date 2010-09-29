@@ -432,7 +432,8 @@ class Function {
      */
     def norm2() {
         if compressed then reconstruct();
-        return sqrt(+ reduce [i in sumC] normf(i)**2);
+        // This needs to be serial
+        return sqrt(+ reduce for i in sumC do normf(i)**2);
     }
 
 

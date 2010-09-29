@@ -292,6 +292,8 @@ def isAssociativeDom(d: domain) param {
   return isAssociativeDomClass(d._value);
 }
 
+def isAssociativeArr(a: []) param return isAssociativeDom(a.domain);
+
 def isEnumDom(d: domain) param {
   return isAssociativeDom(d) && _isEnumeratedType(d._value.idxType);
 }
@@ -1019,6 +1021,13 @@ def =(a: domain, b: domain) {
     // TODO: These should eventually become forall loops, hence the
     // warning
     //
+    // NOTE: For the current implementation of associative domains,
+    // the domain iteration is parallelized, but modification
+    // of the underlying data structures (in particular, the _resize()
+    // operation on the table) is not thread-safe.  Something more
+    // intelligent will likely be needed before it is worth it to
+    // parallelize whole-domain assignment for associative arrays.
+    //
     compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for i in a._value.dsiIndsIterSafeForRemoving() {
       if !b.member(i) {
@@ -1112,11 +1121,13 @@ def chpl__serializeAssignment(a: [], b) param {
   if a.rank != 1 && chpl__isRange(b) then
     return true;
 
-  // Sparse, Associative, Opaque do not yet support parallel iteration.  We
+  // Sparse and Opaque arrays do not yet support parallel iteration.  We
   // could let them fall through, but then we get multiple warnings for a
   // single assignment statement which feels like overkill
   //
-  if (!isArithmeticArr(a) || (chpl__isArray(b) && !isArithmeticArr(b))) then
+  if ((!isArithmeticArr(a) && !isAssociativeArr(a)) ||
+      (chpl__isArray(b) &&
+       !isArithmeticArr(b) && !isAssociativeArr(b))) then
     return true;
   return false;
 }
@@ -1506,6 +1517,8 @@ def chpl__initCopy(a: domain) {
   } else {
     // TODO: These should eventually become forall loops, hence the
     // warning
+    //
+    // NOTE: See above note regarding associative domains
     //
     compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for i in a do
