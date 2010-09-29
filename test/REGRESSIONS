@@ -15,13 +15,17 @@
 general regressions
 ===================
 
+gets halt since associative domains/arrays parallelized (09/29/10)
+------------------------------------------------------------------
+[Error matching program output for associative/waynew/indef8-fail2]
+
 not yet working consistently
 ----------------------------
 [Error: Timed out executing program studies/shootout/chameneos-redux/chameneos-redux-multiple-meeting-places]
 
 nondet. compilation timeouts
 ----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10, 05/21/10, 05/27/10, 06/15/10, 07/01/10, 07/07/10, 07/16/10, 07/20/10, 07/23/10, 09/09/10, 09/10/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10, 05/21/10, 05/27/10, 06/15/10, 07/01/10, 07/07/10, 07/16/10, 07/20/10, 07/23/10, 09/09/10, 09/10/10, 09/29/10)
 
 nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 ----------------------------------------------------------------------------
@@ -66,7 +70,7 @@ performance-specific regressions
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_record_domain_2a] (08/29/09, 06/14/10, 06/16/10, 06/28/10, 06/29/10, 06/30/10, 07/02/10, 07/12/10, 07/14/10, 07/17/10, 07/20/10, 07/22/10, 07/26/10, 08/02/10, 08/06/10, 08/10/10, 08/15/10)
+[Error: Timed out executing program studies/shootout/nbody/nbody_record_domain_2a] (08/29/09, 06/14/10, 06/16/10, 06/28/10, 06/29/10, 06/30/10, 07/02/10, 07/12/10, 07/14/10, 07/17/10, 07/20/10, 07/22/10, 07/26/10, 08/02/10, 08/06/10, 08/10/10, 08/15/10, 09/29/10)
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -84,6 +88,10 @@ memory leaks regressions
 =============================
 valgrind-specific regressions
 =============================
+
+invalid read since test was checked in
+--------------------------------------
+[Error matching program output for classes/claridge/recordInClass]
 
 nondet. 'VG_N_THREADS too low' errors
 -------------------------------------
@@ -998,7 +1006,7 @@ nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
-[Error: Timed out compilation for release/examples/hello] (07/11/10, 07/18/10, 07/21/10, 07/25/10, 08/01/10, 08/08/10, 08/13/10, 09/20/10)
+[Error: Timed out compilation for release/examples/hello] (07/11/10, 07/18/10, 07/21/10, 07/25/10, 08/01/10, 08/08/10, 08/13/10, 09/20/10, 09/26/10)
 
 out-of-bounds index (0) at line 100
 -----------------------------------
