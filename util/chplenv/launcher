@@ -14,11 +14,19 @@ if ($preset_launcher eq "") {
     $platform = `$utildirname/platform --target`; chomp($platform);
 
     $launcher = "none";
-    if ($comm eq "gasnet") {
+    if ($platform eq "xt-cle" || $platform eq "xe-cle") {
+        if (system("which aprun > /dev/null 2>&1")) {
+            $launcher = "none";
+        } else {
+            if (system("which qsub > /dev/null 2>&1")) {
+                $launcher = "aprun";
+            } else {
+                $launcher = "qsub-aprun";
+            }
+        }
+    } elsif ($comm eq "gasnet") {
         if ($substrate eq "udp") {
             $launcher = "amudprun";
-        } elsif ($substrate eq "portals") {
-            $launcher = "aprun";
         } elsif ($substrate eq "ibv") {
 	    if ($platform eq "pwr6") {
 #
