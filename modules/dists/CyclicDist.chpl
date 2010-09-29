@@ -752,9 +752,12 @@ def CyclicArr.these(param tag: iterator, follower, param fast: bool = false) var
     t(i) = ((follower(i).low*wholestride)..(follower(i).high*wholestride) by (follower(i).stride*wholestride)) + dom.whole.dim(i).low;
   }
   const followThis = [(...t)];
-  const arrSection = locArr(dom.dist.idxToLocaleInd(followThis.low));
   if fast {
-    local {
+    const arrSection = locArr(dom.dist.idxToLocaleInd(followThis.low));
+    if arrSection.locale.uid == here.uid then local {
+      for e in arrSection.myElems(followThis) do
+        yield e;
+    } else {
       for e in arrSection.myElems(followThis) do
         yield e;
     }
