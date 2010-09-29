@@ -7,6 +7,11 @@
 #include "stm-gtm-cmgr.h"
 #include "stm-gtm-comm.h"
 
+#ifdef __OPTIMIZE__
+// Turn assert() into a no op if the C compiler defines the macro above.
+#define NDEBUG
+#endif
+
 //
 // GTM specific macros
 //
@@ -75,18 +80,6 @@ typedef struct __writeSet_t {
 // transaction descriptor
 //
 
-typedef struct __mfix {
-  read_entry_t rentries[RWSETSIZE];
-  write_entry_t wentries[RWSETSIZE];
-  int32_t remlocales[1024];
-  memset_t memset;
-  tx_generic_t genericbuf;
-  tx_get_t getbuf;
-  tx_getdata_t getdatabuf;
-  tx_put_t putbuf;
-  tx_fork_t forkbuf;
-} mfix_t; 
-
 typedef struct __chpl_stm_tx_t {
   int32_t id;
   int32_t status;            // TX_IDLE, TX_LACTIVE, etc.
@@ -102,9 +95,7 @@ typedef struct __chpl_stm_tx_t {
   memset_t* memset;          // tracks memory allocated / freed 
   chpl_stm_stats_p counters;     // timers and counters
   cmgr_t cmgr;
-  mfix_t mfix; 
 } chpl_stm_tx_t;
-
 
 //
 // global metadata and lock operations 

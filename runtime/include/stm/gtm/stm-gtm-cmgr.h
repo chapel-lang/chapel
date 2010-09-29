@@ -1,7 +1,7 @@
 #ifndef _stm_gtm_cmgr_h_
 #define _stm_gtm_cmgr_h_
 
-#define MIN_BACKOFF (1UL << 15)
+#define MIN_BACKOFF (1UL << 10)
 #define MAX_BACKOFF (1UL << 32)
 
 enum {GTM_CMGR_RETRY = 0, GTM_CMGR_BACKOFF};

@@ -100,7 +100,10 @@ void gtm_tx_comm_register(chpl_stm_tx_p tx, int32_t dstlocale) {
     // First time we are doing a remote operation
     // Allocate and initialize remote locales array
     assert(tx->numremlocales == -1 && tx->remlocales == NULL);
-    tx->remlocales = (int32_t*) chpl_malloc(NLOCALES, sizeof(int32_t), CHPL_RT_MD_STM_TX_REMLOCALES, 0, 0);
+    tx->remlocales = (int32_t*) chpl_malloc(NLOCALES, 
+					    sizeof(int32_t), 
+					    CHPL_RT_MD_STM_TX_REMLOCALES, 
+					    0, 0);
     for (i = 0; i < NLOCALES; i++) 
       tx->remlocales[i] = -1;
     
