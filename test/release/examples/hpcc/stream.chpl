@@ -52,17 +52,14 @@ def main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
   //
-  // BlockDist is a 1D block distribution that is computed by blocking
-  // the bounding box 1..m across the set of locales
-  //
-  const BlockDist = new dmap(new Block(boundingBox=[1..m]));
-
-  //
   // ProblemSpace describes the index set for the three vectors.  It
   // is a 1D domain storing 64-bit ints and is distributed according
-  // to BlockDist.  It contains the indices 1..m.
+  // to a Block distribution.  In this case, the Block distribution is 1D
+  // distribution computed by blocking the bounding box 1..m across the set
+  // of locales.  The ProblemSpace domain contains the indices 1..m.
   //
-  const ProblemSpace: domain(1, int(64)) dmapped BlockDist = [1..m];
+  const ProblemSpace:
+    domain(1, int(64)) dmapped Block(boundingBox=[1..m]) = [1..m];
 
   //
   // A, B, and C are the three distributed vectors, declared to store

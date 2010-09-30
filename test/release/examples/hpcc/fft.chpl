@@ -70,11 +70,11 @@ def main() {
   //
   // TwiddleDom describes the index set used to define the vector of
   // twiddle values and is a 1D domain indexed by 64-bit ints from 0
-  // to m/4-1 stored using the block distribution TwiddleDist.
+  // to m/4-1 stored using a block distribution.
   // Twiddles is the vector of twiddle values.
   //
-  const TwiddleDist = new dmap(new Block(boundingBox=[0..m/4-1]));
-  const TwiddleDom: domain(1, idxType) dmapped TwiddleDist = [0..m/4-1];
+  const TwiddleDom:
+    domain(1, idxType) dmapped Block(boundingBox=[0..m/4-1]) = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
   //
@@ -84,26 +84,22 @@ def main() {
   const ProblemSpace = [0..m-1];
 
   //
-  // BlkDist describes the problem space as distributed in a Block
-  // manner between the Locales where ProblemSpace defines the
-  // bounding box used to compute the blocking.  BlkDom defines the
-  // Block-distributed problem space and is used to define the vectors
-  // z (used to store the input vector) and ZBlk (used for the first
-  // half of the FFT phases).
+  // BlkDom defines a Block-distributed problem space and is used to
+  // define the vectors z (used to store the input vector) and ZBlk
+  // (used for the first half of the FFT phases).
   //
-  const BlkDist = new dmap(new Block(boundingBox=ProblemSpace)); 
-  const BlkDom: domain(1, idxType) dmapped BlkDist = ProblemSpace;
+  const BlkDom:
+    domain(1, idxType) dmapped Block(boundingBox=ProblemSpace) = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
   //
-  // CycDist describes the problem space as distributed in a Cyclic
-  // manner between the Locales where locale #0 stores element 0.
   // CycDom defines the Cyclic-distributed problem space and is used
   // to define the Zcyc vector, used for the second half of the FFT
   // phases.
   //
-  const CycDist = new dmap(new Cyclic(startIdx=0:idxType)); 
-  const CycDom: domain(1, idxType) dmapped CycDist = ProblemSpace;
+  const CycDom:
+    domain(1, idxType) dmapped Cyclic(startIdx=0:idxType) = ProblemSpace;
+
   var Zcyc: [CycDom] elemType;
 
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
