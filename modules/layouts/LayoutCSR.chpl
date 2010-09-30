@@ -1,4 +1,5 @@
 config param debugCSR = false;
+var _haltLockSparseCSR: sync int; // ensure halt() happens at most once
 
 class CSR: BaseDist {
   def dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
@@ -106,8 +107,10 @@ class CSRDom: BaseSparseDom {
     if boundsChecking then
       assert(startIx <= endIx, "CSRDom follower - got nothing to iterate over");
 
-    if (followerDom != this) then
+    if (followerDom != this) then {
+      _haltLockSparseCSR = 1;
       halt("Sparse domains can't be zippered with anything other than themselves and their arrays (CSR layout)");
+    }
 
     // This loop is identical to the serial iterator, except for the iteration
     // space and finding the initial 'cursorRow'.
@@ -339,8 +342,10 @@ class CSRArr: BaseArr {
     // simpler than CSRDom's follower - no need to deal with rows (or columns)
     var (followerDom, startIx, endIx) = follower;
 
-    if (followerDom != this.dom) then
+    if (followerDom != this.dom) then {
+      _haltLockSparseCSR = 1;
       halt("Sparse arrays can't be zippered with anything other than their domains and sibling arrays (CSR layout)");
+    }
     if debugCSR then
       writeln("CSRArr follower: ", startIx, "..", endIx);
 
