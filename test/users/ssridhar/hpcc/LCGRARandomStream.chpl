@@ -6,14 +6,11 @@ module RARandomStream {
   param randWidth = 64;              // the bit-width of the random numbers
   type randType = uint(randWidth);   // the type of the random numbers
 
-  //
-  // m2 is a table (tuple) of helper values used to fast-forward
-  // through the random stream.
-  //
-  const m2: randWidth*randType = computeM2Vals();
+  param LCGMUL64 = 0x5851F42D4C957F2D;
+  param LCGADD64 = 1;
 
   def whichRNG(): string {
-    return "DEF";
+    return "LCG";
   }
 
   //
@@ -21,9 +18,9 @@ module RARandomStream {
   // to its 0th element and yields values endlessly.
   //
   def RAStream(seed: randType) {
-    var val = getNthRandom(0, seed);
+    var val = LCGgetNthRandom(0, seed);
     while (1) {
-      getNextRandom(val);
+      LCGgetNextRandom(val);
       yield val;
     }
   }
@@ -37,9 +34,9 @@ module RARandomStream {
   def RAStream(param tag: iterator, follower, seed: randType) where tag == iterator.follower {
     if follower.size != 1 then
       halt("RAStream cannot use multi-dimensional iterator");
-    var val = getNthRandom(follower(1).low, seed);
+    var val = LCGgetNthRandom(follower(1).low, seed);
     for follower {
-      getNextRandom(val);
+      LCGgetNextRandom(val);
       yield val;
     }
   }
@@ -48,19 +45,22 @@ module RARandomStream {
   // A helper function for "fast-forwarding" the random stream to
   // position n in O(log2(n)) time
   //
-  def getNthRandom(in n: uint(64), seed: randType) {
-    param period = 0x7fffffffffffffff/7;
+  def LCGgetNthRandom(in n: uint(64), seed: randType) {
+    var mulk, addk, un: randType;        
+    var ran: randType = seed * LCGMUL64;
 
-    n %= period;
-    if (n == 0) then return 0x1;
-    var ran: randType = seed;
-    for i in 0..log2(n)-1 by -1 {
-      var val: randType = 0;
-      for j in 0..#randWidth do
-	if ((ran >> j) & 1) then val ^= m2(j+1);
-      ran = val;
-      if ((n >> i) & 1) then getNextRandom(ran);
+    mulk = LCGMUL64;
+    addk = LCGADD64;
+    un = n;
+
+    while (un > 0) {
+      if (un & 1) then
+	ran = mulk * ran + addk;
+      addk *= mulk + 1;
+      mulk *= mulk;
+      un >>= 1;
     }
+
     return ran;
   }
 
@@ -68,30 +68,12 @@ module RARandomStream {
   // A helper function for advancing a value from the random stream,
   // x, to the next value
   //
-  def getNextRandom(inout x) {
-    param POLY = 0x7;
-    param hiRandBit = 0x1:randType << (randWidth-1);
-    
-    x = (x << 1) ^ (if (x & hiRandBit) then POLY else 0);
+  def LCGgetNextRandom(inout x: randType) {  
+    x = LCGMUL64 * x + LCGADD64;
   }
 
-  //
-  // A helper function for computing the values of the helper tuple, m2
-  //
-  def computeM2Vals() {
-    var m2tmp: randWidth*randType;
-    var nextVal = 0x1: randType;
-    for i in 1..randWidth {
-      m2tmp(i) = nextVal;
-      getNextRandom(nextVal);
-      getNextRandom(nextVal);
-    }
-    return m2tmp;
-  }
-  
-  // note: power operator will result in a while loop
   def indexMask(r: randType, n): randType {
-    return r & ((1 << n) - 1);
+    return r >> (64 - n);
   }
 }
 

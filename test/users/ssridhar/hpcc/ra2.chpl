@@ -27,35 +27,32 @@ var T: [TableSpace] elemType;
 config param safeUpdates: bool = false;
 config param useOn: bool = false;
 config param trackStmStats = false;
-config param useLCG: bool = true;
-config param seed1: randType = 0;
-config param seed2: randType = 0x7fffffffffffffff;
-
-def indexMask(r: randType): randType {
-  if useLCG then
-    return r >> (64 - n);
-  else
-    return r & (m - 1);
-}
+config param seed1: randType = 0x2;
+config param seed2: randType = 0x7fff;
 
 def updateValues(myR: indexType, myS: indexType, factor: int(64)) {
-  const myRIdx = indexMask(myR);
-  const mySIdx = indexMask(myS);
+  const myRIdx = indexMask(myR, n);
+  const mySIdx = indexMask(myS, n);
   const myRVal = myS * factor:uint(64);
   const mySVal = myR * factor:uint(64);
-
+  var x: elemType;
   if (myRIdx != mySIdx) {
     local T(myRIdx) += myRVal;
+    // local x = T(myRIdx); 
     if useOn then
       on TableDist.idxToLocale(mySIdx) {
 	const mySIdx1 = mySIdx;
 	const mySVal1 = mySVal;
 	local T(mySIdx1) += mySVal1;
+	// local const x = T(mySIdx1); 
       }
-    else 
+    else {
       T(mySIdx) += mySVal;
+      // x = T(mySIdx); 
+    }
   } else {
     local T(myRIdx) += (2 * myRVal);
+    // local x = T(myRIdx);
   }
 }
 
@@ -66,8 +63,8 @@ def main() {
  
   const startTime = getCurrentTime();               // capture the start time
 
-  forall ( , r, s) in (Updates, RAStream(seed1, useLCG), RAStream(seed2, useLCG)) do
-    on TableDist.idxToLocale(indexMask(r)) { 
+  forall ( , r, s) in (Updates, RAStream(seed1), RAStream(seed2)) do
+    on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
       if safeUpdates then
@@ -88,19 +85,21 @@ def printConfiguration() {
     printProblemSize(elemType, 1, m);
     writeln("Atomic Update = ", safeUpdates);
     writeln("UseOn = ", useOn);
+    writeln("RNG = ", whichRNG());
     writeln("Number of updates = ", N_U, "\n");
   }
 }
 
 def verifyResults() {
+  writeln("Verification Begins");
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   if (trackStmStats) then startStmStats();
 
   var startTime = getCurrentTime();
 
-  forall ( , r, s) in (Updates, RAStream(seed1, useLCG), RAStream(seed2, useLCG)) do
-    on TableDist.idxToLocale(indexMask(r)) { 
+  forall ( , r, s) in (Updates, RAStream(seed1), RAStream(seed2)) do
+    on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
       atomic updateValues(myR, myS, -1);
