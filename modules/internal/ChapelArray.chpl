@@ -841,8 +841,25 @@ record _array {
   }
 
   def localSlice(r: range(?)... rank) {
-    return _value.dsiLocalSlice(r);
+    var d = _dom((...r));
+    return localSlice(d);
   }
+
+  def localSlice(d: domain) where _value.type: DefaultArithmeticArr {
+    if (_value.locale != here) then
+      halt("Attempting to take a local slice of an array on locale ",
+           _value.locale.id, " from locale ", here.id);
+
+    var A => this(d);
+    return A;
+  }
+
+  def localSlice(d: domain) {
+    if boundsChecking then
+      checkSlice((...d.getIndices()));
+    return _value.dsiLocalSlice(d.getIndices());
+  }
+
 
   pragma "inline"
   def these() var {

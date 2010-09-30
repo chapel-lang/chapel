@@ -585,14 +585,7 @@ class DefaultArithmeticArr: BaseArr {
   }
 
   def dsiLocalSlice(ranges) {
-    if this.locale.uid != here.uid {
-      halt("cannot take local slice on a remote locale");
-    }
-
-    halt("unimplemented code");
-//    var d = new DefaultArithmeticDom(rank, idxType, chpl__anyStridable(ranges), dom.dist);
-//    d.ranges = ranges;
-//    return dsiSlice(d);
+    halt("all dsiLocalSlice calls on DefaultArithmetics should be handled in ChapelArray.chpl");
   }
 }
 
