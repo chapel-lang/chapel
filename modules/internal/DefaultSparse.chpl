@@ -1,6 +1,5 @@
 use Search;
 config param debugDefaultSparse = false;
-var _haltLockSparseDefault: sync int; // ensure halt() happens at most once
 
 class DefaultSparseDom: BaseSparseDom {
   param rank : int;
@@ -61,10 +60,8 @@ class DefaultSparseDom: BaseSparseDom {
   def these(param tag: iterator, follower:(?,?,?)) where tag == iterator.follower {
     var (followerDom, startIx, endIx) = follower;
 
-    if (followerDom != this) then {
-      _haltLockSparseDefault = 1;
+    if (followerDom != this) then
       halt("Sparse domains can't be zippered with anything other than themselves and their arrays");
-    }
     if debugDefaultSparse then
       writeln("DefaultSparseDom follower: ", startIx, "..", endIx);
 
@@ -256,10 +253,8 @@ class DefaultSparseArr: BaseArr {
   def these(param tag: iterator, follower:(?,?,?)) var where tag == iterator.follower {
     var (followerDom, startIx, endIx) = follower;
 
-    if (followerDom != this.dom) then {
-      _haltLockSparseDefault = 1;
+    if (followerDom != this.dom) then
       halt("Sparse arrays can't be zippered with anything other than their domains and sibling arrays");
-    }
     if debugDefaultSparse then
       writeln("DefaultSparseArr follower: ", startIx, "..", endIx);
 
