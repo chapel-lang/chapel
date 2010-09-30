@@ -88,6 +88,15 @@ def test(param dim:int, d: domain(dim)) {
 
   forall(x,i,y,j) in (X,sd,Y,sd) { Q(i) = Z(i) - x - y; }
   hd("forall(arr,dom,arr,dom) { ix = ix, ivar, ivar }"); showQ;
+
+  A = B; hd("A=B"); showA;
+  X = Y; hd("X=Y"); showX;
+  D = A; hd("D=A"); showD;
+  Q = X; hd("Q=X"); showQ;
+  C = D; hd("C=D"); showC;
+  B = C; hd("B=C"); showB;
+  Z = Q; hd("Z=Q"); showZ;
+  Y = Z; hd("Y=Z"); showY;  
 }
 
 // helpers

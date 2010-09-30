@@ -1142,9 +1142,9 @@ def chpl__serializeAssignment(a: [], b) param {
   // could let them fall through, but then we get multiple warnings for a
   // single assignment statement which feels like overkill
   //
-  if ((!isArithmeticArr(a) && !isAssociativeArr(a)) ||
+  if ((!isArithmeticArr(a) && !isAssociativeArr(a) && !isSparseArr(a)) ||
       (chpl__isArray(b) &&
-       !isArithmeticArr(b) && !isAssociativeArr(b))) then
+       !isArithmeticArr(b) && !isAssociativeArr(b) && !isSparseArr(b))) then
     return true;
   return false;
 }
