@@ -840,26 +840,39 @@ record _array {
         halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
-  def localSlice(r: range(?)... rank) {
-    var d = _dom((...r));
-    return localSlice(d);
+  // Special cases of local slices for DefaultArithmeticArrs because
+  // we can't take an alias of the ddata class within that class
+  def localSlice(r: range(?)... rank) where _value.type: DefaultArithmeticArr {
+    if boundsChecking then
+      checkSlice((...r));
+    var dom = _dom((...r));
+    return chpl__localSliceDefaultArithArrHelp(dom);
   }
 
   def localSlice(d: domain) where _value.type: DefaultArithmeticArr {
+    if boundsChecking then
+      checkSlice((...d.getIndices()));
+
+    return chpl__localSliceDefaultArithArrHelp(d);
+  }
+
+  def chpl__localSliceDefaultArithArrHelp(d: domain) {
     if (_value.locale != here) then
       halt("Attempting to take a local slice of an array on locale ",
            _value.locale.id, " from locale ", here.id);
-
     var A => this(d);
     return A;
   }
 
-  def localSlice(d: domain) {
+  def localSlice(r: range(?)... rank) {
     if boundsChecking then
-      checkSlice((...d.getIndices()));
-    return _value.dsiLocalSlice(d.getIndices());
+      checkSlice((...r));
+    return _value.dsiLocalSlice(r);
   }
 
+  def localSlice(d: domain) {
+    return localSlice(d.getIndices());
+  }
 
   pragma "inline"
   def these() var {

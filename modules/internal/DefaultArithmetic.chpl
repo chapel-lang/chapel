@@ -15,6 +15,8 @@ class DefaultDist: BaseDist {
   def dsiNewSparseDom(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDom(rank, idxType, this, dom);
 
+  def dsiIndexLocale(ind) return this.locale;
+
   def dsiClone() return this;
 
   def dsiAssign(other: this.type) { }
