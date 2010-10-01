@@ -1,0 +1,9 @@
+error message: The compiler needs to generate a proper error message here.
+
+Currently I get "error: unresolved call '_TypeDefaultT.writeThis(Writer)'".
+
+If the writeln() line is removed, the generated C code has errors
+(e.g. _TypeDefaultT is not defined).
+
+The situation is the same for both classes, i.e. whether
+it is a 'const' or a 'var' field.
