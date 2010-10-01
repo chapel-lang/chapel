@@ -1,11 +1,6 @@
 #!/usr/bin/env perl
 
 #
-# In general this value should be set to the SVN revision number
-# at the time of the last release.
-#
-$LAST_RELEASE_BUILD_NUM = 17087;
-#
 # For this first stage of converting to subversion, I've set it
 # artificially since all of the automated CVS updates to CVSLOG 
 # and BUILD_VERSION were counted as revisions, doubling the count
@@ -37,8 +32,7 @@ if (defined $ENV{'CHPL_DEVELOPER'} &&
     chomp($revline);
 
     if ($revline =~ m/Revision: (\d*)/) {
-        $CURRENT_BUILD_NUM = $1;
-        $build_version = $CURRENT_BUILD_NUM - $LAST_RELEASE_BUILD_NUM;
+        $build_version = $1;
     } else {
         print "ERROR: updateBuildVersion failed!";
         exit(1);
