@@ -15,10 +15,6 @@
 general regressions
 ===================
 
-gets halt since associative domains/arrays parallelized (09/29/10)
-------------------------------------------------------------------
-[Error matching program output for associative/waynew/indef8-fail2]
-
 not yet working consistently
 ----------------------------
 [Error: Timed out executing program studies/shootout/chameneos-redux/chameneos-redux-multiple-meeting-places]
@@ -58,10 +54,6 @@ linux32 regressions (in addition to the above)
 numerical accuracy issue (04/01/10)
 -----------------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct]
-
-times out regularly since moving to stemp7
-------------------------------------------
-[Error: Timed out executing program npb/cg/bradc/cg-sparse]
 
 
 ================================
@@ -267,19 +259,10 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-generating pthread join error (never worked since sparse made parallel)
------------------------------------------------------------------------
-[Error matching program output for sparse/bradc/parIter/spsZipper2]
-[Error matching program output for sparse/vass/sparse-mismatch-dom-err-arr1dom1dom2]
-[Error matching program output for sparse/vass/sparse-mismatch-dom-err-arr1dom2dom1]
-[Error matching program output for sparse/vass/sparse-mismatch-dom-err-arrarr]
-[Error matching program output for sparse/vass/sparse-mismatch-dom-err-arrdom]
-[Error matching program output for sparse/vass/sparse-mismatch-dom-err-dom1arr1arr2]
-[Error matching program output for sparse/vass/sparse-mismatch-dom-err-dom1arr2arr1]
-[Error matching program output for sparse/vass/sparse-mismatch-dom-err-dom1dom2dom1]
-[Error matching program output for sparse/vass/sparse-mismatch-dom-err-dom1dom2dom2]
-[Error matching program output for sparse/vass/sparse-mismatch-dom-err-domarr]
-[Error matching program output for sparse/vass/sparse-mismatch-dom-err-domdom]
+brad made mistakes in local slicing
+-----------------------------------
+[Error matching program output for release/examples/hpcc/fft]
+[Error matching program output for studies/hpcc/FFT/diten/fft]
 
 nondet. execution timeouts
 --------------------------
@@ -395,6 +378,10 @@ timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 =====================
 mpi-specific failures
 =====================
+
+brad made mistakes in local slicing
+-----------------------------------
+[Error matching program output for release/examples/hpcc/fft]
 
 ??? (06/29/10)
 --------------
@@ -1006,7 +993,7 @@ nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
-[Error: Timed out compilation for release/examples/hello] (07/11/10, 07/18/10, 07/21/10, 07/25/10, 08/01/10, 08/08/10, 08/13/10, 09/20/10, 09/26/10)
+[Error: Timed out compilation for release/examples/hello] (07/11/10, 07/18/10, 07/21/10, 07/25/10, 08/01/10, 08/08/10, 08/13/10, 09/20/10, 09/26/10, 09/30/10)
 
 out-of-bounds index (0) at line 100
 -----------------------------------
