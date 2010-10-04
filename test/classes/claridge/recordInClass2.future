@@ -1,3 +1,5 @@
+bug: Seg fault at runtime possibly due to improperly freeing memory.
+
 recordInClass2 is the same as recordInClass1, but crashes
 on lnx-vass and on chap10.
 
