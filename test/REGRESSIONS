@@ -259,11 +259,6 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-brad made mistakes in local slicing
------------------------------------
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for studies/hpcc/FFT/diten/fft]
-
 nondet. execution timeouts
 --------------------------
 [Error: Timed out executing program users/franzf/v1/chpl/main] (05/26/10, 06/06/10, 06/15/10)
@@ -361,7 +356,7 @@ spurious "pvmd refuses connection" failures
 
 spurious "address already in use" failures
 ------------------------------------------
-*any* (e.g., 04/09/10, 09/02/10, 09/10/10, 09/11/10, 09/12/10, 09/16/10)
+*any* (e.g., 04/09/10, 09/02/10, 09/10/10, 09/11/10, 09/12/10, 09/16/10, 10/3/10)
 
 timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 ----------------------------------------------------------------------
@@ -378,10 +373,6 @@ timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 =====================
 mpi-specific failures
 =====================
-
-brad made mistakes in local slicing
------------------------------------
-[Error matching program output for release/examples/hpcc/fft]
 
 ??? (06/29/10)
 --------------
@@ -679,6 +670,10 @@ getting warning about code size threshhold on David's runs once -O removed
 darwin-specific regressions
 ===========================
 
+has always failed on Mac (10/01/10)
+-----------------------------------
+[Error matching program output for classes/claridge/recordInClass1]
+
 nondet. execution timeout (07/21/10)
 ------------------------------------
 [Error: Timed out executing program studies/shootout/chameneos-redux/chameneos-redux]
@@ -686,10 +681,6 @@ nondet. execution timeout (07/21/10)
 ??? (06/23/10)
 --------------
 [Error matching compiler output for parallel/taskPool/figueroa/TooManyThreads]
-
-execution timeout (10/05/09)
-----------------------------
-[Error: Timed out executing program npb/cg/bradc/cg-sparse]
 
 
 ========================
@@ -993,7 +984,7 @@ nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
-[Error: Timed out compilation for release/examples/hello] (07/11/10, 07/18/10, 07/21/10, 07/25/10, 08/01/10, 08/08/10, 08/13/10, 09/20/10, 09/26/10, 09/30/10)
+[Error: Timed out compilation for release/examples/hello] (07/11/10, 07/18/10, 07/21/10, 07/25/10, 08/01/10, 08/08/10, 08/13/10, 09/20/10, 09/26/10, 09/30/10, 10/03/10)
 
 out-of-bounds index (0) at line 100
 -----------------------------------
