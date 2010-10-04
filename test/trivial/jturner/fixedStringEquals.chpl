@@ -5,7 +5,7 @@ record fixed_length_string {
 }
 
 def fixed_string(param s:string) {
-  const x = new fixed_length_string(stringLen = length(s), contents = s);
+  const x = new fixed_length_string(stringLen = s.length, contents = s);
   return x;
 }
 
