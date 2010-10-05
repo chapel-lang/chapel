@@ -48,7 +48,10 @@ We note some of the most useful flags here:
      --ccflags <flags> : specify flags that should be used when invoking
      --ldflags <flags> :   the back-end C compiler and linker
 
-     -s <name>[=<value>] : set the value of a config param
+     -s <name>[=<expression>] : set a config with the given expression
+                                as its default value (config params must
+                                be set to values that are known at compile
+                                time)
 
      --print-passes : print the compiler passes as they execute
 
