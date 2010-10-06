@@ -7,7 +7,7 @@
 #include "chpltasks.h"
 #include "chplstm.h"
 
-static stm_none_comm_register(chpl_stm_tx_p tx, int32_t locale) {
+static void stm_none_comm_register(chpl_stm_tx_p tx, int32_t locale) {
   int32_t i;
 
   for (i = 0; i <= tx->numremlocales; i++) {
@@ -103,18 +103,6 @@ void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *
     stm_none_comm_register(tx, dstlocale);
     CHPL_STM_STATS_START(tx->counters, STATS_TX_FORK);
     chpl_comm_fork(dstlocale, fid, arg, argsize);
-    CHPL_STM_STATS_STOP(tx->counters, STATS_TX_FORK, 0);
-  }
-}
-
-void chpl_stm_tx_fork_fast(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize) {
-  assert(tx != NULL);
-  if (dstlocale == chpl_localeID) {
-    (*chpl_txftable[fid])(tx, arg);
-  } else {
-    stm_none_comm_register(tx, dstlocale);
-    CHPL_STM_STATS_START(tx->counters, STATS_TX_FORK);
-    chpl_comm_fork_fast(dstlocale, fid, arg, argsize);
     CHPL_STM_STATS_STOP(tx->counters, STATS_TX_FORK, 0);
   }
 }
