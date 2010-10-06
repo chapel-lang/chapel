@@ -21,7 +21,7 @@ if ($preset_compiler eq "") {
     } elsif ($platform eq "x1"     || $platform eq "x2" ||
              $platform eq "x1-sim" || $platform eq "x2-sim") {
 	$compiler = "cray-vec";
-    } elsif ($platform eq "xt-cle") {
+    } elsif ($platform eq "xt-cle" || $platform eq "xe-cle") {
         if ($flag eq "--host") {
             $compiler = "gnu";
         } else {
@@ -31,7 +31,11 @@ if ($preset_compiler eq "") {
             } else {
                 $subcompiler =~ tr/A-Z/a-z/;
             }
-            $compiler = "cray-xt$subcompiler";
+            if ($platform eq "xt-cle") {
+                $compiler = "cray-xt$subcompiler";
+            } else {
+                $compiler = "cray-xe$subcompiler";
+            }
         }
     } elsif ($platform eq "pwr5" || $platform eq "pwr6") {
 	$compiler = "ibm";

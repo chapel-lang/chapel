@@ -44,158 +44,160 @@
 
 %}
 
-digit           [0-9]
-bit             [0-1]
-hexDigit        [0-9a-fA-F]
-letter          [_a-zA-Z]
-ident           {letter}({letter}|{digit}|"$")*
-binaryLiteral   0[bB]{bit}+
-hexLiteral      0[xX]{hexDigit}+
-intLiteral      {digit}+|{binaryLiteral}|{hexLiteral}
-exponent        [Ee][\+\-]?{digit}+
-floatLiteral    {digit}*"."{digit}+{exponent}?|{digit}+{exponent}
+digit            [0-9]
+bit              [0-1]
+hexDigit         [0-9a-fA-F]
+letter           [_a-zA-Z]
+ident            {letter}({letter}|{digit}|"$")*
+binaryLiteral    0[bB]{bit}+
+hexLiteral       0[xX]{hexDigit}+
+intLiteral       {digit}+|{binaryLiteral}|{hexLiteral}
+exponent         [Ee][\+\-]?{digit}+
+floatLiteral     {digit}*"."{digit}+{exponent}?|{digit}+{exponent}
 
 
 %%
 
-atomic          processToken(TATOMIC);
-begin           processToken(TBEGIN);
-break           processToken(TBREAK);
-by              processToken(TBY);
-class           processToken(TCLASS);
-cobegin         processToken(TCOBEGIN);
-coforall        processToken(TCOFORALL);
-config          processToken(TCONFIG);
-const           processToken(TCONST);
-continue        processToken(TCONTINUE);
-def             processToken(TDEF);
-delete          processToken(TDELETE);
-dmapped         processToken(TDMAPPED);
-do              processToken(TDO);
-domain          processToken(TDOMAIN);
-else            processToken(TELSE);
-enum            processToken(TENUM);
-_extern         processToken(TEXTERN);
-for             processToken(TFOR);
-forall          processToken(TFORALL);
-if              processToken(TIF);
-in              processToken(TIN);
-index           processToken(TINDEX);
-inout           processToken(TINOUT);
-label           processToken(TLABEL);
-let             processToken(TLET);
-local           processToken(TLOCAL);
-module          processToken(TMODULE);
-new             processToken(TNEW);
-nil             processToken(TNIL);
-on              processToken(TON);
-otherwise       processToken(TOTHERWISE);
-out             processToken(TOUT);
-param           processToken(TPARAM);
-pragma          processToken(TPRAGMA);
-__primitive     processToken(TPRIMITIVE);
-record          processToken(TRECORD);
-reduce          processToken(TREDUCE);
-return          processToken(TRETURN);
-scan            processToken(TSCAN);
-select          processToken(TSELECT);
-serial          processToken(TSERIAL);
-single          processToken(TSINGLE);
-sparse          processToken(TSPARSE);
-subdomain       processToken(TSUBDOMAIN);
-sync            processToken(TSYNC);
-then            processToken(TTHEN);
-type            processToken(TTYPE);
-union           processToken(TUNION);
-use             processToken(TUSE);
-var             processToken(TVAR);
-when            processToken(TWHEN);
-where           processToken(TWHERE);
-while           processToken(TWHILE);
-yield           processToken(TYIELD);
+atomic           processToken(TATOMIC);
+begin            processToken(TBEGIN);
+break            processToken(TBREAK);
+by               processToken(TBY);
+class            processToken(TCLASS);
+cobegin          processToken(TCOBEGIN);
+coforall         processToken(TCOFORALL);
+config           processToken(TCONFIG);
+const            processToken(TCONST);
+continue         processToken(TCONTINUE);
+def              processToken(TDEF);
+delete           processToken(TDELETE);
+dmapped          processToken(TDMAPPED);
+do               processToken(TDO);
+domain           processToken(TDOMAIN);
+else             processToken(TELSE);
+enum             processToken(TENUM);
+_extern          processToken(TEXTERN);
+for              processToken(TFOR);
+forall           processToken(TFORALL);
+if               processToken(TIF);
+in               processToken(TIN);
+index            processToken(TINDEX);
+inout            processToken(TINOUT);
+label            processToken(TLABEL);
+lambda           processToken(TLAMBDA);
+let              processToken(TLET);
+local            processToken(TLOCAL);
+module           processToken(TMODULE);
+new              processToken(TNEW);
+nil              processToken(TNIL);
+on               processToken(TON);
+otherwise        processToken(TOTHERWISE);
+out              processToken(TOUT);
+param            processToken(TPARAM);
+pragma           processToken(TPRAGMA);
+__primitive      processToken(TPRIMITIVE);
+__primitive_loop processToken(TPRIMITIVELOOP);
+record           processToken(TRECORD);
+reduce           processToken(TREDUCE);
+return           processToken(TRETURN);
+scan             processToken(TSCAN);
+select           processToken(TSELECT);
+serial           processToken(TSERIAL);
+single           processToken(TSINGLE);
+sparse           processToken(TSPARSE);
+subdomain        processToken(TSUBDOMAIN);
+sync             processToken(TSYNC);
+then             processToken(TTHEN);
+type             processToken(TTYPE);
+union            processToken(TUNION);
+use              processToken(TUSE);
+var              processToken(TVAR);
+when             processToken(TWHEN);
+where            processToken(TWHERE);
+while            processToken(TWHILE);
+yield            processToken(TYIELD);
 
-"="             processToken(TASSIGN);
-"+="            processToken(TASSIGNPLUS);
-"-="            processToken(TASSIGNMINUS);
-"*="            processToken(TASSIGNMULTIPLY);
-"/="            processToken(TASSIGNDIVIDE);
-"**="           processToken(TASSIGNEXP);
-"%="            processToken(TASSIGNMOD);
-"&="            processToken(TASSIGNBAND);
-"|="            processToken(TASSIGNBOR);
-"^="            processToken(TASSIGNBXOR);
-"&&="           processToken(TASSIGNLAND);
-"||="           processToken(TASSIGNLOR);
-"<<="           processToken(TASSIGNSL);
-">>="           processToken(TASSIGNSR);
+"="              processToken(TASSIGN);
+"+="             processToken(TASSIGNPLUS);
+"-="             processToken(TASSIGNMINUS);
+"*="             processToken(TASSIGNMULTIPLY);
+"/="             processToken(TASSIGNDIVIDE);
+"**="            processToken(TASSIGNEXP);
+"%="             processToken(TASSIGNMOD);
+"&="             processToken(TASSIGNBAND);
+"|="             processToken(TASSIGNBOR);
+"^="             processToken(TASSIGNBXOR);
+"&&="            processToken(TASSIGNLAND);
+"||="            processToken(TASSIGNLOR);
+"<<="            processToken(TASSIGNSL);
+">>="            processToken(TASSIGNSR);
 
-"=>"            processToken(TALIAS);
+"=>"             processToken(TALIAS);
 
-"<=>"           processToken(TSWAP);
+"<=>"            processToken(TSWAP);
 
-"#"             processToken(THASH);
-".."            processToken(TDOTDOT);
-"..."           processToken(TDOTDOTDOT);
+"#"              processToken(THASH);
+".."             processToken(TDOTDOT);
+"..."            processToken(TDOTDOTDOT);
 
-"&&"            processToken(TAND);
-"||"            processToken(TOR);
-"!"             processToken(TNOT);
+"&&"             processToken(TAND);
+"||"             processToken(TOR);
+"!"              processToken(TNOT);
 
-"&"             processToken(TBAND);
-"|"             processToken(TBOR);
-"^"             processToken(TBXOR);
-"~"             processToken(TBNOT);
+"&"              processToken(TBAND);
+"|"              processToken(TBOR);
+"^"              processToken(TBXOR);
+"~"              processToken(TBNOT);
 
-"<<"            processToken(TSHIFTLEFT);
-">>"            processToken(TSHIFTRIGHT);
+"<<"             processToken(TSHIFTLEFT);
+">>"             processToken(TSHIFTRIGHT);
 
-"=="            processToken(TEQUAL);
-"!="            processToken(TNOTEQUAL);
-"<="            processToken(TLESSEQUAL);
-">="            processToken(TGREATEREQUAL);
-"<"             processToken(TLESS);
-">"             processToken(TGREATER);
+"=="             processToken(TEQUAL);
+"!="             processToken(TNOTEQUAL);
+"<="             processToken(TLESSEQUAL);
+">="             processToken(TGREATEREQUAL);
+"<"              processToken(TLESS);
+">"              processToken(TGREATER);
 
-"+"             processToken(TPLUS);
-"-"             processToken(TMINUS);
-"*"             processToken(TSTAR);
-"/"             processToken(TDIVIDE);
-"%"             processToken(TMOD);
-"--"            processToken(TMINUSMINUS);
-"++"            processToken(TPLUSPLUS);
+"+"              processToken(TPLUS);
+"-"              processToken(TMINUS);
+"*"              processToken(TSTAR);
+"/"              processToken(TDIVIDE);
+"%"              processToken(TMOD);
+"--"             processToken(TMINUSMINUS);
+"++"             processToken(TPLUSPLUS);
 
-"**"            processToken(TEXP);
+"**"             processToken(TEXP);
 
-":"             processToken(TCOLON);
-";"             processToken(TSEMI);
-","             processToken(TCOMMA);
-"."             processToken(TDOT);
-"("             processToken(TLP);
-")"             processToken(TRP);
-"["             processToken(TLSBR);
-"]"             processToken(TRSBR);
-"{"             processToken(TLCBR);
-"}"             processToken(TRCBR);
+":"              processToken(TCOLON);
+";"              processToken(TSEMI);
+","              processToken(TCOMMA);
+"."              processToken(TDOT);
+"("              processToken(TLP);
+")"              processToken(TRP);
+"["              processToken(TLSBR);
+"]"              processToken(TRSBR);
+"{"              processToken(TLCBR);
+"}"              processToken(TRCBR);
 
-"?"             processToken(TQUESTION);
+"?"              processToken(TQUESTION);
 
-{ident}         processToken(TIDENT);
-{intLiteral}    processToken(INTLITERAL);
-{floatLiteral}  processToken(REALLITERAL);
-{intLiteral}i   processToken(IMAGLITERAL);
-{floatLiteral}i processToken(IMAGLITERAL);
+{ident}          processToken(TIDENT);
+{intLiteral}     processToken(INTLITERAL);
+{floatLiteral}   processToken(REALLITERAL);
+{intLiteral}i    processToken(IMAGLITERAL);
+{floatLiteral}i  processToken(IMAGLITERAL);
 
-"\""            processStringLiteral("\"");
-"\'"            processStringLiteral("\'");
+"\""             processStringLiteral("\"");
+"\'"             processStringLiteral("\'");
 
-[ \t\r]         processWhitespace(yytext);
-\n              processNewline();
+[ \t\r]          processWhitespace(yytext);
+\n               processNewline();
 
-"//"            processSingleLineComment();
+"//"             processSingleLineComment();
 
-"/*"            processMultiLineComment();
+"/*"             processMultiLineComment();
 
-.               processInvalidToken();
+.                processInvalidToken();
 
 %%
 
@@ -209,3 +211,20 @@ int getNextYYChar() {
   }
   return retval;
 }
+
+bool chplParseString;
+const char *chplParseStringMsg = NULL;
+BlockStmt*
+parseString(const char* string, const char* filename, const char* msg) {
+  yyblock = NULL;
+  yyfilename = filename;
+  chplParseString = true;
+  chplParseStringMsg = msg;
+  yy_scan_string(string);
+  yyparse();
+  chplParseString = false;
+  chplParseStringMsg = NULL;
+  YY_NEW_FILE; // reset the lexer
+  return yyblock;
+}
+

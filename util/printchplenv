@@ -5,12 +5,10 @@ use File::Basename;
 $utildirname = dirname($0)."/chplenv";
 
 $uname = `uname -a`;
-$pwd = `pwd`; chomp($pwd);
 
 print "uname -a: $uname";
 
 print "\$CHPL_HOME: $ENV{'CHPL_HOME'}\n";
-print "pwd: $pwd\n";
 print "script location: $utildirname\n";
 
 $hostplatform = `$utildirname/platform --host`; chomp($hostplatform);
@@ -33,14 +31,13 @@ if ($comm eq "none") {
     $commsubstrate = `$utildirname/commSubstrate`; chomp($commsubstrate);
     print "  CHPL_COMM_SUBSTRATE: $commsubstrate\n";
     if (($comm eq "armci" && $commsubstrate eq "mpi") ||
-        ($comm eq "gasnet" && $commsubstrate eq "mpi") ||
         ($comm eq "mpi")) {
         $mpiver = `$utildirname/chplmpi`; chomp($mpiver);
         print "  CHPL_MPI_VERSION: $mpiver\n";
     }
     if ($comm eq "gasnet") {
         $commsegment = `$utildirname/commSegment`; chomp($commsegment);
-        print "  CHPL_GASNET_SEGMENT: $commsegment\n";a
+        print "  CHPL_GASNET_SEGMENT: $commsegment\n";
     }
 }
 

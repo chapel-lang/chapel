@@ -1,0 +1,1 @@
+nonlocalslice.chpl:4: error: halt reached - Attempting to take a local slice of an array on locale 0 from locale 1

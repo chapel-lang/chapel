@@ -19,8 +19,8 @@ if ($preset_threads eq "") {
 	$threads = "none";
     } elsif ($preset_tasks eq "dev-tasks-1") {
 	$threads = "dev-threads-1";
-    } elsif ($preset_tasks eq "nanos") {
-	$threads = "pthreads";
+    } elsif ($preset_tasks eq "nanox") {
+	$threads = "none";
     } elsif ($preset_tasks eq "none") {
 	$threads = "none";
     } elsif ($preset_tasks eq "") {

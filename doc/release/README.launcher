@@ -48,14 +48,22 @@ Currently-supported launchers include:
 A specific launcher can be requested by setting the CHPL_LAUNCHER
 environment variable.  If left unset, a default is picked as follows:
 
+  CHPL_PLATFORM=xt-cle or xe-cle
+  + qsub & aprun in user's path -> qsub-aprun
+  + only aprun in user's path   -> aprun
+  (otherwise)                   -> none
+
   CHPL_COMM=gasnet...
   + CHPL_COMM_SUBSTRATE=ibv
     + CHPL_TARGET_PLATFORM=pwr6 -> none
     (otherwise)                 -> gasnetrun_ibv
-  + CHPL_COMM_SUBSTRATE=portals -> aprun
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
-  CHPL_COMM=pvm                 -> pvm
+  (otherwise)                   -> none
+
   CHPL_PLATFORM=xmt             -> mtarun
+
+  CHPL_COMM=pvm                 -> pvm
+
   (otherwise)                   -> none
 
 If the launcher binary does not work for your system (due to an

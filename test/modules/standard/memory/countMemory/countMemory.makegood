@@ -1,0 +1,36 @@
+#!/usr/bin/env perl
+
+$memoryInKBytes = @ARGV[0];
+$memoryInBytes = $memoryInKBytes * 1024;
+$memoryInMBytes = int($memoryInKBytes / 1024);
+$memoryInGBytes = int($memoryInMBytes / 1024);
+
+print "memory is: $memoryInBytes\n";
+print " in bytes: $memoryInBytes\n";
+print "    in kb: $memoryInKBytes\n";
+print "    in mb: $memoryInMBytes\n";
+print "    in gb: $memoryInGBytes\n";
+
+print "memory is: $memoryInBytes\n";
+print " in bytes: $memoryInBytes\n";
+print "    in kb: $memoryInKBytes\n";
+print "    in mb: $memoryInMBytes\n";
+print "    in gb: $memoryInGBytes\n";
+
+print "memory is: $memoryInBytes\n";
+print " in bytes: $memoryInBytes\n";
+print "    in kb: $memoryInKBytes\n";
+print "    in mb: $memoryInMBytes\n";
+print "    in gb: $memoryInGBytes\n";
+
+$realMemInKBytes = $memoryInKBytes;
+$realMemInBytes = $realMemInKBytes * 1024;
+$realMemInMBytes = $realMemInKBytes / 1024;
+$realMemInGBytes = $realMemInMBytes / 1024;
+
+printf "memory is: %g\n",$realMemInBytes;
+printf " in bytes: %g\n",$realMemInBytes;
+printf "    in kb: %g\n",$realMemInKBytes;
+printf "    in mb: %g\n",$realMemInMBytes;
+printf "    in gb: %g\n",$realMemInGBytes;
+

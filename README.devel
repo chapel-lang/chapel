@@ -61,11 +61,7 @@ the SVN tree, but not exactly the same:
 
   examples/ : for the end user, this directory is taken wholesale
               from test/release/examples in the developer hierarchy
-              (with outdated subdirectories pruned).  For the
-              developer, this is an outdated directory that should be
-              blown away when we switch over to subversion; it used to
-              hold examples before we moved them into the testing
-              system.  
+              (with outdated subdirectories pruned).
 
   man/ :      for the developer, this directory contains the sources
               for our man page as well as for the man page itself, built

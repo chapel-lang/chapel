@@ -43,6 +43,7 @@ class PrivateDom: BaseArithmeticDom {
   def dsiNumIndices return numLocales;
   def dsiLow return 0;
   def dsiHigh return numLocales-1;
+  def dsiStride return 0;
   def dsiSetIndices(x: domain) { compilerError("cannot reassign private domain"); }
   def dsiGetIndices() { return [0..numLocales-1]; }
 

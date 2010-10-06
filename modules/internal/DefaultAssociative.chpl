@@ -1,3 +1,7 @@
+use DSIUtil;
+config param debugDefaultAssoc = false;
+config param debugAssocDataPar = false;
+
 use Sort /* only QuickSort */;
 
 // TODO: make the domain parameterized by this?
@@ -67,6 +71,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   // Standard user domain interface
   //
 
+  pragma "inline"
   def dsiNumIndices {
     return numEntries;
   }
@@ -99,15 +104,72 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-    compilerWarning("parallel iteration over associative domain has been serialized (see note in $CHPL_HOME/STATUS)");
-    yield 0..dsiNumIndices-1;
+    if debugDefaultAssoc then
+      writeln("*** In domain leader code:");
+    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+                     else dataParTasksPerLocale;
+    const ignoreRunning = dataParIgnoreRunningTasks;
+    const minIndicesPerTask = dataParMinGranularity;
+    // We are simply slicing up the table here.  Trying to do something
+    //  more intelligent (like evenly dividing up the full slots, led
+    //  to poor speed ups.
+    // This requires that the zipppered domains match.
+    const numIndices = tableSize;
+
+    if debugAssocDataPar {
+      writeln("### numTasks = ", numTasks);
+      writeln("### ignoreRunning = ", ignoreRunning);
+      writeln("### minIndicesPerTask = ", minIndicesPerTask);
+    }
+
+    if debugDefaultAssoc then
+      writeln("    numTasks=", numTasks, " (", ignoreRunning,
+              "), minIndicesPerTask=", minIndicesPerTask);
+
+    var numChunks = _computeNumChunks(numTasks, ignoreRunning,
+                                      minIndicesPerTask,
+                                      numIndices);
+    if debugDefaultAssoc then
+      writeln("    numChunks=", numChunks, "length=", numIndices);
+
+    if debugAssocDataPar then writeln("### numChunks=", numChunks);
+
+    if numChunks == 1 {
+      yield (0..numIndices-1, this);
+    } else {
+      coforall chunk in 0..numChunks-1 {
+        const (lo, hi) = _computeBlock(numIndices, numChunks,
+                                       chunk, numIndices-1);
+        if debugDefaultAssoc then
+          writeln("*** DI[", chunk, "]: tuple = ", tuple(lo..hi));
+        yield (lo..hi, this);
+      }
+    }
   }
 
   def these(param tag: iterator, follower) where tag == iterator.follower {
-    for (slot,i) in (_fullSlots(),0..) {
-      if follower.member(i) then
-        yield table(slot).idx;
+    var (chunk, followerDom) = follower;
+    if followerDom != this {
+      // check to see if domains match
+      var followerTab = followerDom.table;
+      var myTab = table;
+      var mismatch = false;
+      // could use a reduction
+      for slot in chunk._low..chunk._high do
+        if followerTab(slot).status != myTab(slot).status {
+          mismatch = true;
+          break;
+        }
+      if mismatch then
+        halt("zippered associative domains do not match");
     }
+
+    if debugDefaultAssoc then
+      writeln("In domain follower code: Following ", chunk);
+
+    for slot in chunk._low..chunk._high do
+      if table(slot).status == chpl__hash_status.full then
+        yield table(slot).idx;
   }
 
   //
@@ -127,8 +189,6 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   pragma "inline" 
   def dsiAdd(idx: idxType): index(tableDom) {
     if ((numEntries+1)*2 > tableSize) {
-      // TODO: should also make sure that we don't exceed the maximum table
-      // size
       if atomicSupport then
 	_resize(grow=true);
       else
@@ -170,8 +230,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   def dsiSorted() {
     var tableCopy: [0..#numEntries] idxType;
 
-    for (tmp, slot) in (tableCopy, _fullSlots()) do
-      tmp = table(slot).idx;
+    for (tmp, slot) in (tableCopy.domain, _fullSlots()) do
+      tableCopy(tmp) = table(slot).idx;
 
     QuickSort(tableCopy);
 
@@ -195,6 +255,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     tableDom = [0..-1:chpl_table_index_type]; // non-preserving resize
     numEntries = 0; // reset, because the adds below will re-set this
     tableSizeNum += if grow then 1 else -1;
+    if tableSizeNum > chpl__primes.size then halt("associative array exceeds maximum size");
     tableSize = chpl__primes(tableSizeNum);
     tableDom = [0..tableSize-1];
 
@@ -289,14 +350,71 @@ class DefaultAssociativeArr: BaseArr {
   }
 
   def these(param tag: iterator) where tag == iterator.leader {
-    compilerWarning("parallel iteration over associative array has been serialized (see note in $CHPL_HOME/STATUS)");
-    for block in dom.these(tag=iterator.leader) do
-      yield block;
+    if debugDefaultAssoc then
+      writeln("*** In array leader code:");
+    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+                     else dataParTasksPerLocale;
+    const ignoreRunning = dataParIgnoreRunningTasks;
+    const minIndicesPerTask = dataParMinGranularity;
+    // We are simply slicing up the table here.  Trying to do something
+    //  more intelligent (like evenly dividing up the full slots, led
+    //  to poor speed ups.
+    // This requires that leader's domain matches that of the array.
+    const numIndices = dom.tableSize;
+
+    if debugAssocDataPar {
+      writeln("### numTasks = ", numTasks);
+      writeln("### ignoreRunning = ", ignoreRunning);
+      writeln("### minIndicesPerTask = ", minIndicesPerTask);
+    }
+
+    if debugDefaultAssoc then
+      writeln("    numTasks=", numTasks, " (", ignoreRunning,
+              "), minIndicesPerTask=", minIndicesPerTask);
+
+    var numChunks = _computeNumChunks(numTasks, ignoreRunning,
+                                      minIndicesPerTask,
+                                      numIndices);
+    if debugDefaultAssoc then
+      writeln("    numChunks=", numChunks, "length=", numIndices);
+
+    if debugAssocDataPar then writeln("### numChunks=", numChunks);
+
+    if numChunks == 1 {
+      yield (0..numIndices-1, dom);
+    } else {
+      coforall chunk in 0..numChunks-1 {
+        const (lo, hi) = _computeBlock(numIndices, numChunks,
+                                       chunk, numIndices-1);
+        if debugDefaultAssoc then
+          writeln("*** AI[", chunk, "]: tuple = ", tuple(lo..hi));
+        yield (lo..hi, dom);
+      }
+    }
   }
 
   def these(param tag: iterator, follower) var where tag == iterator.follower {
-    for i in dom.these(tag=iterator.follower, follower) do
-      yield this(i);
+    var (chunk, followerDom) = follower;
+    if followerDom != dom {
+      // check to see if domains match
+      var followerTab = followerDom.table;
+      var myTab = dom.table;
+      var mismatch = false;
+      // could use a reduction
+      for slot in chunk._low..chunk._high do
+        if followerTab(slot).status != myTab(slot).status {
+          mismatch = true;
+          break;
+        }
+      if mismatch then
+        halt("zippered associative array does not match the iterated domain");
+    }
+    if debugDefaultAssoc then
+      writeln("In array follower code: Following ", chunk);
+    var tab = dom.table;  // cache table for performance
+    for slot in chunk._low..chunk._high do
+      if tab(slot).status == chpl__hash_status.full then
+        yield data(slot);
   }
 
   def dsiSerialWrite(f: Writer) {
@@ -317,8 +435,8 @@ class DefaultAssociativeArr: BaseArr {
 
   def dsiSorted() {
     var tableCopy: [0..dom.dsiNumIndices-1] eltType;
-    for (copy, slot) in (tableCopy, dom._fullSlots()) do
-      copy = data(slot);
+    for (copy, slot) in (tableCopy.domain, dom._fullSlots()) do
+      tableCopy(copy) = data(slot);
 
     QuickSort(tableCopy);
 
@@ -403,7 +521,7 @@ def chpl__defaultHash(u: chpl_taskID_t): int(64) {
 pragma "inline"
 def chpl__defaultHash(x : string): int(64) {
   var hash: int(64) = 0;
-  for c in 1..length(x) {
+  for c in 1..(x.length) {
     hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
   }
   return _gen_key(hash);

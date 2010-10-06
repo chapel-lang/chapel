@@ -371,6 +371,8 @@ def CyclicDom.dsiLow return whole.low;
 
 def CyclicDom.dsiHigh return whole.high;
 
+def CyclicDom.dsiStride return whole.stride;
+
 def CyclicDom.dsiMember(i) return whole.member(i);
 
 def CyclicDom.dsiIndexOrder(i) return whole.indexOrder(i);
@@ -424,7 +426,7 @@ def CyclicDom.these(param tag: iterator) where tag == iterator.leader {
   coforall locDom in locDoms do on locDom {
     const (numTasks, parDim) = _computeChunkStuff(maxTasks, ignoreRunning,
                                                   minSize,
-                                                  locDom.myBlock.dims(), rank);
+                                                  locDom.myBlock.dims());
 
     var result: rank*range(idxType=idxType, stridable=true);
     var zeroedLocalPart = whole((...locDom.myBlock.getIndices())) - whole.low;
@@ -515,7 +517,7 @@ def CyclicDom.dsiBuildArithmeticDom(param rank, type idxType,
 
 }
 
-def CyclicDom.localSlice(param stridable: bool, ranges) {
+def CyclicDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
 }
 
@@ -624,7 +626,7 @@ def CyclicArr.dsiReindex(d: CyclicDom) {
   return alias;
 }
 
-def CyclicArr.localSlice(ranges) {
+def CyclicArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
     low(i) = ranges(i).low;
@@ -695,7 +697,7 @@ def CyclicArr.these(param tag: iterator) where tag == iterator.leader {
   coforall locDom in dom.locDoms do on locDom {
     const (numTasks, parDim) = _computeChunkStuff(maxTasks, ignoreRunning,
                                                   minSize,
-                                                  locDom.myBlock.dims(), rank);
+                                                  locDom.myBlock.dims());
 
     var result: rank*range(idxType=idxType, stridable=true);
     var zeroedLocalPart = dom.whole((...locDom.myBlock.getIndices())) - wholeLow;
@@ -750,15 +752,18 @@ def CyclicArr.these(param tag: iterator, follower, param fast: bool = false) var
     t(i) = ((follower(i).low*wholestride)..(follower(i).high*wholestride) by (follower(i).stride*wholestride)) + dom.whole.dim(i).low;
   }
   const followThis = [(...t)];
-  const arrSection = locArr(dom.dist.idxToLocaleInd(followThis.low));
   if fast {
-    local {
+    const arrSection = locArr(dom.dist.idxToLocaleInd(followThis.low));
+    if arrSection.locale.uid == here.uid then local {
+      for e in arrSection.myElems(followThis) do
+        yield e;
+    } else {
       for e in arrSection.myElems(followThis) do
         yield e;
     }
   } else {
     def accessHelper(i) var {
-      local {
+      if myLocArr then local {
         if myLocArr.locDom.member(i) then
           return myLocArr.this(i);
       }

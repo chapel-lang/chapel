@@ -161,7 +161,8 @@ class LocTree {
     //AGS: Provide constructor that can copy a tree instead of create-then-copy
     def copy(t: LocTree) {
         nodes = t.nodes;
-        coeffs = t.coeffs;
+        // get around restriction of matching domains for assoc arrays
+        forall i in coeffs.domain do coeffs(i) = t.coeffs(i);
     }
 }
 

@@ -340,12 +340,14 @@ In general, these methods are provided such that other traditional
 synchronization primitives, such as semaphores and mutexes, can be
 constructed.
 
-In addition, the implicitly-invoked \chpl{readFE} and \chpl{writeEF}
-methods (which can arguably be categorized as unnecessary due to the
-implicit invocation) are provided to support programmers who wish to
-make the semantics of these operations more explicit.  It might be
-desirable to have a compiler option that disables the implicit
-application of these methods.
+Note that the implicitly-invoked \chpl{writeEF}
+and \chpl{readFE}/\chpl{readFF} methods (for \chpl{sync}
+and \chpl{single} variables, respectively) could be considered
+unnecessary due to their implicit invocations, yet are provided to
+support programmers who wish to make the semantics of these operations
+more explicit.  It might be desirable to have a compiler option that
+disables the implicit application of these methods.
+
 \end{rationale}
 
 \begin{example}
@@ -354,35 +356,39 @@ Given the following declarations
 % test_syncMethods.chpl
 \end{chapelpre}
 \begin{chapel}
-var x$\mbox{{\bf \$}}$: single int;
-var y: int;
+var x$\mbox{{\bf \$}}$: sync int;
+var y$\mbox{{\bf \$}}$: single int;
+var z: int;
 \end{chapel}
 the code
 \begin{chapel}
 x$\mbox{{\bf \$}}$ = 5;
-y = x$\mbox{{\bf \$}}$;
+y$\mbox{{\bf \$}}$ = 6;
+z = x$\mbox{{\bf \$}}$ + y$\mbox{{\bf \$}}$;
 \end{chapel}
 \begin{chapelpost}
-writeln((x$\mbox{{\bf \$}}$, y));
+writeln((x$\mbox{{\bf \$}}$.readXX(), y$\mbox{{\bf \$}}$, z));
 \end{chapelpost}
 \begin{chapeloutput}
-(5, 5)
+(5, 6, 11)
 \end{chapeloutput}
 is equivalent to
 \begin{chapelpre}
 % test_syncMethods2.chpl
-var x$\mbox{{\bf \$}}$: single int;
-var y: int;
+var x$\mbox{{\bf \$}}$: sync int;
+var y$\mbox{{\bf \$}}$: single int;
+var z: int;
 \end{chapelpre}
 \begin{chapel}
 x$\mbox{{\bf \$}}$.writeEF(5);
-y = x$\mbox{{\bf \$}}$.readFF();
+y$\mbox{{\bf \$}}$.writeEF(6);
+z = x$\mbox{{\bf \$}}$.readFE() + y$\mbox{{\bf \$}}$.readFF();
 \end{chapel}
 \begin{chapelpost}
-writeln((x$\mbox{{\bf \$}}$, y));
+writeln((x$\mbox{{\bf \$}}$.readXX(), y$\mbox{{\bf \$}}$, z));
 \end{chapelpost}
 \begin{chapeloutput}
-(5, 5)
+(5, 6, 11)
 \end{chapeloutput}
 \end{example}
 

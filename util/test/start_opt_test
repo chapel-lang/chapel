@@ -72,7 +72,7 @@ if ($cron) {
     if ($nerror == 0) {
         open(FILE, "| mail -s \"Cron $nerror/$nerror (chap02:opts tests)\" chapel_cronmail_all\@cray.com $ENV{'USER'}\@cray.com");
     } else { 
-        open(FILE, "| mail -s \"Cron $nerror/$nerror (chap02:opts tests)\" chapel_cronmail\@cray.com");
+        open(FILE, "| mail -s \"Cron $nerror/$nerror (chap02:opts tests)\" chapel_cronmail\@cray.com chapel_cronmail_all\@cray.com");
     }
 } else {
     open(FILE, ">&STDOUT");

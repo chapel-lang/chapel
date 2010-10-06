@@ -17,7 +17,7 @@
 #define CHPL_COMM_GASNET_SETENV
 #endif
 
-static chpl_mutex_t chpl_comm_diagnostics_lock;
+static chpl_sync_aux_t chpl_comm_diagnostics_sync;
 static int chpl_comm_gets = 0;
 static int chpl_comm_puts = 0;
 static int chpl_comm_forks = 0;
@@ -273,7 +273,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 void chpl_comm_rollcall(void) {
-  CHPL_MUTEX_INIT(&chpl_comm_diagnostics_lock);
+  CHPL_SYNC_INIT_AUX(&chpl_comm_diagnostics_sync);
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, 
            chpl_numLocales, chpl_localeName());
 }
@@ -431,9 +431,9 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote put to %d\n", chpl_localeID, fn, ln, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_MUTEX_LOCK(&chpl_comm_diagnostics_lock);
+      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
       chpl_comm_puts++;
-      CHPL_MUTEX_UNLOCK(&chpl_comm_diagnostics_lock);
+      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
     }
     gasnet_put(locale, raddr, addr, size); // node, dest, src, size
   }
@@ -449,9 +449,9 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int l
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_MUTEX_LOCK(&chpl_comm_diagnostics_lock);
+      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
       chpl_comm_gets++;
-      CHPL_MUTEX_UNLOCK(&chpl_comm_diagnostics_lock);
+      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
     }
     gasnet_get(addr, locale, raddr, size); // dest, node, src, size
   }
@@ -471,9 +471,9 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote task created on %d\n", chpl_localeID, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_MUTEX_LOCK(&chpl_comm_diagnostics_lock);
+      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
       chpl_comm_forks++;
-      CHPL_MUTEX_UNLOCK(&chpl_comm_diagnostics_lock);
+      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
     }
 
     if (passArg) {
@@ -537,9 +537,9 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote non-blocking task created on %d\n", chpl_localeID, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_MUTEX_LOCK(&chpl_comm_diagnostics_lock);
+      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
       chpl_comm_nb_forks++;
-      CHPL_MUTEX_UNLOCK(&chpl_comm_diagnostics_lock);
+      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
     }
     if (passArg) {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
@@ -566,9 +566,9 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size
         printf("%d: remote (no-fork) task created on %d\n",
                chpl_localeID, locale);
       if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-        CHPL_MUTEX_LOCK(&chpl_comm_diagnostics_lock);
+        CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
         chpl_comm_fast_forks++;
-        CHPL_MUTEX_UNLOCK(&chpl_comm_diagnostics_lock);
+        CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
       }
       info = (fork_t *) &infod;
 

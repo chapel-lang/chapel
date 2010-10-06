@@ -1,3 +1,6 @@
+#include <sstream>
+#include <map>
+
 #include "astutil.h"
 #include "build.h"
 #include "caches.h"
@@ -13,6 +16,9 @@
 
 bool resolved = false;
 bool inDynamicDispatchResolution = false;
+
+extern void build_constructor(ClassType* ct);
+extern void build_type_constructor(ClassType* ct);
 
 SymbolMap paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
@@ -40,6 +46,9 @@ static Map<Type*,Type*> runtimeTypeMap; // map static types to runtime types
                                         // e.g. array and domain runtime types
 static Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
 static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
+
+static std::map<std::string, std::pair<ClassType*, FnSymbol*> > functionTypeMap; // lookup table/cache for function types and their representative parents
+static std::map<FnSymbol*, FnSymbol*> functionCaptureMap; //loopup table/cache for function captures
 
 // map of compiler warnings that may need to be reissued for repeated
 // calls; the inner compiler warning map is from the compilerWarning
@@ -137,6 +146,16 @@ resolveAutoDestroy(Type* type) {
   resolveFns(fn);
   autoDestroyMap.put(type, fn);
   tmp->defPoint->remove();
+}
+
+
+FnSymbol* getAutoCopy(Type *t) {
+  return autoCopyMap.get(t);
+}
+
+
+FnSymbol* getAutoDestroy(Type* t) {
+  return autoDestroyMap.get(t);
 }
 
 
@@ -279,6 +298,31 @@ const char* toString(FnSymbol* fn) {
   if (developer)
     str = astr(str, " [", istr(fn->id), "]");
   return str;
+}
+
+
+static void
+checkResolveRemovedPrims(void) {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->primitive) {
+      switch(call->primitive->tag) {
+        case PRIM_INIT:
+        case PRIM_LOGICAL_FOLDER:
+        case PRIM_TYPEOF:
+        case PRIM_TYPE_TO_STRING:
+        case PRIM_IS_STAR_TUPLE_TYPE:
+        case PRIM_ISSUBTYPE:
+        case PRIM_TUPLE_EXPAND:
+        case PRIM_QUERY:
+        case PRIM_ERROR:
+          if (call->parentSymbol)
+            INT_FATAL("Primitive should no longer be in AST");
+          break;
+        default:
+          break;
+      }
+    }
+  }
 }
 
 
@@ -1305,6 +1349,8 @@ printResolutionError(const char* error,
     Type* type = info->actuals.v[1]->getValType();
     if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       USR_FATAL(call, "illegal access of iterator or promoted expression");
+    } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
+      USR_FATAL(call, "illegal access of first class function");
     } else {
       USR_FATAL(call, "%s access of '%s' by '%s'", error,
                 toString(info->actuals.v[1]->type),
@@ -2269,6 +2315,379 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   return result;
 }
 
+/*
+  Creates the parent class which will represent the function's type.  Children of the parent class will capture different functions which
+  happen to share the same function type.  By using the parent class we can assign new values onto variable that match the function type
+  but may currently be pointing at a different function.
+*/
+static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name) {
+  ClassType *parent = new ClassType(CLASS_CLASS);
+  TypeSymbol *parent_ts = new TypeSymbol(name, parent);
+
+  parent_ts->addFlag(FLAG_FUNCTION_CLASS);
+
+  // Because this function type needs to be globally visible (because we don't know the modules it will be passed to), we put
+  // it at the highest scope
+  theProgram->block->body.insertAtTail(new DefExpr(parent_ts));
+    
+  parent->dispatchParents.add(dtObject);
+  dtObject->dispatchChildren.add(parent);
+  VarSymbol* parent_super = new VarSymbol("super", dtObject);
+  parent_super->addFlag(FLAG_SUPER_CLASS);
+  parent->fields.insertAtHead(new DefExpr(parent_super));
+  build_constructor(parent);
+  build_type_constructor(parent);
+
+  return parent;
+}
+
+/*
+  To mimic a function call, we create a .this method for the parent class.  This will allow the object to look and feel like a 
+  first-class function, by both being an object and being invoked using parentheses syntax.  Children of the parent class will
+  override this method and wrap the function that is being used as a first-class value.
+
+  To focus on just the types of the arguments and not their names or default values, we use the parent method's names and types
+  as the basis for all children which override it.  
+
+  The function is put at the highest scope so that all functions of a given type will share the same parent class.
+*/
+static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *parent, AList &arg_list, bool isFormal, Type *retType) {
+  FnSymbol *parent_method = new FnSymbol("this");
+  ArgSymbol *thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
+  parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  parent_method->insertFormalAtTail(thisParentSymbol);
+  parent_method->_this = thisParentSymbol;
+
+  int i = 0, alength = arg_list.length;
+
+  //We handle the arg list differently depending on if it's a list of formal args or actual args
+  if (isFormal) {
+    
+    for_alist(formalExpr, arg_list) {
+      DefExpr* dExp = toDefExpr(formalExpr);
+      ArgSymbol* fArg = toArgSymbol(dExp->sym);
+
+      if (fArg->type != dtVoid) {
+        ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
+        if (fArg->typeExpr)
+          newFormal->typeExpr = fArg->typeExpr->copy();
+
+        parent_method->insertFormalAtTail(newFormal);
+      }
+    }
+  }
+  else {
+    char name_buffer[100];
+    int name_index = 0;
+    
+    for_alist(actualExpr, arg_list) {
+      sprintf(name_buffer, "name%i", name_index++);
+      if (i != (alength-1)) {
+        SymExpr* sExpr = toSymExpr(actualExpr);
+        if (sExpr->var->type != dtVoid) {
+          ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, name_buffer, sExpr->var->type);
+        
+          parent_method->insertFormalAtTail(newFormal);
+        }
+      }
+      ++i;
+    }
+  }
+
+  if (retType != dtVoid) {
+    VarSymbol *tmp = newTemp(retType); 
+    parent_method->insertAtTail(new DefExpr(tmp));
+    parent_method->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+  }
+
+  // Because this function type needs to be globally visible (because we don't know the modules it will be passed to), we put
+  // it at the highest scope
+  theProgram->block->body.insertAtTail(new DefExpr(parent_method));
+    
+  normalize(parent_method);
+    
+  parent->methods.add(parent_method);
+  
+  return parent_method;
+}
+
+/*
+  Builds up the name of the parent for lookup by looking through the types of the arguments, either formal or actual
+*/
+static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType) {
+  std::ostringstream oss;
+  oss << "chpl__fcf_type_";
+  
+  bool isFirst = true;
+
+  if (isFormal) {
+    if (arg_list.length == 0) {
+      oss << "void";
+    }
+    else {
+      for_alist(formalExpr, arg_list) {
+        DefExpr* dExp = toDefExpr(formalExpr);
+        ArgSymbol* fArg = toArgSymbol(dExp->sym);
+        
+        if (!isFirst)
+          oss << "_";
+    
+        oss << fArg->type->symbol->name;
+    
+        isFirst = false;
+      }
+    }     
+    oss << "_";
+    oss << retType->symbol->name;
+  }
+  else {
+    int i = 0, alength = arg_list.length;
+
+    if (alength == 1) {
+      oss << "void_";
+    }
+    
+    for_alist(actualExpr, arg_list) {
+      if (!isFirst)
+        oss << "_";
+      
+      SymExpr* sExpr = toSymExpr(actualExpr);
+      
+      ++i;
+   
+      oss << sExpr->var->type->symbol->name;
+      
+      isFirst = false;
+    }
+  }
+
+  return oss.str();
+}
+
+/*
+  Helper function for creating or finding the parent class for a given function type specified 
+  by the type signature.  The last type given in the signature is the return type, the remainder
+  represent arguments to the function.
+*/
+static ClassType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call) {
+  ClassType *parent;
+  FnSymbol *parent_method;
+
+  SymExpr *retTail = toSymExpr(arg_list.tail);
+  Type *retType = retTail->var->type;
+
+  std::string parent_name = buildParentName(arg_list, false, retType);
+  
+  if (functionTypeMap.find(parent_name) != functionTypeMap.end()) {
+    std::pair<ClassType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
+    parent = ctfs.first;
+    parent_method = ctfs.second;
+  }
+  else {
+    parent = createAndInsertFunParentClass(call, parent_name.c_str());
+    parent_method = createAndInsertFunParentMethod(call, parent, arg_list, false, retType);
+
+    functionTypeMap[parent_name] = std::pair<ClassType*, FnSymbol*>(parent, parent_method);
+  }
+
+  return parent;
+}
+
+/*
+  Captures a function as a first-class value by creating an object that will represent the function.  The class is 
+  created at the same scope as the function being referenced.  Each class is unique and shared among all 
+  uses of that function as a value.  Once built, the class will override the .this method of the parent and wrap 
+  the call to the function being captured as a value.  Then, an instance of the class is instantiated and returned.
+*/
+static Expr*
+createFunctionAsValue(CallExpr *call) {
+  static int unique_fcf_id = 0;
+  UnresolvedSymExpr* use = toUnresolvedSymExpr(call->get(1));
+  INT_ASSERT(use);
+  const char *fname = use->unresolved;
+      
+  Vec<FnSymbol*> visibleFns;
+  Vec<BlockStmt*> visited;
+  getVisibleFunctions(getVisibilityBlock(call), fname, visibleFns, visited);
+
+  if (visibleFns.n > 1) {
+    USR_FATAL(call, "Can not capture overloaded functions as values");
+  }
+
+  INT_ASSERT(visibleFns.n == 1);
+  
+  FnSymbol* captured_fn = visibleFns.v[0];
+
+  //Check to see if we've already cached the capture somewhere
+  if (functionCaptureMap.find(captured_fn) != functionCaptureMap.end()) {
+    return new CallExpr(functionCaptureMap[captured_fn]);
+  }
+
+  resolveFormals(captured_fn);
+  resolveFns(captured_fn);
+
+  ClassType *parent;
+  FnSymbol *thisParentMethod;
+
+  std::string parent_name = buildParentName(captured_fn->formals, true, captured_fn->retType); 
+  
+  if (functionTypeMap.find(parent_name) != functionTypeMap.end()) {
+    std::pair<ClassType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
+    parent = ctfs.first;
+    thisParentMethod = ctfs.second;
+  }
+  else {
+    parent = createAndInsertFunParentClass(call, parent_name.c_str());
+    thisParentMethod = createAndInsertFunParentMethod(call, parent, captured_fn->formals, true, captured_fn->retType);
+    functionTypeMap[parent_name] = std::pair<ClassType*, FnSymbol*>(parent, thisParentMethod);
+  }
+
+  ClassType *ct = new ClassType(CLASS_CLASS);
+  std::ostringstream fcf_name;
+  fcf_name << "_chpl_fcf_" << unique_fcf_id++ << "_" << fname;
+  
+  TypeSymbol *ts = new TypeSymbol(astr(fcf_name.str().c_str()), ct);
+
+  call->parentExpr->insertBefore(new DefExpr(ts));
+  
+  ct->dispatchParents.add(parent);
+  parent->dispatchChildren.add(ct);
+  VarSymbol* super = new VarSymbol("super", parent);
+  super->addFlag(FLAG_SUPER_CLASS);
+  ct->fields.insertAtHead(new DefExpr(super));
+
+  build_constructor(ct);
+  build_type_constructor(ct);
+
+  FnSymbol *thisMethod = new FnSymbol("this");
+  ArgSymbol *thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
+  thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  thisMethod->insertFormalAtTail(thisSymbol);
+  thisMethod->_this = thisSymbol;
+
+  CallExpr *innerCall = new CallExpr(captured_fn);
+      
+  int skip = 2;
+  for_alist(formalExpr, thisParentMethod->formals) {
+    //Skip the first two arguments from the parent, which are _mt and this
+    if (skip) {
+      --skip;
+      continue;
+    }
+
+    DefExpr* dExp = toDefExpr(formalExpr);
+    ArgSymbol* fArg = toArgSymbol(dExp->sym);
+
+    ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK, fArg->name, fArg->type);
+    if (fArg->typeExpr) 
+      newFormal->typeExpr = fArg->typeExpr->copy();
+    SymExpr* argSym = new SymExpr(newFormal);
+    innerCall->insertAtTail(argSym);
+              
+    thisMethod->insertFormalAtTail(newFormal);
+  }
+      
+  Vec<CallExpr*> calls;
+  collectCallExprs(captured_fn, calls);
+
+  forv_Vec(CallExpr, cl, calls) {
+    if (cl->isPrimitive(PRIM_YIELD)) {
+      USR_FATAL_CONT(cl, "Iterators not allowed in first class functions");
+    }
+  }
+      
+  if (captured_fn->retType == dtVoid) {
+    thisMethod->insertAtTail(innerCall);
+  }
+  else {
+    VarSymbol *tmp = newTemp();
+    thisMethod->insertAtTail(new DefExpr(tmp));
+    thisMethod->insertAtTail(new CallExpr(PRIM_MOVE, tmp, innerCall));
+      
+    thisMethod->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+  }
+      
+  call->parentExpr->insertBefore(new DefExpr(thisMethod));
+  normalize(thisMethod);
+
+  ct->methods.add(thisMethod);
+  
+  FnSymbol *wrapper = new FnSymbol("wrapper");
+  wrapper->addFlag(FLAG_INLINE);
+
+  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, parent->symbol, new CallExpr(ct->defaultConstructor))));
+
+  call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
+
+  normalize(wrapper);
+
+  CallExpr *call_wrapper = new CallExpr(wrapper);
+  functionCaptureMap[captured_fn] = wrapper;
+  
+  return call_wrapper;
+}
+
+//
+// returns true if the symbol is defined in an outer function to fn
+// third argument not used at call site
+//
+static bool
+isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
+  if (!parent)
+    parent = fn->defPoint->parentSymbol;
+  if (!isFnSymbol(parent))
+    return false;
+  else if (sym->defPoint->parentSymbol == parent)
+    return true;
+  else
+    return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
+}
+
+
+//
+// finds outer vars directly used in a function
+//
+static bool
+usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
+  Vec<BaseAST*> asts;
+  collect_asts(fn, asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (toCallExpr(ast)) {
+      CallExpr *call = toCallExpr(ast);
+                
+      //dive into calls
+      Vec<FnSymbol*> visibleFns;
+      Vec<BlockStmt*> visited;
+
+      getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited);
+    
+      forv_Vec(FnSymbol, called_fn, visibleFns) {
+        bool seen_this_fn = false;
+        forv_Vec(FnSymbol, seen_fn, seen) {
+          if (called_fn == seen_fn) {
+            seen_this_fn = true;
+            break;
+          }
+        }
+        if (!seen_this_fn) {
+          seen.add(called_fn);
+          if (usesOuterVars(called_fn, seen)) {
+            return true;
+          }
+        }
+      }
+    }
+    if (SymExpr* symExpr = toSymExpr(ast)) {
+      Symbol* sym = symExpr->var;
+      
+      if (toVarSymbol(sym) || toArgSymbol(sym))
+        if (isOuterVar(sym, fn))
+          return true;
+    }
+  }
+  return false;
+}
+
 static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
@@ -2476,6 +2895,14 @@ preFold(Expr* expr) {
         call->replace(new CallExpr(PRIM_TYPEOF, tmp));
       } else
         USR_FATAL(call, "invalid query -- queried field must be a type of parameter");
+    } else if (call->isPrimitive(PRIM_CAPTURE_FN)) {
+      result = createFunctionAsValue(call);
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_CREATE_FN_TYPE)) {
+      ClassType *parent = createOrFindFunTypeFromAnnotation(call->argList, call);
+
+      result = new SymExpr(parent->symbol);
+      call->replace(result);
     } else if (call->isNamed("chpl__initCopy") ||
                call->isNamed("chpl__autoCopy")) {
       if (call->numActuals() == 1) {
@@ -3038,28 +3465,6 @@ postFold(Expr* expr) {
       if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
       call->get(1)->replace(new SymExpr(t->symbol));
-    } else if (call->isPrimitive(PRIM_IS_ENUM)) {
-      // Replace the "isEnumType" primitive with true if the type is
-      // an enum, otherwise with false
-      bool is_enum = false;
-      CallExpr* c;
-      SymExpr* symExpr;
-      if ((c = toCallExpr(call->get(1))) &&
-          (c->isPrimitive(PRIM_TYPEOF))) {
-        symExpr = toSymExpr(c->get(1));
-      } else {
-        symExpr = toSymExpr(call->get(1));
-      }
-      if (symExpr && toEnumType(symExpr->var->type)) {
-        is_enum = true;
-      }
-      result = (is_enum) ? new SymExpr(gTrue) : new SymExpr(gFalse);
-      call->replace(result);
-    } else if (call->isPrimitive(PRIM_IS_TUPLE)) {
-      Type* type = call->get(1)->getValType();
-      bool is_tuple = type->symbol->hasFlag(FLAG_TUPLE);
-      result = (is_tuple) ? new SymExpr(gTrue) : new SymExpr(gFalse);
-      call->replace(result);
     } else if (call->isPrimitive("chpl_string_compare")) {
       SymExpr* lhs = toSymExpr(call->get(1));
       SymExpr* rhs = toSymExpr(call->get(2));
@@ -3181,13 +3586,8 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIM_CHPL_FREE) ||
                (call->primitive && 
                 (!strncmp("_fscan", call->primitive->name, 6) ||
-                 !strcmp("fprintf", call->primitive->name) ||
-                 !strcmp("fopen", call->primitive->name) ||
-                 !strcmp("fclose", call->primitive->name) ||
-                 !strcmp("fflush", call->primitive->name) ||
                  !strcmp("_readToEndOfLine", call->primitive->name) ||
-                 !strcmp("_now_timer", call->primitive->name) ||
-                 !strcmp("_format", call->primitive->name)))) {
+                 !strcmp("_now_timer", call->primitive->name)))) {
       //
       // these primitives require temps to dereference actuals
       //   why not do this to all primitives?
@@ -4099,6 +4499,8 @@ resolve() {
           init->replace(distCall);
           resolveCall(distCall);
           resolveFns(distCall->isResolved());
+        } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
+          init->replace(init->get(1)->remove());
         } else {
           INT_ASSERT(type->defaultConstructor);
           CallExpr* call = new CallExpr(type->defaultConstructor);
@@ -4122,7 +4524,27 @@ resolve() {
     SET_LINENO(call);
     FnSymbol* key = call->isResolved();
     Vec<FnSymbol*>* fns = virtualChildrenMap.get(key);
-    if (fns->n + 1 > fConditionalDynamicDispatchLimit) {
+
+    //Check to see if any of the overridden methods reference outer variables.  If they do, then when we later change the
+    //signature in flattenFunctions, the vtable style will break (function signatures will no longer match).  To avoid this
+    //we switch to the if-block style in the case where outer variables are discovered.
+    //Note: This is conservative, as we haven't finished resolving functions and calls yet, we check all possibilities. 
+    
+    bool referencesOuterVars = false;
+
+    Vec<FnSymbol*> seen;
+    referencesOuterVars = usesOuterVars(key, seen);
+
+    if (!referencesOuterVars) {    
+      for (int i = 0; i < fns->n; ++i) {
+        seen.clear();
+        if ( (referencesOuterVars = usesOuterVars(key, seen)) ) {
+          break;
+        }
+      }
+    }
+    
+    if ((fns->n + 1 > fConditionalDynamicDispatchLimit) && (!referencesOuterVars)) {
       //
       // change call of root method into virtual method call; replace
       // method token with function
@@ -4226,6 +4648,8 @@ resolve() {
   visibleFunctionMap.clear();
   visibilityBlockCache.clear();
 
+  checkResolveRemovedPrims();
+
   resolved = true;
 }
 
@@ -4253,7 +4677,9 @@ static void insertReturnTemps() {
   // Insert return temps for functions that return values if no
   // variable captures the result. If the value is a sync var or a
   // reference to a sync var, pass it through the _statementLevelSymbol
-  // function to get the semantics of reading a sync var.
+  // function to get the semantics of reading a sync var. If the value
+  // is an iterator pass it through another overload of
+  // _statementLevelSymbol to iterate through it for side effects.
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
@@ -4264,8 +4690,10 @@ static void insertReturnTemps() {
             VarSymbol* tmp = newTemp(fn->retType);
             DefExpr* def = new DefExpr(tmp);
             call->insertBefore(def);
-            if ((fn->retType->getValType() && fn->retType->getValType()->symbol->hasFlag(FLAG_SYNC)) ||
-                fn->retType->symbol->hasFlag(FLAG_SYNC)) {
+            if ((fn->retType->getValType() &&
+                 fn->retType->getValType()->symbol->hasFlag(FLAG_SYNC)) ||
+                fn->retType->symbol->hasFlag(FLAG_SYNC) ||
+                fn->hasFlag(FLAG_ITERATOR_FN)) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
               call->insertBefore(sls);
               reset_line_info(sls, call->lineno);
@@ -4406,8 +4834,17 @@ pruneResolvedTree() {
           if (formal->type == dtMethodToken ||
               formal->instantiatedParam ||
               (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-               !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)))
-            call->get(i)->remove();
+               !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))) {
+            if (!fn->hasFlag(FLAG_EXTERN)) {
+              call->get(i)->remove();
+            } else {
+              // extern function with a type parameter
+              INT_ASSERT(toSymExpr(call->get(1)));
+              TypeSymbol *ts = toSymExpr(call->get(1))->var->type->symbol;
+              // Remove the tmp and just pass the type through directly
+              call->get(i)->replace(new SymExpr(ts));
+            }
+          }
         }
       }
     } else if (NamedExpr* named = toNamedExpr(ast)) {
@@ -4470,7 +4907,8 @@ pruneResolvedTree() {
         if (formal->type == dtMethodToken || formal->instantiatedParam)
           formal->defPoint->remove();
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-            !formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+            (!formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
+             !fn->hasFlag(FLAG_EXTERN))) {
           formal->defPoint->remove();
           VarSymbol* tmp = newTemp(formal->type);
           fn->insertAtHead(new DefExpr(tmp));

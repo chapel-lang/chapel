@@ -3,7 +3,7 @@
 #include "chplrt.h"
 #include "chpltimers.h"
 
-_real64 _now_time(void) {
+_real64 chpl_now_time(void) {
   struct tm * now;
   _timervalue t;
   gettimeofday(&t, NULL);

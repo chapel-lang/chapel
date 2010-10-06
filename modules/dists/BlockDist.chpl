@@ -556,7 +556,7 @@ def BlockDom.these(param tag: iterator) where tag == iterator.leader {
     var tmpBlock = locDom.myBlock - precomputedWholeLow;
     const (numTasks, parDim) =
       _computeChunkStuff(maxTasks, ignoreRunning, minSize,
-                         locDom.myBlock.dims(), rank);
+                         locDom.myBlock.dims());
     var locBlock: rank*range(idxType);
     for param i in 1..tmpBlock.rank {
       locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
@@ -626,6 +626,7 @@ def BlockDom.dsiBuildArray(type eltType) {
 def BlockDom.dsiNumIndices return whole.numIndices;
 def BlockDom.dsiLow return whole.low;
 def BlockDom.dsiHigh return whole.high;
+def BlockDom.dsiStride return whole.stride;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for an arithmetic
@@ -670,7 +671,7 @@ def BlockDom.getDist(): Block(idxType) {
 }
 
 // dsiLocalSlice
-def BlockDom.localSlice(param stridable: bool, ranges) {
+def BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
 }
 
@@ -777,7 +778,7 @@ def BlockArr.these(param tag: iterator) where tag == iterator.leader {
     var tmpBlock = locDom.myBlock - precomputedWholeLow;
     const (numTasks, parDim) =
       _computeChunkStuff(maxTasks, ignoreRunning, minSize,
-                         locDom.myBlock.dims(), rank);
+                         locDom.myBlock.dims());
     var locBlock: rank*range(idxType);
     for param i in 1..tmpBlock.rank {
       locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
@@ -914,7 +915,7 @@ def BlockArr.dsiSlice(d: BlockDom) {
   return alias;
 }
 
-def BlockArr.localSlice(ranges) {
+def BlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
     low(i) = ranges(i).low;

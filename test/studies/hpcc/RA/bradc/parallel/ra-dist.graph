@@ -1,0 +1,20 @@
+perfkeys: Problem size =
+graphkeys: Problem size
+ylabel: Problem size
+graphname: ra-dist-problem-size
+
+perfkeys: Total memory required (GB) =
+graphkeys: Total memory required (GB)
+ylabel: Performance (GB)
+graphname: ra-dist-total-memory-required
+
+perfkeys: Performance (GUPS) =
+graphkeys: Performance (GUPS)
+ylabel: Performance (GUPS)
+graphname: ra-dist-performance-gups
+
+perfkeys: Execution time =
+graphkeys: Execution time
+ylabel: Performance (seconds)
+graphname: ra-dist-execution-time
+

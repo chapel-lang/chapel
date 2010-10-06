@@ -35,6 +35,7 @@ BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
 ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename);
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
+BlockStmt* buildPrimitiveLoopStmt(CallExpr* exprs, BlockStmt* body);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
@@ -74,12 +75,14 @@ BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 CallExpr* buildReduceExpr(Expr* op, Expr* data);
 CallExpr* buildScanExpr(Expr* op, Expr* data);
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, bool isConfig, bool isParam, bool isConst);
+BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst);
 
 DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, bool isExtern);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr* buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
+
+FnSymbol* buildLambda(FnSymbol *fn);
 
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
@@ -89,6 +92,8 @@ BlockStmt* buildCobeginStmt(BlockStmt* block);
 BlockStmt* buildAtomicStmt(Expr* stmt);
 void createInitFn(ModuleSymbol* mod);
 CallExpr* buildPreDecIncWarning(Expr* expr, char sign);
+BlockStmt* convertTypesToExtern(BlockStmt*);
+BlockStmt* handleConfigTypes(BlockStmt*);
 
 BlockStmt* buildAtomicStmt(Expr* stmt); // SS: atomic block statement
 

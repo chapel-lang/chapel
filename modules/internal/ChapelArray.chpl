@@ -293,8 +293,10 @@ def isAssociativeDom(d: domain) param {
   return isAssociativeDomClass(d._value);
 }
 
+def isAssociativeArr(a: []) param return isAssociativeDom(a.domain);
+
 def isEnumDom(d: domain) param {
-  return isAssociativeDom(d) && __primitive("isEnumType", d._value.idxType);
+  return isAssociativeDom(d) && _isEnumeratedType(d._value.idxType);
 }
 
 def isEnumArr(a: []) param return isEnumDom(a.domain);
@@ -396,7 +398,7 @@ record _distribution {
     return x;
   }
 
-  def newAssociativeDom(type idxType) where __primitive("isEnumType", idxType) {
+  def newAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
     var x = _value.dsiNewAssociativeDom(idxType);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
@@ -436,7 +438,7 @@ record _distribution {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
-}
+}  // record _distribution
 
 
 //
@@ -480,10 +482,35 @@ record _domain {
       return 1;
   }
 
+  def stridable param where isArithmeticDom(this) {
+    return _value.stridable;
+  }
+
+  def stridable param where isSparseDom(this) {
+    compilerError("sparse domains do not currently support .stridable");
+  }
+
+  def stridable param where isOpaqueDom(this) {
+    compilerError("opaque domains do not support .stridable");  
+  }
+
+  def stridable param where isEnumDom(this) {
+    compilerError("enumerated domains do not support .stridable");  
+  }
+
+  def stridable param where isAssociativeDom(this) {
+    compilerError("associative domains do not support .stridable");  
+  }
+
   pragma "inline"
   def these() {
     return _value.these();
   }
+
+  // see comments for the same method in _array
+  //
+  def this(d: domain) where d.rank == rank
+    return this((...d.getIndices()));
 
   def this(ranges: range(?) ...rank) {
     param stridable = _value.stridable || chpl__anyStridable(ranges);
@@ -572,6 +599,7 @@ record _domain {
   def numIndices return _value.dsiNumIndices;
   def low return _value.dsiLow;
   def high return _value.dsiHigh;
+  def stride return _value.dsiStride;
 
   pragma "inline" // SS: added inline pragma
   def member(i) {
@@ -686,7 +714,7 @@ record _domain {
   }
 
   def localSlice(r: range(?)... rank) {
-    return _value.localSlice(chpl__anyStridable(r), r);
+    return _value.dsiLocalSlice(chpl__anyStridable(r), r);
   }
 
   // associative array interface
@@ -698,7 +726,7 @@ record _domain {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
-}
+}  // record _domain
 
 def _getNewDist(value) {
   return new dmap(value);
@@ -818,8 +846,38 @@ record _array {
         halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
+  // Special cases of local slices for DefaultArithmeticArrs because
+  // we can't take an alias of the ddata class within that class
+  def localSlice(r: range(?)... rank) where _value.type: DefaultArithmeticArr {
+    if boundsChecking then
+      checkSlice((...r));
+    var dom = _dom((...r));
+    return chpl__localSliceDefaultArithArrHelp(dom);
+  }
+
+  def localSlice(d: domain) where _value.type: DefaultArithmeticArr {
+    if boundsChecking then
+      checkSlice((...d.getIndices()));
+
+    return chpl__localSliceDefaultArithArrHelp(d);
+  }
+
+  def chpl__localSliceDefaultArithArrHelp(d: domain) {
+    if (_value.locale != here) then
+      halt("Attempting to take a local slice of an array on locale ",
+           _value.locale.id, " from locale ", here.id);
+    var A => this(d);
+    return A;
+  }
+
   def localSlice(r: range(?)... rank) {
-    return _value.localSlice(r);
+    if boundsChecking then
+      checkSlice((...r));
+    return _value.dsiLocalSlice(r);
+  }
+
+  def localSlice(d: domain) {
+    return localSlice(d.getIndices());
   }
 
   pragma "inline"
@@ -882,7 +940,7 @@ record _array {
   }
 
   def displayRepresentation() { _value.dsiDisplayRepresentation(); }
-}
+}  // record _array
 
 //
 // Helper functions
@@ -999,6 +1057,13 @@ def =(a: domain, b: domain) {
     // TODO: These should eventually become forall loops, hence the
     // warning
     //
+    // NOTE: For the current implementation of associative domains,
+    // the domain iteration is parallelized, but modification
+    // of the underlying data structures (in particular, the _resize()
+    // operation on the table) is not thread-safe.  Something more
+    // intelligent will likely be needed before it is worth it to
+    // parallelize whole-domain assignment for associative arrays.
+    //
     compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for i in a._value.dsiIndsIterSafeForRemoving() {
       if !b.member(i) {
@@ -1023,6 +1088,38 @@ def =(a: domain, b: _tuple) {
 
 def =(d: domain, r: range(?)) {
   d = [r];
+  return d;
+}
+
+//
+// Return true if t is a tuple of ranges that is legal to assign to domain d
+//
+def chpl__isLegalRngTupDomAssign(d, t) param {
+  def isRangeTuple(a) param {
+    def isRange(r: range(?e,?b,?s)) param return true;
+    def isRange(r) param return false;
+    def peelArgs(first, rest...) param {
+      return if rest.size > 1 then
+               isRange(first) && peelArgs((...rest))
+             else
+               isRange(first) && isRange(rest(1));
+    }
+    def peelArgs(first) param return isRange(first);
+
+    return if !isTuple(a) then false else peelArgs((...a));
+  }
+
+  def strideSafe(d, rt, param dim: int=1) param {
+    return if dim == d.rank then
+             d.dim(dim).stridable || !rt(dim).stridable
+           else
+             (d.dim(dim).stridable || !rt(dim).stridable) && strideSafe(d, rt, dim+1);
+  }
+  return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
+}
+
+def =(d: domain, rt: _tuple) where chpl__isLegalRngTupDomAssign(d, rt) {
+  d = [(...rt)];
   return d;
 }
 
@@ -1060,11 +1157,13 @@ def chpl__serializeAssignment(a: [], b) param {
   if a.rank != 1 && chpl__isRange(b) then
     return true;
 
-  // Sparse, Associative, Opaque do not yet support parallel iteration.  We
+  // Sparse and Opaque arrays do not yet support parallel iteration.  We
   // could let them fall through, but then we get multiple warnings for a
   // single assignment statement which feels like overkill
   //
-  if (!isArithmeticArr(a) || (chpl__isArray(b) && !isArithmeticArr(b))) then
+  if ((!isArithmeticArr(a) && !isAssociativeArr(a) && !isSparseArr(a)) ||
+      (chpl__isArray(b) &&
+       !isArithmeticArr(b) && !isAssociativeArr(b) && !isSparseArr(b))) then
     return true;
   return false;
 }
@@ -1454,6 +1553,8 @@ def chpl__initCopy(a: domain) {
   } else {
     // TODO: These should eventually become forall loops, hence the
     // warning
+    //
+    // NOTE: See above note regarding associative domains
     //
     compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for i in a do

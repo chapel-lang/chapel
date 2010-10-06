@@ -14,11 +14,6 @@
 // Define the names.
 //
 
-#define CHPL_MUTEX_INIT                  _TFN(chpl_mutex_init)
-#define CHPL_MUTEX_NEW                   _TFN(chpl_mutex_new)
-#define CHPL_MUTEX_LOCK                  _TFN(chpl_mutex_lock)
-#define CHPL_MUTEX_UNLOCK                _TFN(chpl_mutex_unlock)
-
 #define CHPL_SYNC_LOCK                   _TFN(chpl_sync_lock)
 #define CHPL_SYNC_UNLOCK                 _TFN(chpl_sync_unlock)
 #define CHPL_SYNC_WAIT_FULL_AND_LOCK     _TFN(chpl_sync_wait_full_and_lock)
@@ -51,6 +46,9 @@
 #define CHPL_TASK_SLEEP                  _TFN(chpl_task_sleep)
 #define CHPL_GET_SERIAL                  _TFN(chpl_get_serial)
 #define CHPL_SET_SERIAL                  _TFN(chpl_set_serial)
+
+#define CHPL_TASK_CALLSTACKSIZE          _TFN(chpl_task_callStackSize)
+#define CHPL_TASK_CALLSTACKSIZELIMIT     _TFN(chpl_task_callStackSizeLimit)
 
 #define CHPL_NUMQUEUEDTASKS              _TFN(chpl_numQueuedTasks)
 #define CHPL_NUMRUNNINGTASKS             _TFN(chpl_numRunningTasks)

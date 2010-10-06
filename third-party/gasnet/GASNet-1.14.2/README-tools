@@ -1,0 +1,1076 @@
+============================
+README file for GASNet tools
+============================
+by: Dan Bonachea <bonachea@cs.berkeley.edu>
+$Revision: 1.24.2.3 $
+GASNet tools specification version: 1.6
+
+The GASNet tools are a set of communication-independent utilities that are used
+to implement GASNet, and constitute a useful portability tool for GASNet
+clients and even for other portable software that might not require the GASNet
+communication services. The GASNet tools are available to all regular GASNet
+clients, and are also available in a stripped-down "tools-only" software
+distribution which is intended for bundling with third-party software that does
+not require communication services. This file documents both.
+
+============================================
+Tools-Only Distribution Install Instructions
+============================================
+
+The GASNet_Tools distribution contains just the sources required to build and
+use the GASNet tools, without any GASNet conduit support. It can only be used
+in executables which do not link a GASNet conduit (which already provide the
+tools).
+
+* Step 1: Configure
+
+  Unpack the distribution and run:
+
+    configure (options)
+    
+  A few of the more important options available:
+
+  --help :  display all available configure options
+  --prefix=/install/path : set the directory where GASNet Tools will be installed
+  --enable-debug : Enables hundreds of system-wide sanity checks, at a cost in performance.
+                   Highly recommended during software development.
+  --disable-pthreads: Can be used to disable the thread-safe version of the tools.
+
+* Step 2: Build
+  
+  Use make to build the tools library:
+    
+    make
+    make check   (optional, but recommended - builds and runs a correctness test)
+
+* Step 3: Install
+
+  Use make to install the tools library:
+
+   make install
+
+* Step 4: Use the library
+
+  Once installed, client code should #include <gasnet_tools.h> from
+  $prefix/include and link the appropriate library in $prefix/lib.
+  Clients which use multiple pthreads should link the thread-safe library, 
+  and define GASNETT_THREAD_SAFE before including gasnet_tools.h, eg:
+  
+   cc -o myprogram myprogram.c -I$prefix/include -DGASNETT_THREAD_SAFE=1 \
+        -L$prefix/lib -lgasnet_tools-par -lpthreads
+
+  Where $prefix is the prefix passed during Step 1. 
+  
+  Clients which never use pthreads may link the single-threaded version of the
+  tools using -lgasnet_tools-seq and omitting the GASNETT_THREAD_SAFE define.
+
+  Additionally, client code used to build shared libraries (compiled with
+  -fPIC, -KPIC or a similar compiler-dependent flag) should pass
+  -DGASNETI_FORCE_PIC=1 to ensure use of PIC-safe code in gasnet_tools.h.
+
+===============================
+GASNet Tools User Documentation
+===============================
+
+The remainder of this file documents the usage of GASNet tools, regardless of
+which distribution is in use.
+
+-------------
+General Usage
+-------------
+
+* All clients of GASNet tools should #include <gasnet_tools.h> before any other header.
+  The only exception is source files that use both a GASNet conduit and GASNet
+  tools, which must include gasnet.h before gasnet_tools.h.
+
+* All of the supported public interfaces in GASNet tools are named using the
+  'gasnett_' or 'GASNETT_' prefix. Clients of GASNet tools should *ONLY* invoke
+  names with this prefix. Use of names with any other prefix (notably including
+  'gasneti_') is totally unsupported and subject to change and breakage without
+  notice.
+
+* Many of the 'functions' provided by GASNet tools are actually implemented as 
+  macros or inline functions for performance reasons. This distinction is explicitly
+  undocumented and open to change without notice, and may even differ across 
+  platforms in a given release. To ensure correctness, clients should never
+  attempt to take the address of a GASNet tool 'function' or #undef its name.
+
+* The GASNet tools have been ported to all the platforms listed in the main
+  GASNet README. They may work on others as well. Please contact us if you have
+  a new platform you'd like to see supported.
+
+* For questions on using the GASNet tools, contact upc-devel@lbl.gov. 
+  It's especially recommended to contact us before bundling the tools in your
+  software package.
+
+------
+Timers
+------
+
+GASNet tools provides high-granularity, low-overhead wall-clock timers using 
+system-specific support, where available.
+
+  gasnett_tick_t - timer datatype representing an integer number of "ticks"
+    where a "tick" has a system-specific interpretation
+    safe to be handled using integer operations (+,-,<,>,==)
+
+  gasnett_tick_t gasnett_ticks_now() - returns the current tick count 
+    note that tick values are THREAD-specific, and do NOT represent a globally-synchronized timer.
+    In specific, tick values are very likely to have a different base value across nodes, and 
+    might even advance at substantially different rates on different nodes.
+    Therefore tick values and tick intervals from different threads should never be directly compared or 
+    arithmetically combined, without first converting the relevant tick intervals to wall time intervals.
+
+  uint64_t gasnett_ticks_to_ns(gasnett_tick_t ticks) - convert ticks to nanoseconds as a uint64_t
+
+  GASNETT_TICK_MIN - a value representing the minimum value storable in a gasnett_tick_t
+
+  GASNETT_TICK_MAX - a value representing the maximum value storable in a gasnett_tick_t
+
+---------------
+Memory barriers
+---------------
+
+Memory barriers are used to implement lock-free synchronization and data sharing across 
+the threads of a process.
+
+ gasnett_local_wmb:
+   A local memory write barrier - ensure all stores to local mem from this thread are
+   globally completed across this SMP before issuing any subsequent loads or stores.
+   (i.e. all loads issued from any CPU subsequent to this call
+      returning will see the new value for any previously issued
+      stores from this proc, and any subsequent stores from this CPU
+      are guaranteed to become globally visible after all previously issued
+      stores from this CPU)
+   This must also include whatever is needed to prevent the compiler from reordering
+   loads and stores across this point.
+
+ gasnett_local_rmb:
+   A local memory read barrier - ensure all subsequent loads from local mem from this thread
+   will observe previously issued stores from any CPU which have globally completed.  
+   For instance, on the Alpha this ensures
+   that queued cache invalidations are processed and on the PPC this discards any loads
+   that were executed speculatively.
+   This must also include whatever is needed to prevent the compiler from reordering
+   loads and stores across this point.
+ 
+ gasnett_local_mb:
+   A "full" local memory barrer.  This is equivalent to both a wmb() and rmb().
+   All oustanding loads and stores must be completed before any subsequent ones
+   may begin.
+
+ gasnett_weak_wmb:
+ gasnett_weak_rmb:
+ gasnett_weak_mb:
+   These are equivalent to the corresponding gasnett_local_* except that in a build
+   without threads these compile away to nothing.
+  
+ gasnett_compiler_fence:
+   A barrier to compiler optimizations that would reorder any memory references across
+   this point in the code.
+
+  Note that for all of the memory barriers, we require only that a given architecture's
+  "normal" loads and stores are ordered as required.  "Extended" instructions such as
+  MMX, SSE, SSE2, Altivec and vector ISAs on various other machines often bypass some
+  or all of the machine's memory hierarchy and therefore may not be ordered by the same
+  instructions.  Authors of MMX-based memcpy and similar code must therefore take care
+  to add appropriate flushes to their code.
+
+  For more info on memory barriers: http://gee.cs.oswego.edu/dl/jmm/cookbook.html
+
+-----------------
+Atomic operations
+-----------------
+
+GASNet tools provides portable atomic memory operations for efficient inter-thread coordination.
+
+Note the default atomic operations exposed by GASNet tools only expand to architecturally 
+atomic instructions in GASNETT_THREAD_SAFE mode. In single-threaded mode, they all expand to
+appropriate regular (non-atomic) operations, which are often more efficient
+than their atomic equivalents and should be indistinguishable in behavior for
+programs with no concurrency. 
+
+The default atomics exposed by GASNet tools are *not* guaranteed to be atomic with respect 
+to signal handlers, and therefore should not be used for synchronizing with signal handlers.
+If you need signal-safe atomics or atomic memory access in single-threaded codes, see
+the section on strong atomics below.
+
+ * gasnett_atomic_t
+
+ This interface provides a special datatype (gasnett_atomic_t) representing an atomically
+  updated unsigned integer value and a set of atomic ops
+ Atomicity is guaranteed only if ALL accesses to the gasnett_atomic_t data happen
+  through the provided operations (i.e. it is an error to directly access the
+  contents of a gasnett_atomic_t), and if the gasnett_atomic_t data is only
+  addressable by the current process (e.g. not in a System V shared memory segment)
+ It is also an error to access an uninitialized gasnett_atomic_t with any operation
+  other than gasnett_atomic_set().
+ We define an unsigned type (gasnett_atomic_val_t) and a signed type
+ (gasnett_atomic_sval_t) and provide the following operations on all platforms:
+
+  gasnett_atomic_init(gasnett_atomic_val_t v)
+      Static initializer (macro) for an gasnett_atomic_t to value v.
+
+  void gasnett_atomic_set(gasnett_atomic_t *p,
+                          gasnett_atomic_val_t v,
+                          int flags);
+      Atomically sets *p to value v.
+
+  gasnett_atomic_val_t gasnett_atomic_read(gasnett_atomic_t *p, int flags);
+      Atomically read and return the value of *p.
+
+  void gasnett_atomic_increment(gasnett_atomic_t *p, int flags);
+      Atomically increment *p (no return value).
+
+  void gasnett_atomic_decrement(gasnett_atomic_t *p, int flags);
+      Atomically decrement *p (no return value).
+
+  int gasnett_atomic_decrement_and_test(gasnett_atomic_t *p, int flags);
+      Atomically decrement *p, return non-zero iff the new value is 0.
+
+ * Semi-portable atomic operations
+
+ These useful operations are available on most, but not all, platforms.
+
+  gasnett_atomic_val_t gasnett_atomic_add(gasnett_atomic_t *p,
+                                          gasnett_atomic_val_t op,
+                                          int flags);
+  gasnett_atomic_val_t gasnett_atomic_subtract(gasnett_atomic_t *p,
+                                               gasnett_atomic_val_t op,
+                                               int flags);
+
+ These implement atomic addition and subtraction, where op must be non-negative.
+ The result is platform dependent if the value of op is negative or out of the
+ range of gasnett_atomic_val_t, or if the resulting value is out of range.
+ Both return the value after the addition or subtraction.
+
+ GASNETT_HAVE_ATOMIC_ADD_SUB will be defined to 1 when these operations are available.
+ They are always either both available, or neither is available.
+
+  int gasnett_atomic_compare_and_swap(gasnett_atomic_t *p,
+                                      gasnett_atomic_val_t oldval,
+                                      gasnett_atomic_val_t newval,
+                                      int flags);
+
+   This operation is the atomic equivalent of:
+    if (*p == oldval) {
+      *p = newval;
+      return NONZERO;
+    } else {
+      return 0;
+    }
+
+ GASNETT_HAVE_ATOMIC_CAS will be defined to 1 when this operation is available
+
+ * Range of atomic type
+
+ Internally a gasnett_atomic_t is an unsigned type of at least 24-bits.  No special
+ action is needed to store signed values via gasnett_atomic_set(), however because
+ the type may use less than a full word, gasnett_atomic_signed() is provided to
+ perform any required sign extension if a value read from a gasnett_atomic_t is
+ to be used as a signed type.
+
+  gasnett_atomic_signed(v)      Converts a gasnett_atomic_val_t returned by
+                                gasnett_atomic_{read,add,subtract} to a signed
+                                gasnett_atomic_sval_t.
+  GASNETT_ATOMIC_MAX            The largest representable unsigned value
+                                (the smallest representable unsigned value is always 0).
+  GASNETT_ATOMIC_SIGNED_MIN     The smallest (most negative) representable signed value.
+  GASNETT_ATOMIC_SIGNED_MAX     The largest (most positive) representable signed value.
+
+ The atomic type is guaranteed to wrap around at it's minimum and maximum values in
+ the normal manner expected of two's-complement integers.  This includes the 'oldval'
+ and 'newval' arguments to gasnett_atomic_compare_and_swap(), and the 'v' arguments
+ to gasnett_atomic_init() and gasnett_atomic_set() which are wrapped (not clipped)
+ to the proper range prior to assignment (for 'newval' and 'v') or comparison (for
+ 'oldval').
+
+ * Memory fence properties of atomic operations
+
+ NOTE: Atomic operations have no default memory fence properties, as this
+ varies by platform.  Every atomic operation except _init() includes a 'flags'
+ argument to indicate the caller's minimum fence requirements.
+ Depending on the platform, the implementation may use fences stronger than
+ those requested, but never weaker. 
+
+ Most cases where atomics are used to implement thread synchronization (eg where 
+ the atomic operation indicates the availability or consumption of other data)
+ will need to include some fences to ensure consistency of other data (this includes
+ both non-atomic data, and other atomic variables).
+ Specifying the necessary fence properties
+ as arguments to the atomic operation helps to reduce duplication of fences on some 
+ platforms (relative to issuing explicit fences before/after the atomic op), because it
+ allows the data fence to be combined with whatever fences are used to implement the 
+ atomic operation.
+
+ The following fence flags are recognized and may be OR'd together for the flags argument of any
+ atomic operation:
+
+  GASNETT_ATOMIC_NONE  - no fence (equivalent to passing 0)
+		  
+  GASNETT_ATOMIC_RMB_PRE - enforce a read/write/full fence before the atomic operation	
+  GASNETT_ATOMIC_WMB_PRE
+  GASNETT_ATOMIC_MB_PRE
+	
+  GASNETT_ATOMIC_RMB_POST - enforce a read/write/full fence after the atomic operation	
+  GASNETT_ATOMIC_WMB_POST
+  GASNETT_ATOMIC_MB_POST
+	
+  GASNETT_ATOMIC_RMB_POST_IF_TRUE 
+  GASNETT_ATOMIC_RMB_POST_IF_FALSE
+    - These enforce a read fence after a boolean atomic operation that succeeds (true) or
+      fails (false). 
+    - The boolean atomic operations are compare-and-swap and decrement-and-test.
+
+ Convenience names for specifying acquire/release semantics in critical sections built from atomics:
+  
+  GASNETT_ATOMIC_REL		equivalent to: GASNETT_ATOMIC_WMB_PRE
+  GASNETT_ATOMIC_ACQ		equivalent to: GASNETT_ATOMIC_RMB_POST
+  GASNETT_ATOMIC_ACQ_IF_TRUE	equivalent to: GASNETT_ATOMIC_RMB_POST_IF_TRUE
+  GASNETT_ATOMIC_ACQ_IF_FALSE	equivalent to: GASNETT_ATOMIC_RMB_POST_IF_FALSE
+
+ * Storage of atomic type
+
+ Internally an atomic type may use storage significantly larger than the number
+ of significant bits.  This additional space may be needed, for instance, to
+ meet platform-specific alignment constraints, or to hold a mutex on platforms
+ lacking any other means of ensuring atomicity.
+
+ * Fixed-width atomic types
+
+ The following fixed-width (32- and 64-bit) types/operations are available
+ on all platforms.  These are guaranteed to consume exactly the "natural"
+ storage, without padding or any extra alignment.  However, one or both may
+ use mutexes or lack signal-safety, even where gasnett_atomic_t does not.
+ Additionally, unlike gasnett_atomic_t, the same set of operations is present
+ on all platforms, even if that requires a mutex-based approach to support
+ the compare-and-swap operation.
+
+  gasnett_atomic32_t
+  gasnett_atomic64_t
+    Typedef
+
+  gasnett_atomic32_init(uint32_t v)
+  gasnett_atomic64_init(uint64_t v)
+    Static initializer (macro).
+
+  void gasnett_atomic32_set(gasnett_atomic32_t *p, uint32_t v, int flags);
+  void gasnett_atomic64_set(gasnett_atomic64_t *p, uint64_t v, int flags);
+    Atomically sets *p to value v.
+
+  uint32_t gasnett_atomic32_read(gasnett_atomic32_t *p, int flags);
+  uint64_t gasnett_atomic64_read(gasnett_atomic64_t *p, int flags);
+    Atomically read and return the value of *p.
+
+  int gasnett_atomic32_compare_and_swap(gasnett_atomic32_t *p, uint32_t oldval,
+                                        uint32_t newval, int flags);
+  int gasnett_atomic64_compare_and_swap(gasnett_atomic64_t *p, uint64_t oldval,
+                                        uint64_t newval, int flags);
+    Atomic compare-and-swap of *p from oldval to newval.
+
+
+  While some platforms do not enforce the same alignment constraints for all
+  types of a given width, the implementation of the fixed-width atomics
+  guarantee correct atomic operations on storage declared as any of the 4-byte
+  and 8-byte integer or floating point scalar types on a given platform.  So,
+  assuming 4-byte float and 8-byte double, fixed-width atomic operations via
+  pointers generated by the following casts are correct:
+    (int32_t *) or (float *) cast to (gasnett_atomic32_t *)
+    (int64_t *) or (double *) cast to (gasnett_atomic64_t *)
+  where any signed or unsigned integral type of the same width may be used in
+  place of int32_t and int64_t.  However, the fixed-width atomic operations do
+  NOT guarantee correct operation on arbitrarily aligned blocks of data.  For
+  instance the following two examples are NOT permitted
+  EX1:
+    struct { int16_t a, b; } X;
+    gasnett_atomic32_set((gasnett_atomic32_t *)&X, 0, 0);
+  EX2: 
+    struct { float Real, Img; } Y;
+    gasnett_atomic64_set((gasnett_atomic64_t *)&Y, 0, 0);
+  because some platforms might align these structures less strictly than the
+  integral and floating point types of equal size.  However, since in C
+  unions are always aligned by their most-restrictive constituent type,
+  the following two examples ARE legal:
+  EX3:
+    union { float f;
+            struct { int16_t a, b; } u16s;
+          } X2;
+    gasnett_atomic32_set((gasnett_atomic32_t *)&X2, 0, 0);
+  EX4:
+    union { uint64_t u64;
+            struct { float Real, Img; } cplx32;
+          } Y2;
+    gasnett_atomic64_set((gasnett_atomic64_t *)&Y2, 0, 0);
+
+  Additionally, casts from (gasnett_atomic32_t *) or (gasnett_atomic64_t *) to
+  pointers to other types are NOT safe in general, because the alignment of
+  the atomic type might be less than required for the other type.  When this
+  under-alignment occurs such casts could result in a fatal SIGBUS when the
+  pointer is dereferenced.  To avoid this problem apply this rule-of-thumb:
+    Storage to be accessed via both a pointer to a fixed-width atomic
+    type and another pointer type must be declared as the non-atomic type.
+  This will ensure the storage is suitably aligned for accesses via pointers
+  to both the atomic and non-atomic types (assuming, of course, that the
+  non-atomic type is one allowed by the previous paragraph.)
+
+  It is not safe to concurrently access the same memory location as both
+  an atomic type and a non-atomic type.  For the purpose of this distinction
+  only references using the gasnett_atomic32_ or gasnett_atomic64_ prefixes
+  are atomic.  All non-GASNet references and any other GASNet references are
+  non-atomic (including all gets and puts, Active Message calls, etc.).
+
+  The client code is responsible for providing sufficient synchronization
+  (such as barriers or mutexes) to prevent the concurrent use of any given
+  memory location as both atomic and non-atomic.  Use of non-atomic "flag"
+  variables is not sufficient synchronization (even when volatile) in the
+  presence of certain compiler optimizations.  Additionally, use of an
+  atomic variable as a "flag" is only sufficient when memory fences are
+  used correctly.  When practical, one possible mechanism to have the
+  client code separate the atomic and non-atomic treatment of memory into
+  distinct phases of the computation, separated by a barrier.
+   
+ * Strong atomics
+
+  GASNet tools offers a "strong" atomics interface, which expands to the strongest available
+  atomic operations on a given platform, even in single threaded-codes. The syntax and semantics
+  for these operations is identical to those described above, with all name prefixes changed as follows: 
+
+    gasnett_atomic_X    to   gasnett_strongatomic_X
+    gasnett_atomic32_X  to   gasnett_strongatomic32_X
+    gasnett_atomic64_X  to   gasnett_strongatomic64_X
+
+  On most, but not all, platforms, operations on gasnett_strongatomic_t are signal safe.  
+  On the few platforms where this is not the case GASNETT_STRONGATOMIC_NOT_SIGNALSAFE
+  will be defined to 1.
+
+  Similarly, GASNETT_STRONGATOMIC32_NOT_SIGNALSAFE and GASNETT_STRONGATOMIC64_NOT_SIGNALSAFE
+  are defined to 1 IFF the implementation of the fixed-width atomics is not signal-safe.
+  Note that these two are set independently.
+
+
+-------------------------
+Portable platform defines
+-------------------------
+
+Most systems have predefined preprocessor tokens for identifying the compiler, OS and architecture
+in use. However, there is no uniform naming convention for such platform features, and often 
+a given feature (such as CPU family) will be indicated using a different name under 
+different combinations of OS and compiler. 
+
+GASNet tools provides a uniform naming scheme for detecting these preprocessor-provided 
+platform features, so that #if tests can be written concisely with expressions like:
+
+#if PLATFORM_COMPILER_GNU && PLATFORM_OS_SOLARIS && PLATFORM_ARCH_X86
+
+See the comments in portable_platform.h for the details of the provided defines.
+
+----------------------------------
+Portable fixed-width integer types
+----------------------------------
+
+inttypes.h is part of the POSIX and C99 specs, but in practice support for it 
+varies wildly across systems. GASNet tools portably provides the fixed-bit-width 
+integral types via the following typedefs:
+
+    int8_t, uint8_t     signed/unsigned 8-bit integral types
+   int16_t, uint16_t    signed/unsigned 16-bit integral types
+   int32_t, uint32_t    signed/unsigned 32-bit integral types
+   int64_t, uint64_t    signed/unsigned 64-bit integral types
+   intptr_t, uintptr_t  signed/unsigned types big enough to hold any pointer offset
+
+--------------------
+Compiler annotations
+--------------------
+
+Many compilers have pragmas, attributes or other compiler-specific mechanisms for annotating
+declarations and code in useful ways which are not standardized by the C specification.
+The following macros expand to appropriate annotations when available, or to safe, unannotated 
+versions when the given annotation is unavailable.  See also "Feature control", below.
+
+GASNETT_INLINE(fnname) 
+definition
+
+  Most forceful inlining demand available.
+  Might generate errors in cases where inlining is semantically impossible 
+  (eg recursive functions, varargs fns)
+  fnname should be the name of the function, and definition should be the actual
+  definition of the function (declaration and body)
+          
+GASNETT_PLEASE_INLINE(fnname) 
+definition
+
+  Similar to GASNETT_INLINE - inline a function if possible, but don't generate an error 
+  for cases where it is impossible (eg recursive functions)
+      
+GASNETT_NEVER_INLINE(fnname,definition)
+
+  Most forceful demand available to disable inlining for function.
+     
+GASNETT_RESTRICT     
+  
+  The C99 'restrict' keyword, if supported by the compiler, or empty otherwise.
+        
+GASNETT_FORMAT_PRINTF(fnname,fmtarg,firstvararg,declarator)
+GASNETT_FORMAT_PRINTF_FUNCPTR(fnname,fmtarg,firstvararg,declarator)
+
+  Annotate function fnname (defined by definition) as a printf-like function, 
+  whose arguments should be checked for type compatilibility with a format string whenever possible.
+  fmtarg is the 1-based index of the argument providing the format character string, 
+  firstvararg is the 1-based index of the first ... argument which corresponds to 
+  arguments to the format string.
+
+declaration GASNETT_NORETURN;
+GASNETT_NORETURNP(fnname)
+
+  Declare the given function as one that will never return (ie program will exit before return)
+
+GASNETT_MALLOC    
+declarator           
+GASNETT_MALLOCP(fnname)     
+        
+  Declare the given function as one that returns new, unaliased memory (as with malloc)
+
+GASNETT_PURE                 
+declarator           
+GASNETT_PUREP(fnname)        
+
+  Declare as pure function: one with no effects except the return value, and 
+  return value depends only on the parameters and/or global variables.
+  prohibited from performing volatile accesses, compiler fences, I/O,
+  changing any global variables (including statically scoped ones), or
+  calling any functions that do so       
+
+GASNETT_CONST                
+declarator           
+GASNETT_CONSTP(fnname)         
+
+  Declare as const function: a more restricted form of pure function, with all the
+  same restrictions, except additionally the return value must NOT
+  depend on global variables or anything pointed to by the arguments
+
+GASNETT_WARN_UNUSED_RESULT   
+declarator
+
+  Attempt to generate a warning if the return value of the declared function is ignored by caller.
+
+GASNETT_USED                
+declarator           
+
+  Declare the given function as one that must not be omitted, even if the compiler
+  believes the function cannot ever be called.
+
+if_pf(cond) S;
+if_pt(cond) S;
+
+  Drop-in replacements for the standard C 'if' keyword with branch-prediction hints.
+  if_pf and if_pt behave just like 'if' except they give the C compiler a hint that 
+  the condition is predicted to be false (if_pf) and the branch not taken, 
+  or predicted to be true (pt) and the branch taken.
+
+-----------------------------------------------------
+Error-checking System Mutexes and Condition Variables
+-----------------------------------------------------
+
+GASNet tools provides convenience wrappers around the system's pthread mutexes
+and condition variables.  In debug mode, these wrappers add error checking
+capabilities to detect common usage violations (such as attempts to recursively
+acquire a mutex, or release a mutex that has not been acquired).  The wrappers
+also implement workarounds for known bugs in the pthread implementations of
+several systems.  
+
+In non-threaded builds, these wrappers still compile and expand to
+appropriate no-ops, unless compiled with -DGASNETT_USE_TRUE_MUTEXES=1
+which will force gasnett_mutex_t to always use true locking (even 
+without -DGASNETT_THREAD_SAFE=1).
+
+* The following function identically to the pthread_mutex symbols of the same name:
+
+gasnett_mutex_t             
+GASNETT_MUTEX_INITIALIZER
+void gasnett_mutex_init(gasnett_mutex_t *)
+void gasnett_mutex_destroy(gasnett_mutex_t *)
+int gasnett_mutex_destroy_ignoreerr(gasnett_mutex_t *)
+
+     mutex creation and destruction, as with pthread_mutex_t
+     gasnett_mutex_destroy_ignoreerr performs no error checking and silently returns any errors 
+     (eg as may occur when attempting to destroy a locked mutex)
+
+void gasnett_mutex_lock(gasnett_mutex_t *)
+void gasnett_mutex_unlock(gasnett_mutex_t *)
+
+     lock and unlock (checks for recursive locking errors)
+
+int gasnett_mutex_trylock(gasnett_mutex_t *)
+
+     non-blocking trylock - returns EBUSY on failure, 0 on success
+
+* Additional mutex utilities:
+
+void gasnett_mutex_assertlocked(gasnett_mutex_t *)
+void gasnett_mutex_assertunlocked(gasnett_mutex_t *) 
+
+  In debug builds, these functions respectively assert that the given mutex is 
+  currently locked or not locked by the calling thread, generating a fatal error
+  if the assertion is violated. Has no effect in non-debug builds.
+
+* The following function identically to the pthread_cond symbols of the same name:
+
+gasnett_cond_t             
+GASNETT_COND_INITIALIZER
+void gasnett_cond_init(gasnett_cond_t *pc)
+void gasnett_cond_destroy(gasnett_cond_t *pc)
+
+     condition variable creation and destruction, as with pthread_cond_t
+
+void gasnett_cond_signal(gasnett_cond_t *pc)
+void gasnett_cond_broadcast(gasnett_cond_t *pc)
+
+    signal at least one / all current waiters on a gasnet_cond_t, while holding the associated mutex
+
+void gasneti_cond_wait(gasneti_cond_t *pc, gasneti_mutex_t *pl)
+
+    release gasnett_mutex_t pl (which must be held) and block WITHOUT POLLING 
+    until gasnett_cond_t pc is signalled by another thread, or until the system
+    decides to wake this thread for no good reason (which it may or may not do).
+    Upon wakeup for any reason, the mutex will be reacquired before returning.
+
+    It's an error to wait if there is only one thread, and can easily lead to 
+    deadlock if the last thread goes to sleep. No thread may call wait unless it
+    can guarantee that (A) some other thread will eventually signal it to wake
+    up and (B) some other thread is still polling (except in tools-only mode,
+    where there is no polling).  The system may or may not also randomly signal
+    threads to wake up for no good reason, so upon awaking the thread MUST
+    verify using its own means that the condition it was waiting for has
+    actually been signalled (ie that the client-level "outer" condition has
+    been set).
+
+    In order to prevent races leading to missed signals and deadlock, signaling
+    threads must always hold the associated mutex while signaling, and ensure the
+    outer condition is set *before* releasing the mutex. Additionally, all waiters
+    must check the outer condition *after* acquiring the same mutex and *before*
+    calling wait (which atomically releases the lock and puts the thread to sleep).
+
+--------------------
+Thread-specific data
+--------------------
+
+GASNet tools provides wrappers to define and access pointers to thread-specific data, 
+using an interface that expands to the fastest available mechanism provided by the
+current platform for thread-specific data on threaded configurations
+(eg __thread or pthread_getspecific()), and expands to simple dereference of 
+process-global storage for non-threaded configurations.
+Automatically handles the hassle of pthread key creation if required.
+
+A thread-specific data pointer (mykey) must be declared as:
+
+  GASNETI_THREADKEY_DEFINE(mykey); - must be defined in exactly one C file at global scope
+  GASNETI_THREADKEY_DECLARE(mykey); - optional, use in headers to reference externally-defined key
+
+and then can be used as:
+
+  void *val = gasnett_threadkey_get(mykey);
+  gasnett_threadkey_set(mykey,val);
+
+no initialization is required (happens automatically on first access).
+
+Initialization can optionally be performed using:
+
+  gasnett_threadkey_init(mykey);
+
+which then allows subsequent calls to:
+
+  void *val = gasnett_threadkey_get_noinit(mykey);
+  gasnett_threadkey_set_noinit(mykey,val);
+
+these save a branch by avoiding the initialization check.
+gasnett_threadkey_init is permitted to be called multiple times and
+from multiple threads - calls after the first one will be ignored.
+
+---------------------
+Environment utilities
+---------------------
+
+Following utilities support querying the environment and manipulating the result.
+Most of the query functions will report their actions to the console when the user
+selects verbose reporting mode, to support self-documenting environment settings.
+
+char *gasnett_format_number(int64_t val, char *buf, size_t bufsz, int is_mem_size);
+
+  format a integer value as a human-friendly string, with appropriate mem suffix 
+
+int64_t gasnett_parse_int(const char *str, uint64_t mem_size_multiplier);
+
+  parse an integer value back out again
+  if mem_size_multiplier==0, it's a unitless quantity
+  otherwise, it's a memory size quantity, and mem_size_multiplier provides the 
+    default memory unit (ie 1024=1KB) if the string provides none  
+
+void gasnett_setenv(const char *key, const char *value);
+void gasnett_unsetenv(const char *key);
+
+  set/unset an environment variable, for the local process ONLY 
+
+char *gasnett_getenv(const char *keyname);
+
+  raw environment query function, bypasses reporting
+  uses the gasnet conduit-provided global environment if available or regular getenv otherwise
+  legal to call before gasnet_init, but may malfunction if
+  the conduit has not yet established the contents of the environment
+
+char *gasnett_getenv_withdefault(const char *keyname, const char *defaultval);
+
+  environment query for a string parameter
+  if user has set value the return value indicates their selection
+  if value is not set, the provided default value is returned
+  call is reported to the console in verbose-environment mode,
+   (only the first call with a given key is reported)
+  legal to call before gasnet_init, but may malfunction if
+  the conduit has not yet established the contents of the environment
+
+int gasnett_getenv_yesno_withdefault(const char *keyname, int defaultval);
+
+   environment query for a yes/no parameter
+   if user has set value to 'Y|YES|y|yes|1' or 'N|n|NO|no|0', 
+   the return value indicates their selection
+   if value is not set, the provided default value is returned
+
+int64_t gasnett_getenv_int_withdefault(const char *keyname, int64_t defaultval, uint64_t mem_size_multiplier);
+
+   environment query for an integral parameter
+   if mem_size_multiplier non-zero, expect a (possibly fractional) memory size with suffix (B|KB|MB|GB|TB)
+     and the default multiplier is mem_size_multiplier (eg 1024 for KB)
+   otherwise, expect a positive or negative integer in decimal or hex ("0x" prefix)
+   the return value indicates their selection
+   if value is not set, the provided default value is returned
+
+double gasnett_getenv_dbl_withdefault(const char *keyname, double defaultval);
+
+  environment query for a floating-point parameter
+  if user has set value the return value indicates their selection
+   which must be a valid floating-point value or a fraction (e.g "1.5", "-1e4", or "3/8")
+  if value is not set, the provided default value is returned
+  call is reported to the console in verbose-environment mode,
+   (only the first call with a given key is reported)
+  legal to call before gasnet_init, but may malfunction if
+  the conduit has not yet established the contents of the environment
+
+int gasnett_verboseenv();
+
+   returns true iff GASNET_VERBOSEENV reporting is enabled on this node 
+   note the answer may change during initialization
+
+void gasnett_envint_display(const char *key, int64_t val, int is_dflt, int is_mem_size);
+void gasnett_envstr_display(const char *key, const char *val, int is_dflt);
+void gasnett_envdbl_display(const char *key, double val, int is_dflt);
+
+   display an integral/string/double environment setting iff gasnett_verboseenv()
+
+-------------------------------
+Backtracing and debugger attach
+-------------------------------
+
+GASNet tools provides some utilities to automatically freeze your process and wait for
+a debugger attach when errors occur, and generate automatic backtraces during a crash.
+
+void gasnett_freezeForDebuggerNow(volatile int *flag, const char *flagsymname);
+
+   freeze immediately for debugger attach, and prompt the user to unfreeze by changing flag
+
+void gasnett_freezeForDebuggerErr(); 
+
+   freeze for debugger attach iff user enabled error freezing (GASNET_FREEZE_ON_ERROR=1)
+
+void gasnett_backtrace_init(const char *exename);
+
+   should be called early at startup with argv[0] in programs that intend to use the 
+   automatic backtrace functionality
+
+int gasnett_print_backtrace(int fd);
+
+   print a human-readable backtrace immediately to the provided file descriptor.
+   The mechanism used for generating the backtrace is system specific - on some systems
+   several mechanisms are available and can be prioritized using GASNET_BACKTRACE_TYPE
+   (see GASNet README for details).
+
+int (*gasnett_print_backtrace_ifenabled)(int fd);
+
+   This version is called by all internal GASNet errors, and is a pointer to a function
+   that invokes gasnett_print_backtrace iff GASNET_BACKTRACE is enabled. 
+   The pointer can be changed to modify the default backtracing mechanism 
+   used for errors (eg to wrap gasnett_print_backtrace with a language-specific 
+   symbol demangler).
+
+
+GASNETT_CURRENT_FUNCTION
+
+  Expands to const char * indicating the current function name, if available.
+
+gasnett_current_loc
+  
+  Macro that evaluates to a dynamically-allocated char * describing the current location
+  (file, line number and function) for use in error messages.
+
+Backtrace extensibility
+
+  The GASNet tools auto-backtrace mechanisms can be extended by the client, by defining 
+  a variable called gasnett_backtrace_user in the client code, as follows:
+
+   extern int myapp_do_backtrace(int fd) {
+      /* write backtrace for calling thread to file descriptor fd */
+      ...
+      return 0; /* indicate success */
+   }
+   #if GASNETT_SPEC_VERSION_MAJOR > 1 || \
+       (GASNETT_SPEC_VERSION_MAJOR == 1 && GASNETT_SPEC_VERSION_MINOR >= 1)
+     gasnett_backtrace_type_t gasnett_backtrace_user = 
+       { "MYAPP", /* name of backtrace mechanism to be added */
+       &myapp_do_backtrace, /* pointer to user-provided function that writes backtrace */
+       1 /* supports backtracing of multi-threaded executables? */ 
+     };
+   #endif
+
+  This code will cause MYAPP to be added to the default GASNET_BACKTRACE_TYPE list, 
+  and when GASNET_BACKTRACE_TYPE=MYAPP your function will be called to produce backtraces.
+  The function should return non-zero if backtrace generation fails for whatever reason 
+  (eg if the call occurs too early), so that other backtrace mechanisms can be attempted.
+
+-----------------
+System properties
+-----------------
+
+GASNETT_SYSTEM_TUPLE
+
+  Configure-detected human-readable target tuple of this system. 
+  Intended for informational display purposes.
+
+GASNETT_CACHE_LINE_BYTES
+
+  Compile-time constant positive int which estimates byte width of cache lines 
+  shared between CPUs in an SMP. Set to a conservative value if unknown.
+
+GASNETT_PAGESIZE
+
+  Compile-time constant positive int which provides the size in bytes of the system's 
+  virtual memory pages. Set to a conservative value for systems lacking VM or a fixed page size.
+
+GASNETT_PAGESHIFT
+  
+  Compile-time constant positive int which is log_2(GASNETT_PAGESIZE)
+
+const char *gasnett_gethostname();
+
+  Returns the current system hostname, as reported by gethostname().
+  
+int gasnett_cpu_count();    
+
+  Returns the count of physical CPU's on this node (ie sharing a virtual memory), 
+  or zero if that cannot be determined. Multiple cores may or may not be counted 
+  as separate CPUs, depending on the system.
+
+uint64_t gasnett_getPhysMemSz(int failureIsFatal);
+ 
+  Return the size of the physical memory (in bytes) which is directly addressable 
+  on this node. If that cannot be determined, issue a fatal error if failureIsFatal,
+  or return zero otherwise.
+
+int gasnett_isLittleEndian();
+
+  Return true iff this architecture stores multi-word integral types in memory with
+  the least-significant-byte in the lowest-numbered byte address.
+
+-------------------
+Miscellaneous tools
+-------------------
+
+GASNETT_SPEC_VERSION_MAJOR
+GASNETT_SPEC_VERSION_MINOR
+
+  Integral values corresponding to the major and minor version numbers of the GASNet tools 
+  specification version adhered to by a particular implementation. The minor version is 
+  incremented whenever new functionality is added without breaking backward compatibility.
+  The major version is incremented whenever changes require breaking backward compatibility.
+  The specification version is provided at the top of this document.
+
+GASNETT_RELEASE_VERSION_MAJOR
+GASNETT_RELEASE_VERSION_MINOR
+GASNETT_RELEASE_VERSION_PATCH
+
+  Integral values corresponding to the major, minor and patch version numbers of the public release
+  identifiers corresponding the packaging on this implementation of GASNet/GASNet tools.
+
+GASNETT_IDENT(identName, identText);
+
+  Macro that should appear at global scope which takes a globally-unique identifier 
+  and a textual string and embeds the textual string in the executable file. 
+  The text to be embedded is arbitrary, but if you intend to extract it using the RCS 'ident' 
+  utility, it will need to match the pattern:  
+      "$[A-Za-z]+: [A-Za-z0-9_()<>.,|-]+ $"
+  Note ident is particularly picky about the part before the initial colon and the final " $".
+
+void gasnett_set_affinity(int rank);
+
+  Attempt to "pin" the calling thread to the physical processor indicated by rank, so that
+  this thread will run only on the named processor (does not guarantee exclusive use of the
+  processor, only trys to ensure the thread will not migrate to other processors).
+  Rank is interpreted mod the number of physical processors in the system.
+
+void gasnett_sched_yield();
+
+  Cause the calling thread to yield (as in sched_yield()), if supported by the system.
+
+void gasnett_flush_streams();
+
+  Make the best effort possible to flush the stdout/stderr streams back to the console.
+
+void gasnett_close_streams();
+
+  Close the stdin/stdout/stderr streams, usually in preparation for shutdown.
+
+void gasnett_fatalerror(const char *msg, ...);
+
+  Issue an fatal error message to the console, as specified by the arguments 
+  (which follow a printf format convention). Then freeze for debugger and/or
+  print a backtrace (depending on current settings) and issue an abort().
+
+void gasnett_killmyprocess(int exitcode); 
+
+  Terminate the calling process as quickly as possible with the given exitcode, 
+  including killing any sibling threads. Bypass any atexit handlers.
+
+typedef void (*gasnett_sighandlerfn_t)(int);
+extern gasnett_sighandlerfn_t gasnett_reghandler(int sigtocatch, gasnett_sighandlerfn_t fp);
+
+  Register the provided signal handler function to service the specified signal.
+  Return the previous handler function for that signal. 
+  Valid fp values include SIG_DFL (system default handler for selected signal) and
+  SIG_IGN (ignore the selected signal).
+
+uint64_t gasnett_checksum(const void *p, int numbytes);
+
+  Compute a very simplistic (insecure) but relatively efficient 64-bit checksum 
+  from an untyped block of data [*p...*(p+numbytes-1)].
+
+int gasnett_count0s_uint32_t(uint32_t x);
+int gasnett_count0s_uint64_t(uint64_t x);
+int gasnett_count0s_uintptr_t(uintptr_t x);
+
+  Efficiently count the number of bytes with value 0 in the machine representation
+  of a value of type uint32_t, uint64_t or uintptr_t, respectively.
+
+size_t gasnett_count0s(const void *p, size_t numbytes);
+
+  Efficiently count the number of bytes with value 0 in an untyped block of data
+  [*p...*(p+numbytes-1)].
+
+size_t gasnett_count0s_copy(void * restrict dst, const void * restrict src, size_t numbytes);
+
+  Efficiently count the number of bytes with value 0 in an untyped block of data
+  [*src...*(src+numbytes-1)], while also copying from src to dst.
+  This function is equivalent (excluding any side-effects of evaluating numbytes) to
+  the following expression:
+      gasnett_count0s(memcpy(dst, src, numbytes), numbytes)
+  but is generally more efficient.
+
+gasnett_spinloop_hint()
+
+   Some processors get measurably better performance when a special instruction
+   is inserted in spin-loops (eg to avoid a memory hazard stall on spin loop exit 
+   and reduce power consumption). This macro issues such an instruction, if an
+   appropriate instruction exists for this architecture.
+
+int gasnett_maximize_rlimits();
+int gasnett_maximize_rlimit(int res, const char *lim_desc);
+ 
+   Maximize an rlimit indicated by res (an RLIMIT_* constant from sys/resource.h), with
+   associated limit description. gasnett_maximize_rlimits() maximizes all the in-memory 
+   execution rlimits associated with the current process (does not affect file system 
+   related limits).
+  
+---------------
+Feature control
+---------------
+
+There are many features of the compilation and execution environment which are probed
+by GASNet at configure-time.  The results of these configure probes are used to determine
+if/how to implement certain of the macros or functions listed above.  In some cases there
+may be a reasonable need to override the results of the configure probes.  This section
+describes a family of pre-processor symbols that the GASNet client may define in order to
+control the use of certain features, overriding the default behavior based on the
+configure-time probes.
+
+Use of these preprocessor symbols takes precedence over any information GASNet may have
+probed from the compiler(s) and libraries at configure-time.  THESE SHOULD BE USED WITH
+CARE, SINCE SYNTAX ERRORS CAN RESULT IF ONE ENABLES A FEATURE NOT SUPPORTED BY THE CURRENT
+COMPILER.
+
+* Feature control for compiler annotations
+
+  The "Compiler annotations" section above describes a family of macros provided to the
+  client for portably applying certain useful annotations.  However, these annotations
+  are implemented based on configure-time tests of the compilers ($CC for GASNet-tools,
+  and optionally $CXX and $MPI_CC for full GASNet).  In the event that a GASNet header
+  is processed by a compiler different from the one(s) probed at configure-time, these
+  annotation macros are reduced to their "safe" (usually empty) implementations, since
+  GASNet cannot know that the "new" compiler will accept the same __attribute__(()) or
+  #pragma syntax as the compiler(s) it probed.
+
+  The client may define any of the following preprocessor symbols, prior to inclusion of
+  gasnet.h or gasnet_tools.h, to inform GASNet's headers that the current compiler does
+  (#define to 1) or does NOT (#define to 0) support the corresponding syntax:
+
+    GASNETT_USE_GCC_ATTRIBUTE_ALWAYSINLINE
+      Compiler supports __attribute__((__always_inline__))
+    GASNETT_USE_GCC_ATTRIBUTE_NOINLINE
+      Compiler supports __attribute__((__noinline__)) 
+    GASNETT_USE_GCC_ATTRIBUTE_MALLOC
+      Compiler supports __attribute__((__malloc__)) 
+    GASNETT_USE_GCC_ATTRIBUTE_WARNUNUSEDRESULT
+      Compiler supports __attribute__((__warn_unused_result__)) 
+    GASNETT_USE_GCC_ATTRIBUTE_USED
+      Compiler supports __attribute__((__used__)) 
+    GASNETT_USE_GCC_ATTRIBUTE_UNUSED
+      Compiler supports __attribute__((__unused__)) 
+    GASNETT_USE_GCC_ATTRIBUTE_MAYALIAS
+      Compiler supports __attribute__((__may_alias__)) 
+    GASNETT_USE_GCC_ATTRIBUTE_NORETURN
+      Compiler supports __attribute__((__noreturn__)) 
+    GASNETT_USE_GCC_ATTRIBUTE_PURE
+      Compiler supports __attribute__((__pure__)) 
+    GASNETT_USE_GCC_ATTRIBUTE_CONST
+      Compiler supports __attribute__((__const__)) 
+    GASNETT_USE_GCC_ATTRIBUTE_FORMAT
+      Compiler supports __attribute__((__format__ (...))) 
+    GASNETT_USE_GCC_ATTRIBUTE_FORMAT_FUNCPTR
+      Compiler supports __attribute__((__format__ (...))) applied to a function pointer
+
+  The following can be defined to control use of "restrict"
+    GASNETT_USE_RESTRICT
+      Set to the (possibly empty) keyword to use for GASNETT_RESTRICT
+      Might be, for instance, "restrict", "__restrict" or "__restrict__".
+    GASNETT_USE_RESTRICT_ON_TYPEDEFS
+      Set to "1" to allow use in GASNet's headers of GASNETT_RESTRICT to qualify aguments
+      declared via typedefs (and thus don't look like pointers until the typedef has been
+      expanded).  Setting to "0" will disable such use.
+      One may not set GASNETT_USE_RESTRICT_ON_TYPEDEFS without setting GASNETT_USE_RESTRICT.
+
+  The following can control the implementation of GASNETT_PLEASE_INLINE(fnname)
+    GASNETT_USE_PLEASE_INLINE(fnname)
+      If defined, provides the implementation of GASNETT_PLEASE_INLINE()
+      However, note that in a debug build inlining is disabled and this macro is unused.
+
+* Feature control for ctype.h wrappers
+
+  There are systems on which ctype.h is implemented in such a way that passing char-typed
+  arguments (for instance to isalpha() or tolower()) results in compiler warnings.  The
+  GASNet configure script attempts to detect such systems and if found will replace the
+  ctype.h interfaces with wrappers that promote the argument to an int prior to calling
+  the system-provided implementation.  One can force (#define to 1) or prohibit (#define
+  to 0) use of these wrappers by defining GASNETT_USE_CTYPE_WRAPPERS.
+
+* Feature control for mutexes and condition variables
+
+  In non-threaded builds, the debugging wrappers around pthreads functions expand to
+  appropriate no-ops, unless compiled with GASNETT_USE_TRUE_MUTEXES=1 which will force
+  unconditional use of true locking (even without GASNETT_THREAD_SAFE=1).
+  NOTE: For proper operation this must be defined BOTH when the GASNet(-tools) library
+  is built, and when compiling client code that includes gasnet.h or gasnet_tools.h.

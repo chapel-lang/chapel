@@ -1,18 +1,28 @@
+_extern def chpl_init_timer(timer);
+_extern def chpl_now_timer(timer): _timervalue;
+_extern def chpl_seconds_timer(timer): real;
+_extern def chpl_microseconds_timer(timer): real;
+_extern def chpl_now_year(): int;
+_extern def chpl_now_month(): int;
+_extern def chpl_now_day(): int;
+_extern def chpl_now_dow(): int;
+_extern def chpl_now_time(): real;
+
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours };
 enum Day { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday };
 
 // returns time elapsed since midnight
 def getCurrentTime(unit: TimeUnits = TimeUnits.seconds)
-  return _convert_microseconds(unit, __primitive("_now_time"));
+  return _convert_microseconds(unit, chpl_now_time());
 
 // returns (year, month, day) as a tuple of 3 ints
 def getCurrentDate()
-  return (__primitive("_now_year")+1900,
-          __primitive("_now_month")+1,
-          __primitive("_now_day"));
+  return (chpl_now_year()+1900,
+          chpl_now_month()+1,
+          chpl_now_day());
 
 def getCurrentDayOfWeek() {
-    return __primitive("_now_dow"):Day;
+    return chpl_now_dow():Day;
 }
 
 record Timer {
@@ -21,7 +31,7 @@ record Timer {
   var running: bool = false;
 
   def initialize() {
-    __primitive("_init_timer", time);
+    chpl_init_timer(time);
   }
 
   def clear() {
@@ -32,7 +42,7 @@ record Timer {
   def start() {
     if !running {
       running = true;
-      time = __primitive("_now_timer", time);
+      time = chpl_now_timer(time);
     } else {
       halt("start called on a timer that has not been stopped");
     }
@@ -41,7 +51,7 @@ record Timer {
   def stop() {
     if running {
       var time2: _timervalue;
-      time2 = __primitive("_now_timer", time2);
+      time2 = chpl_now_timer(time2);
       accumulated += _diff_timer(time2, time);
       running = false;
     } else {
@@ -52,7 +62,7 @@ record Timer {
   def elapsed(unit: TimeUnits = TimeUnits.seconds) {
     if running {
       var time2: _timervalue;
-      time2 = __primitive("_now_timer", time2);
+      time2 = chpl_now_timer(time2);
       return _convert_microseconds(unit, accumulated + _diff_timer(time2, time));
     } else {
       return _convert_microseconds(unit, accumulated);
@@ -63,10 +73,10 @@ record Timer {
 // returns diff of two timer values in microseconds
 pragma "inline"
 def _diff_timer(t1: _timervalue, t2: _timervalue) {
-  var s1 = __primitive("_seconds_timer", t1);
-  var s2 = __primitive("_seconds_timer", t2);
-  var us1 = __primitive("_microseconds_timer", t1);
-  var us2 = __primitive("_microseconds_timer", t2);
+  var s1 = chpl_seconds_timer(t1);
+  var s2 = chpl_seconds_timer(t2);
+  var us1 = chpl_microseconds_timer(t1);
+  var us2 = chpl_microseconds_timer(t2);
   return (s1*1.0e+6+us1)-(s2*1.0e+6+us2);
 }
 

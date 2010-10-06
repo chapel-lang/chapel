@@ -11,6 +11,8 @@ extern FILE *yyin;
 
 extern char* yytext;
 extern int chplLineno;
+extern bool chplParseString;
+extern const char *chplParseStringMsg;
 extern const char* yyfilename;
   
 int yyparse(void);

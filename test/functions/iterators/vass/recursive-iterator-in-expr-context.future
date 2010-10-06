@@ -1,0 +1,41 @@
+bug: compiler fails on legal code, but it shouldn't
+
+When compiling the test (or any of the iterators separately),
+the compiler currently reports:
+
+$CHPL_HOME/modules/internal/ChapelBase.chpl:542: In function '_rec_iter_loop__ir_copy_recursive':
+$CHPL_HOME/modules/internal/ChapelBase.chpl:543: error: primitive codegen fail; should it still be in the AST? [expr.cpp:2083]
+
+(It's ChapelBase.chpl:1525/1526 for try3.)
+
+It seems like the following pattern causes that: an iterator contains
+a recursive call to itself, but in an expression context.
+The code is deemed legal so should be accepted by the compiler
+with no error messages. At the very least the error message should be clearer.
+
+Once (or regardless of) the above is fixed, here is another one:
+
+---------------
+feature request: warn user of (likely) useless iterator invocations
+
+When code invokes an iterator in an expression context *and*
+discards the resulting value, this could likely be a programming error:
+the programmer simply intended to have a recursive iterator.
+
+E.g.
+
+def recI(...) { if ... then yield ...; else recI(...); }
+
+probably meant to be
+
+def recI(...) { if ... then yield ...; else {
+  for i in recI(...) do yield i;
+  // or whatever iterator forwarding syntax we may come up with
+} }
+
+So the compiler could say "warning: did you really mean that"?
+
+It *may* be meaningful to discard the resulting value, invoking
+the iterator just for its side effects, so the above warning
+should be suppressable with an option. However, it seems like
+the warning should be on by default.

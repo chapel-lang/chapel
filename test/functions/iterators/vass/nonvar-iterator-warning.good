@@ -1,0 +1,1 @@
+nonvar-iterator-warning.chpl:8: warning: modifying an index variable for a non-var iterator: did you intend to mark the iterator with 'var?

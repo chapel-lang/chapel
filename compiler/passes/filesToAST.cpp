@@ -10,6 +10,7 @@
 #include "symbol.h"
 #include "countTokens.h"
 #include "yy.h"
+#include "config.h"
 
 
 static ModuleSymbol* parseInternalModule(const char* name) {
@@ -21,9 +22,7 @@ static ModuleSymbol* parseInternalModule(const char* name) {
 }
 
 
-static void parseInternalModules(void) {
-  baseModule = parseInternalModule("ChapelBase");
-
+static void setIteratorTags(void) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (!strcmp(ts->name, "iterator")) {
       if (EnumType* enumType = toEnumType(ts->type)) {
@@ -38,14 +37,36 @@ static void parseInternalModules(void) {
       }
     }
   }
+}
+
+
+static void parseInternalModules(void) {
+  baseModule = parseInternalModule("ChapelBase");
+
+  setIteratorTags();
 
   addStdRealmsPath();
   standardModule = parseInternalModule("ChapelStandard"); 
 }
 
 
+static void countTokensInCmdLineFiles(void) {
+  int filenum = 0;
+  const char* inputFilename;
+  while ((inputFilename = nthFilename(filenum++))) {
+    if (isChplSource(inputFilename)) {
+      ParseFile(inputFilename, MOD_MAIN);
+    }
+  }
+  finishCountingTokens();
+}
+
+
 void parse(void) {
   yydebug = debugParserLevel;
+
+  if (countTokens)
+    countTokensInCmdLineFiles();
 
   parseInternalModules();
 
@@ -101,6 +122,8 @@ void parse(void) {
       mod->modUseList.add(standardModule);
     }
   }
+
+  checkConfigs();
 
   baseModule->block->addUse(rootModule);
   finishCountingTokens();

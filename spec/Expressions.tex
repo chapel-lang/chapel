@@ -35,6 +35,7 @@ expression:
   tuple-expand-expression
   locale-access-expression
   mapped-domain-expression
+  lambda-declaration-expression
 \end{syntax}
 
 \subsection{Literal Expressions}
@@ -97,42 +98,9 @@ ignored and has only syntactic effect.
 \label{Call_Expressions}
 \index{function calls}
 
-The syntax to call a function is given by:
-\begin{syntax}
-call-expression:
-  expression ( named-expression-list )
-  expression [ named-expression-list ]
-  parenthesesless-function-identifier
+Functions and function calls are defined in~\rsec{Functions}.
 
-named-expression-list:
-  named-expression
-  named-expression , named-expression-list
-
-named-expression:
-  expression
-  identifier = expression
-
-parenthesesless-function-identifier:
-  identifier
-\end{syntax}
-
-A \sntx{call-expression} is resolved to a particular function
-according to the algorithm for function resolution described
-in~\rsec{Function_Resolution}.
-
-Functions can be called using either parentheses or brackets.  The
-only difference in the call has to do with promotion and is discussed
-in~\rsec{Promotion}.
-
-Functions that are defined without parentheses are called without
-parentheses as defined by scope resolution.  Functions without
-parentheses are discussed in~\rsec{Functions_without_Parentheses}.
-
-A \sntx{named-expression} is an expression that may be optionally
-named.  The optional \sntx{identifier} represents a named actual
-argument described in~\rsec{Named_Arguments}.
-
-\subsubsection{Indexing Expressions}
+\subsection{Indexing Expressions}
 \label{Indexing_Expressions}
 \index{indexing}
 
@@ -140,7 +108,7 @@ Indexing into arrays, tuples, and domains shares the same syntax of a
 call expression.  Indexing, at its core, is nothing more than a call
 to the indexing function defined on these types.
 
-\subsubsection{Member Access Expressions}
+\subsection{Member Access Expressions}
 \label{Member_Access_Expressions}
 \index{member access}
 

@@ -218,10 +218,10 @@ static void handleSegFault(int sig) {
 
 
 void startCatchingSignals(void) {
-  if (!developer) {
-    signal(SIGINT, handleInterrupt);
-    signal(SIGSEGV, handleSegFault);
-  }
+  signal(SIGINT, handleInterrupt);
+  signal(SIGTERM, handleInterrupt);
+  signal(SIGHUP, handleInterrupt);
+  signal(SIGSEGV, handleSegFault);
 }
 
 

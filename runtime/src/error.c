@@ -22,7 +22,21 @@ void chpl_warning(const char* message, int32_t lineno, chpl_string filename) {
     fprintf(stderr, "warning: %s\n", message);
 }
 
+static volatile int thisLocaleAlreadyExiting = 0;
+
+static void spinhaltIfAlreadyExiting(void) {
+  volatile int temp;
+  if (thisLocaleAlreadyExiting == 0) {
+    thisLocaleAlreadyExiting = 1;
+    return;
+  }
+  // spin forever if somebody else already set it to 1
+  temp = 1;
+  while (temp);
+}
+
 void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
+  spinhaltIfAlreadyExiting();
   fflush(stdout);
   if (lineno > 0)
     fprintf(stderr, "%s:%" PRId32 ": error: %s\n", filename, lineno, message);
@@ -34,6 +48,7 @@ void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
 }
 
 void chpl_internal_error(const char* message) {
+  spinhaltIfAlreadyExiting();
   fflush(stdout);
   fprintf(stderr, "internal error: %s\n", message);
   chpl_exit_any(2);

@@ -1,1 +1,1 @@
--s astring=world
+-s astring='"world"'

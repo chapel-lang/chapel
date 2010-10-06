@@ -56,7 +56,6 @@ enum PrimitiveTag {
   PRIM_GET_IMAG,                  // get complex imag component
   PRIM_QUERY,                     // query expression primitive
 
-  PRIM_INIT_REF, // initialize reference to NULL
   PRIM_SET_REF,  // set a reference to a value
   PRIM_GET_REF,  // dereference a reference
 
@@ -94,7 +93,6 @@ enum PrimitiveTag {
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
 
-  PRIM_INIT_TASK_LIST,
   PRIM_PROCESS_TASK_LIST,
   PRIM_EXECUTE_TASKS_IN_LIST,
   PRIM_FREE_TASK_LIST,
@@ -149,6 +147,7 @@ enum PrimitiveTag {
   PRIM_BLOCK_BEGIN,           // BlockStmt::blockInfo - begin block
   PRIM_BLOCK_COBEGIN,         // BlockStmt::blockInfo - cobegin block
   PRIM_BLOCK_COFORALL,        // BlockStmt::blockInfo - coforall block
+  PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N, // BlockStmt::blockInfo - xmt prag loop
   PRIM_BLOCK_ON,              // BlockStmt::blockInfo - on block
   PRIM_BLOCK_ON_NB,           // BlockStmt::blockInfo - non-blocking on block
   PRIM_BLOCK_LOCAL,           // BlockStmt::blockInfo - local block
@@ -202,8 +201,6 @@ enum PrimitiveTag {
   PRIM_GC_DELETE_ROOT,   // Remove a root variable for garbage collection
   PRIM_GC_CLEANUP,       // Free GC heaps
 
-  PRIM_IS_ENUM,   // True if argument is an enum
-  PRIM_IS_TUPLE,  // True if argument is a tuple
   PRIM_CALL_DESTRUCTOR, // call destructor on type (do not free)
 
   PRIM_LOGICAL_FOLDER, // Help fold logical && and ||
@@ -220,10 +217,13 @@ enum PrimitiveTag {
 
   PRIM_INT_ERROR,
 
-  PRIM_GET_ERRNO,
-
   PRIM_STRING_COPY,
 
+  PRIM_CAPTURE_FN,
+  PRIM_CREATE_FN_TYPE,
+
+  PRIM_CHPL_CALLSTACKSIZE,
+  PRIM_CHPL_CALLSTACKSIZELIMIT,
   PRIM_CHPL_NUMTHREADS,
   PRIM_CHPL_NUMIDLETHREADS,
   PRIM_CHPL_NUMQUEUEDTASKS,

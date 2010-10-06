@@ -98,7 +98,7 @@ print "Generating the bison/flex files...\n";
 system("cd chapel/compiler/parser && make lex.yy.cpp > /dev/null");
 
 print "Creating the BUILD_VERSION file...\n";
-system("cd chapel/compiler && export CHPL_DEVELOPER=true && make main/BUILD_VERSION > /dev/null");
+system("cd chapel/compiler/main && echo 0 > BUILD_VERSION");
 
 print "Creating the examples directory...\n";
 system("cd chapel && rm -r examples");

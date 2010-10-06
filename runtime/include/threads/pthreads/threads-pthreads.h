@@ -18,18 +18,18 @@ typedef threadlayer_mutex_t* threadlayer_mutex_p;
 
 // Sync variables
 
-typedef pthread_cond_t chpl_condvar_t;
+typedef pthread_cond_t threadlayer_condvar_t;
 
 typedef struct {
-  chpl_condvar_t* signal_full;  // wait for full; signal this when full
-  chpl_condvar_t* signal_empty; // wait for empty; signal this when empty
+  threadlayer_condvar_t signal_full;  // wait for full; signal this when full
+  threadlayer_condvar_t signal_empty; // wait for empty; signal this when empty
 } threadlayer_sync_aux_t;
 
 
 // Single variables
 
 typedef struct {
-  chpl_condvar_t* signal_full;  // wait for full; signal this when full
+  threadlayer_condvar_t signal_full;  // wait for full; signal this when full
 } threadlayer_single_aux_t;
 
 #endif // _threads_pthreads_h_

@@ -254,6 +254,9 @@ static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
 
 
 void VarSymbol::codegenDef(FILE* outfile) {
+  if (this->hasFlag(FLAG_EXTERN)) {
+    return;
+  }
   if (type == dtVoid)
     return;
   if (this->hasFlag(FLAG_SUPER_CLASS))
@@ -613,17 +616,20 @@ void FnSymbol::codegenDef(FILE* outfile) {
   codegenHeader(outfile);
 
   fprintf(outfile, " {\n");
-  Vec<BaseAST*> asts;
-  collect_top_asts(body, asts);
+  if (fNoRepositionDefExpr) {
+    Vec<BaseAST*> asts;
+    collect_top_asts(body, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast))
-      if (!toTypeSymbol(def->sym)) {
-        if (fGenIDS && isVarSymbol(def->sym))
-          fprintf(outfile, "/* %7d */ ", def->sym->id);
-        def->sym->codegenDef(outfile);
-      }
+    forv_Vec(BaseAST, ast, asts) {
+      if (DefExpr* def = toDefExpr(ast))
+        if (!toTypeSymbol(def->sym)) {
+          if (fGenIDS && isVarSymbol(def->sym))
+            fprintf(outfile, "/* %7d */ ", def->sym->id);
+          def->sym->codegenDef(outfile);
+        }
+    }
   }
+
   body->codegen(outfile);
   fprintf(outfile, "}\n\n");
 }
@@ -1114,16 +1120,30 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   return s;
 }
 
+// enable locally-unique temp names?
+bool localTempNames = false;
+
+// used to number the temps uniquely to top-level statements
+// (give them smaller numbers, for readability of AST printouts)
+static int tempID = 1;
+
+void resetTempID() {
+  tempID = 1;
+}
 
 VarSymbol* newTemp(const char* name, Type* type) {
-  VarSymbol* vs = new VarSymbol(name ? name : "_tmp", type);
+  if (!name) {
+    if (localTempNames)
+      name = astr("_t", istr(tempID++), "_");
+    else
+      name = "_tmp";
+  }
+  VarSymbol* vs = new VarSymbol(name, type);
   vs->addFlag(FLAG_TEMP);
   return vs;
 }
 
 
 VarSymbol* newTemp(Type* type) {
-  VarSymbol* vs = new VarSymbol("_tmp", type);
-  vs->addFlag(FLAG_TEMP);
-  return vs;
+  return newTemp((const char*)NULL, type);
 }

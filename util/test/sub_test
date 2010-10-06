@@ -146,6 +146,13 @@ def IsChplSource(f):
     else:
         return False
 
+# return True if f has .graph extension
+def IsGraphFile(f):
+    if ((f.count('.') !=0) and (len(f) > 7) and (len(f)-f.find('.graph')==6)):
+	return True
+    else:
+	return False
+
 # read file with comments
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
     # sys.stdout.write('Opening: %s\n'%(f))
@@ -268,7 +275,7 @@ if os.access('./TIMEOUT',os.R_OK):
     gt=subprocess.Popen(['cat', './TIMEOUT'], stdout=subprocess.PIPE).communicate()[0]
     globalTimeout=string.atoi(gt)
 elif os.getenv('CHPL_TEST_VGRND_COMP')=='on':
-    globalTimeout=900
+    globalTimeout=1000
 else:
     globalTimeout=300
 # sys.stdout.write('globalTimeout=%d\n'%(globalTimeout))
@@ -382,7 +389,11 @@ if os.getenv('CHPL_TEST_PERF')!=None:
     compoptssuffix='.perfcompopts'
     execoptssuffix='.perfexecopts'
     perftest=True
-    perfdir=os.getenv('CHPL_TEST_PERF_DIR', './perfdat/'+machine)
+    searchperfdir='./perfdat/'+machine
+    if os.getenv('CHPL_TEST_PERF_DIR')!=None:
+        perfdir=os.getenv('CHPL_TEST_PERF_DIR')
+    else:
+        perfdir='./perfdat/'+machine
 else:
     compoptssuffix='.compopts'
     execoptssuffix='.execopts'
@@ -450,8 +461,10 @@ if onetestsrc==None:
 else:
     testsrc=list()
     testsrc.append(onetestsrc)
-# sys.stdout.write('testsrc=%s\n'%(testsrc))
 
+graphfiles=filter(IsGraphFile, dirlist)
+
+exectimeout = False
 for testname in testsrc:
     sys.stdout.flush()
 
@@ -471,7 +484,8 @@ for testname in testsrc:
     execname_files = fnmatch.filter(dirlist, execname+'.*')
     # print execname_files, dirlist
 
-    if (perftest and (execname_files.count(execname+'.perfkeys')==0)):
+    if (perftest and (execname_files.count(execname+'.perfkeys')==0) and
+        (execname_files.count(execname+'.perfexecopts')==0)):
         sys.stdout.write('[Skipping noperf test: %s/%s]\n'%(localdir,execname))
         continue # on to next test
 
@@ -691,7 +705,10 @@ for testname in testsrc:
                 sys.stdout.write('Executing ./PREDIFF\n')
                 sys.stdout.flush()
                 subprocess.Popen(['./PREDIFF',
-                                  execname,complog,compiler]).wait()
+                                  execname,complog,compiler,
+                                  ' '.join(globalCompopts)+
+                                  ' '+compopts,
+                                  ' '.join(args)]).wait()
 
             if prediff:
                 sys.stdout.write('[Executing %s.prediff]\n'%(execname))
@@ -715,7 +732,7 @@ for testname in testsrc:
             # sys.stdout.write('default checkfile=%s\n'%(checkfile))
                 
             if not os.access(checkfile, os.R_OK):
-                sys.stdout.write('[Error cannot locate compiler output comparison file %s]\n'%(checkfile))
+                sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, checkfile))
                 sys.stdout.write('[Compiler output was as follows:]\n')
                 sys.stdout.write(origoutput)
                 cleanup(execname)
@@ -824,6 +841,7 @@ for testname in testsrc:
             sys.stdout.write('[Executing program %s %s< %s\']\n'%
                              (cmd, ' '.join(args), redirectin))
             sys.stdout.flush()
+
             if useTimedExec:
                 wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+' < '+redirectin
                 p = subprocess.Popen([timedexec, str(timeout), wholecmd],
@@ -833,6 +851,7 @@ for testname in testsrc:
                 status = p.returncode
 
                 if status == 222:
+	            exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
                     if not onlyone:
@@ -841,7 +860,7 @@ for testname in testsrc:
                                           ' '.join(globalCompopts),compopts,
                                           compoptsnum, execoptsnum))
                     sys.stdout.write(']\n')
-                    continue # on to next execopts
+                    # continue # on to next execopts
 
             else:
                 my_stdin=file(redirectin, 'r')
@@ -851,6 +870,7 @@ for testname in testsrc:
                 try:
                     output = SuckOutputWithTimeout(p.stdout, timeout)
                 except ReadTimeoutException:
+		    exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
                     if not onlyone:
@@ -860,121 +880,203 @@ for testname in testsrc:
                                           compoptsnum, execoptsnum))
                     sys.stdout.write(']\n')
                     KillProc(p, killtimeout)
-                    continue # on to next execopts
+                    # continue # on to next execopts
 
                 status = p.returncode
 
-            if catfiles:
-                sys.stdout.write('[Concatenating extra files: %s]\n'%
-                                 (execname+'.catfiles'))
-                sys.stdout.flush()
-                output+=subprocess.Popen(['cat']+catfiles.split(),
-                                         stdout=subprocess.PIPE).communicate()[0]
+	    if not exectimeout:
+                if catfiles:
+                    sys.stdout.write('[Concatenating extra files: %s]\n'%
+                                     (execname+'.catfiles'))
+                    sys.stdout.flush()
+                    output+=subprocess.Popen(['cat']+catfiles.split(),
+                                             stdout=subprocess.PIPE).communicate()[0]
 
-            # Sadly these scripts require an actual file
-            execlogfile=file(execlog, 'w')
-            execlogfile.write('%s'%(compoutput))
-            execlogfile.write('%s'%(output))
-            execlogfile.close()
+                # Sadly these scripts require an actual file
+                execlogfile=file(execlog, 'w')
+                execlogfile.write('%s'%(compoutput))
+                execlogfile.write('%s'%(output))
+                execlogfile.close()
 
-            if globalPrediff:
-                sys.stdout.write('[Executing PREDIFF]\n')
-                sys.stdout.flush()
-                sys.stdout.write(subprocess.Popen(['./PREDIFF',
-                                                   execname,execlog,compiler,
-                                                   ' '.join(globalCompopts)+
-                                                   ' '+compopts,
-                                                   ' '.join(args)],
-                                                  stdout=subprocess.PIPE).
-                                 communicate()[0])
-
-            if prediff:
-                sys.stdout.write('[Executing %s.prediff]\n'%(execname))
-                sys.stdout.flush()
-                sys.stdout.write(subprocess.Popen(['./'+execname+'.prediff',
-                                                   execname,execlog,compiler,
-                                                   ' '.join(globalCompopts)+
-                                                   ' '+compopts,
-                                                   ' '.join(args)],
-                                                  stdout=subprocess.PIPE).
-                                 communicate()[0])
-
-            if not perftest:
-                if (execcheckfile == None):
-                    # Look for the "golden" output
-                    if onlyone:
-                        ceident=''
-                    else:
-                        if len(compoptslist)==1:
-                            ceident = '.0-'
-                        else:
-                            ceident = '.'+str(compoptsnum)+'-'
-                        ceident += str(execoptsnum)
-
-                    execcheckfile = execname+'.'+machine+ceident+'.good'
-                    if not os.path.isfile(execcheckfile):
-                        execcheckfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+ceident+'.good'
-                        if not os.path.isfile(execcheckfile):
-                            execcheckfile=execname+'.'+platform+ceident+'.good'
-                            if not os.path.isfile(execcheckfile):
-                                execcheckfile=execname+ceident+'.good'
-                                if not os.path.isfile(execcheckfile):
-                                    execcheckfile=execname+'.good'
-
-                if not os.access(execcheckfile, os.R_OK):
-                    sys.stdout.write('[Error cannot locate program output comparison file %s]\n'%(execcheckfile))
-                    sys.stdout.write('[Execution output was as follows:]\n')
-                    sys.stdout.write(subprocess.Popen(['cat', execlog],
+                if globalPrediff:
+                    sys.stdout.write('[Executing PREDIFF]\n')
+                    sys.stdout.flush()
+                    sys.stdout.write(subprocess.Popen(['./PREDIFF',
+                                                       execname,execlog,compiler,
+                                                       ' '.join(globalCompopts)+
+                                                       ' '+compopts,
+                                                       ' '.join(args)],
                                                       stdout=subprocess.PIPE).
                                      communicate()[0])
 
-                    continue # on to next execopts
+                if prediff:
+                    sys.stdout.write('[Executing %s.prediff]\n'%(execname))
+                    sys.stdout.flush()
+                    sys.stdout.write(subprocess.Popen(['./'+execname+'.prediff',
+                                                       execname,execlog,compiler,
+                                                       ' '.join(globalCompopts)+
+                                                       ' '+compopts,
+                                                       ' '.join(args)],
+                                                      stdout=subprocess.PIPE).
+                                     communicate()[0])
 
-                result = DiffFiles(execcheckfile, execlog)
-                if result==0:
-                    os.unlink(execlog)
-                    sys.stdout.write('%s[Success '%(futuretest))
-                else:
-                    sys.stdout.write('%s[Error '%(futuretest))
-                sys.stdout.write('matching program output for %s/%s'%
-                                 (localdir, execname))
-                if result!=0 and not onlyone:
-                    sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                     (' '.join(globalExecopts), execopts,
-                                      ' '.join(globalCompopts),compopts,
-                                      compoptsnum, execoptsnum))
-                sys.stdout.write(']\n')
+                if not perftest:
+                    if (execcheckfile == None):
+                        # Look for the "golden" output
+                        if onlyone:
+                            ceident=''
+                        else:
+                            if len(compoptslist)==1:
+                                ceident = '.0-'
+                            else:
+                                ceident = '.'+str(compoptsnum)+'-'
+                            ceident += str(execoptsnum)
 
-            else:
+                        execcheckfile = execname+'.'+machine+ceident+'.good'
+                        if not os.path.isfile(execcheckfile):
+                            execcheckfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+ceident+'.good'
+                            if not os.path.isfile(execcheckfile):
+                                execcheckfile=execname+'.'+platform+ceident+'.good'
+                                if not os.path.isfile(execcheckfile):
+                                    execcheckfile=execname+ceident+'.good'
+                                    if not os.path.isfile(execcheckfile):
+                                        execcheckfile=execname+'.good'
+
+                    if not os.access(execcheckfile, os.R_OK):
+                        sys.stdout.write('[Error cannot locate program output comparison file %s/%s]\n'%(localdir, execcheckfile))
+                        sys.stdout.write('[Execution output was as follows:]\n')
+                        sys.stdout.write(subprocess.Popen(['cat', execlog],
+                                                          stdout=subprocess.PIPE).
+                                         communicate()[0])
+
+                        continue # on to next execopts
+
+                    result = DiffFiles(execcheckfile, execlog)
+                    if result==0:
+                        os.unlink(execlog)
+                        sys.stdout.write('%s[Success '%(futuretest))
+                    else:
+                        sys.stdout.write('%s[Error '%(futuretest))
+                    sys.stdout.write('matching program output for %s/%s'%
+                                     (localdir, execname))
+                    if result!=0 and not onlyone:
+                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                         (' '.join(globalExecopts), execopts,
+                                          ' '.join(globalCompopts),compopts,
+                                          compoptsnum, execoptsnum))
+                    sys.stdout.write(']\n')
+
+            if perftest:
                 if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
                     os.makedirs(perfdir)
                 if not os.access(perfdir, os.R_OK|os.X_OK):
                     sys.stdout.write('[Error creating performance test directory %s]\n'%(perfdir))
                     break # on to next compopts
-                sys.stdout.write('[Executing checkKeys %s %s]\n'%(execname, perfdir))
-                sys.stdout.flush()
-                p = subprocess.Popen([utildir+'/computePerfStats',
-                                      execname, perfdir],
-                                     stdout=subprocess.PIPE)
-                sys.stdout.write('%s'%(p.communicate()[0]))
-                sys.stdout.flush()
 
-                status = p.returncode
-
-                if status == 0:
-                    sys.stdout.write('[Success')
+                if execcheckfile==None:
+                    perfexecname = execname
+                    keyfile = execname+'.perfkeys'
                 else:
-                    sys.stdout.write('[Error')
-                sys.stdout.write(' matching performance keys for %s/%s'%
-                                 (localdir, execname))
-                if status!=0 and not onlyone:
-                    sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                     (' '.join(globalExecopts), execopts,
-                                      ' '.join(globalCompopts),compopts,
-                                      compoptsnum, execoptsnum))
-                sys.stdout.write(']\n')
+                    perfexecname = string.strip(execcheckfile, '.perfkeys')
+                    if os.path.isfile(execcheckfile):
+                        keyfile = execcheckfile
+                    else:
+                        keyfile = execname+'.perfkeys'
+
+		duplicates = 0
+	
+		sys.stdout.write('[Executing checkDuplicates %s %s %s]\n'%(perfexecname, perfdir, testdir))
+		sys.stdout.flush()
+
+ 		if os.path.isfile(utildir+'/checkDuplicates'):
+   	    	    p = subprocess.Popen([utildir+'/checkDuplicates', perfexecname, perfdir, testdir],stdout=subprocess.PIPE)
+   	    	    sys.stdout.write('%s'%(p.communicate()[0]))
+   	    	    sys.stdout.flush()
+		else:
+	    	    sys.stdout.write('cannot find checkDuplicates\n')
+
+  		duplicates = p.returncode
+  
+
+		if duplicates==0:
+	    	    sys.stdout.write('[No duplicates found for %s]\n'%(perfexecname))
+                    sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(perfexecname, perfdir, keyfile, execlog, str(exectimeout)))
+                    sys.stdout.flush()
+
+                    p = subprocess.Popen([utildir+'/computePerfStats',
+                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout)],
+                                         stdout=subprocess.PIPE)
+                    sys.stdout.write('%s'%(p.communicate()[0]))
+                    sys.stdout.flush()
+
+                    status = p.returncode
+
+                    if status == 0:
+                        sys.stdout.write('[Success')
+                    else:
+                        sys.stdout.write('[Error')
+                    sys.stdout.write(' matching performance keys for %s/%s'%
+                                     (localdir, execname))
+                    if status!=0 and not onlyone:
+                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                         (' '.join(globalExecopts), execopts,
+                                          ' '.join(globalCompopts),compopts,
+                                          compoptsnum, execoptsnum))
+                    sys.stdout.write(']\n')
+        	else:
+ 	    	    sys.stdout.write('[Duplicates found.  Will not execute computePerfStats on %s]\n'%(perfexecname))
 
         cleanup(execname)
 
     del execoptslist
     del compoptslist
+
+if perftest: 
+    for graphfile in graphfiles:
+	(root, suffix) = os.path.splitext(graphfile)
+    	graphname=root
+	
+
+ 	sys.stdout.write('[Executing %s/createGraphs for %s.graph in %s]\n'%(utildir, graphname, testdir+'/'+localdir))
+	sys.stdout.flush()
+	
+	if os.path.isfile(utildir+'/createGraphs'):
+	    startdate = os.getenv('STARTDATE', "")
+   	    p = subprocess.Popen([utildir+'/createGraphs', graphname, perfdir, startdate, str(exectimeout)],stdout=subprocess.PIPE)
+   	    sys.stdout.write('%s'%(p.communicate()[0]))
+   	    sys.stdout.flush()
+	else:
+	    sys.stdout.write('cannot find createGraphs\n')
+
+  	status = p.returncode
+  
+   	if status == 0:
+	    sys.stdout.write('[Success')
+        else:
+ 	    sys.stdout.write('[Error')
+        sys.stdout.write(' creating graphs in %s]\n'%(testdir+'/'+localdir))
+
+    if (os.getenv('CHPL_TEST_PERF_DIR')==None) and (len(graphfiles)>0):
+        if (len(graphfiles) > 0):
+            if os.path.isfile(utildir+'/viewGraphs'):
+                sys.stdout.write('[Executing %s/viewGraphs in %s]\n'%(utildir, testdir+'/'+localdir))
+                sys.stdout.flush()
+	
+	        p = subprocess.Popen([utildir+'/viewGraphs', perfdir],stdout=subprocess.PIPE)
+	        sys.stdout.write('%s'%(p.communicate()[0]))
+	        sys.stdout.flush()
+            else:
+	        sys.stdout.write('[cannot find viewGraphs]\n')
+
+            status = p.returncode
+
+            if status==0:
+	        sys.stdout.write('[Success')
+            else:
+	        sys.stdout.write('[Error')
+            sys.stdout.write(' creating html in %s]\n'%(testdir+'/'+localdir))
+
+	
+
+
+del graphfiles

@@ -11,13 +11,13 @@
 
 #define MAXTDS 1024
 chpl_stm_tx_p gtmTxArray[2048][MAXTDS];
-static chpl_mutex_t gtmTxArrayLock[MAXTDS];
+static threadlayer_mutex_t gtmTxArrayLock[MAXTDS];
 
 void gtm_tx_init() {
   int i, j;
   
   for (j = 0; j < MAXTDS; j++) 
-    CHPL_MUTEX_INIT(&gtmTxArrayLock[j]);
+    threadlayer_mutex_init(&gtmTxArrayLock[j]);
 
   for (i = 0; i < NLOCALES; i++)
     for (j = 0; j < MAXTDS; j++) 
@@ -62,9 +62,9 @@ void gtm_tx_destroy(chpl_stm_tx_p tx) {
   if (tx->id != -1 && tx->locale == MYLOCALE) {
     assert(tx->numremlocales >= 0 && tx->remlocales != NULL);
     chpl_free(tx->remlocales, 0, 0);
-    CHPL_MUTEX_LOCK(&gtmTxArrayLock[tx->id]);
+    threadlayer_mutex_lock(&gtmTxArrayLock[tx->id]);
     gtmTxArray[tx->locale][tx->id] = NULL; 
-    CHPL_MUTEX_UNLOCK(&gtmTxArrayLock[tx->id]);
+    threadlayer_mutex_unlock(&gtmTxArrayLock[tx->id]);
   } else {
     assert(tx->numremlocales == -1 && tx->remlocales == NULL);
   }
@@ -109,14 +109,14 @@ void gtm_tx_comm_register(chpl_stm_tx_p tx, int32_t dstlocale) {
     
     // Get a global id for this transaction
     for (i = 0; i < MAXTDS; i++) {
-      CHPL_MUTEX_LOCK(&gtmTxArrayLock[i]);
+      threadlayer_mutex_lock(&gtmTxArrayLock[i]);
       if (gtmTxArray[tx->locale][i] == NULL) {
 	gtmTxArray[tx->locale][i] = tx;
-	CHPL_MUTEX_UNLOCK(&gtmTxArrayLock[i]);
+	threadlayer_mutex_unlock(&gtmTxArrayLock[i]);
 	tx->id = i; 
 	break;
       }
-      CHPL_MUTEX_UNLOCK(&gtmTxArrayLock[i]);
+      threadlayer_mutex_unlock(&gtmTxArrayLock[i]);
     }
     if (tx->id == -1) 
       chpl_error("Run out of tx descriptors", 0, 0);

@@ -10,7 +10,12 @@
 
 use Time;
 
+_extern def setThreadLimit(l: int(32));
+_extern def setStackLimit(l: int(32));
+
 config const numThreads = 6000;
+config const threadLimit = 500;
+config const stackLimit = 8192;
 var total: int,
     count: int = numThreads,
      done: sync bool,
@@ -26,6 +31,11 @@ def foo (x) {
   }
     
 }
+
+// Set the system limit on number processes artificially low
+setThreadLimit(threadLimit);
+// Set the system limit on stack size artificially low
+setStackLimit(stackLimit);
 
 writeln ("need a short nap ...");
 begin

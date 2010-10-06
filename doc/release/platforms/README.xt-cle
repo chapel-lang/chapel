@@ -33,10 +33,12 @@ let us know at chapel_info@cray.com.
 
      setenv CHPL_LAUNCHER pbs-aprun
 
-   Otherwise, CHPL_LAUNCHER will default to 'aprun' on xt-cle systems.
-   Note that for some system installations, you may need to execute
-   'module load pbs' from your shell in order to put PBS/qsub into
-   your path.  See README.launcher for more information on Chapel's
+   If it only requires aprun to launch a job, set it to 'aprun'.  If
+   you want to manage all job queueing/launching responsibilities
+   yourself, set it to 'none'.  If left unset, the value of
+   CHPL_LAUNCHER will be set automatically to one of the three
+   settings above depending on the presence of aprun and/or qsub.  See
+   $CHPL_HOME/doc/README.launcher for more information on Chapel's
    launcher capabilities.
 
 
@@ -69,6 +71,7 @@ let us know at chapel_info@cray.com.
    modules loaded which will specify the C compiler used to compile
    Chapel programs for the compute nodes:
 
+     - PrgEnv-cray
      - PrgEnv-gnu
      - PrgEnv-pathscale
      - PrgEnv-pgi
@@ -80,6 +83,7 @@ let us know at chapel_info@cray.com.
    of the following values:
 
      gnu       : the GNU compiler suite -- gcc and g++
+     cray      : the Cray compiler suite -- cc and CC
      intel     : the Intel compiler suite -- icc and icpc
      pathscale : the Pathscale compiler suite -- pathcc and pathCC
      pgi       : the PGI compiler suite -- pgcc and pgCC

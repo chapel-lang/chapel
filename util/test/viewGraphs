@@ -1,0 +1,57 @@
+#!/usr/bin/env perl
+
+
+my $outputdir = $ARGV[0];
+my $html_file = "$outputdir/index.html";
+my $image_files = "$outputdir/images.tmp";
+my $currentdir_file = "$outputdir/dir.tmp";
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
+
+$mon += 1;
+$year -= 100;
+
+system("pwd > $currentdir_file");
+open CURRENTDIR, "$currentdir_file" or die "can't open $currentdir_file $!";
+my $currentdir = <CURRENTDIR>;
+chomp($currentdir);
+close (CURRENTDIR);
+system ("rm $currentdir_file");
+
+system("find $outputdir -name \*.gif > $image_files");
+open IMAGES, "$image_files" or die "can't open $image_files $!";
+my @images = <IMAGES>;
+close(IMAGES);
+system("rm $image_files");
+
+foreach my $image (@images) {
+    my @image_parts = split(/\//, $image);
+    $image = @image_parts[$#image_parts];
+}
+
+if (-e $html_file) {
+    system("rm $html_file");
+} 
+open HTML, ">$html_file" or die "can't open $html_file for creating $!";
+print HTML "<html>\n";
+print HTML "<body>\n";
+print HTML "<p>Performance Graphs as of $mon/$mday/$year</p>\n";
+&appendImageList;
+print HTML "</body>\n";
+print HTML "</html>\n";
+close (HTML);
+
+sub appendImageList {
+    foreach my $image (@images) {
+        chomp($image);
+        my $image_name = substr $image, 0, -4;
+        print HTML "\n";
+	print HTML "<p>\n";
+	print HTML "$image_name: <a href=$image>\n";
+	print HTML "<br>\n";
+        print HTML "<img border=\"0\" alt=\"\" src=\"$image\" title=\"$image\" width=\"600\" />\n"; #height=\"150\" />\n";
+	print HTML "</a>\n";
+	print HTML "</p>\n";
+        print HTML "\n";
+    }
+}
+

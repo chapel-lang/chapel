@@ -4,6 +4,7 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 LD = $(CC)
 
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
+-include $(CHAPEL_ROOT)/runtime/etc/Makefile.tasks-$(CHPL_MAKE_TASKS)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.stm-$(CHPL_MAKE_STM)

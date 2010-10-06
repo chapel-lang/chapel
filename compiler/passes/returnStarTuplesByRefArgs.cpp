@@ -13,7 +13,7 @@ void returnStarTuplesByRefArgs() {
   compute_call_sites();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->retType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    if ((fn->retType->symbol->hasFlag(FLAG_STAR_TUPLE)) || (fn->retType->symbol->hasFlag(FLAG_FIXED_STRING))) {
 
       //
       // change function interface to take a reference

@@ -328,10 +328,19 @@ extern void* const chpl_private_broadcast_table[];
     CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, wide)          \
   } while (0)
 
+#ifdef DEBUG_COMM_INIT
+#define CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals) \
+  for (int i = 0; i < numGlobals; i++) \
+    printf("[%d] chpl_globals_registry[%d] = %p\n", chpl_localeID, i, *((void **)chpl_globals_registry[i]));
+#else
+#define CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals) ;
+#endif
+
 #define CHPL_COMM_BROADCAST_GLOBAL_VARS(numGlobals)             \
   do {                                                          \
     chpl_comm_barrier("barrier before broadcasting globals");  \
     chpl_comm_broadcast_global_vars(numGlobals);               \
+    CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals);         \
     chpl_comm_barrier("barrier after broadcasting globals");   \
   } while (0)
 

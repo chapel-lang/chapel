@@ -15,6 +15,8 @@ class DefaultDist: BaseDist {
   def dsiNewSparseDom(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDom(rank, idxType, this, dom);
 
+  def dsiIndexLocale(ind) return this.locale;
+
   def dsiClone() return this;
 
   def dsiAssign(other: this.type) { }
@@ -111,38 +113,58 @@ class DefaultArithmeticDom: BaseArithmeticDom {
               "), minIndicesPerTask=", minIndicesPerTask);
 
     var (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
-                                                 minIndicesPerTask,
-                                                 ranges, rank);
+                                                 minIndicesPerTask, ranges);
     if debugDefaultDist then
       writeln("    numChunks=", numChunks, " parDim=", parDim,
               " ranges(", parDim, ").length=", ranges(parDim).length);
 
     if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
 
-    if numChunks == 1 {
-      if rank == 1 {
-	yield tuple(0..ranges(1).length-1);
+    if (CHPL_TARGET_PLATFORM != "xmt") {
+      if numChunks == 1 {
+        if rank == 1 {
+          yield tuple(0..ranges(1).length-1);
+        } else {
+          var block: rank*range(idxType);
+          for param i in 1..rank do
+            block(i) = 0..ranges(i).length-1;
+          yield block;
+        }
       } else {
-	var block: rank*range(idxType);
-	for param i in 1..rank do
-	  block(i) = 0..ranges(i).length-1;
-	yield block;
+        var locBlock: rank*range(idxType);
+        for param i in 1..rank do
+          locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
+        if debugDefaultDist then
+          writeln("*** DI: locBlock = ", locBlock);
+        coforall chunk in 0..numChunks-1 {
+          var tuple: rank*range(idxType) = locBlock;
+          const (lo,hi) = _computeBlock(locBlock(parDim).length,
+                                        numChunks, chunk,
+                                        locBlock(parDim).high);
+          tuple(parDim) = lo..hi;
+          if debugDefaultDist then
+            writeln("*** DI[", chunk, "]: tuple = ", tuple);
+          yield tuple;
+        }
       }
     } else {
+
+      var per_stream_i: uint(64) = 0;
+      var total_streams_n: uint(64) = 0;
+
       var locBlock: rank*range(idxType);
       for param i in 1..rank do
-	locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
-      if debugDefaultDist then
-	writeln("*** DI: locBlock = ", locBlock);
-      coforall chunk in 0..numChunks-1 {
-	var tuple: rank*range(idxType) = locBlock;
-	const (lo,hi) = _computeBlock(locBlock(parDim).length,
-                                      numChunks, chunk,
-                                      locBlock(parDim).high);
-	tuple(parDim) = lo..hi;
-        if debugDefaultDist then
-          writeln("*** DI[", chunk, "]: tuple = ", tuple);
-	yield tuple;
+        locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
+
+      __primitive_loop("xmt pragma forall i in n", per_stream_i,
+                       total_streams_n) {
+
+        var tuple: rank*range(idxType) = locBlock;
+        const (lo,hi) = _computeBlock(ranges(parDim).length,
+                                      total_streams_n, per_stream_i,
+                                      (ranges(parDim).length-1));
+        tuple(parDim) = lo..hi;
+        yield tuple;
       }
     }
   }
@@ -248,6 +270,17 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
+  def dsiStride {
+    if rank == 1 {
+      return ranges(1)._stride;
+    } else {
+      var result: rank*chpl__idxTypeToStrType(idxType);
+      for param i in 1..rank do
+        result(i) = ranges(i)._stride;
+      return result;
+    }
+  }
+
   def dsiBuildArray(type eltType) {
     return new DefaultArithmeticArr(eltType=eltType, rank=rank, idxType=idxType,
                                     stridable=stridable, dom=this);
@@ -277,7 +310,6 @@ class DefaultArithmeticArr: BaseArr {
   var str: rank*chpl__idxTypeToStrType(idxType);
   var origin: idxType;
   var factoredOffs: idxType;
-  var size : idxType;
   var data : _ddata(eltType);
   var noinit: bool = false;
 
@@ -309,18 +341,30 @@ class DefaultArithmeticArr: BaseArr {
 
   def these() var {
     if rank == 1 {
-      const stride = dom.ranges(1).stride: idxType,
-            start  = if stride > 0 then dom.dsiLow else dom.dsiHigh,
-            first  = getDataIndex(start),
-            second = getDataIndex(start + stride),
-            step   = (second-first):chpl__idxTypeToStrType(idxType),
-            last   = first + (dom.dsiNumIndices-1) * step:idxType;
-      if step > 0 then
+      // This is specialized to avoid overheads of calling dsiAccess()
+      if !dom.stridable {
+        // This is specialized because the strided version disables the
+        // "single loop iterator" optimization
+        var first = getDataIndex(dom.dsiLow);
+        var second = getDataIndex(dom.dsiLow+dom.ranges(1).stride:idxType);
+        var step = (second-first):chpl__idxTypeToStrType(idxType);
+        var last = first + (dom.dsiNumIndices-1) * step:idxType;
         for i in first..last by step do
           yield data(i);
-      else
-        for i in last..first by step do
-          yield data(i);
+      } else {
+        const stride = dom.ranges(1).stride: idxType,
+              start  = if stride > 0 then dom.dsiLow else dom.dsiHigh,
+              first  = getDataIndex(start),
+              second = getDataIndex(start + stride),
+              step   = (second-first):chpl__idxTypeToStrType(idxType),
+              last   = first + (dom.dsiNumIndices-1) * step:idxType;
+        if step > 0 then
+          for i in first..last by step do
+            yield data(i);
+        else
+          for i in last..first by step do
+            yield data(i);
+      }
     } else {
       for i in dom do
         yield dsiAccess(i);
@@ -345,38 +389,59 @@ class DefaultArithmeticArr: BaseArr {
               "), minElemsPerTask=", minElemsPerTask);
 
     var (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
-                                                 minElemsPerTask,
-                                                 dom.ranges, rank);
+                                                 minElemsPerTask, dom.ranges);
     if debugDefaultDist then
       writeln("    numChunks=", numChunks, " parDim=", parDim,
               " ranges(", parDim, ").length=", dom.ranges(parDim).length);
 
     if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
 
-    if numChunks == 1 {
-      if rank == 1 {
-	yield tuple(0..dom.ranges(1).length-1);
+    if (CHPL_TARGET_PLATFORM != "xmt") {
+
+      if numChunks == 1 {
+        if rank == 1 {
+          yield tuple(0..dom.ranges(1).length-1);
+        } else {
+          var block: rank*range(idxType);
+          for param i in 1..rank do
+            block(i) = 0..dom.ranges(i).length-1;
+          yield block;
+        }
       } else {
-	var block: rank*range(idxType);
-	for param i in 1..rank do
-	  block(i) = 0..dom.ranges(i).length-1;
-	yield block;
+        var locBlock: rank*range(idxType);
+        for param i in 1..rank do
+          locBlock(i) = 0:dom.ranges(i).low.type..#(dom.ranges(i).length);
+        if debugDefaultDist then
+          writeln("*** AI: locBlock = ", locBlock);
+        coforall chunk in 0..numChunks-1 {
+          var tuple: rank*range(idxType) = locBlock;
+          const (lo,hi) = _computeBlock(locBlock(parDim).length,
+                                        numChunks, chunk,
+                                        locBlock(parDim).high);
+          tuple(parDim) = lo..hi;
+          if debugDefaultDist then
+            writeln("*** AI[", chunk, "]: tuple = ", tuple);
+          yield tuple;
+        }
       }
     } else {
+
+      var per_stream_i: uint(64) = 0;
+      var total_streams_n: uint(64) = 0;
+
       var locBlock: rank*range(idxType);
       for param i in 1..rank do
-	locBlock(i) = 0:dom.ranges(i).low.type..#(dom.ranges(i).length);
-      if debugDefaultDist then
-	writeln("*** AI: locBlock = ", locBlock);
-      coforall chunk in 0..numChunks-1 {
-	var tuple: rank*range(idxType) = locBlock;
-	const (lo,hi) = _computeBlock(locBlock(parDim).length,
-                                      numChunks, chunk,
-                                      locBlock(parDim).high);
-	tuple(parDim) = lo..hi;
-	if debugDefaultDist then
-          writeln("*** AI[", chunk, "]: tuple = ", tuple);
-	yield tuple;
+        locBlock(i) = 0:dom.ranges(i).low.type..#(dom.ranges(i).length);
+
+      __primitive_loop("xmt pragma forall i in n", per_stream_i,
+                       total_streams_n) {
+
+        var tuple: rank*range(idxType) = locBlock;
+        const (lo,hi) = _computeBlock(dom.ranges(parDim).length,
+                                      total_streams_n, per_stream_i,
+                                      (dom.ranges(parDim).length-1));
+        tuple(parDim) = lo..hi;
+        yield tuple;
       }
     }
   }
@@ -407,7 +472,7 @@ class DefaultArithmeticArr: BaseArr {
     for param dim in 1..rank-1 by -1 do
       blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
     computeFactoredOffs();
-    size = blk(1) * dom.dsiDim(1).length;
+    var size = blk(1) * dom.dsiDim(1).length;
     data = new _ddata(eltType);
     data.init(size);
   }
@@ -449,7 +514,6 @@ class DefaultArithmeticArr: BaseArr {
                                          stridable=d.stridable,
                                          dom=d, noinit=true);
     alias.data = data;
-    alias.size = size: d.idxType;
     for param i in 1..rank {
       alias.off(i) = d.dsiDim(i)._low;
       alias.blk(i) = (blk(i) * dom.dsiDim(i)._stride / str(i)) : d.idxType;
@@ -466,7 +530,6 @@ class DefaultArithmeticArr: BaseArr {
                                          stridable=d.stridable,
                                          dom=d, noinit=true);
     alias.data = data;
-    alias.size = size;
     alias.blk = blk;
     alias.str = str;
     alias.origin = origin;
@@ -487,7 +550,6 @@ class DefaultArithmeticArr: BaseArr {
                                          stridable=newStridable,
                                          dom=d, noinit=true);
     alias.data = data;
-    alias.size = size;
     var i = 1;
     alias.origin = origin;
     for param j in 1..args.size {
@@ -518,13 +580,16 @@ class DefaultArithmeticArr: BaseArr {
       str = copy.str;
       origin = copy.origin;
       factoredOffs = copy.factoredOffs;
-      size = copy.size;
       dsiDestroyData();
       data = copy.data;
       delete copy;
     } else {
       halt("illegal reallocation");
     }
+  }
+
+  def dsiLocalSlice(ranges) {
+    halt("all dsiLocalSlice calls on DefaultArithmetics should be handled in ChapelArray.chpl");
   }
 }
 

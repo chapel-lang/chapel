@@ -1,11 +1,14 @@
+use Time;
 /*One pass Reduction version of K-means from the former version*/
 
 /*Definition of variables*/
 
-config const n: int = 1000000;
-config const k: int = 100;
+config const n: int = 100;
+config const k: int = 10;
 config const m: int = 3;
 config const t: real = 1e-4;
+
+config const printTiming = true;
 
 record Data{
 var countNO: int = 0;
@@ -139,8 +142,14 @@ def generate()
     //used to identify where should we insert a timer.
     writeln("start reduce");
     var OnePassRedObj: redObj;
+    const startTime = getCurrentTime();
     OnePassRedObj = kmeansReduction reduce data1;
-    writeln("finish reduce");
+    const endTime = getCurrentTime() - startTime;
+
+    write("finish reduce");
+    if printTiming then
+      write(": ", endTime);
+     writeln();
 
     testRedObj = OnePassRedObj;
     

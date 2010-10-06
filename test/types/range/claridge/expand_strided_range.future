@@ -1,0 +1,11 @@
+bug: expanding a strided range may yield un-aligned bounds
+
+The same problem occurs using range.interior or range.exterior.
+I think this is a higher-level incident of the same issue in
+strided_range_constructor.chpl -- the bound-alignment only occurs
+when "by" is called, but "by" is never called if the range
+constructor is used directly.
+
+The main difference is you can get to an endless loop by a way
+that's meant to be user-exposed.  (Also, Brad asked for a .future for
+this one, and who am I to deny Brad what he wants?)

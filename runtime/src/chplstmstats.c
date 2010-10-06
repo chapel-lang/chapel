@@ -15,8 +15,8 @@
 
 int printStmStats;    // hack to print stats only when we collect them
 
-static chpl_mutex_t stmStatsLock;
-static chpl_mutex_t stmStatsCommLock;
+static threadlayer_mutex_t stmStatsLock;
+static threadlayer_mutex_t stmStatsCommLock;
 
 unsigned int numSuccess;
 _real64 durSuccess;
@@ -102,8 +102,8 @@ void chpl_stopStmStats() {
 }
 
 void chpl_stm_stats_init() {
-  CHPL_MUTEX_INIT(&stmStatsLock);
-  CHPL_MUTEX_INIT(&stmStatsCommLock);
+  threadlayer_mutex_init(&stmStatsLock);
+  threadlayer_mutex_init(&stmStatsCommLock);
 }
 
 void chpl_stm_stats_exit() {
@@ -187,7 +187,7 @@ chpl_stm_stats_p chpl_stm_stats_create() {
 
   printStmStats = 1;
 
-  t = _now_timer(t);
+  t = chpl_now_timer(t);
   nowtime = t.tv_sec + (t.tv_usec / 1.0e+6);
 
   counters = (chpl_stm_stats_t*) chpl_malloc(1, sizeof(chpl_stm_stats_t), 
@@ -261,7 +261,7 @@ void chpl_stm_stats_start(chpl_stm_stats_p counters, int op) {
   _timervalue t;
   _real64 nowtime;
 
-  t = _now_timer(t);
+  t = chpl_now_timer(t);
   nowtime = t.tv_sec + (t.tv_usec / 1.0e+6);
 
   switch(op) {
@@ -299,7 +299,7 @@ void chpl_stm_stats_stop(chpl_stm_stats_p counters, int op, int status, int valu
 
   if (status != 1) return;
  
-  t = _now_timer(t);
+  t = chpl_now_timer(t);
   nowtime = t.tv_sec + (t.tv_usec / 1.0e+6);
 
   switch(op) {
@@ -327,7 +327,7 @@ void chpl_stm_stats_stop(chpl_stm_stats_p counters, int op, int status, int valu
     counters->durCommCommitPh1 += nowtime - counters->starttime;
     break;
   case STATS_TX_COMMITPH2:
-    CHPL_MUTEX_LOCK(&stmStatsLock);
+    threadlayer_mutex_lock(&stmStatsLock);
 
     // collect abort stats
     numAbort += counters->numAbort;
@@ -392,10 +392,10 @@ void chpl_stm_stats_stop(chpl_stm_stats_p counters, int op, int status, int valu
     numMFail += (counters->numMAbort) ? 1 : 0; 
     durMFail += counters->durMFail;
     
-    CHPL_MUTEX_UNLOCK(&stmStatsLock);
+    threadlayer_mutex_unlock(&stmStatsLock);
     break;
   case STATS_TX_COMM_COMMITPH2:
-    CHPL_MUTEX_LOCK(&stmStatsCommLock);
+    threadlayer_mutex_lock(&stmStatsCommLock);
     numCommAbort += counters->numCommAbort;
     durCommAbort += counters->durCommAbort;
     numCommCommitPh1 += counters->numCommCommitPh1;
@@ -408,7 +408,7 @@ void chpl_stm_stats_stop(chpl_stm_stats_p counters, int op, int status, int valu
     durCommPut += counters->durCommPut;
     numCommFork += counters->numCommFork;
     durCommFork += counters->durCommFork;
-    CHPL_MUTEX_UNLOCK(&stmStatsCommLock);
+    threadlayer_mutex_unlock(&stmStatsCommLock);
     break;
   case STATS_TX_LOAD:
     counters->numLoad++;

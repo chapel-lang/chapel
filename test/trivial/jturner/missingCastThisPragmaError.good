@@ -1,0 +1,1 @@
+missingCastThisPragmaError.chpl:5: error: unresolved access of 'fixed_length_string' by '[2]'

@@ -1,0 +1,10 @@
+#!/usr/bin/env tcsh
+source ~/.chapelcshrc-cron && ~/chapel/util/buildRelease/testRelease -cron >&! ~/tmp/nightly.testRelease.out
+source ~/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/bradc-lnx && ~/chapel/util/cron/nightly -cron -performance -startdate 02/19/10 >&! ~/tmp/nightly-perf.linux64.bradc-lnx.out
+source ~/.chapelcshrc-cron && ~/chapel/util/tokencount/tokctnightly -cron >&! ~/tmp/tokctnightly.out
+~/chapel/util/cron/lookForTabs.cron >&! ~/tmp/tabnightly.out
+#
+# my desktop is no longer 32-bit, so I think this is redundant:
+#
+#source ~bradc/.chapelcshrc-cron && ~bradc/chapel/util/cron/nightly -cron >&! ~bradc/tmp/nightly.linux.out
+#

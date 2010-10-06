@@ -1,4 +1,3 @@
-arrayOfArithInClass.chpl:58: warning: parallel iteration over associative domain has been serialized (see note in $CHPL_HOME/STATUS)
 C.x.domain is: [1..3]
 x is: 1.1 1.2 1.3 2.1 2.2 2.3 3.1 3.2 3.3
 

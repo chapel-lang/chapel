@@ -6,6 +6,48 @@ This section defines functions.  Methods and iterators are functions
 and most of this section applies to them as well.  They are defined
 separately in~\rsec{Iterators} and~\rsec{Class_Methods}.
 
+
+\subsection{Function Calls}
+\label{Function_Calls}
+\index{function calls}
+
+The syntax to call a function is given by:
+\begin{syntax}
+call-expression:
+  expression ( named-expression-list )
+  expression [ named-expression-list ]
+  parenthesesless-function-identifier
+
+named-expression-list:
+  named-expression
+  named-expression , named-expression-list
+
+named-expression:
+  expression
+  identifier = expression
+
+parenthesesless-function-identifier:
+  identifier
+\end{syntax}
+
+
+A \sntx{call-expression} is resolved to a particular function
+according to the algorithm for function resolution described
+in~\rsec{Function_Resolution}.
+
+Functions can be called using either parentheses or brackets.  The
+only difference in the call has to do with promotion and is discussed
+in~\rsec{Promotion}.
+
+Functions that are defined without parentheses are called without
+parentheses as defined by scope resolution.  Functions without
+parentheses are discussed in~\rsec{Functions_without_Parentheses}.
+
+A \sntx{named-expression} is an expression that may be optionally
+named.  The optional \sntx{identifier} represents a named actual
+argument described in~\rsec{Named_Arguments}.
+
+
 \subsection{Function Definitions}
 \label{Function_Definitions}
 \index{functions!syntax}
@@ -14,8 +56,8 @@ separately in~\rsec{Iterators} and~\rsec{Class_Methods}.
 Functions are declared with the following syntax:
 \begin{syntax}
 function-declaration-statement:
-  `def' function-name argument-list[OPT] var-param-clause[OPT]
-    return-type[OPT] where-clause[OPT] function-body
+  `def' function-name argument-list[OPT] var-param-type-clause[OPT] where-clause[OPT]
+    function-body
 
 function-name:
   identifier
@@ -52,10 +94,11 @@ variable-argument-expression:
 formal-tag: one of
   `in' `out' `inout' `param' `type'
 
-var-param-clause:
-  `var'
-  `const'
-  `param'
+var-param-type-clause:
+  `var' return-type[OPT]
+  `const' return-type[OPT]
+  `param' return-type[OPT]
+  `type'
 
 return-type:
   : type-specifier
@@ -68,9 +111,18 @@ function-body:
   return-statement
 \end{syntax}
 
-Operator overloading is supported in Chapel on the operators listed
-above under operator name.  Operator and function overloading is
-discussed in~\rsec{Function_Overloading}.
+%% This should be in the order that the sections appear in this
+%% chapter (if they appear in this chapter).
+
+Functions do not require parentheses if they have no arguments.  Such
+functions are described in~\rsec{Functions_without_Parentheses}.
+
+Formal arguments can be grouped together using a tuple notation as
+described in~\rsec{Formal_Argument_Declarations_in_a_Tuple}.
+
+Default expressions allow for the omission of actual arguments at the
+call site, resulting in the implicit passing of a default value.
+Default values are discussed in~\rsec{Default_Values}.
 
 The intents \chpl{in}, \chpl{out}, and \chpl{inout} are discussed
 in~\rsec{Intents}.  The formal tags \chpl{param} and \chpl{type} make
@@ -79,63 +131,61 @@ formal argument's type is elided, generic, or prefixed with a question
 mark, the function is also generic and is discussed
 in~\rsec{Generics}.
 
-Default expressions allow for the omission of actual arguments at the
-call site, resulting in the implicit passing of a default value.
-Default values are discussed in~\rsec{Default_Values}.
-
-Formal arguments can be grouped together using a tuple notation as
-described in~\rsec{Formal_Argument_Declarations_in_a_Tuple}.
-
-Functions do not require parentheses if they have no arguments.  Such
-functions are described in~\rsec{Functions_without_Parentheses}.
-
-Return types are optional and are discussed in~\rsec{Return_Types}.
-
 Functions can take a variable number of arguments.  Such functions are
 discussed in~\rsec{Variable_Length_Argument_Lists}.
 
-The optional \sntx{var-param-clause} defines a variable function,
+The optional \sntx{var-param-type-clause} defines a variable function,
 discussed in~\rsec{Variable_Functions}, or a parameter function,
-discussed in~\rsec{Parameter_Functions}.  By default, a function call
-cannot be treated as an lvalue and is constant.  This may be
-explicitly specified via the keyword~\chpl{const}.
+discussed in~\rsec{Parameter_Functions}, or a type function, discussed
+in~\rsec{Type_Functions}.  By default, a function call cannot be
+treated as an lvalue and is constant.  This may be explicitly
+specified via the keyword~\chpl{const}.
+
+Return types are optional and are discussed in~\rsec{Return_Types}.
 
 The optional where clause is only applicable if the function is
 generic.  It is discussed in~\rsec{Where_Expressions}.
 
-\subsection{The Return Statement}
-\label{The_Return_Statement}
-\index{return@\chpl{return}}
+Operator overloading is supported in Chapel on the operators listed
+above under operator name.  Operator and function overloading is
+discussed in~\rsec{Function_Overloading}.
 
-The return statement can only appear in a function.  It exits that
-function, returning control to the point at which that function was
-called.  It can optionally return a value.  The syntax of the return
-statement is given by
-\begin{syntax}
-return-statement:
-  `return' expression[OPT] ;
-\end{syntax}
+
+\subsection{Functions without Parentheses}
+\label{Functions_without_Parentheses}
+\index{functions!functions without parentheses}
+
+Functions do not require parentheses if they have empty argument
+lists.  Functions declared without parentheses around empty argument
+lists must be called without parentheses.
 
 \begin{example}
-The following code defines a function that returns the sum of three
-integers:
+Given the definitions
+\begin{chapelpre}
+% test_function_no_parens.chpl
+\end{chapelpre}
 \begin{chapel}
-def sum(i1: int, i2: int, i3: int)
-  return i1 + i2 + i3;
+def foo { writeln("In foo"); }
+def bar() { writeln("In bar"); }
 \end{chapel}
+\begin{chapelpost}
+foo;
+bar();
+\end{chapelpost}
+\begin{chapeloutput}
+In foo
+In bar
+\end{chapeloutput}
+the function \chpl{foo} can be called by writing \chpl{foo} and the
+function \chpl{bar} can be called by writing \chpl{bar()}.  It is an
+error to apply parentheses to \chpl{foo} or omit them from \chpl{bar}.
 \end{example}
 
-\subsection{Function Calls}
-\label{Function_Calls}
-\index{function calls}
-
-Functions are called in call expressions described
-in~\rsec{Call_Expressions}.  The function that is called is resolved
-according to the algorithm described in~\rsec{Function_Resolution}.
 
 \subsection{Formal Arguments}
 \label{Formal_Arguments}
 \index{formal arguments}
+\index{functions!formal arguments}
 
 Chapel supports an intuitive formal argument passing mechanism.  An
 argument is passed by value unless it is a class, array, or domain in
@@ -148,6 +198,7 @@ intent \chpl{in}, a temporary array will be created.
 \subsubsection{Named Arguments}
 \label{Named_Arguments}
 \index{named arguments}
+\index{functions!named arguments}
 \index{formal arguments!naming}
 
 A formal argument can be named at the call site to explicitly map an
@@ -155,12 +206,21 @@ actual argument to a formal argument.
 
 \begin{example}
 In the code
+\begin{chapelpre}
+% test_named_args.chpl
+\end{chapelpre}
 \begin{chapel}
-def foo(x: int, y: int) { ... }
+def foo(x: int, y: int) { writeln(x); writeln(y); }
 
 foo(x=2, y=3);
 foo(y=3, x=2);
 \end{chapel}
+\begin{chapeloutput}
+2
+3
+2
+3
+\end{chapeloutput}
 named argument passing is used to map the actual arguments to the
 formal arguments.  The two function calls are equivalent.
 \end{example}
@@ -173,6 +233,7 @@ call-site for compiler-checked documentation.
 \subsubsection{Default Values}
 \label{Default_Values}
 \index{default values}
+\index{functions!default argument values}
 \index{formal arguments!defaults}
 
 Default values can be specified for a formal argument by appending the
@@ -184,13 +245,24 @@ it were passed from the call site.
 
 \begin{example}
 In the code
+\begin{chapelpre}
+% test_default_values.chpl
+\end{chapelpre}
 \begin{chapel}
-def foo(x: int = 5, y: int = 7) { ... }
+def foo(x: int = 5, y: int = 7) { writeln(x); writeln(y); }
 
 foo();
 foo(7);
 foo(y=5);
 \end{chapel}
+\begin{chapeloutput}
+5
+7
+7
+7
+5
+5
+\end{chapeloutput}
 default values are specified for the formal arguments \chpl{x}
 and \chpl{y}.  The three calls to \chpl{foo} are equivalent to the
 following three calls where the actual arguments are
@@ -200,15 +272,18 @@ formal arguments but use default values for arguments that are
 specified earlier in the formal argument list.
 \end{example}
 
+
 \subsection{Intents}
 \label{Intents}
 \index{intents}
+\index{functions!argument intents}
 
 Intents allow the actual arguments to be copied to a formal argument
 and also to be copied back.
 
 \subsubsection{The Blank Intent}
 \label{The_Blank_Intent}
+\index{intents!blank}
 
 If the intent is omitted, it is called a blank intent.  In such a
 case, the value is copied in using the assignment operator.  Thus
@@ -232,7 +307,6 @@ the function.  This assignment is not reflected back at the call site.
 If an array is passed to a formal argument that has \chpl{in} intent,
 a copy of the array is made via assignment.  Changes to the elements
 within the array are thus not reflected back at the call site.
-Domains cannot be passed to a function via the \chpl{in} intent.
 
 \subsubsection{The Out Intent}
 \label{The_Out_Intent}
@@ -246,8 +320,7 @@ argument must be a valid lvalue.  The formal argument can be assigned
 to and read from within the function.
 
 The formal argument cannot not be generic and is treated as a variable
-declaration.  Domains cannot be passed to a function via
-the \chpl{out} intent.
+declaration.
 
 \subsubsection{The Inout Intent}
 \label{The_Inout_Intent}
@@ -258,13 +331,328 @@ If \chpl{inout} is specified as the intent, the actual argument is
 both passed to the formal argument as if the \chpl{in} intent applied
 and then copied back as if the \chpl{out} intent applied.  The formal
 argument can be generic and takes its type from the actual argument.
-Domains cannot be passed to a function via the \chpl{inout} intent.
 The formal argument can be assigned to and read from within the
 function.
+
+
+\subsection{Variable Length Argument Lists}
+\label{Variable_Length_Argument_Lists}
+\index{functions!variable number of arguments}
+
+Functions can be defined to take a variable number of arguments where
+those arguments can have any intent or can be types.  A variable
+number of parameters is not supported.  This allows the call site to
+pass a different number of actual arguments.  There must be at least
+one actual argument.
+
+If the variable argument expression is an identifier prepended by a
+question mark, the number of arguments is variable.  Alternatively,
+the variable expression can evaluate to an integer parameter value
+requiring the call site to pass that number of arguments to the
+function.
+
+In the function, the formal argument is a tuple of the actual
+arguments.
+
+\begin{example}
+The code
+\begin{chapelpre}
+% test_varargs.chpl
+\end{chapelpre}
+\begin{chapel}
+def mywriteln(x ...?k) {
+  for param i in 1..k do
+    writeln(x(i));
+}
+\end{chapel}
+\begin{chapelpost}
+mywriteln("hi", "there");
+mywriteln(1, 2.0, 3, 4.0);
+\end{chapelpost}
+\begin{chapeloutput}
+hi
+there
+1
+2.0
+3
+4.0
+\end{chapeloutput}
+defines a generic function called \chpl{mywriteln} that takes a
+variable number of arguments of any type and then writes them out on
+separate lines.  The parameter for-loop~(\rsec{Parameter_For_Loops})
+is unrolled by the compiler so that \chpl{i} is a parameter, rather
+than a variable.  This needs to be a parameter for-loop because the
+expression \chpl{x(i)} will have a different type on each iteration.
+The type of \chpl{x} can be specified in the formal argument list to
+ensure that the actuals all have the same type.
+\end{example}
+
+\begin{example}
+Either or both the number of variable arguments and their types can be
+specified.  For example, a basic function to sum the values of three
+integers can be wrtten as
+\begin{chapelpre}
+% test_varargs_with_type.chpl
+\end{chapelpre}
+\begin{chapel}
+def sum(x: int...3) return x(1) + x(2) + x(3);
+\end{chapel}
+\begin{chapelpost}
+writeln(sum(1, 2, 3));
+writeln(sum(-1, -2, -3));
+\end{chapelpost}
+\begin{chapeloutput}
+6
+-6
+\end{chapeloutput}
+Specifying the type is useful if it is important that each argument
+have the same type.  Specifying the number is useful in, for example,
+defining a method on a class that is instantiated over a rank
+parameter.
+\end{example}
+
+\begin{example}
+The function
+\begin{chapelpre}
+% test_varargs_returns_tuples.chpl
+\end{chapelpre}
+\begin{chapel}
+def tuple(x ...) return x;
+\end{chapel}
+\begin{chapelpost}
+writeln(tuple(1));
+writeln(tuple("hi", "there"));
+writeln(tuple(tuple(1, 2), tuple(3, 4)));
+\end{chapelpost}
+\begin{chapeloutput}
+(1)
+(hi, there)
+((1, 2), (3, 4))
+\end{chapeloutput}
+creates a generic function that returns tuples.  When passed two or
+more actuals in a call, it is equivalent to building a tuple so the
+expressions \chpl{tuple(1, 2)} and \chpl{(1, 2)} are equivalent.  When
+passed one actual, it builds a 1-tuple which is different than the
+evaluation of the parenthesized expression.  Thus the
+expressions \chpl{tuple(1)} and \chpl{(1)} are not equivalent.
+\end{example}
+
+
+\subsection{Variable Functions}
+\label{Variable_Functions}
+\index{functions!variable functions}
+\index{functions!as lvalues}
+
+A variable function is a function that can be assigned a value.  Note
+that a variable function does not return a reference.  That is, the
+reference cannot be captured.
+
+A variable function is specified by following the argument list with
+the \chpl{var} keyword.  A variable function must return an lvalue.
+
+When a variable function is called on the left-hand side of an
+assignment statement or in the context of a call to a formal argument
+by out or inout intent, the lvalue that is returned by the function is
+assigned a value.
+
+Variable functions support an implicit argument \chpl{setter} of type
+bool that is a compile-time constant (and can thus be folded).  If the
+variable function is called in a context such that the returned lvalue
+is assigned a value, the argument \chpl{setter} is \chpl{true};
+otherwise it is \chpl{false}.  This argument is useful for controlling
+different behavior depending on the call site.
+
+\begin{example}
+The following code creates a function that can be interpreted as a
+simple two-element array where the elements are actually global
+variables:
+\begin{chapelpre}
+% test_variable_functions.chpl
+% This test spans the next 3 chapel code segments
+\end{chapelpre}
+\begin{chapel}
+var x, y = 0;
+
+def A(i: int) var {
+  if i < 0 || i > 1 then
+    halt("array access out of bounds");
+  if i == 0 then
+    return x;
+  else
+    return y;
+}
+\end{chapel}
+This function can be assigned to in order to write to the ``elements''
+of the array as in
+\begin{chapel}
+A(0) = 1;
+A(1) = 2;
+\end{chapel}
+It can be called as an expression to access the ``elements'' as in
+\begin{chapel}
+writeln(A(0) + A(1));
+\end{chapel}
+\begin{chapeloutput}
+3
+\end{chapeloutput}
+This code outputs the number \chpl{3}.
+
+\index{setter}
+\index{functions!setter argument}
+The implicit \chpl{setter} argument can be used to ensure, for
+example, that the second element in the pseudo-array is only assigned
+a value if the first argument is positive.  To do this, add the
+following:
+\begin{chapelpre}
+% test_setter.chpl
+var x, y = 0;
+def A(i: int) var { // } to fool latex
+  if i < 0 || i > 1 then
+    halt("array access out of bounds");
+\end{chapelpre}
+\begin{chapel}
+if setter && i == 1 && x <= 0 then
+  halt("cannot assign value to A(1) if A(0) <= 0");
+\end{chapel}
+\begin{chapelpost}
+// { to fool latex
+  if i == 0 then
+    return x;
+  else
+    return y;
+}
+A(1) = 1;
+\end{chapelpost}
+\begin{chapeloutput}
+test\_setter.chpl:6: error: halt reached - cannot assign value to A(1) if A(0) <= 0
+\end{chapeloutput}
+\end{example}
+
+
+\subsection{Parameter Functions}
+\label{Parameter_Functions}
+\index{functions!as parameters}
+
+A parameter function is a function that returns a parameter
+expression.  It is specified by following the function's argument list
+by the keyword \chpl{param}.  It is often, but not necessarily,
+generic.
+
+It is a compile-time error if a parameter function does not return a
+parameter expression.  The result of a parameter function is computed
+during compilation and the result is inlined at the call site.
+
+\begin{example}
+In the code
+\begin{chapelpre}
+% test_param_functions.chpl
+\end{chapelpre}
+\begin{chapel}
+def sumOfSquares(param a: int, param b: int) param
+  return a**2 + b**2;
+
+var x: sumOfSquares(2, 3)*int;
+\end{chapel}
+\begin{chapelpost}
+writeln(x);
+\end{chapelpost}
+\begin{chapeloutput}
+(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+\end{chapeloutput}
+the function \chpl{sumOfSquares} is a parameter function that takes
+two parameters as arguments.  Calls to this function can be used in
+places where a parameter expression is required.  In this example, the
+call is used in the declaration of a homogeneous tuple and so is
+required to be a parameter.
+\end{example}.
+
+Parameter functions may not contain control flow that is not resolved
+at compile-time.  This includes loops other than the parameter for
+loop~\rsec{Parameter_For_Loops} and conditionals with a conditional
+expressions that is not a parameter.
+
+
+\subsection{Type Functions}
+\label{Type_Functions}
+\index{functions!as types}
+
+A type function is a function that returns a type.  It is specified by
+following the function's argument list by the keyword \chpl{type}.  It
+is often, but not necessarily, generic.
+
+It is a compile-time error if a type function does not return a type.
+The result of a type function is computed during compilation.
+
+As with parameter functions, type functions may not contain control
+flow that is not resolved at compile-time.  This includes loops other
+than the parameter for loop~\rsec{Parameter_For_Loops} and
+conditionals with a conditional expressions that is not a parameter.
+
+\begin{example}
+In the code
+\begin{chapelpre}
+% test_type_functions.chpl
+\end{chapelpre}
+\begin{chapel}
+def myType(x) type {
+  if numBits(x.type) <= 32 then return int;
+  else return int(64);
+}
+\end{chapel}
+\begin{chapelpost}
+var a = 4,
+    b = 4.0;
+var at: myType(a),
+    bt: myType(b);
+writeln((numBits(at.type), numBits(bt.type)));
+\end{chapelpost}
+\begin{chapeloutput}
+(32, 64)
+\end{chapeloutput}
+the function \chpl{myType} is a type function that takes a single
+argument \chpl{x} and returns \chpl{int} if the number of bits used to
+represent \chpl{x} is less than or equal to 32, otherwise it
+returns \chpl{int(64)}.  The function \chpl{numBits} is a param
+function defined in the Standard Modules.
+\end{example}
+
+
+\subsection{The Return Statement}
+\label{The_Return_Statement}
+\index{return@\chpl{return}}
+
+The return statement can only appear in a function.  It exits that
+function, returning control to the point at which that function was
+called.  It can optionally return a value.  The syntax of the return
+statement is given by
+\begin{syntax}
+return-statement:
+  `return' expression[OPT] ;
+\end{syntax}
+
+\begin{example}
+The following code defines a function that returns the sum of three
+integers:
+\begin{chapelpre}
+% test_return.chpl
+\end{chapelpre}
+\begin{chapel}
+def sum(i1: int, i2: int, i3: int)
+  return i1 + i2 + i3;
+\end{chapel}
+\begin{chapelpost}
+writeln(sum(1, 2, 3));
+\end{chapelpost}
+\begin{chapeloutput}
+6
+\end{chapeloutput}
+\end{example}
+
 
 \subsection{Return Types}
 \label{Return_Types}
 \index{return@\chpl{return}!types}
+\index{functions!return@\chpl{return} types}
 
 A function can optionally return a value.  If the function does not
 return a value, then no return type can be specified.  If the function
@@ -291,98 +679,6 @@ return type.  Otherwise, it is an error.  For variable
 functions~(\rsec{Variable_Functions}), every return statement must
 return the same exact type and it becomes the inferred type.
 
-\subsection{Variable Functions}
-\label{Variable_Functions}
-\index{functions!as lvalues}
-
-A variable function is a function that can be assigned a value.  Note
-that a variable function does not return a reference.  That is, the
-reference cannot be captured.
-
-A variable function is specified by following the argument list with
-the \chpl{var} keyword.  A variable function must return an lvalue.
-
-When a variable function is called on the left-hand side of an
-assignment statement or in the context of a call to a formal argument
-by out or inout intent, the lvalue that is returned by the function is
-assigned a value.
-
-Variable functions support an implicit argument \chpl{setter} of type
-bool that is a compile-time constant (and can thus be folded).  If the
-variable function is called in a context such that the returned lvalue
-is assigned a value, the argument \chpl{setter} is \chpl{true};
-otherwise it is \chpl{false}.  This argument is useful for controlling
-different behavior depending on the call site.
-
-\begin{example}
-The following code creates a function that can be interpreted as a
-simple two-element array where the elements are actually global
-variables:
-\begin{chapel}
-var x, y = 0;
-
-def A(i: int) var {
-  if i < 0 || i > 1 then
-    halt("array access out of bounds");
-  if i == 0 then
-    return x;
-  else
-    return y;
-}
-\end{chapel}
-This function can be assigned to in order to write to the ``elements''
-of the array as in
-\begin{chapel}
-A(0) = 1;
-A(1) = 2;
-\end{chapel}
-It can be called as an expression to access the ``elements'' as in
-\begin{chapel}
-writeln(A(0) + A(1));
-\end{chapel}
-This code outputs the number \chpl{3}.
-
-The implicit \chpl{setter} argument can be used to ensure, for
-example, that the second element in the pseudo-array is only assigned
-a value if the first argument is positive.  To do this, the line
-\begin{chapel}
-if setter && i == 1 && x <= 0 then
-  halt("cannot assign value to A(1) if A(0) <= 0");
-\end{chapel}
-\end{example}
-
-\subsection{Parameter Functions}
-\label{Parameter_Functions}
-\index{functions!as parameters}
-
-A parameter function is a function that returns a parameter
-expression.  It is specified by following the function's argument list
-by the keyword \chpl{param}.  It is often, but not necessarily,
-generic.
-
-It is a compile-time error if a parameter function does not return a
-parameter expression.  The result of a parameter function is computed
-during compilation and the result is inlined at the call site.
-
-\begin{example}
-In the code
-\begin{chapel}
-def sumOfSquares(param a: int, param b: int) param
-  return a**2 + b**2;
-
-var x: sumOfSquares(2, 3)*int;
-\end{chapel}
-the function \chpl{sumOfSquares} is a parameter function that takes
-two parameters as arguments.  Calls to this function can be used in
-places where a parameter expression is required.  In this example, the
-call is used in the declaration of a homogeneous tuple and so is
-required to be a parameter.
-\end{example}.
-
-Parameter functions may not contain control flow that is not resolved
-at compile-time.  This includes loops other than the parameter for
-loop~\rsec{Parameter_For_Loops} and conditionals with a conditional
-expressions that is not a parameter.
 
 \subsection{Function Overloading}
 \label{Function_Overloading}
@@ -412,8 +708,184 @@ The arity and precedence of the operator must be maintained when it is
 overloaded.  Operator resolution follows the same algorithm as
 function resolution.
 
+
+\subsection{Nested Functions}
+\label{Nested_Functions}
+\index{functions!nested}
+
+A function defined in another function is called a nested function.
+Nesting of functions may be done to arbitrary degrees, i.e., a
+function can be nested in a nested function.
+
+Nested functions are only visible to function calls within the scope
+in which they are defined.
+
+\subsubsection{Accessing Outer Variables}
+\label{Accessing_Outer_Variables}
+
+Nested functions may refer to variables defined in the function in
+which they are nested.
+
+
+\subsection{First-Class Functions}
+\label{First_Class_Functions}
+\index{functions!first-class}
+\index{functions!capture}
+
+Functions defined with parentheses may be captured as values by referring to them by name without parentheses.  Once captured, these values may be passed around as other value types.
+
+\begin{example}
+\begin{chapelpre}
+% test_first_class_functions.chpl
+\end{chapelpre}
+\begin{chapel}
+def myfunc(x:int) { return x + 1; }
+
+var f = myfunc;
+writeln(f(3)); // outputs: 4
+\end{chapel}
+\begin{chapeloutput}
+4
+\end{chapeloutput}
+\end{example}
+
+To be captured, a function must not be any of the following:
+
+\begin{itemize}
+\item
+  A generic function - all captured functions must be fully-qualified with no generic arguments
+\item
+  A function with special return types (type, param)
+\item
+  An iterator
+\item
+  The method of an object
+\item
+  An operator
+\item
+  An overloaded function
+\end{itemize}
+
+\begin{rationale}
+Generic functions are outside of the scope of the current first-class function work.  Functions with compile-time return types like type and param require the ability to have param classes.  Param classes are not currently part of Chapel.  Iterators require a new type of capture, one that works similarly to the current implementation but respects the yielding that occurs inside an interator.  Method capture requires the currying of the object as the first argument to the first-class function.  Operators and overloaded functions require a type-based multiple dispatch mechanism.
+\end{rationale}
+
+
+\subsection{Lambda Functions}
+\label{Lambda_Functions}
+\index{lambda functions}
+\index{functions!lambdas}
+
+\begin{syntax}
+lambda-declaration-expression:
+  `lambda' argument-list
+    return-type[OPT] function-body
+\end{syntax}
+
+
+Anonymous first-class functions, those not formally defined as named functions, are  available using the lambda keyword.
+
+\begin{example}
+\begin{chapelpre}
+% test_lambda.chpl
+\end{chapelpre}
+\begin{chapel}
+var f = lambda(x:int, y:int) { return x + y; };
+writeln(f(1,2)); // outputs: 3
+\end{chapel}
+\begin{chapeloutput}
+3
+\end{chapeloutput}
+\end{example}
+
+\index{functions!capture variables}
+\index{functions!closures}
+\index{closures}
+
+Lambdas can also \textit{capture} variables that are defined outside of the lambda by referring to them in the body of the lambda.  These form a \textit{closure}, a combination of a function and an associated execution environment.  This closure captures the variables in such a way that modifying them modifies the original variables (this is sometimes called capturing the variables by reference).  
+
+\begin{example}
+For example the following is acceptable:
+\begin{chapelpre}
+% test_lambda_capture.chpl
+\end{chapelpre}
+\begin{chapel}
+def myfunc() {
+  var x = 3;
+  var f = lambda() { x = 4; };
+  f();
+  return x;
+}
+writeln(myfunc()); // outputs: 4
+\end{chapel}
+\begin{chapeloutput}
+4
+\end{chapeloutput}
+\end{example}
+
+
+\subsection{Function Type Signatures}
+\label{Function_Type_Signatures}
+\index{functions!type signatures}
+
+\begin{syntax}
+function-type:
+  `func'( type-args[OPT] )
+
+type-args:
+  function-return-type
+  type-specifier, function-return-type
+  type-specifier, type-args
+
+function-return-type:
+  type-specifier
+  
+\end{syntax}
+
+\begin{example}
+\begin{chapelpre}
+% test_function_type_signatures.chpl
+\end{chapelpre}
+\begin{chapel}
+var f : func(); // A function with no arguments, returning void
+var g : func(int); // A function with no arguments, returning int
+var h : func(bool, int); // A function with one bool argument, returning int
+\end{chapel}
+\begin{chapelpost}
+def f1() {
+  writeln("In f1");
+}
+def g1() {
+  return -1;
+}
+def h1(b: bool) {
+  if b then return -1;
+  else return 1;
+}
+f = f1;
+g = g1;
+h = h1;
+f();
+writeln(g());
+writeln(h(true));
+writeln(h(false));
+\end{chapelpost}
+\begin{chapeloutput}
+In f1
+-1
+-1
+1
+\end{chapeloutput}
+\end{example}
+
+Where func is a keyword function which takes any number of argument types to the function and finally a type that represents the return type of the function.  Functions which have no arguments drop them from the call to func and supply the return type alone.  A function with no arguments and void return type may use the shortcut \chpl{func()}.
+                          
+
+
 \subsection{Function Resolution}
 \label{Function_Resolution}
+\index{function resolution}
+\index{functions!resolution}
 
 Given a function call, the function that the call resolves to is
 determined according to the following algorithm:
@@ -580,101 +1052,3 @@ is determined by the following steps:
 \item
  Otherwise neither mapping is more specific.
 \end{itemize}
-
-\subsection{Functions without Parentheses}
-\label{Functions_without_Parentheses}
-\index{functions!functions without parentheses}
-
-Functions do not require parentheses if they have empty argument
-lists.  Functions declared without parentheses around empty argument
-lists must be called without parentheses.
-
-\begin{example}
-Given the definitions
-\begin{chapel}
-def foo { }
-def bar() { }
-\end{chapel}
-the function \chpl{foo} can be called by writing \chpl{foo} and the
-function \chpl{bar} can be called by writing \chpl{bar()}.  It is an
-error to apply parentheses to \chpl{foo} or omit them from \chpl{bar}.
-\end{example}
-
-\subsection{Nested Functions}
-\label{Nested_Functions}
-\index{functions!nested}
-
-A function defined in another function is called a nested function.
-Nesting of functions may be done to arbitrary degrees, i.e., a
-function can be nested in a nested function.
-
-Nested functions are only visible to function calls within the scope
-in which they are defined.
-
-\subsubsection{Accessing Outer Variables}
-\label{Accessing_Outer_Variables}
-
-Nested functions may refer to variables defined in the function in
-which they are nested.
-
-\subsection{Variable Length Argument Lists}
-\label{Variable_Length_Argument_Lists}
-\index{functions!variable number of arguments}
-
-Functions can be defined to take a variable number of arguments where
-those arguments can have any intent or can be types.  A variable
-number of parameters is not supported.  This allows the call site to
-pass a different number of actual arguments.
-
-If the variable argument expression is an identifier prepended by a
-question mark, the number of arguments is variable.  Alternatively,
-the variable expression can evaluate to an integer parameter value
-requiring the call site to pass that number of arguments to the
-function.
-
-In the function, the formal argument is a tuple of the actual
-arguments.
-
-\begin{example}
-The code
-\begin{chapel}
-def mywriteln(x ...?k) {
-  for param i in 1..k do
-    writeln(x(i));
-}
-\end{chapel}
-defines a generic function called \chpl{mywriteln} that takes a
-variable number of arguments of any type and then writes them out on
-separate lines.  The parameter for-loop~(\rsec{Parameter_For_Loops})
-is unrolled by the compiler so that \chpl{i} is a parameter, rather
-than a variable.  This needs to be a parameter for-loop because the
-expression \chpl{x(i)} will have a different type on each iteration.
-The type of \chpl{x} can be specified in the formal argument list to
-ensure that the actuals all have the same type.
-\end{example}
-
-\begin{example}
-Either or both the number of variable arguments and their types can be
-specified.  For example, a basic function to sum the values of three
-integers can be wrtten as
-\begin{chapel}
-def sum(x: int...3) return x(1) + x(2) + x(3);
-\end{chapel}
-Specifying the type is useful if it is important that each argument
-have the same type.  Specifying the number is useful in, for example,
-defining a method on a class that is instantiated over a rank
-parameter.
-\end{example}
-
-\begin{example}
-The function
-\begin{chapel}
-def tuple(x ...) return x;
-\end{chapel}
-creates a generic function that returns tuples.  When passed two or
-more actuals in a call, it is equivalent to building a tuple so the
-expressions \chpl{tuple(1, 2)} and \chpl{(1, 2)} are equivalent.  When
-passed one actual, it builds a 1-tuple which is different than the
-evaluation of the parenthesized expression.  Thus the
-expressions \chpl{tuple(1)} and \chpl{(1)} are not equivalent.
-\end{example}

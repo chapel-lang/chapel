@@ -65,6 +65,7 @@
 #   -norecurse
 #   -componly
 #   -performance
+#   -startdate <MM/DD/YY>             ""
 #   -futures
 #   -futuresonly
 #   -valgrind
@@ -171,6 +172,92 @@
 # whether all the performance keys for a test were matched or not.
 # In particular, a failure indicates that a test's performance
 # keys couldn't all be found.
+#
+# If all the performance keys for a test were matched, the 
+# resulting data can be graphed by specifying a .graph file where the
+# contents of the .graph specify what data should be graphed, and 
+# basic information about the format of the graph. The graphs are .gif
+# formatted, and get written to an index.html in $CHPL_TEST_PERF_DIR. 
+#
+# If a foo.chpl and foo.perfkeys are accompanied by a foo.graph, and
+# foo.graph is empty, the testing system will by default graph all
+# columns in foo.dat, with a y-axis labeled "Performance", where the 
+# x-axis represents time in the format of MM/DD/YY.  The start date 
+# if not set as a flag to start_test, will be the lowest date of all
+# the data files the .graph must read from.
+#
+# The user can also choose the graph settings by writing to the
+# .graph the format desired, as follows:
+#
+# -- to specify which performance keys are to be graphed,
+#    in .graph should be the line:
+#
+#    perfkeys: key1, key2, key3
+#
+#    where key1, key2 and key3 are all keys in a .perfkeys.  if not all keys
+#    specified come from the same .perfkeys, the .dat files they should be 
+#    extracted from should be listed (see below)
+#
+# -- if the performance keys specified above come from more than one 
+#    .perfkey, or come from a .perfkey that has its root name different than its 
+#    .graph (e.g. foo.graph's listed perfkeys don't come from foo.perfkey, but from
+#    baz.perfkey etc.), specify the different files where the data should come from.
+#     
+#    For example,
+#
+#    files: file1.dat, file2.dat, file3.dat
+#
+#    where file1.dat has key1's data, file2.dat has key2's data, etc.
+#
+# -- if you would like to specify the name of the key to be different
+#    on the graph than it is in .perfkeys, specify the name it should
+#    have:
+#
+#    graphkeys: key11, key12, key13
+#
+#    (this can be useful if you are graphing data across different 
+#    files which have the same keys in .perfkeys, and you want to distinguish
+#    them when viewing the graph.)    
+#
+# -- to specify the name of the output graph,
+#    in .graph should be the line:
+#
+#    graphname: foo
+# 
+#    such that foo.gif will be put in $CHPL_TEST_PERF_DIR/ at end of a performance run
+#  
+# -- to specify the start date of the graph (the lowest date on the x-axis)
+#    in .graph should be the line:
+#
+#    startdate: 07/08/10
+#   
+#    Format is MM/DD/YY.  If no start date specified, the start date will be the
+#    lowest start date of all data files specified, and if start date is specified by
+#    the -startdate flag to start_test, this local startdate: will override that one.
+#
+# -- to specify the title of the graph,
+#    in .graph should be the line:
+#
+#    graphtitle: Title
+#
+# -- to specify the y-axis label of the graph,
+#    in .graph should be the line:
+#    
+#    ylabel: Performance
+#
+# If want to specify more than one set of keys per .graph, such that
+# each set of keys corresponds to its own graph, please specify the perfkeys
+# first, followed by any lines pertaining to the above keys. Then
+# the next set of lines to specify any other set of keys, and so on.
+#
+# Sets of keys can be line separated from another set of keys, but no line separation
+# within a set of keys and its own attributes.
+#
+# The -startdate option allows the user to specify a date that all
+# graphs should start with (having a common start date for all graphs 
+# unifies the x-axis).  if in a .graph, there is a specified start date
+# for a particular graph, that graph will use the date in the .graph
+# and not the date by the -startdate option.  
 #
 # The -interpret option requests that the compiler be executed in
 # interpreter mode.  This will cause the test system to invoke the
@@ -473,6 +560,7 @@ set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
 set performance = 0
+set startdate = ""
 set testfutures = 0
 set testfuturesonly = 0
 set testnotests = 0
@@ -556,6 +644,12 @@ while ( $#argv > 0 )
                 shift
                 set performance = 1
                 breaksw
+	case --startdate:
+	case -startdate:
+		shift
+		set startdate = $argv[1]
+		shift
+		breaksw
         case -norecurse:
         case --norecurse:
                 shift
@@ -597,13 +691,14 @@ while ( $#argv > 0 )
 		echo Usage and defaults\:
 		echo "     start_test <file list> <directory list>"
                 echo "          -clean-only"
-		echo "          -compiler <path>     (currently: $CHPL_HOME/bin/$platform/chpl)"
-		echo "          -compopts <options>  (currently: '--cc-warnings')"
-		echo "          -execopts <options>  (currently: '')"
-                echo "          -launchcmd <command> (currently: '')"
+		echo "          -compiler <path>      (currently: $CHPL_HOME/bin/$platform/chpl)"
+		echo "          -compopts <options>   (currently: '--cc-warnings')"
+		echo "          -execopts <options>   (currently: '')"
+                echo "          -launchcmd <command>  (currently: '')"
                 echo "          -norecurse"
 		echo "          -componly"
                 echo "          -performance"
+		echo "          -startdate <MM/DD/YY> (currently: '')"
                 echo "          -futures"
                 echo "          -futuresonly"
 		echo "          -valgrind"
@@ -938,6 +1033,7 @@ foreach absdir ($absdirs)
                 setenv EXECOPTS "$execopts"
                 setenv NUMLOCALES "$numlocales"
                 setenv LAUNCHCMD "$launchcmd"
+		setenv STARTDATE "$startdate"
                 echo "[Starting $sub_test `date`]" |& $tee -a $logfile
                 $sub_test "$compiler" |& $tee -a $logfile
             endif
@@ -945,6 +1041,13 @@ foreach absdir ($absdirs)
 	    echo \["No tests in directory " $dir\] |& $tee -a $logfile
 	endif
     end
+   
+    if ($performance) then
+	if ($?CHPL_TEST_PERF_DIR) then
+	    set viewGraphs = $utildir/viewGraphs
+	    $viewGraphs $CHPL_TEST_PERF_DIR  
+	endif
+    endif
 end
 
 # return to where we started

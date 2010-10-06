@@ -67,16 +67,17 @@ const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
 const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
       Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
 
-//
-// T is the distributed table itself, storing a variable of type
-// elemType for each index in TableSpace.
-//
-var T: [TableSpace] elemType;
 
 //
 // The program entry point
 //
 def main() {
+  //
+  // T is the distributed table itself, storing a variable of type
+  // elemType for each index in TableSpace.
+  //
+  var T: [TableSpace] elemType;
+
   printConfiguration();   // print the problem size, number of trials, etc.
 
   //
@@ -107,7 +108,7 @@ def main() {
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
-  const validAnswer = verifyResults();             // verify the updates
+  const validAnswer = verifyResults(T);            // verify the updates
   printResults(validAnswer, execTime);             // print the results
 }
 
@@ -125,7 +126,7 @@ def printConfiguration() {
 //
 // Verify that the computation is correct
 //
-def verifyResults() {
+def verifyResults(T) {
   //
   // Print the table, if requested
   //

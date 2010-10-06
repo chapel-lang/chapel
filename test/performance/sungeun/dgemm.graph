@@ -1,0 +1,2 @@
+perfkeys: dgemm:, dgemm_local:, dgemm:, dgemm_local:
+files: dgemm.64.dat, dgemm.64.dat, dgemm.128.dat, dgemm.128.dat

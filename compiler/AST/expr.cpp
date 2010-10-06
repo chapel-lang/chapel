@@ -700,6 +700,12 @@ gen(FILE* outfile, const char* format, ...) {
 }
 
 
+static bool
+isTupleOfTuple(Expr *e) {
+  return (e->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) &&
+          toDefExpr(toClassType(e->typeInfo())->fields.head)->sym->type->symbol->hasFlag(FLAG_TUPLE));
+}
+
 void CallExpr::codegen(FILE* outfile) {
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
@@ -833,8 +839,27 @@ void CallExpr::codegen(FILE* outfile) {
               fprintf(outfile, ", ");
             }
             gen(outfile, "%A, %A)", call->get(2), call->get(3));
-          } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-            gen(outfile, "CHPL_ASSIGN_SVEC(%A, *(%A))", get(1), call->get(1));
+          } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) ||
+                     get(1)->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING)) {
+            if (!fNoTupleCopyOpt &&
+                (toClassType(get(1)->typeInfo())->fields.length <=
+                 tuple_copy_limit) &&
+                !isTupleOfTuple(get(1))) {
+              int i = 0;
+              for_fields(field, toClassType(get(1)->typeInfo())) {
+                if (i != 0) {
+                  fprintf(outfile, ";\n");
+                }
+                gen(outfile, "(%A)[", get(1));
+                fprintf(outfile, "%d] =", i);
+                gen(outfile, " (*(%A))[", call->get(1));
+                fprintf(outfile, "%d]", i);
+                i++;
+              }
+            } else {
+              gen(outfile, "CHPL_ASSIGN_SVEC(%A, *(%A))",
+                  get(1), call->get(1));
+            }
           } else if (call->get(1)->typeInfo() == dtString) {
             // this should be illegal when wide strings are fixed
             gen(outfile, "%A = %A", get(1), call->get(1));
@@ -878,9 +903,26 @@ void CallExpr::codegen(FILE* outfile) {
             gen(outfile, "%A, %A, %A, %A)",
                 call->get(2), fieldType, call->get(3), call->get(4));
           } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-            gen(outfile, "CHPL_ASSIGN_SVEC(%A, ", get(1));
-            codegen_member(outfile, call->get(1), call->get(2));
-            gen(outfile, ")");
+            if (!fNoTupleCopyOpt &&
+                (toClassType(get(2)->typeInfo())->fields.length <=
+                 tuple_copy_limit) &&
+                !isTupleOfTuple(get(2))) {
+              int i = 0;
+              for_fields(field, toClassType(get(2)->typeInfo())) {
+                if (i != 0) {
+                  fprintf(outfile, ";\n");
+                }
+                gen(outfile, "(%A)[", get(1));
+                fprintf(outfile, "%d] = (", i);
+                codegen_member(outfile, call->get(1), call->get(2));
+                fprintf(outfile, ")[%d]", i);
+                i++;
+              }
+            } else {
+              gen(outfile, "CHPL_ASSIGN_SVEC(%A, ", get(1));
+              codegen_member(outfile, call->get(1), call->get(2));
+              gen(outfile, ")");
+            }
           } else {
             SymExpr* se = toSymExpr(call->get(2));
             INT_ASSERT(se);
@@ -912,9 +954,26 @@ void CallExpr::codegen(FILE* outfile) {
             gen(outfile, "%A)", call->get(2));
             break;
           } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-            gen(outfile, "CHPL_ASSIGN_SVEC(%A, ", get(1));
-            codegen_member(outfile, call->get(1), call->get(2));
-            fprintf(outfile, ")");
+            if (!fNoTupleCopyOpt &&
+                (toClassType(get(2)->typeInfo())->fields.length <=
+                 tuple_copy_limit) &&
+                !isTupleOfTuple(get(2))) {
+              int i = 0;
+              for_fields(field, toClassType(get(2)->typeInfo())) {
+                if (i != 0) {
+                  fprintf(outfile, ";\n");
+                }
+                gen(outfile, "(%A)[", get(1));
+                fprintf(outfile, "%d] = (", i);
+                codegen_member(outfile, call->get(1), call->get(2));
+                fprintf(outfile, ")[%d]", i);
+                i++;
+              }
+            } else {
+              gen(outfile, "CHPL_ASSIGN_SVEC(%A, ", get(1));
+              codegen_member(outfile, call->get(1), call->get(2));
+              fprintf(outfile, ")");
+            }
             break;
           }
         }
@@ -942,7 +1001,8 @@ void CallExpr::codegen(FILE* outfile) {
                 fieldType, call->get(3), call->get(4));
           } else {
             Type* tupleType = call->get(1)->getValType();
-            bool useMemCpy = tupleType->getField("x1")->type->symbol->hasFlag(FLAG_STAR_TUPLE);
+            bool useMemCpy =
+              tupleType->getField("x1")->type->symbol->hasFlag(FLAG_STAR_TUPLE);
             if (useMemCpy)
               fprintf(outfile, "CHPL_ASSIGN_SVEC(");
             get(1)->codegen(outfile);
@@ -1104,11 +1164,32 @@ void CallExpr::codegen(FILE* outfile) {
         gen(outfile, "CHPL_NARROW(%A, %A)", get(1), get(2));
         break;
       }
-      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-        if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
-          gen(outfile, "CHPL_ASSIGN_SVEC(*%A, %A)", get(1), get(2));
-        else
-          gen(outfile, "CHPL_ASSIGN_SVEC(%A, %A)", get(1), get(2));
+      if ((get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) || (get(2)->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING))) {
+        if (!fNoTupleCopyOpt &&
+            (toClassType(get(2)->typeInfo())->fields.length <=
+             tuple_copy_limit) &&
+            !isTupleOfTuple(get(2))) {
+          int i = 0;
+          for_fields(field, toClassType(get(2)->typeInfo())) {
+            if (i != 0) {
+              fprintf(outfile, ";\n");
+            }
+            if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
+              fprintf(outfile, "(*");
+            gen(outfile, "(%A)", get(1));
+            if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
+              fprintf(outfile, ")");
+            fprintf(outfile, "[%d] = ", i);
+            gen(outfile, "(%A)", get(2));
+            fprintf(outfile, "[%d]", i);
+            i++;
+          }
+        } else {
+          if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
+            gen(outfile, "CHPL_ASSIGN_SVEC(*%A, %A)", get(1), get(2));
+          else
+            gen(outfile, "CHPL_ASSIGN_SVEC(%A, %A)", get(1), get(2));
+        }
         break;
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
@@ -1128,13 +1209,6 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_GPU_GET_VAL:
     case PRIM_GPU_GET_ARRAY:
       // generated during generation of PRIM_MOVE
-      break;
-    case PRIM_INIT_REF:
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-        gen(outfile, "CHPL_WIDEN_NULL(%A)", get(1));
-      } else {
-        gen(outfile, "%A = NULL", get(1));
-      }
       break;
     case PRIM_SET_REF:
       gen(outfile, "&(%A)", get(1));
@@ -1453,16 +1527,35 @@ void CallExpr::codegen(FILE* outfile) {
         codegenExprMinusOne(outfile, get(2));
         gen(outfile, ", %A, %A)", get(4), get(5));
       } else {
-        if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE))
-          gen(outfile, "CHPL_ASSIGN_SVEC(");
-        codegenTupleMember(outfile, get(1), get(2));
-        if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE))
-          fprintf(outfile, ", ");
-        else
+        if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+          if (!fNoTupleCopyOpt &&
+              (toClassType(get(3)->typeInfo())->fields.length <=
+               tuple_copy_limit) &&
+              !isTupleOfTuple(get(3))) {
+            int i = 0;
+            for_fields(field, toClassType(get(3)->typeInfo())) {
+              if (i != 0) {
+                fprintf(outfile, ";\n");
+              }
+              fprintf(outfile, "(");
+              codegenTupleMember(outfile, get(1), get(2));
+              fprintf(outfile, ")[%d] = (", i);
+              get(3)->codegen(outfile);
+              fprintf(outfile, ")[%d]", i);
+              i++;
+            }
+          } else {
+            gen(outfile, "CHPL_ASSIGN_SVEC(");
+            codegenTupleMember(outfile, get(1), get(2));
+            fprintf(outfile, ", ");
+            get(3)->codegen(outfile);
+            fprintf(outfile, ")");
+          }
+        } else {
+          codegenTupleMember(outfile, get(1), get(2));
           fprintf(outfile, " = ");
-        get(3)->codegen(outfile);
-        if (get(3)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE))
-          fprintf(outfile, ")");
+          get(3)->codegen(outfile);
+        }
       }
       break;
     }
@@ -1509,9 +1602,27 @@ void CallExpr::codegen(FILE* outfile) {
           gen(outfile, "_u.");
         gen(outfile, "%A, %A, %A)", get(2), get(4), get(5));
       } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-        fprintf(outfile, "CHPL_ASSIGN_SVEC(");
-        codegen_member(outfile, get(1), get(2));
-        gen(outfile, ", %A)", get(3));
+        if (!fNoTupleCopyOpt &&
+            (toClassType(get(2)->typeInfo())->fields.length <=
+             tuple_copy_limit) &&
+            !isTupleOfTuple(get(2))) {
+          int i = 0;
+          for_fields(field, toClassType(get(2)->typeInfo())) {
+            if (i != 0) {
+              fprintf(outfile, ";\n");
+            }
+            fprintf(outfile, "(");
+            codegen_member(outfile, get(1), get(2));
+            fprintf(outfile, ")[%d] = ", i);
+            gen(outfile, "(%A)", get(3));
+            fprintf(outfile, "[%d]", i);
+            i++;
+          }
+        } else {
+          fprintf(outfile, "CHPL_ASSIGN_SVEC(");
+          codegen_member(outfile, get(1), get(2));
+          gen(outfile, ", %A)", get(3));
+        }
       } else {
         codegen_member(outfile, get(1), get(2));
         gen(outfile, " = %A", get(3));
@@ -1786,9 +1897,6 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SET_SERIAL:
       gen(outfile, "CHPL_SET_SERIAL(%A)", get(1));
       break;
-    case PRIM_INIT_TASK_LIST:
-      fprintf( outfile, "NULL");
-      break;
     case PRIM_CHPL_ALLOC:
     case PRIM_CHPL_ALLOC_PERMIT_ZERO: {
       bool is_struct = false;
@@ -1989,6 +2097,12 @@ void CallExpr::codegen(FILE* outfile) {
       } else
         codegenBasicPrimitive(outfile, this);
       break;
+    case PRIM_CHPL_CALLSTACKSIZE:
+      fprintf(outfile, "CHPL_TASK_CALLSTACKSIZE()");
+      break;
+    case PRIM_CHPL_CALLSTACKSIZELIMIT:
+      fprintf(outfile, "CHPL_TASK_CALLSTACKSIZELIMIT()");
+      break;
     case PRIM_CHPL_NUMTHREADS:
       fprintf(outfile, "CHPL_NUMTHREADS()");
       break;
@@ -2017,9 +2131,6 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIM_NUM_PRIV_CLASSES:
       fprintf(outfile, "chpl_numPrivatizedClasses()");
-      break;
-    case PRIM_GET_ERRNO:
-      fprintf(outfile, "get_errno()");
       break;
     case PRIM_WARNING:
       // warning issued, continue codegen
@@ -2607,6 +2718,7 @@ void CallExpr::codegen(FILE* outfile) {
   bool first_actual = true;
   int count = 0;
   for_formals_actuals(formal, actual, this) {
+    bool closeDeRefParens = false;
     if (fn->hasFlag(FLAG_GPU_ON) && count < 2) {
       count++;
       continue; // do not print nBlocks and numThreadsPerBlock
@@ -2617,8 +2729,20 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ", ");
     if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
       fprintf(outfile, "(");
-    else if (formal->requiresCPtr() && !actual->typeInfo()->symbol->hasFlag(FLAG_REF))
+    else if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING))
+      fprintf(outfile, "(");
+    else if (fn->hasFlag(FLAG_EXTERN)) {
+      if (formal->type->symbol->hasFlag(FLAG_REF) &&
+          formal->type->symbol->getValType()->symbol->hasFlag(FLAG_STAR_TUPLE) &&
+          actual->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+        fprintf(outfile, "*(");
+        closeDeRefParens = true;
+      }
+    } else if (formal->requiresCPtr() && 
+               !actual->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       fprintf(outfile, "&(");
+      closeDeRefParens = true;
+    }
     if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo() == dtString)
       fprintf(outfile, "((char*)");
     SymExpr* se = toSymExpr(actual);
@@ -2629,7 +2753,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
     if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
       fprintf(outfile, ").addr");
-    else if (formal->requiresCPtr() && !actual->typeInfo()->symbol->hasFlag(FLAG_REF))
+    else if (closeDeRefParens)
       fprintf(outfile, ")");
   }
   fprintf(outfile, ")");

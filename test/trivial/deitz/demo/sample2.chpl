@@ -1,7 +1,7 @@
 use List;
 
 config var phrase : string = "shuffle me please";
-const n = length(phrase);
+const n = (phrase.length);
 
 var encoded = phrase.substring(1..n by 2) + phrase.substring(2..n by 2);
 

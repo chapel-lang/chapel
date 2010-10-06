@@ -7,19 +7,23 @@
 #define NDEBUG
 #endif
 
-#include <errno.h>
 #include "chpl_mem.h"
+#include "chplcast.h"
 #include "chplrt.h"
 #include "chpltasks.h"
+#include "config.h"
 #include "error.h"
+#include <assert.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <pthread.h>
+#include <sched.h>
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#include <signal.h>
-#include <assert.h>
-#include <pthread.h>
-#include <inttypes.h>
+#include <sys/resource.h>
 #include <sys/time.h>
-#include <sched.h>
+#include <unistd.h>
 
 typedef struct {
   void* (*fn)(void*);
@@ -27,10 +31,12 @@ typedef struct {
 } thread_func_t;
 
 
+static pthread_attr_t thread_attributes;
+
 static pthread_cond_t wakeup_cond = PTHREAD_COND_INITIALIZER;
 static pthread_key_t  thread_private_key;
 
-static chpl_condvar_t* chpl_condvar_new(void);
+static void            threadlayer_condvar_init(threadlayer_condvar_t*);
 static void*           initial_pthread_func(void*);
 static void            destroy_thread_private_data(void*);
 static void*           pthread_func(void*);
@@ -91,13 +97,9 @@ void threadlayer_thread_join(threadlayer_threadID_t thread) {
 
 // Condition variables
 
-static chpl_condvar_t* chpl_condvar_new(void) {
-  chpl_condvar_t* cv;
-  cv = (chpl_condvar_t*) chpl_alloc(sizeof(chpl_condvar_t),
-                                    CHPL_RT_MD_COND_VAR, 0, 0);
-  if (pthread_cond_init(cv, NULL))
+static void threadlayer_condvar_init(threadlayer_condvar_t* cv) {
+  if (pthread_cond_init((pthread_cond_t*) cv, NULL))
     chpl_internal_error("pthread_cond_init() failed");
-  return cv;
 }
 
 
@@ -105,71 +107,113 @@ static chpl_condvar_t* chpl_condvar_new(void) {
 
 chpl_bool threadlayer_sync_suspend(chpl_sync_aux_t *s,
                                    struct timeval *deadline) {
-  chpl_condvar_t* cond;
-  cond = s->is_full ? s->tl_aux.signal_empty : s->tl_aux.signal_full;
+  threadlayer_condvar_t* cond;
+  cond = s->is_full ? &s->tl_aux.signal_empty : &s->tl_aux.signal_full;
 
   if (deadline == NULL) {
-    (void) pthread_cond_wait(cond, s->lock);
+    (void) pthread_cond_wait(cond, (pthread_mutex_t*) &s->lock);
     return false;
   }
   else {
     struct timespec ts;
     ts.tv_sec  = deadline->tv_sec;
     ts.tv_nsec = deadline->tv_usec * 1000UL;
-    return pthread_cond_timedwait(cond, s->lock, &ts) == ETIMEDOUT;
+    return (pthread_cond_timedwait(cond, (pthread_mutex_t*) &s->lock, &ts)
+            == ETIMEDOUT);
   }
 }
 
 void threadlayer_sync_awaken(chpl_sync_aux_t *s) {
   if (pthread_cond_signal(s->is_full ?
-                          s->tl_aux.signal_full : s->tl_aux.signal_empty))
+                          &s->tl_aux.signal_full : &s->tl_aux.signal_empty))
     chpl_internal_error("pthread_cond_signal() failed");
 }
 
 void threadlayer_sync_init(chpl_sync_aux_t *s) {
-  s->tl_aux.signal_full = chpl_condvar_new();
-  s->tl_aux.signal_empty = chpl_condvar_new();
+  threadlayer_condvar_init(&s->tl_aux.signal_full);
+  threadlayer_condvar_init(&s->tl_aux.signal_empty);
 }
 
-void threadlayer_sync_destroy(chpl_sync_aux_t *s) {
-  chpl_free(s->tl_aux.signal_full, 0, 0);
-  chpl_free(s->tl_aux.signal_empty, 0, 0);
-}
+void threadlayer_sync_destroy(chpl_sync_aux_t *s) { }
 
 // Single variable callbacks for the FIFO tasking layer
 
 chpl_bool threadlayer_single_suspend(chpl_single_aux_t *s,
                                      struct timeval *deadline) {
   if (deadline == NULL) {
-    (void) pthread_cond_wait(s->tl_aux.signal_full, s->lock);
+    (void) pthread_cond_wait(&s->tl_aux.signal_full,
+                             (pthread_mutex_t*) &s->lock);
     return false;
   }
   else {
     struct timespec ts;
     ts.tv_sec  = deadline->tv_sec;
     ts.tv_nsec = deadline->tv_usec * 1000UL;
-    return
-      pthread_cond_timedwait(s->tl_aux.signal_full, s->lock, &ts) == ETIMEDOUT;
+    return (pthread_cond_timedwait(&s->tl_aux.signal_full,
+                                   (pthread_mutex_t*) &s->lock, &ts)
+            == ETIMEDOUT);
   }
 }
 
 void threadlayer_single_awaken(chpl_single_aux_t *s) {
-  if (pthread_cond_signal(s->tl_aux.signal_full))
+  if (pthread_cond_signal(&s->tl_aux.signal_full))
     chpl_internal_error("pthread_cond_signal() failed");
 }
 
 void threadlayer_single_init(chpl_single_aux_t *s) {
-  s->tl_aux.signal_full = chpl_condvar_new();
+  threadlayer_condvar_init(&s->tl_aux.signal_full);
 }
 
-void threadlayer_single_destroy(chpl_single_aux_t *s) {
-  chpl_free(s->tl_aux.signal_full, 0, 0);
-}
+void threadlayer_single_destroy(chpl_single_aux_t *s) { }
 
 
 // Thread callbacks for the FIFO tasking layer
 
 void threadlayer_init(void) {
+  char* s;
+
+  //
+  // If a value was specified for the call stack size config const, use
+  // that (rounded up to a whole number of pages) to set the system and
+  // pthread stack limits.
+  //
+  if (pthread_attr_init(&thread_attributes) != 0)
+    chpl_internal_error("pthread_attr_init() failed");
+
+  if ((s = chpl_config_get_value("callStackSize", "Built-in")) != NULL) {
+    uint64_t stacksize;
+    int      invalid;
+    char     invalidChars[2] = "\0\0";
+
+    //
+    // We leave it to the Chapel config const initialization code to
+    // emit any official warnings about the syntax or magnitude of the
+    // callStackSize value.  Here we just do some reasonable thing if
+    // there are problems.
+    //
+    stacksize = chpl_string_to_uint64_t_precise(s, &invalid, invalidChars);
+    if (!invalid) {
+      uint64_t      pagesize = (uint64_t) sysconf(_SC_PAGESIZE);
+      struct rlimit rlim;
+
+      stacksize = (stacksize + pagesize - 1) & ~(pagesize - 1);
+
+      if (getrlimit(RLIMIT_STACK, &rlim) != 0)
+        chpl_internal_error("getrlimit() failed");
+
+      rlim.rlim_cur =
+        (rlim.rlim_max != RLIM_INFINITY && (size_t) rlim.rlim_max < stacksize)
+        ? rlim.rlim_max
+        : stacksize;
+
+      if (setrlimit(RLIMIT_STACK, &rlim) != 0)
+        chpl_internal_error("setrlimit() failed");
+
+      if (pthread_attr_setstacksize(&thread_attributes, stacksize) != 0)
+        chpl_internal_error("pthread_attr_setstacksize() failed");
+    }
+  }
+
   if (pthread_key_create(&thread_private_key, destroy_thread_private_data))
     chpl_internal_error("pthread_key_create failed");
 
@@ -210,7 +254,11 @@ static void destroy_thread_private_data(void* p) {
 }
 
 void threadlayer_exit(void) {
-  (void) pthread_key_delete(thread_private_key);
+  if (pthread_key_delete(thread_private_key) != 0)
+    chpl_internal_error("pthread_key_delete() failed");
+
+  if (pthread_attr_destroy(&thread_attributes) != 0)
+    chpl_internal_error("pthread_attr_destroy() failed");
 }
 
 int threadlayer_thread_create(threadlayer_threadID_t* thread,
@@ -222,7 +270,7 @@ int threadlayer_thread_create(threadlayer_threadID_t* thread,
                                   CHPL_RT_MD_THREAD_CALLEE, 0, 0);
   f->fn  = fn;
   f->arg = arg;
-  if (pthread_create(&pthread, NULL, pthread_func, f))
+  if (pthread_create(&pthread, &thread_attributes, pthread_func, f))
     return -1;
   if (thread != NULL)
     *thread = (threadlayer_threadID_t) pthread;
@@ -243,7 +291,7 @@ static void* pthread_func(void* void_f) {
   return (*(fn))(arg);
 }
 
-chpl_bool threadlayer_pool_suspend(chpl_mutex_p lock,
+chpl_bool threadlayer_pool_suspend(threadlayer_mutex_p lock,
                                    struct timeval *deadline) {
   int last_cancel_state;
   chpl_bool res;
@@ -273,7 +321,7 @@ chpl_bool threadlayer_pool_suspend(chpl_mutex_p lock,
 }
 
 static void pool_suspend_cancel_cleanup(void* void_lock) {
-  CHPL_MUTEX_UNLOCK((chpl_mutex_p) void_lock);
+  threadlayer_mutex_unlock((threadlayer_mutex_p) void_lock);
 }
 
 void threadlayer_pool_awaken(void) {
@@ -288,4 +336,36 @@ void* threadlayer_get_thread_private_data(void) {
 void threadlayer_set_thread_private_data(void* p) {
   if (pthread_setspecific(thread_private_key, p))
     chpl_internal_error("thread private data key doesn't work");
+}
+
+uint64_t threadlayer_call_stack_size(void) {
+  struct rlimit rlim;
+
+  //
+  // If there is a soft system stack limit then that's our limit;
+  // otherwise if there is a hard system stack limit then that's
+  // it; otherwise we don't have one.  Note that if the user gave
+  // a value for the call stack size config const on this run, we
+  // have already set the soft system stack limit appropriately,
+  // so our return value will reflect that.
+  //
+  if (getrlimit(RLIMIT_STACK, &rlim) != 0)
+    chpl_internal_error("getrlimit() failed");
+  return ((rlim.rlim_cur == RLIM_INFINITY)
+          ? ((rlim.rlim_max == RLIM_INFINITY)
+             ? 0
+             : (uint64_t) rlim.rlim_max)
+          : (uint64_t) rlim.rlim_cur);
+}
+
+uint64_t threadlayer_call_stack_size_limit(void) {
+  struct rlimit rlim;
+
+  //
+  // If there is a hard system stack limit then that's our limit;
+  // otherwise we don't have one.
+  //
+  if (getrlimit(RLIMIT_STACK, &rlim) != 0)
+    chpl_internal_error("getrlimit() failed");
+  return (rlim.rlim_max == RLIM_INFINITY) ? 0 : (uint64_t) rlim.rlim_max;
 }

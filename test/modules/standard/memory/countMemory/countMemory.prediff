@@ -1,0 +1,17 @@
+#!/usr/bin/env perl
+
+$memfile = "/proc/meminfo";
+
+if (-r $memfile) {
+  open MEMFILE, "$memfile" or die "can't open $memfile $!";
+  my @memLines = <MEMFILE>;
+  close (MEMFILE);
+
+  foreach my $line (@memLines) {
+    if ($line =~ m/MemTotal: (\s*)(\S*)/) {
+      $memfree = "$2";
+    }
+  }
+  $hostname = `hostname -s`; chomp($hostname);
+  system("./countMemory.makegood $memfree > countMemory.$hostname.good");
+}

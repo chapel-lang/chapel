@@ -19,8 +19,8 @@ def getDataParMinGranularity() {
 // helper functions for determining the number of chunks and the
 //   dimension to chunk over
 //
-def _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges, param rank) {
-  // is there a way to avoid passing in rank?
+def _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges) {
+  param rank=ranges.size;
   var numElems: uint(64) = 1;
   for param i in 1..rank do {
     numElems *= ranges(i).length:uint(64);
@@ -50,6 +50,8 @@ def _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges, param rank) {
 }
 
 def _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
+  assert(numElems >= 0);
+  const unumElems = numElems:uint(64);
   const runningTasks = here.runningTasks();
   var numChunks: uint(64) =
     if ignoreRunning then maxTasks:uint(64)
@@ -59,15 +61,47 @@ def _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
 
   if minSize > 0 then
     // This is approximate
-    while (numElems:uint(64) < minSize:uint(64)*numChunks) && (numChunks > 1) {
+    while (unumElems < minSize:uint(64)*numChunks) && (numChunks > 1) {
         numChunks -= 1;
     }
 
-  if numChunks > numElems:uint(64) then numChunks = numElems:uint(64);
+  if numChunks > unumElems then numChunks = unumElems;
 
   return numChunks;
 }
 
+// How many tasks should be spawned to service numElems elements.
+def _computeNumChunks(numElems) {
+  // copy some machinery from DefaultArithmeticDom
+  var numTasks = if dataParTasksPerLocale==0
+                 then here.numCores
+                 else dataParTasksPerLocale;
+  var ignoreRunning = dataParIgnoreRunningTasks;
+  var minIndicesPerTask = dataParMinGranularity;
+  var numChunks = _computeNumChunks(numTasks, ignoreRunning,
+                                    minIndicesPerTask, numElems)
+                  :numElems.type;
+  return numChunks;
+}
+
+// Divide 1..numElems into (almost) equal numChunk pieces
+// and return myChunk-th piece.
+def _computeChunkStartEnd(numElems, numChunks, myChunk) {
+  var div = numElems / numChunks;
+  var rem = numElems % numChunks;
+
+  if myChunk <= rem then {
+    // (div+1) elements per chunk
+    var endIx = myChunk * (div + 1);
+    //writeln("yielding ", endIx - div, "..", endIx);
+    return (endIx - div, endIx);
+  } else {
+    // (div) elements per chunk
+    var startIx1 = numElems - (numChunks - myChunk + 1) * div;
+    //writeln("yielding ", startIx1 + 1, "..", startIx1 + div);
+    return (startIx1 + 1, startIx1 + div);
+  }
+}
 
 //
 // helper function for blocking index ranges

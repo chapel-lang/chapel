@@ -61,7 +61,6 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_GET_REAL:
   case PRIM_GET_IMAG:
 
-  case PRIM_INIT_REF:
   case PRIM_SET_REF:
 
   case PRIM_INIT_FIELDS:
@@ -88,13 +87,8 @@ isFastPrimitive(CallExpr *call) {
 
   case PRIM_DELETE:
 
-  case PRIM_IS_ENUM:
-  case PRIM_IS_TUPLE:
-
   case PRIM_LOCALE_ID:
   case PRIM_NUM_LOCALES:
-
-  case PRIM_GET_ERRNO:
 
   case PRIM_STRING_COPY:
 

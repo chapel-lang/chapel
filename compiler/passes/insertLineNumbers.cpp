@@ -185,6 +185,16 @@ void insertLineNumbers() {
     }
   }
 
+  // loop over all marked functions ("insert line file info"), add
+  // line number and filename arguments to these functions, and add
+  // them to the queue
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO)) {
+      newLine(fn);
+      newFile(fn);
+    }
+  }
+
   // loop over all functions in the queue and all calls to these
   // functions, and pass the calls an actual line number and filename
   forv_Vec(FnSymbol, fn, queue) {

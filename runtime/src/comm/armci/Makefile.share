@@ -13,9 +13,7 @@ COMM_OBJS = \
 COMM_LAUNCHER_OBJS = \
 	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
 
-ARMCI_INSTALL = $(RUNTIME_ROOT)/../third-party/armci/armci-GPCsockets
-
-INCL_CFLAGS += -I$(ARMCI_INSTALL)/src -I$(MPICH1_INSTALL)/include
+INCL_CFLAGS += -I$(ARMCI_INSTALL_DIR)/src -I$(MPICH1_INSTALL_DIR)/include
 
 #
 # -Wno-strict-prototypes is required below because armci.h doesn't use
