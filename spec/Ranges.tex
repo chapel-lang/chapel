@@ -368,6 +368,27 @@ writeln((r, r2, r3, r4));
 \subsection{Predefined Functions and Methods on Ranges}
 \index{ranges!predefined functions}
 \begin{protohead}
+def $range$.idxType type
+\end{protohead}
+\begin{protobody}
+Returns the index type of the range.
+\end{protobody}
+
+\begin{protohead}
+def $range$.stridable type
+\end{protohead}
+\begin{protobody}
+Returns true if the range is stridable, false otherwise.
+\end{protobody}
+
+\begin{protohead}
+def $range$.boundedType type
+\end{protohead}
+\begin{protobody}
+Returns boundedType of the range.
+\end{protobody}
+
+\begin{protohead}
 def $range$.low : idxType
 \end{protohead}
 \begin{protobody}

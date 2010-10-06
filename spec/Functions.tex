@@ -665,7 +665,7 @@ If a return type is specified, the values that the function returns
 via return statements must be assignable to a value of the return
 type.  For variable functions~(\rsec{Variable_Functions}), the return
 type must match the type returned in all of the return statements
-exactly.
+exactly after generic instantiation and parameter folding.
 
 \subsubsection{Implicit Return Types}
 \label{Implicit_Return_Types}
@@ -699,7 +699,7 @@ listed in the following table:
 {\bf arity} & {\bf operators} \\
 \hline
 unary & \verb@+ - ! ~@ \\
-binary & \verb@+ - * / % ** ! == <= >= < > << >> & | ^ @ \\
+binary & \verb@+ - * / % ** ! == <= >= < > << >> & | ^ @ by\\
 \hline
 \end{tabular}
 \end{center}
