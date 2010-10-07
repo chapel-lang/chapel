@@ -548,10 +548,11 @@ these semantics need to be defined nevertheless.
 All domain types support domain assignment.  Domain assignment is by
 value and causes the target domain variable to take on the index set
 of the right-hand side expression.  In practice, the right-hand side
-expression is often another domain value, a tuple of indices, or a
-loop that enumerates indices.  If the domain variable being assigned
-was used to declare arrays, these arrays are reallocated as discussed
-in~\rsec{Association_of_Arrays_to_Domains}.
+expression is often another domain value; a tuple of ranges (for
+regular domains); or a tuple of indices or a loop that enumerates
+indices (for irregular domains).  If the domain variable being
+assigned was used to declare arrays, these arrays are reallocated as
+discussed in~\rsec{Association_of_Arrays_to_Domains}.
 
 \begin{example}
 The following three assignments show ways of assigning indices to a
@@ -852,10 +853,17 @@ dimension is iterated over in the inner loop.
 % per-dimension index type in the language that I can see.
 
 \begin{protohead}
-def $Domain$.rank param
+def $Domain$.rank param : int
 \end{protohead}
 \begin{protobody}
-Returns the rank of the domain.
+Returns the rank of the domain as a parameter int.
+\end{protobody}
+
+\begin{protohead}
+def $Domain$.stridable param : bool
+\end{protohead}
+\begin{protobody}
+Returns whether or not the domain is stridable as a parameter bool.
 \end{protobody}
 
 \begin{protohead}
@@ -872,6 +880,16 @@ def $Domain$.high: index($Domain$)
 \begin{protobody}
 Returns the high index of the domain as a value of the domain's index
 type.
+\end{protobody}
+
+\begin{protohead}
+def $Domain$.stride: int(numBits(idxType)) where rank == 1
+def $Domain$.stride: rank*int(numBits(idxType))
+\end{protohead}
+\begin{protobody}
+Returns the stride of the domain as the domain's stride type (for 1D
+domains) or a tuple of the domain's stride type (for multidimensional
+domains).
 \end{protobody}
 
 \begin{protohead}

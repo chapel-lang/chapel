@@ -61,6 +61,11 @@ TODOs from email:
 - in Sort module, add definition that < is used to do the sort.
 
 
+Generics
+--------
+* add mention of the new 'depth' argument for compilerWarning/Error
+
+
 TODOs while updating the CHANGES file
 -------------------------------------
 * document the Containers module
