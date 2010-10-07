@@ -17,6 +17,9 @@
 #define CHPL_COMM_GASNET_SETENV
 #endif
 
+void* globalHeapStart;
+size_t globalHeapSize;
+
 static chpl_sync_aux_t chpl_comm_diagnostics_sync;
 static int chpl_comm_gets = 0;
 static int chpl_comm_puts = 0;
@@ -283,8 +286,12 @@ void chpl_comm_init_shared_heap(void) {
   void* heapStart = chpl_numGlobalsOnHeap*sizeof(void*) + (char*)seginfo_table[chpl_localeID].addr;
   size_t heapSize = seginfo_table[chpl_localeID].size - chpl_numGlobalsOnHeap*sizeof(void*);
   chpl_initHeap(heapStart, heapSize);
+  globalHeapStart = (char*)seginfo_table[chpl_localeID].addr;
+  globalHeapSize = seginfo_table[chpl_localeID].size;
 #else
   chpl_initHeap(NULL, 0);
+  globalHeapStart = NULL;
+  globalHeapSize = 0;
 #endif
 }
 

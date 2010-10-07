@@ -15,8 +15,6 @@
 #include "error.h"
 
 
-void* chpl_heapStart;
-size_t chpl_heapSize;
 int heapInitialized = 0;
 
 
@@ -56,8 +54,6 @@ const char* chpl_memDescString(chpl_memDescInt_t mdi) {
 void chpl_initHeap(void* start, size_t size) {
   chpl_md_initHeap(start, size);
   heapInitialized = 1;
-  chpl_heapStart = start;
-  chpl_heapSize = size;
 }
 
 

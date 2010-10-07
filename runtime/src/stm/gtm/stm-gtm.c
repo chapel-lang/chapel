@@ -9,6 +9,18 @@
 #include "stm-gtm.h"
 #include "stm-gtm-atomic.h"
 
+extern void* globalHeapStart;   // see src/comm/gasnet
+extern size_t globalHeapSize; 
+
+static int isHeapAddr(void* addr) {
+  if (!(globalHeapStart && globalHeapSize))
+    return 1;
+  if ((char*) addr >= (char*) globalHeapStart)
+    if ((char*) addr <= (char*) globalHeapStart + globalHeapSize)
+      return 1;
+  return 0;
+}
+
 void chpl_stm_init() { 
   assert(sizeof(gtm_word_t) == sizeof(void*));
   assert(sizeof(gtm_word_t) == sizeof(atomic_t));
@@ -215,10 +227,16 @@ void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t siz
   assert(tx != NULL);
   assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
-  CHPL_STM_STATS_START(tx->counters, STATS_TX_LOAD);
-  GTM_Safe(tx, gtm_tx_load_wrap(tx, dstaddr, srcaddr, size));
-  CHPL_STM_STATS_STOP(tx->counters, STATS_TX_LOAD, size);
+
+  if(isHeapAddr(srcaddr)) {
+    CHPL_STM_STATS_START(tx->counters, STATS_TX_LOAD);
+    GTM_Safe(tx, gtm_tx_load_wrap(tx, dstaddr, srcaddr, size));
+    CHPL_STM_STATS_STOP(tx->counters, STATS_TX_LOAD, size);
+  } else {
+    memcpy(dstaddr, srcaddr, size);
+  }
 }
+
 
 int gtm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t size) {
   wrapper_t sval, mask;
@@ -293,9 +311,13 @@ void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t si
   assert(tx != NULL);
   assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
-  CHPL_STM_STATS_START(tx->counters, STATS_TX_STORE);
-  GTM_Safe(tx, gtm_tx_store_wrap(tx, srcaddr, dstaddr, size));
-  CHPL_STM_STATS_STOP(tx->counters, STATS_TX_STORE, size);
+  if(isHeapAddr(dstaddr)) {
+    CHPL_STM_STATS_START(tx->counters, STATS_TX_STORE);
+    GTM_Safe(tx, gtm_tx_store_wrap(tx, srcaddr, dstaddr, size));
+    CHPL_STM_STATS_STOP(tx->counters, STATS_TX_STORE, size);
+  } else {
+    memcpy(dstaddr, srcaddr, size);
+  }
 }
 
 void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size, int ln, chpl_string fn) {

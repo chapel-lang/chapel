@@ -14,17 +14,6 @@
 #define LOCK_GET_TIMESTAMP(lock)    (((unsigned long)lock) >> 1) 
 #define VERSION_MAX                 (~(gtm_word_t)0 >> 1)
 
-extern void* chpl_heapStart;   // see src/chpl_mem.c
-extern size_t chpl_heapSize; 
-
-static
-int isHeapAddr(gtm_word_p addr) {
-  if ((!chpl_heapStart && !chpl_heapSize) || (addr >= (gtm_word_p) chpl_heapStart && addr <= (gtm_word_p) chpl_heapStart + chpl_heapSize)) {
-    return 1;
-  }
-  return 0;
-}
-
 static inline
 write_entry_t* gtm_tx_has_write_entry(chpl_stm_tx_p tx, volatile gtm_word_p lock) {
   write_entry_t* wentry;  
@@ -140,11 +129,6 @@ int gtm_tx_load_word(chpl_stm_tx_t* tx, gtm_word_p dstaddr, gtm_word_p srcaddr) 
   read_entry_t* rentry;
   write_entry_t* wentry;
 
-  if(!isHeapAddr(srcaddr)) {
-    *dstaddr = *srcaddr;
-    return TX_OK;
-  }
-
   lock = GET_LOCK(srcaddr);
   lockval = ATOMIC_LOAD_MB(lock);
  restart:
@@ -196,11 +180,6 @@ int gtm_tx_store_word(chpl_stm_tx_t* tx, gtm_word_p srcaddr, gtm_word_p dstaddr,
   read_entry_t* rentry;
   write_entry_t* prev;
   write_entry_t* wentry;
-
-  if(!isHeapAddr(dstaddr)) {
-    *dstaddr = *srcaddr & mask;
-    return TX_OK;
-  }
 
   assert(mask != 0);
   value = *srcaddr; 
