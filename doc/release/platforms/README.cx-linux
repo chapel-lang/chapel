@@ -1,43 +1,43 @@
-===============================
-Using Chapel on a Cray CX1 (TM)
-===============================
+===================================================
+Using Chapel on a Cray CX1 (TM) or Cray CX1000 (TM)
+===================================================
 
 The following information is assembled to help users get up and
-running on multiple nodes of a Cray CX1 running Linux.  If you are not
-familiar with Chapel, it is recommended that you first try the
-instructions in the top-level README to get started with the language.
-In this case your programs will run on the login node (which may be
-faster for small programs).
+running on multiple nodes of a Cray CX1 or Cray CX1000 running Linux.
+If you are not familiar with Chapel, it is recommended that you first
+try the instructions in the top-level README to get started with the
+language.  In this case your programs will run on the login node
+(which may be faster for small programs).
 
 
 1) Set CHPL_HOME and MANPATH as indicated in README.chplenv.
 
 
-2) Set CHPL_HOST_PLATFORM to cx1-linux and CHPL_COMM to gasnet.
+2) Set CHPL_HOST_PLATFORM to cx-linux and CHPL_COMM to gasnet.
    For example:
 
-     setenv CHPL_HOST_PLATFORM cx1-linux
+     setenv CHPL_HOST_PLATFORM cx-linux
      setenv CHPL_COMM gasnet
 
    Advanced information about running using multiple locales and GASNet
    can be found in README.multilocale.
 
 
-3) Set your PATH to include the directory $CHPL_HOME/bin/cx1-linux
+3) Set your PATH to include the directory $CHPL_HOME/bin/cx-linux
    which is created when you build the compiler.  For example:
 
-     setenv PATH "$PATH":"$CHPL_HOME/bin/cx1-linux"
+     setenv PATH "$PATH":"$CHPL_HOME/bin/cx-linux"
 
 
-4) If your Cray CX1 uses LSF for scheduling jobs between multiple
-   users, you can have Chapel take care of the details for you by
-   setting CHPL_LAUNCHER to lsf-gasnetrun_ibv.  For example:
+4) If your Cray CX1/CX1000 uses LSF for scheduling jobs between
+   multiple users, you can have Chapel take care of the details for
+   you by setting CHPL_LAUNCHER to lsf-gasnetrun_ibv.  For example:
 
      setenv CHPL_LAUNCHER lsf-gasnetrun_ibv
 
-   If your Cray CX1 uses PBS for scheduling jobs between multiple
-   users, you can have Chapel take care of the details for you by
-   setting CHPL_LAUNCHER to pbs-gasnetrun_ibv.  For example:
+   If your Cray CX1/CX1000 uses PBS for scheduling jobs between
+   multiple users, you can have Chapel take care of the details for
+   you by setting CHPL_LAUNCHER to pbs-gasnetrun_ibv.  For example:
 
      setenv CHPL_LAUNCHER pbs-gasnetrun_ibv
 
@@ -45,10 +45,10 @@ faster for small programs).
    or qsub (PBS) job on your behalf and then launch your program using
    the gasnetrun_ibv launcher.
 
-   If your Cray CX1 does not use LSF or PBS, you do not need to set
-   CHPL_LAUNCHER, in which case it will default to gasnetrun_ibv (a
-   GASNet launch script for Infiniband networks).  In this case, you
-   will need to set GASNET_SSH_SERVERS to list the names of the
+   If your Cray CX1/CX1000 does not use LSF or PBS, you do not need to
+   set CHPL_LAUNCHER, in which case it will default to gasnetrun_ibv
+   (a GASNet launch script for Infiniband networks).  In this case,
+   you will need to set GASNET_SSH_SERVERS to list the names of the
    compute nodes on your system.  For example:
 
      setenv GASNET_SSH_SERVERS 'compute-0-0.local compute-0-1.local'
@@ -58,9 +58,10 @@ faster for small programs).
    on Chapel's launcher capabilities.
 
 
-5) By default, Chapel will use gcc as the compiler for a Cray CX1.  If
-   you want to override this choice, you can select another compiler
-   using the CHPL_HOST_COMPILER variable.  See README.chplenv for options.
+5) By default, Chapel will use gcc as the compiler for a Cray
+   CX1/CX1000.  If you want to override this choice, you can select
+   another compiler using the CHPL_HOST_COMPILER variable.  See
+   README.chplenv for options.
 
 
 6) Make sure you're in the top-level chapel/ directory:

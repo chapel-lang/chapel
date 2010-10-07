@@ -82,13 +82,14 @@ For more detailed information about...      refer to...
   ...executing programs on multiple locales  ...doc/README.multilocale
   ...how Chapel tasks are mapped to threads  ...doc/README.tasks
 
-  ...using Chapel on a Cray XE (TM)          ...doc/platforms/README.xe-cle
-  ...using Chapel on a Cray XT (TM) (CLE)    ...doc/platforms/README.xt-cle
-  ...using Chapel on a Cray CX1 (TM) (Linux) ...doc/platforms/README.cx1-linux
-  ...using Chapel on a Cray XMT (TM)         ...doc/platforms/README.xmt
-  ...using Chapel with Cygwin over Windows   ...doc/platforms/README.cygwin
-  ...using Chapel on an IBM system           ...doc/platforms/README.ibm
-  ...using Chapel on an SGI Altix system     ...doc/platforms/README.sgi
+  ...using Chapel on a specific platform...
+     ...a Cray CX1 (TM) or Cray CX1000 (TM)  ...doc/platforms/README.cx-linux
+     ...a Cray XE (TM)                       ...doc/platforms/README.xe-cle
+     ...a Cray XMT (TM)                      ...doc/platforms/README.xmt
+     ...a Cray XT (TM) (CLE)                 ...doc/platforms/README.xt-cle
+     ...Cygwin over Windows                  ...doc/platforms/README.cygwin
+     ...an IBM system                        ...doc/platforms/README.ibm
+     ...an SGI Altix system                  ...doc/platforms/README.sgi
 
   ...calling C routines from Chapel          ...doc/technotes/README.extern
   ...formatting value-to-string conversions  ...doc/technotes/README.format

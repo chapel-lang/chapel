@@ -33,6 +33,7 @@ Syntactic/Naming Changes
 - made string length a parenthesis-less method rather than a standalone function
   (i.e., 'length(mystring)' should now be written mystring.length)
   ***CHECK SPEC***
+- renamed the cx1-linux CHPL_*_PLATFORM variable to cx-linux
 
 Semantic Changes/Changes to Chapel Language
 -------------------------------------------
@@ -80,6 +81,8 @@ Standard Modules
 
 Platform-specific notes
 -----------------------
+- added support for the Cray CX1000 as part of the cx-linux CHPL_*_PLATFORM
+- added support for using LFS as a launcher for cx-linux via lfs-gasnetrun_ibv
 - added support for the Cray XE6 via a new CHPL_*_PLATFORM variable xe-cle
   (see doc/platforms/README.xe-cle)
 - for xt-cle/xe-cle:

@@ -38,10 +38,11 @@ Currently-supported launchers include:
   amudprun          : GASNet launcher for programs running over UDP
   aprun             : Cray XT application launcher using aprun
   gasnetrun_ibv     : GASNet launcher for programs running over Infiniband
+  lfs-gasnetrun_ibv : GASNet launcher using LFS (bsub) over Infiniband
   loadleveler       : launch using IBM loadleveler (still needs refining)
   mtarun            : Cray XMT application launcher using mtarun
   pbs-aprun         : Cray XT application launcher using PBS (qsub) + aprun
-  pbs-gasnetrun_ibv : GASNet launcher using PBS (qsub) + aprun over Infiniband
+  pbs-gasnetrun_ibv : GASNet launcher using PBS (qsub) over Infiniband
   pvm               : PVM launcher using pvm_spawn
   none              : do not use a launcher
 

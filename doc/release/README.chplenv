@@ -35,11 +35,11 @@ Recommended Settings
         setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/chplenv/platform`
 
    For other platforms that appear very similar to a UNIX workstation
-   from the shell prompt (e.g., a Cray XT or Cray CX1), the value may
-   need to be set explicitly.  The strings for our currently-supported
-   host platforms are as follows:
+   from the shell prompt (e.g., a Cray XT or Cray CX1000), the value
+   may need to be set explicitly.  The strings for our
+   currently-supported host platforms are as follows:
 
-        cx1-linux : Cray CX1 running Linux
+        cx-linux  : Cray CX1 or Cray CX1000 running Linux
         cygwin    : Cygwin (Windows) platforms
         darwin    : Macintosh OS X platforms
         linux32   : 32-bit Linux platforms
@@ -48,9 +48,10 @@ Recommended Settings
         pwr5      : IBM Power5 SMP cluster
         pwr6      : IBM Power6 SMP cluster
         sunos     : SunOS platforms
+        xe-cle    : Cray XE running the Cray Linux Environment (CLE)
         xt-cle    : Cray XT running the Cray Linux Environment (CLE)
 
-   See README.cx1-linux, README.cygwin, README.macosx, README.ibm, and
+   See README.cx-linux, README.cygwin, README.macosx, README.ibm, and
    README.xt-cle for specific notes for each of these platforms.
 
    The Chapel Makefiles and sources are designed to work for any
@@ -124,7 +125,7 @@ Optional Settings
 
         platform        compiler
         --------        --------
-        cx1-linux   ->  gnu
+        cx-linux    ->  gnu
         xmt         ->  cray-mta
         pwr5, pwr6  ->  ibm
         x1, x2      ->  cray-vec
