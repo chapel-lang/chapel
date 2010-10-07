@@ -46,32 +46,32 @@ config const printParams = true,
              printArrays = false,
              printStats = true;
 
-//
-// TableDist is a 1D block distribution for domains storing indices
-// of type "indexType", and it is computed by blocking the bounding
-// box 0..m-1 across the set of locales.  UpdateDist is a similar
-// distribution that is computed by blocking the indices 0..N_U-1
-// across the locales.
-//
-const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
-      UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1]));
-
-//
-// TableSpace describes the index set for the table.  It is a 1D
-// domain storing indices of type indexType, it is distributed
-// according to TableDist, and it contains the indices 0..m-1.
-// Updates is an index set describing the set of updates to be made.
-// It is distributed according to UpdateDist and contains the
-// indices 0..N_U-1.
-//
-const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
-      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
-
 
 //
 // The program entry point
 //
 def main() {
+  //
+  // TableDist is a 1D block distribution for domains storing indices
+  // of type "indexType", and it is computed by blocking the bounding
+  // box 0..m-1 across the set of locales.  UpdateDist is a similar
+  // distribution that is computed by blocking the indices 0..N_U-1
+  // across the locales.
+  //
+  const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
+        UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1]));
+
+  //
+  // TableSpace describes the index set for the table.  It is a 1D
+  // domain storing indices of type indexType, it is distributed
+  // according to TableDist, and it contains the indices 0..m-1.
+  // Updates is an index set describing the set of updates to be made.
+  // It is distributed according to UpdateDist and contains the
+  // indices 0..N_U-1.
+  //
+  const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
+        Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
+
   //
   // T is the distributed table itself, storing a variable of type
   // elemType for each index in TableSpace.
@@ -108,7 +108,7 @@ def main() {
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
-  const validAnswer = verifyResults(T);            // verify the updates
+  const validAnswer = verifyResults(T, Updates);   // verify the updates
   printResults(validAnswer, execTime);             // print the results
 }
 
@@ -126,12 +126,13 @@ def printConfiguration() {
 //
 // Verify that the computation is correct
 //
-def verifyResults(T) {
+def verifyResults(T: [?TableSpace], Updates) {
   //
   // Print the table, if requested
   //
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
+  const TableDist = TableSpace.dist;
   //
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
