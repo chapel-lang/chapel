@@ -32,21 +32,17 @@ Syntactic/Naming Changes
 - renamed the range's index type from eltType to idxType
 - made string length a parenthesis-less method rather than a standalone function
   (i.e., 'length(mystring)' should now be written mystring.length)
-  ***CHECK SPEC***
 - renamed the cx1-linux CHPL_*_PLATFORM variable to cx-linux
 
 Semantic Changes/Changes to Chapel Language
 -------------------------------------------
 - added initial support for first-class and anonymous functions
-  (see technotes/README.TODO) ***
+  (see doc/technotes/README.firstClassFns)
 - added support for config types and params
   ***CHECK SPEC***
 - added support for param 'this' arguments to methods
-  ***CHECK SPEC***
 - added support for assigning tuples of ranges to arithmetic domains
-  ***CHECK SPEC***
 - added support for .stridable and .stride methods on domains
-  ***CHECK SPEC***
 - changed the range's stride type from an int to a signed int of the index type
   (e.g., range(uint(64)) and range(int(64)) now store a stride value of int(64))
 - made the by operator for a range accept the range's idxType or its stride type
@@ -200,7 +196,6 @@ Internal
 - made the compileTest script more robust w.r.t. -I, -M, .h, etc. arguments
 - cached the number of processor cores in the locale type
 - added versions of compilerError and compilerWarning that take a call depth
-  ***TODO add to spec and hoist up***
 - reduced the number of runtime files that get rebuilt when the compiler changes
 - simplified the implementation of associative arrays to reduce copies/temps
 - removed the 'size' field from the default arithmetic array class
@@ -210,6 +205,7 @@ Internal
 - added a new repositionDefExprs pass to make local variables safe on XMT
 - added --local-temp-names flag to use a different temp naming scheme
 - changed the --gen-communicated-structures developer flag to --heterogeneous
+
 
 =============
 version 1.1.2
