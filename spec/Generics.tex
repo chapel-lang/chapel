@@ -393,8 +393,10 @@ A type alias defined in a class or record is accessed as if it were a
 field.  Moreover, it becomes an argument with intent \chpl{type} to
 the default constructor for that class or record.  This makes the
 default constructor generic.  When the default constructor is
-instantiated, the type is instantiated where the type bound to the
-type alias is set to be the type passed to the default constructor.
+instantiated, the generic type is instantiated so that the type
+alias is bound to the actual type passed to the constructor.
+
+% VASS: CONTINUE HERE
 
 \begin{example}
 The following code defines a class called \chpl{Node} that implements
@@ -528,12 +530,88 @@ as \chpl{Node(int)}.
 \label{Generic_Methods}
 \index{generics!methods}
 
-All methods bound to generic classes or records are generic over the
-implicit \chpl{this} argument and any other argument that is generic.
+All methods bound to generic classes or records, including constructors, are generic over the
+implicit \chpl{this} argument, in addition to any other argument that is generic.
+
+\subsubsection{Generic Constructors}
+\label{Generic_Constructors}
+\index{generics!constructors}
+
+
+If a generic field of a class does not have an initialization expression,
+each constructor for that class must provide a formal argument whose name
+matches the name of the field.
+If the name of a formal argument in a constructor matches the name of
+a generic field that either does not have an initialization
+expression, is a type field, or is a parameter field, the field is
+automatically initialized to the actual value for that argument upon
+the constructor invocation.
+
+%%  The following story is nicer but it's not how it is implemented:
+%If the name of a formal argument in a class constructor
+%matches the name of a generic field, the field is automatically initialized
+%to the actual value for that argument upon the constructor invocation.
+%If the generic field does not have an initialization expression,
+%such a matching formal argument must be provided in each constructor
+%for that class.
+
+\begin{example}
+In the following code:
+\begin{chapelpre}
+% constructorsForGenericFields.chpl
+\end{chapelpre}
+\begin{chapel}
+class MyGenericClass {
+  type t1;
+  param p1;
+  const c1;
+  var v1;
+  var x1: t1; // this field is not generic
+
+  type t5 = real;
+  param p5 = "a string";
+  const c5 = 5.5;
+  var v5 = 555;
+  var x5: t5; // this field is not generic
+
+  def MyGenericClass(c1, v1, type t1, param p1) { }
+  def MyGenericClass(type t5, param p5, c5, v5, x5,
+                     type t1, param p1, c1, v1, x1) { }
+}  // class MyGenericClass
+
+var g1 = new MyGenericClass(11, 111, int, 1);
+var g2 = new MyGenericClass(int, "this is g2", 3.3, 333, 3333,
+                            real, 2, 222, 222.2, 22);
+\end{chapel}
+\begin{chapelpost}
+writeln(g1);
+writeln(g2);
+\end{chapelpost}
+\begin{chapeloutput}
+{p1 = 1, c1 = 11, v1 = 111, x1 = 0, p5 = a string, c5 = 5.5, v5 = 555, x5 = 0.0}
+{p1 = 2, c1 = 222, v1 = 222.2, x1 = 0.0, p5 = this is g2, c5 = 5.5, v5 = 555, x5 = 0}
+\end{chapeloutput}
+the arguments \chpl{t1}, \chpl{p1}, \chpl{c1}, and \chpl{v1} are
+required in all constructors for \chpl{MyGenericClass}. They can appear
+in any order. Both \chpl{MyGenericClass} constructors initialize the
+corresponding fields implicitly because these fields do not have initialization
+expressions. The second constructor also initializes implicitly
+the fields \chpl{t5} and \chpl{p5} because they are a type field
+and a parameter field. It does not initialize the fields \chpl{c5}
+and \chpl{v5} because they have initialization expressions, or
+the fields \chpl{x1} and \chpl{x5} because they are not generic fields
+(even though they are of generic types).
+\end{example}
+
+\begin{openissue}
+The design of constructors, especially for generic classes, is
+under development, so the above specification may change.
+\end{openissue}
 
 \subsection{Where Expressions}
 \label{Where_Expressions}
 \index{where@\chpl{where}}
+\index{generics!where@\chpl{where}}
 
 The instantiation of a generic function can be constrained by {\em
 where clauses}.  A where clause is specified in the definition of a

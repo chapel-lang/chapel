@@ -64,7 +64,7 @@ function-name:
   operator-name
 
 operator-name: one of
-  + - * / % ** ! == <= >= < > << >> & | ^ ~
+  + $ $ $ $ - $ $ $ $ * $ $ $ $ / $ $ $ $ % $ $ $ $ ** $ $ $ $ ! $ $ $ $ == $ $ $ $ <= $ $ $ $ >= $ $ $ $ < $ $ $ $ > $ $ $ $ << $ $ $ $ >> $ $ $ $ & $ $ $ $ | $ $ $ $ ^ $ $ $ $ ~
 
 argument-list:
   ( formals[OPT] )
@@ -74,10 +74,10 @@ formals:
   formal , formals
 
 formal:
-  formal-tag identifier formal-type[OPT] default-expression[OPT]
-  formal-tag identifier formal-type[OPT] variable-argument-expression
-  formal-tag tuple-grouped-identifier-list formal-type[OPT] default-expression[OPT]
-  formal-tag tuple-grouped-identifier-list formal-type[OPT] variable-argument-expression
+  formal-intent[OPT] identifier formal-type[OPT] default-expression[OPT]
+  formal-intent[OPT] identifier formal-type[OPT] variable-argument-expression
+  formal-intent[OPT] tuple-grouped-identifier-list formal-type[OPT] default-expression[OPT]
+  formal-intent[OPT] tuple-grouped-identifier-list formal-type[OPT] variable-argument-expression
 
 formal-type:
   : type-specifier
@@ -91,7 +91,7 @@ variable-argument-expression:
   ... ? identifier[OPT]
   ...
 
-formal-tag: one of
+formal-intent: one of
   `in' `out' `inout' `param' `type'
 
 var-param-type-clause:
@@ -125,9 +125,9 @@ call site, resulting in the implicit passing of a default value.
 Default values are discussed in~\rsec{Default_Values}.
 
 The intents \chpl{in}, \chpl{out}, and \chpl{inout} are discussed
-in~\rsec{Intents}.  The formal tags \chpl{param} and \chpl{type} make
+in~\rsec{Intents}.  The intents \chpl{param} and \chpl{type} make
 a function generic and are discussed in~\rsec{Generics}.  If the
-formal argument's type is elided, generic, or prefixed with a question
+formal argument's type is omitted, generic, or prefixed with a question
 mark, the function is also generic and is discussed
 in~\rsec{Generics}.
 
@@ -143,12 +143,13 @@ specified via the keyword~\chpl{const}.
 
 Return types are optional and are discussed in~\rsec{Return_Types}.
 
-The optional where clause is only applicable if the function is
+The optional \sntx{where-clause} is only applicable if the function is
 generic.  It is discussed in~\rsec{Where_Expressions}.
 
-Operator overloading is supported in Chapel on the operators listed
-above under operator name.  Operator and function overloading is
+Function and operator overloading is supported in Chapel and is
 discussed in~\rsec{Function_Overloading}.
+Operator overloading is supported on the operators listed
+above (see \sntx{operator-name}).
 
 
 \subsection{Functions without Parentheses}
@@ -267,9 +268,10 @@ default values are specified for the formal arguments \chpl{x}
 and \chpl{y}.  The three calls to \chpl{foo} are equivalent to the
 following three calls where the actual arguments are
 explicit: \chpl{foo(5, 7)}, \chpl{foo(7, 7)}, and \chpl{foo(5, 5)}.
-Note that named arguments are necessary to pass actual arguments to
-formal arguments but use default values for arguments that are
-specified earlier in the formal argument list.
+The example \chpl{foo(y=5)} shows that we have to use a named argument
+for \chpl{y} in order to use the default value for \chpl{x} in the
+case when \chpl{x} appears earlier than \chpl{y} in the formal
+argument list.
 \end{example}
 
 
