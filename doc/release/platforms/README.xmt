@@ -7,13 +7,13 @@ running on a Cray XMT.  If you are not familiar with Chapel, it is
 recommended that you first try the instructions in the top-level
 README to get started with the language.
 
-It should be noted that support for Chapel on Cray XMT systems is very
-preliminary, and performance may be unacceptable for certain language
-constructs.  In particular, the implementation of Chapel's data
-parallel constructs (e.g., domain and array operations) has not yet
-been optimized to leverage the native compiler.  On the other hand, we
-believe the task parallel constructs will perform more reasonably, as
-these constructs map directly to native constructs in Cray XMT C/C++.
+It should be noted that support for Chapel on Cray XMT systems is a
+work-in-progress.  While recent changes improve performance by
+utilizing parallel loop paradigms suggested by the design of the XMT
+C compiler, certain language constructs may exhibit unacceptable
+performance.  The Chapel framework is in place in the implementation
+of data parallel constructs (e.g., domain and array operations),
+however work is not complete in its optimization.
 
 1) Set CHPL_HOME and MANPATH as usual.  See README.chplenv for
    details.
