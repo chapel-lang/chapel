@@ -142,15 +142,21 @@ special syntax that is similar to a field access.
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  `def' type-binding function-name argument-list[OPT] var-param-type-clause[OPT]
+  `def' param-clause[OPT] type-binding function-name argument-list[OPT] var-param-type-clause[OPT]
     return-type[OPT] where-clause[OPT] function-body
+
+param-clause:
+  `param'
 
 type-binding:
   identifier .
 \end{syntax}
 If a method is declared within the lexical scope of a class, record,
 or union, the type binding can be omitted and is taken to be the
-innermost class, record, or union that the method is defined in.
+innermost class, record, or union that the method is defined in.  If a
+method declaration contains the optional \sntx{param-clause}, it
+implies that it can only be applied to param objects of the given type
+binding.
 
 \subsubsection{Class Method Calls}
 \label{Class_Method_Calls}
