@@ -2,6 +2,212 @@
 Release Changes List
 ====================
 
+***STOPPED AT r17860***
+
+===========
+version 1.2
+===========
+
+Fifth public release of Chapel, October 21, 2010
+
+
+High-Level Themes
+-----------------
+- single- and multi-locale task parallelism
+- improved single- and multiple-locale data parallelism
+  - single- and multi-locale parallelism for arithmetic domains/arrays
+  - single-locale parallelism for sparse and associative domains/arrays
+  - serial reference version of opaque domains/arrays
+- improved support for extern types and vars
+- initial support for first-class and anonymous functions
+- added support for the Cray XE
+- improved parallelization of loops for the Cray XMT
+- bug fixes
+
+Environment Changes
+-------------------
+
+Syntactic/Naming Changes
+------------------------
+- renamed the range's index type from eltType to idxType
+- made string length a parenthesis-less method rather than a standalone function
+  (i.e., 'length(mystring)' should now be written mystring.length)
+  ***CHECK SPEC***
+
+Semantic Changes/Changes to Chapel Language
+-------------------------------------------
+- added initial support for first-class and anonymous functions
+  (see technotes/README.TODO) ***
+- added support for config types and params
+  ***CHECK SPEC***
+- added support for param 'this' arguments to methods
+  ***CHECK SPEC***
+- added support for assigning tuples of ranges to arithmetic domains
+  ***CHECK SPEC***
+- added support for .stridable and .stride methods on domains
+  ***CHECK SPEC***
+- changed the range's stride type from an int to a signed int of the index type
+  (e.g., range(uint(64)) and range(int(64)) now store a stride value of int(64))
+- made the by operator for a range accept the range's idxType or its stride type
+- added min()/max() functions for tuples that fills the tuple with min/max vals
+  (see 'Tuples' chapter of language spec)
+- added isTupleType(type t) param function that tells whether t is a tuple
+- made a value of 0 for dataParTasksPerLocale evalute to here.numCores
+- converted dataParMinGranularity from a uint to an int and made its default '1'
+- added a new config variable 'callStackSize' to control thread stack sizes
+  (see TODO)
+- made numBits/numBytes for default-width bools generate a compiler error
+
+Newly Implemented Features
+--------------------------
+- added support for parallel iteration over sparse domains/arrays
+- added support for parallel iteration over associative domains/arrays
+- added support for sparse strided domains
+- added support for printing of default layout arrays with negative strides
+- fixed iteration over/printing of default layout arrays with negative strides
+- implemented initialization of strided arrays by tuples
+- added the ability to slice a domain with another domain
+- added support for localSlice method on arrays with default layout
+- added support for indexToLocale method on the default layout
+
+Standard Domain Maps
+--------------------
+
+Standard Modules
+----------------
+- initial support for a GMP (Gnu Multi-Precision) module
+  ***TODO -- make sure it's included if we think it's ready
+
+Platform-specific notes
+-----------------------
+- added support for the Cray XE6 via a new CHPL_*_PLATFORM variable xe-cle
+  (see doc/platforms/README.xe-cle)
+- for xt-cle/xe-cle:
+  - made MPI the default conduit due to portals conduit issues in GASNet 1.14.x
+  - changed the C compilation step to use dynamic linking
+  - made the default launcher depend on the availability of pbs/aprun
+    (see doc/platforms/README.xt-cle or README.xe-cle)
+- for xmt:
+  - improved the parallelization of operations on default layout arrays/domains
+  - made XMT compilations ignore dmapped annotations on domains
+
+Documentation
+-------------
+- improved the language specification to improve clarity, fix bugs
+
+Example Codes
+-------------
+- switched hpcc benchmarks to use sugared form of dmapped for clarity
+
+Packaging Changes
+-----------------
+- moved test system helper scripts from test/Bin to util/test
+- added ability for multiple communication substrates to coexist at once
+
+Compiler Changes
+----------------
+- converted the compiler version to the format: major.minor.update
+
+Third Party Changes
+-------------------
+- updated to GASNet version 1.14.2
+
+Runtime Library Changes
+-----------------------
+- improved the implementation of the fast fork optimization
+- removed the mutex-related calls from the tasking layer interface
+
+Launcher-specific notes
+-----------------------
+- made the pbs-aprun launcher use options to qsub rather than a script file
+
+Compiler Flags
+--------------
+--report-scalar-replace : print statistics about scalar replacement
+--scalar-replace-limit : sets the max size of variables replaced (default=8)
+--[no-]tuple-copy-opt : enables tuple assignment optimization
+--tuple-copy-limit <limit> : limits size of tuples for --tuple-copy-opt
+- TODO: didn't Greg add a flag too?
+- TODO: update man page
+- TODO: --localize-globals flag?  on man page?
+
+Interoperability Changes
+------------------------
+- added support for external type and variable declarations
+  (see technotes/README.extern)
+- added support for passing homogenous tuples to external functions
+  (see technotes/README.extern)
+  ***CHECK README***
+- added support for type arguments to an external function
+  (see technotes/README.extern)
+  ***CHECK README***
+
+Bug Fixes/New Semantic Checks (for old semantics)
+-------------------------------------------------
+- fixed a bug in multiplying two imag values
+- added a check to prevent comparisons between types and values using == or !=
+  (e.g., 'var x = ...;  type t = ...; ...(x == t)...' is now illegal)
+- added a check to ensure tuple-style decls match the size of their initializer
+  (e.g., 'var (x, y) = (1, 2, 3);' will now generate an error)
+- fixed a pair of nil pointer dereference bugs in the Cyclic distribution
+- made string.length return an 'int' as documented rather than an 'int(64)'
+- fixed a bug in which the compiler seg faulted if no .chpl files were given
+- generate a compiler error when applying '#' to a completely unbounded range
+  (i.e., ".. # 10" is now a compiler error)
+- fixed a bug in which queried argument types sometimes became void incorrectly
+- made values of dataParTasksPerLocale and dataParMinGranularity < 0 an error
+- added a check to make sure maxThreadsPerLocale >= 0
+- fixed a race condition in the initialization of the fifo tasking layer
+- fixed a bug in which functions returning enums were flagged as not
+- fixed a bug in which failing to capture an iterator caused it not to be called
+- removed a race condition on calling halt() from multiple tasks in a locale
+
+
+
+Error Message Improvements
+--------------------------
+- 'illegal use of a function that does not return a value' now says which fn.
+
+Compiler Analysis and Optimizations/Performance of Generated Code
+-----------------------------------------------------------------
+- improved the compiler's ability to narrow wide references when possible
+- optimized small tuple assignment to use scalar assignment rather than memcpy
+- turned the --localize-global-consts flag on by default
+- removed empty records from the compiler's intermediate representation
+- improved scalar replacement for nested records
+
+Compiler Performance and Cleanup
+--------------------------------
+
+Cleanup of Generated Code
+-------------------------
+
+Testing system
+--------------
+- added ability for testing system to generate graphs in performance mode
+  (see comments in start_test for details)
+
+Internal
+--------
+- added documentation on compiler arch. to doc/developer/compilerOverview (SVN)
+- refactored the $CHPL_HOME/util directory into several subdirectories
+- refactored third-party directory and Makefiles
+- generally removed file extensions from shell scripts
+- made internal version number take the form: major.minor.update.svnrev
+- made the compileTest script more robust w.r.t. -I, -M, .h, etc. arguments
+- cached the number of processor cores in the locale type
+- added versions of compilerError and compilerWarning that take a call depth
+  ***TODO add to spec and hoist up***
+- reduced the number of runtime files that get rebuilt when the compiler changes
+- simplified the implementation of associative arrays to reduce copies/temps
+- removed the 'size' field from the default arithmetic array class
+- made our implementation of Norm.chpl use slicing rather than rank change
+- replaced the isEnumType primitive with calls to _isEnumeratedType()
+- replaced several primitives with extern functions
+- added a new repositionDefExprs pass to make local variables safe on XMT
+- added --local-temp-names flag to use a different temp naming scheme
+- changed the --gen-communicated-structures developer flag to --heterogeneous
+
 =============
 version 1.1.2
 =============
