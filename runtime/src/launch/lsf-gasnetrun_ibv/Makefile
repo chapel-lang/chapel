@@ -1,5 +1,5 @@
 RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/launch/aprun
+RUNTIME_SUBDIR = src/launch/lsf-gasnetrun_ibv
 
 #
 # standard header
