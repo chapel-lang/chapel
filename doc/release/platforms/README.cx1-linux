@@ -6,58 +6,73 @@ The following information is assembled to help users get up and
 running on multiple nodes of a Cray CX1 running Linux.  If you are not
 familiar with Chapel, it is recommended that you first try the
 instructions in the top-level README to get started with the language.
+In this case your programs will run on the login node (which may be
+faster for small programs).
 
 
-1) Set CHPL_HOME and MANPATH as usual.  See README.chplenv for
-   details.
+1) Set CHPL_HOME and MANPATH as indicated in README.chplenv.
 
 
-2) Set CHPL_HOST_PLATFORM to cx1-linux and CHPL_COMM to gasnet.  For
-   example:
+2) Set CHPL_HOST_PLATFORM to cx1-linux and CHPL_COMM to gasnet.
+   For example:
 
      setenv CHPL_HOST_PLATFORM cx1-linux
      setenv CHPL_COMM gasnet
 
-   See README.multilocale for further information about running using
-   multiple locales and GASNet.
+   Advanced information about running using multiple locales and GASNet
+   can be found in README.multilocale.
 
 
-3) If your Cray CX1 uses PBS for scheduling jobs between multiple
+3) Set your PATH to include the directory $CHPL_HOME/bin/cx1-linux
+   which is created when you build the compiler.  For example:
+
+     setenv PATH "$PATH":"$CHPL_HOME/bin/cx1-linux"
+
+
+4) If your Cray CX1 uses LSF for scheduling jobs between multiple
+   users, you can have Chapel take care of the details for you by
+   setting CHPL_LAUNCHER to lsf-gasnetrun_ibv.  For example:
+
+     setenv CHPL_LAUNCHER lsf-gasnetrun_ibv
+
+   If your Cray CX1 uses PBS for scheduling jobs between multiple
    users, you can have Chapel take care of the details for you by
    setting CHPL_LAUNCHER to pbs-gasnetrun_ibv.  For example:
 
      setenv CHPL_LAUNCHER pbs-gasnetrun_ibv
 
-   This will cause the generated Chapel program to submit a qsub job
-   on your behalf and then launch your program using the gasnetrun_ibv
-   launcher.
+   This will cause the generated Chapel program to submit a bsub (LSF)
+   or qsub (PBS) job on your behalf and then launch your program using
+   the gasnetrun_ibv launcher.
 
-   If your Cray CX1 does not use PBS, you do not need to set
+   If your Cray CX1 does not use LSF or PBS, you do not need to set
    CHPL_LAUNCHER, in which case it will default to gasnetrun_ibv (a
-   GASNet launch script for Infiniband networks.  In this case, you
+   GASNet launch script for Infiniband networks).  In this case, you
    will need to set GASNET_SSH_SERVERS to list the names of the
    compute nodes on your system.  For example:
 
      setenv GASNET_SSH_SERVERS 'compute-0-0.local compute-0-1.local'
 
-   See README.launcher for more information on Chapel's launcher
-   capabilities.
+   Consult your system administrator for information on the above
+   choices, if needed.  See README.launcher for more information
+   on Chapel's launcher capabilities.
 
 
-4) By default, Chapel will use gcc as the compiler for a Cray CX1.  If
+5) By default, Chapel will use gcc as the compiler for a Cray CX1.  If
    you want to override this choice, you can select another compiler
-   using the CHPL_HOST_COMPILER variable.  See README.chplenv for
-   options.
+   using the CHPL_HOST_COMPILER variable.  See README.chplenv for options.
 
 
-5) Make sure you're in the top-level chapel/ directory:
+6) Make sure you're in the top-level chapel/ directory:
 
      cd $CHPL_HOME
 
-
-6) Make/re-make the compiler and runtime:
+   Make/re-make the compiler and runtime:
 
      gmake
+
+   If your shell is tcsh, you may need to execute 'rehash' after
+   your first make.
 
 
 7) Compile your Chapel program as usual.  See README.compiling for
@@ -66,17 +81,19 @@ instructions in the top-level README to get started with the language.
      chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
 
 
-8) When you compile a Chapel program using the settings above, you
-   should see two binaries (e.g., hello-multiloc and
-   hello-multiloc_real).  The first binary contains code to launch the
-   Chapel program onto the compute nodes, as specified by your
-   CHPL_LAUNCHER setting.  The second contains the program code
-   itself.
+8) The above settings result in multi-locale compilations.  When you
+   compile a Chapel program in multi-locale mode, you should see two
+   binaries (e.g., hello-multiloc and hello-multiloc_real).  The first
+   binary contains code to launch the Chapel program onto the compute
+   nodes, as specified by your CHPL_LAUNCHER setting.  The second
+   contains the program code itself; it is not intended to be executed
+   directly from the shell prompt.
 
 
-9) Multi-locale executions require the number of locales to be
-   specified on the command line.  Other than this, execute your
-   Chapel program as usual.  For example:
+9) Multi-locale binaries require the number of locales to be
+   specified on the command line.  Under LSF you will need to have
+   at least one compute node available per locale.  Other than this,
+   execute your Chapel program as usual.  For example:
 
      ./hello-multiloc -nl 2
 

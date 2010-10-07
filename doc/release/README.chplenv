@@ -6,7 +6,7 @@ To get started with Chapel, there are four environment settings that
 are strongly recommended for effective use of the release, and a few
 other optional settings that are useful for cross-compiling or
 overriding the default settings.  To check the values of the Chapel
-environment variables that were set and inferred, run the script:
+environment variables that are set or can be inferred, run the script:
 $CHPL_HOME/util/printchplenv
 
 
@@ -16,10 +16,16 @@ Recommended Settings
 
 1) Set the CHPL_HOME environment variable to point to the location of
    the chapel/ directory that was created when you unpacked the
-   release.  For example:
+   release.  This is the parent of the directory containing this file.
+   For example:
 
-        setenv CHPL_HOME ~/chapel
+        (if your shell is tcsh - assumed in all examples:)
+        setenv CHPL_HOME ~/chapel-1.2/chapel
 
+        (if your shell is bash:)
+        export CHPL_HOME=~/chapel-1.2/chapel
+
+        (use appropriate commands for other shells)
 
 2) Set the CHPL_HOST_PLATFORM environment variable to represent the
    platform on which you're working.  For standard UNIX workstations,
@@ -57,15 +63,15 @@ Recommended Settings
    chapel_info@cray.com
 
 
-3) Set your path to include the directory
-   $CHPL_HOME/bin/$CHPL_HOST_PLATFORM which is created when you build
-   the compiler.  For example:
+3) Set your PATH to include the directory
+     $CHPL_HOME/bin/$CHPL_HOST_PLATFORM
+   which is created when you build the compiler.  For example:
 
-        set path = ($path $CHPL_HOME/bin/$CHPL_HOST_PLATFORM)
+        setenv PATH "$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 
 
-4) Set your man path to include the directory $CHPL_HOME/man.  For
-   example:
+4) Set your man path to include the directory $CHPL_HOME/man.
+   For example:
 
         setenv MANPATH "$MANPATH":"$CHPL_HOME"/man
 
