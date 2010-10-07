@@ -10,6 +10,9 @@
 #include "chpl_mem.h"
 #include "chpltasks.h"
 
+void* globalHeapStart;
+size_t globalHeapSize;
+
 // Helper functions
 
 static int mysystem(const char* command, const char* description, 
@@ -56,6 +59,8 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
 void chpl_comm_init_shared_heap(void) {
   chpl_initHeap(NULL, 0);
+  globalHeapStart = NULL;
+  globalHeapSize = 0;
 }
 
 void chpl_comm_rollcall(void) {

@@ -2167,7 +2167,7 @@ void CallExpr::codegen(FILE* outfile) {
 	    get(1), get(2), arrayType, get(4), get(5), get(6));
       } else {
 	Type* arrayType = getDataClassType(get(2)->typeInfo()->symbol)->type;
-	gen(outfile, "_TX_ARRAY_ALLOC(%A, %A, %A, %A, %A)", 
+	gen(outfile, "_TX_ARRAY_ALLOC(%A, %A, %A, %A, %A, %A)", 
 	    get(1), get(2), arrayType, get(4), get(5), get(6));
       }
       break;
@@ -2316,8 +2316,8 @@ void CallExpr::codegen(FILE* outfile) {
      case PRIM_TX_ARRAY_LOAD_VALUE: {
        Type* type = get(2)->typeInfo();
        registerTypeToStructurallyCodegen(type->symbol);
-       gen(outfile, "CHPL_STM_ARRAY_LOAD_VALUE(%A, %A, %A, %A, %A)",
-	   get(1), get(2), get(3), type, get(4), get(5));    
+       gen(outfile, "CHPL_STM_ARRAY_LOAD_VALUE(%A, %A, %A, %A, %A, %A, %A)",
+	   get(1), get(2), get(3), get(4), type, get(5), get(6));    
        break; 
      }
     case PRIM_TX_GET_TEST_CID: {
@@ -2327,10 +2327,14 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     }
     case PRIM_TX_LOAD_TEST_CID: {
+      INT_ASSERT(get(3)->typeInfo() != dtNil);
       gen(outfile, "CHPL_STM_CLASS_LOAD_TEST_CID(%A, %A, ", get(1), get(2));
-      gen(outfile, "((object)%A)->chpl__cid, ", get(3));
-      gen(outfile, "chpl__cid_%A, %A, %A)", 
-	  get(4)->typeInfo()->symbol->cname, get(5), get(6));
+      fprintf(outfile, "((object)");
+      get(3)->codegen(outfile);
+      fprintf(outfile, ")->chpl__cid, ");
+      fprintf(outfile, "%s%s, ", 
+	      "chpl__cid_", get(4)->typeInfo()->symbol->cname);
+      gen(outfile, "%A, %A)", get(5), get(6));
       break;
     }
     case PRIM_TX_PUT: {

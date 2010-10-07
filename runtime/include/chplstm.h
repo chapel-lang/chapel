@@ -131,10 +131,10 @@ extern chpl_txfn_p chpl_txftable[];
     ldst = chpl_macro_tmp == cid;					\
   } while(0)
 
-#define CHPL_STM_LOAD_TEST_CID(tx, dst, src, cid, ln, fn)		\
+#define CHPL_STM_CLASS_LOAD_TEST_CID(tx, dst, src, cid, ln, fn)		\
   do {									\
     chpl__class_id chpl_macro_tmp;					\
-    chpl_stm_load(tx, &chpl_macro_tmp, &src,				\
+    chpl_stm_tx_load(tx, &chpl_macro_tmp, &src,				\
 		  SPECIFY_SIZE(chpl__class_id), ln, fn);		\
     dst = chpl_macro_tmp == cid;					\
   } while(0)
@@ -150,7 +150,7 @@ extern chpl_txfn_p chpl_txftable[];
 #define CHPL_STM_COMM_WIDE_ARRAY_GET_SVEC(tx, wide, cls, ind, stype, sfield, etype, ln, fn) \
   CHPL_STM_COMM_WIDE_ARRAY_GET(tx, wide, cls, ind, stype, sfield, etype, ln, fn)
 
-#define CHPL_STM_ARRAY_LOAD(tx, dst, src, ind, type, ln, fn)		\
+#define CHPL_STM_ARRAY_LOAD(tx, dst, src, ind, type, ln, fn)	\
   do {									\
     chpl_stm_tx_load(tx, &dst, &((src)->_data),				\
 		     SPECIFY_SIZE(type), ln, fn);			\
@@ -164,6 +164,12 @@ extern chpl_txfn_p chpl_txftable[];
 				 sfield, etype, ln, fn);		\
     CHPL_STM_COMM_WIDE_GET(tx, ldst, chpl_macro_tmp, etype2, ln, fn);	\
   } while (0)
+
+#define CHPL_STM_ARRAY_LOAD_VALUE(tx, dst, src, ind, type, ln, fn)	\
+  do {									\
+    chpl_stm_tx_load(tx, &dst, &((src)->_data[ind]),			\
+		     SPECIFY_SIZE(type), ln, fn);			\
+  } while(0)
 
 #define CHPL_STM_COMM_WIDE_PUT(tx, wide, lsrc, type, ln, fn)		\
   do {									\
@@ -252,7 +258,8 @@ extern chpl_txfn_p chpl_txftable[];
 
 #define CHPL_STM_ARRAY_STORE_VALUE(tx, dst, ind, src, type, ln, fn)	\
   do {									\
-    chpl_stm_tx_store(tx, &src, &((dst)->_data[ind]),			\
+    type chpl_macro_tmp = src;						\
+    chpl_stm_tx_store(tx, &chpl_macro_tmp, &((dst)->_data[ind]),	\
 		      SPECIFY_SIZE(type), ln, fn);			\
   } while(0)
 
