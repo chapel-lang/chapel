@@ -328,14 +328,18 @@ variables.  The initialization expression in the program is ignored if
 the initialization is alternatively set.
 
 \index{parameters!configuration}
-Configuration parameters are set during compilation time via
-compilation flags or other implementation dependent means.
+Configuration parameters are set at compilation time via compilation
+flags or other implementation dependent means.  The value passed via
+these means can be an arbitrary Chapel expression as long as the
+expression can be evaluated at compile-time.
 \begin{example}
-A configuration parameter is set via a compiler flag.  It may be used
-to control the target that is being compiled.  For example, the code
+A configuration parameter can be set via a compiler flag.  For example,
 \begin{chapel}
-config param target: string = "XT3";
+config param rank = 2;
 \end{chapel}
-sets a string parameter \chpl{target} to \chpl{"XT3"}.  This can be
-checked to compile different code for this target.
+sets a integer parameter \chpl{rank} to \chpl{2}.  At
+compile-time, \chpl{rank} can be set via to \chpl{3} or \chpl{2*n}
+(assuming \chpl{n} is also a param variable) or any other expression
+that can be evaluated at compile-time.  This can be used to write
+rank-independent code.
 \end{example}

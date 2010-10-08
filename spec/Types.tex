@@ -369,7 +369,7 @@ types are defined in~\rsec{Domains}~and~\rsec{Arrays}.
 Type aliases are declared with the following syntax:
 \begin{syntax}
 type-alias-declaration-statement:
-  `type' type-alias-declaration-list ;
+  `config'[OPT] `type' type-alias-declaration-list ;
 
 type-alias-declaration-list:
   type-alias-declaration
@@ -382,6 +382,12 @@ type-alias-declaration:
 A type alias is a symbol that aliases any type as specified in the
 \sntx{type-part}.  A use of a type alias has the same meaning as using
 the type specified by \sntx{type-part} directly.
+
+If the keyword \chpl{config} precedes the keyword \chpl{type}, the
+type alias is called a configuration type alias.  Configuration type
+aliases are set at compilation time via compilation flags or other
+implementation dependent means.  The \chpl{type-specifier} in the
+program is ignored if the type-alias is alternatively set.
 
 The \sntx{type-part} is optional in the definition of a class or
 record.  Such a type alias is called an unspecified type
