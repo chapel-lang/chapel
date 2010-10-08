@@ -629,7 +629,7 @@ so that the type of the expression is statically known.
 %\index{\! (unary)@\chpl{\!} (unary)}
 
 The unary operators \chpl{\+}, \chpl{\-}, \chpl{\~}, and \chpl{\!} are
-overloaded on tuples by applying them to each argument component
+overloaded on tuples by applying the operator to each argument component
 and returning the results as a new tuple.
 
 The size of the result tuple is the same as the size of the
@@ -658,7 +658,7 @@ The sizes of the two argument tuples must be the same.
 
 The size of the result tuple is the same as the argument tuples.  The
 type of each result component is the result type of the operator when
-applied to the corresponding pair of the arguments components.
+applied to the corresponding pair of the argument components.
 
 \begin{example}
 \begin{chapelpre}
@@ -672,7 +672,7 @@ creates a 3-tuple of an int, a real and a string with the value \chpl{(3, 3.0, "
 writeln(x);
 \end{chapelpost}
 \begin{chapeloutput}
-(3.0, 3.0)
+(3, 3.0, 12)
 \end{chapeloutput}
 \end{example}
 
@@ -691,7 +691,7 @@ writeln(x);
 The relational operators \chpl{\>}, \chpl{\>\=}, \chpl{\<}, \chpl{\<\=},
 \chpl{\=\=}, and \chpl{\!\=} are defined over tuples of matching size.
 They return a single boolean value indicating whether the two
-arguments are in the corresponding relation.
+arguments satisfy the corresponding relation.
 
 The operators \chpl{\>}, \chpl{\>\=}, \chpl{\<}, and \chpl{\<\=}
 check the corresponding lexicographical order

@@ -109,7 +109,7 @@ Given a variable \chpl{anActor} of type \chpl{Actor}, defined above,
 the code
 \begin{chapelpre}
 % useActor1.chpl
-use test\_defineActor;
+use defineActor;
 var anActor = new Actor(name="Tommy", age=26);
 \end{chapelpre}
 \begin{chapel}
@@ -170,7 +170,7 @@ A method to output information about an instance of the \chpl{Actor}
 class can be defined as follows:
 \begin{chapelpre}
 % defineMethod.chpl
-use test\_useActor1;
+use useActor1;
 \end{chapelpre}
 \begin{chapel}
 def Actor.print() {
@@ -268,7 +268,7 @@ ta(4) = 4;
 1
 2
 3
-test\_thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
+thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 \end{chapeloutput}
 \end{example}
 
