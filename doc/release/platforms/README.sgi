@@ -38,28 +38,43 @@ specifying inter-locale communication.  Left to its own devices,
 GASNet prefers to use its SHMEM conduit on the SGI Altix because it's
 considered the lowest overhead communication layer with which to
 implement GASNet.  Unfortunately, GASNet's SHMEM conduit is not
-thread-safe (because SHMEM itself is apparently not thread-safe) -- or
+thread-safe (because SHMEM itself is apparently not thread-safe); or,
 to use GASNet terminology, it does not support PAR mode.  Chapel's
 execution model requires PAR mode, and therefore the suboptimal MPI
-conduit needs to be used for GASNet executions.  This can be done
-using the following settings:
+conduit needs to be used for GASNet executions.  
+
+This can be done using the following settings:
 
         go to chapel source directory
 
         export CHPL_HOME=$(pwd)
         export CHPL_COMM=gasnet
         export CHPL_COMM_SUBSTRATE=mpi
+        # edit make/Makefile.base to include
+        CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
+
+In our experience, different Altix installations support MPI in
+different ways.  If your Altix machine supports MPI via an mpicc
+compiler command and launches using an mpiexec command, then make the
+following settings:
+
         export MPI_CC=mpicc
         export MPI_LDFLAGS=-mt
         export MPI_RUNCMD="mpiexec -n %N %C"
         export MPI_LIBS=
-        # edit make/Makefile.base to include
-        CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
 
-        then build the Chapel compiler/runtime using 'make'
+If on the other hand, your Altix machine supports MPI via a normal
+compiler invocation and by linking in the mpi libraries, make the
+following settings:
 
-Over time, we ought be able to minimize the number of settings that a
+        export MPI_CC=cc        (or whatever compiler you wish to use)
+        export MPI_LIBS=-lmpi
+
+Then build the Chapel compiler/runtime again using 'make'/'gmake'
+
+Over time, we would like to minimize the number of settings that a
 user has to manually make by introducing the concept of an 'altix'
 platform for Chapel that implies the above settings in our scripts and
 Makefiles.  If you would like to help with this effort or can provide
-us with an account so that we can develop it, please let us know.
+us with an account so that we can develop it (or Makefile patches that
+we could commit back to our source tree), please let us know.
