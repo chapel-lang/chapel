@@ -1,9 +1,6 @@
 armci: FORCE
 	cd armci && $(MAKE)
 
-gmp: FORCE
-	cd gmp && $(MAKE)
-
 mpich1: FORCE
 	cd mpich1 && $(MAKE)
 
