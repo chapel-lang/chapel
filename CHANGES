@@ -128,9 +128,12 @@ Compiler Flags
 --scalar-replace-limit : sets the max size of variables replaced (default=8)
 --[no-]tuple-copy-opt : enables tuple assignment optimization
 --tuple-copy-limit <limit> : limits size of tuples for --tuple-copy-opt
-- TODO: didn't Greg add a flag too?
 - TODO: update man page
 - TODO: --localize-globals flag?  on man page?
+
+Execution Flags
+---------------
+--callStackSize : specify the task call stack size
 
 Interoperability Changes
 ------------------------
