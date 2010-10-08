@@ -2,8 +2,6 @@
 Release Changes List
 ====================
 
-***STOPPED AT r17860***
-
 =============
 version 1.2.0
 =============
@@ -18,28 +16,28 @@ High-Level Themes
   - single- and multi-locale parallelism for arithmetic domains/arrays
   - single-locale parallelism for sparse and associative domains/arrays
   - serial reference version of opaque domains/arrays
-- improved support for extern types and vars
+- improved support for extern types, vars, and functions
 - initial support for first-class and anonymous functions
-- added support for the Cray XE
-- improved parallelization of loops for the Cray XMT
+- added support for the Cray XE6 (TM) and Cray CX1000 (TM)
+- improved parallelization of loops for the Cray XMT (TM)
+- prototype implementation of a GMP multiprecision math module
 - bug fixes
 
 Environment Changes
 -------------------
+- renamed the cx1-linux CHPL_*_PLATFORM variable to cx-linux
 
 Syntactic/Naming Changes
 ------------------------
 - renamed the range's index type from eltType to idxType
 - made string length a parenthesis-less method rather than a standalone function
   (i.e., 'length(mystring)' should now be written mystring.length)
-- renamed the cx1-linux CHPL_*_PLATFORM variable to cx-linux
 
 Semantic Changes/Changes to Chapel Language
 -------------------------------------------
 - added initial support for first-class and anonymous functions
   (see doc/technotes/README.firstClassFns)
 - added support for config types and params
-  ***CHECK SPEC***
 - added support for param 'this' arguments to methods
 - added support for assigning tuples of ranges to arithmetic domains
 - added support for .stridable and .stride methods on domains
@@ -69,16 +67,17 @@ Newly Implemented Features
 
 Standard Domain Maps
 --------------------
+- made default sparse and associative domains/array layouts support parallelism
 
 Standard Modules
 ----------------
-- initial support for a GMP (Gnu Multi-Precision) module
-  ***TODO -- make sure it's included if we think it's ready
+- added a prototype GMP (GNU Multiple Precision Arithmetic) module
+  (see doc/technotes/README.gmp)
 
 Platform-specific notes
 -----------------------
 - added support for the Cray CX1000 as part of the cx-linux CHPL_*_PLATFORM
-- added support for using LFS as a launcher for cx-linux via lfs-gasnetrun_ibv
+- added support for using LSF as a launcher for cx-linux via lsf-gasnetrun_ibv
 - added support for the Cray XE6 via a new CHPL_*_PLATFORM variable xe-cle
   (see doc/platforms/README.xe-cle)
 - for xt-cle/xe-cle:
@@ -93,10 +92,12 @@ Platform-specific notes
 Documentation
 -------------
 - improved the language specification to improve clarity, fix bugs
+- updated the various READMEs, text files, and man page
 
 Example Codes
 -------------
 - switched hpcc benchmarks to use sugared form of dmapped for clarity
+- made ra domain maps, domains, and arrays local variables for modularity
 
 Packaging Changes
 -----------------
@@ -110,6 +111,7 @@ Compiler Changes
 Third Party Changes
 -------------------
 - updated to GASNet version 1.14.2
+- added GMP (the GNU Multiple Precision Arithmetic Library)
 
 Runtime Library Changes
 -----------------------
@@ -132,14 +134,11 @@ Compiler Flags
 
 Interoperability Changes
 ------------------------
-- added support for external type and variable declarations
-  (see technotes/README.extern)
-- added support for passing homogenous tuples to external functions
-  (see technotes/README.extern)
-  ***CHECK README***
-- added support for type arguments to an external function
-  (see technotes/README.extern)
-  ***CHECK README***
+- improved ability to express external C functions, types, and variables:
+  - added support for external type and variable declarations
+  - added support for expressing and passing external C array types
+  - added support for type arguments to an external function
+  (see doc/technotes/README.extern)
 
 Bug Fixes/New Semantic Checks (for old semantics)
 -------------------------------------------------
@@ -161,8 +160,6 @@ Bug Fixes/New Semantic Checks (for old semantics)
 - fixed a bug in which failing to capture an iterator caused it not to be called
 - removed a race condition on calling halt() from multiple tasks in a locale
 
-
-
 Error Message Improvements
 --------------------------
 - 'illegal use of a function that does not return a value' now says which fn.
@@ -174,12 +171,6 @@ Compiler Analysis and Optimizations/Performance of Generated Code
 - turned the --localize-global-consts flag on by default
 - removed empty records from the compiler's intermediate representation
 - improved scalar replacement for nested records
-
-Compiler Performance and Cleanup
---------------------------------
-
-Cleanup of Generated Code
--------------------------
 
 Testing system
 --------------
