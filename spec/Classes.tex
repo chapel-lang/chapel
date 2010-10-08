@@ -3,13 +3,26 @@
 \index{class@\chpl{class}}
 \index{classes}
 
-Classes are an abstraction of a data structure where the storage location is
-allocated independent of the scope of the variable of class type.  Each call to
-the constructor, preceded by the \chpl{new} keyword, creates a new data object
-and returns a reference to the object.  Storage can be reclaimed by deleting the object with the \chpl{delete} keyword.
+Classes are an abstraction of a data structure. Storage for
+\index{classes!instances}
+\index{objects}
+a class instance, or an object, is allocated independently of the scope of
+the variable that refers to it.
+An object is created by calling a class constructor
+(\rsec{Class_Constructors}), which allocates storage, initializes it,
+and returns a reference to the newly-created object.
+Storage can be reclaimed by deleting the object (\rsec{Class_Delete}).
+
+A class declaration (\rsec{Class_Declarations}) also generates a class
+type (\rsec{Class_Types}), which is the type of variables referring to
+instances of that class or any of its derived classes.
+
+A class is generic if it has generic fields. Generic classes and fields
+are discussed in~\rsec{Generic_Types}.
 
 \subsection{Class Types}
 \label{Class_Types}
+\index{classes!class types}
 
 The syntax of a class type is summarized as follows:
 \begin{syntax}
@@ -319,6 +332,8 @@ for i in ta do
 \subsection{Class Constructors}
 \label{Class_Constructors}
 \index{classes!constructors}
+\index{classes!new}
+\index{new!classes}
 
 A class constructor is defined by declaring a method with the same
 name as the class.  The constructor is used to create instances of the
@@ -595,9 +610,21 @@ A class defined within another class is a nested class.
 Nested classes can refer to fields and methods in the outer class
 implicitly or explicitly with an \chpl{outer} reference.
 
+\subsection{The \chpl{nil} Value}
+\index{classes!nil}
+\index{nil@\chpl{nil}}
+
+Chapel provides \chpl{nil} to indicate the absence of a reference to
+any object.  \chpl{nil} can be assigned to a variable of any class
+type.  Invoking a class method or accessing a field of the \chpl{nil}
+value results in a run-time error.
+
 \subsection{Dynamic Memory Management}
 \label{Dynamic_Memory_Management}
+\label{Class_Delete}
 \index{memory management}
+\index{classes!delete}
+\index{delete!classes}
 
 Memory associated with class instances can be reclaimed with the \chpl{delete}
 keyword.
