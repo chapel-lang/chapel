@@ -54,7 +54,7 @@ let us know at chapel_info@cray.com.
    queue name using the environment variable CHPL_LAUNCHER_QUEUE.  For
    example:
 
-     setenv CHPL_LAUNCHER_QUEUE 64n24h
+     setenv CHPL_LAUNCHER_QUEUE batch
 
    If this variable is left unset, no queue name will be specified.
    You can also optionally set a wall clock time limit for the job
@@ -73,6 +73,7 @@ let us know at chapel_info@cray.com.
 
      - PrgEnv-cray
      - PrgEnv-gnu
+     - PrgEnv-intel
      - PrgEnv-pathscale
      - PrgEnv-pgi
 
@@ -138,17 +139,32 @@ Cray XT File Systems and Chapel execution
   programs from a Lustre file system directory.
 
 
+-----------------------------------------------------
+Dynamic linking with the Cray Programming Environment
+-----------------------------------------------------
+
+* By default, Chapel programs built for the Cray XT do not specify
+  static or dynamic linking.  The current default for the Cray
+  Programming Environment compilers is static linking.  If you wish to
+  override this, set the environment variable CHPL_ASYNCPE_USE_DYNAMIC
+  to 'true'.
+
+
 --------------------------
 Memory limits using GASNet
 --------------------------
 
 * The amount of memory that is available to a Chapel program running
-  over GASNet+portals on the Cray XT is constrained by an environment
-  variable named GASNET_MAX_SEGSIZE.  If the user has not set this
-  variable, we heuristically set it for each compute node to be 90% of
-  the MemTotal value reported by /proc/meminfo.  If GASNET_MAX_SEGSIZE
-  is set too high, your program may terminate silently, or with the
-  message:
+  over GASNet+portals on the Cray XT is constrained by two environment
+  variables: GASNET_MAX_SEGSIZE and GASNET_PHYSMEM_PINNABLE_RATIO.  If
+  the user has not set GASNET_MAX_SEGSIZE, we heuristically set it for
+  each compute node to be 90% of the MemTotal value reported in
+  /proc/meminfo.  During initialization, the GASNet library allocates
+  the lesser of GASNET_MAX_SEGSIZE and GASNET_PHYSMEM_PINNABLE_RATIO
+  times the amount of available physical memory.
+
+  If GASNET_MAX_SEGSIZE is set too high, your program may terminate
+  silently, or with the message:
 
         _pmii_daemon(SIGCHLD): PE 0 exit signal Killed
 
@@ -167,6 +183,7 @@ Memory limits using GASNet
   and:
 
     $CHPL_HOME/third-party/gasnet/GASNet-*/README
+
 
 
 ---------------
@@ -195,3 +212,19 @@ NCCS user notes
 
 * NCCS users either need to specify 'debug' as their queue using the
   CHPL_LAUNCHER_QUEUE or a walltime using CHPL_LAUNCHER_WALLTIME.
+
+
+--------------------------
+Known Constraints and Bugs
+--------------------------
+
+* GASNet targets multiple "conduits" as the underlying communication
+  mechanism.  By default, the Chapel build will use the 'mpi' conduit.
+  You can use the native Portals conduit by setting the environment
+  variable CHPL_COMM_SUBSTRATE to 'portals.'
+
+  The reason Chapel defaults to the non-native conduit is because we
+  have noticed performance problems for certain Chapel programs using
+  the Portals conduit.  We have not had the resources to devote to
+  this problem yet, so for now we are assuming that the problems lie
+  either in our GASNet port or our GASNet build configuration.
