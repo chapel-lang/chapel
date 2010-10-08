@@ -35,9 +35,10 @@ This directory contains the following documentation:
   technotes/                : technical notes about our implementation
     README.comm-diagnostics : technical note about tracking communication events
     README.extern           : technical note on calling external C routines
-    README.format           : technical note on value-to-string formatting
-    README.multirealm       : technical note on multi-realm execution
     README.firstClassFns    : technical note on first-class functions
+    README.format           : technical note on value-to-string formatting
+    README.gmp              : technical note on a prototype GMP module
+    README.multirealm       : technical note on multi-realm execution
 
 
 --------------------
