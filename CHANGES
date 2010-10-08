@@ -49,8 +49,6 @@ Semantic Changes/Changes to Chapel Language
 - added isTupleType(type t) param function that tells whether t is a tuple
 - made a value of 0 for dataParTasksPerLocale evalute to here.numCores
 - converted dataParMinGranularity from a uint to an int and made its default '1'
-- added a new config variable 'callStackSize' to control thread stack sizes
-  (see TODO)
 - made numBits/numBytes for default-width bools generate a compiler error
 
 Newly Implemented Features
@@ -131,8 +129,8 @@ Compiler Flags
 
 Execution Flags
 ---------------
---callStackSize : specify the task call stack size (see
-                  doc/release/README.executing, doc/release/README.tasks)
+--callStackSize : specify the task call stack size
+  (see doc/release/README.executing and doc/release/README.tasks)
 
 Interoperability Changes
 ------------------------
