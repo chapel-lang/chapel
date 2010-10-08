@@ -1,14 +1,18 @@
 MISC_LIB=../misc
+GRID_LIB=../grid
+LEVEL_LIB=../level
+AMR_LIB=../amr
 
 
-Trim_test: Trim_test.out
-	./Trim_test.out
+Regridder_test: Regridder_test.out
+	./Regridder_test.out
 
-Trim_test.out: Trim.chpl
-	chpl Trim.chpl -M $(MISC_LIB) -o Trim_test.out
+Regridder_test.out: Regridder_def.chpl FlaggedDomain_def.chpl Stack_def.chpl
+	chpl Regridder_def.chpl FlaggedDomain_def.chpl Stack_def.chpl --main-module=Regridder_def -M $(MISC_LIB) -M $(GRID_LIB) -M $(LEVEL_LIB) -M $(AMR_LIB) -o Regridder_test.out
 
-Regrid_test: Regrid_test.out
-	./Regrid_test.out
 
-Regrid_test.out: Regrid.chpl
-	chpl Regrid.chpl -M $(MISC_LIB) -o Regrid_test.out
+FlaggedDomainSet_test: FlaggedDomainSet_test.out
+	./FlaggedDomainSet_test.out
+
+FlaggedDomainSet_test.out: FlaggedDomainSet_def.chpl Stack_def.chpl
+	chpl FlaggedDomainSet_def.chpl Stack_def.chpl --main-module=FlaggedDomainSet_def -M $(MISC_LIB) -o FlaggedDomainSet_test.out
