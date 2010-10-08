@@ -131,7 +131,8 @@ Compiler Flags
 
 Execution Flags
 ---------------
---callStackSize : specify the task call stack size
+--callStackSize : specify the task call stack size (see
+                  doc/release/README.executing, doc/release/README.tasks)
 
 Interoperability Changes
 ------------------------
