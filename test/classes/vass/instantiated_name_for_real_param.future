@@ -1,0 +1,16 @@
+bug: a class's instantiated name in the generated code contains dot
+
+The generated chpl__header.h has this:
+
+typedef enum {
+  ....,
+  chpl__cid_B_1.0
+} chpl__class_id;
+
+The 'dot' clearly results from the generic param field
+being instantiated with a real, which real's dot
+(and probably any minus/plus(es) it may contain) need to be mangled.
+
+Note that if it's a var/const field, the generic class
+is instantiated with the 'real' type (rather than the specific value),
+so the mangling omission does not come into play.

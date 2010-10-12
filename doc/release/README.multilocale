@@ -33,10 +33,11 @@ To run Chapel on multiple locales, the following steps are required:
    and Chapel will make a choice for them.  Current defaults are:
 
      When compiling for...       Chapel will choose...
-       cx1-linux                   ibv
+       cx-linux                    ibv
        pwr5                        lapi
        pwr6                        ibv
-       xt-cle                      portals
+       xe-cle                      mpi
+       xt-cle                      mpi
        (other)                     udp
 
 
@@ -101,7 +102,7 @@ To run Chapel on multiple locales, the following steps are required:
               setenv GASNET_SPAWNFN L
 
        (iii) For other options, please refer to:
-               $CHPL_HOME/third-party/gasnet/GASNet-1.10.0/udp-conduit/README
+               $CHPL_HOME/third-party/gasnet/GASNet-1.*.*/udp-conduit/README
 
 
    (b) We've had best results with console I/O using:

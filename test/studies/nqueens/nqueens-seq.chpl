@@ -75,7 +75,7 @@ def Board.removeLast(row: int, col: int): void {
     halt("attempted to remove a queen at row ", row,
          " from column ", col, ", should be column ", queenvec(row));
 
-  queenvec(row) = 0;
+  queenvec(row) = 0;  // this is merely to satisfy our assertions
   lastfilled -= 1;
 }
 
@@ -143,6 +143,9 @@ def debug(arg...)  { if dbg  then write((...arg)); }
 // ancillary: count the solutions
 var solutionCount: int;
 
+// ancillary: show each solution as it is discovered?
+config var showEachSolution: bool = true;
+
 //
 // Given a partially-filled board, we try placing a queen
 // in the next row - trying each column in turn.
@@ -160,12 +163,11 @@ def tryQueenInNextRow(board: Board): void {
       if nextRow == board.boardSize then {
         // found a complete solution
         solutionCount += 1;
-        board.show("");
+        if showEachSolution then board.show("");
       } else {
         tryQueenInNextRow(board);
       }
       // remove the placed queen so we can try another column
-      // (this is merely to satisfy our assertions)
       board.removeLast(nextRow, col);
     }
   }
@@ -174,15 +176,31 @@ def tryQueenInNextRow(board: Board): void {
 /////////////////////////////////////////////////////////////////////////////
 // the driver
 
+//
+// Find all solutions for the given board size, optionally showing each,
+// and print their count.
+//
+def countSolutions(boardSize: int, showEachSoln: bool) {
+  solutionCount = 0;
+  showEachSolution = showEachSoln;
+  if showEachSoln then
+    writeln("Solving N Queens for N=", boardSize, "...");
+  tryQueenInNextRow(createBoard(boardSize));   // elide dealloc of this board
+  writeln("Found ", solutionCount, " solutions for N=", boardSize);
+}
+
 // how big the board to play
 config const N = 8;
+
+// up to how big a board to print solution counts for
+config var N_counts_only = 11;
 
 //
 // The main program.
 //
 def main() {
-  solutionCount = 0;
-  writeln("Solving N Queens for N=", N, "...");
-  tryQueenInNextRow(createBoard(N));   // elide dealloc of this board
-  writeln("Found ", solutionCount, " solutions for N=", N);
+  if N > 0 then
+    countSolutions(N, showEachSolution);
+  for n in 1..N_counts_only do
+    countSolutions(n, false);
 }

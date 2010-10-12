@@ -74,7 +74,9 @@ def AMRSolution.stepLevelSolution_AdvectionCTU(
   velocity: dimension*real,
   dt:       real)
 {
-  //===> Step the solution on the input level ===>
+  //|\'''''''''''''''''''''''''''''''''''''''''|\
+  //| >    Step solution on the input level    | >
+  //|/.........................................|/
   var level_solution = level_solutions(level);
   var coarse_sol_interface = coarse_interfaces(level);
   var t = level_solution.current_time;
@@ -82,13 +84,19 @@ def AMRSolution.stepLevelSolution_AdvectionCTU(
   //---- Fill ghost cells ----
   bc.apply(level_solution.current_data, t);
   if coarse_sol_interface then
-    level_solution.current_data.fineBoundaryTimeInterpolation(coarse_sol_interface, t);
+    coarse_sol_interface.provideFineBoundaryData(level_solution.current_data, t);
+/*     level_solution.current_data.fineBoundaryTimeInterpolation(coarse_sol_interface, t); */
 
   level_solutions(level).step_AdvectionCTU(velocity, dt);
-  //<=== Step the solution on the input level
+  // /|'''''''''''''''''''''''''''''''''''''''''/|
+  //< |    Step solution on the input level    < |
+  // \|.........................................\|
 
 
-  //===> Step the next level down ===>
+
+  //|\'''''''''''''''''''''''''''''''''''''''''''''''|\
+  //| >    Step solution on the next-finest level    | >
+  //|/...............................................|/
   if level != hierarchy.bottom_level {
 
     //==== Identify fine interfaces ====
@@ -98,7 +106,7 @@ def AMRSolution.stepLevelSolution_AdvectionCTU(
 
 
     //==== Fill the solution interface's fine boundary ====
-    fine_solution_interface.fillFineBoundaryData_Linear();
+    fine_solution_interface.getFineBoundaryData_Linear();
 
 
     //==== Step the finer solution as many times as necessary ====
@@ -111,7 +119,9 @@ def AMRSolution.stepLevelSolution_AdvectionCTU(
     //==== Correct the solution on the input level ====
     fine_solution_interface.correctCoarseSolution_Linear();
   }
-  //<=== Step the next level down <===
+  // /|'''''''''''''''''''''''''''''''''''''''''''''''/|
+  //< |    Step solution on the next-finest level    < |
+  // \|...............................................\|
 
 }
 // /""""""""""""""""""""""""""""""""""""""""""""""""""/

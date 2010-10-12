@@ -140,7 +140,8 @@ class FTree {
     def copy() {
         var t = new FTree(order);
         t.indices = indices;
-        t.nodes   = nodes;
+        // get around restriction of matching domains for assoc arrays
+        forall i in t.nodes.domain do t.nodes(i) = nodes(i);
         return t;
     }
 

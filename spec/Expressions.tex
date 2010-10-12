@@ -35,8 +35,8 @@ expression:
   tuple-expand-expression
   locale-access-expression
   mapped-domain-expression
-  lambda-declaration-expression
 \end{syntax}
+% in README.firstClassFns: lambda-declaration-expression
 
 \subsection{Literal Expressions}
 \label{Literal_Expressions}
@@ -133,7 +133,7 @@ query-expression:
   ? identifier[OPT]
 \end{syntax}
 Querying is restricted to querying the type of a formal argument, the
-element type of an formal argument that is an array, the domain of a
+element type of a formal argument that is an array, the domain of a
 formal argument that is an array, the size of a primitive type, or a
 type or parameter field of a formal argument type.
 
@@ -765,16 +765,29 @@ def &(a: int(32), b: int(32)): int(32)
 def &(a: int(64), b: int(64)): int(64)
 def &(a: uint(32), b: uint(32)): uint(32)
 def &(a: uint(64), b: uint(64)): uint(64)
-def &(a: uint(64), b: int(64))
-def &(a: int(64), b: uint(64))
+def &(a: int(32), b: uint(32)): uint(32)
+def &(a: int(64), b: uint(64)): uint(64)
+def &(a: uint(32), b: int(32)): uint(32)
+def &(a: uint(64), b: int(64)): uint(64)
 \end{chapel}
-For each of these definitions that return a value, the result is
+For each of these definitions, the result is
 computed by applying the logical and operation to the bits of the
 operands.
 
-It is a compile-time error to apply the bitwise and operator to a
-value of type \chpl{uint(64)} and a value of type \chpl{int(64)}, and
-vice versa.
+Chapel allows mixing signed and unsigned integers of the same size
+when passing them as arguments to bitwise and.
+In the mixed case the result is of the same size as the arguments
+and is unsigned.
+
+\begin{rationale}
+The mathematical meaning of integer arguments
+is discarded when they are passed to bitwise operators.
+Instead the arguments are treated simply as bit vectors.
+The bit-vector meaning is preserved when converting
+between signed and unsigned of the same size.
+The choice of unsigned over signed as the result type in the mixed case
+reflects the semantics of standard C.
+\end{rationale}
 
 \subsubsection{Bitwise Or Operators}
 \label{Bitwise_Or_Operators}
@@ -787,16 +800,21 @@ def |(a: int(32), b: int(32)): int(32)
 def |(a: int(64), b: int(64)): int(64)
 def |(a: uint(32), b: uint(32)): uint(32)
 def |(a: uint(64), b: uint(64)): uint(64)
-def |(a: uint(64), b: int(64))
-def |(a: int(64), b: uint(64))
+def |(a: int(32), b: uint(32)): uint(32)
+def |(a: int(64), b: uint(64)): uint(64)
+def |(a: uint(32), b: int(32)): uint(32)
+def |(a: uint(64), b: int(64)): uint(64)
 \end{chapel}
-For each of these definitions that return a value, the result is
+For each of these definitions, the result is
 computed by applying the logical or operation to the bits of the
 operands.
 
-It is a compile-time error to apply the bitwise or operator to a value
-of type \chpl{uint(64)} and a value of type \chpl{int(64)}, and vice
-versa.
+Chapel allows mixing signed and unsigned integers of the same size
+when passing them as arguments to bitwise or.
+
+\begin{rationale}
+The same as for bitwise and (\rsec{Bitwise_And_Operators}).
+\end{rationale}
 
 \subsubsection{Bitwise Xor Operators}
 \label{Bitwise_Xor_Operators}
@@ -809,15 +827,20 @@ def ^(a: int(32), b: int(32)): int(32)
 def ^(a: int(64), b: int(64)): int(64)
 def ^(a: uint(32), b: uint(32)): uint(32)
 def ^(a: uint(64), b: uint(64)): uint(64)
-def ^(a: uint(64), b: int(64))
-def ^(a: int(64), b: uint(64))
+def ^(a: int(32), b: uint(32)): uint(32)
+def ^(a: int(64), b: uint(64)): uint(64)
+def ^(a: uint(32), b: int(32)): uint(32)
+def ^(a: uint(64), b: int(64)): uint(64)
 \end{chapel}
-For each of these definitions that return a value, the result is
+For each of these definitions, the result is
 computed by applying the XOR operation to the bits of the operands.
 
-It is a compile-time error to apply the bitwise xor operator to a
-value of type \chpl{uint(64)} and a value of type \chpl{int(64)}, and
-vice versa.
+Chapel allows mixing signed and unsigned integers of the same size
+when passing them as arguments to bitwise xor.
+
+\begin{rationale}
+The same as for bitwise and (\rsec{Bitwise_And_Operators}).
+\end{rationale}
 
 \subsection{Shift Operators}
 \label{Shift_Operators}
@@ -1066,15 +1089,15 @@ overloading~(\rsec{Function_Overloading}).
 
 The string concatenation operator \chpl{+} is predefined over numeric, boolean,
 and enumerated types with strings. It casts its operands to string type and
-concatenation of them together.
+concatenates them together.
 
 \begin{example}
 The code
 \begin{chapel}
 "result: "+i
 \end{chapel}
-where \chpl{i} is an integer appends the value of \chpl{i} to the
-string literal.  If \chpl{i} is \chpl{3}, then the resulting string
+where \chpl{i} is an integer appends the string representation of \chpl{i} to the
+string literal \chpl{"result: "}.  If \chpl{i} is \chpl{3}, then the resulting string
 would be \chpl{"result: 3"}.
 \end{example}
 

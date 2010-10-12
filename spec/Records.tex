@@ -3,8 +3,128 @@
 \index{records}
 
 A record is a data structure that is like a class but has value
-semantics.  The key differences between records and classes are
-described in this section.
+semantics.  Like classes, records can be generic (\rsec{Generic_Types}).
+The key differences between records and classes are listed below.
+
+A variable of a record type declared without an initialization expression
+is initialized to a record instance by calling the record's default constructor.
+\index{records!new}
+\index{new!records}
+\index{records!instances}
+To construct a record instance as an expression,
+i.e. without binding it to a variable, the \chpl{new} keyword is
+required.  In this case, storage is allocated and reclaimed as for a record
+variable declaration (\rsec{Record_Storage}).
+\begin{rationale}
+The \chpl{new} keyword disambiguates types from values. This is needed because of the close
+relationship between constructors and type specifiers for classes and
+records.
+\end{rationale}
+
+\subsection{Differences between Classs and Records}
+\label{Class_and_Record_Differences}
+\index{records!differences with classes}
+
+\subsubsection{References vs. Values}
+\label{Records_as_Value_Classes}
+
+The main difference between records and classes is that records are
+value classes.  Record instances are manipulated as values, in the
+same manner as values of primitive types.  Records are assigned by value;
+see \rsec{Record_Assignment} for more details.  Records are also passed
+by value to functions, unless argument intents (\rsec{Intents}) are used.
+
+\begin{example}
+The following example defines and manipulates a simple record.
+\begin{chapelpre}
+% assignmentAndParamPassing.chpl
+\end{chapelpre}
+\begin{chapel}
+record MyColor {
+  var color: int;
+}
+
+def printMyColor(mc: MyColor) {
+  writeln("my color is ", mc.color);
+  mc.color = 6;   // does not affect the caller's record
+}
+
+var mc1: MyColor;        // 'color' defaults to 0
+var mc2: MyColor = mc1;  // mc1's value is copied into mc2
+mc1.color = 3;           // mc1's value is modified
+printMyColor(mc2);       // mc2 is not affected by assignment to mc1
+printMyColor(mc2);       // ... or by assignment in printMyColor()
+
+def modifyMyColor(inout mc: MyColor, newcolor: int) {
+  mc.color = newcolor;
+}
+modifyMyColor(mc2, 7);   // mc2 is affected because of the 'inout' intent
+printMyColor(mc2);
+\end{chapel}
+\begin{chapeloutput}
+my color is 0
+my color is 0
+my color is 7
+\end{chapeloutput}
+The assignment to \chpl{mc1.color} affects only the record stored
+in \chpl{mc1}. The record in \chpl{mc2} is not affected by
+the assignment to \chpl{mc1} or by the assignment in \chpl{printMyColor}.
+\chpl{mc2} is affected by the assignment in \chpl{modifyMyColor}
+because the intent \chpl{inout} is used.
+\end{example}
+
+\subsubsection{Storage Allocation}
+\label{Record_Storage}
+
+Storage for a record variable contains directly the data associated
+with the fields in the record, in the same manner as variables
+of primitive types contain directly the primitive values.
+Record storage is reclaimed when the record variable goes out of scope.
+No additional storage for a record is allocated or reclaimed.
+Field data of one variable's record is not shared with data
+of another variable's record.
+
+By contrast, the memory for a class variable contains only a reference to a
+class instance.  Storage for a class instance, including storage for
+the data associated with the fields in the class, is allocated and reclaimed
+separately from variables referencing that instance.  The same class instance
+can be referenced by multiple variables.
+
+\subsubsection{Record Inheritance}
+\label{Record_Inheritance}
+\index{records!inheritance}
+
+When a record is derived from a base record, it contains the data in
+the base record.  The difference between record inheritance and class
+inheritance is that there is no dynamic dispatch.  The record type of
+a variable is the exact type of that variable, i.e. a variable of a
+base record type cannot contain a derived record.
+
+\subsubsection{No Dynamic Dispatch}
+
+Records do not support dynamic dispatch.
+
+\subsubsection{No \chpl{nil} Value}
+\index{nil!not provided for records}
+
+There is no counterpart of the \chpl{nil} value for records.  A record
+with all fields set to their corresponding default values is the
+closest concept to \chpl{nil}. It is different, however, in that it is
+a legal record instance, whereas \chpl{nil} does not refer to any
+legal class instance.
+
+\subsubsection{Record Assignment}
+\label{Record_Assignment}
+\index{records!assignment}
+
+In record assignment, the fields of the record on the left-hand side
+of the assignment are assigned the values in the fields of the record
+on the right-hand side of the assignment.  When a base record is
+assigned a derived record, just the fields that exist in the base
+record are assigned.  Record assignment is generic in that the
+right-hand side expression can be of any type as long as the type
+contains the same fields (by name) as the record on the left-hand
+side.
 
 \subsection{Record Declarations}
 \label{Record_Declarations}
@@ -31,6 +151,7 @@ record-statement:
   type-declaration-statement
   function-declaration-statement
   variable-declaration-statement
+  empty-statement
 \end{syntax}
 The only difference between record and class declarations is that
 the \chpl{record} keyword replaces the \chpl{class} keyword.
@@ -42,53 +163,6 @@ record-type:
   identifier
   identifier ( named-expression-list )
 \end{syntax}
-
-\subsection{Class and Record Differences}
-\label{Class_and_Record_Differences}
-\index{records!differences with classes}
-
-The main differences between records and classes are that records are
-value classes.  They do not need to be reclaimed since the data is
-recovered when the variable goes out of scope.  Records do not support
-dynamic dispatch and are assigned by value.
-
-Note that even though records do not allocate storage, the \chpl{new}
-keyword is still required to construct an instance.
-\begin{rationale}
-The \chpl{new} keyword disambiguates types from values given the close
-relationship between constructors and type specifiers for classes and
-records.
-\end{rationale}
-
-\subsubsection{Records as Value Classes}
-\label{Records_as_Value_Classes}
-
-A record is not a reference to a storage location that contains the
-data in the record but is more like a variable of a primitive type.  A
-record directly contains the data associated with the fields in the
-record.
-
-\subsubsection{Record Inheritance}
-\label{Record_Inheritance}
-\index{records!inheritance}
-
-When a record is derived from a base record, it contains the data in
-the base record.  The difference between record inheritance and class
-inheritance is that there is no dynamic dispatch.  The record type of
-a variable is the exact type of that variable.
-
-\subsubsection{Record Assignment}
-\label{Record_Assignment}
-\index{records!assignment}
-
-In record assignment, the fields of the record on the left-hand side
-of the assignment are assigned the values in the fields of the record
-on the right-hand side of the assignment.  When a base record is
-assigned a derived record, just the fields that exist in the base
-record are assigned.  Record assignment is generic in that the
-right-hand side expression can be of any type as long as the type
-contains the same fields (by name) as the record on the left-hand
-side.
 
 \subsection{Default Comparison Operators on Records}
 \label{Record_Comparison_Operators}

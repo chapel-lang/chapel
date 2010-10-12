@@ -185,6 +185,30 @@ value semantics.  It exists on \chpl{Locales(1)} even though it is
 assigned a value on a remote locale.
 \end{example}
 
+Global (non-distributed) constants are replicated across all locales.
+\begin{example}
+For example, the following code:
+%
+% We can't yet specify multiple .good files or .numlocales files, so
+% add this test later when we can.
+%
+\begin{chapel}
+const c = 10;
+for loc in Locales do on loc do
+    writeln(c.locale);
+\end{chapel}
+outputs
+\begin{chapel}
+LOCALE0
+LOCALE1
+LOCALE2
+LOCALE3
+LOCALE4
+\end{chapel}
+when running on 5 locales.
+\end{example}
+
+
 \subsection{The On Statement}
 \label{On}
 \index{on@\chpl{on}}

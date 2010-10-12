@@ -185,7 +185,7 @@ class FTree {
      */
     def copy() {
         var t = new FTree(order);
-        t.nodes = nodes;
+        forall i in t.nodes.domain do t.nodes(i) = nodes(i);
         return t;
     }
 

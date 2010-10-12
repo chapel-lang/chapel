@@ -1,3 +1,5 @@
+use Functions;
+
 var f:func(int, int) = lambda(i:int) { return i+1; };
 
 writeln(f(10));

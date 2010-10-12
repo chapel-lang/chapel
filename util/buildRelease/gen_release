@@ -63,7 +63,14 @@ system("cd $rootdir && svn export -q $svnroot chapel");
        "util/test/sub_clean",
        "util/test/computePerfStats",
        "util/test/filterSuppressions",
-       "util/test/testEnv"
+       "util/test/testEnv",
+       "util/test/createGraphs",
+       "util/test/viewGraphs",
+       "util/test/checkDuplicates",
+       "util/test/compileTest",
+       "util/test/paratest.server",
+       "util/test/paratest.client",
+       "util/test/cat2File"
 );
 
 
@@ -84,6 +91,7 @@ system("cd $rootdir && svn export -q $svnroot chapel");
     "runtime",
     "third-party/dlmalloc",
     "third-party/gasnet",
+    "third-party/gmp",
     "third-party/pvm",
     "util/chplenv"
 );
@@ -98,10 +106,9 @@ print "Generating the bison/flex files...\n";
 system("cd chapel/compiler/parser && make lex.yy.cpp > /dev/null");
 
 print "Creating the BUILD_VERSION file...\n";
-system("cd chapel/compiler && export CHPL_DEVELOPER=true && make main/BUILD_VERSION > /dev/null");
+system("cd chapel/compiler/main && echo 0 > BUILD_VERSION");
 
 print "Creating the examples directory...\n";
-system("cd chapel && rm -r examples");
 system("cd chapel && cp -r test/release/examples .");
 system("cd chapel/util && cp start_test ../examples/");
 
@@ -126,8 +133,6 @@ system("cd chapel/runtime/src/launch && rm -r apsim");
 system("cd chapel/runtime/src/launch && rm -r dummy");
 system("cd chapel/runtime/src/launch && rm -r mpirun");
 system("cd chapel/runtime/src/launch && rm -r zebra");
-system("cd chapel/runtime/include/tasks && rm -r nanos");
-system("cd chapel/runtime/src/tasks && rm -r nanos");
 system("cd chapel/runtime/include && rm -r sunos_old");
 
 chdir "$tmpdir";

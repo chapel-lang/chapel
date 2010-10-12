@@ -34,6 +34,16 @@ gasnet/
   See also: gasnet/README
 
 
+gmp/
+  Summary: the GNU Multiple Precision Arithmetic Library
+
+  License: L-GPL (see gmp/gmp-*/COPYING and gmp/gmp-*/COPYING.LIB)
+
+  Contact: For more information, please refer to: http://gmplib.org
+
+  See also: gmp/README and gmp/gmp-*/README
+
+
 pvm/
   Summary: the PVM message passing library that we are using to
            prototype hybrid (multi-realm) Chapel execution

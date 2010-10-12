@@ -5,12 +5,10 @@ use File::Basename;
 $utildirname = dirname($0)."/chplenv";
 
 $uname = `uname -a`;
-$pwd = `pwd`; chomp($pwd);
 
 print "uname -a: $uname";
 
 print "\$CHPL_HOME: $ENV{'CHPL_HOME'}\n";
-print "pwd: $pwd\n";
 print "script location: $utildirname\n";
 
 $hostplatform = `$utildirname/platform --host`; chomp($hostplatform);
@@ -25,6 +23,13 @@ $targcompiler = `$utildirname/compiler --target`; chomp($targcompiler);
 
 print "CHPL_TARGET_PLATFORM: $targplatform\n";
 print "CHPL_TARGET_COMPILER: $targcompiler\n";
+if (($targcompiler =~ /^cray-xt/) or ($targcompiler =~ /^cray-xe/)) {
+    $link_dynamic = $ENV{'CHPL_ASYNCPE_USE_DYNAMIC'};
+    if (($link_dynamic eq "true") or ($link_dynamic eq "false")) {
+        print "  CHPL_ASYNCPE_USE_DYNAMIC: $link_dynamic\n";
+    }
+}
+
 
 $comm = `$utildirname/comm`; chomp($comm);
 print "CHPL_COMM: $comm\n";
@@ -39,7 +44,7 @@ if ($comm eq "none") {
     }
     if ($comm eq "gasnet") {
         $commsegment = `$utildirname/commSegment`; chomp($commsegment);
-        print "  CHPL_GASNET_SEGMENT: $commsegment\n";a
+        print "  CHPL_GASNET_SEGMENT: $commsegment\n";
     }
 }
 
@@ -55,3 +60,4 @@ $mem = `$utildirname/mem`; chomp($mem);
 print "CHPL_MEM: $mem\n";
 $make = `$utildirname/chplmake`; chomp($make);
 print "CHPL_MAKE: $make\n";
+

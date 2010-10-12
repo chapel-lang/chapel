@@ -1,3 +1,5 @@
+use Functions;
+
 module mod1 {
   def write_fun( f: func(int, int) ) {
     writeln( f(1) );

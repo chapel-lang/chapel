@@ -22,16 +22,18 @@ first to get started with the language.
    multiple locales and GASNet.
 
 
-3) If your Cray XE requires PBS/qsub to launch jobs onto the compute
+3) If your Cray XT requires PBS/qsub to launch jobs onto the compute
    nodes (or you simply want to use it as your job launch mechanism),
    set CHPL_LAUNCHER to 'pbs-aprun'.  For example:
 
      setenv CHPL_LAUNCHER pbs-aprun
 
-   Otherwise, CHPL_LAUNCHER will default to 'aprun' on xe-cle systems.
-   Note that for some system installations, you may need to execute
-   'module load pbs' from your shell in order to put PBS/qsub into
-   your path.  See README.launcher for more information on Chapel's
+   If it only requires aprun to launch a job, set it to 'aprun'.  If
+   you want to manage all job queueing/launching responsibilities
+   yourself, set it to 'none'.  If left unset, the value of
+   CHPL_LAUNCHER will be set automatically to one of the three
+   settings above depending on the presence of aprun and/or qsub.  See
+   $CHPL_HOME/doc/README.launcher for more information on Chapel's
    launcher capabilities.
 
 
@@ -63,6 +65,7 @@ first to get started with the language.
 
      - PrgEnv-cray
      - PrgEnv-gnu
+     - PrgEnv-intel
      - PrgEnv-pathscale
      - PrgEnv-pgi
 
@@ -128,20 +131,31 @@ Cray XE File Systems and Chapel execution
   programs from a Lustre file system directory.
 
 
+-----------------------------------------------------
+Dynamic linking with the Cray Programming Environment
+-----------------------------------------------------
+
+* By default, Chapel programs built for the Cray XE do not specify
+  static or dynamic linking.  The current default for the Cray
+  Programming Environment compilers is static linking.  If you wish to
+  override this, set the environment variable CHPL_ASYNCPE_USE_DYNAMIC
+  to 'true'.
+
+
 --------------------------
 Known Constraints and Bugs
 --------------------------
 
-This is a very preliminary release of Chapel for the Cray XE using
-GASNet over the MPI conduit.  As such, the implementation does not
-take full advantage of some of the high performance hardware
-instructions.
+* This is a very preliminary release of Chapel for the Cray XE using
+  GASNet over the MPI conduit (no other conduits exists).  As such,
+  the implementation does not take full advantage of some of the high
+  performance hardware instructions.
 
-There is a known issue with the Cray MPI release for XE systems that
-causes some programs to assert and then hang during exit.  A
-workaround is to set the environment variable, MPICH_GNI_DYNAMIC_CONN
-to 'disabled.'  Setting this environment variable may affect memory
-usage for all MPI programs linked against the Cray MPI release.  In
-addition, an additional performance penalty may be paid at start up
-time for thousands of MPI ranks.
+* There is a known issue with the Cray MPI release for XE systems that
+  causes some programs to assert and then hang during exit.  A
+  workaround is to set the environment variable,
+  MPICH_GNI_DYNAMIC_CONN to 'disabled.'  Setting this environment
+  variable may affect memory usage for all MPI programs linked against
+  the Cray MPI release.  In addition, an additional performance
+  penalty may be paid at start up time for thousands of MPI ranks.
 

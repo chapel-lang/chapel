@@ -517,7 +517,7 @@ def CyclicDom.dsiBuildArithmeticDom(param rank, type idxType,
 
 }
 
-def CyclicDom.localSlice(param stridable: bool, ranges) {
+def CyclicDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
 }
 
@@ -626,7 +626,7 @@ def CyclicArr.dsiReindex(d: CyclicDom) {
   return alias;
 }
 
-def CyclicArr.localSlice(ranges) {
+def CyclicArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
     low(i) = ranges(i).low;
@@ -752,9 +752,12 @@ def CyclicArr.these(param tag: iterator, follower, param fast: bool = false) var
     t(i) = ((follower(i).low*wholestride)..(follower(i).high*wholestride) by (follower(i).stride*wholestride)) + dom.whole.dim(i).low;
   }
   const followThis = [(...t)];
-  const arrSection = locArr(dom.dist.idxToLocaleInd(followThis.low));
   if fast {
-    local {
+    const arrSection = locArr(dom.dist.idxToLocaleInd(followThis.low));
+    if arrSection.locale.uid == here.uid then local {
+      for e in arrSection.myElems(followThis) do
+        yield e;
+    } else {
       for e in arrSection.myElems(followThis) do
         yield e;
     }

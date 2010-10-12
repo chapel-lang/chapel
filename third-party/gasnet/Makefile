@@ -10,7 +10,11 @@ ifneq ($(CHPL_GASNET_SEGMENT),everything)
 CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
 endif
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),power-smp)
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr5)
+CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
+endif
+
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr6)
 CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
 endif
 
@@ -60,7 +64,7 @@ gasnet-build: FORCE
 	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(MAKE) all
 	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(MAKE) install
 	$(XTRA_BUILD_COMMAND)
-	$(XTRA_POST_INSTALL_COMMAND)
+	-$(XTRA_POST_INSTALL_COMMAND)
 
 gasnet: gasnet-config gasnet-build
 

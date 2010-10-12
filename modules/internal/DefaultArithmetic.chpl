@@ -15,6 +15,8 @@ class DefaultDist: BaseDist {
   def dsiNewSparseDom(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDom(rank, idxType, this, dom);
 
+  def dsiIndexLocale(ind) return this.locale;
+
   def dsiClone() return this;
 
   def dsiAssign(other: this.type) { }
@@ -337,18 +339,30 @@ class DefaultArithmeticArr: BaseArr {
 
   def these() var {
     if rank == 1 {
-      const stride = dom.ranges(1).stride: idxType,
-            start  = if stride > 0 then dom.dsiLow else dom.dsiHigh,
-            first  = getDataIndex(start),
-            second = getDataIndex(start + stride),
-            step   = (second-first):chpl__idxTypeToStrType(idxType),
-            last   = first + (dom.dsiNumIndices-1) * step:idxType;
-      if step > 0 then
+      // This is specialized to avoid overheads of calling dsiAccess()
+      if !dom.stridable {
+        // This is specialized because the strided version disables the
+        // "single loop iterator" optimization
+        var first = getDataIndex(dom.dsiLow);
+        var second = getDataIndex(dom.dsiLow+dom.ranges(1).stride:idxType);
+        var step = (second-first):chpl__idxTypeToStrType(idxType);
+        var last = first + (dom.dsiNumIndices-1) * step:idxType;
         for i in first..last by step do
           yield data(i);
-      else
-        for i in last..first by step do
-          yield data(i);
+      } else {
+        const stride = dom.ranges(1).stride: idxType,
+              start  = if stride > 0 then dom.dsiLow else dom.dsiHigh,
+              first  = getDataIndex(start),
+              second = getDataIndex(start + stride),
+              step   = (second-first):chpl__idxTypeToStrType(idxType),
+              last   = first + (dom.dsiNumIndices-1) * step:idxType;
+        if step > 0 then
+          for i in first..last by step do
+            yield data(i);
+        else
+          for i in last..first by step do
+            yield data(i);
+      }
     } else {
       for i in dom do
         yield dsiAccess(i);
@@ -570,6 +584,10 @@ class DefaultArithmeticArr: BaseArr {
     } else {
       halt("illegal reallocation");
     }
+  }
+
+  def dsiLocalSlice(ranges) {
+    halt("all dsiLocalSlice calls on DefaultArithmetics should be handled in ChapelArray.chpl");
   }
 }
 

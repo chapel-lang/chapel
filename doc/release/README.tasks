@@ -169,3 +169,33 @@ load balanced manually).  Our hope is to leverage existing open source
 threading and task management software and to collaborate with others
 in these areas, so please contact us at chapel_info@cray.com if you'd
 like to work with us in this area.
+
+------------------------
+Limiting Per-Task Memory
+------------------------
+
+As documented in README.execution, the --callStackSize configuration
+constant can be used to adjust the call stack size for active tasks.
+This interacts with the tasking and threading models as follows:
+
+CHPL_TASKS == fifo, CHPL_THREADS == pthreads:
+  The call stack size is used to set the stack size for the process and
+  each pthread.  The tasks inherit this call stack size, because the
+  execution model is that a task occupies a pthread and uses its stack
+  for the duration of the task's existence.
+
+CHPL_TASKS == mta, CHPL_THREADS == none
+  The --callStackSize configuration constant is ignored.  As in FIFO
+  tasking, the execution model is that a task occupies a thread and uses
+  its stack for the duration of the task's existence.  But on Cray
+  MTA/XMT systems thread stacks are initially small, and are extended
+  and contracted dynamically as needed, with a maximum size limited only
+  by available memory.  There is no need for call stack sizing; tasks
+  neither waste memory because their stacks are too big, nor do they
+  overflow stacks that are too small.
+
+CHPL_TASKS == none, CHPL_THREADS == none
+  The call stack size is used to set the stack size for the process.
+  The tasks inherit this call stack size, because the execution model,
+  as described above, is either serial like FIFO tasking with a single
+  thread.

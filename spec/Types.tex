@@ -30,8 +30,8 @@ structured-type-specifier:
   record-type
   union-type
   tuple-type
-  function-type
 \end{syntax}
+% in README.firstClassFns: function-type
 
 Classes are discussed in~\rsec{Classes}.  Records are discussed
 in~\rsec{Records}.  Unions are discussed in~\rsec{Unions}.  Tuples are
@@ -230,7 +230,7 @@ See~\rsec{Standard} for routines for manipulating strings.
 
 
 \begin{openissue}
-There is an expectation of future support for fix-length strings.
+There is an expectation of future support for fixed-length strings.
 \end{openissue}
 
 \begin{openissue}
@@ -283,7 +283,7 @@ defines an enumerated type with four constants.  The function
 def quote(s: statesman) {
   select s {
     when statesman.Aristotle do
-       writeln("All paid jobs absorb and degrade the mind.")
+       writeln("All paid jobs absorb and degrade the mind.");
     when statesman.Roosevelt do
        writeln("Every reform movement has a lunatic fringe.");
     when statesman.Churchill do
@@ -369,7 +369,7 @@ types are defined in~\rsec{Domains}~and~\rsec{Arrays}.
 Type aliases are declared with the following syntax:
 \begin{syntax}
 type-alias-declaration-statement:
-  `type' type-alias-declaration-list ;
+  `config'[OPT] `type' type-alias-declaration-list ;
 
 type-alias-declaration-list:
   type-alias-declaration
@@ -382,6 +382,12 @@ type-alias-declaration:
 A type alias is a symbol that aliases any type as specified in the
 \sntx{type-part}.  A use of a type alias has the same meaning as using
 the type specified by \sntx{type-part} directly.
+
+If the keyword \chpl{config} precedes the keyword \chpl{type}, the
+type alias is called a configuration type alias.  Configuration type
+aliases are set at compilation time via compilation flags or other
+implementation dependent means.  The \chpl{type-specifier} in the
+program is ignored if the type-alias is alternatively set.
 
 The \sntx{type-part} is optional in the definition of a class or
 record.  Such a type alias is called an unspecified type
