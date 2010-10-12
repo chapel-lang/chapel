@@ -31,9 +31,9 @@ class-type:
   identifier ( named-expression-list )
 \end{syntax}
 For non-generic classes, the class name is sufficient to specify the
-type.  For generic classes, the generic fields must be ``passed'' to
-the class name.  This is similar to a constructor call except without
-the \chpl{new} keyword.
+type.  Generic classes must be instantiated to be used as types
+of variables and in most other contexts.  This is done with
+type constructors, which are defined in Section~\ref{Type_Constructors}.
 
 \subsection{Class Declarations}
 \label{Class_Declarations}
@@ -69,12 +69,12 @@ Inheritance is described in~\rsec{Inheritance}.
 
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
-field), a function (called a method), or a type.  In addition, empty
+field), a function (called a method), or a type alias.  In addition, empty
 statements are allowed in class declarations, and they have no effect.
 
-If a class contains a variable without a specified type or
-initialization expression, a type alias or a parameter, the class is
-generic.  Generic classes are described in~\rsec{Generics}.
+If a class contains a variable or constant without a specified type or
+initialization expression, a type alias or a parameter field, the class is
+generic.  Generic classes are described in~\rsec{Generic_Types}.
 
 \subsection{Class Assignment}
 \label{Class_Assignment}
@@ -82,15 +82,16 @@ generic.  Generic classes are described in~\rsec{Generics}.
 
 Classes are assigned by reference.  After an assignment from one
 variable of class type to another, the variables reference the same
-storage location.
+class instance, i.e. the same storage location.
 
 \subsection{Class Fields}
 \label{Class_Fields}
 \index{classes!fields}
+\index{fields}
 
-Variables and constants declared within class declarations define
-fields within that class.  (Parameters make a class generic.)  Fields
-define the storage associated with a class.
+Variable declarations within a class define
+fields within that class.  Parameter fields make a class generic.
+Variable and constant fields define the storage associated with a class.
 
 \begin{example}
 The code
@@ -116,7 +117,8 @@ string field \chpl{name} and the unsigned integer field \chpl{age}.
 The field in a class is accessed via a member access expression as
 described in~\rsec{Member_Access_Expressions}.  Fields in a class can
 be modified via an assignment statement where the left-hand side of
-the assignment is a member access.
+the assignment is a member access expression.
+Accessing a parameter field returns a parameter.
 \begin{example}
 Given a variable \chpl{anActor} of type \chpl{Actor}, defined above,
 the code
@@ -386,14 +388,16 @@ when creating a MessagePoint.
 
 Constructors for generic classes (\rsec{Generic_Types}) handle certain
 arguments differently and may need to satisfy additional
-requirements. See Section~\ref{Generic_Constructors} for details.
+requirements. See Section~\ref{Generic_User_Constructors} for details.
 
 \subsubsection{The Default Constructor}
 \label{The_Default_Constructor}
+\index{classes!default constructors}
 
 The default constructor is automatically created for every class in
 the Chapel program. It has one argument for every field in the class
-(including the fields inherited from superclasses, if any)
+(including the fields inherited from superclasses, if any, and including
+type alias and parameter fields, if any)
 with the argument name matching the field's name.
 The order of the arguments matches the order of the field declarations
 in the class, with the arguments for a superclass's fields occurring
@@ -455,15 +459,16 @@ var c1 = new C();
 var c2 = new C(2);
 var c3 = new C(z="");
 var c4 = new C(2, z="");
-var c5 = new C(0,0.0, "");
+var c5 = new C(0, 0.0, "");
 writeln((c1, c2, c3, c4, c5));
 \end{chapelpost}
 \begin{chapeloutput}
 ({x = 0, y = 3.14, z = Hello, World!}, {x = 2, y = 3.14, z = Hello, World!}, {x = 0, y = 3.14, z = }, {x = 2, y = 3.14, z = }, {x = 0, y = 0.0, z = })
 \end{chapeloutput}
 there are no user-defined constructors for \chpl{C}, so \chpl{new} expressions
-will invoke \chpl{C}'s default constructor. The \chpl{y} and \chpl{z} arguments
-of the default constructor have the default values \chpl{3.14} and
+will invoke \chpl{C}'s default constructor. The \chpl{x} argument
+of the default constructor has the default value \chpl{0}.
+The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
 \chpl{"Hello, World!"}, respectively.
 
 \chpl{C} instances can be created by calling the default constructor as follows:

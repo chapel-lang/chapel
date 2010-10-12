@@ -264,10 +264,10 @@ specified with the keyword \chpl{const}, are runtime constants.
 \subsubsection{Compile-Time Constants}
 \label{Compile-Time_Constants}
 \index{constants!compile-time}
-\index{param@\chpl{param}}
 \index{parameters}
+\index{param@\chpl{param}}
 
-A compile-time constant or parameter must have a single value that is
+A compile-time constant, or ``parameter'', must have a single value that is
 known statically by the compiler.  Parameters are restricted to
 primitive and enumerated types.
 
@@ -301,19 +301,23 @@ and more operations.
 \subsubsection{Runtime Constants}
 \label{Runtime_Constants}
 \index{constants!runtime}
+\index{constants}
 \index{const@\chpl{const}}
 
-Constants do not have the restrictions that are associated with
+Runtime constants, or simply ``constants'',
+do not have the restrictions that are associated with
 parameters.  Constants can be any type.  They require an initialization
 expression and contain the value of that expression throughout their lifetime.
 
-Variables of class type that are constants are constant references.
-The fields of the class can be modified, but the variable always
+A variable of a class type that is a constant is a constant reference.
+That is, the variable always
 points to the object that it was initialized to reference.
+However, the fields of that object are allowed to be modified.
 
 \subsection{Configuration Variables}
 \label{Configuration_Variables}
 \index{variables!configuration}
+\index{constants!configuration}
 \index{config@\chpl{config}}
 
 If the keyword \chpl{config} precedes the

@@ -107,9 +107,9 @@ Records do not support dynamic dispatch.
 \subsubsection{No \chpl{nil} Value}
 \index{nil!not provided for records}
 
-There is no counterpart of the \chpl{nil} value for records.  A record
-with all fields set to their corresponding default values is the
-closest concept to \chpl{nil}. It is different, however, in that it is
+Records do not provide a counterpart of the \chpl{nil} value.  A record
+with all fields set to their types' default values might be the closest
+concept to \chpl{nil}. Such a record is different, however, in that it is
 a legal record instance, whereas \chpl{nil} does not refer to any
 legal class instance.
 
