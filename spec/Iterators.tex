@@ -38,8 +38,8 @@ yield-statement:
 
 Iterator functions can be called within for or forall loops, in which
 case they are executed in an interleaved manner with the body of the
-loop, can be captured in new variable declarations or arrays, in which
-case they evaluate to an array of values, or can be passed to a
+loop. An iterator function call, or iterator invocation, can be captured in a variable declaration or assigned to an array, in which
+case it evaluates to an array of values. Iterator invocations can also be passed to a
 generic function argument.
 
 \subsubsection{Iterators in For and Forall Loops}
@@ -65,6 +65,12 @@ def squares(n: int): int {
     yield i * i;
 }
 \end{chapel}
+\begin{chapelpost}
+writeln(squares(5));
+\end{chapelpost}
+\begin{chapeloutput}
+1 4 9 16 25
+\end{chapeloutput}
 the expression \chpl{squares(5)} evaluates to the array \chpl{1, 4, 9, 16, 25}.
 \end{example}
 
@@ -72,9 +78,42 @@ the expression \chpl{squares(5)} evaluates to the array \chpl{1, 4, 9, 16, 25}.
 \label{Iterators_and_Generics}
 \index{iterators!and generics}
 
-If an iterator call expression is passed to a function argument that
-is generic, the iterator is passed without being evaluated and is
-treated as a closure within the generic function.
+An iterator call expression can be passed to a function argument that
+is generic by being declared without a type and a default value
+(\rsec{Formal_Arguments_without_Types}).
+In this case the iterator is passed without being evaluated.
+Within the generic function the corresponding formal argument
+can be used as an iterator, e.g. in for loops.
+The arguments to the iterator call expression, if any, are evaluated
+at the call site, i.e. prior to passing the iterator to the generic function.
+
+\subsubsection{Recursive Iterators}
+\label{Recursive_Iterators}
+\index{iterators!recursive}
+
+Recursive iterators are allowed. A recursive iterator invocation is
+typically made by iterating over it in a loop,
+unless it is desired to aggregate its outcomes into an array
+(\rsec{Iterators_as_Arrays}).
+
+\begin{example}
+A post-order traversal of a tree data structure could look like this:
+\begin{chapel}
+def postorder(tree: Tree): string {
+  if tree != nil {
+    for child in postorder(tree.left) do
+      yield child;
+    for child in postorder(tree.right) do
+      yield child;
+    yield tree.data;
+  }
+}
+\end{chapel}
+By contrast, using calls \chpl{postorder(tree.left)}
+and \chpl{postorder(tree.right)} as stand-alone statements would
+result in generating temporary arrays containing the outcomes of these
+recursive calls, which would then be discarded.
+\end{example}
 
 \subsection{Parallel Iterators}
 \label{Parallel_Iterators}
