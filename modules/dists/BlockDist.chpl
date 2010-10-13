@@ -31,7 +31,7 @@ use ChapelUtil;
 // modules, perhaps called debugDists and checkDists.
 //
 config param debugBlockDist = false;
-config param debugBlockDistBenchmark = true;
+config param debugBlockDistBenchmark = false;
 config param sanityCheckDistribution = false;
 
 //
