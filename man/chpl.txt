@@ -303,8 +303,9 @@ OPTIONS
 ENVIRONMENT
   See $CHPL_HOME/doc/README.chplenv for detailed information about 
   general environment variable settings, legal values, and default
-  settings. Use $CHPL_HOME/util/printchplenv.pl to view your current
-  settings (as explicitly set and inferred).
+  settings. Run $CHPL_HOME/util/printchplenv to view your current
+  settings (as explicitly set and inferred). Some of the most
+  commonly-used environment variables are summarized here.
 
   CHPL_HOME           Specifies the location of the Chapel installation directory
 
@@ -329,8 +330,8 @@ ENVIRONMENT
                       based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
                       and $CHPL_HOST_COMPILER)
 
-  CHPL_THREADS        Specifies the thread layer to use for implementing
-                      tasks (defaults to a best guess based on 
+  CHPL_TASKS          Specified the tasking layer to use for implementing
+                      tasks (defaults to a best guess based on
                       $CHPL_TARGET_PLATFORM)
 
   CHPL_COMM           Specifies the communication layer to use for
@@ -339,9 +340,6 @@ ENVIRONMENT
   CHPL_LAUNCHER       Specifies the launcher, if any, used to start job
                       execution (defaults to a best guess based on
                       $CHPL_COMM and $CHPL_TARGET_PLATFORM)
-
-  CHPL_MEM            Specifies the memory allocation layer to use
-                      (defaults to 'default' which uses C's malloc/free)
 
   Most compiler command-line options have an environment variable that can
   be used to specify a default value. Use the --help-env option to list the 
