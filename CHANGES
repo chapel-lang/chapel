@@ -8,46 +8,51 @@ version 1.2.0
 
 Fifth public release of Chapel, October 21, 2010
 
-
 High-Level Themes
 -----------------
 - single- and multi-locale task parallelism
-- improved single- and multiple-locale data parallelism
+- improved single- and multi-locale data parallelism
   - single- and multi-locale parallelism for arithmetic domains/arrays
   - single-locale parallelism for sparse and associative domains/arrays
   - serial reference version of opaque domains/arrays
-- improved support for extern types, vars, and functions
-- initial support for first-class and anonymous functions
+- improved stability and portability
+
+Highlights
+----------
+- support for parallel iteration over sparse and associative domains and arrays
 - added support for the Cray XE6 (TM) and Cray CX1000 (TM)
 - improved parallelization of loops for the Cray XMT (TM)
+- support for config types and improved support for config params
+- improved support for external C types, vars, and functions
+- initial support for first-class and anonymous functions
 - prototype implementation of a GMP multiprecision math module
-- bug fixes
 
 Environment Changes
 -------------------
-- renamed the cx1-linux CHPL_*_PLATFORM variable to cx-linux
+- renamed the 'cx1-linux' platform variable to 'cx-linux'
 
 Syntactic/Naming Changes
 ------------------------
-- renamed the range's index type from eltType to idxType
+- renamed the range's index type from 'eltType' to 'idxType'
 - made string length a parenthesis-less method rather than a standalone function
-  (i.e., 'length(mystring)' should now be written mystring.length)
+  (i.e., 'length(mystring)' should now be written 'mystring.length')
 
 Semantic Changes/Changes to Chapel Language
 -------------------------------------------
 - added initial support for first-class and anonymous functions
   (see doc/technotes/README.firstClassFns)
-- added support for config types and params
+- added support for config types
+- enabled config params to support very general command-line expressions
 - added support for param 'this' arguments to methods
 - added support for assigning tuples of ranges to arithmetic domains
-- added support for .stridable and .stride methods on domains
+- added support for .stridable and .stride queries on domains
 - changed the range's stride type from an int to a signed int of the index type
-  (e.g., range(uint(64)) and range(int(64)) now store a stride value of int(64))
+  (e.g., range(uint(64)) and range(int(64)) now store an int(64) stride value)
 - made the by operator for a range accept the range's idxType or its stride type
-- added min()/max() functions for tuples that fills the tuple with min/max vals
+- added min()/max() functions for tuples that fill the tuple with min/max vals
   (see 'Tuples' chapter of language spec)
 - added isTupleType(type t) param function that tells whether t is a tuple
-- made a value of 0 for dataParTasksPerLocale evalute to here.numCores
+- made a dataParTasksPerLocale value of '0' evalute to here.numCores
 - converted dataParMinGranularity from a uint to an int and made its default '1'
 - made numBits/numBytes for default-width bools generate a compiler error
 
@@ -74,13 +79,15 @@ Standard Modules
 
 Platform-specific notes
 -----------------------
-- added support for the Cray CX1000 as part of the cx-linux CHPL_*_PLATFORM
-- added support for using LSF as a launcher for cx-linux via lsf-gasnetrun_ibv
-- added support for the Cray XE6 via a new CHPL_*_PLATFORM variable xe-cle
+- added support for the Cray XE6 (TM) via a new platform variable xe-cle
   (see doc/platforms/README.xe-cle)
+- added support for the Cray CX1000 (TM) as part of the cx-linux platform
+  (see doc/platforms/README.cx-linux)
+- added support for using LSF as a launcher for cx-linux via lsf-gasnetrun_ibv
 - for xt-cle/xe-cle:
   - made MPI the default conduit due to portals conduit issues in GASNet 1.14.x
-  - changed the C compilation step to use dynamic linking
+  - added support for specifying dynamic vs. static linking
+    (see doc/platforms/README.xt-cle or .../README.xe-cle)
   - made the default launcher depend on the availability of pbs/aprun
     (see doc/platforms/README.xt-cle or README.xe-cle)
 - for xmt:
@@ -95,12 +102,11 @@ Documentation
 Example Codes
 -------------
 - switched hpcc benchmarks to use sugared form of dmapped for clarity
-- made ra domain maps, domains, and arrays local variables for modularity
 
 Packaging Changes
 -----------------
 - moved test system helper scripts from test/Bin to util/test
-- added ability for multiple communication substrates to coexist at once
+- added ability for multiple communication substrate builds to coexist at once
 
 Compiler Changes
 ----------------
