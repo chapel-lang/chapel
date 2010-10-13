@@ -31,7 +31,7 @@ use ChapelUtil;
 // modules, perhaps called debugDists and checkDists.
 //
 config param debugBlockDist = false;
-config param debugBlockDistBenchmark = false;
+config param debugBlockDistBenchmark = true;
 config param sanityCheckDistribution = false;
 
 //
@@ -846,6 +846,9 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
   var bytes_written=0:int(64);
   outfile.open();
 
+  // 2 is _IONBF (unbuffered), 0 is fully buffered
+  outfile.ch_setvbuf(2);
+
   if debugBlockDist then writeln("BlockArr.writeBinLocalArray in ",here.id," myblock:",locArr(localeIdx).locDom.myBlock.numIndices);
   var ind=privarr.locArr(localeIdx).locDom.myBlock.low;
   if debugBlockDist then writeln("BlockArr.writeBinLocalArray  create ind:",ind);
@@ -862,10 +865,10 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
 
     pos=(idx-dom.dsiDim(1)._low)*nbyteslin+(from-dom.dsiDim(2)._low)*numbytespn+offset;
     if (pos!=(oldpos+numelem*numbytespn)) then {
-      if debugBlockDistBenchmark then writeln("BlockArr.writeBinLocalArray in ",here.id," line:",idx," to seek to pos:(",from," ",to,") ",pos," old pos:",oldpos+numelem*numbytespn," elapsed:",timer.elapsed(TimeUnits.seconds));
+// In the case of two dimensional distributions it prints too much messages
+//      if debugBlockDistBenchmark then writeln("BlockArr.writeBinLocalArray in ",here.id," line:",idx," to seek to pos:(",from," ",to,") ",pos," old pos:",oldpos+numelem*numbytespn," elapsed:",timer.elapsed(TimeUnits.seconds));
       outfile.fseekset(pos);
     }
-
     oldpos=pos;
     binfwrite(privarr.locArr(localeIdx)(ind),numbytespn,numelem,outfile._fp, status, err);
     bytes_written=bytes_written+(numbytespn*numelem);

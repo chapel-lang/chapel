@@ -122,3 +122,8 @@ void binfread (void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, in
   *err=errno;
 }
 
+int chpl_setvbuf(FILE *stream, int mode) 
+{
+  return setvbuf(stream,0,mode,0);
+}
+

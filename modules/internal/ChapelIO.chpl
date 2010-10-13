@@ -295,6 +295,15 @@ def file.fseek(offset: int(64)) {
   return pos;
 }
 
+def file.ch_setvbuf(mode: int) {
+  on this {
+    if !isOpen then
+      _checkOpen(this, isRead=(FileAccessMode.read==mode));
+// no buffer is _IONBF 2
+    chpl_setvbuf(_fp,mode);
+  }
+}
+
 def file.chpl_ftell() {
   var pos : int(64) = 5;
   on this {
@@ -626,4 +635,6 @@ _extern def binfwrite (inout ptr:real, size:int(64) , nelm:int(64), file:_file, 
 _extern def binfread (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 _extern def binfread (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 _extern def binfread (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+
+_extern def chpl_setvbuf (stream:_file,mode:int=0);
 
