@@ -5,6 +5,7 @@
 This section defines functions.  Methods and iterators are functions
 and most of this section applies to them as well.  They are defined
 separately in~\rsec{Iterators} and~\rsec{Class_Methods}.
+Recursive and mutually-recursive functions are supported.
 
 
 \subsection{Function Calls}
@@ -44,7 +45,11 @@ parentheses as defined by scope resolution.  Functions without
 parentheses are discussed in~\rsec{Functions_without_Parentheses}.
 
 A \sntx{named-expression} is an expression that may be optionally
-named.  The optional \sntx{identifier} represents a named actual
+named.  It provides
+\index{actual arguments}
+\index{functions!actual arguments}
+an actual argument to the function being called.
+The optional \sntx{identifier} represents a named actual
 argument described in~\rsec{Named_Arguments}.
 
 
@@ -190,12 +195,14 @@ error to apply parentheses to \chpl{foo} or omit them from \chpl{bar}.
 \index{functions!formal arguments}
 
 Chapel supports an intuitive formal argument passing mechanism.  An
-argument is passed by value unless it is a class, array, or domain in
+argument is passed by value unless it is a class, array, or domain, in
 which case it is passed by reference.
 
-Intents~(\rsec{Intents}) result in potential assignments to temporary
-variables during a function call.  For example, passing an array by
-intent \chpl{in}, a temporary array will be created.
+Intents~(\rsec{Intents}) may modify the above default
+parameter passing mechanism and result in potential assignments to temporary
+variables during a function call.  For example, when passing an array by
+intent \chpl{in}, a temporary array will be created and used within
+the function; it will be initialized to a copy of the argument array.
 
 \subsubsection{Named Arguments}
 \label{Named_Arguments}
@@ -230,7 +237,7 @@ formal arguments.  The two function calls are equivalent.
 Named arguments are sometimes necessary to disambiguate calls or
 ignore arguments with default values.  For a function that has many
 arguments, it is sometimes good practice to name the arguments at the
-call-site for compiler-checked documentation.
+call site for compiler-checked documentation.
 
 \subsubsection{Default Values}
 \label{Default_Values}
@@ -239,7 +246,7 @@ call-site for compiler-checked documentation.
 \index{formal arguments!defaults}
 
 Default values can be specified for a formal argument by appending the
-assignment operator and a default expression the declaration of the
+assignment operator and a default expression to the declaration of the
 formal argument.  If the actual argument is omitted from the function
 call, the default expression is evaluated when the function call is
 made and the evaluated result is passed to the formal argument as if
@@ -348,13 +355,17 @@ number of parameters is not supported.  This allows the call site to
 pass a different number of actual arguments.  There must be at least
 one actual argument.
 
-If the variable argument expression is an identifier prepended by a
-question mark, the number of arguments is variable.  Alternatively,
-the variable expression can evaluate to an integer parameter value
+If the variable argument expression contains an identifier prepended by a
+question mark, the number of actual arguments can vary, and the identifier
+will be bound to an integer parameter value indicating the number of
+arguments at a given call site.
+If the variable argument expression contains an expression without
+a question mark, that expression must evaluate to an integer parameter value
 requiring the call site to pass that number of arguments to the
 function.
 
-In the function, the formal argument is a tuple of the actual
+Within the function, the formal argument that is marked with a
+variable argument expression takes on the value that is a tuple of the actual
 arguments.
 
 \begin{example}
@@ -786,6 +797,7 @@ the function call to the function and each actual argument is mapped
 to a formal argument that is a \emph{legal argument mapping}.
 
 \paragraph{Valid Mapping}
+\label{Valid_Mapping}
 
 The following algorithm determines a valid mapping from a function
 call to a function if one exists:
