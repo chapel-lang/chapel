@@ -49,7 +49,7 @@ named.  It provides
 \index{actual arguments}
 \index{functions!actual arguments}
 an actual argument to the function being called.
-The optional \sntx{identifier} represents a named actual
+The optional \sntx{identifier} refers to a named formal
 argument described in~\rsec{Named_Arguments}.
 
 
@@ -198,11 +198,11 @@ Chapel supports an intuitive formal argument passing mechanism.  An
 argument is passed by value unless it is a class, array, or domain, in
 which case it is passed by reference.
 
-Intents~(\rsec{Intents}) may modify the above default
-parameter passing mechanism and result in potential assignments to temporary
-variables during a function call.  For example, when passing an array by
-intent \chpl{in}, a temporary array will be created and used within
-the function; it will be initialized to a copy of the argument array.
+Intents~(\rsec{Intents}) may be used to override the default
+argument passing mechanism.  This may result in assignments to and from
+the formal argument during a function call.  For example, when passing an array by
+intent \chpl{in}, the actual argument array will be copied into the formal argument
+for use within the function.
 
 \subsubsection{Named Arguments}
 \label{Named_Arguments}
@@ -365,7 +365,7 @@ requiring the call site to pass that number of arguments to the
 function.
 
 Within the function, the formal argument that is marked with a
-variable argument expression takes on the value that is a tuple of the actual
+variable argument expression is a tuple of the actual
 arguments.
 
 \begin{example}

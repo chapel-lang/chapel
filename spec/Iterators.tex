@@ -38,9 +38,11 @@ yield-statement:
 
 Iterator functions can be called within for or forall loops, in which
 case they are executed in an interleaved manner with the body of the
-loop. An iterator function call, or iterator invocation, can be captured in a variable declaration or assigned to an array, in which
-case it evaluates to an array of values. Iterator invocations can also be passed to a
-generic function argument.
+loop. An iterator function call, or iterator invocation, can be used in an expression context, in which
+case it evaluates to a 1-based array of values. 
+An iterator invocation can also be passed to a
+generic function argument, in which case it will not be evaluted until
+the formal argument is referenced within the function.
 
 \subsubsection{Iterators in For and Forall Loops}
 \label{Iterators_in_For_and_Forall_Loops}
@@ -78,8 +80,8 @@ the expression \chpl{squares(5)} evaluates to the array \chpl{1, 4, 9, 16, 25}.
 \label{Iterators_and_Generics}
 \index{iterators!and generics}
 
-An iterator call expression can be passed to a function argument that
-is generic by being declared without a type and a default value
+An iterator call expression can be passed to a generic function argument that
+has neither a declared type nor default value
 (\rsec{Formal_Arguments_without_Types}).
 In this case the iterator is passed without being evaluated.
 Within the generic function the corresponding formal argument
@@ -92,12 +94,11 @@ at the call site, i.e. prior to passing the iterator to the generic function.
 \index{iterators!recursive}
 
 Recursive iterators are allowed. A recursive iterator invocation is
-typically made by iterating over it in a loop,
-unless it is desired to aggregate its outcomes into an array
-(\rsec{Iterators_as_Arrays}).
+typically made by iterating over it in a loop.
+
 
 \begin{example}
-A post-order traversal of a tree data structure could look like this:
+A post-order traversal of a tree data structure could be written like this:
 \begin{chapel}
 def postorder(tree: Tree): string {
   if tree != nil {

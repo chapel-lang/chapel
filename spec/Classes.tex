@@ -3,19 +3,19 @@
 \index{class@\chpl{class}}
 \index{classes}
 
-Classes are an abstraction of a data structure. Storage for
+Classes are data structures with associated state and methods. Storage for
 \index{classes!instances}
 \index{objects}
-a class instance, or an object, is allocated independently of the scope of
+a class instance, or object, is allocated independently of the scope of
 the variable that refers to it.
 An object is created by calling a class constructor
 (\rsec{Class_Constructors}), which allocates storage, initializes it,
 and returns a reference to the newly-created object.
 Storage can be reclaimed by deleting the object (\rsec{Class_Delete}).
 
-A class declaration (\rsec{Class_Declarations}) also generates a class
-type (\rsec{Class_Types}), which is the type of variables referring to
-instances of that class or any of its derived classes.
+A class declaration (\rsec{Class_Declarations}) generates a class
+type (\rsec{Class_Types}).  A variable of a class type can refer to an
+instance of that class or any of its derived classes.
 
 A class is generic if it has generic fields. Generic classes and fields
 are discussed in~\rsec{Generic_Types}.
@@ -31,8 +31,8 @@ class-type:
   identifier ( named-expression-list )
 \end{syntax}
 For non-generic classes, the class name is sufficient to specify the
-type.  Generic classes must be instantiated to be used as types
-of variables and in most other contexts.  This is done with
+type.  Generic classes must be instantiated to serve as a fully-specified
+type, for example to declare a variable.  This is done with
 type constructors, which are defined in Section~\ref{Type_Constructors}.
 
 \subsection{Class Declarations}
@@ -72,9 +72,10 @@ where each of the statements either defines a variable (called a
 field), a function (called a method), or a type alias.  In addition, empty
 statements are allowed in class declarations, and they have no effect.
 
-If a class contains a variable or constant without a specified type or
-initialization expression, a type alias or a parameter field, the class is
-generic.  Generic classes are described in~\rsec{Generic_Types}.
+If a class contains a type alias or a parameter field, or it contains a variable or
+constant without a specified type or an initialization
+expression, the class is generic.  Generic classes are described
+in~\rsec{Generic_Types}.
 
 \subsection{Class Assignment}
 \label{Class_Assignment}
@@ -396,8 +397,8 @@ requirements. See Section~\ref{Generic_User_Constructors} for details.
 
 The default constructor is automatically created for every class in
 the Chapel program. It has one argument for every field in the class
-(including the fields inherited from superclasses, if any, and including
-type alias and parameter fields, if any)
+(including any fields inherited from superclasses, type aliases, and
+parameter fields)
 with the argument name matching the field's name.
 The order of the arguments matches the order of the field declarations
 in the class, with the arguments for a superclass's fields occurring
