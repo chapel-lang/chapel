@@ -593,6 +593,7 @@ as \chpl{Node(int)}.
 \subsubsection{The Type Constructor}
 \label{Type_Constructors}
 \index{generics!type constructor}
+\index{constructors!type constructors}
 
 A type constructor is automatically created for each class or record.
 A type constructor is a type function (\rsec{Type_Functions}) that has
@@ -639,6 +640,7 @@ This is in addition to being generic over any other argument that is generic.
 \subsubsection{The Default Constructor}
 \label{Generic_Default_Constructors}
 \index{generics!constructors, default}
+\index{constructors!default!for generic classes or records}
 
 The default constructor for a class or record (\rsec{The_Default_Constructor})
 is generic over each argument that corresponds to a generic field, as
@@ -661,16 +663,21 @@ actual values must always be provided.
 \subsubsection{User-Defined Constructors}
 \label{Generic_User_Constructors}
 \index{generics!constructors, user-defined}
+\index{constructors!user-defined!for generic classes or records}
 
 If a generic field of a class does not have an initialization expression
 or a type alias is unspecified, each user-defined constructor for that
 class must provide a formal argument whose name
 matches the name of the field.
-If the name of a formal argument in a constructor matches the name of
-a generic field that either does not have an initialization
-expression, is a type alias or a parameter field, the field is
-automatically initialized to the actual value for that argument upon
-the constructor invocation.
+
+If the name of a formal argument in a user-defined constructor matches the name
+of a generic field that does not have an initialization
+expression, is a type alias, or is a parameter field, the field is
+automatically initialized at the beginning of the constructor invocation
+to the actual value of that argument.
+This is done by passing that formal argument to the implicit invocation
+of the default constructor at the start of the user-defined constructor
+(\rsec{User_Defined_Constructors}).
 
 %%  The following story is nicer but it's not how it is implemented:
 %If the name of a formal argument in a class constructor
@@ -716,7 +723,7 @@ writeln(g2);
 {p1 = 1, c1 = 11, v1 = 111, x1 = 0, p5 = a string, c5 = 5.5, v5 = 555, x5 = 0.0}
 {p1 = 2, c1 = 222, v1 = 222.2, x1 = 0.0, p5 = this is g2, c5 = 5.5, v5 = 555, x5 = 0}
 \end{chapeloutput}
-the arguments \chpl{t1}, \chpl{p1}, \chpl{c1}, and \chpl{v1} are
+The arguments \chpl{t1}, \chpl{p1}, \chpl{c1}, and \chpl{v1} are
 required in all constructors for \chpl{MyGenericClass}. They can appear
 in any order. Both \chpl{MyGenericClass} constructors initialize the
 corresponding fields implicitly because these fields do not have initialization

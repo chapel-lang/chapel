@@ -337,15 +337,44 @@ for i in ta do
 \index{classes!constructors}
 \index{classes!new}
 \index{new!classes}
+\index{new@\chpl{new}}
+\index{constructors}
 
-A class constructor is defined by declaring a method with the same
-name as the class.  The constructor is used to create instances of the
-class. It is invoked by preceding a call to it with the \chpl{new}
-keyword.  When the constructor is called, memory is allocated to store
+Class instances are created by invoking class constructors.
+A class constructor is a method with the same name as the class.
+It is invoked by the \chpl{new} operator, where the
+class name and constructor arguments are preceded with the
+\chpl{new} keyword.
+
+When the constructor is called, memory is allocated to store
 a class instance, its fields are initialized to default values
 (field defaults when specified in the class declaration, type defaults
 otherwise), then the constructor method is invoked on this newly-created
 instance.
+
+If the program declares a class constructor method,
+it is a user-defined constructor. There is also the default
+constructor that is automatically created for each class.
+The default constructor is invoked by the \chpl{new} operator
+when there are no user-defined constructors for that class,
+otherwise it cannot be accessed explicitly.
+
+\subsubsection{User-Defined Constructors}
+\label{User_Defined_Constructors}
+\index{classes!constructors!user-defined}
+\index{user-defined constructors}
+\index{constructors!user-defined}
+
+A user-defined constructor is a constructor method explicitly declared
+in the program.  The usual function resolution mechanism
+(\rsec{Function_Resolution}) is applied to determine which
+user-defined constructor to invoke.
+
+Any user-defined constructor begins with an implicit call to the
+default constructor (\rsec{The_Default_Constructor}) for that class.
+This call passes no arguments explicitly, so each field is set
+to the initializer expression if given in the field's declaration and
+to the default value for the field's type otherwise.
 
 \begin{example}
 The following example shows a class with two constructors:
@@ -393,55 +422,43 @@ requirements. See Section~\ref{Generic_User_Constructors} for details.
 
 \subsubsection{The Default Constructor}
 \label{The_Default_Constructor}
-\index{classes!default constructors}
+\index{classes!constructors!default}
+\index{default constructors}
+\index{constructors!default}
 
 The default constructor is automatically created for every class in
 the Chapel program. It has one argument for every field in the class
-(including any fields inherited from superclasses, type aliases, and
-parameter fields)
 with the argument name matching the field's name.
+This includes fields inherited from superclasses, type aliases
+and parameter fields, if any.
 The order of the arguments matches the order of the field declarations
-in the class, with the arguments for a superclass's fields occurring
+within the class, with the arguments for a superclass's fields occurring
 before the arguments for a subclass's fields.
-The default constructor for a class can be invoked via a \chpl{new}
-operator only when the class does not have any user-defined constructors,
-i.e. the program does not define any constructors for
-that class explicitly.
+Each argument has a default value.
+For a field that has an initializer expression,
+the default value is that expression.
+Otherwise, it is the default value for the field's type
+(\rsec{Default_Initialization}).
+This rule does not apply to generic fields without initializers,
+which are discussed in Section~\ref{Generic_Default_Constructors}.
 
-The default constructor provides default values for its arguments as follows.
-For a field that has an initializer expression (like the
-fields \chpl{y} and \chpl{z} in the example below), that initializer
-expression is the corresponding argument's default value.
-Otherwise, for non-generic fields it is the default value for that
-field's type.
-For generic fields declared without an initializer expression the
-default constructor provides no default value.
-Therefore, when the default constructor is invoked via a \chpl{new}
-expression and no actual is passed to its argument \chpl{x}, the
-field \chpl{x} of the newly-created object will be initialized if it
-is declared with an initializer or is not generic, otherwise it is a
-compile-time error.
+The default constructor for a class can be invoked by a \chpl{new}
+operator only when the class does not have any user-defined constructors.
+In this case the usual function resolution mechanism
+(\rsec{Function_Resolution}) determines whether an invocation of the
+default constructor is legal.
 
-The default constructor initializes each field in the class to the
-value of the corresponding actual. (For example, a field \chpl{x} is
-initialized to the actual passed to the argument named \chpl{x}.)
+When invoked, the default constructor initializes each field in the class to the
+value of the corresponding actual.
 This ensures that upon return from the constructor it is safe to use
-the object being created -- each field contains a legal value for its type.
+the object being created, as each field contains a legal value for its type.
 The initialization is done in the order the fields are declared, with
 a superclass's fields initialized before a subclass's fields.
-(This is the same as the order of the default constructor's arguments.)
 
 The program may define a constructor with the same arguments and types
-as the default constructor for that class. If there is such a
-user-defined constructor, it is distinct from the default
-constructor and, as discussed above, makes the default constructor
-unavailable for \chpl{new} expressions.
-
-Any user-defined constructor begins with an implicit call to the
-default constructor for that class. No arguments are passed in this
-call, so the default values discussed above are used to initialize all
-fields. Correspondingly, it is illegal for a program to define a
-constructor for a class that has a generic field with no default.
+as the default constructor for that class. If there is such a constructor,
+it is a user-defined constructor and is distinct from the default
+constructor.
 
 \begin{example}
 Given the class
@@ -466,7 +483,7 @@ writeln((c1, c2, c3, c4, c5));
 \begin{chapeloutput}
 ({x = 0, y = 3.14, z = Hello, World!}, {x = 2, y = 3.14, z = Hello, World!}, {x = 0, y = 3.14, z = }, {x = 2, y = 3.14, z = }, {x = 0, y = 0.0, z = })
 \end{chapeloutput}
-there are no user-defined constructors for \chpl{C}, so \chpl{new} expressions
+there are no user-defined constructors for \chpl{C}, so \chpl{new} operators
 will invoke \chpl{C}'s default constructor. The \chpl{x} argument
 of the default constructor has the default value \chpl{0}.
 The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
@@ -559,6 +576,7 @@ in~\rsec{Overriding_Base_Class_Methods}.
 
 \subsubsection{Derived Class Constructors}
 \label{Derived_Class_Constructors}
+\index{constructors!for derived classes}
 
 Derived class constructors automatically call the default constructor
 of the base class.  There is an expectation that a more standard way

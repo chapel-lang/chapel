@@ -104,12 +104,21 @@ legal class instance.
 
 In record assignment, the fields of the record on the left-hand side
 of the assignment are assigned the corresponding field values of the record
-on the right-hand side of the assignment.  When a base record is
-assigned a derived record, just the fields that exist in the base
-record are assigned.  Record assignment is generic in that the
-right-hand side expression can be of any type as long as the type
-contains the same fields (by name) as the record on the left-hand
+on the right-hand side of the assignment.
+Record assignment is generic and structural in that the
+right-hand side expression can be of any type as long as it
+contains at least the same fields (by name) as the record on the left-hand
 side.
+
+A left-hand-side field must be assignable the corresponding
+right-hand-side field, i.e., an implicit conversion
+(\rsec{Implicit_Conversions}) must exist between the fields' types.
+Fields on the right-hand side that do not exist on the left-hand side
+are ignored during record assignment.  For example, when a base record is
+assigned a derived record, just the fields that exist in the base
+record are assigned.
+Assignment from a class instance to a record is allowed, but assignment
+from record to class is not.
 
 \subsection{Record Declarations}
 \label{Record_Declarations}

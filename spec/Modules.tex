@@ -37,7 +37,7 @@ Module declaration statements must be top-level statements within a
 module.  A module that is declared within another module is called a
 nested module~(\rsec{Nested_Modules}).
 
-\subsection{Implicit Modules}
+\subsection{Files and Implicit Modules}
 \label{Implicit_Modules}
 \index{modules!and files}
 
@@ -45,7 +45,8 @@ Multiple modules can be defined in the same file and need not bear any
 relation to the file in terms of their names.
 
 \begin{example}
-The following file contains two explicitly named modules, MX and MY.
+The following file contains two explicitly named modules
+(\rsec{Explicit_Naming}), MX and MY.
 \begin{chapelpre}
 % test_two_modules.chpl
 \end{chapelpre}
@@ -79,8 +80,11 @@ defines top-level module symbols y and printY.
 \end{example}
 
 For any file that contains top-level statements other than module
-declarations, the file is treated as the module declaration.  In this
-case, the module takes its name from the file.  If the file name is
+declarations, the file itself is treated as the module declaration.
+In this case,
+\index{implicit modules}
+\index{modules!implicit}
+the module is implicit and takes its name from the file.  If the file name is
 not a legal Chapel identifier, the module name cannot be used in a use
 statement.
 
@@ -198,6 +202,7 @@ the use statement as defined in~\rsec{The_Use_Statement}.
 
 \subsubsection{Explicit Naming}
 \label{Explicit_Naming}
+\index{modules!explicitly named}
 
 All top-level module symbols can be named explicitly with the
 following syntax:
