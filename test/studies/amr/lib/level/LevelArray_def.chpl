@@ -2,25 +2,33 @@ use Level_def;
 use GridArray_def;
 
 
-//=====================================================>
-//==================== LEVEL ARRAYS ===================>
-//=====================================================>
-
-
-//===> LevelArray class ===>
-//=========================>
+//|\"""""""""""""""""""""""""|\
+//| >    LevelArray class    | >
+//|/_________________________|/
 class LevelArray {
   const level:        Level;
   var grid_arrays:    [level.grids] GridArray;
   var _promotionType: real;
 
+  //|\''''''''''''''''''''''''''''|\
+  //| >    initialize() method    | >
+  //|/............................|/
+  //--------------------------------------------------------
+  // Needed instead of a constructor, so grid_arrays can be
+  // referred to level.grids by the default constructor.
+  //--------------------------------------------------------
   def initialize() {
-
     for grid in level.grids do
-      grid_arrays(grid) = new GridArray(grid = grid);
-                                              
+      grid_arrays(grid) = new GridArray(grid = grid);                          
   }
+  // /|''''''''''''''''''''''''''''/|
+  //< |    initialize() method    < |
+  // \|............................\|
 
+
+  //|\'''''''''''''''''''''''|\
+  //| >    this() methods    | >
+  //|/.......................|/
   def this(grid: Grid) var {
     return grid_arrays(grid);
   }
@@ -32,9 +40,14 @@ class LevelArray {
     var pointer => grid_arrays(grid).value(D);
     return pointer;
   }
+  // /|'''''''''''''''''''''''/|
+  //< |    this() methods    < |
+  // \|.......................\|
 
 
-  //===> these() iterator ===>
+  //|\''''''''''''''''''''''''''|\
+  //| >    these() iterators    | >
+  //|/..........................|/
   //---------------------------------------------------------------------
   // Seems like it would be ideal to chain this with the leader/follower
   // for GridArrays.
@@ -42,10 +55,9 @@ class LevelArray {
   def these() {
     for grid in level.grids {
       for cell in grid.cells do
-	yield grid_arrays(grid).value(cell);
+	      yield grid_arrays(grid).value(cell);
     }
   }
-
 
   def these(param tag: iterator)
   where tag == iterator.leader {
@@ -57,30 +69,17 @@ class LevelArray {
 
   def these(param tag: iterator, follower) var
   where tag == iterator.follower {
-    //    writeln(follower(2));
     yield grid_arrays(follower(1)).value(follower(2));
   }
+  // /|''''''''''''''''''''''''''/|
+  //< |    these() iterators    < |
+  // \|..........................\|
 
-
-/*   def these(param tag: iterator) */
-/*   where tag == iterator.leader { */
-/*     yield true; */
-/*   } */
-
-/*   def these(param tag: iterator, follower) var */
-/*   where tag == iterator.follower { */
-/*     for grid in level.grids { */
-/*       for cell in grid.cells { */
-/* 	//	writeln(cell); */
-/* 	yield grid_arrays(grid).value(cell); */
-/*       } */
-/*     } */
-/*   } */
-  //<=== these() iterator <===
 
 }
-//<=== LevelArray class <===
-//<=========================
+// /|"""""""""""""""""""""""""/|
+//< |    LevelArray class    < |
+// \|_________________________\|
 
 
 
@@ -104,8 +103,9 @@ def =(q: LevelArray, rvalue: real) {
 
 
 
-//===> LevelArray.setToFunction method ===>
-//========================================>
+//|\"""""""""""""""""""""""""""""""""|\
+//| >    LevelArray.setToFunction    | >
+//|/_________________________________|/
 //-----------------------------------------------------------------
 // Sets LevelArray.value to the analytical function f evaluated on
 // the level.
@@ -114,54 +114,40 @@ def LevelArray.setToFunction(
   f: func(dimension*real, real)
 ){
 
-  coforall grid in level.grids {
+  for grid in level.grids {
     grid_arrays(grid).setToFunction(f);
   }
 
 }
-//<=== LevelArray.setToFunction method ====
-//<========================================
+// /|"""""""""""""""""""""""""""""""""/|
+//< |    LevelArray.setToFunction    < |
+// \|_________________________________\|
 
 
 
 
-//===> LevelArray.fillSharedGhosts method ===>
-//===========================================>
-def LevelArray.fillSharedGhosts() {
-
-  coforall grid in level.grids {    
-    coforall sib in level.grids {
-
-      var shared_domain = level.shared_ghosts(grid)(sib);
-      grid_arrays(grid).value(shared_domain) 
-	= grid_arrays(sib).value(shared_domain);
-
-    }
+//|\""""""""""""""""""""""""""""""""""""""|\
+//| >    LevelArray.fillOverlapRegions    | >
+//|/______________________________________|/
+def LevelArray.fillOverlapRegions() {
+  
+  for grid in level.grids {
+    for (nbr, overlap) in level.overlap_data(grid) do
+      this(grid,overlap) = this(nbr,overlap);
   }
-
+  
 }
-//<=== LevelArray.fillSharedGhosts method <===
-//<===========================================
-
-
-
-//<=====================================================
-//<=================== LEVEL ARRAYS ====================
-//<=====================================================
+// /|""""""""""""""""""""""""""""""""""""""/|
+//< |    LevelArray.fillOverlapRegions    < |
+// \|______________________________________\|
 
 
 
 
 
-
-
-//=======================================================>
-//==================== OUTPUT METHODS ===================>
-//=======================================================>
-
-
-//===> LevelArray.clawOutput method ===>
-//=====================================>
+//|\""""""""""""""""""""""""""""""|\
+//| >    LevelArray.clawOutput    | >
+//|/______________________________|/
 //-----------------------------------------------------------------------
 // Writes both a time file and a solution file for a given frame number.
 //-----------------------------------------------------------------------
@@ -194,14 +180,20 @@ def LevelArray.clawOutput(
   delete outfile;
 
 }
-//<=== clawOutput method <===
-//<==========================
+// /|""""""""""""""""""""""""""""""/|
+//< |    LevelArray.clawOutput    < |
+// \|______________________________\|
 
 
 
 
-//===> LevelArray.write method ===>
-//================================>
+
+//|\"""""""""""""""""""""""""|\
+//| >    LevelArray.write    | >
+//|/_________________________|/
+//--------------------------------------------------
+// Writes out all data contained in the LevelArray.
+//--------------------------------------------------
 def LevelArray.write(
   AMR_level:        int,
   base_grid_number: int,
@@ -216,10 +208,8 @@ def LevelArray.write(
   }
 
 }
-//<=== LevelArray.write method <===
-//<================================
+// /|"""""""""""""""""""""""""/|
+//< |    LevelArray.write    < |
+// \|_________________________\|
 
 
-//<=======================================================
-//<=================== OUTPUT METHODS ====================
-//<=======================================================

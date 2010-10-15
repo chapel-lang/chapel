@@ -15,11 +15,15 @@ use GridBC_AdvectionCTU;
 def main {
 
   //==== Output times ====
+  write("Reading output times...");
   var output_times = setOutputTimes("time.txt");
-
+  write("done.\n");
+  
 
   //==== Grid ====
+  writeln("Setting up grid.");
   var grid = readGrid("grid.txt");
+  writeln("Done setting up grid.");
 
 
   //===> Initialize solution ===>

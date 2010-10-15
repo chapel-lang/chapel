@@ -20,7 +20,7 @@ def LevelGhostArraySet.interpolateFromCoarse_Linear(
 
   //==== Prepare ghost data of q_coarse ====
   q_coarse.extrapolateGhostData();
-  q_coarse.fillSharedGhosts();
+  q_coarse.fillOverlapRegions();
 
   //==== Interpolate on each fine grid ====
   for grid in level.grids do

@@ -127,7 +127,7 @@ def LevelArray.storeFluxDivergence(
   q:           LevelArray,
   diffusivity: real)
 {
-  q.fillSharedGhosts();
+  q.fillOverlapRegions();
   
   for grid in level.grids do
     this(grid).storeFluxDivergence(q(grid), diffusivity);

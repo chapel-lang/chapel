@@ -95,9 +95,9 @@ class Grid {
     var ghost_domain: domain(dimension, stridable=true);
     for loc in ghost_locations {
       if loc != inner_location {
-	for d in dimensions do ranges(d) = ghostRange(d,loc(d));
-	ghost_domain = ranges;
-	ghost_domain_set.add(ghost_domain);
+        for d in dimensions do ranges(d) = ghostRange(d,loc(d));
+        ghost_domain = ranges;
+        ghost_domain_set.add(ghost_domain);
       }
     }
 
