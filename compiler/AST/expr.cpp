@@ -2196,6 +2196,25 @@ void CallExpr::codegen(FILE* outfile) {
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "impossible");
       break;
+    case PRIM_BLOCK_XMT_PRAGMA_NOALIAS:
+      // This case allows __primitive("noalias pragma") to generate 
+      // _Pragma("mta assert noalias <variable list>")
+      // EVERY variable within a block is added to the variable list,
+      // which means several variables will spawn warnings (ignored in
+      // Makefile.cray-mta). Eventually, we'll only generate invariant 
+      // pointer variables.
+      if (!(strcmp(CHPL_TARGET_PLATFORM, "xmt"))) {
+        Vec<SymExpr*> se;
+        int i = 0;
+        collectSymExprs(this->next, se);
+        forv_Vec(SymExpr*, sym, se) {
+          if (isVarSymbol(sym->var) && (!(isPrimitiveType(sym->var->type)))) {
+            fprintf(outfile, "_Pragma(\"mta assert noalias *%s\")\n", sym->var->cname);
+          }
+        }
+        this->remove();
+      }
+      break;
     default:
       INT_FATAL(this, "primitive codegen fail; should it still be in the AST?");
       fprintf(outfile, "/* ERR %s */", primitive->name);
