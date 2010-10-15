@@ -86,6 +86,7 @@ static chpl_bool        initialized = false;
 
 static threadlayer_mutex_t threading_lock;     // critical section lock
 static threadlayer_mutex_t extra_task_lock;    // critical section lock
+static threadlayer_mutex_t task_id_lock;       // critical section lock
 static threadlayer_mutex_t task_list_lock;     // critical section lock
 static task_pool_p         task_pool_head;     // head of task pool
 static task_pool_p         task_pool_tail;     // tail of task pool
@@ -288,6 +289,7 @@ void CHPL_TASKING_INIT(void) {
 
   threadlayer_mutex_init(&threading_lock);
   threadlayer_mutex_init(&extra_task_lock);
+  threadlayer_mutex_init(&task_id_lock);
   threadlayer_mutex_init(&task_list_lock);
   threadlayer_mutex_init(&thread_list_lock);
   queued_cnt = 0;
@@ -763,16 +765,12 @@ int32_t  CHPL_NUMBLOCKEDTASKS(void) {
 //
 static chpl_taskID_t get_next_task_id(void) {
   static chpl_taskID_t       id = 0;
-  static threadlayer_mutex_t id_lock;
 
   chpl_taskID_t              next_id;
 
-  if (id == 0)
-    threadlayer_mutex_init(&id_lock);
-
-  threadlayer_mutex_lock(&id_lock);
+  threadlayer_mutex_lock(&task_id_lock);
   next_id = id++;
-  threadlayer_mutex_unlock(&id_lock);
+  threadlayer_mutex_unlock(&task_id_lock);
 
   return next_id;
 }
