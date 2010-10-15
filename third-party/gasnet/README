@@ -3,20 +3,8 @@ GASNet for Chapel release
 =========================
 
 This copy of GASNet is being released with Chapel for convenience and
-uses a snapshot of GASNet version 1.12.0 obtained from UC Berkeley at:
+uses a snapshot of GASNet obtained from UC Berkeley at:
 http://gasnet.cs.berkeley.edu.
-
-This release also contains a copy of GASNet version 1.14.0 which was
-released just prior to our Chapel release.  We were not able to gain
-enough experience with it prior to releasing to feel confident making
-it our default version, but expect that the next version of Chapel
-will replace 1.12.0 with 1.14.0.  If you want to try the 1.14.0
-version of GASNet with Chapel, change $CHPL_HOME/make/Makefile.base so
-that GASNET_VERSION is set to 1.14.0 rather than 1.12.0.  Then remove
-the directory $CHPL_HOME/third-party/gasnet/install if it exists, and
-execute 'make third-party runtime' (from $CHPL_HOME).  This should
-build GASNet 1.14.0 and rebuild your Chapel runtime to use the new
-GASNet version.
 
 Any Chapel issues that seem to be related to GASNet should be directed
 to the Chapel team at chapel-bugs@lists.sourceforge.net, as the cause
@@ -32,35 +20,12 @@ release are as follows:
   be innocuous for non-Chapel developers, and has been exceedingly
   useful for the Chapel development team.
 
-We have also applied a number of patches from the GASNet team that
-will be made available in future versions of GASNet:
-
-* one that fixes some IBM xlc compilation issues related to offsetof()
-  macros.
-
-* one that fixes runtime crashes due to insufficient alignment of
-  arguments to the cmpxchg16b instruction present on many recent
-  x86_64 processors (see
-  http://upc.lbl.gov/download/patch/berkeley_upc-2.8.0-patch1.shtml).
-
-* one co-developed by the Chapel team that addresses the use of
-  cnos/PMI calls in the portals conduit.
-
-* one that disables the building of the portals conduit when segment
-  everything has been specified.
-
-* one which supports a -T option for the Bootstrap script that touches
-  the autoconf-generated files in the appropriate order in cases when
-  timestamps are not preserved (such as being stored in our source
-  repository)
-
 The structure of this directory is as follows:
 
 ./
   Makefile        : a Makefile to help build GASNet for Chapel's use
   README          : this file
-  GASNet-1.12.0/  : the 1.12.0 GASNet release, with the above modifications
-  GASNet-1.14.0/  : the 1.14.0 GASNet release
+  GASNet-1.*.*/   : the current GASNet release
   install/        : as GASNet is built it will be installed here:
     $CHPL_TARGET_PLATFORM-$CHPL_TARGET_COMPILER/
       seg-$CHPL_GASNET_SEGMENT/

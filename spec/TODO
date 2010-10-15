@@ -40,10 +40,9 @@ Functions
 * move oveloading and resolution subsections to the end of the section
 * define semantics of passing tuples to functions
 * define semantics of creating tuples with array components, etc.
-* add type functions
-* need to specify that finding a common type across return statements
-  for inferred return types is only for those returns that are live
-  after generic instantiation, conditional folding, etc.
+* define function resolution for type functions (perhaps by difference from
+  resolution for regular functions)
+  ** insert a reference to that in the Generics' Type Constructor section
 
 Locales and Affinity
 --------------------
@@ -83,6 +82,11 @@ TODOs from email:
   believe.
 
 - in Sort module, add definition that < is used to do the sort.
+
+
+Generics
+--------
+* add mention of the new 'depth' argument for compilerWarning/Error
 
 
 TODOs while updating the CHANGES file

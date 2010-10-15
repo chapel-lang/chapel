@@ -106,6 +106,26 @@ within a locale.  The default values for these arguments are set to
 their corresponding configuration constants for default data
 parallelism.
 
+------------------------
+Limiting Per-Task Memory
+------------------------
+
+An active task requires space for its call stack.  This space is created
+at a fixed size when the task starts executing, and remains in existence
+until the task completes.  By default the size of a call stack is set to
+the system stack limit, which for example on Linux-based systems is
+typically 8 mb.  If the system doesn't specify a stack size limit, the
+tasking layer chooses a call stack size itself.  Again for example, this
+is typically 8 mb for tasking layers which use pthreads-based threading
+layers.  However, this automatically selected call stack size may not be
+appropriate in all cases.  For programs in which some tasks have deep
+call trees it may be too small, leading to stack overflow.  For programs
+which use tasks only for data parallelism it may be unnecessarily large.
+The following built-in configuration constants can be used to change the
+task call stack size:
+
+ --callStackSize : Size, in bytes, of the call stack for a task.
+
 
 -----------------------------------------
 Controlling the amount of non-user output
@@ -153,10 +173,10 @@ support, please let us know so that we can prioritize accordingly.
 Flags for Tracking Tasks
 ------------------------
 
-As of this release, Chapel supports a few experimental capabilities
-for tracking the status of tasks, primarily designed for use in a
-single-locale execution.  These flags add a certain amount of runtime
-overhead to task parallel programs. The flags are as follows:
+Chapel supports a few experimental capabilities for tracking the status
+of tasks, primarily designed for use in a single-locale execution.
+These flags add a certain amount of runtime overhead to task parallel
+programs. The flags are as follows:
 
   -b, --blockreport : when Ctrl-C is entered during a program
                       executing under this flag, it will display a
@@ -188,18 +208,18 @@ The configuration constants can be set as follows:
 
   --memTrack        : turns on memory tracking and enables the
                       functions memoryUsed, printMemStat, and
- 		      printMemTable.  This flag is implied by
- 		      memStats, memLeaks, and memMax.  To call these
- 		      functions from a Chapel program, the module
- 		      Memory must be explicitly used.  The
- 		      printMemTable function prints out a table of all
- 		      of the currently allocated memory.  It takes an
- 		      optional argument to restrict the printing to
- 		      allocations greater than a threshold (in bytes).
- 		      The printMemStat function prints out statistic
- 		      as explained below.  The memoryUsed function
- 		      returns the number of bytes that are currently
- 		      allocated.
+                      printMemTable.  This flag is implied by
+                      memStats, memLeaks, and memMax.  To call these
+                      functions from a Chapel program, the module
+                      Memory must be explicitly used.  The
+                      printMemTable function prints out a table of all
+                      of the currently allocated memory.  It takes an
+                      optional argument to restrict the printing to
+                      allocations greater than a threshold (in bytes).
+                      The printMemStat function prints out statistic
+                      as explained below.  The memoryUsed function
+                      returns the number of bytes that are currently
+                      allocated.
 
   --memStats        : makes the call printMemStat() when the
                       program completes, printing out the following

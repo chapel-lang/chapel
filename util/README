@@ -11,3 +11,4 @@ to end-users.  The current contents of the directory are as follows:
    setchplenv.csh  : csh/tcsh quick-start settings (see $CHPL_HOME/README)
    setchplenv.sh   : sh quick-start settings (see $CHPL_HOME/README)
    chplenv/        : helper scripts for inferring CHPL_* variables if unset
+   test/           : helper scripts for the testing system

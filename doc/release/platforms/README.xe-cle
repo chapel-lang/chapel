@@ -65,6 +65,7 @@ first to get started with the language.
 
      - PrgEnv-cray
      - PrgEnv-gnu
+     - PrgEnv-intel
      - PrgEnv-pathscale
      - PrgEnv-pgi
 
@@ -130,20 +131,31 @@ Cray XE File Systems and Chapel execution
   programs from a Lustre file system directory.
 
 
+-----------------------------------------------------
+Dynamic linking with the Cray Programming Environment
+-----------------------------------------------------
+
+* By default, Chapel programs built for the Cray XE do not specify
+  static or dynamic linking.  The current default for the Cray
+  Programming Environment compilers is static linking.  If you wish to
+  override this, set the environment variable CHPL_ASYNCPE_USE_DYNAMIC
+  to 'true'.
+
+
 --------------------------
 Known Constraints and Bugs
 --------------------------
 
-This is a very preliminary release of Chapel for the Cray XE using
-GASNet over the MPI conduit.  As such, the implementation does not
-take full advantage of some of the high performance hardware
-instructions.
+* This is a very preliminary release of Chapel for the Cray XE using
+  GASNet over the MPI conduit (no other conduits exists).  As such,
+  the implementation does not take full advantage of some of the high
+  performance hardware instructions.
 
-There is a known issue with the Cray MPI release for XE systems that
-causes some programs to assert and then hang during exit.  A
-workaround is to set the environment variable, MPICH_GNI_DYNAMIC_CONN
-to 'disabled.'  Setting this environment variable may affect memory
-usage for all MPI programs linked against the Cray MPI release.  In
-addition, an additional performance penalty may be paid at start up
-time for thousands of MPI ranks.
+* There is a known issue with the Cray MPI release for XE systems that
+  causes some programs to assert and then hang during exit.  A
+  workaround is to set the environment variable,
+  MPICH_GNI_DYNAMIC_CONN to 'disabled.'  Setting this environment
+  variable may affect memory usage for all MPI programs linked against
+  the Cray MPI release.  In addition, an additional performance
+  penalty may be paid at start up time for thousands of MPI ranks.
 

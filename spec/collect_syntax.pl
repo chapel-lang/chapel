@@ -1,6 +1,8 @@
 #!/usr/bin/env perl
 #
 
+my $rc = 0;
+
 `rm -f Syntax.tex`;
 $i = 0;
 @texs = `ls *.tex`;
@@ -126,7 +128,7 @@ foreach $rule (sort values %all) {
     @prefixes = split /\ /, $rule;
     foreach $prefix (@prefixes) {
         if ($counts{$prefix} < 1) {
-            print "error: used but not defined: $prefix\n";
+            synerror("used but not defined: $prefix");
         } else {
             $counts{$prefix} += 1;
         }
@@ -136,7 +138,7 @@ foreach $rule (sort values %all) {
 foreach $prefix (sort keys %counts) {
     $counts{$prefix}--;
     if ($counts{$prefix} < 1) {
-        print "error: defined but not used: $prefix\n";
+        synerror("defined but not used: $prefix");
     }
 }
 
@@ -218,11 +220,18 @@ do {
 
 foreach $prefix (keys %syn_cnt) {
     if ($syn_cnt{$prefix} == 2) {
-        print "error: unreachable: $prefix\n";
+        synerror("unreachable: $prefix");
     }
 }
 
 close FILE;
+
+exit $rc;
+
+sub synerror {
+   print STDERR "error: @_\n";
+   $rc = 1;
+}
 
 
 #$rule = "module-declaration-statement";

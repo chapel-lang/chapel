@@ -44,7 +44,7 @@ site and returns a 2-tuple where the types of the components of the
 tuple are defined by the two type arguments and the values are
 specified by the types default values.
 \begin{chapelpre}
-% test_build2tuple.chpl
+% build2tuple.chpl
 \end{chapelpre}
 \begin{chapel}
 def build2Tuple(type t, type tt) {
@@ -82,7 +82,7 @@ integer type \chpl{x}.  The function returns a homogeneous tuple of
 size \chpl{p} where each component in the tuple has the value of
 \chpl{x}.
 \begin{chapelpre}
-% test_fillTuple.chpl
+% fillTuple.chpl
 \end{chapelpre}
 \begin{chapel}
 def fillTuple(param p: int, x: int) {
@@ -117,7 +117,7 @@ omitting the type of the formal argument \chpl{x}.  The following code
 defines a function that returns a homogeneous tuple of size \chpl{p}
 where each component in the tuple is initialized to \chpl{x}:
 \begin{chapelpre}
-% test_fillTuple2.chpl
+% fillTuple2.chpl
 \end{chapelpre}
 \begin{chapel}
 def fillTuple(param p: int, x) {
@@ -155,7 +155,7 @@ type has the semantics of a type alias.
 The example from the previous section can be rewritten to use a
 queried type for clarity:
 \begin{chapelpre}
-% test_fillTuple3.chpl
+% fillTuple3.chpl
 \end{chapelpre}
 \begin{chapel}
 def fillTuple(param p: int, x: ?t) {
@@ -308,7 +308,7 @@ module exists at the call site.
 Consider the following code which defines a generic
 function \chpl{bar}:
 \begin{chapelpre}
-% test_point_of_instantiation.chpl
+% point_of_instantiation.chpl
 \end{chapelpre}
 \begin{chapel}
 module M1 {
@@ -366,42 +366,91 @@ discussion.  Comments or questions are appreciated.
 \subsection{Generic Types}
 \label{Generic_Types}
 \index{generics!types}
+\index{types!generic}
+\index{generics!classes}
 \index{classes!generic}
+\index{generics!records}
 \index{records!generic}
 
-A class or record is generic if any of the following conditions hold:
+Generic types are generic classes and generic records.
+A class or record is generic if it contains one or more
+\index{generics!fields}
+\index{fields!generic}
+generic fields. A generic field is one of:
 \begin{itemize}
-\item
-The class contains a specified or unspecified type alias.
-\item
-The class contains a field that is a parameter.
-\item
-The class contains a field that has no type and no initialization
+\item a specified or unspecified type alias,
+\item a parameter field, or
+\item a \chpl{var} or \chpl{const} field that has no type and no initialization
 expression.
 \end{itemize}
+
+\mbox{} % push the following line to the next page
+
+For each generic field, the class or record is parameterized over:
+\begin{itemize}
+\item the type bound to the type alias,
+\item the value of the parameter field, or
+\item the type of the \chpl{var} or \chpl{const} field, respectively.
+\end{itemize}
+Correspondingly, the class or record is instantiated with a set
+of types and parameter values, one type or value per generic field.
+
+% Here are the aspects to be defined for each kind of generic field:
+% - what it makes the class/record generic over
+% - the type constructor arg that gets created
+% - the default constructor arg that gets created
+% - the requirements on the corresponding user-defined constructor arg
+% - for each of the above args:
+%    - what kind of actual it accepts (type, param, value)
+%    - what is the semantics;
+%      i.e. how it corresponds to the class/record's genericity
+%    - what is the arg's default, if any
+% 
+% In the presentation below, some of these aspects are discussed
+% in the field-kind-specific subsections, some in the constructor-specific
+% subsections, some in both.  I.e. there is an overlap between
+% field-kind and constructor subsections; that should be OK but feel free
+% to clean up.
+% 
+% It would be cool to summarize that in a table
+% (one dimension: field kinds; the other dimension: aspects).
 
 \subsubsection{Type Aliases in Generic Types}
 \label{Type_Aliases_in_Generic_Types}
 \index{type aliases!in classes or records}
+\index{fields!type alias}
 
-Type aliases defined in a class or a record can be unspecified type
-aliases; type aliases that are not bound to a type.  If a class or
-record contains an unspecified type alias, the aliased type must be
-specified whenever the type is used.
+If a class or record defines a type alias, the class or record
+is generic over the type that is bound to that alias.
+% Type aliases defined in a class or a record can be unspecified type
+% aliases; type aliases that are not bound to a type.  If a class or
+% record contains an unspecified type alias, the aliased type must be
+% specified whenever the type is used.
+Such a type alias is accessed as if it were a field;
+similar to a parameter field, it cannot be assigned
+except in its declaration.
 
-A type alias defined in a class or record is accessed as if it were a
-field.  Moreover, it becomes an argument with intent \chpl{type} to
-the default constructor for that class or record.  This makes the
-default constructor generic.  When the default constructor is
-instantiated, the type is instantiated where the type bound to the
-type alias is set to be the type passed to the default constructor.
+The type alias becomes an argument with intent \chpl{type} to
+the default constructor (\rsec{Generic_Default_Constructors})
+for its class or record. This makes the default constructor generic.
+The type alias also becomes an argument with intent \chpl{type} to
+the type constructor (\rsec{Type_Constructors}).
+If the type alias declaration binds it to a type, that type
+becomes the default for these arguments, otherwise they have no defaults.
+
+The class or record is instantiated by binding the type alias
+to the actual type passed to the corresponding argument of
+a user-defined (\rsec{Generic_User_Constructors})
+or default constructor or type constructor.
+If that argument has a default, the actual type can be omitted, in
+which case the default will be used instead.
 
 \begin{example}
 The following code defines a class called \chpl{Node} that implements
 a linked list data structure.  It is generic over the type of the
 element contained in the linked list.
 \begin{chapelpre}
-% test_NodeClass.chpl
+% NodeClass.chpl
 \end{chapelpre}
 \begin{chapel}
 class Node {
@@ -434,25 +483,33 @@ the type of the object that it is a field of.
 \subsubsection{Parameters in Generic Types}
 \label{Parameters_in_Generic_Types}
 \index{parameters!in classes or records}
+\index{fields!parameter}
 
-Parameters defined in a class or record do not require an
-initialization expression.  If they do not have an initialization
-expression, the parameter must be specified whenever the type is used.
+If a class or record defines a parameter field, the class or record
+is generic over the value that is bound to that field.
+% A parameter defined in a class or record is accessed as if it were a
+% field.  This access returns a parameter.  
+The parameter becomes an argument with intent \chpl{param} to the
+default constructor (\rsec{Generic_Default_Constructors})
+for that class or record.  This makes the default
+constructor generic.  The parameter also becomes an argument
+with intent \chpl{param} to the type  constructor (\rsec{Type_Constructors}).
+If the parameter declaration has an initialization expression, that expression
+becomes the default for these arguments, otherwise they have no defaults.
 
-A parameter defined in a class or record is accessed as if it were a
-field.  This access returns a parameter.  Parameters defined in
-classes or records become arguments with intent \chpl{param} to the
-default constructor for that class or record.  This makes the default
-constructor generic.  When the default constructor is instantiated,
-the type is instantiated where the parameter is bound to the parameter
-passed to the default constructor.
+The class or record is instantiated by binding the parameter
+to the actual value passed to the corresponding argument of
+a user-defined (\rsec{Generic_User_Constructors})
+or default constructor or type constructor.
+If that argument has a default, the actual value can be omitted, in
+which case the default will be used instead.
 
 \begin{example}
 The following code defines a class called \chpl{IntegerTuple} that is
 generic over an integer parameter which defines the number of
 components in the class.
 \begin{chapelpre}
-% test_IntegerTuple.chpl
+% IntegerTuple.chpl
 \end{chapelpre}
 \begin{chapel}
 class IntegerTuple {
@@ -476,18 +533,27 @@ specified by \chpl{IntegerTuple} is a generic type.
 
 \subsubsection{Fields without Types}
 \label{Fields_without_Types}
-\index{fields!without types}
+\index{fields!variable and constant, without types}
+\index{variables!in classes or records}
+\index{constants!in classes or records}
 
-If a field in a class or record has no specified type or
+If a \chpl{var} or \chpl{const} field in a class or record has no specified type or
 initialization expression, the class or record is generic over the
-type of that field.  The field must be specified when the class or
-record is constructed or specified.  The field becomes an argument to
-the default constructor that has no specified type and no default
-value.  This makes the default constructor generic.  When the default
-constructor is instantiated, the type is instantiated where the type
-of the field becomes the type of the actual argument passed to the
-default constructor.  When specifying the type of the class or record,
-the type of this field should be ``passed'' to the specifier.
+type of that field.  The field becomes an argument with blank intent to
+the default constructor (\rsec{Generic_Default_Constructors}).
+That argument has no specified type and no default
+value. This makes the default constructor generic.
+The field also becomes an argument with \chpl{type} intent and no default
+to the type constructor (\rsec{Type_Constructors}).
+Correspondingly, an actual value must always be passed to the default
+constructor argument and an actual type to the type constructor argument.
+
+The class or record is instantiated by binding the type of the field
+to the type of the value passed to the corresonding argument
+of a user-defined (\rsec{Generic_User_Constructors}) or default constructor.
+When the type constructor is invoked, the class or record is instantiated
+by binding the type of the field to the actual type passed to
+the corresponding argument.
 
 \begin{example}
 The following code defines another class called \chpl{Node} that
@@ -496,7 +562,7 @@ of the element contained in the linked list.  This code does not
 specify the element type directly in the class as a type alias but
 rather omits the type from the \chpl{data} field.
 \begin{chapelpre}
-% test_fieldWithoutType.chpl
+% fieldWithoutType.chpl
 \end{chapelpre}
 \begin{chapel}
 class Node {
@@ -520,20 +586,164 @@ writeln(list.next.data);
 2
 \end{chapeloutput}
 defines a two-element list with nodes containing the values \chpl{1}
-and \chpl{2}.  The type of each class could be specified
+and \chpl{2}.  The type of each object could be specified
 as \chpl{Node(int)}.
 \end{example}
+
+\subsubsection{The Type Constructor}
+\label{Type_Constructors}
+\index{generics!type constructor}
+\index{constructors!type constructors}
+
+A type constructor is automatically created for each class or record.
+A type constructor is a type function (\rsec{Type_Functions}) that has
+the same name as the class or record.  It takes one argument per the
+class's or record's generic field, including fields inherited from the
+superclasses, if any.
+The formal argument has intent \chpl{type} for a type alias field and is a
+parameter for a parameter field. It accepts the type to be bound
+to the type alias and the value to be bound to the parameter, respectively.
+For a generic \chpl{var} or \chpl{const} field, the corresponding
+formal argument also has intent \chpl{type}. It accepts the type
+of the field, as opposed to a value as is the case for a parameter field.
+The formal arguments occur in the same order as the fields are
+declared and have the same names as the corresponding fields.
+Unlike the default constructor, the type constructor has only
+those arguments that correspond to generic fields.
+
+A call to a type constructor accepts actual types and parameter values
+and returns the type of the class or record that is instantiated
+appropriately for each field
+(\rsec{Type_Aliases_in_Generic_Types}, \rsec{Parameters_in_Generic_Types},
+\rsec{Fields_without_Types}).
+\index{generics!instantiated type}
+Such an instantiated type must be used as the type of a variable,
+array element, non-generic formal argument, and in other cases
+where uninstantiated generic class or record types are not allowed.
+
+When a generic field declaration has an initialization expression
+or a type alias is specified, that initializer becomes the default value
+for the corresponding type constructor argument.  Uninitialized
+fields, including all generic \chpl{var} and \chpl{const} fields,
+and unspecified type aliases result in arguments with no defaults;
+actual types or values for these arguments must always be provided
+when invoking the type constructor.
 
 \subsubsection{Generic Methods}
 \label{Generic_Methods}
 \index{generics!methods}
 
-All methods bound to generic classes or records are generic over the
-implicit \chpl{this} argument and any other argument that is generic.
+All methods bound to generic classes or records, including
+constructors, are generic over the implicit \chpl{this} argument.
+This is in addition to being generic over any other argument that is generic.
+
+\subsubsection{The Default Constructor}
+\label{Generic_Default_Constructors}
+\index{generics!constructors, default}
+\index{constructors!default!for generic classes or records}
+
+The default constructor for a class or record (\rsec{The_Default_Constructor})
+is generic over each argument that corresponds to a generic field, as
+specified above.
+The argument has intent \chpl{type} for a type alias field and is a
+parameter for a parameter field. It accepts the type to be bound
+to the type alias and the value to be bound to the parameter, respectively.
+This is the same as for the type constructor.
+For a generic \chpl{var} or \chpl{const} field, the corresponding
+formal argument has the blank intent and accepts the value
+for the field to be initialized with. The type of the field
+is inferred automatically to be the type of the initialization value.
+
+The default values for the generic arguments of the default constructor
+are the same as for the type constructor (\rsec{Type_Constructors}).
+For example, the arguments corresponding to the generic \chpl{var}
+and \chpl{const} fields, if any, never have defaults, so the corresponding
+actual values must always be provided.
+
+\subsubsection{User-Defined Constructors}
+\label{Generic_User_Constructors}
+\index{generics!constructors, user-defined}
+\index{constructors!user-defined!for generic classes or records}
+
+If a generic field of a class does not have an initialization expression
+or a type alias is unspecified, each user-defined constructor for that
+class must provide a formal argument whose name
+matches the name of the field.
+
+If the name of a formal argument in a user-defined constructor matches the name
+of a generic field that does not have an initialization
+expression, is a type alias, or is a parameter field, the field is
+automatically initialized at the beginning of the constructor invocation
+to the actual value of that argument.
+This is done by passing that formal argument to the implicit invocation
+of the default constructor at the start of the user-defined constructor
+(\rsec{User_Defined_Constructors}).
+
+%%  The following story is nicer but it's not how it is implemented:
+%If the name of a formal argument in a class constructor
+%matches the name of a generic field, the field is automatically initialized
+%to the actual value for that argument upon the constructor invocation.
+%If the generic field does not have an initialization expression,
+%such a matching formal argument must be provided in each constructor
+%for that class.
+
+\begin{example}
+In the following code:
+\begin{chapelpre}
+% constructorsForGenericFields.chpl
+\end{chapelpre}
+\begin{chapel}
+class MyGenericClass {
+  type t1;
+  param p1;
+  const c1;
+  var v1;
+  var x1: t1; // this field is not generic
+
+  type t5 = real;
+  param p5 = "a string";
+  const c5 = 5.5;
+  var v5 = 555;
+  var x5: t5; // this field is not generic
+
+  def MyGenericClass(c1, v1, type t1, param p1) { }
+  def MyGenericClass(type t5, param p5, c5, v5, x5,
+                     type t1, param p1, c1, v1, x1) { }
+}  // class MyGenericClass
+
+var g1 = new MyGenericClass(11, 111, int, 1);
+var g2 = new MyGenericClass(int, "this is g2", 3.3, 333, 3333,
+                            real, 2, 222, 222.2, 22);
+\end{chapel}
+\begin{chapelpost}
+writeln(g1);
+writeln(g2);
+\end{chapelpost}
+\begin{chapeloutput}
+{p1 = 1, c1 = 11, v1 = 111, x1 = 0, p5 = a string, c5 = 5.5, v5 = 555, x5 = 0.0}
+{p1 = 2, c1 = 222, v1 = 222.2, x1 = 0.0, p5 = this is g2, c5 = 5.5, v5 = 555, x5 = 0}
+\end{chapeloutput}
+The arguments \chpl{t1}, \chpl{p1}, \chpl{c1}, and \chpl{v1} are
+required in all constructors for \chpl{MyGenericClass}. They can appear
+in any order. Both \chpl{MyGenericClass} constructors initialize the
+corresponding fields implicitly because these fields do not have initialization
+expressions. The second constructor also initializes implicitly
+the fields \chpl{t5} and \chpl{p5} because they are a type field
+and a parameter field. It does not initialize the fields \chpl{c5}
+and \chpl{v5} because they have initialization expressions, or
+the fields \chpl{x1} and \chpl{x5} because they are not generic fields
+(even though they are of generic types).
+\end{example}
+
+\begin{openissue}
+The design of constructors, especially for generic classes, is
+under development, so the above specification may change.
+\end{openissue}
 
 \subsection{Where Expressions}
 \label{Where_Expressions}
 \index{where@\chpl{where}}
+\index{generics!where@\chpl{where}}
 
 The instantiation of a generic function can be constrained by {\em
 where clauses}.  A where clause is specified in the definition of a
@@ -546,7 +756,7 @@ Otherwise, the function is instantiated.
 \begin{example}
 Given two overloaded function definitions
 \begin{chapelpre}
-% test_whereClause.chpl
+% whereClause.chpl
 \end{chapelpre}
 \begin{chapel}
 def foo(x) where x.type == int { writeln("int"); }
@@ -594,7 +804,7 @@ compiler diagnostic statements.
 The following code shows an example of using user-defined compiler
 diagnostics to generate warnings and errors:
 \begin{chapelpre}
-% test_compilerDiagnostics.chpl
+% compilerDiagnostics.chpl
 \end{chapelpre}
 \begin{chapel}
 def foo(x, y) {
@@ -617,8 +827,8 @@ foo(1.2, 3.4);
 foo("hi", "bye");
 \end{chapelpost}
 \begin{chapeloutput}
-test\_compilerDiagnostics.chpl:12: warning: 1-argument version of foo called
-test\_compilerDiagnostics.chpl:13: warning: 1-argument version of foo called
+compilerDiagnostics.chpl:12: warning: 1-argument version of foo called
+compilerDiagnostics.chpl:13: warning: 1-argument version of foo called
 In generic foo!
 In generic foo!
 In 2-argument foo...
@@ -657,7 +867,7 @@ foo.chpl:6: error: foo() called with non-matching types: int != real
 \subsection{Example: A Generic Stack}
 \label{Example_Generic_Stack}
 \begin{chapelpre}
-% test_genericStack.chpl
+% genericStack.chpl
 \end{chapelpre}
 \begin{chapel}
 class MyNode {

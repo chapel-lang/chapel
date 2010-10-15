@@ -165,7 +165,7 @@ a \chpl{BoundedRangeType.boundedLow} range with negative stride or a
 \chpl{BoundedRangeType.boundedHigh} range with positive stride.
 
 Unbounded ranges can also be used to index into ranges, domains,
-arrays, and strings.  In these cases, elided bounds are inherited
+arrays, and strings.  In these cases, omitted bounds are inherited
 from the bounds of the expression being indexed.
 
 
@@ -410,10 +410,10 @@ Returns whether or not every element in other is also in this.
 \end{protobody}
 
 \begin{protohead}
-def $range$.order(i: idxType): idxType
+def $range$.indexOrder(i: idxType): idxType
 \end{protohead}
 \begin{protobody}
-If \chpl{i} is a member of the range, returns an integer value giving
+If \chpl{i} is a member of the range, returns an integer giving
 the ordinal value of \chpl{i} within the range using 0-based indexing.
 Otherwise, it returns \chpl{(-1):idxType}.
 \end{protobody}
@@ -422,10 +422,10 @@ Otherwise, it returns \chpl{(-1):idxType}.
 The following calls show the order of index 4 in each of the given
 ranges:
 \begin{chapel}
-(0..10).order(4) == 4
-(1..10).order(4) == 3
-(3..5).order(4) == 1
-(0..10 by 2).order(4) == 2
-(3..5 by 2).order(4) == -1
+(0..10).indexOrder(4) == 4
+(1..10).indexOrder(4) == 3
+(3..5).indexOrder(4) == 1
+(0..10 by 2).indexOrder(4) == 2
+(3..5 by 2).indexOrder(4) == -1
 \end{chapel}
 \end{example}

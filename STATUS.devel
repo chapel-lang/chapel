@@ -1,6 +1,10 @@
 #
 # All comments will be stripped out before releasing the final STATUS
 #
+# To remove comments use: grep -v "^\ *#" STATUS.devel
+#
+# For release 1.2: current to r17838.
+#
 ============================
 Chapel Implementation Status
 ============================
@@ -73,17 +77,20 @@ Tuples, Classes, Records, and Unions
 - Type select on unions is not implemented.
 - User-defined constructors are not robust.
   # classes/claridge/baseConstructorCall.future, et al.
-#
-# Are these still accurate?
-#
 - Constant checking for fields of constant records is incomplete.
 - Constant checking for constant fields of records or classes is incomplete.
+# classes/deitz/test_const_field_error.future
+# classes/dinan/user_def_unique_constructor_const_multipleassign.future
 - Constant checking for components of constant tuples is incomplete.
 - Function argument with type tuple of generic class results in a
   compiler assertion.
   # functions/diten/fnGenericTupleArg.future
   # functions/vass/arg-is-tuple-with-generic-class.future
   # functions/vass/arg-is-tuple-with-no-type.future (maybe?)
+- Constant checking for domains and arrays is not supported.
+  # domains/bradc/assignConstDom2.future
+  # domains/bradc/assignConstDom.future
+  # arrays/bradc/constArray.future
 - Non-sync arguments to default constructors that expect sync vars are
   not properly coerced to sync type.
   # classes/hannah/coercingIntToSyncIntOnConstructor.future
@@ -216,8 +223,9 @@ Standard Modules, Standard Distributions, and Standard Layouts
 - The BlockCyclic distribution is incomplete.
 - Block and Cyclic domains containing indices near the minimum or
   maximum integral type may overflow.
-- Array slicing on Block and Cyclic arrays is not supported in some
+- Array reindexing on Block and Cyclic arrays is not supported in some
   cases.
+  # distributions/robust/arithmetic/reindexing/test_strided_reindex3.future
 
 
 Miscellaneous

@@ -3,13 +3,26 @@
 \index{class@\chpl{class}}
 \index{classes}
 
-Classes are an abstraction of a data structure where the storage location is
-allocated independent of the scope of the variable of class type.  Each call to
-the constructor, preceded by the \chpl{new} keyword, creates a new data object
-and returns a reference to the object.  Storage can be reclaimed by deleting the object with the \chpl{delete} keyword.
+Classes are data structures with associated state and methods. Storage for
+\index{classes!instances}
+\index{objects}
+a class instance, or object, is allocated independently of the scope of
+the variable that refers to it.
+An object is created by calling a class constructor
+(\rsec{Class_Constructors}), which allocates storage, initializes it,
+and returns a reference to the newly-created object.
+Storage can be reclaimed by deleting the object (\rsec{Class_Delete}).
+
+A class declaration (\rsec{Class_Declarations}) generates a class
+type (\rsec{Class_Types}).  A variable of a class type can refer to an
+instance of that class or any of its derived classes.
+
+A class is generic if it has generic fields. Generic classes and fields
+are discussed in~\rsec{Generic_Types}.
 
 \subsection{Class Types}
 \label{Class_Types}
+\index{classes!class types}
 
 The syntax of a class type is summarized as follows:
 \begin{syntax}
@@ -18,9 +31,9 @@ class-type:
   identifier ( named-expression-list )
 \end{syntax}
 For non-generic classes, the class name is sufficient to specify the
-type.  For generic classes, the generic fields must be ``passed'' to
-the class name.  This is similar to a constructor call except without
-the \chpl{new} keyword.
+type.  Generic classes must be instantiated to serve as a fully-specified
+type, for example to declare a variable.  This is done with
+type constructors, which are defined in Section~\ref{Type_Constructors}.
 
 \subsection{Class Declarations}
 \label{Class_Declarations}
@@ -56,12 +69,13 @@ Inheritance is described in~\rsec{Inheritance}.
 
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
-field), a function (called a method), or a type.  In addition, empty
+field), a function (called a method), or a type alias.  In addition, empty
 statements are allowed in class declarations, and they have no effect.
 
-If a class contains a variable without a specified type or
-initialization expression, a type alias or a parameter, the class is
-generic.  Generic classes are described in~\rsec{Generics}.
+If a class contains a type alias or a parameter field, or it contains a variable or
+constant without a specified type or an initialization
+expression, the class is generic.  Generic classes are described
+in~\rsec{Generic_Types}.
 
 \subsection{Class Assignment}
 \label{Class_Assignment}
@@ -69,20 +83,21 @@ generic.  Generic classes are described in~\rsec{Generics}.
 
 Classes are assigned by reference.  After an assignment from one
 variable of class type to another, the variables reference the same
-storage location.
+class instance, i.e. the same storage location.
 
 \subsection{Class Fields}
 \label{Class_Fields}
 \index{classes!fields}
+\index{fields}
 
-Variables and constants declared within class declarations define
-fields within that class.  (Parameters make a class generic.)  Fields
-define the storage associated with a class.
+Variable declarations within a class define
+fields within that class.  Parameter fields make a class generic.
+Variable and constant fields define the storage associated with a class.
 
 \begin{example}
 The code
 \begin{chapelpre}
-% test_defineActor.chpl
+% defineActor.chpl
 \end{chapelpre}
 \begin{chapel}
 class Actor {
@@ -103,13 +118,14 @@ string field \chpl{name} and the unsigned integer field \chpl{age}.
 The field in a class is accessed via a member access expression as
 described in~\rsec{Member_Access_Expressions}.  Fields in a class can
 be modified via an assignment statement where the left-hand side of
-the assignment is a member access.
+the assignment is a member access expression.
+Accessing a parameter field returns a parameter.
 \begin{example}
 Given a variable \chpl{anActor} of type \chpl{Actor}, defined above,
 the code
 \begin{chapelpre}
-% test_useActor1.chpl
-use test\_defineActor;
+% useActor1.chpl
+use defineActor;
 var anActor = new Actor(name="Tommy", age=26);
 \end{chapelpre}
 \begin{chapel}
@@ -142,15 +158,21 @@ special syntax that is similar to a field access.
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  `def' type-binding function-name argument-list[OPT] var-param-type-clause[OPT]
+  `def' param-clause[OPT] type-binding function-name argument-list[OPT] var-param-type-clause[OPT]
     return-type[OPT] where-clause[OPT] function-body
+
+param-clause:
+  `param'
 
 type-binding:
   identifier .
 \end{syntax}
 If a method is declared within the lexical scope of a class, record,
 or union, the type binding can be omitted and is taken to be the
-innermost class, record, or union that the method is defined in.
+innermost class, record, or union that the method is defined in.  If a
+method declaration contains the optional \sntx{param-clause}, it
+implies that it can only be applied to param objects of the given type
+binding.
 
 \subsubsection{Class Method Calls}
 \label{Class_Method_Calls}
@@ -163,8 +185,8 @@ the name of the method.
 A method to output information about an instance of the \chpl{Actor}
 class can be defined as follows:
 \begin{chapelpre}
-% test_defineMethod.chpl
-use test\_useActor1;
+% defineMethod.chpl
+use useActor1;
 \end{chapelpre}
 \begin{chapel}
 def Actor.print() {
@@ -195,7 +217,7 @@ which the method is called.
 Let class \chpl{C}, method \chpl{foo}, and function \chpl{bar} be
 defined as
 \begin{chapelpre}
-% test_implicitThis.chpl
+% implicitThis.chpl
 \end{chapelpre}
 \begin{chapel}
 class C {
@@ -234,7 +256,7 @@ In the following code, the \chpl{this} method is used to create a
 class that acts like a simple array that contains three integers
 indexed by 1, 2, and 3.
 \begin{chapelpre}
-% test_thisMethod.chpl
+% thisMethod.chpl
 \end{chapelpre}
 \begin{chapel}
 class ThreeArray {
@@ -262,7 +284,7 @@ ta(4) = 4;
 1
 2
 3
-test\_thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
+thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 \end{chapeloutput}
 \end{example}
 
@@ -282,7 +304,7 @@ In the following code, the \chpl{these} method is used to create a
 class that acts like a simple array that can be iterated over and
 contains three integers.
 \begin{chapelpre}
-% test_theseIterator.chpl
+% theseIterator.chpl
 \end{chapelpre}
 \begin{chapel}
 class ThreeArray {
@@ -313,30 +335,135 @@ for i in ta do
 \subsection{Class Constructors}
 \label{Class_Constructors}
 \index{classes!constructors}
+\index{classes!new}
+\index{new!classes}
+\index{new@\chpl{new}}
+\index{constructors}
 
-A class constructor is defined by declaring a method with the same
-name as the class.  The constructor is used to create instances of the
-class and must be called by preceding a call to it with the \chpl{new}
-keyword.  When the constructor is called, memory is allocated to store
-a class instance.  Formals for every generic field must be specified
-in the constructor unless that generic field has a default specified
-in the field declaration.  When instantiated, the generic fields are
-matched up by name.
+Class instances are created by invoking class constructors.
+A class constructor is a method with the same name as the class.
+It is invoked by the \chpl{new} operator, where the
+class name and constructor arguments are preceded with the
+\chpl{new} keyword.
+
+When the constructor is called, memory is allocated to store
+a class instance, its fields are initialized to default values
+(field defaults when specified in the class declaration, type defaults
+otherwise), then the constructor method is invoked on this newly-created
+instance.
+
+If the program declares a class constructor method,
+it is a user-defined constructor. There is also the default
+constructor that is automatically created for each class.
+The default constructor is invoked by the \chpl{new} operator
+when there are no user-defined constructors for that class,
+otherwise it cannot be accessed explicitly.
+
+\subsubsection{User-Defined Constructors}
+\label{User_Defined_Constructors}
+\index{classes!constructors!user-defined}
+\index{user-defined constructors}
+\index{constructors!user-defined}
+
+A user-defined constructor is a constructor method explicitly declared
+in the program.  The usual function resolution mechanism
+(\rsec{Function_Resolution}) is applied to determine which
+user-defined constructor to invoke.
+
+Any user-defined constructor begins with an implicit call to the
+default constructor (\rsec{The_Default_Constructor}) for that class.
+This call passes no arguments explicitly, so each field is set
+to the initializer expression if given in the field's declaration and
+to the default value for the field's type otherwise.
+
+\begin{example}
+The following example shows a class with two constructors:
+\begin{chapelpre}
+% simpleConstructors.chpl
+\end{chapelpre}
+\begin{chapel}
+class MessagePoint {
+  var x, y: real;
+  var message: string;
+
+  def MessagePoint(x: real, y: real) {
+    this.x = x;
+    this.y = y;
+    this.message = "a point";
+  }
+
+  def MessagePoint(message: string) {
+    this.x = 0;
+    this.y = 0;
+    this.message = message;
+  }
+}  // class MessagePoint
+
+// create two objects
+var mp1 = new MessagePoint(1.0,2.0);
+var mp2 = new MessagePoint("point mp2");
+\end{chapel}
+\begin{chapelpost}
+writeln(mp1);
+writeln(mp2);
+\end{chapelpost}
+\begin{chapeloutput}
+{x = 1.0, y = 2.0, message = a point}
+{x = 0.0, y = 0.0, message = point mp2}
+\end{chapeloutput}
+The first constructor lets the user specify the initial coordinates
+and the second constructor lets the user specify the initial message
+when creating a MessagePoint.
+\end{example}
+
+Constructors for generic classes (\rsec{Generic_Types}) handle certain
+arguments differently and may need to satisfy additional
+requirements. See Section~\ref{Generic_User_Constructors} for details.
 
 \subsubsection{The Default Constructor}
 \label{The_Default_Constructor}
+\index{classes!constructors!default}
+\index{default constructors}
+\index{constructors!default}
 
-A default constructor is automatically created for every class in the
-Chapel program that does not define any constructors.  This
-constructor is defined such that it has one argument for every field
-in the class.  Each of the non-generic fields has a default value.
-Actual values for each generic field must be passed to a constructor
-call if no default is specified.
+The default constructor is automatically created for every class in
+the Chapel program. It has one argument for every field in the class
+with the argument name matching the field's name.
+This includes fields inherited from superclasses, type aliases
+and parameter fields, if any.
+The order of the arguments matches the order of the field declarations
+within the class, with the arguments for a superclass's fields occurring
+before the arguments for a subclass's fields.
+Each argument has a default value.
+For a field that has an initializer expression,
+the default value is that expression.
+Otherwise, it is the default value for the field's type
+(\rsec{Default_Initialization}).
+This rule does not apply to generic fields without initializers,
+which are discussed in Section~\ref{Generic_Default_Constructors}.
+
+The default constructor for a class can be invoked by a \chpl{new}
+operator only when the class does not have any user-defined constructors.
+In this case the usual function resolution mechanism
+(\rsec{Function_Resolution}) determines whether an invocation of the
+default constructor is legal.
+
+When invoked, the default constructor initializes each field in the class to the
+value of the corresponding actual.
+This ensures that upon return from the constructor it is safe to use
+the object being created, as each field contains a legal value for its type.
+The initialization is done in the order the fields are declared, with
+a superclass's fields initialized before a subclass's fields.
+
+The program may define a constructor with the same arguments and types
+as the default constructor for that class. If there is such a constructor,
+it is a user-defined constructor and is distinct from the default
+constructor.
 
 \begin{example}
 Given the class
 \begin{chapelpre}
-% test_defaultConstructor.chpl
+% defaultConstructor.chpl
 \end{chapelpre}
 \begin{chapel}
 class C {
@@ -349,19 +476,26 @@ class C {
 var c1 = new C();
 var c2 = new C(2);
 var c3 = new C(z="");
-var c4 = new C(0,0.0, "");
-writeln((c1, c2, c3, c4));
+var c4 = new C(2, z="");
+var c5 = new C(0, 0.0, "");
+writeln((c1, c2, c3, c4, c5));
 \end{chapelpost}
 \begin{chapeloutput}
-({x = 0, y = 3.14, z = Hello, World!}, {x = 2, y = 3.14, z = Hello, World!}, {x = 0, y = 3.14, z = }, {x = 0, y = 0.0, z = })
+({x = 0, y = 3.14, z = Hello, World!}, {x = 2, y = 3.14, z = Hello, World!}, {x = 0, y = 3.14, z = }, {x = 2, y = 3.14, z = }, {x = 0, y = 0.0, z = })
 \end{chapeloutput}
-then instances of the class can be created by calling the default
-constructor as follows:
+there are no user-defined constructors for \chpl{C}, so \chpl{new} operators
+will invoke \chpl{C}'s default constructor. The \chpl{x} argument
+of the default constructor has the default value \chpl{0}.
+The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
+\chpl{"Hello, World!"}, respectively.
+
+\chpl{C} instances can be created by calling the default constructor as follows:
 \begin{itemize}
 \item The call \chpl{new C()} is equivalent to \chpl{C(0,3.14,"Hello, World!")}.
 \item The call \chpl{new C(2)} is equivalent to \chpl{C(2,3.14,"Hello, World!")}.
 \item The call \chpl{new C(z="")} is equivalent to \chpl{C(0,3.14,"")}.
-\item The call \chpl{new C(0,0.0,"")} is equivalent to \chpl{C(0,0.0,"")}.
+\item The call \chpl{new C(2, z="")} is equivalent to \chpl{C(2,3.14,"")}.
+\item The call \chpl{new C(0,0.0,"")} specifies the initial values for all fields explicitly.
 \end{itemize}
 \end{example}
 
@@ -378,7 +512,7 @@ field if the user does not define their own.
 \begin{example}
 In the code
 \begin{chapelpre}
-% test_getterSetter.chpl
+% getterSetter.chpl
 \end{chapelpre}
 \begin{chapel}
 class C {
@@ -442,6 +576,7 @@ in~\rsec{Overriding_Base_Class_Methods}.
 
 \subsubsection{Derived Class Constructors}
 \label{Derived_Class_Constructors}
+\index{constructors!for derived classes}
 
 Derived class constructors automatically call the default constructor
 of the base class.  There is an expectation that a more standard way
@@ -499,9 +634,21 @@ A class defined within another class is a nested class.
 Nested classes can refer to fields and methods in the outer class
 implicitly or explicitly with an \chpl{outer} reference.
 
+\subsection{The \chpl{nil} Value}
+\index{classes!nil}
+\index{nil@\chpl{nil}}
+
+Chapel provides \chpl{nil} to indicate the absence of a reference to
+any object.  \chpl{nil} can be assigned to a variable of any class
+type.  Invoking a class method or accessing a field of the \chpl{nil}
+value results in a run-time error.
+
 \subsection{Dynamic Memory Management}
 \label{Dynamic_Memory_Management}
+\label{Class_Delete}
 \index{memory management}
+\index{classes!delete}
+\index{delete!classes}
 
 Memory associated with class instances can be reclaimed with the \chpl{delete}
 keyword.
@@ -510,7 +657,7 @@ keyword.
 The following example allocates a new object \chpl{c} of class type \chpl{C}
 and then deletes it.
 \begin{chapelpre}
-% test_delete.chpl
+% delete.chpl
 class C {
   var i,j,k: int;
 }

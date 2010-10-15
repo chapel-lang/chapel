@@ -17,6 +17,9 @@ clobber: FORCE
 gasnet: FORCE
 	cd gasnet && $(MAKE)
 
+gmp: FORCE
+	cd gmp && $(MAKE)
+
 pvm: FORCE
 	cd pvm && $(MAKE)
 

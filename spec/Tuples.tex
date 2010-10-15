@@ -157,7 +157,7 @@ writeln((x1,x2,x3));
 \begin{chapeloutput}
 ((hello, 3.14), (hello, 3.14), (1))
 \end{chapeloutput}
-\end{example}.
+\end{example}
 
 Note that if a single expression is delimited by parentheses, the
 parentheses only impact precedence.  Thus \chpl{(1)} is equivalent
@@ -254,9 +254,9 @@ outputs \chpl{3 4 3 4}.
 \end{chapeloutput}
 \end{example}
 
-\index{tuples!eliding components}
+\index{tuples!omitting components}
 When splitting a tuple with assignment, the expressions that are
-grouped using the tuple notation may be elided.  In this case, the
+grouped using the tuple notation may be omitted.  In this case, the
 expression on the right-hand side of the assignment operator is
 evaluated, but its value is not assigned.
 
@@ -304,7 +304,7 @@ The code
 var (a, (b, c)) = (1, (2, 3));
 \end{chapel}
 defines three integer variables \chpl{a}, \chpl{b}, and \chpl{c}.  It
-plits the tuple \chpl{(1, (2, 3))} such that \chpl{1}
+splits the tuple \chpl{(1, (2, 3))} such that \chpl{1}
 initializes \chpl{a}, \chpl{2} initializes \chpl{b}, and \chpl{3}
 initializes \chpl{c}.
 \begin{chapelpost}
@@ -334,10 +334,10 @@ writeln(a);
 \end{chapeloutput}
 \end{example}
 
-\index{tuples!eliding components}
+\index{tuples!omitting components}
 When splitting a tuple into multiple variable declarations, the
-variables that are grouped using the tuple notation may be elided.  In
-this case, a variable is not defined for any elided component.
+variables that are grouped using the tuple notation may be omitted.  In
+this case, a variable is not defined for any omitted component.
 
 \begin{example}
 \begin{chapelpre}
@@ -394,10 +394,10 @@ their values from the iterator.
 \end{chapeloutput}
 \end{example}
 
-\index{tuples!eliding components}
+\index{tuples!omitting components}
 When splitting a tuple into multiple indices, the indices that are
-grouped using the tuple notation may be elided.  In this case, a new
-index is not defined for any elided component.  The iterator is
+grouped using the tuple notation may be omitted.  In this case, a new
+index is not defined for any omitted component.  The iterator is
 evaluated as if an index were defined.
 
 \subsubsection{Splitting a Tuple into Multiple Formal Arguments}
@@ -492,10 +492,10 @@ f(y);
 \end{chapeloutput}
 \end{example}
 
-\index{tuples!eliding components}
+\index{tuples!omitting components}
 When splitting a tuple into multiple formal arguments, the arguments
-that are grouped using the tuple notation may be elided.  In this
-case, a new argument is not defined for any elided component.  The
+that are grouped using the tuple notation may be omitted.  In this
+case, a new argument is not defined for any omitted component.  The
 call is evaluated as if an argument were defined.
 
 \subsubsection{Splitting a Tuple via Tuple Expansion}
@@ -621,136 +621,88 @@ so that the type of the expression is statically known.
 \label{Tuple_Operators}
 \index{tuples!operators}
 
-The unary operators \chpl{\+}, \chpl{\-}, \chpl{\~}, and \chpl{\!} are
-overloaded on tuples as defined by the following code
-\begin{chapel}
-def $\oplus$(a) where isTuple(a)
-  if a.size == 1 then
-    return tuple($\oplus$a(1));
-  else
-    return ($\oplus$a(1), (...$\oplus$rest(a)));
-\end{chapel}
-where $\oplus$ is replaced by the unary operator and \chpl{rest} is
-defined as follows:
-\begin{chapelpre}
-\end{chapelpre}
-\begin{chapel}
-def rest(t) {
-  def helper(first, rest...)
-    return rest;
-  return helper((...t));
-}
-\end{chapel}
-\begin{chapelpost}
-writeln(rest((1, 2, 3)));
-\end{chapelpost}
-\begin{chapeloutput}
-(2, 3)
-\end{chapeloutput}
+\subsubsection{Unary Operators}
+\label{Tuple_Unary_Operators}
+%\index{\+ (unary)@\chpl{\+} (unary)}
+%\index{\- (unary)@\chpl{\-} (unary)}
+%\index{\~ (unary)@\chpl{\~} (unary)}
+%\index{\! (unary)@\chpl{\!} (unary)}
 
-The \chpl{rest} function takes a tuple and returns a tuple of all of
-the components in the argument except the first one.
+The unary operators \chpl{\+}, \chpl{\-}, \chpl{\~}, and \chpl{\!} are
+overloaded on tuples by applying the operator to each argument component
+and returning the results as a new tuple.
+
+The size of the result tuple is the same as the size of the
+argument tuple. The type of each result component is the result
+type of the operator when applied to the corresponding argument component.
+
+\subsubsection{Binary Operators}
+\label{Tuple_Binary_Operators}
+%\index{\+@\chpl{\+}}
+%\index{\-@\chpl{\-}}
+%\index{\*@\chpl{\*}}
+%\index{\/@\chpl{\/}}
+%\index{\%@\chpl{\%}}
+%\index{\*\*@\chpl{\*\*}}
+%\index{\&@\chpl{\&}}
+%\index{\|@\chpl{\|}}
+%\index{\^@\chpl{\^}}
+%\index{\<\<@\chpl{\<\<}}
+%\index{\>\>@\chpl{\>\>}}
 
 The binary operators \chpl{\+}, \chpl{\-}, \chpl{\*}, \chpl{\/}, \chpl{\%},
 \chpl{\*\*}, \chpl{\&}, \chpl{\|}, \chpl{\^}, \chpl{\<\<}, and \chpl{\>\>}
-are overloaded on tuples as defined by the following code
-\begin{chapel}
-def $\oplus$(a, b) where isTuple(a) && isTuple(b) {
-  if a.size != b.size then
-    compilerError("tuple operands to $\oplus$ have different sizes");
-  if a.size == 1 then
-    return tuple(a(1)$\oplus$b(1));
-  else
-    return (a(1)$\oplus$b(1), (...rest(a)$\oplus$rest(b)));
-}
-\end{chapel}
-where $\oplus$ is replaced by the binary operator and \chpl{rest} is
-defined as above.
+are overloaded on tuples by applying them to pairs of the respective
+argument components and returning the results as a new tuple.
+The sizes of the two argument tuples must be the same.
+
+The size of the result tuple is the same as the argument tuples.  The
+type of each result component is the result type of the operator when
+applied to the corresponding pair of the argument components.
 
 \begin{example}
 \begin{chapelpre}
 \end{chapelpre}
 The code
 \begin{chapel}
-var x = (1, 1.0) + (2.0, 2);
+var x = (1, 1, 1) + (2, 2.0, "2");
 \end{chapel}
-creates a 2-tuple of reals with the value \chpl{(2.0, 2.0)}.
+creates a 3-tuple of an int, a real and a string with the value \chpl{(3, 3.0, "12")}.
 \begin{chapelpost}
 writeln(x);
 \end{chapelpost}
 \begin{chapeloutput}
-(3.0, 3.0)
+(3, 3.0, 12)
 \end{chapeloutput}
 \end{example}
 
-The relational operators~(\rsec{Relational_Operators}) are defined
-over tuples so that the comparison starts with the first component,
-and continues to each next component until it can be decided whether
-the relation holds or not.  Specifically, these operators are defined
-as follows:
-\begin{chapel}
-def >(a, b) where isTuple(a) && isTuple(b) {
-  if a.size != b.size then
-    compilerError("tuple operands to > have different sizes");
-  for param i in 1..a.size do
-    if a(i) > b(i) then
-      return true;
-    else if a(i) < b(i) then
-      return false;
-  return false;
-}
 
-def >=(a, b) where isTuple(a) && isTuple(b) {
-  if a.size != b.size then
-    compilerError("tuple operands to >= have different sizes");
-  for param i in 1..a.size do
-    if a(i) > b(i) then
-      return true;
-    else if a(i) < b(i) then
-      return false;
-  return true;
-}
+\subsubsection{Relational Operators}
+\label{Tuple_Relational_Operators}
+%\index{\>@\chpl{\>}}
+%\index{\>\=@\chpl{\>\=}}
+%\index{\<@\chpl{\<}}
+%\index{\<\=@\chpl{\<\=}}
+%\index{\=\=@\chpl{\=\=}}
+%\index{\!\=@\chpl{\!\=}}
 
-def <(a, b) where isTuple(a) && isTuple(b) {
-  if a.size != b.size then
-    compilerError("tuple operands to < have different sizes");
-  for param i in 1..a.size do
-    if a(i) < b(i) then
-      return true;
-    else if a(i) > b(i) then
-      return false;
-  return false;
-}
+% (\rsec{Relational_Operators})
 
-def <=(a, b) where isTuple(a) && isTuple(b) {
-  if a.size != b.size then
-    compilerError("tuple operands to <= have different sizes");
-  for param i in 1..a.size do
-    if a(i) < b(i) then
-      return true;
-    else if a(i) > b(i) then
-      return false;
-  return true;
-}
+The relational operators \chpl{\>}, \chpl{\>\=}, \chpl{\<}, \chpl{\<\=},
+\chpl{\=\=}, and \chpl{\!\=} are defined over tuples of matching size.
+They return a single boolean value indicating whether the two
+arguments satisfy the corresponding relation.
 
-def ==(a, b) where isTuple(a) && isTuple(b) {
-  if a.size != b.size then
-    return false;
-  for param i in 1..a.size do
-    if a(i) != b(i) then
-      return false;
-  return true;
-}
-
-def !=(a, b) where isTuple(a) && isTuple(b) {
-  if a.size != b.size then
-    return true;
-  for param i in 1..a.size do
-    if a(i) != b(i) then
-      return true;
-  return false;
-}
-\end{chapel}
+The operators \chpl{\>}, \chpl{\>\=}, \chpl{\<}, and \chpl{\<\=}
+check the corresponding lexicographical order
+based on pair-wise comparisons between the argument tuples' components.
+%based on comparisons between pairs of the respective
+%components of the arguments.
+The operators \chpl{\=\=} and \chpl{\!\=} check whether
+the two arguments are pair-wise equal or not.
+The relational operators on tuples may be short-circuiting, i.e.
+they may execute only the pair-wise comparisons that are necessary
+to determine the result.
 
 \begin{example}
 \begin{chapelpre}
@@ -770,13 +722,6 @@ writeln(x);
 true
 \end{chapeloutput}
 \end{example}
-
-\begin{note}
-The overloaded operators above define the semantics of these operators
-on tuples, but a Chapel implementation can use alternative but
-semantically equivalent definitions.  Indeed, it may be beneficial to
-specialize the functions to homogeneous tuples to avoid code bloat.
-\end{note}
 
 \subsection{Predefined Functions and Methods on Tuples}
 \index{tuples!predefined functions}

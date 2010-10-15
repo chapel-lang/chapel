@@ -58,7 +58,6 @@ Other files
   README.features : maps out which tests use which Chapel features
   README.testing  : provides an introduction to using the Chapel testing system
   start_test      : the main script for the Chapel testing system
-  Bin/            : contains helper scripts for the testing system
   Logs/           : directory created by the test system to store logs
   *.compopts      : used by the Chapel testing system -- see README.testing
   *.execopts      : "

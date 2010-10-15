@@ -32,4 +32,19 @@ COMP_CFLAGS = $(CFLAGS) $(XT_COMP_CFLAGS)
 RUNTIME_CFLAGS = $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 GEN_CFLAGS += $(CFLAGS) $(XT_GEN_CFLAGS)
+
+ifdef CHPL_ASYNCPE_USE_DYNAMIC
+ifeq ($(CHPL_ASYNCPE_USE_DYNAMIC),true)
 GEN_LFLAGS += $(LFLAGS) -dynamic
+else
+ifeq ($(CHPL_ASYNCPE_USE_DYNAMIC),false)
+GEN_LFLAGS += $(LFLAGS) -static
+else
+# use the default
+GEN_LFLAGS += $(LFLAGS)
+endif
+endif
+else
+# use the default
+GEN_LFLAGS += $(LFLAGS)
+endif

@@ -678,7 +678,8 @@ insertTransactions(void) {
 
     forv_Vec(CallExpr, call, calls) {
       if (call->primitive) {
-	handleMemoryOperations(block, call, tx);
+	if (!(strstr(fn->name, "tx_clone_wrapon"))) 
+	  handleMemoryOperations(block, call, tx);
 	continue;
       }
       FnSymbol* cloneFn = call->isResolved();

@@ -33,7 +33,7 @@ To run Chapel on multiple locales, the following steps are required:
    and Chapel will make a choice for them.  Current defaults are:
 
      When compiling for...       Chapel will choose...
-       cx1-linux                   ibv
+       cx-linux                    ibv
        pwr5                        lapi
        pwr6                        ibv
        xe-cle                      mpi

@@ -1,19 +1,25 @@
 \sekshun{Standard Modules}
 \label{Standard_Modules}
 \index{standard modules}
+\index{modules!standard}
 
-This section describes modules that are automatically used by every
-Chapel program as well as a set of standard modules that can be used
-manually, provididing standard library support.  The automatic modules
+Standard modules provide standard library support
+and are available to every Chapel program.
+The functions and other definitions of automatic modules are always
+available to a Chapel program.
+Optional modules can be accessed via use statements
+(\rsec{Using_Modules}).
+
+The automatic modules
 are as follows:
 
 \begin{tabular}{lll}
 \hspace{1pc} & \chpl{Math} & Math routines \\
-             & \chpl{Standard} & Basic routines \\
+             & \chpl{Base} & Basic routines \\
              & \chpl{Types} & Routines related to primitive types \\
 \end{tabular}
 
-\noindent The standard modules include:
+\noindent The optional modules include:
 
 \begin{tabular}{lll}
 \hspace{1pc} & \chpl{BitOps} & Bit manipulation routines \\
@@ -30,9 +36,10 @@ and that more standard modules will be defined over time.
 
 \subsection{Automatic Modules}
 \index{automatic modules}
+\index{standard modules!automatic}
 
 Automatic modules are used by a Chapel program automatically.  There
-is currently no way to avoid their use by a program though we
+is currently no way to avoid their use by a program, although we
 anticipate adding such a capability in the future.
 
 \subsubsection{Math}
@@ -344,9 +351,9 @@ than the argument in absolute value.
 \end{protobody}
 
 
-\subsubsection{Standard}
+\subsubsection{Base}
 \label{Standard}
-\index{automatic modules!Standard}
+\index{automatic modules!Base}
 
 \begin{protohead}
 def ascii(s: string): int
@@ -428,10 +435,10 @@ arguments to the call.
 \end{protobody}
 
 \begin{protohead}
-def length(s: string): int
+def string.length: int
 \end{protohead}
 \begin{protobody}
-Returns the number of characters in the argument \chpl{s}.
+Returns the number of characters in the base expression of type string.
 \end{protobody}
 
 \begin{protohead}
@@ -472,6 +479,7 @@ type \chpl{t}.
 \end{protobody}
 
 \subsubsection{Types}
+\label{Types_standard_module}
 
 \begin{protohead}
 def numBits(type t) param : int
@@ -510,14 +518,16 @@ is implemented for all numeric types.
 
 
 
-\subsection{Standard Modules}
+\subsection{Optional Modules}
+\index{optional modules}
+\index{standard modules!optional}
 
-Standard modules can be used by a Chapel program via the \chpl{use}
-keyword.
+Optional modules can be used by a Chapel program via the \chpl{use}
+keyword (\rsec{Using_Modules}).
 
 \subsubsection{BitOps}
 \label{BitOps}
-\index{standard modules!BitOps}
+\index{optional modules!BitOps}
 
 The module \chpl{BitOps} defines routines that manipulate the bits of
 values of integral types.
@@ -560,7 +570,7 @@ bits to the right \chpl{shift} number of times.
 
 \subsubsection{Norm}
 \label{Norm}
-\index{standard modules!Norm}
+\index{optional modules!Norm}
 
 The module \chpl{Norm} supports the computation of standard vector and
 matrix norms on Chapel arrays.  The current interface is minimal and
@@ -592,7 +602,7 @@ the 2-norm, for a 2D array, this is the Frobenius norm.
 
 \subsubsection{Random}
 \label{Random}
-\index{standard modules!Random}
+\index{optional modules!Random}
 
 The module \chpl{Random} supports the generation of pseudo-random
 values and streams of values.  The current interface is minimal and
@@ -692,7 +702,7 @@ class will be used.
 
 \subsubsection{Search}
 \label{Search}
-\index{standard modules!Search}
+\index{optional modules!Search}
 
 The \chpl{Search} module is designed to support standard search
 routines.  The current interface is minimal and should be expected to
@@ -726,7 +736,7 @@ it was not found.
 
 \subsubsection{Sort}
 \label{Sort}
-\index{standard modules!Sort}
+\index{optional modules!Sort}
 
 The \chpl{Sort} module is designed to support standard sorting
 routines.  The current interface is minimal and should be expected to
@@ -750,7 +760,7 @@ implementation of the QuickSort algorithm.
 
 \subsubsection{Time}
 \label{Time}
-\index{standard modules!Time}
+\index{optional modules!Time}
 
 The module \chpl{Time} defines routines that query the system time and
 a record \chpl{Timer} that is useful for timing portions of code.
