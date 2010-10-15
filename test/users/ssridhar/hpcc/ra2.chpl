@@ -29,8 +29,9 @@ config param useOn: bool = false;
 config param trackStmStats = false;
 config param seed1: randType = 0x2;
 config param seed2: randType = 0x7fff;
+config param forkFast: bool = false;
 
-def updateValues(myR: indexType, myS: indexType, factor: int(64)) {
+def updateValues(myR: indexType, myS: indexType, factor: int(64), mySLocale: locale) {
   const myRIdx = indexMask(myR, n);
   const mySIdx = indexMask(myS, n);
   const myRVal = myS * factor:uint(64);
@@ -38,21 +39,20 @@ def updateValues(myR: indexType, myS: indexType, factor: int(64)) {
   var x: elemType;
   if (myRIdx != mySIdx) {
     local T(myRIdx) += myRVal;
-    // local x = T(myRIdx); 
     if useOn then
-      on TableDist.idxToLocale(mySIdx) {
+      on mySLocale {
 	const mySIdx1 = mySIdx;
 	const mySVal1 = mySVal;
-	local T(mySIdx1) += mySVal1;
-	// local const x = T(mySIdx1); 
+	if forkFast then
+	  local T(mySIdx1) += mySVal1;
+	else
+	  T(mySIdx1) += mySVal1;
       }
     else {
       T(mySIdx) += mySVal;
-      // x = T(mySIdx); 
     }
   } else {
     local T(myRIdx) += (2 * myRVal);
-    // local x = T(myRIdx);
   }
 }
 
@@ -67,10 +67,11 @@ def main() {
     on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
+      const mySLocale = TableDist.idxToLocale(indexMask(myS, n));
       if safeUpdates then
-  	atomic updateValues(myR, myS, 1);
+  	atomic updateValues(myR, myS, 1, mySLocale);
       else 
-	updateValues(myR, myS, 1);
+	updateValues(myR, myS, 1, mySLocale);
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
@@ -102,7 +103,8 @@ def verifyResults() {
     on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
-      atomic updateValues(myR, myS, -1);
+      const mySLocale = TableDist.idxToLocale(indexMask(myS, n));
+      atomic updateValues(myR, myS, -1, mySLocale);
     }
 
   const verifyTime = getCurrentTime() - startTime; 

@@ -33,21 +33,14 @@ var TLock: [LockSpace] mutex_p;
 
 config param safeUpdates: bool = false;
 config param useOn: bool = false;
-config param trackStmStats = false;
 config param useLCG: bool = true;
-config param seed1: randType = 0;
-config param seed2: randType = 0x7fffffffffffffff;
+config param seed1: randType = 0x2;
+config param seed2: randType = 0x7fff;
+config param forkFast: bool = false;
 
-def indexMask(r: randType): randType {
-  if useLCG then
-    return r >> (64 - n);
-  else
-    return r & (m - 1);
-}
-
-def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
-  const myRIdx = indexMask(myR);
-  const mySIdx = indexMask(myS);
+def updateValues(myR: indexType, myS: indexType, factor: int(64), mySLocale: locale) {
+  const myRIdx = indexMask(myR, n);
+  const mySIdx = indexMask(myS, n);
   const myRVal = myS * factor:uint(64);
   const mySVal = myR * factor:uint(64); 
   const myRLock = myRIdx >> lockMask;
@@ -60,19 +53,25 @@ def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
 
     // Acquire mySIndex Lock, update mySIdx entry
     if useOn then
-      on LockDist.idxToLocale(mySLock) {
+      on mySLocale { //LockDist.idxToLocale(mySLock) {
 	const mySIdx1 = mySIdx;
 	const mySVal1 = mySVal;
 	const mySLock1 = mySLock;
-	local {
+	if forkFast then
+	  local {
+	    mutex_lock(TLock(mySLock1));
+	    T(mySIdx1) += mySVal1;
+	  }
+	else {
 	  mutex_lock(TLock(mySLock1));
 	  T(mySIdx1) += mySVal1;
 	}
       }
     else {
-      on LockDist.idxToLocale(mySLock) {
+      on mySLocale { //LockDist.idxToLocale(mySLock) {
 	const mySLock1 = mySLock;
-	local mutex_lock(TLock(mySLock1));
+	if forkFast then mutex_lock(TLock(mySLock1));
+	else mutex_lock(TLock(mySLock1));
       }
       T(mySIdx) += mySVal;
     }
@@ -81,9 +80,10 @@ def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
     local T(myRIdx) += myRVal;
 
     // Release mySIdx Lock
-    on LockDist.idxToLocale(mySLock) {
+    on mySLocale { // LockDist.idxToLocale(mySLock) {
       const mySLock1 = mySLock;
-      local mutex_unlock(TLock(mySLock1));
+      if forkFast then local mutex_unlock(TLock(mySLock1));
+      else mutex_unlock(TLock(mySLock1));
     }
 
     // Release myRLock
@@ -91,9 +91,10 @@ def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
 
   } else if (myRLock > mySLock) {
     // Acquire mySIdx Lock
-    on LockDist.idxToLocale(mySLock) {
+    on mySLocale { // LockDist.idxToLocale(mySLock) {
       const mySLock1 = mySLock;
-      local mutex_lock(TLock(mySLock1));
+      if forkFast then local mutex_lock(TLock(mySLock1));
+      else mutex_lock(TLock(mySLock1));
     }
     
     // Acquire myRLock and update myRIdx
@@ -107,7 +108,8 @@ def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
       on TableDist.idxToLocale(mySIdx) {
 	const mySIdx1 = mySIdx;
 	const mySVal1 = mySVal;
-	local T(mySIdx1) += mySVal1;
+	if forkFast then local T(mySIdx1) += mySVal1;
+	else T(mySIdx1) += mySVal1;
       }
     else
       T(mySIdx) += mySVal;
@@ -116,9 +118,10 @@ def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
     local mutex_unlock(TLock(myRLock)); 
 
     // Release mySIdx Lock
-    on LockDist.idxToLocale(mySLock) {
+    on mySLocale { // LockDist.idxToLocale(mySLock) {
       const mySLock1 = mySLock;
-      local mutex_unlock(TLock(mySLock1));
+      if forkFast then local mutex_unlock(TLock(mySLock1));
+      else mutex_unlock(TLock(mySLock1));
     }
 
   } else {
@@ -131,19 +134,20 @@ def updateValues (myR:indexType, myS:indexType, factor: int(64)) {
   }
 }
 
-def updateValuesNoSync(myR: indexType, myS: indexType) {
-  const myRIdx = indexMask(myR);
-  const mySIdx = indexMask(myS);
+def updateValuesNoSync(myR: indexType, myS: indexType, mySLocale: locale) {
+  const myRIdx = indexMask(myR, n);
+  const mySIdx = indexMask(myS, n);
   const myRVal = myS;
   const mySVal = myR;
 
   if (myRIdx != mySIdx) {
     local T(myRIdx) += myRVal;
     if useOn then
-      on TableDist.idxToLocale(mySIdx) {
+      on mySLocale {
 	const mySVal1 = mySVal;
 	const mySIdx1 = mySIdx;
-	local T(mySIdx1) += mySVal1;
+	if forkFast then local T(mySIdx1) += mySVal1;
+	else T(mySIdx1) += mySVal1;
       }
     else 
       T(mySIdx) += mySVal;
@@ -160,14 +164,16 @@ def main() {
  
   const startTime = getCurrentTime();               // capture the start time
 
-  forall ( , r, s) in (Updates, RAStream(seed1, useLCG), RAStream(seed2, useLCG)) do
-    on TableDist.idxToLocale(indexMask(r)) { 
+  forall ( , r, s) in (Updates, RAStream(seed1), RAStream(seed2)) do
+    on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
-      if safeUpdates then
-	updateValues(myR, myS, 1);
-      else {
-	updateValuesNoSync(myR, myS);
+      if safeUpdates {
+	const mySLocale: locale = LockDist.idxToLocale(indexMask(myS, n) >> lockMask);
+	updateValues(myR, myS, 1, mySLocale);
+      } else {
+	const mySLocale: locale = TableDist.idxToLocale(indexMask(myS, n));
+	updateValuesNoSync(myR, myS, mySLocale);
       }
     }
 
@@ -183,6 +189,7 @@ def printConfiguration() {
     printProblemSize(elemType, 1, m);
     writeln("Atomic Update = ", safeUpdates);
     writeln("UseOn = ", useOn);
+    writeln("RNG = ", whichRNG());
     writeln("Number of updates = ", N_U, "\n");
   }
 }
@@ -190,21 +197,18 @@ def printConfiguration() {
 def verifyResults() {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
-  if (trackStmStats) then startStmStats();
-
   var startTime = getCurrentTime();
 
-  forall ( , r, s) in (Updates, RAStream(seed1, useLCG), RAStream(seed2, useLCG)) do
-    on TableDist.idxToLocale(indexMask(r)) { 
+  forall ( , r, s) in (Updates, RAStream(seed1), RAStream(seed2)) do
+    on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
-	updateValues(myR, myS, -1);
+      const mySLocale: locale = LockDist.idxToLocale(indexMask(myS, n) >> lockMask);
+      updateValues(myR, myS, -1, mySLocale);
     }
 
   const verifyTime = getCurrentTime() - startTime; 
   
-  if trackStmStats then stopStmStats();
-
   if (printArrays) then writeln("After verification, T is: ", T, "\n");
 
   const numErrors = + reduce [i in TableSpace] (T(i) != 0);

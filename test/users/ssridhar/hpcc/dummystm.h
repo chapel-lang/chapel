@@ -28,6 +28,9 @@
 #define CHPL_DUMMY_STM_COMM_WIDE_GET_FIELD_VALUE_SVEC(tx, local, wide, stype, sfield, type, ln, fn) \
   CHPL_COMM_WIDE_GET_FIELD_VALUE_SVEC(local, wide, stype, sfield, type, ln, fn)
 
+#define CHPL_DUMMY_STM_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE(tx, local, wide, index, type, ln, fn) \
+  CHPL_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE(local, wide, index, type, ln, fn);
+
 #define CHPL_DUMMY_STM_COMM_WIDE_ARRAY_GET(tx, wide, cls, ind, stype, sfield, etype, ln, fn) \
   CHPL_COMM_WIDE_ARRAY_GET(wide, cls, ind, stype, sfield, etype, ln, fn)
 

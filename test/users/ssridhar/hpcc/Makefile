@@ -39,8 +39,9 @@ ra: HPCCProblemSize.chpl $(RNG).chpl ra.chpl
 
 raSTM: HPCCProblemSize.chpl $(RNG).chpl ra.chpl dummystm.h
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+	rm raSTM
 	sed -i -f dummystm.sed c_$@/ra.c
-	grep LOAD_REF c_$@/ra.c
+	grep -e LOAD_REF -e STM_COMM_WIDE_GET c_$@/ra.c
 	make -f c_$@/Makefile
 
 raMLA: HPCCProblemSize.chpl $(RNG).chpl MutexLock.chpl MutexLock.h ra_mutex_lock_array.chpl
@@ -55,11 +56,21 @@ raSDA: HPCCProblemSize.chpl $(RNG).chpl ra_sync_data_array.chpl
 ra2: $(RNG).chpl ra2.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
+ra3: $(RNG).chpl ra3.chpl
+	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+
+ra4: $(RNG).chpl ra4.chpl
+	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+
+ra5: $(RNG).chpl ra5.chpl
+	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+
 ra2RAR: $(RNG).chpl ra2.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
 ra2STM: $(RNG).chpl ra2.chpl dummystm.h
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+	rm ra2STM
 	sed -i -f dummystm.sed c_$@/ra2.c
 	grep -e LOAD_REF -e STM_COMM_WIDE_GET c_$@/ra2.c
 	make -f c_$@/Makefile

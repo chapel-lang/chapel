@@ -26,21 +26,12 @@ var T$: [TableSpace] sync elemType;
 
 config param safeUpdates: bool = false;
 config param useOn: bool = false;
-config param trackStmStats = false;
-config param useLCG: bool = true;
 config param seed1: randType = 0;
-config param seed2: randType = 0x7fffffffffffffff;
+config param seed2: randType = 0x7fff;
 
-def indexMask(r: randType): randType {
-  if useLCG then
-    return r >> (64 - n);
-  else
-    return r & (m - 1);
-}
-
-def updateValues(myR: indexType, myS: indexType, factor: int(64)) {
-  const myRIdx = indexMask(myR);
-  const mySIdx = indexMask(myS);
+def updateValues(myR: indexType, myS: indexType, factor: int(64), mySLocale: locale) {
+  const myRIdx = indexMask(myR, n);
+  const mySIdx = indexMask(myS, n);
   const myRVal = myS * factor:uint(64);
   const mySVal = myR * factor:uint(64); 
 
@@ -52,7 +43,7 @@ def updateValues(myR: indexType, myS: indexType, factor: int(64)) {
 
     // Acquire mySIdx Lock, update mySIdx entry, and release lock   
     if useOn then
-      on TableDist.idxToLocale(mySIdx) {
+      on mySLocale {
 	const mySIdx1 = mySIdx;
 	const mySVal1 = mySVal;
 	local T$(mySIdx1) += mySVal1;
@@ -67,7 +58,7 @@ def updateValues(myR: indexType, myS: indexType, factor: int(64)) {
 
     // Acquire mySIdx Lock
     if useOn then 
-      on TableDist.idxToLocale(mySIdx) {
+      on mySLocale {
 	const mySIdx1 = mySIdx;
 	local T$(mySIdx1);
       }
@@ -79,7 +70,7 @@ def updateValues(myR: indexType, myS: indexType, factor: int(64)) {
 
     // Update mySIdx entry and release lock
     if useOn then 
-      on TableDist.idxToLocale(mySIdx) {
+      on mySLocale {
 	const mySIdx1 = mySIdx;
 	const mySVal1 = mySVal;
 	local T$(mySIdx1) = T$(mySIdx1).readXX() + mySVal1;
@@ -92,9 +83,9 @@ def updateValues(myR: indexType, myS: indexType, factor: int(64)) {
   }
 }
 
-def updateValuesNoSync(myR: indexType, myS: indexType) {
-  const myRIdx = indexMask(myR);
-  const mySIdx = indexMask(myS);
+def updateValuesNoSync(myR: indexType, myS: indexType, mySLocale: locale) {
+  const myRIdx = indexMask(myR, n);
+  const mySIdx = indexMask(myS, n);
   const myRVal = myS;
   const mySVal = myR;
 
@@ -104,14 +95,13 @@ def updateValuesNoSync(myR: indexType, myS: indexType) {
 
     // Update mySIdx entry   
     if useOn then
-      on TableDist.idxToLocale(mySIdx) {
+      on mySLocale {
 	const mySIdx1 = mySIdx;
 	const mySVal1 = mySVal;
 	local T$(mySIdx1).writeXF(T$(mySIdx1).readXX() + mySVal1);
       }
     else 
       T$(mySIdx).writeXF(T$(mySIdx).readXX() + mySVal);
-
   } else {
     local T$(myRIdx).writeXF(T$(myRIdx).readXX() + (2 * myRVal));
   }
@@ -124,15 +114,15 @@ def main() {
  
   const startTime = getCurrentTime();               // capture the start time
 
-  forall ( , r, s) in (Updates, RAStream(seed1, useLCG), RAStream(seed2, useLCG)) do
-    on TableDist.idxToLocale(indexMask(r)) { 
+  forall ( , r, s) in (Updates, RAStream(seed1), RAStream(seed2)) do
+    on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
+      const mySLocale = TableDist.idxToLocale(indexMask(myS, n));
       if safeUpdates then
-	updateValues(myR, myS, 1);
-      else {
-	updateValuesNoSync(myR, myS);
-      }
+	updateValues(myR, myS, 1, mySLocale);
+      else 
+	updateValuesNoSync(myR, myS, mySLocale);
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
@@ -147,6 +137,7 @@ def printConfiguration() {
     printProblemSize(elemType, 1, m);
     writeln("Atomic Update = ", safeUpdates);
     writeln("UseOn = ", useOn);
+    writeln("RNG = ", whichRNG());
     writeln("Number of updates = ", N_U, "\n");
   }
 }
@@ -154,20 +145,17 @@ def printConfiguration() {
 def verifyResults() {
   if (printArrays) then writeln("After updates, T is: ", T$, "\n");
 
-  if (trackStmStats) then startStmStats();
-
   var startTime = getCurrentTime();
 
-  forall ( , r, s) in (Updates, RAStream(seed1, useLCG), RAStream(seed2, useLCG)) do
-    on TableDist.idxToLocale(indexMask(r)) { 
+  forall ( , r, s) in (Updates, RAStream(seed1), RAStream(seed2)) do
+    on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
-      updateValues(myR, myS, -1);
+      const mySLocale = TableDist.idxToLocale(indexMask(myS, n));
+      updateValues(myR, myS, -1, mySLocale);
     }
 
   const verifyTime = getCurrentTime() - startTime; 
-  
-  if trackStmStats then stopStmStats();
 
   if (printArrays) then writeln("After verification, T is: ", T$, "\n");
 
