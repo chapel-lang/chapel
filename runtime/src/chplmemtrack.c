@@ -437,7 +437,7 @@ void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size,
       CHPL_SYNC_UNLOCK(&memTrack_sync);
     }
     if (chpl_verbose_mem)
-      fprintf(memLogFile, "%"PRId32": %s:%"PRId32": allocate %zuB of %s at %p\n", chpl_localeID, filename, lineno, number*size, chpl_memDescString(description), memAlloc);
+      fprintf(memLogFile, "%"PRId32": %s:%"PRId32": allocate %zuB of %s at %p\n", chpl_localeID, (filename ? filename : "--"), lineno, number*size, chpl_memDescString(description), memAlloc);
   }
 }
 
@@ -450,12 +450,12 @@ void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename) {
     memEntry = removeMemTableEntry(memAlloc);
     if (memEntry) {
       if (chpl_verbose_mem)
-        fprintf(memLogFile, "%"PRId32": %s:%"PRId32": free %zuB of %s at %p\n", chpl_localeID, filename, lineno, memEntry->number*memEntry->size, chpl_memDescString(memEntry->description), memAlloc);
+        fprintf(memLogFile, "%"PRId32": %s:%"PRId32": free %zuB of %s at %p\n", chpl_localeID, (filename ? filename : "--"), lineno, memEntry->number*memEntry->size, chpl_memDescString(memEntry->description), memAlloc);
       free(memEntry);
     }
     CHPL_SYNC_UNLOCK(&memTrack_sync);
   } else if (chpl_verbose_mem && !memEntry) {
-    fprintf(memLogFile, "%"PRId32": %s:%"PRId32": free at %p\n", chpl_localeID, filename, lineno, memAlloc);
+    fprintf(memLogFile, "%"PRId32": %s:%"PRId32": free at %p\n", chpl_localeID, (filename ? filename : "--"), lineno, memAlloc);
   }
 }
 
@@ -483,7 +483,7 @@ void chpl_track_realloc2(void* moreMemAlloc, size_t newChunk, void* memAlloc, si
       CHPL_SYNC_UNLOCK(&memTrack_sync);
     }
     if (chpl_verbose_mem)
-      fprintf(memLogFile, "%"PRId32": %s:%"PRId32": reallocate %zuB of %s at %p -> %p\n", chpl_localeID, filename, lineno, number*size, chpl_memDescString(description), memAlloc, moreMemAlloc);
+      fprintf(memLogFile, "%"PRId32": %s:%"PRId32": reallocate %zuB of %s at %p -> %p\n", chpl_localeID, (filename ? filename : "--"), lineno, number*size, chpl_memDescString(description), memAlloc, moreMemAlloc);
   }
 }
 
