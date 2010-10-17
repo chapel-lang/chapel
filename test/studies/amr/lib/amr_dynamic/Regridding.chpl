@@ -63,7 +63,7 @@ def regridLevel(
   }
   
   //==== Partition ====
-  grid_domains = partitionFlags(flags); // returns DomainSet
+  var grid_domains = partitionFlags(flags); // returns DomainSet
   
   //==== Ensure nesting ====
   for grid_above in levels(i-1).grids do

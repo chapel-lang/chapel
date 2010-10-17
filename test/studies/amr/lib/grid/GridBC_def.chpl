@@ -38,7 +38,7 @@ class PeriodicGridBC: GridBC {
 
   def apply_Homogeneous(q: GridArray) {
 
-    for ghost_domain in grid.ghost_domain_set {
+    for ghost_domain in grid.ghost_multidomain {
       var loc = grid.relativeLocation(ghost_domain);
       var shift: dimension*int;
 

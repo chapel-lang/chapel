@@ -1,4 +1,5 @@
 
+use LevelArray_def;
 use FineBoundaryArray_def;
 
 
@@ -159,37 +160,36 @@ def LevelArray.getFineValues_Linear(
 def FineBoundaryArray.getCoarseValues_Linear(
   q_coarse:  LevelArray)
 {
+  //==== Safety check ====
+  assert(q_coarse.level == cf_boundary.coarse_level);
 
   //==== Pull refinement ratio ====
   const ref_ratio = cf_boundary.ref_ratio;
 
   //==== Prepare ghost data of q_coarse ====
   q_coarse.extrapolateGhostData();
-  q_coarse.fillOverlapRegions();
+  q_coarse.fillOverlaps();
 
   //===> Interpolate on each fine grid ===>
-  for grid in cf_boundary.fine_level.grids {
+  for fine_grid in cf_boundary.fine_level.grids {
     
-    var arrays_to_fill = array_sets(fine_grid);
+    const multiarray     = multiarrays(fine_grid);
+    const coarse_overlap = cf_boundary.coarse_overlaps(fine_grid);
     
-    //--------------------------------------------------------------------
-    // At the moment, it seems like it's actually easier to compare every
-    // array's domain to coarse_nbr.cells, rather than trying to use the
-    // DomainSet of sharply-defined overlap data.
-    //--------------------------------------------------------------------
-    for coarse_nbr in cf_boundary.coarse_overlaps(grid).neighbors {
+    for (nbr, multidomain, subrange) in coarse_overlap {
+      
+      var i_nbr = 0;
+      for i in subrange {
+        const array = multiarray.arrays(i);
 
-      var refined_coarse_cells = refine(coarse_nbr.cells,ref_ratio);
-
-      //===> If array's domain overlaps coarse_nbr, then interpolate ===>
-      for array in arrays_to_fill {
-        var overlap = array.dom( refined_coarse_cells );
+        //==== Safety check; potentially fragile iteration ====
+        i_nbr += 1;
+        assert(array.Domain == multidomain.domains(i_nbr));
         
-        if overlap.numIndices>0 then
-          array.value(overlap) =
-              q_coarse(coarse_nbr).refine_Linear(overlap,ref_ratio);
+        //==== Interpolate ====
+        array.value = q_coarse(nbr).refine_Linear(array.Domain,ref_ratio);
       }
-      //<=== If array's domain overlaps coarse_nbr, then interpolate <===
+
     }
     
   }

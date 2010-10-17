@@ -9,7 +9,7 @@ class FineBoundaryArray {
   
   const cf_boundary: CFBoundary;
   
-  var array_sets: [cf_boundary.fine_level.grids] ArraySet(dimension,true,real);
+  var multiarrays: [cf_boundary.fine_level.grids] MultiArray(dimension,true,real);
   
   
   //|\''''''''''''''''''''''''''''|\
@@ -21,14 +21,8 @@ class FineBoundaryArray {
   //-------------------------------------------------
   def initialize() {
     for grid in cf_boundary.fine_level.grids {
-      var overlap_domains = new DomainSet(dimension,stridable=true);
-      
-      for (coarse_nbr, overlap_set) in CFBoundary.fine_overlap_data(fine_grid) {
-        overlap_domains.add(overlap_set);
-      }
-
-      array_sets(grid).allocate( overlap_domains );
-      
+      multiarrays(grid) = new MultiArray(dimension,true,real);
+      multiarrays(grid).allocate( cf_boundary.coarse_overlaps(grid).full_multidomain );
     }
   }
   // /|''''''''''''''''''''''''''''/|
@@ -43,7 +37,7 @@ class FineBoundaryArray {
   // Return the ArraySet corresponding to a single Grid.
   //-----------------------------------------------------
   def this(grid: Grid) {
-    return array_sets(grid);
+    return multiarrays(grid);
   }
   // /|''''''''''''''''''''/|
   //< |    this method    < |

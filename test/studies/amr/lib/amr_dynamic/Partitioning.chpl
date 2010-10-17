@@ -1,50 +1,46 @@
-use DomainSet_def;
-use ArraySet_def;
-use EnhancedArithmetic;
-use Stack_def;
 
-param dimension: int = 2;
-const dimensions = [1..dimension];
+use MultiDomain_def;
 
-    
-    
+
+
 //|\""""""""""""""""""""""""""""""|\
 //| >    partitionFlags routine   | >
 //|/______________________________|/
-//-------------------------------------------------------
-// Returns a DomainSet that partitions the boolean array
+//---------------------------------------------------------
+// Returns a MultiDomain that partitions the boolean array
 // 'flags' with the target efficiency, if possible.
-//-------------------------------------------------------
+//---------------------------------------------------------
 def partitionFlags(
-  flags:             [] bool, 
+  flags:             [?full_domain] bool, 
   target_efficiency: real,
-  min_width:         dimension*int)
+  min_width:         full_domain.rank*int)
 {
+  param rank = full_domain.rank;
 
   //==== Create stack of unprocessed domains ====
-  var unprocessed_domain_stack = new Stack(domain(dimension,stridable=true));
-  unprocessed_domain_stack.push(flags.domain);
+  var unprocessed_domain_stack = new Stack(domain(rank,stridable=true));
+  unprocessed_domain_stack.push(full_domain);
   
-  //==== DomainSet for finished domains ====
-  var finished_domains = new DomainSet(dimension, stridable=true);
+  //==== MultiDomain for finished domains ====
+  var finished_mDomain = new MultiDomain(rank, stridable=true);
   
   
   while unprocessed_domain_stack.isEmpty()==false {
     //==== Pop top domain ====
     var D = unprocessed_domain_stack.pop();
-    var candidate = new CandidateDomain(D,flags,min_width);
+    var candidate = new CandidateDomain(rank,D,flags(D),min_width);
     
     //===> If candidate is inefficient, then split ===>
     if candidate.efficiency() < target_efficiency {
       //==== Generate new domains ====
-      var D1, D2: domain(dimension,stridable=true);
+      var D1, D2: domain(rank,stridable=true);
       (D1,D2) = candidate.split();
       
       //==== If D2 is empty, split was unsuccessful ====
       if D2.numIndices==0 {
         writeln("Warning: FlaggedDomain.partition\n" +
                 "  Could not meet target efficiency on domain ", candidate.D, ".");
-        finished_domains.add(candidate.D);
+        finished_mDomain.add(candidate.D);
       }
       //==== Otherwise, push new candidates to stack ====
       else {
@@ -55,14 +51,14 @@ def partitionFlags(
     //<=== If candidate is inefficient, then split <===
     //==== Otherwise, add to domain_set of finished domains ====
     else
-      finished_domains.add(candidate.D);
+      finished_mDomain.add(candidate.D);
     
     //==== Clean up ====
     candidate.clear();
     delete candidate;
   }
   
-  return finished_domains;
+  return finished_mDomain;
 }
 // /|"""""""""""""""""""""""""""""""/|
 //< |    partitionFlags routine    < |
@@ -74,28 +70,27 @@ def partitionFlags(
 //| >    CandidateDomain class    | >
 //|/______________________________|/
 class CandidateDomain {
-  var D: domain(dimension,stridable=true);
-  var min_width: dimension*int;
-  var signatures: dimension*IndependentArray(1,true,int);
+  param rank:       int;
+  const D:          domain(rank,stridable=true);
+  const flags:      [D] bool;
+  const min_width:  rank*int;
+  var   signatures: rank*IndependentArray(1,true,int);
   
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def CandidateDomain(
-    D:         domain(dimension, stridable=true),
-    flags:     [] bool,
-    min_width: dimension*int)
-  {
-    this.D         = D;
-    this.min_width = min_width;
-
+  //------------------------------------------------------------------
+  // Currently forced to use initialize rather than a constructor, as
+  // this class is generic.
+  //------------------------------------------------------------------
+  def initialize() {
     //===> Calculate signatures ===>
-    for d in dimensions do
+    for d in 1..rank do
       signatures(d) = new IndependentArray(1,true,int,[D.dim(d)]);
       
     for idx in D {
       if flags(idx) then
-        for d in dimensions do
+        for d in 1..rank do
           signatures(d).value(idx(d)) += 1;
     }
     //<=== Calculate signatures <===
@@ -123,10 +118,7 @@ class CandidateDomain {
   //|\''''''''''''''|\
   //| >    clear    | >
   //|/..............|/
-  def clear() {
-    for d in dimensions do
-      delete signatures(d);
-  }
+  def clear() { for i in 1..rank do delete signatures(i); }
   // /|''''''''''''''/|
   //< |    clear    < |
   // \|..............\|
@@ -141,10 +133,10 @@ class CandidateDomain {
 def CandidateDomain.trim()
 {    
   //===> Find bounds of trimmed domain ===>
-  var trimmed_ranges:      dimension*range(stridable=true);
+  var trimmed_ranges:      rank*range(stridable=true);
   var trim_low, trim_high: int;
   
-  for d in dimensions {
+  for d in 1..rank {
     //==== Low bound ====
     for i in D.dim(d) do
       if signatures(d).value(i)>0 {
@@ -189,8 +181,8 @@ def CandidateDomain.trim()
   D = trimmed_ranges;
   
   //==== Resize signatures ====
-  for d in dimensions do
-    signatures(d).dom = [D.dim(d)];
+  for d in 1..rank do
+    signatures(d).Domain = [D.dim(d)];
 }
 // /|"""""""""""""""""""""""""""""/|
 //< |    CandidateDomain.trim    < |
@@ -207,7 +199,7 @@ def CandidateDomain.trim()
 def CandidateDomain.split()
 {
   
-  var D1, D2: domain(dimension, stridable=true);
+  var D1, D2: domain(rank, stridable=true);
   
   (D1,D2) = removeHole();
   
@@ -230,19 +222,22 @@ def CandidateDomain.split()
 def CandidateDomain.removeHole()
 {
 
-  var D1, D2: domain(dimension, stridable=true);
+  var D1, D2: domain(rank, stridable=true);
   D1 = D;
 
-  var ranges: dimension*range(stridable=true);
-  var hole_low, hole_high: int;
-  var low_active, high_active: bool;
-  var hole, max_hole: domain(dimension, stridable=true);
+  var ranges:      rank*range(stridable=true);
+  var hole_low:    int;
+  var hole_high:   int;
+  var low_active:  bool;
+  var high_active: bool;
+  var hole:        domain(rank,stridable=true);
+  var max_hole:    domain(rank, stridable=true);
 
 
   //===> Create stack of holes ===>
-  for d in dimensions {
+  for d in 1..rank {
     //==== ranges = D ====
-    for d2 in dimensions do ranges(d2) = D.dim(d2);
+    for d2 in 1..rank do ranges(d2) = D.dim(d2);
   
     low_active  = false;
     high_active = false;
@@ -286,11 +281,11 @@ def CandidateDomain.removeHole()
 
   
   if max_hole.numIndices > 0 {
-    var Dset = D - max_hole;
-    assert(Dset.indices.numIndices == 2);
-    D1 = Dset.domains(1);
-    D2 = Dset.domains(2);
-    delete Dset;
+    var mD = D - max_hole; // Returns MultiDomain
+    assert(mD.domains.numElements == 2);
+    D1 = mD.domains(1);
+    D2 = mD.domains(2);
+    delete mD;
   }
   //<=== Split by removing largest hole <===
 
@@ -310,9 +305,9 @@ def CandidateDomain.removeHole()
 def CandidateDomain.inflectionCut()
 {
 
-  var ranges: dimension*range(stridable=true);
+  var ranges: rank*range(stridable=true);
 
-  var D1, D2: domain(dimension, stridable=true);
+  var D1, D2: domain(rank, stridable=true);
   D1 = D;
 
   var magnitude: int;
@@ -321,7 +316,7 @@ def CandidateDomain.inflectionCut()
 
 
   //===> Generate stack of possible cuts ===>
-  for d in dimensions {
+  for d in 1..rank {
     //==== Must be at least 4 cells wide for an inflection cut ====
     if D.dim(d).length >= 4 {
 
@@ -364,7 +359,7 @@ def CandidateDomain.inflectionCut()
   if cut_magnitude > 0 {
 
     //===> Apply cut ===>
-    for d in dimensions do ranges(d) = D.dim(d);
+    for d in 1..rank do ranges(d) = D.dim(d);
 
     var stride = D.stride(cut_dimension);
     ranges(cut_dimension) = D.low(cut_dimension) .. D1_high by stride;
@@ -386,21 +381,31 @@ def CandidateDomain.inflectionCut()
 
 
 
+//|\"""""""""""""""""""""""""""|\
+//| >    writeFlags routine    | >
+//|/___________________________|/
+//--------------------------------------------------------
+// For testing purposes.  Writes a boolean array of flags
+// in a more readable form (0s and 1s).
+//--------------------------------------------------------
+def writeFlags(flags: [?D] bool) 
+{
+  var I: [D] int;
+  for (i,flag) in (I,flags) do
+    if flag then i=1;
+    
+  writeln("On domain ", flags.domain, ":");
+  writeln(I);
+}
+// /|"""""""""""""""""""""""""""/|
+//< |    writeFlags routine    < |
+// \|___________________________\|
 
 
 
 
 def main {
 
-  def writeFlags(flags: [] bool) 
-  {
-    var I: [flags.domain] int;
-    for (i,flag) in (I,flags) do
-      if flag then i=1;
-      
-    writeln("On domain ", flags.domain, ":");
-    writeln(I);
-  }
 
  
   //===> Initialize array of flags ===>

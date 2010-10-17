@@ -8,12 +8,22 @@ use Level_def;
 def refinementRatio(coarse_object, fine_object)
   where (coarse_object.type == Grid || coarse_object.type == Level)
      && (fine_object.type == Grid || fine_object.type == Level)
+     && (coarse_object.type == Grid || fine_object.type == Grid)
 {
   var ref_ratio: dimension*int;
   
   for d in dimensions do
     ref_ratio(d) = round(coarse_object.dx(d) / fine_object.dx(d)): int;
+    
+  return ref_ratio;
 }
+
+def refinementRatio(coarse_level: Level, fine_level: Level)
+{
+  const ref_ratio = fine_level.n_cells / coarse_level.n_cells;
+  return ref_ratio;
+}
+
 // /|"""""""""""""""""""""""""""""""""/|
 //< |    refinementRatio routines    < |
 // \|_________________________________\|
@@ -58,7 +68,7 @@ def refine(
   for d in dimensions do
     ranges(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
 
-  var fine_cells: subdomain(fine_level.cells) = ranges;
+  var fine_cells: domain(dimension,stridable=true) = ranges;
   return fine_cells;
 
 }
@@ -78,8 +88,8 @@ def refine(
   // Recall that "refine" returns a domain of fine cells, rather than
   // a single cell.
   //------------------------------------------------------------------
-  var fine_cells_low  = refine(coarse_cells.low).low;
-  var fine_cells_high = refine(coarse_cells.high).high;
+  var fine_cells_low  = refine(coarse_cells.low, ref_ratio).low;
+  var fine_cells_high = refine(coarse_cells.high, ref_ratio).high;
 
 
   //==== Set and return new domain ====
@@ -133,8 +143,8 @@ def coarsen(
 {
  
   //=== Index bounds for coarsened domain ====
-  var low_coarse  = coarsen(fine_cells.low);
-  var high_coarse = coarsen(fine_cells.high);
+  var low_coarse  = coarsen(fine_cells.low, ref_ratio);
+  var high_coarse = coarsen(fine_cells.high, ref_ratio);
   
 
   //==== Set and return new domain ====
@@ -143,7 +153,7 @@ def coarsen(
     ranges(d) = low_coarse(d) .. high_coarse(d) by 2;
 
 
-  var coarse_cells: subdomain(coarse_level.cells) = ranges;
+  var coarse_cells: domain(dimension,stridable=true) = ranges;
   return coarse_cells;
   
 }
@@ -162,32 +172,3 @@ def coarsen(
 
 
 
-//|\"""""""""""""""""""""""""""""""""""""|\
-//| >    extrapolateGhostData methods    | >
-//|/_____________________________________|/
-//-----------------------------------------------------------------
-// Fills the first layer of ghost cells with linearly extrapolated
-// data from the interior.
-//-----------------------------------------------------------------
-def LevelArray.extrapolateGhostData() {
-  
-  for grid_array in grid_arrays do
-    grid_array.extrapolateGhostData();
-
-}
-
-
-def GridArray.extrapolateGhostData() {
-
-  for ghost_domain in grid.ghost_domain_set {
-    var loc = grid.relativeLocation(ghost_domain);
-    var shift = -1*loc;
-
-    forall cell in ghost_domain do
-      value(cell) = 2.0*value(cell+shift) - value(cell+2*shift);
-  }
-
-}
-// /|"""""""""""""""""""""""""""""""""""""/|
-//< |    extrapolateGhostData methods    < |
-// \|_____________________________________\|

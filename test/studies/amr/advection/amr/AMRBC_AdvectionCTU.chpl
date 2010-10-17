@@ -19,7 +19,7 @@ class ZeroInflowBC: AMRBC {
 
 /*     for grid in hierarchy.boundary(q.level).grids { */
 /*       for loc in ghost_locations do */
-/*         q(grid,grid.ghost_domain_set(loc)) = 0.0; */
+/*         q(grid,grid.ghost_multidomain(loc)) = 0.0; */
 /*     } */
 
   }

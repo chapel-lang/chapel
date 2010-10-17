@@ -127,18 +127,18 @@ def LevelArray.setToFunction(
 
 
 //|\""""""""""""""""""""""""""""""""""""""|\
-//| >    LevelArray.fillOverlapRegions    | >
+//| >    LevelArray.fillOverlaps    | >
 //|/______________________________________|/
-def LevelArray.fillOverlapRegions() {
+def LevelArray.fillOverlaps() {
   
   for grid in level.grids {
-    for (nbr, overlap) in level.overlap_data(grid) do
+    for (nbr, overlap) in level.sibling_overlaps(grid) do
       this(grid,overlap) = this(nbr,overlap);
   }
   
 }
 // /|""""""""""""""""""""""""""""""""""""""/|
-//< |    LevelArray.fillOverlapRegions    < |
+//< |    LevelArray.fillOverlaps    < |
 // \|______________________________________\|
 
 
@@ -213,3 +213,36 @@ def LevelArray.write(
 // \|_________________________\|
 
 
+
+
+
+
+//|\"""""""""""""""""""""""""""""""""""""|\
+//| >    extrapolateGhostData methods    | >
+//|/_____________________________________|/
+//-----------------------------------------------------------------
+// Fills the first layer of ghost cells with linearly extrapolated
+// data from the interior.
+//-----------------------------------------------------------------
+def LevelArray.extrapolateGhostData() {
+  
+  for grid_array in grid_arrays do
+    grid_array.extrapolateGhostData();
+
+}
+
+
+def GridArray.extrapolateGhostData() {
+
+  for ghost_domain in grid.ghost_multidomain {
+    var loc = grid.relativeLocation(ghost_domain);
+    var shift = -1*loc;
+
+    forall cell in ghost_domain do
+      value(cell) = 2.0*value(cell+shift) - value(cell+2*shift);
+  }
+
+}
+// /|"""""""""""""""""""""""""""""""""""""/|
+//< |    extrapolateGhostData methods    < |
+// \|_____________________________________\|

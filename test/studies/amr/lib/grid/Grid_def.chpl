@@ -10,9 +10,8 @@
 //
 //<=== Description <===
 
-use EnhancedArithmetic;
-use DomainSet_def;
-use ArraySet_def;
+use LanguageExtensions;
+use MultiDomain_def;
 
 
 config param dimension = 2;
@@ -45,7 +44,7 @@ class Grid {
   const ext_cells: domain(dimension, stridable=true);
   const cells:     subdomain(ext_cells);
   
-  const ghost_domain_set: DomainSet(dimension, stridable=true);
+  const ghost_multidomain: MultiDomain(dimension, stridable=true);
 
 
   //|\''''''''''''''''''''|\
@@ -87,7 +86,7 @@ class Grid {
     ext_cells = cells.expand(size);
 
     //==== Ghost cells ====
-    ghost_domain_set = new DomainSet(dimension, stridable=true);
+    ghost_multidomain = new MultiDomain(dimension, stridable=true);
 
     var inner_location: dimension*int;
     for d in dimensions do interior_location(d) = loc1d.inner;
@@ -97,7 +96,7 @@ class Grid {
       if loc != inner_location {
         for d in dimensions do ranges(d) = ghostRange(d,loc(d));
         ghost_domain = ranges;
-        ghost_domain_set.add(ghost_domain);
+        ghost_multidomain.add(ghost_domain);
       }
     }
 
@@ -307,31 +306,6 @@ def setOutputTimes(file_name: string) {
 // *------------------------------|
 //<=== setOutputTimes routine <===|
 // *------------------------------|
-
-
-
-
-
-
-
-//|------------------------>
-//|===> tuplify routine ===>
-//|------------------------>
-//-----------------------------------------------------------
-// This is used to fix the "1D problem", in that indices of
-// a one-dimensional domain are of type int, whereas for all
-// other dimensions, they're dimension*int.
-//-----------------------------------------------------------
-def tuplify(idx) {
-  if isTuple(idx) then return idx;
-  else return tuple(idx);
-}
-//<------------------------|
-//<=== tuplify routine <===|
-//<------------------------|
-
-
-
 
 
 

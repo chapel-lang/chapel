@@ -25,8 +25,9 @@ class Level {
 
 
   //==== Child grid info ====
-  var grids:        domain(Grid);
-  var overlap_data: [grids] OverlapWithSiblings;
+  var grids:            domain(Grid);
+  var sibling_overlaps: [grids] SiblingOverlap;
+  var boundary: [grids] MultiDomain(dimension,stridable=true);
 
 
 
@@ -110,9 +111,9 @@ class Level {
 
 
 
-//|\"""""""""""""""""""""""""""""|\
-//| >    Level.addGrid method    | >
-//|/_____________________________|/
+//|\""""""""""""""""""""""""""""""|\
+//| >    Level.addGrid methods    | >
+//|/______________________________|/
 //--------------------------------------------------------
 // This version is based on indices, and probably best to
 // use in practice, as integer arithmetic is cleaner than
@@ -126,7 +127,6 @@ def Level.addGrid(
   //==== Safety check ====  
   assert(is_complete == false,
 	 "Attempted to add grid to a completed level.");
-
 
   //==== Derive grid fields from index bounds and parent (this) info ====
   var x_low_grid, x_high_grid: dimension*real;
@@ -150,6 +150,16 @@ def Level.addGrid(
 }
 
 
+//---------------------------------------------------
+// This version takes the full domain of grid cells.
+//---------------------------------------------------
+def Level.addGrid(
+  grid_cells: domain(dimension,stridable=true))
+{
+  addGrid(grid_cells.low-1, grid_cells.high+1);
+}
+
+
 //----------------------------------------------------------
 // This version takes in real bounds, and snaps them to the
 // level's discretization.
@@ -165,9 +175,9 @@ def Level.addGrid(
   addGrid(i_low_grid, i_high_grid);
 
 }
-// /|"""""""""""""""""""""""""""""/|
-//< |    Level.addGrid method    < |
-// \|_____________________________\|
+// /|""""""""""""""""""""""""""""""/|
+//< |    Level.addGrid methods    < |
+// \|______________________________\|
 
 
 
@@ -187,9 +197,15 @@ def Level.complete() {
   assert(is_complete == false,
 	 "Attempted to complete a completed level.");
 
-  //==== Set overlap data ====
-  for grid in grids do
-    overlap_data(grid) = new OverlapWithSiblings(grid,this);
+  //==== Set overlap and boundary data ====
+  for grid in grids {
+    sibling_overlaps(grid) = new SiblingOverlap(this,grid);
+    
+    boundary(grid) = new MultiDomain(dimension,stridable=true);
+    boundary(grid).add(grid.ghost_multidomain);
+    for overlap_domain in sibling_overlaps(grid).domains do
+      boundary(grid).subtract(overlap_domain);
+  }
 
   //==== Finish ====
   is_complete = true;
@@ -202,32 +218,32 @@ def Level.complete() {
 
 
 
-//|\""""""""""""""""""""""""""""""""""|\
-//| >    OverlapWithSiblings class    | >
-//|/__________________________________|/
+//|\"""""""""""""""""""""""""""""|\
+//| >    SiglingOverlap class    | >
+//|/_____________________________|/
 //----------------------------------------------------------------------
-// Describes the overlap of a Grid with its siblings on the Level.
+// Describes the overlap of a Grid with its siblings on a Level.
 // Each overlap is the Grid's ghost cells, overlapped with a neighbor's
 // interior cells.  However, the intersection will always be a single
 // rectangle, and therefore each overlap may be described by a domain.
 //----------------------------------------------------------------------
-class OverlapWithSiblings {
-  var   neighbors:       domain(Grid);
-  var   overlap_domains: [neighbors] domain(dimension,stridable=true);
+class SiblingOverlap {
+  const neighbors: domain(Grid);
+  const domains:   [neighbors] domain(dimension,stridable=true);
   
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def OverlapWithSiblings(
-    grid:  Grid, 
-    level: Level)
+  def SiblingOverlap(
+    level: Level,
+    grid:  Grid)
   {
-    for sib in level.grids {
-      if sib != grid {
-        var overlap = grid.ext_cells( sib.cells );
+    for sibling in level.grids {
+      if sibling != grid {
+        var overlap = grid.ext_cells( sibling.cells );
         if overlap.numIndices>0 {
-          neighbors.add(sib);
-          overlap_domains(sib) = overlap;
+          neighbors.add(sibling);
+          domains(sibling) = overlap;
         }
       }      
     }
@@ -242,16 +258,16 @@ class OverlapWithSiblings {
   //|/.........................|/
   def these() {
     for nbr in neighbors do
-      yield (nbr, overlap_domains(nbr));
+      yield (nbr, domains(nbr));
   }
   // /|'''''''''''''''''''''''''/|
   //< |    these() iterator    < |
   // \|.........................\|
   
 }
-// /|""""""""""""""""""""""""""""""""""/|
-//< |    OverlapWithSiblings class    < |
-// \|__________________________________\|
+// /|"""""""""""""""""""""""""""""/|
+//< |    SiblingOverlap class    < |
+// \|_____________________________\|
 
 
 

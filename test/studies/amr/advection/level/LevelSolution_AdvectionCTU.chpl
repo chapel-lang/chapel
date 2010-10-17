@@ -64,7 +64,7 @@ def LevelSolution.step_AdvectionCTU(
 {
 
   //==== Fill shared ghost cells ====
-  current_data.fillOverlapRegions();
+  current_data.fillOverlaps();
   
   //==== Update old storage with new data ====
   old_data.storeCTUOperator(current_data, velocity, dt);

@@ -1,5 +1,6 @@
 
 use CFDataTransfer;
+use LevelSolution_def;
 
 
 //|\"""""""""""""""""""""""""""""""""""|\
@@ -9,8 +10,8 @@ class FineBoundarySolution {
   
   const cf_boundary:     CFBoundary;
     
-  var old_data:     CFBoundaryArray;
-  var current_data: CFBoundaryArray;
+  var old_data:     FineBoundaryArray;
+  var current_data: FineBoundaryArray;
   var old_time:     real;
   var current_time: real;
   
@@ -83,37 +84,35 @@ def LevelArray.getFineBoundaryValues(
   time:                   real)
 {
   //==== Pull times from fine_boundary_solution ====
-  const old_time = fine_boundary_solution.old_time;
-  const current_time = fine_boundary_solution.current_time;
+  const t1 = fine_boundary_solution.old_time;
+  const t2 = fine_boundary_solution.current_time;
   
   //==== Safety check the level ====
   assert(this.level == fine_boundary_solution.cf_boundary.fine_level);
 
   //==== Safety check the requested time ====
-  assert(time > old_time - 1.0E-8 
-      && time < current_time + 1.0E-8,
+  assert(time > t1 - 1.0E-8  &&  time < t2 + 1.0E-8,
 	 "Warning: LevelArray.getFineBoundaryValues\n" +
-	 "Requesting fine data at time " + format("%8.4E",t) + "\n" +
-	 "fine_boundary_solution.old_time =     " + format("%8.4E", old_time) + "\n" +
-	 "fine_boundary_solution.current_time = " + format("%8.4E", current_time));
+	 "Requesting fine data at time " + format("%8.4E",time) + "\n" +
+	 "fine_boundary_solution.old_time =     " + format("%8.4E", t1) + "\n" +
+	 "fine_boundary_solution.current_time = " + format("%8.4E", t2));
 
   //==== Interpolation parameters ====
-  const a2 = (time - old_time) / (current_time - old_time);
-  const a1 = 1 - a2;
+  const c2 = (time - t1) / (t2 - t1);
+  const c1 = 1 - c2;
 
   
   //===> Fill boundary one grid at a time ===>
   for grid in this.level.grids {
 
     //==== Handle one block of data at a time ====
-    for (old_array, curent_array) in fine_boundary_solution(grid)
+    for (array1, array2) in fine_boundary_solution(grid)
     {
-      //==== Safety check; this iteration seems slightly fragile ====
-      assert(old_array.dom == current_array.dom);
+      //==== Safety check; this iteration seems a bit fragile ====
+      assert(array1.Domain == array2.Domain);
 
       //==== Interpolate ====
-      q.value(old_array.dom) = a1 * old_array.value 
-                              + a2 * current_array.value;
+      value(array1.Domain) = c1 * array1.value + c2 * array2.value;
     }
   }
   //<=== Fill boundary one grid at a time <===
@@ -130,7 +129,7 @@ def LevelArray.getFineBoundaryValues(
 //| >    LevelSolution.correct_Linear    | >
 //|/_____________________________________|/
 def LevelSolution.correct(
-  fine_solution: LevelSolution
+  fine_solution: LevelSolution,
   cf_boundary:   CFBoundary)
 {
   //==== Safety check ====

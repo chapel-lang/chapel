@@ -20,7 +20,7 @@ def LevelGhostArraySet.interpolateFromCoarse_Linear(
 
   //==== Prepare ghost data of q_coarse ====
   q_coarse.extrapolateGhostData();
-  q_coarse.fillOverlapRegions();
+  q_coarse.fillOverlaps();
 
   //==== Interpolate on each fine grid ====
   for grid in level.grids do
@@ -154,7 +154,7 @@ def LevelArray.extrapolateGhostData() {
 
 def GridArray.extrapolateGhostData() {
 
-  for ghost_domain in grid.ghost_domain_set {
+  for ghost_domain in grid.ghost_multidomain {
     var loc = grid.relativeLocation(ghost_domain);
     var shift = -1*loc;
 
