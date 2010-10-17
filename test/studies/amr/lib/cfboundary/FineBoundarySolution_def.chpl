@@ -37,7 +37,7 @@ class FineBoundarySolution {
   //------------------------------------------------------------
   // Iterate over the ArraySets corresponding to a single Grid.
   //------------------------------------------------------------
-  def these(grid: Grid) {
+  def array_pairs(grid: Grid) {
     for (old_array,current_array) in (old_data(grid),current_data(grid)) do
       yield (old_array,current_array);
   }
@@ -106,13 +106,13 @@ def LevelArray.getFineBoundaryValues(
   for grid in this.level.grids {
 
     //==== Handle one block of data at a time ====
-    for (array1, array2) in fine_boundary_solution(grid)
+    for (array1, array2) in fine_boundary_solution.array_pairs(grid)
     {
       //==== Safety check; this iteration seems a bit fragile ====
       assert(array1.Domain == array2.Domain);
 
       //==== Interpolate ====
-      value(array1.Domain) = c1 * array1.value + c2 * array2.value;
+      this(grid).value(array1.Domain) = c1 * array1.value + c2 * array2.value;
     }
   }
   //<=== Fill boundary one grid at a time <===
@@ -125,24 +125,7 @@ def LevelArray.getFineBoundaryValues(
 
 
 
-//|\"""""""""""""""""""""""""""""""""""""|\
-//| >    LevelSolution.correct_Linear    | >
-//|/_____________________________________|/
-def LevelSolution.correct(
-  fine_solution: LevelSolution,
-  cf_boundary:   CFBoundary)
-{
-  //==== Safety check ====
-  assert(this.level == cf_boundary.coarse_level);
-  assert(fine_solution.level == cf_boundary.fine_level);
-  assert( abs(this.current_time - fine_solution.current_time) < 1.0e-8);
-  
-  //==== Correct ====
-  current_data.getFineValues_Linear(fine_solution.current_data, cf_boundary);
-}
-// /|"""""""""""""""""""""""""""""""""""""/|
-//< |    LevelSolution.correct_Linear    < |
-// \|_____________________________________\|
+
 
 
 

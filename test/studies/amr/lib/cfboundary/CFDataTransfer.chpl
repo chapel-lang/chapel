@@ -1,5 +1,5 @@
 
-use LevelArray_def;
+use LevelSolution_def;
 use FineBoundaryArray_def;
 
 
@@ -199,3 +199,27 @@ def FineBoundaryArray.getCoarseValues_Linear(
 // /|"""""""""""""""""""""""""""""""""""""""""""""""""/|
 //< |    FineBoundaryArray.getCoarseValues_Linear    < |
 // \|_________________________________________________\|
+
+
+
+
+
+
+//|\"""""""""""""""""""""""""""""""""""""|\
+//| >    LevelSolution.correct_Linear    | >
+//|/_____________________________________|/
+def LevelSolution.correct_Linear(
+  fine_solution: LevelSolution,
+  cf_boundary:   CFBoundary)
+{
+  //==== Safety check ====
+  assert(this.level == cf_boundary.coarse_level);
+  assert(fine_solution.level == cf_boundary.fine_level);
+  assert( abs(this.current_time - fine_solution.current_time) < 1.0e-8);
+  
+  //==== Correct ====
+  current_data.getFineValues_Linear(fine_solution.current_data, cf_boundary);
+}
+// /|"""""""""""""""""""""""""""""""""""""/|
+//< |    LevelSolution.correct_Linear    < |
+// \|_____________________________________\|

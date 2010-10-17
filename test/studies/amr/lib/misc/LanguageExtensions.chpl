@@ -125,6 +125,16 @@ def /(T,a)
     U(i) = T(i)/a;
   return U;;
 }
+
+def abs(T)
+  where isTuple(T) && isHomogeneousTuple(T) 
+    && (T(1).type==int || T(1).type==real)
+{
+  var U: T.type;
+  for i in 1..T.size do
+    U(i) = abs(T(i));
+  return U;
+}
 // /|""""""""""""""""""""""""""""""""/|
 //< |    Scalar/tuple arithmetic    < |
 // \|________________________________\|

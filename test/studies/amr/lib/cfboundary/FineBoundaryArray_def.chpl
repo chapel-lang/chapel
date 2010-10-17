@@ -33,9 +33,9 @@ class FineBoundaryArray {
   //|\''''''''''''''''''''|\
   //| >    this method    | >
   //|/....................|/
-  //-----------------------------------------------------
-  // Return the ArraySet corresponding to a single Grid.
-  //-----------------------------------------------------
+  //-------------------------------------------------------
+  // Return the MultiArray corresponding to a single Grid.
+  //-------------------------------------------------------
   def this(grid: Grid) {
     return multiarrays(grid);
   }

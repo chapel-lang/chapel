@@ -118,6 +118,18 @@ class PhysicalBoundary {
   //< |    constructor    < |
   // \|....................\|
   
+  
+  //|\'''''''''''''''''''''''|\
+  //| >    these iterator    | >
+  //|/.......................|/
+  def these() {
+    for grid in grids do
+      yield (grid, multidomains(grid));
+  }
+  // /|'''''''''''''''''''''''/|
+  //< |    these iterator    < |
+  // \|.......................\|
+  
 }
 // /|"""""""""""""""""""""""""""""""/|
 //< |    PhysicalBoundary class    < |

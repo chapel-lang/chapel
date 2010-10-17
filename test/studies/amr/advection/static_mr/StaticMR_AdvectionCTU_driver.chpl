@@ -1,5 +1,5 @@
-use AMRSolution_AdvectionCTU;
-use AMRBC_AdvectionCTU;
+use StaticMRSolution_AdvectionCTU;
+use StaticMRBC_AdvectionCTU;
 
 
 
@@ -24,7 +24,7 @@ def main {
     return f;
   }
 
-  var solution = new AMRSolution(hierarchy = hierarchy);
+  var solution = new StaticMRSolution(hierarchy = hierarchy);
   solution.setToFunction(initial_condition, output_times(0));
   write("done.\n");
   //<=== Initialize  solution <===
