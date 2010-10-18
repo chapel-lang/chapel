@@ -436,13 +436,25 @@ def range.these(param tag: iterator) where tag == iterator.leader {
 
   if debugChapelRange then
     writeln("*** RI: Using ", numChunks, " chunk(s)");
-  if numChunks == 1 {
-    yield tuple(0..v-1);
+  if (CHPL_TARGET_PLATFORM != "xmt") {
+    if numChunks == 1 {
+      yield tuple(0..v-1);
+    } else {
+      coforall chunk in 0..numChunks-1 {
+        const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
+        if debugChapelRange then
+          writeln("*** RI: tuple = ", tuple(lo..hi));
+        yield tuple(lo..hi);
+      }
+    }
   } else {
-    coforall chunk in 0..numChunks-1 {
-      const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
-      if debugChapelRange then
-        writeln("*** RI: tuple = ", tuple(lo..hi));
+
+    var per_stream_i: uint(64) = 0;
+    var total_streams_n: uint(64) = 0;
+
+    __primitive_loop("xmt pragma forall i in n", per_stream_i,
+                     total_streams_n) {
+      const (lo,hi) = _computeBlock(v, total_streams_n, per_stream_i, v-1);
       yield tuple(lo..hi);
     }
   }
@@ -461,12 +473,16 @@ def range.these(param tag: iterator, follower) where tag == iterator.follower {
         low+followThis.low*stride:idxType..low+followThis.high*stride:idxType by stride by followThis.stride
       else
         high+followThis.high*stride:idxType..high+followThis.low*stride:idxType by stride by followThis.stride;
-    for i in r do
+    for i in r {
+      __primitive("noalias pragma");
       yield i;
+    }
   } else {
     var r = low+followThis;
-    for i in r do
+    for i in r {
+      __primitive("noalias pragma");
       yield i;
+    }
   }
 }
 
