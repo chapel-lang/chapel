@@ -1,0 +1,9 @@
+==================================
+Chapel Developer Utility Directory
+==================================
+
+This directory contains utility scripts that are useful mostly to developers.
+For example:
+
+  receive_patch    : two scripts useful for moving patches between trees
+  send_patch
