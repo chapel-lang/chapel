@@ -8,17 +8,26 @@ Environment (TM) (CLE).  If you are not familiar with Chapel, it is
 recommended that you try the instructions in the top-level README
 first to get started with the language.
 
+Chapel is available as a module for Cray XE running CLE.  When it is
+installed on your system, you do not need to build the compiler.
+Simply load the module with:
+
+     module load chapel
+
+then proceed directly to compiling your Chapel programs (Step 10 below).
+For information on obtaining and installing the Chapel module
+please contact your system administrator.
+
 If you are a Cray XT user on an NCCS machine, please see the special
 notes at the bottom of this file.  If you have any troubles, please
 let us know at chapel_info@cray.com.
 
 
-1) Set CHPL_HOME and MANPATH as usual.  See README.chplenv for
-   details.
+1) Set CHPL_HOME and MANPATH as indicated in README.chplenv.
 
 
-2) Set CHPL_HOST_PLATFORM to xt-cle and CHPL_COMM to gasnet.  For
-   example:
+2) Set CHPL_HOST_PLATFORM to xt-cle and CHPL_COMM to gasnet.
+   For example:
 
      setenv CHPL_HOST_PLATFORM xt-cle
      setenv CHPL_COMM gasnet
@@ -94,10 +103,15 @@ let us know at chapel_info@cray.com.
 
      cd $CHPL_HOME
 
-
-9) Make/re-make the compiler and runtime:
+   Make/re-make the compiler and runtime:
 
      gmake
+
+
+9) Set your PATH to include the directory $CHPL_HOME/bin/xe-cle
+   which is created when you build the compiler.  For example:
+
+     setenv PATH "$PATH":"$CHPL_HOME/bin/xe-cle"
 
 
 10) Compile your Chapel program as usual.  See README.compiling for
@@ -110,7 +124,8 @@ let us know at chapel_info@cray.com.
     two binaries (e.g., hello-multiloc and hello-multiloc_real).  The
     first binary contains code to launch the Chapel program onto the
     compute nodes, as specified by your CHPL_LAUNCHER setting.  The
-    second contains the program code itself.
+    second contains the program code itself; it is not intended to be
+    executed directly from the shell prompt.
 
 
 12) Multi-locale executions require the number of locales to be
@@ -228,3 +243,6 @@ Known Constraints and Bugs
   the Portals conduit.  We have not had the resources to devote to
   this problem yet, so for now we are assuming that the problems lie
   either in our GASNet port or our GASNet build configuration.
+
+* Redirecting stdin when executing a Chapel program under PBS/qsub
+  may not work due to limitations of qsub.
