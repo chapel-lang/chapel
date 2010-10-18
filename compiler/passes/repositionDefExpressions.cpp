@@ -190,15 +190,15 @@ void repositionDefExpressions(void) {
     forv_Vec(CallExpr*, call, calls) {
       if (call->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_NOALIAS)) {
         Vec<SymExpr*> se;
-	BlockStmt* current_block = toBlockStmt(call->parentExpr);
-	if (block == current_block) { 
-	  call->remove();
-	} else {
-	  block = current_block;
-	  collectSymExprs(current_block, se);
-	  current_block->insertBefore(new CallExpr(PRIM_BLOCK_XMT_PRAGMA_NOALIAS));
-	  call->remove();
-	}
+        BlockStmt* current_block = toBlockStmt(call->parentExpr);
+        if (block == current_block) { 
+          call->remove();
+        } else {
+          block = current_block;
+          collectSymExprs(current_block, se);
+          current_block->insertBefore(new CallExpr(PRIM_BLOCK_XMT_PRAGMA_NOALIAS));
+          call->remove();
+        }
       }
     }
 
