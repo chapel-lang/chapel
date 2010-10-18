@@ -10,6 +10,18 @@ class LevelArray {
   var grid_arrays:    [level.grids] GridArray;
   var _promotionType: real;
 
+
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    //==== Nothing to do ====
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+
+
   //|\''''''''''''''''''''''''''''|\
   //| >    initialize() method    | >
   //|/............................|/
@@ -222,7 +234,8 @@ def LevelArray.write(
 //|/_____________________________________|/
 //-----------------------------------------------------------------
 // Fills the first layer of ghost cells with linearly extrapolated
-// data from the interior.
+// data from the interior.  Note that if there are more layers of
+// ghost cells, they will be filled with incorrect values.
 //-----------------------------------------------------------------
 def LevelArray.extrapolateGhostData() {
   
@@ -238,8 +251,9 @@ def GridArray.extrapolateGhostData() {
     var loc = grid.relativeLocation(ghost_domain);
     var shift = -1*loc;
 
-    forall cell in ghost_domain do
+    forall cell in ghost_domain {
       value(cell) = 2.0*value(cell+shift) - value(cell+2*shift);
+    }
   }
 
 }

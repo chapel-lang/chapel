@@ -22,6 +22,19 @@ class CoarseOverlap {
   const subranges:    [neighbors] range;
   
   
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    delete full_multidomain;
+    for neighbor in neighbors do delete multidomains(neighbor);
+    neighbors.clear();
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+  
+  
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
@@ -92,8 +105,19 @@ class CoarseOverlap {
 // a domain.
 //---------------------------------------------------------------------
 class FineOverlap {
-  var neighbors: domain(Grid);
-  var domains:   [neighbors] domain(dimension,stridable=true);
+  const neighbors: domain(Grid);
+  const domains:   [neighbors] domain(dimension,stridable=true);
+  
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    neighbors.clear();
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+  
   
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
@@ -152,6 +176,25 @@ class CFBoundary {
 
   var coarse_overlaps: [fine_level.grids] CoarseOverlap;
   var fine_overlaps:   [coarse_level.grids] FineOverlap;
+
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    for grid in fine_level.grids {
+      coarse_overlaps(grid).clear();
+      delete coarse_overlaps(grid);
+    }
+    
+    for grid in coarse_level.grids {
+      fine_overlaps(grid).clear();
+      delete fine_overlaps(grid);
+    }
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+
 
   //|\''''''''''''''''''''''''''''|\
   //| >    initialize() method    | >

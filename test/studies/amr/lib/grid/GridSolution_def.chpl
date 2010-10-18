@@ -2,9 +2,9 @@ use Grid_def;
 use GridArray_def;
 
 
-//|""""""""""""""""""""""""""\
-//|===> GridSolution class ===>
-//|__________________________/
+//|\"""""""""""""""""""""""""""|\
+//| >    GridSolution class    | >
+//|/___________________________|/
 class GridSolution {
 
   const grid:     Grid;
@@ -14,6 +14,17 @@ class GridSolution {
   var old_time:     real;
   var current_time: real;
   
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    delete old_data;
+    delete current_data;
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+
 
   //==== Constructor ====
   def GridSolution(grid: Grid) {
@@ -22,24 +33,24 @@ class GridSolution {
     current_data = new GridArray(grid = grid);
   }
 }
-// /""""""""""""""""""""""""""|
-//<=== GridSolution class <===|
-// \__________________________|
+// /|"""""""""""""""""""""""""""/|
+//< |    GridSolution class    < |
+// \|___________________________\|
 
 
 
 
 
-//-----------------------------------------*
-//===> GridSolution.setToFunction method ===>
-//-----------------------------------------*
+//|\"""""""""""""""""""""""""""""""""""|\
+//| >    GridSolution.setToFunction    | >
+//|/___________________________________|/
 //----------------------------------------------------------
 // Sets both time levels to a particular analytic function.
 //----------------------------------------------------------
 def GridSolution.setToFunction(
   initial_condition: func(dimension*real, real),
-  time_in:           real
-){
+  time_in:           real)
+{
 
   //===> Evaluate and store initial_condition ===>
   write("Writing solution on grid...");
@@ -54,15 +65,16 @@ def GridSolution.setToFunction(
 
 
 }
-// *-----------------------------------------|
-//<=== GridSolution.setToFunction method <===|
-// *-----------------------------------------|
+// /|"""""""""""""""""""""""""""""""""""/|
+//< |    GridSolution.setToFunction    < |
+// \|___________________________________\|
 
 
 
 
-//===> GridSolution.clawOutput method ===>
-//=======================================>
+//|\""""""""""""""""""""""""""""""""|\
+//| >    GridSolution.clawOutput    | >
+//|/________________________________|/
 //-------------------------------------------------------------------
 // Writes Clawpack-formatted output for a GridSolution, at the given
 // frame_number.
@@ -75,5 +87,6 @@ def GridSolution.clawOutput(
   current_data.clawOutput(current_time, frame_number);
 
 }
-//<=== GridSolution.clawOutput method <===
-//<=======================================
+// /|""""""""""""""""""""""""""""""""/|
+//< |    GridSolution.clawOutput    < |
+// \|________________________________\|

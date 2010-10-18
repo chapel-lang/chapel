@@ -47,6 +47,17 @@ class Grid {
   const ghost_multidomain: MultiDomain(dimension, stridable=true);
 
 
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    delete ghost_multidomain;
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+
+
   //|\''''''''''''''''''''|\
   //| >    Constructor    | >
   //|/....................|/

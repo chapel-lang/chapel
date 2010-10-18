@@ -1,14 +1,10 @@
 use Grid_def;
 
 
-//====================================================>
-//==================== GRID ARRAYS ===================>
-//====================================================>
 
-
-//|"""""""""""""""""""""""\
-//|===> GridArray class ===>
-//|_______________________/
+//|\""""""""""""""""""""""""|\
+//| >    GridArray class    | >
+//|/________________________|/
 class GridArray {
 
   const grid:         Grid;
@@ -16,9 +12,20 @@ class GridArray {
   var _promotionType: real;
 
 
-  //|------------------------*
-  //|===> these() iterator ===>
-  //|------------------------*
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    //==== Nothing to do! ====
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+
+
+  //|\'''''''''''''''''''''''''|\
+  //| >    these() iterator    | >
+  //|/.........................|/
   //--------------------------------------------------------------------
   // Iterates over interior values.  The aim is to allow arithmetic
   // operations without directly accessing the 'value' field, such as
@@ -43,9 +50,9 @@ class GridArray {
   where tag == iterator.follower {
     yield value(follower);
   }
-  // *------------------------|
-  //<=== these() iterator <===|
-  // *------------------------|
+  // /|'''''''''''''''''''''''''/|
+  //< |    these() iterator    < |
+  // \|.........................\|
 
   def this(D: domain) var{
     var pointer => value(D);
@@ -53,9 +60,9 @@ class GridArray {
   }
 
 }
-// /"""""""""""""""""""""""|
-//<=== GridArray class <===|
-// \_______________________|
+// /|""""""""""""""""""""""""/|
+//< |    GridArray class    < |
+// \|________________________\|
 
 
 
@@ -78,9 +85,9 @@ def =(q: GridArray, rvalue: real) {
 
 
 
-//|--------------------------------------*
-//|===> GridArray.setToFunction method ===>
-//|--------------------------------------*
+//|\""""""""""""""""""""""""""""""""|\
+//| >    GridArray.setToFunction    | >
+//|/________________________________|/
 def GridArray.setToFunction(
   f: func(dimension*real, real)
 ){
@@ -91,30 +98,18 @@ def GridArray.setToFunction(
     value(cell) = f(grid.xValue(cell));
   }
 }
-// *--------------------------------------|
-//<=== GridArray.setToFunction method <===|
-// *--------------------------------------|
-
-
-//<====================================================
-//<=================== GRID ARRAYS ====================
-//<====================================================
+// /|""""""""""""""""""""""""""""""""/|
+//< |    GridArray.setToFunction    < |
+// \|________________________________\|
 
 
 
 
 
 
-
-
-
-//=======================================================>
-//==================== OUTPUT METHODS ===================>
-//=======================================================>
-
-
-//===> writeTimeFile function =====>
-//=================================>
+//|\""""""""""""""""""""""""""""""|\
+//| >    writeTimeFile routine    | >
+//|/______________________________|/
 //-------------------------------------------------------------
 // Global routine; meant to be called by output method of any
 // spatial object.  The time file is really simple, and this
@@ -142,14 +137,16 @@ def writeTimeFile(
   outfile.writeln("");
 
 }
-//<=== writeTimeFile method <=====
-//<===============================
+// /|""""""""""""""""""""""""""""""/|
+//< |    writeTimeFile routine    < |
+// \|______________________________\|
 
 
 
 
-//===> GridArray.write method ===>
-//===============================>
+//|\""""""""""""""""""""""""|\
+//| >    GridArray.write    | >
+//|/________________________|/
 def GridArray.write(
   grid_number: int,
   AMR_level:   int,
@@ -227,7 +224,10 @@ def GridArray.write(
 
       //==== Write value ====
       [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
-      outfile.writeln(format(efmt, value(cell)));
+      if abs(value(cell)) > 1.0e-99 then
+        outfile.writeln(format(efmt, value(cell)));
+      else
+        outfile.writeln(format(efmt, 0.0));
 
       //===> Newlines at the end of each dimension ===>
       //--------------------------------------------------------------
@@ -252,14 +252,15 @@ def GridArray.write(
   //<=== Write array values <===
   
 }
-//<=== GridArray.write method <===
-//<===============================
+// /|""""""""""""""""""""""""/|
+//< |    GridArray.write    < |
+// \|________________________\|
 
 
 
-
-//===> GridArray.clawOutput method ===>
-//====================================>
+//|\"""""""""""""""""""""""""""""|\
+//| >    GridArray.clawOutput    | >
+//|/_____________________________|/
 //-------------------------------------------------------------------
 // Writes Clawpack-formatted output for a GridArray, at the given 
 // time and frame_number.
@@ -291,10 +292,8 @@ def GridArray.clawOutput(
   delete outfile;
 
 }
-//<=== GridArray.clawOutput method <===
-//<====================================
+// /|"""""""""""""""""""""""""""""/|
+//< |    GridArray.clawOutput    < |
+// \|_____________________________\|
 
 
-//<=======================================================
-//<=================== OUTPUT METHODS ====================
-//<=======================================================

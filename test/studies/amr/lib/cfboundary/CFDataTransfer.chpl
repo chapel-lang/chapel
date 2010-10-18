@@ -1,6 +1,6 @@
 
 use LevelSolution_def;
-use FineBoundaryArray_def;
+use CoarseOverlapArray_def;
 
 
 
@@ -155,9 +155,9 @@ def LevelArray.getFineValues_Linear(
 
 
 //|\"""""""""""""""""""""""""""""""""""""""""""""""""|\
-//| >    FineBoundaryArray.getCoarseValues_Linear    | >
+//| >    CoarseOverlapArray.getCoarseValues_Linear    | >
 //|/_________________________________________________|/
-def FineBoundaryArray.getCoarseValues_Linear(
+def CoarseOverlapArray.getCoarseValues_Linear(
   q_coarse:  LevelArray)
 {
   //==== Safety check ====
@@ -197,7 +197,7 @@ def FineBoundaryArray.getCoarseValues_Linear(
 
 }
 // /|"""""""""""""""""""""""""""""""""""""""""""""""""/|
-//< |    FineBoundaryArray.getCoarseValues_Linear    < |
+//< |    CoarseOverlapArray.getCoarseValues_Linear    < |
 // \|_________________________________________________\|
 
 

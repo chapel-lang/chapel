@@ -3,13 +3,23 @@ use CFBoundary_def;
 
 
 //|\""""""""""""""""""""""""""""""""|\
-//| >    FineBoundaryArray class    | >
+//| >    CoarseOverlapArray class    | >
 //|/________________________________|/
-class FineBoundaryArray {
+class CoarseOverlapArray {
   
   const cf_boundary: CFBoundary;
   
   var multiarrays: [cf_boundary.fine_level.grids] MultiArray(dimension,true,real);
+  
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    for multiarray in multiarrays do delete multiarray;
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
   
   
   //|\''''''''''''''''''''''''''''|\
@@ -17,7 +27,7 @@ class FineBoundaryArray {
   //|/............................|/
   //-------------------------------------------------
   // Intended constructor signature:
-  //     FineBoundaryArray(cf_boundary: CFBoundary)
+  //     CoarseOverlapArray(cf_boundary: CFBoundary)
   //-------------------------------------------------
   def initialize() {
     for grid in cf_boundary.fine_level.grids {
@@ -45,7 +55,7 @@ class FineBoundaryArray {
   
 }
 // /|""""""""""""""""""""""""""""""""/|
-//< |    FineBoundaryArray class    < |
+//< |    CoarseOverlapArray class    < |
 // \|________________________________\|
 
 

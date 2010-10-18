@@ -3,8 +3,9 @@ use LevelArray_def;
 
 
 
-//===> LevelSolution class ===>
-//============================>
+//|\""""""""""""""""""""""""""""|\
+//| >    LevelSolution class    | >
+//|/____________________________|/
 class LevelSolution {
   const level:    Level;
 
@@ -14,22 +15,41 @@ class LevelSolution {
   var current_time: real;
 
 
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    delete old_data;
+    delete current_data;
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+
+
+  //|\''''''''''''''''''''|\
+  //| >    constructor    | >
+  //|/....................|/
   def LevelSolution(level: Level) {
     this.level  = level;
     old_data     = new LevelArray(level = level);
     current_data = new LevelArray(level = level);
   }
+  // /|''''''''''''''''''''/|
+  //< |    constructor    < |
+  // \|....................\|
 
 }
-//<=== LevelSolution class <===
-//<============================
+// /|""""""""""""""""""""""""""""/|
+//< |    LevelSolution class    < |
+// \|____________________________\|
 
 
 
 
-
-//===> LevelSolution.setToFunction method ===>
-//===========================================>
+//|\""""""""""""""""""""""""""""""""""""|\
+//| >    LevelSolution.setToFunction    | >
+//|/____________________________________|/
 def LevelSolution.setToFunction(
   initial_condition: func(dimension*real, real),
   time_in:           real
@@ -43,22 +63,24 @@ def LevelSolution.setToFunction(
   current_time = time_in;
 
 }
-//<=== LevelSolution.setToFunction method <===
-//<===========================================
+// /|""""""""""""""""""""""""""""""""""""/|
+//< |    LevelSolution.setToFunction    < |
+// \|____________________________________\|
 
 
 
 
-//===> LevelSolution.clawOutput method ===>
-//========================================>
+//|\"""""""""""""""""""""""""""""""""|\
+//| >    LevelSolution.clawOutput    | >
+//|/_________________________________|/
 def LevelSolution.clawOutput(
   frame_number: int
 ){
-
 
   //==== Use clawOutput for LevelArray ====
   current_data.clawOutput(current_time, frame_number);
   
 }
-//<=== LevelSolution.clawOutput method <===
-//<========================================
+// /|"""""""""""""""""""""""""""""""""/|
+//< |    LevelSolution.clawOutput    < |
+// \|_________________________________\|

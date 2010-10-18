@@ -30,6 +30,19 @@ class Level {
   var boundary: [grids] MultiDomain(dimension,stridable=true);
 
 
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    for grid in grids {
+      delete sibling_overlaps(grid);
+      delete boundary(grid);
+    }
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+
 
   //|\''''''''''''''''''''''''''''|\
   //| >    initialize() method    | >
@@ -228,8 +241,21 @@ def Level.complete() {
 // rectangle, and therefore each overlap may be described by a domain.
 //----------------------------------------------------------------------
 class SiblingOverlap {
+
   const neighbors: domain(Grid);
   const domains:   [neighbors] domain(dimension,stridable=true);
+
+
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    neighbors.clear();
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+  
   
   //|\''''''''''''''''''''|\
   //| >    constructor    | >

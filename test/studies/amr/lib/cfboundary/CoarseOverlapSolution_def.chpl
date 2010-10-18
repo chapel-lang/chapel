@@ -4,27 +4,41 @@ use LevelSolution_def;
 
 
 //|\"""""""""""""""""""""""""""""""""""|\
-//| >    FineBoundarySolution class    | >
+//| >    CoarseOverlapSolution class    | >
 //|/___________________________________|/
-class FineBoundarySolution {
+class CoarseOverlapSolution {
   
   const cf_boundary:     CFBoundary;
     
-  var old_data:     FineBoundaryArray;
-  var current_data: FineBoundaryArray;
+  var old_data:     CoarseOverlapArray;
+  var current_data: CoarseOverlapArray;
   var old_time:     real;
   var current_time: real;
+  
+  
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  def clear() {
+    old_data.clear();
+    delete old_data;
+    current_data.clear();
+    delete current_data;
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
   
   
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def FineBoundarySolution(cf_boundary: CFBoundary)
+  def CoarseOverlapSolution(cf_boundary: CFBoundary)
  {
     this.cf_boundary = cf_boundary;
     
-    old_data     = new FineBoundaryArray(cf_boundary);
-    current_data = new FineBoundaryArray(cf_boundary);
+    old_data     = new CoarseOverlapArray(cf_boundary);
+    current_data = new CoarseOverlapArray(cf_boundary);
   }
   // /|''''''''''''''''''''/|
   //< |    constructor    < |
@@ -47,15 +61,15 @@ class FineBoundarySolution {
   
 }
 // /|"""""""""""""""""""""""""""""""""""/|
-//< |    FineBoundarySolution class    < |
+//< |    CoarseOverlapSolution class    < |
 // \|___________________________________\|
 
 
 
 //|\"""""""""""""""""""""""""""""""""""""""""|\
-//| >    FineBoundarySolution.fill_Linear    | >
+//| >    CoarseOverlapSolution.fill_Linear    | >
 //|/_________________________________________|/
-def FineBoundarySolution.fill_Linear(
+def CoarseOverlapSolution.fill_Linear(
   coarse_solution: LevelSolution)
 {
   //==== Safety check ====
@@ -70,7 +84,7 @@ def FineBoundarySolution.fill_Linear(
   current_time = coarse_solution.current_time;  
 }
 // /|"""""""""""""""""""""""""""""""""""""""""/|
-//< |    FineBoundarySolution.fill_Linear    < |
+//< |    CoarseOverlapSolution.fill_Linear    < |
 // \|_________________________________________\|
 
 
@@ -80,22 +94,22 @@ def FineBoundarySolution.fill_Linear(
 //| >    LevelArray.getFineBoundaryValues    | >
 //|/_________________________________________|/
 def LevelArray.getFineBoundaryValues(
-  fine_boundary_solution: FineBoundarySolution,
+  coarse_overlap_solution: CoarseOverlapSolution,
   time:                   real)
 {
-  //==== Pull times from fine_boundary_solution ====
-  const t1 = fine_boundary_solution.old_time;
-  const t2 = fine_boundary_solution.current_time;
+  //==== Pull times from coarse_overlap_solution ====
+  const t1 = coarse_overlap_solution.old_time;
+  const t2 = coarse_overlap_solution.current_time;
   
   //==== Safety check the level ====
-  assert(this.level == fine_boundary_solution.cf_boundary.fine_level);
+  assert(this.level == coarse_overlap_solution.cf_boundary.fine_level);
 
   //==== Safety check the requested time ====
   assert(time > t1 - 1.0E-8  &&  time < t2 + 1.0E-8,
 	 "Warning: LevelArray.getFineBoundaryValues\n" +
 	 "Requesting fine data at time " + format("%8.4E",time) + "\n" +
-	 "fine_boundary_solution.old_time =     " + format("%8.4E", t1) + "\n" +
-	 "fine_boundary_solution.current_time = " + format("%8.4E", t2));
+	 "coarse_overlap_solution.old_time =     " + format("%8.4E", t1) + "\n" +
+	 "coarse_overlap_solution.current_time = " + format("%8.4E", t2));
 
   //==== Interpolation parameters ====
   const c2 = (time - t1) / (t2 - t1);
@@ -106,7 +120,7 @@ def LevelArray.getFineBoundaryValues(
   for grid in this.level.grids {
 
     //==== Handle one block of data at a time ====
-    for (array1, array2) in fine_boundary_solution.array_pairs(grid)
+    for (array1, array2) in coarse_overlap_solution.array_pairs(grid)
     {
       //==== Safety check; this iteration seems a bit fragile ====
       assert(array1.Domain == array2.Domain);
