@@ -2205,7 +2205,6 @@ void CallExpr::codegen(FILE* outfile) {
       // pointer variables.
       if (!(strcmp(CHPL_TARGET_PLATFORM, "xmt"))) {
         Vec<SymExpr*> se;
-        int i = 0;
         collectSymExprs(this->next, se);
         forv_Vec(SymExpr*, sym, se) {
           if (isVarSymbol(sym->var) && (!(isPrimitiveType(sym->var->type)))) {
