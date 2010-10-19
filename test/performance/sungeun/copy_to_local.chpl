@@ -27,15 +27,7 @@ coforall loc in Locales do on loc {
   if doCommDiag then stopCommDiagnostics();
   if (debug) {
     writeln(here, ": copying from locale ", l);
-    writeln(myA);
-
-    var numErrors = 0;
-    for a in myA do // I need a eureka
-      if a != l {
-        writeln("ERROR: ", a, "!=", l);
-        numErrors += 1;
-      }
-    writeln(here, ": ", numErrors, " errors");
+    writeln(here, ": ", + reduce [a in myA] a != l, " errors");
   }
   if doCommDiag {
     var Diagnostics = getCommDiagnostics();
