@@ -54,33 +54,30 @@ class GradientFlagger: Flagger {
 
 def main {
   
-  //===> Set up AMR hierarchy ===>
-  const x_low  = (-1.0,-1.0);
-  const x_high = (1.0,1.0);
-  const n_coarsest_cells = (40,40);
-  const n_ghost_cells = (2,2);
-  const max_n_levels = 3;
-  const ref_ratio = (2,2);
+  //===> Set up AMR hierarchy ===> */
   
-  def elevatedSquare (x: 2*real)
+  def elevatedRectangle (x: dimension*real)
   {
-    var f: real = 0.0;
-    if x(1)>-0.8 && x(1)<-0.2 && (x(2)>-0.8 && x(2)<-0.2) then f = 1.0;
+    var f: real = 1.0;
+    for d in dimensions do
+      if x(d)<-0.8 || x(d) > -0.2 then f = 0.0;
     return f;
   }
+
+  def elevatedCircle (x: dimension*real) {
+    var r: real = 0.0;
+    for d in dimensions do
+      r += (x(d)+0.5)**2;
+    r = sqrt(r);
+    if r <= 0.3 then return 1.0;
+    else return 0.0;
+  }
+
   
   const flagger = new GradientFlagger(tolerance = 0.1);
-  const target_efficiency = 0.7;
-  
-  const hierarchy = new AMRHierarchy(x_low,
-                                     x_high,
-                                     n_coarsest_cells,
-                                     n_ghost_cells,
-                                     max_n_levels,
-                                     ref_ratio,
-                                     elevatedSquare,
-                                     flagger,
-                                     target_efficiency);  
+  const hierarchy = new AMRHierarchy('set_problem/hierarchy_parameters.txt',
+				     flagger,
+				     elevatedCircle);
   //<=== Set up AMR hierarchy <===
   
 
@@ -89,7 +86,7 @@ def main {
 
 
   //==== Advection velocity ====
-  var velocity = (0.75, 0.5);
+  var velocity: dimension*real = (0.75, 0.625, 0.5);
 
 
   //==== Set boundary conditions ====

@@ -64,16 +64,6 @@ class AMRHierarchy {
   //| >    Basic methods and iterators    | >
   //|/....................................|/
   def n_levels { return level_indices.high; };
-
-  // def coarse_levels {
-  //   for level_idx in 1..n_levels-1 do
-  //     yield level(level_idx);
-  // }
-  // 
-  // def fine_levels {
-  //   for level_idx in 2..n_levels do
-  //     yield level(level_idx);
-  // }
   
   def fine_boundaries(i: int) var {
     return coarse_boundaries(i+1);
@@ -94,9 +84,9 @@ class AMRHierarchy {
     n_ghost_cells:     dimension*int,
     max_n_levels:      int,
     ref_ratio:         dimension*int,
-    initialCondition:  func(dimension*real, real),
+    target_efficiency: real,
     flagger:           Flagger,
-    target_efficiency: real)
+    initialCondition:  func(dimension*real, real))
   {
 
     this.x_low             = x_low;
@@ -105,9 +95,9 @@ class AMRHierarchy {
     this.n_ghost_cells     = n_ghost_cells;
     this.max_n_levels      = max_n_levels;
     this.ref_ratio         = ref_ratio;
-    this.initialCondition  = initialCondition;
-    this.flagger           = flagger;
     this.target_efficiency = target_efficiency;
+    this.flagger           = flagger;
+    this.initialCondition  = initialCondition;
 
 
     //==== Create the top level ====
@@ -243,14 +233,12 @@ def AMRHierarchy.regrid(
       i_finest = max(i_finest, i_regridding);
             
       //==== Replace the solution ====
-      writeln("Creating new LevelSolution...");
       var regridded_level_solution = new LevelSolution(regridded_level);
       regridded_level_solution.initialFill( level_solutions(i_regridding), 
                                             level_solutions(i_regridding-1) );
       level_solutions(i_regridding).clear();
       delete level_solutions(i_regridding);
       level_solutions(i_regridding) = regridded_level_solution;
-      writeln("...done.");
             
       //==== Replace the level ====
       levels(i_regridding).clear();
@@ -462,6 +450,78 @@ class PhysicalBoundary {
 // /|"""""""""""""""""""""""""""""""/|
 //< |    PhysicalBoundary class    < |
 // \|_______________________________\|
+
+
+
+
+
+//|\""""""""""""""""""""""""""""""""""|\
+//| >    AMRHierarchy.AMRHierarchy    | >
+//|/__________________________________|/
+//-----------------------------------------------------------------
+// Alternate constructor in which all numerical parameters for the
+// hierarchy are provided using an input file.  This allows those
+// parameters to be changed without recompiling the code.
+//-----------------------------------------------------------------
+def AMRHierarchy.AMRHierarchy(
+  file_name:  string,
+  flagger:    Flagger,
+  inputIC:    func(dimension*real,real))
+{
+
+  const parameter_file = new file(file_name, FileAccessMode.read);
+  parameter_file.open();
+
+  //==== Safety check the dimension ====
+  var dim_input: int;
+  parameter_file.readln(dim_input);
+  assert(dim_input == dimension,
+         "error: dimension of input file inconsistent with compiled dimension.");
+  parameter_file.readln(); // skip line
+
+
+  //==== Read parameters from file ====
+  var x_low, x_high:     dimension*real;
+  var n_coarsest_cells:  dimension*int;
+  var n_ghost_cells:     dimension*int;
+  var max_n_levels:      int;
+  var ref_ratio:         dimension*int;
+  var target_efficiency: real;
+
+  parameter_file.readln( (...x_low) );
+  parameter_file.readln( (...x_high) );
+  parameter_file.readln( (...n_coarsest_cells) );
+  parameter_file.readln( (...n_ghost_cells) );
+  parameter_file.readln( (...ref_ratio) );
+  parameter_file.readln( max_n_levels );
+  parameter_file.readln( target_efficiency );
+  parameter_file.close();
+
+  
+
+  //==== Create and return hierarchy ====
+  return new AMRHierarchy(x_low,
+                          x_high,
+			  n_coarsest_cells,
+			  n_ghost_cells,
+			  max_n_levels,
+			  ref_ratio,
+			  target_efficiency,
+			  flagger,
+			  inputIC);
+
+}
+// /|""""""""""""""""""""""/|
+//< |    readHierarchy    < |
+// \|______________________\|
+
+
+
+
+
+
+
+
 
 
 
@@ -701,9 +761,9 @@ def main {
                                      n_ghost_cells,
                                      max_n_levels,
                                      ref_ratio,
-                                     elevatedSquare,
-                                     flagger,
-                                     target_efficiency);
+				     target_efficiency,
+				     flagger,
+				     elevatedSquare);
   
   hierarchy.clawOutput(0);
   
