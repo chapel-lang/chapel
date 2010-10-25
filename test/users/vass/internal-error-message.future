@@ -8,3 +8,11 @@ in the developer mode:
 This is misleading because the developer mode message looks like
 it arises from a bug in the user code.  Should be "error: internal failure"
 in both user and developer modes.
+
+Remark: it does not matter which particular internal failure is
+causing such an error message. Even if this particular test example
+generates a different internal failure or (ideally) none at all,
+this error message request still holds.
+
+The source code, internal-error-message.chpl, is of no significance on its own.
+Anything that generates an internal compiler failure would illustrate this.
