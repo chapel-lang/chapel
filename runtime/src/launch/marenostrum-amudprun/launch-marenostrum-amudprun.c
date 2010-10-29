@@ -9,13 +9,13 @@
 #include "chpltypes.h"
 #include "error.h"
 
+#define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
+#define WRAP_TO_STR(x) TO_STR(x)
+#define TO_STR(x) #x
+
 #define baseLLFilename ".chpl-mnsub-"
 
 char llFilename[FILENAME_MAX];
-
-/* copies of binary to run per node */
-#define procsPerNode 1  
-#define versionBuffLen 80
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_CLASS"
 
@@ -38,8 +38,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   chpl_compute_real_binary_name(argv[0]);
 
-#define DEBUG_LAUNCH
-
 #ifndef DEBUG_LAUNCH
   mypid = getpid();
 #else
@@ -59,10 +57,21 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(llFile, "# @ tasks_per_node = 1\n");
   fprintf(llFile, "# @ wall_clock_limit = 00:10:00\n");
   fprintf(llFile, "\n");
-  fprintf(llFile, "export SSH_SERVERS=`echo $SLURM_NODELIST | sed s/,/\\ /`\n");
-  fprintf(llFile, "$CHPL_HOME/third-party/gasnet/install/marenostrum-ibm/seg-everything/nodbg/bin/amudprun -n %d %s", numLocales, chpl_get_real_binary_name());
+  fprintf(llFile, "MLIST=$(/opt/perf/bin/sl_get_machine_list -j=\\$SLURM_JOB_ID )\n");
+  fprintf(llFile, "\n");
+  fprintf(llFile, "export -n SSH_SERVERS\n");
+  fprintf(llFile, "for i in $MLIST ; do\n");
+  fprintf(llFile, "  export SSH_SERVERS=\"$SSH_SERVERS $i\" ;\n");
+  fprintf(llFile, "done\n");
+#ifdef DEBUG_LAUNCH
+  fprintf(llFile, "echo $SSH_SERVERS\n");
+#endif
+  fprintf(llFile, "\n");
+
+  fprintf(llFile, "%samudprun -n %d %s", WRAP_TO_STR(LAUNCH_PATH), numLocales, 
+	  chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
-      fprintf(llFile, " '%s'", argv[i]);
+    fprintf(llFile, " '%s'", argv[i]);
   }
   fprintf(llFile, " || echo -n \"\"\n");
   fclose(llFile);
@@ -81,6 +90,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   return command;
 }
+
 
 static void chpl_launch_cleanup(void) {
 #ifndef DEBUG_LAUNCH
