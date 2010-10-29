@@ -39,6 +39,8 @@ if ($preset_compiler eq "") {
         }
     } elsif ($platform eq "pwr5" || $platform eq "pwr6") {
 	$compiler = "ibm";
+    } elsif ($platform eq "marenostrum") {
+	$compiler = "ibm";
     } else {
 	if (`$platformscript --host` eq `$platformscript --target`) {
 	    $compiler=$ENV{'CHPL_HOST_COMPILER'};

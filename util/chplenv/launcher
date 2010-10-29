@@ -24,6 +24,12 @@ if ($preset_launcher eq "") {
                 $launcher = "pbs-aprun";
             }
         }
+    } elsif ($platform eq "marenostrum") {
+	if ($substrate eq "udp") {
+	    $launcher = "marenostrum-amudprun";
+	} else {
+	    $launcher = "marenostrum-slurm";
+	}
     } elsif ($comm eq "gasnet") {
         if ($substrate eq "udp") {
             $launcher = "amudprun";
