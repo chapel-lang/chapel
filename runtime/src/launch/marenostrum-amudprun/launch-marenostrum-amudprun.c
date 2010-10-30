@@ -69,7 +69,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(llFile, "\n");
 
   fprintf(llFile, "%samudprun -n %d %s", WRAP_TO_STR(LAUNCH_PATH), numLocales, 
-	  chpl_get_real_binary_name());
+          chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(llFile, " '%s'", argv[i]);
   }
