@@ -25,11 +25,7 @@ if ($preset_launcher eq "") {
             }
         }
     } elsif ($platform eq "marenostrum") {
-	if ($substrate eq "udp") {
-	    $launcher = "marenostrum-amudprun";
-	} else {
-	    $launcher = "marenostrum-slurm";
-	}
+        $launcher = "marenostrum";
     } elsif ($comm eq "gasnet") {
         if ($substrate eq "udp") {
             $launcher = "amudprun";

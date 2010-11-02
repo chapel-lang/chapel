@@ -1,5 +1,5 @@
 RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/launch/marenostrum-amudprun
+RUNTIME_SUBDIR = src/launch/marenostrum
 
 #
 # standard header

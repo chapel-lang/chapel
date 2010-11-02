@@ -15,9 +15,16 @@
 
 #define baseLLFilename ".chpl-mnsub-"
 
+#define udp 1
+#define mpi 2
+#define none 3
+
 char llFilename[FILENAME_MAX];
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_CLASS"
+
+static char* debug = NULL;
+static char* walltime = NULL;
 
 static char* chpl_launch_create_command(int argc, char* argv[], 
                                         int32_t numLocales) {
@@ -25,10 +32,16 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   int size;
   char baseCommand[256];
   char* command;
-  FILE* llFile, *expectFile;
-  char* projectString = getenv(launcherAccountEnvvar);
+  FILE* llFile;
+  //  char* projectString = getenv(launcherAccountEnvvar);
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
+  char* queue = getenv("CHPL_LAUNCHER_QUEUE");
+
+  if (!walltime) {
+    chpl_error("You must specify the wall clock time limit of your job using --walltime\n"
+               "or CHPL_LAUNCHER_WALLTIME (HH:MM:SS)", 0, NULL);
+  }
 
   if (basenamePtr == NULL) {
       basenamePtr = argv[0];
@@ -38,16 +51,19 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   chpl_compute_real_binary_name(argv[0]);
 
-#ifndef DEBUG_LAUNCH
-  mypid = getpid();
-#else
-  mypid = 0;
-#endif
+  if (debug) {
+    mypid = 0;
+  } else {
+    mypid = getpid();
+  }
+
   sprintf(llFilename, "%s%d", baseLLFilename, (int)mypid);
 
   llFile = fopen(llFilename, "w");
   fprintf(llFile, "#!/bin/bash\n");
-  fprintf(llFile, "# @ class = debug\n");
+  if (queue) {
+    fprintf(llFile, "# @ class = %s\n", queue);
+  }
   fprintf(llFile, "# @ job_name = %s\n", basenamePtr);
   fprintf(llFile, "# @ initialdir = .\n");
   fprintf(llFile, "# @ output = %s_%%j.out\n", basenamePtr);
@@ -55,21 +71,34 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(llFile, "# @ total_tasks = %d\n", numLocales);
   fprintf(llFile, "# @ cpus_per_task = 4\n");
   fprintf(llFile, "# @ tasks_per_node = 1\n");
-  fprintf(llFile, "# @ wall_clock_limit = 00:10:00\n");
+  fprintf(llFile, "# @ wall_clock_limit = %s\n", walltime);
   fprintf(llFile, "\n");
+#if CHPL_COMM_SUBSTRATE == udp
   fprintf(llFile, "MLIST=$(/opt/perf/bin/sl_get_machine_list -j=\\$SLURM_JOB_ID )\n");
   fprintf(llFile, "\n");
   fprintf(llFile, "export -n SSH_SERVERS\n");
   fprintf(llFile, "for i in $MLIST ; do\n");
   fprintf(llFile, "  export SSH_SERVERS=\"$SSH_SERVERS $i\" ;\n");
   fprintf(llFile, "done\n");
-#ifdef DEBUG_LAUNCH
-  fprintf(llFile, "echo $SSH_SERVERS\n");
-#endif
+  if (debug) {
+    fprintf(llFile, "echo $SSH_SERVERS\n");
+  }
   fprintf(llFile, "\n");
 
-  fprintf(llFile, "%samudprun -n %d %s", WRAP_TO_STR(LAUNCH_PATH), numLocales, 
-          chpl_get_real_binary_name());
+  fprintf(llFile, "%samudprun ", WRAP_TO_STR(LAUNCH_PATH));
+#elif CHPL_COMM_SUBSTRATE == mpi
+  fprintf(llFile, "export MPIRUN_CMD='srun --kill-on-bad-exit %%C'\n");
+  fprintf(llFile, "export MPIRUN_CMD_OK=true\n");
+  fprintf(llFile, "\n");
+  fprintf(llFile, "%sgasnetrun_mpi ", WRAP_TO_STR(LAUNCH_PATH));
+#elif CHPL_COMM_SUBSTRATE == none
+#else
+#error "Unknown CHPL_COMM_SUBSTRATE"
+#endif
+#if CHPL_COMM_SUBSTRATE != none
+  fprintf(llFile, "-n %d ", numLocales);
+#endif
+  fprintf(llFile, "%s", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(llFile, " '%s'", argv[i]);
   }
@@ -93,24 +122,36 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
 
 static void chpl_launch_cleanup(void) {
-#ifndef DEBUG_LAUNCH
-  char command[1024];
+  if (!debug) {
+    char command[1024];
 
-  sprintf(command, "rm %s", llFilename);
-  system(command);
-
-#endif
+    sprintf(command, "rm %s", llFilename);
+    system(command);
+  }
 }
 
 
 void chpl_launch(int argc, char* argv[], int32_t numLocales) {
+  debug = getenv("CHPL_LAUNCHER_DEBUG");
+  if (!walltime) {
+    walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  }
   chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
                            argv[0]);
   chpl_launch_cleanup();
 }
 
 
+#define CHPL_WALLTIME_FLAG "--walltime"
+
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, chpl_string filename) {
+  if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
+    walltime = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_WALLTIME_FLAG"=", strlen(CHPL_WALLTIME_FLAG))) {
+    walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG)+1]);
+    return 1;
+  }
   return 0;
 }

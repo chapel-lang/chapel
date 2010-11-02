@@ -1,11 +1,11 @@
 LAUNCHER_SRCS = \
-        launch-marenostrum-amudprun.c \
+        launch-marenostrum.c \
 
 #
 # is this the right time to set this variable?  Or is user code
 # compile time
 #
-RUNTIME_CFLAGS += -DLAUNCH_PATH="$(CURDIR)/$(CHAPEL_ROOT)/third-party/gasnet/$(GASNET_INSTALL_SUBDIR)/bin/"
+RUNTIME_CFLAGS += -DLAUNCH_PATH="$(CURDIR)/$(CHAPEL_ROOT)/third-party/gasnet/$(GASNET_INSTALL_SUBDIR)/bin/" -DCHPL_COMM_SUBSTRATE=$(CHPL_MAKE_COMM_SUBSTRATE)
 
 SVN_SRCS = $(LAUNCHER_SRCS)
 SRCS = $(SVN_SRCS)
