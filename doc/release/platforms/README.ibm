@@ -2,6 +2,9 @@
 Using Chapel on IBM Machines
 ============================
 
+[Note, if you are using Chapel on IBM's MareNostrum, you should refer
+to README.marenostrum in this directory]
+
 We only have limited experience using Chapel on IBM platforms to date.
 This file contains notes that reflect our current experience, focusing
 first on PowerPC-based systems and then BG systems.  If you are not

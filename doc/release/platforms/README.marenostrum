@@ -1,0 +1,56 @@
+===========================
+Using Chapel on MareNostrum
+===========================
+
+The following information describes how to build and use Chapel on
+Barcelona Supercomputing Center's MareNostrum machine for users who
+have an account there.  If you are not familiar with Chapel, it is
+recommended that you first try the instructions in the top-level
+README on a traditional workstation in order to get started with the
+language.
+
+1) Set CHPL_HOME to point to your installation as usual.
+
+2) Set CHPL_HOST_PLATFORM to marenostrum and CHPL_COMM to gasnet.
+   For example:
+
+     export CHPL_HOST_PLATFORM=marenostrum
+     export CHPL_COMM=gasnet
+
+   Additional information about running using multiple locales and
+   GASNet can be found in $CHPL_HOME/doc/README.multilocale
+
+3) Make sure you're in the top-level chapel/ directory:
+
+     cd $CHPL_HOME
+
+   Make/re-make the compiler and runtime:
+
+     gmake
+
+4) Set your PATH to include the directory $CHPL_HOME/bin/marenostrum
+   which is created when you build the compiler.  For example:
+
+     export PATH="$PATH":"$CHPL_HOME/bin/marenostrum" 
+
+
+5) Compile your Chapel program as usual.  See
+   $CHPL_HOME/doc/README.compiling for details.  For example:
+
+     chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
+
+6) The above settings will result in a multi-locale compilation.  When
+   you compile a Chapel program, you should see two binaries (e.g.,
+   hello-multiloc and hello-multiloc_real).  The first binary contains
+   code to launch the Chapel program onto the compute nodes using
+   mnsubmit.  The second contains the program code itself; it is not
+   intended to be executed directly from the shell prompt.
+
+7) Multi-locale binaries require the number of locales to be specified
+   on the command line.  Other than this, execute your Chapel program
+   as usual.  For example:
+
+     ./hello-multiloc -nl 2
+
+   You can use the -v flag to see the commands used to launch your
+   program.

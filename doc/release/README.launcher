@@ -40,6 +40,7 @@ Currently-supported launchers include:
   gasnetrun_ibv     : GASNet launcher for programs running over Infiniband
   lsf-gasnetrun_ibv : GASNet launcher using LSF (bsub) over Infiniband
   loadleveler       : launch using IBM loadleveler (still needs refining)
+  marenostrum       : launch using MareNostrum's mnsubmit script
   mtarun            : Cray XMT application launcher using mtarun
   pbs-aprun         : Cray XT application launcher using PBS (qsub) + aprun
   pbs-gasnetrun_ibv : GASNet launcher using PBS (qsub) over Infiniband
@@ -54,14 +55,16 @@ environment variable.  If left unset, a default is picked as follows:
   + only aprun in user's path   -> aprun
   (otherwise)                   -> none
 
+  CHPL_PLATFORM=xmt             -> mtarun
+
+  CHPL_PLATFORM=marenostrum     -> marenostrum
+
   CHPL_COMM=gasnet...
   + CHPL_COMM_SUBSTRATE=ibv
     + CHPL_TARGET_PLATFORM=pwr6 -> none
     (otherwise)                 -> gasnetrun_ibv
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
   (otherwise)                   -> none
-
-  CHPL_PLATFORM=xmt             -> mtarun
 
   CHPL_COMM=pvm                 -> pvm
 
