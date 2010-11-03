@@ -89,12 +89,15 @@ CheckForStandardCHeaders:
 	  echo The above list was generated with the util/devel/grepstdchdrs script.; \
 	  exit 1; \
 	fi
-$(BUILD_VERSION_FILE): CheckForStandardCHeaders
-	@$(CHAPEL_ROOT)/util/buildRelease/updateBuildVersion $(CHAPEL_ROOT)/compiler/main
 else
-$(BUILD_VERSION_FILE):
-	@echo -999 > $@
+CheckForStandardCHeaders:
 endif
+
+UPDATE_BUILD_VERSION = $(CHAPEL_ROOT)/util/devel/updateBuildVersion
+
+$(BUILD_VERSION_FILE): CheckForStandardCHeaders
+	@(test -x $(CHAPEL_ROOT)/.svn && test -x $(UPDATE_BUILD_VERSION) && \
+	$(UPDATE_BUILD_VERSION) $@) || echo -n "";
 
 
 $(CHPL): $(CHPL_BIN_DIR) $(CHPL_OBJS)
