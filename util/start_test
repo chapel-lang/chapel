@@ -70,7 +70,6 @@
 #   -futuresonly
 #   -valgrind
 #   -valgrindexe
-#   -notee
 #   -comm [none|gasnet|pvm]           $CHPL_HOME/util/chplenv/comm
 #   -suppress <suppression file>
 #   -interpret (DEPRECATED)
@@ -135,10 +134,6 @@
 # executable should be run using valgrind in order to find errors.
 # The -valgrindexe option specifies that the generated executable
 # should be run using valgrind, but not the compiler.
-#
-# The -notee option indicates that "tee" should not be used.  This was
-# added due to a sense that tee was breaking the nightly regression
-# runs on the Cygwin platform.
 #
 # The -futures option specifies that the testing system should test
 # both future and non-future tests.  By default, future tests are
@@ -681,11 +676,6 @@ while ( $#argv > 0 )
                 shift
                 set valgrindexe = 1
                 breaksw
-        case -notee:
-        case --notee:
-                shift
-                set tee = "$utildir/cat2File"
-                breaksw
         case -comm:
         case --comm:
                 shift
@@ -719,7 +709,6 @@ while ( $#argv > 0 )
                 echo "          -futuresonly"
 		echo "          -valgrind"
                 echo "          -valgrindexe"
-                echo "          -notee"
                 echo "          -comm [none|gasnet|pvm]  (currently: $comm)"
                 echo "          -suppress <filename>"
 #                echo "          -interpret (or -i)"
