@@ -552,3 +552,6 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   return 0;
 }
 
+
+void chpl_launch_print_help(void) {
+}

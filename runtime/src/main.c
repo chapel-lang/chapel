@@ -26,6 +26,10 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
 }
 
 
+void printAdditionalHelp(void) {
+}
+
+
 static void recordExecutionCommand(int argc, char *argv[]) {
   int i, length = 0;
   for (i = 0; i < argc; i++) {

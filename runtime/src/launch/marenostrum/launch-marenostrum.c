@@ -25,6 +25,7 @@ char llFilename[FILENAME_MAX];
 
 static char* debug = NULL;
 static char* walltime = NULL;
+static char* queue = NULL;
 
 static char* chpl_launch_create_command(int argc, char* argv[], 
                                         int32_t numLocales) {
@@ -36,7 +37,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   //  char* projectString = getenv(launcherAccountEnvvar);
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
-  char* queue = getenv("CHPL_LAUNCHER_QUEUE");
 
   if (!walltime) {
     chpl_error("You must specify the wall clock time limit of your job using --walltime\n"
@@ -136,6 +136,9 @@ void chpl_launch(int argc, char* argv[], int32_t numLocales) {
   if (!walltime) {
     walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   }
+  if (!queue) {
+    queue = getenv("CHPL_LAUNCHER_QUEUE");
+  }
   chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
                            argv[0]);
   chpl_launch_cleanup();
@@ -143,6 +146,7 @@ void chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 
 #define CHPL_WALLTIME_FLAG "--walltime"
+#define CHPL_QUEUE_FLAG "--queue"
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, chpl_string filename) {
@@ -153,5 +157,22 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG)+1]);
     return 1;
   }
+  if (!strcmp(argv[argNum], CHPL_QUEUE_FLAG)) {
+    queue = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_QUEUE_FLAG"=", strlen(CHPL_QUEUE_FLAG))) {
+    queue = &(argv[argNum][strlen(CHPL_QUEUE_FLAG)+1]);
+    return 1;
+  }
   return 0;
+}
+
+
+void chpl_launch_print_help(void) {
+  fprintf(stdout, "LAUNCHER FLAGS:\n");
+  fprintf(stdout, "===============\n");
+  fprintf(stdout, "--queue <queue>        : specify a queue (e.g., debug, interact)\n");
+  fprintf(stdout, "                         (or use $CHPL_LAUNCHER_QUEUE)\n");
+  fprintf(stdout, "--walltime <HH:MM:SS>  : specify a wallclock time limit\n");
+  fprintf(stdout, "                         (or use $CHPL_LAUNCHER_WALLTIME)\n");
 }

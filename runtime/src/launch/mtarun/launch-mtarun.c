@@ -80,3 +80,12 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
   }
   return 0;
 }
+
+
+void chpl_launch_print_help(void) {
+  fprintf(stdout, "LAUNCHER FLAGS:\n");
+  fprintf(stdout, "===============\n");
+  fprintf(stdout, "    --numInitialTeams <n>  : start with n teams\n");
+  fprintf(stdout, "    --maxTeams <n>         : use no more than n teams\n");
+  fprintf(stdout, "-nn,--numNodes <n>         : start with n teams and use no more\n");
+}

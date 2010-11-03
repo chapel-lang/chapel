@@ -53,6 +53,11 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
 }
 
 
+void printAdditionalHelp(void) {
+  chpl_launch_print_help();
+}
+
+
 static char chpl_real_binary_name[256];
 
 void chpl_compute_real_binary_name(const char* argv0) {
