@@ -53,24 +53,11 @@ system("cd $rootdir && svn export -q $svnroot chapel");
        "third-party/Makefile",
        "third-party/README",
        "util/README",
-       "util/chpl-multirealm",
        "util/printchplenv",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
        "util/setchplenv.sh",
-       "util/test/timedexec",
-       "util/test/sub_test",
-       "util/test/sub_clean",
-       "util/test/computePerfStats",
-       "util/test/filterSuppressions",
-       "util/test/testEnv",
-       "util/test/createGraphs",
-       "util/test/viewGraphs",
-       "util/test/checkDuplicates",
-       "util/test/compileTest",
-       "util/test/paratest.server",
-       "util/test/paratest.client",
-       "util/test/cat2File"
+       "util/start_test"
 );
 
 
@@ -93,7 +80,9 @@ system("cd $rootdir && svn export -q $svnroot chapel");
     "third-party/gasnet",
     "third-party/gmp",
     "third-party/pvm",
-    "util/chplenv"
+    "util/chplenv",
+    "util/multirealm",
+    "util/test"
 );
 
 
