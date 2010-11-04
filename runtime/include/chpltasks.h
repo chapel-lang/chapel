@@ -54,6 +54,9 @@ void      CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *);
 void CHPL_TASKING_INIT(void);        // main task initializes tasking
 void CHPL_TASKING_EXIT(void);        // called by the main task
 
+// tasking init for any threads created outside of the tasking/threading layer
+void CHPL_PER_PTHREAD_TASKING_INIT(void);
+
 typedef struct chpl_task_list* chpl_task_list_p;
 
 void CHPL_ADD_TO_TASK_LIST(

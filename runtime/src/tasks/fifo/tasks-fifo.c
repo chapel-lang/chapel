@@ -369,6 +369,11 @@ void CHPL_TASKING_EXIT(void) {
 }
 
 
+void CHPL_PER_PTHREAD_TASKING_INIT(void) {
+  return;
+}
+
+
 void CHPL_ADD_TO_TASK_LIST(chpl_fn_int_t fid, void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
