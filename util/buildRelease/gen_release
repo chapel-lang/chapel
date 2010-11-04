@@ -94,9 +94,6 @@ system("cd chapel && make -f make/Makefile.release");
 print "Generating the bison/flex files...\n";
 system("cd chapel/compiler/parser && make lex.yy.cpp > /dev/null");
 
-print "Creating the BUILD_VERSION file...\n";
-system("cd chapel/compiler/main && echo 0 > BUILD_VERSION");
-
 print "Creating the examples directory...\n";
 system("cd chapel && cp -r test/release/examples .");
 system("cd chapel/util && cp start_test ../examples/");
