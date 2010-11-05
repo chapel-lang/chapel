@@ -95,6 +95,8 @@ extern bool fNoMemoryFrees;
 
 extern int numGlobalsOnHeap;
 
+extern int breakOnID;
+
 // code generation strings
 extern const char* compileCommand;
 extern char compileVersion[64];

@@ -515,6 +515,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-scalar-replace", ' ', NULL, "Print information about scalar replacement", "F", &fReportScalarReplace, NULL, NULL},
 
  {"", ' ', NULL, "Misc. Developer Flags", NULL, NULL, NULL, NULL},
+  {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, NULL, NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
