@@ -27,6 +27,7 @@ const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_TASKS = NULL;
+const char* CHPL_THREADS = NULL;
 const char* CHPL_COMM = NULL;
 
 int fdump_html = 0;
@@ -152,6 +153,7 @@ static void setupOrderedGlobals(void) {
   SETUP_ENV_VAR(CHPL_HOST_COMPILER, "chplenv/compiler --host");
   SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/compiler --target");
   SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
+  SETUP_ENV_VAR(CHPL_THREADS, "chplenv/threads");
   SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
 
   // These depend on the environment variables being set

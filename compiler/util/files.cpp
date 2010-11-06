@@ -491,7 +491,8 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
 
 
 static const char* searchPath(Vec<const char*> path, const char* filename,
-                              const char* foundfile = NULL) {
+                              const char* foundfile = NULL,
+                              bool noWarn = false) {
   forv_Vec(const char*, dirname, path) {
     //    printf("searching %s\n", dirname);
     const char* fullfilename = astr(dirname, "/", filename);
@@ -500,7 +501,7 @@ static const char* searchPath(Vec<const char*> path, const char* filename,
       closefile(file);
       if (foundfile == NULL) {
         foundfile = fullfilename;
-      } else {
+      } else if (!noWarn) {
         USR_WARN("Ambiguous module source file -- using %s over %s", 
                  cleanFilename(foundfile), cleanFilename(fullfilename));
       }
@@ -516,6 +517,8 @@ static Vec<const char*> fileModPath;
 static Vec<const char*> fileModPathSet;
 
 void setupModulePaths(void) {
+  intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_THREADS));
+  intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_TASKS));
   intModPath.add(astr(CHPL_HOME, "/modules/internal"));
   stdModPath.add(astr(CHPL_HOME, "/modules/standard"));
   stdModPath.add(astr(CHPL_HOME, "/modules/layouts"));
@@ -539,8 +542,7 @@ void setupModulePaths(void) {
 
 void addStdRealmsPath(void) {
   int32_t numRealms = getNumRealms();
-
-  intModPath.add(astr(intModPath.v[0], "/", 
+  intModPath.add(astr(CHPL_HOME, "/modules/internal/",
                       numRealms == 1 ? "singlerealm" : "multirealm"));
 }
 
@@ -581,7 +583,7 @@ const char* modNameToFilename(const char* modName, bool isInternal,
   const char* filename = astr(modName, ".chpl");
   const char* fullfilename;
   if (isInternal) {
-    fullfilename = searchPath(intModPath, filename);
+    fullfilename = searchPath(intModPath, filename, NULL, true);
   } else {
     fullfilename = searchPath(fileModPath, filename);
     fullfilename = searchPath(usrModPath, filename, fullfilename);
