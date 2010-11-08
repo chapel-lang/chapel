@@ -628,13 +628,14 @@ def chpl__testPar(args...) where chpl__testParFlag == true {
 }
 
 
+_extern def binfwrite (inout ptr:opaque, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 _extern def binfwrite (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 _extern def binfwrite (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-_extern def binfwrite (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 
 _extern def binfread (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 _extern def binfread (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-_extern def binfread (inout ptr:real, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 
 _extern def chpl_setvbuf (stream:_file,mode:int=0);
+
+_extern def chpl_remove (path:string):int;
 
