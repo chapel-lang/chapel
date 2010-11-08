@@ -44,5 +44,6 @@ void binfwrite (const void *ptr, size_t size, size_t nmemb, FILE *stream, long *
 void binfread (void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, int *err);
 
 int chpl_setvbuf(FILE *stream, int mode);
+int chpl_remove(char *path);
 
 #endif
