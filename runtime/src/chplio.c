@@ -127,3 +127,10 @@ int chpl_setvbuf(FILE *stream, int mode)
   return setvbuf(stream,0,mode,0);
 }
 
+
+int chpl_remove(char *path)
+{
+  return remove(path);
+}
+
+
