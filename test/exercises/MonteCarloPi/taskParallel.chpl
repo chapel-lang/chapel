@@ -17,10 +17,12 @@ writeln("Number of tasks     = ", tasks);
 //
 var counts: [0..#tasks] int;
 coforall tid in 0..#tasks {
-  var rs = new RandomStream(seed + tid*2, parSafe=false);
+  var rs = new RandomStream(seed, parSafe=false);
+  const nPerTask = n/tasks, extras = n%tasks;
+  rs.skipToNth(2*(tid*nPerTask + (if tid < extras then tid else extras)) + 1);
 
   var count = 0;
-  for i in 1..(n/tasks) + (tid < n%tasks) do
+  for i in 1..nPerTask + (tid < extras) do
     count += (rs.getNext()**2 + rs.getNext()**2) <= 1.0;
 
   counts[tid] = count;

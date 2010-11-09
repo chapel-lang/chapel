@@ -30,14 +30,19 @@ coforall loc in Locales {
   on loc {
     const locid = here.id;  // could also use loc.id
     var locCounts: [0..#tasksPerLocale] int;
-    const myN = n/numLocales + (locid < n%numLocales);
+    const nPerLoc = n/numLocales, globExtras = n%numLocales;
+    const locN = nPerLoc + (locid < n%numLocales),
+          locFirstPt = locid*nPerLoc + (locid < globExtras);
 
     coforall tid in 0..#tasksPerLocale {
-      var rs = new RandomStream(seed + locid*tasksPerLocale*2 + tid*2,
-                                parSafe=false);
+      var rs = new RandomStream(seed, parSafe=false);
+      const locNPerTask = locN/tasksPerLocale, extras = locN%tasksPerLocale;
+      rs.skipToNth(2*(locFirstPt + 
+                      tid*locNPerTask + (if tid < extras then tid else extras))
+                   + 1);
 
       var count = 0;
-      for i in 1..myN/tasksPerLocale + (tid < myN%tasksPerLocale) do
+      for i in 1..locNPerTask + (tid < extras) do
         count += (rs.getNext()**2 + rs.getNext()**2) <= 1.0;
 
       locCounts[tid] = count;
