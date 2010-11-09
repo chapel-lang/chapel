@@ -245,6 +245,31 @@ returnInfoVirtualMethodCall(CallExpr* call) {
   return fn->retType;
 }
 
+// print the number of each type of primitive present in the AST
+void printPrimitiveCounts(const char* passName) {
+  int primCounts[NUM_KNOWN_PRIMS];
+  for(int i=0; i<NUM_KNOWN_PRIMS; i++) {
+    primCounts[i] = 0;
+  }
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->baseExpr == NULL) {
+      if (call->primitive) {
+        primCounts[call->primitive->tag] += 1;
+      }
+    }
+  }
+
+  printf("NUM_KNOWN_PRIMS = %d\n", NUM_KNOWN_PRIMS);
+  for(int i=1; i<NUM_KNOWN_PRIMS; i++) {
+    if (primitives[i])
+      printf("%s prim[%d] %s %d\n", passName, i, primitives[i]->name, primCounts[i]);
+    else
+      printf("%s prim[%d] *** UNKNOWN *** %d\n", passName, i, primCounts[i]);
+  }
+
+}
+
 HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
 
 PrimitiveOp* primitives[NUM_KNOWN_PRIMS];

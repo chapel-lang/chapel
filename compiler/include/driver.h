@@ -10,6 +10,7 @@ extern FILE* html_index_file;
 extern int instantiation_limit;
 
 extern int fdump_html;
+extern bool fdump_html_incude_system_modules;
 
 extern int trace_level;
 

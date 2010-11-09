@@ -531,6 +531,7 @@ void html_view(const char* passName) {
   fprintf(html_index_file, "%s", passName);
   fprintf(html_index_file, "</TD><TD>");
   forv_Vec(ModuleSymbol, mod, allModules) {
+   if (fdump_html_incude_system_modules || mod->modTag == MOD_MAIN || mod->modTag == MOD_USER) {
     filename = html_file_name( uid, mod->name);
     fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
     html_file = fopen(astr(log_dir, filename), "w");
@@ -551,6 +552,7 @@ void html_view(const char* passName) {
       html_view_ast(stmt, html_file, uid);
     fprintf(html_file, "</HTML>\n");
     fclose(html_file);
+   }
   }
   fprintf(html_index_file, "</TD></TR>");
   fflush(html_index_file);

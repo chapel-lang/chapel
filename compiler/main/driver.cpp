@@ -31,6 +31,7 @@ const char* CHPL_THREADS = NULL;
 const char* CHPL_COMM = NULL;
 
 int fdump_html = 0;
+bool fdump_html_incude_system_modules = true;
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
@@ -405,7 +406,12 @@ static void setBaselineFlag(ArgumentState* arg, char* unused) {
 
 static void setHelpTrue(ArgumentState* arg, char* unused) {
   printHelp = true;
-}  
+}
+
+static void setHtmlUser(ArgumentState* arg, char* unused) {
+  fdump_html = true;
+  fdump_html_incude_system_modules = false;
+}
 
 
 /*
@@ -494,12 +500,12 @@ static ArgumentDescription arg_desc[] = {
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
- {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL},
- {"help", 'h', NULL, "Help (show this list)", "F", &printHelp, NULL},
+ {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL, NULL},
+ {"help", 'h', NULL, "Help (show this list)", "F", &printHelp, NULL, NULL},
  {"help-env", ' ', NULL, "Environment variable help", "F", &printEnvHelp, "", setHelpTrue},
  {"help-settings", ' ', NULL, "Current flag settings", "F", &printSettingsHelp, "", setHelpTrue},
- {"license", ' ', NULL, "Show license", "F", &printLicense, NULL},
- {"version", ' ', NULL, "Show version", "F", &printVersion, NULL},
+ {"license", ' ', NULL, "Show license", "F", &printLicense, NULL, NULL},
+ {"version", ' ', NULL, "Show version", "F", &printVersion, NULL, NULL},
 
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
  {"", ' ', NULL, "Debug Output", NULL, NULL, NULL, NULL},
@@ -507,6 +513,7 @@ static ArgumentDescription arg_desc[] = {
  {"c-line-numbers", ' ', NULL, "Use C code line numbers and filenames", "F", &fCLineNumbers, NULL, NULL},
  {"gen-ids", ' ', NULL, "Pepper generated code with BaseAST::id numbers", "F", &fGenIDS, "CHPL_GEN_IDS", NULL},
  {"html", 't', NULL, "Dump IR in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
+ {"html-user", ' ', NULL, "Dump IR in HTML for main/user module(s) only", "T", &fdump_html, NULL, setHtmlUser},
  {"log", 'd', "[a|i|F|d|s]", "Specify debug logs", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},

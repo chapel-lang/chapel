@@ -233,6 +233,7 @@ extern HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
 
 extern PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 
+void printPrimitiveCounts(const char* passName);
 void initPrimitive();
 
 extern Map<const char*, VarSymbol*> memDescsMap;

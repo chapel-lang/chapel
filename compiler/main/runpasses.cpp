@@ -5,6 +5,7 @@
 #include "runpasses.h"
 #include "stringutil.h"
 #include "view.h"
+#include "primitive.h"
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -75,6 +76,7 @@ static void runPass(const char *passName, void (*pass)(void)) {
   }
   cleanAst();
   verify();
+  //printPrimitiveCounts(passName);
 }
 
 
