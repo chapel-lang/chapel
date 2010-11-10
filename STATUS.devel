@@ -185,6 +185,8 @@ Data Parallelism
 - Records in reduction classes may results in out-of-bound indexing
   problems.
   # studies/kmeans/kmeansonepassreduction-mystery.future
+- Parallel zippered iteration does not perform runtime size/shape checks
+  # arrays/claridge/arraySizeMismatch.future, arrays/bradc/badParZip.future
 - Some data parallel statements that should be parallelized are
   serialized with a warning message "X has been serialized".  In some
   case, this can be fixed in the program.
