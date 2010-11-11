@@ -10,15 +10,19 @@ writeln("Number of tasks     = ", tasks);
 
 //
 // Use a coforall to create the configured number of tasks.  Have each 
-// task construct a RandomStream object with a unique seed, run the
-// Monte Carlo method for its portion of the n total points, and delete
-// the RandomStream object.  Store the resulting count in an array of
-// counts with one element per task.
+// task construct a RandomStream object with the same seed, fast forward
+// to the task's unique point in the stream (in order to avoid using
+// the same random numbers redundantly while also getting the same
+// answer as the serial version), run the Monte Carlo method for its
+// portion of the n total points, and delete the RandomStream object.
+// Store the resulting count in an array of counts with one element per
+// task.
 //
 var counts: [0..#tasks] int;
 coforall tid in 0..#tasks {
   var rs = new RandomStream(seed, parSafe=false);
-  const nPerTask = n/tasks, extras = n%tasks;
+  const nPerTask = n/tasks,
+        extras = n%tasks;
   rs.skipToNth(2*(tid*nPerTask + (if tid < extras then tid else extras)) + 1);
 
   var count = 0;
