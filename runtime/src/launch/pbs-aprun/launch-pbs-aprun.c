@@ -13,6 +13,9 @@
 #define baseExpectFilename ".chpl-expect-"
 #define baseSysFilename ".chpl-sys-"
 
+#define CHPL_CC_ARG "-cc"
+static char *_ccArg = NULL;
+
 char expectFilename[FILENAME_MAX];
 char sysFilename[FILENAME_MAX];
 
@@ -142,6 +145,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* qsubOptions;
   pid_t mypid;
   int numCoresPerLocale;
+  const char *host = getenv("CHPL_HOST_PLATFORM");
+  const char *ccArg = _ccArg ? _ccArg :
+    (host && !strcmp(host, "xe-cle") ? "none" : "cpu");
 
   if (basenamePtr == NULL) {
       basenamePtr = argv[0];
@@ -199,7 +205,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"aprun -q -b -d%d -n1 -N1 ls %s\\n\"\n", numCoresPerLocale, chpl_get_real_binary_name());
+  fprintf(expectFile, "send \"aprun -cc %s -q -b -d%d -n1 -N1 ls %s\\n\"\n",
+          ccArg, numCoresPerLocale, chpl_get_real_binary_name());
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"failed: chdir\" {send_user "
           "\"error: %s must be launched from and/or stored on a "
@@ -211,7 +218,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   if (verbosity < 2) {
     fprintf(expectFile, "-q ");
   }
-  fprintf(expectFile, "-d%d -n%d -N%d %s", numCoresPerLocale, numLocales, procsPerNode, chpl_get_real_binary_name());
+  fprintf(expectFile, "-cc %s -d%d -n%d -N%d %s", ccArg, numCoresPerLocale,
+          numLocales, procsPerNode, chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }
@@ -258,9 +266,29 @@ void chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, chpl_string filename) {
-  return 0;
+  int numArgs = 0;
+  if (!strcmp(argv[argNum], CHPL_CC_ARG)) {
+    _ccArg = argv[argNum+1];
+    numArgs = 2;
+  } else if (!strncmp(argv[argNum], CHPL_CC_ARG"=", strlen(CHPL_CC_ARG))) {
+    _ccArg = &(argv[argNum][strlen(CHPL_CC_ARG)+1]);
+    numArgs = 1;
+  }
+  if (numArgs > 0) {
+    if (strcmp(_ccArg, "none") &&
+        strcmp(_ccArg, "numa_node") &&
+        strcmp(_ccArg, "cpu")) {
+      char msg[256];
+      sprintf(msg, "'%s' is not a valid cpu assignment", _ccArg);
+      chpl_error(msg, 0, 0);
+    }
+  }
+  return numArgs;
 }
 
 
 void chpl_launch_print_help(void) {
+  fprintf(stdout, "LAUNCHER FLAGS:\n");
+  fprintf(stdout, "===============\n");
+  fprintf(stdout, "  %s keyword     : specify cpu assignment within a node: none (default), numa_node, cpu\n", CHPL_CC_ARG);
 }

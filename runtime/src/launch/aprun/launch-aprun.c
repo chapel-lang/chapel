@@ -10,6 +10,8 @@
 #define baseSysFilename ".chpl-sys-"
 char sysFilename[FILENAME_MAX];
 
+#define CHPL_CC_ARG "-cc"
+static char *_ccArg = NULL;
 
 // TODO: Un-hard-code this stuff:
 
@@ -58,10 +60,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   int size;
   char baseCommand[256];
   char* command;
+  const char *host = getenv("CHPL_HOST_PLATFORM");
+  const char *ccArg = _ccArg ? _ccArg :
+    (host && !strcmp(host, "xe-cle") ? "none" : "cpu");
 
   chpl_compute_real_binary_name(argv[0]);
 
-  sprintf(baseCommand, "aprun %s -d%d -n%d -N1 %s", 
+  sprintf(baseCommand, "aprun -cc %s %s -d%d -n%d -N1 %s", ccArg,
           ((verbosity < 2) ? "-q" : ""), getNumCoresPerLocale(), numLocales, 
           chpl_get_real_binary_name());
 
@@ -96,9 +101,29 @@ void chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, chpl_string filename) {
-  return 0;
+  int numArgs = 0;
+  if (!strcmp(argv[argNum], CHPL_CC_ARG)) {
+    _ccArg = argv[argNum+1];
+    numArgs = 2;
+  } else if (!strncmp(argv[argNum], CHPL_CC_ARG"=", strlen(CHPL_CC_ARG))) {
+    _ccArg = &(argv[argNum][strlen(CHPL_CC_ARG)+1]);
+    numArgs = 1;
+  }
+  if (numArgs > 0) {
+    if (strcmp(_ccArg, "none") &&
+        strcmp(_ccArg, "numa_node") &&
+        strcmp(_ccArg, "cpu")) {
+      char msg[256];
+      sprintf(msg, "'%s' is not a valid cpu assignment", _ccArg);
+      chpl_error(msg, 0, 0);
+    }
+  }
+  return numArgs;
 }
 
 
 void chpl_launch_print_help(void) {
+  fprintf(stdout, "LAUNCHER FLAGS:\n");
+  fprintf(stdout, "===============\n");
+  fprintf(stdout, "  %s keyword     : specify cpu assignment within a node: none (default), numa_node, cpu\n", CHPL_CC_ARG);
 }
