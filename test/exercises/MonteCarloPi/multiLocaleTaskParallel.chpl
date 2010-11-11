@@ -31,8 +31,9 @@ coforall loc in Locales {
     const locid = here.id;  // could also use loc.id
     var locCounts: [0..#tasksPerLocale] int;
     const nPerLoc = n/numLocales, globExtras = n%numLocales;
-    const locN = nPerLoc + (locid < n%numLocales),
-          locFirstPt = locid*nPerLoc + (locid < globExtras);
+    const locN = nPerLoc + (locid < globExtras),
+          locFirstPt = locid*nPerLoc
+                       + (if (locid < globExtras) then locid else globExtras);
 
     coforall tid in 0..#tasksPerLocale {
       var rs = new RandomStream(seed, parSafe=false);
