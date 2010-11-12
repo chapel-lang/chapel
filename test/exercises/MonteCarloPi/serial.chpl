@@ -16,7 +16,7 @@ use Random;
 // executable's command line (using --n and --seed).
 //
 config const n = 100000,
-             seed = 314159265;
+             seed = 589494289;
 
 //
 // Print simulation configuration.

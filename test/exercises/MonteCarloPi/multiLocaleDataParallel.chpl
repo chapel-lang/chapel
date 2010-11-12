@@ -1,7 +1,7 @@
 use Random, BlockDist;  // Add a use for the standard block distribution
 
 config const n = 100000,
-             seed = 314159265;
+             seed = 589494289;
 
 writeln("Number of locales     = ", numLocales);
 writeln("Number of points      = ", n);

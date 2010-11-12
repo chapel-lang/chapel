@@ -4,7 +4,7 @@ use Random;
 // Replace config const n with epsilon since we're now computing n
 //
 config const epsilon = 0.0000001,
-             seed = 314159265;
+             seed = 589494289;
 
 //
 // store a "correct" solution for pi to compare against

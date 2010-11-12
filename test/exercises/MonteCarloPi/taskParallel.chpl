@@ -2,7 +2,7 @@ use Random;
 
 config const n = 100000,
        tasks = here.numCores,
-       seed = 314159265;
+       seed = 589494289;
 
 writeln("Number of points    = ", n);
 writeln("Random number seed  = ", seed);
