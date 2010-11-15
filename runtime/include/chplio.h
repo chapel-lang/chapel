@@ -40,8 +40,10 @@ void _readToEndOfLine(FILE* fp);
 char* chpl_refToString(void* ref);
 char* chpl_wideRefToString(void* wideref);
 
-void binfwrite (const void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, int *err);
-void binfread (void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, int *err);
+void binfwrite_simple_data (const void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, int *err);
+void binfwrite_pointer (const void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, int *err);
+void binfread_simple_data (void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, int *err);
+void binfread_pointer (void *ptr, size_t size, size_t nmemb, FILE *stream, long *res, int *err);
 
 int chpl_setvbuf(FILE *stream, int mode);
 int chpl_remove(char *path);
