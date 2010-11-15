@@ -284,7 +284,7 @@ def file.fseekset(offset: int(64)) {
 
 // fseek moves the position on the file offset bytes relative to the current
 // position
-def file.fseek(offset: int(64)) {
+def file.fseekrel(offset: int(64)) {
   var pos : int(64) = 5;
   on this {
     if !isOpen then
@@ -628,12 +628,17 @@ def chpl__testPar(args...) where chpl__testParFlag == true {
 }
 
 
-_extern def binfwrite (inout ptr:opaque, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-_extern def binfwrite (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-_extern def binfwrite (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfwrite_simple_data (inout ptr:opaque, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfwrite_simple_data (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfwrite_simple_data (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 
-_extern def binfread (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
-_extern def binfread (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfwrite_pointer (ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfwrite_pointer (ptr:opaque, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+
+_extern def binfread_simple_data (inout ptr:int, size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+_extern def binfread_simple_data (inout ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
+
+_extern def binfread_pointer (ptr:int(64), size:int(64) , nelm:int(64), file:_file, inout res:int(64), inout err:int );
 
 _extern def chpl_setvbuf (stream:_file,mode:int=0);
 
