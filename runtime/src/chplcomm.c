@@ -43,6 +43,12 @@ extern void* chpl_getPrivatizedClass(int32_t i) {
 }
 
 
+//
+// The function chpl_comm_get_offset copies data from the memory of
+// a locale, to the pointer indicated plus an offset, so it can be used to
+// fill a buffer, for example. That cannot be done in Chapel, as 
+// it cannot add an offset to a pointer.
+//
 
 void  chpl_comm_get_offset(long *addr,long offset, int32_t locale, long* raddr, int32_t size) {
 /* DEBUG INFO commented  
