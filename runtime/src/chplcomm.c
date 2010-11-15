@@ -42,3 +42,28 @@ extern void* chpl_getPrivatizedClass(int32_t i) {
   return chpl_privateObjects[i];
 }
 
+
+
+void  chpl_comm_get_offset(long *addr,long offset, int32_t locale, long* raddr, int32_t size) {
+/* DEBUG INFO commented  
+   printf("before copying values: ");
+   for (int i=0; i < (offset/8)+(size/8);i++) {
+	printf(" %ld ",addr[i]);
+   }
+   printf("\n");
+   printf ("amp addr:%ld value:%ld point dat:%ld offset:%ld\n",addr+(offset/8),(*(addr+offset/8)),*addr,offset/8);
+   printf ("rdata:%ld size:%d\n",raddr,size);
+   fflush(NULL);
+   */
+   chpl_comm_get(addr+(offset/8), locale, raddr, size, 0, "none");
+  /* 
+   printf ("new value:%ld\n",(addr+offset));
+   printf("copied values: ");
+   for (int i=0; i < (offset/8)+(size/8);i++) {
+	printf(" %ld ",addr[i]);
+   }
+   printf("END\n");
+   */
+}
+
+
