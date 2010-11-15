@@ -1,0 +1,7 @@
+5.0 6.0 7.0
+8.0 9.4 10.6
+Using fseekset 6:7.0 8.0 9.4 fpos:11
+Using fseek -10:6.0 7.0 8.0 fpos:7
+string read:9.4
+string read:10.6
+string read:appended
