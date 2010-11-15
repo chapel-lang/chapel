@@ -890,20 +890,9 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
 
 
 
-//    _extern def chpl_comm_get(chpl_macro_tmp, locale, addr, size, ln, fn);
     _extern def chpl_comm_get (inout addr:int(64), locale:int(32) , inout raddr:int(64), size, ln, fn );
-    _extern def chpl_pario_get (addr, offset:int(64), locale:int(32) , raddr:int(64), size );
-//    _extern def chpl_pario_get (inout addr, offset:int(64), locale:int(32) , inout raddr:int(64), size );
-//    void  chpl_pario_get(void *addr,long offset, int32_t locale, void* raddr, int32_t size) ;
+    _extern def chpl_comm_get_offset (addr, offset:int(64), locale:int(32) ,inout raddr:int(64), size );
 
-//    var inlocal_dest2 = chpl_malloc(numelem, numbytespn,0, linenum, filename);
-//    chpl_comm_get(inlocal_dest, here.id, inlocal_dest2, numbytespn*numelem,linenum, filename);
-    //chpl_comm_get(inlocal_dest, here.id, privarr.locArr(localeIdx)(ind), numbytespn*numelem,linenum, filename);
-    //chpl_comm_get(privarr.locArr(localeIdx)(ind),here.id, inlocal_dest, numbytespn*numelem,linenum, filename);
-    //chpl_comm_get(privarr.locArr(localeIdx)(ind),here.id, inlocal_dest, 2,linenum, filename);
-//    chpl_comm_get(inlocal_dest,here.id:int,privarr.locArr(localeIdx)(ind), numelem*numbytespn,linenum, filename);
-//    var jj=privarr.dom.dist.targetLocales(localeIdx).id:int;
-//    chpl_comm_get(inlocal_dest,jj,privarr.locArr(localeIdx)(ind), numelem*numbytespn,linenum, filename);
     mem_offset=0;
     for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
 	    from=privarr.locArr((tmp_loc,i2)).locDom.myBlock.low(2);
@@ -916,19 +905,11 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
 //    writeln("to ",to," from:",from," data:", privarr.locArr((tmp_loc,i2))(ind)," memoffset:",mem_offset," size:",numelem," ",numbytespn," here:",here.id," procc:",dom.dist.targetLocales((tmp_loc,i2)).id);
 	    num_elem_total=num_elem_total+to-from+1;
 	    chpl_comm_get_offset(inlocal_dest,mem_offset,dom.dist.targetLocales((tmp_loc,i2)).id , privarr.locArr((tmp_loc,i2))(ind), numelem*numbytespn);
-//    chpl_comm_get(inlocal_dest,dom.dist.targetLocales((tmp_loc,i2)).id , privarr.locArr((tmp_loc,i2))(ind), numelem*numbytespn,linenum, filename);
 
-//	    writeln("inlocalmem: locale:",dom.dist.targetLocales((tmp_loc,i2)).id);
 //	    mem_offset=mem_offset+(numelem*numbytespn); //*(i2-dom.dist.targetLocDom.dim(2)._low):int(64);
     	    binfwrite_pointer(inlocal_dest,numbytespn,numelem,outfile._fp, status, err);
     }   
-    /*    for i2 in dom.dist.targetLocDom.dim(2)._low..dom.dist.targetLocDom.dim(2)._high {
-	    	writeln("in locales ",localeIdx(1)," ",i2);
-    }
-*/	
 
-//    binfwrite_simple_data(inlocal_dest,numbytespn,num_elem_total,outfile._fp, status, err);
-//    infwrite(privarr.locArr(localeIdx)(ind),numbytespn,numelem,outfile._fp, status, err);
     if status < 0 {
       halt("***Error: Write failed: ", err, "***");
     }
