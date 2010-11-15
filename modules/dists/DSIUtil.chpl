@@ -223,7 +223,7 @@ def read2DBlock(f : file) {
 //  writeln("readBinBlock begin, ftell:",fpos);
 
   var rank:int;
-  binfread(rank,4,1,f._fp,gres,gerr);
+  binfread_simple_data(rank,4,1,f._fp,gres,gerr);
 //  writeln("Read Block rank:",rank);
 
   var rr:int;
@@ -233,9 +233,9 @@ def read2DBlock(f : file) {
   var stride: [1..2] int;
 
   for dim in 1..rank do {
-    binfread(low[dim],4,1,f._fp,gres,gerr);
-    binfread(high[dim],4,1,f._fp,gres,gerr);
-    binfread(stride[dim],4,1,f._fp,gres,gerr);
+    binfread_simple_data(low[dim],4,1,f._fp,gres,gerr);
+    binfread_simple_data(high[dim],4,1,f._fp,gres,gerr);
+    binfread_simple_data(stride[dim],4,1,f._fp,gres,gerr);
 //    writeln("Read Block dim:",dim," low   : ",low[dim]);
 //    writeln("Read Block dim:",dim," high  : ",high[dim]);
 //    writeln("Read Block dim:",dim," stride: ",stride[dim]);
