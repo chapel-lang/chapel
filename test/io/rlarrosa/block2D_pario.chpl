@@ -137,7 +137,7 @@ if debugInfo then writeln("ww5, ftell:",fpos);
 // close the file
 outfile.close();
 
-writeln("Zeroed via parallel iteration over the array");
+writeln("1 Zeroed via parallel iteration over the array");
 forall a in A do {
   a = 0;
 }
@@ -213,5 +213,5 @@ forall i in Dom do {
 forall a in Aread do {
   a = 0;
 }
-writeln("Zeroed via parallel iteration over the array");
+writeln("2 Zeroed via parallel iteration over the array");
 //writeln(A);
