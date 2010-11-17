@@ -3,11 +3,10 @@
  *
  * This example demonstrates a simple use of the Block distribution to
  * distribute a 2D array of integers across multiple locales and then
- * doing a parallel write and finally a read from disk. Try it
- * with 4 locales by running it with the command-line argument -nl 4.
- * Note that you will need to set CHPL_COMM to gasnet.  Then try it
- * varying the numbers of locales and by changing the problem size
- * (--n=16).
+ * doing a parallel write. Try it with 4 locales by running it with the
+ * command-line argument -nl 4.  Note that you will need to set CHPL_COMM to
+ * gasnet.  Then try it varying the numbers of locales and by changing the
+ * problem size (--x_len=19 --y_len=13).
  *
  */
 
@@ -25,7 +24,7 @@ config param debugInfo = true;
 
 
 var numloc:int(32)=numLocales;
-config const filename:string="Arr_Bin_"+numloc+"_"+x_len+"_"+y_len+".dat";
+config const filename:string="Arr_Bin_Test"+numloc+"_"+x_len+"_"+y_len+".dat";
 
 //
 // Declare and initialize an instance of the Block distribution Dist,
@@ -76,7 +75,7 @@ writeln();
 //
 var j = 2;
 forall i in Dom do {
-  A(i) = (50+i[2]+(i[1]-1)*y_len)+1;
+  A(i) = (50+(i[2]-1)+(i[1]-1)*y_len);
 }
 
 // Print the array if it is not too big
