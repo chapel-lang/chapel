@@ -865,8 +865,6 @@ def BlockArr.writeBinLocalArray(localeIdx, offset: int(64), f: file)
   var num_elem_total=0:int(64);
 
   var loc_per_row=dom.dist.targetLocDom.dim(2)._high-dom.dist.targetLocDom.dim(2)._low+1;
-  writeln("to do the malloc ",numbytespn," elem_per_row=",elem_per_row," locpr=",loc_per_row);
-//  var inlocal_dest = chpl_malloc(numelem, numbytespn*elem_per_row,"buffer for writting");
   var inlocal_dest = chpl_malloc(elem_per_row, numbytespn);
 
 
@@ -959,7 +957,6 @@ def BlockArr.writeBinArray(f: file)
 	    for i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
 	      on dom.dist.targetLocales((i1,i2)) {
 		if debugBlockDist then writeln("Sequential: Inside: ",here.id," idx:",i1,",",i2, " low:",dom.dist.targetLocDom.dim(1)._low, " high:",dom.dist.targetLocDom.dim(1)._high);
-		writeln("Sequential: Inside: ",here.id," idx:",i1,",",i2, " low:",dom.dist.targetLocDom.dim(1)._low, " high:",dom.dist.targetLocDom.dim(1)._high);
 		lastPos=writeBinLocalArray((i1,i2),fpos,f);
 		if ( gotoPos < lastPos ) then gotoPos=lastPos;
 	      }
@@ -974,7 +971,6 @@ def BlockArr.writeBinArray(f: file)
 	    for i1 in dom.dist.targetLocDom.dim(1)._low..dom.dist.targetLocDom.dim(1)._high {
 	      on dom.dist.targetLocales((i1,i2)) {
 		if debugBlockDist then writeln("Inside: ",here.id," idx:",i1,",",i2, " low:",dom.dist.targetLocDom.dim(1)._low, " high:",dom.dist.targetLocDom.dim(1)._high);
-		writeln("Inside: ",here.id," idx:",i1,",",i2, " low:",dom.dist.targetLocDom.dim(1)._low, " high:",dom.dist.targetLocDom.dim(1)._high);
 		lastPos=writeBinLocalArray((i1,i2),fpos,f);
 		if ( gotoPos < lastPos ) then gotoPos=lastPos;
 	      }
