@@ -464,7 +464,8 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
 //
 void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn);
 
-void  chpl_pario_get(long *addr,long offset, int32_t locale, long* raddr, int32_t size);
+void  chpl_comm_get_offset(long *addr,long offset, int32_t locale, long* raddr, int32_t size);
+
 
 //
 // remote fork should launch a thread on locale that runs function f
