@@ -57,6 +57,10 @@ void CHPL_TASKING_EXIT(void);        // called by the main task
 // tasking init for any threads created outside of the tasking/threading layer
 void CHPL_PER_PTHREAD_TASKING_INIT(void);
 
+#ifdef RUN_MAIN_AS_A_TASK
+void CHPL_TASKING_CALL_MAIN(void (*)(void));  // invoke the main task
+#endif
+
 typedef struct chpl_task_list* chpl_task_list_p;
 
 void CHPL_ADD_TO_TASK_LIST(
