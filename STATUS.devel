@@ -210,8 +210,11 @@ Locales and Domain Maps
   # multilocale/sungeun/locale_default.future
 - Domain maps may be prematurely freed.
   Workaround: This may be in the declaration. Try eliding the type.
-- The local statement is not well supported.
+- The local statement is not well supported.  For example, declaring
+  domains (whether explicitly via a declaration or implicitly via
+  slicing results in a seg fault or non-local access error).
   # John Lewis examples and other .futures forthcoming
+  # multilocale/local/sungeun/local_privatization.chpl
 
 User-Defined Reductions and Scans and User-Defined Domain Maps
 --------------------------------------------------------------

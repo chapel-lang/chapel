@@ -36,6 +36,9 @@ spectests: FORCE
 	rm -rf $(SPECTEST_DIR)
 	util/devel/test/extract_tests -o $(SPECTEST_DIR) spec/*.tex
 
+STATUS: STATUS.devel
+	grep -v "^\ *#" STATUS.devel > STATUS
+
 clean: FORCE
 	cd compiler && $(MAKE) clean
 	cd runtime && $(MAKE) clean
