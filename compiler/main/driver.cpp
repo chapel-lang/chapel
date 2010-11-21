@@ -82,6 +82,7 @@ bool report_inlining = false;
 char chplmake[256] = "";
 char fExplainCall[256] = "";
 char fExplainInstantiation[256] = "";
+bool fShowCallStackOnError = false;
 bool fCLineNumbers = false;
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
@@ -495,6 +496,7 @@ static ArgumentDescription arg_desc[] = {
  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
+ {"show-calls-on-error", ' ', NULL, "show the call chain leading to each error or warning", "N", &fShowCallStackOnError, "CHPL_SHOW_CALLS_ON_ERROR", NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},

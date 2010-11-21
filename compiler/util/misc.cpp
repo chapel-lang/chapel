@@ -12,6 +12,7 @@
 #include "stringutil.h"
 #include "misc.h"
 #include "yy.h"
+#include "../resolution/resolution.h"
 
 static void cleanup_for_exit(void) {
   deleteTmpDir();
@@ -146,6 +147,21 @@ static void printDevelErrorFooter(void) {
     fprintf(stderr, " [%s:%d]", err_filename, err_lineno);
 }
 
+// a variation on the same in functionResolution.cpp
+static void printCallStackOnError() {
+  if (!fShowCallStackOnError || callStack.n <= 1)
+    return;
+  fprintf(stderr, "while processing the following Chapel call chain:\n");
+  for (int i = callStack.n-1; i >= 0; i--) {
+    CallExpr* call = callStack.v[i];
+    FnSymbol* fn = call->getFunction();
+    ModuleSymbol* module = call->getModule();
+    fprintf(stderr, "  %s:%d: %s%s%s\n",
+            module->filename, call->lineno, toString(fn),
+            (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
+            (fn->hasFlag(FLAG_TEMP) ? " [compiler-generated]" : ""));
+  }
+}
 
 
 void handleError(const char *fmt, ...) {
@@ -168,6 +184,8 @@ void handleError(const char *fmt, ...) {
   printDevelErrorFooter();
 
   fprintf(stderr, "\n");
+
+  printCallStackOnError();
 
   if (exit_immediately && !ignore_errors) {
     clean_exit(1);
@@ -193,6 +211,8 @@ void handleError(BaseAST* ast, const char *fmt, ...) {
   printDevelErrorFooter();
 
   fprintf(stderr, "\n");
+
+  printCallStackOnError();
 
   if (exit_immediately && !ignore_errors) {
     clean_exit(1);
