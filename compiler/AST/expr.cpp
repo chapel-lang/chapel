@@ -2205,10 +2205,19 @@ void CallExpr::codegen(FILE* outfile) {
       // pointer variables.
       if (!(strcmp(CHPL_TARGET_PLATFORM, "xmt"))) {
         Vec<SymExpr*> se;
+	Vec<DefExpr*> de_parent;
+	Vec<VarSymbol*> vs_parent;
         collectSymExprs(this->next, se);
+	collectDefExprs(this->parentExpr, de_parent);
+	forv_Vec(DefExpr*, def, de_parent) {
+	  VarSymbol* vs = toVarSymbol(def->sym);
+	  if (vs) vs_parent.add(vs);
+	}
         forv_Vec(SymExpr*, sym, se) {
-          if (isVarSymbol(sym->var) && (!(isPrimitiveType(sym->var->type)))) {
-            fprintf(outfile, "_Pragma(\"mta assert noalias *%s\")\n", sym->var->cname);
+	  if (isVarSymbol(sym->var) && (!(isPrimitiveType(sym->var->type)))) {
+	    VarSymbol* vs = toVarSymbol(sym->var);
+	    if (vs_parent.in(vs))
+	      fprintf(outfile, "_Pragma(\"mta assert noalias *%s\")\n", sym->var->cname);
           }
         }
         this->remove();

@@ -185,19 +185,16 @@ void repositionDefExpressions(void) {
     // Several copies of the noalias pragma are stuffed into a given block.
     // This removes all but one, and pulls it ahead of the block.
     Vec<CallExpr*> calls;
-    BlockStmt* block = fn->body;
+    BlockStmt* block = NULL;
     collectCallExprs(fn, calls);
     forv_Vec(CallExpr*, call, calls) {
       if (call->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_NOALIAS)) {
-        Vec<SymExpr*> se;
         BlockStmt* current_block = toBlockStmt(call->parentExpr);
         if (block == current_block) { 
           call->remove();
         } else {
           block = current_block;
-          collectSymExprs(current_block, se);
-          current_block->insertBefore(new CallExpr(PRIM_BLOCK_XMT_PRAGMA_NOALIAS));
-          call->remove();
+	  current_block->insertBefore(call->remove());
         }
       }
     }
