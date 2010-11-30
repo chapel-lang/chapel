@@ -1,81 +1,71 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "chpllaunch.h"
 #include "chpl_mem.h"
 #include "error.h"
 
-int numTeams = 0;
-int maxTeams = 0;
+static int numTeams = 0;
+static int maxTeams = 0;
 
-static char* chpl_launch_create_command(int argc, char* argv[],
-                                        int32_t numLocales) {
-  int i;
-  int size;
-  char baseCommand[256];
-  char* command;
+static char _tbuf[16];
+static char _mbuf[16];
+static char** chpl_launch_create_argv(int argc, char* argv[]) {
+  const int largc = 5;
+  char *largv[largc];
+  int l = 0;
 
-  if (numLocales != 1) {
-    chpl_error("XMT launcher only supports numLocales==1", 0, "<command-line>"\
-);
+  largv[l++] = (char *) "mtarun";
+  if (numTeams != 0) {
+    largv[l++] = (char *) "-t";
+    sprintf(_tbuf, "%d", numTeams);
+    largv[l++] = _tbuf;
+  }
+  if (maxTeams != 0) {
+    largv[l++] = (char *) "-m";
+    sprintf(_mbuf, "%d", maxTeams);
+    largv[l++] = _mbuf;
   }
 
-  chpl_compute_real_binary_name(argv[0]);
-
-  if ((numTeams != 0) && (maxTeams != 0)) {
-    sprintf(baseCommand, "mtarun -m %d -t %d %s", maxTeams, numTeams, chpl_get\
-_real_binary_name());
-  } else if (numTeams != 0) {
-    sprintf(baseCommand, "mtarun -t %d %s", numTeams, chpl_get_real_binary_nam\
-e());
-  } else if (maxTeams != 0) {
-    sprintf(baseCommand, "mtarun -m %d %s", maxTeams, chpl_get_real_binary_nam\
-e());
-  } else {
-    sprintf(baseCommand, "mtarun %s", chpl_get_real_binary_name());
-  }
-
-  size = strlen(baseCommand) + 1;
-
-  for (i=1; i<argc; i++) {
-    size += strlen(argv[i]) + 3;
-  }
-
-  command = chpl_malloc(size, sizeof(char*), CHPL_RT_MD_COMMAND_BUFFER, -1, ""\
-);
-
-  sprintf(command, "%s", baseCommand);
-  for (i=1; i<argc; i++) {
-    strcat(command, " '");
-    strcat(command, argv[i]);
-    strcat(command, "'");
-  }
-
-  if (strlen(command)+1 > size) {
-    chpl_internal_error("buffer overflow");
-  }
-
-  return command;
+  return chpl_bundle_exec_args(argc, argv, l, largv);
 }
 
 
-void chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
-                           argv[0]);
+int  chpl_launch(int argc, char* argv[], int32_t numLocales) {
+  if (numLocales != 1) {
+    // This error should be taken care of before we get to this point
+    chpl_internal_error("The XMT launcher only supports numLocales==1");
+  }
+
+  return chpl_launch_using_exec("mtarun",
+                                chpl_launch_create_argv(argc, argv),
+                                argv[0]);
 }
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, chpl_string filename) {
+  char *endptr;
+
   if ((strcmp(argv[argNum], "--numNodes") == 0) ||
       (strcmp(argv[argNum], "-nn") == 0)) {
-    numTeams = atoi(argv[argNum+1]);
-    maxTeams = atoi(argv[argNum+1]);
+    numTeams = strtol(argv[argNum+1], &endptr, 10);
+    if ((endptr == argv[argNum+1]) || (numTeams <= 0)) {
+      chpl_error("Invalid number of teams", 0, "<command-line>");
+    }
+    maxTeams = numTeams;
     return 2;
   } else if (strcmp(argv[argNum], "--numInitialTeams") == 0) {
-    numTeams = atoi(argv[argNum+1]);
+    numTeams = strtol(argv[argNum+1], &endptr, 10);
+    if ((endptr == argv[argNum+1]) || (numTeams <= 0)) {
+      chpl_error("Invalid number of initial teams", 0, "<command-line>");
+    }
     return 2;
   } else if (strcmp(argv[argNum], "--maxTeams") == 0) {
-    maxTeams = atoi(argv[argNum+1]);
+    maxTeams = strtol(argv[argNum+1], &endptr, 10);
+    if ((endptr == argv[argNum+1]) || (maxTeams <= 0)) {
+      chpl_error("Invalid number of max teams", 0, "<command-line>");
+    }
     return 2;
   }
   return 0;

@@ -209,7 +209,7 @@ static int pvm_spawn_wrapper(char* command, char** args, char* node, int* tid) {
 }
 
 
-void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   int i, j, info;
   int infos[256];
   struct utsname myhostname;
@@ -543,7 +543,7 @@ void chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   }
 
   cleanup_for_exit();
-  exit(0);
+  exit(0); // why exit and not return?
 }
 
 

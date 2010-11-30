@@ -131,7 +131,8 @@ static void chpl_launch_cleanup(void) {
 }
 
 
-void chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+  int retcode;
   debug = getenv("CHPL_LAUNCHER_DEBUG");
   if (!walltime) {
     walltime = getenv("CHPL_LAUNCHER_WALLTIME");
@@ -139,9 +140,10 @@ void chpl_launch(int argc, char* argv[], int32_t numLocales) {
   if (!queue) {
     queue = getenv("CHPL_LAUNCHER_QUEUE");
   }
-  chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
-                           argv[0]);
+  retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
+                                     argv[0]);
   chpl_launch_cleanup();
+  return retcode;
 }
 
 

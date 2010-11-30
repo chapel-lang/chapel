@@ -151,7 +151,7 @@ void* chpl_md_realloc(void* memAlloc, size_t newChunk, int32_t, chpl_string);
 #include "arg.h"
 
 #define chpl_malloc(number, size, description, lineno, filename)        \
-  malloc(number*size)
+  malloc((number)*(size))
 
 #define chpl_free(ptr, lineno, filename)        \
   free(ptr)

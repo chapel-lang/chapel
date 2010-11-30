@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
 #include <comm_printf_macros.h>
 #include "chplcgfns.h"
 #include "chplcomm_locales.h"
@@ -9,7 +12,7 @@
 #include "error.h"
 
 
-static void chpl_launch_sanity_checks(char* argv0) {
+static void chpl_launch_sanity_checks(const char* argv0) {
   // Do sanity checks just before launching.
   struct stat statBuf;
 
@@ -23,13 +26,71 @@ static void chpl_launch_sanity_checks(char* argv0) {
   }
 }
 
+//
+// This function returns a NULL terminated argv list as required by
+// chpl_launch_using_exec(), i.e., execve(3).
+//
+//     argc, argv: as passed to main()
+//     largc, largv: launcher command and args
+//
+char** chpl_bundle_exec_args(int argc, char *const argv[],
+                              int largc, char *const largv[]) {
+  int len = argc+largc+1;
+  char **newargv = chpl_malloc(len, sizeof(char*),
+                               CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  if (!newargv) {
+    chpl_error("Could not allocate memory", -1, "<internal>");
+  }
 
-void chpl_launch_using_system(char* command, char* argv0) {
+  chpl_compute_real_binary_name(argv[0]);
+
+  newargv[len-1] = NULL;
+
+  if (largc > 0) {
+    // launcher args
+    memcpy(newargv, largv, largc*sizeof(char *));
+  }
+  // binary
+  newargv[largc] = (char *) chpl_get_real_binary_name();
+  if (argc > 1) {
+    // other args (skip binary name)
+    memcpy(newargv+largc+1, argv+1, (argc-1)*sizeof(char *));
+  }
+
+  return newargv;
+}
+
+//
+// This function calls execvp(3)
+//
+int chpl_launch_using_exec(const char* command, char * const argv1[], const char* argv0) {
+  if (verbosity > 1) {
+    char * const *arg;
+    printf("%s ", command);
+    fflush(stdout);
+    for (arg = argv1+1; *arg; arg++) {
+      printf(" %s", *arg);
+      fflush(stdout);
+    }
+    printf("\n");
+  }
+  chpl_launch_sanity_checks(argv0);
+
+  execvp(command, argv1);
+  {
+    char msg[256];
+    sprintf(msg, "execvp() failed: %s", strerror(errno));
+    chpl_error(msg, -1, "<internal>");
+  }
+  return -1;
+}
+
+int chpl_launch_using_system(char* command, char* argv0) {
   if (verbosity > 1) {
     printf("%s\n", command);
   }
   chpl_launch_sanity_checks(argv0);
-  system(command);
+  return system(command);
 }
 
 
@@ -106,8 +167,7 @@ int main(int argc, char* argv[]) {
   chpl_comm_verify_num_locales(execNumLocales);
   //
   // Launch the program
+  // This may not return (e.g., if calling chpl_launch_using_exec())
   //
-  chpl_launch(argc, argv, execNumLocales);
-
-  return 0;
+  return chpl_launch(argc, argv, execNumLocales);
 }

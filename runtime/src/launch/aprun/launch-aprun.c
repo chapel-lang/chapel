@@ -54,48 +54,32 @@ static int getNumCoresPerLocale(void) {
   return numCores;
 }
 
-static char* chpl_launch_create_command(int argc, char* argv[], 
-                                        int32_t numLocales) {
-  int i;
-  int size;
-  char baseCommand[256];
-  char* command;
+static char _nbuf[16];
+static char _dbuf[16];
+static char** chpl_launch_create_argv(int argc, char* argv[],
+                                      int32_t numLocales) {
+  const int largc = 6;
+  char *largv[largc];
   const char *host = getenv("CHPL_HOST_PLATFORM");
   const char *ccArg = _ccArg ? _ccArg :
     (host && !strcmp(host, "xe-cle") ? "none" : "cpu");
 
-  chpl_compute_real_binary_name(argv[0]);
+  largv[0] = (char *) "aprun";
+  largv[1] = (char *) "-cc";
+  largv[2] = (char *) ccArg;
+  sprintf(_dbuf, "-d%d", getNumCoresPerLocale());
+  largv[3] = _dbuf;
+  sprintf(_nbuf, "-n%d", numLocales);
+  largv[4] = _nbuf;
+  largv[5] = (char *) "-N1";
 
-  sprintf(baseCommand, "aprun -cc %s %s -d%d -n%d -N1 %s", ccArg,
-          ((verbosity < 2) ? "-q" : ""), getNumCoresPerLocale(), numLocales, 
-          chpl_get_real_binary_name());
-
-  size = strlen(baseCommand) + 1;
-
-  for (i=1; i<argc; i++) {
-    size += strlen(argv[i]) + 3;
-  }
-
-  command = chpl_malloc(size, sizeof(char*), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
-  
-  sprintf(command, "%s", baseCommand);
-  for (i=1; i<argc; i++) {
-    strcat(command, " '");
-    strcat(command, argv[i]);
-    strcat(command, "'");
-  }
-
-  if (strlen(command)+1 > size) {
-    chpl_internal_error("buffer overflow");
-  }
-
-  return command;
+  return chpl_bundle_exec_args(argc, argv, largc, largv);
 }
 
-
-void chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
-                           argv[0]);
+int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+  return chpl_launch_using_exec("aprun",
+                                chpl_launch_create_argv(argc, argv, numLocales),
+                                argv[0]);
 }
 
 
