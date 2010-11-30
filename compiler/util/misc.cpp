@@ -147,20 +147,41 @@ static void printDevelErrorFooter(void) {
     fprintf(stderr, " [%s:%d]", err_filename, err_lineno);
 }
 
-// a variation on the same in functionResolution.cpp
-static void printCallStackOnError() {
-  if (!fShowCallStackOnError || callStack.n <= 1)
-    return;
-  fprintf(stderr, "while processing the following Chapel call chain:\n");
+
+//
+// Print the module name, line number, and function signature of each function
+// on the call stack. This can be called from a debugger to to see what the
+// call chain looks like e.g. after a resolution error.
+//
+void printCallStack(bool force, bool shortModule, FILE* out) {
+  if (!force) {
+    if (!fShowCallStackOnError || err_print || callStack.n <= 1)
+      return;
+  }
+  if (!developer)
+    fprintf(out, "while processing the following Chapel call chain:\n");
   for (int i = callStack.n-1; i >= 0; i--) {
     CallExpr* call = callStack.v[i];
     FnSymbol* fn = call->getFunction();
     ModuleSymbol* module = call->getModule();
-    fprintf(stderr, "  %s:%d: %s%s%s\n",
-            module->filename, call->lineno, toString(fn),
+    fprintf(out, "  %s:%d: %s%s%s\n",
+            (shortModule ? module->name : cleanFilename(module->filename)),
+            call->lineno, toString(fn),
             (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
             (fn->hasFlag(FLAG_TEMP) ? " [compiler-generated]" : ""));
   }
+}
+
+static void printCallStackOnError() {
+  printCallStack(false, false, stderr);
+}
+
+//
+// debugging convenience
+//
+void printCallStack();
+void printCallStack() {
+  printCallStack(true, true, stdout);
 }
 
 
