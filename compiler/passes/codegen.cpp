@@ -630,7 +630,7 @@ codegen_config(FILE* outfile) {
   fprintf(outfile, "initConfigVarTable();\n");
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (var->hasFlag(FLAG_CONFIG)) {
+    if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
       fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
       Type* type = var->type;
       if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
