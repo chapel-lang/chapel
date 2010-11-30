@@ -194,7 +194,7 @@ void repositionDefExpressions(void) {
           call->remove();
         } else {
           block = current_block;
-	  current_block->insertBefore(call->remove());
+          current_block->insertBefore(call->remove());
         }
       }
     }
