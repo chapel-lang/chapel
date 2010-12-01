@@ -15,7 +15,7 @@ clobber: FORCE
 	cd gasnet && $(MAKE) clobber
 
 gasnet: FORCE
-	cd gasnet && $(MAKE)
+	cd gasnet && $(MAKE) && $(MAKE) post-install
 
 gmp: FORCE
 	cd gmp && $(MAKE)

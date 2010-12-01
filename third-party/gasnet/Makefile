@@ -20,7 +20,6 @@ endif
 
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xe-cle)
 CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=cc --enable-mpi --enable-pthreads
-XTRA_POST_INSTALL_COMMAND=$(foreach var,include/mpi-conduit/mpi-par.mak,sed -i -e "s;$(GASNET_INSTALL_DIR);"'$$(GASNET_INSTALL_DIR);g' $(GASNET_INSTALL_DIR)/$(var) &&) true
 endif
 
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
@@ -29,12 +28,13 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
 # match the corresponding test in cross-configure-crayxt-linux
 #
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/cross-configure-crayxt-linux $(GASNET_SUBDIR)
-XTRA_BUILD_COMMAND=if test -f /usr/include/nptl/pthread.h -a -d /usr/lib64/nptl ; then cp -fr $(GASNET_BUILD_DIR)/patched-headers $(GASNET_INSTALL_DIR); fi
-XTRA_POST_INSTALL_COMMAND=$(foreach var,include/portals-conduit/portals-par.mak include/mpi-conduit/mpi-par.mak,sed -i -e "s;$(GASNET_INSTALL_DIR);"'$$(GASNET_INSTALL_DIR);g' $(GASNET_INSTALL_DIR)/$(var) &&) true
+XTRA_POST_INSTALL_COMMAND=if test -f /usr/include/nptl/pthread.h -a -d /usr/lib64/nptl ; then cp -fr $(GASNET_BUILD_DIR)/patched-headers $(GASNET_INSTALL_DIR); fi
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxt-linux
 else
 CHPL_GASNET_CFG_SCRIPT=configure
 endif
+
+MKFILES=$(shell find $(GASNET_INSTALL_DIR) -name \*.mak)
 
 #
 # set up the directories
@@ -62,10 +62,14 @@ gasnet-config: FORCE
 
 gasnet-build: FORCE
 	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(MAKE) all
-	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(MAKE) install
-	$(XTRA_BUILD_COMMAND)
-	-$(XTRA_POST_INSTALL_COMMAND)
 
-gasnet: gasnet-config gasnet-build
+gasnet-install: FORCE
+	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(MAKE) install
+	$(XTRA_POST_INSTALL_COMMAND)
+
+post-install: FORCE
+	$(foreach mkfile, $(MKFILES), sed -i -e "s;$(GASNET_INSTALL_DIR);"'$$(GASNET_INSTALL_DIR);g' $(mkfile) &&) true
+
+gasnet: gasnet-config gasnet-build gasnet-install
 
 FORCE:
