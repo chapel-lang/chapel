@@ -442,7 +442,8 @@
 #      4) the compiler options used
 #      5) the execution options used
 #    A test-specific PREDIFF script can be added  by using a foo.prediff
-#    script.
+#    script. Arguments 1 and 2 do not include any path components
+#    (regardless of how start_test is invoked); Argument 3 does.
 #
 #  - similarly, actions desired before running the generated
 #    executable can be specified using a PREEXEC or foo.preexec

@@ -12,7 +12,7 @@ def isSeparator(line):
     else:
         return False
 
-outfile=sys.argv[1]+".exec.out.tmp"
+outfile=sys.argv[2];
 
 fh = open(outfile)
 lines = fh.readlines()
