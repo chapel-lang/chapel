@@ -81,13 +81,23 @@ checkControlFlow(Expr* expr, const char* context) {
 }
 
 
+static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
+  forv_Vec(const char, str, *pragmas) {
+    Flag flag = pragma2flag(str);
+    if (flag == FLAG_UNKNOWN)
+      USR_FATAL_CONT(sym, "unknown pragma: %s", str);
+    else
+      sym->addFlag(flag);
+  }
+}
+
 BlockStmt* buildPragmaStmt(BlockStmt* block,
                            Vec<const char*>* pragmas,
                            BlockStmt* stmt) {
   if (DefExpr* def = toDefExpr(stmt->body.first()))
-    def->sym->addFlags(pragmas);
+    addPragmaFlags(def->sym, pragmas);
   else if (pragmas->n > 0)
-    USR_WARN("Line %d: ignoring preceeding pragmas", stmt->lineno);
+    USR_FATAL_CONT("Line %d: ignoring preceeding pragmas", stmt->lineno);
   delete pragmas;
   block->insertAtTail(stmt);
   return block;
@@ -359,6 +369,7 @@ void createInitFn(ModuleSymbol* mod) {
 
   mod->initFn = new FnSymbol(astr("chpl__init_", mod->name));
   mod->initFn->retType = dtVoid;
+  mod->initFn->addFlag(FLAG_MODULE_INIT);
 
   //
   // move module-level statements into module's init function

@@ -121,7 +121,7 @@ checkNormalized(void) {
         USR_FATAL(fn, "iterators may not yield or return types");
       if (fn->retTag == RET_PARAM)
         USR_FATAL(fn, "iterators may not yield or return parameters");
-    } else if (!strncmp(fn->name, "_construct_", 11) &&
+    } else if (fn->hasFlag(FLAG_CONSTRUCTOR) &&
                !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
       for_formals(formal, fn) {
         Vec<SymExpr*> symExprs;

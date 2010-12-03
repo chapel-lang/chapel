@@ -651,6 +651,7 @@ void build_constructor(ClassType* ct) {
 
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
+  fn->addFlag(FLAG_CONSTRUCTOR);
   ct->defaultConstructor = fn;
   fn->cname = astr("_construct_", ct->symbol->cname);
   fn->addFlag(FLAG_TEMP); // compiler inserted

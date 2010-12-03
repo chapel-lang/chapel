@@ -229,11 +229,18 @@ const char* toString(FnSymbol* fn) {
   }
   const char* str;
   int start = 0;
+ if (developer) {
+   // report the name as-is and include all args
+   str = fn->name;
+ } else {
   if (fn->instantiatedFrom)
     fn = fn->instantiatedFrom;
-  if (!strncmp("_type_construct_", fn->name, 16)) {
+  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+    // if not, make sure 'str' is built as desired
+    INT_ASSERT(!strncmp("_type_construct_", fn->name, 16));
     str = astr(fn->name+16);
-  } else if (!strncmp("_construct_", fn->name, 11)) {
+  } else if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
+    INT_ASSERT(!strncmp("_construct_", fn->name, 11));
     str = astr(fn->name+11);
   } else if (fn->hasFlag(FLAG_METHOD)) {
     if (!strcmp(fn->name, "this")) {
@@ -243,11 +250,19 @@ const char* toString(FnSymbol* fn) {
       str = astr(toString(fn->getFormal(2)->type), ".", fn->name);
       start = 2;
     }
+  } else if (fn->hasFlag(FLAG_MODULE_INIT)) {
+    INT_ASSERT(!strncmp("chpl__init_", fn->name, 11)); //if not, fix next line
+    str = astr("top-level module statements for ", fn->name+11);
   } else
     str = astr(fn->name);
-  
-  if (!fn->hasFlag(FLAG_NO_PARENS) &&
-      !(!strncmp("_type_construct_", fn->name, 16) && fn->numFormals() == 0))
+ } // if developer
+
+  bool skipParens =
+    fn->hasFlag(FLAG_NO_PARENS) ||
+    (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && fn->numFormals() == 0) ||
+    (fn->hasFlag(FLAG_MODULE_INIT) && !developer);
+
+  if (!skipParens)
     str = astr(str, "(");
   bool first = false;
   for (int i = start; i < fn->numFormals(); i++) {
@@ -277,8 +292,7 @@ const char* toString(FnSymbol* fn) {
     if (arg->variableExpr)
       str = astr(str, " ...");
   }
-  if (!fn->hasFlag(FLAG_NO_PARENS) &&
-      !(!strncmp("_type_construct_", fn->name, 16) && fn->numFormals() == 0))
+  if (!skipParens)
     str = astr(str, ")");
   if (developer)
     str = astr(str, " [", istr(fn->id), "]");
@@ -3293,7 +3307,7 @@ requiresImplicitDestroy(CallExpr* call) {
         strcmp(fn->name, "chpl__autoCopy") &&
         strcmp(fn->name, "=") &&
         !fn->hasFlag(FLAG_AUTO_II) &&
-        strncmp(fn->name, "_construct_", 11) &&
+        !fn->hasFlag(FLAG_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
       return fn;
     }
