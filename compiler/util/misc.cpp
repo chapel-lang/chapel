@@ -155,7 +155,7 @@ static void printDevelErrorFooter(void) {
 //
 void printCallStack(bool force, bool shortModule, FILE* out) {
   if (!force) {
-    if (!fShowCallStackOnError || err_print || callStack.n <= 1)
+    if (!fPrintCallStackOnError || err_print || callStack.n <= 1)
       return;
   }
   if (!developer)

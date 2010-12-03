@@ -53,7 +53,7 @@ extern const char* CHPL_COMM;
 extern char chplmake[256];
 extern char fExplainCall[256];
 extern char fExplainInstantiation[256];
-extern bool fShowCallStackOnError;
+extern bool fPrintCallStackOnError;
 extern bool fCLineNumbers;
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
