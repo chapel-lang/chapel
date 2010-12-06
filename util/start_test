@@ -454,6 +454,10 @@
 #    script. Arguments 1 and 2 do not include any path components
 #    (regardless of how start_test is invoked). Argument 3 gives
 #    the absolute path to the compiler.
+#    A system-wide PREDIFF script, to be run on on the compiled executable's
+#    output for *all* tests, can be provided via the -sysprediff option.
+#    It is invoked with the same five arguments listed above,
+#    prior to invoking the two other PREDIFFs.
 #
 #  - similarly, actions desired before running the generated
 #    executable can be specified using a PREEXEC or foo.preexec
@@ -645,6 +649,12 @@ while ( $#argv > 0 )
 		shift
 		set valgrind = 1
 		breaksw
+	case -sysprediff:
+	case --sysprediff:
+		shift
+                setenv CHPL_SYSTEM_PREDIFF "$argv[1]"
+		shift
+		breaksw
         case -futures:
         case --futures:
                 shift
@@ -725,6 +735,7 @@ while ( $#argv > 0 )
                 echo "          -futuresonly"
 		echo "          -valgrind"
                 echo "          -valgrindexe"
+                echo "          -sysprediff <path>"
                 echo "          -comm [none|gasnet|pvm]  (currently: $comm)"
                 echo "          -suppress <filename>"
                 echo "          -nostdinredirect"
@@ -836,6 +847,21 @@ if ($numlocales == "0") then
     echo \[numlocales: \"\(default\)\"\] |& tee -a $logtmp
 else
     echo \[numlocales: \"$numlocales\"\] |& tee -a $logtmp
+endif
+
+# if system-wide prediff is requested,  get absolute path name for it
+if ($?CHPL_SYSTEM_PREDIFF) then
+    if ( -f $CHPL_SYSTEM_PREDIFF && -x $CHPL_SYSTEM_PREDIFF ) then
+        pushd `dirname $CHPL_SYSTEM_PREDIFF` >& /dev/null
+        setenv CHPL_SYSTEM_PREDIFF  $cwd/`basename $CHPL_SYSTEM_PREDIFF`
+        popd >& /dev/null
+
+        echo \[system-wide prediff: \"$CHPL_SYSTEM_PREDIFF\"\] |& $tee -a $logtmp
+    else
+	echo \[Cannot find or execute system-wide prediff: \"$CHPL_SYSTEM_PREDIFF\"\] \
+		|& $tee -a $logtmp
+        exit 1
+    endif
 endif
 
 if ("$dirlist" == "" && "$testlist" == "") then
