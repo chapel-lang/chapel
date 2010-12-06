@@ -203,3 +203,5 @@
   // reserved words in c++
   this
 
+  // cuda specific
+  dim3

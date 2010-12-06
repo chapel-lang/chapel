@@ -194,6 +194,16 @@ def file.read(inout val: real) {
   val = x;
 }
 
+def file.read(inout val: real(32)) {
+  if !isOpen then
+    _checkOpen(this, isRead=true);
+  var x: real(32);
+  on this {
+    x = __primitive("_fscan_real32", _fp);
+  }
+  val = x;
+}
+
 def file.read(inout val: complex) {
   var realPart: real;
   var imagPart: real;

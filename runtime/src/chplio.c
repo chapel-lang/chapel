@@ -50,6 +50,15 @@ uint32_t _fscan_uint32(FILE* fp, int32_t lineno, chpl_string filename) {
   return result;
 }
 
+_real32 _fscan_real32(FILE* fp, int32_t lineno, chpl_string filename) {
+  _real32 result;
+  int err;
+
+  err = fscanf(fp, "%f", &result);
+  _fscan_error_check(err, lineno, filename);
+  return result;
+}
+
 _real64 _fscan_real64(FILE* fp, int32_t lineno, chpl_string filename) {
   _real64 result;
   int err;

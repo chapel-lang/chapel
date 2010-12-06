@@ -44,6 +44,11 @@ returnInfoUInt64(CallExpr* call) {
 }
 
 static Type*
+returnInfoReal32(CallExpr* call) {
+  return dtReal[FLOAT_SIZE_32];
+}
+
+static Type*
 returnInfoReal64(CallExpr* call) {
   return dtReal[FLOAT_SIZE_64];
 }
@@ -414,11 +419,21 @@ initPrimitive() {
   prim_def(PRIM_GPU_GET_ARRAY, "get_gpu_array", returnInfoArrayIndex, false, true);
   prim_def(PRIM_GPU_GET_VALUE, "get_gpu_value", returnInfoArrayIndex, false, true);
   prim_def(PRIM_GPU_GET_VAL, "get_gpu_val", returnInfoArrayIndex, false, true);
+  prim_def(PRIM_GPU_COPY_ARRAY_TO_CONST_MEM, "copy_array_to_const_mem", returnInfoVoid, true, true);
+  prim_def(PRIM_GPU_COPY_SCALAR_TO_CONST_MEM, "copy_scalar_to_const_mem", returnInfoVoid, true, true);
+  prim_def(PRIM_GPU_COPY_TO_CONST_MEM_EXPL, "copy_to_const_mem_expl", returnInfoVoid, true, true);
   prim_def(PRIM_GPU_ALLOC, "gpu_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_COPY_HOST_GPU, "copy_host_to_gpu", returnInfoVoid, true, false);
+  prim_def(PRIM_COPY_HOST_HOST, "copy_host_to_host", returnInfoVoid, true, false);
+  prim_def(PRIM_COPY_GPU_GPU, "copy_gpu_to_gpu", returnInfoVoid, true, false);
+  prim_def(PRIM_IMPLICIT_COPY_HOST_GPU, "implicit_copy_host_to_gpu", returnInfoVoid, true, false);
+  prim_def(PRIM_IMPLICIT_COPY_GPU_HOST, "implicit_copy_gpu_to_host", returnInfoVoid, true, false);
+  prim_def(PRIM_DECLARE_CONSTANT_MEM, "declare_cc_mem", returnInfoVoid, true, false);
   prim_def(PRIM_COPY_GPU_HOST, "copy_gpu_to_host", returnInfoVoid, true, false);
   prim_def(PRIM_GPU_FREE, "gpu_free", returnInfoVoid, true, true);
   prim_def(PRIM_ON_GPU, "chpl_on_gpu", returnInfoInt32);
+  prim_def(PRIM_GPU_REDUCE, "chpl_gpu_reduce", returnInfoArrayIndex, true, true);
+
 
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
   prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true, true);
@@ -473,6 +488,7 @@ initPrimitive() {
   prim_def("_fscan_string", returnInfoString, true, true);
   prim_def("_fscan_int32", returnInfoInt32, true, true);
   prim_def("_fscan_uint32", returnInfoUInt32, true, true);
+  prim_def("_fscan_real32", returnInfoReal32, true, true);
   prim_def("_fscan_real64", returnInfoReal64, true, true);
   prim_def("_readToEndOfLine", returnInfoVoid, true);
   prim_def("_format", returnInfoString);

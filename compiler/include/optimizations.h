@@ -17,6 +17,7 @@ void singleAssignmentRefPropagation(FnSymbol* fn);
 void deadVariableElimination(FnSymbol* fn);
 void deadExpressionElimination(FnSymbol* fn);
 void deadCodeElimination(FnSymbol* fn);
+void removeUnnecessaryAutoCopyCalls(FnSymbol* fn);
 
 void liveVariableAnalysis(FnSymbol* fn,
                           Vec<Symbol*>& locals,

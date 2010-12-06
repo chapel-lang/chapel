@@ -762,7 +762,9 @@ record _array {
     }
   }
 
-  def ~_array() {
+  //////////////////////////////////////////////////////////////////
+  // Albert - Prevent this from executing on the GPU
+  def ~_array() where !_value.isGPUExecution {
     if !_isPrivatized(_valueType) {
       on _value {
         var cnt = _value.destroyArr();
@@ -771,6 +773,9 @@ record _array {
       }
     }
   }
+  pragma "inline"
+  def ~_array() where _value.isGPUExecution { }
+  //////////////////////////////////////////////////////////////////
 
   def eltType type return _value.eltType;
   def _dom return _getDomain(_value.dom);

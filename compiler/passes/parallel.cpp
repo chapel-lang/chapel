@@ -662,15 +662,112 @@ reprivatizeIterators() {
   }
 }
 
+static void
+buildReduceForGPU(FnSymbol *fn) {
+  forv_Vec(CallExpr, fncall, *fn->calledBy) {
+    /* determine if the formal belongs to a GPU distribution */
+    if (ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.head)->sym)) {
+      if (ClassType *ct = toClassType(formal->type)) {
+        if (TypeSymbol *ts = toTypeSymbol(ct->substitutions.v[0].value)) {
+          if (ts->hasFlag(FLAG_USE_GPU_REDUCTION)) {
+
+            /* Find the actual reduction operation in string form */
+            Vec<DefExpr*> defs;
+            collectDefExprs(fn->body, defs);
+            char *op = NULL;
+            forv_Vec(DefExpr, def, defs) {
+              if (Symbol* sym = toSymbol(def->sym)) {
+                if (Type* type = toType(sym->type)) {
+                  if (const char *substr = strstr(type->symbol->name, "ReduceScanOp")) {
+                    int op_len = substr - def->sym->type->symbol->name;
+                    op = (char *)malloc(op_len+1);
+                    strncpy(op, def->sym->type->symbol->name, op_len);
+                    op[op_len] = '\0';
+                  }
+                }
+              }
+            }
+
+            //FnSymbol *fnred = fn->copy();
+            //fnred->name = astr("gpu", fn->name);
+            //fnred->cname = astr("gpu", fn->cname);
+            
+            FnSymbol *fnred = new FnSymbol(astr("gpu", fn->name));
+           
+            fnred->addFlag(FLAG_INLINE);
+            ArgSymbol* reducArg = formal->copy();
+            fnred->insertFormalAtTail(reducArg);
+            BlockStmt *stmt = new BlockStmt();
+            fnred->body = stmt;
+            VarSymbol* tmp = newTemp(fn->retType);
+            fnred->body->insertAtHead(new DefExpr(tmp));
+            fnred->body->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+                  new CallExpr(PRIM_GPU_REDUCE, reducArg, tmp->type->symbol, new_StringSymbol(op))));
+            fnred->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+            fnred->retType = fn->retType;
+            fn->addFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING);
+            fn->defPoint->insertBefore(new DefExpr(fnred));
+            fncall->baseExpr->replace(new SymExpr(fnred));
+            printf("test!\n");
+            //break;
+            //fncall->baseExpr = new SymExpr(fnred);
+          }
+        }
+      }
+    }
+  }
+}
+
+static void
+inlineGPUfuncs(void) {
+  // Not sure where else to put this. Mark functions that are inner GPU functions as
+  // inline. Not the cleanest of solutions. We could move this analysis upwards instead
+  // of searching through all of the FnSymbols again.
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    forv_Vec(CallExpr, fncall, *fn->calledBy) {
+      if (!fn->hasFlag(FLAG_EXTERN)) {
+        if (FnSymbol *fnsym = fncall->getFunction()) {
+          if (fnsym->hasFlag(FLAG_GPU_ON)) {
+            if (strstr(fn->cname, "_coerce_wrap_")) {
+              Vec<CallExpr*> calls;
+              collectCallExprs(fn, calls);
+              collectFnCalls(fn, calls);
+              forv_Vec(CallExpr, call, calls) {
+                if (call->parentSymbol)
+                  if (FnSymbol *fninner = call->isResolved())
+                    fninner->addFlag(FLAG_INLINE);
+              }
+            }
+            fn->addFlag(FLAG_INLINE);
+          }
+        }
+      }
+    }
+  }
+}
+
+
 
 void
 parallel(void) {
+  /* Albert - A kludge in order to get GPU reductions working for the time being. */
+  compute_call_sites();
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+    if (fn->hasFlag(FLAG_REDUCE))
+      buildReduceForGPU(fn);
+
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (var->hasFlag(FLAG_CONST_MEM_SIZE)) {
+      printf("HERE?!?!?\n");
+    }
+  }
+
   //
   // convert begin/cobegin/coforall/on blocks into nested functions and flatten
   //
   Vec<FnSymbol*> nestedFunctions;
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->blockInfo) {
+    if (block->parentSymbol && block->blockInfo) {
       SET_LINENO(block);
       FnSymbol* fn = NULL;
       if (block->blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)) {
@@ -697,10 +794,18 @@ parallel(void) {
         //Add two formal arguments:
         // nBlocks = Number of Thread blocks
         // threadsPerBlock = Number of threads per single thread block
-        ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "nBlocks", dtInt[INT_SIZE_32]);
-        ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "threadsPerBlock", dtInt[INT_SIZE_32]);
+        ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "gridX", dtInt[INT_SIZE_32]);
+        ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "gridY", dtInt[INT_SIZE_32]);
+        ArgSymbol* arg3 = new ArgSymbol(INTENT_BLANK, "tbsizeX", dtInt[INT_SIZE_32]);
+        ArgSymbol* arg4 = new ArgSymbol(INTENT_BLANK, "tbsizeY", dtInt[INT_SIZE_32]);
+        ArgSymbol* arg5 = new ArgSymbol(INTENT_BLANK, "tbsizeZ", dtInt[INT_SIZE_32]);
+        ArgSymbol* arg6 = new ArgSymbol(INTENT_BLANK, "sharedSize", dtInt[INT_SIZE_32]);
         fn->insertFormalAtTail(arg1);
         fn->insertFormalAtTail(arg2);
+        fn->insertFormalAtTail(arg3);
+        fn->insertFormalAtTail(arg4);
+        fn->insertFormalAtTail(arg5);
+        fn->insertFormalAtTail(arg6);
       }
       if (fn) {
         nestedFunctions.add(fn);
@@ -709,6 +814,10 @@ parallel(void) {
             block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           call->insertAtTail(block->blockInfo->get(1)->remove());
         else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
+          call->insertAtTail(block->blockInfo->get(1)->remove());
+          call->insertAtTail(block->blockInfo->get(1)->remove());
+          call->insertAtTail(block->blockInfo->get(1)->remove());
+          call->insertAtTail(block->blockInfo->get(1)->remove());
           call->insertAtTail(block->blockInfo->get(1)->remove());
           call->insertAtTail(block->blockInfo->get(1)->remove());
         }
@@ -723,6 +832,9 @@ parallel(void) {
     }
   }
   flattenNestedFunctions(nestedFunctions);
+
+  // Albert -- inline functions so that the CUDA compiler has an easier time
+  inlineGPUfuncs();
 
   compute_call_sites();
 

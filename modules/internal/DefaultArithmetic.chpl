@@ -312,6 +312,7 @@ class DefaultArithmeticArr: BaseArr {
   var noinit: bool = false;
 
   def canCopyFromDevice param return true;
+  def isGPUExplicit param return false;
 
   // end class definition here, then defined secondary methods below
 

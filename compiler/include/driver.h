@@ -8,6 +8,8 @@
 extern FILE* html_index_file;
 
 extern int instantiation_limit;
+extern int maxGPUargs;
+extern int enableGPU;
 
 extern int fdump_html;
 

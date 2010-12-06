@@ -402,7 +402,7 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 
 
 CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -422,12 +422,13 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 
-CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
+CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -440,11 +441,12 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
-CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
+CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -457,13 +459,14 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 
 CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(new UnresolvedSymExpr(name)),
   argList(),
@@ -476,6 +479,7 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
@@ -766,12 +770,76 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     case PRIM_COPY_HOST_GPU:
-      gen(outfile, "_GPU_COPY_HOST_GPU(%A, %A, %A, %A)",
-          get(1), get(2), get(3), get(4));
+      gen(outfile, "_GPU_COPY_HOST_GPU(%A, %A, %A, %A, %A, %A)",
+          get(1), get(2), get(3), get(4), get(5), get(6));
+      break;
+    case PRIM_COPY_HOST_HOST:
+      gen(outfile, "_GPU_COPY_HOST_HOST(%A, %A, %A, %A, %A)",
+          get(1), get(2), get(3), get(4), get(5));
       break;
     case PRIM_COPY_GPU_HOST:
-      gen(outfile, "_GPU_COPY_GPU_HOST(%A, %A, %A, %A)",
-          get(1), get(2), get(3), get(4));
+      gen(outfile, "_GPU_COPY_GPU_HOST(%A, %A, %A, %A, %A, %A)",
+          get(1), get(2), get(3), get(4), get(5), get(6));
+      break;
+    case PRIM_IMPLICIT_COPY_GPU_HOST:
+      gen(outfile, "_IMPLICIT_GPU_TO_HOST_COPY(%A, %A)",
+          get(1), get(2));
+      break;
+    case PRIM_IMPLICIT_COPY_HOST_GPU:
+      gen(outfile, "_IMPLICIT_HOST_TO_GPU_COPY(%A, %A)",
+          get(1), get(2));
+      break;
+    case PRIM_COPY_GPU_GPU:
+      gen(outfile, "_GPU_COPY_GPU_GPU(%A, %A, %A, %A, %A, %A)",
+          get(1), get(2), get(3), get(4), get(5), get(6));
+      break;
+    case PRIM_GPU_COPY_ARRAY_TO_CONST_MEM:
+      fprintf(outfile, "_GPU_COPY_ARRAY_TO_CONST_MEM(");
+      fprintf(outfile,"\"");
+      get(1)->codegen(outfile);
+      fprintf(outfile,"\"");
+      fprintf(outfile,", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile,", ");
+      get(2)->typeInfo()->getValType()->symbol->codegen(outfile);
+      fprintf(outfile,", ");
+      get(3)->codegen(outfile);
+      fprintf(outfile,")");
+      break;
+    case PRIM_GPU_COPY_SCALAR_TO_CONST_MEM:
+      fprintf(outfile, "_GPU_COPY_SCALAR_TO_CONST_MEM(");
+      fprintf(outfile,"\"");
+      get(1)->codegen(outfile);
+      fprintf(outfile,"\"");
+      fprintf(outfile,", &");
+      get(2)->codegen(outfile);
+      fprintf(outfile,", ");
+      get(3)->codegen(outfile);
+      fprintf(outfile,", ");
+      get(2)->typeInfo()->getValType()->symbol->codegen(outfile);
+      fprintf(outfile,")");
+      break;
+    case PRIM_GPU_COPY_TO_CONST_MEM_EXPL:
+      fprintf(outfile, "_GPU_COPY_TO_CONST_MEM_EXPL(");
+      get(1)->codegen(outfile);
+      fprintf(outfile,", ");
+      get(2)->codegen(outfile);
+      fprintf(outfile,", ");
+      get(3)->codegen(outfile);
+      fprintf(outfile,", ");
+      get(2)->typeInfo()->getValType()->symbol->codegen(outfile);
+      fprintf(outfile,")");
+      break;
+    case PRIM_DECLARE_CONSTANT_MEM:
+      /*
+      fprintf(outfile, "__constant__BLAH ");
+      get(1)->codegen(outfile);
+      if (get(2)) {
+        fprintf(outfile, "[");
+        get(2)->codegen(outfile);
+        fprintf(outfile, "]");
+      }
+      */
       break;
     case PRIM_GPU_FREE:
       if (fNoMemoryFrees)
@@ -1074,6 +1142,11 @@ void CallExpr::codegen(FILE* outfile) {
         }
         if (call->isPrimitive(PRIM_GPU_GET_ARRAY)) {
           gen(outfile, "%A = _GPU_GET_ARRAY(%A)", get(1), call->get(1));
+          break;
+        }
+        if (call->isPrimitive(PRIM_GPU_REDUCE)) {
+          gen(outfile, "%A = _GPU_REDUCE(%A, %A, %A)", 
+              get(1), call->get(1), call->get(2), call->get(3));
           break;
         }
         if (call->isPrimitive(PRIM_UNION_GETID)) {
@@ -2333,13 +2406,25 @@ void CallExpr::codegen(FILE* outfile) {
     return;
   }
 
-  baseExpr->codegen(outfile);
   if (fn->hasFlag(FLAG_GPU_ON)) {
-    fprintf(outfile,"<<<");
+    fprintf(outfile, "dim3 dimGrid(");
     get(1)->codegen(outfile);
     fprintf(outfile,",");
     get(2)->codegen(outfile);
-    fprintf(outfile, ">>>");
+    fprintf(outfile,");\n");
+    fprintf(outfile, "dim3 dimBlock(");
+    get(3)->codegen(outfile);
+    fprintf(outfile,",");
+    get(4)->codegen(outfile);
+    fprintf(outfile,",");
+    get(5)->codegen(outfile);
+    fprintf(outfile,");\n");
+  }
+  baseExpr->codegen(outfile);
+  if (fn->hasFlag(FLAG_GPU_ON)) {
+    fprintf(outfile,"<<<dimGrid,dimBlock,");
+    get(6)->codegen(outfile);
+    fprintf(outfile,">>>");
   }
   fprintf(outfile, "(");
 
@@ -2347,7 +2432,7 @@ void CallExpr::codegen(FILE* outfile) {
   int count = 0;
   for_formals_actuals(formal, actual, this) {
     bool closeDeRefParens = false;
-    if (fn->hasFlag(FLAG_GPU_ON) && count < 2) {
+    if (fn->hasFlag(FLAG_GPU_ON) && count < 6) {
       count++;
       continue; // do not print nBlocks and numThreadsPerBlock
     }

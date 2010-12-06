@@ -39,6 +39,7 @@ enum Flag {
   FLAG_BEGIN,
   FLAG_BEGIN_BLOCK,
   FLAG_CALLS_CONSTRUCTOR, // for functions that return constructor return values
+  FLAG_CCACHE, // constant cache memory for GPU
   FLAG_COBEGIN_OR_COFORALL,
   FLAG_COBEGIN_OR_COFORALL_BLOCK,
   FLAG_COMMAND_LINE_SETTING,
@@ -46,6 +47,7 @@ enum Flag {
   FLAG_CONCURRENTLY_ACCESSED, // local variables accessed by multiple threads
   FLAG_CONFIG, // config variable, constant, or parameter
   FLAG_CONST, // constant
+  FLAG_CONST_MEM_SIZE,
   FLAG_DATA_CLASS,
   FLAG_DATA_SET_ERROR,
   FLAG_DEFAULT_CONSTRUCTOR,
@@ -54,16 +56,20 @@ enum Flag {
   FLAG_DOMAIN,
   FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING,
   FLAG_EXPAND_TUPLES_WITH_VALUES,
+  FLAG_EXPLICIT_GPU_ARRAY, // maker to designate gpu data
   FLAG_EXPORT,
   FLAG_EXPR_TEMP, // temporary that stores the result of an expression
   FLAG_EXTERN, // extern variables, types, and functions
   FLAG_FIXED_STRING, // fixed-length strength
   FLAG_FUNCTION_CLASS, // first-class function class representation
   FLAG_GENERIC, // generic types and functions
+  FLAG_GEN_CC, // marker to generate constant cache mem
+  FLAG_GEN_SHARED, // marker to generate shared decl
   FLAG_HEAP,
   FLAG_HEAP_ALLOCATE,
   FLAG_STAR_TUPLE, // mark tuple types as star tuple types
   FLAG_IMPLICIT_ALIAS_FIELD,
+  FLAG_IMPLICIT_GPU_ARRAY, // maker to designate implicit gpu data
   FLAG_INDEX_VAR,
   FLAG_INLINE,
   FLAG_INLINE_ITERATOR, // iterators that are always inlined, e.g., leaders
@@ -103,11 +109,13 @@ enum Flag {
   FLAG_PRIVATIZED_CLASS, // privatized array or domain class
   FLAG_PROMOTION_WRAPPER,
   FLAG_RANGE,
+  FLAG_REDUCE, // mark a function as reduction
   FLAG_REF,
   FLAG_REF_ITERATOR_CLASS,
   FLAG_REF_THIS,
   FLAG_REMOVABLE_AUTO_COPY,
   FLAG_REMOVABLE_AUTO_DESTROY,
+  FLAG_SHARED, // shared mem for GPU
   FLAG_SINGLE,
   FLAG_SPECIFIED_RETURN_TYPE,
   FLAG_SUPER_CLASS,
@@ -117,6 +125,7 @@ enum Flag {
   FLAG_TUPLE,
   FLAG_TYPE_CONSTRUCTOR,
   FLAG_TYPE_VARIABLE, // contains a type instead of a value
+  FLAG_USE_GPU_REDUCTION, // Use specialized implementation
   FLAG_VIRTUAL,
   FLAG_WIDE,
   FLAG_WIDE_CLASS,

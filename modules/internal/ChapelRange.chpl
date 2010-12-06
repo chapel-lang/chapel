@@ -31,15 +31,19 @@ record range {
 //
 // syntax function for bounded ranges
 //
+// Albert hack to make this inline
+pragma "inline"
 def _build_range(low: int, high: int)
   return new range(int, BoundedRangeType.bounded, false, low, high);
+pragma "inline"
 def _build_range(low: uint, high: uint)
   return new range(uint, BoundedRangeType.bounded, false, low, high);
+pragma "inline"
 def _build_range(low: int(64), high: int(64))
   return new range(int(64), BoundedRangeType.bounded, false, low, high);
+pragma "inline"
 def _build_range(low: uint(64), high: uint(64))
   return new range(uint(64), BoundedRangeType.bounded, false, low, high);
-
 
 //
 // syntax function for unbounded ranges
@@ -199,6 +203,8 @@ def range._hasHigh() param
 // 
 // Return the number in the range 0 <= result < b that is congruent to a (mod b)
 //
+// Albert hack to make this inline
+pragma "inline"
 def mod(a:integral, b:integral) {
   if (b <= 0) then
     halt("modulus divisor must be positive");
@@ -210,6 +216,8 @@ def mod(a:integral, b:integral) {
 //
 // align low bound of this range to an alignment; snap up
 //
+// Albert hack to make this inline
+pragma "inline"
 def range._alignLow(alignment: idxType) {
   var s = abs(stride):idxType;
   // The following is equivalent to var d = abs(alignment - low) % s;
@@ -233,6 +241,8 @@ def range._alignLow(alignment: idxType) {
 //
 // align high bound of this range to an alignment; snap down
 //
+// Albert hack to make this inline
+pragma "inline"
 def range._alignHigh(alignment: idxType) {
   var s = abs(stride):idxType;
   // See the note about this declaration in range._alignLow. It is like

@@ -1290,6 +1290,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr) {
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   fn->addFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING);
   fn->addFlag(FLAG_INLINE);
+  fn->addFlag(FLAG_REDUCE);
 
   VarSymbol* data = newTemp();
   VarSymbol* eltType = newTemp();
@@ -1623,9 +1624,6 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     if (call->isPrimitive(PRIM_ON_GPU)) {
       BlockStmt* block = buildChapelStmt();
       BlockStmt* onBlock = new BlockStmt(stmt);
-      //Expr *arg1 = call->get(1)->remove(); 
-      //Expr *arg2 = call->get(1)->remove(); 
-      //onBlock->blockInfo = new CallExpr(PRIM_ON_GPU, arg1, arg2);
       onBlock->blockInfo = call;
       block->insertAtTail(onBlock);
       return block;

@@ -249,6 +249,11 @@ static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
 
 
 void VarSymbol::codegenDef(FILE* outfile) {
+  if (hasFlag(FLAG_GEN_SHARED)) {
+    fprintf(outfile,"extern __shared__ ");
+    fprintf(outfile, "%s %s[];\n", type->getValType()->symbol->cname, cname);
+    return;
+  }
   if (this->hasFlag(FLAG_EXTERN)) {
     return;
   }
@@ -558,7 +563,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
     for_formals(formal, this) {
       if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
         continue; // do not print locale argument for on blocks
-      if (hasFlag(FLAG_GPU_ON) && count < 2) {
+      if (hasFlag(FLAG_GPU_ON) && count < 6) {
         count++;
         continue; // do not print nBlocks and numThreadsPerBlock
       }

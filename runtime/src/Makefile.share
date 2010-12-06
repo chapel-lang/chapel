@@ -18,7 +18,8 @@ COMMON_NOGEN_SRCS = \
 
 ifdef NVCC
 CUDA_SRCS = \
-	chplgpu.cu
+	chplgpu.cu \
+	chplgpu_reduction.cu
 else
 CUDA_SRCS = \
 	chplgpu_stub.c

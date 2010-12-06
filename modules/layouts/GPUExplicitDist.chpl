@@ -16,44 +16,37 @@ _extern def getGridSize_y() : int(32);
 chpl_init_accelerator();
 
 pragma "data class"
-pragma "implicit gpu array"
-pragma "removable auto destroy"
+pragma "explicit gpu array"
 class _gdata {
   type eltType;
-  const array_size : int(64);
   def ~_gdata() {
-    __primitive("array_free", this);
-    // TODO: need to call gpu_free as well!
+    __primitive("gpu_free", this);
   }
   pragma "inline" def init(size: integral) {
-    __primitive("array_alloc", this, eltType, size); // Allocate Host Memory
-    init_elts(this, size, eltType);
     __primitive("gpu_alloc", this, size, eltType);   // Allocate GPU Memory
-    array_size = size;
   }
   pragma "inline" def this(i: integral) var {
-    return __primitive("array_get", this, i);
+    return __primitive("get_gpu_value", this, i);
   }
 }
 
-config param debugGPUDist = false; // internal development flag (debugging)
+config param debugGPUExplicitDist = false; // internal development flag (debugging)
 
-class GPUDist: BaseDist {
+pragma "use gpu reduction"
+class GPUExplicitDist: BaseDist {
 
   const tbsizeX, tbsizeY, tbsizeZ : int;
   const gridsizeX, gridsizeY : int;
 
-  def GPUDist(param rank : int,
-              type idxType = int(64),
+  def GPUExplicitDist(param rank : int, 
+	      type idxType = int(64),
               const gridSizeX = 1,
               const gridSizeY = 1,
               const tbSizeX = 1,
               const tbSizeY = 1,
-              const tbSizeZ = 1,
-              param arraySize = 1) {
-    if (CHPL_TARGET_COMPILER != "nvidia") then
-      compilerError("Support for non-nvidia compilers not yet defined for GPUDist");
-    //arraysize = arraySize;
+              const tbSizeZ = 1) {
+    if (CHPL_TARGET_COMPILER != "nvidia") then 
+      compilerError("Support for non-nvidia compilers not yet defined for GPUExplicitDist");
     tbsizeX = tbSizeX;
     tbsizeY = tbSizeY;
     tbsizeZ = tbSizeZ;
@@ -62,33 +55,38 @@ class GPUDist: BaseDist {
   }
 
   def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
-    return new GPUArithmeticDom(rank, idxType, stridable, this);
+    return new GPUExplicitArithmeticDom(rank, idxType, stridable, this);
   }
 
+  def dsiDestroyDistClass() { }
   def dsiClone() return this;
-  def dsiAssign(other: this.type) { }
+
   def dsiCreateReindexDist(newSpace, oldSpace) return this;
   def dsiCreateRankChangeDist(param newRank, args) return this;
 }
 
-pragma "removable auto destroy"
-class GPUArithmeticDom: BaseArithmeticDom {
+pragma "use gpu reduction"
+class GPUExplicitArithmeticDom: BaseArithmeticDom {
   param rank : int;
   type idxType;
   param stridable: bool;
-  var dist: GPUDist;
+  var dist: GPUExplicitDist;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
+
   var low_val : rank*idxType;
+
   var sharedsize : int;
+
   const tbsizeX : int;
   const tbsizeY : int;
   const tbsizeZ : int;
+  
   const tbGridX : int = 1;
   const tbGridY : int = 1;
 
   def linksDistribution() param return false;
 
-  def GPUArithmeticDom(param rank, type idxType, param stridable, dist) {
+  def GPUExplicitArithmeticDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;
   }
 
@@ -98,18 +96,18 @@ class GPUArithmeticDom: BaseArithmeticDom {
       ranges(i) = emptyRange;
   }
   
+  def dsiGetIndices() return ranges;
+
   def setTBsizeX(x) { tbsizeX = x; }
-  def setTBsizeY(y) { tbsizeY = y; }
-  def setTBsizeZ(z) { tbsizeZ = z; }
+  def setTBsizeY(x) { tbsizeY = x; }
+  def setTBsizeZ(x) { tbsizeZ = x; }
 
   def getTBsizeX() return tbsizeX;
   def getTBsizeY() return tbsizeY;
   def getTBsizeZ() return tbsizeZ;
 
   def setTBGridX(x) { tbGridX = x; }
-  def setTBGridY(y) { tbGridY = y; }
-
-  def dsiGetIndices() return ranges;
+  def setTBGridY(x) { tbGridY = x; }
 
   def dsiSetIndices(x) {
     if ranges.size != x.size then
@@ -137,14 +135,13 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
     else if rank == 3 then {
       if tbGridX == 1 then
-        tbGridX = (((ranges(1).length:int + tbsizeX - 1) / tbsizeX):int *
+        tbGridX = (((ranges(1).length:int + tbsizeX - 1) / tbsizeX):int * 
                    ((ranges(2).length:int + tbsizeY - 1) / tbsizeY):int *
                    ((ranges(3).length:int + tbsizeZ - 1) / tbsizeZ) : int);
     }
     else
       compilerError("Can't support dimensions higher than 3 currently");
-  }  
-
+  }
   def these_help(param d: int) {
     if d == rank - 1 {
       for i in ranges(d) do
@@ -179,6 +176,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
+
   def these(param tag: iterator) where tag == iterator.leader {
     if rank == 1 {
       var gridX = tbGridX;
@@ -193,7 +191,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
         if tid < size then
           yield tid;
       }
-    }
+    } 
     else if rank == 2 {
       var gridX = tbGridX;
       var gridY = tbGridY;
@@ -209,7 +207,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
         if (i < lenX && j < lenY) then
           yield (i,j);
       }
-    }
+    } 
     else if rank == 3 {
       var gridX = tbGridX;
       var gridY = tbGridY;
@@ -236,7 +234,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
 
         if (i < lenX && j < lenY && k < lenZ) then
           yield (i,j,k);
-
+        
       }
     }
     else {
@@ -276,11 +274,6 @@ class GPUArithmeticDom: BaseArithmeticDom {
   def dsiDim(d : int)
     return ranges(d);
 
-  // optional, is this necesary? probably not now that
-  // homogeneous tuples are implemented as C vectors.
-  def dsiDim(param d : int)
-    return ranges(d);
-
   def dsiNumIndices {
     var sum = 1:idxType;
     for param i in 1..rank do
@@ -311,27 +304,17 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def dsiStride {
-    if rank == 1 {
-      return ranges(1)._stride;
-    } else {
-      var result: rank*chpl__idxTypeToStrType(idxType);
-      for param i in 1..rank do
-        result(i) = ranges(i)._stride;
-      return result;
-    }
-  }
-
+  pragma "use gpu reduction"
   def dsiBuildArray(type eltType) {
-    return new GPUArithmeticArr(eltType=eltType, rank=rank, idxType=idxType,
-                                  stridable=stridable, dom=this, off=low_val);
+      return new GPUExplicitArithmeticArr(eltType=eltType, rank=rank, idxType=idxType, 
+          stridable=stridable, dom=this, off=low_val);
   }
 
   def dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
                             ranges: rank*range(idxType,
                                                BoundedRangeType.bounded,
                                                stridable)) {
-    var dom = new GPUArithmeticDom(rank, idxType, dist=dist, stridable=stridable);
+    var dom = new GPUExplicitArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       dom.ranges(i) = ranges(i);
     return dom;
@@ -339,30 +322,30 @@ class GPUArithmeticDom: BaseArithmeticDom {
 }
 
 pragma "use gpu reduction"
-class GPUArithmeticArr: BaseArr {
+class GPUExplicitArithmeticArr: BaseArr {
   type eltType;
   param rank : int;
   type idxType;
   param stridable: bool;
 
-  var dom : GPUArithmeticDom(rank=rank, idxType=idxType,
+  var dom : GPUExplicitArithmeticDom(rank=rank, idxType=idxType,
                                          stridable=stridable);
+  var noinit: bool = false;
+  var contiguousMem : bool = true;
+
   var off: rank*idxType;
   var blk: rank*idxType;
   var str: rank*int;
+  var origin: idxType;
   var factoredOffs: idxType;
   var data : _gdata(eltType);
-  var noinit: bool = false;
-  var contiguousMem : bool = true;
-  var size : int;
+  var size : idxType;
 
   def isGPUExecution param return true;
+
   def canCopyFromHost param return true;
-  def isGPUExplicit param return false;
+  def isGPUExplicit param return true;
 
-  // end class definition here, then defined secondary methods below
-
-  // can the compiler create this automatically?
   def dsiGetBaseDom() return dom;
 
   def dsiDestroyData() { }
@@ -413,65 +396,93 @@ class GPUArithmeticArr: BaseArr {
     data.init(size);
   }
 
-  // only need second version because wrapper record can pass a 1-tuple
   pragma "inline"
-  def dsiAccess(ind: idxType ...1) var where rank == 1
+  def dsiAccess(ind: idxType ...1) var where rank == 1 {
     return dsiAccess(ind);
+  }
 
   pragma "inline"
   def dsiAccess(ind : rank*idxType) var {
+  /*
     var sum = factoredOffs;
     for param i in 1..rank do
       sum += ind(i) * blk(i);
     return data(sum);
+  */
+    var sum = origin;
+    if stridable {
+      for param i in 1..rank do
+        sum += (ind(i) - off(i)) * blk(i) / str(i):idxType;
+    } else {
+      for param i in 1..rank do
+        sum += ind(i) * blk(i);
+      sum += factoredOffs;
+    }
+    return data(sum);
   }
 
-  def dsiReindex(d: GPUArithmeticDom) {
-    var alias = new GPUArithmeticArr(eltType=eltType, rank=d.rank,
+  def dsiReindex(d: GPUExplicitArithmeticDom) {
+    if rank != d.rank then
+      compilerError("illegal implicit rank change");
+    for param i in 1..rank do
+      if d.dsiDim(i).length != dom.dsiDim(i).length then
+        halt("extent in dimension ", i, " does not match actual");
+    var alias = new GPUExplicitArithmeticArr(eltType=eltType, rank=d.rank,
                                      idxType=d.idxType,
-                                     stridable=d.stridable, contiguousMem=false, dom=d);
+                                     stridable=d.stridable, dom=d, noinit=true, 
+                                     contiguousMem=true);
     alias.data = data;
+    alias.size = size: d.idxType;
     for param i in 1..rank {
       alias.off(i) = d.dsiDim(i)._low;
       alias.blk(i) = (blk(i) * dom.dsiDim(i)._stride / str(i)) : d.idxType;
       alias.str(i) = d.dsiDim(i)._stride;
     }
+    alias.origin = origin:d.idxType;
     alias.computeFactoredOffs();
     return alias;
   }
 
-  def dsiSlice(d: GPUArithmeticDom) {
-    var alias = new GPUArithmeticArr(eltType=eltType, rank=rank,
+  def dsiSlice(d: GPUExplicitArithmeticDom) {
+    var alias = new GPUExplicitArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
-                                         dom=d, contiguousMem=false, noinit=true);
+                                         dom=d, contiguousMem=true, noinit=true);
 
     alias.data = data;
+    alias.size = size;
     alias.blk = blk;
     alias.str = str;
+    alias.origin = origin;
     for param i in 1..rank {
       alias.off(i) = d.dsiDim(i)._low;
+      alias.origin += blk(i) * (d.dsiDim(i)._low - off(i)) / str(i);
     }
     alias.computeFactoredOffs();
     return alias;
   }
 
   def dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
+    writeln("rank change..");
     def isRange(r: range(?e,?b,?s)) param return 1;
     def isRange(r) param return 0;
 
-    var alias = new GPUArithmeticArr(eltType=eltType, rank=newRank,
+    var alias = new GPUExplicitArithmeticArr(eltType=eltType, rank=newRank,
                                          idxType=idxType,
-                                         stridable=newStridable, contiguousMem=false, dom=d);
-
+                                         stridable=newStridable, contiguousMem=true, dom=d);
     alias.data = data;
+    alias.size = size;
     var i = 1;
+    alias.origin = origin;
     for param j in 1..args.size {
       if isRange(args(j)) {
         alias.off(i) = d.dsiDim(i)._low;
+        alias.origin += blk(j) * (d.dsiDim(i)._low - off(j)) / str(j);
         alias.blk(i) = blk(j);
         alias.str(i) = str(j);
         i += 1;
+      } else {
+        alias.origin += blk(j) * (args(j) - off(j)) / str(j);
       }
     }
     alias.computeFactoredOffs();
@@ -479,8 +490,9 @@ class GPUArithmeticArr: BaseArr {
   }
 
   def dsiReallocate(d: domain) {
+    writeln("reallocate...");
     if (d._value.type == dom.type) {
-      var copy = new GPUArithmeticArr(eltType=eltType, rank=rank,
+      var copy = new GPUExplicitArithmeticArr(eltType=eltType, rank=rank,
                                           idxType=idxType,
                                           stridable=d._value.stridable,
                                           dom=d._value);
@@ -489,8 +501,10 @@ class GPUArithmeticArr: BaseArr {
       off = copy.off;
       blk = copy.blk;
       str = copy.str;
+      origin = copy.origin;
       factoredOffs = copy.factoredOffs;
-      dsiDestroyData();
+      size = copy.size;
+      delete data;
       data = copy.data;
       delete copy;
     } else {
@@ -499,14 +513,14 @@ class GPUArithmeticArr: BaseArr {
   }
 }
 
-def GPUArithmeticDom.dsiSerialWrite(f: Writer) {
+def GPUExplicitArithmeticDom.dsiSerialWrite(f: Writer) {
   f.write("[", dsiDim(1));
   for i in 2..rank do
     f.write(", ", dsiDim(i));
   f.write("]");
 }
 
-def GPUArithmeticArr.dsiSerialWrite(f: Writer) {
+def GPUExplicitArithmeticArr.dsiSerialWrite(f: Writer) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do

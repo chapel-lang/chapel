@@ -122,6 +122,8 @@ pragma "inline" def _cast(type t, x: (?,?)) where t == complex(128) {
 // tuple except the first
 //
 pragma "inline" def chpl__tupleRest(t: _tuple) {
+  // Albert hack to inline tupleRestHelper
+  pragma "inline" 
   def chpl__tupleRestHelper(first, rest...)
     return rest;
   return chpl__tupleRestHelper((...t));

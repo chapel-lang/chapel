@@ -9,7 +9,7 @@
 // Remove autoCopy (and matching autoDestroy calls) that are
 // unnecessary within a function
 //
-static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
+void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
   buildBasicBlocks(fn);
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     Map<Symbol*,Symbol*> equivalenceMap;

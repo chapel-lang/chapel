@@ -650,6 +650,11 @@ void build_constructor(ClassType* ct) {
     ct->defaultValue = NULL;
 
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
+
+  // Albert -- Hack in order to inline constructors inside the gpu kernel
+  // There is probably a better GPU-specific way of doing this
+  fn->addFlag(FLAG_INLINE);
+
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   ct->defaultConstructor = fn;
   fn->cname = astr("_construct_", ct->symbol->cname);

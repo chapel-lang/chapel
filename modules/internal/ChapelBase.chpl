@@ -1286,11 +1286,21 @@ pragma "removable auto copy" def chpl__autoCopy(x: domain) {
   return x;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Albert - Need a way to prevent the compiler of generating host code from
+// within a GPU kernel
 pragma "dont disable remote value forwarding"
-pragma "removable auto copy" def chpl__autoCopy(x: []) {
+pragma "removable auto copy" def chpl__autoCopy(x: []) where !x._value.isGPUExecution {
   on x._value do x._value._arrCnt$ += 1;
+    return x;
+}
+
+pragma "dont disable remote value forwarding"
+pragma "removable auto copy"
+pragma "inline" def chpl__autoCopy(x: []) where x._value.isGPUExecution {
   return x;
 }
+///////////////////////////////////////////////////////////////////////////////
 
 pragma "dont disable remote value forwarding"
 pragma "inline"

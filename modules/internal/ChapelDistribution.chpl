@@ -166,6 +166,9 @@ class BaseArr {
 
   def canCopyFromDevice param return false;
   def canCopyFromHost param return false;
+  def isGPUExecution param return false;
+  def isGPUExplicit param return false;
+  def isConstMem param return false;
 
   def dsiGetBaseDom(): BaseDom {
     return nil;

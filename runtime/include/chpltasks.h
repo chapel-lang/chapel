@@ -5,8 +5,16 @@
 
 #include <stdint.h>
 #include "arg.h"
-#ifdef CHPL_TASKS_H
+#ifndef ENABLE_GPU
 #include CHPL_TASKS_H
+#else
+#include "threads-pthreads.h"
+typedef int chpl_mutex_t;
+
+typedef chpl_bool chpl_sync_aux_t; // only needs to store the full/empty bit
+typedef chpl_sync_aux_t chpl_single_aux_t;
+typedef int64_t chpl_taskID_t;
+
 #endif
 
 //

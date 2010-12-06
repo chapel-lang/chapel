@@ -504,6 +504,9 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     }
   }
 
+  if (fGPU)
+    fprintf(hdrfile, "\n#ifndef ENABLE_GPU\n");
+
   fprintf(hdrfile, "\n/*** Virtual Method Table ***/\n\n");
   int maxVMT = 0;
   for (int i = 0; i < virtualMethodTable.n; i++)
@@ -541,7 +544,11 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
 
   fprintf(hdrfile, "\n};\n");
 
-
+  if (fGPU) {
+    fprintf(hdrfile, "#else\n");
+    fprintf(hdrfile, "extern chpl_fn_p %s[][%d];\n", vmt, maxVMT);
+    fprintf(hdrfile, "#endif\n");
+  }
   
   if (fGPU)
     fprintf(hdrfile, "\n#ifndef ENABLE_GPU\n");
@@ -600,8 +607,45 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
           continue;
         fprintf(hdrfile, "static ");
       }
-      fprintf(hdrfile,"extern ");
-      varSymbol->codegenDef(hdrfile);
+      // If any variables have been marked, put them into constant memory
+      if (varSymbol->hasFlag(FLAG_GPU_CALL)) {
+        fileinfo gpusrcfile;
+        appendCFile(&gpusrcfile, "chplGPU", "cu");
+        printf("Here too?\n");
+        fprintf(gpusrcfile.fptr, "__constant__ ");
+        //varSymbol->codegenDef(gpusrcfile.fptr);
+        //varSymbol->type->codegen(gpusrcfile.fptr);
+        // strip out "__ref_ from typecname"
+        //
+        const char *typecname = varSymbol->type->symbol->cname;
+        if (isReferenceType(varSymbol->type)) {
+          int len = strlen(typecname);
+          // TODO : TEMP HACK DUE TO MAC OSX lacking strndup
+#if 1
+          char *newname = (char *)malloc(sizeof(char) * (len - 5));
+          memcpy(newname, typecname + 5, sizeof(char) * (len - 5));
+#else
+          char *newname = strndup(typecname+5, len - 5);
+#endif
+          fprintf(gpusrcfile.fptr, "%s ", newname);
+        }
+        else
+          fprintf(gpusrcfile.fptr, "%s ", typecname);
+        varSymbol->codegen(gpusrcfile.fptr);
+        forv_Vec(CallExpr, call, gCallExprs) {
+          if (call->isPrimitive(PRIM_DECLARE_CONSTANT_MEM)) {
+            fprintf(gpusrcfile.fptr, "[");
+            call->get(2)->codegen(gpusrcfile.fptr);
+            fprintf(gpusrcfile.fptr, "]");
+          }
+        }
+        fprintf(gpusrcfile.fptr, ";\n");
+        closeCFile(&gpusrcfile);
+      }
+      else {
+        fprintf(hdrfile,"extern ");
+        varSymbol->codegenDef(hdrfile);
+      }
     }
 
     if (!fRuntime) {

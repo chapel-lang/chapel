@@ -314,6 +314,7 @@ class DefaultAssociativeArr: BaseArr {
   //
   // Standard internal array interface
   // 
+  def isGPUExplicit param return false;
 
   def dsiGetBaseDom() return dom;
 

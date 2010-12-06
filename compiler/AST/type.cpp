@@ -328,6 +328,9 @@ void ClassType::codegenDef(FILE* outfile) {
   if (symbol->hasFlag(FLAG_DATA_CLASS)) {
     getDataClassType(symbol)->codegen(outfile);
     fprintf(outfile, "* _data;\n");
+    /* Generate shadow ptr for GPU data */
+    getDataClassType(symbol)->codegen(outfile);
+    fprintf(outfile, "* _cudata;\n");
   }
   fprintf(outfile, "} ");
   if (classTag == CLASS_CLASS)

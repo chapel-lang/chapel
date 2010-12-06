@@ -1,9 +1,8 @@
 include $(CHAPEL_ROOT)/make/compiler/Makefile.gnu
 
 NVCC = nvcc
-DEVICEEMU = -deviceemu
 
-CUDA_LIB_PATH = /users/deitz/work2/chapel/cuda/lib
+CUDA_LIB_PATH = /usr/local/cuda/lib64
 COMP_GEN_LFLAGS +=-L$(CUDA_LIB_PATH) -lcudart
 
-RUNTIME_CUDA_CFLAGS = $(DEVICEEMU) -arch sm_13 --compiler-options -fno-strict-aliasing -DUNIX -O3 -DENABLE_GPU
+RUNTIME_CUDA_CFLAGS = -arch sm_20 --compiler-options -fno-strict-aliasing -DUNIX -O3 -DENABLE_GPU

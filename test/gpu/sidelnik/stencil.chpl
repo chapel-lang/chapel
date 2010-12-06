@@ -1,33 +1,26 @@
-use GPUDist, Random;
+use GPUDist;
 
 config const threadsPerBlock = 16;
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
 
-var m = 64: int(64);
+var m = 64;
 
 def main() {
 
-const GPUBlockDist = new GPUDist(rank=1, threadsPerBlock=threadsPerBlock);
+const GPUBlockDist = new dmap(new GPUDist(rank=1, tbSizeX=threadsPerBlock));
 
-const space: domain(1, int(64)) dmapped GPUBlockDist = [1..m];
-const subspace: domain(1, int(64)) dmapped GPUBlockDist = [2..m-1];
+const space: domain(1) dmapped GPUBlockDist = [1..m];
+const subspace: domain(1) dmapped GPUBlockDist = [2..m-1];
 
 var gpuA, gpuB : [space] real;
 
-var hostA, hostB : [1..m] real;
+forall i in space do
+  gpuB(i) = i : real;
 
-var randlist = new RandomStream(seed);
-randlist.fillRandom(hostB);
-writeln(hostB);
-
-gpuB = hostB;
+writeln(gpuB);
 
 forall i in subspace do {
   gpuA(i) = (gpuB(i-1) + gpuB(i) + gpuB(i+1))/3;
 }
 
-hostA = gpuA;
-
-writeln(hostA);
+writeln(gpuA);
 }
