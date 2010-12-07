@@ -85,7 +85,7 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
   forv_Vec(const char, str, *pragmas) {
     Flag flag = pragma2flag(str);
     if (flag == FLAG_UNKNOWN)
-      USR_FATAL_CONT(sym, "unknown pragma: %s", str);
+      USR_FATAL_CONT(sym, "unknown pragma: \"%s\"", str);
     else
       sym->addFlag(flag);
   }
@@ -96,8 +96,12 @@ BlockStmt* buildPragmaStmt(BlockStmt* block,
                            BlockStmt* stmt) {
   if (DefExpr* def = toDefExpr(stmt->body.first()))
     addPragmaFlags(def->sym, pragmas);
-  else if (pragmas->n > 0)
-    USR_FATAL_CONT("Line %d: ignoring preceeding pragmas", stmt->lineno);
+  else if (pragmas->n > 0) {
+    USR_FATAL_CONT(stmt, "cannot attach pragmas to this statement");
+    USR_PRINT(stmt, "   %s \"%s\"",
+              pragmas->n == 1 ? "pragma" : "starting with pragma",
+              pragmas->v[0]);
+  }
   delete pragmas;
   block->insertAtTail(stmt);
   return block;
