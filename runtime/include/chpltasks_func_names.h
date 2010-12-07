@@ -7,7 +7,7 @@
 
 #define _TFN_CONCAT(name, suffix)    name##_##suffix
 #define _TFN_INDIRECT(name, suffix)  _TFN_CONCAT(name, suffix)
-#define _TFN(name)                   _TFN_INDIRECT(name, CHPL_TASKS)
+#define _TFN(name)                   _TFN_INDIRECT(name, CHPL_TASK_LAYER_NAME)
 
 
 //
