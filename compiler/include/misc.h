@@ -18,6 +18,7 @@
 #define USR_PRINT      setupError(__FILE__, __LINE__, 5), handleError
 #define USR_STOP exitIfFatalErrorsEncountered
 
+// INT_ASSERT is intended to become no-op in production builds of compiler
 #define INT_ASSERT(x) do { if (!(x)) INT_FATAL("assertion error"); } while (0)
 
 class BaseAST;
