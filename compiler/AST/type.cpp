@@ -240,11 +240,24 @@ static void
 addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
   if (FnSymbol* fn = toFnSymbol(def->sym)) {
     ct->methods.add(fn);
-    INT_ASSERT(!fn->_this);
-    fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
-    fn->insertFormalAtHead(new DefExpr(fn->_this));
-    fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    fn->addFlag(FLAG_METHOD);
+    if (fn->_this) {
+      // this is the way it comes from the parser (see fn_decl_stmt_inner)
+      ArgSymbol* thisArg = toArgSymbol(fn->_this);  INT_ASSERT(thisArg);
+      INT_ASSERT(thisArg->type == dtUnknown);
+      BlockStmt* bs = thisArg->typeExpr;  INT_ASSERT(bs && bs->length() == 1);
+      Expr* firstexpr = bs->body.first();  INT_ASSERT(firstexpr);
+      UnresolvedSymExpr* sym = toUnresolvedSymExpr(firstexpr); INT_ASSERT(sym);
+      // ensure the name of the "this" argument matches that in ct
+      if (sym->unresolved != ct->symbol->name)
+        USR_FATAL_CONT(thisArg, "Only member methods of the"
+                       " innermost class/record/union (here, \"%s\")"
+                       " are allowed", ct->symbol->name);
+    } else {
+      fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
+      fn->insertFormalAtHead(new DefExpr(fn->_this));
+      fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+      fn->addFlag(FLAG_METHOD);
+    }
   }
   if (def->parentSymbol || def->list)
     def->remove();
