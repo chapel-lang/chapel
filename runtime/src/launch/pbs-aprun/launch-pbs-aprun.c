@@ -12,12 +12,15 @@
 
 #define baseExpectFilename ".chpl-expect-"
 #define baseSysFilename ".chpl-sys-"
+#define EXPECT "expect"
 
 #define CHPL_CC_ARG "-cc"
 static char *_ccArg = NULL;
 
-char expectFilename[FILENAME_MAX];
-char sysFilename[FILENAME_MAX];
+static char* debug = NULL;
+
+static char expectFilename[FILENAME_MAX];
+static char sysFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
 #define procsPerNode 1  
@@ -133,12 +136,11 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
   return optionString;
 }
 
-static char* chpl_launch_create_command(int argc, char* argv[], 
-                                        int32_t numLocales) {
+static char** chpl_launch_create_argv(int argc, char* argv[], 
+                                      int32_t numLocales) {
+  const int largc = 2;
+  char *largv[largc];
   int i;
-  int size;
-  char baseCommand[256];
-  char* command;
   FILE* expectFile;
   char* projectString = getenv(launcherAccountEnvvar);
   char* basenamePtr = strrchr(argv[0], '/');
@@ -156,11 +158,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   }
   chpl_compute_real_binary_name(argv[0]);
 
-#ifndef DEBUG_LAUNCH
-  mypid = getpid();
-#else
-  mypid = 0;
-#endif
+  if (!debug) {
+    mypid = getpid();
+  } else {
+    mypid = 0;
+  }
   sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
 
@@ -180,6 +182,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(expectFile, "expect -re $prompt\n");
     fprintf(expectFile, "send \"df -T . \\n\"\n");
     fprintf(expectFile, "expect {\n");
+    fprintf(expectFile, "  -ex lustre {}\n");
     fprintf(expectFile, "  -re $prompt {\n");
     fprintf(expectFile, "    send_user \"warning: Executing this program from a non-Lustre file system may cause it \\nto be unlaunchable, or for file I/O to be performed on a non-local file system.\\nContinue anyway? (\\[y\\]/n) \"\n");
     fprintf(expectFile, "    interact {\n");
@@ -192,7 +195,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(expectFile, "    }\n");
     fprintf(expectFile, "    send_user  \"\\n\"\n");
     fprintf(expectFile, "  }\n");
-    fprintf(expectFile, "  lustre\n");
     fprintf(expectFile, "}\n");
     fprintf(expectFile, "send \"exit\\n\"\n");
   }
@@ -205,6 +207,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
+  fprintf(expectFile, "send \"tcsh\\n\"\n");
+  fprintf(expectFile, "expect -re $prompt\n");
+  fprintf(expectFile, "set chpl_prompt \"chpl-%d # \"\n", mypid);
+  fprintf(expectFile, "send \"set prompt=\\\"$chpl_prompt\\\"\\n\"\n");
+  fprintf(expectFile, "expect -ex $chpl_prompt\n");
+  fprintf(expectFile, "expect -ex $chpl_prompt\n");
   fprintf(expectFile, "send \"aprun -cc %s -q -b -d%d -n1 -N1 ls %s\\n\"\n",
           ccArg, numCoresPerLocale, chpl_get_real_binary_name());
   fprintf(expectFile, "expect {\n");
@@ -212,7 +220,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
           "\"error: %s must be launched from and/or stored on a "
           "cross-mounted file system\\n\" ; exit 1}\n", 
           basenamePtr);
-  fprintf(expectFile, "  -re $prompt\n");
+  fprintf(expectFile, "  -ex $chpl_prompt\n");
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"aprun ");
   if (verbosity < 2) {
@@ -224,43 +232,50 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(expectFile, " '%s'", argv[i]);
   }
   fprintf(expectFile, "\\n\"\n");
-  fprintf(expectFile, "interact -o -re $prompt {return}\n");
-  fprintf(expectFile, "send_user \"\\n\"\n");
-  fprintf(expectFile, "send \"exit\\n\"\n");
+  fprintf(expectFile, "expect -ex \" %s", chpl_get_real_binary_name());
+  for (i=1; i<argc; i++) {
+    fprintf(expectFile, " '%s'", argv[i]);
+  }
+  fprintf(expectFile, "\"\n");
+  fprintf(expectFile, "interact -o $chpl_prompt {return}\n");
+  fprintf(expectFile, "send \"echo exit code: \\$?\\n\"\n");
+  fprintf(expectFile, "expect {\n");
+  fprintf(expectFile, "  -re {exit code: 0} {set exitval \"0\"}\n");
+  fprintf(expectFile, "  -re {exit code: \\d+} {set exitval \"1\"}\n");
+  fprintf(expectFile, "}\n");
+  fprintf(expectFile, "expect -ex $chpl_prompt\n");
+  if (verbosity > 1) {
+    fprintf(expectFile, "send_user \"\\n\"\n");
+  }
+  fprintf(expectFile, "exit $exitval\n");
   fclose(expectFile);
 
-  sprintf(baseCommand, "expect %s", expectFilename);
+  largv[0] = (char *) EXPECT;
+  largv[1] = expectFilename;
 
-  size = strlen(baseCommand) + 1;
-
-  command = chpl_malloc(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
-  
-  sprintf(command, "%s", baseCommand);
-
-  if (strlen(command)+1 > size) {
-    chpl_internal_error("buffer overflow");
-  }
-
-  return command;
+  return chpl_bundle_exec_args(0, NULL, largc, largv);
 }
 
 static void chpl_launch_cleanup(void) {
-#ifndef DEBUG_LAUNCH
-  char command[1024];
+  if (!debug) {
+    char command[1024];
 
-  sprintf(command, "rm %s", expectFilename);
-  system(command);
+    sprintf(command, "rm %s", expectFilename);
+    system(command);
 
-  sprintf(command, "rm %s", sysFilename);
-  system(command);
-#endif
+    sprintf(command, "rm %s", sysFilename);
+    system(command);
+  }
 }
 
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  int retcode =
-    chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
-                             argv[0]);
+  int retcode;
+  debug = getenv("CHPL_LAUNCHER_DEBUG");
+  retcode =
+    chpl_launch_using_fork_exec(EXPECT,
+                                chpl_launch_create_argv(argc, argv, numLocales),
+                                argv[0]);
   chpl_launch_cleanup();
   return retcode;
 }

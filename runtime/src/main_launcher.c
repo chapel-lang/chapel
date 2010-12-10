@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <errno.h>
 #include <string.h>
 #include <comm_printf_macros.h>
@@ -42,19 +44,20 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
     chpl_error("Could not allocate memory", -1, "<internal>");
   }
 
-  chpl_compute_real_binary_name(argv[0]);
-
   newargv[len-1] = NULL;
 
   if (largc > 0) {
     // launcher args
     memcpy(newargv, largv, largc*sizeof(char *));
   }
-  // binary
-  newargv[largc] = (char *) chpl_get_real_binary_name();
-  if (argc > 1) {
-    // other args (skip binary name)
-    memcpy(newargv+largc+1, argv+1, (argc-1)*sizeof(char *));
+  if (argc > 0) {
+    // binary
+    chpl_compute_real_binary_name(argv[0]);
+    newargv[largc] = (char *) chpl_get_real_binary_name();
+    if (argc > 1) {
+      // other args (skip binary name)
+      memcpy(newargv+largc+1, argv+1, (argc-1)*sizeof(char *));
+    }
   }
 
   return newargv;
@@ -83,6 +86,31 @@ int chpl_launch_using_exec(const char* command, char * const argv1[], const char
     chpl_error(msg, -1, "<internal>");
   }
   return -1;
+}
+
+int chpl_launch_using_fork_exec(const char* command, char * const argv1[], const char* argv0) {
+  int status;
+  pid_t pid = fork();
+  switch (pid) {
+  case 0:
+    chpl_launch_using_exec(command, argv1, argv0);
+    // should not return
+  case -1:
+  {
+    char msg[256];
+    sprintf(msg, "fork() failed: %s", strerror(errno));
+    chpl_error(msg, -1, "<internal>");
+  }
+  default:
+    {
+      if (waitpid(pid, &status, 0) != pid) {
+        char msg[256];
+        sprintf(msg, "waitpid() failed: %s", strerror(errno));
+        chpl_error(msg, -1, "<internal>");
+      }
+    }
+  }
+  return WEXITSTATUS(status);
 }
 
 int chpl_launch_using_system(char* command, char* argv0) {

@@ -8,6 +8,7 @@
 //
 char **chpl_bundle_exec_args(int argc, char *const argv[],
                               int largc, char *const largv[]);
+int chpl_launch_using_fork_exec(const char* command, char * const argv1[], const char* argv0);
 int chpl_launch_using_exec(const char* command, char * const argv1[], const char* argv0);
 int chpl_launch_using_system(char* command, char* argv0);
 
