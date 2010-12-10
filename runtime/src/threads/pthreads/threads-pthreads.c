@@ -77,6 +77,12 @@ threadlayer_threadID_t threadlayer_thread_id(void) {
 }
 
 
+// Thread yield
+
+void threadlayer_yield(void) {
+  sched_yield();
+}
+
 // Thread cancellation
 
 void threadlayer_thread_cancel(threadlayer_threadID_t thread) {

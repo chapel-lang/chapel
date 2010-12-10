@@ -87,6 +87,7 @@ typedef uint64_t chpl_taskID_t;
 // Thread management
 //
 threadlayer_threadID_t threadlayer_thread_id(void);
+void threadlayer_yield(void);
 void threadlayer_thread_cancel(threadlayer_threadID_t);
 void threadlayer_thread_join(threadlayer_threadID_t);
 

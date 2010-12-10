@@ -211,6 +211,9 @@ void CHPL_BEGIN(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
 
 chpl_taskID_t CHPL_TASK_ID(void) { return 0; }
 
+void CHPL_TASK_YIELD(void) {
+}
+
 void CHPL_TASK_SLEEP(int secs) {
   sleep(secs);
 }

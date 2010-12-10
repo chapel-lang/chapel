@@ -93,12 +93,6 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-#ifdef BLAH
-  GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
-                                      SIGNAL,
-                                      &(f->ack),
-                                      sizeof(f->ack)));
-#endif
 }
 
 static void fork_wrapper(fork_t *f) {
@@ -591,7 +585,14 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
       memcpy(&(info->arg), &arg, sizeof(void*));
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_LARGE, info, info_size));
     }
-    GASNET_BLOCKUNTIL(1==done);
+#ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
+    GASNET_BLOCKUNTIL(done != 1);
+#else
+    while (done != 1) {
+      (void) gasnet_AMPoll();
+      CHPL_TASK_YIELD();
+    }
+#endif
     chpl_free(info, 0, 0);
   }
 }
@@ -677,7 +678,6 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size
         memcpy(&(info->arg), arg, arg_size);
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_FAST, info, info_size));
 
-      // GASNET_BLOCKUNTIL(1==done);
     } else {
       // Call the normal chpl_comm_fork()
       chpl_comm_fork(locale, fid, arg, arg_size);

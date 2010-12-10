@@ -698,6 +698,11 @@ chpl_taskID_t CHPL_TASK_ID(void) {
 }
 
 
+void CHPL_TASK_YIELD(void) {
+  threadlayer_yield();
+}
+
+
 void CHPL_TASK_SLEEP(int secs) {
   sleep(secs);
 }

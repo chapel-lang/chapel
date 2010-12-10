@@ -94,6 +94,11 @@ void CHPL_BEGIN(
 chpl_taskID_t CHPL_TASK_ID(void);
 
 //
+// Yield.
+//
+void CHPL_TASK_YIELD(void);
+
+//
 // Suspend.
 //
 void CHPL_TASK_SLEEP(int);
