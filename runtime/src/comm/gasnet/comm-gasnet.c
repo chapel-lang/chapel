@@ -586,7 +586,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_LARGE, info, info_size));
     }
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
-    GASNET_BLOCKUNTIL(done != 1);
+    GASNET_BLOCKUNTIL(done==1);
 #else
     while (done != 1) {
       (void) gasnet_AMPoll();
