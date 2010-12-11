@@ -1,37 +1,54 @@
 use Grid_def;
-use GridArray_def;
+use GridVariable_def;
 
 
 //|\"""""""""""""""""""""""""""|\
 //| >    GridSolution class    | >
 //|/___________________________|/
+
+//------------------------------------------------------------
+// Approximates the solution to a time-dependent PDE defined
+// on a Grid.  Spatial data is stored at two time levels (old
+// and current).  Each level of spatial data is stored in a
+// GVariable.
+//------------------------------------------------------------
+
 class GridSolution {
 
   const grid:     Grid;
   
-  var old_data:     GridArray;
-  var current_data: GridArray;
+  var old_data:     GridVariable;
+  var current_data: GridVariable;
   var old_time:     real;
   var current_time: real;
   
-  //|\''''''''''''''''|\
-  //| >    clear()    | >
-  //|/................|/
+  
+  //|\''''''''''''''|\
+  //| >    clear    | >
+  //|/..............|/
+  
   def clear() {
     delete old_data;
     delete current_data;
   }
-  // /|''''''''''''''''/|
-  //< |    clear()    < |
-  // \|................\|
+  // /|''''''''''''''/|
+  //< |    clear    < |
+  // \|..............\|
 
 
-  //==== Constructor ====
-  def GridSolution(grid: Grid) {
+  //|\''''''''''''''''''''|\
+  //| >    constructor    | >
+  //|/....................|/
+  
+  def GridSolution (grid: Grid) {
     this.grid = grid;
-    old_data =     new GridArray(grid = grid);
-    current_data = new GridArray(grid = grid);
+    old_data =     new GridVariable(grid = grid);
+    current_data = new GridVariable(grid = grid);
   }
+  // /|''''''''''''''''''''/|
+  //< |    constructor    < |
+  // \|....................\|
+  
 }
 // /|"""""""""""""""""""""""""""/|
 //< |    GridSolution class    < |
@@ -44,10 +61,20 @@ class GridSolution {
 //|\"""""""""""""""""""""""""""""""""""|\
 //| >    GridSolution.setToFunction    | >
 //|/___________________________________|/
-//----------------------------------------------------------
-// Sets both time levels to a particular analytic function.
-//----------------------------------------------------------
-def GridSolution.setToFunction(
+
+//------------------------------------------------------------
+// Sets both old_data and current_data equal to the provided 
+// function initial_condition.  This is meant to be used
+// when setting up the initial condition for a PDE.
+//
+// For efficiency, it would probably be better to have a flag
+// indicating that only one time point worth of data is
+// currently stored, so that the values generated here would
+// only need to be stored once.  But for the time being, the
+// current behavior gets the point across.
+//------------------------------------------------------------
+
+def GridSolution.setToFunction (
   initial_condition: func(dimension*real, real),
   time_in:           real)
 {
@@ -58,7 +85,7 @@ def GridSolution.setToFunction(
   old_data.setToFunction(initial_condition);
   old_time = time_in;
   
-  current_data.setToFunction(initial_condition);
+  current_data(grid.cells) = old_data(grid.cells);
   current_time = time_in;
   write("done.\n");
   //<=== Evaluate and store initial_condition <===
@@ -75,15 +102,17 @@ def GridSolution.setToFunction(
 //|\""""""""""""""""""""""""""""""""|\
 //| >    GridSolution.clawOutput    | >
 //|/________________________________|/
+
 //-------------------------------------------------------------------
 // Writes Clawpack-formatted output for a GridSolution, at the given
 // frame_number.
 //-------------------------------------------------------------------
+
 def GridSolution.clawOutput(
   frame_number: int
 ){
 
-  //==== Use clawOutput method for GridArray ====
+  //==== Use clawOutput method for GridVariable ====
   current_data.clawOutput(current_time, frame_number);
 
 }

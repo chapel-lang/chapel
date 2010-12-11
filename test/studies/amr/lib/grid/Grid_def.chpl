@@ -10,29 +10,28 @@
 //
 //<=== Description <===
 
+use SpaceDimension;
 use LanguageExtensions;
 use MultiDomain_def;
 
 
-config param dimension = 2;
-const dimensions = [1..dimension];
 
-enum loc1d {below=-2, low=-1, inner=0, high=1, above=2};
-const interior_location: dimension*int; // since loc1d.interior=0, this initializes correctly
-const ghost_locations = (loc1d.below .. loc1d.above by 2)**dimension;
+//-----------------------------------------------------------
+// Define an enum type to describe the relative position of
+// an index to a range.  Tuples of these will describe how
+// a multi-dimensional index (and potentially a full domain)
+// is positioned relative to a full grid.
+//-----------------------------------------------------------
 
+enum  loc1d {below=-2, low=-1, inner=0, high=1, above=2};
 
-//==== Helper constants ====
-/* const zeros: dimension*int; */
-/* const e: dimension*(dimension*int); */
-/* for d in dimensions do e(d)(d) = 1; */
-/* const empty_domain: domain(dimension, stridable=true); */
 
 
 
 //|\"""""""""""""""""""|\
 //| >    Grid class    | >
 //|/___________________|/
+
 class Grid {
   
   const x_low, x_high:          dimension*real;
@@ -41,26 +40,28 @@ class Grid {
 
   const dx: dimension*real;
           
-  const ext_cells: domain(dimension, stridable=true);
-  const cells:     subdomain(ext_cells);
+  const extended_cells: domain(dimension, stridable=true);
+  const cells:          subdomain(extended_cells);
   
   const ghost_multidomain: MultiDomain(dimension, stridable=true);
 
 
-  //|\''''''''''''''''|\
-  //| >    clear()    | >
-  //|/................|/
-  def clear() {
+  //|\''''''''''''''|\
+  //| >    clear    | >
+  //|/..............|/
+
+  def clear () {
     delete ghost_multidomain;
   }
-  // /|''''''''''''''''/|
-  //< |    clear()    < |
-  // \|................\|
+  // /|''''''''''''''/|
+  //< |    clear    < |
+  // \|..............\|
 
 
   //|\''''''''''''''''''''|\
   //| >    Constructor    | >
   //|/....................|/
+  
   def Grid(
     x_low:         dimension*real,
     x_high:        dimension*real,
@@ -91,39 +92,46 @@ class Grid {
     for d in dimensions do ranges(d) = (i_low(d)+1 .. by 2) #n_cells(d);
     cells = ranges;
 
-    //==== Extended cells (includes ghost cells) ====
-    var size: dimension*int;
-    for d in dimensions do size(d) = 2*n_ghost_cells(d);
-    ext_cells = cells.expand(size);
 
-    //==== Ghost cells ====
+    //==== Extended cells (includes ghost cells) ====
+    //------------------------------------------------------------
+    // Note that the argument to 'expand' must be multiplied by 2
+    // because a cell is 2 indices wide.
+    //------------------------------------------------------------
+    extended_cells = cells.expand(2*n_ghost_cells);
+
+
+    //===> Ghost cells ===>
+    //----------------------------------------------------------------
+    // Blocks of ghost cells are placed in ghost_multidomain, grouped
+    // by their position relative to the grid.  For example, in 2d,
+    // there are 8 blocks:
+    //   (lower,lower), (lower,inner), (lower,upper)
+    //   (inner,lower), (inner,upper),
+    //   (upper,lower), (upper,inner), (upper,upper)
+    //----------------------------------------------------------------
+
     ghost_multidomain = new MultiDomain(dimension, stridable=true);
 
     var inner_location: dimension*int;
-    for d in dimensions do interior_location(d) = loc1d.inner;
+    for d in dimensions do inner_location(d) = loc1d.inner;
 
     var ghost_domain: domain(dimension, stridable=true);
-    for loc in ghost_locations {
+    for loc in (loc1d.below .. loc1d.above by 2)**dimension {
       if loc != inner_location {
-        for d in dimensions do ranges(d) = ghostRange(d,loc(d));
+        for d in dimensions do
+          ranges(d) = if loc(d) == loc1d.below then 
+                        (extended_cells.low(d).. by 2) #n_ghost_cells(d)
+                      else if loc(d) == loc1d.inner then
+                        cells.dim(d)
+                      else
+                        (..extended_cells.high(d) by 2) #n_ghost_cells(d);
+        
         ghost_domain = ranges;
         ghost_multidomain.add(ghost_domain);
       }
     }
-
-    def ghostRange(d: int, p: int) {
-      // p = "position"; instance of loc1d
-      var R: range(stridable=true);
-
-      if p == loc1d.below then
-        R = (ext_cells.low(d).. by 2) #n_ghost_cells(d);
-      else if p == loc1d.inner then
-        R = cells.dim(d);
-      else
-        R = (..ext_cells.high(d) by 2) #n_ghost_cells(d);
-
-      return R;
-    }
+    //<=== Ghost cells <===
 
   }
   // /|''''''''''''''''''''/|
@@ -135,10 +143,12 @@ class Grid {
   //|\''''''''''''''''''''''''''|\
   //| >   sanityChecks method   | >
   //|/..........................|/
+
   //--------------------------------------------------------------
   // Performs some basic sanity checks on the constructor inputs.
   //--------------------------------------------------------------
-  def sanityChecks() {
+
+  def sanityChecks () {
     var d_string: string;
     for d in dimensions do {
       d_string = format("%i", d);
@@ -162,6 +172,7 @@ class Grid {
   //|\''''''''''''''''''''''''''''''''|\
   //| >    relativeLocation method    | >
   //|/................................|/
+  
   def relativeLocation(idx: dimension*int) {
     var loc: dimension*int;
 
@@ -192,11 +203,17 @@ class Grid {
 
 
 
-
   //|\'''''''''''''''''''''''''|\
   //| >    writeThis method    | >
   //|/.........................|/
-  def writeThis(w: Writer) {
+  
+  //-----------------------------------------------------------
+  // Defines the output of the intrinsic 'write' and 'writeln' 
+  // procedures, so that write(Grid) will produce something
+  // sensible.  Mainly for testing and debugging.
+  //-----------------------------------------------------------
+  
+  def writeThis (w: Writer) {
     writeln("x_low: ", x_low, ",  x_high: ", x_high);
     write("i_low: ", i_low, ",  i_high: ", i_high);
   }
@@ -215,12 +232,16 @@ class Grid {
 
 
 
-//|--------------------------->
-//|===> Grid.xValue method ===>
-//|--------------------------->
-//----------------------------------------
-// Converts indices to coordinate values.
-//----------------------------------------
+//|\"""""""""""""""""""""""""""|\
+//| >    Grid.xValue method    | >
+//|/___________________________|/
+
+//-------------------------------------------------------------
+// Converts an index to a coordinate tuple.  This is primarily
+// used when evaluating an analyitical function on the Grid,
+// as when setting up in initial condition.
+//-------------------------------------------------------------
+
 def Grid.xValue (point_index: dimension*int) {
 
   var coord: dimension*real;
@@ -235,21 +256,24 @@ def Grid.xValue (point_index: dimension*int) {
 
   return coord;
 }
-//<---------------------------|
-//<=== Grid.xValue method <===|
-//<---------------------------|
+// /|"""""""""""""""""""""""""""/|
+//< |    Grid.xValue method    < |
+// \|___________________________\|
 
 
 
 
 
 
-//|------------------------->
-//|===> readGrid routine ===>
-//|------------------------->
-//---------------------------------------
-// Constructs a grid from an input file.
-//---------------------------------------
+//|\"""""""""""""""""""""""""|\
+//| >    readGrid routine    | >
+//|/_________________________|/
+
+//---------------------------------------------------------------
+// Constructs a grid from an input file.  Used when implementing
+// single-grid problems, but not for AMR.
+//---------------------------------------------------------------
+
 def readGrid(file_name: string) {
 
   var input_file = new file(file_name, FileAccessMode.read);
@@ -282,17 +306,18 @@ def readGrid(file_name: string) {
   return new Grid(x_low, x_high, i_low, n_cells, n_ghost_cells);
 
 }
-//<-------------------------|
-//<=== readGrid routine <===|
-//<-------------------------|
+// /|"""""""""""""""""""""""""/|
+//< |    readGrid routine    < |
+// \|_________________________\|
 
 
 
 
-//|------------------------------*
-//|===> setOutputTimes routine ===>
-//|------------------------------*
-def setOutputTimes(file_name: string) {
+//|\"""""""""""""""""""""""""""""""|\
+//| >    setOutputTimes routine    | >
+//|/_______________________________|/
+
+def setOutputTimes (file_name: string) {
 
   var input_file = new file(file_name, FileAccessMode.read);
   input_file.open();
@@ -314,9 +339,9 @@ def setOutputTimes(file_name: string) {
   return output_times;
 
 }
-// *------------------------------|
-//<=== setOutputTimes routine <===|
-// *------------------------------|
+// /|"""""""""""""""""""""""""""""""/|
+//< |    setOutputTimes routine    < |
+// \|_______________________________\|
 
 
 
@@ -341,7 +366,7 @@ def main {
 
   writeln(grid);
   writeln("grid.cells = ", grid.cells);
-  writeln("grid.ext_cells = ", grid.ext_cells);
+  writeln("grid.extended_cells = ", grid.extended_cells);
 
 
 }

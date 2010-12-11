@@ -37,9 +37,23 @@ class MultiDomain {
   def length { return indices.high; }
 
 
+
+  //|\'''''''''''''''''''''''''|\
+  //| >    writeThis method    | >
+  //|/.........................|/
+  //-----------------------------------------------------------
+  // Defines the output of the intrinsic 'write' and 'writeln' 
+  // procedures, so that write(MultiDomain) will produce
+  // something sensible.  Mainly for testing and debugging.
+  //-----------------------------------------------------------
+
   def writeThis(w: Writer){
     write(domains);
   }
+  // /|'''''''''''''''''''''''''/|
+  //< |    writeThis method    < |
+  // \|.........................\|
+  
 
 }
 // /|""""""""""""""""""""""""""/|
@@ -195,6 +209,27 @@ def *(mD1: MultiDomain, mD2: MultiDomain)
 //|\''''''''''''''''''''''''''''''''''''''|\
 //| >    MultiDomain = domain - domain    | >
 //|/......................................|/
+//---------------------------------------------------------------------------
+// This performs a "set minus" operation D-E between two domains of equal 
+// rank and stride, returning a MultiDomain.  This procedure is the backbone 
+// of MultiDomain calculations.
+//
+// The algorithm is recursive.  If the input domains are of rank 1, the 
+// result can be calculated explicitly.  If they are of rank > 1, then
+// the result is split into three segments -- low, interior, and high --
+// based on the structure of the difference in the leading dimension.
+//
+// The 'interior' section is determined by the range in the leading dimension
+// on which D and E overlap.  It is formed by the tensor product of this
+// range with the difference of D and E projected onto all non-leading
+// dimensions; this projected difference is computed by a lower-rank domain
+// subtraction.
+//
+// The 'low' and 'high' sections are determined by the portion of the
+// leading dimension that is either lower or higher than the 'interior'
+// section.  By definition, nothing is removed from D in these areas, and
+// they are directly calculated as full (but possibly empty) domains.
+//--------------------------------------------------------------------------
 def -(D: domain, E: domain) where D.rank == E.rank
 {
   param stridable = D.stridable || E.stridable;

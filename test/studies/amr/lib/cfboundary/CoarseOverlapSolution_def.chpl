@@ -91,9 +91,9 @@ def CoarseOverlapSolution.fill_Linear(
 
 
 //|\"""""""""""""""""""""""""""""""""""""""""|\
-//| >    LevelArray.getFineBoundaryValues    | >
+//| >    LevelVariable.getFineBoundaryValues    | >
 //|/_________________________________________|/
-def LevelArray.getFineBoundaryValues(
+def LevelVariable.getFineBoundaryValues(
   coarse_overlap_solution: CoarseOverlapSolution,
   time:                   real)
 {
@@ -106,7 +106,7 @@ def LevelArray.getFineBoundaryValues(
 
   //==== Safety check the requested time ====
   assert(time > t1 - 1.0E-8  &&  time < t2 + 1.0E-8,
-	 "Warning: LevelArray.getFineBoundaryValues\n" +
+	 "Warning: LevelVariable.getFineBoundaryValues\n" +
 	 "Requesting fine data at time " + format("%8.4E",time) + "\n" +
 	 "coarse_overlap_solution.old_time =     " + format("%8.4E", t1) + "\n" +
 	 "coarse_overlap_solution.current_time = " + format("%8.4E", t2));
@@ -133,7 +133,7 @@ def LevelArray.getFineBoundaryValues(
   
 }
 // /|"""""""""""""""""""""""""""""""""""""""""/|
-//< |    LevelArray.getFineBoundaryValues    < |
+//< |    LevelVariable.getFineBoundaryValues    < |
 // \|_________________________________________\|
 
 
@@ -148,7 +148,7 @@ def LevelArray.getFineBoundaryValues(
 // //| >    CFBoundarySolution.fillFineBoundary    | >
 // //|/____________________________________________|/
 // def CFBoundarySolution.fillFineBoundary(
-//   q: LevelArray,
+//   q: LevelVariable,
 //   t: real)
 // {
 //   //==== Safety check the fine level ====
@@ -171,7 +171,7 @@ def LevelArray.getFineBoundaryValues(
 // 
 // 
 // def CFSolutionInterface.fillFineBoundary(
-//   q: GridArray,
+//   q: GridVariable,
 //   t: real)
 // {
 // 

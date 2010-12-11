@@ -1,5 +1,5 @@
 use Level_def;
-use LevelArray_def;
+use LevelVariable_def;
 
 
 
@@ -9,8 +9,8 @@ use LevelArray_def;
 class LevelSolution {
   const level:    Level;
 
-  var old_data:     LevelArray;
-  var current_data: LevelArray;
+  var old_data:     LevelVariable;
+  var current_data: LevelVariable;
   var old_time:     real;
   var current_time: real;
 
@@ -32,8 +32,8 @@ class LevelSolution {
   //|/....................|/
   def LevelSolution(level: Level) {
     this.level  = level;
-    old_data     = new LevelArray(level = level);
-    current_data = new LevelArray(level = level);
+    old_data     = new LevelVariable(level = level);
+    current_data = new LevelVariable(level = level);
   }
   // /|''''''''''''''''''''/|
   //< |    constructor    < |
@@ -52,10 +52,10 @@ class LevelSolution {
 //|/____________________________________|/
 def LevelSolution.setToFunction(
   initial_condition: func(dimension*real, real),
-  time_in:           real
-){
+  time_in:           real)
+{
 
-  //==== Set each LevelArray to the initial condition ====
+  //==== Set each LevelVariable to the initial condition ====
   old_data.setToFunction(initial_condition);
   old_time = time_in;
   
@@ -77,7 +77,7 @@ def LevelSolution.clawOutput(
   frame_number: int
 ){
 
-  //==== Use clawOutput for LevelArray ====
+  //==== Use clawOutput for LevelVariable ====
   current_data.clawOutput(current_time, frame_number);
   
 }

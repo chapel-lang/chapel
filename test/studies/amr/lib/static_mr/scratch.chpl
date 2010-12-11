@@ -6,8 +6,8 @@
 /* //  */
 /* //--------------------------------------------------------------------- */
 /* def LevelInterface.C2FInteriorInterpolator( */
-/*   q_coarse: LevelArray, */
-/*   q_fine:   LevelArray,) */
+/*   q_coarse: LevelVariable, */
+/*   q_fine:   LevelVariable,) */
 /* { */
 
 /*   for coarse_grid in coarse_grids { */
@@ -71,7 +71,7 @@
 /* // */
 /* // */
 /* def LevelInterface.minmodDiffs( */
-/*   q:     GridArray,  */
+/*   q:     GridVariable,  */
 /*   cells: subdomain(coarse_level.cells)) */
 /* { */
 
@@ -187,7 +187,7 @@
 /* //|""""""""""""""""""""""""""""""""""""""""""""""""""\ */
 /* //|===> LevelInterface.interpolateC2FLinear method ===> */
 /* //|__________________________________________________/ */
-/* def LevelInterface.interpolateC2FLinear(q_coarse: LevelArray) */
+/* def LevelInterface.interpolateC2FLinear(q_coarse: LevelVariable) */
 /* { */
 
 /*   //===> Fill coarse ghost cells for interpolation ===> */
@@ -323,8 +323,8 @@
 /* // Conservatively averages data from the fine level onto the coarse level. */
 /* //------------------------------------------------------------------------- */
 /* def LevelInterface.interpolateF2C( */
-/*   q_coarse: LevelArray, */
-/*   q_fine:   LevelArray */
+/*   q_coarse: LevelVariable, */
+/*   q_fine:   LevelVariable */
 /* ) { */
 
 /*   //==== Volume fraction is 1/product(ref_ratio) ==== */

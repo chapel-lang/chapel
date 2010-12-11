@@ -1,4 +1,4 @@
-use GridArray_DiffusionBE;
+use GridVariable_DiffusionBE;
 use GridBC_def;
 
 
@@ -84,7 +84,7 @@ def GridSolution.step_DiffusionBE(
   // a clean decoupling of the "ghostFill" and "homogeneousGhostFill"
   // methods.
   //----------------------------------------------------------------------
-  var rhs = new GridArray(grid);
+  var rhs = new GridVariable(grid);
   bc.apply(current_data, t_new);
   rhs.storeFluxDivergence(current_data, diffusivity);
   rhs(grid.cells) *= -dt;
@@ -97,7 +97,7 @@ def GridSolution.step_DiffusionBE(
   //------------------------------------------------------------
   // residual = rhs - (dq + dt*flux_divergence(dq))
   //------------------------------------------------------------
-  var residual = new GridArray(grid);
+  var residual = new GridVariable(grid);
   bc.apply_Homogeneous(dq);
   residual.storeBEOperator(dq, diffusivity, dt);
   residual(grid.cells) = rhs(grid.cells) - residual(grid.cells);
@@ -105,7 +105,7 @@ def GridSolution.step_DiffusionBE(
 
 
   //==== Initialize search direction ====
-  var search_dir = new GridArray(grid);
+  var search_dir = new GridVariable(grid);
   search_dir(grid.cells) = residual(grid.cells);
   
 
@@ -113,7 +113,7 @@ def GridSolution.step_DiffusionBE(
   //--------------------------------------------------
   // Initializes to homogeneousBEOperator(search_dir)
   //--------------------------------------------------
-  var residual_update = new GridArray(grid);
+  var residual_update = new GridVariable(grid);
   bc.apply_Homogeneous(search_dir);
   residual_update.storeBEOperator(search_dir, diffusivity, dt);
   
@@ -151,7 +151,7 @@ def GridSolution.step_DiffusionBE(
   //----------------------------------------------
   // Recalling that dq = q.old_data...
   //----------------------------------------------
-  old_data += current_data;
+  old_data(grid.cells) += current_data(grid.cells);
   old_data <=> current_data;
 
   old_time = current_time;

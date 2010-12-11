@@ -1,21 +1,28 @@
 use Level_def;
-use GridArray_def;
+use GridVariable_def;
 
 
-//|\"""""""""""""""""""""""""|\
-//| >    LevelArray class    | >
-//|/_________________________|/
-class LevelArray {
-  const level:        Level;
-  var grid_arrays:    [level.grids] GridArray;
-  var _promotionType: real;
+//|\""""""""""""""""""""""""""""|\
+//| >    LevelVariable class    | >
+//|/____________________________|/
+
+//---------------------------------------------------------------
+// Similar to the GridVariable class, this represents a variable
+// defined on the spatial region described by a Level.  This
+// allows data to be stored on a union of rectangles.
+//---------------------------------------------------------------
+
+class LevelVariable {
+  
+  const level:     Level;
+  var grid_arrays: [level.grids] GridVariable;
 
 
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
   def clear() {
-    //==== Nothing to do ====
+    // Nothing to do
   }
   // /|''''''''''''''''/|
   //< |    clear()    < |
@@ -31,7 +38,7 @@ class LevelArray {
   //--------------------------------------------------------
   def initialize() {
     for grid in level.grids do
-      grid_arrays(grid) = new GridArray(grid = grid);                          
+      grid_arrays(grid) = new GridVariable(grid = grid);                          
   }
   // /|''''''''''''''''''''''''''''/|
   //< |    initialize() method    < |
@@ -49,80 +56,37 @@ class LevelArray {
     grid: Grid, 
     D: domain(dimension, stridable=true)) 
   var {
-    var pointer => grid_arrays(grid).value(D);
-    return pointer;
+    var alias => grid_arrays(grid).value(D);
+    return alias;
   }
   // /|'''''''''''''''''''''''/|
   //< |    this() methods    < |
   // \|.......................\|
 
 
-  //|\''''''''''''''''''''''''''|\
-  //| >    these() iterators    | >
-  //|/..........................|/
-  //---------------------------------------------------------------------
-  // Seems like it would be ideal to chain this with the leader/follower
-  // for GridArrays.
-  //---------------------------------------------------------------------
-  def these() {
-    for grid in level.grids {
-      for cell in grid.cells do
-	      yield grid_arrays(grid).value(cell);
-    }
-  }
-
-  def these(param tag: iterator)
-  where tag == iterator.leader {
-    for grid in level.grids {
-      for cell in grid.cells do
-	yield (grid,cell);
-    }
-  }
-
-  def these(param tag: iterator, follower) var
-  where tag == iterator.follower {
-    yield grid_arrays(follower(1)).value(follower(2));
-  }
-  // /|''''''''''''''''''''''''''/|
-  //< |    these() iterators    < |
-  // \|..........................\|
-
-
 }
-// /|"""""""""""""""""""""""""/|
-//< |    LevelArray class    < |
-// \|_________________________\|
+// /|""""""""""""""""""""""""""""/|
+//< |    LevelVariable class    < |
+// \|____________________________\|
 
 
 
 
-//===> LevelArray assignment overloads ===>
-//========================================>
-def =(q: LevelArray, rvalue)
-where rvalue.type != LevelArray && rvalue.type != real
-{
-  forall (x,y) in (q,rvalue) do
-    x = y;
-}
-
-def =(q: LevelArray, rvalue: real) {
-  forall x in q do
-    x = rvalue;
-}
-//<=== LevelArray assignment overloads <===
-//<========================================
 
 
 
 
-//|\"""""""""""""""""""""""""""""""""|\
-//| >    LevelArray.setToFunction    | >
-//|/_________________________________|/
-//-----------------------------------------------------------------
-// Sets LevelArray.value to the analytical function f evaluated on
-// the level.
-//-----------------------------------------------------------------
-def LevelArray.setToFunction(
+
+//|\""""""""""""""""""""""""""""""""""""|\
+//| >    LevelVariable.setToFunction    | >
+//|/____________________________________|/
+
+//-------------------------------------------------------
+// Sets the value to a specified function f, as would be
+// done when setting up the initial condition for a PDE.
+//-------------------------------------------------------
+
+def LevelVariable.setToFunction(
   f: func(dimension*real, real)
 ){
 
@@ -132,16 +96,17 @@ def LevelArray.setToFunction(
 
 }
 // /|"""""""""""""""""""""""""""""""""/|
-//< |    LevelArray.setToFunction    < |
+//< |    LevelVariable.setToFunction    < |
 // \|_________________________________\|
 
 
 
 
-//|\""""""""""""""""""""""""""""""""""""""|\
-//| >    LevelArray.fillOverlaps    | >
-//|/______________________________________|/
-def LevelArray.fillOverlaps() {
+//|\""""""""""""""""""""""""""""""""|\
+//| >    LevelVariable.fillOverlaps    | >
+//|/________________________________|/
+
+def LevelVariable.fillOverlaps () {
   
   for grid in level.grids {
     for (nbr, overlap) in level.sibling_overlaps(grid) do
@@ -149,21 +114,23 @@ def LevelArray.fillOverlaps() {
   }
   
 }
-// /|""""""""""""""""""""""""""""""""""""""/|
-//< |    LevelArray.fillOverlaps    < |
-// \|______________________________________\|
+// /|""""""""""""""""""""""""""""""""/|
+//< |    LevelVariable.fillOverlaps    < |
+// \|________________________________\|
 
 
 
 
 
-//|\""""""""""""""""""""""""""""""|\
-//| >    LevelArray.clawOutput    | >
-//|/______________________________|/
+//|\"""""""""""""""""""""""""""""""""|\
+//| >    LevelVariable.clawOutput    | >
+//|/_________________________________|/
+
 //-----------------------------------------------------------------------
 // Writes both a time file and a solution file for a given frame number.
 //-----------------------------------------------------------------------
-def LevelArray.clawOutput(
+
+def LevelVariable.clawOutput(
   time:         real,
   frame_number: int)
 {
@@ -187,26 +154,28 @@ def LevelArray.clawOutput(
   //==== Solution file ====
   outfile = new file(solution_filename, FileAccessMode.write);
   outfile.open();
-  write(1, 1, outfile);  // AMR_level=1 and base_grid_number=1 for single-level output
+  this.writeData(1, 1, outfile);  // AMR_level=1 and base_grid_number=1 for single-level output
   outfile.close();
   delete outfile;
 
 }
-// /|""""""""""""""""""""""""""""""/|
-//< |    LevelArray.clawOutput    < |
-// \|______________________________\|
+// /|"""""""""""""""""""""""""""""""""/|
+//< |    LevelVariable.clawOutput    < |
+// \|_________________________________\|
 
 
 
 
 
-//|\"""""""""""""""""""""""""|\
-//| >    LevelArray.write    | >
-//|/_________________________|/
+//|\""""""""""""""""""""""""""""""""|\
+//| >    LevelVariable.writeData    | >
+//|/________________________________|/
+
 //--------------------------------------------------
-// Writes out all data contained in the LevelArray.
+// Writes out all data contained in the LevelVariable.
 //--------------------------------------------------
-def LevelArray.write(
+
+def LevelVariable.writeData(
   AMR_level:        int,
   base_grid_number: int,
   outfile:          file)
@@ -214,15 +183,15 @@ def LevelArray.write(
 
   var grid_number = base_grid_number;
   for grid in level.ordered_grids {
-    grid_arrays(grid).write(grid_number, AMR_level, outfile);
+    grid_arrays(grid).writeData(grid_number, AMR_level, outfile);
     outfile.writeln("  ");
     grid_number += 1;
   }
 
 }
-// /|"""""""""""""""""""""""""/|
-//< |    LevelArray.write    < |
-// \|_________________________\|
+// /|""""""""""""""""""""""""""""""""/|
+//< |    LevelVariable.writeData    < |
+// \|________________________________\|
 
 
 
@@ -232,12 +201,14 @@ def LevelArray.write(
 //|\"""""""""""""""""""""""""""""""""""""|\
 //| >    extrapolateGhostData methods    | >
 //|/_____________________________________|/
+
 //-----------------------------------------------------------------
 // Fills the first layer of ghost cells with linearly extrapolated
 // data from the interior.  Note that if there are more layers of
 // ghost cells, they will be filled with incorrect values.
 //-----------------------------------------------------------------
-def LevelArray.extrapolateGhostData() {
+
+def LevelVariable.extrapolateGhostData () {
   
   for grid_array in grid_arrays do
     grid_array.extrapolateGhostData();
@@ -245,7 +216,7 @@ def LevelArray.extrapolateGhostData() {
 }
 
 
-def GridArray.extrapolateGhostData() {
+def GridVariable.extrapolateGhostData () {
 
   for ghost_domain in grid.ghost_multidomain {
     var loc = grid.relativeLocation(ghost_domain);

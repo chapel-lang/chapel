@@ -91,7 +91,7 @@ class TrueDirichletGridBC: GridBC {
   //---------------------------------------------------
   // Evaluates true_solution.qTrue on each ghost cell.
   //---------------------------------------------------
-  def ghostFill(q: [grid.ext_cells] real, t: real) {
+  def ghostFill(q: [grid.extended_cells] real, t: real) {
     
     for d in dimensions {
 
@@ -119,7 +119,7 @@ class TrueDirichletGridBC: GridBC {
   // nearest interior value is reflected about 0 to the nearest 
   // ghost cell value.
   //------------------------------------------------------------
-  def homogeneousGhostFill(q: [grid.ext_cells] real) {
+  def homogeneousGhostFill(q: [grid.extended_cells] real) {
 
     for d in dimensions {
 
@@ -171,7 +171,7 @@ class TrueNeumannGridBC: GridBC {
 
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: [grid.ext_cells] real, t: real) {
+  def ghostFill(q: [grid.extended_cells] real, t: real) {
 
     writeln("Start of ghostFill");
     
@@ -215,7 +215,7 @@ class TrueNeumannGridBC: GridBC {
 
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: [grid.ext_cells] real) {
+  def homogeneousGhostFill(q: [grid.extended_cells] real) {
 
     for d in dimensions do {
       //==== Low ghost cells ====

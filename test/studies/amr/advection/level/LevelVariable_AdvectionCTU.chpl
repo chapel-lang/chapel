@@ -1,9 +1,9 @@
-use GridArray_AdvectionCTU;
-use LevelArray_def;
+use GridVariable_AdvectionCTU;
+use LevelVariable_def;
 
 
-def LevelArray.storeCTUOperator(
-  q:        LevelArray,
+def LevelVariable.storeCTUOperator(
+  q:        LevelVariable,
   velocity: dimension*real,
   dt:       real)
 {

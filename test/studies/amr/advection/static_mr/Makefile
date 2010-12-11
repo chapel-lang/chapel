@@ -5,8 +5,8 @@ CF_LIB = ../../lib/cfboundary
 SMR_LIB = ../../lib/static_mr
 
 SOURCES = \
-	../grid/GridArray_AdvectionCTU.chpl \
-	../level/LevelArray_AdvectionCTU.chpl \
+	../grid/GridVariable_AdvectionCTU.chpl \
+	../level/LevelVariable_AdvectionCTU.chpl \
 	../level/LevelSolution_AdvectionCTU.chpl \
 	StaticMRSolution_AdvectionCTU.chpl \
 	StaticMRBC_AdvectionCTU.chpl \

@@ -5,8 +5,8 @@ CF_LIB = ../../lib/cfboundary
 AMR_LIB = ../../lib/amr
 
 SOURCES = \
-	../grid/GridArray_AdvectionCTU.chpl \
-	../level/LevelArray_AdvectionCTU.chpl \
+	../grid/GridVariable_AdvectionCTU.chpl \
+	../level/LevelVariable_AdvectionCTU.chpl \
 	../level/LevelSolution_AdvectionCTU.chpl \
 	AMRHierarchy_AdvectionCTU.chpl \
 	AMRBC_AdvectionCTU.chpl \
@@ -20,6 +20,7 @@ DIM = 2
 
 output: _output AMRAdvectionCTU.out
 	./AMRAdvectionCTU.out
+	python ../../lib/python/touch_output.py
 
 AMRAdvectionCTU.out: $(SOURCES)
 	chpl $(SOURCES) -M $(MISC_LIB) -M $(GRID_LIB) -M $(LEVEL_LIB) -M $(CF_LIB) -M $(AMR_LIB) --set dimension=$(DIM) -o AMRAdvectionCTU.out

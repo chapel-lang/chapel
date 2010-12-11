@@ -132,6 +132,7 @@ class AMRHierarchy {
         //==== Create new solution ====
         level_solutions(i_finest) = new LevelSolution(new_level);
         level_solutions(i_finest).setToFunction(initialCondition, time);
+        
       
         //==== Create new boundary structures ====
         coarse_boundaries(i_finest)        = new CFBoundary(levels(i_finest-1), new_level);
@@ -147,6 +148,7 @@ class AMRHierarchy {
       }
     }
     //<=== Create refined levels and solutions as needed <===
+    
 
   }
   // /|''''''''''''''''''''/|
@@ -236,6 +238,7 @@ def AMRHierarchy.regrid(
       var regridded_level_solution = new LevelSolution(regridded_level);
       regridded_level_solution.initialFill( level_solutions(i_regridding), 
                                             level_solutions(i_regridding-1) );
+                                                                                
       level_solutions(i_regridding).clear();
       delete level_solutions(i_regridding);
       level_solutions(i_regridding) = regridded_level_solution;
@@ -294,10 +297,11 @@ def AMRHierarchy.regrid(
 //|\"""""""""""""""""""""""""""""""""""""""|\
 //| >    AMRHierarchy.buildRefinedLevel    | >
 //|/_______________________________________|/
+
 //--------------------------------------------------------
-// Regrids the ith level.  This is done by flagging cells
-// on level i-1.
+// Builds a refined level below level i_refining.
 //--------------------------------------------------------
+
 def AMRHierarchy.buildRefinedLevel(i_refining: int)
 {
   def buffer(flags: [?cells] bool) {
@@ -315,6 +319,8 @@ def AMRHierarchy.buildRefinedLevel(i_refining: int)
     return buffered_flags;
   }
   
+  
+  
   //==== Flag the level being refined====
   var flags: [levels(i_refining).cells] bool;
   flagger.setFlags(level_solutions(i_refining), flags);
@@ -327,6 +333,8 @@ def AMRHierarchy.buildRefinedLevel(i_refining: int)
     }
   }
   
+  
+  
   //==== Add buffer region ====
   var buffered_flags = buffer(flags);
   
@@ -335,29 +343,52 @@ def AMRHierarchy.buildRefinedLevel(i_refining: int)
   const min_width: dimension*int = 2;
   var partitioned_domains = partitionFlags(buffered_flags, target_efficiency, min_width);
   
-  //===> Ensure nesting ===>
+  
+  //===> Ensure proper nesting ===>
+  //------------------------------------------------------------------------
+  // Every domain to refine must be at least one cell away from the level's
+  // boundary with a coarser level (physical boundary is OK).  So for each
+  // partitioned domain, we locate the "adjacent coarse region," in terms
+  // of cells sized by the refining level that spill into the next-coarser
+  // level.
+  //
+  // This is done by growing the partitioned domain by 1 cell, and then
+  // subtracting the (interior) cells of every grid on the level.  The
+  // level's physical boundary is also removed.  Then
+  // this adjacent coarse region is expanded by 1 cell and removed from
+  // the original partitioned domain.
+  //
+  // (You'll probably want to draw a picture.  Verbal explanation doesn't
+  // do it justice.) 
+  //------------------------------------------------------------------------
+
   var domains_to_refine = new MultiDomain(dimension,stridable=true);
 
   for D in partitioned_domains {
-    var multi_overflow = new MultiDomain(dimension,stridable=true);
-    multi_overflow.add(D);
+    var adjacent_coarse_region = new MultiDomain(dimension,stridable=true);
     
+    //==== Initialize to D expanded by one cell ====
+    adjacent_coarse_region.add( D.expand(2) );
+
+    //==== Physical boundary is OK; this trims it off ====
+    adjacent_coarse_region.intersect( levels(i_refining).cells );
+
+    //==== Remove all grid cells from the level ====
     for grid in levels(i_refining).grids do
-      multi_overflow.subtract(grid.cells);
+      adjacent_coarse_region.subtract(grid.cells);
       
-    if multi_overflow.domains.numElements == 0 then
-      domains_to_refine.add(D);
-    else {
-      var D_fragments = new MultiDomain(dimension,stridable=true);
-      D_fragments.add(D);
-      for overflow in multi_overflow do D_fragments.subtract(overflow);
-      domains_to_refine.add(D_fragments);
-      delete D_fragments;
-    }
+    var properly_nested_domains = new MultiDomain(dimension,stridable=true);
+    properly_nested_domains.add(D);
     
-    delete multi_overflow;
+    for adjacent_coarse_domain in adjacent_coarse_region do
+      properly_nested_domains.subtract( adjacent_coarse_domain.expand(2) );
+    
+    domains_to_refine.add( properly_nested_domains );
+    
+    delete adjacent_coarse_region;
+    delete properly_nested_domains;
   }
-  
+    
   delete partitioned_domains;
   //<=== Ensure proper nesting <===
   
@@ -372,7 +403,7 @@ def AMRHierarchy.buildRefinedLevel(i_refining: int)
     new_level.addGrid( refine(domain_to_refine, ref_ratio) ); //# need to add this method to the level
   
   delete domains_to_refine;
-  
+    
   new_level.complete();
   
   return new_level;
@@ -455,14 +486,15 @@ class PhysicalBoundary {
 
 
 
-//|\""""""""""""""""""""""""""""""""""|\
-//| >    AMRHierarchy.AMRHierarchy    | >
-//|/__________________________________|/
+//|\"""""""""""""""""""""""""""""""""""""""""""""|\
+//| >    AMRHierarchy constructor, file-based    | >
+//|/_____________________________________________|/
 //-----------------------------------------------------------------
 // Alternate constructor in which all numerical parameters for the
 // hierarchy are provided using an input file.  This allows those
 // parameters to be changed without recompiling the code.
 //-----------------------------------------------------------------
+
 def AMRHierarchy.AMRHierarchy(
   file_name:  string,
   flagger:    Flagger,
@@ -511,10 +543,9 @@ def AMRHierarchy.AMRHierarchy(
 			  inputIC);
 
 }
-// /|""""""""""""""""""""""/|
-//< |    readHierarchy    < |
-// \|______________________\|
-
+// /|"""""""""""""""""""""""""""""""""""""""""""""/|
+//< |    AMRHierarchy constructor, file-based    < |
+// \|_____________________________________________\|
 
 
 
@@ -553,12 +584,12 @@ def LevelSolution.initialFill(
 // \|__________________________________\|
 
 
-//|\"""""""""""""""""""""""""""""""|\
-//| >    LevelArray.initialFill    | >
-//|/_______________________________|/
-def LevelArray.initialFill(
-  q_old:     LevelArray,
-  q_coarse:  LevelArray)
+//|\""""""""""""""""""""""""""""""""""|\
+//| >    LevelVariable.initialFill    | >
+//|/__________________________________|/
+def LevelVariable.initialFill(
+  q_old:     LevelVariable,
+  q_coarse:  LevelVariable)
 {
   //==== Safety check ====
   if q_old != nil then
@@ -612,15 +643,15 @@ def LevelArray.initialFill(
 }
 
 
-def LevelArray.initialFill(
-  q_coarse: LevelArray)
+def LevelVariable.initialFill(
+  q_coarse: LevelVariable)
 {
-  const q_old: LevelArray;
+  const q_old: LevelVariable;
   initialFill(q_old, q_coarse);
 }
-// /|"""""""""""""""""""""""""""""""/|
-//< |    LevelArray.initialFill    < |
-// \|_______________________________\|
+// /|""""""""""""""""""""""""""""""""""/|
+//< |    LevelVariable.initialFill    < |
+// \|__________________________________\|
 
 
 
@@ -656,22 +687,22 @@ def AMRHierarchy.clawOutput(frame_number: int)
   //==== Solution file ====
   const solution_file = new file(solution_file_name, FileAccessMode.write);
   solution_file.open();
-  this.write(solution_file);
+  this.writeData(solution_file);
 
 }
 
 
 
 //----------------------------------------------------------------
-// Proceeds down the indexed_levels, calling the LevelArray.write
-// method on each corresponding LevelArray.
+// Proceeds down the indexed_levels, calling the LevelVariable.write
+// method on each corresponding LevelVariable.
 //----------------------------------------------------------------
-def AMRHierarchy.write(outfile: file){
+def AMRHierarchy.writeData(outfile: file){
 
   var base_grid_number = 1;
 
   for i in level_indices {
-    level_solutions(i).current_data.write(i, base_grid_number, outfile);
+    level_solutions(i).current_data.writeData(i, base_grid_number, outfile);
     base_grid_number += levels(i).grids.numIndices;
   }
 

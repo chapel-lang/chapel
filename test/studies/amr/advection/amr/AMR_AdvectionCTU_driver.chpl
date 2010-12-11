@@ -13,6 +13,7 @@ class GradientFlagger: Flagger {
   {
     const current_data = level_solution.current_data;
     current_data.extrapolateGhostData();
+    current_data.fillOverlaps();
     
     for grid in level_solution.level.grids {
       const value => current_data(grid).value;
@@ -23,17 +24,13 @@ class GradientFlagger: Flagger {
           differential = abs(value(cell) - value(nbr));
           max_differential = max(differential, max_differential);
         }
-
-        // writeln("cell: ", cell, ";  value = ", current_data(grid).value(cell));        
-        // writeln("cell: ", cell, ";  max_differential = ", max_differential);
         
         if max_differential > tolerance {
           flags(cell) = true;
-          // writeln("Adding flag");
         }
       }
     }
-    
+   
   }
   
   def neighbors(cell: dimension*int) {
@@ -54,8 +51,24 @@ class GradientFlagger: Flagger {
 
 def main {
   
-  //===> Set up AMR hierarchy ===> */
+  //===> Get names of input files ===>
+  const pointer_file = new file("input_files.txt", FileAccessMode.read);
+  var time_file_name:      string;
+  var hierarchy_file_name: string;
+  var velocity_file_name:  string;
   
+  pointer_file.open();
+  pointer_file.read(hierarchy_file_name);
+  pointer_file.read(velocity_file_name);
+  pointer_file.read(time_file_name);
+  pointer_file.close();
+  
+  writeln(hierarchy_file_name);
+  writeln(velocity_file_name);
+  //<=== Get names of input files <===
+  
+  
+  //===> Set up AMR hierarchy ===>
   def elevatedRectangle (x: dimension*real)
   {
     var f: real = 1.0;
@@ -72,21 +85,27 @@ def main {
     if r <= 0.3 then return 1.0;
     else return 0.0;
   }
-
   
   const flagger = new GradientFlagger(tolerance = 0.1);
-  const hierarchy = new AMRHierarchy('set_problem/hierarchy_parameters.txt',
-				     flagger,
-				     elevatedCircle);
+  const hierarchy = new AMRHierarchy(hierarchy_file_name,
+                                     flagger,
+                                     elevatedCircle);
   //<=== Set up AMR hierarchy <===
   
 
-  //==== Initialize output ====
-  var output_times = setOutputTimes("set_problem/time.txt");
-
-
   //==== Advection velocity ====
-  var velocity: dimension*real = (0.75, 0.625, 0.5);
+  var velocity: dimension*real;
+  const velocity_file = new file(velocity_file_name, FileAccessMode.read);
+  velocity_file.open();
+  velocity_file.read( (...velocity) );
+  velocity_file.close();
+
+
+
+  //==== Initialize output ====
+  var output_times = setOutputTimes(time_file_name);
+
+
 
 
   //==== Set boundary conditions ====

@@ -1,13 +1,13 @@
-use GridArray_DiffusionBE;
-use LevelArray_def;
+use GridVariable_DiffusionBE;
+use LevelVariable_def;
 use LevelBC_def;
 
 
 //|""""""""""""""""""""""""""""""""""\
-//|===> LevelArray.storeCGSolution ===>
+//|===> LevelVariable.storeCGSolution ===>
 //|__________________________________/
-def LevelArray.storeCGSolution(
-  rhs: LevelArray,
+def LevelVariable.storeCGSolution(
+  rhs: LevelVariable,
   bc:  LevelBC,
   diffusivity: real,
   dt: real,
@@ -15,22 +15,21 @@ def LevelArray.storeCGSolution(
 {
   
   //==== Initialize residual ====
-  var residual = new LevelArray(level = level);
+  var residual = new LevelVariable(level = level);
   bc.apply_Homogeneous(this);
   residual.storeBEOperator(this, diffusivity, dt);
   for grid in level.grids do
-    residual(grid) = rhs(grid) - residual(grid);			       
+    residual(grid,grid.cells) = rhs(grid,grid.cells) - residual(grid,grid.cells);			       
 
 
   //==== Initialize search direction ====
-  var search_dir = new LevelArray(level = level);
+  var search_dir = new LevelVariable(level = level);
   for grid in level.grids do
     search_dir(grid,grid.cells) = residual(grid,grid.cells);
-    //    search_dir(grid).value(grid.cells) = residual(grid).value(grid.cells);
 
 
   //==== Initialize residual update direction ====
-  var residual_update = new LevelArray(level = level);
+  var residual_update = new LevelVariable(level = level);
   bc.apply_Homogeneous(search_dir);
   residual_update.storeBEOperator(search_dir, diffusivity, dt);
 
@@ -63,8 +62,8 @@ def LevelArray.storeCGSolution(
     alpha = level_res_norm_square / alpha;
 
     for grid in level.grids {
-      this(grid) += alpha * search_dir(grid);
-      residual(grid) -= alpha * residual_update(grid);
+      this(grid,grid.cells) += alpha * search_dir(grid,grid.cells);
+      residual(grid,grid.cells) -= alpha * residual_update(grid,grid.cells);
       grid_res_norm_squares(grid) = +reduce( residual(grid).value(grid.cells)**2 );
     }
     //<=== Update solution and residual <===
@@ -95,17 +94,17 @@ def LevelArray.storeCGSolution(
   
 }
 // /""""""""""""""""""""""""""""""""""/
-//<=== LevelArray.storeCGSolution <==<
+//<=== LevelVariable.storeCGSolution <==<
 // \__________________________________\
 
 
 
 
 //|""""""""""""""""""""""""""""""""""\
-//|===> LevelArray.storeBEOperator ===>
+//|===> LevelVariable.storeBEOperator ===>
 //|__________________________________/
-def LevelArray.storeBEOperator(
-  q:           LevelArray,
+def LevelVariable.storeBEOperator(
+  q:           LevelVariable,
   diffusivity: real,
   dt:          real)
 {
@@ -118,13 +117,13 @@ def LevelArray.storeBEOperator(
 
 }
 // /""""""""""""""""""""""""""""""""""/
-//<=== LevelArray.storeBEOperator <==<
+//<=== LevelVariable.storeBEOperator <==<
 // \__________________________________\
 
 
 
-def LevelArray.storeFluxDivergence(
-  q:           LevelArray,
+def LevelVariable.storeFluxDivergence(
+  q:           LevelVariable,
   diffusivity: real)
 {
   q.fillOverlaps();

@@ -7,7 +7,7 @@ class ZeroFluxDiffusionBC: GridBC {
   
   //===> applyBoundaryCondition method ===>
   //==============================>
-  def apply(q: GridArray, t: real) {
+  def apply(q: GridVariable, t: real) {
     apply_Homogeneous(q);
   }
   //<=== applyBoundaryCondition method <===
@@ -16,7 +16,7 @@ class ZeroFluxDiffusionBC: GridBC {
 
   //===> applyBoundaryConditionHomogeneous method ===>
   //=========================================>
-  def apply_Homogeneous(q: GridArray) {
+  def apply_Homogeneous(q: GridVariable) {
 
     for ghost_domain in grid.ghost_multidomain {
       var loc = grid.relativeLocation(ghost_domain);

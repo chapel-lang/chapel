@@ -2,93 +2,75 @@ use Grid_def;
 
 
 
-//|\""""""""""""""""""""""""|\
-//| >    GridArray class    | >
-//|/________________________|/
-class GridArray {
+//|\"""""""""""""""""""""""""""|\
+//| >    GridVariable class    | >
+//|/___________________________|/
+//------------------------------------------------------------
+// This class is represents a variable defined on the spatial 
+// region described by a Grid.  Note that any number of
+// GridVariables may be defined on a given Grid, as the Grid
+// class just describes the region of space, and not any
+// associated storage.
+//
+// The GridVariable class is used, as opposed to simply an
+// array defined on Grid.cells, for two reasons:
+//   (1) This allows the definition of a LevelVariable, as
+//       (mostly) an array of GridVariables.
+//   (2) Better organization of code, as the algorithms for
+//       various numerical solvers can be sensibly defined
+//       as methods of class GridVariable.
+//------------------------------------------------------------
 
-  const grid:         Grid;
-  var value:          [grid.ext_cells] real;
-  var _promotionType: real;
+class GridVariable {
+
+  const grid: Grid;
+  var value:  [grid.extended_cells] real;
 
 
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
   def clear() {
-    //==== Nothing to do! ====
+    // Nothing to do!
   }
   // /|''''''''''''''''/|
   //< |    clear()    < |
   // \|................\|
 
 
-  //|\'''''''''''''''''''''''''|\
-  //| >    these() iterator    | >
-  //|/.........................|/
-  //--------------------------------------------------------------------
-  // Iterates over interior values.  The aim is to allow arithmetic
-  // operations without directly accessing the 'value' field, such as
-  // q += 2.0, or q = q1 + q2.
-  //--------------------------------------------------------------------
-  // Brad mentioned that there ought to be a way to use the default
-  // leader/follower iterators for arithmetic domains.  For now, though
-  // this is acceptably fast given the simplicity of the code.
-  //--------------------------------------------------------------------
-  def these() {
-    for cell in grid.cells do
-      yield value(cell);
-  }
-
-  def these(param tag: iterator) 
-  where tag == iterator.leader {
-    forall cell in grid.cells do
-      yield cell;
-  }
-
-  def these(param tag: iterator, follower) var
-  where tag == iterator.follower {
-    yield value(follower);
-  }
-  // /|'''''''''''''''''''''''''/|
-  //< |    these() iterator    < |
-  // \|.........................\|
+  //|\'''''''''''''|\
+  //| >    this    | >
+  //|/.............|/  
+  //----------------------------------------------------
+  // Provides an alias directly into the 'value' array.
+  //----------------------------------------------------
 
   def this(D: domain) var{
-    var pointer => value(D);
-    return pointer;
+    var alias => value(D);
+    return alias;
   }
+  // /|'''''''''''''/|
+  //< |    this    < |
+  // \|.............\|
+  
 
 }
-// /|""""""""""""""""""""""""/|
-//< |    GridArray class    < |
-// \|________________________\|
+// /|"""""""""""""""""""""""""""/|
+//< |    GridVariable class    < |
+// \|___________________________\|
 
 
 
+//|\"""""""""""""""""""""""""""""""""""|\
+//| >    GridVariable.setToFunction    | >
+//|/___________________________________|/
 
-//|--------------------------------------*
-//|===> GridArray assignment overloads ===>
-//|--------------------------------------*
-def =(q: GridArray, rvalue) 
-  where rvalue.type != GridArray && rvalue.type != real
-{
-  forall (x,y) in (q,rvalue) do x = y;
-}
+//-------------------------------------------------------
+// Sets the value to a specified function f, as would be
+// done when setting up the initial condition for a PDE.
+//-------------------------------------------------------
 
-def =(q: GridArray, rvalue: real) {
-  forall x in q do x = rvalue;
-}
-// *--------------------------------------|
-//<=== GridArray assignment overloads <===|
-// *--------------------------------------|
-
-
-
-//|\""""""""""""""""""""""""""""""""|\
-//| >    GridArray.setToFunction    | >
-//|/________________________________|/
-def GridArray.setToFunction(
+def GridVariable.setToFunction(
   f: func(dimension*real, real)
 ){
 
@@ -98,23 +80,34 @@ def GridArray.setToFunction(
     value(cell) = f(grid.xValue(cell));
   }
 }
-// /|""""""""""""""""""""""""""""""""/|
-//< |    GridArray.setToFunction    < |
-// \|________________________________\|
+// /|"""""""""""""""""""""""""""""""""""/|
+//< |    GridVariable.setToFunction    < |
+// \|___________________________________\|
 
 
 
+
+
+
+//------------------------------------
+// Only I/O methods below this line
+//------------------------------------
+// |   |   |   |   |   |   |   |   |
+//\|/ \|/ \|/ \|/ \|/ \|/ \|/ \|/ \|/
+// V   V   V   V   V   V   V   V   V
 
 
 
 //|\""""""""""""""""""""""""""""""|\
 //| >    writeTimeFile routine    | >
 //|/______________________________|/
+
 //-------------------------------------------------------------
 // Global routine; meant to be called by output method of any
 // spatial object.  The time file is really simple, and this
 // just formats a few parameters.
 //-------------------------------------------------------------
+
 def writeTimeFile(
   time:    real,
   meqn:    int,
@@ -144,14 +137,15 @@ def writeTimeFile(
 
 
 
-//|\""""""""""""""""""""""""|\
-//| >    GridArray.write    | >
-//|/________________________|/
-def GridArray.write(
+//|\"""""""""""""""""""""""""""""""|\
+//| >    GridVariable.writeData    | >
+//|/_______________________________|/
+
+def GridVariable.writeData (
   grid_number: int,
   AMR_level:   int,
-  outfile:     file
-){
+  outfile:     file)
+{
 
   //==== Formatting parameters ====
   var efmt:  string = "%26.16E",
@@ -252,23 +246,25 @@ def GridArray.write(
   //<=== Write array values <===
   
 }
-// /|""""""""""""""""""""""""/|
-//< |    GridArray.write    < |
-// \|________________________\|
+// /|"""""""""""""""""""""""""""""""/|
+//< |    GridVariable.writeData    < |
+// \|_______________________________\|
 
 
 
-//|\"""""""""""""""""""""""""""""|\
-//| >    GridArray.clawOutput    | >
-//|/_____________________________|/
+//|\""""""""""""""""""""""""""""""""|\
+//| >    GridVariable.clawOutput    | >
+//|/________________________________|/
+
 //-------------------------------------------------------------------
-// Writes Clawpack-formatted output for a GridArray, at the given 
+// Writes Clawpack-formatted output for a GridVariable, at the given 
 // time and frame_number.
 //-------------------------------------------------------------------
-def GridArray.clawOutput(
+
+def GridVariable.clawOutput(
   time:         real,
-  frame_number: int
-){
+  frame_number: int)
+{
 
   //==== Names of output files ====
   var frame_string:  string = format("%04i", frame_number),
@@ -287,13 +283,13 @@ def GridArray.clawOutput(
   //==== Data file ====
   outfile = new file(data_filename, FileAccessMode.write);
   outfile.open();
-  write(1, 1, outfile);
+  this.writeData(1, 1, outfile);
   outfile.close();
   delete outfile;
 
 }
-// /|"""""""""""""""""""""""""""""/|
-//< |    GridArray.clawOutput    < |
-// \|_____________________________\|
+// /|""""""""""""""""""""""""""""""""/|
+//< |    GridVariable.clawOutput    < |
+// \|________________________________\|
 
 

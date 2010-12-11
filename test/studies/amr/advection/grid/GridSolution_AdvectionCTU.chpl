@@ -1,23 +1,26 @@
-//===> Description ===>
-//
-// Initializes grid_base_defs and creates a method for a CTU
-// (corner transport upwind) solver.
-//
-//<=== Description <===
-
 
 use GridSolution_def;
 use GridBC_def;
-use GridArray_AdvectionCTU;
+use GridVariable_AdvectionCTU;
 
 
-//===> Grid.advance_AdvectionCTU method ===>
-//=========================================>
+
+
+//|\"""""""""""""""""""""""""""""""""""""""""""""""""|\
+//| >    GridSolution.advance_AdvectionCTU method    | >
+//|/_________________________________________________|/
+
+//------------------------------------------------------------------
+// This advances the GridSolution to time_requested by applying the
+// CTU (corner transport upwind) method.  Mathematical content of
+// the algorithm is in the method GridVariable.storeCTUOperator.
+//------------------------------------------------------------------
+
 def GridSolution.advance_AdvectionCTU(
   bc:             GridBC,
   velocity:       dimension*real,
-  time_requested: real
-){
+  time_requested: real)
+{
 
   //==== Safety check ====
   assert(current_time <= time_requested);
@@ -52,24 +55,29 @@ def GridSolution.advance_AdvectionCTU(
   }
   //<=== Time-stepping loop <===
 
-
 }
-//<=== grid.advanceAdvectionCTU routine <===
-//<=========================================
+// /|""""""""""""""""""""""""""""""""""""""""""/|
+//< |    GridSolution.advance_AdvectionCTU    < |
+// \|__________________________________________\|
 
 
-//|"""""""""""""""""""""""""""""""""""""""\
-//|===> GridSolution.step_AdvectionCTU  ===>
-//|_______________________________________/
+
+
+
+//|\"""""""""""""""""""""""""""""""""""""""|\
+//| >    GridSolution.step_AdvectionCTU    | >
+//|/_______________________________________|/
+
 //-------------------------------------------------------------
 // The output of the oprator will be stored in q.old, and then
 // q.old and q.current will be swapped.
 //-------------------------------------------------------------
+
 def GridSolution.step_AdvectionCTU(
   bc:       GridBC,
   velocity: dimension*real,
-  dt:       real
-){
+  dt:       real)
+{
 
   //==== Apply physical BC ====
   bc.apply(current_data, current_time);
@@ -83,6 +91,6 @@ def GridSolution.step_AdvectionCTU(
   current_time += dt;
 
 }
-// /""""""""""""""""""""""""""""""""""""""/
-//<=== GridSolution.step_AdvectionCTU <==<
-// \______________________________________\
+// /|""""""""""""""""""""""""""""""""""""""/|
+//< |   GridSolution.step_AdvectionCTU    < |
+// \|______________________________________\|

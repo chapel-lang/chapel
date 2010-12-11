@@ -99,22 +99,22 @@ def StaticMRSolution.clawOutput(frame_number: int)
   //==== Solution file ====
   const solution_file = new file(solution_file_name, FileAccessMode.write);
   solution_file.open();
-  this.write(solution_file);
+  this.writeData(solution_file);
 
 }
 
 
 
-//----------------------------------------------------------------
-// Proceeds down the indexed_levels, calling the LevelArray.write
-// method on each corresponding LevelArray.
-//----------------------------------------------------------------
-def StaticMRSolution.write(outfile: file){
+//-----------------------------------------------------------------------
+// Proceeds down the indexed_levels, calling the LevelVariable.writeData
+// method on each corresponding LevelVariable.
+//-----------------------------------------------------------------------
+def StaticMRSolution.writeData(outfile: file){
 
   var base_grid_number = 1;
 
   for i in hierarchy.level_indices {
-    level_solutions(i).current_data.write(i, base_grid_number, outfile);
+    level_solutions(i).current_data.writeData(i, base_grid_number, outfile);
     base_grid_number += hierarchy.levels(i).grids.numIndices;
   }
 

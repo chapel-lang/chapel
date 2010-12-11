@@ -1,4 +1,4 @@
-use GridArray_def;
+use GridVariable_def;
 
 
 //===> Backward Euler diffusion operator ===>
@@ -8,8 +8,8 @@ use GridArray_def;
 //
 // As with FluxDivergence, ghost cells must be filled beforehand.
 //----------------------------------------------------------------
-def GridArray.storeBEOperator(
-  q:           GridArray,
+def GridVariable.storeBEOperator(
+  q:           GridVariable,
   diffusivity: real,
   dt:          real
 ){
@@ -30,8 +30,8 @@ def GridArray.storeBEOperator(
 // Calculates the flux divergence of q.  Note that the ghost
 // cells of q must be filled beforehand
 //-----------------------------------------------------------
-def GridArray.storeFluxDivergence(
-  q:               GridArray,
+def GridVariable.storeFluxDivergence(
+  q:               GridVariable,
   diffusivity:     real)
 {
 
@@ -60,4 +60,4 @@ def GridArray.storeFluxDivergence(
 
 }
 //<==============================
-//<=== GridArray.storeFluxDivergence method <===
+//<=== GridVariable.storeFluxDivergence method <===

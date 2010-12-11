@@ -38,8 +38,8 @@ def partitionFlags(
       
       //==== If D2 is empty, split was unsuccessful ====
       if D2.numIndices==0 {
-        writeln("Warning: FlaggedDomain.partition\n" +
-                "  Could not meet target efficiency on domain ", candidate.D, ".");
+        // writeln("Warning: FlaggedDomain.partition\n" +
+        //         "  Could not meet target efficiency on domain ", candidate.D, ".");
         finished_mDomain.add(candidate.D);
       }
       //==== Otherwise, push new candidates to stack ====
@@ -118,7 +118,9 @@ class CandidateDomain {
   //|\''''''''''''''|\
   //| >    clear    | >
   //|/..............|/
-  def clear() { for i in 1..rank do delete signatures(i); }
+  def clear() { 
+    for i in 1..rank do delete signatures(i);
+  }
   // /|''''''''''''''/|
   //< |    clear    < |
   // \|..............\|
@@ -130,6 +132,7 @@ class CandidateDomain {
 //|\"""""""""""""""""""""""""""""|\
 //| >    CandidateDomain.trim    | >
 //|/_____________________________|/
+
 def CandidateDomain.trim()
 {    
   //===> Find bounds of trimmed domain ===>
@@ -196,6 +199,7 @@ def CandidateDomain.trim()
 //|\""""""""""""""""""""""""""""""|\
 //| >    CandidateDomain.split    | >
 //|/______________________________|/
+
 def CandidateDomain.split()
 {
   
@@ -219,6 +223,7 @@ def CandidateDomain.split()
 //|\"""""""""""""""""""""""""""""""""""|\
 //| >    CandidateDomain.removeHole    | >
 //|/___________________________________|/
+
 def CandidateDomain.removeHole()
 {
 
@@ -302,6 +307,7 @@ def CandidateDomain.removeHole()
 //|\""""""""""""""""""""""""""""""""""""""|\
 //| >    CandidateDomain.inflectionCut    | >
 //|/______________________________________|/
+
 def CandidateDomain.inflectionCut()
 {
 
@@ -404,42 +410,42 @@ def writeFlags(flags: [?D] bool)
 
 
 
-def main {
-
-
- 
-  //===> Initialize array of flags ===>
-  var D = [-19..19 by 2, -19..19 by 2];
-  var F: [D] bool = false;
-  
-  var a1: real = 20.0;
-  var b1: real = 7.0;
-  var a2: real = 9.0;
-  var b2: real = 18.0;
-  
-  
-  for (i,j) in D {
-    if (i**2:real/a1**2 + j**2:real/b1**2 < 1.0 || 
-       i**2:real/a2**2 + j**2:real/b2**2 < 1.0) &&
-       abs(j) > 0 then
-      F(i,j) = true;
-  }
-  //<=== Initialize array of flags <===
-  
-
-  
-  writeFlags(F);
-
-  writeln("");
-
-  var partitioned_blocks = partitionFlags(F, .8, (2,2));
-
-  for block in partitioned_blocks {
-    writeln("");
-    writeFlags(F(block));
-  }
-
-
-
-  
-}
+// def main {
+// 
+// 
+//  
+//   //===> Initialize array of flags ===>
+//   var D = [-19..19 by 2, -19..19 by 2];
+//   var F: [D] bool = false;
+//   
+//   var a1: real = 20.0;
+//   var b1: real = 7.0;
+//   var a2: real = 9.0;
+//   var b2: real = 18.0;
+//   
+//   
+//   for (i,j) in D {
+//     if (i**2:real/a1**2 + j**2:real/b1**2 < 1.0 || 
+//        i**2:real/a2**2 + j**2:real/b2**2 < 1.0) &&
+//        abs(j) > 0 then
+//       F(i,j) = true;
+//   }
+//   //<=== Initialize array of flags <===
+//   
+// 
+//   
+//   writeFlags(F);
+// 
+//   writeln("");
+// 
+//   var partitioned_blocks = partitionFlags(F, .8, (2,2));
+// 
+//   for block in partitioned_blocks {
+//     writeln("");
+//     writeFlags(F(block));
+//   }
+// 
+// 
+// 
+//   
+// }

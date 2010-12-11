@@ -5,14 +5,14 @@ use CoarseOverlapArray_def;
 
 
 //|\"""""""""""""""""""""""""""""""""|\
-//| >    GridArray.coarsen_Linear    | >
+//| >    GridVariable.coarsen_Linear    | >
 //|/_________________________________|/
 //----------------------------------------------------------------
-// Returns values from the GridArray linearly interpolated to the 
+// Returns values from the GridVariable linearly interpolated to the 
 // input domain coarse_cells.  This is akin to accessing the
-// GridArray's values on a coarser index space.
+// GridVariable's values on a coarser index space.
 //----------------------------------------------------------------
-def GridArray.coarsen_Linear(
+def GridVariable.coarsen_Linear(
   coarse_cells: domain(dimension,stridable=true),
   ref_ratio:    dimension*int)
 {
@@ -37,21 +37,21 @@ def GridArray.coarsen_Linear(
 
 }
 // /|"""""""""""""""""""""""""""""""""/|
-//< |    GridArray.coarsen_Linear    < |
+//< |    GridVariable.coarsen_Linear    < |
 // \|_________________________________\|
 
 
 
 
 //|\""""""""""""""""""""""""""""""""|\
-//| >    GridArray.refine_Linear    | >
+//| >    GridVariable.refine_Linear    | >
 //|/________________________________|/
 //----------------------------------------------------------------
-// Returns values from the GridArray linearly interpolated to the 
+// Returns values from the GridVariable linearly interpolated to the 
 // input domain fine_cells.  This is akin to accessing the
-// GridArray's values on a finer index space.
+// GridVariable's values on a finer index space.
 //----------------------------------------------------------------
-def GridArray.refine_Linear(
+def GridVariable.refine_Linear(
   fine_cells: domain(dimension,stridable=true),
   ref_ratio:  dimension*int)
 {
@@ -118,17 +118,17 @@ def GridArray.refine_Linear(
 
 }
 // /|""""""""""""""""""""""""""""""""/|
-//< |    GridArray.refine_Linear    < |
+//< |    GridVariable.refine_Linear    < |
 // \|________________________________\|
 
 
 
 
 //|\"""""""""""""""""""""""""""""""""""""""|\
-//| >    LevelArray.getFineValues_Linear   | >
+//| >    LevelVariable.getFineValues_Linear   | >
 //|/_______________________________________|/
-def LevelArray.getFineValues_Linear(
-  q_fine:      LevelArray,
+def LevelVariable.getFineValues_Linear(
+  q_fine:      LevelVariable,
   cf_boundary: CFBoundary)
 {
 
@@ -147,7 +147,7 @@ def LevelArray.getFineValues_Linear(
 
 }
 // /|""""""""""""""""""""""""""""""""""""""""/|
-//< |    LevelArray.getFineValues_Linear    < |
+//< |    LevelVariable.getFineValues_Linear    < |
 // \|________________________________________\|
 
 
@@ -158,7 +158,7 @@ def LevelArray.getFineValues_Linear(
 //| >    CoarseOverlapArray.getCoarseValues_Linear    | >
 //|/_________________________________________________|/
 def CoarseOverlapArray.getCoarseValues_Linear(
-  q_coarse:  LevelArray)
+  q_coarse:  LevelVariable)
 {
   //==== Safety check ====
   assert(q_coarse.level == cf_boundary.coarse_level);

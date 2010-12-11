@@ -6,4 +6,4 @@
   2    2   2     Width of ghost cell layers
   2    2   2     Refinement ratio
   3              Maximum number of levels
-  0.75           Target efficiency for regridding
+  0.8           Target efficiency for regridding

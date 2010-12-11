@@ -7,13 +7,13 @@ use GridBC_def;
 class ZeroInflowAdvectionBC: GridBC {
   
   
-  def apply(q: GridArray, t: real) {
+  def apply(q: GridVariable, t: real) {
     //==== This type of BC is homogeneous ====
     apply_Homogeneous(q);
   }
   
   
-  def apply_Homogeneous(q: GridArray) {
+  def apply_Homogeneous(q: GridVariable) {
 
     for ghost_domain in grid.ghost_multidomain {
       forall cell in ghost_domain do
