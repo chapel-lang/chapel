@@ -207,7 +207,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"tcsh\\n\"\n");
+  fprintf(expectFile, "send \"tcsh -f\\n\"\n");
   fprintf(expectFile, "expect -re $prompt\n");
   fprintf(expectFile, "set chpl_prompt \"chpl-%d # \"\n", mypid);
   fprintf(expectFile, "send \"set prompt=\\\"$chpl_prompt\\\"\\n\"\n");
@@ -232,15 +232,17 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(expectFile, " '%s'", argv[i]);
   }
   fprintf(expectFile, "\\n\"\n");
+#ifdef EXPECT_IS_NOT_CONFUSING_ME
   fprintf(expectFile, "expect -ex \" %s", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }
   fprintf(expectFile, "\"\n");
-  fprintf(expectFile, "interact -o $chpl_prompt {return}\n");
+#endif
+  fprintf(expectFile, "interact -o -ex $chpl_prompt {return}\n");
   fprintf(expectFile, "send \"echo exit code: \\$?\\n\"\n");
   fprintf(expectFile, "expect {\n");
-  fprintf(expectFile, "  -re {exit code: 0} {set exitval \"0\"}\n");
+  fprintf(expectFile, "  -ex \"exit code: 0\" {set exitval \"0\"}\n");
   fprintf(expectFile, "  -re {exit code: \\d+} {set exitval \"1\"}\n");
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "expect -ex $chpl_prompt\n");
