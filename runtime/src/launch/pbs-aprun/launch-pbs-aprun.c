@@ -232,13 +232,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(expectFile, " '%s'", argv[i]);
   }
   fprintf(expectFile, "\\n\"\n");
-#ifdef EXPECT_IS_NOT_CONFUSING_ME
-  fprintf(expectFile, "expect -ex \" %s", chpl_get_real_binary_name());
-  for (i=1; i<argc; i++) {
-    fprintf(expectFile, " '%s'", argv[i]);
-  }
-  fprintf(expectFile, "\"\n");
-#endif
+  // Suck up the aprun command
+  fprintf(expectFile, "expect -re {.+\\n}\n");
   fprintf(expectFile, "interact -o -ex $chpl_prompt {return}\n");
   fprintf(expectFile, "send \"echo exit code: \\$?\\n\"\n");
   fprintf(expectFile, "expect {\n");
