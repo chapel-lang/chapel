@@ -236,7 +236,19 @@ Known Constraints and Bugs
 * GASNet targets multiple "conduits" as the underlying communication
   mechanism.  By default, the Chapel build will use the 'mpi' conduit.
   You can use the native Portals conduit by setting the environment
-  variable CHPL_COMM_SUBSTRATE to 'portals.'
+  variable CHPL_COMM_SUBSTRATE to 'portals.'  As a result of using the
+  mpi conduit, you may see the following GASNet warning message at
+  program start up:
+
+WARNING: Using GASNet's mpi-conduit, which exists for portability convenience.
+WARNING: This system appears to contain recognized network hardware: Cray XT
+WARNING: which is supported by a GASNet native conduit, although
+WARNING: it was not detected at configure time (missing drivers?)
+WARNING: You should *really* use the high-performance native GASNet conduit
+WARNING: if communication performance is at all important in this program run.
+
+  To squelch this message, you can set the environment variable
+  GASNET_QUIET=yes.
 
   The reason Chapel defaults to the non-native conduit is because we
   have noticed performance problems for certain Chapel programs using
