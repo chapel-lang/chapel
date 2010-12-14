@@ -15,9 +15,13 @@
 #define EXPECT "expect"
 
 #define CHPL_CC_ARG "-cc"
-static char *_ccArg = NULL;
+#define CHPL_WALLTIME_FLAG "--walltime"
+#define CHPL_QUEUE_FLAG "--queue"
 
+static char *_ccArg = NULL;
 static char* debug = NULL;
+static char* walltime = NULL;
+static char* queue = NULL;
 
 static char expectFilename[FILENAME_MAX];
 static char sysFilename[FILENAME_MAX];
@@ -97,8 +101,12 @@ static int getNumCoresPerLocale(void) {
 static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion qsub, 
                             int32_t numLocales, int32_t numCoresPerLocale) {
   const size_t maxOptLength = 256;
-  char* queue = getenv("CHPL_LAUNCHER_QUEUE");
-  char* walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  if (!queue) {
+    queue = getenv("CHPL_LAUNCHER_QUEUE");
+  }
+  if (!walltime) {
+    walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  }
   char* optionString = chpl_malloc(maxOptLength, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
   int length = 0;
 
@@ -280,6 +288,20 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, chpl_string filename) {
+  if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
+    walltime = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_WALLTIME_FLAG"=", strlen(CHPL_WALLTIME_FLAG))) {
+    walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG)+1]);
+    return 1;
+  }
+  if (!strcmp(argv[argNum], CHPL_QUEUE_FLAG)) {
+    queue = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_QUEUE_FLAG"=", strlen(CHPL_QUEUE_FLAG))) {
+    queue = &(argv[argNum][strlen(CHPL_QUEUE_FLAG)+1]);
+    return 1;
+  }
   int numArgs = 0;
   if (!strcmp(argv[argNum], CHPL_CC_ARG)) {
     _ccArg = argv[argNum+1];
@@ -296,13 +318,18 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
       sprintf(msg, "'%s' is not a valid cpu assignment", _ccArg);
       chpl_error(msg, 0, 0);
     }
+    return numArgs;
   }
-  return numArgs;
+  return 0;
 }
-
 
 void chpl_launch_print_help(void) {
   fprintf(stdout, "LAUNCHER FLAGS:\n");
   fprintf(stdout, "===============\n");
-  fprintf(stdout, "  %s keyword     : specify cpu assignment within a node: none (default), numa_node, cpu\n", CHPL_CC_ARG);
+  fprintf(stdout, "  %s <cpu assignment>   : specify cpu assignment within a node:\n", CHPL_CC_ARG);
+  fprintf(stdout, "                           none (default), numa_node, cpu\n", CHPL_CC_ARG);
+  fprintf(stdout, "  %s <queue>        : specify a queue\n", CHPL_QUEUE_FLAG);
+  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_QUEUE)\n");
+  fprintf(stdout, "  %s <HH:MM:SS>  : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
+  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
 }
