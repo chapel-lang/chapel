@@ -1,1 +1,0 @@
-method-def-with-type-binding-error-class-2.chpl:3: error: Only member methods of the innermost class/record/union (here, "C") are allowed
