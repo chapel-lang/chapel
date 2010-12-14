@@ -153,9 +153,9 @@ Dynamic linking with the Cray Programming Environment
 
 * By default, Chapel programs built for the Cray XE do not specify
   static or dynamic linking.  The current default for the Cray
-  Programming Environment compilers is static linking.  If you wish to
-  override this, set the environment variable CHPL_ASYNCPE_USE_DYNAMIC
-  to 'true'.
+  Programming Environment compilers is dynamic linking.  If you wish
+  to override this, set the environment variable
+  CHPL_ASYNCPE_USE_DYNAMIC to 'false'.
 
 
 --------------------------
@@ -168,8 +168,8 @@ Known Constraints and Bugs
   performance hardware instructions.
 
 * There is a known issue with the Cray MPI release for XE systems that
-  causes some programs to assert and then hang during exit.  A
-  workaround is to set the environment variable,
+  causes some programs to hit an MPI assertion and then possibly hang
+  during exit.  A workaround is to set the environment variable,
   MPICH_GNI_DYNAMIC_CONN to 'disabled.'  Setting this environment
   variable may affect memory usage for all MPI programs linked against
   the Cray MPI release.  In addition, an additional performance
