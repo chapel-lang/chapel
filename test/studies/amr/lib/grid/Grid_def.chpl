@@ -94,10 +94,11 @@ class Grid {
 
 
     //==== Extended cells (includes ghost cells) ====
-    //------------------------------------------------------------
-    // Note that the argument to 'expand' must be multiplied by 2
-    // because a cell is 2 indices wide.
-    //------------------------------------------------------------
+    //---------------------------------------------------------------
+    // The 'expand' method of an arithmetic domain extends both its
+    // lower and upper bounds by the input.  In this case, the input
+    // must be multiplied by 2 because a cell is 2 indices wide.
+    //---------------------------------------------------------------
     extended_cells = cells.expand(2*n_ghost_cells);
 
 
@@ -354,19 +355,19 @@ def setOutputTimes (file_name: string) {
 
 
 
-def main {
-
-  var x_low = (0.0,1.0);
-  var x_high = (2.0,3.0);
-  var i_low = (0,0);
-  var n_cells = (20,40);
-  var n_ghost_cells = (2,2);
-
-  var grid = new Grid(x_low, x_high, i_low, n_cells, n_ghost_cells);
-
-  writeln(grid);
-  writeln("grid.cells = ", grid.cells);
-  writeln("grid.extended_cells = ", grid.extended_cells);
-
-
-}
+// def main {
+// 
+//   var x_low = (0.0,1.0);
+//   var x_high = (2.0,3.0);
+//   var i_low = (0,0);
+//   var n_cells = (20,40);
+//   var n_ghost_cells = (2,2);
+// 
+//   var grid = new Grid(x_low, x_high, i_low, n_cells, n_ghost_cells);
+// 
+//   writeln(grid);
+//   writeln("grid.cells = ", grid.cells);
+//   writeln("grid.extended_cells = ", grid.extended_cells);
+// 
+// 
+// }

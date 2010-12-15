@@ -6,26 +6,49 @@ use Grid_def;
 //| >    Level class    | >
 //|/____________________|/
 
+//-------------------------------------------------------------------
+// A Level describes a collection of Grids, each of whichdiscretizes
+// a subset of a single, larger rectangle.  These Grids share a 
+// global index space, in which the lowest face of the rectangle in 
+// each dimension occupies index 0.
+//
+// The fields x_low, x_high, n_cells, and dx all refer to the global
+// discretization of the rectangle, and each child grid will have
+// cells of the same size dx.
+//
+// The field n_ghost_cells states the width of the layer of ghost 
+// cells that will be used by each Grid.
+//-------------------------------------------------------------------
+
 class Level {
 
   var is_complete: bool = false;
   
-  var x_low, x_high: dimension*real,
-      n_cells:       dimension*int,
-      n_ghost_cells: dimension*int,
-      dx:            dimension*real;
+  const x_low, x_high: dimension*real;
+  const n_cells:       dimension*int;
+  const n_ghost_cells: dimension*int;
+  const dx:            dimension*real;
 
 
   //==== Cell domains ====
-  //--------------------------------------------------------------------
-  // Not meant for iteration, but they describe how the Level's indices
-  // relate to physical space.
-  //--------------------------------------------------------------------
-  var extended_cells: domain(dimension, stridable=true);
-  var cells:          subdomain(extended_cells);
+  //--------------------------------------------------------------
+  // These domains index the possible cells occupied by a grid on 
+  // the level.
+  //--------------------------------------------------------------
+  const possible_ghost_cells: domain(dimension, stridable=true);
+  const possible_cells:       subdomain(possible_ghost_cells);
 
 
   //==== Child grid info ====
+  //---------------------------------------------------------------------
+  // 'grids' is an associative domain, which stores a list of indices of
+  // type Grid.  It initializes to empty, and new indices are added via
+  // the 'add' method.
+  //
+  // The fields 'sibling_overlaps' and 'boundary' are arrays declared
+  // on 'grids'; as seen here, the syntax is identical to that for
+  // arithmetic domains.  Iteration syntax is the same as well.
+  //---------------------------------------------------------------------
   var grids:            domain(Grid);
   var sibling_overlaps: [grids] SiblingOverlap;
   var boundary:         [grids] MultiDomain(dimension,stridable=true);
@@ -46,31 +69,42 @@ class Level {
   // \|..............\|
 
 
-  //|\''''''''''''''''''''''''''''|\
-  //| >    initialize() method    | >
-  //|/............................|/
-  //--------------------------------------------------------------------
-  // Sets dx and cell domains, based on the mandatory input parameters.
-  //--------------------------------------------------------------------
-  def initialize() {
+  //|\''''''''''''''''''''|\
+  //| >    constructor    | >
+  //|/....................|/
+
+  def Level(
+    x_low: dimension*real,
+    x_high: dimension*real,
+    n_cells: dimension*int,
+    n_ghost_cells: dimension*int)
+  {
+    
+    this.x_low = x_low;
+    this.x_high = x_high;
+    this.n_cells = n_cells;
+    this.n_ghost_cells = n_ghost_cells;
+    
     dx = (x_high - x_low) / n_cells;
 
 
-    //==== Set cell domains ====
-    var range_tuple: dimension*range(stridable = true);
+    //==== Possible cells ====
+    var ranges: dimension*range(stridable = true);
     for d in dimensions do
-      range_tuple(d) = 1 .. #2*n_cells(d) by 2;
-    cells = range_tuple;
+      ranges(d) = 1 .. #2*n_cells(d) by 2;
+    possible_cells = ranges;
 
-    var size: dimension*int;
-    for d in dimensions do
-      size(d) = 2*n_ghost_cells(d); // ### Comment
-    extended_cells = cells.expand(size);
-
+    //==== Possible ghost cells ====
+    //---------------------------------------------------------------
+    // The 'expand' method of an arithmetic domain extends both its
+    // lower and upper bounds by the input.  In this case, the input
+    // must be multiplied by 2 because a cell is 2 indices wide.
+    //---------------------------------------------------------------
+    possible_ghost_cells = possible_cells.expand(2*n_ghost_cells);    
   }
-  // /|''''''''''''''''''''''''''''/|
-  //< |    initialize() method    < |
-  // \|............................\|
+  // /|''''''''''''''''''''/|
+  //< |    constructor    < |
+  // \|....................\|
   
 
   //|\''''''''''''''''''''''''''''|\
@@ -254,6 +288,9 @@ def Level.complete () {
 // Each overlap is the Grid's ghost cells, overlapped with a neighbor's
 // interior cells.  However, the intersection will always be a single
 // rectangle, and therefore each overlap may be described by a domain.
+//
+// Overlaps are computed when this object is constructed, so it should
+// only be built once all grids have been added to a level.
 //----------------------------------------------------------------------
 
 class SiblingOverlap {
@@ -276,6 +313,7 @@ class SiblingOverlap {
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
+  
   def SiblingOverlap (
     level: Level,
     grid:  Grid)
@@ -298,6 +336,16 @@ class SiblingOverlap {
   //|\'''''''''''''''''''''''''|\
   //| >    these() iterator    | >
   //|/.........................|/
+  
+  //--------------------------------------------------------------
+  // A these() iterator allows iteration over the object:
+  //    for (nbr,overlap) in sibling_overlaps(grid) ...
+  // In this case, it's designed so that iteration will provide
+  // both each neighboring grid and the associated domain of
+  // overlap, which is what will be needed to access the relevant
+  // storage in a LevelVariable.
+  //--------------------------------------------------------------
+  
   def these() {
     for nbr in neighbors do
       yield (nbr, domains(nbr));
@@ -315,7 +363,13 @@ class SiblingOverlap {
 
 
 
-// ### I/O methods
+//------------------------------------
+// Only I/O methods below this line
+//------------------------------------
+// |   |   |   |   |   |   |   |   |
+//\|/ \|/ \|/ \|/ \|/ \|/ \|/ \|/ \|/
+// V   V   V   V   V   V   V   V   V
+
 
 
 //|\"""""""""""""""""""""""""""""""""""""|\
@@ -323,10 +377,12 @@ class SiblingOverlap {
 //|/_____________________________________|/
 
 //---------------------------------------------------------------
-// While grids don't need to be ordered in terms of computation,
-// they should be ordered when writing output, so that the
-// output is well-defined.  Otherwise, regressions are much
-// more difficult.
+// This yields the grids based on their low index bound, and the
+// ordering
+//    (i,j) < (k,l) if i<k or (i==k and j<l).
+// This is used purely for output, for which it is required to
+// make results determinisic.  As such, the calculation of the
+// ordering isn't done in a particularly sophisticated fashion.
 //---------------------------------------------------------------
 
 def Level.ordered_grids {    
@@ -334,7 +390,7 @@ def Level.ordered_grids {
   
   while grid_list.numIndices > 0 {
     var lowest_grid: Grid;
-    var i_lowest = extended_cells.high;
+    var i_lowest = possible_ghost_cells.high;
 
     for grid in grid_list {
       for d in dimensions {
@@ -364,8 +420,8 @@ def Level.ordered_grids {
 //|/___________________________________|/
 
 //------------------------------------------------------------------
-// Creates a Level, provided an input file starting on the line
-// where the level's definition begins.
+// Creates a Level whose parameters are read from an input file,
+// the name of which is provided as a string.
 //------------------------------------------------------------------
 
 def readLevel(file_name: string){
@@ -388,9 +444,9 @@ def readLevel(file_name: string){
   input_file.readln( (...n_ghost) );
 
   var level = new Level(x_low         = x_low,
-			x_high        = x_high,
-			n_cells       = n_cells,
-			n_ghost_cells = n_ghost);
+                        x_high        = x_high,
+                        n_cells       = n_cells,
+                        n_ghost_cells = n_ghost);
 
   input_file.readln();
 
@@ -418,16 +474,11 @@ def readLevel(file_name: string){
 
 
 
-
-
-
-
-
-def main {
-
-  var level = readLevel("input_level.txt");
-
-  writeln(level);
-
-
-}
+// def main {
+// 
+//   var level = readLevel("input_level.txt");
+// 
+//   writeln(level);
+// 
+// 
+// }

@@ -27,18 +27,16 @@ def GridSolution.advance_AdvectionCTU(
 
 
   //===> Calculate dt_target via CFL condition ===>
-  var cfl: [dimensions] real,
-      dt_target:        real,
-      dt:               real;
-
-  [d in dimensions] cfl(d) = grid.dx(d) / abs(velocity(d));
-  (dt_target,) = minloc reduce(cfl, dimensions);
+  var max_dt_values = grid.dx / abs(velocity);
+  var dt_target     = min( (...max_dt_values) );
   dt_target *= 0.95;
   //<=== Calculate dt_target via CFL condition <===
   
 
   
   //===> Time-stepping loop ===>
+  var dt: real;
+  
   while (current_time < time_requested) do {
 
     //==== Adjust the time step to hit time_requested if necessary ====

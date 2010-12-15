@@ -15,7 +15,7 @@ use GridVariable_def;
 class LevelVariable {
   
   const level:     Level;
-  var grid_arrays: [level.grids] GridVariable;
+  var grid_variables: [level.grids] GridVariable;
 
 
   //|\''''''''''''''''|\
@@ -32,45 +32,58 @@ class LevelVariable {
   //|\''''''''''''''''''''''''''''|\
   //| >    initialize() method    | >
   //|/............................|/
-  //--------------------------------------------------------
-  // Needed instead of a constructor, so grid_arrays can be
-  // referred to level.grids by the default constructor.
-  //--------------------------------------------------------
+  
+  //-----------------------------------------------------------
+  // Needed instead of a constructor, so grid_variables can be
+  // referred to level.grids by the default constructor.  The
+  // intended constructor signature is
+  //   LevelVariable(level: Level)
+  //-----------------------------------------------------------
+
   def initialize() {
     for grid in level.grids do
-      grid_arrays(grid) = new GridVariable(grid = grid);                          
+      grid_variables(grid) = new GridVariable(grid = grid);                          
   }
   // /|''''''''''''''''''''''''''''/|
   //< |    initialize() method    < |
   // \|............................\|
 
 
-  //|\'''''''''''''''''''''''|\
-  //| >    this() methods    | >
-  //|/.......................|/
+  //|\'''''''''''''''''''''|\
+  //| >    this methods    | >
+  //|/.....................|/
+  
+  //---------------------------------------------------------------
+  // A 'this' method lets the object be accessed as a function.
+  // And, like any other function, it may be overloaded like we've
+  // done here.
+  //
+  // A LevelVariable may be accessed by a Grid, in which case it
+  // returns the associated GridVariable.  Or it may be accessed
+  // by both a Grid and a subdomain of that grid, in which case
+  // it provides a pointer directly into the relevant portion of
+  // the GridVariable's 'value' field.
+  //---------------------------------------------------------------
+  
   def this(grid: Grid) var {
-    return grid_arrays(grid);
+    return grid_variables(grid);
   }
 
   def this(
     grid: Grid, 
     D: domain(dimension, stridable=true)) 
   var {
-    var alias => grid_arrays(grid).value(D);
+    var alias => grid_variables(grid).value(D);
     return alias;
   }
-  // /|'''''''''''''''''''''''/|
-  //< |    this() methods    < |
-  // \|.......................\|
-
+  // /|'''''''''''''''''''''/|
+  //< |    this methods    < |
+  // \|.....................\|
 
 }
 // /|""""""""""""""""""""""""""""/|
 //< |    LevelVariable class    < |
 // \|____________________________\|
-
-
-
 
 
 
@@ -90,23 +103,34 @@ def LevelVariable.setToFunction(
   f: func(dimension*real, real)
 ){
 
-  for grid in level.grids {
-    grid_arrays(grid).setToFunction(f);
-  }
+  for grid in level.grids do
+    grid_variables(grid).setToFunction(f);
 
 }
-// /|"""""""""""""""""""""""""""""""""/|
+// /|""""""""""""""""""""""""""""""""""""/|
 //< |    LevelVariable.setToFunction    < |
-// \|_________________________________\|
+// \|____________________________________\|
 
 
 
 
-//|\""""""""""""""""""""""""""""""""|\
+//|\"""""""""""""""""""""""""""""""""""|\
 //| >    LevelVariable.fillOverlaps    | >
-//|/________________________________|/
+//|/___________________________________|/
 
-def LevelVariable.fillOverlaps () {
+//-----------------------------------------------------------
+// This method fills all overlap regions, i.e. each grid's
+// ghost cells that overlap with one of its neighbors.  The
+// overlap regions have already been stored in the structure
+// level.sibling_overlaps.
+//
+// Note how SiblingOverlap.these and LevelVariable.this have
+// been defined to greatly simplify the syntax of this
+// operation.
+//-----------------------------------------------------------
+
+def LevelVariable.fillOverlaps ()
+{
   
   for grid in level.grids {
     for (nbr, overlap) in level.sibling_overlaps(grid) do
@@ -114,12 +138,61 @@ def LevelVariable.fillOverlaps () {
   }
   
 }
-// /|""""""""""""""""""""""""""""""""/|
+// /|"""""""""""""""""""""""""""""""""""/|
 //< |    LevelVariable.fillOverlaps    < |
-// \|________________________________\|
+// \|___________________________________\|
 
 
 
+
+
+//|\"""""""""""""""""""""""""""""""""""""|\
+//| >    extrapolateGhostData methods    | >
+//|/_____________________________________|/
+
+//-----------------------------------------------------------------
+// Fills the first layer of ghost cells with linearly extrapolated
+// data from the interior.  Note that if there are more layers of
+// ghost cells, they will be filled with incorrect values.
+//
+// This is used in a few settings to prevent the special treatment
+// of boundary cases.
+//-----------------------------------------------------------------
+
+def LevelVariable.extrapolateGhostData () {
+  
+  for grid_variable in grid_variables do
+    grid_variable.extrapolateGhostData();
+
+}
+
+
+def GridVariable.extrapolateGhostData () {
+
+  for ghost_domain in grid.ghost_multidomain {
+    var loc = grid.relativeLocation(ghost_domain);
+    var shift = -1*loc;
+
+    forall cell in ghost_domain {
+      value(cell) = 2.0*value(cell+shift) - value(cell+2*shift);
+    }
+  }
+
+}
+// /|"""""""""""""""""""""""""""""""""""""/|
+//< |    extrapolateGhostData methods    < |
+// \|_____________________________________\|
+
+
+
+
+
+//------------------------------------
+// Only I/O methods below this line
+//------------------------------------
+// |   |   |   |   |   |   |   |   |
+//\|/ \|/ \|/ \|/ \|/ \|/ \|/ \|/ \|/
+// V   V   V   V   V   V   V   V   V
 
 
 //|\"""""""""""""""""""""""""""""""""|\
@@ -130,7 +203,7 @@ def LevelVariable.fillOverlaps () {
 // Writes both a time file and a solution file for a given frame number.
 //-----------------------------------------------------------------------
 
-def LevelVariable.clawOutput(
+def LevelVariable.clawOutput (
   time:         real,
   frame_number: int)
 {
@@ -171,11 +244,11 @@ def LevelVariable.clawOutput(
 //| >    LevelVariable.writeData    | >
 //|/________________________________|/
 
-//--------------------------------------------------
+//-----------------------------------------------------
 // Writes out all data contained in the LevelVariable.
-//--------------------------------------------------
+//-----------------------------------------------------
 
-def LevelVariable.writeData(
+def LevelVariable.writeData (
   AMR_level:        int,
   base_grid_number: int,
   outfile:          file)
@@ -183,7 +256,7 @@ def LevelVariable.writeData(
 
   var grid_number = base_grid_number;
   for grid in level.ordered_grids {
-    grid_arrays(grid).writeData(grid_number, AMR_level, outfile);
+    grid_variables(grid).writeData(grid_number, AMR_level, outfile);
     outfile.writeln("  ");
     grid_number += 1;
   }
@@ -192,42 +265,3 @@ def LevelVariable.writeData(
 // /|""""""""""""""""""""""""""""""""/|
 //< |    LevelVariable.writeData    < |
 // \|________________________________\|
-
-
-
-
-
-
-//|\"""""""""""""""""""""""""""""""""""""|\
-//| >    extrapolateGhostData methods    | >
-//|/_____________________________________|/
-
-//-----------------------------------------------------------------
-// Fills the first layer of ghost cells with linearly extrapolated
-// data from the interior.  Note that if there are more layers of
-// ghost cells, they will be filled with incorrect values.
-//-----------------------------------------------------------------
-
-def LevelVariable.extrapolateGhostData () {
-  
-  for grid_array in grid_arrays do
-    grid_array.extrapolateGhostData();
-
-}
-
-
-def GridVariable.extrapolateGhostData () {
-
-  for ghost_domain in grid.ghost_multidomain {
-    var loc = grid.relativeLocation(ghost_domain);
-    var shift = -1*loc;
-
-    forall cell in ghost_domain {
-      value(cell) = 2.0*value(cell+shift) - value(cell+2*shift);
-    }
-  }
-
-}
-// /|"""""""""""""""""""""""""""""""""""""/|
-//< |    extrapolateGhostData methods    < |
-// \|_____________________________________\|

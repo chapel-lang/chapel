@@ -3,24 +3,6 @@ use CoarseOverlapSolution_def;
 use Partitioning;
 
 
-//|\""""""""""""""""""""""|\
-//| >    Flagger class    | >
-//|/______________________|/
-//----------------------------------------------------------
-// Container for the setFlags routine.  This class is meant
-// to be derived, and the setFlags routine overridden with
-// something user-specified.
-//----------------------------------------------------------
-class Flagger {
-  def setFlags(level_solution: LevelSolution, 
-               flags: [level_solution.level.cells] bool) {}
-}
-// /|""""""""""""""""""""""/|
-//< |    Flagger class    < |
-// \|______________________\|
-
-
-
 
 
 //|\"""""""""""""""""""""""""""|\
@@ -37,7 +19,7 @@ class AMRHierarchy {
 
   const initialCondition: func(dimension*real, real);
   
-  const flagger:  Flagger;
+  const flagger:  Flagger;  // Flagger class is defined below
   
   const target_efficiency: real;
 
@@ -105,7 +87,7 @@ class AMRHierarchy {
                           n_cells       = n_coarsest_cells,
                           n_ghost_cells = n_ghost_cells);
     writeln("Adding grid to level 1.");                        
-    levels(1).addGrid(levels(1).cells);
+    levels(1).addGrid(levels(1).possible_cells);
     levels(1).complete();
     physical_boundaries(1) = new PhysicalBoundary(levels(1));
 
@@ -322,7 +304,7 @@ def AMRHierarchy.buildRefinedLevel(i_refining: int)
   
   
   //==== Flag the level being refined====
-  var flags: [levels(i_refining).cells] bool;
+  var flags: [levels(i_refining).possible_cells] bool;
   flagger.setFlags(level_solutions(i_refining), flags);
   
   //==== Add flags for the level below the new one, if needed ====
@@ -371,7 +353,7 @@ def AMRHierarchy.buildRefinedLevel(i_refining: int)
     adjacent_coarse_region.add( D.expand(2) );
 
     //==== Physical boundary is OK; this trims it off ====
-    adjacent_coarse_region.intersect( levels(i_refining).cells );
+    adjacent_coarse_region.intersect( levels(i_refining).possible_cells );
 
     //==== Remove all grid cells from the level ====
     for grid in levels(i_refining).grids do
@@ -423,10 +405,12 @@ def AMRHierarchy.buildRefinedLevel(i_refining: int)
 //|\"""""""""""""""""""""""""""""""|\
 //| >    PhysicalBoundary class    | >
 //|/_______________________________|/
+
 //---------------------------------------------------------
 // Describes the physical boundary of a level, situated in
 // the rectangular domain of the full hierarchy.
 //---------------------------------------------------------
+
 class PhysicalBoundary {
   const level:        Level;
   const grids:        domain(Grid);
@@ -452,7 +436,7 @@ class PhysicalBoundary {
 
       var boundary_multidomain = new MultiDomain(dimension,stridable=true);
       boundary_multidomain.add(grid.ghost_multidomain);
-      boundary_multidomain.subtract(level.cells);
+      boundary_multidomain.subtract(level.possible_cells);
 
       if boundary_multidomain.domains.numElements > 0 {
         grids.add(grid);
@@ -485,10 +469,30 @@ class PhysicalBoundary {
 
 
 
+//|\""""""""""""""""""""""|\
+//| >    Flagger class    | >
+//|/______________________|/
+
+//----------------------------------------------------------
+// Container for the setFlags routine.  This class is meant
+// to be derived, and the setFlags routine overridden with
+// something user-specified.
+//----------------------------------------------------------
+
+class Flagger {
+  def setFlags(level_solution: LevelSolution, 
+               flags: [level_solution.level.possible_cells] bool) {}
+}
+// /|""""""""""""""""""""""/|
+//< |    Flagger class    < |
+// \|______________________\|
+
+
 
 //|\"""""""""""""""""""""""""""""""""""""""""""""|\
 //| >    AMRHierarchy constructor, file-based    | >
 //|/_____________________________________________|/
+
 //-----------------------------------------------------------------
 // Alternate constructor in which all numerical parameters for the
 // hierarchy are provided using an input file.  This allows those
@@ -546,13 +550,6 @@ def AMRHierarchy.AMRHierarchy(
 // /|"""""""""""""""""""""""""""""""""""""""""""""/|
 //< |    AMRHierarchy constructor, file-based    < |
 // \|_____________________________________________\|
-
-
-
-
-
-
-
 
 
 
@@ -657,6 +654,8 @@ def LevelVariable.initialFill(
 
 
 
+
+
 //|\""""""""""""""""""""""""""""""""""""|\
 //| >    AMRHierarchy output methods    | >
 //|/____________________________________|/
@@ -729,7 +728,7 @@ def main {
     
     def setFlags(
       level_solution: LevelSolution, 
-      flags:          [level_solution.level.cells] bool)
+      flags:          [level_solution.level.possible_cells] bool)
     {
       const current_data = level_solution.current_data;
       current_data.extrapolateGhostData();

@@ -9,7 +9,7 @@ class GradientFlagger: Flagger {
   
   def setFlags(
     level_solution: LevelSolution, 
-    flags:          [level_solution.level.cells] bool)
+    flags:          [level_solution.level.possible_cells] bool)
   {
     const current_data = level_solution.current_data;
     current_data.extrapolateGhostData();

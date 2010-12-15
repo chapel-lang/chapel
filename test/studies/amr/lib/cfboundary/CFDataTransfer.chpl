@@ -59,7 +59,7 @@ def GridVariable.refine_Linear(
   var coarse_cells  = grid.cells( coarsen(fine_cells, ref_ratio) );
 
   var coarse_values = value(coarse_cells);
-  var coarse_diffs: [coarse_cells] [dimensions] real;
+  var coarse_diffs: [coarse_cells] dimension*real;
 
 
   //===> Form interpolant data (values and differentials ===>

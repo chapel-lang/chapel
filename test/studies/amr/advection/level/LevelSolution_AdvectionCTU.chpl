@@ -27,18 +27,16 @@ def LevelSolution.advance_AdvectionCTU(
   assert(current_time <= time_requested);
 
 
-  //===> Initialize ===>
-  var cfl:       [dimensions] real;
-  var dt_target: real;
-  var dt:        real;
-
-  [d in dimensions] cfl(d) = level.dx(d) / abs(velocity(d));
-  (dt_target,) = minloc reduce(cfl, dimensions);
+  //===> Calculate dt_target via CFL condition ===>
+  var max_dt_values = level.dx / abs(velocity);
+  var dt_target     = min( (...max_dt_values) );
   dt_target *= 0.95;
-  //<=== Initialize <===
+  //<=== Calculate dt_target via CFL condition <===
 
 
   //===> Time-stepping loop ===>
+  var dt: real;
+  
   while current_time < time_requested {
 
     //==== Adjust the time step to hit time_requested if necessary ====

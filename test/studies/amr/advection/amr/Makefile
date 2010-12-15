@@ -13,9 +13,10 @@ SOURCES = \
 	AMR_AdvectionCTU_driver.chpl
 
 
-.PHONY: clean
+.PHONY: clean touch
 
 DIM = 2
+
 
 
 output: _output AMRAdvectionCTU.out
@@ -24,6 +25,9 @@ output: _output AMRAdvectionCTU.out
 
 AMRAdvectionCTU.out: $(SOURCES)
 	chpl $(SOURCES) -M $(MISC_LIB) -M $(GRID_LIB) -M $(LEVEL_LIB) -M $(CF_LIB) -M $(AMR_LIB) --set dimension=$(DIM) -o AMRAdvectionCTU.out
+
+touch:
+	python ../../lib/python/touch_output.py
 
 _output:
 	mkdir _output

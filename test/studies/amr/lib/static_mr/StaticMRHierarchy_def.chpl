@@ -105,7 +105,7 @@ class PhysicalBoundary {
 
       var boundary_multidomain = new MultiDomain(dimension,stridable=true);
       boundary_multidomain.add(grid.ghost_multidomain);
-      boundary_multidomain.subtract(level.cells);
+      boundary_multidomain.subtract(level.possible_cells);
 
       if boundary_multidomain.domains.numElements > 0 {
         grids.add(grid);
