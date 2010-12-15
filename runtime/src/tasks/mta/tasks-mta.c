@@ -116,16 +116,20 @@ void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) { }
 
 // Tasks
 
-void CHPL_TASKING_INIT(void) {
+void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   //
   // If a value was specified for the call stack size config const, warn
   // the user that it's ignored on this system.
   //
-  if (chpl_config_get_value("callStackSize", "Built-in") != NULL)
+  if (maxThreadsPerLocale != 0)
+    chpl_warning("the maxThreadsPerLocale config constant has no effect "
+                 "on XMT systems", 0, NULL);
+
+  if (callStackSize != 0)
     chpl_warning("the callStackSize config constant has no effect "
                  "on XMT systems",
                  0, NULL);
-
+  
   chpl_begin_cnt = 0;                     // only main thread running
   chpl_can_exit = 1;                      // mark full - no threads created yet
 }
@@ -213,7 +217,7 @@ void CHPL_SET_SERIAL(chpl_bool state) {
     chpl_internal_error("out of memory while creating serial state");
 }
 
-uint64_t CHPL_TASK_CALLSTACKSIZE(void) { return 0; }
+uint64_t chpl_task_callstacksize(void) { return 0; }
 
 uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) { return 0; }
 

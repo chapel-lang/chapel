@@ -126,6 +126,9 @@ task call stack size:
 
  --callStackSize : Size, in bytes, of the call stack for a task.
 
+If the size is set to 0, the implication is that the default system
+stack size should be used.
+
 
 -----------------------------------------
 Controlling the amount of non-user output

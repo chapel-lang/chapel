@@ -374,6 +374,7 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn = new FnSymbol(astr("chpl__init_", mod->name));
   mod->initFn->retType = dtVoid;
   mod->initFn->addFlag(FLAG_MODULE_INIT);
+  mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
 
   //
   // move module-level statements into module's init function

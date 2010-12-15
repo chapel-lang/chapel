@@ -78,7 +78,20 @@ int main(int argc, char* argv[]) {
   chpl_comm_rollcall();
   chpl_init_chpl_rt_utils();
 
-  CHPL_TASKING_INIT();      // initialize the task management layer
+ 
+  //
+  // initialize the task management layer
+  //
+  //
+  // This is an early call to initialize the ChapelThreads module so
+  // that its config consts (maxThreadsPerLocale and callStackSize)
+  // can be used to initialize the tasking layer.  It assumes that the
+  // ChapelThreads module can be initialized multiple times without
+  // harm (currently true).
+  //
+  chpl__init_ChapelThreads(1, "<internal>");
+  //
+  CHPL_TASKING_INIT(maxThreadsPerLocale, callStackSize); 
 
   recordExecutionCommand(argc, argv);
 

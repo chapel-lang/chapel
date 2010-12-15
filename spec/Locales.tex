@@ -68,6 +68,15 @@ terms of the specified memory units (Bytes, KB, MB, or GB) using a
 value of the specified return type.
 \end{protobody}
 
+\begin{protohead}
+def locale.callStackSize: uint(64);
+\end{protohead}
+\begin{protobody}
+Returns the per-task call stack size used when creating tasks on the
+locale in question.  A value of 0 indicates that the call stack size
+is determined by the system.
+\end{protobody}
+
 \subsubsection{The Predefined Locales Array}
 \label{Predefined_Locales_Array}
 \index{Locales@\chpl{Locales}}

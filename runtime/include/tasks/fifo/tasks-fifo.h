@@ -146,7 +146,7 @@ chpl_bool chpl_pool_is_empty(void);
 // These are called once each, from CHPL_TASKING_INIT() and
 // CHPL_TASKING_EXIT().
 //
-void threadlayer_init(void);
+void threadlayer_init(uint64_t callStackSize);
 void threadlayer_exit(void);
 
 

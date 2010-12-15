@@ -2098,9 +2098,6 @@ void CallExpr::codegen(FILE* outfile) {
       } else
         codegenBasicPrimitive(outfile, this);
       break;
-    case PRIM_CHPL_CALLSTACKSIZE:
-      fprintf(outfile, "CHPL_TASK_CALLSTACKSIZE()");
-      break;
     case PRIM_CHPL_CALLSTACKSIZELIMIT:
       fprintf(outfile, "CHPL_TASK_CALLSTACKSIZELIMIT()");
       break;

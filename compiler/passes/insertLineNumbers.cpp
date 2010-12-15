@@ -190,8 +190,10 @@ void insertLineNumbers() {
   // them to the queue
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO)) {
-      newLine(fn);
-      newFile(fn);
+      if (!filenameMap.get(fn)) {  // avoid duplicates
+        newLine(fn);
+        newFile(fn);
+      }
     }
   }
 

@@ -31,6 +31,11 @@ class locale {
     return locName;
   }
 
+  def callStackSize: uint(64) {
+    _extern def chpl_task_callstacksize(): uint(64);
+    return chpl_taskCallStackSize();
+  }
+
   def writeThis(f: Writer) {
     if (numRealms == 1) {
       f.write("LOCALE", id);

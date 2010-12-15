@@ -129,6 +129,7 @@ static task_pool_p             add_to_task_pool(chpl_fn_p,
                                                 void*,
                                                 chpl_bool,
                                                 chpl_task_list_p);
+static int taskMaxThreadsPerLocale = -1;
 
 
 // Sync variables
@@ -284,8 +285,11 @@ void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) {
 
 // Tasks
 
-void CHPL_TASKING_INIT(void) {
+void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   thread_private_data_t *tp;
+
+  // Tuck maxThreadsPerLocale away in a static global for use by other routines
+  taskMaxThreadsPerLocale = maxThreadsPerLocale;
 
   threadlayer_mutex_init(&threading_lock);
   threadlayer_mutex_init(&extra_task_lock);
@@ -302,7 +306,8 @@ void CHPL_TASKING_INIT(void) {
   task_pool_head = task_pool_tail = NULL;
   thread_list_head = thread_list_tail = NULL;
 
-  threadlayer_init();
+  threadlayer_init(callStackSize);
+
 
   tp = (thread_private_data_t*) chpl_alloc(sizeof(thread_private_data_t),
                                            CHPL_RT_MD_THREAD_PRIVATE_DATA,
@@ -716,11 +721,9 @@ void CHPL_SET_SERIAL(chpl_bool state) {
   get_thread_private_data()->ptask->serial_state = state;
 }
 
-
-uint64_t CHPL_TASK_CALLSTACKSIZE(void) {
+uint64_t chpl_task_callstacksize(void) {
   return threadlayer_call_stack_size();
 }
-
 
 uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) {
   return threadlayer_call_stack_size_limit();
@@ -1193,10 +1196,10 @@ launch_next_task_in_new_thread(void) {
   if ((ptask = task_pool_head)) {
     if (threadlayer_thread_create(&thread, chpl_begin_helper, ptask)) {
       char msg[256];
-      if (maxThreadsPerLocale)
+      if (taskMaxThreadsPerLocale)
         sprintf(msg,
                 "maxThreadsPerLocale is %"PRId32", but unable to create more than %d threads",
-                maxThreadsPerLocale, threads_cnt);
+                taskMaxThreadsPerLocale, threads_cnt);
       else
         sprintf(msg,
                 "maxThreadsPerLocale is unbounded, but unable to create more than %d threads",
@@ -1249,7 +1252,7 @@ static void schedule_next_task(int howMany) {
     threadlayer_pool_awaken();
   }
 
-  for (; howMany && (maxThreadsPerLocale == 0 || threads_cnt + 1 < maxThreadsPerLocale); howMany--)
+  for (; howMany && (taskMaxThreadsPerLocale == 0 || threads_cnt + 1 < taskMaxThreadsPerLocale); howMany--)
     launch_next_task_in_new_thread();
 }
 
