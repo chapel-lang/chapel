@@ -20,8 +20,7 @@ DIM = 2
 
 
 output: _output AMRAdvectionCTU.out
-	./AMRAdvectionCTU.out
-	python ../../lib/python/touch_output.py
+	./AMRAdvectionCTU.out --dataParTasksPerLocale=2
 
 AMRAdvectionCTU.out: $(SOURCES)
 	chpl $(SOURCES) -M $(MISC_LIB) -M $(GRID_LIB) -M $(LEVEL_LIB) -M $(CF_LIB) -M $(AMR_LIB) --set dimension=$(DIM) -o AMRAdvectionCTU.out
