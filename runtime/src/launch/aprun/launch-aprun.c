@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 #include "chpllaunch.h"
 #include "chpl_mem.h"
 #include "error.h"
@@ -12,6 +13,7 @@ char sysFilename[FILENAME_MAX];
 
 #define CHPL_CC_ARG "-cc"
 static char *_ccArg = NULL;
+static char* debug = NULL;
 
 // TODO: Un-hard-code this stuff:
 
@@ -30,11 +32,11 @@ static int getNumCoresPerLocale(void) {
       return numCores;
   }
 
-#ifndef DEBUG_LAUNCH
-  mypid = getpid();
-#else
-  mypid = 0;
-#endif
+  if (!debug) {
+    mypid = getpid();
+  } else {
+    mypid = 0;
+  }
   sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
   command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
   system(command);
@@ -49,8 +51,12 @@ static int getNumCoresPerLocale(void) {
     numCores += 1;
   }
   fclose(sysFile);
-  sprintf(command, "rm %s", sysFilename);
-  system(command);
+  if (unlink(sysFilename)) {
+    char msg[1024];
+    sprintf(msg, "Error removing temporary file '%s': %s", sysFilename,
+            strerror(errno));
+    chpl_warning(msg, 0, 0);
+  }
   return numCores;
 }
 
@@ -58,25 +64,27 @@ static char _nbuf[16];
 static char _dbuf[16];
 static char** chpl_launch_create_argv(int argc, char* argv[],
                                       int32_t numLocales) {
-  const int largc = 6;
+  const int largc = 7;
   char *largv[largc];
   const char *host = getenv("CHPL_HOST_PLATFORM");
   const char *ccArg = _ccArg ? _ccArg :
     (host && !strcmp(host, "xe-cle") ? "none" : "cpu");
 
   largv[0] = (char *) "aprun";
-  largv[1] = (char *) "-cc";
-  largv[2] = (char *) ccArg;
+  largv[1] = (char *) "-q";
+  largv[2] = (char *) "-cc";
+  largv[3] = (char *) ccArg;
   sprintf(_dbuf, "-d%d", getNumCoresPerLocale());
-  largv[3] = _dbuf;
+  largv[4] = _dbuf;
   sprintf(_nbuf, "-n%d", numLocales);
-  largv[4] = _nbuf;
-  largv[5] = (char *) "-N1";
+  largv[5] = _nbuf;
+  largv[6] = (char *) "-N1";
 
   return chpl_bundle_exec_args(argc, argv, largc, largv);
 }
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+  debug = getenv("CHPL_LAUNCHER_DEBUG");
   return chpl_launch_using_exec("aprun",
                                 chpl_launch_create_argv(argc, argv, numLocales),
                                 argv[0]);

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 #include "chpllaunch.h"
 #include "chpl_mem.h"
 #include "chpltypes.h"
@@ -101,14 +102,15 @@ static int getNumCoresPerLocale(void) {
 static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion qsub, 
                             int32_t numLocales, int32_t numCoresPerLocale) {
   const size_t maxOptLength = 256;
+  char* optionString;
+  int length = 0;
   if (!queue) {
     queue = getenv("CHPL_LAUNCHER_QUEUE");
   }
   if (!walltime) {
     walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   }
-  char* optionString = chpl_malloc(maxOptLength, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
-  int length = 0;
+  optionString = chpl_malloc(maxOptLength, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
 
   length += snprintf(optionString + length, maxOptLength - length,
                      "-z -V -I -N Chpl-%.10s", genFilename);
@@ -263,13 +265,18 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
 
 static void chpl_launch_cleanup(void) {
   if (!debug) {
-    char command[1024];
-
-    sprintf(command, "rm %s", expectFilename);
-    system(command);
-
-    sprintf(command, "rm %s", sysFilename);
-    system(command);
+    if (unlink(expectFilename)) {
+      char msg[1024];
+      sprintf(msg, "Error removing temporary file '%s': %s", expectFilename,
+              strerror(errno));
+      chpl_warning(msg, 0, 0);
+    }
+    if (unlink(sysFilename)) {
+      char msg[1024];
+      sprintf(msg, "Error removing temporary file '%s': %s", sysFilename,
+              strerror(errno));
+      chpl_warning(msg, 0, 0);
+    }
   }
 }
 
@@ -288,6 +295,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, chpl_string filename) {
+  int numArgs = 0;
   if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
     walltime = argv[argNum+1];
     return 2;
@@ -302,7 +310,6 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     queue = &(argv[argNum][strlen(CHPL_QUEUE_FLAG)+1]);
     return 1;
   }
-  int numArgs = 0;
   if (!strcmp(argv[argNum], CHPL_CC_ARG)) {
     _ccArg = argv[argNum+1];
     numArgs = 2;
@@ -327,7 +334,7 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "LAUNCHER FLAGS:\n");
   fprintf(stdout, "===============\n");
   fprintf(stdout, "  %s <cpu assignment>   : specify cpu assignment within a node:\n", CHPL_CC_ARG);
-  fprintf(stdout, "                           none (default), numa_node, cpu\n", CHPL_CC_ARG);
+  fprintf(stdout, "                           none (default), numa_node, cpu\n");
   fprintf(stdout, "  %s <queue>        : specify a queue\n", CHPL_QUEUE_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_QUEUE)\n");
   fprintf(stdout, "  %s <HH:MM:SS>  : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
