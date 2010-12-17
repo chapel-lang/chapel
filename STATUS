@@ -180,6 +180,7 @@ Miscellaneous
 - Bounds checking is not complete.
 - Overloading operations such as multiplcation for domain literal not supported.
 - Name mangling for generics may result in errors during C compilation.
+- Leaving off () when calling exit results in an internal error.
 
 
 Portability
