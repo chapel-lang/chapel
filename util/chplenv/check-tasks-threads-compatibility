@@ -10,6 +10,7 @@ unless (($tasks eq "fifo" && $threads eq pthreads) ||
 	($tasks eq "dev-tasks-1" &&
 	 $threads =~ /^pthreads|dev-threads-1$/) ||
 	($tasks eq "nanox" && $threads eq "none") ||
+	($tasks eq "qthreads" && $threads eq "none") ||
 	($tasks eq "none" && $threads eq "none")) {
     die "Tasks \"$tasks\" is incompatible with threads \"$threads\".\n";
 }
