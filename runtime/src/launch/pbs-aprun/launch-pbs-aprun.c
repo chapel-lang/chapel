@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
 #include "chpllaunch.h"
@@ -12,7 +13,6 @@
 
 
 #define baseExpectFilename ".chpl-expect-"
-#define baseSysFilename ".chpl-sys-"
 #define EXPECT "expect"
 
 #define CHPL_CC_ARG "-cc"
@@ -25,7 +25,6 @@ static char* walltime = NULL;
 static char* queue = NULL;
 
 static char expectFilename[FILENAME_MAX];
-static char sysFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
 #define procsPerNode 1  
@@ -39,27 +38,20 @@ typedef enum {
   unknown
 } qsubVersion;
 
-static qsubVersion determineQsubVersion(void) {
-  char version[versionBuffLen+1] = "";
-  char* versionPtr = version;
-  FILE* sysFile;
-  int i;
 
-  char* command = chpl_glom_strings(3, "qsub --version > ", sysFilename, " 2>&1");
-  system(command);
-  sysFile = fopen(sysFilename, "r");
-  for (i=0; i<versionBuffLen; i++) {
-    char tmp;
-    fscanf(sysFile, "%c", &tmp);
-    if (tmp == '\n') {
-      *versionPtr++ = '\0';
-      break;
-    } else {
-      *versionPtr++ = tmp;
-    }
+static qsubVersion determineQsubVersion(void) {
+  const int buflen = 256;
+  char version[buflen];
+  char *argv[3];
+  argv[0] = (char *) "qsub";
+  argv[1] = (char *) "--version";
+  argv[2] = NULL;
+  
+  memset(version, 0, buflen);
+  if (chpl_run_utility1K("qsub", argv, version, buflen) <= 0) {
+    chpl_error("Error trying to determine qsub version", 0, 0);
   }
 
-  fclose(sysFile);
   if (strstr(version, "NCCS")) {
     return nccs;
   } else if (strstr(version, "PBSPro")) {
@@ -70,32 +62,42 @@ static qsubVersion determineQsubVersion(void) {
 }
 
 static int getNumCoresPerLocale(void) {
-  FILE* sysFile;
+  const int buflen = 256;
+  char buf[buflen];
   int coreMask;
   int bitMask = 0x1;
-  int numCores;
+  int numCores = -1;
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
-  char* command = NULL;
 
   if (numCoresString) {
     numCores = atoi(numCoresString);
-    if (numCores != 0)
-      return numCores;
+    if (numCores <= 0)
+      chpl_warning("CHPL_LAUNCHER_CORES_PER_LOCALE set to invalid value.", 0, 0);
   }
 
-  command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
-  system(command);
-  sysFile = fopen(sysFilename, "r");
-  if (fscanf(sysFile, "%d\n", &coreMask) != 1 || !feof(sysFile)) {
-    chpl_error("unable to determine number of cores per locale; please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
-  }
-  coreMask >>= 1;
-  numCores = 1;
-  while (coreMask & bitMask) {
+  if (numCores <= 0) {
+    char *argv[3];
+    int charsRead;
+    argv[0] = (char *) "cnselect";
+    argv[1] = (char *) "-Lcoremask";
+    argv[2] = NULL;
+  
+    memset(buf, 0, buflen);
+    if ((charsRead = chpl_run_utility1K("cnselect", argv, buf, buflen)) <= 0) {
+      chpl_error("Error trying to determine number of cores per node", 0, 0);
+    }
+
+    if (sscanf(buf, "%d", &coreMask) != 1) {
+      chpl_error("unable to determine number of cores per locale; please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+    }
     coreMask >>= 1;
-    numCores += 1;
+    numCores = 1;
+    while (coreMask & bitMask) {
+      coreMask >>= 1;
+      numCores += 1;
+    }
   }
-  fclose(sysFile);
+
   return numCores;
 }
 
@@ -173,7 +175,6 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   } else {
     mypid = 0;
   }
-  sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
 
   numCoresPerLocale = getNumCoresPerLocale();
@@ -223,15 +224,17 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   fprintf(expectFile, "send \"set prompt=\\\"$chpl_prompt\\\"\\n\"\n");
   fprintf(expectFile, "expect -ex $chpl_prompt\n");
   fprintf(expectFile, "expect -ex $chpl_prompt\n");
-  fprintf(expectFile, "send \"aprun -cc %s -q -b -d%d -n1 -N1 ls %s\\n\"\n",
-          ccArg, numCoresPerLocale, chpl_get_real_binary_name());
-  fprintf(expectFile, "expect {\n");
-  fprintf(expectFile, "  \"failed: chdir\" {send_user "
-          "\"error: %s must be launched from and/or stored on a "
-          "cross-mounted file system\\n\" ; exit 1}\n", 
-          basenamePtr);
-  fprintf(expectFile, "  -ex $chpl_prompt\n");
-  fprintf(expectFile, "}\n");
+  if (verbosity > 2) {
+    fprintf(expectFile, "send \"aprun -cc %s -q -b -d%d -n1 -N1 ls %s\\n\"\n",
+            ccArg, numCoresPerLocale, chpl_get_real_binary_name());
+    fprintf(expectFile, "expect {\n");
+    fprintf(expectFile, "  \"failed: chdir\" {send_user "
+            "\"error: %s must be launched from and/or stored on a "
+            "cross-mounted file system\\n\" ; exit 1}\n", 
+            basenamePtr);
+    fprintf(expectFile, "  -ex $chpl_prompt\n");
+    fprintf(expectFile, "}\n");
+  }
   fprintf(expectFile, "send \"aprun ");
   if (verbosity < 2) {
     fprintf(expectFile, "-q ");
@@ -241,14 +244,13 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }
-  fprintf(expectFile, "\\n\"\n");
+  fprintf(expectFile, "; echo CHPL_EXIT_CODE:\\$?\\n\"\n");
   // Suck up the aprun command
   fprintf(expectFile, "expect -re {.+\\n}\n");
-  fprintf(expectFile, "interact -o -ex $chpl_prompt {return}\n");
-  fprintf(expectFile, "send \"echo exit code: \\$?\\n\"\n");
+  fprintf(expectFile, "interact -o -ex \"CHPL_EXIT_CODE:\" {return}\n");
   fprintf(expectFile, "expect {\n");
-  fprintf(expectFile, "  -ex \"exit code: 0\" {set exitval \"0\"}\n");
-  fprintf(expectFile, "  -re {exit code: \\d+} {set exitval \"1\"}\n");
+  fprintf(expectFile, "  -ex \"0\" {set exitval \"0\"}\n");
+  fprintf(expectFile, "  -re {\\d+} {set exitval \"1\"}\n");
   fprintf(expectFile, "}\n");
   fprintf(expectFile, "expect -ex $chpl_prompt\n");
   if (verbosity > 1) {
@@ -268,12 +270,6 @@ static void chpl_launch_cleanup(void) {
     if (unlink(expectFilename)) {
       char msg[1024];
       sprintf(msg, "Error removing temporary file '%s': %s", expectFilename,
-              strerror(errno));
-      chpl_warning(msg, 0, 0);
-    }
-    if (unlink(sysFilename)) {
-      char msg[1024];
-      sprintf(msg, "Error removing temporary file '%s': %s", sysFilename,
               strerror(errno));
       chpl_warning(msg, 0, 0);
     }

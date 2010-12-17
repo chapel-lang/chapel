@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/select.h>
 #include <errno.h>
 #include <string.h>
 #include <comm_printf_macros.h>
@@ -24,8 +25,97 @@ static void chpl_launch_sanity_checks(const char* argv0) {
   if (stat(chpl_get_real_binary_name(), &statBuf) != 0) {
     char errorMsg[256];
     sprintf(errorMsg, "unable to locate file: %s", chpl_get_real_binary_name());
-    chpl_error(errorMsg, -1, "<internal>");
+    chpl_internal_error(errorMsg);
   }
+}
+
+//
+// Use this function to run short utility programs that will return less
+//  than 1024 characters of output.  The program must not expect any input.
+//  On success, returns the number of bytes read and the output of the
+//  command in outbuf.  Returns -1 on failure.
+//
+int
+chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int outbuflen) {
+  const int buflen = 1024;
+  int curlen;
+  char buf[buflen];
+  char *cur;
+  int fdo[2], outfd;
+  fd_set set;
+  pid_t pid;
+  int status;
+  int rv, numRead;
+
+  if (pipe(fdo) < 0) {
+    sprintf(buf, "Unable to run utility '%s' (pipe failed): %s\n", command, strerror(errno));
+    chpl_internal_error(buf);
+  }
+
+  pid = fork();
+  switch (pid) {
+  case 0: // child should exit on errors
+    close(fdo[0]);
+    if (fdo[1] != STDOUT_FILENO) {
+      if (dup2(fdo[1], STDOUT_FILENO) != STDOUT_FILENO) {
+        sprintf(buf, "Unable to run utility '%s' (dup2 failed): %s",
+                command, strerror(errno));
+        chpl_internal_error(buf);
+      }
+    }
+    execvp(command, argv);
+    // should only return on error
+    sprintf(buf, "Unable to run utility '%s' (execvp failed): %s",
+                command, strerror(errno));
+    chpl_internal_error(buf);
+  case -1:
+    sprintf(buf, "Unable to run utility '%s' (fork failed): %s",
+            command, strerror(errno));
+    chpl_warning(buf, 0, 0);
+    return -1;
+  default:
+    outfd = fdo[0];
+    close(fdo[1]);
+    numRead = 0;
+    curlen = buflen > outbuflen ? outbuflen : buflen;
+    cur = buf;
+    while (numRead < buflen) {
+      FD_ZERO(&set);
+      FD_SET(outfd, &set);
+      select(outfd+1, &set, NULL, NULL, NULL);
+      if (FD_ISSET(outfd, &set)) {
+        rv = read(outfd, cur, buflen);
+        if (rv == 0) {
+          break;
+        } else if (rv > 0) {
+          cur += rv;
+          numRead += rv;
+          curlen -= rv;
+        } else {
+          sprintf(buf, "Unable to run utility '%s' (read failed): %s",
+                  command, strerror(errno));
+          chpl_warning(buf, 0, 0);
+          return -1;
+        }
+      }
+    }
+
+    if (numRead != 0) {
+      memcpy(outbuf, buf, numRead);
+    } else {
+      sprintf(buf, "Unable to run utility '%s' (no bytes read)", command);
+      chpl_warning(buf, 0, 0);
+      return -1;
+    }
+
+    // do we really need to wait?
+    if (waitpid(pid, &status, 0) != pid) {
+      sprintf(buf, "'%s' (waitpid failed): %s",
+              command, strerror(errno));
+      chpl_warning(buf, 0, 0);
+    }
+  }
+  return numRead;
 }
 
 //
@@ -41,7 +131,7 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
   char **newargv = chpl_malloc(len, sizeof(char*),
                                CHPL_RT_MD_COMMAND_BUFFER, -1, "");
   if (!newargv) {
-    chpl_error("Could not allocate memory", -1, "<internal>");
+    chpl_internal_error("Could not allocate memory");
   }
 
   newargv[len-1] = NULL;
@@ -83,7 +173,7 @@ int chpl_launch_using_exec(const char* command, char * const argv1[], const char
   {
     char msg[256];
     sprintf(msg, "execvp() failed: %s", strerror(errno));
-    chpl_error(msg, -1, "<internal>");
+    chpl_internal_error(msg);
   }
   return -1;
 }
@@ -99,14 +189,14 @@ int chpl_launch_using_fork_exec(const char* command, char * const argv1[], const
   {
     char msg[256];
     sprintf(msg, "fork() failed: %s", strerror(errno));
-    chpl_error(msg, -1, "<internal>");
+    chpl_internal_error(msg);
   }
   default:
     {
       if (waitpid(pid, &status, 0) != pid) {
         char msg[256];
         sprintf(msg, "waitpid() failed: %s", strerror(errno));
-        chpl_error(msg, -1, "<internal>");
+        chpl_internal_error(msg);
       }
     }
   }

@@ -18,45 +18,42 @@ static char* debug = NULL;
 // TODO: Un-hard-code this stuff:
 
 static int getNumCoresPerLocale(void) {
-  FILE* sysFile;
+  const int buflen = 256;
+  char buf[buflen];
   int coreMask;
   int bitMask = 0x1;
-  int numCores;
-  pid_t mypid;
+  int numCores = -1;
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
-  char* command;
 
   if (numCoresString) {
     numCores = atoi(numCoresString);
-    if (numCores != 0)
-      return numCores;
+    if (numCores <= 0)
+      chpl_warning("CHPL_LAUNCHER_CORES_PER_LOCALE set to invalid value.", 0, 0);
   }
 
-  if (!debug) {
-    mypid = getpid();
-  } else {
-    mypid = 0;
-  }
-  sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
-  command = chpl_glom_strings(2, "cnselect -Lcoremask > ", sysFilename);
-  system(command);
-  sysFile = fopen(sysFilename, "r");
-  if (fscanf(sysFile, "%d\n", &coreMask) != 1 || !feof(sysFile)) {
-    chpl_error("unable to determine number of cores per locale; please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
-  }
-  coreMask >>= 1;
-  numCores = 1;
-  while (coreMask & bitMask) {
+  if (numCores <= 0) {
+    char *argv[3];
+    int charsRead;
+    argv[0] = (char *) "cnselect";
+    argv[1] = (char *) "-Lcoremask";
+    argv[2] = NULL;
+  
+    memset(buf, 0, buflen);
+    if ((charsRead = chpl_run_utility1K("cnselect", argv, buf, buflen)) <= 0) {
+      chpl_error("Error trying to determine number of cores per node", 0, 0);
+    }
+
+    if (sscanf(buf, "%d", &coreMask) != 1) {
+      chpl_error("unable to determine number of cores per locale; please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+    }
     coreMask >>= 1;
-    numCores += 1;
+    numCores = 1;
+    while (coreMask & bitMask) {
+      coreMask >>= 1;
+      numCores += 1;
+    }
   }
-  fclose(sysFile);
-  if (unlink(sysFilename)) {
-    char msg[1024];
-    sprintf(msg, "Error removing temporary file '%s': %s", sysFilename,
-            strerror(errno));
-    chpl_warning(msg, 0, 0);
-  }
+
   return numCores;
 }
 
