@@ -10,9 +10,11 @@ class OneWayNode {
 record Stack {
   type data_type;
   var top: OneWayNode(data_type);
+  var size: int=0;
   
   def push(data: data_type) {
     top = new OneWayNode(data_type, data, top);
+    size += 1;
   }
   
   def pop() {
@@ -20,6 +22,7 @@ record Stack {
       halt("Attempting to pop off an empty stack.");
     var old_top = top;
     top = old_top.next;
+    size -= 1;
     return old_top.data;
   }
   

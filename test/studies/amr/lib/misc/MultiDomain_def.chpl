@@ -246,6 +246,44 @@ def -(D: domain, E: domain) where D.rank == E.rank
 
 
   var mD = new MultiDomain(D.rank, stridable=stridable);
+  
+  
+  //==== Check whether D and E are disjoint ====
+  //--------------------------------------------------------------------
+  // Checking for this right away can provide a significant performance
+  // improvement.  Otherwise, disjointness may not be discovered until
+  // iterating down to a lower dimension.
+  //--------------------------------------------------------------------
+  var disjoint = false;
+  for i in 1..rank do
+    if D.high(i) < E.low(i) || D.low(i) > E.high(i) {
+      disjoint = true;
+      break;
+    }
+  
+  if disjoint {
+    mD = new MultiDomain(D.rank, stridable=stridable);
+    mD.add(D);
+    return mD;
+  }
+  else {
+    var domain_stack = nontrivialSubtraction(D,E);
+    mD.indices = [1..domain_stack.size];
+    for i in 1..domain_stack.size do
+      mD.domains(i) = domain_stack.pop();
+    return mD;
+  }
+}
+
+
+def nontrivialSubtraction(D: domain, E: domain) where D.rank == E.rank
+{
+  
+  param stridable = D.stridable || E.stridable;
+  param rank = D.rank;
+  
+  var domain_stack = new Stack(domain(rank, stridable=stridable));
+  
 
   //==== Extract data from first dimension ====
   //-----------------------------------------------------------
@@ -258,79 +296,80 @@ def -(D: domain, E: domain) where D.rank == E.rank
   var E1low  =  E.dim(1).low;
   var E1high =  E.dim(1).high;
 
-  if E1low > D1high  ||  E1high < D1low then  // D and E are disjoint
-    mD.add(D);
-  else {
-    var interior1_low  = max(D1low,  E1low);
-    var interior1_high = min(D1high, E1high);
-
-    //===> Rank 1: Terminal case ===>
-    if rank == 1 {
-
-      //==== Add the low section, if it exists ====
-      if D1low < interior1_low {
-        if stridable then
-          mD.add( [D1low .. interior1_low-stride1 by stride1] );
-        else
-          mD.add( [D1low .. interior1_low-1] );
-      }
-
-      //==== Add the high section, if it exists ====
-      if D1high > interior1_high {
-        if stridable then
-          mD.add( [interior1_high+stride1 .. D1high by stride1] );
-        else
-          mD.add( [interior1_high+1 .. D1high] );
-      }
-    }
-    //<=== Rank 1: Terminal case <===
+  var interior1_low  = max(D1low,  E1low);
+  var interior1_high = min(D1high, E1high);
 
 
-    //===> Rank > 1 ===>
-    else {
-      //==== Declarations ====
-      var D_projected: domain(rank-1, stridable=stridable);
-      var E_projected: domain(rank-1, stridable=stridable);
-      var ranges:      (rank-1) * range(stridable=stridable);
+  //===> Rank 1: Terminal case ===>
+  if rank == 1 {
 
-      //==== Calculate projections of D and E onto upper dimensions ====
-      for i in 1..rank-1 do ranges(i) = D.dim(i+1);
-      D_projected = ranges;
-      for i in 1..rank-1 do ranges(i) = E.dim(i+1);
-      E_projected = ranges;
-
-
-      //==== Add the low section, if it exists ====
-      if D1low < interior1_low {
-        if stridable then
-          mD.add( (D1low .. interior1_low-stride1 by stride1) * D_projected );
-        else
-          mD.add( (D1low .. interior1_low-1) * D_projected );
-      }
-
-      //==== Compute the interior MultiDomain, and add ====
-      var projected_diff: MultiDomain(rank-1,stridable=stridable) = D_projected - E_projected;
-      var mD_interior:    MultiDomain(rank,stridable=stridable);
+    //==== Add the low section, if it exists ====
+    if D1low < interior1_low {
       if stridable then
-        mD_interior = (interior1_low .. interior1_high by stride1) * projected_diff;
+        domain_stack.push( [D1low .. interior1_low-stride1 by stride1] );
       else
-        mD_interior = (interior1_low .. interior1_high) * projected_diff;
-      mD.add(mD_interior);
-      delete projected_diff;
-      delete mD_interior;
-
-      //==== Add the high section, if it exists ====
-      if D1high > interior1_high {
-        if stridable then
-          mD.add( (interior1_high + stride1 .. D1high by stride1) * D_projected );
-        else
-          mD.add( (interior1_high+1 .. D1high) * D_projected );
-      }
+        domain_stack.push( [D1low .. interior1_low-1] );
     }
-    //<=== Rank > 1 <===
-  }
 
-  return mD;
+    //==== Add the high section, if it exists ====
+    if D1high > interior1_high {
+      if stridable then
+        domain_stack.push( [interior1_high+stride1 .. D1high by stride1] );
+      else
+        domain_stack.push( [interior1_high+1 .. D1high] );
+    }
+  }
+  //<=== Rank 1: Terminal case <===
+
+
+  //===> Rank > 1 ===>
+  else {
+    //==== Declarations ====
+    var D_projected: domain(rank-1, stridable=stridable);
+    var E_projected: domain(rank-1, stridable=stridable);
+    var ranges:      (rank-1) * range(stridable=stridable);
+
+    //==== Calculate projections of D and E onto upper dimensions ====
+    for i in 1..rank-1 do ranges(i) = D.dim(i+1);
+    D_projected = ranges;
+    for i in 1..rank-1 do ranges(i) = E.dim(i+1);
+    E_projected = ranges;
+
+
+    //==== Add the low section, if it exists ====
+    if D1low < interior1_low {
+      if stridable then
+        domain_stack.push( (D1low .. interior1_low-stride1 by stride1) * D_projected );
+      else
+        domain_stack.push( (D1low .. interior1_low-1) * D_projected );
+    }
+
+    //==== Compute the interior MultiDomain, and add ====
+    var projected_diff: Stack( domain(rank-1,stridable=stridable) ) 
+                          = nontrivialSubtraction(D_projected,E_projected);
+
+    var interior1_range: range(stridable=stridable);
+    if stridable then
+      interior1_range = interior1_low .. interior1_high by stride1;
+    else
+      interior1_range = interior1_low .. interior1_high;
+      
+
+    for i in 1..projected_diff.size do
+      domain_stack.push( interior1_range * projected_diff.pop() );
+
+
+    //==== Add the high section, if it exists ====
+    if D1high > interior1_high {
+      if stridable then
+        domain_stack.push( (interior1_high + stride1 .. D1high by stride1) * D_projected );
+      else
+        domain_stack.push( (interior1_high+1 .. D1high) * D_projected );
+    }
+  }
+  //<=== Rank > 1 <===
+
+  return domain_stack;
 
 }
 // /|''''''''''''''''''''''''''''''''''''''/|
@@ -344,14 +383,27 @@ def -(D: domain, E: domain) where D.rank == E.rank
 def -(mD: MultiDomain, E: domain) 
   where mD.rank==E.rank && mD.stridable==E.dim(1).stridable
 {
-  var mD_new = new MultiDomain(mD.rank, mD.stridable);
+  
+  var domain_stack = new Stack(domain(mD.rank, stridable = mD.stridable));
+  var domain_count: int;
   
   for D in mD {
     var difference = D-E;
-    mD_new.add(difference);
+
+    for D_diff in difference { 
+      domain_stack.push(D_diff);
+      domain_count += 1;
+    }
+    
     delete difference;
   }
-  
+
+
+  var mD_new = new MultiDomain(mD.rank, mD.stridable);
+  mD_new.indices = [1..domain_count];
+  for i in mD_new.indices do
+    mD_new.domains(i) = domain_stack.pop();
+
   return mD_new;
 
 }
