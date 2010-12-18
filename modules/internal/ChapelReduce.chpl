@@ -147,7 +147,7 @@ class BitwiseXorReduceScanOp: ReduceScanOp {
 
 class maxloc: ReduceScanOp {
   type eltType;
-  var value: eltType;
+  var value: eltType = min(eltType);
   var uninitialized = true;
 
   def accumulate(x) {
@@ -159,8 +159,10 @@ class maxloc: ReduceScanOp {
   def combine(x) {
     if uninitialized || (x.value(1) > value(1)) ||
       ((x.value(1) == value(1)) && (x.value(2) < value(2))) {
-      value = x.value;
-      uninitialized = x.uninitialized;
+      if !x.uninitialized {
+        value = x.value;
+        uninitialized = false;
+      }
     }
   }
   def generate() return value;
@@ -168,7 +170,7 @@ class maxloc: ReduceScanOp {
 
 class minloc: ReduceScanOp {
   type eltType;
-  var value: eltType;
+  var value: eltType = max(eltType);
   var uninitialized = true;
 
   def accumulate(x) {
@@ -180,8 +182,10 @@ class minloc: ReduceScanOp {
   def combine(x) {
     if uninitialized || (x.value(1) < value(1)) ||
       ((x.value(1) == value(1)) && (x.value(2) < value(2))) {
-      value = x.value;
-      uninitialized = x.uninitialized;
+      if !x.uninitialized {
+        value = x.value;
+        uninitialized = false;
+      }
     }
   }
   def generate() return value;
