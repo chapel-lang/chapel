@@ -26,6 +26,8 @@ static char* queue = NULL;
 
 static char expectFilename[FILENAME_MAX];
 
+extern int fileno(FILE *stream);
+
 /* copies of binary to run per node */
 #define procsPerNode 1  
 #define versionBuffLen 80
@@ -235,7 +237,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(expectFile, "  -ex $chpl_prompt\n");
     fprintf(expectFile, "}\n");
   }
-  fprintf(expectFile, "send \"aprun ");
+  fprintf(expectFile, "send \"%s aprun ",
+          isatty(fileno(stdout)) ? "" : "stty -onlcr;");
   if (verbosity < 2) {
     fprintf(expectFile, "-q ");
   }
