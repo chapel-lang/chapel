@@ -287,6 +287,12 @@
 # support stdin redirect.  The tests that have .stdin files are skipped
 # (because this would not be supported with those launchers).
 #
+# The -launchertimeout option makes start_test rely on the launcher
+# to enforce the timeout, instead of using 'timedexec'. This works
+# only if the launcher supports an appropriate option, whose format
+# is determined by the argument after -launchertimeout. Currently,
+# '-launchertimeout pbs' passes the option '--walltime=HH:MM:SS' .
+#
 # The -memleaks=<filename> option requests that the executable run
 # with --memLeaksLog=<filename> option.
 #
@@ -717,6 +723,12 @@ while ( $#argv > 0 )
                 shift
                 setenv CHPL_NO_STDIN_REDIRECT true
                 breaksw
+        case -launchertimeout:
+        case --launchertimeout:
+                shift
+                setenv CHPL_LAUNCHER_TIMEOUT $argv[1]
+                shift
+                breaksw
 	case -h:
 	case -help:
         case --help
@@ -739,6 +751,7 @@ while ( $#argv > 0 )
                 echo "          -comm [none|gasnet|pvm]  (currently: $comm)"
                 echo "          -suppress <filename>"
                 echo "          -nostdinredirect"
+                echo "          -launchertimeout pbs"
 #                echo "          -interpret (or -i)"
 		echo "          -logfile <file>      (currently: $testdir/Logs/$user.$platform.log)"
 		echo "          -memleaks <file>"

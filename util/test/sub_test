@@ -24,6 +24,7 @@
 #  the expected behavior of tests that do not use the features or
 #  behaviors.
 #
+#
 # ENVIRONMENT VARIABLES:
 #
 # CHPL_HOME: Grabbed from the environment or deduced based on the path to
@@ -42,17 +43,19 @@
 # CHPL_TEST_PERF_DIR: Scratch directory for performance data
 # CHPL_ONE_TEST: Name of the one test in this directory to run
 # CHPL_TEST_SINGLES: If false, test the entire directory
+# CHPL_SYSTEM_PREDIFF: If set, run that script on each test output
 # CHPL_COMM: Chapel communication layer
 # CHPL_COMPONLY: Only build the test (same as -noexec flag)
 # CHPL_NO_STDIN_REDIRECT: do not redirect stdin when running tests
 #                         also, skip tests with .stdin files
+# CHPL_LAUNCHER_TIMEOUT: if defined, pass an option/options to the executable
+#                        for it to enforce timeout instead of using timedexec;
+#                        the value of the variable determines the option format.
 #
 #
 # DIRECTORY-WIDE FILES:  These settings are for the entire directory and
 #  in many cases can be overridden or augmented with test-specific settings.
 #
-# TIMEOUT: Timeout for compiler or test execution (default 300, 1000 for valgrind)
-# KILLTIMEOUT: Timeout before kill'ed processes are sent 'kill -9' (default 10)
 # NOEXEC: Do not execute tests in this directory
 # NOVGRBIN: Do not execute valgrind
 # COMPSTDIN: Get stdin from this file (default /dev/null)
@@ -131,6 +134,19 @@ def SuckOutputWithTimeout(stream, timeout):
             # if we relied on that, we would require no data ready in order
             # to timeout  which doesn't seem quite right either.
     return buffer
+
+def LauncherTimeoutArgs(timeout):
+    if useLauncherTimeout == 'pbs':
+        # --walltime=hh:mm:ss
+        hours = 0
+        minutes = timeout / 60  # might be OK even if over an hour
+        seconds = timeout % 60
+        option = '--walltime=' + str(hours) + ':' + str(minutes) \
+                 + ':' + str(seconds)
+        return [option]
+    else:
+        Fatal('LauncherTimeoutArgs encountered an unknown format spec: ' + \
+              useLauncherTimeout)
 
 
 #
@@ -296,6 +312,9 @@ systemPrediff = os.getenv('CHPL_SYSTEM_PREDIFF')
 if systemPrediff:
   if not os.access(systemPrediff,os.R_OK|os.X_OK):
     Fatal('Cannot execute system-wide prediff \''+systemPrediff+'\'')
+
+# Use the launcher walltime option for timeout
+useLauncherTimeout = os.getenv('CHPL_LAUNCHER_TIMEOUT')
 
 # Get the current directory (normalize for MacOS case-sort-of-sensitivity)
 localdir = string.replace(os.path.normpath(os.getcwd()), testdir, '.')
@@ -866,7 +885,30 @@ for testname in testsrc:
                              (cmd, ' '.join(args), redirectinSpec))
             sys.stdout.flush()
 
-            if useTimedExec:
+            if useLauncherTimeout:
+                if redirectin == None:
+                    my_stdin = None
+                else:
+                    my_stdin=file(redirectin, 'r')
+                p = subprocess.Popen([cmd]+LauncherTimeoutArgs(timeout)+args,
+                                     stdin=my_stdin,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                output = p.communicate()[0]
+                status = p.returncode
+
+                if re.search('PBS: job killed: walltime', output) != None:
+                    exectimeout = True
+                    sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
+                                     (futuretest, localdir, execname))
+                    if not onlyone:
+                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                         (' '.join(globalExecopts), execopts,
+                                          ' '.join(globalCompopts),compopts,
+                                          compoptsnum, execoptsnum))
+                    sys.stdout.write(']\n')
+
+            elif useTimedExec:
                 wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+redirectinSpec
                 p = subprocess.Popen([timedexec, str(timeout), wholecmd],
                                      stdout=subprocess.PIPE,
@@ -884,12 +926,12 @@ for testname in testsrc:
                                           ' '.join(globalCompopts),compopts,
                                           compoptsnum, execoptsnum))
                     sys.stdout.write(']\n')
-                    # continue # on to next execopts
 
             else:
                 if redirectin == None:
-                    Fatal('sub_test: -nostdinredirect is not supported without useTimedExec')
-                my_stdin=file(redirectin, 'r')
+                    my_stdin = None
+                else:
+                    my_stdin=file(redirectin, 'r')
                 p = subprocess.Popen([cmd]+args, stdin=my_stdin,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
@@ -906,7 +948,6 @@ for testname in testsrc:
                                           compoptsnum, execoptsnum))
                     sys.stdout.write(']\n')
                     KillProc(p, killtimeout)
-                    # continue # on to next execopts
 
                 status = p.returncode
 
