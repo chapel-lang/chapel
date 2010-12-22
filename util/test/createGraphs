@@ -95,8 +95,6 @@ sub getMinDate {
 sub setDefaults {
     if (-e $src_file) {
         $default_key_file = "$format_file_name.perfkeys";
-        print "### setDefaults opening $default_key_file\n";
-    
         open KEYS, "$default_key_file" or die "### createGraphs Error: can't open .perfkeys file '$default_key_file' $!";
         my @keys = <KEYS>;
         close(KEYS);
@@ -256,7 +254,11 @@ sub makeGraph {
         } else {
             $real_data_file = $default_data_file;
         }
-	
+	# if the derived $key_file does not exist, then use the default
+        unless (-e $key_file) {
+            print "### createGraphs WARNING: '$key_file' does not exist, using default perfkeys file '$default_key_file'\n";
+            $key_file = $default_key_file;
+        }
 	open KEYS, "$key_file" or die "### createGraphs Error: can't open .perfkeys file '$key_file' $!";
 	my @keys = <KEYS>;
 	close (KEYS);
@@ -264,11 +266,10 @@ sub makeGraph {
 	    chomp($key);
 	} 
 
-        $line_type = ($graph_key_index % 8) + 1; 
+        $line_type = ($graph_key_index % 8) + 1;
         my $key_index = 0;
  	while (($key_index <= $#keys) && ($graph_key ne @keys[$key_index])) {
 	    if ($key_index == $#keys) {
-		print "### createGraphs Error: $graph_key does not match any key in $key_file\n";
 		exit 1;
 	    }
             $key_index++;
@@ -279,7 +280,7 @@ sub makeGraph {
 	    $graph_key = @graph_key_labels[$graph_key_index];
 	}
 
-	if ($graph_key ne @graph_keys[$#graph_keys]) {
+	if ($graph_key_index ne $#graph_keys) {
 	    print GNUPLOT_COMMANDS "\t\"$real_data_file\" using 1:$column_index title '$graph_key' with linespoints lt $line_type pt 4, \\\n";
 	} else {
 	    print GNUPLOT_COMMANDS "\t\"$real_data_file\" using 1:$column_index title '$graph_key' with linespoints lt $line_type pt 4\n";
