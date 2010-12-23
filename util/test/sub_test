@@ -1061,48 +1061,29 @@ for testname in testsrc:
                     else:
                         keyfile = execname+'.perfkeys'
 
-		duplicates = 0
-	
-		sys.stdout.write('[Executing checkDuplicates %s %s %s]\n'%(perfexecname, perfdir, testdir))
-		sys.stdout.flush()
+                sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(perfexecname, perfdir, keyfile, execlog, str(exectimeout)))
+                sys.stdout.flush()
 
- 		if os.path.isfile(utildir+'/checkDuplicates'):
-   	    	    p = subprocess.Popen([utildir+'/checkDuplicates', perfexecname, perfdir, testdir],stdout=subprocess.PIPE)
-   	    	    sys.stdout.write('%s'%(p.communicate()[0]))
-   	    	    sys.stdout.flush()
-		else:
-	    	    sys.stdout.write('cannot find checkDuplicates\n')
+                p = subprocess.Popen([utildir+'/computePerfStats',
+                                      perfexecname, perfdir, keyfile, execlog, str(exectimeout)],
+                                     stdout=subprocess.PIPE)
+                sys.stdout.write('%s'%(p.communicate()[0]))
+                sys.stdout.flush()
 
-  		duplicates = p.returncode
-  
+                status = p.returncode
 
-		if duplicates==0:
-	    	    sys.stdout.write('[No duplicates found for %s]\n'%(perfexecname))
-                    sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(perfexecname, perfdir, keyfile, execlog, str(exectimeout)))
-                    sys.stdout.flush()
-
-                    p = subprocess.Popen([utildir+'/computePerfStats',
-                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout)],
-                                         stdout=subprocess.PIPE)
-                    sys.stdout.write('%s'%(p.communicate()[0]))
-                    sys.stdout.flush()
-
-                    status = p.returncode
-
-                    if status == 0:
-                        sys.stdout.write('[Success')
-                    else:
-                        sys.stdout.write('[Error')
-                    sys.stdout.write(' matching performance keys for %s/%s'%
-                                     (localdir, execname))
-                    if status!=0 and not onlyone:
-                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                         (' '.join(globalExecopts), execopts,
-                                          ' '.join(globalCompopts),compopts,
-                                          compoptsnum, execoptsnum))
-                    sys.stdout.write(']\n')
-        	else:
- 	    	    sys.stdout.write('[Duplicates found.  Will not execute computePerfStats on %s]\n'%(perfexecname))
+                if status == 0:
+                    sys.stdout.write('[Success')
+                else:
+                    sys.stdout.write('[Error')
+                sys.stdout.write(' matching performance keys for %s/%s'%
+                                 (localdir, execname))
+                if status!=0 and not onlyone:
+                    sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                     (' '.join(globalExecopts), execopts,
+                                      ' '.join(globalCompopts),compopts,
+                                      compoptsnum, execoptsnum))
+                sys.stdout.write(']\n')
 
         cleanup(execname)
 

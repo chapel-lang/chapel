@@ -14,14 +14,15 @@ my @graph_keys;
 my @data_files; 
 my @graph_key_labels;
 
-my $default_key_file = "$format_file_name.perfkeys"; 
-my $data_file = "$outputdir/$format_file_name.dat"; 
-my $format_file = "$format_file_name.graph"; 
-my $gpl_file = "$outputdir/$format_file_name.gpl"; 
-my $gif_file = "$outputdir/$format_file_name.gif"; 
-my $errors_file = "$outputdir/$format_file_name.errors"; 
+my $default_key_file = "$format_file_name.perfkeys";
+my $default_data_filename = "$format_file_name.dat";
+my $data_file = "$outputdir/$default_data_filename";
+my $format_file = "$format_file_name.graph";
+my $gpl_file = "$outputdir/$format_file_name.gpl";
+my $gif_file = "$outputdir/$format_file_name.gif";
+my $errors_file = "$outputdir/$format_file_name.errors";
 my $fatal_errors = 0;
-my $custom = 0;  
+my $custom = 0;
 my $custom_start_date = 0;
 my $src_file = "$format_file_name.chpl";
 
@@ -33,6 +34,14 @@ my $src_file = "$format_file_name.chpl";
 
 
 # auxilliary functions
+
+# remove white space surrounding a string
+sub trim($) {
+    my $string = shift;
+    $string =~ s/^\s+//;
+    $string =~ s/\s+$//;
+    return $string;
+}
 
 # get start date (date of first performance run)
 sub getStartDate {
@@ -50,7 +59,7 @@ sub getMinDate {
     my ($date1, $date2) = @_;
     my ($mon1, $mday1, $year1) = split(/\//, $date1);
     my ($mon2, $mday2, $year2) = split(/\//, $date2);
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,@rest) = localtime time;
     $mon += 1;
     $year -= 100;
 
@@ -99,10 +108,20 @@ sub setDefaults {
         my @keys = <KEYS>;
         close(KEYS);
         foreach  my $key (@keys) {
-	    chomp($key);
+            my $real_key = &trim($key);
+            # chomp($key);
+            if (substr($real_key,0,1) ne "#") {
+                push(@graph_keys, $real_key);
+            } else {
+                # ignore comments unless they specify a .dat file
+                my $comment = &trim(substr($real_key,1));
+                if (index($comment,"file:") == 0) {
+                    my @crap = split(/\s+/, $comment);
+                    $default_data_filename = @crap[1];
+                    $data_file = "$outputdir/$default_data_filename";
+                }
+            }
         }
-
-        @graph_keys = @keys;
     }
     $graph_file_name = $format_file_name;	
     $graph_title = "$graph_file_name Performance";
@@ -183,20 +202,15 @@ sub makeGraph {
         foreach my $data_file (@data_files) {
             my $real_data_file;
             if (substr($outputdir,0,1) eq "/") {
-                # absolute path (replace entire path)
+                # absolute path (prepend path)
+                $real_data_file = $outputdir."/".$data_file;
+            } else {
+                # relative path (find .dat file in the subdir)
                 my $ri = rindex($data_file, "/");
                 if ($ri > -1) {
-                    $real_data_file = $outputdir."/".substr($data_file,$ri);
+                    $real_data_file = substr($data_file,0,$ri).$outputdir.substr($data_file,$ri);
                 } else {
                     $real_data_file = $outputdir."/".$data_file;
-                }
-            } else {
-                # relative path (replace ###outputdir###)
-                $real_data_file = $data_file;
-                if (index($real_data_file, "###outdir###") > -1) {
-                    $real_data_file =~ s/###outdir###/$outputdir/g;
-                } else {
-                    $real_data_file = $outputdir."/".$real_data_file;
                 }
             }
             push(@real_data_files, $real_data_file);
@@ -214,7 +228,11 @@ sub makeGraph {
         if ($use_default) {
             $start_date = &getStartDate($default_data_file);
         } else {
-            $start_date = "1/1/9999";
+            my ($sec,$min,$hour,$mday,$mon,$year,@rest) = localtime time;
+            $mon += 1;
+            $mday += 1;
+            $year -= 100;
+            $start_date = "$mon/$mday/$year";
             foreach my $f (@real_data_files) {
                 $start_date = &getMinDate(&getStartDate($f), $start_date);
             }
@@ -246,25 +264,37 @@ sub makeGraph {
 	    $data_file = "@data_files[$graph_key_index]";
             $real_data_file = "@real_data_files[$graph_key_index]";
             $key_file = $data_file;
-            if (index($key_file, "###outdir###") > -1) {
-                $key_file =~ s/###outdir###//g;
-            }
             my $ri = rindex($key_file, ".dat");
             substr($key_file,$ri,length(".dat")) = '.perfkeys' if $ri > -1;
         } else {
             $real_data_file = $default_data_file;
         }
+
 	# if the derived $key_file does not exist, then use the default
         unless (-e $key_file) {
             print "### createGraphs WARNING: '$key_file' does not exist, using default perfkeys file '$default_key_file'\n";
             $key_file = $default_key_file;
         }
 	open KEYS, "$key_file" or die "### createGraphs Error: can't open .perfkeys file '$key_file' $!";
-	my @keys = <KEYS>;
+        my @keys;
+	my @tmp_keys = <KEYS>;
 	close (KEYS);
-	foreach my $key (@keys) {
-	    chomp($key);
-	} 
+	foreach my $key (@tmp_keys) {
+            my $real_key = &trim($key);
+            # chomp($key);
+            if (substr($real_key,0,1) ne "#") {
+                push(@keys, $real_key);
+            } else {
+                # ignore comments unless they specify a .dat file
+                my $comment = &trim(substr($real_key,1));
+                if (index($comment,"file:") == 0) {
+                    if ($use_default == 1) {
+                        my @crap = split(/\s+/, $comment);
+                        $real_data_file = @crap[1];
+                    }
+                }
+            }
+	}
 
         $line_type = ($graph_key_index % 8) + 1;
         my $key_index = 0;

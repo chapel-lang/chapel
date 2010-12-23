@@ -155,8 +155,8 @@
 # characters after the key string until the next whitespace 
 # character).  These data values will then be written to a file
 # named $CHPL_TEST_PERF_DIR/<machine name>/foo.dat (where
-# $CHPL_TEST_PERF_DIR is "." by default) in a  TAB-separated manner 
-# for graphing or display using gnuplot or Excel.
+# $CHPL_TEST_PERF_DIR is "./perfdat" by default) in a TAB-separated
+# manner for graphing or display using gnuplot or Excel.
 #
 # When running with the -performance flag, compiler and executable
 # options are specified in files with .perfcompopts and 
@@ -175,7 +175,7 @@
 # resulting data can be graphed by specifying a .graph file where the
 # contents of the .graph specify what data should be graphed, and 
 # basic information about the format of the graph. The graphs are .gif
-# formatted, and get written to an index.html in $CHPL_TEST_PERF_DIR. 
+# formatted, and get written to an index.html in $CHPL_TEST_PERF_DIR.
 #
 # If a foo.chpl and foo.perfkeys are accompanied by a foo.graph, and
 # foo.graph is empty, the testing system will by default graph all
@@ -194,18 +194,32 @@
 #
 #    where key1, key2 and key3 are all keys in a .perfkeys.  if not all keys
 #    specified come from the same .perfkeys, the .dat files they should be 
-#    extracted from should be listed (see below)
+#    extracted from should be listed (see below).  The .graph file may
+#    contain comments formatted by starting a line with '#'.
 #
 # -- if the performance keys specified above come from more than one 
-#    .perfkey, or come from a .perfkey that has its root name different than its 
-#    .graph (e.g. foo.graph's listed perfkeys don't come from foo.perfkey, but from
-#    baz.perfkey etc.), specify the different files where the data should come from.
+#    .perfkey, or come from a .perfkey that has its root name different
+#    than its .graph (e.g. foo.graph's listed perfkeys don't come from
+#    foo.perfkey, but from baz.perfkey etc.), specify the different files
+#    where the data should come from.
 #     
 #    For example,
 #
 #    files: file1.dat, file2.dat, file3.dat
 #
 #    where file1.dat has key1's data, file2.dat has key2's data, etc.
+#
+#    The .perfkeys file may contain comments formatted by starting a line
+#    with '#'.
+#
+# -- if you want the .dat file to be written to a file other than the
+#    the default file name (e.g., in foo.perfkeys, write the performance
+#    data to myfoo.dat), in the .perfkeys file, use the 'file: <filename>'
+#    in a comment.  For example,
+#
+#    # file: myfoo.dat
+#
+#    The filename must end in .dat.
 #
 # -- if you would like to specify the name of the key to be different
 #    on the graph than it is in .perfkeys, specify the name it should
@@ -215,16 +229,17 @@
 #
 #    (this can be useful if you are graphing data across different 
 #    files which have the same keys in .perfkeys, and you want to distinguish
-#    them when viewing the graph.)    
+#    them when viewing the graph.)
 #
 # -- to specify the name of the output graph,
 #    in .graph should be the line:
 #
 #    graphname: foo
 # 
-#    such that foo.gif will be put in $CHPL_TEST_PERF_DIR/ at end of a performance run
+#    such that foo.gif will be put in $CHPL_TEST_PERF_DIR/<machine name> at
+#    end of a performance run
 #  
-# -- to specify the start date of the graph (the lowest date on the x-axis)
+# -- to specify the start date of the graph (the earliest date on the x-axis)
 #    in .graph should be the line:
 #
 #    startdate: 07/08/10
