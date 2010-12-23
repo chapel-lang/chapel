@@ -1,0 +1,11 @@
+perfkeys: Performance (GB/s) =
+files: stream.dat
+graphtitle: Global STREAM Performance (GB/s)
+ylabel: Performance (GB/s)
+graphname: global-stream-perf
+
+perfkeys: min =, avg =
+files: stream.dat, stream.dat
+graphtitle: Global STREAM Performance
+ylabel: Time (seconds)
+graphname: global-stream

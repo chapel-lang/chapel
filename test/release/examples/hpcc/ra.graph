@@ -1,0 +1,11 @@
+perfkeys: Execution time =
+files: ra.dat
+graphtitle: HPCC RA Performance
+ylabel: Time (seconds)
+graphname: hpcc-ra
+
+perfkeys: Performance (GUPS) =
+files: ra.dat
+graphtitle: HPCC RA Performance (GUPS)
+ylabel: Performance (GUPS)
+graphname: hpcc-ra-gups
