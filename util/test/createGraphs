@@ -270,6 +270,7 @@ sub makeGraph {
         my $key_index = 0;
  	while (($key_index <= $#keys) && ($graph_key ne @keys[$key_index])) {
 	    if ($key_index == $#keys) {
+                printf "### createGraphs Error: number of keys does not match .perfkeys file\n";
 		exit 1;
 	    }
             $key_index++;

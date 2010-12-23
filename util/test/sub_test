@@ -1132,7 +1132,7 @@ if perftest:
 	    sys.stdout.write('[Success')
         else:
  	    sys.stdout.write('[Error')
-        sys.stdout.write(' creating graphs in %s]\n'%(testdir+'/'+localdir))
+        sys.stdout.write(' creating graphs in %s for %s]\n'%(testdir+'/'+localdir, graphfile))
 
     if (os.getenv('CHPL_TEST_PERF_DIR')==None) and (len(graphfiles)>0):
         if (len(graphfiles) > 0):
