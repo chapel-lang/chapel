@@ -1,17 +1,19 @@
 
 use LevelSolution_def;
-use CoarseOverlapArray_def;
+use RefiningTransferVariable_def;
 
 
 
-//|\"""""""""""""""""""""""""""""""""|\
+//|\""""""""""""""""""""""""""""""""""""|\
 //| >    GridVariable.coarsen_Linear    | >
-//|/_________________________________|/
-//----------------------------------------------------------------
+//|/____________________________________|/
+
+//-------------------------------------------------------------------
 // Returns values from the GridVariable linearly interpolated to the 
 // input domain coarse_cells.  This is akin to accessing the
 // GridVariable's values on a coarser index space.
-//----------------------------------------------------------------
+//-------------------------------------------------------------------
+
 def GridVariable.coarsen_Linear(
   coarse_cells: domain(dimension,stridable=true),
   ref_ratio:    dimension*int)
@@ -36,16 +38,16 @@ def GridVariable.coarsen_Linear(
   return coarse_values;
 
 }
-// /|"""""""""""""""""""""""""""""""""/|
+// /|""""""""""""""""""""""""""""""""""""/|
 //< |    GridVariable.coarsen_Linear    < |
-// \|_________________________________\|
+// \|____________________________________\|
 
 
 
 
-//|\""""""""""""""""""""""""""""""""|\
+//|\"""""""""""""""""""""""""""""""""""|\
 //| >    GridVariable.refine_Linear    | >
-//|/________________________________|/
+//|/___________________________________|/
 //----------------------------------------------------------------
 // Returns values from the GridVariable linearly interpolated to the 
 // input domain fine_cells.  This is akin to accessing the
@@ -117,16 +119,16 @@ def GridVariable.refine_Linear(
   return fine_values;
 
 }
-// /|""""""""""""""""""""""""""""""""/|
+// /|"""""""""""""""""""""""""""""""""""/|
 //< |    GridVariable.refine_Linear    < |
-// \|________________________________\|
+// \|___________________________________\|
 
 
 
 
-//|\"""""""""""""""""""""""""""""""""""""""|\
+//|\""""""""""""""""""""""""""""""""""""""""""|\
 //| >    LevelVariable.getFineValues_Linear   | >
-//|/_______________________________________|/
+//|/__________________________________________|/
 def LevelVariable.getFineValues_Linear(
   q_fine:      LevelVariable,
   cf_boundary: CFBoundary)
@@ -146,18 +148,18 @@ def LevelVariable.getFineValues_Linear(
   }
 
 }
-// /|""""""""""""""""""""""""""""""""""""""""/|
+// /|"""""""""""""""""""""""""""""""""""""""""""/|
 //< |    LevelVariable.getFineValues_Linear    < |
-// \|________________________________________\|
+// \|___________________________________________\|
 
 
 
 
 
-//|\"""""""""""""""""""""""""""""""""""""""""""""""""|\
-//| >    CoarseOverlapArray.getCoarseValues_Linear    | >
-//|/_________________________________________________|/
-def CoarseOverlapArray.getCoarseValues_Linear(
+//|\""""""""""""""""""""""""""""""""""""""""""""""""""""""""|\
+//| >    RefiningTransferVariable.getCoarseValues_Linear    | >
+//|/________________________________________________________|/
+def RefiningTransferVariable.getCoarseValues_Linear(
   q_coarse:  LevelVariable)
 {
   //==== Safety check ====
@@ -180,14 +182,17 @@ def CoarseOverlapArray.getCoarseValues_Linear(
       
       var i_nbr = 0;
       for i in subrange {
-        const array = multiarray.arrays(i);
+        // const array = multiarray.arrays(i);
+        var array => multiarray(i);
 
         //==== Safety check; potentially fragile iteration ====
         i_nbr += 1;
-        assert(array.Domain == multidomain.domains(i_nbr));
+        assert(array.domain == multidomain.domains(i_nbr));
         
         //==== Interpolate ====
-        array.value = q_coarse(nbr).refine_Linear(array.Domain,ref_ratio);
+        // array.value = q_coarse(nbr).refine_Linear(array.Domain,ref_ratio);
+        array = q_coarse(nbr).refine_Linear(array.domain,ref_ratio);
+        
       }
 
     }
@@ -196,9 +201,9 @@ def CoarseOverlapArray.getCoarseValues_Linear(
   //<=== Interpolate on each fine grid <===
 
 }
-// /|"""""""""""""""""""""""""""""""""""""""""""""""""/|
-//< |    CoarseOverlapArray.getCoarseValues_Linear    < |
-// \|_________________________________________________\|
+// /|""""""""""""""""""""""""""""""""""""""""""""""""""""""""/|
+//< |    RefiningTransferVariable.getCoarseValues_Linear    < |
+// \|________________________________________________________\|
 
 
 
@@ -208,6 +213,7 @@ def CoarseOverlapArray.getCoarseValues_Linear(
 //|\"""""""""""""""""""""""""""""""""""""|\
 //| >    LevelSolution.correct_Linear    | >
 //|/_____________________________________|/
+
 def LevelSolution.correct_Linear(
   fine_solution: LevelSolution,
   cf_boundary:   CFBoundary)

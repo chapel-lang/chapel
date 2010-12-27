@@ -1,6 +1,6 @@
 
 use StaticMRHierarchy_def;
-use CoarseOverlapSolution_def;
+use RefiningTransferSolution_def;
 
 
 //|\"""""""""""""""""""""""""""""""|\
@@ -15,7 +15,7 @@ class StaticMRSolution {
   const hierarchy: StaticMRHierarchy;
 
   var level_solutions:         [hierarchy.level_indices] LevelSolution;
-  var coarse_overlap_solutions: [hierarchy.level_indices] CoarseOverlapSolution;
+  var coarse_overlap_solutions: [hierarchy.level_indices] RefiningTransferSolution;
 
   def time { return level_solutions(1).current_time; }
 
@@ -34,9 +34,9 @@ class StaticMRSolution {
       //==== Initialize LevelSolution ====
       level_solutions(i) = new LevelSolution(hierarchy.levels(i));
 
-      //==== If level is fine, make a CoarseOverlapSolution ===
+      //==== If level is fine, make a RefiningTransferSolution ===
       if i>1 then
-        coarse_overlap_solutions(i) = new CoarseOverlapSolution(hierarchy.fine_boundaries(i-1));
+        coarse_overlap_solutions(i) = new RefiningTransferSolution(hierarchy.fine_boundaries(i-1));
 
     }
 

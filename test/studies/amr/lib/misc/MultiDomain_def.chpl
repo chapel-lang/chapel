@@ -2,57 +2,76 @@
 use LanguageExtensions;
 
 
-//|\""""""""""""""""""""""""""|\
-//| >    MultiDomain class    | >
-//|/__________________________|/
+//|\"""""""""""""""""""""""""""|\
+//| >    class: MultiDomain    | >
+//|/___________________________|/
+
 //-------------------------------------------------------------
 // Stores a list of arithmetic domains.  Allows the subraction
 // of one domain from a collection of other domains.  Useful
 // for dealing with irregular but rectangular geometries.
 //-------------------------------------------------------------
+
 class MultiDomain {
 
   param rank:      int;
   param stridable: bool = false;
   var   stride:    rank*int;
 
-  var indices: domain(1) = [1..0];
-  var domains: [indices] domain(rank, stridable=stridable);
+  var subindices: domain(1) = [1..0];
+  var domains: [subindices] domain(rank, stridable=stridable);
 
 
-  //|\'''''''''''''''''''''''|\
-  //| >    these iterator    | >
-  //|/.......................|/
-  //-----------------------------------
-  // Iterate over the list of domains.
-  //-----------------------------------
-  def these() {
+
+
+  //|\'''''''''''''''''''''''''''''|\
+  //| >    special method: this    | >
+  //|/.............................|/
+  
+  def this (subindex: int)
+  {
+    return domains(subindex);
+  }
+  // /|'''''''''''''''''''''''''''''/|
+  //< |    special method: this    < |
+  // \|.............................\|
+  
+  
+
+  //|\''''''''''''''''''''''''''''''|\
+  //| >    special method: these    | >
+  //|/..............................|/
+
+  def these () 
+  {
     for D in domains do yield D;
   }
-  // /|'''''''''''''''''''''''/|
-  //< |    these iterator    < |
-  // \|.......................\|
+  // /|''''''''''''''''''''''''''''''/|
+  //< |    speical method: these    < |
+  // \|..............................\|
 
 
-  def length { return indices.high; }
+  def length { return subindices.high; }
 
 
 
-  //|\'''''''''''''''''''''''''|\
-  //| >    writeThis method    | >
-  //|/.........................|/
+  //|\''''''''''''''''''''''''''''''''''|\
+  //| >    special method: writeThis    | >
+  //|/..................................|/
+  
   //-----------------------------------------------------------
   // Defines the output of the intrinsic 'write' and 'writeln' 
   // procedures, so that write(MultiDomain) will produce
   // something sensible.  Mainly for testing and debugging.
   //-----------------------------------------------------------
 
-  def writeThis(w: Writer){
+  def writeThis (w: Writer)
+  {
     write(domains);
   }
-  // /|'''''''''''''''''''''''''/|
-  //< |    writeThis method    < |
-  // \|.........................\|
+  // /|''''''''''''''''''''''''''''''''''/|
+  //< |    special method: writeThis    < |
+  // \|..................................\|
   
 
 }
@@ -82,7 +101,7 @@ def MultiDomain.intersect(D_in)
       new_mD.add(intersection);
   }
   
-  indices = new_mD.indices;
+  subindices = new_mD.subindices;
   domains = new_mD.domains;
   
   delete new_mD;
@@ -108,8 +127,8 @@ def MultiDomain.add(D: domain)
     else assert(tuplify(D.stride) == stride,
                 "error: Elements of a MultiDomain must have equal stride.");
 
-    indices = [1..indices.high+1];
-    domains(indices.high) = D;
+    subindices = [1..subindices.high+1];
+    domains(subindices.high) = D;
   }
 }
 
@@ -128,9 +147,9 @@ def MultiDomain.add(mD: MultiDomain)
     stride = mD.stride;
     
   
-  const prev_high = indices.high;
-  indices = [1..prev_high + mD.indices.high];
-  domains(prev_high+1..indices.high) = mD.domains;
+  const prev_high = subindices.high;
+  subindices = [1..prev_high + mD.subindices.high];
+  domains(prev_high+1..subindices.high) = mD.domains;
 }
 // /|""""""""""""""""""""""""""""""""/|
 //< |    MultiDomain.add methods    < |
@@ -268,7 +287,7 @@ def -(D: domain, E: domain) where D.rank == E.rank
   }
   else {
     var domain_stack = nontrivialSubtraction(D,E);
-    mD.indices = [1..domain_stack.size];
+    mD.subindices = [1..domain_stack.size];
     for i in 1..domain_stack.size do
       mD.domains(i) = domain_stack.pop();
     return mD;
@@ -400,8 +419,8 @@ def -(mD: MultiDomain, E: domain)
 
 
   var mD_new = new MultiDomain(mD.rank, mD.stridable);
-  mD_new.indices = [1..domain_count];
-  for i in mD_new.indices do
+  mD_new.subindices = [1..domain_count];
+  for i in mD_new.subindices do
     mD_new.domains(i) = domain_stack.pop();
 
   return mD_new;
@@ -455,7 +474,7 @@ def MultiDomain.subtract(E: domain)
 	         "error: Elements of a MultiDomain must have equal stride.");
 
   var difference = this - E;
-  this.indices = difference.indices;
+  this.subindices = difference.subindices;
   this.domains = difference.domains;
   delete difference;
 }
@@ -467,62 +486,116 @@ def MultiDomain.subtract(E: domain)
 
 
 
-//|\"""""""""""""""""""""""""|\
-//| >    MultiArray class    | >
-//|/_________________________|/
+//|\""""""""""""""""""""""""""|\
+//| >    class: MultiArray    | >
+//|/__________________________|/
+
 //-----------------------------------------------------
 // A collection of arrays, designed to store values on
 // all domains in a MultiDomain.  Enforcement of this
 // is fairly weak.
 //-----------------------------------------------------
+
 class MultiArray {
   
+  //|\'''''''''''''''|\
+  //| >    fields    | >
+  //|/...............|/
+
   param rank: int;
   param stridable: bool;
   type  eltType;
   
-  var indices: domain(1) = [1..0];
-  var arrays: [indices] IndependentArray(rank, stridable, eltType);
+  var subindices:         domain(1);
+  var independent_arrays: [subindices] IndependentArray(rank, stridable, eltType);
+
+  // /|'''''''''''''''/|
+  //< |    fields    < |
+  // \|...............\|
   
-  def length return indices.high;
   
-  //|\'''''''''''''''''''''''|\
-  //| >    these iterator    | >
-  //|/.......................|/
+  def length return subindices.high;
+
+
+  
+  
+  //|\'''''''''''''''''''''''''''''|\
+  //| >    special method: this    | >
+  //|/.............................|/
+  
+  def this (subindex: int) var
+  {
+    return independent_arrays(subindex).value;
+  }
+  // /|'''''''''''''''''''''''''''''/|
+  //< |    special method: this    < |
+  // \|.............................\|
+  
+  
+  
+  //|\''''''''''''''''''''''''''''''|\
+  //| >    special method: these    | >
+  //|/..............................|/
+  
   //------------------------------------------------------
   // Iterates over the IndependentArrays that make up the
   // MultiArray.
   //------------------------------------------------------
-  def these() {
-    for array in arrays do yield array;
+
+  def these () var 
+  {
+    for independent_array in independent_arrays do 
+      yield independent_array.value;
   }
-  // /|'''''''''''''''''''''''/|
-  //< |    these iterator    < |
-  // \|.......................\|
+  // /|''''''''''''''''''''''''''''''/|
+  //< |    special method: these    < |
+  // \|..............................\|
 
 
-  //|\''''''''''''''''''''''''|\
-  //| >    allocate method    | >
-  //|/........................|/
+
+  //|\'''''''''''''''''''''''''|\
+  //| >    method: allocate    | >
+  //|/.........................|/
+  
   //----------------------------------------------------------
   // Allocates storage in the MultiArray corresponding to the
   // domains in a MultiDomain.
   //----------------------------------------------------------
-  def allocate(mD: MultiDomain(rank,stridable)) {
-    indices = mD.indices;
-    for i in indices {
-      arrays(i) = new IndependentArray(rank, stridable, eltType);
-      arrays(i).Domain = mD.domains(i);      
+
+  def allocate ( mD: MultiDomain(rank,stridable) ) 
+  {
+    subindices = mD.subindices;
+    
+    for i in subindices {
+      independent_arrays(i) = new IndependentArray(rank, stridable, eltType);
+      independent_arrays(i).Domain = mD.domains(i);      
     }
   }
-  // /|''''''''''''''''''''''''/|
-  //< |    allocate method    < |
-  // \|........................\|
+  // /|'''''''''''''''''''''''''/|
+  //< |    method: allocate    < |
+  // \|.........................\|
+ 
+ 
+ 
+  //|\''''''''''''''''''''''|\
+  //| >    method: clear    | >
+  //|/......................|/
+  
+  def clear () 
+  {
+    for subindex in subindices {
+      independent_arrays(subindex).clear();
+      delete independent_arrays(subindex);
+    }
+  }
+  // /|''''''''''''''''''''''/|
+  //< |    method: clear    < |
+  // \|......................\|
   
 }
-// /|"""""""""""""""""""""""""/|
-//< |    MultiArray class    < |
-// \|_________________________\|
+// /|""""""""""""""""""""""""""/|
+//< |    class: MultiArray    < |
+// \|__________________________\|
 
 
 
@@ -535,7 +608,7 @@ class MultiArray {
 // def ==(S1: MultiDomain, S2: MultiDomain) {
 //   var S_diff = S1 - S2;
 // 
-//   if S_diff.indices.numIndices==0 then
+//   if S_diff.subindices.numIndices==0 then
 //     return true;
 //   else
 //     return false;

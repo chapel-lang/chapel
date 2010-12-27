@@ -226,6 +226,7 @@ def tuplify(obj) {
 //|\"""""""""""""""""""""""""""""""|\
 //| >    IndependentArray class    | >
 //|/_______________________________|/
+
 //--------------------------------------------------------------
 // This class is designed to enable an "array of arrays".  The
 // array is "independent" in that its domain is tethered to it.
@@ -233,6 +234,7 @@ def tuplify(obj) {
 // it is declared, the IndependentArray may be "allocated" by
 // setting its Domain.
 //--------------------------------------------------------------
+
 class IndependentArray {
   param rank: int;
   param stridable: bool;
@@ -240,6 +242,18 @@ class IndependentArray {
   
   var Domain: domain(rank=rank, stridable=stridable);
   var value: [Domain] eltType;
+  
+  
+  //|\''''''''''''''|\
+  //| >    clear    | >
+  //|/..............|/
+  def clear () {
+    Domain.clear();
+  }
+  // /|''''''''''''''/|
+  //< |    clear    < |
+  // \|..............\|
+  
 }
 // /|"""""""""""""""""""""""""""""""/|
 //< |    IndependentArray class    < |

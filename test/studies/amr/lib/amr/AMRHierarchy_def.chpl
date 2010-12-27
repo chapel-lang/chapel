@@ -1,5 +1,5 @@
 use LevelSolution_def;
-use CoarseOverlapSolution_def;
+use RefiningTransferSolution_def;
 use Partitioning;
 
 
@@ -33,8 +33,8 @@ class AMRHierarchy {
 
 
   //==== Boundary structures ====
-  var coarse_boundaries:        [level_indices] CFBoundary;
-  var coarse_overlap_solutions: [level_indices] CoarseOverlapSolution;
+  var coarse_boundaries:        [level_indices] CFBoundary;  // Index 1 will be unused
+  var coarse_overlap_solutions: [level_indices] RefiningTransferSolution;
   var physical_boundaries:      [level_indices] PhysicalBoundary;
 
 
@@ -118,7 +118,7 @@ class AMRHierarchy {
       
         //==== Create new boundary structures ====
         coarse_boundaries(i_finest)        = new CFBoundary(levels(i_finest-1), new_level);
-        coarse_overlap_solutions(i_finest) = new CoarseOverlapSolution(coarse_boundaries(i_finest));
+        coarse_overlap_solutions(i_finest) = new RefiningTransferSolution(coarse_boundaries(i_finest));
         physical_boundaries(i_finest)      = new PhysicalBoundary(new_level);
       
         //==== Initialize regrid counter ====
@@ -178,7 +178,7 @@ def AMRHierarchy.regrid(
 
       //==== Create new boundary structures ====
       coarse_boundaries(i_finest)        = new CFBoundary(levels(i_finest-1), new_level);
-      coarse_overlap_solutions(i_finest) = new CoarseOverlapSolution( coarse_boundaries(i_finest) );
+      coarse_overlap_solutions(i_finest) = new RefiningTransferSolution( coarse_boundaries(i_finest) );
       physical_boundaries(i_finest)      = new PhysicalBoundary(new_level);
       
       //==== Set regrid counter ====
@@ -264,7 +264,7 @@ def AMRHierarchy.regrid(
   //==== Create new boundary structures ====
   for i in i_base+1..i_finest {
     coarse_boundaries(i)        = new CFBoundary(levels(i-1), levels(i));
-    coarse_overlap_solutions(i) = new CoarseOverlapSolution( coarse_boundaries(i) );
+    coarse_overlap_solutions(i) = new RefiningTransferSolution( coarse_boundaries(i) );
     physical_boundaries(i)      = new PhysicalBoundary( levels(i) );
   }
   

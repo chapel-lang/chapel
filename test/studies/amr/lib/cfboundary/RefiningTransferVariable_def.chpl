@@ -2,10 +2,10 @@
 use CFBoundary_def;
 
 
-//|\""""""""""""""""""""""""""""""""|\
-//| >    CoarseOverlapArray class    | >
-//|/________________________________|/
-class CoarseOverlapArray {
+//|\"""""""""""""""""""""""""""""""""""""""|\
+//| >    RefiningTransferVariable class    | >
+//|/_______________________________________|/
+class RefiningTransferVariable {
   
   const cf_boundary: CFBoundary;
   
@@ -27,7 +27,7 @@ class CoarseOverlapArray {
   //|/............................|/
   //-------------------------------------------------
   // Intended constructor signature:
-  //     CoarseOverlapArray(cf_boundary: CFBoundary)
+  //     RefiningTransferVariable(cf_boundary: CFBoundary)
   //-------------------------------------------------
   def initialize() {
     for grid in cf_boundary.fine_level.grids {
@@ -54,9 +54,9 @@ class CoarseOverlapArray {
   // \|....................\|
   
 }
-// /|""""""""""""""""""""""""""""""""/|
-//< |    CoarseOverlapArray class    < |
-// \|________________________________\|
+// /|"""""""""""""""""""""""""""""""""""""""/|
+//< |    RefiningTransferVariable class    < |
+// \|_______________________________________\|
 
 
 

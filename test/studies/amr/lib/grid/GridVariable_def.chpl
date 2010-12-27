@@ -24,7 +24,7 @@ use Grid_def;
 class GridVariable {
 
   const grid: Grid;
-  var value:  [grid.extended_cells] real;
+  var  value: [grid.extended_cells] real;
 
 
   //|\''''''''''''''''|\

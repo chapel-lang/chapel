@@ -5,6 +5,13 @@ use Level_def;
 //|\"""""""""""""""""""""""""""""""""|\
 //| >    refinementRatio routines    | >
 //|/_________________________________|/
+
+//----------------------------------------------------------
+// These routines calculate the refinement ratio relating
+// some combination of Grids and Levels.  The (Level,Level)
+// version is probably the best to use in practice.
+//----------------------------------------------------------
+
 def refinementRatio(coarse_object, fine_object)
   where (coarse_object.type == Grid || coarse_object.type == Level)
      && (fine_object.type == Grid || fine_object.type == Level)
@@ -36,9 +43,13 @@ def refinementRatio(coarse_level: Level, fine_level: Level)
 //|\""""""""""""""""""""""""|\
 //| >    refine routines    | >
 //|/________________________|/
-//----------------------------------------------------------------
-// Refine a single coarse cell. Output is a domain of fine cells.
-//----------------------------------------------------------------
+
+//-----------------------------------------------------------------
+// Refines a single coarse cell by the specified refinement ratio.
+// The output is the domain of all fine cells contained in the
+// coarse cell.
+//-----------------------------------------------------------------
+
 def refine(
   coarse_cell: dimension*int,
   ref_ratio:   dimension*int)
@@ -74,10 +85,11 @@ def refine(
 }
 
 
-//------------------------------------------------------------------
-// Refines a domain of coarse cells by refining its lower and upper
-// bounds.
-//------------------------------------------------------------------
+//---------------------------------------------------------------
+// This version refines a domain of coarse cells by refining its 
+// lower and upper bounds.
+//---------------------------------------------------------------
+
 def refine(
   coarse_cells: domain(dimension,stridable=true),
   ref_ratio:    dimension*int)
@@ -112,10 +124,13 @@ def refine(
 //|\"""""""""""""""""""""""""|\
 //| >    coarsen routines    | >
 //|/_________________________|/
-//-----------------------------
-// Coarsen a single fine cell.
-//-----------------------------
-def coarsen(
+
+//----------------------------------------------------------------
+// Coarsens a single fine cell by the specified refinement ratio.
+// The output is the coarse cell in which the fine cell lies.
+//----------------------------------------------------------------
+
+def coarsen (
   fine_cell: dimension*int,
   ref_ratio: dimension*int)
 {
@@ -134,10 +149,13 @@ def coarsen(
 
 }
 
-//----------------------------------------------------------------------
-// Coarsens a domain of cells by coarsening the lower and upper bounds.
-//----------------------------------------------------------------------
-def coarsen(
+
+//-----------------------------------------------------------------
+// This version coarsens a full domain of fine cells by coarsening 
+// the lower and upper bounds.
+//-----------------------------------------------------------------
+
+def coarsen (
   fine_cells: domain(dimension,stridable=true),
   ref_ratio:  dimension*int)
 {
