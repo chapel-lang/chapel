@@ -33,7 +33,7 @@ class locale {
 
   def callStackSize: uint(64) {
     _extern def chpl_task_callstacksize(): uint(64);
-    return chpl_taskCallStackSize();
+    return chpl_task_callstacksize();
   }
 
   def writeThis(f: Writer) {
