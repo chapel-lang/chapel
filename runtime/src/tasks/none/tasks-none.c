@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <sys/resource.h>
 #include <unistd.h>
+#include <stdio.h>
 
 //
 // task pool: linked list of tasks
@@ -129,7 +130,12 @@ void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
     if (getrlimit(RLIMIT_STACK, &rlim) != 0)
       chpl_internal_error("getrlimit() failed");
 
-    if (callStackSize > rlim.rlim_max) {
+    if (rlim.rlim_max != RLIM_INFINITY && callStackSize > rlim.rlim_max) {
+      char warning[128];
+      sprintf(warning, "callStackSize capped at %lu\n", 
+              (unsigned long)rlim.rlim_max);
+      chpl_warning(warning, 0, NULL);
+
       callStackSize = rlim.rlim_max;
     }
 
@@ -218,17 +224,6 @@ uint64_t chpl_task_callstacksize(void) {
   return taskCallStackSize;
 }
 
-uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) {
-  struct rlimit rlim;
-
-  //
-  // If there is a hard system stack limit then that's our limit;
-  // otherwise we don't have one.
-  //
-  if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-    chpl_internal_error("getrlimit() failed");
-  return (rlim.rlim_max == RLIM_INFINITY) ? 0 : (uint64_t) rlim.rlim_max;
-}
 
 uint32_t CHPL_NUMQUEUEDTASKS(void) { return queued_cnt; }
 

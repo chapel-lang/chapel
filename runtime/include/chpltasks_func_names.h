@@ -52,7 +52,6 @@
 #define CHPL_SET_SERIAL                  _TFN(chpl_set_serial)
 
 #define CHPL_TASK_CALLSTACKSIZE          _TFN(chpl_task_callStackSize)
-#define CHPL_TASK_CALLSTACKSIZELIMIT     _TFN(chpl_task_callStackSizeLimit)
 
 #define CHPL_NUMQUEUEDTASKS              _TFN(chpl_numQueuedTasks)
 #define CHPL_NUMRUNNINGTASKS             _TFN(chpl_numRunningTasks)

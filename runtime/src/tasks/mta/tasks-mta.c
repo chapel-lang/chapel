@@ -219,8 +219,6 @@ void CHPL_SET_SERIAL(chpl_bool state) {
 
 uint64_t chpl_task_callstacksize(void) { return 0; }
 
-uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) { return 0; }
-
 // not sure what the correct value should be here!
 uint32_t CHPL_NUMQUEUEDTASKS(void) { return 0; }
 

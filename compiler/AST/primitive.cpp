@@ -38,10 +38,12 @@ returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
 }
 
+/* Currently unused
 static Type*
 returnInfoUInt64(CallExpr* call) {
   return dtUInt[INT_SIZE_64];
 }
+*/
 
 static Type*
 returnInfoReal64(CallExpr* call) {
@@ -517,7 +519,6 @@ initPrimitive() {
   prim_def("chpl_exit_any", returnInfoVoid, true);
   prim_def("chpl_coresPerLocale", returnInfoInt32);
   prim_def("chpl_localeName", returnInfoString);
-  prim_def(PRIM_CHPL_CALLSTACKSIZELIMIT, "chpl_callStackSizeLimit", returnInfoUInt64);
   prim_def("chpl_maxThreads", returnInfoInt32);
   prim_def("chpl_maxThreadsLimit", returnInfoInt32);
   prim_def(PRIM_CHPL_NUMTHREADS, "chpl_numThreads", returnInfoUInt32);

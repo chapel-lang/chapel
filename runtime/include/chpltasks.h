@@ -55,6 +55,9 @@ void      CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *);
 //     layer should use; 0 means unlimited
 //   - callStackSize is the size of the callstack each task should use;
 //     0 means use the system default
+// These values should be checked for legality and tucked away for later use
+// by the tasking layer as necessary.  This is a reasonable place to print
+// out warnings about bad values.
 //
 void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize);
 void CHPL_TASKING_EXIT(void);        // called by the main task
@@ -120,12 +123,6 @@ void      CHPL_SET_SERIAL(chpl_bool);
 // to the next
 //
 uint64_t chpl_task_callstacksize(void);
-
-//
-// returns the upper limit on the size of a stack; the sentinel value 0 means
-// that there is no preexisting limit
-//
-uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void);
 
 //
 // returns the number of tasks that are ready to run on the current locale,

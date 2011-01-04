@@ -725,11 +725,6 @@ uint64_t chpl_task_callstacksize(void) {
   return threadlayer_call_stack_size();
 }
 
-uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) {
-  return threadlayer_call_stack_size_limit();
-}
-
-
 uint32_t CHPL_NUMQUEUEDTASKS(void) { return queued_cnt; }
 
 uint32_t CHPL_NUMRUNNINGTASKS(void) {

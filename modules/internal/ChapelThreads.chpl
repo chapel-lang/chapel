@@ -34,11 +34,3 @@ if maxThreadsPerLocaleLimit != 0 {
 // the size of a call stack
 //
 config const callStackSize: uint(64) = 0;
-const callStackSizeLimit: uint(64) = __primitive("chpl_callStackSizeLimit");
-
-if callStackSizeLimit != 0 {
-  if (callStackSize > callStackSizeLimit) then
-    __primitive("chpl_warning",
-                "specified value of " + callStackSize
-                  + " for callStackSize is too high; limit is " + callStackSizeLimit);
-}

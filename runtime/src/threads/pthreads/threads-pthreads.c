@@ -200,7 +200,12 @@ void threadlayer_init(uint64_t callStackSize) {
     if (getrlimit(RLIMIT_STACK, &rlim) != 0)
       chpl_internal_error("getrlimit() failed");
 
-    if (callStackSize > rlim.rlim_max) {
+    if (rlim.rlim_max != RLIM_INFINITY && callStackSize > rlim.rlim_max) {
+      char warning[128];
+      sprintf(warning, "callStackSize capped at %lu\n", 
+              (unsigned long)rlim.rlim_max);
+      chpl_warning(warning, 0, NULL);
+
       callStackSize = rlim.rlim_max;
     }
 
@@ -341,16 +346,4 @@ void threadlayer_set_thread_private_data(void* p) {
 
 uint64_t threadlayer_call_stack_size(void) {
   return threadCallStackSize;
-}
-
-uint64_t threadlayer_call_stack_size_limit(void) {
-  struct rlimit rlim;
-
-  //
-  // If there is a hard system stack limit then that's our limit;
-  // otherwise we don't have one.
-  //
-  if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-    chpl_internal_error("getrlimit() failed");
-  return (rlim.rlim_max == RLIM_INFINITY) ? 0 : (uint64_t) rlim.rlim_max;
 }
