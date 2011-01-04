@@ -118,8 +118,8 @@ void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) { }
 
 void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   //
-  // If a value was specified for the call stack size config const, warn
-  // the user that it's ignored on this system.
+  // If a value was specified for the call stack size or max threads
+  // config consts, warn the user that it's ignored on this system.
   //
   if (maxThreadsPerLocale != 0)
     chpl_warning("the maxThreadsPerLocale config constant has no effect "
@@ -234,11 +234,11 @@ int32_t  CHPL_NUMBLOCKEDTASKS(void) { return -1; }
 // Threads
 
 int32_t CHPL_THREADS_GETMAXTHREADS(void) {
-  return chpl_coresPerLocale() * 100;
+  return 0;
 }
 
 int32_t CHPL_THREADS_MAXTHREADSLIMIT(void) {
-  return chpl_coresPerLocale() * 104;
+  return 0;
 }
 
 // not sure what the correct value should be here!
