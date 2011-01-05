@@ -67,6 +67,12 @@ gasnet-install: FORCE
 	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(MAKE) install
 	$(XTRA_POST_INSTALL_COMMAND)
 
+#
+# This post-install step should be executed in a separate invocation of
+#  make than for the "gasnet" rule because the MKFILES environment variable
+#  defined by the command above is executed when this Makefile is loaded
+#  and will be empty in a fresh build.
+#
 post-install: FORCE
 	$(foreach mkfile, $(MKFILES), sed -i -e "s;$(GASNET_INSTALL_DIR);"'$$(GASNET_INSTALL_DIR);g' $(mkfile) &&) true
 
