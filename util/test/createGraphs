@@ -1,8 +1,11 @@
 #!/usr/bin/env perl
 
 use Text::ParseWords;
+use File::Basename;
 use strict;
-my $format_file_name = $ARGV[0]; 
+die "[Error (createGraphs): Incorrect number of arguments]\n" unless ($#ARGV >= 3);
+
+my $format_file = $ARGV[0]; 
 my $outputdir = $ARGV[1]; 
 my $start_date = $ARGV[2];
 my $exec_time_out = $ARGV[3];
@@ -14,10 +17,11 @@ my @graph_keys;
 my @data_files; 
 my @graph_key_labels;
 
+my $format_file_name = fileparse($format_file, ("\.graph"));
+
 my $default_key_file = "$format_file_name.perfkeys";
 my $default_data_filename = "$format_file_name.dat";
 my $data_file = "$outputdir/$default_data_filename";
-my $format_file = "$format_file_name.graph";
 my $gpl_file = "$outputdir/$format_file_name.gpl";
 my $gif_file = "$outputdir/$format_file_name.gif";
 my $errors_file = "$outputdir/$format_file_name.errors";
@@ -47,7 +51,7 @@ sub trim($) {
 sub getStartDate {
     if ($exec_time_out eq "False") {
         my $data_file_temp = $_[0];
-        open STATS, "$data_file_temp" or die "### createGraphs Error: can't open .dat file '$data_file_temp' $!";
+        open STATS, "$data_file_temp" or die "[Error (createGraphs): can't open .dat file '$data_file_temp' $!]";
         my @stat_lines = <STATS>;
         my $header_line = @stat_lines[1];
         my @headers = parse_line('\t', 0, $header_line);
@@ -104,7 +108,7 @@ sub getMinDate {
 sub setDefaults {
     if (-e $src_file) {
         $default_key_file = "$format_file_name.perfkeys";
-        open KEYS, "$default_key_file" or die "### createGraphs Error: can't open .perfkeys file '$default_key_file' $!";
+        open KEYS, "$default_key_file" or die "[Error (createGraphs): can't open .perfkeys file '$default_key_file' $!]";
         my @keys = <KEYS>;
         close(KEYS);
         foreach  my $key (@keys) {
@@ -130,8 +134,7 @@ sub setDefaults {
 
 
 sub processGraphFile {
-    $format_file = "$format_file_name.graph";
-    open FORMAT, "$format_file" or die "### createGraphs Error: can't open .graph file '$format_file' $!";
+    open FORMAT, "$format_file" or die "[Error (createGraphs): can't open .graph file '$format_file' $!]";
 
     my $use_default = 1;
 
@@ -165,7 +168,7 @@ sub processGraphFile {
 		    $start_date = @words[1];
                 } elsif (@words[0] eq "#") {
                 } else {
-		    print "### createGraphs Error: improper format of $format_file (@words), exiting\n";
+		    print "[Error (createGraphs): improper format of $format_file (@words)]\n";
 		    exit 1;
 	        } 
 	        $line = <FORMAT>;
@@ -173,7 +176,7 @@ sub processGraphFile {
 	        @words = (split / /, $line);
 	    }
             if (($use_default == 0) && ($#graph_keys != $#data_files)) {
-                print "### createGraphs Error: files do not match up with keys, $#graph_keys keys and $#data_files files\n";
+                print "[Error (createGraphs): files do not match up with keys, $#graph_keys keys and $#data_files files]\n";
                 exit 1;
             }
             $custom = 1;
@@ -181,7 +184,7 @@ sub processGraphFile {
         } elsif (!@words[0] || (@words[0] eq "#"))  {
             # ignore comments and blank lines
         } else {
-            print "### createGraphs WARNING: Ignoring stray format line: $line\n";
+            print "[createGraphs WARNING: Ignoring stray format line: $line]\n";
         }
     }
     if (!$custom) {
@@ -224,7 +227,7 @@ sub makeGraph {
         }
     }
 
-    if (($custom_start_date == 0) || ($start_date eq "")) {
+    if (($custom_start_date == 0) && ($start_date eq "")) {
         if ($use_default) {
             $start_date = &getStartDate($default_data_file);
         } else {
@@ -238,7 +241,8 @@ sub makeGraph {
             }
         }
     }
-    open GNUPLOT_COMMANDS, ">$gpl_file" or die "### createGraphs Error: can't open .gpl file '$gpl_file' for creating $!";
+
+    open GNUPLOT_COMMANDS, ">$gpl_file" or die "[Error (createGraphs): can't open .gpl file '$gpl_file' for creating $!]";
 
     print GNUPLOT_COMMANDS "set terminal gif size 1200\n"; 
     print GNUPLOT_COMMANDS "set size ratio 0.33\n"; # figure out how to adjust this setting to x-axis range?
@@ -272,10 +276,10 @@ sub makeGraph {
 
 	# if the derived $key_file does not exist, then use the default
         unless (-e $key_file) {
-            print "### createGraphs WARNING: '$key_file' does not exist, using default perfkeys file '$default_key_file'\n";
+            print "[createGraphs WARNING: '$key_file' does not exist, using default perfkeys file '$default_key_file']\n";
             $key_file = $default_key_file;
         }
-	open KEYS, "$key_file" or die "### createGraphs Error: can't open .perfkeys file '$key_file' $!";
+	open KEYS, "$key_file" or die "[Error (createGraphs): can't open .perfkeys file '$key_file' $!]";
         my @keys;
 	my @tmp_keys = <KEYS>;
 	close (KEYS);
@@ -300,7 +304,7 @@ sub makeGraph {
         my $key_index = 0;
  	while (($key_index <= $#keys) && ($graph_key ne @keys[$key_index])) {
 	    if ($key_index == $#keys) {
-                printf "### createGraphs Error: number of keys does not match .perfkeys file\n";
+                print "[Error (createGraphs): number of keys does not match .perfkeys file]\n";
 		exit 1;
 	    }
             $key_index++;
@@ -322,7 +326,7 @@ sub makeGraph {
     close(GNUPLOT_COMMANDS);
     my $succeed_gnuplot = system("gnuplot $gpl_file");
     if ($succeed_gnuplot != 0) {
-	print "### createGraphs Error: 'gnuplot' command failed\n";
+	print "[Error (createGraphs): 'gnuplot' command failed]\n";
         exit 1;
     }
 

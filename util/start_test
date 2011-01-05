@@ -68,7 +68,8 @@
 #   -norecurse
 #   -componly
 #   -performance
-#   -startdate <MM/DD/YY>             ""
+#   -generate-graphs
+#   -startdate <MM/DD/YY>
 #   -futures
 #   -futuresonly
 #   -valgrind
@@ -171,17 +172,28 @@
 # In particular, a failure indicates that a test's performance
 # keys couldn't all be found.
 #
-# If all the performance keys for a test were matched, the 
-# resulting data can be graphed by specifying a .graph file where the
-# contents of the .graph specify what data should be graphed, and 
-# basic information about the format of the graph. The graphs are .gif
-# formatted, and get written to an index.html in $CHPL_TEST_PERF_DIR.
+# After all the performance tests are run, a second pass is taken
+# through the list of files or directories to generate graphs.  You
+# can use the -generate-graphs flag to only generate graphs (no building
+# or executing test programs).  Graphs are generated using a .graph file
+# where the contents of the .graph specify what data should be graphed,
+# and basic information about the format of the graph. The graphs are
+# generated using gnuplot (gnuplot must be in your path) and dumped out
+# in .gif format.  In each $CHPL_TEST_PERF_DIR, an html index is created
+# that includes all the .gif files in that directory.
+#
+# The graphing is performed in a second pass so that a single .graph file
+# can use data from more than one test (thus avoiding dependences).  A caveat
+# with this dual pass design is that the graphing step is executed even if
+# the test fails (due to compilation, execution, etc.).  In such case,
+# there may be a Success counted for the graphing step in the test Summary
+# in addition to the test Failure.
 #
 # If a foo.chpl and foo.perfkeys are accompanied by a foo.graph, and
 # foo.graph is empty, the testing system will by default graph all
 # columns in foo.dat, with a y-axis labeled "Performance", where the 
 # x-axis represents time in the format of MM/DD/YY.  The start date 
-# if not set as a flag to start_test, will be the lowest date of all
+# if not set as a flag to start_test, will be the earliest date of all
 # the data files the .graph must read from.
 #
 # The user can also choose the graph settings by writing to the
@@ -236,17 +248,18 @@
 #
 #    graphname: foo
 # 
-#    such that foo.gif will be put in $CHPL_TEST_PERF_DIR/<machine name> at
-#    end of a performance run
+#    such that foo.gif will be put in $CHPL_TEST_PERF_DIR at end of a
+#    performance run
 #  
 # -- to specify the start date of the graph (the earliest date on the x-axis)
 #    in .graph should be the line:
 #
 #    startdate: 07/08/10
 #   
-#    Format is MM/DD/YY.  If no start date specified, the start date will be the
-#    lowest start date of all data files specified, and if start date is specified by
-#    the -startdate flag to start_test, this local startdate: will override that one.
+#    Format is MM/DD/YY.  If no start date specified, the start date will be
+#    the earliest start date of all data files specified.  The start date
+#    specified in the .graph file will override the start date specified by
+#    the -startdate flag to start_test.
 #
 # -- to specify the title of the graph,
 #    in .graph should be the line:
@@ -271,16 +284,6 @@
 # unifies the x-axis).  if in a .graph, there is a specified start date
 # for a particular graph, that graph will use the date in the .graph
 # and not the date by the -startdate option.  
-#
-# The -interpret option requests that the compiler be executed in
-# interpreter mode.  This will cause the test system to invoke the
-# compiler to interpret the program rather than compile and run it.
-# Future tests, those utilizing executable options (execopts), and
-# those that are not executed (noexec) tests are skipped when this
-# flag is invoked.  In addition, a directory can be requested to
-# be skipped by dropping a NOINTERP file into it.  Because the
-# Chapel compiler's interpreter feature is currently disabled, this
-# flags is currenty deprecated.
 #
 # The -comm option requests that testing be performed with respect to
 # a specific comm layer.  At the time of this writing, none, gasnet,
@@ -310,6 +313,17 @@
 #
 # The -memleaks=<filename> option requests that the executable run
 # with --memLeaksLog=<filename> option.
+#
+# DEPRECATED The -interpret option requests that the compiler be executed in
+# DEPRECATED interpreter mode.  This will cause the test system to invoke the
+# DEPRECATED compiler to interpret the program rather than compile and run it.
+# DEPRECATED Future tests, those utilizing executable options (execopts), and
+# DEPRECATED those that are not executed (noexec) tests are skipped when this
+# DEPRECATED flag is invoked.  In addition, a directory can be requested to
+# DEPRECATED be skipped by dropping a NOINTERP file into it.  Because the
+# DEPRECATED Chapel compiler's interpreter feature is currently disabled, this
+# DEPRECATED flags is currenty deprecated.
+#
 #
 # STRUCTURE OF TEST DIRECTORIES
 #
@@ -607,6 +621,7 @@ set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
 set performance = 0
+set gengraphs = 0
 set startdate = ""
 set testfutures = 0
 set testfuturesonly = 0
@@ -616,6 +631,7 @@ set tee = "tee"
 set numlocales = 0
 set comm = `$CHPL_HOME/util/chplenv/comm`
 set suppressions = ""
+set optionerr = 0
 
 while ( $#argv > 0 )
 	switch ( $argv[1] )
@@ -696,6 +712,12 @@ while ( $#argv > 0 )
         case -performance:
                 shift
                 set performance = 1
+                set gengraphs = 1
+                breaksw
+        case --generate-graphs:
+        case -generate-graphs:
+                shift
+                set gengraphs = 1
                 breaksw
 	case --startdate:
 	case -startdate:
@@ -746,9 +768,9 @@ while ( $#argv > 0 )
                 breaksw
 	case -h:
 	case -help:
-        case --help
+        case --help:
 		echo Usage and defaults\:
-		echo "     start_test <files> <directories> <options>"
+		echo "     start_test <options> <files> <directories>"
                 echo "          -clean-only"
 		echo "          -compiler <path>      (currently: $CHPL_HOME/bin/$platform/chpl)"
 		echo "          -compopts <options>   (currently: '--cc-warnings')"
@@ -757,6 +779,7 @@ while ( $#argv > 0 )
                 echo "          -norecurse"
 		echo "          -componly"
                 echo "          -performance"
+                echo "          -generate-graphs"
 		echo "          -startdate <MM/DD/YY> (currently: '')"
                 echo "          -futures"
                 echo "          -futuresonly"
@@ -787,10 +810,14 @@ while ( $#argv > 0 )
                 else
                     echo \[ERROR: Unknown command line parameter \"$argv[1]\", aborting.\]
                     shift
-		exit 1
+		set optionerr = 1
 		breaksw
 	endsw
 end
+
+if ($optionerr == 1) then
+    exit 1
+endif
 
 if ($comm != "none") then
     set numlocales = "1"
@@ -833,11 +860,11 @@ if ($compiler == "") then
 endif
 
 if ($interpret) then
-    echo \[interpreter: ON\] |& $tee -a $logtmp
-    set compopts = "-i $compopts"
+#     echo \[interpreter: ON\] |& $tee -a $logtmp
+#    set compopts = "-i $compopts"
     setenv CHPL_TEST_INTERP on
 else
-    echo \[interpreter: OFF\] |& $tee -a $logtmp
+#    echo \[interpreter: OFF\] |& $tee -a $logtmp
     setenv CHPL_TEST_INTERP off
 endif
 
@@ -846,6 +873,12 @@ if ($performance) then
     setenv CHPL_TEST_PERF on
 else
     echo \[performance tests: OFF\] |& $tee -a $logtmp
+endif
+
+if ($gengraphs) then
+    echo \[performance graph generation: ON\] |& $tee -a $logtmp
+else
+    echo \[performance graph generation: OFF\] |& $tee -a $logtmp
 endif
 
 
@@ -863,10 +896,13 @@ else
 endif
 
 echo \[compopts: \"$compopts\"\] |& $tee -a $logtmp
+setenv COMPOPTS "$compopts"
 
 echo \[execopts: \"$execopts\"\] |& $tee -a $logtmp
+setenv EXECOPTS "$execopts"
 
 echo \[launchcmd: \"$launchcmd\"\] |& $tee -a $logtmp
+setenv LAUNCHCMD "$launchcmd"
 
 echo \[comm: \"$comm\"\] |& tee -a $logtmp
 setenv CHPL_COMM $comm
@@ -876,6 +912,7 @@ if ($numlocales == "0") then
 else
     echo \[numlocales: \"$numlocales\"\] |& tee -a $logtmp
 endif
+setenv NUMLOCALES "$numlocales"
 
 # if system-wide prediff is requested,  get absolute path name for it
 if ($?CHPL_SYSTEM_PREDIFF) then
@@ -955,17 +992,36 @@ endif
 mv $logtmp $logfile
 
 
-set gsub_test = $utildir/sub_test
+# Set up vars for performance testing/graphing
+if ($performance || $gengraphs) then
+    # NOTE: this logic is currently repeated in sub_test
+    if ($?CHPL_TEST_PERF_DIR) then
+        set perfdir = $CHPL_TEST_PERF_DIR
+    else
+	set perfdir = ./perfdat/`uname -n`
+	setenv CHPL_TEST_PERF_DIR "$perfdir"
+    endif
+    set createGraphs = $utildir/createGraphs
+    set viewGraphs = $utildir/viewGraphs
+endif
 
 
 #
-# test all of the tests that the user listed (if any).
+# Utility functions
+#
+set gsub_test = $utildir/sub_test
+
+
+#####################################################
+#
+# test all of the tests that the user listed (if any)
 #
 
 # For this mode, test futures, non-futures, and notests
 setenv CHPL_TEST_FUTURES 1
 setenv CHPL_TEST_NOTESTS 1
 setenv CHPL_TEST_SINGLES 1
+
 foreach test ($testlist)
     set basedir = `dirname $test`
     set testname = `basename $test`
@@ -983,41 +1039,51 @@ foreach test ($testlist)
 
     $sub_clean |& $tee -a $logfile
 
+    if ($clean_only == 0) then
+        # run the test
+        if ($performance || ($performance == 0 && $gengraphs == 0)) then
+            echo " " |& $tee -a $logfile
+            echo "[Working on file $test]" |& $tee -a $logfile
+
+            if (-x ./sub_test) then
+                set sub_test = ./sub_test
+            else
+                set sub_test = $gsub_test
+            endif
+
+            setenv CHPL_ONETEST "$testname"
+            echo "[Starting $sub_test `date`]" |& $tee -a $logfile
+
+            $sub_test "$compiler" |& $tee -a $logfile
+
+            unsetenv CHPL_ONETEST
+        endif
+
+        # generate performance graphs
+        if ($gengraphs) then
+            # For single tests, we only look for a $testname.graph file
+            set graphfile = `basename $testname .chpl`.graph
+            if (-e $graphfile) then
+                echo "[Executing createGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
+                $createGraphs "$graphfile" "$perfdir" "$startdate" "False" |& tee -a $logfile
+                if ($? == 0) then
+                    echo "[Executing viewGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
+                    $viewGraphs "$perfdir" |& tee -a $logfile
+                    if ($?) then
+                        echo "[Error generating graphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
+                    else
+                        echo "[Success generating graphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
+                    endif
+                endif
+            endif
+        endif
+    endif
+
     popd >& /dev/null
 end
 
 
-if ($clean_only == 0) then
-  foreach test ($testlist)
-    set basedir = `dirname $test`
-    set testname = `basename $test`
-
-    pushd $basedir >& /dev/null
-    echo " " |& $tee -a $logfile
-    echo "[Working on file $test]" |& $tee -a $logfile
-
-    if (-x ./sub_test) then
-	set sub_test = ./sub_test
-    else
-	set sub_test = $gsub_test
-    endif
-
-    setenv COMPOPTS "$compopts"
-    setenv EXECOPTS "$execopts"
-    setenv NUMLOCALES "$numlocales"
-    setenv LAUNCHCMD "$launchcmd"
-    setenv CHPL_ONETEST "$testname"
-    echo "[Starting $sub_test `date`]" |& $tee -a $logfile
-
-    $sub_test "$compiler" |& $tee -a $logfile
-
-    unsetenv CHPL_ONETEST
-
-    popd >& /dev/null
-  end
-endif
-
-
+#####################################################
 #
 # test all of the directories that the user specified
 #
@@ -1042,88 +1108,110 @@ else
     setenv CHPL_TEST_NOTESTS 0
 endif
 
-
-foreach absdir ($absdirs)
-    # if specified to start in a specific directory, start there
-    set basedir = $absdir
-    cd $basedir
-
-    echo "[Working from directory $absdir]"
-
-    # execute script that is located in each directory
-    #   Recursively list all directories (have a : in the line)
-    #   Don't include directories known not to be for tests
-    #   Take off : with sed
-    #
-    if ($recurse == 1) then
-        set dirs = `ls -R |& grep ":" | grep -v "\.:" | grep -v "Permission denied" | grep -v Bin | grep -v Logs | grep -v Samples | grep -v Share | grep -v perfdat | sed 's/://g'`
-    # gotta add ./ on in case explicit start directories were specified
-        set dirs = (./ $dirs)
+# set up for multiple passes through the directories
+if ($performance) then
+    set testTypes = "performance graph"
+else
+    if ($gengraphs) then
+        set testTypes = "graph"
     else
-        set dirs = (./)
+        set testTypes = "run"
     endif
+endif
 
-    foreach dir ($dirs)
+foreach testType ($testTypes)
+    # run the tests
+    foreach absdir ($absdirs)
+        # if specified to start in a specific directory, start there
+        set basedir = $absdir
         cd $basedir
-	if ( -x $dir ) then
-            pushd $dir >& /dev/null
-            set dir = $cwd
-	    popd >& /dev/null
+        echo "[Working from directory $absdir]"
 
-	    cd $dir
-	else
-	    echo \["Warning: Cannot cd into" $dir "skipping directory."\]|&\
-			$tee -a $logfile
-	    continue
-	endif
-
-       	echo " " |& $tee -a $logfile
-        echo "[Working on directory $dir]" |& $tee -a $logfile
-
-	set numtests = `(ls *.{chpl,v} |& grep -v "No match" | wc -l)`
-
-        if (-e ./SKIPIF) then
-            set skiptest = `$utildir/testEnv ./SKIPIF`
-            if ($skiptest == 1) then
-                echo "[Skipping directory based on SKIPIF environment settings]"
-                continue
-            endif
+        # Recursively list all directories, ignoring some (should we really do
+        # this?  Maybe add NOTEST files instead?)
+        if ($recurse == 1) then
+            set dirs = `find . -name ".svn" -prune -o -name Logs -prune -o -name Samples -prune -o -name Share -prune -o -name perfdat -prune -o -type d -print`
+        else
+            set dirs = (./)
         endif
 
-	if ((! -e ./NOTEST && ($numtests != 0 || -x ./sub_test) && \
-            (($CHPL_TEST_INTERP == "off") || (! -e ./NOINTERP && ! -e ./NOEXEC && ! -e ./EXECOPTS)))) then
-            if (-x ./sub_test) then
-                set sub_test = ./sub_test
-            else
-                set sub_test = $gsub_test
-            endif
-            if (-x ./Bin/sub_clean) then
-                set sub_clean = ./Bin/sub_clean
-            else
-                set sub_clean = $utildir/sub_clean
-            endif
-	    $sub_clean |& $tee -a $logfile
+        foreach dir ($dirs)
+            cd $basedir
+            if ( -x $dir ) then
+                pushd $dir >& /dev/null
+                set dir = $cwd
+                popd >& /dev/null
 
-            if ($clean_only == 0)  then
-                setenv COMPOPTS "$compopts"
-                setenv EXECOPTS "$execopts"
-                setenv NUMLOCALES "$numlocales"
-                setenv LAUNCHCMD "$launchcmd"
-		setenv STARTDATE "$startdate"
-                echo "[Starting $sub_test `date`]" |& $tee -a $logfile
-                $sub_test "$compiler" |& $tee -a $logfile
+                cd $dir
+            else
+                echo \["Warning: Cannot cd into" $dir "skipping directory"\]|&\
+                    $tee -a $logfile
+                continue
             endif
-	else
-	    echo \["No tests in directory " $dir\] |& $tee -a $logfile
-	endif
+
+            echo " " |& $tee -a $logfile
+            echo "[Working on directory $dir]" |& $tee -a $logfile
+
+            if (-e ./SKIPIF) then
+                set skiptest = `$utildir/testEnv ./SKIPIF`
+                if ($skiptest == 1) then
+                    echo "[Skipping directory based on SKIPIF environment settings]"
+                    continue
+                endif
+            endif
+
+            if ($testType != "graph") then
+                # run tests
+                if ($performance) then
+                    set areTests = `find . -maxdepth 1 -name \*.perfkeys`
+                else
+                    set areTests = `find . -maxdepth 1 -name \*.chpl`
+                endif
+                if ((! -e ./NOTEST && ("$areTests" != "" || -x ./sub_test) && \
+                    (($CHPL_TEST_INTERP == "off") || \
+                    (! -e ./NOINTERP && ! -e ./NOEXEC && ! -e ./EXECOPTS)))) then
+                    # clean up
+                    if (-x ./Bin/sub_clean) then
+                        set sub_clean = ./Bin/sub_clean
+                    else
+                        set sub_clean = $utildir/sub_clean
+                    endif
+                    $sub_clean |& $tee -a $logfile
+
+                    if ($clean_only == 0)  then
+                        if (-x ./sub_test) then
+                            set sub_test = ./sub_test
+                        else
+                            set sub_test = $gsub_test
+                        endif
+                        echo "[Starting $sub_test `date`]" |& $tee -a $logfile
+                    
+                        $sub_test "$compiler" |& $tee -a $logfile
+                    endif
+                else
+                    echo \["No tests in directory" $dir\] |& $tee -a $logfile
+                endif
+            else
+                # generate performance graphs
+                # do this in a somewhat kludgy way to avoid stderr output
+                set graphfiles = `find . -maxdepth 1 -name \*.graph`
+                foreach gfile ($graphfiles)
+                    set graphfile = `basename $gfile`
+                    echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                    $createGraphs "$graphfile" "$perfdir" "$startdate" "False" |& tee -a $logfile
+                    if ($? == 0) then
+                        echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                        $viewGraphs "$perfdir" |& tee -a $logfile
+                        if ($?) then
+                            echo "[Error generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                        else
+                            echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                        endif
+                    endif
+                end
+            endif
+        end
     end
-   
-    if ($performance) then
-	if ($?CHPL_TEST_PERF_DIR) then
-	    set viewGraphs = $utildir/viewGraphs
-	    $viewGraphs $CHPL_TEST_PERF_DIR  
-	endif
-    endif
 end
 
 # return to where we started
@@ -1135,10 +1223,14 @@ echo " " |& $tee -a $logfile
 # Output grep to a temp file, don't want to infinite loop
 set futuremarker = "^Future"
 set errormarker = "^\[Error"
-if ($?CHPL_COMPONLY) then
-    set successmarker = "^\[Success compiling"
+if ($performance == 0 && $gengraphs) then
+    set successmarker = "^\[Success generating"
 else
-    set successmarker = "^\[Success matching"
+    if ($?CHPL_COMPONLY) then
+        set successmarker = "^\[Success compiling"
+    else
+        set successmarker = "^\[Success matching"
+    endif
 endif
 set skipstdinredirectmarker = "^\[Skipping test with .stdin input"
 

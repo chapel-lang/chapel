@@ -38,10 +38,10 @@
 #                    0 == test non-futures only
 # CHPL_TEST_NOTESTS: Test the tests that are marked "notest" (see below)
 # LAUNCHCMD: Uses this command to launch the test program
-# CHPL_TEST_INTERP:
+# CHPL_TEST_INTERP: DEPRECATED
 # CHPL_TEST_PERF: Run as a performance test (same as -performance flag)
 # CHPL_TEST_PERF_DIR: Scratch directory for performance data
-# CHPL_ONE_TEST: Name of the one test in this directory to run
+# CHPL_ONETEST: Name of the one test in this directory to run
 # CHPL_TEST_SINGLES: If false, test the entire directory
 # CHPL_SYSTEM_PREDIFF: If set, run that script on each test output
 # CHPL_COMM: Chapel communication layer
@@ -163,13 +163,6 @@ def IsChplSource(f):
         return True
     else:
         return False
-
-# return True if f has .graph extension
-def IsGraphFile(f):
-    if ((f.count('.') !=0) and (len(f) > 7) and (len(f)-f.find('.graph')==6)):
-	return True
-    else:
-	return False
 
 # read file with comments
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
@@ -417,7 +410,6 @@ if os.getenv('CHPL_TEST_PERF')!=None:
     compoptssuffix='.perfcompopts'
     execoptssuffix='.perfexecopts'
     perftest=True
-    searchperfdir='./perfdat/'+machine
     if os.getenv('CHPL_TEST_PERF_DIR')!=None:
         perfdir=os.getenv('CHPL_TEST_PERF_DIR')
     else:
@@ -490,8 +482,6 @@ if onetestsrc==None:
 else:
     testsrc=list()
     testsrc.append(onetestsrc)
-
-graphfiles=filter(IsGraphFile, dirlist)
 
 exectimeout = False
 for testname in testsrc:
@@ -1090,52 +1080,4 @@ for testname in testsrc:
     del execoptslist
     del compoptslist
 
-if perftest: 
-    for graphfile in graphfiles:
-	(root, suffix) = os.path.splitext(graphfile)
-    	graphname=root
-	
-
- 	sys.stdout.write('[Executing createGraphs for %s.graph in %s]\n'%(graphname, testdir+'/'+localdir))
-	sys.stdout.flush()
-	
-	if os.path.isfile(utildir+'/createGraphs'):
-	    startdate = os.getenv('STARTDATE', "")
-   	    p = subprocess.Popen([utildir+'/createGraphs', graphname, perfdir, startdate, str(exectimeout)],stdout=subprocess.PIPE)
-   	    sys.stdout.write('%s'%(p.communicate()[0]))
-   	    sys.stdout.flush()
-	else:
-	    sys.stdout.write('cannot find createGraphs\n')
-
-  	status = p.returncode
-  
-   	if status == 0:
-	    sys.stdout.write('[Success')
-        else:
- 	    sys.stdout.write('[Error')
-        sys.stdout.write(' creating graphs in %s for %s]\n'%(testdir+'/'+localdir, graphfile))
-
-    if (os.getenv('CHPL_TEST_PERF_DIR')==None) and (len(graphfiles)>0):
-        if (len(graphfiles) > 0):
-            if os.path.isfile(utildir+'/viewGraphs'):
-                sys.stdout.write('[Executing viewGraphs in %s]\n'%(testdir+'/'+localdir))
-                sys.stdout.flush()
-	
-	        p = subprocess.Popen([utildir+'/viewGraphs', perfdir],stdout=subprocess.PIPE)
-	        sys.stdout.write('%s'%(p.communicate()[0]))
-	        sys.stdout.flush()
-            else:
-	        sys.stdout.write('[cannot find viewGraphs]\n')
-
-            status = p.returncode
-
-            if status==0:
-	        sys.stdout.write('[Success')
-            else:
-	        sys.stdout.write('[Error')
-            sys.stdout.write(' creating html in %s]\n'%(testdir+'/'+localdir))
-
-	
-
-
-del graphfiles
+sys.exit(0)
