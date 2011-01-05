@@ -238,7 +238,7 @@ RUNTIME_CHPL_FLAGS = --runtime --no-checks --local --serial
 ifndef CHPL_TAGS_UTIL
 ifeq ($(CHPL_EDITOR),vim)
 CHPL_TAGS_UTIL = ctags
-CHPL_TAGS_FLAGS = -w
+CHPL_TAGS_FLAGS := -w
 CHPL_TAGS_FILE = tags
 CHPL_TAGS_APPEND_FLAG = -a
 else
@@ -247,6 +247,9 @@ CHPL_TAGS_FILE = TAGS
 CHPL_TAGS_APPEND_FLAG = -a
 endif
 endif
+
+# handle flags_list.h as well
+CHPL_TAGS_FLAGS += --regex='/symbolFlag(\s-*\(FLAG[a-zA-Z0-9_]+\)/\1/'
 
 
 #
