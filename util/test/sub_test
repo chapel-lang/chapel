@@ -159,7 +159,7 @@ def ShellEscape(str):
 
 # return True if f has .chpl extension
 def IsChplSource(f):
-    if ((f.count('.') !=0) and (len(f) > 6) and (len(f)-f.find('.chpl')==5)):
+    if ((f.count('.') !=0) and (len(f) >= 6) and (len(f)-f.find('.chpl')==5)):
         return True
     else:
         return False
