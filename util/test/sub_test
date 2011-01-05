@@ -483,9 +483,9 @@ else:
     testsrc=list()
     testsrc.append(onetestsrc)
 
-exectimeout = False
 for testname in testsrc:
     sys.stdout.flush()
+    exectimeout = False
 
     # print testname
     sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
