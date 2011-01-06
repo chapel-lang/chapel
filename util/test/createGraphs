@@ -184,7 +184,7 @@ sub processGraphFile {
         } elsif (!@words[0] || (@words[0] eq "#"))  {
             # ignore comments and blank lines
         } else {
-            print "[createGraphs WARNING: Ignoring stray format line: $line]\n";
+            print "[Warning (createGraphs): Ignoring stray format line: $line]\n";
         }
     }
     if (!$custom) {
@@ -276,7 +276,7 @@ sub makeGraph {
 
 	# if the derived $key_file does not exist, then use the default
         unless (-e $key_file) {
-            print "[createGraphs WARNING: '$key_file' does not exist, using default perfkeys file '$default_key_file']\n";
+            print "[Warning (createGraphs): '$key_file' does not exist, using default perfkeys file '$default_key_file']\n";
             $key_file = $default_key_file;
         }
 	open KEYS, "$key_file" or die "[Error (createGraphs): can't open .perfkeys file '$key_file' $!]";
@@ -326,11 +326,11 @@ sub makeGraph {
     close(GNUPLOT_COMMANDS);
     my $succeed_gnuplot = system("gnuplot $gpl_file");
     if ($succeed_gnuplot != 0) {
-	print "[Error (createGraphs): 'gnuplot' command failed]\n";
+	print "[Error (createGraphs): 'gnuplot' command failed for $format_file]\n";
         exit 1;
     }
 
-    # unlink $gpl_file or warn "### createGraphs WARNING: Could not remove $gpl_file: $!";
-    # unlink $errors_file or warn "### createGraphs WARNING: Could not remove $errors_file: $!";
+    # unlink $gpl_file or warn "[Warning (createGraphs): Could not remove $gpl_file: $!]";
+    # unlink $errors_file or warn "[Warning (createGraphs): Could not remove $errors_file: $!]";
 
 }
