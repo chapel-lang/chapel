@@ -571,7 +571,7 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert temporary for constants to assist constant checking
   //
-  if (var->hasFlag(FLAG_CONST)) {
+  if (var->hasFlag(FLAG_CONST) && !var->hasFlag(FLAG_EXTERN)) {
     constTemp = newTemp();
     stmt->insertBefore(new DefExpr(constTemp));
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));
@@ -640,7 +640,7 @@ fix_def_expr(VarSymbol* var) {
       else {
         CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
         Expr* newExpr = moveToConst;
-        if (constTemp->hasFlag(FLAG_EXTERN)) {
+        if (var->hasFlag(FLAG_EXTERN)) {
           newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
         }
         stmt->insertAfter(newExpr);

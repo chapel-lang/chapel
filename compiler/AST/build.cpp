@@ -1422,6 +1422,9 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
+        if (externconfig == FLAG_EXTERN && varconst == FLAG_PARAM)
+          USR_FATAL(var, "external params are not supported");
+
         if (externconfig != FLAG_UNKNOWN)
           var->addFlag(externconfig);
         if (varconst != FLAG_UNKNOWN)
