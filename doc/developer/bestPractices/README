@@ -1,0 +1,10 @@
+=====================
+Chapel Best Practices
+=====================
+
+This directory contains rough notes intended to be helpful in pointing
+out features/quirks of the Chapel development experience for new
+developers.  A possible reading order is as follows:
+
+GettingStarted.txt: A list of suggested "first steps" for new developers
+CHPL_DEVELOPER.txt: The most important environment variable you'll set?
