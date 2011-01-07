@@ -1,0 +1,63 @@
+An easy way to examine the evolution of the source code is to compile with
+--html. For example, when you compile hello.chpl with this flag in conjuction
+with --savec (useful for reference if you're trying to understand where a
+given line of code comes from):
+
+# chpl --html -o ./bin/hello ./test/release/examples/hello.chpl --savec ./Hello.Out
+
+...you create a directory called log/ in the current directory. (This trick
+also can be spawned using -t.) Note that you can change the defaulted log
+directory by also using --log-dir.
+
+Within this directory contains a file called index.html. Point your web
+browser here.
+
+You will see files corresponding to each generated .c file after every pass
+of the compiler. For example, after the parser (pass 1) handles hello.c, you
+should see output like this:
+
+module hello[70159]
+   function chpl__init_hello[70160] ( ) : void[17]
+      {
+            {
+                 (70157 call writeln "Hello, world!")
+            }
+      }
+
+As the passes make the code more sophisticated, you will see more calls,
+declarations, etc, and code can move or be removed entirely. Using the output
+from --savec, you may line up interesting code samples to how the compiler
+changes this code over time.
+
+The trick is to find the ID associated with the code. For example, in the
+above code, there's a call expression to writeln with ID 70157. (writeln
+eventually gets a function associated with it within the 'resolve' pass.)
+
+The ID for the expression, symbol, etc. you're interested in tracking can be
+used within gdb to follow it. Each ID is unique. (Potential gotcha: sometimes
+code is copied or moved, and the original reference is removed. You may have
+to chase the ID back to a previous unique ID.)
+
+To break on a reference to a particular ID, use --break-on-id:
+
+# chpl --gdb --break-on-id 70157 -o ./bin/hello ./test/release/examples/hello.chpl
+Using host libthread_db library "/lib64/libthread_db.so.1".
+Breakpoint 1 at 0x527ae0
+(gdb) run
+Starting program: chpl --break-on-id 70157 -o ./bin/hello ./test/release/examples/hello.chpl
+
+Breakpoint 1, 0x0000000000527ae0 in gdbShouldBreakHere ()
+(gdb) 
+
+Should you want to break on more than one ID without running gdb several
+times, the solution is a little contrived. 
+
+Start gdb and break where you're interested in the id (you don't need to, but
+you could end up waiting a while):
+
+(gdb) break checkid if ((id == 70157) || (id == 512306))
+Breakpoint 2 at 0x418122: file baseAST.cpp, line 182.
+(gdb) run
+
+One last note, --html-user only captures output for user modules. In the case
+of hello.chpl, only hello will be displayed. This may save you some time.
