@@ -19,18 +19,18 @@ project via the following steps:
   yourself with the language, compiler, documentation, and example
   programs as presented to the end-user.
 
-* Read the language specification from cover to cover.  This can be a
-  fairly dry/tedious task, so most people will tend to find other
-  tasks to interleave it with, like programming.  Nevertheless, we
-  must emphasize how important it is to be familiar with the language
-  spec, both to get an understanding of the language's scope and the
-  state of the documentation today.
-
 * Read through presentations and tutorials from the Chapel webpage to
   get a more abstract/visual overview of how we describe the language.
   Most slide decks are better with a human delivering them, so see if
   you can find someone to walk you through any that aren't
   self-explanatory.
+
+* Familiarize yourself with the language specification.  This can be a
+  fairly dry/tedious task, so most people will tend to find other
+  tasks to interleave it with, like programming.  Nevertheless, we
+  must emphasize how important it is to be familiar with the language
+  spec, both to get an understanding of the language's scope and the
+  state of the documentation today.
 
 * Code up sample computations from scratch to get a feel for the
   language and compiler.  Get feedback on your codes from an
