@@ -65,9 +65,13 @@ void CHPL_TASKING_EXIT(void);        // called by the main task
 // tasking init for any threads created outside of the tasking/threading layer
 void CHPL_PER_PTHREAD_TASKING_INIT(void);
 
-#ifdef RUN_MAIN_AS_A_TASK
-void CHPL_TASKING_CALL_MAIN(void (*)(void));  // invoke the main task
-#endif
+//
+// Have the tasking layer call the 'chpl_main' function pointer
+// representing the entry point for the user's Chapel code.  This
+// can either be done by invoking the function directly or by creating
+// a task that evaluates the function.
+//
+void CHPL_TASKING_CALL_MAIN(void (*chpl_main)(void));
 
 typedef struct chpl_task_list* chpl_task_list_p;
 

@@ -142,6 +142,10 @@ void CHPL_TASKING_EXIT(void) {
   while (!ready);
 }
 
+void CHPL_TASKING_CALL_MAIN(void (*chpl_main)(void)) {
+  chpl_main();
+}
+
 void CHPL_ADD_TO_TASK_LIST(chpl_fn_int_t fid,
                            void* arg,
                            chpl_task_list_p *task_list,

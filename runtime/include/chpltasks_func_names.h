@@ -35,9 +35,7 @@
 #define CHPL_TASKING_INIT                _TFN(chpl_tasking_init)
 #define CHPL_TASKING_EXIT                _TFN(chpl_tasking_exit)
 
-#ifdef RUN_MAIN_AS_A_TASK
 #define CHPL_TASKING_CALL_MAIN           _TFN(chpl_tasking_call_main)
-#endif
 
 #define CHPL_ADD_TO_TASK_LIST            _TFN(chpl_add_to_task_list)
 #define CHPL_PROCESS_TASK_LIST           _TFN(chpl_process_task_list)

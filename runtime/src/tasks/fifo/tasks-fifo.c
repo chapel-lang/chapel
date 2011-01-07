@@ -286,8 +286,6 @@ void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) {
 // Tasks
 
 void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
-  thread_private_data_t *tp;
-
   // Tuck maxThreadsPerLocale away in a static global for use by other routines
   taskMaxThreadsPerLocale = maxThreadsPerLocale;
 
@@ -309,37 +307,13 @@ void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   threadlayer_init(callStackSize);
 
 
-  tp = (thread_private_data_t*) chpl_alloc(sizeof(thread_private_data_t),
-                                           CHPL_RT_MD_THREAD_PRIVATE_DATA,
-                                           0, 0);
-
-  tp->ptask = (task_pool_p) chpl_alloc(sizeof(task_pool_t),
-                                       CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
-                                       0, 0);
-  tp->ptask->id           = get_next_task_id();
-  tp->ptask->fun          = NULL;
-  tp->ptask->arg          = NULL;
-  tp->ptask->serial_state = false;
-  tp->ptask->ltask        = NULL;
-  tp->ptask->begun        = true;
-  tp->ptask->filename     = "main program";
-  tp->ptask->lineno       = 0;
-  tp->ptask->next         = NULL;
-
-  threadlayer_set_thread_private_data(tp);
-
   if (taskreport) {
     threadlayer_mutex_init(&taskTable_lock);
-    chpldev_taskTable_add(tp->ptask->id,
-                          tp->ptask->lineno, tp->ptask->filename,
-                          (uint64_t) (intptr_t) tp->ptask);
-    chpldev_taskTable_set_active(tp->ptask->id);
   }
 
   if (blockreport) {
     progress_cnt = 0;
     threadlayer_mutex_init(&block_report_lock);
-    initializeLockReportForThread();
   }
 
   if (blockreport || taskreport) {
@@ -371,6 +345,42 @@ void CHPL_TASKING_EXIT(void) {
   }
 
   threadlayer_exit();
+}
+
+
+void CHPL_TASKING_CALL_MAIN(void (*chpl_main)(void)) {
+  thread_private_data_t *tp = (thread_private_data_t*) 
+                                chpl_alloc(sizeof(thread_private_data_t),
+                                           CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                           0, 0);
+
+  tp->ptask = (task_pool_p) chpl_alloc(sizeof(task_pool_t),
+                                       CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                       0, 0);
+  tp->ptask->id           = get_next_task_id();
+  tp->ptask->fun          = NULL;
+  tp->ptask->arg          = NULL;
+  tp->ptask->serial_state = false;
+  tp->ptask->ltask        = NULL;
+  tp->ptask->begun        = true;
+  tp->ptask->filename     = "main program";
+  tp->ptask->lineno       = 0;
+  tp->ptask->next         = NULL;
+
+  threadlayer_set_thread_private_data(tp);
+
+  if (taskreport) {
+    chpldev_taskTable_add(tp->ptask->id,
+                          tp->ptask->lineno, tp->ptask->filename,
+                          (uint64_t) (intptr_t) tp->ptask);
+    chpldev_taskTable_set_active(tp->ptask->id);
+  }
+
+  if (blockreport) {
+    initializeLockReportForThread();
+  }
+
+  chpl_main();
 }
 
 

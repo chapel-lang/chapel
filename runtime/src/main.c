@@ -76,7 +76,6 @@ int main(int argc, char* argv[]) {
   //
   chpl_comm_verify_num_locales(execNumLocales);
   chpl_comm_rollcall();
-  chpl_init_chpl_rt_utils();
 
  
   //
@@ -92,17 +91,14 @@ int main(int argc, char* argv[]) {
   chpl__init_ChapelThreads(1, "<internal>");
   //
   CHPL_TASKING_INIT(maxThreadsPerLocale, callStackSize); 
+  chpl_init_chpl_rt_utils();
 
   recordExecutionCommand(argc, argv);
 
   chpl_comm_barrier("barrier before main");
 
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
-#ifndef RUN_MAIN_AS_A_TASK
-    chpl_main();
-#else
     CHPL_TASKING_CALL_MAIN(chpl_main);
-#endif
   }
 
   chpl_exit_all(0);         // have everyone exit
