@@ -245,11 +245,11 @@ sets, possibly including internationalization.
 Enumerated types are declared with the following syntax:
 \begin{syntax}
 enum-declaration-statement:
-  `enum' identifier { enum-constant-list } ;
+  `enum' identifier { enum-constant-list }
 
 enum-constant-list:
   enum-constant
-  enum-constant , enum-constant-list
+  enum-constant , enum-constant-list[OPT]
 
 enum-constant:
   identifier init-part[OPT]
@@ -266,8 +266,8 @@ enum-type:
 \end{syntax}
 
 An enumerated type defines a set of named constants that can be
-specified in a program as a member access on the enumerated type.
-These are associated with parameters of integral type.  Each
+referred to via a member access on the enumerated type.
+These constants are treated as parameters of integral type.  Each
 enumerated type is a distinct type. If the \sntx{init-part} is
 omitted, the \sntx{enum-constant} has an integral value one higher
 than the previous \sntx{enum-constant} in the enum, with the first
@@ -276,7 +276,7 @@ having the value \chpl{1}.
 \begin{example}
 The code
 \begin{chapel}
-enum statesman { Aristotle, Roosevelt, Churchill, Kissinger } ;
+enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
 \end{chapel}
 defines an enumerated type with four constants.  The function
 \begin{chapel}

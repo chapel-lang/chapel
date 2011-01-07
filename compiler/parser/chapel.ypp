@@ -348,7 +348,7 @@ class_level_stmt_ls:
 ;
 
 enum_decl_stmt:
-  TENUM ident TLCBR enum_ls TRCBR TSEMI
+  TENUM ident TLCBR enum_ls TRCBR
     {
       EnumType* pdt = $4;
       TypeSymbol* pst = new TypeSymbol($2, pdt);
@@ -364,6 +364,10 @@ enum_ls:
       $1->sym->type = $$;
       $$->constants.insertAtTail($1);
       $$->defaultValue = $1->sym;
+    }
+| enum_ls TCOMMA
+    {
+      $$ = $1;
     }
 | enum_ls TCOMMA enum_item
     {
