@@ -1107,7 +1107,7 @@ foreach test ($testlist)
             set graphfile = `basename $testname .chpl`.graph
             if (-e $graphfile) then
                 echo "[Executing createGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
-                $createGraphs "$graphfile" "$perfdir" "$startdate" "False" |& tee -a $logfile
+                $createGraphs "$graphfile" "$perfdir" "$startdate" |& tee -a $logfile
                 if ($? == 0) then
                     echo "[Executing viewGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
                     $viewGraphs "$perfdir" |& tee -a $logfile

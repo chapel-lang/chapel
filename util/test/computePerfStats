@@ -69,18 +69,18 @@ print ERRORS "processed $key_file\n";
 
 # get lines from output file
 my @file_lines;
-if ($exec_time_out eq "False") {
+# if ($exec_time_out eq "False") {
     open TEST, "$test_output_file" or die "can't open $test_output_file $!";
     @file_lines = <TEST>;
     close (TEST);
     print ERRORS "processed $test_output_file\n";
-} else {
-    print ERRORS "timed out executing $testname, no $test_output_file to process\n";
-}
+# } else {
+#     print ERRORS "timed out executing $testname, no $test_output_file to process\n";
+# }
 
 # if this is first performance run, create the .dat
-if (-e "$data_file") {
-} else {
+if (! -e "$data_file") {
+# } else {
     open STATS, ">$data_file" or die "can't open $data_file for creating $!";
     print ERRORS "created $data_file\n";
     print STATS "# Date";
@@ -102,29 +102,31 @@ $year -= 100;
 
 # check all output lines for values following keys, values get written to the .dat
 my $foundEverything = 1;
+if ($exec_time_out eq "True") {
+    # Timed out executions will be comments
+    printf STATS "# ";
+}
 printf STATS "%.2d/%.2d/%.2d ", $mon, $mday, $year;
 foreach my $key (@keys) {
-    if ($exec_time_out eq "False") {
-        print "Looking for $key...";
-        print STATS "\t";
-        my $found = 0;
-        foreach my $line (@file_lines) {
-            if ($line =~ m/\Q$key\E(\s*)(\S*)/ && $found == 0) {
-                print "found it: $2\n";
-                print STATS "$2";
-                $found = 1;
-            }
+    print "Looking for $key...";
+    print STATS "\t";
+    my $found = 0;
+    foreach my $line (@file_lines) {
+        if ($line =~ m/\Q$key\E(\s*)(\S*)/ && $found == 0) {
+            print "found it: $2\n";
+            print STATS "$2";
+            $found = 1;
         }
-        if ($found == 0) {
-            print STATS "-";
-            print "didn't find it\n";
-            $foundEverything = 0;
-        }
-    } else {
-	print ERRORS "Printing time out as \"-\" under $key...\n";
-        print STATS "\t";
-        print STATS "-";
     }
+    if ($found == 0) {
+        print STATS "-";
+        print "didn't find it\n";
+        $foundEverything = 0;
+
+    }
+}
+if ($exec_time_out eq "True") {
+    print STATS " ### EXECUTION TIMED OUT ###";
 }
 print STATS "\n";
 

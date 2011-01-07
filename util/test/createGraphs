@@ -1,14 +1,12 @@
 #!/usr/bin/env perl
 
-use Text::ParseWords;
 use File::Basename;
 use strict;
-die "[Error (createGraphs): Incorrect number of arguments]\n" unless ($#ARGV >= 3);
+die "[Error (createGraphs): Incorrect number of arguments]\n" unless ($#ARGV >= 2);
 
 my $format_file = $ARGV[0]; 
 my $outputdir = $ARGV[1]; 
 my $start_date = $ARGV[2];
-my $exec_time_out = $ARGV[3];
 
 my $graph_file_name; 
 my $graph_title; 
@@ -49,14 +47,20 @@ sub trim($) {
 
 # get start date (date of first performance run)
 sub getStartDate {
-    if ($exec_time_out eq "False") {
-        my $data_file_temp = $_[0];
-        open STATS, "$data_file_temp" or die "[Error (createGraphs): can't open .dat file '$data_file_temp' $!]";
-        my @stat_lines = <STATS>;
-        my $header_line = @stat_lines[1];
-        my @headers = parse_line('\t', 0, $header_line);
-        return @headers[0];
-    }  
+    my $data_file_temp = $_[0];
+    open STATS, "$data_file_temp" or die "[Error (createGraphs): can't open .dat file '$data_file_temp' $!]";
+    # Assume the first line is a comment with the key names
+    my $header_line = <STATS>;
+    my $first_test = <STATS>;
+    ### my @headers = parse_line('\t', 0, $first_date);
+    my @fields = split(/\t/, $first_test);
+    # If the date of the first test timed out, it will be in a comment, but
+    #  we still want to use that date
+    if (index(@fields[0], "#") == 0) {
+        return &trim(substr(@fields[0],1));
+    } else {
+        return @fields[0];
+    }
 }
 
 sub getMinDate {

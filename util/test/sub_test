@@ -941,20 +941,20 @@ for testname in testsrc:
 
                 status = p.returncode
 
+            if catfiles:
+                sys.stdout.write('[Concatenating extra files: %s]\n'%
+                                 (execname+'.catfiles'))
+                sys.stdout.flush()
+                output+=subprocess.Popen(['cat']+catfiles.split(),
+                                         stdout=subprocess.PIPE).communicate()[0]
+
+            # Sadly the scripts used below require an actual file
+            execlogfile=file(execlog, 'w')
+            execlogfile.write('%s'%(compoutput))
+            execlogfile.write('%s'%(output))
+            execlogfile.close()
+
 	    if not exectimeout:
-                if catfiles:
-                    sys.stdout.write('[Concatenating extra files: %s]\n'%
-                                     (execname+'.catfiles'))
-                    sys.stdout.flush()
-                    output+=subprocess.Popen(['cat']+catfiles.split(),
-                                             stdout=subprocess.PIPE).communicate()[0]
-
-                # Sadly these scripts require an actual file
-                execlogfile=file(execlog, 'w')
-                execlogfile.write('%s'%(compoutput))
-                execlogfile.write('%s'%(output))
-                execlogfile.close()
-
                 if systemPrediff:
                     sys.stdout.write('[Executing system-wide prediff]\n')
                     sys.stdout.flush()
