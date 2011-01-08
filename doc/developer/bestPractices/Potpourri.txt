@@ -2,7 +2,8 @@
 Miscellaneous Notes
 ===================
 
-* README files
+README files
+------------
 
 The subversion repository has a collection of REAMDE files on various
 topics. The main file is $CHPL_HOME/README. Each file points to other
@@ -17,7 +18,9 @@ The non-.devel READMEs are written so they are relevant to *users* of
 Chapel. Therefore they reflect the directory structure of Chapel's
 public releases; see $CHPL_HOME/README.devel for details.
 
-* --runtime compiler flag
+
+--runtime compiler flag
+-----------------------
 
 This flag is to be passed when the compiled code will become a part of
 the runtime library.

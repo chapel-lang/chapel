@@ -45,6 +45,12 @@ project via the following steps:
   release, but in some cases there are differences.  Refer to the
   top-level README.devel to see what some of these differences are.
 
+* As a sub-step of the above, augment your shell environment:
+   - set CHPL_HOME to your preferred or current tree,
+   - incorporate the settings from $CHPL_HOME/util/setchplenv.bash (or .csh),
+   - add $CHPL_HOME/util and $CHPL_HOME/util/devel to your PATH,
+   - set CHPL_DEVELOPER to 'true' (see also CHPL_DEVELOPER.txt).
+
 * Get aquainted with the testing system, located in $CHPL_HOME/test
   and driven by $CHPL_HOME/util/start_test.  We rely on it heavily in
   the project to support a test-first development philosophy, to avoid

@@ -4,16 +4,22 @@ Chapel Best Practices
 
 This directory contains rough notes intended to be helpful in pointing
 out features/quirks of the Chapel development experience for new
-developers.  A possible reading order is as follows:
+developers.  A possible reading order is roughly as follows:
 
 GettingStarted.txt
   A list of suggested "first steps" for new developers.
 
-CHPL_DEVELOPER.txt
-  The most important environment variable you want to set.
+CompilerDebugging.txt
+  Tips on debugging the compiler.
+
+CompilerIRTricks.txt
+  Tips on examining compiler IR during/after compilation.
 
 GASNetOnDesktops.txt
   Tips on running and debugging Chapel programs with GASNet on your desktop.
+
+CHPL_DEVELOPER.txt
+  The most important environment variable you want to set, and what it does.
 
 Potpourri.txt
   Notes not in any of the above categories.

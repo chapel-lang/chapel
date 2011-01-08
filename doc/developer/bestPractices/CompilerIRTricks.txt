@@ -1,3 +1,9 @@
+===============================
+Examining/Debugging Compiler IR
+===============================
+
+See also: CompilerDebugging.txt.
+
 An easy way to examine the evolution of the source code is to compile with
 --html. For example, when you compile hello.chpl with this flag in conjuction
 with --savec (useful for reference if you're trying to understand where a
@@ -52,12 +58,23 @@ Breakpoint 1, 0x0000000000527ae0 in gdbShouldBreakHere ()
 Should you want to break on more than one ID without running gdb several
 times, the solution is a little contrived. 
 
-Start gdb and break where you're interested in the id (you don't need to, but
-you could end up waiting a while):
-
 (gdb) break checkid if ((id == 70157) || (id == 512306))
 Breakpoint 2 at 0x418122: file baseAST.cpp, line 182.
 (gdb) run
 
-One last note, --html-user only captures output for user modules. In the case
-of hello.chpl, only hello will be displayed. This may save you some time.
+As gdb implements this inefficiently, you may want first to break on
+the pass(es) where the desired IDs are created, to reduce the wait time.
+
+Alternatively, start with --break-on-id on the lowest ID.  Once gdb
+break on that, update the variable 'breakOnID' with the next-lowest ID,
+the next time with the next-next-lowest ID, etc.
+
+(gdb) set breakOnID = 512306
+(gdb) continue
+
+(If you find yourself using this a lot, holler - we should really just
+implement a multiple-ID counterpart to --break-on-id.)
+
+To save some time on html generation, try --html-user.
+This generates html only for user modules. In the case
+of hello.chpl, only hello will be displayed.
