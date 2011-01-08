@@ -5,7 +5,7 @@ Getting Started
 It is recommended that all Chapel developers get aquainted with the
 project via the following steps:
 
-* Start taking notes as you undertake these steps in order to track
+* Start taking notes as you undertake these steps in order to track suggestions,
   any points of confusion and areas for possible improvement.  You'll
   only be new to Chapel once, so this is the best way of making things
   clearer and easier for users.  And soon you'll be in the position of
@@ -47,7 +47,8 @@ project via the following steps:
 
 * As a sub-step of the above, augment your shell environment:
    - set CHPL_HOME to your preferred or current tree,
-   - incorporate the settings from $CHPL_HOME/util/setchplenv.bash (or .csh),
+   - incorporate the settings from $CHPL_HOME/util/setchplenv.bash
+     (or .csh) e.g. by source'ing it,
    - add $CHPL_HOME/util and $CHPL_HOME/util/devel to your PATH,
    - set CHPL_DEVELOPER to 'true' (see also CHPL_DEVELOPER.txt).
 

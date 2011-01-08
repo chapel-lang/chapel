@@ -3,6 +3,7 @@ Examining/Debugging Compiler IR
 ===============================
 
 See also: CompilerDebugging.txt.
+See also: compiler overview in $CHPL_HOME/doc/developer/compilerOverview.
 
 An easy way to examine the evolution of the source code is to compile with
 --html. For example, when you compile hello.chpl with this flag in conjuction
@@ -35,16 +36,35 @@ declarations, etc, and code can move or be removed entirely. Using the output
 from --savec, you may line up interesting code samples to how the compiler
 changes this code over time.
 
-The trick is to find the ID associated with the code. For example, in the
-above code, there's a call expression to writeln with ID 70157. (writeln
-eventually gets a function associated with it within the 'resolve' pass.)
+A key debugging concept is the unique ID associated with each AST node.
+IDs are given sequentially to the nodes when they are constructed.
+See the Compiler Overview document for more details.
 
-The ID for the expression, symbol, etc. you're interested in tracking can be
-used within gdb to follow it. Each ID is unique. (Potential gotcha: sometimes
-code is copied or moved, and the original reference is removed. You may have
-to chase the ID back to a previous unique ID.)
+The IDs are commonly shown in debugging and HTML printouts. In the
+above example 17 -> the void type, 70157 -> the call to writeln, etc.
+(This call gets a function associated with it within the 'resolve' pass.)
 
-To break on a reference to a particular ID, use --break-on-id:
+IDs are often used like this while debugging:
+* find the ID of an interesting node in the HTML or debugging printout
+  (e.g. when printing another node with gdb commands 'nv' or 'lv',
+   see CompilerDebugging.txt), then
+* break on the creation of that node (see below) to see when/why that happened.
+
+You can also go between the ID and the node pointer:
+
+  myNodePointer->id  // gives the ID
+  aid(myID)          // gives the AST pointer
+
+The intention is for the IDs to remain the same between different runs
+of the compiler, so that you restart the compiler (with the same arguments)
+to trace the ID you discovered in a previous run. (There are cases when
+IDs change, which should be fixed.)
+
+Potential gotcha: sometimes code is copied or moved, and the original
+reference is removed. You may have to chase the ID back to a previous
+or parent ID.
+
+To break on the creation of a particular ID, use --break-on-id:
 
 # chpl --gdb --break-on-id 70157 -o ./bin/hello ./test/release/examples/hello.chpl
 Using host libthread_db library "/lib64/libthread_db.so.1".
