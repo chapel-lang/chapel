@@ -1242,15 +1242,16 @@ foreach testType ($testTypes)
                     echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
                     $createGraphs "$graphfile" "$perfdir" "$startdate" "False" |& tee -a $logfile
                     if ($? == 0) then
-                        echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                        $viewGraphs "$perfdir" |& tee -a $logfile
-                        if ($?) then
-                            echo "[Error generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                        else
-                            echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                        endif
+                        echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
                     endif
                 end
+
+                if ("$graphfiles" != "") then
+                    echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                    $viewGraphs "$perfdir" |& tee -a $logfile
+                    # Ignore return code
+
+                endif
             endif
         end
     end

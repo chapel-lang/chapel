@@ -35,9 +35,6 @@ if ($argc >= 4) {
     $exec_time_out = "False";
 }
 my $data_file = "$outputdir/$testname.dat";
-my $graph_file = "$testname.graph";
-my $gpl_file = "$outputdir/$testname.gpl";
-my $gif_file = "$outputdir/$testname.gif";
 my $errors_file = "$outputdir/$testname.errors";
 my $fatal_errors = 0;
 

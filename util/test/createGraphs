@@ -20,7 +20,6 @@ my $format_file_name = fileparse($format_file, ("\.graph"));
 my $default_key_file = "$format_file_name.perfkeys";
 my $default_data_filename = "$format_file_name.dat";
 my $data_file = "$outputdir/$default_data_filename";
-my $gpl_file = "$outputdir/$format_file_name.gpl";
 my $gif_file = "$outputdir/$format_file_name.gif";
 my $errors_file = "$outputdir/$format_file_name.errors";
 my $fatal_errors = 0;
@@ -208,17 +207,17 @@ sub makeGraph {
     if ($use_default == 0) {
         foreach my $data_file (@data_files) {
             my $real_data_file;
-            if (substr($outputdir,0,1) eq "/") {
-                # absolute path (prepend path)
-                $real_data_file = $outputdir."/".$data_file;
-            } else {
-                # relative path (find .dat file in the subdir)
-                my $ri = rindex($data_file, "/");
-                if ($ri > -1) {
-                    $real_data_file = substr($data_file,0,$ri).$outputdir.substr($data_file,$ri);
+            my $ri = rindex($data_file, "/");
+            if ($ri > -1) {
+                if (substr($outputdir,0,1) eq "/") {
+                    # absolute path (prepend path and strip relative path))
+                    $real_data_file = $outputdir."/".substr($data_file,$ri);
                 } else {
-                    $real_data_file = $outputdir."/".$data_file;
+                    # relative path (find .dat file in the subdir)
+                    $real_data_file = substr($data_file,0,$ri)."/".$outputdir."/".substr($data_file,$ri);
                 }
+            } else {
+                $real_data_file = $outputdir."/".$data_file;
             }
             push(@real_data_files, $real_data_file);
         }
@@ -245,6 +244,16 @@ sub makeGraph {
             }
         }
     }
+
+    if (! -d $outputdir) {
+        # This output directory may not exist if the .dat files are from
+        #  different directories
+        # NOTE: mkpath() is deprecated in newer versions of File::Path
+        #  and replaced by make_path()
+        use File::Path qw(mkpath);
+        mkpath("$outputdir");
+    }
+    my $gpl_file = "$outputdir/$format_file_name.gpl";
 
     open GNUPLOT_COMMANDS, ">$gpl_file" or die "[Error (createGraphs): can't open .gpl file '$gpl_file' for creating $!]";
 
