@@ -18,5 +18,5 @@ fpos=outfile.chpl_ftell();
 writeln("actual fpos:",fpos);
 outfile.close();
 
-chpl_remove(filename);
+//chpl_remove(filename);
 
