@@ -238,3 +238,14 @@ Tracing memory use
 
 See:
       $CHPL_HOME/doc/release/README.executing
+
+
+Miscellanea
+-----------
+
+grepcomp
+greprt
+grepmod
+...
+  Shortcuts in $CHPL_HOME/util/devel to grep the compiler, runtime, and
+  Chapel module sources, resp.

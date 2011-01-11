@@ -2,7 +2,7 @@
 Tips On Debugging The Compiler
 ==============================
 
-See also: CompilerIRTricks.txt; notes on the generated code.
+See also: CompilerIRTricks.txt, GeneratedCode.txt.
 See also: compiler overview in $CHPL_HOME/doc/developer/compilerOverview.
 
 With --print-passes, the compiler prints individual passes as they progress.
@@ -17,6 +17,8 @@ Starting GDB and setup
 
   This fires up gdb and sets it up with useful shortcuts
   (by reading in $CHPL_HOME/compiler/etc/gdb.commands).
+
+  Typing C-x 2 within gdb should split the window, showing the source code.
 
 * traditional:  gdb $CHPL_HOME/bin/$CHPL_HOST_PLATFORM/chpl
 
@@ -125,6 +127,27 @@ gdbShouldBreakHere()
   for another reason) and for --break-on-id.
   You can call it in your debugging instrumentation as well.
 
+
+Examining the source code
+-------------------------
+
+TAGS
+  Is created when you build the compiler, in $CHPL_HOME/compiler/TAGS
+  - for use with emacs's find-tag et al.
+  TAGS are also created elsewhere when building the runtime library
+  and compiling a Chapel program.
+
+BROWSE
+  Created like TAGS above. Reflects the class hierarchy within the compiler,
+  compatible with emacs's ebrowse-tree.
+  Presently there is little more than the BaseAST and Vec<> hierarchies.
+
+grepcomp
+greprt
+grepmod
+...
+  Shortcuts in $CHPL_HOME/util/devel to grep the compiler, runtime, and
+  Chapel module sources, resp.
 
 Troubles exiting
 ----------------

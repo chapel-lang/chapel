@@ -23,6 +23,9 @@ Compiler documentation:
   ErrorWarningMessaging.txt
     The standard ways to report errors and warnings in Chapel/compiler/runtime.
 
+RuntimeLibrary.txt
+  All about the runtime library.
+
 GeneratedCode.txt
   All about compiler-generated code: where it is, timing it,
   debugging/profiling, etc.
