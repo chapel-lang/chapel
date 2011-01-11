@@ -9,17 +9,19 @@ developers.  A possible reading order is roughly as follows:
 GettingStarted.txt
   A list of suggested "first steps" for new developers.
 
-(Proceed to GeneratedCode.txt or GASNetOnDesktops.txt
-if that is your focus.)
+Compiler documentation:
 
-The compiler overview document
-  in $CHPL_HOME/doc/developer/compilerOverview
+  The compiler overview document
+    in $CHPL_HOME/doc/developer/compilerOverview
 
-CompilerDebugging.txt
-  Tips on debugging the compiler.
+  CompilerDebugging.txt
+    Tips on debugging the compiler.
 
-CompilerIRTricks.txt
-  Tips on examining compiler IR during/after compilation.
+  CompilerIRTricks.txt
+    Tips on examining compiler IR during/after compilation.
+
+  ErrorWarningMessaging.txt
+    The standard ways to report errors and warnings in Chapel/compiler/runtime.
 
 GeneratedCode.txt
   All about compiler-generated code: where it is, timing it,
