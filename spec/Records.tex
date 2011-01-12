@@ -161,19 +161,56 @@ record-type:
 \subsection{Record Construction}
 
 A variable of a record type declared without an initialization expression
-is initialized to a record instance by calling the record's default constructor.
+is initialized to a record instance by calling the record's default constructor
+without arguments (unless it is generic).
 \index{records!new}
 \index{new!records}
 \index{records!instances}
 To construct a record instance as an expression,
-i.e. without binding it to a variable, the \chpl{new} keyword is
+i.e. without binding it to a variable, a \chpl{new} expression is
 required.  In this case, storage is allocated and reclaimed as for a record
 variable declaration (\rsec{Record_Storage}).
+To initialize a variable with a non-default value, it can be assigned
+the value of a \chpl{new} expression.
 \begin{rationale}
 The \chpl{new} keyword disambiguates types from values. This is needed because of the close
 relationship between constructors and type specifiers for classes and
 records.
 \end{rationale}
+
+\begin{example}
+
+\begin{chapelpre}
+% recordCreation.chpl
+\end{chapelpre}
+\begin{chapel}
+record TimeStamp {
+  var time: string = "1/1/1011";
+}
+
+var timestampDefault: TimeStamp;                  // use the default for 'time'
+var timestampCustom = new TimeStamp("2/2/2022");  // ... or a different one
+writeln(timestampDefault);
+writeln(timestampCustom);
+
+var idCounter = 0;
+record UniqueID {
+  var id: int;
+  def UniqueID() { idCounter += 1; id = idCounter; }
+}
+
+writeln(new UniqueID());  // create and use a record value without a variable
+writeln(new UniqueID());
+\end{chapel}
+\begin{chapeloutput}
+(time = 1/1/1011)
+(time = 2/2/2022)
+(id = 1)
+(id = 2)
+\end{chapeloutput}
+The variable \chpl{timestampDefault} is initialized with \chpl{TimeStamp}'s default constructor. The \chpl{new TimeStamp} expression creates a record that is assigned to \chpl{timestampCustom}, effectively initializing \chpl{timestampCustom} via a call to the constructor with desired arguments. The records created with \chpl{new UniqueID()} are discarded after they are used.
+\end{example}
+
 
 \subsection{Default Comparison Operators on Records}
 \label{Record_Comparison_Operators}
