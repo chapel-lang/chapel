@@ -90,9 +90,8 @@ def main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-def LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
+def LUFactorize(n: indexType, Ab: [?AbD] elemType,
                 piv: [1..n] indexType) {
-  const AbD = Ab.domain;    // alias Ab.domain to save typing
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
@@ -133,14 +132,12 @@ def LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
     // computation:
     //
     panelSolve(Ab, l, piv);
-    if (tr.numIndices > 0) then
-      updateBlockRow(Ab, tl, tr);
+    updateBlockRow(Ab, tl, tr);
     
     //
     // update trailing submatrix (if any)
     //
-    if (br.numIndices > 0) then
-      schurComplement(Ab, blk);
+    schurComplement(Ab, blk);
   }
 }
 
@@ -173,9 +170,7 @@ def LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-def schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
-  const AbD = Ab.domain;
-
+def schurComplement(Ab: [?AbD] elemType, ptOp: indexType) {
   //
   // Calculate location of ptSol (see diagram above)
   //
@@ -194,8 +189,8 @@ def schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
   const replAD: domain(2, indexType) = AbD[ptSol.., ptOp..#blkSize],
         replBD: domain(2, indexType) = AbD[ptOp..#blkSize, ptSol..];
     
-  const replA : [replAD] elemType = Ab[ptSol.., ptOp..#blkSize],
-        replB : [replBD] elemType = Ab[ptOp..#blkSize, ptSol..];
+  const replA : [replAD] elemType = Ab[replAD],
+        replB : [replBD] elemType = Ab[replBD];
 
   // do local matrix-multiply on a block-by-block basis
   forall (row,col) in AbD[ptSol.., ptSol..] by (blkSize, blkSize) {
@@ -208,12 +203,14 @@ def schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
             bBlkD = replBD[ptOp..#blkSize, col..#blkSize],
             cBlkD = AbD[row..#blkSize, col..#blkSize];
 
-      dgemm(aBlkD.dim(1).length,
-            aBlkD.dim(2).length,
-            bBlkD.dim(2).length,
-            replA(aBlkD),
-            replB(bBlkD),
-            Ab(cBlkD));
+      dgemmNativeInds(replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
+      /*
+      dgemmReindexed(cBlkD.dim(1).length, aBlkD.dim(2).length, cBlkD.dim(2).length,
+                     replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
+      */
+      /*
+      dgemmIdeal(replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
+      */
     }
   }
 }
@@ -221,12 +218,21 @@ def schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
 //
 // calculate C = C - A * B.
 //
-def dgemm(p: indexType,       // number of rows in A
-          q: indexType,       // number of cols in A, number of rows in B
-          r: indexType,       // number of cols in B
-          A: [1..p, 1..q] ?t,
-          B: [1..q, 1..r] t,
-          C: [1..p, 1..r] t) {
+def dgemmNativeInds(A: [] elemType,
+                    B: [] elemType,
+                    C: [] elemType) {
+  for (iA, iC) in (A.domain.dim(1), C.domain.dim(1)) do
+    for (jA, iB) in (A.domain.dim(2), B.domain.dim(1)) do
+      for (jB, jC) in (B.domain.dim(2), C.domain.dim(2)) do
+        C[iC,jC] -= A[iA, jA] * B[iB, jB];
+}
+
+def dgemmReindexed(p: indexType,    // number of rows in A
+                   q: indexType,    // number of cols in A, number of rows in B
+                   r: indexType,    // number of cols in B
+                   A: [1..p, 1..q] elemType,
+                   B: [1..q, 1..r] elemType,
+                   C: [1..p, 1..r] elemType) {
   // Calculate (i,j) using a dot product of a row of A and a column of B.
   for i in 1..p do
     for j in 1..r do
@@ -234,51 +240,58 @@ def dgemm(p: indexType,       // number of rows in A
         C[i,j] -= A[i, k] * B[k, j];
 }
 
+def dgemmIdeal(A: [1.., 1..] elemType,
+               B: [1.., 1..] elemType,
+               C: [1.., 1..] elemType) {
+  for i in C.domain.dim(1) do
+    for j in C.domain.dim(2) do
+      for k in A.domain.dim(2) do
+        C[i,j] -= A[i, k] * B[k, j];
+}
+
+
 //
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-def panelSolve(Ab: [] ?t,
-               panel: domain(2, indexType),
+def panelSolve(Ab: [] elemType,
+               panel: domain,
                piv: [] indexType) {
-  const pnlRows = panel.dim(1),
-        pnlCols = panel.dim(2);
 
   //
-  // Ideally some type of assertion to ensure panel is embedded in Ab's
-  // domain
+  // TODO: Use on clause here (or avoid using a range?
   //
-  assert(piv.domain.dim(1) == Ab.domain.dim(1));
-  
-  if (pnlCols.length == 0) then return;
-  
-  for k in pnlCols {             // iterate through the columns
+  for k in panel.dim(2) {             // iterate through the columns
     var col = panel[k.., k..k];
     
     // If there are no rows below the current column return
-    if col.dim(1).length == 0 then return;
+    if col.numIndices == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
-    const ( , (pivotRow, )) = maxloc reduce(abs(Ab(col)), col),
-          pivot = Ab[pivotRow, k];
+    const ( , (pivotRow, )) = maxloc reduce(abs(Ab(col)), col);
+
+    // Capture the pivot value explicitly (note that result of maxloc
+    // is absolute value, so it can't be used directly).
+    //
+    // TODO: could introduce a maxabsloc reduction that returns the
+    //       raw value with the highest absolute value
+    const pivotVal = Ab[pivotRow, k];
     
-    // Swap the current row with the pivot row
+    // Swap the current row with the pivot row and update the pivot vector
+    // to reflect that
+    Ab[k, ..] <=> Ab[pivotRow, ..];
     piv[k] <=> piv[pivotRow];
 
-    Ab[k, ..] <=> Ab[pivotRow, ..];
-    
-    if (pivot == 0) then
+    if (pivotVal == 0) then
       halt("Matrix can not be factorized");
     
     // divide all values below and in the same col as the pivot by
-    // the pivot
-    if k+1 <= pnlRows.high then
-      Ab(col)[k+1.., k..k] /= pivot;
+    // the pivot value
+    Ab[k+1.., k..k] /= pivotVal;
     
     // update all other values below the pivot
-    if k+1 <= pnlRows.high && k+1 <= pnlCols.high then
-      forall (i,j) in panel[k+1.., k+1..] do
-        Ab[i,j] -= Ab[i,k] * Ab[k,j];
+    forall (i,j) in panel[k+1.., k+1..] do
+      Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
 
@@ -288,26 +301,20 @@ def panelSolve(Ab: [] ?t,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-def updateBlockRow(Ab: [] ?t,
-                   tl: domain(2, indexType),
-                   tr: domain(2, indexType)) {
-  const tlRows = tl.dim(1),
-        tlCols = tl.dim(2),
-        trRows = tr.dim(1),
-        trCols = tr.dim(2);
-  
-  assert(tlCols == trRows);
+def updateBlockRow(Ab: [] elemType,
+                   tl: domain,
+                   tr: domain) {
 
-  //
-  // Ultimately, we will probably want to do some replication of the
-  // tl block in order to make this operation completely localized as
-  // in the dgemm.  We have not yet undertaken that optimization.
-  //
-  for i in trRows do
-    forall j in trCols do
-      for k in tlRows.low..i-1 do
+  for row in tr.dim(1) {
+    const activeRow = tr[row..row, ..],
+          prevRows = tr.dim(1).low..row-1;
+
+    forall (i,j) in activeRow do
+      for k in prevRows do
         Ab[i, j] -= Ab[i, k] * Ab[k,j];
+  }
 }
+
 
 //
 // compute the backwards substitution
