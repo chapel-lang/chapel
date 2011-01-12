@@ -5,7 +5,6 @@ module M {
 }
 
 def bar() {
-  use M;
   M.foo(3);
 }
 bar();

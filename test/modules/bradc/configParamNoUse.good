@@ -1,1 +1,1 @@
-configParamNoUse.chpl:12: error: module 'M1' must be used before accessing its symbols
+In M1.foo()

@@ -9,5 +9,7 @@ module M1 {
 }
 
 module M2 {
-  M1.foo();
+  def main() {
+    M1.foo();
+  }
 }
