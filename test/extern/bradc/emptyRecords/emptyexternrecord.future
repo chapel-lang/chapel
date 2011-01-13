@@ -1,0 +1,8 @@
+bug: pruning of empty records and externs
+
+This bug demonstrates that _extern declarations of empty extern
+records get pruned out of the compiler AST, like other empty records.
+This should not happen because we permit the user to specify partial
+information about an external record, and therefore an empty external
+record is a reasonable thing.  Moreover, we shouldn't ever remove
+arguments from external functions.
