@@ -124,13 +124,12 @@ extern void* const chpl_private_broadcast_table[];
       CHPL_COMM_GET(local, wide, type, ln, fn);                         \
   } while (0)
 
-#define CHPL_COMM_WIDE_GET_SVEC(local, wide, type, ln, fn)            \
+#define CHPL_COMM_WIDE_GET_SVEC(local, wide, type, ln, fn)              \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
-      CHPL_ASSIGN_SVEC(local, (*(wide).addr));                             \
+      CHPL_ASSIGN_SVEC(local, (*(wide).addr));                          \
     else                                                                \
-      chpl_comm_get(&(local), (wide).locale, (wide).addr,               \
-                    SPECIFY_SIZE(type), ln, fn);                        \
+      CHPL_COMM_GET(local, wide, type, ln, fn);                         \
   } while (0)
 
 #define CHPL_COMM_WIDE_GET_LOCALE(local, wide, ln, fn)                  \
@@ -138,8 +137,7 @@ extern void* const chpl_private_broadcast_table[];
     if (chpl_localeID == (wide).locale)                                 \
       local = (wide).addr->locale;                                      \
     else                                                                \
-      chpl_comm_get(&(local), (wide).locale, (wide).addr,               \
-                    SPECIFY_SIZE(int32_t), ln, fn);                     \
+      CHPL_COMM_GET(local, wide, int32_t, ln, fn);                      \
   } while (0)
 
 #define CHPL_COMM_WIDE_PUT(type, wide, local, ln, fn)                   \
