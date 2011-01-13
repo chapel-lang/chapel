@@ -64,8 +64,7 @@ def main() {
         MatrixSpace = MatVectSpace[.., ..n];
 
   var Ab : [MatVectSpace] elemType,  // the matrix A and vector b
-      piv: [1..n] indexType,         // a vector of pivot values
-      x  : [1..n] elemType;          // the solution vector, x
+      piv: [1..n] indexType;         // a vector of pivot values
 
   var A => Ab[MatrixSpace],          // an alias for the Matrix part of Ab
       b => Ab[.., n+1];              // an alias for the last column of Ab
@@ -76,7 +75,7 @@ def main() {
 
   LUFactorize(n, Ab, piv);                 // compute the LU factorization
 
-  x = backwardSub(n, A, b);  // perform the back substitution
+  var x = backwardSub(n, A, b);  // perform the back substitution
 
   const execTime = getCurrentTime() - startTime;  // store the elapsed time
 
@@ -283,7 +282,7 @@ def panelSolve(Ab: [] elemType,
     piv[k] <=> piv[pivotRow];
 
     if (pivotVal == 0) then
-      halt("Matrix can not be factorized");
+      halt("Matrix cannot be factorized");
     
     // divide all values below and in the same col as the pivot by
     // the pivot value
@@ -320,17 +319,12 @@ def updateBlockRow(Ab: [] elemType,
 // compute the backwards substitution
 //
 def backwardSub(n: indexType,
-                A: [1..n, 1..n] elemType,
-                b: [1..n] elemType) {
-  var x: [b.domain] elemType;
+                A: [] elemType,
+                b: [?bd] elemType) {
+  var x: [bd] elemType;
 
-  for i in [b.domain by -1] {
-    x[i] = b[i];
-    
-    for j in [i+1..b.domain.high] do
-      x[i] -= A[i,j] * x[j];
-
-    x[i] /= A[i,i];
+  for i in bd by -1 {
+    x[i] = (b[i] - (+ reduce [j in i+1..bd.high] (A[i,j] * x[j]))) / A[i,i];
   }
 
   return x;
@@ -365,7 +359,7 @@ def verifyResults(Ab, MatrixSpace, x) {
 
   initAB(Ab);
   
-  const axmbNorm = norm(gaxpyMinus(n, n, A, x, b), normType.normInf);
+  const axmbNorm = norm(gaxpyMinus(A, x, b), normType.normInf);
 
   const a1norm   = norm(A, normType.norm1),
         aInfNorm = norm(A, normType.normInf),
@@ -400,19 +394,14 @@ def printResults(successful, execTime) {
 //
 // simple matrix-vector multiplication, solve equation A*x-y
 //
-def gaxpyMinus(n: indexType,
-               m: indexType,
-               A: [1..n, 1..m],
-               x: [1..m],
-               y: [1..n]) {
-  var res: [1..n] elemType;
+def gaxpyMinus(A: [?AD],
+               x: [?xD],
+               y: [?yD]) {
+  var res: [yD] elemType;
 
-  for i in 1..n do
-    for j in 1..m do
-      res[i] += A[i,j]*x[j];
-
-  for i in 1..n do
-    res[i] -= y[i];
+  // TODO: really want a partial reduction here
+  forall i in yD do
+    res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i];
 
   return res;
 }
