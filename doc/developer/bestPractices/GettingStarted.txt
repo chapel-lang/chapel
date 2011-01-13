@@ -61,3 +61,6 @@ project via the following steps:
   comments at the top of $CHPL_HOME/util/start_test are the best
   documentation.  Looking through the test system for uses of the
   various files is also a good way to get started with it.
+
+* Get aquainted with the compiler architecture via the compiler
+  overview document in $CHPL_HOME/doc/developer/compilerOverview/
