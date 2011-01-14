@@ -1,0 +1,15 @@
+error message: better error message for iterators with the void return type
+
+Currently it says: "illegal use of function that does not return a value",
+which does not point to the issue very clearly.
+
+Developer's note: the error is issued in functionResolution.cpp
+when it comes across PRIM_MOVE(retval,ret_expr) (or similar),
+which is created in normalize_returns(). Since normalize happens
+before function resolution, we will not necessarily catch it there
+(as exemplified by void-iterator-error.chpl).
+
+Also: need make sure the error message and location still make sense
+when the iterator is in an internal module. Specifically,
+functionResolution.cpp use userCall(call) to determine the location,
+which may cause it not point to the actual void-typed iterator.
