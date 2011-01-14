@@ -1,4 +1,9 @@
-bug: no error is detected when a larger array is assigned to a smaller one
+bug: parallel zippered iteration does no size/shape checking
+
+bradc: The problem is that our parallel leader/follower interface does
+not support a size check.
+
+Claridge writes:
 
 Note that the error is detected if the roles are reversed, i.e. a smaller
 array is assigned to a larger one.  The bounds performing the loop for
