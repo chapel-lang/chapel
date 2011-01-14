@@ -37,7 +37,7 @@ OPTIONS
 
   --help-env      Print the command line option help message, listing
                   the environment variable equivalent for each flag
-                  and its current value.
+                  (see ENVIRONMENT) and its current value.
 
   --help-settings   Print the command line option help message, listing
                  the current setting of each option as specified by
@@ -286,6 +286,12 @@ OPTIONS
                      those calls within a specific module or at a
                      particular line number.
 
+  --[no-]print-callstack-on-error   Accompany certain error and warning
+                     messages with the Chapel call stack that the compiler
+                     was working on when it reached the error or warning
+                     location. This is useful when the underlying cause
+                     of the issue is in one of the callers.
+
   --instantiate-max <max>   In order to avoid infinite loops when
                      instantiating generic functions, the compiler
                      limits the number of times a single function
@@ -301,10 +307,12 @@ OPTIONS
                      be omitted, causing the default value to be toggled.
 
 ENVIRONMENT
+
   See $CHPL_HOME/doc/README.chplenv for detailed information about 
   general environment variable settings, legal values, and default
-  settings. Use $CHPL_HOME/util/printchplenv.pl to view your current
-  settings (as explicitly set and inferred).
+  settings. Run $CHPL_HOME/util/printchplenv to view your current
+  settings (as explicitly set and inferred). Some of the most
+  commonly-used environment variables are summarized here.
 
   CHPL_HOME           Specifies the location of the Chapel installation directory
 
@@ -329,8 +337,8 @@ ENVIRONMENT
                       based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
                       and $CHPL_HOST_COMPILER)
 
-  CHPL_THREADS        Specifies the thread layer to use for implementing
-                      tasks (defaults to a best guess based on 
+  CHPL_TASKS          Specified the tasking layer to use for implementing
+                      tasks (defaults to a best guess based on
                       $CHPL_TARGET_PLATFORM)
 
   CHPL_COMM           Specifies the communication layer to use for
@@ -340,14 +348,12 @@ ENVIRONMENT
                       execution (defaults to a best guess based on
                       $CHPL_COMM and $CHPL_TARGET_PLATFORM)
 
-  CHPL_MEM            Specifies the memory allocation layer to use
-                      (defaults to 'default' which uses C's malloc/free)
-
   Most compiler command-line options have an environment variable that can
   be used to specify a default value. Use the --help-env option to list the 
   environment variable equivalent for each option. Command-line options 
   will always override environment variable settings in the event of a 
-  conflict.
+  conflict. Except for options expecting a string or a path, if the
+  environment variable is set to empty, it is considered unset.
 
 BUGS
   See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/README.bugs
@@ -357,5 +363,4 @@ SEE ALSO
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors to Chapel.
 COPYRIGHT
-  Copyright (c) 2004-2010 Cray Inc. (See $CHPL_HOME/LICENSE for more
-  details)
+  Copyright (c) 2004-2011 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)
