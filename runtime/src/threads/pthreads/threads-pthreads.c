@@ -216,7 +216,6 @@ void threadlayer_init(uint64_t callStackSize) {
 
     if (pthread_attr_setstacksize(&thread_attributes, callStackSize) != 0)
       chpl_internal_error("pthread_attr_setstacksize() failed");
-
   }
   threadCallStackSize = callStackSize;
 

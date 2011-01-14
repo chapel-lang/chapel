@@ -143,7 +143,6 @@ void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
 
     if (setrlimit(RLIMIT_STACK, &rlim) != 0)
       chpl_internal_error("setrlimit() failed");
-
   }
   taskCallStackSize = callStackSize;
 
