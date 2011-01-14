@@ -199,12 +199,17 @@ class DefaultArithmeticDom: BaseArithmeticDom {
       for  param i in 1..rank do
         block(i) = ranges(i).low+follower(i).low:idxType..ranges(i).low+follower(i).high:idxType;
     }
+
     if rank == 1 {
-      for i in block do
+      for i in block {
+        __primitive("noalias pragma");
         yield i;
+      }
     } else {
-      for i in these_help(1, block) do
+      for i in these_help(1, block) {
+        __primitive("noalias pragma");
         yield i;
+      }
     }
   }
 
@@ -447,8 +452,10 @@ class DefaultArithmeticArr: BaseArr {
   def these(param tag: iterator, follower) var where tag == iterator.follower {
     if debugDefaultDist then
       writeln("*** In array follower code:"); // [\n", this, "]");
-    for i in dom.these(tag=iterator.follower, follower) do
+    for i in dom.these(tag=iterator.follower, follower) {
+      __primitive("noalias pragma");
       yield dsiAccess(i);
+    }
   }
 
   def computeFactoredOffs() {

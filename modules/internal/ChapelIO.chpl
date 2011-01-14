@@ -133,6 +133,12 @@ def file.flush() {
   on this do chpl_fflush(_fp);
 }
 
+def file.eof {
+  _extern def feof(fp: _file): int;  // This should be a c_int not Chapel 'int'
+  return (feof(_fp) != 0);
+}
+
+
 def _checkOpen(f: file, isRead: bool) {
   if !f.isOpen {
     var fullFilename:string = f.path + "/" + f.filename;

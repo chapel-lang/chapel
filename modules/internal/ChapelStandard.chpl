@@ -1,6 +1,8 @@
 use ChapelBase;
 use ChapelNumLocales;
 use ChapelThreads;
+use ChapelThreadsInternal;
+use ChapelTasksInternal;
 use ChapelIO;
 use ChapelTuple;
 use ChapelRange;
