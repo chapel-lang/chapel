@@ -119,6 +119,9 @@ sync-type:
   `sync' type-specifier
 \end{syntax}
 
+If a sync variable declaration has an initialization expression, then
+the variable is initially full, otherwise it is initially empty.
+
 \begin{example}
 The code
 \begin{chapelpre}
@@ -183,7 +186,8 @@ type \chpl{sync} can also be used to specify a generic formal
 argument.  In this case, the actual must be a sync variable and it is
 passed by reference.
 
-For generic formal arguments with unspecified types, an actual that
+For generic formal arguments with unspecified types
+(\rsec{Formal_Arguments_of_Generic_Type}), an actual that
 is \chpl{sync} is ``read'' before being passed to the function and the
 generic formal argument's type is set to the base type of the actual.
 

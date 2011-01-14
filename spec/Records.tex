@@ -6,22 +6,7 @@ A record is a data structure that is like a class but has value
 semantics.  Like classes, records can be generic (\rsec{Generic_Types}).
 The key differences between records and classes are listed below.
 
-A variable of a record type declared without an initialization expression
-is initialized to a record instance by calling the record's default constructor.
-\index{records!new}
-\index{new!records}
-\index{records!instances}
-To construct a record instance as an expression,
-i.e. without binding it to a variable, the \chpl{new} keyword is
-required.  In this case, storage is allocated and reclaimed as for a record
-variable declaration (\rsec{Record_Storage}).
-\begin{rationale}
-The \chpl{new} keyword disambiguates types from values. This is needed because of the close
-relationship between constructors and type specifiers for classes and
-records.
-\end{rationale}
-
-\subsection{Differences between Classs and Records}
+\subsection{Differences between Classes and Records}
 \label{Class_and_Record_Differences}
 \index{records!differences with classes}
 
@@ -76,9 +61,9 @@ because the intent \chpl{inout} is used.
 \subsubsection{Storage Allocation}
 \label{Record_Storage}
 
-Storage for a record variable contains directly the data associated
+Storage for a record variable directly contains the data associated
 with the fields in the record, in the same manner as variables
-of primitive types contain directly the primitive values.
+of primitive types directly contain the primitive values.
 Record storage is reclaimed when the record variable goes out of scope.
 No additional storage for a record is allocated or reclaimed.
 Field data of one variable's record is not shared with data
@@ -98,13 +83,13 @@ When a record is derived from a base record, it contains the data in
 the base record.  The difference between record inheritance and class
 inheritance is that there is no dynamic dispatch.  The record type of
 a variable is the exact type of that variable, i.e. a variable of a
-base record type cannot contain a derived record.
+base record type cannot store a derived record type.
 
 \subsubsection{No Dynamic Dispatch}
 
 Records do not support dynamic dispatch.
 
-\subsubsection{No \chpl{nil} Value}
+\subsubsection{No {\em nil} Value}
 \index{nil!not provided for records}
 
 There is no counterpart of the \chpl{nil} value for records.  A record
@@ -118,13 +103,22 @@ legal class instance.
 \index{records!assignment}
 
 In record assignment, the fields of the record on the left-hand side
-of the assignment are assigned the values in the fields of the record
-on the right-hand side of the assignment.  When a base record is
-assigned a derived record, just the fields that exist in the base
-record are assigned.  Record assignment is generic in that the
-right-hand side expression can be of any type as long as the type
-contains the same fields (by name) as the record on the left-hand
+of the assignment are assigned the corresponding field values of the record
+on the right-hand side of the assignment.
+Record assignment is generic and structural in that the
+right-hand side expression can be of any type as long as it
+contains at least the same fields (by name) as the record on the left-hand
 side.
+
+A left-hand-side field must be assignable the corresponding
+right-hand-side field, i.e., an implicit conversion
+(\rsec{Implicit_Conversions}) must exist between the fields' types.
+Fields on the right-hand side that do not exist on the left-hand side
+are ignored during record assignment.  For example, when a base record is
+assigned a derived record, just the fields that exist in the base
+record are assigned.
+Assignment from a class instance to a record is allowed, but assignment
+from record to class is not.
 
 \subsection{Record Declarations}
 \label{Record_Declarations}
@@ -163,6 +157,23 @@ record-type:
   identifier
   identifier ( named-expression-list )
 \end{syntax}
+
+\subsection{Record Construction}
+
+A variable of a record type declared without an initialization expression
+is initialized to a record instance by calling the record's default constructor.
+\index{records!new}
+\index{new!records}
+\index{records!instances}
+To construct a record instance as an expression,
+i.e. without binding it to a variable, the \chpl{new} keyword is
+required.  In this case, storage is allocated and reclaimed as for a record
+variable declaration (\rsec{Record_Storage}).
+\begin{rationale}
+The \chpl{new} keyword disambiguates types from values. This is needed because of the close
+relationship between constructors and type specifiers for classes and
+records.
+\end{rationale}
 
 \subsection{Default Comparison Operators on Records}
 \label{Record_Comparison_Operators}
