@@ -9,6 +9,9 @@ developers.  A possible reading order is roughly as follows:
 GettingStarted.txt
   A list of suggested "first steps" for new developers.
 
+TestSystem.txt
+  A brief overview of the Chapel testing system.
+
 Compiler documentation:
 
   The compiler overview document
