@@ -53,24 +53,11 @@ system("cd $rootdir && svn export -q $svnroot chapel");
        "third-party/Makefile",
        "third-party/README",
        "util/README",
-       "util/chpl-multirealm",
        "util/printchplenv",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
        "util/setchplenv.sh",
-       "util/test/timedexec",
-       "util/test/sub_test",
-       "util/test/sub_clean",
-       "util/test/computePerfStats",
-       "util/test/filterSuppressions",
-       "util/test/testEnv",
-       "util/test/createGraphs",
-       "util/test/viewGraphs",
-       "util/test/checkDuplicates",
-       "util/test/compileTest",
-       "util/test/paratest.server",
-       "util/test/paratest.client",
-       "util/test/cat2File"
+       "util/start_test"
 );
 
 
@@ -93,7 +80,9 @@ system("cd $rootdir && svn export -q $svnroot chapel");
     "third-party/gasnet",
     "third-party/gmp",
     "third-party/pvm",
-    "util/chplenv"
+    "util/chplenv",
+    "util/multirealm",
+    "util/test"
 );
 
 
@@ -104,9 +93,6 @@ system("cd chapel && make -f make/Makefile.release");
 
 print "Generating the bison/flex files...\n";
 system("cd chapel/compiler/parser && make lex.yy.cpp > /dev/null");
-
-print "Creating the BUILD_VERSION file...\n";
-system("cd chapel/compiler/main && echo 0 > BUILD_VERSION");
 
 print "Creating the examples directory...\n";
 system("cd chapel && cp -r test/release/examples .");

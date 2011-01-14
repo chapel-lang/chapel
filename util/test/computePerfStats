@@ -7,11 +7,11 @@
 # maintains a .dat by searching the output of the run for values 
 # of performance keys specified in .perfkeys. It then writes 
 # these values to the .dat for every run.  
-
+use strict;
 use Text::ParseWords;
 #use strict;
-$testname = $ARGV[0];
-$outputdir = $ARGV[1];
+my $testname = $ARGV[0];
+my $outputdir = $ARGV[1];
 
 my $argc = @ARGV+1;
 my $key_file;
@@ -49,28 +49,38 @@ open ERRORS, ">$errors_file" or die "can't open $errors_file for creating $!";
 
 # get keys from .perfkeys
 open KEYS, "$key_file" or die "can't open $key_file $!";
-my @keys = <KEYS>;
+my @keys;
+my @tmp_keys = <KEYS>;
 close (KEYS);
-foreach my $key (@keys) {
-    chomp($key);
+foreach my $key (@tmp_keys) {
+    my $real_key = &trim($key);
+    if (substr($real_key,0,1) ne "#") {
+        push(@keys, $real_key);
+    } else {
+        # ignore comments unless they specify a .dat file
+        my $comment = &trim(substr($real_key,1));
+        if (index($comment,"file:") == 0) {
+            my @crap = split(/\s+/, $comment);
+            $data_file = $outputdir."/".@crap[1];
+        }
+    }
 }
 print ERRORS "processed $key_file\n";
 
-
 # get lines from output file
 my @file_lines;
-if ($exec_time_out eq "False") {
+# if ($exec_time_out eq "False") {
     open TEST, "$test_output_file" or die "can't open $test_output_file $!";
     @file_lines = <TEST>;
     close (TEST);
     print ERRORS "processed $test_output_file\n";
-} else {
-    print ERRORS "timed out executing $testname, no $test_output_file to process\n";
-}
+# } else {
+#     print ERRORS "timed out executing $testname, no $test_output_file to process\n";
+# }
 
 # if this is first performance run, create the .dat
-if (-e "$data_file") {
-} else {
+if (! -e "$data_file") {
+# } else {
     open STATS, ">$data_file" or die "can't open $data_file for creating $!";
     print ERRORS "created $data_file\n";
     print STATS "# Date";
@@ -92,29 +102,31 @@ $year -= 100;
 
 # check all output lines for values following keys, values get written to the .dat
 my $foundEverything = 1;
+if ($exec_time_out eq "True") {
+    # Timed out executions will be comments
+    printf STATS "# ";
+}
 printf STATS "%.2d/%.2d/%.2d ", $mon, $mday, $year;
 foreach my $key (@keys) {
-    if ($exec_time_out eq "False") {
-        print "Looking for $key...";
-        print STATS "\t";
-        my $found = 0;
-        foreach my $line (@file_lines) {
-            if ($line =~ m/\Q$key\E(\s*)(\S*)/ && $found == 0) {
-                print "found it: $2\n";
-                print STATS "$2";
-                $found = 1;
-            }
+    print "Looking for $key...";
+    print STATS "\t";
+    my $found = 0;
+    foreach my $line (@file_lines) {
+        if ($line =~ m/\Q$key\E(\s*)(\S*)/ && $found == 0) {
+            print "found it: $2\n";
+            print STATS "$2";
+            $found = 1;
         }
-        if ($found == 0) {
-            print STATS "-";
-            print "didn't find it\n";
-            $foundEverything = 0;
-        }
-    } else {
-	print ERRORS "Printing time out as \"-\" under $key...\n";
-        print STATS "\t";
-        print STATS "-";
     }
+    if ($found == 0) {
+        print STATS "-";
+        print "didn't find it\n";
+        $foundEverything = 0;
+
+    }
+}
+if ($exec_time_out eq "True") {
+    print STATS " ### EXECUTION TIMED OUT ###";
 }
 print STATS "\n";
 
@@ -124,3 +136,10 @@ if ($foundEverything != 1 and $exec_time_out eq "False") {
     exit 1;
 } 
 
+# remove white space surrounding a string
+sub trim($) {
+    my $string = shift;
+    $string =~ s/^\s+//;
+    $string =~ s/\s+$//;
+    return $string;
+}

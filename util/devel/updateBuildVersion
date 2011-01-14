@@ -8,14 +8,12 @@
 #
 
 $chplhome = $ENV{'CHPL_HOME'};
-$build_version_file_dir = $ARGV[0];
+$build_version_file = $ARGV[0];
 
-if ($build_version_file_dir eq "") {
-    print "usage: updateBuildVersion <directory to place BUILD_VERSION";
+if ($build_version_file eq "") {
+    print "usage: updateBuildVersion <filename for build version>\n";
     exit(1);
 }
-
-$build_version_file = "$build_version_file_dir/BUILD_VERSION";
 
 if (-r "$build_version_file") {
     $last_build_version = `cat $build_version_file`;
@@ -24,8 +22,7 @@ if (-r "$build_version_file") {
     $last_build_version = "!!!";
 }
 
-if (defined $ENV{'CHPL_DEVELOPER'} &&
-    defined $ENV{'CHPL_HOME'} &&
+if (defined $ENV{'CHPL_HOME'} &&
     -e "$chplhome/.svn") {
 
     $revline = `svn info $ENV{'CHPL_HOME'} | grep Revision`;
