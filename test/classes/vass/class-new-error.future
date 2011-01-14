@@ -1,0 +1,3 @@
+feature request: in this case, I would like the compiler to suggest missing parentheses
+
+Likewise for 'new' on a record or union.
