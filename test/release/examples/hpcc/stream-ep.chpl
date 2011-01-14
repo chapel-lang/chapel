@@ -214,9 +214,9 @@ def printResults(successful, minTimes) {
           avgTime = + reduce minTimes / numLocales,
           minTime = min reduce minTimes;
     writeln("Execution time:");
-    writeln("  max = ", maxTime);
-    writeln("  avg = ", avgTime);
-    writeln("  min = ", minTime);
+    writeln("  max (seconds) = ", maxTime);
+    writeln("  avg (seconds) = ", avgTime);
+    writeln("  min (seconds) = ", minTime);
 
     const maxGBPerSec = numVectors * numBytes(elemType) * (m / minTime) * 1e-9,
           avgGBPerSec = numVectors * numBytes(elemType) * (m / avgTime) * 1e-9,
