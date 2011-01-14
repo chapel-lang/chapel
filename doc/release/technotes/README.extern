@@ -166,8 +166,8 @@ and y within variables of type fltdbl:
 as would the following declaration:
 
    _extern record fltdbl {
-     var x: real(32);
      var y: real(64);
+     var x: real(32);
    }
 
 Alternatively, the external declaration could only mention one of the

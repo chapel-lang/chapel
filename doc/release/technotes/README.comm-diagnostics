@@ -72,13 +72,13 @@ diagnostics:
 
 When communication diagnostics is turned on, all remote gets, remote
 puts, remote blocking forks, and remote non-blocking forks are
-counted.  The following function then returns an array of 4-tuples
+counted.  The following function then returns an array of 5-tuples
 that contains these counts for each locale:
 
-  getCommDiagnostics(): [LocaleSpace] 4*int - Return an array of
-    4-tuples of remote gets, remote puts, remote blocking forks, and
-    remote non-blocking forks, each element corresponding to its
-    locale.
+  getCommDiagnostics(): [LocaleSpace] 5*int - Return an array of
+    5-tuples of remote gets, remote puts, remote blocking forks,
+    remote blocking fast forks, and remote non-blocking forks, each
+    element corresponding to its locale.
 
 For example, given a program mytest.chpl:
 
@@ -94,7 +94,7 @@ For example, given a program mytest.chpl:
 
 Executing as "a.out -nl 2" results in the following output:
 
-  (0, 0, 1, 0) (1, 1, 0, 0)
+  (0, 0, 1, 0, 0) (1, 1, 0, 0, 0)
 
 So we can say that a remote blocking fork was executed on locale 0,
 and a remote get and a remote put was executed on locale 1.

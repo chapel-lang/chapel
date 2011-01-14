@@ -23,13 +23,7 @@ language.  In this case your programs will run on the login node
    can be found in README.multilocale.
 
 
-3) Set your PATH to include the directory $CHPL_HOME/bin/cx-linux
-   which is created when you build the compiler.  For example:
-
-     setenv PATH "$PATH":"$CHPL_HOME/bin/cx-linux"
-
-
-4) If your Cray CX1/CX1000 uses LSF for scheduling jobs between
+3) If your Cray CX1/CX1000 uses LSF for scheduling jobs between
    multiple users, you can have Chapel take care of the details for
    you by setting CHPL_LAUNCHER to lsf-gasnetrun_ibv.  For example:
 
@@ -58,13 +52,13 @@ language.  In this case your programs will run on the login node
    on Chapel's launcher capabilities.
 
 
-5) By default, Chapel will use gcc as the compiler for a Cray
+4) By default, Chapel will use gcc as the compiler for a Cray
    CX1/CX1000.  If you want to override this choice, you can select
    another compiler using the CHPL_HOST_COMPILER variable.  See
    README.chplenv for options.
 
 
-6) Make sure you're in the top-level chapel/ directory:
+5) Make sure you're in the top-level chapel/ directory:
 
      cd $CHPL_HOME
 
@@ -72,8 +66,11 @@ language.  In this case your programs will run on the login node
 
      gmake
 
-   If your shell is tcsh, you need to execute 'rehash' after your
-   first make.
+
+6) Set your PATH to include the directory $CHPL_HOME/bin/cx-linux
+   which is created when you build the compiler.  For example:
+
+     setenv PATH "$PATH":"$CHPL_HOME/bin/cx-linux"
 
 
 7) Compile your Chapel program as usual.  See README.compiling for

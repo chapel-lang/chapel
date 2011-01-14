@@ -2,6 +2,9 @@
 Using Chapel on IBM Machines
 ============================
 
+[Note, if you are using Chapel on IBM's MareNostrum, you should refer
+to README.marenostrum in this directory]
+
 We only have limited experience using Chapel on IBM platforms to date.
 This file contains notes that reflect our current experience, focusing
 first on PowerPC-based systems and then BG systems.  If you are not
@@ -14,7 +17,8 @@ PowerPC SMP clusters
 We have run Chapel on clusters of Power5 and Power6 SMP nodes using
 the following settings:
 
-1) Set CHPL_HOME and MANPATH as usual.
+
+1) Set CHPL_HOME and MANPATH as indicated in README.chplenv.
 
 
 2) Set CHPL_HOST_PLATFORM to pwr5 for a Power5 cluster or pwr6 for a
@@ -47,10 +51,15 @@ or:
 
      cd $CHPL_HOME
 
-
-5) Make/re-make the compiler and runtime:
+   Make/re-make the compiler and runtime:
 
      gmake
+
+
+5) Set your PATH to include the directory $CHPL_HOME/bin/$CHPL_HOST_PLATFORM
+   which is created when you build the compiler.  For example:
+
+     setenv PATH "$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 
 
 6) Compile your Chapel program as usual.  See README.compiling for
