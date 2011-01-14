@@ -384,8 +384,11 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
     return;
   }
 
-  while (block && *done == 0)
-    ;
+  while (block && *done == 0) {
+#ifdef CHPL_COMM_YIELD_TASK_WHILE_POLLING
+    CHPL_TASK_YIELD();
+#endif
+  }
 
   chpl_free(info, 0, 0);
   if (rdata) {

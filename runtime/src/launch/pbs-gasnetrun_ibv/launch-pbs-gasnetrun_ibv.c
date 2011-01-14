@@ -224,14 +224,20 @@ static void chpl_launch_cleanup(void) {
 }
 
 
-void chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
-                           argv[0]);
+int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+  int retcode =
+    chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
+                             argv[0]);
   chpl_launch_cleanup();
+  return retcode;
 }
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, chpl_string filename) {
   return 0;
+}
+
+
+void chpl_launch_print_help(void) {
 }

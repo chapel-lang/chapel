@@ -6,9 +6,17 @@
 
 /* This header file is for routines that are in the generated code */
 
+/* defined in chpl__header.h: */
+
+extern int32_t maxThreadsPerLocale;
+extern uint64_t callStackSize;
+extern int32_t chpl_numRealms;
+
+/* defined in ChapelThreads.c: */
+void chpl__init_ChapelThreads(int32_t _ln, chpl_string _fn);
+
 /* defined in _config.c: */
 
-extern int32_t chpl_numRealms;
 const char* chpl_realmType(int32_t r);
 
 /* used for entry point: */

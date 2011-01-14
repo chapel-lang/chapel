@@ -19,9 +19,6 @@
 
 // Defined in the generated Chapel code:
 
-extern int32_t maxThreadsPerLocale;
-extern uint64_t callStackSize;
-
 
 // Sync variables
 
@@ -51,8 +48,30 @@ void      CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *);
 
 // Tasks
 
-void CHPL_TASKING_INIT(void);        // main task initializes tasking
+//
+// CHPL_TASKING_INIT() is called by the main task on each locale to initialize
+//   the tasking layer
+//   - maxThreadsPerLocale is the maximum number of threads the tasking
+//     layer should use; 0 means unlimited
+//   - callStackSize is the size of the callstack each task should use;
+//     0 means use the system default
+// These values should be checked for legality and tucked away for later use
+// by the tasking layer as necessary.  This is a reasonable place to print
+// out warnings about bad values.
+//
+void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize);
 void CHPL_TASKING_EXIT(void);        // called by the main task
+
+// tasking init for any threads created outside of the tasking/threading layer
+void CHPL_PER_PTHREAD_TASKING_INIT(void);
+
+//
+// Have the tasking layer call the 'chpl_main' function pointer
+// representing the entry point for the user's Chapel code.  This
+// can either be done by invoking the function directly or by creating
+// a task that evaluates the function.
+//
+void CHPL_TASKING_CALL_MAIN(void (*chpl_main)(void));
 
 typedef struct chpl_task_list* chpl_task_list_p;
 
@@ -87,6 +106,11 @@ void CHPL_BEGIN(
 chpl_taskID_t CHPL_TASK_ID(void);
 
 //
+// Yield.
+//
+void CHPL_TASK_YIELD(void);
+
+//
 // Suspend.
 //
 void CHPL_TASK_SLEEP(int);
@@ -98,17 +122,11 @@ chpl_bool CHPL_GET_SERIAL(void);
 void      CHPL_SET_SERIAL(chpl_bool);
 
 //
-// returns the size of a stack (initial value of callStackSize); the sentinel
-// value 0 means that the stack size is limited only by the system's available
-// resources, and implies that a task's stack can be dynamically extended
+// returns the value of the call stack size limit being used in
+// practice; the value returned may potentially differ from one locale
+// to the next
 //
-uint64_t CHPL_TASK_CALLSTACKSIZE(void);
-
-//
-// returns the upper limit on the size of a stack; the sentinel value 0 means
-// that there is no preexisting limit
-//
-uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void);
+uint64_t chpl_task_callstacksize(void);
 
 //
 // returns the number of tasks that are ready to run on the current locale,
