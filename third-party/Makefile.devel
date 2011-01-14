@@ -10,3 +10,5 @@ nanox: FORCE
 openmpi: FORCE
 	cd openmpi && $(MAKE)
 
+qthread: FORCE
+	cd qthread && $(MAKE)
