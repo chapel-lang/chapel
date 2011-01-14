@@ -12,6 +12,7 @@
 #include "stringutil.h"
 #include "misc.h"
 #include "yy.h"
+#include "../resolution/resolution.h"
 
 static void cleanup_for_exit(void) {
   deleteTmpDir();
@@ -147,6 +148,42 @@ static void printDevelErrorFooter(void) {
 }
 
 
+//
+// Print the module name, line number, and function signature of each function
+// on the call stack. This can be called from a debugger to to see what the
+// call chain looks like e.g. after a resolution error.
+//
+void printCallStack(bool force, bool shortModule, FILE* out) {
+  if (!force) {
+    if (!fPrintCallStackOnError || err_print || callStack.n <= 1)
+      return;
+  }
+  if (!developer)
+    fprintf(out, "while processing the following Chapel call chain:\n");
+  for (int i = callStack.n-1; i >= 0; i--) {
+    CallExpr* call = callStack.v[i];
+    FnSymbol* fn = call->getFunction();
+    ModuleSymbol* module = call->getModule();
+    fprintf(out, "  %s:%d: %s%s%s\n",
+            (shortModule ? module->name : cleanFilename(module->filename)),
+            call->lineno, toString(fn),
+            (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
+            (fn->hasFlag(FLAG_TEMP) ? " [compiler-generated]" : ""));
+  }
+}
+
+static void printCallStackOnError() {
+  printCallStack(false, false, stderr);
+}
+
+//
+// debugging convenience
+//
+void printCallStack();
+void printCallStack() {
+  printCallStack(true, true, stdout);
+}
+
 
 void handleError(const char *fmt, ...) {
   fflush(stdout);
@@ -168,6 +205,8 @@ void handleError(const char *fmt, ...) {
   printDevelErrorFooter();
 
   fprintf(stderr, "\n");
+
+  printCallStackOnError();
 
   if (exit_immediately && !ignore_errors) {
     clean_exit(1);
@@ -193,6 +232,8 @@ void handleError(BaseAST* ast, const char *fmt, ...) {
   printDevelErrorFooter();
 
   fprintf(stderr, "\n");
+
+  printCallStackOnError();
 
   if (exit_immediately && !ignore_errors) {
     clean_exit(1);

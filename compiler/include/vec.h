@@ -157,9 +157,10 @@ template <class C, int S> inline void
 Vec<C,S>::add(C a) {
   if (n & (S-1))
     v[n++] = a;
-  else if (!v)
-    (v = e)[n++] = a;
-  else
+  else if (!v) {
+    v = e;
+    v[n++] = a;
+  } else
     add_internal(a);
 }
 
@@ -168,9 +169,10 @@ Vec<C,S>::add() {
   C *ret;
   if (n & (S-1))
     ret = &v[n++];
-  else if (!v)
-    ret = &(v = e)[n++];
-  else
+  else if (!v) {
+    v = e;
+    ret = &(v)[n++];
+  } else
     ret = &add_internal();
   return *ret;
 }

@@ -18,6 +18,7 @@
 #define USR_PRINT      setupError(__FILE__, __LINE__, 5), handleError
 #define USR_STOP exitIfFatalErrorsEncountered
 
+// INT_ASSERT is intended to become no-op in production builds of compiler
 #define INT_ASSERT(x) do { if (!(x)) INT_FATAL("assertion error"); } while (0)
 
 class BaseAST;
@@ -28,6 +29,7 @@ void setupError(const char* filename, int lineno, int tag);
 void handleError(const char* fmt, ...);
 void handleError(BaseAST* ast, const char* fmt, ...);
 void exitIfFatalErrorsEncountered(void);
+void printCallStack(bool force, bool shortModule, FILE* out);
 
 void startCatchingSignals(void);
 void stopCatchingSignals(void);

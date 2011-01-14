@@ -341,6 +341,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "const char* CHPL_HOST_COMPILER      = \"%s\";\n", CHPL_HOST_COMPILER);
     fprintf(hdrfile, "const char* CHPL_TARGET_COMPILER    = \"%s\";\n", CHPL_TARGET_COMPILER);
     fprintf(hdrfile, "const char* CHPL_TASKS              = \"%s\";\n", CHPL_TASKS);
+    fprintf(hdrfile, "const char* CHPL_THREADS            = \"%s\";\n", CHPL_THREADS);
     fprintf(hdrfile, "const char* CHPL_COMM               = \"%s\";\n", CHPL_COMM);
     if (fGPU) {
       fprintf(hdrfile, "#else\n");
@@ -629,7 +630,7 @@ codegen_config(FILE* outfile) {
   fprintf(outfile, "initConfigVarTable();\n");
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (var->hasFlag(FLAG_CONFIG)) {
+    if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
       fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
       Type* type = var->type;
       if (type->symbol->hasFlag(FLAG_WIDE_CLASS))

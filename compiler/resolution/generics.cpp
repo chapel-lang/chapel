@@ -28,7 +28,7 @@ explainInstantiation(FnSymbol* fn) {
 
   char msg[1024] = "";
   int len;
-  if (!strncmp(fn->name, "_construct_", 11))
+  if (fn->hasFlag(FLAG_CONSTRUCTOR))
     len = sprintf(msg, "instantiated %s(", fn->_this->type->symbol->name);
   else
     len = sprintf(msg, "instantiated %s(", fn->name);

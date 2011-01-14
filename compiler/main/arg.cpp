@@ -112,6 +112,27 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
     desc[i].pfn(arg_state, arg);
 }
 
+static char* get_envvar_setting(ArgumentDescription& desc) {
+  /*
+   * Return NULL if the option has no corresponding environment variable
+   * or if that env var is not set.
+   * (For non-S or P flags, env var set to empty is considered not set.)
+   */
+  const char* envvar = desc.env;
+  if (!envvar)
+    return NULL;
+  char* setting = getenv(envvar);
+  switch (desc.type[0]) {
+    case 'P':
+    case 'S':
+      return setting;
+    default:
+      if (!setting || !setting[0])
+        return NULL;
+      else
+        return setting;
+  }
+}
 
 void
 process_args(ArgumentState *arg_state, int argc, char **aargv) {
@@ -129,7 +150,7 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
       break; 
     if (desc[i].env) {
       char type = desc[i].type[0];
-      char * env = getenv(desc[i].env);
+      char * env = get_envvar_setting(desc[i]);
       if (!env) continue;
       switch (type) {
         case '+': (*(int *)desc[i].location)++; break;
@@ -323,7 +344,7 @@ void usage(ArgumentState* arg_state, int status, bool printEnvHelp,
         printf("          env var: ");
         const char* envvar = desc[i].env;
         if (envvar) {
-          const char* setting = getenv(envvar);
+          char* setting = get_envvar_setting(desc[i]);
           printf("%s", envvar);
           if (setting) {
             printf(" (set to '%s')", setting);

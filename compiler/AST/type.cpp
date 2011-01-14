@@ -240,11 +240,23 @@ static void
 addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
   if (FnSymbol* fn = toFnSymbol(def->sym)) {
     ct->methods.add(fn);
-    INT_ASSERT(!fn->_this);
-    fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
-    fn->insertFormalAtHead(new DefExpr(fn->_this));
-    fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
-    fn->addFlag(FLAG_METHOD);
+    if (fn->_this) {
+      // get the name used in the type binding clause
+      // this is the way it comes from the parser (see fn_decl_stmt_inner)
+      ArgSymbol* thisArg = toArgSymbol(fn->_this);  INT_ASSERT(thisArg);
+      INT_ASSERT(thisArg->type == dtUnknown);
+      BlockStmt* bs = thisArg->typeExpr;  INT_ASSERT(bs && bs->length() == 1);
+      Expr* firstexpr = bs->body.first();  INT_ASSERT(firstexpr);
+      UnresolvedSymExpr* sym = toUnresolvedSymExpr(firstexpr); INT_ASSERT(sym);
+      const char* name = sym->unresolved;
+      // ... then report it to the user
+      USR_FATAL_CONT(fn->_this, "Type binding clauses ('%s.' in this case) are not supported in declarations within a class, record or union", name);
+    } else {
+      fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
+      fn->insertFormalAtHead(new DefExpr(fn->_this));
+      fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+      fn->addFlag(FLAG_METHOD);
+    }
   }
   if (def->parentSymbol || def->list)
     def->remove();

@@ -73,7 +73,6 @@ class Symbol : public BaseAST {
 
   bool hasFlag(Flag flag);
   void addFlag(Flag flag);
-  void addFlags(Vec<const char*>* strs);
   void copyFlags(Symbol* other);
   void removeFlag(Flag flag);
 };

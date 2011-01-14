@@ -38,4 +38,7 @@ end
 define flags
   call viewFlags($arg0)
 end
+define loc
+  p ($arg0)->stringLoc()
+end
 break gdbShouldBreakHere

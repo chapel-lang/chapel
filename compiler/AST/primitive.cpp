@@ -44,10 +44,12 @@ returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
 }
 
+/* Currently unused
 static Type*
 returnInfoUInt64(CallExpr* call) {
   return dtUInt[INT_SIZE_64];
 }
+*/
 
 static Type*
 returnInfoReal64(CallExpr* call) {
@@ -251,6 +253,31 @@ returnInfoVirtualMethodCall(CallExpr* call) {
   return fn->retType;
 }
 
+// print the number of each type of primitive present in the AST
+void printPrimitiveCounts(const char* passName) {
+  int primCounts[NUM_KNOWN_PRIMS];
+  for(int i=0; i<NUM_KNOWN_PRIMS; i++) {
+    primCounts[i] = 0;
+  }
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->baseExpr == NULL) {
+      if (call->primitive) {
+        primCounts[call->primitive->tag] += 1;
+      }
+    }
+  }
+
+  printf("NUM_KNOWN_PRIMS = %d\n", NUM_KNOWN_PRIMS);
+  for(int i=1; i<NUM_KNOWN_PRIMS; i++) {
+    if (primitives[i])
+      printf("%s prim[%d] %s %d\n", passName, i, primitives[i]->name, primCounts[i]);
+    else
+      printf("%s prim[%d] *** UNKNOWN *** %d\n", passName, i, primCounts[i]);
+  }
+
+}
+
 HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
 
 PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
@@ -443,6 +470,7 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_COBEGIN, "cobegin block", returnInfoVoid);
   prim_def(PRIM_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
   prim_def(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N, "xmt pragma forall i in n", returnInfoVoid);
+  prim_def(PRIM_BLOCK_XMT_PRAGMA_NOALIAS, "noalias pragma", returnInfoVoid, true);
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_ON_NB, "non-blocking on block", returnInfoVoid);
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);
@@ -505,8 +533,6 @@ initPrimitive() {
   prim_def("chpl_exit_any", returnInfoVoid, true);
   prim_def("chpl_coresPerLocale", returnInfoInt32);
   prim_def("chpl_localeName", returnInfoString);
-  prim_def(PRIM_CHPL_CALLSTACKSIZE, "chpl_callStackSize", returnInfoUInt64);
-  prim_def(PRIM_CHPL_CALLSTACKSIZELIMIT, "chpl_callStackSizeLimit", returnInfoUInt64);
   prim_def("chpl_maxThreads", returnInfoInt32);
   prim_def("chpl_maxThreadsLimit", returnInfoInt32);
   prim_def(PRIM_CHPL_NUMTHREADS, "chpl_numThreads", returnInfoUInt32);

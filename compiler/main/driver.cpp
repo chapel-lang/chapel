@@ -27,9 +27,11 @@ const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_TASKS = NULL;
+const char* CHPL_THREADS = NULL;
 const char* CHPL_COMM = NULL;
 
 int fdump_html = 0;
+bool fdump_html_incude_system_modules = true;
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
@@ -80,6 +82,7 @@ bool report_inlining = false;
 char chplmake[256] = "";
 char fExplainCall[256] = "";
 char fExplainInstantiation[256] = "";
+bool fPrintCallStackOnError = false;
 bool fCLineNumbers = false;
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
@@ -152,6 +155,7 @@ static void setupOrderedGlobals(void) {
   SETUP_ENV_VAR(CHPL_HOST_COMPILER, "chplenv/compiler --host");
   SETUP_ENV_VAR(CHPL_TARGET_COMPILER, "chplenv/compiler --target");
   SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
+  SETUP_ENV_VAR(CHPL_THREADS, "chplenv/threads");
   SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
 
   // These depend on the environment variables being set
@@ -403,7 +407,12 @@ static void setBaselineFlag(ArgumentState* arg, char* unused) {
 
 static void setHelpTrue(ArgumentState* arg, char* unused) {
   printHelp = true;
-}  
+}
+
+static void setHtmlUser(ArgumentState* arg, char* unused) {
+  fdump_html = true;
+  fdump_html_incude_system_modules = false;
+}
 
 
 /*
@@ -487,17 +496,18 @@ static ArgumentDescription arg_desc[] = {
  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
+ {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
- {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL},
- {"help", 'h', NULL, "Help (show this list)", "F", &printHelp, NULL},
+ {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL, NULL},
+ {"help", 'h', NULL, "Help (show this list)", "F", &printHelp, NULL, NULL},
  {"help-env", ' ', NULL, "Environment variable help", "F", &printEnvHelp, "", setHelpTrue},
  {"help-settings", ' ', NULL, "Current flag settings", "F", &printSettingsHelp, "", setHelpTrue},
- {"license", ' ', NULL, "Show license", "F", &printLicense, NULL},
- {"version", ' ', NULL, "Show version", "F", &printVersion, NULL},
+ {"license", ' ', NULL, "Show license", "F", &printLicense, NULL, NULL},
+ {"version", ' ', NULL, "Show version", "F", &printVersion, NULL, NULL},
 
  {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
  {"", ' ', NULL, "Debug Output", NULL, NULL, NULL, NULL},
@@ -505,6 +515,7 @@ static ArgumentDescription arg_desc[] = {
  {"c-line-numbers", ' ', NULL, "Use C code line numbers and filenames", "F", &fCLineNumbers, NULL, NULL},
  {"gen-ids", ' ', NULL, "Pepper generated code with BaseAST::id numbers", "F", &fGenIDS, "CHPL_GEN_IDS", NULL},
  {"html", 't', NULL, "Dump IR in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
+ {"html-user", ' ', NULL, "Dump IR in HTML for main/user module(s) only", "T", &fdump_html, NULL, setHtmlUser},
  {"log", 'd', "[a|i|F|d|s]", "Specify debug logs", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
@@ -515,6 +526,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-scalar-replace", ' ', NULL, "Print information about scalar replacement", "F", &fReportScalarReplace, NULL, NULL},
 
  {"", ' ', NULL, "Misc. Developer Flags", NULL, NULL, NULL, NULL},
+  {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, NULL, NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},

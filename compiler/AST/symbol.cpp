@@ -118,19 +118,14 @@ FnSymbol* Symbol::getFnSymbol(void) {
 
 
 bool Symbol::hasFlag(Flag flag) {
+  CHECK_FLAG(flag);
   return flags[flag];
 }
 
 
 void Symbol::addFlag(Flag flag) {
+  CHECK_FLAG(flag);
   flags.set(flag);
-}
-
-
-void Symbol::addFlags(Vec<const char*>* strs) {
-  forv_Vec(const char, str, *strs) {
-    flags.set(str2flag(str));
-  }
 }
 
 
@@ -140,6 +135,7 @@ void Symbol::copyFlags(Symbol* other) {
 
 
 void Symbol::removeFlag(Flag flag) {
+  CHECK_FLAG(flag);
   flags.reset(flag);
 }
 
@@ -506,6 +502,8 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 FnSymbol*
 FnSymbol::copyInner(SymbolMap* map) {
   FnSymbol* copy = new FnSymbol(name);
+  if (hasFlag(FLAG_CONSTRUCTOR))
+    copy->addFlag(FLAG_CONSTRUCTOR);
   for_formals(formal, this) {
     copy->insertFormalAtTail(COPY_INT(formal->defPoint));
   }
