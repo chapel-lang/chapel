@@ -79,6 +79,8 @@ extern bool printModuleFiles;
 extern bool ignore_warnings;
 extern bool ignore_errors;
 extern int squelch_header_errors;
+extern bool enforce_proc_iter;
+extern bool print_proc_iter_conversion_messages;
 
 extern bool fWarnPromotion;
 extern bool fReportOptimizedOn;

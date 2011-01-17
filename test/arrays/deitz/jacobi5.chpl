@@ -13,7 +13,7 @@ var Temp : [BigD] real;
 A(SouthD) = 1.0;
 Temp(SouthD) = 1.0;
 
-var iter = 0;
+var iters = 0;
 
 do {
 
@@ -21,13 +21,13 @@ do {
     return (x(1) + y(1), x(2) + y(2));
 
   [i in D] Temp(i) = (+ reduce A(i + stencil)) / 4.0;
-  iter += 1;
+  iters += 1;
   if (max reduce abs(A - Temp)) <= epsilon {
     break;
   }
   [i in D] A(i) = (+ reduce Temp(i + stencil)) / 4.0;
-  iter += 1;
+  iters += 1;
 } while (max reduce abs(A - Temp)) > epsilon;
 
 writeln("Delta = ", max reduce abs(A - Temp));
-writeln("Iterations = ", iter);
+writeln("Iterations = ", iters);

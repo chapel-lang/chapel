@@ -4338,6 +4338,7 @@ resolve() {
   }
 
   resolveFns(chpl_main);
+  USR_STOP();
 
   if (fRuntime) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {

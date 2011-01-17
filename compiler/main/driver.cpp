@@ -43,6 +43,8 @@ int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
 bool ignore_warnings = false;
+bool enforce_proc_iter = false;
+bool print_proc_iter_conversion_messages = false;
 int trace_level = 0;
 int fcg = 0;
 static bool fBaseline = false;
@@ -429,14 +431,17 @@ Flag types:
   L = int64 (long)
   N = --no-... flag, --no version sets to false
   n = --no-... flag, --no version sets to true
+
+Record components:
+ {"long option" (or "" for separators), 'short option', "description of option argument(s), if any", "option description", "option type", &affectedVariable, "environment variable name", setter_function},
 */
 
 static ArgumentDescription arg_desc[] = {
   {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
   {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
   {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
-  {"print-search-dirs", ' ', "", "Print module search path", "F", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
-  {"print-module-files", ' ', "", "Print module file locations", "F", &printModuleFiles, NULL, NULL},
+  {"print-search-dirs", ' ', NULL, "Print module search path", "F", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
+  {"print-module-files", ' ', NULL, "Print module file locations", "F", &printModuleFiles, NULL, NULL},
   {"count-tokens", ' ', NULL, "Count tokens in main modules", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
   {"print-code-size", ' ', NULL, "Print code size of main modules", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
 
@@ -499,6 +504,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
+ {"enforce-proc-iter-keywords", ' ', NULL, "Enforce fully the new rules for the 'proc' and 'iter' keywords", "F", &enforce_proc_iter, "CHPL_ENFORCE_PROC_ITER", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
@@ -540,6 +546,7 @@ static ArgumentDescription arg_desc[] = {
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
+ {"print-proc-iter-conversion-messages", ' ', NULL, "Print directions for converting the source code to the new rules for the 'proc' and 'iter' keywords", "F", &print_proc_iter_conversion_messages, "CHPL_PRINT_PROC_ITER_CONVERSION_MESSAGES", NULL},
  {0}
 };
 

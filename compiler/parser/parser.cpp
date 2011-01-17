@@ -5,8 +5,8 @@
 #include "parser.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "chapel.tab.h"
 #include "yy.h"
+#include "chapel.tab.h"
 
 BlockStmt* yyblock = NULL;
 const char* yyfilename;

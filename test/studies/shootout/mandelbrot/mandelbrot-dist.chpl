@@ -6,10 +6,10 @@ use BlockDist;
 _extern def putchar(i : int) : int;
 
 config const size: int(64) = 200;
-config const iter : uint = 50;
+config const iters : uint = 50;
   
 const sizeRange = 0..#size;
-const iterRange = 0..#iter;
+const iterRange = 0..#iters;
 
 var Dist = new dmap (new Block(rank=2, idxType=int(64), boundingBox=[sizeRange, sizeRange]));
 var Dom: domain(2, int(64)) dmapped Dist = [sizeRange, sizeRange];

@@ -5,10 +5,10 @@
 _extern def putchar(i : int) : int;
 
 config const size: int(64) = 200;
-config const iter : uint = 50;
+config const iters : uint = 50;
   
 const sizeRange = 0..#size;
-const iterRange = 0..#iter;
+const iterRange = 0..#iters;
 
 def main() {
   

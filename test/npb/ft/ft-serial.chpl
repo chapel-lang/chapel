@@ -301,31 +301,31 @@ const
 
 def verify() {
   var rerr : real, ierr : real;
-  for iter in 1..niter {
+  for iterNo in 1..niter {
     select problem_class {
       when classes.S {
-        rerr = (sums(iter).re - vdata_s(iter).re) / vdata_s(iter).re;
-        ierr = (sums(iter).im - vdata_s(iter).im) / vdata_s(iter).im;
+        rerr = (sums(iterNo).re - vdata_s(iterNo).re) / vdata_s(iterNo).re;
+        ierr = (sums(iterNo).im - vdata_s(iterNo).im) / vdata_s(iterNo).im;
       }
       when classes.W {
-        rerr = (sums(iter).re - vdata_w(iter).re) / vdata_w(iter).re;
-        ierr = (sums(iter).im - vdata_w(iter).im) / vdata_w(iter).im;
+        rerr = (sums(iterNo).re - vdata_w(iterNo).re) / vdata_w(iterNo).re;
+        ierr = (sums(iterNo).im - vdata_w(iterNo).im) / vdata_w(iterNo).im;
       }
       when classes.A {
-        rerr = (sums(iter).re - vdata_a(iter).re) / vdata_a(iter).re;
-        ierr = (sums(iter).im - vdata_a(iter).im) / vdata_a(iter).im;
+        rerr = (sums(iterNo).re - vdata_a(iterNo).re) / vdata_a(iterNo).re;
+        ierr = (sums(iterNo).im - vdata_a(iterNo).im) / vdata_a(iterNo).im;
       }
       when classes.B {
-        rerr = (sums(iter).re - vdata_b(iter).re) / vdata_b(iter).re;
-        ierr = (sums(iter).im - vdata_b(iter).im) / vdata_b(iter).im;
+        rerr = (sums(iterNo).re - vdata_b(iterNo).re) / vdata_b(iterNo).re;
+        ierr = (sums(iterNo).im - vdata_b(iterNo).im) / vdata_b(iterNo).im;
       }
       when classes.C {
-        rerr = (sums(iter).re - vdata_c(iter).re) / vdata_c(iter).re;
-        ierr = (sums(iter).im - vdata_c(iter).im) / vdata_c(iter).im;
+        rerr = (sums(iterNo).re - vdata_c(iterNo).re) / vdata_c(iterNo).re;
+        ierr = (sums(iterNo).im - vdata_c(iterNo).im) / vdata_c(iterNo).im;
       }
       when classes.D {
-        rerr = (sums(iter).re - vdata_d(iter).re) / vdata_d(iter).re;
-        ierr = (sums(iter).im - vdata_d(iter).im) / vdata_d(iter).im;
+        rerr = (sums(iterNo).re - vdata_d(iterNo).re) / vdata_d(iterNo).re;
+        ierr = (sums(iterNo).im - vdata_d(iterNo).im) / vdata_d(iterNo).im;
       }
     }
     if !(abs(rerr) <= epsilon && abs(ierr) <= epsilon) then
@@ -362,10 +362,10 @@ compute_initial_conditions(U1);
 fft_init();
 fft(1, U1, U0);
 
-for iter in 1..niter {
+for iterNo in 1..niter {
   evolve(U0, U1, Twiddle);
   fft(-1, U1, U2);
-  checksum(iter, U2);
+  checksum(iterNo, U2);
 }
 
 if verify() {

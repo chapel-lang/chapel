@@ -1,0 +1,2 @@
+conversion-messages.chpl:11: In iterator 'c13':
+conversion-messages.chpl:13: warning: returning a value in an iterator is deprecated; replace it with a yield of that value, followed by a return with no expression

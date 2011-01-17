@@ -22,5 +22,10 @@ int getNextYYChar();
 extern int yylex(void);
 extern int yydebug;
 
+enum ProcIter {
+  ProcIter_DEF, // ProcIter: remove after transition
+  ProcIter_PROC,
+  ProcIter_ITER
+};
 
 #endif

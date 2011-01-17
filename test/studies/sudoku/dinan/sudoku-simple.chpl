@@ -3,8 +3,8 @@ config const inputfile = "easy.dat";
 var givenBoard: [1..9, 1..9] int;  // The given board
 var board:  [1..9, 1..9] int;
 
-def checkForNum(num: int, board: [] int, iter: domain(2)): bool {
-  for spot in iter do
+def checkForNum(num: int, board: [] int, iters: domain(2)): bool {
+  for spot in iters do
     if board(spot) == num then return false;
 
   return true;

@@ -67,6 +67,8 @@ viewFlags(BaseAST* ast) {
         printf("\n");
       }
     }
+  } else {
+    printf("[%d]: not a Symbol, has no flags\n", ast->id);
   }
 }
 

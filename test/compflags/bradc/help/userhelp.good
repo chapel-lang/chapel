@@ -84,6 +84,8 @@ Miscellaneous Options:
                                          to each error or warning
       --instantiate-max <max>            Limit number of instantiations
       --no-warnings                      Disable output of warnings
+      --enforce-proc-iter-keywords       Enforce fully the new rules for the
+                                         'proc' and 'iter' keywords
   -s, --set <name>[=<value>]             Set config param value
 
 Compiler Information Options:

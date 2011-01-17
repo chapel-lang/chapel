@@ -45,14 +45,14 @@ def main()
           const Ci : real = (2.0*y/size - 1.0);
 
           {
-            var iter : int = maxIter;
-            while (iter > 0 && (Tr+Ti <= limit**2))
+            var iterNo : int = maxIter;
+            while (iterNo > 0 && (Tr+Ti <= limit**2))
               {
                 Zi = 2.0*Zr*Zi + Ci;
                 Zr = Tr - Ti + Cr;
                 Tr = Zr * Zr;
                 Ti = Zi * Zi;
-                iter -= 1;
+                iterNo -= 1;
               }
           }
 
