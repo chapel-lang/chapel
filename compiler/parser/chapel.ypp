@@ -338,7 +338,7 @@ class_tag:
 ;
 
 opt_inherit:
-                  { $$ = new CallExpr(PRIM_ACTUALS_LIST); }
+                  { $$ = NULL; }
 | TCOLON expr_ls  { $$ = $2; }
 ;
 

@@ -1487,8 +1487,11 @@ buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls,
   TypeSymbol* ts = new TypeSymbol(name, ct);
   DefExpr* def = new DefExpr(ts);
   ct->addDeclarations(decls);
-  if (isExtern)
+  if (isExtern) {
     ts->addFlag(FLAG_EXTERN);
+    if (inherit)
+      USR_FATAL_CONT(inherit, "External types do not currently support inheritance");
+  }
   if (inherit)
     ct->inherits.insertAtTail(inherit);
   return def;

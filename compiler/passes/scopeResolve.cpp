@@ -620,7 +620,7 @@ void build_constructor(ClassType* ct) {
     meme->addFlag(FLAG_IS_MEME);
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, meme));
     if (isClass(ct)) {
-      if (ct->dispatchParents.n > 0) {
+      if (ct->dispatchParents.n > 0 && !ct->symbol->hasFlag(FLAG_EXTERN)) {
         if (!ct->dispatchParents.v[0]->defaultConstructor) {
           build_type_constructor(toClassType(ct->dispatchParents.v[0]));
           build_constructor(toClassType(ct->dispatchParents.v[0]));
