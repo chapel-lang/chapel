@@ -23,7 +23,8 @@ There are five environments for use in the spec:
 
 Guidelines for updating the spec:
 
-- There should be example programs for every language concept.
+- There should be example programs for every language concept
+  and for every subsection.
 
 - In explaining a feature, try to address both the compiler
   developers and programmers of the language.  Explain the syntax of
