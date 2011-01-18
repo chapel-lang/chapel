@@ -1,0 +1,3 @@
+callMethodAsFunction.chpl:23: In function 'main':
+callMethodAsFunction.chpl:25: error: unresolved call 'start(D)'
+callMethodAsFunction.chpl:14: note: candidates are: D.start
