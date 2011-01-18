@@ -143,8 +143,8 @@ chpl_bool chpl_pool_is_empty(void);
 //
 
 //
-// These are called once each, from CHPL_TASKING_INIT() and
-// CHPL_TASKING_EXIT().
+// These are called once each, from chpl_tasking_init() and
+// chpl_tasking_exit().
 //
 void threadlayer_init(uint64_t callStackSize);
 void threadlayer_exit(void);
@@ -200,7 +200,7 @@ void threadlayer_sync_destroy(chpl_sync_aux_t *s);
 //
 // Single variables
 //
-// Analogous to the sync case, the CHPL_SINGLE_WAIT_FULL() function
+// Analogous to the sync case, the chpl_single_wait_full() function
 // calls threadlayer_single_suspend() when a single variable is not
 // full.  The call will be made with the single variable's mutex held.
 // It should return (with the mutex again held) as soon as it can once
@@ -217,7 +217,7 @@ void threadlayer_sync_destroy(chpl_sync_aux_t *s);
 // routine waits for the variable to become full or the deadline to
 // pass, or livelock may result.
 //
-// The CHPL_SINGLE_MARK_AND_SIGNAL_FULL() function will call
+// The chpl_single_mark_and_signal_full() function will call
 // threadlayer_single_awaken() every time it is called, not just when it
 // fills the single variable.
 //

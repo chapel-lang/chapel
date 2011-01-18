@@ -34,9 +34,9 @@
 
 #define PVM_LOCK_UNLOCK_SAFE(call, who, in) {                           \
     int retcode;                                                        \
-    CHPL_SYNC_LOCK(&pvm_sync);                                         \
+    chpl_sync_lock(&pvm_sync);                                         \
     retcode = call;                                                     \
-    CHPL_SYNC_UNLOCK(&pvm_sync);                                       \
+    chpl_sync_unlock(&pvm_sync);                                       \
     if (retcode < 0) {                                                  \
       char msg[256];                                                    \
       sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in); \
@@ -46,12 +46,12 @@
 
 #define PVM_LOCK_SAFE(call, who, in) {                                  \
     int retcode;                                                        \
-    CHPL_SYNC_LOCK(&pvm_sync);                                         \
+    chpl_sync_lock(&pvm_sync);                                         \
     retcode = call;                                                     \
     if (retcode < 0) {                                                  \
       char msg[256];                                                    \
       sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in); \
-      CHPL_SYNC_UNLOCK(&pvm_sync);                                     \
+      chpl_sync_unlock(&pvm_sync);                                     \
       chpl_error(msg, 0, 0);                                            \
     }                                                                   \
   }
@@ -59,7 +59,7 @@
 #define PVM_UNLOCK_SAFE(call, who, in) {                                \
     int retcode;                                                        \
     retcode = call;                                                     \
-    CHPL_SYNC_UNLOCK(&pvm_sync);                                       \
+    chpl_sync_unlock(&pvm_sync);                                       \
     if (retcode < 0) {                                                  \
       char msg[256];                                                    \
       sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in); \
@@ -75,16 +75,16 @@
     if (retcode < 0) {                                                  \
       char msg[256];                                                    \
       sprintf(msg, "\n\n%d/%d:%d PVM call %s failed with %d in %s.\n\n", chpl_localeID, chpl_numLocales, (int)pthread_self(), who, retcode, in); \
-      CHPL_SYNC_UNLOCK(&pvm_sync);                                     \
+      chpl_sync_unlock(&pvm_sync);                                     \
       chpl_error(msg, 0, 0);                                            \
     }                                                                   \
   }
 
 #define PVM_LOCK_UNLOCK_UNSAFE(call, who, in) {                         \
     int retcode;                                                        \
-    CHPL_SYNC_LOCK(&pvm_sync);                                         \
+    chpl_sync_lock(&pvm_sync);                                         \
     retcode = call;                                                     \
-    CHPL_SYNC_UNLOCK(&pvm_sync);                                       \
+    chpl_sync_unlock(&pvm_sync);                                       \
   }
 
 #define TAGMASK 4194303
@@ -591,7 +591,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
   while (bufid == 0) {
     PVM_LOCK_SAFE(bufid = pvm_nrecv(tid, msgtag), "pvm_nrecv", "chpl_pvm_recv");
     if (bufid == 0) {
-      CHPL_SYNC_UNLOCK(&pvm_sync);
+      chpl_sync_unlock(&pvm_sync);
       sched_yield();
     }
   }
@@ -609,14 +609,14 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
     if ((pvmtype == ChplCommPut) || (pvmtype == ChplCommGet)) {
 #ifdef CHPL_COMM_HETEROGENEOUS
       chpl_upkCLASS_REFERENCE((void *)&(((_chpl_message_info *)buf)->u.data), 0, CHPL_TYPE_CLASS_REFERENCE, 0, sizeof(void *));
-      CHPL_SYNC_UNLOCK(&pvm_sync);
+      chpl_sync_unlock(&pvm_sync);
 #else
       PVM_NO_LOCK_SAFE(pvm_upkint(&packagesize, 1, 1), "pvm_upkint", "chpl_pvm_recv");
       PVM_UNLOCK_SAFE(pvm_upkbyte((void *)&(((_chpl_message_info *)buf)->u.data), packagesize, 1), "pvm_upkbyte", "chpl_pvm_recv");
 #endif
     } else if (pvmtype == ChplCommFinish) {
       // Do nothing. Nothing in the union.
-      CHPL_SYNC_UNLOCK(&pvm_sync);
+      chpl_sync_unlock(&pvm_sync);
     } else {
       PVM_UNLOCK_SAFE(pvm_upkint(&fnid, 1, 1), "pvm_upkint", "chpl_pvm_recv");
       ((_chpl_message_info *)buf)->u.fid = (chpl_fn_int_t) fnid;
@@ -762,7 +762,7 @@ static int chpl_pvm_recv(int tid, int msgtag, void* buf, int sz) {
         }
       }
     }
-    CHPL_SYNC_UNLOCK(&pvm_sync);
+    chpl_sync_unlock(&pvm_sync);
 #else
     PVM_UNLOCK_SAFE(pvm_upkbyte(buf, sz, 1), "pvm_upkbyte", "chpl_pvm_recv");
 #endif
@@ -993,7 +993,7 @@ static void chpl_pvm_send(int tid, int msgtag, void* buf, int sz) {
     while (bufid == 0) {
       PVM_LOCK_SAFE(bufid = pvm_nrecv(tid, msgtag), "pvm_nrecv", "chpl_pvm_send");
       if (bufid == 0) {
-        CHPL_SYNC_UNLOCK(&pvm_sync);
+        chpl_sync_unlock(&pvm_sync);
         sched_yield();
       }
     }
@@ -1077,7 +1077,7 @@ static void polling(void* x) {
       rpcArg->replyTag = msg_info.replyTag;
       rpcArg->joinLocale = source;
 
-      CHPL_BEGIN((chpl_fn_p)chpl_RPC, rpcArg, true, false, NULL);
+      chpl_begin((chpl_fn_p)chpl_RPC, rpcArg, true, false, NULL);
       break;
     }
     case ChplCommForkNB: {
@@ -1099,7 +1099,7 @@ static void polling(void* x) {
       }
 
       chpl_pvm_recv(source, msg_info.replyTag, args, msg_info.size);
-      CHPL_BEGIN((chpl_fn_p)chpl_ftable[msg_info.u.fid], args, true, false, NULL);
+      chpl_begin((chpl_fn_p)chpl_ftable[msg_info.u.fid], args, true, false, NULL);
 
       break;
     }
@@ -1139,7 +1139,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 #endif
 
   // Initialize locks
-  CHPL_SYNC_INIT_AUX(&pvm_sync);
+  chpl_init_sync_aux(&pvm_sync);
 
   // Figure out who spawned this thread (if no one, this will be PvmNoParent).
   // Still need to lock call, but since PvmNoParent is perfectly okay, don't
@@ -1234,7 +1234,7 @@ static int mysystem(const char* command, const char* description, int ignorestat
     while (bufid == 0) {
       PVM_LOCK_SAFE(bufid = pvm_nrecv(parent, NOTIFYTAG), "pvm_nrecv", "mysystem");
       if (bufid == 0) {
-        CHPL_SYNC_UNLOCK(&pvm_sync);
+        chpl_sync_unlock(&pvm_sync);
         sched_yield();
       }
     }
@@ -1276,7 +1276,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 void chpl_comm_rollcall(void) {
-  CHPL_SYNC_INIT_AUX(&chpl_comm_diagnostics_sync);
+  chpl_init_sync_aux(&chpl_comm_diagnostics_sync);
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, chpl_numLocales, chpl_localeName());
   return;
 }
@@ -1327,7 +1327,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
       PVM_LOCK_SAFE(pvm_recv(-1, BCASTTAG), "pvm_recv", "chpl_comm_broadcast_global_vars");
 #ifdef CHPL_COMM_HETEROGENEOUS
       chpl_upkCLASS_REFERENCE(chpl_globals_registry[i], 0, CHPL_TYPE_CLASS_REFERENCE, 0, sizeof(void *));
-      CHPL_SYNC_UNLOCK(&pvm_sync);
+      chpl_sync_unlock(&pvm_sync);
 #else
       PVM_NO_LOCK_SAFE(pvm_upkint(&size, 1, 1), "pvm_upkint", "chpl_comm_broadcast_global_vars");
       PVM_UNLOCK_SAFE(pvm_upkbyte((char *)(chpl_globals_registry[i]), size, 1), "pvm_upkbyte", "chpl_comm_broadcast_global_vars");
@@ -1427,7 +1427,7 @@ void chpl_comm_barrier(const char *msg) {
     while (bufid == 0) {
       PVM_LOCK_SAFE(bufid = pvm_nrecv(-1, BCASTTAG), "pvm_nrecv", "chpl_comm_barrier");
       if (bufid == 0) {
-        CHPL_SYNC_UNLOCK(&pvm_sync);
+        chpl_sync_unlock(&pvm_sync);
         sched_yield();
       }
     }
@@ -1556,9 +1556,9 @@ void chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln
 #endif
 
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_puts++;
-      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
 
     // Note: this isn't a PVM call, but we need this locked to make
@@ -1604,9 +1604,9 @@ void chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln
 #endif
 
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_gets++;
-      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
 
     // Note: this isn't a PVM call, but we need this locked to make
@@ -1645,9 +1645,9 @@ void chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
 #endif
 
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_forks++;
-      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
 
     // Note: this isn't a PVM call, but we need this locked to make
@@ -1691,12 +1691,12 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   if (chpl_localeID == locale) {
     void* argCopy = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
     memmove(argCopy, arg, mallocsize);
-    CHPL_BEGIN((chpl_fn_p)chpl_ftable[fid], argCopy, true, false, NULL);
+    chpl_begin((chpl_fn_p)chpl_ftable[fid], argCopy, true, false, NULL);
   } else {
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_nb_forks++;
-      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
 
     // Note: this isn't a PVM call, but we need this locked to make

@@ -9,47 +9,40 @@
 #include CHPL_TASKS_H
 #endif
 
-//
-// Define the (uppercase) function names in the interface, that is,
-// the names of the functions declared below.
-//
-
-#include "chpltasks_func_names.h"
-
 
 // Defined in the generated Chapel code:
 
 
 // Sync variables
 
-void      CHPL_SYNC_LOCK(chpl_sync_aux_t *);
-void      CHPL_SYNC_UNLOCK(chpl_sync_aux_t *);
-void      CHPL_SYNC_WAIT_FULL_AND_LOCK(chpl_sync_aux_t *,
+void      chpl_sync_lock(chpl_sync_aux_t *);
+void      chpl_sync_unlock(chpl_sync_aux_t *);
+void      chpl_sync_wait_full_and_lock(chpl_sync_aux_t *,
                                        int32_t, chpl_string);
-void      CHPL_SYNC_WAIT_EMPTY_AND_LOCK(chpl_sync_aux_t *,
+void      chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *,
                                         int32_t, chpl_string);
-void      CHPL_SYNC_MARK_AND_SIGNAL_FULL(chpl_sync_aux_t *);     // and unlock
-void      CHPL_SYNC_MARK_AND_SIGNAL_EMPTY(chpl_sync_aux_t *);    // and unlock
-chpl_bool CHPL_SYNC_IS_FULL(void *, chpl_sync_aux_t *, chpl_bool);
-void      CHPL_SYNC_INIT_AUX(chpl_sync_aux_t *);
-void      CHPL_SYNC_DESTROY_AUX(chpl_sync_aux_t *);
+void      chpl_sync_mark_and_signal_full(chpl_sync_aux_t *);     // and unlock
+void      chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *);    // and unlock
+chpl_bool chpl_sync_is_full(void *, chpl_sync_aux_t *, chpl_bool);
+void      chpl_init_sync_aux(chpl_sync_aux_t *);
+void      chpl_destroy_sync_aux(chpl_sync_aux_t *);
 
 
 // Single variables
 
-void      CHPL_SINGLE_LOCK(chpl_single_aux_t *);
-void      CHPL_SINGLE_UNLOCK(chpl_single_aux_t *);
-void      CHPL_SINGLE_WAIT_FULL(chpl_single_aux_t *, int32_t, chpl_string);
-void      CHPL_SINGLE_MARK_AND_SIGNAL_FULL(chpl_single_aux_t *); // and unlock
-chpl_bool CHPL_SINGLE_IS_FULL(void *, chpl_single_aux_t *, chpl_bool);
-void      CHPL_SINGLE_INIT_AUX(chpl_single_aux_t *);
-void      CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *);
+void      chpl_single_lock(chpl_single_aux_t *);
+void      chpl_single_unlock(chpl_single_aux_t *);
+void      chpl_single_wait_full(chpl_single_aux_t *, int32_t, chpl_string);
+void      chpl_single_mark_and_signal_full(chpl_single_aux_t *); // and unlock
+chpl_bool chpl_single_is_full(void *, chpl_single_aux_t *, chpl_bool);
+void      chpl_init_single_aux(chpl_single_aux_t *);
+void      chpl_destroy_single_aux(chpl_single_aux_t *);
 
 
 // Tasks
 
 //
-// CHPL_TASKING_INIT() is called by the main task on each locale to initialize
+// chpl_tasking_init() is called by the main task on each locale to initialize
 //   the tasking layer
 //   - maxThreadsPerLocale is the maximum number of threads the tasking
 //     layer should use; 0 means unlimited
@@ -59,11 +52,11 @@ void      CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *);
 // by the tasking layer as necessary.  This is a reasonable place to print
 // out warnings about bad values.
 //
-void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize);
-void CHPL_TASKING_EXIT(void);        // called by the main task
+void chpl_tasking_init(int32_t maxThreadsPerLocale, uint64_t callStackSize);
+void chpl_tasking_exit(void);        // called by the main task
 
 // tasking init for any threads created outside of the tasking/threading layer
-void CHPL_PER_PTHREAD_TASKING_INIT(void);
+void chpl_per_pthread_tasking_init(void);
 
 //
 // Have the tasking layer call the 'chpl_main' function pointer
@@ -71,24 +64,24 @@ void CHPL_PER_PTHREAD_TASKING_INIT(void);
 // can either be done by invoking the function directly or by creating
 // a task that evaluates the function.
 //
-void CHPL_TASKING_CALL_MAIN(void (*chpl_main)(void));
+void chpl_tasking_call_main(void (*chpl_main)(void));
 
 typedef struct chpl_task_list* chpl_task_list_p;
 
-void CHPL_ADD_TO_TASK_LIST(
+void chpl_add_to_task_list(
          chpl_fn_int_t,      // function to call for task
          void*,              // argument to the function
          chpl_task_list_p*,  // task list
          int32_t,            // locale where task list resides
-         chpl_bool,          // whether to call CHPL_BEGIN
+         chpl_bool,          // whether to call chpl_begin
          int,                // line at which function begins
          chpl_string);       // name of file containing functions
-void CHPL_PROCESS_TASK_LIST(chpl_task_list_p);
-void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p);
-void CHPL_FREE_TASK_LIST(chpl_task_list_p);
+void chpl_process_task_list(chpl_task_list_p);
+void chpl_execute_tasks_in_list(chpl_task_list_p);
+void chpl_free_task_list(chpl_task_list_p);
 
 // Fork one task.  Do not wait.  Used to implement Chapel's begin statement.
-void CHPL_BEGIN(
+void chpl_begin(
          chpl_fn_p,         // function to fork
          void*,             // function arg
          chpl_bool,         // ignore_serial = force spawning task regardless
@@ -97,29 +90,29 @@ void CHPL_BEGIN(
          chpl_bool,         // serial state (must be "false" except when
                             // called from a comm lib such as gasnet;
                             // otherwise, serial state is that of the
-                            // task executing CHPL_BEGIN)
+                            // task executing chpl_begin)
          chpl_task_list_p);
 
 //
 // Get ID.
 //
-chpl_taskID_t CHPL_TASK_ID(void);
+chpl_taskID_t chpl_task_id(void);
 
 //
 // Yield.
 //
-void CHPL_TASK_YIELD(void);
+void chpl_task_yield(void);
 
 //
 // Suspend.
 //
-void CHPL_TASK_SLEEP(int);
+void chpl_task_sleep(int);
 
 //
 // Get and set dynamic serial state.
 //
-chpl_bool CHPL_GET_SERIAL(void);
-void      CHPL_SET_SERIAL(chpl_bool);
+chpl_bool chpl_get_serial(void);
+void      chpl_set_serial(chpl_bool);
 
 //
 // returns the value of the call stack size limit being used in
@@ -132,7 +125,7 @@ uint64_t chpl_task_callstacksize(void);
 // returns the number of tasks that are ready to run on the current locale,
 // not including any that have already started running.
 //
-uint32_t CHPL_NUMQUEUEDTASKS(void);
+uint32_t chpl_numQueuedTasks(void);
 
 //
 // returns the number of tasks that are running on the current locale,
@@ -143,7 +136,7 @@ uint32_t CHPL_NUMQUEUEDTASKS(void);
 // executing a task inside the cobegin, so in effect the same thread would be
 // executing more than one task.
 //
-uint32_t CHPL_NUMRUNNINGTASKS(void);
+uint32_t chpl_numRunningTasks(void);
 
 //
 // returns the number of tasks that are blocked waiting on a sync or single
@@ -152,7 +145,7 @@ uint32_t CHPL_NUMRUNNINGTASKS(void);
 // the -b switch, which enables block reporting and deadlock detection.
 // If this switch is not specified, -1 may be returned.
 //
-int32_t CHPL_NUMBLOCKEDTASKS(void);
+int32_t chpl_numBlockedTasks(void);
 
 
 // Threads
@@ -163,31 +156,31 @@ int32_t CHPL_NUMBLOCKEDTASKS(void);
 // if the maximum number of threads is limited only by the system's available
 // resources.
 //
-int32_t CHPL_THREADS_GETMAXTHREADS(void);
+int32_t chpl_threads_getMaxThreads(void);
 
 //
 // returns the upper limit on the maximum number of threads that can be handled
 // by this threading layer; use the sentinel value 0 if the maximum number of
 // threads is limited only by the system's available resources.
 //
-int32_t CHPL_THREADS_MAXTHREADSLIMIT(void);
+int32_t chpl_threads_maxThreadsLimit(void);
 
 //
 // returns the total number of threads that currently exist, whether running,
 // blocked, or idle
 //
-uint32_t CHPL_NUMTHREADS(void);
+uint32_t chpl_numThreads(void);
 
 //
 // returns the number of threads that are currently idle
 //
-uint32_t CHPL_NUMIDLETHREADS(void);
+uint32_t chpl_numIdleThreads(void);
 
 #else // LAUNCHER
 
 typedef void chpl_sync_aux_t;
 typedef void chpl_single_aux_t;
-#define CHPL_TASKING_EXIT()
+#define chpl_tasking_exit()
 
 #endif // LAUNCHER
 

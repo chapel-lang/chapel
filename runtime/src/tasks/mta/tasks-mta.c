@@ -21,46 +21,46 @@ static sync int64_t     chpl_can_exit;       // can main thread exit?
 
 // Sync variables
 
-void CHPL_SYNC_LOCK(chpl_sync_aux_t *s) {
+void chpl_sync_lock(chpl_sync_aux_t *s) {
   readfe(&(s->is_full));            // mark empty
 }
 
-void CHPL_SYNC_UNLOCK(chpl_sync_aux_t *s) {
+void chpl_sync_unlock(chpl_sync_aux_t *s) {
   int64_t is_full = readxx(&(s->is_full));
   writeef(&(s->is_full), is_full);  // mark full
 }
 
-void CHPL_SYNC_WAIT_FULL_AND_LOCK(chpl_sync_aux_t *s,
+void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s,
                                   int32_t lineno, chpl_string filename) {
-  CHPL_SYNC_LOCK(s);
+  chpl_sync_lock(s);
   while (!readxx(&(s->is_full))) {
-    CHPL_SYNC_UNLOCK(s);
+    chpl_sync_unlock(s);
     readfe(&(s->signal_full));
-    CHPL_SYNC_LOCK(s);
+    chpl_sync_lock(s);
   }
 }
 
-void CHPL_SYNC_WAIT_EMPTY_AND_LOCK(chpl_sync_aux_t *s,
+void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s,
                                    int32_t lineno, chpl_string filename) {
-  CHPL_SYNC_LOCK(s);
+  chpl_sync_lock(s);
   while (readxx(&(s->is_full))) {
-    CHPL_SYNC_UNLOCK(s);
+    chpl_sync_unlock(s);
     readfe(&(s->signal_empty));
-    CHPL_SYNC_LOCK(s);
+    chpl_sync_lock(s);
   }
 }
 
-void CHPL_SYNC_MARK_AND_SIGNAL_FULL(chpl_sync_aux_t *s) {
+void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *s) {
   writexf(&(s->signal_full), true);                // signal full
   writeef(&(s->is_full), true);                    // mark full and unlock
 }
 
-void CHPL_SYNC_MARK_AND_SIGNAL_EMPTY(chpl_sync_aux_t *s) {
+void chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *s) {
   writexf(&(s->signal_empty), true);               // signal empty
   writeef(&(s->is_full), false);                   // mark empty and unlock
 }
 
-chpl_bool CHPL_SYNC_IS_FULL(void *val_ptr, chpl_sync_aux_t *s,
+chpl_bool chpl_sync_is_full(void *val_ptr, chpl_sync_aux_t *s,
                             chpl_bool simple_sync_var) {
   if (simple_sync_var)
     return (chpl_bool)(((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0);
@@ -68,38 +68,38 @@ chpl_bool CHPL_SYNC_IS_FULL(void *val_ptr, chpl_sync_aux_t *s,
     return (chpl_bool)readxx(&(s->is_full));
 }
 
-void CHPL_SYNC_INIT_AUX(chpl_sync_aux_t *s) {
+void chpl_init_sync_aux(chpl_sync_aux_t *s) {
   writexf(&(s->is_full), 0);          // mark empty and unlock
   purge(&(s->signal_empty));
   purge(&(s->signal_full));
 }
 
-void CHPL_SYNC_DESTROY_AUX(chpl_sync_aux_t *s) { }
+void chpl_destroy_sync_aux(chpl_sync_aux_t *s) { }
 
 
 // Single variables
 
-void CHPL_SINGLE_LOCK(chpl_single_aux_t *s) {
+void chpl_single_lock(chpl_single_aux_t *s) {
   readfe(&(s->is_full));            // mark empty
 }
 
-void CHPL_SINGLE_UNLOCK(chpl_single_aux_t *s) {
+void chpl_single_unlock(chpl_single_aux_t *s) {
   int64_t is_full = readxx(&(s->is_full));
   writeef(&(s->is_full), is_full);  // mark full
 }
 
-void CHPL_SINGLE_WAIT_FULL(chpl_single_aux_t *s,
+void chpl_single_wait_full(chpl_single_aux_t *s,
                            int32_t lineno, chpl_string filename) {
   while (!readxx(&(s->is_full)))
     readff(&(s->signal_full));
 }
 
-void CHPL_SINGLE_MARK_AND_SIGNAL_FULL(chpl_single_aux_t *s) {
+void chpl_single_mark_and_signal_full(chpl_single_aux_t *s) {
   writexf(&(s->is_full), true);     // mark full and unlock
   writexf(&(s->signal_full), true); // signal full
 }
 
-chpl_bool CHPL_SINGLE_IS_FULL(void *val_ptr, chpl_single_aux_t *s,
+chpl_bool chpl_single_is_full(void *val_ptr, chpl_single_aux_t *s,
                               chpl_bool simple_single_var) {
   if (simple_single_var)
     return (chpl_bool)(((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0);
@@ -107,16 +107,16 @@ chpl_bool CHPL_SINGLE_IS_FULL(void *val_ptr, chpl_single_aux_t *s,
     return (chpl_bool)readxx(&(s->is_full));
 }
 
-void CHPL_SINGLE_INIT_AUX(chpl_single_aux_t *s) {
+void chpl_init_single_aux(chpl_single_aux_t *s) {
   writexf(&(s->is_full), 0);          // mark empty and unlock
   purge(&(s->signal_full));
 }
 
-void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) { }
+void chpl_destroy_single_aux(chpl_single_aux_t *s) { }
 
 // Tasks
 
-void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+void chpl_tasking_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   //
   // If a value was specified for the call stack size or max threads
   // config consts, warn the user that it's ignored on this system.
@@ -134,7 +134,7 @@ void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   chpl_can_exit = 1;                      // mark full - no threads created yet
 }
 
-void CHPL_TASKING_EXIT(void) {
+void chpl_tasking_exit(void) {
   int ready=0;
   do
     // this will block until chpl_can_exit is marked full!
@@ -142,31 +142,31 @@ void CHPL_TASKING_EXIT(void) {
   while (!ready);
 }
 
-void CHPL_TASKING_CALL_MAIN(void (*chpl_main)(void)) {
+void chpl_tasking_call_main(void (*chpl_main)(void)) {
   chpl_main();
 }
 
-void CHPL_ADD_TO_TASK_LIST(chpl_fn_int_t fid,
+void chpl_add_to_task_list(chpl_fn_int_t fid,
                            void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
                            chpl_bool call_chpl_begin,
                            int lineno,
                            chpl_string filename) {
-  CHPL_BEGIN(chpl_ftable[fid], arg, false, false, NULL);
+  chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
 }
 
-void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) { }
+void chpl_process_task_list(chpl_task_list_p task_list) { }
 
-void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) { }
+void chpl_execute_tasks_in_list(chpl_task_list_p task_list) { }
 
-void CHPL_FREE_TASK_LIST(chpl_task_list_p task_list) { }
+void chpl_free_task_list(chpl_task_list_p task_list) { }
 
 void
-CHPL_BEGIN(chpl_fn_p fp, void* arg, chpl_bool ignore_serial, 
+chpl_begin(chpl_fn_p fp, void* arg, chpl_bool ignore_serial, 
            chpl_bool serial_state, chpl_task_list_p task_list_entry) {
 
-  if (!ignore_serial && CHPL_GET_SERIAL())
+  if (!ignore_serial && chpl_get_serial())
     (*fp)(arg);
 
   else {
@@ -190,15 +190,15 @@ CHPL_BEGIN(chpl_fn_p fp, void* arg, chpl_bool ignore_serial,
   }
 }
 
-chpl_taskID_t CHPL_TASK_ID(void) {
+chpl_taskID_t chpl_task_id(void) {
   return (chpl_taskID_t) mta_get_threadid(); 
 }
 
-void CHPL_TASK_SLEEP(int secs) {
+void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
-chpl_bool CHPL_GET_SERIAL(void) {
+chpl_bool chpl_get_serial(void) {
   chpl_bool *p = NULL;
   p = (chpl_bool*) mta_register_task_data(p);
   if (p == NULL)
@@ -209,7 +209,7 @@ chpl_bool CHPL_GET_SERIAL(void) {
   }
 }
 
-void CHPL_SET_SERIAL(chpl_bool state) {
+void chpl_set_serial(chpl_bool state) {
   chpl_bool *p = NULL;
   p = (chpl_bool*) mta_register_task_data(p);
   if (p == NULL)
@@ -224,27 +224,27 @@ void CHPL_SET_SERIAL(chpl_bool state) {
 uint64_t chpl_task_callstacksize(void) { return 0; }
 
 // not sure what the correct value should be here!
-uint32_t CHPL_NUMQUEUEDTASKS(void) { return 0; }
+uint32_t chpl_numQueuedTasks(void) { return 0; }
 
 // not sure what the correct value should be here!
-uint32_t CHPL_NUMRUNNINGTASKS(void) { return 1; }
+uint32_t chpl_numRunningTasks(void) { return 1; }
 
 // not sure what the correct value should be here!
-int32_t  CHPL_NUMBLOCKEDTASKS(void) { return -1; }
+int32_t  chpl_numBlockedTasks(void) { return -1; }
 
 
 // Threads
 
-int32_t CHPL_THREADS_GETMAXTHREADS(void) {
+int32_t chpl_threads_getMaxThreads(void) {
   return 0;
 }
 
-int32_t CHPL_THREADS_MAXTHREADSLIMIT(void) {
+int32_t chpl_threads_maxThreadsLimit(void) {
   return 0;
 }
 
 // not sure what the correct value should be here!
-uint32_t CHPL_NUMTHREADS(void) { return 1; }
+uint32_t chpl_numThreads(void) { return 1; }
 
 // not sure what the correct value should be here!
-uint32_t CHPL_NUMIDLETHREADS(void) { return 0; }
+uint32_t chpl_numIdleThreads(void) { return 0; }
