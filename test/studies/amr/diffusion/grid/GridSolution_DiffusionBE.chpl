@@ -119,7 +119,7 @@ def GridSolution.step_DiffusionBE(
   
   
   //===> CG iteration ===>
-  for iter in [1..maxiter] {
+  for iter_no in [1..maxiter] {
  
     //==== Update the solution and residual ====
     inner_product = +reduce( residual_update(grid.cells) * search_dir(grid.cells) );
@@ -131,9 +131,9 @@ def GridSolution.step_DiffusionBE(
     //==== Compute norm of residual, and check for convergence ====
     old_residual_norm_square = residual_norm_square;
     residual_norm_square = +reduce(residual(grid.cells)**2);
-    writeln("Iteration ", iter, ": residual_norm = ", sqrt(residual_norm_square));
+    writeln("Iteration ", iter_no, ": residual_norm = ", sqrt(residual_norm_square));
     if sqrt(residual_norm_square) < tolerance then break;
-    if iter==maxiter then writeln("Warning: conjugate gradient method failed to converge.");
+    if iter_no==maxiter then writeln("Warning: conjugate gradient method failed to converge.");
 
 
     //==== Update directions for search and residual update ====
