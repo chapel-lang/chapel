@@ -229,6 +229,8 @@ void handleError(BaseAST* ast, const char *fmt, ...) {
   vfprintf(stderr, fmt, args);
   va_end(args);
 
+  if (fPrintIDonError && ast)
+    fprintf(stderr, " [%d]", ast->id);
   printDevelErrorFooter();
 
   fprintf(stderr, "\n");

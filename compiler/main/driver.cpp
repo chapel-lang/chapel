@@ -85,6 +85,7 @@ char chplmake[256] = "";
 char fExplainCall[256] = "";
 char fExplainInstantiation[256] = "";
 bool fPrintCallStackOnError = false;
+bool fPrintIDonError = false;
 bool fCLineNumbers = false;
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
@@ -437,13 +438,13 @@ Record components:
 */
 
 static ArgumentDescription arg_desc[] = {
-  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
-  {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
-  {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
-  {"print-search-dirs", ' ', NULL, "Print module search path", "F", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
-  {"print-module-files", ' ', NULL, "Print module file locations", "F", &printModuleFiles, NULL, NULL},
-  {"count-tokens", ' ', NULL, "Count tokens in main modules", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
-  {"print-code-size", ' ', NULL, "Print code size of main modules", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
+ {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
+ {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
+ {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
+ {"print-search-dirs", ' ', NULL, "Print module search path", "F", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
+ {"print-module-files", ' ', NULL, "Print module file locations", "F", &printModuleFiles, NULL, NULL},
+ {"count-tokens", ' ', NULL, "Count tokens in main modules", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
+ {"print-code-size", ' ', NULL, "Print code size of main modules", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", NULL},
@@ -452,7 +453,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
-  {"conditional-dynamic-dispatch-limit", ' ', "<limit>", "Set limit to use conditionals for dynamic dispatch", "I", &fConditionalDynamicDispatchLimit, "CHPL_CONDITIONAL_DYNAMIC_DISPATCH_LIMIT", NULL},
+ {"conditional-dynamic-dispatch-limit", ' ', "<limit>", "Set limit to use conditionals for dynamic dispatch", "I", &fConditionalDynamicDispatchLimit, "CHPL_CONDITIONAL_DYNAMIC_DISPATCH_LIMIT", NULL},
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, NULL, setFastFlag},
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
  {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
@@ -479,13 +480,14 @@ static ArgumentDescription arg_desc[] = {
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
+ {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
  {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
  {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},
  {"ldflags", ' ', "<flags>", "Back-end C linker flags", "S256", ldflags, "CHPL_LD_FLAGS", NULL},
-  {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, NULL, handleIncDir},
+ {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, NULL, handleIncDir},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"make", ' ', "<make utility>", "Make utility for generated code", "S256", &chplmake, "CHPL_MAKE", NULL},
@@ -532,14 +534,14 @@ static ArgumentDescription arg_desc[] = {
  {"report-scalar-replace", ' ', NULL, "Print information about scalar replacement", "F", &fReportScalarReplace, NULL, NULL},
 
  {"", ' ', NULL, "Misc. Developer Flags", NULL, NULL, NULL, NULL},
-  {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, NULL, NULL},
+ {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL},
+ {"print-id-on-error", ' ', NULL, "Print AST id in error messages, when available", "F", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
-  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
+ {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
- {"no-codegen", ' ', NULL, "Suppress code generation", "F", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"remove-empty-records", ' ', NULL, "Enable [disable] removal of empty records", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},

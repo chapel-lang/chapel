@@ -5,7 +5,7 @@
 
 void yyerror(const char *str) {
   if (!chplParseString) {
-    fprintf(stderr, "%s:%d %s", yyfilename, chplLineno, str);
+    fprintf(stderr, "%s:%d: %s", yyfilename, chplLineno, str);
     if (strlen(yytext) > 0) {
       fprintf(stderr, ": near '%s'", yytext);
     }

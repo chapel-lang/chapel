@@ -55,6 +55,7 @@ Run-time Semantic Check Options:
       --[no-]nil-checks                  Enable [disable] nil checking
 
 C Code Generation Options:
+      --[no-]codegen                     [Don't] Do code generation
       --[no-]cpp-lines                   [Don't] Generate #line annotations
       --savec <directory>                Save generated C code in directory
 

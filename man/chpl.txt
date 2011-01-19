@@ -195,7 +195,7 @@ OPTIONS
 
   --no-checks       Turns on --no-bounds-checks, --no-nil-checks and
                     --no-local-checks. Currently, it is typically necessary to
-                    use this flag in order to have any hope of
+                    use this flag (or --fast) in order to have any hope of
                     achieving performance competitive with hand-coded
                     C or Fortran.
 
@@ -210,14 +210,19 @@ OPTIONS
 
   C Code Generation Options
 
+  --[no-]codegen     Enable [disable] generating C code and the binary
+                    executable. Disabling code generation is useful to reduce
+                    compilation time, for example, when only Chapel compiler
+                    warnings/errors are of interest.
+
   --[no-]cpp-lines   Causes the compiler to emit cpp #line directives
                     into the generated code in order to help map generated
                     C code back to the Chapel source code that it implements.
                     The [no-] version of this flag turns this feature off.
 
-  --savec <dir>    Saves the compiler-generated C code in the specified 
+  --savec <dir>      Saves the compiler-generated C code in the specified 
                     directory, creating the directory if it does not already
-                    exist.
+                    exist. May overwrite existing files in the directory.
 
   C Code Compilation Options
 
