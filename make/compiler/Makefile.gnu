@@ -54,8 +54,8 @@ SUPPORT_SETENV_CFLAGS = -std=gnu89
 #
 # Flags for turning on warnings for C++/C code
 #
-WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings
-WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
+WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wmissing-declarations
+WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
 
 #

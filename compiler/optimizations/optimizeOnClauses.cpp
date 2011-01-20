@@ -7,6 +7,7 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "passes.h"
 
 //
 // Return true if this primitive function is safe for fast on optimization

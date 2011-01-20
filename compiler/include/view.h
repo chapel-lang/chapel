@@ -3,16 +3,16 @@
 
 #include "baseAST.h"
 
-extern BaseAST* aid(int id);
-extern void print_view(BaseAST* ast);
-extern void print_view_noline(BaseAST* ast);
-extern void iprint_view(int id);
-extern void nprint_view(BaseAST* ast);
-extern void nprint_view_noline(BaseAST* ast);
-extern void mark_view(BaseAST* ast, int id);
-extern void list_view(BaseAST* ast);
-extern void list_view_noline(BaseAST* ast);
+BaseAST* aid(int id);
+void print_view(BaseAST* ast);
+void print_view_noline(BaseAST* ast);
+void iprint_view(int id);
+void nprint_view(BaseAST* ast);
+void nprint_view_noline(BaseAST* ast);
+void mark_view(BaseAST* ast, int id);
+void list_view(BaseAST* ast);
+void list_view_noline(BaseAST* ast);
 
-extern void html_view(const char* passName);
+void html_view(const char* passName);
 
 #endif

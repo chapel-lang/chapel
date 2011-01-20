@@ -9,6 +9,7 @@
 #include "iterator.h"
 #include "passes.h"
 #include "resolution.h"
+#include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -16,9 +17,6 @@
 
 bool resolved = false;
 bool inDynamicDispatchResolution = false;
-
-extern void build_constructor(ClassType* ct);
-extern void build_type_constructor(ClassType* ct);
 
 SymbolMap paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
