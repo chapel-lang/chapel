@@ -136,7 +136,7 @@ def LUFactorize(n: indexType, Ab: [?AbD] elemType,
     //
     // update trailing submatrix (if any)
     //
-    schurComplement(Ab, blk);
+    schurComplement(Ab, bl, tr, br);
   }
 }
 
@@ -150,11 +150,11 @@ def LUFactorize(n: indexType, Ab: [?AbD] elemType,
 //     |     |bbbbb|bbbbb|bbbbb|  The 'a' region is a block column, the
 //     +----[2]----+-----+-----+  'b' region is a block row.
 //     |aaaaa|.....|.....|.....|
-//     |aaaaa|.....|.....|.....|  The vertex labeled [1] is location
-//     |aaaaa|.....|.....|.....|  (ptOp, ptOp) in the code below.
-//     +-----+-----+-----+-----+
-//     |aaaaa|.....|.....|.....|  The vertex labeled [2] is location
-//     |aaaaa|.....|.....|.....|  (ptSol, ptSol)
+//     |aaaaa|.....|.....|.....|  The 'a' region was 'bl' in the calling
+//     |aaaaa|.....|.....|.....|  function but called AD here.  Similarly,
+//     +-----+-----+-----+-----+  'b' was 'tr' in the calling code, but BD
+//     |aaaaa|.....|.....|.....|  here.
+//     |aaaaa|.....|.....|.....|  
 //     |aaaaa|.....|.....|.....|
 //     +-----+-----+-----+-----+
 //
@@ -169,12 +169,7 @@ def LUFactorize(n: indexType, Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-def schurComplement(Ab: [?AbD] elemType, ptOp: indexType) {
-  //
-  // Calculate location of ptSol (see diagram above)
-  //
-  const ptSol = ptOp+blkSize;
-
+def schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
   //
   // Copy data into replicated array so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.  These
@@ -182,24 +177,23 @@ def schurComplement(Ab: [?AbD] elemType, ptOp: indexType) {
   // they look something like the following:
   //
   //var replAbD: domain(2) 
-  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) 
-  //          = AbD[ptSol.., 1..#blkSize];
+  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) = AbD[AD];
   //
-  const replAD: domain(2, indexType) = AbD[ptSol.., ptOp..#blkSize],
-        replBD: domain(2, indexType) = AbD[ptOp..#blkSize, ptSol..];
+  const replAD: domain(2, indexType) = AD,
+        replBD: domain(2, indexType) = BD;
     
   const replA : [replAD] elemType = Ab[replAD],
         replB : [replBD] elemType = Ab[replBD];
 
   // do local matrix-multiply on a block-by-block basis
-  forall (row,col) in AbD[ptSol.., ptSol..] by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) {
     //
     // At this point, the dgemms should all be local, so assert that
     // fact
     //
     local {
-      const aBlkD = replAD[row..#blkSize, ptOp..#blkSize],
-            bBlkD = replBD[ptOp..#blkSize, col..#blkSize],
+      const aBlkD = replAD[row..#blkSize, ..],
+            bBlkD = replBD[.., col..#blkSize],
             cBlkD = AbD[row..#blkSize, col..#blkSize];
 
       dgemmNativeInds(replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
@@ -323,9 +317,9 @@ def backwardSub(n: indexType,
                 b: [?bd] elemType) {
   var x: [bd] elemType;
 
-  for i in bd by -1 {
+  // TODO: Really want a partial reduction here
+  for i in bd by -1 do
     x[i] = (b[i] - (+ reduce [j in i+1..bd.high] (A[i,j] * x[j]))) / A[i,i];
-  }
 
   return x;
 }
