@@ -313,7 +313,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 void chpl_comm_rollcall(void) {
-  chpl_init_sync_aux(&chpl_comm_diagnostics_sync);
+  chpl_sync_init_aux(&chpl_comm_diagnostics_sync);
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, 
            chpl_numLocales, chpl_localeName());
 }

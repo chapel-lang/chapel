@@ -204,7 +204,7 @@ void chpl_setMemFlags(chpl_bool memTrackConfig,
     memTrack = true;
 
   if (memTrack) {
-    chpl_init_sync_aux(&memTrack_sync);
+    chpl_sync_init_aux(&memTrack_sync);
     hashSizeIndex = 0;
     hashSize = hashSizes[hashSizeIndex];
     memTable = calloc(hashSize, sizeof(memTableEntry*));

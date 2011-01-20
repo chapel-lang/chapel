@@ -1649,7 +1649,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SYNC_INIT:
     case PRIM_SYNC_DESTROY:
       fprintf( outfile, primitive->tag == PRIM_SYNC_INIT ?
-               "chpl_init_sync_aux(&((" : "chpl_destroy_sync_aux(&((");
+               "chpl_sync_init_aux(&((" : "chpl_sync_destroy_aux(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
@@ -1708,7 +1708,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SINGLE_INIT:
     case PRIM_SINGLE_DESTROY:
       fprintf(outfile, primitive->tag == PRIM_SINGLE_INIT ?
-              "chpl_init_single_aux(&((" : "chpl_destroy_single_aux(&((");
+              "chpl_single_init_aux(&((" : "chpl_single_destroy_aux(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");
@@ -1729,7 +1729,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")->single_aux))");
       break;
     case PRIM_SINGLE_WAIT_FULL:
-      fprintf( outfile, "chpl_single_wait_full(&((");
+      fprintf( outfile, "chpl_single_wait_full_and_lock(&((");
       get(1)->codegen( outfile);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         fprintf(outfile, ".addr");

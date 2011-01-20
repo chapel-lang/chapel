@@ -205,81 +205,14 @@ chpl_bool chpl_sync_is_full(void *val_ptr,
   return s->is_full;
 }
 
-void chpl_init_sync_aux(chpl_sync_aux_t *s) {
+void chpl_sync_init_aux(chpl_sync_aux_t *s) {
   s->is_full = false;
   threadlayer_mutex_init(&s->lock);
   threadlayer_sync_init(s);
 }
 
-void chpl_destroy_sync_aux(chpl_sync_aux_t *s) {
+void chpl_sync_destroy_aux(chpl_sync_aux_t *s) {
   threadlayer_sync_destroy(s);
-}
-
-
-// Single variables
-
-void chpl_single_lock(chpl_single_aux_t *s) {
-  threadlayer_mutex_lock(&s->lock);
-}
-
-void chpl_single_unlock(chpl_single_aux_t *s) {
-  threadlayer_mutex_unlock(&s->lock);
-}
-
-void chpl_single_wait_full(chpl_single_aux_t *s,
-                           int32_t lineno, chpl_string filename) {
-  threadlayer_mutex_lock(&s->lock);
-  while (!s->is_full) {
-    if (set_block_loc(lineno, filename)) {
-      // all other tasks appear to be blocked
-      struct timeval deadline, now;
-      chpl_bool timed_out;
-      gettimeofday(&deadline, NULL);
-      deadline.tv_sec += 1;
-      do {
-        timed_out = threadlayer_single_suspend(s, &deadline);
-        if (!s->is_full && !timed_out)
-            gettimeofday(&now, NULL);
-      } while (!s->is_full
-               && !timed_out
-               && (now.tv_sec < deadline.tv_sec
-                   || (now.tv_sec == deadline.tv_sec
-                       && now.tv_usec < deadline.tv_usec)));
-      if (!s->is_full)
-        check_for_deadlock();
-    }
-    else {
-      do {
-        (void) threadlayer_single_suspend(s, NULL);
-      } while (!s->is_full);
-    }
-    unset_block_loc();
-  }
-
-  if (blockreport)
-    progress_cnt++;
-}
-
-void chpl_single_mark_and_signal_full(chpl_single_aux_t *s) {
-  s->is_full = true;
-  threadlayer_single_awaken(s);
-  chpl_single_unlock(s);
-}
-
-chpl_bool chpl_single_is_full(void *val_ptr,
-                              chpl_single_aux_t *s,
-                              chpl_bool simple_single_var) {
-  return s->is_full;
-}
-
-void chpl_init_single_aux(chpl_single_aux_t *s) {
-  s->is_full = false;
-  threadlayer_mutex_init(&s->lock);
-  threadlayer_single_init(s);
-}
-
-void chpl_destroy_single_aux(chpl_single_aux_t *s) {
-  threadlayer_single_destroy(s);
 }
 
 

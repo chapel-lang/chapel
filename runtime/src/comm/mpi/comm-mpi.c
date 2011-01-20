@@ -294,8 +294,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_comm_barrier("barrier in init");
 
   tag_count = (TAGMASK / chpl_numLocales) * chpl_localeID;
-  chpl_init_sync_aux(&termination_sync);
-  chpl_init_sync_aux(&tag_count_sync);
+  chpl_sync_init_aux(&termination_sync);
+  chpl_sync_init_aux(&tag_count_sync);
   pthread_key_create(&tag_count_key, NULL);
 
   if (pthread_create(&polling_thread, NULL,

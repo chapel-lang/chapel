@@ -72,43 +72,12 @@ chpl_bool chpl_sync_is_full(void *val_ptr, chpl_sync_aux_t *s,
   return *s;
 }
 
-void chpl_init_sync_aux(chpl_sync_aux_t *s) {
+void chpl_sync_init_aux(chpl_sync_aux_t *s) {
   *s = false;
 }
 
-void chpl_destroy_sync_aux(chpl_sync_aux_t *s) { }
+void chpl_sync_destroy_aux(chpl_sync_aux_t *s) { }
 
-
-// Single variables
-
-void chpl_single_lock(chpl_single_aux_t *s) { }
-
-void chpl_single_unlock(chpl_single_aux_t *s) { }
-
-void chpl_single_wait_full(chpl_single_aux_t *s,
-                           int32_t lineno, chpl_string filename) {
-  // while blocked, try running tasks from the task pool
-  while (!*s && launch_next_task())
-    /* do nothing! */;
-  if (!*s)
-    chpl_error("single var empty (running in single-threaded mode)",
-               lineno, filename);
-}
-
-void chpl_single_mark_and_signal_full(chpl_single_aux_t *s) {
-  *s = true;
-}
-
-chpl_bool chpl_single_is_full(void *val_ptr, chpl_single_aux_t *s,
-                              chpl_bool simple_single_var) {
-  return *s;
-}
-
-void chpl_init_single_aux(chpl_single_aux_t *s) {
-  *s = false;
-}
-
-void chpl_destroy_single_aux(chpl_single_aux_t *s) { }
 
 // Tasks
 

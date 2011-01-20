@@ -123,7 +123,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   int nprocs, me;
   armci_size_t sz;
 
-  chpl_init_sync_aux(&armci_sync);
+  chpl_sync_init_aux(&armci_sync);
 
   MPI_SAFE(MPI_Init(argc_p, argv_p));
   ARMCI_SAFE(ARMCI_Init());

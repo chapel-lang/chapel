@@ -24,19 +24,28 @@ void      chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *,
 void      chpl_sync_mark_and_signal_full(chpl_sync_aux_t *);     // and unlock
 void      chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *);    // and unlock
 chpl_bool chpl_sync_is_full(void *, chpl_sync_aux_t *, chpl_bool);
-void      chpl_init_sync_aux(chpl_sync_aux_t *);
-void      chpl_destroy_sync_aux(chpl_sync_aux_t *);
+void      chpl_sync_init_aux(chpl_sync_aux_t *);
+void      chpl_sync_destroy_aux(chpl_sync_aux_t *);
 
 
-// Single variables
+// Single variables (currently a synonym for syncs)
 
-void      chpl_single_lock(chpl_single_aux_t *);
-void      chpl_single_unlock(chpl_single_aux_t *);
-void      chpl_single_wait_full(chpl_single_aux_t *, int32_t, chpl_string);
-void      chpl_single_mark_and_signal_full(chpl_single_aux_t *); // and unlock
-chpl_bool chpl_single_is_full(void *, chpl_single_aux_t *, chpl_bool);
-void      chpl_init_single_aux(chpl_single_aux_t *);
-void      chpl_destroy_single_aux(chpl_single_aux_t *);
+typedef chpl_sync_aux_t chpl_single_aux_t;
+
+#define chpl_single_lock(s) \
+        chpl_sync_lock(s)
+#define chpl_single_unlock(s) \
+        chpl_sync_unlock(s)
+#define chpl_single_wait_full_and_lock(s, lineno, filename) \
+        chpl_sync_wait_full_and_lock(s, lineno, filename)
+#define chpl_single_mark_and_signal_full(s) \
+        chpl_sync_mark_and_signal_full(s)
+#define chpl_single_is_full(val_ptr, s, simple_sync_var) \
+        chpl_sync_is_full(val_ptr, s, simple_sync_var)
+#define chpl_single_init_aux(s) \
+        chpl_sync_init_aux(s)
+#define chpl_single_destroy_aux(s) \
+        chpl_sync_destroy_aux(s)
 
 
 // Tasks
@@ -179,7 +188,7 @@ uint32_t chpl_numIdleThreads(void);
 #else // LAUNCHER
 
 typedef void chpl_sync_aux_t;
-typedef void chpl_single_aux_t;
+typedef chpl_sync_aux_t chpl_single_aux_t;
 #define chpl_tasking_exit()
 
 #endif // LAUNCHER
