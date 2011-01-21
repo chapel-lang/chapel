@@ -54,19 +54,19 @@ and implemented via the standard C routines defined in \chpl{math.h}.
 \vspace{1pc}
 
 \begin{protohead}
-def abs(i: int(?w)): int(w)
-def abs(i: uint(?w)): uint(w)
-def abs(x: real): real
-def abs(x: real(32)): real(32)
-def abs(x: complex): real
+proc abs(i: int(?w)): int(w)
+proc abs(i: uint(?w)): uint(w)
+proc abs(x: real): real
+proc abs(x: real(32)): real(32)
+proc abs(x: complex): real
 \end{protohead}
 \begin{protobody}
 Returns the absolute value of the argument.
 \end{protobody}
 
 \begin{protohead}
-def acos(x: real): real
-def acos(x: real(32)): real(32)
+proc acos(x: real): real
+proc acos(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the arc cosine of the argument.  It is an error if \chpl{x} is
@@ -74,8 +74,8 @@ less than $-1$ or greater than $1$.
 \end{protobody}
 
 \begin{protohead}
-def acosh(x: real): real
-def acosh(x: real(32)): real(32)
+proc acosh(x: real): real
+proc acosh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the inverse hyperbolic cosine of the argument.  It is an error
@@ -83,8 +83,8 @@ if \chpl{x} is less than $1$.
 \end{protobody}
 
 \begin{protohead}
-def asin(x: real): real
-def asin(x: real(32)): real(32)
+proc asin(x: real): real
+proc asin(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the arc sine of the argument.  It is an error if \chpl{x} is
@@ -92,24 +92,24 @@ less than $-1$ or greater than $1$.
 \end{protobody}
 
 \begin{protohead}
-def asinh(x: real): real
-def asinh(x: real(32)): real(32)
+proc asinh(x: real): real
+proc asinh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the inverse hyperbolic sine of the argument.
 \end{protobody}
 
 \begin{protohead}
-def atan(x: real): real
-def atan(x: real(32)): real(32)
+proc atan(x: real): real
+proc atan(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the arc tangent of the argument.
 \end{protobody}
 
 \begin{protohead}
-def atan2(y: real, x: real): real
-def atan2(y: real(32), x: real(32)): real(32)
+proc atan2(y: real, x: real): real
+proc atan2(y: real(32), x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the arc tangent of the two arguments.  This is equivalent to
@@ -118,8 +118,8 @@ and \chpl{x} are used to determine the quadrant of the result.
 \end{protobody}
 
 \begin{protohead}
-def atanh(x: real): real
-def atanh(x: real(32)): real(32)
+proc atanh(x: real): real
+proc atanh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the inverse hyperbolic tangent of the argument.  It is an error
@@ -127,47 +127,47 @@ if \chpl{x} is less than $-1$ or greater than $1$.
 \end{protobody}
 
 \begin{protohead}
-def cbrt(x: real): real
-def cbrt(x: real(32)): real(32)
+proc cbrt(x: real): real
+proc cbrt(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the cube root of the argument.
 \end{protobody}
 
 \begin{protohead}
-def ceil(x: real): real
-def ceil(x: real(32)): real(32)
+proc ceil(x: real): real
+proc ceil(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the value of the argument rounded up to the nearest integer.
 \end{protobody}
 
 \begin{protohead}
-def conjg(a: complex(?w)): complex(w)
+proc conjg(a: complex(?w)): complex(w)
 \end{protohead}
 \begin{protobody}
 Returns the conjugate of \chpl{a}.
 \end{protobody}
 
 \begin{protohead}
-def cos(x: real): real
-def cos(x: real(32)): real(32)
+proc cos(x: real): real
+proc cos(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the cosine of the argument.
 \end{protobody}
 
 \begin{protohead}
-def cosh(x: real): real
-def cosh(x: real(32)): real(32)
+proc cosh(x: real): real
+proc cosh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the hyperbolic cosine of the argument.
 \end{protobody}
 
 \begin{protohead}
-def erf(x: real): real
-def erf(x: real(32)): real(32)
+proc erf(x: real): real
+proc erf(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the error function of the argument defined as
@@ -176,8 +176,8 @@ for the argument $x$.
 \end{protobody}
 
 \begin{protohead}
-def erfc(x: real): real
-def erfc(x: real(32)): real(32)
+proc erfc(x: real): real
+proc erfc(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the complementary error function of the argument.  This is
@@ -185,40 +185,40 @@ equivalent to \chpl{1.0 - erf(x)}.
 \end{protobody}
 
 \begin{protohead}
-def exp(x: real): real
-def exp(x: real(32)): real(32)
+proc exp(x: real): real
+proc exp(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the value of $e$ raised to the power of the argument.
 \end{protobody}
 
 \begin{protohead}
-def exp2(x: real): real
-def exp2(x: real(32)): real(32)
+proc exp2(x: real): real
+proc exp2(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the value of $2$ raised to the power of the argument.
 \end{protobody}
 
 \begin{protohead}
-def expm1(x: real): real
-def expm1(x: real(32)): real(32)
+proc expm1(x: real): real
+proc expm1(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns one less than the value of $e$ raised to the power of the argument.
 \end{protobody}
 
 \begin{protohead}
-def floor(x: real): real
-def floor(x: real(32)): real(32)
+proc floor(x: real): real
+proc floor(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the value of the argument rounded down to the nearest integer.
 \end{protobody}
 
 \begin{protohead}
-def lgamma(x: real): real
-def lgamma(x: real(32)): real(32)
+proc lgamma(x: real): real
+proc lgamma(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the natural logarithm of the absolute value of the gamma
@@ -226,8 +226,8 @@ function of the argument.
 \end{protobody}
 
 \begin{protohead}
-def log(x: real): real
-def log(x: real(32)): real(32)
+proc log(x: real): real
+proc log(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the natural logarithm of the argument.  It is an error if the
@@ -235,8 +235,8 @@ argument is less than or equal to zero.
 \end{protobody}
 
 \begin{protohead}
-def log10(x: real): real
-def log10(x: real(32)): real(32)
+proc log10(x: real): real
+proc log10(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the base 10 logarithm of the argument.  It is an error if the
@@ -244,8 +244,8 @@ argument is less than or equal to zero.
 \end{protobody}
 
 \begin{protohead}
-def log1p(x: real): real
-def log1p(x: real(32)): real(32)
+proc log1p(x: real): real
+proc log1p(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the natural logarithm of \chpl{x+1}.  It is an error
@@ -253,10 +253,10 @@ if \chpl{x} is less than or equal to $-1$.
 \end{protobody}
 
 \begin{protohead}
-def log2(i: int(?w)): int(w)
-def log2(i: uint(?w)): uint(w)
-def log2(x: real): real
-def log2(x: real(32)): real(32)
+proc log2(i: int(?w)): int(w)
+proc log2(i: uint(?w)): uint(w)
+proc log2(x: real): real
+proc log2(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the base 2 logarithm of the argument.  It is an error if the
@@ -264,8 +264,8 @@ argument is less than or equal to zero.
 \end{protobody}
 
 \begin{protohead}
-def nearbyint(x: real): real
-def nearbyint(x: real(32)): real(32)
+proc nearbyint(x: real): real
+proc nearbyint(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the rounded integral value of the argument determined by the
@@ -273,8 +273,8 @@ current rounding direction.
 \end{protobody}
 
 \begin{protohead}
-def rint(x: real): real
-def rint(x: real(32)): real(32)
+proc rint(x: real): real
+proc rint(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the rounded integral value of the argument determined by the
@@ -282,8 +282,8 @@ current rounding direction.
 \end{protobody}
 
 \begin{protohead}
-def round(x: real): real
-def round(x: real(32)): real(32)
+proc round(x: real): real
+proc round(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the rounded integral value of the argument.  Cases halfway
@@ -291,24 +291,24 @@ between two integral values are rounded towards zero.
 \end{protobody}
 
 \begin{protohead}
-def sin(x: real): real
-def sin(x: real(32)): real(32)
+proc sin(x: real): real
+proc sin(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the sine of the argument.
 \end{protobody}
 
 \begin{protohead}
-def sinh(x: real): real
-def sinh(x: real(32)): real(32)
+proc sinh(x: real): real
+proc sinh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the hyperbolic sine of the argument.
 \end{protobody}
 
 \begin{protohead}
-def sqrt(x: real): real
-def sqrt(x: real(32)): real(32)
+proc sqrt(x: real): real
+proc sqrt(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the square root of the argument.  It is an error if the
@@ -316,24 +316,24 @@ argument is less than zero.
 \end{protobody}
 
 \begin{protohead}
-def tan(x: real): real
-def tan(x: real(32)): real(32)
+proc tan(x: real): real
+proc tan(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the tangent of the argument.
 \end{protobody}
 
 \begin{protohead}
-def tanh(x: real): real
-def tanh(x: real(32)): real(32)
+proc tanh(x: real): real
+proc tanh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the hyperbolic tangent of the argument.
 \end{protobody}
 
 \begin{protohead}
-def tgamma(x: real): real
-def tgamma(x: real(32)): real(32)
+proc tgamma(x: real): real
+proc tgamma(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the gamma function of the argument defined as
@@ -342,8 +342,8 @@ for the argument $x$.
 \end{protobody}
 
 \begin{protohead}
-def trunc(x: real): real
-def trunc(x: real(32)): real(32)
+proc trunc(x: real): real
+proc trunc(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the nearest integral value to the argument that is not larger
@@ -356,7 +356,7 @@ than the argument in absolute value.
 \index{automatic modules!Base}
 
 \begin{protohead}
-def ascii(s: string): int
+proc ascii(s: string): int
 \end{protohead}
 \begin{protobody}
 Returns the ASCII code number of the first letter in the
@@ -364,7 +364,7 @@ argument \chpl{s}.
 \end{protobody}
 
 \begin{protohead}
-def assert(test: bool) {
+proc assert(test: bool) {
 \end{protohead}
 \begin{protobody}
 Exits the program if \chpl{test} is false and prints to standard error
@@ -373,7 +373,7 @@ If \chpl{test} is true, no action is taken.
 \end{protobody}
 
 \begin{protohead}
-def assert(test: bool, args ...?numArgs) {
+proc assert(test: bool, args ...?numArgs) {
 \end{protohead}
 \begin{protobody}
 Exits the program if \chpl{test} is false and prints to standard error
@@ -383,42 +383,42 @@ action is taken.
 \end{protobody}
 
 \begin{protohead}
-def complex.re: real
+proc complex.re: real
 \end{protohead}
 \begin{protobody}
 Returns the real component of the complex number.
 \end{protobody}
 
 \begin{protohead}
-def complex.im: real
+proc complex.im: real
 \end{protohead}
 \begin{protobody}
 Returns the imaginary component of the complex number.
 \end{protobody}
 
 \begin{protohead}
-def complex.=re(f: real)
+proc complex.=re(f: real)
 \end{protohead}
 \begin{protobody}
 Sets the real component of the complex number to \chpl{f}.
 \end{protobody}
 
 \begin{protohead}
-def complex.=im(f: real)
+proc complex.=im(f: real)
 \end{protohead}
 \begin{protobody}
 Sets the imaginary component of the complex number to \chpl{f}.
 \end{protobody}
 
 \begin{protohead}
-def exit(status: int)
+proc exit(status: int)
 \end{protohead}
 \begin{protobody}
 Exits the program with code \chpl{status}.
 \end{protobody}
 
 \begin{protohead}
-def halt()
+proc halt()
 \end{protohead}
 \begin{protobody}
 Exits the program and prints to standard error the location in the
@@ -426,7 +426,7 @@ Chapel code of the call to \chpl{halt}.
 \end{protobody}
 
 \begin{protohead}
-def halt(args ...?numArgs)
+proc halt(args ...?numArgs)
 \end{protohead}
 \begin{protobody}
 Exits the program and prints to standard error the location in the
@@ -435,14 +435,14 @@ arguments to the call.
 \end{protobody}
 
 \begin{protohead}
-def string.length: int
+proc string.length: int
 \end{protohead}
 \begin{protobody}
 Returns the number of characters in the base expression of type string.
 \end{protobody}
 
 \begin{protohead}
-def max(x, y...?k)
+proc max(x, y...?k)
 \end{protohead}
 \begin{protobody}
 Returns the maximum of the arguments when compared using the
@@ -451,7 +451,7 @@ of the arguments as allowed by implicit coercions.
 \end{protobody}
 
 \begin{protohead}
-def min(x, y...?k)
+proc min(x, y...?k)
 \end{protohead}
 \begin{protobody}
 Returns the minimum of the arguments when compared using the
@@ -460,7 +460,7 @@ the arguments as allowed by implicit coercions.
 \end{protobody}
 
 \begin{protohead}
-def string.substring(x): string
+proc string.substring(x): string
 \end{protohead}
 \begin{protobody}
 Returns a value of string type that is a substring of the base
@@ -471,7 +471,7 @@ values in the range.
 \end{protobody}
 
 \begin{protohead}
-def typeToString(type t) param : string
+proc typeToString(type t) param : string
 \end{protohead}
 \begin{protobody}
 Returns a string parameter that represents the name of the
@@ -482,7 +482,7 @@ type \chpl{t}.
 \label{Types_standard_module}
 
 \begin{protohead}
-def numBits(type t) param : int
+proc numBits(type t) param : int
 \end{protohead}
 \begin{protobody}
 Returns the number of bits used to store the values of type \chpl{t}.
@@ -492,7 +492,7 @@ It is not implemented for default-width \chpl{bool}.
 
 
 \begin{protohead}
-def numBytes(type t) param : int
+proc numBytes(type t) param : int
 \end{protohead}
 \begin{protobody}
 Returns the number of bytes used to store the values of type \chpl{t}.
@@ -501,7 +501,7 @@ It is not implemented for default-width \chpl{bool}.
 \end{protobody}
 
 \begin{protohead}
-def max(type t): t
+proc max(type t): t
 \end{protohead}
 \begin{protobody}
 Returns the maximum value that can be stored in type \chpl{t}.  This
@@ -509,7 +509,7 @@ is implemented for all numeric types.
 \end{protobody}
 
 \begin{protohead}
-def min(type t): t
+proc min(type t): t
 \end{protohead}
 \begin{protobody}
 Returns the minimum value that can be stored in type \chpl{t}.  This
@@ -535,7 +535,7 @@ values of integral types.
 \vspace{1pc}
 
 \begin{protohead}
-def bitPop(i: integral): int
+proc bitPop(i: integral): int
 \end{protohead}
 \begin{protobody}
 Returns the number of bits set to one in the integral
@@ -543,7 +543,7 @@ argument \chpl{i}.
 \end{protobody}
 
 \begin{protohead}
-def bitMatMultOr(i: uint(64), j: uint(64)): uint(64)
+proc bitMatMultOr(i: uint(64), j: uint(64)): uint(64)
 \end{protohead}
 \begin{protobody}
 Returns the bitwise matrix multiplication of \chpl{i} and \chpl{j}
@@ -552,7 +552,7 @@ bit matrices and the combinator function is bitwise or.
 \end{protobody}
 
 \begin{protohead}
-def bitRotLeft(i: integral, shift: integral): i.type
+proc bitRotLeft(i: integral, shift: integral): i.type
 \end{protohead}
 \begin{protobody}
 Returns the value of the integral argument \chpl{i} after rotating the
@@ -560,7 +560,7 @@ bits to the left \chpl{shift} number of times.
 \end{protobody}
 
 \begin{protohead}
-def bitRotRight(i: integral, shift: integral): i.type
+proc bitRotRight(i: integral, shift: integral): i.type
 \end{protohead}
 \begin{protobody}
 Returns the value of the integral argument \chpl{i} after rotating the
@@ -586,14 +586,14 @@ respectively.
 \end{protobody}
 
 \begin{protohead}
-def norm(x: [], p: normType) where x.rank == 1 || x.rank == 2
+proc norm(x: [], p: normType) where x.rank == 1 || x.rank == 2
 \end{protohead}
 \begin{protobody}
 Compute the norm indicated by \chpl{p} on the 1D or 2D array \chpl{x}.
 \end{protobody}
 
 \begin{protohead}
-def norm(x: [])
+proc norm(x: [])
 \end{protohead}
 \begin{protobody}
 Compute the default norm on array \chpl{x}.  For a 1D array this is
@@ -613,8 +613,8 @@ iterators over the RandomStream class.
 
 \begin{protohead}
 class RandomStream
-def RandomStream(seed: int(64), param parSafe: bool = true)
-def RandomStream(seedGenerator: SeedGenerator = SeedGenerator.currentTime,
+proc RandomStream(seed: int(64), param parSafe: bool = true)
+proc RandomStream(seedGenerator: SeedGenerator = SeedGenerator.currentTime,
                  param parSafe: bool = true)
 \end{protohead}
 \begin{protobody}
@@ -653,7 +653,7 @@ $2^{46}-1$.
 \end{protobody}
 
 \begin{protohead}
-def RandomStream.fillRandom(x:[?D], param parSafe = this.parSafe)
+proc RandomStream.fillRandom(x:[?D], param parSafe = this.parSafe)
 \end{protohead}
 \begin{protobody}
 Fill the argument array, \chpl{x}, with the next $|$\chpl{D}$|$ values
@@ -664,7 +664,7 @@ stream of random numbers.
 \end{protobody}
 
 \begin{protohead}
-def RandomStream.skipToNth(in n: integral, param parSafe = this.parSafe)
+proc RandomStream.skipToNth(in n: integral, param parSafe = this.parSafe)
 \end{protohead}
 \begin{protobody}
 Skips ahead or back to the \chpl{n}-th value in the
@@ -673,14 +673,14 @@ random stream.  The value of n is assumed to be positive, such that
 \end{protobody}
 
 \begin{protohead}
-def RandomStream.getNext(param parSafe = this.parSafe): real
+proc RandomStream.getNext(param parSafe = this.parSafe): real
 \end{protohead}
 \begin{protobody}
 Returns the next value in the random stream as a real.
 \end{protobody}
 
 \begin{protohead}
-def RandomStream.getNth(n: integral, param parSafe = this.parSafe): real
+proc RandomStream.getNth(n: integral, param parSafe = this.parSafe): real
 \end{protohead}
 \begin{protobody}
 Returns the \chpl{n}-th value in the random stream as a real.  Equivalent to
@@ -688,7 +688,7 @@ calling \chpl{skipToNth(n)} followed by \chpl{getNext()}.
 \end{protobody}
 
 \begin{protohead}
-def fillRandom(x:[], initseed: int(64))
+proc fillRandom(x:[], initseed: int(64))
 \end{protohead}
 \begin{protobody}
 A routine provided for convenience to support the functionality of the
@@ -709,7 +709,7 @@ routines.  The current interface is minimal and should be expected to
 grow and evolve over time.
 
 \begin{protohead}
-def LinearSearch(Data: [?Dom], val): (bool, index(Dom))
+proc LinearSearch(Data: [?Dom], val): (bool, index(Dom))
 \end{protohead}
 \begin{protobody}
 Searches through the pre-sorted array \chpl{Data} looking for the
@@ -721,7 +721,7 @@ have been if it was not found.
 
 
 \begin{protohead}
-def BinarySearch(Data: [?Dom], val, in lo = Dom.low, in hi = Dom.high)
+proc BinarySearch(Data: [?Dom], val, in lo = Dom.low, in hi = Dom.high)
 \end{protohead}
 \begin{protobody}
 Searches through the pre-sorted array \chpl{Data} looking for the
@@ -743,7 +743,7 @@ routines.  The current interface is minimal and should be expected to
 grow and evolve over time.
 
 \begin{protohead}
-def InsertionSort(Data: [?Dom]) where Dom.rank == 1
+proc InsertionSort(Data: [?Dom]) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
 Sorts the 1D array \chpl{Data} in-place using a sequential insertion
@@ -751,7 +751,7 @@ sort algorithm.
 \end{protobody}
 
 \begin{protohead}
-def QuickSort(Data: [?Dom]) where Dom.rank == 1
+proc QuickSort(Data: [?Dom]) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
 Sorts the 1D array \chpl{Data} in-place using a sequential
@@ -792,7 +792,7 @@ The enumeration Day defines the days of the week, with Sunday defined to be 0.
 
 
 \begin{protohead}
-def getCurrentDate(): (int, int, int)
+proc getCurrentDate(): (int, int, int)
 \end{protohead}
 \begin{protobody}
 Returns the year, month, and day of the month as integers.  The year
@@ -801,7 +801,7 @@ in the range 1 to 31.
 \end{protobody}
 
 \begin{protohead}
-def getCurrentDayOfWeek(): Day
+proc getCurrentDayOfWeek(): Day
 \end{protohead}
 \begin{protobody}
 Returns the current day of the week.
@@ -809,21 +809,21 @@ Returns the current day of the week.
 
 
 \begin{protohead}
-def getCurrentTime(unit: TimeUnits = TimeUnits.seconds): real
+proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds): real
 \end{protohead}
 \begin{protobody}
 Returns the elapsed time since midnight in the units specified.
 \end{protobody}
 
 \begin{protohead}
-def Timer.clear()
+proc Timer.clear()
 \end{protohead}
 \begin{protobody}
 Clears the elapsed time stored in the Timer.
 \end{protobody}
 
 \begin{protohead}
-def Timer.elapsed(unit: TimeUnits = TimeUnits.seconds): real
+proc Timer.elapsed(unit: TimeUnits = TimeUnits.seconds): real
 \end{protohead}
 \begin{protobody}
 Returns the cumulative elapsed time, in the units specified, between
@@ -833,7 +833,7 @@ return value.
 \end{protobody}
 
 \begin{protohead}
-def Timer.start()
+proc Timer.start()
 \end{protohead}
 \begin{protobody}
 Starts the timer.  It is an error to start a timer that is already
@@ -841,14 +841,14 @@ running.
 \end{protobody}
 
 \begin{protohead}
-def Timer.stop()
+proc Timer.stop()
 \end{protohead}
 \begin{protobody}
 Stops the timer.  It is an error to stop a timer that is not running.
 \end{protobody}
 
 \begin{protohead}
-def sleep(t: uint)
+proc sleep(t: uint)
 \end{protohead}
 \begin{protobody}
 Delays a task for \chpl{t} seconds.

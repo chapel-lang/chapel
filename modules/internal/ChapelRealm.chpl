@@ -5,18 +5,18 @@
 var doneCreatingLocales: bool;
 
 pragma "private" var _here: locale;
-def here return _here;
+proc here return _here;
 
 // End comment
 
 pragma "private" var chpl_thisRealm: realm;
-def thisRealm return chpl_thisRealm;
+proc thisRealm return chpl_thisRealm;
 
 //
 // Using the obvious reduction in the initialization of totNumLocales
 // results in a warning... :(
 //
-def chpl_computeTotNumLocalesWithoutWarning() {
+proc chpl_computeTotNumLocalesWithoutWarning() {
   var retval = 0;
   for r in RealmSpace do
     retval += chpl_numLocales(r);
@@ -49,7 +49,7 @@ record chpl_localeTreeRecord {
 }
 pragma "private" var chpl_localeTree: chpl_localeTreeRecord;
 
-def chpl_initLocaleTree() {
+proc chpl_initLocaleTree() {
   for i in AllLocaleSpace {
     var left: locale = nil;
     var right: locale = nil;
@@ -76,20 +76,20 @@ class realm {
   const LocaleSpace: domain(1);
   const Locales: [LocaleSpace] locale;
 
-  def initialize() {
+  proc initialize() {
     if doneCreatingLocales {
       halt("realms cannot be created");
     }
   }
 
-  def id return chpl_id;
+  proc id return chpl_id;
 
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.write("{id = ", id, ", rtype = ", rtype, ", numLocales = ", numLocales, ", LocaleSpace = ", LocaleSpace, ", Locales = ", Locales, "}");
   }
 }
 
-def chpl_setupRealm(id, numLocales, baseID) {
+proc chpl_setupRealm(id, numLocales, baseID) {
   var tmp: realm;
   on __primitive("chpl_on_locale_num", baseID) {
     if (defaultDist._value == nil) {

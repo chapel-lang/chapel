@@ -148,7 +148,7 @@ initialization expression are evaluated only once.
 \begin{example}
 In the declaration
 \begin{chapel}
-def g() { writeln("side effect"); return "a string"; }
+proc g() { writeln("side effect"); return "a string"; }
 var a, b = 1.0, c, d:int, e, f = g();
 \end{chapel}
 variables \chpl{a} and \chpl{b} are of type \chpl{real} with
@@ -204,9 +204,9 @@ var v1: t = e; var v2: v1.type = readXX(v1); var v3: v1.type = readXX(v1);
 \end{chapel}
 where the function \chpl{readXX} is defined as follows:
 \begin{chapel}
-def readXX(x: sync) return x.readXX();
-def readXX(x: single) return x.readXX();
-def readXX(x) return x;
+proc readXX(x: sync) return x.readXX();
+proc readXX(x: single) return x.readXX();
+proc readXX(x) return x;
 \end{chapel}
 Note that the \chpl{readXX} function cannot be called directly by a
 Chapel programmer and that adding an additional overload or shadowing

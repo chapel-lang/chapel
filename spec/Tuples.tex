@@ -39,7 +39,7 @@ can be defined as a product of an integral parameter (a compile-time
 constant integer) and a type.  This latter specification is
 implemented by overloading \chpl{*} with the following prototype:
 \begin{chapel}
-def *(param p: int, type t) type
+proc *(param p: int, type t) type
 \end{chapel}
 
 \begin{rationale}
@@ -136,7 +136,7 @@ writeln((x1,x2,x3));
 \index{tuple@\chpl{tuple}}
 The function
 \begin{chapel}
-def tuple(x...) return x;
+proc tuple(x...) return x;
 \end{chapel}
 is defined in the standard context to create arbitrary tuples.
 
@@ -265,7 +265,7 @@ evaluated, but its value is not assigned.
 \end{chapelpre}
 The code
 \begin{chapel}
-def f()
+proc f()
   return (1, 2);
 
 var x: int;
@@ -344,7 +344,7 @@ this case, a variable is not defined for any omitted component.
 \end{chapelpre}
 The code
 \begin{chapel}
-def f()
+proc f()
   return (1, 2);
 
 var (x, ) = f();
@@ -375,7 +375,7 @@ returned by the iterator.
 \end{chapelpre}
 The code
 \begin{chapel}
-def bar() {
+iter bar() {
   yield (1, 1);
   yield (2, 2);
 }
@@ -419,7 +419,7 @@ in~\rsec{Function_Definitions}.
 \end{chapelpre}
 The function
 \begin{chapel}
-def f(x: int, (y, z): (int, int)) {
+proc f(x: int, (y, z): (int, int)) {
   // body
 }
 \end{chapel}
@@ -452,13 +452,13 @@ variable number of them.
 \end{chapelpre}
 The function \chpl{f} defined as
 \begin{chapel}
-def f((x, (y, z))) {
+proc f((x, (y, z))) {
   writeln((x, y, z));
 }
 \end{chapel}
 is equivalent to the function \chpl{g} defined as
 \begin{chapel}
-def g(t) where isTuple(t) && t.size == 2 && isTuple(t(2)) && t(2).size == 2 {
+proc g(t) where isTuple(t) && t.size == 2 && isTuple(t(2)) && t(2).size == 2 {
   writeln((t(1), t(2)(1), t(2)(2)));
 }
 \end{chapel}
@@ -480,7 +480,7 @@ destructured by enclosing a single formal argument in parentheses.
 \end{chapelpre}
 The empty function
 \begin{chapel}
-def f((x)) { }
+proc f((x)) { }
 \end{chapel}
 accepts a 1-tuple actual with any component type.
 \begin{chapelpost}
@@ -541,11 +541,11 @@ returns the first component of a tuple and a function \chpl{rest} that
 returns a tuple containing all of the components of a tuple except for
 the first:
 \begin{chapel}
-def first(t) where isTuple(t) {
+proc first(t) where isTuple(t) {
   return t(1);
 }
-def rest(t) where isTuple(t) {
-  def helper(first, rest...)
+proc rest(t) where isTuple(t) {
+  proc helper(first, rest...)
     return rest;
   return helper((...t));
 }
@@ -727,35 +727,35 @@ true
 \index{tuples!predefined functions}
 
 \begin{protohead}
-def $Tuple$.size param
+proc $Tuple$.size param
 \end{protohead}
 \begin{protobody}
 Returns the size of the tuple.
 \end{protobody}
 
 \begin{protohead}
-def isHomogeneousTuple(t: $Tuple$) param
+proc isHomogeneousTuple(t: $Tuple$) param
 \end{protohead}
 \begin{protobody}
 Returns true if \chpl{t} is a homogeneous tuple; otherwise false.
 \end{protobody}
 
 \begin{protohead}
-def isTuple(t: $Tuple$) param
+proc isTuple(t: $Tuple$) param
 \end{protohead}
 \begin{protobody}
 Returns true if \chpl{t} is a tuple; otherwise false.
 \end{protobody}
 
 \begin{protohead}
-def isTupleType(type t) param
+proc isTupleType(type t) param
 \end{protohead}
 \begin{protobody}
 Returns true if \chpl{t} is a tuple of types; otherwise false.
 \end{protobody}
 
 \begin{protohead}
-def max(type t) where isTupleType(t)
+proc max(type t) where isTupleType(t)
 \end{protohead}
 \begin{protobody}
 Returns a tuple of type \chpl{t} with each component set to the maximum
@@ -763,7 +763,7 @@ value that can be stored in its position.
 \end{protobody}
 
 \begin{protohead}
-def min(type t) where isTupleType(t)
+proc min(type t) where isTupleType(t)
 \end{protohead}
 \begin{protobody}
 Returns a tuple of type \chpl{t} with each component set to the minimum

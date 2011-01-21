@@ -237,7 +237,7 @@ var A: [1..5] int = [i in 1..5] i;
 \end{chapel}
 and the function
 \begin{chapel}
-def square(x: int) return x**2;
+proc square(x: int) return x**2;
 \end{chapel}
 then the call \chpl{square(A)} results in the promotion of
 the \chpl{square} function over the values in the array \chpl{A}.  The
@@ -267,7 +267,7 @@ the promoted actuals must have the same shape.
 \begin{example}
 Given a function defined as
 \begin{chapel}
-def foo(i: int, j: int) {
+proc foo(i: int, j: int) {
   write(i, " ", j, " ");
 }
 \end{chapel}
@@ -292,7 +292,7 @@ There are no constraints on tensor product promotion.
 \begin{example}
 Given a function defined as
 \begin{chapel}
-def foo(i: int, j: int) {
+proc foo(i: int, j: int) {
   write(i, " ", j, " ");
 }
 \end{chapel}

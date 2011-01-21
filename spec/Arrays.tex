@@ -268,7 +268,7 @@ The code
 % index-using-var-arg-tuple.chpl
 \end{chapelpre}
 \begin{chapel}
-def f(A: [], is...)
+proc f(A: [], is...)
   return A(is);
 \end{chapel}
 \begin{chapelpost}
@@ -591,7 +591,7 @@ In the code
 config const c = 55;
 \end{chapelpre}
 \begin{chapel}
-def foo(X: [1..5] int) { X = c; }
+proc foo(X: [1..5] int) { X = c; }
 var A: [1..10 by 2] int;
 foo(A);
 \end{chapel}
@@ -849,21 +849,21 @@ There is an expectation that this list of predefined functions and
 methods will grow.
 
 \begin{protohead}
-def $Array$.eltType type
+proc $Array$.eltType type
 \end{protohead}
 \begin{protobody}
 Returns the element type of the array.
 \end{protobody}
 
 \begin{protohead}
-def $Array$.rank param
+proc $Array$.rank param
 \end{protohead}
 \begin{protobody}
 Returns the rank of the array.
 \end{protobody}
 
 \begin{protohead}
-def $Array$.domain: this.domain
+proc $Array$.domain: this.domain
 \end{protohead}
 \begin{protobody}
 Returns the domain of the given array.  This domain is constant,
@@ -872,14 +872,14 @@ field, only by modifying the domain directly.
 \end{protobody}
 
 \begin{protohead}
-def $Array$.numElements: this.domain.dim_type
+proc $Array$.numElements: this.domain.dim_type
 \end{protohead}
 \begin{protobody}
 Returns the number of elements in the array.
 \end{protobody}
 
 \begin{protohead}
-def reshape(A: $Array$, D: $Domain$): $Array$
+proc reshape(A: $Array$, D: $Domain$): $Array$
 \end{protohead}
 \begin{protobody}
 Returns a copy of the array containing the same values but in the

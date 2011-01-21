@@ -33,7 +33,7 @@ module hello[70159]
 
 As the passes make the code more sophisticated, you will see more calls,
 declarations, etc, and code can move or be removed entirely. Using the output
-from --savec, you may line up interesting code samples to how the compiler
+from --savec, you may line up interesting code samples to see how the compiler
 changes this code over time.
 
 A key debugging concept is the unique ID associated with each AST node.
@@ -86,7 +86,7 @@ As gdb implements this inefficiently, you may want first to break on
 the pass(es) where the desired IDs are created, to reduce the wait time.
 
 Alternatively, start with --break-on-id on the lowest ID.  Once gdb
-break on that, update the variable 'breakOnID' with the next-lowest ID,
+breaks on that, update the variable 'breakOnID' with the next-lowest ID,
 the next time with the next-next-lowest ID, etc.
 
 (gdb) set breakOnID = 512306

@@ -20,21 +20,6 @@ instance of that class or any of its derived classes.
 A class is generic if it has generic fields. Generic classes and fields
 are discussed in~\rsec{Generic_Types}.
 
-\subsection{Class Types}
-\label{Class_Types}
-\index{classes!class types}
-
-The syntax of a class type is summarized as follows:
-\begin{syntax}
-class-type:
-  identifier
-  identifier ( named-expression-list )
-\end{syntax}
-For non-generic classes, the class name is sufficient to specify the
-type.  Generic classes must be instantiated to serve as a fully-specified
-type, for example to declare a variable.  This is done with
-type constructors, which are defined in Section~\ref{Type_Constructors}.
-
 \subsection{Class Declarations}
 \label{Class_Declarations}
 \index{classes!declarations}
@@ -46,11 +31,13 @@ class-declaration-statement:
     class-statement-list[OPT] }
 
 class-inherit-list:
-  : class-type-list
+  : class-or-record-type-list
 
-class-type-list:
+class-or-record-type-list:
   class-type
-  class-type , class-type-list
+  record-type
+  class-type , class-or-record-type-list
+  record-type , class-or-record-type-list
 
 class-statement-list:
   class-statement
@@ -59,12 +46,13 @@ class-statement-list:
 class-statement:
   type-declaration-statement
   function-declaration-statement
+  iterator-declaration-statement
   variable-declaration-statement
   empty-statement
 \end{syntax}
 A \sntx{class-declaration-statement} defines a new type symbol
 specified by the identifier.  Classes inherit data and functionality
-from other classes if the \sntx{inherit-type-list} is specified.
+from other classes and/or records if the \sntx{inherit-type-list} is specified.
 Inheritance is described in~\rsec{Inheritance}.
 
 The body of a class declaration consists of a sequence of statements
@@ -76,6 +64,28 @@ If a class contains a type alias or a parameter field, or it contains a variable
 constant without a specified type or an initialization
 expression, the class is generic.  Generic classes are described
 in~\rsec{Generic_Types}.
+
+\subsection{Class Types}
+\label{Class_Types}
+\index{classes!class types}
+
+A class type specifier is used to declare a variable that can hold an instance
+of that class (or any of its subclasses).  Such a variable may appear in an
+aggregate (class, record, union, tuple) declaration, and also specify argument
+and/or return value types in a function definition.  
+Class type specifiers may also appear in the
+inheritance list of class and record declarations.
+
+The syntax of a class type specifier is summarized as follows:
+\begin{syntax}
+class-type:
+  identifier
+  identifier ( named-expression-list )
+\end{syntax}
+For non-generic classes, the class name is sufficient to specify the
+type.  Generic classes must be instantiated to serve as a fully-specified
+type, for example to declare a variable.  This is done with
+type constructors, which are defined in Section~\ref{Type_Constructors}.
 
 \subsection{Class Assignment}
 \label{Class_Assignment}
@@ -158,7 +168,7 @@ special syntax that is similar to a field access.
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  `def' param-clause[OPT] type-binding function-name argument-list[OPT] var-param-type-clause[OPT]
+  `proc' param-clause[OPT] type-binding function-name argument-list[OPT] var-param-type-clause[OPT]
     return-type[OPT] where-clause[OPT] function-body
 
 param-clause:
@@ -189,7 +199,7 @@ class can be defined as follows:
 use useActor1;
 \end{chapelpre}
 \begin{chapel}
-def Actor.print() {
+proc Actor.print() {
   writeln("Actor ", name, " is ", age, " years old");
 }
 \end{chapel}
@@ -221,11 +231,11 @@ defined as
 \end{chapelpre}
 \begin{chapel}
 class C {
-  def foo() {
+  proc foo() {
     bar(this);
   }
 }
-def bar(c: C) { writeln(c); }
+proc bar(c: C) { writeln(c); }
 \end{chapel}
 \begin{chapelpost}
 var c: C = new C();
@@ -261,7 +271,7 @@ indexed by 1, 2, and 3.
 \begin{chapel}
 class ThreeArray {
   var x1, x2, x3: int;
-  def this(i: int) var {
+  proc this(i: int) var {
     select i {
       when 1 do return x1;
       when 2 do return x2;
@@ -309,7 +319,7 @@ contains three integers.
 \begin{chapel}
 class ThreeArray {
   var x1, x2, x3: int;
-  def these() var {
+  iter these() var {
     yield x1;
     yield x2;
     yield x3;
@@ -386,13 +396,13 @@ class MessagePoint {
   var x, y: real;
   var message: string;
 
-  def MessagePoint(x: real, y: real) {
+  proc MessagePoint(x: real, y: real) {
     this.x = x;
     this.y = y;
     this.message = "a point";
   }
 
-  def MessagePoint(message: string) {
+  proc MessagePoint(message: string) {
     this.x = 0;
     this.y = 0;
     this.message = message;
@@ -518,7 +528,7 @@ In the code
 class C {
   var setCount: int;
   var x: int;
-  def x var {
+  proc x var {
     if setter then
       setCount += 1;
     return x;

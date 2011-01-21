@@ -280,7 +280,7 @@ enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
 \end{chapel}
 defines an enumerated type with four constants.  The function
 \begin{chapel}
-def quote(s: statesman) {
+proc quote(s: statesman) {
   select s {
     when statesman.Aristotle do
        writeln("All paid jobs absorb and degrade the mind.");

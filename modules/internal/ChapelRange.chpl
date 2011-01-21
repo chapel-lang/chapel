@@ -19,9 +19,9 @@ record range {
   var _stride: chpl__idxTypeToStrType(idxType) = 1;    // signed stride of range
   var _promotionType : idxType;                  // enables promotion
 
-  pragma "inline" def low return _low;       // public getter for low bound
-  pragma "inline" def high return _high;     // public getter for high bound
-  pragma "inline" def stride return _stride; // public getter for stride
+  pragma "inline" proc low return _low;       // public getter for low bound
+  pragma "inline" proc high return _high;     // public getter for high bound
+  pragma "inline" proc stride return _stride; // public getter for stride
 }
 
 
@@ -31,35 +31,35 @@ record range {
 //
 // syntax function for bounded ranges
 //
-def _build_range(low: int, high: int)
+proc _build_range(low: int, high: int)
   return new range(int, BoundedRangeType.bounded, false, low, high);
-def _build_range(low: uint, high: uint)
+proc _build_range(low: uint, high: uint)
   return new range(uint, BoundedRangeType.bounded, false, low, high);
-def _build_range(low: int(64), high: int(64))
+proc _build_range(low: int(64), high: int(64))
   return new range(int(64), BoundedRangeType.bounded, false, low, high);
-def _build_range(low: uint(64), high: uint(64))
+proc _build_range(low: uint(64), high: uint(64))
   return new range(uint(64), BoundedRangeType.bounded, false, low, high);
 
 
 //
 // syntax function for unbounded ranges
 //
-def _build_range(param bt: BoundedRangeType, bound: int)
+proc _build_range(param bt: BoundedRangeType, bound: int)
   return new range(int, bt, false, bound, bound);
-def _build_range(param bt: BoundedRangeType, bound: uint)
+proc _build_range(param bt: BoundedRangeType, bound: uint)
   return new range(uint, bt, false, bound, bound);
-def _build_range(param bt: BoundedRangeType, bound: int(64))
+proc _build_range(param bt: BoundedRangeType, bound: int(64))
   return new range(int(64), bt, false, bound, bound);
-def _build_range(param bt: BoundedRangeType, bound: uint(64))
+proc _build_range(param bt: BoundedRangeType, bound: uint(64))
   return new range(uint(64), bt, false, bound, bound);
-def _build_range(param bt: BoundedRangeType)
+proc _build_range(param bt: BoundedRangeType)
   return new range(int, bt, false);
 
 
 //
 // syntax function for by-expressions
 //
-def chpl__byHelp(r : range(?et, ?bt, ?sbl), str : chpl__idxTypeToStrType(et)) {
+proc chpl__byHelp(r : range(?et, ?bt, ?sbl), str : chpl__idxTypeToStrType(et)) {
   if str == 0 then
     halt("range cannot be strided by zero");
   if r.boundedType == BoundedRangeType.boundedNone then
@@ -74,7 +74,7 @@ def chpl__byHelp(r : range(?et, ?bt, ?sbl), str : chpl__idxTypeToStrType(et)) {
   return result;
 }
 
-def chpl__legalIntCoerce(type t1, type t2) param {
+proc chpl__legalIntCoerce(type t1, type t2) param {
   if (_isSignedType(t2)) {
     if (_isSignedType(t1)) {
       return (numBits(t1) <= numBits(t2));
@@ -90,7 +90,7 @@ def chpl__legalIntCoerce(type t1, type t2) param {
   }
 }
 
-def by(r : range(?), str) {
+proc by(r : range(?), str) {
   type idxType = r.idxType;
   type strType = chpl__idxTypeToStrType(idxType);
   type argType = str.type;
@@ -107,7 +107,7 @@ def by(r : range(?), str) {
 //
 // syntax functions for counted ranges
 //
-def #(r:range(?), i:integral)
+proc #(r:range(?), i:integral)
   where r.boundedType == BoundedRangeType.boundedLow {
   type resultType = (r.low + i).type;
   if i < 0 then
@@ -128,7 +128,7 @@ def #(r:range(?), i:integral)
                    _stride = r.stride);
 }
 
-def #(r:range(?), i:integral)
+proc #(r:range(?), i:integral)
   where r.boundedType == BoundedRangeType.boundedHigh {
   type resultType = (r.low + i).type;
   if i < 0 then
@@ -149,7 +149,7 @@ def #(r:range(?), i:integral)
                    _stride = r.stride);
 }
 
-def #(r:range(?), i:integral)
+proc #(r:range(?), i:integral)
   where r.boundedType == BoundedRangeType.bounded {
   type resultType = (r.low + i).type;
   if i < 0 then
@@ -172,7 +172,7 @@ def #(r:range(?), i:integral)
                    _stride = r.stride);
 }
 
-def #(r:range(?), i:integral)
+proc #(r:range(?), i:integral)
   where r.boundedType == BoundedRangeType.boundedNone {
   compilerError("count operator is not defined for unbounded ranges");
 }
@@ -185,21 +185,21 @@ def #(r:range(?), i:integral)
 //
 // return true if this range has a low bound
 //
-def range._hasLow() param
+proc range._hasLow() param
   return boundedType == BoundedRangeType.bounded || boundedType == BoundedRangeType.boundedLow;
 
 
 //
 // return true if this range has a high bound
 //
-def range._hasHigh() param
+proc range._hasHigh() param
   return boundedType == BoundedRangeType.bounded || boundedType == BoundedRangeType.boundedHigh;
 
 
 // 
 // Return the number in the range 0 <= result < b that is congruent to a (mod b)
 //
-def mod(a:integral, b:integral) {
+proc mod(a:integral, b:integral) {
   if (b <= 0) then
     halt("modulus divisor must be positive");
   var tmp = a % b:a.type;
@@ -210,7 +210,7 @@ def mod(a:integral, b:integral) {
 //
 // align low bound of this range to an alignment; snap up
 //
-def range._alignLow(alignment: idxType) {
+proc range._alignLow(alignment: idxType) {
   var s = abs(stride):idxType;
   // The following is equivalent to var d = abs(alignment - low) % s;
   // except that it avoids problems with an overflow in the subtraction.
@@ -233,7 +233,7 @@ def range._alignLow(alignment: idxType) {
 //
 // align high bound of this range to an alignment; snap down
 //
-def range._alignHigh(alignment: idxType) {
+proc range._alignHigh(alignment: idxType) {
   var s = abs(stride):idxType;
   // See the note about this declaration in range._alignLow. It is like
   // var d = abs(alignment - high) % s; but avoids overflow problems.
@@ -253,7 +253,7 @@ def range._alignHigh(alignment: idxType) {
 //
 // range assignment
 //
-def =(r1: range(stridable=?s1), r2: range(stridable=?s2)) {
+proc =(r1: range(stridable=?s1), r2: range(stridable=?s2)) {
   if r1.boundedType != r2.boundedType then
     compilerError("type mismatch in assignment of ranges with different boundedType parameters");
   if !s1 && s2 then
@@ -272,11 +272,11 @@ def =(r1: range(stridable=?s1), r2: range(stridable=?s2)) {
 //
 // return the intersection of this and other
 //
-def range.this(other: range(?idxType2, ?boundedType, ?stridable)) {
+proc range.this(other: range(?idxType2, ?boundedType, ?stridable)) {
   //
   // determine boundedType of result
   //
-  def computeBoundedType(r1, r2) param {
+  proc computeBoundedType(r1, r2) param {
     param low = r1._hasLow() || r2._hasLow();
     param high = r1._hasHigh() || r2._hasHigh();
     if low && high then
@@ -295,7 +295,7 @@ def range.this(other: range(?idxType2, ?boundedType, ?stridable)) {
   //
   // source: Knuth Volume 2 --- Section 4.5.2
   //
-  def extendedEuclidHelp(u, v) {
+  proc extendedEuclidHelp(u, v) {
     var zero: u.type = 0;
     var one: u.type = 1;
     var U = (one, zero, u);
@@ -306,11 +306,11 @@ def range.this(other: range(?idxType2, ?boundedType, ?stridable)) {
     return (U(3), U(1));
   }
     
-  def extendedEuclid(u:int, v:int) {
+  proc extendedEuclid(u:int, v:int) {
     return extendedEuclidHelp(u,v);
   }
 
-  def extendedEuclid(u:int(64), v:int(64)) {
+  proc extendedEuclid(u:int(64), v:int(64)) {
     return extendedEuclidHelp(u,v);
   }
 
@@ -363,7 +363,7 @@ def range.this(other: range(?idxType2, ?boundedType, ?stridable)) {
 //
 // default iterator optimized for unit stride
 //
-def range.these() {
+iter range.these() {
   if boundedType != BoundedRangeType.bounded {
     if boundedType == BoundedRangeType.boundedNone then
       halt("iteration over a range with no bounds");
@@ -413,7 +413,7 @@ def range.these() {
   }
 }
 
-def range.these(param tag: iterator) where tag == iterator.leader {
+iter range.these(param tag: iterator) where tag == iterator.leader {
   // want "yield 0..length-1;"
   // but compilerError in length causes a problem because leaders are
   // resolved wherever an iterator is.
@@ -460,7 +460,7 @@ def range.these(param tag: iterator) where tag == iterator.leader {
   }
 }
 
-def range.these(param tag: iterator, follower) where tag == iterator.follower {
+iter range.these(param tag: iterator, follower) where tag == iterator.follower {
   if boundedType == BoundedRangeType.boundedNone then
     halt("iteration over a range with no bounds");
   if follower.size != 1 then
@@ -490,7 +490,7 @@ def range.these(param tag: iterator, follower) where tag == iterator.follower {
 //
 // returns the number of elements in this range
 //
-def range.length {
+proc range.length {
   if boundedType != BoundedRangeType.bounded then
     compilerError("unbounded range has infinite length");
   if low > high then
@@ -505,7 +505,7 @@ def range.length {
 //
 // returns true if i is in this range
 //
-def range.member(i: idxType) {
+proc range.member(i: idxType) {
   if stridable {
     if boundedType == BoundedRangeType.bounded {
       return i >= low && i <= high && (i - low) % abs(stride):idxType == 0;
@@ -529,7 +529,7 @@ def range.member(i: idxType) {
   }
 }
 
-def range.indexOrder(i: idxType) {
+proc range.indexOrder(i: idxType) {
   if (!member(i)) then return (-1):idxType;
   return (i-low)/abs(stride);
 }
@@ -542,12 +542,12 @@ def range.indexOrder(i: idxType) {
 // unbounded ranges to slice ranges of various index types -- otherwise
 // we get a compiler error in the boundsCheck function.
 //
-def range.boundsCheck(other: range(?e,?b,?s)) where b == BoundedRangeType.boundedNone {
+proc range.boundsCheck(other: range(?e,?b,?s)) where b == BoundedRangeType.boundedNone {
   return true;
 }
 
 
-def range.boundsCheck(other: range(?e,?b,?s)) {
+proc range.boundsCheck(other: range(?e,?b,?s)) {
   var boundedOther: range(idxType,BoundedRangeType.bounded,s||this.stridable);
   if other._hasLow() then
     boundedOther._low = other.low;
@@ -562,21 +562,21 @@ def range.boundsCheck(other: range(?e,?b,?s)) {
   return (boundedOther.length == 0) || (this(boundedOther) == boundedOther);
 }
 
-def range.boundsCheck(other: idxType)
+proc range.boundsCheck(other: idxType)
   return member(other);
 
 
 //
 // returns true if every i in other is in this range
 //
-def range.member(other: range(?))
+proc range.member(other: range(?))
   return this(other) == other;
 
 
 //
 // write implementation for ranges
 //
-def range.writeThis(f: Writer) {
+proc range.writeThis(f: Writer) {
   if _hasLow() then
     f.write(low);
   f.write("..");
@@ -590,13 +590,13 @@ def range.writeThis(f: Writer) {
 //
 // translate the indices in this range by i
 //
-def range.translate(i: idxType)
+proc range.translate(i: idxType)
   return this + i;
 
 //
 // intended for internal use only:
 //
-def range.chpl__unTranslate(i: idxType) {
+proc range.chpl__unTranslate(i: idxType) {
   return this - i;
 }
 
@@ -604,7 +604,7 @@ def range.chpl__unTranslate(i: idxType) {
 //
 // return an interior portion of this range
 //
-def range.interior(i: idxType) {
+proc range.interior(i: idxType) {
   if boundedType != BoundedRangeType.bounded then
     compilerError("interior is not supported on unbounded ranges");
   if i == 0 then
@@ -619,7 +619,7 @@ def range.interior(i: idxType) {
 //
 // return an exterior portion of this range
 //
-def range.exterior(i: idxType) {
+proc range.exterior(i: idxType) {
   if boundedType != BoundedRangeType.bounded then
     compilerError("exterior is not supported on unbounded ranges");
   if i == 0 then
@@ -634,27 +634,27 @@ def range.exterior(i: idxType) {
 //
 // returns an expanded range, or a contracted range if i < 0
 //
-def range.expand(i: idxType)
+proc range.expand(i: idxType)
   return new range(idxType, boundedType, stridable, low-i, high+i, stride);
 
 
 //
 // range op scalar and scalar op range arithmetic
 //
-def +(r: range(?e,?b,?s), i: integral)
+proc +(r: range(?e,?b,?s), i: integral)
   return new range((r.low+i).type, b, s, r.low+i, r.high+i, r.stride);
 
-def +(i:integral, r: range(?e,?b,?s))
+proc +(i:integral, r: range(?e,?b,?s))
   return new range((i+r.low).type, b, s, i+r.low, i+r.high, r.stride);
 
-def -(r: range(?e,?b,?s), i: integral)
+proc -(r: range(?e,?b,?s), i: integral)
   return new range((r.low-i).type, b, s, r.low-i, r.high-i, r.stride);
 
 
 //
 // return a substring of a string with a range of indices
 //
-pragma "inline" def string.substring(s: range(?e,?b,?st)) {
+pragma "inline" proc string.substring(s: range(?e,?b,?st)) {
   if s.boundedType != BoundedRangeType.bounded then
     compilerError("substring indexing undefined on unbounded ranges");
   if s.stride != 1 then

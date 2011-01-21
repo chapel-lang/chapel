@@ -149,7 +149,7 @@ first parameter is queried and stored in the type alias \chpl{t} and
 the domain of the second argument is queried and stored in the
 variable \chpl{D}:
 \begin{chapel}
-def foo(x: ?t, y: [?D] t) {
+proc foo(x: ?t, y: [?D] t) {
   for i in D do
     y[i] = x;
 }
@@ -159,7 +159,7 @@ particular value to all elements of an array.  The value and the
 elements of the array are constrained to be the same type.  This
 function can be rewritten without query expression as follows:
 \begin{chapel}
-def foo(x, y: [] x.type) {
+proc foo(x, y: [] x.type) {
   for i in y.domain do
     y[i] = x;
 }
@@ -446,17 +446,17 @@ the 32-bit integers.  The result is a 32-bit integer.
 
 The unary plus operators are predefined as follows:
 \begin{chapel}
-def +(a: int(32)): int(32)
-def +(a: int(64)): int(64)
-def +(a: uint(32)): uint(32)
-def +(a: uint(64)): uint(64)
-def +(a: real(32)): real(32)
-def +(a: real(64)): real(64)
-def +(a: imag(32)): imag(32)
-def +(a: imag(64)): imag(64)
-def +(a: complex(32)): complex(32)
-def +(a: complex(64)): complex(64)
-def +(a: complex(128)): complex(128)
+proc +(a: int(32)): int(32)
+proc +(a: int(64)): int(64)
+proc +(a: uint(32)): uint(32)
+proc +(a: uint(64)): uint(64)
+proc +(a: real(32)): real(32)
+proc +(a: real(64)): real(64)
+proc +(a: imag(32)): imag(32)
+proc +(a: imag(64)): imag(64)
+proc +(a: complex(32)): complex(32)
+proc +(a: complex(64)): complex(64)
+proc +(a: complex(128)): complex(128)
 \end{chapel}
 For each of these definitions, the result is the value of the operand.
 
@@ -466,16 +466,16 @@ For each of these definitions, the result is the value of the operand.
 
 The unary minus operators are predefined as follows:
 \begin{chapel}
-def -(a: int(32)): int(32)
-def -(a: int(64)): int(64)
-def -(a: uint(64))
-def -(a: real(32)): real(32)
-def -(a: real(64)): real(64)
-def -(a: imag(32)): imag(32)
-def -(a: imag(64)): imag(64)
-def -(a: complex(32)): complex(32)
-def -(a: complex(64)): complex(64)
-def -(a: complex(128)): complex(128)
+proc -(a: int(32)): int(32)
+proc -(a: int(64)): int(64)
+proc -(a: uint(64))
+proc -(a: real(32)): real(32)
+proc -(a: real(64)): real(64)
+proc -(a: imag(32)): imag(32)
+proc -(a: imag(64)): imag(64)
+proc -(a: complex(32)): complex(32)
+proc -(a: complex(64)): complex(64)
+proc -(a: complex(128)): complex(128)
 \end{chapel}
 For each of these definitions that return a value, the result is the
 negation of the value of the operand.  For integral types, this
@@ -494,36 +494,36 @@ to \chpl{int(64)} using an implicit conversion.
 
 The addition operators are predefined as follows:
 \begin{chapel}
-def +(a: int(32), b: int(32)): int(32)
-def +(a: int(64), b: int(64)): int(64)
-def +(a: uint(32), b: uint(32)): uint(32)
-def +(a: uint(64), b: uint(64)): uint(64)
-def +(a: uint(64), b: int(64))
-def +(a: int(64), b: uint(64))
+proc +(a: int(32), b: int(32)): int(32)
+proc +(a: int(64), b: int(64)): int(64)
+proc +(a: uint(32), b: uint(32)): uint(32)
+proc +(a: uint(64), b: uint(64)): uint(64)
+proc +(a: uint(64), b: int(64))
+proc +(a: int(64), b: uint(64))
 
-def +(a: real(32), b: real(32)): real(32)
-def +(a: real(64), b: real(64)): real(64)
+proc +(a: real(32), b: real(32)): real(32)
+proc +(a: real(64), b: real(64)): real(64)
 
-def +(a: imag(32), b: imag(32)): imag(32)
-def +(a: imag(64), b: imag(64)): imag(64)
+proc +(a: imag(32), b: imag(32)): imag(32)
+proc +(a: imag(64), b: imag(64)): imag(64)
 
-def +(a: complex(64), b: complex(64)): complex(64)
-def +(a: complex(128), b: complex(128)): complex(128)
+proc +(a: complex(64), b: complex(64)): complex(64)
+proc +(a: complex(128), b: complex(128)): complex(128)
 
-def +(a: real(32), b: imag(32)): complex(64)
-def +(a: imag(32), b: real(32)): complex(64)
-def +(a: real(64), b: imag(64)): complex(128)
-def +(a: imag(64), b: real(64)): complex(128)
+proc +(a: real(32), b: imag(32)): complex(64)
+proc +(a: imag(32), b: real(32)): complex(64)
+proc +(a: real(64), b: imag(64)): complex(128)
+proc +(a: imag(64), b: real(64)): complex(128)
 
-def +(a: real(32), b: complex(64)): complex(64)
-def +(a: complex(64), b: real(32)): complex(64)
-def +(a: real(64), b: complex(128)): complex(128)
-def +(a: complex(128), b: real(64)): complex(128)
+proc +(a: real(32), b: complex(64)): complex(64)
+proc +(a: complex(64), b: real(32)): complex(64)
+proc +(a: real(64), b: complex(128)): complex(128)
+proc +(a: complex(128), b: real(64)): complex(128)
 
-def +(a: imag(32), b: complex(64)): complex(64)
-def +(a: complex(64), b: imag(32)): complex(64)
-def +(a: imag(64), b: complex(128)): complex(128)
-def +(a: complex(128), b: imag(64)): complex(128)
+proc +(a: imag(32), b: complex(64)): complex(64)
+proc +(a: complex(64), b: imag(32)): complex(64)
+proc +(a: imag(64), b: complex(128)): complex(128)
+proc +(a: complex(128), b: imag(64)): complex(128)
 \end{chapel}
 For each of these definitions that return a value, the result is the
 sum of the two operands.
@@ -542,36 +542,36 @@ type.
 
 The subtraction operators are predefined as follows:
 \begin{chapel}
-def -(a: int(32), b: int(32)): int(32)
-def -(a: int(64), b: int(64)): int(64)
-def -(a: uint(32), b: uint(32)): uint(32)
-def -(a: uint(64), b: uint(64)): uint(64)
-def -(a: uint(64), b: int(64))
-def -(a: int(64), b: uint(64))
+proc -(a: int(32), b: int(32)): int(32)
+proc -(a: int(64), b: int(64)): int(64)
+proc -(a: uint(32), b: uint(32)): uint(32)
+proc -(a: uint(64), b: uint(64)): uint(64)
+proc -(a: uint(64), b: int(64))
+proc -(a: int(64), b: uint(64))
 
-def -(a: real(32), b: real(32)): real(32)
-def -(a: real(64), b: real(64)): real(64)
+proc -(a: real(32), b: real(32)): real(32)
+proc -(a: real(64), b: real(64)): real(64)
 
-def -(a: imag(32), b: imag(32)): imag(32)
-def -(a: imag(64), b: imag(64)): imag(64)
+proc -(a: imag(32), b: imag(32)): imag(32)
+proc -(a: imag(64), b: imag(64)): imag(64)
 
-def -(a: complex(64), b: complex(64)): complex(64)
-def -(a: complex(128), b: complex(128)): complex(128)
+proc -(a: complex(64), b: complex(64)): complex(64)
+proc -(a: complex(128), b: complex(128)): complex(128)
 
-def -(a: real(32), b: imag(32)): complex(64)
-def -(a: imag(32), b: real(32)): complex(64)
-def -(a: real(64), b: imag(64)): complex(128)
-def -(a: imag(64), b: real(64)): complex(128)
+proc -(a: real(32), b: imag(32)): complex(64)
+proc -(a: imag(32), b: real(32)): complex(64)
+proc -(a: real(64), b: imag(64)): complex(128)
+proc -(a: imag(64), b: real(64)): complex(128)
 
-def -(a: real(32), b: complex(64)): complex(64)
-def -(a: complex(64), b: real(32)): complex(64)
-def -(a: real(64), b: complex(128)): complex(128)
-def -(a: complex(128), b: real(64)): complex(128)
+proc -(a: real(32), b: complex(64)): complex(64)
+proc -(a: complex(64), b: real(32)): complex(64)
+proc -(a: real(64), b: complex(128)): complex(128)
+proc -(a: complex(128), b: real(64)): complex(128)
 
-def -(a: imag(32), b: complex(64)): complex(64)
-def -(a: complex(64), b: imag(32)): complex(64)
-def -(a: imag(64), b: complex(128)): complex(128)
-def -(a: complex(128), b: imag(64)): complex(128)
+proc -(a: imag(32), b: complex(64)): complex(64)
+proc -(a: complex(64), b: imag(32)): complex(64)
+proc -(a: imag(64), b: complex(128)): complex(128)
+proc -(a: complex(128), b: imag(64)): complex(128)
 \end{chapel}
 For each of these definitions that return a value, the result is the
 value obtained by subtracting the second operand from the first
@@ -591,36 +591,36 @@ versa, also produces a value of complex type.
 
 The multiplication operators are predefined as follows:
 \begin{chapel}
-def *(a: int(32), b: int(32)): int(32)
-def *(a: int(64), b: int(64)): int(64)
-def *(a: uint(32), b: uint(32)): uint(32)
-def *(a: uint(64), b: uint(64)): uint(64)
-def *(a: uint(64), b: int(64))
-def *(a: int(64), b: uint(64))
+proc *(a: int(32), b: int(32)): int(32)
+proc *(a: int(64), b: int(64)): int(64)
+proc *(a: uint(32), b: uint(32)): uint(32)
+proc *(a: uint(64), b: uint(64)): uint(64)
+proc *(a: uint(64), b: int(64))
+proc *(a: int(64), b: uint(64))
 
-def *(a: real(32), b: real(32)): real(32)
-def *(a: real(64), b: real(64)): real(64)
+proc *(a: real(32), b: real(32)): real(32)
+proc *(a: real(64), b: real(64)): real(64)
 
-def *(a: imag(32), b: imag(32)): real(32)
-def *(a: imag(64), b: imag(64)): real(64)
+proc *(a: imag(32), b: imag(32)): real(32)
+proc *(a: imag(64), b: imag(64)): real(64)
 
-def *(a: complex(64), b: complex(64)): complex(64)
-def *(a: complex(128), b: complex(128)): complex(128)
+proc *(a: complex(64), b: complex(64)): complex(64)
+proc *(a: complex(128), b: complex(128)): complex(128)
 
-def *(a: real(32), b: imag(32)): imag(32)
-def *(a: imag(32), b: real(32)): imag(32)
-def *(a: real(64), b: imag(64)): imag(64)
-def *(a: imag(64), b: real(64)): imag(64)
+proc *(a: real(32), b: imag(32)): imag(32)
+proc *(a: imag(32), b: real(32)): imag(32)
+proc *(a: real(64), b: imag(64)): imag(64)
+proc *(a: imag(64), b: real(64)): imag(64)
 
-def *(a: real(32), b: complex(64)): complex(64)
-def *(a: complex(64), b: real(32)): complex(64)
-def *(a: real(64), b: complex(128)): complex(128)
-def *(a: complex(128), b: real(64)): complex(128)
+proc *(a: real(32), b: complex(64)): complex(64)
+proc *(a: complex(64), b: real(32)): complex(64)
+proc *(a: real(64), b: complex(128)): complex(128)
+proc *(a: complex(128), b: real(64)): complex(128)
 
-def *(a: imag(32), b: complex(64)): complex(64)
-def *(a: complex(64), b: imag(32)): complex(64)
-def *(a: imag(64), b: complex(128)): complex(128)
-def *(a: complex(128), b: imag(64)): complex(128)
+proc *(a: imag(32), b: complex(64)): complex(64)
+proc *(a: complex(64), b: imag(32)): complex(64)
+proc *(a: imag(64), b: complex(128)): complex(128)
+proc *(a: complex(128), b: imag(64)): complex(128)
 \end{chapel}
 For each of these definitions that return a value, the result is the
 product of the two operands.
@@ -640,36 +640,36 @@ value of complex type.
 
 The division operators are predefined as follows:
 \begin{chapel}
-def /(a: int(32), b: int(32)): int(32)
-def /(a: int(64), b: int(64)): int(64)
-def /(a: uint(32), b: uint(32)): uint(32)
-def /(a: uint(64), b: uint(64)): uint(64)
-def /(a: uint(64), b: int(64))
-def /(a: int(64), b: uint(64))
+proc /(a: int(32), b: int(32)): int(32)
+proc /(a: int(64), b: int(64)): int(64)
+proc /(a: uint(32), b: uint(32)): uint(32)
+proc /(a: uint(64), b: uint(64)): uint(64)
+proc /(a: uint(64), b: int(64))
+proc /(a: int(64), b: uint(64))
 
-def /(a: real(32), b: real(32)): real(32)
-def /(a: real(64), b: real(64)): real(64)
+proc /(a: real(32), b: real(32)): real(32)
+proc /(a: real(64), b: real(64)): real(64)
 
-def /(a: imag(32), b: imag(32)): real(32)
-def /(a: imag(64), b: imag(64)): real(64)
+proc /(a: imag(32), b: imag(32)): real(32)
+proc /(a: imag(64), b: imag(64)): real(64)
 
-def /(a: complex(64), b: complex(64)): complex(64)
-def /(a: complex(128), b: complex(128)): complex(128)
+proc /(a: complex(64), b: complex(64)): complex(64)
+proc /(a: complex(128), b: complex(128)): complex(128)
 
-def /(a: real(32), b: imag(32)): imag(32)
-def /(a: imag(32), b: real(32)): imag(32)
-def /(a: real(64), b: imag(64)): imag(64)
-def /(a: imag(64), b: real(64)): imag(64)
+proc /(a: real(32), b: imag(32)): imag(32)
+proc /(a: imag(32), b: real(32)): imag(32)
+proc /(a: real(64), b: imag(64)): imag(64)
+proc /(a: imag(64), b: real(64)): imag(64)
 
-def /(a: real(32), b: complex(64)): complex(64)
-def /(a: complex(64), b: real(32)): complex(64)
-def /(a: real(64), b: complex(128)): complex(128)
-def /(a: complex(128), b: real(64)): complex(128)
+proc /(a: real(32), b: complex(64)): complex(64)
+proc /(a: complex(64), b: real(32)): complex(64)
+proc /(a: real(64), b: complex(128)): complex(128)
+proc /(a: complex(128), b: real(64)): complex(128)
 
-def /(a: imag(32), b: complex(64)): complex(64)
-def /(a: complex(64), b: imag(32)): complex(64)
-def /(a: imag(64), b: complex(128)): complex(128)
-def /(a: complex(128), b: imag(64)): complex(128)
+proc /(a: imag(32), b: complex(64)): complex(64)
+proc /(a: complex(64), b: imag(32)): complex(64)
+proc /(a: imag(64), b: complex(128)): complex(128)
+proc /(a: complex(128), b: imag(64)): complex(128)
 \end{chapel}
 For each of these definitions that return a value, the result is the
 quotient of the two operands.
@@ -689,12 +689,12 @@ type.
 
 The modulus operators are predefined as follows:
 \begin{chapel}
-def %(a: int(32), b: int(32)): int(32)
-def %(a: int(64), b: int(64)): int(64)
-def %(a: uint(32), b: uint(32)): uint(32)
-def %(a: uint(64), b: uint(64)): uint(64)
-def %(a: uint(64), b: int(64))
-def %(a: int(64), b: uint(64))
+proc %(a: int(32), b: int(32)): int(32)
+proc %(a: int(64), b: int(64)): int(64)
+proc %(a: uint(32), b: uint(32)): uint(32)
+proc %(a: uint(64), b: uint(64)): uint(64)
+proc %(a: uint(64), b: int(64))
+proc %(a: int(64), b: uint(64))
 \end{chapel}
 For each of these definitions that return a value, the result is the
 remainder when the first operand is divided by the second operand.
@@ -712,15 +712,15 @@ extended to handle real, imaginary, and complex types in the future.
 
 The exponentiation operators are predefined as follows:
 \begin{chapel}
-def **(a: int(32), b: int(32)): int(32)
-def **(a: int(64), b: int(64)): int(64)
-def **(a: uint(32), b: uint(32)): uint(32)
-def **(a: uint(64), b: uint(64)): uint(64)
-def **(a: uint(64), b: int(64))
-def **(a: int(64), b: uint(64))
+proc **(a: int(32), b: int(32)): int(32)
+proc **(a: int(64), b: int(64)): int(64)
+proc **(a: uint(32), b: uint(32)): uint(32)
+proc **(a: uint(64), b: uint(64)): uint(64)
+proc **(a: uint(64), b: int(64))
+proc **(a: int(64), b: uint(64))
 
-def **(a: real(32), b: real(32)): real(32)
-def **(a: real(64), b: real(64)): real(64)
+proc **(a: real(32), b: real(32)): real(32)
+proc **(a: real(64), b: real(64)): real(64)
 \end{chapel}
 For each of these definitions that return a value, the result is the
 value of the first operand raised to the power of the second operand.
@@ -746,11 +746,11 @@ overloading~(\rsec{Function_Overloading}).
 
 The bitwise complement operators are predefined as follows:
 \begin{chapel}
-def ~(a: bool): bool
-def ~(a: int(32)): int(32)
-def ~(a: int(64)): int(64)
-def ~(a: uint(32)): uint(32)
-def ~(a: uint(64)): uint(64)
+proc ~(a: bool): bool
+proc ~(a: int(32)): int(32)
+proc ~(a: int(64)): int(64)
+proc ~(a: uint(32)): uint(32)
+proc ~(a: uint(64)): uint(64)
 \end{chapel}
 For each of these definitions, the result is the bitwise complement of
 the operand.
@@ -761,15 +761,15 @@ the operand.
 
 The bitwise and operators are predefined as follows:
 \begin{chapel}
-def &(a: bool, b: bool): bool
-def &(a: int(32), b: int(32)): int(32)
-def &(a: int(64), b: int(64)): int(64)
-def &(a: uint(32), b: uint(32)): uint(32)
-def &(a: uint(64), b: uint(64)): uint(64)
-def &(a: int(32), b: uint(32)): uint(32)
-def &(a: int(64), b: uint(64)): uint(64)
-def &(a: uint(32), b: int(32)): uint(32)
-def &(a: uint(64), b: int(64)): uint(64)
+proc &(a: bool, b: bool): bool
+proc &(a: int(32), b: int(32)): int(32)
+proc &(a: int(64), b: int(64)): int(64)
+proc &(a: uint(32), b: uint(32)): uint(32)
+proc &(a: uint(64), b: uint(64)): uint(64)
+proc &(a: int(32), b: uint(32)): uint(32)
+proc &(a: int(64), b: uint(64)): uint(64)
+proc &(a: uint(32), b: int(32)): uint(32)
+proc &(a: uint(64), b: int(64)): uint(64)
 \end{chapel}
 For each of these definitions, the result is
 computed by applying the logical and operation to the bits of the
@@ -796,15 +796,15 @@ reflects the semantics of standard C.
 
 The bitwise or operators are predefined as follows:
 \begin{chapel}
-def |(a: bool, b: bool): bool
-def |(a: int(32), b: int(32)): int(32)
-def |(a: int(64), b: int(64)): int(64)
-def |(a: uint(32), b: uint(32)): uint(32)
-def |(a: uint(64), b: uint(64)): uint(64)
-def |(a: int(32), b: uint(32)): uint(32)
-def |(a: int(64), b: uint(64)): uint(64)
-def |(a: uint(32), b: int(32)): uint(32)
-def |(a: uint(64), b: int(64)): uint(64)
+proc |(a: bool, b: bool): bool
+proc |(a: int(32), b: int(32)): int(32)
+proc |(a: int(64), b: int(64)): int(64)
+proc |(a: uint(32), b: uint(32)): uint(32)
+proc |(a: uint(64), b: uint(64)): uint(64)
+proc |(a: int(32), b: uint(32)): uint(32)
+proc |(a: int(64), b: uint(64)): uint(64)
+proc |(a: uint(32), b: int(32)): uint(32)
+proc |(a: uint(64), b: int(64)): uint(64)
 \end{chapel}
 For each of these definitions, the result is
 computed by applying the logical or operation to the bits of the
@@ -823,15 +823,15 @@ The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 
 The bitwise xor operators are predefined as follows:
 \begin{chapel}
-def ^(a: bool, b: bool): bool
-def ^(a: int(32), b: int(32)): int(32)
-def ^(a: int(64), b: int(64)): int(64)
-def ^(a: uint(32), b: uint(32)): uint(32)
-def ^(a: uint(64), b: uint(64)): uint(64)
-def ^(a: int(32), b: uint(32)): uint(32)
-def ^(a: int(64), b: uint(64)): uint(64)
-def ^(a: uint(32), b: int(32)): uint(32)
-def ^(a: uint(64), b: int(64)): uint(64)
+proc ^(a: bool, b: bool): bool
+proc ^(a: int(32), b: int(32)): int(32)
+proc ^(a: int(64), b: int(64)): int(64)
+proc ^(a: uint(32), b: uint(32)): uint(32)
+proc ^(a: uint(64), b: uint(64)): uint(64)
+proc ^(a: int(32), b: uint(32)): uint(32)
+proc ^(a: int(64), b: uint(64)): uint(64)
+proc ^(a: uint(32), b: int(32)): uint(32)
+proc ^(a: uint(64), b: int(64)): uint(64)
 \end{chapel}
 For each of these definitions, the result is
 computed by applying the XOR operation to the bits of the operands.
@@ -854,14 +854,14 @@ overloading~(\rsec{Function_Overloading}).
 
 The shift operators are predefined as follows:
 \begin{chapel}
-def <<(a: int(32), b): int(32)
-def >>(a: int(32), b): int(32)
-def <<(a: int(64), b): int(64)
-def >>(a: int(64), b): int(64)
-def <<(a: uint(32), b): uint(32)
-def >>(a: uint(32), b): uint(32)
-def <<(a: uint(64), b): uint(64)
-def >>(a: uint(64), b): uint(64)
+proc <<(a: int(32), b): int(32)
+proc >>(a: int(32), b): int(32)
+proc <<(a: int(64), b): int(64)
+proc >>(a: int(64), b): int(64)
+proc <<(a: uint(32), b): uint(32)
+proc >>(a: uint(32), b): uint(32)
+proc <<(a: uint(64), b): uint(64)
+proc >>(a: uint(64), b): uint(64)
 \end{chapel}
 The type of the second actual argument must be any integral type.
 
@@ -888,7 +888,7 @@ overloading~(\rsec{Function_Overloading}).
 
 The logical negation operator is predefined as follows:
 \begin{chapel}
-def !(a: bool): bool
+proc !(a: bool): bool
 \end{chapel}
 The result is the logical negation of the operand.
 
@@ -913,7 +913,7 @@ if isTrue(a) then isTrue(b) else false
 
 The function \chpl{isTrue} is predefined over bool type as follows:
 \begin{chapel}
-def isTrue(a:bool) return a;
+proc isTrue(a:bool) return a;
 \end{chapel}
 Overloading the logical and operator over other types is accomplished
 by overloading the \chpl{isTrue} function over other types.
@@ -957,14 +957,14 @@ overloading~(\rsec{Function_Overloading}).
 The ``less than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
-def <(a: int(32), b: int(32)): bool
-def <(a: int(64), b: int(64)): bool
-def <(a: uint(32), b: uint(32)): bool
-def <(a: uint(64), b: uint(64)): bool
-def <(a: real(32), b: real(32)): bool
-def <(a: real(64), b: real(64)): bool
-def <(a: imag(32), b: imag(32)): bool
-def <(a: imag(64), b: imag(64)): bool
+proc <(a: int(32), b: int(32)): bool
+proc <(a: int(64), b: int(64)): bool
+proc <(a: uint(32), b: uint(32)): bool
+proc <(a: uint(64), b: uint(64)): bool
+proc <(a: real(32), b: real(32)): bool
+proc <(a: real(64), b: real(64)): bool
+proc <(a: imag(32), b: imag(32)): bool
+proc <(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a < b} is true if \chpl{a} is less than \chpl{b};
 otherwise the result is false.
@@ -973,14 +973,14 @@ otherwise the result is false.
 The ``greater than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
-def >(a: int(32), b: int(32)): bool
-def >(a: int(64), b: int(64)): bool
-def >(a: uint(32), b: uint(32)): bool
-def >(a: uint(64), b: uint(64)): bool
-def >(a: real(32), b: real(32)): bool
-def >(a: real(64), b: real(64)): bool
-def >(a: imag(32), b: imag(32)): bool
-def >(a: imag(64), b: imag(64)): bool
+proc >(a: int(32), b: int(32)): bool
+proc >(a: int(64), b: int(64)): bool
+proc >(a: uint(32), b: uint(32)): bool
+proc >(a: uint(64), b: uint(64)): bool
+proc >(a: real(32), b: real(32)): bool
+proc >(a: real(64), b: real(64)): bool
+proc >(a: imag(32), b: imag(32)): bool
+proc >(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a > b} is true if \chpl{a} is greater
 than \chpl{b}; otherwise the result is false.
@@ -989,14 +989,14 @@ than \chpl{b}; otherwise the result is false.
 The ``less than or equal to'' comparison operators are predefined over
 numeric types as follows:
 \begin{chapel}
-def <=(a: int(32), b: int(32)): bool
-def <=(a: int(64), b: int(64)): bool
-def <=(a: uint(32), b: uint(32)): bool
-def <=(a: uint(64), b: uint(64)): bool
-def <=(a: real(32), b: real(32)): bool
-def <=(a: real(64), b: real(64)): bool
-def <=(a: imag(32), b: imag(32)): bool
-def <=(a: imag(64), b: imag(64)): bool
+proc <=(a: int(32), b: int(32)): bool
+proc <=(a: int(64), b: int(64)): bool
+proc <=(a: uint(32), b: uint(32)): bool
+proc <=(a: uint(64), b: uint(64)): bool
+proc <=(a: real(32), b: real(32)): bool
+proc <=(a: real(64), b: real(64)): bool
+proc <=(a: imag(32), b: imag(32)): bool
+proc <=(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a <= b} is true if \chpl{a} is less than or equal
 to \chpl{b}; otherwise the result is false.
@@ -1005,24 +1005,24 @@ to \chpl{b}; otherwise the result is false.
 The ``greater than or equal to'' comparison operators are predefined
 over numeric types as follows:
 \begin{chapel}
-def >=(a: int(32), b: int(32)): bool
-def >=(a: int(64), b: int(64)): bool
-def >=(a: uint(32), b: uint(32)): bool
-def >=(a: uint(64), b: uint(64)): bool
-def >=(a: real(32), b: real(32)): bool
-def >=(a: real(64), b: real(64)): bool
-def >=(a: imag(32), b: imag(32)): bool
-def >=(a: imag(64), b: imag(64)): bool
+proc >=(a: int(32), b: int(32)): bool
+proc >=(a: int(64), b: int(64)): bool
+proc >=(a: uint(32), b: uint(32)): bool
+proc >=(a: uint(64), b: uint(64)): bool
+proc >=(a: real(32), b: real(32)): bool
+proc >=(a: real(64), b: real(64)): bool
+proc >=(a: imag(32), b: imag(32)): bool
+proc >=(a: imag(64), b: imag(64)): bool
 \end{chapel}
 The result of \chpl{a >= b} is true if \chpl{a} is greater than or
 equal to \chpl{b}; otherwise the result is false.
 
 The ordered comparison operators are predefined over strings as follows:
 \begin{chapel}
-def <(a: string, b: string): bool
-def >(a: string, b: string): bool
-def <=(a: string, b: string): bool
-def >=(a: string, b: string): bool
+proc <(a: string, b: string): bool
+proc >(a: string, b: string): bool
+proc <=(a: string, b: string): bool
+proc >=(a: string, b: string): bool
 \end{chapel}
 Comparisons between strings are defined based on the ordering of the
 character set used to represent the string, which is applied
@@ -1037,16 +1037,16 @@ elementwise to the string's characters in order.
 The equality comparison operators are predefined over bool and the
 numeric types as follows:
 \begin{chapel}
-def ==(a: int(32), b: int(32)): bool
-def ==(a: int(64), b: int(64)): bool
-def ==(a: uint(32), b: uint(32)): bool
-def ==(a: uint(64), b: uint(64)): bool
-def ==(a: real(32), b: real(32)): bool
-def ==(a: real(64), b: real(64)): bool
-def ==(a: imag(32), b: imag(32)): bool
-def ==(a: imag(64), b: imag(64)): bool
-def ==(a: complex(64), b: complex(64)): bool
-def ==(a: complex(128), b: complex(128)): bool
+proc ==(a: int(32), b: int(32)): bool
+proc ==(a: int(64), b: int(64)): bool
+proc ==(a: uint(32), b: uint(32)): bool
+proc ==(a: uint(64), b: uint(64)): bool
+proc ==(a: real(32), b: real(32)): bool
+proc ==(a: real(64), b: real(64)): bool
+proc ==(a: imag(32), b: imag(32)): bool
+proc ==(a: imag(64), b: imag(64)): bool
+proc ==(a: complex(64), b: complex(64)): bool
+proc ==(a: complex(128), b: complex(128)): bool
 \end{chapel}
 The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} contain
 the same value; otherwise the result is false.  The result of \chpl{a
@@ -1055,8 +1055,8 @@ the same value; otherwise the result is false.  The result of \chpl{a
 The equality comparison operators are predefined over classes as
 follows:
 \begin{chapel}
-def ==(a: object, b: object): bool
-def !=(a: object, b: object): bool
+proc ==(a: object, b: object): bool
+proc !=(a: object, b: object): bool
 \end{chapel}
 The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} reference
 the same storage location; otherwise the result is false.  The result
@@ -1069,8 +1069,8 @@ in~\rsec{Record_Comparison_Operators}.
 The equality comparison operators are predefined over strings as
 follows:
 \begin{chapel}
-def ==(a: string, b: string): bool
-def !=(a: string, b: string): bool
+proc ==(a: string, b: string): bool
+proc !=(a: string, b: string): bool
 \end{chapel}
 The result of \chpl{a == b} is true if the sequence of characters
 in \chpl{a} matches exactly the sequence of characters in \chpl{b};

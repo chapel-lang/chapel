@@ -296,9 +296,9 @@ The following arithmetic operators are defined on ranges and integral
 types:
 
 \begin{chapel}
-def +(r: range, s: integral): range
-def +(s: integral, r: range): range
-def -(r: range, s: integral): range
+proc +(r: range, s: integral): range
+proc +(s: integral, r: range): range
+proc -(r: range, s: integral): range
 \end{chapel}
 
 The \chpl{+} and \chpl{-} operators apply the scalar via the operator
@@ -368,70 +368,70 @@ writeln((r, r2, r3, r4));
 \subsection{Predefined Functions and Methods on Ranges}
 \index{ranges!predefined functions}
 \begin{protohead}
-def $range$.idxType type
+proc $range$.idxType type
 \end{protohead}
 \begin{protobody}
 Returns the index type of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.stridable type
+proc $range$.stridable type
 \end{protohead}
 \begin{protobody}
 Returns true if the range is stridable, false otherwise.
 \end{protobody}
 
 \begin{protohead}
-def $range$.boundedType type
+proc $range$.boundedType type
 \end{protohead}
 \begin{protobody}
 Returns boundedType of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.low : idxType
+proc $range$.low : idxType
 \end{protohead}
 \begin{protobody}
 Returns the low bound of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.high : idxType
+proc $range$.high : idxType
 \end{protohead}
 \begin{protobody}
 Returns the high bound of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.stride : int(numBits(idxType))
+proc $range$.stride : int(numBits(idxType))
 \end{protohead}
 \begin{protobody}
 Returns the stride of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.length : idxType
+proc $range$.length : idxType
 \end{protohead}
 \begin{protobody}
 Returns the number of elements in the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.member(i: idxType): bool
+proc $range$.member(i: idxType): bool
 \end{protohead}
 \begin{protobody}
 Returns whether or not \chpl{i} is in the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.member(other: range): bool
+proc $range$.member(other: range): bool
 \end{protohead}
 \begin{protobody}
 Returns whether or not every element in other is also in this.
 \end{protobody}
 
 \begin{protohead}
-def $range$.indexOrder(i: idxType): idxType
+proc $range$.indexOrder(i: idxType): idxType
 \end{protohead}
 \begin{protobody}
 If \chpl{i} is a member of the range, returns an integer giving

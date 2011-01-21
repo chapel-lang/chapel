@@ -47,7 +47,7 @@ specified by the types default values.
 % build2tuple.chpl
 \end{chapelpre}
 \begin{chapel}
-def build2Tuple(type t, type tt) {
+proc build2Tuple(type t, type tt) {
   var x1: t;
   var x2: tt;
   return (x1, x2);
@@ -85,7 +85,7 @@ size \chpl{p} where each component in the tuple has the value of
 % fillTuple.chpl
 \end{chapelpre}
 \begin{chapel}
-def fillTuple(param p: int, x: int) {
+proc fillTuple(param p: int, x: int) {
   var result: p*int;
   for param i in 1..p do
     result(i) = x;
@@ -120,7 +120,7 @@ where each component in the tuple is initialized to \chpl{x}:
 % fillTuple2.chpl
 \end{chapelpre}
 \begin{chapel}
-def fillTuple(param p: int, x) {
+proc fillTuple(param p: int, x) {
   var result: p*x.type;
   for param i in 1..p do
     result(i) = x;
@@ -158,7 +158,7 @@ queried type for clarity:
 % fillTuple3.chpl
 \end{chapelpre}
 \begin{chapel}
-def fillTuple(param p: int, x: ?t) {
+proc fillTuple(param p: int, x: ?t) {
   var result: p*t;
   for param i in 1..p do
     result(i) = x;
@@ -191,7 +191,7 @@ actual argument that is a generic stack
 (see~\rsec{Example_Generic_Stack}) and outputs the top element of the
 stack.  The function is generic on the type of its argument.
 \begin{chapel}
-def writeTop(s: Stack) {
+proc writeTop(s: Stack) {
   write(s.top.item);
 }
 \end{chapel}
@@ -216,10 +216,10 @@ because of the use of the question mark.
 class C {
   type t = int;
 }
-def f(c: C) {
+proc f(c: C) {
   // c.type is always int
 }
-def g(c: C(?)) {
+proc g(c: C(?)) {
   // c.type may not be int
 }
 \end{chapel}
@@ -239,13 +239,13 @@ class C {
 \end{chapel}
 then the function definition
 \begin{chapel}
-def f(c: C(?t,real)) {
+proc f(c: C(?t,real)) {
   // body
 }
 \end{chapel}
 is equivalent to
 \begin{chapel}
-def f(c: C(?t,?tt)) where tt == real {
+proc f(c: C(?t,?tt)) where tt == real {
   // body
 }
 \end{chapel}
@@ -256,13 +256,13 @@ implicitly specified size of the formal tuple.
 \begin{example}
 The function definition
 \begin{chapel}
-def f(tuple: (?t,real)) {
+proc f(tuple: (?t,real)) {
   // body
 }
 \end{chapel}
 is equivalent to
 \begin{chapel}
-def f(tuple: (?t,?tt)) where tuple.size == 2 && tt == real {
+proc f(tuple: (?t,?tt)) where tuple.size == 2 && tt == real {
   // body
 }
 \end{chapel}
@@ -314,19 +314,19 @@ function \chpl{bar}:
 module M1 {
   record R {
     var x: int;
-    def foo() { }
+    proc foo() { }
   }
 }
 
 module M2 {
-  def bar(x) {
+  proc bar(x) {
     x.foo();
   }
 }
 
 module M3 {
   use M1, M2;
-  def main() {
+  proc main() {
     var r: R;
     bar(r);
   }
@@ -706,8 +706,8 @@ class MyGenericClass {
   var v5 = 555;
   var x5: t5; // this field is not generic
 
-  def MyGenericClass(c1, v1, type t1, param p1) { }
-  def MyGenericClass(type t5, param p5, c5, v5, x5,
+  proc MyGenericClass(c1, v1, type t1, param p1) { }
+  proc MyGenericClass(type t5, param p5, c5, v5, x5,
                      type t1, param p1, c1, v1, x1) { }
 }  // class MyGenericClass
 
@@ -759,8 +759,8 @@ Given two overloaded function definitions
 % whereClause.chpl
 \end{chapelpre}
 \begin{chapel}
-def foo(x) where x.type == int { writeln("int"); }
-def foo(x) where x.type == real { writeln("real"); }
+proc foo(x) where x.type == int { writeln("int"); }
+proc foo(x) where x.type == real { writeln("real"); }
 \end{chapel}
 \begin{chapelpost}
 foo(3);
@@ -807,14 +807,14 @@ diagnostics to generate warnings and errors:
 % compilerDiagnostics.chpl
 \end{chapelpre}
 \begin{chapel}
-def foo(x, y) {
+proc foo(x, y) {
   if (x.type != y.type) then
     compilerError("foo() called with non-matching types: ", 
                   typeToString(x.type), " != ", typeToString(y.type));
   writeln("In 2-argument foo...");
 }
 
-def foo(x) {
+proc foo(x) {
   compilerWarning("1-argument version of foo called");
   writeln("In generic foo!");
 }
@@ -880,11 +880,11 @@ record Stack {
   type itemType;             // type of items
   var top: MyNode(itemType); // top node on stack linked list
 
-  def push(item: itemType) {
+  proc push(item: itemType) {
     top = new MyNode(itemType, item, top);
   }
 
-  def pop() {
+  proc pop() {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
     var oldTop = top;
@@ -892,7 +892,7 @@ record Stack {
     return oldTop.item;
   }
 
-  def isEmpty return top == nil;
+  proc isEmpty return top == nil;
 }
 \end{chapel}
 \begin{chapelpost}

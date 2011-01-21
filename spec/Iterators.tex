@@ -10,17 +10,33 @@ The parallel iterator story is under development.  It is expected that
 the specification will be expanded regarding parallel iterators soon.
 \end{openissue}
 
-\subsection{Iterator Functions}
-\label{Iterator_Functions}
+\subsection{Iterator Function Definitions}
+\label{Iterator_Function_Definitions}
+\index{iterator function definitions}
 
-The syntax of an iterator declaration is identical to that of a
-function declaration.  A function is an iterator if it includes yield
-statements.  When a yield is encountered, the value is returned, but
-the iterator is not finished evaluating when called within a loop.  It
-will continue from the point after the yield and can yield or return
-more values.  When a return is encountered, the value is returned and
-the iterator finishes.  An iterator also completes after the last
-statement in the iterator function is executed.
+The syntax to declare an iterator function (or simply, ``iterator''), is given
+by:
+\begin{syntax}
+iterator-declaration-statement:
+  `iter' iterator-name argument-list[OPT] var-param-type-clause[OPT] where-clause[OPT]
+  iterator-body
+
+iterator-name:
+  identifier
+
+iterator-body:
+  block-statement
+  yield-statement
+\end{syntax}
+
+The syntax of an iterator declaration is similar to a function declaration, with
+some key differences:
+\begin{itemize}
+\item The keyword \chpl{iter} is used instead of the keyword \chpl{proc}.
+\item The name of the iterator cannot overload any operator.
+\item \chpl{yield} statements may appear in the body of an iterator, but not in
+a regular function.
+\end{itemize}
 
 \subsection{The Yield Statement}
 \label{The_Yield_Statement}
@@ -33,16 +49,33 @@ yield-statement:
   `yield' expression ;
 \end{syntax}
 
+When an iterator is executed and a yield is encountered, the value of the yield
+expression is returned.  However, the state of execution of the iterator is
+saved.  On its next invocation, execution resumes from the point immediately
+following that yield statement.
+When a return is encountered, the value is returned and
+the iterator finishes.  An iterator also completes after the last
+statement in the iterator function is executed.
+
 \subsection{Iterator Calls}
 \label{Iterator_Calls}
 
-Iterator functions can be called within for or forall loops, in which
-case they are executed in an interleaved manner with the body of the
-loop. An iterator function call, or iterator invocation, can be used in an expression context, in which
-case it evaluates to a 1-based array of values. 
-An iterator invocation can also be passed to a
-generic function argument, in which case it will not be evaluted until
-the formal argument is referenced within the function.
+The syntax used to call an interator is given by:
+\begin{syntax}
+iterator-call-expression:
+  call-expression
+\end{syntax}
+This is identical to the function-call syntax.
+%REVIEW: hilde
+% Can iterator definitions and uses be parameterless?
+
+All details of the \sntx{iterator-call-expression} semantics --- including
+resolution, the use of parentheses versus brackets to delimit the parameter
+list, calling the iterator without a parameter list and named parameters ---
+are identical with the corresponding semantics for function calls.
+See~\rsec{Function_Calls}.
+
+However, the result of an iterator call depends upon its context, as described below.
 
 \subsubsection{Iterators in For and Forall Loops}
 \label{Iterators_in_For_and_Forall_Loops}
@@ -62,7 +95,7 @@ contains the values returned by the iterator on each iteration.
 \begin{example}
 Given an iterator
 \begin{chapel}
-def squares(n: int): int {
+iter squares(n: int): int {
   for i in 1..n do
     yield i * i;
 }
@@ -100,7 +133,7 @@ typically made by iterating over it in a loop.
 \begin{example}
 A post-order traversal of a tree data structure could be written like this:
 \begin{chapel}
-def postorder(tree: Tree): string {
+iter postorder(tree: Tree): string {
   if tree != nil {
     for child in postorder(tree.left) do
       yield child;

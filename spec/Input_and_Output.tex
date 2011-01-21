@@ -150,10 +150,10 @@ it is written.
 \begin{chapel}
 class C: Writer {
   var data: string;
-  def writeIt(s: string) {
+  proc writeIt(s: string) {
     data += s.substring(1);
   }
-  def writeThis(x: Writer) {
+  proc writeThis(x: Writer) {
     x.write(data);
   }
 }

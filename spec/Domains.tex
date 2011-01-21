@@ -806,14 +806,14 @@ corresponding range using the \chpl{by} operator.
 \index{domains!predefined functions}
 
 \begin{protohead}
-def $Domain$.numIndices: dim_type
+proc $Domain$.numIndices: dim_type
 \end{protohead}
 \begin{protobody}
 Returns the number of indices in the domain.
 \end{protobody}
 
 %% \begin{protohead} **/
-%% def $Domain$.order(i: index($Domain$)): dim_type **/
+%% proc $Domain$.order(i: index($Domain$)): dim_type **/
 %% \end{protohead} **/
 %% \begin{protobody} **/
 %% If \chpl{i} is a member of the domain, returns the ordinal value of **/
@@ -829,7 +829,7 @@ Returns the number of indices in the domain.
 \subsubsection{Predefined Functions and Methods on Arithmetic Domains}
 
 \begin{protohead}
-def $Domain$.dim(d: int): range
+proc $Domain$.dim(d: int): range
 \end{protohead}
 \begin{protobody}
 Returns the range of indices described by dimension \chpl{d} of the
@@ -853,21 +853,21 @@ dimension is iterated over in the inner loop.
 % per-dimension index type in the language that I can see.
 
 \begin{protohead}
-def $Domain$.rank param : int
+proc $Domain$.rank param : int
 \end{protohead}
 \begin{protobody}
 Returns the rank of the domain as a parameter int.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.stridable param : bool
+proc $Domain$.stridable param : bool
 \end{protohead}
 \begin{protobody}
 Returns whether or not the domain is stridable as a parameter bool.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.low: index($Domain$)
+proc $Domain$.low: index($Domain$)
 \end{protohead}
 \begin{protobody}
 Returns the low index of the domain as a value of the domain's index
@@ -875,7 +875,7 @@ type.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.high: index($Domain$)
+proc $Domain$.high: index($Domain$)
 \end{protohead}
 \begin{protobody}
 Returns the high index of the domain as a value of the domain's index
@@ -883,8 +883,8 @@ type.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.stride: int(numBits(idxType)) where rank == 1
-def $Domain$.stride: rank*int(numBits(idxType))
+proc $Domain$.stride: int(numBits(idxType)) where rank == 1
+proc $Domain$.stride: rank*int(numBits(idxType))
 \end{protohead}
 \begin{protobody}
 Returns the stride of the domain as the domain's stride type (for 1D
@@ -893,8 +893,8 @@ domains).
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.translate(off: integral): domain
-def $Domain$.translate(off: rank*integral): domain
+proc $Domain$.translate(off: integral): domain
+proc $Domain$.translate(off: rank*integral): domain
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the current domain translated
@@ -902,8 +902,8 @@ by \chpl{off} or \chpl{off(d)} for each dimension \chpl{d}.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.expand(off: integral): domain
-def $Domain$.expand(off: rank*integral): domain
+proc $Domain$.expand(off: integral): domain
+proc $Domain$.expand(off: rank*integral): domain
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the current domain expanded in
@@ -913,8 +913,8 @@ negative.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.exterior(off: integral): domain
-def $Domain$.exterior(off: rank*integral): domain
+proc $Domain$.exterior(off: integral): domain
+proc $Domain$.exterior(off: rank*integral): domain
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the exterior portion of the current
@@ -925,8 +925,8 @@ compute the exterior from the high bound.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.interior(off: integral): domain
-def $Domain$.interior(off: rank*integral): domain
+proc $Domain$.interior(off: integral): domain
+proc $Domain$.interior(off: rank*integral): domain
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the interior portion of the current
@@ -937,7 +937,7 @@ compute the interior from the high bound.
 \end{protobody}
 
 %% \begin{protohead} **/
-%% def $Domain$.position(i: index($Domain$)): rank*dim_type **/
+%% proc $Domain$.position(i: index($Domain$)): rank*dim_type **/
 %% \end{protohead} **/
 %% \begin{protobody} **/
 %% Returns a tuple holding the order of index i in each range defining **/
