@@ -149,7 +149,16 @@ grepmod
   Shortcuts in $CHPL_HOME/util/devel to grep the compiler, runtime, and
   Chapel module sources, resp.
 
+
 Troubles exiting
 ----------------
 
-TBD
+Sometimes when debugging using the --gdb flag, you will not be able to
+execute the "run" or "quit" commands, typically due to insufficient
+stack space.  The cause of the problem is that we alias these commands
+to make a function call to clean up our /tmp directory space before
+re-running or exiting, so if that stack space is not available, things
+get stuck...  In such cases, you can use the "rerun" or "halt" aliases
+that we set up to bypass the attempt to clean up /tmp and simply do
+the run or quit alone (which requires no stack space).
+
