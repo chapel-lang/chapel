@@ -37,7 +37,7 @@ OPTIONS
 
   --help-env      Print the command line option help message, listing
                   the environment variable equivalent for each flag
-                  (see ENVIRONMENT) and its current value.
+                  and its current value.
 
   --help-settings   Print the command line option help message, listing
                  the current setting of each option as specified by
@@ -122,8 +122,8 @@ OPTIONS
                     method table. The default is zero.
 
   --fast            Turns off all runtime checks using --no-checks, turns
-                    on --no-ieee-float, and enables all other compiler
-                    optimizations (via -O) in the rest of this section.
+                    on --no-ieee-float and -O, and enables all compiler
+                    optimizations in the rest of this section.
  
   --[no-]ieee-float   Disable [enable] optimizations that may affect IEEE
                     floating point conformance. The default is --ieee-float,
@@ -195,7 +195,7 @@ OPTIONS
 
   --no-checks       Turns on --no-bounds-checks, --no-nil-checks and
                     --no-local-checks. Currently, it is typically necessary to
-                    use this flag (or --fast) in order to have any hope of
+                    use this flag in order to have any hope of
                     achieving performance competitive with hand-coded
                     C or Fortran.
 
@@ -210,19 +210,14 @@ OPTIONS
 
   C Code Generation Options
 
-  --[no-]codegen     Enable [disable] generating C code and the binary
-                    executable. Disabling code generation is useful to reduce
-                    compilation time, for example, when only Chapel compiler
-                    warnings/errors are of interest.
-
   --[no-]cpp-lines   Causes the compiler to emit cpp #line directives
                     into the generated code in order to help map generated
                     C code back to the Chapel source code that it implements.
                     The [no-] version of this flag turns this feature off.
 
-  --savec <dir>      Saves the compiler-generated C code in the specified 
+  --savec <dir>    Saves the compiler-generated C code in the specified 
                     directory, creating the directory if it does not already
-                    exist. May overwrite existing files in the directory.
+                    exist.
 
   C Code Compilation Options
 
@@ -291,12 +286,6 @@ OPTIONS
                      those calls within a specific module or at a
                      particular line number.
 
-  --[no-]print-callstack-on-error   Accompany certain error and warning
-                     messages with the Chapel call stack that the compiler
-                     was working on when it reached the error or warning
-                     location. This is useful when the underlying cause
-                     of the issue is in one of the callers.
-
   --instantiate-max <max>   In order to avoid infinite loops when
                      instantiating generic functions, the compiler
                      limits the number of times a single function
@@ -312,7 +301,6 @@ OPTIONS
                      be omitted, causing the default value to be toggled.
 
 ENVIRONMENT
-
   See $CHPL_HOME/doc/README.chplenv for detailed information about 
   general environment variable settings, legal values, and default
   settings. Run $CHPL_HOME/util/printchplenv to view your current
@@ -357,8 +345,7 @@ ENVIRONMENT
   be used to specify a default value. Use the --help-env option to list the 
   environment variable equivalent for each option. Command-line options 
   will always override environment variable settings in the event of a 
-  conflict. Except for options expecting a string or a path, if the
-  environment variable is set to empty, it is considered unset.
+  conflict.
 
 BUGS
   See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/README.bugs
@@ -368,4 +355,5 @@ SEE ALSO
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors to Chapel.
 COPYRIGHT
-  Copyright (c) 2004-2011 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)
+  Copyright (c) 2004-2010 Cray Inc. (See $CHPL_HOME/LICENSE for more
+  details)
