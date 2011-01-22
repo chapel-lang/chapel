@@ -182,6 +182,7 @@ Task Parallelism and Synchronization
 Data Parallelism
 ----------------
 - Reductions and scans of arrays of arrays may result in errors.
+  # arrays/sungeun/arrays_of_arrays/*reduce.chpl
 - Records in reduction classes may results in out-of-bound indexing
   problems.
   # studies/kmeans/kmeansonepassreduction-mystery.future
