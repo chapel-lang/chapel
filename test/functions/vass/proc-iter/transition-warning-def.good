@@ -1,0 +1,8 @@
+transition-warning-def.chpl:13: In iterator 'c13':
+transition-warning-def.chpl:15: warning: returning a value in an iterator is deprecated; replace it with a yield of that value, followed by a return with no expression
+in c11a
+in c11b
+11c
+12a
+12b
+13a.13b.
