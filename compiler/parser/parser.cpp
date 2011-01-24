@@ -56,8 +56,8 @@ containsOnlyModules(BlockStmt* block, const char* filename) {
   int moduleDefs = 0;
   bool hasUses = false;
   bool hasOther = false;
-  ModuleSymbol* lastmodsym;
-  BaseAST* lastmodsymstmt;
+  ModuleSymbol* lastmodsym = NULL;
+  BaseAST* lastmodsymstmt = NULL;
   for_alist(stmt, block->body) {
     if (BlockStmt* block = toBlockStmt(stmt))
       stmt = block->body.first();
