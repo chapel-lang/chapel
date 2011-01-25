@@ -1,6 +1,6 @@
 config const natom = 10;
 
-def bas_init(i,j) {
+proc bas_init(i,j) {
   return 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
 }
 

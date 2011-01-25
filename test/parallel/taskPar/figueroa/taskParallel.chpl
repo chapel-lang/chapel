@@ -88,7 +88,7 @@ cobegin {
 // There are two components to the behavior: one is to make a choice
 // (rock, paper, or scissors) for each round; the other is the
 // attention span the person has.
-def player(num) {
+proc player(num) {
 
   // The sync statement is used to introduce synchronization points in
   // a program. Before continuing past a sync statement, all threads
@@ -139,7 +139,7 @@ def player(num) {
 // The following function implements the behavior of the referee.
 // There are two components to the behavior: one is to decide who wins
 // each round; the other is the attention span the person has.
-def referee () {
+proc referee () {
 
   // The difference between the cobegin statement here and the sync statement
   // used to implement the behavior of the players is that execution continues
@@ -203,7 +203,7 @@ def referee () {
   writeln ("Referee: Yes, me too!");
 }
 
-def RandomNumber() {
+proc RandomNumber() {
   const multiplier: int(64) = 16807,
         modulus: int(64) = 2147483647;
   // The following calculation must be done in at least 46-bit arithmetic!
@@ -212,13 +212,13 @@ def RandomNumber() {
   return (newSeed-1) / (modulus-1) : real;
 }
 
-def chooseBetweenRockPaperScissors() {
+proc chooseBetweenRockPaperScissors() {
   var random = RandomNumber();
   var choice = (random * 3.0) : uint + 1;
   return choice : choices;
 }
 
-def determineWinner (player1, player2) {
+proc determineWinner (player1, player2) {
   if player1 == player2 then
     declareWinner("Tied!");
   else if player1 == choices.rock then
@@ -235,7 +235,7 @@ def determineWinner (player1, player2) {
     else declareWinner("Player 1 wins!");
 }
 
-def declareWinner (w) {
+proc declareWinner (w) {
   if notTired.readFF() then
     writeln ("Referee: ", w);
 }

@@ -1,12 +1,12 @@
 class C {
   var x: int;
-  def this() {
+  proc this() {
     writeln("C: x");
   }
 }
 
 class D : C {
-  def this() {
+  proc this() {
     writeln("D: x");
   }
 }

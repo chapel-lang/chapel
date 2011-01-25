@@ -6,7 +6,7 @@ var A3D: [Dom3D] int;
 var A4D: [Dom4D] int;
 var A2D64: [Dom2D64] int;
 
-def outputArrays() {
+proc outputArrays() {
   write("A1D  :"); for i in Space1 do write(" ", A1D[i]); writeln();
   write("A2D  :"); for i in Space2 do write(" ", A2D[i]); writeln();
   write("A3D  :"); for i in Space3 do write(" ", A3D[i]); writeln();

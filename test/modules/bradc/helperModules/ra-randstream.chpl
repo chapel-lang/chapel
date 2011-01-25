@@ -7,7 +7,7 @@ module RARandomStream {
         m2: [bitDom] randType = computeM2Vals(randWidth);
 
 
-  def RAStream(numvals, start = 0:randType): randType {
+  iter RAStream(numvals, start = 0:randType): randType {
     var val = getNthRandom(start);
     for i in 1..numvals {
       getNextRand(val);
@@ -16,7 +16,7 @@ module RARandomStream {
   }
 
 
-  def getNthRandom(in n) {
+  proc getNthRandom(in n) {
     param period = 0x7fffffffffffffff/7;
     
     n %= period;
@@ -35,7 +35,7 @@ module RARandomStream {
 
 
   // BLC: would also like to see this fn inlined -- how to specify?
-  def getNextRand(inout x) {
+  proc getNextRand(inout x) {
     param POLY:randType = 0x7;  // BLC: this cast should be unnecessary?
     param hiRandBit = 0x1:randType << (randWidth-1);
 
@@ -43,7 +43,7 @@ module RARandomStream {
   }
 
 
-  def computeM2Vals(numVals): randType {
+  iter computeM2Vals(numVals): randType {
     var nextVal = 0x1: randType;
     for i in 1..numVals {
       yield nextVal;

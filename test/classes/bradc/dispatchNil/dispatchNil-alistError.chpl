@@ -2,10 +2,10 @@ config var runsegfault = false;
 
 class C {
   var x = 2;
-  def foo() {
+  proc foo() {
     writeln("In C.foo()");
   }
-  def baz() {
+  proc baz() {
     return x;
   }
 }
@@ -14,13 +14,13 @@ class D : C {
   var DsC: C;
   var y = DsC.baz();
 
-  def foo() {
+  proc foo() {
     writeln("In D.foo(), y is ", y);
   }
-  def baz() {
+  proc baz() {
     return y;
   }
-  def buildNew() {
+  proc buildNew() {
     return new D();
   }
 }

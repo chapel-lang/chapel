@@ -1,4 +1,4 @@
-def foo(i: int(?k)) {
+proc foo(i: int(?k)) {
   writeln("foo of int on ", k, " bits called with ", i);
   var i2: int(k) = i;
   writeln(i2);

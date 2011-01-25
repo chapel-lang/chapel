@@ -3,7 +3,7 @@ class Tree {
   var left, right: Tree;
 }
 
-def treeNodes(tree: Tree): Tree {
+iter treeNodes(tree: Tree): Tree {
   yield tree;
   if tree.left then
     for t in treeNodes(tree.left) do

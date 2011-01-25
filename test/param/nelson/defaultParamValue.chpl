@@ -27,7 +27,7 @@ record Z {
   param r : int = 3;
 }
 
-def main() {
+proc main() {
   const a : R;
   writeln(typeToString(a.type));
 

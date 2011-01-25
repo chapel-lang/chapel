@@ -15,7 +15,7 @@ config const iters = 36: int;
 var full_domain = [0..size, 0..size];
 var life_domain = [1..size-1, 1..size-1];
 
-def main(){
+proc main(){
   var life: [full_domain] int;
   var tmp: [life_domain] int;
 
@@ -57,6 +57,6 @@ def main(){
   } while iter_count < iters;
 }
 
-def +(a: (int, int), b: (int, int)){
+proc +(a: (int, int), b: (int, int)){
   return (a(1) + b(1), a(2) + b(2));
 }

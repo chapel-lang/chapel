@@ -10,7 +10,7 @@ use MultiDomain_def;
 // Returns a MultiDomain that partitions the boolean array
 // 'flags' with the target efficiency, if possible.
 //---------------------------------------------------------
-def partitionFlags(
+proc partitionFlags(
   flags:             [?full_domain] bool, 
   target_efficiency: real,
   min_width:         full_domain.rank*int)
@@ -83,7 +83,7 @@ class CandidateDomain {
   // Currently forced to use initialize rather than a constructor, as
   // this class is generic.
   //------------------------------------------------------------------
-  def initialize() {
+  proc initialize() {
     //===> Calculate signatures ===>
     for d in 1..rank do
       signatures(d) = new IndependentArray(1,true,int,[D.dim(d)]);
@@ -106,7 +106,7 @@ class CandidateDomain {
   //|\'''''''''''''''''''|\
   //| >    efficiency    | >
   //|/...................|/
-  def efficiency()
+  proc efficiency()
   {
     return +reduce(signatures(1).value):real / D.numIndices:real;
   }
@@ -118,7 +118,7 @@ class CandidateDomain {
   //|\''''''''''''''|\
   //| >    clear    | >
   //|/..............|/
-  def clear() { 
+  proc clear() { 
     for i in 1..rank do delete signatures(i);
   }
   // /|''''''''''''''/|
@@ -133,7 +133,7 @@ class CandidateDomain {
 //| >    CandidateDomain.trim    | >
 //|/_____________________________|/
 
-def CandidateDomain.trim()
+proc CandidateDomain.trim()
 {    
   //===> Find bounds of trimmed domain ===>
   var trimmed_ranges:      rank*range(stridable=true);
@@ -200,7 +200,7 @@ def CandidateDomain.trim()
 //| >    CandidateDomain.split    | >
 //|/______________________________|/
 
-def CandidateDomain.split()
+proc CandidateDomain.split()
 {
   
   var D1, D2: domain(rank, stridable=true);
@@ -224,7 +224,7 @@ def CandidateDomain.split()
 //| >    CandidateDomain.removeHole    | >
 //|/___________________________________|/
 
-def CandidateDomain.removeHole()
+proc CandidateDomain.removeHole()
 {
 
   var D1, D2: domain(rank, stridable=true);
@@ -308,7 +308,7 @@ def CandidateDomain.removeHole()
 //| >    CandidateDomain.inflectionCut    | >
 //|/______________________________________|/
 
-def CandidateDomain.inflectionCut()
+proc CandidateDomain.inflectionCut()
 {
 
   var ranges: rank*range(stridable=true);
@@ -394,7 +394,7 @@ def CandidateDomain.inflectionCut()
 // For testing purposes.  Writes a boolean array of flags
 // in a more readable form (0s and 1s).
 //--------------------------------------------------------
-def writeFlags(flags: [?D] bool) 
+proc writeFlags(flags: [?D] bool) 
 {
   var I: [D] int;
   for (i,flag) in (I,flags) do
@@ -410,7 +410,7 @@ def writeFlags(flags: [?D] bool)
 
 
 
-// def main {
+// proc main {
 // 
 // 
 //  

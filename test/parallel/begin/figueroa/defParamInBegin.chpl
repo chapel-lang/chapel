@@ -1,4 +1,4 @@
-def foo (x: int, y: int = x) {
+proc foo (x: int, y: int = x) {
   begin writeln (x, ": Hello, world!");
   return y;
 }

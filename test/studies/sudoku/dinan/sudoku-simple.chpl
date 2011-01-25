@@ -3,14 +3,14 @@ config const inputfile = "easy.dat";
 var givenBoard: [1..9, 1..9] int;  // The given board
 var board:  [1..9, 1..9] int;
 
-def checkForNum(num: int, board: [] int, iters: domain(2)): bool {
+proc checkForNum(num: int, board: [] int, iters: domain(2)): bool {
   for spot in iters do
     if board(spot) == num then return false;
 
   return true;
 }
 
-def populateBoard(inout board: [] int) {
+proc populateBoard(inout board: [] int) {
   var spotsAvail:   [1..9] bool;
   var spots:        [1..9] bool;
   var g_spotsAvail: [1..3, 1..3] bool;
@@ -159,7 +159,7 @@ def populateBoard(inout board: [] int) {
 }
 
 
-def main() {
+proc main() {
   var boardData = new file(inputfile, path='./', mode=FileAccessMode.read);
 
   // Read the board from the input file

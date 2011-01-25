@@ -4,7 +4,7 @@ var y: int;
 
 y = 456;
 
-def foo(z: int) {
+proc foo(z: int) {
   var a: int = 789;
 
   writeln("a is: ", a);

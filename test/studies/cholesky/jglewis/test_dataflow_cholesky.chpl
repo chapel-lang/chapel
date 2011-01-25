@@ -82,7 +82,7 @@ module test_dataflow_cholesky {
   use cholesky_scalar_algorithms, 
       dataflow_block_cholesky;
 
-  def main {
+  proc main {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
@@ -153,7 +153,7 @@ module test_dataflow_cholesky {
   }
 
  
-  def check_factorization ( A : [], L : [] )
+  proc check_factorization ( A : [], L : [] )
 
     // -----------------------------------------------------------------------
     // Check the factorization by forming L L^T and comparing the result to A.
@@ -200,7 +200,7 @@ module test_dataflow_cholesky {
   }
 
 
-  def print_L ( L : [] ) {
+  proc print_L ( L : [] ) {
    
     const rows = L.domain.dim (1);
 

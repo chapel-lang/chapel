@@ -40,7 +40,7 @@ config const N: int = 7;
 config const num2print = 30;
 var P: domain(1) = [1..N];
 
-def main() {
+proc main() {
   var maxflips: sync int;
 
   begin maxflips = fannkuch();
@@ -49,11 +49,11 @@ def main() {
 
 }
 
-def fannkuch() {
+proc fannkuch() {
   return max reduce ([i in P] do_fannkuch(i));
 }
 
-def do_fannkuch(pos: int):int {
+proc do_fannkuch(pos: int):int {
   var p, p1, count: [P] int;
   var r: int = N;
   var flips: int = 0;
@@ -105,7 +105,7 @@ def do_fannkuch(pos: int):int {
 
 
 // iterator for all possible permutations
-def gen_perms(limit: int, swap:int=-1): [P] int {
+iter gen_perms(limit: int, swap:int=-1): [P] int {
   var p: [P] int;
   var count: [P] int;
   var r: int = N;

@@ -16,7 +16,7 @@ use GridVariable_AdvectionCTU;
 // the algorithm is in the method GridVariable.storeCTUOperator.
 //------------------------------------------------------------------
 
-def GridSolution.advance_AdvectionCTU(
+proc GridSolution.advance_AdvectionCTU(
   bc:             GridBC,
   velocity:       dimension*real,
   time_requested: real)
@@ -71,7 +71,7 @@ def GridSolution.advance_AdvectionCTU(
 // q.old and q.current will be swapped.
 //-------------------------------------------------------------
 
-def GridSolution.step_AdvectionCTU(
+proc GridSolution.step_AdvectionCTU(
   bc:       GridBC,
   velocity: dimension*real,
   dt:       real)

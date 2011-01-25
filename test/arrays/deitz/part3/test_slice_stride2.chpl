@@ -1,6 +1,6 @@
 var x = 1;
 
-def foo(n: int, A: [1..n] int) {
+proc foo(n: int, A: [1..n] int) {
   for i in 1..n {
     A(i) = x;
     x += 1;

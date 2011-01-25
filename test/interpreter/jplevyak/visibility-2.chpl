@@ -1,11 +1,11 @@
 
-def g(c) { 
-  def f() { return 1; }
+proc g(c) { 
+  proc f() { return 1; }
   return c(); 
 }
 
-def h() {
-  def f() { return 2; }
+proc h() {
+  proc f() { return 2; }
   writeln(g(=>f()));
 }
 

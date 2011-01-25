@@ -1,9 +1,9 @@
-def f(i: int) {
+proc f(i: int) {
   writeln("f(", i, ")");
   return i;
 }
 
-def main {
+proc main {
   f(1..5);
 }
 

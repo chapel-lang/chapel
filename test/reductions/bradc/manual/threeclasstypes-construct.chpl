@@ -3,19 +3,19 @@ class mysumreduce {
   type statetype;
   type outtype;
   
-  def ident(): statetype {
+  proc ident(): statetype {
     return 0;
   }
 
-  def combine(x: statetype, y: intype): statetype {
+  proc combine(x: statetype, y: intype): statetype {
     return x + y;
   }
 
-  def result(x: statetype): outtype {
+  proc result(x: statetype): outtype {
     return x;
   }
 
-  def mysumreduce(type in_t) {
+  proc mysumreduce(type in_t) {
     intype = in_t;
     statetype = in_t;
     outtype = in_t;

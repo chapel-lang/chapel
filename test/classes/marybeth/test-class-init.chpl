@@ -2,7 +2,7 @@ class Params {
   var numProbSizes: int;
   var N: [1..numProbSizes] int;
 
-  def initialize() {
+  proc initialize() {
     numProbSizes = 3;
     for n in N do n = 10;
   }

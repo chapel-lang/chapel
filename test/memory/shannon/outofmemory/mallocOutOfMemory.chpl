@@ -1,4 +1,4 @@
-_extern def chpl_malloc(number, size, description, lineno = -1, filename = ""): opaque;
+_extern proc chpl_malloc(number, size, description, lineno = -1, filename = ""): opaque;
 
 while (1) {
   var i = 1000000;

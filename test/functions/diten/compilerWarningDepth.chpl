@@ -1,16 +1,16 @@
-def f1(param d) {
+proc f1(param d) {
   f2(d);
 }
 
-def f2(param d) {
+proc f2(param d) {
   f3(d);
 }
 
-def f3(param d) {
+proc f3(param d) {
   f4(d);
 }
 
-def f4(param d) {
+proc f4(param d) {
   compilerWarning("warning from f4 with d = " + d, d);
 }
 
@@ -25,6 +25,6 @@ f1(-1); // Warning about negative depth plus warning line = 14
 
 f5();
 
-def f5() {
+proc f5() {
   compilerWarning("warning from f5 with default depth");
 }

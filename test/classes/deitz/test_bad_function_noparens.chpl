@@ -1,4 +1,4 @@
-def bar {
+proc bar {
   writeln("this is not allowed");
 }
 

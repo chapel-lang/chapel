@@ -16,7 +16,7 @@ config var ENABLE_PLOT_K3DB  = false;
 union Weight {
   var i : int;
   var s : string;
-  def is_string {
+  proc is_string {
     typeselect (this) {
       when s     return true;
       otherwise  return false;
@@ -66,7 +66,7 @@ class Graph {
                       VertexD=>VertexD,
                       ParEdgeD=>ParEdgeD);
 
-  def copy(s : Graph) {
+  proc copy(s : Graph) {
     return Graph(VerteD  =s.VertexD,
                  ParEdgeD=s.ParEdgeD);
   }
@@ -85,11 +85,11 @@ class Subgraph {
     start = s;
     end   = e;
   }
-  def adjMatrix(i: index(AdjD)) { return weights(i).length; }
+  proc adjMatrix(i: index(AdjD)) { return weights(i).length; }
 }
 
 
-def main() {
+proc main() {
   // Scalable Data Generator parameters.
   // Total number of vertices in directed multigraph.
   config var TOT_VERTICES       =  2^8;
@@ -193,7 +193,7 @@ def main() {
 }
 
 
-def genScalData(totVertices, maxCliqueSize, maxParalEdges,
+proc genScalData(totVertices, maxCliqueSize, maxParalEdges,
                      percentIntWeights, 
                      maxIntWeightP, probInterclEdges) {
 
@@ -331,7 +331,7 @@ def genScalData(totVertices, maxCliqueSize, maxParalEdges,
 }
 
 
-def binsearch(x : [?lo..?hi] , y]) {
+proc binsearch(x : [?lo..?hi] , y]) {
   if (hi < lo  ) then return lo;
   if (x(hi) > y) then return hi;
   if (y <= x(lo)) then return lo;
@@ -348,7 +348,7 @@ def binsearch(x : [?lo..?hi] , y]) {
   return hi;
 }
 
-def computeGraph(edges , totVertices, maxParalEdges, 
+proc computeGraph(edges , totVertices, maxParalEdges, 
                       maxIntWeight ) : Graph {
   var G = new Graph();
   G:Numbers = edges;
@@ -371,9 +371,9 @@ def computeGraph(edges , totVertices, maxParalEdges,
 }
 
 
-def sortWeights( G : Graph, soughtString : string ) {
+proc sortWeights( G : Graph, soughtString : string ) {
 
-  def Subgraph.choose(value) {
+  proc Subgraph.choose(value) {
     return [e in AdjD] (if (weights(e) == value) then EndPoints(e));
   }
   use G only intg, strg;
@@ -382,12 +382,12 @@ def sortWeights( G : Graph, soughtString : string ) {
 }
 
 
-def Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
+proc Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
                              startSetIntVPairs : seq of EndPoints,
                              startSetStrVPairs : seq of EndPoints) 
                             : seq of Graph {
     
-  def Subgraph.expandSubGraphs(start, complete:subgraph) {
+  proc Subgraph.expandSubGraphs(start, complete:subgraph) {
     var frontier like AdjD = (start.start, start.end);
     AdjD = start;
     for k in 2..SUBGR_EDGE_LENGTH {
@@ -413,9 +413,9 @@ def Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
   return subgraphs;
 }
 
-def cutClusters(G, cutBoxSize, alpha) {
+proc cutClusters(G, cutBoxSize, alpha) {
 
-  def cutClustersCommon( adjMatrix : Subgraph,
+  proc cutClustersCommon( adjMatrix : Subgraph,
                               cutBoxSize, alpha) {
     if cutBoxSize < 1
       then halt('cutBoxSize must be a least one.');
@@ -488,7 +488,7 @@ def cutClusters(G, cutBoxSize, alpha) {
   var strVertexRemap = cutClustersCommon( G.strg, cutBoxSize, alpha );
   var cutG = new Graph.copy(G);
 
-  def remap(oldg, newg, vertexRemap) {
+  proc remap(oldg, newg, vertexRemap) {
     var map: [G.VertexD];
     forall (new, old) in (1.., vertexRemap) do 
       map(old) = new;

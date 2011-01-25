@@ -2,7 +2,7 @@ use Time, BitOps;
 
 config var printTiming = false;
 
-def writeBinaryMatrix(u: uint(64)) {
+proc writeBinaryMatrix(u: uint(64)) {
   for i in 0..7 by -1 {
     for j in 0..7 by -1 {
       write((u&(1:uint(64)<<((i*8)+j)) != 0):int);
@@ -12,18 +12,18 @@ def writeBinaryMatrix(u: uint(64)) {
   writeln();
 }
 
-pragma "inline" def byteOrReduce(u: uint(64)) {
+pragma "inline" proc byteOrReduce(u: uint(64)) {
   var t1 = u | (u >> 4);
   var t2 = t1 | (t1 >> 2);
   var t3 = t2 | (t2 >> 1);
   return t3 & 0x0101010101010101;
 }
 
-pragma "inline" def byteExpand(u: uint(64)) {
+pragma "inline" proc byteExpand(u: uint(64)) {
   return 0x8080808080808080 ^ (0x8080808080808080 - u);
 }
 
-def bitMatTrans(x: uint(64)) {
+proc bitMatTrans(x: uint(64)) {
   // Return the transpose of x, treating it as an 8x8 bit-matrix.
   return   x & 0x8040201008040201        |
           (x & 0x0080402010080402) <<  7 |
@@ -42,7 +42,7 @@ def bitMatTrans(x: uint(64)) {
           (x >> 49) & 0x0000000000000080;
 }
 
-def oldBitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
+proc oldBitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
   var yTranspose = bitMatTrans(y);
   var result:uint(64) = 0;
   for i in 0..7:uint(64) {
@@ -55,7 +55,7 @@ def oldBitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
   return result;
 }
 
-def newBitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
+proc newBitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
   var result:uint(64) = 0;
   var yTranspose = bitMatTrans(y);
   result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x8040201008040201;
@@ -76,7 +76,7 @@ def newBitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
   return result;
 }
 
-def main() {
+proc main() {
   0x8040201008040201;
 
   var D = [0..1000:uint(64), 0..1000:uint(64)];

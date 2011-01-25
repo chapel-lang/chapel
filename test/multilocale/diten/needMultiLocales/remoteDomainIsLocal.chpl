@@ -2,7 +2,7 @@
 class C {
   var D: domain(1);
 }
-def main {
+proc main {
   var D: domain(1);
   writeln(D);
   writeln(D.locale.id);

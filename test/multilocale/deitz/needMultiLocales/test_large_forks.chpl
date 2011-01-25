@@ -1,7 +1,7 @@
 config param size: int = 256;
 
 
-def main() {
+proc main() {
   var x, y, z: size*real;
 
   for i in 1..size {

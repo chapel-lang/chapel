@@ -1,7 +1,7 @@
 config type xtype = real;
 config type ytype = int;
 
-def widthOfResult(param x, param y) param {
+proc widthOfResult(param x, param y) param {
   var z = x + y;
   return numBits(z.type);
 }

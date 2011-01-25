@@ -1,5 +1,5 @@
 record R {
-  def f() { writeln("hello"); }
+  proc f() { writeln("hello"); }
 }
 var r: R;
 r.f();

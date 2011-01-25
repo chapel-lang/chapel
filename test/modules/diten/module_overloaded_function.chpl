@@ -1,15 +1,15 @@
 module color {
   var r, g, b: int;
 
-  def do_something() {
+  proc do_something() {
     r = 1; g = 2; b = 3;
   }
-  def do_something(i: int){
+  proc do_something(i: int){
     r = i; g = i; b = i;
   }
 }
 
-def main() {
+proc main() {
   use color;
 
   g = 1;

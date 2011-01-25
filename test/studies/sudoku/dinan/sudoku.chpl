@@ -12,7 +12,7 @@ var myRand = new RandomStream(seed=314159265);
 
 
 // Return a random number on the range [1, n]
-def getRand(n: int) {
+proc getRand(n: int) {
   return (myRand.getNext()*max(int)):int%n+1;
 }
 
@@ -22,7 +22,7 @@ def getRand(n: int) {
 var seenItX: [1..9] bool = false;
 var seenItY: [1..9] bool = false;
 var seenIt:  [1..9] bool = false;
-def costFcn(board: [] int): int {
+proc costFcn(board: [] int): int {
   var cost: int;
   
   for i in [1..9] {
@@ -55,7 +55,7 @@ def costFcn(board: [] int): int {
 }
 
 
-def main() {
+proc main() {
   var boardData = new file(inputfile, path='./', mode=FileAccessMode.read);
 
   // Read the board from the input file

@@ -1,5 +1,5 @@
 class C {
-  def bbox(d: int) {
+  proc bbox(d: int) {
     halt("bbox() is not implemented for this class");
     return 1..0;
   }
@@ -13,7 +13,7 @@ class D : C {
 
   var ranges: rank*range(dim_type, BoundedRangeType.bounded, stridable);
 
-  def bbox(d: int) {
+  proc bbox(d: int) {
     const r: range(dim_type, BoundedRangeType.bounded, false) = ranges(d);
     return r;
   }

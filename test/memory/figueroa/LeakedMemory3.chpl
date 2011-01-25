@@ -8,13 +8,13 @@ var A: [1..N] int;
 serial true do A = 7;
 var sum = -3;
 
-def foo (X) {
+proc foo (X) {
   var sum = 0;
   for i in X.domain do sum += X[i]*i;
   return sum;
 }
 
-def bar () {
+proc bar () {
 sum += foo(A[A.domain.low+1..A.domain.high-1]);
 }
 

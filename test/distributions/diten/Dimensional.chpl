@@ -1,21 +1,21 @@
 class DimensionDistributor {
   // interface
-  def indToDimInd(ind: int, localeDomain) { return 0; }
-  def localPart(localeDomain, loc, type idxType) { return 1..0 by 1; }
+  proc indToDimInd(ind: int, localeDomain) { return 0; }
+  proc localPart(localeDomain, loc, type idxType) { return 1..0 by 1; }
 }
 
 class Cyclic: DimensionDistributor {
   param myDimension:int;
-  def mod(a, b) {
+  proc mod(a, b) {
     var tmp = a % b;
     return if tmp < 0 then b + tmp else tmp;
   }
 
-  def indToDimInd(ind: int, localeDomain) {
+  proc indToDimInd(ind: int, localeDomain) {
     return mod(ind, localeDomain.dim(myDimension).length);
   }
 
-  def localPart(localeDomain, loc, type idxType) {
+  proc localPart(localeDomain, loc, type idxType) {
     var lows:[localeDomain.dim(myDimension)] idxType;
     var length = localeDomain.dim(myDimension).length;
     for i in min(idxType)..#length {
@@ -33,13 +33,13 @@ class Dimensional {
   var localeArray: [localeDomain] locale;
 
 
-  def indexToLoc(ind:idxType ...nDims) {
+  proc indexToLoc(ind:idxType ...nDims) {
     return localeArray(indexToLocIndex((...ind)));
   }
 
   // Return the index into the localeArray that the ind maps to
   // using the dimensionDistributer for each dimension
-  def indexToLocIndex(ind: idxType ...nDims) {
+  proc indexToLocIndex(ind: idxType ...nDims) {
     var localeArrayInd: nDims*int;
     for i in 1..#nDims {
        localeArrayInd(i) = dimensionDistributors(i).indToDimInd(ind(i), localeDomain);
@@ -47,11 +47,11 @@ class Dimensional {
     return localeArrayInd;
   }
 
-  def indexToLocIndex(ind: nDims*idxType) {
+  proc indexToLocIndex(ind: nDims*idxType) {
     return indexToLocIndex((...ind));
   }
 
-  def newDomain(inds:domain(nDims,idxType)) {
+  proc newDomain(inds:domain(nDims,idxType)) {
     return new DimensionalDomain(nDims, idxType, inds, this);
   }
 
@@ -59,7 +59,7 @@ class Dimensional {
   // each position in the tuple representing all values that would be
   // mapped to that locale for that dimension within the range
   // min(idxType)..max(idxType)
-  def getLocRanges(loc: nDims*int) {
+  proc getLocRanges(loc: nDims*int) {
     var ranges: nDims*range(stridable=true);
     for param dim in 1..nDims {
       ranges(dim) = dimensionDistributors(dim).localPart(localeDomain, loc, idxType);
@@ -77,7 +77,7 @@ class DimensionalDomain {
   var dist:Dimensional(nDims, idxType);
   var locDoms: [dist.localeDomain] LocDimensionalDomain(nDims, idxType);
 
-  def initialize() {
+  proc initialize() {
     for loc in dist.localeDomain {
       on dist.localeArray(loc) {
         var locDist = dist.getLocRanges(loc);
@@ -86,19 +86,19 @@ class DimensionalDomain {
     }
   }
 
-  def these() {
+  iter these() {
     for i in whole {
       yield i;
     }
   }
 
-  def newThese(param iteratorType:IteratorType)
+  iter newThese(param iteratorType:IteratorType)
     where iteratorType == IteratorType.leader {
     for locDom in locDoms {
       yield locDom.myElems; // - whole.low;
     }
   }
-  def newThese(param iteratorType:IteratorType, followThis)
+  iter newThese(param iteratorType:IteratorType, followThis)
     where iteratorType == IteratorType.follower {
     for i in followThis {
       yield i; // + whole.low;
@@ -106,7 +106,7 @@ class DimensionalDomain {
   }
 
 
-  def newArray(type eltType) {
+  proc newArray(type eltType) {
     return new DimensionalArray(nDims, idxType, eltType, this);
   }
 }
@@ -125,7 +125,7 @@ class DimensionalArray {
   var dom: DimensionalDomain(nDims, idxType);
   var locArrs: [dom.dist.localeDomain] LocDimensionalArray(nDims, idxType, eltType);
 
-  def initialize() {
+  proc initialize() {
     for loc in [dom.dist.localeDomain] {
       on loc {
         locArrs(loc) = new LocDimensionalArray(nDims, idxType, eltType, this, dom.locDoms(loc));
@@ -133,17 +133,17 @@ class DimensionalArray {
     }
   }
 
-  def this(ind: nDims*idxType) var {
+  proc this(ind: nDims*idxType) var {
     return locArrs(dom.dist.indexToLocIndex(ind)).locArr(ind);
   }
 
-  def newThese(param iteratorType:IteratorType)
+  iter newThese(param iteratorType:IteratorType)
     where iteratorType == IteratorType.leader {
     for blk in dom.newThese(IteratorType.leader) do
       yield blk;
   }
 
-  def newThese(param iteratorType:IteratorType, followThis) var
+  iter newThese(param iteratorType:IteratorType, followThis) var
     where iteratorType == IteratorType.follower {
     for i in followThis {
       yield this(i);
@@ -161,7 +161,7 @@ class LocDimensionalArray {
 }
 
 
-def main {
+proc main {
   param nDims = 2;
   param nLocRows = 2;
   param nLocCols = 3;

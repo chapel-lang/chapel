@@ -8,7 +8,7 @@ var s4 = shift;
 const MySpace4 = Space4 + fill(4,shift);
 const MyDom4D: domain(4) dmapped Dist4D = MySpace4;
 
-def foo(TD: domain, A: [TD] int, TA, offset) {
+proc foo(TD: domain, A: [TD] int, TA, offset) {
   var errs = 0;
   for i in [TD] do {
     if A[i] != TA[i+offset] {
@@ -22,7 +22,7 @@ def foo(TD: domain, A: [TD] int, TA, offset) {
   return errs;
 }
 
-def dit() {
+proc dit() {
   const ReindexSpace4 = [min(int)+s1..#Space4.dim(1).length,
                          min(int)+s2..#Space4.dim(2).length,
                          min(int)+s3..#Space4.dim(3).length,

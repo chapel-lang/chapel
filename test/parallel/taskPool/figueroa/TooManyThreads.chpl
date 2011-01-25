@@ -10,8 +10,8 @@
 
 use Time;
 
-_extern def setThreadLimit(l: int(32));
-_extern def setStackLimit(l: int(32));
+_extern proc setThreadLimit(l: int(32));
+_extern proc setStackLimit(l: int(32));
 
 config const numThreads = 6000;
 config const threadLimit = 500;
@@ -21,7 +21,7 @@ var total: int,
      done: sync bool,
     ready: sync bool;
 
-def foo (x) {
+proc foo (x) {
 
   if ready {
     total += x;

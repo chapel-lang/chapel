@@ -4,7 +4,7 @@ writeln(t);
 var (x) = t;
 writeln(x);
 
-def f((x)) {
+proc f((x)) {
   writeln(x);
 }
 f(t);

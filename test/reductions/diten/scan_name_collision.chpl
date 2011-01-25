@@ -8,7 +8,7 @@ writeln(+ scan [1..n] longerName.next());
 
 class R {
   var count = 0;
-  def next() {
+  proc next() {
     count += 1;
     return count;
   }

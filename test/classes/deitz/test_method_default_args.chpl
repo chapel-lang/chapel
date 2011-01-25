@@ -1,6 +1,6 @@
 class C {
   var x: int;
-  def foo(y: int = 2) return x + y;
+  proc foo(y: int = 2) return x + y;
 }
 
 var c = new C();

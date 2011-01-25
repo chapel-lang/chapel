@@ -1,7 +1,7 @@
 // Test the identity values for product, logical and, logical or,
 // logical xor, bit-wise and, bit-wise or, and bitwise xor.
 
-def identities( type t) {
+proc identities( type t) {
   writeln( "product = ", _prod_id( t));
   writeln( "logical and = ", _land_id( t));
   writeln( "logical or = ", _lor_id( t));

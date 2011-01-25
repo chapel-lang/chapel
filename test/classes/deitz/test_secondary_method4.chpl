@@ -2,8 +2,8 @@ class C {
   var y: int;
 }
 
-def foo() {
-  def C.a() {
+proc foo() {
+  proc C.a() {
     writeln(y);
   }
   var a = new C();

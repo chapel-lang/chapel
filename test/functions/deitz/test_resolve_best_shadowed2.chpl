@@ -1,12 +1,12 @@
-def main() {
-  def f() { }
+proc main() {
+  proc f() { }
   {
-    def f() { } // shadows other f based on call to f
+    proc f() { } // shadows other f based on call to f
     f();
   }
 
   use M2;
-  def g() { } // shadows other g based on call to g
+  proc g() { } // shadows other g based on call to g
   g();
 
   use M3;
@@ -15,12 +15,12 @@ def main() {
 }
 
 module M2 { 
-  def g() { }
+  proc g() { }
 }
 
 module M3 {
   use M5;
-  def h() { } // does not shadow other h based on call to h since
+  proc h() { } // does not shadow other h based on call to h since
   // there is another path (through M4) to the other h
 }
 
@@ -29,5 +29,5 @@ module M4 {
 }
 
 module M5 {
-  def h() { }
+  proc h() { }
 }

@@ -2,7 +2,7 @@ _extern record R {
   var x: int;
 }
 
-_extern def foo(): R;
+_extern proc foo(): R;
 
 var myR: R;
 

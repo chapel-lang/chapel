@@ -1,6 +1,6 @@
 class C {
   var i : int;
-  def foo() var {
+  proc foo() var {
     return i;
   }
 }

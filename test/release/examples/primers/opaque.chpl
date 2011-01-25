@@ -117,7 +117,7 @@ config const maxChildren = 16;
 var NumChildren: [People] int;
 var Child: [People] [1..maxChildren] index(People);
 
-def addChild(parent: index(People), child: index(People)) {
+proc addChild(parent: index(People), child: index(People)) {
   const childnum = NumChildren(parent) + 1;
   NumChildren(parent) = childnum;
   Child(parent)(childnum) = child;
@@ -231,7 +231,7 @@ writeln();
 //
 // create a random graph using the global variables defined above
 //
-def createRandomGraph() {
+proc createRandomGraph() {
   //
   // create a random number stream
   //

@@ -1,4 +1,4 @@
-def main {
+proc main {
   var t: 2*string;
   t = ("hi", "hello");
   writeln(t);

@@ -3,7 +3,7 @@ use Random;
 config const n = 10;
 config const seed = 13;
 
-def main(){
+proc main(){
   var x: [0..n-1, 0..n-1] complex; 
   var y: [0..n**2 - 1] complex;
 

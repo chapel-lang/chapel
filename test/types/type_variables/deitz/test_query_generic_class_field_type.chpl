@@ -4,7 +4,7 @@ class C {
 
 var c: C(int) = new C(2);
 
-def f(c: C(?t)) {
+proc f(c: C(?t)) {
   var x: t;
   writeln(x);
   writeln(c);

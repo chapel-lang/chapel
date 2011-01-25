@@ -1,4 +1,4 @@
-def retSync(x: ?t): sync t {
+proc retSync(x: ?t): sync t {
   var xx: sync t = x;
   return xx;
 }

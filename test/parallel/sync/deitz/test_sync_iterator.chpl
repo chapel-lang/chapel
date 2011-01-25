@@ -1,6 +1,6 @@
 var s$: sync bool = true;
 
-def foo() {
+iter foo() {
   s$;
   for i in 1..3 do
     yield i;
@@ -13,7 +13,7 @@ for i in foo() do
 for i in foo() do
   writeln(i);
 
-def bar() {
+iter bar() {
   s$;
   var r = 1..3;
   s$ = true;

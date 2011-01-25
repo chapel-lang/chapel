@@ -3,7 +3,7 @@ record R {
   var A: [D] real;
 }
 
-def main {
+proc main {
   var r1: R;
   var r2   = r1;
   var r3:R = r1;

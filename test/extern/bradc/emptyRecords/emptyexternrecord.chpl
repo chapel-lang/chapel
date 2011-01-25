@@ -5,6 +5,6 @@ _extern record R {
 
 var myR: R;
 
-_extern def foo(myR:R);
+_extern proc foo(myR:R);
 
 foo(myR);

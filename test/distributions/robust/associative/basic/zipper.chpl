@@ -42,7 +42,7 @@ testZip(AUint, AUint2);
 testZip(AReal, AReal2);
 testZip(AString, AString2);
 
-def testZip(D1: domain, D2: domain) {
+proc testZip(D1: domain, D2: domain) {
   type idxType1 = D1._value.idxType;
   type idxType2 = D2._value.idxType;
   var success = true;
@@ -53,7 +53,7 @@ def testZip(D1: domain, D2: domain) {
           if success then "SUCCESS" else "FAILED");
 }
 
-def testZip(D1: domain, A2: []) {
+proc testZip(D1: domain, A2: []) {
   type idxType1 = D1._value.idxType;
   type idxType2 = A2.domain._value.idxType;
   var success = true;
@@ -64,7 +64,7 @@ def testZip(D1: domain, A2: []) {
           if success then "SUCCESS" else "FAILED");
 }
 
-def testZip(A1: [], D2: domain) {
+proc testZip(A1: [], D2: domain) {
   type idxType1 = A1.domain._value.idxType;
   type idxType2 = D2._value.idxType;
   var success = true;
@@ -75,7 +75,7 @@ def testZip(A1: [], D2: domain) {
           if success then "SUCCESS" else "FAILED");
 }
 
-def testZip(A1: [], A2: []) {
+proc testZip(A1: [], A2: []) {
   type idxType1 = A1.domain._value.idxType;
   type idxType2 = A2.domain._value.idxType;
   var success = true;

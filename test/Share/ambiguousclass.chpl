@@ -8,7 +8,7 @@ class myotherclass {
   var y: int;
 }
 
-def foo(a) {
+proc foo(a) {
   writeln("a is: (", a.x, ", ", a.y, ") // b is: (", b.x, ", ", b.y, ")");
 }
 

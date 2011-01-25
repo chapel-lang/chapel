@@ -28,7 +28,7 @@ module MyNorm {
   enum normType {norm1, norm2, normInf, normFrob};
 
   // vector norms
-  def norm(x: [], p: normType) where x.rank == 1 {
+  proc norm(x: [], p: normType) where x.rank == 1 {
     select (p) {
       when normType.norm1 do return + reduce abs(x);
       when normType.norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
@@ -39,7 +39,7 @@ module MyNorm {
   }
 
   // matrix norms
-  def norm(x: [?D], p: normType) where x.rank == 2 {
+  proc norm(x: [?D], p: normType) where x.rank == 2 {
     select (p) {
       when normType.norm1 do
         return max reduce [j in D.dim(2)] (+ reduce abs(x[D.dim(1), j]));
@@ -58,12 +58,12 @@ module MyNorm {
 
   // this module doesn't implement norms for > 2D arrays, so generate
   // a compile-timem error if the user tries to call one
-  def norm(x: [], p: normType) where x.rank > 2 {
+  proc norm(x: [], p: normType) where x.rank > 2 {
     compilerError("Norms not implemented for array ranks > 2D");
   }
 
   //  default norms
-  def norm(x: []) {
+  proc norm(x: []) {
     select (x.rank) {
       when 1 do return norm(x, normType.norm2);
       when 2 do return norm(x, normType.normFrob);
@@ -76,7 +76,7 @@ module MyNorm {
 module TestNorm {
   use MyNorm;
 
-  def testNorm(arr: []) {
+  proc testNorm(arr: []) {
     var testType = if (arr.rank == 1) then "vector" else "matrix";
     writeln("Test of ", testType, " norms.  Array = ");
     writeln(arr);
@@ -89,7 +89,7 @@ module TestNorm {
     writeln();
   }
 
-  def main() {
+  proc main() {
     const D1 = [1..4];
     var a:[D1] real;
     a = 2.0;

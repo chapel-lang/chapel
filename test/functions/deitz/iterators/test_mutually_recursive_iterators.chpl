@@ -1,4 +1,4 @@
-def foo(n: int): int {
+iter foo(n: int): int {
   if n <= 1 then {
     yield 1;
     return;
@@ -7,7 +7,7 @@ def foo(n: int): int {
     yield i;
 }
 
-def bar(n: int): int {
+iter bar(n: int): int {
   if n <= 1 then {
     yield 1;
     return;

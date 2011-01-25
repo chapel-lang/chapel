@@ -17,7 +17,7 @@ const probSizes:   [Class] = ( 1400, 7000, 14000, 75000, 150000, 150000, 1400 ),
 type elemType = real(64);
 
 
-def main() {
+proc main() {
   const n = probSizes(probClass),
         nonzer = nonZeroes(probClass),
         shift = shifts(probClass),
@@ -67,7 +67,7 @@ def main() {
 }
 
 
-def conjGrad(A: [?MatDom], X: [?VectDom]) {
+proc conjGrad(A: [?MatDom], X: [?VectDom]) {
   const cgitmax = 25;
 
   var Z: [Vectdom] = 0.0,
@@ -94,7 +94,7 @@ def conjGrad(A: [?MatDom], X: [?VectDom]) {
 }
 
 
-def makea() {
+proc makea() {
   var v: [1..nonzer+1] real,    // BLC: insert domains? or grow as necessary?
       iv: [1..nonzer+1] int;
   
@@ -132,7 +132,7 @@ def makea() {
 }
 
 
-def sprnvc(n, nz, v, iv, randStr) {
+proc sprnvc(n, nz, v, iv, randStr) {
   var nn1 = 1;
   while (nn1 < n) do nn1 *= 2;
 
@@ -152,7 +152,7 @@ def sprnvc(n, nz, v, iv, randStr) {
 }
 
 
-def vecset(v, iv, inout nzv, i, val) {
+proc vecset(v, iv, inout nzv, i, val) {
   var set = false;
   for k in 1..nzv {
     if (iv(k) == i) {

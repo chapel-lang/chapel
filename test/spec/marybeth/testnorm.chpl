@@ -1,6 +1,6 @@
 use MyNorm;
 
-def main() {
+proc main() {
   const D1 = [1..5];
   var a:[D1] real;
   a = 2.0;

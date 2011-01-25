@@ -10,7 +10,7 @@ writeln(B);
 B = A[1, 1..5];
 writeln(B);
 
-def foo(B: [] int) {
+proc foo(B: [] int) {
   writeln(B);
 }
 

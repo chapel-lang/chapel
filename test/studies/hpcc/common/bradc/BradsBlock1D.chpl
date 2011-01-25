@@ -49,7 +49,7 @@ class Block1DDist {
   //
   var locDist: [targetLocDom] LocBlock1DDist(glbIdxType, index(targetLocs.domain));
 
-  def initialize() {
+  proc initialize() {
     for (loc, locid) in (targetLocs, 0..) do
       on loc do
         locDist(loc) = new LocBlock1DDist(glbIdxType, locid, this);
@@ -60,7 +60,7 @@ class Block1DDist {
   // set (inds) and the given global and local index type (idxType,
   // locIdxType)
   //
-  def newDomain(inds, type idxType = glbIdxType, type locIdxType = idxType) {
+  proc newDomain(inds, type idxType = glbIdxType, type locIdxType = idxType) {
     // Note that I'm fixing the global and local index types to be the
     // same, but making this a generic function would fix this
     return new Block1DDom(idxType, locIdxType, this, inds);
@@ -70,7 +70,7 @@ class Block1DDist {
   // compute what chunk of inds is owned by a given locale -- assumes
   // it's being called on the locale in question
   //
-  def getChunk(inds) {
+  proc getChunk(inds) {
     // use domain slicing to get the intersection between what the
     // locale owns and the domain's index set
 
@@ -83,7 +83,7 @@ class Block1DDist {
   //
   // TODO: Is this correct if targetLocs doesn't start with 0?
   //
-  def idxToLocale(ind: glbIdxType) {
+  proc idxToLocale(ind: glbIdxType) {
     return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
   }
 }
@@ -120,13 +120,13 @@ class LocBlock1DDist {
   //
   // a helper function for mapping processors to indices
   //
-  def procToData(x, lo)
+  proc procToData(x, lo)
     return (lo + (x: lo.type) + (x:real != x:int:real));
 
   //
   // Compute what chunk of index(1) is owned by the current locale
   //
-  def computeMyChunk() {
+  proc computeMyChunk() {
     const lo = dist.bbox.low;
     const hi = dist.bbox.high;
     const numelems = hi - lo + 1;
@@ -172,7 +172,7 @@ class Block1DDom {
   //
   var locDom: [dist.targetLocDom] LocBlock1DDom(glbIdxType, lclIdxType);
 
-  def initialize() {
+  proc initialize() {
     for loc in dist.targetLocs do
       on loc do
         locDom(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, dist.getChunk(whole));
@@ -183,7 +183,7 @@ class Block1DDom {
   //
   // the iterator for the domain -- currently sequential
   //
-  def these() {
+  iter these() {
     for blk in locDom do
       // May want to do something like:     
       // on blk do
@@ -196,29 +196,29 @@ class Block1DDom {
   //
   // the print method for the domain
   //
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.write(whole);
   }
 
   //
   // how to allocate a new array over this domain
   //
-  def newArray(type elemType) {
+  proc newArray(type elemType) {
     return new Block1DArr(glbIdxType, lclIdxType, elemType, this);
   }
 
   //
   // queries for the number of indices, low, and high bounds
   //
-  def numIndices {
+  proc numIndices {
     return whole.numIndices;
   }
 
-  def low {
+  proc low {
     return whole.low;
   }
 
-  def high {
+  proc high {
     return whole.high;
   }
 }
@@ -247,7 +247,7 @@ class LocBlock1DDom {
   //
   // iterator over this locale's indices
   //
-  def these() {
+  iter these() {
     // May want to do something like:     
     // on this do
     // But can't currently have yields in on clauses
@@ -258,22 +258,22 @@ class LocBlock1DDom {
   //
   // how to write out this locale's indices
   //
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.write(myBlock);
   }
 
   //
   // queries for this locale's number of indices, low, and high bounds
   //
-  def numIndices {
+  proc numIndices {
     return myBlock.numIndices;
   }
 
-  def low {
+  proc low {
     return myBlock.low;
   }
 
-  def high {
+  proc high {
     return myBlock.high;
   }
 }
@@ -307,7 +307,7 @@ class Block1DArr {
   //
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(glbIdxType, lclIdxType, elemType);
 
-  def initialize() {
+  proc initialize() {
     for loc in dom.dist.targetLocs do
       on loc do
         locArr(loc) = new LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDom(loc));
@@ -316,14 +316,14 @@ class Block1DArr {
   //
   // the global accessor for the array
   //
-  def this(i: glbIdxType) var {
+  proc this(i: glbIdxType) var {
     return locArr(dom.dist.idxToLocale(i))(i);
   }
 
   //
   // the iterator over the array's elements, currently sequential
   //
-  def these() var {
+  iter these() var {
     for loc in dom.dist.targetLocs {
       // May want to do something like:     
       // on this do
@@ -334,14 +334,14 @@ class Block1DArr {
     }
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     coforall blk in dom.locDom do
       on blk do
         yield blk.myBlock;
     //    yield 1..2;
   }
 
-  def these(param tag: iterator, follower) var where tag == iterator.follower {
+  iter these(param tag: iterator, follower) var where tag == iterator.follower {
     for i in follower do
       yield this(i);
   }
@@ -349,7 +349,7 @@ class Block1DArr {
   //
   // how to print out the whole array, sequentially
   //
-  def writeThis(x: Writer) {
+  proc writeThis(x: Writer) {
     var first = true;
     for loc in dom.dist.targetLocs {
       // May want to do something like the following:
@@ -371,7 +371,7 @@ class Block1DArr {
   //
   // a query for the number of elements in the array
   //
-  def numElements {
+  proc numElements {
     return dom.numIndices;
   }
 }
@@ -405,14 +405,14 @@ class LocBlock1DArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  def this(i: lclIdxType) var {
+  proc this(i: lclIdxType) var {
     return myElems(i);
   }
 
   //
   // iterator over the elements owned by this locale
   //
-  def these() var {
+  iter these() var {
     for elem in myElems {
       yield elem;
     }
@@ -421,7 +421,7 @@ class LocBlock1DArr {
   //
   // prints out this locale's piece of the array
   //
-  def writeThis(x: Writer) {
+  proc writeThis(x: Writer) {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
@@ -431,7 +431,7 @@ class LocBlock1DArr {
   //
   // query for the number of local array elements
   //
-  def numElements {
+  proc numElements {
     return myElems.numElements;
   }
 }

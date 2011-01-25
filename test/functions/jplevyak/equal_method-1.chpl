@@ -1,5 +1,5 @@
 record foo { var a : int;  }
-def =(x : foo, b) {
+proc =(x : foo, b) {
   x.a = b.a + 10;
   return x;
 }

@@ -1,4 +1,4 @@
-def foo(x: range) {
+proc foo(x: range) {
   writeln("x is: ", x);
 }
 

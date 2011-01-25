@@ -1,10 +1,10 @@
 class C {
-  def these() {
+  iter these() {
     for i in 1..10 do
       yield i;
   }
 
-  def these(leader) {
+  proc these(leader) {
   }
 }
 

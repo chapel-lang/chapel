@@ -1,9 +1,9 @@
 class foo {
   var x : int;
-  def setx(i : int) {
+  proc setx(i : int) {
     x = i;
   }
-  def getx() : int {
+  proc getx() : int {
     return x;
   }
 }

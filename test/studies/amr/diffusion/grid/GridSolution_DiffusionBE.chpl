@@ -9,7 +9,7 @@ use GridBC_def;
 // Advances a GridSolution to the requested time, stepping forward with
 // diffusion via Backward Euler.
 //----------------------------------------------------------------------
-def GridSolution.advance_DiffusionBE(
+proc GridSolution.advance_DiffusionBE(
   bc:             GridBC,
   diffusivity:    real,
   time_requested: real,
@@ -54,7 +54,7 @@ def GridSolution.advance_DiffusionBE(
 
 //===> GridSolution.step_DiffusionBE method ===>
 //====================================>
-def GridSolution.step_DiffusionBE(
+proc GridSolution.step_DiffusionBE(
   bc:          GridBC,
   diffusivity: real,
   dt:          real, 

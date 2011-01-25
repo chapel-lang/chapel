@@ -41,7 +41,7 @@ const UpdateDomain: domain(2) = [0..NumStreams-1,0..BigStep-1];
 var RealTime:real;
 var GUPs:real;
 
-def main() {
+proc main() {
 
   var Time:real;
 
@@ -62,7 +62,7 @@ def main() {
   if (verify) then VerifyResults();
 }
 
-def RandomAccessUpdate() {
+proc RandomAccessUpdate() {
 
   [i in TableDomain] Table(i) = i:uint(64);
   
@@ -75,7 +75,7 @@ def RandomAccessUpdate() {
   }
 }
 
-def RandomStart(step0:int):uint(64) {
+proc RandomStart(step0:int):uint(64) {
 
   var i:int;
   var ran:uint(64) = 2;
@@ -98,7 +98,7 @@ def RandomStart(step0:int):uint(64) {
   return ran;
 }
 
-def InitRandomSteps() {
+proc InitRandomSteps() {
   
   var temp:uint(64) = 1;
 
@@ -109,7 +109,7 @@ def InitRandomSteps() {
   }
 }
 
-def VerifyResults() {
+proc VerifyResults() {
 
   var temp: uint(64) = 1;  
   for i in UpdateDomain {
@@ -131,11 +131,11 @@ def VerifyResults() {
   }
 }
 
-def Timer():real {
+proc Timer():real {
   return 1.0;
 }
 
-def writeRAdata() {
+proc writeRAdata() {
   writeln("Main table size = 2^",LogTableSize," = ",TableSize," words");
   writeln("Number of updates = ",NumUpdates);
   writeln("Number of random streams = ",NumStreams);
@@ -143,7 +143,7 @@ def writeRAdata() {
   writeln();
 }
 
-def writeRAresults() {
+proc writeRAresults() {
 
   writeln("Real time used = ", RealTime, " seconds");
   writeln(GUPs, " Billion(10^9) Updates    per second [GUP/s]");

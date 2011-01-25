@@ -11,7 +11,7 @@ writeln(A);
 writeln("B = ");
 writeln(B);
 
-def initMatrix(A:[?D]) {
+proc initMatrix(A:[?D]) {
   if (D.rank == 2) {
     if ((D.dim(1).low == D.dim(2).low) & (D.dim(1).high == D.dim(2).high)) {
       A = 1.0;

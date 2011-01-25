@@ -28,7 +28,7 @@ class MultiDomain {
   //| >    special method: this    | >
   //|/.............................|/
   
-  def this (subindex: int)
+  proc this (subindex: int)
   {
     return domains(subindex);
   }
@@ -42,7 +42,7 @@ class MultiDomain {
   //| >    special method: these    | >
   //|/..............................|/
 
-  def these () 
+  iter these () 
   {
     for D in domains do yield D;
   }
@@ -51,7 +51,7 @@ class MultiDomain {
   // \|..............................\|
 
 
-  def length { return subindices.high; }
+  proc length { return subindices.high; }
 
 
 
@@ -65,7 +65,7 @@ class MultiDomain {
   // something sensible.  Mainly for testing and debugging.
   //-----------------------------------------------------------
 
-  def writeThis (w: Writer)
+  proc writeThis (w: Writer)
   {
     write(domains);
   }
@@ -89,7 +89,7 @@ class MultiDomain {
 // Replace each element of the domain list with its 
 // intersection with the input domain.
 //--------------------------------------------------
-def MultiDomain.intersect(D_in)
+proc MultiDomain.intersect(D_in)
   where D_in.type == domains.eltType
 {
   
@@ -118,7 +118,7 @@ def MultiDomain.intersect(D_in)
 //|\""""""""""""""""""""""""""""""""|\
 //| >    MultiDomain.add methods    | >
 //|/________________________________|/
-def MultiDomain.add(D: domain) 
+proc MultiDomain.add(D: domain) 
   where D.type==domains.eltType
 {
   if D.numIndices>0 {
@@ -133,7 +133,7 @@ def MultiDomain.add(D: domain)
 }
 
 
-def MultiDomain.add(mD: MultiDomain) 
+proc MultiDomain.add(mD: MultiDomain) 
   where mD.rank==rank && mD.stridable==stridable
 {
   // writeln("this.length = ", this.length);
@@ -167,7 +167,7 @@ def MultiDomain.add(mD: MultiDomain)
 //| >    MultiDomain multiplication    | >
 //|/___________________________________|/
 //==== range * MultiDomain ====
-def *(R: range(stridable=?s), mD: MultiDomain) 
+proc *(R: range(stridable=?s), mD: MultiDomain) 
 {
   param stridable = s || mD.stridable;
 
@@ -177,7 +177,7 @@ def *(R: range(stridable=?s), mD: MultiDomain)
 }
 
 //==== domain * MultiDomain ====
-def *(D: domain, mD: MultiDomain)
+proc *(D: domain, mD: MultiDomain)
 {
   param stridable = D.stridable || mD.stridable;
 
@@ -189,7 +189,7 @@ def *(D: domain, mD: MultiDomain)
 }
 
 //==== MultiDomain * domain ====
-def *(mD: MultiDomain, E: domain)
+proc *(mD: MultiDomain, E: domain)
 {
   param stridable = mD.stridable || E.stridable;
   var mD_new = new MultiDomain(mD.rank+E.rank, stridable=stridable);
@@ -199,7 +199,7 @@ def *(mD: MultiDomain, E: domain)
 }
 
 //==== MultiDomain * MultiDomain ====
-def *(mD1: MultiDomain, mD2: MultiDomain)
+proc *(mD1: MultiDomain, mD2: MultiDomain)
 {
   param stridable = mD1.stridable || mD2.stridable;
 
@@ -249,7 +249,7 @@ def *(mD1: MultiDomain, mD2: MultiDomain)
 // section.  By definition, nothing is removed from D in these areas, and
 // they are directly calculated as full (but possibly empty) domains.
 //--------------------------------------------------------------------------
-def -(D: domain, E: domain) where D.rank == E.rank
+proc -(D: domain, E: domain) where D.rank == E.rank
 {
   param stridable = D.stridable || E.stridable;
   param rank = D.rank;
@@ -295,7 +295,7 @@ def -(D: domain, E: domain) where D.rank == E.rank
 }
 
 
-def nontrivialSubtraction(D: domain, E: domain) where D.rank == E.rank
+proc nontrivialSubtraction(D: domain, E: domain) where D.rank == E.rank
 {
   
   param stridable = D.stridable || E.stridable;
@@ -399,7 +399,7 @@ def nontrivialSubtraction(D: domain, E: domain) where D.rank == E.rank
 //|\'''''''''''''''''''''''''''''''''''''''''''|\
 //| >    MultiDomain = MultiDomain - domain    | >
 //|/...........................................|/
-def -(mD: MultiDomain, E: domain) 
+proc -(mD: MultiDomain, E: domain) 
   where mD.rank==E.rank && mD.stridable==E.dim(1).stridable
 {
   
@@ -435,7 +435,7 @@ def -(mD: MultiDomain, E: domain)
 //|\''''''''''''''''''''''''''''''''''''''''''''''''|\
 //| >    MultiDomain = MultiDomain - MultiDomain    | >
 //|/................................................|/
-def -(mD1: MultiDomain, mD2: MultiDomain)
+proc -(mD1: MultiDomain, mD2: MultiDomain)
   where mD1.rank==mD2.rank && mD1.stridable==mD2.stridable
 {
   var mD_new = new MultiDomain(mD1.rank, mD1.stridable);
@@ -466,7 +466,7 @@ def -(mD1: MultiDomain, mD2: MultiDomain)
 //|\"""""""""""""""""""""""""""""|\
 //| >    MultiDomain.subtract    | >
 //|/_____________________________|/
-def MultiDomain.subtract(E: domain)
+proc MultiDomain.subtract(E: domain)
   where E.type == domains.eltType
 {
   if domains.numElements>0 then
@@ -514,7 +514,7 @@ class MultiArray {
   // \|...............\|
   
   
-  def length return subindices.high;
+  proc length return subindices.high;
 
 
   
@@ -523,7 +523,7 @@ class MultiArray {
   //| >    special method: this    | >
   //|/.............................|/
   
-  def this (subindex: int) var
+  proc this (subindex: int) var
   {
     return independent_arrays(subindex).value;
   }
@@ -542,7 +542,7 @@ class MultiArray {
   // MultiArray.
   //------------------------------------------------------
 
-  def these () var 
+  iter these () var 
   {
     for independent_array in independent_arrays do 
       yield independent_array.value;
@@ -562,7 +562,7 @@ class MultiArray {
   // domains in a MultiDomain.
   //----------------------------------------------------------
 
-  def allocate ( mD: MultiDomain(rank,stridable) ) 
+  proc allocate ( mD: MultiDomain(rank,stridable) ) 
   {
     subindices = mD.subindices;
     
@@ -581,7 +581,7 @@ class MultiArray {
   //| >    method: clear    | >
   //|/......................|/
   
-  def clear () 
+  proc clear () 
   {
     for subindex in subindices {
       independent_arrays(subindex).clear();
@@ -605,7 +605,7 @@ class MultiArray {
 // //|\""""""""""""""""""""""""""|\
 // //| >    equality overload    | >
 // //|/__________________________|/
-// def ==(S1: MultiDomain, S2: MultiDomain) {
+// proc ==(S1: MultiDomain, S2: MultiDomain) {
 //   var S_diff = S1 - S2;
 // 
 //   if S_diff.subindices.numIndices==0 then
@@ -619,7 +619,7 @@ class MultiArray {
 // // \|__________________________\|
 
 
-def main {
+proc main {
   
   var full_D = [1..10, 1..10];
  

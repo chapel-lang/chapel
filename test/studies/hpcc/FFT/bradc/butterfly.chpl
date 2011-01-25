@@ -1,7 +1,7 @@
 
 // BLC -- a good example of where one would like to declare multiple
 // arguments of the same type/intent:
-def butterfly(wk1: complex, wk2: complex, wk3: complex, 
+proc butterfly(wk1: complex, wk2: complex, wk3: complex, 
               inout a, inout b, inout c, inout d) {
   var x0 = a + b;
   var x1 = a - b;

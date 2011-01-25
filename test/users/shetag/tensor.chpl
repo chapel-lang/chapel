@@ -21,7 +21,7 @@ class Vector {
   //error: internal failure SYM1167 chpl Version 0.5
   //due to default constructor semantics i think?
   /* 
-  def Vector(arg) {
+  proc Vector(arg) {
     if (arg.type == int) then {
       n = arg;
       a = 0.0;
@@ -33,51 +33,51 @@ class Vector {
   }
   */
 
-  def normf() {
+  proc normf() {
     return sqrt(+ reduce a**2);
   }
     
-  def inner(other) {
+  proc inner(other) {
     return + reduce (a*other.a);
   }
     
-  def gaxpy(alpha,other,beta) {
+  proc gaxpy(alpha,other,beta) {
     a = alpha*a + beta*other.a;
     return this;
   }
     
-  def scale(s) {
+  proc scale(s) {
     a = a*s;
     return this;
   }
 
-  def emul(other) {
+  proc emul(other) {
     a = a*other.a;
     return this;
   }
 
-  def getitem(ind) {
+  proc getitem(ind) {
     return a(ind);
   }
 
-  def setitem(ind,value) {
+  proc setitem(ind,value) {
     a(ind) = value;
   }
     
-  def getslice(lo,hi) {
+  proc getslice(lo,hi) {
     var aslice => a(lo..hi);
     return new Vector(aslice.numElements,aslice);
   }
 
-  def setslice(lo,hi,value) {
+  proc setslice(lo,hi,value) {
     a(lo..hi) = value;
   }
  
-  def len() {
+  proc len() {
     return n;
   }
 
-  def add(other) {
+  proc add(other) {
     return gaxpy(1.0,other,1.0);
   }
 }
@@ -89,7 +89,7 @@ class Matrix {
   //error: internal failure SYM1167 chpl Version 0.5
   //due to default constructor semantics i think?
   /*
-  def Matrix(arg0,arg1=-1) {
+  proc Matrix(arg0,arg1=-1) {
     if (arg1 == -1) 
     then {
       n = arg0.domain.dim(1).high;
@@ -107,33 +107,33 @@ class Matrix {
   //error: internal failure SYM1167 chpl Version 0.5
   //due to default constructor semantics i think?
   /*
-  def Matrix(arg0) {
+  proc Matrix(arg0) {
     n = arg0.domain.dim(1).high;
     m = arg0.domain.dim(2).high;
     a = arg0;
   }
   
-  def Matrix(arg0,arg1) {
+  proc Matrix(arg0,arg1) {
     n = arg0;
     m = arg1;
     a = 0.0;
   }
   */
   
-  def dims() {
+  proc dims() {
     return (n,m);
   }
 
-  def getitem(i,j) {
+  proc getitem(i,j) {
     return a(i,j);
   }
 
-  def setitem(i,j,value) {
+  proc setitem(i,j,value) {
     a(i,j) = value;
   }
 
   // does (nxm)*(mx1)
-  def mul(v) {
+  proc mul(v) {
     var r = new Vector(n);
     
     //Case 1 -- works fine if v is of type [1..m]. 
@@ -158,7 +158,7 @@ class Matrix {
   }
  
   // does (1xn)*(nxm) 
-  def rmul(v) {
+  proc rmul(v) {
     var r = new Vector(m);
 
     //Case 1 -- works fine if v is of type [1..n]. 
@@ -183,7 +183,7 @@ class Matrix {
   }
 }
 
-def main() {
+proc main() {
   const v1 = new Vector(6);
   writeln("v1 = ",v1);
 

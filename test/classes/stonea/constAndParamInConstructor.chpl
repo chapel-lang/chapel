@@ -1,7 +1,7 @@
 class Foo {
     var value : int;
     const SOME_CONST : uint = 100; 
-    def Foo(val = SOME_CONST) {
+    proc Foo(val = SOME_CONST) {
         value = val;
     }
 }
@@ -9,7 +9,7 @@ class Foo {
 class Bar {
     var value : int;
     param SOME_CONST : uint = 100; 
-    def Bar(val = SOME_CONST) {
+    proc Bar(val = SOME_CONST) {
         value = val;
     }
 }

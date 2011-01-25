@@ -77,7 +77,7 @@ class Cyclic1DDist {
   // WORKAROUND: Initialize in the constructor instead
   //
 
-  def Cyclic1DDist(type glbIdxType = int(64),
+  proc Cyclic1DDist(type glbIdxType = int(64),
                   targetLocales: [?targetLocalesDomain] locale) {
     targetLocDom = targetLocalesDomain;
     targetLocs = targetLocales;
@@ -96,7 +96,7 @@ class Cyclic1DDist {
   //
   // WORKAROUND CONTINUED:
   //
-  def helpConstruct() {
+  proc helpConstruct() {
     for locid in targetLocDom do
       on targetLocs(locid) do
         locDist(locid) = new LocCyclic1DDist(glbIdxType, locid, this);
@@ -106,7 +106,7 @@ class Cyclic1DDist {
   //
 
 
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.writeln("Cyclic1DPar");
     x.writeln("---------------");
     x.writeln("across locales: ", targetLocs);
@@ -122,7 +122,7 @@ class Cyclic1DDist {
   // set (inds) and the given global and local index type (idxType,
   // locIdxType)
   //
-  def newDomain(inds, type idxType = glbIdxType) {
+  proc newDomain(inds, type idxType = glbIdxType) {
     // Note that I'm fixing the global and local index types to be the
     // same, but making this a generic function would fix this
     return new Cyclic1DDom(idxType, this, inds);
@@ -132,7 +132,7 @@ class Cyclic1DDist {
   // compute what chunk of inds is owned by a given locale -- assumes
   // it's being called on the locale in question
   //
-  def getChunk(inds, locid) {
+  proc getChunk(inds, locid) {
     // use domain slicing to get the intersection between what the
     // locale owns and the domain's index set
 
@@ -143,8 +143,8 @@ class Cyclic1DDist {
   //
   // Determine which locale owns a particular index
   //
-  def idxToLocaleInd(ind: glbIdxType) {
-    def mod(a, b) {
+  proc idxToLocaleInd(ind: glbIdxType) {
+    proc mod(a, b) {
       if (a >= 0) then
         return a % b;
       else
@@ -155,7 +155,7 @@ class Cyclic1DDist {
                numlocs) + targetLocDom.low):index(targetLocs.domain);
   }
 
-  def idxToLocale(ind: glbIdxType) {
+  proc idxToLocale(ind: glbIdxType) {
     return targetLocs(idxToLocaleInd(ind));
   }
 }
@@ -183,7 +183,7 @@ class LocCyclic1DDist {
   // Compute what chunk of index(1) is owned by the current locale
   // Arguments:
   //
-  def LocCyclic1DDist(type glbIdxType, 
+  proc LocCyclic1DDist(type glbIdxType, 
                      _locid: int, // the locale index from the target domain
                      dist: Cyclic1DDist(glbIdxType) // reference to glob dist
                      ) {
@@ -198,7 +198,7 @@ class LocCyclic1DDist {
       writeln("locale ", locid, " owns ", myChunk);
   }
 
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.write("locale ", loc.id, " owns chunk: ", myChunk);
   }
 }
@@ -236,7 +236,7 @@ class Cyclic1DDom {
   //
   var locDoms: [dist.targetLocDom] LocCyclic1DDom(glbIdxType);
 
-  def initialize() {
+  proc initialize() {
     for locid in dist.targetLocDom do
       on dist.targetLocs(locid) do {
         locDoms(locid) = new LocCyclic1DDom(glbIdxType, this, 
@@ -249,7 +249,7 @@ class Cyclic1DDom {
   //
   // the iterator for the domain -- currently sequential
   //
-  def these() {
+  iter these() {
     for blk in locDoms do
       // TODO: Would want to do something like:     
       // on blk do
@@ -273,7 +273,7 @@ class Cyclic1DDom {
   // overload these() to serve this purpose in the final language
   // definition.
   //
-  def newThese(param iterator: IteratorType)
+  iter newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
     //
     // TODO: This currently only results in a single level of
@@ -304,7 +304,7 @@ class Cyclic1DDom {
   }
 
 
-  def newThese(param iterator: IteratorType, followThis)
+  iter newThese(param iterator: IteratorType, followThis)
         where iterator == IteratorType.follower {
     //
     // TODO: Abstract this addition of low into a function?
@@ -325,29 +325,29 @@ class Cyclic1DDom {
   //
   // the print method for the domain
   //
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.write(whole);
   }
 
   //
   // how to allocate a new array over this domain
   //
-  def newArray(type elemType) {
+  proc newArray(type elemType) {
     return new Cyclic1DArr(glbIdxType, elemType, this);
   }
 
   //
   // queries for the number of indices, low, and high bounds
   //
-  def numIndices {
+  proc numIndices {
     return whole.numIndices;
   }
 
-  def low {
+  proc low {
     return whole.low;
   }
 
-  def high {
+  proc high {
     return whole.high;
   }
 }
@@ -375,7 +375,7 @@ class LocCyclic1DDom {
   //
   // iterator over this locale's indices
   //
-  def these() {
+  iter these() {
     // May want to do something like:     
     // on this do
     // But can't currently have yields in on clauses
@@ -387,11 +387,11 @@ class LocCyclic1DDom {
   // this is the parallel iterator for the local domain, see global
   // domain parallel iterators for general notes on the approach
   //
-  def newThese(param iterator: IteratorType)
+  proc newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
   }
 
-  def newThese(param iterator: IteratorType, followThis)
+  proc newThese(param iterator: IteratorType, followThis)
         where iterator == IteratorType.follower {
   }
 
@@ -399,22 +399,22 @@ class LocCyclic1DDom {
   //
   // how to write out this locale's indices
   //
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.write(myBlock);
   }
 
   //
   // queries for this locale's number of indices, low, and high bounds
   //
-  def numIndices {
+  proc numIndices {
     return myBlock.numIndices;
   }
 
-  def low {
+  proc low {
     return myBlock.low;
   }
 
-  def high {
+  proc high {
     return myBlock.high;
   }
 }
@@ -450,7 +450,7 @@ class Cyclic1DArr {
   //
   var locArr: [dom.dist.targetLocDom] LocCyclic1DArr(glbIdxType, elemType);
 
-  def initialize() {
+  proc initialize() {
     for locid in dom.dist.targetLocDom do
       on dom.dist.targetLocs(locid) do
         locArr(locid) = new LocCyclic1DArr(glbIdxType, elemType, dom.locDoms(locid));
@@ -459,14 +459,14 @@ class Cyclic1DArr {
   //
   // the global accessor for the array
   //
-  def this(i: glbIdxType) var {
+  proc this(i: glbIdxType) var {
     return locArr(dom.dist.idxToLocaleInd(i))(i);
   }
 
   //
   // the iterator over the array's elements, currently sequential
   //
-  def these() var {
+  iter these() var {
     for loc in dom.dist.targetLocDom {
       // TODO: May want to do something like:     
       // on this do
@@ -482,13 +482,13 @@ class Cyclic1DArr {
   // example for general notes on the approach
   //
 
-  def newThese(param iterator: IteratorType)
+  iter newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
     for blk in dom.newThese(IteratorType.leader) do
       yield blk;
   }
 
-  def newThese(param iterator: IteratorType, followThis) var
+  iter newThese(param iterator: IteratorType, followThis) var
         where iterator == IteratorType.follower {
     for i in followThis {
       yield this(i + dom.low);
@@ -498,7 +498,7 @@ class Cyclic1DArr {
   //
   // how to print out the whole array, sequentially
   //
-  def writeThis(x: Writer) {
+  proc writeThis(x: Writer) {
     var first = true;
     for loc in dom.dist.targetLocDom {
       // May want to do something like the following:
@@ -520,7 +520,7 @@ class Cyclic1DArr {
   //
   // a query for the number of elements in the array
   //
-  def numElements {
+  proc numElements {
     return dom.numIndices;
   }
 }
@@ -553,14 +553,14 @@ class LocCyclic1DArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  def this(i: glbIdxType) var {
+  proc this(i: glbIdxType) var {
     return myElems(i);
   }
 
   //
   // iterator over the elements owned by this locale
   //
-  def these() var {
+  iter these() var {
     for elem in myElems {
       yield elem;
     }
@@ -570,11 +570,11 @@ class LocCyclic1DArr {
   // this is the parallel iterator for the local array, see global
   // domain parallel iterators for general notes on the approach
   //
-  def newThese(param iterator: IteratorType)
+  proc newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
   }
 
-  def newThese(param iterator: IteratorType, followThis)
+  proc newThese(param iterator: IteratorType, followThis)
         where iterator == IteratorType.follower {
   }
 
@@ -582,7 +582,7 @@ class LocCyclic1DArr {
   //
   // prints out this locale's piece of the array
   //
-  def writeThis(x: Writer) {
+  proc writeThis(x: Writer) {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
@@ -592,7 +592,7 @@ class LocCyclic1DArr {
   //
   // query for the number of local array elements
   //
-  def numElements {
+  proc numElements {
     return myElems.numElements;
   }
 }

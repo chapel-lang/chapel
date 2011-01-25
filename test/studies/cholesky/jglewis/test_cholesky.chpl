@@ -87,7 +87,7 @@ module cholesky_test {
       block_bordering_cholesky,
       block_2D_bordering_cholesky;
 
-  def main {
+  proc main {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
@@ -260,7 +260,7 @@ module cholesky_test {
       writeln ("factorization failed for non-positive semi-definite matrix");
   }
 
-  def check_factorization ( A : [], L : [] )
+  proc check_factorization ( A : [], L : [] )
 
     // -----------------------------------------------------------------------
     // Check the factorization by forming L L^T and comparing the result to A.
@@ -307,7 +307,7 @@ module cholesky_test {
   }
 
 
-  def print_L ( L : [] ) {
+  proc print_L ( L : [] ) {
    
     const rows = L.domain.dim (1);
 

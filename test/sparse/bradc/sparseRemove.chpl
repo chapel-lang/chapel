@@ -29,7 +29,7 @@ removeItAndProveIt(6,6);
 
 removeItAndProveIt(4,4);
 
-def removeItAndProveIt(i,j) {
+proc removeItAndProveIt(i,j) {
   writeln("Removing (",i,",",j,")");
   S1 -= (i,j);
   writeln("S1 is:\n", S1);

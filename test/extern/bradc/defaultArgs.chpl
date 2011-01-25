@@ -1,3 +1,3 @@
-_extern def printReturnReal(x = 1.1): real;
+_extern proc printReturnReal(x = 1.1): real;
 
 printReturnReal();

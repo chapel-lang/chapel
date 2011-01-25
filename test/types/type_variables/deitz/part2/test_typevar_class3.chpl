@@ -1,7 +1,7 @@
 class foo {
   type t;
   var x : t;
-  def print() {
+  proc print() {
     writeln(x);
   }
 }

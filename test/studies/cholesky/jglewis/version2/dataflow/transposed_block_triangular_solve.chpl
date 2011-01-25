@@ -6,7 +6,7 @@ module transposed_block_triangular_solve  {
   // and Outer Product and Dataflow Cholesky codes
   // ==================================================
 
-  def transposed_block_triangular_solve ( L_diag    : [],
+  proc transposed_block_triangular_solve ( L_diag    : [],
 					  L_offdiag : [] ) {
     
     // ------------------------------------------------------

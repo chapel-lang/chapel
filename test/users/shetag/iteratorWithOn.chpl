@@ -1,6 +1,6 @@
 config const n = 10;
 
-def g() {
+iter g() {
   var loc = 0;
   for i in 0..n {
     on Locales(loc) do yield i;

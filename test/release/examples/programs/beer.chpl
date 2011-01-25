@@ -27,7 +27,7 @@
 config const numBottles = 99;
 
 // the program's entry point
-def main {
+proc main {
   // the number of verses to compute
   const numVerses = numBottles+1;
 
@@ -50,7 +50,7 @@ def main {
 
 // HELPER FUNCTIONS:
 
-def computeLyric(verseNum, numVerses) {
+proc computeLyric(verseNum, numVerses) {
   var bottleNum = numBottles - (verseNum - 1);
   var nextBottle = (bottleNum + numVerses - 1)%numVerses;
   return "\n" // disguise space used to separate elements in array I/O
@@ -61,7 +61,7 @@ def computeLyric(verseNum, numVerses) {
 }
 
 
-def describeBottles(bottleNum, startOfVerse = false) {
+proc describeBottles(bottleNum, startOfVerse = false) {
   var bottleDescription = if (bottleNum) then bottleNum:string
                                          else (if startOfVerse then "N" 
                                                                else "n") 
@@ -72,7 +72,7 @@ def describeBottles(bottleNum, startOfVerse = false) {
 }
 
 
-def computeAction(bottleNum) {
+proc computeAction(bottleNum) {
   return if (bottleNum == 0) then "Go to the store and buy some more, "
                              else "Take one down and pass it around, ";
 }

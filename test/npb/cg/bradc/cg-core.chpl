@@ -1,4 +1,4 @@
-def conjGrad(A: [?MatDom], X: [?VectDom]) {
+proc conjGrad(A: [?MatDom], X: [?VectDom]) {
   const cgitmax = 25;
 
   var Z: [Vectdom] = 0.0,

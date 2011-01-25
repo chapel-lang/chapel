@@ -1,19 +1,19 @@
-def returnInt() {
+proc returnInt() {
   return 2;
 }
 
 
-def returnFloat() {
+proc returnFloat() {
   return 2.3;
 }
 
 
-def returnString() {
+proc returnString() {
   return "hi there";
 }
 
 
-def main() {
+proc main() {
   writeln("returnInt() returns: ", returnInt());
   writeln("returnFloat() returns: ", returnFloat());
   writeln("returnString() returns: ", returnString());

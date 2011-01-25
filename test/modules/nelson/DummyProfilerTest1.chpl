@@ -2,7 +2,7 @@
 //use CrayPatProfiler; 
 use DummyProfiler; 
 
-def main() {
+proc main() {
 
   writeln("1");
   const r1 : Region(RegionID, "r1");

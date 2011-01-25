@@ -1,7 +1,7 @@
-def afun() {
+proc afun() {
   return 1;
 }
-def valfun(): afun {
+proc valfun(): afun {
   return 1;
 }
 writeln(valfun());

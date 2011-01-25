@@ -3,7 +3,7 @@ class myClass {
 
 }
 
-def myClass.setMember(a: int ...?rank) {
+proc myClass.setMember(a: int ...?rank) {
   var mc : myClass = new myClass();
   for i in 1..rank do
     mc.x = a(i);

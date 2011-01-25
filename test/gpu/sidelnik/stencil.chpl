@@ -6,7 +6,7 @@ config const useRandomSeed = true,
 
 var m = 64: int(64);
 
-def main() {
+proc main() {
 
 const GPUBlockDist = new GPUDist(rank=1, threadsPerBlock=threadsPerBlock);
 

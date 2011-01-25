@@ -8,7 +8,7 @@ var A: [DW] complex;
 twiddles(A);
 
 
-def twiddles(W: [?WD] complex) {
+proc twiddles(W: [?WD] complex) {
   const n = WD.dim(1).length;
   const delta = atan(1.0) / n;
   const i = 1.0;

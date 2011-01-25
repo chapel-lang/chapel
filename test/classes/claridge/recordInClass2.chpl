@@ -6,7 +6,7 @@ class Container {
   var r = new R();
 }
 
-def main {
+proc main {
   var c = new Container();
   writeln("12345678901234567");
   c.r.indices = [1..1];

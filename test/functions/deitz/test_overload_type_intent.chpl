@@ -1,10 +1,10 @@
-def foo(type t) {
+proc foo(type t) {
   writeln("foo(type t) called");
   var x : t;
   writeln("  ", x);
 }
 
-def foo(x : int) {
+proc foo(x : int) {
   writeln("foo(int) called");
   writeln("  ", x);
 }

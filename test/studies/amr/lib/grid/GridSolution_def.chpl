@@ -27,7 +27,7 @@ class GridSolution {
   //| >    clear    | >
   //|/..............|/
   
-  def clear() {
+  proc clear() {
     delete old_data;
     delete current_data;
   }
@@ -40,7 +40,7 @@ class GridSolution {
   //| >    constructor    | >
   //|/....................|/
   
-  def GridSolution (grid: Grid) {
+  proc GridSolution (grid: Grid) {
     this.grid = grid;
     old_data =     new GridVariable(grid = grid);
     current_data = new GridVariable(grid = grid);
@@ -74,7 +74,7 @@ class GridSolution {
 // current behavior gets the point across.
 //------------------------------------------------------------
 
-def GridSolution.setToFunction (
+proc GridSolution.setToFunction (
   initial_condition: func(dimension*real, real),
   time_in:           real)
 {
@@ -108,7 +108,7 @@ def GridSolution.setToFunction (
 // frame_number.
 //-------------------------------------------------------------------
 
-def GridSolution.clawOutput(
+proc GridSolution.clawOutput(
   frame_number: int
 ){
 

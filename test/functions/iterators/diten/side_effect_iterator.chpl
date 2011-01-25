@@ -1,4 +1,4 @@
-def itr(i) {
+iter itr(i) {
   var temp = i;
   while temp > 0 {
     writeln(temp);
@@ -7,7 +7,7 @@ def itr(i) {
   }
 }
 
-def main {
+proc main {
   writeln("Capturing the result of itr(5)");
   var array = itr(5);
   writeln("Using the result of itr(5) in an empty loop");

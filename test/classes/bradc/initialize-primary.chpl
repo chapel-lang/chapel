@@ -2,7 +2,7 @@ class C {
   var a: int;
   var b: int;
 
-  def initialize() {
+  proc initialize() {
     b = a;
   }
 }

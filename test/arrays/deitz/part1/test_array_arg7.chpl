@@ -1,9 +1,9 @@
-def foo(X: [1..5] int) {
+proc foo(X: [1..5] int) {
   for i in X.domain do
     writeln(i, ": ", X(i));
 }
 
-def bar(X: [1..20 by 4] int) {
+proc bar(X: [1..20 by 4] int) {
   for i in X.domain do
     writeln(i, ": ", X(i));
 }

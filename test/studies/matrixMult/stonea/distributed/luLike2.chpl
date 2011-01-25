@@ -30,7 +30,7 @@ const blkSize = n / numBlocks : int;
 
 
 
-def matrixMult_ijk(
+proc matrixMult_ijk(
     const m : int,
     const p : int,
     const n : int,
@@ -48,7 +48,7 @@ def matrixMult_ijk(
     }
 }
 
-def luLikeMultiply(A : [1..n, 1..n] int)
+proc luLikeMultiply(A : [1..n, 1..n] int)
 {
     var ACopies : [A.domain[blkSize+1..n, blkSize+1..n]] int;
     var BCopies : [A.domain[blkSize+1..n, blkSize+1..n]] int;
@@ -88,7 +88,7 @@ def luLikeMultiply(A : [1..n, 1..n] int)
 
 
 
-def main() {
+proc main() {
     // verify that the number of locales is a perfect-square
     assert(sqrt(numLocales) == sqrt(numLocales):int,
         "Number of locales must be a perfect-square");

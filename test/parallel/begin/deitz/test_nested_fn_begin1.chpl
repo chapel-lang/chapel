@@ -1,8 +1,8 @@
 use Time;
 
-def foo() {
+proc foo() {
   var x: int = 2;
-  def bar() {
+  proc bar() {
     begin {
       sleep(1);
       writeln(x);

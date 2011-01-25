@@ -30,7 +30,7 @@
 config const inputfile = "lehmer10.dat";
 config const upper = true;
 
-def main() {
+proc main() {
   var Adat = new file(inputfile,path='./',mode=FileAccessMode.read);
   Adat.open();
 
@@ -61,7 +61,7 @@ def main() {
   writeln();
 }
 
-def blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
+proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
   if (D.dim(1) != D.dim(2)) then
     halt("error:  blockChol requires a square matrix with same dimensions");
 
@@ -112,7 +112,7 @@ def blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
   }
 }
 
-def Block(D:range,blksize,upper) {
+iter Block(D:range,blksize,upper) {
 // This iterator defines the subdomains used in each iteration
 // of blocked Cholesky.  
   var start = D.low;
@@ -139,7 +139,7 @@ def Block(D:range,blksize,upper) {
   }
 }
 
-def IterSyrk(D, upper) {
+iter IterSyrk(D, upper) {
 //  This iterator computes the indices for
 //  the computation C += A*A' or C += A'*A,
 //  where only the upper or lower half of C
@@ -165,7 +165,7 @@ def IterSyrk(D, upper) {
         yield((i,j), (j,k), (i,k));
 }  
 
-def IterChol(D,upper) {
+iter IterChol(D,upper) {
 // This iterator computes the indices and ranges for
 // the non-blocked cholesky factorization of the current 
 // diagonal block of A.
@@ -177,7 +177,7 @@ def IterChol(D,upper) {
       yield((j,j), j..j, rows(..(j-1)), rows((j+1)..));
 } 
 
-def IterGemm(D1, D2, upper) {
+iter IterGemm(D1, D2, upper) {
 //  This iterator computes the matrix-matrix multiplication
 //  of A2 = G1*G2, with the correct transposes for either
 //  the lower or upper triangular case.
@@ -193,7 +193,7 @@ def IterGemm(D1, D2, upper) {
           yield ((i,j), (j,k), (i,k));
 }  
 
-def IterTrsm(D, upper) {
+iter IterTrsm(D, upper) {
 // This iterator computes the indices and ranges used in the
 // multiple right-hand side solve.  There are more cases for
 // trsm to consider.  The two that are included here are the
@@ -212,32 +212,32 @@ def IterTrsm(D, upper) {
         yield ((j,j), (i,j), j..j, i..i, Dcols(..j-1), Dcols(..j-1));
 }
 
-def dotProd(A, B) {
+proc dotProd(A, B) {
 // This routine computes the dot product of A and B.
   return (+ reduce(A*B));
 }
 
-def readSize(Adat) {
+proc readSize(Adat) {
   var n: int;
 
   Adat.read(n);
   return n;
 } 
 
-def readBlk(Adat) {
+proc readBlk(Adat) {
   var blk: int;
 
   Adat.read(blk);
   return blk;
 } 
 
-def initA(A,Adat){
+proc initA(A,Adat){
   for ij in A.domain {
     Adat.read(A(ij));
   }
 }
 
-def writeCholFactor(A:[?D],fac:string) {
+proc writeCholFactor(A:[?D],fac:string) {
   var G:[D] A.eltType;
 
   if (fac == "U") {

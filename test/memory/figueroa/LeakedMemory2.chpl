@@ -5,7 +5,7 @@ use Memory;
 
 const N = 5;
 
-def foo () {
+proc foo () {
   var sum = 0;
   var A: [1..N] int = 7;
   for i in A.domain do sum += A[i]*i;

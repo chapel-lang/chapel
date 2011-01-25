@@ -1,4 +1,4 @@
-def swap(inout x, inout y) {
+proc swap(inout x, inout y) {
   var tmp = x;
   x = y;
   y = tmp;

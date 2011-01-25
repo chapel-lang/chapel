@@ -1,6 +1,6 @@
 use Functions;
 
-def testme() {
+proc testme() {
   return 4;
 }
 

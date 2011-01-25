@@ -1,4 +1,4 @@
-def foo(a) {
+proc foo(a) {
   class C {
     var x: int;
   }

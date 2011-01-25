@@ -1,4 +1,4 @@
-def foo(param rank : int, n : int) {
+iter foo(param rank : int, n : int) {
   var result : rank*int;
   if rank == 1 then
     for i in 1..n do

@@ -1,2 +1,2 @@
-def mytypefun() type { return int; }
+proc mytypefun() type { return int; }
 var myvar: mytypefun;

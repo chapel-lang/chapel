@@ -1,7 +1,7 @@
 class Foo {
   var x: int;
 
-  def Foo(y: int) {
+  proc Foo(y: int) {
     x = 2*y;
   }
 }

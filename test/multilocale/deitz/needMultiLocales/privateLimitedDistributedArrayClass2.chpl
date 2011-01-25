@@ -11,7 +11,7 @@ class DistributedArray {
   var otherBases: [0..numLocales-1] _ddata(int);
 }
 
-def DistributedArray.this(i: int) var {
+proc DistributedArray.this(i: int) var {
   if ndata.member(i) {
     return data[i];
   } else {
@@ -20,7 +20,7 @@ def DistributedArray.this(i: int) var {
   }
 }
 
-def DistributedArray.writeThis(W: Writer) {
+proc DistributedArray.writeThis(W: Writer) {
   for loc in Locales {
     W.write(if loc == here then data else others[loc.id].data);
     if loc.id != numLocales-1 then

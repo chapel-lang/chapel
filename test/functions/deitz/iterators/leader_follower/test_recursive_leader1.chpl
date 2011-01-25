@@ -1,23 +1,23 @@
-def foo(lo: int, hi: int) {
+iter foo(lo: int, hi: int) {
   for i in lo..hi do
     yield i;
 }
 
-def foo(param tag: iterator, lo: int, hi: int) where tag == iterator.leader {
+iter foo(param tag: iterator, lo: int, hi: int) where tag == iterator.leader {
   coforall i in lo..hi do
     yield i;
 }
 
-def foo(param tag: iterator, follower, lo: int, hi: int) where tag == iterator.follower {
+iter foo(param tag: iterator, follower, lo: int, hi: int) where tag == iterator.follower {
   yield follower;
 }
 
-def bar(lo: int, hi: int) {
+iter bar(lo: int, hi: int) {
   for i in lo..hi do
     yield i;
 }
 
-def bar(param tag: iterator, lo: int, hi: int): int where tag == iterator.leader {
+iter bar(param tag: iterator, lo: int, hi: int): int where tag == iterator.leader {
   if lo < hi {
     var mid = (lo + hi) / 2;
     cobegin {
@@ -31,7 +31,7 @@ def bar(param tag: iterator, lo: int, hi: int): int where tag == iterator.leader
   }
 }
 
-def bar(param tag: iterator, follower, lo: int, hi: int) where tag == iterator.follower {
+iter bar(param tag: iterator, follower, lo: int, hi: int) where tag == iterator.follower {
   yield follower;
 }
 

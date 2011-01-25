@@ -1,7 +1,7 @@
 param N = 1024;
 param ITERS = 200;
 
-def main() {
+proc main() {
   const D = [0..N-1, 0..N-1];
   var A, B, C: [D] int;
   [(i,j) in D] A(i,j) = i+j;

@@ -5,7 +5,7 @@ module cholesky_test {
   config const n = 59; 
   config const index_base = -3;
  
-  def main {
+  proc main {
  
     const MatIdx = [ index_base .. #n, index_base .. #n ];
  
@@ -20,7 +20,7 @@ module cholesky_test {
  
    }
  
-  def elemental_cholesky ( A : [] )
+  proc elemental_cholesky ( A : [] )
     {
     class barrier_data {
       var   tasks_to_finish$         : sync int; // = n_processors;

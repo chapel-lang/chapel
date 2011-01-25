@@ -3,7 +3,7 @@ class C {
   var x : t;
 }
 
-def foo(c : C(?u)) {
+proc foo(c : C(?u)) {
   var y : u;
   writeln("foo of ", c, " with y = ", y);
   delete c;

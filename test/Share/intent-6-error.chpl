@@ -1,6 +1,6 @@
 
 
-def foo(in x) {
+proc foo(in x) {
   x = 7;
   return x;
 }

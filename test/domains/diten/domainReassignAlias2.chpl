@@ -1,8 +1,8 @@
-def main {
+proc main {
   var D = [1..10];
   var A: [i in D] int = i;
 
-  def foo(X: [] int) {
+  proc foo(X: [] int) {
     D = [1..10];
     writeln(X);
   }

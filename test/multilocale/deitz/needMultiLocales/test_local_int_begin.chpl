@@ -1,11 +1,11 @@
 use Time;
 
-def main {
+proc main {
   foo();
   sleep(5); // make sure program does not exit
 }
 
-def foo() {
+proc foo() {
   var x: int = 17;
   _debugWriteln(here.id, " x=", x);
   x += 1;

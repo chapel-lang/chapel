@@ -1,4 +1,4 @@
-def foo() {
+proc foo() {
   const x: int;
 
   on Locales(numLocales-1) do x = 2;

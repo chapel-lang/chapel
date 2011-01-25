@@ -4,7 +4,7 @@ var b16: bool(16) = true;
 var b32: bool(32) = true;
 var b64: bool(64) = true;
 
-def testBoolCombo(x, y) {
+proc testBoolCombo(x, y) {
   writeln("!x = ", !x);
   writeln("x && y = ", x && y);
   writeln("x || y = ", x || y);

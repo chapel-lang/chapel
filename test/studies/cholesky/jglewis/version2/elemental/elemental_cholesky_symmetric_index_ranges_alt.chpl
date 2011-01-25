@@ -76,7 +76,7 @@ module elemental_cholesky_symmetric_index_ranges_alt {
       scalar_inner_product_cholesky,
       transposed_block_triangular_solve;
 
-  def elemental_cholesky_symmetric_index_ranges_alt ( A : [] )
+  proc elemental_cholesky_symmetric_index_ranges_alt ( A : [] )
 
     where ( A.domain.rank == 2 ) {
 

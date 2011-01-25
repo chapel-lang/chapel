@@ -6,12 +6,12 @@ module a {
 
 module b { writeln("b"); }
 
-def main() {
+proc main() {
   use a.b;
   foo();
 }
 
-def foo() {
+proc foo() {
   use b;
 }
 

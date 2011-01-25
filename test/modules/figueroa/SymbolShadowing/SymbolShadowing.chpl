@@ -1,7 +1,7 @@
 config const seed: uint = 113579,
              arraySize = 101;
 
-def main () {
+proc main () {
   writeln ("Before shadowing, arraySize = ", arraySize);
   use RandomNumber;
   //var arraySize = 32;

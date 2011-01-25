@@ -4,7 +4,7 @@ config const threadsPerBlock = 2;
 
 var m = 16: int(64);
 
-def main() {
+proc main() {
 
 var alpha = 3.0;
 

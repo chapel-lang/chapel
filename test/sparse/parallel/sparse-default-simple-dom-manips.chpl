@@ -10,13 +10,13 @@ var dd = [1..rr, 1..cc];
 var sd: sparse subdomain(dd);
 
 var cnt = 0;
-def show(msg...) {
+proc show(msg...) {
   cnt += 1;
   writeln(cnt, ": ", (...msg));
   forall i in sd do writeln(cnt, ": ", i);
 }
 
-def test(msg) {
+proc test(msg) {
   sd += (3,4);
   show(msg, "added (3,4)");
 

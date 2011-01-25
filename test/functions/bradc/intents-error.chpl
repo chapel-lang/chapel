@@ -1,33 +1,33 @@
 
-def callin(in x: int) {
+proc callin(in x: int) {
   writeln("in callin, x is: ", x);
   x += 1;
   writeln("re-assigned to be: ", x);
 }
 
 
-def callout(out x: int) {
+proc callout(out x: int) {
   writeln("in callout, x is: ", x);
   x += 1;
   writeln("re-assigned to be: ", x);
 }
 
 
-def callinout(inout x: int) {
+proc callinout(inout x: int) {
   writeln("in callinout, x is: ", x);
   x += 1;
   writeln("re-assigned to be: ", x);
 }
 
 
-def callblank(x: int) {
+proc callblank(x: int) {
   writeln("in callblank, x is: ", x);
   x += 1;
   writeln("re-assigned to be: ", x);
 }
 
 
-def main() {
+proc main() {
   var a: int = 10;
 
   callin(a);

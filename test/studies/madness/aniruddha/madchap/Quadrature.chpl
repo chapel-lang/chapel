@@ -6,7 +6,7 @@
 
 /** Return Gauss-Legendre points for order k.
  */
-def gl_getPoints(k: int) {
+proc gl_getPoints(k: int) {
     var ret: [0..k-1] real;
     
     select k {
@@ -52,7 +52,7 @@ def gl_getPoints(k: int) {
 
 /** Return Gauss-Legendre weights for order k.
  */
-def gl_getWeights(k: int) {
+proc gl_getWeights(k: int) {
     var ret: [0..k-1] real;
 
     select k {

@@ -22,7 +22,7 @@ class Subgraph {
     start = s;
     end = e;
   }
-  def adjMatrix [i:AdjD] { return weights(i).length; }
+  proc adjMatrix [i:AdjD] { return weights(i).length; }
 }
 
 class Graph {
@@ -31,7 +31,7 @@ class Graph {
   var ParEdgeD : domain(1);
   var intg = new Subgraph(wtype = int, VertexD => VertexD, ParEdgeD => ParEdgeD);
   var strg = new Subgraph(wtype = string, VertexD => VertexD, ParEdgeD => ParEdgeD);
-  def copy(s : Graph) {
+  proc copy(s : Graph) {
     return Graph(VertexD = s.VertexD, ParEdgeD = s.ParEdgeD);
   }
 }

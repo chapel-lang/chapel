@@ -23,16 +23,16 @@ config const printParams = true,
 
 
 record FakeLeader {
-  def these() {
+  iter these() {
     for i in 0:indexType..#N_U do
       yield i;
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     yield tuple(0:indexType..#N_U);
   }
   
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     for i in follower(1) do
       yield follower;
   }
@@ -41,7 +41,7 @@ record FakeLeader {
 var myFakeLeader: FakeLeader;
 
 
-def main() {
+proc main() {
   printConfiguration();
 
   const TableSpace: domain(1, indexType) = [0:indexType..#m];
@@ -63,7 +63,7 @@ def main() {
 }
 
 
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     printProblemSize(elemType, numTables, m);
     writeln("Number of updates = ", N_U, "\n");
@@ -71,7 +71,7 @@ def printConfiguration() {
 }
 
 
-def verifyResults(T: [?TDom], UpdateSpace) {
+proc verifyResults(T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   forall ( ,r) in (myFakeLeader, RAStream()) do
@@ -86,7 +86,7 @@ def verifyResults(T: [?TDom], UpdateSpace) {
 }
 
 
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);

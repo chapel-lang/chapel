@@ -1,19 +1,19 @@
 class MyDist : BaseDist {
-  def dsiNewAssociativeDom(type idxType) {
+  proc dsiNewAssociativeDom(type idxType) {
     return new MyDom();
   }
 
-  def dsiClone() return new MyDist();
+  proc dsiClone() return new MyDist();
 }
 
 class MyDom : BaseAssociativeDom {
   type idxType = int(32);
 
-  def dsiGetIndices() {
+  proc dsiGetIndices() {
     var r: range;
     return r;
   }
 
-  def dsiSetIndices(ind) {
+  proc dsiSetIndices(ind) {
   }
 }

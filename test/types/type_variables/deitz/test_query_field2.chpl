@@ -5,7 +5,7 @@ class C {
   var xx: tt;
 }
 
-def foo(c: C(tt=?tt, t=?t)) {
+proc foo(c: C(tt=?tt, t=?t)) {
   var y: t;
   var yy: tt;
   writeln((y, yy));

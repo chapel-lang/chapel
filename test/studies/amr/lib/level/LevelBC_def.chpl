@@ -8,8 +8,8 @@ class LevelBC {
   
   const level: Level;
 
-  def apply(q: LevelVariable, t: real) {}
-  def apply_Homogeneous(q: LevelVariable) {}
+  proc apply(q: LevelVariable, t: real) {}
+  proc apply_Homogeneous(q: LevelVariable) {}
 
 }
 //<=== LevelBC class <===

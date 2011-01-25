@@ -1,5 +1,5 @@
 
-def printRange(type t, name) {
+proc printRange(type t, name) {
   var minval: t = min(t);
   var maxval: t = max(t);
   writeln("Type ", name, " ranges from ", minval, "..", maxval);

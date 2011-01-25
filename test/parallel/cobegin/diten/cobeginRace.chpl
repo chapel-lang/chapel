@@ -1,10 +1,10 @@
-def foo() { }
+proc foo() { }
 
-def bar() { }
+proc bar() { }
 
 var done: single bool;
 
-def timeout(n: uint) {
+proc timeout(n: uint) {
   use Time;
   begin { sleep(n); writeln("Timeout"); exit(1); }
   begin { done; exit(0); }

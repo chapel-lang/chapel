@@ -9,7 +9,7 @@ config param printTiming = false;
 
 config const randSeed:int(64) = 314159265;
 
-def main {
+proc main {
   const D1 = [1..#m*n];
   const D2 = [1.. by 1 # m*n];
   const D3 = [1..#m, 1..#n];
@@ -30,14 +30,14 @@ def main {
   }
 }
 
-def initialize(B) {
+proc initialize(B) {
   use Random;
   var rnd = new RandomStream(randSeed);
   rnd.fillRandom(B);
   delete rnd;
 }
 
-def runTest(D, alpha: real) {
+proc runTest(D, alpha: real) {
   use Time;
   var timer: Timer;
   var A, B: [D] real;

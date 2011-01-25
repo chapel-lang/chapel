@@ -1,5 +1,5 @@
-_extern def getPtr(): opaque;
-_extern def printPtr(ptr);
+_extern proc getPtr(): opaque;
+_extern proc printPtr(ptr);
 
 var x = getPtr();
 printPtr(x);

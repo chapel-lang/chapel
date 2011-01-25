@@ -1,1 +1,1 @@
-def ~bar (x) {writeln("inside ~bar");}
+proc ~bar (x) {writeln("inside ~bar");}

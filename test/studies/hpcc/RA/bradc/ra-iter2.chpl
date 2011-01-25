@@ -34,7 +34,7 @@ for i in RAStream(NUPDATE/4, 3*NUPDATE/4) {
 }
 
 
-def RAStream(numvals, start=0): indexType {
+iter RAStream(numvals, start=0): indexType {
   const POLY = 0x7:indexType;
   const hibit = 0x1:indexType << (numBits(indexType)-1);
   var val = getNthRandom(start);
@@ -45,7 +45,7 @@ def RAStream(numvals, start=0): indexType {
 }
 
 
-def getNthRandom(in n:int(64)) {
+proc getNthRandom(in n:int(64)) {
   param period = 1317624576693539401;
 
   while (n < 0) do
@@ -88,7 +88,7 @@ def getNthRandom(in n:int(64)) {
 
 // BLC: would also like to see this fn inlined -- how to specify?
 // BLC: better name for this fn?
-def bitMunge(inout x) {
+proc bitMunge(inout x) {
   param POLY = 0x7:tableElem;
   param hibit = 0x1:tableElem << 63;
   x = (x << 1) ^ (if (x & hibit) then POLY else 0);

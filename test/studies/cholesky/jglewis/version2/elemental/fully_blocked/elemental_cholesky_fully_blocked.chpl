@@ -77,7 +77,7 @@ module elemental_cholesky_fully_blocked {
       scalar_inner_product_cholesky,
       transposed_fully_blocked_triangular_solve;
 
-  def elemental_cholesky_fully_blocked ( A : [] )
+  proc elemental_cholesky_fully_blocked ( A : [] )
 
     where ( A.domain.rank == 2 ) {
 

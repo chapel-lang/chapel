@@ -1,14 +1,14 @@
 module outermost {
   module middlemost {
     module innermost {
-      def f() {
+      proc f() {
         writeln("hello from innermost");
       }
     }
   }
 }
 
-def main() {
+proc main() {
   use notoutermost.middlemost.innermost;
 }
 

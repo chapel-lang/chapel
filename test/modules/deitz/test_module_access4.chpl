@@ -1,7 +1,7 @@
-def foo(r: real) { writeln(r); }
+proc foo(r: real) { writeln(r); }
 
 module M {
-  def foo(i: int) { writeln(i); }
+  proc foo(i: int) { writeln(i); }
 }
 
 M.foo(3.0);

@@ -2,7 +2,7 @@
 module module1 {
   var x = 3;
 
-  def main() {
+  proc main() {
     writeln("x is: ", x);
   }
 }

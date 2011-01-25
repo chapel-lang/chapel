@@ -1,22 +1,22 @@
 var x: int = 2;
 
-def foo(x: int) {
+proc foo(x: int) {
   writeln("x in foo() is: ", x);
   var x = 4;
   writeln("then x is: ", x);
 }
 
-def bar() {
+proc bar() {
   writeln("x in bar() is: ", x);
   var x = 5;
   writeln("then x is: ", x);
 }
 
-def baz() {
+proc baz() {
   writeln("x in baz() is: ", x);
 }
 
-def main() {
+proc main() {
   foo(3);
   writeln();
   bar();

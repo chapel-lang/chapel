@@ -17,7 +17,7 @@ class StaticMRSolution {
   var level_solutions:         [hierarchy.level_indices] LevelSolution;
   var coarse_overlap_solutions: [hierarchy.level_indices] RefiningTransferSolution;
 
-  def time { return level_solutions(1).current_time; }
+  proc time { return level_solutions(1).current_time; }
 
 
   //|\''''''''''''''''''''|\
@@ -28,7 +28,7 @@ class StaticMRSolution {
   // Intended signature:
   //     StaticMRSolution(hierarchy: StaticMRHierarchy)
   //----------------------------------------------------------------------------
-  def initialize() {
+  proc initialize() {
     for i in hierarchy.level_indices {
 
       //==== Initialize LevelSolution ====
@@ -56,7 +56,7 @@ class StaticMRSolution {
 //|\"""""""""""""""""""""""""""""""""""""""|\
 //| >    StaticMRSolution.setToFunction    | >
 //|/_______________________________________|/
-def StaticMRSolution.setToFunction(
+proc StaticMRSolution.setToFunction(
   initial_condition: func(dimension*real, real),
   time_in:           real
 ) {
@@ -76,7 +76,7 @@ def StaticMRSolution.setToFunction(
 //|\""""""""""""""""""""""""""""""""""""""""|\
 //| >    StaticMRSolution output methods    | >
 //|/________________________________________|/
-def StaticMRSolution.clawOutput(frame_number: int)
+proc StaticMRSolution.clawOutput(frame_number: int)
 {
 
   //==== Names of output files ====
@@ -109,7 +109,7 @@ def StaticMRSolution.clawOutput(frame_number: int)
 // Proceeds down the indexed_levels, calling the LevelVariable.writeData
 // method on each corresponding LevelVariable.
 //-----------------------------------------------------------------------
-def StaticMRSolution.writeData(outfile: file){
+proc StaticMRSolution.writeData(outfile: file){
 
   var base_grid_number = 1;
 
@@ -130,9 +130,9 @@ def StaticMRSolution.writeData(outfile: file){
 
 
 
-def main {
+proc main {
 
-  def initial_condition ( x: dimension*real ) {
+  proc initial_condition ( x: dimension*real ) {
     var f: real = 1.0;
     for d in dimensions do
       f *= exp(-10 * (x(d) + 0.0)**2);

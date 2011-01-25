@@ -7,7 +7,7 @@ module fully_blocked_partition_iterators {
   // reduced matrices that occur during a triangular factorization.
   // ===================================================================
 
-  def symmetric_strided_2_by_2_block_partition ( idx_range, block_size ) {
+  iter symmetric_strided_2_by_2_block_partition ( idx_range, block_size ) {
 
     // -------------------------------------------------------------------
     // Deliver as ranges the sequence of reduced matrices that arise in a
@@ -46,7 +46,7 @@ module fully_blocked_partition_iterators {
   // (or the rows or columns of a Matrix)
   // ====================================
 
-  def strided_vector_block_partition ( idx_range, block_size  ) {
+  iter strided_vector_block_partition ( idx_range, block_size  ) {
 
     // -------------------------------------------------------------------
     // Deliver as ranges the block partitioning of a vector.

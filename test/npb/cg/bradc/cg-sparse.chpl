@@ -33,7 +33,7 @@ config const numTrials = 1,
              printError = true;
 
 
-def main() {
+proc main() {
   const DenseSpace = [1..n, 1..n];
   const MatrixSpace: sparse subdomain(DenseSpace) dmapped(new dmap(new CSR()))
                    = genAIndsSorted(elemType, n, nonzer, shift);
@@ -84,7 +84,7 @@ def main() {
 }
 
 
-def conjGrad(A: [?MatDom], X: [?VectDom]) {
+proc conjGrad(A: [?MatDom], X: [?VectDom]) {
   const cgitmax = 25;
 
   var Z: [VectDom] elemType = 0.0,

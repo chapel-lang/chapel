@@ -4,7 +4,7 @@ param b16: bool(16) = true;
 param b32: bool(32) = true;
 param b64: bool(64) = true;
 
-def testAssignToAll(param x) {
+proc testAssignToAll(param x) {
   param locb: bool = x;
   param locb8: bool = x;
   param locb16: bool = x;

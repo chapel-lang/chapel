@@ -1,6 +1,6 @@
 use List;
 
-def foo(s) {
+proc foo(s) {
 
   writeln("s is: ", s);
 

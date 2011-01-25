@@ -1,7 +1,7 @@
-def foo(param r: real) {
+proc foo(param r: real) {
   writeln("param ", r);
 }
-def foo(r: real) {
+proc foo(r: real) {
   writeln("non-param ", r);
 }
 

@@ -20,7 +20,7 @@ class RefiningTransferSolution {
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
-  def clear() {
+  proc clear() {
     old_data.clear();
     delete old_data;
     current_data.clear();
@@ -34,7 +34,7 @@ class RefiningTransferSolution {
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def RefiningTransferSolution(cf_boundary: CFBoundary)
+  proc RefiningTransferSolution(cf_boundary: CFBoundary)
  {
     this.cf_boundary = cf_boundary;
     
@@ -52,7 +52,7 @@ class RefiningTransferSolution {
   //------------------------------------------------------------
   // Iterate over the ArraySets corresponding to a single Grid.
   //------------------------------------------------------------
-  def array_pairs (grid: Grid) 
+  iter array_pairs (grid: Grid) 
   {
     for (old_array,current_array) in (old_data(grid),current_data(grid)) do
       yield (old_array,current_array);
@@ -74,7 +74,7 @@ class RefiningTransferSolution {
 //| >    RefiningTransferSolution.fill_Linear    | >
 //|/_____________________________________________|/
 
-def RefiningTransferSolution.fill_Linear(
+proc RefiningTransferSolution.fill_Linear(
   coarse_solution: LevelSolution)
 {
   //==== Safety check ====
@@ -101,7 +101,7 @@ def RefiningTransferSolution.fill_Linear(
 //| >    LevelVariable.getFineBoundaryValues    | >
 //|/____________________________________________|/
 
-def LevelVariable.getFineBoundaryValues (
+proc LevelVariable.getFineBoundaryValues (
   refining_transfer_solution: RefiningTransferSolution,
   time:                       real )
 {

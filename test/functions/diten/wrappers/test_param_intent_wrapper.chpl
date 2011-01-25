@@ -1,4 +1,4 @@
-def f(param a: int, param b: int) param {
+proc f(param a: int, param b: int) param {
   return a+b;
 }
 

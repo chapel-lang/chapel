@@ -1,9 +1,9 @@
 class foo {
   var x : int;
-  def setxlo(i : int) {
+  proc setxlo(i : int) {
     x = i-1;
   }
-  def setxhi(i : int) {
+  proc setxhi(i : int) {
     x = i+1;
   }
 }

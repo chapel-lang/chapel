@@ -1,13 +1,13 @@
 class P {
-    def f() return "";
+    proc f() return "";
 }
 
 class C: P {
-    def f() return "C";
+    proc f() return "C";
 }
 
 class D: P {
-    def f() return "D";
+    proc f() return "D";
 }
 
 // OK: var ps: [1..2] P = (C():P, D():P);

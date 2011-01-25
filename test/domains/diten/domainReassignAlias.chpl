@@ -1,4 +1,4 @@
-def main {
+proc main {
   var D1 = [1..10];
   var D2 = [1..10];
   var A1: [i in D1] int = i;

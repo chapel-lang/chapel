@@ -9,20 +9,20 @@ record stack {
   var top : stack_elt(eltType);
 }
 
-def stack.empty
+proc stack.empty
   return top == nil;
 
-def stack.push(v : eltType) {
+proc stack.push(v : eltType) {
   top = new stack_elt(eltType, v, top);
 }
 
-def stack.pop() : eltType {
+proc stack.pop() : eltType {
   var v = top.value;
   top = top.next;
   return v;
 }
 
-def stack.writeThis(f : Writer) {
+proc stack.writeThis(f : Writer) {
   var tmp = top;
   while tmp != nil {
     f.write(tmp.value, " ");

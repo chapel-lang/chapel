@@ -1,17 +1,17 @@
-def myiter() {
+iter myiter() {
   for myiter_iter in 1..3 {
     yield myiter_iter;
   }
 }
 
 class Parent {
-  def foo(k:int) {    
+  iter foo(k:int) {    
     yield 2;
   }
 }
 
 class Child : Parent {
-  def foo(k:int) {
+  iter foo(k:int) {
     for l in myiter() {
       yield k+l+100;
     }

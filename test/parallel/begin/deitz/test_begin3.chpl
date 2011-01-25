@@ -1,11 +1,11 @@
 use Time;
 
-def foo() {
+proc foo() {
   var x: int = 17;
   bar(x);
 }
 
-def bar(x) {
+proc bar(x) {
   begin {
     sleep(1);
     writeln(x);

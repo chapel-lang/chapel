@@ -1,11 +1,11 @@
 class C {
-  def foo(x: int) { writeln("C.foo = ", x); }
-  def bar(x: int) { writeln("C.bar = ", x); }
+  proc foo(x: int) { writeln("C.foo = ", x); }
+  proc bar(x: int) { writeln("C.bar = ", x); }
 }
 
 class D: C {
-  def foo(x: int) { writeln("D.foo = ", x); }
-  def bar(y: int) { writeln("D.bar = ", y); }
+  proc foo(x: int) { writeln("D.foo = ", x); }
+  proc bar(y: int) { writeln("D.bar = ", y); }
 }
 
 var c: C = new C();

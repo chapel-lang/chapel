@@ -1,4 +1,4 @@
-def ii() {
+iter ii() {
   local {
     local {
       for i in 1..10 {

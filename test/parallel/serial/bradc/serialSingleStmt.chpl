@@ -3,7 +3,7 @@ use Time;
 serial (1==1) do begin foo();
 writeln("Second");
 
-def foo() {
+proc foo() {
   sleep(2);
   writeln("First");
 }

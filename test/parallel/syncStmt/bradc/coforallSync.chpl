@@ -1,7 +1,7 @@
 use Time;
 var num: sync int = 0;
 
-def foo() {
+proc foo() {
   sleep(1);
   num += 1;
 }

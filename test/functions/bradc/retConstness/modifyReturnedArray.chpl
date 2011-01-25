@@ -1,10 +1,10 @@
 var a1: [1..3] int = (1, 2, 3);
 
-def foo() {
+proc foo() {
   return a1;
 }
 
-def bar() {
+proc bar() {
   var a2: [1..3] int = (4, 5, 6);
   return a2;
 }

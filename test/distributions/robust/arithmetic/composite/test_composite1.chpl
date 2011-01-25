@@ -2,7 +2,7 @@ use driver_arrays;
 
 var S: [1..n3, 1..n3] string;
 
-def writeToString() {
+proc writeToString() {
   for (i,j,k) in Space3 do
     S(i,j) += A3D(i,j,k):string;
   for s in S do

@@ -2,18 +2,18 @@ module M1 {
   var a = 1;
   class C {
     var myvar = 2;
-    def foo() {
+    proc foo() {
       return a+myvar;
     }
   }
 }
 
 module M2 {
-  def main {
+  proc main {
     var c = bar();
     writeln(c.myvar);
   }
-  def bar() {
+  proc bar() {
     use M1;
     return new C();
   }

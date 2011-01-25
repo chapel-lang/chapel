@@ -1,14 +1,14 @@
 
 record X {
   param p = 0;
-  def initialize() { 
+  proc initialize() { 
     writeln("X has p=", p); 
   }
 }
 
 
 // // this works
-// def main() {
+// proc main() {
 //  type t = X;
 //  var y : t;
 //}

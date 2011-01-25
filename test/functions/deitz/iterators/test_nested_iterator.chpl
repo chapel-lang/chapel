@@ -1,6 +1,6 @@
-def foo() {
+proc foo() {
   var n = 4;
-  def bar() {
+  iter bar() {
     for i in 1..n do
       yield i;
   }

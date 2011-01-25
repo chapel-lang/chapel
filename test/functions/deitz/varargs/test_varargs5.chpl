@@ -1,12 +1,12 @@
-def foo(s : string) {
+proc foo(s : string) {
   write("string ", s);
 }
 
-def foo(i : int) {
+proc foo(i : int) {
   write("int ", i);
 }
 
-def foo(ys ...2) {
+proc foo(ys ...2) {
   foo(ys(1));
   write(", ");
   foo(ys(2));

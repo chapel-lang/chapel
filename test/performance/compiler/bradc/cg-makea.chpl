@@ -4,7 +4,7 @@ module CGMakeA {
 
   config const rcond = 0.1;
 
-  def makea(type elemType, n, nonzer, shift) {
+  iter makea(type elemType, n, nonzer, shift) {
     var v: [1..nonzer+1] elemType, // BLC: insert domains? or grow as necessary?
         iv: [1..nonzer+1] int;
 
@@ -43,14 +43,14 @@ module CGMakeA {
   }
 
 
-  def genAInds(type elemType, n, nonzer, shift) {
+  iter genAInds(type elemType, n, nonzer, shift) {
     for (ind, val) in makea(elemType, n, nonzer, shift) {
       yield ind;
     }
   }
 
 
-  def genAIndsSorted(type elemType, n, nonzer, shift) {
+  iter genAIndsSorted(type elemType, n, nonzer, shift) {
     // build associative domain of indices
     var Inds: domain(index(2));
     for i in genAInds(elemType, n, nonzer, shift) {
@@ -78,7 +78,7 @@ module CGMakeA {
   }
 
 
-  def sprnvc(type elemType, n, nz, v, iv, randStr) {
+  proc sprnvc(type elemType, n, nz, v, iv, randStr) {
     var nn1 = 1;
     while (nn1 < n) do nn1 *= 2;
 
@@ -100,7 +100,7 @@ module CGMakeA {
   }
 
 
-  def vecset(v, iv, inout nzv, i, val) {
+  proc vecset(v, iv, inout nzv, i, val) {
     var set = false;
     for k in 1..nzv {
       if (iv(k) == i) {

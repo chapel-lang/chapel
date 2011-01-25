@@ -3,7 +3,7 @@ use Time;
 
 var done: sync bool = true;
 
-def foo(type t, v: t, s) {
+proc foo(type t, v: t, s) {
   var d: single t;
 
   begin {

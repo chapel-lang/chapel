@@ -6,7 +6,7 @@ record RR {
   var r: R;
 }
 
-def f(type t) {
+proc f(type t) {
   var v: t;
   writeln(v);
 }

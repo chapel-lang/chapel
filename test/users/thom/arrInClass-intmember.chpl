@@ -2,7 +2,7 @@ class StoreSomeInts {
   var numInts: int;
   var m_someints: [1..numInts] int;
 
-  def StoreSomeInts(m_someints: [] int) {
+  proc StoreSomeInts(m_someints: [] int) {
     numInts = m_someints.numElements;
     this.m_someints = m_someints;
   }

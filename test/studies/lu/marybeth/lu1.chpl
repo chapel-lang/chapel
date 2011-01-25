@@ -55,7 +55,7 @@ writeln("Pivot Vector:");
 writeln(piv);
 
 
-def initA(A){
+proc initA(A){
 
 A(1,1) = 3.0;
 A(1,2) = 17.0;

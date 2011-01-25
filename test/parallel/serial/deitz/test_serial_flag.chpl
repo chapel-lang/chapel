@@ -1,6 +1,6 @@
 use Time;
 
-def foo(u: uint) {
+proc foo(u: uint) {
   sleep(u);
   writeln("foo called with delay ", u);
 }

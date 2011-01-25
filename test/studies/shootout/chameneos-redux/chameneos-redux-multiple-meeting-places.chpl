@@ -32,7 +32,7 @@ class MeetingPlace {
 	
 	/* reset must be called after meet, 
 	   to reset numMeetings for a subsequent call of meet */
-	def reset() {
+	proc reset() {
 		spotsLeft$.writeXF(2);
 	}
 
@@ -40,7 +40,7 @@ class MeetingPlace {
 	   returns the color of the chameneos who arrives 2nd,
 	   otherwise returns the color of the chameneos who arrives 1st
       	   (denies meetings of 3+ chameneos) */
-	def meet(chameneos : Chameneos) {
+	proc meet(chameneos : Chameneos) {
 		/* peek at spotsLeft$ */	
 		if (peek) {
 			if (spotsLeft$.readXX() == 0) {
@@ -79,7 +79,7 @@ class MeetingPlace {
 /* getComplement returns the complement of this and another color:
    if this and the other color are of the same value, return own value
    otherwise return the color that is neither this or the other color */
-def getComplement(myColor : color, otherColor : color) {
+proc getComplement(myColor : color, otherColor : color) {
 	if (myColor == otherColor) { return myColor; } 
 	return (3 - myColor - otherColor):color;
 }
@@ -94,7 +94,7 @@ class Chameneos {
 	/* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
 	   with another Chameneos.  If it does, it will get the complement of the color
 	   of the Chameneos it met with, and change to that color. */
-	def start(place : MeetingPlace) {
+	proc start(place : MeetingPlace) {
 		lock$;
 		var otherColor : color;
 		otherColor = place.meet(this);
@@ -106,7 +106,7 @@ class Chameneos {
 /* printColorChange takes a MeetingPlace, and two colors.  It generates two chameneos, whose
    colors are the two passed in, allows them to meet at the MeetingPlace, and prints their
    starting and ending colors.  */
-def printColorChange(meetingPlace : MeetingPlace, color1 : color,  color2 : color) {
+proc printColorChange(meetingPlace : MeetingPlace, color1 : color,  color2 : color) {
 	var ch1 : Chameneos = new Chameneos(0, color1);
 	var ch2 : Chameneos = new Chameneos(1, color2);
 
@@ -126,7 +126,7 @@ def printColorChange(meetingPlace : MeetingPlace, color1 : color,  color2 : colo
 }
 
 /* printColorChanges prints the result of getComplement for all possible pairs of colors */
-def printColorChanges() {
+proc printColorChanges() {
 	const colors : [1..3] color = (color.blue, color.red, color.yellow);
 	for color1 in colors {
 		for color2 in colors {
@@ -138,7 +138,7 @@ def printColorChanges() {
 
 /* populate takes an parameter of type int, size, and returns a population of chameneos 
    of that size. if population size is set to 10, will use preset array of colors  */
-def populate (size : int) {
+proc populate (size : int) {
 	const colorsDefault10  = (color.blue, color.red, color.yellow, color.red, color.yellow, 
 			      	        color.blue, color.red, color.yellow, color.red, color.blue);	
 	const D : domain(1) = [1..size];
@@ -156,7 +156,7 @@ def populate (size : int) {
    it then prints out the number of times each Chameneos met another Chameneos, spells out the
    number of times it met with itself, then spells out the total number of times all the Chameneos met
    another Chameneos. */
-def run(population : [] Chameneos, size : int, meetingPlaces : [] MeetingPlace) {
+proc run(population : [] Chameneos, size : int, meetingPlaces : [] MeetingPlace) {
 	for i in population { write(" ", i.myColor); }
 	writeln();
 
@@ -164,7 +164,7 @@ def run(population : [] Chameneos, size : int, meetingPlaces : [] MeetingPlace) 
 	forall place in meetingPlaces {place.reset();}
 }
 
-def runQuiet(population : [] Chameneos, size : int, meetingPlaces : [] MeetingPlace) {
+proc runQuiet(population : [] Chameneos, size : int, meetingPlaces : [] MeetingPlace) {
 	coforall i in [1..numMeetings*2] { population((i % size) + 1).start(meetingPlaces((i + 1) / 2)); }
 	forall place in meetingPlaces {place.reset();}
 
@@ -173,7 +173,7 @@ def runQuiet(population : [] Chameneos, size : int, meetingPlaces : [] MeetingPl
 	printInfoQuiet(totalMeetings, totalMeetingsWithSelf);
 }
 
-def printInfo(population : [] Chameneos) {
+proc printInfo(population : [] Chameneos) {
 	for i in population {
 		write(i.meetings);
 		spellInt(i.meetingsWithSelf);
@@ -184,7 +184,7 @@ def printInfo(population : [] Chameneos) {
 	writeln();
 }
 
-def printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
+proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 	if (totalMeetings == numMeetings*2) { writeln("total meetings PASS"); }
 	else { writeln("total meetings actual = ", totalMeetings, ", total meetings expected = ", numMeetings*2); }
 
@@ -195,13 +195,13 @@ def printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 }
 
 /* spellInt takes an integer, and spells each of its digits out in English */
-def spellInt(n : int) {
+proc spellInt(n : int) {
 	var s : string = n:string;
 	for i in 1..s.length {write(" ", (s.substring(i):int + 1):digit);}
 	writeln();
 }
 
-def main() {
+proc main() {
 	if (numChameneos1 < 2 || numChameneos2 < 2 || numMeetings < 0) {
 		writeln("Please specify numChameneos1 and numChameneos2 of at least 2, and numMeetings of at least 0.");
 	} else {

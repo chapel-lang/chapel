@@ -6,14 +6,14 @@ var D = [1..N];
 var A: [D] int = 7;
 var sum = -3;
 
-def foo (X) {
+proc foo (X) {
   var sum = 0;
   D = [0..1];
   [i in X.domain] sum += X[i]*i;
   return sum;
 }
 
-def bar () {
+proc bar () {
   sum += foo(A[A.domain.low+1..A.domain.high-1]);
 }
 

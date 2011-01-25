@@ -12,6 +12,6 @@ writeln("minA = ", minA, ", minALoc = ", minALoc);
 var (maxVal, maxValNum) = maxloc reduce ([i in 1..n] foo(i), 1..n);
 writeln("maxVal = ", maxVal, ", maxValNum = ", maxValNum);
 
-def foo(x) {
+proc foo(x) {
   return abs(n/2 - x);
 }

@@ -43,7 +43,7 @@ module block_inner_product_cholesky  {
     
   use block_partition_iterators, symmetric_blas;
 
-  def block_inner_product_cholesky ( A : [] ) 
+  proc block_inner_product_cholesky ( A : [] ) 
 
     where ( A.domain.rank == 2 ) 
     {

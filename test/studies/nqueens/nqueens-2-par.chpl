@@ -23,7 +23,7 @@ config var showEachSolution: bool = true;
 
 // The main program.
 //
-def main() {
+proc main() {
   if N > 0 then
     countSolutions(N, showEachSolution);
   for n in 1..N_counts_only do
@@ -33,7 +33,7 @@ def main() {
 // Find all solutions for the given board size, optionally showing each,
 // and print their count.
 //
-def countSolutions(boardSize: int, showEachSoln: bool) {
+proc countSolutions(boardSize: int, showEachSoln: bool) {
   solutionCount$ = 0;
   showEachSolution = showEachSoln;
   if showEachSoln then
@@ -53,7 +53,7 @@ def countSolutions(boardSize: int, showEachSoln: bool) {
 // If the column succeeds, we proceed to the next row
 // (or show the result if we have filled all rows).
 //
-def tryQueenInNextRow(board: Board): void {
+proc tryQueenInNextRow(board: Board): void {
   // iterate over the columns
   for col in 1..board.boardSize {
     // place the queen in that column if legal
@@ -115,13 +115,13 @@ class Board {
 // Create an empty board of the given size.
 // NB could not do this by writing our own constructor.
 //
-def createBoard(boardSize:int) {
+proc createBoard(boardSize:int) {
   return new Board(boardSize = boardSize);
 }
 
 // Return a (newly-created) clone of this board.
 //
-def Board.clone(taskNumArg: int): Board {
+proc Board.clone(taskNumArg: int): Board {
 
   // Linguistic remark: this code looks funny, but it does the following.
   // It invokes Board's default constructor (since we have not defined any
@@ -143,7 +143,7 @@ def Board.clone(taskNumArg: int): Board {
 // If placing a queen at (lastfilled+1,col) is legal, do so and return true.
 // Otherwise, don't and return false.
 //
-def Board.placeNextIfLegal(col: int): bool {
+proc Board.placeNextIfLegal(col: int): bool {
   if nextPlacementIsLegal(col) {
     lastfilled += 1;
     queencol(lastfilled) = col;
@@ -155,14 +155,14 @@ def Board.placeNextIfLegal(col: int): bool {
 
 // Remove the most recently placed queen (that hasn't been removed yet).
 //
-def Board.removeLast(col: int): void {
+proc Board.removeLast(col: int): void {
   lastfilled -= 1;
 }
 
 // Helper: would placing a new queen at (lastfilled+1,col) be legal?
 // Assume the existing placement is legal.
 //
-def Board.nextPlacementIsLegal(col: int): bool {
+proc Board.nextPlacementIsLegal(col: int): bool {
   var row = lastfilled + 1;
   for prevRow in 1..lastfilled {
     var prevCol = queencol(prevRow);
@@ -183,7 +183,7 @@ def Board.nextPlacementIsLegal(col: int): bool {
 //
 config var show1line: bool = true;
 
-def Board.writeThis(f:Writer) {
+proc Board.writeThis(f:Writer) {
   if boardSize <= 0 {
     f.write( taskNum, ": the board is empty");
     return;

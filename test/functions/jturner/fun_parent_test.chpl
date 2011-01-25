@@ -1,8 +1,8 @@
-def fun1(i:int) {
+proc fun1(i:int) {
   return i;
 }
 
-def fun2(i:int) {
+proc fun2(i:int) {
   return i+ 10;
 }
 
@@ -18,11 +18,11 @@ f2 = f1;
 writeln(f1(1));
 
 
-def fun3(i:int) {
+proc fun3(i:int) {
   writeln(i);
 }
 
-def fun4(i:int) {
+proc fun4(i:int) {
   var j = i+10;
   writeln(j);
 }

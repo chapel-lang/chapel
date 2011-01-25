@@ -1,4 +1,4 @@
-def foo(i : int) : int {
+proc foo(i : int) : int {
   return i + 2;
 }
 

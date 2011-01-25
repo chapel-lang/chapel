@@ -1,7 +1,7 @@
 class C {
   const irng: int;
 
-  def C(v1: int) {
+  proc C(v1: int) {
     irng = v1;
   }
 }

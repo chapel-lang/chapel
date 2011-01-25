@@ -17,7 +17,7 @@ config var
 config var initial_spike = 1000.0;
 
    
-def main() {
+proc main() {
 
    const ProblemSpace = [1..n, 1..n],       // domain for interior grid points
          BigDomain    = [0..n+1, 0..n+1];   // domain with boundary points
@@ -73,7 +73,7 @@ def main() {
 }
 
 
-def computeNextApproximation(ProblemSpace, newGrid, oldGrid, iteration) {
+proc computeNextApproximation(ProblemSpace, newGrid, oldGrid, iteration) {
   forall (i,j) in ProblemSpace do
   
     newGrid(i,j) = (                 oldGrid(i-1,j) + 

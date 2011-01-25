@@ -1,5 +1,5 @@
 use Time;
-def main {
+proc main {
   var s: sync int;
   begin {
     sleep(1);

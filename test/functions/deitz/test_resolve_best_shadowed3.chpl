@@ -1,10 +1,10 @@
-def main() {
+proc main() {
   {
-    def foo() {
+    proc foo() {
       writeln("bad");
     }
     {
-      def foo() {
+      proc foo() {
         writeln("good");
       }
       {

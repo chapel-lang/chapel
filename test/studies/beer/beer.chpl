@@ -41,7 +41,7 @@ writeln(Lyrics);
 
 // HELPER FUNCTIONS:
 
-def computeLyric(verseNum) {
+proc computeLyric(verseNum) {
   var bottleNum = numBottles - (verseNum - 1);
   var nextBottle = (bottleNum + numVerses - 1)%numVerses;
   return "\n" // disguise space used to separate elements in array I/O
@@ -52,7 +52,7 @@ def computeLyric(verseNum) {
 }
 
 
-def describeBottles(bottleNum, startOfVerse = false) {
+proc describeBottles(bottleNum, startOfVerse = false) {
   var bottleDescription = if (bottleNum) then bottleNum:string 
                                          else (if startOfVerse then "N" 
                                                                else "n") 
@@ -63,7 +63,7 @@ def describeBottles(bottleNum, startOfVerse = false) {
 }
 
 
-def computeAction(bottleNum) {
+proc computeAction(bottleNum) {
   return if (bottleNum == 0) then "Go to the store and buy some more, "
                              else "Take one down and pass it around, ";
 }

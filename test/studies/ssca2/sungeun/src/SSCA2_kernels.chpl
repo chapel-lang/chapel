@@ -48,7 +48,7 @@ module SSCA2_kernels
   // edges, all of which have the largest weight.
   // ========================================================
   
-  def largest_edges ( G, heavy_edge_list :domain )
+  proc largest_edges ( G, heavy_edge_list :domain )
     
     // edge_weights can be either an array over an associative
     // domain or over a sparse domain.  the output  heavy_edge_list
@@ -127,7 +127,7 @@ module SSCA2_kernels
   // in which the first edge traversed is the root edge
   // ===================================================================
   
-  def rooted_heavy_subgraphs ( G, 
+  proc rooted_heavy_subgraphs ( G, 
 			       Heavy_Edge_List     : domain,
 			       Heavy_Edge_Subgraph : [],
 			       in max_path_length  : int )
@@ -239,7 +239,7 @@ module SSCA2_kernels
   // Brandes's 2001 algorithm
   // ==================================================================
 
-  def approximate_betweenness_centrality ( G, starting_vertices, 
+  proc approximate_betweenness_centrality ( G, starting_vertices, 
 					   Between_Cent : [] real,
 					   out Sum_Min_Dist : real )
   

@@ -1,8 +1,8 @@
-def foo(x, y) {
+proc foo(x, y) {
   writeln("In 2-argument foo...");
 }
 
-def foo(x) {
+proc foo(x) {
   compilerWarning("1-argument version of foo called with type: ", typeToString(x.type));
   writeln("In generic foo!");
 }

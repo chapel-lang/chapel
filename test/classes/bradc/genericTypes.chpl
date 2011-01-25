@@ -4,7 +4,7 @@ class C {
   type type2 = rank*type1;
 
 
-  def foo() {
+  proc foo() {
     var x: type1;
     var x2: type2;
 

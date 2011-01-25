@@ -1,4 +1,4 @@
-def raiseType(x) {
+proc raiseType(x) {
       if (x.type==bool) {
               var x:int;
               return x;

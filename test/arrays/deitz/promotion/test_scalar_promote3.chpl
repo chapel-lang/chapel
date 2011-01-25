@@ -1,4 +1,4 @@
-def foo(i : int) {
+proc foo(i : int) {
   return i**2;
 }
 

@@ -46,7 +46,7 @@ b32 = b64;
 
 printAll();
 
-def printAll() {
+proc printAll() {
   writeln("b is: ", b);
   writeln("b8 is: ", b8);
   writeln("b16 is: ", b16);

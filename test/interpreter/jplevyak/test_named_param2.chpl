@@ -1,4 +1,4 @@
-def foo(i : int, j : int) {
+proc foo(i : int, j : int) {
   writeln(i);
   writeln(j);
 }

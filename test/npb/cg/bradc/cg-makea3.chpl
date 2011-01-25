@@ -23,7 +23,7 @@ config const n = probSizes(probClass),
 type elemType = real(64);
 
 
-def main() {
+proc main() {
   const D = [1..n, 1..n];
   var A: [D] real;
 

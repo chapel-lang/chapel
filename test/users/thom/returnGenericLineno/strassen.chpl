@@ -9,7 +9,7 @@ module Strassen
     {
         var n : int;
 
-        def getInstance() : Strassen  // Error message line# wrong
+        proc getInstance() : Strassen  // Error message line# wrong
         {
             return new Strassen(n);
         }

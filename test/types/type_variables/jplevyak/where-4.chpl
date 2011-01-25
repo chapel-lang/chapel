@@ -1,4 +1,4 @@
-def f(x : ?t) {
+proc f(x : ?t) {
   var y : t = x;
   writeln(y);
 }

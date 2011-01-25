@@ -3,7 +3,7 @@ record R {
   var arrDom = [1..arrSize];
   var arr:     [arrDom] R;
       
-  def makeArr(): int {
+  proc makeArr(): int {
     arrSize = 10;
     arrDom  = [1..arrSize];
     return arrSize;

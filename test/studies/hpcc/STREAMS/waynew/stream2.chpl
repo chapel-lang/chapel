@@ -33,7 +33,7 @@ config const scalar = 3.0;
 // the vectors
 var A, B, C: [1..vectorSize] elemType;
 
-def main() {
+proc main() {
   param HLINE = "-------------------------------------------------------------";
 
   var bytes: [tests.COPY..tests.TRIAD] elemType;
@@ -99,7 +99,7 @@ def main() {
 }
 
 
-def checkSTREAMresults(): bool {
+proc checkSTREAMresults(): bool {
   var aj = 1.0;
   var bj = 2.0;
   var cj = 0.0;

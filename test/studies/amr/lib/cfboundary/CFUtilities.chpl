@@ -12,7 +12,7 @@ use Level_def;
 // version is probably the best to use in practice.
 //----------------------------------------------------------
 
-def refinementRatio(coarse_object, fine_object)
+proc refinementRatio(coarse_object, fine_object)
   where (coarse_object.type == Grid || coarse_object.type == Level)
      && (fine_object.type == Grid || fine_object.type == Level)
      && (coarse_object.type == Grid || fine_object.type == Grid)
@@ -25,7 +25,7 @@ def refinementRatio(coarse_object, fine_object)
   return ref_ratio;
 }
 
-def refinementRatio(coarse_level: Level, fine_level: Level)
+proc refinementRatio(coarse_level: Level, fine_level: Level)
 {
   const ref_ratio = fine_level.n_cells / coarse_level.n_cells;
   return ref_ratio;
@@ -50,7 +50,7 @@ def refinementRatio(coarse_level: Level, fine_level: Level)
 // coarse cell.
 //-----------------------------------------------------------------
 
-def refine(
+proc refine(
   coarse_cell: dimension*int,
   ref_ratio:   dimension*int)
 {
@@ -90,7 +90,7 @@ def refine(
 // lower and upper bounds.
 //---------------------------------------------------------------
 
-def refine(
+proc refine(
   coarse_cells: domain(dimension,stridable=true),
   ref_ratio:    dimension*int)
 {
@@ -130,7 +130,7 @@ def refine(
 // The output is the coarse cell in which the fine cell lies.
 //----------------------------------------------------------------
 
-def coarsen (
+proc coarsen (
   fine_cell: dimension*int,
   ref_ratio: dimension*int)
 {
@@ -155,7 +155,7 @@ def coarsen (
 // the lower and upper bounds.
 //-----------------------------------------------------------------
 
-def coarsen (
+proc coarsen (
   fine_cells: domain(dimension,stridable=true),
   ref_ratio:  dimension*int)
 {

@@ -46,7 +46,7 @@ config const printParams = true,
 //
 // The program entry point
 //
-def main() {
+proc main() {
   printConfiguration();          // print the problem size
 
   //
@@ -83,7 +83,7 @@ def main() {
 // compute the discrete fast Fourier transform of a vector A declared
 // over domain ADom using twiddle vector W
 //
-def dfft(A: [?ADom], W) {
+proc dfft(A: [?ADom], W) {
   const numElements = A.numElements;
 
   //
@@ -157,7 +157,7 @@ def dfft(A: [?ADom], W) {
 // this is the radix-4 butterfly routine that takes multipliers wk1,
 // wk2, and wk3 and a 4-element array (slice) A.
 //
-def butterfly(wk1, wk2, wk3, A) {
+proc butterfly(wk1, wk2, wk3, A) {
   var X: [0..#radix] elemType = A;  // make a local copy of A on this locale
   var x0 = X(0) + X(1),
       x1 = X(0) - X(1),
@@ -179,7 +179,7 @@ def butterfly(wk1, wk2, wk3, A) {
 // this iterator generates the stride and span values for the phases
 // of the DFFT simply by yielding tuples: (radix**i, radix**(i+1))
 //
-def genDFTStrideSpan(numElements) {
+iter genDFTStrideSpan(numElements) {
   var stride = 1;
   for 1..log4(numElements-1) {
     const span = stride * radix;
@@ -191,7 +191,7 @@ def genDFTStrideSpan(numElements) {
 //
 // Print the problem size
 //
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     if (printStats) then printLocalesTasks(tasksPerLocale=1);
     printProblemSize(elemType, numVectors, m);
@@ -202,7 +202,7 @@ def printConfiguration() {
 // Initialize the twiddle vector and random input vector and
 // optionally print them to the console
 //
-def initVectors(Twiddles, z) {
+proc initVectors(Twiddles, z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
@@ -217,7 +217,7 @@ def initVectors(Twiddles, z) {
 //
 // Compute the twiddle vector values
 //
-def computeTwiddles(Twiddles) {
+proc computeTwiddles(Twiddles) {
   const numTwdls = Twiddles.numElements,
         delta = 2.0 * atan(1.0) / numTwdls;
 
@@ -236,7 +236,7 @@ def computeTwiddles(Twiddles) {
 // Perform a permutation of the argument vector by reversing the bits
 // of the indices
 //
-def bitReverseShuffle(Vect: [?Dom]) {
+proc bitReverseShuffle(Vect: [?Dom]) {
   const numBits = log2(Vect.numElements),
         Perm: [Dom] Vect.eltType = [i in Dom] Vect(bitReverse(i, revBits=numBits));
   Vect = Perm;
@@ -245,7 +245,7 @@ def bitReverseShuffle(Vect: [?Dom]) {
 //
 // Reverse the low revBits bits of val
 //
-def bitReverse(val: ?valType, revBits = 64) {
+proc bitReverse(val: ?valType, revBits = 64) {
   param mask = 0x0102040810204080;
   const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask)),
         valReverse = bitRotLeft(valReverse64, revBits);
@@ -255,13 +255,13 @@ def bitReverse(val: ?valType, revBits = 64) {
 //
 // Compute the log base 4 of x
 //
-def log4(x) return logBasePow2(x, 2);  
+proc log4(x) return logBasePow2(x, 2);  
 
 //
 // verify that the results are correct by reapplying the dfft and then
 // calculating the maximum error, comparing against epsilon
 //
-def verifyResults(z, Z, Twiddles) {
+proc verifyResults(z, Z, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
   Z = conjg(Z) / m;
@@ -280,7 +280,7 @@ def verifyResults(z, Z, Twiddles) {
 //
 // print out sucess/failure, the timing, and the Gflop/s value
 //
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);

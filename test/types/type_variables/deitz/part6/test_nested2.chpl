@@ -1,9 +1,9 @@
-def foo(type t) {
+proc foo(type t) {
   var x : t;
-  def bar(_x) {
+  proc bar(_x) {
     writeln("default bar");
   }
-  def bar(_x : int) {
+  proc bar(_x : int) {
     writeln("bar of int");
   }
   bar(x);

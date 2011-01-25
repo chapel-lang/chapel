@@ -27,7 +27,7 @@ module analyze_torus_graphs {
 
     var   Neighbors   : [vertex_domain] [1..2*dimensions] vertex;
     var   edge_weight : [vertex_domain] [1..2*dimensions] int;
-    def   n_Neighbors (v : index (vertex_domain) ) return 2*dimensions;
+    proc   n_Neighbors (v : index (vertex_domain) ) return 2*dimensions;
   }
 
 
@@ -36,7 +36,7 @@ module analyze_torus_graphs {
   // vertices, then execute Kernels 2, 3 and 4 of SSCA #2
   // ====================================================
 
-  def generate_and_analyze_1D_torus {
+  proc generate_and_analyze_1D_torus {
 
     const d = 2**SCALE;
     
@@ -80,7 +80,7 @@ module analyze_torus_graphs {
   // execute Kernels 2, 3 and 4 of SSCA #2
   // ==============================================
 
-  def generate_and_analyze_2D_torus {
+  proc generate_and_analyze_2D_torus {
 
     const lg2d1 : int = SCALE / 2,
           lg2d2 = SCALE - lg2d1,
@@ -137,7 +137,7 @@ module analyze_torus_graphs {
   // execute Kernels 2, 3 and 4 of SSCA #2
   // ===============================================
   
-  def generate_and_analyze_3D_torus {
+  proc generate_and_analyze_3D_torus {
 	    
     const lg2d1 : int = SCALE / 3,
           lg2d2 : int = lg2d1,
@@ -186,7 +186,7 @@ module analyze_torus_graphs {
   // 2^SCALE vertices, then execute Kernels 2, 3 and 4 of SSCA #2
   // ============================================================
 
-  def generate_and_analyze_4D_torus {
+  proc generate_and_analyze_4D_torus {
   
     const lg2d1 : int = SCALE / 4,
           lg2d2 : int = lg2d1,

@@ -1,4 +1,4 @@
-def dothing(x:int, y:string) { writeln(y); return x+1; }
+proc dothing(x:int, y:string) { writeln(y); return x+1; }
 
 var g = dothing;
 

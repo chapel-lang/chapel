@@ -2,9 +2,9 @@ class C {
   var x: int = 3;
 }
 
-def bar() {
+proc bar() {
   var x: int = 2;
-  def foo(c: C) {
+  proc foo(c: C) {
     writeln((c, x));
     delete c;
   }

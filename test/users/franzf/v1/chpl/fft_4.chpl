@@ -35,11 +35,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use omega;
 
-def init_fft4() {
+proc init_fft4() {
 
 }
 
-def fft4(Y: [] complex, X: [] complex) {
+proc fft4(Y: [] complex, X: [] complex) {
   var a5591, t5375, t5376, t5377:complex;
   t5375 = (X(0) + X(2));
   t5376 = (X(0) - X(2));

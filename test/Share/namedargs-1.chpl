@@ -1,4 +1,4 @@
-def foo(x, y, z) {
+proc foo(x, y, z) {
   return (x - 1) * y + z;
 }
 

@@ -1,8 +1,8 @@
-def g(x: int, y: int) {
+proc g(x: int, y: int) {
   writeln("In g(:int, :int)");
 }
 
-def g(x: [] int, y) {
+proc g(x: [] int, y) {
   writeln("In g(:[] int, :int)");
 }
 

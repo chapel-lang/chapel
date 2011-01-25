@@ -3,7 +3,7 @@ class C {
   var x: t;
 }
 
-def foo(c: C) {
+proc foo(c: C) {
   return c.x;
 }
 

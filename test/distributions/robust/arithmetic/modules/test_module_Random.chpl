@@ -8,7 +8,7 @@ config const printRefArrays = true;
 var rng = new RandomStream(314159265);
 var trng = new RandomStream(314159265);
 
-def fillRefArrays() {
+proc fillRefArrays() {
   rng.fillRandom(R1D);
   rng.fillRandom(R2D);
   rng.fillRandom(R3D);
@@ -16,7 +16,7 @@ def fillRefArrays() {
   rng.fillRandom(R2D64);
 }
 
-def checkRNG(R, T: [?D2]) {
+proc checkRNG(R, T: [?D2]) {
   var errs = 0;
   [i in D2] if R[i]!=T[i] {
     errs += 1;
@@ -31,7 +31,7 @@ var T3D: [Dom3D] real;
 var T4D: [Dom4D] real;
 var T2D64: [Dom2D64] real;
 
-def resetTempArrays() {
+proc resetTempArrays() {
   [i in Dom1D] T1D[i] = -1;
   [ij in Dom2D] T2D[ij] = -1;
   [ijk in Dom3D] T3D[ijk] = -1;
@@ -78,7 +78,7 @@ writeln("\tR2D64: ", checkRNG(R2D64, aT2D64), " errors");
 
 
 writeln("fillRandom() reindexed arrays");
-def foo(rng, D: domain, A: [D]) {
+proc foo(rng, D: domain, A: [D]) {
   rng.fillRandom(A);
 }
 resetTempArrays();

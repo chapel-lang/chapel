@@ -1,6 +1,6 @@
 use driver_domains;
 
-def foo(Dom, Dist) {
+proc foo(Dom, Dist) {
   writeln(Dom.expand(1));
   var A: [Dom.expand(1)] int;
 

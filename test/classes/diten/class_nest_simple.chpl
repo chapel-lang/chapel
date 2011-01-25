@@ -3,18 +3,18 @@ class myouter {
 
   class inner {
     var b = 2;
-    def bar() {
+    proc bar() {
       writeln("inner.b is: ", b);
     }
   }
-  def foo() {
+  proc foo() {
     var inside_inner = new inner();
     writeln("outer.a is: ", a);
     inside_inner.bar();
   }
 }
 
-def main() {
+proc main() {
   var outside: myouter = new myouter();
   outside.foo();
 }

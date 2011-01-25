@@ -5,7 +5,7 @@ writeln(A);
 
 writeln(A(1..8 by 6));
 
-def foo(A: [3..6 by 2] int) {
+proc foo(A: [3..6 by 2] int) {
   writeln(A);
 }
 

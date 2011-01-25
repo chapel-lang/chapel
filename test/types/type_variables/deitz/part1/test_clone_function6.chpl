@@ -1,4 +1,4 @@
-def foo(x) {
+proc foo(x) {
   var i : int = 2;
   i = i * 6;
   writeln(i);

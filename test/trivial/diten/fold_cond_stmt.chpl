@@ -2,12 +2,12 @@ config param a = true;
 config param b = false;
 config param c: uint = 5;
 
-def main() {
+proc main() {
   param x = if a && b then 3 else c;
   writeln(foo(x));
 }
 
-def foo(param n: uint) {
+proc foo(param n: uint) {
   var j = 0;
   for param i in 1..n {
     j += i;

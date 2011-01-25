@@ -19,7 +19,7 @@ for w in 1..10 do
   multi_array();
 
 // P - number of products
-def multi_array(P: int=100) {
+proc multi_array(P: int=100) {
   // Domain -  Consumers
   var D: domain(1) = [1..numLocales*4-1];
   // elements of array A used to write/read

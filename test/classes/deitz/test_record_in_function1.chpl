@@ -1,4 +1,4 @@
-def foo() {
+proc foo() {
   record bar {
     var x : int = 2;
   }

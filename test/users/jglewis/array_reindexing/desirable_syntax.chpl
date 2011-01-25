@@ -9,7 +9,7 @@ module desirable_syntax {
 
   config const n = 4, row_base = -4, col_base = 17;
 
-  def main {
+  proc main {
 
     var A : [row_base .. #n, col_base .. #n] 2*int;
 
@@ -26,13 +26,13 @@ module desirable_syntax {
 
   }
 
-  def print_A (A) {
+  proc print_A (A) {
     for i in A.domain.dim(1) do
       writeln (i, A (i, ..) );
     writeln ();
   }
 
-  def print_A_reindexed (A : [0.., 0..]) {
+  proc print_A_reindexed (A : [0.., 0..]) {
     for i in A.domain.dim(1) do
       writeln (i, A (i, ..) );
   }

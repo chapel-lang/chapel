@@ -7,7 +7,7 @@ var MyA3D: [[10001..10005, 10001..10005, 10001..10005] dmapped Dist3D] int;
 
 var S: [1..n3, 1..n3] string;
 
-def writeToString() {
+proc writeToString() {
   for (i,j,k) in Space3 do
     S(i,j) += MyA3D(10000+i,10000+j,10000+k):string;
   for s in S do

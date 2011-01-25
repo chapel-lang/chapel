@@ -1,7 +1,7 @@
 var x: uint(64) = 1;
 var y: int = 1;
 
-def foo(x: uint(64), y: uint(64)) {
+proc foo(x: uint(64), y: uint(64)) {
   writeln("Got x = ", x, " and y = ", y);
 }
 

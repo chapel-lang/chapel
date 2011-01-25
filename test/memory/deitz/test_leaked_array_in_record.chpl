@@ -8,7 +8,7 @@ record R {
   var A: [D] int;
 }
 
-def foo() {
+proc foo() {
   var result = 0;
   var r: R;
   for (i,j) in D do

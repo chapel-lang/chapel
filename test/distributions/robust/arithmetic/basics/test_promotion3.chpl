@@ -7,7 +7,7 @@ var A, B: [Dom] int;
 for e in A do e = next();
 for e in B do e = next();
 
-def foo(a: int, b: int) return a + b;
+proc foo(a: int, b: int) return a + b;
 
 var C = foo[A, B];
 

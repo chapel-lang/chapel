@@ -6,7 +6,7 @@ use LevelBC_def;
 //|""""""""""""""""""""""""""""""""""\
 //|===> LevelVariable.storeCGSolution ===>
 //|__________________________________/
-def LevelVariable.storeCGSolution(
+proc LevelVariable.storeCGSolution(
   rhs: LevelVariable,
   bc:  LevelBC,
   diffusivity: real,
@@ -103,7 +103,7 @@ def LevelVariable.storeCGSolution(
 //|""""""""""""""""""""""""""""""""""\
 //|===> LevelVariable.storeBEOperator ===>
 //|__________________________________/
-def LevelVariable.storeBEOperator(
+proc LevelVariable.storeBEOperator(
   q:           LevelVariable,
   diffusivity: real,
   dt:          real)
@@ -122,7 +122,7 @@ def LevelVariable.storeBEOperator(
 
 
 
-def LevelVariable.storeFluxDivergence(
+proc LevelVariable.storeFluxDivergence(
   q:           LevelVariable,
   diffusivity: real)
 {

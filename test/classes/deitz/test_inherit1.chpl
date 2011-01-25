@@ -12,7 +12,7 @@ class D: C {
   var i: int;
 }
 
-def main() {
+proc main() {
   var d = new D();
 
   d.s.append(4);

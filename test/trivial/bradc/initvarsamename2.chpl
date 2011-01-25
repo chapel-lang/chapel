@@ -1,4 +1,4 @@
-def foo(x: int) {
+proc foo(x: int) {
   var x = x + 1;
 
   writeln("x is: ", x);

@@ -3,14 +3,14 @@ param radix = 4;
 config const n: int(64) = 6;
 const m = 2**n;
 
-def main() {
+proc main() {
   const ProblemDom: domain(1, int(64)) = [0:m.type..#m];
   var Z: [ProblemDom] complex(128);
 
   dfft(Z);
 }
 
-def dfft(A: [?ADom]) {
+proc dfft(A: [?ADom]) {
   var str = 2;
   var span = 8;
   var wk1, wk2, wk3: complex(128);
@@ -33,6 +33,6 @@ def dfft(A: [?ADom]) {
   }
 }
 
-def butterfly(wk1, wk2, wk3, inout A) {
+proc butterfly(wk1, wk2, wk3, inout A) {
   writeln("A is: ", A);
 }

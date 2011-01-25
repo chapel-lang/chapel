@@ -1,5 +1,5 @@
-def testSubdomain(d: domain, sd: subdomain(d)) { }
-def testSparseSubdomain(d: domain, sd: sparse subdomain(d)) { }
+proc testSubdomain(d: domain, sd: subdomain(d)) { }
+proc testSparseSubdomain(d: domain, sd: sparse subdomain(d)) { }
 
 var c: domain(1);
 var d: domain(1);
