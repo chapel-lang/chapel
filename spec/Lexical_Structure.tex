@@ -2,8 +2,9 @@
 \label{Lexical_Structure}
 
 This section describes the lexical components of Chapel programs.
-Note that the productions in this section are lexical; the components
-are not delimited by white space.
+The purpose of lexical analysis is
+to separate the raw input stream into a sequence of tokens suitable
+for input to the parser.  
 
 \subsection{Comments}
 \label{Comments}
@@ -76,6 +77,7 @@ legal-identifier-chars:
 legal-identifier-char:
   letter
   digit
+  `_'
   `$\mbox{{\bf \$}}$'
 
 letter: one of
@@ -137,38 +139,40 @@ index
 inout
 iter
 label
-lambda
 let
 local
+locale
 module
 new
 nil
 on
+opaque
 otherwise
 out
 \end{chapel} & \begin{chapel}
 param
 proc
-record      
-reduce      
-return      
-scan        
+range
+record
+reduce
+return
+scan
 select
-serial      
-single      
+serial
+single
 sparse
 subdomain
-sync        
+sync
 \end{chapel} & \begin{chapel}
-then        
+then
 true
-type        
-union       
-use         
+type
+union
+use
 var
-when        
-where       
-while       
+when
+where
+while
 yield
 $$
 \end{chapel} \\
@@ -181,6 +185,17 @@ otherwise
 \end{invisible} & \begin{invisible}
 otherwise
 \end{invisible} & \begin{invisible}
+otherwise
+\end{invisible}
+\end{tabular}
+
+The following identifiers are keywords reserved for future use:
+
+\begin{tabular}{l}
+\begin{chapel}
+lambda
+\end{chapel} \\
+\begin{invisible}
 otherwise
 \end{invisible}
 \end{tabular}

@@ -18,6 +18,7 @@ expression:
   enum-constant-expression
   member-access-expression
   call-expression
+  constructor-call-expression
   query-expression
   cast-expression
   lvalue-expression
@@ -92,8 +93,8 @@ by parentheses as given by:
 parenthesized-expression:
   ( expression )
 \end{syntax}
-Such an expression evaluates to the expression.  The parentheses is
-ignored and has only syntactic effect.
+Such an expression evaluates to the expression.  The parentheses are
+ignored and have only a syntactical effect.
 
 \subsection{Call Expressions}
 \label{Call_Expressions}
@@ -105,7 +106,7 @@ Functions and function calls are defined in~\rsec{Functions}.
 \label{Indexing_Expressions}
 \index{indexing}
 
-Indexing into arrays, tuples, and domains shares the same syntax of a
+Indexing into arrays, tuples, and domains has the same syntax as a
 call expression.  Indexing, at its core, is nothing more than a call
 to the indexing function defined on these types.
 
@@ -145,7 +146,7 @@ in~\rsec{Formal_Arguments_of_Generic_Type}.
 
 \begin{example}
 The following code defines a generic function where the type of the
-first parameter is queried and stored in the type alias \chpl{t} and
+first argument is queried and stored in the type alias \chpl{t} and
 the domain of the second argument is queried and stored in the
 variable \chpl{D}:
 \begin{chapel}
@@ -435,6 +436,12 @@ This section describes the predefined arithmetic operators.  These
 operators can be redefined over different types using operator
 overloading~(\rsec{Function_Overloading}).
 
+For each operator, implicit conversions are applied to the operands of
+an operator such that they are compatible with one of the function
+forms listed, those listed earlier in the list being given
+preference.  If no compatible implicit conversions exist, then a
+compile-time error occurs.  In these cases, an explict cast is required.
+
 All integral arithmetic operators are implemented over integral types
 of size 32 and 64 bits only.  For example, adding two 8-bit integers
 is done by first converting them to 32-bit integers and then adding
@@ -454,7 +461,6 @@ proc +(a: real(32)): real(32)
 proc +(a: real(64)): real(64)
 proc +(a: imag(32)): imag(32)
 proc +(a: imag(64)): imag(64)
-proc +(a: complex(32)): complex(32)
 proc +(a: complex(64)): complex(64)
 proc +(a: complex(128)): complex(128)
 \end{chapel}
@@ -473,7 +479,6 @@ proc -(a: real(32)): real(32)
 proc -(a: real(64)): real(64)
 proc -(a: imag(32)): imag(32)
 proc -(a: imag(64)): imag(64)
-proc -(a: complex(32)): complex(32)
 proc -(a: complex(64)): complex(64)
 proc -(a: complex(128)): complex(128)
 \end{chapel}
@@ -498,8 +503,6 @@ proc +(a: int(32), b: int(32)): int(32)
 proc +(a: int(64), b: int(64)): int(64)
 proc +(a: uint(32), b: uint(32)): uint(32)
 proc +(a: uint(64), b: uint(64)): uint(64)
-proc +(a: uint(64), b: int(64))
-proc +(a: int(64), b: uint(64))
 
 proc +(a: real(32), b: real(32)): real(32)
 proc +(a: real(64), b: real(64)): real(64)
@@ -779,6 +782,8 @@ Chapel allows mixing signed and unsigned integers of the same size
 when passing them as arguments to bitwise and.
 In the mixed case the result is of the same size as the arguments
 and is unsigned.
+No run-time error is issued, even if the apparent sign changes as the
+required conversions are performed.
 
 \begin{rationale}
 The mathematical meaning of integer arguments
@@ -806,12 +811,14 @@ proc |(a: int(64), b: uint(64)): uint(64)
 proc |(a: uint(32), b: int(32)): uint(32)
 proc |(a: uint(64), b: int(64)): uint(64)
 \end{chapel}
+
 For each of these definitions, the result is
 computed by applying the logical or operation to the bits of the
 operands.
-
 Chapel allows mixing signed and unsigned integers of the same size
 when passing them as arguments to bitwise or.
+No run-time error is issued, even if the apparent sign changes as the
+required conversions are performed.
 
 \begin{rationale}
 The same as for bitwise and (\rsec{Bitwise_And_Operators}).
@@ -833,11 +840,13 @@ proc ^(a: int(64), b: uint(64)): uint(64)
 proc ^(a: uint(32), b: int(32)): uint(32)
 proc ^(a: uint(64), b: int(64)): uint(64)
 \end{chapel}
+
 For each of these definitions, the result is
 computed by applying the XOR operation to the bits of the operands.
-
 Chapel allows mixing signed and unsigned integers of the same size
 when passing them as arguments to bitwise xor.
+No run-time error is issued, even if the apparent sign changes as the required
+conversions are performed.
 
 \begin{rationale}
 The same as for bitwise and (\rsec{Bitwise_And_Operators}).

@@ -72,7 +72,7 @@ to a default value described in~\rsec{Default_Initialization}.
 
 Multiple variables can be defined in the
 same \sntx{variable-declaration-list}.  The semantics of declaring
-multiple variables that share a \sntx{initialization-part}
+multiple variables that share an \sntx{initialization-part}
 and/or \sntx{type-part} is defined in~\rsec{Multiple_Variable_Declarations}.
 
 Multiple variables can be grouped together using a tuple notation as
@@ -110,6 +110,20 @@ sync/single & base default value and \emph{empty} status \\
 \hline
 \end{tabular}
 \end{center}
+
+\begin{openissue}
+In the case that the first enumerator in an enumeration type is offset
+from zero, as in
+\begin{example}
+enum foo \{ red = 0xff0000, green = 0xff00, blue = 0xff \} ;
+\end{example}
+the compiler has to look up the first named type to see what to use as
+the default.  
+
+An alternative would be to specify that the default
+value is the enumerator whose underlying value is zero.  But that approach also
+has issues, since the default value does not conform to any named enumerator.
+\end{openissue}
 
 \begin{openissue}
 Array initialization is potentially time-consuming.  There is an
@@ -285,7 +299,16 @@ Parameter expressions are restricted to the following constructs:
  and \verb@~@ on operands that are bool or integral parameter
  expressions.
 \item
+ Applications of the unary operators \verb@+@ and \verb@-@ on operands that are
+ real, imaginary or complex parameter
+ expressions.
+\item
  Applications of the binary operators \verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@%@, \verb@**@, \verb@&&@, \verb@||@, \verb@&@, \verb@|@, \verb@^@, \verb@<<@, \verb@>>@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, and \verb@>@ on operands that are bool or integral parameter expressions.
+\item
+\item
+ Applications of the binary
+ operators \verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@**@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@,
+ and \verb@>@ on operands that are real, imaginary or complex parameter expressions.
 \item
  Applications of the string concatenation operator \verb@+@, string comparison operators \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, \verb@>@, and the string length and ascii functions on parameter string expressions.
 \item
@@ -295,8 +318,12 @@ Parameter expressions are restricted to the following constructs:
  Call expressions of parameter functions.  See~\rsec{Parameter_Functions}.
 \end{itemize}
 
+\begin{openissue}
 There is an expectation that parameters will be expanded to more types
 and more operations.
+%REVIEW: hilde
+% Which ones did I miss?
+\end{openissue}
 
 \subsubsection{Runtime Constants}
 \label{Runtime_Constants}
@@ -306,7 +333,7 @@ and more operations.
 
 Runtime constants, or simply ``constants'',
 do not have the restrictions that are associated with
-parameters.  Constants can be any type.  They require an initialization
+parameters.  Constants can be of any type.  They require an initialization
 expression and contain the value of that expression throughout their lifetime.
 
 A variable of a class type that is a constant is a constant reference.
@@ -333,17 +360,21 @@ the initialization is alternatively set.
 
 \index{parameters!configuration}
 Configuration parameters are set at compilation time via compilation
-flags or other implementation dependent means.  The value passed via
+flags or other implementation-defined means.  The value passed via
 these means can be an arbitrary Chapel expression as long as the
-expression can be evaluated at compile-time.
+expression can be evaluated at compile-time.  If present, the value thus
+supplied overrides the default value appearing in the Chapel code.
+
 \begin{example}
-A configuration parameter can be set via a compiler flag.  For example,
+For example,
 \begin{chapel}
 config param rank = 2;
 \end{chapel}
 sets a integer parameter \chpl{rank} to \chpl{2}.  At
-compile-time, \chpl{rank} can be set via to \chpl{3} or \chpl{2*n}
-(assuming \chpl{n} is also a param variable) or any other expression
-that can be evaluated at compile-time.  This can be used to write
-rank-independent code.
+compile-time, \chpl{rank} can be set via a configuration file or compile-line
+override to \chpl{3} or \chpl{2*n}\footnote{It is assumed here that \chpl{n} is
+also a param variable.} or indeed to any other expression
+that can be evaluated at compile-time.  The value supplied at compile time
+overrides the value \chpl{2} appearing in the code.  In this example, the \chpl{rank}
+configuration variable can be used to write rank-independent code.
 \end{example}

@@ -126,7 +126,7 @@ symbols in the outer module.  However, the outer module needs to
 explicitly use a nested module to have access to its symbols.
 
 A nested module can be used without using the outer module by
-explicitly naming the module in the use statement.
+explicitly naming the outer module in the use statement.
 \begin{example}
 The code
 \begin{chapelpre}
@@ -224,6 +224,13 @@ If code refers to symbols that are defined by multiple modules, the
 compiler will issue an error.  Explicit naming can be used to
 disambiguate the symbols in this case.
 
+\begin{openissue}
+It is currently unspecified whether the
+first-named module is always at the global scope, or whether a
+scope-search mechanism is used starting at the scope containing the
+usage.
+\end{openissue}
+
 \begin{example}
 In the following example,
 \begin{chapelpre}
@@ -278,8 +285,6 @@ The call to printX() is not ambiguous because M2's definition shadows
 that of M1.  On the other hand, the call to printY() is ambiguous
 because it is defined in both M1 and M3.  This will result in a
 compiler error.
-
-
 \end{example}
 
 
@@ -315,7 +320,6 @@ The function foo() will be invoked and its result assigned to x.  Then
 
 Module initialization order is discussed
 in~\rsec{Module_Initialization_Order}.
-
 
 
 \subsection{Program Execution}
