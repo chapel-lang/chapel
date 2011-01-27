@@ -9,10 +9,9 @@ proc main() {
 }
 
 proc doSomeWork() {
-   writeln("starting to work!");
    for i in 1..numIters {
      write(".");
      stdout.flush();
    }
-   writeln("done working, time to go home");
+   writeln("done working");
 }
