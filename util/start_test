@@ -340,6 +340,16 @@
 # errors, warnings, and correct programs to all be tested using the
 # same mechanisms.  
 #
+# If a test generates files that should be cleaned up before running
+# the next test to ensure that things start from a blank slate, these
+# files can be listed in a directory-level file called CLEANFILES.
+# Upon starting the test system or running it with the -clean-only
+# flag, these files will be removed.  As an example, if a test is
+# making sure that a file can be opened and written to, failure to
+# remove the generated file could result in a false positive on a
+# second run of the test system if the Chapel program failed to create
+# the file because the previous one would still be there.
+#
 # If the output for a test varies by machine, communication layer, or
 # platform name, files named <testname>.<machname>.good,
 # <testname>.comm-<commlayer>.good, or <testname>.<platform>.good can

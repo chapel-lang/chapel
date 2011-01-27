@@ -49,7 +49,7 @@ class file: Writer {
         when FileAccessMode.read  do modestring = "r";
         when FileAccessMode.write do modestring = "w";
       }
-      _fp = chpl_fopen(filename, modestring);
+      _fp = chpl_fopen(fullFilename, modestring);
 
       if _fp == chpl_cnullfile() {
         const err = chpl_cerrno();
