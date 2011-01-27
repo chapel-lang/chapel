@@ -49,16 +49,17 @@ yield-statement:
   `yield' expression ;
 \end{syntax}
 
-When an iterator is executed and a yield is encountered, the value of the yield
+When an iterator is executed and a \chpl{yield} is encountered, the value of the yield
 expression is returned.  However, the state of execution of the iterator is
 saved.  On its next invocation, execution resumes from the point immediately
-following that yield statement.
+following that \chpl{yield} statement.
 
-When a return is encountered, the value is returned and
-the iterator finishes.  An iterator also completes after the last
+When a \chpl{return} is encountered, the iterator finishes without yielding another
+index value.  The \chpl{return} statements appearing in an iterator are not
+permitted to have a return value.
+An iterator also completes after the last
 statement in the iterator function is executed.
 An iterator need not contain any yield statements.
-
 
 \subsection{Iterator Calls}
 \label{Iterator_Calls}
