@@ -29,12 +29,13 @@ PROFILE_LFLAGS = -pg
 # Warnings squashed for non-Chapel code (bison/flex output):
 # 2215 : definition at end of file not followed by a semicolon or declarator
 # 2259 : non-pointer conversion from "int" to "yytype_int16={short}" may lose bits
+# 170 : pointer points outside outside of underlying object
 #
 # Warnings squashed for generated code:
 #  592 : squelch use-before-def problems -- we'll rely on valgrind to catch them
 
 COMP_CFLAGS = $(CFLAGS)
-COMP_CFLAGS_NONCHPL = -wr111,193,1418,1419,2215,2259
+COMP_CFLAGS_NONCHPL = -wr111,193,1418,1419,2215,2259,170
 RUNTIME_CFLAGS = -std=c99 $(CFLAGS) -wr181
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 GEN_CFLAGS = -std=c99 -fp-model strict -wr592
