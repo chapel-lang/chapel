@@ -175,6 +175,13 @@ verify() {
 
 int breakOnID = -1;
 
+int lastNodeIDUsed() {
+  return uid - 1;
+}
+
+// ProcIter: remove this
+bool markNewFnSymbolsWithProcIter = false;
+
 
 // This is here so that we can break on the creation of a particular
 // BaseAST instance in gdb.
@@ -207,6 +214,35 @@ const char* BaseAST::stringLoc(void) {
   return astr(tmpBuff);
 }
 
+
+// stringLoc for debugging only
+char* stringLoc(BaseAST* ast);
+char* stringLoc(int id);
+BaseAST* aid(int id);
+
+char* stringLoc(BaseAST* ast) {
+  if (!ast)
+    return (char*)"<no node provided>";
+
+  const int tmpBuffSize = 256;
+  static char tmpBuff[tmpBuffSize];
+
+  ModuleSymbol* module = ast->getModule();
+  if (module) {
+    snprintf(tmpBuff, tmpBuffSize, "%s:%d", module->filename, ast->lineno);
+  } else {
+    snprintf(tmpBuff, tmpBuffSize, "<unknown module>:%d", ast->lineno);
+  }
+  return tmpBuff;
+}
+
+char* stringLoc(int id) {
+  BaseAST* ast = aid(id);
+  if (ast)
+    return stringLoc(aid(id));
+  else
+    return (char*)"<the given ID does not correspond to any AST node>";
+}
 
 ModuleSymbol* BaseAST::getModule() {
   if (!this)
