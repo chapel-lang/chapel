@@ -253,7 +253,7 @@ Real literals are designated by the following syntax:
 \begin{syntax}
 real-literal:
   digits[OPT] . digits exponent-part[OPT]
-  digits exponent-part
+  digits .[OPT] exponent-part
 
 exponent-part:
   `e' sign[OPT] digits
@@ -263,13 +263,11 @@ sign: one of
   + -
 \end{syntax}
 \begin{rationale}
-Why can't a real literal end with '.'?  There is an ambiquity between
-real literals ending in '.' and the range operator '..' that makes it
-difficult to parse.  For example, we want to parse \chpl{1..10} as a
-range from 1 to 10 without concern that \chpl{1.} is a real literal.
-There is also an ambiquity between methods invoked on literals.  For
-example, if there is a method named \chpl{e} defined on integers,
-than \chpl{1.e} should invoke that method.
+Why can't a real literal end with '.'?  There is a lexical ambiquity
+between real literals ending in '.' and the range operator '..' that
+makes it difficult to parse.  For example, we want to
+parse \chpl{1..10} as a range from 1 to 10 without concern
+that \chpl{1.} is a real literal.
 \end{rationale}
 The type of a real literal is \chpl{real}.  Explicit conversions are
 necessary to change the size of the literal.
