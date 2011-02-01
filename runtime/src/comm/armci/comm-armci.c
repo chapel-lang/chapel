@@ -345,7 +345,7 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   info = (dist_fork_t *)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
 
   info->caller = chpl_localeID;
-  info->serial_state = chpl_get_serial();
+  info->serial_state = chpl_task_getSerial();
   info->fid = fid;
   info->arg_size = arg_size;
   info->block = block;
@@ -449,7 +449,7 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   prhdr = *(intptr_t *)hdr;
   ginfo->rhdr = (int *)prhdr;
 
-  chpl_begin(_gpc_thread_handler, ginfo, true, finfo->serial_state, NULL);
+  chpl_task_begin(_gpc_thread_handler, ginfo, true, finfo->serial_state, NULL);
 
   /* Small return header */
   *rhsize = sizeof(int);

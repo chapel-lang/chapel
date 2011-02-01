@@ -1077,7 +1077,7 @@ static void polling(void* x) {
       rpcArg->replyTag = msg_info.replyTag;
       rpcArg->joinLocale = source;
 
-      chpl_begin((chpl_fn_p)chpl_RPC, rpcArg, true, false, NULL);
+      chpl_task_begin((chpl_fn_p)chpl_RPC, rpcArg, true, false, NULL);
       break;
     }
     case ChplCommForkNB: {
@@ -1099,7 +1099,7 @@ static void polling(void* x) {
       }
 
       chpl_pvm_recv(source, msg_info.replyTag, args, msg_info.size);
-      chpl_begin((chpl_fn_p)chpl_ftable[msg_info.u.fid], args, true, false, NULL);
+      chpl_task_begin((chpl_fn_p)chpl_ftable[msg_info.u.fid], args, true, false, NULL);
 
       break;
     }
@@ -1691,7 +1691,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   if (chpl_localeID == locale) {
     void* argCopy = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
     memmove(argCopy, arg, mallocsize);
-    chpl_begin((chpl_fn_p)chpl_ftable[fid], argCopy, true, false, NULL);
+    chpl_task_begin((chpl_fn_p)chpl_ftable[fid], argCopy, true, false, NULL);
   } else {
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);

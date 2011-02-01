@@ -218,7 +218,7 @@ void chpl_sync_destroy_aux(chpl_sync_aux_t *s) {
 
 // Tasks
 
-void chpl_tasking_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   // Tuck maxThreadsPerLocale away in a static global for use by other routines
   taskMaxThreadsPerLocale = maxThreadsPerLocale;
 
@@ -257,7 +257,7 @@ void chpl_tasking_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
 }
 
 
-void chpl_tasking_exit(void) {
+void chpl_task_exit(void) {
   chpl_bool debug = false;
   thread_list_p tlp;
 
@@ -281,7 +281,7 @@ void chpl_tasking_exit(void) {
 }
 
 
-void chpl_tasking_call_main(void (*chpl_main)(void)) {
+void chpl_task_callMain(void (*chpl_main)(void)) {
   thread_private_data_t *tp = (thread_private_data_t*) 
                                 chpl_alloc(sizeof(thread_private_data_t),
                                            CHPL_RT_MD_THREAD_PRIVATE_DATA,
@@ -317,12 +317,12 @@ void chpl_tasking_call_main(void (*chpl_main)(void)) {
 }
 
 
-void chpl_per_pthread_tasking_init(void) {
+void chpl_task_perPthreadInit(void) {
   return;
 }
 
 
-void chpl_add_to_task_list(chpl_fn_int_t fid, void* arg,
+void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
                            chpl_bool call_chpl_begin,
@@ -341,7 +341,7 @@ void chpl_add_to_task_list(chpl_fn_int_t fid, void* arg,
     ltask->ptask    = NULL;
     if (call_chpl_begin) {
       chpl_fn_p fp = chpl_ftable[fid];
-      chpl_begin(fp, arg, false, false, ltask);
+      chpl_task_begin(fp, arg, false, false, ltask);
     }
 
     // begin critical section - not needed for cobegin or coforall statements
@@ -364,15 +364,15 @@ void chpl_add_to_task_list(chpl_fn_int_t fid, void* arg,
     // call_chpl_begin should be true here because if task_list_locale !=
     // chpl_localeID, then this function could not have been called from
     // the context of a cobegin or coforall statement, which are the only
-    // contexts in which chpl_begin() should not be called.
+    // contexts in which chpl_task_begin() should not be called.
     chpl_fn_p fp = chpl_ftable[fid];
     assert(call_chpl_begin);
-    chpl_begin(fp, arg, false, false, NULL);
+    chpl_task_begin(fp, arg, false, false, NULL);
   }
 }
 
 
-void chpl_process_task_list(chpl_task_list_p task_list) {
+void chpl_task_processTaskList(chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is
   // actually the first element on the list.
   chpl_task_list_p ltask = task_list, next_task;
@@ -477,7 +477,7 @@ void chpl_process_task_list(chpl_task_list_p task_list) {
 }
 
 
-void chpl_execute_tasks_in_list(chpl_task_list_p task_list) {
+void chpl_task_executeTasksInList(chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is
   // actually the first element on the list.
   chpl_task_list_p ltask = task_list, next_task;
@@ -491,7 +491,7 @@ void chpl_execute_tasks_in_list(chpl_task_list_p task_list) {
 
   // If the serial state is true, the tasks in task_list have already been
   // executed.
-  if (!chpl_get_serial()) do {
+  if (!chpl_task_getSerial()) do {
     ltask = next_task;
     next_task = ltask->next;
 
@@ -587,7 +587,7 @@ void chpl_execute_tasks_in_list(chpl_task_list_p task_list) {
 }
 
 
-void chpl_free_task_list(chpl_task_list_p task_list) {
+void chpl_task_freeTaskList(chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is
   // actually the first element on the list.
   chpl_task_list_p ltask = task_list, next_task;
@@ -610,11 +610,11 @@ void chpl_free_task_list(chpl_task_list_p task_list) {
 //
 // interface function with begin-statement
 //
-void chpl_begin(chpl_fn_p fp, void* a,
+void chpl_task_begin(chpl_fn_p fp, void* a,
                 chpl_bool ignore_serial,  // always add task to pool
                 chpl_bool serial_state,
                 chpl_task_list_p ltask) {
-  if (!ignore_serial && chpl_get_serial()) {
+  if (!ignore_serial && chpl_task_getSerial()) {
     (*fp)(a);
   } else {
     task_pool_p ptask = NULL;
@@ -641,7 +641,7 @@ void chpl_begin(chpl_fn_p fp, void* a,
 }
 
 
-chpl_taskID_t chpl_task_id(void) {
+chpl_taskID_t chpl_task_getId(void) {
   return get_current_ptask()->id;
 }
 
@@ -656,21 +656,21 @@ void chpl_task_sleep(int secs) {
 }
 
 
-chpl_bool chpl_get_serial(void) {
+chpl_bool chpl_task_getSerial(void) {
   return get_thread_private_data()->ptask->serial_state;
 }
 
-void chpl_set_serial(chpl_bool state) {
+void chpl_task_setSerial(chpl_bool state) {
   get_thread_private_data()->ptask->serial_state = state;
 }
 
-uint64_t chpl_task_callstacksize(void) {
+uint64_t chpl_task_getCallStackSize(void) {
   return threadlayer_call_stack_size();
 }
 
-uint32_t chpl_numQueuedTasks(void) { return queued_cnt; }
+uint32_t chpl_task_getNumQueuedTasks(void) { return queued_cnt; }
 
-uint32_t chpl_numRunningTasks(void) {
+uint32_t chpl_task_getNumRunningTasks(void) {
   int numRunningTasks;
 
   // begin critical section
@@ -687,7 +687,7 @@ uint32_t chpl_numRunningTasks(void) {
   return numRunningTasks;
 }
 
-int32_t  chpl_numBlockedTasks(void) {
+int32_t  chpl_task_getNumBlockedTasks(void) {
   if (blockreport) {
     int numBlockedTasks;
 
@@ -1245,14 +1245,14 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
 
 // Threads
 
-int32_t  chpl_threads_getMaxThreads(void) { return 0; }
+int32_t  chpl_task_getMaxThreads(void) { return 0; }
 
-int32_t  chpl_threads_maxThreadsLimit(void) { return 0; }
+int32_t  chpl_task_getMaxThreadsLimit(void) { return 0; }
 
 // take the main thread into account
-uint32_t chpl_numThreads(void) { return threads_cnt + 1; }
+uint32_t chpl_task_getNumThreads(void) { return threads_cnt + 1; }
 
-uint32_t chpl_numIdleThreads(void) {
+uint32_t chpl_task_getNumIdleThreads(void) {
   int numIdleThreads;
 
   // begin critical section

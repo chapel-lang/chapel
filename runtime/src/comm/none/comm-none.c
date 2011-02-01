@@ -108,7 +108,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   info->arg_size = arg_size;
   if (arg_size)
     memcpy(&(info->arg), arg, arg_size);
-  chpl_begin((chpl_fn_p)fork_nb_wrapper, (void*)info, false, false, NULL);
+  chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)info, false, false, NULL);
 }
 
 void chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {

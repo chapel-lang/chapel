@@ -1858,7 +1858,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
       break;
     case PRIM_PROCESS_TASK_LIST:
-      fputs( "chpl_process_task_list(", outfile);
+      fputs( "chpl_task_processTaskList(", outfile);
       get(1)->codegen( outfile);
       {
         ClassType *endCountType = toClassType(toSymExpr(get(1))->typeInfo());
@@ -1873,19 +1873,19 @@ void CallExpr::codegen(FILE* outfile) {
       fputc( ')', outfile);
       break;
     case PRIM_EXECUTE_TASKS_IN_LIST:
-      fputs( "chpl_execute_tasks_in_list(", outfile);
+      fputs( "chpl_task_executeTasksInList(", outfile);
       get(1)->codegen( outfile);
       fputc( ')', outfile);
       break;
     case PRIM_FREE_TASK_LIST:
       if (fNoMemoryFrees)
         break;
-      fputs( "chpl_free_task_list(", outfile);
+      fputs( "chpl_task_freeTaskList(", outfile);
       get(1)->codegen( outfile);
       fputc( ')', outfile);
       break;
     case PRIM_TASK_ID:
-      fprintf(outfile, "chpl_task_id()");
+      fprintf(outfile, "chpl_task_getId()");
       break;
     case PRIM_TASK_SLEEP:
       fputs( "chpl_task_sleep(", outfile);
@@ -1893,10 +1893,10 @@ void CallExpr::codegen(FILE* outfile) {
       fputc( ')', outfile);
       break;
     case PRIM_GET_SERIAL:
-      fprintf(outfile, "chpl_get_serial()");
+      fprintf(outfile, "chpl_task_getSerial()");
       break;
     case PRIM_SET_SERIAL:
-      gen(outfile, "chpl_set_serial(%A)", get(1));
+      gen(outfile, "chpl_task_setSerial(%A)", get(1));
       break;
     case PRIM_CHPL_ALLOC:
     case PRIM_CHPL_ALLOC_PERMIT_ZERO: {
@@ -2099,19 +2099,19 @@ void CallExpr::codegen(FILE* outfile) {
         codegenBasicPrimitive(outfile, this);
       break;
     case PRIM_chpl_numThreads:
-      fprintf(outfile, "chpl_numThreads()");
+      fprintf(outfile, "chpl_task_getNumThreads()");
       break;
     case PRIM_chpl_numIdleThreads:
-      fprintf(outfile, "chpl_numIdleThreads()");
+      fprintf(outfile, "chpl_task_getNumIdleThreads()");
       break;
     case PRIM_chpl_numQueuedTasks:
-      fprintf(outfile, "chpl_numQueuedTasks()");
+      fprintf(outfile, "chpl_task_getNumQueuedTasks()");
       break;
     case PRIM_chpl_numRunningTasks:
-      fprintf(outfile, "chpl_numRunningTasks()");
+      fprintf(outfile, "chpl_task_getNumRunningTasks()");
       break;
     case PRIM_chpl_numBlockedTasks:
-      fprintf(outfile, "chpl_numBlockedTasks()");
+      fprintf(outfile, "chpl_task_getNumBlockedTasks()");
       break;
     case PRIM_RT_ERROR:
     case PRIM_RT_WARNING:
@@ -2230,7 +2230,7 @@ void CallExpr::codegen(FILE* outfile) {
   INT_ASSERT(fn);
 
   if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
-    fputs("chpl_add_to_task_list(", outfile);
+    fputs("chpl_task_addToTaskList(", outfile);
     fprintf(outfile, "/* %s */ %d, ", fn->cname, ftableMap.get(fn));
     fputs("(void*)", outfile);
     if (Expr *actuals = get(1)) {
@@ -2268,7 +2268,7 @@ void CallExpr::codegen(FILE* outfile) {
             fn->lineno, fn->getModule()->filename);
     return;
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
-    fputs("chpl_add_to_task_list(", outfile);
+    fputs("chpl_task_addToTaskList(", outfile);
     fprintf(outfile, "/* %s */ %d, ", fn->cname, ftableMap.get(fn));
     fputs("(void*)", outfile);
     if (Expr *actuals = get(1)) {

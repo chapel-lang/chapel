@@ -228,7 +228,7 @@ static void chpl_mpi_polling_thread(void* arg) {
         rpcArg->joinLocale = status.MPI_SOURCE;
         rpcArg->blockingCall = 1;
 
-        chpl_begin((chpl_fn_p)chplExecForkedTask, rpcArg, true, false, NULL);
+        chpl_task_begin((chpl_fn_p)chplExecForkedTask, rpcArg, true, false, NULL);
         break;
       }
       case ChplCommForkNB: {
@@ -250,7 +250,7 @@ static void chpl_mpi_polling_thread(void* arg) {
         rpcArg->replyTag = msg_info.replyTag;
         rpcArg->joinLocale = status.MPI_SOURCE;
         rpcArg->blockingCall = 0;
-        chpl_begin((chpl_fn_p)chplExecForkedTask, rpcArg, true, false, NULL);
+        chpl_task_begin((chpl_fn_p)chplExecForkedTask, rpcArg, true, false, NULL);
         break;
       }
       case ChplCommFinish: {
@@ -469,7 +469,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
     rpcArg->replyTag = 0;
     rpcArg->joinLocale = 0;
     rpcArg->blockingCall = 0;
-    chpl_begin((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
+    chpl_task_begin((chpl_fn_p)chplExecForkedTask, rpcArg, false, false, NULL);
   } else {
     _chpl_mpi_message_info msg_info;
     int tag = makeTag();
