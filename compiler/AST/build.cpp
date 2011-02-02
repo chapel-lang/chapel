@@ -1132,6 +1132,18 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
         new CallExpr(op,
           new CallExpr(PRIM_GET_REF, ltmp), rtmp)));
 
+  // This code performs a rewrite of += and -= for domains at
+  // compile-time.
+  //     D += x     becomes     D.add(x)
+  //     D -= x     becomes     D.remove(x)
+  // Even though we can handle this in the module code (ChapelArray.chpl)
+  // because we overload +/- and =, we choose to rewrite the expression
+  // because using the assignment operator results in an O(n) operation
+  // rather than O(1) (see overload of = for domains in ChapelArray.chpl).
+  //
+  // The right way to do this would be to make += and += proper methods
+  // that can be overloaded.  When we get around to this, this rewrite
+  // should be removed.
   if (!strcmp(op, "+")) {
     stmt->insertAtTail(
       new CondStmt(
