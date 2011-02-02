@@ -10,7 +10,7 @@ proc main() {
 
 proc doSomeWork() {
    for i in 1..numIters {
-     write(".");
+     write("");
      stdout.flush();
    }
    writeln("done working");
