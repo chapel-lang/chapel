@@ -22,6 +22,32 @@ record range {
   pragma "inline" proc low return _low;       // public getter for low bound
   pragma "inline" proc high return _high;     // public getter for high bound
   pragma "inline" proc stride return _stride; // public getter for stride
+
+  // Returns the high index, properly aligned.
+  proc alignedHigh {
+    if stridable {
+      // (For stride == 1, high is already aligned.)
+      if stride <= 1 || low > high then return high;
+      else return high - (high - low) % abs(stride):idxType;
+    } else return high; }
+
+  // Returns the low index, properly aligned.
+  proc alignedLow {
+    if stridable {
+      // If the stride is positive then low is already aligned.
+      // Otherwise, we align it with the high bound.
+      if stride > 0 || low > high then return low;
+      return low + (high - low) % abs(stride):idxType;
+    } else return low; }
+
+  // Returns the starting index (with minimal checks).
+  pragma "inline" proc first {
+    if stridable { return if stride > 0 then low else high; }
+    else return low; }
+  // Returns the ending index (with minimal checks).
+  pragma "inline" proc last {
+    if (stridable) { return if stride > 0 then alignedHigh else alignedLow; }
+    else return high; }
 }
 
 
@@ -64,14 +90,15 @@ proc chpl__byHelp(r : range(?et, ?bt, ?sbl), str : chpl__idxTypeToStrType(et)) {
     halt("range cannot be strided by zero");
   if r.boundedType == BoundedRangeType.boundedNone then
     halt("unbounded range cannot be strided");
-  var result = new range(r.idxType, r.boundedType, true, r.low, r.high, r.stride*str);
-  if r.low > r.high then
-    return result;
-  if result.stride < 0 then
-    result._alignLow(result.high);
-  else
-    result._alignHigh(result.low);
-  return result;
+
+  // We want the strided range to be a subset of the original
+  // So when the stride multiplier is negative, we have to adjust the end bound.
+  // Both of these ifs are optional!
+  if str < 0 {
+    if r.stride < 0 then r._low = r.alignedLow;
+    else r._high = r.alignedHigh;
+  }
+  return new range(r.idxType, r.boundedType, true, r.low, r.high, r.stride*str);
 }
 
 proc chpl__legalIntCoerce(type t1, type t2) param {
@@ -200,10 +227,25 @@ proc range._hasHigh() param
 // Return the number in the range 0 <= result < b that is congruent to a (mod b)
 //
 proc mod(a:integral, b:integral) {
-  if (b <= 0) then
-    halt("modulus divisor must be positive");
-  var tmp = a % b:a.type;
-  return if tmp < 0 then b:a.type + tmp else tmp;
+  if _isSignedType(b.type) {
+    if (b <= 0) then
+      halt("modulus divisor must be positive");
+  }
+
+  // b is positive, so this cast is OK unless b is very large and a is signed.
+  var modulus = b:a.type;
+  if _isSignedType(a.type) {
+    if (modulus < 0) then
+      halt("Unsigned modulus too large for signed result.");
+  }
+
+  var tmp = a % modulus;
+
+  if _isSignedType(a.type) {
+    if tmp < 0 then tmp += modulus;
+  }
+
+  return tmp;
 }
 
 
@@ -212,21 +254,14 @@ proc mod(a:integral, b:integral) {
 //
 proc range._alignLow(alignment: idxType) {
   var s = abs(stride):idxType;
-  // The following is equivalent to var d = abs(alignment - low) % s;
+  // The following is equivalent to _low += abs(alignment - low) % s;
   // except that it avoids problems with an overflow in the subtraction.
   // It uses the fact that if a1 == b1 mod n and a2 == b2 mod n then
-  // a1 - a2 == b1 - b2 mod n and the fact that abs(a-b) is a-b if a > b
-  // and is b-a when b >= a.
-  var d = if(alignment > low) then
-    mod(mod(alignment,s):int - mod(low,s):int, s):idxType
-  else
-    mod(mod(low,s):int - mod(alignment, s):int, s):idxType;
-  if d != 0 {
-    if low < alignment then
-      _low += d;
-    else
-      _low += s - d;
-  }
+  // (a1 - a2) mod n == (b1 - b2) mod n
+
+  // The RHS is how far we are from the mark in modulo space;
+  // it is always in the range [0, s-1].
+  _low += mod((alignment % s):int - (low % s):int, s):idxType;
 }
 
 
@@ -235,18 +270,12 @@ proc range._alignLow(alignment: idxType) {
 //
 proc range._alignHigh(alignment: idxType) {
   var s = abs(stride):idxType;
-  // See the note about this declaration in range._alignLow. It is like
-  // var d = abs(alignment - high) % s; but avoids overflow problems.
-  var d = if(alignment > high) then
-    mod(mod(alignment,s):int - mod(high,s):int, s):idxType
-  else
-    mod(mod(high,s):int - mod(alignment,s):int,s):idxType;
-  if d != 0 {
-    if high > alignment then
-      _high -= d;
-    else
-      _high -= s - d;
-  }
+  // We take the absolute value of s, so it can be cast to idxType even if idxType is unsigned.
+
+  // Each of the modulo expressions can be safely cast to an int.
+  // The mod function is applied to bring the result back into the nonnegative.
+  // Then it can be cast back into the index type.
+  _high -= mod((high % s):int - (alignment % s):int, s):idxType;
 }
 
 
@@ -314,46 +343,62 @@ proc range.this(other: range(?idxType2, ?boundedType, ?stridable)) {
     return extendedEuclidHelp(u,v);
   }
 
-  var lo1 = if _hasLow() then this.low:idxType else other.low;
-  var hi1 = if _hasHigh() then this.high:idxType else other.high;
+  // If this range us unbounded below, we use low from the other range,
+  // so that max(lo1, lo2) == lo2.  etc.
+  var lo1 = if _hasLow() then this.low else other.low;
+  // If the result type is unsigned, don't let the low bound go negative.
+  // This is a kludge.  We should really obey type coercion rules. (hilde)
+  if (_isUnsignedType(idxType)) {
+    if (lo1 < 0) then lo1 = 0;
+  }
+  var hi1 = if _hasHigh() then this.high else other.high;
   var st1 = abs(this.stride);
-  var al1 = if this.stride < 0 then hi1 else lo1;
 
-  var lo2 = if other._hasLow() then other.low else this.low:idxType;
-  var hi2 = if other._hasHigh() then other.high else this.high:idxType;
+  var lo2 = if other._hasLow() then other.low else this.low;
+  var hi2 = if other._hasHigh() then other.high else this.high;
   var st2 = abs(other.stride);
-  var al2 = if this.stride < 0 then hi2 else lo2;
 
   var (g, x) = extendedEuclid(st1, st2);
+  var lcm = st1 / g * st2;	// The LCM of the two strides.
+  // The division must be done first to prevent overflow.
 
   var result = new range(idxType,
                          computeBoundedType(this, other),
                          this.stridable | other.stridable,
                          max(lo1, lo2):idxType,
                          min(hi1, hi2):idxType,
-                         (st1 * (st2 / g)):chpl__idxTypeToStrType(idxType));
-  if lo1 > hi1 || lo2 > hi2 {
+                         lcm:chpl__idxTypeToStrType(idxType));
+
+  // hilde: We may be able to eliminate this test.
+  if result.boundedType == BoundedRangeType.bounded &&
+     result._low > result._high then
     // empty intersection
-    if result.low < result.high then
-      result._low <=> result._high;
-    else if result.high == result.low then
-      (result._low, result._high) = (1:idxType, 0:idxType);
-    var al = al1 + (al2:idxType - al1) * x:idxType * st1:idxType / g:idxType;
-    result._alignLow(al);
-    result._alignHigh(al);
-  } else if abs(lo1 - lo2) % g:idxType != 0 {
+    return result;
+
+  var al1 = (this.first % st1:idxType):int;
+  var al2 = (other.first % st2:other.idxType):int;
+
+  if (al2 - al1) % g != 0 {
     // empty intersection, return degenerate result
-    result._low <=> result._high;
+    (result._low, result._high) = (1:idxType, 0:idxType);
   } else {
     // non-empty intersection
+	// x and/or the diff may negative, even with a uint source range.
+	var offset = (al2 - al1) * x;
+	// offset is in the range [-(lcm-1), lcm-1]
+	if offset < 0 then offset += lcm;
+	// Now offset can be safely cast to idxType.
+    var al = al1:idxType + offset:idxType * st1:idxType / g:idxType;
 
-    if other.stride < 0 then
-      result._stride = -result.stride;
+    // We inherit the sign of the stride from the operand.
+	// hilde: Why?
+    if other.stride < 0 then 
+      result._stride = -result._stride;
 
-    var al = al1 + (al2:idxType - al1) * x:idxType * st1:idxType / g:idxType;
-
-    result._alignLow(al);
-    result._alignHigh(al);
+    if result.stride > 0 then
+      result._alignLow(al);
+    else
+      result._alignHigh(al);
   }
 
   return result;
@@ -374,7 +419,7 @@ iter range.these() {
       if boundedType == BoundedRangeType.boundedHigh then
         if stride > 0 then
           halt("iteration over range with positive stride but no low bound");
-      var i = if stride > 0 then low else high;
+      var i = first;
       while true {
         yield i;
         i = i + stride:idxType;
@@ -389,24 +434,23 @@ iter range.these() {
       }
     }
   } else {
-    var i, last: idxType;
+    // a bounded range ...
+    if high < low then return;	// The degenerate case.
+
+    // If this range is not degenerate, then we know we will yield at least one index. 
+    var i = first;
+    var end = last;
+
     if stridable {
-      if stride > 0 {
-        i = low;
-        last = if i > high then low else high + stride:idxType;
-      } else {
-        i = high;
-        last = if i < low then high else low + stride:idxType;
-      }
-      while i != last {
+      while true {
         yield i;
+		if i == end then break;
         i = i + stride:idxType;
       }
     } else {
-      i = low;
-      last = if i > high then low else high + 1;
-      while i != last {
+      while true {
         yield i;
+		if i == end then break;
         i = i + 1;
       }
     }
@@ -495,6 +539,7 @@ proc range.length {
     compilerError("unbounded range has infinite length");
   if low > high then
     return 0:idxType;
+  // This works because either high or low is aligned.
   const retVal = if stride > 0
                then (high - low) / stride:idxType + 1
                else (low - high) / stride:idxType + 1;
@@ -590,8 +635,11 @@ proc range.writeThis(f: Writer) {
 //
 // translate the indices in this range by i
 //
-proc range.translate(i: idxType)
+// REVIEW: hilde
+// Should member functions normally return new objects?
+proc range.translate(i: idxType) {
   return this + i;
+}
 
 //
 // intended for internal use only:
