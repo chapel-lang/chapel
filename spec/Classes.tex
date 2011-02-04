@@ -70,7 +70,7 @@ in~\rsec{Generic_Types}.
 \label{Class_Types}
 \index{classes!class types}
 
-A class type specifier is used to declare a variable that can hold an instance
+A class type specifier is used to declare a variable that can refer to an instance
 of that class (or any of its subclasses).  Such a variable may appear in an
 aggregate (class, record, union, tuple) declaration, and also specify argument
 and/or return value types in a function definition.  
@@ -396,23 +396,18 @@ for i in ta do
 \index{default initialization!classes}
 \index{initialization!classes!default}
 
-When an instance of a class (an object) is created, Chapel ensures that it is
-placed into a known state.  This is done through default initialization.
-After an object is default-initialized, its fields may be updated further
-in the body of a constructor.
+When an instance of a class (an object) is created, it is brought to a
+known and legal state first, before it can be accessed or operated upon.
+This is done through default initialization.
 
-A variable of any class type is default-initialized to \chpl{nil}.  
-When a class instance is created, its fields are also default-initialized.
-Therefore, it is not necessary for the author of a class to supply any explicit
-constructors.
+An object is default-initialized by initializing all of its fields in
+the order of the field declarations within the class. Fields inherited
+from a superclass are initialized before fields declared in current class.
 
-The default initializer for a class first calls the default initializer for each class and record from which the
-class inherits.  These initializers are called in the order in which they appear
-in the inheritance list.  It then calls the initializer for each field appearing in the class, in
-lexical order.
-If a field in the class is supplied with an initialization expression, that
-expression is used to initialize the field.  Otherwise, the default initializer
-is called according to the declared type of the field.
+If a field in the class is declared with an initialization expression, that
+expression is used to initialize the field.  Otherwise, the field is
+initialized to the default value of its type
+(\rsec{Default_Values_For_Types}).
 
 \subsection{Class Constructors}
 \label{Class_Constructors}
@@ -429,14 +424,14 @@ class name and constructor arguments are preceded with the
 \chpl{new} keyword.
 
 When the constructor is called, memory is allocated to store
-a class instance, its fields are initialized and
+a class instance, the instance undergoes default initialization, and
 then the constructor method is invoked on this newly-created
-instance.  The fields are initialized by a call to the default initializer for
-the class.
+instance.
 
 If the program declares a class constructor method,
 it is a user-defined constructor.  
-
+If the program declares no constructors for a class,
+a compiler-generated constructor for that class is created automatically.
 
 \subsubsection{User-Defined Constructors}
 \label{User_Defined_Constructors}
@@ -445,17 +440,16 @@ it is a user-defined constructor.
 \index{constructors!user-defined}
 
 A user-defined constructor is a constructor method explicitly declared
-within the body of a class declaration.  A constructor declaration has the same
+in the program.  A constructor declaration has the same
 syntax as a function declaration, except that the name of the function matches
-the name of the class, and there is no return value type specifier.
+the name of the class, and there is no return type specifier.
 
-A constructor for a given class is called by placing the \chpl{new} operator in front of the type
-name for the class.  Any constructor arguments follow the class name in a
+A constructor for a given class is called by placing the \chpl{new} operator
+in front of the class name.  Any constructor arguments follow the class name in a
 parenthesized list.
 
 \begin{syntax}
 constructor-call-expression:
-  `new' class-name
   `new' class-name ( argument-list )
 
 class-name:
@@ -465,9 +459,6 @@ class-name:
 When a constructor is called, the usual function resolution mechanism
 (\rsec{Function_Resolution}) is applied to determine which
 user-defined constructor to invoke.
-
-If any user-defined constructors are supplied for a given class, then the
-compiler-defined constructor can no longer be called.
 
 \begin{example}
 The following example shows a class with two constructors:
@@ -519,8 +510,8 @@ requirements. See Section~\ref{Generic_User_Constructors} for details.
 \index{constructors!compiler-generated}
 \index{compiler-generated constructors}
 
-If the user does not specify any constructors in a class definition, the
-compiler generates one automatically.
+A compiler-generated constructor for a class is created automatically
+if there are no constructors for that class in the program.
 The compiler-generated constructor has one argument for every field in the class.
 %REVIEW: hilde
 % Do you really want to say this ? {
@@ -534,8 +525,6 @@ before the arguments for the fields declared in current class.
 Generic fields are treated separately
 which are discussed in Section~\ref{Generic_Compiler_Generated_Constructors}.
 
-The compiler-generated constructor for a class can be invoked explicitly (using
-the \chpl{new} operator) only when the class does not have any user-defined constructors.
 When invoked, the compiler-generated constructor initializes each field in the class to the
 value of the corresponding actual argument.  
 
@@ -547,6 +536,36 @@ compiler-generated constructor is actually a family of constructors, one for
 each permissible combination of named and unnamed arguments.\footnote{This makes
 it clear why the compiler-generated constructor is visible only if no
 user-defined constructors are present.}
+
+%REVIEW: vass
+% I am unhappy with having to present this as "not an actual function call".
+% Background: two ways for presenting constructors have been used.
+% Previously:
+% - compiler-generated constructor is always there
+% - it is implicitly invoked at the beginning of a user-defined constructor
+% - there is no default initialization
+% Currently
+% - compiler-generated constructor exists only if no user-defined constructors
+% - default initialization always happens before a constructor is invoked
+% - compiler-generated constructor initializes only the fields for which
+%   its invocation provides actual arguments
+%   (hence it is magic, unlike a function call)
+% 
+% The motivation for this refactoring is:
+% - give the reader a firm understanding that an object is zeroed-out
+%   before they can do anything with it, and
+% - eliminate compiler-generated constructor when there is a user-defined one
+% This leads us to the "unlike a function call" semantics here -
+% to avoid duplicate invocation of fields' default initializers
+% (which otherwise would happen once during the object's default initialization
+% and the second time upon invoking the compiler-generated constructor).
+% But overall I do not feel that this refactoring is a win, especially
+% because we now need to define the magic (and I am not sure presently
+% it is defined formally enough).
+% 
+% Higher-level remark: we may want to leave this as-is for now
+% in light of an upcoming discussion (and potential revision) of Chapel's
+% constructor story.
 
 \begin{example}
 Given the class
