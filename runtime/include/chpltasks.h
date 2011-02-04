@@ -17,15 +17,15 @@
 
 void      chpl_sync_lock(chpl_sync_aux_t *);
 void      chpl_sync_unlock(chpl_sync_aux_t *);
-void      chpl_sync_wait_full_and_lock(chpl_sync_aux_t *,
+void      chpl_sync_waitFullAndLock(chpl_sync_aux_t *,
                                        int32_t, chpl_string);
-void      chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *,
+void      chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *,
                                         int32_t, chpl_string);
-void      chpl_sync_mark_and_signal_full(chpl_sync_aux_t *);     // and unlock
-void      chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *);    // and unlock
-chpl_bool chpl_sync_is_full(void *, chpl_sync_aux_t *, chpl_bool);
-void      chpl_sync_init_aux(chpl_sync_aux_t *);
-void      chpl_sync_destroy_aux(chpl_sync_aux_t *);
+void      chpl_sync_markAndSignalFull(chpl_sync_aux_t *);     // and unlock
+void      chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *);    // and unlock
+chpl_bool chpl_sync_isFull(void *, chpl_sync_aux_t *, chpl_bool);
+void      chpl_sync_initAux(chpl_sync_aux_t *);
+void      chpl_sync_destroyAux(chpl_sync_aux_t *);
 
 
 // Single variables (currently a synonym for syncs)
@@ -36,16 +36,16 @@ typedef chpl_sync_aux_t chpl_single_aux_t;
         chpl_sync_lock(s)
 #define chpl_single_unlock(s) \
         chpl_sync_unlock(s)
-#define chpl_single_wait_full_and_lock(s, lineno, filename) \
-        chpl_sync_wait_full_and_lock(s, lineno, filename)
-#define chpl_single_mark_and_signal_full(s) \
-        chpl_sync_mark_and_signal_full(s)
-#define chpl_single_is_full(val_ptr, s, simple_sync_var) \
-        chpl_sync_is_full(val_ptr, s, simple_sync_var)
-#define chpl_single_init_aux(s) \
-        chpl_sync_init_aux(s)
-#define chpl_single_destroy_aux(s) \
-        chpl_sync_destroy_aux(s)
+#define chpl_single_waitFullAndLock(s, lineno, filename) \
+        chpl_sync_waitFullAndLock(s, lineno, filename)
+#define chpl_single_markAndSignalFull(s) \
+        chpl_sync_markAndSignalFull(s)
+#define chpl_single_isFull(val_ptr, s, simple_sync_var) \
+        chpl_sync_isFull(val_ptr, s, simple_sync_var)
+#define chpl_single_initAux(s) \
+        chpl_sync_initAux(s)
+#define chpl_single_destroyAux(s) \
+        chpl_sync_destroyAux(s)
 
 
 // Tasks

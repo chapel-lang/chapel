@@ -177,41 +177,41 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
   threadlayer_mutex_unlock(&s->lock);
 }
 
-void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s,
+void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
                                   int32_t lineno, chpl_string filename) {
   sync_wait_and_lock(s, true, lineno, filename);
 }
 
-void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s,
+void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
                                    int32_t lineno, chpl_string filename) {
   sync_wait_and_lock(s, false, lineno, filename);
 }
 
-void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s) {
   s->is_full = true;
   threadlayer_sync_awaken(s);
   chpl_sync_unlock(s);
 }
 
-void chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
   s->is_full = false;
   threadlayer_sync_awaken(s);
   chpl_sync_unlock(s);
 }
 
-chpl_bool chpl_sync_is_full(void *val_ptr,
+chpl_bool chpl_sync_isFull(void *val_ptr,
                             chpl_sync_aux_t *s,
                             chpl_bool simple_sync_var) {
   return s->is_full;
 }
 
-void chpl_sync_init_aux(chpl_sync_aux_t *s) {
+void chpl_sync_initAux(chpl_sync_aux_t *s) {
   s->is_full = false;
   threadlayer_mutex_init(&s->lock);
   threadlayer_sync_init(s);
 }
 
-void chpl_sync_destroy_aux(chpl_sync_aux_t *s) {
+void chpl_sync_destroyAux(chpl_sync_aux_t *s) {
   threadlayer_sync_destroy(s);
 }
 

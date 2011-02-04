@@ -23,7 +23,7 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
   writeef(&(s->is_full), is_full);  // mark full
 }
 
-void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s,
+void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
                                   int32_t lineno, chpl_string filename) {
   chpl_sync_lock(s);
   while (!readxx(&(s->is_full))) {
@@ -33,7 +33,7 @@ void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s,
   }
 }
 
-void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s,
+void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
                                    int32_t lineno, chpl_string filename) {
   chpl_sync_lock(s);
   while (readxx(&(s->is_full))) {
@@ -43,17 +43,17 @@ void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s,
   }
 }
 
-void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s) {
   writexf(&(s->signal_full), true);                // signal full
   writeef(&(s->is_full), true);                    // mark full and unlock
 }
 
-void chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
   writexf(&(s->signal_empty), true);               // signal empty
   writeef(&(s->is_full), false);                   // mark empty and unlock
 }
 
-chpl_bool chpl_sync_is_full(void *val_ptr, chpl_sync_aux_t *s,
+chpl_bool chpl_sync_isFull(void *val_ptr, chpl_sync_aux_t *s,
                             chpl_bool simple_sync_var) {
   if (simple_sync_var)
     return (chpl_bool)(((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0);
@@ -61,13 +61,13 @@ chpl_bool chpl_sync_is_full(void *val_ptr, chpl_sync_aux_t *s,
     return (chpl_bool)readxx(&(s->is_full));
 }
 
-void chpl_sync_init_aux(chpl_sync_aux_t *s) {
+void chpl_sync_initAux(chpl_sync_aux_t *s) {
   writexf(&(s->is_full), 0);          // mark empty and unlock
   purge(&(s->signal_empty));
   purge(&(s->signal_full));
 }
 
-void chpl_sync_destroy_aux(chpl_sync_aux_t *s) { }
+void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 
 // Tasks
