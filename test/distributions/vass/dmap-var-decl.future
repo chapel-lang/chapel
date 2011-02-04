@@ -1,0 +1,6 @@
+bug: reference counting is broken
+
+When running this, I get:
+  /users/vass/chapel/modules/internal/ChapelDistribution.chpl:23: error: halt reached - distribution reference count is negative!
+
+BTW this is code from the Chapel spec as of now.
