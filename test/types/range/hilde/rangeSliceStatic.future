@@ -1,0 +1,10 @@
+bug: Range slicing using the statically-type procedure-call syntax does not work.
+
+Instead, we get:
+rangeSliceStatic.chpl:8: error: unresolved access of 'int' by '[range(int,boundedLow,0)]'
+
+and that is all.
+
+This is probably a more general bug involving the semantics of the static function-call syntax, and not specific to range slicing --
+though perhaps related to the fact that range defines an overloaded 'this' function.
+

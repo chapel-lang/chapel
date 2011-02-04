@@ -466,13 +466,7 @@ iter range.these(param tag: iterator) where tag == iterator.leader {
   if debugChapelRange then
     writeln("*** In range leader:"); // ", this);
 
-  var v: idxType;
-  if stride > 0 then
-    v = (high - low) / stride:idxType + 1;
-  else
-    v = (low - high) / stride:idxType + 1;
-  if v < 0 then
-    v = 0;
+  var v = this.length;
 
   var numChunks = _computeNumChunks(v);
   if debugChapelRange then
@@ -513,10 +507,14 @@ iter range.these(param tag: iterator, follower) where tag == iterator.follower {
     writeln("In range follower code: Following ", follower);
   var followThis = follower(1);
   if stridable {
+    // r is a range which contains the next chunk of values controlled by followThis.
+    // The range in followThis usually has a stride of 1 (optimization opportunity?).
     var r = if stride > 0 then
         low+followThis.low*stride:idxType..low+followThis.high*stride:idxType by stride by followThis.stride
       else
         high+followThis.high*stride:idxType..high+followThis.low*stride:idxType by stride by followThis.stride;
+    if debugChapelRange then
+      writeln("r = ",r);
     for i in r {
       __primitive("noalias pragma");
       yield i;
@@ -539,11 +537,12 @@ proc range.length {
     compilerError("unbounded range has infinite length");
   if low > high then
     return 0:idxType;
+
   // This works because either high or low is aligned.
   const retVal = if stride > 0
                then (high - low) / stride:idxType + 1
                else (low - high) / stride:idxType + 1;
-  return if (retVal < 0) then 0 else retVal;
+  return if (retVal < 0) then 0:idxType else retVal;
 }
 
 
