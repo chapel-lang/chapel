@@ -82,7 +82,7 @@ a variable or constant without a specified type and without an initialization
 expression, then it declares a generic record type.  Generic record types are
 described in~\rsec{Generic_Types}.
 
-\subsection{Record Types}
+\subsubsection{Record Types}
 \label{Record_Types}
 \index{records!record types}
 
@@ -100,7 +100,7 @@ type.  Generic records must be instantiated to serve as a fully-specified
 type, for example to declare a variable.  This is done with
 type constructors, which are defined in Section~\ref{Type_Constructors}.
 
-\subsection{Record Fields}
+\subsubsection{Record Fields}
 \label{Record_Fields}
 \index{records!fields}
 \index{fields}
@@ -129,7 +129,7 @@ contained by a record of this type is exactly the same as that contained by
 the \chpl{Actor} class defined in the preceding chapter~\rsec{Class_Fields}.
 \end{example}
 
-\subsection{Record Methods}
+\subsubsection{Record Methods}
 \label{Record_Methods}
 \index{records!methods}
 
@@ -139,6 +139,88 @@ reference, so that persistent field updates are possible.
 
 The syntax for record method declarations is identical to that for class method
 declarations (\rsec{Class_Method_Declarations}).
+
+\subsubsection{Nested Record Types}
+\label{Nested_Record_Types}
+\index{records!nested}
+
+Record type declarations may be nested within other class, record and union
+declarations.  Methods defined in a nested record type may access fields
+declared in the containing aggregate type either implicitly, or explicitly by
+means of an \chpl{outer} reference.
+
+\subsection{Record Inheritance}
+\label{Record_Inheritance}
+\index{records!inheritance}
+\index{inheritance!records}
+
+A ``derived'' record type can inherit from other record types.  For each named
+base record type, inheritance effectively inserts all of its fields and methods
+into the new record type.  Inheriting from a class type is not permitted.
+
+Since record types are resolved statically, there is no type hierarchy implied
+by record inheritance.  It is merely a shorthand for including a list of fields
+in the record (or class) type being defined.  Record inheritance can be useful
+for grouping data common to several or class or record types.
+
+From the definition of record inheritance, it is apparent that a record of a
+derived type can be cast legally to any of its base record types.  But given
+their semantics, records can also be legally cast to types with which they have
+no inheritance relationship.  Thus, records do not induce a well-defined type
+hierarchy.
+
+\begin{example}
+\begin{chapelpre}
+% recordInheritance.chpl
+\end{chapelpre}
+\begin{chapel}
+record Center { var x, y: real; }
+record Circle : Center {
+  var radius: real;
+}
+record Ellipse : Center {
+  var major, minor: real;
+}
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+The record \chpl{Center} is defined and used as a shorthand in defining
+the \chpl{Circle} and \chpl{Ellipse} records.  The \chpl{Circle} record contains
+three \chpl{real} fields named \chpl{x}, \chpl{y} and \chpl{radius}.  The
+\chpl{Ellipse} record contains four \chpl{real} fields named \chpl{x}, \chpl{y},
+\chpl{major} and \chpl{minor}.
+\end{example}
+
+The syntax and semantics for accessing methods (including getter methods and
+hence fields) in a base
+record type is the same as for accessing fields in a base class (\rsec{Accessing_Base_Class_Fields}).
+
+\subsubsection{Shadowing Base Record Fields}
+\label{Shadowing_Base_Record_Fields}
+
+A field in the derived record can be declared with the same name as a
+field in a base record.  Such a field shadows the field in the base
+record, meaning that the field by the same name in the base record is not
+directly accessible.
+
+\begin{openissue}
+A syntax for accessing shadowed fields has not yet been specified.
+\end{openissue}
+
+\subsubsection{Overriding Base Record Methods}
+\label{Overriding_Base_Record_Methods}
+
+If a method in a derived record is declared with a signature identical to that
+of a method in a base record, then it is said to override the
+base record's method.  Since records do not support dynamic dispatch, method
+overriding is the same as method shadowing: When referenced via the derived
+record type, the derived type's version of the method is called; when referenced
+via the base record type, the base record type's version of the method is called.
+
+The identical signature requires that the names, types, and order of
+the formal arguments be identical. The return type of the overriding
+method must be the same as the return type of the base record's method,
+or must be a subrecord of the base record method's return type.
 
 \subsection{Record Variable Declarations}
 \label{Record_Variable_Declarations}
@@ -171,7 +253,7 @@ No additional storage for a record is allocated or reclaimed.
 Field data of one variable's record is not shared with data
 of another variable's record.
 
-\subsection{Record Assignment}
+\subsubsection{Record Assignment}
 \label{Record_Assignment}
 \index{records!assignment}
 
@@ -303,101 +385,7 @@ References can be used to reduce the length of dereference expression, and also
 improve performance -- especially if that expression is used repeatedly.
 \end{openissue}
 
-\subsection{Record Arguments}
-\label{Record_Arguments}
-\index{records!arguments}
-
-A function declared with an argument of record type expects that argument to be
-passed by value unless intents (\rsec{Intents}) are used.  The type of the
-actual argument must be compatible with the type of the formal argument, as if
-the former is being assigned to the latter.  Specifically, for each field $f$
-defined in the type of the formal argument, there must be a corresponding field
-in the actual argument which can be assigned to $f$.  If the actual argument
-type is derived from the formal argument type, this condition always holds.
-
-When a record as passed as a function argument, it is copied into
-the corresponding formal argument, consistent with the semantics described for
-record assignment (\rsec{Record_Assignment}).
-
-\begin{example}
-\begin{chapelpre}
-% paramPassing.chpl
-\end{chapelpre}
-\begin{chapel}
-record MyColor {
-  var color: int;
-}
-proc printMyColor(mc: MyColor) {
-  writeln("my color is ", mc.color);
-  mc.color = 6;   // does not affect the caller's record
-}
-var mc1: MyColor;        // 'color' defaults to 0
-var mc2: MyColor = mc1;  // mc1's value is copied into mc2
-mc1.color = 3;           // mc1's value is modified
-printMyColor(mc2);       // mc2 is not affected by assignment to mc1
-printMyColor(mc2);       // ... or by assignment in printMyColor()
-
-proc modifyMyColor(inout mc: MyColor, newcolor: int) {
-  mc.color = newcolor;
-}
-modifyMyColor(mc2, 7);   // mc2 is affected because of the 'inout' intent
-printMyColor(mc2);
-\end{chapel}
-\begin{chapeloutput}
-my color is 0
-my color is 0
-my color is 7
-\end{chapeloutput}
-The assignment to \chpl{mc1.color} affects only the record stored
-in \chpl{mc1}. The record in \chpl{mc2} is not affected by
-the assignment to \chpl{mc1} or by the assignment in \chpl{printMyColor}.
-\chpl{mc2} is affected by the assignment in \chpl{modifyMyColor}
-because the intent \chpl{inout} is used.
-\end{example}
-
-\subsection{Record Field Access}
-\label{Record_Field_Access}
-\index{member access!records}
-
-A record field is accessed via a member access expression
-(\rsec{Member_Access_Expressions}).  When such an expression is used as an
-rvalue, the value of that field is returned.  When such an expression is used as
-an lvalue, the value of the record field is updated.
-
-Member access expressions which access parameter fields can only appear in
-parameter expressions.
-
-\subsection{Record Method Access}
-\label{Record_Method_Access}
-\index{method access!records}
-
-A record method may be called as well, using member access syntax
-(\rsec{Member_Access_Expressions}).  Unlike class methods, record methods are
-bound at compile time.  
-
-\subsubsection{The \em{this} Reference}
-\label{The_this_Reference}
-\index{this@\chpl[this}
-
-When a record method is called, it is effectively passed a reference to the
-record with which it is invoked.  This allows the fields within the record to be
-updated within the body of a record method.  The record itself can be accessed
-using the \chpl{this} reference.
-
-\subsubsection{The \em{this} Method}
-\index{records!indexing}
-
-As with classes, records can be supplied with a \chpl{this} method.  This method
-defines the behavior of the indexing operator \chpl{[]}.
-
-\subsubsection{The {\em these} Method}
-\index{records!iterating}
-
-A \chpl{these} method can be defined for records as well as classes (\rsec{The_these_Method}).  It
-provides an iterator which iterates over the contents of the record in a
-user-defined manner.
-
-\subsection{Record Initialization}
+\subsubsection{Record Initialization}
 \label{Record_Initialization}
 \index{records!initialization}
 \index{initialization!records}
@@ -464,7 +452,71 @@ As with classes, the user can provide his own constructors
 (\rsec{User_Defined_Constructors}).  If any user-defined constructors are
 supplied, the default initializer cannot be called directly.  
 
-\subsection{Field Getter Methods}
+\subsection{Record Arguments}
+\label{Record_Arguments}
+\index{records!arguments}
+
+A function declared with an argument of record type expects that argument to be
+passed by value unless intents (\rsec{Intents}) are used.  The type of the
+actual argument must be compatible with the type of the formal argument, as if
+the former is being assigned to the latter.  Specifically, for each field $f$
+defined in the type of the formal argument, there must be a corresponding field
+in the actual argument which can be assigned to $f$.  If the actual argument
+type is derived from the formal argument type, this condition always holds.
+
+When a record as passed as a function argument, it is copied into
+the corresponding formal argument, consistent with the semantics described for
+record assignment (\rsec{Record_Assignment}).
+
+\begin{example}
+\begin{chapelpre}
+% paramPassing.chpl
+\end{chapelpre}
+\begin{chapel}
+record MyColor {
+  var color: int;
+}
+proc printMyColor(mc: MyColor) {
+  writeln("my color is ", mc.color);
+  mc.color = 6;   // does not affect the caller's record
+}
+var mc1: MyColor;        // 'color' defaults to 0
+var mc2: MyColor = mc1;  // mc1's value is copied into mc2
+mc1.color = 3;           // mc1's value is modified
+printMyColor(mc2);       // mc2 is not affected by assignment to mc1
+printMyColor(mc2);       // ... or by assignment in printMyColor()
+
+proc modifyMyColor(inout mc: MyColor, newcolor: int) {
+  mc.color = newcolor;
+}
+modifyMyColor(mc2, 7);   // mc2 is affected because of the 'inout' intent
+printMyColor(mc2);
+\end{chapel}
+\begin{chapeloutput}
+my color is 0
+my color is 0
+my color is 7
+\end{chapeloutput}
+The assignment to \chpl{mc1.color} affects only the record stored
+in \chpl{mc1}. The record in \chpl{mc2} is not affected by
+the assignment to \chpl{mc1} or by the assignment in \chpl{printMyColor}.
+\chpl{mc2} is affected by the assignment in \chpl{modifyMyColor}
+because the intent \chpl{inout} is used.
+\end{example}
+
+\subsection{Record Field Access}
+\label{Record_Field_Access}
+\index{member access!records}
+
+A record field is accessed via a member access expression
+(\rsec{Member_Access_Expressions}).  When such an expression is used as an
+rvalue, the value of that field is returned.  When such an expression is used as
+an lvalue, the value of the record field is updated.
+
+Member access expressions which access parameter fields can only appear in
+parameter expressions.
+
+\subsubsection{Field Getter Methods}
 \label{Field_Getter_Methods}
 \index{records!getters}
 
@@ -473,87 +525,35 @@ As in classes, field accesses are performed via getter methods
 the specified field (so they can be written as well as read).  The user may
 redefine these as needed.
 
-\subsection{Record Inheritance}
-\label{Record_Inheritance}
-\index{records!inheritance}
-\index{inheritance!records}
+\subsection{Record Method Access}
+\label{Record_Method_Access}
+\index{method access!records}
 
-A ``derived'' record type can inherit from other record types.  For each named
-base record type, inheritance effectively inserts all of its fields and methods
-into the new record type.  Inheriting from a class type is not permitted.
+A record method may be called as well, using member access syntax
+(\rsec{Member_Access_Expressions}).  Unlike class methods, record methods are
+bound at compile time.  
 
-Since record types are resolved statically, there is no type hierarchy implied
-by record inheritance.  It is merely a shorthand for including a list of fields
-in the record (or class) type being defined.  Record inheritance can be useful
-for grouping data common to several or class or record types.
+\subsubsection{The \em{this} Reference}
+\label{The_this_Reference}
+\index{this@\chpl[this}
 
-From the definition of record inheritance, it is apparent that a record of a
-derived type can be cast legally to any of its base record types.  But given
-their semantics, records can also be legally cast to types with which they have
-no inheritance relationship.  Thus, records do not induce a well-defined type
-hierarchy.
+When a record method is called, it is effectively passed a reference to the
+record with which it is invoked.  This allows the fields within the record to be
+updated within the body of a record method.  The record itself can be accessed
+using the \chpl{this} reference.
 
-\begin{example}
-\begin{chapelpre}
-% recordInheritance.chpl
-\end{chapelpre}
-\begin{chapel}
-record Center { var x, y: real; }
-record Circle : Center {
-  var radius: real;
-}
-record Ellipse : Center {
-  var major, minor: real;
-}
-\end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
-The record \chpl{Center} is defined and used as a shorthand in defining
-the \chpl{Circle} and \chpl{Ellipse} records.  The \chpl{Circle} record contains
-three \chpl{real} fields named \chpl{x}, \chpl{y} and \chpl{radius}.  The
-\chpl{Ellipse} record contains four \chpl{real} fields named \chpl{x}, \chpl{y},
-\chpl{major} and \chpl{minor}.
-\end{example}
+\subsubsection{The \em{this} Method}
+\index{records!indexing}
 
-The syntax and semantics for accessing methods (including getter methods and
-hence fields) in a base
-record type is the same as for accessing fields in a base class (\rsec{Accessing_Base_Class_Fields}).
+As with classes, records can be supplied with a \chpl{this} method.  This method
+defines the behavior of the indexing operator \chpl{[]}.
 
-\subsubsection{Shadowing Base Record Fields}
-\label{Shadowing_Base_Record_Fields}
+\subsubsection{The {\em these} Method}
+\index{records!iterating}
 
-A field in the derived record can be declared with the same name as a
-field in a base record.  Such a field shadows the field in the base
-record, meaning that the field by the same name in the base record is not
-directly accessible.
-
-\begin{openissue}
-A syntax for accessing shadowed fields has not yet been specified.
-\end{openissue}
-
-\subsubsection{Overriding Base Record Methods}
-\label{Overriding_Base_Record_Methods}
-
-If a method in a derived record is declared with a signature identical to that
-of a method in a base record, then it is said to override the
-base record's method.  Since records do not support dynamic dispatch, method
-overriding is the same as method shadowing: When referenced via the derived
-record type, the derived type's version of the method is called; when referenced
-via the base record type, the base record type's version of the method is called.
-
-The identical signature requires that the names, types, and order of
-the formal arguments be identical. The return type of the overriding
-method must be the same as the return type of the base record's method,
-or must be a subrecord of the base record method's return type.
-
-\subsection{Nested Record Types}
-\label{Nested_Record_Types}
-\index{records!nested}
-
-Record type declarations may be nested within other class, record and union
-declarations.  Methods defined in a nested record type may access fields
-declared in the containing aggregate type either implicitly, or explicitly by
-means of an \chpl{outer} reference.
+A \chpl{these} method can be defined for records as well as classes (\rsec{The_these_Method}).  It
+provides an iterator which iterates over the contents of the record in a
+user-defined manner.
 
 \subsection{Default Comparison Operators}
 \label{Record_Comparison_Operators}
