@@ -7,7 +7,7 @@
 #include "chpltypes.h"
 #include <comm_heap_macros.h>
 #include "chpltasks.h"
-#include <comm_nb_macros.h>
+#include <comm_task_decls.h>
 #include <chplcomm_plat_md.h>
 #include "chplcomm_locales.h"
 
@@ -38,7 +38,7 @@ extern void* const chpl_private_broadcast_table[];
 
 #define CHPL_WIDEN(wide, ref)                   \
   do {                                          \
-    (wide).locale = chpl_localeID;                  \
+    (wide).locale = chpl_localeID;              \
     (wide).addr = (ref);                        \
   } while (0)
 
@@ -86,7 +86,7 @@ extern void* const chpl_private_broadcast_table[];
 
 #define CHPL_WIDE_GET_PRIVATIZED_CLASS(wide, id)                        \
   do {                                                                  \
-    (wide).locale = chpl_localeID;                                          \
+    (wide).locale = chpl_localeID;                                      \
     (wide).addr = chpl_getPrivatizedClass(id);                          \
   } while (0)
 
@@ -102,18 +102,12 @@ extern void* const chpl_private_broadcast_table[];
 #define SPECIFY_STRING_SIZE(size) (size)
 #endif
 
-#define CHPL_COMM_BLOCKING_GET(local, wide, type, ln, fn)               \
-  do {                                                                  \
-      chpl_comm_get(&(local), (wide).locale, (wide).addr,               \
-                    SPECIFY_SIZE(type), ln, fn);                        \
-  } while (0)
-
 #ifdef CHPL_TASK_COMM_GET
-#define CHPL_COMM_GET(local, wide, type, ln, fn) \
-  CHPL_TASK_COMM_GET(local, wide, type, ln, fn)
+#define CHPL_COMM_GET(localvar, locale, addr, size, ln, fn)             \
+  CHPL_TASK_COMM_GET(localvar, locale, (addr), size, ln, fn)
 #else
-#define CHPL_COMM_GET(local, wide, type, ln, fn) \
-  CHPL_COMM_BLOCKING_GET(local, wide, type, ln, fn)
+#define CHPL_COMM_GET(localvar, locale, addr, size, ln, fn)             \
+  chpl_comm_get(&(localvar), locale, addr, size, ln, fn)
 #endif
 
 #define CHPL_COMM_WIDE_GET(local, wide, type, ln, fn)                   \
@@ -121,15 +115,16 @@ extern void* const chpl_private_broadcast_table[];
     if (chpl_localeID == (wide).locale)                                 \
       local = *(wide).addr;                                             \
     else                                                                \
-      CHPL_COMM_GET(local, wide, type, ln, fn);                         \
+      CHPL_COMM_GET(local, (wide).locale, (wide).addr,                  \
+                    SPECIFY_SIZE(type), ln, fn);                        \
   } while (0)
 
-#define CHPL_COMM_WIDE_GET_SVEC(local, wide, type, ln, fn)            \
+#define CHPL_COMM_WIDE_GET_SVEC(local, wide, type, ln, fn)              \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
-      CHPL_ASSIGN_SVEC(local, (*(wide).addr));                             \
+      CHPL_ASSIGN_SVEC(local, (*(wide).addr));                          \
     else                                                                \
-      chpl_comm_get(&(local), (wide).locale, (wide).addr,               \
+      CHPL_COMM_GET(local, (wide).locale, (wide).addr,                  \
                     SPECIFY_SIZE(type), ln, fn);                        \
   } while (0)
 
@@ -138,7 +133,7 @@ extern void* const chpl_private_broadcast_table[];
     if (chpl_localeID == (wide).locale)                                 \
       local = (wide).addr->locale;                                      \
     else                                                                \
-      chpl_comm_get(&(local), (wide).locale, (wide).addr,               \
+      CHPL_COMM_GET(local, (wide).locale, (wide).addr,                  \
                     SPECIFY_SIZE(int32_t), ln, fn);                     \
   } while (0)
 
@@ -152,10 +147,10 @@ extern void* const chpl_private_broadcast_table[];
                     (wide).addr, SPECIFY_SIZE(type), ln, fn);           \
   } while (0)
 
-#define CHPL_COMM_WIDE_PUT_SVEC(type, wide, local, ln, fn)            \
+#define CHPL_COMM_WIDE_PUT_SVEC(type, wide, local, ln, fn)              \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
-      CHPL_ASSIGN_SVEC(*(wide).addr, local);                               \
+      CHPL_ASSIGN_SVEC(*(wide).addr, local);                            \
     else                                                                \
       chpl_comm_put(&local, (wide).locale,                              \
                     (wide).addr, SPECIFY_SIZE(type), ln, fn);           \
@@ -170,8 +165,9 @@ extern void* const chpl_private_broadcast_table[];
     if (chpl_localeID == (wide).locale)                                 \
       memcpy(chpl_macro_tmp, (wide).addr, (wide).size);                 \
     else                                                                \
-      chpl_comm_get(chpl_macro_tmp, (wide).locale,                      \
-                    (void*)((wide).addr), SPECIFY_STRING_SIZE((wide).size), ln, fn); \
+      CHPL_COMM_GET(*chpl_macro_tmp, (wide).locale,                     \
+                    ((void*)(wide).addr),                               \
+                    SPECIFY_STRING_SIZE((wide).size), ln, fn);          \
     local = chpl_macro_tmp;                                             \
   } while (0)
 
@@ -192,7 +188,7 @@ extern void* const chpl_private_broadcast_table[];
     if (chpl_localeID == (wide).locale)                                 \
       local = ((stype)((wide).addr))->sfield;                           \
     else                                                                \
-      chpl_comm_get(&(local),                                           \
+      CHPL_COMM_GET(local,                                              \
                     (wide).locale,                                      \
                     &((stype)((wide).addr))->sfield,                    \
                     SPECIFY_SIZE(type), ln, fn);                        \
@@ -201,9 +197,9 @@ extern void* const chpl_private_broadcast_table[];
 #define CHPL_COMM_WIDE_GET_FIELD_VALUE_SVEC(local, wide, stype, sfield, type, ln, fn) \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
-      CHPL_ASSIGN_SVEC(local, ((stype)((wide).addr))->sfield);             \
+      CHPL_ASSIGN_SVEC(local, ((stype)((wide).addr))->sfield);          \
     else                                                                \
-      chpl_comm_get(&(local),                                           \
+      CHPL_COMM_GET(local,                                              \
                     (wide).locale,                                      \
                     &((stype)((wide).addr))->sfield,                    \
                     SPECIFY_SIZE(type), ln, fn);                        \
@@ -214,7 +210,7 @@ extern void* const chpl_private_broadcast_table[];
     if (chpl_localeID == (wide).locale)                                 \
       local = (*(wide).addr)[index];                                    \
     else                                                                \
-      chpl_comm_get(&(local),                                           \
+      CHPL_COMM_GET(local,                                              \
                     (wide).locale,                                      \
                     &(*(wide).addr)[index],                             \
                     SPECIFY_SIZE(type), ln, fn);                        \
@@ -223,9 +219,9 @@ extern void* const chpl_private_broadcast_table[];
 #define CHPL_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE_SVEC(local, wide, index, type, ln, fn) \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
-      CHPL_ASSIGN_SVEC(local, (*(wide).addr)[index]);                      \
+      CHPL_ASSIGN_SVEC(local, (*(wide).addr)[index]);                   \
     else                                                                \
-      chpl_comm_get(&(local),                                           \
+      CHPL_COMM_GET(local,                                              \
                     (wide).locale,                                      \
                     &(*(wide).addr)[index],                             \
                     SPECIFY_SIZE(type), ln, fn);                        \
@@ -246,7 +242,7 @@ extern void* const chpl_private_broadcast_table[];
 #define CHPL_COMM_WIDE_SET_FIELD_VALUE_SVEC(type, wide, local, stype, sfield, ln, fn) \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
-      CHPL_ASSIGN_SVEC(((stype)((wide).addr))->sfield, local);             \
+      CHPL_ASSIGN_SVEC(((stype)((wide).addr))->sfield, local);          \
     else                                                                \
       chpl_comm_put(&local,                                             \
                     (wide).locale,                                      \
@@ -269,7 +265,7 @@ extern void* const chpl_private_broadcast_table[];
 #define CHPL_COMM_WIDE_SET_TUPLE_COMPONENT_VALUE_SVEC(type, wide, local, stype, index, ln, fn) \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
-      CHPL_ASSIGN_SVEC((*(wide).addr)[index], local);                      \
+      CHPL_ASSIGN_SVEC((*(wide).addr)[index], local);                   \
     else                                                                \
       chpl_comm_put(&local,                                             \
                     (wide).locale,                                      \
@@ -295,7 +291,7 @@ extern void* const chpl_private_broadcast_table[];
   do {                                                                  \
     wide_type chpl_macro_tmp;                                           \
     CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype, sfield, etype, ln, fn); \
-    CHPL_COMM_WIDE_GET(local, chpl_macro_tmp, etype2, ln, fn);           \
+    CHPL_COMM_WIDE_GET(local, chpl_macro_tmp, etype2, ln, fn);          \
   } while (0)
 
 #define CHPL_COMM_WIDE_ARRAY_SET_VALUE(wide_type, cls, ind, stype, sfield, etype, val, ln, fn) \
@@ -309,7 +305,7 @@ extern void* const chpl_private_broadcast_table[];
   do {                                                                  \
     wide_type chpl_macro_tmp;                                           \
     CHPL_COMM_WIDE_ARRAY_GET_SVEC(chpl_macro_tmp, cls, ind, stype, sfield, etype, ln, fn); \
-    CHPL_COMM_WIDE_PUT_SVEC(etype, chpl_macro_tmp, val, ln, fn);      \
+    CHPL_COMM_WIDE_PUT_SVEC(etype, chpl_macro_tmp, val, ln, fn);        \
   } while (0)
 
 #define CHPL_COMM_WIDE_CLASS_GET_CID(local, wide, stype, ln, fn)        \
@@ -321,7 +317,7 @@ extern void* const chpl_private_broadcast_table[];
     (local).addr = (type)((wide).addr);                                 \
   } while (0)
 
-#define CHPL_COMM_WIDE_CLASS_TEST_CID(local, wide, cid, stype, ln, fn)   \
+#define CHPL_COMM_WIDE_CLASS_TEST_CID(local, wide, cid, stype, ln, fn)  \
   do {                                                                  \
     chpl__class_id chpl_macro_tmp;                                      \
     CHPL_COMM_WIDE_GET_FIELD_VALUE(chpl_macro_tmp, wide,                \
@@ -338,7 +334,7 @@ extern void* const chpl_private_broadcast_table[];
 #define CHPL_HEAP_REGISTER_GLOBAL_VAR(i, wide)            \
   do {                                                    \
     (wide).locale = 0;                                    \
-    chpl_globals_registry[i] = (&((wide).addr));   \
+    chpl_globals_registry[i] = (&((wide).addr));          \
     CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, wide)          \
   } while (0)
 
@@ -352,10 +348,10 @@ extern void* const chpl_private_broadcast_table[];
 
 #define CHPL_COMM_BROADCAST_GLOBAL_VARS(numGlobals)             \
   do {                                                          \
-    chpl_comm_barrier("barrier before broadcasting globals");  \
-    chpl_comm_broadcast_global_vars(numGlobals);               \
-    CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals);         \
-    chpl_comm_barrier("barrier after broadcasting globals");   \
+    chpl_comm_barrier("barrier before broadcasting globals");   \
+    chpl_comm_broadcast_global_vars(numGlobals);                \
+    CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals);          \
+    chpl_comm_barrier("barrier after broadcasting globals");    \
   } while (0)
 
 //

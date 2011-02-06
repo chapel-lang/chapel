@@ -25,11 +25,4 @@ typedef struct {
   threadlayer_condvar_t signal_empty; // wait for empty; signal this when empty
 } threadlayer_sync_aux_t;
 
-
-// Single variables
-
-typedef struct {
-  threadlayer_condvar_t signal_full;  // wait for full; signal this when full
-} threadlayer_single_aux_t;
-
 #endif // _threads_pthreads_h_

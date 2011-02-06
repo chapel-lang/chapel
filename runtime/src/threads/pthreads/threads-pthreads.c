@@ -144,36 +144,6 @@ void threadlayer_sync_init(chpl_sync_aux_t *s) {
 
 void threadlayer_sync_destroy(chpl_sync_aux_t *s) { }
 
-// Single variable callbacks for the FIFO tasking layer
-
-chpl_bool threadlayer_single_suspend(chpl_single_aux_t *s,
-                                     struct timeval *deadline) {
-  if (deadline == NULL) {
-    (void) pthread_cond_wait(&s->tl_aux.signal_full,
-                             (pthread_mutex_t*) &s->lock);
-    return false;
-  }
-  else {
-    struct timespec ts;
-    ts.tv_sec  = deadline->tv_sec;
-    ts.tv_nsec = deadline->tv_usec * 1000UL;
-    return (pthread_cond_timedwait(&s->tl_aux.signal_full,
-                                   (pthread_mutex_t*) &s->lock, &ts)
-            == ETIMEDOUT);
-  }
-}
-
-void threadlayer_single_awaken(chpl_single_aux_t *s) {
-  if (pthread_cond_signal(&s->tl_aux.signal_full))
-    chpl_internal_error("pthread_cond_signal() failed");
-}
-
-void threadlayer_single_init(chpl_single_aux_t *s) {
-  threadlayer_condvar_init(&s->tl_aux.signal_full);
-}
-
-void threadlayer_single_destroy(chpl_single_aux_t *s) { }
-
 
 // Thread callbacks for the FIFO tasking layer
 
@@ -216,7 +186,6 @@ void threadlayer_init(uint64_t callStackSize) {
 
     if (pthread_attr_setstacksize(&thread_attributes, callStackSize) != 0)
       chpl_internal_error("pthread_attr_setstacksize() failed");
-
   }
   threadCallStackSize = callStackSize;
 
