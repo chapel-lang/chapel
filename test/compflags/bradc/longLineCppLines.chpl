@@ -11,7 +11,7 @@ const A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y,
 
 config const verbose = false;
 
-def foo(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15,
+proc foo(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15,
         X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26) {
   if (verbose) {
     writeln("X1 is: ", X1);
