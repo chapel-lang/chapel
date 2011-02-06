@@ -2,15 +2,15 @@ type chpl_clock_t = int(32);
 
 config const printTimings = true;
 
-_extern def clock(): chpl_clock_t;
-_extern def get_CLOCKS_PER_SEC(): chpl_clock_t;
+_extern proc clock(): chpl_clock_t;
+_extern proc get_CLOCKS_PER_SEC(): chpl_clock_t;
 
 use Time;  // to get sleep() function
 
 config const numSpins = 1000000;
 const chpl_CLOCKS_PER_SEC = get_CLOCKS_PER_SEC();
 
-def main() {
+proc main() {
   var start, finish: chpl_clock_t;
 
   writeln("About to spin ", numSpins, " times...");

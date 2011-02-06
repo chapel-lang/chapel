@@ -1,8 +1,8 @@
-_extern def fopen(name: string, mode: string): _file;
-_extern def fread(inout data, size: int, n: int, f: _file): int;
-_extern def fwrite(inout data, size: int, n: int, f: _file): int;
-_extern def fclose(f: _file);
-_extern def sizeof(x): int;
+_extern proc fopen(name: string, mode: string): _file;
+_extern proc fread(inout data, size: int, n: int, f: _file): int;
+_extern proc fwrite(inout data, size: int, n: int, f: _file): int;
+_extern proc fclose(f: _file);
+_extern proc sizeof(x): int;
 
 var i = 1, j = 2.0;
 
