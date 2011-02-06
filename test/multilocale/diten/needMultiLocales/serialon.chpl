@@ -7,6 +7,6 @@ serial true {
 
 foo(n);
 
-def foo(n: int) {
+proc foo(n: int) {
   var a = n;
 }

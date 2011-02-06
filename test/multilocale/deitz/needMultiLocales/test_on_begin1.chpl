@@ -2,7 +2,7 @@ use Time;
 
 var i$: sync int;
 
-def foo() {
+proc foo() {
   var x: int = 2;
   on Locales(1) {
     begin {

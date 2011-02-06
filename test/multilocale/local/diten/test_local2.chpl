@@ -1,4 +1,4 @@
-def main() {
+proc main() {
   var x, y, z: int;
   on Locales(1) {
     x = 1;

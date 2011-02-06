@@ -4,7 +4,7 @@ record R {
   var x3: int;
 }
 
-def main {
+proc main {
   var r: R;
   r.x1 = 17;
   r.x2 = 19;

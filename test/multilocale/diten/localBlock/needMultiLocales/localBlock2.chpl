@@ -3,7 +3,7 @@ class C {
   var b: real;
 }
 
-def main {
+proc main {
   var c = new C(1, 1.0);
 
   on Locales(1) {

@@ -1,6 +1,6 @@
 use Time;
 
-def main {
+proc main {
   var s1, s2: sync bool;
   on Locales(1) {
     begin {

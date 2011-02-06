@@ -1,4 +1,4 @@
-def ii() {
+iter ii() {
   for i in 1..10 {
     local {
       yield i;

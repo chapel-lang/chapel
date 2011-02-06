@@ -1,4 +1,4 @@
-def main {
+proc main {
   var s, t: sync int;
   var x, y: int;
   begin {

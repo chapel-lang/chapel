@@ -1,4 +1,4 @@
-def main {
+proc main {
   var x: int;
   coforall i in 0..numLocales-1 {
     var y: int;

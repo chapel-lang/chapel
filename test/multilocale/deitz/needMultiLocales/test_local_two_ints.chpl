@@ -1,4 +1,4 @@
-def main {
+proc main {
   var x: int = 17;
   var y: int = 23;
   _debugWriteln(here.id, " x=", x);
