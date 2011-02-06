@@ -1,9 +1,9 @@
-def f(e) {
+proc f(e) {
   var a = e;
   return a;
 }
 
-def f(type t) {
+proc f(type t) {
   var a: t;
   for (aa,i) in (a,1..) do
     aa = i;

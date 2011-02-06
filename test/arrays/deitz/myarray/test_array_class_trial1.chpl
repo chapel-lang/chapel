@@ -3,7 +3,7 @@ class array1d {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  def this(i : int) var : t {
+  proc this(i : int) var : t {
     if setter then
       writeln("Write on ", i);
     else

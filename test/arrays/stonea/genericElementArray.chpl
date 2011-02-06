@@ -1,4 +1,4 @@
-def output(A : [1..10] numeric) {
+proc output(A : [1..10] numeric) {
     writeln(A);
 }
 

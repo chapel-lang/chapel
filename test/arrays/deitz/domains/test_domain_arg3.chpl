@@ -1,4 +1,4 @@
-def foo(d: domain) {
+proc foo(d: domain) {
   var a: [d] real;
   writeln(a);
 }

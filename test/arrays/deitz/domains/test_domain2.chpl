@@ -10,7 +10,7 @@ class mydomain {
   var info0 : mydomain_info;
   var info1 : mydomain_info;
   var info2 : mydomain_info;
-  def dimInit(d : int, low, high, stride) {
+  proc dimInit(d : int, low, high, stride) {
     select d {
       when 1 {
         info0.low = low;
@@ -35,7 +35,7 @@ class mydomain {
       }
     }
   }
-  def dforall(d : int) : int {
+  iter dforall(d : int) : int {
     var low : int;
     select d {
       when 1 do low = info0.low;
@@ -52,7 +52,7 @@ class mydomain {
       yield i;
     }
   }
-  def dfor(d : int) : int {
+  iter dfor(d : int) : int {
     var low : int;
     select d {
       when 1 do low = info0.low;

@@ -6,7 +6,7 @@ class C {
 }
 class D {
   var aa : int;
-  def a(i : int) var { return aa; }
+  proc a(i : int) var { return aa; }
 }
 class E {
   var a : arr;

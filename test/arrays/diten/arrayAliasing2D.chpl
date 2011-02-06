@@ -5,7 +5,7 @@ var A: [notAliasDom] int;
 
 reset(A);
 
-def reset(A: [] int) {
+proc reset(A: [] int) {
   for (i, j) in A.domain {
     A(i,j) = i*10 + j;
   }

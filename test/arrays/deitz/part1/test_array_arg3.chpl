@@ -1,4 +1,4 @@
-def foo(A: [?D] int) {
+proc foo(A: [?D] int) {
   for i in D do
     writeln(A(i));
 }

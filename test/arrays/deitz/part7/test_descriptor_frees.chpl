@@ -5,7 +5,7 @@ config const serially = true;
 var D: domain(1) = [1..10];
 var A: [D] real;
 
-def foo() {
+proc foo() {
   for i in D do
     A(1..i) = i..;
 }

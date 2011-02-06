@@ -1,4 +1,4 @@
-def foo(type t) {
+proc foo(type t) {
   writeln(typeToString(t));
   var X: t;
   writeln(X);

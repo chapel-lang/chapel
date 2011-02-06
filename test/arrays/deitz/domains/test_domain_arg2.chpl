@@ -1,8 +1,8 @@
-def foo(d: domain(int)) {
+proc foo(d: domain(int)) {
   writeln("indefinite domain of int = ", d);
 }
 
-def foo(d: domain(2)) {
+proc foo(d: domain(2)) {
   writeln("2D arithmetic domain = ", d);
 }
 

@@ -1,4 +1,4 @@
-def foo(n: int): [1..n] int {
+proc foo(n: int): [1..n] int {
   var A: [1..n] int = 1..n;
   return A;
 }

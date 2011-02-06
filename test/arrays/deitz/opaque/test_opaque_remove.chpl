@@ -1,4 +1,4 @@
-def main(){
+proc main(){
   var Dom : domain(opaque);
   var Idx = Dom.create();
   var A: [Dom] int;

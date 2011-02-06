@@ -1,5 +1,5 @@
 class C {
-  def foo(i : int, j : int)
+  proc foo(i : int, j : int)
     return i**2 + j**2;
 }
 
