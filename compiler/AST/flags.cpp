@@ -67,6 +67,8 @@ viewFlags(BaseAST* ast) {
         printf("\n");
       }
     }
+  } else {
+    printf("[%d]: not a Symbol, has no flags\n", ast->id);
   }
 }
 
@@ -96,12 +98,12 @@ bool hasFlag(BaseAST* ast, int flag) {
 }
 
 void addFlag(BaseAST* ast, int flag) {
-  Symbol* sym = symflagOK("hasFlag", ast, flag);
+  Symbol* sym = symflagOK("addFlag", ast, flag);
   if (sym) sym->addFlag((Flag)flag);
 }
 
 void removeFlag(BaseAST* ast, int flag) {
-  Symbol* sym = symflagOK("hasFlag", ast, flag);
+  Symbol* sym = symflagOK("removeFlag", ast, flag);
   if (sym) sym->removeFlag((Flag)flag);
 }
 

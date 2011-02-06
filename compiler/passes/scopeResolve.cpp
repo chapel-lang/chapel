@@ -3,6 +3,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "passes.h"
+#include "scopeResolve.h"
 #include "stringutil.h"
 #include "symbol.h"
 
@@ -175,80 +176,6 @@ buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
   if (next.n) {
     buildBreadthFirstModuleList(modules, &next, alreadySeen);
   }
-}
-
-
-//
-// returns true iff module 'mod' is used so that its symbols are
-// visible in this 'scope'
-//
-static bool
-verifyModuleUsed(ModuleSymbol* module, BaseAST* scope,
-                 Vec<BaseAST*>* alreadyVisited = NULL,
-                 bool scanModuleUses = true) {
-  Vec<BaseAST*> nestedscopes;
-  if (!alreadyVisited) {
-    return verifyModuleUsed(module, scope, &nestedscopes, scanModuleUses);
-  }
-  if (!scanModuleUses) {
-    nestedscopes.copy(*alreadyVisited);
-    alreadyVisited = &nestedscopes;
-  }
-
-  if (alreadyVisited->set_in(scope))
-    return false;
-
-  alreadyVisited->set_add(scope);
-
-  if (scanModuleUses) {
-    if (BlockStmt* block = toBlockStmt(scope)) {
-      if (block->modUses) {
-        Vec<ModuleSymbol*>* modules = moduleUsesCache.get(block); 
-        if (!modules) {
-          modules = new Vec<ModuleSymbol*>();
-          for_actuals(expr, block->modUses) {
-            SymExpr* se = toSymExpr(expr);
-            INT_ASSERT(se);
-            ModuleSymbol* mod = toModuleSymbol(se->var);
-            INT_ASSERT(mod);
-            modules->add(mod);
-          }
-          INT_ASSERT(modules->n);
-          buildBreadthFirstModuleList(modules);
-          if (enableModuleUsesCache)
-            moduleUsesCache.put(block, modules);
-        }
-        INT_ASSERT(modules);
-        forv_Vec(ModuleSymbol, mod, *modules) {
-          if (mod == module) {
-            return true;
-          } else if (mod) {
-            if (mod != rootModule) {
-              if (verifyModuleUsed(module, mod->initFn->body, alreadyVisited, false))
-                return true;
-            } else {
-              if (verifyModuleUsed(module, mod->block, alreadyVisited, false))
-                return true;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  if (scanModuleUses) {
-    if (scope->getModule()->block == scope) {
-      ModuleSymbol* mod = scope->getModule();
-      if (mod == module)
-        return true;
-    }
-    if (getScope(scope)) {
-      if (verifyModuleUsed(module, getScope(scope), alreadyVisited, scanModuleUses))
-        return true;
-    }
-  }
-
-  return false;
 }
 
 
@@ -694,7 +621,7 @@ void build_constructor(ClassType* ct) {
     meme->addFlag(FLAG_IS_MEME);
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, meme));
     if (isClass(ct)) {
-      if (ct->dispatchParents.n > 0) {
+      if (ct->dispatchParents.n > 0 && !ct->symbol->hasFlag(FLAG_EXTERN)) {
         if (!ct->dispatchParents.v[0]->defaultConstructor) {
           build_type_constructor(toClassType(ct->dispatchParents.v[0]));
           build_constructor(toClassType(ct->dispatchParents.v[0]));
@@ -1277,10 +1204,12 @@ void scopeResolve(void) {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isNamed(".")) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
-          if (!verifyModuleUsed(mod, call))
-            USR_FATAL_CONT(call, "module '%s' must be used before accessing its symbols",
-                           mod->name);
+        if (ModuleSymbol* mod = toModuleSymbol(se->var)) { 
+          ModuleSymbol* enclosingModule = call->getModule();
+          if (!enclosingModule->modUseSet.set_in(mod)) {
+            enclosingModule->modUseSet.set_add(mod);
+            enclosingModule->modUseList.add(mod);
+          }
           SET_LINENO(call);
           SymbolTableEntry* entry = symbolTable.get(mod->initFn->body);
           Symbol* sym = (entry) ? entry->get(get_string(call->get(2))) : 0;

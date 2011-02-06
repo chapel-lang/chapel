@@ -74,6 +74,13 @@ foreach_ast(decl_gvecs);
 typedef Map<Symbol*,Symbol*> SymbolMap;
 typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
 
+// get the current AST node id
+extern int lastNodeIDUsed();
+
+// mark all FnSymbols created after the parser with FLAG_PROC_ITER_KW_USED
+// ProcIter: remove this
+extern bool markNewFnSymbolsWithProcIter;
+
 //
 // enumerated type of all AST node types (and superclass types)
 //

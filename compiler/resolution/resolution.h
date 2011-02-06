@@ -33,4 +33,7 @@ FnSymbol* orderWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* inf
 FnSymbol* coercionWrap(FnSymbol* fn, CallInfo* info);
 FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 
+FnSymbol* getAutoCopy(Type* t);
+FnSymbol* getAutoDestroy(Type* t);
+
 #endif

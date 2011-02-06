@@ -10,33 +10,49 @@
 static void
 check_functions(FnSymbol* fn) {
   if (!strcmp(fn->name, "this") && fn->hasFlag(FLAG_NO_PARENS))
-    USR_FATAL(fn, "method 'this' must have parentheses");
+    USR_FATAL_CONT(fn, "method 'this' must have parentheses");
 
   if (!strcmp(fn->name, "these") && fn->hasFlag(FLAG_NO_PARENS))
-    USR_FATAL(fn, "method 'these' must have parentheses");
+    USR_FATAL_CONT(fn, "method 'these' must have parentheses");
 
-  Vec<CallExpr*> rets;
   Vec<CallExpr*> calls;
-  collectCallExprs(fn, calls);
+  collectMyCallExprs(fn, calls, fn);
+  bool isIterator = fn->hasFlag(FLAG_ITERATOR_FN);
+  bool isProc = fn->hasFlag(FLAG_PROC_ITER_KW_USED) && !isIterator;  // ProcIter: replace isProc with !isIterator
+  INT_ASSERT(!isIterator || fn->hasFlag(FLAG_PROC_ITER_KW_USED));  // ProcIter: remove
+  bool notInAFunction = !isIterator && (fn->getModule()->initFn == fn);
+  int numVoidReturns = 0, numNonVoidReturns = 0, numYields = 0;
+
   forv_Vec(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_RETURN) && call->parentSymbol == fn)
-      rets.add(call);
-  }
-  if (rets.n == 0)
-    return;
-  bool returns_void = false;
-  forv_Vec(CallExpr, ret, rets) {
-    if (SymExpr* sym = toSymExpr(ret->get(1)))
-      if (sym->var == gVoid)
-        returns_void = true;
-  }
-  forv_Vec(CallExpr, ret, rets) {
-    if (fn->getModule()->initFn == fn) {
-      USR_FATAL(ret, "return statement is not in a function");
-    } else if (returns_void && ret->typeInfo() != dtVoid) {
-      USR_FATAL(fn, "Not all function returns return a value");
+    if (call->isPrimitive(PRIM_RETURN)) {
+      if (notInAFunction)
+        USR_FATAL_CONT(call, "return statement is not in a function or iterator");
+      else {
+        SymExpr* sym = toSymExpr(call->get(1));
+        if (sym && sym->var == gVoid)
+          numVoidReturns++;
+        else {
+          if (isIterator)
+            USR_FATAL_CONT(call, "returning a value in an iterator");
+          else
+            numNonVoidReturns++;
+        }
+      }
+    }
+    else if (call->isPrimitive(PRIM_YIELD)) {
+      if (notInAFunction)
+        USR_FATAL_CONT(call, "yield statement is outside an iterator");
+      else if (isProc)
+        USR_FATAL_CONT(call, "yield statement is in a non-iterator function");
+      else
+        numYields++;
     }
   }
+
+  if (numVoidReturns != 0 && numNonVoidReturns != 0)
+    USR_FATAL_CONT(fn, "Not all returns in this function return a value");
+  if (isIterator && numYields == 0)
+    USR_FATAL_CONT(fn, "iterator does not yield a value");
 }
 
 
@@ -46,7 +62,7 @@ check_parsed_vars(VarSymbol* var) {
     if (!var->defPoint->init &&
         (toFnSymbol(var->defPoint->parentSymbol) ||
          toModuleSymbol(var->defPoint->parentSymbol)))
-      USR_FATAL(var, "Top-level params must be initialized.");
+      USR_FATAL_CONT(var, "Top-level params must be initialized.");
   if (var->hasFlag(FLAG_CONFIG) &&
       var->defPoint->parentSymbol != var->getModule()->initFn) {
     const char *varType = NULL;
@@ -57,7 +73,7 @@ check_parsed_vars(VarSymbol* var) {
     else
       varType = "variables";
     USR_FATAL_CONT(var->defPoint,
-                   "Configuration %s only allowed at module scope.", varType);
+                   "Configuration %s are allowed only at module scope.", varType);
   }
 }
 
@@ -69,7 +85,7 @@ check_named_arguments(CallExpr* call) {
     if (NamedExpr* named = toNamedExpr(expr)) {
       forv_Vec(const char, name, names) {
         if (!strcmp(name, named->name))
-          USR_FATAL(named, "The named argument '%s' is used more "
+          USR_FATAL_CONT(named, "The named argument '%s' is used more "
                     "than once in the same function call.", name);
       }
       names.add(named->name);
@@ -102,6 +118,7 @@ checkParsed(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     check_functions(fn);
   }
+  markNewFnSymbolsWithProcIter = true; // ProcIter: remove
 }
 
 
@@ -114,23 +131,30 @@ checkNormalized(void) {
             formal->intent == INTENT_INOUT ||
             formal->intent == INTENT_OUT ||
             formal->intent == INTENT_REF) {
-          USR_FATAL(formal, "formal argument of iterator cannot have intent");
+          USR_FATAL_CONT(formal, "formal argument of iterator cannot have intent");
         }
       }
       if (fn->retTag == RET_TYPE)
-        USR_FATAL(fn, "iterators may not yield or return types");
+        USR_FATAL_CONT(fn, "iterators may not yield or return types");
       if (fn->retTag == RET_PARAM)
-        USR_FATAL(fn, "iterators may not yield or return parameters");
+        USR_FATAL_CONT(fn, "iterators may not yield or return parameters");
     } else if (fn->hasFlag(FLAG_CONSTRUCTOR) &&
                !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+      if (fn->retExprType)
+        USR_FATAL_CONT(fn, "constructors may not declare a return type");
       for_formals(formal, fn) {
         Vec<SymExpr*> symExprs;
         collectSymExprs(formal, symExprs);
         forv_Vec(SymExpr, se, symExprs) {
-          if (se->var == fn->_this)
-            USR_FATAL(se, "invalid access of class member in constructor header");
+          if (se->var == fn->_this) {
+            USR_FATAL_CONT(se, "invalid access of class member in constructor header");
+            break;
+          }
         }
       }
+    } else if (fn->hasFlag(FLAG_DESTRUCTOR)) {
+      if (fn->retExprType)
+        USR_FATAL_CONT(fn, "destructors may not declare a return type");
     }
   }
 }
@@ -206,7 +230,7 @@ checkResolved(void) {
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->hasFlag(FLAG_ITERATOR_FN) &&
         fn->retType->defaultConstructor->defPoint->parentSymbol == fn)
-      USR_FATAL(fn, "functions cannot return nested iterators or loop expressions");
+      USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
   }
 
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
@@ -216,7 +240,7 @@ checkResolved(void) {
           SymExpr* sym = toSymExpr(def->init);
           if (!sym || (!sym->var->hasFlag(FLAG_PARAM) &&
                        !toVarSymbol(sym->var)->immediate))
-            USR_FATAL(def, "enumerator '%s' is not an int parameter", def->sym->name);
+            USR_FATAL_CONT(def, "enumerator '%s' is not an int parameter", def->sym->name);
         }
       }
     }
