@@ -33,28 +33,30 @@ statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 \index{conversions!numeric}
 \index{conversions!bool}
 
-The implicit numeric conversions are as follows:
-\begin{itemize}
-\item From \chpl{bool} to \chpl{bool(k)}, \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(8)}, \chpl{uint(16)}, \chpl{uint(32)}, or \chpl{uint(64)} for any legal value of $k$
-\item From \chpl{bool(j)} to \chpl{bool}, \chpl{bool(k)}, \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(8)}, \chpl{uint(16)}, \chpl{uint(32)}, or \chpl{uint(64)}, for any legal values of $j$ and $k$
-\item From \chpl{int(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{real(64)}, or \chpl{complex(128)}
-\item From \chpl{int(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{real(64)}, or \chpl{complex(128)}
-\item From \chpl{int(32)} to \chpl{int(64)}, \chpl{real(64)}, or \chpl{complex(128)}
-\item From \chpl{int(64)} to \chpl{real(64)}, or \chpl{complex(128)}
-\item From \chpl{uint(8)} to \chpl{int(16)}, \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(16)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(64)}, or \chpl{complex(128)}
-\item From \chpl{uint(16)} to \chpl{int(32)}, \chpl{int(64)}, \chpl{uint(32)}, \chpl{uint(64)}, \chpl{real(64)}, or \chpl{complex(128)}
-\item From \chpl{uint(32)} to \chpl{int(64)}, \chpl{uint(64)}, \chpl{real(64)}, or \chpl{complex(128)}
-\item From \chpl{uint(64)} to \chpl{real(64)}, or \chpl{complex(128)}
-\item From \chpl{real(32)} to \chpl{real(64)}, \chpl{complex(64)}, or \chpl{complex(128)}
-\item From \chpl{real(64)} to \chpl{complex(128)}
-\item From \chpl{imag(32)} to \chpl{imag(64)}, \chpl{complex(64)}, or \chpl{complex(128)}
-\item From \chpl{imag(64)} to \chpl{complex(128)}
-\item From \chpl{complex(64)} to \chpl{complex(128)}
-\end{itemize}
+Implicit conversions among fundamental numeric types are always allowed, so long as all
+values that can be represented in the source type can also be represented in the
+target type without loss of precision.
+When the implicit conversion is from an integral to a real type, source
+types are converted to type \chpl{int} before determining if the
+conversion is valid.
 
-The implicit numeric conversions do not result in any loss of
-information except for the conversions from \chpl{int(64)}
-or \chpl{uint(64)} to \chpl{real(64)} or \chpl{complex(128)}.
+In addition, implicit conversions from
+types \chpl{int(64)} and \chpl{uint(64)} to types \chpl{real(64)}
+and \chpl{complex(128)} are allowed, even though they may result in a loss of
+precision.
+
+%REVIEW: hilde
+% Unless we are supporting some legacy behavior, I would recommend removing this
+% provision.  A loss of precision is a loss of precision, so I would favor
+% consistent behavior that does not lead to surprising results.  EVERY ``if''
+% costs money: which is to say that if a behavior can be described simply, it can
+% be implemented simply.
+% A general description like the one above makes the spec comprehensive.  It
+% will continue to be correct, even if additional types are added later -- while
+% stating each permissible conversion explicitly is not only verbose, it is a
+% path to the spec's obsolescence.
+% The ``In addition'' clause above is inconsistent with the section on
+% Explicit conversions, below.  One or the other should be fixed.
 
 \begin{rationale}
 In C\#, implicit conversions from \chpl{int(32)} or \chpl{int(64)}
@@ -71,7 +73,32 @@ call the \chpl{real(32)} version.
 Additionally, we don't allow implicit conversions from \chpl{int(8)}
 or \chpl{int(16)} to \chpl{real(32)} because to do so would result in
 an ambiguity when computing, e.g., \chpl{int(8) + int(8)}.
+%NOTE:
+%Both of these restrictions proceed naturally from the above, since conversion
+%of an int(8) or int(16) to any real type involves first converting to int
+%(which is int(32) by default), whereby the first legal implicit conversion to
+%real is real(64).  Implicit conversions cannot imply a loss of precision, so
+%there is no implicit conversion path to real(32).
 \end{rationale}
+
+Implicit numeric conversions may thus be tabulated as follows:
+\begin{center}
+\begin{tabular}{l|llllll|}
+\cline{2-7}
+& \multicolumn{6}{c|}{Target Type} \\
+Source Type & bool($j$) & int($j$) & uint($j$) & real($j$) & imag($j$) & complex($j$) \\ \cline{2-7}
+bool($i$) & all $i,j$ & all $i,j>=2$ & all $i,j$ & all $i,j$ & all $i,j$ & all $i,j$ \\
+int($i$) & & $i<=j$ & $i<j$ & $i<=mant(j)$ & & $i<=mant(j)$ \\
+uint($i$) & & $i<j$ & $i<=j$ & $i<smant(j)$ & & $i<mant(j)$ \\
+real($i$) & & $mant(i)<=j$ & $mant(i)<j$ & $i<=j$ & & $2i<=j$ \\
+imag($i$) & & & & & $i<=j$ & $2i<=j$ \\
+complex($i$) & & & & & & $i<=j$ \\ \cline{2-7}
+\end{tabular}
+\end{center}
+, where $mant(i)$ represents the effective number of bits in the signed mantissa
+of the corresponding floating-point type.  In this table the
+default \chpl{int}, \chpl{uint} and \chpl{real} types map to their corresponding
+explicitly-sized types.
 
 \subsubsection{Implicit Enumeration Conversions}
 \label{Implicit_Enumeration_Conversions}
@@ -80,6 +107,10 @@ an ambiguity when computing, e.g., \chpl{int(8) + int(8)}.
 An expression that is an enumerated type can be implicitly converted
 to any integral type as long as all of the constants defined by the
 enumerated type are within range of the integral type.
+
+% Note that the inverse conversion in not implicit, an explicit cast is required
+% to convert an integer to an enumerated type.
+% This is consistent with C# and later versions of C++.
 
 \subsubsection{Implicit Class Conversions}
 \label{Implicit_Class_Conversions}
@@ -117,8 +148,8 @@ to \chpl{uint(64)} if the value of the parameter is nonnegative.
 In the condition of an if-statement, while-loop, and do-while-loop,
 the following implicit conversions are supported:
 \begin{itemize}
-\item An expression of integral type is taken to be true if it is non-zero and is false otherwise.
-\item An expression of a class type is taken to be true if it is not nil and is false otherwise.
+\item An expression of integral type is taken to be true if it is non-zero and is false, otherwise.
+\item An expression of a class type is taken to be true if it is not nil and is false, otherwise.
 \end{itemize}
 
 \subsection{Explicit Conversions}
@@ -137,15 +168,114 @@ The explicit conversions are a superset of the implicit conversions.
 \index{conversions!numeric}
 
 Explicit conversions are allowed from any numeric type, bool, or
-string to any other numeric type, bool, or string.  The definitions of
-how these explicit conversions work is forthcoming.
+string to any other numeric type, bool, or string.  
+
+% A valid \chpl{bool} value behaves like a single unsigned bit.  
+When a \chpl{bool} is converted to a \chpl{bool}, \chpl{int}
+or \chpl{uint} of equal or larger size, its value is zero-extended to fit the
+new representation.  When a \chpl{bool} is converted to a
+smaller \chpl{bool}, \chpl{int} or \chpl{uint}, its most significant
+bits are truncated (as appropriate) to fit the new representation.
+% This has the odd effect that a bool stored in a signed one-bit bitfield would
+% change sign without generating a conversion error.  But its subsequent
+% conversion back to a bool would yield the original value.
+% In regard to supporting bitfields: Be careful what you wish for.
+
+% The source type determines whether a value is zero- or sign-extended.
+When an \chpl{int} is converted to a larger \chpl{int} or \chpl{uint}, its value is
+sign-extended to fit the new representation.  
+When a \chpl{uint} is converted to a larger \chpl{int} or \chpl{uint}, its value
+is zero-extended.
+When an \chpl{int} or \chpl{uint} is converted to an \chpl{int} or \chpl{uint}
+of the same size, its binary representation is unchanged.
+When an \chpl{int} or \chpl{uint} is converted to a smaller \chpl{int}
+or \chpl{uint}, its value is truncated to fit the new representation.
+
+% An exception is thrown if the source value cannot be represented in the target type.
+When an \chpl{int} is converted to a \chpl{uint} and the original value is
+negative, an invalid cast exception is thrown.
+When a \chpl{uint} is converted to an \chpl{int} and the sign bit of the result
+is true, an invalid cast excpetion is thrown.
+When an \chpl{int} is converted to a smaller \chpl{int} or \chpl{uint} and any
+of the truncated bits differs from the original sign bit, an invalid cast
+exception is thrown.
+When a \chpl{uint} is converted to a smaller \chpl{int} or \chpl{uint} and any
+of the truncated bits is true, an invalid cast exception is thrown.
+
+\begin{rationale}
+For integer conversions, the default behavior of a program should be to produce
+a run-time error if there is a loss of precision.  So explicit casts not only
+give rise to a value conversion at run time, but amount to an assertion
+that the required precision is preserved.  Explicit conversion functions are
+available in the run-time library so that one can perform explicit conversions that result in a loss
+of precision without generating a run-time diagnostic.
+\end{rationale}
+
+When converting from a \chpl{real} type to a larger \chpl{real} type, the
+represented value is preserved.  When converting from a \chpl{real} type to a
+smaller \chpl{real} type, the closest representation in the target type is
+chosen.\footnote{When converting to a smaller real type, a loss of precision is \emph{expected}.
+Therefore, there is no reason to produce a run-time diagnostic.}
+
+When converting to a \chpl{real} type from an integer type, integer types
+smaller than \chpl{int} are first converted to \chpl{int}.  Then, the closest
+representation of the converted value in the target type is chosen.  The exact
+behavior of this conversion is implementation-defined.
+
+When converting from \chpl{real($k$)} to \chpl{complex($2k$)}, the original
+value is copied into the real part of the result, and the imaginary part of the
+result is set to zero.  When converting from a \chpl{real($k$)} to
+a \chpl{complex($\ell$)} such that $\ell > 2k$, the conversion is performed as
+if the original value is first converted to \chpl{real($\ell/2$)} and then
+to \chpl{$\ell$}.
+
+The rules for converting from \chpl{imag} to \chpl{complex} are the same as for
+converting from real, except that the imaginary part of the result is set using
+the input value, and the real part of the result is set to zero.
 
 \subsubsection{Explicit Enumeration Conversions}
 \label{Explicit_Enumeration_Conversions}
 \index{conversions!enumeration}
 
-Explicit conversions are allowed from any enumerated types to any
-numeric type, bool, or string, and vice versa.
+Explicit conversions are allowed from any enumerated type to any
+integer or real type, \chpl{bool}, or \chpl{string}, and vice versa.
+
+When the target type is an integer type, the value is first converted to its
+underlying integer type and then to the target type, following the rules above
+for converting between integers.
+
+When the target type is a real or complex type, the value is first converted to
+its underlying integer type and then to the target type.
+
+The conversion of an enumerated type to \chpl{imag} is not permitted.
+
+When the target type is \chpl{bool}, the value is first converted to its
+underlying integer type.  If the result is zero, the value of the \chpl{bool}
+is \chpl{false}; otherwise, it is \chpl{true}.
+
+When the target type is \chpl{string}, the value becomes the name of the
+enumerator.  % in the execution character set.
+
+When the source type is \chpl{bool}, enumerators corresponding to the values 0
+and 1 in the underlying integer type are selected, corresponding to input values
+of \chpl{false} and \chpl{true}, respectively.
+
+%REVIEW: hilde
+% As with default values for variables of enumerated types, I am pushing for the
+% simplest implementation -- in which the conversion does not actually change
+% the stored value.  This means that it may be possible for an enumerated variable
+% to assume a value that does not correspond to any of its enumerators.  Further
+% encouragement to always supply a default clause in your switch statements!
+
+When the source type is a real or integer type, the value is converted to the
+target type's underlying integer type.  
+
+The conversion from \chpl{complex} and \chpl{imag} types to an enumerated type is not
+permitted.
+
+When the source type is string, the enumerator whose name matches value of the input
+string is selected.  If no such enumerator exists, an invalid cast exception
+is thrown.
 
 \subsubsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}

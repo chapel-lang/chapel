@@ -7,131 +7,53 @@ Domains are used to specify iteration spaces, to define the size and
 shape of arrays (\rsec{Arrays}), and to specify aggregate operations
 like slicing.  The indices described by a domain may be regular and
 structured or they may be irregular and unstructured.  Chapel also
-supports the ability to create \emph{subdomains} and \emph{sparse
+supports the ability to create simple \emph{subdomains} and \emph{sparse
 subdomains} to represent subsets of a domain's index set.  A domain's
 indices may potentially be distributed across multiple locales as
 described in~\rsec{Domain_Maps}, supporting global-view data
 structures.
 
+\subsection{Domain Overview}
 
-\subsection{Domain Taxonomy}
-\label{Domain_Taxonomy}
-\index{domains!taxonomy}
-
-This section describes Chapel's taxonomy of domain types.
-
-\subsubsection{Root Domains and Subdomains}
-\index{domains!root}
-
-% could also call root domains base domains, except that we currently
-% use that term for subdomains -- a place where it seems natural, but
-% where we could also lean more heavily on parent domain...
-
-A domain is either a \emph{root domain} or a \emph{subdomain}.  This
-is represented as follows:
+There are three \emph{kinds} of domain, distinguished by their subset
+dependencies: \emph{base domains}, \emph{subdomains} and \emph{sparse
+subdomains}.  Base domains create complete index sets.  Subdomains create index
+sets which are a subset of the indices in a base domain or another subdomain.
+Sparse subdomains are subdomains which can represent sparse index subsets
+efficiently. These relationships can be represented as follows:
 
 \begin{syntax}
 domain-type:
-  root-domain-type
+  base-domain-type
   subdomain-type
+
+subdomain-type:
+  simple-subdomain-type
+  sparse-subdomain-type
 \end{syntax}
 
- \noindent A root domain has no parent domain and can represent an
-arbitrary set of indices of its index type.  A subdomain has an
-associated parent domain value and is constrained to only store
-indices that are also described by its parent domain.
-
-
-\subsubsection{Regular and Irregular Domain Types}
-\index{domains!regular}
-\index{domains!irregular}
-
-Domain types can be thought of as falling into two major categories:
-regular and irregular.  This is represented for root domain types as
-follows:
-
-\begin{syntax}
-root-domain-type:
-  regular-domain-type
-  irregular-domain-type
-\end{syntax}
-
-Regular domains, known as \emph{arithmetic domains}, describe
-multidimensional rectangular index sets.  They are characterized by a
-tensor product of ranges and represent indices that are tuples of an
-integral type.  Regular domains can be represented using $O(1)$ space.
-They are useful for representing multidimensional rectangular index
-sets and arrays.
-
-% TODO: Do we depend on the term arithmetic anywhere in the spec or
-% code?
+Domains can be further classified according to whether they are \emph{regular}
+or \emph{irregular}.  Regular domains include contiguous and strided rectangular
+domains.  Irregular domains include the \emph{associative} domain types as well
+as sparse subdomains of regular domains.  
 
 An irregular domain can store an arbitrary set of indices of an
 arbitrary but homogenous index type.  Irregular domains typically
 require space proportional to the number of indices being
 represented.
 
-\index{domains!associative}
-\index{domains!opaque}
+Practically, regular and irregular
+domains are distinguished by their layout: regular domains can be summarized
+using ranges, while irregular domains contain an explicit entry for each
+possible index value.  An index set can be either \emph{ordered} or \emph{unordered},
+depending on whether its members have a well-defined order defined upon them.
 
-The two major classes of irregular domains in Chapel are associative
-domains and opaque domains:
-
-\begin{syntax}
-irregular-domain-type:
-  associative-domain-type
-  opaque-domain-type
-\end{syntax}
-
-\noindent Associative domains represent an arbitrary set of indices
-of a given type and can be used to describe sets or to create
-dictionary-style arrays.  Opaque domains are those for which the
-indices have no inherent names and are therefore anonymous.  They can
-be used for representing sets and for building unstructured arrays,
-similar to pointer-based data structures in conventional languages.
-
-Sparse subdomains, described in~\rsec{Sparse_Subdomains}, are also
-considered to be irregular domains.  A non-sparse subdomain inherits
-the regularity or irregularity of its parent domain.
-
-
-\subsection{Domain Characteristics}
-\label{Domain_Characteristics}
-\index{domains!characteristics}
-
-\subsubsection{Domain Types}
-\label{Domain_Types}
-\index{domains!types}
-
-All domain types are characterized by the type of indices that they
-store (see~\rsec{Index_Types}).  The way in which these index types
-are specified in the domain's type signature varies across domain
-types.  It is defined for root domain types
-in~\rsec{Root_Domain_Types} and for subdomains
-in~\rsec{Subdomain_Types}.
-
-\subsubsection{Domain Values}
-\label{Domain_Values}
-\index{domains!values}
-\index{domains!ordered}
-\index{domains!unordered}
-
-A domain's value is the index set that it represents.  A domain's
-index set can be considered either \emph{ordered} or \emph{unordered},
-indicating whether or not there is a well-defined order defined for
-its indices for the purposes of things like serial iteration and I/O.
-The domain values for the root domain types are defined
-in~\rsec{Domain_Values}.  The domain values for sparse subdomain types
-are defined in~\rsec{Sparse_Domain_Values}.
-
-\subsubsection{Domain Identity}
-\label{Domain_Identity}
-\index{domains!identity}
-
-In addition to storing a value, domain variables have an identity that
-distinguishes them from other domains of the same type with the same
+The type of a domain describes how a domain is represented, while its value is
+the set of indices it represents.
+In addition to storing a value, each domain variable has an identity that
+distinguishes them from other domains that may have the same type and
 value.  This identity is used to define the domain's relationship
-with subdomains~(\rsec{Subdomains}), index types~(\rsec{Index_Types}),
+with subdomains, index types~(\rsec{Index_Types}),
 and arrays~(\rsec{Association_of_Arrays_to_Domains}).  The identity of
 a domain is represented by its name.
 
@@ -140,60 +62,73 @@ In the future, it is likely that we will support a means of creating
 domain aliases, much as we support array aliases currently.
 \end{openissue}
 
-\subsubsection{Runtime Representation of Domain Values}
-\label{Domain_Runtime_Representation}
-\index{domains!runtime representation}
-\index{domains!domain maps}
-
-While domains are a high-level abstraction, users have control over
-the runtime representation of a domain's index set through Chapel's
-support for domain maps~(\rsec{Domain_Maps}), both
-standard~(\rsec{Standard_Layouts} and \rsec{Standard_Distributions})
-and user-defined~(\rsec{User_Defined_Domain_Maps}).  Chapel
-implementations should also document their choice of implicit domain
-maps (used to implement domains with no domain map specifiers).
+In the next section (\rsec{Base_Domains}) we discuss the types and values
+that can be associated with a base domain.  In~\rsec{Subdomains}, we discuss the
+types and values of 
+simple subdomains that can be created from those base domains.
+In~\rsec{Sparse_Subdomains}, we discuss the types and values of sparse
+subdomains.  The remainder of this chapter describes the important
+manipulations that can be perfomed with domains, as well as the built-in
+operators and functions defined for domains.
 
 
-\subsection{Root Domain Types}
-\label{Root_Domain_Types}
-\index{domains!root types}
-\index{types!domains, root}
+\subsection{Base Domains}
+\label{Base_Domains}
+\index{domains!base}
 
+Base domain types can be classified as regular or irregular.  Contiguous and
+strided rectangular domains are currently the only supported regular domains.
+Irregular base domain types are all associative domain types.  Associative
+domain types consist of normal, enumerated and opaque associative domain types.
 
-\subsubsection{Arithmetic Domain Types}
-\index{arithmetic domains!types}
-\index{types!arithmetic domains}
+\begin{syntax}
+base-domain-type:
+  rectangular-domain-type
+  associative-domain-type
+\end{syntax}
 
-Arithmetic domain types are parameterized by three things:
+All of these base domain types are discussed in turn in the following
+subsections.
+
+\subsubsection{Rectangular Domains}
+
+Rectangular domains describe
+multidimensional rectangular index sets.  They are characterized by a
+tensor product of ranges and represent indices that are tuples of an
+integral type.  Because their index sets can be represented using ranges,
+regular domain values occupy $O(1)$ space.
+They are useful for representing multidimensional rectangular index
+sets and arrays.
+
+\paragraph{Rectangular Domain Types}
+\index{rectangular domains!types}
+\index{types!rectangular domains}
+
+Rectangular domain types are parameterized by three things:
 \begin{itemize}
-
- \item \chpl{rank}, a positive \chpl{int} value indicating the number
+\item \chpl{rank}, a positive \chpl{int} value indicating the number
 of dimensions that the domain represents;
-
- \item \chpl{idxType}, a type member representing the index type for
+\item \chpl{idxType}, a type member representing the index type for
 each dimension.  If unspecified, \chpl{idxType} defaults
 to \chpl{int}.
-
 % BLC: we should potentially rename idxType to idxDimType to make it
 % more consistent with the irregular case
-
- \item \chpl{stridable}, a \chpl{bool} value indicating whether or not
+\item \chpl{stridable}, a \chpl{bool} value indicating whether
 any of the domain's dimensions will be characterized by a strided
 range.  If unspecified, \chpl{stridable} defaults to \chpl{false}.
-
 \end{itemize}
 
-If \chpl{rank} is $1$, the index type represented by an arithmetic
+If \chpl{rank} is $1$, the index type represented by a rectangular
 domain is \chpl{idxType}.  Otherwise, the index type is the homogenous
 tuple type \chpl{rank*idxType}.
 
 % BLC: longer-term, we've talked about potentially making it be
 % rank*idxType even if rank is 1.
 
-The syntax of an arithmetic domain type is summarized as follows:
+The syntax of a rectangular domain type is summarized as follows:
 
 \begin{syntax}
-regular-domain-type:
+rectangular-domain-type:
   `domain' ( named-expression-list )
 \end{syntax}
 
@@ -207,74 +142,23 @@ using standard function call syntax.
 %
 %\end{example}
 
+\paragraph{Rectangular Domain Values}
+\label{Rectangular_Domain_Values}
+\index{rectangular domains!values}
+\index{domains!values!rectangular}
 
-\subsubsection{Associative Domain Types}
-\label{Associative_Domain_Types}
-\index{types!associative domains}
-\index{associative domains!types}
+A rectangular domain's value is represented as \chpl{rank} ranges of
+type \chpl{range(idxType,} \chpl{ BoundedRangeType.bounded,} \chpl{
+stridable)}.  The index set for a rank~1 domain is the set of indices
+described by its singleton range.  The index set for a rank~$n$
+domain is the set of all \chpl{n*idxType} tuples described by the
+tensor product of its ranges.  Rectangular domain indices are ordered
+according to the lexicographic order of their values.
 
-An associative domain type is parameterized by \chpl{idxType}, the
-type of the index that it stores.  The syntax is as follows:
+\index{rectangular domains!literals}
+\index{domains!rectangular!literals}
 
-\begin{syntax}
-associative-domain-type:
-  `domain' ( associative-index-type )
-
-associative-index-type:
-  type-specifier
-\end{syntax}
-
-%
-% should there be an opt_idxTypeEquals in the domain type above?
-%
-
-
-If the \sntx{associative-index-type} is an enumerated type, the
-associative domain is called an \emph{enumerated domain type}---a
-variant of associative domain types that has some distinct
-characteristics, described in subsequent sections.
-
-% TODO: is there a more explicit reference I could put here?
-
-\subsubsection{Opaque Domain Types}
-\label{Opaque_Domain_Types}
-\index{types!opaque domains}
-\index{opaque domains!types}
-
-An opaque domain type is parameterized by the type \chpl{opaque},
-indicating that the index values are anonymous and have no obvious
-representational name or value.  The opaque domain type is given by
-the following syntax:
-
-\begin{syntax}
-opaque-domain-type:
-  `domain' ( `opaque' )
-\end{syntax}
-
-
-\subsection{Root Domain Values}
-\label{Root_Domain_Values}
-\label{Root_Domain Literals}
-\label{Root_Default_Domain_Values}
-
-This section describes the values, literal formats (if applicable),
-and default values for each root domain type.
-
-\subsubsection{Arithmetic Domain Values}
-\label{Arithmetic_Domain_Values}
-\index{arithmetic domains!values}
-
-An arithmetic domain's value is represented as \chpl{rank} ranges of
- type \chpl{range(idxType,} \chpl{ BoundedRangeType.bounded,} \chpl{
- stridable)}.  The index set for a rank~1 domain is the set of indices
- described by its singleton range.  The index set for a rank~$n$
- domain is the set of all \chpl{n*idxType} tuples described by the
- tensor product of its ranges.  Arithmetic domain indices are ordered
- according to the lexicographic order of their values.
-
-\index{arithmetic domains!literals}
-
-Literal arithmetic domain values are represented by a comma-separated
+Literal rectangular domain values are represented by a comma-separated
 list of range expressions of matching \chpl{idxType} enclosed in
 square brackets:
 
@@ -294,26 +178,22 @@ range-expression:
   expression
 \end{syntax}
 
-\noindent The type of an arithmetic domain literal is defined as follows:
+\noindent The type of a rectangular domain literal is defined as follows:
 
 \begin{itemize}
-
 \item \chpl{rank} = the number of range expressions in the literal
-
 \item \chpl{idxType} = the type of the range expressions
-
 \item \chpl{stridable} = \chpl{true} if any of the range expressions
 are stridable, otherwise \chpl{false}
-
 \end{itemize}
 
 \begin{example}
-The expression \chpl{[1..5, 1..5]} defines an arithmetic domain with
+The expression \chpl{[1..5, 1..5]} defines a rectangular domain with
 type \chpl{domain(rank=2,} \chpl{ idxType=int,} \chpl{ strided=false)}.
 \end{example}
 
 \begin{example}
-The expression \chpl{[1..5, 1..5]} defines a $5 \times 5$ arithmetic
+The expression \chpl{[1..5, 1..5]} defines a $5 \times 5$ rectangular
 domain with the indices $(1, 1), (1, 2), \ldots, (1, 5), (2, 1), \ldots (5, 5)$.
 \end{example}
 
@@ -323,29 +203,82 @@ In the code
 var D: domain(2) = [1..n, 1..n];
 \end{chapel}
 
-\chpl{D} is defined as a two-dimensional, nonstridable arithmetic
+\chpl{D} is defined as a two-dimensional, nonstridable rectangular
 domain with an index type of \chpl{2*int} and is initialized to
 contain the set of indices $(i,j)$ for all $i$ and $j$ such that
 $i \in {1, 2, \ldots, n}$ and $j \in {1, 2, \ldots, n}$.
 \end{example}
 
-\index{arithmetic domains!default value}
+\index{rectangular domains!default value}
+\index{domains!rectangular!default value}
 
 The default value of a range type is the \chpl{rank} default range
-values for type \chpl{range(idxType,} \chpl{ BoundedRangeType.bounded,}
-\chpl{stridable)}.
+values for type \chpl{range(idxType, BoundedRangeType.bounded, stridable)}.
 
 % TODO: example here
 
-\subsubsection{Associative Domain Values}
+\subsubsection{Associative Domains}
+
+Associative domains represent an arbitrary set of indices
+of a given type and can be used to describe sets or to create
+dictionary-style arrays.  Opaque domains are those for which the
+indices have no inherent names and are therefore anonymous.  They can
+be used for representing sets and for building unstructured arrays,
+similar to pointer-based data structures in conventional languages.
+
+\paragraph{Associative Domain Types}
+
+\label{Associative_Domain_Types}
+\index{types!associative domains}
+\index{associative domains!types}
+
+An associative domain type is parameterized by \chpl{idxType}, the
+type of the index that it stores.  The syntax is as follows:
+
+\begin{syntax}
+associative-domain-type:
+  normal-associative-domain-type
+  enumerated-domain-type
+  opaque-domain-type
+
+normal-associative-domain-type:
+  `domain' ( associative-index-type )
+
+enumerated-domain-type:
+  `domain' ( enumerated-type-name )
+
+opaque-domain-type:
+  `domain' ( `opaque' )
+
+associative-index-type:
+  identifier
+
+enumerated-type-name:
+  identifier
+\end{syntax}
+
+%
+% should there be an opt_idxTypeEquals in the domain type above?
+%
+Normal associative domains have an index set whose members are of the
+associative index type.  Enumerated domains are a special case, in which
+the \sntx{associative-index-type} is an enumerated type.  Enumerated types are
+handled specially during initialization, as described below.
+\index{types!opaque domains}
+\index{opaque domains!types}
+\index{domains!opaque}
+Opaque domain types are parameterized by the type \chpl{opaque},
+indicating that the index values are anonymous and have no obvious
+representational name or value.  
+
+\paragraph{Associative Domain Values}
 \label{Associative_Domain_Values}
 \index{associative domains!values}
+\index{domains!associative!values}
 
 An associative domain's value is simply the set of all index values
 that the domain describes.  The indices of an associative domain are
-typically unordered.  The only exception is associative domains over
-enumerated types which are ordered according to the order in which the
-enumeration's identifiers were declared.
+typically unordered.  
 
 \index{associative domains!literals, lack thereof}
 \index{associative domains!initializations}
@@ -358,9 +291,22 @@ of associative domain type.
 
 \index{associative domains!default values}
 
-The default value for an associative domain is the empty set unless
-\chpl{idxType} is an enumerated type in which case the default value
-is the set of all identifiers in the enumeration.
+The default value for a normal associative domain is the empty set.
+
+\subparagraph{Enumerated Domain Values}
+
+Associative domains over
+enumerated types are ordered according to the order in which the
+enumeration's identifiers were declared.
+
+Being a special case of associative domains, an enumerated domain can be
+initialized by tuple of enumerators.  All of the enumerators must be
+members of the enumeration type used to declare the domain.
+
+\index{associative domains!default values}
+
+The default value for an enumerated domain is the set of all identifiers in the
+enumeration.
 
 \begin{rationale}
 
@@ -368,24 +314,24 @@ The decision to have enumerated domains start fully populated was
 based on the observation that enumerations have a finite, typically
 small number of elements and that it would be common to declare arrays
 with values corresponding to each identifier in the enumeration.
-Furthermore, we considered it simpler to clear a fully-populated
+Further, in terms of usability it is simpler to clear a fully-populated
 domain than to fully populate an empty one.
 
-In addition, we believe that fully-populated constant enumerated
+In addition, fully-populated constant enumerated
 domains are an important case for compiler optimizations, particularly
 if the numeric values of the enumeration are consecutive.
 
 \end{rationale}
 
-
-\subsubsection{Opaque Domain Values}
-\label{Opaque_Domain_Values}
+\subparagraph{Opaque Domain Values}
 \index{opaque domains!values}
+\index{domains!opaque!values}
 
 An opaque domain's value is simply the unordered set of anonymous
 indices that the domain describes.
 
 \index{opaque domains!literals, lack thereof}
+\index{domains!opaque!literals}
 
 There is no literal syntax for an opaque domain due to the fact that
 the indices have no inherent names.
@@ -397,8 +343,6 @@ The default value for an opaque domain is the empty set.
 
 \subsection{Subdomains}
 \label{Subdomains}
-\index{subdomains}
-\index{domains!subdomains}
 
 A subdomain is a domain whose indices are guaranteed to be a subset of
 those described by another domain known as its \emph{parent domain}.
@@ -421,16 +365,17 @@ away bounds checks for array accesses.
 \index{subdomains!types}
 \index{types!subdomains}
 
-A subdomain type is specified using the following syntax:
+A simple subdomain type is specified using the following syntax:
 \begin{syntax}
-subdomain-type:
-  `sparse'[OPT] `subdomain' ( domain-expression )
+simple-subdomain-type:
+  `subdomain' ( domain-expression )
 \end{syntax}
+
 This declares that \sntx{domain-expression} is the parent domain of
 this subdomain type.  The subdomain type has the same type as its
 parent domain.  By default it will share the parent domain's domain
-map.  The optional \sntx{sparse} keyword permits the ability to
-create sparse subdomains described in ~\rsec{Sparse_Subdomains}.
+map.  A simple subdomain specifies a subdomain
+with the same underlying representation as its base domain.  
 
 \begin{openissue}
 
@@ -446,6 +391,12 @@ and whether this should be done aggressively or lazily.
 \index{domains!sparse}
 \index{subdomains!sparse}
 
+\begin{syntax}
+sparse-subdomain-type:
+  `sparse' `subdomain'[OPT] ( domain-expression )
+\end{syntax}
+
+This declaration creates a sparse subdomain.
  \emph{Sparse subdomains} are irregular domains that describe an
 arbitrary subset of a domain, even if the parent domain is a regular
 domain.  Sparse subdomains are useful in Chapel for
@@ -492,8 +443,157 @@ var SpsD: sparse subdomain(D);
 \end{example}
 
 
+\subsection{Iteration over Domains}
+\label{Iteration_over_Domains}
+\index{domains!iteration}
 
-\subsection{Index Types}
+All domains support iteration via standard for, forall, and coforall
+loops.  These loops iterate over all of the indices that the domain
+describes.  The type of the iterator variable for an iteration over a
+domain named \chpl{D} is that domain's index type, \chpl{index(D)}.
+If the domain's indices are ordered, a for loop will traverse the
+indices in order.
+
+
+\subsection{Domain Operations}
+
+Chapel supplies built-in operators and functions that can be used to manipulate
+domains.  Unless otherwise noted, these operations are applicable to a domain of
+any type, whether a base domain or a subdomain.
+
+\subsubsection{Domain Assignment}
+\label{Domain_Assignment}
+\index{domains!assignment}
+
+All domain types support domain assignment.  Domain assignment is by
+value and causes the target domain variable to take on the index set
+of the right-hand side expression.  In practice, the right-hand side
+expression is often another domain value; a tuple of ranges (for
+regular domains); or a tuple of indices or a loop that enumerates
+indices (for irregular domains).  If the domain variable being
+assigned was used to declare arrays, these arrays are reallocated as
+discussed in~\rsec{Association_of_Arrays_to_Domains}.
+
+\begin{example}
+The following three assignments show ways of assigning indices to a
+sparse domain, \chpl{SpsD}.  The first assigns the domain two index
+values, \chpl{(1,1)} and \chpl{(n,n)}.  The second assigns the domain
+all of the indices along the diagonal from
+\chpl{(1,1)}$\ldots$\chpl{(n,n)}.  The third invokes an iterator that
+is written to \chpl{yield} indices read from a file named
+``inds.dat''.  Each of these assignments has the effect of replacing
+the previous index set with a completely new set of values.
+\begin{chapel}
+SpsD = ((1,1), (n,n));
+SpsD = [i in 1..n] (i,i);
+SpsD = readIndicesFromFile("inds.dat");
+\end{chapel}
+\end{example}
+
+\subsubsection{Domain Slicing}
+\label{Domain_Slicing}
+\index{slicing!domains}
+\index{domains!slicing}
+
+In Chapel, slicing is the application of an index set to another
+variable using either parentheses or square brackets.
+
+% TODO: syntax diagram?!?
+
+\paragraph{Domain-based Slicing}
+\index{slicing!domains}
+\index{domains!slicing}
+
+The index set used to express a slice can be represented using a
+domain value.
+
+Slicing an array results in an alias to a subset of the array's
+elements as described in~\rsec{Array_Slicing}.
+
+Slicing a domain evaluates to a new domain value whose index set is
+the intersection of the domain's index set and the slicing index set.
+The type and domain map of the result match the domain being sliced.
+
+%
+% TODO: can we say that it is an alias in the case of sparse/associative?
+%
+
+\paragraph{Range-based Slicing}
+\label{Range_Based_Slicing}
+\index{slicing!range-based}
+\index{range-based slicing}
+When slicing rectangular domains or arrays, the slice can be expressed
+as a list of \chpl{rank} ranges.  These ranges can either be bounded
+or unbounded.  When unbounded, they inherit their bounds from the
+domain or array being sliced.
+
+\begin{example}
+The following code declares a two dimensional rectangular
+domain \chpl{D}, and then a number of subdomains of \chpl{D} by
+slicing into \chpl{D} using bounded and unbounded ranges.
+The \chpl{InnerD} domain describes the inner indices of
+D, \chpl{Col2OfD} describes the 2nd column of
+\chpl{D}, and \chpl{AllButLastRow} describes all of \chpl{D} except
+for the last row.
+
+\begin{chapel}
+const D: domain(2) = [1..n, 1..n],
+      InnerD = D[2..n-1, 2..n-1],
+      Col2OfD = D[.., 2..2],
+      AllButLastRow = D[..n-1, ..];
+\end{chapel}
+\end{example}
+
+\begin{openissue}
+For slices that use a list of ranges, our intention is to use zipper
+semantics vs. tensor semantics when evaluating the ranges depending on
+whether square brackets or parentheses are used.  Currently all slices
+are defined using tensor semantics for simplicity.  Since this may
+change in the future, we recommend using square brackets to express
+array-based slicing.
+\end{openissue}
+
+\paragraph{Rank-Change Slicing}
+\label{Rank_Change_Slicing}
+\index{slicing!rank-change}
+\index{rank-change slicing}
+
+For multidimensional rectangular domains and arrays, substituting
+integral values for one or more of the ranges in a range-based slice
+will result in domain or array of lower rank.
+
+The result of a rank-change slice on an array is an alias to a subset
+of the array's elements as described
+in~\rsec{Rectangular_Array_Slicing}.
+
+The result of rank-change slice on a domain is a subdomain of the
+domain being sliced, as described in~\rsec{Subdomains}.  The resulting
+subdomain's type will be the same as the original domain, but with
+a \chpl{rank} equal to the number of dimensions that were sliced by
+ranges rather than integers.
+
+\subsubsection{Domain Striding}
+\label{Domain_Striding}
+\index{domains!striding}
+\index{by@\chpl{by}!on rectangular domains}
+
+The \chpl{by} operator can be applied to a rectangular domain value in
+order to create a strided rectangular domain value.  The right-hand
+operand to the \chpl{by} operator can either be an integral value or
+an integral tuple whose size matches the domain's rank.
+
+% syntax diagram?
+
+The type of the resulting domain is the same as the original domain
+but with \chpl{stridable} set to true.  In the case of an integer
+stride value, the value of the resulting domain is computed by
+applying the integer value to each range in the value using the
+\chpl{by} operator.  In the case of a tuple stride value, the resulting
+domain's value is computed by applying each tuple component to the
+corresponding range using the \chpl{by} operator.
+
+
+\subsubsection{Domain Index Type Extraction}
 \label{Index_Types}
 \index{domains!index types}
 
@@ -540,40 +640,7 @@ these semantics need to be defined nevertheless.
 
 \end{openissue}
 
-
-\subsection{Domain Assignment}
-\label{Domain_Assignment}
-\index{domains!assignment}
-
-All domain types support domain assignment.  Domain assignment is by
-value and causes the target domain variable to take on the index set
-of the right-hand side expression.  In practice, the right-hand side
-expression is often another domain value; a tuple of ranges (for
-regular domains); or a tuple of indices or a loop that enumerates
-indices (for irregular domains).  If the domain variable being
-assigned was used to declare arrays, these arrays are reallocated as
-discussed in~\rsec{Association_of_Arrays_to_Domains}.
-
-\begin{example}
-The following three assignments show ways of assigning indices to a
-sparse domain, \chpl{SpsD}.  The first assigns the domain two index
-values, \chpl{(1,1)} and \chpl{(n,n)}.  The second assigns the domain
-all of the indices along the diagonal from
-\chpl{(1,1)}$\ldots$\chpl{(n,n)}.  The third invokes an iterator that
-is written to \chpl{yield} indices read from a file named
-``inds.dat''.  Each of these assignments has the effect of replacing
-the previous index set with a completely new set of values.
-\begin{chapel}
-SpsD = ((1,1), (n,n));
-SpsD = [i in 1..n] (i,i);
-SpsD = readIndicesFromFile("inds.dat");
-\end{chapel}
-\end{example}
-
-\subsection{Domain Index Set Manipulation}
-\label{Domain_Index_Set_Manipulation}
-
-\subsubsection{Querying Index Set Membership}
+\subsubsection{Domain Index Set Membership}
 \label{Domain_Membership}
 \index{domains!membership}
 
@@ -583,7 +650,7 @@ member of the domain's index set.
 
 %
 % would like to call the type of i above idxType, but it's not true
-% for arithmetic...  motivation to unify
+% for rectangular...  motivation to unify
 %
 
 \subsubsection{Clearing a Domain's Index Set}
@@ -592,7 +659,7 @@ member of the domain's index set.
 
 Every domain type supports a \chpl{clear()} method that resets a
 domain's index set to its default value as specified
-in~\rsec{Root_Default_Domain_Values}.
+in the corresponding Default Values subsection.
 
 \begin{example}
 The following call will cause the sparse domain \chpl{SpsD} to
@@ -635,103 +702,8 @@ domain being modified in this way will be reallocated as discussed
 in~\rsec{Association_of_Arrays_to_Domains}.
 
 
-
-\subsection{Iteration over Domains}
-\label{Iteration_over_Domains}
-\index{domains!iteration}
-
-All domains support iteration via standard for, forall, and coforall
-loops.  These loops iterate over all of the indices that the domain
-describes.  The type of the iterator variable for an iteration over a
-domain named \chpl{D} is that domain's index type, \chpl{index(D)}.
-If the domain's indices are ordered, a for loop will traverse the
-indices in order.
-
-
-\subsection{Slicing}
-\label{Slicing}
-\index{slicing}
-
-In Chapel, slicing is the application of an index set to another
-variable using either parentheses or square brackets.
-
-% TODO: syntax diagram?!?
-
-\subsubsection{Domain-based Slicing}
-\index{slicing!domains}
-\index{domains!slicing}
-
-The index set used to express a slice can be represented using a
-domain value.
-
-Slicing an array results in an alias to a subset of the array's
-elements as described in~\rsec{Array_Slicing}.
-
-Slicing a domain evaluates to a new domain value whose index set is
-the intersection of the domain's index set and the slicing index set.
-The type and domain map of the result match the domain being sliced.
-
-%
-% TODO: can we say that it is an alias in the case of sparse/associative?
-%
-
-\subsubsection{Range-based Slicing}
-\label{Range_Based_Slicing}
-\index{slicing!range-based}
-\index{range-based slicing}
-When slicing arithmetic domains or arrays, the slice can be expressed
-as a list of \chpl{rank} ranges.  These ranges can either be bounded
-or unbounded.  When unbounded, they inherit their bounds from the
-domain or array being sliced.
-
-\begin{example}
-The following code declares a two dimensional arithmetic
-domain \chpl{D}, and then a number of subdomains of \chpl{D} by
-slicing into \chpl{D} using bounded and unbounded ranges.
-The \chpl{InnerD} domain describes the inner indices of
-D, \chpl{Col2OfD} describes the 2nd column of
-\chpl{D}, and \chpl{AllButLastRow} describes all of \chpl{D} except
-for the last row.
-
-\begin{chapel}
-const D: domain(2) = [1..n, 1..n],
-      InnerD = D[2..n-1, 2..n-1],
-      Col2OfD = D[.., 2..2],
-      AllButLastRow = D[..n-1, ..];
-\end{chapel}
-\end{example}
-
-\begin{openissue}
-For slices that use a list of ranges, our intention is to use zipper
-semantics vs. tensor semantics when evaluating the ranges depending on
-whether square brackets or parentheses are used.  Currently all slices
-are defined using tensor semantics for simplicity.  Since this may
-change in the future, we recommend using square brackets to express
-array-based slicing.
-\end{openissue}
-
-\subsubsection{Rank-Change Slicing}
-\label{Rank_Change_Slicing}
-\index{slicing!rank-change}
-\index{rank-change slicing}
-
-For multidimensional arithmetic domains and arrays, substituting
-integral values for one or more of the ranges in a range-based slice
-will result in domain or array of lower rank.
-
-The result of a rank-change slice on an array is an alias to a subset
-of the array's elements as described
-in~\rsec{Arithmetic_Array_Slicing}.
-
-The result of rank-change slice on a domain is a subdomain of the
-domain being sliced, as described in~\rsec{Subdomains}.  The resulting
-subdomain's type will be the same as the original domain, but with
-a \chpl{rank} equal to the number of dimensions that were sliced by
-ranges rather than integers.
-
-
-\subsection{Domain Arguments to Functions}
-\label{Domain_Arguments_to_Functions}
+\subsection{Domain Arguments}
+\label{Domain_Arguments}
 \index{domains!function arguments}
 \index{function arguments!domains}
 
@@ -781,55 +753,34 @@ forall (a,i) in (A,D) do
 
 \subsection{Domain Operators}
 
-\subsubsection{By Operator}
-\label{By_Operator_For_Domains}
-\index{by@\chpl{by}!on arithmetic domains}
-
-The \chpl{by} operator can be applied to an arithmetic domain value in
-order to create a strided arithmetic domain value.  The right-hand
-operand to the \chpl{by} operator can either be an integral value or
-an integral tuple whose size matches the domain's rank.
-
-% syntax diagram?
-
-The type of the resulting domain is the same as the original domain
-but with \chpl{stridable} set to true.  In the case of an integer
-stride value, the value of the resulting domain is computed by
-applying the integer value to each range in the value using the
-\chpl{by} operator.  In the case of a tuple stride value, the resulting
-domain's value is computed by applying each tuple component to the
-corresponding range using the \chpl{by} operator.
-
-
-
 \subsection{Predefined Functions and Methods on Domains}
 \index{domains!predefined functions}
 
 \begin{protohead}
-def $Domain$.numIndices: dim_type
+proc $Domain$.numIndices: dim_type
 \end{protohead}
 \begin{protobody}
 Returns the number of indices in the domain.
 \end{protobody}
 
 %% \begin{protohead} **/
-%% def $Domain$.order(i: index($Domain$)): dim_type **/
+%% proc $Domain$.order(i: index($Domain$)): dim_type **/
 %% \end{protohead} **/
 %% \begin{protobody} **/
 %% If \chpl{i} is a member of the domain, returns the ordinal value of **/
 %% \chpl{i} using a total ordering of the domain's indices using 0-based **/
-%% indexing.  Otherwise, it returns \chpl{(-1):dim_type}.  For arithmetic **/
+%% indexing.  Otherwise, it returns \chpl{(-1):dim_type}.  For rectangular **/
 %% domains, this ordering will be based on a row-major ordering of the **/
 %% indices; for other domains, the ordering may be **/
-%% implementation-dependent and unstable as elements are added and **/
+%% implementation-defined and unstable as elements are added and **/
 %% removed from the domain. **/
 %% \end{protobody} **/
 
 
-\subsubsection{Predefined Functions and Methods on Arithmetic Domains}
+\subsubsection{Predefined Functions and Methods on Rectangular Domains}
 
 \begin{protohead}
-def $Domain$.dim(d: int): range
+proc $Domain$.dim(d: int): range
 \end{protohead}
 \begin{protobody}
 Returns the range of indices described by dimension \chpl{d} of the
@@ -853,21 +804,21 @@ dimension is iterated over in the inner loop.
 % per-dimension index type in the language that I can see.
 
 \begin{protohead}
-def $Domain$.rank param : int
+proc $Domain$.rank param : int
 \end{protohead}
 \begin{protobody}
 Returns the rank of the domain as a parameter int.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.stridable param : bool
+proc $Domain$.stridable param : bool
 \end{protohead}
 \begin{protobody}
 Returns whether or not the domain is stridable as a parameter bool.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.low: index($Domain$)
+proc $Domain$.low: index($Domain$)
 \end{protohead}
 \begin{protobody}
 Returns the low index of the domain as a value of the domain's index
@@ -875,7 +826,7 @@ type.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.high: index($Domain$)
+proc $Domain$.high: index($Domain$)
 \end{protohead}
 \begin{protobody}
 Returns the high index of the domain as a value of the domain's index
@@ -883,8 +834,8 @@ type.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.stride: int(numBits(idxType)) where rank == 1
-def $Domain$.stride: rank*int(numBits(idxType))
+proc $Domain$.stride: int(numBits(idxType)) where rank == 1
+proc $Domain$.stride: rank*int(numBits(idxType))
 \end{protohead}
 \begin{protobody}
 Returns the stride of the domain as the domain's stride type (for 1D
@@ -893,8 +844,8 @@ domains).
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.translate(off: integral): domain
-def $Domain$.translate(off: rank*integral): domain
+proc $Domain$.translate(off: integral): domain
+proc $Domain$.translate(off: rank*integral): domain
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the current domain translated
@@ -902,8 +853,8 @@ by \chpl{off} or \chpl{off(d)} for each dimension \chpl{d}.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.expand(off: integral): domain
-def $Domain$.expand(off: rank*integral): domain
+proc $Domain$.expand(off: integral): domain
+proc $Domain$.expand(off: rank*integral): domain
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the current domain expanded in
@@ -913,8 +864,8 @@ negative.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.exterior(off: integral): domain
-def $Domain$.exterior(off: rank*integral): domain
+proc $Domain$.exterior(off: integral): domain
+proc $Domain$.exterior(off: rank*integral): domain
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the exterior portion of the current
@@ -925,8 +876,8 @@ compute the exterior from the high bound.
 \end{protobody}
 
 \begin{protohead}
-def $Domain$.interior(off: integral): domain
-def $Domain$.interior(off: rank*integral): domain
+proc $Domain$.interior(off: integral): domain
+proc $Domain$.interior(off: rank*integral): domain
 \end{protohead}
 \begin{protobody}
 Returns a new domain that is the interior portion of the current
@@ -937,9 +888,10 @@ compute the interior from the high bound.
 \end{protobody}
 
 %% \begin{protohead} **/
-%% def $Domain$.position(i: index($Domain$)): rank*dim_type **/
+%% proc $Domain$.position(i: index($Domain$)): rank*dim_type **/
 %% \end{protohead} **/
 %% \begin{protobody} **/
 %% Returns a tuple holding the order of index i in each range defining **/
 %% the domain. **/
 %% \end{protobody} **/
+

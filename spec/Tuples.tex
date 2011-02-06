@@ -39,7 +39,7 @@ can be defined as a product of an integral parameter (a compile-time
 constant integer) and a type.  This latter specification is
 implemented by overloading \chpl{*} with the following prototype:
 \begin{chapel}
-def *(param p: int, type t) type
+proc *(param p: int, type t) type
 \end{chapel}
 
 \begin{rationale}
@@ -136,7 +136,7 @@ writeln((x1,x2,x3));
 \index{tuple@\chpl{tuple}}
 The function
 \begin{chapel}
-def tuple(x...) return x;
+proc tuple(x...) return x;
 \end{chapel}
 is defined in the standard context to create arbitrary tuples.
 
@@ -149,8 +149,8 @@ var x1 =      ("hello", 3.14),
     x2 = tuple("hello", 3.14),
     x3 = tuple(1);
 \end{chapel}
-creates two identical tuples \chpl{x1} and \chpl{x2}, and a 1-tuple of
-an integer \chpl{x3} with its component initialized to \chpl{1}.
+creates two identical tuples: \chpl{x1} and \chpl{x2}; and \chpl{x3}: an integer 1-tuple
+ initialized to \chpl{(1)}.
 \begin{chapelpost}
 writeln((x1,x2,x3));
 \end{chapelpost}
@@ -167,8 +167,11 @@ to use the standard \chpl{tuple} function.
 
 Tuple expressions are evaluated similarly to function calls where the
 arguments are all generic with no explicit intent.  So a tuple
-expression containing an array does not copy the array.  The semantics
-regarding passing tuples to functions is forthcoming.
+expression containing an array does not copy the array.  
+
+When a tuple is passed as an argument to a function, it is passed as
+if it is a record type containing fields of the same type and in
+the same order as in the tuple.
 
 \subsection{Tuple Assignment}
 \label{Tuple_Assignment}
@@ -265,7 +268,7 @@ evaluated, but its value is not assigned.
 \end{chapelpre}
 The code
 \begin{chapel}
-def f()
+proc f()
   return (1, 2);
 
 var x: int;
@@ -288,9 +291,9 @@ writeln(x);
 \index{tuples!variable declarations grouped as}
 
 When multiple variables in a declaration are grouped using tuple
-notation, the tuple type and/or tuple initialization expression are
-split into their components.  The number of grouped variables must be
-equal to the size of the tuple type and/or tuple initialization
+notation, the tuple initialization expression is
+split into its type and/or value components.  The number of grouped variables must be
+equal to the size of the tuple initialization
 expression.  The variables are initialized in component order.
 
 The syntax of grouped variable declarations is defined
@@ -335,8 +338,8 @@ writeln(a);
 \end{example}
 
 \index{tuples!omitting components}
-When splitting a tuple into multiple variable declarations, the
-variables that are grouped using the tuple notation may be omitted.  In
+When splitting a tuple into multiple variable declarations, variable
+names in the declarator on the left-hand side may be omitted.  In
 this case, a variable is not defined for any omitted component.
 
 \begin{example}
@@ -344,7 +347,7 @@ this case, a variable is not defined for any omitted component.
 \end{chapelpre}
 The code
 \begin{chapel}
-def f()
+proc f()
   return (1, 2);
 
 var (x, ) = f();
@@ -365,9 +368,9 @@ writeln(x);
 \label{Indices_in_a_Tuple}
 \index{tuples!indices grouped as}
 
-When multiple indices in a loop are grouped using tuple notation, the
-values returned by the iterator are split into their components.  The
-number of grouped indices must be equal to the size of the tuple
+When multiple indices in a loop are grouped using tuple notation, the tuple
+returned by the iterator is split across the index tuple's components.  The
+number of indices in the index tuple must equal the size of the tuple
 returned by the iterator.
 
 \begin{example}
@@ -375,7 +378,7 @@ returned by the iterator.
 \end{chapelpre}
 The code
 \begin{chapel}
-def bar() {
+iter bar() {
   yield (1, 1);
   yield (2, 2);
 }
@@ -395,10 +398,15 @@ their values from the iterator.
 \end{example}
 
 \index{tuples!omitting components}
-When splitting a tuple into multiple indices, the indices that are
-grouped using the tuple notation may be omitted.  In this case, a new
-index is not defined for any omitted component.  The iterator is
-evaluated as if an index were defined.
+When a tuple is split across an index tuple, indices in the index
+tuple (left-hand side) may be omitted.  In this case, no index is
+defined for any omitted component.  
+
+However even when indices are omitted, the iterator is
+evaluated as if an index were defined.  Execution proceeds as if the
+omitted indices are present but invisible.  This means that the loop body
+controlled by the iterator may be executed multiple times with the
+same set of (visible) indices.
 
 \subsubsection{Splitting a Tuple into Multiple Formal Arguments}
 \label{Formal_Argument_Declarations_in_a_Tuple}
@@ -419,7 +427,7 @@ in~\rsec{Function_Definitions}.
 \end{chapelpre}
 The function
 \begin{chapel}
-def f(x: int, (y, z): (int, int)) {
+proc f(x: int, (y, z): (int, int)) {
   // body
 }
 \end{chapel}
@@ -435,10 +443,10 @@ f(1, (2, 3));
 \end{chapeloutput}
 \end{example}
 
-An implicit where clause is created when arguments are grouped using a
-tuple notation to ensure that the function is called with an actual
-tuple of the correct size.  Grouping arguments in tuples may be
-arbitrarily nested.  Functions with tuple-grouped arguments may not be
+An implicit \chpl{where} clause is created when arguments are grouped using
+tuple notation, to ensure that the function is called with an actual
+tuple of the correct size.  Arguments grouped in tuples may be
+nested arbitrarily.  Functions with arguments grouped into tuples may not be
 called using named-argument passing on the tuple-grouped arguments.
 In addition, tuple-grouped arguments may not be specified individually
 with types or default values (only in aggregate).  They may not be
@@ -452,13 +460,13 @@ variable number of them.
 \end{chapelpre}
 The function \chpl{f} defined as
 \begin{chapel}
-def f((x, (y, z))) {
+proc f((x, (y, z))) {
   writeln((x, y, z));
 }
 \end{chapel}
 is equivalent to the function \chpl{g} defined as
 \begin{chapel}
-def g(t) where isTuple(t) && t.size == 2 && isTuple(t(2)) && t(2).size == 2 {
+proc g(t) where isTuple(t) && t.size == 2 && isTuple(t(2)) && t(2).size == 2 {
   writeln((t(1), t(2)(1), t(2)(2)));
 }
 \end{chapel}
@@ -480,7 +488,7 @@ destructured by enclosing a single formal argument in parentheses.
 \end{chapelpre}
 The empty function
 \begin{chapel}
-def f((x)) { }
+proc f((x)) { }
 \end{chapel}
 accepts a 1-tuple actual with any component type.
 \begin{chapelpost}
@@ -495,8 +503,10 @@ f(y);
 \index{tuples!omitting components}
 When splitting a tuple into multiple formal arguments, the arguments
 that are grouped using the tuple notation may be omitted.  In this
-case, a new argument is not defined for any omitted component.  The
+case, no name is associated with any omitted component.  The
 call is evaluated as if an argument were defined.
+%TODO: hilde
+% Example required.
 
 \subsubsection{Splitting a Tuple via Tuple Expansion}
 \label{Tuple_Expansion}
@@ -541,11 +551,11 @@ returns the first component of a tuple and a function \chpl{rest} that
 returns a tuple containing all of the components of a tuple except for
 the first:
 \begin{chapel}
-def first(t) where isTuple(t) {
+proc first(t) where isTuple(t) {
   return t(1);
 }
-def rest(t) where isTuple(t) {
-  def helper(first, rest...)
+proc rest(t) where isTuple(t) {
+  proc helper(first, rest...)
     return rest;
   return helper((...t));
 }
@@ -614,7 +624,7 @@ an error were tuple not homogeneous.
 
 \begin{rationale}
 Non-homogeneous tuples can only be accessed by compile-time constants
-so that the type of the expression is statically known.
+since the type of an expression must be statically known.
 \end{rationale}
 
 \subsection{Tuple Operators}
@@ -635,6 +645,12 @@ and returning the results as a new tuple.
 The size of the result tuple is the same as the size of the
 argument tuple. The type of each result component is the result
 type of the operator when applied to the corresponding argument component.
+
+The type of every element of the operand tuple must have a
+well-defined operator matching the unary operator being applied.  That
+is, if the element type is a user-defined type, it must supply an
+overloaded definition for the unary operator being used.  Otherwise, a
+compile-time error will be issued.
 
 \subsubsection{Binary Operators}
 \label{Tuple_Binary_Operators}
@@ -659,6 +675,11 @@ The sizes of the two argument tuples must be the same.
 The size of the result tuple is the same as the argument tuples.  The
 type of each result component is the result type of the operator when
 applied to the corresponding pair of the argument components.
+
+When a tuple binary operator is used, the same operator must be
+well-defined for successive pairs of operands in the two tuples.
+Otherwise, the operation is illegal and a compile-time error will
+result.
 
 \begin{example}
 \begin{chapelpre}
@@ -704,6 +725,10 @@ The relational operators on tuples may be short-circuiting, i.e.
 they may execute only the pair-wise comparisons that are necessary
 to determine the result.
 
+However, just as for other binary tuple operators, the corresponding operation
+must be well-defined on each successive pair of operand types in the two operand
+tuples.  Otherwise, a compile-time error will result.
+
 \begin{example}
 \begin{chapelpre}
 \end{chapelpre}
@@ -727,35 +752,35 @@ true
 \index{tuples!predefined functions}
 
 \begin{protohead}
-def $Tuple$.size param
+proc $Tuple$.size param
 \end{protohead}
 \begin{protobody}
 Returns the size of the tuple.
 \end{protobody}
 
 \begin{protohead}
-def isHomogeneousTuple(t: $Tuple$) param
+proc isHomogeneousTuple(t: $Tuple$) param
 \end{protohead}
 \begin{protobody}
 Returns true if \chpl{t} is a homogeneous tuple; otherwise false.
 \end{protobody}
 
 \begin{protohead}
-def isTuple(t: $Tuple$) param
+proc isTuple(t: $Tuple$) param
 \end{protohead}
 \begin{protobody}
 Returns true if \chpl{t} is a tuple; otherwise false.
 \end{protobody}
 
 \begin{protohead}
-def isTupleType(type t) param
+proc isTupleType(type t) param
 \end{protohead}
 \begin{protobody}
 Returns true if \chpl{t} is a tuple of types; otherwise false.
 \end{protobody}
 
 \begin{protohead}
-def max(type t) where isTupleType(t)
+proc max(type t) where isTupleType(t)
 \end{protohead}
 \begin{protobody}
 Returns a tuple of type \chpl{t} with each component set to the maximum
@@ -763,7 +788,7 @@ value that can be stored in its position.
 \end{protobody}
 
 \begin{protohead}
-def min(type t) where isTupleType(t)
+proc min(type t) where isTupleType(t)
 \end{protohead}
 \begin{protobody}
 Returns a tuple of type \chpl{t} with each component set to the minimum
