@@ -5,7 +5,7 @@ var A: [D] real;
 
 writeln(norm1(A));
 
-def norm1(x) {
+proc norm1(x) {
   var norm = 0.0;
 
   for i in x.domain {

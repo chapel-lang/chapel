@@ -1,5 +1,5 @@
 module MyNorm{
-  def norm(x: [], p: string) where x.rank == 1 {
+  proc norm(x: [], p: string) where x.rank == 1 {
 
     if (p == '2') {
       return sqrt(+ reduce (x*x));
@@ -10,7 +10,7 @@ module MyNorm{
     } else return -1;
   }
 
-  def norm(x:[?D], p: string) where x.rank == 2 {
+  proc norm(x:[?D], p: string) where x.rank == 2 {
   
     if (p == '1') {
       var maxColSum = abs(x(1,1));
@@ -29,7 +29,7 @@ module MyNorm{
     } else return -1;
   }
 
-  def norm(x: []) {
+  proc norm(x: []) {
     if (x.rank == 1) then return norm(x,'2');
     else if (x.rank == 2) then return norm(x,'frob');
     else return -1;
