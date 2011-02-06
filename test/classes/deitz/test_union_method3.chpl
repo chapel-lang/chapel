@@ -1,10 +1,10 @@
 union foo {
   var i : int;
   var f : real;
-  def hello() {
+  proc hello() {
     writeln("Hello");
   }
-  def printf() {
+  proc printf() {
     writeln("f value: ", f);
   }
 }

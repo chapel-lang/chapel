@@ -2,16 +2,16 @@ class D {
   var n: int;
   class C {
     var a: int;
-    def foo(i: int) {
+    proc foo(i: int) {
       n = i;
     }
   }
-  def make_a_C(i: int = 0) {
+  proc make_a_C(i: int = 0) {
     return new C(i);
   }
 }
 
-def main {
+proc main {
   var d = new D(1);
   var c = d.make_a_C();
 

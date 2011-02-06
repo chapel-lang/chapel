@@ -1,4 +1,4 @@
-def main() {
+proc main() {
   var b     : volatile bool;
   var b8    : volatile bool(8);
   var b16   : volatile bool(16);

@@ -7,7 +7,7 @@ class Function1d {
   var s = new FTree();
 }
 
-def main() {
+proc main() {
   var f: Function1d;
   //var ff = new Function1d();
 }

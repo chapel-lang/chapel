@@ -2,19 +2,19 @@ type cptrtovoid = opaque;
 
 
 class GPUDist: BaseDist {
-  def newArithmeticDom(param rank: int, type idxType, param stridable: bool)
+  proc newArithmeticDom(param rank: int, type idxType, param stridable: bool)
     return new GPUArithmeticDom(rank, idxType, stridable, this);
 
-  def newAssociativeDom(type idxType)
+  proc newAssociativeDom(type idxType)
     return new DefaultAssociativeDom(idxType, this);
 
-  def newEnumDom(type idxType)
+  proc newEnumDom(type idxType)
     return new DefaultEnumDom(idxType, this);
 
-  def newOpaqueDom(type idxType)
+  proc newOpaqueDom(type idxType)
     return new DefaultOpaqueDom(this);
 
-  def newSparseDom(param rank: int, type idxType, dom: domain)
+  proc newSparseDom(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDom(rank, idxType, this, dom);
 }
 
@@ -31,20 +31,20 @@ class GPUArithmeticDom: BaseArithmeticDom {
   var dist: GPUDist;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
-  def GPUArithmeticDom(param rank, type idxType, param stridable,
+  proc GPUArithmeticDom(param rank, type idxType, param stridable,
                                    dist) {
     this.dist = dist;
   }
 
-  def clear() {
+  proc clear() {
     var emptyRange: range(idxType, BoundedRangeType.bounded, stridable);
     for param i in 1..rank do
       ranges(i) = emptyRange;
   }
   
-  def getIndices() return ranges;
+  proc getIndices() return ranges;
 
-  def setIndices(x) {
+  proc setIndices(x) {
     if ranges.size != x.size then
       compilerError("rank mismatch in domain assignment");
     if ranges(1).eltType != x(1).eltType then
@@ -52,7 +52,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     ranges = x;
   }
 
-  def these_help(param d: int) {
+  iter these_help(param d: int) {
     if d == rank - 1 {
       for i in ranges(d) do
         for j in ranges(rank) do
@@ -64,7 +64,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these_help(param d: int, block) {
+  iter these_help(param d: int, block) {
     if d == block.size - 1 {
       for i in block(d) do
         for j in block(block.size) do
@@ -76,7 +76,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these() {
+  iter these() {
     if rank == 1 {
       for i in ranges(1) do
         yield i;
@@ -86,7 +86,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     if rank == 1 {
       yield 0..ranges(1).length-1;
     } else {
@@ -97,7 +97,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     if rank == 1 {
       if stridable {
         var block =
@@ -129,24 +129,24 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def member(ind: idxType) where rank == 1 {
+  proc member(ind: idxType) where rank == 1 {
     if !ranges(1).member(ind) then
       return false;
     return true;
   }
 
-  def member(ind: rank*idxType) {
+  proc member(ind: rank*idxType) {
     for param i in 1..rank do
       if !ranges(i).member(ind(i)) then
         return false;
     return true;
   }
 
-  def order(ind: idxType) where rank == 1 {
+  proc order(ind: idxType) where rank == 1 {
     return ranges(1).order(ind);
   }
 
-  def order(ind: rank*idxType) {
+  proc order(ind: rank*idxType) {
     var totOrder: idxType;
     var blk: idxType = 1;
     for param d in 1..rank by -1 {
@@ -158,13 +158,13 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return totOrder;
   }
 
-  def position(ind: idxType) where rank == 1 {
+  proc position(ind: idxType) where rank == 1 {
     var pos: 1*idxType;
     pos(1) = order(ind);
     return pos;
   }
 
-  def position(ind: rank*idxType) {
+  proc position(ind: rank*idxType) {
     var pos: rank*idxType;
     for d in 1..rank {
       pos(d) = ranges(d).order(ind(d));
@@ -172,10 +172,10 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return pos;
   }
 
-  def dim(d : int)
+  proc dim(d : int)
     return ranges(d);
 
-  def numIndices {
+  proc numIndices {
     var sum = 1:idxType;
     for param i in 1..rank do
       sum *= ranges(i).length;
@@ -183,7 +183,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     // WANT: return * reduce (this(1..rank).length);
   }
 
-  def low {
+  proc low {
     if rank == 1 {
       return ranges(1)._low;
     } else {
@@ -194,7 +194,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def high {
+  proc high {
     if rank == 1 {
       return ranges(1)._high;
     } else {
@@ -205,12 +205,12 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def buildArray(type eltType) {
+  proc buildArray(type eltType) {
     return new GPUArithmeticArr(eltType, rank, idxType, stridable,
                                            dom=this);
   }
 
-  def slice(param stridable: bool, ranges) {
+  proc slice(param stridable: bool, ranges) {
     var d = new GPUArithmeticDom(rank, idxType,
                                      stridable || this.stridable, dist);
     for param i in 1..rank do
@@ -218,9 +218,9 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return d;
   }
 
-  def rankChange(param rank: int, param stridable: bool, args) {
-    def isRange(r: range(?e,?b,?s)) param return 1;
-    def isRange(r) param return 0;
+  proc rankChange(param rank: int, param stridable: bool, args) {
+    proc isRange(r: range(?e,?b,?s)) param return 1;
+    proc isRange(r) param return 0;
 
     var d = new GPUArithmeticDom(rank, idxType, stridable, dist);
     var i = 1;
@@ -233,21 +233,21 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return d;
   }
 
-  def translate(off: rank*idxType) {
+  proc translate(off: rank*idxType) {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).translate(off(i));
     return x;
   }
 
-  def chpl__unTranslate(off: rank*idxType) {
+  proc chpl__unTranslate(off: rank*idxType) {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).chpl__unTranslate(off(i));
     return x;
   }
 
-  def interior(off: rank*idxType) {
+  proc interior(off: rank*idxType) {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do {
       if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
@@ -259,14 +259,14 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return x;
   }
 
-  def exterior(off: rank*idxType) {
+  proc exterior(off: rank*idxType) {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dim(i).exterior(off(i));
     return x;
   }
 
-  def expand(off: rank*idxType) {
+  proc expand(off: rank*idxType) {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do {
       x.ranges(i) = ranges(i).expand(off(i));
@@ -277,21 +277,21 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return x;
   }  
 
-  def expand(off: idxType) {
+  proc expand(off: idxType) {
     var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i).expand(off);
     return x;
   }
 
-  def strideBy(str : rank*int) {
+  proc strideBy(str : rank*int) {
     var x = new GPUArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str(i);
     return x;
   }
 
-  def strideBy(str : int) {
+  proc strideBy(str : int) {
     var x = new GPUArithmeticDom(rank, idxType, true, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str;
@@ -320,15 +320,15 @@ class GPUArithmeticArr: BaseArr {
   var noinit: bool = false;
   var D_data : cptrtovoid;
 //  param mem : memType = memType.GPU;
-  def mem param return memType.GPU;
+  proc mem param return memType.GPU;
 
-  def ~GPUArithmeticArr() {
+  proc ~GPUArithmeticArr() {
     //gpuFree(D_data);
     destroyData();
     destroyDom();
   }
 
-  def destroyData() {
+  proc destroyData() {
     var cnt = data.count - 1;
     data.count = cnt;
     if cnt < 0 then halt("count is negative!"); // should never happen!
@@ -336,7 +336,7 @@ class GPUArithmeticArr: BaseArr {
       on data do delete data;
   }
 
-  def destroyDom() {
+  proc destroyDom() {
     if !dom.supportsPrivatization() {
       var cnt = dom._count - 1;
       if cnt < 0 then halt("count is negative!"); // should never happen!
@@ -349,29 +349,29 @@ class GPUArithmeticArr: BaseArr {
     }
   }
 
-  def these() var {
+  iter these() var {
     for i in dom do
       yield this(i);
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     for block in dom.these(tag=iterator.leader) do
       yield block;
   }
 
-  def these(param tag: iterator, follower) var where tag == iterator.follower {
+  iter these(param tag: iterator, follower) var where tag == iterator.follower {
     for i in dom.these(tag=iterator.follower, follower) do
       yield this(i);
   }
 
-  def computeFactoredOffs() {
+  proc computeFactoredOffs() {
     factoredOffs = 0:idxType;
     for i in 1..rank do {
       factoredOffs = factoredOffs + blk(i) * off(i);
     }
   }
 
-  def initialize() {
+  proc initialize() {
     if noinit == true then return;
     for param dim in 1..rank {
       off(dim) = dom.dim(dim)._low;
@@ -392,11 +392,11 @@ class GPUArithmeticArr: BaseArr {
   }
 
   pragma "inline"
-  def this(ind: idxType ...1) var where rank == 1
+  proc this(ind: idxType ...1) var where rank == 1
     return this(ind);
 
   pragma "inline"
-  def this(ind : rank*idxType) var {
+  proc this(ind : rank*idxType) var {
     if boundsChecking then
       if !dom.member(ind) then
         halt("array index out of bounds: ", ind);
@@ -419,7 +419,7 @@ class GPUArithmeticArr: BaseArr {
     //return data(sum);
   }
 
-  def reindex(d: GPUArithmeticDom) {
+  proc reindex(d: GPUArithmeticDom) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 1..rank do
@@ -443,13 +443,13 @@ class GPUArithmeticArr: BaseArr {
     return alias;
   }
 
-  def checkSlice(ranges) {
+  proc checkSlice(ranges) {
     for param i in 1..rank do
       if !dom.dim(i).boundsCheck(ranges(i)) then
         halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
 
-  def slice(d: GPUArithmeticDom) {
+  proc slice(d: GPUArithmeticDom) {
     var alias = new GPUArithmeticArr(eltType, rank, idxType,
                                                 d.stridable, reindexed,
                                                 d, noinit=true);
@@ -468,9 +468,9 @@ class GPUArithmeticArr: BaseArr {
     return alias;
   }
 
-  def checkRankChange(args) {
-    def isRange(r: range(?e,?b,?s)) param return 1;
-    def isRange(r) param return 0;
+  proc checkRankChange(args) {
+    proc isRange(r: range(?e,?b,?s)) param return 1;
+    proc isRange(r) param return 0;
 
     for param i in 1..args.size do
       if isRange(args(i)) then
@@ -478,11 +478,11 @@ class GPUArithmeticArr: BaseArr {
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
-  def rankChange(param newRank: int, param newStridable: bool, args) {
+  proc rankChange(param newRank: int, param newStridable: bool, args) {
     var d = dom.rankChange(newRank, newStridable, args);
 
-    def isRange(r: range(?e,?b,?s)) param return 1;
-    def isRange(r) param return 0;
+    proc isRange(r: range(?e,?b,?s)) param return 1;
+    proc isRange(r) param return 0;
 
     var alias = new GPUArithmeticArr(eltType, newRank, idxType,
                                                 newStridable, true, d,
@@ -508,7 +508,7 @@ class GPUArithmeticArr: BaseArr {
     return alias;
   }
 
-  def reallocate(d: domain) {
+  proc reallocate(d: domain) {
     if (d._value.type == dom.type) {
       var copy = new GPUArithmeticArr(eltType, rank, idxType,
                                                  d._value.stridable, reindexed,
@@ -531,8 +531,8 @@ class GPUArithmeticArr: BaseArr {
     }
   }
 
-  def tupleInit(b: _tuple) {
-    def _tupleInitHelp(j, param rank: int, b: _tuple) {
+  proc tupleInit(b: _tuple) {
+    proc _tupleInitHelp(j, param rank: int, b: _tuple) {
       if rank == 1 {
         for param i in 1..b.size {
           j(this.rank-rank+1) = dom.dim(this.rank-rank+1).low + i - 1;
@@ -556,14 +556,14 @@ class GPUArithmeticArr: BaseArr {
   }
 }
 
-def GPUArithmeticDom.writeThis(f: Writer) {
+proc GPUArithmeticDom.writeThis(f: Writer) {
   f.write("[", dim(1));
   for i in 2..rank do
     f.write(", ", dim(i));
   f.write("]");
 }
 
-def GPUArithmeticArr.writeThis(f: Writer) {
+proc GPUArithmeticArr.writeThis(f: Writer) {
   if dom.numIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
@@ -589,7 +589,7 @@ def GPUArithmeticArr.writeThis(f: Writer) {
   }
 }
 
-def main() {
+proc main() {
 	const GPUBlockDist = new GPUDist();
 	const space : domain(1) dmapped GPUBlockDist = [1..100];
 

@@ -5,7 +5,7 @@ class BinaryTree {
   var right: BinaryTree(eltType);
 }
 
-def BinaryTree.postOrder(): eltType {
+iter BinaryTree.postOrder(): eltType {
   if left then
     for e in left.postOrder() do
       yield e;

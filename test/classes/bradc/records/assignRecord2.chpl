@@ -9,7 +9,7 @@ record myrecord {
   var a: list(int);
 }
 
-def main() {
+proc main() {
   var x: myrecord;
   var y: myrecord;
 

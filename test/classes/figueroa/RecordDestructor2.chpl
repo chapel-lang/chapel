@@ -1,8 +1,8 @@
 record R {
-  def ~R () {writeln("Inside ~R");}
+  proc ~R () {writeln("Inside ~R");}
 }
 
-def foo {
+proc foo {
   var r: R;
 }
 

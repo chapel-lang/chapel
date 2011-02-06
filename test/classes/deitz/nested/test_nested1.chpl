@@ -1,12 +1,12 @@
 class C {
   class D {
     var x = 0;
-    def bar() {
+    proc bar() {
       writeln(d);
     }
   }
   var d = new D();
-  def foo() {
+  proc foo() {
     writeln(d.x);
     d.bar();
   }

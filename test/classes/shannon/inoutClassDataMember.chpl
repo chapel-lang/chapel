@@ -2,7 +2,7 @@ class volcano {
   var alertLevel: int;
 }
 
-def setVolcano(inout al: int, inout name: string) {
+proc setVolcano(inout al: int, inout name: string) {
   name = "Mount St. Helens";
   al = 2;
 }

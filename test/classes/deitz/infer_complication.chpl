@@ -1,7 +1,7 @@
 class C {
   var x;
   var y;
-  def foo() {
+  proc foo() {
     return x + y;
   }
 }

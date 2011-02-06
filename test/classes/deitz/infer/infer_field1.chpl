@@ -3,12 +3,12 @@ class C {
   var y;
 }
 
-def foo(c : C) {
+proc foo(c : C) {
   c.x = 2;
   c.y = 3;
 }
 
-def bar(c : C) {
+proc bar(c : C) {
   c.x = "hello";
   c.y = "world";
 }

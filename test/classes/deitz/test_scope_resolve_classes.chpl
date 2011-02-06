@@ -6,11 +6,11 @@ class C {
 
 module M {
   var y = 1;
-  def C.foo() {
+  proc C.foo() {
     writeln(y, x);
   }
 
-  def main() {
+  proc main() {
     var c = new C();
     c.foo();
     delete c;

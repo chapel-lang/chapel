@@ -1,9 +1,9 @@
 class C {
   var x : int;
-  def foo() {
+  proc foo() {
     writeln("foo of ", x);
   }
-  def bar() {
+  proc bar() {
     writeln("bar of ", x);
     foo();
   }

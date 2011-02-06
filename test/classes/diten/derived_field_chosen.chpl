@@ -1,6 +1,6 @@
 class Base {
   var s = "Base";
-  def get_s():string {
+  proc get_s():string {
     return s;
   }
 }
@@ -9,7 +9,7 @@ class Sub: Base {
   var s = "Sub";
 }
 
-def main() {
+proc main() {
   var sub = new Sub();
   var base = sub;
   var base2= new Base();

@@ -1,13 +1,13 @@
 class C {
   var x: int;
-  def foo(param rank: int) {
+  proc foo(param rank: int) {
     writeln("foo<", rank, ">: (x = ", x, ")");
   }
 }
 
 class D: C {
   var y: int;
-  def foo(param rank: int) where rank == 1 {
+  proc foo(param rank: int) where rank == 1 {
     writeln("foo<", rank, ">: (x = ", x, ", y = ", y, ")");
   }
 }

@@ -1,6 +1,6 @@
 class foo {
   var a : int;
-  def bar {
+  proc bar {
     if a < 100
       then return true;
       else return false;

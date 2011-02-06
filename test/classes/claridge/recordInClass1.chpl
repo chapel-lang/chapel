@@ -26,7 +26,7 @@ class Container {
   var r = new R();
 }
 
-def main {
+proc main {
   var c = new Container();
   // writeln(c.r.indices);
   writeln("hello");

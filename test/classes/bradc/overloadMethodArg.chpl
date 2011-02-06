@@ -1,5 +1,5 @@
 class C {
-  def foo(foo:int) {
+  proc foo(foo:int) {
     if (foo < 0) {
       writeln("negative");
     } else {
@@ -7,7 +7,7 @@ class C {
     }
   }
 
-  def bar(param bar) {
+  proc bar(param bar) {
     if (bar < 0) {
       writeln("negative");
     } else {
@@ -15,7 +15,7 @@ class C {
     }
   }
 
-  def baz(foo:int, bar: int) {
+  proc baz(foo:int, bar: int) {
     if (foo < bar) {
       writeln("less");
     } else {

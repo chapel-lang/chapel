@@ -28,7 +28,7 @@ class EnumC {
 
 // generic print routine
 
-def foo(C) {
+proc foo(C) {
   writeln("C.x.domain is: ", C.x.domain);
   writeln("x is: ", C.x);
   writeln();

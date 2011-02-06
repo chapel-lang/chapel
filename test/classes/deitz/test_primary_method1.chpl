@@ -1,9 +1,9 @@
 class foo {
   var i : int;
-  def primary() {
+  proc primary() {
     writeln("primary method call; i is ", i);
   }
-  def setx() {
+  proc setx() {
     i = 4;
   }
 }

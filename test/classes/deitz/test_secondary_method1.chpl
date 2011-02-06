@@ -1,11 +1,11 @@
 class foo {
   var i : int;
-  def primary() {
+  proc primary() {
     writeln("primary method call");
   }
 }
 
-def foo.secondary() {
+proc foo.secondary() {
   writeln("secondary method call");
 }
 
