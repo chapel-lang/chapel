@@ -1,6 +1,6 @@
 writeln("Fred".length);
 
-def bob(s:string) {
+proc bob(s:string) {
   writeln(s.length);
 }
 

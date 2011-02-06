@@ -1,6 +1,6 @@
 // what about aliasing of parameters?
 
-def zap(inout x : int, inout y : int) {
+proc zap(inout x : int, inout y : int) {
   writeln(x, ' ', y);
   x = 1;
   writeln(x, ' ', y);

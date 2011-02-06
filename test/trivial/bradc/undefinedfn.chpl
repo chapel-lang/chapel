@@ -1,4 +1,4 @@
-def main() {
+proc main() {
   var x: real;
 
   x = foo();

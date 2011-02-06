@@ -1,4 +1,4 @@
-pragma "inline" def basic() : int {
+pragma "inline" iter basic() : int {
   var i : int;
   while i < 10 {
     yield i * 4;
@@ -8,7 +8,7 @@ pragma "inline" def basic() : int {
 
 
 
-def main() {
+proc main() {
 var x : int = 5;
   for i in basic() {
     writeln(i+x);

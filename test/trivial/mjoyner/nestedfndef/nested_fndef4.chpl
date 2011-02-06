@@ -1,17 +1,17 @@
-def main() {
+proc main() {
 
-  def nested() {
+  proc nested() {
      var w : int = 3;
      deeplyNested();
           
-    def deeplyNested() {
+    proc deeplyNested() {
       var x : int = 4;
       
-      def reallyDeeplyNested() {
+      proc reallyDeeplyNested() {
         var y : int = 5;
         superNested(); 
         
-        def superNested() {
+        proc superNested() {
           var z : real = 6.0;
           writeln(w);
           writeln(x);

@@ -2,11 +2,11 @@ class C {
   var m = 2.3;
 }
 
-def buildC() {
+proc buildC() {
   return new C();
 }
 
-def foo(x: int ...?numargs) {
+proc foo(x: int ...?numargs) {
   writeln("In foo()");
   if (numargs > 1) {
     return buildC();

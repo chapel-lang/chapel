@@ -1,4 +1,4 @@
-def foo() {
+proc foo() {
   writeln("side effect");
   return 2;
 }
