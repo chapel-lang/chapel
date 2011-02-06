@@ -46,7 +46,7 @@
 // be made private to the RandomStream class.
 //
 
-def fillRandom(x:[], seed: int(64)) {
+proc fillRandom(x:[], seed: int(64)) {
   if x.eltType != complex && x.eltType != real && x.eltType != imag then
     compilerError("Random.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
   var randNums = new RandomStream(seed, parSafe=false);
@@ -54,7 +54,7 @@ def fillRandom(x:[], seed: int(64)) {
   delete randNums;
 }
 
-def fillRandom(x:[]) {
+proc fillRandom(x:[]) {
   if x.eltType != complex && x.eltType != real && x.eltType != imag then
     compilerError("Random.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
   var randNums = new RandomStream(parSafe=false);
@@ -63,7 +63,7 @@ def fillRandom(x:[]) {
 }
 
 record SeedGenerators {
-  def currentTime {
+  proc currentTime {
     use Time;
     const seed: int(64) = getCurrentTime(unit=TimeUnits.microseconds):int(64);
     return (if seed % 2 == 0 then seed + 1 else seed) % (1:int(64) << 46);
@@ -76,14 +76,14 @@ class RandomStream {
   param parSafe: bool = true;
   const seed: int(64);
 
-  def RandomStream(seed: int(64) = SeedGenerator.currentTime,
+  proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
                    param parSafe: bool = true) {
     if seed % 2 == 0 || seed < 1 || seed > 1:int(64)<<46 then
       halt("RandomStream seed must be an odd integer between 0 and 2**46");
     RandomStreamPrivate_init(seed);
   }
 
-  def getNext(param parSafe = this.parSafe) {
+  proc getNext(param parSafe = this.parSafe) {
     if parSafe then
       RandomStreamPrivate_lock$ = true;
     RandomStreamPrivate_count += 1;
@@ -93,7 +93,7 @@ class RandomStream {
     return result;
   }
 
-  def skipToNth(n: integral, param parSafe = this.parSafe) {
+  proc skipToNth(n: integral, param parSafe = this.parSafe) {
     if n <= 0 then
       halt("RandomStream.skipToNth(n) called with non-positive 'n' value", n);
     if parSafe then
@@ -104,7 +104,7 @@ class RandomStream {
       RandomStreamPrivate_lock$;
   }
 
-  def getNth(n: integral, param parSafe = this.parSafe) {
+  proc getNth(n: integral, param parSafe = this.parSafe) {
     if (n <= 0) then 
       halt("RandomStream.getNth(n) called with non-positive 'n' value", n);
     if parSafe then
@@ -116,14 +116,14 @@ class RandomStream {
     return result;
   }
 
-  def fillRandom(X: [], param parSafe = this.parSafe) {
+  proc fillRandom(X: [], param parSafe = this.parSafe) {
     if X.eltType != complex && X.eltType != real && X.eltType != imag then
       compilerError("RandomStream.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
     forall (x, r) in (X, iterate(X.domain, X.eltType, parSafe)) do
       x = r;
   }
 
-  def iterate(D: domain, type resultType=real, param parSafe = this.parSafe) {
+  proc iterate(D: domain, type resultType=real, param parSafe = this.parSafe) {
     if resultType != complex && resultType != real && resultType != imag then
       compilerError("RandomStream.iterate is only defined for real(64), imag(64), and complex(128) result types");
     param cplxMultiplier = if resultType == complex then 2 else 1;
@@ -148,7 +148,7 @@ class RandomStream {
   var RandomStreamPrivate_cursor: real;
   var RandomStreamPrivate_count: int(64);
 
-  def RandomStreamPrivate_init(seed: int(64)) {
+  proc RandomStreamPrivate_init(seed: int(64)) {
     this.seed = seed;
     RandomStreamPrivate_cursor = seed;
     RandomStreamPrivate_count = 1;
@@ -174,7 +174,7 @@ const RandomPrivate_r23   = 0.5**23,
 //
 // NPB-defined randlc routine
 //
-def RandomPrivate_randlc(inout x: real, a: real = RandomPrivate_arand) {
+proc RandomPrivate_randlc(inout x: real, a: real = RandomPrivate_arand) {
   var t1 = RandomPrivate_r23 * a;
   const a1 = floor(t1),
     a2 = a - RandomPrivate_t23 * a1;
@@ -192,7 +192,7 @@ def RandomPrivate_randlc(inout x: real, a: real = RandomPrivate_arand) {
 }
 
 // Wrapper that takes a result type (two calls for complex types)
-def RandomPrivate_randlc(type resultType, inout x: real) {
+proc RandomPrivate_randlc(type resultType, inout x: real) {
   if resultType == complex then
     return (RandomPrivate_randlc(x), RandomPrivate_randlc(x)):complex;
   else
@@ -203,7 +203,7 @@ def RandomPrivate_randlc(type resultType, inout x: real) {
 // Return a value for the cursor so that the next call to randlc will
 // return the same value as the nth call to randlc
 //
-def RandomPrivate_randlc_skipto(seed: int(64), in n: integral): real {
+proc RandomPrivate_randlc_skipto(seed: int(64), in n: integral): real {
   var cursor = seed:real;
   n -= 1;
   var t = RandomPrivate_arand;
@@ -225,7 +225,7 @@ def RandomPrivate_randlc_skipto(seed: int(64), in n: integral): real {
 //
 // iterate over outer ranges in tuple of ranges
 //
-def RandomPrivate_outer(ranges, param dim: int = 1) {
+iter RandomPrivate_outer(ranges, param dim: int = 1) {
   if dim + 1 == ranges.size {
     for i in ranges(dim) do
       yield tuple(i);
@@ -241,21 +241,21 @@ def RandomPrivate_outer(ranges, param dim: int = 1) {
 //
 // RandomStream iterator implementation
 //
-def RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                           start: int(64)) {
   var cursor = RandomPrivate_randlc_skipto(seed, start);
   for i in D do
     yield RandomPrivate_randlc(resultType, cursor);
 }
 
-def RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                           start: int(64), param tag: iterator)
       where tag == iterator.leader {
   for block in D._value.these(tag=iterator.leader) do
     yield block;
 }
 
-def RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                           start: int(64), param tag: iterator, follower)
       where tag == iterator.follower {
   param multiplier = if resultType == complex then 2 else 1;

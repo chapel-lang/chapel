@@ -3,26 +3,26 @@ config param debugDefaultDist = false;
 config param debugDataPar = false;
 
 class DefaultDist: BaseDist {
-  def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool)
+  proc dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool)
     return new DefaultArithmeticDom(rank, idxType, stridable, this);
 
-  def dsiNewAssociativeDom(type idxType)
+  proc dsiNewAssociativeDom(type idxType)
     return new DefaultAssociativeDom(idxType, this);
 
-  def dsiNewOpaqueDom(type idxType)
+  proc dsiNewOpaqueDom(type idxType)
     return new DefaultOpaqueDom(this);
 
-  def dsiNewSparseDom(param rank: int, type idxType, dom: domain)
+  proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDom(rank, idxType, this, dom);
 
-  def dsiIndexLocale(ind) return this.locale;
+  proc dsiIndexLocale(ind) return this.locale;
 
-  def dsiClone() return this;
+  proc dsiClone() return this;
 
-  def dsiAssign(other: this.type) { }
+  proc dsiAssign(other: this.type) { }
 
-  def dsiCreateReindexDist(newSpace, oldSpace) return this;
-  def dsiCreateRankChangeDist(param newRank, args) return this;
+  proc dsiCreateReindexDist(newSpace, oldSpace) return this;
+  proc dsiCreateRankChangeDist(param newRank, args) return this;
 }
 
 //
@@ -38,22 +38,22 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   var dist: DefaultDist;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
-  def linksDistribution() param return false;
+  proc linksDistribution() param return false;
 
-  def DefaultArithmeticDom(param rank, type idxType, param stridable, dist) {
+  proc DefaultArithmeticDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;
   }
 
-  def dsiClear() {
+  proc dsiClear() {
     var emptyRange: range(idxType, BoundedRangeType.bounded, stridable);
     for param i in 1..rank do
       ranges(i) = emptyRange;
   }
   
   // function and iterator versions, also for setIndices
-  def dsiGetIndices() return ranges;
+  proc dsiGetIndices() return ranges;
 
-  def dsiSetIndices(x) {
+  proc dsiSetIndices(x) {
     if ranges.size != x.size then
       compilerError("rank mismatch in domain assignment");
     if ranges(1).idxType != x(1).idxType then
@@ -61,7 +61,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     ranges = x;
   }
 
-  def these_help(param d: int) {
+  iter these_help(param d: int) {
     if d == rank - 1 {
       for i in ranges(d) do
         for j in ranges(rank) do
@@ -73,7 +73,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these_help(param d: int, block) {
+  iter these_help(param d: int, block) {
     if d == block.size - 1 {
       for i in block(d) do
         for j in block(block.size) do
@@ -85,7 +85,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these() {
+  iter these() {
     if rank == 1 {
       for i in ranges(1) do
         yield i;
@@ -95,7 +95,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In domain leader code:"); // this = ", this);
     const numTasks = if dataParTasksPerLocale==0 then here.numCores
@@ -119,6 +119,8 @@ class DefaultArithmeticDom: BaseArithmeticDom {
               " ranges(", parDim, ").length=", ranges(parDim).length);
 
     if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
+
+    if numChunks == 0 then return;	// Avoid problems with 0:uint(64) - 1 below.
 
     if (CHPL_TARGET_PLATFORM != "xmt") {
       if numChunks == 1 {
@@ -169,8 +171,8 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
-    def anyStridable(rangeTuple, param i: int = 1) param
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
+    proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
@@ -213,14 +215,14 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def dsiMember(ind: rank*idxType) {
+  proc dsiMember(ind: rank*idxType) {
     for param i in 1..rank do
       if !ranges(i).member(ind(i)) then
         return false;
     return true;
   }
 
-  def dsiIndexOrder(ind: rank*idxType) {
+  proc dsiIndexOrder(ind: rank*idxType) {
     var totOrder: idxType;
     var blk: idxType = 1;
     for param d in 1..rank by -1 {
@@ -232,18 +234,18 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     return totOrder;
   }
 
-  def dsiDims()
+  proc dsiDims()
     return ranges;
 
-  def dsiDim(d : int)
+  proc dsiDim(d : int)
     return ranges(d);
 
   // optional, is this necesary? probably not now that
   // homogeneous tuples are implemented as C vectors.
-  def dsiDim(param d : int)
+  proc dsiDim(param d : int)
     return ranges(d);
 
-  def dsiNumIndices {
+  proc dsiNumIndices {
     var sum = 1:idxType;
     for param i in 1..rank do
       sum *= ranges(i).length;
@@ -251,7 +253,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     // WANT: return * reduce (this(1..rank).length);
   }
 
-  def dsiLow {
+  proc dsiLow {
     if rank == 1 {
       return ranges(1)._low;
     } else {
@@ -262,18 +264,18 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def dsiHigh {
+  proc dsiHigh {
     if rank == 1 {
-      return ranges(1)._high;
+      return ranges(1).high;
     } else {
       var result: rank*idxType;
       for param i in 1..rank do
-        result(i) = ranges(i)._high;
+        result(i) = ranges(i).high;
       return result;
     }
   }
 
-  def dsiStride {
+  proc dsiStride {
     if rank == 1 {
       return ranges(1)._stride;
     } else {
@@ -284,12 +286,34 @@ class DefaultArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def dsiBuildArray(type eltType) {
+  proc dsiFirst {
+    if rank == 1 {
+      return ranges(1).first;
+    } else {
+      var result: rank*idxType;
+      for param i in 1..rank do
+        result(i) = ranges(i).first;
+      return result;
+    }
+  }
+
+  proc dsiLast {
+    if rank == 1 {
+      return ranges(1).last;
+    } else {
+      var result: rank*idxType;
+      for param i in 1..rank do
+        result(i) = ranges(i).last;
+      return result;
+    }
+  }
+
+  proc dsiBuildArray(type eltType) {
     return new DefaultArithmeticArr(eltType=eltType, rank=rank, idxType=idxType,
                                     stridable=stridable, dom=this);
   }
 
-  def dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
+  proc dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
                             ranges: rank*range(idxType,
                                                BoundedRangeType.bounded,
                                                stridable)) {
@@ -316,14 +340,14 @@ class DefaultArithmeticArr: BaseArr {
   var data : _ddata(eltType);
   var noinit: bool = false;
 
-  def canCopyFromDevice param return true;
+  proc canCopyFromDevice param return true;
 
   // end class definition here, then defined secondary methods below
 
   // can the compiler create this automatically?
-  def dsiGetBaseDom() return dom;
+  proc dsiGetBaseDom() return dom;
 
-  def dsiDestroyData() {
+  proc dsiDestroyData() {
     if dom.dsiNumIndices > 0 {
       pragma "no copy" pragma "no auto destroy" var dr = data;
       pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
@@ -342,7 +366,7 @@ class DefaultArithmeticArr: BaseArr {
     delete data;
   }
 
-  def these() var {
+  iter these() var {
     if rank == 1 {
       // This is specialized to avoid overheads of calling dsiAccess()
       if !dom.stridable {
@@ -374,7 +398,7 @@ class DefaultArithmeticArr: BaseArr {
     }
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultDist then
       writeln("*** In array leader code:");// [\n", this, "]");
     const numTasks = if dataParTasksPerLocale==0 then here.numCores
@@ -398,6 +422,8 @@ class DefaultArithmeticArr: BaseArr {
               " ranges(", parDim, ").length=", dom.ranges(parDim).length);
 
     if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
+
+    if numChunks == 0 then return;
 
     if (CHPL_TARGET_PLATFORM != "xmt") {
 
@@ -449,7 +475,7 @@ class DefaultArithmeticArr: BaseArr {
     }
   }
 
-  def these(param tag: iterator, follower) var where tag == iterator.follower {
+  iter these(param tag: iterator, follower) var where tag == iterator.follower {
     if debugDefaultDist then
       writeln("*** In array follower code:"); // [\n", this, "]");
     for i in dom.these(tag=iterator.follower, follower) {
@@ -458,7 +484,7 @@ class DefaultArithmeticArr: BaseArr {
     }
   }
 
-  def computeFactoredOffs() {
+  proc computeFactoredOffs() {
     factoredOffs = 0:idxType;
     for i in 1..rank do {
       factoredOffs = factoredOffs + blk(i) * off(i);
@@ -467,7 +493,7 @@ class DefaultArithmeticArr: BaseArr {
   
   // change name to setup and call after constructor call sites
   // we want to get rid of all initialize functions everywhere
-  def initialize() {
+  proc initialize() {
     if noinit == true then return;
     for param dim in 1..rank {
       off(dim) = dom.dsiDim(dim)._low;
@@ -483,11 +509,11 @@ class DefaultArithmeticArr: BaseArr {
   }
 
   pragma "inline"
-  def getDataIndex(ind: idxType ...1) where rank == 1
+  proc getDataIndex(ind: idxType ...1) where rank == 1
     return getDataIndex(ind);
 
   pragma "inline"
-  def getDataIndex(ind: rank* idxType) {
+  proc getDataIndex(ind: rank* idxType) {
     var sum = origin;
     if stridable {
       for param i in 1..rank do
@@ -502,18 +528,18 @@ class DefaultArithmeticArr: BaseArr {
 
   // only need second version because wrapper record can pass a 1-tuple
   pragma "inline"
-  def dsiAccess(ind: idxType ...1) var where rank == 1
+  proc dsiAccess(ind: idxType ...1) var where rank == 1
     return dsiAccess(ind);
 
   pragma "inline"
-  def dsiAccess(ind : rank*idxType) var {
+  proc dsiAccess(ind : rank*idxType) var {
     if boundsChecking then
       if !dom.dsiMember(ind) then
         halt("array index out of bounds: ", ind);
     return data(getDataIndex(ind));
   }
 
-  def dsiReindex(d: DefaultArithmeticDom) {
+  proc dsiReindex(d: DefaultArithmeticDom) {
     var alias = new DefaultArithmeticArr(eltType=eltType, rank=d.rank,
                                          idxType=d.idxType,
                                          stridable=d.stridable,
@@ -529,7 +555,7 @@ class DefaultArithmeticArr: BaseArr {
     return alias;
   }
 
-  def dsiSlice(d: DefaultArithmeticDom) {
+  proc dsiSlice(d: DefaultArithmeticDom) {
     var alias = new DefaultArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
@@ -546,9 +572,9 @@ class DefaultArithmeticArr: BaseArr {
     return alias;
   }
 
-  def dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
-    def isRange(r: range(?e,?b,?s)) param return 1;
-    def isRange(r) param return 0;
+  proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
+    proc isRange(r: range(?e,?b,?s)) param return 1;
+    proc isRange(r) param return 0;
 
     var alias = new DefaultArithmeticArr(eltType=eltType, rank=newRank,
                                          idxType=idxType,
@@ -572,7 +598,7 @@ class DefaultArithmeticArr: BaseArr {
     return alias;
   }
 
-  def dsiReallocate(d: domain) {
+  proc dsiReallocate(d: domain) {
     if (d._value.type == dom.type) {
       var copy = new DefaultArithmeticArr(eltType=eltType, rank=rank,
                                           idxType=idxType,
@@ -593,20 +619,20 @@ class DefaultArithmeticArr: BaseArr {
     }
   }
 
-  def dsiLocalSlice(ranges) {
+  proc dsiLocalSlice(ranges) {
     halt("all dsiLocalSlice calls on DefaultArithmetics should be handled in ChapelArray.chpl");
   }
 }
 
-def DefaultArithmeticDom.dsiSerialWrite(f: Writer) {
+proc DefaultArithmeticDom.dsiSerialWrite(f: Writer) {
   f.write("[", dsiDim(1));
   for i in 2..rank do
     f.write(", ", dsiDim(i));
   f.write("]");
 }
 
-def DefaultArithmeticArr.dsiSerialWrite(f: Writer) {
-  def recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
+proc DefaultArithmeticArr.dsiSerialWrite(f: Writer) {
+  proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
     var makeStridePositive = if dom.ranges(dim).stride > 0 then 1 else -1;
     if dim == rank {
       var first = true;
@@ -617,8 +643,7 @@ def DefaultArithmeticArr.dsiSerialWrite(f: Writer) {
       }
     } else {
       for j in dom.ranges(dim) by makeStridePositive {
-        var lastIdx = if dom.ranges(dim).stride > 0 then dom.ranges(dim).high
-                                                    else dom.ranges(dim).low;
+        var lastIdx =  dom.ranges(dim).last;
         idx(dim) = j;
         recursiveArrayWriter(idx, dim=dim+1,
                              last=(last || dim == 1) && (j == lastIdx));

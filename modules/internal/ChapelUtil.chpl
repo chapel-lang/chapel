@@ -8,14 +8,14 @@ class _stack {
   var  top: int;
   var  data: _ddata(eltType);
   
-  def initialize() {
+  proc initialize() {
     top = 0;
     size = _INIT_STACK_SIZE;
     data = new _ddata(eltType);
     data.init(8);
   }
 
-  def push( e: eltType) {
+  proc push( e: eltType) {
     if (top == size-1) {  // supersize as necessary
       size *= 2;
       var supersize = new _ddata(eltType);
@@ -27,7 +27,7 @@ class _stack {
     top += 1;
   }
 
-  def pop() {
+  proc pop() {
     var e: eltType;
     if top>0 then {
       top -= 1;
@@ -38,15 +38,15 @@ class _stack {
     return e;
   }
 
-  def empty() {
+  proc empty() {
     top = 0;
   }
 
-  def length {
+  proc length {
     return top;
   }
 
-  def writeThis(f: Writer) {
+  proc writeThis(f: Writer) {
     for i in 0..top-1 do f.write(" ", data[i]);
   }
 }
@@ -55,7 +55,7 @@ class _stack {
 // safeAdd: If a and b are of type t, return true iff no
 //  overflow/underflow would occur for a + b
 //
-def safeAdd(a: ?t, b: t) {
+proc safeAdd(a: ?t, b: t) {
   if !_isIntegralType(t) then
     compilerError("Values must be of integral type.");
   if a < 0 {
@@ -85,7 +85,7 @@ def safeAdd(a: ?t, b: t) {
 // safeSub: If a and b are of type t, return true iff no
 //  underflow/overflow would occur for a - b
 //
-def safeSub(a: ?t, b: t) {
+proc safeSub(a: ?t, b: t) {
   if !_isIntegralType(t) then
     compilerError("Values must be of integral type.");
   if a < 0 {

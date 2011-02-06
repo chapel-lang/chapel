@@ -1,4 +1,4 @@
-def LinearSearch(Data:[?Dom], val) {
+proc LinearSearch(Data:[?Dom], val) {
   for i in Dom {
     if (Data(i) == val) {
       return (true, i);
@@ -12,7 +12,7 @@ def LinearSearch(Data:[?Dom], val) {
 
 // would really like to drop the lo/hi arguments here, but right now
 // that causes too big of a memory leak
-def BinarySearch(Data:[?Dom], val, in lo = Dom.low, in hi = Dom.high) {
+proc BinarySearch(Data:[?Dom], val, in lo = Dom.low, in hi = Dom.high) {
   while (lo <= hi) {
     const mid = (hi - lo)/2 + lo;
     if (Data(mid) == val) {

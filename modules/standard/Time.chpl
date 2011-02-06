@@ -1,27 +1,27 @@
-_extern def chpl_init_timer(timer);
-_extern def chpl_now_timer(timer): _timervalue;
-_extern def chpl_seconds_timer(timer): real;
-_extern def chpl_microseconds_timer(timer): real;
-_extern def chpl_now_year(): int;
-_extern def chpl_now_month(): int;
-_extern def chpl_now_day(): int;
-_extern def chpl_now_dow(): int;
-_extern def chpl_now_time(): real;
+_extern proc chpl_init_timer(timer);
+_extern proc chpl_now_timer(timer): _timervalue;
+_extern proc chpl_seconds_timer(timer): real;
+_extern proc chpl_microseconds_timer(timer): real;
+_extern proc chpl_now_year(): int;
+_extern proc chpl_now_month(): int;
+_extern proc chpl_now_day(): int;
+_extern proc chpl_now_dow(): int;
+_extern proc chpl_now_time(): real;
 
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours };
 enum Day { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday };
 
 // returns time elapsed since midnight
-def getCurrentTime(unit: TimeUnits = TimeUnits.seconds)
+proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds)
   return _convert_microseconds(unit, chpl_now_time());
 
 // returns (year, month, day) as a tuple of 3 ints
-def getCurrentDate()
+proc getCurrentDate()
   return (chpl_now_year()+1900,
           chpl_now_month()+1,
           chpl_now_day());
 
-def getCurrentDayOfWeek() {
+proc getCurrentDayOfWeek() {
     return chpl_now_dow():Day;
 }
 
@@ -30,16 +30,16 @@ record Timer {
   var accumulated: real = 0.0;
   var running: bool = false;
 
-  def initialize() {
+  proc initialize() {
     chpl_init_timer(time);
   }
 
-  def clear() {
+  proc clear() {
     accumulated = 0.0;
     running = false;
   }
 
-  def start() {
+  proc start() {
     if !running {
       running = true;
       time = chpl_now_timer(time);
@@ -48,7 +48,7 @@ record Timer {
     }
   }
 
-  def stop() {
+  proc stop() {
     if running {
       var time2: _timervalue;
       time2 = chpl_now_timer(time2);
@@ -59,7 +59,7 @@ record Timer {
     }
   }
 
-  def elapsed(unit: TimeUnits = TimeUnits.seconds) {
+  proc elapsed(unit: TimeUnits = TimeUnits.seconds) {
     if running {
       var time2: _timervalue;
       time2 = chpl_now_timer(time2);
@@ -72,7 +72,7 @@ record Timer {
 
 // returns diff of two timer values in microseconds
 pragma "inline"
-def _diff_timer(t1: _timervalue, t2: _timervalue) {
+proc _diff_timer(t1: _timervalue, t2: _timervalue) {
   var s1 = chpl_seconds_timer(t1);
   var s2 = chpl_seconds_timer(t2);
   var us1 = chpl_microseconds_timer(t1);
@@ -81,7 +81,7 @@ def _diff_timer(t1: _timervalue, t2: _timervalue) {
 }
 
 // converts microseconds to another unit
-def _convert_microseconds(unit: TimeUnits, us: real) {
+proc _convert_microseconds(unit: TimeUnits, us: real) {
   select unit {
     when TimeUnits.microseconds do return us;
     when TimeUnits.milliseconds do return us / 1.0e+3;
@@ -94,6 +94,6 @@ def _convert_microseconds(unit: TimeUnits, us: real) {
   return -1.0;
 }
 
-pragma "inline" def sleep(t: uint) {
+pragma "inline" proc sleep(t: uint) {
   __primitive("task sleep", t);
 }

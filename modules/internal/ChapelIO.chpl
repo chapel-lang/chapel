@@ -1,13 +1,13 @@
-_extern def chpl_cstdin(): _file;
-_extern def chpl_cstdout(): _file;
-_extern def chpl_cstderr(): _file;
-_extern def chpl_cerrno(): string;
-_extern def chpl_cnullfile(): _file;
-_extern def chpl_fopen(filename: string, modestring: string): _file;
-_extern def chpl_fclose(file: _file): int;
-_extern def chpl_fflush(file: _file): int;
-_extern def chpl_fprintf(file: _file, s: string): int;
-_extern def chpl_format(fmt: string, x): string;
+_extern proc chpl_cstdin(): _file;
+_extern proc chpl_cstdout(): _file;
+_extern proc chpl_cstderr(): _file;
+_extern proc chpl_cerrno(): string;
+_extern proc chpl_cnullfile(): _file;
+_extern proc chpl_fopen(filename: string, modestring: string): _file;
+_extern proc chpl_fclose(file: _file): int;
+_extern proc chpl_fflush(file: _file): int;
+_extern proc chpl_fprintf(file: _file, s: string): int;
+_extern proc chpl_format(fmt: string, x): string;
 
 // class file
 //
@@ -19,11 +19,11 @@ enum FileAccessMode { read, write, append ,readwrite };
 //
 // functions on _file primitive type, the C file pointer type
 //
-pragma "inline" def =(a: _file, b: _file) return b;
-pragma "inline" def ==(a: _file, b: _file) return __primitive("==", a, b);
-pragma "inline" def !=(a: _file, b: _file) return __primitive("!=", a, b);
+pragma "inline" proc =(a: _file, b: _file) return b;
+pragma "inline" proc ==(a: _file, b: _file) return __primitive("==", a, b);
+pragma "inline" proc !=(a: _file, b: _file) return __primitive("!=", a, b);
 
-pragma "inline" def _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
+pragma "inline" proc _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
   return __primitive("_fscan_literal", fp, val, ignoreWhiteSpace);
 
 const stdin  = new file("stdin", FileAccessMode.read, "/dev", chpl_cstdin());
@@ -37,7 +37,7 @@ class file: Writer {
   var _fp : _file;
   var _lock : sync uint(64);    // for serializing output
 
-  def open() {
+  proc open() {
     on this {
       if this == stdin || this == stdout || this == stderr then
         halt("***Error: It is not necessary to open \"", filename, "\"***");
@@ -58,7 +58,7 @@ class file: Writer {
         when FileAccessMode.append do modestring = "a";
         when FileAccessMode.readwrite do modestring = "r+";
       }
-      _fp = chpl_fopen(filename, modestring);
+      _fp = chpl_fopen(fullFilename, modestring);
 
       if _fp == chpl_cnullfile() {
         const err = chpl_cerrno();
@@ -67,32 +67,32 @@ class file: Writer {
     }
   }
 
-  def _checkFileStateChangeLegality(state) {
+  proc _checkFileStateChangeLegality(state) {
     if (isOpen) {
       halt("Cannot change ", state, " of file ", path, "/", filename, 
            " while it is open");
     }
   }
 
-  def filename var : string {
+  proc filename var : string {
     if setter then
       _checkFileStateChangeLegality("filename");
     return filename;
   }
 
-  def path var : string {
+  proc path var : string {
     if setter then
       _checkFileStateChangeLegality("path");
     return path;
   }
 
-  def mode var {
+  proc mode var {
     if setter then
       _checkFileStateChangeLegality("mode");
     return mode;
   }
 
-  def isOpen: bool {
+  proc isOpen: bool {
     var openStatus: bool = false;
     if (_fp != chpl_cnullfile()) {
       openStatus = true;
@@ -100,7 +100,7 @@ class file: Writer {
     return openStatus;
   }
   
-  def close() {
+  proc close() {
     on this {
       if (this == stdin || this == stdout || this == stderr) {
         halt("***Error: You may not close \"", filename, "\"***");
@@ -122,24 +122,24 @@ class file: Writer {
   }
 }
 
-def file.writeThis(f: Writer) {
+proc file.writeThis(f: Writer) {
   f.write("(filename = ",this.filename);
   f.write(", path = ",this.path);
   f.write(", mode = ",this.mode);
   f.write(")");
 }
 
-def file.flush() {
+proc file.flush() {
   on this do chpl_fflush(_fp);
 }
 
-def file.eof {
-  _extern def feof(fp: _file): int;  // This should be a c_int not Chapel 'int'
+proc file.eof {
+  _extern proc feof(fp: _file): int;  // This should be a c_int not Chapel 'int'
   return (feof(_fp) != 0);
 }
 
 
-def _checkOpen(f: file, isRead: bool) {
+proc _checkOpen(f: file, isRead: bool) {
   if !f.isOpen {
     var fullFilename:string = f.path + "/" + f.filename;
     if isRead {
@@ -152,7 +152,7 @@ def _checkOpen(f: file, isRead: bool) {
   }
 }
 
-def file.readln() {
+proc file.readln() {
   on this {
     if !isOpen then
       _checkOpen(this, isRead=true);
@@ -160,27 +160,27 @@ def file.readln() {
   }
 }
 
-def file.readln(inout list ...?n) {
+proc file.readln(inout list ...?n) {
   read((...list));
   on this {
     __primitive("_readToEndOfLine",_fp);
   }
 } 
 
-def file.readln(type t) {
+proc file.readln(type t) {
   var val: t;
   this.readln(val);
   return val;
 }
 
-def file.read(inout first, inout rest ...?n) {
+proc file.read(inout first, inout rest ...?n) {
   read(first);
   for param i in 1..n do
     read(rest(i));
 
 }
 
-def file.read(inout val: int) {
+proc file.read(inout val: int) {
   if !isOpen then
     _checkOpen(this, isRead=true);
   var x: int;
@@ -190,7 +190,7 @@ def file.read(inout val: int) {
   val = x;
 }
 
-def file.read(inout val: uint) {
+proc file.read(inout val: uint) {
   if !isOpen then
     _checkOpen(this, isRead=true);
   var x: uint;
@@ -200,7 +200,7 @@ def file.read(inout val: uint) {
   val = x;
 }
 
-def file.read(inout val: real) {
+proc file.read(inout val: real) {
   if !isOpen then
     _checkOpen(this, isRead=true);
   var x: real;
@@ -210,7 +210,7 @@ def file.read(inout val: real) {
   val = x;
 }
 
-def file.read(inout val: complex) {
+proc file.read(inout val: complex) {
   var realPart: real;
   var imagPart: real;
   var imagI: string;
@@ -247,7 +247,7 @@ def file.read(inout val: complex) {
   }
 }
 
-def file.read(inout val: string) {
+proc file.read(inout val: string) {
   if !isOpen then
     _checkOpen(this, isRead=true);
   var x: string;
@@ -257,7 +257,7 @@ def file.read(inout val: string) {
   val = x;
 }
 
-def file.read(inout val: bool) {
+proc file.read(inout val: bool) {
   var s: string;
   this.read(s);
   if (s == "true") {
@@ -269,79 +269,34 @@ def file.read(inout val: bool) {
   }
 }
 
-def file.read(type t) {
+proc file.read(type t) {
   var val: t;
   this.read(val);
   return val;
 }
 
-// fseekset moves the position on the file offset bytes relative to the beggining
-// of the file
-def file.fseekset(offset: int(64)) {
-  var pos : int(64) = 5;
-  on this {
-    if !isOpen then
-      _checkOpen(this, isRead=(FileAccessMode.read==mode));
-        // SEEK_SET is 0
-    pos = __primitive("fseek", _fp, offset, 0) : int(64);
-  }
-  return pos;
-}
-
-// fseek moves the position on the file offset bytes relative to the current
-// position
-def file.fseekrel(offset: int(64)) {
-  var pos : int(64) = 5;
-  on this {
-    if !isOpen then
-      _checkOpen(this, isRead=(FileAccessMode.read==mode));
-        // SEEK_CUR is 1
-    pos  =  __primitive("fseek", _fp, offset, 1) : int(64);
-  }
-  return pos;
-}
-
-def file.ch_setvbuf(mode: int) {
-  on this {
-    if !isOpen then
-      _checkOpen(this, isRead=(FileAccessMode.read==mode));
-// no buffer is _IONBF 2
-    chpl_setvbuf(_fp,mode);
-  }
-}
-
-def file.chpl_ftell() {
-  var pos : int(64) = 5;
-  on this {
-    if !isOpen then
-      _checkOpen(this, isRead=(FileAccessMode.read==mode));
-    pos  =  __primitive("ftell", _fp) : int(64);
-  }
-  return pos;
-}
-
-def string.writeThis(f: Writer) {
+proc string.writeThis(f: Writer) {
   f.writeIt(this);
 }
 
-def numeric.writeThis(f: Writer) {
+proc numeric.writeThis(f: Writer) {
   f.writeIt(this:string);
 }
 
-def enumerated.writeThis(f: Writer) {
+proc enumerated.writeThis(f: Writer) {
   f.writeIt(this:string);
 }
 
-def bool.writeThis(f: Writer) {
+proc bool.writeThis(f: Writer) {
   f.writeIt(this:string);
 }
 
-def chpl_taskID_t.writeThis(f: Writer) {
+proc chpl_taskID_t.writeThis(f: Writer) {
   var tmp : uint(64) = this : uint(64);
   f.writeIt(tmp : string);
 }
 
-def file.writeIt(s: string) {
+proc file.writeIt(s: string) {
   if !isOpen then
     _checkOpen(this, isRead = false);
   if ( mode != FileAccessMode.write &&
@@ -376,18 +331,18 @@ def file.writeIt(s: int) {
 
 class StringClass: Writer {
   var s: string;
-  def writeIt(s: string) { this.s += s; }
+  proc writeIt(s: string) { this.s += s; }
 }
 
 pragma "ref this" pragma "dont disable remote value forwarding"
-def string.write(args ...?n) {
+proc string.write(args ...?n) {
   var sc = new StringClass(this);
   sc.write((...args));
   this = sc.s;
   delete sc;
 }
 
-def file.lockWrite() {
+proc file.lockWrite() {
   var me: uint(64) = __primitive("task_id") : uint(64);
   if _lock.isFull then
     if _lock.readXX() == me then
@@ -396,19 +351,18 @@ def file.lockWrite() {
   return true;
 }
 
-def file.unlockWrite() {
+proc file.unlockWrite() {
   _lock.reset();
 }
 
 class Writer {
-  def writeIt(s: string) { }
-  def writeIt(s: int) { }
-  def lockWrite() return false;
-  def unlockWrite() { }
-  def write(args ...?n) {
-    def isNilObject(val) {
-      def helper(o: object) return o == nil;
-      def helper(o)         return false;
+  proc writeIt(s: string) { }
+  proc lockWrite() return false;
+  proc unlockWrite() { }
+  proc write(args ...?n) {
+    proc isNilObject(val) {
+      proc helper(o: object) return o == nil;
+      proc helper(o)         return false;
       return helper(val);
     }
 
@@ -424,74 +378,49 @@ class Writer {
         unlockWrite();
     }
   }
-  def writeln(args ...?n) {
+  proc writeln(args ...?n) {
     write((...args), "\n");
   }
-  def writeln() {
+  proc writeln() {
     write("\n");
   }
 }
 
-def write(args ...?n) {
+proc write(args ...?n) {
   stdout.write((...args));
   stdout.flush();
 }
 
-def writeln(args ...?n) {
+proc writeln(args ...?n) {
   stdout.writeln((...args));
   stdout.flush();
 }
 
-def writeln() {
+proc writeln() {
   stdout.writeln();
   stdout.flush();
 }
 
-def file.read(val: []) {
-  val.readBinArray(this);
-}
-
-def file.write(val: []) {
-  val.writeBinArray(this);
-}
-
-def file.read(val: domain) {
-  val.readBinDom(this);
-}
-
-def file.write(val: domain) {
-  val.writeBinDom(this);
-}
-
-def file.read(val: _distribution) {
-  val.readBinBlock(this);
-}
-
-def file.write(val: _distribution) {
-  val.writeBinBlock(this);
-}
-
-
-def read(inout args ...?n) {
+proc read(inout args ...?n) {
   stdin.read((...args));
 }
 
-def readln(inout args ...?n) {
+proc readln(inout args ...?n) {
   stdin.readln((...args));
 }
 
-def readln() {
+proc readln() {
   stdin.readln();
 }
 
-def readln(type t) {
+proc readln(type t) {
   return stdin.readln(t);
 }
 
-def read(type t)
+proc read(type t)
   return stdin.read(t);
 
-def file.readln(type t ...?numTypes) where numTypes > 1 {
+proc file.readln(type t ...?numTypes) where numTypes > 1 {
   var tupleVal: t;
   for param i in 1..numTypes-1 do
     tupleVal(i) = this.read(t(i));
@@ -499,46 +428,46 @@ def file.readln(type t ...?numTypes) where numTypes > 1 {
   return tupleVal;
 }
 
-def file.read(type t ...?numTypes) where numTypes > 1 {
+proc file.read(type t ...?numTypes) where numTypes > 1 {
   var tupleVal: t;
   for param i in 1..numTypes do
     tupleVal(i) = this.read(t(i));
   return tupleVal;
 }
 
-def readln(type t ...?numTypes) where numTypes > 1
+proc readln(type t ...?numTypes) where numTypes > 1
   return stdin.readln((...t));
 
-def read(type t ...?numTypes) where numTypes > 1
+proc read(type t ...?numTypes) where numTypes > 1
   return stdin.read((...t));
   
-def _tuple2string(t) {
+proc _tuple2string(t) {
   var s: string;
   for param i in 1..t.size do
     s.write(t(i));
   return s;
 }
 
-def assert(test: bool) {
+proc assert(test: bool) {
   if !test then
     __primitive("chpl_error", "assert failed");
 }
 
-def assert(test: bool, args ...?numArgs) {
+proc assert(test: bool, args ...?numArgs) {
   if !test then
     __primitive("chpl_error", "assert failed - "+_tuple2string(args));
 }
 
-def halt() {
+proc halt() {
   __primitive("chpl_error", "halt reached");
 }
 
-def halt(args ...?numArgs) {
+proc halt(args ...?numArgs) {
   __primitive("chpl_error", "halt reached - "+_tuple2string(args));
 }
 
-def _debugWrite(args...?n) {
-  def getString(a: ?t) {
+proc _debugWrite(args...?n) {
+  proc getString(a: ?t) {
     if t == bool(8) || t == bool(16) || t == bool(32) || t == bool(64) ||
        t == int(8) || t == int(16) || t == int(32) || t == int(64) ||
        t == uint(8) || t == uint(16) || t == uint(32) || t == uint(64) ||
@@ -560,19 +489,19 @@ def _debugWrite(args...?n) {
   chpl_fflush(chpl_cstdout());
 }
 
-def _debugWriteln(args...?n) {
+proc _debugWriteln(args...?n) {
   _debugWrite((...args), "\n");
 }
 
-def _debugWriteln() {
+proc _debugWriteln() {
   _debugWrite("\n");
 }
 
-def _ddata.writeThis(f: Writer) {
+proc _ddata.writeThis(f: Writer) {
   halt("cannot write the _ddata class");
 }
 
-def format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
+proc format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
   if fmt.substring(1) == "#" {
     var fmt2 = _getoutputformat(fmt);
     if _isImagType(t) then
@@ -583,7 +512,7 @@ def format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
     return chpl_format(fmt, x);
 }
 
-def format(fmt: string, x:?t) where _isComplexType(t) {
+proc format(fmt: string, x:?t) where _isComplexType(t) {
   if fmt.substring(1) == "#" {
     var fmt2 = _getoutputformat(fmt);
     return (chpl_format(fmt2, x.re)+" + "+ chpl_format(fmt2, x.im)+"i");
@@ -591,11 +520,11 @@ def format(fmt: string, x:?t) where _isComplexType(t) {
     return chpl_format(fmt, x);
 }
 
-def format(fmt: string, x: ?t) {
+proc format(fmt: string, x: ?t) {
   return chpl_format(fmt, x);
 }
 
-def _getoutputformat(s: string):string {
+proc _getoutputformat(s: string):string {
   var sn = s.length;
   var afterdot = false;
   var dplaces = 0;
@@ -615,18 +544,18 @@ def _getoutputformat(s: string):string {
 config param chpl__testParFlag = false;
 var chpl__testParOn = false;
 
-def chpl__testParStart() {
+proc chpl__testParStart() {
   chpl__testParOn = true;
 }
 
-def chpl__testParStop() {
+proc chpl__testParStop() {
   chpl__testParOn = false;
 }
 
 pragma "inline"
-def chpl__testPar(args...) where chpl__testParFlag == false { }
+proc chpl__testPar(args...) where chpl__testParFlag == false { }
 
-def chpl__testPar(args...) where chpl__testParFlag == true {
+proc chpl__testPar(args...) where chpl__testParFlag == true {
   if chpl__testParFlag && chpl__testParOn {
     const file : string = __primitive("_get_user_file");
     const line : int = __primitive("_get_user_line");

@@ -7,13 +7,13 @@ class Vector {
 //    param MIN_SIZE : uint = 4;
 
     
-    def Vector(type eltType, cap=4, offset=0) {
+    proc Vector(type eltType, cap=4, offset=0) {
         capacity = cap;
         lastIdx  = offset-1;
         dom = [offset..offset+capacity-1];
     }
 
-    def push(val : eltType) {
+    proc push(val : eltType) {
         const firstIdx = this.low;
 
         lastIdx += 1;
@@ -24,15 +24,15 @@ class Vector {
         elements[lastIdx] = val;
     }
 
-    def low const {
+    proc low const {
         return dom.dim(1).low;
     }
 
-    def high const {
+    proc high const {
         return lastIdx;
     }
 
-    def pop() {
+    proc pop() {
         const firstIdx = this.low;
         var val = elements[lastIdx];
 
@@ -50,11 +50,11 @@ class Vector {
         return val;
     }
 
-    def top var {
+    proc top var {
         return elements[lastIdx];
     }
 
-    def this(idx) var {
+    proc this(idx) var {
         const firstIdx = this.low;
         
         assert(firstIdx <= idx && idx <= lastIdx,
@@ -62,7 +62,7 @@ class Vector {
         return elements[idx];
     }
 
-    def these() var {
+    iter these() var {
         const firstIdx = this.low;
 
         for idx in firstIdx..lastIdx {
@@ -70,18 +70,18 @@ class Vector {
         }
     }
 
-    def size const {
+    proc size const {
         const firstIdx = this.low;
         return lastIdx - firstIdx + 1;
     }
 
-    def empty const {
+    proc empty const {
         const firstIdx = this.low;
         return lastIdx < firstIdx;
     }
     
     // other functions we might want to add:
-    //      def append(rhs);
-    //      def clear()
+    //      proc append(rhs);
+    //      proc clear()
 }
 
