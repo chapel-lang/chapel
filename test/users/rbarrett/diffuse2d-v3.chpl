@@ -67,7 +67,7 @@ const
 /*                                               Main program.                                            */    
 /* ====================================================================================================== */
 
-def main() {
+proc main() {
 
    /* ------------ */
    /* Declarations */
@@ -138,7 +138,7 @@ def main() {
 
 /* ====================================================================================================== */
 
-def ApplyStencil2d5ptA ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
+proc ApplyStencil2d5ptA ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
       
    /* --------------------- */
    /* Executable Statements */
@@ -160,7 +160,7 @@ def ApplyStencil2d5ptA ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
 
 /* ====================================================================================================== */
 
-def ApplyStencil2d5ptB ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
+proc ApplyStencil2d5ptB ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
       
    /* --------------------- */
    /* Executable Statements */
@@ -183,7 +183,7 @@ def ApplyStencil2d5ptB ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
 
 /* ====================================================================================================== */
 
-def ApplyStencil2d5ptC ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
+proc ApplyStencil2d5ptC ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
       
    /* --------------------- */
    /* Executable Statements */
@@ -206,7 +206,7 @@ def ApplyStencil2d5ptC ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
 
 /* ====================================================================================================== */
 
-def ApplyStencil2d9pt ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
+proc ApplyStencil2d9pt ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
       
    /* --------------------- */
    /* Executable Statements */
@@ -229,7 +229,7 @@ def ApplyStencil2d9pt ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
 
 /* ====================================================================================================== */
 
-def ApplyStencil3d7pt ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
+proc ApplyStencil3d7pt ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
       
    /* --------------------- */
    /* Executable Statements */
@@ -255,7 +255,7 @@ def ApplyStencil3d7pt ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
 
 /* ====================================================================================================== */
 
-def ApplyStencil3d27pt ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
+proc ApplyStencil3d27pt ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
       
    /* --------------------- */
    /* Executable Statements */
@@ -288,7 +288,7 @@ def ApplyStencil3d27pt ( ProblemSpace2d, newGrid, oldGrid, iteration ) {
 
 /* ====================================================================================================== */
 
-def CheckAnswer ( ProblemSpace2d, newGrid, iteration ) {
+proc CheckAnswer ( ProblemSpace2d, newGrid, iteration ) {
    
    /* ------------------ */
    /* Local Declarations */

@@ -2,7 +2,7 @@ record Node {
     const lvl, idx : int;
     const loc = (lvl+idx)%numLocales;
 
-    def this() {
+    proc this() {
         return (lvl, idx);
     }
 }

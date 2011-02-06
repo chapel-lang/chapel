@@ -11,7 +11,7 @@ module SSCA2_sync_array_initialization_bug
     const vertices = vertex_domain;
   }
 
-  def main () {
+  proc main () {
 
     const d = 2**SCALE;
   

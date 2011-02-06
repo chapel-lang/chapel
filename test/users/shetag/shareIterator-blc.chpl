@@ -8,7 +8,7 @@ var A: [D] int;
 class OneToTen {
   var currIndex: sync int = 1;
   
-  def count() {
+  iter count() {
     var done = false;
     
     while (!done) {

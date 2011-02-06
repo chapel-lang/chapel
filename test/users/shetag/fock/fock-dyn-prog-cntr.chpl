@@ -13,7 +13,7 @@ var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType;
 
 var G : sync int = 0;
 
-def buildjk() {
+proc buildjk() {
   coforall loc in LocaleSpace do on Locales(loc) {
       var (L,lattop,myG) = (0,0,readAndIncrementG());
       for iat in 1..natom do
@@ -46,7 +46,7 @@ def buildjk() {
   writeln("\n1st col of exchange matrix:-\n", kmat2(1..n,1..1));
 }
 
-def readAndIncrementG() {
+proc readAndIncrementG() {
   const myG : int = G;
   G = myG + 1;
   return myG;
@@ -54,7 +54,7 @@ def readAndIncrementG() {
 
 var oneAtATime: sync bool = true; // workaround because atomics don't work
 
-def buildjk_atom4(blk) {
+proc buildjk_atom4(blk) {
 
   // BLC: TODO: Once we have arrays of differently-sized arrays, the
   // following sets of six statements can be replaced by arrays of
@@ -100,7 +100,7 @@ def buildjk_atom4(blk) {
   oneAtATime = tmp;
 }
 
-def main() {
+proc main() {
   buildjk();
 }
 

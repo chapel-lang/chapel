@@ -1,1 +1,1 @@
-raiseType.chpl:3 syntax error: near 'return'
+raiseType.chpl:3: syntax error: near 'return'

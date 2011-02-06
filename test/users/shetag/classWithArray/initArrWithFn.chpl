@@ -5,11 +5,11 @@ class C {
   var arr : [1..n] int = initArr(n);
   //  var arr : [1..n] int;
 
-  def initialize() {
+  proc initialize() {
     //    [i in 1..n] arr(i) = i;
   }
 
-  def initArr(n) {
+  proc initArr(n) {
     const a : [1..n] int = [i in 1..n] i;
     return a;
   }

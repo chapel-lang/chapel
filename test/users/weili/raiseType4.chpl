@@ -1,9 +1,9 @@
-def raiseType(type x) where (x==int){
+proc raiseType(type x) where (x==int){
       var x:real;
       return x;
 }
 
-def raiseType(type x) where (x==bool){
+proc raiseType(type x) where (x==bool){
       var x:int;
       return x;
 }

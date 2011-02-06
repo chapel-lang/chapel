@@ -7,7 +7,7 @@ module block_partition_iterators {
   // reduced matrices that occur during a triangular factorization.
   // ===================================================================
 
-  def symmetric_reduced_matrix_2_by_2_block_partition ( idx_range ) {
+  iter symmetric_reduced_matrix_2_by_2_block_partition ( idx_range ) {
 
     // -------------------------------------------------------------------
     // Deliver as ranges the sequence of reduced matrices that arise in a
@@ -39,7 +39,7 @@ module block_partition_iterators {
   // the original matrix that occur during a triangular factorization.
   // ===================================================================
 
-  def symmetric_matrix_3_by_3_block_partition ( idx_range ) {
+  iter symmetric_matrix_3_by_3_block_partition ( idx_range ) {
 
     // -----------------------------------------------------
     // Deliver as ranges the block partitioning of the block 
@@ -89,7 +89,7 @@ module block_partition_iterators {
   // (or the rows or columns of a Matrix)
   // ====================================
 
-  def vector_block_partition ( idx_range )
+  iter vector_block_partition ( idx_range )
   {
     for block_low in idx_range by block_size do
       yield block_low .. min ( block_low + block_size - 1, idx_range.high );

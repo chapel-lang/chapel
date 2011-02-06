@@ -8,7 +8,7 @@ var A: [D] int;
 class OneToTen {
   var currIndex: sync int = 1;
   
-  def count() {
+  iter count() {
     var done = false;
     
     while (!done) {
@@ -28,7 +28,7 @@ cobegin {
   for y in sharedOneToTen.count() do register(2, y);
 }
 
-def register(taskid, i) {
+proc register(taskid, i) {
   A(i) = taskid;
 }
 

@@ -6,7 +6,7 @@ class mink : ReduceScanOp {
   const k : int;
   var v: [1..k] eltType = max(eltType);
   
-  def accumulate(x: eltType)
+  proc accumulate(x: eltType)
   {
     if (x < v[1])
       {
@@ -21,7 +21,7 @@ class mink : ReduceScanOp {
       }
   }
   
-  def combine(s: mink(eltType))
+  proc combine(s: mink(eltType))
   {
     for i in 1..k
       {
@@ -29,7 +29,7 @@ class mink : ReduceScanOp {
       }
   }
   
-  def generate()
+  proc generate()
   {
     var t = v;
     writeln("returning: ", t);

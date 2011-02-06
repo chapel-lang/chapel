@@ -13,7 +13,7 @@ config var
    max_iter = 100,    // max_iter
    verbose = false;   // printing control
    
-def main() {
+proc main() {
 
    var
       sum : real;

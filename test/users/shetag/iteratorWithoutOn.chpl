@@ -1,6 +1,6 @@
 config const n = 10;
 
-def g() {
+iter g() {
   for i in 0..n do
     yield i;
 }
