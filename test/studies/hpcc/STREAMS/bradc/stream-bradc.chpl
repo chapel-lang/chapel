@@ -34,7 +34,7 @@ config const scalar = 3.0;
 config const doIO = true;
 
 
-def main() {
+proc main() {
   param HLINE="-------------------------------------------------------------";
 
   if doIO {
@@ -67,7 +67,7 @@ def main() {
 }
 
 
-def checkSTREAMresults() {
+proc checkSTREAMresults() {
   var aj = 1.0;
   var bj = 2.0;
   var cj = 0.0;

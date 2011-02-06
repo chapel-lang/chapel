@@ -21,7 +21,7 @@ config const printParams = true,
              printStats = true;
 
 
-def main() {
+proc main() {
   printConfiguration();
 
   const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[1..m], targetLocales=Locales));
@@ -52,7 +52,7 @@ def main() {
 }
 
 
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     printProblemSize(elemType, numVectors, m);
     writeln("Number of trials = ", numTrials, "\n");
@@ -60,7 +60,7 @@ def printConfiguration() {
 }
 
 
-def initVectors(B, C) {
+proc initVectors(B, C) {
   var randlist = new RandomStream(seed);
 
   randlist.fillRandom(B);
@@ -75,7 +75,7 @@ def initVectors(B, C) {
 }
 
 
-def verifyResults(A, B, C) {
+proc verifyResults(A, B, C) {
   if (printArrays) then writeln("A is: ", A, "\n");
 
   const infNorm = max reduce [i in A.domain] abs(A(i) - (B(i) + alpha * C(i)));
@@ -84,7 +84,7 @@ def verifyResults(A, B, C) {
 }
 
 
-def printResults(successful, execTimes) {
+proc printResults(successful, execTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     const totalTime = + reduce execTimes,

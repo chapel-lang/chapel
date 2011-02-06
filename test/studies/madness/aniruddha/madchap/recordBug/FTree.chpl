@@ -23,7 +23,7 @@ const rootNode = (0,0);
 const emptyNode = (-1,-1);
 
 // Check if we have None.
-def isNone(x) {
+proc isNone(x) {
     return x.numElements == 0;
 }
 
@@ -47,7 +47,7 @@ record LocTree {
         middle of the tree you will short circuit a whole subtree!
 
      */
-    def this(lvl: int, idx: int) var {
+    proc this(lvl: int, idx: int) var {
         if !locIndices.member((lvl, idx)) {
             if setter {
               locIndices += ((lvl, idx));
@@ -67,7 +67,7 @@ record LocTree {
     /** Access an element in the associative domain.  If it doesn't exist,
         return None.
      */
-    def peek(lvl: int, idx: int) var {
+    proc peek(lvl: int, idx: int) var {
         if has_coeffs(lvl, idx) then
             return this(lvl, idx);
         else
@@ -76,7 +76,7 @@ record LocTree {
 
     /** Unordered iterator over all coefficients
      */
-    def these() {
+    iter these() {
         for n in locNodes do 
             yield n.data;
     }
@@ -88,7 +88,7 @@ record LocTree {
         A sparse array or an array of associative arrays may be more conducive
         to this type of iteration vs. the associative domain used here.
      */
-    def lvl_iter(lvl: int) {
+    iter lvl_iter(lvl: int) {
         // AGS - Why are we doing indices.member(i)?
         for i in locIndices do
             if i(1) == lvl && locIndices.member(i) then yield locNodes[i].data;
@@ -96,23 +96,23 @@ record LocTree {
 
     /** Check if there are coefficients in box (lvl, idx)
      */
-    def has_coeffs(lvl: int, idx: int) {
+    proc has_coeffs(lvl: int, idx: int) {
         return locIndices.member((lvl, idx));
     }
 
     /** Remove an element from the associative domain.  If the element
         does not exist, it is ignored.
      */
-    def remove(lvl: int, idx: int) {
+    proc remove(lvl: int, idx: int) {
         if locIndices.member((lvl, idx)) then locIndices.remove((lvl, idx));
     }
 
-    def idx_iter(lvl: int) {
+    iter idx_iter(lvl: int) {
         for idx in locIndices do
             if idx(1) == lvl then yield idx;
     }
 
-    def idx_iter() {
+    iter idx_iter() {
         for idx in locIndices do
             yield idx;
     }
@@ -125,27 +125,27 @@ class FTree {
     const locDom = [0..#numLocs];
     var nodes    : [locDom] LocTree;
 
-    def initialize() {
+    proc initialize() {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
 
         [loc in locDom] nodes[loc] = new LocTree(coeffDom);
     }
 
-    def mapNodeToLoc(lvl, idx) {
+    proc mapNodeToLoc(lvl, idx) {
         return (lvl+idx)%numLocs; 
     }
     
-    def this((lvl, idx)) var {
+    proc this((lvl, idx)) var {
         return nodes[mapNodeToLoc(lvl, idx)][lvl,idx];
     }
 
-    def this(loc) {
+    iter this(loc) {
         for data in nodes[loc] do
             yield data;
     }
 
-    def these() {
+    iter these() {
         for n in nodes do
             for data in n do
                 yield data;
@@ -153,55 +153,55 @@ class FTree {
 
     // BLC: Really want to replace these with a non-zippered parallel
     // iterator
-    def these(param tag: iterator) where tag == iterator.leader {
+    iter these(param tag: iterator) where tag == iterator.leader {
       coforall n in nodes do
         yield n;
     }
 
-    def these(param tag: iterator, follower) where tag == iterator.follower {
+    iter these(param tag: iterator, follower) where tag == iterator.follower {
       for data in follower do
         yield data;
     }
 
-    def lvl_iter(lvl) {
+    iter lvl_iter(lvl) {
         for n in nodes do
             for data in n.lvl_iter(lvl) do
                 yield data;
     }
     
-    def peek((lvl, idx)) var {
+    proc peek((lvl, idx)) var {
         return nodes[mapNodeToLoc(lvl, idx)].peek(lvl, idx);
     }
 
-    def has_coeffs((lvl, idx)) {
+    proc has_coeffs((lvl, idx)) {
         return nodes[mapNodeToLoc(lvl, idx)].has_coeffs(lvl, idx);
     }
 
-    def remove((lvl, idx)) {
+    proc remove((lvl, idx)) {
         nodes[mapNodeToLoc(lvl, idx)].remove(lvl, idx);
     }
     
     /** Return a copy of this FTree
      */
-    def copy() {
+    proc copy() {
         var t = new FTree(order);
         forall i in t.nodes.domain do t.nodes(i) = nodes(i);
         return t;
     }
 
-    def idx_iter(lvl) {
+    iter idx_iter(lvl) {
         for n in nodes do
             for idx in n.idx_iter(lvl) do
                 yield idx;
     }
 
-    def idx_iter() {
+    iter idx_iter() {
         for n in nodes do
             for idx in n.idx_iter() do
                 yield idx;
     }
 
-    def path_upwards((lvl0, idx0), (lvl1, idx1)) {
+    iter path_upwards((lvl0, idx0), (lvl1, idx1)) {
         var l = idx0;
         for n in lvl1..lvl0 by -1 {
            yield ((n,l));
@@ -209,26 +209,26 @@ class FTree {
         }
     }
 
-    def path_downwards((lvl0, idx0), (lvl1, idx1)) {
+    iter path_downwards((lvl0, idx0), (lvl1, idx1)) {
         for n in (lvl0..lvl1-1) {
           yield (n, idx1/(2**(lvl1-n)));
         }
     }
 
-    def on_boundary((lvl, idx)) {
+    proc on_boundary((lvl, idx)) {
         return ((idx < 0 || idx >= 2**lvl));
     }
 
-    def get_children((lvl, idx)) {
+    proc get_children((lvl, idx)) {
         return ((lvl+1, 2*idx), (lvl+1, 2*idx+1));
     }
 
-    def get_neighbors((lvl, idx)) {
+    proc get_neighbors((lvl, idx)) {
         return ((lvl, idx-1), (lvl, idx+1));
     }
 }
 
-def main() {
+proc main() {
     /*
     var f = new FTree(2);
 

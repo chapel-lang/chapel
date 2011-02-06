@@ -1,7 +1,7 @@
 /*
  * querying the type of an argument
  */
-def sumOfSquares(x: ?t, y: t): t {
+proc sumOfSquares(x: ?t, y: t): t {
   return x**2 + y**2;
 }
 
@@ -13,7 +13,7 @@ writeln();
 /*
  * querying the width of an arguemnt
  */
-def printShifts(x: int(?width)) {
+proc printShifts(x: int(?width)) {
   writeln("the value ", x, "...");
   for i in 1..width do
     writeln("  ...shifted ", i, " times: ", x >> i);
@@ -27,7 +27,7 @@ printShifts(0x80:int(8));
 /*
  * querying the domain of an array argument 
  */
-def printIndices(A: [?D]) {
+proc printIndices(A: [?D]) {
   for i in D {
     writeln("i is: ", i, ", A(i) is: ", A(i));
   }

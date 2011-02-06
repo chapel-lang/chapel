@@ -12,18 +12,22 @@ use GridSolution_AdvectionCTU;
 use GridBC_AdvectionCTU;
 
 
-def main {
+proc main {
 
   //==== Output times ====
+  write("Reading output times...");
   var output_times = setOutputTimes("time.txt");
-
+  write("done.\n");
+  
 
   //==== Grid ====
+  writeln("Setting up grid.");
   var grid = readGrid("grid.txt");
+  writeln("Done setting up grid.");
 
 
   //===> Initialize solution ===>
-  def initial_condition ( x: dimension*real ) {
+  proc initial_condition ( x: dimension*real ) {
     var f: real = 1.0;
     for d in dimensions do
     	f *= exp(-30*x(d)**2);

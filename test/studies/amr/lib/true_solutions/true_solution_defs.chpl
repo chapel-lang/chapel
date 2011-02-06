@@ -12,15 +12,15 @@ use grid_bc_defs;
 //----------------------------------------------------------------------
 class TrueSolution {
 
-  def qTrue(x: dimension*real, t: real) {
+  proc qTrue(x: dimension*real, t: real) {
     return 0.0;
   }
 
-  def fluxComponent(x: dimension*real, t: real, comp: int) {
+  proc fluxComponent(x: dimension*real, t: real, comp: int) {
     return 0.0;
   }
 
-  def normalFluxToGhost(flux: real,
+  proc normalFluxToGhost(flux: real,
                         inner_value: real,
                         dx: real
                        ){
@@ -35,7 +35,7 @@ class TrueSolution {
 
 //===> RectangularGrid.initializeSolution method ===>
 //==================================================>
-def RectangularGrid.initializeSolution(
+proc RectangularGrid.initializeSolution(
   sol:             ScalarGridSolution,
   true_solution: TrueSolution,
   time:          real
@@ -79,7 +79,7 @@ class TrueDirichletGridBC: GridBC {
   
   //===> initialize method ===>
   //==========================>
-  def initialize() {
+  proc initialize() {
     setBoundaryFaces();
   }
   //<=== initialize method <===
@@ -91,7 +91,7 @@ class TrueDirichletGridBC: GridBC {
   //---------------------------------------------------
   // Evaluates true_solution.qTrue on each ghost cell.
   //---------------------------------------------------
-  def ghostFill(q: [grid.ext_cells] real, t: real) {
+  proc ghostFill(q: [grid.extended_cells] real, t: real) {
     
     for d in dimensions {
 
@@ -119,7 +119,7 @@ class TrueDirichletGridBC: GridBC {
   // nearest interior value is reflected about 0 to the nearest 
   // ghost cell value.
   //------------------------------------------------------------
-  def homogeneousGhostFill(q: [grid.ext_cells] real) {
+  proc homogeneousGhostFill(q: [grid.extended_cells] real) {
 
     for d in dimensions {
 
@@ -161,7 +161,7 @@ class TrueNeumannGridBC: GridBC {
 
   //===> initialize method ===>
   //==========================>
-  def initialize() {
+  proc initialize() {
     setBoundaryFaces();
   }
   //<=== intialize method <===
@@ -171,7 +171,7 @@ class TrueNeumannGridBC: GridBC {
 
   //===> ghostFill method ===>
   //=========================>
-  def ghostFill(q: [grid.ext_cells] real, t: real) {
+  proc ghostFill(q: [grid.extended_cells] real, t: real) {
 
     writeln("Start of ghostFill");
     
@@ -215,7 +215,7 @@ class TrueNeumannGridBC: GridBC {
 
   //===> homogeneousGhostFill method ===>
   //====================================>
-  def homogeneousGhostFill(q: [grid.ext_cells] real) {
+  proc homogeneousGhostFill(q: [grid.extended_cells] real) {
 
     for d in dimensions do {
       //==== Low ghost cells ====
@@ -258,7 +258,7 @@ class Gaussian: TrueSolution {
 
   //===> qTrue method ===>
   //=====================>
-  def qTrue(x: dimension*real, t: real) {
+  proc qTrue(x: dimension*real, t: real) {
 
     //==== Calculate norm squared of x ====
     var norm_squared_x = 0.0;
@@ -274,7 +274,7 @@ class Gaussian: TrueSolution {
 
   //===> fluxComponent method ===>
   //=============================>
-  def fluxComponent(x: dimension*real, t: real, comp: int) {
+  proc fluxComponent(x: dimension*real, t: real, comp: int) {
     var delta = 1.0e-4;
     var shift: dimension*real;
     shift(comp) = delta;
@@ -287,7 +287,7 @@ class Gaussian: TrueSolution {
 
   //===> normalFluxToGhost method ===>
   //=================================>
-  def normalFluxToGhost(flux:        real,
+  proc normalFluxToGhost(flux:        real,
 			inner_value: real,
 			dx:          real) {
 

@@ -7,13 +7,13 @@
 //<=== Description <===
 
 
-use GridArray_DiffusionBE;
+use GridVariable_DiffusionBE;
 use GridSolution_DiffusionBE;
 use GridBC_DiffusionBE;
 
 
 
-def main {
+proc main {
 
   //==== Output times ====
   var output_times = setOutputTimes("time.txt");
@@ -28,7 +28,7 @@ def main {
 
 
   //===> Initialize solution ===>
-  def initial_condition (x: dimension*real) {
+  proc initial_condition (x: dimension*real) {
     var f: real = 1.0;
     for d in dimensions do
       f *= exp(-30*(x(d)+0.5)**2);

@@ -27,13 +27,13 @@ const localesAcross = sqrt(numLocales) : int;
 const blkSize = n / localesAcross : int;
 
 class WrappedArray {
-    def WrappedArray() { }
+    proc WrappedArray() { }
 
-    def WrappedArray(row, col, numRows, numCols) {
+    proc WrappedArray(row, col, numRows, numCols) {
         dom = [row..row+numRows-1, col..col+numCols-1];
     }
 
-    def this(i,j : int) var { return data[i,j]; }
+    proc this(i,j : int) var { return data[i,j]; }
 
     var dom : domain(2);
     var data : [dom] int;
@@ -41,7 +41,7 @@ class WrappedArray {
 
 
 
-def luLikeMultiply(
+proc luLikeMultiply(
     myLocales  : [?localesDom] locale,
     A          : [localesDom] WrappedArray,
     aLocales   : subdomain(localesDom),
@@ -99,7 +99,7 @@ def luLikeMultiply(
 
 
 
-def matrixMult_ijk(
+proc matrixMult_ijk(
     const m : int,
     const p : int,
     const n : int,
@@ -117,7 +117,7 @@ def matrixMult_ijk(
     }
 }
 
-def main() {
+proc main() {
     // verify that the number of locales is a power of 2.
     assert(log2(numLocales) == log2(numLocales):int,
         "Number of locales must be a power of 2");

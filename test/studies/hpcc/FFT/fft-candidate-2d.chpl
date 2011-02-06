@@ -25,7 +25,7 @@ config const printParams = true,
              printStats = true;
 
 
-def main() {
+proc main() {
   printConfiguration();
 
   const TwiddleDom = [0:int(64)..#m/4];
@@ -48,7 +48,7 @@ def main() {
   printResults(validAnswer, execTime);
 }
 
-def dfft(A, W) {
+proc dfft(A, W) {
 
   const numElements = A.numElements;
   const halfLogN = (log2(numElements))/2;
@@ -62,7 +62,7 @@ def dfft(A, W) {
   transpose(A);
 }
 
-def fft2d(A, W, steps, phase) {
+proc fft2d(A, W, steps, phase) {
 
   const numElements = A.numElements;
   const p = sqrt(numElements):int;
@@ -126,7 +126,7 @@ def fft2d(A, W, steps, phase) {
   }
 }
 
-def transpose(inout A:[?AD] complex) {
+proc transpose(inout A:[?AD] complex) {
   const n = AD.dim(1).length;
   var p = sqrt(n):int;
   var row, col: index(AD);
@@ -140,12 +140,12 @@ def transpose(inout A:[?AD] complex) {
   }
 }
 
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) then printProblemSize(elemType, numVectors, m);
 }
 
 
-def initVectors(Twiddles, z) {
+proc initVectors(Twiddles, z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
@@ -158,7 +158,7 @@ def initVectors(Twiddles, z) {
 }
 
 
-def computeTwiddles(Twiddles) {
+proc computeTwiddles(Twiddles) {
   const numTwdls = Twiddles.numElements,
         delta = 2.0 * atan(1.0) / numTwdls;
 
@@ -174,7 +174,7 @@ def computeTwiddles(Twiddles) {
 }
 
 
-def bitReverseShuffle(Vect: [?Dom]) {
+proc bitReverseShuffle(Vect: [?Dom]) {
   const numBits = log2(Vect.numElements),
         Perm: [Dom] index(Dom) = [i in Dom] bitReverse(i, revBits = numBits),
         Temp = Vect(Perm);
@@ -182,7 +182,7 @@ def bitReverseShuffle(Vect: [?Dom]) {
 }
 
 
-def bitReverse(val: ?valType, revBits = 64) {
+proc bitReverse(val: ?valType, revBits = 64) {
   param mask = 0x0102040810204080;
   const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask)),
         valReverse = bitRotLeft(valReverse64, revBits);
@@ -190,7 +190,7 @@ def bitReverse(val: ?valType, revBits = 64) {
 }
 
 
-def verifyResults(z, Z, Twiddles) {
+proc verifyResults(z, Z, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
   Z = conjg(Z) / m;
@@ -207,7 +207,7 @@ def verifyResults(z, Z, Twiddles) {
 }
 
 
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
@@ -216,7 +216,7 @@ def printResults(successful, execTime) {
 }
 
 
-def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
+proc butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
   var x0 = A(1) + A(2),
       x1 = A(1) - A(2),
       x2 = A(3) + A(4),

@@ -17,7 +17,7 @@ config const epsilon = 2.0 ** -51.0,
 // boolean configs
 config const printTiming = true;
 
-def main() {
+proc main() {
   // compute problem size
   const N = 1 << logN;
 
@@ -55,7 +55,7 @@ def main() {
 }
 
 
-def computeTwiddles(W) {
+proc computeTwiddles(W) {
   const n = W.numElements;
   const delta = 2.0 * atan(1.0) / n;
 
@@ -73,7 +73,7 @@ def computeTwiddles(W) {
 
 // Check what the NSA supports for bit reversal
 // rename this?
-def bitReverseShuffle(W: [?WD]) {
+proc bitReverseShuffle(W: [?WD]) {
   const n = WD.numIndices;
   const reverse = log2(n);
   var V: [WD] W.eltType;  // BLC: rename this field?
@@ -94,7 +94,7 @@ def bitReverseShuffle(W: [?WD]) {
 
 
 // reverses numBits low-order bits of val
-def bitReverse(val: ?valType, numBits = 64) {
+proc bitReverse(val: ?valType, numBits = 64) {
   param mask: uint(64) = 0x0102040810204080;
   const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask));
   const valReverse = bitRotLeft(valReverse64, numBits);
@@ -102,7 +102,7 @@ def bitReverse(val: ?valType, numBits = 64) {
 }
 
 
-def dfft(A, W) {
+proc dfft(A, W) {
   
   var span = 1;
   var m, m2: int;
@@ -148,7 +148,7 @@ def dfft(A, W) {
 }
 
 
-def verifyResults(z, Z, execTime, Twiddles) {
+proc verifyResults(z, Z, execTime, Twiddles) {
   const N = Z.numElements;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
@@ -173,7 +173,7 @@ def verifyResults(z, Z, execTime, Twiddles) {
   }
 }
 
-def butterfly(wk1: complex, wk2: complex, wk3: complex, 
+proc butterfly(wk1: complex, wk2: complex, wk3: complex, 
               inout A:[1..4] complex) {
   var x0 = A[1] + A[2];
   var x1 = A[1] - A[2];

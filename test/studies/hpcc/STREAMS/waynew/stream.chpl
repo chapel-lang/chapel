@@ -17,7 +17,7 @@ record HPCC_Params {
 
 
 // from src/io.c
-def
+proc
 HPCC_LocalVectorSize( params: HPCC_Params, 
                       vecCnt: int, 
                       size: int, 
@@ -59,7 +59,7 @@ var HLINE = "-------------------------------------------------------------";
 
 
 // return failure
-def checkSTREAMresults( doIO: bool): bool {
+proc checkSTREAMresults( doIO: bool): bool {
   // reproduce initialization
   var aj = 1.0;
   var bj = 2.0;
@@ -124,7 +124,7 @@ def checkSTREAMresults( doIO: bool): bool {
 }
 
 
-def HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
+proc HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
   VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, numBits(real)/8, false); 
 
   Vector = [1..VectorSize];   // realloc a, b, and c

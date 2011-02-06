@@ -6,7 +6,7 @@ config var inputfile = "HPL.dat";
 config var writeTimingInfo = false;
 config var writeAccuracyInfo = false;
 
-def main() {
+proc main() {
   var TEST = new HPLparams(inFileName=inputfile);
   var outfile = new file(TEST.outFileName, path='./', mode=FileAccessMode.write);
   outfile.open();
@@ -65,12 +65,12 @@ def main() {
   }
 }
 
-def testResults(ofile, n, nb) {
+proc testResults(ofile, n, nb) {
    ofile.writeln("====================================================================");
    ofile.writeln("N = ", n, ", NB = ", nb);
 }
 
-def timingResults(ofile, n, timeData) {
+proc timingResults(ofile, n, timeData) {
    var GFlops = ((n:real/1.0e+9) * (n:real/timeData(2)))*
                 ((2.0/3.0) * n:real + (3.0/2.0));
    ofile.writeln("GFlops             = ", GFlops);
@@ -79,7 +79,7 @@ def timingResults(ofile, n, timeData) {
    ofile.writeln("  Solve time       = ", (timeData(2) - timeData(1)));
 }
 
-def testSolution(A: [?ADom], x: [?xDom], in eps: real, 
+proc testSolution(A: [?ADom], x: [?xDom], in eps: real, 
      out resid: 3*real, out norms: 5*real) {
  
   var n = ADom.dim(1).length;
@@ -109,7 +109,7 @@ def testSolution(A: [?ADom], x: [?xDom], in eps: real,
   norms = (errNorm, ANormInf, ANorm1, xNormInf, xNorm1);
 }
 
-def errorResults(ofile, TEST, resid: 3*real, norms: 5*real) {
+proc errorResults(ofile, TEST, resid: 3*real, norms: 5*real) {
  
   var thresh = TEST.Thresh;
   if (max((...resid)) < thresh) 

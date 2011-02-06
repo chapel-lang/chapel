@@ -8,7 +8,7 @@
 //   piv: a vector used to store and output the permutations performed
 //        by pivoting operations
 
-def blockLU(x: [?D], piv, blk) where (D.rank != 2) {
+proc blockLU(x: [?D], piv, blk) where (D.rank != 2) {
 // This routine will give a compiler error if blockLU
 // is called with an array that is not two dimensional.
 
@@ -16,7 +16,7 @@ def blockLU(x: [?D], piv, blk) where (D.rank != 2) {
 input parameter to blockLU must be a two-dimensional array.");
 }
 
-def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
+proc blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 
   // Test that the domain of A is square with the same index set for
   // each dimension.
@@ -140,7 +140,7 @@ def blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 // the blockLU code will not execute, so testing for this case is
 // not necessary.
 
-def generateBlockLURanges(D:domain(2), blksize) {
+iter generateBlockLURanges(D:domain(2), blksize) {
   const stop = D.dim(1).high;
 
   for i in D.dim(1) by blksize {
@@ -156,7 +156,7 @@ def generateBlockLURanges(D:domain(2), blksize) {
 // code in a complete linear algebra library that uses matrix-matrix
 // multiplication).
 
-def MMIterator(D1, D2) {
+iter MMIterator(D1, D2) {
   for j in D2.dim(2) do
     for (k1, k2) in (D1.dim(2), D2.dim(1)) do
       for i in D1.dim(1) do
@@ -169,12 +169,12 @@ def MMIterator(D1, D2) {
 // matrix, dropping the maximum value on the floor using the
 // underscore operator, and returning the row of the resulting index.
 
-def computePivotRow(A:[?D]) {
+proc computePivotRow(A:[?D]) {
    const ( , ind) = maxloc reduce (abs(A), D);
    return ind(1);
 }
 
-def blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
+proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
   if (D.dim(1) != D.dim(2)) then
     halt("error:  blockChol requires a square matrix with same dimensions");
 
@@ -256,7 +256,7 @@ def blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
   }
 }
 
-def GenerateCholBlocks(D:range,blksize) {
+iter GenerateCholBlocks(D:range,blksize) {
   var start = D.low;
   var stop = D.high;
   var hi: int;

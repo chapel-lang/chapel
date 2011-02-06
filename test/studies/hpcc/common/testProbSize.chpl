@@ -1,6 +1,6 @@
 use HPCCProblemSize;
 
-def main() {
+proc main() {
   writeln("For default settings:");
   writeln("  Stream = ", computeProblemSize(real(64), 3));
   writeln("  RA     = ", computeProblemSize(uint(64), 1));

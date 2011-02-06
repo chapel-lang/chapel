@@ -7,7 +7,7 @@ class ZeroFluxDiffusionBC: GridBC {
   
   //===> applyBoundaryCondition method ===>
   //==============================>
-  def apply(q: GridArray, t: real) {
+  proc apply(q: GridVariable, t: real) {
     apply_Homogeneous(q);
   }
   //<=== applyBoundaryCondition method <===
@@ -16,9 +16,9 @@ class ZeroFluxDiffusionBC: GridBC {
 
   //===> applyBoundaryConditionHomogeneous method ===>
   //=========================================>
-  def apply_Homogeneous(q: GridArray) {
+  proc apply_Homogeneous(q: GridVariable) {
 
-    for ghost_domain in grid.ghost_domain_set {
+    for ghost_domain in grid.ghost_multidomain {
       var loc = grid.relativeLocation(ghost_domain);
       var shift = -1*loc;
 
@@ -37,7 +37,7 @@ class ZeroFluxDiffusionBC: GridBC {
 /* 	  shift(d) = -2; */
 /*       } */
 
-/*       forall precell in grid.ghost_domain_set(loc) { */
+/*       forall precell in grid.ghost_multidomain(loc) { */
 /* 	var cell = tuplify(precell); */
 /* 	q.value(cell) = q.value(cell+shift); */
 /*       } */

@@ -10,19 +10,19 @@ class MaxHeap {
     var key: int;
   }
 
-  def parent(i: int) {
+  proc parent(i: int) {
     return (i-1) / 2;
   }
 
-  def left(i: int) {
+  proc left(i: int) {
     return 2*i + 1;
   }
 
-  def right(i: int) {
+  proc right(i: int) {
     return 2*i + 2;
   }
 
-  def verify(node: int = 0): bool {
+  proc verify(node: int = 0): bool {
     if left(node) < size then
       if heap(left(node)).key > heap(node).key || !verify(left(node)) then
         return false;
@@ -32,7 +32,7 @@ class MaxHeap {
     return true;
   }
 
-  def heapify(node: int) {
+  proc heapify(node: int) {
     var par, child: int;
     var done = false;
     
@@ -52,7 +52,7 @@ class MaxHeap {
     }
   }
 
-  def extractMax() {
+  proc extractMax() {
     var node: HeapNode;
     var parent, child, ind, key: int;
     node = heap(0);
@@ -77,13 +77,13 @@ class MaxHeap {
     return (ind, key);
   }
 
-  def increaseKey(ind:int) {
+  proc increaseKey(ind:int) {
     var node = IndexToHeapNode(ind);
     heap(node).key += 1;
     heapify(node);
   }
 
-  def insert(ind: int, key: int) {
+  proc insert(ind: int, key: int) {
     var node: int = size;
     var par: int = parent(node);
     var newNode = new HeapNode(ind, key);
@@ -97,7 +97,7 @@ class MaxHeap {
     heap(node) = newNode;
     IndexToHeapNode(ind) = node;
   }
-  def printHeap() {
+  proc printHeap() {
     writeln("Heap:");
     for i in 0..#size {
       var node = heap(i);
@@ -107,7 +107,7 @@ class MaxHeap {
 }
 
 /*
-def main {
+proc main {
   var heap = new MaxHeap(1024);
   heap.insert(1,1);
   heap.printHeap();

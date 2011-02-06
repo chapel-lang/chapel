@@ -8,7 +8,7 @@ writeln("W is: ", W);
 
 foo(W);
 
-def foo(W: [?WD]) {
+proc foo(W: [?WD]) {
   var Perm: [WD] int = [i in WD] i;
   writeln("Perm is: ", Perm);
 }

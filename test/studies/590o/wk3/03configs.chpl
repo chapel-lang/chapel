@@ -25,7 +25,7 @@ config var firstIteration: int;
 type intType = int(intSize);
 
 
-def main() {
+proc main() {
   /*
    * eliminate conditional code at compile-time using configuration
    * parameters

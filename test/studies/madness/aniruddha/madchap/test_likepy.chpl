@@ -4,7 +4,7 @@ use MadAnalytics;
 class Sum: AFcn {
     var f: AFcn;
     var g: AFcn;
-    def this(x) {
+    proc this(x) {
         return f(x)+g(x);
     }
 }
@@ -12,12 +12,12 @@ class Sum: AFcn {
 class Product: AFcn {
     var f: AFcn;
     var g: AFcn;
-    def this(x) {
+    proc this(x) {
         return f(x)*g(x);
     }
 }
 
-def main() {
+proc main() {
     // Run the code on each test function in turn
 
     // Note that test3 does not satisfy the boundary condition

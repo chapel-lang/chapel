@@ -6,7 +6,7 @@ module symmetric_blas {
   // Inner and Outer Product Cholesky codes
   // ============================================
 
-  def transposed_block_triangular_solve ( L_diag    : [],
+  proc transposed_block_triangular_solve ( L_diag    : [],
 					  L_offdiag : [] ) {
     
     // ------------------------------------------------------
@@ -42,7 +42,7 @@ module symmetric_blas {
   // Inner and Outer Product Cholesky codes
   // ===============================================
 
-  def transposed_2D_block_triangular_solve ( L_diag    : [],
+  proc transposed_2D_block_triangular_solve ( L_diag    : [],
 					     L_offdiag : [] ) {
     
     // ------------------------------------------------------
@@ -85,7 +85,7 @@ module symmetric_blas {
   // in Block Bordering Cholesky codes
   // ===================================
 
-  def block_transposed_block_triangular_solve ( L : [], A : [] )
+  proc block_transposed_block_triangular_solve ( L : [], A : [] )
     where ( A.domain.rank == 2  && L.domain.rank == 2 ) {
 
     // -----------------------------------------------------------
@@ -133,7 +133,7 @@ module symmetric_blas {
   // in Block Bordering Cholesky codes
   // ======================================
 
-  def block_2D_transposed_block_triangular_solve ( L : [], A : [] )
+  proc block_2D_transposed_block_triangular_solve ( L : [], A : [] )
     where ( A.domain.rank == 2  && L.domain.rank == 2 ) {
 
     // -----------------------------------------------------------
@@ -181,7 +181,7 @@ module symmetric_blas {
   // Symmetric Block Outer Product_Modification
   // ==========================================
 
-  def symmetric_block_schur_complement ( A : [] , L : [] )
+  proc symmetric_block_schur_complement ( A : [] , L : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
@@ -219,7 +219,7 @@ module symmetric_blas {
   // Symmetric 2D Block Outer Product_Modification
   // =============================================
 
-  def symmetric_2D_block_schur_complement ( A : [] , L : [] )
+  proc symmetric_2D_block_schur_complement ( A : [] , L : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
@@ -255,7 +255,7 @@ module symmetric_blas {
   // Symmetric Block Outer Product Modification for a single diagonal block
   // ======================================================================
 
-  def symmetric_diagonal_low_rank_modification ( L : [], A : [] ) {
+  proc symmetric_diagonal_low_rank_modification ( L : [], A : [] ) {
 
     // -----------------------------------------------------------
     // form diagonal block A (K,K) = A (K,K) - L (K,J) L^T (J,K) 
@@ -280,7 +280,7 @@ module symmetric_blas {
   // Symmetric Block Outer Product Modification for a single offdiagonal block
   // =========================================================================
 
-  def symmetric_offdiagonal_low_rank_modification ( L : [], A : [] ) {
+  proc symmetric_offdiagonal_low_rank_modification ( L : [], A : [] ) {
 
     // -------------------------------------------------------------
     // Form a single offdiagonal block 
@@ -300,7 +300,7 @@ module symmetric_blas {
   // Symmetric Block Inner Product for a Single Block Column
   // =======================================================
 
-  def block_inner_product ( L : [] , A : [] )
+  proc block_inner_product ( L : [] , A : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
@@ -341,7 +341,7 @@ module symmetric_blas {
   // Column for a 2D Block Distributed Matrix
   // ================================================
 
-  def block_2D_inner_product ( L : [] , A : [] )
+  proc block_2D_inner_product ( L : [] , A : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 

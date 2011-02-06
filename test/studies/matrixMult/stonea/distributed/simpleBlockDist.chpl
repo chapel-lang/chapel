@@ -10,20 +10,20 @@ const localesAcross = sqrt(numLocales) : int;
 const blkSize = n / localesAcross : int;
 
 record WrappedArray {
-    def WrappedArray() { }
+    proc WrappedArray() { }
 
-    def WrappedArray(row, col, numRows, numCols) {
+    proc WrappedArray(row, col, numRows, numCols) {
         dom = [row..row+numRows-1, col..col+numCols-1];
     }
 
-    def this(i,j : int) var { return data[i,j]; }
+    proc this(i,j : int) var { return data[i,j]; }
 
     var dom : domain(2);
     var data : [dom] int;
 }
 
 
-def simpleDistMultiply(
+proc simpleDistMultiply(
     blkSize : int,
     A : [?localesDom] WrappedArray,
     B : [localesDom] WrappedArray,
@@ -75,7 +75,7 @@ def simpleDistMultiply(
 }
 
 
-def main() {
+proc main() {
     // verify that the number of locales is a power of 2.
     // QUESTION: How safe is it really to do this? Is there a possibility
     // of some kind of roundoff error? Another method would be to see if

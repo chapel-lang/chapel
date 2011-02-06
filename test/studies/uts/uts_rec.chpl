@@ -54,7 +54,7 @@ class TreeNode {
 
 
   // Generate this node's children
-  def genChildren(): int {
+  proc genChildren(): int {
     select distrib {
       when NodeDistrib.Geometric do 
         nChildren = numGeoChildren(geoDist);
@@ -82,14 +82,14 @@ class TreeNode {
 
   // Constant Distribution: Find the number of children
   //  Note: This is a _balanced_ tree.
-  def numConstChildren(): int {
+  proc numConstChildren(): int {
     return if depth < MAX_DEPTH then B_0 else 0;
   }
 
 
   // Hybrid trees are geometric at the top of the tree and binomial
   // below a certain depth.
-  def numHybridChildren(): int {
+  proc numHybridChildren(): int {
     if (depth < shiftDepth * MAX_DEPTH) then
       return numGeoChildren(geoDist);
     
@@ -99,7 +99,7 @@ class TreeNode {
 
   // Binomial Distribution: Find the number of children
   //  Note: distribution is identical everywhere below root
-  def numBinChildren(): int {
+  proc numBinChildren(): int {
     if (depth == 0) then
       return B_0;
     
@@ -109,7 +109,7 @@ class TreeNode {
 
 
   // Geometric Distribution: Find the number of children
-  def numGeoChildren(shape: GeoDistrib): int {
+  proc numGeoChildren(shape: GeoDistrib): int {
     var b_i: real = B_0;
   
     // use shape function to compute target b_i
@@ -156,7 +156,7 @@ class TreeNode {
 /*
 ** Print out search parameters
 */
-def uts_showSearchParams() {
+proc uts_showSearchParams() {
   writeln("UTS v", uts_version, " - Unbalanced Tree Search (", 
       if parallel then "Parallel Chapel" else "Sequential Chapel", ")");
 
@@ -187,7 +187,7 @@ def uts_showSearchParams() {
 /*
 ** Request n threads.  Get back the number of threads granted.
 */
-def requestThreads(n:int): int {
+proc requestThreads(n:int): int {
   if (parallel) {
     // Trade some imbalance here for blocking overhead
     if (thread_cnt.readXX() < MIN_THREADS) {
@@ -214,7 +214,7 @@ def requestThreads(n:int): int {
 /*
 **  Parallel DFS
 */
-def dfs_count(n: TreeNode, wasParallel: bool = false):int {
+proc dfs_count(n: TreeNode, wasParallel: bool = false):int {
   if n != nil {
     if (parallel) {
       var threads_granted = requestThreads(n.nChildren);
@@ -248,7 +248,7 @@ def dfs_count(n: TreeNode, wasParallel: bool = false):int {
 /*
 **  Parallel Tree Creation
 */
-def create_tree(parent: TreeNode, wasParallel: bool = false): int {
+proc create_tree(parent: TreeNode, wasParallel: bool = false): int {
   if parent == nil {
     writeln("create_tree(): Warning, called with nil");
     return 0;
@@ -281,14 +281,14 @@ def create_tree(parent: TreeNode, wasParallel: bool = false): int {
 } 
 
 
-def destroyTree(tn: TreeNode) {
+proc destroyTree(tn: TreeNode) {
   for child in tn.children do
     destroyTree(child);
   delete tn;
 }
 
 
-def main {
+proc main {
   var t_create: Timer();
   var t_dfs   : Timer();
   var counted, created: int;

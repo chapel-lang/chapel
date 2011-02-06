@@ -1,0 +1,98 @@
+\documentclass[12pt]{article}
+\usepackage{fullpage}
+
+\begin{document}
+\parskip=12pt
+\parindent = 0pt
+
+{\large \bf Algebra}
+The matrix equation $A = L L^T$ can be expanded to a system of $N \times N$
+block equations, one for each subblock $A_{IJ}$:
+\[  A_{IJ} = \sum_{K=1}^{N} L_{IK} \cdot (L^T)_{KJ} 
+= \sum_{K=1}^{\min (I,J)} L_{IK} \cdot L_{JK}^T \]
+  
+We can compute the entries in $L$ by rearranging the equations corresponding to
+the lower triangle as
+\[ L_{IJ} \cdot L_{JJ}^T = A_{IJ} - 
+\sum_{K=1}^{J-1} L_{IK} \cdot L_{JK}^T \]
+
+The diagonal blocks must satisfy
+\[ L_{JJ} \cdot L_{JJ}^T = A_{JJ} - 
+\sum_{K=1}^{J-1} L_{JK} \cdot L_{JK}^T. \] 
+
+We solve this by computing $L_{JJ}$ as the Cholesky factor of $A_{JJ} -
+\sum_{K=1}^{J-1} L_{JK} \cdot L_{JK}^T$.  This is possible when all of the
+blocks in the $J$th block row of $L$ to the left of the diagonal are known.
+
+The offdiagonal blocks ($I > J)$ in the  $J$th block column of $L$ satisfy
+\[ L_{IJ} = ( A_{IJ} - \sum_{K=1}^{J-1} L_{IK} \cdot L_{JK}^T) 
+\cdot L_{JJ}^{-T}  \]
+We ``apply the inverse'' by solving linear systems of equations; $L_{JJ}$ is
+triangular, so this is straight-forward.  
+
+{\large \bf Dependencies}
+
+\emph{The offdiagonal block} $L_{IJ}$ then depends on all blocks in
+the $I$th block row of $L$ to the left of the diagonal being known, as
+well as the diagonal block in the $J$th block row and column.
+
+\emph{The diagonal block} $L_{JJ}$ depended on all the off-diagonal
+blocks $L_{JK}$.  Combining these results, we saw that each of these
+off-diagonal blocks $L_{JK}$ depends on the corresponding diagonal
+block $L_{KK}$.  This shows that $L_{JJ}$ depends on all the preceding
+diagonal blocks $L_{KK}, K = 1 \ldots J-1$.  Since each of these
+blocks depends on the off-diagonal blocks to its left, $L_{JJ}$ cannot
+be computed until all of the other blocks in the leading $J \times J$
+triangle have been computed.
+
+The offdiagonal block $L_{IJ}, I > J$ then depends on all of the blocks in the
+leading $J \times J$ triangle and all of the blocks to its left in the
+$I$th block row.  It is \emph{independent} of all of the other off-diagonal
+blocks below the $J$th row.  This is the source of lots of parallelism.
+
+{\large \bf Task Types}
+
+The block factorization depends on three kinds of tasks:
+\begin{itemize}
+\item Factoring diagonal blocks (standard Cholesky) 
+  $L_{JJ} \cdot L_{JJ}^T = \widehat{A_{JJ}}$
+\item Solving linear systems involving $L_{JJ}^{-T}$
+\item computing the modification $A_{IJ} - L_{IK} \cdot L_{JK}^T$ for some
+  particular triple of block indices $I, J, K$.
+\end{itemize}
+We can do these tasks in any order that respects the need for the arguments to
+have been computed.  There are many such orders.  The process necessarily starts
+by computing the Cholesky factor $L_{11}$ which depends on no other tasks.
+Following this, any or all off-diagonal blocks in the first block column can be
+computed.  These then enable all modifications of the form $A_{IJ} - L_{I1}
+\cdot L_{J1}^T, J > 1, I \ge J$.
+
+{\large \bf Scheduling Tasks}
+
+A \emph{data-flow} implementation proceeds by performing these and all
+subsequent operations whenever their input arguments are ready.  Block Cholesky
+factorization can be implemented in a simple data-flow style in Chapel.  The
+dataflow code uses \emph{sync} or \emph{single} variables to register the status
+of each particular operation.  The variables used in the code are arrays of
+variables, one entry for each $I,J$ block:
+\begin{description}
+  \item [all\_schur\_complement\_mods\_done\$ ] a \emph{single} variable, initially
+    empty, which becomes full only when all of the $J-1$ modifications $A_{IJ} -
+    L_{IK} \cdot L_{JK}^T$ needed to form $\widehat{A_{IJ}}$ have been
+    completed.
+
+  \item [block\_computed\$] a second \emph{single} variable, initially empty, which
+    becomes full when the factorization step or the block solve step for this
+    block has finished, marking that the block is available for use in other
+    operations.
+  
+    \item [mod\_lock\$] a \emph{sync} variable used to lock the block so that only one
+      modification step on this block can be active at any time.
+
+    \item [schur\_complement\_mods\_to\_be\_done] an ordinary variable, which
+      holds the count of modifications yet to be done.  Each block $A_{I,J}$
+      will be sujected to $J-1$ modifications in total.  The counter is
+      decremented inside a critical section controlled by mod\_lock\$.
+\end{description}
+
+\end{document}

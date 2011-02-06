@@ -22,7 +22,7 @@ config const printParams = true,
              printStats = true;
 
 
-def main() {
+proc main() {
   printConfiguration();
 
   const ProblemSpace: domain(1, indexType) = [1..m];
@@ -66,7 +66,7 @@ def main() {
 }
 
 
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     if (printStats) then printLocalesTasks(tasksPerLocale=1);
     printProblemSize(elemType, numVectors, m);
@@ -75,7 +75,7 @@ def printConfiguration() {
 }
 
 
-def initVectors(B, C, ProblemSpace) {
+proc initVectors(B, C, ProblemSpace) {
   var randlist = new RandomStream(seed);
 
   randlist.skipToNth(B.domain.low);
@@ -92,7 +92,7 @@ def initVectors(B, C, ProblemSpace) {
 }
 
 
-def verifyResults(A, B, C) {
+proc verifyResults(A, B, C) {
   if (printArrays) then writelnFragArray("A is:     ", A, "\n");
 
   forall (b, c) in (B, C) do
@@ -106,7 +106,7 @@ def verifyResults(A, B, C) {
 }
 
 
-def printResults(successful, minGBs, avgGBs, maxGBs) {
+proc printResults(successful, minGBs, avgGBs, maxGBs) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Fragmented, per-locale GBs:");

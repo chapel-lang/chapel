@@ -4,8 +4,8 @@ LEVEL_LIB = ../../lib/level
 
 
 SOURCES = \
-	../grid/GridArray_AdvectionCTU.chpl \
-	LevelArray_AdvectionCTU.chpl \
+	../grid/GridVariable_AdvectionCTU.chpl \
+	LevelVariable_AdvectionCTU.chpl \
 	LevelSolution_AdvectionCTU.chpl \
 	LevelBC_AdvectionCTU.chpl \
 	Level_AdvectionCTU_driver.chpl

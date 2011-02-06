@@ -5,15 +5,15 @@ use LevelBC_def;
 //|/___________________________________|/
 class ZeroInflowBC: LevelBC {
 
-  def apply(q: LevelArray, t: real){
+  proc apply(q: LevelVariable, t: real){
     apply_Homogeneous(q);
   }
 
-  def apply_Homogeneous(q: LevelArray){
+  proc apply_Homogeneous(q: LevelVariable){
 
     for grid in level.grids {
 
-      for ghost_domain in grid.ghost_domain_set {
+      for ghost_domain in level.boundary(grid) {
         forall cell in ghost_domain do
           q(grid).value(cell) = 0.0;
       }

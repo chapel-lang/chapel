@@ -32,7 +32,7 @@ writeln("\nsolving...\n");
 
 //-------- Define an important set function or two...  --------------------
 
-def setUnion(X, Y) {
+proc setUnion(X, Y) {
    var Res: X.type;
    for i in X {
      Res += i;
@@ -44,7 +44,7 @@ def setUnion(X, Y) {
 }
 
 
-def setIntersect(X, Y) {
+proc setIntersect(X, Y) {
    var Res: X.type;
    for i in X {
      if (Y.member(i)) {
@@ -110,7 +110,7 @@ for i in [1..9] {
     // DEBUG: writeln("Box #", i, " is:\n", Table[BoxDomains[i]]);
 }
 
-def getBoxIndex(i, j) {
+proc getBoxIndex(i, j) {
     var bI: int = 0;    
     if (i <= 3) {
       if (j <= 3) {

@@ -1,41 +1,61 @@
 use Level_def;
-use LevelArray_def;
+use LevelVariable_def;
 
 
 
-//===> LevelSolution class ===>
-//============================>
+//|\""""""""""""""""""""""""""""|\
+//| >    LevelSolution class    | >
+//|/____________________________|/
 class LevelSolution {
   const level:    Level;
 
-  var old_data:     LevelArray;
-  var current_data: LevelArray;
+  var old_data:     LevelVariable;
+  var current_data: LevelVariable;
   var old_time:     real;
   var current_time: real;
 
 
-  def LevelSolution(level: Level) {
-    this.level  = level;
-    old_data     = new LevelArray(level = level);
-    current_data = new LevelArray(level = level);
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  proc clear() {
+    delete old_data;
+    delete current_data;
   }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+
+
+  //|\''''''''''''''''''''|\
+  //| >    constructor    | >
+  //|/....................|/
+  proc LevelSolution(level: Level) {
+    this.level  = level;
+    old_data     = new LevelVariable(level = level);
+    current_data = new LevelVariable(level = level);
+  }
+  // /|''''''''''''''''''''/|
+  //< |    constructor    < |
+  // \|....................\|
 
 }
-//<=== LevelSolution class <===
-//<============================
+// /|""""""""""""""""""""""""""""/|
+//< |    LevelSolution class    < |
+// \|____________________________\|
 
 
 
 
-
-//===> LevelSolution.setToFunction method ===>
-//===========================================>
-def LevelSolution.setToFunction(
+//|\""""""""""""""""""""""""""""""""""""|\
+//| >    LevelSolution.setToFunction    | >
+//|/____________________________________|/
+proc LevelSolution.setToFunction(
   initial_condition: func(dimension*real, real),
-  time_in:           real
-){
+  time_in:           real)
+{
 
-  //==== Set each LevelArray to the initial condition ====
+  //==== Set each LevelVariable to the initial condition ====
   old_data.setToFunction(initial_condition);
   old_time = time_in;
   
@@ -43,22 +63,24 @@ def LevelSolution.setToFunction(
   current_time = time_in;
 
 }
-//<=== LevelSolution.setToFunction method <===
-//<===========================================
+// /|""""""""""""""""""""""""""""""""""""/|
+//< |    LevelSolution.setToFunction    < |
+// \|____________________________________\|
 
 
 
 
-//===> LevelSolution.clawOutput method ===>
-//========================================>
-def LevelSolution.clawOutput(
+//|\"""""""""""""""""""""""""""""""""|\
+//| >    LevelSolution.clawOutput    | >
+//|/_________________________________|/
+proc LevelSolution.clawOutput(
   frame_number: int
 ){
 
-
-  //==== Use clawOutput for LevelArray ====
+  //==== Use clawOutput for LevelVariable ====
   current_data.clawOutput(current_time, frame_number);
   
 }
-//<=== LevelSolution.clawOutput method <===
-//<========================================
+// /|"""""""""""""""""""""""""""""""""/|
+//< |    LevelSolution.clawOutput    < |
+// \|_________________________________\|
