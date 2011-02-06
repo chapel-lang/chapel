@@ -56,7 +56,7 @@ config const numTrials = 1,
 //
 // entry point for the program
 //
-def main() {
+proc main() {
   //
   // the dense domain defining the bounding box for the matrix
   //
@@ -166,7 +166,7 @@ def main() {
 // computes the conjugant gradient; takes sparse matrix A and vector X
 // and queries their respective domains storing as MatDom and VectDom
 //
-def conjGrad(A: [?MatDom], X: [?VectDom]) {
+proc conjGrad(A: [?MatDom], X: [?VectDom]) {
   //
   // number of iterations to run
   //
