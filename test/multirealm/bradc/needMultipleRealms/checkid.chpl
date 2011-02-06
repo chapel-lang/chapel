@@ -17,7 +17,7 @@ writeln("c1.locale.id = ", c2.locale.id);
 writeln("c3.locale.id = ", c3.locale.id);
 writeln("c4.locale.id = ", c4.locale.id);
 /*
-def testit(c: C) {
+proc testit(c: C) {
   on c do {
     writeln("here.id = ", here.id);
     writeln("c1.id = ", c
