@@ -12,10 +12,10 @@ This displays the compiler's command-line flags sorted by category.
 For each flag, the short one-letter form is given (if one exists),
 followed by the long form of the flag.  Next, the pattern for any
 arguments to the flag are given.  And finally a brief description of
-the flag is provided.  You can get more information about each flag,
-including the environment variable that can be used to set it and the
-flag's current setting, using the --help-env and --help-settings
-options, respectively.
+the flag is provided.  A flag may have a corresponding environment
+variable, setting which is equivalent to passing the flag.  These
+variables are listed by the --help-env option.  The flags' current
+settings are listed by --help-settings.
 
 More detailed information about the compiler and its command-line
 flags is also available on its man page, which you can read using:
