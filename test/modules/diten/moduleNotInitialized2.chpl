@@ -4,7 +4,7 @@ var lock2: sync bool;
 module M1 {
   var a: int;
   var raninit = false;
-  def init() {
+  proc init() {
     if (!raninit) {
       raninit = true;
       lock1 = false;
@@ -15,7 +15,7 @@ module M1 {
 }
 
 module M2 {
-  def main {
+  proc main {
     var b, c: sync int;
     begin {
       use M1;

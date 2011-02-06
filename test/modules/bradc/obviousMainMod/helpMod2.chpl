@@ -1,7 +1,7 @@
 record R {
   var x: int;
 
-  def foo() {
+  proc foo() {
     writeln("In R.foo");
   }
 }
@@ -9,7 +9,7 @@ record R {
 class C {
   var x: int;
 
-  def foo() {
+  proc foo() {
     writeln("In C.foo");
   }
 }
@@ -18,7 +18,7 @@ class C {
 union U {
   var x: int;
 
-  def foo() {
+  proc foo() {
     writeln("In U.foo");
   }
 }

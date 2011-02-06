@@ -2,7 +2,7 @@
 use CrayPatProfiler; 
 //use DefaultProfiler; 
 
-def main() {
+proc main() {
   const p : Profiler;
 
   writeln("1");

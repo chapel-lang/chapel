@@ -1,7 +1,7 @@
 module M1 {
   module M2 {
     var x: int = 3;
-    def f() {
+    proc f() {
       writeln(x);
     }
   }

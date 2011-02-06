@@ -28,19 +28,19 @@ for (i,a,b) in (D,A,B) {
 }
 
 class DD {
-  def these() {
+  iter these() {
     for i in 1..n do
       yield i;
   }
 
-  def these(leader) {
+  iter these(leader) {
     cobegin {
       yield [n/2+1..n];
       yield [1..n/2];
     }
   }
 
-  def these(follower) {
+  iter these(follower) {
     for i in follower do
       yield i;
   }
@@ -50,14 +50,14 @@ class C {
   var A: [1..n] real;
   var B: [1..n] real;
 
-  def these() {
+  iter these() {
     for i in 1..n do
       yield A(i);
     for i in 1..n do
       yield B(i);
   }
 
-  def these(leader) {
+  iter these(leader) {
     cobegin {
       yield [((3*n)/2)+1..2*n];
       yield [n/2+1..n];
@@ -66,7 +66,7 @@ class C {
     }
   }
 
-  def these(follower) var {
+  iter these(follower) var {
     for i in follower do
       if (i <= n) then
         yield A(i);
@@ -74,7 +74,7 @@ class C {
         yield B(i-n);
   }
 
-  def this(i) var {
+  proc this(i) var {
     if (i <= n) then
       return A(i);
     else

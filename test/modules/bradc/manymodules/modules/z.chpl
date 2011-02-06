@@ -1,7 +1,7 @@
 
 
 module f {
-  def runf() {
+  proc runf() {
     writeln("in runf() from module f");
   }
 }

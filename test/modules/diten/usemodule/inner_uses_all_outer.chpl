@@ -2,7 +2,7 @@ module outermost {
   use useMe;
   module middlemost {
     module innermost {
-      def f() {
+      proc f() {
         writeln("Here's f!");
         // Should have access to symbols in module useMe
         writeln(a);
@@ -14,12 +14,12 @@ module outermost {
 
 module useMe {
   var a = 3 + 4i;
-  def g() {
+  proc g() {
     writeln("Here's g!");
   }
 }
 
-def main() {
+proc main() {
   use outermost.middlemost.innermost;
   f();
 }

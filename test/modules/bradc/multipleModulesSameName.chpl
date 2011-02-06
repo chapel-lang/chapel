@@ -1,7 +1,7 @@
 module foo {
   var x: int;
 
-  def main() {
+  proc main() {
     writeln("In foo");
   }
 }

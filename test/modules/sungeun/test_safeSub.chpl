@@ -1,4 +1,4 @@
-def testSafeSub(a, b, expected) {
+proc testSafeSub(a, b, expected) {
   const safe = safeSub(a,b);
   const res = if safe==true then "safe" else "not-safe";
   write(a, " - ", b, ": ", res);

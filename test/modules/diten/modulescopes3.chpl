@@ -1,7 +1,7 @@
 module M1 {
-  var a = 3.14;
   module M2 {
     module M3 {
+      var a = 3.14;
     }
   }
 }

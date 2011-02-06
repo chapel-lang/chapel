@@ -6,7 +6,7 @@ use Random;
 config const size = 4096;
 config const seed = 27;
 
-def main() {
+proc main() {
   var A: [1..size] int;
   var rands: [1..size] real;
   var randomStream = new RandomStream(seed);

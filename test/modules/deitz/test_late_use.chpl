@@ -3,7 +3,7 @@ module M1 {
 }
 
 module M2 {
-  def main {
+  proc main {
     writeln(x);
     use M1;
   }
