@@ -1,11 +1,11 @@
 class mysumreduce {
   type t;
   
-  def ident() {
+  proc ident() {
     return 0;
   }
 
-  def combine(x: t, y: t): t {
+  proc combine(x: t, y: t): t {
     return x + y;
   }
 }
