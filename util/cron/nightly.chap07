@@ -56,14 +56,14 @@ done
 
 
 # Test using $compiler as HOST and TARGET compiler
-for compiler in $compilers ; do
-  module load PrgEnv-${compiler}${PrgEnv_Version}
-  export CHPL_HOST_PLATFORM=xt-cle
-  export CHPL_TARGET_PLATFORM=xt-cle
-  export CHPL_HOST_COMPILER=cray-xt-$compiler
-  $NIGHTLY -combinedir -cron $EXAMPLES
-  module unload PrgEnv-${compiler}${PrgEnv_Version}
-done
+#for compiler in $compilers ; do
+#  module load PrgEnv-${compiler}${PrgEnv_Version}
+#  export CHPL_HOST_PLATFORM=xt-cle
+#  export CHPL_TARGET_PLATFORM=xt-cle
+#  export CHPL_HOST_COMPILER=cray-xt-$compiler
+#  $NIGHTLY -combinedir -cron $EXAMPLES
+#  module unload PrgEnv-${compiler}${PrgEnv_Version}
+#done
 
 # Test using $compiler as HOST and TARGET compiler without the Cray wrapper scripts
 # cray compiler cannot be used without Cray wrapper scripts

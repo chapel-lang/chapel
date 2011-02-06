@@ -340,6 +340,16 @@
 # errors, warnings, and correct programs to all be tested using the
 # same mechanisms.  
 #
+# If a test generates files that should be cleaned up before running
+# the next test to ensure that things start from a blank slate, these
+# files can be listed in a directory-level file called CLEANFILES.
+# Upon starting the test system or running it with the -clean-only
+# flag, these files will be removed.  As an example, if a test is
+# making sure that a file can be opened and written to, failure to
+# remove the generated file could result in a false positive on a
+# second run of the test system if the Chapel program failed to create
+# the file because the previous one would still be there.
+#
 # If the output for a test varies by machine, communication layer, or
 # platform name, files named <testname>.<machname>.good,
 # <testname>.comm-<commlayer>.good, or <testname>.<platform>.good can
@@ -443,6 +453,18 @@
 #    a test named foo.chpl can add its own compilation and execution
 #    options by specifying them in foo.compopts and foo.execopts.
 #
+#    The .compopts and .execopts files may contain multiple lines
+#    where each line specifies a different set of compilation or
+#    execution options.  All such files also support single line
+#    comments via the '#' character.  In addition, for the .compopts
+#    and .execopts files, if a line of options is followed by a
+#    '#' the first token following the '#' is treated as the .good file
+#    for the test using those options (.execopts .good files override
+#    .compopts ones).  If no .good file name is specified, the .good file
+#    will be assumed to be
+#         <testname>.<compopts line no>-<execopts line no>.good
+#    A '0' will be used if there is no appropriate line number.
+#
 #  - also added support for a LASTCOMPOPTS file that contains
 #    compiler options to be added after the source file.  Thus:
 #    ./chpl <-compopts> <COMPOPTS> source.chpl <LASTCOMPOPTS>.
@@ -466,10 +488,14 @@
 #
 #  - if the subdirectory contains an executable PREDIFF file, that
 #    file will be executed prior to running any diff command and
-#    will be sent three arguments: 1) the name of the current test,
-#    2) the name of the output file that the diff is going to
-#    be taken against, and 3) the compiler being used.  A 
-#    test-specific PREDIFF script can be added  by using a foo.prediff
+#    will be sent five arguments:
+#      1) the name of the current test
+#      2) the name of the output file that the diff is going to
+#         be taken against
+#      3) the compiler being used
+#      4) the compiler options used
+#      5) the execution options used
+#    A test-specific PREDIFF script can be added  by using a foo.prediff
 #    script. Arguments 1 and 2 do not include any path components
 #    (regardless of how start_test is invoked). Argument 3 gives
 #    the absolute path to the compiler.
@@ -1226,15 +1252,16 @@ foreach testType ($testTypes)
                     echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
                     $createGraphs "$graphfile" "$perfdir" "$startdate" "False" |& tee -a $logfile
                     if ($? == 0) then
-                        echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                        $viewGraphs "$perfdir" |& tee -a $logfile
-                        if ($?) then
-                            echo "[Error generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                        else
-                            echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                        endif
+                        echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
                     endif
                 end
+
+                if ("$graphfiles" != "") then
+                    echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
+                    $viewGraphs "$perfdir" |& tee -a $logfile
+                    # Ignore return code
+
+                endif
             endif
         end
     end
