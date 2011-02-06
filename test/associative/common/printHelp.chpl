@@ -1,4 +1,4 @@
-def writelnSortedByDom(arr) {
+proc writelnSortedByDom(arr) {
   var first = true;
   for i in arr.domain.sorted() {
     if first then first = false; else write(" ");
@@ -8,7 +8,7 @@ def writelnSortedByDom(arr) {
 }
 
 
-def writelnSorted(arr) {
+proc writelnSorted(arr) {
   var first = true;
   for elem in arr.sorted() {
     if first then first = false; else write(" ");
@@ -17,7 +17,7 @@ def writelnSorted(arr) {
   writeln();
 }
 
-def writelnSorted(dom: domain) {
+proc writelnSorted(dom: domain) {
   var first = true;
   for elem in dom.sorted() {
     if first then {

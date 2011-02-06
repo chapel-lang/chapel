@@ -14,7 +14,7 @@ d.add( (0,-1));
 d.add( (1,0));
 d.add( (0,1));
 
-def check( t: twod_t) {
+proc check( t: twod_t) {
   writeln( t, " member = ", d.member( t));
 }
 

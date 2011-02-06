@@ -13,6 +13,6 @@ d += new R(5);
 
 writelnSorted(d);
 
-def <(x1: R, x2: R) {
+proc <(x1: R, x2: R) {
   return x1.x < x2.x;
 }
