@@ -3,12 +3,12 @@ var seed: [randNumDom] sync int = 1;
 const multipliers: [randNumDom] int = (16807, 397204094, 950706376),
       modulus = 2147483647;
 
-def RandomNumber (x_n, multiplier) {
+proc RandomNumber (x_n, multiplier) {
   // The following calculation must be done in at least 46-bit arithmetic!
   return (x_n:int(64) * multiplier % modulus) : int(32);
 }
 
-def RealRandomNumber (i) {
+proc RealRandomNumber (i) {
   var n = RandomNumber(seed[i], multipliers[i]);
   seed[i] = n;
   return (n-1) / (modulus-2) : real;
@@ -16,7 +16,7 @@ def RealRandomNumber (i) {
 
 config const numberOfIterations = 10000;
 
-def test {
+proc test {
   coforall i in 1..numberOfIterations do
     seed[1] = RandomNumber(seed[1], multipliers[1]);
 

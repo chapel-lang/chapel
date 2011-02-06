@@ -1,4 +1,4 @@
-def f (x) {
+proc f (x) {
   return x + 1;
 }
 

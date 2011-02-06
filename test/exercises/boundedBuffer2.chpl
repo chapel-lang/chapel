@@ -18,7 +18,7 @@ class BoundedBuffer {
 
   // Add a value to the circular buffer. If it is full, wait until a
   // value has been consumed
-  def add(i: eltType) {
+  proc add(i: eltType) {
     var c = producerPos$;
     producerPos$ = (c + 1) % bufSize;
     buffer$(c) = i;
@@ -26,14 +26,14 @@ class BoundedBuffer {
 
   // Remove a value from the buffer. If it is empty, wait until a
   // value has been produced
-  def remove(): eltType {
+  proc remove(): eltType {
     var c = consumerPos$;
     consumerPos$ = (c + 1) % bufSize;
     return buffer$(c);
   }
 
   // Yield all values in the buffer until the -1 sentinel value is found
-  def these() {
+  iter these() {
     var val = remove();
     while val != -1 {
       yield val;
@@ -47,7 +47,7 @@ var buffers: [0..nMiddleSteps] BoundedBuffer = [0..nMiddleSteps] new BoundedBuff
 
 // Given a value, do some work on it to create the next value. In this
 // case, the work is sleeping for a second and leaving the value unchanged.
-def createNextValue(val) {
+proc createNextValue(val) {
   use Time;
   sleep(1);
   return val;
@@ -56,7 +56,7 @@ def createNextValue(val) {
 // Produce the numbers from 1 to nProducts by adding them to the first
 // bounded buffer. -1 is used as a sentinel to indicate that the final
 // value has been produced.
-def producer(nProducts: int) {
+proc producer(nProducts: int) {
   for i in 1..nProducts {
     createNextValue(i);
     writeln("producer producing ", i);
@@ -68,7 +68,7 @@ def producer(nProducts: int) {
 
 // Act as both a consumer and a producer. It consumes a value from buffer
 // i-1 and produces it to buffer i.
-def middleStep(i: int) {
+proc middleStep(i: int) {
   for val in buffers(i-1) {
     writeln("middleStep ", i, " consumed ", val);
     var next = createNextValue(val);
@@ -81,13 +81,13 @@ def middleStep(i: int) {
 
 // Consume values from the final buffer. These values were created by the
 // producer and have passed through each middleStep.
-def consumer(consumerNumber: int) {
+proc consumer(consumerNumber: int) {
   for consumedValue in buffers(nMiddleSteps) {
     writeln("consumer ", consumerNumber, ": Consumed: ", consumedValue);
   }
 }
 
-def main {
+proc main {
   // Simultaneously start a producer, nMiddleSteps middleSteps and
   // nConsumers consumers.
   cobegin {

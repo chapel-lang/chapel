@@ -54,7 +54,7 @@ for i in 1..k {
 }
 
 // print a generation
-def printGrid() {
+proc printGrid() {
   write("+"); for i in 1..n do write("-"); writeln("+");
   for i in D.dim(1) {
     write("|");
