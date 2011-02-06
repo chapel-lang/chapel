@@ -11,7 +11,7 @@
 //
 // fibonacci - generates the first n Fibonacci numbers
 //
-def fibonacci(n: int) {
+iter fibonacci(n: int) {
   var (current, next) = (0, 1); // equiv. var current = 0, next = 1;
   for 1..n {
     yield current;
@@ -33,7 +33,7 @@ writeln(); // line break
 // multiloop - generate the cross product of indices in two ranges and
 // yield them as tuples
 //
-def multiloop(n: int) {
+iter multiloop(n: int) {
   for i in 1..n do
     for j in 1..n do
       yield (i, j);
@@ -66,7 +66,7 @@ var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"), new Tree("e
 //
 // postorder - iterate over the Tree in postorder using recursion
 //
-def postorder(tree: Tree): string {
+iter postorder(tree: Tree): string {
   if tree != nil {
     for child in postorder(tree.left) do
       yield child;

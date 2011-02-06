@@ -71,7 +71,7 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 //
 // The program entry point
 //
-def main() {
+proc main() {
   //
   // T is the distributed table itself, storing a variable of type
   // elemType for each index in TableSpace.
@@ -115,7 +115,7 @@ def main() {
 //
 // Print the problem size and number of updates
 //
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numTables, m);
@@ -126,7 +126,7 @@ def printConfiguration() {
 //
 // Verify that the computation is correct
 //
-def verifyResults(T) {
+proc verifyResults(T) {
   //
   // Print the table, if requested
   //
@@ -163,7 +163,7 @@ def verifyResults(T) {
 //
 // Print out success/failure, the execution time, and the GUPS value
 //
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);

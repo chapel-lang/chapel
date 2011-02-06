@@ -62,7 +62,7 @@ writeln("verification success");
 //   low: lower bound of array to start sort at, defaults to whole array
 //   high: upper bound of array to stop sort at, defaults to whole array
 //
-def pqsort(arr: [],
+proc pqsort(arr: [],
            thresh: int,
            low: int = arr.domain.low,
            high: int = arr.domain.high) where arr.rank == 1 {
@@ -95,7 +95,7 @@ def pqsort(arr: [],
   // findPivot -- helper routine to find pivot value using simple
   //              median-of-3 method, returns pivot value
   //
-  def findPivot() {
+  proc findPivot() {
     const mid = low + (high-low+1) / 2;
 
     if arr(mid) < arr(low) then arr(mid) <=> arr(low);
@@ -115,7 +115,7 @@ def pqsort(arr: [],
   //              values greater than pivot are to its right, returns
   //              pivot location
   //
-  def partition(pivotVal) {
+  proc partition(pivotVal) {
     var ilo = low, ihi = high-1;
     while (ilo < ihi) {
       do { ilo += 1; } while arr(ilo) < pivotVal;
@@ -137,7 +137,7 @@ def pqsort(arr: [],
 //   low: lower bound of array to start sort at
 //   high: upper bound of array to stop sort at
 //
-def bubbleSort(arr: [], low: int, high: int) where arr.rank == 1 {
+proc bubbleSort(arr: [], low: int, high: int) where arr.rank == 1 {
   for i in low..high do
     for j in low..high-1 do
       if arr(j) > arr(j+1) then

@@ -4,8 +4,18 @@ Chapel HPC Challenge Codes
 
 This directory contains Chapel versions of the HPC Challenge
 benchmarks (http://icl.cs.utk.edu/hpcc/) and a Makefile to help build
-them.  For a detailed explanation of these benchmarks, please visit
-the Chapel web site at http://chapel.cray.com.
+them.
+
+These benchmarks are very much a work-in-progress and are provided to
+give an indication of where we're going in Chapel.  The STREAM and RA
+benchmarks are scalable but have outstanding performance and elegance
+improvements that we have yet to address.  The FFT benchmark runs on
+distributed memory, but does not yet scale or perform well.  The HPL
+benchmark does not yet support distributed memory execution and has
+performance issues on shared memory.  Our intention is to continue
+improving the implementation of all of these benchmarks over time.
+Please refer to the Chapel website (http://chapel.cray.com) for
+reports that evaluate these benchmarks over time.
 
 The main files for these benchmarks are as follows:
 
@@ -22,16 +32,18 @@ There are also helper modules for these benchmarks:
 
 These benchmarks can be compiled using the following commands:
 
-     chpl -o stream stream.chpl
-     chpl -o stream-ep stream-ep.chpl
-     chpl -o ra ra.chpl
-     chpl -o fft fft.chpl
-     chpl -o hpl hpl.chpl
+     chpl --fast -o stream stream.chpl
+     chpl --fast -o stream-ep stream-ep.chpl
+     chpl --fast -o ra ra.chpl
+     chpl --fast -o fft fft.chpl
+     chpl --fast -o hpl hpl.chpl
 
-Or using the provided Makefile (which also turns on optimizations,
-turns off runtime correctness checks, and permits IEEE math to be
-relaxed with some back-end C compilers).  To make the tests
-individually use:
+The presence of the --fast flag turns
+on optimizations, turns off runtime correctness checks, and permits
+IEEE math to be relaxed for some back-end C compilers).  
+
+Or using the provided Makefile you can make the tests individually
+using:
 
     gmake stream
     gmake stream-ep
@@ -39,6 +51,6 @@ individually use:
     gmake fft
     gmake hpl
 
-To make them all, use:
+Or to make them all, use:
 
     gmake all
