@@ -6,7 +6,7 @@ use Memory;
 
 config const n = 1;
 
-def foo () {
+proc foo () {
   var m1 = memoryUsed();
   var s1 = "Honey, I'm home!  Where's my dinner?",
       s2 = s1;

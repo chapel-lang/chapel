@@ -1,11 +1,11 @@
 use Time;
 
-def foo() {
+proc foo() {
   var A: [1..10] int;
   return A;
 }
 
-def bar(A: []) {
+proc bar(A: []) {
   for e in A {
     begin {
       sleep(2);

@@ -1,6 +1,6 @@
 use Memory;
 
-_extern def chpl_malloc(number, size, description, lineno=-1, filename=""): opaque;
+_extern proc chpl_malloc(number, size, description, lineno=-1, filename=""): opaque;
 
 config var print: bool = false;
 
