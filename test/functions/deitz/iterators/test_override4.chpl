@@ -1,12 +1,12 @@
 class C {
-  def foo(n: int) {
+  iter foo(n: int) {
     for i in 1..n do
       yield i;
   }
 }
 
 class D: C {
-  def foo(n: int) {
+  iter foo(n: int) {
     for i in 1..n by -1 do
       yield i;
   }

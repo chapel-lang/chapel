@@ -1,6 +1,6 @@
 var A: [1..3] int;
 
-def foo(i: int) var {
+proc foo(i: int) var {
   if (setter) {
     writeln("foo called in setter context");
   }
@@ -24,7 +24,7 @@ for t in (foo(1..3), 1..3) {
   writeln(t);
 }
 
-def iter() var {
+proc iter() var {
   for j in foo(1..3) {
     yield j;
   }
@@ -39,7 +39,7 @@ for i in iter() {
   writeln(i);
 }
 
-def iter2() var {
+proc iter2() var {
   for i in 1..3 {
     yield foo(i);
   }

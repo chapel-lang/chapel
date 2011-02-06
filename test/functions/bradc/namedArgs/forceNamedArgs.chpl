@@ -1,10 +1,10 @@
 class dummyarg {
-  def dummyarg() {
+  proc dummyarg() {
     compilerError("can't create an object of type 'dummyarg' -- use named argument passing to call this routine");
   }
 }
 
-def momentum(dummy: dummyarg = nil, mass: real, velocity: real) {
+proc momentum(dummy: dummyarg = nil, mass: real, velocity: real) {
   return mass*velocity;
 }
 

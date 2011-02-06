@@ -1,6 +1,6 @@
 class C {
-  def f { return 1; }
-  def g() { return 2; }
+  proc f { return 1; }
+  proc g() { return 2; }
   
 }
 

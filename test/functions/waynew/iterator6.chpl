@@ -1,4 +1,4 @@
-def foo_for( rank: int) : int {
+iter foo_for( rank: int) : int {
   for j in 1..rank {
     yield j;
   }

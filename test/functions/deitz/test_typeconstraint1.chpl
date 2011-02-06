@@ -1,4 +1,4 @@
-def thesame(x : ?t, y : t) {
+proc thesame(x : ?t, y : t) {
   writeln(x, " and ", y);
 }
 

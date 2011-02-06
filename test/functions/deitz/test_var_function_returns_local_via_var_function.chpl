@@ -1,4 +1,4 @@
-def foo() var {
+proc foo() var {
   var x: (int, int);
   return x(1);
 }

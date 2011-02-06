@@ -1,5 +1,5 @@
 class C {
-  def these() {
+  iter these() {
     yield 1;
     yield 2;
     yield 3;
@@ -7,7 +7,7 @@ class C {
 }
 
 class D : C {
-  def these() {
+  iter these() {
     yield 3;
     yield 2;
     yield 1;
@@ -22,7 +22,7 @@ test(c1);
 test(c2);
 test(d);
 
-def test(x: C) {
+proc test(x: C) {
   for i in x {
     writeln(i);
   }

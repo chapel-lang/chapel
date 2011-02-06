@@ -2,12 +2,12 @@ record R {
   var x;
 }
 
-def R.foo() {
+iter R.foo() {
   for i in x do
     yield i;
 }
 
-def R.bar() {
+iter R.bar() {
   for i in foo() do
     yield i;
 }

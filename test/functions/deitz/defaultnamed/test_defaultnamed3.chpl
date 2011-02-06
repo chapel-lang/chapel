@@ -1,4 +1,4 @@
-def foo(i : int = 1, j : int = 2, k : int = 3) {
+proc foo(i : int = 1, j : int = 2, k : int = 3) {
   writeln("foo of ", i, ", ", j, ", ", k);
 }
 

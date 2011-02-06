@@ -1,4 +1,4 @@
-def foo(x: y.type) {
+proc foo(x: y.type) {
   writeln("x is: ", x);
 }
 

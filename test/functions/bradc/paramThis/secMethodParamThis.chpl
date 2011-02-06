@@ -1,16 +1,16 @@
-def foo(param x: int) {
+proc foo(param x: int) {
   writeln("Got into param foo with value ", x);
 }
 
-def foo(x: int) {
+proc foo(x: int) {
   writeln("Got into non-param foo with value ", x);
 }
 
-def param string.bar param return 3;
+proc param string.bar param return 3;
 
-def string.bar param return 4;
+proc string.bar param return 4;
 
-def string.baz return 5;
+proc string.baz return 5;
 
 foo("test".bar);
 foo("test".baz);

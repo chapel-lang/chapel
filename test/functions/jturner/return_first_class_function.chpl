@@ -1,6 +1,6 @@
 use Functions;
 
-def make_fun() : func(func(int)) {
+proc make_fun() : func(func(int)) {
   return lambda() { return (lambda() { return 3; }); };
 }
 

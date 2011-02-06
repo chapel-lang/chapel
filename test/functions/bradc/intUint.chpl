@@ -1,8 +1,8 @@
-def foo(x: int, y: int) {
+proc foo(x: int, y: int) {
   writeln("in int foo");
 }
 
-def foo(x: uint, y: uint) {
+proc foo(x: uint, y: uint) {
   writeln("in uint foo");
 }
 

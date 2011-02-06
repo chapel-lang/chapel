@@ -1,6 +1,6 @@
 class C {
   var x : int = 2;
-  def foo(y : int = 4) {
+  proc foo(y : int = 4) {
     writeln(y, " and ", x);
   }
 }

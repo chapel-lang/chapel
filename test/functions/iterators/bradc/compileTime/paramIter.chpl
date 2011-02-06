@@ -1,4 +1,4 @@
-def intSizes() param {
+proc intSizes() param {
   yield 8;
   yield 16;
   yield 32;

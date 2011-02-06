@@ -1,9 +1,9 @@
-def foo(x, y, z : int) {
+proc foo(x, y, z : int) {
   writeln("x is: ", x);
   writeln("y is: ", y);
   writeln("z is: ", z);
 }
 
-def main() {
+proc main() {
   foo(1, 2, 4);
 }

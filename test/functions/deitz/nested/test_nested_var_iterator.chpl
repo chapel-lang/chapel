@@ -1,6 +1,6 @@
-def foo() {
+proc foo() {
   var x, y, z: int;
-  def bar() var {
+  iter bar() var {
     yield x;
     yield y;
     yield z;

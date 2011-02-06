@@ -1,4 +1,4 @@
-def x(i: int) {
+proc x(i: int) {
   var x: uint(8);
   while i < 1 do
     x += 1;

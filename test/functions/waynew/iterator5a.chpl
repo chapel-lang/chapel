@@ -1,4 +1,4 @@
-def foo_while( param rank : int) : int {
+iter foo_while( param rank : int) : int {
   var j: int;
   j = 1;
   while (j <= rank) {

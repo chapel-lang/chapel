@@ -1,4 +1,4 @@
-def intTypes() type {
+proc intTypes() type {
   yield int(8);
   yield int(16);
   yield int(32);

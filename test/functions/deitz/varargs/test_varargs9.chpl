@@ -1,23 +1,23 @@
-def output_help(param i : int, x) {
+proc output_help(param i : int, x) {
   if i > 1 then
     output_help(i-1, x);
   output(x(i));
 }
 
-def output(x, xs ...?n) {
+proc output(x, xs ...?n) {
   output(x);
   output_help(n, xs);
 }
 
-def output(x : int) {
+proc output(x : int) {
   writeln("output int ", x);
 }
 
-def output(x : real) {
+proc output(x : real) {
   writeln("output real ", x);
 }
 
-def output(x : string) {
+proc output(x : string) {
   writeln("output string ", x);
 }
 

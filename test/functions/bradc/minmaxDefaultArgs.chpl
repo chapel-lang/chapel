@@ -1,4 +1,4 @@
-def foo(x: [], 
+proc foo(x: [], 
         y: x.eltType = min(x.eltType), 
         z: x.eltType = max(x.eltType))
     where _isIntegralType(x.eltType) {

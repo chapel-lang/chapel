@@ -1,5 +1,5 @@
 
-def f() {
+iter f() {
   var Arr: [0..10] int;
   for (c, d) in (Arr, 0..10) {
     c = d; // nil dereference in assigning to "c"
@@ -8,7 +8,7 @@ def f() {
     yield elem;
 }
 
-def main {
+proc main {
   for i in f() do
     writeln(i);
 }

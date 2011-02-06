@@ -1,6 +1,6 @@
 use Functions;
 
-def even(x:int) {
+proc even(x:int) {
   if ((x % 2) == 0) {
     return true;
   }
@@ -9,7 +9,7 @@ def even(x:int) {
   }
 }
 
-def odd(x:int) {
+proc odd(x:int) {
   return !even(x);
 }
 

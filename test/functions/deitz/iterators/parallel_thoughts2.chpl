@@ -17,7 +17,7 @@ config const myLow = 4, myHigh = 12; // iterator arguments (config for testing)
 //
 enum IteratorType { solo, leader, follower };
 
-def singleLocaleIterator(low: int, high: int,
+iter singleLocaleIterator(low: int, high: int,
                          param iterator: IteratorType, follower) {
   if iterator == IteratorType.solo {
     for i in low..high do

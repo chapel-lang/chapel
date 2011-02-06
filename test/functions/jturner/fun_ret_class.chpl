@@ -2,7 +2,7 @@ class TestClass {
   var x:int;
 }
 
-def testfun() {
+proc testfun() {
   var c = new TestClass(x=2);
   return c;
 }

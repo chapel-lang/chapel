@@ -3,7 +3,7 @@ class C {
 }
 class D {
   var aa : int;
-  def a(i : int) var { return aa; }
+  proc a(i : int) var { return aa; }
 }
 var d : domain(1) = [1..3];
 class E {

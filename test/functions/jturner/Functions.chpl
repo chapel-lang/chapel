@@ -1,12 +1,12 @@
 //Common Higher-Order Functions
 
-def reverse(arr) {
+iter reverse(arr) {
   for n in arr.domain by -1 {
     yield arr[n];
   }
 }
 
-def foldLeft(arr, init, op) {
+proc foldLeft(arr, init, op) {
   var ret = init;
 
   for a in arr {
@@ -16,7 +16,7 @@ def foldLeft(arr, init, op) {
   return ret;
 }
 
-def foldRight(arr, init, op) {
+proc foldRight(arr, init, op) {
   var ret = init;
 
   for a in reverse(arr) {
@@ -26,13 +26,13 @@ def foldRight(arr, init, op) {
   return ret;
 }
 
-def map(arr, op) {
+iter map(arr, op) {
   for a in arr {
     yield(op(a));
   }
 }
 
-def filter(arr, op) {
+iter filter(arr, op) {
   for a in arr {
     if (op(a)) {
       yield a;
@@ -40,7 +40,7 @@ def filter(arr, op) {
   }
 }
 
-def array(x...?n) {
+proc array(x...?n) {
   var ret : [1..n] x(1).type;
   for param i in 1..n do
     ret(i) = x(i);
@@ -48,7 +48,7 @@ def array(x...?n) {
   return ret;
 }
 
-def take(arr, n) {
+iter take(arr, n) {
   var i = 0;
   for a in arr {
     if (i < n) {
@@ -61,7 +61,7 @@ def take(arr, n) {
   }
 }
 
-def drop(arr, n) {
+iter drop(arr, n) {
   var i = 0;
   for a in arr {
     if (i >= n) {
@@ -71,11 +71,11 @@ def drop(arr, n) {
   }
 }
 
-def splitAt(arr, n) {
+proc splitAt(arr, n) {
   return (take(arr, n), drop(arr, n));
 }
 
-def takeWhile(arr, op) {
+iter takeWhile(arr, op) {
   for a in arr {
     if (op(a)) {
       yield a;
@@ -86,7 +86,7 @@ def takeWhile(arr, op) {
   }
 }
  
-def dropWhile(arr, op) {
+iter dropWhile(arr, op) {
   var keepDropping = true;
   for a in arr {
     if (keepDropping) {

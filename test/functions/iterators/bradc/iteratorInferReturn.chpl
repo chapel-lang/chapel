@@ -16,7 +16,7 @@ for i in RAStream(NUPDATE) {
 }
 
 
-def RAStream(numvals) {
+iter RAStream(numvals) {
   const POLY = 0x7:indexType;
   const hibit = 0x1:indexType << (numBits(indexType)-1);
   var val = 1:indexType;

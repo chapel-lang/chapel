@@ -1,6 +1,6 @@
 var x, y: int;
 
-def foo() var {
+proc foo() var {
   return x + y;
 }
 

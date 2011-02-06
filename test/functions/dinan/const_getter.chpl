@@ -2,7 +2,7 @@ const x = 10;
 
 var y = 0;
 
-def f() var {
+proc f() var {
     if setter then return y;
               else return x;
 }

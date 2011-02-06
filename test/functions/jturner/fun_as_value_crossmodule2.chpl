@@ -1,11 +1,11 @@
 module mod1 {
   use mod2;
 
-  def addme(x:int, y:int) {
+  proc addme(x:int, y:int) {
     return x+y;
   }
 
-  def dothat() {
+  proc dothat() {
     var s = subtractme;
     s = addme;
 
@@ -16,11 +16,11 @@ module mod1 {
 module mod2 {
   use mod1;
 
-  def subtractme(x:int, y:int) {
+  proc subtractme(x:int, y:int) {
     return x-y;
   }
 
-  def main() {
+  proc main() {
     var a = addme;
     a = subtractme;
 

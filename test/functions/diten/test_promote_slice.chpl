@@ -1,4 +1,4 @@
-def f(a: int): int {
+proc f(a: int): int {
   return 1;
 }
 
