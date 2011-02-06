@@ -1,7 +1,7 @@
 use driver_arrays;
 const c = n4/2;
 
-def checkMe(i1, i2, i3, i4, A, j1, j2) {
+proc checkMe(i1, i2, i3, i4, A, j1, j2) {
   var err = 0;
   if A4D(i1,i2,i3,i4) != A(j1,j2) then
     err +=1;

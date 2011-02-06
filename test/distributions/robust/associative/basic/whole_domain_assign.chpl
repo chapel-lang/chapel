@@ -26,7 +26,7 @@ testWhole(DomUintType);
 testWhole(DomRealType);
 testWhole(DomStringType);
 
-def testWhole(DA) {
+proc testWhole(DA) {
   type idxType = DA._value.idxType;
   var DA2: DA.type;
   if debug then writeln(DA2);

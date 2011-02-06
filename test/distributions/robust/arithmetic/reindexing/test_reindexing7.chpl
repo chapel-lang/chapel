@@ -2,7 +2,7 @@ use driver_domains;
 
 // test reindexing from distributed domains to non-distributed arrays
 
-def foo(TD: domain, A: [TD] int, TA) {
+proc foo(TD: domain, A: [TD] int, TA) {
   var errs = 0;
   var offset = if (TD.rank==1) then o5 else fill(TD.rank, o5);
   for i in [TD] do

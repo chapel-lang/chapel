@@ -12,7 +12,7 @@ for i in 1..m do
 for i in 1..n do
   foo(i);
 
-def foo(i: int) {
+proc foo(i: int) {
   const modi = i % m;
   var D: domain(intType) dmapped DistIntType;
 

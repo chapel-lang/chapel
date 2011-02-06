@@ -55,7 +55,7 @@ config const printParams = true,
 //
 // The program entry point
 //
-def main() {
+proc main() {
   printConfiguration();
 
   //
@@ -96,7 +96,7 @@ def main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-def LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
+proc LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
                 piv: [1..n] indexType) {
   const AbD = Ab.domain;    // alias Ab.domain to save typing
   
@@ -179,7 +179,7 @@ def LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-def schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
+proc schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
   const AbD = Ab.domain;
 
   //
@@ -227,7 +227,7 @@ def schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
 //
 // calculate C = C - A * B.
 //
-def dgemm(p: indexType,       // number of rows in A
+proc dgemm(p: indexType,       // number of rows in A
           q: indexType,       // number of cols in A, number of rows in B
           r: indexType,       // number of cols in B
           A: [1..p, 1..q] ?t,
@@ -244,7 +244,7 @@ def dgemm(p: indexType,       // number of rows in A
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-def panelSolve(Ab: [] ?t,
+proc panelSolve(Ab: [] ?t,
                panel: domain(2, indexType) dmapped Dist2D,
                piv: [] indexType) {
   const pnlRows = panel.dim(1),
@@ -294,7 +294,7 @@ def panelSolve(Ab: [] ?t,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-def updateBlockRow(Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) dmapped Dist2D) {
+proc updateBlockRow(Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) dmapped Dist2D) {
   const tlRows = tl.dim(1),
         tlCols = tl.dim(2),
         trRows = tr.dim(1),
@@ -316,7 +316,7 @@ def updateBlockRow(Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) dmappe
 //
 // compute the backwards substitution
 //
-def backwardSub(n: int,
+proc backwardSub(n: int,
                 A: [1..n, 1..n] elemType,
                 b: [1..n] elemType) {
   var x: [b.domain] elemType;
@@ -336,7 +336,7 @@ def backwardSub(n: int,
 //
 // print out the problem size and block size if requested
 //
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numMatrices, n, rank=2);
@@ -348,7 +348,7 @@ def printConfiguration() {
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-def initAB(Ab: [] elemType) {
+proc initAB(Ab: [] elemType) {
   fillRandom(Ab, seed);
   Ab = Ab * 2.0 - 1.0;
 }
@@ -356,7 +356,7 @@ def initAB(Ab: [] elemType) {
 //
 // calculate norms and residuals to verify the results
 //
-def verifyResults(Ab, MatrixSpace, x) {
+proc verifyResults(Ab, MatrixSpace, x) {
   var A => Ab[MatrixSpace],
       b => Ab[.., n+1];
 
@@ -385,7 +385,7 @@ def verifyResults(Ab, MatrixSpace, x) {
 //
 // print success/failure, the execution time and the Gflop/s value
 //
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
@@ -397,7 +397,7 @@ def printResults(successful, execTime) {
 //
 // simple matrix-vector multiplication, solve equation A*x-y
 //
-def gaxpyMinus(n: indexType,
+proc gaxpyMinus(n: indexType,
                m: indexType,
                A: [1..n, 1..m],
                x: [1..m],

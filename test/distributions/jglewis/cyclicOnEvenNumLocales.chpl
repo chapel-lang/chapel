@@ -12,7 +12,7 @@ module cholesky_test {
 
   use CyclicDist, BlockDist;
 
-  def main {
+  proc main {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
@@ -68,7 +68,7 @@ module cholesky_test {
       writeln ("factorization failed for non-positive semi-definite matrix");
   }
 
-  def scalar_outer_product_cholesky ( A : [] )
+  proc scalar_outer_product_cholesky ( A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -116,7 +116,7 @@ module cholesky_test {
 
   }
 
-  def check_factorization ( A : [], L : [] )
+  proc check_factorization ( A : [], L : [] )
 
     // -----------------------------------------------------------------------
     // Check the factorization by forming L L^T and comparing the result to A.

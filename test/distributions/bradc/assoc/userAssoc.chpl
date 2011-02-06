@@ -1,7 +1,7 @@
 use UserMapAssoc;
 
 class myMapper : AbstractMapper {
-  def idxToLocaleInd(ind: real, numlocs: int) {
+  proc idxToLocaleInd(ind: real, numlocs: int) {
     const indAsInt = ind: int;
     return indAsInt % numlocs;
   }
