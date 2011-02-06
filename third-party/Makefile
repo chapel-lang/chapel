@@ -18,9 +18,6 @@ clobber: FORCE
 gasnet: FORCE
 	cd gasnet && $(MAKE) && $(MAKE) post-install
 
-gmp: FORCE
-	cd gmp && $(MAKE)
-
 pvm: FORCE
 	cd pvm && $(MAKE)
 

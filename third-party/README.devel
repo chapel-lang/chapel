@@ -20,6 +20,16 @@ armci/
   See also: armci/armci-*/README
 
 
+gmp/
+  Summary: the GNU Multiple Precision Arithmetic Library
+
+  License: L-GPL (see gmp/gmp-*/COPYING and gmp/gmp-*/COPYING.LIB)
+
+  Contact: For more information, please refer to: http://gmplib.org
+
+  See also: gmp/gmp-*/README
+
+
 mpich1/
   Summary: the MPICH1 implementation of MPI that we use to launch
            ARMCI programs

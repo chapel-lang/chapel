@@ -14,10 +14,6 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr5)
 CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
 endif
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr6)
-CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
-endif
-
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xe-cle)
 CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=cc --enable-mpi --enable-pthreads
 endif
