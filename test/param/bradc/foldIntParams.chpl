@@ -1,6 +1,6 @@
 config param i: int = 1;
 
-def main() {
+proc main() {
   if (i == 1) then
     compilerWarning("i is 1");
   else if (i == 0) then
