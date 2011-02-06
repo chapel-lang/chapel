@@ -1,4 +1,4 @@
-def *(D1: domain, D2: domain)
+proc *(D1: domain, D2: domain)
 {
   param stridable = D1.stridable || D2.stridable;
   param rank = D1.rank + D2.rank;

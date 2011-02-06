@@ -10,7 +10,7 @@ foo(A);
 
 writeln("A is: ", A);
 
-def foo(X: [?D]) {
+proc foo(X: [?D]) {
   D = [1..2*n];
 }
 

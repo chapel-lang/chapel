@@ -2,7 +2,7 @@ class C {
   var D: domain(1);
   var A: [D] real;
 
-  def foo() {
+  proc foo() {
     writeln("D is: ", D);
     writeln("A is: ", A);
     D = [1..10];

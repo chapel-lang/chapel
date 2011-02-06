@@ -8,7 +8,7 @@ writeln("A is:\n", A);
 
 foo(D);
 
-def foo(dom) {
+proc foo(dom) {
   dom = [1..n/2, 1..n/2];
   writeln("dom is: ", dom);
   writeln("D is: ", D);
