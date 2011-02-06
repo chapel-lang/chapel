@@ -1,4 +1,4 @@
-def main() {
+proc main() {
   {
     type intalias = int(64);
     type int = real(64);

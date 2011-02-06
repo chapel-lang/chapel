@@ -19,7 +19,7 @@ if (numErrors > 0) {
 }
 
 
-def writeArray(n, X, filename) {
+proc writeArray(n, X, filename) {
   var outfile = new file(filename, FileAccessMode.write);
   outfile.open();
   outfile.writeln(n, " ", n);
@@ -28,7 +28,7 @@ def writeArray(n, X, filename) {
 }
 
 
-def readArray(filename) {
+proc readArray(filename) {
   var m, n: int;
 
   var infile = new file(filename, FileAccessMode.read);

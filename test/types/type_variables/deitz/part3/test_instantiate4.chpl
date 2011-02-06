@@ -2,7 +2,7 @@ module M1 {
   class C {
     type t;
     var y : t;
-    def bar()
+    proc bar()
       return foo(y);
   }
 }
@@ -14,10 +14,10 @@ module M2 {
     var x : int = 3;
   }
 
-  def foo(r : R)
+  proc foo(r : R)
     return r.x * 2;
 
-  def main() {
+  proc main() {
     var c = new C(R);
     writeln(c.bar());
     delete c;

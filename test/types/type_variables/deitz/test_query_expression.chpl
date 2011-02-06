@@ -6,11 +6,11 @@ class C {
 var c1 = new C(2,1);
 var c2 = new C(6,2);
 
-def f(c: C(1+1,?p)) {
+proc f(c: C(1+1,?p)) {
   writeln("1: ", p, ": ", c);
 }
 
-def f(c: C(1+2+3,?p)) {
+proc f(c: C(1+2+3,?p)) {
   writeln("2: ", p, ": ", c);
 }
 

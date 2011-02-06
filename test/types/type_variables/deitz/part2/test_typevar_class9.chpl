@@ -6,7 +6,7 @@ class bar {
 class foo {
   type t;
   var x : bar(t) = new bar(t);
-  def print() {
+  proc print() {
     writeln(x.y);
   }
 }

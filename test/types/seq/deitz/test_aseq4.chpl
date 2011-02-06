@@ -1,4 +1,4 @@
-def ii(i: int) return i;
+proc ii(i: int) return i;
 
 var as = 1..10;
 var bs = as by -2;

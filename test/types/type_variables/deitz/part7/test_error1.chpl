@@ -7,7 +7,7 @@ var c = new C(int);
 
 writeln(c);
 
-def foo(i : int) {
+proc foo(i : int) {
   writeln(i);
 }
 

@@ -1,4 +1,4 @@
-def foo(i : ?t) {
+proc foo(i : ?t) {
   writeln("The function foo has been called with actual value ", i);
 }
 

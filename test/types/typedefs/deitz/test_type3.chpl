@@ -1,4 +1,4 @@
-def main() {
+proc main() {
   type a = b;
   type b = int;
   var c: a;
