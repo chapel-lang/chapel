@@ -1,12 +1,12 @@
 var l: int = 0;
 var r: int = 1;
 
-def left() var {
+proc left() var {
   writeln("left");
   return l;
 }
 
-def right() var {
+proc right() var {
   writeln("right");
   return r;
 }
