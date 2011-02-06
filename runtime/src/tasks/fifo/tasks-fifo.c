@@ -86,7 +86,6 @@ static chpl_bool        initialized = false;
 
 static threadlayer_mutex_t threading_lock;     // critical section lock
 static threadlayer_mutex_t extra_task_lock;    // critical section lock
-static threadlayer_mutex_t task_id_lock;       // critical section lock
 static threadlayer_mutex_t task_list_lock;     // critical section lock
 static task_pool_p         task_pool_head;     // head of task pool
 static task_pool_p         task_pool_tail;     // tail of task pool
@@ -169,11 +168,11 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
     progress_cnt++;
 }
 
-void chpl_sync_lock(chpl_sync_aux_t *s) {
+void CHPL_SYNC_LOCK(chpl_sync_aux_t *s) {
   threadlayer_mutex_lock(&s->lock);
 }
 
-void chpl_sync_unlock(chpl_sync_aux_t *s) {
+void CHPL_SYNC_UNLOCK(chpl_sync_aux_t *s) {
   threadlayer_mutex_unlock(&s->lock);
 }
 
@@ -211,8 +210,75 @@ void chpl_sync_initAux(chpl_sync_aux_t *s) {
   threadlayer_sync_init(s);
 }
 
-void chpl_sync_destroyAux(chpl_sync_aux_t *s) {
+void CHPL_SYNC_DESTROY_AUX(chpl_sync_aux_t *s) {
   threadlayer_sync_destroy(s);
+}
+
+
+// Single variables
+
+void CHPL_SINGLE_LOCK(chpl_single_aux_t *s) {
+  threadlayer_mutex_lock(&s->lock);
+}
+
+void CHPL_SINGLE_UNLOCK(chpl_single_aux_t *s) {
+  threadlayer_mutex_unlock(&s->lock);
+}
+
+void CHPL_SINGLE_WAIT_FULL(chpl_single_aux_t *s,
+                           int32_t lineno, chpl_string filename) {
+  threadlayer_mutex_lock(&s->lock);
+  while (!s->is_full) {
+    if (set_block_loc(lineno, filename)) {
+      // all other tasks appear to be blocked
+      struct timeval deadline, now;
+      chpl_bool timed_out;
+      gettimeofday(&deadline, NULL);
+      deadline.tv_sec += 1;
+      do {
+        timed_out = threadlayer_single_suspend(s, &deadline);
+        if (!s->is_full && !timed_out)
+            gettimeofday(&now, NULL);
+      } while (!s->is_full
+               && !timed_out
+               && (now.tv_sec < deadline.tv_sec
+                   || (now.tv_sec == deadline.tv_sec
+                       && now.tv_usec < deadline.tv_usec)));
+      if (!s->is_full)
+        check_for_deadlock();
+    }
+    else {
+      do {
+        (void) threadlayer_single_suspend(s, NULL);
+      } while (!s->is_full);
+    }
+    unset_block_loc();
+  }
+
+  if (blockreport)
+    progress_cnt++;
+}
+
+void CHPL_SINGLE_MARK_AND_SIGNAL_FULL(chpl_single_aux_t *s) {
+  s->is_full = true;
+  threadlayer_single_awaken(s);
+  CHPL_SINGLE_UNLOCK(s);
+}
+
+chpl_bool CHPL_SINGLE_IS_FULL(void *val_ptr,
+                              chpl_single_aux_t *s,
+                              chpl_bool simple_single_var) {
+  return s->is_full;
+}
+
+void CHPL_SINGLE_INIT_AUX(chpl_single_aux_t *s) {
+  s->is_full = false;
+  threadlayer_mutex_init(&s->lock);
+  threadlayer_single_init(s);
+}
+
+void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) {
+  threadlayer_single_destroy(s);
 }
 
 
@@ -224,7 +290,6 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
 
   threadlayer_mutex_init(&threading_lock);
   threadlayer_mutex_init(&extra_task_lock);
-  threadlayer_mutex_init(&task_id_lock);
   threadlayer_mutex_init(&task_list_lock);
   threadlayer_mutex_init(&thread_list_lock);
   queued_cnt = 0;
@@ -242,11 +307,16 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
 
   if (taskreport) {
     threadlayer_mutex_init(&taskTable_lock);
+    chpldev_taskTable_add(tp->ptask->id,
+                          tp->ptask->lineno, tp->ptask->filename,
+                          (uint64_t) (intptr_t) tp->ptask);
+    chpldev_taskTable_set_active(tp->ptask->id);
   }
 
   if (blockreport) {
     progress_cnt = 0;
     threadlayer_mutex_init(&block_report_lock);
+    initializeLockReportForThread();
   }
 
   if (blockreport || taskreport) {
@@ -668,7 +738,17 @@ uint64_t chpl_task_getCallStackSize(void) {
   return threadlayer_call_stack_size();
 }
 
-uint32_t chpl_task_getNumQueuedTasks(void) { return queued_cnt; }
+uint64_t CHPL_TASK_CALLSTACKSIZE(void) {
+  return threadlayer_call_stack_size();
+}
+
+
+uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) {
+  return threadlayer_call_stack_size_limit();
+}
+
+
+uint32_t CHPL_NUMQUEUEDTASKS(void) { return queued_cnt; }
 
 uint32_t chpl_task_getNumRunningTasks(void) {
   int numRunningTasks;
@@ -716,12 +796,16 @@ int32_t  chpl_task_getNumBlockedTasks(void) {
 //
 static chpl_taskID_t get_next_task_id(void) {
   static chpl_taskID_t       id = 0;
+  static threadlayer_mutex_t id_lock;
 
   chpl_taskID_t              next_id;
 
-  threadlayer_mutex_lock(&task_id_lock);
+  if (id == 0)
+    threadlayer_mutex_init(&id_lock);
+
+  threadlayer_mutex_lock(&id_lock);
   next_id = id++;
-  threadlayer_mutex_unlock(&task_id_lock);
+  threadlayer_mutex_unlock(&id_lock);
 
   return next_id;
 }

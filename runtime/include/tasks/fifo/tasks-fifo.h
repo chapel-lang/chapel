@@ -98,6 +98,21 @@ typedef struct {
 } chpl_sync_aux_t;
 
 
+//
+// Single variables
+//
+// The threading layer's threadlayer_single_aux_t may include any
+// additional members the layer needs to support the suspend/awaken
+// callbacks efficiently.  The FIFO tasking code itself does not
+// refer to this type or the tl_aux member at all.
+//
+typedef struct {
+  volatile chpl_bool is_full;
+  threadlayer_mutex_t lock;
+  threadlayer_single_aux_t tl_aux;
+} chpl_single_aux_t;
+
+
 // Tasks
 
 //

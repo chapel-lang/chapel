@@ -123,7 +123,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   int nprocs, me;
   armci_size_t sz;
 
-  chpl_sync_initAux(&armci_sync);
+  CHPL_SYNC_INIT_AUX(&armci_sync);
 
   MPI_SAFE(MPI_Init(argc_p, argv_p));
   ARMCI_SAFE(ARMCI_Init());
@@ -282,9 +282,9 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
   if (chpl_localeID == locale)
     memmove(raddr, addr, size);
   else {
-    chpl_sync_lock(&armci_sync);
+    CHPL_SYNC_LOCK(&armci_sync);
     ARMCI_SAFE(ARMCI_Put(addr, raddr, size, locale));
-    chpl_sync_unlock(&armci_sync);
+    CHPL_SYNC_UNLOCK(&armci_sync);
   }
 }
 
@@ -302,9 +302,9 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int l
   if (chpl_localeID == locale)
     memmove(addr, raddr, size);
   else {
-    chpl_sync_lock(&armci_sync);
+    CHPL_SYNC_LOCK(&armci_sync);
     ARMCI_SAFE(ARMCI_Get((void*)raddr, addr, size, locale));
-    chpl_sync_unlock(&armci_sync);
+    CHPL_SYNC_UNLOCK(&armci_sync);
   }
 }
 
@@ -369,10 +369,10 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   done = rheader;
   *done = 0;
 
-  chpl_sync_lock(&armci_sync);
+  CHPL_SYNC_LOCK(&armci_sync);
   ret = ARMCI_Gpc_exec(ghndl, locale, header, sizeof(void *), info, info_size, (void *)rheader, rhdr_size,
                        rdata, rdlen, NULL);
-  chpl_sync_unlock(&armci_sync);
+  CHPL_SYNC_UNLOCK(&armci_sync);
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");

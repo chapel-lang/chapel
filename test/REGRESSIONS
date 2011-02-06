@@ -15,13 +15,18 @@
 general regressions
 ===================
 
-not yet working consistently
-----------------------------
-[Error: Timed out executing program studies/shootout/chameneos-redux/chameneos-redux-multiple-meeting-places]
+new version of gdb generates different output with OS upgrade (06/19/10)
+------------------------------------------------------------------------
+[Error matching compiler output for compflags/bradc/gdbddash/declint]
+[Error matching program output for execflags/bradc/gdbddash/declint]
+
+non-portable compiler flags used in .compopts (06/19/10)
+--------------------------------------------------------
+[Error matching compiler output for studies/gmp/gmp-chudnovsky]
 
 nondet. compilation timeouts
 ----------------------------
-[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10, 05/21/10, 05/27/10, 06/15/10, 07/01/10, 07/07/10, 07/16/10, 07/20/10, 07/23/10, 09/09/10, 09/10/10, 09/29/10)
+[Error: Timed out compilation for release/examples/hpcc/fft] (04/12/10, 04/22/10, 04/23/10, 04/28/10, 05/01/10, 05/21/10, 05/27/10, 06/15/10)
 
 nondet. __pthread_mutex_lock: Assertion `mutex->__data.__owner == 0' failed.
 ----------------------------------------------------------------------------
@@ -46,6 +51,12 @@ nondet. verification failures on RA (probably due to intentional races)
 linux64 regressions (in addition to the above)
 ==============================================
 
+countMemory tests need updating on chap01-08 (06/17/10)
+-------------------------------------------------------
+[Error matching program output for modules/standard/memory/countMemory/countMemory]
+[Error matching program output for studies/hpcc/2008/testProbSize]
+[Error matching program output for studies/hpcc/common/testProbSize]
+
 
 ==============================================
 linux32 regressions (in addition to the above)
@@ -62,7 +73,7 @@ performance-specific regressions
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_record_domain_2a] (08/29/09, 06/14/10, 06/16/10, 06/28/10, 06/29/10, 06/30/10, 07/02/10, 07/12/10, 07/14/10, 07/17/10, 07/20/10, 07/22/10, 07/26/10, 08/02/10, 08/06/10, 08/10/10, 08/15/10, 09/29/10)
+[Error: Timed out executing program studies/shootout/nbody/nbody_record_domain_2a] (08/29/09, 06/14/10, 06/16/10)
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -113,58 +124,25 @@ nondet. "vg_alloc_ThreadState: no free slots available" error
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program exercises/histogram2] (06/29/10)
-[Error: Timed out executing program functions/deitz/iterators/leader_follower/test_record_follower] (06/29/10)
-[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin] (06/28/10)
-[Error matching program output for users/shetag/fock/fock-3] (06/28/10)
-[Error: Timed out executing program arrays/deitz/part2/test_array_of_array1] (06/28/10)
-[Error: Timed out executing program arrays/deitz/part7/test_generic_record_of_array] (06/28/10)
-[Error: Timed out executing program users/ren/mink-blc-workaround] (06/27/10)
-[Error: Timed out executing program arrays/deitz/part4/test_array_of_array_assignment] (06/26/10)
-[Error: Timed out executing program arrays/dinan/init_arraymember/test7] (06/26/10
-[Error: Timed out executing program functions/bradc/intents-arrays] (06/26/10)
-[Error: Timed out executing program studies/590o/bradc/coforall-private-indices-workaround2] (06/26/10)
-[Error: Timed out executing program studies/hpcc/nodistrib/fft.nodist] (06/26/10, 06/28/10)
-[Error: Timed out executing program studies/matrixlib/QR/qr] (06/26/10)
-[Error: Timed out executing program studies/matrixlib/test_overloading] (06/26/10)
-[Error: Timed out executing program exercises/life] (06/25/10)
-[Error: Timed out executing program studies/hpcc/common/bradc/unit/modifyLocales] (06/25/10)
-[Error: Timed out executing program studies/hpcc/common/bradc/unit/multipleDomains2] (06/25/10)
-[Error: Timed out executing program studies/lu/marybeth/nopivlublock] (06/25/10)
-[Error: Timed out executing program studies/shootout/mandelbrot/mandelbrot-fancy] (06/25/10)
-[Error: Timed out executing program classes/deitz/test_record_of_domain2] (06/25/10, 06/28/10)
-[Error: Timed out executing program arrays/diten/distributedArrayFunctions] (06/24/10)
-[Error: Timed out executing program associative/waynew/indef9] (06/24/10)
-[Error: Timed out executing program studies/sudoku/dinan/sudoku-simple] (06/24/10)
-[Error: Timed out executing program users/ren/mink-minchange] (06/24/10)
-[Error: Timed out executing program arrays/deitz/jacobi-unoptimized] (06/24/10)
-[Error: Timed out executing program arrays/deitz/test_remote_cyclic_slicing] (06/24/10)
-[Error: Timed out executing program release/examples/programs/jacobi] (06/23/10)
-[Error: Timed out executing program studies/jacobi/waynew/example1] (06/23/10)
-[Error: Timed out executing program arrays/deitz/matrix] (06/23/10)
-[Error: Timed out executing program arrays/deitz/jacobi4] (06/22/10, 06/28/10)
-[Error: Timed out executing program release/examples/hpcc/fft] (06/22/10, 06/27/10)
-[Error: Timed out executing program studies/jacobi/jacobi] (06/22/10)
-[Error: Timed out executing program studies/sudoku/dinan/sudoku-simpler] (06/22/10, 06/25/10)
-[Error: Timed out executing program arrays/deitz/part4/test_array_of_array_of_array_assign] (06/21/10, 06/23/10, 06/26/10)
+[Error: Timed out executing program arrays/deitz/part4/test_array_of_array_of_array_assign] (06/21/10)
 [Error: Timed out executing program modules/standard/Random/deitz/test1D2D] (06/21/10)
-[Error: Timed out executing program reductions/waynew/breductions] (06/21/10, 06/24/10, 06/28/10)
-[Error: Timed out executing program reductions/waynew/reductions] (06/21/10, 06/26/10)
+[Error: Timed out executing program reductions/waynew/breductions] (06/21/10)
+[Error: Timed out executing program reductions/waynew/reductions] (06/21/10)
 [Error: Timed out executing program studies/lu/marybeth/nopivlublock-alias] (06/21/10)
 [Error: Timed out executing program trivial/diten/jacobi] (06/21/10)
-[Error: Timed out executing program arrays/deitz/jacobi3] (06/20/10, 06/24/10, 06/26/10)
+[Error: Timed out executing program arrays/deitz/jacobi3] (06/20/10)
 [Error: Timed out executing program arrays/deitz/jacobi4] (06/20/10)
-[Error: Timed out executing program arrays/diten/arrayAliasing] (06/20/10, 06/23/10)
+[Error: Timed out executing program arrays/diten/arrayAliasing] (06/20/10)
 [Error: Timed out executing program studies/hpcc/FFT/fft-testPow4] (06/20/10)
 [Error: Timed out executing program studies/jacobi/bocchino/jacobi.workaround] (06/20/10)
 [Error: Timed out executing program studies/lu/marybeth/blocks] (06/20/10)
-[Error: Timed out executing program users/shetag/fock/fock-2] (06/20/10, 06/24/10, 06/26/10, 06/28/10)
+[Error: Timed out executing program users/shetag/fock/fock-2] (06/20/10)
 [Error: Timed out executing program users/shetag/tensor] (06/20/10)
-[Error: Timed out executing program arrays/deitz/part3/test_record_contains_array1] (06/19/10, 06/25/10)
+[Error: Timed out executing program arrays/deitz/part3/test_record_contains_array1] (06/19/10)
 [Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_array_alias4] (06/19/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing1] (06/19/10)
-[Error: Timed out executing program exercises/RandomNumber6] (06/19/10, 06/23/10, 06/26/10)
-[Error: Timed out executing program studies/jacobi/bocchino/jacobi] (06/19/10, 06/27/10)
+[Error: Timed out executing program exercises/RandomNumber6] (06/19/10)
+[Error: Timed out executing program studies/jacobi/bocchino/jacobi] (06/19/10)
 [Error: Timed out executing program studies/matrixlib/testBlockLU] (06/19/10)
 [Error: Timed out executing program studies/sudoku/dinan/sudoku-simpler] (06/19/10)
 [Error: Timed out executing program users/shetag/fock/fock-1] (04/11/10, 04/12/10, 04/14/10, 04/27/10, 04/29/10, 05/14/10, 05/25/10, 05/27/10, 06/01/10, 06/08/10, 06/11/10, 06/16/10)
@@ -223,14 +201,14 @@ execution timeouts (04/30/10 -- after sched_yield polcy change)
 no-local regressions
 ====================
 
-nondet. out-of-memory error
----------------------------
-[Error matching program output for parallel/begin/dinan/mvm_coforall] (06/30/10)
+problem with new extern code for --no-local/gasnet/mpi
+------------------------------------------------------
+[Error matching program output for extern/bradc/types/smallCArr]
 
 nondet. compilation timeouts for new tests
 ------------------------------------------
 [Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)]
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 06/11/10, 06/13/10, 07/08/10, 07/10/10, 07/13/10, 07/16/10, 07/19/10)
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 06/11/10, 06/13/10)
 
 nondet. can't find float.h?!
 ----------------------------
@@ -262,7 +240,7 @@ gasnet-everything regressions (other than the above)
 nondet. execution timeouts
 --------------------------
 [Error: Timed out executing program users/franzf/v1/chpl/main] (05/26/10, 06/06/10, 06/15/10)
-[Error: Timed out executing program users/franzf/v2/chpl/main] (05/26/10, 06/06/10, 07/23/10)
+[Error: Timed out executing program users/franzf/v2/chpl/main] (05/26/10, 06/06/10)
 
 nondet. access of remote data in local block
 --------------------------------------------
@@ -270,11 +248,11 @@ nondet. access of remote data in local block
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main   -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast) (2-1)] (05/06/10, 05/07/10, 05/11/10, 05/16/10, 05/18/10, 05/21/10, 05/24/10, 05/27/10, 06/03/10, 06/05/10, 06/09/10, 06/10/10, 06/12/10, 06/13/10, 06/16/10, 06/18/10, 06/23/10, 06/30/10, 07/01/10, 07/24/10)
+[Error: Timed out executing program users/jglewis/ssca2_version2/SSCA2_main   -nl 2 (--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast) (2-1)] (05/06/10, 05/07/10, 05/11/10, 05/16/10, 05/18/10, 05/21/10, 05/24/10, 05/27/10, 06/03/10, 06/05/10, 06/09/10, 06/10/10, 06/12/10, 06/13/10, 06/16/10, 06/18/10)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10, 05/12/10, 05/17/10, 05/18/10, 05/26/10, 06/03/10, 06/04/10, 06/08/10, 06/10/10, 06/12/10, 06/19/10, 06/22/10, 07/18/10)
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast)] (04/20/10, 05/08/10, 05/10/10, 05/12/10, 05/17/10, 05/18/10, 05/26/10, 06/03/10, 06/04/10, 06/08/10, 06/10/10, 06/12/10, 06/19/10)
 
 nondet. seg fault
 -----------------
@@ -286,7 +264,7 @@ nondet. execution timeout
 -------------------------
 [Error: Timed out executing program users/agnieszka/test2] (04/13/10, 04/19/10, 04/20/10, 04/22/10, 04/27/10, 04/29/10, 05/02/10, 05/07/10, 05/08/10, 05/11/10, 05/12/10, 05/15/10, 05/17/10, 05/18/10, 05/19/10, 05/22/10, 05/28/10, 06/03/10, 06/04/10, 06/06/10, 06/07/10, 06/08/10, 06/12/10, 06/15/10)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (04/10/10)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10, 05/13/10, 05/16/10, 05/18/10, 05/19/10, 05/22/10, 05/24/10, 06/03/10, 06/04/10, 06/07/10, 06/10/10, 06/11/10, 06/13/10, 06/14/10, 06/16/10, 06/16/10, 06/22/10, 06/23/10, 06/26/10, 07/02/10, 07/14/10, 07/16/10, 07/17/10)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-compress/test_compress] (04/10/10, 04/12/10, 04/16/10, 04/18/10, 04/19/10, 04/23/10, 04/25/10, 04/27/10, 04/30/10, 05/01/10, 05/03/10, 05/09/10, 05/11/10, 05/13/10, 05/16/10, 05/18/10, 05/19/10, 05/22/10, 05/24/10, 06/03/10, 06/04/10, 06/07/10, 06/10/10, 06/11/10, 06/13/10, 06/14/10, 06/16/10, 06/16/10)
 [Error: Timed out executing program distributions/bradc/extremeBlock]
 
 execution timeout (didn't get fixed with the others 04/02/10)
@@ -324,26 +302,26 @@ times out fairly consistently
 gasnet-fast regressions (other than the above)
 ==============================================
 
-nondet. compilation timeouts
-----------------------------
-[Error: Timed out compilation for trivial/bradc/deadvar] (06/21/10)
-[Error: Timed out compilation for trivial/bradc/formatoutput] (06/21/10)
-[Error: Timed out compilation for trivial/bradc/pareninit] (06/21/10)
-[Error: Timed out compilation for trivial/bradc/ref2string] (06/21/10)
-[Error: Timed out compilation for trivial/bradc/whilescope] (06/21/10)
-[Error: Timed out compilation for trivial/deitz/demo/sample1] (06/21/10)
-[Error: Timed out compilation for trivial/deitz/demo/sample1a] (06/21/10)
-[Error: Timed out compilation for trivial/deitz/demo/sample1b] (06/21/10)
-[Error: Timed out compilation for trivial/deitz/demo/sample2] (06/21/10)
-[Error: Timed out compilation for trivial/deitz/test_if_expr] (06/21/10)
-[Error: Timed out compilation for trivial/deitz/test_let1] (06/21/10)
-[Error: Timed out compilation for trivial/deitz/test_loop_noindex] (06/21/10)
-[Error: Timed out compilation for trivial/deitz/test_timer1] (06/21/10)
-[Error: Timed out compilation for trivial/deitz/test_underscore_name] (06/21/10)
-[Error: Timed out compilation for trivial/dinan/enumTest] (06/21/10)
-[Error: Timed out compilation for trivial/dinan/minusminus_warning] (06/21/10)
-[Error: Timed out compilation for trivial/dinan/plusplus_warning] (06/21/10)
-[Error: Timed out compilation for trivial/diten/life] (06/21/10)
+compilation timeouts (06/21/10)
+-------------------------------
+[Error: Timed out compilation for trivial/bradc/deadvar]
+[Error: Timed out compilation for trivial/bradc/formatoutput]
+[Error: Timed out compilation for trivial/bradc/pareninit]
+[Error: Timed out compilation for trivial/bradc/ref2string]
+[Error: Timed out compilation for trivial/bradc/whilescope]
+[Error: Timed out compilation for trivial/deitz/demo/sample1]
+[Error: Timed out compilation for trivial/deitz/demo/sample1a]
+[Error: Timed out compilation for trivial/deitz/demo/sample1b]
+[Error: Timed out compilation for trivial/deitz/demo/sample2]
+[Error: Timed out compilation for trivial/deitz/test_if_expr]
+[Error: Timed out compilation for trivial/deitz/test_let1]
+[Error: Timed out compilation for trivial/deitz/test_loop_noindex]
+[Error: Timed out compilation for trivial/deitz/test_timer1]
+[Error: Timed out compilation for trivial/deitz/test_underscore_name]
+[Error: Timed out compilation for trivial/dinan/enumTest]
+[Error: Timed out compilation for trivial/dinan/minusminus_warning]
+[Error: Timed out compilation for trivial/dinan/plusplus_warning]
+[Error: Timed out compilation for trivial/diten/life]
 
 
 ==================
@@ -374,10 +352,6 @@ timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 mpi-specific failures
 =====================
 
-??? (06/29/10)
---------------
-[Error matching program output for multilocale/deitz/needMultiLocales/test_termination2]
-
 incorrect output ordering after OS upgrade (06/20/10)
 -----------------------------------------------------
 [Error matching program output for multilocale/deitz/needMultiLocales/test_begin_then_on]
@@ -393,7 +367,6 @@ out of memory creating threads after OS upgrade (06/20/10)
 nondet. exec timeout
 --------------------
 [Error: Timed out executing program users/shetag/fock/fock-stc-1] (05/24/10, 05/26/10, 06/12/10, 06/20/10)
-[Error: Timed out executing program stress/deitz/test_10k_local_coforall_with_remote_update] (07/08/10)
 
 
 nondet. memory corruption
@@ -462,9 +435,10 @@ missing 1-tuple acccessor (03/03/10)
 baseline-specific tests
 =======================
 
-has timed out since test was committed (9/14/10)
-------------------------------------------------
-[Error: Timed out executing program studies/hpcc/PTRANS/PTRANS]
+../../../sub_test not found (06/18/10)
+--------------------------------------
+[Error matching compiler output for compflags/bradc/gdbddash/declint]
+[Error matching program output for execflags/bradc/gdbddash/declint]
 
 incorrect output -- expected? (04/03/10)
 ----------------------------------------
@@ -500,12 +474,8 @@ opts-specific tests
 
 (Example runs: 0)
 
-prediff problem for --baseline --scalar-replacement
----------------------------------------------------
-[Error matching program output for release/examples/primers/taskParallel]
 
-
-(Full run: 131)
+(Full run: 134)
 
 general failures
 ----------------
@@ -621,17 +591,12 @@ threads-none causes serial iterator to be used rather than follower (11/25/08)
 intel-specific regressions
 ==========================
 
-??? (07/13/10)
---------------
-[Error matching compiler output for ./test/trivial/sungeun/no_chpl/blah.chpl]
-
 warnings in carr.c (06/20/10)
 -----------------------------
 [Error matching compiler output for extern/bradc/types/smallCArr]
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for multilocale/deitz/linked/test_linked1] (07/01/10)
 [Error: Timed out compilation for parallel/cobegin/waynew/cobegin.simple2] (06/21/10)
 [Error: Timed out compilation for parallel/cobegin/waynew/writeln] (06/21/10)
 [Error: Timed out compilation for trivial/deitz/test_let2] (06/21/10)
@@ -750,6 +715,7 @@ consistent compilation timeout
 new timeouts (08/30/09)
 -----------------------
 [Error: Timed out compilation for classes/bradc/arrayInClass/genericArrayInClass-otharrs]
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3]
 
 wrong result -- bug in compiler?
 --------------------------------
@@ -778,10 +744,6 @@ precision issues (?) -- is there a floating point flag we need to throw?
 =============================================================
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
-
-sh: seg fault (06/25/10)
-------------------------
-*all*
 
 seg fault (06/19/10)
 --------------------
@@ -984,7 +946,6 @@ nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
-[Error: Timed out compilation for release/examples/hello] (07/11/10, 07/18/10, 07/21/10, 07/25/10, 08/01/10, 08/08/10, 08/13/10, 09/20/10, 09/26/10, 09/30/10, 10/03/10)
 
 out-of-bounds index (0) at line 100
 -----------------------------------

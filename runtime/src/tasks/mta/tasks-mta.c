@@ -12,6 +12,13 @@
 #include <stdlib.h>
 
 
+// The global vars are to synchronize with threads created with 
+// begin's which are not joined.  We need to wait on them before the
+// main thread can call exit for the process.
+static int64_t          chpl_begin_cnt;      // number of unjoined threads 
+static sync int64_t     chpl_can_exit;       // can main thread exit?
+
+
 // Sync variables
 
 void chpl_sync_lock(chpl_sync_aux_t *s) {
@@ -94,7 +101,46 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   chpl_main();
 }
 
-void chpl_task_addToTaskList(chpl_fn_int_t fid,
+chpl_bool CHPL_SINGLE_IS_FULL(void *val_ptr, chpl_single_aux_t *s,
+                              chpl_bool simple_single_var) {
+  if (simple_single_var)
+    return (chpl_bool)(((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0);
+  else
+    return (chpl_bool)readxx(&(s->is_full));
+}
+
+void CHPL_SINGLE_INIT_AUX(chpl_single_aux_t *s) {
+  writexf(&(s->is_full), 0);          // mark empty and unlock
+  purge(&(s->signal_full));
+}
+
+void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) { }
+
+// Tasks
+
+void CHPL_TASKING_INIT(void) {
+  //
+  // If a value was specified for the call stack size config const, warn
+  // the user that it's ignored on this system.
+  //
+  if (chpl_config_get_value("callStackSize", "Built-in") != NULL)
+    chpl_warning("the callStackSize config constant has no effect "
+                 "on XMT systems",
+                 0, NULL);
+
+  chpl_begin_cnt = 0;                     // only main thread running
+  chpl_can_exit = 1;                      // mark full - no threads created yet
+}
+
+void CHPL_TASKING_EXIT(void) {
+  int ready=0;
+  do
+    // this will block until chpl_can_exit is marked full!
+    ready = readff(&chpl_can_exit);
+  while (!ready);
+}
+
+void CHPL_ADD_TO_TASK_LIST(chpl_fn_int_t fid,
                            void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
@@ -158,7 +204,9 @@ void chpl_task_setSerial(chpl_bool state) {
     chpl_internal_error("out of memory while creating serial state");
 }
 
-uint64_t chpl_task_getCallStackSize(void) { return 0; }
+uint64_t CHPL_TASK_CALLSTACKSIZE(void) { return 0; }
+
+uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) { return 0; }
 
 // not sure what the correct value should be here!
 uint32_t chpl_task_getNumQueuedTasks(void) { return 0; }

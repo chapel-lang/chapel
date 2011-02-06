@@ -17,7 +17,7 @@ const Space3 = [1..n3, 1..n3, 1..n3];
 const Space4 = [1..n4, 1..n4, 1..n4, 1..n4];
 const Space2D64 = [n5-o5..n5, n5-o5..n5];
 
-proc setupDistributions() {
+def setupDistributions() {
   if distType == DistType.default {
     return (
             new dmap(new DefaultDist()),

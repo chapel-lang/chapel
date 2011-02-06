@@ -9,8 +9,9 @@
 #include CHPL_TASKS_H
 #endif
 
-
 // Defined in the generated Chapel code:
+
+extern uint64_t callStackSize;
 
 
 // Sync variables
@@ -124,11 +125,17 @@ chpl_bool chpl_task_getSerial(void);
 void      chpl_task_setSerial(chpl_bool);
 
 //
-// returns the value of the call stack size limit being used in
-// practice; the value returned may potentially differ from one locale
-// to the next
+// returns the size of a stack (initial value of callStackSize); the sentinel
+// value 0 means that the stack size is limited only by the system's available
+// resources, and implies that a task's stack can be dynamically extended
 //
-uint64_t chpl_task_getCallStackSize(void);
+uint64_t CHPL_TASK_CALLSTACKSIZE(void);
+
+//
+// returns the upper limit on the size of a stack; the sentinel value 0 means
+// that there is no preexisting limit
+//
+uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void);
 
 //
 // returns the number of tasks that are ready to run on the current locale,
@@ -188,8 +195,8 @@ uint32_t chpl_task_getNumIdleThreads(void);
 #else // LAUNCHER
 
 typedef void chpl_sync_aux_t;
-typedef chpl_sync_aux_t chpl_single_aux_t;
-#define chpl_task_exit()
+typedef void chpl_single_aux_t;
+#define CHPL_TASKING_EXIT()
 
 #endif // LAUNCHER
 

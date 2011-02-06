@@ -348,10 +348,10 @@ extern void* const chpl_private_broadcast_table[];
 
 #define CHPL_COMM_BROADCAST_GLOBAL_VARS(numGlobals)             \
   do {                                                          \
-    chpl_comm_barrier("barrier before broadcasting globals");   \
-    chpl_comm_broadcast_global_vars(numGlobals);                \
-    CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals);          \
-    chpl_comm_barrier("barrier after broadcasting globals");    \
+    chpl_comm_barrier("barrier before broadcasting globals");  \
+    chpl_comm_broadcast_global_vars(numGlobals);               \
+    CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals);         \
+    chpl_comm_barrier("barrier after broadcasting globals");   \
   } while (0)
 
 //

@@ -114,10 +114,10 @@ static int makeTag(void) {
   const int maxtag = (TAGMASK/chpl_numLocales)*(1+chpl_localeID) - 1;
   if (tag == NULL) {
     tag = chpl_malloc(1, sizeof(int), 0, 0, 0);
-    chpl_sync_lock(&tag_count_sync);
+    CHPL_SYNC_LOCK(&tag_count_sync);
     *tag = tag_count;
     tag_count += 1;
-    chpl_sync_unlock(&tag_count_sync);
+    CHPL_SYNC_UNLOCK(&tag_count_sync);
     if (*tag > maxtag)
       chpl_error("tag is too big", 0, 0);
     pthread_setspecific(tag_count_key, tag);
@@ -183,7 +183,7 @@ static void chpl_mpi_polling_thread(void* arg) {
 
   PRINTF("Starting mpi polling thread");
 
-  chpl_sync_lock(&termination_sync);
+  CHPL_SYNC_LOCK(&termination_sync);
   while (!finished) {
     PRINTF("Poller Receiving");
     status = chpl_mpi_recv(&msg_info, sizeof(_chpl_mpi_message_info),
@@ -257,7 +257,7 @@ static void chpl_mpi_polling_thread(void* arg) {
         PRINTF("ChplCommFinish");
         fflush(stdout);
         fflush(stderr);
-        chpl_sync_unlock(&termination_sync);
+        CHPL_SYNC_UNLOCK(&termination_sync);
         finished = 1;
         break;
       }
@@ -294,8 +294,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_comm_barrier("barrier in init");
 
   tag_count = (TAGMASK / chpl_numLocales) * chpl_localeID;
-  chpl_sync_initAux(&termination_sync);
-  chpl_sync_initAux(&tag_count_sync);
+  CHPL_SYNC_INIT_AUX(&termination_sync);
+  CHPL_SYNC_INIT_AUX(&tag_count_sync);
   pthread_key_create(&tag_count_key, NULL);
 
   if (pthread_create(&polling_thread, NULL,
@@ -366,8 +366,8 @@ void chpl_comm_exit_all(int status) {
   chpl_mpi_send(&msg_info, sizeof(_chpl_mpi_message_info), MPI_BYTE,
                 chpl_localeID, TAGMASK+1, MPI_COMM_WORLD);
   PRINTF("Sent shutdown message");
-  chpl_sync_lock(&termination_sync);
-  chpl_sync_unlock(&termination_sync);
+  CHPL_SYNC_LOCK(&termination_sync);
+  CHPL_SYNC_UNLOCK(&termination_sync);
   chpl_comm_barrier("About to finalize");
   MPI_SAFE(MPI_Finalize());
 }

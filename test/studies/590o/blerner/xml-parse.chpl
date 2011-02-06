@@ -73,7 +73,7 @@ proc hasIndex(start, stop, indices) {
   return || reduce ([i in indices] (i >= start && i <= stop));
 }
 
-proc hasSpace(str) {
+def hasSpace(str) {
   for i in [1..(str.length)] do
      if str.substring(i) == " " then return true;
   return false;

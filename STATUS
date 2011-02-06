@@ -37,16 +37,10 @@ Modules and Functions
 - Programs requiring non-linear function resolution may fail to compile.
   E.g., mutual module uses that access variables across both modules
 - Variable functions that return local data may not result in an error.
-- Type functions with unambigious return paths may result in "illegal
-  cast" errors.
-- Param functions can return runtime variables.
-- Where clauses on non-generic functions ignored.
-- Var functions returning multiple class types should be illegal, but
-  instead they are compiled and result in runtime error.
-- Constructor calls with the same name in different modules are not
-  properly resolved.
-- Param functions with explicitly specified return types may not
-  create a param return value
+- Because the lambdas refer to variables directly by reference, lambdas
+  can't currently be returned safely if they capture variables.
+- Methods can not be captured as first-class functions, though once
+  currying has been added, this will be a trivial extension.
 
 
 Tuples, Classes, Records, and Unions

@@ -1,4 +1,4 @@
-iter iter_string_chars(s: string) {
+def iter_string_chars(s: string) {
   var i = 1, limit = s.length;
   while i <= limit {
     yield s.substring(i);
