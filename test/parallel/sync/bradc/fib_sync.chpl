@@ -9,7 +9,7 @@ var arg2out: sync int = 1;
 
 var result: sync int;
 
-def arg1supplier() {
+proc arg1supplier() {
   var newval: int;
   do {
     newval = arg1in;
@@ -17,7 +17,7 @@ def arg1supplier() {
   } while (newval != -1);
 }
 
-def arg2supplier() {
+proc arg2supplier() {
   var newval: int;
   do {
     newval = result;
@@ -25,7 +25,7 @@ def arg2supplier() {
   } while (newval != -1);
 }
 
-def fibcomputer() {
+proc fibcomputer() {
   if (n > 1) {
     output(1, 0);
     if (n > 2) {
@@ -47,7 +47,7 @@ def fibcomputer() {
   }
 }
 
-def main() {
+proc main() {
   cobegin {
     fibcomputer();
     arg1supplier();
@@ -55,7 +55,7 @@ def main() {
   }
 }
 
-def output(ind, fib) {
+proc output(ind, fib) {
   writeln("fib #", ind, " is: ", fib);
 }
 

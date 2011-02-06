@@ -1,8 +1,8 @@
-def bar(type t) {
+proc bar(type t) {
   writeln("bar");
 }
 
-def foo(type t) {
+proc foo(type t) {
   begin bar(t);
 }
 

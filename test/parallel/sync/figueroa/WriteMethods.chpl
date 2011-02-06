@@ -1,7 +1,7 @@
 use Time;
 // Test sync var using mostly write methods
 
-def foo(type t, u: t, v: t, name) {
+proc foo(type t, u: t, v: t, name) {
   var s: sync t;
 
   writeln("going to sleep ... ");

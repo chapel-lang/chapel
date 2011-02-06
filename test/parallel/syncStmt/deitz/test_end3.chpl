@@ -1,4 +1,4 @@
-def foo() {
+proc foo() {
   var s: sync int;
   begin {
     s.readFE();

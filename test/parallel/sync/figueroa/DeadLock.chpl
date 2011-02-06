@@ -2,7 +2,7 @@
 
 var done: sync bool;
 
-def foo(u, v) {
+proc foo(u, v) {
   var s: sync int = u;
 
   begin {

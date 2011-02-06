@@ -1,4 +1,4 @@
-def foo() {
+proc foo() {
   var s = "aaa";
   for i in 1..100 {
     s += "bbbbbb";

@@ -1,6 +1,6 @@
 var i: int = 2;
 
-def foo(s: sync int) {
+proc foo(s: sync int) {
   s = i;
   i += 1;
 }

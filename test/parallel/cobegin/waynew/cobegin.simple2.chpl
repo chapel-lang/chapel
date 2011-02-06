@@ -1,5 +1,5 @@
 
-def test () {
+proc test () {
   var x : int;
 
   x = 92;

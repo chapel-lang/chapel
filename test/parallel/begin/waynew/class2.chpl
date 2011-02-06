@@ -4,7 +4,7 @@ class C {
   var x: int;
 }
 
-def jam() {
+proc jam() {
   var c = new C();
   c.x = 7;
   writeln( c);

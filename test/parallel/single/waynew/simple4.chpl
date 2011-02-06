@@ -5,7 +5,7 @@ use Time;
 
 var go: single int;
 
-def jam( i: int) {
+proc jam( i: int) {
   writeln( i, " Pizza!");
 }
 

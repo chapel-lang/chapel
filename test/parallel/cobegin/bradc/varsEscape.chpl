@@ -1,7 +1,7 @@
 class C {
   var left, right: C;
   
-  def countNodes(): int {
+  proc countNodes(): int {
     if (this == nil) then return 0;
 
     cobegin {

@@ -1,6 +1,6 @@
 use Time;
 
-def foo() {
+proc foo() {
   begin {
     sleep(1);
     writeln("1. hello, world");
