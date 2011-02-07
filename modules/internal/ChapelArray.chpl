@@ -333,7 +333,7 @@ proc chpl__buildDistType(type t) type where t: BaseDist {
 }
 
 proc chpl__buildDistType(type t) {
-  compilerError("illegal distribution type specifier");
+  compilerError("illegal domain map type specifier - must be a subclass of BaseDist");
 }
 
 proc chpl__buildDistValue(x) where x: BaseDist {
@@ -341,7 +341,7 @@ proc chpl__buildDistValue(x) where x: BaseDist {
 }
 
 proc chpl__buildDistValue(x) {
-  compilerError("illegal distribution value specifier");
+  compilerError("illegal domain map value specifier - must be a subclass of BaseDist");
 }
 
 //
