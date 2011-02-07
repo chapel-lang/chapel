@@ -7,10 +7,10 @@ Domains are used to specify iteration spaces, to define the size and
 shape of arrays (\rsec{Arrays}), and to specify aggregate operations
 like slicing.  The indices described by a domain may be regular and
 structured or they may be irregular and unstructured.  Chapel also
-supports the ability to create simple \emph{subdomains} and \emph{sparse
+supports the ability to create \emph{simple subdomains} and \emph{sparse
 subdomains} to represent subsets of a domain's index set.  A domain's
 indices may potentially be distributed across multiple locales as
-described in~\rsec{Domain_Maps}, supporting global-view data
+described in~\rsec{Domain_Maps}, thus supporting global-view data
 structures.
 
 \subsection{Domain Overview}
@@ -35,18 +35,16 @@ subdomain-type:
 Domains can be further classified according to whether they are \emph{regular}
 or \emph{irregular}.  Regular domains include contiguous and strided rectangular
 domains.  Irregular domains include the \emph{associative} domain types as well
-as sparse subdomains of regular domains.  
-
-An irregular domain can store an arbitrary set of indices of an
-arbitrary but homogenous index type.  Irregular domains typically
-require space proportional to the number of indices being
-represented.
+as all sparse subdomains (including those of regular domains).  An irregular
+domain can store an arbitrary set of indices of an arbitrary but homogenous
+index type.  Irregular domains typically require space proportional to the
+number of indices being represented.
 
 Practically, regular and irregular
 domains are distinguished by their layout: regular domains can be summarized
 using ranges, while irregular domains contain an explicit entry for each
-possible index value.  An index set can be either \emph{ordered} or \emph{unordered},
-depending on whether its members have a well-defined order defined upon them.
+possible index value.  An index set can be either \emph{ordered} or \emph{unordered}
+depending on whether its members have a well-defined order relationship.
 
 The type of a domain describes how a domain is represented, while its value is
 the set of indices it represents.
@@ -78,7 +76,7 @@ operators and functions defined for domains.
 
 Base domain types can be classified as regular or irregular.  Contiguous and
 strided rectangular domains are currently the only supported regular domains.
-Irregular base domain types are all associative domain types.  Associative
+Irregular base domain types include all of the associative domain types.  Associative
 domain types consist of normal, enumerated and opaque associative domain types.
 
 \begin{syntax}
@@ -87,7 +85,7 @@ base-domain-type:
   associative-domain-type
 \end{syntax}
 
-All of these base domain types are discussed in turn in the following
+These base domain types are discussed in turn in the following
 subsections.
 
 \subsubsection{Rectangular Domains}
@@ -113,7 +111,7 @@ each dimension.  If unspecified, \chpl{idxType} defaults
 to \chpl{int}.
 % BLC: we should potentially rename idxType to idxDimType to make it
 % more consistent with the irregular case
-\item \chpl{stridable}, a \chpl{bool} value indicating whether
+\item \chpl{stridable}, a \chpl{bool} parameter indicating whether
 any of the domain's dimensions will be characterized by a strided
 range.  If unspecified, \chpl{stridable} defaults to \chpl{false}.
 \end{itemize}
@@ -346,8 +344,8 @@ The default value for an opaque domain is the empty set.
 
 A subdomain is a domain whose indices are guaranteed to be a subset of
 those described by another domain known as its \emph{parent domain}.
-Subdomains have the same type as their parent domain, and by default
-they inherit the domain map of their parent domain.  All domain types
+A subdomains has the same type as its parent domain, and by default
+it inherits the domain map of its parent domain.  All domain types
 support subdomains.
 
 \begin{rationale}
@@ -407,16 +405,18 @@ and its parent domain's describes the set of indices for which the
 sparse array will store this replicated value.
 See~\rsec{Sparse_Arrays} for details about sparse arrays.
 
-\subsubsection{Sparse Domain Types}
-\index{sparse domains!values}
+\subsubsection{Sparse Subdomain Types}
+\index{domains!sparse!types}
+\index{subdomains!sparse!types}
 
 Each root domain type has a unique corresponding sparse subdomain
 type.  Sparse subdomains whose parent domains are also sparse
 subdomains share the same type.
 
-\subsubsection{Sparse Domain Values}
+\subsubsection{Sparse Subomain Values}
 \label{Sparse_Domain_Values}
-\index{sparse domains!values}
+\index{domains!sparse!values}
+\index{subdomains!sparse!values}
 
 A sparse subdomain's value is simply the set of all index values that
 the domain describes.  If the parent domain's indices were ordered,
@@ -426,7 +426,7 @@ the sparse subdomain's are as well.
 \index{sparse domains!initializations}
 There is no literal syntax for an associative domain, though for a
 domain \chpl{D}, a tuple of values of type \chpl{index(D)} can be used
-to initialize a variable of sparse domain type.
+to initialize a variable of a sparse subdomain type.
 
 \index{sparse domains!default value}
 The default value for a sparse subdomain value is the empty set.
@@ -441,18 +441,6 @@ const D: domain(2) = [1..n, 1..n];
 var SpsD: sparse subdomain(D);
 \end{chapel}
 \end{example}
-
-
-\subsection{Iteration over Domains}
-\label{Iteration_over_Domains}
-\index{domains!iteration}
-
-All domains support iteration via standard for, forall, and coforall
-loops.  These loops iterate over all of the indices that the domain
-describes.  The type of the iterator variable for an iteration over a
-domain named \chpl{D} is that domain's index type, \chpl{index(D)}.
-If the domain's indices are ordered, a for loop will traverse the
-indices in order.
 
 
 \subsection{Domain Operations}
@@ -560,7 +548,7 @@ array-based slicing.
 
 For multidimensional rectangular domains and arrays, substituting
 integral values for one or more of the ranges in a range-based slice
-will result in domain or array of lower rank.
+will result in a domain or array of lower rank.
 
 The result of a rank-change slice on an array is an alias to a subset
 of the array's elements as described
@@ -591,6 +579,18 @@ applying the integer value to each range in the value using the
 \chpl{by} operator.  In the case of a tuple stride value, the resulting
 domain's value is computed by applying each tuple component to the
 corresponding range using the \chpl{by} operator.
+
+
+\subsubsection{Iteration over Domains}
+\label{Iteration_over_Domains}
+\index{domains!iteration}
+
+All domains support iteration via standard \chpl{for}, \chpl{forall}, and \chpl{coforall}
+loops.  These loops iterate over all of the indices that the domain
+describes.  The type of the iterator variable for an iteration over a
+domain named \chpl{D} is that domain's index type, \chpl{index(D)}.
+If the domain's indices are ordered, a \chpl{for} loop will traverse the
+indices in order.
 
 
 \subsubsection{Domain Index Type Extraction}
