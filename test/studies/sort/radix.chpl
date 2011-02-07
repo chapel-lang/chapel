@@ -6,7 +6,7 @@ use Time, Random;
 // radix and nbits toggles how many keys are generated and processed per pass.
 
 // assert indices for Values starts at 0
-proc radix_sort(Values, radix:int(64), nbits:int(64)) {
+proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
 
     var nelem:int(64) = Values.numElements;
     var nbuckets:int(64) = 1 << radix;   // Number of keys in counting sort
@@ -14,8 +14,6 @@ proc radix_sort(Values, radix:int(64), nbits:int(64)) {
     var D1 = [0..(nelem-1)];
     var D2 = [0..(nbuckets-1)];
 
-    var Permute: [D1] int(64);
-    [i in D1] Permute[i] = i;
     var Permute_old: [D1] int(64) = Permute; // Old permutation array
 
     var sortTime: real;                           // overall timing
@@ -95,7 +93,7 @@ proc radix_sort(Values, radix:int(64), nbits:int(64)) {
     sortTime = getCurrentTime() - sortStartTime;  // store the elapsed time
 //    writeln(npasses, " passes in ", sortTime, " secs");
 
-    return Permute;
+    return;
 }
 
 config const npoints:int(64) = 8;
@@ -117,14 +115,16 @@ rngTime = getCurrentTime() - rngStartTime;
 //writeln("Finished generating numbers in ", rngTime, " sec");
 
 forall i in D {
+  Permute_F[i] = i;
+  Permute_G[i] = i;
   G[i] = i % 10;
 }
 
 var mwTime: real;
 const mwStartTime = getCurrentTime();
 
-Permute_F = radix_sort(F_prime, 16, 64);
-Permute_G =  radix_sort(G, 5, 5);
+radix_sort(F_prime, Permute_F, 16, 64);
+radix_sort(G, Permute_G, 5, 5);
 
 mwTime = getCurrentTime() - mwStartTime;
 //writeln("----- Total Time = ", mwTime, " sec -----------------------------------------");
