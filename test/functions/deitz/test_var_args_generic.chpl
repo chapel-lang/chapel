@@ -1,11 +1,11 @@
 class C {
   param rank: int;
 
-  def foo(i ...rank) {
+  proc foo(i ...rank) {
     writeln("wrong");
   }
 
-  def foo(i: int) {
+  proc foo(i: int) {
     writeln("right");
   }
 }

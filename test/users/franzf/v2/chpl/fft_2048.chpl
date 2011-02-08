@@ -39,7 +39,7 @@ var  buf7: [0..63] complex;
 var  dat6: [0..63] complex;
 var  dat7: [0..2047] complex;
 
-def init_fft2048() {
+proc init_fft2048() {
     for i1875 in 0..3 {
         for i1882 in 0..3 {
             for i1892 in 0..1 {
@@ -59,7 +59,7 @@ def init_fft2048() {
 
 }
 
-def fft2048(Y: [] complex, X: [] complex) {
+proc fft2048(Y: [] complex, X: [] complex) {
     for i1874 in 0..63 {
         var s4237, s4238, s4239, s4240, s4241, s4242, s4243, 
     s4244, s4245, s4246, s4247, s4248, s4249, s4250, s4251, 

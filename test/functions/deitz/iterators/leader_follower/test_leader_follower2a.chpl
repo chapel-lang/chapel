@@ -1,31 +1,31 @@
-def foo(n: int) {
+iter foo(n: int) {
   for i in 1..n do
     yield i;
 }
 
-def foo(param tag: iterator, n: int) where tag == iterator.leader {
+iter foo(param tag: iterator, n: int) where tag == iterator.leader {
   cobegin {
     yield 0..3;
     yield 5..n-1;
   }
 }
 
-def foo(param tag: iterator, follower, n: int) where tag == iterator.follower {
+iter foo(param tag: iterator, follower, n: int) where tag == iterator.follower {
   for i in follower+1 do
     yield i;
 }
 
-def bar(n: int) {
+iter bar(n: int) {
   for i in 1..n do
     yield i;
 }
 
-def bar(param tag: iterator, n: int) where tag == iterator.leader {
+iter bar(param tag: iterator, n: int) where tag == iterator.leader {
   yield 0..2;
   yield 4..n-1;
 }
 
-def bar(param tag: iterator, follower, n: int) where tag == iterator.follower {
+iter bar(param tag: iterator, follower, n: int) where tag == iterator.follower {
   for i in follower+1 do
     yield i;
 }

@@ -5,8 +5,8 @@
 #include "parser.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "chapel.tab.h"
 #include "yy.h"
+#include "chapel.tab.h"
 
 BlockStmt* yyblock = NULL;
 const char* yyfilename;
@@ -52,18 +52,39 @@ static const char* filenameToModulename(const char* filename) {
 }
 
 static bool
-containsOnlyModules(BlockStmt* block) {
+containsOnlyModules(BlockStmt* block, const char* filename) {
+  int moduleDefs = 0;
+  bool hasUses = false;
+  bool hasOther = false;
+  ModuleSymbol* lastmodsym = NULL;
+  BaseAST* lastmodsymstmt = NULL;
   for_alist(stmt, block->body) {
-    bool isModuleDef = false;
     if (BlockStmt* block = toBlockStmt(stmt))
       stmt = block->body.first();
-    if (DefExpr* defExpr = toDefExpr(stmt))
-      if (toModuleSymbol(defExpr->sym))
-        isModuleDef = true;
-    if (!isModuleDef)
-      return false;
+    if (DefExpr* defExpr = toDefExpr(stmt)) {
+      ModuleSymbol* modsym = toModuleSymbol(defExpr->sym);
+      if (modsym != NULL) {
+        lastmodsym = modsym;
+        lastmodsymstmt = stmt;
+        moduleDefs++;
+      } else {
+        hasOther = true;
+      }
+    } else if (CallExpr* callexpr = toCallExpr(stmt)) {
+      if (callexpr->isPrimitive(PRIM_USE)) {
+        hasUses = true;
+      } else {
+        hasOther = true;
+      }
+    } else {
+      hasOther = true;
+    }
   }
-  return true;
+  if (hasUses && !hasOther && moduleDefs == 1) {
+    USR_WARN(lastmodsymstmt, "as written, '%s' is a sub-module of the module created for file '%s' due to the file-level 'use' statements.  If you meant for '%s' to be a top-level module, move the 'use' statements into its scope.", lastmodsym->name, filename, lastmodsym->name);
+
+  }
+  return !hasUses && !hasOther && moduleDefs > 0;
 }
 
 
@@ -97,7 +118,7 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
 
   closeInputFile(yyin);
 
-  if (!yyblock->body.head || !containsOnlyModules(yyblock)) {
+  if (!yyblock->body.head || !containsOnlyModules(yyblock, filename)) {
     const char* modulename = filenameToModulename(filename);
     newModule = buildModule(modulename, yyblock, yyfilename);
   }

@@ -1,10 +1,10 @@
 // test #1
 var s:int;
 
-def function1( a:int, b:int, c:int) {
+proc function1( a:int, b:int, c:int) {
   var d:int;
 
-  def nested_function( a:int, b:int, c:int) {
+  proc nested_function( a:int, b:int, c:int) {
     writeln( "test1:", a, b, c, d, s);
   }
 
@@ -25,7 +25,7 @@ function1( x, y, z);
 
 
 // test #2
-def function2( a:int) {
+proc function2( a:int) {
   var d:int;
 
   d = a;
@@ -45,7 +45,7 @@ function2( 2);
 
 
 // test #3
-def function3() {
+proc function3() {
   class C {
     var a:int;
   }

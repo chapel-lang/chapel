@@ -18,7 +18,7 @@ class BoundedBuffer {
   // Add a value to the circular buffer. If it is full, wait until a
   // value has been consumed
   //
-  def add(i: eltType) {
+  proc add(i: eltType) {
     var c = producerPos$;
     producerPos$ = (c + 1) % bufSize;
     buffer$(c) = i;
@@ -28,7 +28,7 @@ class BoundedBuffer {
   // Remove a value from the buffer. If it is empty, wait until a
   // value has been produced
   //
-  def remove(): eltType {
+  proc remove(): eltType {
     var c = consumerPos$;
     consumerPos$ = (c + 1) % bufSize;
     return buffer$(c);
@@ -37,7 +37,7 @@ class BoundedBuffer {
   // 
   // Yield all values in the buffer until the -1 sentinel value is found
   //
-  def these() {
+  iter these() {
     var val = remove();
     while val != -1 {
       yield val;
@@ -51,7 +51,7 @@ var buffer: BoundedBuffer = new BoundedBuffer();
 
 // Given a value, do some work on it to create the next value. In this
 // case, the work is sleeping for a second and leaving the value unchanged.
-def createNextValue(val) {
+proc createNextValue(val) {
   use Time;
   sleep(1);
   return val;
@@ -61,7 +61,7 @@ def createNextValue(val) {
 // Produce the numbers from 1 to nProducts by adding them to the
 // bounded buffer. -1 is used as a sentinel to indicate that the final
 // value has been produced.
-def producer(nProducts: int) {
+proc producer(nProducts: int) {
   for i in 1..nProducts {
     createNextValue(i);
     writeln("producer producing ", i);
@@ -73,13 +73,13 @@ def producer(nProducts: int) {
 
 
 // Consume values from the buffer. These values were created by the producer.
-def consumer() {
+proc consumer() {
   for consumedValue in buffer {
     writeln("consumer consumed: ", consumedValue);
   }
 }
 
-def main {
+proc main {
   // Simultaneously start a producer and a consumer.
   cobegin {
     producer(problemSize);

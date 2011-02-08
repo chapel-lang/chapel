@@ -2,7 +2,7 @@ var A: [1..3] real = [i in 1..3] i;
 
 foo(A, 3);
 
-def foo(A: [], depth: int = 3) {
+proc foo(A: [], depth: int = 3) {
   var B = A;
 
   writeln("In foo(), A is: ", A);

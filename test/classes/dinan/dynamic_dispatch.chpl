@@ -1,11 +1,11 @@
 class A {
-  def fcn() {
+  proc fcn() {
     return "In A";
   }
 }
 
 class B: A {
-  def fcn() {
+  proc fcn() {
     return "In B";
   }
 }

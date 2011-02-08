@@ -6,7 +6,7 @@ class D : C {
   var y : real = 2.0;
 }
 
-def foo(c : C) {
+proc foo(c : C) {
   writeln(c);
 }
 

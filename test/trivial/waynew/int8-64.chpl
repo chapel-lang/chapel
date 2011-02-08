@@ -1,4 +1,4 @@
-def jam_records( somei:int(64)) : void {
+proc jam_records( somei:int(64)) : void {
   writeln( somei);
 }
 

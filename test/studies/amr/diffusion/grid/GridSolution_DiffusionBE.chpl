@@ -1,4 +1,4 @@
-use GridArray_DiffusionBE;
+use GridVariable_DiffusionBE;
 use GridBC_def;
 
 
@@ -9,7 +9,7 @@ use GridBC_def;
 // Advances a GridSolution to the requested time, stepping forward with
 // diffusion via Backward Euler.
 //----------------------------------------------------------------------
-def GridSolution.advance_DiffusionBE(
+proc GridSolution.advance_DiffusionBE(
   bc:             GridBC,
   diffusivity:    real,
   time_requested: real,
@@ -54,7 +54,7 @@ def GridSolution.advance_DiffusionBE(
 
 //===> GridSolution.step_DiffusionBE method ===>
 //====================================>
-def GridSolution.step_DiffusionBE(
+proc GridSolution.step_DiffusionBE(
   bc:          GridBC,
   diffusivity: real,
   dt:          real, 
@@ -84,7 +84,7 @@ def GridSolution.step_DiffusionBE(
   // a clean decoupling of the "ghostFill" and "homogeneousGhostFill"
   // methods.
   //----------------------------------------------------------------------
-  var rhs = new GridArray(grid);
+  var rhs = new GridVariable(grid);
   bc.apply(current_data, t_new);
   rhs.storeFluxDivergence(current_data, diffusivity);
   rhs(grid.cells) *= -dt;
@@ -97,7 +97,7 @@ def GridSolution.step_DiffusionBE(
   //------------------------------------------------------------
   // residual = rhs - (dq + dt*flux_divergence(dq))
   //------------------------------------------------------------
-  var residual = new GridArray(grid);
+  var residual = new GridVariable(grid);
   bc.apply_Homogeneous(dq);
   residual.storeBEOperator(dq, diffusivity, dt);
   residual(grid.cells) = rhs(grid.cells) - residual(grid.cells);
@@ -105,7 +105,7 @@ def GridSolution.step_DiffusionBE(
 
 
   //==== Initialize search direction ====
-  var search_dir = new GridArray(grid);
+  var search_dir = new GridVariable(grid);
   search_dir(grid.cells) = residual(grid.cells);
   
 
@@ -113,13 +113,13 @@ def GridSolution.step_DiffusionBE(
   //--------------------------------------------------
   // Initializes to homogeneousBEOperator(search_dir)
   //--------------------------------------------------
-  var residual_update = new GridArray(grid);
+  var residual_update = new GridVariable(grid);
   bc.apply_Homogeneous(search_dir);
   residual_update.storeBEOperator(search_dir, diffusivity, dt);
   
   
   //===> CG iteration ===>
-  for iter in [1..maxiter] {
+  for iter_no in [1..maxiter] {
  
     //==== Update the solution and residual ====
     inner_product = +reduce( residual_update(grid.cells) * search_dir(grid.cells) );
@@ -131,9 +131,9 @@ def GridSolution.step_DiffusionBE(
     //==== Compute norm of residual, and check for convergence ====
     old_residual_norm_square = residual_norm_square;
     residual_norm_square = +reduce(residual(grid.cells)**2);
-    writeln("Iteration ", iter, ": residual_norm = ", sqrt(residual_norm_square));
+    writeln("Iteration ", iter_no, ": residual_norm = ", sqrt(residual_norm_square));
     if sqrt(residual_norm_square) < tolerance then break;
-    if iter==maxiter then writeln("Warning: conjugate gradient method failed to converge.");
+    if iter_no==maxiter then writeln("Warning: conjugate gradient method failed to converge.");
 
 
     //==== Update directions for search and residual update ====
@@ -151,7 +151,7 @@ def GridSolution.step_DiffusionBE(
   //----------------------------------------------
   // Recalling that dq = q.old_data...
   //----------------------------------------------
-  old_data += current_data;
+  old_data(grid.cells) += current_data(grid.cells);
   old_data <=> current_data;
 
   old_time = current_time;

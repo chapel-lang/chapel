@@ -4,7 +4,7 @@ class C {
 class D : C {
   var x: int;
 
-  def writeThis() {
+  proc writeThis() {
     writeln("x is: ", x);
   }
 }
@@ -12,7 +12,7 @@ class D : C {
 class E : C {
   var y: real;
 
-  def writeThis() {
+  proc writeThis() {
     writeln("y is: ", y);
   }
 }

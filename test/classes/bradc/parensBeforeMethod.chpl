@@ -1,5 +1,5 @@
 class C {
-  def foo(x) {
+  proc foo(x) {
     writeln("In foo, x is: ", x);
   }
 }

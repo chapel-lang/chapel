@@ -1,7 +1,7 @@
 class point {
   var x : real;
   var y : real;
-  def speak() {
+  proc speak() {
     writeln("Hello");
   }
 }

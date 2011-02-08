@@ -1,9 +1,9 @@
 class C {
-  def ~C() { writeln("In ~C #1"); }
+  proc ~C() { writeln("In ~C #1"); }
 }
-def C.~C() { writeln("In ~C #2"); }
+proc C.~C() { writeln("In ~C #2"); }
 
-def main {
+proc main {
   var c = new C();
   delete c;
 }

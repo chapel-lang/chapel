@@ -2,7 +2,7 @@ config const half_width = 39;
 config const half_height = 11;
 config const iterations = 50;
 
-def main() {
+proc main() {
   var grid_space: domain(2) =
     [-half_height..half_height, -half_width..half_width];
 
@@ -23,7 +23,7 @@ def main() {
   }
 }
 
-def in_mandelbrot_set(real_part, imag_part) {
+proc in_mandelbrot_set(real_part, imag_part) {
   // Returns true if the complex number real_part + i*imag_part
   // is in the Mandelbrot set.  Returns false otherwise.
   var start, z: complex;

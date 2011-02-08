@@ -1,4 +1,4 @@
-def norm(x:?t...?n) {
+proc norm(x:?t...?n) {
   var sum:t(1);
 
   for i in 1..n {

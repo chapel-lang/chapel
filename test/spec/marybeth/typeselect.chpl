@@ -10,7 +10,7 @@ writetype(coord);
 writetype(yes);
 writetype("no");
 
-def writetype(x) {
+proc writetype(x) {
   type select x {
     when int do writeln("Integer type");
     when uint do writeln("Unsigned integer type");

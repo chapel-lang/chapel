@@ -1,6 +1,6 @@
 class D { var x = 1; }
 class C: D { var y = 2; }
-def **(d:D,i:int) return d.x..i;
+proc **(d:D,i:int) return d.x..i;
 
 write("C(): ");
 writeln(typeToString(C()));

@@ -1,4 +1,4 @@
-def testRangeIndexing(r1, r2) {
+proc testRangeIndexing(r1, r2) {
   write("(", r1, ")(", r2, ") = ");
   for i in r1(r2) do
     write(i, " ");

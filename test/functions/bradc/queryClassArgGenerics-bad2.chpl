@@ -3,12 +3,12 @@ class C {
   param r: int;
 }
 
-def foo(x: C(t=?tt, r=?rr),
+proc foo(x: C(t=?tt, r=?rr),
         y: C(tt, rr)) {
   writeln("In foo-a, x = ", x, ", y = ", y);
 }
 
-def foo(x: C(t=?tt, r=?rr),
+proc foo(x: C(t=?tt, r=?rr),
         y: C(t2=?tt, r2=?rr)) {
   writeln("In foo-b, x = ", x, ", y = ", y);
 }

@@ -60,6 +60,8 @@ const char* chpl_rt_memDescs[] = {
   "locale name buffer",
   "serial flag",
   "task descriptor",
+  "task descriptor link",               // reserved for future use
+  "task stack",                         // reserved for future use
   "mutex",
   "lock report data",
   "task pool descriptor",
@@ -107,6 +109,8 @@ typedef enum {
   CHPL_RT_MD_LOCALE_NAME_BUFFER,
   CHPL_RT_MD_SERIAL_FLAG,
   CHPL_RT_MD_TASK_DESCRIPTOR,
+  CHPL_RT_MD_TASK_DESCRIPTOR_LINK,      // reserved for future use
+  CHPL_RT_MD_TASK_STACK,                // reserved for future use
   CHPL_RT_MD_MUTEX,
   CHPL_RT_MD_LOCK_REPORT_DATA,
   CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
@@ -147,7 +151,7 @@ void* chpl_md_realloc(void* memAlloc, size_t newChunk, int32_t, chpl_string);
 #include "arg.h"
 
 #define chpl_malloc(number, size, description, lineno, filename)        \
-  malloc(number*size)
+  malloc((number)*(size))
 
 #define chpl_free(ptr, lineno, filename)        \
   free(ptr)

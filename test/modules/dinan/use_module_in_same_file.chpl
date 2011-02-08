@@ -4,6 +4,6 @@ module foo {
 
 use foo;
 
-def main() {
+proc main() {
   writeln(x);
 }

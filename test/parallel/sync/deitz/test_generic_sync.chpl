@@ -1,10 +1,10 @@
-def foo(s: sync) {
+proc foo(s: sync) {
   var x = s;
   writeln(x);
   s = (x+1):x.type;
 }
 
-def bar(type t) {
+proc bar(type t) {
   var s: sync t;
   s = 0:t;
   foo(s);

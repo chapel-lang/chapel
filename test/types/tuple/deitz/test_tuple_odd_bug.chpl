@@ -1,12 +1,12 @@
-def f(args...?n) {
+proc f(args...?n) {
   var whole = 1..10;
   var xxx = args;
   xxx(1) = 1..5;
   writeln(whole((...args)));
-  def noop(args) {} noop(args);
+  proc noop(args) {} noop(args);
 }
 
-def g(args...?n) {
+proc g(args...?n) {
   var whole = 1..10;
   var xxx = args;
   xxx(1) = 1..5;

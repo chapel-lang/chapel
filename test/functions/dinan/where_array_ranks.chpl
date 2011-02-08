@@ -1,4 +1,4 @@
-def f(x: [] int, y: [] int) where x.rank == 1 && y.rank == 1 {
+proc f(x: [] int, y: [] int) where x.rank == 1 && y.rank == 1 {
   return x+y;
 }
 

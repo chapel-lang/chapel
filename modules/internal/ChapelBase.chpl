@@ -1,5 +1,5 @@
-_extern def chpl_config_has_value(name, module_name): bool;
-_extern def chpl_config_get_value(name, module_name): string;
+_extern proc chpl_config_has_value(name, module_name): bool;
+_extern proc chpl_config_get_value(name, module_name): string;
 
 config param CHPL_HOST_PLATFORM: string = "unset";
 config param CHPL_TARGET_PLATFORM: string = "unset";
@@ -24,71 +24,76 @@ if (CHPL_TASKS == "unset") {
   compilerWarning("CHPL_TASKS not set");
 }
 
+config param CHPL_THREADS: string = "unset";
+if (CHPL_THREADS == "unset") {
+  compilerWarning("CHPL_THREADS not set");
+}
+
 config param CHPL_COMM: string = "unset";
 if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");
 }
 
-pragma "inline" def +(s: string, x: numeric)
+pragma "inline" proc +(s: string, x: numeric)
   return s + x:string;
 
-pragma "inline" def +(x: numeric, s: string)
+pragma "inline" proc +(x: numeric, s: string)
   return x:string + s;
 
-def +(param s: string, param x: integral) param
+proc +(param s: string, param x: integral) param
   return s + x:string;
 
-def +(param x: integral, param s: string) param
+proc +(param x: integral, param s: string) param
   return x:string + s;
 
-pragma "inline" def +(s: string, x: enumerated)
+pragma "inline" proc +(s: string, x: enumerated)
   return s + x:string;
 
-pragma "inline" def +(x: enumerated, s: string)
+pragma "inline" proc +(x: enumerated, s: string)
   return x:string + s;
 
-def +(param s: string, param x: enumerated) param
+proc +(param s: string, param x: enumerated) param
   return s + x:string;
 
-def +(param x: enumerated, param s: string) param
+proc +(param x: enumerated, param s: string) param
   return x:string + s;
 
-pragma "inline" def +(s: string, x: bool)
+pragma "inline" proc +(s: string, x: bool)
   return s + x:string;
 
-pragma "inline" def +(x: bool, s: string)
+pragma "inline" proc +(x: bool, s: string)
   return x:string + s;
 
-def +(param s: string, param x: bool) param
+proc +(param s: string, param x: bool) param
   return s + x:string;
 
-def +(param x: bool, param s: string) param
+proc +(param x: bool, param s: string) param
   return x:string + s;
 
 config param realmTypes: string = CHPL_TARGET_PLATFORM;
 param numRealms: int(32) = __primitive("get num realms"); // defined by realmTypes
 
-def _throwOpError(param op: string) {
+proc _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
 }
 
-def compilerError(param x:string ...?n, param errorDepth:int) {
+proc compilerError(param x:string ...?n, param errorDepth:int) {
   __primitive("error", (...x));
 }
 
-def compilerError(param x:string ...?n) {
+proc compilerError(param x:string ...?n) {
   __primitive("error", (...x));
 }
 
-def compilerWarning(param x:string ...?n, param errorDepth:int) {
+proc compilerWarning(param x:string ...?n, param errorDepth:int) {
   __primitive("warning", (...x));
 }
 
-def compilerWarning(param x:string ...?n) {
+proc compilerWarning(param x:string ...?n) {
   __primitive("warning", (...x));
 }
 
-def typeToString(type t) param {
+proc typeToString(type t) param {
   return __primitive("typeToString", t);
 }
 
@@ -97,148 +102,148 @@ enum iterator {leader, follower};
 //
 // assignment on primitive types
 //
-pragma "inline" def =(a: bool, b: bool) return b;
-pragma "inline" def =(a: bool(?w), b: bool) return b:a.type;
-pragma "inline" def =(a: int(?w), b: int(w)) return b;
-pragma "inline" def =(a: uint(?w), b: uint(w)) return b;
-pragma "inline" def =(a: real(?w), b: real(w)) return b;
-pragma "inline" def =(a: imag(?w), b: imag(w)) return b;
-pragma "inline" def =(a: complex(?w), b: complex(w)) return b;
-pragma "inline" def =(a: string, b: string) return __primitive("string_copy", b);
-pragma "inline" def =(a, b) return b;
+pragma "inline" proc =(a: bool, b: bool) return b;
+pragma "inline" proc =(a: bool(?w), b: bool) return b:a.type;
+pragma "inline" proc =(a: int(?w), b: int(w)) return b;
+pragma "inline" proc =(a: uint(?w), b: uint(w)) return b;
+pragma "inline" proc =(a: real(?w), b: real(w)) return b;
+pragma "inline" proc =(a: imag(?w), b: imag(w)) return b;
+pragma "inline" proc =(a: complex(?w), b: complex(w)) return b;
+pragma "inline" proc =(a: string, b: string) return __primitive("string_copy", b);
+pragma "inline" proc =(a, b) return b;
 
-pragma "inline" def ==(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("==", a, b);
+pragma "inline" proc ==(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("==", a, b);
 
 //
 // equality comparison on primitive types
 //
-pragma "inline" def ==(a: bool, b: bool) return __primitive("==", a, b);
-pragma "inline" def ==(a: int(32), b: int(32)) return __primitive("==", a, b);
-pragma "inline" def ==(a: int(64), b: int(64)) return __primitive("==", a, b);
-pragma "inline" def ==(a: uint(32), b: uint(32)) return __primitive("==", a, b);
-pragma "inline" def ==(a: uint(64), b: uint(64)) return __primitive("==", a, b);
-pragma "inline" def ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
-pragma "inline" def ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
-pragma "inline" def ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
-pragma "inline" def ==(a: string, b: string) return (__primitive("chpl_string_compare", a, b) == 0);
-pragma "inline" def ==(a: object, b: object) return __primitive("ptr_eq", a, b);
+pragma "inline" proc ==(a: bool, b: bool) return __primitive("==", a, b);
+pragma "inline" proc ==(a: int(32), b: int(32)) return __primitive("==", a, b);
+pragma "inline" proc ==(a: int(64), b: int(64)) return __primitive("==", a, b);
+pragma "inline" proc ==(a: uint(32), b: uint(32)) return __primitive("==", a, b);
+pragma "inline" proc ==(a: uint(64), b: uint(64)) return __primitive("==", a, b);
+pragma "inline" proc ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
+pragma "inline" proc ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
+pragma "inline" proc ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
+pragma "inline" proc ==(a: string, b: string) return (__primitive("chpl_string_compare", a, b) == 0);
+pragma "inline" proc ==(a: object, b: object) return __primitive("ptr_eq", a, b);
 
-pragma "inline" def !=(a: bool, b: bool) return __primitive("!=", a, b);
-pragma "inline" def !=(a: int(32), b: int(32)) return __primitive("!=", a, b);
-pragma "inline" def !=(a: int(64), b: int(64)) return __primitive("!=", a, b);
-pragma "inline" def !=(a: uint(32), b: uint(32)) return __primitive("!=", a, b);
-pragma "inline" def !=(a: uint(64), b: uint(64)) return __primitive("!=", a, b);
-pragma "inline" def !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
-pragma "inline" def !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
-pragma "inline" def !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
-pragma "inline" def !=(a: string, b: string) return (__primitive("chpl_string_compare", a, b) != 0);
-pragma "inline" def !=(a: object, b: object) return __primitive("ptr_neq", a, b);
+pragma "inline" proc !=(a: bool, b: bool) return __primitive("!=", a, b);
+pragma "inline" proc !=(a: int(32), b: int(32)) return __primitive("!=", a, b);
+pragma "inline" proc !=(a: int(64), b: int(64)) return __primitive("!=", a, b);
+pragma "inline" proc !=(a: uint(32), b: uint(32)) return __primitive("!=", a, b);
+pragma "inline" proc !=(a: uint(64), b: uint(64)) return __primitive("!=", a, b);
+pragma "inline" proc !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
+pragma "inline" proc !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
+pragma "inline" proc !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
+pragma "inline" proc !=(a: string, b: string) return (__primitive("chpl_string_compare", a, b) != 0);
+pragma "inline" proc !=(a: object, b: object) return __primitive("ptr_neq", a, b);
 
-pragma "inline" def ==(param a: bool, param b: bool) param return __primitive("==", a, b);
-pragma "inline" def ==(param a: int(32), param b: int(32)) param return __primitive("==", a, b);
-pragma "inline" def ==(param a: int(64), param b: int(64)) param return __primitive("==", a, b);
-pragma "inline" def ==(param a: uint(32), param b: uint(32)) param return __primitive("==", a, b);
-pragma "inline" def ==(param a: uint(64), param b: uint(64)) param return __primitive("==", a, b);
-pragma "inline" def ==(param a: enumerated, param b: enumerated) param return __primitive("==", a, b);
-pragma "inline" def ==(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) == 0;
+pragma "inline" proc ==(param a: bool, param b: bool) param return __primitive("==", a, b);
+pragma "inline" proc ==(param a: int(32), param b: int(32)) param return __primitive("==", a, b);
+pragma "inline" proc ==(param a: int(64), param b: int(64)) param return __primitive("==", a, b);
+pragma "inline" proc ==(param a: uint(32), param b: uint(32)) param return __primitive("==", a, b);
+pragma "inline" proc ==(param a: uint(64), param b: uint(64)) param return __primitive("==", a, b);
+pragma "inline" proc ==(param a: enumerated, param b: enumerated) param return __primitive("==", a, b);
+pragma "inline" proc ==(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) == 0;
 
-pragma "inline" def !=(param a: bool, param b: bool) param return __primitive("!=", a, b);
-pragma "inline" def !=(param a: int(32), param b: int(32)) param return __primitive("!=", a, b);
-pragma "inline" def !=(param a: int(64), param b: int(64)) param return __primitive("!=", a, b);
-pragma "inline" def !=(param a: uint(32), param b: uint(32)) param return __primitive("!=", a, b);
-pragma "inline" def !=(param a: uint(64), param b: uint(64)) param return __primitive("!=", a, b);
-pragma "inline" def !=(param a: enumerated, param b: enumerated) param return __primitive("!=", a, b);
-pragma "inline" def !=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) != 0;
+pragma "inline" proc !=(param a: bool, param b: bool) param return __primitive("!=", a, b);
+pragma "inline" proc !=(param a: int(32), param b: int(32)) param return __primitive("!=", a, b);
+pragma "inline" proc !=(param a: int(64), param b: int(64)) param return __primitive("!=", a, b);
+pragma "inline" proc !=(param a: uint(32), param b: uint(32)) param return __primitive("!=", a, b);
+pragma "inline" proc !=(param a: uint(64), param b: uint(64)) param return __primitive("!=", a, b);
+pragma "inline" proc !=(param a: enumerated, param b: enumerated) param return __primitive("!=", a, b);
+pragma "inline" proc !=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) != 0;
 
 //
 // ordered comparison on primitive types
 //
-pragma "inline" def <=(a: int(32), b: int(32)) return __primitive("<=", a, b);
-pragma "inline" def <=(a: int(64), b: int(64)) return __primitive("<=", a, b);
-pragma "inline" def <=(a: uint(32), b: uint(32)) return __primitive("<=", a, b);
-pragma "inline" def <=(a: uint(64), b: uint(64)) return __primitive("<=", a, b);
-pragma "inline" def <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
-pragma "inline" def <=(a: imag(?w), b: imag(w)) return __primitive("<=", a, b);
-pragma "inline" def <=(a: string, b: string) return (__primitive("chpl_string_compare", a, b) <= 0);
+pragma "inline" proc <=(a: int(32), b: int(32)) return __primitive("<=", a, b);
+pragma "inline" proc <=(a: int(64), b: int(64)) return __primitive("<=", a, b);
+pragma "inline" proc <=(a: uint(32), b: uint(32)) return __primitive("<=", a, b);
+pragma "inline" proc <=(a: uint(64), b: uint(64)) return __primitive("<=", a, b);
+pragma "inline" proc <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
+pragma "inline" proc <=(a: imag(?w), b: imag(w)) return __primitive("<=", a, b);
+pragma "inline" proc <=(a: string, b: string) return (__primitive("chpl_string_compare", a, b) <= 0);
 
-pragma "inline" def >=(a: int(32), b: int(32)) return __primitive(">=", a, b);
-pragma "inline" def >=(a: int(64), b: int(64)) return __primitive(">=", a, b);
-pragma "inline" def >=(a: uint(32), b: uint(32)) return __primitive(">=", a, b);
-pragma "inline" def >=(a: uint(64), b: uint(64)) return __primitive(">=", a, b);
-pragma "inline" def >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
-pragma "inline" def >=(a: imag(?w), b: imag(w)) return __primitive(">=", a, b);
-pragma "inline" def >=(a: string, b: string) return (__primitive("chpl_string_compare", a, b) >= 0);
+pragma "inline" proc >=(a: int(32), b: int(32)) return __primitive(">=", a, b);
+pragma "inline" proc >=(a: int(64), b: int(64)) return __primitive(">=", a, b);
+pragma "inline" proc >=(a: uint(32), b: uint(32)) return __primitive(">=", a, b);
+pragma "inline" proc >=(a: uint(64), b: uint(64)) return __primitive(">=", a, b);
+pragma "inline" proc >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
+pragma "inline" proc >=(a: imag(?w), b: imag(w)) return __primitive(">=", a, b);
+pragma "inline" proc >=(a: string, b: string) return (__primitive("chpl_string_compare", a, b) >= 0);
 
-pragma "inline" def <(a: int(32), b: int(32)) return __primitive("<", a, b);
-pragma "inline" def <(a: int(64), b: int(64)) return __primitive("<", a, b);
-pragma "inline" def <(a: uint(32), b: uint(32)) return __primitive("<", a, b);
-pragma "inline" def <(a: uint(64), b: uint(64)) return __primitive("<", a, b);
-pragma "inline" def <(a: real(?w), b: real(w)) return __primitive("<", a, b);
-pragma "inline" def <(a: imag(?w), b: imag(w)) return __primitive("<", a, b);
-pragma "inline" def <(a: string, b: string) return (__primitive("chpl_string_compare", a, b) < 0);
+pragma "inline" proc <(a: int(32), b: int(32)) return __primitive("<", a, b);
+pragma "inline" proc <(a: int(64), b: int(64)) return __primitive("<", a, b);
+pragma "inline" proc <(a: uint(32), b: uint(32)) return __primitive("<", a, b);
+pragma "inline" proc <(a: uint(64), b: uint(64)) return __primitive("<", a, b);
+pragma "inline" proc <(a: real(?w), b: real(w)) return __primitive("<", a, b);
+pragma "inline" proc <(a: imag(?w), b: imag(w)) return __primitive("<", a, b);
+pragma "inline" proc <(a: string, b: string) return (__primitive("chpl_string_compare", a, b) < 0);
 
-pragma "inline" def >(a: int(32), b: int(32)) return __primitive(">", a, b);
-pragma "inline" def >(a: int(64), b: int(64)) return __primitive(">", a, b);
-pragma "inline" def >(a: uint(32), b: uint(32)) return __primitive(">", a, b);
-pragma "inline" def >(a: uint(64), b: uint(64)) return __primitive(">", a, b);
-pragma "inline" def >(a: real(?w), b: real(w)) return __primitive(">", a, b);
-pragma "inline" def >(a: imag(?w), b: imag(w)) return __primitive(">", a, b);
-pragma "inline" def >(a: string, b: string) return (__primitive("chpl_string_compare", a, b) > 0);
+pragma "inline" proc >(a: int(32), b: int(32)) return __primitive(">", a, b);
+pragma "inline" proc >(a: int(64), b: int(64)) return __primitive(">", a, b);
+pragma "inline" proc >(a: uint(32), b: uint(32)) return __primitive(">", a, b);
+pragma "inline" proc >(a: uint(64), b: uint(64)) return __primitive(">", a, b);
+pragma "inline" proc >(a: real(?w), b: real(w)) return __primitive(">", a, b);
+pragma "inline" proc >(a: imag(?w), b: imag(w)) return __primitive(">", a, b);
+pragma "inline" proc >(a: string, b: string) return (__primitive("chpl_string_compare", a, b) > 0);
 
-pragma "inline" def <=(param a: int(32), param b: int(32)) param return __primitive("<=", a, b);
-pragma "inline" def <=(param a: int(64), param b: int(64)) param return __primitive("<=", a, b);
-pragma "inline" def <=(param a: uint(32), param b: uint(32)) param return __primitive("<=", a, b);
-pragma "inline" def <=(param a: uint(64), param b: uint(64)) param return __primitive("<=", a, b);
-pragma "inline" def <=(param a: enumerated, param b: enumerated) param return __primitive("<=", a, b);
-pragma "inline" def <=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) <= 0;
+pragma "inline" proc <=(param a: int(32), param b: int(32)) param return __primitive("<=", a, b);
+pragma "inline" proc <=(param a: int(64), param b: int(64)) param return __primitive("<=", a, b);
+pragma "inline" proc <=(param a: uint(32), param b: uint(32)) param return __primitive("<=", a, b);
+pragma "inline" proc <=(param a: uint(64), param b: uint(64)) param return __primitive("<=", a, b);
+pragma "inline" proc <=(param a: enumerated, param b: enumerated) param return __primitive("<=", a, b);
+pragma "inline" proc <=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) <= 0;
 
-pragma "inline" def >=(param a: int(32), param b: int(32)) param return __primitive(">=", a, b);
-pragma "inline" def >=(param a: int(64), param b: int(64)) param return __primitive(">=", a, b);
-pragma "inline" def >=(param a: uint(32), param b: uint(32)) param return __primitive(">=", a, b);
-pragma "inline" def >=(param a: uint(64), param b: uint(64)) param return __primitive(">=", a, b);
-pragma "inline" def >=(param a: enumerated, param b: enumerated) param return __primitive(">=", a, b);
-pragma "inline" def >=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) >= 0;
+pragma "inline" proc >=(param a: int(32), param b: int(32)) param return __primitive(">=", a, b);
+pragma "inline" proc >=(param a: int(64), param b: int(64)) param return __primitive(">=", a, b);
+pragma "inline" proc >=(param a: uint(32), param b: uint(32)) param return __primitive(">=", a, b);
+pragma "inline" proc >=(param a: uint(64), param b: uint(64)) param return __primitive(">=", a, b);
+pragma "inline" proc >=(param a: enumerated, param b: enumerated) param return __primitive(">=", a, b);
+pragma "inline" proc >=(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) >= 0;
 
-pragma "inline" def <(param a: int(32), param b: int(32)) param return __primitive("<", a, b);
-pragma "inline" def <(param a: int(64), param b: int(64)) param return __primitive("<", a, b);
-pragma "inline" def <(param a: uint(32), param b: uint(32)) param return __primitive("<", a, b);
-pragma "inline" def <(param a: uint(64), param b: uint(64)) param return __primitive("<", a, b);
-pragma "inline" def <(param a: enumerated, param b: enumerated) param return __primitive("<", a, b);
-pragma "inline" def <(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) < 0;
+pragma "inline" proc <(param a: int(32), param b: int(32)) param return __primitive("<", a, b);
+pragma "inline" proc <(param a: int(64), param b: int(64)) param return __primitive("<", a, b);
+pragma "inline" proc <(param a: uint(32), param b: uint(32)) param return __primitive("<", a, b);
+pragma "inline" proc <(param a: uint(64), param b: uint(64)) param return __primitive("<", a, b);
+pragma "inline" proc <(param a: enumerated, param b: enumerated) param return __primitive("<", a, b);
+pragma "inline" proc <(param a: string, param b: string) param return __primitive("chpl_string_compare", a, b) < 0;
 
-pragma "inline" def >(param a: int(32), param b: int(32)) param return __primitive(">", a, b);
-pragma "inline" def >(param a: int(64), param b: int(64)) param return __primitive(">", a, b);
-pragma "inline" def >(param a: uint(32), param b: uint(32)) param return __primitive(">", a, b);
-pragma "inline" def >(param a: uint(64), param b: uint(64)) param return __primitive(">", a, b);
-pragma "inline" def >(param a: enumerated, param b: enumerated) param return __primitive(">", a, b);
-pragma "inline" def >(param a: string, param b: string) param return (__primitive("chpl_string_compare", a, b) > 0);
+pragma "inline" proc >(param a: int(32), param b: int(32)) param return __primitive(">", a, b);
+pragma "inline" proc >(param a: int(64), param b: int(64)) param return __primitive(">", a, b);
+pragma "inline" proc >(param a: uint(32), param b: uint(32)) param return __primitive(">", a, b);
+pragma "inline" proc >(param a: uint(64), param b: uint(64)) param return __primitive(">", a, b);
+pragma "inline" proc >(param a: enumerated, param b: enumerated) param return __primitive(">", a, b);
+pragma "inline" proc >(param a: string, param b: string) param return (__primitive("chpl_string_compare", a, b) > 0);
 
 //
 // unary + and - on primitive types
 //
-pragma "inline" def +(a: int(32)) return a;
-pragma "inline" def +(a: int(64)) return a;
-pragma "inline" def +(a: uint(32)) return a;
-pragma "inline" def +(a: uint(64)) return a;
-pragma "inline" def +(a: real(?w)) return a;
-pragma "inline" def +(a: imag(?w)) return a;
-pragma "inline" def +(a: complex(?w)) return a;
+pragma "inline" proc +(a: int(32)) return a;
+pragma "inline" proc +(a: int(64)) return a;
+pragma "inline" proc +(a: uint(32)) return a;
+pragma "inline" proc +(a: uint(64)) return a;
+pragma "inline" proc +(a: real(?w)) return a;
+pragma "inline" proc +(a: imag(?w)) return a;
+pragma "inline" proc +(a: complex(?w)) return a;
 
-pragma "inline" def -(a: int(32)) return __primitive("u-", a);
-pragma "inline" def -(a: int(64)) return __primitive("u-", a);
-pragma "inline" def -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", typeToString(a.type)); }
-pragma "inline" def -(a: real(?w)) return __primitive("u-", a);
-pragma "inline" def -(a: imag(?w)) return __primitive("u-", a);
-pragma "inline" def -(a: complex(?w)) return (-a.re, -a.im):complex;
+pragma "inline" proc -(a: int(32)) return __primitive("u-", a);
+pragma "inline" proc -(a: int(64)) return __primitive("u-", a);
+pragma "inline" proc -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", typeToString(a.type)); }
+pragma "inline" proc -(a: real(?w)) return __primitive("u-", a);
+pragma "inline" proc -(a: imag(?w)) return __primitive("u-", a);
+pragma "inline" proc -(a: complex(?w)) return (-a.re, -a.im):complex;
 
-pragma "inline" def +(param a: int(32)) param return a;
-pragma "inline" def +(param a: int(64)) param return a;
-pragma "inline" def +(param a: uint(32)) param return a;
-pragma "inline" def +(param a: uint(64)) param return a;
+pragma "inline" proc +(param a: int(32)) param return a;
+pragma "inline" proc +(param a: int(64)) param return a;
+pragma "inline" proc +(param a: uint(32)) param return a;
+pragma "inline" proc +(param a: uint(64)) param return a;
 
-pragma "inline" def -(param a: int(32)) param return __primitive("u-", a);
-pragma "inline" def -(param a: int(64)) param return __primitive("u-", a);
-pragma "inline" def -(param a: uint(64)) param {
+pragma "inline" proc -(param a: int(32)) param return __primitive("u-", a);
+pragma "inline" proc -(param a: int(64)) param return __primitive("u-", a);
+pragma "inline" proc -(param a: uint(64)) param {
   if (a:int(64) < 0) then
     compilerError("illegal use of '-' on operand of type ", typeToString(a.type));
   else
@@ -248,118 +253,118 @@ pragma "inline" def -(param a: uint(64)) param {
 //
 // binary + and - on primitive types
 //
-pragma "inline" def +(a: int(32), b: int(32)) return __primitive("+", a, b);
-pragma "inline" def +(a: int(64), b: int(64)) return __primitive("+", a, b);
-pragma "inline" def +(a: uint(32), b: uint(32)) return __primitive("+", a, b);
-pragma "inline" def +(a: uint(64), b: uint(64)) return __primitive("+", a, b);
-pragma "inline" def +(a: real(?w), b: real(w)) return __primitive("+", a, b);
-pragma "inline" def +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
-pragma "inline" def +(a: complex(?w), b: complex(w)) return (a.re+b.re, a.im+b.im):complex;
-pragma "inline" def +(a: string, b: string) return __primitive("string_concat", a, b);
+pragma "inline" proc +(a: int(32), b: int(32)) return __primitive("+", a, b);
+pragma "inline" proc +(a: int(64), b: int(64)) return __primitive("+", a, b);
+pragma "inline" proc +(a: uint(32), b: uint(32)) return __primitive("+", a, b);
+pragma "inline" proc +(a: uint(64), b: uint(64)) return __primitive("+", a, b);
+pragma "inline" proc +(a: real(?w), b: real(w)) return __primitive("+", a, b);
+pragma "inline" proc +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
+pragma "inline" proc +(a: complex(?w), b: complex(w)) return (a.re+b.re, a.im+b.im):complex;
+pragma "inline" proc +(a: string, b: string) return __primitive("string_concat", a, b);
 
-pragma "inline" def +(a: real(?w), b: imag(w)) return (a, _i2r(b)):complex;
-pragma "inline" def +(a: imag(?w), b: real(w)) return (b, _i2r(a)):complex;
-pragma "inline" def +(a: real(?w), b: complex(w*2)) return (a+b.re, b.im):complex;
-pragma "inline" def +(a: complex(?w), b: real(w/2)) return (a.re+b, a.im):complex;
-pragma "inline" def +(a: imag(?w), b: complex(w*2)) return (b.re, _i2r(a)+b.im):complex;
-pragma "inline" def +(a: complex(?w), b: imag(w/2)) return (a.re, a.im+_i2r(b)):complex;
+pragma "inline" proc +(a: real(?w), b: imag(w)) return (a, _i2r(b)):complex;
+pragma "inline" proc +(a: imag(?w), b: real(w)) return (b, _i2r(a)):complex;
+pragma "inline" proc +(a: real(?w), b: complex(w*2)) return (a+b.re, b.im):complex;
+pragma "inline" proc +(a: complex(?w), b: real(w/2)) return (a.re+b, a.im):complex;
+pragma "inline" proc +(a: imag(?w), b: complex(w*2)) return (b.re, _i2r(a)+b.im):complex;
+pragma "inline" proc +(a: complex(?w), b: imag(w/2)) return (a.re, a.im+_i2r(b)):complex;
 
-pragma "inline" def -(a: int(32), b: int(32)) return __primitive("-", a, b);
-pragma "inline" def -(a: int(64), b: int(64)) return __primitive("-", a, b);
-pragma "inline" def -(a: uint(32), b: uint(32)) return __primitive("-", a, b);
-pragma "inline" def -(a: uint(64), b: uint(64)) return __primitive("-", a, b);
-pragma "inline" def -(a: real(?w), b: real(w)) return __primitive("-", a, b);
-pragma "inline" def -(a: imag(?w), b: imag(w)) return __primitive("-", a, b);
-pragma "inline" def -(a: complex(?w), b: complex(w)) return (a.re-b.re, a.im-b.im):complex;
+pragma "inline" proc -(a: int(32), b: int(32)) return __primitive("-", a, b);
+pragma "inline" proc -(a: int(64), b: int(64)) return __primitive("-", a, b);
+pragma "inline" proc -(a: uint(32), b: uint(32)) return __primitive("-", a, b);
+pragma "inline" proc -(a: uint(64), b: uint(64)) return __primitive("-", a, b);
+pragma "inline" proc -(a: real(?w), b: real(w)) return __primitive("-", a, b);
+pragma "inline" proc -(a: imag(?w), b: imag(w)) return __primitive("-", a, b);
+pragma "inline" proc -(a: complex(?w), b: complex(w)) return (a.re-b.re, a.im-b.im):complex;
 
-pragma "inline" def -(a: real(?w), b: imag(w)) return (a, -_i2r(b)):complex;
-pragma "inline" def -(a: imag(?w), b: real(w)) return (-b, _i2r(a)):complex;
-pragma "inline" def -(a: real(?w), b: complex(w*2)) return (a-b.re, -b.im):complex;
-pragma "inline" def -(a: complex(?w), b: real(w/2)) return (a.re-b, a.im):complex;
-pragma "inline" def -(a: imag(?w), b: complex(w*2)) return (-b.re, _i2r(a)-b.im):complex;
-pragma "inline" def -(a: complex(?w), b: imag(w/2)) return (a.re, a.im-_i2r(b)):complex;
+pragma "inline" proc -(a: real(?w), b: imag(w)) return (a, -_i2r(b)):complex;
+pragma "inline" proc -(a: imag(?w), b: real(w)) return (-b, _i2r(a)):complex;
+pragma "inline" proc -(a: real(?w), b: complex(w*2)) return (a-b.re, -b.im):complex;
+pragma "inline" proc -(a: complex(?w), b: real(w/2)) return (a.re-b, a.im):complex;
+pragma "inline" proc -(a: imag(?w), b: complex(w*2)) return (-b.re, _i2r(a)-b.im):complex;
+pragma "inline" proc -(a: complex(?w), b: imag(w/2)) return (a.re, a.im-_i2r(b)):complex;
 
-pragma "inline" def +(param a: int(32), param b: int(32)) param return __primitive("+", a, b);
-pragma "inline" def +(param a: int(64), param b: int(64)) param return __primitive("+", a, b);
-pragma "inline" def +(param a: uint(32), param b: uint(32)) param return __primitive("+", a, b);
-pragma "inline" def +(param a: uint(64), param b: uint(64)) param return __primitive("+", a, b);
-pragma "inline" def +(param a: string, param b: string) param return __primitive("string_concat", a, b);
+pragma "inline" proc +(param a: int(32), param b: int(32)) param return __primitive("+", a, b);
+pragma "inline" proc +(param a: int(64), param b: int(64)) param return __primitive("+", a, b);
+pragma "inline" proc +(param a: uint(32), param b: uint(32)) param return __primitive("+", a, b);
+pragma "inline" proc +(param a: uint(64), param b: uint(64)) param return __primitive("+", a, b);
+pragma "inline" proc +(param a: string, param b: string) param return __primitive("string_concat", a, b);
 
-pragma "inline" def -(param a: int(32), param b: int(32)) param return __primitive("-", a, b);
-pragma "inline" def -(param a: int(64), param b: int(64)) param return __primitive("-", a, b);
-pragma "inline" def -(param a: uint(32), param b: uint(32)) param return __primitive("-", a, b);
-pragma "inline" def -(param a: uint(64), param b: uint(64)) param return __primitive("-", a, b);
+pragma "inline" proc -(param a: int(32), param b: int(32)) param return __primitive("-", a, b);
+pragma "inline" proc -(param a: int(64), param b: int(64)) param return __primitive("-", a, b);
+pragma "inline" proc -(param a: uint(32), param b: uint(32)) param return __primitive("-", a, b);
+pragma "inline" proc -(param a: uint(64), param b: uint(64)) param return __primitive("-", a, b);
 
 //
 // * and / on primitive types
 //
-pragma "inline" def *(a: int(32), b: int(32)) return __primitive("*", a, b);
-pragma "inline" def *(a: int(64), b: int(64)) return __primitive("*", a, b);
-pragma "inline" def *(a: uint(32), b: uint(32)) return __primitive("*", a, b);
-pragma "inline" def *(a: uint(64), b: uint(64)) return __primitive("*", a, b);
-pragma "inline" def *(a: real(?w), b: real(w)) return __primitive("*", a, b);
-pragma "inline" def *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
-pragma "inline" def *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex;
+pragma "inline" proc *(a: int(32), b: int(32)) return __primitive("*", a, b);
+pragma "inline" proc *(a: int(64), b: int(64)) return __primitive("*", a, b);
+pragma "inline" proc *(a: uint(32), b: uint(32)) return __primitive("*", a, b);
+pragma "inline" proc *(a: uint(64), b: uint(64)) return __primitive("*", a, b);
+pragma "inline" proc *(a: real(?w), b: real(w)) return __primitive("*", a, b);
+pragma "inline" proc *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
+pragma "inline" proc *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex;
 
-pragma "inline" def *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
-pragma "inline" def *(a: imag(?w), b: real(w)) return _r2i(_i2r(a)*b);
-pragma "inline" def *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex;
-pragma "inline" def *(a: complex(?w), b: real(w/2)) return (a.re*b, a.im*b):complex;
-pragma "inline" def *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex;
-pragma "inline" def *(a: complex(?w), b: imag(w/2)) return (-a.im*_i2r(b), a.re*_i2r(b)):complex;
+pragma "inline" proc *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
+pragma "inline" proc *(a: imag(?w), b: real(w)) return _r2i(_i2r(a)*b);
+pragma "inline" proc *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex;
+pragma "inline" proc *(a: complex(?w), b: real(w/2)) return (a.re*b, a.im*b):complex;
+pragma "inline" proc *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex;
+pragma "inline" proc *(a: complex(?w), b: imag(w/2)) return (-a.im*_i2r(b), a.re*_i2r(b)):complex;
 
-pragma "inline" def /(a: int(32), b: int(32)) return __primitive("/", a, b);
-pragma "inline" def /(a: int(64), b: int(64)) return __primitive("/", a, b);
-pragma "inline" def /(a: uint(32), b: uint(32)) return __primitive("/", a, b);
-pragma "inline" def /(a: uint(64), b: uint(64)) return __primitive("/", a, b);
-pragma "inline" def /(a: real(?w), b: real(w)) return __primitive("/", a, b);
-pragma "inline" def /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
-pragma "inline" def /(a: complex(?w), b: complex(w))
+pragma "inline" proc /(a: int(32), b: int(32)) return __primitive("/", a, b);
+pragma "inline" proc /(a: int(64), b: int(64)) return __primitive("/", a, b);
+pragma "inline" proc /(a: uint(32), b: uint(32)) return __primitive("/", a, b);
+pragma "inline" proc /(a: uint(64), b: uint(64)) return __primitive("/", a, b);
+pragma "inline" proc /(a: real(?w), b: real(w)) return __primitive("/", a, b);
+pragma "inline" proc /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
+pragma "inline" proc /(a: complex(?w), b: complex(w))
   return let d = b.re*b.re+b.im*b.im in
     ((a.re*b.re+a.im*b.im)/d, (a.im*b.re-a.re*b.im)/d):complex;
 
-pragma "inline" def /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
-pragma "inline" def /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
-pragma "inline" def /(a: real(?w), b: complex(w*2))
+pragma "inline" proc /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
+pragma "inline" proc /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
+pragma "inline" proc /(a: real(?w), b: complex(w*2))
   return let d = b.re*b.re+b.im*b.im in
     (a*b.re/d, -a*b.im/d):complex;
-pragma "inline" def /(a: complex(?w), b: real(w/2))
+pragma "inline" proc /(a: complex(?w), b: real(w/2))
   return (a.re/b, a.im/b):complex;
-pragma "inline" def /(a: imag(?w), b: complex(w*2))
+pragma "inline" proc /(a: imag(?w), b: complex(w*2))
   return let d = b.re*b.re+b.im*b.im in
     (_i2r(a)*b.im/d, _i2r(a)*b.re/d):complex;
-pragma "inline" def /(a: complex(?w), b: imag(w/2))
+pragma "inline" proc /(a: complex(?w), b: imag(w/2))
   return let d = _i2r(b)*_i2r(b) in
     (a.im/_i2r(b), -a.re/_i2r(b)):complex;
 
-pragma "inline" def *(param a: int(32), param b: int(32)) param return __primitive("*", a, b);
-pragma "inline" def *(param a: int(64), param b: int(64)) param return __primitive("*", a, b);
-pragma "inline" def *(param a: uint(32), param b: uint(32)) param return __primitive("*", a, b);
-pragma "inline" def *(param a: uint(64), param b: uint(64)) param return __primitive("*", a, b);
+pragma "inline" proc *(param a: int(32), param b: int(32)) param return __primitive("*", a, b);
+pragma "inline" proc *(param a: int(64), param b: int(64)) param return __primitive("*", a, b);
+pragma "inline" proc *(param a: uint(32), param b: uint(32)) param return __primitive("*", a, b);
+pragma "inline" proc *(param a: uint(64), param b: uint(64)) param return __primitive("*", a, b);
 
-pragma "inline" def /(param a: int(32), param b: int(32)) param return __primitive("/", a, b);
-pragma "inline" def /(param a: int(64), param b: int(64)) param return __primitive("/", a, b);
-pragma "inline" def /(param a: uint(32), param b: uint(32)) param return __primitive("/", a, b);
-pragma "inline" def /(param a: uint(64), param b: uint(64)) param return __primitive("/", a, b);
+pragma "inline" proc /(param a: int(32), param b: int(32)) param return __primitive("/", a, b);
+pragma "inline" proc /(param a: int(64), param b: int(64)) param return __primitive("/", a, b);
+pragma "inline" proc /(param a: uint(32), param b: uint(32)) param return __primitive("/", a, b);
+pragma "inline" proc /(param a: uint(64), param b: uint(64)) param return __primitive("/", a, b);
 
 //
 // % on primitive types
 //
-pragma "inline" def %(a: int(32), b: int(32)) return __primitive("%", a, b);
-pragma "inline" def %(a: int(64), b: int(64)) return __primitive("%", a, b);
-pragma "inline" def %(a: uint(32), b: uint(32)) return __primitive("%", a, b);
-pragma "inline" def %(a: uint(64), b: uint(64)) return __primitive("%", a, b);
+pragma "inline" proc %(a: int(32), b: int(32)) return __primitive("%", a, b);
+pragma "inline" proc %(a: int(64), b: int(64)) return __primitive("%", a, b);
+pragma "inline" proc %(a: uint(32), b: uint(32)) return __primitive("%", a, b);
+pragma "inline" proc %(a: uint(64), b: uint(64)) return __primitive("%", a, b);
 
-pragma "inline" def %(param a: int(32), param b: int(32)) param return __primitive("%", a, b);
-pragma "inline" def %(param a: int(64), param b: int(64)) param return __primitive("%", a, b);
-pragma "inline" def %(param a: uint(32), param b: uint(32)) param return __primitive("%", a, b);
-pragma "inline" def %(param a: uint(64), param b: uint(64)) param return __primitive("%", a, b);
+pragma "inline" proc %(param a: int(32), param b: int(32)) param return __primitive("%", a, b);
+pragma "inline" proc %(param a: int(64), param b: int(64)) param return __primitive("%", a, b);
+pragma "inline" proc %(param a: uint(32), param b: uint(32)) param return __primitive("%", a, b);
+pragma "inline" proc %(param a: uint(64), param b: uint(64)) param return __primitive("%", a, b);
 
 //
 // ** on primitive types
 //
 
-pragma "inline" def _intExpHelp(a: integral, b) where a.type == b.type {
+pragma "inline" proc _intExpHelp(a: integral, b) where a.type == b.type {
   if b < 0 then
     if a == 0 then
       halt("cannot compute ", a, " ** ", b);
@@ -375,18 +380,18 @@ pragma "inline" def _intExpHelp(a: integral, b) where a.type == b.type {
   return y;
 }
 
-pragma "inline" def **(a: int(32), b: int(32)) return _intExpHelp(a, b);
-pragma "inline" def **(a: int(64), b: int(64)) return _intExpHelp(a, b);
-pragma "inline" def **(a: uint(32), b: uint(32)) return _intExpHelp(a, b);
-pragma "inline" def **(a: uint(64), b: uint(64)) return _intExpHelp(a, b);
-pragma "inline" def **(a: real(?w), b: real(w)) return __primitive("**", a, b);
+pragma "inline" proc **(a: int(32), b: int(32)) return _intExpHelp(a, b);
+pragma "inline" proc **(a: int(64), b: int(64)) return _intExpHelp(a, b);
+pragma "inline" proc **(a: uint(32), b: uint(32)) return _intExpHelp(a, b);
+pragma "inline" proc **(a: uint(64), b: uint(64)) return _intExpHelp(a, b);
+pragma "inline" proc **(a: real(?w), b: real(w)) return __primitive("**", a, b);
 
-def **(param a: int(32), param b: int(32)) param return __primitive("**", a, b);
-def **(param a: int(64), param b: int(64)) param return __primitive("**", a, b);
-def **(param a: uint(32), param b: uint(32)) param return __primitive("**", a, b);
-def **(param a: uint(64), param b: uint(64)) param return __primitive("**", a, b);
+proc **(param a: int(32), param b: int(32)) param return __primitive("**", a, b);
+proc **(param a: int(64), param b: int(64)) param return __primitive("**", a, b);
+proc **(param a: uint(32), param b: uint(32)) param return __primitive("**", a, b);
+proc **(param a: uint(64), param b: uint(64)) param return __primitive("**", a, b);
 
-pragma "inline" def _expHelp(a, param b: integral) {
+pragma "inline" proc _expHelp(a, param b: integral) {
   if b == 0 then
     return 1:a.type;
   else if b == 1 then
@@ -407,138 +412,138 @@ pragma "inline" def _expHelp(a, param b: integral) {
     compilerError("unexpected case in exponentiation optimization");
 }
 
-def _canOptimizeExp(param b: integral) param return b >= 0 && b <= 8 && b != 7;
+proc _canOptimizeExp(param b: integral) param return b >= 0 && b <= 8 && b != 7;
 
-pragma "inline" def **(a: int(32), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
-pragma "inline" def **(a: int(64), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
-pragma "inline" def **(a: uint(32), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
-pragma "inline" def **(a: uint(64), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
-pragma "inline" def **(a: real(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+pragma "inline" proc **(a: int(32), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+pragma "inline" proc **(a: int(64), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+pragma "inline" proc **(a: uint(32), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+pragma "inline" proc **(a: uint(64), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+pragma "inline" proc **(a: real(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
 
 //
 // logical operations on primitive types
 //
-pragma "inline" def !(a: bool) return __primitive("!", a);
+pragma "inline" proc !(a: bool) return __primitive("!", a);
 
-pragma "inline" def isTrue(a: bool) return a;
-pragma "inline" def isTrue(param a: bool) param return a;
+pragma "inline" proc isTrue(a: bool) return a;
+pragma "inline" proc isTrue(param a: bool) param return a;
 
-def isTrue(a: integral) { compilerError("short-circuiting logical operators not supported on integers"); }
+proc isTrue(a: integral) { compilerError("short-circuiting logical operators not supported on integers"); }
 
-pragma "inline" def !(param a: bool) param return __primitive("!", a);
+pragma "inline" proc !(param a: bool) param return __primitive("!", a);
 
 //
 // bitwise operations on primitive types
 //
-pragma "inline" def ~(a: bool) return __primitive("u~", a);
-pragma "inline" def ~(a: int(32)) return __primitive("u~", a);
-pragma "inline" def ~(a: int(64)) return __primitive("u~", a);
-pragma "inline" def ~(a: uint(32)) return __primitive("u~", a);
-pragma "inline" def ~(a: uint(64)) return __primitive("u~", a);
+pragma "inline" proc ~(a: bool) return __primitive("u~", a);
+pragma "inline" proc ~(a: int(32)) return __primitive("u~", a);
+pragma "inline" proc ~(a: int(64)) return __primitive("u~", a);
+pragma "inline" proc ~(a: uint(32)) return __primitive("u~", a);
+pragma "inline" proc ~(a: uint(64)) return __primitive("u~", a);
 
-pragma "inline" def &(a: bool, b: bool) return __primitive("&", a, b);
-pragma "inline" def &(a: int(32), b: int(32)) return __primitive("&", a, b);
-pragma "inline" def &(a: int(64), b: int(64)) return __primitive("&", a, b);
-pragma "inline" def &(a: uint(32), b: uint(32)) return __primitive("&", a, b);
-pragma "inline" def &(a: uint(64), b: uint(64)) return __primitive("&", a, b);
-pragma "inline" def &(a: uint(32), b: int(32)) return __primitive("&", a, b:uint(32));
-pragma "inline" def &(a: int(32), b: uint(32)) return __primitive("&", a:uint(32), b);
-pragma "inline" def &(a: uint(64), b: int(64)) return __primitive("&", a, b:uint(64));
-pragma "inline" def &(a: int(64), b: uint(64)) return __primitive("&", a:uint(64), b);
+pragma "inline" proc &(a: bool, b: bool) return __primitive("&", a, b);
+pragma "inline" proc &(a: int(32), b: int(32)) return __primitive("&", a, b);
+pragma "inline" proc &(a: int(64), b: int(64)) return __primitive("&", a, b);
+pragma "inline" proc &(a: uint(32), b: uint(32)) return __primitive("&", a, b);
+pragma "inline" proc &(a: uint(64), b: uint(64)) return __primitive("&", a, b);
+pragma "inline" proc &(a: uint(32), b: int(32)) return __primitive("&", a, b:uint(32));
+pragma "inline" proc &(a: int(32), b: uint(32)) return __primitive("&", a:uint(32), b);
+pragma "inline" proc &(a: uint(64), b: int(64)) return __primitive("&", a, b:uint(64));
+pragma "inline" proc &(a: int(64), b: uint(64)) return __primitive("&", a:uint(64), b);
 
-pragma "inline" def |(a: bool, b: bool) return __primitive("|", a, b);
-pragma "inline" def |(a: int(32), b: int(32)) return __primitive("|", a, b);
-pragma "inline" def |(a: int(64), b: int(64)) return __primitive("|", a, b);
-pragma "inline" def |(a: uint(32), b: uint(32)) return __primitive("|", a, b);
-pragma "inline" def |(a: uint(64), b: uint(64)) return __primitive("|", a, b);
-pragma "inline" def |(a: uint(32), b: int(32)) return __primitive("|", a, b:uint(32));
-pragma "inline" def |(a: int(32), b: uint(32)) return __primitive("|", a:uint(32), b);
-pragma "inline" def |(a: uint(64), b: int(64)) return __primitive("|", a, b:uint(64));
-pragma "inline" def |(a: int(64), b: uint(64)) return __primitive("|", a:uint(64), b);
+pragma "inline" proc |(a: bool, b: bool) return __primitive("|", a, b);
+pragma "inline" proc |(a: int(32), b: int(32)) return __primitive("|", a, b);
+pragma "inline" proc |(a: int(64), b: int(64)) return __primitive("|", a, b);
+pragma "inline" proc |(a: uint(32), b: uint(32)) return __primitive("|", a, b);
+pragma "inline" proc |(a: uint(64), b: uint(64)) return __primitive("|", a, b);
+pragma "inline" proc |(a: uint(32), b: int(32)) return __primitive("|", a, b:uint(32));
+pragma "inline" proc |(a: int(32), b: uint(32)) return __primitive("|", a:uint(32), b);
+pragma "inline" proc |(a: uint(64), b: int(64)) return __primitive("|", a, b:uint(64));
+pragma "inline" proc |(a: int(64), b: uint(64)) return __primitive("|", a:uint(64), b);
 
-pragma "inline" def ^(a: bool, b: bool) return __primitive("^", a, b);
-pragma "inline" def ^(a: int(32), b: int(32)) return __primitive("^", a, b);
-pragma "inline" def ^(a: int(64), b: int(64)) return __primitive("^", a, b);
-pragma "inline" def ^(a: uint(32), b: uint(32)) return __primitive("^", a, b);
-pragma "inline" def ^(a: uint(64), b: uint(64)) return __primitive("^", a, b);
-pragma "inline" def ^(a: uint(32), b: int(32)) return __primitive("^", a, b:uint(32));
-pragma "inline" def ^(a: int(32), b: uint(32)) return __primitive("^", a:uint(32), b);
-pragma "inline" def ^(a: uint(64), b: int(64)) return __primitive("^", a, b:uint(64));
-pragma "inline" def ^(a: int(64), b: uint(64)) return __primitive("^", a:uint(64), b);
+pragma "inline" proc ^(a: bool, b: bool) return __primitive("^", a, b);
+pragma "inline" proc ^(a: int(32), b: int(32)) return __primitive("^", a, b);
+pragma "inline" proc ^(a: int(64), b: int(64)) return __primitive("^", a, b);
+pragma "inline" proc ^(a: uint(32), b: uint(32)) return __primitive("^", a, b);
+pragma "inline" proc ^(a: uint(64), b: uint(64)) return __primitive("^", a, b);
+pragma "inline" proc ^(a: uint(32), b: int(32)) return __primitive("^", a, b:uint(32));
+pragma "inline" proc ^(a: int(32), b: uint(32)) return __primitive("^", a:uint(32), b);
+pragma "inline" proc ^(a: uint(64), b: int(64)) return __primitive("^", a, b:uint(64));
+pragma "inline" proc ^(a: int(64), b: uint(64)) return __primitive("^", a:uint(64), b);
 
-pragma "inline" def ~(param a: bool) param return __primitive("u~", a);
-pragma "inline" def ~(param a: int(32)) param return __primitive("u~", a);
-pragma "inline" def ~(param a: int(64)) param return __primitive("u~", a);
-pragma "inline" def ~(param a: uint(32)) param return __primitive("u~", a);
-pragma "inline" def ~(param a: uint(64)) param return __primitive("u~", a);
+pragma "inline" proc ~(param a: bool) param return __primitive("u~", a);
+pragma "inline" proc ~(param a: int(32)) param return __primitive("u~", a);
+pragma "inline" proc ~(param a: int(64)) param return __primitive("u~", a);
+pragma "inline" proc ~(param a: uint(32)) param return __primitive("u~", a);
+pragma "inline" proc ~(param a: uint(64)) param return __primitive("u~", a);
 
-pragma "inline" def &(param a: bool, param b: bool) param return __primitive("&", a, b);
-pragma "inline" def &(param a: int(32), param b: int(32)) param return __primitive("&", a, b);
-pragma "inline" def &(param a: int(64), param b: int(64)) param return __primitive("&", a, b);
-pragma "inline" def &(param a: uint(32), param b: uint(32)) param return __primitive("&", a, b);
-pragma "inline" def &(param a: uint(64), param b: uint(64)) param return __primitive("&", a, b);
-pragma "inline" def &(param a: uint(32), param b: int(32)) param return __primitive("&", a, b:uint(32));
-pragma "inline" def &(param a: int(32), param b: uint(32)) param return __primitive("&", a:uint(32), b);
-pragma "inline" def &(param a: uint(64), param b: int(64)) param return __primitive("&", a, b:uint(64));
-pragma "inline" def &(param a: int(64), param b: uint(64)) param return __primitive("&", a:uint(64), b);
+pragma "inline" proc &(param a: bool, param b: bool) param return __primitive("&", a, b);
+pragma "inline" proc &(param a: int(32), param b: int(32)) param return __primitive("&", a, b);
+pragma "inline" proc &(param a: int(64), param b: int(64)) param return __primitive("&", a, b);
+pragma "inline" proc &(param a: uint(32), param b: uint(32)) param return __primitive("&", a, b);
+pragma "inline" proc &(param a: uint(64), param b: uint(64)) param return __primitive("&", a, b);
+pragma "inline" proc &(param a: uint(32), param b: int(32)) param return __primitive("&", a, b:uint(32));
+pragma "inline" proc &(param a: int(32), param b: uint(32)) param return __primitive("&", a:uint(32), b);
+pragma "inline" proc &(param a: uint(64), param b: int(64)) param return __primitive("&", a, b:uint(64));
+pragma "inline" proc &(param a: int(64), param b: uint(64)) param return __primitive("&", a:uint(64), b);
 
-pragma "inline" def |(param a: bool, param b: bool) param return __primitive("|", a, b);
-pragma "inline" def |(param a: int(32), param b: int(32)) param return __primitive("|", a, b);
-pragma "inline" def |(param a: int(64), param b: int(64)) param return __primitive("|", a, b);
-pragma "inline" def |(param a: uint(32), param b: uint(32)) param return __primitive("|", a, b);
-pragma "inline" def |(param a: uint(64), param b: uint(64)) param return __primitive("|", a, b);
-pragma "inline" def |(param a: uint(32), param b: int(32)) param return __primitive("|", a, b:uint(32));
-pragma "inline" def |(param a: int(32), param b: uint(32)) param return __primitive("|", a:uint(32), b);
-pragma "inline" def |(param a: uint(64), param b: int(64)) param return __primitive("|", a, b:uint(64));
-pragma "inline" def |(param a: int(64), param b: uint(64)) param return __primitive("|", a:uint(64), b);
+pragma "inline" proc |(param a: bool, param b: bool) param return __primitive("|", a, b);
+pragma "inline" proc |(param a: int(32), param b: int(32)) param return __primitive("|", a, b);
+pragma "inline" proc |(param a: int(64), param b: int(64)) param return __primitive("|", a, b);
+pragma "inline" proc |(param a: uint(32), param b: uint(32)) param return __primitive("|", a, b);
+pragma "inline" proc |(param a: uint(64), param b: uint(64)) param return __primitive("|", a, b);
+pragma "inline" proc |(param a: uint(32), param b: int(32)) param return __primitive("|", a, b:uint(32));
+pragma "inline" proc |(param a: int(32), param b: uint(32)) param return __primitive("|", a:uint(32), b);
+pragma "inline" proc |(param a: uint(64), param b: int(64)) param return __primitive("|", a, b:uint(64));
+pragma "inline" proc |(param a: int(64), param b: uint(64)) param return __primitive("|", a:uint(64), b);
 
-pragma "inline" def ^(param a: bool, param b: bool) param return __primitive("^", a, b);
-pragma "inline" def ^(param a: int(32), param b: int(32)) param return __primitive("^", a, b);
-pragma "inline" def ^(param a: int(64), param b: int(64)) param return __primitive("^", a, b);
-pragma "inline" def ^(param a: uint(32), param b: uint(32)) param return __primitive("^", a, b);
-pragma "inline" def ^(param a: uint(64), param b: uint(64)) param return __primitive("^", a, b);
-pragma "inline" def ^(param a: uint(32), param b: int(32)) param return __primitive("^", a, b:uint(32));
-pragma "inline" def ^(param a: int(32), param b: uint(32)) param return __primitive("^", a:uint(32), b);
-pragma "inline" def ^(param a: uint(64), param b: int(64)) param return __primitive("^", a, b:uint(64));
-pragma "inline" def ^(param a: int(64), param b: uint(64)) param return __primitive("^", a:uint(64), b);
+pragma "inline" proc ^(param a: bool, param b: bool) param return __primitive("^", a, b);
+pragma "inline" proc ^(param a: int(32), param b: int(32)) param return __primitive("^", a, b);
+pragma "inline" proc ^(param a: int(64), param b: int(64)) param return __primitive("^", a, b);
+pragma "inline" proc ^(param a: uint(32), param b: uint(32)) param return __primitive("^", a, b);
+pragma "inline" proc ^(param a: uint(64), param b: uint(64)) param return __primitive("^", a, b);
+pragma "inline" proc ^(param a: uint(32), param b: int(32)) param return __primitive("^", a, b:uint(32));
+pragma "inline" proc ^(param a: int(32), param b: uint(32)) param return __primitive("^", a:uint(32), b);
+pragma "inline" proc ^(param a: uint(64), param b: int(64)) param return __primitive("^", a, b:uint(64));
+pragma "inline" proc ^(param a: int(64), param b: uint(64)) param return __primitive("^", a:uint(64), b);
 
 //
 // left and right shift on primitive types
 //
-pragma "inline" def <<(a: int(32), b: integral) return __primitive("<<", a, b);
-pragma "inline" def <<(a: int(64), b: integral) return __primitive("<<", a, b);
-pragma "inline" def <<(a: uint(32), b: integral) return __primitive("<<", a, b);
-pragma "inline" def <<(a: uint(64), b: integral) return __primitive("<<", a, b);
+pragma "inline" proc <<(a: int(32), b: integral) return __primitive("<<", a, b);
+pragma "inline" proc <<(a: int(64), b: integral) return __primitive("<<", a, b);
+pragma "inline" proc <<(a: uint(32), b: integral) return __primitive("<<", a, b);
+pragma "inline" proc <<(a: uint(64), b: integral) return __primitive("<<", a, b);
 
-pragma "inline" def >>(a: int(32), b: integral) return __primitive(">>", a, b);
-pragma "inline" def >>(a: int(64), b: integral) return __primitive(">>", a, b);
-pragma "inline" def >>(a: uint(32), b: integral) return __primitive(">>", a, b);
-pragma "inline" def >>(a: uint(64), b: integral) return __primitive(">>", a, b);
+pragma "inline" proc >>(a: int(32), b: integral) return __primitive(">>", a, b);
+pragma "inline" proc >>(a: int(64), b: integral) return __primitive(">>", a, b);
+pragma "inline" proc >>(a: uint(32), b: integral) return __primitive(">>", a, b);
+pragma "inline" proc >>(a: uint(64), b: integral) return __primitive(">>", a, b);
 
-pragma "inline" def <<(param a: int(32), param b: integral) param return __primitive("<<", a, b);
-pragma "inline" def <<(param a: int(64), param b: integral) param return __primitive("<<", a, b);
-pragma "inline" def <<(param a: uint(32), param b: integral) param return __primitive("<<", a, b);
-pragma "inline" def <<(param a: uint(64), param b: integral) param return __primitive("<<", a, b);
+pragma "inline" proc <<(param a: int(32), param b: integral) param return __primitive("<<", a, b);
+pragma "inline" proc <<(param a: int(64), param b: integral) param return __primitive("<<", a, b);
+pragma "inline" proc <<(param a: uint(32), param b: integral) param return __primitive("<<", a, b);
+pragma "inline" proc <<(param a: uint(64), param b: integral) param return __primitive("<<", a, b);
 
-pragma "inline" def >>(param a: int(32), param b: integral) param return __primitive(">>", a, b);
-pragma "inline" def >>(param a: int(64), param b: integral) param return __primitive(">>", a, b);
-pragma "inline" def >>(param a: uint(32), param b: integral) param return __primitive(">>", a, b);
-pragma "inline" def >>(param a: uint(64), param b: integral) param return __primitive(">>", a, b);
+pragma "inline" proc >>(param a: int(32), param b: integral) param return __primitive(">>", a, b);
+pragma "inline" proc >>(param a: int(64), param b: integral) param return __primitive(">>", a, b);
+pragma "inline" proc >>(param a: uint(32), param b: integral) param return __primitive(">>", a, b);
+pragma "inline" proc >>(param a: uint(64), param b: integral) param return __primitive(">>", a, b);
 
 //
 // These functions are to handle symbols at statement level such as
 // the second statement here: var a: sync int = 1; a;
 //
-pragma "inline" def _statementLevelSymbol(a) { return a; }
-pragma "inline" def _statementLevelSymbol(param a) param { return a; }
-pragma "inline" def _statementLevelSymbol(type a) type { return a; }
+pragma "inline" proc _statementLevelSymbol(a) { return a; }
+pragma "inline" proc _statementLevelSymbol(param a) param { return a; }
+pragma "inline" proc _statementLevelSymbol(type a) type { return a; }
 
 //
 // If an iterator is called without capturing the result, iterate over it
 // to ensure any side effects it has will happen.
 //
-pragma "inline" def _statementLevelSymbol(ir: _iteratorRecord) {
-  def _ir_copy_recursive(ir) {
+pragma "inline" proc _statementLevelSymbol(ir: _iteratorRecord) {
+  iter _ir_copy_recursive(ir) {
     for e in ir do
       yield chpl__initCopy(e);
   }
@@ -554,25 +559,25 @@ pragma "inline" def _statementLevelSymbol(ir: _iteratorRecord) {
 //   incorrectness; it is used to give better error messages for
 //   promotion of && and ||
 //
-pragma "inline" def _cond_test(x: object) return x != nil;
-pragma "inline" def _cond_test(x: bool) return x;
-pragma "inline" def _cond_test(x: integral) return x != 0;
+pragma "inline" proc _cond_test(x: object) return x != nil;
+pragma "inline" proc _cond_test(x: bool) return x;
+pragma "inline" proc _cond_test(x: integral) return x != 0;
 
-pragma "inline" def _cond_test(param x: bool) param return x;
-pragma "inline" def _cond_test(param x: integral) param return x != 0;
+pragma "inline" proc _cond_test(param x: bool) param return x;
+pragma "inline" proc _cond_test(param x: integral) param return x != 0;
 
-pragma "inline" def _cond_test(x) {
+pragma "inline" proc _cond_test(x) {
   compilerError("type '", typeToString(x.type), "' used in if or while condition");
 }
 
-pragma "inline" def _cond_test(x: _iteratorRecord) {
+pragma "inline" proc _cond_test(x: _iteratorRecord) {
   compilerError("iterator or promoted expression used in if or while condition");
 }
 
-def _cond_invalid(x: object) param return false;
-def _cond_invalid(x: bool) param return false;
-def _cond_invalid(x: integral) param return false;
-def _cond_invalid(x) param return true;
+proc _cond_invalid(x: object) param return false;
+proc _cond_invalid(x: bool) param return false;
+proc _cond_invalid(x: integral) param return false;
+proc _cond_invalid(x) param return true;
 
 
 
@@ -582,55 +587,55 @@ def _cond_invalid(x) param return true;
 //  bug?  in setters, parameterize real argument over complex bit width
 //
 pragma "inline" pragma "ref this"
-def chpl_anycomplex.re var return __primitive("complex_get_real", this);
+proc chpl_anycomplex.re var return __primitive("complex_get_real", this);
 pragma "inline" pragma "ref this"
-def chpl_anycomplex.im var return __primitive("complex_get_imag", this);
+proc chpl_anycomplex.im var return __primitive("complex_get_imag", this);
 
 //
 // helper functions
 //
-pragma "inline" def _i2r(a: imag(?w)) return __primitive("cast", real(w), a);
-pragma "inline" def _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
+pragma "inline" proc _i2r(a: imag(?w)) return __primitive("cast", real(w), a);
+pragma "inline" proc _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
 
 //
 // primitive string functions and methods
 //
-pragma "inline" def ascii(a: string) return __primitive("ascii", a);
-pragma "inline" def string.length return __primitive("string_length", this);
-pragma "inline" def string.substring(i: int) return __primitive("string_index", this, i);
-pragma "inline" def _string_contains(a: string, b: string) return __primitive("string_contains", a, b);
+pragma "inline" proc ascii(a: string) return __primitive("ascii", a);
+pragma "inline" proc string.length return __primitive("string_length", this);
+pragma "inline" proc string.substring(i: int) return __primitive("string_index", this, i);
+pragma "inline" proc _string_contains(a: string, b: string) return __primitive("string_contains", a, b);
 
-pragma "inline" def ascii(param a: string) param return __primitive("ascii", a);
-pragma "inline" def param string.length param return __primitive("string_length", this);
-pragma "inline" def _string_contains(param a: string, param b: string) param return __primitive("string_contains", a, b);
+pragma "inline" proc ascii(param a: string) param return __primitive("ascii", a);
+pragma "inline" proc param string.length param return __primitive("string_length", this);
+pragma "inline" proc _string_contains(param a: string, param b: string) param return __primitive("string_contains", a, b);
 
 //
 // identity functions (for reductions)
 //
-pragma "inline" def _prod_id(type t) return __primitive("_prod_id", t);
-pragma "inline" def _land_id(type t) return __primitive("_land_id", t);
-pragma "inline" def _lor_id(type t) return __primitive("_lor_id", t);
-pragma "inline" def _lxor_id(type t) return __primitive("_lxor_id", t);
-pragma "inline" def _band_id(type t) return __primitive("_band_id", t);
-pragma "inline" def _bor_id(type t) return __primitive("_bor_id", t);
-pragma "inline" def _bxor_id(type t) return __primitive("_bxor_id", t);
+pragma "inline" proc _prod_id(type t) return __primitive("_prod_id", t);
+pragma "inline" proc _land_id(type t) return __primitive("_land_id", t);
+pragma "inline" proc _lor_id(type t) return __primitive("_lor_id", t);
+pragma "inline" proc _lxor_id(type t) return __primitive("_lxor_id", t);
+pragma "inline" proc _band_id(type t) return __primitive("_band_id", t);
+pragma "inline" proc _bor_id(type t) return __primitive("_bor_id", t);
+pragma "inline" proc _bxor_id(type t) return __primitive("_bxor_id", t);
 
 //
 // min and max
 //
-pragma "inline" def min(x, y) return if x < y then x else y;
-pragma "inline" def max(x, y) return if x > y then x else y;
-pragma "inline" def min(x, y, z...?k) return min(min(x, y), (...z));
-pragma "inline" def max(x, y, z...?k) return max(max(x, y), (...z));
+pragma "inline" proc min(x, y) return if x < y then x else y;
+pragma "inline" proc max(x, y) return if x > y then x else y;
+pragma "inline" proc min(x, y, z...?k) return min(min(x, y), (...z));
+pragma "inline" proc max(x, y, z...?k) return max(max(x, y), (...z));
 
 //
 // More primitive funs
 //
-pragma "inline" def exit(status: int) {
+pragma "inline" proc exit(status: int) {
   __primitive("chpl_exit_any", status);
 }
 
-def init_elts(x, s, type t) {
+proc init_elts(x, s, type t) {
   for i in 1..s {
     pragma "no auto destroy" var y: t;  // TODO: why is this in the loop?
     __primitive("array_set_first", x, i-1, y);
@@ -641,14 +646,14 @@ def init_elts(x, s, type t) {
 pragma "data class"
 class _ddata {
   type eltType;
-  def ~_ddata() {
+  proc ~_ddata() {
     __primitive("array_free", this);
   }
-  pragma "inline" def init(size: integral) {
+  pragma "inline" proc init(size: integral) {
     __primitive("array_alloc", this, eltType, size);
     init_elts(this, size, eltType);
   }
-  pragma "inline" def this(i: integral) var {
+  pragma "inline" proc this(i: integral) var {
     return __primitive("array_get", this, i);
   }
 }
@@ -663,9 +668,9 @@ class _ref {
   var _val;
 }
 
-def chpl__readXX(x: sync) return x.readXX();
-def chpl__readXX(x: single) return x.readXX();
-def chpl__readXX(x) return x;
+proc chpl__readXX(x: sync) return x.readXX();
+proc chpl__readXX(x: single) return x.readXX();
+proc chpl__readXX(x) return x;
 
 // Returns whether an object of type t occupies a 64-bit word on Cray's MTA/XMT
 // (The definition of this function should be target dependent.  This would avoid
@@ -673,7 +678,7 @@ def chpl__readXX(x) return x;
 // the functionality of the read/write methods of the _syncvar and _singlevar classes
 // for targets that don't have particularly fast ways of achieving this functionality
 // for simple base types.)
-def isSimpleSyncBaseType (type t) param {
+proc isSimpleSyncBaseType (type t) param {
   if CHPL_TASKS == "mta" then
     if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
         || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
@@ -693,9 +698,9 @@ class _syncvar {
   // Ideally, the definition of this class should be target and base_type dependent,
   // since not all targets need to have a sync_aux field if base_type is sufficiently simple.
 
-  def ~_syncvar() { __primitive("destroy_sync_aux", this); }
+  proc ~_syncvar() { __primitive("destroy_sync_aux", this); }
 
-  def initialize() {
+  proc initialize() {
     __primitive("init_sync_aux", this);
     if (isSimpleSyncBaseType(this.base_type)) {
       // The sync_aux field might not be used on some targets!
@@ -716,7 +721,7 @@ class _syncvar {
 //  isFull - query whether it is full
 
 // This is the default read on sync vars. Wait for full, set and signal empty.
-def _syncvar.readFE(): base_type {
+proc _syncvar.readFE(): base_type {
   var ret: base_type;
   on this {
     var localRet: base_type;
@@ -733,7 +738,7 @@ def _syncvar.readFE(): base_type {
 }
 
 // Wait for full, set and signal full.
-def _syncvar.readFF() {
+proc _syncvar.readFF() {
   var ret: base_type;
   on this {
     var localRet: base_type;
@@ -750,7 +755,7 @@ def _syncvar.readFF() {
 }
 
 // Ignore F/E.  Read value.  No state change or signals.
-def _syncvar.readXX() {
+proc _syncvar.readXX() {
   var ret: base_type;
   on this {
     var localRet: base_type;
@@ -767,7 +772,7 @@ def _syncvar.readXX() {
 }
 
 // This is the default write on sync vars. Wait for empty, set and signal full.
-def _syncvar.writeEF(val:base_type) {
+proc _syncvar.writeEF(val:base_type) {
   on this {
     if isSimpleSyncBaseType(base_type) then
       __primitive("write_EF", this, val);
@@ -779,12 +784,12 @@ def _syncvar.writeEF(val:base_type) {
   }
 }
 
-def =(sv: sync, val:sv.base_type) {
+proc =(sv: sync, val:sv.base_type) {
   sv.writeEF(val);
 }
 
 // Wait for full, set and signal full.
-def _syncvar.writeFF(val:base_type) {
+proc _syncvar.writeFF(val:base_type) {
   on this {
     if isSimpleSyncBaseType(base_type) then
       __primitive("write_FF", this, val);
@@ -797,7 +802,7 @@ def _syncvar.writeFF(val:base_type) {
 }
 
 // Ignore F/E, set and signal full.
-def _syncvar.writeXF(val:base_type) {
+proc _syncvar.writeXF(val:base_type) {
   on this {
     if isSimpleSyncBaseType(base_type) then
       __primitive("write_XF", this, val);
@@ -810,7 +815,7 @@ def _syncvar.writeXF(val:base_type) {
 }
 
 // Ignore F/E, set to zero or default value and signal empty.
-def _syncvar.reset() {
+proc _syncvar.reset() {
   on this {
     if isSimpleSyncBaseType(base_type) then
       // Reset this's value to zero.
@@ -824,7 +829,7 @@ def _syncvar.reset() {
   }
 }
 
-def _syncvar.isFull {
+proc _syncvar.isFull {
   var b: bool;
   on this {
     b = __primitive("sync_is_full", this, isSimpleSyncBaseType(base_type));
@@ -845,9 +850,9 @@ class _singlevar {
   // Ideally, the definition of this class should be target and base_type dependent,
   // since not all targets need to have a single_aux field if base_type is sufficiently simple.
 
-  def ~_singlevar() { __primitive("destroy_single_aux", this); }
+  proc ~_singlevar() { __primitive("destroy_single_aux", this); }
 
-  def initialize() {
+  proc initialize() {
     __primitive("init_single_aux", this);
     if (isSimpleSyncBaseType(this.base_type)) {
       // The single_aux field might not be used on some targets!
@@ -857,7 +862,7 @@ class _singlevar {
 }
 
 // Wait for full. Set and signal full.
-def _singlevar.readFF() {
+proc _singlevar.readFF() {
   var ret: base_type;
   on this {
     var localRet: base_type;
@@ -877,7 +882,7 @@ def _singlevar.readFF() {
 
 
 // Ignore F/E.  Read value.  No state change or signals.
-def _singlevar.readXX() {
+proc _singlevar.readXX() {
   var ret: base_type;
   on this {
     var localRet: base_type;
@@ -897,7 +902,7 @@ def _singlevar.readXX() {
 
 
 // Can only write once.  Otherwise, it is an error.
-def _singlevar.writeEF(val:base_type) {
+proc _singlevar.writeEF(val:base_type) {
   on this {
     if isSimpleSyncBaseType(base_type) then
       __primitive("single_write_EF", this, val);
@@ -911,11 +916,11 @@ def _singlevar.writeEF(val:base_type) {
   }
 }
 
-def =(sv: single, value:sv.base_type) {
+proc =(sv: single, value:sv.base_type) {
   sv.writeEF(value);
 }
 
-def _singlevar.isFull {
+proc _singlevar.isFull {
   var b: bool;
   on this {
     b = __primitive("single_is_full", this, isSimpleSyncBaseType(base_type));
@@ -935,19 +940,19 @@ class _EndCount {
 }
 
 pragma "dont disable remote value forwarding"
-def _endCountAlloc() return new _EndCount();
+proc _endCountAlloc() return new _EndCount();
 
 pragma "dont disable remote value forwarding"
-def _endCountFree(e: _EndCount) {
+proc _endCountFree(e: _EndCount) {
   delete e;
 }
 
 pragma "dont disable remote value forwarding"
-def _upEndCount(e: _EndCount) {
+proc _upEndCount(e: _EndCount) {
   on e {
     _upEndCountInternal(e);
     pragma "dont disable remote value forwarding" pragma "inline"
-    def _upEndCountInternal(e: _EndCount) {
+    proc _upEndCountInternal(e: _EndCount) {
       //
       // By hiding this code in its own function, remote value
       // forwarding can be applied to the reference 'e' in order to
@@ -965,12 +970,12 @@ def _upEndCount(e: _EndCount) {
 }
 
 pragma "dont disable remote value forwarding"
-def _downEndCount(e: _EndCount) {
+proc _downEndCount(e: _EndCount) {
   on e {
     _downEndCountInternal(e);
     // This function seems unnecessary; sse comment in _upEndCountInternal.
     pragma "dont disable remote value forwarding" pragma "inline"
-    def _downEndCountInternal(e: _EndCount) {
+    proc _downEndCountInternal(e: _EndCount) {
       var i = e.i;
       if i == 1 then
         e.b = true;
@@ -980,7 +985,7 @@ def _downEndCount(e: _EndCount) {
 }
 
 pragma "dont disable remote value forwarding"
-def _waitEndCount(e: _EndCount) {
+proc _waitEndCount(e: _EndCount) {
   __primitive("execute tasks in list", e.taskList);
   // First wait for the signal to be set.
   e.b.readFE();
@@ -992,17 +997,17 @@ def _waitEndCount(e: _EndCount) {
   __primitive("free task list", e.taskList);
 }
 
-def _upEndCount() {
+proc _upEndCount() {
   var e = __primitive("get end count");
   _upEndCount(e);
 }
 
-def _downEndCount() {
+proc _downEndCount() {
   var e = __primitive("get end count");
   _downEndCount(e);
 }
 
-def _waitEndCount() {
+proc _waitEndCount() {
   var e = __primitive("get end count");
   _waitEndCount(e);
 }
@@ -1010,52 +1015,52 @@ def _waitEndCount() {
 //
 // casts
 //
-def chpl__isType(type t) param return true;
-def chpl__isType(e) param return false;
+proc chpl__isType(type t) param return true;
+proc chpl__isType(e) param return false;
 
-def _isPrimitiveType(type t) param return
+proc _isPrimitiveType(type t) param return
   (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64)) |
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
   (t == real(32)) | (t == real(64)) |
   (t == string);
 
-def _isSimpleScalarType(type t) param return
+proc _isSimpleScalarType(type t) param return
   _isBooleanType(t) | _isIntegralType(t) | _isFloatType(t);
 
-def _isBooleanType(type t) param return
+proc _isBooleanType(type t) param return
   (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64));
 
-def _isIntegralType(type t) param return
+proc _isIntegralType(type t) param return
   _isSignedType(t) || _isUnsignedType(t);
 
-def _isSignedType(type t) param return
+proc _isSignedType(type t) param return
   (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
 
 
-def _isUnsignedType(type t) param return
+proc _isUnsignedType(type t) param return
   (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
-def _isEnumeratedType(type t) param {
-  def isEnum(type t: enumerated) param return true;
-  def isEnum(type t) param return false;
+proc _isEnumeratedType(type t) param {
+  proc isEnum(type t: enumerated) param return true;
+  proc isEnum(type t) param return false;
   return isEnum(t);
 }
 
-def _isComplexType(type t) param return
+proc _isComplexType(type t) param return
   (t == complex(64)) | (t == complex(128));
 
-def _isFloatType(type t) param return
+proc _isFloatType(type t) param return
   (t == real(32)) | (t == real(64)) |
   (t == imag(32)) | (t == imag(64));
 
-def _isRealType(type t) param return
+proc _isRealType(type t) param return
   (t == real(32)) | (t == real(64));
 
-def _isImagType(type t) param return
+proc _isImagType(type t) param return
   (t == imag(32)) | (t == imag(64));
 
-def chpl__idxTypeToStrType(type t) type {
+proc chpl__idxTypeToStrType(type t) type {
   if (t == uint(8)) {
     return int(8);
   } else if (t == uint(16)) {
@@ -1072,105 +1077,105 @@ def chpl__idxTypeToStrType(type t) type {
 }
 
 pragma "command line setting"
-def _command_line_cast(param s: string, type t, x) return _cast(t, x);
+proc _command_line_cast(param s: string, type t, x) return _cast(t, x);
 
-pragma "inline" def _cast(type t, x: bool) where _isPrimitiveType(t)
+pragma "inline" proc _cast(type t, x: bool) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: bool(8)) where _isPrimitiveType(t)
+pragma "inline" proc _cast(type t, x: bool(8)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: bool(16)) where _isPrimitiveType(t)
+pragma "inline" proc _cast(type t, x: bool(16)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: bool(32)) where _isPrimitiveType(t)
+pragma "inline" proc _cast(type t, x: bool(32)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: bool(64)) where _isPrimitiveType(t)
+pragma "inline" proc _cast(type t, x: bool(64)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: int(?w)) where _isPrimitiveType(t)
+pragma "inline" proc _cast(type t, x: int(?w)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: uint(?w)) where _isPrimitiveType(t)
+pragma "inline" proc _cast(type t, x: uint(?w)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: chpl_taskID_t) where _isPrimitiveType(t)
+pragma "inline" proc _cast(type t, x: chpl_taskID_t) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: real(?w)) where _isPrimitiveType(t)
+pragma "inline" proc _cast(type t, x: real(?w)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: string) where _isPrimitiveType(t)
+pragma "inline" proc _cast(type t, x: string) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: enumerated) where _isPrimitiveType(t) && t != string
+pragma "inline" proc _cast(type t, x: enumerated) where _isPrimitiveType(t) && t != string
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x) where t:object && x:t
+pragma "inline" proc _cast(type t, x) where t:object && x:t
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x) where t:object && x:_nilType
+pragma "inline" proc _cast(type t, x) where t:object && x:_nilType
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x) where x:object && t:x && (x.type != t)
+pragma "inline" proc _cast(type t, x) where x:object && t:x && (x.type != t)
   return __primitive("dynamic_cast", t, x);
 
-pragma "inline" def _cast(type t, x:_nilType) where t == _nilType
+pragma "inline" proc _cast(type t, x:_nilType) where t == _nilType
   return nil;
 
 //
 // casts to complex
 //
-pragma "inline" def _cast(type t, x: bool) where _isComplexType(t)
+pragma "inline" proc _cast(type t, x: bool) where _isComplexType(t)
   return (x, 0):t;
 
-pragma "inline" def _cast(type t, x: int(?w)) where _isComplexType(t)
+pragma "inline" proc _cast(type t, x: int(?w)) where _isComplexType(t)
   return (x, 0):t;
 
-pragma "inline" def _cast(type t, x: uint(?w)) where _isComplexType(t)
+pragma "inline" proc _cast(type t, x: uint(?w)) where _isComplexType(t)
   return (x, 0):t;
 
-pragma "inline" def _cast(type t, x: real(?w)) where _isComplexType(t)
+pragma "inline" proc _cast(type t, x: real(?w)) where _isComplexType(t)
   return (x, 0):t;
 
-pragma "inline" def _cast(type t, x: imag(?w)) where _isComplexType(t)
+pragma "inline" proc _cast(type t, x: imag(?w)) where _isComplexType(t)
   return (0, _i2r(x)):t;
 
-pragma "inline" def _cast(type t, x: complex(?w)) where _isComplexType(t)
+pragma "inline" proc _cast(type t, x: complex(?w)) where _isComplexType(t)
   return (x.re, x.im):t;
 
-pragma "inline" def _cast(type t, x: string) where _isComplexType(t)
+pragma "inline" proc _cast(type t, x: string) where _isComplexType(t)
   return __primitive("cast", t, x);
 
 //
 // casts to imag
 //
-pragma "inline" def _cast(type t, x: bool) where _isImagType(t)
+pragma "inline" proc _cast(type t, x: bool) where _isImagType(t)
   return if x then 1i:t else 0i:t;
 
-pragma "inline" def _cast(type t, x: int(?w)) where _isImagType(t)
+pragma "inline" proc _cast(type t, x: int(?w)) where _isImagType(t)
   return 0i:t;
 
-pragma "inline" def _cast(type t, x: uint(?w)) where _isImagType(t)
+pragma "inline" proc _cast(type t, x: uint(?w)) where _isImagType(t)
   return 0i:t;
 
-pragma "inline" def _cast(type t, x: real(?w)) where _isImagType(t)
+pragma "inline" proc _cast(type t, x: real(?w)) where _isImagType(t)
   return 0i:t;
 
-pragma "inline" def _cast(type t, x: imag(?w)) where _isImagType(t)
+pragma "inline" proc _cast(type t, x: imag(?w)) where _isImagType(t)
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: complex(?w)) where _isImagType(t)
+pragma "inline" proc _cast(type t, x: complex(?w)) where _isImagType(t)
   return let xim = x.im in __primitive("cast", t, xim);
 
-pragma "inline" def _cast(type t, x: string) where _isImagType(t)
+pragma "inline" proc _cast(type t, x: string) where _isImagType(t)
   return __primitive("cast", t, x);
 
 //
 // casts from complex
 //
-pragma "inline" def _cast(type t, x: complex(?w)) where t == string {
+pragma "inline" proc _cast(type t, x: complex(?w)) where t == string {
   if isnan(x.re) || isnan(x.im) then
     return "nan";
   var re = x.re:string, op = " + ", im = x.im:string;
@@ -1184,7 +1189,7 @@ pragma "inline" def _cast(type t, x: complex(?w)) where t == string {
   return re + op + im + "i";
 }
 
-pragma "inline" def _cast(type t, x: complex(?w)) where _isRealType(t) || _isIntegralType(t) {
+pragma "inline" proc _cast(type t, x: complex(?w)) where _isRealType(t) || _isIntegralType(t) {
   var y: t;
   y = x.re:t;
   return y;
@@ -1193,95 +1198,95 @@ pragma "inline" def _cast(type t, x: complex(?w)) where _isRealType(t) || _isInt
 //
 // casts from imag
 //
-pragma "inline" def _cast(type t, x: imag(?w)) where t == string
+pragma "inline" proc _cast(type t, x: imag(?w)) where t == string
   return __primitive("cast", t, x);
 
-pragma "inline" def _cast(type t, x: imag(?w)) where _isRealType(t) || _isIntegralType(t)
+pragma "inline" proc _cast(type t, x: imag(?w)) where _isRealType(t) || _isIntegralType(t)
   return 0:t;
 
-pragma "inline" def _cast(type t, x: imag(?w)) where _isBooleanType(t)
+pragma "inline" proc _cast(type t, x: imag(?w)) where _isBooleanType(t)
   return if x != 0i then true else false;
 
 
 //
 // Default swap operator for most types
 //
-pragma "inline" def _chpl_swap(inout x, inout y) {
+pragma "inline" proc _chpl_swap(inout x, inout y) {
   const t = y;
   y = x;
   x = t;
 }
 
-pragma "inline" def chpl__typeAliasInit(type t) type return t;
-pragma "inline" def chpl__typeAliasInit(v) {
+pragma "inline" proc chpl__typeAliasInit(type t) type return t;
+pragma "inline" proc chpl__typeAliasInit(v) {
   compilerError("illegal assignment of value to type");
 }
 
 pragma "dont disable remote value forwarding"
-pragma "inline" def _createFieldDefault(type t, init) {
+pragma "inline" proc _createFieldDefault(type t, init) {
   pragma "no auto destroy" var x: t;
   x = init;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
-pragma "inline" def _createFieldDefault(type t, param init) {
+pragma "inline" proc _createFieldDefault(type t, param init) {
   pragma "no auto destroy" var x: t;
   x = init;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
-pragma "inline" def _createFieldDefault(type t, init: _nilType) {
+pragma "inline" proc _createFieldDefault(type t, init: _nilType) {
   pragma "no auto destroy" var x: t;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
-pragma "inline" def _createFieldDefault(type t, init: sync) {
+pragma "inline" proc _createFieldDefault(type t, init: sync) {
   return init;
 }
 
 pragma "dont disable remote value forwarding"
-pragma "inline" def _createFieldDefault(type t, init: single) {
+pragma "inline" proc _createFieldDefault(type t, init: single) {
   return init;
 }
 
-pragma "inline" def chpl__initCopy(a) {
+pragma "inline" proc chpl__initCopy(a) {
   if a.type == string then
     return __primitive("string_copy", a);
   else
     return a;
 }
 
-pragma "inline" def chpl__initCopy(type t) {
+pragma "inline" proc chpl__initCopy(type t) {
   compilerError("illegal assignment of type to value");
 }
 
 pragma "inline" pragma "ref"
-def chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("get ref", r));
+proc chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("get ref", r));
 
-pragma "inline" def chpl__initCopy(sv: sync) {
+pragma "inline" proc chpl__initCopy(sv: sync) {
   return sv.readFE();
 }
 
-pragma "inline" def chpl__initCopy(sv: single) {
+pragma "inline" proc chpl__initCopy(sv: single) {
   return sv.readFF();
 }
 
-pragma "inline" def chpl__initCopy(x: _tuple) { 
+pragma "inline" proc chpl__initCopy(x: _tuple) { 
   // body inserted during generic instantiation
 }
 
 pragma "dont disable remote value forwarding"
-pragma "removable auto copy" def chpl__autoCopy(x: _distribution) {
+pragma "removable auto copy" proc chpl__autoCopy(x: _distribution) {
   if x._value then
     on x._value do x._value._distCnt$ += 1;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
-pragma "removable auto copy" def chpl__autoCopy(x: domain) {
+pragma "removable auto copy" proc chpl__autoCopy(x: domain) {
   on x._value do x._value._domCnt$ += 1;
   return x;
 }
@@ -1290,80 +1295,80 @@ pragma "removable auto copy" def chpl__autoCopy(x: domain) {
 // Albert - Need a way to prevent the compiler of generating host code from
 // within a GPU kernel
 pragma "dont disable remote value forwarding"
-pragma "removable auto copy" def chpl__autoCopy(x: []) where !x._value.isGPUExecution {
+pragma "removable auto copy" proc chpl__autoCopy(x: []) where !x._value.isGPUExecution {
   on x._value do x._value._arrCnt$ += 1;
     return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy"
-pragma "inline" def chpl__autoCopy(x: []) where x._value.isGPUExecution {
+pragma "inline" proc chpl__autoCopy(x: []) where x._value.isGPUExecution {
   return x;
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 pragma "dont disable remote value forwarding"
 pragma "inline"
-def chpl__autoCopy(x: sync) return x;
+proc chpl__autoCopy(x: sync) return x;
 
 pragma "dont disable remote value forwarding"
 pragma "inline"
-def chpl__autoCopy(x: single) return x;
+proc chpl__autoCopy(x: single) return x;
 
 pragma "inline"
-def chpl__autoCopy(x: _tuple) {
+proc chpl__autoCopy(x: _tuple) {
   // body inserted during generic instantiation
 }
 
-pragma "inline" def chpl__autoCopy(ir: _iteratorRecord) {
+pragma "inline" proc chpl__autoCopy(ir: _iteratorRecord) {
   // body modified during call destructors pass
   return ir;
 }
 
-pragma "inline" def chpl__autoCopy(x) return chpl__initCopy(x);
+pragma "inline" proc chpl__autoCopy(x) return chpl__initCopy(x);
 
-pragma "inline" pragma "ref" def chpl__autoCopy(r: _ref) var return r;
+pragma "inline" pragma "ref" proc chpl__autoCopy(r: _ref) var return r;
 
-pragma "inline" def chpl__autoCopy(type t) type return t;
+pragma "inline" proc chpl__autoCopy(type t) type return t;
 
-pragma "inline" def chpl__maybeAutoDestroyed(x) param
+pragma "inline" proc chpl__maybeAutoDestroyed(x) param
   return !(_isPrimitiveType(x.type) ||
            _isImagType(x.type) ||
            _isComplexType(x.type));
-pragma "inline" def chpl__maybeAutoDestroyed(x: enumerated) param return false;
-pragma "inline" def chpl__maybeAutoDestroyed(x: object) param return false;
+pragma "inline" proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
+pragma "inline" proc chpl__maybeAutoDestroyed(x: object) param return false;
 
-pragma "inline" def chpl__autoDestroy(x: object) { }
-pragma "inline" def chpl__autoDestroy(type t)  { }
-pragma "inline" def chpl__autoDestroy(x: ?t) {
+pragma "inline" proc chpl__autoDestroy(x: object) { }
+pragma "inline" proc chpl__autoDestroy(type t)  { }
+pragma "inline" proc chpl__autoDestroy(x: ?t) {
   __primitive("call destructor", x);
 }
-pragma "inline" def chpl__autoDestroy(ir: _iteratorRecord) {
+pragma "inline" proc chpl__autoDestroy(ir: _iteratorRecord) {
   // body inserted during call destructors pass
 }
 pragma "dont disable remote value forwarding"
-pragma "removable auto destroy" def chpl__autoDestroy(x: _distribution) {
+pragma "removable auto destroy" proc chpl__autoDestroy(x: _distribution) {
   __primitive("call destructor", x);
 }
 pragma "dont disable remote value forwarding"
-pragma "removable auto destroy" def chpl__autoDestroy(x: domain) {
+pragma "removable auto destroy" proc chpl__autoDestroy(x: domain) {
   __primitive("call destructor", x);
 }
 pragma "dont disable remote value forwarding"
-pragma "removable auto destroy" def chpl__autoDestroy(x: []) {
+pragma "removable auto destroy" proc chpl__autoDestroy(x: []) {
   __primitive("call destructor", x);
 }
-pragma "inline" def chpl__autoDestroy(x: _syncvar) {
+pragma "inline" proc chpl__autoDestroy(x: _syncvar) {
   delete x;
 }
-pragma "inline" def chpl__autoDestroy(x: _singlevar) {
+pragma "inline" proc chpl__autoDestroy(x: _singlevar) {
   delete x;
 }
 
 // Type functions for representing function types
-pragma "inline" def func() type { return __primitive("create fn type", void); }
-pragma "inline" def func(type rettype) type { return __primitive("create fn type", rettype); }
-pragma "inline" def func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
+pragma "inline" proc func() type { return __primitive("create fn type", void); }
+pragma "inline" proc func(type rettype) type { return __primitive("create fn type", rettype); }
+pragma "inline" proc func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
 
 //
 // BLC: The inout is used here not because it is necessary, but in
@@ -1375,14 +1380,14 @@ pragma "inline" def func(type t...?n, type rettype) type { return __primitive("c
 // to be special-cased in functionResolution.cpp such that the inout
 // does not actually result in temps.
 //
-def chpldev_refToString(inout ref) {
+proc chpldev_refToString(inout ref) {
 
   //
   // print out the address of class references as well
   //
-  def chpldev_classToString(x: object)
+  proc chpldev_classToString(x: object)
     return " (class = " + __primitive("ref to string", x) + ")";
-  def chpldev_classToString(x) return "";
+  proc chpldev_classToString(x) return "";
 
   return __primitive("ref to string", ref) + chpldev_classToString(ref);
 }
@@ -1394,253 +1399,253 @@ def chpldev_refToString(inout ref) {
 
 
 // non-param/non-param
-pragma "inline" def +(a: uint(64), b: int(64)) { _throwOpError("+"); }
-pragma "inline" def +(a: int(64), b: uint(64)) { _throwOpError("+"); }
+pragma "inline" proc +(a: uint(64), b: int(64)) { _throwOpError("+"); }
+pragma "inline" proc +(a: int(64), b: uint(64)) { _throwOpError("+"); }
 
 // param/param
-pragma "inline" def +(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc +(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("+"); else return a + b:uint(64);
 }
-pragma "inline" def +(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc +(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("+"); else return a:uint(64) + b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def +(a: uint(64), param b: int(64)) {
+pragma "inline" proc +(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("+"); else return a + b:uint(64);
 }
-pragma "inline" def +(param a: int(64), b: uint(64)) {
+pragma "inline" proc +(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("+"); else return a:uint(64) + b;
 }
 
 
 // non-param/non-param
-pragma "inline" def -(a: uint(64), b: int(64)) { _throwOpError("-"); }
-pragma "inline" def -(a: int(64), b: uint(64)) { _throwOpError("-"); }
+pragma "inline" proc -(a: uint(64), b: int(64)) { _throwOpError("-"); }
+pragma "inline" proc -(a: int(64), b: uint(64)) { _throwOpError("-"); }
 
 // param/param
-pragma "inline" def -(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc -(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("-"); else return a - b:uint(64);
 }
-pragma "inline" def -(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc -(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("-"); else return a:uint(64) - b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def -(a: uint(64), param b: int(64)) {
+pragma "inline" proc -(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("-"); else return a - b:uint(64);
 }
-pragma "inline" def -(param a: int(64), b: uint(64)) {
+pragma "inline" proc -(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("-"); else return a:uint(64) - b;
 }
 
 
 // non-param/non-param
-pragma "inline" def *(a: uint(64), b: int(64)) { _throwOpError("*"); }
-pragma "inline" def *(a: int(64), b: uint(64)) { _throwOpError("*"); }
+pragma "inline" proc *(a: uint(64), b: int(64)) { _throwOpError("*"); }
+pragma "inline" proc *(a: int(64), b: uint(64)) { _throwOpError("*"); }
 
 // param/param
-pragma "inline" def *(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc *(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("*"); else return a * b:uint(64);
 }
-pragma "inline" def *(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc *(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("*"); else return a:uint(64) * b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def *(a: uint(64), param b: int(64)) {
+pragma "inline" proc *(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("*"); else return a * b:uint(64);
 }
-pragma "inline" def *(param a: int(64), b: uint(64)) {
+pragma "inline" proc *(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("*"); else return a:uint(64) * b;
 }
 
 
 // non-param/non-param
-pragma "inline" def /(a: uint(64), b: int(64)) { _throwOpError("/"); }
-pragma "inline" def /(a: int(64), b: uint(64)) { _throwOpError("/"); }
+pragma "inline" proc /(a: uint(64), b: int(64)) { _throwOpError("/"); }
+pragma "inline" proc /(a: int(64), b: uint(64)) { _throwOpError("/"); }
 
 // param/param
-pragma "inline" def /(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc /(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("/"); else return a / b:uint(64);
 }
-pragma "inline" def /(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc /(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("/"); else return a:uint(64) / b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def /(a: uint(64), param b: int(64)) {
+pragma "inline" proc /(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("/"); else return a / b:uint(64);
 }
-pragma "inline" def /(param a: int(64), b: uint(64)) {
+pragma "inline" proc /(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("/"); else return a:uint(64) / b;
 }
 
 
 // non-param/non-param
-pragma "inline" def **(a: uint(64), b: int(64)) { _throwOpError("**"); }
-pragma "inline" def **(a: int(64), b: uint(64)) { _throwOpError("**"); }
+pragma "inline" proc **(a: uint(64), b: int(64)) { _throwOpError("**"); }
+pragma "inline" proc **(a: int(64), b: uint(64)) { _throwOpError("**"); }
 
 // param/param
-pragma "inline" def **(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc **(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("**"); else return a ** b:uint(64);
 }
-pragma "inline" def **(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc **(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("**"); else return a:uint(64) ** b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def **(a: uint(64), param b: int(64)) {
+pragma "inline" proc **(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("**"); else return a ** b:uint(64);
 }
-pragma "inline" def **(param a: int(64), b: uint(64)) {
+pragma "inline" proc **(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("**"); else return a:uint(64) ** b;
 }
 
 
 // non-param/non-param
-pragma "inline" def %(a: uint(64), b: int(64)) { _throwOpError("%"); }
-pragma "inline" def %(a: int(64), b: uint(64)) { _throwOpError("%"); }
+pragma "inline" proc %(a: uint(64), b: int(64)) { _throwOpError("%"); }
+pragma "inline" proc %(a: int(64), b: uint(64)) { _throwOpError("%"); }
 
 // param/param
-pragma "inline" def %(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc %(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("%"); else return a % b:uint(64);
 }
-pragma "inline" def %(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc %(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("%"); else return a:uint(64) % b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def %(a: uint(64), param b: int(64)) {
+pragma "inline" proc %(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("%"); else return a % b:uint(64);
 }
-pragma "inline" def %(param a: int(64), b: uint(64)) {
+pragma "inline" proc %(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("%"); else return a:uint(64) % b;
 }
 
 
 // non-param/non-param
-pragma "inline" def ==(a: uint(64), b: int(64)) { _throwOpError("=="); }
-pragma "inline" def ==(a: int(64), b: uint(64)) { _throwOpError("=="); }
+pragma "inline" proc ==(a: uint(64), b: int(64)) { _throwOpError("=="); }
+pragma "inline" proc ==(a: int(64), b: uint(64)) { _throwOpError("=="); }
 
 // param/param
-pragma "inline" def ==(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc ==(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("=="); else return a == b:uint(64);
 }
-pragma "inline" def ==(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc ==(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("=="); else return a:uint(64) == b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def ==(a: uint(64), param b: int(64)) {
+pragma "inline" proc ==(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("=="); else return a == b:uint(64);
 }
-pragma "inline" def ==(param a: int(64), b: uint(64)) {
+pragma "inline" proc ==(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("=="); else return a:uint(64) == b;
 }
 
 
 // non-param/non-param
-pragma "inline" def !=(a: uint(64), b: int(64)) { _throwOpError("!="); }
-pragma "inline" def !=(a: int(64), b: uint(64)) { _throwOpError("!="); }
+pragma "inline" proc !=(a: uint(64), b: int(64)) { _throwOpError("!="); }
+pragma "inline" proc !=(a: int(64), b: uint(64)) { _throwOpError("!="); }
 
 // param/param
-pragma "inline" def !=(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc !=(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("!="); else return a != b:uint(64);
 }
-pragma "inline" def !=(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc !=(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("!="); else return a:uint(64) != b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def !=(a: uint(64), param b: int(64)) {
+pragma "inline" proc !=(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("!="); else return a != b:uint(64);
 }
-pragma "inline" def !=(param a: int(64), b: uint(64)) {
+pragma "inline" proc !=(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("!="); else return a:uint(64) != b;
 }
 
 
 // non-param/non-param
-pragma "inline" def >(a: uint(64), b: int(64)) { _throwOpError(">"); }
-pragma "inline" def >(a: int(64), b: uint(64)) { _throwOpError(">"); }
+pragma "inline" proc >(a: uint(64), b: int(64)) { _throwOpError(">"); }
+pragma "inline" proc >(a: int(64), b: uint(64)) { _throwOpError(">"); }
 
 // param/param
-pragma "inline" def >(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc >(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError(">"); else return a > b:uint(64);
 }
-pragma "inline" def >(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc >(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError(">"); else return a:uint(64) > b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def >(a: uint(64), param b: int(64)) {
+pragma "inline" proc >(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError(">"); else return a > b:uint(64);
 }
-pragma "inline" def >(param a: int(64), b: uint(64)) {
+pragma "inline" proc >(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError(">"); else return if a == 0 then false else a:uint(64) > b;
 }
 
 
 // non-param/non-param
-pragma "inline" def <(a: uint(64), b: int(64)) { _throwOpError("<"); }
-pragma "inline" def <(a: int(64), b: uint(64)) { _throwOpError("<"); }
+pragma "inline" proc <(a: uint(64), b: int(64)) { _throwOpError("<"); }
+pragma "inline" proc <(a: int(64), b: uint(64)) { _throwOpError("<"); }
 
 // param/param
-pragma "inline" def <(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc <(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("<"); else return a < b:uint(64);
 }
-pragma "inline" def <(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc <(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("<"); else return a:uint(64) < b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def <(a: uint(64), param b: int(64)) {
+pragma "inline" proc <(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("<"); else return if b == 0 then false else a < b:uint(64);
 }
-pragma "inline" def <(param a: int(64), b: uint(64)) {
+pragma "inline" proc <(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("<"); else return a:uint(64) < b;
 }
 
 
 // non-param/non-param
-pragma "inline" def >=(a: uint(64), b: int(64)) { _throwOpError(">="); }
-pragma "inline" def >=(a: int(64), b: uint(64)) { _throwOpError(">="); }
+pragma "inline" proc >=(a: uint(64), b: int(64)) { _throwOpError(">="); }
+pragma "inline" proc >=(a: int(64), b: uint(64)) { _throwOpError(">="); }
 
 // param/param
-pragma "inline" def >=(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc >=(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError(">="); else return a >= b:uint(64);
 }
-pragma "inline" def >=(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc >=(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError(">="); else return a:uint(64) >= b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def >=(a: uint(64), param b: int(64)) {
+pragma "inline" proc >=(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError(">="); else return if b == 0 then true else a >= b:uint(64);
 }
-pragma "inline" def >=(param a: int(64), b: uint(64)) {
+pragma "inline" proc >=(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError(">="); else return a:uint(64) >= b;
 }
 
 
 // non-param/non-param
-pragma "inline" def <=(a: uint(64), b: int(64)) { _throwOpError("<="); }
-pragma "inline" def <=(a: int(64), b: uint(64)) { _throwOpError("<="); }
+pragma "inline" proc <=(a: uint(64), b: int(64)) { _throwOpError("<="); }
+pragma "inline" proc <=(a: int(64), b: uint(64)) { _throwOpError("<="); }
 
 // param/param
-pragma "inline" def <=(param a: uint(64), param b: int(64)) param {
+pragma "inline" proc <=(param a: uint(64), param b: int(64)) param {
   if b < 0 then _throwOpError("<="); else return a <= b:uint(64);
 }
-pragma "inline" def <=(param a: int(64), param b: uint(64)) param {
+pragma "inline" proc <=(param a: int(64), param b: uint(64)) param {
   if a < 0 then _throwOpError("<="); else return a:uint(64) <= b;
 }
 
 // non-param/param and param/non-param
-pragma "inline" def <=(a: uint(64), param b: int(64)) {
+pragma "inline" proc <=(a: uint(64), param b: int(64)) {
   if b < 0 then _throwOpError("<="); else return a <= b:uint(64);
 }
-pragma "inline" def <=(param a: int(64), b: uint(64)) {
+pragma "inline" proc <=(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("<="); else return if a == 0 then true else a:uint(64) <= b;
 }
 

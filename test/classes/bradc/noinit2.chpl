@@ -3,7 +3,7 @@ class pair {
   var y: real;
 }
 
-def main() {
+proc main() {
   var a: pair;
 
   if (a == nil) {

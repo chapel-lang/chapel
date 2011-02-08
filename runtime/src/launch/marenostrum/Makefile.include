@@ -1,0 +1,7 @@
+LAUNCH_SUBDIR = src/launch/marenostrum
+
+LAUNCH_OBJDIR = $(RUNTIME_ROOT)/$(LAUNCH_SUBDIR)/$(LAUNCHER_OBJDIR)
+
+ALL_SRCS += $(CURDIR)/$(LAUNCH_SUBDIR)/*.c
+
+include $(RUNTIME_ROOT)/$(LAUNCH_SUBDIR)/Makefile.share

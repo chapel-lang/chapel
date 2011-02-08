@@ -37,7 +37,7 @@ use omega;
 var  buf2: [0..127] complex;
 var  dat2: [0..127] complex;
 
-def init_fft128() {
+proc init_fft128() {
     for i1315 in 0..3 {
         for i1318 in 0..3 {
             for i1324 in 0..1 {
@@ -51,7 +51,7 @@ def init_fft128() {
 
 }
 
-def fft128(Y: [] complex, X: [] complex) {
+proc fft128(Y: [] complex, X: [] complex) {
     for i1316 in 0..31 {
         var s2609, s2610, s2611, s2612, s2613, t4511, t4512, 
     t4513:complex;

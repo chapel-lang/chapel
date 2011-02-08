@@ -2,7 +2,7 @@
 class C {
   var D: real;
 }
-def main {
+proc main {
   var D: real;
   writeln(D);
   writeln(D.locale.id);

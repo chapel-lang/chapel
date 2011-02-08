@@ -6,7 +6,7 @@
 //
 // BEFORE
 //
-def foo(n: int) {
+iter foo(n: int) {
   var i = 0;
   while i < n {
     yield i;
@@ -20,13 +20,13 @@ for i in foo(10) do
 //
 // AFTER
 //
-def goo(n: int)
+proc goo(n: int)
   return new bar(n);
 
 class bar {
   var n, i, result: int;
 /*
-  def getNextCursor(c: int) {
+  proc getNextCursor(c: int) {
     var n = this.n;
     var i = this.i;
     if c == 2 then
@@ -43,7 +43,7 @@ label L2
     return 0;
   }
 */
-  def getNextCursor(c: int) {
+  proc getNextCursor(c: int) {
     var n = this.n;
     var i = this.i;
     if c != 2 {
@@ -65,9 +65,9 @@ label L2
   }
 
 
-  def getHeadCursor() return getNextCursor(1);
-  def isValidCursor(c: int) return c != 0;
-  def getValue(c: int) return result;
+  proc getHeadCursor() return getNextCursor(1);
+  proc isValidCursor(c: int) return c != 0;
+  proc getValue(c: int) return result;
 }
 
 var ic = goo(10);

@@ -7,7 +7,7 @@ record myrecord {
   var c: myclass;
 }
 
-def main() {
+proc main() {
   var x: myrecord;
   var y: myrecord;
 

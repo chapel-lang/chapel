@@ -1,7 +1,7 @@
 quadsol(3.0,8.0,5.0);
 quadsol(3.0,4.0,5.0);
 
-def quadsol(a:real, b:real, c:real) {
+proc quadsol(a:real, b:real, c:real) {
   writeln("The solution of ",a,"x^2 + ",b,"x + ",c," = 0 is:");
   if (b*b > 4.0*a*c) {
     var x:  (real, real);

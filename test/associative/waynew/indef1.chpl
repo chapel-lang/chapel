@@ -5,7 +5,7 @@ intd.add(3);
 intd.add(4);
 intd.add(5);
 
-def icheck( i:int) {
+proc icheck( i:int) {
   writeln( "member(", i, ") = ", intd.member( i));
 }
 
@@ -28,7 +28,7 @@ stringd.add( "feet");
 stringd.add( "greet");
 stringd.add( "meat");
 
-def scheck( s:string) {
+proc scheck( s:string) {
   writeln( "member(", s, ") = ", stringd.member( s));
 }
 

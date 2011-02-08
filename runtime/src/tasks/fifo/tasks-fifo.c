@@ -129,6 +129,7 @@ static task_pool_p             add_to_task_pool(chpl_fn_p,
                                                 void*,
                                                 chpl_bool,
                                                 chpl_task_list_p);
+static int taskMaxThreadsPerLocale = -1;
 
 
 // Sync variables
@@ -168,124 +169,58 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
     progress_cnt++;
 }
 
-void CHPL_SYNC_LOCK(chpl_sync_aux_t *s) {
+void chpl_sync_lock(chpl_sync_aux_t *s) {
   threadlayer_mutex_lock(&s->lock);
 }
 
-void CHPL_SYNC_UNLOCK(chpl_sync_aux_t *s) {
+void chpl_sync_unlock(chpl_sync_aux_t *s) {
   threadlayer_mutex_unlock(&s->lock);
 }
 
-void CHPL_SYNC_WAIT_FULL_AND_LOCK(chpl_sync_aux_t *s,
+void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
                                   int32_t lineno, chpl_string filename) {
   sync_wait_and_lock(s, true, lineno, filename);
 }
 
-void CHPL_SYNC_WAIT_EMPTY_AND_LOCK(chpl_sync_aux_t *s,
+void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
                                    int32_t lineno, chpl_string filename) {
   sync_wait_and_lock(s, false, lineno, filename);
 }
 
-void CHPL_SYNC_MARK_AND_SIGNAL_FULL(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s) {
   s->is_full = true;
   threadlayer_sync_awaken(s);
-  CHPL_SYNC_UNLOCK(s);
+  chpl_sync_unlock(s);
 }
 
-void CHPL_SYNC_MARK_AND_SIGNAL_EMPTY(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
   s->is_full = false;
   threadlayer_sync_awaken(s);
-  CHPL_SYNC_UNLOCK(s);
+  chpl_sync_unlock(s);
 }
 
-chpl_bool CHPL_SYNC_IS_FULL(void *val_ptr,
+chpl_bool chpl_sync_isFull(void *val_ptr,
                             chpl_sync_aux_t *s,
                             chpl_bool simple_sync_var) {
   return s->is_full;
 }
 
-void CHPL_SYNC_INIT_AUX(chpl_sync_aux_t *s) {
+void chpl_sync_initAux(chpl_sync_aux_t *s) {
   s->is_full = false;
   threadlayer_mutex_init(&s->lock);
   threadlayer_sync_init(s);
 }
 
-void CHPL_SYNC_DESTROY_AUX(chpl_sync_aux_t *s) {
+void chpl_sync_destroyAux(chpl_sync_aux_t *s) {
   threadlayer_sync_destroy(s);
-}
-
-
-// Single variables
-
-void CHPL_SINGLE_LOCK(chpl_single_aux_t *s) {
-  threadlayer_mutex_lock(&s->lock);
-}
-
-void CHPL_SINGLE_UNLOCK(chpl_single_aux_t *s) {
-  threadlayer_mutex_unlock(&s->lock);
-}
-
-void CHPL_SINGLE_WAIT_FULL(chpl_single_aux_t *s,
-                           int32_t lineno, chpl_string filename) {
-  threadlayer_mutex_lock(&s->lock);
-  while (!s->is_full) {
-    if (set_block_loc(lineno, filename)) {
-      // all other tasks appear to be blocked
-      struct timeval deadline, now;
-      chpl_bool timed_out;
-      gettimeofday(&deadline, NULL);
-      deadline.tv_sec += 1;
-      do {
-        timed_out = threadlayer_single_suspend(s, &deadline);
-        if (!s->is_full && !timed_out)
-            gettimeofday(&now, NULL);
-      } while (!s->is_full
-               && !timed_out
-               && (now.tv_sec < deadline.tv_sec
-                   || (now.tv_sec == deadline.tv_sec
-                       && now.tv_usec < deadline.tv_usec)));
-      if (!s->is_full)
-        check_for_deadlock();
-    }
-    else {
-      do {
-        (void) threadlayer_single_suspend(s, NULL);
-      } while (!s->is_full);
-    }
-    unset_block_loc();
-  }
-
-  if (blockreport)
-    progress_cnt++;
-}
-
-void CHPL_SINGLE_MARK_AND_SIGNAL_FULL(chpl_single_aux_t *s) {
-  s->is_full = true;
-  threadlayer_single_awaken(s);
-  CHPL_SINGLE_UNLOCK(s);
-}
-
-chpl_bool CHPL_SINGLE_IS_FULL(void *val_ptr,
-                              chpl_single_aux_t *s,
-                              chpl_bool simple_single_var) {
-  return s->is_full;
-}
-
-void CHPL_SINGLE_INIT_AUX(chpl_single_aux_t *s) {
-  s->is_full = false;
-  threadlayer_mutex_init(&s->lock);
-  threadlayer_single_init(s);
-}
-
-void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) {
-  threadlayer_single_destroy(s);
 }
 
 
 // Tasks
 
-void CHPL_TASKING_INIT(void) {
-  thread_private_data_t *tp;
+void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+  // Tuck maxThreadsPerLocale away in a static global for use by other routines
+  taskMaxThreadsPerLocale = maxThreadsPerLocale;
 
   threadlayer_mutex_init(&threading_lock);
   threadlayer_mutex_init(&extra_task_lock);
@@ -302,39 +237,16 @@ void CHPL_TASKING_INIT(void) {
   task_pool_head = task_pool_tail = NULL;
   thread_list_head = thread_list_tail = NULL;
 
-  threadlayer_init();
+  threadlayer_init(callStackSize);
 
-  tp = (thread_private_data_t*) chpl_alloc(sizeof(thread_private_data_t),
-                                           CHPL_RT_MD_THREAD_PRIVATE_DATA,
-                                           0, 0);
-
-  tp->ptask = (task_pool_p) chpl_alloc(sizeof(task_pool_t),
-                                       CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
-                                       0, 0);
-  tp->ptask->id           = get_next_task_id();
-  tp->ptask->fun          = NULL;
-  tp->ptask->arg          = NULL;
-  tp->ptask->serial_state = false;
-  tp->ptask->ltask        = NULL;
-  tp->ptask->begun        = true;
-  tp->ptask->filename     = "main program";
-  tp->ptask->lineno       = 0;
-  tp->ptask->next         = NULL;
-
-  threadlayer_set_thread_private_data(tp);
 
   if (taskreport) {
     threadlayer_mutex_init(&taskTable_lock);
-    chpldev_taskTable_add(tp->ptask->id,
-                          tp->ptask->lineno, tp->ptask->filename,
-                          (uint64_t) (intptr_t) tp->ptask);
-    chpldev_taskTable_set_active(tp->ptask->id);
   }
 
   if (blockreport) {
     progress_cnt = 0;
     threadlayer_mutex_init(&block_report_lock);
-    initializeLockReportForThread();
   }
 
   if (blockreport || taskreport) {
@@ -345,7 +257,7 @@ void CHPL_TASKING_INIT(void) {
 }
 
 
-void CHPL_TASKING_EXIT(void) {
+void chpl_task_exit(void) {
   chpl_bool debug = false;
   thread_list_p tlp;
 
@@ -369,7 +281,48 @@ void CHPL_TASKING_EXIT(void) {
 }
 
 
-void CHPL_ADD_TO_TASK_LIST(chpl_fn_int_t fid, void* arg,
+void chpl_task_callMain(void (*chpl_main)(void)) {
+  thread_private_data_t *tp = (thread_private_data_t*) 
+                                chpl_alloc(sizeof(thread_private_data_t),
+                                           CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                           0, 0);
+
+  tp->ptask = (task_pool_p) chpl_alloc(sizeof(task_pool_t),
+                                       CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                       0, 0);
+  tp->ptask->id           = get_next_task_id();
+  tp->ptask->fun          = NULL;
+  tp->ptask->arg          = NULL;
+  tp->ptask->serial_state = false;
+  tp->ptask->ltask        = NULL;
+  tp->ptask->begun        = true;
+  tp->ptask->filename     = "main program";
+  tp->ptask->lineno       = 0;
+  tp->ptask->next         = NULL;
+
+  threadlayer_set_thread_private_data(tp);
+
+  if (taskreport) {
+    chpldev_taskTable_add(tp->ptask->id,
+                          tp->ptask->lineno, tp->ptask->filename,
+                          (uint64_t) (intptr_t) tp->ptask);
+    chpldev_taskTable_set_active(tp->ptask->id);
+  }
+
+  if (blockreport) {
+    initializeLockReportForThread();
+  }
+
+  chpl_main();
+}
+
+
+void chpl_task_perPthreadInit(void) {
+  return;
+}
+
+
+void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
                            chpl_bool call_chpl_begin,
@@ -388,7 +341,7 @@ void CHPL_ADD_TO_TASK_LIST(chpl_fn_int_t fid, void* arg,
     ltask->ptask    = NULL;
     if (call_chpl_begin) {
       chpl_fn_p fp = chpl_ftable[fid];
-      CHPL_BEGIN(fp, arg, false, false, ltask);
+      chpl_task_begin(fp, arg, false, false, ltask);
     }
 
     // begin critical section - not needed for cobegin or coforall statements
@@ -411,15 +364,15 @@ void CHPL_ADD_TO_TASK_LIST(chpl_fn_int_t fid, void* arg,
     // call_chpl_begin should be true here because if task_list_locale !=
     // chpl_localeID, then this function could not have been called from
     // the context of a cobegin or coforall statement, which are the only
-    // contexts in which CHPL_BEGIN() should not be called.
+    // contexts in which chpl_task_begin() should not be called.
     chpl_fn_p fp = chpl_ftable[fid];
     assert(call_chpl_begin);
-    CHPL_BEGIN(fp, arg, false, false, NULL);
+    chpl_task_begin(fp, arg, false, false, NULL);
   }
 }
 
 
-void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
+void chpl_task_processTaskList(chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is
   // actually the first element on the list.
   chpl_task_list_p ltask = task_list, next_task;
@@ -524,7 +477,7 @@ void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) {
 }
 
 
-void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
+void chpl_task_executeTasksInList(chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is
   // actually the first element on the list.
   chpl_task_list_p ltask = task_list, next_task;
@@ -538,7 +491,7 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
 
   // If the serial state is true, the tasks in task_list have already been
   // executed.
-  if (!CHPL_GET_SERIAL()) do {
+  if (!chpl_task_getSerial()) do {
     ltask = next_task;
     next_task = ltask->next;
 
@@ -634,7 +587,7 @@ void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) {
 }
 
 
-void CHPL_FREE_TASK_LIST(chpl_task_list_p task_list) {
+void chpl_task_freeTaskList(chpl_task_list_p task_list) {
   // task_list points to the last entry on the list; task_list->next is
   // actually the first element on the list.
   chpl_task_list_p ltask = task_list, next_task;
@@ -657,11 +610,11 @@ void CHPL_FREE_TASK_LIST(chpl_task_list_p task_list) {
 //
 // interface function with begin-statement
 //
-void CHPL_BEGIN(chpl_fn_p fp, void* a,
+void chpl_task_begin(chpl_fn_p fp, void* a,
                 chpl_bool ignore_serial,  // always add task to pool
                 chpl_bool serial_state,
                 chpl_task_list_p ltask) {
-  if (!ignore_serial && CHPL_GET_SERIAL()) {
+  if (!ignore_serial && chpl_task_getSerial()) {
     (*fp)(a);
   } else {
     task_pool_p ptask = NULL;
@@ -688,38 +641,36 @@ void CHPL_BEGIN(chpl_fn_p fp, void* a,
 }
 
 
-chpl_taskID_t CHPL_TASK_ID(void) {
+chpl_taskID_t chpl_task_getId(void) {
   return get_current_ptask()->id;
 }
 
 
-void CHPL_TASK_SLEEP(int secs) {
+void chpl_task_yield(void) {
+  threadlayer_yield();
+}
+
+
+void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
 
-chpl_bool CHPL_GET_SERIAL(void) {
+chpl_bool chpl_task_getSerial(void) {
   return get_thread_private_data()->ptask->serial_state;
 }
 
-void CHPL_SET_SERIAL(chpl_bool state) {
+void chpl_task_setSerial(chpl_bool state) {
   get_thread_private_data()->ptask->serial_state = state;
 }
 
-
-uint64_t CHPL_TASK_CALLSTACKSIZE(void) {
+uint64_t chpl_task_getCallStackSize(void) {
   return threadlayer_call_stack_size();
 }
 
+uint32_t chpl_task_getNumQueuedTasks(void) { return queued_cnt; }
 
-uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) {
-  return threadlayer_call_stack_size_limit();
-}
-
-
-uint32_t CHPL_NUMQUEUEDTASKS(void) { return queued_cnt; }
-
-uint32_t CHPL_NUMRUNNINGTASKS(void) {
+uint32_t chpl_task_getNumRunningTasks(void) {
   int numRunningTasks;
 
   // begin critical section
@@ -736,7 +687,7 @@ uint32_t CHPL_NUMRUNNINGTASKS(void) {
   return numRunningTasks;
 }
 
-int32_t  CHPL_NUMBLOCKEDTASKS(void) {
+int32_t  chpl_task_getNumBlockedTasks(void) {
   if (blockreport) {
     int numBlockedTasks;
 
@@ -1183,10 +1134,10 @@ launch_next_task_in_new_thread(void) {
   if ((ptask = task_pool_head)) {
     if (threadlayer_thread_create(&thread, chpl_begin_helper, ptask)) {
       char msg[256];
-      if (maxThreadsPerLocale)
+      if (taskMaxThreadsPerLocale)
         sprintf(msg,
                 "maxThreadsPerLocale is %"PRId32", but unable to create more than %d threads",
-                maxThreadsPerLocale, threads_cnt);
+                taskMaxThreadsPerLocale, threads_cnt);
       else
         sprintf(msg,
                 "maxThreadsPerLocale is unbounded, but unable to create more than %d threads",
@@ -1239,7 +1190,7 @@ static void schedule_next_task(int howMany) {
     threadlayer_pool_awaken();
   }
 
-  for (; howMany && (maxThreadsPerLocale == 0 || threads_cnt + 1 < maxThreadsPerLocale); howMany--)
+  for (; howMany && (taskMaxThreadsPerLocale == 0 || threads_cnt + 1 < taskMaxThreadsPerLocale); howMany--)
     launch_next_task_in_new_thread();
 }
 
@@ -1294,14 +1245,14 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
 
 // Threads
 
-int32_t  CHPL_THREADS_GETMAXTHREADS(void) { return 0; }
+int32_t  chpl_task_getMaxThreads(void) { return 0; }
 
-int32_t  CHPL_THREADS_MAXTHREADSLIMIT(void) { return 0; }
+int32_t  chpl_task_getMaxThreadsLimit(void) { return 0; }
 
 // take the main thread into account
-uint32_t CHPL_NUMTHREADS(void) { return threads_cnt + 1; }
+uint32_t chpl_task_getNumThreads(void) { return threads_cnt + 1; }
 
-uint32_t CHPL_NUMIDLETHREADS(void) {
+uint32_t chpl_task_getNumIdleThreads(void) {
   int numIdleThreads;
 
   // begin critical section

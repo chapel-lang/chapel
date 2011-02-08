@@ -1,1 +1,1 @@
-<internal>: error: unable to locate file: ./testMissing_real_real
+error: unable to locate file: ./testMissing_real_real

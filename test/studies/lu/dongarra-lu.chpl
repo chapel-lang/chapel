@@ -9,7 +9,7 @@
 
 config const epsilon = minPositive(float);
 
-def lutx(A: [1..?n, 1..n]) {
+proc lutx(A: [1..?n, 1..n]) {
   var p: [i in 1..n] = i;
 
   for k in [1..n) {

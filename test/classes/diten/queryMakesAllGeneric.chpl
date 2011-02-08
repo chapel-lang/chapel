@@ -5,12 +5,12 @@ record R {
   type t = int;
 }
 
-def foo(r: R(?b)) {
+proc foo(r: R(?b)) {
   var n: r.t;
   writeln((r.a, b, r.b, r.c, n));
 }
 
-def bar(r: R) {
+proc bar(r: R) {
   writeln((r.a, r.b, r.c));
 }
 

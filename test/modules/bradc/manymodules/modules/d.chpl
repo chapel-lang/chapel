@@ -1,12 +1,12 @@
 
 
 module d2 {
-  def rund() {
+  proc rund() {
     writeln("in rund() from module d2");
   }
 }
 
 
-def rund() {
+proc rund() {
   writeln("in rund() from module d");
 }

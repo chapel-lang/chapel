@@ -67,7 +67,7 @@ class Statistics {
 	var maxDecisionLevel : int = 0;
 	
 	// prints out the entire assignment
-	def writeThis(w : Writer) {
+	proc writeThis(w : Writer) {
 		w.write("Statistics\n");
 		w.write("Num clauses: ", nClauses, "\n");
 		w.write("Num conflicts: ", nVariables, "\n");
@@ -88,7 +88,7 @@ class IGNode {
 	var isdecision : bool; // was this a decision or as a result of a deduction
 	var antecedents : List(IGNode); // previous assignments that implied this assignment (empty if isdecision == true)
 	
-	def init(i:int, dl:int, v:bool, dv:bool) {
+	proc init(i:int, dl:int, v:bool, dv:bool) {
 		this.varid = i;
 		this.dlevel = dl;
 		this.value = v;
@@ -97,7 +97,7 @@ class IGNode {
 	} 	
 	
 	// initialize this node using the information stored in a given node
-	def initwith(node : IGNode) {
+	proc initwith(node : IGNode) {
 		this.init(node.varid, node.dlevel, node.value, node.isdecision);
 	} 
 }
@@ -110,7 +110,7 @@ class Assignment {
 	var dlevel : int; // current decision level
 	var slevel : int; // the decision level (of the parent processor) when this assignment is created (0 for the first processor)
 
-	def init() {
+	proc init() {
 		for i in domVars do {
 			values(i) = nil;	
 		}	
@@ -119,7 +119,7 @@ class Assignment {
 	}
 	
 	// initializes the assignment by copying the individual assignments from a given one, which is the parent
-	def init(A : Assignment) {
+	proc init(A : Assignment) {
 		for i in domVars do {
 			values(i) = A(i);	
 		}	
@@ -128,34 +128,34 @@ class Assignment {
 	}
 	
 	// increase the decision level to the next one
-	def next_dlevel() {
+	proc next_dlevel() {
 		dlevel = dlevel + 1;
 	}
 	
 	// reset the decision level to the given one
-	def reset_dlevel(dl : int) {
+	proc reset_dlevel(dl : int) {
 		dlevel = dl;
 	}
 	
 	// returns the IGNode (representing the assignment) associated with the variable
-	def this(i : int) var {
+	proc this(i : int) var {
 		assert(domVars.member(i), "Check if i is member of assignment.");
 		return values(i);
 	}
 	
 	// have all the variables been assigned?
-	def is_complete() : bool {
+	proc is_complete() : bool {
 		return (dlevel == numVars);
 	}
 	
 	// make an implication edge from the source to the target, as a result of a deduction
-	def make_edge(from_node : IGNode, to_node : IGNode) {
+	proc make_edge(from_node : IGNode, to_node : IGNode) {
 		var ans = new to_node.antecedents;
 		ans.insert(from_node);
 	}
 	
 	// assign a variable
-	def assign(x : int, v : bool, dv : bool) : IGNode {
+	proc assign(x : int, v : bool, dv : bool) : IGNode {
 		var node = new IGNode();
 		
 		assert(values(x) == nil, "Variables must be unassigned.");
@@ -167,12 +167,12 @@ class Assignment {
 	} 
 	
 	// assign a unit variable (+literal means assign true, -literal means assign false)
-	def assign_unit(unit : int) {
+	proc assign_unit(unit : int) {
 		return assign_literal(unit, false);
 	}
 	
 	// assign a literal (+literal means assign true, -literal means assign false)
-	def assign_literal(literal : int, dv : bool) : IGNode {
+	proc assign_literal(literal : int, dv : bool) : IGNode {
 		if literal > 0 {
 			return assign(literal, true, dv);
 		} else {
@@ -181,17 +181,17 @@ class Assignment {
 	}
 	
 	// assign a decision variable (+literal means assign true, -literal means assign false)
-	def assign_decision(literal : int) : IGNode {
+	proc assign_decision(literal : int) : IGNode {
 		return assign_literal(literal, true);	
 	}
 	
 	// remove the given assignment 
-	def unassign(node : IGNode) {
+	proc unassign(node : IGNode) {
 		values(node.varid) = nil;
 	}
 	
 	// replace the old node with a new node with the complement value
-	def reassign(x : int, v : bool) {
+	proc reassign(x : int, v : bool) {
 		var node : IGNode();
 		var newnode = new IGNode();
 		
@@ -202,7 +202,7 @@ class Assignment {
 	} 
 	
 	// prints out the entire assignment
-	def writeThis(w : Writer) {
+	proc writeThis(w : Writer) {
 		var node : IGNode = nil;
 		
   		w.write("[");
@@ -228,23 +228,23 @@ class Clause {
 	var domLtrs  : sparse subdomain (domVars); // subdomain points only to the variables whose literals are in this clause
 	var posneg   : [domLtrs] bool; // map from variable id to true/false. posneg[id]==true means +id is in the clause, posneg[id]==false means -id is in the clause
 	
-	def init() {
+	proc init() {
 		domLtrs.clear();
 	}
 	
 	// number of literals in this clause
-	def numLtrs() {
+	proc numLtrs() {
 		return domLtrs.numIndices;
 	}
 	
 	// iterator over the literals in the clause
-	def these() {
+	iter these() {
 	    for ltr in domLtrs do
 	      yield ltr;
   	}
   	
   	// check if this contains a given literal
-  	def has_literal(l : int) {
+  	proc has_literal(l : int) {
   		for ltr in domLtrs {
   			if ltr == l then
   				return true;
@@ -253,7 +253,7 @@ class Clause {
   	}
   	
   	// check if this contains a given variable either in positive or negative form
-  	def has_variable(l : int) {
+  	proc has_variable(l : int) {
   		for ltr in domLtrs {
   			if abs(ltr) == l then
   				return true;
@@ -262,7 +262,7 @@ class Clause {
   	}
   	
   	// prints out this clause
-  	def writeThis(w : Writer) {
+  	proc writeThis(w : Writer) {
   		w.write("[");
   		forall ltr in domLtrs {
   			if posneg(ltr) == false then
@@ -275,7 +275,7 @@ class Clause {
   	}
   	
   	// does the given assignment satisfy this clause?
-	def check_sat(A : Assignment) : bool {
+	proc check_sat(A : Assignment) : bool {
 		var issat = false;
 		var ltr : int;
 		var node : IGNode;
@@ -297,7 +297,7 @@ class Clause {
 	}
 	
 	// does the given assignment makes this clause unsatisfiable?
-	def check_conflict(A : Assignment) : bool {
+	proc check_conflict(A : Assignment) : bool {
 		var conflict = true;
 		var ltr : int;
 		var node : IGNode;
@@ -322,7 +322,7 @@ class Clause {
 	}
 	
 	// does the given assignment leaves this clause unit? (unit clause: the clause is unsatisfied and there is exactly one literal unassigned)
-	def check_unit(A : Assignment) : int {
+	proc check_unit(A : Assignment) : int {
 		var unit = 0;
 		var node : IGNode;
 		var ltr : int;
@@ -363,7 +363,7 @@ class Clause {
  * selects an unassigned variable to decide whose value in the current decision level
  * this basically selects the one with lowest id
  ***************************************************/
-def select_dvar_basic(A : Assignment) {
+proc select_dvar_basic(A : Assignment) {
 	var node : IGNode;
 	var dvar = 0;
 	
@@ -385,7 +385,7 @@ def select_dvar_basic(A : Assignment) {
  * this selects the one whose assignment will satisfy maximum number of clauses 
  ***************************************************/
  
-def select_dvar(A : Assignment) {
+proc select_dvar(A : Assignment) {
 	var node : IGNode;
 	var maxcls : int = 0;
 	var maxltr : int = 0;
@@ -428,7 +428,7 @@ def select_dvar(A : Assignment) {
 /***************************************************
  * decides the value of an unassigned variable
  ***************************************************/
-def decide(A : Assignment) {
+proc decide(A : Assignment) {
 
 	var node : IGNode;
 	var dltr : int;
@@ -449,7 +449,7 @@ def decide(A : Assignment) {
 /***************************************************
  * check whether the entire formula has been satisfied by the given assignment 
  ***************************************************/
-def check_sat(A : Assignment) : bool {
+proc check_sat(A : Assignment) : bool {
 	
 	var clause : Clause;
 	var issat = true;
@@ -479,7 +479,7 @@ def check_sat(A : Assignment) : bool {
 /***************************************************
  * checks whether there is any unsatisfied clauses by the given assignment
  ***************************************************/
-def check_conflict(A : Assignment) : Clause {
+proc check_conflict(A : Assignment) : Clause {
 	
 	var conflict_clause : Clause = nil;
 	var clause : Clause = nil;
@@ -504,7 +504,7 @@ def check_conflict(A : Assignment) : Clause {
 /***************************************************
  * makes deductions. deduction detects unit clauses (unsatisfied and having exactly one unassigned literal) and assigns the unassigned literals in them
  ***************************************************/
-def deduce(dvar : int, A : Assignment) : Clause {
+proc deduce(dvar : int, A : Assignment) : Clause {
 	var clause : Clause;
 	var unit : int;
 	var unode : IGNode;
@@ -544,7 +544,7 @@ def deduce(dvar : int, A : Assignment) : Clause {
 /***************************************************
  * collect the assignments that caused the given assignment (node) to be deducted
  ***************************************************/
-def compute_causes(node : IGNode, causes : List(IGNode)) {
+proc compute_causes(node : IGNode, causes : List(IGNode)) {
 	var antecedents = node.antecedents;
 	
 	forall anode in antecedents {
@@ -560,7 +560,7 @@ def compute_causes(node : IGNode, causes : List(IGNode)) {
 /***************************************************
  * collect the assignments that caused the given clause to be unsatisfied
  ***************************************************/
-def compute_conflict_clause(A : Assignment, clause : Clause) : List(IGNode) {
+proc compute_conflict_clause(A : Assignment, clause : Clause) : List(IGNode) {
 	var node : IGNode;
 	var causes = new List(IGNode);
 	
@@ -575,7 +575,7 @@ def compute_conflict_clause(A : Assignment, clause : Clause) : List(IGNode) {
 /***************************************************
  * do an atomic addition of a clause to the global set of clauses
  ***************************************************/
-def atomic_add_clause(clause : Clause) {
+proc atomic_add_clause(clause : Clause) {
 	var nc = numClss; // acquire
 	
 	nc = nc + 1;
@@ -591,7 +591,7 @@ def atomic_add_clause(clause : Clause) {
 /***************************************************
  * add a conflict induced clause to the global set of clauses as a learned lemma 
  ***************************************************/
-def add_conflict_lemma(causes : List(IGNode)) : Clause {
+proc add_conflict_lemma(causes : List(IGNode)) : Clause {
 	var varid : int; 
 	var clause = new Clause();
 	
@@ -616,7 +616,7 @@ def add_conflict_lemma(causes : List(IGNode)) : Clause {
 /***************************************************
  * after detecting a conflict and adding the conflict induced clause, this adds the required implications to the implication graph 
  ***************************************************/
-def deduce_btvar(A : Assignment, btvar : int, clause : Clause) {
+proc deduce_btvar(A : Assignment, btvar : int, clause : Clause) {
 	var unit = 0;
 	var unitvar = 0;
 	var nodef : IGNode;
@@ -642,7 +642,7 @@ def deduce_btvar(A : Assignment, btvar : int, clause : Clause) {
 /***************************************************
  * backtrack to the given decision level, this may cause a subset of the assignments to be rolled back 
  ***************************************************/
-def backtrack(A : Assignment, btlevel : int) : int {
+proc backtrack(A : Assignment, btlevel : int) : int {
 	var node : IGNode;
 
 	// remove all nodes after btlevel
@@ -662,7 +662,7 @@ def backtrack(A : Assignment, btlevel : int) : int {
 /***************************************************
  * analyze a unsatisfied clause and determine the conflict induced clause (cause of the conflict) and which the decision level to backtrack
  ***************************************************/
-def diagnose(A : Assignment, clause : Clause) : (int, int, List(IGNode)) {
+proc diagnose(A : Assignment, clause : Clause) : (int, int, List(IGNode)) {
 	var ltr : int;
 	var node : IGNode;
 	var ispos : bool;
@@ -695,7 +695,7 @@ def diagnose(A : Assignment, clause : Clause) : (int, int, List(IGNode)) {
 /***************************************************
  * if the max number of processors has not been reached, allocate a new processor and start a new search on that  
  ***************************************************/
-def fork_search (A : Assignment, dvar : int) {
+proc fork_search (A : Assignment, dvar : int) {
 	var newA : Assignment;
 	var node : IGNode;
 	var newnode : IGNode;
@@ -722,7 +722,7 @@ def fork_search (A : Assignment, dvar : int) {
  * the main search procedure. performed by a processor starting from a decision level (0 if the main processor)
  * it terminates if it has to backtrack to a decision level from which it was forked (except the main one) 
  ***************************************************/
-def search(A : Assignment, dvar0 : int) {
+proc search(A : Assignment, dvar0 : int) {
 	var conflict_clause : Clause;
 	var conflict_induced_clause : Clause;
 	var btlevel : int;
@@ -802,7 +802,7 @@ def search(A : Assignment, dvar0 : int) {
 /***************************************************
  * the main entry point 
  ***************************************************/
-def main() {
+proc main() {
 	var A : Assignment;
 	
 	if STAT then
@@ -843,7 +843,7 @@ def main() {
 /***************************************************
  * reads the input file and initializes the formula 
  ***************************************************/
-def parse() {
+proc parse() {
 	var line : string;
 	var p : string;
 	var format : string;
@@ -918,7 +918,7 @@ def parse() {
 /************************************************
  * if the max number of processors has not been reached, returns true and increases the current number of processors, returns false otherwise 
  ************************************************/
- def alloc_proc () : bool {
+ proc alloc_proc () : bool {
  	var np = numProcs; // acquire
  	
  	if np < MAXPROCS {
@@ -938,7 +938,7 @@ def parse() {
 /************************************************
  * frees a processor and decreases the current number of processors when the search on a processor terminates  
  ************************************************/
- def free_proc () {
+ proc free_proc () {
  	var np = numProcs;
  	
  	np = np - 1;
@@ -948,7 +948,7 @@ def parse() {
 /************************************************
  * if DEBUG flag is set, prints out a message to the console 
  ************************************************/
-def verbose(message : string) {
+proc verbose(message : string) {
 	if DEBUG {
 		writeln(message);
 	}
@@ -984,14 +984,14 @@ class List {
   //
   // Insert value into the front of the list
   //
-  def insert(value: eltType) {
+  proc insert(value: eltType) {
     head = new Node(eltType, value, head);
   }
 
   //
   // Return true if the list has any elements that match the argument in value
   //
-  def contains(value: eltType) {
+  proc contains(value: eltType) {
     for i in this do
       if i == value then
         return true;
@@ -1001,7 +1001,7 @@ class List {
   //
   // Remove the first occurrence of an element that matches the argument value
   //
-  def remove(value: eltType) {
+  proc remove(value: eltType) {
     if head == nil then
       return;
 
@@ -1024,7 +1024,7 @@ class List {
   // A default iterator.  Starting at head, follow next references
   // and yield the values of each node.
   //
-  def these() {
+  iter these() {
     var current = head;
     while current != nil {
       yield current.value;
@@ -1035,7 +1035,7 @@ class List {
   // Define the style of the output when a list is passed to the write or
   // writeln functions. The values will be written separated by spaces.
   // 
-  def writeThis(x: Writer) {
+  proc writeThis(x: Writer) {
     var first = true;
     for i in this do
       if first {

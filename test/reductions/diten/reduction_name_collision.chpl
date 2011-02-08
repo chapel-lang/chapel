@@ -8,7 +8,7 @@ writeln(+ reduce [1..n] longerName.next());
 
 class R {
   var count: sync int = 0;
-  def next() {
+  proc next() {
     var c = count + 1;
     count = c;
     return c;

@@ -21,7 +21,7 @@ numeric value to a string.
 
 The prototype for the format function is as follows:
 
-   def format(fmt: string, val): string;
+   proc format(fmt: string, val): string;
 
 where "fmt" is a format string and "val" is a scalar value.  This
 function can currently be used in one of two forms:

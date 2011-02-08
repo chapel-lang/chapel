@@ -17,7 +17,7 @@ for d in 1..rank {
   weights(ind) = 0.25;
 }
 
-def main() {
+proc main() {
   var A, B: [D] real = 0.0;
 
   A.setBoundary(computeBoundary);
@@ -39,7 +39,7 @@ def main() {
 }
 
 
-def computeBoundary(ijk: index(rank)) {
+proc computeBoundary(ijk: index(rank)) {
   for d in 1..rank {
     if (ijk(d) < 0 || ijk(d) > n+1) {
       halt("Out of bounds error in computeBoundary");

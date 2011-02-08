@@ -3,13 +3,13 @@ use BlockDist;
 
 
 // for binary output
-_extern def putchar(i : int) : int;
+_extern proc putchar(i : int) : int;
 
 config const size: int(64) = 200;
-config const iter : uint = 50;
+config const iters : uint = 50;
   
 const sizeRange = 0..#size;
-const iterRange = 0..#iter;
+const iterRange = 0..#iters;
 
 var Dist = new dmap (new Block(rank=2, idxType=int(64), boundingBox=[sizeRange, sizeRange]));
 var Dom: domain(2, int(64)) dmapped Dist = [sizeRange, sizeRange];
@@ -21,7 +21,7 @@ forall(i,j) in Dom do {
  }
 
 
-def work(x, y) : bool {
+proc work(x, y) : bool {
   var fy, z, c : complex;
   fy = 2i * y / size - 1i;
   z = 0i;

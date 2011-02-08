@@ -17,7 +17,7 @@ const updateDom = [0..numUpdates-1];
 
 //var NUPDATE: int;
 
-def main() {
+proc main() {
   writeln("Main table size = 2**", logTableSize, " = ", tableSize, " words");
   writeln("Number of updates = ", numUpdates);
 
@@ -36,7 +36,7 @@ def main() {
 }
 
 
-def VerifyResults() {
+proc VerifyResults() {
   var temp = 0x1:uint(64);
   for i in updateDom {
     temp = (temp << 1) ^ (if (temp < 0) then POLY else 0);
@@ -53,7 +53,7 @@ def VerifyResults() {
 }
 
 
-def computeLogTableSize(memsize: uint) {
+proc computeLogTableSize(memsize: uint) {
   param tableElemSize = 8;
   param fractionOfMemory = 0.5;
 

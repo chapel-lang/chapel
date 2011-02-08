@@ -1,6 +1,6 @@
 use Time;
 
-def main {
+proc main {
   var x: int;
   var z: int;
   var s: sync int;

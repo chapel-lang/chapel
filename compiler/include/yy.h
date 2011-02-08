@@ -18,9 +18,16 @@ extern const char* yyfilename;
 int yyparse(void);
 void yyerror(const char* str);
 int getNextYYChar();
+BlockStmt* parseString(const char* string, const char* filename, 
+                       const char* msg);
 
-extern int yylex(void);
+int yylex(void);
 extern int yydebug;
 
+enum ProcIter {
+  ProcIter_DEF, // ProcIter: remove after transition
+  ProcIter_PROC,
+  ProcIter_ITER
+};
 
 #endif

@@ -4,7 +4,7 @@ class pair {
   var b: real;
 }
 
-def callin(in x: pair) {
+proc callin(in x: pair) {
   writeln("in callin, x is: ", x.a, " ", x.b);
   x = new pair();
   x.a = 11;
@@ -13,7 +13,7 @@ def callin(in x: pair) {
 }
 
 
-def callout(out x: pair) {
+proc callout(out x: pair) {
   writeln("in callout, x ought to be nil");
   x = new pair();
   x.a = 12;
@@ -22,7 +22,7 @@ def callout(out x: pair) {
 }
 
 
-def callinout(inout x: pair) {
+proc callinout(inout x: pair) {
   writeln("in callinout, x is: ", x.a, " ", x.b);
   x = new pair();
   x.a = 13;
@@ -31,7 +31,7 @@ def callinout(inout x: pair) {
 }
 
 
-def callblank(x: pair) {
+proc callblank(x: pair) {
   writeln("in callblank, x is: ", x.a, " ", x.b);
   x.a = 14;
   x.b = 6.7;
@@ -39,7 +39,7 @@ def callblank(x: pair) {
 }
 
 
-def main() {
+proc main() {
   var a: pair = new pair();
 
   a.a = 10;

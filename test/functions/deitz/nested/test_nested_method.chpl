@@ -1,7 +1,7 @@
 class C {
   var x = "hello world";
-  def foo() {
-    def bar(s: string) {
+  proc foo() {
+    proc bar(s: string) {
       if s == "0" then
         writeln(x);
       else

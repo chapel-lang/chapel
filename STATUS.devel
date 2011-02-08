@@ -106,6 +106,11 @@ Ranges, Domains, and Arrays
 ---------------------------
 - Arrays of arrays where the inner arrays vary in size are not supported.
   # arrays/deitz/test_skyline_array.future
+- Modifications to Associative and Sparse domains are not thread-safe.
+  # domains/sungeun/assoc/forall.future
+  # domains/sungeun/assoc/stress.future
+  # domains/sungeun/sparse/forall.future
+  # domains/sungeun/sparse/stress.future
 - Sparse domain/array slicing is not supported.
 - Constant checking for domains and arrays is incomplete.
 - There are no bounds checks on index types.
@@ -182,9 +187,12 @@ Task Parallelism and Synchronization
 Data Parallelism
 ----------------
 - Reductions and scans of arrays of arrays may result in errors.
+  # arrays/sungeun/arrays_of_arrays/*reduce.chpl
 - Records in reduction classes may results in out-of-bound indexing
   problems.
   # studies/kmeans/kmeansonepassreduction-mystery.future
+- Parallel zippered iteration does not perform runtime size/shape checks
+  # arrays/claridge/arraySizeMismatch.future, arrays/bradc/badParZip.future
 - Some data parallel statements that should be parallelized are
   serialized with a warning message "X has been serialized".  In some
   case, this can be fixed in the program.
@@ -196,7 +204,9 @@ Data Parallelism
   2. Assignments from ranges to multidimensional arrays are always serialized.
   3. Assignment, reductions, and parallel iteration over opaque domains and
      arrays are always serialized.
-
+- Whole-domain assignment operations on sparse domains are not all serialized.
+  # domains/sungeun/sparse/minus_equals.future
+  # domains/sungeun/sparse/plus_equals.future
 
 Locales and Domain Maps
 -----------------------
@@ -208,8 +218,11 @@ Locales and Domain Maps
   # multilocale/sungeun/locale_default.future
 - Domain maps may be prematurely freed.
   Workaround: This may be in the declaration. Try eliding the type.
-- The local statement is not well supported.
+- The local statement is not well supported.  For example, declaring
+  domains (whether explicitly via a declaration or implicitly via
+  slicing results in a seg fault or non-local access error).
   # John Lewis examples and other .futures forthcoming
+  # multilocale/local/sungeun/local_privatization.chpl
 
 User-Defined Reductions and Scans and User-Defined Domain Maps
 --------------------------------------------------------------
@@ -244,6 +257,8 @@ Miscellaneous
 - Name mangling for generics may result in errors during C compilation.
   # classes/vass/instantiated_name_for_real_param.future
 # OMITTED: classes/claridge/recordInClass2.future
+- Leaving off () when calling exit results in an internal error.
+  # exits/sungeun/exitWithNoParensNoArgs.chpl
 
 
 Portability

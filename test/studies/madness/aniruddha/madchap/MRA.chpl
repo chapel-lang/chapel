@@ -59,7 +59,7 @@ class Function {
     const r0   : [dcDom] real;
     const rp   : [dcDom] real;
 
-    def Function(k:int=5, thresh:real=1e-5, f:AFcn=nil, initial_level:int=2, 
+    proc Function(k:int=5, thresh:real=1e-5, f:AFcn=nil, initial_level:int=2, 
                  max_level:int=30, autorefine:bool=true, compressed:bool=false, 
                  sumC:FTree=new FTree(order=k), diffC:FTree=new FTree(order=k)) {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
@@ -95,7 +95,7 @@ class Function {
     }
 
 
-    def ~Function() {
+    proc ~Function() {
         delete sumC;
         delete diffC;
     }
@@ -103,7 +103,7 @@ class Function {
 
     /** Initialize the two-scale relation coefficient matricies.
      */
-    def init_twoscale(k) {
+    proc init_twoscale(k) {
         hgDom = [0..2*k-1, 0..2*k-1];
         hg = hg_getCoeffs(k);
         [(i,j) in hgDom] hgT[i,j] = hg[j,i];
@@ -112,7 +112,7 @@ class Function {
 
     /** Initialize the quadrature coefficient matricies.
      */
-    def init_quadrature(k) {
+    proc init_quadrature(k) {
         quadDom = [0..k-1];
         quad_x = gl_getPoints(k);
         quad_w = gl_getWeights(k);
@@ -131,7 +131,7 @@ class Function {
         difference derivative operator with periodic boundary
         conditions on either side.
      */
-    def make_dc_periodic(k) {
+    proc make_dc_periodic(k) {
         dcDom = [0..k-1, 0..k-1];
         var iphase = 1.0;
         for i in dcDom.dim(1) {
@@ -153,7 +153,7 @@ class Function {
 
     /** Return a deep copy of this Function
      */
-    def copy() {
+    proc copy() {
         return new Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine, compressed=compressed,
                 sumC=sumC.copy(), diffC=diffC.copy());
@@ -162,7 +162,7 @@ class Function {
 
     /** Return a copy of this function's skeleton
      */
-    def skeletonCopy() {
+    proc skeletonCopy() {
         // Omit: f, compressed, sumC, diffC
         return new Function(k=k, thresh=thresh, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine);
@@ -173,7 +173,7 @@ class Function {
         for box (n,l) project f(x) using quadrature rule
         into scaling function basis
      */
-    def project(curNode: Node) {
+    proc project(curNode: Node) {
         const (n, l) = curNode.get_coords();
         var h     = 0.5 ** n;
         var scale = sqrt(h);
@@ -192,7 +192,7 @@ class Function {
 
     /** Refine numerical representation of f(x) to desired tolerance
      */
-    def refine(curNode: Node) {
+    proc refine(curNode: Node) {
         // project f(x) at next level
         var sc : [0..2*k-1] real;
         var s0 : [0..k-1] => sc[0..k-1];
@@ -226,7 +226,7 @@ class Function {
     /** Evaluate numerical representation of f at x.  Performed in scaling
         function basis only.
      */
-    def this(x) {
+    proc this(x) {
         if compressed then reconstruct();
         return evaluate( rootNode, x);
     }
@@ -238,7 +238,7 @@ class Function {
         Descend tree looking for box (n,l) with scaling function
         coefficients containing the point x.
      */
-    def evaluate(curNode = rootNode, in x): real {
+    proc evaluate(curNode = rootNode, in x): real {
         if sumC.has_coeffs(curNode) {
             const (n, ) = curNode.get_coords();
             var p = phi(x, k);
@@ -260,7 +260,7 @@ class Function {
         n is level in tree
         l is box index
      */
-    def compress(curNode = rootNode) {
+    proc compress(curNode = rootNode) {
         if compressed then return;
 
         // sub-trees can be done in parallel
@@ -292,7 +292,7 @@ class Function {
         n is level in tree
         l is box index
      */
-    def reconstruct(curNode = rootNode) {
+    proc reconstruct(curNode = rootNode) {
         if !compressed then return;
 
         if diffC.has_coeffs(curNode) {
@@ -324,7 +324,7 @@ class Function {
         the corresponding coefficients on level n+1 and insert the results into
         the tree of scaling function coefficients.
      */
-    def recur_down(curNode: Node) {
+    proc recur_down(curNode: Node) {
         if debug then writeln(" + recur_down",curNode);
 
         var sc : [0..2*k-1] real;
@@ -348,7 +348,7 @@ class Function {
 
         Else, return None (corresponding child boxes exist at a finer scale)
      */
-    def get_coeffs(curNode: Node) {
+    proc get_coeffs(curNode: Node) {
         if debug then writeln(" @ get_coeffs",curNode);
 
         // Check to see if curNode is on the boundary.  If so,
@@ -381,7 +381,7 @@ class Function {
         locally first box with scaling function coefficients.
         Delete all children below there. 
      */
-    def sclean(curNode = rootNode, in cleaning=false) {
+    proc sclean(curNode = rootNode, in cleaning=false) {
         if cleaning { //then
             if debug then writeln(" + sclean deleting ", curNode);
             sumC.remove(curNode);
@@ -406,8 +406,8 @@ class Function {
         boxes exist in the same scale.
      */
 
-  def diff() {
-    def diffHelper(curNode = rootNode, result) {
+  proc diff() {
+    proc diffHelper(curNode = rootNode, result) {
         const (n,l) = curNode.get_coords();
         if debug then writeln(" * diff",curNode);
         if !sumC.has_coeffs(curNode) {
@@ -451,7 +451,7 @@ class Function {
 
     /** Return sqrt(integral(f(x)**2))
      */
-    def norm2() {
+    proc norm2() {
         if compressed then reconstruct();
         return sqrt(+ reduce [i in sumC] normf(i)**2);
     }
@@ -460,7 +460,7 @@ class Function {
     /** Perform GAXPY in the multi-wavelet (compressed) basis
         this = alpha*this + beta*other (other is not changed).
      */
-    def gaxpy(alpha, other, beta) {
+    proc gaxpy(alpha, other, beta) {
         if !compressed then compress();
         if !other.compressed then other.compress();
 
@@ -480,7 +480,7 @@ class Function {
     /** Add this function to another and return the result in a new
         function.  This and other are unchanged.
      */ 
-    def add(other) {
+    proc add(other) {
         return copy().gaxpy(1.0, other, 1.0);
     }
 
@@ -488,14 +488,14 @@ class Function {
     /** Subtract this function from another and return the result in a new
         function.  This and other are unchanged.
      */ 
-    def subtract(other) {
+    proc subtract(other) {
         return copy().gaxpy(1.0, other, -1.0);
     }
 
     
     /** Recursively multiply f1 and f2 put the result into this
      */ 
-    def multiply(f1, f2, curNode = rootNode) {
+    proc multiply(f1, f2, curNode = rootNode) {
         const child = curNode.get_children();
         if f1.sumC.has_coeffs(curNode) && f2.sumC.has_coeffs(curNode) {
             const (n, ) = curNode.get_coords();
@@ -554,7 +554,7 @@ class Function {
         For multiply, both operands need to be in the scaling function basis
         so possibly call reconstruct on one or both of them first
      */
-    def multiply(other) {
+    proc multiply(other) {
         if compressed then reconstruct();
         if other.compressed then other.reconstruct();
 
@@ -572,7 +572,7 @@ class Function {
     /** Mostly for debugging, print summary of coefficients,
         optionally printing the norm of each block
      */
-    def summarize() {
+    proc summarize() {
         writeln("\n-----------------------------------------------------");
         writeln("k=", k, " thresh=", thresh, " compressed=", compressed);
         writeln("sum coefficients:");
@@ -606,7 +606,7 @@ class Function {
     /** Evaluate the analytic and numerical functions over the given interval
         and print the error.
      */
-    def evalNPT(npt) {
+    proc evalNPT(npt) {
         for i in 0..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
             //writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.5e", Fval),
@@ -625,14 +625,14 @@ class Function {
 /*************************************************************************/
 
 
-def +(F: Function, G: Function): Function {
+proc +(F: Function, G: Function): Function {
     return F.add(G);
 }
 
-def -(F: Function, G: Function): Function {
+proc -(F: Function, G: Function): Function {
     return F.subtract(G);
 }
     
-def *(F: Function, G: Function): Function {
+proc *(F: Function, G: Function): Function {
     return F.multiply(G);
 }

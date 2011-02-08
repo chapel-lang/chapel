@@ -20,6 +20,7 @@
 #
 # Creating a file name PARAHALT in the root test directory halts the
 # distribution of more work.
+# (Do so on the host running paratest.server to avoid NFS delays if applicable.)
 #
 # Requirements:
 #  - $CHPL_HOME environment variable is set
@@ -51,7 +52,7 @@ $dirs_to_ignore = "Bin|Logs|Samples|Share|OUTPUT|RCS";
 
 $logdir = "Logs";                      # dir under test to store logs
 $synchdir = "$logdir/.synch";          # where to store temporary metadata
-$rem_exe = "ssh";
+$rem_exe = "ssh -x";                   # disable X
 $pwd = `pwd`; chomp $pwd;
 $client_script = "$pwd/../util/test/paratest.client";
 $summary_len = 2;
@@ -61,6 +62,7 @@ $filedist = 0;
 $valgrind = 0;
 $memleaks = "/dev/null";
 $memleaksflag = 0;
+$show_all_errors = 0;
 $suppressions = "";
 
 $localhost = `uname -n`;
@@ -168,7 +170,7 @@ sub free_workers {
         wait;
     }
 
-    print ".";
+    print (@readyids ? "," : ".");
     return @readyids;
 }
 
@@ -229,13 +231,17 @@ sub feed_nodes {
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
-                    systemd ("$rem_cmd > /dev/null 2>& 1");
+                    systemd ("$rem_cmd 2>&1 | grep -i error:");
                 }
                 $partial_errors = `grep -a "^\\[Error" $logfile`;
                 if ($partial_errors =~ /^\[Error/) {
                     @errors = split /^/m, $partial_errors;
-                    chomp $errors[0];
-                    print "\n:( " . $errors[0] . "\n";
+		    if ($show_all_errors) {
+		        print "\n:( \n@errors";
+		    } else {
+		        chomp $errors[0];
+			print "\n:( " . $errors[0] . "\n";
+		    }
                 } else {
                     print ":)";
                 }
@@ -252,7 +258,8 @@ sub feed_nodes {
 
     # wait for everyone to finish;
     @readyidv = free_workers ();
-    while ($#readyidv != $#node_list) {
+    while (($#readyidv != $#node_list) &&
+           !(-e "PARAHALT")) {
         sleep $sleep_time;
         @readyidv = free_workers ();
     }
@@ -466,6 +473,8 @@ sub main {
             }
         } elsif (/^-valgrind/) {
             $valgrind = 1;
+        } elsif (/^-show-all-errors/) {
+	   $show_all_errors = 1;
         } elsif (/^-help|^-h/) {
             print_help;
             exit (9);
@@ -507,8 +516,10 @@ sub main {
         die "Error generating Spec tests in $ENV{CHPL_HOME}/spec\n" unless $? == 0;
         chdir $cwd;
         if ($filedist) {
+	    print "[Collecting test files in $cwd]\n";
             @testdir_list = find_files (".", 0, !$incl_futures, 1);
         } else {
+	    print "[Collecting test directories in $cwd]\n";
             @testdir_list = find_subdirs (".", 0);
         }
     }

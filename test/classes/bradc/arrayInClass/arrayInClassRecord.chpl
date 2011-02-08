@@ -25,14 +25,14 @@ baz(myC, 20);
 writeln("myC is: ", myC);
 delete myC;
 
-def foo(x,y) {
+proc foo(x,y) {
   x(1) = y;
 }
 
-def bar((x,y)) {
+proc bar((x,y)) {
   x(1) = y;
 }
 
-def baz(x,y) {
+proc baz(x,y) {
   x.A(1) = y;
 }

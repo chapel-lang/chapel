@@ -1,20 +1,20 @@
 class C {
   var x: int;
-  def foo(i: int, j: int) {
+  proc foo(i: int, j: int) {
     writeln((x, i, j));
   }
 }
 
 class D : C {
   var y: int;
-  def foo(i: int, j: int) {
+  proc foo(i: int, j: int) {
     writeln((x, y, i, j));
   }
 }
 
 class E : D {
   var z: int;
-  def foo(i: int, j: int) {
+  proc foo(i: int, j: int) {
     writeln((x, y, z, i, j));
   }
 }

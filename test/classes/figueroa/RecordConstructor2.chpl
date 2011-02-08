@@ -1,9 +1,9 @@
 record R {
   var c: int;
-  def initialize () {c = 2;}
+  proc initialize () {c = 2;}
 }
 
-def init (x: [] ?t) {
+proc init (x: [] ?t) {
   for i in x.domain do {
     var y: t;
     x[i] = y;

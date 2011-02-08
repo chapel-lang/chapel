@@ -4,41 +4,146 @@ use CFUtilities;
 
 
 
-//|\""""""""""""""""""""""""""""|\
-//| >    CoarseOverlap class    | >
-//|/____________________________|/
-//------------------------------------------------------------------
-// Describes the overlap of a Grid with a coarser level.  This
-// is the intersection of the Grid's ghost cells with the interior
-// of each coarse grid.  As such, each overlap is typically a union
-// of rectangles, and must be described by a DomainSet.
-//------------------------------------------------------------------
-class CoarseOverlap {  
-  var neighbors:           domain(Grid);
-  var overlap_domain_sets: [neighbors] DomainSet(dimension,stridable=true);
+//|\"""""""""""""""""""""""""""""""""""""|\
+//| >    CoarseningTransferZone class    | >
+//|/_____________________________________|/
+
+//---------------------------------------------------------------------
+// Stores the region on which a coarse grid will receive data from a
+// finer level.  This consists of grid.cells, intersected with the
+// coarsening of fine_grid.cells.
+//---------------------------------------------------------------------
+
+class CoarseningTransferZone {
+  const neighbors: domain(Grid);
+  const domains:   [neighbors] domain(dimension,stridable=true);
+  
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  proc clear() {
+    neighbors.clear();
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
   
   
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def CoarseOverlap(
-    grid:         Grid,
-    coarse_level: Level)
+  proc CoarseningTransferZone(
+    coarse_level: Level,
+    fine_level:   Level,
+    coarse_grid:  Grid)
   {
     //==== Calculate refinement ratio ====
-    var ref_ratio: dimension*int;
-    for d in dimensions do
-      ref_ratio(d) = round(coarse_level.dx(d) / grid.dx(d)): int;
+    const ref_ratio = refinementRatio(coarse_level, fine_level);
+    
+    //==== Check each grid on fine_level for overlap ====
+    for fine_grid in fine_level.grids {
+      var overlap = coarse_grid.cells( coarsen(fine_grid.cells, ref_ratio) );
+      
+      if overlap.numIndices>0 {
+        neighbors.add(fine_grid);
+        domains(fine_grid) = overlap;
+      }
+    }
+
+  }
+  // /|''''''''''''''''''''/|
+  //< |    constructor    < |
+  // \|....................\|
+  
+  
+  //|\'''''''''''''''''''''''''|\
+  //| >    these() iterator    | >
+  //|/.........................|/
+  iter these() {
+    for nbr in neighbors do
+      yield (nbr, domains(nbr));
+  }
+  // /|'''''''''''''''''''''''''/|
+  //< |    these() iterator    < |
+  // \|.........................\|
+  
+}
+// /|"""""""""""""""""""""""""""""""""""""/|
+//< |    CoarseningTransferZone class    < |
+// \|_____________________________________\|
+
+
+
+
+
+
+//|\"""""""""""""""""""""""""""""""""""|\
+//| >    RefiningTransferZone class    | >
+//|/___________________________________|/
+
+//------------------------------------------------------------------
+// Describes the overlap of a Grid with a coarser level.  This
+// is the intersection of the Grid's ghost cells with the interior
+// of each coarse grid.  As such, each overlap is typically a union
+// of rectangles, and must be described by a MultiDomain.
+//------------------------------------------------------------------
+
+class RefiningTransferZone {  
+
+  const full_multidomain: MultiDomain(dimension,stridable=true);
+
+  const neighbors:    domain(Grid);
+  const multidomains: [neighbors] MultiDomain(dimension,stridable=true);
+  const subranges:    [neighbors] range;
+  
+  
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  proc clear() {
+    delete full_multidomain;
+    for neighbor in neighbors do delete multidomains(neighbor);
+    neighbors.clear();
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+  
+  
+  //|\''''''''''''''''''''|\
+  //| >    constructor    | >
+  //|/....................|/
+  proc RefiningTransferZone(
+    coarse_level: Level,
+    fine_level:   Level,
+    grid:         Grid)
+  {
+    //==== Calculate refinement ratio ====
+    const ref_ratio = refinementRatio(coarse_level, fine_level);
     
     //==== Check each grid on coarse_level for overlap ====
     for coarse_grid in coarse_level.grids {
-      var overlap = grid.ext_cells( refine(coarse_grid.cells) ) - grid.cells;
-      if overlap.indices.numIndices>0 {
+      
+      //==== Determine overlap ====
+      var overlap_multidomain = new MultiDomain(dimension,stridable=true);
+      overlap_multidomain.add(fine_level.boundary(grid));
+      overlap_multidomain.intersect( refine(coarse_grid.cells,ref_ratio) );
+
+      //==== Update data structures ====
+      if overlap_multidomain.domains.numElements > 0 {
         neighbors.add(coarse_grid);
-        overlap_domain_sets(coarse_grid) = overlap;
+        multidomains(coarse_grid) = overlap_multidomain;
       }
       else
-        delete overlap;
+        delete overlap_multidomain;
+    }
+    
+    //==== Build full MultiDomain of overlaps ====
+    full_multidomain = new MultiDomain(dimension,stridable=true);
+    for coarse_nbr in neighbors {
+      var subrange_low = full_multidomain.subindices.high+1;
+      full_multidomain.add(multidomains(coarse_nbr));
+      subranges(coarse_nbr) = subrange_low .. full_multidomain.subindices.high;
     }
   }
   // /|''''''''''''''''''''/|
@@ -49,9 +154,9 @@ class CoarseOverlap {
   //|\'''''''''''''''''''''''''|\
   //| >    these() iterator    | >
   //|/.........................|/
-  def these() {
+  iter these() {
     for nbr in neighbors do
-      yield (nbr, overlap_domain_sets(nbr));
+      yield (nbr, multidomains(nbr), subranges(nbr));
   }
   // /|'''''''''''''''''''''''''/|
   //< |    these() iterator    < |
@@ -60,66 +165,14 @@ class CoarseOverlap {
 
 }
 // /|""""""""""""""""""""""""""""/|
-//< |    CoarseOverlap class    < |
+//< |    RefiningTransferZone class    < |
 // \|____________________________\|
 
 
 
-//|\""""""""""""""""""""""""""|\
-//| >    FineOverlap class    | >
-//|/__________________________|/
-//---------------------------------------------------------------------
-// Stores the overlap of a Grid with a finer level, which in this case
-// is the intersection of Grid.cells with each fine_grid.cells.  Each
-// intersection is a rectangle, and thus each overlap may be stored as
-// a domain.
-//---------------------------------------------------------------------
-class FineOverlap {
-  var neighbors: domain(Grid);
-  var overlap_domains: [neighbors] domain(dimension,stridable=true);
-  
-  //|\''''''''''''''''''''|\
-  //| >    constructor    | >
-  //|/....................|/
-  def FineOverlap(
-    grid:       Grid,
-    fine_level: Level)
-  {
-    //==== Calculate refinement ratio ====
-    var ref_ratio: dimension*int;
-    for d in dimensions do
-      ref_ratio(d) = round(grid.dx(d) / fine_level.dx(d)): int;
-    
-    //==== Check each grid on fine_level for overlap ====
-    for fine_grid in fine_level.grids {
-      var overlap = grid.cells( coarsen(fine_grid.cells, ref_ratio) );
-      if overlap.numIndices>0 {
-        neighbors.add(fine_grid);
-        overlap_domains(fine_grid) = overlap;
-      }
-    }
 
-  }
-  // /|''''''''''''''''''''/|
-  //< |    constructor    < |
-  // \|....................\|
-  
-  
-  //|\'''''''''''''''''''''''''|\
-  //| >    these() iterator    | >
-  //|/.........................|/
-  def these() {
-    for nbr in neighbors do
-      yield (nbr, overlap_domains(nbr));
-  }
-  // /|'''''''''''''''''''''''''/|
-  //< |    these() iterator    < |
-  // \|.........................\|
-  
-}
-// /|""""""""""""""""""""""""""/|
-//< |    FineOverlap class    < |
-// \|__________________________\|
+
+
 
 
 
@@ -133,8 +186,27 @@ class CFBoundary {
   const fine_level:   Level;
   const ref_ratio:    dimension*int;
 
-  var coarse_overlaps: [fine_level.grids] CoarseOverlap;
-  var fine_overlaps:   [coarse_level.grids] FineOverlap;
+  var coarse_overlaps: [fine_level.grids] RefiningTransferZone;
+  var fine_overlaps:   [coarse_level.grids] CoarseningTransferZone;
+
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  proc clear() {
+    for grid in fine_level.grids {
+      coarse_overlaps(grid).clear();
+      delete coarse_overlaps(grid);
+    }
+    
+    for grid in coarse_level.grids {
+      fine_overlaps(grid).clear();
+      delete fine_overlaps(grid);
+    }
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+
 
   //|\''''''''''''''''''''''''''''|\
   //| >    initialize() method    | >
@@ -143,14 +215,14 @@ class CFBoundary {
   // Intended signature is 
   //     CFBoundary(coarse_level: Level, fine_level: Level)
   //----------------------------------------------------------
-  def initialize() {
+  proc initialize() {
     ref_ratio = refinementRatio(coarse_level, fine_level);
     
     for fine_grid in fine_level.grids do
-      coarse_overlaps(fine_grid) = new CoarseOverlap(fine_grid, coarse_level);
+      coarse_overlaps(fine_grid) = new RefiningTransferZone(coarse_level, fine_level, fine_grid);
       
     for coarse_grid in coarse_level.grids do
-      fine_overlaps(coarse_grid) = new FineOverlap(coarse_grid, fine_level)
+      fine_overlaps(coarse_grid) = new CoarseningTransferZone(coarse_level, fine_level, coarse_grid);
   }
   // /|''''''''''''''''''''''''''''/|
   //< |    initialize() method    < |

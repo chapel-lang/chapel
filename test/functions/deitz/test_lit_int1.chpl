@@ -1,7 +1,7 @@
-def foo(param x : int)
+proc foo(param x : int)
   return x;
 
-def foo(x : int)
+proc foo(x : int)
   return -1;
 
 var y : int = 2;

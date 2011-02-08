@@ -1,4 +1,4 @@
-def f(param p: int) {
+proc f(param p: int) {
   var x: p*int;
   for param i in 1..p do
     x(i) = i;

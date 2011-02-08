@@ -1,4 +1,4 @@
-def basic() : int {
+iter basic() : int {
   var a : int;
   while a < 10 {
     yield a * 4;
@@ -6,7 +6,7 @@ def basic() : int {
   }
 }
 
-def simple() : int {
+iter simple() : int {
   var b : int;
   while b < 6 {
     yield b * 10;
@@ -14,7 +14,7 @@ def simple() : int {
   }
 }
 
-def main() {
+proc main() {
 var x : int = 5;
   for i in basic() {
     for j in simple() {

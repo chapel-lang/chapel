@@ -59,9 +59,9 @@ base_path = os.getcwd()
 advection_grid_dir = base_path + "/advection/grid"
 os.chdir(advection_grid_dir)
 os.system("make output")
-file_name_1 = "_output/fort.q0020"
-file_name_2 = "regression_data/fort.q0020"
-advection_grid_diff = approximateDiff(file_name_1, file_name_2, tolerance)
+output_file = "_output/fort.q0020"
+regression_file = "regression_data/fort.q0020"
+advection_grid_diff = approximateDiff(output_file, regression_file, tolerance)
 os.system("make clean")
 os.chdir(base_path)
 
@@ -70,9 +70,19 @@ os.chdir(base_path)
 advection_level_dir = base_path + "/advection/level"
 os.chdir(advection_level_dir)
 os.system("make output")
-file_name_1 = "_output/fort.q0020"
-file_name_2 = "regression_data/fort.q0020"
-advection_level_diff = approximateDiff(file_name_1, file_name_2, tolerance)
+output_file = "_output/fort.q0020"
+regression_file = "regression_data/fort.q0020"
+advection_level_diff = approximateDiff(output_file, regression_file, tolerance)
+os.system("make clean")
+os.chdir(base_path)
+
+
+advection_amr_dir = base_path + "/advection/amr"
+os.chdir(advection_amr_dir)
+os.system("make output")
+output_file = "_output/fort.q0015"
+regression_file = "regression_data/fort.q0015"
+advection_amr_diff = approximateDiff(output_file, regression_file, tolerance)
 os.system("make clean")
 os.chdir(base_path)
 
@@ -80,9 +90,9 @@ os.chdir(base_path)
 diffusion_grid_dir = base_path + "/diffusion/grid"
 os.chdir(diffusion_grid_dir)
 os.system("make output")
-file_name_1 = "_output/fort.q0020"
-file_name_2 = "regression_data/fort.q0020"
-diffusion_grid_diff = approximateDiff(file_name_1, file_name_2, tolerance)
+output_file = "_output/fort.q0020"
+regression_file = "regression_data/fort.q0020"
+diffusion_grid_diff = approximateDiff(output_file, regression_file, tolerance)
 os.system("make clean")
 os.chdir(base_path)
 
@@ -90,11 +100,14 @@ os.chdir(base_path)
 diffusion_level_dir = base_path + "/diffusion/level"
 os.chdir(diffusion_level_dir)
 os.system("make output")
-file_name_1 = "_output/fort.q0025"
-file_name_2 = "regression_data/fort.q0025"
-diffusion_level_diff = approximateDiff(file_name_1, file_name_2, tolerance)
+output_file = "_output/fort.q0025"
+regression_file = "regression_data/fort.q0025"
+diffusion_level_diff = approximateDiff(output_file, regression_file, tolerance)
 os.system("make clean")
 os.chdir(base_path)
+
+
+
 
 
 if advection_grid_diff:
@@ -107,6 +120,11 @@ if advection_level_diff:
 else:
     print "No change in advection/level"
 
+if advection_amr_diff:
+    print "Warning: Change in advection/amr"
+else:
+    print "No change in advection/amr"
+
 if diffusion_grid_diff:
     print "Warning: Change in diffusion/grid"
 else:
@@ -116,3 +134,4 @@ if diffusion_level_diff:
     print "Warning: Change in diffusion/level"
 else:
     print "No change in diffusion/level"
+

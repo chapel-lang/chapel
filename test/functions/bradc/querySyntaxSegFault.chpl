@@ -3,7 +3,7 @@ class C {
   param r: int;
 }
 
-def foo(x: C(t=?tt, r=?rr)) {
+proc foo(x: C(t=?tt, r=?rr)) {
   writeln("In foo");
 }
 

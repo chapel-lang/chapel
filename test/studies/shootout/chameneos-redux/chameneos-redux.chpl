@@ -27,13 +27,13 @@ class MeetingPlace {
 
 	/* constructor for MeetingPlace, sets the 
 	   number of meetings to take place */
-	def MeetingPlace() {
+	proc MeetingPlace() {
 		spotsLeft$.writeXF(numMeetings*2);
 	}
 	
 	/* reset must be called after meet, 
 	   to reset numMeetings for a subsequent call of meet */
-	def reset() {
+	proc reset() {
 		spotsLeft$.writeXF(numMeetings*2);
 	}
 }
@@ -41,7 +41,7 @@ class MeetingPlace {
 /* getComplement returns the complement of this and another color:
    if this and the other color are of the same value, return own value
    otherwise return the color that is neither this or the other color */
-def getComplement(myColor : Color, otherColor : Color) {
+proc getComplement(myColor : Color, otherColor : Color) {
 	if (myColor == otherColor) { return myColor; } 
 	return (3 - myColor - otherColor) : Color;
 }
@@ -56,7 +56,7 @@ class Chameneos {
 	/* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
 	   with another Chameneos.  If it does, it will get the complement of the color
 	   of the Chameneos it met with, and change to the complement of that color. */
-	def start(place : MeetingPlace) {
+	proc start(place : MeetingPlace) {
 		var meetingPlace : MeetingPlace = place;
 		var stop : bool = false;
 		while (!stop) {
@@ -67,7 +67,7 @@ class Chameneos {
 	/* meet, if called on by the chameneos who arrives 1st, 
 	   returns the color of the chameneos who arrives 2nd,
 	   otherwise returns the color of the chameneos who arrives 1st */
-	def meet(place : MeetingPlace) {
+	proc meet(place : MeetingPlace) {
 		var partner : Chameneos;
 		var spotsLeft = place.spotsLeft$; 	
 
@@ -100,7 +100,7 @@ class Chameneos {
 }
 
 /* printColorChanges prints the result of getComplement for all possible pairs of colors */
-def printColorChanges() {
+proc printColorChanges() {
 	const colors : [1..3] Color = (Color.blue, Color.red, Color.yellow);
 	for color1 in colors {
 		for color2 in colors {
@@ -112,7 +112,7 @@ def printColorChanges() {
 
 /* populate takes an parameter of type int, size, and returns a population of chameneos 
    of that size. if population size is set to 10, will use preset array of colors  */
-def populate (size : int) {
+proc populate (size : int) {
 	const colorsDefault10  = (Color.blue, Color.red, Color.yellow, Color.red, Color.yellow, 
 			      	        Color.blue, Color.red, Color.yellow, Color.red, Color.blue);	
 	const D : domain(1) = [1..size];
@@ -130,7 +130,7 @@ def populate (size : int) {
    it then prints out the number of times each Chameneos met another Chameneos, spells out the
    number of times it met with itself, then spells out the total number of times all the Chameneos met
    another Chameneos. */
-def run(population : [] Chameneos, meetingPlace : MeetingPlace) {
+proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
 	for i in population { write(" ", i.color); }
 	writeln();
 
@@ -138,7 +138,7 @@ def run(population : [] Chameneos, meetingPlace : MeetingPlace) {
 	meetingPlace.reset();
 }
 
-def runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
+proc runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
 	coforall i in population { i.start(meetingPlace); }
 	meetingPlace.reset();
 
@@ -147,7 +147,7 @@ def runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
 	printInfoQuiet(totalMeetings, totalMeetingsWithSelf);
 }
 
-def printInfo(population : [] Chameneos) {
+proc printInfo(population : [] Chameneos) {
 	for i in population {
 		write(i.meetings);
 		spellInt(i.meetingsWithSelf);
@@ -158,7 +158,7 @@ def printInfo(population : [] Chameneos) {
 	writeln();
 }
 
-def printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
+proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 	if (totalMeetings == numMeetings*2) { writeln("total meetings PASS"); } 
 	else { writeln("total meetings actual = ", totalMeetings, ", total meetings expectud = ", numMeetings*2); }
 	
@@ -169,13 +169,13 @@ def printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 }
 
 /* spellInt takes an integer, and spells each of its digits out in English */
-def spellInt(n : int) {
+proc spellInt(n : int) {
 	var s : string = n:string;
 	for i in 1..s.length {write(" ", (s.substring(i):int + 1):Digit);}
 	writeln();
 }
 
-def main() {
+proc main() {
 	if (numChameneos1 < 2 || numChameneos2 < 2 || numMeetings < 0) {
 		writeln("Please specify numChameneos1 and numChameneos2 of at least 2, and numMeetings of at least 0.");
 	} else 	{

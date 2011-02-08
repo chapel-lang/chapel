@@ -1,4 +1,4 @@
-def foo(a:int) {
+proc foo(a:int) {
   writeln(a);
 }
 

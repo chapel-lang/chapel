@@ -17,11 +17,12 @@
 # NOTE: Assumes paratest.client is run from $CHPL_HOME/test
 # 
 
-$debug = 0; # set $verbose=1 in server
+$debug = 0;  # if setting this, also set $verbose=1 in paratest.server
 $logdir = "Logs";
 $synchdir = "Logs/.synch";
 $testcmd = "nice ../util/start_test";
 $publish_delay = 2;
+$node = "";
 
 sub systemd {
     my ($cmd) = @_;
@@ -29,17 +30,20 @@ sub systemd {
     system ($cmd);
 }
 
+sub fatal {
+    print STDERR "Error: [$node] @_\n";
+    exit(2);
+}
 
 sub main {
     my ($logfile, $synchfile, $workingdir, $testdir, $compiler, $platform);
-    my ($node) = `uname -n`;
+    $node = `uname -n`;
     chomp $node;
     ($node, $junk) = split (/\./, $node, 2);
 
     if ($#ARGV < 4) {
-        print "@ARGV\n";
-        print "usage: paratest.client id chapeltestdir testdir futures valgrind memleaks [compopts] [execopts] [comm]\n";
-        exit (3);
+        fatal("insufficient arguments: '@ARGV'\n" .
+	      "Usage:  paratest.client id chapeltestdir testdir futures valgrind memleaks [compopts] [execopts] [comm]");
     }
 
     $id = $ARGV[0];
@@ -62,21 +66,18 @@ sub main {
     $synchfile = "$synchdir/$node.$id";
 
     unless (chdir ($workingdir)) {
-        print "Error: cannot change to directory $workingdir\n";
-        exit (2);
+        fatal("cannot change to directory '$workingdir'");
     }
     print "\n* $node up @ $workingdir *\n";
 
     $platform = `../util/chplenv/platform`; chomp $platform;
     $compiler = "../bin/$platform/chpl";
     unless (-e $compiler) {
-        print "Error: cannot find chpl as '$compiler'\n";
-        exit (2);
+        fatal("cannot find or execute the compiler '$compiler'");
     }
 
     unless (-e $synchdir and -d $synchdir) {
-        print "Error: synch directory $synchdir does not exist\n";
-        exit (2);
+        fatal("synch directory $synchdir does not exist");
     }
 
     print "$node $workingdir $testdir $compiler\n";

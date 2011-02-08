@@ -2,6 +2,6 @@ foo();
 
 var x: int;
 
-def foo() {
+proc foo() {
   writeln(x);
 }

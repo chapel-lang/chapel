@@ -26,24 +26,24 @@ for (i,a,b) in (D,A,B) {
 class C {
   var A: [1..n] real;
 
-  def these() {
+  iter these() {
     for i in 1..n do
       yield A(i);
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     cobegin {
       yield [n/2+1..n-1];
       yield [0..n/2];
     }
   }
 
-  def these(param tag: iterator, follower) var where tag == iterator.follower {
+  iter these(param tag: iterator, follower) var where tag == iterator.follower {
     for i in follower do
       yield A(i+1);
   }
 
-  def this(i) var {
+  proc this(i) var {
     return A(i);
   }
 }

@@ -1,4 +1,4 @@
-def foo() param {
+proc foo() param {
   return false;
   return true;
 }

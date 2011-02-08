@@ -48,7 +48,7 @@ var curGBs: real;
 // setting the seed for the random number generator
 param seed = 314159265;
 
-def main() {
+proc main() {
   var clock: Timer;
 
   initStreamVectors();
@@ -70,7 +70,7 @@ def main() {
   if (checkSTREAMresults() && doIO) then writeln("Solution Failed!");
 }
 
-def initStreamVectors() {
+proc initStreamVectors() {
   var randlist = new RandomStream(seed);
 
   randlist.fillRandom(A);
@@ -82,7 +82,7 @@ def initStreamVectors() {
   delete randlist;
 }
 
-def computeStreamResults() {
+proc computeStreamResults() {
 
   sumtime = + reduce time[2..numIters];
   mintime = min reduce time[2..numIters];
@@ -90,7 +90,7 @@ def computeStreamResults() {
 }
 
 
-def checkSTREAMresults() {
+proc checkSTREAMresults() {
   var randlist = new RandomStream(seed);
 
   var Aref, Bref, Cref, error : [VecDomain] elemType;
@@ -136,7 +136,7 @@ def checkSTREAMresults() {
   return failure;
 }
 
-def writeStreamData() {
+proc writeStreamData() {
   param HLINE="-------------------------------------------------------------";
   writeln(HLINE);
   writeln("This system uses ", elemSizeInBytes, " bytes per 64-bit real.");
@@ -147,7 +147,7 @@ def writeStreamData() {
   writeln(HLINE);
 }
 
-def writeStreamResults() {
+proc writeStreamResults() {
   writeln( "Function\tRate (GB/s)\tAvg time\tMin time\tMax time");
   curGBs = mintime;
   curGBs *= 1.0e-9 * bytes * vectorSize;

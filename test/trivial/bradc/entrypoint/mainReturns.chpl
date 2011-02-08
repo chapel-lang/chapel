@@ -1,3 +1,3 @@
-def main() {
+proc main() {
   return -1;
 }

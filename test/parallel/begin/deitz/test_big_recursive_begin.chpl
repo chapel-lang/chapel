@@ -1,6 +1,6 @@
 config const n: int = 4096;
 
-def foo(i: int) {
+proc foo(i: int) {
   var x: sync int;
   var y: single int;
   if i < n {

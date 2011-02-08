@@ -1,6 +1,6 @@
 class C {
   var x: int;
-  def foo() {
+  proc foo() {
     writeln("C: ", this);
   }
 }
@@ -8,12 +8,12 @@ class C {
 class D: C {
   type t;
   var y: t;
-  def foo() {
+  proc foo() {
     writeln("D: ", this);
   }
 }
 
-def bar(c: C) {
+proc bar(c: C) {
   c.foo();
   delete c;
 }

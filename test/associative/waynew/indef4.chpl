@@ -3,7 +3,7 @@ param SIZE = 100000;
 
 var idomain: domain(uint);
 
-def icheck( i) {
+proc icheck( i) {
   writeln( "member(", i, ") = ", idomain.member( i));
 }
 

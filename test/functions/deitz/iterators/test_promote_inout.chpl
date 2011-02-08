@@ -1,4 +1,4 @@
-def foo(inout x: int, y: int) {
+proc foo(inout x: int, y: int) {
   x = x + y;
 }
 

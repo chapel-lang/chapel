@@ -2,12 +2,12 @@ use DSIUtil;
 
 config const numTasks=4;
 
-def leadfollow() {
+iter leadfollow() {
   for i in 0..numLocales do
     yield i;
 }
 
-def leadfollow(param tag: iterator) where tag == iterator.leader {
+iter leadfollow(param tag: iterator) where tag == iterator.leader {
   coforall loc in Locales {
     on loc {
       coforall taskid in 0..#numTasks {
@@ -18,7 +18,7 @@ def leadfollow(param tag: iterator) where tag == iterator.leader {
   }
 }
 
-def leadfollow(param tag: iterator, follower) where tag == iterator.follower {
+iter leadfollow(param tag: iterator, follower) where tag == iterator.follower {
   for i in follower {
     yield i;
   }

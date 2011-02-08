@@ -61,7 +61,7 @@ j_k = \left\{
 
 The Block class constructor is defined as follows:
 \begin{chapel}
-def Block(boundingBox: domain,
+proc Block(boundingBox: domain,
           targetLocales: [] locale = Locales, 
           dataParTasksPerLocale = $\mbox{{\it value in global config const of the same name}}$,
           dataParIgnoreRunningTasks = $\mbox{{\it value in global config const of the same name}}$,
@@ -150,7 +150,7 @@ formula:
 
 The Cyclic class constructor is defined as follows:
 \begin{chapel}
-def Cyclic(startIdx,
+proc Cyclic(startIdx,
            targetLocales: [] locale = Locales,
            dataParTasksPerLocale = $\mbox{{\it value in global config const of the same name}}$,
            dataParIgnoreRunningTasks = $\mbox{{\it value in global config const of the same name}}$,

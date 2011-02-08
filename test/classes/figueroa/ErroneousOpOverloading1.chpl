@@ -1,5 +1,5 @@
 class C {
-  def +(x) {writeln("In +, x is ", x);}
+  proc +(x) {writeln("In +, x is ", x);}
 }
 
 var c: C = new C();

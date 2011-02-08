@@ -1,17 +1,20 @@
 
-use FineBoundaryArray_def;
+use LevelSolution_def;
+use RefiningTransferVariable_def;
 
 
 
-//|\"""""""""""""""""""""""""""""""""|\
-//| >    GridArray.coarsen_Linear    | >
-//|/_________________________________|/
-//----------------------------------------------------------------
-// Returns values from the GridArray linearly interpolated to the 
+//|\""""""""""""""""""""""""""""""""""""|\
+//| >    GridVariable.coarsen_Linear    | >
+//|/____________________________________|/
+
+//-------------------------------------------------------------------
+// Returns values from the GridVariable linearly interpolated to the 
 // input domain coarse_cells.  This is akin to accessing the
-// GridArray's values on a coarser index space.
-//----------------------------------------------------------------
-def GridArray.coarsen_Linear(
+// GridVariable's values on a coarser index space.
+//-------------------------------------------------------------------
+
+proc GridVariable.coarsen_Linear(
   coarse_cells: domain(dimension,stridable=true),
   ref_ratio:    dimension*int)
 {
@@ -35,22 +38,22 @@ def GridArray.coarsen_Linear(
   return coarse_values;
 
 }
-// /|"""""""""""""""""""""""""""""""""/|
-//< |    GridArray.coarsen_Linear    < |
-// \|_________________________________\|
+// /|""""""""""""""""""""""""""""""""""""/|
+//< |    GridVariable.coarsen_Linear    < |
+// \|____________________________________\|
 
 
 
 
-//|\""""""""""""""""""""""""""""""""|\
-//| >    GridArray.refine_Linear    | >
-//|/________________________________|/
+//|\"""""""""""""""""""""""""""""""""""|\
+//| >    GridVariable.refine_Linear    | >
+//|/___________________________________|/
 //----------------------------------------------------------------
-// Returns values from the GridArray linearly interpolated to the 
+// Returns values from the GridVariable linearly interpolated to the 
 // input domain fine_cells.  This is akin to accessing the
-// GridArray's values on a finer index space.
+// GridVariable's values on a finer index space.
 //----------------------------------------------------------------
-def GridArray.refine_Linear(
+proc GridVariable.refine_Linear(
   fine_cells: domain(dimension,stridable=true),
   ref_ratio:  dimension*int)
 {
@@ -58,7 +61,7 @@ def GridArray.refine_Linear(
   var coarse_cells  = grid.cells( coarsen(fine_cells, ref_ratio) );
 
   var coarse_values = value(coarse_cells);
-  var coarse_diffs: [coarse_cells] [dimensions] real;
+  var coarse_diffs: [coarse_cells] dimension*real;
 
 
   //===> Form interpolant data (values and differentials ===>
@@ -116,18 +119,18 @@ def GridArray.refine_Linear(
   return fine_values;
 
 }
-// /|""""""""""""""""""""""""""""""""/|
-//< |    GridArray.refine_Linear    < |
-// \|________________________________\|
+// /|"""""""""""""""""""""""""""""""""""/|
+//< |    GridVariable.refine_Linear    < |
+// \|___________________________________\|
 
 
 
 
-//|\"""""""""""""""""""""""""""""""""""""""|\
-//| >    LevelArray.getFineValues_Linear   | >
-//|/_______________________________________|/
-def LevelArray.getFineValues_Linear(
-  q_fine:      LevelArray,
+//|\""""""""""""""""""""""""""""""""""""""""""|\
+//| >    LevelVariable.getFineValues_Linear   | >
+//|/__________________________________________|/
+proc LevelVariable.getFineValues_Linear(
+  q_fine:      LevelVariable,
   cf_boundary: CFBoundary)
 {
 
@@ -145,57 +148,84 @@ def LevelArray.getFineValues_Linear(
   }
 
 }
-// /|""""""""""""""""""""""""""""""""""""""""/|
-//< |    LevelArray.getFineValues_Linear    < |
-// \|________________________________________\|
+// /|"""""""""""""""""""""""""""""""""""""""""""/|
+//< |    LevelVariable.getFineValues_Linear    < |
+// \|___________________________________________\|
 
 
 
 
 
-//|\"""""""""""""""""""""""""""""""""""""""""""""""""|\
-//| >    FineBoundaryArray.getCoarseValues_Linear    | >
-//|/_________________________________________________|/
-def FineBoundaryArray.getCoarseValues_Linear(
-  q_coarse:  LevelArray)
+//|\""""""""""""""""""""""""""""""""""""""""""""""""""""""""|\
+//| >    RefiningTransferVariable.getCoarseValues_Linear    | >
+//|/________________________________________________________|/
+proc RefiningTransferVariable.getCoarseValues_Linear(
+  q_coarse:  LevelVariable)
 {
+  //==== Safety check ====
+  assert(q_coarse.level == cf_boundary.coarse_level);
 
   //==== Pull refinement ratio ====
   const ref_ratio = cf_boundary.ref_ratio;
 
   //==== Prepare ghost data of q_coarse ====
   q_coarse.extrapolateGhostData();
-  q_coarse.fillOverlapRegions();
+  q_coarse.fillOverlaps();
 
   //===> Interpolate on each fine grid ===>
-  for grid in cf_boundary.fine_level.grids {
+  for fine_grid in cf_boundary.fine_level.grids {
     
-    var arrays_to_fill = array_sets(fine_grid);
+    const multiarray     = multiarrays(fine_grid);
+    const coarse_overlap = cf_boundary.coarse_overlaps(fine_grid);
     
-    //--------------------------------------------------------------------
-    // At the moment, it seems like it's actually easier to compare every
-    // array's domain to coarse_nbr.cells, rather than trying to use the
-    // DomainSet of sharply-defined overlap data.
-    //--------------------------------------------------------------------
-    for coarse_nbr in cf_boundary.coarse_overlaps(grid).neighbors {
+    for (nbr, multidomain, subrange) in coarse_overlap {
+      
+      var i_nbr = 0;
+      for i in subrange {
+        // const array = multiarray.arrays(i);
+        var array => multiarray(i);
 
-      var refined_coarse_cells = refine(coarse_nbr.cells,ref_ratio);
-
-      //===> If array's domain overlaps coarse_nbr, then interpolate ===>
-      for array in arrays_to_fill {
-        var overlap = array.dom( refined_coarse_cells );
+        //==== Safety check; potentially fragile iteration ====
+        i_nbr += 1;
+        assert(array.domain == multidomain.domains(i_nbr));
         
-        if overlap.numIndices>0 then
-          array.value(overlap) =
-              q_coarse(coarse_nbr).refine_Linear(overlap,ref_ratio);
+        //==== Interpolate ====
+        // array.value = q_coarse(nbr).refine_Linear(array.Domain,ref_ratio);
+        array = q_coarse(nbr).refine_Linear(array.domain,ref_ratio);
+        
       }
-      //<=== If array's domain overlaps coarse_nbr, then interpolate <===
+
     }
     
   }
   //<=== Interpolate on each fine grid <===
 
 }
-// /|"""""""""""""""""""""""""""""""""""""""""""""""""/|
-//< |    FineBoundaryArray.getCoarseValues_Linear    < |
-// \|_________________________________________________\|
+// /|""""""""""""""""""""""""""""""""""""""""""""""""""""""""/|
+//< |    RefiningTransferVariable.getCoarseValues_Linear    < |
+// \|________________________________________________________\|
+
+
+
+
+
+
+//|\"""""""""""""""""""""""""""""""""""""|\
+//| >    LevelSolution.correct_Linear    | >
+//|/_____________________________________|/
+
+proc LevelSolution.correct_Linear(
+  fine_solution: LevelSolution,
+  cf_boundary:   CFBoundary)
+{
+  //==== Safety check ====
+  assert(this.level == cf_boundary.coarse_level);
+  assert(fine_solution.level == cf_boundary.fine_level);
+  assert( abs(this.current_time - fine_solution.current_time) < 1.0e-8);
+  
+  //==== Correct ====
+  current_data.getFineValues_Linear(fine_solution.current_data, cf_boundary);
+}
+// /|"""""""""""""""""""""""""""""""""""""/|
+//< |    LevelSolution.correct_Linear    < |
+// \|_____________________________________\|

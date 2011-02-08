@@ -1,7 +1,7 @@
-def f(x:int, y:int, z:int) {
+proc f(x:int, y:int, z:int) {
 
   // Replace: y=x+1 and z=2(x+1)
-  def g(y:int) {
+  proc g(y:int) {
     var z = 2*y;
     writeln("x=",x);
     writeln("y=",y);

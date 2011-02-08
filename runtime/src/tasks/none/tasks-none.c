@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <sys/resource.h>
 #include <unistd.h>
+#include <stdio.h>
 
 //
 // task pool: linked list of tasks
@@ -35,10 +36,10 @@ static chpl_bool launch_next_task(void);
 
 // Sync variables
 
-void CHPL_SYNC_LOCK(chpl_sync_aux_t *s) { }
-void CHPL_SYNC_UNLOCK(chpl_sync_aux_t *s) { }
+void chpl_sync_lock(chpl_sync_aux_t *s) { }
+void chpl_sync_unlock(chpl_sync_aux_t *s) { }
 
-void CHPL_SYNC_WAIT_FULL_AND_LOCK(chpl_sync_aux_t *s,
+void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
                                   int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (!*s && launch_next_task())
@@ -48,7 +49,7 @@ void CHPL_SYNC_WAIT_FULL_AND_LOCK(chpl_sync_aux_t *s,
                lineno, filename);
 }
 
-void CHPL_SYNC_WAIT_EMPTY_AND_LOCK(chpl_sync_aux_t *s,
+void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
                                    int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (*s && launch_next_task())
@@ -58,133 +59,99 @@ void CHPL_SYNC_WAIT_EMPTY_AND_LOCK(chpl_sync_aux_t *s,
                lineno, filename);
 }
 
-void CHPL_SYNC_MARK_AND_SIGNAL_FULL(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s) {
   *s = true;
 }
 
-void CHPL_SYNC_MARK_AND_SIGNAL_EMPTY(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
   *s = false;
 }
 
-chpl_bool CHPL_SYNC_IS_FULL(void *val_ptr, chpl_sync_aux_t *s,
+chpl_bool chpl_sync_isFull(void *val_ptr, chpl_sync_aux_t *s,
                             chpl_bool simple_sync_var) {
   return *s;
 }
 
-void CHPL_SYNC_INIT_AUX(chpl_sync_aux_t *s) {
+void chpl_sync_initAux(chpl_sync_aux_t *s) {
   *s = false;
 }
 
-void CHPL_SYNC_DESTROY_AUX(chpl_sync_aux_t *s) { }
+void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
-
-// Single variables
-
-void CHPL_SINGLE_LOCK(chpl_single_aux_t *s) { }
-
-void CHPL_SINGLE_UNLOCK(chpl_single_aux_t *s) { }
-
-void CHPL_SINGLE_WAIT_FULL(chpl_single_aux_t *s,
-                           int32_t lineno, chpl_string filename) {
-  // while blocked, try running tasks from the task pool
-  while (!*s && launch_next_task())
-    /* do nothing! */;
-  if (!*s)
-    chpl_error("single var empty (running in single-threaded mode)",
-               lineno, filename);
-}
-
-void CHPL_SINGLE_MARK_AND_SIGNAL_FULL(chpl_single_aux_t *s) {
-  *s = true;
-}
-
-chpl_bool CHPL_SINGLE_IS_FULL(void *val_ptr, chpl_single_aux_t *s,
-                              chpl_bool simple_single_var) {
-  return *s;
-}
-
-void CHPL_SINGLE_INIT_AUX(chpl_single_aux_t *s) {
-  *s = false;
-}
-
-void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) { }
 
 // Tasks
 
 static chpl_bool serial_state;
+static uint64_t taskCallStackSize = 0;
 
-void CHPL_TASKING_INIT(void) {
-  char* s;
-
+void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   //
   // If a value was specified for the call stack size config const, use
   // that (rounded up to a whole number of pages) to set the system
   // stack limit.
   //
-  if ((s = chpl_config_get_value("callStackSize", "Built-in")) != NULL) {
-    uint64_t stacksize;
-    int      invalid;
-    char     invalidChars[2] = "\0\0";
+  if (callStackSize != 0) {
+    uint64_t      pagesize = (uint64_t) sysconf(_SC_PAGESIZE);
+    struct rlimit rlim;
+      
+    callStackSize = (callStackSize + pagesize - 1) & ~(pagesize - 1);
 
-    //
-    // We leave it to the Chapel config const initialization code to
-    // emit any official warnings about the syntax or magnitude of the
-    // callStackSize value.  Here we just do some reasonable thing if
-    // there are problems.
-    //
-    stacksize = chpl_string_to_uint64_t_precise(s, &invalid, invalidChars);
-    if (!invalid) {
-      uint64_t      pagesize = (uint64_t) sysconf(_SC_PAGESIZE);
-      struct rlimit rlim;
+    if (getrlimit(RLIMIT_STACK, &rlim) != 0)
+      chpl_internal_error("getrlimit() failed");
 
-      stacksize = (stacksize + pagesize - 1) & ~(pagesize - 1);
+    if (rlim.rlim_max != RLIM_INFINITY && callStackSize > rlim.rlim_max) {
+      char warning[128];
+      sprintf(warning, "callStackSize capped at %lu\n", 
+              (unsigned long)rlim.rlim_max);
+      chpl_warning(warning, 0, NULL);
 
-      if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-        chpl_internal_error("getrlimit() failed");
-
-      rlim.rlim_cur =
-        (rlim.rlim_max != RLIM_INFINITY && (size_t) rlim.rlim_max < stacksize)
-        ? rlim.rlim_max
-        : stacksize;
-
-      if (setrlimit(RLIMIT_STACK, &rlim) != 0)
-        chpl_internal_error("setrlimit() failed");
+      callStackSize = rlim.rlim_max;
     }
+
+    rlim.rlim_cur = callStackSize;
+
+    if (setrlimit(RLIMIT_STACK, &rlim) != 0)
+      chpl_internal_error("setrlimit() failed");
   }
+  taskCallStackSize = callStackSize;
 
   task_pool_head = task_pool_tail = NULL;
   serial_state = false;
   queued_cnt = 0;
 }
 
-void CHPL_TASKING_EXIT(void) { }
+void chpl_task_exit(void) { }
 
-void CHPL_ADD_TO_TASK_LIST(chpl_fn_int_t fid,
+void chpl_task_callMain(void (*chpl_main)(void)) {
+  chpl_main();
+}
+
+void chpl_task_addToTaskList(chpl_fn_int_t fid,
                            void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
                            chpl_bool call_chpl_begin,
                            int lineno,
                            chpl_string filename) {
-  CHPL_BEGIN(chpl_ftable[fid], arg, false, false, NULL);
+  chpl_task_begin(chpl_ftable[fid], arg, false, false, NULL);
 }
 
-void CHPL_PROCESS_TASK_LIST(chpl_task_list_p task_list) { }
+void chpl_task_processTaskList(chpl_task_list_p task_list) { }
 
-void CHPL_EXECUTE_TASKS_IN_LIST(chpl_task_list_p task_list) { }
+void chpl_task_executeTasksInList(chpl_task_list_p task_list) { }
 
-void CHPL_FREE_TASK_LIST(chpl_task_list_p task_list) { }
+void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
 
-void CHPL_BEGIN(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
+void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
                 chpl_bool serial_state, chpl_task_list_p task_list_entry) {
-  if (!ignore_serial && CHPL_GET_SERIAL()) {
+  if (!ignore_serial && chpl_task_getSerial()) {
     //
     // save and restore current task's serial state before and after
     // invoking new task
     //
-    chpl_bool saved_serial_state = CHPL_GET_SERIAL();
+    chpl_bool saved_serial_state = chpl_task_getSerial();
     (*fp)(a);
-    CHPL_SET_SERIAL(saved_serial_state);
+    chpl_task_setSerial(saved_serial_state);
   } else {
     // create a task from the given function pointer and arguments
     // and append it to the end of the task pool for later execution
@@ -209,56 +176,32 @@ void CHPL_BEGIN(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
   }
 }
 
-chpl_taskID_t CHPL_TASK_ID(void) { return 0; }
+chpl_taskID_t chpl_task_getId(void) { return 0; }
 
-void CHPL_TASK_SLEEP(int secs) {
+void chpl_task_yield(void) {
+}
+
+void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
-chpl_bool CHPL_GET_SERIAL(void) { return serial_state; }
+chpl_bool chpl_task_getSerial(void) { return serial_state; }
 
-void CHPL_SET_SERIAL(chpl_bool new_state) {
+void chpl_task_setSerial(chpl_bool new_state) {
   serial_state = new_state;
 }
 
 
-uint64_t CHPL_TASK_CALLSTACKSIZE(void) {
-  struct rlimit rlim;
-
-  //
-  // If there is a soft system stack limit then that's our limit;
-  // otherwise if there is a hard system stack limit then that's
-  // it; otherwise we don't have one.  Note that if the user gave
-  // a value for the call stack size config const on this run, we
-  // have already set the soft system stack limit appropriately,
-  // so our return value will reflect that.
-  //
-  if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-    chpl_internal_error("getrlimit() failed");
-  return ((rlim.rlim_cur == RLIM_INFINITY)
-          ? ((rlim.rlim_max == RLIM_INFINITY)
-             ? 0
-             : (uint64_t) rlim.rlim_max)
-          : (uint64_t) rlim.rlim_cur);
+uint64_t chpl_task_getCallStackSize(void) {
+  return taskCallStackSize;
 }
 
-uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) {
-  struct rlimit rlim;
 
-  //
-  // If there is a hard system stack limit then that's our limit;
-  // otherwise we don't have one.
-  //
-  if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-    chpl_internal_error("getrlimit() failed");
-  return (rlim.rlim_max == RLIM_INFINITY) ? 0 : (uint64_t) rlim.rlim_max;
-}
+uint32_t chpl_task_getNumQueuedTasks(void) { return queued_cnt; }
 
-uint32_t CHPL_NUMQUEUEDTASKS(void) { return queued_cnt; }
+uint32_t chpl_task_getNumRunningTasks(void) { return 1; }
 
-uint32_t CHPL_NUMRUNNINGTASKS(void) { return 1; }
-
-int32_t  CHPL_NUMBLOCKEDTASKS(void) { return 0; }
+int32_t  chpl_task_getNumBlockedTasks(void) { return 0; }
 
 
 // Internal utility functions for task management
@@ -280,8 +223,8 @@ launch_next_task(void) {
     //
     // reset serial state
     //
-    saved_serial_state = CHPL_GET_SERIAL();
-    CHPL_SET_SERIAL(task->serial_state);
+    saved_serial_state = chpl_task_getSerial();
+    chpl_task_setSerial(task->serial_state);
 
     (*task->fun)(task->arg);
     chpl_free(task, 0, 0);
@@ -289,7 +232,7 @@ launch_next_task(void) {
     //
     // restore serial state
     //
-    CHPL_SET_SERIAL(saved_serial_state);
+    chpl_task_setSerial(saved_serial_state);
 
     return true;
   } else {
@@ -300,10 +243,10 @@ launch_next_task(void) {
 
 // Threads
 
-int32_t CHPL_THREADS_GETMAXTHREADS(void) { return 1; }
+int32_t chpl_task_getMaxThreads(void) { return 1; }
 
-int32_t CHPL_THREADS_MAXTHREADSLIMIT(void) { return 1; }
+int32_t chpl_task_getMaxThreadsLimit(void) { return 1; }
 
-uint32_t CHPL_NUMTHREADS(void) { return 1; }
+uint32_t chpl_task_getNumThreads(void) { return 1; }
 
-uint32_t CHPL_NUMIDLETHREADS(void) { return 0; }
+uint32_t chpl_task_getNumIdleThreads(void) { return 0; }

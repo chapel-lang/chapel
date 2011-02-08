@@ -3,7 +3,7 @@ record R {
   var y;
 }
 
-def foo(a, b) {
+proc foo(a, b) {
   var r = new R(a, b);
   writeln(r);
 }

@@ -1,16 +1,16 @@
-_extern def chpl_init_accelerator();
-_extern def thread_barrier();
-_extern def getThreadID_x() : int(32);
-_extern def getThreadID_y() : int(32);
-_extern def getThreadID_z() : int(32);
-_extern def getBlockID_x() : int(32);
-_extern def getBlockID_y() : int(32);
-_extern def getBlockID_z() : int(32);
-_extern def getBlockSize_x() : int(32);
-_extern def getBlockSize_y() : int(32);
-_extern def getBlockSize_z() : int(32);
-_extern def getGridSize_x() : int(32);
-_extern def getGridSize_y() : int(32);
+_extern proc chpl_init_accelerator();
+_extern proc thread_barrier();
+_extern proc getThreadID_x() : int(32);
+_extern proc getThreadID_y() : int(32);
+_extern proc getThreadID_z() : int(32);
+_extern proc getBlockID_x() : int(32);
+_extern proc getBlockID_y() : int(32);
+_extern proc getBlockID_z() : int(32);
+_extern proc getBlockSize_x() : int(32);
+_extern proc getBlockSize_y() : int(32);
+_extern proc getBlockSize_z() : int(32);
+_extern proc getGridSize_x() : int(32);
+_extern proc getGridSize_y() : int(32);
 
 // Initialize the accelerator device from the beginning
 chpl_init_accelerator();
@@ -21,17 +21,17 @@ pragma "removable auto destroy"
 class _gdata {
   type eltType;
   const array_size : int(64);
-  def ~_gdata() {
+  proc ~_gdata() {
     __primitive("array_free", this);
     // TODO: need to call gpu_free as well!
   }
-  pragma "inline" def init(size: integral) {
+  pragma "inline" proc init(size: integral) {
     __primitive("array_alloc", this, eltType, size); // Allocate Host Memory
     init_elts(this, size, eltType);
     __primitive("gpu_alloc", this, size, eltType);   // Allocate GPU Memory
     array_size = size;
   }
-  pragma "inline" def this(i: integral) var {
+  pragma "inline" proc this(i: integral) var {
     return __primitive("array_get", this, i);
   }
 }
@@ -43,7 +43,7 @@ class GPUDist: BaseDist {
   const tbsizeX, tbsizeY, tbsizeZ : int;
   const gridsizeX, gridsizeY : int;
 
-  def GPUDist(param rank : int,
+  proc GPUDist(param rank : int,
               type idxType = int(64),
               const gridSizeX = 1,
               const gridSizeY = 1,
@@ -61,14 +61,14 @@ class GPUDist: BaseDist {
     gridsizeY = gridSizeY;
   }
 
-  def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+  proc dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     return new GPUArithmeticDom(rank, idxType, stridable, this);
   }
 
-  def dsiClone() return this;
-  def dsiAssign(other: this.type) { }
-  def dsiCreateReindexDist(newSpace, oldSpace) return this;
-  def dsiCreateRankChangeDist(param newRank, args) return this;
+  proc dsiClone() return this;
+  proc dsiAssign(other: this.type) { }
+  proc dsiCreateReindexDist(newSpace, oldSpace) return this;
+  proc dsiCreateRankChangeDist(param newRank, args) return this;
 }
 
 pragma "removable auto destroy"
@@ -86,32 +86,32 @@ class GPUArithmeticDom: BaseArithmeticDom {
   const tbGridX : int = 1;
   const tbGridY : int = 1;
 
-  def linksDistribution() param return false;
+  proc linksDistribution() param return false;
 
-  def GPUArithmeticDom(param rank, type idxType, param stridable, dist) {
+  proc GPUArithmeticDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;
   }
 
-  def dsiClear() {
+  proc dsiClear() {
     var emptyRange: range(idxType, BoundedRangeType.bounded, stridable);
     for param i in 1..rank do
       ranges(i) = emptyRange;
   }
   
-  def setTBsizeX(x) { tbsizeX = x; }
-  def setTBsizeY(y) { tbsizeY = y; }
-  def setTBsizeZ(z) { tbsizeZ = z; }
+  proc setTBsizeX(x) { tbsizeX = x; }
+  proc setTBsizeY(y) { tbsizeY = y; }
+  proc setTBsizeZ(z) { tbsizeZ = z; }
 
-  def getTBsizeX() return tbsizeX;
-  def getTBsizeY() return tbsizeY;
-  def getTBsizeZ() return tbsizeZ;
+  proc getTBsizeX() return tbsizeX;
+  proc getTBsizeY() return tbsizeY;
+  proc getTBsizeZ() return tbsizeZ;
 
-  def setTBGridX(x) { tbGridX = x; }
-  def setTBGridY(y) { tbGridY = y; }
+  proc setTBGridX(x) { tbGridX = x; }
+  proc setTBGridY(y) { tbGridY = y; }
 
-  def dsiGetIndices() return ranges;
+  proc dsiGetIndices() return ranges;
 
-  def dsiSetIndices(x) {
+  proc dsiSetIndices(x) {
     if ranges.size != x.size then
       compilerError("rank mismatch in domain assignment");
     if ranges(1).idxType != x(1).idxType then
@@ -145,7 +145,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
       compilerError("Can't support dimensions higher than 3 currently");
   }  
 
-  def these_help(param d: int) {
+  iter these_help(param d: int) {
     if d == rank - 1 {
       for i in ranges(d) do
         for j in ranges(rank) do
@@ -157,7 +157,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these_help(param d: int, block) {
+  iter these_help(param d: int, block) {
     if d == block.size - 1 {
       for i in block(d) do
         for j in block(block.size) do
@@ -169,7 +169,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these() {
+  iter these() {
     if rank == 1 {
       for i in ranges(1) do
         yield i;
@@ -179,7 +179,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     if rank == 1 {
       var gridX = tbGridX;
       var gridY = tbGridY;
@@ -244,21 +244,21 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     if rank == 1 then
       yield follower + low_val(1);
     else
       yield follower + low_val;
   }
 
-  def dsiMember(ind: rank*idxType) {
+  proc dsiMember(ind: rank*idxType) {
     for param i in 1..rank do
       if !ranges(i).member(ind(i)) then
         return false;
     return true;
   }
 
-  def dsiIndexOrder(ind: rank*idxType) {
+  proc dsiIndexOrder(ind: rank*idxType) {
     var totOrder: idxType;
     var blk: idxType = 1;
     for param d in 1..rank by -1 {
@@ -270,18 +270,18 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return totOrder;
   }
 
-  def dsiDims()
+  proc dsiDims()
     return ranges;
 
-  def dsiDim(d : int)
+  proc dsiDim(d : int)
     return ranges(d);
 
   // optional, is this necesary? probably not now that
   // homogeneous tuples are implemented as C vectors.
-  def dsiDim(param d : int)
+  proc dsiDim(param d : int)
     return ranges(d);
 
-  def dsiNumIndices {
+  proc dsiNumIndices {
     var sum = 1:idxType;
     for param i in 1..rank do
       sum *= ranges(i).length;
@@ -289,7 +289,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     // WANT: return * reduce (this(1..rank).length);
   }
 
-  def dsiLow {
+  proc dsiLow {
     if rank == 1 {
       return ranges(1)._low;
     } else {
@@ -300,7 +300,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def dsiHigh {
+  proc dsiHigh {
     if rank == 1 {
       return ranges(1)._high;
     } else {
@@ -311,7 +311,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def dsiStride {
+  proc dsiStride {
     if rank == 1 {
       return ranges(1)._stride;
     } else {
@@ -322,12 +322,12 @@ class GPUArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def dsiBuildArray(type eltType) {
+  proc dsiBuildArray(type eltType) {
     return new GPUArithmeticArr(eltType=eltType, rank=rank, idxType=idxType,
                                   stridable=stridable, dom=this, off=low_val);
   }
 
-  def dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
+  proc dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
                             ranges: rank*range(idxType,
                                                BoundedRangeType.bounded,
                                                stridable)) {
@@ -356,23 +356,23 @@ class GPUArithmeticArr: BaseArr {
   var contiguousMem : bool = true;
   var size : int;
 
-  def isGPUExecution param return true;
-  def canCopyFromHost param return true;
-  def isGPUExplicit param return false;
+  proc isGPUExecution param return true;
+  proc canCopyFromHost param return true;
+  proc isGPUExplicit param return false;
 
   // end class definition here, then defined secondary methods below
 
   // can the compiler create this automatically?
-  def dsiGetBaseDom() return dom;
+  proc dsiGetBaseDom() return dom;
 
-  def dsiDestroyData() { }
+  proc dsiDestroyData() { }
 
-  def these() var {
+  iter these() var {
     for i in dom do
       yield dsiAccess(i);
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
       var tbgridX = dom.tbGridX;
       var tbgridY = dom.tbGridY;
       var tbsizeX = dom.tbsizeX;
@@ -387,20 +387,20 @@ class GPUArithmeticArr: BaseArr {
       }
   }
 
-  def these(param tag: iterator, follower) var where tag == iterator.follower {
+  iter these(param tag: iterator, follower) var where tag == iterator.follower {
     if rank == 1 then
       yield dsiAccess(follower + off(1));
     else
       yield dsiAccess(follower + off);
   }
 
-  def computeFactoredOffs() {
+  proc computeFactoredOffs() {
     factoredOffs = 0:idxType;
     for param i in 1..rank do
       factoredOffs = factoredOffs - blk(i) * off(i);
   }
 
-  def initialize() {
+  proc initialize() {
     if noinit == true then return;
     for param dim in 1..rank do
       str(dim) = dom.dsiDim(dim)._stride;
@@ -415,18 +415,18 @@ class GPUArithmeticArr: BaseArr {
 
   // only need second version because wrapper record can pass a 1-tuple
   pragma "inline"
-  def dsiAccess(ind: idxType ...1) var where rank == 1
+  proc dsiAccess(ind: idxType ...1) var where rank == 1
     return dsiAccess(ind);
 
   pragma "inline"
-  def dsiAccess(ind : rank*idxType) var {
+  proc dsiAccess(ind : rank*idxType) var {
     var sum = factoredOffs;
     for param i in 1..rank do
       sum += ind(i) * blk(i);
     return data(sum);
   }
 
-  def dsiReindex(d: GPUArithmeticDom) {
+  proc dsiReindex(d: GPUArithmeticDom) {
     var alias = new GPUArithmeticArr(eltType=eltType, rank=d.rank,
                                      idxType=d.idxType,
                                      stridable=d.stridable, contiguousMem=false, dom=d);
@@ -440,7 +440,7 @@ class GPUArithmeticArr: BaseArr {
     return alias;
   }
 
-  def dsiSlice(d: GPUArithmeticDom) {
+  proc dsiSlice(d: GPUArithmeticDom) {
     var alias = new GPUArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
@@ -456,9 +456,9 @@ class GPUArithmeticArr: BaseArr {
     return alias;
   }
 
-  def dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
-    def isRange(r: range(?e,?b,?s)) param return 1;
-    def isRange(r) param return 0;
+  proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
+    proc isRange(r: range(?e,?b,?s)) param return 1;
+    proc isRange(r) param return 0;
 
     var alias = new GPUArithmeticArr(eltType=eltType, rank=newRank,
                                          idxType=idxType,
@@ -478,7 +478,7 @@ class GPUArithmeticArr: BaseArr {
     return alias;
   }
 
-  def dsiReallocate(d: domain) {
+  proc dsiReallocate(d: domain) {
     if (d._value.type == dom.type) {
       var copy = new GPUArithmeticArr(eltType=eltType, rank=rank,
                                           idxType=idxType,
@@ -499,14 +499,14 @@ class GPUArithmeticArr: BaseArr {
   }
 }
 
-def GPUArithmeticDom.dsiSerialWrite(f: Writer) {
+proc GPUArithmeticDom.dsiSerialWrite(f: Writer) {
   f.write("[", dsiDim(1));
   for i in 2..rank do
     f.write(", ", dsiDim(i));
   f.write("]");
 }
 
-def GPUArithmeticArr.dsiSerialWrite(f: Writer) {
+proc GPUArithmeticArr.dsiSerialWrite(f: Writer) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do

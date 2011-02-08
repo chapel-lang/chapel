@@ -1,9 +1,9 @@
-def foo(n: int) {
+proc foo(n: int) {
   writeln("in foo, n is: ", n);
   return n;
 }
 
-def main() {
+proc main() {
   var a, b: int;
 
   (a, (, b)) = (1, (foo(2), foo(3)));

@@ -28,11 +28,11 @@ testPromote(AInt);
 testPromote(AUint);
 testPromote(AReal);
 
-def foo(x: real, y: real) {
+proc foo(x: real, y: real) {
   return sqrt(x**2 + y**2);
 }
 
-def testPromote(AAssoc) {
+proc testPromote(AAssoc) {
   type idxType = AAssoc.domain._value.idxType;
   var AA: AAssoc.type;
   if debug then writeln(AA);

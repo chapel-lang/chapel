@@ -2,11 +2,11 @@ var A: [1..3] real = [i in 1..3] i;
 
 foo(A);
 
-def fooHelp(x, y) {
+proc fooHelp(x, y) {
   foo(x, y);
 }
 
-def foo(A: [], depth: int = 3) {
+proc foo(A: [], depth: int = 3) {
   var B = A;
 
   writeln("In foo(), A is: ", A);

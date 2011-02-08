@@ -1,0 +1,12 @@
+feature request: make 'memTrack' assignable to from Chapel code
+
+Since I can write memoryUsed() in Chapel, I should also be able
+to write in Chapel whatever is needed to make that call succeed.
+
+Presently that seems to be 'memTrack=true', but I am not allowed
+to do that, as 'memTrack' is declared a const (ChapelLocale.chpl).
+
+We should change that (or provide other means or enabling
+memoryUsed() from within Chapel). E.g. startTrackingMemory()
+would mean start counting from that point. This includes finding
+ways to start tracking in the middle of program execution.

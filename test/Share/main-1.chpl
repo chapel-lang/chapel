@@ -2,6 +2,6 @@
 
 writeln("not here");
 
-def main {
+proc main {
   writeln("but here");
 }

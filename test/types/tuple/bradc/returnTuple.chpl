@@ -1,4 +1,4 @@
-def returntwo(): (int, real) {
+proc returntwo(): (int, real) {
   return (1, 2.3);
 }
 

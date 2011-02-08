@@ -20,7 +20,7 @@ Step 1: Prototype the C routine in your Chapel code
    takes no arguments and returns nothing, the prototype would appear
    as follows:
 
-       _extern def foo();
+       _extern proc foo();
 
    C functions that return values which you wish to refer to within
    your Chapel program must have those return types declared (the
@@ -28,7 +28,7 @@ Step 1: Prototype the C routine in your Chapel code
    functions since it does not analyze the C source code).  To make
    the function above return a C "double", it would be declared:
 
-       _extern def foo(): real;
+       _extern proc foo(): real;
 
    Similarly, external functions that expect arguments must declare
    those arguments.
@@ -57,7 +57,7 @@ Step 1: Prototype the C routine in your Chapel code
    will be inferred based on the Chapel callsite.  For example, the
    following Chapel code:
 
-       _extern def foo(x: int, y): real;
+       _extern proc foo(x: int, y): real;
 
        var a, b: int;
 
@@ -73,7 +73,7 @@ Step 1: Prototype the C routine in your Chapel code
    in which case the default argument will be supplied by the Chapel
    compiler if it is omitted at the callsite.  For example:
 
-       _extern def foo(x: int, y = 1.2): real;
+       _extern proc foo(x: int, y = 1.2): real;
 
        foo(0);
 
@@ -84,7 +84,7 @@ Step 1: Prototype the C routine in your Chapel code
    syntax.  For example, the following declaration prototypes C's
    printf function:
 
-       _extern def printf(fmt: string, vals...?numvals): int;
+       _extern proc printf(fmt: string, vals...?numvals): int;
 
    External C functions or macros that accept type arguments can also
    be prototyped in Chapel by declaring the argument as a type.  For
@@ -166,8 +166,8 @@ and y within variables of type fltdbl:
 as would the following declaration:
 
    _extern record fltdbl {
-     var x: real(32);
      var y: real(64);
+     var x: real(32);
    }
 
 Alternatively, the external declaration could only mention one of the
@@ -261,7 +261,7 @@ used for operations other than argument passing and assignment
 For example, Chapel could be used to call an external C function that
 returns a pointer to a structure as follows:
 
-    _extern def returnStructPtr(): opaque;
+    _extern proc returnStructPtr(): opaque;
 
     var structPtr: opaque = returnStructPtr();
 
@@ -270,7 +270,7 @@ much apart from assigning it to other opaque variables of matching
 underlying type, or passing it back to an external C routine that
 expects a pointer-to-struct of that type:
 
-    _extern def operateOnStructPtr(ptr: opaque);
+    _extern proc operateOnStructPtr(ptr: opaque);
 
     var copyOfStructPtr = structPtr;
 

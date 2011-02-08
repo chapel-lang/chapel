@@ -1,5 +1,5 @@
 class C {
-  def foo(i : int, f : real) {
+  proc foo(i : int, f : real) {
     writeln(i);
     writeln(f);
   }

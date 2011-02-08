@@ -7,7 +7,7 @@ class C {
   var A: [D] eltType;
 }
 
-def main {
+proc main {
   var D = [1..10 by 2];
   var A: [1..5] int;
   var c = new C(1, true, int, int, D, A=>A);

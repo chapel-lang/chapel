@@ -3,7 +3,7 @@ class C {
   var x: k*int;
 }
 
-def foo(y: C, x: C ...y.k) {
+proc foo(y: C, x: C ...y.k) {
   writeln(x);
   delete y;
   delete x(1);

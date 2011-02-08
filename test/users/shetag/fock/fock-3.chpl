@@ -14,7 +14,7 @@ config const numLocs = 100;
 config const poolSize = 1;
 const t = new taskpool(poolSize);
 
-def buildjk() {
+proc buildjk() {
   cobegin {
     coforall loc in 1..numLocs do
       consumer();
@@ -38,7 +38,7 @@ def buildjk() {
   writeln("\n1st col of exchange matrix:-\n", kmat2(1..n,1..1));
 }
 
-def consumer() {
+proc consumer() {
   var bI, copyofbI : blockIndices;
   bI = t.remove();
   while (bI.ilo != 0) {
@@ -50,12 +50,12 @@ def consumer() {
   }
 }
 
-def producer() {
+proc producer() {
   for bI in genBlocks() do // sjd: changed forall to for
     t.add(bI);
 }
 
-def genBlocks() {
+iter genBlocks() {
   for iat in 1..natom { // sjd: changed forall to for because of yield
     for jat in 1..iat { // sjd: changed forall to for because of yield
       for kat in 1..iat { // sjd: changed forall to for because of yield
@@ -70,7 +70,7 @@ def genBlocks() {
     yield new blockIndices(0,0,0,0,0,0,0,0);
 }
 
-def buildjk_atom4(bI) {
+proc buildjk_atom4(bI) {
   const (ilo,ihi,jlo,jhi,klo,khi,llo,lhi) = (bI.ilo,bI.ihi,bI.jlo,bI.jhi,bI.klo,bI.khi,bI.llo,bI.lhi);
 
   const (ijD,ikD,ilD,jkD,jlD,klD) = ([ilo..ihi,jlo..jhi],[ilo..ihi,klo..khi],[ilo..ihi,llo..lhi],[jlo..jhi,klo..khi],[jlo..jhi,llo..lhi],[klo..khi,llo..lhi]);
@@ -127,10 +127,10 @@ def buildjk_atom4(bI) {
   oneAtATime = tmp;
 }
 
-def g(i,j,k,l) {
+proc g(i,j,k,l) {
   return 1.0/(i*j + k*l);
 }
 
-def main() {
+proc main() {
   buildjk();
 }

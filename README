@@ -90,6 +90,7 @@ For more detailed information about...      refer to...
      ...Cygwin over Windows                  ...doc/platforms/README.cygwin
      ...an IBM system                        ...doc/platforms/README.ibm
      ...an SGI Altix system                  ...doc/platforms/README.sgi
+     ...BSC's MareNostrum system             ...doc/platforms/README.marenostrum
 
   ...calling C routines from Chapel          ...doc/technotes/README.extern
   ...formatting value-to-string conversions  ...doc/technotes/README.format

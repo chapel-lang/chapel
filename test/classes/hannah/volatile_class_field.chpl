@@ -11,7 +11,7 @@ class Foo {
   var r1    : volatile real;
   var r2    : volatile real = 2.0;
 
-  def m1() {
+  proc m1() {
     write(b1,  ", ");
     write(b2,  ", ");
     write(i1,  ", ");
@@ -22,7 +22,7 @@ class Foo {
     writeln(r2);
   }
 }
-def main() {
+proc main() {
   const f1 = new Foo();
   const f2 = new Foo(false, true, 1, 2, 3, 4, 5.0, 6.0);
 

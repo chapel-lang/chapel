@@ -1,7 +1,7 @@
 var   zero = 0;
 var data = 1;
 
-def myVarFn() var {
+proc myVarFn() var {
   if setter then
     return data;
   else

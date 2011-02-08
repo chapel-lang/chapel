@@ -7,7 +7,7 @@ module blue {
 
   use red;
 
-  def main() {
+  proc main() {
     writeln("y is ", y);
     writeln("x is ", x);
   }

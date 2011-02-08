@@ -2,7 +2,7 @@ use Memory;
 
 config const n = 1;
 
-def foo () {
+proc foo () {
   var s1 = "a string",
       s2 = s1,
       s3 = "another string",

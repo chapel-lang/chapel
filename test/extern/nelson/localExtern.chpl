@@ -1,5 +1,5 @@
 
-_extern def puts(s : string) : int;
+_extern proc puts(s : string) : int;
 
 local {
   puts("inside local");

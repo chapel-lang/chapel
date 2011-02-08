@@ -1,12 +1,12 @@
-def foo(i : int) {
+proc foo(i : int) {
   writeln("fun foo called with i = ", i);
 }
 
 class bar {
-  def foo() {
+  proc foo() {
     writeln("method foo called");
   }
-  def goo() {
+  proc goo() {
     foo(2);
   }
 }

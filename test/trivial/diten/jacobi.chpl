@@ -4,7 +4,7 @@ var D = [1..N, 1..N];
 var BD= [0..N+1, 0..N+1];
 
 
-def main(){
+proc main(){
   var A : [BD] real(64);
   var tmp : [D] real(64);
   var delta : real(64);
@@ -23,6 +23,6 @@ def main(){
   writeln(A(D));
 }
 
-def +(a: (int, int), b: (int, int)){
+proc +(a: (int, int), b: (int, int)){
   return (a(1) + b(1), a(2) + b(2));
 }

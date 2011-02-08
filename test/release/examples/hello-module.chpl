@@ -19,7 +19,7 @@ module Hello {
   // and will be run after the module (and any modules that it uses)
   // are initialized.
   //
-  def main() {
+  proc main() {
     writeln(message);
   }
 }

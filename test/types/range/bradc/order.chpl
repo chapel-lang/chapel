@@ -1,8 +1,8 @@
-def doInd(D, i) {
+proc doInd(D, i) {
   writeln("D.order(",i,") = ", D.indexOrder(i));
 }
 
-def doRange(D) {
+proc doRange(D) {
   doInd(D, D.low-1);
   for i in D {
     doInd(D, i);

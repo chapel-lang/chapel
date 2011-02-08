@@ -1,7 +1,7 @@
 use Time;
 config const sleepTime:uint = 1;
 config const printIterations = false;
-def main() {
+proc main() {
   var s: string = "a string";
   var b: int;
   writeln(s);

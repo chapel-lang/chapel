@@ -1,14 +1,14 @@
 class C {
-  def param foo {
+  proc param foo {
     writeln("In param foo");
   }
-  def param bar() {
+  proc param bar() {
     writeln("In param bar()");
   }
-  def foo {
+  proc foo {
     writeln("In non-param foo");
   }
-  def bar() {
+  proc bar() {
     writeln("In non-param bar()");
   }
 }

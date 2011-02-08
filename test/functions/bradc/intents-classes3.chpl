@@ -6,7 +6,7 @@ class pair {
 
 var a: pair = new pair();
 
-def callin(in x: pair) {
+proc callin(in x: pair) {
   writeln("in callin, x is: ", x.a, " ", x.b);
   if (x == a) {
     writeln("a and x are the same on the way in");
@@ -25,7 +25,7 @@ def callin(in x: pair) {
 }
 
 
-def callout(out x: pair) {
+proc callout(out x: pair) {
   writeln("in callout, x should be nil");
   if (x == a) {
     writeln("a and x are the same on the way in");
@@ -44,7 +44,7 @@ def callout(out x: pair) {
 }
 
 
-def callinout(inout x: pair) {
+proc callinout(inout x: pair) {
   writeln("in callinout, x is: ", x.a, " ", x.b);
   if (x == a) {
     writeln("a and x are the same on the way in");
@@ -63,7 +63,7 @@ def callinout(inout x: pair) {
 }
 
 
-def callblank(x: pair) {
+proc callblank(x: pair) {
   writeln("in callblank, x is: ", x.a, " ", x.b);
   if (x == a) {
     writeln("a and x are the same on the way in");
@@ -73,7 +73,7 @@ def callblank(x: pair) {
 }
 
 
-def main() {
+proc main() {
 
   a.a = 10;
   a.b = 2.3;

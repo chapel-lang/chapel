@@ -3,7 +3,7 @@ const D = [1..9];
 class C {
   var SparseD: sparse subdomain(D);
 
-  def foo() {
+  proc foo() {
     writeln("SparseD is: ", SparseD);
     SparseD += 4;
     writeln("SparseD is: ", SparseD);

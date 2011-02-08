@@ -17,6 +17,8 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   wrapper->addFlag(FLAG_INLINE);
   if (fn->hasFlag(FLAG_NO_PARENS))
     wrapper->addFlag(FLAG_NO_PARENS);
+  if (fn->hasFlag(FLAG_CONSTRUCTOR))
+    wrapper->addFlag(FLAG_CONSTRUCTOR);
   if (!fn->hasFlag(FLAG_ITERATOR_FN)) { // getValue is var, not iterator
     wrapper->retTag = fn->retTag;
     if (fn->setter)

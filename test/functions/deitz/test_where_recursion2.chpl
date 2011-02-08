@@ -1,8 +1,8 @@
-def foo(i) where bar(2).type == real {
+proc foo(i) where bar(2).type == real {
   writeln("hello world");
 }
 
-def bar(i) where foo(2).type == real {
+proc bar(i) where foo(2).type == real {
   writeln("hello again");
 }
 

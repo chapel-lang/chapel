@@ -5,14 +5,14 @@ class ll {
 
   class a_class {
     var a: int;
-    def bar() { writeln(a); }
+    proc bar() { writeln(a); }
   }
 
-  def add_front(e) {
+  proc add_front(e) {
     list = new ll_entry(itemType, e, list);
   }
 
-  def remove_front() {
+  proc remove_front() {
     var e: itemType;
     if list != nil {
       e = list.element;
@@ -21,7 +21,7 @@ class ll {
     return e;
   }
 
-  def add_back(e) {
+  proc add_back(e) {
     if list == nil then
       list = new ll_entry(itemType, e);
     else {
@@ -32,7 +32,7 @@ class ll {
     }
   }
 
-  def remove_back() {
+  proc remove_back() {
     var e: itemType;
     if list != nil {
       if list.next != nil {
@@ -50,7 +50,7 @@ class ll {
     return e;
   }
 
-  def contains(e)  {
+  proc contains(e)  {
     var mylist = list;
     while mylist != nil do
       if e == mylist.element then
@@ -58,7 +58,7 @@ class ll {
     return false;
   }
 
-  def remove_all_matching(e) {
+  proc remove_all_matching(e) {
     var mylist = list;
     if list == nil then
       return;
@@ -72,7 +72,7 @@ class ll {
       list = list.next;
   }
 
-  def reverse() {
+  proc reverse() {
     var mylist: ll_entry(itemType);
     var e: itemType;
 
@@ -87,7 +87,7 @@ class ll {
     list = mylist;
   }
 
-  def concatenate_front(list2: ll(itemType)){
+  proc concatenate_front(list2: ll(itemType)){
     if list2 == nil then
       return;
 
@@ -98,7 +98,7 @@ class ll {
     }
   }
 
-  def print() {
+  proc print() {
     var mylist = list;
     while mylist != nil {
       writeln(mylist.element);
@@ -116,7 +116,7 @@ class ll_entry {
   var next: ll_entry(elementType);  
 }
 
-def main(){
+proc main(){
   var list: ll(int) = new ll(int);
   var list2: ll(int) = new ll(int);
 

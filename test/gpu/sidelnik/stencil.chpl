@@ -4,7 +4,7 @@ config const threadsPerBlock = 16;
 
 var m = 64;
 
-def main() {
+proc main() {
 
 const GPUBlockDist = new dmap(new GPUDist(rank=1, tbSizeX=threadsPerBlock));
 

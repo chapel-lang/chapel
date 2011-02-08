@@ -1,4 +1,4 @@
-def int.foo() {
+proc int.foo() {
   writeln("hi: ", this);
 }
 

@@ -23,7 +23,7 @@ config const numRandoms = 128;
 config const errorTolerance = 0.01;
 
 
-def main() {
+proc main() {
   writeln("Main table size = 2**", logTableSize, " = ", tableSize, " words");
   writeln("Number of updates = ", numUpdates);
 
@@ -35,7 +35,7 @@ def main() {
 
 // BLC: eliminate Ran array -- replace with per-thread local variable
 
-def randomAccessUpdate() {
+proc randomAccessUpdate() {
   // BLC: might prefer the following line to be Table = tableDom;
   [i in tableDom] Table(i) = i:uint(64);      // BLC: unfortunate cast
 
@@ -68,7 +68,7 @@ def randomAccessUpdate() {
 }
 
 
-def verifyResults() {
+proc verifyResults() {
 
   var temp:uint(64) = 0x1;  // BLC: Can we rename this?
   for i in updateDom {
@@ -91,7 +91,7 @@ def verifyResults() {
 }
 
 
-def HPCCstarts(in n:int(64)) {
+proc HPCCstarts(in n:int(64)) {
   param period = 1317624576693539401;
 
   while (n < 0) do
@@ -134,7 +134,7 @@ def HPCCstarts(in n:int(64)) {
 
 // BLC: could replace this all by some sort of bpop + bit search 
 // function?
-def computeLogTableSize(memsize) {
+proc computeLogTableSize(memsize) {
   param tableElemSize = 8;  // BLC: magic number == sizeof(uint(64))
 
   var elemsInTable = memsize / tableElemSize;

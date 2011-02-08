@@ -1,45 +1,22 @@
-GRID_LIB = ../grid
-LEVEL_LIB = ../level
-
-HIERARCHY_SOURCES = \
-	AMRHierarchy_def.chpl \
-	CFLevelInterface_def.chpl
-
-
-ARRAY_MAIN = AMRArray_def
-ARRAY_SOURCES = $(ARRAY_MAIN).chpl $(HIERARCHY_SOURCES)
-
-SOLUTION_MAIN = AMRSolution_def
-SOLUTION_SOURCES = $(SOLUTION_MAIN).chpl \
-	CFSolutionInterface_def.chpl \
-	$(ARRAY_SOURCES)	
-
+MISC_LIB = ../../lib/misc
+GRID_LIB = ../../lib/grid
+LEVEL_LIB = ../../lib/level
+CF_LIB = ../../lib/cfboundary
 
 .PHONY: clean
 
 DIM = 2
 
 
-
-AMRSolution_test: AMRSolution_test.out
-	./AMRSolution_test.out
-
-AMRSolution_test.out: $(SOLUTION_SOURCES)
-	chpl $(SOLUTION_SOURCES) --main-module $(SOLUTION_MAIN) -M $(GRID_LIB) -M $(LEVEL_LIB) --set dimension=$(DIM) -o AMRSolution_test.out
-
-
-AMRArray_test: amr_array_test.out
-	./AMRArray_test.out
-
-AMRArray_test.out: $(ARRAY_SOURCES)
-	chpl $(ARRAY_SOURCES) --main-module $(ARRAY_MAIN) -M $(GRID_LIB) -M $(LEVEL_LIB) --set dimension=$(DIM) -o AMRArray_test.out
-
-
-AMRHierarchy_test: AMRHierarchy_test.out
+AMRHierarchy_test: AMRHierarchy_test.out _output
 	./AMRHierarchy_test.out
 
-AMRHierarchy_test.out: $(HIERARCHY_SOURCES)
-	chpl $(HIERARCHY_SOURCES) -M $(GRID_LIB) -M $(LEVEL_LIB) --set dimension=$(DIM) -o AMRHierarchy_test.out
+AMRHierarchy_test.out: AMRHierarchy_def.chpl Partitioning.chpl
+	chpl AMRHierarchy_def.chpl Partitioning.chpl --main-module=AMRHierarchy_def -M $(MISC_LIB) -M $(GRID_LIB) -M $(LEVEL_LIB) -M $(CF_LIB) --set dimension=$(DIM) -o AMRHierarchy_test.out
+
+_output:
+	mkdir _output
+	cp ../plot.claw _output
 
 clean:
-	rm -f *.out
+	rm -rf *.out _output

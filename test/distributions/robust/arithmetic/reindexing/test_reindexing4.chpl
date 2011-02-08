@@ -2,10 +2,10 @@
 use driver_arrays;
 config const iters = 10;
 
-def foo(TD: domain, A: [TD] int, TA, iter: int) {
+proc foo(TD: domain, A: [TD] int, TA, iterNo: int) {
   var errs = 0;
   var offset = if (TD.rank==1) then o5 else fill(TD.rank, o5);
-  [i in TD] A[i] += iter;
+  [i in TD] A[i] += iterNo;
   for i in [TD] do
     if A[i] != TA[i+offset] {
       writeln("A[",i,"] Incorrect reindex");
@@ -14,13 +14,13 @@ def foo(TD: domain, A: [TD] int, TA, iter: int) {
   return errs;
 }
 
-def dit(TD: domain, A:[?D]) {
+proc dit(TD: domain, A:[?D]) {
   var errs = 0;
-  for iter in 1..iters {
-    [i in D] A[i] -= iter;
-    var ei = foo(TD, A, A, iter);
+  for iterNo in 1..iters {
+    [i in D] A[i] -= iterNo;
+    var ei = foo(TD, A, A, iterNo);
     if (ei != 0) {
-      writeln("\tIteration ", iter, ": ", ei, " errors");
+      writeln("\tIteration ", iterNo, ": ", ei, " errors");
       errs += ei;
     }
   }

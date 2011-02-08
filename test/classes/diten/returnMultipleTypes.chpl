@@ -1,32 +1,32 @@
 class A {
   var name:string = "A";
-  def sayTypeName() {
+  proc sayTypeName() {
     writeln("A");
   }
 }
 
 class B:A {
   var name:string = "B";
-  def sayTypeName() {
+  proc sayTypeName() {
     writeln("B");
   }
 }
 
 class C:B {
   var name:string = "C";
-  def sayTypeName() {
+  proc sayTypeName() {
     writeln("C");
   }
 }
 
-def foo(i: int) {
+proc foo(i: int) {
   if i > 0 then
     return new B();
   else
     return new C();
 }
 
-def main {
+proc main {
   var a = foo(3);
   var b = foo(-3);
 

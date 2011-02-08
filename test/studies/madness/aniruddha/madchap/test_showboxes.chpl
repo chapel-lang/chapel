@@ -4,7 +4,7 @@ use MadAnalytics;
 config const k      = 5;
 config const thresh = 1e-5;
 
-def main() {
+proc main() {
     var npt = 10;
 
     writeln("Mad Chapel -- Show me the boxes\n");

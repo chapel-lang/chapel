@@ -1,7 +1,7 @@
 class BaseClass {
   var a, b: int;
 
-  def BaseClass(b: int) {
+  proc BaseClass(b: int) {
     this.b = b;
   }
 }
@@ -9,7 +9,7 @@ class BaseClass {
 class DerivedClass: BaseClass {
   var c: int;
 
-  def DerivedClass(b:int, c:int) {
+  proc DerivedClass(b:int, c:int) {
     this.b = b;
     this.c = c;
   }

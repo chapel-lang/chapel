@@ -41,15 +41,6 @@
 //     threadlayer_sync_init()
 //     threadlayer_sync_destroy()
 //
-// For single variables
-//   type(s)
-//     threadlayer_single_aux_t
-//   functions
-//     threadlayer_single_suspend()
-//     threadlayer_single_awaken()
-//     threadlayer_single_init()
-//     threadlayer_single_destroy()
-//
 // For task management
 //   type(s)
 //     <none>
@@ -87,6 +78,7 @@ typedef uint64_t chpl_taskID_t;
 // Thread management
 //
 threadlayer_threadID_t threadlayer_thread_id(void);
+void threadlayer_yield(void);
 void threadlayer_thread_cancel(threadlayer_threadID_t);
 void threadlayer_thread_join(threadlayer_threadID_t);
 
@@ -104,21 +96,6 @@ typedef struct {
   threadlayer_mutex_t lock;
   threadlayer_sync_aux_t tl_aux;
 } chpl_sync_aux_t;
-
-
-//
-// Single variables
-//
-// The threading layer's threadlayer_single_aux_t may include any
-// additional members the layer needs to support the suspend/awaken
-// callbacks efficiently.  The FIFO tasking code itself does not
-// refer to this type or the tl_aux member at all.
-//
-typedef struct {
-  volatile chpl_bool is_full;
-  threadlayer_mutex_t lock;
-  threadlayer_single_aux_t tl_aux;
-} chpl_single_aux_t;
 
 
 // Tasks
@@ -142,10 +119,10 @@ chpl_bool chpl_pool_is_empty(void);
 //
 
 //
-// These are called once each, from CHPL_TASKING_INIT() and
-// CHPL_TASKING_EXIT().
+// These are called once each, from chpl_task_init() and
+// chpl_task_exit().
 //
-void threadlayer_init(void);
+void threadlayer_init(uint64_t callStackSize);
 void threadlayer_exit(void);
 
 
@@ -194,41 +171,6 @@ chpl_bool threadlayer_sync_suspend(chpl_sync_aux_t *s,
 void threadlayer_sync_awaken(chpl_sync_aux_t *s);
 void threadlayer_sync_init(chpl_sync_aux_t *s);
 void threadlayer_sync_destroy(chpl_sync_aux_t *s);
-
-
-//
-// Single variables
-//
-// Analogous to the sync case, the CHPL_SINGLE_WAIT_FULL() function
-// calls threadlayer_single_suspend() when a single variable is not
-// full.  The call will be made with the single variable's mutex held.
-// It should return (with the mutex again held) as soon as it can once
-// either the single variable becomes full, or (if the given deadline
-// pointer is non-NULL) the deadline passes.  It can return also early,
-// before either of these things occur, with no ill effects.  If a
-// deadline is given and it does pass, then threadlayer_single_suspend()
-// must return true; otherwise false.
-//
-// The less the function can execute while waiting for the single
-// variable to become full, and the quicker it can un-suspend when the
-// variable does become full, the better overall performance will be.
-// Obviously the single variable's mutex must be unlocked while the
-// routine waits for the variable to become full or the deadline to
-// pass, or livelock may result.
-//
-// The CHPL_SINGLE_MARK_AND_SIGNAL_FULL() function will call
-// threadlayer_single_awaken() every time it is called, not just when it
-// fills the single variable.
-//
-// Threadlayer_single_{init,destroy}() are called to initialize or
-// destroy, respectively, the contents of the tl_aux member of the
-// chpl_single_aux_t for the specific threading layer.
-//
-chpl_bool threadlayer_single_suspend(chpl_single_aux_t *s,
-                                     struct timeval *deadline);
-void threadlayer_single_awaken(chpl_single_aux_t *s);
-void threadlayer_single_init(chpl_single_aux_t *s);
-void threadlayer_single_destroy(chpl_single_aux_t *s);
 
 
 //

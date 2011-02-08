@@ -1,5 +1,5 @@
 module mod1 {
-  def foo() {
+  proc foo() {
     writeln("in mod1.foo()");
   }
 }
@@ -8,12 +8,12 @@ module mod1 {
 module mod2 {
   use mod1; 
 
-  def bar() {
+  proc bar() {
     writeln("in mod2.bar()");
     foo();
   }
 
-  def main() {
+  proc main() {
     bar();
   }
 }

@@ -1,7 +1,7 @@
 record point {
   var x : real;
   var y : real;
-  def hello() {
+  proc hello() {
     writeln("Hi.  I'm a point.");
   }
 }

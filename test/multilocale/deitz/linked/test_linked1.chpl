@@ -5,12 +5,12 @@ class C {
 class D {
   var cs: [0..numLocales-1] C;
 
-  def initialize() {
+  proc initialize() {
     coforall i in 0..numLocales-1 do 
       on Locales(i) do cs[i] = new C(i);
   }
 
-  def ~D() {
+  proc ~D() {
     coforall i in 0..numLocales-1 do 
       on Locales(i) do delete cs[i];
   }

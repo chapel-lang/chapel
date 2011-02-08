@@ -44,7 +44,7 @@ the equality and inequality comparison operators.
 The locale type supports the following methods:
 
 \begin{protohead}
-def locale.id: int;
+proc locale.id: int;
 \end{protohead}
 \begin{protobody}
 Returns a unique integer for each locale, from 0 to the number of
@@ -52,7 +52,7 @@ locales less one.
 \end{protobody}
 
 \begin{protohead}
-def locale.numCores: int;
+proc locale.numCores: int;
 \end{protohead}
 \begin{protobody}
 Returns the number of processor cores available on a given locale.
@@ -60,12 +60,21 @@ Returns the number of processor cores available on a given locale.
 
 \begin{protohead}
 use Memory;
-def locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)): retType;
+proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)): retType;
 \end{protohead}
 \begin{protobody}
 Returns the amount of physical memory available on a given locale in
 terms of the specified memory units (Bytes, KB, MB, or GB) using a
 value of the specified return type.
+\end{protobody}
+
+\begin{protohead}
+proc locale.callStackSize: uint(64);
+\end{protohead}
+\begin{protobody}
+Returns the per-task call stack size used when creating tasks on the
+locale in question.  A value of 0 indicates that the call stack size
+is determined by the system.
 \end{protobody}
 
 \subsubsection{The Predefined Locales Array}

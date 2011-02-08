@@ -1,7 +1,7 @@
 
 var span = max(int)..min(int);  // degenerate range
 
-def genInts() {
+iter genInts() {
   yield 2;
   yield 0;
   yield 1;

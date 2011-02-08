@@ -39,7 +39,7 @@ var otype : [Dom] bool;
 // See Hull, Section 11.8, P.243-244
 param inv_sqrt_2xPI = 0.39894228040143270286;
 
-def CNDF ( in InputX : fptype )  : fptype
+proc CNDF ( in InputX : fptype )  : fptype
 {
     var sign : int;
     // Check for negative value of InputX
@@ -79,7 +79,7 @@ def CNDF ( in InputX : fptype )  : fptype
     return xLocal;
 } 
 
-def BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
+proc BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
                          volatility : fptype, time : fptype, otype : bool) : fptype
 {
 	// local private working variables for the calculation
@@ -107,7 +107,7 @@ def BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
 	return OptionPrice;
 }
 
-def bs() {
+proc bs() {
 	for 0..#NUM_RUNS do {
 		forall i in [Dom] do {
 			/* Calling main function to calculate option value based on 
@@ -129,7 +129,7 @@ def bs() {
 	}
 }
 
-def main() {
+proc main() {
 	var infile = new file(filename, FileAccessMode.read);
 	infile.open();
 

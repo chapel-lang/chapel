@@ -70,6 +70,8 @@ static void printHelpTable(void) {
   int longestFlag = 0;
   char lastHeaderType = '\0';
 
+  printAdditionalHelp();
+
   while (flagList[i].flag) {
     int thisFlag = strlen(flagList[i].flag);
     if (longestFlag < thisFlag) {

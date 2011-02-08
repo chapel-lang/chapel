@@ -1,8 +1,8 @@
-def foo(x : real) {
+proc foo(x : real) {
   writeln("It's a real!");
 }
 
-def foo(x : complex) {
+proc foo(x : complex) {
   writeln("It's a complex!");
 }
 

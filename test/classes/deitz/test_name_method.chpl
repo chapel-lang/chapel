@@ -1,6 +1,6 @@
 class C {
   var x : int;
-  def foo(i : int) {
+  proc foo(i : int) {
     x = i;
   }
 }

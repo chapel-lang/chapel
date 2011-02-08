@@ -1,7 +1,7 @@
 config const verbose = false;
 config const iters = 100;
 
-def f() {
+proc f() {
   var D = [1..10000];
   var A: [D] real;
 

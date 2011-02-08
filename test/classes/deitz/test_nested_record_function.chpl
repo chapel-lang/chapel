@@ -23,7 +23,7 @@ cp.coordinate.y = 3.3;
 
 writeln("cp { ", cp.coordinate.x, ", ", cp.coordinate.y, ", ", cp.color, " }");
 
-def foo(x : real) {
+proc foo(x : real) {
   writeln(x);
 }
 

@@ -9,7 +9,7 @@ module N {
 }
 
 module O {
-  def foo() {
+  proc foo() {
     M.x = 1;
     M.y = 2;
     N.x = 3;
@@ -18,7 +18,7 @@ module O {
 }
 
 module P {
-  def bar() {
+  proc bar() {
     writeln(M.x, M.y, N.x, N.y);
   }
 }
@@ -29,7 +29,7 @@ module Q {
   class M {
     var x: int;
   }
-  def main() {
+  proc main() {
     bar();
     foo();
     bar();

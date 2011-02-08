@@ -1,4 +1,4 @@
-def f(d) {
+proc f(d) {
   var x: [d] real = 5.0;
   return x;
 }
@@ -7,7 +7,7 @@ class C {
   var d = [1..10];
   var x: [d] real;
   
-  def initialize() {
+  proc initialize() {
     x = f(d);
   }
 }

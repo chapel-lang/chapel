@@ -1,4 +1,4 @@
-def foo(x: bool(32)) {
+proc foo(x: bool(32)) {
   writeln("In 32-bit bool");
 }
 

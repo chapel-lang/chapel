@@ -1,4 +1,4 @@
-def f(s: string ...?n, i: int = 1) {
+proc f(s: string ...?n, i: int = 1) {
   writeln("s = ", s);
   writeln("n = ", n);
   writeln("i = ", i);

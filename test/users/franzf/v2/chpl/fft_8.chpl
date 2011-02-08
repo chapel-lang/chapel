@@ -35,11 +35,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use omega;
 
-def init_fft8() {
+proc init_fft8() {
 
 }
 
-def fft8(Y: [] complex, X: [] complex) {
+proc fft8(Y: [] complex, X: [] complex) {
     var s2250, s2251, s2252, s2253, s2254, t3704, t3705, 
     t3706, t3707, t3708, t3709, t3710, t3711, t3712, t3713, 
     t3714:complex;

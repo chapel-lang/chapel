@@ -1,8 +1,8 @@
-def foo(i : int) {
+proc foo(i : int) {
   writeln(i);
 }
 
-def foo(r: real) {
+proc foo(r: real) {
   writeln(r);
 }
 

@@ -1,16 +1,16 @@
-Capturing the result of iter(5)
+Capturing the result of itr(5)
 5
 4
 3
 2
 1
-Using the result of iter(5) in an empty loop
+Using the result of itr(5) in an empty loop
 5
 4
 3
 2
 1
-Not capturing the result of iter(5)
+Not capturing the result of itr(5)
 5
 4
 3

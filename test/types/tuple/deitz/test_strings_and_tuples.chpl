@@ -8,7 +8,7 @@ writeln((s1, s2));
 s1 = "BBB";
 writeln((s1, s2));
 
-def foo(s: string) {
+proc foo(s: string) {
   writeln((s1, s2, s));
   s1 = "CCC";
   writeln((s1, s2, s));
@@ -26,7 +26,7 @@ writeln((s1, s2, tt));
 s1 = "EEE";
 writeln((s1, s2, tt));
 
-def foo(t) {
+proc foo(t) {
   writeln((s1, s2, t));
   s1 = "FFF";
   writeln((s1, s2, t));

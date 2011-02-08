@@ -1,6 +1,6 @@
-def foo() {
+proc foo() {
   var x = 1;
-  def bar() {
+  proc bar() {
     var y = 2;
     writeln(x);
     writeln(y);

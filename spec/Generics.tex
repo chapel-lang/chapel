@@ -47,7 +47,7 @@ specified by the types default values.
 % build2tuple.chpl
 \end{chapelpre}
 \begin{chapel}
-def build2Tuple(type t, type tt) {
+proc build2Tuple(type t, type tt) {
   var x1: t;
   var x2: tt;
   return (x1, x2);
@@ -85,7 +85,7 @@ size \chpl{p} where each component in the tuple has the value of
 % fillTuple.chpl
 \end{chapelpre}
 \begin{chapel}
-def fillTuple(param p: int, x: int) {
+proc fillTuple(param p: int, x: int) {
   var result: p*int;
   for param i in 1..p do
     result(i) = x;
@@ -120,7 +120,7 @@ where each component in the tuple is initialized to \chpl{x}:
 % fillTuple2.chpl
 \end{chapelpre}
 \begin{chapel}
-def fillTuple(param p: int, x) {
+proc fillTuple(param p: int, x) {
   var result: p*x.type;
   for param i in 1..p do
     result(i) = x;
@@ -158,7 +158,7 @@ queried type for clarity:
 % fillTuple3.chpl
 \end{chapelpre}
 \begin{chapel}
-def fillTuple(param p: int, x: ?t) {
+proc fillTuple(param p: int, x: ?t) {
   var result: p*t;
   for param i in 1..p do
     result(i) = x;
@@ -191,7 +191,7 @@ actual argument that is a generic stack
 (see~\rsec{Example_Generic_Stack}) and outputs the top element of the
 stack.  The function is generic on the type of its argument.
 \begin{chapel}
-def writeTop(s: Stack) {
+proc writeTop(s: Stack) {
   write(s.top.item);
 }
 \end{chapel}
@@ -216,10 +216,10 @@ because of the use of the question mark.
 class C {
   type t = int;
 }
-def f(c: C) {
+proc f(c: C) {
   // c.type is always int
 }
-def g(c: C(?)) {
+proc g(c: C(?)) {
   // c.type may not be int
 }
 \end{chapel}
@@ -239,13 +239,13 @@ class C {
 \end{chapel}
 then the function definition
 \begin{chapel}
-def f(c: C(?t,real)) {
+proc f(c: C(?t,real)) {
   // body
 }
 \end{chapel}
 is equivalent to
 \begin{chapel}
-def f(c: C(?t,?tt)) where tt == real {
+proc f(c: C(?t,?tt)) where tt == real {
   // body
 }
 \end{chapel}
@@ -256,13 +256,13 @@ implicitly specified size of the formal tuple.
 \begin{example}
 The function definition
 \begin{chapel}
-def f(tuple: (?t,real)) {
+proc f(tuple: (?t,real)) {
   // body
 }
 \end{chapel}
 is equivalent to
 \begin{chapel}
-def f(tuple: (?t,?tt)) where tuple.size == 2 && tt == real {
+proc f(tuple: (?t,?tt)) where tuple.size == 2 && tt == real {
   // body
 }
 \end{chapel}
@@ -314,19 +314,19 @@ function \chpl{bar}:
 module M1 {
   record R {
     var x: int;
-    def foo() { }
+    proc foo() { }
   }
 }
 
 module M2 {
-  def bar(x) {
+  proc bar(x) {
     x.foo();
   }
 }
 
 module M3 {
   use M1, M2;
-  def main() {
+  proc main() {
     var r: R;
     bar(r);
   }
@@ -431,8 +431,8 @@ similar to a parameter field, it cannot be assigned
 except in its declaration.
 
 The type alias becomes an argument with intent \chpl{type} to
-the default constructor (\rsec{Generic_Default_Constructors})
-for its class or record. This makes the default constructor generic.
+the compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors})
+for its class or record. This makes the compiler-generated constructor generic.
 The type alias also becomes an argument with intent \chpl{type} to
 the type constructor (\rsec{Type_Constructors}).
 If the type alias declaration binds it to a type, that type
@@ -441,7 +441,7 @@ becomes the default for these arguments, otherwise they have no defaults.
 The class or record is instantiated by binding the type alias
 to the actual type passed to the corresponding argument of
 a user-defined (\rsec{Generic_User_Constructors})
-or default constructor or type constructor.
+or compiler-generated constructor or type constructor.
 If that argument has a default, the actual type can be omitted, in
 which case the default will be used instead.
 
@@ -490,8 +490,8 @@ is generic over the value that is bound to that field.
 % A parameter defined in a class or record is accessed as if it were a
 % field.  This access returns a parameter.  
 The parameter becomes an argument with intent \chpl{param} to the
-default constructor (\rsec{Generic_Default_Constructors})
-for that class or record.  This makes the default
+compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors})
+for that class or record.  This makes the compiler-generated
 constructor generic.  The parameter also becomes an argument
 with intent \chpl{param} to the type  constructor (\rsec{Type_Constructors}).
 If the parameter declaration has an initialization expression, that expression
@@ -500,7 +500,7 @@ becomes the default for these arguments, otherwise they have no defaults.
 The class or record is instantiated by binding the parameter
 to the actual value passed to the corresponding argument of
 a user-defined (\rsec{Generic_User_Constructors})
-or default constructor or type constructor.
+or compiler-generated constructor or type constructor.
 If that argument has a default, the actual value can be omitted, in
 which case the default will be used instead.
 
@@ -540,9 +540,9 @@ specified by \chpl{IntegerTuple} is a generic type.
 If a \chpl{var} or \chpl{const} field in a class or record has no specified type or
 initialization expression, the class or record is generic over the
 type of that field.  The field becomes an argument with blank intent to
-the default constructor (\rsec{Generic_Default_Constructors}).
+the compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors}).
 That argument has no specified type and no default
-value. This makes the default constructor generic.
+value. This makes the compiler-generated constructor generic.
 The field also becomes an argument with \chpl{type} intent and no default
 to the type constructor (\rsec{Type_Constructors}).
 Correspondingly, an actual value must always be passed to the default
@@ -550,7 +550,7 @@ constructor argument and an actual type to the type constructor argument.
 
 The class or record is instantiated by binding the type of the field
 to the type of the value passed to the corresonding argument
-of a user-defined (\rsec{Generic_User_Constructors}) or default constructor.
+of a user-defined (\rsec{Generic_User_Constructors}) or compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors}).
 When the type constructor is invoked, the class or record is instantiated
 by binding the type of the field to the actual type passed to
 the corresponding argument.
@@ -608,7 +608,7 @@ formal argument also has intent \chpl{type}. It accepts the type
 of the field, as opposed to a value as is the case for a parameter field.
 The formal arguments occur in the same order as the fields are
 declared and have the same names as the corresponding fields.
-Unlike the default constructor, the type constructor has only
+Unlike the compiler-generated constructor, the type constructor has only
 those arguments that correspond to generic fields.
 
 A call to a type constructor accepts actual types and parameter values
@@ -637,14 +637,17 @@ All methods bound to generic classes or records, including
 constructors, are generic over the implicit \chpl{this} argument.
 This is in addition to being generic over any other argument that is generic.
 
-\subsubsection{The Default Constructor}
-\label{Generic_Default_Constructors}
-\index{generics!constructors, default}
-\index{constructors!default!for generic classes or records}
+\subsubsection{The Compiler-Generated Constructor}
+\label{Generic_Compiler_Generated_Constructors}
+\index{generics!constructors!compiler-generated}
+\index{constructors!compiler-generated!for generic classes or records}
 
-The default constructor for a class or record (\rsec{The_Default_Constructor})
-is generic over each argument that corresponds to a generic field, as
-specified above.
+If no user-defined constructors are supplied for a given generic class, the
+compiler generates one following in a manner similar to that for concrete
+classes (\rsec{The_Compiler_Generated_Constructor}).
+However, the compiler-generated constructor for a generic class or record
+(\rsec{The_Compiler_Generated_Constructor}) is generic over each argument that
+corresponds to a generic field, as specified above.
 The argument has intent \chpl{type} for a type alias field and is a
 parameter for a parameter field. It accepts the type to be bound
 to the type alias and the value to be bound to the parameter, respectively.
@@ -654,7 +657,7 @@ formal argument has the blank intent and accepts the value
 for the field to be initialized with. The type of the field
 is inferred automatically to be the type of the initialization value.
 
-The default values for the generic arguments of the default constructor
+The default values for the generic arguments of the compiler-generated constructor
 are the same as for the type constructor (\rsec{Type_Constructors}).
 For example, the arguments corresponding to the generic \chpl{var}
 and \chpl{const} fields, if any, never have defaults, so the corresponding
@@ -662,7 +665,7 @@ actual values must always be provided.
 
 \subsubsection{User-Defined Constructors}
 \label{Generic_User_Constructors}
-\index{generics!constructors, user-defined}
+\index{generics!constructors!user-defined}
 \index{constructors!user-defined!for generic classes or records}
 
 If a generic field of a class does not have an initialization expression
@@ -676,8 +679,7 @@ expression, is a type alias, or is a parameter field, the field is
 automatically initialized at the beginning of the constructor invocation
 to the actual value of that argument.
 This is done by passing that formal argument to the implicit invocation
-of the default constructor at the start of the user-defined constructor
-(\rsec{User_Defined_Constructors}).
+of the compiler-generated constructor during default-initialization (\rsec{Default_Initialization}).
 
 %%  The following story is nicer but it's not how it is implemented:
 %If the name of a formal argument in a class constructor
@@ -706,8 +708,8 @@ class MyGenericClass {
   var v5 = 555;
   var x5: t5; // this field is not generic
 
-  def MyGenericClass(c1, v1, type t1, param p1) { }
-  def MyGenericClass(type t5, param p5, c5, v5, x5,
+  proc MyGenericClass(c1, v1, type t1, param p1) { }
+  proc MyGenericClass(type t5, param p5, c5, v5, x5,
                      type t1, param p1, c1, v1, x1) { }
 }  // class MyGenericClass
 
@@ -759,8 +761,8 @@ Given two overloaded function definitions
 % whereClause.chpl
 \end{chapelpre}
 \begin{chapel}
-def foo(x) where x.type == int { writeln("int"); }
-def foo(x) where x.type == real { writeln("real"); }
+proc foo(x) where x.type == int { writeln("int"); }
+proc foo(x) where x.type == real { writeln("real"); }
 \end{chapel}
 \begin{chapelpost}
 foo(3);
@@ -807,14 +809,14 @@ diagnostics to generate warnings and errors:
 % compilerDiagnostics.chpl
 \end{chapelpre}
 \begin{chapel}
-def foo(x, y) {
+proc foo(x, y) {
   if (x.type != y.type) then
     compilerError("foo() called with non-matching types: ", 
                   typeToString(x.type), " != ", typeToString(y.type));
   writeln("In 2-argument foo...");
 }
 
-def foo(x) {
+proc foo(x) {
   compilerWarning("1-argument version of foo called");
   writeln("In generic foo!");
 }
@@ -880,11 +882,11 @@ record Stack {
   type itemType;             // type of items
   var top: MyNode(itemType); // top node on stack linked list
 
-  def push(item: itemType) {
+  proc push(item: itemType) {
     top = new MyNode(itemType, item, top);
   }
 
-  def pop() {
+  proc pop() {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
     var oldTop = top;
@@ -892,7 +894,7 @@ record Stack {
     return oldTop.item;
   }
 
-  def isEmpty return top == nil;
+  proc isEmpty return top == nil;
 }
 \end{chapel}
 \begin{chapelpost}

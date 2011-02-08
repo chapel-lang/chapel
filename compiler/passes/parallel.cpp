@@ -6,14 +6,12 @@
 #include "expr.h"
 #include "optimizations.h"
 #include "passes.h"
+#include "../resolution/resolution.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "stringutil.h"
 #include "driver.h"
 #include "files.h"
-
-FnSymbol* getAutoCopy(Type* t);
-FnSymbol* getAutoDestroy(Type* t);
 
 // Package args into a class and call a wrapper function with that
 // object. The wrapper function will then call the function
@@ -374,7 +372,8 @@ makeHeapAllocations() {
                isModuleSymbol(def->parentSymbol) &&
                def->parentSymbol != rootModule &&
                isVarSymbol(def->sym) &&
-               !def->sym->hasFlag(FLAG_PRIVATE)) {
+               !def->sym->hasFlag(FLAG_PRIVATE) &&
+               !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
           (is_int_type(def->sym->type) ||
            is_uint_type(def->sym->type) ||

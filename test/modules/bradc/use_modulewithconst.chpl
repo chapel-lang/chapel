@@ -1,5 +1,5 @@
 use moduleWithConst;
 
-def main() {
+proc main() {
   writeln("foo is: ", foo);
 }

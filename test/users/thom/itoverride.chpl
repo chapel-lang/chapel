@@ -1,22 +1,22 @@
 
 class C
 {
-    def writeThis(w:Writer) { w.write("C"); }
+    proc writeThis(w:Writer) { w.write("C"); }
 }
 
 class SubC : C
 {
-    def writeThis(w:Writer) { w.write("SubC"); }
+    proc writeThis(w:Writer) { w.write("SubC"); }
 }
 
 class OverrideMe
 {
-    def getC()
+    proc getC()
     {
         return new C();
     }
 
-    def manyC()
+    iter manyC()
     {
         yield new C();
         yield new C();
@@ -25,12 +25,12 @@ class OverrideMe
 
 class OverridesIt : OverrideMe
 {
-    def getC()
+    proc getC()
     {
         return new SubC();
     }
     
-    def manyC()
+    iter manyC()
     {
         //even if these are C() this still breaks
         yield new SubC();
@@ -38,7 +38,7 @@ class OverridesIt : OverrideMe
     }
 }
 
-def main()
+proc main()
 {
     var o : OverrideMe;
     o = new OverridesIt();

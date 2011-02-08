@@ -1,4 +1,4 @@
-def test_int_size(in i) {
+proc test_int_size(in i) {
   i -= 1;
   write(i, " ");
   i += 1;

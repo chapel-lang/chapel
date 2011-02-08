@@ -63,7 +63,7 @@
 but they don't build a type of themselves.  Unlike the keywords on
 `c-primitive-type-kwds', they are fontified with the keyword face and
 not the type face."
-  chpl '("const" "config" "def" "module" "param" "type" "use" "var"))
+  chpl '("const" "config" "def" "module" "param" "type" "use" "var" "_extern"))
 
 ;; Class-style declarations
 (c-lang-defconst c-class-decl-kwds
@@ -106,7 +106,7 @@ will be handled."
   ;; Default to `c-class-decl-kwds' and `c-brace-list-decl-kwds'
   ;; (since e.g. "Foo" is the identifier being defined in "class Foo
   ;; {...}").
-  chpl '("const" "def" "module" "param" "type" "var"))
+  chpl '("const" "def" "module" "param" "type" "var" "_extern"))
 
 (c-lang-defconst c-ref-list-kwds
   "Keywords that may be followed by a comma separated list of
@@ -125,8 +125,9 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-block-stmt-2-kwds
   "Statement keywords followed by a paren sexp and then by a substatement."
-  chpl '("compilerError" "compilerWarning" "select" "while"))  ; putting "if" "for" "forall" here causes
-                            ; weird indentation since parens not required
+  chpl '("select" "while"))
+  ; putting "if" "for" "forall" here would cause
+  ; weird indentation since parens not required
 
 
 (c-lang-defconst c-simple-stmt-kwds

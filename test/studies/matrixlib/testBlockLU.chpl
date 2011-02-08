@@ -7,7 +7,7 @@ use MatrixOps;
 config const inputfile = "blockLU-Mat.dat";
 config var block = 2;
 
-def main() {
+proc main() {
 
   // Open the input file, read in the array size, ensure it's square
   var infile = new file(inputfile, path='./', mode=FileAccessMode.read);

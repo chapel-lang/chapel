@@ -1,13 +1,13 @@
-def g(x) {
+proc g(x) {
   writeln(typeToString(x.type), ": ", x);
 }
 
-def f(e) {
+proc f(e) {
   var x = e;
   g(x);
 }
 
-def f(type t) {
+proc f(type t) {
   var x : t;
   g(x);
 }

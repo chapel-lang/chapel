@@ -1,7 +1,7 @@
 
 class A {
   var a : real;
-  def this(i) var {
+  proc this(i) var {
     return a;
   }
 }
@@ -9,10 +9,10 @@ class A {
 class C {
   var a : A = new A();
   var bb : int;
-  def f() {
+  proc f() {
     a(1) *= 2.0;
   }
-  def b(i) var {
+  proc b(i) var {
     return bb; 
   }
 }

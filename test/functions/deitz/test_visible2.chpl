@@ -4,8 +4,8 @@ class C {
 
 var c = new C();
 
-def foo() {
-  def bar(c : C) {
+proc foo() {
+  proc bar(c : C) {
     writeln("in bar");
   }
   writeln("in foo");

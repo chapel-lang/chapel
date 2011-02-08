@@ -1,17 +1,17 @@
 // Useful functions for implementing distributions
 
 pragma "inline"
-def getDataParTasksPerLocale() {
+proc getDataParTasksPerLocale() {
   return dataParTasksPerLocale;
 }
 
 pragma "inline"
-def getDataParIgnoreRunningTasks() {
+proc getDataParIgnoreRunningTasks() {
   return dataParIgnoreRunningTasks;
 }
 
 pragma "inline"
-def getDataParMinGranularity() {
+proc getDataParMinGranularity() {
   return dataParMinGranularity;
 }
 
@@ -19,7 +19,7 @@ def getDataParMinGranularity() {
 // helper functions for determining the number of chunks and the
 //   dimension to chunk over
 //
-def _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges) {
+proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges) {
   param rank=ranges.size;
   var numElems: uint(64) = 1;
   for param i in 1..rank do {
@@ -49,7 +49,7 @@ def _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges) {
   return (numChunks, parDim);
 }
 
-def _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
+proc _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
   assert(numElems >= 0);
   const unumElems = numElems:uint(64);
   const runningTasks = here.runningTasks();
@@ -71,7 +71,7 @@ def _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
 }
 
 // How many tasks should be spawned to service numElems elements.
-def _computeNumChunks(numElems) {
+proc _computeNumChunks(numElems) {
   // copy some machinery from DefaultArithmeticDom
   var numTasks = if dataParTasksPerLocale==0
                  then here.numCores
@@ -86,7 +86,7 @@ def _computeNumChunks(numElems) {
 
 // Divide 1..numElems into (almost) equal numChunk pieces
 // and return myChunk-th piece.
-def _computeChunkStartEnd(numElems, numChunks, myChunk) {
+proc _computeChunkStartEnd(numElems, numChunks, myChunk) {
   var div = numElems / numChunks;
   var rem = numElems % numChunks;
 
@@ -106,9 +106,9 @@ def _computeChunkStartEnd(numElems, numChunks, myChunk) {
 //
 // helper function for blocking index ranges
 //
-def _computeBlock(numelems, numblocks, blocknum, wayhi,
+proc _computeBlock(numelems, numblocks, blocknum, wayhi,
                   waylo=0:wayhi.type, lo=0:wayhi.type) {
-  def intCeilXDivByY(x, y) return ((x + (y-1)) / y);
+  proc intCeilXDivByY(x, y) return ((x + (y-1)) / y);
 
   if numelems == 0 then
     return (1:lo.type, 0:lo.type);
@@ -126,7 +126,7 @@ def _computeBlock(numelems, numblocks, blocknum, wayhi,
 //
 // naive routine for dividing numLocales into rank factors
 //
-def _factor(param rank: int, value) {
+proc _factor(param rank: int, value) {
   var factors: rank*int;
   for param i in 1..rank do
     factors(i) = 1;
@@ -160,8 +160,8 @@ def _factor(param rank: int, value) {
 // type, and shape of 'dom' but for which the indices in each
 // dimension start at zero and have unit stride.
 //
-def computeZeroBasedDomain(dom: domain) {
-  def helper(first, rest...) {
+proc computeZeroBasedDomain(dom: domain) {
+  proc helper(first, rest...) {
     if rest.size > 1 then
       return (0..#first.length, (...helper((...rest))));
     else
@@ -176,7 +176,7 @@ def computeZeroBasedDomain(dom: domain) {
 //
 // setupTargetLocalesArray
 //
-def setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {
+proc setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {
   param rank = targetLocDom.rank;
   if rank != 1 && specifiedLocArr.rank == 1 {
     const factors = _factor(rank, specifiedLocArr.numElements);

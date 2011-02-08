@@ -5,67 +5,119 @@ use Grid_def;
 //|\""""""""""""""""""""|\
 //| >    Level class    | >
 //|/____________________|/
+
+//-------------------------------------------------------------------
+// A Level describes a collection of Grids, each of whichdiscretizes
+// a subset of a single, larger rectangle.  These Grids share a 
+// global index space, in which the lowest face of the rectangle in 
+// each dimension occupies index 0.
+//
+// The fields x_low, x_high, n_cells, and dx all refer to the global
+// discretization of the rectangle, and each child grid will have
+// cells of the same size dx.
+//
+// The field n_ghost_cells states the width of the layer of ghost 
+// cells that will be used by each Grid.
+//-------------------------------------------------------------------
+
 class Level {
 
   var is_complete: bool = false;
   
-  var x_low, x_high: dimension*real,
-      n_cells:       dimension*int,
-      n_ghost_cells: dimension*int,
-      dx:            dimension*real;
+  const x_low, x_high: dimension*real;
+  const n_cells:       dimension*int;
+  const n_ghost_cells: dimension*int;
+  const dx:            dimension*real;
 
 
   //==== Cell domains ====
-  //--------------------------------------------------------------------
-  // Not meant for iteration, but they describe how the Level's indices
-  // relate to physical space.
-  //--------------------------------------------------------------------
-  var ext_cells: domain(dimension, stridable=true);
-  var cells:     subdomain(ext_cells);
+  //--------------------------------------------------------------
+  // These domains index the possible cells occupied by a grid on 
+  // the level.
+  //--------------------------------------------------------------
+  const possible_ghost_cells: domain(dimension, stridable=true);
+  const possible_cells:       subdomain(possible_ghost_cells);
 
 
   //==== Child grid info ====
-  var grids:        domain(Grid);
-  var overlap_data: [grids] OverlapWithSiblings;
+  //---------------------------------------------------------------------
+  // 'grids' is an associative domain, which stores a list of indices of
+  // type Grid.  It initializes to empty, and new indices are added via
+  // the 'add' method.
+  //
+  // The fields 'sibling_overlaps' and 'boundary' are arrays declared
+  // on 'grids'; as seen here, the syntax is identical to that for
+  // arithmetic domains.  Iteration syntax is the same as well.
+  //---------------------------------------------------------------------
+  var grids:            domain(Grid);
+  var sibling_overlaps: [grids] SiblingOverlap;
+  var boundary:         [grids] MultiDomain(dimension,stridable=true);
 
 
+  //|\''''''''''''''|\
+  //| >    clear    | >
+  //|/..............|/
+  
+  proc clear () {
+    for grid in grids {
+      delete sibling_overlaps(grid);
+      delete boundary(grid);
+    }
+  }
+  // /|''''''''''''''/|
+  //< |    clear    < |
+  // \|..............\|
 
-  //|\''''''''''''''''''''''''''''|\
-  //| >    initialize() method    | >
-  //|/............................|/
-  //--------------------------------------------------------------------
-  // Sets dx and cell domains, based on the mandatory input parameters.
-  //--------------------------------------------------------------------
-  def initialize() {
+
+  //|\''''''''''''''''''''|\
+  //| >    constructor    | >
+  //|/....................|/
+
+  proc Level(
+    x_low: dimension*real,
+    x_high: dimension*real,
+    n_cells: dimension*int,
+    n_ghost_cells: dimension*int)
+  {
+    
+    this.x_low = x_low;
+    this.x_high = x_high;
+    this.n_cells = n_cells;
+    this.n_ghost_cells = n_ghost_cells;
+    
     dx = (x_high - x_low) / n_cells;
 
 
-    //==== Set cell domains ====
-    var range_tuple: dimension*range(stridable = true);
+    //==== Possible cells ====
+    var ranges: dimension*range(stridable = true);
     for d in dimensions do
-      range_tuple(d) = 1 .. #2*n_cells(d) by 2;
-    cells = range_tuple;
+      ranges(d) = 1 .. #2*n_cells(d) by 2;
+    possible_cells = ranges;
 
-    var size: dimension*int;
-    for d in dimensions do
-      size(d) = 2*n_ghost_cells(d);
-    ext_cells = cells.expand(size);
-
+    //==== Possible ghost cells ====
+    //---------------------------------------------------------------
+    // The 'expand' method of an arithmetic domain extends both its
+    // lower and upper bounds by the input.  In this case, the input
+    // must be multiplied by 2 because a cell is 2 indices wide.
+    //---------------------------------------------------------------
+    possible_ghost_cells = possible_cells.expand(2*n_ghost_cells);    
   }
-  // /|''''''''''''''''''''''''''''/|
-  //< |    initialize() method    < |
-  // \|............................\|
+  // /|''''''''''''''''''''/|
+  //< |    constructor    < |
+  // \|....................\|
   
 
   //|\''''''''''''''''''''''''''''|\
   //| >    snapToVertex method    | >
   //|/............................|/
+
   //------------------------------------------------------
   // Provided a real coordinate, returns the index of the
   // nearest vertex.  Useful when defining a grid by
   // its real bounds.
   //------------------------------------------------------
-  def snapToVertex(x: dimension*real) {
+
+  proc snapToVertex (x: dimension*real) {
 
     var idx: dimension*int;
 
@@ -84,7 +136,14 @@ class Level {
   //|\'''''''''''''''''''''''''|\
   //| >    writeThis method    | >
   //|/.........................|/
-  def writeThis(w: Writer) {
+
+  //-----------------------------------------------------------
+  // Defines the output of the intrinsic 'write' and 'writeln' 
+  // procedures, so that write(Level) will produce something
+  // sensible.  Mainly for testing and debugging.
+  //-----------------------------------------------------------
+  
+  proc writeThis(w: Writer) {
     writeln("Level bounds: ", x_low, "  ", x_high);
     writeln("Number of cells: ", n_cells);
     writeln("Number of ghost cells: ", n_ghost_cells);
@@ -110,15 +169,17 @@ class Level {
 
 
 
-//|\"""""""""""""""""""""""""""""|\
-//| >    Level.addGrid method    | >
-//|/_____________________________|/
+//|\""""""""""""""""""""""""""""""|\
+//| >    Level.addGrid methods    | >
+//|/______________________________|/
+
 //--------------------------------------------------------
 // This version is based on indices, and probably best to
 // use in practice, as integer arithmetic is cleaner than
 // real arithmetic.
 //--------------------------------------------------------
-def Level.addGrid(
+
+proc Level.addGrid(
   i_low_grid:  dimension*int,
   i_high_grid: dimension*int)
 {
@@ -126,7 +187,6 @@ def Level.addGrid(
   //==== Safety check ====  
   assert(is_complete == false,
 	 "Attempted to add grid to a completed level.");
-
 
   //==== Derive grid fields from index bounds and parent (this) info ====
   var x_low_grid, x_high_grid: dimension*real;
@@ -150,11 +210,21 @@ def Level.addGrid(
 }
 
 
+//---------------------------------------------------
+// This version takes the full domain of grid cells.
+//---------------------------------------------------
+
+proc Level.addGrid (grid_cells: domain(dimension,stridable=true))
+{
+  addGrid(grid_cells.low-1, grid_cells.high+1);
+}
+
+
 //----------------------------------------------------------
 // This version takes in real bounds, and snaps them to the
 // level's discretization.
 //----------------------------------------------------------
-def Level.addGrid(
+proc Level.addGrid(
   x_low_grid:  dimension*real,
   x_high_grid: dimension*real)
 {
@@ -165,9 +235,9 @@ def Level.addGrid(
   addGrid(i_low_grid, i_high_grid);
 
 }
-// /|"""""""""""""""""""""""""""""/|
-//< |    Level.addGrid method    < |
-// \|_____________________________\|
+// /|""""""""""""""""""""""""""""""/|
+//< |    Level.addGrid methods    < |
+// \|______________________________\|
 
 
 
@@ -176,20 +246,27 @@ def Level.addGrid(
 //|\""""""""""""""""""""""""""""""|\
 //| >    Level.complete method    | >
 //|/______________________________|/
+
 //----------------------------------------------------------------
-// This method is meant to be called after all grids are added to
-// the level.  Neighbor data is set on each grid, and other post-
-// processing can be added here as needed.
+// Call after all grids have been added to the level, so now we
+// can safely compute how they overlap with one another.
 //----------------------------------------------------------------
-def Level.complete() {
+
+proc Level.complete () {
 
   //==== Safety check ====
   assert(is_complete == false,
 	 "Attempted to complete a completed level.");
 
-  //==== Set overlap data ====
-  for grid in grids do
-    overlap_data(grid) = new OverlapWithSiblings(grid,this);
+  //==== Set overlap and boundary data ====
+  for grid in grids {
+    sibling_overlaps(grid) = new SiblingOverlap(this,grid);
+    
+    boundary(grid) = new MultiDomain(dimension,stridable=true);
+    boundary(grid).add(grid.ghost_multidomain);
+    for overlap_domain in sibling_overlaps(grid).domains do
+      boundary(grid).subtract(overlap_domain);
+  }
 
   //==== Finish ====
   is_complete = true;
@@ -202,32 +279,51 @@ def Level.complete() {
 
 
 
-//|\""""""""""""""""""""""""""""""""""|\
-//| >    OverlapWithSiblings class    | >
-//|/__________________________________|/
+//|\"""""""""""""""""""""""""""""|\
+//| >    SiblingOverlap class    | >
+//|/_____________________________|/
+
 //----------------------------------------------------------------------
-// Describes the overlap of a Grid with its siblings on the Level.
+// Describes the overlap of a Grid with its siblings on a Level.
 // Each overlap is the Grid's ghost cells, overlapped with a neighbor's
 // interior cells.  However, the intersection will always be a single
 // rectangle, and therefore each overlap may be described by a domain.
+//
+// Overlaps are computed when this object is constructed, so it should
+// only be built once all grids have been added to a level.
 //----------------------------------------------------------------------
-class OverlapWithSiblings {
-  var   neighbors:       domain(Grid);
-  var   overlap_domains: [neighbors] domain(dimension,stridable=true);
+
+class SiblingOverlap {
+
+  const neighbors: domain(Grid);
+  const domains:   [neighbors] domain(dimension,stridable=true);
+
+
+  //|\''''''''''''''''|\
+  //| >    clear()    | >
+  //|/................|/
+  proc clear() {
+    neighbors.clear();
+  }
+  // /|''''''''''''''''/|
+  //< |    clear()    < |
+  // \|................\|
+  
   
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def OverlapWithSiblings(
-    grid:  Grid, 
-    level: Level)
+  
+  proc SiblingOverlap (
+    level: Level,
+    grid:  Grid)
   {
-    for sib in level.grids {
-      if sib != grid {
-        var overlap = grid.ext_cells( sib.cells );
+    for sibling in level.grids {
+      if sibling != grid {
+        var overlap = grid.extended_cells( sibling.cells );
         if overlap.numIndices>0 {
-          neighbors.add(sib);
-          overlap_domains(sib) = overlap;
+          neighbors.add(sibling);
+          domains(sibling) = overlap;
         }
       }      
     }
@@ -240,38 +336,61 @@ class OverlapWithSiblings {
   //|\'''''''''''''''''''''''''|\
   //| >    these() iterator    | >
   //|/.........................|/
-  def these() {
+  
+  //--------------------------------------------------------------
+  // A these() iterator allows iteration over the object:
+  //    for (nbr,overlap) in sibling_overlaps(grid) ...
+  // In this case, it's designed so that iteration will provide
+  // both each neighboring grid and the associated domain of
+  // overlap, which is what will be needed to access the relevant
+  // storage in a LevelVariable.
+  //--------------------------------------------------------------
+  
+  iter these() {
     for nbr in neighbors do
-      yield (nbr, overlap_domains(nbr));
+      yield (nbr, domains(nbr));
   }
   // /|'''''''''''''''''''''''''/|
   //< |    these() iterator    < |
   // \|.........................\|
   
 }
-// /|""""""""""""""""""""""""""""""""""/|
-//< |    OverlapWithSiblings class    < |
-// \|__________________________________\|
+// /|"""""""""""""""""""""""""""""/|
+//< |    SiblingOverlap class    < |
+// \|_____________________________\|
 
 
+
+
+
+//------------------------------------
+// Only I/O methods below this line
+//------------------------------------
+// |   |   |   |   |   |   |   |   |
+//\|/ \|/ \|/ \|/ \|/ \|/ \|/ \|/ \|/
+// V   V   V   V   V   V   V   V   V
 
 
 
 //|\"""""""""""""""""""""""""""""""""""""|\
 //| >    Level.ordered_grids iterator    | >
 //|/_____________________________________|/
+
 //---------------------------------------------------------------
-// While grids don't need to be ordered in terms of computation,
-// they should be ordered when writing output, so that the
-// output is well-defined.  Otherwise, regressions are much
-// more difficult.
+// This yields the grids based on their low index bound, and the
+// ordering
+//    (i,j) < (k,l) if i<k or (i==k and j<l).
+// This is used purely for output, for which it is required to
+// make results determinisic.  As such, the calculation of the
+// ordering isn't done in a particularly sophisticated fashion.
 //---------------------------------------------------------------
-def Level.ordered_grids {    
+
+iter Level.ordered_grids {    
   var grid_list = grids;
   
   while grid_list.numIndices > 0 {
     var lowest_grid: Grid;
-    var i_lowest = ext_cells.high;
+    var i_lowest = possible_ghost_cells.high;
 
     for grid in grid_list {
       for d in dimensions {
@@ -296,14 +415,16 @@ def Level.ordered_grids {
 
 
 
-//|""""""""""""""""""""""""""""""""""\
-//|===> levelFromInputFile routine ===>
-//|__________________________________/
+//|\"""""""""""""""""""""""""""""""""""|\
+//| >    levelFromInputFile routine    | >
+//|/___________________________________|/
+
 //------------------------------------------------------------------
-// Creates a Level, provided an input file starting on the line
-// where the level's definition begins.
+// Creates a Level whose parameters are read from an input file,
+// the name of which is provided as a string.
 //------------------------------------------------------------------
-def readLevel(file_name: string){
+
+proc readLevel(file_name: string){
 
   var input_file = new file(file_name, FileAccessMode.read);
   input_file.open();
@@ -323,9 +444,9 @@ def readLevel(file_name: string){
   input_file.readln( (...n_ghost) );
 
   var level = new Level(x_low         = x_low,
-			x_high        = x_high,
-			n_cells       = n_cells,
-			n_ghost_cells = n_ghost);
+                        x_high        = x_high,
+                        n_cells       = n_cells,
+                        n_ghost_cells = n_ghost);
 
   input_file.readln();
 
@@ -344,79 +465,20 @@ def readLevel(file_name: string){
   return level;
 
 }
-// /""""""""""""""""""""""""""""""""""|
-//<=== levelFromInputFile routine <===|
-// \__________________________________|
+// /|"""""""""""""""""""""""""""""""""""/|
+//< |    levelFromInputFile routine    < |
+// \|___________________________________\|
 
 
 
 
 
 
-/* //|"""""""""""""""""""""""""""""\ */
-/* //|===> LevelGhostCells class ===> */
-/* //|_____________________________/ */
-/* class LevelGhostCells { */
-/*   const level:             Level; */
-/*   var   grid_ghost_cells: [level.grids] GhostCells; */
-
-/*   def LevelGhostCells(level: Level){ */
-/*     this.level = level; */
-/*   } */
-
-/*   def this(grid: Grid) var { */
-/*     return grid_ghost_cells(grid); */
-/*   } */
-/* } */
-/* // /"""""""""""""""""""""""""""""| */
-/* //<=== LevelGhostCells class <===| */
-/* // \_____________________________| */
-
-
-
-// //|""""""""""""""""""""""""""""""""\
-// //|===> LevelGhostArraySet class ===>
-// //|________________________________/
-// class LevelGhostArraySet {
-//   const level: Level;
-//   var ghost_array_sets: [level.grids] GhostArraySet;
+// proc main {
 // 
-//   def initialize() {
-//     for grid in level.grids do
-//       ghost_array_sets(grid) = new GhostArraySet(grid);
-//   }
+//   var level = readLevel("input_level.txt");
 // 
-//   def this(grid: Grid) {
-//     return ghost_array_sets(grid);
-//   }
+//   writeln(level);
+// 
+// 
 // }
-// // /""""""""""""""""""""""""""""""""/
-// //<=== LevelGhostArraySet class <==<
-// // \________________________________\
-
-
-
-
-
-def main {
-
-  var level = readLevel("input_level.txt");
-
-  writeln(level);
-
-  // var lga = new LevelGhostArraySet(level = level);
-  // 
-  // writeln("");
-  // 
-  // for grid in level.grids {
-  //   writeln("Grid:");
-  //   writeln(grid);
-  // 
-  //   for loc in ghost_locations {
-  //     writeln("Ghost domain at ", loc, ": ", lga(grid)(loc).dom );
-  //     writeln( lga(grid)(loc).value );
-  //     writeln("");
-  //   }
-  // }
-
-}

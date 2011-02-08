@@ -1,12 +1,12 @@
-def foo(x: range(int, BoundedRangeType.boundedLow, ?stridable) ... ?k) {
+proc foo(x: range(int, BoundedRangeType.boundedLow, ?stridable) ... ?k) {
   writeln("bounded low ranges: ", x);
 }
 
-def foo(x: range(int, BoundedRangeType.boundedHigh, ?stridable) ... ?k) {
+proc foo(x: range(int, BoundedRangeType.boundedHigh, ?stridable) ... ?k) {
   writeln("bounded high ranges: ", x);
 }
 
-def foo(x: range(?) ... ?k) {
+proc foo(x: range(?) ... ?k) {
   writeln("mixed bounded type ranges: ", x);
 }
 

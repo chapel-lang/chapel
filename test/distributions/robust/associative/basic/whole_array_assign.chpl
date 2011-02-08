@@ -36,7 +36,7 @@ testWhole(AUint);
 testWhole(AReal);
 testWhole(AString);
 
-def testWhole(AAssoc) {
+proc testWhole(AAssoc) {
   type idxType = AAssoc.domain._value.idxType;
   var AA: AAssoc.type;
   if debug then writeln(AA);

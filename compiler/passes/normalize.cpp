@@ -134,12 +134,14 @@ insertUseForExplicitModuleCalls(void) {
 void normalize(void) {
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
+    // ProcIter: after transition this entire 'if' should disappear
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
       if (!fn) {
-        USR_FATAL(call, "yield statement must be in a function");
+        USR_FATAL_CONT(call, "yield statement must be in a function");
+      } else {
+        fn->addFlag(FLAG_ITERATOR_FN);
       }
-      fn->addFlag(FLAG_ITERATOR_FN);
     }
     if (call->isPrimitive(PRIM_DELETE)) {
       VarSymbol* tmp = newTemp();
@@ -153,8 +155,20 @@ void normalize(void) {
       call->remove();
     }
   }
+  USR_STOP();  // ProcIter: remove this after transition (not needed)
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // ProcIter: remove this entire 'if' after transition
+    if (!(fn->hasFlag(FLAG_TEMP) || fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))
+        && !fn->hasFlag(FLAG_PROC_ITER_KW_USED))
+    {
+      if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+        INT_ASSERT(!fn->hasFlag(FLAG_EXTERN)); // should be ensured by parser
+        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'iter'");
+      } else {
+        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'proc'");
+      }
+    }
     SET_LINENO(fn);
     if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
@@ -174,11 +188,14 @@ void normalize(void) {
     if (call->parentSymbol && call->isPrimitive(PRIM_NEW)) {
       if (CallExpr* classCall = toCallExpr(call->get(1)))
         if (UnresolvedSymExpr* use = toUnresolvedSymExpr(classCall->baseExpr))
-          if (isalpha(use->unresolved[0]))
-            USR_FATAL(call, "invalid use of 'new' on %s", use->unresolved);
-      USR_FATAL(call, "invalid use of 'new'");
+          if (isalpha(use->unresolved[0])) {
+            USR_FATAL_CONT(call, "invalid use of 'new' on %s", use->unresolved);
+            continue;
+          }
+      USR_FATAL_CONT(call, "invalid use of 'new'");
     }
   }
+  USR_STOP();
 
   // handle side effects on sync/single variables
   forv_Vec(SymExpr, se, gSymExprs) {
@@ -286,22 +303,43 @@ void normalize(BaseAST* base) {
   }
 }
 
+static bool is_void_return(CallExpr* call) {
+  if (call->isPrimitive(PRIM_RETURN)) {
+    SymExpr* arg = toSymExpr(call->argList.first());
+    if (arg) {
+      // NB false for 'return void' in type functions, as it should be
+      if (arg->var == gVoid)
+        return true;
+    }
+  }
+  return false;
+}
 
 static void normalize_returns(FnSymbol* fn) {
   SET_LINENO(fn);
 
   Vec<CallExpr*> rets;
   Vec<CallExpr*> calls;
-  collectCallExprs(fn, calls);
+  int numVoidReturns = 0;
+  bool isIterator = fn->hasFlag(FLAG_ITERATOR_FN);
+  collectMyCallExprs(fn, calls, fn); // ones not in a nested function
   forv_Vec(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_RETURN) ||
         call->isPrimitive(PRIM_YIELD))
-      if (call->parentSymbol == fn) // not in a nested function
+      {
         rets.add(call);
+        if (is_void_return(call)) {
+          numVoidReturns++;
+        } else if (isIterator && call->isPrimitive(PRIM_RETURN)) {
+          // return with an expression
+          // ProcIter: remove the entire enclosing 'else if'
+          INT_ASSERT(!fn->hasFlag(FLAG_PROC_ITER_KW_USED)); // done in semanticChecks
+          USR_WARN(call, "returning a value in an iterator is deprecated; replace it with a yield of that value, followed by a return with no expression");
+        }
+      }
   }
+  INT_ASSERT(!isIterator || rets.n > numVoidReturns); // done in semanticChecks
   if (rets.n == 0) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN))
-      USR_FATAL(fn, "iterator does not yield or return a value");
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
   }
@@ -309,8 +347,8 @@ static void normalize_returns(FnSymbol* fn) {
     CallExpr* ret = rets.v[0];
     if (ret == fn->body->body.last()) {
       if (SymExpr* se = toSymExpr(ret->get(1))) {
-        if (!strncmp("_type_construct_", fn->name, 16) ||
-            !strncmp("_construct_", fn->name, 11) ||
+        if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
+            fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
             !strncmp("_if_fn", fn->name, 6) ||
             !strcmp("=", fn->name) ||
             !strcmp("_init", fn->name) ||
@@ -320,12 +358,13 @@ static void normalize_returns(FnSymbol* fn) {
       }
     }
   }
-  SymExpr* retSym = toSymExpr(rets.v[0]->get(1));
-  bool returns_void = retSym && retSym->var == gVoid;
   LabelSymbol* label = new LabelSymbol(astr("_end_", fn->name));
   fn->insertAtTail(new DefExpr(label));
   VarSymbol* retval = NULL;
-  if (returns_void) {
+  // If a proc has a void return, do not return any values ever.
+  // (Types are not resolved yet, so we judge by presence of "void returns"
+  // i.e. returns with no expr. See also a related check in semanticChecks.)
+  if (!isIterator && (numVoidReturns != 0)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   } else {
     retval = newTemp("_ret", fn->retType);
@@ -337,6 +376,11 @@ static void normalize_returns(FnSymbol* fn) {
       retval->addFlag(FLAG_MAYBE_TYPE);
     if (fn->retExprType && fn->retTag != RET_VAR) {
       BlockStmt* retExprType = fn->retExprType->copy();
+      if (isIterator)
+        if (SymExpr* lastRTE = toSymExpr(retExprType->body.tail))
+          if (TypeSymbol* retSym = toTypeSymbol(lastRTE->var))
+            if (retSym->type == dtVoid)
+              USR_FATAL_CONT(fn, "an iterator's return type cannot be 'void'; if specified, it must be the type of the expressions the iterator yields");
       fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_INIT, retExprType->body.tail->remove())));
       fn->insertAtHead(retExprType);
       fn->addFlag(FLAG_SPECIFIED_RETURN_TYPE);
@@ -347,7 +391,9 @@ static void normalize_returns(FnSymbol* fn) {
   bool label_is_used = false;
   forv_Vec(CallExpr, ret, rets) {
     SET_LINENO(ret);
-    if (retval) {
+    bool void_return = isIterator && is_void_return(ret);
+    if (retval && !void_return) {
+      // insert MOVE(retval,ret_expr)
       Expr* ret_expr = ret->get(1);
       ret_expr->remove();
       if (fn->retTag == RET_VAR)
@@ -360,18 +406,20 @@ static void normalize_returns(FnSymbol* fn) {
       else
         ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
     }
-    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
-      if (!retval)
-        INT_FATAL(ret, "unexpected case");
-      if (ret->isPrimitive(PRIM_RETURN)) {
-        ret->insertAfter(new GotoStmt(GOTO_NORMAL, label));
+    if (isIterator && !void_return) {
+      // insert YIELD(retval)
+      ret->insertBefore(new CallExpr(PRIM_YIELD, retval));
+    }
+    if (!isIterator || !ret->isPrimitive(PRIM_YIELD)) {
+      // replace with GOTO(label)
+      if (ret->next != label->defPoint) {
+        ret->replace(new GotoStmt(GOTO_NORMAL, label));
         label_is_used = true;
+      } else {
+        ret->remove();
       }
-      ret->replace(new CallExpr(PRIM_YIELD, retval));
-    } else if (ret->next != label->defPoint) {
-      ret->replace(new GotoStmt(GOTO_NORMAL, label));
-      label_is_used = true;
     } else {
+      // it's a yield => no goto; need to remove the original node
       ret->remove();
     }
   }
@@ -571,7 +619,7 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert temporary for constants to assist constant checking
   //
-  if (var->hasFlag(FLAG_CONST)) {
+  if (var->hasFlag(FLAG_CONST) && !var->hasFlag(FLAG_EXTERN)) {
     constTemp = newTemp();
     stmt->insertBefore(new DefExpr(constTemp));
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));
@@ -640,7 +688,7 @@ fix_def_expr(VarSymbol* var) {
       else {
         CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
         Expr* newExpr = moveToConst;
-        if (constTemp->hasFlag(FLAG_EXTERN)) {
+        if (var->hasFlag(FLAG_EXTERN)) {
           newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
         }
         stmt->insertAfter(newExpr);
@@ -994,6 +1042,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(2)->remove();
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
-  fn->name = astr(astr("_construct_", fn->name));
+  fn->name = astr("_construct_", fn->name);
+  fn->addFlag(FLAG_CONSTRUCTOR);
   ct->defaultConstructor->addFlag(FLAG_INVISIBLE_FN);
 }

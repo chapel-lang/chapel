@@ -1,10 +1,10 @@
-def rangewrite(r: range(?)) {
+proc rangewrite(r: range(?)) {
   for i in r do
     write(i, " ");
   writeln();
 }
 
-def main {
+proc main {
   rangewrite(..10 # 3);
   rangewrite(..10 # 3 by 2);
   rangewrite(..10 # 3 by -2);

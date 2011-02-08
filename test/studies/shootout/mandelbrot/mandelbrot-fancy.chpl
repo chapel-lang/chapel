@@ -4,9 +4,9 @@ use BlockDist;
 config const size : uint = 200;
 
 // for binary output
-_extern def putchar(i : int) : int;
+_extern proc putchar(i : int) : int;
 
-def main()
+proc main()
 {
   var bytesRequired : uint = (size + 7) / 8;
   var byteRange = 0..#bytesRequired:int(64);
@@ -45,14 +45,14 @@ def main()
           const Ci : real = (2.0*y/size - 1.0);
 
           {
-            var iter : int = maxIter;
-            while (iter > 0 && (Tr+Ti <= limit**2))
+            var iterNo : int = maxIter;
+            while (iterNo > 0 && (Tr+Ti <= limit**2))
               {
                 Zi = 2.0*Zr*Zi + Ci;
                 Zr = Tr - Ti + Cr;
                 Tr = Zr * Zr;
                 Ti = Zi * Zi;
-                iter -= 1;
+                iterNo -= 1;
               }
           }
 

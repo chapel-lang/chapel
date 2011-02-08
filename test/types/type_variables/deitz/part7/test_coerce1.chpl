@@ -1,4 +1,4 @@
-def foo(x1 : real, x2 : int) {
+proc foo(x1 : real, x2 : int) {
   writeln("foo w/ real ", x1, " and int ", x2);
 }
 

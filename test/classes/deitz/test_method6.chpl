@@ -1,6 +1,6 @@
 class foo {
   var x : int;
-  def getx() : int {
+  proc getx() : int {
     return x;
   }
 }

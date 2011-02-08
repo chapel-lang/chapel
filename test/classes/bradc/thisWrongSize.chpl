@@ -4,12 +4,12 @@ class C {
   var dom: domain(1) = [1..2];
   var data: [dom] D(idxtype);
 
-  def C(type idxtype) {
+  proc C(type idxtype) {
     for i in dom do
       data(i) = new D(idxtype);
   }
 
-  def this(i: idxtype) var {
+  proc this(i: idxtype) var {
     /* This gets the first i into the right size
     var i32 = i: int(32);
     return data(i32)(i);
@@ -23,7 +23,7 @@ class D {
   type idxtype;
   var x: real;
 
-  def this(i: idxtype) var {
+  proc this(i: idxtype) var {
     return x;
   }    
 }

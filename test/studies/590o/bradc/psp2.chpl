@@ -11,6 +11,6 @@ var str = foo[ A[1, ..], A[.., 1] ];
 
 writeln(str);
 
-def foo(r: real, c: real) {
+proc foo(r: real, c: real) {
   return "aRow is: " + r + "; aCol is: " + c + "\n";
 }

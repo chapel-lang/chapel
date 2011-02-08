@@ -1,6 +1,6 @@
 
 class A {
- def hello() { writeln("hello from A!"); }
+ proc hello() { writeln("hello from A!"); }
 }
 
 class N {
@@ -8,7 +8,7 @@ class N {
   var x = new X(); 
 }
 
-def main() {
+proc main() {
   var n = new N(X=A);
   n.x.hello();
 }

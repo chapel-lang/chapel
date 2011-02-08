@@ -2,7 +2,7 @@ class C {
   var x = 17;
 }
 
-def main {
+proc main {
   var c = new C();
   _debugWriteln(here.id, " ", c.x);
   c.x = 18;

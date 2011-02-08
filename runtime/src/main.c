@@ -26,6 +26,10 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
 }
 
 
+void printAdditionalHelp(void) {
+}
+
+
 static void recordExecutionCommand(int argc, char *argv[]) {
   int i, length = 0;
   for (i = 0; i < argc; i++) {
@@ -72,16 +76,29 @@ int main(int argc, char* argv[]) {
   //
   chpl_comm_verify_num_locales(execNumLocales);
   chpl_comm_rollcall();
-  chpl_init_chpl_rt_utils();
 
-  CHPL_TASKING_INIT();      // initialize the task management layer
+ 
+  //
+  // initialize the task management layer
+  //
+  //
+  // This is an early call to initialize the ChapelThreads module so
+  // that its config consts (maxThreadsPerLocale and callStackSize)
+  // can be used to initialize the tasking layer.  It assumes that the
+  // ChapelThreads module can be initialized multiple times without
+  // harm (currently true).
+  //
+  chpl__init_ChapelThreads(1, "<internal>");
+  //
+  chpl_task_init(maxThreadsPerLocale, callStackSize); 
+  chpl_init_chpl_rt_utils();
 
   recordExecutionCommand(argc, argv);
 
   chpl_comm_barrier("barrier before main");
 
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
-    chpl_main();
+    chpl_task_callMain(chpl_main);
   }
 
   chpl_exit_all(0);         // have everyone exit

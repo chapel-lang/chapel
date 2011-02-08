@@ -6,7 +6,7 @@ var StartIndices: sparse subdomain(AllIndices);
 var EndIndices: sparse subdomain(AllIndices);
 var lock: sync int = 0;
 
-def main {
+proc main {
   forall z in AllIndices do {
     if sourceText.substring[z] == '<' then {
       lock;

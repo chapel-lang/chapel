@@ -1,7 +1,7 @@
 config const inputfile = "blockLU-Mat.dat";
 config const filterfile = "aafilter3x3.dat";
 
-def AA(Img:[?D], Filter:[?FD], fx: int, fy: int, out outImg:[D]){
+proc AA(Img:[?D], Filter:[?FD], fx: int, fy: int, out outImg:[D]){
   for (NeighborDom,i,j) in aawindow(D.dim(1),D.dim(2),fx,fy){ 
     
     var newPixel : real = 0;
@@ -21,7 +21,7 @@ def AA(Img:[?D], Filter:[?FD], fx: int, fy: int, out outImg:[D]){
   }     
 }
 
-def aawindow(W:range,H:range,filter_width:int,filter_height:int){
+iter aawindow(W:range,H:range,filter_width:int,filter_height:int){
   for j in H { //which row
     for i in W { //which pixel
       
@@ -36,7 +36,7 @@ def aawindow(W:range,H:range,filter_width:int,filter_height:int){
   }
 }
 
-def main() {
+proc main() {
 
   var infile = new file(inputfile,path='./',mode=FileAccessMode.read);
   infile.open();

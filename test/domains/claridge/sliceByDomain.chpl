@@ -35,7 +35,7 @@ var p313 = [1..3, 5..5, 5..7];
 var p133 = [3..3, 3..5, 5..7];
 var p333 = [1..3, 3..5, 5..7];
 
-def testit(d1,d2) { writeln( d1, " ", d2, " -> ", d1(d2) ); }
+proc testit(d1,d2) { writeln( d1, " ", d2, " -> ", d1(d2) ); }
 
 // 81 combos of tN,tM
 testit(t1,t1);

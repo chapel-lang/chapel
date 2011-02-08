@@ -1,12 +1,12 @@
 class C {
-  def printType() {
+  proc printType() {
     writeln("C");
     return "C";
   }
 }
 
 class D : C {
-  def printType() {
+  proc printType() {
     writeln("D");
     return "D";
   }

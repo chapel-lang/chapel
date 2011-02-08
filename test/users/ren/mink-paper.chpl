@@ -4,7 +4,7 @@ class mink{
   const k : int;
   var v: [1..k] in_t = in_t.max;
   
-  def accum(x: in_t)
+  proc accum(x: in_t)
   {
     if (x < v[1])
       {
@@ -21,7 +21,7 @@ class mink{
       }
   }
   
-  def combine(s: mink(in_t))
+  proc combine(s: mink(in_t))
   {
     for i in 1..k
       {
@@ -29,7 +29,7 @@ class mink{
       }
   }
   
-  def gen()
+  proc gen()
   {
     return v;
   }

@@ -16,7 +16,7 @@ config const myLow = 4, myHigh = 12; // iterator arguments (config for testing)
 // only to capture the range that the leader identifies that we should
 // iterate over.
 //
-def singleLocaleIterator(low: int, high: int, param leader: bool, follower) {
+iter singleLocaleIterator(low: int, high: int, param leader: bool, follower) {
   if leader {
     for i in 1..parallelFactor do
       yield 1+(high-low+1)*(i-1)/parallelFactor..(high-low+1)*i/parallelFactor;

@@ -3,8 +3,8 @@ GRID_LIB = ../../lib/grid
 LEVEL_LIB = ../../lib/level
 
 LEVEL_SOURCES = \
-	../grid/GridArray_DiffusionBE.chpl \
-	LevelArray_DiffusionBE.chpl \
+	../grid/GridVariable_DiffusionBE.chpl \
+	LevelVariable_DiffusionBE.chpl \
 	LevelBC_DiffusionBE.chpl \
 	LevelSolution_DiffusionBE.chpl \
 	Level_DiffusionBE_driver.chpl

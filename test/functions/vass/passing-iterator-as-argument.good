@@ -1,0 +1,2 @@
+passing-iterator-as-argument.chpl:4: In iterator 'i11a':
+passing-iterator-as-argument.chpl:5: error: Iterators not allowed in first class functions

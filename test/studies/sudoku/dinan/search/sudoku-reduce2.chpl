@@ -1,6 +1,6 @@
 var S = [0..8,0..8], A: [S] int = for S do read(int);
 
-def R {
+proc R {
   for (i,j) in S { if A(i,j) == 0 {
     for k in 1..9 {
       if (&& reduce [l in S.dim(1)] A(i,l) != k && A(l,j) != k)

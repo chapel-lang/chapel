@@ -1,6 +1,6 @@
 // Test iterator->class transformation with more than 1 argument.
 
-def jam( min: int, max: int): int {
+iter jam( min: int, max: int): int {
   var i, j: int;
   i = min;
   while (i <= max) {
@@ -20,7 +20,7 @@ def jam( min: int, max: int): int {
 }
 
 
-def test1() {
+proc test1() {
   for k in jam( 0, 10) {
     write( " ", k);
   }

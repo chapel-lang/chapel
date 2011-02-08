@@ -1,4 +1,4 @@
-def jam( j: int, k: int): int {
+proc jam( j: int, k: int): int {
   return j*k;
 }
 

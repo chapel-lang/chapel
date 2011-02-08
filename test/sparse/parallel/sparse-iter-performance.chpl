@@ -17,7 +17,7 @@ test(2, d2);
 
 // main test driver
 
-def test(param dim:int, d: domain(dim)) {
+proc test(param dim:int, d: domain(dim)) {
   writeln("=== n=", n, " ", dim, "-d ===");
   // This is our sparse domain that everything will spin around.
   var sd: sparse subdomain(d);
@@ -26,8 +26,8 @@ def test(param dim:int, d: domain(dim)) {
 
   tm.start();
   var startTm = tm.elapsed(TimeUnits.milliseconds); 
-  def st      { startTm = tm.elapsed(TimeUnits.milliseconds); }
-  def fi(msg) {
+  proc st      { startTm = tm.elapsed(TimeUnits.milliseconds); }
+  proc fi(msg) {
     var endTm = tm.elapsed(TimeUnits.milliseconds);
     writeln(msg, " : ", endTm - startTm, " ms");
   }
@@ -68,12 +68,12 @@ def test(param dim:int, d: domain(dim)) {
   tm.stop();
 }
 
-def populateDomain(param dim, sd) where dim == 1 {
+proc populateDomain(param dim, sd) where dim == 1 {
   // for 1-D, use half of the values; domain members are not tuples
   for i in 1..n by 2 do sd += i;
 }
 
-def populateDomain(param dim, sd) where dim > 1 {
+proc populateDomain(param dim, sd) where dim > 1 {
   for i in 1..n-1 {
     var member: index(sd);
     for param dm in 1..dim do member(dm) =

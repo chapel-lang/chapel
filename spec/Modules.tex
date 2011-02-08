@@ -53,21 +53,19 @@ The following file contains two explicitly named modules
 \begin{chapel}
 module MX {
   var x: int = 0;
-  def printX() {
+  proc printX() {
     writeln(x);
   }
 }
 
 module MY {
   var y: int = 0;
-  def printY() {
+  proc printY() {
     writeln(y);
   }
 }
 \end{chapel}
 \begin{chapelpost}
-use MX, MY;
-
 MX.printX();
 MY.printY();
 \end{chapelpost}
@@ -98,10 +96,10 @@ module called myModule.
 var x: int = 0;
 var y: int = 0;
 
-def printX() {
+proc printX() {
   writeln(x);
 }
-def printY() {
+proc printY() {
   writeln(y);
 }
 \end{chapel}
@@ -128,7 +126,7 @@ symbols in the outer module.  However, the outer module needs to
 explicitly use a nested module to have access to its symbols.
 
 A nested module can be used without using the outer module by
-explicitly naming the module in the use statement.
+explicitly naming the outer module in the use statement.
 \begin{example}
 The code
 \begin{chapelpre}
@@ -138,6 +136,8 @@ module libsci {
   module blas {
     writeln("\\tInitializing blas");
   }
+}
+module testmain { // used to avoid warnings
 }
 \end{chapelpre}
 \begin{chapel}
@@ -172,11 +172,11 @@ module MY {
 
 use MX, MY;
 
-def printX() {
+proc printX() {
   writeln(x);
 }
 
-def printY() {
+proc printY() {
   writeln(y);
 }
 \end{chapel}
@@ -224,6 +224,13 @@ If code refers to symbols that are defined by multiple modules, the
 compiler will issue an error.  Explicit naming can be used to
 disambiguate the symbols in this case.
 
+\begin{openissue}
+It is currently unspecified whether the
+first-named module is always at the global scope, or whether a
+scope-search mechanism is used starting at the scope containing the
+usage.
+\end{openissue}
+
 \begin{example}
 In the following example,
 \begin{chapelpre}
@@ -233,10 +240,10 @@ In the following example,
 module M1 {
   var x: int = 1;
   var y: int = -1;
-  def printX() {
+  proc printX() {
     writeln("M1's x is: ", x);
   }
-  def printY() {
+  proc printY() {
     writeln("M1's y is: ", y);
   }
 }
@@ -247,11 +254,11 @@ module M2 {
 
   var x: int = 2;
 
-  def printX() {
+  proc printX() {
     writeln("M2's x is: ", x);
   }
 
-  def main() {
+  proc main() {
     M1.x = 4;
     M1.printX();
     writeln(x);
@@ -263,7 +270,7 @@ module M2 {
 module M3 {
   var x: int = 3;
   var y: int = -3;
-  def printY() {
+  proc printY() {
     writeln("M3's y is: ", y);
   }
 }
@@ -278,8 +285,6 @@ The call to printX() is not ambiguous because M2's definition shadows
 that of M1.  On the other hand, the call to printY() is ambiguous
 because it is defined in both M1 and M3.  This will result in a
 compiler error.
-
-
 \end{example}
 
 
@@ -295,14 +300,14 @@ executed during module initialization.
 In the code,
 \begin{chapelpre}
 % test_init.chpl
-def foo() {
+proc foo() {
     return 1;
 }
 \end{chapelpre}
 \begin{chapel}
 var x = foo();       // executed at module initialization
 writeln("Hi!");      // executed at module initialization
-def sayGoodbye {
+proc sayGoodbye {
   writeln("Bye!");   // not executed at module initialization
 }
 \end{chapel}
@@ -315,7 +320,6 @@ The function foo() will be invoked and its result assigned to x.  Then
 
 Module initialization order is discussed
 in~\rsec{Module_Initialization_Order}.
-
 
 
 \subsection{Program Execution}
@@ -352,7 +356,7 @@ will yield an error.
 \begin{chapel}
 module M1 {
   const x = 1;
-  def main() {
+  proc main() {
     writeln("M", x, "'s main");
   }
 }
@@ -361,7 +365,7 @@ module M2 {
   use M1;
 
   const x = 2;
-  def main() {
+  proc main() {
     M1.main();
     writeln("M", x, "'s main");
   }
@@ -435,7 +439,7 @@ module M1 {
   use M2.M3;
   use M2;
   writeln("In M1's initializer");
-  def main() {
+  proc main() {
     writeln("In main");
   }
 }

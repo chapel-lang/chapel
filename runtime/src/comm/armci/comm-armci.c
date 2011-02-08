@@ -123,7 +123,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   int nprocs, me;
   armci_size_t sz;
 
-  CHPL_SYNC_INIT_AUX(&armci_sync);
+  chpl_sync_initAux(&armci_sync);
 
   MPI_SAFE(MPI_Init(argc_p, argv_p));
   ARMCI_SAFE(ARMCI_Init());
@@ -282,9 +282,9 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
   if (chpl_localeID == locale)
     memmove(raddr, addr, size);
   else {
-    CHPL_SYNC_LOCK(&armci_sync);
+    chpl_sync_lock(&armci_sync);
     ARMCI_SAFE(ARMCI_Put(addr, raddr, size, locale));
-    CHPL_SYNC_UNLOCK(&armci_sync);
+    chpl_sync_unlock(&armci_sync);
   }
 }
 
@@ -302,9 +302,9 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int l
   if (chpl_localeID == locale)
     memmove(addr, raddr, size);
   else {
-    CHPL_SYNC_LOCK(&armci_sync);
+    chpl_sync_lock(&armci_sync);
     ARMCI_SAFE(ARMCI_Get((void*)raddr, addr, size, locale));
-    CHPL_SYNC_UNLOCK(&armci_sync);
+    chpl_sync_unlock(&armci_sync);
   }
 }
 
@@ -345,7 +345,7 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   info = (dist_fork_t *)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
 
   info->caller = chpl_localeID;
-  info->serial_state = CHPL_GET_SERIAL();
+  info->serial_state = chpl_task_getSerial();
   info->fid = fid;
   info->arg_size = arg_size;
   info->block = block;
@@ -369,10 +369,10 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   done = rheader;
   *done = 0;
 
-  CHPL_SYNC_LOCK(&armci_sync);
+  chpl_sync_lock(&armci_sync);
   ret = ARMCI_Gpc_exec(ghndl, locale, header, sizeof(void *), info, info_size, (void *)rheader, rhdr_size,
                        rdata, rdlen, NULL);
-  CHPL_SYNC_UNLOCK(&armci_sync);
+  chpl_sync_unlock(&armci_sync);
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
@@ -384,8 +384,11 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
     return;
   }
 
-  while (block && *done == 0)
-    ;
+  while (block && *done == 0) {
+#ifdef CHPL_COMM_YIELD_TASK_WHILE_POLLING
+    chpl_task_yield();
+#endif
+  }
 
   chpl_free(info, 0, 0);
   if (rdata) {
@@ -446,7 +449,7 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   prhdr = *(intptr_t *)hdr;
   ginfo->rhdr = (int *)prhdr;
 
-  CHPL_BEGIN(_gpc_thread_handler, ginfo, true, finfo->serial_state, NULL);
+  chpl_task_begin(_gpc_thread_handler, ginfo, true, finfo->serial_state, NULL);
 
   /* Small return header */
   *rhsize = sizeof(int);

@@ -237,6 +237,18 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     printf(")");
 }
 
+// complement view_ast(), which does not do justice to types
+static void type_nprint_view(BaseAST* ast) {
+  if (Type* type = toType(ast))
+    if (Symbol* ts = type->symbol)
+      printf(":%s[%d]\n", ts->name, type->id);
+}
+static void type_print_view(BaseAST* ast) {
+  if (Type* type = toType(ast))
+    if (Symbol* ts = type->symbol)
+      printf(":%s\n", ts->name);
+}
+
 void list_view(BaseAST* ast) {
   if (toSymbol(ast))
     printf("%-7d ", ast->id);
@@ -253,23 +265,27 @@ void list_view_noline(BaseAST* ast) {
 }
 
 void print_view(BaseAST* ast) {
+  type_print_view(ast);
   view_ast(ast);
   printf("\n\n");
   fflush(stdout);
 }
 
 void print_view_noline(BaseAST* ast) {
+  type_print_view(ast);
   view_ast(ast);
   fflush(stdout);
 }
 
 void nprint_view(BaseAST* ast) {
+  type_nprint_view(ast);
   view_ast(ast, true);
   printf("\n\n");
   fflush(stdout);
 }
 
 void nprint_view_noline(BaseAST* ast) {
+  type_nprint_view(ast);
   view_ast(ast, true);
   fflush(stdout);
 }
@@ -528,9 +544,11 @@ void html_view(const char* passName) {
   const char* filename;
 
   fprintf(html_index_file, "<TR><TD>");
-  fprintf(html_index_file, "%s", passName);
+  fprintf(html_index_file, "%s%s[%d]", passName,
+          fdump_html_incude_system_modules ? "<br>" : " ", lastNodeIDUsed());
   fprintf(html_index_file, "</TD><TD>");
   forv_Vec(ModuleSymbol, mod, allModules) {
+   if (fdump_html_incude_system_modules || mod->modTag == MOD_MAIN || mod->modTag == MOD_USER) {
     filename = html_file_name( uid, mod->name);
     fprintf(html_index_file, "&nbsp;&nbsp;<a href=\"%s\">%s</a>\n", filename, mod->name);
     html_file = fopen(astr(log_dir, filename), "w");
@@ -551,6 +569,7 @@ void html_view(const char* passName) {
       html_view_ast(stmt, html_file, uid);
     fprintf(html_file, "</HTML>\n");
     fclose(html_file);
+   }
   }
   fprintf(html_index_file, "</TD></TR>");
   fflush(html_index_file);

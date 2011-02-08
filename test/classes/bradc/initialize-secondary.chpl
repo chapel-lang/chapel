@@ -4,7 +4,7 @@ class C {
 
 }
 
-def C.initialize() {
+proc C.initialize() {
   b = a;
 }
 

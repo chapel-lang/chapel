@@ -15,11 +15,11 @@ The file class contains the following fields:
 The \chpl{filename} field is a \chpl{string} that contains the name of
 the file.
 \item
-The \chpl{path} field is a \chpl{string} that contains the path of the
-file.
-\item
 The \chpl{mode} field is a \chpl{FileAccessMode} enum value that indicates
 whether the file is being read or written.
+\item
+The \chpl{path} field is a \chpl{string} that contains the path of the
+file.
 \item
 The \chpl{style} field can be set to \chpl{text} or \chpl{binary} to
 specify that reading from or writing to the file should be done with
@@ -45,6 +45,9 @@ The \chpl{close()} method closes the file for reading and/or writing.
 \item
 The \chpl{isOpen} method returns true if the file is open for reading
 and/or writing, and otherwise returns false.
+\item
+The \chpl{eof} method returns true if the file is at its end-of-file
+position and returns false otherwise.
 \item
 The \chpl{flush()} method flushes the file, finishing outstanding
 reading and writing.
@@ -147,10 +150,10 @@ it is written.
 \begin{chapel}
 class C: Writer {
   var data: string;
-  def writeIt(s: string) {
+  proc writeIt(s: string) {
     data += s.substring(1);
   }
-  def writeThis(x: Writer) {
+  proc writeThis(x: Writer) {
     x.write(data);
   }
 }

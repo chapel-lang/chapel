@@ -1,4 +1,4 @@
-def main {
+proc main {
   var i = 1.0i;
 
   writeln(i);

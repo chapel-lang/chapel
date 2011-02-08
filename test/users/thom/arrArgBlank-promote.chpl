@@ -1,4 +1,4 @@
-def writeArr(X: [] real) {
+proc writeArr(X: [] real) {
   writeln(X);
 }
 

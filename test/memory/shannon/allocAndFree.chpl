@@ -1,9 +1,9 @@
-_extern def chpl_malloc(number, size, description, userCode=true, lineno=-1, filename=""): opaque;
-_extern def chpl_realloc(ptr, number, size, description, lineno=-1, filename=""): opaque;
-_extern def chpl_free(ptr, userCode=true, lineno=-1, filename="");
+_extern proc chpl_malloc(number, size, description, userCode=true, lineno=-1, filename=""): opaque;
+_extern proc chpl_realloc(ptr, number, size, description, lineno=-1, filename=""): opaque;
+_extern proc chpl_free(ptr, userCode=true, lineno=-1, filename="");
 
-_extern def resetMemStat();
-_extern def printMemStat(lineno=-1, filename="");
+_extern proc resetMemStat();
+_extern proc printMemStat(lineno=-1, filename="");
 
 resetMemStat();
 

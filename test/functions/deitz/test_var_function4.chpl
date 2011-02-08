@@ -1,11 +1,11 @@
 var x: int;
 
-def foo() var {
+proc foo() var {
   writeln(setter);
   return x;
 }
 
-def bar() var {
+proc bar() var {
   writeln(setter);
   return foo();
 }

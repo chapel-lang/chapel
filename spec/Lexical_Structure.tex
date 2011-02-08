@@ -2,8 +2,9 @@
 \label{Lexical_Structure}
 
 This section describes the lexical components of Chapel programs.
-Note that the productions in this section are lexical; the components
-are not delimited by white space.
+The purpose of lexical analysis is
+to separate the raw input stream into a sequence of tokens suitable
+for input to the parser.  
 
 \subsection{Comments}
 \label{Comments}
@@ -25,7 +26,7 @@ The following program makes use of both forms of comment:
 /*
  *  main function
  */
-def main() {
+proc main() {
   writeln("hello, world"); // output greeting with new line
 }
 \end{chapel}
@@ -76,6 +77,7 @@ legal-identifier-chars:
 legal-identifier-char:
   letter
   digit
+  `_'
   `$\mbox{{\bf \$}}$'
 
 letter: one of
@@ -120,7 +122,6 @@ coforall
 config
 const
 continue
-def
 \end{chapel} & \begin{chapel}
 delete
 dmapped
@@ -136,38 +137,42 @@ in
 \end{chapel} & \begin{chapel}
 index
 inout
+iter
 label
-lambda
 let
 local
+locale
 module
 new
 nil
 on
+opaque
 otherwise
 out
 \end{chapel} & \begin{chapel}
 param
-record      
-reduce      
-return      
-scan        
+proc
+range
+record
+reduce
+return
+scan
 select
-serial      
-single      
+serial
+single
 sparse
 subdomain
-sync        
+sync
 \end{chapel} & \begin{chapel}
-then        
+then
 true
-type        
-union       
-use         
+type
+union
+use
 var
-when        
-where       
-while       
+when
+where
+while
 yield
 $$
 \end{chapel} \\
@@ -180,6 +185,17 @@ otherwise
 \end{invisible} & \begin{invisible}
 otherwise
 \end{invisible} & \begin{invisible}
+otherwise
+\end{invisible}
+\end{tabular}
+
+The following identifiers are keywords reserved for future use:
+
+\begin{tabular}{l}
+\begin{chapel}
+lambda
+\end{chapel} \\
+\begin{invisible}
 otherwise
 \end{invisible}
 \end{tabular}
@@ -237,7 +253,7 @@ Real literals are designated by the following syntax:
 \begin{syntax}
 real-literal:
   digits[OPT] . digits exponent-part[OPT]
-  digits exponent-part
+  digits .[OPT] exponent-part
 
 exponent-part:
   `e' sign[OPT] digits
@@ -247,13 +263,11 @@ sign: one of
   + -
 \end{syntax}
 \begin{rationale}
-Why can't a real literal end with '.'?  There is an ambiquity between
-real literals ending in '.' and the range operator '..' that makes it
-difficult to parse.  For example, we want to parse \chpl{1..10} as a
-range from 1 to 10 without concern that \chpl{1.} is a real literal.
-There is also an ambiquity between methods invoked on literals.  For
-example, if there is a method named \chpl{e} defined on integers,
-than \chpl{1.e} should invoke that method.
+Why can't a real literal end with '.'?  There is a lexical ambiquity
+between real literals ending in '.' and the range operator '..' that
+makes it difficult to parse.  For example, we want to
+parse \chpl{1..10} as a range from 1 to 10 without concern
+that \chpl{1.} is a real literal.
 \end{rationale}
 The type of a real literal is \chpl{real}.  Explicit conversions are
 necessary to change the size of the literal.

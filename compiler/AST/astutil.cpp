@@ -36,6 +36,14 @@ void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs) {
     callExprs.add(callExpr);
 }
 
+void collectMyCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs,
+                        FnSymbol* parent_fn) {
+  AST_CHILDREN_CALL(ast, collectMyCallExprs, callExprs, parent_fn);
+  if (CallExpr* callExpr = toCallExpr(ast))
+    if (callExpr->parentSymbol == parent_fn)
+      callExprs.add(callExpr);
+}
+
 void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts) {
   AST_CHILDREN_CALL(ast, collectGotoStmts, gotoStmts);
   if (GotoStmt* gotoStmt = toGotoStmt(ast))

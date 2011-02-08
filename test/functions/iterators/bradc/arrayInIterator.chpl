@@ -1,12 +1,12 @@
 
-def main() {
+proc main() {
   for x in testme() {
     writeln("x is: ", x);
   }
 }
 
 
-def testme() {
+iter testme() {
   for i in 1..10 do
     yield i: real;
 

@@ -7,11 +7,11 @@ const ProbDom = [1..n, 1..n],
 record arr33 {
   var data: [-1..1, -1..1] real;
 
-  def this(x,y) var {
+  proc this(x,y) var {
     return data(x,y);
   }
 
-  def this(xy:2*int) var {
+  proc this(xy:2*int) var {
     return data(xy(1), xy(2));
   }
 }

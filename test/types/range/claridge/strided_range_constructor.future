@@ -1,5 +1,0 @@
-bug: range constructor doesn't align upper bound of strided range
-
-Alignment only occurs when the "by" operator is called, and if the
-constructor is called directly, this never happens.  Iterating over
-the resulting range, e.g. 1..8 by 2, causes an endless loop.

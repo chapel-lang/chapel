@@ -2,7 +2,7 @@ use bar;
 
 type secondType = randType;
 
-def main() {
+proc main() {
   var x: secondType = 1;
 
   writeln("x is: ", x);

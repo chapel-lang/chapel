@@ -84,8 +84,6 @@ The following files/directories are for developers only:
                      left in this file
   chapel-emacs.tar.gz : ditto for the util/gen_editors script
   chapel-vim.tar.gz   : "
-  receive_patch    : two scripts useful for moving patches between trees;
-  send_patch       : really shouldn't be in the $CHPL_HOME directory
   etc/             : miscellaneous stuff -- see the README/README.devel there
   log/             : this directory is created when using the -t compiler
                      option, and so often ends up in this location

@@ -22,7 +22,7 @@ keys[13] = "k13";
 for i in 1..n do
   foo(i);
 
-def foo(i: int) {
+proc foo(i: int) {
   var D: domain(stringType) dmapped DistStringType;
   var AA: [D] int;
 

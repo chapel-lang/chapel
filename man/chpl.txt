@@ -122,8 +122,8 @@ OPTIONS
                     method table. The default is zero.
 
   --fast            Turns off all runtime checks using --no-checks, turns
-                    on --no-ieee-float, and enables all other compiler
-                    optimizations (via -O) in the rest of this section.
+                    on --no-ieee-float and -O, and enables all compiler
+                    optimizations in the rest of this section.
  
   --[no-]ieee-float   Disable [enable] optimizations that may affect IEEE
                     floating point conformance. The default is --ieee-float,

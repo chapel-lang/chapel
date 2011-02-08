@@ -1,4 +1,4 @@
-def random(inout x: uint) {
+proc random(inout x: uint) {
   x = (x:int(64) * 16807 % 2147483647): uint;
   return x:real / 2147483647;
 }

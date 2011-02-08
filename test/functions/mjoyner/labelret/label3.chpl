@@ -1,4 +1,4 @@
-def foo() : int {
+proc foo() : int {
   var i : int = 0;
   while(i < 10) {
     i = i + 1;
@@ -15,7 +15,7 @@ def foo() : int {
   return i;    
 }
 
-def main() {
+proc main() {
  foo();
  return;
 }

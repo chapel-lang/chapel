@@ -122,7 +122,7 @@ writeRange(r2(1..20 by 2));
 // values nearest to the bound.  If it is fully unbounded, it just
 // prints "all integers".
 //
-def writeRange(r: range(?)) {
+proc writeRange(r: range(?)) {
   write("Range ", r, " = ");
   select r.boundedType {
     when BoundedRangeType.bounded {

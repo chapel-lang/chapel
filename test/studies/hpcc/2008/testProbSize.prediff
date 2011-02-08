@@ -5,9 +5,7 @@ $hostname = `hostname -s`; chomp($hostname);
 $countMemoryDir="../../../modules/standard/memory/countMemory";
 $countMemoryFile="$countMemoryDir/countMemory.$hostname.good";
 
-if (! -r $countMemoryFile) {
-        system("cd $countMemoryDir && ./countMemory.prediff");
-}
+system("cd $countMemoryDir && ./countMemory.prediff");
 
 open MEMFILE, "$countMemoryFile" or die "can't open $countMemoryFile $!";
 my @memLines = <MEMFILE>;

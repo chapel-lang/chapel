@@ -11,13 +11,13 @@ on Locales(1) {
 _debugWriteln(here.id, " c.locale.id = ", c.locale.id);
 _debugWriteln(here.id, " c.x.locale.id = ", c.x.locale.id);
 
-def C.foo() {
+proc C.foo() {
   _debugWriteln(here.id, " this.locale.id = ", this.locale.id);
 }
 
 c.foo();
 
-def C.goo() {
+proc C.goo() {
   on Locales(1) do
     foo();
   _debugWriteln(here.id, " this.locale.id = ", this.locale.id);
@@ -28,7 +28,7 @@ c.goo();
 on Locales(1) do
   c.goo();
 
-def bar() {
+proc bar() {
   var d: C;
   d = c;
   _debugWriteln(here.id, " d.locale.id = ", d.locale.id);

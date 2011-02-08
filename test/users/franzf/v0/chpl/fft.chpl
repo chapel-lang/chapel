@@ -36,7 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use omega, fft_2, fft_4, fft_8, fft_16, fft_32, fft_64, fft_128, 
   fft_256, fft_512, fft_1024, fft_2048;
 
-def init_fft(n : int) {
+proc init_fft(n : int) {
   select n {
   when 2 do init_fft2();
   when 4 do init_fft4();
@@ -53,7 +53,7 @@ def init_fft(n : int) {
   }
 }
 
-def fft(n: int, Y, X) {
+proc fft(n: int, Y, X) {
   select n {
   when 2 do fft2(Y, X);
   when 4 do fft4(Y, X);

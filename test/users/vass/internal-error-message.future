@@ -1,0 +1,18 @@
+error message: in the developer mode, error messages for internal failures
+need to indicate that those are internal failures.
+
+Right now I get "internal failure CAL0035" in the user mode but the following
+in the developer mode:
+  internal-error-message.chpl:90: error: actual type is unknown or generic [callInfo.cpp:35]
+
+This is misleading because the developer mode message looks like
+it arises from a bug in the user code.  Should be "error: internal failure"
+in both user and developer modes.
+
+Remark: it does not matter which particular internal failure is
+causing such an error message. Even if this particular test example
+generates a different internal failure or (ideally) none at all,
+this error message request still holds.
+
+The source code, internal-error-message.chpl, is of no significance on its own.
+Anything that generates an internal compiler failure would illustrate this.

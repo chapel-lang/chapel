@@ -7,7 +7,7 @@ var b : bar(int);
 
 writeln(b);
 
-def foo(b : bar(int)) {
+proc foo(b : bar(int)) {
   writeln(b);
 }
 

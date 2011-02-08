@@ -1,21 +1,21 @@
 var x = 1, y = 2;
 
-def L1() var {
+proc L1() var {
   writeln("L1");
   return x;
 }
 
-def L2() var {
+proc L2() var {
   writeln("L2");
   return y;
 }
 
-def R1() var {
+proc R1() var {
   writeln("R1");
   return y;
 }
 
-def R2() var {
+proc R2() var {
   writeln("R2");
   return x;
 }

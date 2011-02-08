@@ -1,6 +1,6 @@
 use Time;
 
-def main {
+proc main {
   const n = 5;
 
   var a: [1..n] int;
@@ -16,4 +16,4 @@ def main {
   }
 }
 
-def foo(i: int) return i**2;
+proc foo(i: int) return i**2;

@@ -1,13 +1,13 @@
 class C {
   var rank: int = 2;
 
-  def foo(dim: rank*int) {
+  proc foo(dim: rank*int) {
     writeln("In other foo()");
     var x = new C();
     return x;
   }
 
-  def foo(dim: int ...?numdims) {
+  proc foo(dim: int ...?numdims) {
     if (rank == numdims) {
       return foo(dim);
     } else {

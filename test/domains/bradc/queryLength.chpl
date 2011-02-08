@@ -6,7 +6,7 @@ var A: [D] complex;
 
 foo(A);
 
-def foo(X: [?D] complex) {
+proc foo(X: [?D] complex) {
   var len = D.dim(1).length;
   writeln("length of X is: ", len);
 }

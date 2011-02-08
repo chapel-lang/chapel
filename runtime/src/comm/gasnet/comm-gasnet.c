@@ -2,13 +2,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "gasnet.h"
 #include "chplrt.h"
 #include "chplcomm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
 #include "error.h"
-#include "gasnet.h"
 
 #ifdef GASNET_NEEDS_MAX_SEGSIZE
 #define CHPL_COMM_GASNET_SETENV chpl_comm_gasnet_set_max_segsize();
@@ -18,6 +18,9 @@
 
 static chpl_sync_aux_t chpl_comm_diagnostics_sync;
 static int chpl_comm_gets = 0;
+static int chpl_comm_nb_gets = 0;
+static int chpl_comm_test_nb_gets = 0;
+static int chpl_comm_wait_nb_gets = 0;
 static int chpl_comm_puts = 0;
 static int chpl_comm_forks = 0;
 static int chpl_comm_fast_forks = 0;
@@ -90,12 +93,6 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-#ifdef BLAH
-  GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
-                                      SIGNAL,
-                                      &(f->ack),
-                                      sizeof(f->ack)));
-#endif
 }
 
 static void fork_wrapper(fork_t *f) {
@@ -113,7 +110,7 @@ static void fork_wrapper(fork_t *f) {
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = (fork_t*)chpl_malloc(nbytes, sizeof(char), CHPL_RT_MD_AM_FORK_DATA, 0, 0);
   memcpy(f, buf, nbytes);
-  CHPL_BEGIN((chpl_fn_p)fork_wrapper, (void*)f, true, f->serial_state, NULL);
+  chpl_task_begin((chpl_fn_p)fork_wrapper, (void*)f, true, f->serial_state, NULL);
 }
 
 static void fork_large_wrapper(fork_t* f) {
@@ -135,7 +132,7 @@ static void fork_large_wrapper(fork_t* f) {
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_malloc(1, nbytes, CHPL_RT_MD_AM_FORK_LARGE_DATA, 0, 0);
   memcpy(f, buf, nbytes);
-  CHPL_BEGIN((chpl_fn_p)fork_large_wrapper, (void*)f,
+  chpl_task_begin((chpl_fn_p)fork_large_wrapper, (void*)f,
              true, f->serial_state, NULL);
 }
 
@@ -153,7 +150,7 @@ static void AM_fork_nb(gasnet_token_t  token,
   fork_t *f = (fork_t*)chpl_malloc(nbytes, sizeof(char),
                                    CHPL_RT_MD_AM_NB_FORK_DATA, 0, 0);
   memcpy(f, buf, nbytes);
-  CHPL_BEGIN((chpl_fn_p)fork_nb_wrapper, (void*)f,
+  chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)f,
              true, f->serial_state, NULL);
 }
 
@@ -173,7 +170,7 @@ static void fork_nb_large_wrapper(fork_t* f) {
 static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_malloc(1, nbytes, CHPL_RT_MD_AM_NB_FORK_LARGE_DATA, 0, 0);
   memcpy(f, buf, nbytes);
-  CHPL_BEGIN((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
+  chpl_task_begin((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
              true, f->serial_state, NULL);
 }
 
@@ -236,6 +233,7 @@ int32_t chpl_comm_maxThreadsLimit(void) {
 static int done = 0;
 
 static void polling(void* x) {
+  chpl_task_perPthreadInit();
   GASNET_BLOCKUNTIL(done);
 }
 
@@ -315,7 +313,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 void chpl_comm_rollcall(void) {
-  CHPL_SYNC_INIT_AUX(&chpl_comm_diagnostics_sync);
+  chpl_sync_initAux(&chpl_comm_diagnostics_sync);
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, 
            chpl_numLocales, chpl_localeName());
 }
@@ -473,9 +471,9 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote put to %d\n", chpl_localeID, fn, ln, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_puts++;
-      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
     gasnet_put(locale, raddr, addr, size); // node, dest, src, size
   }
@@ -491,13 +489,60 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int l
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_gets++;
-      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
     gasnet_get(addr, locale, raddr, size); // dest, node, src, size
   }
 }
+
+//
+// Optional non-blocking get interface
+//
+void chpl_comm_get_nb(void* addr, int32_t locale, void* raddr, int32_t size,
+                      chpl_comm_get_nb_token_t *token, int ln, chpl_string fn) {
+  if (chpl_localeID == locale) {
+    memcpy(addr, raddr, size);
+  } else {
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_sync_lock(&chpl_comm_diagnostics_sync);
+      chpl_comm_nb_gets++;
+      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+    }
+    *token = gasnet_get_nb(addr, locale, raddr, size); // dest, node, src, size
+    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+      printf("%d: %s:%d: remote non-blocking get from %d (%p)\n",
+             chpl_localeID, fn, ln, locale, *token);
+  }
+}
+
+int chpl_comm_test_get_nb(chpl_comm_get_nb_token_t *token,
+                          int ln, chpl_string fn) {
+  if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+    printf("%d: %s:%d: test non-blocking get (%p)\n",
+           chpl_localeID, fn, ln, token);
+  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+    chpl_sync_lock(&chpl_comm_diagnostics_sync);
+    chpl_comm_test_nb_gets++;
+    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+  }
+  return gasnet_try_syncnb(*token)==GASNET_OK;
+}
+
+void chpl_comm_wait_get_nb(chpl_comm_get_nb_token_t *token,
+                           int ln, chpl_string fn) {
+  if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+    printf("%d: %s:%d: wait non-blocking get (%p)\n",
+           chpl_localeID, fn, ln, token);
+  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+    chpl_sync_lock(&chpl_comm_diagnostics_sync);
+    chpl_comm_wait_nb_gets++;
+    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+  }
+  gasnet_wait_syncnb(*token);
+}
+
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in fork_t redundant? active message can determine this.
@@ -513,9 +558,9 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote task created on %d\n", chpl_localeID, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_forks++;
-      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
 
     if (passArg) {
@@ -526,7 +571,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
     info = (fork_t*)chpl_malloc(1, info_size, CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
     info->caller = chpl_localeID;
     info->ack = &done;
-    info->serial_state = CHPL_GET_SERIAL();
+    info->serial_state = chpl_task_getSerial();
     info->fid = fid;
     info->arg_size = arg_size;
 
@@ -540,7 +585,14 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
       memcpy(&(info->arg), &arg, sizeof(void*));
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_LARGE, info, info_size));
     }
-    GASNET_BLOCKUNTIL(1==done);
+#ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
+    GASNET_BLOCKUNTIL(done==1);
+#else
+    while (done != 1) {
+      (void) gasnet_AMPoll();
+      chpl_task_yield();
+    }
+#endif
     chpl_free(info, 0, 0);
   }
 }
@@ -560,7 +612,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
   info = (fork_t*)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
   info->caller = chpl_localeID;
   info->ack = (int*)info; // pass address to free after get in large case
-  info->serial_state = CHPL_GET_SERIAL();
+  info->serial_state = chpl_task_getSerial();
   info->fid = fid;
   info->arg_size = arg_size;
   if (passArg) {
@@ -573,15 +625,15 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
   }
 
   if (chpl_localeID == locale) {
-    CHPL_BEGIN((chpl_fn_p)fork_nb_wrapper, (void*)info,
+    chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)info,
                false, info->serial_state, NULL);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote non-blocking task created on %d\n", chpl_localeID, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_nb_forks++;
-      CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
+      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
     if (passArg) {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
@@ -608,15 +660,15 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size
         printf("%d: remote (no-fork) task created on %d\n",
                chpl_localeID, locale);
       if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-        CHPL_SYNC_LOCK(&chpl_comm_diagnostics_sync);
+        chpl_sync_lock(&chpl_comm_diagnostics_sync);
         chpl_comm_fast_forks++;
-        CHPL_SYNC_UNLOCK(&chpl_comm_diagnostics_sync);
+        chpl_sync_unlock(&chpl_comm_diagnostics_sync);
       }
       info = (fork_t *) &infod;
 
       info->caller = chpl_localeID;
       info->ack = &done;
-      info->serial_state = CHPL_GET_SERIAL();
+      info->serial_state = chpl_task_getSerial();
       info->fid = fid;
       info->arg_size = arg_size;
 
@@ -626,7 +678,6 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size
         memcpy(&(info->arg), arg, arg_size);
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_FAST, info, info_size));
 
-      // GASNET_BLOCKUNTIL(1==done);
     } else {
       // Call the normal chpl_comm_fork()
       chpl_comm_fork(locale, fid, arg, arg_size);
@@ -680,6 +731,18 @@ void chpl_stopCommDiagnosticsHere() {
 
 int32_t chpl_numCommGets(void) {
   return chpl_comm_gets;
+}
+
+int32_t chpl_numCommNBGets(void) {
+  return chpl_comm_nb_gets;
+}
+
+int32_t chpl_numCommTestNBGets(void) {
+  return chpl_comm_test_nb_gets;
+}
+
+int32_t chpl_numCommWaitNBGets(void) {
+  return chpl_comm_wait_nb_gets;
 }
 
 int32_t chpl_numCommPuts(void) {

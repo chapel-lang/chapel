@@ -7,21 +7,21 @@ use GridBC_def;
 class ZeroInflowAdvectionBC: GridBC {
   
   
-  def apply(q: GridArray, t: real) {
+  proc apply(q: GridVariable, t: real) {
     //==== This type of BC is homogeneous ====
     apply_Homogeneous(q);
   }
   
   
-  def apply_Homogeneous(q: GridArray) {
+  proc apply_Homogeneous(q: GridVariable) {
 
-    for ghost_domain in grid.ghost_domain_set {
+    for ghost_domain in grid.ghost_multidomain {
       forall cell in ghost_domain do
         q.value(cell) = 0.0;
     }
 
 /*     for loc in ghost_locations { */
-/*       forall cell in grid.ghost_domain_set(loc) do */
+/*       forall cell in grid.ghost_multidomain(loc) do */
 /* 	      q.value(cell) = 0.0; */
 /*     } */
     

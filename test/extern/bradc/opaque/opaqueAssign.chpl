@@ -1,7 +1,7 @@
 type cptr = opaque;
 
-_extern def getPtr(): opaque;
-_extern def printPtr(ptr: opaque);
+_extern proc getPtr(): opaque;
+_extern proc printPtr(ptr: opaque);
 
 {
   var x = getPtr();

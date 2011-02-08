@@ -1,6 +1,6 @@
 // questionable implementation because of multiple random streams
 
-def random(n: uint, seed: uint) {
+iter random(n: uint, seed: uint) {
   var x = seed;
   for 1..n {
     x = (x:int(64) * 16807 % 2147483647): uint;

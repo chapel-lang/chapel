@@ -1,7 +1,7 @@
 use Memory;
 
-_extern def chpl_malloc(number, size, description, lineno=-1, filename=""): opaque;
-_extern def chpl_free(ptr, lineno=-1, filename="");
+_extern proc chpl_malloc(number, size, description, lineno=-1, filename=""): opaque;
+_extern proc chpl_free(ptr, lineno=-1, filename="");
 
 config var linenum: int = 0;
 config var filename: string = "";

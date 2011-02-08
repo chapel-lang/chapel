@@ -2,12 +2,12 @@ module red {
   var x : int = 8;
 
   module green {
-    def bar() {
+    proc bar() {
       writeln(x);
     }
   }
 
-  def foo(i : int) {
+  proc foo(i : int) {
     writeln(i);
     use green;
     bar();
@@ -19,7 +19,7 @@ module blue {
 
   use red;
 
-  def main() {
+  proc main() {
     foo(y);
     foo(x);
     foo(16);

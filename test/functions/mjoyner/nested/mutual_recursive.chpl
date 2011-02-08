@@ -1,20 +1,20 @@
-def bar() {
+proc bar() {
   var x : int = 12;
   var y : int = 15;
   var z : int = 18;
-  def foo() {
+  proc foo() {
     writeln(x);
     if (x > 0) {
       goo();
     }
   }
-  def goo() {
+  proc goo() {
     writeln(y);
     if (y > 0) {
       fie();
     }
   }
-  def fie() {
+  proc fie() {
     writeln(z);
     if (z < 0) {
       foo();

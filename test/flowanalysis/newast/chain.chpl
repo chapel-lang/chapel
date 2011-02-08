@@ -1,9 +1,9 @@
-def foo(a) {
+proc foo(a) {
   writeln("in foo, a is ", a);
   bar(7);
 }
 
-def bar(a) {
+proc bar(a) {
   writeln("in bar, a is ", a);
 }
 

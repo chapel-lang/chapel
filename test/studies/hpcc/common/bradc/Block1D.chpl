@@ -53,7 +53,7 @@ class Block1D : Distribution {
 
   // CONSTRUCTORS:
 
-  def Block1D(type idxType = int(64), bbox: domain(1, idxType),
+  proc Block1D(type idxType = int(64), bbox: domain(1, idxType),
               targetLocales: [] locale = Locales) {
     boundingBox = bbox;
     //
@@ -82,12 +82,12 @@ class Block1D : Distribution {
   //
   // TODO: What should we do if domIdxType did not match idxType?
   //
-  def newArithmeticDomain(param rank: int, type domIdxType, param stridable: bool) 
+  proc newArithmeticDomain(param rank: int, type domIdxType, param stridable: bool) 
         where domIdxType != idxType {
     compilerError("Trying to create a domain whose index type does not match the distribution's");
   }
 
-  def newArithmeticDomain(param rank: int, type domIdxType, param stridable: bool) 
+  proc newArithmeticDomain(param rank: int, type domIdxType, param stridable: bool) 
         where rank != 1 {
     compilerError("Block1D only supports 1D domains currently");
   }
@@ -97,7 +97,7 @@ class Block1D : Distribution {
   // initial index set if one exists?  If not, we should rewrite the
   // global domain construction to not do anything with whole...
   //
-  def newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
+  proc newArithmeticDomain(param rank: int, type idxType, param stridable: bool) {
     var dom = new Block1DDom(idxType=idxType, dist=this, stridable=stridable);
     dom.setup();
     return dom;
@@ -107,7 +107,7 @@ class Block1D : Distribution {
   //
   // print out the distribution
   //
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.writeln("Block1DPar");
     x.writeln("---------------");
     x.writeln("distributes: ", boundingBox);
@@ -121,7 +121,7 @@ class Block1D : Distribution {
   //
   // convert an index into a locale value
   //
-  def idxToLocale(ind: idxType) {
+  proc idxToLocale(ind: idxType) {
     return targetLocs(idxToLocaleInd(ind));
   }
 
@@ -132,7 +132,7 @@ class Block1D : Distribution {
   // compute what chunk of inds is owned by a given locale -- assumes
   // it's being called on the locale in question
   //
-  def getChunk(inds, locid) {
+  proc getChunk(inds, locid) {
     // use domain slicing to get the intersection between what the
     // locale owns and the domain's index set
     //
@@ -153,7 +153,7 @@ class Block1D : Distribution {
   // someone else can help me remember it (since it was probably someone
   // else's suggestion).
   //
-  def idxToLocaleInd(ind: idxType) {
+  proc idxToLocaleInd(ind: idxType) {
     //    writeln("distribution = ", this);
     const ind0 = ind - boundingBox.low;
     const locInd = (ind0 * targetLocs.numElements:idxType) / boundingBox.numIndices;
@@ -198,7 +198,7 @@ class LocBlock1DDist {
   // Constructor computes what chunk of index(1) is owned by the
   // current locale
   //
-  def LocBlock1DDist(type idxType, 
+  proc LocBlock1DDist(type idxType, 
                      _localeIdx: int, // the locale index from the target domain
                      dist: Block1D(idxType) // reference to glob dist
                      ) {
@@ -229,13 +229,13 @@ class LocBlock1DDist {
   //
   // a helper function for mapping processors to indices
   //
-  def procToData(x, lo)
+  proc procToData(x, lo)
     return (lo + (x: lo.type) + (x:real != x:int:real): lo.type);
 
   //
   // print out the local distribution class
   //
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.write("locale ", loc.id, " owns chunk: ", myChunk);
   }
 }
@@ -301,7 +301,7 @@ class Block1DDom: BaseArithmeticDomain {
   // TODO: This really should go over the elements in row-major order,
   // not the block orders.
   //
-  def these() {
+  proc these() {
     for blk in locDoms do
       // TODO: Would want to do something like:     
       // on blk do
@@ -329,7 +329,7 @@ class Block1DDom: BaseArithmeticDomain {
   // clause interact with a loop that used an on clause explicitly
   // within its body?  How would it be done efficiently?
   //
-  def these(param tag: iterator) where tag == iterator.leader {
+  proc these(param tag: iterator) where tag == iterator.leader {
     //
     // TODO: This currently only results in a single level of
     // per-locale parallelism -- no per-core parallelism; maybe
@@ -360,7 +360,7 @@ class Block1DDom: BaseArithmeticDomain {
       }
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  proc these(param tag: iterator, follower) where tag == iterator.follower {
     //
     // TODO: Abstract this addition of low into a function?
     // Note relationship between this operation and the
@@ -377,7 +377,7 @@ class Block1DDom: BaseArithmeticDomain {
     }
   }
 
-  def strideBy(str : int) {
+  proc strideBy(str : int) {
     var x = new Block1DDom(idxType=idxType, rank=rank, stridable=true, dist=dist);
     x.whole = whole by str;
     x.setup();
@@ -387,14 +387,14 @@ class Block1DDom: BaseArithmeticDomain {
   //
   // the print method for the domain
   //
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.write(whole);
   }
 
   //
   // how to allocate a new array over this domain
   //
-  def buildArray(type elemType) {
+  proc buildArray(type elemType) {
     var arr = new Block1DArr(idxType, elemType, stridable, this);
     arr.setup();
     return arr;
@@ -403,15 +403,15 @@ class Block1DDom: BaseArithmeticDomain {
   //
   // queries for the number of indices, low, and high bounds
   //
-  def numIndices {
+  proc numIndices {
     return whole.numIndices;
   }
 
-  def low {
+  proc low {
     return whole.low;
   }
 
-  def high {
+  proc high {
     return whole.high;
   }
 
@@ -420,7 +420,7 @@ class Block1DDom: BaseArithmeticDomain {
   // INTERFACE NOTES: Could we make setIndices() for an arithmetic
   // domain take a domain rather than something else?
   //
-  def setIndices(x: domain) {
+  proc setIndices(x: domain) {
     if x.rank != 1 then
       compilerError("rank mismatch in domain assignment");
     if x._value.idxType != idxType then
@@ -429,7 +429,7 @@ class Block1DDom: BaseArithmeticDomain {
     setup();
   }
 
-  def setIndices(x) {
+  proc setIndices(x) {
     if x.size != 1 then
       compilerError("rank mismatch in domain assignment");
     if x(1).eltType != idxType then
@@ -441,18 +441,18 @@ class Block1DDom: BaseArithmeticDomain {
     setup();
   }
 
-  def getIndices() {
+  proc getIndices() {
     return whole;
   }
 
   //
   // INTERNAL INTERFACE
   //
-  def getDist(): Block1D(idxType) {
+  proc getDist(): Block1D(idxType) {
     return dist;
   }
 
-  def setup() {
+  proc setup() {
     for localeIdx in dist.targetLocDom do
       on dist.targetLocs(localeIdx) do
         if (locDoms(localeIdx) == nil) then
@@ -465,14 +465,14 @@ class Block1DDom: BaseArithmeticDomain {
 
   }
 
-  def supportsPrivatization() param return true;
-  def privatize1() {
+  proc supportsPrivatization() param return true;
+  proc privatize1() {
     var c = new Block1DDom(idxType=idxType, rank=rank, stridable=stridable, dist=dist);
     c.locDoms = locDoms;
     c.whole = whole;
     return c;
   }
-  def privatize2(pid: int) {
+  proc privatize2(pid: int) {
     this.pid = pid;
   }
 }
@@ -521,7 +521,7 @@ class LocBlock1DDom {
   //
   // iterator over this locale's indices
   //
-  def these() {
+  proc these() {
     // May want to do something like:     
     // on this do
     // But can't currently have yields in on clauses
@@ -533,12 +533,12 @@ class LocBlock1DDom {
   // this is the parallel iterator for the local domain, see global
   // domain parallel iterators for general notes on the approach
   //
-  def these(param tag: iterator) where tag == iterator.leader {
+  proc these(param tag: iterator) where tag == iterator.leader {
     halt("This is bogus");
     yield [1..100];
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  proc these(param tag: iterator, follower) where tag == iterator.follower {
     halt("This is bogus");
     yield 2;
   }
@@ -546,7 +546,7 @@ class LocBlock1DDom {
   //
   // how to write out this locale's indices
   //
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.write(myBlock);
   }
 
@@ -559,15 +559,15 @@ class LocBlock1DDom {
   // TODO: I believe these are only used by the random number generator
   // in stream -- will they always be required once that is rewritten?
   //
-  def numIndices {
+  proc numIndices {
     return myBlock.numIndices;
   }
 
-  def low {
+  proc low {
     return myBlock.low;
   }
 
-  def high {
+  proc high {
     return myBlock.high;
   }
 }
@@ -611,19 +611,19 @@ class Block1DArr: BaseArray {
   //
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, eltType, stridable);
 
-  def setup() {
+  proc setup() {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
         locArr(localeIdx) = new LocBlock1DArr(idxType, eltType, stridable, dom.locDoms(localeIdx));
   }
 
-  def supportsPrivatization() param return true;
-  def privatize1() {
+  proc supportsPrivatization() param return true;
+  proc privatize1() {
     var c = new Block1DArr(idxType, eltType, stridable, dom);
     c.locArr = locArr;
     return c;
   }
-  def privatize2(pid) {
+  proc privatize2(pid) {
     var dompid = dom.pid;
     var thisdom = dom;
     this.dom = __primitive("chpl_getPrivateClass", thisdom, dompid);
@@ -636,7 +636,7 @@ class Block1DArr: BaseArray {
   //
   // TODO: Do we need a global bounds check here or in idxToLocaleind?
   //
-  def this(i: idxType) var {
+  proc this(i: idxType) var {
     const myLocArr = locArr(here.id);
     local {
       if myLocArr.locDom.myBlock.member(i) then
@@ -648,7 +648,7 @@ class Block1DArr: BaseArray {
   //
   // the iterator over the array's elements, currently sequential
   //
-  def these() var {
+  proc these() var {
     for loc in dom.dist.targetLocDom {
       // TODO: May want to do something like:     
       // on this do
@@ -663,7 +663,7 @@ class Block1DArr: BaseArray {
   // this is the parallel iterator for the global array, see the
   // example for general notes on the approach
   //
-  def these(param tag: iterator) where tag == iterator.leader {
+  proc these(param tag: iterator) where tag == iterator.leader {
     //
     // TODO: Rewrite this to reuse more of the global domain iterator
     // logic?  (e.g., can we forward the forall to the global domain
@@ -674,9 +674,9 @@ class Block1DArr: BaseArray {
         yield locDom.myBlock - dom.whole.low;
   }
 
-  def supportsAlignedFollower() param return true;
+  proc supportsAlignedFollower() param return true;
 
-  def these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
+  proc these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
     //
     // TODO: Would like to write this as follower += dom.low;
     //
@@ -700,7 +700,7 @@ class Block1DArr: BaseArray {
       //
       // TODO: could do something smarter to only bring the non-local
       // elements over.
-      def accessHelper(i) var {
+      proc accessHelper(i) var {
         local {
           if myLocArr.locDom.myBlock.member(i) then
             return myLocArr.this(i);
@@ -752,7 +752,7 @@ class Block1DArr: BaseArray {
   //
   // how to print out the whole array, sequentially
   //
-  def writeThis(x: Writer) {
+  proc writeThis(x: Writer) {
 
     var first = true;
     for loc in dom.dist.targetLocDom {
@@ -775,7 +775,7 @@ class Block1DArr: BaseArray {
   //
   // a query for the number of elements in the array
   //
-  def numElements {
+  proc numElements {
     return dom.numIndices;
   }
 }
@@ -823,14 +823,14 @@ class LocBlock1DArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  def this(i: idxType) var {
+  proc this(i: idxType) var {
     return myElems(i);
   }
 
   //
   // iterator over the elements owned by this locale
   //
-  def these() var {
+  proc these() var {
     for elem in myElems {
       yield elem;
     }
@@ -840,12 +840,12 @@ class LocBlock1DArr {
   // this is the parallel iterator for the local array, see global
   // domain parallel iterators for general notes on the approach
   //
-  def these(param tag: iterator) where tag == iterator.leader {
+  proc these(param tag: iterator) where tag == iterator.leader {
     halt("This is bogus");
     yield [1..100];
   }
 
-  def these(param tag: iterator, follower) var where tag == iterator.follower {
+  proc these(param tag: iterator, follower) var where tag == iterator.follower {
     yield myElems(0);
   }
 
@@ -853,7 +853,7 @@ class LocBlock1DArr {
   //
   // prints out this locale's piece of the array
   //
-  def writeThis(x: Writer) {
+  proc writeThis(x: Writer) {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
@@ -863,13 +863,13 @@ class LocBlock1DArr {
   //
   // query for the number of local array elements
   //
-  def numElements {
+  proc numElements {
     return myElems.numElements;
   }
 
   // INTERNAL INTERFACE:
 
-  def owns(x) {
+  proc owns(x) {
     //
     // TODO: When this is multidimensional need to do a reduction or something:
     //

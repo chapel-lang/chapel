@@ -1,6 +1,6 @@
 config const numTasks=4;
 
-def iterate() {
+iter iterate() {
   coforall loc in Locales {
 //    on loc {
       coforall taskid in 0..#numTasks {

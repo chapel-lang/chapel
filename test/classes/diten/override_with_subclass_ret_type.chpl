@@ -1,13 +1,13 @@
 class ic_A {
   var i: int;
-  def bar() {
+  proc bar() {
     writeln("ic_A.bar()");
   }
 }
 
 class ic_B: ic_A {
   var s: real;
-  def bar() {
+  proc bar() {
     writeln("ic_B.bar()");
   }
 }
@@ -15,19 +15,19 @@ class ic_B: ic_A {
 
 class A {
   var n: int;
-  def foo() {
+  proc foo() {
     return new ic_A(1);
   }
 }
 
 class B: A {
   var r: real;
-  def foo() {
+  proc foo() {
     return new ic_B(1, 2.0);
   }
 }
 
-def main {
+proc main {
   var a: A = new B(1, 2.0);
   var ic_b = a.foo();
   ic_b.bar();

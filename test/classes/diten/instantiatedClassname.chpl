@@ -4,7 +4,7 @@ class C {
   param c: int = 3;
 }
 
-def foo(c: C) {
+proc foo(c: C) {
   writeln(c.b);
 }
 

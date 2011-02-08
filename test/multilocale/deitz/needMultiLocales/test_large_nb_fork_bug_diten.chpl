@@ -1,6 +1,6 @@
 use Time;
 
-def main {
+proc main {
   on Locales(1) {
     cobegin {
       coforall i in 1..100 {

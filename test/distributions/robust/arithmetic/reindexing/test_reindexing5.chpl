@@ -19,7 +19,7 @@ const TD3D: domain(3) = Space3 - (o5,o5,o5);
 const TD4D: domain(4) = Space4 - (o5,o5,o5,o5);
 const TD2D64: domain(2,int(64)) = Space2D64 - (o5:int(64),o5:int(64));
 
-def foo(TD: domain, A: [TD] int, TA) {
+proc foo(TD: domain, A: [TD] int, TA) {
   var errs = 0;
   var offset = if (TD.rank==1) then o5-shift else fill(TD.rank, o5-shift);
   for i in [TD] do

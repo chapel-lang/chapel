@@ -1,6 +1,6 @@
 use driver_arrays;
 
-def foo(TD: domain, A: [TD] int, TA) {
+proc foo(TD: domain, A: [TD] int, TA) {
   var errs = 0;
   var offset = if (TD.rank==1) then o5 else fill(TD.rank, o5);
   [i in TD] A[i] += 1;

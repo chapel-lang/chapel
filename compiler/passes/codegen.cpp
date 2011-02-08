@@ -73,7 +73,38 @@ static void legalizeName(Symbol* sym) {
     switch (*ch) {
     case '>': ch = subChar(sym, ch, "_GREATER_"); break;
     case '<': ch = subChar(sym, ch, "_LESS_"); break;
-    case '=': ch = subChar(sym, ch, "_EQUAL_"); break;
+    case '=':
+      {
+
+        /* To help generated code readability, we'd like to convert =
+           into "ASSIGN" and == into "EQUALS".  Unfortunately, because
+           of the character-at-a-time approach taken here combined
+           with the fact that subChar() returns a completely new
+           string on every call, the way I implemented this is a bit
+           ugly (in part because I didn't want to spend the time to
+           reimplement this whole function -BLC */
+
+        static const char* equalsStr = "_EQUALS_";
+        static int equalsLen = strlen(equalsStr);
+
+        if (*(ch+1) == '=') {
+          // If we're in the == case, replace the first = with EQUALS
+          ch = subChar(sym, ch, equalsStr);
+        } else {
+          if ((ch-equalsLen >= sym->cname) && 
+              strncmp(ch-equalsLen, equalsStr, equalsLen) == 0) {
+            // Otherwise, if the thing preceding this '=' is the
+            // string _EQUALS_, we must have been the second '=' and
+            // we should just replace ourselves with an underscore to
+            // make things legal.
+            ch = subChar(sym, ch, "_");
+          } else {
+            // Otherwise, this must have simply been a standalone '='
+            ch = subChar(sym, ch, "_ASSIGN_");
+          }
+        }
+        break;
+    }
     case '*': ch = subChar(sym, ch, "_ASTERISK_"); break;
     case '/': ch = subChar(sym, ch, "_SLASH_"); break;
     case '%': ch = subChar(sym, ch, "_PERCENT_"); break;
@@ -341,6 +372,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "const char* CHPL_HOST_COMPILER      = \"%s\";\n", CHPL_HOST_COMPILER);
     fprintf(hdrfile, "const char* CHPL_TARGET_COMPILER    = \"%s\";\n", CHPL_TARGET_COMPILER);
     fprintf(hdrfile, "const char* CHPL_TASKS              = \"%s\";\n", CHPL_TASKS);
+    fprintf(hdrfile, "const char* CHPL_THREADS            = \"%s\";\n", CHPL_THREADS);
     fprintf(hdrfile, "const char* CHPL_COMM               = \"%s\";\n", CHPL_COMM);
     if (fGPU) {
       fprintf(hdrfile, "#else\n");
@@ -673,7 +705,7 @@ codegen_config(FILE* outfile) {
   fprintf(outfile, "initConfigVarTable();\n");
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (var->hasFlag(FLAG_CONFIG)) {
+    if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
       fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
       Type* type = var->type;
       if (type->symbol->hasFlag(FLAG_WIDE_CLASS))

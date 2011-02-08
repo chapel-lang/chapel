@@ -1,8 +1,8 @@
-def foo(param i : int) where i == 1 {
+proc foo(param i : int) where i == 1 {
   writeln("Alpha");
 }
 
-def foo(param i : int) where i == 2 {
+proc foo(param i : int) where i == 2 {
   writeln("Beta");
 }
 

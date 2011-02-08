@@ -1,4 +1,4 @@
-def f2(A: []) {
+proc f2(A: []) {
   var _value = A._value;
   begin {
     use Time;
@@ -8,12 +8,12 @@ def f2(A: []) {
   }
 }
 
-def f1() {
+proc f1() {
   var A: [1..5] int;
   var _value = A._value;
   f2(A);
 }
 
-def main {
+proc main {
   f1();
 }

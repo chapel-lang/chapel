@@ -4,7 +4,7 @@ class TestRandom {
   const timeofday = 4531;
   const seed = if (timeofday%2) then (timeofday) else (timeofday + 1);
 
-  def showseed() {
+  proc showseed() {
     writeln(seed);
   }
 }

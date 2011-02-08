@@ -8,9 +8,9 @@ class C {
 module M {
   var y = 3;
 
-  def main() {
+  proc main() {
     var z = 4;
-    def C.foo() {
+    proc C.foo() {
       writeln(w, x, y, z);
     }
     var c = new C();

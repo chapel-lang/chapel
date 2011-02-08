@@ -1,5 +1,6 @@
 #include "astutil.h"
 #include "expr.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "stmt.h"
 #include "view.h"

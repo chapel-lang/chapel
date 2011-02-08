@@ -34,7 +34,7 @@ writeln("\nsolving...\n");
 
 //-------- Define an important set function or two...  --------------------
 
-def setUnion(X, Y) {
+proc setUnion(X, Y) {
    var Res: X.type;
    for i in X {
      Res += i;
@@ -46,7 +46,7 @@ def setUnion(X, Y) {
 }
 
 
-def setIntersect(X, Y) {
+proc setIntersect(X, Y) {
    var Res: X.type;
    for i in X {
      if (Y.member(i)) {
@@ -80,7 +80,7 @@ const BoxDomains: [Boxes] subdomain(TableSpace)
                 = [(br, bc) in Boxes] [(br-1)*3 + 1 .. br*3, (bc-1)*3+1..bc*3];
 // DEBUG: writeln("BoxDomains = ", BoxDomains);
 
-def getBoxIndex(ij) {
+proc getBoxIndex(ij) {
   return (ij - (1,1)) / (3,3) + (1,1);
 }
 

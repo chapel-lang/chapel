@@ -1,6 +1,6 @@
 use Memory;
 
-def output(type retType) {
+proc output(type retType) {
   const mem = Locales(0).physicalMemory(retType = retType),
         bytes = Locales(0).physicalMemory(MemUnits.Bytes, retType),
         kb = Locales(0).physicalMemory(MemUnits.KB, retType),

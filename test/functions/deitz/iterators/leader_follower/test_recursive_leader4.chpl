@@ -1,11 +1,11 @@
 use Time;
 
-def bar(n: int, i: int) {
+iter bar(n: int, i: int) {
   for i in i..n do
     yield i;
 }
 
-def bar(param tag: iterator, n: int, i: int): int where tag == iterator.leader {
+iter bar(param tag: iterator, n: int, i: int): int where tag == iterator.leader {
   if i == 1 then
     coforall j in 2..n do
       on Locales((j-1)%numLocales) do
@@ -14,7 +14,7 @@ def bar(param tag: iterator, n: int, i: int): int where tag == iterator.leader {
   yield i;
 }
 
-def bar(param tag: iterator, follower, n: int, i: int) where tag == iterator.follower {
+iter bar(param tag: iterator, follower, n: int, i: int) where tag == iterator.follower {
   yield follower;
 }
 

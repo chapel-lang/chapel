@@ -4,7 +4,7 @@
 // the module is rounding to an odd number
 // as it should.
 
-def main() {
+proc main() {
 
 use Random;
 
