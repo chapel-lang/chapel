@@ -4,16 +4,16 @@ class _ccdata {
   type eltType;
   const array_size : int(64);
 
-  def ~_ccdata() {
+  proc ~_ccdata() {
     __primitive("array_free", this);
   }
 
-  pragma "inline" def init(size: integral) {
+  pragma "inline" proc init(size: integral) {
     __primitive("array_alloc", this, eltType, size); // Allocate Host Memory
     init_elts(this, size, eltType);
     array_size = size;
   }
-  pragma "inline" def this(i: integral) var {
+  pragma "inline" proc this(i: integral) var {
     return __primitive("array_get", this, i);
   }
 }
@@ -22,7 +22,7 @@ config param debugGPUConstDist = false; // internal development flag (debugging)
 
 class GPUConstDist: BaseDist {
 
-   def GPUConstDist(param rank : int, 
+   proc GPUConstDist(param rank : int, 
 	      type idxType = int(64),
               param constSize) {
 
@@ -33,12 +33,12 @@ class GPUConstDist: BaseDist {
       compilerError("Support for non-nvidia compilers not yet defined for GPUCCDist");
   }
 
-  def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+  proc dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
     return new GPUConstArithmeticDom(rank, idxType, stridable, this);
     //return new GPUConstArithmeticDom(rank, idxType, stridable, constSize);
   }
 
-  def dsiClone() return this;
+  proc dsiClone() return this;
 }
 
 class GPUConstArithmeticDom: BaseArithmeticDom {
@@ -49,21 +49,21 @@ class GPUConstArithmeticDom: BaseArithmeticDom {
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
 
-  def linksDistribution() param return false;
+  proc linksDistribution() param return false;
 
-  def GPUConstArithmeticDom(param rank, type idxType, param stridable, dist) {
+  proc GPUConstArithmeticDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;
     writeln(dist);
   }
 
-  def dsiClear() {
+  proc dsiClear() {
     var emptyRange: range(idxType, BoundedRangeType.bounded, stridable);
     ranges(1) = emptyRange;
   }
   
-  def dsiGetIndices() return ranges;
+  proc dsiGetIndices() return ranges;
 
-  def dsiSetIndices(x) {
+  proc dsiSetIndices(x) {
     if ranges.size != x.size then
       compilerError("rank mismatch in domain assignment");
     if ranges(1).idxType != x(1).idxType then
@@ -71,7 +71,7 @@ class GPUConstArithmeticDom: BaseArithmeticDom {
     ranges = x;
   }
 
-  def these_help(param d: int) {
+  iter these_help(param d: int) {
     if d == rank - 1 {
       for i in ranges(d) do
         for j in ranges(rank) do
@@ -83,7 +83,7 @@ class GPUConstArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these_help(param d: int, block) {
+  iter these_help(param d: int, block) {
     if d == block.size - 1 {
       for i in block(d) do
         for j in block(block.size) do
@@ -95,7 +95,7 @@ class GPUConstArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def these() {
+  iter these() {
 
     if rank == 1 {
       for i in ranges(1) do
@@ -107,22 +107,22 @@ class GPUConstArithmeticDom: BaseArithmeticDom {
 
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  proc these(param tag: iterator) where tag == iterator.leader {
       compilerError("Not supported");
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  proc these(param tag: iterator, follower) where tag == iterator.follower {
       compilerError("Not supported");
   }
 
-  def dsiMember(ind: rank*idxType) {
+  proc dsiMember(ind: rank*idxType) {
     for param i in 1..rank do
       if !ranges(i).member(ind(i)) then
         return false;
     return true;
   }
 
-  def dsiIndexOrder(ind: rank*idxType) {
+  proc dsiIndexOrder(ind: rank*idxType) {
     var totOrder: idxType;
     var blk: idxType = 1;
     for param d in 1..rank by -1 {
@@ -134,13 +134,13 @@ class GPUConstArithmeticDom: BaseArithmeticDom {
     return totOrder;
   }
 
-  def dsiDims()
+  proc dsiDims()
     return ranges;
 
-  def dsiDim(d : int)
+  proc dsiDim(d : int)
     return ranges(d);
 
-  def dsiNumIndices {
+  proc dsiNumIndices {
     var sum = 1:idxType;
     for param i in 1..rank do
       sum *= ranges(i).length;
@@ -148,7 +148,7 @@ class GPUConstArithmeticDom: BaseArithmeticDom {
     // WANT: return * reduce (this(1..rank).length);
   }
 
-  def dsiLow {
+  proc dsiLow {
     if rank == 1 {
       return ranges(1)._low;
     } else {
@@ -159,7 +159,7 @@ class GPUConstArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def dsiHigh {
+  proc dsiHigh {
     if rank == 1 {
       return ranges(1)._high;
     } else {
@@ -170,12 +170,12 @@ class GPUConstArithmeticDom: BaseArithmeticDom {
     }
   }
 
-  def dsiBuildArray(type eltType) {
+  proc dsiBuildArray(type eltType) {
       return new GPUConstArithmeticArr(eltType=eltType, rank=rank, idxType=idxType, 
           stridable=stridable, dom=this);
   }
 
-  def dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
+  proc dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
                             ranges: rank*range(idxType,
                                                BoundedRangeType.bounded,
                                                stridable)) {
@@ -198,29 +198,29 @@ class GPUConstArithmeticArr: BaseArr {
   var data : _ccdata(eltType);
   var size : idxType;
 
-  def isGPUExecution param return true;
-  def canCopyFromHost param return true;
-  def isConstMem param return true;
+  proc isGPUExecution param return true;
+  proc canCopyFromHost param return true;
+  proc isConstMem param return true;
 
-  def dsiGetBaseDom() return dom;
+  proc dsiGetBaseDom() return dom;
 
-  def dsiDestroyData() { }
+  proc dsiDestroyData() { }
 
-  def these() var {
+  iter these() var {
     for i in dom do
       yield dsiAccess(i);
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  proc these(param tag: iterator) where tag == iterator.leader {
     halt("Not supposed to happen");
   }
 
 
-  def these(param tag: iterator, follower) var where tag == iterator.follower {
+  proc these(param tag: iterator, follower) var where tag == iterator.follower {
     halt("Not supposed to happen");
   }
 
-  def initialize() {
+  proc initialize() {
     if noinit == true then return;
     size = dom.dsiDim(1).length;
     data = new _ccdata(eltType);
@@ -228,17 +228,17 @@ class GPUConstArithmeticArr: BaseArr {
   }
 
   pragma "inline"
-  def dsiAccess(ind: idxType ...1) var where rank == 1 {
+  proc dsiAccess(ind: idxType ...1) var where rank == 1 {
     return dsiAccess(ind);
   }
 
   pragma "inline"
-  def dsiAccess(ind : rank*idxType) var {
+  proc dsiAccess(ind : rank*idxType) var {
     var sum = ind(1);
     return data(sum);
   }
 
-  def dsiReindex(d: GPUConstArithmeticDom) {
+  proc dsiReindex(d: GPUConstArithmeticDom) {
     var alias = new GPUConstArithmeticArr(eltType=eltType, rank=d.rank,
                                      idxType=d.idxType,
                                      stridable=d.stridable, dom=d, noinit=true);
@@ -248,7 +248,7 @@ class GPUConstArithmeticArr: BaseArr {
     return alias;
   }
 
-  def dsiSlice(d: GPUConstArithmeticDom) {
+  proc dsiSlice(d: GPUConstArithmeticDom) {
     writeln("slice...");
     var alias = new GPUConstArithmeticArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
@@ -259,10 +259,10 @@ class GPUConstArithmeticArr: BaseArr {
     return alias;
   }
 
-  def dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
+  proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
     writeln("rank change..");
-    def isRange(r: range(?e,?b,?s)) param return 1;
-    def isRange(r) param return 0;
+    proc isRange(r: range(?e,?b,?s)) param return 1;
+    proc isRange(r) param return 0;
 
     var alias = new GPUConstArithmeticArr(eltType=eltType, rank=newRank,
                                          idxType=idxType,
@@ -272,7 +272,7 @@ class GPUConstArithmeticArr: BaseArr {
     return alias;
   }
 
-  def dsiReallocate(d: domain) {
+  proc dsiReallocate(d: domain) {
     writeln("reallocate...");
     //writeln(d._value.type," ", dom.type);
     if (d._value.type == dom.type) {
@@ -292,14 +292,14 @@ class GPUConstArithmeticArr: BaseArr {
   }
 }
 
-def GPUConstArithmeticDom.dsiSerialWrite(f: Writer) {
+proc GPUConstArithmeticDom.dsiSerialWrite(f: Writer) {
   f.write("[", dsiDim(1));
   for i in 2..rank do
     f.write(", ", dsiDim(i));
   f.write("]");
 }
 
-def GPUConstArithmeticArr.dsiSerialWrite(f: Writer) {
+proc GPUConstArithmeticArr.dsiSerialWrite(f: Writer) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do

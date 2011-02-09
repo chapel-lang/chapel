@@ -339,6 +339,7 @@ class DefaultArithmeticArr: BaseArr {
   var factoredOffs: idxType;
   var data : _ddata(eltType);
   var noinit: bool = false;
+  var size : int;
 
   proc canCopyFromDevice param return true;
   proc isGPUExplicit param return false;
@@ -504,7 +505,7 @@ class DefaultArithmeticArr: BaseArr {
     for param dim in 1..rank-1 by -1 do
       blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
     computeFactoredOffs();
-    var size = blk(1) * dom.dsiDim(1).length;
+    size = blk(1) * dom.dsiDim(1).length;
     data = new _ddata(eltType);
     data.init(size);
   }

@@ -1198,7 +1198,7 @@ pragma "inline" proc =(a: [], b : []) where (a._value.canCopyFromDevice && b._va
   if a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
   __primitive("copy_gpu_to_host", 
-              a._value.data, b._value.data, b._value.eltType, b._value.size);
+              a._value.data, 0, b._value.data, 0, b._value.eltType, b._value.size);
   return a;
 }
 
@@ -1206,7 +1206,7 @@ pragma "inline" proc =(a: [], b : []) where (a._value.canCopyFromHost && b._valu
   if a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
   __primitive("copy_host_to_gpu", 
-              a._value.data, b._value.data, b._value.eltType, b._value.size);
+              a._value.data, 0, b._value.data, 0, b._value.eltType, b._value.size);
   return a;
 }
 
