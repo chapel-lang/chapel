@@ -1,0 +1,25 @@
+semantic: range equality
+
+In this test, I'd like to argue that we should implement range
+equality by seeing whether the integer sequences described by the
+ranges are identical rather than by checking to see if their
+low/high/stride (and alignment values if/when we add that) are the
+same.
+
+Here are the cases:
+
+1) These two ranges trivially describe the same integers but are
+   considered unequal today
+
+2) This is a variation on the above that is intended to capture the
+   fact that if we introduced an alignment term, we could represent
+   the first range as 1..10 by -2 aligned 1, but the two ranges still
+   represent the same ranges.  This works today due to the ranges we
+   happen to construct by application of the by operator.
+
+3) This question asks whether range equality should only look at the
+   set of integers described or also include the order.  I'm going to
+   assert that the order should matter (which the current compiler
+   agrees with).  Interestingly, I think my answer would be the
+   opposite for domains (because I think of domains as describing sets
+   not serially ordered integers).

@@ -1,0 +1,20 @@
+feature request: printing of aligned ranges
+
+This future is intended to point out that if we support a general
+alignment value and operator, we will need to make printing of ranges
+print the alignment value.  My proposal here is that the alignment not
+be printed in the case that it's trivially indicated by the
+lower/upper bound based on the stride (i.e., if the lower bound is
+aligned and the stride is positive, no alignment needs to be printed;
+similarly, if the upper bound is aligned and it's negative).
+
+Note that I've taken the approach here (debated in alignedOp.future)
+of representing the alignment values in their non-normalized form.  If
+we decide that ranges should store the alignment in a normalized form
+(0..#abs(stride)) then the cases here that print "aligned 3" should
+actually print "aligned 0".
+
+The final case here shows that whereas today we normalize this range
+into 1..9 by -2, the right behavior for a range that stores an
+alignment value would probably be to leave the upper bound
+un-normalized.
