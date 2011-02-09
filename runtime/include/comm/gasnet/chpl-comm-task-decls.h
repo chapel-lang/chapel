@@ -27,7 +27,8 @@ typedef void *chpl_comm_get_nb_token_t;
 //   size and locale are part of p
 //   token is the handle returned by GASNet
 //
-void chpl_comm_get_nb(void *addr, int32_t locale, void* raddr, int32_t size,
+void chpl_comm_get_nb(void *addr, int32_t locale, void* raddr,
+                      int32_t elemSize, int32_t typeIndex, int32_t len,
                       chpl_comm_get_nb_token_t *token, int ln, chpl_string fn);
 
 int chpl_comm_test_get_nb(chpl_comm_get_nb_token_t *token,
@@ -41,13 +42,14 @@ void chpl_comm_wait_get_nb(chpl_comm_get_nb_token_t *token,
 //  the tasking layer may decide to forgo non-blocking gets based
 //  on the size of the message
 //
-#define CHPL_COMM_BLOCKING_GET(local, locale, addr, size, ln, fn)  \
-  do {                                                             \
-    chpl_comm_get(&(local), locale, addr, size, ln, fn);           \
+#define CHPL_COMM_BLOCKING_GET(local, locale, addr, elemSize, len, ln, fn)  \
+  do {                                                                      \
+    chpl_comm_get(&(local), locale, addr, elemSize, -1, len, ln, fn);       \
   } while (0)
 
 #endif
 
-void chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size,
-                   int ln, chpl_string fn);
+void chpl_comm_get(void *addr, int32_t locale, void* raddr,
+                   int32_t elemSize, int32_t typeIndex,
+                   int32_t len, int ln, chpl_string fn);
 
