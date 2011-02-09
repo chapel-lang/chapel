@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <comm_printf_macros.h>
+#include <chpl-comm-printf-macros.h>
 
 #include "chplcast.h"
 #include "chplio.h"

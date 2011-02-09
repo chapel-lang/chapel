@@ -2,7 +2,7 @@
 #include "chpl_rt_utils_static.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chplexit.h"
 #include "chplio.h"
 #include "chpl_mem.h"

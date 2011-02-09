@@ -1,6 +1,6 @@
 #include "arg.h"
 #include "chplrt.h"
-#include "chplcomm_locales.h"
+#include "chpl-comm-locales.h"
 #include "error.h"
 
 int chpl_comm_default_num_locales(void) {

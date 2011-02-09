@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include "chplexit.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplrt.h"
 #include "chpltasks.h"
@@ -331,13 +331,13 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 }
 
 
-void chpl_comm_broadcast_private(int id, int size) {
+void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   int i;
   PRINTF("broadcast private");
 
   for (i = 0; i < chpl_numLocales; i++) {
     if (i != chpl_localeID) {
-      chpl_comm_put(chpl_private_broadcast_table[id], i, chpl_private_broadcast_table[id], size, 0, 0);
+      chpl_comm_put(chpl_private_broadcast_table[id], i, chpl_private_broadcast_table[id], size, -1, 1, 0, 0);
     }
   }
 }
@@ -378,7 +378,10 @@ void chpl_comm_exit_any(int status) {
 }
 
 
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
+                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    int ln, chpl_string fn) {
+  const int32_t size = elemSize*len;
   if (chpl_localeID == locale) {
     memmove(raddr, addr, size);
   } else {
@@ -406,7 +409,10 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
 }
 
 
-void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_get(void *addr, int32_t locale, void* raddr,
+                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    int ln, chpl_string fn) {
+  const int size = elemSize*len;
   if (chpl_localeID == locale) {
     memmove(addr, raddr, size);
   } else {
@@ -434,7 +440,8 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int l
 }
 
 
-void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
+                     int32_t arg_size, int32_t arg_tid) {
   if (chpl_localeID == locale) {
     (*chpl_ftable[fid])(arg);
   } else {
@@ -459,7 +466,8 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
 }
 
 
-void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
+                        int32_t arg_size, int32_t arg_tid) {
   if (chpl_localeID == locale) {
     void* argCopy = chpl_malloc(1, arg_size, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
     _chplForkedTaskArg* rpcArg = chpl_malloc(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
@@ -492,8 +500,9 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
 }
 
 // Just call chpl_comm_fork()
-void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
-  chpl_comm_fork(locale, fid, arg, arg_size);
+void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
+                          int32_t arg_size, int32_t arg_tid) {
+  chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
 }
 
 void chpl_startVerboseComm() { }

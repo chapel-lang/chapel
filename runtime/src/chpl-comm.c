@@ -1,8 +1,9 @@
 //
-// Shared code for different comm implementations in comm-*/chpl_cfg_comm.c
+// Shared code for different comm implementations in
+//  comm/<commlayer>/comm-<commlayer>.c
 //
 #include "chplrt.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chpl_mem.h"
 
 #include <stdint.h>

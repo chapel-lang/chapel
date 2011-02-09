@@ -4,7 +4,7 @@
 #include <string.h>
 #include "gasnet.h"
 #include "chplrt.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
@@ -116,7 +116,8 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
 static void fork_large_wrapper(fork_t* f) {
   void* arg = chpl_malloc(1, f->arg_size, CHPL_RT_MD_AM_FORK_ARG, 0, 0);
 
-  chpl_comm_get(arg, f->caller, *(void**)f->arg, f->arg_size, 0, "fork large");
+  chpl_comm_get(arg, f->caller, *(void**)f->arg,
+                f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
   (*chpl_ftable[f->fid])(arg);
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
                                       SIGNAL,
@@ -157,7 +158,8 @@ static void AM_fork_nb(gasnet_token_t  token,
 static void fork_nb_large_wrapper(fork_t* f) {
   void* arg = chpl_malloc(1, f->arg_size, CHPL_RT_MD_AM_NB_FORK_ARG, 0, 0);
 
-  chpl_comm_get(arg, f->caller, *(void**)f->arg, f->arg_size, 0, "fork large");
+  chpl_comm_get(arg, f->caller, *(void**)f->arg,
+                f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
                                       FREE,
                                       &(f->ack),
@@ -338,16 +340,18 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
     for (i = 0; i < numGlobals; i++) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
       chpl_comm_get(chpl_globals_registry[i], 0,
-                     &((void**)seginfo_table[0].addr)[i], sizeof(void*), 0, "");
+                    &((void**)seginfo_table[0].addr)[i],
+                    sizeof(void*), -1 /*typeIndex: unused*/, 1, 0, "");
 #else
       chpl_comm_get(chpl_globals_registry[i], 0,
-                    chpl_globals_registry[i], sizeof(void*), 0, "");
+                    chpl_globals_registry[i],
+                    sizeof(void*), -1 /*typeIndex: unused*/, 1, 0, "");
 #endif
     }
   }
 }
 
-void chpl_comm_broadcast_private(int id, int size) {
+void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   int locale, offset;
   int payloadSize = size + sizeof(priv_bcast_t);
 
@@ -464,7 +468,10 @@ void chpl_comm_exit_any(int status) {
   chpl_comm_exit_any_dirty(status); 
 }
 
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
+                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    int ln, chpl_string fn) {
+  const int size = elemSize*len;
   if (chpl_localeID == locale) {
     memcpy(raddr, addr, size);
   } else {
@@ -482,7 +489,10 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
 ////GASNET - pass trace info to gasnet_get
 ////GASNET - define GASNET_E_ PUTGET always REMOTE
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
-void  chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
+                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    int ln, chpl_string fn) {
+  const int size = elemSize*len;
   if (chpl_localeID == locale) {
     memcpy(addr, raddr, size);
   } else {
@@ -500,8 +510,10 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int l
 //
 // Optional non-blocking get interface
 //
-void chpl_comm_get_nb(void* addr, int32_t locale, void* raddr, int32_t size,
+void chpl_comm_get_nb(void* addr, int32_t locale, void* raddr,
+                      int32_t elemSize, int32_t typeIndex, int32_t len,
                       chpl_comm_get_nb_token_t *token, int ln, chpl_string fn) {
+  const int size = elemSize*len;
   if (chpl_localeID == locale) {
     memcpy(addr, raddr, size);
   } else {
@@ -546,7 +558,8 @@ void chpl_comm_wait_get_nb(chpl_comm_get_nb_token_t *token,
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in fork_t redundant? active message can determine this.
-void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
+                     int32_t arg_size, int32_t arg_tid) {
   fork_t* info;
   int     info_size;
   int     done;
@@ -597,7 +610,8 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   }
 }
 
-void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
+                        int32_t arg_size, int32_t arg_tid) {
   fork_t *info;
   int     info_size;
   int     passArg = chpl_localeID == locale || sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
@@ -645,7 +659,8 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
 }
 
 // GASNET - should only be called for "small" functions
-void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
+                          int32_t arg_size, int32_t arg_tid) {
   char infod[gasnet_AMMaxMedium()];
   fork_t* info;
   int     info_size = sizeof(fork_t) + arg_size;
@@ -680,7 +695,7 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size
 
     } else {
       // Call the normal chpl_comm_fork()
-      chpl_comm_fork(locale, fid, arg, arg_size);
+      chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
     }
   }
 }
@@ -688,14 +703,16 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size
 void chpl_startVerboseComm() {
   chpl_verbose_comm = 1;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int));
+  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
+                              -1 /*typeIndex: unused*/);
   chpl_comm_no_debug_private = 0;
 }
 
 void chpl_stopVerboseComm() {
   chpl_verbose_comm = 0;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int));
+  chpl_comm_broadcast_private(0 /* &chpl_verbose_comm */, sizeof(int),
+                              -1 /*typeIndex: unused*/);
   chpl_comm_no_debug_private = 0;
 }
 
@@ -710,14 +727,16 @@ void chpl_stopVerboseCommHere() {
 void chpl_startCommDiagnostics() {
   chpl_comm_diagnostics = 1;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int));
+  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
+                              -1 /*typeIndex: unused*/);
   chpl_comm_no_debug_private = 0;
 }
 
 void chpl_stopCommDiagnostics() {
   chpl_comm_diagnostics = 0;
   chpl_comm_no_debug_private = 1;
-  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int));
+  chpl_comm_broadcast_private(1 /* &chpl_comm_diagnostics */, sizeof(int),
+                              -1 /*typeIndex: unused*/);
   chpl_comm_no_debug_private = 0;
 }
 

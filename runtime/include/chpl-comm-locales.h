@@ -1,5 +1,5 @@
-#ifndef _chplcomm_locales_h_
-#define _chplcomm_locales_h_
+#ifndef _chpl_comm_locales_h_
+#define _chpl_comm_locales_h_
 
 #include "chpltypes.h"
 

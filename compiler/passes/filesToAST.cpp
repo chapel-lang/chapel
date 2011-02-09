@@ -72,23 +72,76 @@ void parse(void) {
 
   parseDependentModules(MOD_INTERNAL);
 
+  // These types are a required part of the compiler/module interface
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (!strcmp(ts->name, "_array")) {
+      if (dtArray) {
+        USR_WARN("'_array' defined more than once in Chapel Internal modules.");
+      }
       dtArray = toClassType(ts->type);
     } else if (!strcmp(ts->name, "_tuple")) {
+      if (dtTuple) {
+        USR_WARN("'_tuple' defined more than once in Chapel Internal modules.");
+      }
       dtTuple = toClassType(ts->type);
+    } else if (!strcmp(ts->name, "locale")) {
+      if (dtLocale) {
+        USR_WARN("'locale' defined more than once in Chapel Internal modules.");
+      }
+      dtLocale = toClassType(ts->type);
     } else if (!strcmp(ts->name, "BaseArr")) {
+      if (dtBaseArr) {
+        USR_WARN("'BaseArr' defined more than once in Chapel Internal modules.");
+      }
       dtBaseArr = toClassType(ts->type);
     } else if (!strcmp(ts->name, "BaseDom")) {
+      if (dtBaseDom) {
+        USR_WARN("'BaseDom' dfined more than once in Chapel Internal modules.");
+      }
       dtBaseDom = toClassType(ts->type);
     } else if (!strcmp(ts->name, "BaseDist")) {
+      if (dtDist) {
+        USR_WARN("'BaseDist' defined more than once in Chapel Internal modules.");
+      }
       dtDist = toClassType(ts->type);
     } else if (!strcmp(ts->name, "Writer")) {
+      if (dtWriter) {
+        USR_WARN("'Writer' defined more than once in Chapel Internal modules.");
+      }
       dtWriter = toClassType(ts->type);
     } else if (!strcmp(ts->name, "file")) {
+      if (dtChapelFile) {
+        USR_WARN("'file' defined more than once in Chapel Internal modules.");
+      }
       dtChapelFile = toClassType(ts->type);
     }
   }
+
+  if (!dtArray) {
+    USR_FATAL_CONT("'_array' not defined in Chapel Internal modules.");
+  }
+  if (!dtTuple) {
+    USR_FATAL_CONT("'_tuple' not defined in Chapel Internal modules.");
+  }
+  if (!dtLocale) {
+    USR_FATAL_CONT("'locale' not defined in Chapel Internal modules.");
+  }
+  if (!dtBaseArr) {
+    USR_FATAL_CONT("'BaseArr' not defined in Chapel Internal modules.");
+  }
+  if (!dtBaseDom) {
+    USR_FATAL_CONT("'BaseDom' not defined in Chapel Internal modules.");
+  }
+  if (!dtDist) {
+    USR_FATAL_CONT("'BaseDist' not defined in Chapel Internal modules.");
+  }
+  if (!dtWriter) {
+    USR_FATAL_CONT("'Writer' not defined in Chapel Internal modules.");
+  }
+  if (!dtChapelFile) {
+    USR_FATAL_CONT("'file' not defined in Chapel Internal modules.");
+  }
+  USR_STOP();
 
   int filenum = 0;
   const char* inputFilename;

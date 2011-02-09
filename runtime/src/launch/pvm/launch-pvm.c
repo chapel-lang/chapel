@@ -1,4 +1,4 @@
-#include <comm_printf_macros.h>
+#include <chpl-comm-printf-macros.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +11,7 @@
 
 #include "chplcgfns.h"
 #include "chplrt.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"

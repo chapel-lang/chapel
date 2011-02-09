@@ -17,7 +17,7 @@
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "error.h"
 
 #ifndef chplGetPageSize
