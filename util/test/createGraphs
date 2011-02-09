@@ -20,7 +20,6 @@ my $format_file_name = fileparse($format_file, ("\.graph"));
 my $default_key_file = "$format_file_name.perfkeys";
 my $default_data_filename = "$format_file_name.dat";
 my $data_file = "$outputdir/$default_data_filename";
-my $gif_file = "$outputdir/$format_file_name.gif";
 my $errors_file = "$outputdir/$format_file_name.errors";
 my $fatal_errors = 0;
 my $custom = 0;
@@ -132,7 +131,7 @@ sub setDefaults {
     }
     $graph_file_name = $format_file_name;	
     $graph_title = "$graph_file_name Performance";
-    $graph_ylabel = "Performance";
+    $graph_ylabel = "";
 }
 
 
