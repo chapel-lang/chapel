@@ -10,13 +10,19 @@ _extern type mpz_t = 1*__mpz_struct;
 
 _extern proc mpz_init(inout X: mpz_t);
 _extern proc mpz_set_ui(inout ROP: mpz_t, OP: c_ulong);
+_extern proc mpz_init_set_ui(inout ROP: mpz_t, OP: c_ulong);
 _extern proc mpz_mul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+_extern proc mpz_submul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
 _extern proc mpz_add_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
 _extern proc mpz_mul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+_extern proc mpz_mul_2exp(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
 _extern proc mpz_neg(inout ROP: mpz_t, inout OP: mpz_t);
 _extern proc mpz_clear(inout X: mpz_t);
 _extern proc mpz_tdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
+_extern proc mpz_fdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
 _extern proc mpz_add(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+_extern proc mpz_cmp(inout OP1: mpz_t, inout OP2: mpz_t) : int;
+_extern proc mpz_get_ui(OP: mpz_t): uint(64);
 
 _extern type mp_bitcnt_t = c_ulong;
 _extern type size_t = int(64);
