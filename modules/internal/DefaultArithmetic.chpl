@@ -255,11 +255,11 @@ class DefaultArithmeticDom: BaseArithmeticDom {
 
   proc dsiLow {
     if rank == 1 {
-      return ranges(1)._low;
+      return ranges(1).low;
     } else {
       var result: rank*idxType;
       for param i in 1..rank do
-        result(i) = ranges(i)._low;
+        result(i) = ranges(i).low;
       return result;
     }
   }
@@ -271,6 +271,28 @@ class DefaultArithmeticDom: BaseArithmeticDom {
       var result: rank*idxType;
       for param i in 1..rank do
         result(i) = ranges(i).high;
+      return result;
+    }
+  }
+
+  proc dsiAlignedLow {
+    if rank == 1 {
+      return ranges(1).alignedLow;
+    } else {
+      var result: rank*idxType;
+      for param i in 1..rank do
+        result(i) = ranges(i).alignedLow;
+      return result;
+    }
+  }
+
+  proc dsiAlignedHigh {
+    if rank == 1 {
+      return ranges(1).alignedHigh;
+    } else {
+      var result: rank*idxType;
+      for param i in 1..rank do
+        result(i) = ranges(i).alignedHigh;
       return result;
     }
   }

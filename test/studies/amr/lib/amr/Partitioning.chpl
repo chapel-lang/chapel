@@ -254,7 +254,7 @@ proc CandidateDomain.removeHole()
     //--------------------------------------------------------
     var stride = D.stride(d);
     var allowable_hole_bounds = D.low(d) + stride*min_width(d) 
-                                .. D.high(d) - stride*min_width(d)
+                                .. D.alignedHigh(d) - stride*min_width(d)
                                 by stride;
   
     for i in allowable_hole_bounds {

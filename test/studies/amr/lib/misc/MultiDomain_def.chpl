@@ -311,9 +311,9 @@ proc nontrivialSubtraction(D: domain, E: domain) where D.rank == E.rank
   //-----------------------------------------------------------
   var stride1 = D.dim(1).stride;
   var D1low  =  D.dim(1).low;
-  var D1high =  D.dim(1).high;
+  var D1high =  D.dim(1).alignedHigh;
   var E1low  =  E.dim(1).low;
-  var E1high =  E.dim(1).high;
+  var E1high =  E.dim(1).alignedHigh;
 
   var interior1_low  = max(D1low,  E1low);
   var interior1_high = min(D1high, E1high);

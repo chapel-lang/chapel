@@ -604,6 +604,8 @@ record _domain {
   proc stride return _value.dsiStride;
   proc first return _value.dsiFirst;
   proc last return _value.dsiLast;
+  proc alignedLow return _value.dsiAlignedLow;
+  proc alignedHigh return _value.dsiAlignedHigh;
 
   proc member(i) {
     if isArithmeticDom(this) then

@@ -27,27 +27,27 @@ record range {
   proc alignedHigh {
     if stridable {
       // (For stride == 1, high is already aligned.)
-      if stride <= 1 || low > high then return high;
-      else return high - (high - low) % abs(stride):idxType;
-    } else return high; }
+      if _stride <= 1 || _low > _high then return _high;
+      else return _high - (_high - _low) % abs(_stride):idxType;
+    } else return _high; }
 
   // Returns the low index, properly aligned.
   proc alignedLow {
     if stridable {
       // If the stride is positive then low is already aligned.
       // Otherwise, we align it with the high bound.
-      if stride > 0 || low > high then return low;
-      return low + (high - low) % abs(stride):idxType;
-    } else return low; }
+      if _stride > 0 || _low > _high then return _low;
+      return _low + (_high - _low) % abs(_stride):idxType;
+    } else return _low; }
 
   // Returns the starting index (with minimal checks).
   pragma "inline" proc first {
-    if stridable { return if stride > 0 then low else high; }
-    else return low; }
+    if stridable { return if _stride > 0 then _low else _high; }
+    else return _low; }
   // Returns the ending index (with minimal checks).
   pragma "inline" proc last {
-    if (stridable) { return if stride > 0 then alignedHigh else alignedLow; }
-    else return high; }
+    if (stridable) { return if _stride > 0 then alignedHigh else alignedLow; }
+    else return _high; }
 }
 
 
@@ -95,10 +95,10 @@ proc chpl__byHelp(r : range(?et, ?bt, ?sbl), str : chpl__idxTypeToStrType(et)) {
   // So when the stride multiplier is negative, we have to adjust the end bound.
   // Both of these ifs are optional!
   if str < 0 {
-    if r.stride < 0 then r._low = r.alignedLow;
+    if r._stride < 0 then r._low = r.alignedLow;
     else r._high = r.alignedHigh;
   }
-  return new range(r.idxType, r.boundedType, true, r.low, r.high, r.stride*str);
+  return new range(r.idxType, r.boundedType, true, r._low, r._high, r._stride*str);
 }
 
 proc chpl__legalIntCoerce(type t1, type t2) param {
@@ -136,49 +136,49 @@ proc by(r : range(?), str) {
 //
 proc #(r:range(?), i:integral)
   where r.boundedType == BoundedRangeType.boundedLow {
-  type resultType = (r.low + i).type;
+  type resultType = (r._low + i).type;
   if i < 0 then
     halt("range cannot have a negative number of elements");
   if i == 0 then
     return new range(idxType = resultType,
                      boundedType = BoundedRangeType.bounded,
                      stridable = r.stridable,
-                     _low = r.low + 1,
-                     _high = r.low,
-                     _stride = r.stride);
+                     _low = r._low + 1,
+                     _high = r._low,
+                     _stride = r._stride);
 
   return new range(idxType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
-                   _low = r.low,
-                   _high = r.low + (i-1)*abs(r.stride):resultType,
-                   _stride = r.stride);
+                   _low = r._low,
+                   _high = r._low + (i-1)*abs(r._stride):resultType,
+                   _stride = r._stride);
 }
 
 proc #(r:range(?), i:integral)
   where r.boundedType == BoundedRangeType.boundedHigh {
-  type resultType = (r.low + i).type;
+  type resultType = (r._low + i).type;
   if i < 0 then
     halt("range cannot have a negative number of elements");
   if i == 0 then
     return new range(idxType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
-                   _low = r.high,
-                   _high = r.high - 1,
-                   _stride = r.stride);
+                   _low = r._high,
+                   _high = r._high - 1,
+                   _stride = r._stride);
 
   return new range(idxType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
-                   _low = r.high - (i-1)*abs(r.stride):resultType,
-                   _high = r.high,
-                   _stride = r.stride);
+                   _low = r._high - (i-1)*abs(r._stride):resultType,
+                   _high = r._high,
+                   _stride = r._stride);
 }
 
 proc #(r:range(?), i:integral)
   where r.boundedType == BoundedRangeType.bounded {
-  type resultType = (r.low + i).type;
+  type resultType = (r._low + i).type;
   if i < 0 then
     halt("range cannot have a negative number of elements");
   if i > r.length then
@@ -187,16 +187,16 @@ proc #(r:range(?), i:integral)
     return new range(idxType = resultType,
                      boundedType = BoundedRangeType.bounded,
                      stridable = r.stridable,
-                     _low = r.high,
-                     _high = r.low,
-                     _stride = r.stride);
+                     _low = r._high,
+                     _high = r._low,
+                     _stride = r._stride);
 
   return new range(idxType = resultType,
                    boundedType = BoundedRangeType.bounded,
                    stridable = r.stridable,
-                   _low = if r.stride < 0 then r.high + (i-1)*r.stride:resultType else r.low,
-                   _high = if r.stride < 0 then r.high else r.low + (i-1)*r.stride:resultType,
-                   _stride = r.stride);
+                   _low = if r._stride < 0 then r._high + (i-1)*r._stride:resultType else r._low,
+                   _high = if r._stride < 0 then r._high else r._low + (i-1)*r._stride:resultType,
+                   _stride = r._stride);
 }
 
 proc #(r:range(?), i:integral)
@@ -253,15 +253,15 @@ proc mod(a:integral, b:integral) {
 // align low bound of this range to an alignment; snap up
 //
 proc range._alignLow(alignment: idxType) {
-  var s = abs(stride):idxType;
-  // The following is equivalent to _low += abs(alignment - low) % s;
+  var s = abs(_stride):idxType;
+  // The following is equivalent to _low += abs(alignment - _low) % s;
   // except that it avoids problems with an overflow in the subtraction.
   // It uses the fact that if a1 == b1 mod n and a2 == b2 mod n then
   // (a1 - a2) mod n == (b1 - b2) mod n
 
   // The RHS is how far we are from the mark in modulo space;
   // it is always in the range [0, s-1].
-  _low += mod((alignment % s):int - (low % s):int, s):idxType;
+  _low += mod((alignment % s):int - (_low % s):int, s):idxType;
 }
 
 
@@ -269,13 +269,13 @@ proc range._alignLow(alignment: idxType) {
 // align high bound of this range to an alignment; snap down
 //
 proc range._alignHigh(alignment: idxType) {
-  var s = abs(stride):idxType;
+  var s = abs(_stride):idxType;
   // We take the absolute value of s, so it can be cast to idxType even if idxType is unsigned.
 
   // Each of the modulo expressions can be safely cast to an int.
   // The mod function is applied to bring the result back into the nonnegative.
   // Then it can be cast back into the index type.
-  _high -= mod((high % s):int - (alignment % s):int, s):idxType;
+  _high -= mod((_high % s):int - (alignment % s):int, s):idxType;
 }
 
 
@@ -286,11 +286,11 @@ proc =(r1: range(stridable=?s1), r2: range(stridable=?s2)) {
   if r1.boundedType != r2.boundedType then
     compilerError("type mismatch in assignment of ranges with different boundedType parameters");
   if !s1 && s2 then
-    if r2.stride != 1 then
+    if r2._stride != 1 then
       halt("non-stridable range assigned non-unit stride");
-  r1._low = r2.low;
-  r1._high = r2.high;
-  r1._stride = r2.stride;
+  r1._low = r2._low;
+  r1._high = r2._high;
+  r1._stride = r2._stride;
   return r1;
 }
 
@@ -345,18 +345,18 @@ proc range.this(other: range(?idxType2, ?boundedType, ?stridable)) {
 
   // If this range us unbounded below, we use low from the other range,
   // so that max(lo1, lo2) == lo2.  etc.
-  var lo1 = if _hasLow() then this.low else other.low;
+  var lo1 = if _hasLow() then this._low else other._low;
   // If the result type is unsigned, don't let the low bound go negative.
   // This is a kludge.  We should really obey type coercion rules. (hilde)
   if (_isUnsignedType(idxType)) {
     if (lo1 < 0) then lo1 = 0;
   }
-  var hi1 = if _hasHigh() then this.high else other.high;
-  var st1 = abs(this.stride);
+  var hi1 = if _hasHigh() then this._high else other._high;
+  var st1 = abs(this._stride);
 
-  var lo2 = if other._hasLow() then other.low else this.low;
-  var hi2 = if other._hasHigh() then other.high else this.high;
-  var st2 = abs(other.stride);
+  var lo2 = if other._hasLow() then other._low else this._low;
+  var hi2 = if other._hasHigh() then other._high else this._high;
+  var st2 = abs(other._stride);
 
   var (g, x) = extendedEuclid(st1, st2);
   var lcm = st1 / g * st2;	// The LCM of the two strides.
@@ -392,10 +392,10 @@ proc range.this(other: range(?idxType2, ?boundedType, ?stridable)) {
 
     // We inherit the sign of the stride from the operand.
 	// hilde: Why?
-    if other.stride < 0 then 
+    if other._stride < 0 then 
       result._stride = -result._stride;
 
-    if result.stride > 0 then
+    if result._stride > 0 then
       result._alignLow(al);
     else
       result._alignHigh(al);
@@ -414,20 +414,20 @@ iter range.these() {
       halt("iteration over a range with no bounds");
     if stridable {
       if boundedType == BoundedRangeType.boundedLow then
-        if stride < 0 then
+        if _stride < 0 then
           halt("iteration over range with negative stride but no high bound");
       if boundedType == BoundedRangeType.boundedHigh then
-        if stride > 0 then
+        if _stride > 0 then
           halt("iteration over range with positive stride but no low bound");
       var i = first;
       while true {
         yield i;
-        i = i + stride:idxType;
+        i = i + _stride:idxType;
       }
     } else {
       if boundedType == BoundedRangeType.boundedHigh then
         halt("iteration over range with positive stride but no low bound");
-      var i = low;
+      var i = _low;
       while true {
         yield i;
         i = i + 1;
@@ -435,7 +435,7 @@ iter range.these() {
     }
   } else {
     // a bounded range ...
-    if high < low then return;	// The degenerate case.
+    if _high < _low then return;	// The degenerate case.
 
     // If this range is not degenerate, then we know we will yield at least one index. 
     var i = first;
@@ -445,7 +445,7 @@ iter range.these() {
       while true {
         yield i;
 		if i == end then break;
-        i = i + stride:idxType;
+        i = i + _stride:idxType;
       }
     } else {
       while true {
@@ -506,21 +506,23 @@ iter range.these(param tag: iterator, follower) where tag == iterator.follower {
   if debugChapelRange then
     writeln("In range follower code: Following ", follower);
   var followThis = follower(1);
+  if debugChapelRange then
+    writeln("Range = ", followThis);
   if stridable {
     // r is a range which contains the next chunk of values controlled by followThis.
     // The range in followThis usually has a stride of 1 (optimization opportunity?).
-    var r = if stride > 0 then
-        low+followThis.low*stride:idxType..low+followThis.high*stride:idxType by stride by followThis.stride
+    var r = if _stride > 0 then
+        _low+followThis._low*_stride:idxType.._low+followThis._high*_stride:idxType by _stride by followThis._stride
       else
-        high+followThis.high*stride:idxType..high+followThis.low*stride:idxType by stride by followThis.stride;
+        _high+followThis._high*_stride:idxType.._high+followThis._low*_stride:idxType by _stride by followThis._stride;
     if debugChapelRange then
-      writeln("r = ",r);
+      writeln("Expanded range = ",r);
     for i in r {
       __primitive("noalias pragma");
       yield i;
     }
   } else {
-    var r = low+followThis;
+    var r = _low+followThis;
     for i in r {
       __primitive("noalias pragma");
       yield i;
@@ -535,13 +537,13 @@ iter range.these(param tag: iterator, follower) where tag == iterator.follower {
 proc range.length {
   if boundedType != BoundedRangeType.bounded then
     compilerError("unbounded range has infinite length");
-  if low > high then
+  if _low > _high then
     return 0:idxType;
 
   // This works because either high or low is aligned.
-  const retVal = if stride > 0
-               then (high - low) / stride:idxType + 1
-               else (low - high) / stride:idxType + 1;
+  const retVal = if _stride > 0
+               then (_high - _low) / _stride:idxType + 1
+               else (_low - _high) / _stride:idxType + 1;
   return if (retVal < 0) then 0:idxType else retVal;
 }
 
@@ -552,21 +554,21 @@ proc range.length {
 proc range.member(i: idxType) {
   if stridable {
     if boundedType == BoundedRangeType.bounded {
-      return i >= low && i <= high && (i - low) % abs(stride):idxType == 0;
+      return i >= _low && i <= _high && (i - _low) % abs(_stride):idxType == 0;
     } else if boundedType == BoundedRangeType.boundedLow {
-      return i >= low && (i - low) % abs(stride):idxType == 0;
+      return i >= _low && (i - _low) % abs(_stride):idxType == 0;
     } else if boundedType == BoundedRangeType.boundedHigh {
-      return i <= high && (high - i) % abs(stride):idxType == 0;
+      return i <= _high && (_high - i) % abs(_stride):idxType == 0;
     } else {
       return true;
     }
   } else {
     if boundedType == BoundedRangeType.bounded {
-      return i >= low && i <= high;
+      return i >= _low && i <= _high;
     } else if boundedType == BoundedRangeType.boundedLow {
-      return i >= low;
+      return i >= _low;
     } else if boundedType == BoundedRangeType.boundedHigh {
-      return i <= high;
+      return i <= _high;
     } else {
       return true;
     }
@@ -575,7 +577,7 @@ proc range.member(i: idxType) {
 
 proc range.indexOrder(i: idxType) {
   if (!member(i)) then return (-1):idxType;
-  return (i-low)/abs(stride);
+  return (i-_low)/abs(_stride);
 }
 
 
@@ -594,14 +596,14 @@ proc range.boundsCheck(other: range(?e,?b,?s)) where b == BoundedRangeType.bound
 proc range.boundsCheck(other: range(?e,?b,?s)) {
   var boundedOther: range(idxType,BoundedRangeType.bounded,s||this.stridable);
   if other._hasLow() then
-    boundedOther._low = other.low;
+    boundedOther._low = other._low;
   else
-    boundedOther._low = low;
+    boundedOther._low = _low;
   if other._hasHigh() then
-    boundedOther._high = other.high;
+    boundedOther._high = other._high;
   else
-    boundedOther._high = high;
-  boundedOther._stride = other.stride;
+    boundedOther._high = _high;
+  boundedOther._stride = other._stride;
 
   return (boundedOther.length == 0) || (this(boundedOther) == boundedOther);
 }
@@ -622,12 +624,12 @@ proc range.member(other: range(?))
 //
 proc range.writeThis(f: Writer) {
   if _hasLow() then
-    f.write(low);
+    f.write(_low);
   f.write("..");
   if _hasHigh() then
-    f.write(high);
-  if stride != 1 then
-    f.write(" by ", stride);
+    f.write(_high);
+  if _stride != 1 then
+    f.write(" by ", _stride);
 }
 
 
@@ -657,9 +659,9 @@ proc range.interior(i: idxType) {
   if i == 0 then
     return this;
   else if i < 0 then
-    return new range(idxType, boundedType, stridable, low, low-1-i, stride);
+    return new range(idxType, boundedType, stridable, _low, _low-1-i, _stride);
   else
-    return new range(idxType, boundedType, stridable, high+1-i, high, stride);
+    return new range(idxType, boundedType, stridable, _high+1-i, _high, _stride);
 }
 
 
@@ -672,9 +674,9 @@ proc range.exterior(i: idxType) {
   if i == 0 then
     return this;
   else if i < 0 then
-    return new range(idxType, boundedType, stridable, low+i, low-1, stride);
+    return new range(idxType, boundedType, stridable, _low+i, _low-1, _stride);
   else
-    return new range(idxType, boundedType, stridable, high+1, high+i, stride);
+    return new range(idxType, boundedType, stridable, _high+1, _high+i, _stride);
 }
 
 
@@ -682,20 +684,20 @@ proc range.exterior(i: idxType) {
 // returns an expanded range, or a contracted range if i < 0
 //
 proc range.expand(i: idxType)
-  return new range(idxType, boundedType, stridable, low-i, high+i, stride);
+  return new range(idxType, boundedType, stridable, _low-i, _high+i, _stride);
 
 
 //
 // range op scalar and scalar op range arithmetic
 //
 proc +(r: range(?e,?b,?s), i: integral)
-  return new range((r.low+i).type, b, s, r.low+i, r.high+i, r.stride);
+  return new range((r._low+i).type, b, s, r._low+i, r._high+i, r._stride);
 
 proc +(i:integral, r: range(?e,?b,?s))
-  return new range((i+r.low).type, b, s, i+r.low, i+r.high, r.stride);
+  return new range((i+r._low).type, b, s, i+r._low, i+r._high, r._stride);
 
 proc -(r: range(?e,?b,?s), i: integral)
-  return new range((r.low-i).type, b, s, r.low-i, r.high-i, r.stride);
+  return new range((r._low-i).type, b, s, r._low-i, r._high-i, r._stride);
 
 
 //
@@ -704,9 +706,9 @@ proc -(r: range(?e,?b,?s), i: integral)
 pragma "inline" proc string.substring(s: range(?e,?b,?st)) {
   if s.boundedType != BoundedRangeType.bounded then
     compilerError("substring indexing undefined on unbounded ranges");
-  if s.stride != 1 then
-    return __primitive("string_strided_select", this, s.low, s.high, s.stride);
+  if s._stride != 1 then
+    return __primitive("string_strided_select", this, s._low, s._high, s._stride);
   else
-    return __primitive("string_select", this, s.low, s.high);
+    return __primitive("string_select", this, s._low, s._high);
 }
 

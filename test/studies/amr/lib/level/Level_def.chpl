@@ -216,7 +216,9 @@ proc Level.addGrid(
 
 proc Level.addGrid (grid_cells: domain(dimension,stridable=true))
 {
-  addGrid(grid_cells.low-1, grid_cells.high+1);
+  // Review: hilde
+  // Not +/- stride here?
+  addGrid(grid_cells.low-1, grid_cells.alignedHigh+1);
 }
 
 
@@ -390,7 +392,7 @@ iter Level.ordered_grids {
   
   while grid_list.numIndices > 0 {
     var lowest_grid: Grid;
-    var i_lowest = possible_ghost_cells.high;
+    var i_lowest = possible_ghost_cells.alignedHigh;
 
     for grid in grid_list {
       for d in dimensions {
