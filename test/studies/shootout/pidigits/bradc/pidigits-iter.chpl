@@ -52,23 +52,19 @@ iter gen_digits(numDigits) {
   var k: uint;
   for i in 1..numDigits {
     do {
-      var repeat = false;
+      do {
+        k += 1;
+        const y2 = 2 * k + 1;
 
-      k += 1;
-      const y2 = 2 * k + 1;
+        // Compute the next term
+        mpz_mul_2exp(tmp1, numer, 1:c_ulong);
+        mpz_add(accum, accum, tmp1);		// accum <- accum + numer * 2
+        mpz_mul_ui(accum, accum, y2);		// accum <- accum * (2k+1)
+        mpz_mul_ui(numer, numer, k);		// numer <- numer * k
+        mpz_mul_ui(denom, denom, y2);		// denom <- denom * (2k+1)
 
-      // Compute the next term
-      mpz_mul_2exp(tmp1, numer, 1:c_ulong);
-      mpz_add(accum, accum, tmp1);		// accum <- accum + numer * 2
-      mpz_mul_ui(accum, accum, y2);		// accum <- accum * (2k+1)
-      mpz_mul_ui(numer, numer, k);		// numer <- numer * k
-      mpz_mul_ui(denom, denom, y2);		// denom <- denom * (2k+1)
-
-      // Extract the digit if it's ready
-      if mpz_cmp(numer, accum) > 0 {
-        repeat = true;
-        continue;
-      }
+        // Extract the digit if it's ready
+      } while (mpz_cmp(numer, accum) > 0);
 
       // Compute (numer * 3 + accum)
       mpz_mul_2exp(tmp1, numer, 1);
@@ -81,7 +77,7 @@ iter gen_digits(numDigits) {
       // Now, if (numer * 3 + accum) % denom + numer
       // == (numer * 4 + accum) % denom
       mpz_add(tmp2, tmp2, numer);
-    } while (repeat || mpz_cmp(tmp2, denom) >= 0);
+    } while (mpz_cmp(tmp2, denom) >= 0);
 
     // compute and yield the digit
     const d = mpz_get_ui(tmp1);
