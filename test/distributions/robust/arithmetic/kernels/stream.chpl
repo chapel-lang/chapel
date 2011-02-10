@@ -51,7 +51,7 @@ config const printParams = true,
 //
 // The program entry point
 //
-def main() {
+proc main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
   //
@@ -92,7 +92,7 @@ def main() {
 //
 // Print the problem size and number of trials
 //
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numVectors, m);
@@ -104,7 +104,7 @@ def printConfiguration() {
 // Initialize vectors B and C using a random stream of values and
 // optionally print them to the console
 //
-def initVectors(B, C) {
+proc initVectors(B, C) {
   var randlist = new RandomStream(seed);
 
   randlist.fillRandom(B);
@@ -121,7 +121,7 @@ def initVectors(B, C) {
 //
 // Verify that the computation is correct
 //
-def verifyResults(A, B, C) {
+proc verifyResults(A, B, C) {
   if (printArrays) then writeln("A is:     ", A, "\n");  // optionally print A
 
   //
@@ -145,7 +145,7 @@ def verifyResults(A, B, C) {
 //
 // Print out success/failure, the timings, and the GB/s value
 //
-def printResults(successful, execTimes) {
+proc printResults(successful, execTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     const totalTime = + reduce execTimes,

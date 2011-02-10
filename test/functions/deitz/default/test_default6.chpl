@@ -1,10 +1,10 @@
-def foo(x : int = 4) {
+proc foo(x : int = 4) {
   writeln("foo of ", x);
   bar(x);
   bar();
 }
 
-def bar(x : real = 2.0) {
+proc bar(x : real = 2.0) {
   writeln("bar of ", x);
 }
 

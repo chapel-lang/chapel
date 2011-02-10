@@ -46,7 +46,7 @@ module cholesky_scalar_algorithms {
   // the factorization.  
   // =========================================================================
     
-  def scalar_outer_product_cholesky ( A : [] )
+  proc scalar_outer_product_cholesky ( A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -103,7 +103,7 @@ module cholesky_scalar_algorithms {
   // matrix-vector product form.
   // =========================================================================
     
-  def scalar_inner_product_cholesky ( A : [] ) 
+  proc scalar_inner_product_cholesky ( A : [] ) 
 
     where ( A.domain.rank == 2 ) 
     {
@@ -167,7 +167,7 @@ module cholesky_scalar_algorithms {
   // rows and columns (i+1..).
   // =========================================================================
     
-  def scalar_bordering_cholesky ( A : [] )  
+  proc scalar_bordering_cholesky ( A : [] )  
 
     where ( A.domain.rank == 2 ) {
 

@@ -1,6 +1,6 @@
 // playing with bound funs
 
-def int.fact() {
+proc int.fact() {
   var i = 1;
   var n = this;
   while n > 1 {

@@ -1,4 +1,4 @@
-def f(d) {
+proc f(d) {
   var x: [d] real = 5.0;
   return x;
 }

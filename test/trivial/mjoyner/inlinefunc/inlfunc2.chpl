@@ -7,7 +7,7 @@ class Foo {
   var y : int;
 }
 
-def main() {
+proc main() {
   var f : Foo = new Foo();
   /* setter method will be created, temporary should not be created for f
    * since formal param this will be a ref */
@@ -33,11 +33,11 @@ def main() {
  
 }
 
-pragma "inline" def leaf(x : Foo) : Foo {
+pragma "inline" proc leaf(x : Foo) : Foo {
   return x;
 }
 
-def bar(in a: int, out b: int, inout c : int, const d : int) {    
+proc bar(in a: int, out b: int, inout c : int, const d : int) {    
   a = 11;
   b = 22;
   c = 33;

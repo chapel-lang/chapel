@@ -3,7 +3,7 @@ class R {
   var y: real;
 }
 
-def foo() {
+proc foo() {
   var x: int = 1;
   var y: real = 2.3;
 
@@ -12,7 +12,7 @@ def foo() {
   writeln("r is: ", r);
 }
 
-def bar() {
+proc bar() {
   var x: real = 4.5;
   var y: int = 6;
 
@@ -21,7 +21,7 @@ def bar() {
   writeln("r is: ", r);
 }
 
-def main() {
+proc main() {
   foo();
   bar();
 }

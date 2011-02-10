@@ -8,7 +8,7 @@ class D2 : C {
   var x : real;
 }
 
-def foo(c : C) {
+proc foo(c : C) {
   writeln(c.x);
 }
 

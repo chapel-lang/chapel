@@ -1,6 +1,6 @@
 
 var first: bool = true;
-def main {
+proc main {
   var aliasDom: domain(1) = [1..5];
   var notAliasDom: domain(1) = [1..20];
   var A: [notAliasDom] int = [i in notAliasDom] i;
@@ -64,11 +64,11 @@ def main {
   }
 }
 
-def reset(A: [] int) {
+proc reset(A: [] int) {
   [i in A.domain] A(i) = i;
 }
 
-def writeArr(A: [] int) {
+proc writeArr(A: [] int) {
   if first {
     writeln("------");
     first = false;

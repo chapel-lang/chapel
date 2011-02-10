@@ -576,7 +576,7 @@ canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (formalType == dtIntegral && (is_int_type(actualType) || is_uint_type(actualType)))
     return true;
-  if (formalType == dtEnumerated && (is_enum_type(actualType)))
+  if (formalType == dtAnyEnumerated && (is_enum_type(actualType)))
     return true;
   if (formalType == dtNumeric &&
       (is_int_type(actualType) || is_uint_type(actualType) || is_imag_type(actualType) ||

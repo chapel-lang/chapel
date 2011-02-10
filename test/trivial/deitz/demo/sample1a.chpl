@@ -3,11 +3,11 @@ class trio {
   var x2;
   var x3;
 
-  def sum()
+  proc sum()
     return x1 + x2 + x3;
 }
 
-def trio.writeThis(f : Writer) {
+proc trio.writeThis(f : Writer) {
   f.write("(", x1, " & ", x2, " & ", x3, ")");
 }
 

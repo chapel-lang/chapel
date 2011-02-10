@@ -2,15 +2,15 @@ class mysumreduce {
   type t;
   var state: t;
   
-  def init() {
+  proc init() {
     state = 0;
   }
 
-  def combine(x: t) {
+  proc combine(x: t) {
     state += x;
   }
 
-  def finalize(): t {
+  proc finalize(): t {
     return state;
   }
 }

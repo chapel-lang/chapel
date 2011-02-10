@@ -29,7 +29,7 @@ config const printTiming = true;
 // BLC: control printing out of error value to avoid portability issues
 
 
-def main() {
+proc main() {
   // compute problem size
   const N = 1 << logN;
 
@@ -66,7 +66,7 @@ def main() {
 }
 
 
-def computeTwiddles(W) {
+proc computeTwiddles(W) {
   const n = W.numElements;
   const delta = 2.0 * atan(1.0) / n;
 
@@ -82,7 +82,7 @@ def computeTwiddles(W) {
 }
 
 
-def bitReverseShuffle(W: [?WD]) {
+proc bitReverseShuffle(W: [?WD]) {
   const n = WD.numIndices;
   const reverse = log2(n);
   var Perm: [WD] index(WD) = [i in WD] bitReverse(i, numBits = reverse);
@@ -92,7 +92,7 @@ def bitReverseShuffle(W: [?WD]) {
 
 
 // reverses numBits low-order bits of val
-def bitReverse(val: ?valType, numBits = 64) {
+proc bitReverse(val: ?valType, numBits = 64) {
   param mask: uint(64) = 0x0102040810204080;
   const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask));
   const valReverse = bitRotLeft(valReverse64, numBits);
@@ -101,7 +101,7 @@ def bitReverse(val: ?valType, numBits = 64) {
 
 
 
-def dfft(Z, W) {
+proc dfft(Z, W) {
   cft1st(Z, W);
 
   var span = radix;
@@ -132,7 +132,7 @@ def dfft(Z, W) {
 }
 
 
-def verifyResults(z, Z, execTime, Twiddles) {
+proc verifyResults(z, Z, execTime, Twiddles) {
   const N = Z.numElements;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
@@ -158,7 +158,7 @@ def verifyResults(z, Z, execTime, Twiddles) {
 }
 
 
-def cft1st(A, W) {
+proc cft1st(A, W) {
   const n = A.domain.dim(1).length;
   var x0 = A(0) + A(1);
   var x1 = A(0) - A(1);
@@ -204,7 +204,7 @@ def cft1st(A, W) {
 }
 
 
-def cftmd0(span, A, W) {
+proc cftmd0(span, A, W) {
   var wk1r = W(1).re;
   const m = radix*span;
 
@@ -219,7 +219,7 @@ def cftmd0(span, A, W) {
 }
 
 
-def cftmd1(span, A, W) {
+proc cftmd1(span, A, W) {
   const m = radix*span;
   const m2 = 2*m;
   const n = A.domain.dim(1).length;
@@ -245,7 +245,7 @@ def cftmd1(span, A, W) {
 }
 
 
-def cftmd2(span, A, W) {
+proc cftmd2(span, A, W) {
   var m = radix*span;
   var m2 = 2*m;
   const n = A.domain.dim(1).length;
@@ -279,7 +279,7 @@ def cftmd2(span, A, W) {
 }
 
 
-def cftmd21(span, A, W) {
+proc cftmd21(span, A, W) {
   const n = A.domain.dim(1).length;
   var m = radix*span;
   var m2 = 2*m;
@@ -306,7 +306,7 @@ def cftmd21(span, A, W) {
 }
 
 
-def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
+proc butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
   var x0 = A[1] + A[2];
   var x1 = A[1] - A[2];
   var x2 = A[3] + A[4];

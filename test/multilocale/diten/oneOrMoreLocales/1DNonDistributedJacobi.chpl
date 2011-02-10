@@ -1,7 +1,7 @@
 config const size = 10;
 config const epsilon = 0.0001;
 
-def main {
+proc main {
   var A: [0..size-1] real;
   var B: [0..size-1] real;
   var delta: real;

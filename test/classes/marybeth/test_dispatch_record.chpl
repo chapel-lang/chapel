@@ -1,21 +1,21 @@
 record pants{
   var size:int;
   var color:string;
-  def display() {
+  proc display() {
     writeln('Pants:  size = ', size, '; color = ', color);
   }
 }
 
 record jeans: pants{
   var rise:string;
-  def display() {
+  proc display() {
     writeln('Jeans:  size = ', size, '; color = ', color, '; rise = ',
 rise);
   }
 }
 
 
-def displaypants (item:pants) {
+proc displaypants (item:pants) {
   item.display();
 }
 

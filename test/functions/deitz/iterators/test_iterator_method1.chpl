@@ -1,5 +1,5 @@
 class C {
-  def foo() : int {
+  iter foo() : int {
     for i in 1..10 do
       yield i;
   }

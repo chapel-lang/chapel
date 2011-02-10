@@ -1,4 +1,4 @@
-def bar(x...) {
+proc bar(x...) {
   writeln(x.size);
   writeln(x);
 }

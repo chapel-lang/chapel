@@ -35,11 +35,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use omega;
 
-def init_fft2() {
+proc init_fft2() {
 
 }
 
-def fft2(Y: [] complex, X: [] complex) {
+proc fft2(Y: [] complex, X: [] complex) {
     Y(0) = (X(0) + X(1));
     Y(1) = (X(0) - X(1));
 

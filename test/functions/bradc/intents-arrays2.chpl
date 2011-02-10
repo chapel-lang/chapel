@@ -2,7 +2,7 @@ config var n: int = 6;
 var D: domain(1) = [1..n];
 var A: [D] real;
 
-def callin(in x) {
+proc callin(in x) {
   writeln("in callin, x is: ", x);
   forall i in D {
     x(i) += 1.0;
@@ -11,7 +11,7 @@ def callin(in x) {
 }
 
 
-def callout(out x) {
+proc callout(out x) {
   forall i in D {
     x(i) = i;
   }
@@ -19,7 +19,7 @@ def callout(out x) {
 }
 
 
-def callinout(inout x) {
+proc callinout(inout x) {
   writeln("in callinout, x is: ", x);
   forall i in D {
     x(i) += 1.0;
@@ -28,7 +28,7 @@ def callinout(inout x) {
 }
 
 
-def callblank(x) {
+proc callblank(x) {
   writeln("in callblank, x is: ", x);
   forall i in D {
     x(i) += 1.0;
@@ -37,7 +37,7 @@ def callblank(x) {
 }
 
 
-def main() {
+proc main() {
 
   forall i in D {
     A(i) = i;

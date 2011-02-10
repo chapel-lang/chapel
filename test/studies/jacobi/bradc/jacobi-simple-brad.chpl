@@ -13,7 +13,7 @@ const south = ( 1,  0);
 const east  = ( 0,  1);
 const west  = ( 0, -1);
 
-def main() {
+proc main() {
   var A: [BigD] real = 0.0,
       B: [D] real;
 

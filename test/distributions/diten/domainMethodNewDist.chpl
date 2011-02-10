@@ -1,9 +1,9 @@
-def _domain.callNewDist() {
+proc _domain.callNewDist() {
   var x = new dmap(defaultDist._value);
   return x;
 }
 
-def callNewDistOutsideDomain(val) {
+proc callNewDistOutsideDomain(val) {
   var x = new dmap(val);
   return x;
 }

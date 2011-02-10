@@ -32,8 +32,8 @@ class locale {
   }
 
   proc callStackSize: uint(64) {
-    _extern proc chpl_task_callstacksize(): uint(64);
-    return chpl_task_callstacksize();
+    _extern proc chpl_task_getCallStackSize(): uint(64);
+    return chpl_task_getCallStackSize();
   }
 
   proc writeThis(f: Writer) {

@@ -1,5 +1,5 @@
 var x = 2;
 
-def main() {
+proc main() {
   writeln("x is: ", x);
 }

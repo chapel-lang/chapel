@@ -1,4 +1,4 @@
-def foo(s: sync int) {
+proc foo(s: sync int) {
   writeln(s); // first read
 }
 
@@ -7,7 +7,7 @@ var s: sync int;
 s = 1; // first write
 foo(s); // pass sync by reference
 
-def bar(s: int) {
+proc bar(s: int) {
   writeln(s);
 }
 

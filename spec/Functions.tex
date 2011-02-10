@@ -157,6 +157,13 @@ discussed in~\rsec{Function_Overloading}.
 Operator overloading is supported on the operators listed
 above (see \sntx{operator-name}).
 
+%REVIEW: hilde
+% <= may be considered symmetrical with > and >= with <.
+% Yet, I see only == and not != in the list above.
+% One could argue for complete control over the meaning of all six
+% relationals, and at the other extreme for a single overloaded signum
+% function that governed them all.  Compatibility with C# is not
+% sufficient motivation ... .
 
 \subsection{Functions without Parentheses}
 \label{Functions_without_Parentheses}
@@ -600,7 +607,7 @@ The result of a type function is computed during compilation.
 As with parameter functions, type functions may not contain control
 flow that is not resolved at compile-time.  This includes loops other
 than the parameter for loop~\rsec{Parameter_For_Loops} and
-conditionals with a conditional expressions that is not a parameter.
+conditionals with a conditional expression that is not a parameter.
 
 \begin{example}
 In the code
@@ -783,7 +790,7 @@ function} if the name of the function is the same as the name of the
 function call and the function is defined in the same scope as the
 function call or a lexical outer scope of the function call, or if the
 function is defined in a module that is used from the same scope as
-the function call or a lexical outer scope fo the function call.
+the function call or a lexical outer scope of the function call.
 Function visibility in generic functions is discussed
 in~\rsec{Function_Visibility_in_Generic_Functions}.
 

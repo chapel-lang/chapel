@@ -24,7 +24,7 @@ for coord in D.sorted() {
   writeln("coord ", coord, " is called ", Name(coord));
 }
 
-def <(a: Coord, b: Coord) {
+proc <(a: Coord, b: Coord) {
   if (a.x == b.x) {
     if (a.y == b.y) {
       if (a.z == b.z) {

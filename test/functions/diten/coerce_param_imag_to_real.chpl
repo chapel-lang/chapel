@@ -1,4 +1,4 @@
-def foo(r: real) {
+proc foo(r: real) {
   writeln("coercion incorrectly made");
 }
 

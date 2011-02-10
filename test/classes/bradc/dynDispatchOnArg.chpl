@@ -5,15 +5,15 @@ class C {
 class D : C {
 }
 
-def writeType(c:C) {
+proc writeType(c:C) {
   writeln("I am a C");
 }
 
-def writeType(d:D) {
+proc writeType(d:D) {
   writeln("I am a D");
 }
 
-def foo(cOrD:C) {
+proc foo(cOrD:C) {
   writeType(cOrD);
 }
 

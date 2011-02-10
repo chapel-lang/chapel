@@ -4,7 +4,7 @@ use fock;
 class blockIndices {
   const is, js, ks, ls: range(int);
 
-  def blockIndices(iat, jat, kat, lat) {
+  proc blockIndices(iat, jat, kat, lat) {
     is = bas_info(iat);
     js = bas_info(jat);
     ks = bas_info(kat);
@@ -12,7 +12,7 @@ class blockIndices {
   }
 
   // BLC: TODO -- this should have a better name
-  def genIndices() {
+  iter genIndices() {
     for i in is {
       const jtop = if (is.low==js.low) then i else js.high;
       for j in js.low..jtop {
@@ -37,7 +37,7 @@ class blockIndices {
   }
 }
 
-def g(i,j,k,l) {
+proc g(i,j,k,l) {
   return 1.0/(i*j + k*l);
 }
 

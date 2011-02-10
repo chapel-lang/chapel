@@ -26,7 +26,7 @@ check_functions(FnSymbol* fn) {
   forv_Vec(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_RETURN)) {
       if (notInAFunction)
-        USR_FATAL_CONT(call, "return statement is not in a function");
+        USR_FATAL_CONT(call, "return statement is not in a function or iterator");
       else {
         SymExpr* sym = toSymExpr(call->get(1));
         if (sym && sym->var == gVoid)
@@ -40,8 +40,10 @@ check_functions(FnSymbol* fn) {
       }
     }
     else if (call->isPrimitive(PRIM_YIELD)) {
-      if (notInAFunction || isProc)
-        USR_FATAL_CONT(call, "yield statement is not in an iterator");
+      if (notInAFunction)
+        USR_FATAL_CONT(call, "yield statement is outside an iterator");
+      else if (isProc)
+        USR_FATAL_CONT(call, "yield statement is in a non-iterator function");
       else
         numYields++;
     }
@@ -116,6 +118,7 @@ checkParsed(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     check_functions(fn);
   }
+  markNewFnSymbolsWithProcIter = true; // ProcIter: remove
 }
 
 
@@ -137,6 +140,8 @@ checkNormalized(void) {
         USR_FATAL_CONT(fn, "iterators may not yield or return parameters");
     } else if (fn->hasFlag(FLAG_CONSTRUCTOR) &&
                !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+      if (fn->retExprType)
+        USR_FATAL_CONT(fn, "constructors may not declare a return type");
       for_formals(formal, fn) {
         Vec<SymExpr*> symExprs;
         collectSymExprs(formal, symExprs);
@@ -147,6 +152,9 @@ checkNormalized(void) {
           }
         }
       }
+    } else if (fn->hasFlag(FLAG_DESTRUCTOR)) {
+      if (fn->retExprType)
+        USR_FATAL_CONT(fn, "destructors may not declare a return type");
     }
   }
 }

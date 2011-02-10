@@ -10,7 +10,7 @@ record R2: R1 { var s: string; }
 
 var A: [D] int = 13;
 
-def foo(x) {
+proc foo(x) {
   var r = new R2(A, x);
   writeln(r.s);
 }

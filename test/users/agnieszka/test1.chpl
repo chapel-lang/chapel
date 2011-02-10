@@ -1,6 +1,6 @@
 use multiArray;
 
-def main() {
+proc main() {
   multi_array();
 }
 

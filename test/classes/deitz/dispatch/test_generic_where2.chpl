@@ -1,6 +1,6 @@
 class C {
   var x: int;
-  def foo() {
+  proc foo() {
     writeln("foo: (x = ", x, ")");
   }
 }
@@ -8,7 +8,7 @@ class C {
 class D: C {
   param rank: int;
   var y: int;
-  def foo() where rank == 1 {
+  proc foo() where rank == 1 {
     writeln("foo<", rank, ">: (x = ", x, ", y = ", y, ")");
   }
 }

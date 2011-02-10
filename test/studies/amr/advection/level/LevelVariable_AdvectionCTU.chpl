@@ -2,7 +2,7 @@ use GridVariable_AdvectionCTU;
 use LevelVariable_def;
 
 
-def LevelVariable.storeCTUOperator(
+proc LevelVariable.storeCTUOperator(
   q:        LevelVariable,
   velocity: dimension*real,
   dt:       real)

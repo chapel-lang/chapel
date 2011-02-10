@@ -1,5 +1,5 @@
 config param astring = "hello";
 
-def main() {
+proc main() {
   writeln(astring);
 }

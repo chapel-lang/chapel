@@ -4,11 +4,11 @@ class D {
 
 class C : D {
   var x = 1;
-  def foo() {
-    def bar(_x) {
+  proc foo() {
+    proc bar(_x) {
       writeln("default bar");
     }
-    def bar(_x : D) {
+    proc bar(_x : D) {
       writeln("bar of D");
     }
     bar(x);

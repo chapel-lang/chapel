@@ -1,11 +1,11 @@
 class C {
   var bar: real;
 
-  def foo(x) {
+  proc foo(x) {
     return x+0.1;
   }
 
-  def iterate(numValues, startPoint = 0.0): real {
+  iter iterate(numValues, startPoint = 0.0): real {
     var nextVal = startPoint:real;
     for i in 1..numValues {
       nextVal = foo(nextVal);

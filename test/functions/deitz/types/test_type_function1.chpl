@@ -1,4 +1,4 @@
-def foo(param size: int) type return int(size);
+proc foo(param size: int) type return int(size);
 
 var i16: foo(16);
 writeln((i16,min(i16.type),max(i16.type)));

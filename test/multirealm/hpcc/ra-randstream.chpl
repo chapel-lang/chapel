@@ -17,7 +17,7 @@ module RARandomStream {
   // A serial iterator for the random stream that resets the stream
   // to its 0th element and yields values endlessly.
   //
-  def RAStream() {
+  iter RAStream() {
     var val = getNthRandom(0);
     while (1) {
       getNextRandom(val);
@@ -31,7 +31,7 @@ module RARandomStream {
   // corresponding to those indices.  Follower iterators like these
   // are required for parallel zippered iteration.
   //
-  def RAStream(param tag: iterator, follower) where tag == iterator.follower {
+  iter RAStream(param tag: iterator, follower) where tag == iterator.follower {
     if follower.size != 1 then
       halt("RAStream cannot use multi-dimensional iterator");
     var val = getNthRandom(follower(1).low);
@@ -45,7 +45,7 @@ module RARandomStream {
   // A helper function for "fast-forwarding" the random stream to
   // position n in O(log2(n)) time
   //
-  def getNthRandom(in n: uint(64)) {
+  proc getNthRandom(in n: uint(64)) {
     param period = 0x7fffffffffffffff/7;
 
     n %= period;
@@ -65,7 +65,7 @@ module RARandomStream {
   // A helper function for advancing a value from the random stream,
   // x, to the next value
   //
-  def getNextRandom(inout x) {
+  proc getNextRandom(inout x) {
     param POLY = 0x7;
     param hiRandBit = 0x1:randType << (randWidth-1);
 
@@ -75,7 +75,7 @@ module RARandomStream {
   //
   // A helper function for computing the values of the helper tuple, m2
   //
-  def computeM2Vals() {
+  proc computeM2Vals() {
     var m2tmp: randWidth*randType;
     var nextVal = 0x1: randType;
     for param i in 1..randWidth {

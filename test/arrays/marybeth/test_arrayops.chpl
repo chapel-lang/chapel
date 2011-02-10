@@ -9,7 +9,7 @@ initA(A,'Adata.dat');
 writeln(maxIndex(A));
 writeln(maxIndex(abs(A)));
 
-def maxIndex(A:[?D]) {
+proc maxIndex(A:[?D]) {
   var maxA = A(D.low);
   var ind = D.low;
 
@@ -22,7 +22,7 @@ def maxIndex(A:[?D]) {
   return ind;
 }
   
-def initA(A,filename:string){
+proc initA(A,filename:string){
 
   var Adat = new file(filename,path='./',mode=FileAccessMode.read);
 

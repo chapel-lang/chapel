@@ -1,11 +1,11 @@
 class C {
   var classField: int;
-  def classMethod(i: int, j: int) {
+  proc classMethod(i: int, j: int) {
     return (classField, i, j);
   }
 }
 
-def main {
+proc main {
   var array: [0..1] C;
   [i in 0..1] array(i) = new C(i);
   writeln(array);

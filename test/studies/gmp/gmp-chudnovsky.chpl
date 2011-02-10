@@ -42,7 +42,7 @@ config param HAVE_DIVEXACT_PREINV = false;
 
 config param printTimings = true;
 
-def CHECK_MEMUSAGE {
+proc CHECK_MEMUSAGE {
   //  writeln("CHECK_MEM_USAGE not implemented yet");  
 }
 
@@ -98,7 +98,7 @@ var gstack: [stackdom1] mpz_t,
 var top: long = 0;
 
 
-def main() {
+proc main() {
   writeln("#terms=", terms, ", depth=", depth);
 
   const start = getCurrentTime();
@@ -253,7 +253,7 @@ def main() {
 }
 
 
-def build_sieve(s: [] sieve_t) {
+proc build_sieve(s: [] sieve_t) {
   const n = s.numElements*2,
         m = sqrt(n): long;
 
@@ -283,7 +283,7 @@ def build_sieve(s: [] sieve_t) {
 }
 
 
-def my_sqrt_ui(inout r: mpf_t, x: c_ulong) {
+proc my_sqrt_ui(inout r: mpf_t, x: c_ulong) {
   const prec0 = mpf_get_prec(r);
 
   if (prec0 <= DOUBLE_PREC) {
@@ -334,7 +334,7 @@ def my_sqrt_ui(inout r: mpf_t, x: c_ulong) {
 
 
 // r = y/x   WARNING: r cannot be the same as y.
-def my_div(inout r: mpf_t, inout y: mpf_t, in x: mpf_t) {
+proc my_div(inout r: mpf_t, inout y: mpf_t, in x: mpf_t) {
   const prec0 = mpf_get_prec(r);
 
   if (prec0<=DOUBLE_PREC) {
@@ -380,7 +380,7 @@ def my_div(inout r: mpf_t, inout y: mpf_t, in x: mpf_t) {
   }
 }
 
-def fac_show(f: fac_t) {
+proc fac_show(f: fac_t) {
   for i in 0..#f.num_facs do
     if (f.pow[i]==1) then
       write(f.fac[i], " ");
@@ -389,11 +389,11 @@ def fac_show(f: fac_t) {
   writeln();
 }
 
-def fac_reset(inout f: fac_t) {
+proc fac_reset(inout f: fac_t) {
   f.num_facs = 0;
 }
 
-def fac_init_size(inout f: fac_t, in s: long) {
+proc fac_init_size(inout f: fac_t, in s: long) {
   if (s<INIT_FACS) then
     s=INIT_FACS;
 
@@ -402,16 +402,16 @@ def fac_init_size(inout f: fac_t, in s: long) {
   fac_reset(f);
 }
 
-def fac_init(inout f: fac_t) {
+proc fac_init(inout f: fac_t) {
   fac_init_size(f, INIT_FACS);
 }
 
 
-def fac_clear(inout f: fac_t) {
+proc fac_clear(inout f: fac_t) {
   f.sdom.clear();
 }
 
-def fac_resize(inout f: fac_t, s: long)
+proc fac_resize(inout f: fac_t, s: long)
 {
   if (f.sdom.numIndices < s) {
     fac_clear(f);
@@ -420,13 +420,13 @@ def fac_resize(inout f: fac_t, s: long)
 }
 
 // BLC: unfortunate -- original GMP took advantage of long/ulong conversions
-def fac_set_bp(inout f: fac_t, base: c_ulong, pow: long) {
+proc fac_set_bp(inout f: fac_t, base: c_ulong, pow: long) {
   assert (base < max(long): c_ulong);
   fac_set_bp(f, base: long, pow: long);
 }
 
 // f = base^pow
-def fac_set_bp(inout f: fac_t, in base: long, pow: long) {
+proc fac_set_bp(inout f: fac_t, in base: long, pow: long) {
   assert(base < sieve_size);
   var i: long;
   base /= 2;
@@ -441,7 +441,7 @@ def fac_set_bp(inout f: fac_t, in base: long, pow: long) {
 }
 
 // r = f*g
-def fac_mul2(inout r: fac_t, f: fac_t, g: fac_t) {
+proc fac_mul2(inout r: fac_t, f: fac_t, g: fac_t) {
 
   var i, j, k: long;
   while (i<f.num_facs & j<g.num_facs) {
@@ -477,26 +477,26 @@ def fac_mul2(inout r: fac_t, f: fac_t, g: fac_t) {
 }
 
 // f *= g
-def fac_mul(inout f: fac_t, g: fac_t) {
+proc fac_mul(inout f: fac_t, g: fac_t) {
   fac_resize(fmul, f.num_facs + g.num_facs);
   fac_mul2(fmul, f, g);
   f <=> fmul;
 }
 
 // BLC: unfortunate -- original GMP took advantage of long/ulong conversions
-def fac_mul_bp(inout f: fac_t, base: c_ulong, pow: long) {
+proc fac_mul_bp(inout f: fac_t, base: c_ulong, pow: long) {
   assert (base < max(long): c_ulong);
   fac_mul_bp(f, base:long, pow);
 }
 
 // f *= base^pow
-def fac_mul_bp(inout f: fac_t, base: long, pow: long) {
+proc fac_mul_bp(inout f: fac_t, base: long, pow: long) {
   fac_set_bp(ftmp, base, pow);
   fac_mul(f, ftmp);
 }
 
 // remove factors of power 0
-def fac_compact(inout f: fac_t) {
+proc fac_compact(inout f: fac_t) {
   var j: long;
   for i in 0..#f.num_facs {
     if (f.pow[i]>0) {
@@ -511,7 +511,7 @@ def fac_compact(inout f: fac_t) {
 }
 
 // convert factorized form to number
-def bs_mul(inout r: mpz_t, a: long, b: long) {
+proc bs_mul(inout r: mpz_t, a: long, b: long) {
   if (b-a <= 32) {
     mpz_set_ui(r, 1);
     for i in a..b-1 do
@@ -535,7 +535,7 @@ def bs_mul(inout r: mpz_t, a: long, b: long) {
 //#endif
 
 // f /= gcd(f,g), g /= gcd(f,g)
-def fac_remove_gcd(inout p: mpz_t, inout fp: fac_t, inout g: mpz_t, inout fg: fac_t) {
+proc fac_remove_gcd(inout p: mpz_t, inout fp: fac_t, inout g: mpz_t, inout fg: fac_t) {
   var i, j, k: long;
   var c: c_ulong;
   fac_resize(fmul, min(fp.num_facs, fg.num_facs));
@@ -572,17 +572,17 @@ def fac_remove_gcd(inout p: mpz_t, inout fp: fac_t, inout g: mpz_t, inout fg: fa
 }
 
 
-def p1  var return  pstack[top];
-def q1  var return  qstack[top];
-def g1  var return  gstack[top];
-def fp1 var return fpstack[top];
-def fg1 var return fgstack[top];
+proc p1  var return  pstack[top];
+proc q1  var return  qstack[top];
+proc g1  var return  gstack[top];
+proc fp1 var return fpstack[top];
+proc fg1 var return fgstack[top];
 
-def p2  var return  pstack[top+1];
-def q2  var return  qstack[top+1];
-def g2  var return  gstack[top+1];
-def fp2 var return fpstack[top+1];
-def fg2 var return fgstack[top+1];
+proc p2  var return  pstack[top+1];
+proc q2  var return  qstack[top+1];
+proc g2  var return  gstack[top+1];
+proc fp2 var return fpstack[top+1];
+proc fg2 var return fgstack[top+1];
 
 //////////////////////////////////////////////////////////////////////
 //////
@@ -590,7 +590,7 @@ def fg2 var return fgstack[top+1];
 var progress = 0.0;
 
 /*
-def mpz_t.writeThis(f) {
+proc mpz_t.writeThis(f) {
   var outfile = f: file;
     gmp_fprintf(outfile._fp, "%Zd", this);
   if (outfile) then
@@ -598,7 +598,7 @@ def mpz_t.writeThis(f) {
 */
 
 // binary splitting
-def bs(a: c_ulong, b: c_ulong, gflag: c_uint, level: long) {
+proc bs(a: c_ulong, b: c_ulong, gflag: c_uint, level: long) {
   if (b-a==1) {
     /*
       g(b-1,b) = (6b-5)(2b-1)(6b-1)

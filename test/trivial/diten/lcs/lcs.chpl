@@ -12,7 +12,7 @@ const north = (-1, 0);
 const northwest = (-1, -1);
 const west = (0, -1);
 
-def main() {
+proc main() {
   var s1, s2: string;
   var len1, len2: int;
 
@@ -29,7 +29,7 @@ def main() {
   writeln();
 }
 
-def get_strings(out s1: string, out s2: string) {
+proc get_strings(out s1: string, out s2: string) {
   var infile = new file(filename, FileAccessMode.read, ".");
 
   infile.open();
@@ -38,7 +38,7 @@ def get_strings(out s1: string, out s2: string) {
   infile.close();
 }
 
-def lcs_length(s1: string, s2: string, b, c) {
+proc lcs_length(s1: string, s2: string, b, c) {
   /* Build up two tables, b, and c.  C(i,j) will contain
      the longest common substring length using characters up
      to s1(i), s2(j).  B contains directions to follow back to
@@ -62,7 +62,7 @@ def lcs_length(s1: string, s2: string, b, c) {
   }
 }
 
-def print_lcs(b, X, field: (int, int)) {
+proc print_lcs(b, X, field: (int, int)) {
   /* Print a longest common substring using table b by following
      the directional pointers in b back through string X.
   */

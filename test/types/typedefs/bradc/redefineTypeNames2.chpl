@@ -1,4 +1,4 @@
-def main() {
+proc main() {
   {
     type int = real(64);
     type real = int(64);

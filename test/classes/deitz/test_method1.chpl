@@ -1,7 +1,7 @@
 class dog {
   var weight : real;
   var paws : int;
-  def grow(pounds : real) {
+  proc grow(pounds : real) {
     writeln("woof");
   }
 }

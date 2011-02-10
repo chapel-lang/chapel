@@ -17,7 +17,7 @@ use AMRBC_def;
 // method GridSolution.step_AdvectionCTU.
 //------------------------------------------------------------------
 
-def AMRHierarchy.advance_AdvectionCTU(
+proc AMRHierarchy.advance_AdvectionCTU(
   bc:             AMRBC,
   velocity:       dimension*real,
   time_requested: real)
@@ -98,7 +98,7 @@ def AMRHierarchy.advance_AdvectionCTU(
 // about something more suitable.)
 //--------------------------------------------------------------
 
-def AMRHierarchy.stepLevel_AdvectionCTU(
+proc AMRHierarchy.stepLevel_AdvectionCTU(
   i_level: int,
   bc:        AMRBC,
   velocity:  dimension*real,

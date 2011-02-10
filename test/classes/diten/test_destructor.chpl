@@ -6,11 +6,11 @@ record R {
 // private:
   var c: C;
 // public:
-  def R(a:int, b:int) {
+  proc R(a:int, b:int) {
     writeln("R");
     c = new C(a, b);
   }
-  def ~R() {
+  proc ~R() {
     writeln("~R");
     delete c;
   }
@@ -18,7 +18,7 @@ record R {
 
 config var iters = 2;
 
-def main {
+proc main {
   for i in 1..#iters {
     var r = new R(1,2);
     writeln(i);

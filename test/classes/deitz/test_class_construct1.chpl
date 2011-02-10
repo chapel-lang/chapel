@@ -1,6 +1,6 @@
 class foo {
   var x : int = 12;
-  def initialize() {
+  proc initialize() {
     x += 10;
   }
 }

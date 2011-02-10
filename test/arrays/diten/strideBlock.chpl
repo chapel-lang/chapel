@@ -7,7 +7,7 @@ for i in dom {
   writeln("A(", i, ") is ", A(i), " on ", A(i).locale);
 }
 
-def foo(X, i) {
+proc foo(X, i) {
   writeln(X);
   X(i) = 0;
 }

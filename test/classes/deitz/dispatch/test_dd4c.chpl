@@ -1,17 +1,17 @@
 class C {
-  def goo() {
+  proc goo() {
     writeln("C.goo");
   }
 }
 
 class D : C {
-  def foo() {
+  proc foo() {
     goo();
   }
 }
 
 class E : D {
-  def goo() {
+  proc goo() {
     writeln("E.goo");
   }
 }

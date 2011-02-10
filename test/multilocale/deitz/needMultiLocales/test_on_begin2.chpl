@@ -1,6 +1,6 @@
 use Time;
 
-def foo() {
+proc foo() {
   var x: int = 2;
   on Locales(1) {
     begin {

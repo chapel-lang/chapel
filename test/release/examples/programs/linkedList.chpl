@@ -33,14 +33,14 @@ class List {
   //
   // Insert value into the front of the list
   //
-  def insert(value: eltType) {
+  proc insert(value: eltType) {
     head = new Node(eltType, value, head);
   }
 
   //
   // Return true if the list has any elements that match the argument in value
   //
-  def contains(value: eltType) {
+  proc contains(value: eltType) {
     for i in this do
       if i == value then
         return true;
@@ -50,7 +50,7 @@ class List {
   //
   // Remove the first occurrence of an element that matches the argument value
   //
-  def remove(value: eltType) {
+  proc remove(value: eltType) {
     if head == nil then
       return;
 
@@ -73,7 +73,7 @@ class List {
   // A default iterator.  Starting at head, follow next references
   // and yield the values of each node.
   //
-  def these() {
+  iter these() {
     var current = head;
     while current != nil {
       yield current.value;
@@ -84,7 +84,7 @@ class List {
   // Define the style of the output when a list is passed to the write or
   // writeln functions. The values will be written separated by spaces.
   // 
-  def writeThis(x: Writer) {
+  proc writeThis(x: Writer) {
     var first = true;
     for i in this do
       if first {
@@ -96,7 +96,7 @@ class List {
   }
 }
 
-def main() {
+proc main() {
   use Random;
 
   var lst = new List(int);

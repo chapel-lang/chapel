@@ -24,7 +24,7 @@ record Planet {
 	var mass : real;
 }
 
-def advance(B: [] Planet, dt: real) {
+proc advance(B: [] Planet, dt: real) {
 	for (b1, i) in (B, 0..) do {
 		for b2 in B[i+1..] do {
 			var dx = b1.x - b2.x;
@@ -48,7 +48,7 @@ def advance(B: [] Planet, dt: real) {
 	}
 }
 
-def energy(B : [] Planet) : real {
+proc energy(B : [] Planet) : real {
 	var e : real;
 	for (b1, i) in (B, 0..) do {
 		e += 0.5 * b1.mass * (b1.vx * b1.vx + b1.vy * b1.vy + b1.vz * b1.vz);
@@ -63,7 +63,7 @@ def energy(B : [] Planet) : real {
 	return e;
 }
 
-def offset_momentum(B : [] Planet) {
+proc offset_momentum(B : [] Planet) {
 	var px,py,pz : real;
 	for b in B do {
 		px += b.vx * b.mass;
@@ -75,7 +75,7 @@ def offset_momentum(B : [] Planet) {
 	B(0).vz = -pz / solar_mass;
 }
 
-def main() {
+proc main() {
 	if timer then
 		t.start();
 

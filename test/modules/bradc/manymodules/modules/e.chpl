@@ -1,20 +1,20 @@
 
 
-def runea() {
+proc runea() {
   writeln("in runea() from module e");
 }
 
 module e2 {
-  def runea() {
+  proc runea() {
     writeln("in runea() from module e2");
   }
 
-  def runeb() {
+  proc runeb() {
     writeln("in runeb() from module e2");
   }
 }
 
 
-def runeb() {
+proc runeb() {
   writeln("in runeb() from module e");
 }

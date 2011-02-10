@@ -1,16 +1,16 @@
-def f(i: int,    j: int) {
+proc f(i: int,    j: int) {
   writeln("In f(:int, :int)");
 }
 
-def f(i: [] int, j: int) {
+proc f(i: [] int, j: int) {
   writeln("In f(:[] int, :int)");
 }
 
-def f(i: int,    j) {
+proc f(i: int,    j) {
   writeln("In f(:int, :any)");
 }
 
-def f(i: [] int, j) {
+proc f(i: [] int, j) {
   writeln("In f(:[] int, :any)");
 }
 

@@ -73,7 +73,7 @@ class kmeansReduction : ReduceScanOp{
 type eltType;
 //var RO : redObj;
 
-def accumulate (da: eltType)
+proc accumulate (da: eltType)
 {
     //find nearest Cluster for this point
     
@@ -109,7 +109,7 @@ def accumulate (da: eltType)
     }
 }
 
-def combine(km: kmeansReduction(eltType))
+proc combine(km: kmeansReduction(eltType))
 {
     RO.counts = RO.counts + km.RO.counts;
     RO.error = RO.error + km.RO.error;
@@ -123,7 +123,7 @@ def combine(km: kmeansReduction(eltType))
     }
 }
 
-def generate()
+proc generate()
 {
     var RO1:redObj;
     RO1 = RO;

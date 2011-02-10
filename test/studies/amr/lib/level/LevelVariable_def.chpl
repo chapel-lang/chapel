@@ -21,7 +21,7 @@ class LevelVariable {
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
-  def clear() {
+  proc clear() {
     // Nothing to do
   }
   // /|''''''''''''''''/|
@@ -40,7 +40,7 @@ class LevelVariable {
   //   LevelVariable(level: Level)
   //-----------------------------------------------------------
 
-  def initialize() {
+  proc initialize() {
     for grid in level.grids do
       grid_variables(grid) = new GridVariable(grid = grid);                          
   }
@@ -65,11 +65,11 @@ class LevelVariable {
   // the GridVariable's 'value' field.
   //---------------------------------------------------------------
   
-  def this(grid: Grid) var {
+  proc this(grid: Grid) var {
     return grid_variables(grid);
   }
 
-  def this(
+  proc this(
     grid: Grid, 
     D: domain(dimension, stridable=true)) 
   var {
@@ -99,7 +99,7 @@ class LevelVariable {
 // done when setting up the initial condition for a PDE.
 //-------------------------------------------------------
 
-def LevelVariable.setToFunction(
+proc LevelVariable.setToFunction(
   f: func(dimension*real, real)
 ){
 
@@ -129,7 +129,7 @@ def LevelVariable.setToFunction(
 // operation.
 //-----------------------------------------------------------
 
-def LevelVariable.fillOverlaps ()
+proc LevelVariable.fillOverlaps ()
 {
   
   for grid in level.grids {
@@ -159,7 +159,7 @@ def LevelVariable.fillOverlaps ()
 // of boundary cases.
 //-----------------------------------------------------------------
 
-def LevelVariable.extrapolateGhostData () {
+proc LevelVariable.extrapolateGhostData () {
   
   for grid_variable in grid_variables do
     grid_variable.extrapolateGhostData();
@@ -167,7 +167,7 @@ def LevelVariable.extrapolateGhostData () {
 }
 
 
-def GridVariable.extrapolateGhostData () {
+proc GridVariable.extrapolateGhostData () {
 
   for ghost_domain in grid.ghost_multidomain {
     var loc = grid.relativeLocation(ghost_domain);
@@ -203,7 +203,7 @@ def GridVariable.extrapolateGhostData () {
 // Writes both a time file and a solution file for a given frame number.
 //-----------------------------------------------------------------------
 
-def LevelVariable.clawOutput (
+proc LevelVariable.clawOutput (
   time:         real,
   frame_number: int)
 {
@@ -248,7 +248,7 @@ def LevelVariable.clawOutput (
 // Writes out all data contained in the LevelVariable.
 //-----------------------------------------------------
 
-def LevelVariable.writeData (
+proc LevelVariable.writeData (
   AMR_level:        int,
   base_grid_number: int,
   outfile:          file)

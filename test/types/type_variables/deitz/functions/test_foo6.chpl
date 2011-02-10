@@ -1,4 +1,4 @@
-def foo(x : ?t) {
+proc foo(x : ?t) {
   var y : t;
   writeln("foo of ", x, " with y = ", y);
 }

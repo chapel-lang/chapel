@@ -122,6 +122,10 @@ class BaseArithmeticDom : BaseDom {
   proc dsiAdd(x) {
     compilerError("Cannot add indices to an arithmetic domain");
   }
+
+  proc dsiRemove(x) {
+    compilerError("Cannot remove indices from an arithmetic domain");
+  }
 }
 
 class BaseSparseDom : BaseDom {

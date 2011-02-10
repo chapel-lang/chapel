@@ -375,6 +375,7 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn->retType = dtVoid;
   mod->initFn->addFlag(FLAG_MODULE_INIT);
   mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+  mod->initFn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
 
   //
   // move module-level statements into module's init function
@@ -662,6 +663,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   //
   FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
   isArrayTypeFn->addFlag(FLAG_INLINE);
+  isArrayTypeFn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
 
   Symbol* isArrayType = newTemp("_isArrayType");
   isArrayType->addFlag(FLAG_MAYBE_PARAM);
@@ -729,6 +731,7 @@ static int loopexpr_uid = 1;
 CallExpr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType) {
   FnSymbol* fn = new FnSymbol(astr("_seqloopexpr", istr(loopexpr_uid++)));
+  fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
@@ -747,6 +750,8 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
   // build serial iterator function
   //
   FnSymbol* sifn = new FnSymbol(iteratorName);
+  sifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
+  sifn->addFlag(FLAG_ITERATOR_FN); // ProcIter: I think we should keep this one
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
@@ -764,6 +769,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
     return buildForLoopExpr(indices, iteratorExpr, expr, cond, maybeArrayType);
 
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
+  fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
@@ -782,6 +788,8 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   // build serial iterator function
   //
   FnSymbol* sifn = new FnSymbol(iteratorName);
+  sifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
+  sifn->addFlag(FLAG_ITERATOR_FN); // ProcIter: I think we should keep this one
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
@@ -794,6 +802,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   // build leader iterator function
   //
   FnSymbol* lifn = new FnSymbol(iteratorName);
+  lifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   lifn->insertFormalAtTail(lifnIterator);
   Expr* tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
@@ -813,6 +822,8 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   // build follower iterator function
   //
   FnSymbol* fifn = new FnSymbol(iteratorName);
+  fifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
+  fifn->addFlag(FLAG_ITERATOR_FN); // ProcIter: I think we should keep this one
   ArgSymbol* fifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   fifn->insertFormalAtTail(fifnIterator);
 
@@ -1121,6 +1132,18 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
         new CallExpr(op,
           new CallExpr(PRIM_GET_REF, ltmp), rtmp)));
 
+  // This code performs a rewrite of += and -= for domains at
+  // compile-time.
+  //     D += x     becomes     D.add(x)
+  //     D -= x     becomes     D.remove(x)
+  // Even though we can handle this in the module code (ChapelArray.chpl)
+  // because we overload +/- and =, we choose to rewrite the expression
+  // because using the assignment operator results in an O(n) operation
+  // rather than O(1) (see overload of = for domains in ChapelArray.chpl).
+  //
+  // The right way to do this would be to make += and += proper methods
+  // that can be overloaded.  When we get around to this, this rewrite
+  // should be removed.
   if (!strcmp(op, "+")) {
     stmt->insertAtTail(
       new CondStmt(
@@ -1234,6 +1257,7 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
         USR_FATAL(conds, "Type select statement has multiple otherwise clauses");
       has_otherwise = true;
       fn = new FnSymbol(astr("_typeselect", istr(uid)));
+      fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
       int lid = 1;
       for_actuals(expr, exprs) {
         fn->insertFormalAtTail(
@@ -1252,6 +1276,7 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
       if (conds->numActuals() != exprs->argList.length)
         USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
       fn = new FnSymbol(astr("_typeselect", istr(uid)));
+      fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
       int lid = 1;
       for_actuals(expr, conds) {
         fn->insertFormalAtTail(

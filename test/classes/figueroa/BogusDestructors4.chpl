@@ -1,3 +1,3 @@
 class C {
-  def ~C (x) {writeln("inside ~C");}
+  proc ~C (x) {writeln("inside ~C");}
 }

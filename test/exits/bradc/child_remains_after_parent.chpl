@@ -2,17 +2,16 @@ use Time;
 
 config const numIters = 100000;
 
-def main() {
+proc main() {
    begin doSomeWork();
    // while original task exits
    writeln("Original task falling out of main");
 }
 
-def doSomeWork() {
-   writeln("starting to work!");
+proc doSomeWork() {
    for i in 1..numIters {
-     write(".");
+     write("");
      stdout.flush();
    }
-   writeln("done working, time to go home");
+   writeln("done working");
 }

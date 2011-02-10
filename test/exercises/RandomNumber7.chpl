@@ -2,12 +2,12 @@ var seed: sync int = 1; // a config var cannot be of type sync int!
 const multiplier = 16807,
       modulus = 2147483647;
 
-def RandomNumber (x_n) {
+proc RandomNumber (x_n) {
   // The following calculation must be done in at least 46-bit arithmetic!
   return (x_n:int(64) * multiplier % modulus) : int(32);
 }
 
-def RealRandomNumber () {
+proc RealRandomNumber () {
   var n = RandomNumber(seed);
   seed = n;
   return (n-1) / (modulus-2) : real;
@@ -15,7 +15,7 @@ def RealRandomNumber () {
 
 config const numberOfIterations = 10000;
 
-def test {
+proc test {
   coforall i in 1..numberOfIterations do
     seed = RandomNumber(seed);
 

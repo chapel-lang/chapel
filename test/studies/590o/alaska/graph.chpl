@@ -20,11 +20,11 @@ class Node {
   var pred : Node = nil;
   var disc,fini : int = -1;
 
-  def writeThis(w: Writer){
+  proc writeThis(w: Writer){
     w.write("{",name,"}");
   }
 
-  def writeFancy(w: Writer){
+  proc writeFancy(w: Writer){
     w.write("{",name," : ",color);
     if(pred != nil) then w.write("^",pred.name);
     if(disc >= 0) then w.write(" ",disc);
@@ -33,7 +33,7 @@ class Node {
   }
 }
 
-def <(x: Node, y: Node) {
+proc <(x: Node, y: Node) {
   return x.name < y.name;
 }
 
@@ -43,7 +43,7 @@ class Edge {
   var dst: Node;
   var reversed: bool = false;
   var kind: edgeKind = edgeKind.GRAPH;
-  def writeThis(w: Writer){
+  proc writeThis(w: Writer){
     var ec:string;
     select(kind) {
     when edgeKind.GRAPH do ec = "--->";
@@ -61,13 +61,13 @@ class Edge {
     }
     w.write(src,ec,dst);
   }
-  def these() {
+  iter these() {
     if( src != nil) then yield src;
     if( dst != nil) then yield dst;
   }
 }
 
-def <(x: Edge, y: Edge) {
+proc <(x: Edge, y: Edge) {
   if (x.src.name == y.src.name) {
     return (x.dst.name < y.dst.name);
   } else {
@@ -84,7 +84,7 @@ class MultiMap {
 
   var bins : [keySpD] list(eltType);
 
-  def add( key: keyType, d: eltType ) : bool {
+  proc add( key: keyType, d: eltType ) : bool {
     var list_head=nil;
     if(keySpD.member(key) == false){
       keySpD.add(key);
@@ -102,7 +102,7 @@ class MultiMap {
   /* list of elements mapping to
    * the specific key
    */
-  def get( key: keyType ) : list(eltType) {
+  proc get( key: keyType ) : list(eltType) {
     var list_head = list(eltType);
 
     if(keySpD.member(key)){
@@ -113,7 +113,7 @@ class MultiMap {
 }
 
 /*
-def file.read(inout val: Edge){
+proc file.read(inout val: Edge){
   var s,a,d: string;
   this.read(s,a,d);
 
@@ -124,7 +124,7 @@ def file.read(inout val: Edge){
   return val;
 }
 
-def Edge.read(infile: file){
+proc Edge.read(infile: file){
   var s,a,d: string;
   file.read(s,a,d);
 
@@ -136,14 +136,14 @@ def Edge.read(infile: file){
 */
 
 class UndirectedEdge : Edge {
-  def writeThis(w: Writer){
+  proc writeThis(w: Writer){
      w.write(src," -- ",dst);
   }
 }
 
 class Graph {
 
-  def Graph(nd:domain(1),ed:domain(1), ns, es){
+  proc Graph(nd:domain(1),ed:domain(1), ns, es){
     NodeDom = nd;
     EdgeDom = ed;
     nodes = ns;
@@ -158,12 +158,12 @@ class Graph {
   var edges : [EdgeDom] Edge;
 
   var inEdges : [NodeDom] list(Edge) = nil;
-  def inEdges(n:Node) var { return inEdges[n.id]; }
-  def inEdges(i:index(NodeDom)) var { return inEdges[i]; }
+  proc inEdges(n:Node) var { return inEdges[n.id]; }
+  proc inEdges(i:index(NodeDom)) var { return inEdges[i]; }
 
   var outEdges : [NodeDom] list(Edge) = nil;
-  def outEdges(n:Node) var { return outEdges[n.id]; }
-  def outEdges(i:index(NodeDom)) var { return outEdges[i]; }
+  proc outEdges(n:Node) var { return outEdges[n.id]; }
+  proc outEdges(i:index(NodeDom)) var { return outEdges[i]; }
 
 
 
@@ -171,24 +171,24 @@ class Graph {
   var undir_adjacent: [NodeDom] list(int) = nil;
 
   var __slack : [EdgeDom] int = -1;
-  def slack(e:Edge) var { return slack[e.id]; }
-  def slack(i:index(EdgeDom)) var { return __slack[i]; }
+  proc slack(e:Edge) var { return slack[e.id]; }
+  proc slack(i:index(EdgeDom)) var { return __slack[i]; }
 
   var __length: [EdgeDom] int = 1;
-  def length(e:Edge) var { return length[e.id]; }
-  def length(i:index(EdgeDom)) var { return __length[i]; }
+  proc length(e:Edge) var { return length[e.id]; }
+  proc length(i:index(EdgeDom)) var { return __length[i]; }
 
   var __treeEdges : [EdgeDom] int = 0;
-  def treeEdges(e:Edge) var { return treeEdges[e.id]; }
-  def treeEdges(i:index(EdgeDom)) var { return __treeEdges[i]; }
+  proc treeEdges(e:Edge) var { return treeEdges[e.id]; }
+  proc treeEdges(i:index(EdgeDom)) var { return __treeEdges[i]; }
 
   var __curRank : [NodeDom] int = -1;
-  def curRank(n:Node) var { return curRank[n.id]; }
-  def curRank(i:index(NodeDom)) var { return __curRank[i]; }
+  proc curRank(n:Node) var { return curRank[n.id]; }
+  proc curRank(i:index(NodeDom)) var { return __curRank[i]; }
 
   var __treeNodes : [NodeDom] int = 0;
-  def treeNodes(n:Node) var { return treeNodes[n.id]; }
-  def treeNodes(i:index(NodeDom)) var { return __treeNodes[i]; }
+  proc treeNodes(n:Node) var { return treeNodes[n.id]; }
+  proc treeNodes(i:index(NodeDom)) var { return __treeNodes[i]; }
 
 
   // Graph variables
@@ -200,7 +200,7 @@ class Graph {
   var time : int = 1;
 
   /* Populate index structures in parallel */
-  def preprocess(){
+  proc preprocess(){
     forall n in nodes do {
       preprocess(n);
     }
@@ -211,7 +211,7 @@ class Graph {
       }
   }
 
-  def preprocess(n : Node){
+  proc preprocess(n : Node){
     forall e in edges do {
       if( e.src == n ){
 	outEdges[n.id].append(e);
@@ -225,7 +225,7 @@ class Graph {
   }
 
 
-  def init_rank(){
+  proc init_rank(){
     writeln("**************");
     writeln("* init_rank  *");
     writeln("**************");
@@ -242,7 +242,7 @@ class Graph {
     }
   }
 
-  def propagate_rank(u:Node) {
+  proc propagate_rank(u:Node) {
     var r = curRank(u.id);
     for e in inEdges[u.id] do {
       var v = e.src.id;
@@ -270,7 +270,7 @@ class Graph {
     }
   }
 
-  def recompute_slack(){
+  proc recompute_slack(){
     forall e in edges do{
       if(e.kind == edgeKind.BACK){
 	slack(e.id) = curRank(e.src.id) - curRank(e.dst.id);
@@ -281,7 +281,7 @@ class Graph {
   }
 
   // Network Simplex for Rank assignment
-  def rank(){
+  proc rank(){
     /*     feasible_tree();
      var edge: edgeType = leave_tree();
      for e in leave_edge() do {
@@ -293,7 +293,7 @@ class Graph {
     */
   }
 
-  def non_tree_inEdges(id:index(NodeDom)) : Edge {
+  iter non_tree_inEdges(id:index(NodeDom)) : Edge {
     for edge in inEdges[id] do {
 	if ((slack[edge] == length[edge]) && treeEdges[edge] == 0){
 	  yield edge;
@@ -301,7 +301,7 @@ class Graph {
       }
   }
 
-  def non_tree_outEdges(id:index(NodeDom)) : Edge {
+  iter non_tree_outEdges(id:index(NodeDom)) : Edge {
     for edge in outEdges[id] do {
 	if ((slack[edge] == length[edge]) && treeEdges[edge] == 0){
 	  yield edge;
@@ -309,7 +309,7 @@ class Graph {
       }
   }
 
-  def tight_inEdges(id:index(NodeDom)): Edge {
+  iter tight_inEdges(id:index(NodeDom)): Edge {
     for edge in inEdges[id] do {
 	if(slack[edge] == length[edge]){
 	  yield edge;
@@ -317,7 +317,7 @@ class Graph {
       }
   }
 
-  def tight_outEdges(id:index(NodeDom)): Edge {
+  iter tight_outEdges(id:index(NodeDom)): Edge {
     for edge in outEdges[id] do {
 	if(slack[edge] == length[edge]){
 	  yield edge;
@@ -325,7 +325,7 @@ class Graph {
       }
   }
 
-  def tight_tree(nID:index(NodeDom)=1):int{
+  proc tight_tree(nID:index(NodeDom)=1):int{
     __treeEdges = 0;
     __treeNodes = 0;
     treeNodes(nID) = 1;
@@ -335,7 +335,7 @@ class Graph {
     return + reduce [i in NodeDom] treeNodes(i);
   }
 
-  def find_tight_tree(nID:index(NodeDom)):int {
+  proc find_tight_tree(nID:index(NodeDom)):int {
     var cnt = 0;
     var node: Node = nodes(nID);
     treeNodes(nID) = 1;
@@ -367,7 +367,7 @@ class Graph {
     return cnt;
   }
 
-  def incident_non_tree_edge() : Edge {
+  iter incident_non_tree_edge() : Edge {
     for e in edges do {
 	if((treeEdges[e.id] == 0) &&
 	   ((treeNodes(e.src.id) == 0 && treeNodes(e.dst.id) != 0) ||
@@ -379,7 +379,7 @@ class Graph {
   }
 
   // Compute a feasible tree for the graph
-  def feasible_tree(){
+  proc feasible_tree(){
     writeln("*******************");
     writeln("* feasible_tree() *");
     writeln("*******************");
@@ -429,13 +429,13 @@ class Graph {
   }
 
 
-  def nodeEdges(u:Node) : Edge {
+  iter nodeEdges(u:Node) : Edge {
     yield inEdges[u.id];
     yield outEdges[u.id];
   }
 
 
-  def adjacentNodes(u:Node): Node {
+  iter adjacentNodes(u:Node): Node {
     for edge in inEdges[u.id] do {
       if(edge.kind == edgeKind.BACK){
 	yield edge.src;
@@ -448,7 +448,7 @@ class Graph {
       }
   }
 
-  def edgesOut(u:Node) : Edge {
+  iter edgesOut(u:Node) : Edge {
     for e in edges do {
       if ((e.src == u && !e.reversed) || (e.dst == u && e.reversed)){
 	yield e;
@@ -456,14 +456,14 @@ class Graph {
     }
   }
 
-  def whiteNodes() : Node {
+  iter whiteNodes() : Node {
     for n in nodes do {
       if( n.color == colors.WHITE) then yield n;
     }
   }
 }
 
-def DFS(G){
+proc DFS(G){
   G.time = 0;
   for u in G.nodes do {
       if( u.color == colors.WHITE ) {
@@ -473,7 +473,7 @@ def DFS(G){
     }
 }
 
-  def DFS_VISIT(G:Graph, u:Node){
+  proc DFS_VISIT(G:Graph, u:Node){
     u.color = colors.GRAY;
     G.time += 1;
     u.disc = G.time;
@@ -503,7 +503,7 @@ def DFS(G){
 //
 // This function reads a new graph returns
 //
-def readGraph(filename) {
+proc readGraph(filename) {
   // Create an input file with the specified filename in read (FileAccessMode.read) mode
   var infile = new file(filename, FileAccessMode.read);
 
@@ -578,7 +578,7 @@ def readGraph(filename) {
 //
 // the main routine builds the tree and then sums its values
 //
-def main() {
+proc main() {
 
   writeln("Reading graph from ",filename);
 

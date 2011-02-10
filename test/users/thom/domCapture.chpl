@@ -1,9 +1,9 @@
-def idamax(dx : [?D] real) where D.rank==1 : int {
+proc idamax(dx : [?D] real) where D.rank==1 : int {
   writeln("In idamax, dx is: ", dx);
 }
 
 
-def idamax2(dx : [?D]) where D.rank==1 : int {
+proc idamax2(dx : [?D]) where D.rank==1 : int {
   writeln("In idamax2, dx is: ", dx);
 }
 

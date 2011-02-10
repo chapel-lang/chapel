@@ -2338,12 +2338,12 @@ writeln(answerb);
 answerb = fls || (fls || fls);
 writeln(answerb, "\n");
 
-def rettru() {
+proc rettru() {
   writeln("In rettru");
   return true;
 }
 
-def retfls() {
+proc retfls() {
   writeln("In retfls");
   return false;
 }

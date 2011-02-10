@@ -7,7 +7,7 @@ writeln(getvalue("first",A));
 writeln(getvalue("last",A));
 writeln(getvalue("middle",A));
 
-def getvalue(pos:string,y) {
+proc getvalue(pos:string,y) {
   var x = 0.0;
   select pos {
     when "first" do x = y(1);

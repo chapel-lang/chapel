@@ -1,4 +1,4 @@
-def main {
+proc main {
   var x: string = "hello world";
   _debugWriteln(here.id, " x=", x);
   x = x + 1;

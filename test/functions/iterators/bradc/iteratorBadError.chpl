@@ -1,4 +1,4 @@
-def itr() {
+iter itr() {
   startval = 0;
   for i in startval..10 do
     yield i;

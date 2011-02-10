@@ -1,5 +1,5 @@
 class addition {
-  def identity(x : int) : int {
+  proc identity(x : int) : int {
     return x + 2;
   }
 }

@@ -1,4 +1,4 @@
-def main {
+proc main {
   var x: [1..3] int = (4, 5, 6);
   writeln((here.id, x));
   x = x + 1;

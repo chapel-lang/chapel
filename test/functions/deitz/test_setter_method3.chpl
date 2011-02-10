@@ -1,6 +1,6 @@
 class C {
   var x;
-  def foo() var {
+  proc foo() var {
     writeln(setter);
     return x;
   }
@@ -8,7 +8,7 @@ class C {
 
 class D {
   var c = new C(1);
-  def bar() {
+  proc bar() {
     c.foo() = 2;
     writeln(c.foo());
   }

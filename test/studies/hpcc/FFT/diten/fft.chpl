@@ -52,7 +52,7 @@ config const printParams = true,
 //
 // The program entry point
 //
-def main() {
+proc main() {
   printConfiguration();          // print the problem size
   makeSizeAssertions();
   //
@@ -107,7 +107,7 @@ def main() {
 // compute the discrete fast Fourier transform of a vector A declared
 // over domain ADom using twiddle vector W
 //
-def dfft(A: [?ADom], W, phase) {
+proc dfft(A: [?ADom], W, phase) {
   const numElements = A.numElements;
   //
   // loop over the phases of the DFT sequentially using custom
@@ -190,7 +190,7 @@ def dfft(A: [?ADom], W, phase) {
 // this is the radix-4 butterfly routine that takes multipliers wk1,
 // wk2, and wk3 and a 4-element array (slice) A.
 //
-def butterfly(wk1, wk2, wk3, X:[0..3]) {
+proc butterfly(wk1, wk2, wk3, X:[0..3]) {
   var x0 = X(0) + X(1),
       x1 = X(0) - X(1),
       x2 = X(2) + X(3),
@@ -205,7 +205,7 @@ def butterfly(wk1, wk2, wk3, X:[0..3]) {
   X(3) = wk3 * x0;
 }
 
-def butterfly(wk1, wk2, wk3, A, rng) {
+proc butterfly(wk1, wk2, wk3, A, rng) {
   var X: [0..#radix] elemType;
   for (x,r) in (X, rng) do
     x = A(r);
@@ -218,7 +218,7 @@ def butterfly(wk1, wk2, wk3, A, rng) {
 // this iterator generates the stride and span values for the phases
 // of the DFFT simply by yielding tuples: (radix**i, radix**(i+1))
 //
-def genDFTStrideSpan(numElements, phase) {
+iter genDFTStrideSpan(numElements, phase) {
   const (start, end) =
     if phase == 0 then (1, numLocales:int(64)) else (numLocales, numElements-1);
   var stride = start;
@@ -232,19 +232,19 @@ def genDFTStrideSpan(numElements, phase) {
 //
 // Print the problem size
 //
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     if (printStats) then printLocalesTasks(tasksPerLocale=tasksPerLocale);
     printProblemSize(elemType, numVectors, m);
   }
 }
 
-def printLocalesTasks(tasksPerLocale=1) {
+proc printLocalesTasks(tasksPerLocale=1) {
   writeln("Number of Locales = ", numLocales);
   writeln("Tasks per locale = ", tasksPerLocale);
 }
 
-def makeSizeAssertions() {
+proc makeSizeAssertions() {
   assert(4**log4(numLocales) == numLocales, "numLocales must be a power of 4");
 }
 
@@ -252,7 +252,7 @@ def makeSizeAssertions() {
 // Initialize the twiddle vector and random input vector and
 // optionally print them to the console
 //
-def initVectors(Twiddles, z) {
+proc initVectors(Twiddles, z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
@@ -267,7 +267,7 @@ def initVectors(Twiddles, z) {
 //
 // Compute the twiddle vector values
 //
-def computeTwiddles(Twiddles) {
+proc computeTwiddles(Twiddles) {
   const numTwdls = Twiddles.numElements,
         delta = 2.0 * atan(1.0) / numTwdls;
 
@@ -286,7 +286,7 @@ def computeTwiddles(Twiddles) {
 // Perform a permutation of the argument vector by reversing the bits
 // of the indices
 //
-def bitReverseShuffle(Vect: [?Dom]) {
+proc bitReverseShuffle(Vect: [?Dom]) {
   const numBits = log2(Vect.numElements),
         Perm: [Dom] Vect.eltType = [i in Dom] Vect(bitReverse(i, revBits=numBits));
   Vect = Perm;
@@ -295,7 +295,7 @@ def bitReverseShuffle(Vect: [?Dom]) {
 //
 // Reverse the low revBits bits of val
 //
-def bitReverse(val: ?valType, revBits = 64) {
+proc bitReverse(val: ?valType, revBits = 64) {
   param mask = 0x0102040810204080;
   const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask)),
         valReverse = bitRotLeft(valReverse64, revBits);
@@ -305,13 +305,13 @@ def bitReverse(val: ?valType, revBits = 64) {
 //
 // Compute the log base 4 of x
 //
-def log4(x) return logBasePow2(x, 2);  
+proc log4(x) return logBasePow2(x, 2);  
 
 //
 // verify that the results are correct by reapplying the dfft and then
 // calculating the maximum error, comparing against epsilon
 //
-def verifyResults(z, Z, Cyc, Twiddles) {
+proc verifyResults(z, Z, Cyc, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
   Z = conjg(Z) / m;
@@ -335,7 +335,7 @@ def verifyResults(z, Z, Cyc, Twiddles) {
 //
 // print out sucess/failure, the timing, and the Gflop/s value
 //
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
@@ -343,7 +343,7 @@ def printResults(successful, execTime) {
   }
 }
 
-def tmp_localSlice(A, rng) {
+proc tmp_localSlice(A, rng) {
   var low: A.rank*A._value.idxType;
   for param i in 1..A.rank {
     low(i) = rng.low;

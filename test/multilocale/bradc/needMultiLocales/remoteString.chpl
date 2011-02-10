@@ -2,7 +2,7 @@ var s1: string;
 var flag1: sync bool;
 var done: sync bool;
 
-def main() {
+proc main() {
   s1 = "foo";
   on Locales(1) do begin {
     const tmp = flag1;

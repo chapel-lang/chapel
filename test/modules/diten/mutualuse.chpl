@@ -13,7 +13,7 @@ module M2 {
 }
 
 module M3 {
-  def main {
+  proc main {
     use M1, M2;
     writeln(a);
     writeln(n);

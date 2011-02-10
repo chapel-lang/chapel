@@ -286,6 +286,12 @@ proc isArithmeticDom(d: domain) param {
 
 proc isArithmeticArr(a: []) param return isArithmeticDom(a.domain);
 
+proc isIrregularDom(d: domain) param {
+  return isSparseDom(d) || isAssociativeDom(d) || isOpaqueDom(d);
+}
+
+proc isIrregularArr(a: []) param return isIrregularDom(a.domain);
+
 proc isAssociativeDom(d: domain) param {
   proc isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
   proc isAssociativeDomClass(dc) param return false;
@@ -327,7 +333,7 @@ proc chpl__buildDistType(type t) type where t: BaseDist {
 }
 
 proc chpl__buildDistType(type t) {
-  compilerError("illegal distribution type specifier");
+  compilerError("illegal domain map type specifier - must be a subclass of BaseDist");
 }
 
 proc chpl__buildDistValue(x) where x: BaseDist {
@@ -335,7 +341,7 @@ proc chpl__buildDistValue(x) where x: BaseDist {
 }
 
 proc chpl__buildDistValue(x) {
-  compilerError("illegal distribution value specifier");
+  compilerError("illegal domain map value specifier - must be a subclass of BaseDist");
 }
 
 //
@@ -596,6 +602,10 @@ record _domain {
   proc low return _value.dsiLow;
   proc high return _value.dsiHigh;
   proc stride return _value.dsiStride;
+  proc first return _value.dsiFirst;
+  proc last return _value.dsiLast;
+  proc alignedLow return _value.dsiAlignedLow;
+  proc alignedHigh return _value.dsiAlignedHigh;
 
   proc member(i) {
     if isArithmeticDom(this) then
@@ -735,9 +745,59 @@ proc +(i, d: domain) where i: index(d) {
   return d.translate(i);
 }
 
+proc +(d: domain, i: index(d)) where isIrregularDom(d) {
+  d.add(i);
+  return d;
+}
+
+proc +(i, d: domain) where i:index(d) && isIrregularDom(d) {
+  d.add(i);
+  return d;
+}
+
+proc +(d1: domain, d2: domain) where
+                                 (d1.type == d2.type) &&
+                                 (isIrregularDom(d1) && isIrregularDom(d2)) {
+  var d3: d1.type;
+  // These should eventually become forall loops
+  for e in d1 do d3.add(e);
+  for e in d2 do d3.add(e);
+  return d3;
+}
+
+proc +(d1: domain, d2: domain) {
+  if (isArithmeticDom(d1) || isArithmeticDom(d2)) then
+    compilerError("Cannot add indices to an arithmetic domain");
+  else
+    compilerError("Cannot add indices to this domain type");
+}
+
 proc -(d: domain, i: index(d)) {
   return d.chpl__unTranslate(i);
 }
+
+proc -(d: domain, i: index(d)) where isIrregularDom(d) {
+  d.remove(i);
+  return d;
+}
+
+proc -(d1: domain, d2: domain) where
+                                 (d1.type == d2.type) &&
+                                 (isIrregularDom(d1) && isIrregularDom(d2)) {
+  var d3: d1.type;
+  // These should eventually become forall loops
+  for e in d1 do d3.add(e);
+  for e in d2 do d3.remove(e);
+  return d3;
+}
+
+proc -(d1: domain, d2: domain) {
+  if (isArithmeticDom(d1) || isArithmeticDom(d2)) then
+    compilerError("Cannot remove indices from an arithmetic domain");
+  else
+    compilerError("Cannot remove indices from this domain type");
+}
+
 
 
 //
@@ -1035,7 +1095,7 @@ proc =(a: _distribution, b: _distribution) {
 }
 
 proc =(a: domain, b: domain) {
-  if isArithmeticDom(a) && isArithmeticDom(b) {
+  if !isIrregularDom(a) && !isIrregularDom(b) {
     var bc = b;
     for e in a._value._arrs do {
       on e do e.dsiReallocate(bc);
@@ -1192,8 +1252,8 @@ proc =(a: [], b: _tuple) where isEnumArr(a) || isArithmeticArr(a) {
   } else {
     proc chpl__tupleInit(j, param rank: int, b: _tuple) {
       const stride = a.domain.dim(a.rank-rank+1).stride,
-            start = if stride > 0 then a.domain.dim(a.rank-rank+1).low
-                                  else a.domain.dim(a.rank-rank+1).high;
+            start = a.domain.dim(a.rank-rank+1).first;
+
       if rank == 1 {
         for param i in 1..b.size {
           j(a.rank-rank+1) = start + (i-1)*stride;

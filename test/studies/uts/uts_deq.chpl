@@ -68,7 +68,7 @@ class TreeNode {
   var nChildren: int = 0;
 
   // Generate this node's children
-  def genChildren(inout q: DeQueue(TreeNode)): int {
+  proc genChildren(inout q: DeQueue(TreeNode)): int {
     select distrib {
       when NodeDistrib.Geometric do 
         nChildren = numGeoChildren(geoDist);
@@ -95,14 +95,14 @@ class TreeNode {
 
   // Constant Distribution: Find the number of children
   //  Note: This is a _balanced_ tree.
-  def numConstChildren(): int {
+  proc numConstChildren(): int {
     return if depth < MAX_DEPTH then B_0 else 0;
   }
 
 
   // Hybrid trees are geometric at the top of the tree and binomial
   // below a certain depth.
-  def numHybridChildren(): int {
+  proc numHybridChildren(): int {
     if (depth < shiftDepth * MAX_DEPTH) then
       return numGeoChildren(geoDist);
     
@@ -112,7 +112,7 @@ class TreeNode {
 
   // Binomial Distribution: Find the number of children
   //  Note: distribution is identical everywhere below root
-  def numBinChildren(): int {
+  proc numBinChildren(): int {
     if (depth == 0) then
       return B_0;
     
@@ -122,7 +122,7 @@ class TreeNode {
 
 
   // Geometric Distribution: Find the number of children
-  def numGeoChildren(shape: GeoDistrib): int {
+  proc numGeoChildren(shape: GeoDistrib): int {
     var b_i: real = B_0;
   
     // use shape function to compute target b_i
@@ -169,7 +169,7 @@ class TreeNode {
 /*
 ** Print out search parameters
 */
-def uts_showSearchParams() {
+proc uts_showSearchParams() {
   writeln("UTS v", uts_version, " - Unbalanced Tree Search (", 
       if parallel then "Parallel Chapel (DeQueue)" else "Sequential Chapel (DeQueue)", ")");
 
@@ -197,7 +197,7 @@ def uts_showSearchParams() {
 }
 
 
-def balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int {
+proc balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int {
   if (parallel) {
     // Trade some imbalance here for blocking overhead
     if (q.size > 2*chunkSize && thread_cnt.readXX() < MAX_THREADS) {
@@ -229,7 +229,7 @@ def balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int {
 /*
 **  Parallel Tree Creation
 */
-def create_tree(inout q: DeQueue(TreeNode)) {
+proc create_tree(inout q: DeQueue(TreeNode)) {
   var count, maxDepth: int;
   var ldbal_state = new LDBalanceState();
 
@@ -260,7 +260,7 @@ def create_tree(inout q: DeQueue(TreeNode)) {
 } 
 
 
-def main() {
+proc main() {
   var t_create: Timer;
   var root: TreeNode;
   var queue: DeQueue(TreeNode);

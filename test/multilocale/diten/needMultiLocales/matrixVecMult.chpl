@@ -14,7 +14,7 @@ var resultVec: [ColumnDom] real;
 
 var matrix: [DistColumnDom] [RowDom] real;
 
-def init(X) { /* ... */ }
+proc init(X) { /* ... */ }
 
 init(matrix);
 init(vec);

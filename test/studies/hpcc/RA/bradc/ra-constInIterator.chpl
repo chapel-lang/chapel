@@ -2,7 +2,7 @@ type indexType = uint(64);
 
 const POLY2: indexType = 0x7;
 
-def testit(): indexType {
+iter testit(): indexType {
   const POLY: indexType = 0x7;
 
   yield POLY;

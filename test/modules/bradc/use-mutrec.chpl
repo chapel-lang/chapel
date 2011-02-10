@@ -1,7 +1,7 @@
 module mod1 {
   use mod2;
 
-  def foo() {
+  proc foo() {
     writeln("in mod1.foo()");
     baz();
   }
@@ -11,16 +11,16 @@ module mod1 {
 module mod2 {
   use mod1; 
 
-  def bar() {
+  proc bar() {
     writeln("in mod2.bar()");
     foo();
   }
 
-  def baz() {
+  proc baz() {
     writeln("in mod2.baz()");
   }
 
-  def main() {
+  proc main() {
     bar();
   }
 }

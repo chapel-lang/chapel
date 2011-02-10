@@ -12,12 +12,12 @@ var myRand = new RandomStream();
 
 
 // Return a random number on the range [1, n]
-def getRand(n: int) {
+proc getRand(n: int) {
   return (myRand.getNext()*max(int)):int%n+1;
 }
 
 
-def populateBoard(inout board: [] int) {
+proc populateBoard(inout board: [] int) {
   var spotsAvail:   [1..9] bool;
   var spots:        [1..9] bool;
   var g_spotsAvail: [1..3, 1..3] bool;
@@ -212,7 +212,7 @@ def populateBoard(inout board: [] int) {
 var seenItX: [1..9] bool = false;
 var seenItY: [1..9] bool = false;
 var seenIt:  [1..9] bool = false;
-def costFcn(board: [] int): int {
+proc costFcn(board: [] int): int {
   var cost: int;
   
   for i in [1..9] {
@@ -245,7 +245,7 @@ def costFcn(board: [] int): int {
 }
 
 
-def main() {
+proc main() {
   var boardData = new file(inputfile, path='./', mode=FileAccessMode.read);
 
   // Read the board from the input file

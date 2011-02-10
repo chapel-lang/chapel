@@ -21,7 +21,7 @@ config const printParams = true,
              printStats = true;
 
 
-def main() {
+proc main() {
   printConfiguration();
 
   const ProblemDist = new Block1DDist(bbox=[1..m], targetLocs=Locales);
@@ -54,7 +54,7 @@ def main() {
 }
 
 
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     printProblemSize(elemType, numVectors, m);
     writeln("Number of trials = ", numTrials, "\n");
@@ -62,7 +62,7 @@ def printConfiguration() {
 }
 
 
-def initVectors(B, C) {
+proc initVectors(B, C) {
   // TODO: should write a fillRandom() implementation that does this
   coforall loc in B.dom.dist.targetLocs {
     on loc {
@@ -83,7 +83,7 @@ def initVectors(B, C) {
 }
 
 
-def verifyResults(A, B, C) {
+proc verifyResults(A, B, C) {
   if (printArrays) then writeln("A is: ", A, "\n");
 
   const infNorm = max reduce [i in A.dom] abs(A(i) - (B(i) + alpha * C(i)));
@@ -92,7 +92,7 @@ def verifyResults(A, B, C) {
 }
 
 
-def printResults(successful, execTimes) {
+proc printResults(successful, execTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     const totalTime = + reduce execTimes,

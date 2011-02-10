@@ -135,8 +135,9 @@ class DefaultSparseDom: BaseSparseDom {
     // find position in nnzDom to insert new index
     const (found, insertPt) = find(ind);
 
-    // if the index already existed, then return
-    if (!found) then return;
+    // if the index does not exist, then halt
+    if (!found) then
+      halt("index not in domain: ", ind);
 
     // increment number of nonzeroes
     nnz -= 1;

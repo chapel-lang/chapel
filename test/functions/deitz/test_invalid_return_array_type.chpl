@@ -1,4 +1,4 @@
-def f() {
+proc f() {
   return [1..3] int;
 }
 

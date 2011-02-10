@@ -15,14 +15,14 @@ record Stack {
   }
 
   var head: node;
-  def push(s: string) {
+  proc push(s: string) {
     if head == nil {
       head = new node(s);
     } else {
       head = new node(s, head);
     }
   }
-  def pop() {
+  proc pop() {
     if head == nil {
       return "";
     } else {
@@ -31,7 +31,7 @@ record Stack {
       return e;
     }
   }
-  def peek() {
+  proc peek() {
     if head == nil then
       return "";
     else
@@ -39,7 +39,7 @@ record Stack {
   }
 }
 
-def infix2postfix(str: string) {
+proc infix2postfix(str: string) {
   var operDom: domain(string);
   operDom += "+"; operDom += "-";
   operDom += "*"; operDom += "/";
@@ -93,7 +93,7 @@ def infix2postfix(str: string) {
 }
 
 
-def postfixEval(str: string) {
+proc postfixEval(str: string) {
   var stack: Stack;
   for i in 1..(str.length) {
     var s: string = str.substring(i);

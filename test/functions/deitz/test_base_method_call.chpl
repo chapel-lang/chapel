@@ -1,13 +1,13 @@
 class C {
   var x: int;
-  def foo() {
+  proc foo() {
     writeln("C: ", this);
   }
 }
 
 class D: C {
   var y: int;
-  def foo() {
+  proc foo() {
     writeln("D: ", this);
   }
 }

@@ -1,7 +1,7 @@
 MPI_INSTALL = $(OPENMPI_INSTALL_DIR)
 
 COMM_LAUNCHER_SRCS = \
-        comm-mpi_locales.c \
+        comm-mpi-locales.c \
 
 COMM_SRCS = \
 	$(COMM_LAUNCHER_SRCS) \

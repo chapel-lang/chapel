@@ -1,14 +1,14 @@
 class C {
-  def these() {
+  iter these() {
     for i in 1..10 do
       yield i;
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     yield 1..10;
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     for i in follower do
       yield i;
   }
@@ -17,13 +17,13 @@ class C {
 class D {
   // BLC: Really, I'd prefer not to define this one either, but parNoSolo.chpl
   // already captures this case
-  def these() {
+  iter these() {
     for i in 1..10 do
       yield i;
   }
   //
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     for i in follower do
       yield -i;
   }

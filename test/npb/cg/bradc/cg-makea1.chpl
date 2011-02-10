@@ -23,7 +23,7 @@ config const n = probSizes(probClass),
 type elemType = real(64);
 
 
-def main() {
+proc main() {
   writeln("Chapel sparsity pattern is:");
   for ((r,c), v) in makea(elemType, n, nonzer, shift) {
     writeln(" ", r, " ", c, "  ", v);

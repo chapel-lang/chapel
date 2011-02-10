@@ -39,7 +39,7 @@ static chpl_bool launch_next_task(void);
 void chpl_sync_lock(chpl_sync_aux_t *s) { }
 void chpl_sync_unlock(chpl_sync_aux_t *s) { }
 
-void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s,
+void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
                                   int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (!*s && launch_next_task())
@@ -49,7 +49,7 @@ void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s,
                lineno, filename);
 }
 
-void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s,
+void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
                                    int32_t lineno, chpl_string filename) {
   // while blocked, try running tasks from the task pool
   while (*s && launch_next_task())
@@ -59,24 +59,24 @@ void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s,
                lineno, filename);
 }
 
-void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s) {
   *s = true;
 }
 
-void chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
   *s = false;
 }
 
-chpl_bool chpl_sync_is_full(void *val_ptr, chpl_sync_aux_t *s,
+chpl_bool chpl_sync_isFull(void *val_ptr, chpl_sync_aux_t *s,
                             chpl_bool simple_sync_var) {
   return *s;
 }
 
-void chpl_sync_init_aux(chpl_sync_aux_t *s) {
+void chpl_sync_initAux(chpl_sync_aux_t *s) {
   *s = false;
 }
 
-void chpl_sync_destroy_aux(chpl_sync_aux_t *s) { }
+void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 
 // Tasks
@@ -84,7 +84,7 @@ void chpl_sync_destroy_aux(chpl_sync_aux_t *s) { }
 static chpl_bool serial_state;
 static uint64_t taskCallStackSize = 0;
 
-void chpl_tasking_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   //
   // If a value was specified for the call stack size config const, use
   // that (rounded up to a whole number of pages) to set the system
@@ -120,38 +120,38 @@ void chpl_tasking_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   queued_cnt = 0;
 }
 
-void chpl_tasking_exit(void) { }
+void chpl_task_exit(void) { }
 
-void chpl_tasking_call_main(void (*chpl_main)(void)) {
+void chpl_task_callMain(void (*chpl_main)(void)) {
   chpl_main();
 }
 
-void chpl_add_to_task_list(chpl_fn_int_t fid,
+void chpl_task_addToTaskList(chpl_fn_int_t fid,
                            void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
                            chpl_bool call_chpl_begin,
                            int lineno,
                            chpl_string filename) {
-  chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
+  chpl_task_begin(chpl_ftable[fid], arg, false, false, NULL);
 }
 
-void chpl_process_task_list(chpl_task_list_p task_list) { }
+void chpl_task_processTaskList(chpl_task_list_p task_list) { }
 
-void chpl_execute_tasks_in_list(chpl_task_list_p task_list) { }
+void chpl_task_executeTasksInList(chpl_task_list_p task_list) { }
 
-void chpl_free_task_list(chpl_task_list_p task_list) { }
+void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
 
-void chpl_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
+void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
                 chpl_bool serial_state, chpl_task_list_p task_list_entry) {
-  if (!ignore_serial && chpl_get_serial()) {
+  if (!ignore_serial && chpl_task_getSerial()) {
     //
     // save and restore current task's serial state before and after
     // invoking new task
     //
-    chpl_bool saved_serial_state = chpl_get_serial();
+    chpl_bool saved_serial_state = chpl_task_getSerial();
     (*fp)(a);
-    chpl_set_serial(saved_serial_state);
+    chpl_task_setSerial(saved_serial_state);
   } else {
     // create a task from the given function pointer and arguments
     // and append it to the end of the task pool for later execution
@@ -176,7 +176,7 @@ void chpl_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
   }
 }
 
-chpl_taskID_t chpl_task_id(void) { return 0; }
+chpl_taskID_t chpl_task_getId(void) { return 0; }
 
 void chpl_task_yield(void) {
 }
@@ -185,23 +185,23 @@ void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
-chpl_bool chpl_get_serial(void) { return serial_state; }
+chpl_bool chpl_task_getSerial(void) { return serial_state; }
 
-void chpl_set_serial(chpl_bool new_state) {
+void chpl_task_setSerial(chpl_bool new_state) {
   serial_state = new_state;
 }
 
 
-uint64_t chpl_task_callstacksize(void) {
+uint64_t chpl_task_getCallStackSize(void) {
   return taskCallStackSize;
 }
 
 
-uint32_t chpl_numQueuedTasks(void) { return queued_cnt; }
+uint32_t chpl_task_getNumQueuedTasks(void) { return queued_cnt; }
 
-uint32_t chpl_numRunningTasks(void) { return 1; }
+uint32_t chpl_task_getNumRunningTasks(void) { return 1; }
 
-int32_t  chpl_numBlockedTasks(void) { return 0; }
+int32_t  chpl_task_getNumBlockedTasks(void) { return 0; }
 
 
 // Internal utility functions for task management
@@ -223,8 +223,8 @@ launch_next_task(void) {
     //
     // reset serial state
     //
-    saved_serial_state = chpl_get_serial();
-    chpl_set_serial(task->serial_state);
+    saved_serial_state = chpl_task_getSerial();
+    chpl_task_setSerial(task->serial_state);
 
     (*task->fun)(task->arg);
     chpl_free(task, 0, 0);
@@ -232,7 +232,7 @@ launch_next_task(void) {
     //
     // restore serial state
     //
-    chpl_set_serial(saved_serial_state);
+    chpl_task_setSerial(saved_serial_state);
 
     return true;
   } else {
@@ -243,10 +243,10 @@ launch_next_task(void) {
 
 // Threads
 
-int32_t chpl_threads_getMaxThreads(void) { return 1; }
+int32_t chpl_task_getMaxThreads(void) { return 1; }
 
-int32_t chpl_threads_maxThreadsLimit(void) { return 1; }
+int32_t chpl_task_getMaxThreadsLimit(void) { return 1; }
 
-uint32_t chpl_numThreads(void) { return 1; }
+uint32_t chpl_task_getNumThreads(void) { return 1; }
 
-uint32_t chpl_numIdleThreads(void) { return 0; }
+uint32_t chpl_task_getNumIdleThreads(void) { return 0; }

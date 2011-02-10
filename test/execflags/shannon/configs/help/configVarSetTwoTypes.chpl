@@ -1,10 +1,10 @@
 module module1 {
   config var x: int = 1;
-  def main() {
+  proc main() {
     writeln("x is: ", x);
     useModule2(); // initialize module2 without bringing it into main's scope
   }
-  def useModule2() {
+  proc useModule2() {
     use module2;
   }
 }

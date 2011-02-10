@@ -1,10 +1,10 @@
 module M1 {
   var x: int = 1;
   var y: int = -1;
-  def printX() {
+  proc printX() {
     writeln("M1's x is: ", x);
   }
-  def printY() {
+  proc printY() {
     writeln("M1's y is: ", y);
   }
 }
@@ -15,11 +15,11 @@ module M2 {
 
   var x: int = 2;
 
-  def printX() {
+  proc printX() {
     writeln("M2's x is: ", x);
   }
 
-  def main() {
+  proc main() {
     M1.x = 4;
     M1.printX();
     writeln(x);
@@ -31,7 +31,7 @@ module M2 {
 module M3 {
   var x: int = 3;
   var y: int = -3;
-  def printY() {
+  proc printY() {
     writeln("M3's y is: ", y);
   }
 }

@@ -30,6 +30,7 @@ the range, and (3)~whether or not the range is \emph{stridable}.
 The type of the range's values is represented using a type parameter
 named \emph{idxType}.  This must be one of the \chpl{int} or
 \chpl{uint} types.  The default type is \chpl{int}.
+The type of a range's stride is the signed equivalent of its \emph{idxType}.
 
 \begin{openissue}
 It has been hypothesized that ranges of other types, such as floating
@@ -84,7 +85,7 @@ writeln(r);
 \end{chapelpost}
 \begin{chapeloutput}
 1..0
-3..12 by 3
+3..13 by 3
 \end{chapeloutput}
 \end{example}
 
@@ -118,8 +119,8 @@ in~\rsec{By_Operator_For_Ranges}.
 \index{ranges!integral element type}
 The element type of the range type is determined by the type of the
 low and high bound.  It is either \chpl{int}, \chpl{uint},
-\chpl{int(64)}, or \chpl{uint(64)}.  The type is determined by
-conceptually adding the low and high bounds together.  The boundedness
+\chpl{int(64)}, or \chpl{uint(64)}.  The index type of the range is obtained by
+applying integral promotions to the low and high bounds.  The boundedness
 of such a range is \chpl{BoundedRangeType.bounded}.  The stridability of
 the range is \chpl{false}.
 
@@ -139,9 +140,9 @@ The first form results in a \chpl{BoundedRangeType.boundedLow} range, the
 second in a \chpl{BoundedRangeType.boundedHigh} range, and the third in
 a \chpl{BoundedRangeType.boundedNone} range.
 
-Unbounded ranges can be iterated over with zipper iteration
-(~\rsec{Zipper_Iteration}) and their shape conforms to the shape of the
-other iterators they are being iterated over with.
+When used in zippered iteration (~\rsec{Zipper_Iteration}), the shape of an
+unbounded range conforms to that of the other iterator.
+
 \begin{example}
 The code
 \begin{chapelpre}
@@ -201,7 +202,7 @@ The \chpl{by} operator takes a range and an integer value to yield a
 new range that is strided by the integer.  Striding a strided range
 results in a stride whose value is the product of the two strides.
 The stride argument can either be of type \chpl{idxType} or some other
-integer value that can coerce to a signed integer value of the same
+integer value that can be coerced to a signed integer value of the same
 bit-width as \chpl{idxType}.
 
 \begin{example}
@@ -220,8 +221,8 @@ writeln(r1);
 writeln(r2);
 \end{chapelpost}
 \begin{chapeloutput}
-1..19 by 2
-1..17 by 4
+1..20 by 2
+1..20 by 4
 \end{chapeloutput}
 \end{example}
 
@@ -230,7 +231,7 @@ writeln(r2);
 negative?}  The reason for this choice is that the \chpl{by} operator
 is binary, not ternary.  Given a range \chpl{R} initialized
 to \chpl{1..3}, we want \chpl{R by -1} to contain the ordered sequence
-$3,2,1$.  But then \chpl{R by -1} would be different than \chpl{3..1
+$3,2,1$.  But then \chpl{R by -1} would be different from \chpl{3..1
 by -1} even though it should be identical by substituting the value in
 R into the expression.
 \end{rationale}
@@ -275,7 +276,7 @@ The following declarations result in equivalent ranges.
 var r1 = 2.. by -2 # 3;
 var r2 = ..6 by -2 # 3;
 var r3 = 0..6 by -2 # 3;
-var r4 = 1..#6 by -2;
+var r4 = 2..#5 by -2;
 \end{chapel}
 \begin{chapelpost}
 writeln(r1 == r2 \&\& r2 == r3 \&\& r3 == r4);
@@ -361,7 +362,7 @@ var r4 = r3[0.. by 3];
 writeln((r, r2, r3, r4));
 \end{chapelpost}
 \begin{chapeloutput}
-(1..20, 3..20, 1..19 by 2, 3..15 by 6)
+(1..20, 3..20, 1..20 by 2, 3..20 by 6)
 \end{chapeloutput}
 \end{example}
 
@@ -400,6 +401,52 @@ proc $range$.high : idxType
 \end{protohead}
 \begin{protobody}
 Returns the high bound of the range.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.alignedLow : idxType
+\end{protohead}
+\begin{protobody}
+Returns the aligned low bound of the range.  If the stride is less than -1, the
+aligned low bound may be greater than the declared low bound.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.alignedHigh : idxType
+\end{protohead}
+\begin{protobody}
+Returns the aligned high bound of the range.  If the stride is greater than 1,
+the aligned high bound may be greater than the declared high bound.
+\end{protobody}
+\begin{example}
+The following code:
+\begin{chapelpre}
+% alignedHigh.chpl
+\end{chapelpre}
+\begin{chapel}
+var r = 0..20 by 3;
+writeln(r.alignedHigh);
+\end{chapel}
+\begin{chapeloutput}
+18
+\end{chapeloutput}
+produces the output ``18''.
+\end{example}
+
+\begin{protohead}
+proc $range$.first : idxType
+\end{protohead}
+\begin{protobody}
+Returns the first index in the range.  If the stride is positive, the 
+\chpl{low} value is returned; otherwise, the \chpl{high} value is returned.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.last : idxType
+\end{protohead}
+\begin{protobody}
+Returns the last index within the range.  In general, this is given
+by \chpl{start + length * stride}.
 \end{protobody}
 
 \begin{protohead}

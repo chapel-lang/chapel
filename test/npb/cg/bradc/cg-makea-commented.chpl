@@ -20,7 +20,7 @@ module CGMakeA {
   // produced, the problem size, an indication of the number of
   // nonzeroes to compute, and r condition and shift factors
   //
-  def makea(type elemType, n, nonzer, shift) {
+  iter makea(type elemType, n, nonzer, shift) {
     //
     // temporary storage space for the computation
     //
@@ -77,7 +77,7 @@ module CGMakeA {
   //
   // helper routine for creating sparse entries
   //
-  def sprnvc(type elemType, n, nz, v, iv, randStr) {
+  proc sprnvc(type elemType, n, nz, v, iv, randStr) {
     var nn1 = 1;
     while (nn1 < n) do nn1 *= 2;
 
@@ -114,7 +114,7 @@ module CGMakeA {
   // another helper routine that, in some cases, adds another sparse
   // value
   //
-  def vecset(v, iv, inout nzv, i, val) {
+  proc vecset(v, iv, inout nzv, i, val) {
     var set = false;
     for k in 1..nzv {
       if (iv(k) == i) {

@@ -1,8 +1,8 @@
-def foo(i : int = 1, j : real = 2.0, k : string = "three") {
+proc foo(i : int = 1, j : real = 2.0, k : string = "three") {
   writeln("foo of ", i, ", ", j, ", ", k);
 }
 
-def foo(i : real = 1.0, j : string = "two", k : int = 3) {
+proc foo(i : real = 1.0, j : string = "two", k : int = 3) {
   writeln("foo of ", i, ", ", j, ", ", k);
 }
 

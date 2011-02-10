@@ -1,7 +1,7 @@
-def f(x, y, z) { writeln(x + y + z); return x + y + z; }
+proc f(x, y, z) { writeln(x + y + z); return x + y + z; }
 class A {
   var a;
-  def this(x,y) { return a(x, y); }
+  proc this(x,y) { return a(x, y); }
 }
 class C {
   var a;

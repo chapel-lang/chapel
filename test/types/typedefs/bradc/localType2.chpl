@@ -4,13 +4,13 @@
 // declared (if, in fact, that is the language's
 // intention.
 
-def readDefaultVal(): int {
+proc readDefaultVal(): int {
   var defaultVal: int;
   read(defaultVal);
   return defaultVal;
 }
 
-def foo() {
+proc foo() {
   type myfooint = int;
   var x: myfooint;
   var y: myfooint;
@@ -18,7 +18,7 @@ def foo() {
   writeln("y is: ", y);
 }
 
-def main() {
+proc main() {
   foo();
   foo();
 }

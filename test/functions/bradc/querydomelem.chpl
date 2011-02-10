@@ -1,4 +1,4 @@
-def foo(A: [?ADom] ?t) {
+proc foo(A: [?ADom] ?t) {
   const BigADom = ADom.expand(1);
   var Temp: [BigADom] t = 1.0;
 

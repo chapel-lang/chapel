@@ -18,7 +18,7 @@ class LevelSolution {
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
-  def clear() {
+  proc clear() {
     delete old_data;
     delete current_data;
   }
@@ -30,7 +30,7 @@ class LevelSolution {
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def LevelSolution(level: Level) {
+  proc LevelSolution(level: Level) {
     this.level  = level;
     old_data     = new LevelVariable(level = level);
     current_data = new LevelVariable(level = level);
@@ -50,7 +50,7 @@ class LevelSolution {
 //|\""""""""""""""""""""""""""""""""""""|\
 //| >    LevelSolution.setToFunction    | >
 //|/____________________________________|/
-def LevelSolution.setToFunction(
+proc LevelSolution.setToFunction(
   initial_condition: func(dimension*real, real),
   time_in:           real)
 {
@@ -73,7 +73,7 @@ def LevelSolution.setToFunction(
 //|\"""""""""""""""""""""""""""""""""|\
 //| >    LevelSolution.clawOutput    | >
 //|/_________________________________|/
-def LevelSolution.clawOutput(
+proc LevelSolution.clawOutput(
   frame_number: int
 ){
 

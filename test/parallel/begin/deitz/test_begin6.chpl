@@ -1,4 +1,4 @@
-def foo(x) where x.type == int {
+proc foo(x) where x.type == int {
   begin {
     writeln(x);
   }

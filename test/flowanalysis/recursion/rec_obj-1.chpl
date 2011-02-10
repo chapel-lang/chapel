@@ -3,7 +3,7 @@ class Cons {
   var cdr; 
 };
 
-def print(c : Cons) {
+proc print(c : Cons) {
   if (c != nil) {
      writeln(c.car);
      print(c.cdr);

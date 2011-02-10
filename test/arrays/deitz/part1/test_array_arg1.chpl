@@ -1,4 +1,4 @@
-def foo(a: [] real) {
+proc foo(a: [] real) {
   writeln(a);
 }
 

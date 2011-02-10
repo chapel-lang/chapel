@@ -1,4 +1,4 @@
-def binsearch(x : [?lo..?hi] , y]) {
+proc binsearch(x : [?lo..?hi] , y]) {
          if(hi < lo ) return lo;
          if(x(hi) > y) return hi;
          if(y <= x(lo) return lo;

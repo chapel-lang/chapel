@@ -3,7 +3,7 @@ use Time;
 
 var done: sync bool = true;
 
-def foo(type t, u: t, v: t, name) {
+proc foo(type t, u: t, v: t, name) {
   var s: sync t;
 
   if done then // wait until all prior invocations have finished

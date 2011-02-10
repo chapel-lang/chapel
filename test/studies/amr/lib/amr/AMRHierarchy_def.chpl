@@ -45,9 +45,9 @@ class AMRHierarchy {
   //|\''''''''''''''''''''''''''''''''''''|\
   //| >    Basic methods and iterators    | >
   //|/....................................|/
-  def n_levels { return level_indices.high; };
+  proc n_levels { return level_indices.high; };
   
-  def fine_boundaries(i: int) var {
+  proc fine_boundaries(i: int) var {
     return coarse_boundaries(i+1);
   }
   // /|''''''''''''''''''''''''''''''''''''/|
@@ -59,7 +59,7 @@ class AMRHierarchy {
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def AMRHierarchy(
+  proc AMRHierarchy(
     x_low:             dimension*real,
     x_high:            dimension*real,
     n_coarsest_cells:  dimension*int,
@@ -147,7 +147,7 @@ class AMRHierarchy {
 //|\""""""""""""""""""""""""""""|\
 //| >    AMRHierarchy.regrid    | >
 //|/____________________________|/
-def AMRHierarchy.regrid(
+proc AMRHierarchy.regrid(
   i_base: int)
 {
 
@@ -284,9 +284,9 @@ def AMRHierarchy.regrid(
 // Builds a refined level below level i_refining.
 //--------------------------------------------------------
 
-def AMRHierarchy.buildRefinedLevel(i_refining: int)
+proc AMRHierarchy.buildRefinedLevel(i_refining: int)
 {
-  def buffer(flags: [?cells] bool) {
+  proc buffer(flags: [?cells] bool) {
     var buffered_flags: [cells] bool;
 
     for cell in cells do
@@ -420,7 +420,7 @@ class PhysicalBoundary {
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
-  def clear() {
+  proc clear() {
     for grid in grids do delete multidomains(grid);
   }
   // /|''''''''''''''''/|
@@ -431,7 +431,7 @@ class PhysicalBoundary {
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def PhysicalBoundary(level: Level) {
+  proc PhysicalBoundary(level: Level) {
     for grid in level.grids {
 
       var boundary_multidomain = new MultiDomain(dimension,stridable=true);
@@ -453,7 +453,7 @@ class PhysicalBoundary {
   //|\'''''''''''''''''''''''|\
   //| >    these iterator    | >
   //|/.......................|/
-  def these() {
+  iter these() {
     for grid in grids do
       yield (grid, multidomains(grid));
   }
@@ -480,7 +480,7 @@ class PhysicalBoundary {
 //----------------------------------------------------------
 
 class Flagger {
-  def setFlags(level_solution: LevelSolution, 
+  proc setFlags(level_solution: LevelSolution, 
                flags: [level_solution.level.possible_cells] bool) {}
 }
 // /|""""""""""""""""""""""/|
@@ -499,7 +499,7 @@ class Flagger {
 // parameters to be changed without recompiling the code.
 //-----------------------------------------------------------------
 
-def AMRHierarchy.AMRHierarchy(
+proc AMRHierarchy.AMRHierarchy(
   file_name:  string,
   flagger:    Flagger,
   inputIC:    func(dimension*real,real))
@@ -558,7 +558,7 @@ def AMRHierarchy.AMRHierarchy(
 //|\""""""""""""""""""""""""""""""""""|\
 //| >    LevelSolution.initialFill    | >
 //|/__________________________________|/
-def LevelSolution.initialFill(
+proc LevelSolution.initialFill(
   old_solution:    LevelSolution,
   coarse_solution: LevelSolution)
 {
@@ -569,7 +569,7 @@ def LevelSolution.initialFill(
   old_time     = current_time;
 }
 
-def LevelSolution.initialFill(
+proc LevelSolution.initialFill(
   coarse_solution: LevelSolution)
 {
   current_data.initialFill(coarse_solution.current_data);
@@ -584,7 +584,7 @@ def LevelSolution.initialFill(
 //|\""""""""""""""""""""""""""""""""""|\
 //| >    LevelVariable.initialFill    | >
 //|/__________________________________|/
-def LevelVariable.initialFill(
+proc LevelVariable.initialFill(
   q_old:     LevelVariable,
   q_coarse:  LevelVariable)
 {
@@ -640,7 +640,7 @@ def LevelVariable.initialFill(
 }
 
 
-def LevelVariable.initialFill(
+proc LevelVariable.initialFill(
   q_coarse: LevelVariable)
 {
   const q_old: LevelVariable;
@@ -663,7 +663,7 @@ def LevelVariable.initialFill(
 // Writes full Clawpack output at a given time.  Most of the work is done
 // by the "write" method, which handles output of the spatial data.
 //------------------------------------------------------------------------
-def AMRHierarchy.clawOutput(frame_number: int)
+proc AMRHierarchy.clawOutput(frame_number: int)
 {
 
   //==== Names of output files ====
@@ -696,7 +696,7 @@ def AMRHierarchy.clawOutput(frame_number: int)
 // Proceeds down the indexed_levels, calling the LevelVariable.write
 // method on each corresponding LevelVariable.
 //----------------------------------------------------------------
-def AMRHierarchy.writeData(outfile: file){
+proc AMRHierarchy.writeData(outfile: file){
 
   var base_grid_number = 1;
 
@@ -719,14 +719,14 @@ def AMRHierarchy.writeData(outfile: file){
 
 
 
-def main {
+proc main {
   
   //===> Flagger definition ===>
   class GradientFlagger: Flagger {
     
     const tolerance: real = 0.05;
     
-    def setFlags(
+    proc setFlags(
       level_solution: LevelSolution, 
       flags:          [level_solution.level.possible_cells] bool)
     {
@@ -752,7 +752,7 @@ def main {
       
     }
     
-    def neighbors(cell: dimension*int) {
+    iter neighbors(cell: dimension*int) {
       var shift: dimension*int;
       for d in dimensions {
         shift(d) = -2;
@@ -774,7 +774,7 @@ def main {
   const max_n_levels = 4;
   const ref_ratio = (2,2);
   
-  def elevatedSquare (x: 2*real)
+  proc elevatedSquare (x: 2*real)
   {
     var f: real = 0.0;
     if x(1)<-0.6 && (x(2)>-0.8 && x(2)<-0.2) then f = 1.0;

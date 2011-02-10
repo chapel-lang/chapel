@@ -7,7 +7,7 @@ class GradientFlagger: Flagger {
   
   const tolerance: real = 0.05;
   
-  def setFlags(
+  proc setFlags(
     level_solution: LevelSolution, 
     flags:          [level_solution.level.possible_cells] bool)
   {
@@ -33,7 +33,7 @@ class GradientFlagger: Flagger {
    
   }
   
-  def neighbors(cell: dimension*int) {
+  iter neighbors(cell: dimension*int) {
     var shift: dimension*int;
     for d in dimensions {
       shift(d) = -2;
@@ -49,7 +49,7 @@ class GradientFlagger: Flagger {
 
 
 
-def main {
+proc main {
   
   //===> Get names of input files ===>
   const pointer_file = new file("input_files.txt", FileAccessMode.read);
@@ -69,7 +69,7 @@ def main {
   
   
   //===> Set up AMR hierarchy ===>
-  def elevatedRectangle (x: dimension*real)
+  proc elevatedRectangle (x: dimension*real)
   {
     var f: real = 1.0;
     for d in dimensions do
@@ -77,7 +77,7 @@ def main {
     return f;
   }
 
-  def elevatedCircle (x: dimension*real) {
+  proc elevatedCircle (x: dimension*real) {
     var r: real = 0.0;
     for d in dimensions do
       r += (x(d)+0.5)**2;

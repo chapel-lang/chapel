@@ -53,7 +53,7 @@ module scalar_bordering_cholesky {
   // rows and columns (i+1..).
   // =========================================================================
     
-  def scalar_bordering_cholesky ( A : [] )  
+  proc scalar_bordering_cholesky ( A : [] )  
 
     where ( A.domain.rank == 2 ) {
 

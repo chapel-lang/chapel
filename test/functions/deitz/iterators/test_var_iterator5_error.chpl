@@ -1,6 +1,6 @@
 var x1, x2: int;
 
-def foo() {
+iter foo() {
   yield x1;
   yield x2;
 }

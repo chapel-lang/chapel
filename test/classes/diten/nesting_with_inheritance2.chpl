@@ -5,11 +5,11 @@ class intList {
     var next: Node;
   }
 
-  def insert(value: int) {
+  proc insert(value: int) {
     head = new Node(value, head);
   }
 
-  def these() {
+  iter these() {
     var current = head;
     while current != nil {
       yield current.value;
@@ -19,7 +19,7 @@ class intList {
 }
 
 class intSortedList: intList {
-  def insert(value: int) {
+  proc insert(value: int) {
     if head == nil || head.value >= value {
       head = new Node(value, head);
       return;
@@ -31,6 +31,6 @@ class intSortedList: intList {
   }
 }
 
-def main() {
+proc main() {
   var lst = new intSortedList();
 }

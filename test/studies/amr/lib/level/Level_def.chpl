@@ -58,7 +58,7 @@ class Level {
   //| >    clear    | >
   //|/..............|/
   
-  def clear () {
+  proc clear () {
     for grid in grids {
       delete sibling_overlaps(grid);
       delete boundary(grid);
@@ -73,7 +73,7 @@ class Level {
   //| >    constructor    | >
   //|/....................|/
 
-  def Level(
+  proc Level(
     x_low: dimension*real,
     x_high: dimension*real,
     n_cells: dimension*int,
@@ -117,7 +117,7 @@ class Level {
   // its real bounds.
   //------------------------------------------------------
 
-  def snapToVertex (x: dimension*real) {
+  proc snapToVertex (x: dimension*real) {
 
     var idx: dimension*int;
 
@@ -143,7 +143,7 @@ class Level {
   // sensible.  Mainly for testing and debugging.
   //-----------------------------------------------------------
   
-  def writeThis(w: Writer) {
+  proc writeThis(w: Writer) {
     writeln("Level bounds: ", x_low, "  ", x_high);
     writeln("Number of cells: ", n_cells);
     writeln("Number of ghost cells: ", n_ghost_cells);
@@ -179,7 +179,7 @@ class Level {
 // real arithmetic.
 //--------------------------------------------------------
 
-def Level.addGrid(
+proc Level.addGrid(
   i_low_grid:  dimension*int,
   i_high_grid: dimension*int)
 {
@@ -214,9 +214,11 @@ def Level.addGrid(
 // This version takes the full domain of grid cells.
 //---------------------------------------------------
 
-def Level.addGrid (grid_cells: domain(dimension,stridable=true))
+proc Level.addGrid (grid_cells: domain(dimension,stridable=true))
 {
-  addGrid(grid_cells.low-1, grid_cells.high+1);
+  // Review: hilde
+  // Not +/- stride here?
+  addGrid(grid_cells.low-1, grid_cells.alignedHigh+1);
 }
 
 
@@ -224,7 +226,7 @@ def Level.addGrid (grid_cells: domain(dimension,stridable=true))
 // This version takes in real bounds, and snaps them to the
 // level's discretization.
 //----------------------------------------------------------
-def Level.addGrid(
+proc Level.addGrid(
   x_low_grid:  dimension*real,
   x_high_grid: dimension*real)
 {
@@ -252,7 +254,7 @@ def Level.addGrid(
 // can safely compute how they overlap with one another.
 //----------------------------------------------------------------
 
-def Level.complete () {
+proc Level.complete () {
 
   //==== Safety check ====
   assert(is_complete == false,
@@ -302,7 +304,7 @@ class SiblingOverlap {
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
-  def clear() {
+  proc clear() {
     neighbors.clear();
   }
   // /|''''''''''''''''/|
@@ -314,7 +316,7 @@ class SiblingOverlap {
   //| >    constructor    | >
   //|/....................|/
   
-  def SiblingOverlap (
+  proc SiblingOverlap (
     level: Level,
     grid:  Grid)
   {
@@ -346,7 +348,7 @@ class SiblingOverlap {
   // storage in a LevelVariable.
   //--------------------------------------------------------------
   
-  def these() {
+  iter these() {
     for nbr in neighbors do
       yield (nbr, domains(nbr));
   }
@@ -385,12 +387,12 @@ class SiblingOverlap {
 // ordering isn't done in a particularly sophisticated fashion.
 //---------------------------------------------------------------
 
-def Level.ordered_grids {    
+iter Level.ordered_grids {    
   var grid_list = grids;
   
   while grid_list.numIndices > 0 {
     var lowest_grid: Grid;
-    var i_lowest = possible_ghost_cells.high;
+    var i_lowest = possible_ghost_cells.alignedHigh;
 
     for grid in grid_list {
       for d in dimensions {
@@ -424,7 +426,7 @@ def Level.ordered_grids {
 // the name of which is provided as a string.
 //------------------------------------------------------------------
 
-def readLevel(file_name: string){
+proc readLevel(file_name: string){
 
   var input_file = new file(file_name, FileAccessMode.read);
   input_file.open();
@@ -474,7 +476,7 @@ def readLevel(file_name: string){
 
 
 
-// def main {
+// proc main {
 // 
 //   var level = readLevel("input_level.txt");
 // 

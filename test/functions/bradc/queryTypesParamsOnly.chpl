@@ -7,7 +7,7 @@ class D : C {
   param r: int;
 }
 
-def foo(argD: D(?t, ?r)) {
+proc foo(argD: D(?t, ?r)) {
   writeln("argD.x = ", argD.x);
 }
 

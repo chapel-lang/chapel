@@ -58,7 +58,7 @@ writeln(A);
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 \end{chapeloutput}
-\chpl{A} is declared to be an arithmetic array over arithmetic
+\chpl{A} is declared to be an arithmetic array over rectangular
 domain \chpl{D} with elements of type \chpl{real}.  As a result, it
 represents a 2-dimensional $10 \times 10$ real floating point
 variables indexed using the indices $(1, 1), (1, 2), \ldots, (1, 10),
@@ -198,17 +198,17 @@ index set, the reference is considered out-of-bounds and a runtime
 error will occur, halting the program.
 
 
-\subsubsection{Arithmetic Array Indexing}
-\label{Arithmetic_Array_Indexing}
-\index{indexing!arithmetic arrays}
-\index{arithmetic arrays!indexing}
+\subsubsection{Rectangular Array Indexing}
+\label{Rectangular_Array_Indexing}
+\index{indexing!rectangular arrays}
+\index{rectangular arrays!indexing}
 
-Since the indices for multidimensional arithmetic domains are tuples,
-for convenience, arithmetic arrays can be indexed using the list of
+Since the indices for multidimensional rectangular domains are tuples,
+for convenience, rectangular arrays can be indexed using the list of
 integer values that make up the tuple index.  This is semantically
 equivalent to creating a tuple value out of the integer values and
 using that tuple value to index the array.  For symmetry,
-1-dimensional arithmetic arrays can be accessed using 1-tuple indices
+1-dimensional rectangular arrays can be accessed using 1-tuple indices
 even though their index type is an integral value.  This is
 semantically equivalent to de-tupling the integral value from the
 1-tuple and using it to index the array.
@@ -495,29 +495,29 @@ assigns the elements in the interior of \chpl{B} to the elements in
 the interior of \chpl{A}.
 \end{example}
 
-\subsubsection{Arithmetic Array Slicing}
-\label{Arithmetic_Array_Slicing}
+\subsubsection{Rectangular Array Slicing}
+\label{Rectangular_Array_Slicing}
 \index{arrays!slice}
 
-An arithmetic array can be sliced by any arithmetic domain that is a
+a rectangular array can be sliced by any rectangular domain that is a
 subdomain of the array's defining domain.  If the subdomain
 relationship is not met, an out-of-bounds error will occur.  The
 result is a subarray whose indices are those of the slicing domain and
 whose elements are an alias of the original array's.
 
-Arithmetic arrays also support slicing by ranges directly.  If each
+Rectangular arrays also support slicing by ranges directly.  If each
 dimension is indexed by a range, this is equivalent to slicing the
-array by the arithmetic domain defined by those ranges.  These
+array by the rectangular domain defined by those ranges.  These
 range-based slices may also be expressed using partially unbounded or
 completely unbounded ranges.  This is equivalent to slicing the
 array's defining domain by the specified ranges to create a subdomain
-as described in~\rsec{Slicing} and then using that subdomain to slice
+as described in~\rsec{Array_Slicing} and then using that subdomain to slice
 the array.
 
-For multidimensional arithmetic arrays, slicing with a rank change is
+For multidimensional rectangular arrays, slicing with a rank change is
 supported by substituting integral values within a dimension's range
 for an actual range.  The resulting array will have a rank less than
-the arithmetic array's rank and equal to the number of ranges that are
+the rectangular array's rank and equal to the number of ranges that are
 passed in to take the slice.
 
 \begin{example}
@@ -567,18 +567,18 @@ in~\rsec{Formal_Arguments_of_Generic_Array_Types}.
 If a non-queried domain is specified in the array type of a formal
 argument, the domain must match the domain of the actual argument.
 This is verified at runtime.  There is an exception if the domain is
-an arithmetic domain, described
-in~\rsec{Formal_Arguments_of_Arithmetic_Array_Type}.
+a rectangular domain, described
+in~\rsec{Formal_Arguments_of_Rectangular_Array_Type}.
 
 
-\subsubsection{Formal Arguments of Arithmetic Array Type}
-\label{Formal_Arguments_of_Arithmetic_Array_Type}
-\index{formal arguments!arithmetic arrays}
+\subsubsection{Formal Arguments of Rectangular Array Type}
+\label{Formal_Arguments_of_Rectangular_Array_Type}
+\index{formal arguments!rectangular arrays}
 \index{arrays!as formal arguments}
 
-Formal arguments of arithmetic array type allow an arithmetic domain
-to be specified that does not match the arithmetic domain of the
-actual arithmetic array that is passed to the formal argument.  In
+Formal arguments of rectangular array type allow a rectangular domain
+to be specified that does not match the rectangular domain of the
+actual rectangular array that is passed to the formal argument.  In
 this case, the shape (size in each dimension and rank) of the domain
 of the actual array must match the shape of the domain of the formal
 array.  The indices are translated in the formal array, which is a

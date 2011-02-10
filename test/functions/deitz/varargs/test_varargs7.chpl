@@ -1,6 +1,6 @@
 class C {
   param rank : int;
-  def this(ii : int ...rank) : int {
+  proc this(ii : int ...rank) : int {
     for i in 1..rank do
       writeln(ii(i));
     return 4;

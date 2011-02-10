@@ -3,10 +3,14 @@ The CHPL_DEVELOPER environment variable
 =======================================
 
 It is strongly recommended that all Chapel development work be done
-with CHPL_DEVELOPER set by default (to any non-empty value, e.g. 'true').
-This setting has a number of impacts on how things behave, most of
-which are set up to serve the typical developer as best possible.
-In particular:
+with CHPL_DEVELOPER set by default (to any non-empty value,
+e.g. 'true').  In particular, all code that is committed should be
+able to be built with CHPL_DEVELOPER is set; otherwise, that code is
+considered to break the build.
+
+Setting CHPL_DEVELOPER has a number of impacts on how things behave,
+most of which are set up to serve the typical developer as best
+possible.  In particular:
 
 1) When building the compiler and runtime, it causes:
    (a) debugging to be turned on

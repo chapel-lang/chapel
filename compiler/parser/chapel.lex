@@ -53,7 +53,10 @@ binaryLiteral    0[bB]{bit}+
 hexLiteral       0[xX]{hexDigit}+
 intLiteral       {digit}+|{binaryLiteral}|{hexLiteral}
 exponent         [Ee][\+\-]?{digit}+
-floatLiteral     {digit}*"."{digit}+{exponent}?|{digit}+{exponent}
+floatLiteral1    {digit}*"."{digit}+({exponent})?
+floatLiteral2    {digit}+"."{exponent}
+floatLiteral3    {digit}+{exponent}
+floatLiteral     {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
 
 
 %%
@@ -137,6 +140,8 @@ yield            processToken(TYIELD);
 
 "<=>"            processToken(TSWAP);
 
+{floatLiteral}   processToken(REALLITERAL);
+
 "#"              processToken(THASH);
 ".."             processToken(TDOTDOT);
 "..."            processToken(TDOTDOTDOT);
@@ -185,7 +190,6 @@ yield            processToken(TYIELD);
 
 {ident}          processToken(TIDENT);
 {intLiteral}     processToken(INTLITERAL);
-{floatLiteral}   processToken(REALLITERAL);
 {intLiteral}i    processToken(IMAGLITERAL);
 {floatLiteral}i  processToken(IMAGLITERAL);
 

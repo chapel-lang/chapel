@@ -20,7 +20,7 @@
 //**** Need to modify routine to delay row swaps until after panel 
 //     factorization
 
-def rightBlockLU(A: [?D], blk) where (D.rank == 2) {
+proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
 
   // Test that 0 < blk <= n, where n = length of one dimension of A.
   if (blk <= 0) || (blk > D.dim(1).length) then
@@ -176,7 +176,7 @@ def rightBlockLU(A: [?D], blk) where (D.rank == 2) {
 // the blockLU code will not execute, so testing for this case is
 // not necessary.
 
-def generateBlockLURanges(D:domain(2), blksize) {
+iter generateBlockLURanges(D:domain(2), blksize) {
   const stop = D.dim(1).high;
   const endcol = D.dim(2).high;
 
@@ -186,7 +186,7 @@ def generateBlockLURanges(D:domain(2), blksize) {
   }
 }
 
-def blkIter(indRange, blksize) {
+iter blkIter(indRange, blksize) {
   const stop = indRange.high;
  
   for i in indRange by blksize {
@@ -195,7 +195,7 @@ def blkIter(indRange, blksize) {
   }
 }
 
-def blkIter2D(rowRange, colRange, blksize) {
+iter blkIter2D(rowRange, colRange, blksize) {
   const rowEnd = rowRange.high;
   const colEnd = colRange.high;
  
@@ -213,13 +213,13 @@ def blkIter2D(rowRange, colRange, blksize) {
 // matrix, dropping the maximum value on the floor using the
 // underscore operator, and returning the row of the resulting index.
 
-def computePivotRow(A:[?D]) {
+proc computePivotRow(A:[?D]) {
    const ( , ind) = maxloc reduce (abs(A), D);
    return ind(1);
 }
 
 //  The LU solve routine takes A = [L U y] and solves for x.
-def LUSolve (A: [?ADom], x: [?xDom]) {
+proc LUSolve (A: [?ADom], x: [?xDom]) {
 
    var n = ADom.dim(1).length;
    var AD1 = ADom.dim(1);

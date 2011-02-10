@@ -8,12 +8,12 @@ class D {
   var y = 20;
   var locc: C;
 
-  def doit {
+  proc doit {
     locc = globc;
   }
 }
 
-def main() {
+proc main() {
   var d: D = new D();
   delete globc;
   globc = nil;

@@ -14,7 +14,7 @@ class DistribArray {
   var internalArr: [LocaleSpace] DistribArrayNode(arrType);
   var isLocalize = false;
 
-  def initialize() {
+  proc initialize() {
     if isLocalize then return;
 
     for loc in LocaleSpace {
@@ -29,7 +29,7 @@ class DistribArray {
     }
   }
 
-  def localize() {
+  proc localize() {
     var localArrays: [LocaleSpace] DistribArray(arrType);
     for loc in LocaleSpace {
       on Locales(loc) {
@@ -41,18 +41,18 @@ class DistribArray {
     return localArrays;
   }
 
-  def element(indexNum: int) var {
+  proc element(indexNum: int) var {
     const localeNum = min(indexNum / localSize, numLocales-1);
     const localIndex = indexNum - (localeNum * localSize);
     return internalArr(localeNum).arr(localIndex);
   }
 
-  def getLocales() {
+  iter getLocales() {
     // One could imagine not distributing it across all locales
     for i in LocaleSpace do yield i;
   }
   
-  def getLocalIndices() {
+  iter getLocalIndices() {
     // Get the indices that live on this locale
     var myID = here.id;
     var size = if myID == numLocales-1
@@ -64,7 +64,7 @@ class DistribArray {
     }
   }
 
-  def writeThis(w: Writer) {
+  proc writeThis(w: Writer) {
     on Locales(0) {
       for i in 0..arrSize-1 {
         w.writeln(element(i));
@@ -72,7 +72,7 @@ class DistribArray {
     }
   }
 
-  def copy(b: DistribArray(arrType)) {
+  proc copy(b: DistribArray(arrType)) {
     if (b.arrSize != arrSize) then
       halt("Bad sizes in DistribArray.copy");
 
@@ -88,7 +88,7 @@ class DistribArray {
   }
 }
 
-def main {
+proc main {
   var delta: sync real;
   var localAs => (new DistribArray(real, size)).localize();
   var localBs => (new DistribArray(real, size)).localize();

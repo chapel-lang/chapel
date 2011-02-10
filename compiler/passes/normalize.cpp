@@ -155,9 +155,20 @@ void normalize(void) {
       call->remove();
     }
   }
-  USR_STOP();
+  USR_STOP();  // ProcIter: remove this after transition (not needed)
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // ProcIter: remove this entire 'if' after transition
+    if (!(fn->hasFlag(FLAG_TEMP) || fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))
+        && !fn->hasFlag(FLAG_PROC_ITER_KW_USED))
+    {
+      if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+        INT_ASSERT(!fn->hasFlag(FLAG_EXTERN)); // should be ensured by parser
+        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'iter'");
+      } else {
+        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'proc'");
+      }
+    }
     SET_LINENO(fn);
     if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
@@ -323,7 +334,7 @@ static void normalize_returns(FnSymbol* fn) {
           // return with an expression
           // ProcIter: remove the entire enclosing 'else if'
           INT_ASSERT(!fn->hasFlag(FLAG_PROC_ITER_KW_USED)); // done in semanticChecks
-          USR_WARN(call, "returning a value in an iterator is deprecated; replace it with a yield of that value, followed by a return with no expression"); // TODO: optionally a convertion message
+          USR_WARN(call, "returning a value in an iterator is deprecated; replace it with a yield of that value, followed by a return with no expression");
         }
       }
   }

@@ -1,4 +1,4 @@
-def butterfly(wk1: complex, wk2: complex, wk3: complex, 
+proc butterfly(wk1: complex, wk2: complex, wk3: complex, 
               abcd: [1..4] complex) {
   var x0 = abcd(1) + abcd(2);
   var x1 = abcd(1) - abcd(2);

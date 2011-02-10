@@ -1,4 +1,4 @@
-def myfunc() {
+proc myfunc() {
   var x = 3;
   var f = lambda() { writeln("f: x=", x, "  assigning 4"); x = 4; };
   var g = lambda() { writeln("g: x=", x, "  assigning 5"); x = 5; };

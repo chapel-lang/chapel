@@ -11,7 +11,7 @@ class Bucket {
 class UpdateManager {
   var updateList: Update;
 
-  def getUpdate() {
+  proc getUpdate() {
     if updateList == nil {
       return new Update();
     } else {
@@ -21,7 +21,7 @@ class UpdateManager {
     }
   }
 
-  def returnUpdate(update) {
+  proc returnUpdate(update) {
     update.forward = updateList;
     updateList = update;
   }
@@ -48,7 +48,7 @@ class Buckets {
   var heap = new MaxHeap(numLocs);
   var updateManager = new UpdateManager();
 
-  def insertUpdate(ran: uint(64), loc: int) {
+  proc insertUpdate(ran: uint(64), loc: int) {
     local {
       var bucket = BucketArray(loc);
       var update = updateManager.getUpdate();
@@ -65,7 +65,7 @@ class Buckets {
     }
   }
 
-  def getUpdates(buf:[]) {
+  proc getUpdates(buf:[]) {
     var loc, nu: int;
     local {
       (loc, nu) = heap.extractMax();
@@ -88,7 +88,7 @@ class Buckets {
     return (loc, nu);
   }
 
-  def printCounts() {
+  proc printCounts() {
     for i in 0..#numLocs {
       var b = BucketArray(i);
       writeln(here.id, ": bucket ", i, " has ", b.numUpdates, " updates");
@@ -100,7 +100,7 @@ class Buckets {
 var buckets = new Buckets(numLocs=4);
 var A: [0..100] uint(64);
 
-def main() {
+proc main() {
   buckets.insertUpdate(32, 0);
   buckets.printCounts();
   buckets.insertUpdate(7, 2);

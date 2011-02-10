@@ -1,6 +1,6 @@
 
 
-def foo(inout x) {
+proc foo(inout x) {
   x = x + x;
   return x;
 }

@@ -3,7 +3,7 @@ var A: [1..5] int;
 A = for i in 1..5 do i;
 A = for j in 2..6 do j;
 
-def foo() {
+iter foo() {
   for i in 1..5 do
     yield i;
 }

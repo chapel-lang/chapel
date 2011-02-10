@@ -7,7 +7,7 @@ module M1 {
     use M3;
     writeln("In M2's initializer");
     use M10;
-    def main() {
+    proc main() {
       use M7;
       writeln("In main");
     }

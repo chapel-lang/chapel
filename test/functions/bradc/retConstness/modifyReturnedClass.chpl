@@ -2,11 +2,11 @@ class C { var x: int; }
 
 var c1 = new C(1);
 
-def foo() {
+proc foo() {
   return c1;
 }
 
-def bar() {
+proc bar() {
   var c2 = new C(2);
   return c2;
 }

@@ -1,8 +1,8 @@
-def foo(i : int(32)) {
+proc foo(i : int(32)) {
   writeln("int32 = ", i);
 }
 
-def foo(i : int(64)) {
+proc foo(i : int(64)) {
   writeln("int64 = ", i);
 }
 

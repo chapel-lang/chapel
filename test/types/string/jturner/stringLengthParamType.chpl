@@ -1,4 +1,4 @@
-def fix_string_val(param s:string, param str_len:int) {
+proc fix_string_val(param s:string, param str_len:int) {
   compilerWarning("Success");
 }
 

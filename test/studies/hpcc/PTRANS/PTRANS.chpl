@@ -21,7 +21,7 @@ module HPCC_PTRANS {
       Time,
       BlockDist;
 
-  def main () {
+  proc main () {
 
     // ===================================================================
     // Test Harness for simple Chapel distributed matrix transpose routine
@@ -163,7 +163,7 @@ module HPCC_PTRANS {
   //  | where  A  and  C  are distributed dense matrices. |  
   //  =====================================================
 
-  def Chapel_PTRANS ( A : [?A_domain] real, 
+  proc Chapel_PTRANS ( A : [?A_domain] real, 
 		      C : [?C_domain] real, 
 		      beta : real ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )

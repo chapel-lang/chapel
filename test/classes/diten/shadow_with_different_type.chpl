@@ -6,7 +6,7 @@ class Sub: Base {
   var s = 1;
 }
 
-def main() {
+proc main() {
   var sub = new Sub();
   var base:Base() = sub;
   var base2 = new Base();

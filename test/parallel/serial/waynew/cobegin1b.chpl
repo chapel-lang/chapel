@@ -1,14 +1,14 @@
 use Time;
 
-def one() {
+proc one() {
   writeln("one");
 }
 
-def two() {
+proc two() {
   writeln("two");
 }
 
-def three() {
+proc three() {
   writeln("three");
 }
 

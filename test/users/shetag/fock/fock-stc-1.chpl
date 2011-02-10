@@ -11,7 +11,7 @@ const matD : domain(2) = [1..n, 1..n];
 const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j); 
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
-def buildjk() {
+proc buildjk() {
   var loc = LocaleSpace.low;
   sync {
     for iat in 1..natom do
@@ -42,7 +42,7 @@ def buildjk() {
 
 var oneAtATime: sync bool = true; // workaround because atomics don't work
 
-def buildjk_atom4(blk) {
+proc buildjk_atom4(blk) {
 
   // BLC: TODO: Once we have arrays of differently-sized arrays, the
   // following sets of six statements can be replaced by arrays of
@@ -88,7 +88,7 @@ def buildjk_atom4(blk) {
   oneAtATime = tmp;
 }
 
-def main() {
+proc main() {
   buildjk();
 }
 

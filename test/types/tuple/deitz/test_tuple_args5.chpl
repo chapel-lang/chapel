@@ -1,4 +1,4 @@
-def f((x, (y, z)): (int, (int, int)) = (4, (5, 6))) {
+proc f((x, (y, z)): (int, (int, int)) = (4, (5, 6))) {
   writeln(x + y + z);
 }
 

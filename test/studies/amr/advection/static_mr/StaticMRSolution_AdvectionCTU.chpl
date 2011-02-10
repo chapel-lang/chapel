@@ -9,7 +9,7 @@ use StaticMRBC_def;
 //|\""""""""""""""""""""""""""""""""""""""""""""""|\
 //| >    StaticMRSolution.advance_AdvectionCTU    | >
 //|/______________________________________________|/
-def StaticMRSolution.advance_AdvectionCTU(
+proc StaticMRSolution.advance_AdvectionCTU(
   bc:             StaticMRBC,
   velocity:       dimension*real,
   time_requested: real)
@@ -63,7 +63,7 @@ def StaticMRSolution.advance_AdvectionCTU(
 //|\""""""""""""""""""""""""""""""""""""""""""""""""""""""""|\
 //| >    StaticMRSolution.stepLevelSolution_AdvectionCTU    | >
 //|/________________________________________________________|/
-def StaticMRSolution.stepLevelSolution_AdvectionCTU(
+proc StaticMRSolution.stepLevelSolution_AdvectionCTU(
   level_idx: int,
   bc:        StaticMRBC,
   velocity:  dimension*real,

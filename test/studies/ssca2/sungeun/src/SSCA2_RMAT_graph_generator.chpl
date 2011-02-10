@@ -34,7 +34,7 @@ module SSCA2_RMAT_graph_generator
     var end   = 1: int; 
   }
     
-  def +(l: directed_vertex_pair, r: directed_vertex_pair) 
+  proc +(l: directed_vertex_pair, r: directed_vertex_pair) 
       return new directed_vertex_pair (l.start + r.start, l.end + r.end);
 
 
@@ -42,7 +42,7 @@ module SSCA2_RMAT_graph_generator
   // Quadrant selection algorithm
   // ============================
 
-  def assign_quadrant ( u: real, a: real, b: real, c: real, d : real, 
+  proc assign_quadrant ( u: real, a: real, b: real, c: real, d : real, 
 			bit : int ) : directed_vertex_pair
     {
       // ---------------------------------------------------------------------
@@ -93,7 +93,7 @@ module SSCA2_RMAT_graph_generator
   // Main RMAT Graph Generation Procedure
   // ====================================~
 
-  def Gen_RMAT_graph ( a : real, 
+  proc Gen_RMAT_graph ( a : real, 
 		       b : real, 
 		       c : real, 
 		       d : real, 

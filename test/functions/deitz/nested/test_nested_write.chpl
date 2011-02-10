@@ -1,4 +1,4 @@
-def foo() {
+proc foo() {
   var x, y: int;
 
   x = 1;
@@ -6,7 +6,7 @@ def foo() {
   y = x;
   writeln(y);
 
-  def bar() {
+  proc bar() {
     x = 2;
   }
 }

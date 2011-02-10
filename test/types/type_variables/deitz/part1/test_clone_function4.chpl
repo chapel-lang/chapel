@@ -1,8 +1,8 @@
-def filler(x : int) {
+proc filler(x : int) {
   writeln(x);
 }
 
-def foo(x) {
+proc foo(x) {
   writeln(x);
 }
 

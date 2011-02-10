@@ -4,7 +4,7 @@ module M1 {
 }
 
 module M2 {
-  def main() {
+  proc main() {
     writeln("M1.x is: ", M1.x);
   }
 }

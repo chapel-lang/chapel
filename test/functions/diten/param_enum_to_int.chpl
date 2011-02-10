@@ -1,9 +1,9 @@
 enum color { red, green, blue };
 
-def foo(param i: int) {
+proc foo(param i: int) {
   writeln("param ", i);
 }
-def foo(i: int) {
+proc foo(i: int) {
   writeln("non-param ", i);
 }
 

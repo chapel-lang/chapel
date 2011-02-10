@@ -1,6 +1,6 @@
-def bar(x) return 12;
+proc bar(x) return 12;
 
-def foo(x, y = bar(x)) {
+proc foo(x, y = bar(x)) {
   writeln(x, " ", y);
 }
 

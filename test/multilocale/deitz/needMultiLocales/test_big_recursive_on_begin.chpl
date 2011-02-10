@@ -1,6 +1,6 @@
 config const n: int = 1024;
 
-def foo(i: int) {
+proc foo(i: int) {
   if i < n {
     _debugWriteln(here.id, " pre ", i);
     sync {

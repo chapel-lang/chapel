@@ -19,7 +19,7 @@ config const numRandoms = 128;
 config const errorTolerance = 0.01;
 
 
-def main() {
+proc main() {
   writeln("Main table size = 2**", logTableSize, " = ", tableSize, " words");
   writeln("Number of updates = ", numUpdates);
 
@@ -30,7 +30,7 @@ def main() {
 
 
 // BLC: eliminate Ran array -- replace with per-thread local variable
-def randomAccessUpdate() {
+proc randomAccessUpdate() {
   // BLC: might prefer the following line to be Table = tableDom;
   [i in tableDom] Table(i) = i:uint(64);  // BLC: unfortunate cast
 
@@ -61,7 +61,7 @@ def randomAccessUpdate() {
 }
 
 
-def verifyResults() {
+proc verifyResults() {
 
   var temp= 0x1:uint(64);  // BLC: Can we rename this?
   for i in updateDom {
@@ -84,7 +84,7 @@ def verifyResults() {
 }
 
 
-def HPCCstarts(in n:int(64)) { // BLC: unfortunate type specification
+proc HPCCstarts(in n:int(64)) { // BLC: unfortunate type specification
   param period = 1317624576693539401;
 
   while (n < 0) do
@@ -128,7 +128,7 @@ def HPCCstarts(in n:int(64)) { // BLC: unfortunate type specification
 // BLC: would like x to be an inout
 // BLC: would also like to see this fn inlined -- how to specify?
 // BLC: better name for this fn?
-def bitMunge(x) {
+proc bitMunge(x) {
   const POLY: uint(64) = 0x0000000000000007;  // BLC: should be param, but causes error
   param hibit: uint(64) = 0x8000000000000000; // BLC: would like to write this: 0x1u << 63, but doesn't work
   return (x << 1) ^ (if (x & hibit) then POLY else 0:uint(64));  // BLC: cast is unfortunate

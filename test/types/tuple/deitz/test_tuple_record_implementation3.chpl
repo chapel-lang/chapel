@@ -3,11 +3,11 @@ record mytuple {
   var field2 : real;
 }
 
-def foo(t : mytuple, param i : int) where i == 1 {
+proc foo(t : mytuple, param i : int) where i == 1 {
   return 1;
 }
 
-def foo(t : mytuple, param i : int) where i == 2 {
+proc foo(t : mytuple, param i : int) where i == 2 {
   return 2;
 }
 

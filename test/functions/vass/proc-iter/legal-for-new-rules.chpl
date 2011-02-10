@@ -20,14 +20,14 @@ proc p11c() {
 writeln("p11c: ", p11c());
 
 
-def i11a() {
-  yield "11a";
+iter i11a() {
+  yield "i11a";
 }
 ti(i11a());
 
 
 iter i11b() {
-  yield "11b";
+  yield "i11b";
   return;
 }
 ti(i11b());
@@ -35,8 +35,8 @@ ti(i11b());
 
 // ensure it is treated as an iterator, not a procedure
 iter i11g() {
-  yield "11g-1.";
-  yield "11g-2.";
+  yield "i11g-1.";
+  yield "i11g-2.";
 }
 writeln(i11g());
 

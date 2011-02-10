@@ -1,12 +1,12 @@
 class C {
   type t;
   var x: t;
-  def initialize() {
+  proc initialize() {
     writeln("side effect ", x);
   }
 }
 
-def foo(type t) {
+proc foo(type t) {
   var x: t;
   writeln(x);
 }

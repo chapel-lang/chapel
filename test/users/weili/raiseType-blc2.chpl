@@ -1,4 +1,4 @@
-def raiseType(type x) type
+proc raiseType(type x) type
 {
         if (x==bool) then return int;
         if (x==int) then return real;

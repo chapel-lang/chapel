@@ -1,4 +1,4 @@
-def foo(X: [1..5] int) {
+proc foo(X: [1..5] int) {
   for i in X.domain do
     X(i) = i;
 }

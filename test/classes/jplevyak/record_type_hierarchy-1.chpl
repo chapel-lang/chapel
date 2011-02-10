@@ -7,7 +7,7 @@ record D {
   var y : int;
 }
 
-def f(a : C) {
+proc f(a : C) {
   return 1;
 }
 

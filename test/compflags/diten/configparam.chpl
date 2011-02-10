@@ -15,7 +15,7 @@ config param aimag2: imag = 3.4i;
 config param acolor1 = color.blue;
 config param acolor2: color = color.blue;
 
-def main() {
+proc main() {
   writeln(abool1);
   writeln(abool2);
 

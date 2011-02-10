@@ -3,7 +3,7 @@ class C {
 
   var x: t;
 
-  def foo() {
+  proc foo() {
     writeln("x.domain is: ", x.domain);
     writeln("x is: ", x);
     writeln();

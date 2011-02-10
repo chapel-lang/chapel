@@ -1,11 +1,11 @@
 module M1 {
   use M2;
 
-  def foo() {
+  proc foo() {
     writeln("In M1's foo()");
   }
 
-  def main() {
+  proc main() {
     M1.foo();
     M2.foo();
     baz();
@@ -15,11 +15,11 @@ module M1 {
 module M2 {
   use M1;
 
-  def foo() {
+  proc foo() {
     writeln("In M2's foo()");
   }
 
-  def baz() {
+  proc baz() {
     M1.foo();
     M2.foo();
   }

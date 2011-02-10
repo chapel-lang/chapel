@@ -4,7 +4,7 @@ class C {
   var SparseD: sparse subdomain(D);
   var A: [SparseD] real;
 
-  def foo() {
+  proc foo() {
     writeln("SparseD is: ", SparseD);
     writeln("A is: ", A);
     SparseD += 4;

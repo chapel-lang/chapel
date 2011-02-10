@@ -10,14 +10,14 @@ class myseq {
   var first : myseq_node(elementType);
   var last : myseq_node(elementType);
 
-  def append(e : elementType) {
+  proc append(e : elementType) {
     first = new myseq_node(elementType = elementType);
     first.element = e;
     last = first;
     length = 1;
   }
 
-  def print() {
+  proc print() {
     writeln("sequence contains ", first.element);
   }
 }

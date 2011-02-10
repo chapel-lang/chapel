@@ -1,4 +1,4 @@
-def norm(x: [], p) where x.rank == 1 {
+proc norm(x: [], p) where x.rank == 1 {
   type select p {
     when int {
       if (p == 2) {

@@ -3,7 +3,7 @@ record R {
   var s: string;
 }
 
-def main() {
+proc main() {
   var r: R;
   coforall i in 0..numLocales-1 {
     on Locales(i) {

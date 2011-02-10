@@ -1,6 +1,6 @@
 var (x, y, z) = (1, 2, 3);
 
-def foo() var {
+iter foo() var {
   if setter then
     writeln("setter version of foo() used");
   else

@@ -1,4 +1,4 @@
-def isDegen(r) {
+proc isDegen(r) {
   return r.low > r.high;
 }
 

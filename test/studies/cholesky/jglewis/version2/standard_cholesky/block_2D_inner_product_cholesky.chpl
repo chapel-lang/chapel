@@ -46,7 +46,7 @@ module block_2D_inner_product_cholesky  {
       block_triangular_solve_variants, 
       matrix_matrix_multiply_inner_product;
 
-  def block_2D_inner_product_cholesky ( A : [] ) 
+  proc block_2D_inner_product_cholesky ( A : [] ) 
 
     where ( A.domain.rank == 2 ) 
     {

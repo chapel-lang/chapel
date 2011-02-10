@@ -2,10 +2,10 @@ class C {
   var a, b, c: int;
 }
 
-def C.~C() { writeln("In destructor"); }
+proc C.~C() { writeln("In destructor"); }
 
 
-def main {
+proc main {
   var c: C = new C(1,2,3);
   delete c;
 }

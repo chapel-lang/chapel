@@ -6,7 +6,7 @@ use LevelBC_def;
 //| >    LevelSolution.advance_DiffusionBE method    | >
 //|/_________________________________________________|/
 
-def LevelSolution.advance_DiffusionBE(
+proc LevelSolution.advance_DiffusionBE(
   bc:             LevelBC,
   diffusivity:    real,
   time_requested: real,
@@ -50,7 +50,7 @@ def LevelSolution.advance_DiffusionBE(
 //| >    LevelSolution.step_DiffusionBE method    | >
 //|/______________________________________________|/
 
-def LevelSolution.step_DiffusionBE(
+proc LevelSolution.step_DiffusionBE(
   bc:           LevelBC,
   diffusivity:  real,
   dt:           real,

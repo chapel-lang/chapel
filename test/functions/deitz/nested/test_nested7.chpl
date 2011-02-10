@@ -1,9 +1,9 @@
 var a = 2;
 var b = 3;
 var c = 5;
-def foo() {
+proc foo() {
   var x = a * b * c;
-  def bar() {
+  proc bar() {
     var y = a * b;
     return x * y;
   }

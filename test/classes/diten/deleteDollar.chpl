@@ -1,13 +1,13 @@
 class c$ {
-  def writeme() {
+  proc writeme() {
     writeln("Hi from $");
   }
-  def ~c$() {
+  proc ~c$() {
     writeln("Destroy dollar");
   }
 }
 
-def main {
+proc main {
   var c$$ = new c$();
   c$$.writeme();
   delete c$$;

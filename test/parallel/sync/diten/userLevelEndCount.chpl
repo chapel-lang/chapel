@@ -3,25 +3,25 @@ class EC {
   var b: sync bool = true;
 }
 
-def up(e: EC) {
+proc up(e: EC) {
   var i = e.i;
   if i == 0 then
     e.b.reset();
   e.i = i + 1;
 }
 
-def down(e: EC) {
+proc down(e: EC) {
   var i = e.i;
   if i == 1 then
     e.b = true;
   e.i = i - 1;
 }
 
-def allocate() {
+proc allocate() {
   return new EC();
 }
 
-def wait(e: EC) {
+proc wait(e: EC) {
   e.b;
   e.i; // wait until down is finished setting i
   delete e;
@@ -29,7 +29,7 @@ def wait(e: EC) {
 
 config var n = 1000;
 
-def main {
+proc main {
   var a = 0;
   for i in 1..n {
     //var unused = allocate();

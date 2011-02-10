@@ -1,0 +1,29 @@
+bug: domain equality uses promotion (plus semantic question too)
+
+This test was written to ask the similar questions as
+test/ranges/bradc/rangeEquality.chpl for domains.  However, it happens
+to show that domain assignment is implemented today using a promoted
+assignment on the index types rather than an actual set comparison
+(which should be O(1) for rectangular domains; O(numIndices) for
+sparse/associative domains with an O(1) escape if numIndices doesn't
+match for the two.  If we were to fix the promotion issue but not
+resolve the semantic question below, I'd convert this to a semantic
+future as indicated in the header.  Giving credit where it's due: John
+Lewis pointed this bug out recently as well.
+
+As noted in the range version of the .future, my proposed answer for
+the third comparison differs here from ranges because of the fact that
+domains are intended to define index sets, so arguably we should be
+using set equality rather than ordered equality.
+
+I don't feel 100% confident of this final point.  In particular, I
+could imagine an argument that says "rectangular domains are ordered
+therefore we could/should take order into account in computing
+equality" and I'm open to this argument.  This question is very
+closely tied to the one asked in domainOrder.chpl in this same
+directory.
+
+Note that I only did 1D cases here to get the conversation started.
+2D cases (or higher) should also be added as well as
+associative/sparse cases.
+

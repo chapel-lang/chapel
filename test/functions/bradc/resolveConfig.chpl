@@ -2,7 +2,7 @@ module A {
   use B;
   config const n = 5;
 
-  def main() {
+  proc main() {
     writeln("arr is: ", arr);
   }
 }

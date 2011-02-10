@@ -11,7 +11,7 @@ module barrier {
     // in each iteration, set the first lock on (empty) and set the second
     // lock off (full).  The middle assignment should be unnecessary.
 
-    def barrier_data ( n_processors: int ) {
+    proc barrier_data ( n_processors: int ) {
       processor_count  = n_processors;
       tasks_to_finish$ = n_processors;
       if  first_barrier_unlocked$.isFull then
@@ -21,7 +21,7 @@ module barrier {
     }
   }
 
-  def barrier ( locks ) {
+  proc barrier ( locks ) {
 
     // =========================================================================
     // Barrier function based on sync variables.  

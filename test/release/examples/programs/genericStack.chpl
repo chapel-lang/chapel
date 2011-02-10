@@ -25,13 +25,13 @@ record ListStack {
   var top: MyNode(itemType); // top node on stack linked list
 
   // push method: add an item to the top of the stack
-  def push(item: itemType) {
+  proc push(item: itemType) {
     top = new MyNode(itemType, item, top);
   }
 
   // pop method: remove an item from the top of the stack
   // note: it is a runtime error if the stack is empty
-  def pop() {
+  proc pop() {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
     var oldTop = top;
@@ -40,7 +40,7 @@ record ListStack {
   }
 
   // isEmpty method: true if the stack is empty; otherwise false
-  def isEmpty return top == nil;
+  proc isEmpty return top == nil;
 }
 
 
@@ -55,7 +55,7 @@ record ArrayStack {
 
   // push method: add an item to the top of the stack
   // note: the array is doubled if it is full
-  def push(item: itemType) {
+  proc push(item: itemType) {
     var height = data.numElements;
     if numItems == height then
       dataSpace = [1..height*2];
@@ -65,7 +65,7 @@ record ArrayStack {
 
   // pop method: remove an item from the top of the stack
   // note: it is a runtime error if the stack is empty
-  def pop() {
+  proc pop() {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
     numItems -= 1;
@@ -73,7 +73,7 @@ record ArrayStack {
   }
 
   // isEmpty method: true if the stack is empty; otherwise false
-  def isEmpty return numItems == 0;
+  proc isEmpty return numItems == 0;
 }
 
 
@@ -84,7 +84,7 @@ testStacks(new ListStack(string), new ListStack(index(D)));
 testStacks(new ArrayStack(string), new ArrayStack(index(D)));
 
 
-def testStacks(stack1, stack2) {
+proc testStacks(stack1, stack2) {
   // Test: Push three strings onto a stack and then pop them off.
   stack1.push("one");
   stack1.push("two");

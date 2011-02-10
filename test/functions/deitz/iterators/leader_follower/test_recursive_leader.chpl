@@ -1,9 +1,9 @@
-def foo(n: int) {
+iter foo(n: int) {
   for i in 1..n do
     yield i;
 }
 
-def foo(param tag: iterator, n: int):range where tag == iterator.leader {
+iter foo(param tag: iterator, n: int):range where tag == iterator.leader {
   if n == 1 then
     yield 1..1;
   else {
@@ -13,7 +13,7 @@ def foo(param tag: iterator, n: int):range where tag == iterator.leader {
   }
 }
 
-def foo(param tag: iterator, follower, n: int) where tag == iterator.follower {
+iter foo(param tag: iterator, follower, n: int) where tag == iterator.follower {
   for i in follower do
     yield i;
 }

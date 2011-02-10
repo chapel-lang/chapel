@@ -1,4 +1,4 @@
-def foo(A: [2..4, 2..4] int) {
+proc foo(A: [2..4, 2..4] int) {
   for ie in (A.domain,A) do
     writeln(ie);
 }

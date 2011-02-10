@@ -23,7 +23,7 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
   writeef(&(s->is_full), is_full);  // mark full
 }
 
-void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s,
+void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
                                   int32_t lineno, chpl_string filename) {
   chpl_sync_lock(s);
   while (!readxx(&(s->is_full))) {
@@ -33,7 +33,7 @@ void chpl_sync_wait_full_and_lock(chpl_sync_aux_t *s,
   }
 }
 
-void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s,
+void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
                                    int32_t lineno, chpl_string filename) {
   chpl_sync_lock(s);
   while (readxx(&(s->is_full))) {
@@ -43,17 +43,17 @@ void chpl_sync_wait_empty_and_lock(chpl_sync_aux_t *s,
   }
 }
 
-void chpl_sync_mark_and_signal_full(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s) {
   writexf(&(s->signal_full), true);                // signal full
   writeef(&(s->is_full), true);                    // mark full and unlock
 }
 
-void chpl_sync_mark_and_signal_empty(chpl_sync_aux_t *s) {
+void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
   writexf(&(s->signal_empty), true);               // signal empty
   writeef(&(s->is_full), false);                   // mark empty and unlock
 }
 
-chpl_bool chpl_sync_is_full(void *val_ptr, chpl_sync_aux_t *s,
+chpl_bool chpl_sync_isFull(void *val_ptr, chpl_sync_aux_t *s,
                             chpl_bool simple_sync_var) {
   if (simple_sync_var)
     return (chpl_bool)(((unsigned)MTA_STATE_LOAD(val_ptr)<<3)>>63 == 0);
@@ -61,18 +61,18 @@ chpl_bool chpl_sync_is_full(void *val_ptr, chpl_sync_aux_t *s,
     return (chpl_bool)readxx(&(s->is_full));
 }
 
-void chpl_sync_init_aux(chpl_sync_aux_t *s) {
+void chpl_sync_initAux(chpl_sync_aux_t *s) {
   writexf(&(s->is_full), 0);          // mark empty and unlock
   purge(&(s->signal_empty));
   purge(&(s->signal_full));
 }
 
-void chpl_sync_destroy_aux(chpl_sync_aux_t *s) { }
+void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 
 // Tasks
 
-void chpl_tasking_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   //
   // If a value was specified for the call stack size or max threads
   // config consts, warn the user that it's ignored on this system.
@@ -87,34 +87,34 @@ void chpl_tasking_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
                  0, NULL);
 }
 
-void chpl_tasking_exit(void) {
+void chpl_task_exit(void) {
 }
 
-void chpl_tasking_call_main(void (*chpl_main)(void)) {
+void chpl_task_callMain(void (*chpl_main)(void)) {
   chpl_main();
 }
 
-void chpl_add_to_task_list(chpl_fn_int_t fid,
+void chpl_task_addToTaskList(chpl_fn_int_t fid,
                            void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
                            chpl_bool call_chpl_begin,
                            int lineno,
                            chpl_string filename) {
-  chpl_begin(chpl_ftable[fid], arg, false, false, NULL);
+  chpl_task_begin(chpl_ftable[fid], arg, false, false, NULL);
 }
 
-void chpl_process_task_list(chpl_task_list_p task_list) { }
+void chpl_task_processTaskList(chpl_task_list_p task_list) { }
 
-void chpl_execute_tasks_in_list(chpl_task_list_p task_list) { }
+void chpl_task_executeTasksInList(chpl_task_list_p task_list) { }
 
-void chpl_free_task_list(chpl_task_list_p task_list) { }
+void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
 
 void
-chpl_begin(chpl_fn_p fp, void* arg, chpl_bool ignore_serial, 
+chpl_task_begin(chpl_fn_p fp, void* arg, chpl_bool ignore_serial, 
            chpl_bool serial_state, chpl_task_list_p task_list_entry) {
 
-  if (!ignore_serial && chpl_get_serial())
+  if (!ignore_serial && chpl_task_getSerial())
     (*fp)(arg);
 
   else {
@@ -127,7 +127,7 @@ chpl_begin(chpl_fn_p fp, void* arg, chpl_bool ignore_serial,
   }
 }
 
-chpl_taskID_t chpl_task_id(void) {
+chpl_taskID_t chpl_task_getId(void) {
   return (chpl_taskID_t) mta_get_threadid(); 
 }
 
@@ -135,7 +135,7 @@ void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
-chpl_bool chpl_get_serial(void) {
+chpl_bool chpl_task_getSerial(void) {
   chpl_bool *p = NULL;
   p = (chpl_bool*) mta_register_task_data(p);
   if (p == NULL)
@@ -146,7 +146,7 @@ chpl_bool chpl_get_serial(void) {
   }
 }
 
-void chpl_set_serial(chpl_bool state) {
+void chpl_task_setSerial(chpl_bool state) {
   chpl_bool *p = NULL;
   p = (chpl_bool*) mta_register_task_data(p);
   if (p == NULL)
@@ -158,30 +158,30 @@ void chpl_set_serial(chpl_bool state) {
     chpl_internal_error("out of memory while creating serial state");
 }
 
-uint64_t chpl_task_callstacksize(void) { return 0; }
+uint64_t chpl_task_getCallStackSize(void) { return 0; }
 
 // not sure what the correct value should be here!
-uint32_t chpl_numQueuedTasks(void) { return 0; }
+uint32_t chpl_task_getNumQueuedTasks(void) { return 0; }
 
 // not sure what the correct value should be here!
-uint32_t chpl_numRunningTasks(void) { return 1; }
+uint32_t chpl_task_getNumRunningTasks(void) { return 1; }
 
 // not sure what the correct value should be here!
-int32_t  chpl_numBlockedTasks(void) { return -1; }
+int32_t  chpl_task_getNumBlockedTasks(void) { return -1; }
 
 
 // Threads
 
-int32_t chpl_threads_getMaxThreads(void) {
+int32_t chpl_task_getMaxThreads(void) {
   return 0;
 }
 
-int32_t chpl_threads_maxThreadsLimit(void) {
+int32_t chpl_task_getMaxThreadsLimit(void) {
   return 0;
 }
 
 // not sure what the correct value should be here!
-uint32_t chpl_numThreads(void) { return 1; }
+uint32_t chpl_task_getNumThreads(void) { return 1; }
 
 // not sure what the correct value should be here!
-uint32_t chpl_numIdleThreads(void) { return 0; }
+uint32_t chpl_task_getNumIdleThreads(void) { return 0; }

@@ -21,7 +21,7 @@ use GridVariable_def;
 // cell.
 //----------------------------------------------------------------
 
-def GridVariable.storeCTUOperator(
+proc GridVariable.storeCTUOperator(
   q_in:     GridVariable,
   velocity: dimension*real,
   dt:       real)

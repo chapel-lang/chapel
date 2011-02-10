@@ -69,7 +69,7 @@ module cholesky_scalar_algorithms {
   // the factorization.  
   // =========================================================================
     
-  def scalar_outer_product_cholesky ( A : [] )
+  proc scalar_outer_product_cholesky ( A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -126,7 +126,7 @@ module cholesky_scalar_algorithms {
   // matrix-vector product form.
   // =========================================================================
     
-  def scalar_inner_product_cholesky ( A : [] ) 
+  proc scalar_inner_product_cholesky ( A : [] ) 
 
     where ( A.domain.rank == 2 ) 
     {
@@ -190,7 +190,7 @@ module cholesky_scalar_algorithms {
   // rows and columns (i+1..).
   // =========================================================================
     
-  def scalar_bordering_cholesky ( A : [] )  
+  proc scalar_bordering_cholesky ( A : [] )  
 
     where ( A.domain.rank == 2 ) {
 
@@ -326,7 +326,7 @@ module cholesky_scalar_algorithms {
   //elemental_cholesky_symmetric_index_ranges1,
   // elemental_cholesky_symmetric_index_ranges2;
 
-  def main {
+  proc main {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
@@ -398,7 +398,7 @@ module cholesky_scalar_algorithms {
     //				"iterators version 2", 
     //				elemental_cholesky_v2 );
 
-    def run_one_cholesky_algorithm ( header : string, cholesky_fun ) {
+    proc run_one_cholesky_algorithm ( header : string, cholesky_fun ) {
 
       // --------------------------------------------
       // Timer version assumes one process per locale
@@ -428,7 +428,7 @@ module cholesky_scalar_algorithms {
     }
   }
 
-  def check_factorization ( A : [], L : [] )
+  proc check_factorization ( A : [], L : [] )
 
     // -----------------------------------------------------------------------
     // Check the factorization by forming L L^T and comparing the result to A.
@@ -475,7 +475,7 @@ module cholesky_scalar_algorithms {
   }
 
 
-  def print_L ( L : [] ) {
+  proc print_L ( L : [] ) {
    
     const rows = L.domain.dim (1);
 

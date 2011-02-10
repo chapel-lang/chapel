@@ -1,0 +1,31 @@
+bug: range methods should preserve alignment
+
+This test asserts that range methods like .expand and .exterior should
+preserve the alignment value of the original range.  The intention for
+these methods is to be able to support boundary conditions and
+halo-style index sets for strided domains in a natural way.  Since
+operations on such domains are built in terms of the range operators,
+getting the details right in the range operators should make the
+domain cases fall out trivially.  I'd argue that the ZPL experience
+showed that having these not change the alignment was natural and
+robust.  
+
+(Arguably these methods should only be called with values that are a
+multiple of the stride in which case it tends not to matter, but to
+present a clear algebra, I favor maintaining the alignment in cases
+that don't meet that constraint.  And I don't like requiring that
+constraint).
+
+I think the right way to support this would be to have a range store
+low, high, stride, and alignment values which is what we did in ZPL.
+Steve had optimistically hoped that if we always snapped range bounds
+to aligned values, we wouldn't have to store an explicit alignment
+term, but I think Tom's recent bug fixes show that that wasn't the
+case.  His changes fixed the existing bugs by storing low and high
+using their native values (which I like and which actually make things
+like exterior more correct on something like 1..10 by 2 I would
+argue), but without storing an alignment value, it becomes impossible
+to implement the semantics desired by this test.
+
+Bottom line: This test argues for storing a range using an alignment
+values in addition to low, high, and stride.

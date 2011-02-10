@@ -6,7 +6,7 @@ module M1 {
 
 module M2 {
   _debugWriteln(here.id, " initializing M2");
-  def main() {
+  proc main() {
     _debugWriteln(here.id, " starting main");
     on Locales(1) {
       _debugWriteln(here.id, " using M1");

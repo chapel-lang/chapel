@@ -14,7 +14,7 @@ var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType;
 const poolSize = numLocales;
 const t = new taskpool(poolSize);
 
-def buildjk() {
+proc buildjk() {
   cobegin {
     coforall loc in LocaleSpace do on Locales(loc) do
       consumer();
@@ -37,7 +37,7 @@ def buildjk() {
   writeln("\n1st col of exchange matrix:-\n", kmat2(1..n,1..1));
 }
 
-def consumer() {
+proc consumer() {
   var blk = t.remove();
   while (blk != nil) {
     const copyofblk = blk;
@@ -48,12 +48,12 @@ def consumer() {
   }
 }
 
-def producer() {
+proc producer() {
   for blk in genBlocks() do // sjd: changed forall to for
     t.add(blk);
 }
 
-def genBlocks() {
+iter genBlocks() {
   for iat in 1..natom do
     for (jat, kat) in [1..iat, 1..iat] {
       const lattop = if (kat==iat) then jat else kat;
@@ -66,7 +66,7 @@ def genBlocks() {
 
 var oneAtATime: sync bool = true; // workaround because atomics don't work
 
-def buildjk_atom4(blk) {
+proc buildjk_atom4(blk) {
 
   // BLC: TODO: Once we have arrays of differently-sized arrays, the
   // following sets of six statements can be replaced by arrays of
@@ -112,7 +112,7 @@ def buildjk_atom4(blk) {
   oneAtATime = tmp;
 }
 
-def main() {
+proc main() {
   buildjk();
 }
 

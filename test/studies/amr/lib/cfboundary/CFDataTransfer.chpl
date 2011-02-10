@@ -14,7 +14,7 @@ use RefiningTransferVariable_def;
 // GridVariable's values on a coarser index space.
 //-------------------------------------------------------------------
 
-def GridVariable.coarsen_Linear(
+proc GridVariable.coarsen_Linear(
   coarse_cells: domain(dimension,stridable=true),
   ref_ratio:    dimension*int)
 {
@@ -53,7 +53,7 @@ def GridVariable.coarsen_Linear(
 // input domain fine_cells.  This is akin to accessing the
 // GridVariable's values on a finer index space.
 //----------------------------------------------------------------
-def GridVariable.refine_Linear(
+proc GridVariable.refine_Linear(
   fine_cells: domain(dimension,stridable=true),
   ref_ratio:  dimension*int)
 {
@@ -129,7 +129,7 @@ def GridVariable.refine_Linear(
 //|\""""""""""""""""""""""""""""""""""""""""""|\
 //| >    LevelVariable.getFineValues_Linear   | >
 //|/__________________________________________|/
-def LevelVariable.getFineValues_Linear(
+proc LevelVariable.getFineValues_Linear(
   q_fine:      LevelVariable,
   cf_boundary: CFBoundary)
 {
@@ -159,7 +159,7 @@ def LevelVariable.getFineValues_Linear(
 //|\""""""""""""""""""""""""""""""""""""""""""""""""""""""""|\
 //| >    RefiningTransferVariable.getCoarseValues_Linear    | >
 //|/________________________________________________________|/
-def RefiningTransferVariable.getCoarseValues_Linear(
+proc RefiningTransferVariable.getCoarseValues_Linear(
   q_coarse:  LevelVariable)
 {
   //==== Safety check ====
@@ -214,7 +214,7 @@ def RefiningTransferVariable.getCoarseValues_Linear(
 //| >    LevelSolution.correct_Linear    | >
 //|/_____________________________________|/
 
-def LevelSolution.correct_Linear(
+proc LevelSolution.correct_Linear(
   fine_solution: LevelSolution,
   cf_boundary:   CFBoundary)
 {

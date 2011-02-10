@@ -6,7 +6,7 @@ record R {
 record RR {
   var DD = [1..3];
   var AA: [1..3] R;
-  def this(i) var {
+  proc this(i) var {
     return AA(i).A;
   }
 }

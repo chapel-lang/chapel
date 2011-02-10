@@ -1,4 +1,4 @@
-def foo(n: int) {
+iter foo(n: int) {
   for i in 1..n do
     yield i;
 }

@@ -120,6 +120,8 @@ class DefaultArithmeticDom: BaseArithmeticDom {
 
     if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
 
+    if numChunks == 0 then return;	// Avoid problems with 0:uint(64) - 1 below.
+
     if (CHPL_TARGET_PLATFORM != "xmt") {
       if numChunks == 1 {
         if rank == 1 {
@@ -253,22 +255,44 @@ class DefaultArithmeticDom: BaseArithmeticDom {
 
   proc dsiLow {
     if rank == 1 {
-      return ranges(1)._low;
+      return ranges(1).low;
     } else {
       var result: rank*idxType;
       for param i in 1..rank do
-        result(i) = ranges(i)._low;
+        result(i) = ranges(i).low;
       return result;
     }
   }
 
   proc dsiHigh {
     if rank == 1 {
-      return ranges(1)._high;
+      return ranges(1).high;
     } else {
       var result: rank*idxType;
       for param i in 1..rank do
-        result(i) = ranges(i)._high;
+        result(i) = ranges(i).high;
+      return result;
+    }
+  }
+
+  proc dsiAlignedLow {
+    if rank == 1 {
+      return ranges(1).alignedLow;
+    } else {
+      var result: rank*idxType;
+      for param i in 1..rank do
+        result(i) = ranges(i).alignedLow;
+      return result;
+    }
+  }
+
+  proc dsiAlignedHigh {
+    if rank == 1 {
+      return ranges(1).alignedHigh;
+    } else {
+      var result: rank*idxType;
+      for param i in 1..rank do
+        result(i) = ranges(i).alignedHigh;
       return result;
     }
   }
@@ -280,6 +304,28 @@ class DefaultArithmeticDom: BaseArithmeticDom {
       var result: rank*chpl__idxTypeToStrType(idxType);
       for param i in 1..rank do
         result(i) = ranges(i)._stride;
+      return result;
+    }
+  }
+
+  proc dsiFirst {
+    if rank == 1 {
+      return ranges(1).first;
+    } else {
+      var result: rank*idxType;
+      for param i in 1..rank do
+        result(i) = ranges(i).first;
+      return result;
+    }
+  }
+
+  proc dsiLast {
+    if rank == 1 {
+      return ranges(1).last;
+    } else {
+      var result: rank*idxType;
+      for param i in 1..rank do
+        result(i) = ranges(i).last;
       return result;
     }
   }
@@ -398,6 +444,8 @@ class DefaultArithmeticArr: BaseArr {
               " ranges(", parDim, ").length=", dom.ranges(parDim).length);
 
     if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
+
+    if numChunks == 0 then return;
 
     if (CHPL_TARGET_PLATFORM != "xmt") {
 
@@ -617,8 +665,7 @@ proc DefaultArithmeticArr.dsiSerialWrite(f: Writer) {
       }
     } else {
       for j in dom.ranges(dim) by makeStridePositive {
-        var lastIdx = if dom.ranges(dim).stride > 0 then dom.ranges(dim).high
-                                                    else dom.ranges(dim).low;
+        var lastIdx =  dom.ranges(dim).last;
         idx(dim) = j;
         recursiveArrayWriter(idx, dim=dim+1,
                              last=(last || dim == 1) && (j == lastIdx));

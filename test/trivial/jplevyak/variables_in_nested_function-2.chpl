@@ -1,8 +1,8 @@
-def baz() {
+proc baz() {
   var y = 2.0;
-  def foo() {
+  proc foo() {
    var x = 1;
-   def bar() {
+   proc bar() {
      x = x + 1;
      y = y + 1;
      writeln(x);

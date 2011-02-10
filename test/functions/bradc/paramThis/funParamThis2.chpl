@@ -1,4 +1,4 @@
-def param foo() {
+proc param foo() {
   writeln("In foo() with (nonsensical) param this");
 }
 

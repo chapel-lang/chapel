@@ -40,7 +40,7 @@ for e in Edges do
 
 
 
-def createRandomGraph() {
+proc createRandomGraph() {
   // temporary index for storing vertices during graph generation
   //  var vertices: [1..numVertices] index(Vertices);
 

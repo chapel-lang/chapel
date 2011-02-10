@@ -11,7 +11,7 @@ var d = new D(p=2);
 
 writeln(d);
 
-def foo(c : C) {
+proc foo(c : C) {
   for param i in 1..c.p do
     writeln(i);
 }

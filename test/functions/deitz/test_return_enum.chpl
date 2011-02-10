@@ -1,6 +1,6 @@
 enum E { A };
 
-def f() param {
+proc f() param {
   return E.A;
 }
 

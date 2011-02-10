@@ -1,4 +1,4 @@
-def foobar(x) {
+proc foobar(x) {
   return x;
 }
 

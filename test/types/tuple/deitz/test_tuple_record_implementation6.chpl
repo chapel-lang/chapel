@@ -3,7 +3,7 @@ record mytuple {
   var field2 : real;
 }
 
-def foo(param i : int, t : mytuple) {
+proc foo(param i : int, t : mytuple) {
   return 1;
 }
 

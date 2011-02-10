@@ -4,9 +4,9 @@ use BlockDist;
 config const size : uint = 200;
 
 // for binary output
-_extern def putchar(i : int) : int;
+_extern proc putchar(i : int) : int;
 
-def main()
+proc main()
 {
   var bytesRequired : uint = (size + 7) / 8;
   var byteRange = 0..#bytesRequired:int(64);

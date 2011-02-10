@@ -5,19 +5,19 @@ config param compilerRewrite = true;
 
 var A: [0..8] real;
 
-def myIter() var {
+iter myIter() var {
   for i in 0..8 {
     yield A(i);
   }
 }
 
-def myIter(param tag: iterator) where tag == iterator.leader {
+iter myIter(param tag: iterator) where tag == iterator.leader {
   yield 0..3;
   yield 4..5;
   yield 6..8;
 }
 
-def myIter(param tag: iterator, follower) var where tag == iterator.follower {
+iter myIter(param tag: iterator, follower) var where tag == iterator.follower {
   for i in follower {
     yield A(i);
   }

@@ -2,7 +2,7 @@
 
 
 // for binary output
-_extern def putchar(i : int) : int;
+_extern proc putchar(i : int) : int;
 
 config const size: int(64) = 200;
 config const iters : uint = 50;
@@ -10,7 +10,7 @@ config const iters : uint = 50;
 const sizeRange = 0..#size;
 const iterRange = 0..#iters;
 
-def main() {
+proc main() {
   
   var bit : int = 128;
   var byte_acc : int = 0;

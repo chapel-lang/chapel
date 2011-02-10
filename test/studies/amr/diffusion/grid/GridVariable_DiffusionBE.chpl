@@ -8,7 +8,7 @@ use GridVariable_def;
 //
 // As with FluxDivergence, ghost cells must be filled beforehand.
 //----------------------------------------------------------------
-def GridVariable.storeBEOperator(
+proc GridVariable.storeBEOperator(
   q:           GridVariable,
   diffusivity: real,
   dt:          real
@@ -30,7 +30,7 @@ def GridVariable.storeBEOperator(
 // Calculates the flux divergence of q.  Note that the ghost
 // cells of q must be filled beforehand
 //-----------------------------------------------------------
-def GridVariable.storeFluxDivergence(
+proc GridVariable.storeFluxDivergence(
   q:               GridVariable,
   diffusivity:     real)
 {

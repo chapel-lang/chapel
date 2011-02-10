@@ -1,9 +1,9 @@
 class foo {
   var i : int;
-/* def f() { return 10 + i; } */
+/* proc f() { return 10 + i; } */
 }
 
-def f(x : foo) {
+proc f(x : foo) {
   return 20 + x.i;
 }
 

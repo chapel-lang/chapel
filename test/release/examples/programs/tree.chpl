@@ -24,7 +24,7 @@ class node {
 //
 // the main routine builds the tree and then sums its values
 //
-def main() {
+proc main() {
   var root = buildTree();
   writeln("sum=", sum(root));
 }
@@ -34,7 +34,7 @@ def main() {
 // node's children in parallel.  It uses the monotonically decreasing
 // height variable to control the recursion.
 //
-def buildTree(height: uint = treeHeight, id: int = 1): node {
+proc buildTree(height: uint = treeHeight, id: int = 1): node {
   var newNode = new node(id);
 
   if height > 1 {
@@ -52,7 +52,7 @@ def buildTree(height: uint = treeHeight, id: int = 1): node {
 // sum() walks the tree in parallel using a cobegin, computing the sum
 // of the node IDs using a postorder traversal.
 //
-def sum(n: node): int {
+proc sum(n: node): int {
   var total = n.id;
 
   if n.left != nil {

@@ -1,4 +1,4 @@
-def a(i:int) { return 1; }
+proc a(i:int) { return 1; }
 
 var x = a;
 var y = a;

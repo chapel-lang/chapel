@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use Math;
 
-def omega(N:int, k:int):complex {
+proc omega(N:int, k:int):complex {
   const PI = 4 * atan(1.0);
   return cos(2*PI*k/N) + 1.0i* sin(2*PI*k/N);
 }

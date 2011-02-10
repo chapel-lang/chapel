@@ -1,8 +1,8 @@
-def f(x: int, y: int) {
+proc f(x: int, y: int) {
   writeln("In f(:int, :int)");
 }
 
-def f(x: range, y) {
+proc f(x: range, y) {
   writeln("In f(:range, :any)");
 }
 

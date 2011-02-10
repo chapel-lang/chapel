@@ -2,7 +2,7 @@
 
 config y = 1;
 
-def foo(a) {
+proc foo(a) {
   return a + a;
 }
 

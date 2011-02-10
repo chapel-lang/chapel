@@ -9,8 +9,8 @@ developers.  A possible reading order is roughly as follows:
 GettingStarted.txt
   A list of suggested "first steps" for new developers.
 
-TestSystem.txt
-  A brief overview of the Chapel testing system.
+Subversion.txt
+  Notes on using the Chapel Subversion repository
 
 Compiler documentation:
 

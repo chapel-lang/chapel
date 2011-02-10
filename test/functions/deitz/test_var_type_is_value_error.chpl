@@ -1,6 +1,6 @@
 var y: int;
 
-def f() {
+proc f() {
   var x: y;
   writeln(x);
 }

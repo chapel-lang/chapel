@@ -6,7 +6,7 @@
 #include "chplrt.h"
 #include "chplmemtrack.h"
 #include "chpltasks.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "error.h"
 
 #undef malloc
@@ -204,7 +204,7 @@ void chpl_setMemFlags(chpl_bool memTrackConfig,
     memTrack = true;
 
   if (memTrack) {
-    chpl_sync_init_aux(&memTrack_sync);
+    chpl_sync_initAux(&memTrack_sync);
     hashSizeIndex = 0;
     hashSize = hashSizes[hashSizeIndex];
     memTable = calloc(hashSize, sizeof(memTableEntry*));
@@ -245,10 +245,10 @@ void chpl_printMemStat(int32_t lineno, chpl_string filename) {
     fprintf(memLogFile, "==============================================================\n");
     for (i = 0; i < chpl_numLocales; i++) {
       static size_t m1, m2, m3, m4;
-      chpl_comm_get(&m1, i, &totalMem, sizeof(size_t), lineno, filename);
-      chpl_comm_get(&m2, i, &maxMem, sizeof(size_t), lineno, filename);
-      chpl_comm_get(&m3, i, &totalAllocated, sizeof(size_t), lineno, filename);
-      chpl_comm_get(&m4, i, &totalFreed, sizeof(size_t), lineno, filename);
+      chpl_comm_get(&m1, i, &totalMem, sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
+      chpl_comm_get(&m2, i, &maxMem, sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
+      chpl_comm_get(&m3, i, &totalAllocated,  sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
+      chpl_comm_get(&m4, i, &totalFreed, sizeof(size_t), -1 /*broke for hetero */, 1, lineno, filename);
       fprintf(memLogFile, "%-9d  %-9zu  %-9zu  %-9zu  %-9zu\n", i, m1, m2, m3, m4);
     }
     fprintf(memLogFile, "==============================================================\n");
@@ -489,12 +489,14 @@ void chpl_track_realloc2(void* moreMemAlloc, size_t newChunk, void* memAlloc, si
 
 void chpl_startVerboseMem() {
   chpl_verbose_mem = 1;
-  chpl_comm_broadcast_private(2 /* &chpl_verbose_mem */, sizeof(int));
+  chpl_comm_broadcast_private(2 /* &chpl_verbose_mem */, sizeof(int),
+                              -1 /* typeIndex: broke for hetero */);
 }
 
 void chpl_stopVerboseMem() {
   chpl_verbose_mem = 0;
-  chpl_comm_broadcast_private(2 /* &chpl_verbose_mem */, sizeof(int));
+  chpl_comm_broadcast_private(2 /* &chpl_verbose_mem */, sizeof(int),
+                              -1 /* typeIndex: broke for hetero */);
 }
 
 void chpl_startVerboseMemHere() {

@@ -5,7 +5,7 @@ class C {
 }
 
 /*
-def next_foo(c : C) : C {
+proc next_foo(c : C) : C {
   if c.jump == 0 then
     goto _0;
   else if c.jump == 1 then
@@ -23,7 +23,7 @@ label _1
 }
 */
 
-def next_foo(c : C) : C {
+proc next_foo(c : C) : C {
   if c.jump == 0 {
     c.i = 1;
     if c.i < 5 {
@@ -42,7 +42,7 @@ def next_foo(c : C) : C {
   return nil;
 }
 
-def bar() : int {
+iter bar() : int {
   var i = 1;
   while i < 5 {
     yield i;

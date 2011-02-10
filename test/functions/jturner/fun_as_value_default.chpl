@@ -1,6 +1,6 @@
 use Functions;
 
-def testme(i : int = 4) { return i; }
+proc testme(i : int = 4) { return i; }
 
 writeln(testme());
 

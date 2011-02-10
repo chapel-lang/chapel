@@ -1,5 +1,5 @@
 
-pragma "inline" def foo() {
+pragma "inline" proc foo() {
   var i : int = 0;
   while(i < 10) {
     i = i + 1;
@@ -13,7 +13,7 @@ pragma "inline" def foo() {
   return;    
 }
 
-def main() {
+proc main() {
  foo();
  return;
 }

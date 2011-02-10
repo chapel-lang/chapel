@@ -1,4 +1,4 @@
-def f(in D: domain(1)) {
+proc f(in D: domain(1)) {
   writeln(D);
   D = [1..10];
 }

@@ -1,9 +1,9 @@
-def bar() {
+proc bar() {
   var v: [1..10] real = [i in 1..10] i;
   return v;
 }
 
-def foo(x = bar()) {
+proc foo(x = bar()) {
   writeln("x is: ", x);
 }
 

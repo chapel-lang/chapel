@@ -11,7 +11,7 @@ use LevelBC_AdvectionCTU;
 
 
 
-def main {
+proc main {
 
 
   //==== Initialize output ====
@@ -25,7 +25,7 @@ def main {
 
   //===> Initialize solution ===>
   write("Initializing solution...");
-  def initial_condition ( x: dimension*real ) {
+  proc initial_condition ( x: dimension*real ) {
     var f: real = 1.0;
     for d in dimensions do
       f *= exp(-30 * (x(d) + 0.5)**2);

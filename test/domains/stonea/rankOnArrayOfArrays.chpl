@@ -1,4 +1,4 @@
-def rprtRank(A : [?dmnA]) {
+proc rprtRank(A : [?dmnA]) {
     writeln("Rank = " + dmnA.rank);
 }
 

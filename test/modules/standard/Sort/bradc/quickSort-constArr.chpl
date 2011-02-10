@@ -8,7 +8,7 @@ use Random;
 
 config const size = 4096;
 
-def main() {
+proc main() {
   var A: [1..size] int = 12345;
 
   QuickSort(A);

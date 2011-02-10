@@ -1,13 +1,13 @@
-def foo() {
+proc foo() {
   var A: [1..3] int = [i in 1..3] i;
   return A;
 }
 
-def bar(z) {
+proc bar(z) {
   writeln(z);
 }
 
-def main {
+proc main {
   //
   // init copy
   //

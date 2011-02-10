@@ -5,12 +5,12 @@ config var s: uint = 4;
 
 var A: [1..n] int;
 
-def sleepAndWrite(i: int) {
+proc sleepAndWrite(i: int) {
   sleep(s);
   A(i) = 1;
 }
 
-def foo(i: int) {
+proc foo(i: int) {
   cobegin {
     sleepAndWrite(i);
     if i < n then

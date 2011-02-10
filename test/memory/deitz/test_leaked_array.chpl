@@ -4,7 +4,7 @@ config var n: int = 10;
 
 const D = [1..n, 1..n];
 
-def foo() {
+proc foo() {
   var result = 0;
   var A: [D] int;
   for (i,j) in D do

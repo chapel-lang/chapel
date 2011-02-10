@@ -2,11 +2,11 @@ use StaticMRBC_def;
 
 class ZeroInflowBC: StaticMRBC {
   
-  def apply(level_idx: int, q: LevelVariable, t: real) {
+  proc apply(level_idx: int, q: LevelVariable, t: real) {
     apply_Homogeneous(level_idx, q);
   }
   
-  def apply_Homogeneous(level_idx: int, q: LevelVariable) {
+  proc apply_Homogeneous(level_idx: int, q: LevelVariable) {
     //==== Safety check ====
     assert(hierarchy.levels(level_idx) == q.level);
 

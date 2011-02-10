@@ -3,7 +3,7 @@ record R {
 }
 
 
-def main() {
+proc main() {
   var A: [1..3, 1..3] int;
 
   var r1 = new R(A);

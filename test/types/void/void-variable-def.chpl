@@ -6,7 +6,7 @@ class y {
 
 config param enabled = false;
 
-def vartype() type {
+proc vartype() type {
   if enabled then
     return int;
   else
@@ -15,7 +15,7 @@ def vartype() type {
 
 class c {
   var v: vartype();
-  def c() { if enabled then v = 5; }
+  proc c() { if enabled then v = 5; }
 }
 
 writeln(new c());

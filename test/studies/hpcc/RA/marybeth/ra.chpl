@@ -20,7 +20,7 @@ param MEMSIZE:int = 1000;
 
 var NUPDATE:int;
 
-def HPCC_starts(n:int(64)):uint(64) {
+proc HPCC_starts(n:int(64)):uint(64) {
   var i:int;
   var j:int;
   var n2 = n;
@@ -75,7 +75,7 @@ def HPCC_starts(n:int(64)):uint(64) {
   return ran;
 }
 
-def RandomAccessUpdate(TableSize:uint(64), Table: [] uint(64)) {
+proc RandomAccessUpdate(TableSize:uint(64), Table: [] uint(64)) {
   var i:int;
   var D: domain(1) =  [0..127];
   var ran: [D] uint(64);              
@@ -101,7 +101,7 @@ def RandomAccessUpdate(TableSize:uint(64), Table: [] uint(64)) {
   } while (i < NUPDATE/128);
 }
 
-def main() {
+proc main() {
 
   var i:int;
   var temp:uint(64);

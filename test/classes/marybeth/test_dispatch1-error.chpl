@@ -1,25 +1,25 @@
 class shoe {
   var size:real;
   var color:string;
-  def display() {
+  proc display() {
     writeln('Shoes:  size = ', size, '; color = ', color);
   }
 }
 
 class pumps : shoe {
   var heel: real;
-  def display() {
+  proc display() {
     writeln('Pumps:  size = ', size, '; color = ', color, '; heel ht = ', heel);
   }
 }
 
 class boots : pumps {
-  def display() {
+  proc display() {
     writeln('Boots:  size = ', size, '; color = ', color, '; heel ht = ', heel);
   }
 }
 
-def displayshoe (item:shoe) {
+proc displayshoe (item:shoe) {
   item.display();
 }
 

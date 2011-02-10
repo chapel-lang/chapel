@@ -1,4 +1,4 @@
-def foo(param c: complex) {
+proc foo(param c: complex) {
   writeln("param");
 }
 

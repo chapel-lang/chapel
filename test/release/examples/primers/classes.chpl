@@ -12,7 +12,7 @@
 //
 class C {
   var a, b: int;
-  def printFields() {
+  proc printFields() {
     writeln("a = ", a, " b = ", b);
   }
 }
@@ -41,7 +41,7 @@ writeln(c);
 // is used to access the 'b' field which is otherwise shadowed by the
 // 'b' argument.
 //
-def C.sum_a_b_b(b: int) {
+proc C.sum_a_b_b(b: int) {
   return a + b + this.b;
 }
 writeln(c.sum_a_b_b(3));
@@ -54,7 +54,7 @@ writeln(c.sum_a_b_b(3));
 //
 class D: C {
   var c = 1.2, d = 3.4;
-  def printFields() {
+  proc printFields() {
     writeln("a = ", a, " b = ", b, " c = ", c, " d = ", d);
   }
 }
@@ -81,7 +81,7 @@ delete c;
 //
 class ArrayLike {
   var a, b, c, d: int;
-  def this(i:int) var {
+  proc this(i:int) var {
     select i {
       when 1 do return a;
       when 2 do return b;
@@ -91,7 +91,7 @@ class ArrayLike {
     }
   }
 
-  def these() var {
+  iter these() var {
     yield a;
     yield b;
     yield c;

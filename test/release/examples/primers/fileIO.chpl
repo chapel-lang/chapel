@@ -9,7 +9,7 @@ config var n = 9,                 // the problem size
            filename = "Arr.dat";  // the filename for writing/reading the array
 
 
-def main {
+proc main {
   const ADom = [1..n, 1..n];  // Create a domain of the specified problem size
 
   // Create and initialize an array of the specified size
@@ -40,7 +40,7 @@ def main {
 //
 // this function writes a square array out to a file
 //
-def writeSquareArray(n, X, filename) {
+proc writeSquareArray(n, X, filename) {
   // Create an output file with the specified filename in write mode
   var outfile = new file(filename, FileAccessMode.write);
 
@@ -61,7 +61,7 @@ def writeSquareArray(n, X, filename) {
 //
 // This function reads a new array out of a file and returns it
 //
-def readArray(filename) {
+proc readArray(filename) {
    // Create an input file with the specified filename in read mode
   var infile = new file(filename, FileAccessMode.read);
 

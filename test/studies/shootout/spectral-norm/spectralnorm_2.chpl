@@ -13,7 +13,7 @@ config const NUM = 500 : int(64);
 
 
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
-def eval_A(i,j) : real
+proc eval_A(i,j) : real
 {
 	/*
 	 * 1.0 / (i + j) * (i + j +1) / 2 + i + 1;
@@ -23,26 +23,26 @@ def eval_A(i,j) : real
 	return 1.0 / d;
 }
 
-def eval_A_times_u(U : [] real, inRange, Au : [] real)
+proc eval_A_times_u(U : [] real, inRange, Au : [] real)
 {
 	forall (au,i) in (Au, [0..#inRange]) do 
 		au = + reduce [j in 0..#inRange] (U(j) * eval_A(i,j));
 
 }
 
-def eval_At_times_u(U : [] real, inRange, Au : [] real)
+proc eval_At_times_u(U : [] real, inRange, Au : [] real)
 {
 	forall (au,i) in (Au, [0..#inRange]) do
 		au = + reduce [j in 0..#inRange] (U(j) * eval_A(j,i));
 }
 
-def eval_AtA_times_u(u,AtAu,v : [] real, inRange)
+proc eval_AtA_times_u(u,AtAu,v : [] real, inRange)
 {
 	   eval_A_times_u(u, inRange, v);
 	   eval_At_times_u(v, inRange, AtAu);
 }
 
-def spectral_game(N) : real
+proc spectral_game(N) : real
 {
 	var Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[0..#N],
                                       dataParTasksPerLocale=here.numCores));
@@ -63,7 +63,7 @@ def spectral_game(N) : real
 	return sqrt(vBv/vv);
 }
 
-def main() {
+proc main() {
 	if timer then
 		t.start();
 	writeln(spectral_game(NUM));

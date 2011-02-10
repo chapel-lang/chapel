@@ -2,7 +2,7 @@
 // This test demonstrates what goes wrong when a user forgets
 // our reduction precedence rules;  nicely it blows up big.
 //
-def foo(x: int) {
+proc foo(x: int) {
   writeln("x is: ", x);
 }
 

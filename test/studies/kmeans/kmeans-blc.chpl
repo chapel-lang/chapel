@@ -84,7 +84,7 @@ writeln("final centers are: ", centers);
 //
 // helper function to find the best center for a given coordinate
 //
-def findBestCenter(loc: coord, centers: [] coord) {
+proc findBestCenter(loc: coord, centers: [] coord) {
   return minloc reduce (dist(loc, centers), centerSpace);
 }
 
@@ -92,7 +92,7 @@ def findBestCenter(loc: coord, centers: [] coord) {
 //
 // helper function to compute the distance between two coordinates
 //
-def dist(x: coord, y:coord) {
+proc dist(x: coord, y:coord) {
   return sqrt(+ reduce [d in 1..numdims] ((x(d) - y(d))**2));
 }
 
@@ -111,7 +111,7 @@ class kmeans: ReduceScanOp {
   // updates the error, the appropriate clusterSize, and the offset
   // for that center
   //
-  def accumulate(((dist, ctr), datum, centers)) {
+  proc accumulate(((dist, ctr), datum, centers)) {
     error += dist;    
     clusterSize(ctr) += 1;
     offset(ctr) += datum - centers(ctr);
@@ -121,7 +121,7 @@ class kmeans: ReduceScanOp {
   // the combine function takes two kmeans classes and combines
   // them
   //
-  def combine(other: kmeans) {
+  proc combine(other: kmeans) {
     error += other.error;
     clusterSize += other.clusterSize;
     offset += other.offset;
@@ -130,7 +130,7 @@ class kmeans: ReduceScanOp {
   //
   // the generate function updates the centers and returns the error
   //
-  def generate() {
+  proc generate() {
     return (error, offset / clusterSize);
   }
 }
@@ -140,7 +140,7 @@ class kmeans: ReduceScanOp {
 // a helper function that, for now, initializes data element i to be
 // (i, 0.0, 0.0, 0.0, ...)
 //
-def initData(i) {
+proc initData(i) {
   var loc: coord;
   loc(1) = i;
   return loc;
@@ -150,7 +150,7 @@ def initData(i) {
 //
 // compute the initial centers by taking every ceil(n/k)-th element from data[]
 //
-def initCenters(data) {
+proc initCenters(data) {
   return data[dataSpace by intCeilDiv(n,k)];
 }
 
@@ -158,7 +158,7 @@ def initCenters(data) {
 //
 // a helper function to divide a coordinate by a floating point value
 //
-def /(x: coord, y: real) {
+proc /(x: coord, y: real) {
   var result: coord;
   for param d in 1..numdims do
     result(d) = x(d) / y;
@@ -169,7 +169,7 @@ def /(x: coord, y: real) {
 //
 // a helper function that computes the integer ceiling of x/y
 //
-def intCeilDiv(x: integral, y: integral) {
+proc intCeilDiv(x: integral, y: integral) {
   return (x + (y-1)) / y;
 }
 
