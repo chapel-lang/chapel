@@ -472,7 +472,13 @@ Symbol* ClassType::getField(const char* name, bool fatal) {
     next_p->clear();
   }
   if (fatal) {
-    INT_FATAL(this, "field '%s' not in class in getField", name);
+    const char *className = (char*)"<no name>";
+    if (this->symbol) { // this is always true?
+      className = this->symbol->name;
+    }
+    // TODO: report as a user error in certain cases
+    INT_FATAL(this, "no field '%s' in class '%s' in getField()",
+              name, className);
   }
   return NULL;
 }
