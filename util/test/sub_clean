@@ -41,6 +41,7 @@ echo \[pwd: \"`pwd`\"\]
 
 set defaultcleanfiles = 'core'
 
+# important: do NOT use wildcards in CLEANFILES
 if (-r ./CLEANFILES) then
     set cleanfiles = "$defaultcleanfiles `cat ./CLEANFILES`"
 else

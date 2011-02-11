@@ -349,6 +349,8 @@
 # remove the generated file could result in a false positive on a
 # second run of the test system if the Chapel program failed to create
 # the file because the previous one would still be there.
+# Do NOT use wildcards in CLEANFILES - this may result in files
+# silently not getting removed in some cases.
 #
 # If the output for a test varies by machine, communication layer, or
 # platform name, files named <testname>.<machname>.good,
