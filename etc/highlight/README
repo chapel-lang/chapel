@@ -1,0 +1,14 @@
+This file goes with 
+ highlight version 2.16
+ Copyright (C) 2002-2010 Andre Simon <andre.simon1 at gmx.de>
+
+which you can find at highlight http://www.andre-simon.de/
+
+This is the highlighter used by the Computer Languages Benchmark Game.
+
+For example, run from this directory:
+  highlight -M --add-config-dir=. --add-data-dir=. your_file.chpl
+
+For more options, try:
+  highlight --help
+
