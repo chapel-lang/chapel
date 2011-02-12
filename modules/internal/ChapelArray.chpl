@@ -624,6 +624,16 @@ record _domain {
     return pos;
   }
 
+  proc expand(off: rank*_value.idxType) where !isArithmeticDom(this) {
+    if isAssociativeDom(this) then
+      compilerError("expand not supported on associative domains");
+    else if isOpaqueDom(this) then
+      compilerError("expand not supported on opaque domains");
+    else if isSparseDom(this) then
+      compilerError("expand not supported on sparse domains");
+    else
+      compilerError("expand not supported on this domain type");
+  }
   proc expand(off: _value.idxType ...rank) return expand(off);
   proc expand(off: rank*_value.idxType) {
     var ranges = dims();
@@ -651,6 +661,16 @@ record _domain {
     return _newDomain(d);
   }
 
+  proc exterior(off: rank*_value.idxType) where !isArithmeticDom(this) {
+    if isAssociativeDom(this) then
+      compilerError("exterior not supported on associative domains");
+    else if isOpaqueDom(this) then
+      compilerError("exterior not supported on opaque domains");
+    else if isSparseDom(this) then
+      compilerError("exterior not supported on sparse domains");
+    else
+      compilerError("exterior not supported on this domain type");
+  }
   proc exterior(off: _value.idxType ...rank) return exterior(off);
   proc exterior(off: rank*_value.idxType) {
     var ranges = dims();
@@ -663,6 +683,16 @@ record _domain {
     return _newDomain(d);
    }
                   
+  proc interior(off: rank*_value.idxType) where !isArithmeticDom(this) {
+    if isAssociativeDom(this) then
+      compilerError("interior not supported on associative domains");
+    else if isOpaqueDom(this) then
+      compilerError("interior not supported on opaque domains");
+    else if isSparseDom(this) then
+      compilerError("interior not supported on sparse domains");
+    else
+      compilerError("interior not supported on this domain type");
+  }
   proc interior(off: _value.idxType ...rank) return interior(off);
   proc interior(off: rank*_value.idxType) {
     var ranges = dims();

@@ -1,0 +1,2 @@
+exterior.chpl:3: In function 'my_exterior':
+exterior.chpl:4: error: exterior not supported on sparse domains
