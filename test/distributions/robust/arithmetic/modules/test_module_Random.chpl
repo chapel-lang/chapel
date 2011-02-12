@@ -83,19 +83,19 @@ proc foo(rng, D: domain, A: [D]) {
 }
 resetTempArrays();
 fillRefArrays();
-const TD1D: domain(1) = Space1 - (o5);
+const TD1D: domain(1) = Space1.translate(-o5);
 foo(trng, TD1D, T1D);
 writeln("\tR1D: ", checkRNG(R1D, T1D), " errors");
-const TD2D: domain(2) = Space2 - (o5,o5);
+const TD2D: domain(2) = Space2.translate(-o5,-o5);
 foo(trng, TD2D, T2D);
 writeln("\tR2D: ", checkRNG(R2D, T2D), " errors");
-const TD3D: domain(3) = Space3 - (o5,o5,o5);
+const TD3D: domain(3) = Space3.translate(-o5,-o5,-o5);
 foo(trng, TD3D, T3D);
 writeln("\tR3D: ", checkRNG(R3D, T3D), " errors");
-const TD4D: domain(4) = Space4 - (o5,o5,o5,o5);
+const TD4D: domain(4) = Space4.translate(-o5,-o5,-o5,-o5);
 foo(trng, TD4D, T4D);
 writeln("\tR4D: ", checkRNG(R4D, T4D), " errors");
-const TD2D64: domain(2,int(64)) = Space2D64 - (o5:int(64),o5:int(64));
+const TD2D64: domain(2,int(64)) = Space2D64.translate(-o5:int(64),-o5:int(64));
 foo(trng, TD2D64, T2D64);
 writeln("\tR2D64: ", checkRNG(R2D64, T2D64), " errors");
 

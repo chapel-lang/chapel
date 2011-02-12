@@ -429,7 +429,9 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
                                                   locDom.myBlock.dims());
 
     var result: rank*range(idxType=idxType, stridable=true);
-    var zeroedLocalPart = whole((...locDom.myBlock.getIndices())) - whole.low;
+    // Use the internal function for untranslate to avoid having to do
+    // extra work to negate the offset
+    var zeroedLocalPart = whole((...locDom.myBlock.getIndices())).chpl__unTranslate(wholeLow);
     for param i in 1..rank {
       var dim = zeroedLocalPart.dim(i);
       var wholestride = whole.dim(i).stride;
@@ -700,7 +702,9 @@ iter CyclicArr.these(param tag: iterator) where tag == iterator.leader {
                                                   locDom.myBlock.dims());
 
     var result: rank*range(idxType=idxType, stridable=true);
-    var zeroedLocalPart = dom.whole((...locDom.myBlock.getIndices())) - wholeLow;
+    // Use the internal function for untranslate to avoid having to do
+    // extra work to negate the offset
+    var zeroedLocalPart = dom.whole((...locDom.myBlock.getIndices())).chpl__unTranslate(wholeLow);
     for param i in 1..rank {
       var dim = zeroedLocalPart.dim(i);
       var wholestride = dom.whole.dim(i).stride;

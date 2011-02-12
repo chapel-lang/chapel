@@ -300,7 +300,7 @@ class Cyclic1DDom {
     // support? (esp. given how frequent this seems likely to be?)
     //
     for locDom in locDoms do
-      yield locDom.myBlock - whole.low;
+      yield locDom.myBlock.translate(-whole.low);
   }
 
 

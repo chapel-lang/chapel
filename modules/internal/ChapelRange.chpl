@@ -638,8 +638,20 @@ proc range.writeThis(f: Writer) {
 //
 // REVIEW: hilde
 // Should member functions normally return new objects?
-proc range.translate(i: idxType) {
-  return this + i;
+//
+// NOTE: The casts below assume that the value will fit into
+// idxType.  Handling errors when (down) casting is something
+// we need to handle more generally in the future, so for
+// consistency, we are not handling it here at all :-P
+//
+proc range.translate(i: integral) {
+  if _isSignedType(i.type) then
+    return this + i:idxType;
+  else if i >= 0 then return this + i:idxType;
+  else return this - abs(i):idxType;
+}
+proc range.translate(i) {
+  compilerError("offsets must be of integral type");
 }
 
 //
@@ -648,7 +660,12 @@ proc range.translate(i: idxType) {
 proc range.chpl__unTranslate(i: idxType) {
   return this - i;
 }
-
+proc range.chpl__unTranslate(i) {
+  if _isSignedType(i.type) then
+    return this - i;
+  else
+    return this + abs(i);
+}
 
 //
 // return an interior portion of this range

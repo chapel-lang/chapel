@@ -678,10 +678,29 @@ record _domain {
     if (d.linksDistribution()) then
       d.dist._distCnt$ += 1;
     return _newDomain(d);
-   }
+  }
 
-  proc translate(off: _value.idxType ...rank) return translate(off);
-  proc translate(off: rank*_value.idxType) {
+  //
+  // NOTE: We eventually want to support translate on other domain types
+  //
+  proc translate(off) where !isArithmeticDom(this) {
+    if isAssociativeDom(this) then
+      compilerError("translate not supported on associative domains");
+    else if isOpaqueDom(this) then
+      compilerError("translate not supported on opaque domains");
+    else if isSparseDom(this) then
+      compilerError("translate not supported on sparse domains");
+    else
+      compilerError("translate not supported on this domain type");
+  }
+  //
+  // Notice that the type of the offset does not have to match the
+  // index type.  This is handled in the range.translate().
+  //
+  proc translate(off: ?t ...rank) return translate(off);
+  proc translate(off) where isTuple(off) {
+    if off.size != rank then
+      compilerError("must be same size");
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = _value.dsiDim(i).translate(off(i));
@@ -692,6 +711,9 @@ record _domain {
     return _newDomain(d);
    }
 
+  //
+  // intended for internal use only:
+  //
   proc chpl__unTranslate(off: _value.idxType ...rank) return chpl__unTranslate(off);
   proc chpl__unTranslate(off: rank*_value.idxType) {
     var ranges = dims();
@@ -702,7 +724,7 @@ record _domain {
     if (d.linksDistribution()) then
       d.dist._distCnt$ += 1;
     return _newDomain(d);
-   }
+  }
 
   proc setIndices(x) {
     _value.dsiSetIndices(x);
@@ -738,11 +760,17 @@ proc _getNewDist(value) {
 }
 
 proc +(d: domain, i: index(d)) {
-  return d.translate(i);
+  if isArithmeticDom(d) then
+    compilerError("Cannot add indices to an arithmetic domain");
+  else
+    compilerError("Cannot add indices to this domain type");
 }
 
 proc +(i, d: domain) where i: index(d) {
-  return d.translate(i);
+  if isArithmeticDom(d) then
+    compilerError("Cannot add indices to an arithmetic domain");
+  else
+    compilerError("Cannot add indices to this domain type");
 }
 
 proc +(d: domain, i: index(d)) where isIrregularDom(d) {
@@ -773,7 +801,10 @@ proc +(d1: domain, d2: domain) {
 }
 
 proc -(d: domain, i: index(d)) {
-  return d.chpl__unTranslate(i);
+  if isArithmeticDom(d) then
+    compilerError("Cannot remove indices from an arithmetic domain");
+  else
+    compilerError("Cannot remove indices from this domain type");
 }
 
 proc -(d: domain, i: index(d)) where isIrregularDom(d) {

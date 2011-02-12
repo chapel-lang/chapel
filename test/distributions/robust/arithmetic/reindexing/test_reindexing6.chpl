@@ -5,7 +5,7 @@ var s2 = shift;
 var s3 = shift;
 var s4 = shift;
 
-const MySpace4 = Space4 + fill(4,shift);
+const MySpace4 = Space4.translate(fill(4,shift));
 const MyDom4D: domain(4) dmapped Dist4D = MySpace4;
 
 proc foo(TD: domain, A: [TD] int, TA, offset) {

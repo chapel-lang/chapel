@@ -550,9 +550,11 @@ iter BlockDom.these(param tag: iterator) where tag == iterator.leader {
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
-  const precomputedWholeLow = whole.low;
+  const wholeLow = whole.low;
   coforall locDom in locDoms do on locDom {
-    var tmpBlock = locDom.myBlock - precomputedWholeLow;
+    // Use the internal function for untranslate to avoid having to do
+    // extra work to negate the offset
+    var tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
     const (numTasks, parDim) =
       _computeChunkStuff(maxTasks, ignoreRunning, minSize,
                          locDom.myBlock.dims());
@@ -770,9 +772,11 @@ iter BlockArr.these(param tag: iterator) where tag == iterator.leader {
   const maxTasks = dom.dist.dataParTasksPerLocale;
   const ignoreRunning = dom.dist.dataParIgnoreRunningTasks;
   const minSize = dom.dist.dataParMinGranularity;
-  const precomputedWholeLow = dom.whole.low;
+  const wholeLow = dom.whole.low;
   coforall locDom in dom.locDoms do on locDom {
-    var tmpBlock = locDom.myBlock - precomputedWholeLow;
+    // Use the internal function for untranslate to avoid having to do
+    // extra work to negate the offset
+    var tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
     const (numTasks, parDim) =
       _computeChunkStuff(maxTasks, ignoreRunning, minSize,
                          locDom.myBlock.dims());
