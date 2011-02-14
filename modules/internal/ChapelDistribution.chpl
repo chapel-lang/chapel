@@ -28,8 +28,8 @@ class BaseDist {
     return cnt;
   }
 
-  proc dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
-    compilerError("arithmetic domains not supported by this distribution");
+  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
+    compilerError("rectangular domains not supported by this distribution");
   }
 
   proc dsiNewAssociativeDom(type idxType) {
@@ -110,21 +110,21 @@ class BaseDom {
   proc linksDistribution() param return true;
 }
 
-class BaseArithmeticDom : BaseDom {
+class BaseRectangularDom : BaseDom {
   proc dsiClear() {
     halt("clear not implemented for this distribution");
   }
 
   proc clearForIteratableAssign() {
-    compilerError("Illegal assignment to an arithmetic domain");
+    compilerError("Illegal assignment to a rectangular domain");
   }
 
   proc dsiAdd(x) {
-    compilerError("Cannot add indices to an arithmetic domain");
+    compilerError("Cannot add indices to a rectangular domain");
   }
 
   proc dsiRemove(x) {
-    compilerError("Cannot remove indices from an arithmetic domain");
+    compilerError("Cannot remove indices from a rectangular domain");
   }
 }
 

@@ -12,7 +12,7 @@ use ChapelDistribution;
 use ChapelLocale;
 use ChapelRealmSpace;
 use ChapelRealm;
-use DefaultArithmetic;
+use DefaultRectangular;
 use DefaultAssociative;
 use DefaultSparse;
 use DefaultOpaque;

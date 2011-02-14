@@ -113,9 +113,9 @@ class BlockCyclic : BaseDist {
 }
 
 //
-// create a new arithmetic domain over this distribution
+// create a new rectangular domain over this distribution
 //
-proc BlockCyclic.dsiNewArithmeticDom(param rank: int, type idxType,
+proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
                            param stridable: bool) {
   if idxType != this.idxType then
     compilerError("BlockCyclic domain index type does not match distribution's");
@@ -269,7 +269,7 @@ proc LocBlockCyclic.writeThis(x:Writer) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
-class BlockCyclicDom: BaseArithmeticDom {
+class BlockCyclicDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
@@ -380,7 +380,7 @@ proc BlockCyclicDom.dsiHigh return whole.high;
 proc BlockCyclicDom.dsiStride return whole.stride;
 
 //
-// INTERFACE NOTES: Could we make setIndices() for an arithmetic
+// INTERFACE NOTES: Could we make setIndices() for a rectangular
 // domain take a domain rather than something else?
 //
 proc BlockCyclicDom.dsiSetIndices(x: domain) {
@@ -459,7 +459,7 @@ proc BlockCyclicDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 
-proc BlockCyclicDom.dsiBuildArithmeticDom(param rank: int, type idxType,
+proc BlockCyclicDom.dsiBuildRectangularDom(param rank: int, type idxType,
                                          param stridable: bool,
                                          ranges: rank*range(idxType,
                                                             BoundedRangeType.bounded,

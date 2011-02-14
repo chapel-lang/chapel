@@ -3,7 +3,7 @@
 //  Defines PrivateSpace, an instance of PrivateDom
 //
 class Private: BaseDist {
-  proc dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
     return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable);
   }
 
@@ -12,7 +12,7 @@ class Private: BaseDist {
   }
 }
 
-class PrivateDom: BaseArithmeticDom {
+class PrivateDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;

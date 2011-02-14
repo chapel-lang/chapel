@@ -175,7 +175,7 @@ proc Cyclic.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-proc Cyclic.dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
   if idxType != this.idxType then
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != this.rank then
@@ -323,7 +323,7 @@ class LocCyclic {
 }
 
 
-class CyclicDom : BaseArithmeticDom {
+class CyclicDom : BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
@@ -502,7 +502,7 @@ proc CyclicDom.dsiReprivatize(other, reprivatizeData) {
   whole = other.whole;
 }
 
-proc CyclicDom.dsiBuildArithmeticDom(param rank, type idxType,
+proc CyclicDom.dsiBuildRectangularDom(param rank, type idxType,
                                     param stridable: bool,
                                     ranges: rank*range(idxType,
                                                        BoundedRangeType.bounded,

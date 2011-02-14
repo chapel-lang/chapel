@@ -1,4 +1,4 @@
-use DefaultArithmetic;
+use DefaultRectangular;
 
 class locale {
   const myRealm: realm;

@@ -1,7 +1,7 @@
 use ChapelBase;
 use ChapelIO;
 use ChapelArray;
-use DefaultArithmetic;
+use DefaultRectangular;
 use DefaultAssociative;
 
 /* 

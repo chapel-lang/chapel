@@ -5094,15 +5094,19 @@ is_array_type(Type* type) {
 
 
 static void
-fixTypeNames(ClassType* ct) {
-  if (is_array_type(ct)) {
+fixTypeNames(ClassType* ct)
+{
+  const char default_domain_name[] = "DefaultRectangularDom";
+
+  if (is_array_type(ct))
+  {
     const char* domain_type = ct->getField("dom")->type->symbol->name;
     const char* elt_type = ct->getField("eltType")->type->symbol->name;
     ct->symbol->name = astr("[", domain_type, "] ", elt_type);
   }
   if (ct->instantiatedFrom &&
-      !strcmp(ct->instantiatedFrom->symbol->name, "DefaultArithmeticDom")) {
-    ct->symbol->name = astr("domain", ct->symbol->name+20);
+      !strcmp(ct->instantiatedFrom->symbol->name, default_domain_name)) {
+    ct->symbol->name = astr("domain", ct->symbol->name+strlen(default_domain_name));
   }
   if (ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN)) {
     ct->symbol->name = ct->getField("_valueType")->type->symbol->name;

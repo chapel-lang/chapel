@@ -119,7 +119,7 @@ class LocBlock {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class BlockDom: BaseArithmeticDom {
+class BlockDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
@@ -267,7 +267,7 @@ proc Block.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
-proc Block.dsiNewArithmeticDom(param rank: int, type idxType,
+proc Block.dsiNewRectangularDom(param rank: int, type idxType,
                               param stridable: bool) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
@@ -630,7 +630,7 @@ proc BlockDom.dsiHigh return whole.high;
 proc BlockDom.dsiStride return whole.stride;
 
 //
-// INTERFACE NOTES: Could we make dsiSetIndices() for an arithmetic
+// INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
 // domain take a domain rather than something else?
 //
 proc BlockDom.dsiSetIndices(x: domain) {
@@ -700,9 +700,9 @@ proc BlockDom.dsiIndexOrder(i) {
 }
 
 //
-// build a new arithmetic domain using the given range
+// build a new rectangular domain using the given range
 //
-proc BlockDom.dsiBuildArithmeticDom(param rank: int, type idxType,
+proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
                                    param stridable: bool,
                                    ranges: rank*range(idxType,
                                                       BoundedRangeType.bounded,
@@ -1035,9 +1035,9 @@ proc BlockArr.dsiReindex(d: BlockDom) {
 
 proc BlockArr.dsiReallocate(d: domain) {
   //
-  // For the default arithmetic array, this function changes the data
+  // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default
-  // arithmetic domain is changed.  For this distributed array class,
+  // rectangular domain is changed.  For this distributed array class,
   // we don't need to do anything, because changing the domain will
   // change the domain in the local array class which will change the
   // data in the local array class.  This will only work if the domain

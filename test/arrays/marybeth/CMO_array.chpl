@@ -1,5 +1,5 @@
 class CMODist : BaseDist {
-  proc dsiNewArithmeticDom(param rank: int, type dimensional_index_type, param stridable: bool, param alias: bool=false) {
+  proc dsiNewRectangularDom(param rank: int, type dimensional_index_type, param stridable: bool, param alias: bool=false) {
     return new CMODom(rank=rank, idxType=dimensional_index_type, stridable=stridable, alias=alias, dist=this);
   }
   proc dsiCreateRankChangeDist(param newRank, args) {
@@ -8,7 +8,7 @@ class CMODist : BaseDist {
   proc dsiClone() return this;
 }
 
-class CMODom: BaseArithmeticDom {
+class CMODom: BaseRectangularDom {
   param rank : int;
   type idxType;
   param stridable: bool;

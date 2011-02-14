@@ -72,7 +72,7 @@ proc _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
 
 // How many tasks should be spawned to service numElems elements.
 proc _computeNumChunks(numElems) {
-  // copy some machinery from DefaultArithmeticDom
+  // copy some machinery from DefaultRectangularDom
   var numTasks = if dataParTasksPerLocale==0
                  then here.numCores
                  else dataParTasksPerLocale;
@@ -156,7 +156,7 @@ proc _factor(param rank: int, value) {
 }
 
 //
-// Returns a new default arithmetic domain of the same rank, index
+// Returns a new default rectangular domain of the same rank, index
 // type, and shape of 'dom' but for which the indices in each
 // dimension start at zero and have unit stride.
 //

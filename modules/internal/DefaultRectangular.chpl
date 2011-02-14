@@ -3,8 +3,8 @@ config param debugDefaultDist = false;
 config param debugDataPar = false;
 
 class DefaultDist: BaseDist {
-  proc dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool)
-    return new DefaultArithmeticDom(rank, idxType, stridable, this);
+  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
+    return new DefaultRectangularDom(rank, idxType, stridable, this);
 
   proc dsiNewAssociativeDom(type idxType)
     return new DefaultAssociativeDom(idxType, this);
@@ -31,7 +31,7 @@ class DefaultDist: BaseDist {
 //
 pragma "private" var defaultDist = new dmap(new DefaultDist());
 
-class DefaultArithmeticDom: BaseArithmeticDom {
+class DefaultRectangularDom: BaseRectangularDom {
   param rank : int;
   type idxType;
   param stridable: bool;
@@ -40,7 +40,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
 
   proc linksDistribution() param return false;
 
-  proc DefaultArithmeticDom(param rank, type idxType, param stridable, dist) {
+  proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;
   }
 
@@ -176,7 +176,7 @@ class DefaultArithmeticDom: BaseArithmeticDom {
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
-    chpl__testPar("default arithmetic domain follower invoked on ", follower);
+    chpl__testPar("default rectangular domain follower invoked on ", follower);
     if debugDefaultDist then
       writeln("In domain follower code: Following ", follower);
     param stridable = this.stridable || anyStridable(follower);
@@ -331,28 +331,28 @@ class DefaultArithmeticDom: BaseArithmeticDom {
   }
 
   proc dsiBuildArray(type eltType) {
-    return new DefaultArithmeticArr(eltType=eltType, rank=rank, idxType=idxType,
+    return new DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
                                     stridable=stridable, dom=this);
   }
 
-  proc dsiBuildArithmeticDom(param rank: int, type idxType, param stridable: bool,
+  proc dsiBuildRectangularDom(param rank: int, type idxType, param stridable: bool,
                             ranges: rank*range(idxType,
                                                BoundedRangeType.bounded,
                                                stridable)) {
-    var dom = new DefaultArithmeticDom(rank, idxType, stridable, dist);
+    var dom = new DefaultRectangularDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       dom.ranges(i) = ranges(i);
     return dom;
   }
 }
 
-class DefaultArithmeticArr: BaseArr {
+class DefaultRectangularArr: BaseArr {
   type eltType;
   param rank : int;
   type idxType;
   param stridable: bool;
 
-  var dom : DefaultArithmeticDom(rank=rank, idxType=idxType,
+  var dom : DefaultRectangularDom(rank=rank, idxType=idxType,
                                          stridable=stridable);
   var off: rank*idxType;
   var blk: rank*idxType;
@@ -561,8 +561,8 @@ class DefaultArithmeticArr: BaseArr {
     return data(getDataIndex(ind));
   }
 
-  proc dsiReindex(d: DefaultArithmeticDom) {
-    var alias = new DefaultArithmeticArr(eltType=eltType, rank=d.rank,
+  proc dsiReindex(d: DefaultRectangularDom) {
+    var alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                          idxType=d.idxType,
                                          stridable=d.stridable,
                                          dom=d, noinit=true);
@@ -577,8 +577,8 @@ class DefaultArithmeticArr: BaseArr {
     return alias;
   }
 
-  proc dsiSlice(d: DefaultArithmeticDom) {
-    var alias = new DefaultArithmeticArr(eltType=eltType, rank=rank,
+  proc dsiSlice(d: DefaultRectangularDom) {
+    var alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
                                          dom=d, noinit=true);
@@ -598,7 +598,7 @@ class DefaultArithmeticArr: BaseArr {
     proc isRange(r: range(?e,?b,?s)) param return 1;
     proc isRange(r) param return 0;
 
-    var alias = new DefaultArithmeticArr(eltType=eltType, rank=newRank,
+    var alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
                                          idxType=idxType,
                                          stridable=newStridable,
                                          dom=d, noinit=true);
@@ -622,7 +622,7 @@ class DefaultArithmeticArr: BaseArr {
 
   proc dsiReallocate(d: domain) {
     if (d._value.type == dom.type) {
-      var copy = new DefaultArithmeticArr(eltType=eltType, rank=rank,
+      var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                           idxType=idxType,
                                           stridable=d._value.stridable,
                                           dom=d._value);
@@ -642,18 +642,18 @@ class DefaultArithmeticArr: BaseArr {
   }
 
   proc dsiLocalSlice(ranges) {
-    halt("all dsiLocalSlice calls on DefaultArithmetics should be handled in ChapelArray.chpl");
+    halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
   }
 }
 
-proc DefaultArithmeticDom.dsiSerialWrite(f: Writer) {
+proc DefaultRectangularDom.dsiSerialWrite(f: Writer) {
   f.write("[", dsiDim(1));
   for i in 2..rank do
     f.write(", ", dsiDim(i));
   f.write("]");
 }
 
-proc DefaultArithmeticArr.dsiSerialWrite(f: Writer) {
+proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
   proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
     var makeStridePositive = if dom.ranges(dim).stride > 0 then 1 else -1;
     if dim == rank {

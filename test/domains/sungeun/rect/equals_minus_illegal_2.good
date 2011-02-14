@@ -1,1 +1,1 @@
-equals_minus_illegal_2.chpl:6: error: Cannot remove indices from an arithmetic domain
+equals_minus_illegal_2.chpl:6: error: Cannot remove indices from a rectangular domain
