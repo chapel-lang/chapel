@@ -67,7 +67,7 @@
 
 #ifdef CHPL_TASK_COMM_GET
 #define CHPL_COMM_GET(localvar, locale, addr, type, tid, len, ln, fn)  \
-  CHPL_TASK_COMM_GET(localvar, locale, (addr), tid, sizeof(type), len, ln, fn)
+  CHPL_TASK_COMM_GET(localvar, locale, (addr), type, tid, len, ln, fn)
 #else
 #define CHPL_COMM_GET(localvar, locale, addr, type, tid, len, ln, fn)  \
   chpl_comm_get(&(localvar), locale, addr, sizeof(type), tid, len, ln, fn)
