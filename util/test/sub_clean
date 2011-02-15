@@ -1,75 +1,100 @@
-#!/bin/csh -f
+#!/usr/bin/env python
 #
-#  Application output difference test for ZPL
+# Clean a directory or the files associated with a particular test
 #
-# This is the sub_test that used to appear in all
-# subdirectories, but we've now hoisted it to the
-# top directory to avoid its over-replication and
-# support modifications to it.
+
+import os, sys, time, glob, shutil
+
+# return True if f has .chpl extension
+def IsChplSource(f):
+    if ((f.count('.') !=0) and (len(f) >= 6) and (len(f)-f.find('.chpl')==5)):
+        return True
+    else:
+        return False
+
+# read a cleanfiles file (with comments)
+def ReadCleanfiles(f, ignoreLeadingSpace=True):
+    myfile = open(f, 'r')
+    mylines = myfile.readlines()
+    myfile.close()
+    mylist=list()
+    for line in mylines:
+        line=line.rstrip()
+        # ignore blank lines
+        if not line.strip(): continue
+        # ignore comments
+        if ignoreLeadingSpace:
+            if line.lstrip()[0] == '#': continue
+        else:
+            if line[0] == '#': continue
+        tlist = line.split()
+        for t in tlist:
+            if t[0] == '#':
+                break
+            mylist.append(t)
+    return mylist
+
+# Clean the files associated with a Chapel test program
+def cleanChapelTest(f):
+    if IsChplSource(f):
+        execname=f[:len(f)-5]
+        print 'Cleaning test: '+execname
+        try:
+            os.unlink(execname+'.exec.out.tmp')
+            os.unlink(execname+'.comp.out.tmp')
+            os.unlink(execname);
+            os.unlink(execname+'_real')
+        except:
+            pass
+        cleanCleanfiles(None, execname+'.cleanfiles', False)
+
+# Clean files listed in the file f
+def cleanCleanfiles(f, c, rmCore):
+    if f:
+        cleanfile = f+'/'+c
+    else:
+        cleanfile = c
+    if os.access(cleanfile,os.R_OK):
+        cleanfiles = ReadCleanfiles(cleanfile)
+        if rmCore:
+            cleanfiles += ['core']
+        for file in cleanfiles:
+            if f:
+                globfiles = glob.glob(f+'/'+file)
+            else:
+                globfiles = glob.glob(file)
+            for g in globfiles:
+                print 'Removing '+g
+                try:
+                    if os.path.isdir(g):
+                        shutil.rmtree(g)
+                    else:
+                        os.unlink(g)
+                except:
+                    pass
+
+
 #
-# The rules:
+# Cleaning..
 #
-# 1) by default, all subdirectories under the
-#    test directory will be run unless they contain
-#    a file called NOTEST
-#
-# 2) if the directory contains a sub_test script,
-#    that script will be run.  Otherwise, this one
-#    will  be.
-#
-# 3) if the directory does not contain a sub_test
-#    script, the start_test script will look for
-#    files named COMPOPTS and EXECOPTS and will
-#    add these to the zplcompopts and zplexecopts
-#    flags, respectively.
+sys.stdout.write('[Starting sub_clean - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime())))
+sys.stdout.write('[pwd: '+os.getcwd()+']\n')
+
+if len(sys.argv) == 1:
+    clean = ['.'];
+else:
+    clean = sys.argv[1:]
+
+for f in clean:
+    if os.path.isdir(f):
+        print 'Cleaning directory: '+f
+        dirlist = glob.glob(f+'/*.chpl')
+        for file in dirlist:
+            cleanChapelTest(file)
+        cleanCleanfiles(f, 'CLEANFILES', True)
+    else:
+        cleanChapelTest(f)
+
+sys.exit(0);
 
 
-# commenting this out for now
-## set umask such that other testers can modify files also
-#umask 002
-
-set testdir = "$CHPL_HOME/test"
-
-# build a string representing the local directory
-# strip off $testdir
-set sedstr = `echo $testdir | sed 's/\//\\\//g'`
-set sedstr = "s/$sedstr\///"
-set localdir = `echo $cwd | sed $sedstr`
-
-echo \[Starting subclean - `date`\]
-echo \[pwd: \"`pwd`\"\]
-
-set defaultcleanfiles = 'core'
-
-# important: do NOT use wildcards in CLEANFILES
-if (-r ./CLEANFILES) then
-    set cleanfiles = "$defaultcleanfiles `cat ./CLEANFILES`"
-else
-    set cleanfiles = "$defaultcleanfiles"
-endif
-
-# get all the source files
-set testsrc = `ls *.chpl`
-
-echo "rm -f ./*.tmp"
-rm -f ./*.tmp >& /dev/null
-
-# compile, execute, and compare each source file
-foreach chplsrc ($testsrc)
-
-    # set execfile now since used in both if branches
-    set execfile = `echo $chplsrc | sed 's/\.chpl//g'`
-
-    if (-w ./$execfile) then
-	echo "rm -f ./$execfile"
-	rm -f ./$execfile ./${execfile}_real
-    endif
-
-end		
-
-foreach file ($cleanfiles)
-    if (-w ./$file) then
-	echo "rm -rf ./$file"
-	rm -rf ./$file
-    endif
-end
