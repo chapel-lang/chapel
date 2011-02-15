@@ -157,11 +157,17 @@ proc chpl__convertValueToRuntimeType(dom: domain) type
                             dom._value.idxType, dom._value.stridable);
 
 proc chpl__convertValueToRuntimeType(dom: domain) type
+ where dom._value:BaseAssociativeDom || dom._value:BaseOpaqueDom
+  return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
+
+proc chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseSparseDom
   return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
 
-proc chpl__convertValueToRuntimeType(dom: domain) type
-  return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
+proc chpl__convertValueToRuntimeType(dom: domain) type {
+  compilerError("the global domain class of each domain map implementation must be a subclass of BaseArithmeticDom, BaseAssociativeDom, BaseOpaqueDom, or BaseSparseDom", 0);
+  return 0; // dummy
+}
 
 //
 // Support for array types
@@ -1157,11 +1163,10 @@ proc =(a: _distribution, b: _distribution) {
 
 proc =(a: domain, b: domain) {
   if !isIrregularDom(a) && !isIrregularDom(b) {
-    var bc = b;
     for e in a._value._arrs do {
-      on e do e.dsiReallocate(bc);
+      on e do e.dsiReallocate(b);
     }
-    a.setIndices(bc.getIndices());
+    a.setIndices(b.getIndices());
   } else {
     //
     // BLC: It's tempting to do a clear + add here, but because
