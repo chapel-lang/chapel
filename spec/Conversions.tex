@@ -6,7 +6,7 @@ another type.  Conversions can be either
 implicit~(\rsec{Implicit_Conversions}) or
 explicit~(\rsec{Explicit_Conversions}).
 
-\subsection{Implicit Conversions}
+\section{Implicit Conversions}
 \label{Implicit_Conversions}
 \index{conversions!implicit}
 
@@ -28,7 +28,7 @@ implicit conversions are supported from integral and class types to
 bool in the context of a
 statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 
-\subsubsection{Implicit Bool and Numeric Conversions}
+\subsection{Implicit Bool and Numeric Conversions}
 \label{Implicit_Numeric_Conversions}
 \index{conversions!numeric}
 \index{conversions!bool}
@@ -100,7 +100,7 @@ of the corresponding floating-point type.  In this table the
 default \chpl{int}, \chpl{uint} and \chpl{real} types map to their corresponding
 explicitly-sized types.
 
-\subsubsection{Implicit Enumeration Conversions}
+\subsection{Implicit Enumeration Conversions}
 \label{Implicit_Enumeration_Conversions}
 \index{conversions!enumeration}
 
@@ -112,7 +112,7 @@ enumerated type are within range of the integral type.
 % to convert an integer to an enumerated type.
 % This is consistent with C# and later versions of C++.
 
-\subsubsection{Implicit Class Conversions}
+\subsection{Implicit Class Conversions}
 \label{Implicit_Class_Conversions}
 \index{conversions!class}
 
@@ -120,7 +120,7 @@ An expression of class type \chpl{D} can be implicitly converted to
 another class type \chpl{C} provided that \chpl{D} is a subclass
 of \chpl{C}.
 
-\subsubsection{Implicit Record Conversions}
+\subsection{Implicit Record Conversions}
 \label{Implicit_Record_Conversions}
 \index{conversions!record}
 
@@ -128,7 +128,7 @@ An expression of record type \chpl{D} can be implicitly converted to
 another record type \chpl{C} provided that \chpl{D} is a nominal
 subtype of \chpl{C}.
 
-\subsubsection{Implicit Compile-Time Constant Conversions}
+\subsection{Implicit Compile-Time Constant Conversions}
 \label{Implicit_Compile_Time_Constant_Conversions}
 \index{conversions!parameter}
 
@@ -141,7 +141,7 @@ value of the parameter is within the range of the target type.
 to \chpl{uint(64)} if the value of the parameter is nonnegative.
 \end{itemize}
 
-\subsubsection{Implicit Statement Bool Conversions}
+\subsection{Implicit Statement Bool Conversions}
 \label{Implicit_Statement_Bool_Conversions}
 \index{conversions!bool}
 
@@ -152,7 +152,7 @@ the following implicit conversions are supported:
 \item An expression of a class type is taken to be true if it is not nil and is false otherwise.
 \end{itemize}
 
-\subsection{Explicit Conversions}
+\section{Explicit Conversions}
 \label{Explicit_Conversions}
 \index{conversions!explicit}
 
@@ -163,7 +163,7 @@ supported between all types.
 
 The explicit conversions are a superset of the implicit conversions.
 
-\subsubsection{Explicit Numeric Conversions}
+\subsection{Explicit Numeric Conversions}
 \label{Explicit_Numeric_Conversions}
 \index{conversions!numeric}
 
@@ -233,7 +233,7 @@ The rules for converting from \chpl{imag} to \chpl{complex} are the same as for
 converting from real, except that the imaginary part of the result is set using
 the input value, and the real part of the result is set to zero.
 
-\subsubsection{Explicit Enumeration Conversions}
+\subsection{Explicit Enumeration Conversions}
 \label{Explicit_Enumeration_Conversions}
 \index{conversions!enumeration}
 
@@ -277,7 +277,7 @@ When the source type is string, the enumerator whose name matches value of the i
 string is selected.  If no such enumerator exists, an invalid cast exception
 is thrown.
 
-\subsubsection{Explicit Class Conversions}
+\subsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}
 \index{conversions!class}
 
@@ -288,7 +288,7 @@ that \chpl{D} is derived from \chpl{C}, it is a runtime error if the
 the dynamic class type of \chpl{C} is not derived from or equal
 to \chpl{D}.
 
-\subsubsection{Explicit Record Conversions}
+\subsection{Explicit Record Conversions}
 \label{Explicit_Record_Conversions}
 \index{conversions!record}
 

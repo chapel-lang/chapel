@@ -5,7 +5,7 @@ Chapel supports generic functions and types that are parameterizable
 over both types and parameters.  The generic functions and types look
 similar to non-generic functions and types already discussed.
 
-\subsection{Generic Functions}
+\section{Generic Functions}
 \label{Generic_Functions}
 \index{functions!generic}
 \index{generics!functions}
@@ -29,7 +29,7 @@ omitted.
 \end{itemize}
 These conditions are discussed in the next sections.
 
-\subsubsection{Formal Type Arguments}
+\subsection{Formal Type Arguments}
 \label{Formal_Type_Arguments}
 \index{intents!type@\chpl{type}}
 
@@ -67,7 +67,7 @@ writeln(t2);
 \end{chapeloutput}
 \end{example}
 
-\subsubsection{Formal Parameter Arguments}
+\subsection{Formal Parameter Arguments}
 \label{Formal_Parameter_Arguments}
 \index{intents!param@\chpl{param}}
 
@@ -102,7 +102,7 @@ The function call \chpl{fillTuple(3, 3)} returns a 3-tuple where each
 component contains the value \chpl{3}.
 \end{example}
 
-\subsubsection{Formal Arguments without Types}
+\subsection{Formal Arguments without Types}
 \label{Formal_Arguments_without_Types}
 \index{formal arguments!without types}
 
@@ -142,7 +142,7 @@ of real values \chpl{(3.14, 3.14, 3.14)}.  The return type is
 \chpl{(real, real, real)}.
 \end{example}
 
-\subsubsection{Formal Arguments with Queried Types}
+\subsection{Formal Arguments with Queried Types}
 \label{Formal_Arguments_with_Queried_Types}
 \index{formal arguments!queried types}
 
@@ -176,7 +176,7 @@ writeln(typeToString(x.type));
 \end{chapeloutput}
 \end{example}
 
-\subsubsection{Formal Arguments of Generic Type}
+\subsection{Formal Arguments of Generic Type}
 \label{Formal_Arguments_of_Generic_Type}
 \index{formal arguments!generic types}
 
@@ -276,7 +276,7 @@ are generic types that can only be instantiated with, respectively, the
 signed and unsigned integral types, all of the numeric types, and
 enumerated types.
 
-\subsubsection{Formal Arguments of Generic Array Types}
+\subsection{Formal Arguments of Generic Array Types}
 \label{Formal_Arguments_of_Generic_Array_Types}
 \index{formal arguments!array types}
 
@@ -289,7 +289,7 @@ the formal argument is taken to be the domain of the actual argument.
 A queried domain may not be modified via the name to which it is bound
 (see~\rsec{Association_of_Arrays_to_Domains} for rationale).
 
-\subsection{Function Visibility in Generic Functions}
+\section{Function Visibility in Generic Functions}
 \label{Function_Visibility_in_Generic_Functions}
 \index{generics!function visibility}
 
@@ -363,7 +363,7 @@ Note that the Chapel lookup mechanism is still under development and
 discussion.  Comments or questions are appreciated.
 \end{rationale}
 
-\subsection{Generic Types}
+\section{Generic Types}
 \label{Generic_Types}
 \index{generics!types}
 \index{types!generic}
@@ -415,7 +415,7 @@ of types and parameter values, one type or value per generic field.
 % It would be cool to summarize that in a table
 % (one dimension: field kinds; the other dimension: aspects).
 
-\subsubsection{Type Aliases in Generic Types}
+\subsection{Type Aliases in Generic Types}
 \label{Type_Aliases_in_Generic_Types}
 \index{type aliases!in classes or records}
 \index{fields!type alias}
@@ -480,7 +480,7 @@ as \chpl{Node(eltType)}; the type of \chpl{next} is the same type as
 the type of the object that it is a field of.
 \end{example}
 
-\subsubsection{Parameters in Generic Types}
+\subsection{Parameters in Generic Types}
 \label{Parameters_in_Generic_Types}
 \index{parameters!in classes or records}
 \index{fields!parameter}
@@ -531,7 +531,7 @@ type of this class instance is \chpl{IntegerTuple(3)}.  The type
 specified by \chpl{IntegerTuple} is a generic type.
 \end{example}
 
-\subsubsection{Fields without Types}
+\subsection{Fields without Types}
 \label{Fields_without_Types}
 \index{fields!variable and constant, without types}
 \index{variables!in classes or records}
@@ -590,7 +590,7 @@ and \chpl{2}.  The type of each object could be specified
 as \chpl{Node(int)}.
 \end{example}
 
-\subsubsection{The Type Constructor}
+\subsection{The Type Constructor}
 \label{Type_Constructors}
 \index{generics!type constructor}
 \index{constructors!type constructors}
@@ -629,7 +629,7 @@ and unspecified type aliases result in arguments with no defaults;
 actual types or values for these arguments must always be provided
 when invoking the type constructor.
 
-\subsubsection{Generic Methods}
+\subsection{Generic Methods}
 \label{Generic_Methods}
 \index{generics!methods}
 
@@ -637,7 +637,7 @@ All methods bound to generic classes or records, including
 constructors, are generic over the implicit \chpl{this} argument.
 This is in addition to being generic over any other argument that is generic.
 
-\subsubsection{The Compiler-Generated Constructor}
+\subsection{The Compiler-Generated Constructor}
 \label{Generic_Compiler_Generated_Constructors}
 \index{generics!constructors!compiler-generated}
 \index{constructors!compiler-generated!for generic classes or records}
@@ -663,7 +663,7 @@ For example, the arguments corresponding to the generic \chpl{var}
 and \chpl{const} fields, if any, never have defaults, so the corresponding
 actual values must always be provided.
 
-\subsubsection{User-Defined Constructors}
+\subsection{User-Defined Constructors}
 \label{Generic_User_Constructors}
 \index{generics!constructors!user-defined}
 \index{constructors!user-defined!for generic classes or records}
@@ -742,7 +742,7 @@ The design of constructors, especially for generic classes, is
 under development, so the above specification may change.
 \end{openissue}
 
-\subsection{Where Expressions}
+\section{Where Expressions}
 \label{Where_Expressions}
 \index{where@\chpl{where}}
 \index{generics!where@\chpl{where}}
@@ -776,7 +776,7 @@ the call foo(3) resolves to the first definition because when the
 second function is instantiated the where clause evaluates to false.
 \end{example}
 
-\subsection{User-Defined Compiler Diagnostics}
+\section{User-Defined Compiler Diagnostics}
 \label{User_Defined_Compiler_Errors}
 \index{compiler diagnostics!user-defined}
 \index{compiler errors!user-defined}
@@ -866,7 +866,7 @@ foo.chpl:6: error: foo() called with non-matching types: int != real
 
 \end{example}
 
-\subsection{Example: A Generic Stack}
+\section{Example: A Generic Stack}
 \label{Example_Generic_Stack}
 \begin{chapelpre}
 % genericStack.chpl

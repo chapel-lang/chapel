@@ -34,7 +34,7 @@ are as follows:
 There is an expectation that each of these modules will be extended
 and that more standard modules will be defined over time.
 
-\subsection{Automatic Modules}
+\section{Automatic Modules}
 \index{automatic modules}
 \index{standard modules!automatic}
 
@@ -42,7 +42,7 @@ Automatic modules are used by a Chapel program automatically.  There
 is currently no way to avoid their use by a program, although we
 anticipate adding such a capability in the future.
 
-\subsubsection{Math}
+\subsection{Math}
 \label{Math}
 \index{automatic modules!Math}
 
@@ -351,7 +351,7 @@ than the argument in absolute value.
 \end{protobody}
 
 
-\subsubsection{Base}
+\subsection{Base}
 \label{Standard}
 \index{automatic modules!Base}
 
@@ -478,7 +478,7 @@ Returns a string parameter that represents the name of the
 type \chpl{t}.
 \end{protobody}
 
-\subsubsection{Types}
+\subsection{Types}
 \label{Types_standard_module}
 
 \begin{protohead}
@@ -518,14 +518,14 @@ is implemented for all numeric types.
 
 
 
-\subsection{Optional Modules}
+\section{Optional Modules}
 \index{optional modules}
 \index{standard modules!optional}
 
 Optional modules can be used by a Chapel program via the \chpl{use}
 keyword (\rsec{Using_Modules}).
 
-\subsubsection{BitOps}
+\subsection{BitOps}
 \label{BitOps}
 \index{optional modules!BitOps}
 
@@ -568,7 +568,7 @@ bits to the right \chpl{shift} number of times.
 \end{protobody}
 
 
-\subsubsection{Norm}
+\subsection{Norm}
 \label{Norm}
 \index{optional modules!Norm}
 
@@ -600,7 +600,7 @@ Compute the default norm on array \chpl{x}.  For a 1D array this is
 the 2-norm, for a 2D array, this is the Frobenius norm.
 \end{protobody}
 
-\subsubsection{Random}
+\subsection{Random}
 \label{Random}
 \index{optional modules!Random}
 
@@ -700,7 +700,7 @@ the \chpl{RandomStream} class.  If unspecified, the default for the
 class will be used.
 \end{protobody}
 
-\subsubsection{Search}
+\subsection{Search}
 \label{Search}
 \index{optional modules!Search}
 
@@ -734,7 +734,7 @@ it was not found.
 \end{protobody}
 
 
-\subsubsection{Sort}
+\subsection{Sort}
 \label{Sort}
 \index{optional modules!Sort}
 
@@ -758,7 +758,7 @@ Sorts the 1D array \chpl{Data} in-place using a sequential
 implementation of the QuickSort algorithm.
 \end{protobody}
 
-\subsubsection{Time}
+\subsection{Time}
 \label{Time}
 \index{optional modules!Time}
 

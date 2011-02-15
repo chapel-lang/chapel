@@ -74,7 +74,7 @@ type-declaration-statement:
   type-alias-declaration-statement
 \end{syntax}
 
-\subsection{Primitive Types}
+\section{Primitive Types}
 \label{Primitive_Types}
 \index{types!primitive}
 
@@ -111,7 +111,7 @@ primitive types depending on a platform's native support for those
 types.
 \end{openissue}
 
-\subsubsection{The Void Type}
+\subsection{The Void Type}
 \label{The_Void_Type}
 \index{void@\chpl{void}}
 
@@ -121,7 +121,7 @@ example when a function has no arguments and/or no return type.
 There may be storage associated with a value of type \chpl{void}, in which
 case its lifetime obeys the same rules as a value of type \chpl{int}.
 
-\subsubsection{The Bool Type}
+\subsection{The Bool Type}
 \label{The_Bool_Type}
 \index{bool@\chpl{bool}}
 
@@ -140,7 +140,7 @@ Some statements require expressions of \chpl{bool} type and Chapel
 supports a special conversion of values to \chpl{bool} type when used
 in this context~(\rsec{Implicit_Statement_Bool_Conversions}).
 
-\subsubsection{Signed and Unsigned Integral Types}
+\subsection{Signed and Unsigned Integral Types}
 \label{Signed_and_Unsigned_Integral_Types}
 \index{uint@\chpl{uint}}
 \index{int@\chpl{int}}
@@ -180,7 +180,7 @@ integral types should be changed to 64 bits.
 \end{openissue}
 
 
-\subsubsection{Real Types}
+\subsection{Real Types}
 \label{Real_Types}
 \index{real@\chpl{real}}
 
@@ -191,7 +191,7 @@ machine-dependent, but usually include \chpl{real(32)} (single
 precision) and \chpl{real(64)} (double precision) following the IEEE
 754 standard.  
 
-\subsubsection{Imaginary Types}
+\subsection{Imaginary Types}
 \label{Imaginary_Types}
 \index{imaginary@\chpl{imaginary}}
 
@@ -206,7 +206,7 @@ under-optimized code stemming from always coercing real values to
 complex values with a zero imaginary part.
 \end{rationale}
 
-\subsubsection{Complex Types}
+\subsection{Complex Types}
 \label{Complex_Types}
 \index{complex@\chpl{complex}}
 
@@ -233,7 +233,7 @@ expressions \chpl{c.re} and \chpl{c.im} refer to \chpl{3.14}
 and \chpl{2.72} respectively.
 \end{example}
 
-\subsubsection{The String Type}
+\subsection{The String Type}
 \label{The_String_Type}
 \index{string@\chpl{string}}
 
@@ -251,7 +251,7 @@ There is an expectation of future support for different character
 sets, possibly including internationalization.
 \end{openissue}
 
-\subsection{Enumerated Types}
+\section{Enumerated Types}
 \label{Enumerated_Types}
 \index{enumerated types}
 
@@ -312,7 +312,7 @@ constants must be prefixed by the enumerated type and a dot.
 \end{example}
 
 
-\subsection{Locale Types}
+\section{Locale Types}
 \label{Locale_Types}
 \index{types!locale}
 
@@ -329,11 +329,11 @@ The \chpl{locale} type is defined in~\rsec{The_Locale_Type}.
 We expect to support \emph{realms} as another locale type.
 \end{openissue}
 
-\subsection{Structured Types}
+\section{Structured Types}
 \label{Structured_Types}
 \index{types!structured}
 
-\subsubsection{Class Types}
+\subsection{Class Types}
 
 The class type defines a type that contains variables and constants,
 called fields, and functions, called methods.  Classes are defined
@@ -341,34 +341,34 @@ in~\rsec{Classes}.  The class type can also contain type aliases and
 parameters.  Such a class is generic and is defined
 in~\rsec{Generic_Types}.
 
-\subsubsection{Record Types}
+\subsection{Record Types}
 
 The record type is similar to a class type; the primary difference is
 that a record is a value rather than a reference.  Records are defined
 in~\rsec{Records}.
 
-\subsubsection{Union Types}
+\subsection{Union Types}
 
 The union type defines a type that contains one of a set of variables.
 Like classes and records, unions may also define methods.  Unions are
 defined in~\rsec{Unions}.
 
-\subsubsection{Tuple Types}
+\subsection{Tuple Types}
 
 A tuple is a light-weight record that consists of one or more
 anonymous fields.  If all the fields are of the same type, the tuple
 is homogeneous.  Tuples are defined in~\rsec{Tuples}.
 
-\subsection{Data Parallel Types}
+\section{Data Parallel Types}
 \label{Data_Parallel_Types}
 \index{types!dataparallel}
 
-\subsubsection{Range Types}
+\subsection{Range Types}
 
 A range defines an integral sequence of some integral type.  Ranges
 are defined in~\rsec{Ranges}.
 
-\subsubsection{Domain, Array, and Index Types}
+\subsection{Domain, Array, and Index Types}
 \label{Domain_and_Array_Types}
 
 A domain defines a set of indices and an array defines a set of
@@ -376,7 +376,7 @@ elements that are mapped by the indices in an associated domain.  A
 domain's indicies can be of any type.  Domains, arrays, and index
 types are defined in~\rsec{Domains}~and~\rsec{Arrays}.
 
-\subsection{Type Aliases}
+\section{Type Aliases}
 \label{Type_Aliases}
 \index{type aliases}
 

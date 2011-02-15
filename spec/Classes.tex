@@ -20,7 +20,7 @@ instance of that class or any of its derived classes.
 A class is generic if it has generic fields. Generic classes and fields
 are discussed in~\rsec{Generic_Types}.
 
-\subsection{Class Declarations}
+\section{Class Declarations}
 \label{Class_Declarations}
 \index{classes!declarations}
 \index{class@\chpl{class}}
@@ -66,7 +66,7 @@ constant without a specified type and without an initialization
 expression, then it declares a generic class type.  Generic classes are described
 in~\rsec{Generic_Types}.
 
-\subsubsection{Class Types}
+\subsection{Class Types}
 \label{Class_Types}
 \index{classes!class types}
 
@@ -88,7 +88,7 @@ type.  Generic classes must be instantiated to serve as a fully-specified
 type, for example to declare a variable.  This is done with
 type constructors, which are defined in Section~\ref{Type_Constructors}.
 
-\subsubsection{Class Fields}
+\subsection{Class Fields}
 \label{Class_Fields}
 \index{classes!fields}
 \index{fields}
@@ -114,7 +114,7 @@ defines a new class type called \chpl{Actor} that has two fields: the
 string field \chpl{name} and the unsigned integer field \chpl{age}.
 \end{example}
 
-\subsubsection{Class Methods}
+\subsection{Class Methods}
 \label{Class_Methods}
 \index{classes!methods}
 
@@ -122,7 +122,7 @@ A class method is a function or iterator that is bound to a class.  A method
 is called by passing an instance of the class to the method via a
 special syntax that is similar to a field access.
 
-\paragraph{Class Method Declarations}
+\subsubsection{Class Method Declarations}
 \label{Class_Method_Declarations}
 
 Methods are declared with the following syntax:
@@ -146,7 +146,7 @@ method declaration contains the optional \sntx{param-clause}, it
 implies that it can only be applied to param objects of the given type
 binding.
 
-\subsubsection{Nested Classes}
+\subsection{Nested Classes}
 \label{Nested_Classes}
 \index{classes!nested}
 
@@ -155,7 +155,7 @@ A class or record defined within another class is a nested class (or record).
 Nested classes or records can refer to fields and methods in the outer class (or
 record) implicitly, or explicitly by means of an \chpl{outer} reference.
 
-\subsection{Inheritance}
+\section{Inheritance}
 \label{Inheritance}
 \index{inheritance}
 \index{classes!inheritance}
@@ -177,7 +177,7 @@ As with record inheritance, this has the effect of injecting the record's fields
 methods into the new class type.  Record inheritance does not induce a
 well-defined class hierarchy.  See~\rsec{Record_Inheritance} for details.
 
-\subsubsection{The object Class}
+\subsection{The object Class}
 \label{The_object_Class}
 
 All classes are derived from the \chpl{object} class, either directly or
@@ -186,7 +186,7 @@ implicitly from \chpl{object}.  Otherwise, a class derives from \chpl{object}
 indirectly through the class or classes it inherits.  A variable of type \chpl{object}
 can hold a reference to an object of any class type. 
 
-\subsubsection{Accessing Base Class Fields}
+\subsection{Accessing Base Class Fields}
 \label{Accessing_Base_Class_Fields}
 
 A derived class contains data associated with the fields in its base
@@ -195,7 +195,7 @@ accessed in their base class unless the getter or setter method is
 overridden in the derived class, as discussed
 in~\rsec{Overriding_Base_Class_Methods}.
 
-\subsubsection{Derived Class Constructors}
+\subsection{Derived Class Constructors}
 \label{Derived_Class_Constructors}
 \index{constructors!for derived classes}
 
@@ -213,7 +213,7 @@ There is an expectation that a more standard way
 of chaining constructor calls will be supported.
 \end{openissue}
 
-\subsubsection{Shadowing Base Class Fields}
+\subsection{Shadowing Base Class Fields}
 \label{Shadowing_Base_Class_Fields}
 
 A field in the derived class can be declared with the same name as a
@@ -227,7 +227,7 @@ be a way to reference the field in the base class but this is not
 defined at this time.
 \end{openissue}
 
-\subsubsection{Overriding Base Class Methods}
+\subsection{Overriding Base Class Methods}
 \label{Overriding_Base_Class_Methods}
 \index{dynamic dispatch}
 
@@ -251,7 +251,7 @@ impossible to access a base field within a base method should that
 field be shadowed by a subclass.
 \end{rationale}
 
-\subsubsection{Inheriting from Multiple Classes}
+\subsection{Inheriting from Multiple Classes}
 \label{Inheriting_from_Multiple_Classes}
 \index{multiple inheritance}
 \index{classes!inheritance!multiple}
@@ -272,7 +272,7 @@ The capability of inheriting data from multiple classes is currently under study
 at the University of Colorado (Boulder).
 \end{openissue}
 
-\subsection{Class Variable Declarations}
+\section{Class Variable Declarations}
 \label{Class_Variable_Declarations}
 \index{classes!variable declarations}
 
@@ -309,7 +309,7 @@ assigned to \chpl{c}.  The object previously referenced by \chpl{c} is no longer
 referenced, and can be reclaimed by the garbage collector.
 \end{example}
 
-\subsubsection{Class Assignment}
+\subsection{Class Assignment}
 \label{Class_Assignment}
 \index{classes!assignment}
 
@@ -317,7 +317,7 @@ Classes are assigned by reference.  After an assignment from one
 variable of class type to another, the variables reference the same
 class instance.
 
-\subsubsection{The {\em nil} Value}
+\subsection{The {\em nil} Value}
 \index{classes!nil}
 \index{nil@\chpl{nil}}
 
@@ -326,7 +326,7 @@ any object.  \chpl{nil} can be assigned to a variable of any class
 type.  Invoking a class method or accessing a field of the \chpl{nil}
 value results in a run-time error.
 
-\subsubsection{Default Initialization}
+\subsection{Default Initialization}
 \label{Default_Initialization}
 \index{classes!initialization}
 \index{initialization!classes}
@@ -348,7 +348,7 @@ expression is used to initialize the field.  Otherwise, the field is
 initialized to the default value of its type
 (\rsec{Default_Values_For_Types}).
 
-\subsection{Class Constructors}
+\section{Class Constructors}
 \label{Class_Constructors}
 \index{classes!constructors}
 \index{classes!new}
@@ -372,7 +372,7 @@ it is a user-defined constructor.
 If the program declares no constructors for a class,
 a compiler-generated constructor for that class is created automatically.
 
-\subsubsection{User-Defined Constructors}
+\subsection{User-Defined Constructors}
 \label{User_Defined_Constructors}
 \index{classes!constructors!user-defined}
 \index{user-defined constructors}
@@ -443,7 +443,7 @@ Constructors for generic classes (\rsec{Generic_Types}) handle certain
 arguments differently and may need to satisfy additional
 requirements. See Section~\ref{Generic_User_Constructors} for details.
 
-\subsubsection{The Compiler-Generated Constructor}
+\subsection{The Compiler-Generated Constructor}
 \label{The_Compiler_Generated_Constructor}
 \index{classes!constructors!compiler-generated}
 \index{constructors!compiler-generated}
@@ -545,7 +545,7 @@ The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
 \end{itemize}
 \end{example}
 
-\subsection{Class Field Accesses}
+\section{Class Field Accesses}
 \label{Class_Field_Accesses}
 \index{member access}
 
@@ -577,7 +577,7 @@ reads the field \chpl{name} and assigns the value to the variable
 \chpl{anActor} the value \chpl{27}.
 \end{example}
 
-\subsubsection{Variable Getter Methods}
+\subsection{Variable Getter Methods}
 \label{Getter_Methods}
 \index{classes!getters}
 
@@ -623,7 +623,7 @@ returns the field \chpl{x} and increments another field that records
 the number of times x was assigned a value.
 \end{example}
 
-\subsection{Class Method Calls}
+\section{Class Method Calls}
 \label{Class_Method_Calls}
 
 A method is called by using the member access syntax as described
@@ -658,7 +658,7 @@ parentheses.  The actual arguments supplied in the method call are bound to the
 formal arguments in the method declaration following the rules specified for
 functions (\rsec{Functions}).
 
-\subsubsection{The {\em this} Reference}
+\subsection{The {\em this} Reference}
 \label{The_em_this_Reference}
 \index{this@\chpl{this}}
 
@@ -694,7 +694,7 @@ call \chpl{c.foo()} results in a call to \chpl{bar} where the argument
 is \chpl{c}.
 \end{example}
 
-\subsubsection{The {\em this} Method}
+\subsection{The {\em this} Method}
 \label{The_em_this_Method}
 \index{this@\chpl{this}}
 \index{classes!indexing}
@@ -743,7 +743,7 @@ thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 \end{chapeloutput}
 \end{example}
 
-\subsubsection{The {\em these} Method}
+\subsection{The {\em these} Method}
 \label{The_these_Method}
 \index{these@\chpl{these}}
 \index{classes!iterating}
@@ -787,7 +787,7 @@ for i in ta do
 
 \end{example}
 
-\subsection{Dynamic Memory Management}
+\section{Dynamic Memory Management}
 \label{Dynamic_Memory_Management}
 \label{Class_Delete}
 \index{memory management}

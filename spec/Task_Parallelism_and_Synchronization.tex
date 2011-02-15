@@ -22,7 +22,7 @@ describes the memory consistency model.
 The term \emph{task} is used to refer to a distinct context of
 execution that may be running concurrently.
 
-\subsection{Unstructured Task-Parallel Constructs}
+\section{Unstructured Task-Parallel Constructs}
 \label{unstructured_task_parallelism}
 
 Chapel provides a simple construct, the begin statement, to spawn
@@ -36,7 +36,7 @@ introduce concurrency may be easier to use in many common cases.  They
 can be implemented using only the unstructured constructs described in
 this section.
 
-\subsubsection{The Begin Statement}
+\subsection{The Begin Statement}
 \label{Begin}
 \index{begin@\chpl{begin}}
 
@@ -85,7 +85,7 @@ The following statements may not be lexically enclosed in
 begin statements: break statements, continue statements,
 yield statements, and return statements.
 
-\subsubsection{Sync Variables}
+\subsection{Sync Variables}
 \label{Sync_Variables}
 \index{synchronization variables!sync@\chpl{sync}}
 \index{sync@\chpl{sync}}
@@ -191,7 +191,7 @@ For generic formal arguments with unspecified types
 is \chpl{sync} is ``read'' before being passed to the function and the
 generic formal argument's type is set to the base type of the actual.
 
-\subsubsection{Single Variables}
+\subsection{Single Variables}
 \label{Single_Variables}
 \index{synchronization variables!single@\chpl{single}}
 \index{single@\chpl{single}}
@@ -247,7 +247,7 @@ returning the sum waits on the reading of \chpl{x$\mbox{{\bf \$}}$}
 until it has been assigned.
 \end{example}
 
-\subsubsection{Predefined Single and Sync Methods}
+\subsection{Predefined Single and Sync Methods}
 \label{Functions_on_Synchronization_Variables}
 \index{synchronization variables!built-in methods on}
 
@@ -396,7 +396,7 @@ writeln((x$\mbox{{\bf \$}}$.readXX(), y$\mbox{{\bf \$}}$, z));
 \end{chapeloutput}
 \end{example}
 
-\subsection{Structured Task-Parallel Constructs}
+\section{Structured Task-Parallel Constructs}
 \label{structured_task_parallelism}
 
 Chapel provides two constructs, the cobegin and coforall statements,
@@ -408,7 +408,7 @@ All four of these constructs can be implemented through judicious uses
 of the unstructured task-parallel constructs described in the previous
 section.
 
-\subsubsection{The Cobegin Statement}
+\subsection{The Cobegin Statement}
 \label{Cobegin}
 \index{cobegin@\chpl{cobegin}}
 
@@ -459,7 +459,7 @@ continue past the final line above until each of the single variables
 is written, thereby ensuring that each of the functions has finished.
 \end{example}
 
-\subsubsection{The Coforall Loop}
+\subsection{The Coforall Loop}
 \label{Coforall}
 \index{coforall@\chpl{coforall}}
 \index{coforall loops}
@@ -530,7 +530,7 @@ of the tasks have completed.  Thus control does not continue past the
 last line until all of the tasks have completed.
 \end{example}
 
-\subsubsection{The Sync Statement}
+\subsection{The Sync Statement}
 \label{Sync_Statement}
 \index{sync@\chpl{sync}}
 
@@ -617,7 +617,7 @@ code will wait for these begin statements to complete whereas the
 latter code will not.
 \end{example}
 
-\subsubsection{The Serial Statement}
+\subsection{The Serial Statement}
 \label{Serial}
 \index{serial@\chpl{serial}}
 
@@ -717,7 +717,7 @@ because the expression evaluated to determine whether to serialize
 always evaluates to true.
 \end{example}
 
-\subsection{Atomic Statements}
+\section{Atomic Statements}
 \label{Atomic_Transactions}
 \label{atomicity}
 \index{atomic transactions}
@@ -825,7 +825,7 @@ true
 \end{chapeloutput}
 \end{example}
 
-\subsection{Memory Consistency Model}
+\section{Memory Consistency Model}
 \label{Memory_Consistency}
 \index{memory consistency model}
 

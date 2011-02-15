@@ -14,7 +14,7 @@ in~\rsec{Nested_Modules}.  Module uses and explicit naming of symbols
 are described in~\rsec{Using_Modules}.  The execution of a program and
 module initialization is described in~\rsec{Program_Execution}.
 
-\subsection{Module Definitions}
+\section{Module Definitions}
 \label{Module_Definitions}
 
 \index{module@\chpl{module}}
@@ -37,7 +37,7 @@ Module declaration statements must be top-level statements within a
 module.  A module that is declared within another module is called a
 nested module~(\rsec{Nested_Modules}).
 
-\subsection{Files and Implicit Modules}
+\section{Files and Implicit Modules}
 \label{Implicit_Modules}
 \index{modules!and files}
 
@@ -116,7 +116,7 @@ printY.
 \end{example}
 
 
-\subsection{Nested Modules}
+\section{Nested Modules}
 \label{Nested_Modules}
 \index{modules!nested}
 
@@ -191,7 +191,7 @@ printY();
 \end{example}
 
 
-\subsection{Using Modules}
+\section{Using Modules}
 \label{Using_Modules}
 \index{modules!using}
 
@@ -200,7 +200,7 @@ access to the top-level module symbols without the need for explicit
 naming~(\rsec{Explicit_Naming}).  Using modules is accomplished via
 the use statement as defined in~\rsec{The_Use_Statement}.
 
-\subsubsection{Explicit Naming}
+\subsection{Explicit Naming}
 \label{Explicit_Naming}
 \index{modules!explicitly named}
 
@@ -288,7 +288,7 @@ compiler error.
 \end{example}
 
 
-\subsubsection{Module Initialization}
+\subsection{Module Initialization}
 \label{Module_Initialization}
 \index{modules!initialization}
 
@@ -322,13 +322,13 @@ Module initialization order is discussed
 in~\rsec{Module_Initialization_Order}.
 
 
-\subsection{Program Execution}
+\section{Program Execution}
 \label{Program_Execution}
 
 Chapel programs start by initializing all modules and then executing
 the main function~(\rsec{The_main_Function}).
 
-\subsubsection{The {\em main} Function}
+\subsection{The {\em main} Function}
 \label{The_main_Function}
 
 \index{main@\chpl{main}}
@@ -392,7 +392,7 @@ the main module and can be called as such.
 
 \index{exploratory programming}
 
-%% \subsubsection{Programs with a Single Module}
+%subsubsection{Programs with a Single Module}
 %% \label{Programs_with_a_Single_Module}
 
 To aid in exploratory programming, if the file(s) listed on the
@@ -417,7 +417,7 @@ as described in~\rsec{Implicit_Modules}.
 \end{example}
 
 
-\subsubsection{Module Initialization Order}
+\subsection{Module Initialization Order}
 \label{Module_Initialization_Order}
 
 Module initialization is performed using the following algorithm.

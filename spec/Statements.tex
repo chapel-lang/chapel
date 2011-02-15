@@ -56,7 +56,7 @@ in~\rsec{On}.  Cobegin, coforall, begin, sync, serial and atomic
 statements are defined in~\rsec{Task_Parallelism_and_Synchronization}.
 Forall statements are defined in~\rsec{Data_Parallelism}.
 
-\subsection{Blocks}
+\section{Blocks}
 \label{Blocks}
 
 \index{block}
@@ -78,7 +78,7 @@ variables~(\rsec{Local_Variables}).
 The statements within a block are executed serially unless the block
 is in a cobegin statement~(\rsec{Cobegin}).
 
-\subsection{Expression Statements}
+\section{Expression Statements}
 \label{Expression_Statements}
 
 \index{expression statement}
@@ -90,7 +90,7 @@ expression-statement:
   expression ;
 \end{syntax}
 
-\subsection{Assignment Statements}
+\section{Assignment Statements}
 \label{Assignment_Statements}
 \index{assignment}
 
@@ -155,7 +155,7 @@ ranges~(\rsec{Range_Assignment}),
 domains~(\rsec{Domain_Assignment}), and arrays~(\rsec{Array_Assignment})
 is discussed in these later sections.
 
-\subsection{The Swap Statement}
+\section{The Swap Statement}
 \label{The_Swap_Statement}
 \index{swap!statement}
 \index{swap!operator}
@@ -188,7 +188,7 @@ a = t;
 \end{chapel}
 \end{example}
 
-\subsection{The Conditional Statement}
+\section{The Conditional Statement}
 \label{The_Conditional_Statement}
 
 \index{if@\chpl{if}}
@@ -229,7 +229,7 @@ without an else-clause.
 Each statement embedded in the {\em conditional-statement} has its own
 scope whether or not an explicit block surrounds it.
 
-\subsection{The Select Statement}
+\section{The Select Statement}
 \label{The_Select_Statement}
 
 \index{select@\chpl{select}}
@@ -270,7 +270,7 @@ statement does not matter.
 Each statement embedded in the {\em when-statement} has its own scope
 whether or not an explicit block surrounds it.
 
-\subsection{The While and Do While Loops}
+\section{The While and Do While Loops}
 \label{The_While_and_Do_While_Loops}
 
 \index{while loops}
@@ -315,7 +315,7 @@ The do-while loop is executed as follows:
 In this second form of the loop, note that the statement is executed
 unconditionally the first time.
 
-\subsection{The For Loop}
+\section{The For Loop}
 \label{The_For_Loop}
 
 \index{for@\chpl{for}}
@@ -358,7 +358,7 @@ of the tuple must support iteration and these components are iterated
 over using a tensor product iteration defined
 in~\rsec{Tensor_Product_Iteration}.
 
-\subsubsection{Zipper Iteration}
+\subsection{Zipper Iteration}
 \label{Zipper_Iteration}
 \index{zipper iteration}
 
@@ -379,7 +379,7 @@ for (i, j) in (1..3, 4..6) do
 is ``1 4 2 5 3 6 ''.
 \end{example}
 
-\subsubsection{Tensor Product Iteration}
+\subsection{Tensor Product Iteration}
 \label{Tensor_Product_Iteration}
 \index{tensor product iteration}
 When multiple iterators are iterated over in a tensor product context,
@@ -402,7 +402,7 @@ for i in 1..3 do
 \end{chapel}
 \end{example}
 
-\subsubsection{Parameter For Loops}
+\subsection{Parameter For Loops}
 \label{Parameter_For_Loops}
 
 \index{for loops!parameters}
@@ -425,7 +425,7 @@ Parameter for loops are restricted to iteration over range literals
 with an optional by expression where the bounds and stride must be
 parameters.  The loop is then unrolled for each iteration.
 
-\subsection{The Label, Break, and Continue Statements}
+\section{The Label, Break, and Continue Statements}
 \label{Label_Break_Continue}
 \index{label@\chpl{label}}
 \index{break@\chpl{break}}
@@ -473,7 +473,7 @@ label outer for i in 1..n {
 \end{chapel}
 \end{example}
 
-\subsection{The Use Statement}
+\section{The Use Statement}
 \label{The_Use_Statement}
 \index{use@\chpl{use}}
 \index{modules!using}
@@ -511,7 +511,7 @@ the programmer to restrict which symbols are 'used' as well as to
 rename symbols that are used.
 \end{openissue}
 
-\subsection{The Type Select Statement}
+\section{The Type Select Statement}
 \label{The_Type_Select_Statement}
 
 \index{type select statements}
@@ -562,7 +562,7 @@ situation.  Unlike with function resolution, in the event of an
 ambiguity, the first statement in the list of when statements is
 chosen.
 
-\subsection{The Empty Statement}
+\section{The Empty Statement}
 \label{The_Empty_Statement}
 
 An empty statement has no effect.  The syntax of an empty statement is

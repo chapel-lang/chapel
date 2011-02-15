@@ -15,7 +15,7 @@ this locale, and any tasks running on this locale.  The
 term \emph{remote} will be used to describe another locale, the data
 on another locale, and the tasks running on another locale.
 
-\subsection{Locales}
+\section{Locales}
 \index{locales}
 
 A \emph{locale} is a portion of the target parallel architecture that
@@ -28,7 +28,7 @@ nodes or SMPs would typically define each node to be a locale.  In
 contrast a pure shared memory machine would be defined as a single
 locale.
 
-\subsubsection{Locale Types}
+\subsection{Locale Types}
 \label{The_Locale_Type}
 \index{locale@\chpl{locale}}
 
@@ -37,7 +37,7 @@ locale as described above.  Both data and tasks can be associated with
 a value of locale type. The only operators defined over locales are
 the equality and inequality comparison operators.
 
-\subsubsection{Locale Methods}
+\subsection{Locale Methods}
 \label{Locale_Methods}
 \index{Locales!methods}
 
@@ -77,7 +77,7 @@ locale in question.  A value of 0 indicates that the call stack size
 is determined by the system.
 \end{protobody}
 
-\subsubsection{The Predefined Locales Array}
+\subsection{The Predefined Locales Array}
 \label{Predefined_Locales_Array}
 \index{Locales@\chpl{Locales}}
 \index{numLocales@\chpl{numLocales}}
@@ -124,7 +124,7 @@ the \chpl{Locales} array.  Each locale is added to
 the \chpl{MyLocales} array four times in a round-robin fashion.
 \end{example}
 
-\subsubsection{The {\em here} Locale}
+\subsection{The {\em here} Locale}
 \label{here}
 \index{here@\chpl{here}}
 
@@ -145,7 +145,7 @@ executed on locale 1.
 
 The identifier \chpl{here} is not a keyword and can be overridden.
 
-\subsubsection{Querying the Locale of an Expression}
+\subsection{Querying the Locale of an Expression}
 \label{Querying_the_Locale_of_a_Variable}
 \index{locale@\chpl{locale}}
 
@@ -218,7 +218,7 @@ when running on 5 locales.
 \end{example}
 
 
-\subsection{The On Statement}
+\section{The On Statement}
 \label{On}
 \index{on@\chpl{on}}
 
@@ -239,7 +239,7 @@ Return statements may not be lexically enclosed in on statements.
 Yield statement may only be lexically enclosed in on statements in
 parallel iterators~\rsec{Parallel_Iterators}.
 
-\subsubsection{Remote Variable Declarations}
+\subsection{Remote Variable Declarations}
 \label{remote_variable_declarations}
 
 By default, when new variables and data objects are created, they are

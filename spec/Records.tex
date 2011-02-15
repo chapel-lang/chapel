@@ -26,7 +26,7 @@ it and returns it.
 A record type is generic if it contains generic fields.  Generic record types
 are discussed in detail in~\rsec{Generic_Types}.
 
-\subsection{Record Declarations}
+\section{Record Declarations}
 \label{Record_Declarations}
 \index{records!declarations}
 \index{record@\chpl{record}}
@@ -82,7 +82,7 @@ a variable or constant without a specified type and without an initialization
 expression, then it declares a generic record type.  Generic record types are
 described in~\rsec{Generic_Types}.
 
-\subsubsection{Record Types}
+\subsection{Record Types}
 \label{Record_Types}
 \index{records!record types}
 
@@ -100,7 +100,7 @@ type.  Generic records must be instantiated to serve as a fully-specified
 type, for example to declare a variable.  This is done with
 type constructors, which are defined in Section~\ref{Type_Constructors}.
 
-\subsubsection{Record Fields}
+\subsection{Record Fields}
 \label{Record_Fields}
 \index{records!fields}
 \index{fields}
@@ -129,7 +129,7 @@ contained by a record of this type is exactly the same as that contained by
 the \chpl{Actor} class defined in the preceding chapter~\rsec{Class_Fields}.
 \end{example}
 
-\subsubsection{Record Methods}
+\subsection{Record Methods}
 \label{Record_Methods}
 \index{records!methods}
 
@@ -140,7 +140,7 @@ reference, so that persistent field updates are possible.
 The syntax for record method declarations is identical to that for class method
 declarations (\rsec{Class_Method_Declarations}).
 
-\subsubsection{Nested Record Types}
+\subsection{Nested Record Types}
 \label{Nested_Record_Types}
 \index{records!nested}
 
@@ -149,7 +149,7 @@ declarations.  Methods defined in a nested record type may access fields
 declared in the containing aggregate type either implicitly, or explicitly by
 means of an \chpl{outer} reference.
 
-\subsection{Record Inheritance}
+\section{Record Inheritance}
 \label{Record_Inheritance}
 \index{records!inheritance}
 \index{inheritance!records}
@@ -195,7 +195,7 @@ The syntax and semantics for accessing methods (including getter methods and
 hence fields) in a base
 record type is the same as for accessing fields in a base class (\rsec{Accessing_Base_Class_Fields}).
 
-\subsubsection{Shadowing Base Record Fields}
+\subsection{Shadowing Base Record Fields}
 \label{Shadowing_Base_Record_Fields}
 
 A field in the derived record can be declared with the same name as a
@@ -207,7 +207,7 @@ directly accessible.
 A syntax for accessing shadowed fields has not yet been specified.
 \end{openissue}
 
-\subsubsection{Overriding Base Record Methods}
+\subsection{Overriding Base Record Methods}
 \label{Overriding_Base_Record_Methods}
 
 If a method in a derived record is declared with a signature identical to that
@@ -222,7 +222,7 @@ the formal arguments be identical. The return type of the overriding
 method must be the same as the return type of the base record's method,
 or must be a subrecord of the base record method's return type.
 
-\subsection{Record Variable Declarations}
+\section{Record Variable Declarations}
 \label{Record_Variable_Declarations}
 \index{records!variable declarations}
 
@@ -241,7 +241,7 @@ record type.  The record variable is initialized through a call to its
 default initializer.  The default initializer for a record is defined in the
 same way as the default initializer for a class (\rsec{Default_Initialization}).
 
-\subsubsection{Storage Allocation}
+\subsection{Storage Allocation}
 \label{Record_Storage}
 \index{records!allocation}
 
@@ -253,7 +253,7 @@ No additional storage for a record is allocated or reclaimed.
 Field data of one variable's record is not shared with data
 of another variable's record.
 
-\subsubsection{Record Assignment}
+\subsection{Record Assignment}
 \label{Record_Assignment}
 \index{records!assignment}
 
@@ -331,7 +331,7 @@ rather than two references to the same object.  Assigning \chpl{3.14}
 to \chpl{C.x} does not affect the \chpl{x} field in \chpl{A}.
 \end{example}
 
-\subsubsection{Assigning Objects to Records}
+\subsection{Assigning Objects to Records}
 \label{Assigning_Objects_to_Records}
 \index{records!assignment!objects}
 
@@ -385,7 +385,7 @@ References can be used to reduce the length of dereference expression, and also
 improve performance -- especially if that expression is used repeatedly.
 \end{openissue}
 
-\subsubsection{Record Initialization}
+\subsection{Record Initialization}
 \label{Record_Initialization}
 \index{records!initialization}
 \index{initialization!records}
@@ -452,7 +452,7 @@ As with classes, the user can provide his own constructors
 (\rsec{User_Defined_Constructors}).  If any user-defined constructors are
 supplied, the default initializer cannot be called directly.  
 
-\subsection{Record Arguments}
+\section{Record Arguments}
 \label{Record_Arguments}
 \index{records!arguments}
 
@@ -504,7 +504,7 @@ the assignment to \chpl{mc1} or by the assignment in \chpl{printMyColor}.
 because the intent \chpl{inout} is used.
 \end{example}
 
-\subsection{Record Field Access}
+\section{Record Field Access}
 \label{Record_Field_Access}
 \index{member access!records}
 
@@ -516,7 +516,7 @@ an lvalue, the value of the record field is updated.
 Member access expressions which access parameter fields can only appear in
 parameter expressions.
 
-\subsubsection{Field Getter Methods}
+\subsection{Field Getter Methods}
 \label{Field_Getter_Methods}
 \index{records!getters}
 
@@ -525,7 +525,7 @@ As in classes, field accesses are performed via getter methods
 the specified field (so they can be written as well as read).  The user may
 redefine these as needed.
 
-\subsection{Record Method Access}
+\section{Record Method Access}
 \label{Record_Method_Access}
 \index{method access!records}
 
@@ -533,7 +533,7 @@ A record method may be called as well, using member access syntax
 (\rsec{Member_Access_Expressions}).  Unlike class methods, record methods are
 bound at compile time.  
 
-\subsubsection{The \em{this} Reference}
+\subsection{The \em{this} Reference}
 \label{The_this_Reference}
 \index{this@\chpl[this}
 
@@ -542,20 +542,20 @@ record with which it is invoked.  This allows the fields within the record to be
 updated within the body of a record method.  The record itself can be accessed
 using the \chpl{this} reference.
 
-\subsubsection{The \em{this} Method}
+\subsection{The \em{this} Method}
 \index{records!indexing}
 
 As with classes, records can be supplied with a \chpl{this} method.  This method
 defines the behavior of the indexing operator \chpl{[]}.
 
-\subsubsection{The {\em these} Method}
+\subsection{The {\em these} Method}
 \index{records!iterating}
 
 A \chpl{these} method can be defined for records as well as classes (\rsec{The_these_Method}).  It
 provides an iterator which iterates over the contents of the record in a
 user-defined manner.
 
-\subsection{Default Comparison Operators}
+\section{Default Comparison Operators}
 \label{Record_Comparison_Operators}
 \index{records!equality}
 \index{records!inequality}
@@ -568,13 +568,13 @@ the \chpl{&&} operator.  The default implementation of \chpl{\!=}
 applies \chpl{\!=} to each field of the two argument records and
 reduces the result with the \chpl{||} operator.
 
-\subsection{Differences between Classes and Records}
+\section{Differences between Classes and Records}
 \label{Class_and_Record_Differences}
 \index{records!differences with classes}
 
 The key differences between records and classes are listed below.
 
-\subsubsection{Declarations}
+\subsection{Declarations}
 \label{Declaration_Differences}
 \index{records!declarations}
 
@@ -583,7 +583,7 @@ they begin with the \chpl{class} and \chpl{record} keywords, respectively.
 Also, a record type can only inherit from other record types.  Class inheritance
 is not permitted.
 
-\subsubsection{Storage Allocation}
+\subsection{Storage Allocation}
 \label{Storage_Allocation_Differences}
 \index{classes!allocation}
 \index{records!allocation}
@@ -600,7 +600,7 @@ the data associated with the fields in the class, is allocated and reclaimed
 separately from variables referencing that instance.  The same class instance
 can be referenced by multiple class variables.
 
-\subsubsection{Assignment}
+\subsection{Assignment}
 \label{Assignment_Differences}
 \index{classes!assignment}
 \index{records!assignment}
@@ -618,7 +618,7 @@ upon the class instance.
 
 Assignment of a record to a class variable is not permitted.
 
-\subsubsection{Arguments}
+\subsection{Arguments}
 \label{Argument_Differences}
 \index{classes!arguments}
 \index{records!arguments}
@@ -633,7 +633,7 @@ be of that class type or of a type derived from that class type.  If the formal
 argument is of a record type, then it is only necessary for the fields in the
 actual argument to ``cover'' the fields in the formal argument type.
 
-\subsubsection{Inheritance}
+\subsection{Inheritance}
 \label{Inheritance_Differences}
 \index{records!inheritance}
 \index{inheritance!records}
@@ -650,7 +650,7 @@ fields except those belonging to the base record type.  In the same way, only
 those methods accessible to the base record type may be invoked using the result
 of such a cast.
 
-\subsubsection{Shadowing and Overriding}
+\subsection{Shadowing and Overriding}
 \label{Base_Method_Differences}
 \index{classes!shadowing}
 \index{records!shadowing}
@@ -666,20 +666,20 @@ Which field is accessed
 and/or which method is invoked is determined statically by the declared type of
 the record being referenced.
 
-\subsubsection{No {\em nil} Value}
+\subsection{No {\em nil} Value}
 \index{nil!not provided for records}
 
 Records do not provide a counterpart of the \chpl{nil} value.  A variable of
 record type is associated with storage throughout its lifetime, so \chpl{nil}
 has no meaning with respect to records.
 
-\subsubsection{The {\em delete} operator}
+\subsection{The {\em delete} operator}
 
 An explicit call to \chpl{delete} with a record argument has no effect.  The
 compiler may treat this as a hint that the record should not be accessed later
 within its scope and diagnose that case.
 
-\subsubsection{Default Comparison Operators}
+\subsection{Default Comparison Operators}
 \label{Comparison_Operator_Differences}
 \index{classes!comparison}
 \index{records!comparison}

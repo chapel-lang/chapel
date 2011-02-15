@@ -38,7 +38,7 @@ subdomains.  The remainder sections describe the important manipulations
 that can be perfomed with domains, as well as the built-in operators and
 functions defined for domains.
 
-\subsection{Domain Roadmap}
+\section{Domain Roadmap}
 
 Domains can be further classified according to whether they are \emph{regular}
 or \emph{irregular}.  A regular domain has a compact representation consisting
@@ -71,7 +71,7 @@ domain aliases, much as we support array aliases currently.
 \end{openissue}
 
 
-\subsection{Base Domains}
+\section{Base Domains}
 \label{Base_Domains}
 \index{domains!base}
 
@@ -88,14 +88,14 @@ base-domain-type:
 These base domain types are discussed in turn in the following
 subsections.
 
-\subsubsection{Rectangular Domains}
+\subsection{Rectangular Domains}
 
 Rectangular domains describe multidimensional rectangular index sets.  They are
 characterized by a tensor product of ranges and represent indices that are
 tuples of an integral type.  Because their index sets can be represented using
 ranges, regular domain values typically require only $O(1)$ space.
 
-\paragraph{Rectangular Domain Types}
+\subsubsection{Rectangular Domain Types}
 \index{rectangular domains!types}
 \index{types!rectangular domains}
 
@@ -145,7 +145,7 @@ var D2 : domain(3*int);
 \end{chapeloutput}
 \end{example}
 
-\paragraph{Rectangular Domain Values}
+\subsubsection{Rectangular Domain Values}
 \label{Rectangular_Domain_Values}
 \index{rectangular domains!values}
 \index{domains!values!rectangular}
@@ -231,14 +231,14 @@ values for type:
 % TODO: example here
 % I need a hint on what you want here. -- THH
 
-\subsubsection{Associative Domains}
+\subsection{Associative Domains}
 
 Associative domains represent an arbitrary set of indices
 of a given type and can be used to describe sets or to create
 dictionary-style arrays.  Indices may be virtually any value type, including
 integers, reals, objects and enumerators.
 
-\paragraph{Associative Domain Types}
+\subsubsection{Associative Domain Types}
 
 \label{Associative_Domain_Types}
 \index{types!associative domains}
@@ -290,7 +290,7 @@ indices have no inherent names and are therefore anonymous.  Opaque domains can
 be used to represent sets and to build unstructured arrays (similar to
 pointer-based data structures in conventional languages).
 
-\paragraph{Associative Domain Values}
+\subsubsection{Associative Domain Values}
 \label{Associative_Domain_Values}
 \index{associative domains!values}
 \index{domains!associative!values}
@@ -313,7 +313,7 @@ of associative domain type.
 
 In general, the default value for an associative domain is the empty set.
 
-\subparagraph{Enumerated Domain Values}
+\paragraph{Enumerated Domain Values}
 
 Associative domains over
 enumerated types are ordered according to the order in which the
@@ -346,7 +346,7 @@ We may generally support a \chpl{startPopulated} parameter on associative
 domains, to unify this capability with other values.
 \end{future}
 
-\subparagraph{Opaque Domain Values}
+\paragraph{Opaque Domain Values}
 \index{opaque domains!values}
 \index{domains!opaque!values}
 
@@ -365,7 +365,7 @@ created using the \chpl{add} function or \chpl{+} operator.
 The default value for an opaque domain is the empty set.
 
 
-\subsection{Simple Subdomains}
+\section{Simple Subdomains}
 \label{Simple_Subdomains}
 
 A subdomain is a domain whose indices are guaranteed to be a subset of
@@ -394,7 +394,7 @@ of multiple domains; and to improve the compiler's ability to prove
 away bounds checks for array accesses.
 \end{rationale}
 
-\subsubsection{Simple Subdomain Types}
+\subsection{Simple Subdomain Types}
 \label{Simple_Subdomain_Types}
 \index{subdomains!types!simple}
 \index{types!subdomains!simple}
@@ -417,7 +417,7 @@ and whether this should be done aggressively or lazily.
 
 \end{openissue}
 
-\subsubsection{Simple Subdomain Values}
+\subsection{Simple Subdomain Values}
 
 %%The following paragraphs need to be reviewed.  I just wrote down some stuff
 %%because we need to say something here. --- THH
@@ -432,7 +432,7 @@ It is an error to attempt to add an index to a subdomain that is not also
 a member of the parent domain.
 
 \end{openissue}
-\subsection{Sparse Subdomains}
+\section{Sparse Subdomains}
 \label{Sparse_Subdomains}
 \index{domains!sparse}
 \index{subdomains!sparse}
@@ -457,7 +457,7 @@ sparse array will store this replicated value.
 %% I would suggest "uninteresting values" or values that can be omitted. --- THH
 See~\rsec{Sparse_Arrays} for details about sparse arrays.
 
-\subsubsection{Sparse Subdomain Types}
+\subsection{Sparse Subdomain Types}
 \index{domains!sparse!types}
 \index{subdomains!sparse!types}
 
@@ -465,7 +465,7 @@ Each root domain type has a unique corresponding sparse subdomain
 type.  Sparse subdomains whose parent domains are also sparse
 subdomains share the same type.
 
-\subsubsection{Sparse Subdomain Values}
+\subsection{Sparse Subdomain Values}
 \label{Sparse_Domain_Values}
 \index{domains!sparse!values}
 \index{subdomains!sparse!values}
@@ -495,7 +495,7 @@ var SpsD: sparse subdomain(D);
 \end{chapel}
 \end{example}
 
-\subsection{Domain Index Types}
+\section{Domain Index Types}
 \label{Index_Types}
 \index{domains!index types}
 
@@ -544,7 +544,7 @@ these semantics need to be defined nevertheless.
 
 \end{openissue}
 
-\subsection{Iteration Over Domains}
+\section{Iteration Over Domains}
 \label{Iteration_over_Domains}
 \index{domains!iteration}
 
@@ -559,7 +559,7 @@ If the domain's indices are ordered, a \chpl{for} loop will traverse the
 indices in order.
 
 
-\subsection{Domains as Arguments}
+\section{Domains as Arguments}
 \label{Domain_Arguments}
 \index{domains!function arguments}
 \index{function arguments!domains}
@@ -567,13 +567,13 @@ indices in order.
 This section describes the semantics of passing domains as arguments
 to functions.
 
-\subsubsection{Formal Arguments of Domain Type}
+\subsection{Formal Arguments of Domain Type}
 
 When a domain value is passed to a formal argument of compatible
 domain type by blank intent, it is passed by reference in order to
 preserve the domain's identity.
 
-\subsubsection{Domain Promotion of Scalar Functions}
+\subsection{Domain Promotion of Scalar Functions}
 \label{Domain_Promotion_of_Scalar_Functions}
 \index{domains!promotion}
 
@@ -605,13 +605,13 @@ forall (a,i) in (A,D) do
 \end{example}
 
 
-\subsection{Domain Operations}
+\section{Domain Operations}
 
 Chapel supplies built-in operators and functions that can be used to manipulate
 domains.  Unless otherwise noted, these operations are applicable to a domain of
 any type, whether a base domain or a subdomain.
 
-\subsubsection{Domain Assignment}
+\subsection{Domain Assignment}
 \label{Domain_Assignment}
 \index{domains!assignment}
 
@@ -658,7 +658,7 @@ SpsD = readIndicesFromFile("inds.dat");
 \end{chapel}
 \end{example}
 
-\subsubsection{Domain Striding}
+\subsection{Domain Striding}
 \label{Domain_Striding}
 \index{domains!striding}
 \index{by@\chpl{by}!on rectangular domains}
@@ -682,7 +682,7 @@ domain's value is computed by applying each tuple component to the
 corresponding range using the \chpl{by} operator.
 
 
-\subsubsection{Domain Slicing}
+\subsection{Domain Slicing}
 \label{Domain_Slicing}
 \index{slicing!domains}
 \index{domains!slicing}
@@ -696,7 +696,7 @@ domain-slice-expression:
   domain-slice-expression ( domain-expression )
 \end{syntax}
 
-\paragraph{Domain-based Slicing}
+\subsubsection{Domain-based Slicing}
 \index{slicing!domains}
 \index{domains!slicing}
 
@@ -714,7 +714,7 @@ The type and domain map of the result match the domain being sliced.
 Ccan we say that it is an alias in the case of sparse/associative?
 \end{openissue}
 
-\paragraph{Range-based Slicing}
+\subsubsection{Range-based Slicing}
 \label{Range_Based_Slicing}
 \index{slicing!range-based}
 \index{range-based slicing}
@@ -740,7 +740,7 @@ const D: domain(2) = [1..n, 1..n],
 \end{chapel}
 \end{example}
 
-\paragraph{Rank-Change Slicing}
+\subsubsection{Rank-Change Slicing}
 \label{Rank_Change_Slicing}
 \index{slicing!rank-change}
 \index{rank-change slicing}
@@ -760,7 +760,7 @@ a \chpl{rank} equal to the number of dimensions that were sliced by
 ranges rather than integers.
 
 
-\subsubsection{Adding and Removing Domain Indices}
+\subsection{Adding and Removing Domain Indices}
 \label{Adding_and_Removing_Domain_Indices}
 \index{domains!adding indices}
 \index{domains!removing indices}
@@ -784,7 +784,7 @@ domain being modified in this way will be reallocated as discussed
 in~\rsec{Association_of_Arrays_to_Domains}.
 
 
-\subsection{Predefined Methods on Domains}
+\section{Predefined Methods on Domains}
 \index{domains!predefined functions}
 
 This section gives a brief description of the library functions provided for
@@ -792,7 +792,7 @@ Domains.  These are categorized by the type of domain to which they apply: all,
 regular or irregular.  Within each subsection, entries are listed in
 alphabetical order.
 
-\subsubsection{Methods on All Domain Types}
+\subsection{Methods on All Domain Types}
 
 The methods in this subsection can be applied to any domain.
 
@@ -892,7 +892,7 @@ Returns the number of indices in the domain as a value of the capacity type.
 \end{protobody}
 
 
-\subsubsection{Methods on Regular Domains}
+\subsection{Methods on Regular Domains}
 
 The methods described in this subsection can be applied to regular domains only.
 
@@ -1012,7 +1012,7 @@ by \chpl{off} or \chpl{off(d)} for each dimension \chpl{d}.
 %% the domain. **/
 %% \end{protobody} **/
 
-\subsubsection{Methods on Irregular Domains}
+\subsection{Methods on Irregular Domains}
 
 The following methods are available only on irregular domain types.
 

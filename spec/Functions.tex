@@ -8,7 +8,7 @@ separately in~\rsec{Iterators} and~\rsec{Class_Methods}.
 Recursive and mutually-recursive functions are supported.
 
 
-\subsection{Function Calls}
+\section{Function Calls}
 \label{Function_Calls}
 \index{function calls}
 
@@ -53,7 +53,7 @@ The optional \sntx{identifier} refers to a named formal
 argument described in~\rsec{Named_Arguments}.
 
 
-\subsection{Function Definitions}
+\section{Function Definitions}
 \label{Function_Definitions}
 \index{functions!syntax}
 
@@ -165,7 +165,7 @@ above (see \sntx{operator-name}).
 % function that governed them all.  Compatibility with C# is not
 % sufficient motivation ... .
 
-\subsection{Functions without Parentheses}
+\section{Functions without Parentheses}
 \label{Functions_without_Parentheses}
 \index{functions!functions without parentheses}
 
@@ -196,7 +196,7 @@ error to apply parentheses to \chpl{foo} or omit them from \chpl{bar}.
 \end{example}
 
 
-\subsection{Formal Arguments}
+\section{Formal Arguments}
 \label{Formal_Arguments}
 \index{formal arguments}
 \index{functions!formal arguments}
@@ -211,7 +211,7 @@ the formal argument during a function call.  For example, when passing an array 
 intent \chpl{in}, the actual argument array will be copied into the formal argument
 for use within the function.
 
-\subsubsection{Named Arguments}
+\subsection{Named Arguments}
 \label{Named_Arguments}
 \index{named arguments}
 \index{functions!named arguments}
@@ -246,7 +246,7 @@ ignore arguments with default values.  For a function that has many
 arguments, it is sometimes good practice to name the arguments at the
 call site for compiler-checked documentation.
 
-\subsubsection{Default Values}
+\subsection{Default Values}
 \label{Default_Values}
 \index{default values}
 \index{functions!default argument values}
@@ -290,7 +290,7 @@ argument list.
 \end{example}
 
 
-\subsection{Intents}
+\section{Intents}
 \label{Intents}
 \index{intents}
 \index{functions!argument intents}
@@ -298,7 +298,7 @@ argument list.
 Intents allow the actual arguments to be copied to a formal argument
 and also to be copied back.
 
-\subsubsection{The Blank Intent}
+\subsection{The Blank Intent}
 \label{The_Blank_Intent}
 \index{intents!blank}
 
@@ -312,7 +312,7 @@ by reference.
 With the exception of arrays, any argument that has blank intent
 cannot be assigned within the function.
 
-\subsubsection{The In Intent}
+\subsection{The In Intent}
 \label{The_In_Intent}
 \index{in@\chpl{in}}
 \index{intents!in@\chpl{in}}
@@ -325,7 +325,7 @@ If an array is passed to a formal argument that has \chpl{in} intent,
 a copy of the array is made via assignment.  Changes to the elements
 within the array are thus not reflected back at the call site.
 
-\subsubsection{The Out Intent}
+\subsection{The Out Intent}
 \label{The_Out_Intent}
 \index{out@\chpl{out}}
 \index{intents!out@\chpl{out}}
@@ -339,7 +339,7 @@ to and read from within the function.
 The formal argument cannot not be generic and is treated as a variable
 declaration.
 
-\subsubsection{The Inout Intent}
+\subsection{The Inout Intent}
 \label{The_Inout_Intent}
 \index{inout@\chpl{inout}}
 \index{intents!inout@\chpl{inout}}
@@ -352,7 +352,7 @@ The formal argument can be assigned to and read from within the
 function.
 
 
-\subsection{Variable Length Argument Lists}
+\section{Variable Length Argument Lists}
 \label{Variable_Length_Argument_Lists}
 \index{functions!variable number of arguments}
 
@@ -459,7 +459,7 @@ expressions \chpl{tuple(1)} and \chpl{(1)} are not equivalent.
 \end{example}
 
 
-\subsection{Variable Functions}
+\section{Variable Functions}
 \label{Variable_Functions}
 \index{functions!variable functions}
 \index{functions!as lvalues}
@@ -550,7 +550,7 @@ test\_setter.chpl:6: error: halt reached - cannot assign value to A(1) if A(0) <
 \end{example}
 
 
-\subsection{Parameter Functions}
+\section{Parameter Functions}
 \label{Parameter_Functions}
 \index{functions!as parameters}
 
@@ -593,7 +593,7 @@ loop~\rsec{Parameter_For_Loops} and conditionals with a conditional
 expressions that is not a parameter.
 
 
-\subsection{Type Functions}
+\section{Type Functions}
 \label{Type_Functions}
 \index{functions!as types}
 
@@ -638,7 +638,7 @@ function defined in the Types module~(\rsec{Types_standard_module}).
 \end{example}
 
 
-\subsection{The Return Statement}
+\section{The Return Statement}
 \label{The_Return_Statement}
 \index{return@\chpl{return}}
 
@@ -670,7 +670,7 @@ writeln(sum(1, 2, 3));
 \end{example}
 
 
-\subsection{Return Types}
+\section{Return Types}
 \label{Return_Types}
 \index{return@\chpl{return}!types}
 \index{functions!return@\chpl{return} types}
@@ -679,7 +679,7 @@ A function can optionally return a value.  If the function does not
 return a value, its return type is \chpl{void}.  Specifying the return
 type in a function declaration is optional.
 
-\subsubsection{Explicit Return Types}
+\subsection{Explicit Return Types}
 \label{Explicit_Return_Types}
 
 If a return type is specified and is not \chpl{void}, the values that the function returns
@@ -689,7 +689,7 @@ type must match the type returned in all of the return statements
 exactly, when checked after generic instantiation and parameter folding
 (if applicable).
 
-\subsubsection{Implicit Return Types}
+\subsection{Implicit Return Types}
 \label{Implicit_Return_Types}
 \index{type inference!of return types}
 
@@ -703,7 +703,7 @@ return the same exact type and it becomes the inferred type.
 For functions without any return statements, the return type is \chpl{void}.
 
 
-\subsection{Function Overloading}
+\section{Function Overloading}
 \label{Function_Overloading}
 \index{functions!overloading}
 \index{operators!overloading}
@@ -732,7 +732,7 @@ overloaded.  Operator resolution follows the same algorithm as
 function resolution.
 
 
-\subsection{Nested Functions}
+\section{Nested Functions}
 \label{Nested_Functions}
 \index{functions!nested}
 
@@ -743,14 +743,14 @@ function can be nested in a nested function.
 Nested functions are only visible to function calls within the lexical scope
 in which they are defined.
 
-%\subsubsection{Accessing Outer Variables}
+%bsubsection{Accessing Outer Variables}
 %\label{Accessing_Outer_Variables}
 
 Nested functions may refer to variables defined in the function(s) in
 which they are nested.
 
 
-\subsection{Function Resolution}
+\section{Function Resolution}
 \label{Function_Resolution}
 \index{function resolution}
 \index{functions!resolution}
@@ -781,7 +781,7 @@ function that is more specific than every other candidate function,
 the compiler will issue an error stating that the call is ambiguous.
 \end{itemize}
 
-\subsubsection{Determining Visible Functions}
+\subsection{Determining Visible Functions}
 \label{Determining_Visible_Functions}
 \index{functions!visible}
 
@@ -794,7 +794,7 @@ the function call or a lexical outer scope of the function call.
 Function visibility in generic functions is discussed
 in~\rsec{Function_Visibility_in_Generic_Functions}.
 
-\subsubsection{Determining Candidate Functions}
+\subsection{Determining Candidate Functions}
 \label{Determining_Candidate_Functions}
 \index{functions!candidates}
 
@@ -803,7 +803,7 @@ a \emph{candidate function} if there is a \emph{valid mapping} from
 the function call to the function and each actual argument is mapped
 to a formal argument that is a \emph{legal argument mapping}.
 
-\paragraph{Valid Mapping}
+\subsubsection{Valid Mapping}
 \label{Valid_Mapping}
 
 The following algorithm determines a valid mapping from a function
@@ -825,7 +825,7 @@ arguments plus default values to formal arguments that are not mapped
 to by actual arguments.
 \end{itemize}
 
-\paragraph{Legal Argument Mapping}
+\subsubsection{Legal Argument Mapping}
 
 An actual argument of type $T_A$ can be mapped to a formal argument of
 type $T_F$ if any of the following conditions hold:
@@ -836,7 +836,7 @@ type $T_F$ if any of the following conditions hold:
 \item $T_A$ is scalar promotable to $T_F$.
 \end{itemize}
 
-\subsubsection{Determining More Specific Functions}
+\subsection{Determining More Specific Functions}
 \label{Determining_More_Specific_Functions}
 \index{functions!most specific}
 

@@ -7,7 +7,7 @@ is known at compile-time and the compiler enforces that values
 assigned to the variable can be stored in that variable as specified
 by its type.
 
-\subsection{Variable Declarations}
+\section{Variable Declarations}
 \label{Variable_Declarations}
 \index{variables!declarations}
 
@@ -81,7 +81,7 @@ described in~\rsec{Variable_Declarations_in_a_Tuple}.
 The \sntx{array-alias-declaration} is defined
 in~\rsec{Array_Aliases}.
 
-\subsubsection{Default Initialization}
+\subsection{Default Initialization}
 \label{Default_Values_For_Types}
 \index{default initialization!variables}
 \index{variables!default initialization}
@@ -133,7 +133,7 @@ expectation that there will be a way to declare an array that is
 explicitly left uninitialized in order to address this concern.
 \end{openissue}
 
-\subsubsection{Local Type Inference}
+\subsection{Local Type Inference}
 \label{Local_Type_Inference}
 \index{type inference}
 
@@ -154,7 +154,7 @@ of \chpl{e} results in a default read of this expression.  The type of
 the variable is thus equal to the base type of the sync or single
 expression.
 
-\subsubsection{Multiple Variable Declarations}
+\subsection{Multiple Variable Declarations}
 \label{Multiple_Variable_Declarations}
 
 All variables defined in the same \sntx{identifier-list} are defined
@@ -242,7 +242,7 @@ to avoid unintentional changes to their \emph{full}/\emph{empty}
 state.
 \end{rationale}
 
-\subsection{Global Variables}
+\section{Global Variables}
 \label{Global_Variables}
 \index{variables!global}
 
@@ -252,7 +252,7 @@ variables can be accessed anywhere within that module after the
 declaration of that variable.  They can also be accessed in other
 modules that use that module.
 
-\subsection{Local Variables}
+\section{Local Variables}
 \label{Local_Variables}
 \index{variables!local}
 
@@ -270,14 +270,14 @@ types create storage that is not associated with any scope.  Such
 storage can be reclaimed as described
 in~\rsec{Dynamic_Memory_Management}.
 
-\subsection{Constants}
+\section{Constants}
 \label{Constants}
 
 Constants are divided into two categories: parameters, specified with
 the keyword \chpl{param}, are compile-time constants and constants,
 specified with the keyword \chpl{const}, are runtime constants.
 
-\subsubsection{Compile-Time Constants}
+\subsection{Compile-Time Constants}
 \label{Compile-Time_Constants}
 \index{constants!compile-time}
 \index{parameters}
@@ -327,7 +327,7 @@ and more operations.
 % Which ones did I miss?
 \end{openissue}
 
-\subsubsection{Runtime Constants}
+\subsection{Runtime Constants}
 \label{Runtime_Constants}
 \index{constants!runtime}
 \index{constants}
@@ -343,7 +343,7 @@ That is, the variable always
 points to the object that it was initialized to reference.
 However, the fields of that object are allowed to be modified.
 
-\subsection{Configuration Variables}
+\section{Configuration Variables}
 \label{Configuration_Variables}
 \index{variables!configuration}
 \index{constants!configuration}

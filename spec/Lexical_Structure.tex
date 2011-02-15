@@ -6,7 +6,7 @@ The purpose of lexical analysis is
 to separate the raw input stream into a sequence of tokens suitable
 for input to the parser.  
 
-\subsection{Comments}
+\section{Comments}
 \label{Comments}
 \index{comments}
 
@@ -32,7 +32,7 @@ proc main() {
 \end{chapel}
 \end{example}
 
-\subsection{White Space}
+\section{White Space}
 \label{White_Space}
 \index{white space}
 
@@ -40,7 +40,7 @@ White-space characters are spaces, tabs, line feeds, and carriage
 returns.  Along with comments, they delimit tokens, but are otherwise
 ignored.
 
-\subsection{Case Sensitivity}
+\section{Case Sensitivity}
 \label{Case_Sensitivity}
 \index{case sensitivity}
 
@@ -51,13 +51,13 @@ The following identifiers are considered
 distinct: \chpl{chapel}, \chpl{Chapel}, and \chpl{CHAPEL}.
 \end{example}
 
-\subsection{Tokens}
+\section{Tokens}
 \label{Tokens}
 
 Tokens include identifiers, keywords, literals, operators, and
 punctuation.
 
-\subsubsection{Identifiers}
+\subsection{Identifiers}
 \label{Identifiers}
 \index{identifiers}
 
@@ -103,7 +103,7 @@ identifiers: \chpl{Cray1}, \chpl{syncvar$\mbox{{\tt \$}}$},
 \chpl{legalIdentifier}, and \chpl{legal_identifier}.
 \end{example}
 
-\subsubsection{Keywords}
+\subsection{Keywords}
 \label{Keywords}
 \index{keywords}
 \index{reserved words}
@@ -203,7 +203,7 @@ otherwise
 \end{invisible}
 \end{tabular}
 
-\subsubsection{Literals}
+\subsection{Literals}
 \label{Literals}
 \label{Primitive_Type_Literals}
 
@@ -320,7 +320,7 @@ hexadecimal-escape-character:
   `$\backslash$x' hexadecimal-digits
 \end{syntax}
 
-\subsubsection{Operators and Punctuation}
+\subsection{Operators and Punctuation}
 \label{Operators_and_Punctuation}
 
 The following operators and punctuation are defined in the syntax of
@@ -350,7 +350,7 @@ the language:
 \end{tabular}
 \end{center}
 
-\subsubsection{Grouping Tokens}
+\subsection{Grouping Tokens}
 \label{Grouping_Tokens}
 
 The following braces are part of the Chapel language:

@@ -11,7 +11,7 @@ locales without explicitly partitioning them using Chapel's Domain
 Maps~(\rsec{Domain_Maps}).
 
 
-\subsection{Array Types}
+\section{Array Types}
 \label{Array_Types}
 \index{arrays!types}
 
@@ -91,7 +91,7 @@ real
 \end{chapeloutput}
 \end{example}
 
-\subsection{Array Values}
+\section{Array Values}
 \label{Array_Values}
 \index{arrays!values}
 \index{arrays!initialization}
@@ -131,7 +131,7 @@ writeln(A.domain);
 An array's default value is to have its elements all initialized to
 the default values for their types.
 
-\subsubsection{Runtime Representation of Array Values}
+\subsection{Runtime Representation of Array Values}
 \label{Array_Runtime_Representation}
 \index{arrays!runtime representation}
 \index{arrays!domain maps}
@@ -142,7 +142,7 @@ and control the runtime representation of an array's elements.  See
 ~\rsec{Domain_Maps} for more details.
 
 
-\subsection{Array Indexing}
+\section{Array Indexing}
 \label{Array_Indexing}
 \index{arrays!indexing}
 \index{indexing!arrays}
@@ -194,7 +194,7 @@ index set, the reference is considered out-of-bounds and a runtime
 error will occur, halting the program.
 
 
-\subsubsection{Rectangular Array Indexing}
+\subsection{Rectangular Array Indexing}
 \label{Rectangular_Array_Indexing}
 \index{indexing!rectangular arrays}
 \index{rectangular arrays!indexing}
@@ -287,7 +287,7 @@ indexed into by 1-tuples.
 \end{example}
 
 
-\subsection{Iteration over Arrays}
+\section{Iteration over Arrays}
 \label{Iteration_over_Arrays}
 \index{arrays!iteration}
 \index{iteration!over arrays}
@@ -314,7 +314,7 @@ Thus, the iterator variable for an array traversal is a reference to
 the array element type.
 
 
-\subsection{Array Assignment}
+\section{Array Assignment}
 \label{Array_Assignment}
 \index{arrays!assignment}
 
@@ -422,7 +422,7 @@ writeln(A);
 \end{chapeloutput}
 
 
-\subsection{Array Slicing}
+\section{Array Slicing}
 \label{Array_Slicing}
 \index{arrays!slicing}
 \index{slicing!arrays}
@@ -491,7 +491,7 @@ assigns the elements in the interior of \chpl{B} to the elements in
 the interior of \chpl{A}.
 \end{example}
 
-\subsubsection{Rectangular Array Slicing}
+\subsection{Rectangular Array Slicing}
 \label{Rectangular_Array_Slicing}
 \index{arrays!slice}
 
@@ -540,7 +540,7 @@ are the first column of \chpl{A}.
 
 
 
-\subsection{Array Arguments to Functions}
+\section{Array Arguments to Functions}
 \label{Array_Arguments_To_Functions}
 \index{arrays!function arguments}
 
@@ -567,7 +567,7 @@ a rectangular domain, described
 in~\rsec{Formal_Arguments_of_Rectangular_Array_Type}.
 
 
-\subsubsection{Formal Arguments of Rectangular Array Type}
+\subsection{Formal Arguments of Rectangular Array Type}
 \label{Formal_Arguments_of_Rectangular_Array_Type}
 \index{formal arguments!rectangular arrays}
 \index{arrays!as formal arguments}
@@ -604,7 +604,7 @@ indexed by the integers between one and five.
 \end{example}
 
 
-\subsubsection{Array Promotion of Scalar Functions}
+\subsection{Array Promotion of Scalar Functions}
 \label{Array_Promotion_of_Scalar_Functions}
 \index{arrays!promotion}
 
@@ -646,7 +646,7 @@ and \chpl{C}.
 %
 
 
-\subsubsection{Array Aliases}
+\subsection{Array Aliases}
 \label{Array_Aliases}
 \index{=>@\chpl{=>}}
 
@@ -717,7 +717,7 @@ equivalent to \chpl{A(3,3)}.
 %
 
 
-\subsection{Sparse Arrays}
+\section{Sparse Arrays}
 \label{Sparse_Arrays}
 \index{arrays!sparse}
 
@@ -780,7 +780,7 @@ sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value i
 
 
 
-\subsection{Association of Arrays to Domains}
+\section{Association of Arrays to Domains}
 \label{Association_of_Arrays_to_Domains}
 \index{domains!association to arrays}
 \index{arrays!association to domains}
@@ -838,7 +838,7 @@ convenient syntax support a common, optimizable case seems prudent.
 \end{rationale}
 
 
-\subsection{Predefined Functions and Methods on Arrays}
+\section{Predefined Functions and Methods on Arrays}
 \index{arrays!predefined functions}
 
 There is an expectation that this list of predefined functions and

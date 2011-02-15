@@ -10,7 +10,7 @@ The parallel iterator story is under development.  It is expected that
 the specification will be expanded regarding parallel iterators soon.
 \end{openissue}
 
-\subsection{Iterator Function Definitions}
+\section{Iterator Function Definitions}
 \label{Iterator_Function_Definitions}
 \index{iterator function definitions}
 
@@ -38,7 +38,7 @@ some key differences:
 a regular function.
 \end{itemize}
 
-\subsection{The Yield Statement}
+\section{The Yield Statement}
 \label{The_Yield_Statement}
 \index{yield@\chpl{yield}}
 
@@ -61,7 +61,7 @@ An iterator also completes after the last
 statement in the iterator function is executed.
 An iterator need not contain any yield statements.
 
-\subsection{Iterator Calls}
+\section{Iterator Calls}
 \label{Iterator_Calls}
 
 The syntax used to call an interator is given by:
@@ -81,14 +81,14 @@ See~\rsec{Function_Calls}.
 
 However, the result of an iterator call depends upon its context, as described below.
 
-\subsubsection{Iterators in For and Forall Loops}
+\subsection{Iterators in For and Forall Loops}
 \label{Iterators_in_For_and_Forall_Loops}
 
 When an iterator is accessed via a for or forall loop, the iterator is
 evaluated alongside the loop body in an interleaved manner.  For each
 iteration, the iterator yields a value and the body is executed.
 
-\subsubsection{Iterators as Arrays}
+\subsection{Iterators as Arrays}
 \label{Iterators_as_Arrays}
 \index{iterators!and arrays}
 
@@ -113,7 +113,7 @@ writeln(squares(5));
 the expression \chpl{squares(5)} evaluates to the array \chpl{1, 4, 9, 16, 25}.
 \end{example}
 
-\subsubsection{Iterators and Generics}
+\subsection{Iterators and Generics}
 \label{Iterators_and_Generics}
 \index{iterators!and generics}
 
@@ -126,7 +126,7 @@ can be used as an iterator, e.g. in for loops.
 The arguments to the iterator call expression, if any, are evaluated
 at the call site, i.e. prior to passing the iterator to the generic function.
 
-\subsubsection{Recursive Iterators}
+\subsection{Recursive Iterators}
 \label{Recursive_Iterators}
 \index{iterators!recursive}
 
@@ -153,7 +153,7 @@ result in generating temporary arrays containing the outcomes of these
 recursive calls, which would then be discarded.
 \end{example}
 
-\subsection{Parallel Iterators}
+\section{Parallel Iterators}
 \label{Parallel_Iterators}
 
 Iterators used in explicit forall-statements or -expressions must be

@@ -40,7 +40,7 @@ expression:
 % in README.firstClassFns: lambda-declaration-expression
 % TODO: add new and delete; then add cross-refs to top of Classes.tex
 
-\subsection{Literal Expressions}
+\section{Literal Expressions}
 \label{Literal_Expressions}
 
 A literal value for any of the built-in
@@ -57,7 +57,7 @@ literal-expression:
   domain-literal
 \end{syntax}
 
-\subsection{Variable Expressions}
+\section{Variable Expressions}
 \label{Variable_Expressions}
 
 A use of a variable, constant, parameter, or formal argument, is
@@ -68,7 +68,7 @@ variable-expression:
   identifier
 \end{syntax}
 
-\subsection{Enumeration Constant Expression}
+\section{Enumeration Constant Expression}
 \label{Enumeration_Constant_Expression}
 
 A use of an enumeration constant is itself an expression.  Such a
@@ -84,7 +84,7 @@ For an example of using enumeration constants,
 see~\rsec{Enumerated_Types}.
 \end{example}
 
-\subsection{Parenthesized Expressions}
+\section{Parenthesized Expressions}
 \label{Parenthesized_Expressions}
 
 A \sntx{parenthesized-expression} is an expression that is delimited
@@ -96,13 +96,13 @@ parenthesized-expression:
 Such an expression evaluates to the expression.  The parentheses are
 ignored and have only a syntactical effect.
 
-\subsection{Call Expressions}
+\section{Call Expressions}
 \label{Call_Expressions}
 \index{function calls}
 
 Functions and function calls are defined in~\rsec{Functions}.
 
-\subsection{Indexing Expressions}
+\section{Indexing Expressions}
 \label{Indexing_Expressions}
 \index{indexing}
 
@@ -110,7 +110,7 @@ Indexing into arrays, tuples, and domains has the same syntax as a
 call expression.  Indexing, at its core, is nothing more than a call
 to the indexing function defined on these types.
 
-\subsection{Member Access Expressions}
+\section{Member Access Expressions}
 \label{Member_Access_Expressions}
 \index{member access}
 
@@ -123,7 +123,7 @@ member-access-expression:
 The member access may be an access of a field or a function inside a
 class, record, or union.
 
-\subsection{The Query Expression}
+\section{The Query Expression}
 \label{The_Query_Expression}
 \index{?@\chpl{?}}
 
@@ -170,7 +170,7 @@ proc foo(x, y: [] x.type) {
 There is an expectation that query expressions will be allowed in more
 places in the future.
 
-\subsection{Casts}
+\section{Casts}
 \label{Casts}
 \index{casts}
 
@@ -194,7 +194,7 @@ explicit conversion:
   implicit conversions.
 \end{itemize}
 
-\subsection{LValue Expressions}
+\section{LValue Expressions}
 \label{lvalue}
 \index{lvalue}
 
@@ -224,7 +224,7 @@ lvalue-expression:
 The syntax is less restrictive than the definition above.  For
 example, not all \sntx{call-expression}s are lvalues.
 
-\subsection{Precedence and Associativity}
+\section{Precedence and Associativity}
 \label{Operator_Precedence_and_Associativity}
 \index{operators!precedence}
 \index{operators!associativity}
@@ -403,7 +403,7 @@ expression is not a scalar as expected.
 
 \end{rationale}
 
-\subsection{Operator Expressions}
+\section{Operator Expressions}
 \label{Binary_Expressions}
 \label{Unary_Expressions}
 
@@ -428,7 +428,7 @@ binary-operator: one of
 
 The operators are defined in subsequent sections.
 
-\subsection{Arithmetic Operators}
+\section{Arithmetic Operators}
 \label{Arithmetic_Operators}
 \index{operators!arithmetic}
 
@@ -447,7 +447,7 @@ of size 32 and 64 bits only.  For example, adding two 8-bit integers
 is done by first converting them to 32-bit integers and then adding
 the 32-bit integers.  The result is a 32-bit integer.
 
-\subsubsection{Unary Plus Operators}
+\subsection{Unary Plus Operators}
 \label{Unary_Plus_Operators}
 \index{+ (unary)@\chpl{+} (unary)}
 
@@ -466,7 +466,7 @@ proc +(a: complex(128)): complex(128)
 \end{chapel}
 For each of these definitions, the result is the value of the operand.
 
-\subsubsection{Unary Minus Operators}
+\subsection{Unary Minus Operators}
 \label{Unary_Minus_Operators}
 \index{- (unary)@\chpl{-} (unary)}
 
@@ -493,7 +493,7 @@ It is an error to try to negate a value of type \chpl{uint(64)}.  Note
 that negating a value of type \chpl{uint(32)} first converts the type
 to \chpl{int(64)} using an implicit conversion.
 
-\subsubsection{Addition Operators}
+\subsection{Addition Operators}
 \label{Addition_Operators}
 \index{+@\chpl{+}}
 
@@ -539,7 +539,7 @@ produces a value of complex type.  Addition of values of complex type
 and either real or imaginary types also produces a value of complex
 type.
 
-\subsubsection{Subtraction Operators}
+\subsection{Subtraction Operators}
 \label{Subtraction_Operators}
 \index{-@\chpl{-}}
 
@@ -588,7 +588,7 @@ and vice versa, produces a value of complex type.  Subtraction of
 values of complex type from either real or imaginary types, and vice
 versa, also produces a value of complex type.
 
-\subsubsection{Multiplication Operators}
+\subsection{Multiplication Operators}
 \label{Multiplication_Operators}
 \index{*@\chpl{*}}
 
@@ -637,7 +637,7 @@ imaginary type produces a value of imaginary type.  Multiplication of
 values of complex type and either real or imaginary types produces a
 value of complex type.
 
-\subsubsection{Division Operators}
+\subsection{Division Operators}
 \label{Division_Operators}
 \index{/@\chpl{/}}
 
@@ -686,7 +686,7 @@ produces a value of imaginary type.  Division of values of complex
 type and either real or imaginary types produces a value of complex
 type.
 
-\subsubsection{Modulus Operators}
+\subsection{Modulus Operators}
 \label{Modulus_Operators}
 \index{\%@\chpl{\%}}
 
@@ -709,7 +709,7 @@ versa.
 There is an expectation that the predefined modulus operators will be
 extended to handle real, imaginary, and complex types in the future.
 
-\subsubsection{Exponentiation Operators}
+\subsection{Exponentiation Operators}
 \label{Exponentiation_Operators}
 \index{**@\chpl{**}}
 
@@ -735,7 +735,7 @@ versa.
 There is an expectation that the predefined exponentiation operators
 will be extended to handle imaginary and complex types in the future.
 
-\subsection{Bitwise Operators}
+\section{Bitwise Operators}
 \label{Bitwise_Operators}
 \index{operators!bitwise}
 
@@ -743,7 +743,7 @@ This section describes the predefined bitwise operators.  These
 operators can be redefined over different types using operator
 overloading~(\rsec{Function_Overloading}).
 
-\subsubsection{Bitwise Complement Operators}
+\subsection{Bitwise Complement Operators}
 \label{Bitwise_Complement_Operators}
 \index{\~@\chpl{\~}}
 
@@ -758,7 +758,7 @@ proc ~(a: uint(64)): uint(64)
 For each of these definitions, the result is the bitwise complement of
 the operand.
 
-\subsubsection{Bitwise And Operators}
+\subsection{Bitwise And Operators}
 \label{Bitwise_And_Operators}
 \index{&@\chpl{&}}
 
@@ -795,7 +795,7 @@ The choice of unsigned over signed as the result type in the mixed case
 reflects the semantics of standard C.
 \end{rationale}
 
-\subsubsection{Bitwise Or Operators}
+\subsection{Bitwise Or Operators}
 \label{Bitwise_Or_Operators}
 \index{|@\chpl{|}}
 
@@ -824,7 +824,7 @@ required conversions are performed.
 The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 \end{rationale}
 
-\subsubsection{Bitwise Xor Operators}
+\subsection{Bitwise Xor Operators}
 \label{Bitwise_Xor_Operators}
 \index{^@\chpl{^}}
 
@@ -852,7 +852,7 @@ conversions are performed.
 The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 \end{rationale}
 
-\subsection{Shift Operators}
+\section{Shift Operators}
 \label{Shift_Operators}
 \index{<<@\chpl{<<}}
 \index{>>@\chpl{>>}}
@@ -883,7 +883,7 @@ are set to one; otherwise the new high-order bits are set to zero.
 
 The value of \chpl{b} must be non-negative.
 
-\subsection{Logical Operators}
+\section{Logical Operators}
 \label{Logical_Operators}
 \index{operators!logical}
 
@@ -891,7 +891,7 @@ This section describes the predefined logical operators.  These
 operators can be redefined over different types using operator
 overloading~(\rsec{Function_Overloading}).
 
-\subsubsection{The Logical Negation Operator}
+\subsection{The Logical Negation Operator}
 \label{Logical_Negation_Operators}
 \index{!@\chpl{!}}
 
@@ -901,7 +901,7 @@ proc !(a: bool): bool
 \end{chapel}
 The result is the logical negation of the operand.
 
-\subsubsection{The Logical And Operator}
+\subsection{The Logical And Operator}
 \label{Logical_And_Operators}
 \index{&&@\chpl{&&}}
 
@@ -927,7 +927,7 @@ proc isTrue(a:bool) return a;
 Overloading the logical and operator over other types is accomplished
 by overloading the \chpl{isTrue} function over other types.
 
-\subsubsection{The Logical Or Operator}
+\subsection{The Logical Or Operator}
 \label{Logical_Or_Operators}
 \index{||@\chpl{||}}
 
@@ -951,7 +951,7 @@ in~\rsec{Logical_And_Operators}.  Overloading the logical or operator
 over other types is accomplished by overloading the \chpl{isTrue}
 function over other types.
 
-\subsection{Relational Operators}
+\section{Relational Operators}
 \label{Relational_Operators}
 \index{operators!relational}
 
@@ -959,7 +959,7 @@ This section describes the predefined relational operators.  These
 operators can be redefined over different types using operator
 overloading~(\rsec{Function_Overloading}).
 
-\subsubsection{Ordered Comparison Operators}
+\subsection{Ordered Comparison Operators}
 \label{Ordered_Comparison_Operators}
 
 \index{<@\chpl{<}}
@@ -1038,7 +1038,7 @@ character set used to represent the string, which is applied
 elementwise to the string's characters in order.
 
 
-\subsubsection{Equality Comparison Operators}
+\subsection{Equality Comparison Operators}
 \label{Equality_Comparison_Operators}
 \index{==@\chpl{==}}
 \index{!=@\chpl{!=}}
@@ -1086,14 +1086,14 @@ in \chpl{a} matches exactly the sequence of characters in \chpl{b};
 otherwise the result is false.  The result of \chpl{a \!= b} is
 equivalent to \chpl{\!(a == b)}.
 
-\subsection{Miscellaneous Operators}
+\section{Miscellaneous Operators}
 \label{Miscellaneous_Operators}
 
 This section describes several miscellaneous operators.  These
 operators can be redefined over different types using operator
 overloading~(\rsec{Function_Overloading}).
 
-\subsubsection{The String Concatenation Operator}
+\subsection{The String Concatenation Operator}
 \label{The_String_Concatenation_Operator}
 \index{+@\chpl{+}}
 
@@ -1111,7 +1111,7 @@ string literal \chpl{"result: "}.  If \chpl{i} is \chpl{3}, then the resulting s
 would be \chpl{"result: 3"}.
 \end{example}
 
-\subsubsection{The By Operator}
+\subsection{The By Operator}
 \label{The_By_Operator}
 \index{arithmetic domains!strided}
 \index{arithmetic domains!by operator}
@@ -1121,14 +1121,14 @@ The operator \chpl{by} is predefined on ranges and arithmetic domains.
 It is described in~\rsec{By_Operator_For_Ranges} for ranges
 and~\rsec{Domain_Striding} for domains.
 
-\subsubsection{The Range Count Operator}
+\subsection{The Range Count Operator}
 \label{The_Range_Count_Operator}
 \index{#@\chpl{#}}
 
 The operator \chpl{#} is predefined on ranges. It is described
 in ~\rsec{Count_Operator}.
 
-\subsection{Let Expressions}
+\section{Let Expressions}
 \label{Let_Expressions}
 \index{let@\chpl{let}}
 
@@ -1152,7 +1152,7 @@ stored in \chpl{y} and the result of the expression is the reciprocal
 of that value.
 \end{example}
 
-\subsection{Conditional Expressions}
+\section{Conditional Expressions}
 \label{Conditional_Expressions}
 \index{conditional!expression}
 \index{if@\chpl{if}}
@@ -1178,7 +1178,7 @@ is immediately nested inside a forall expression.  Such an expression
 is used to filter predicates as described
 in~\rsec{Filtering_Predicates_For} and~\rsec{Filtering_Predicates_Forall}.
 
-\subsection{For Expressions}
+\section{For Expressions}
 \label{For_Expressions}
 \index{for@\chpl{for}}
 
@@ -1193,7 +1193,7 @@ context of an expression and has the semantics of calling an
 iterator~(\rsec{Iterators}) that yields the evaluated expressions on
 each iteration.
 
-\subsubsection{Filtering Predicates in For Expressions}
+\subsection{Filtering Predicates in For Expressions}
 \label{Filtering_Predicates_For}
 \index{for expressions!and conditional expressions}
 

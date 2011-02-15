@@ -6,7 +6,7 @@ output to files using functions and methods
 called \chpl{read}, \chpl{readln},
 \chpl{write}, and \chpl{writeln}.
 
-\subsection{The {\em file} type}
+\section{The {\em file} type}
 \index{file type}
 
 The file class contains the following fields:
@@ -57,7 +57,7 @@ Additionally, the file type supports the
 methods \chpl{read}, \chpl{readln}, \chpl{write}, and \chpl{writeln} for 
 input and output as discussed in~\rsec{filewrite} and~\rsec{fileread}.
 
-\subsection{Standard files {\em stdout}, {\em stdin}, and {\em stderr}}
+\section{Standard files {\em stdout}, {\em stdin}, and {\em stderr}}
 \index{file type!standard files stdin, stdout, stderr}
 \index{stdin@\chpl{stdin}}
 \index{stdout@\chpl{stdout}}
@@ -67,7 +67,7 @@ The files \chpl{stdout}, \chpl{stdin}, and \chpl{stderr} are
 predefined and map to standard output, standard input, and standard
 error as implemented in a platform dependent fashion.
 
-\subsection{The {\em write}, {\em writeln}, {\em read}, and {\em readln} 
+\section{The {\em write}, {\em writeln}, {\em read}, and {\em readln} 
 functions}
 \index{writeln@\chpl{writeln}}
 \index{write@\chpl{write}}
@@ -105,14 +105,14 @@ writeln("Hello, World!");
 \end{chapel}
 \end{example}
 
-\subsection{User-Defined {\em writeThis} methods}
+\section{User-Defined {\em writeThis} methods}
 
 To define the output for a given type, the user must define a method
 called \chpl{writeThis} on that type that takes a single argument of
 \chpl{Writer} type.  If such a method does not exist, a default method is
 created.
 
-\subsection{The {\em write} and {\em writeln} method on files}
+\section{The {\em write} and {\em writeln} method on files}
 \label{filewrite}
 \index{write!on files}
 
@@ -126,14 +126,14 @@ does not explicitly create one for.
 A lock is used to ensure that output is serialized across multiple
 tasks.
 
-\subsubsection{The {\em write} and {\em writeln} method on strings}
+\subsection{The {\em write} and {\em writeln} method on strings}
 \label{stringwrite}
 \index{write!on strings}
 
 The \chpl{write} and \chpl{writeln} methods can also be called on
 strings to write the output to a string instead of a file.
 
-\subsubsection{Generalized {\em write} and {\em writeln}}
+\subsection{Generalized {\em write} and {\em writeln}}
 \label{writer}
 \index{Writer@\chpl{Writer}}
 
@@ -167,7 +167,7 @@ the first letter.  The output to the above is thus \chpl{4321}.
 \end{example}
 
 
-\subsection{The {\em read} and {\em readln} methods on files}
+\section{The {\em read} and {\em readln} methods on files}
 \label{fileread}
 \index{read!on files}
 
@@ -195,7 +195,7 @@ var x = stdin.read(int);
 \end{example}
 
 
-\subsection{Default {\em read} and {\em write} methods}
+\section{Default {\em read} and {\em write} methods}
 \index{write!default methods}
 \index{read!default methods}
 

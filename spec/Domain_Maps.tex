@@ -39,7 +39,7 @@ Domain maps are presented as follows:
 \end{itemize}
 
 
-\subsection{Domain Maps for Domain Types}
+\section{Domain Maps for Domain Types}
 \label{Domain_Maps_For_Types}
 
 Each domain type has a domain map associated with it.
@@ -141,7 +141,7 @@ type BlockDom = domain(2) dmapped new dmap(new Block([1..5,1..6]));
 \end{example}
 
 
-\subsection{Domain Maps for Domain Values}
+\section{Domain Maps for Domain Values}
 \label{Domain_Maps_For_Values}
 
 A domain value is always mapped using the domain map of that value's type.
@@ -181,7 +181,7 @@ will be mapped using a Block distribution.
 \end{example}
 
 
-\subsection{Domain Maps for Arrays}
+\section{Domain Maps for Arrays}
 \label{Domain_Maps_For_Arrays}
 
 \index{domain maps!for arrays}
@@ -200,7 +200,7 @@ the domain map used for \chpl{MyArray} is the Block
 distribution from the type of \chpl{Dom}.
 \end{example}
 
-\subsection{Domain Maps Are Not Retained upon Domain Assignment}
+\section{Domain Maps Are Not Retained upon Domain Assignment}
 \label{Domain_Maps_Not_Assigned}
 \index{domain maps!domain assignment}
 \index{domains!assignment}

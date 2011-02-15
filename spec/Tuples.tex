@@ -9,7 +9,7 @@ programmer.  In addition to making it easy to return multiple values
 from a function, tuples help to support multidimensional indices, to
 group arguments to functions, and to specify mathematical concepts.
 
-\subsection{Tuple Types}
+\section{Tuple Types}
 \label{Tuple_Types}
 \index{tuples!types}
 
@@ -90,7 +90,7 @@ The type \chpl{3*3*int}, on the other hand, specifies a 9-tuple of
 integers.
 \end{rationale}
 
-\subsection{Tuple Values}
+\section{Tuple Values}
 \label{Tuple_Values}
 \index{tuples!values}
 
@@ -173,7 +173,7 @@ When a tuple is passed as an argument to a function, it is passed as
 if it is a record type containing fields of the same type and in
 the same order as in the tuple.
 
-\subsection{Tuple Assignment}
+\section{Tuple Assignment}
 \label{Tuple_Assignment}
 \index{assignment!tuples}
 \index{tuples!assignment}
@@ -184,7 +184,7 @@ tuple on the right-hand side of the assignment.  These assignments
 occur in component order (component one followed by component two,
 etc.).
 
-\subsection{Tuple Destructuring}
+\section{Tuple Destructuring}
 \label{Tuple_Destructuring}
 \index{tuples!destructuring}
 
@@ -203,7 +203,7 @@ expressions where a tuple expression is expanded in place using the
 tuple expansion expression.
 \end{itemize}
 
-\subsubsection{Splitting a Tuple with Assignment}
+\subsection{Splitting a Tuple with Assignment}
 
 When multiple expression on the left-hand side of an assignment
 operator are grouped using tuple notation, the tuple on the right-hand
@@ -286,7 +286,7 @@ writeln(x);
 \end{chapeloutput}
 \end{example}
 
-\subsubsection{Splitting a Tuple into Multiple Variables}
+\subsection{Splitting a Tuple into Multiple Variables}
 \label{Variable_Declarations_in_a_Tuple}
 \index{tuples!variable declarations grouped as}
 
@@ -364,7 +364,7 @@ writeln(x);
 \end{chapeloutput}
 \end{example}
 
-\subsubsection{Splitting a Tuple into Mutiple Indices}
+\subsection{Splitting a Tuple into Mutiple Indices}
 \label{Indices_in_a_Tuple}
 \index{tuples!indices grouped as}
 
@@ -408,7 +408,7 @@ omitted indices are present but invisible.  This means that the loop body
 controlled by the iterator may be executed multiple times with the
 same set of (visible) indices.
 
-\subsubsection{Splitting a Tuple into Multiple Formal Arguments}
+\subsection{Splitting a Tuple into Multiple Formal Arguments}
 \label{Formal_Argument_Declarations_in_a_Tuple}
 \index{tuples!formal arguments grouped as}
 
@@ -508,7 +508,7 @@ call is evaluated as if an argument were defined.
 %TODO: hilde
 % Example required.
 
-\subsubsection{Splitting a Tuple via Tuple Expansion}
+\subsection{Splitting a Tuple via Tuple Expansion}
 \label{Tuple_Expansion}
 \index{... tuple expansion@\chpl{...} tuple expansion}
 \index{tuples!expanding in place}
@@ -570,7 +570,7 @@ writeln(rest((1, 2, 3)));
 \end{chapeloutput}
 \end{example}
 
-\subsection{Tuple Indexing}
+\section{Tuple Indexing}
 \label{Tuple_Indexing}
 \index{tuples!indexing}
 
@@ -627,11 +627,11 @@ Non-homogeneous tuples can only be accessed by compile-time constants
 since the type of an expression must be statically known.
 \end{rationale}
 
-\subsection{Tuple Operators}
+\section{Tuple Operators}
 \label{Tuple_Operators}
 \index{tuples!operators}
 
-\subsubsection{Unary Operators}
+\subsection{Unary Operators}
 \label{Tuple_Unary_Operators}
 %\index{\+ (unary)@\chpl{\+} (unary)}
 %\index{\- (unary)@\chpl{\-} (unary)}
@@ -652,7 +652,7 @@ is, if the element type is a user-defined type, it must supply an
 overloaded definition for the unary operator being used.  Otherwise, a
 compile-time error will be issued.
 
-\subsubsection{Binary Operators}
+\subsection{Binary Operators}
 \label{Tuple_Binary_Operators}
 %\index{\+@\chpl{\+}}
 %\index{\-@\chpl{\-}}
@@ -698,7 +698,7 @@ writeln(x);
 \end{example}
 
 
-\subsubsection{Relational Operators}
+\subsection{Relational Operators}
 \label{Tuple_Relational_Operators}
 %\index{\>@\chpl{\>}}
 %\index{\>\=@\chpl{\>\=}}
@@ -748,7 +748,7 @@ true
 \end{chapeloutput}
 \end{example}
 
-\subsection{Predefined Functions and Methods on Tuples}
+\section{Predefined Functions and Methods on Tuples}
 \index{tuples!predefined functions}
 
 \begin{protohead}
