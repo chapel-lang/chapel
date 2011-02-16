@@ -28,9 +28,13 @@ General (see also portability section at the bottom of this file)
 
 Types, Variables, Conversions, Expressions, and Statements
 ----------------------------------------------------------
+
 - Unlabeled break and continue statements fail to compile in param for loops.
 - Multiple configuration parameters with different types declared in a
   single statement result in an internal error.
+- Casts and relational operations involving enum constants do not
+  always work.
+
 
 Modules and Functions
 ---------------------
