@@ -8,16 +8,16 @@
 
 use GMP, Time;
 
-config const n = 50,	// Compute 50 digits of Pi, by default
-             printTiming = true;
+config const n = 50;	// Compute 50 digits of Pi, by default
+config param printTiming = true;
 
 proc main() {
   var t: Timer;
 
-  t.start();
+  if printTiming then t.start();
   // Produce the number of digits of Pi specified in n.
   pidigits();
-  t.stop();
+  if printTiming then t.stop();
 
   if printTiming then
     writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));

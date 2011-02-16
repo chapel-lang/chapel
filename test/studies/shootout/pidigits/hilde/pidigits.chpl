@@ -1,9 +1,11 @@
 /* The Computer Language Benchmarks Game
-   http://shootout.alioth.debian.org/
+  http://shootout.alioth.debian.org/
 
-   contributed by Tom Hildebrandt
-   initial Chapel version derived from GNU C version (Bonzini, Bartlett, Mellor).
+  contributed by Paolo Bonzini & Sean Bartlett
+  modified by Michael Mellor
 */
+// Translated to Chapel by Tom Hildebrandt (hilde@cray.com)
+
 
 _extern proc printf(s:string, args ...);
 _extern proc putchar(c:int);
@@ -12,6 +14,7 @@ use GMP;
 use Time;
 
 config const n = 50;	// Compute 50 digits of Pi, usually.
+config param perfTest = false;
 
 var numer, accum, denom, tmp1, tmp2: mpz_t;
 
@@ -19,12 +22,13 @@ proc main
 {
   var t: Timer;
 
-  t.start();
+  if perfTest then t.start();
   // Produce the number of digits of Pi specified in n.
   pidigits;
-  t.stop();
+  if perfTest then t.stop();
 
-  writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));
+  if perfTest then
+    writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));
 }
 
 proc pidigits
