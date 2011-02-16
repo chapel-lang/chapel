@@ -1,0 +1,46 @@
+#   $Source: /var/local/cvs/gasnet/other/amudp/Makefile.titanium.in,v $
+#     $Date: 2006/06/06 16:03:30 $
+# $Revision: 1.11 $
+# Description: setup necessary variables needed by Makefile
+# Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
+
+# variables added here should also go in Makefile.common, and vice-versa
+
+altincdir = $(srcdir)/..
+testdir = $(srcdir)/../amxtests
+
+# compiler
+CC = @CC@
+CXX = @TARGET_CXX@
+
+#otherflags := $(otherflags) -pg
+#otherflags := $(otherflags) -DFREEZE_SLAVE=1
+#otherflags := $(otherflags) -static
+#otherflags := $(otherflags) -DAMUDP_ALLOW_OPTIMIZED_DEBUG
+
+ccdebugflags = @TCBUILD_CFLAGS_COMMON@ @TCBUILD_CFLAGS_DEBUG@ $(otherflags)
+ccoptflags = @TCBUILD_CFLAGS_COMMON@ @TCBUILD_CFLAGS_OPTIMIZE@ $(otherflags)
+cxxdebugflags = @GENERIC_CXXFLAGS@ @CXXFLAGSE@ @CXXFLAGSDIAG@ -O0 -g $(otherflags)
+cxxoptflags = -O @GENERIC_CXXFLAGS@ @CXXFLAGSE@ @CXXFLAGSDIAG@ $(otherflags)
+
+@ENABLED_DEBUG_TRUE@  ccflags = $(set_debug_ccflags)
+@ENABLED_DEBUG_TRUE@  cxxflags = $(set_debug_cxxflags)
+@ENABLED_DEBUG_FALSE@ ccflags = $(set_opt_ccflags)
+@ENABLED_DEBUG_FALSE@ cxxflags = $(set_opt_cxxflags)
+
+# system utilities
+ranlib = @RANLIB@
+ar = @AR@
+
+# paths to platform-dependent helpers
+glunix_includes  = @TIC_GLUNIX_DEFINES@ @TIC_GLUNIX_INCLUDES@
+glunix_libraries = @TIC_GLUNIX_LIBS@
+rexec_includes   = @TIC_REXEC_DEFINES@
+ueth_includes 	 = @TIC_UETH_DEFINES@
+
+# stuff normally set by the pre-baked makefiles
+platform_defines = @TIC_MACHINE_DEFINES@ @INTTYPES_DEFINES@ -DUNIX -DAMUDP_ENV_PREFIX=TI
+platform_libraries = @TIC_UDP_LIBS@ @LIBS@
+
+@PLATFORM_ILP32_FALSE@  testprograms_ILP32only =
+@PLATFORM_ILP32_FALSE@  apputils_flags = -DAPPUTILS_OMIT_READWRITE
