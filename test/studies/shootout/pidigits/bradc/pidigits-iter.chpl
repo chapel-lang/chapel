@@ -9,7 +9,7 @@
 use GMP, Time;
 
 config const n = 50;	// Compute 50 digits of Pi, by default
-config param printTiming = true;
+config param printTiming = false;
 
 proc main() {
   var t: Timer;
