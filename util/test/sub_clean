@@ -39,10 +39,14 @@ def cleanChapelTest(f):
     if IsChplSource(f):
         execname=f[:len(f)-5]
         print 'Cleaning test: '+execname
+        globfiles = glob.glob(execname+'.*.out.tmp')
+        for g in globfiles:
+            try:
+                os.unlink(g)
+            except:
+                pass
         try:
-            os.unlink(execname+'.exec.out.tmp')
-            os.unlink(execname+'.comp.out.tmp')
-            os.unlink(execname);
+            os.unlink(execname)
             os.unlink(execname+'_real')
         except:
             pass
