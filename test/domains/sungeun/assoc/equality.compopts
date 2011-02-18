@@ -1,0 +1,6 @@
+-smyType=real(32)
+-smyType=int(8)
+-smyType=uint(16)
+-smyType=string -sn='"hi "'
+-smyType=complex(128)
+-smyType=imag(32) -sn=7.0i:imag(32)
