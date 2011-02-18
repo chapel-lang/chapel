@@ -70,13 +70,12 @@ Generics
 --------
 * add mention of the new 'depth' argument for compilerWarning/Error
 
-I/O
----
+Input and Output
+----------------
 * show file constructor or at least mention that the default constructor
   exists
 * show default values for fields of file
 * examples showing how to open and close a file
-* improve description of readln() (and maybe all 4 I/O commands)
 
 Task Parallelism and Synchronization
 ------------------------------------

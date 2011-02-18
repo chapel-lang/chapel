@@ -76,24 +76,28 @@ functions}
 \index{read}
 \index{write}
 
-The built-in function \chpl{write} can take an arbitrary number of
-arguments and writes each of the arguments out in turn
-to \chpl{stdout}.  The built-in function \chpl{writeln} has the same
-semantics as \chpl{write} but outputs an {\em end-of-line} character
-after writing out the arguments.  The built-in function \chpl{read}
-can take an arbitrary number of arguments and reads each of the
-arguments in turn from \chpl{stdin}.  The built-in function \chpl{readln}
-also takes an arbitrary number of arguments, reading each argument from
-\chpl{stdin}.  These arguments may be entered on a single line or on multiple
-lines.  After all arguments of the \chpl{readln} call are read, an 
-end-of-line character is expected to be read, ignoring any additional 
-input between the last argument read and the end-of-line character.
+The built-in function \chpl{write} takes an arbitrary number of
+arguments and prints each out in turn to \chpl{stdout}.  The built-in
+function \chpl{writeln} is identical to \chpl{write} except that it
+outputs an additional {\em end-of-line} character after writing out
+the argument expressions.  Both of these functions will generate their
+output atomically with respect to other calls to these functions from
+other tasks.
+
+The built-in function \chpl{read} takes an arbitrary number of
+variable expressions and reads into each in turn from \chpl{stdin}.
+Any whitespace is skipped over and is used only to separate one
+argument from the next.  The built-in function \chpl{readln} is
+identical except that upon reading all of its arguments it scans ahead
+in the input stream until just after the next {\em end-of-line}
+character.
 
 The \chpl{read} and \chpl{readln} functions are also defined to take
 an arbitrary number of types as arguments.  In this case, the
-semantics are the same except that the value returned is a tuple of
-the values that were read.  If only one type is read, the value is not
-returned in a tuple, but is returned directly.
+functions read an expression of each argument type.  In the event that
+a single type is specified, the return value is the value that was
+read; if multiple types are specified, a tuple of the values is
+returned.
 
 These functions are wrappers for the methods on files described next.
 
@@ -102,6 +106,25 @@ The \chpl{writeln} wrapper function allows for a simple implementation
 of the {\em Hello-World} program:
 \begin{chapel}
 writeln("Hello, World!");
+\end{chapel}
+\end{example}
+
+\begin{example}
+The following code shows three ways to read values into a pair of
+variables \chpl{x} and \chpl{y}:
+\begin{chapel}
+var x: int;
+var y: real;
+
+/* reading into variable expressions */
+read(x, y);
+
+/* reading via a single type argument */
+x = read(int);
+y = read(real);
+
+/* reading via multiple type arguments */
+(x, y) = read(int, real);
 \end{chapel}
 \end{example}
 
