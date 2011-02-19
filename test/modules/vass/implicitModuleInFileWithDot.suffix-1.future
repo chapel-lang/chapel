@@ -1,0 +1,11 @@
+bug: incorrect name for an implicit module when filename has extra dots
+
+When a source file defines a module implicitly, the module name
+is derived from the file's name. Currently the compiler uses
+the file name up to the earliest dot. Instead we would like it
+to use the name up to the last dot, i.e. simply strip ".chpl"
+from the end.
+
+(We should also update the spec to make that clear.
+As well as whether the file path, or part thereof,
+becomes part of the implicit module name.)
