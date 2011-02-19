@@ -1,1 +1,1 @@
-in_implicit_module();
+writeln("in implicitModuleInFileWithDot.suffix-2.chpl");
