@@ -31,6 +31,20 @@ typedef struct {
 } thread_func_t;
 
 
+//
+// Types and variables for our list of threads.
+//
+typedef struct thread_list* thread_list_p;
+struct thread_list {
+  pthread_t     thread;
+  thread_list_p next;
+};
+
+static pthread_mutex_t thread_list_lock;        // mutual exclusion lock
+static thread_list_p   thread_list_head = NULL; // head of thread_list
+static thread_list_p   thread_list_tail = NULL; // tail of thread_list
+
+
 static pthread_attr_t thread_attributes;
 
 static pthread_cond_t wakeup_cond = PTHREAD_COND_INITIALIZER;
@@ -84,23 +98,6 @@ threadlayer_threadID_t threadlayer_thread_id(void) {
 void threadlayer_yield(void) {
   sched_yield();
 }
-
-// Thread cancellation
-
-void threadlayer_thread_cancel(threadlayer_threadID_t thread) {
-  if (0 != pthread_cancel((pthread_t) thread)) {
-    chpl_internal_error("thread cancel failed");
-  }
-}    
-
-
-// Thread join (wait for completion)
-
-void threadlayer_thread_join(threadlayer_threadID_t thread) {
-  if (0 != pthread_join((pthread_t) thread, NULL)) {
-    chpl_internal_error("thread join failed");
-  }
-}    
 
 
 // Condition variables
@@ -192,6 +189,8 @@ void threadlayer_init(uint64_t callStackSize) {
   if (pthread_key_create(&thread_private_key, destroy_thread_private_data))
     chpl_internal_error("pthread_key_create failed");
 
+  pthread_mutex_init(&thread_list_lock, NULL);
+
   //
   // This is something of a hack, but it makes us a bit more resilient
   // if we're out of memory or near to it at shutdown time.  Launch,
@@ -229,6 +228,21 @@ static void destroy_thread_private_data(void* p) {
 }
 
 void threadlayer_exit(void) {
+  thread_list_p tlp;
+
+  // shut down all threads
+  for (tlp = thread_list_head; tlp != NULL; tlp = tlp->next) {
+    if (pthread_cancel(tlp->thread) != 0)
+      chpl_internal_error("thread cancel failed");
+  }
+  while (thread_list_head != NULL) {
+    if (pthread_join(thread_list_head->thread, NULL) != 0)
+      chpl_internal_error("thread join failed");
+    tlp = thread_list_head;
+    thread_list_head = thread_list_head->next;
+    chpl_free(tlp, 0, 0);
+  }
+
   if (pthread_key_delete(thread_private_key) != 0)
     chpl_internal_error("pthread_key_delete() failed");
 
@@ -254,14 +268,30 @@ int threadlayer_thread_create(threadlayer_threadID_t* thread,
 
 static void* pthread_func(void* void_f) {
   thread_func_t* f = (thread_func_t*) void_f;
-  void* (*fn)(void*) = f->fn;
-  void* arg = f->arg;
+  void*          (*fn)(void*) = f->fn;
+  void*          arg = f->arg;
+  thread_list_p  tlp;
 
   chpl_free(f, 0, 0);
 
   // disable cancellation immediately
   // enable only while waiting for new work
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); 
+
+  // add us to the list of threads
+  tlp = (thread_list_p) chpl_alloc(sizeof(struct thread_list),
+				   CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
+
+  tlp->thread = pthread_self();
+  tlp->next   = NULL;
+
+  pthread_mutex_lock(&thread_list_lock);
+  if (thread_list_head == NULL)
+    thread_list_head = tlp;
+  else
+    thread_list_tail->next = tlp;
+  thread_list_tail = tlp;
+  pthread_mutex_unlock(&thread_list_lock);
 
   return (*(fn))(arg);
 }

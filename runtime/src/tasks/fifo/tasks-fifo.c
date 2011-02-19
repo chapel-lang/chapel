@@ -58,14 +58,6 @@ struct chpl_task_list {
 };
 
 
-// This constitutes one entry on our list of threads.
-typedef struct thread_list* thread_list_p;
-struct thread_list {
-  threadlayer_threadID_t thread;
-  thread_list_p          next;
-};
-
-
 typedef struct lockReport {
   const char*        filename;
   int                lineno;
@@ -90,9 +82,6 @@ static threadlayer_mutex_t task_id_lock;       // critical section lock
 static threadlayer_mutex_t task_list_lock;     // critical section lock
 static task_pool_p         task_pool_head;     // head of task pool
 static task_pool_p         task_pool_tail;     // tail of task pool
-static threadlayer_mutex_t thread_list_lock;   // critical section lock
-static thread_list_p       thread_list_head;   // head of thread_list
-static thread_list_p       thread_list_tail;   // tail of thread_list
 static int                 queued_cnt;         // number of tasks in the task pool
 static int                 waking_cnt;         // number of threads signaled to wakeup
 static int                 running_cnt;        // number of running threads 
@@ -114,7 +103,6 @@ static chpl_taskID_t           get_next_task_id(void);
 static thread_private_data_t*  get_thread_private_data(void);
 static task_pool_p             get_current_ptask(void);
 static void                    set_current_ptask(task_pool_p);
-static void                    add_me_to_thread_list(void);
 static void                    report_locked_threads(void);
 static void                    report_all_tasks(void);
 static void                    SIGINT_handler(int sig);
@@ -226,7 +214,6 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   threadlayer_mutex_init(&extra_task_lock);
   threadlayer_mutex_init(&task_id_lock);
   threadlayer_mutex_init(&task_list_lock);
-  threadlayer_mutex_init(&thread_list_lock);
   queued_cnt = 0;
   running_cnt = 0;                     // only main thread running
   waking_cnt = 0;
@@ -235,7 +222,6 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   idle_cnt = 0;
   extra_task_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
-  thread_list_head = thread_list_tail = NULL;
 
   threadlayer_init(callStackSize);
 
@@ -259,23 +245,12 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
 
 void chpl_task_exit(void) {
   chpl_bool debug = false;
-  thread_list_p tlp;
 
   if (!initialized)
     return;
 
   if (debug)
     fprintf(stderr, "A total of %d threads were created; waking_cnt = %d\n", threads_cnt, waking_cnt);
-
-  // shut down all threads
-  for (tlp = thread_list_head; tlp != NULL; tlp = tlp->next)
-    threadlayer_thread_cancel(tlp->thread);
-  while (thread_list_head != NULL) {
-    threadlayer_thread_join(thread_list_head->thread);
-    tlp = thread_list_head;
-    thread_list_head = thread_list_head->next;
-    chpl_free(tlp, 0, 0);
-  }
 
   threadlayer_exit();
 }
@@ -758,28 +733,6 @@ static void set_current_ptask(task_pool_p ptask) {
 
 
 //
-// Add the current thread (which is new) to our list of active threads.
-//
-static void add_me_to_thread_list(void) {
-    thread_list_p tlp;
-
-    tlp = (thread_list_p) chpl_alloc(sizeof(struct thread_list),
-                                     CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
-
-    tlp->thread = threadlayer_thread_id();
-    tlp->next   = NULL;
-
-    threadlayer_mutex_lock(&thread_list_lock);
-    if (thread_list_head == NULL)
-      thread_list_head = tlp;
-    else
-      thread_list_tail->next = tlp;
-    thread_list_tail = tlp;
-    threadlayer_mutex_unlock(&thread_list_lock);
-}
-
-
-//
 // Walk over the linked list of thread states and print the ones that
 // are blocked/waiting.  This is used by both the deadlock reporting
 // and the ^C signal handler.
@@ -982,9 +935,6 @@ chpl_begin_helper(void* ptask_void) {
                                            0, 0);
   tp->ptask = ptask;
   threadlayer_set_thread_private_data(tp);
-
-  // add new thread to our thread list
-  add_me_to_thread_list();
 
   // the chpldev_taskTable_set_active() call can end up temporarily
   // waiting on a sync var, so if deadlock detection is enabled we
