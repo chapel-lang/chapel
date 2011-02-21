@@ -1,5 +1,11 @@
+// ChapelRange.chpl
+//
+
 use DSIUtil;
-config param debugChapelRange = false;
+
+config param debugChapelRange = false;	// Turns on range iterator debugging.
+config param warnMaximalRange = false;	// Warns if integer rollover will cause
+					// the iterator to yield zero times.
 
 //
 // range type
@@ -50,6 +56,31 @@ record range {
     else return _high; }
 }
 
+
+// Declare this as constructor, so we can capture range creation.
+// If it is not a constructor, then the user can still create a maximal range
+// (for example) without begin warned.
+//
+proc range.range(type idxType = int,
+     	   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
+           param stridable : bool = false,
+	   _low : idxType = 1,
+	   _high : idxType = 0,
+	   _stride : chpl__idxTypeToStrType(idxType) = 1)
+{
+  this._low = _low;
+  this._high = _high;
+  this._stride = _stride;
+
+  if warnMaximalRange {
+    if boundedType == BoundedRangeType.bounded {
+      if _low <= _high && last + _stride : idxType == first then
+        writeln("Maximal range declared.  ",
+        "A for loop on this range will execute zero times.  ",
+        "Try using a wider index type.");
+    }
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // SYNTAX FUNCTIONS
@@ -435,22 +466,23 @@ iter range.these() {
     }
   } else {
     // a bounded range ...
-    if _high < _low then return;	// The degenerate case.
 
-    // If this range is not degenerate, then we know we will yield at least one index. 
+    // This case is written so that the only control is the loop test.
+    // Zippered iterator inlining currently requires this.
+
     var i = first;
-    var end = last;
+    var end : idxType;
 
     if stridable {
-      while true {
+      end = if _low > _high then i else last + _stride:idxType;
+      while i != end {
         yield i;
-		if i == end then break;
         i = i + _stride:idxType;
       }
     } else {
-      while true {
+      end = if _low > _high then i else last + 1;
+      while i != end {
         yield i;
-		if i == end then break;
         i = i + 1;
       }
     }
