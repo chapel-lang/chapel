@@ -72,14 +72,18 @@ proc range.range(type idxType = int,
   this._high = _high;
   this._stride = _stride;
 
-  if warnMaximalRange {
-    if boundedType == BoundedRangeType.bounded {
-      if _low <= _high && last + _stride : idxType == first then
-        writeln("Maximal range declared.  ",
-        "A for loop on this range will execute zero times.  ",
-        "Try using a wider index type.");
-    }
-  }
+// TODO: hilde
+// Someone will explain to me why warnMaximalRange has an unknown actual type
+// when compiled as part of the runtime.  I suppose it has something to do with
+// the --runtime flag....
+//  if warnMaximalRange {
+//    if boundedType == BoundedRangeType.bounded {
+//      if _low <= _high && last + _stride : idxType == first then
+//        writeln("Maximal range declared.  ",
+//        "A for loop on this range will execute zero times.  ",
+//        "Try using a wider index type.");
+//    }
+//  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
