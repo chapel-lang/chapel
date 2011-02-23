@@ -548,14 +548,24 @@ static void build_record_assignment_function(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("=");
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
   arg1->markedGeneric = true;
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtAny);
+
+  bool externRecord = ct->symbol->hasFlag(FLAG_EXTERN);
+  // If the LHS is extern, the RHS must be of matching type; otherwise
+  // Chapel permits matches that have the same names
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", 
+                                  (externRecord ? ct : dtAny));
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
-  for_fields(tmp, ct) {
-    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
-      if (!tmp->hasFlag(FLAG_TYPE_VARIABLE) && !tmp->isParameter() && strcmp(tmp->name, "_promotionType"))
-        fn->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
+
+  if (externRecord) {
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, arg1, arg2));
+  } else {
+    for_fields(tmp, ct) {
+      if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+        if (!tmp->hasFlag(FLAG_TYPE_VARIABLE) && !tmp->isParameter() && strcmp(tmp->name, "_promotionType"))
+          fn->insertAtTail(new CallExpr("=", new CallExpr(".", arg1, new_StringSymbol(tmp->name)), new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
+      }
     }
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, arg1));
@@ -846,11 +856,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
                                                  buildDotExpr(fn->_this, tmp->name)));
       cond = new CondStmt(new CallExpr("==", new CallExpr(PRIM_UNION_GETID, fn->_this), new_IntSymbol(tmp->id)), writeFieldBlock, cond);
     }
-    if (cond) {
-      fn->insertAtTail(cond);
-    } else {
-      // no fields in this union => do not write anything
-    }
+    fn->insertAtTail(cond);
   } else {
     bool first = true;
     for_fields(tmp, ct) {
