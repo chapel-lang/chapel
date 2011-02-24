@@ -856,7 +856,11 @@ static void buildDefaultWriteFunction(ClassType* ct) {
                                                  buildDotExpr(fn->_this, tmp->name)));
       cond = new CondStmt(new CallExpr("==", new CallExpr(PRIM_UNION_GETID, fn->_this), new_IntSymbol(tmp->id)), writeFieldBlock, cond);
     }
-    fn->insertAtTail(cond);
+    if (cond) {
+      fn->insertAtTail(cond);
+    } else {
+      // no fields in this union => do not write anything
+    }
   } else {
     bool first = true;
     for_fields(tmp, ct) {
