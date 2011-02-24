@@ -1,4 +1,0 @@
-bug: incorrect name for an implicit module when filename has extra dots
-
-This is a different occurrence of the bug in
-  implicitModuleInFileWithDot.suffix-1.future

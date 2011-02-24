@@ -47,8 +47,8 @@ static const char* filenameToModulename(const char* filename) {
   if (lastslash) {
     modulename = lastslash+1;
   }
-  const char* dot = strchr(modulename, '.');
-  return asubstr(modulename, dot);
+  const char* lastdot = strrchr(modulename, '.');
+  return asubstr(modulename, lastdot);
 }
 
 static bool

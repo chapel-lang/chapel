@@ -82,9 +82,11 @@ declarations, the file itself is treated as the module declaration.
 In this case,
 \index{implicit modules}
 \index{modules!implicit}
-the module is implicit and takes its name from the file.  If the file name is
-not a legal Chapel identifier, the module name cannot be used in a use
-statement.
+the module is implicit and takes its name from the base filename.  In
+particular, the module name is defined as the remaining string after
+removing the \chpl{.chpl} suffix and any path specification from the
+specified filename.  If the resulting name is not a legal Chapel
+identifier, it cannot be referenced in a use statement.
 
 \begin{example}
 The following file, named myModule.chpl, defines an implicitly named
