@@ -34,6 +34,9 @@ if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");
 }
 
+config param warnMaximalRange = false;	// Warns if integer rollover will cause
+					// the iterator to yield zero times.
+
 pragma "inline" proc +(s: string, x: numeric)
   return s + x:string;
 

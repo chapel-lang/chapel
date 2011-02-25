@@ -48,6 +48,8 @@ explainInstantiation(FnSymbol* fn) {
           len += sprintf(msg+len, "%s = ", arg->name);
         if (TypeSymbol* ts = toTypeSymbol(e->value))
           len += sprintf(msg+len, "%s", ts->name);
+	else if (EnumSymbol* es = toEnumSymbol(e->value))
+	  len += sprintf(msg+len, "%s", es->name);
         else if (VarSymbol* vs = toVarSymbol(e->value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
             len += sprintf(msg+len, "%"PRId64, vs->immediate->int_value());
