@@ -80,8 +80,10 @@ static threadlayer_mutex_t threading_lock;     // critical section lock
 static threadlayer_mutex_t extra_task_lock;    // critical section lock
 static threadlayer_mutex_t task_id_lock;       // critical section lock
 static threadlayer_mutex_t task_list_lock;     // critical section lock
-static task_pool_p         task_pool_head;     // head of task pool
-static task_pool_p         task_pool_tail;     // tail of task pool
+static volatile task_pool_p
+                           task_pool_head;     // head of task pool
+static volatile task_pool_p
+                           task_pool_tail;     // tail of task pool
 static int                 queued_cnt;         // number of tasks in the task pool
 static int                 waking_cnt;         // number of threads signaled to wakeup
 static int                 running_cnt;        // number of running threads 
@@ -126,31 +128,37 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
                                chpl_bool want_full,
                                int32_t lineno, chpl_string filename) {
   threadlayer_mutex_lock(&s->lock);
+
   while (s->is_full != want_full) {
-    if (set_block_loc(lineno, filename)) {
-      // all other tasks appear to be blocked
-      struct timeval deadline, now;
-      chpl_bool timed_out;
-      gettimeofday(&deadline, NULL);
-      deadline.tv_sec += 1;
-      do {
-        timed_out = threadlayer_sync_suspend(s, &deadline);
-        if (s->is_full != want_full && !timed_out)
+    threadlayer_mutex_unlock(&s->lock);
+
+    while (s->is_full != want_full) {
+      if (set_block_loc(lineno, filename)) {
+        // all other tasks appear to be blocked
+        struct timeval deadline, now;
+        gettimeofday(&deadline, NULL);
+        deadline.tv_sec += 1;
+        do {
+          threadlayer_yield();
+          if (s->is_full != want_full)
             gettimeofday(&now, NULL);
-      } while (s->is_full != want_full
-               && !timed_out
-               && (now.tv_sec < deadline.tv_sec
-                   || (now.tv_sec == deadline.tv_sec
-                       && now.tv_usec < deadline.tv_usec)));
-      if (s->is_full != want_full)
-        check_for_deadlock();
+        } while (s->is_full != want_full
+                 && (now.tv_sec < deadline.tv_sec
+                     || (now.tv_sec == deadline.tv_sec
+                         && now.tv_usec < deadline.tv_usec)));
+        if (s->is_full != want_full)
+          check_for_deadlock();
+      }
+      else {
+        do {
+          threadlayer_yield();
+        } while (s->is_full != want_full);
+      }
+
+      unset_block_loc();
     }
-    else {
-      do {
-        (void) threadlayer_sync_suspend(s, NULL);
-      } while (s->is_full != want_full);
-    }
-    unset_block_loc();
+
+    threadlayer_mutex_lock(&s->lock);
   }
 
   if (blockreport)
@@ -177,13 +185,11 @@ void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
 
 void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s) {
   s->is_full = true;
-  threadlayer_sync_awaken(s);
   chpl_sync_unlock(s);
 }
 
 void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
   s->is_full = false;
-  threadlayer_sync_awaken(s);
   chpl_sync_unlock(s);
 }
 
@@ -196,12 +202,9 @@ chpl_bool chpl_sync_isFull(void *val_ptr,
 void chpl_sync_initAux(chpl_sync_aux_t *s) {
   s->is_full = false;
   threadlayer_mutex_init(&s->lock);
-  threadlayer_sync_init(s);
 }
 
-void chpl_sync_destroyAux(chpl_sync_aux_t *s) {
-  threadlayer_sync_destroy(s);
-}
+void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 
 // Tasks
@@ -983,37 +986,37 @@ chpl_begin_helper(void* ptask_void) {
     //
     // wait for a not-yet-begun task to be present in the task pool
     //
-    do {
-      chpl_bool timed_out = false;
-      while (!task_pool_head || timed_out) {
-        timed_out = false;
+    while (!task_pool_head) {
+      threadlayer_mutex_unlock(&threading_lock);
+
+      while (!task_pool_head) {
         if (set_block_loc(0, idleTaskName)) {
           // all other tasks appear to be blocked
           struct timeval deadline, now;
           gettimeofday(&deadline, NULL);
           deadline.tv_sec += 1;
           do {
-            timed_out = threadlayer_pool_suspend(&threading_lock, &deadline);
-            if (!task_pool_head && !timed_out)
+            threadlayer_yield();
+            if (!task_pool_head)
               gettimeofday(&now, NULL);
           } while (!task_pool_head
-                   && !timed_out
                    && (now.tv_sec < deadline.tv_sec
                        || (now.tv_sec == deadline.tv_sec
                            && now.tv_usec < deadline.tv_usec)));
-          if (!task_pool_head) {
+          if (!task_pool_head)
             check_for_deadlock();
-            timed_out = true;
-          }
         }
         else {
           do {
-            (void) threadlayer_pool_suspend(&threading_lock, NULL);
+            threadlayer_yield();
           } while (!task_pool_head);
         }
+
         unset_block_loc();
       }
-    } while (!task_pool_head);
+
+      threadlayer_mutex_lock(&threading_lock);
+    }
 
     if (blockreport)
       progress_cnt++;
@@ -1048,15 +1051,6 @@ chpl_begin_helper(void* ptask_void) {
       task_pool_tail = NULL;
     else {
       task_pool_head->prev = NULL;
-      if (waking_cnt > 0)
-        // Our technique for informing the threading layer that there is
-        // nothing, and then something, to do is inherently racy.  If we
-        // have more to do than just this one task, tell the threading
-        // layer so.  This may result in the threading layer being overly
-        // optimistic about the amount of available work, but if so that
-        // will correct itself, and it is better than activating too few
-        // threads to do the available work.
-        threadlayer_pool_awaken();
     }
 
     // end critical section
@@ -1137,7 +1131,6 @@ static void schedule_next_task(int howMany) {
       howMany -= (idle_cnt - waking_cnt);
       waking_cnt = idle_cnt;
     }
-    threadlayer_pool_awaken();
   }
 
   for (; howMany && (taskMaxThreadsPerLocale == 0 || threads_cnt + 1 < taskMaxThreadsPerLocale); howMany--)
