@@ -78,21 +78,6 @@ typedef struct {
 } chpl_sync_aux_t;
 
 
-// Tasks
-
-//
-// Handy services for threading layer callback functions.
-//
-// The FIFO tasking implementation also provides the following service
-// routines that can be used by threading layer callback functions.
-//
-
-//
-// Is the task pool empty?
-//
-chpl_bool chpl_pool_is_empty(void);
-
-
 //
 // The remaining declarations are all for callback functions to be
 // provided by the threading layer.
@@ -144,9 +129,9 @@ void threadlayer_thread_destroy(void);
 // Thread private data
 //
 // These set and get a pointer to thread private data associated with
-// each thread.  This is for the use of the FIFO tasking implementation
-// itself.  If the threading layer also needs to store some data private
-// to each thread, it must make other arrangements to do so.
+// each thread.  This is for the use of the tasking layer itself.  If
+// the threading layer also needs to store some data private to each
+// thread, it must make other arrangements to do so.
 //
 void  threadlayer_set_thread_private_data(void*);
 void* threadlayer_get_thread_private_data(void);

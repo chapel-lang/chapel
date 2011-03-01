@@ -1202,14 +1202,3 @@ uint32_t chpl_task_getNumIdleThreads(void) {
   assert(numIdleThreads >= 0);
   return numIdleThreads;
 }
-
-
-//
-// Is the task pool empty?
-//
-// This can be used by a thread layer's threadlayer_pool_suspend() to
-// tell if the pool has become nonempty before the deadline passes.
-//
-chpl_bool chpl_pool_is_empty(void) {
-  return task_pool_head == NULL;
-}
