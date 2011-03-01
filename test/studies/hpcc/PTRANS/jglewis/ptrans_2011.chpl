@@ -11,7 +11,7 @@ module HPCC_PTRANS {
 
   //  default dimensions (overridable from command line)
 
-  config const n_rows : int (64) = 100, n_cols : int (64) = 100, beta = 1.0;
+  config const n_rows = 100, n_cols = 100, beta = 1.0;
 
   config const n_error_max = 1000;
 
@@ -40,9 +40,9 @@ module HPCC_PTRANS {
 
     // declare domains (index sets) for matrix and transpose
 
-    const matrix_domain     : domain (2, int (64) ) dmapped new dmap (
+    const matrix_domain     : domain (2) dmapped new dmap (
                               Matrix_Block_Dist) = [ 1..n_rows, 1..n_cols ],
-          transpose_domain  : domain (2, int (64)) dmapped new dmap (
+          transpose_domain  : domain (2) dmapped new dmap (
                               Transpose_Block_Dist) = [ 1..n_cols, 1..n_rows ];
 
     var A                  : [matrix_domain   ] real, 
@@ -114,44 +114,8 @@ module HPCC_PTRANS {
     // Check results and compute timing statistics
     // -------------------------------------------
 
-    // error = max reduce abs ( C - C_plus_A_transpose );
-
-    error = max reduce forall (i,j) in transpose_domain do 
-      abs ( C [i,j] - C_plus_A_transpose  [i,j] );
-
     writeln ( "  Unblocked Results" );
-
-    //    n_errors = 0;
-    //
-    //    for (i,j) in transpose_domain do {
-    //      if ( ( i > 200 ) && ( abs ( C [i,j] - C_plus_A_transpose  [i,j] ) >
-    //        error_tolerance ) && ( n_errors < n_error_max ) ) then {
-    //  writeln ("  error [", i, ",", j, "] =",
-    //           abs ( C [i,j] - C_plus_A_transpose  [i,j] ) );
-    //  n_errors += 1;
-    //      }
-    //      else if ( n_errors >= n_error_max ) then
-    //  break;
-    //    }
-      
-    if ( error > error_tolerance ) then 
-      writeln ( "    *** FAILURE *** error     : ", error );
-    else if ( error != zero ) then
-      writeln ( "    *** SUCCESS ***  error    : ", error );
-    else
-      writeln ( "    *** SUCCESS***  exact match" );
-
-    elapsed_time = PTRANS_time.elapsed (TimeUnits.seconds);
-    
-    if ( elapsed_time  > zero ) then
-      GB_sec = ( n_rows * n_cols * 8 ) / ( 1.0e9 * elapsed_time );
-    else
-      GB_sec = zero;
-
-    if (printTimings) {
-      writeln ( "    Elapsed time              : ", elapsed_time );
-      writeln ( "    Gigabytes per second      : ", GB_sec );
-    }
+    verify(C, C_plus_A_transpose, error_tolerance, PTRANS_time);
 
     // ------------------------
     // Compute  C = beta C + A'
@@ -170,44 +134,8 @@ module HPCC_PTRANS {
     // Check results and compute timing statistics
     // -------------------------------------------
 
-    // error = max reduce abs ( C - C_plus_A_transpose );
-
-    error = max reduce forall (i,j) in transpose_domain do 
-      abs ( C [i,j] - C_plus_A_transpose  [i,j] );
-
-    writeln ( " BLocked Results V1" );
-
-    //    n_errors = 0;
-    //
-    //    for (i,j) in transpose_domain do {
-    //      if ( ( i > 200 ) && ( abs ( C [i,j] - C_plus_A_transpose  [i,j] ) >
-    //       error_tolerance ) && ( n_errors < n_error_max ) ) then {
-    //  writeln ("  error [", i, ",", j, "] =",
-    //           abs ( C [i,j] - C_plus_A_transpose  [i,j] ) );
-    //  n_errors += 1;
-    //      }
-    //      else if ( n_errors >= n_error_max ) then
-    //  break;
-    //    }
-      
-    if ( error > error_tolerance ) then 
-      writeln ( "    *** FAILURE *** error     : ", error );
-    else if ( error != zero ) then
-      writeln ( "    *** SUCCESS ***  error    : ", error );
-    else
-      writeln ( "    *** SUCCESS***  exact match" );
-
-    elapsed_time = PTRANS_time.elapsed (TimeUnits.seconds);
-    
-    if ( elapsed_time  > zero ) then
-      GB_sec = ( n_rows * n_cols * 8 ) / ( 1.0e9 * elapsed_time );
-    else
-      GB_sec = zero;
-
-    if (printTimings) {
-      writeln ( "    Elapsed time              : ", elapsed_time );
-      writeln ( "    Gigabytes per second      : ", GB_sec );
-    }
+    writeln ( " Blocked Results V1" );
+    verify(C, C_plus_A_transpose, error_tolerance, PTRANS_time);
 
     // ------------------------
     // Compute  C = beta C + A'
@@ -226,44 +154,8 @@ module HPCC_PTRANS {
     // Check results and compute timing statistics
     // -------------------------------------------
 
-    // error = max reduce abs ( C - C_plus_A_transpose );
-
-    error = max reduce forall (i,j) in transpose_domain do 
-      abs ( C [i,j] - C_plus_A_transpose  [i,j] );
-
-    writeln ( " BLocked Results V2" );
-
-    //    n_errors = 0;
-    //
-    //    for (i,j) in transpose_domain do {
-    //      if ( ( i > 200 ) && ( abs ( C [i,j] - C_plus_A_transpose  [i,j] ) >
-    //       error_tolerance ) && ( n_errors < n_error_max ) ) then {
-    //  writeln ("  error [", i, ",", j, "] =",
-    //           abs ( C [i,j] - C_plus_A_transpose  [i,j] ) );
-    //  n_errors += 1;
-    //      }
-    //      else if ( n_errors >= n_error_max ) then
-    //  break;
-    //    }
-      
-    if ( error > error_tolerance ) then 
-      writeln ( "    *** FAILURE *** error     : ", error );
-    else if ( error != zero ) then
-      writeln ( "    *** SUCCESS ***  error    : ", error );
-    else
-      writeln ( "    *** SUCCESS***  exact match" );
-
-    elapsed_time = PTRANS_time.elapsed (TimeUnits.seconds);
-    
-    if ( elapsed_time  > zero ) then
-      GB_sec = ( n_rows * n_cols * 8 ) / ( 1.0e9 * elapsed_time );
-    else
-      GB_sec = zero;
-
-    if (printTimings) {
-      writeln ( "    Elapsed time              : ", elapsed_time );
-      writeln ( "    Gigabytes per second      : ", GB_sec );
-    }
+    writeln ( " Blocked Results V2" );
+    verify(C, C_plus_A_transpose, error_tolerance, PTRANS_time);
   }
     
   //  =====================================================
@@ -471,4 +363,49 @@ module HPCC_PTRANS {
                                C_domain.dim(dimen).high );
   }
 
+  proc verify(C:[?transpose_domain], C_plus_A_transpose, 
+              error_tolerance, PTRANS_time) {
+    // -------------------------------------------
+    // Check results and compute timing statistics
+    // -------------------------------------------
+
+    // error = max reduce abs ( C - C_plus_A_transpose );
+
+    const error = max reduce forall (i,j) in transpose_domain do 
+                               abs ( C [i,j] - C_plus_A_transpose  [i,j] );
+
+    //    var n_errors : int;
+    //
+    //    n_errors = 0;
+    //
+    //    for (i,j) in transpose_domain do {
+    //      if ( ( i > 200 ) && ( abs ( C [i,j] - C_plus_A_transpose  [i,j] ) >
+    //	     error_tolerance ) && ( n_errors < n_error_max ) ) then {
+    //	writeln ("  error [", i, ",", j, "] =",
+    //		 abs ( C [i,j] - C_plus_A_transpose  [i,j] ) );
+    //	n_errors += 1;
+    //      }
+    //      else if ( n_errors >= n_error_max ) then
+    //	break;
+    //    }
+      
+    if ( error > error_tolerance ) then 
+      writeln ( "    *** FAILURE *** error     : ", error );
+    else if ( error != zero ) then
+      writeln ( "    *** SUCCESS ***  error    : ", error );
+    else
+      writeln ( "    *** SUCCESS***  exact match" );
+
+    const elapsed_time = PTRANS_time.elapsed (TimeUnits.seconds);
+    
+    const GB_sec = if ( elapsed_time  > zero ) then
+                     ( n_rows * n_cols * 8 ) / ( 1.0e9 * elapsed_time )
+                   else
+                     zero;
+
+    if printTimings {
+      writeln ( "    Elapsed time              : ", elapsed_time );
+      writeln ( "    Gigabytes per second      : ", GB_sec );
+    }
+  }
 }
