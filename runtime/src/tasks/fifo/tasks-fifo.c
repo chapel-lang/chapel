@@ -87,7 +87,6 @@ static volatile task_pool_p
 static int                 queued_cnt;         // number of tasks in the task pool
 static int                 waking_cnt;         // number of threads signaled to wakeup
 static int                 running_cnt;        // number of running threads 
-static int                 threads_cnt;        // number of threads (total)
 static int                 blocked_thread_cnt; // number of threads waiting for something
 static int                 idle_cnt;           // number of threads that are idle
 static int64_t             extra_task_cnt;     // number of threads executing more than one task
@@ -119,7 +118,6 @@ static task_pool_p             add_to_task_pool(chpl_fn_p,
                                                 void*,
                                                 chpl_bool,
                                                 chpl_task_list_p);
-static int taskMaxThreadsPerLocale = -1;
 
 
 // Sync variables
@@ -210,9 +208,6 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 // Tasks
 
 void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
-  // Tuck maxThreadsPerLocale away in a static global for use by other routines
-  taskMaxThreadsPerLocale = maxThreadsPerLocale;
-
   threadlayer_mutex_init(&threading_lock);
   threadlayer_mutex_init(&extra_task_lock);
   threadlayer_mutex_init(&task_id_lock);
@@ -220,13 +215,12 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   queued_cnt = 0;
   running_cnt = 0;                     // only main thread running
   waking_cnt = 0;
-  threads_cnt = 0;
   blocked_thread_cnt = 0;
   idle_cnt = 0;
   extra_task_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
 
-  threadlayer_init(callStackSize);
+  threadlayer_init(maxThreadsPerLocale, callStackSize);
 
 
   if (taskreport) {
@@ -247,13 +241,8 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
 
 
 void chpl_task_exit(void) {
-  chpl_bool debug = false;
-
   if (!initialized)
     return;
-
-  if (debug)
-    fprintf(stderr, "A total of %d threads were created; waking_cnt = %d\n", threads_cnt, waking_cnt);
 
   threadlayer_exit();
 }
@@ -869,7 +858,7 @@ static chpl_bool set_block_loc(int lineno, chpl_string filename) {
   threadlayer_mutex_lock(&block_report_lock);
 
   blocked_thread_cnt++;
-  if (blocked_thread_cnt > threads_cnt) {
+  if (blocked_thread_cnt >= threadlayer_get_num_threads()) {
     isLastUnblockedThread = true;
   }
 
@@ -1077,21 +1066,22 @@ launch_next_task_in_new_thread(void) {
 
   if ((ptask = task_pool_head)) {
     if (threadlayer_thread_create(&thread, chpl_begin_helper, ptask)) {
+      int32_t max_threads = threadlayer_get_max_threads();
+      uint32_t num_threads = threadlayer_get_num_threads();
       char msg[256];
-      if (taskMaxThreadsPerLocale)
+      if (max_threads)
         sprintf(msg,
                 "maxThreadsPerLocale is %"PRId32", but unable to create more than %d threads",
-                taskMaxThreadsPerLocale, threads_cnt);
+                max_threads, num_threads);
       else
         sprintf(msg,
                 "maxThreadsPerLocale is unbounded, but unable to create more than %d threads",
-                threads_cnt);
+                num_threads);
       chpl_warning(msg, 0, 0);
       warning_issued = true;
     } else {
       assert(queued_cnt > 0);
       queued_cnt--;
-      threads_cnt++;
       running_cnt++;
       if (ptask->ltask) {
         ptask->ltask->ptask = NULL;
@@ -1118,9 +1108,7 @@ static void schedule_next_task(int howMany) {
   // Reduce the number of new threads to be started, by the number that
   // are already looking for work and will find it very soon.  Try to
   // launch each remaining task in a new thread, up to the maximum number
-  // of threads we are supposed to have.  (And keep in mind that the main
-  // thread is not included in threads_cnt, but is included in idle_cnt
-  // if it is idle.)
+  // of threads we are supposed to have.
   //
   if (idle_cnt > waking_cnt) {
     // increment waking_cnt by the number of idle threads
@@ -1133,7 +1121,7 @@ static void schedule_next_task(int howMany) {
     }
   }
 
-  for (; howMany && (taskMaxThreadsPerLocale == 0 || threads_cnt + 1 < taskMaxThreadsPerLocale); howMany--)
+  for (; howMany && threadlayer_can_start_thread(); howMany--)
     launch_next_task_in_new_thread();
 }
 
@@ -1188,12 +1176,17 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
 
 // Threads
 
-int32_t  chpl_task_getMaxThreads(void) { return 0; }
+int32_t  chpl_task_getMaxThreads(void) {
+  return 0;
+}
 
-int32_t  chpl_task_getMaxThreadsLimit(void) { return 0; }
+int32_t  chpl_task_getMaxThreadsLimit(void) {
+  return 0;
+}
 
-// take the main thread into account
-uint32_t chpl_task_getNumThreads(void) { return threads_cnt + 1; }
+uint32_t chpl_task_getNumThreads(void) {
+  return threadlayer_get_num_threads();
+}
 
 uint32_t chpl_task_getNumIdleThreads(void) {
   int numIdleThreads;

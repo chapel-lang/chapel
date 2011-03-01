@@ -102,7 +102,7 @@ chpl_bool chpl_pool_is_empty(void);
 // These are called once each, from chpl_task_init() and
 // chpl_task_exit().
 //
-void threadlayer_init(uint64_t callStackSize);
+void threadlayer_init(int32_t maxThreadsPerLocale, uint64_t callStackSize);
 void threadlayer_exit(void);
 
 
@@ -120,9 +120,24 @@ void threadlayer_mutex_unlock(threadlayer_mutex_p);
 //
 
 //
+// Is the thread layer willing to start another thread (to host another
+// task)?
+//
+chpl_bool threadlayer_can_start_thread(void);
+
+//
 // Create a new thread.
 //
 int threadlayer_thread_create(threadlayer_threadID_t*, void*(*)(void*), void*);
+
+//
+// Destroy the calling thread.  The threading layer is allowed to return
+// without destroying the thread, so this function is really an advisory
+// one, to say that the thread is no longer needed.  Also, the threading
+// layer is actually prohibited from destroying the thread if doing so
+// would leave no threads running on the processor.
+//
+void threadlayer_thread_destroy(void);
 
 
 //
@@ -135,6 +150,18 @@ int threadlayer_thread_create(threadlayer_threadID_t*, void*(*)(void*), void*);
 //
 void  threadlayer_set_thread_private_data(void*);
 void* threadlayer_get_thread_private_data(void);
+
+
+//
+// Get the maximum number of threads that can exist.
+//
+uint32_t threadlayer_get_max_threads(void);
+
+
+//
+// Get the number of threads currently in existence.
+//
+uint32_t threadlayer_get_num_threads(void);
 
 
 //
