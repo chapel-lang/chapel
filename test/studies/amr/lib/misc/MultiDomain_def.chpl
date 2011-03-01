@@ -16,10 +16,11 @@ class MultiDomain {
 
   param rank:      int;
   param stridable: bool = false;
+  
   var   stride:    rank*int;
 
   var subindices: domain(1) = [1..0];
-  var domains: [subindices] domain(rank, stridable=stridable);
+  var domains:    [subindices] domain(rank, stridable=stridable);
 
 
 
@@ -251,10 +252,12 @@ proc *(mD1: MultiDomain, mD2: MultiDomain)
 //--------------------------------------------------------------------------
 proc -(D: domain, E: domain) where D.rank == E.rank
 {
+
   param stridable = D.stridable || E.stridable;
   param rank = D.rank;
 
-  //==== Require strides to be the same ====
+
+  //---- Require strides to be the same ----
   //------------------------------------------------------------
   // It might be possible to make sense out of this for unequal
   // strides, but that's not a functionality I need.
@@ -264,34 +267,42 @@ proc -(D: domain, E: domain) where D.rank == E.rank
          "Strides of domains must be equal.");
 
 
+
+  //---- Initialize the new MultiDomain ----
   var mD = new MultiDomain(D.rank, stridable=stridable);
+  mD.stride = tuplify(D.stride);
   
   
-  //==== Check whether D and E are disjoint ====
+  //---- Check whether D and E are disjoint ----
   //--------------------------------------------------------------------
   // Checking for this right away can provide a significant performance
   // improvement.  Otherwise, disjointness may not be discovered until
   // iterating down to a lower dimension.
   //--------------------------------------------------------------------
   var disjoint = false;
-  for i in 1..rank do
+  for i in 1..rank {
     if D.high(i) < E.low(i) || D.low(i) > E.high(i) {
       disjoint = true;
       break;
     }
-  
+  }
+
+
+  //---- Fill the new MultiDomain ----
   if disjoint {
-    mD = new MultiDomain(D.rank, stridable=stridable);
     mD.add(D);
-    return mD;
   }
   else {
     var domain_stack = nontrivialSubtraction(D,E);
     mD.subindices = [1..domain_stack.size];
     for i in 1..domain_stack.size do
       mD.domains(i) = domain_stack.pop();
-    return mD;
   }
+  
+  
+  //---- Return ----
+  return mD;
+
 }
 
 
@@ -311,9 +322,9 @@ proc nontrivialSubtraction(D: domain, E: domain) where D.rank == E.rank
   //-----------------------------------------------------------
   var stride1 = D.dim(1).stride;
   var D1low  =  D.dim(1).low;
-  var D1high =  D.dim(1).alignedHigh;
+  var D1high =  D.dim(1).high;
   var E1low  =  E.dim(1).low;
-  var E1high =  E.dim(1).alignedHigh;
+  var E1high =  E.dim(1).high;
 
   var interior1_low  = max(D1low,  E1low);
   var interior1_high = min(D1high, E1high);
@@ -469,9 +480,10 @@ proc -(mD1: MultiDomain, mD2: MultiDomain)
 proc MultiDomain.subtract(E: domain)
   where E.type == domains.eltType
 {
-  if domains.numElements>0 then
+  if domains.numElements>0 {
     assert(tuplify(E.stride) == stride,
 	         "error: Elements of a MultiDomain must have equal stride.");
+  }
 
   var difference = this - E;
   this.subindices = difference.subindices;

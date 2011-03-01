@@ -122,9 +122,9 @@ proc LevelVariable.setToFunction(
 // This method fills all overlap regions, i.e. each grid's
 // ghost cells that overlap with one of its neighbors.  The
 // overlap regions have already been stored in the structure
-// level.sibling_overlaps.
+// level.sibling_ghost_regions.
 //
-// Note how SiblingOverlap.these and LevelVariable.this have
+// Note how SiblingGhostRegion.these and LevelVariable.this have
 // been defined to greatly simplify the syntax of this
 // operation.
 //-----------------------------------------------------------
@@ -133,8 +133,8 @@ proc LevelVariable.fillOverlaps ()
 {
   
   for grid in level.grids {
-    for (nbr, overlap) in level.sibling_overlaps(grid) do
-      this(grid,overlap) = this(nbr,overlap);
+    for (neighbor, region) in level.sibling_ghost_regions(grid) do
+      this(grid,region) = this(neighbor,region);
   }
   
 }

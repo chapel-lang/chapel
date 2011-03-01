@@ -228,7 +228,7 @@ class TrueNeumannGridBC: GridBC {
       //==== High ghost cells ====
       forall cell in grid.high_ghost_cells(d) {
         var target_cell = cell;
-        target_cell(d)  = grid.cells.dim(d).alignedHigh;
+        target_cell(d)  = grid.cells.dim(d).high;
         q(cell)         = q(target_cell);
       }
     }

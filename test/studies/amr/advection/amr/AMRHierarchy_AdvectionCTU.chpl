@@ -8,7 +8,7 @@ use AMRBC_def;
 //|\""""""""""""""""""""""""""""""""""""""""""|\
 //| >    AMRHierarchy.advance_AdvectionCTU    | >
 //|/__________________________________________|/
-
+//
 //------------------------------------------------------------------
 // This advances the AMRHierarchy ahead to time_requested using the
 // CTU (corner transport upwind) algorithm for advection.
@@ -23,15 +23,14 @@ proc AMRHierarchy.advance_AdvectionCTU(
   time_requested: real)
 {
 
-  //==== Safety check ====
+  //---- Safety check ----
   assert(time < time_requested,
          "error: AMRHierarchy.advance_AdvectionCTU\n" +
          "AMRHierarchy.time = " + format("%8.4E",time) + ", while time_requested = " +
          format("%8.4E",time_requested));
-
   
   
-  //==== Set dt_target ====
+  //---- Set dt_target ----
   //---------------------------------------------------------------------
   // In each dimension, the maximum time step is determined by the CFL 
   // (Courant-Friedrichs-Lewy) condition.  Since our method only allows 
@@ -56,21 +55,23 @@ proc AMRHierarchy.advance_AdvectionCTU(
 
   while time < time_requested {
 
-    //==== Choose time step ====
+    //---- Choose time step ----
     if time + dt_target > time_requested then
       dt = time_requested - time;
     else
       dt = dt_target;
     writeln("Taking step of size dt=", dt, " to time ", time+dt, ".");
 
-    //==== Step solution forwards ====
+
+    //---- Step solution forwards ----
     //---------------------------------------------------------------------
     // This call invokes the same method on all levels down the hierarchy,
     // so stepping the top level is all that is needed.
     //---------------------------------------------------------------------
     stepLevel_AdvectionCTU(1, bc, velocity, dt);
 
-    //==== Update time ====
+
+    //---- Update time ----
     time += dt;
   }
   //<=== Step ahead to time_requeste <===
@@ -88,7 +89,7 @@ proc AMRHierarchy.advance_AdvectionCTU(
 //|\""""""""""""""""""""""""""""""""""""""""""""|\
 //| >    AMRHierarchy.stepLevel_AdvectionCTU    | >
 //|/____________________________________________|/
-
+//
 //--------------------------------------------------------------
 // This method steps a level of the AMRHierarchy ahead by time
 // step dt.  This procedure is recursively applied to all finer
@@ -107,17 +108,26 @@ proc AMRHierarchy.stepLevel_AdvectionCTU(
 
   //===> Step solution on the input level ===>
   
+  
+  //---- Aliases ----
   const level_solution = level_solutions(i_level);
-  const t = level_solution.current_time;
+  const t =              level_solution.current_time;
 
-  //==== Physical boundary conditions ====
+
+  //---- Apply physical boundary conditions ----
   bc.apply(i_level, level_solution.current_data, t);
 
-  //==== If level is fine, get fine boundary values ====
-  if i_level > 1 then
-    level_solution.current_data.getFineBoundaryValues(coarse_overlap_solutions(i_level), t);
 
+  //---- If level is fine, fill its CF ghost region ----
+  if i_level > 1 then
+    level_solution.current_data.fillCFGhostRegion( cf_ghost_solutions(i_level), t );
+
+
+  //---- Step the LevelSolution ahead ----
   level_solution.step_AdvectionCTU(velocity, dt);
+  
+  
+  //---- Update the regrid counter ----
   regrid_counters(i_level) -= 1;
 
   //<=== Step solution on the input level <===
@@ -128,21 +138,24 @@ proc AMRHierarchy.stepLevel_AdvectionCTU(
 
   if i_level < level_indices.high {
 
-    //==== Fill fine boundary values for the next level ====
-    coarse_overlap_solutions(i_level+1).fill_Linear(level_solution);
+    //---- Fill CFGhostSolution for the next level ----
+    cf_ghost_solutions(i_level+1).fill( level_solution );
 
-    //==== Step the finer solution as many times as necessary ====
-    const ref_ratio = refinementRatio(levels(i_level), levels(i_level+1));
+
+    //---- Step the finer solution as many times as necessary ----
+    const ref_ratio      = refinementRatio(levels(i_level), levels(i_level+1));
     const time_ref_ratio = max( (...ref_ratio) );
-    const dt_fine = dt / time_ref_ratio;
+    const dt_fine        = dt / time_ref_ratio;
     
     for i in 1..time_ref_ratio {
-      stepLevel_AdvectionCTU(i_level+1, bc, velocity, dt_fine);
+      stepLevel_AdvectionCTU( i_level+1, bc, velocity, dt_fine );
       if regrid_counters(i_level+1)==0 then regrid(i_level);
     }
 
-    //==== Correct the solution on the input level ====
-    level_solution.correct_Linear(level_solutions(i_level+1), fine_boundaries(i_level));
+
+    //---- Correct current_data on the invalid region ----
+    level_solution.current_data.fillInvalidRegion( invalid_regions(i_level), 
+                                                   level_solutions(i_level+1).current_data );
 
   }
 

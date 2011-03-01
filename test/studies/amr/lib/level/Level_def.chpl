@@ -45,12 +45,12 @@ class Level {
   // type Grid.  It initializes to empty, and new indices are added via
   // the 'add' method.
   //
-  // The fields 'sibling_overlaps' and 'boundary' are arrays declared
+  // The fields 'sibling_ghost_regions' and 'boundary' are arrays declared
   // on 'grids'; as seen here, the syntax is identical to that for
   // arithmetic domains.  Iteration syntax is the same as well.
   //---------------------------------------------------------------------
   var grids:            domain(Grid);
-  var sibling_overlaps: [grids] SiblingOverlap;
+  var sibling_ghost_regions: [grids] SiblingOverlap;
   var boundary:         [grids] MultiDomain(dimension,stridable=true);
 
 
@@ -60,7 +60,7 @@ class Level {
   
   proc clear () {
     for grid in grids {
-      delete sibling_overlaps(grid);
+      delete sibling_ghost_regions(grid);
       delete boundary(grid);
     }
   }
@@ -91,7 +91,7 @@ class Level {
     //==== Possible cells ====
     var ranges: dimension*range(stridable = true);
     for d in dimensions do
-      ranges(d) = 1 .. #2*n_cells(d) by 2;
+      ranges(d) = (1.. by 2) #n_cells(d);
     possible_cells = ranges;
 
     //==== Possible ghost cells ====
@@ -218,7 +218,8 @@ proc Level.addGrid (grid_cells: domain(dimension,stridable=true))
 {
   // Review: hilde
   // Not +/- stride here?
-  addGrid(grid_cells.low-1, grid_cells.alignedHigh+1);
+  addGrid(grid_cells.low-1, grid_cells.high+1);
+  
 }
 
 
@@ -262,11 +263,11 @@ proc Level.complete () {
 
   //==== Set overlap and boundary data ====
   for grid in grids {
-    sibling_overlaps(grid) = new SiblingOverlap(this,grid);
+    sibling_ghost_regions(grid) = new SiblingOverlap(this,grid);
     
     boundary(grid) = new MultiDomain(dimension,stridable=true);
     boundary(grid).add(grid.ghost_multidomain);
-    for overlap_domain in sibling_overlaps(grid).domains do
+    for overlap_domain in sibling_ghost_regions(grid).domains do
       boundary(grid).subtract(overlap_domain);
   }
 
@@ -341,7 +342,7 @@ class SiblingOverlap {
   
   //--------------------------------------------------------------
   // A these() iterator allows iteration over the object:
-  //    for (nbr,overlap) in sibling_overlaps(grid) ...
+  //    for (nbr,overlap) in sibling_ghost_regions(grid) ...
   // In this case, it's designed so that iteration will provide
   // both each neighboring grid and the associated domain of
   // overlap, which is what will be needed to access the relevant
@@ -392,7 +393,7 @@ iter Level.ordered_grids {
   
   while grid_list.numIndices > 0 {
     var lowest_grid: Grid;
-    var i_lowest = possible_ghost_cells.alignedHigh;
+    var i_lowest = possible_ghost_cells.high;
 
     for grid in grid_list {
       for d in dimensions {
