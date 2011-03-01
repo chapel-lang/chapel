@@ -21,7 +21,7 @@ module HPCC_PTRANS {
 
   use Norm, 
       Time,
-      BlockDist;
+      BlockCycDist;
  
 
   proc main () {
@@ -33,10 +33,12 @@ module HPCC_PTRANS {
     // declare distribution rules for matrix and transpose
 
     const Matrix_Block_Dist 
-      = new Block ( boundingBox = [ 1..n_rows, 1..n_cols ] );
+      = new BlockCyclic ( startIdx=(1,1),
+                          blocksize=(row_block_size, col_block_size) );
 
     const Transpose_Block_Dist 
-      = new Block ( boundingBox = [ 1..n_cols, 1..n_rows ] );
+      = new BlockCyclic ( startIdx=(1,1),
+                          blocksize=(row_block_size, col_block_size) );
 
     // declare domains (index sets) for matrix and transpose
 
@@ -109,7 +111,6 @@ module HPCC_PTRANS {
     // -------------------------------------------
     // Check results and compute timing statistics
     // -------------------------------------------
-
     writeln ( "  Unblocked Results" );
     verify(C, C_plus_A_transpose, error_tolerance, PTRANS_time);
 
