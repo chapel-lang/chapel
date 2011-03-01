@@ -47,11 +47,11 @@ proc setupDistributions() {
   }
   if distType == DistType.blockcyclic {
     return (
-            new dmap(new BlockCyclic(rank=1, idxType=int, low=tuple(0), blk=tuple(3))),
-            new dmap(new BlockCyclic(rank=2, idxType=int, low=(0,0), blk=(3,3))),
-            new dmap(new BlockCyclic(rank=3, idxType=int, low=(0,0,0), blk=(3,3,3))),
-            new dmap(new BlockCyclic(rank=4, idxType=int, low=(0,0,0,0), blk=(3,3,3,3))),
-            new dmap(new BlockCyclic(rank=2, idxType=int(64), low=(0:int(64),0:int(64)), blk=(2,3)))
+            new dmap(new BlockCyclic(startIdx=tuple(0), blocksize=tuple(3))),
+            new dmap(new BlockCyclic(startIdx=(0,0), blocksize=(3,3))),
+            new dmap(new BlockCyclic(startIdx=(0,0,0), blocksize=(3,3,3))),
+            new dmap(new BlockCyclic(startIdx=(0,0,0,0), blocksize=(3,3,3,3))),
+            new dmap(new BlockCyclic(startIdx=(0:int(64),0:int(64)), blocksize=(2,3)))
            );
   }
 }
