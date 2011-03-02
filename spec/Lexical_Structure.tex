@@ -1,5 +1,6 @@
 \sekshun{Lexical Structure}
 \label{Lexical_Structure}
+\index{lexical structure}
 
 This section describes the lexical components of Chapel programs.
 The purpose of lexical analysis is
@@ -9,6 +10,7 @@ for input to the parser.
 \section{Comments}
 \label{Comments}
 \index{comments}
+\index{lexical structure!comment}
 
 Two forms of comments are supported.  All text following the
 consecutive characters {\tt //} and before the end of the line is in a
@@ -43,6 +45,7 @@ ignored.
 \section{Case Sensitivity}
 \label{Case_Sensitivity}
 \index{case sensitivity}
+\index{lexical structure!case sensitivity}
 
 Chapel is a case sensitive language.
 
@@ -53,6 +56,7 @@ distinct: \chpl{chapel}, \chpl{Chapel}, and \chpl{CHAPEL}.
 
 \section{Tokens}
 \label{Tokens}
+\index{lexical structure!token}
 
 Tokens include identifiers, keywords, literals, operators, and
 punctuation.
@@ -60,6 +64,7 @@ punctuation.
 \subsection{Identifiers}
 \label{Identifiers}
 \index{identifiers}
+\index{lexical structure!identifier}
 
 An identifier in Chapel is a sequence of characters that starts with a
 lowercase or uppercase letter or an underscore and is optionally
@@ -106,7 +111,7 @@ identifiers: \chpl{Cray1}, \chpl{syncvar$\mbox{{\tt \$}}$},
 \subsection{Keywords}
 \label{Keywords}
 \index{keywords}
-\index{reserved words}
+\index{lexical structure!keyword}
 
 The following identifiers are reserved as keywords:
 
@@ -206,6 +211,7 @@ otherwise
 \subsection{Literals}
 \label{Literals}
 \label{Primitive_Type_Literals}
+\index{lexical structure!literal}
 
 \index{literals!primitive type}
 Bool literals are designated by the following syntax:
@@ -322,6 +328,9 @@ hexadecimal-escape-character:
 
 \subsection{Operators and Punctuation}
 \label{Operators_and_Punctuation}
+\index{lexical structure!operator}
+\index{operator!lexical structure}
+\index{lexical structure!punctuation}
 
 The following operators and punctuation are defined in the syntax of
 the language:
@@ -352,6 +361,9 @@ the language:
 
 \subsection{Grouping Tokens}
 \label{Grouping_Tokens}
+\index{lexical structure!braces}
+\index{lexical structure!parentheses}
+\index{lexical structure!brackets}
 
 The following braces are part of the Chapel language:
 \begin{center}

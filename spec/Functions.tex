@@ -1,18 +1,62 @@
-\sekshun{Functions}
+\sekshun{Procedures}
 \label{Functions}
 \index{functions}
+\index{functions!call site}
+\index{call site}
+\index{functions!formal argument}
+\index{formal argument}
+\index{functions!actual argument}
+\index{actual argument}
 
-This section defines functions.  Methods and iterators are functions
-and most of this section applies to them as well.  They are defined
-separately in~\rsec{Iterators} and~\rsec{Class_Methods}.
-Recursive and mutually-recursive functions are supported.
+A \emph{function} is a code abstraction that can be invoked by a call
+expression. Throughout this specification the term ``function''
+is used in this programming-languages sense, rather than
+in the mathematical sense.
+% TODO: the above is here until we substitute a different word for 'function'
+A function has zero or more \emph{formal arguments}, or simply
+\emph{formals}. Upon a function call each formal is associated
+with the corresponding \emph{actual argument}, or simply
+\emph{actual}. Actual arguments are provided as part of the call
+expression, or at the the \emph{call site}.
+% TODO - move into a footnote?
+Direct and indirect recursion is supported.
+
+\index{functions!procedure}
+\index{procedure}
+\index{functions!operator}
+\index{operator!procedure}
+A function can be a \emph{procedure}, which completes and returns to
+the call site exactly once, returning no result, a single result, or
+multiple results aggregated in a tuple. A function can also be an
+iterator, which can generate, or \emph{yield}, multiple results (in
+sequence and/or in parallel). A function (either a procedure or an
+iterator) can be a method if it is bound to a type (often a
+class). An \emph{operator} in this chapter is a procedure
+with a special name, which can be invoked using infix notation,
+i.e., via a unary or binary expression.
+This chapter defines procedures, but most of its contents
+apply to iterators and methods as well.
+
+Functions are presented as follows:
+\begin{itemize}
+\item procedures (this chapter)
+\item operators \rsec{Function_Definitions}, \rsec{Binary_Expressions}
+\item iterators \rsec{Iterators}
+\item methods (when bound to a class) \rsec{Class_Methods}
+\item function calls \rsec{Function_Calls}
+\item various aspects of defining a procedure
+      \rsec{Function_Definitions}--\rsec{Nested_Functions}
+\item determining the function to invoke for a given call site:
+      function and operator overloading \rsec{Function_Overloading},
+      function resolution \rsec{Function_Resolution}
+\end{itemize}
 
 
 \section{Function Calls}
 \label{Function_Calls}
 \index{function calls}
 
-The syntax to call a function is given by:
+The syntax to call a non-method function is given by:
 \begin{syntax}
 call-expression:
   expression ( named-expression-list )
@@ -40,27 +84,30 @@ Functions can be called using either parentheses or brackets.  The
 only difference in the call has to do with promotion and is discussed
 in~\rsec{Promotion}.
 
-Functions that are defined without parentheses are called without
+Functions that are defined without parentheses must be called without
 parentheses as defined by scope resolution.  Functions without
 parentheses are discussed in~\rsec{Functions_without_Parentheses}.
 
 A \sntx{named-expression} is an expression that may be optionally
 named.  It provides
-\index{actual arguments}
-\index{functions!actual arguments}
+\index{actual argument}
+\index{functions!actual argument}
 an actual argument to the function being called.
 The optional \sntx{identifier} refers to a named formal
 argument described in~\rsec{Named_Arguments}.
 
+Calls to methods are defined in Section~\rsec{Class_Method_Calls}.
 
-\section{Function Definitions}
+
+\section{Procedure Definitions}
 \label{Function_Definitions}
-\index{functions!syntax}
+\index{functions!procedure definition}
+\index{procedure!definition}
 
 \index{proc@\chpl{proc}}
-Functions are declared with the following syntax:
+Procedures are defined with the following syntax:
 \begin{syntax}
-function-declaration-statement:
+procedure-declaration-statement:
   `proc' function-name argument-list[OPT] var-param-type-clause[OPT] where-clause[OPT]
     function-body
 
@@ -143,9 +190,14 @@ discussed in~\rsec{Variable_Length_Argument_Lists}.
 The optional \sntx{var-param-type-clause} defines a variable function,
 discussed in~\rsec{Variable_Functions}, or a parameter function,
 discussed in~\rsec{Parameter_Functions}, or a type function, discussed
-in~\rsec{Type_Functions}.  By default, a function call cannot be
+in~\rsec{Type_Functions}.  By default, a function call expression cannot be
 treated as an lvalue and is constant.  This may be explicitly
 specified via the keyword~\chpl{const}.
+
+\begin{openissue}
+Parameter and type procedures are supported. Parameter and type
+iterators are currently not supported.
+\end{openissue}
 
 Return types are optional and are discussed in~\rsec{Return_Types}.
 
@@ -164,6 +216,7 @@ above (see \sntx{operator-name}).
 % relationals, and at the other extreme for a single overloaded signum
 % function that governed them all.  Compatibility with C# is not
 % sufficient motivation ... .
+
 
 \section{Functions without Parentheses}
 \label{Functions_without_Parentheses}
@@ -190,19 +243,20 @@ bar();
 In foo
 In bar
 \end{chapeloutput}
-the function \chpl{foo} can be called by writing \chpl{foo} and the
-function \chpl{bar} can be called by writing \chpl{bar()}.  It is an
-error to apply parentheses to \chpl{foo} or omit them from \chpl{bar}.
+the procedure \chpl{foo} can be called by writing \chpl{foo} and the
+procedure \chpl{bar} can be called by writing \chpl{bar()}.  It is an
+error to use parentheses when calling \chpl{foo} or omit them
+when calling \chpl{bar}.
 \end{example}
 
 
 \section{Formal Arguments}
 \label{Formal_Arguments}
-\index{formal arguments}
-\index{functions!formal arguments}
+\index{formal argument}
+\index{functions!formal argument}
 
 Chapel supports an intuitive formal argument passing mechanism.  An
-argument is passed by value unless it is a class, array, or domain, in
+actual argument is passed by value unless it is an array or domain, in
 which case it is passed by reference.
 
 Intents~(\rsec{Intents}) may be used to override the default
@@ -303,14 +357,14 @@ and also to be copied back.
 \index{intents!blank}
 
 If the intent is omitted, it is called a blank intent.  In such a
-case, the value is copied in using the assignment operator.  Thus
-classes are passed by reference and records are passed by value.
-Arrays and domains are an exception because assignment does not apply
-from the actual to the formal.  Instead, arrays and domains are passed
-by reference.
-
-With the exception of arrays, any argument that has blank intent
+case, the value is copied from the actual to the formal.  Thus
+class instances are passed by reference and records are passed by value.
+Furthermore, a formal that has blank intent
 cannot be assigned within the function.
+
+The exception to this rule is made for formals of array, domain, \chpl{sync},
+and \chpl{single} types. Arguments of these types are passed by reference
+and can be modified within the function.
 
 \subsection{The In Intent}
 \label{The_In_Intent}
@@ -318,12 +372,13 @@ cannot be assigned within the function.
 \index{intents!in@\chpl{in}}
 
 If \chpl{in} is specified as the intent, the actual argument is copied
-to the formal argument as usual, but it may also be assigned to within
+to the formal argument by value.
+The formal may also be assigned to within
 the function.  This assignment is not reflected back at the call site.
 
 If an array is passed to a formal argument that has \chpl{in} intent,
-a copy of the array is made via assignment.  Changes to the elements
-within the array are thus not reflected back at the call site.
+a copy of the array is made.  Changes to the elements
+within the array formal are thus not reflected back at the call site.
 
 \subsection{The Out Intent}
 \label{The_Out_Intent}
@@ -337,7 +392,8 @@ argument must be a valid lvalue.  The formal argument can be assigned
 to and read from within the function.
 
 The formal argument cannot not be generic and is treated as a variable
-declaration.
+declaration. It is initialized to the default value for its type,
+unless it has a default expression.
 
 \subsection{The Inout Intent}
 \label{The_Inout_Intent}
@@ -352,7 +408,7 @@ The formal argument can be assigned to and read from within the
 function.
 
 
-\section{Variable Length Argument Lists}
+\section{Variable Number of Arguments}
 \label{Variable_Length_Argument_Lists}
 \index{functions!variable number of arguments}
 
@@ -398,7 +454,7 @@ there
 3
 4.0
 \end{chapeloutput}
-defines a generic function called \chpl{mywriteln} that takes a
+defines a generic procedure called \chpl{mywriteln} that takes a
 variable number of arguments of any type and then writes them out on
 separate lines.  The parameter for-loop~(\rsec{Parameter_For_Loops})
 is unrolled by the compiler so that \chpl{i} is a parameter, rather
@@ -410,7 +466,7 @@ ensure that the actuals all have the same type.
 
 \begin{example}
 Either or both the number of variable arguments and their types can be
-specified.  For example, a basic function to sum the values of three
+specified.  For example, a basic procedure to sum the values of three
 integers can be wrtten as
 \begin{chapelpre}
 % test_varargs_with_type.chpl
@@ -433,7 +489,7 @@ parameter.
 \end{example}
 
 \begin{example}
-The function
+The code
 \begin{chapelpre}
 % test_varargs_returns_tuples.chpl
 \end{chapelpre}
@@ -450,7 +506,7 @@ writeln(tuple(tuple(1, 2), tuple(3, 4)));
 (hi, there)
 ((1, 2), (3, 4))
 \end{chapeloutput}
-creates a generic function that returns tuples.  When passed two or
+defines a generic procedure that returns tuples.  When passed two or
 more actuals in a call, it is equivalent to building a tuple so the
 expressions \chpl{tuple(1, 2)} and \chpl{(1, 2)} are equivalent.  When
 passed one actual, it builds a 1-tuple which is different than the
@@ -464,27 +520,30 @@ expressions \chpl{tuple(1)} and \chpl{(1)} are not equivalent.
 \index{functions!variable functions}
 \index{functions!as lvalues}
 
-A variable function is a function that can be assigned a value.  Note
-that a variable function does not return a reference.  That is, the
+A variable function is a function whose call is an lvalue
+(specifically, a call expression for a variable procedure and
+an iterator variable for an variable iterator).
+This implies that a variable function produces a reference;
+however, this
 reference cannot be captured.
 
 A variable function is specified by following the argument list with
-the \chpl{var} keyword.  A variable function must return an lvalue.
+the \chpl{var} keyword.  A variable function must return or yield an lvalue.
 
-When a variable function is called on the left-hand side of an
+When a variable procedure is called on the left-hand side of an
 assignment statement or in the context of a call to a formal argument
-by out or inout intent, the lvalue that is returned by the function is
+by out or inout intent, the lvalue that is returned by the procedure is
 assigned a value.
 
-Variable functions support an implicit argument \chpl{setter} of type
-bool that is a compile-time constant (and can thus be folded).  If the
-variable function is called in a context such that the returned lvalue
-is assigned a value, the argument \chpl{setter} is \chpl{true};
-otherwise it is \chpl{false}.  This argument is useful for controlling
-different behavior depending on the call site.
+Variable functions provide an implicit param formal argument \chpl{setter}
+of type \chpl{bool}.  If the
+variable function is called in a context requiring an lvalue,
+the actual argument for \chpl{setter} is implicitly \chpl{true};
+otherwise it is \chpl{false}.  This argument is useful for adjusting
+the behavior depending to the calling context.
 
 \begin{example}
-The following code creates a function that can be interpreted as a
+The following code defines a procedure that can be interpreted as a
 simple two-element array where the elements are actually global
 variables:
 \begin{chapelpre}
@@ -503,7 +562,7 @@ proc A(i: int) var {
     return y;
 }
 \end{chapel}
-This function can be assigned to in order to write to the ``elements''
+Calls to this procedure can be assigned to in order to write to the ``elements''
 of the array as in
 \begin{chapel}
 A(0) = 1;
@@ -553,15 +612,17 @@ test\_setter.chpl:6: error: halt reached - cannot assign value to A(1) if A(0) <
 \section{Parameter Functions}
 \label{Parameter_Functions}
 \index{functions!as parameters}
+\index{functions!parameter function}
+\index{parameter function}
 
-A parameter function is a function that returns a parameter
+A \emph{parameter function}, or a \emph{param function}, is a function that returns a parameter
 expression.  It is specified by following the function's argument list
 by the keyword \chpl{param}.  It is often, but not necessarily,
 generic.
 
 It is a compile-time error if a parameter function does not return a
 parameter expression.  The result of a parameter function is computed
-during compilation and the result is inlined at the call site.
+during compilation and substituted for the call expression.
 
 \begin{example}
 In the code
@@ -580,8 +641,8 @@ writeln(x);
 \begin{chapeloutput}
 (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 \end{chapeloutput}
-the function \chpl{sumOfSquares} is a parameter function that takes
-two parameters as arguments.  Calls to this function can be used in
+\chpl{sumOfSquares} is a parameter procedure that takes
+two parameters as arguments.  Calls to this procedure can be used in
 places where a parameter expression is required.  In this example, the
 call is used in the declaration of a homogeneous tuple and so is
 required to be a parameter.
@@ -597,7 +658,7 @@ expressions that is not a parameter.
 \label{Type_Functions}
 \index{functions!as types}
 
-A type function is a function that returns a type.  It is specified by
+A \emph{type function} is a function that returns a type.  It is specified by
 following the function's argument list by the keyword \chpl{type}.  It
 is often, but not necessarily, generic.
 
@@ -630,11 +691,11 @@ writeln((numBits(at.type), numBits(bt.type)));
 \begin{chapeloutput}
 (32, 64)
 \end{chapeloutput}
-the function \chpl{myType} is a type function that takes a single
+\chpl{myType} is a type procedure that takes a single
 argument \chpl{x} and returns \chpl{int} if the number of bits used to
 represent \chpl{x} is less than or equal to 32, otherwise it
-returns \chpl{int(64)}.  The function \chpl{numBits} is a param
-function defined in the Types module~(\rsec{Types_standard_module}).
+returns \chpl{int(64)}.  \chpl{numBits} is a param
+procedure defined in the Types module~(\rsec{Types_standard_module}).
 \end{example}
 
 
@@ -644,15 +705,19 @@ function defined in the Types module~(\rsec{Types_standard_module}).
 
 The return statement can only appear in a function.  It exits that
 function, returning control to the point at which that function was
-called.  It can optionally return a value.  The syntax of the return
-statement is given by
+called.  A return statement in a procedure of a non-void return type
+must include an expression, which indicates the value to be returned,
+i.e., the value that becomes the value of the invoking call expression.
+Other returns statements may not include an expression.
+
+The syntax of the return statement is given by
 \begin{syntax}
 return-statement:
   `return' expression[OPT] ;
 \end{syntax}
 
 \begin{example}
-The following code defines a function that returns the sum of three
+The following code defines a procedure that returns the sum of three
 integers:
 \begin{chapelpre}
 % test_return.chpl
@@ -675,16 +740,17 @@ writeln(sum(1, 2, 3));
 \index{return@\chpl{return}!types}
 \index{functions!return@\chpl{return} types}
 
-A function can optionally return a value.  If the function does not
+A procedure can optionally return a value.  If the procedure does not
 return a value, its return type is \chpl{void}.  Specifying the return
-type in a function declaration is optional.
+type in a procedure declaration is optional.
 
 \subsection{Explicit Return Types}
 \label{Explicit_Return_Types}
+\index{explicit return type}
 
-If a return type is specified and is not \chpl{void}, the values that the function returns
+If a return type is specified and is not \chpl{void}, the values that the procedure returns
 via return statements must be assignable to a variable of the return
-type.  For variable functions~(\rsec{Variable_Functions}), the return
+type.  For variable procedures~(\rsec{Variable_Functions}), the return
 type must match the type returned in all of the return statements
 exactly, when checked after generic instantiation and parameter folding
 (if applicable).
@@ -692,25 +758,44 @@ exactly, when checked after generic instantiation and parameter folding
 \subsection{Implicit Return Types}
 \label{Implicit_Return_Types}
 \index{type inference!of return types}
+\index{implicit return type}
 
 If a return type is not specified, it will be inferred from the return
 statements.  Given the types that are returned by the different
 statements, if exactly one of those types can be a target, via
 implicit conversions, of every other type, then that is the inferred
 return type.  Otherwise, it is an error.  For variable
-functions~(\rsec{Variable_Functions}), every return statement must
+procedures~(\rsec{Variable_Functions}), every return statement must
 return the same exact type and it becomes the inferred type.
-For functions without any return statements, the return type is \chpl{void}.
+For procedures without any return statements, the return type is \chpl{void}.
 
 
-\section{Function Overloading}
+\section{Nested Functions}
+\label{Nested_Functions}
+\index{functions!nested}
+\index{nested function}
+
+A function defined in another function is called a nested function.
+Nesting of functions may be done to arbitrary degrees, i.e., a
+function can be nested in a nested function.
+
+Nested functions are only visible to function calls within the lexical scope
+in which they are defined.
+
+Nested functions may refer to variables defined in the function(s) in
+which they are nested.
+
+
+\section{Function and Operator Overloading}
 \label{Function_Overloading}
 \index{functions!overloading}
 \index{operators!overloading}
+\index{function overloading}
+\index{operator overloading}
 
 Functions that have the same name but different argument lists are
 called overloaded functions.  Function calls to overloaded functions
-are resolved according to the algorithm in~\rsec{Function_Resolution}.
+are resolved according to the function resolution algorithm in~\rsec{Function_Resolution}.
 
 Operator overloading is achieved by defining a function with a name
 specified by that operator.  The operators that may be overloaded are
@@ -732,31 +817,14 @@ overloaded.  Operator resolution follows the same algorithm as
 function resolution.
 
 
-\section{Nested Functions}
-\label{Nested_Functions}
-\index{functions!nested}
-
-A function defined in another function is called a nested function.
-Nesting of functions may be done to arbitrary degrees, i.e., a
-function can be nested in a nested function.
-
-Nested functions are only visible to function calls within the lexical scope
-in which they are defined.
-
-%bsubsection{Accessing Outer Variables}
-%\label{Accessing_Outer_Variables}
-
-Nested functions may refer to variables defined in the function(s) in
-which they are nested.
-
-
 \section{Function Resolution}
 \label{Function_Resolution}
 \index{function resolution}
 \index{functions!resolution}
 
-Given a function call, the function that the call resolves to is
-determined according to the following algorithm:
+\emph{Function resolution} is the algorithm that determines
+which function to invoke for a given call expression.
+Function resolution is defined as follows.
 \begin{itemize}
 \item
 Identify the set of visible functions for the function call.  A

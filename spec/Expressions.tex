@@ -16,8 +16,8 @@ expression:
   literal-expression
   variable-expression
   enum-constant-expression
-  member-access-expression
   call-expression
+  member-access-expression
   constructor-call-expression
   query-expression
   cast-expression
@@ -114,14 +114,16 @@ to the indexing function defined on these types.
 \label{Member_Access_Expressions}
 \index{member access}
 
-Member access expressions are call expressions to members of classes,
-records, or unions.  The syntax for a member access is given by:
+Member access expressions provide access to a field or invoke a method
+of an instance of a class, record, or union.
+They are defined in \rsec{Class_Field_Accesses} and
+\rsec{Class_Method_Calls}, respectively.
+
 \begin{syntax}
 member-access-expression:
-  expression . identifier
+  field-access-expression
+  method-call-expression
 \end{syntax}
-The member access may be an access of a field or a function inside a
-class, record, or union.
 
 \section{The Query Expression}
 \label{The_Query_Expression}

@@ -1,9 +1,9 @@
 \sekshun{Iterators}
 \label{Iterators}
+\index{functions!iterators}
 \index{iterators}
 
-An iterator is a function that conceptually returns multiple values
-rather than simply a single value.
+An iterator is a function that can generate, or \emph{yield}, multiple values (consecutively or in parallel) via its yield statements.
 
 \begin{openissue}
 The parallel iterator story is under development.  It is expected that
@@ -40,6 +40,7 @@ a regular function.
 
 \section{The Yield Statement}
 \label{The_Yield_Statement}
+\index{iterators!yield@\chpl{yield}}
 \index{yield@\chpl{yield}}
 
 The yield statement can only appear in iterators.  The syntax of the

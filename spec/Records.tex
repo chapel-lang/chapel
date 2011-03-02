@@ -3,8 +3,8 @@
 \index{records}
 
 A record is a data structure that is similar to a class but instead has value
-semantics.  Value semantics mean that assignment, argument passing and function
-return values all use copy semantics.  Value semantics also imply that a
+semantics, similar to primitive types.  Value semantics mean that assignment, argument passing and function
+return values are by default all done by copying.  Value semantics also imply that a
 variable of record type is associated with only one piece of storage and has
 only one type throughout its lifetime.  Storage is allocated for a variable of
 record type when the variable declaration is executed, and the record variable
@@ -15,6 +15,7 @@ variable of record type contains all and only the fields defined by that type
 (\rsec{Record_Types}).  Value semantics imply that the type of a record variable
 is known at compile time (i.e. it is statically typed).  
 
+%REVIEW vass: this is a repetition of the first paragraph
 Records are assigned by value;
 see \rsec{Record_Assignment} for more details.  Records are also passed
 by value unless argument intents (\rsec{Intents}) are used.
@@ -22,6 +23,7 @@ by value unless argument intents (\rsec{Intents}) are used.
 Records can be created through an explicit call to a record
 constructor, which allocates storage, initializes
 it and returns it.  
+A record is also created upon a variable declaration of a record type.
 
 A record type is generic if it contains generic fields.  Generic record types
 are discussed in detail in~\rsec{Generic_Types}.
@@ -106,7 +108,7 @@ type constructors, which are defined in Section~\ref{Type_Constructors}.
 \index{fields}
 
 Variable declarations within a record type declaration define fields within that
-record type.  The presence of at least one parameter fields causes the record
+record type.  The presence of at least one parameter field causes the record
 type to become generic.  Variable fields define the storage associated with a
 record.
 
@@ -126,7 +128,7 @@ record ActorRecord {
 defines a new record type called \chpl{ActorRecord} that has two fields: the
 string field \chpl{name} and the unsigned integer field \chpl{age}.  The data
 contained by a record of this type is exactly the same as that contained by
-the \chpl{Actor} class defined in the preceding chapter~\rsec{Class_Fields}.
+an instance of the \chpl{Actor} class defined in the preceding chapter~\rsec{Class_Fields}.
 \end{example}
 
 \subsection{Record Methods}
@@ -138,7 +140,7 @@ functions that take a record as an argument, record methods access the record by
 reference, so that persistent field updates are possible.
 
 The syntax for record method declarations is identical to that for class method
-declarations (\rsec{Class_Method_Declarations}).
+declarations (\rsec{Class_Methods}).
 
 \subsection{Nested Record Types}
 \label{Nested_Record_Types}
@@ -154,7 +156,7 @@ means of an \chpl{outer} reference.
 \index{records!inheritance}
 \index{inheritance!records}
 
-A ``derived'' record type can inherit from other record types.  For each named
+A \emph{derived} record type can inherit from other record types.  For each named
 base record type, inheritance effectively inserts all of its fields and methods
 into the new record type.  Inheriting from a class type is not permitted.
 
@@ -506,15 +508,16 @@ because the intent \chpl{inout} is used.
 
 \section{Record Field Access}
 \label{Record_Field_Access}
-\index{member access!records}
+\index{records!field access}
+\index{field access}
 
-A record field is accessed via a member access expression
-(\rsec{Member_Access_Expressions}).  When such an expression is used as an
-rvalue, the value of that field is returned.  When such an expression is used as
+A record field is accessed the same way as a class field
+(\rsec{Class_Field_Accesses}).  When a field access is used as an
+rvalue, the value of that field is returned.  When it is used as
 an lvalue, the value of the record field is updated.
 
-Member access expressions which access parameter fields can only appear in
-parameter expressions.
+Member access expressions that access parameter fields
+produce a parameter.
 
 \subsection{Field Getter Methods}
 \label{Field_Getter_Methods}
@@ -525,30 +528,39 @@ As in classes, field accesses are performed via getter methods
 the specified field (so they can be written as well as read).  The user may
 redefine these as needed.
 
-\section{Record Method Access}
+\section{Record Method Calls}
 \label{Record_Method_Access}
-\index{method access!records}
+\index{records!method calls}
+\index{method calls}
 
-A record method may be called as well, using member access syntax
-(\rsec{Member_Access_Expressions}).  Unlike class methods, record methods are
-bound at compile time.  
+A record method may be invoked the same way as a class method
+(\rsec{Class_Method_Calls}).  Unlike class methods, record methods are
+resolved at compile time.  
 
-\subsection{The \em{this} Reference}
+\subsection{The Method Receiver and the {\em this} Argument}
 \label{The_this_Reference}
-\index{this@\chpl[this}
+\index{this@\chpl{this}}
+\index{records!receiver}
+\index{receiver}
 
-When a record method is called, it is effectively passed a reference to the
-record with which it is invoked.  This allows the fields within the record to be
-updated within the body of a record method.  The record itself can be accessed
-using the \chpl{this} reference.
+The \emph{receiver} of a record method is similar to and is determined in the
+same way as the receiver of a class method (\rsec{The_em_this_Reference}).
+The type of the receiver is the record in which the method is defined.
+The receiver formal argument can be referred to within the method
+using the identifier \chpl{this}.
 
-\subsection{The \em{this} Method}
+The difference from a class method is that the receiver actual argument,
+which must be a record value, is passed to the record method by reference,
+rather than by copying. Therefore updates to the receiver made in the
+method, if any, are visible outside the method.
+
+\section{The {\em this} Method}
 \index{records!indexing}
 
 As with classes, records can be supplied with a \chpl{this} method.  This method
 defines the behavior of the indexing operator \chpl{[]}.
 
-\subsection{The {\em these} Method}
+\section{The {\em these} Method}
 \index{records!iterating}
 
 A \chpl{these} method can be defined for records as well as classes (\rsec{The_these_Method}).  It
@@ -627,11 +639,16 @@ The semantics of argument passing is determined by the type of the formal
 argument (as declared inside the function header).  An actual argument is of a
 type compatible with the formal argument only if it is legal to assign the
 actual to the formal.
+%REVIEW vass: how is this different from the general rule for argument passing?
 
 Specifically, if the formal argument is of class type, the actual argument must
 be of that class type or of a type derived from that class type.  If the formal
 argument is of a record type, then it is only necessary for the fields in the
 actual argument to ``cover'' the fields in the formal argument type.
+
+The receiver argument is passed by value for class methods but is
+passed by reference for record methods. In both cases modifications to
+the receiver fields are visible outside the method.
 
 \subsection{Inheritance}
 \label{Inheritance_Differences}

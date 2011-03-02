@@ -27,7 +27,7 @@ statement:
   return-statement
   yield-statement
   module-declaration-statement
-  function-declaration-statement
+  procedure-declaration-statement
   iterator-declaration-statement
   method-declaration-statement
   type-declaration-statement
@@ -43,18 +43,23 @@ statement:
   forall-statement
 \end{syntax}
 
-Return statements are defined in~\rsec{The_Return_Statement}.  Yield
-statements are defined in~\rsec{The_Yield_Statement}.  Module
-declaration statements are defined in~\rsec{Modules}.  Function
-declaration statements are defined in~\rsec{Functions}.  Method
-declaration statements are defined in~\rsec{Class_Methods}.  Type
-declaration statements are defined in~\rsec{Types}.  Variable
-declaration statements are defined in~\rsec{Variables}.  Remote
-variable declaration statements are defined
-in~\rsec{remote_variable_declarations}.  On statements are defined
-in~\rsec{On}.  Cobegin, coforall, begin, sync, serial and atomic
-statements are defined in~\rsec{Task_Parallelism_and_Synchronization}.
-Forall statements are defined in~\rsec{Data_Parallelism}.
+Individual statements are defined in the remainder of this chapter
+and additionally as follows:
+\begin{itemize}
+\item return statement \rsec{The_Return_Statement}
+\item yield statement \rsec{The_Yield_Statement}
+\item module declaration \rsec{Modules}
+\item procedure declaration \rsec{Function_Definitions}
+\item iterator declaration \rsec{Iterator_Function_Definitions}
+\item method declaration \rsec{Class_Methods}
+\item type declaration \rsec{Types}
+\item variable declaration \rsec{Variable_Declarations}
+\item remote variable declaration ~\rsec{remote_variable_declarations}
+\item \chpl{on} statement \rsec{On}
+\item cobegin, coforall, begin, sync, serial and atomic statements
+      \rsec{Task_Parallelism_and_Synchronization}
+\item forall statement \rsec{Data_Parallelism}
+\end{itemize}
 
 \section{Blocks}
 \label{Blocks}
@@ -159,6 +164,7 @@ is discussed in these later sections.
 \label{The_Swap_Statement}
 \index{swap!statement}
 \index{swap!operator}
+% TODO: if appropriate, define swap as a sequence of three assignments
 The swap statement indicates to swap the values in the expressions
 on either side of the swap operator.  Since both expressions are assigned
 to, each must be a valid lvalue expression~(\rsec{lvalue}).

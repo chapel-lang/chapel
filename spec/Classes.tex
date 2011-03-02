@@ -3,7 +3,7 @@
 \index{class@\chpl{class}}
 \index{classes}
 
-Classes are data structures with associated state and methods. Storage for
+Classes are data structures with associated state and functions. Storage for
 \index{classes!instances}
 \index{objects}
 a class instance, or object, is allocated independently of the scope of
@@ -58,7 +58,7 @@ Inheritance is described in~\rsec{Inheritance}.
 
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
-field), a function or iterator (called a method), or a type alias.  In addition, empty
+field), a procedure or iterator (called a method), or a type alias.  In addition, empty
 statements are allowed in class declarations, and they have no effect.
 
 If a class declaration contains a type alias or a parameter field, or it contains a variable or
@@ -68,25 +68,62 @@ in~\rsec{Generic_Types}.
 
 \subsection{Class Types}
 \label{Class_Types}
-\index{classes!class types}
+\index{classes!class type}
+\index{class type}
 
-A class type specifier is used to declare a variable that can refer to an instance
-of that class (or any of its subclasses).  Such a variable may appear in an
-aggregate (class, record, union, tuple) declaration, and also specify argument
-and/or return value types in a function definition.  
-Class type specifiers may also appear in the
-inheritance list of other class declarations.
+A class type is given simply by the class name for non-generic classes.
+Generic classes must be instantiated to serve as a fully-specified
+type, for example to declare a variable.  This is done with
+type constructors, which are defined in Section~\ref{Type_Constructors}.
 
-The syntax of a class type specifier is summarized as follows:
 \begin{syntax}
 class-type:
   identifier
   identifier ( named-expression-list )
 \end{syntax}
-For non-generic classes, the class name by itself is sufficient to specify the
-type.  Generic classes must be instantiated to serve as a fully-specified
-type, for example to declare a variable.  This is done with
-type constructors, which are defined in Section~\ref{Type_Constructors}.
+
+A class type may appear in inheritance lists of
+other class declarations.
+
+\subsection{Class Values}
+\label{Class_Values}
+\index{classes!class value}
+\index{class value}
+
+A class value is either a reference to an instance of a class
+or \chpl{nil} (\rsec{Class_nil_value}). Class instances can be created
+using the \chpl{new} operator (\rsec{Class_New}) and deleted using
+the \chpl{delete} operator (\rsec{Class_Delete}).
+
+For a given class type, a legal value of that type is a reference to
+an instance of either that class or a class inheriting, directly or
+indirectly, from that class.
+\chpl{nil} is a legal value of any class type.
+
+The default value of a class type is \chpl{nil}.
+
+\begin{example}
+\begin{chapelpre}
+% declaration.chpl
+\end{chapelpre}
+\begin{chapel}
+class C { }
+var c : C;	// c has the class type C, initialized with the value nil.
+c = new C();	// Now c refers to an object of type C.
+var c2 = new C();	// The type of c2 is also C.
+class D : C {}	// Class D is derived from C.
+c = new D();	// Now c refers to an object of type D.
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+When the variable \chpl{c} is declared, it initially has the value
+of \chpl{nil}.  The next statement assigned to it an instance of the
+class \chpl{C}.  The declaration of variable \chpl{c2} shows that these steps can
+be combined.  The type of \chpl{c2} is also \chpl{C}, determined implicitly from
+the the initialization expression.  Finally, an object of type \chpl{D} is created and
+assigned to \chpl{c}.  The object previously referenced by \chpl{c} is no longer
+referenced anywhere. It could be reclaimed by the garbage collector.
+\end{example}
 
 \subsection{Class Fields}
 \label{Class_Fields}
@@ -114,16 +151,13 @@ defines a new class type called \chpl{Actor} that has two fields: the
 string field \chpl{name} and the unsigned integer field \chpl{age}.
 \end{example}
 
+Field access is described in \rsec{Class_Field_Accesses}.
+
 \subsection{Class Methods}
 \label{Class_Methods}
 \index{classes!methods}
 
-A class method is a function or iterator that is bound to a class.  A method
-is called by passing an instance of the class to the method via a
-special syntax that is similar to a field access.
-
-\subsubsection{Class Method Declarations}
-\label{Class_Method_Declarations}
+A class method is a procedure or iterator that is bound to a class.
 
 Methods are declared with the following syntax:
 \begin{syntax}
@@ -146,9 +180,12 @@ method declaration contains the optional \sntx{param-clause}, it
 implies that it can only be applied to param objects of the given type
 binding.
 
+Method calls are described in \rsec{Class_Method_Calls}.
+
 \subsection{Nested Classes}
 \label{Nested_Classes}
-\index{classes!nested}
+\index{classes!nested classes}
+\index{nested classes}
 
 A class or record defined within another class is a nested class (or record).
 
@@ -159,9 +196,11 @@ record) implicitly, or explicitly by means of an \chpl{outer} reference.
 \label{Inheritance}
 \index{inheritance}
 \index{classes!inheritance}
+\index{derived class}
+\index{classes!derived class}
 
-A ``derived'' class can inherit from one or more other classes or record types by
-listing those classes and record types in the derived class declaration.
+A \emph{derived} class can inherit from one or more other classes by
+listing those classes in the derived class declaration.
 When inheriting from multiple base classes, only one of the base classes
 may contain fields.  The other classes can only define methods.  Note
 that a class can still be derived from a class that contains fields
@@ -172,7 +211,8 @@ an acyclic tree.  A variable containing an instance of class \chpl{C} can be
 cast to any type that is an ancestor of \chpl{C}.  Note that casts to more- and
 less-derived classes are both permitted.
 
-On the other hand, a derived class may inherit from any number of record types.
+A derived class may also incorporate any number of records by listing them
+in the derived class declaration.
 As with record inheritance, this has the effect of injecting the record's fields and
 methods into the new class type.  Record inheritance does not induce a
 well-defined class hierarchy.  See~\rsec{Record_Inheritance} for details.
@@ -264,50 +304,9 @@ concept of interfaces.
 
 \begin{openissue}
 It is an open question whether the language will support \chpl{interface}
-declarations explicitly.
-\end{openissue}
-
-\begin{openissue}
-The capability of inheriting data from multiple classes is currently under study
+declarations and multiple inheritance. This is currently under study
 at the University of Colorado (Boulder).
 \end{openissue}
-
-\section{Class Variable Declarations}
-\label{Class_Variable_Declarations}
-\index{classes!variable declarations}
-
-A class variable declaration is a variable declaration using a class type.  When
-a variable is explicitly declared using a class type, the variable is
-initialized to \chpl{nil}.  That is, no storage is initially assigned to that class
-variable.  
-
-To provide a class variable with a value, one must create an object
-of a compatible type using the \chpl{new} operator, and assign to it the result.
-If \chpl{C} is a class type, a compatible type is any class which inherits
-(directly or indirectly) from \chpl{C}.
-
-\begin{example}
-\begin{chapelpre}
-% declaration.chpl
-\end{chapelpre}
-\begin{chapel}
-class C { }
-var c : C;	// c has the value nil.
-c = new C();	// Now c refers to an object of type C.
-var c2 = new C();	// The type of c2 is also C.
-class D : C {}	// Class D is derived from C.
-c = new D();	// Now c refers to an object of type D.
-\end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
-When the variable \chpl{c} is declared, it initially has the value
-of \chpl{nil}.  Immediately thereafter, it is assigned an object of
-type \chpl{C}.  The declaration of variable \chpl{c2} shows that these steps can
-be combined.  The type of \chpl{c2} is also \chpl{C}, determined implicitly from
-the the initialization expression.  Finally, and object of type \chpl{D} is created and
-assigned to \chpl{c}.  The object previously referenced by \chpl{c} is no longer
-referenced, and can be reclaimed by the garbage collector.
-\end{example}
 
 \subsection{Class Assignment}
 \label{Class_Assignment}
@@ -318,6 +317,7 @@ variable of class type to another, the variables reference the same
 class instance.
 
 \subsection{The {\em nil} Value}
+\label{Class_nil_value}
 \index{classes!nil}
 \index{nil@\chpl{nil}}
 
@@ -350,6 +350,7 @@ initialized to the default value of its type
 
 \section{Class Constructors}
 \label{Class_Constructors}
+\label{Class_New}
 \index{classes!constructors}
 \index{classes!new}
 \index{new!classes}
@@ -545,15 +546,42 @@ The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
 \end{itemize}
 \end{example}
 
-\section{Class Field Accesses}
+\section{Field Accesses}
 \label{Class_Field_Accesses}
-\index{member access}
+\index{classes!field access}
+\index{field access}
 
-The field in a class is accessed via a member access expression as
-described in~\rsec{Member_Access_Expressions}.  Fields in a class can
+The field in a class is accessed via a field access expression.
+
+\begin{syntax}
+field-access-expression:
+  receiver-clause[OPT] identifier
+
+receiver-clause:
+  expression .
+\end{syntax}
+
+\index{classes!receiver}
+\index{receiver}
+% TODO: these are the rules to determine the receiver - move them
+% to a separate section so they can be uniformly referenced from everywhere.
+The receiver-clause specifies the \emph{receiver}, which is the class
+instance whose field is being accessed.
+The receiver clause can be omitted when the field access is within a method.
+In this case the receiver is the method's receiver \rsec{The_em_this_Reference}.
+The receiver clause can also be omitted when the field access is within
+a class declaration. In this case the receiver is the instance
+being implicitly defined or referenced.
+
+The identifier in the field access expression indicates which field is accessed.
+
+% TODO: rephrase all this in terms of the getter methods
+
+A fields can
 be modified via an assignment statement where the left-hand side of
-the assignment is a member access expression.
+the assignment is a field access expression.
 Accessing a parameter field returns a parameter.
+
 \begin{example}
 Given a variable \chpl{anActor} of type \chpl{Actor} as defined above,
 the code
@@ -579,7 +607,8 @@ reads the field \chpl{name} and assigns the value to the variable
 
 \subsection{Variable Getter Methods}
 \label{Getter_Methods}
-\index{classes!getters}
+\index{classes!getter method}
+\index{getter method}
 
 All field accesses are resolved via getters that are variable
 methods~(\rsec{Variable_Functions}) defined in the class with the same
@@ -625,10 +654,22 @@ the number of times x was assigned a value.
 
 \section{Class Method Calls}
 \label{Class_Method_Calls}
+\index{classes!method calls}
+\index{method calls}
 
-A method is called by using the member access syntax as described
-in~\rsec{Member_Access_Expressions} where the accessed expression is
-the name of the method.
+A method is invoked with a method call, which is similar to a non-method
+call expression.
+
+\begin{syntax}
+method-call-expression:
+  receiver-clause[OPT] expression ( named-expression-list )
+  receiver-clause[OPT] expression [ named-expression-list ]
+  receiver-clause[OPT] parenthesesless-function-identifier
+\end{syntax}
+
+The receiver-clause (or its absence) specifies the method's receiver
+\rsec{The_em_this_Reference} in the same way it does for field accesses
+\rsec{Class_Field_Accesses}.
 
 \begin{example}
 A method to output information about an instance of the \chpl{Actor}
@@ -650,23 +691,29 @@ anActor.print();
 Actor Tommy is 27 years old
 \end{chapeloutput}
 This method can be called on an instance of the \chpl{Actor}
-class, \chpl{anActor}, by writing \chpl{anActor.print()}.
+class, \chpl{anActor}, with the call expression \chpl{anActor.print()}.
 \end{example}
 
-In a class method call, the method name may be followed by an argument list in
-parentheses.  The actual arguments supplied in the method call are bound to the
+The actual arguments supplied in the method call are bound to the
 formal arguments in the method declaration following the rules specified for
-functions (\rsec{Functions}).
+procedures (\rsec{Functions}). The exception is the receiver
+\rsec{The_em_this_Reference}.
 
-\subsection{The {\em this} Reference}
+\subsection{The Method Receiver and the {\em this} Argument}
 \label{The_em_this_Reference}
 \index{this@\chpl{this}}
+\index{classes!receiver}
+\index{receiver}
 
-The instance of a class is passed to a method using special syntax.
-It does not appear in the argument list to the method.  The
-reference \chpl{this} is an alias to the instance of the class on
-which the method is called.  Therefore, operations on \chpl{this} also affect
-the class instance on which the method is being invoked.
+A method's \emph{receiver} is its implicit argument, 
+the class instance on which the method is invoked.
+Its type is the class in which the method is defined.
+The receiver actual argument is specified
+by the receiver-clause of a method-call-expression
+as specified in \rsec{Class_Field_Accesses}.
+% TODO: specify how the receiver affects the choice of the method.
+The receiver formal argument can be referred to within the method
+using the identifier \chpl{this}.
 
 \begin{example}
 Let class \chpl{C}, method \chpl{foo}, and function \chpl{bar} be
@@ -683,23 +730,23 @@ class C {
 proc bar(c: C) { writeln(c); }
 \end{chapel}
 \begin{chapelpost}
-var c: C = new C();
-c.foo();
+var c1: C = new C();
+c1.foo();
 \end{chapelpost}
 \begin{chapeloutput}
 {}
 \end{chapeloutput}
-Then given an instance of \chpl{C} called \chpl{c}, the method
-call \chpl{c.foo()} results in a call to \chpl{bar} where the argument
-is \chpl{c}.
+Then given an instance of \chpl{C} called \chpl{c1}, the method
+call \chpl{c1.foo()} results in a call to \chpl{bar} where the argument
+is \chpl{c1}.
 \end{example}
 
-\subsection{The {\em this} Method}
+\section{The {\em this} Method}
 \label{The_em_this_Method}
 \index{this@\chpl{this}}
 \index{classes!indexing}
 
-A method declared with the name \chpl{this} allows a class to be
+A procedure method declared with the name \chpl{this} allows a class to be
 ``indexed'' similarly to how an array is indexed.  Indexing into a
 class has the semantics of calling a method on the class
 named \chpl{this}.  There is no other way to call a method
@@ -743,7 +790,7 @@ thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 \end{chapeloutput}
 \end{example}
 
-\subsection{The {\em these} Method}
+\section{The {\em these} Method}
 \label{The_these_Method}
 \index{these@\chpl{these}}
 \index{classes!iterating}
