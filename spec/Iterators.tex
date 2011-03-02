@@ -3,22 +3,23 @@
 \index{functions!iterators}
 \index{iterators}
 
-An iterator is a function that can generate, or \emph{yield}, multiple values (consecutively or in parallel) via its yield statements.
+An \emph{iterator} is a function that can generate, or \emph{yield}, multiple values (consecutively or in parallel) via its yield statements.
 
 \begin{openissue}
 The parallel iterator story is under development.  It is expected that
 the specification will be expanded regarding parallel iterators soon.
 \end{openissue}
 
-\section{Iterator Function Definitions}
+\section{Iterator Definitions}
 \label{Iterator_Function_Definitions}
-\index{iterator function definitions}
+\index{iterator definitions}
+\index{iterator!definition}
 
-The syntax to declare an iterator function (or simply, ``iterator''), is given
+The syntax to declare an iterator is given
 by:
 \begin{syntax}
 iterator-declaration-statement:
-  `iter' iterator-name argument-list[OPT] var-param-type-clause[OPT] where-clause[OPT]
+  `iter' iterator-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
   iterator-body
 
 iterator-name:
@@ -29,13 +30,14 @@ iterator-body:
   yield-statement
 \end{syntax}
 
-The syntax of an iterator declaration is similar to a function declaration, with
+The syntax of an iterator declaration is similar to a procedure declaration, with
 some key differences:
 \begin{itemize}
 \item The keyword \chpl{iter} is used instead of the keyword \chpl{proc}.
 \item The name of the iterator cannot overload any operator.
 \item \chpl{yield} statements may appear in the body of an iterator, but not in
-a regular function.
+a procedure.
+\item A \chpl{return} statement in the body of an iterator is not allowed to have an expression.
 \end{itemize}
 
 \section{The Yield Statement}
@@ -53,32 +55,32 @@ yield-statement:
 When an iterator is executed and a \chpl{yield} is encountered, the value of the yield
 expression is returned.  However, the state of execution of the iterator is
 saved.  On its next invocation, execution resumes from the point immediately
-following that \chpl{yield} statement.
+following that \chpl{yield} statement and with the saved state of execution.
 
 When a \chpl{return} is encountered, the iterator finishes without yielding another
 index value.  The \chpl{return} statements appearing in an iterator are not
-permitted to have a return value.
+permitted to have a return expression.
 An iterator also completes after the last
-statement in the iterator function is executed.
+statement in the iterator is executed.
 An iterator need not contain any yield statements.
+% TODO: the current implementation requires at least one yield
 
 \section{Iterator Calls}
 \label{Iterator_Calls}
 
-The syntax used to call an interator is given by:
+Iterators are invoked using regular call expressions:
 \begin{syntax}
 iterator-call-expression:
   call-expression
 \end{syntax}
-This is identical to the function-call syntax.
+
 %REVIEW: hilde
 % Can iterator definitions and uses have field syntax?
 
-All details of the \sntx{iterator-call-expression} semantics --- including
+All details of iterator calls, including argument passing, function
 resolution, the use of parentheses versus brackets to delimit the parameter
-list, calling the iterator without an argument list and named arguments ---
-are identical with the corresponding semantics for function calls.
-See~\rsec{Function_Calls}.
+list, and so on,
+are identical to procedure calls as described in Chapter~\ref{Functions}.
 
 However, the result of an iterator call depends upon its context, as described below.
 

@@ -108,7 +108,7 @@ Calls to methods are defined in Section~\rsec{Class_Method_Calls}.
 Procedures are defined with the following syntax:
 \begin{syntax}
 procedure-declaration-statement:
-  `proc' function-name argument-list[OPT] var-param-type-clause[OPT] where-clause[OPT]
+  `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
     function-body
 
 function-name:
@@ -147,11 +147,8 @@ variable-argument-expression:
 formal-intent: one of
   `in' `out' `inout' `param' `type'
 
-var-param-type-clause:
-  `var' return-type[OPT]
-  `const' return-type[OPT]
-  `param' return-type[OPT]
-  `type'
+return-intent: one of
+  `var' `const' `param' `type'
 
 return-type:
   : type-specifier
@@ -187,19 +184,21 @@ in~\rsec{Generic_Functions}.
 Functions can take a variable number of arguments.  Such functions are
 discussed in~\rsec{Variable_Length_Argument_Lists}.
 
-The optional \sntx{var-param-type-clause} defines a variable function,
-discussed in~\rsec{Variable_Functions}, or a parameter function,
-discussed in~\rsec{Parameter_Functions}, or a type function, discussed
-in~\rsec{Type_Functions}.  By default, a function call expression cannot be
-treated as an lvalue and is constant.  This may be explicitly
-specified via the keyword~\chpl{const}.
+The \sntx{return-intent} can be used to indicate
+a variable function \rsec{Variable_Functions},
+or a parameter function \rsec{Parameter_Functions},
+or a type function \rsec{Type_Functions}.
+By default, or if the \sntx{return-intent} is \chpl{const},
+the function returns a value that cannot be used as an lvalue.
+% TODO: define lvalue and rvalue
 
 \begin{openissue}
 Parameter and type procedures are supported. Parameter and type
 iterators are currently not supported.
 \end{openissue}
 
-Return types are optional and are discussed in~\rsec{Return_Types}.
+The \sntx{return-type} is optional and is discussed in~\rsec{Return_Types}.
+A type function may not specify a return type.
 
 The optional \sntx{where-clause} is only applicable if the function is
 generic.  It is discussed in~\rsec{Where_Expressions}.
@@ -658,8 +657,8 @@ expressions that is not a parameter.
 \label{Type_Functions}
 \index{functions!as types}
 
-A \emph{type function} is a function that returns a type.  It is specified by
-following the function's argument list by the keyword \chpl{type}.  It
+A \emph{type function} is a function that returns a type, not a value.  It is specified by
+following the function's argument list by the keyword \chpl{type}, without the subsequent return type.  It
 is often, but not necessarily, generic.
 
 It is a compile-time error if a type function does not return a type.

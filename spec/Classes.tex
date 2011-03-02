@@ -162,10 +162,10 @@ A class method is a procedure or iterator that is bound to a class.
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  `proc' param-clause[OPT] type-binding function-name argument-list[OPT] var-param-type-clause[OPT]
-    return-type[OPT] where-clause[OPT] function-body
-  `iter' param-clause[OPT] type-binding function-name argument-list[OPT] var-param-type-clause[OPT]
-    return-type[OPT] where-clause[OPT] function-body
+  `proc' param-clause[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT]
+    where-clause[OPT] function-body
+  `iter' param-clause[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT]
+    where-clause[OPT] function-body
 
 param-clause:
   `param'
