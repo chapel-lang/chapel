@@ -36,7 +36,8 @@ class DefaultRectangularDom: BaseRectangularDom {
   type idxType;
   param stridable: bool;
   var dist: DefaultDist;
-  var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
+  // For now, a domain is always aligned if it is stridable.
+  var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable,stridable);
 
   proc linksDistribution() param return false;
 
@@ -45,7 +46,7 @@ class DefaultRectangularDom: BaseRectangularDom {
   }
 
   proc dsiClear() {
-    var emptyRange: range(idxType, BoundedRangeType.bounded, stridable);
+    var emptyRange: range(idxType, BoundedRangeType.bounded, stridable, stridable);
     for param i in 1..rank do
       ranges(i) = emptyRange;
   }
@@ -180,7 +181,7 @@ class DefaultRectangularDom: BaseRectangularDom {
     if debugDefaultDist then
       writeln("In domain follower code: Following ", follower);
     param stridable = this.stridable || anyStridable(follower);
-    var block: rank*range(stridable=stridable, idxType=idxType);
+    var block: rank*range(idxType=idxType, stridable=stridable, aligned=stridable);
     if stridable {
       for param i in 1..rank {
         const rStride = ranges(i).stride:idxType,
@@ -308,6 +309,17 @@ class DefaultRectangularDom: BaseRectangularDom {
     }
   }
 
+  proc dsiAlignment {
+    if rank == 1 {
+      return ranges(1)._alignment;
+    } else {
+      var result: rank*idxType;
+      for param i in 1..rank do
+        result(i) = ranges(i)._alignment;
+      return result;
+    }
+  }
+
   proc dsiFirst {
     if rank == 1 {
       return ranges(1).first;
@@ -338,7 +350,7 @@ class DefaultRectangularDom: BaseRectangularDom {
   proc dsiBuildRectangularDom(param rank: int, type idxType, param stridable: bool,
                             ranges: rank*range(idxType,
                                                BoundedRangeType.bounded,
-                                               stridable)) {
+                                               stridable, stridable)) {
     var dom = new DefaultRectangularDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       dom.ranges(i) = ranges(i);
@@ -595,7 +607,7 @@ class DefaultRectangularArr: BaseArr {
   }
 
   proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
-    proc isRange(r: range(?e,?b,?s)) param return 1;
+    proc isRange(r: range(?e,?b,?s,?a)) param return 1;
     proc isRange(r) param return 0;
 
     var alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
@@ -658,6 +670,7 @@ proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
     var makeStridePositive = if dom.ranges(dim).stride > 0 then 1 else -1;
     if dim == rank {
       var first = true;
+      if debugDefaultDist then f.writeln(dom.ranges(dim));
       for j in dom.ranges(dim) by makeStridePositive {
         if first then first = false; else f.write(" ");
         idx(dim) = j;

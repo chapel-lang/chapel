@@ -1,9 +1,9 @@
-var r1 = 1..10 by 3 aligned 1;
-var r2 = 1..10 by 3 aligned 2;
-var r3 = 1..10 by 3 aligned 3;
-var r4 = 1..10 by -3 aligned 1;
-var r5 = 1..10 by -3 aligned 2;
-var r6 = 1..10 by -3 aligned 3;
+var r1 = 1..10 by 3 align 1;
+var r2 = 1..10 by 3 align 2;
+var r3 = 1..10 by 3 align 3;
+var r4 = 1..10 by -3 align 1;
+var r5 = 1..10 by -3 align 2;
+var r6 = 1..10 by -3 align 3;
 var r7 = 1..10 by 2 by -1;
 
 writeln("r1 is: ", r1);

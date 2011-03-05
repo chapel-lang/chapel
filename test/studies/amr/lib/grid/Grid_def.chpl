@@ -88,7 +88,7 @@ class Grid {
       i_high(d) = i_low(d) + 2*n_cells(d);
 
     //==== Physical cells ====
-    var ranges: dimension*range(stridable = true);
+    var ranges: dimension*range(stridable = true, aligned = true);
     for d in dimensions do ranges(d) = (i_low(d)+1 .. by 2) #n_cells(d);
     cells = ranges;
 
@@ -122,7 +122,7 @@ class Grid {
       if loc != inner_location {
         for d in dimensions do
           ranges(d) = if loc(d) == loc1d.below then 
-                        (extended_cells.low(d).. by 2) #n_ghost_cells(d)
+                        (extended_cells.low(d).. by 2 align 0) #n_ghost_cells(d)
                       else if loc(d) == loc1d.inner then
                         cells.dim(d)
                       else

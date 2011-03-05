@@ -1,9 +1,9 @@
-feature request: aligned operator
+feature request: align operator
 
 This feature request argues that if ranges are to store an alignment
 (as suggested by other tests in this directory), then the user should
-be able to change the alignment via an operator like "aligned" which
-sets the new alignment.  I would say that the aligned operator should
+be able to change the alignment via an operator like "align" which
+sets the new alignment.  I would say that the align operator should
 take any value of range.idxType as its argument.  There's an open
 question over whether the range would store the alignment (and print
 it) in its raw value or as a value in the range 0..#abs(stride) --

@@ -23,9 +23,13 @@ number of values.
 \label{Range_Types}
 \index{ranges!types}
 
-The type of a range is characterized by three things:
-(1)~the type of the values being represented, (2)~the boundedness of
-the range, and (3)~whether or not the range is \emph{stridable}.
+The type of a range is characterized by four things:
+\begin{enumerate}
+\item the type of the values being represented, 
+\item the boundedness of the range,
+\item whether or not the range is \emph{stridable}, and
+\item whether or not the rante is \emph{aligned}.
+\end{enumerate}
 
 The type of the range's values is represented using a type parameter
 named \emph{idxType}.  This must be one of the \chpl{int} or
@@ -53,6 +57,15 @@ stride can take on any signed integer value other than 0 of the same
 bit-width as \chpl{idxType}.  If set to false, the range's stride is
 fixed to 1.  The default value is \chpl{false}.
 
+The alignedness of a range is represented by a boolean parameter
+named \emph{aligned}.  If this parameter is set to true, the range's alignment
+value can tack on any integer value representable by its \emph{idxType}.  If it
+is false, the range's alignment is set to 0.  The default value is \chpl{false}.
+An alignment of zero means that the stride is aligned on the low bound
+for \chpl{boundedLow} and \chpl{bounded} ranges, and on the high bound
+for \chpl{boundedHigh} ranges.  If an unbounded range is aligned, then the
+alignment is absolute.
+
 \begin{rationale}
 The \emph{boundedType} and \emph{stridable} values of a range are used
 to optimize the generated code for common cases of ranges, as well as
@@ -69,23 +82,23 @@ range-type:
 \begin{example}
 The following declaration declares a variable \chpl{r}
 of range type that can represent ranges of 64-bit integers, with both
-high and low bounds specified, and the ability to have a stride other
-than 1.
+high and low bounds specified, the ability to have a stride other
+than 1 and an alignment other than zero.
 \begin{chapelpre}
 % test_rangeVariable.chpl
 \end{chapelpre}
 \begin{chapel}
-var r: range(int(64), BoundedRangeType.bounded, stridable=true);
+var r: range(int(64), BoundedRangeType.bounded, stridable=true, aligned=true);
 \end{chapel}
 \begin{chapelpost}
 writeln(r);
 var i64: int(64) = 3;
-r = i64..13 by 3;
+r = i64..13 by 3 align 1;
 writeln(r);
 \end{chapelpost}
 \begin{chapeloutput}
 1..0
-3..13 by 3
+3..13 by 3 align 1
 \end{chapeloutput}
 \end{example}
 
@@ -203,7 +216,8 @@ new range that is strided by the integer.  Striding a strided range
 results in a stride whose value is the product of the two strides.
 The stride argument can either be of type \chpl{idxType} or some other
 integer value that can be coerced to a signed integer value of the same
-bit-width as \chpl{idxType}.
+bit-width as \chpl{idxType}.  The effective alignment of a range is unchanged by
+the \chpl{by} operator.
 
 \begin{example}
 In the following declarations, range \chpl{r1} represents the odd integers
@@ -236,6 +250,48 @@ by -1} even though it should be identical by substituting the value in
 R into the expression.
 \end{rationale}
 
+\subsection{Align Operator}
+\label{Align_Operator}
+\index{ranges!align operator}
+
+The \chpl{align} operator can be applied to any range, and creates a new range
+with the given alignment.  If the range is \chpl{bounded} or \chpl{boundedLow},
+then the alignment is relative to the low bound.  If the range
+is \chpl{boundedHigh}, then the alignment is relative to the high bound.  If the
+range is \chpl{boundedNone}, then the alignment is absolute.
+
+The operand of the \chpl{align} operator (the new alignment) must be compatible
+with the index type of the resulting range.  If the sum of the alignment and its
+related bound lie outside the bounds representable by the index type of the
+operand range, the index type of the resulting range is the smallest integer
+type that can accommodate that sum.  The signedness of the new index type is
+that same as that of the index type of the operand range.  If no such type
+exists, it is a compile-time error.
+
+\begin{example}
+\begin{chapelpre}
+% test_rangeAlignOperator.chpl
+\end{chapelpre}
+\begin{chapel}
+var r1 = 1 .. 10 by 2;
+var r2 = r1 align 1;
+\end{chapel}
+\begin{chapelpost}
+writeln(r1, " is:");
+for i in r1 do write(" ", i);
+writeln();
+writeln(r2, " is:");
+for i in r2 do write(" ", i);
+writeln();
+\end{chapelpost}
+\begin{chapeloutput}
+1..10 by 2 is:
+ 1 3 5 7 9
+1..10 by 2 align 1 is:
+ 2 4 6 8 10
+\end{chapeloutput}
+\end{example}
+
 \subsection{Count Operator}
 \label{Count_Operator}
 \index{ranges!count operator}
@@ -243,12 +299,16 @@ R into the expression.
 The \chpl{#} operator can be applied to a range that has a high bound,
 a low bound, or both.
 
-The \chpl{#} operator takes a range and an integral count and creates
-a new range with \emph{count} elements. The stride of the resulting range is
-the same as that of the initial range. It is an error for the count to
-be negative.  The \emph{idxType} of the resulting range is the same
-type that would be obtained by adding the integral count value to a value
-with the range's \emph{idxType}.
+The \chpl{#} operator takes a range and an integral count and creates a new
+range with \emph{count} elements. It is an error for the count to be negative.
+The stride of the resulting range is the same as that of the initial
+range. The \emph{idxType} of the resulting range is the same type that would be
+obtained by adding the integral count value to a value with the
+range's \emph{idxType}.  The alignment of the resulting range is the same as
+that of the initial range.\footnote{When applied to a \chpl{boundedHigh} range,
+the alignment \emph{value} of the range may change.  This is because
+the \chpl{#} operator supplies a low bound, and alignment is computed relative
+to the low bound if one is present.}
 
 When applied to a \chpl{BoundedRangeType.bounded} range with a positive
 stride, \emph{count} elements are taken starting from the low
@@ -256,13 +316,11 @@ bound. When the stride is negative, \emph{count} elements are taken
 starting from the high bound. It is an error for \emph{count} to be larger
 than the length of the range.
 
-When applied to a \chpl{BoundedRangeType.boundedLow} range, the low bound
-is fixed and and the high bound is set based on the count and the
-absolute value of the stride.
-
-When applied to a \chpl{BoundedRangeType.boundedHigh} range, the high
-bound is fixed and the low bound is set based on the count and the
-absolute value of the stride.
+When applied to a \chpl{BoundedRangeType.boundedLow} range, the low bound is
+fixed and and the high bound is set based on the count and the absolute value of
+the stride.  When applied to a \chpl{BoundedRangeType.boundedHigh} range, the
+high bound is fixed and the low bound is set based on the count and the absolute
+value of the stride.
 
 It is an error to apply the count operator to a
 \chpl{BoundedRangeType.boundedNone} range.
@@ -362,7 +420,7 @@ var r4 = r3[0.. by 3];
 writeln((r, r2, r3, r4));
 \end{chapelpost}
 \begin{chapeloutput}
-(1..20, 3..20, 1..20 by 2, 3..20 by 6)
+(1..20, 3..20, 1..20 by 2, 1..20 by 6 align 2)
 \end{chapeloutput}
 \end{example}
 

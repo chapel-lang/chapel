@@ -72,7 +72,7 @@ class Cyclic: BaseDist {
     }
 
     for param i in 1..rank do
-      this.startIdx(i) = mod(tupleStartIdx(i), targetLocDom.dim(i).length);
+      this.startIdx(i) = chpl__mod(tupleStartIdx(i), targetLocDom.dim(i).length);
 
     // NOTE: When these knobs stop using the global defaults, we will need
     // to add checks to make sure dataParTasksPerLocale<0 and
@@ -129,8 +129,8 @@ proc Cyclic.getChunk(inds, locid) {
     locidtup = locid;
   for param i in 1..rank {
     var distStride = targetLocDom.dim(i).length;
-    var loclowidx = mod(startIdx(i) + locidtup(i), distStride);
-    var lowmod = mod(inds.dim(i).low, distStride);
+    var loclowidx = chpl__mod(startIdx(i) + locidtup(i), distStride);
+    var lowmod = chpl__mod(inds.dim(i).low, distStride);
     var offset = loclowidx - lowmod;
     if offset < 0 then
       sliceBy(i) = inds.dim(i).low + (distStride + offset)..inds.dim(i).high by distStride;
@@ -270,7 +270,7 @@ proc Cyclic.idxToLocaleInd(i: idxType) {
   // this is wrong if i is less than startIdx
   //return ((i - startIdx(1)) % numLocs):int;
   // this works even if i is less than startIdx
-  return mod(mod(i, numLocs) - mod(startIdx(1), numLocs), numLocs):int;
+  return chpl__diffMod(i, startIdx(1), numLocs):int;
 }
 
 proc Cyclic.idxToLocaleInd(ind: rank*idxType) {
@@ -278,7 +278,7 @@ proc Cyclic.idxToLocaleInd(ind: rank*idxType) {
   for param i in 1..rank {
     var dimLen = targetLocDom.dim(i).length;
     //x(i) = ((ind(i) - startIdx(i)) % dimLen):int;
-    x(i) = mod(mod(ind(i), dimLen) - mod(startIdx(i), dimLen), dimLen):int;
+    x(i) = chpl__diffMod(ind(i), startIdx(i), dimLen):int;
   }
   if rank == 1 then
     return x(1);
@@ -506,7 +506,7 @@ proc CyclicDom.dsiBuildRectangularDom(param rank, type idxType,
                                     param stridable: bool,
                                     ranges: rank*range(idxType,
                                                        BoundedRangeType.bounded,
-                                                       stridable)) {
+                                                       stridable, stridable)) {
   if idxType != dist.idxType then
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != dist.rank then
