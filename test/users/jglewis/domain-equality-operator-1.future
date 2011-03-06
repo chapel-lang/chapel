@@ -1,0 +1,9 @@
+feature request: provide an equality operator on domains (==)
+
+Right now we get these errors:
+
+domain-equality-operator-1.chpl:6: error: cannot promote short-circuiting && operator
+domain-equality-operator-1.chpl:7: error: iterator or promoted expression used in if or while condition
+
+Note: apparently '==' is already provided on ranges. If so,
+it should be documented in the spec.

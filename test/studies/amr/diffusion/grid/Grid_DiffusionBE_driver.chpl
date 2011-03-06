@@ -7,7 +7,7 @@
 //<=== Description <===
 
 
-use GridArray_DiffusionBE;
+use GridVariable_DiffusionBE;
 use GridSolution_DiffusionBE;
 use GridBC_DiffusionBE;
 

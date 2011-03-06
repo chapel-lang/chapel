@@ -2,7 +2,7 @@ MISC_LIB = ../../lib/misc
 GRID_LIB = ../../lib/grid
 
 SOURCES = \
-	GridArray_AdvectionCTU.chpl \
+	GridVariable_AdvectionCTU.chpl \
 	GridSolution_AdvectionCTU.chpl \
 	GridBC_AdvectionCTU.chpl \
 	Grid_AdvectionCTU_driver.chpl

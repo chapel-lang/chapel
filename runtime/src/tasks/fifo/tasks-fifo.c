@@ -86,6 +86,7 @@ static chpl_bool        initialized = false;
 
 static threadlayer_mutex_t threading_lock;     // critical section lock
 static threadlayer_mutex_t extra_task_lock;    // critical section lock
+static threadlayer_mutex_t task_id_lock;       // critical section lock
 static threadlayer_mutex_t task_list_lock;     // critical section lock
 static task_pool_p         task_pool_head;     // head of task pool
 static task_pool_p         task_pool_tail;     // tail of task pool
@@ -128,6 +129,7 @@ static task_pool_p             add_to_task_pool(chpl_fn_p,
                                                 void*,
                                                 chpl_bool,
                                                 chpl_task_list_p);
+static int taskMaxThreadsPerLocale = -1;
 
 
 // Sync variables
@@ -283,11 +285,13 @@ void CHPL_SINGLE_DESTROY_AUX(chpl_single_aux_t *s) {
 
 // Tasks
 
-void CHPL_TASKING_INIT(void) {
-  thread_private_data_t *tp;
+void CHPL_TASKING_INIT(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+  // Tuck maxThreadsPerLocale away in a static global for use by other routines
+  taskMaxThreadsPerLocale = maxThreadsPerLocale;
 
   threadlayer_mutex_init(&threading_lock);
   threadlayer_mutex_init(&extra_task_lock);
+  threadlayer_mutex_init(&task_id_lock);
   threadlayer_mutex_init(&task_list_lock);
   threadlayer_mutex_init(&thread_list_lock);
   queued_cnt = 0;
@@ -300,39 +304,16 @@ void CHPL_TASKING_INIT(void) {
   task_pool_head = task_pool_tail = NULL;
   thread_list_head = thread_list_tail = NULL;
 
-  threadlayer_init();
+  threadlayer_init(callStackSize);
 
-  tp = (thread_private_data_t*) chpl_alloc(sizeof(thread_private_data_t),
-                                           CHPL_RT_MD_THREAD_PRIVATE_DATA,
-                                           0, 0);
-
-  tp->ptask = (task_pool_p) chpl_alloc(sizeof(task_pool_t),
-                                       CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
-                                       0, 0);
-  tp->ptask->id           = get_next_task_id();
-  tp->ptask->fun          = NULL;
-  tp->ptask->arg          = NULL;
-  tp->ptask->serial_state = false;
-  tp->ptask->ltask        = NULL;
-  tp->ptask->begun        = true;
-  tp->ptask->filename     = "main program";
-  tp->ptask->lineno       = 0;
-  tp->ptask->next         = NULL;
-
-  threadlayer_set_thread_private_data(tp);
 
   if (taskreport) {
     threadlayer_mutex_init(&taskTable_lock);
-    chpldev_taskTable_add(tp->ptask->id,
-                          tp->ptask->lineno, tp->ptask->filename,
-                          (uint64_t) (intptr_t) tp->ptask);
-    chpldev_taskTable_set_active(tp->ptask->id);
   }
 
   if (blockreport) {
     progress_cnt = 0;
     threadlayer_mutex_init(&block_report_lock);
-    initializeLockReportForThread();
   }
 
   if (blockreport || taskreport) {
@@ -364,6 +345,47 @@ void CHPL_TASKING_EXIT(void) {
   }
 
   threadlayer_exit();
+}
+
+
+void CHPL_TASKING_CALL_MAIN(void (*chpl_main)(void)) {
+  thread_private_data_t *tp = (thread_private_data_t*) 
+                                chpl_alloc(sizeof(thread_private_data_t),
+                                           CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                           0, 0);
+
+  tp->ptask = (task_pool_p) chpl_alloc(sizeof(task_pool_t),
+                                       CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                       0, 0);
+  tp->ptask->id           = get_next_task_id();
+  tp->ptask->fun          = NULL;
+  tp->ptask->arg          = NULL;
+  tp->ptask->serial_state = false;
+  tp->ptask->ltask        = NULL;
+  tp->ptask->begun        = true;
+  tp->ptask->filename     = "main program";
+  tp->ptask->lineno       = 0;
+  tp->ptask->next         = NULL;
+
+  threadlayer_set_thread_private_data(tp);
+
+  if (taskreport) {
+    chpldev_taskTable_add(tp->ptask->id,
+                          tp->ptask->lineno, tp->ptask->filename,
+                          (uint64_t) (intptr_t) tp->ptask);
+    chpldev_taskTable_set_active(tp->ptask->id);
+  }
+
+  if (blockreport) {
+    initializeLockReportForThread();
+  }
+
+  chpl_main();
+}
+
+
+void CHPL_PER_PTHREAD_TASKING_INIT(void) {
+  return;
 }
 
 
@@ -691,6 +713,11 @@ chpl_taskID_t CHPL_TASK_ID(void) {
 }
 
 
+void CHPL_TASK_YIELD(void) {
+  threadlayer_yield();
+}
+
+
 void CHPL_TASK_SLEEP(int secs) {
   sleep(secs);
 }
@@ -704,16 +731,9 @@ void CHPL_SET_SERIAL(chpl_bool state) {
   get_thread_private_data()->ptask->serial_state = state;
 }
 
-
-uint64_t CHPL_TASK_CALLSTACKSIZE(void) {
+uint64_t chpl_task_callstacksize(void) {
   return threadlayer_call_stack_size();
 }
-
-
-uint64_t CHPL_TASK_CALLSTACKSIZELIMIT(void) {
-  return threadlayer_call_stack_size_limit();
-}
-
 
 uint32_t CHPL_NUMQUEUEDTASKS(void) { return queued_cnt; }
 
@@ -763,16 +783,12 @@ int32_t  CHPL_NUMBLOCKEDTASKS(void) {
 //
 static chpl_taskID_t get_next_task_id(void) {
   static chpl_taskID_t       id = 0;
-  static threadlayer_mutex_t id_lock;
 
   chpl_taskID_t              next_id;
 
-  if (id == 0)
-    threadlayer_mutex_init(&id_lock);
-
-  threadlayer_mutex_lock(&id_lock);
+  threadlayer_mutex_lock(&task_id_lock);
   next_id = id++;
-  threadlayer_mutex_unlock(&id_lock);
+  threadlayer_mutex_unlock(&task_id_lock);
 
   return next_id;
 }
@@ -1185,10 +1201,10 @@ launch_next_task_in_new_thread(void) {
   if ((ptask = task_pool_head)) {
     if (threadlayer_thread_create(&thread, chpl_begin_helper, ptask)) {
       char msg[256];
-      if (maxThreadsPerLocale)
+      if (taskMaxThreadsPerLocale)
         sprintf(msg,
                 "maxThreadsPerLocale is %"PRId32", but unable to create more than %d threads",
-                maxThreadsPerLocale, threads_cnt);
+                taskMaxThreadsPerLocale, threads_cnt);
       else
         sprintf(msg,
                 "maxThreadsPerLocale is unbounded, but unable to create more than %d threads",
@@ -1241,7 +1257,7 @@ static void schedule_next_task(int howMany) {
     threadlayer_pool_awaken();
   }
 
-  for (; howMany && (maxThreadsPerLocale == 0 || threads_cnt + 1 < maxThreadsPerLocale); howMany--)
+  for (; howMany && (taskMaxThreadsPerLocale == 0 || threads_cnt + 1 < taskMaxThreadsPerLocale); howMany--)
     launch_next_task_in_new_thread();
 }
 

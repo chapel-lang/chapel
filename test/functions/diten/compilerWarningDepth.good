@@ -8,11 +8,11 @@ compilerWarningDepth.chpl:1: In function 'f1':
 compilerWarningDepth.chpl:2: warning: warning from f4 with d = 3
 compilerWarningDepth.chpl:21: warning: warning from f4 with d = 4
 compilerWarningDepth.chpl:1: warning: warning from f4 with d = 5
-$CHPL_HOME/modules/internal/ChapelBase.chpl:83: In function 'compilerWarning':
-$CHPL_HOME/modules/internal/ChapelBase.chpl:84: warning: compiler diagnostic depth value exceeds call stack depth
+$CHPL_HOME/modules/internal/ChapelBase.chpl:88: In function 'compilerWarning':
+$CHPL_HOME/modules/internal/ChapelBase.chpl:89: warning: compiler diagnostic depth value exceeds call stack depth
 compilerWarningDepth.chpl:1: warning: warning from f4 with d = 6
-$CHPL_HOME/modules/internal/ChapelBase.chpl:83: In function 'compilerWarning':
-$CHPL_HOME/modules/internal/ChapelBase.chpl:84: warning: compiler diagnostic depth value can not be negative
+$CHPL_HOME/modules/internal/ChapelBase.chpl:88: In function 'compilerWarning':
+$CHPL_HOME/modules/internal/ChapelBase.chpl:89: warning: compiler diagnostic depth value can not be negative
 compilerWarningDepth.chpl:9: In function 'f3':
 compilerWarningDepth.chpl:10: warning: warning from f4 with d = -1
 compilerWarningDepth.chpl:26: warning: warning from f5 with default depth

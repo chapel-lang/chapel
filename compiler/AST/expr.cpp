@@ -2097,12 +2097,6 @@ void CallExpr::codegen(FILE* outfile) {
       } else
         codegenBasicPrimitive(outfile, this);
       break;
-    case PRIM_CHPL_CALLSTACKSIZE:
-      fprintf(outfile, "CHPL_TASK_CALLSTACKSIZE()");
-      break;
-    case PRIM_CHPL_CALLSTACKSIZELIMIT:
-      fprintf(outfile, "CHPL_TASK_CALLSTACKSIZELIMIT()");
-      break;
     case PRIM_CHPL_NUMTHREADS:
       fprintf(outfile, "CHPL_NUMTHREADS()");
       break;
@@ -2554,6 +2548,33 @@ void CallExpr::codegen(FILE* outfile) {
     }
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "impossible");
+      break;
+    case PRIM_BLOCK_XMT_PRAGMA_NOALIAS:
+      // This case allows __primitive("noalias pragma") to generate 
+      // _Pragma("mta assert noalias <variable list>")
+      // EVERY variable within a block is added to the variable list,
+      // which means several variables will spawn warnings (ignored in
+      // Makefile.cray-mta). Eventually, we'll only generate invariant 
+      // pointer variables.
+      if (!(strcmp(CHPL_TARGET_PLATFORM, "xmt"))) {
+        Vec<SymExpr*> se;
+        Vec<DefExpr*> de_parent;
+        Vec<VarSymbol*> vs_parent;
+        collectSymExprs(this->next, se);
+        collectDefExprs(this->parentExpr, de_parent);
+        forv_Vec(DefExpr*, def, de_parent) {
+          VarSymbol* vs = toVarSymbol(def->sym);
+          if (vs) vs_parent.add(vs);
+        }
+        forv_Vec(SymExpr*, sym, se) {
+          if (isVarSymbol(sym->var) && (!(isPrimitiveType(sym->var->type)))) {
+            VarSymbol* vs = toVarSymbol(sym->var);
+            if (vs_parent.in(vs))
+              fprintf(outfile, "_Pragma(\"mta assert noalias *%s\")\n", sym->var->cname);
+          }
+        }
+        this->remove();
+      }
       break;
     default:
       INT_FATAL(this, "primitive codegen fail; should it still be in the AST?");

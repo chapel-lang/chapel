@@ -1,10 +1,11 @@
-use LevelArray_DiffusionBE;
+use LevelVariable_DiffusionBE;
 use LevelSolution_def;
 use LevelBC_def;
 
-//|""""""""""""""""""""""""""""""""""""""""""""""""\
-//|===> LevelSolution.advance_DiffusionBE method ===>
-//|________________________________________________/
+//|\"""""""""""""""""""""""""""""""""""""""""""""""""|\
+//| >    LevelSolution.advance_DiffusionBE method    | >
+//|/_________________________________________________|/
+
 def LevelSolution.advance_DiffusionBE(
   bc:             LevelBC,
   diffusivity:    real,
@@ -37,17 +38,18 @@ def LevelSolution.advance_DiffusionBE(
   //<=== Time-stepping <===
  
 }
-// /""""""""""""""""""""""""""""""""""""""""""""""""|
-//<=== LevelSolution.advance_DiffusionBE method <===|
-// \________________________________________________|
+// /|"""""""""""""""""""""""""""""""""""""""""""""""""/|
+//< |    LevelSolution.advance_DiffusionBE method    < |
+// \|_________________________________________________\|
 
 
 
 
 
-//|"""""""""""""""""""""""""""""""""""""""""""""\
-//|===> LevelSolution.step_DiffusionBE method ===>
-//|_____________________________________________/
+//|\""""""""""""""""""""""""""""""""""""""""""""""|\
+//| >    LevelSolution.step_DiffusionBE method    | >
+//|/______________________________________________|/
+
 def LevelSolution.step_DiffusionBE(
   bc:           LevelBC,
   diffusivity:  real,
@@ -55,12 +57,11 @@ def LevelSolution.step_DiffusionBE(
   tolerance:    real)
 {
 
-
   //==== Set rhs ====
-  var rhs = new LevelArray(level = level);
+  var rhs = new LevelVariable(level = level);
   bc.apply(current_data, current_time+dt);
   rhs.storeFluxDivergence(current_data, diffusivity);
-  for grid in level.grids do rhs(grid) *= -dt;
+  for grid in level.grids do rhs(grid,grid.cells) *= -dt;
 
 
   //==== Make initial guess, and solve for change in solution ====
@@ -70,7 +71,8 @@ def LevelSolution.step_DiffusionBE(
 
 
   //===> Update solution ===>
-  for grid in level.grids do old_data(grid) += current_data(grid);
+  for grid in level.grids do 
+    old_data(grid,grid.cells) += current_data(grid,grid.cells);
   old_data <=> current_data;
 
   old_time = current_time;
@@ -78,8 +80,8 @@ def LevelSolution.step_DiffusionBE(
   
 
 }
-// /"""""""""""""""""""""""""""""""""""""""""""""/
-//<=== LevelSolution.step_DiffusionBE method <==<
-// \_____________________________________________\
+// /|""""""""""""""""""""""""""""""""""""""""""""""/|
+//< |    LevelSolution.step_DiffusionBE method    < |
+// \|______________________________________________\|
 
 

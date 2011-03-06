@@ -81,13 +81,27 @@ checkControlFlow(Expr* expr, const char* context) {
 }
 
 
+static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
+  forv_Vec(const char, str, *pragmas) {
+    Flag flag = pragma2flag(str);
+    if (flag == FLAG_UNKNOWN)
+      USR_FATAL_CONT(sym, "unknown pragma: \"%s\"", str);
+    else
+      sym->addFlag(flag);
+  }
+}
+
 BlockStmt* buildPragmaStmt(BlockStmt* block,
                            Vec<const char*>* pragmas,
                            BlockStmt* stmt) {
   if (DefExpr* def = toDefExpr(stmt->body.first()))
-    def->sym->addFlags(pragmas);
-  else if (pragmas->n > 0)
-    USR_WARN("Line %d: ignoring preceeding pragmas", stmt->lineno);
+    addPragmaFlags(def->sym, pragmas);
+  else if (pragmas->n > 0) {
+    USR_FATAL_CONT(stmt, "cannot attach pragmas to this statement");
+    USR_PRINT(stmt, "   %s \"%s\"",
+              pragmas->n == 1 ? "pragma" : "starting with pragma",
+              pragmas->v[0]);
+  }
   delete pragmas;
   block->insertAtTail(stmt);
   return block;
@@ -359,6 +373,8 @@ void createInitFn(ModuleSymbol* mod) {
 
   mod->initFn = new FnSymbol(astr("chpl__init_", mod->name));
   mod->initFn->retType = dtVoid;
+  mod->initFn->addFlag(FLAG_MODULE_INIT);
+  mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
 
   //
   // move module-level statements into module's init function
@@ -1406,6 +1422,9 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
+        if (externconfig == FLAG_EXTERN && varconst == FLAG_PARAM)
+          USR_FATAL(var, "external params are not supported");
+
         if (externconfig != FLAG_UNKNOWN)
           var->addFlag(externconfig);
         if (varconst != FLAG_UNKNOWN)

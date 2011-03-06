@@ -309,8 +309,8 @@ static void normalize_returns(FnSymbol* fn) {
     CallExpr* ret = rets.v[0];
     if (ret == fn->body->body.last()) {
       if (SymExpr* se = toSymExpr(ret->get(1))) {
-        if (!strncmp("_type_construct_", fn->name, 16) ||
-            !strncmp("_construct_", fn->name, 11) ||
+        if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
+            fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
             !strncmp("_if_fn", fn->name, 6) ||
             !strcmp("=", fn->name) ||
             !strcmp("_init", fn->name) ||
@@ -571,7 +571,7 @@ fix_def_expr(VarSymbol* var) {
   //
   // insert temporary for constants to assist constant checking
   //
-  if (var->hasFlag(FLAG_CONST)) {
+  if (var->hasFlag(FLAG_CONST) && !var->hasFlag(FLAG_EXTERN)) {
     constTemp = newTemp();
     stmt->insertBefore(new DefExpr(constTemp));
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));
@@ -640,7 +640,7 @@ fix_def_expr(VarSymbol* var) {
       else {
         CallExpr* moveToConst = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
         Expr* newExpr = moveToConst;
-        if (constTemp->hasFlag(FLAG_EXTERN)) {
+        if (var->hasFlag(FLAG_EXTERN)) {
           newExpr = new BlockStmt(moveToConst, BLOCK_TYPE);
         }
         stmt->insertAfter(newExpr);
@@ -994,6 +994,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(2)->remove();
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
-  fn->name = astr(astr("_construct_", fn->name));
+  fn->name = astr("_construct_", fn->name);
+  fn->addFlag(FLAG_CONSTRUCTOR);
   ct->defaultConstructor->addFlag(FLAG_INVISIBLE_FN);
 }

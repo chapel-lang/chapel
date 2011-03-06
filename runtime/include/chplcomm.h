@@ -4,10 +4,12 @@
 #ifndef LAUNCHER
 
 #include <stdint.h>
+#include "chpltypes.h"
 #include <comm_heap_macros.h>
+#include "chpltasks.h"
+#include <comm_nb_macros.h>
 #include <chplcomm_plat_md.h>
 #include "chplcomm_locales.h"
-#include "chpltypes.h"
 
 extern int32_t chpl_localeID; // unique ID for each locale: 0, 1, 2, ...
 extern int32_t chpl_numLocales; // number of locales
@@ -100,14 +102,26 @@ extern void* const chpl_private_broadcast_table[];
 #define SPECIFY_STRING_SIZE(size) (size)
 #endif
 
+#define CHPL_COMM_BLOCKING_GET(local, wide, type, ln, fn)               \
+  do {                                                                  \
+      chpl_comm_get(&(local), (wide).locale, (wide).addr,               \
+                    SPECIFY_SIZE(type), ln, fn);                        \
+  } while (0)
+
+#ifdef CHPL_TASK_COMM_GET
+#define CHPL_COMM_GET(local, wide, type, ln, fn) \
+  CHPL_TASK_COMM_GET(local, wide, type, ln, fn)
+#else
+#define CHPL_COMM_GET(local, wide, type, ln, fn) \
+  CHPL_COMM_BLOCKING_GET(local, wide, type, ln, fn)
+#endif
 
 #define CHPL_COMM_WIDE_GET(local, wide, type, ln, fn)                   \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
       local = *(wide).addr;                                             \
     else                                                                \
-      chpl_comm_get(&(local), (wide).locale, (wide).addr,               \
-                    SPECIFY_SIZE(type), ln, fn);                        \
+      CHPL_COMM_GET(local, wide, type, ln, fn);                         \
   } while (0)
 
 #define CHPL_COMM_WIDE_GET_SVEC(local, wide, type, ln, fn)            \
@@ -493,6 +507,9 @@ void chpl_startCommDiagnosticsHere(void);
 void chpl_stopCommDiagnosticsHere(void);
 
 int32_t chpl_numCommGets(void);
+int32_t chpl_numCommNBGets(void);
+int32_t chpl_numCommTestNBGets(void);
+int32_t chpl_numCommWaitNBGets(void);
 int32_t chpl_numCommPuts(void);
 int32_t chpl_numCommForks(void);
 int32_t chpl_numCommFastForks(void);

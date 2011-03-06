@@ -2,26 +2,19 @@ use AMRBC_def;
 
 class ZeroInflowBC: AMRBC {
   
-  def apply(q: LevelArray, t: real) {
-    apply_Homogeneous(q: LevelArray);
+  def apply(level_idx: int, q: LevelVariable, t: real) {
+    apply_Homogeneous(level_idx, q);
   }
   
-  def apply_Homogeneous(q: LevelArray) {
+  def apply_Homogeneous(level_idx: int, q: LevelVariable) {
+    //==== Safety check ====
+    assert(hierarchy.levels(level_idx) == q.level);
 
-    var level_boundary = hierarchy.boundary(q.level);
-
-    for grid in level_boundary.grids {
-/*       writeln(grid); */
-/*       writeln(level_boundary.domain_sets(grid).domains); */
-      for ghost_domain in level_boundary.domain_sets(grid) do
-	q(grid, ghost_domain) = 0.0;
+    //==== Assign zeros to ghost cells on the physical boundary ====
+    for (grid,multidomain) in hierarchy.physical_boundaries(level_idx) {
+      for ghost_domain in multidomain do
+	      q(grid, ghost_domain) = 0.0;
     }
-
-/*     for grid in hierarchy.boundary(q.level).grids { */
-/*       for loc in ghost_locations do */
-/*         q(grid,grid.ghost_domain_set(loc)) = 0.0; */
-/*     } */
-
   }
   
 }

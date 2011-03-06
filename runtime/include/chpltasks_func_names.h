@@ -7,7 +7,7 @@
 
 #define _TFN_CONCAT(name, suffix)    name##_##suffix
 #define _TFN_INDIRECT(name, suffix)  _TFN_CONCAT(name, suffix)
-#define _TFN(name)                   _TFN_INDIRECT(name, CHPL_TASKS)
+#define _TFN(name)                   _TFN_INDIRECT(name, CHPL_TASK_LAYER_NAME)
 
 
 //
@@ -35,6 +35,8 @@
 #define CHPL_TASKING_INIT                _TFN(chpl_tasking_init)
 #define CHPL_TASKING_EXIT                _TFN(chpl_tasking_exit)
 
+#define CHPL_TASKING_CALL_MAIN           _TFN(chpl_tasking_call_main)
+
 #define CHPL_ADD_TO_TASK_LIST            _TFN(chpl_add_to_task_list)
 #define CHPL_PROCESS_TASK_LIST           _TFN(chpl_process_task_list)
 #define CHPL_EXECUTE_TASKS_IN_LIST       _TFN(chpl_execute_tasks_in_list)
@@ -48,7 +50,6 @@
 #define CHPL_SET_SERIAL                  _TFN(chpl_set_serial)
 
 #define CHPL_TASK_CALLSTACKSIZE          _TFN(chpl_task_callStackSize)
-#define CHPL_TASK_CALLSTACKSIZELIMIT     _TFN(chpl_task_callStackSizeLimit)
 
 #define CHPL_NUMQUEUEDTASKS              _TFN(chpl_numQueuedTasks)
 #define CHPL_NUMRUNNINGTASKS             _TFN(chpl_numRunningTasks)

@@ -1,0 +1,42 @@
+Cholesky Factorization Scalar Performance Tests
+   Matrix Dimension: 499
+   Indexing Base   : -7
+
+
+
+
+scalar column major outer product cholesky factorization 
+factorization successful
+
+
+
+scalar row major outer product cholesky factorization: 
+factorization successful
+
+
+
+scalar row major outer product cholesky factorization: 
+  with explicit loops in place of vector operations: 
+factorization successful
+
+
+
+scalar row major outer product cholesky factorization
+  with explicit temporaries: 
+factorization successful
+
+
+
+scalar row major outer product cholesky factorization
+  with explicitly bounded iterations: 
+factorization successful
+
+
+
+scalar inner product cholesky factorization 
+factorization successful
+
+
+
+scalar bordering cholesky factorization 
+factorization successful

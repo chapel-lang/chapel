@@ -11,8 +11,8 @@ class GridBC {
   const grid: Grid;
 
   //==== Dummy routines to be provided in derived classes ====
-  def apply(q: GridArray, t: real) {}
-  def apply_Homogeneous(q: GridArray) {}
+  def apply(q: GridVariable, t: real) {}
+  def apply_Homogeneous(q: GridVariable) {}
   
 }
 // /""""""""""""""""""""|
@@ -30,15 +30,15 @@ class GridBC {
 class PeriodicGridBC: GridBC {
 
 
-  def apply(q: GridArray, t: real) {
+  def apply(q: GridVariable, t: real) {
     //==== Periodic BCs are homogeneous ====
     apply_Homogeneous(q);
   }
 
 
-  def apply_Homogeneous(q: GridArray) {
+  def apply_Homogeneous(q: GridVariable) {
 
-    for ghost_domain in grid.ghost_domain_set {
+    for ghost_domain in grid.ghost_multidomain {
       var loc = grid.relativeLocation(ghost_domain);
       var shift: dimension*int;
 

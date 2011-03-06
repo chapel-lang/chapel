@@ -651,6 +651,7 @@ void build_constructor(ClassType* ct) {
 
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
+  fn->addFlag(FLAG_CONSTRUCTOR);
   ct->defaultConstructor = fn;
   fn->cname = astr("_construct_", ct->symbol->cname);
   fn->addFlag(FLAG_TEMP); // compiler inserted
@@ -747,8 +748,8 @@ void build_constructor(ClassType* ct) {
     Expr* exprType = field->defPoint->exprType->remove();
     Expr* init = field->defPoint->init->remove();
 
-    bool hasType = exprType;
-    bool hasInit = init;
+    bool hadType = exprType;
+    bool hadInit = init;
     if (init) {
       if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
         VarSymbol* tmp = newTemp();
@@ -759,17 +760,18 @@ void build_constructor(ClassType* ct) {
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", init->copy())));
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
       }
-    } else if (exprType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
+    } else if (hadType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr(PRIM_INIT, exprType->copy());
     }
-    if (hasType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
-      init = new CallExpr("_createFieldDefault", exprType->copy(), init);
-    }
-    if (!hasType && !field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
-      init = new CallExpr("chpl__initCopy", init);
+    if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
+      if (hadType)
+        init = new CallExpr("_createFieldDefault", exprType->copy(), init);
+      else
+        if (init)
+          init = new CallExpr("chpl__initCopy", init);
     }
     if (init) {
-      if (hasInit)
+      if (hadInit)
         arg->defaultExpr = new BlockStmt(init, BLOCK_SCOPELESS);
       else
         arg->defaultExpr = new BlockStmt(new SymExpr(gTypeDefaultToken));

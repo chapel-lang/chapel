@@ -10,6 +10,7 @@ extern FILE* html_index_file;
 extern int instantiation_limit;
 
 extern int fdump_html;
+extern bool fdump_html_incude_system_modules;
 
 extern int trace_level;
 
@@ -46,13 +47,14 @@ extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;
 extern const char* CHPL_TARGET_COMPILER;
 extern const char* CHPL_TASKS;
+extern const char* CHPL_THREADS;
 extern const char* CHPL_COMM;
 extern const char* CHPL_STM;
 
 extern char chplmake[256];
 extern char fExplainCall[256];
 extern char fExplainInstantiation[256];
-
+extern bool fPrintCallStackOnError;
 extern bool fCLineNumbers;
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
@@ -95,6 +97,8 @@ extern Timer timer5;
 extern bool fNoMemoryFrees;
 
 extern int numGlobalsOnHeap;
+
+extern int breakOnID;
 
 // code generation strings
 extern const char* compileCommand;

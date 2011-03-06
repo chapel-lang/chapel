@@ -6,16 +6,16 @@ use LevelBC_def;
 //|/__________________________________________|/
 class ZeroFluxDiffusionBC: LevelBC {
   
-  def apply(q: LevelArray, t: real) {
+  def apply(q: LevelVariable, t: real) {
     apply_Homogeneous(q);
   }
 
   
-  def apply_Homogeneous(q: LevelArray) {
+  def apply_Homogeneous(q: LevelVariable) {
     
     for grid in level.grids {
     
-      for ghost_domain in grid.ghost_domain_set {
+      for ghost_domain in grid.ghost_multidomain {
         var loc   = grid.relativeLocation(ghost_domain);
         var shift = -1*loc;
         

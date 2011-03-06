@@ -15,8 +15,7 @@ performance.  The Chapel framework is in place in the implementation
 of data parallel constructs (e.g., domain and array operations),
 however work is not complete in its optimization.
 
-1) Set CHPL_HOME and MANPATH as usual.  See README.chplenv for
-   details.
+1) Set CHPL_HOME and MANPATH as indicated in README.chplenv.
 
 2) Set CHPL_TARGET_PLATFORM to xmt.  Notice that we are
    cross-compiling, because the login node for a Cray XMT system is a
@@ -32,9 +31,12 @@ however work is not complete in its optimization.
 
      cd $CHPL_HOME
 
-5) Make/re-make the compiler and runtime:
+   Make/re-make the compiler and runtime:
 
      gmake
+
+6) Add the directory $CHPL_HOME/bin/linux64 to your PATH.
+   This is where the Chapel compiler is located.
 
 6) Compile your Chapel program as usual.  See README.compiling for
    details.  For example:
@@ -44,7 +46,8 @@ however work is not complete in its optimization.
 7) When you compile a Chapel program for the Cray XMT, you should see
    two binaries (e.g., hello and hello_real).  The first binary
    contains code to launch the Chapel program onto the compute nodes.
-   The second contains the program code itself.
+   The second contains the program code itself; it is not intended
+   to be executed directly from the shell prompt.
 
 8) The Cray XMT is treated as a single locale (shared memory) machine.
    Chapel programs are executed as usual:
@@ -64,5 +67,4 @@ however work is not complete in its optimization.
        should ever use
 
      --numNodes <n>: Equivalent to '--numInitialTeams <n> --maxTeams <n>'
-
 

@@ -42,6 +42,8 @@ static void            destroy_thread_private_data(void*);
 static void*           pthread_func(void*);
 static void            pool_suspend_cancel_cleanup(void*);
 
+static uint64_t threadCallStackSize = 0;
+
 
 // Mutexes
 
@@ -76,6 +78,12 @@ threadlayer_threadID_t threadlayer_thread_id(void) {
   return (threadlayer_threadID_t) pthread_self();
 }
 
+
+// Thread yield
+
+void threadlayer_yield(void) {
+  sched_yield();
+}
 
 // Thread cancellation
 
@@ -169,9 +177,7 @@ void threadlayer_single_destroy(chpl_single_aux_t *s) { }
 
 // Thread callbacks for the FIFO tasking layer
 
-void threadlayer_init(void) {
-  char* s;
-
+void threadlayer_init(uint64_t callStackSize) {
   //
   // If a value was specified for the call stack size config const, use
   // that (rounded up to a whole number of pages) to set the system and
@@ -180,39 +186,39 @@ void threadlayer_init(void) {
   if (pthread_attr_init(&thread_attributes) != 0)
     chpl_internal_error("pthread_attr_init() failed");
 
-  if ((s = chpl_config_get_value("callStackSize", "Built-in")) != NULL) {
-    uint64_t stacksize;
-    int      invalid;
-    char     invalidChars[2] = "\0\0";
+  //
+  // If a value was specified for the call stack size config const, use
+  // that (rounded up to a whole number of pages) to set the system
+  // stack limit.
+  //
+  if (callStackSize != 0) {
+    uint64_t      pagesize = (uint64_t) sysconf(_SC_PAGESIZE);
+    struct rlimit rlim;
 
-    //
-    // We leave it to the Chapel config const initialization code to
-    // emit any official warnings about the syntax or magnitude of the
-    // callStackSize value.  Here we just do some reasonable thing if
-    // there are problems.
-    //
-    stacksize = chpl_string_to_uint64_t_precise(s, &invalid, invalidChars);
-    if (!invalid) {
-      uint64_t      pagesize = (uint64_t) sysconf(_SC_PAGESIZE);
-      struct rlimit rlim;
+    callStackSize = (callStackSize + pagesize - 1) & ~(pagesize - 1);
 
-      stacksize = (stacksize + pagesize - 1) & ~(pagesize - 1);
+    if (getrlimit(RLIMIT_STACK, &rlim) != 0)
+      chpl_internal_error("getrlimit() failed");
 
-      if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-        chpl_internal_error("getrlimit() failed");
+    if (rlim.rlim_max != RLIM_INFINITY && callStackSize > rlim.rlim_max) {
+      char warning[128];
+      sprintf(warning, "callStackSize capped at %lu\n", 
+              (unsigned long)rlim.rlim_max);
+      chpl_warning(warning, 0, NULL);
 
-      rlim.rlim_cur =
-        (rlim.rlim_max != RLIM_INFINITY && (size_t) rlim.rlim_max < stacksize)
-        ? rlim.rlim_max
-        : stacksize;
-
-      if (setrlimit(RLIMIT_STACK, &rlim) != 0)
-        chpl_internal_error("setrlimit() failed");
-
-      if (pthread_attr_setstacksize(&thread_attributes, stacksize) != 0)
-        chpl_internal_error("pthread_attr_setstacksize() failed");
+      callStackSize = rlim.rlim_max;
     }
+
+    rlim.rlim_cur = callStackSize;
+
+    if (setrlimit(RLIMIT_STACK, &rlim) != 0)
+      chpl_internal_error("setrlimit() failed");
+
+    if (pthread_attr_setstacksize(&thread_attributes, callStackSize) != 0)
+      chpl_internal_error("pthread_attr_setstacksize() failed");
+
   }
+  threadCallStackSize = callStackSize;
 
   if (pthread_key_create(&thread_private_key, destroy_thread_private_data))
     chpl_internal_error("pthread_key_create failed");
@@ -339,33 +345,5 @@ void threadlayer_set_thread_private_data(void* p) {
 }
 
 uint64_t threadlayer_call_stack_size(void) {
-  struct rlimit rlim;
-
-  //
-  // If there is a soft system stack limit then that's our limit;
-  // otherwise if there is a hard system stack limit then that's
-  // it; otherwise we don't have one.  Note that if the user gave
-  // a value for the call stack size config const on this run, we
-  // have already set the soft system stack limit appropriately,
-  // so our return value will reflect that.
-  //
-  if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-    chpl_internal_error("getrlimit() failed");
-  return ((rlim.rlim_cur == RLIM_INFINITY)
-          ? ((rlim.rlim_max == RLIM_INFINITY)
-             ? 0
-             : (uint64_t) rlim.rlim_max)
-          : (uint64_t) rlim.rlim_cur);
-}
-
-uint64_t threadlayer_call_stack_size_limit(void) {
-  struct rlimit rlim;
-
-  //
-  // If there is a hard system stack limit then that's our limit;
-  // otherwise we don't have one.
-  //
-  if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-    chpl_internal_error("getrlimit() failed");
-  return (rlim.rlim_max == RLIM_INFINITY) ? 0 : (uint64_t) rlim.rlim_max;
+  return threadCallStackSize;
 }

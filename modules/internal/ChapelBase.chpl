@@ -24,6 +24,11 @@ if (CHPL_TASKS == "unset") {
   compilerWarning("CHPL_TASKS not set");
 }
 
+config param CHPL_THREADS: string = "unset";
+if (CHPL_THREADS == "unset") {
+  compilerWarning("CHPL_THREADS not set");
+}
+
 config param CHPL_COMM: string = "unset";
 if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");

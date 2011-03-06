@@ -1,0 +1,224 @@
+\documentclass[10pt]{article}
+\usepackage{fullpage}
+
+\begin{document}
+\parskip=12pt
+\parindent = 0pt
+
+{\large \bf Algebra}
+
+The matrix equation $A = L L^T$ can be expanded to a system of $N \times N$
+block equations, one for each subblock $A_{IJ}$:
+\[  A_{IJ} = \sum_{K=1}^{N} L_{IK} \cdot (L^T)_{KJ} 
+= \sum_{K=1}^{\min (I,J)} L_{IK} \cdot L_{JK}^T \]
+  
+We can compute the entries in $L$ by rearranging the equations corresponding to
+the lower triangle as
+\[ L_{IJ} \cdot L_{JJ}^T = A_{IJ} - 
+\sum_{K=1}^{J-1} L_{IK} \cdot L_{JK}^T \]
+
+The diagonal blocks must satisfy
+\[ L_{JJ} \cdot L_{JJ}^T = A_{JJ} - 
+\sum_{K=1}^{J-1} L_{JK} \cdot L_{JK}^T. \] 
+
+We solve this by computing $L_{JJ}$ as the Cholesky factor of $A_{JJ} -
+\sum_{K=1}^{J-1} L_{JK} \cdot L_{JK}^T$.  This is possible when all of the
+blocks in the $J$th block row of $L$ to the left of the diagonal are known.
+
+The offdiagonal blocks ($I > J)$ in the  $J$th block column of $L$ satisfy
+\[ L_{IJ} = ( A_{IJ} - \sum_{K=1}^{J-1} L_{IK} \cdot L_{JK}^T) 
+\cdot L_{JJ}^{-T}  \]
+We ``apply the inverse'' by solving linear systems of equations; $L_{JJ}$ is
+triangular, so this is straight-forward.  
+
+{\large \bf Dependencies}
+
+\emph{The offdiagonal block} $L_{IJ}$ then depends on all blocks in
+the $I$th block row of $L$ to the left of the diagonal being known, as
+well as the diagonal block in the $J$th block row and column.
+
+\emph{The diagonal block} $L_{JJ}$ depended on all the off-diagonal
+blocks $L_{JK}$.  Combining these results, we saw that each of these
+off-diagonal blocks $L_{JK}$ depends on the corresponding diagonal
+block $L_{KK}$.  This shows that $L_{JJ}$ depends on all the preceding
+diagonal blocks $L_{KK}, K = 1 \ldots J-1$.  Since each of these
+blocks depends on the off-diagonal blocks to its left, $L_{JJ}$ cannot
+be computed until all of the other blocks in the leading $J \times J$
+triangle have been computed.
+
+The offdiagonal block $L_{IJ}, I > J$ then depends on all of the blocks in the
+leading $J \times J$ triangle and all of the blocks to its left in the
+$I$th block row.  It is \emph{independent} of all of the other off-diagonal
+blocks below the $J$th row.  This is the source of lots of parallelism.
+
+{\large \bf Task Types}
+
+The block factorization depends on three kinds of tasks:
+\begin{itemize}
+\item Factoring diagonal blocks (standard Cholesky) 
+  $L_{JJ} \cdot L_{JJ}^T = \widehat{A_{JJ}}$
+\item Solving linear systems involving $L_{JJ}^{-T}$
+\item computing the modification $A_{IJ} - L_{IK} \cdot L_{JK}^T$ for some
+  particular triple of block indices $I, J, K$.
+\end{itemize}
+We can do these tasks in any order that respects the need for the arguments to
+have been computed.  There are many such orders.  The process necessarily starts
+by computing the Cholesky factor $L_{11}$ which depends on no other tasks.
+Following this, any or all off-diagonal blocks in the first block column can be
+computed.  These then enable all modifications of the form $A_{IJ} - L_{I1}
+\cdot L_{J1}^T, J > 1, I \ge J$.
+
+{\large \bf Scheduling Tasks}
+
+A \emph{data-flow} implementation proceeds by performing these and all
+subsequent operations whenever their input arguments are ready.  Block Cholesky
+factorization can be implemented in a simple data-flow style in Chapel.  The
+dataflow code uses \emph{sync} or \emph{single} variables to register the status
+of each particular operation.  The simplest style suffers from an inability to
+prioritize some tasks over others.
+
+Most conventional parallel implementations of Cholesky or $LU$ factorizations
+are written in an SPMD style, in which the order of tasks is completely
+specified.  For example, the most common version used is the ``outer product''
+version, in which the tasks proceed in the following order at each block step:
+
+\begin{enumerate}
+\item Factor the diagonal block $A_{J,J}$
+\item Compute the subdiagonal blocks $A_{I,J}, I>J$
+\item Modify the remaining blocks $A(I,K), I>J, I>K$.
+\end{enumerate}
+
+{\large \bf Why Two-Dimensional Distributions?}
+
+One-dimensional distributions, in which a processor / locale stores a row slab
+or a column slab, are simpler.  But Schreiber showed (``Scalability of Sparse
+Direct Solvers'', 1993) that a dense direct solver (factorization) using a
+one-dimensional distribution of data and an ``owner-computes'' rule cannot
+scale, due to bottlenecks in the critical path of computing the diagonal blocks.
+In contrast, a two-dimensional cyclic wrapping of data scales with
+``owner-computes'' scales on tori and other common networks, assuming that the
+processors are mapped in a 2D grid embedded in the network.
+
+{\large \bf Why Blocking?}
+
+Blocked algorithms are used to get performance from hierarchies of memories,
+especially caches, and now other accelerator structures.  All three basic
+operation types benefit greatly from blocking.  This is a big deal!
+
+Blocked algorithms assume (require) data in contiguous storage.  This is really
+a property of \emph{local} data layout, but conventionally most current
+algorithms obtain local contiguity by inheriting it from blocking in a blocked
+2D cyclic distribution (wrap map).  Blocking in the distribution will appear to
+simplify the algorithm, but substantially increases the difficulty of indexing
+for the user (in a conventional language).  
+
+Given such a distribution and an owner-computes rule, the standard SPMD outer
+product factorization is:
+
+\begin{enumerate}
+\item Factor the diagonal block $A_{J,J}$ on the processor that owns this block.
+\item Broadcast the factors to the other processors in the same column of
+  processors. 
+\item Compute the subdiagonal blocks $L_{I,J}, I>J$ on the processors that own
+  them, which are all of the processors in that column of processors.
+\item Broadcast $L_{I,J}$ across the row of processors that hold any of the
+  blocks in the $I$th block row.
+\item Broadcast $L_{I,J},$ across the column of processors that hold any of the
+  blocks in the $I$th block column.
+\item Modify the remaining blocks $A_{I,K} - L_{IK} \cdot L_{JK}^T, I>J, I>K$.
+\end{enumerate}
+
+Of the three computational steps, one involves only one processor, one involves
+only a column of processors and the last finally involves all.  The algorithm
+scales because the last step dominates the complexity.  But clearly processors
+are sometimes idle.
+
+The algorithm assumes that the \emph {distribution block size} is used as the
+algorithmic block size at each computation step.  This is not actually
+necessary, but it simplifies the algorithm.  It constrains the code, however, to
+use in all steps whatever block size is used to distribute data.
+
+{\large \bf Two ways to breaking the Mold}
+
+There has been a great deal of effort recently to make better use of processor
+resources.  The LAPACK / HPL / ScaLAPACK team has developed so-called
+``look-ahead'' algorithms that incorporate a bit of data-flow structure.  These
+allow otherwise idle processors to move ahead asynchronously while the first and
+third steps of the standard algorithm proceed.  These are quite complicated.
+Data flow with prioritized tasks is a possible answer.
+
+Jack Poulsen, Bryan Marker and Robert van de Geijn have recently developed a
+different scheme.  Their so-called ``elemental'' scheme differs from the
+standard approach in three significant ways:
+
+\begin{enumerate}
+\item They use an unblocked cyclic data distribution.  
+\item Blocking is found in naturally contiguous local data.  This frees the
+  choice of block size from the data distribution and enables somewhat different
+  blocking to be used at each step. 
+\item They replace some broadcasts with \emph{redundant} computation.  this
+  requires some replicated data, but with similar storage complexity to the
+  standard algorithms (I think).
+\end{enumerate}
+
+Here is their algorithm, in outline, with details in the discussion following/
+
+\begin{enumerate}
+\item All to All Gather the diagonal block $A_{JJ}$ on every processor
+\item Factor the diagonal block $A_{JJ}$ locally on every processor
+\item Gather on each processor the rows of the off-diagonal block $A_{J+1..,J}$
+  it will compute (All to All within each processor row).
+\item On every processor compute specific rows of $L_{J+1..,J}$.
+\item Scatter entries of $L_{J+1..,J}$ back to owning processors (All to All
+  within each processor row).
+\item On every processor gather complete rows of $L_{J+1..,J}$ for each row for
+  which this processor will modify a Schur complement entry (All to All Gather
+  within each processor row).
+\item On every processor gather complete rows of $L_{J+1..,J}$ for each column
+  for which this processor will modify a Schur complement entry (All to All
+  Gather within each processor column).
+\item On each processor locally modify entries in $A_{J+1..,J+1..}$
+\end{enumerate}
+
+This algorithm has almost perfect load balance.  It appears to perform more
+communication; the tradeoff is that all processors contribute to the block solve
+task (step 4).  In initial tests on not very large machines, this algorithm is
+faster than the standard ScaLAPACK algorithm. This must be due to having
+processors active in the solve step, not just the processors in a single
+processor column.
+
+There are other important and sometimes surprising characteristics:
+
+\begin{itemize}
+\item The unblocked cyclic distribution simplifies addressing for the user, but
+  means that no processor owns contiguous blocks of any row or column.  The
+  standard ``owner-computes'' rule breaks down.
+\item Locality with contiguity is regained by holding local copies of the
+  diagonal and off-diagonal blocks of the active block column.  This appears to
+  increase the storage complexity, but in a lower order term.
+\item Within the active block column, the entries of each row are partitioned
+  among processors in one processor row.  The entries of each column are
+  partitioned among processors in one processor column.
+\item The rows of the active off-diagonal block are partitioned in step 4 by
+  assigning ownership for this task thusly: The rows whose entries are shared by
+  the processors in a specific processor row are assigned cyclically to those
+  processors.  Thus, rows are partitioned evenly and communication in steps 3
+  and 5 is confined within processor rows.
+\end{itemize}
+
+I had difficulty crafting this SPMD algorithm into the usual Chapel model of
+parallelism for two reasons:
+\begin{enumerate}
+\item Each thread must redundantly perform Step 2.
+\item The ownership rules, especially in step 4, seem to depend intrinsically on
+  processor location in the assumed underlying processor grid.
+\end{enumerate}
+The resulting code, which enforces a SPMD model on Chapel, seems awkward.  In
+particular it needs explicit barriers, which are not presently built-in.
+
+How can I improve this Chapel code?
+
+  
+
+
+\end{document}

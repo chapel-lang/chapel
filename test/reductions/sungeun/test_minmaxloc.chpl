@@ -2,7 +2,7 @@ use Random;
 
 class lastmaxloc: ReduceScanOp {
   type eltType;
-  var value: eltType;
+  var value: eltType = min(eltType);
   var uninitialized = true;
 
   def accumulate(x) {
@@ -14,8 +14,10 @@ class lastmaxloc: ReduceScanOp {
   def combine(x) {
     if uninitialized || (x.value(1) > value(1)) ||
       ((x.value(1) == value(1)) && (x.value(2) > value(2))) {
-      value = x.value;
-      uninitialized = x.uninitialized;
+      if !x.uninitialized {
+        value = x.value;
+        uninitialized = false;
+      }
     }
   }
   def generate() return value;
@@ -23,7 +25,7 @@ class lastmaxloc: ReduceScanOp {
 
 class lastminloc: ReduceScanOp {
   type eltType;
-  var value: eltType;
+  var value: eltType = max(eltType);
   var uninitialized = true;
 
   def accumulate(x) {
@@ -35,8 +37,10 @@ class lastminloc: ReduceScanOp {
   def combine(x) {
     if uninitialized || (x.value(1) < value(1)) ||
       ((x.value(1) == value(1)) && (x.value(2) > value(2))) {
-      value = x.value;
-      uninitialized = x.uninitialized;
+      if !x.uninitialized {
+        value = x.value;
+        uninitialized = false;
+      }
     }
   }
   def generate() return value;

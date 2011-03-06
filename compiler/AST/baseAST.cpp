@@ -173,9 +173,15 @@ verify() {
 }
 
 
+int breakOnID = -1;
+
+
 // This is here so that we can break on the creation of a particular
 // BaseAST instance in gdb.
 static void checkid(int id) {
+  if (id == breakOnID) {
+    gdbShouldBreakHere();
+  }
 }
 
 

@@ -10,7 +10,9 @@ testnum = execlog[string.find(execlog,'.')+1:string.find(execlog,'-')]
 
 f = open(testname+'.good', 'w');
 
-if string.find(execlog, 'configParam')==0:
+if (string.find(execlog, 'configParam')==0 or
+    string.find(execlog, 'configConst')==0 or
+    string.find(execlog, 'configVar')==0):
     if testnum=='1':
         f.write('4\n');
     elif testnum=='2':

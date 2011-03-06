@@ -24,6 +24,7 @@
 #  the expected behavior of tests that do not use the features or
 #  behaviors.
 #
+#
 # ENVIRONMENT VARIABLES:
 #
 # CHPL_HOME: Grabbed from the environment or deduced based on the path to
@@ -37,20 +38,24 @@
 #                    0 == test non-futures only
 # CHPL_TEST_NOTESTS: Test the tests that are marked "notest" (see below)
 # LAUNCHCMD: Uses this command to launch the test program
-# CHPL_TEST_INTERP:
+# CHPL_TEST_INTERP: DEPRECATED
 # CHPL_TEST_PERF: Run as a performance test (same as -performance flag)
 # CHPL_TEST_PERF_DIR: Scratch directory for performance data
-# CHPL_ONE_TEST: Name of the one test in this directory to run
+# CHPL_ONETEST: Name of the one test in this directory to run
 # CHPL_TEST_SINGLES: If false, test the entire directory
+# CHPL_SYSTEM_PREDIFF: If set, run that script on each test output
 # CHPL_COMM: Chapel communication layer
 # CHPL_COMPONLY: Only build the test (same as -noexec flag)
+# CHPL_NO_STDIN_REDIRECT: do not redirect stdin when running tests
+#                         also, skip tests with .stdin files
+# CHPL_LAUNCHER_TIMEOUT: if defined, pass an option/options to the executable
+#                        for it to enforce timeout instead of using timedexec;
+#                        the value of the variable determines the option format.
 #
 #
 # DIRECTORY-WIDE FILES:  These settings are for the entire directory and
 #  in many cases can be overridden or augmented with test-specific settings.
 #
-# TIMEOUT: Timeout for compiler or test execution (default 300, 600 for valgrind)
-# KILLTIMEOUT: Timeout before kill'ed processes are sent 'kill -9' (default 10)
 # NOEXEC: Do not execute tests in this directory
 # NOVGRBIN: Do not execute valgrind
 # COMPSTDIN: Get stdin from this file (default /dev/null)
@@ -130,6 +135,19 @@ def SuckOutputWithTimeout(stream, timeout):
             # to timeout  which doesn't seem quite right either.
     return buffer
 
+def LauncherTimeoutArgs(timeout):
+    if useLauncherTimeout == 'pbs':
+        # --walltime=hh:mm:ss
+        hours = 0
+        minutes = timeout / 60  # might be OK even if over an hour
+        seconds = timeout % 60
+        option = '--walltime=' + str(hours) + ':' + str(minutes) \
+                 + ':' + str(seconds)
+        return [option]
+    else:
+        Fatal('LauncherTimeoutArgs encountered an unknown format spec: ' + \
+              useLauncherTimeout)
+
 
 #
 # Auxilliary functions
@@ -141,17 +159,10 @@ def ShellEscape(str):
 
 # return True if f has .chpl extension
 def IsChplSource(f):
-    if ((f.count('.') !=0) and (len(f) > 6) and (len(f)-f.find('.chpl')==5)):
+    if ((f.count('.') !=0) and (len(f) >= 6) and (len(f)-f.find('.chpl')==5)):
         return True
     else:
         return False
-
-# return True if f has .graph extension
-def IsGraphFile(f):
-    if ((f.count('.') !=0) and (len(f) > 7) and (len(f)-f.find('.graph')==6)):
-	return True
-    else:
-	return False
 
 # read file with comments
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
@@ -204,19 +215,23 @@ def cleanup(execname):
         os.unlink(execname+'_real')
     return
 
+# report an error message and exit
+def Fatal(message):
+    sys.stdout.write('Error: '+message+'\n')
+    sys.exit(-1)
+
 #
 # Start of sub_test proper
 #
 
 if len(sys.argv)!=2:
-    print 'usage: sub_test.py compiler'
+    print 'usage: sub_test COMPILER'
     sys.exit(0)
 
 # Find the base installation
 compiler=sys.argv[1]
 if not os.access(compiler,os.R_OK|os.X_OK):
-    sys.stdout.write('[Cannot execute compiler \'%s\']\n'%(compiler))
-    sys.exit(-1)
+    Fatal('Cannot execute compiler \''+compiler+'\'')
 
 path_to_compiler=os.path.abspath(os.path.dirname(compiler))
 # Assume chpl binary is 2 directory levels down in the base installation
@@ -233,10 +248,9 @@ chpl_home=os.path.normpath(chpl_home)
 # Find the test util directory
 utildir=chpl_home+'/util/test'
 if os.path.isdir(utildir)==0:
-    sys.stdout.write('Error: Cannot find '+chpl_home+'/util/test\n')
-    sys.exit(0)
+    Fatal('Cannot find test util directory '+utildir)
 # Needed for MacOS mount points
-testdir = os.path.realpath(utildir)
+utildir = os.path.realpath(utildir)
 # sys.stdout.write('utildir='+utildir+'\n');
 
 # Find the test directory
@@ -244,21 +258,19 @@ testdir=chpl_home+'/test'
 if os.path.isdir(testdir)==0:
     testdir=chpl_home+'/examples'
     if os.path.isdir(testdir)==0:
-        sys.stdout.write('Error: Cannot find '+chpl_home+'/test or '+chpl_home+'/examples'+'\n')
-        sys.exit(0)
+        Fatal('Cannot find test directory '+chpl_home+'/test or '+testdir)
 # Needed for MacOS mount points
 testdir = os.path.realpath(testdir)
 # sys.stdout.write('testdir='+testdir+'\n');
 
 # Use timedexec
 # As much as I hate calling out to another script for the time out stuff,
-#  subprocess doesn't quite cut is for this kind of stuff
+#  subprocess doesn't quite cut it for this kind of stuff
 useTimedExec=True
 if useTimedExec:
     timedexec=utildir+'/timedexec'
     if not os.access(timedexec,os.R_OK|os.X_OK):
-        sys.stdout.write('[Cannot execute timedexec script \"%s\"]\n'%(timedexec))
-        sys.exit(-1)
+        Fatal('Cannot execute timedexec script \''+timedexec+'\'')
 # sys.stdout.write('timedexec='+timedexec+'\n');
 
 # HW platform
@@ -287,6 +299,15 @@ if os.access('./KILLTIMEOUT',os.R_OK):
 else:
     globalKillTimeout=10
 # sys.stdout.write('globalKillTimeout=%d\n'%(globalKillTimeout))
+
+# Get the system-wide prediff
+systemPrediff = os.getenv('CHPL_SYSTEM_PREDIFF')
+if systemPrediff:
+  if not os.access(systemPrediff,os.R_OK|os.X_OK):
+    Fatal('Cannot execute system-wide prediff \''+systemPrediff+'\'')
+
+# Use the launcher walltime option for timeout
+useLauncherTimeout = os.getenv('CHPL_LAUNCHER_TIMEOUT')
 
 # Get the current directory (normalize for MacOS case-sort-of-sensitivity)
 localdir = string.replace(os.path.normpath(os.getcwd()), testdir, '.')
@@ -389,7 +410,6 @@ if os.getenv('CHPL_TEST_PERF')!=None:
     compoptssuffix='.perfcompopts'
     execoptssuffix='.perfexecopts'
     perftest=True
-    searchperfdir='./perfdat/'+machine
     if os.getenv('CHPL_TEST_PERF_DIR')!=None:
         perfdir=os.getenv('CHPL_TEST_PERF_DIR')
     else:
@@ -445,15 +465,16 @@ else:
 # Start running tests
 #
 sys.stdout.write('[Starting subtest - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime())))
-sys.stdout.write('[compiler: \'%s\']\n'%(compiler))
+#sys.stdout.write('[compiler: \'%s\']\n'%(compiler))
+if systemPrediff:
+    sys.stdout.write('[system-wide prediff: \'%s\']\n'%(systemPrediff))
 
 if os.path.isdir(testdir+'/'+localdir):
     dirlist=os.listdir(testdir+'/'+localdir)
 elif os.path.isdir(localdir):
     dirlist=os.listdir(localdir)
 else:
-    sys.stdout.write('Error: Could not find local test directory: \'%s\'\n'%(localdir))
-    sys.exit(-1)
+    Fatal('Could not find local test directory: \''+localdir+'\'')
 
 onetestsrc = os.getenv('CHPL_ONETEST')
 if onetestsrc==None:
@@ -462,13 +483,13 @@ else:
     testsrc=list()
     testsrc.append(onetestsrc)
 
-graphfiles=filter(IsGraphFile, dirlist)
-
-exectimeout = False
 for testname in testsrc:
     sys.stdout.flush()
+    exectimeout = False
 
     # print testname
+    sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
+
     execname=testname[:len(testname)-5]
     # print execname
 
@@ -498,6 +519,12 @@ for testname in testsrc:
     execoptsfile=False
     prediff=None
     preexec=None
+
+    if os.getenv('CHPL_NO_STDIN_REDIRECT') == None:
+        redirectin = '/dev/null'
+    else:
+        redirectin = None
+
     # Deal with these files
     do_not_test=False
     for f in execname_files:
@@ -520,7 +547,7 @@ for testname in testsrc:
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
             skiptest=subprocess.Popen([utildir+'/testEnv', './'+f], stdout=subprocess.PIPE).communicate()[0]
             if int(skiptest):
-                sys.stdout.write('[Skipping %s based on .skipif environment settings]\n'%(f))
+                sys.stdout.write('[Skipping test based on .skipif environment settings: %s/%s]\n'%(localdir,execname))
                 do_not_test=True
                 break
 
@@ -557,14 +584,20 @@ for testname in testsrc:
         elif (suffix=='.preexec' and os.access(f, os.R_OK|os.X_OK)):
             preexec=f
 
+        elif (suffix=='.stdin' and os.access(f, os.R_OK)):
+            if redirectin == None:
+                sys.stdout.write('[Skipping test with .stdin input since -nostdinredirect is given: %s/%s]\n'%(localdir,execname))
+                do_not_test=True
+                break
+            else:
+                redirectin=f
+
         if suffix=='.future':
             testfuturesfile=True
             if testfutures==0:
                 sys.stdout.write('[Skipping future test: %s/%s]\n'%(localdir,execname))
                 do_not_test=True
-
-        if do_not_test:
-            break
+                break
 
     del execname_files
 
@@ -598,8 +631,13 @@ for testname in testsrc:
 
     if (os.getenv('CHPL_TEST_INTERP')=='on' and
         (noexecfile or testfuturesfile or execoptsfile)):
-        sys.stdout.write('[Skipping interpretation of : %s/%s]\n'%(localdir/execname))
+        sys.stdout.write('[Skipping interpretation of: %s/%s]\n'%(localdir,execname))
         continue # on to next test
+
+    if redirectin == None:
+        redirectinSpec = ''
+    else:
+        redirectinSpec = ' < ' + redirectin
 
     clist = list()
     # For all compopts + execopts combos..
@@ -643,10 +681,10 @@ for testname in testsrc:
         #
         # Compile (with timeout)
         #
-        sys.stdout.write('[Executing %s'%(cmd))
+        sys.stdout.write('[Executing compiler %s'%(cmd))
         if args:
             sys.stdout.write(' %s'%(' '.join(args)))
-        sys.stdout.write('< %s\']\n'%(compstdin))
+        sys.stdout.write(' < %s]\n'%(compstdin))
         sys.stdout.flush()
         if useTimedExec:
             wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+' < '+compstdin
@@ -702,7 +740,7 @@ for testname in testsrc:
             complogfile.close()
 
             if globalPrediff:
-                sys.stdout.write('Executing ./PREDIFF\n')
+                sys.stdout.write('[Executing ./PREDIFF]\n')
                 sys.stdout.flush()
                 subprocess.Popen(['./PREDIFF',
                                   execname,complog,compiler,
@@ -711,7 +749,7 @@ for testname in testsrc:
                                   ' '.join(args)]).wait()
 
             if prediff:
-                sys.stdout.write('[Executing %s.prediff]\n'%(execname))
+                sys.stdout.write('[Executing prediff %s.prediff]\n'%(execname))
                 sys.stdout.flush()
                 subprocess.Popen(['./'+execname+'.prediff',
                                   execname,complog,compiler]).wait()
@@ -766,11 +804,6 @@ for testname in testsrc:
             cleanup(execname)
             continue # on to next compopts
 
-        if os.access(execname+'.stdin', os.R_OK):
-            redirectin = execname+'.stdin'
-        else:
-            redirectin = '/dev/null'
-
         # Execute the test for all requested execopts
         execoptsnum = 0
         # Handle empty execopts list
@@ -803,15 +836,15 @@ for testname in testsrc:
                 execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
 
             if globalPreexec:
-                sys.stdout.write('[Executing PREEXEC]\n')
+                sys.stdout.write('[Executing ./PREEXEC]\n')
                 sys.stdout.flush()
                 subprocess.Popen(['./PREEXEC',
                                   execname,execlog,compiler]).wait()
 
             if preexec:
-                sys.stdout.write('[Executing %s.preexec]\n'%(execname))
+                sys.stdout.write('[Executing preexec %s.preexec]\n'%(execname))
                 sys.stdout.flush()
-                subprocess.Popen([execname+'.preexec',
+                subprocess.Popen(['./'+execname+'.preexec',
                                   execname,execlog,compiler]).wait()
 
             if not os.access(execname, os.R_OK|os.X_OK):
@@ -838,12 +871,35 @@ for testname in testsrc:
             #
             # Run program (with timeout)
             #
-            sys.stdout.write('[Executing program %s %s< %s\']\n'%
-                             (cmd, ' '.join(args), redirectin))
+            sys.stdout.write('[Executing program %s %s%s]\n'%
+                             (cmd, ' '.join(args), redirectinSpec))
             sys.stdout.flush()
 
-            if useTimedExec:
-                wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+' < '+redirectin
+            if useLauncherTimeout:
+                if redirectin == None:
+                    my_stdin = None
+                else:
+                    my_stdin=file(redirectin, 'r')
+                p = subprocess.Popen([cmd]+LauncherTimeoutArgs(timeout)+args,
+                                     stdin=my_stdin,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                output = p.communicate()[0]
+                status = p.returncode
+
+                if re.search('PBS: job killed: walltime', output) != None:
+                    exectimeout = True
+                    sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
+                                     (futuretest, localdir, execname))
+                    if not onlyone:
+                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                         (' '.join(globalExecopts), execopts,
+                                          ' '.join(globalCompopts),compopts,
+                                          compoptsnum, execoptsnum))
+                    sys.stdout.write(']\n')
+
+            elif useTimedExec:
+                wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+redirectinSpec
                 p = subprocess.Popen([timedexec, str(timeout), wholecmd],
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
@@ -860,10 +916,12 @@ for testname in testsrc:
                                           ' '.join(globalCompopts),compopts,
                                           compoptsnum, execoptsnum))
                     sys.stdout.write(']\n')
-                    # continue # on to next execopts
 
             else:
-                my_stdin=file(redirectin, 'r')
+                if redirectin == None:
+                    my_stdin = None
+                else:
+                    my_stdin=file(redirectin, 'r')
                 p = subprocess.Popen([cmd]+args, stdin=my_stdin,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
@@ -880,26 +938,36 @@ for testname in testsrc:
                                           compoptsnum, execoptsnum))
                     sys.stdout.write(']\n')
                     KillProc(p, killtimeout)
-                    # continue # on to next execopts
 
                 status = p.returncode
 
-	    if not exectimeout:
-                if catfiles:
-                    sys.stdout.write('[Concatenating extra files: %s]\n'%
-                                     (execname+'.catfiles'))
-                    sys.stdout.flush()
-                    output+=subprocess.Popen(['cat']+catfiles.split(),
-                                             stdout=subprocess.PIPE).communicate()[0]
+            if catfiles:
+                sys.stdout.write('[Concatenating extra files: %s]\n'%
+                                 (execname+'.catfiles'))
+                sys.stdout.flush()
+                output+=subprocess.Popen(['cat']+catfiles.split(),
+                                         stdout=subprocess.PIPE).communicate()[0]
 
-                # Sadly these scripts require an actual file
-                execlogfile=file(execlog, 'w')
-                execlogfile.write('%s'%(compoutput))
-                execlogfile.write('%s'%(output))
-                execlogfile.close()
+            # Sadly the scripts used below require an actual file
+            execlogfile=file(execlog, 'w')
+            execlogfile.write('%s'%(compoutput))
+            execlogfile.write('%s'%(output))
+            execlogfile.close()
+
+	    if not exectimeout:
+                if systemPrediff:
+                    sys.stdout.write('[Executing system-wide prediff]\n')
+                    sys.stdout.flush()
+                    sys.stdout.write(subprocess.Popen([systemPrediff,
+                                                       execname,execlog,compiler,
+                                                       ' '.join(globalCompopts)+
+                                                       ' '+compopts,
+                                                       ' '.join(args)],
+                                                      stdout=subprocess.PIPE).
+                                     communicate()[0])
 
                 if globalPrediff:
-                    sys.stdout.write('[Executing PREDIFF]\n')
+                    sys.stdout.write('[Executing ./PREDIFF]\n')
                     sys.stdout.flush()
                     sys.stdout.write(subprocess.Popen(['./PREDIFF',
                                                        execname,execlog,compiler,
@@ -910,9 +978,9 @@ for testname in testsrc:
                                      communicate()[0])
 
                 if prediff:
-                    sys.stdout.write('[Executing %s.prediff]\n'%(execname))
+                    sys.stdout.write('[Executing prediff ./%s]\n'%(prediff))
                     sys.stdout.flush()
-                    sys.stdout.write(subprocess.Popen(['./'+execname+'.prediff',
+                    sys.stdout.write(subprocess.Popen(['./'+prediff,
                                                        execname,execlog,compiler,
                                                        ' '.join(globalCompopts)+
                                                        ' '+compopts,
@@ -983,100 +1051,33 @@ for testname in testsrc:
                     else:
                         keyfile = execname+'.perfkeys'
 
-		duplicates = 0
-	
-		sys.stdout.write('[Executing checkDuplicates %s %s %s]\n'%(perfexecname, perfdir, testdir))
-		sys.stdout.flush()
+                sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(perfexecname, perfdir, keyfile, execlog, str(exectimeout)))
+                sys.stdout.flush()
 
- 		if os.path.isfile(utildir+'/checkDuplicates'):
-   	    	    p = subprocess.Popen([utildir+'/checkDuplicates', perfexecname, perfdir, testdir],stdout=subprocess.PIPE)
-   	    	    sys.stdout.write('%s'%(p.communicate()[0]))
-   	    	    sys.stdout.flush()
-		else:
-	    	    sys.stdout.write('cannot find checkDuplicates\n')
+                p = subprocess.Popen([utildir+'/computePerfStats',
+                                      perfexecname, perfdir, keyfile, execlog, str(exectimeout)],
+                                     stdout=subprocess.PIPE)
+                sys.stdout.write('%s'%(p.communicate()[0]))
+                sys.stdout.flush()
 
-  		duplicates = p.returncode
-  
+                status = p.returncode
 
-		if duplicates==0:
-	    	    sys.stdout.write('[No duplicates found for %s]\n'%(perfexecname))
-                    sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(perfexecname, perfdir, keyfile, execlog, str(exectimeout)))
-                    sys.stdout.flush()
-
-                    p = subprocess.Popen([utildir+'/computePerfStats',
-                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout)],
-                                         stdout=subprocess.PIPE)
-                    sys.stdout.write('%s'%(p.communicate()[0]))
-                    sys.stdout.flush()
-
-                    status = p.returncode
-
-                    if status == 0:
-                        sys.stdout.write('[Success')
-                    else:
-                        sys.stdout.write('[Error')
-                    sys.stdout.write(' matching performance keys for %s/%s'%
-                                     (localdir, execname))
-                    if status!=0 and not onlyone:
-                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                         (' '.join(globalExecopts), execopts,
-                                          ' '.join(globalCompopts),compopts,
-                                          compoptsnum, execoptsnum))
-                    sys.stdout.write(']\n')
-        	else:
- 	    	    sys.stdout.write('[Duplicates found.  Will not execute computePerfStats on %s]\n'%(perfexecname))
+                if status == 0:
+                    sys.stdout.write('[Success')
+                else:
+                    sys.stdout.write('[Error')
+                sys.stdout.write(' matching performance keys for %s/%s'%
+                                 (localdir, execname))
+                if status!=0 and not onlyone:
+                    sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
+                                     (' '.join(globalExecopts), execopts,
+                                      ' '.join(globalCompopts),compopts,
+                                      compoptsnum, execoptsnum))
+                sys.stdout.write(']\n')
 
         cleanup(execname)
 
     del execoptslist
     del compoptslist
 
-if perftest: 
-    for graphfile in graphfiles:
-	(root, suffix) = os.path.splitext(graphfile)
-    	graphname=root
-	
-
- 	sys.stdout.write('[Executing %s/createGraphs for %s.graph in %s]\n'%(utildir, graphname, testdir+'/'+localdir))
-	sys.stdout.flush()
-	
-	if os.path.isfile(utildir+'/createGraphs'):
-	    startdate = os.getenv('STARTDATE', "")
-   	    p = subprocess.Popen([utildir+'/createGraphs', graphname, perfdir, startdate, str(exectimeout)],stdout=subprocess.PIPE)
-   	    sys.stdout.write('%s'%(p.communicate()[0]))
-   	    sys.stdout.flush()
-	else:
-	    sys.stdout.write('cannot find createGraphs\n')
-
-  	status = p.returncode
-  
-   	if status == 0:
-	    sys.stdout.write('[Success')
-        else:
- 	    sys.stdout.write('[Error')
-        sys.stdout.write(' creating graphs in %s]\n'%(testdir+'/'+localdir))
-
-    if (os.getenv('CHPL_TEST_PERF_DIR')==None) and (len(graphfiles)>0):
-        if (len(graphfiles) > 0):
-            if os.path.isfile(utildir+'/viewGraphs'):
-                sys.stdout.write('[Executing %s/viewGraphs in %s]\n'%(utildir, testdir+'/'+localdir))
-                sys.stdout.flush()
-	
-	        p = subprocess.Popen([utildir+'/viewGraphs', perfdir],stdout=subprocess.PIPE)
-	        sys.stdout.write('%s'%(p.communicate()[0]))
-	        sys.stdout.flush()
-            else:
-	        sys.stdout.write('[cannot find viewGraphs]\n')
-
-            status = p.returncode
-
-            if status==0:
-	        sys.stdout.write('[Success')
-            else:
-	        sys.stdout.write('[Error')
-            sys.stdout.write(' creating html in %s]\n'%(testdir+'/'+localdir))
-
-	
-
-
-del graphfiles
+sys.exit(0)

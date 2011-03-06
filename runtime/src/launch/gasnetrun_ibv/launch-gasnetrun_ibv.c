@@ -10,47 +10,39 @@
 
 // TODO: Un-hard-code this stuff:
 
-static char* chpl_launch_create_command(int argc, char* argv[], 
-                                        int32_t numLocales) {
-  int i;
-  int size;
-  char baseCommand[256];
-  char* command;
-  
-  chpl_compute_real_binary_name(argv[0]);
-  
-  sprintf(baseCommand, "gasnetrun_ibv -n %d %s", numLocales, chpl_get_real_binary_name());
+static char _nlbuf[16];
+static char** chpl_launch_create_argv(const char *launch_cmd,
+                                      int argc, char* argv[],
+                                      int32_t numLocales) {
+  const int largc = 3;
+  char *largv[largc];
 
-  size = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(baseCommand) + 1;
+  largv[0] = (char *) launch_cmd;
+  largv[1] = (char *) "-n";
+  sprintf(_nlbuf, "%d", numLocales);
+  largv[2] = _nlbuf;
 
-  for (i=1; i<argc; i++) {
-    size += strlen(argv[i]) + 3;
-  }
-
-  command = chpl_malloc(size, sizeof(char*), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
-  
-  sprintf(command, "%s%s", WRAP_TO_STR(LAUNCH_PATH), baseCommand);
-  for (i=1; i<argc; i++) {
-    strcat(command, " '");
-    strcat(command, argv[i]);
-    strcat(command, "'");
-  }
-
-  if (strlen(command)+1 > size) {
-    chpl_internal_error("buffer overflow");
-  }
-
-  return command;
+  return chpl_bundle_exec_args(argc, argv, largc, largv);
 }
 
 
-void chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
-                           argv[0]);
+int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+  int len = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("gasnetrun_ibv") + 1;
+  char *cmd = chpl_malloc(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  sprintf(cmd, "%sgasnetrun_ibv", WRAP_TO_STR(LAUNCH_PATH));
+
+  return chpl_launch_using_exec(cmd,
+                                chpl_launch_create_argv(cmd, argc, argv,
+                                                        numLocales),
+                                argv[0]);
 }
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, chpl_string filename) {
   return 0;
+}
+
+
+void chpl_launch_print_help(void) {
 }

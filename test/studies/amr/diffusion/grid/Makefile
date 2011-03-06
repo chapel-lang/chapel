@@ -2,7 +2,7 @@ MISC_LIB = ../../lib/misc
 GRID_LIB = ../../lib/grid
 
 SOURCES = \
-	GridArray_DiffusionBE.chpl \
+	GridVariable_DiffusionBE.chpl \
 	GridSolution_DiffusionBE.chpl \
 	GridBC_DiffusionBE.chpl \
 	Grid_DiffusionBE_driver.chpl

@@ -81,20 +81,23 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 
 ifdef CHPL_DEVELOPER
 CheckForStandardCHeaders:
-	@if [ `$(CHAPEL_ROOT)/util/grepstdchdrs | wc -l` -gt 0 ]; then \
+	@if [ `$(CHAPEL_ROOT)/util/devel/grepstdchdrs | wc -l` -gt 0 ]; then \
 	  echo; \
 	  echo Standard C headers found in the following file\(s\):; \
-	  echo `$(CHAPEL_ROOT)/util/grepstdchdrs`; \
+	  echo `$(CHAPEL_ROOT)/util/devel/grepstdchdrs`; \
 	  echo; \
-	  echo The above list was generated with the util/grepstdchdrs script.; \
+	  echo The above list was generated with the util/devel/grepstdchdrs script.; \
 	  exit 1; \
 	fi
-$(BUILD_VERSION_FILE): CheckForStandardCHeaders
-	@$(CHAPEL_ROOT)/util/buildRelease/updateBuildVersion $(CHAPEL_ROOT)/compiler/main
 else
-$(BUILD_VERSION_FILE):
-	@echo -999 > $@
+CheckForStandardCHeaders:
 endif
+
+UPDATE_BUILD_VERSION = $(CHAPEL_ROOT)/util/devel/updateBuildVersion
+
+$(BUILD_VERSION_FILE): CheckForStandardCHeaders
+	@(test -x $(CHAPEL_ROOT)/.svn && test -x $(UPDATE_BUILD_VERSION) && \
+	$(UPDATE_BUILD_VERSION) $@) || (echo 0 > $@);
 
 
 $(CHPL): $(CHPL_BIN_DIR) $(CHPL_OBJS)

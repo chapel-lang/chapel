@@ -1,0 +1,20 @@
+#!/bin/bash
+
+testname=$1
+outfile=$2
+
+case $testname in
+  (nqueens-par | nqueens-2-par)
+     # Sort by the first number (taskNum) and preserve the order
+     # within the same taskNum (using -s).
+     sort -n -k 1,1 -s < $outfile > $outfile.tmp
+     mv $outfile.tmp $outfile
+     #
+     # We could strips taskNum and compare the output (modulo status messages)
+     # against the sequential version, like so:
+     #   cat par-output | sed 's@^[0-9]*: @@' | diff seq-output -
+     ;;
+  (*)
+     # nothing else
+     true ;;
+esac

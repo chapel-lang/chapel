@@ -18,45 +18,25 @@ Expressions
   logic of call-expressions
 
 
-Reductions and Scans
---------------------
-Add *some* reference to reduction and scan to the index.
-
 Ranges
 ------
 * should we define ranges/domains as being array-like where the
   indices serve as both indices and values?  (for the purposes of
   slicing, e.g.)
 
-Operators
----------
-* clarify definition of %
-* consider supporting other modulus operators/functions as well?
 
 Functions
 ---------
-* tease sections relating to function calls away from those relating
-  to defining functions
 * move oveloading and resolution subsections to the end of the section
-* define semantics of passing tuples to functions
+  *** this should be true after first class function stuff is removed.
 * define semantics of creating tuples with array components, etc.
 * define function resolution for type functions (perhaps by difference from
   resolution for regular functions)
   ** insert a reference to that in the Generics' Type Constructor section
 
-Locales and Affinity
---------------------
-* add statement that global non-distributed constants are replicated
-  across all locales
-
-Standard Modules
-----------------
-* remove old-style complex setter functions from standard module listings
 
 Domains and Arrays
 ------------------
-
-* add description of expand, etc.
 
 * clarify distinction between sparse domains and associative domains
   of integers?
@@ -81,31 +61,39 @@ TODOs from email:
   This should be narrowed to only apply to zippered products I
   believe.
 
-- in Sort module, add definition that < is used to do the sort.
-
 
 Generics
 --------
 * add mention of the new 'depth' argument for compilerWarning/Error
 
+I/O
+---
+* examples showing how to open and close a file
+* improve description of readln() (and maybe all 4 I/O commands)
+
+Task Parallelism and Synchronization
+------------------------------------
+* make clear that 'begin' creates task immediately and does not
+  evaluate some/all of the statement that follows it
+* make clear that stack variables can outlive parent scope in the
+  presence of begins that escape
+
+Standard Modules
+----------------
+* in Sort module, add definition that < is used to do the sort.
+* add description of List module such as it is
+
+
 
 TODOs while updating the CHANGES file
 -------------------------------------
 * document the Containers module
-* document that by operators can be overloaded
 -------------------------------------
 
 * Make supported parameter and type queries for ranges, domains, and
   arrays more explicit in the spec.  Most users are only realizing
   that this is possible by reading example codes.  Maybe include as
   part of the "supported functions" sections for these concepts?
-
-Added array.eltType to predefined methods on arrays
-Added array.rank to predefined methods on arrays
-Added domain.rank to predefined methods on domains
-Added range.eltType to predefined methods on ranges
-Added range.boundedType to predefined methods on ranges
-Added range.stridable to predefined methods on ranges
 
 * page 100: 1D arrays can be indexed with square brackets or parens;
   shouldn't any rank array be indexable with either?
@@ -117,21 +105,12 @@ use promotion to implement this (and we shouldn't) but that means the
 square brackets are currently ignored.  I didn't make any changes here
 yet.
 
-* add a description of the scan operator and an example
-
-There is a description.  I added an example.
-
 * refactor/rewrite domain/array chapter (Brad)
 
 * add description of local block
 
 Is this a good idea?  I don't understand the semantic guarantees we
 can make for this construct in the presence of optimizations...
-
-* range chapter: more clearly state the default values of the range's
-  types and parameters (is it currently stated at all?)
-
-Added.
 
 * describe how to specify a homogenous varargs type (e.g., x: int...n)?
 
@@ -156,10 +135,6 @@ These are orthogonal.  I added an example.
 * Does spec talk about declaring methods for types other than
   classes/records?
 
-* List "by" among the overloaded operators?
-
-* Document domain operators: translate, interior, exterior, etc.
-
 * Document +, - on domains
 
 * do we document that argument names must match for dynamic dispatch to apply?
@@ -180,22 +155,17 @@ cleanups
   - type fns
   - comp warning/error
 * distributions text
-* memory consistency model text
 
 updates/changes
 ---------------
 * add 'delete'
-* type functions
 * rename 17.5.1
-* rename "implicit modules"
-* add # to operators list and expressions section
 * range promotion
 * ranges with opposite-signed strides slicing comment -- check for accuracy
 * remove 1D cases from high/low function definitions
 * tease "members" apart from "predefined fns" in ranges/domains/arrays
 * arr.domain -- fix return type
 * return iterators from functions text (or don't expose to user?)
-* hoist Standard/Math m odules to initial section "implicitly included"
 * describe the default distributions
 * local block
 * 17.8 top-level content

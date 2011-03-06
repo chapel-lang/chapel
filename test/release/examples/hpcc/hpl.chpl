@@ -11,6 +11,7 @@ use HPCCProblemSize;
 
 //
 // The number of matrices and the element type of those matrices
+// indexType can be int or int(64), elemType can be real or complex
 //
 const numMatrices = 1;
 type indexType = int,
@@ -190,8 +191,8 @@ def schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
   //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) 
   //          = AbD[ptSol.., 1..#blkSize];
   //
-  const replAD: domain(2) = AbD[ptSol.., ptOp..#blkSize],
-        replBD: domain(2) = AbD[ptOp..#blkSize, ptSol..];
+  const replAD: domain(2, indexType) = AbD[ptSol.., ptOp..#blkSize],
+        replBD: domain(2, indexType) = AbD[ptOp..#blkSize, ptSol..];
     
   const replA : [replAD] elemType = Ab[ptSol.., ptOp..#blkSize],
         replB : [replBD] elemType = Ab[ptOp..#blkSize, ptSol..];
@@ -287,7 +288,9 @@ def panelSolve(Ab: [] ?t,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-def updateBlockRow(Ab: [] ?t, tl: domain(2), tr: domain(2)) {
+def updateBlockRow(Ab: [] ?t,
+                   tl: domain(2, indexType),
+                   tr: domain(2, indexType)) {
   const tlRows = tl.dim(1),
         tlCols = tl.dim(2),
         trRows = tr.dim(1),
@@ -309,7 +312,7 @@ def updateBlockRow(Ab: [] ?t, tl: domain(2), tr: domain(2)) {
 //
 // compute the backwards substitution
 //
-def backwardSub(n: int,
+def backwardSub(n: indexType,
                 A: [1..n, 1..n] elemType,
                 b: [1..n] elemType) {
   var x: [b.domain] elemType;

@@ -9,22 +9,14 @@ include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.stm-$(CHPL_MAKE_STM)
 
-GEN_CFLAGS += -DCHPL_TASKS=$(CHPL_MAKE_TASKS_UBAR) \
+GEN_CFLAGS += -DCHPL_TASK_LAYER_NAME=$(CHPL_MAKE_TASKS_UBAR) \
               -DCHPL_TASKS_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
-              -DCHPL_THREADS=$(CHPL_MAKE_THREADS_UBAR) \
               -DCHPL_THREADS_H=\"threads-$(CHPL_MAKE_THREADS).h\" \
               -DCHPL_STM_H=\"stm-$(CHPL_MAKE_STM).h\"
 	   	
-#
-# We always search the include/threads-generic subdir, even when our
-# threading model doesn't use generic threading.  This doesn't hurt
-# anything, since if generic threading isn't used we won't #include
-# the only file in that subdir anyway.
-#
 CHAPEL_RT_INC_DIR = \
 	$(CHAPEL_ROOT)/runtime/include/tasks/$(CHPL_MAKE_TASKS) \
 	-I$(CHAPEL_ROOT)/runtime/include/threads/$(CHPL_MAKE_THREADS) \
-	-I$(CHAPEL_ROOT)/runtime/include/threads-generic \
 	-I$(CHAPEL_ROOT)/runtime/include/comm/$(CHPL_MAKE_COMM) \
 	-I$(CHAPEL_ROOT)/runtime/include/comp-$(CHPL_MAKE_COMPILER) \
 	-I$(CHAPEL_ROOT)/runtime/include/stm/$(CHPL_MAKE_STM) \

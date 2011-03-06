@@ -253,12 +253,12 @@ COMPILING A MULTI-REALM CHAPEL PROGRAM
 
 To help with the process of compiling a Chapel program for multiple
 target platforms, we have provided a wrapper script to the Chapel
-compiler, located in $CHPL_HOME/util/chpl-multirealm.  This script is
-run from a single machine (the compile host) and will invoke the
-Chapel compiler for each specified target host, generating a binary
-for each host type.  The script accepts all the usual Chapel compiler
-arguments.  To invoke the compiler, it ssh's to the first machine
-listed in the corresponding hostfile (described above).  
+compiler, located in $CHPL_HOME/util/multirealm/chpl-multirealm.  This
+script is run from a single machine (the compile host) and will invoke
+the Chapel compiler for each specified target host, generating a
+binary for each host type.  The script accepts all the usual Chapel
+compiler arguments.  To invoke the compiler, it ssh's to the first
+machine listed in the corresponding hostfile (described above).
 
 Because of its approach, the chpl-multirealm script assumes that the
 file system across the target hosts is symmetric, which is to say the
