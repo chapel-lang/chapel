@@ -9,7 +9,7 @@
 //
 // NOTE: The current implementation assumes that all locales will return
 // the same values for chpl_comm_getMaxThreads() and 
-// CHPL_THREADS_GETMAXTHREADS().  If/when this is no longer a safe
+// chpl_threads_getMaxThreads().  If/when this is no longer a safe
 // assumption, this variable should be replaced with a 0 sentinel value
 // and the locale should support a maxThreads query to find out what
 // the actual limit per locale is.  Arguably this could/should be done

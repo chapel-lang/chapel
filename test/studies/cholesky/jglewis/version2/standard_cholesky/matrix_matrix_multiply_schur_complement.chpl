@@ -25,7 +25,7 @@ module matrix_matrix_multiply_schur_complement {
   // for Matrix in Block Colum Form (1D).
   // ==========================================
 
-  def symmetric_block_schur_complement ( A : [] , L : [] )
+  proc symmetric_block_schur_complement ( A : [] , L : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
@@ -61,7 +61,7 @@ module matrix_matrix_multiply_schur_complement {
   // Symmetric 2D Block Outer Product_Modification
   // =============================================
 
-  def symmetric_2D_block_schur_complement ( A : [] , L : [] )
+  proc symmetric_2D_block_schur_complement ( A : [] , L : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
@@ -95,7 +95,7 @@ module matrix_matrix_multiply_schur_complement {
   // Symmetric Block Outer Product Modification for a single diagonal block
   // ======================================================================
 
-  def symmetric_diagonal_low_rank_modification ( L : [], A : [] ) {
+  proc symmetric_diagonal_low_rank_modification ( L : [], A : [] ) {
 
     // -----------------------------------------------------------
     // form diagonal block A (K,K) = A (K,K) - L (K,J) L^T (J,K) 
@@ -120,7 +120,7 @@ module matrix_matrix_multiply_schur_complement {
   // Symmetric Block Outer Product Modification for a single offdiagonal block
   // =========================================================================
 
-  def symmetric_offdiagonal_low_rank_modification ( L : [], A : [] ) {
+  proc symmetric_offdiagonal_low_rank_modification ( L : [], A : [] ) {
 
     // -------------------------------------------------------------
     // Form a single offdiagonal block 

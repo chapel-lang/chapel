@@ -5,7 +5,7 @@ class C {
 }
 
 
-def f(x : ?t) where x.bar == int {
+proc f(x : ?t) where x.bar == int {
   writeln("x = ", x.x);
 }
 

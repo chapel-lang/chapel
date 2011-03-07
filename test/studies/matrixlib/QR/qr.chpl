@@ -16,7 +16,7 @@ config const inputfile = "prolate5.dat";
 // QR: Computes QR.  The arguments are as follows:
 //   A: the m x n input array to be factored.  
 //
-def QR(A: [?D]) where (D.rank == 2) {
+proc QR(A: [?D]) where (D.rank == 2) {
 
   const m = D.dim(1).length,
         n = D.dim(2).length,
@@ -77,7 +77,7 @@ def QR(A: [?D]) where (D.rank == 2) {
   }
 }
 
-def norm(x...?n) {
+proc norm(x...?n) {
   var sum, scale, absXi:x(1).type;
   const one = 1.0:x(1).type;
   const zero = 0.0:x(1).type;
@@ -97,7 +97,7 @@ def norm(x...?n) {
   return (scale*sqrt(sum));
 }
 
-def norm(X: [?D]) {
+proc norm(X: [?D]) {
   var sum, scale, absXi:X.eltType;
   const one = 1.0:X.eltType;
   const zero = 0.0:X.eltType;
@@ -120,7 +120,7 @@ def norm(X: [?D]) {
 // The main function here provides a test harness for calling the
 // QR routine
 
-def main() {
+proc main() {
 
   // Open the input file, read in the array size, ensure it's square
   var infile = new file(inputfile, path='./', mode=FileAccessMode.read);

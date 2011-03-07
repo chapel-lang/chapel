@@ -1,6 +1,6 @@
-def foo() {
+proc foo() {
   var t = ("a", "b");
-  def bar() {
+  proc bar() {
     var x = t(1);
     t(1) = t(2);
     t(2) = x;

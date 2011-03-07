@@ -1,5 +1,5 @@
 record R {
-  def ~R () {writeln("Inside ~R");}
+  proc ~R () {writeln("Inside ~R");}
 }
 
 var r: R;

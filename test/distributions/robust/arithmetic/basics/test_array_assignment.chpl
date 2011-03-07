@@ -1,7 +1,7 @@
 use driver_arrays;
 
 var i = 0;
-def next() { i += 1; return i; }
+proc next() { i += 1; return i; }
 
 for e in A1D do e = next();
 for e in A2D do e = next();

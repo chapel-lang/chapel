@@ -20,7 +20,7 @@ module M5 {
 
 module M6 {
   var aaa = 6;
-  def main() {
+  proc main() {
     use M3, M5;
     var aaa = 0;
     writeln(aaa); // Expect 0

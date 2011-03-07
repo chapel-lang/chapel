@@ -5,7 +5,7 @@
 /* //  */
 /* //  */
 /* //--------------------------------------------------------------------- */
-/* def LevelInterface.C2FInteriorInterpolator( */
+/* proc LevelInterface.C2FInteriorInterpolator( */
 /*   q_coarse: LevelVariable, */
 /*   q_fine:   LevelVariable,) */
 /* { */
@@ -70,7 +70,7 @@
 /* //---------------------------------------------------- */
 /* // */
 /* // */
-/* def LevelInterface.minmodDiffs( */
+/* proc LevelInterface.minmodDiffs( */
 /*   q:     GridVariable,  */
 /*   cells: subdomain(coarse_level.cells)) */
 /* { */
@@ -132,7 +132,7 @@
 
 
 
-/* def neighborhood(cell: dimension*int, k: int) { */
+/* iter neighborhood(cell: dimension*int, k: int) { */
 /*   var ranges: dimension*range(stridable=true); */
 /*   for d in dimensions do ranges(d) = -2*k..2*k by 2; */
 /*   var shifts = [(...ranges)]; */
@@ -143,7 +143,7 @@
 /* } */
 
 
-/* def intVec( x ...? n ) { */
+/* proc intVec( x ...? n ) { */
 /*   var int_vec: dimension*int; */
 /*   for param i in 1..n do */
 /*     int_vec(x(i)(2)) = x(i)(1); */
@@ -164,7 +164,7 @@
 /* // Identifies cells (as arithmetic domains) that will be involved in */
 /* // fine-to-coarse averaging on the way up an AMR cycle. */
 /* //--------------------------------------------------------------------- */
-/* def LevelInterface.setF2CReceivingCells() { */
+/* proc LevelInterface.setF2CReceivingCells() { */
 
 /*   for coarse_grid in coarse_grids { */
 /*     for fine_grid in fine_grids { */
@@ -187,7 +187,7 @@
 /* //|""""""""""""""""""""""""""""""""""""""""""""""""""\ */
 /* //|===> LevelInterface.interpolateC2FLinear method ===> */
 /* //|__________________________________________________/ */
-/* def LevelInterface.interpolateC2FLinear(q_coarse: LevelVariable) */
+/* proc LevelInterface.interpolateC2FLinear(q_coarse: LevelVariable) */
 /* { */
 
 /*   //===> Fill coarse ghost cells for interpolation ===> */
@@ -322,7 +322,7 @@
 /* //------------------------------------------------------------------------- */
 /* // Conservatively averages data from the fine level onto the coarse level. */
 /* //------------------------------------------------------------------------- */
-/* def LevelInterface.interpolateF2C( */
+/* proc LevelInterface.interpolateF2C( */
 /*   q_coarse: LevelVariable, */
 /*   q_fine:   LevelVariable */
 /* ) { */
@@ -390,7 +390,7 @@
 /* // stores the set of fine ghost cells that will receive data from */
 /* // the coarse grid. */
 /* //----------------------------------------------------------------------- */
-/* def LevelInterface.setC2FReceivingCells() { */
+/* proc LevelInterface.setC2FReceivingCells() { */
     
 
 /*   for fine_grid in fine_grids { */
@@ -437,7 +437,7 @@
 /*   var fine_ghost_cells: [fine_grids] GhostCells; */
 
 /*   //===> Constructor ===> */
-/*   def CoarseGridSenderInfo( */
+/*   proc CoarseGridSenderInfo( */
 /*     level_interface: LevelInterface, */
 /*     coarse_grid:     Grid) */
 /*   { */
@@ -486,7 +486,7 @@
 /*   var coarse_cells: [coarse_grids] domain(dimension, stridable=true); */
 
 /*   //===> Constructor ===> */
-/*   def FineGridSenderInfo( */
+/*   proc FineGridSenderInfo( */
 /*     interface: LevelInterface, */
 /*     fine_grid: Grid) */
 /*   { */

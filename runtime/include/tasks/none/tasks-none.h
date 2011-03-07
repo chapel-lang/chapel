@@ -2,7 +2,6 @@
 #define _tasks_none_h_
 
 typedef chpl_bool chpl_sync_aux_t; // only needs to store the full/empty bit
-typedef chpl_sync_aux_t chpl_single_aux_t;
 
 // type (and default value) used to communicate task identifiers
 // between C code and Chapel code in the runtime.

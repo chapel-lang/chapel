@@ -2,7 +2,7 @@ param randWidth = 64;
 type randType = uint(randWidth);
 
 
-def getNextRand(inout x) {
+proc getNextRand(inout x) {
   param POLY = 0x7;
   param hiRandBit = 0x1:randType << (randWidth-1);
 

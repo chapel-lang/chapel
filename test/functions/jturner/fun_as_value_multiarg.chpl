@@ -1,4 +1,4 @@
-def subtract(x:int, y:int) { return x-y; }
+proc subtract(x:int, y:int) { return x-y; }
 
 var g = subtract;
 

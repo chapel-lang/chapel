@@ -2,7 +2,7 @@ class C {
   var s: string;
 }
 
-def main {
+proc main {
   var c = new C("a string");
   var b: int;
   writeln(c);

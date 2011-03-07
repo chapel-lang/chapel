@@ -56,7 +56,7 @@ record HPLparams {
   var L1, U: transtype;
   var memAlign: int;
 
-  def initialize() {
+  proc initialize() {
      var infile = new file(inFileName, path='./', mode=FileAccessMode.read);
 
      infile.open();

@@ -1,4 +1,4 @@
-def f(x) {
+proc f(x) {
   return x*2;
 }
 
@@ -7,7 +7,7 @@ class C {
   var y: int = f(x);
   
   // This works around overriding the default constructor
-  def C(w: bool) {
+  proc C(w: bool) {
     writeln("In user defined constructor: x=", x, " y=", y);
   }
 }

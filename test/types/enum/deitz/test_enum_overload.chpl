@@ -1,10 +1,10 @@
 enum month {jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec};
 
-def foo(m : month) {
+proc foo(m : month) {
   writeln("It's a month");
 }
 
-def foo(i : int) {
+proc foo(i : int) {
   writeln("It's an int");
 }
 

@@ -40,13 +40,14 @@
  ***/
 
 #include "astutil.h"
+#include "passes.h"
 #include "stmt.h"
 #include "symbol.h"
 
 // Gets a total on the number of blocks within some vector of blocks (likely
 // captured via getChildBlocks) which contain var. Useful in determining if
 // a variable is used in multiple locations.
-int countBlocks(Vec<BlockStmt*>& check_vec_block, VarSymbol* var) {
+static int countBlocks(Vec<BlockStmt*>& check_vec_block, VarSymbol* var) {
   int answer = 0;
   forv_Vec(BlockStmt*, block, check_vec_block) {
 
@@ -68,7 +69,7 @@ int countBlocks(Vec<BlockStmt*>& check_vec_block, VarSymbol* var) {
 // example, if some code contains 2 declarations, an if statement, and
 // a while loop, the resulting vector would have two elements: the if
 // and the while.
-Vec<BlockStmt*> getChildBlocks(BlockStmt* check_block) {
+static Vec<BlockStmt*> getChildBlocks(BlockStmt* check_block) {
   Vec<BlockStmt*> answer;
 
   for_alist(expr, check_block->body) {
@@ -91,7 +92,8 @@ Vec<BlockStmt*> getChildBlocks(BlockStmt* check_block) {
 
 // Returns the first block statement within a vector of blocks that
 // contains a variable.
-BlockStmt* getUniqueBlock(Vec<BlockStmt*>& check_vec_block, VarSymbol* var) {
+static BlockStmt* getUniqueBlock(Vec<BlockStmt*>& check_vec_block, 
+                                 VarSymbol* var) {
   forv_Vec(BlockStmt*, block, check_vec_block) {
 
     Vec<SymExpr*> symbols;
@@ -112,7 +114,7 @@ BlockStmt* getUniqueBlock(Vec<BlockStmt*>& check_vec_block, VarSymbol* var) {
 // for y, an if statement, and a while loop (which contains z), this
 // function would return true if called with x, but false if called with
 // z.
-bool isTopDecl(BlockStmt* check_block, VarSymbol* var) {
+static bool isTopDecl(BlockStmt* check_block, VarSymbol* var) {
   for_alist(expr, check_block->body) {
     Vec<SymExpr*> syms;
     if ( (!(toBlockStmt(expr))) &&

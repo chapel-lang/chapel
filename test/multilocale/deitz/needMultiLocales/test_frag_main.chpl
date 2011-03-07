@@ -1,11 +1,11 @@
 config const useVerboseComm = false;
 
-def main() {
+proc main() {
   coforall loc in Locales do on loc do
     fragmentedMain();
 }
 
-def fragmentedMain() {
+proc fragmentedMain() {
   var rank = here.id;
   var size = numLocales;
 
@@ -45,7 +45,7 @@ forall p in PrivateSpace do
   forall l in LocaleSpace do
     buffer[p][l] = new list();
 
-def chpl_send_int(data: int, loc) {
+proc chpl_send_int(data: int, loc) {
   var from = here.id;
   on Locales[loc] {
     var b = buffer[here.id][from];
@@ -58,7 +58,7 @@ def chpl_send_int(data: int, loc) {
   }
 }
 
-def chpl_recv_int(out data: int, loc) {
+proc chpl_recv_int(out data: int, loc) {
   var b = buffer[here.id][loc];
   b.signal$;
   b.lock$ = true;

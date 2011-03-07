@@ -1,17 +1,17 @@
 record BBB {
   var a,b,c: int;
-  def initialize() {
+  proc initialize() {
     writeln("BBB.initialize()");
   }
 }
 record AAA {
   var b: BBB;
-  def initialize() {
+  proc initialize() {
     writeln("AAA.initialize()");
   }
 }
 
-def main() {
+proc main() {
   var a: AAA;
   writeln(a);
 }

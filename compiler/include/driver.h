@@ -55,6 +55,7 @@ extern char chplmake[256];
 extern char fExplainCall[256];
 extern char fExplainInstantiation[256];
 extern bool fPrintCallStackOnError;
+extern bool fPrintIDonError;
 extern bool fCLineNumbers;
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;

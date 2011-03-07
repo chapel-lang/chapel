@@ -10,7 +10,7 @@ class E: C {
   var z: int;
 }
 
-def f(b: bool) {
+proc f(b: bool) {
   if b then
     return new D();
   else

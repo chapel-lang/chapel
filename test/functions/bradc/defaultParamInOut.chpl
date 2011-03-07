@@ -1,5 +1,5 @@
 
-def callinout2(inout x: int = 100, inout y: int = 200): int {
+proc callinout2(inout x: int = 100, inout y: int = 200): int {
   x += 1;
   y += 1;
   writeln("in callinout2, x is: ", x, ", y is: ", y);
@@ -7,7 +7,7 @@ def callinout2(inout x: int = 100, inout y: int = 200): int {
   return x+y;
 }
 
-def main() {
+proc main() {
   var a: int = 10;
   var b: int = 30;
   var r: int;

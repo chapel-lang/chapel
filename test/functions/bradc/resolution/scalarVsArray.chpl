@@ -1,8 +1,8 @@
-def f(i: int) {
+proc f(i: int) {
   writeln("In foo(:int)");
 }
 
-def f(i: [] int) {
+proc f(i: [] int) {
   writeln("In foo(:[] int)");
 }
 

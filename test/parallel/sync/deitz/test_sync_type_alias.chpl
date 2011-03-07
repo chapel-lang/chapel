@@ -1,4 +1,4 @@
-def main {
+proc main {
   type t = sync int;
   var v: t;
   v = 1;

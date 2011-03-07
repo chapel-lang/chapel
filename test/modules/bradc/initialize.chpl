@@ -25,7 +25,7 @@ module Hello {
   // top-level code like that contained in hello.chpl and
   // hello-config.chpl to work.
   //
-  def initialize() {
+  proc initialize() {
     writeln("from the Hello module's initialization routine: ", message);
   }
 
@@ -34,7 +34,7 @@ module Hello {
   // and will be run after the module (and any modules that it uses)
   // are initialized.
   //
-  def main() {
+  proc main() {
     writeln("from the main routine: ", message);
   }
 }

@@ -1,4 +1,4 @@
-def foo() const {
+proc foo() const {
   return 1;
 }
 

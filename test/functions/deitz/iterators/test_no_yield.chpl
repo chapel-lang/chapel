@@ -1,4 +1,4 @@
-def myiter() {
+proc myiter() {
   for i in 1..6 {
     yield;
   }

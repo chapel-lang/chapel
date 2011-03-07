@@ -1,10 +1,10 @@
 class P {
-    def f() return "";
+    proc f() return "";
 }
 
 class C: P {
     var n: int;
-    def f() return "D";
+    proc f() return "D";
 }
 
 class D {

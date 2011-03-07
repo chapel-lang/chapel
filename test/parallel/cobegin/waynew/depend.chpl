@@ -3,17 +3,17 @@ var b: sync int;
 var c: sync int;
 var d: sync int;
 
-def jam_records1 () {
+proc jam_records1 () {
   a;   // wait on thread last statement in cobegin
   b = 1;
 }
 
-def jam_records2 () {
+proc jam_records2 () {
   b;   // wait on thread 1
   c = 1;
 }
 
-def jam_records3 () {
+proc jam_records3 () {
   c;   // wait on thread 2
   d = 1;
 }

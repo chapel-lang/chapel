@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "chplrt.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chplexit.h"
 #include "error.h"
 #include "chpl_mem.h"
@@ -73,7 +73,7 @@ void chpl_comm_alloc_registry(int numGlobals) {
 
 void chpl_comm_broadcast_global_vars(int numGlobals) { }
 
-void chpl_comm_broadcast_private(int id, int size) { }
+void chpl_comm_broadcast_private(int id, int32_t sizee, int32_t tid) { }
 
 void chpl_comm_barrier(const char *msg) { }
 
@@ -81,11 +81,15 @@ void chpl_comm_exit_any(int status) { }
 
 void chpl_comm_exit_all(int status) { }
 
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
+                    int32_t size, int32_t typeIndex, int32_t len,
+                    int ln, chpl_string fn) {
   memcpy(raddr, addr, size);
 }
 
-void  chpl_comm_get(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
+                    int32_t size, int32_t typeIndex, int32_t len,
+                    int ln, chpl_string fn) {
   memcpy(addr, raddr, size);
 }
 
@@ -103,7 +107,8 @@ static void fork_nb_wrapper(fork_t* f) {
   chpl_free(f, 0, 0);
 }
 
-void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
+                       int32_t arg_size, int32_t arg_tid) {
   fork_t *info;
   int     info_size;
 
@@ -113,15 +118,17 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
   info->arg_size = arg_size;
   if (arg_size)
     memcpy(&(info->arg), arg, arg_size);
-  CHPL_BEGIN((chpl_fn_p)fork_nb_wrapper, (void*)info, false, false, NULL);
+  chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)info, false, false, NULL);
 }
 
-void chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
+                    int32_t arg_size, int32_t arg_tid) {
   (*chpl_ftable[fid])(arg);
 }
 
 // Same as chpl_comm_fork()
-void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
+                         int32_t arg_size, int32_t arg_tid) {
   (*chpl_ftable[fid])(arg);
 }
 

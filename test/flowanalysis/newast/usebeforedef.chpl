@@ -1,6 +1,6 @@
 foo(5);
 
-def foo(a) {
+proc foo(a) {
   writeln("a is ", a);
 }
 

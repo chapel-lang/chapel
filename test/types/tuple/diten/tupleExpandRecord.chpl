@@ -1,7 +1,7 @@
 record R {
   param size = 3;
   var a: int;
-  def this(i) var return a;
+  proc this(i) var return a;
 }
 
 var r: R;

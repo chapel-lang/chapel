@@ -3,15 +3,15 @@ use
 
 var NumThreads = 1 : int;
 
-def foo(i) {
+proc foo(i) {
   writeln("In foo()");
 }
 
-def foobar(i) {
+proc foobar(i) {
   writeln("In foobar()");
 }
 
-def main ( ) {
+proc main ( ) {
 
    var i : int; // Counter.
 

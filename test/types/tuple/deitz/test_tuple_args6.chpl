@@ -1,4 +1,4 @@
-def f((x, y): (?u, real)) {
+proc f((x, y): (?u, real)) {
   writeln((x, y));
 }
 

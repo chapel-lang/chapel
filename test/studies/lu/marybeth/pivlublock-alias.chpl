@@ -108,7 +108,7 @@ writeln();
 writeln("Pivot Vector:");
 writeln(piv);
 
-def IterateByBlocks(D:range,blksize) {
+iter IterateByBlocks(D:range,blksize) {
   var n = D.length;
   var lo,hi: int;
 
@@ -119,7 +119,7 @@ def IterateByBlocks(D:range,blksize) {
   }   
 }
   
-def initA(A,filename:string){
+proc initA(A,filename:string){
 
   var Adat = new file(filename,path='./',mode=FileAccessMode.read);
 

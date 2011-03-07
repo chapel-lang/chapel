@@ -1,7 +1,7 @@
 class bar {
   type t;
   var y : t;
-  def clone()
+  proc clone()
     return new bar(t, y);
 }
 

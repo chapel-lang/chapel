@@ -6,7 +6,7 @@ t[n+1,..] = 1.0;
 
 const stencil = makeList((-1, -1), (-1, 1), (1, -1), (1, 1));
 
-def jacobi(t) {
+proc jacobi(t) {
   var tt = t;
   var again = 0;
   [i in D] { 

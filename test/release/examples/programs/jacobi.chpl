@@ -11,7 +11,7 @@ config var n = 5,                       // size of n x n grid
            epsilon = 0.00001,           // convergence tolerance
            verbose = false;             // printing control
 
-def main() {
+proc main() {
   const ProblemSpace = [1..n, 1..n],    // domain for grid points
         BigDomain = [0..n+1, 0..n+1];   // domain including boundary points
 

@@ -1,4 +1,4 @@
-def foo(inout x: string) {
+proc foo(inout x: string) {
   x += " attached";
 }
 

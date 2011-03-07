@@ -5,7 +5,7 @@ var AUint: [DomUintType] uintType;
 var AReal: [DomRealType] realType;
 var AString: [DomStringType] stringType;
 
-def outputArrays() {
+proc outputArrays() {
   write("AInt  :"); for i in DomIntType do write(" ", AInt[i]); writeln();
   write("AUint  :"); for i in DomUintType do write(" ", AUint[i]); writeln();
   write("AReal  :"); for i in DomRealType do write(" ", AReal[i]); writeln();

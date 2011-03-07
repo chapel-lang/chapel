@@ -8,7 +8,7 @@ config const printRefArrays = true;
 var rng = new RandomStream(314159265);
 var trng = new RandomStream(314159265);
 
-def fillRefArrays() {
+proc fillRefArrays() {
   rng.fillRandom(R1D);
   rng.fillRandom(R2D);
   rng.fillRandom(R3D);
@@ -16,7 +16,7 @@ def fillRefArrays() {
   rng.fillRandom(R2D64);
 }
 
-def checkRNG(R, T: [?D2]) {
+proc checkRNG(R, T: [?D2]) {
   var errs = 0;
   [i in D2] if R[i]!=T[i] {
     errs += 1;
@@ -31,7 +31,7 @@ var T3D: [Dom3D] real;
 var T4D: [Dom4D] real;
 var T2D64: [Dom2D64] real;
 
-def resetTempArrays() {
+proc resetTempArrays() {
   [i in Dom1D] T1D[i] = -1;
   [ij in Dom2D] T2D[ij] = -1;
   [ijk in Dom3D] T3D[ijk] = -1;
@@ -78,24 +78,24 @@ writeln("\tR2D64: ", checkRNG(R2D64, aT2D64), " errors");
 
 
 writeln("fillRandom() reindexed arrays");
-def foo(rng, D: domain, A: [D]) {
+proc foo(rng, D: domain, A: [D]) {
   rng.fillRandom(A);
 }
 resetTempArrays();
 fillRefArrays();
-const TD1D: domain(1) = Space1 - (o5);
+const TD1D: domain(1) = Space1.translate(-o5);
 foo(trng, TD1D, T1D);
 writeln("\tR1D: ", checkRNG(R1D, T1D), " errors");
-const TD2D: domain(2) = Space2 - (o5,o5);
+const TD2D: domain(2) = Space2.translate(-o5,-o5);
 foo(trng, TD2D, T2D);
 writeln("\tR2D: ", checkRNG(R2D, T2D), " errors");
-const TD3D: domain(3) = Space3 - (o5,o5,o5);
+const TD3D: domain(3) = Space3.translate(-o5,-o5,-o5);
 foo(trng, TD3D, T3D);
 writeln("\tR3D: ", checkRNG(R3D, T3D), " errors");
-const TD4D: domain(4) = Space4 - (o5,o5,o5,o5);
+const TD4D: domain(4) = Space4.translate(-o5,-o5,-o5,-o5);
 foo(trng, TD4D, T4D);
 writeln("\tR4D: ", checkRNG(R4D, T4D), " errors");
-const TD2D64: domain(2,int(64)) = Space2D64 - (o5:int(64),o5:int(64));
+const TD2D64: domain(2,int(64)) = Space2D64.translate(-o5:int(64),-o5:int(64));
 foo(trng, TD2D64, T2D64);
 writeln("\tR2D64: ", checkRNG(R2D64, T2D64), " errors");
 

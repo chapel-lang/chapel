@@ -6,7 +6,7 @@ use Sort;
 
 var rng = new RandomStream(314159265);
 
-def checkSort(A, len, sortType) {
+proc checkSort(A, len, sortType) {
   var errs = 0;
   for i in 1..len-1 do
     if A[i] > A[i+1] {
@@ -37,13 +37,13 @@ checkSort(R1D, n1, "InsertionSort");
 
 
 writeln("Sort reindexed array");
-def foo(D: domain, A: [D], useQuickSort=true) {
+proc foo(D: domain, A: [D], useQuickSort=true) {
   if useQuickSort then
     QuickSort(A);
   else
     InsertionSort(A);
 }
-const TD1D: domain(1) = Space1 - (o5);
+const TD1D: domain(1) = Space1.translate(-o5);
 rng.fillRandom(R1D);
 foo(TD1D, R1D);
 checkSort(R1D, n1, "QuickSort");

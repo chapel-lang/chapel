@@ -7,7 +7,7 @@ module cyclic_partition_iterators {
   // reduced matrices that occur during a triangular factorization.
   // ===================================================================
 
-  def local_reduced_matrix_cyclic_partition ( idx_range, processor : 2*int, 
+  iter local_reduced_matrix_cyclic_partition ( idx_range, processor : 2*int, 
 					      r, c ) {
 
     // -------------------------------------------------------------------
@@ -71,7 +71,7 @@ module cyclic_partition_iterators {
   // (or the rows or columns of a Matrix)
   // ====================================
 
-  def vector_cyclic_partition ( idx_range )
+  iter vector_cyclic_partition ( idx_range )
   {
     // -------------------------------------------------------------------
     // Deliver as ranges the block partitioning of a vector.

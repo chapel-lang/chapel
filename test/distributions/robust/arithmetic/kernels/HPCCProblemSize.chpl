@@ -11,7 +11,7 @@ module HPCCProblemSize {
   //
   // The main routine for computing the problem size
   //
-  def computeProblemSize(numArrays: int,    // #arrays in the benchmark
+  proc computeProblemSize(numArrays: int,    // #arrays in the benchmark
 			 type elemType,     // the element type of those arrays
                          rank=1,            // rank of the arrays
 			 returnLog2=false,  // whether to return log2(probSize)
@@ -73,7 +73,7 @@ module HPCCProblemSize {
   //
   // Print out the machine configuration used to run the job
   //
-  def printLocalesTasks() {
+  proc printLocalesTasks() {
     writeln("Number of Locales = ", numLocales);
     writeln("Tasks per locale = ", dataParTasksPerLocale);
   }
@@ -82,7 +82,7 @@ module HPCCProblemSize {
   // Print out the problem size, #bytes per array, and total memory
   // required by the arrays
   //
-  def printProblemSize(type elemType, numArrays, problemSize: ?psType, 
+  proc printProblemSize(type elemType, numArrays, problemSize: ?psType, 
                        param rank=1) {
     const bytesPerArray = problemSize**rank * numBytes(elemType),
           totalMemInGB = (numArrays * bytesPerArray:real) / (1024**3),

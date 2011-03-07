@@ -49,7 +49,7 @@ print FILE "%%\n\n";
 print FILE "\\sekshun{Collected Lexical and Syntax Productions}\n";
 print FILE "\\label{Syntax}\n\n";
 print FILE "This appendix collects the syntax productions listed throughout the specification.  There are no new syntax productions in this appendix.  The productions are listed both alphabetically and in depth-first order for convenience.\n\n";
-print FILE "\\subsection{Alphabetical Lexical Productions}\n\n";
+print FILE "\\section{Alphabetical Lexical Productions}\n\n";
 $last = "";
 foreach $rule (sort values %lexes) {
     $prefix = $last;
@@ -71,7 +71,7 @@ foreach $rule (sort values %lexes) {
     $last = $rule;
 }
 
-print FILE "\\subsection{Alphabetical Syntax Productions}\n\n";
+print FILE "\\section{Alphabetical Syntax Productions}\n\n";
 $last = "";
 foreach $rule (sort values %rules) {
     $prefix = $last;
@@ -146,7 +146,7 @@ foreach $prefix (sort keys %counts) {
 ### print lexical rules in depth-first order
 ###
 
-print FILE "\\subsection{Depth-First Lexical Productions}\n\n";
+print FILE "\\section{Depth-First Lexical Productions}\n\n";
 
 foreach $rule (values %lexes) {
     if ($rule =~ m/^(.*):/) {
@@ -191,7 +191,7 @@ do {
 ### print syntax rules in depth-first order
 ###
 
-print FILE "\\subsection{Depth-First Syntax Productions}\n\n";
+print FILE "\\section{Depth-First Syntax Productions}\n\n";
 
 foreach $rule (values %rules) {
     if ($rule =~ m/^(.*):/) {

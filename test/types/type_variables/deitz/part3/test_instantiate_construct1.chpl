@@ -1,10 +1,10 @@
 class foo {
   type t;
   var x : t;
-  def initialize() {
+  proc initialize() {
     x += 10;
   }
-  def print() {
+  proc print() {
     writeln(x);
   }
 }

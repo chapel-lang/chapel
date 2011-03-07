@@ -2,5 +2,5 @@
 
 limit vmemoryuse 256M
 
-../../../Bin/sub_test $1
+../../../../util/test/sub_test $1
 

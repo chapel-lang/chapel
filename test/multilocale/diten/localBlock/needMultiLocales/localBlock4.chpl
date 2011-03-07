@@ -1,4 +1,4 @@
-def main {
+proc main {
   var A: [1..5] int;
   on Locales(1) {
     for i in A.domain do

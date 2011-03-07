@@ -1,0 +1,138 @@
+=====================
+Chapel Testing System
+=====================
+
+The Chapel testing system is a key piece of technology for the Chapel
+developer.  We use it as a harness for doing test-driven development,
+for performing sanity checks on code before committing it, for bug and
+issue tracking, and for nightly correctness and performance regression
+testing.  Getting really comfortable with it is one of the most
+important things a developer can do early in the development cycle.
+
+The tests for the testing system are located in $CHPL_HOME/test.  The
+main script that drives the test system itself is
+$CHPL_HOME/util/start_test, though it relies on several helper scripts
+located in $CHPL_HOME/util/test.
+
+This document provides only a high-level introduction to the testing
+system.  For further details, see the comments at the top of the
+start_test script.  You can also get a sense for the test system by
+looking through the test directory itself to see how it is used in
+practice.
+
+
+Simple example
+--------------
+A simplest use of the test system is to create a .chpl file containing
+some Chapel code and a .good file containing the expected output.  For
+example, given a directory containing two files:
+
+  ========
+  hi.chpl:
+  ========
+  writeln("Hi!");
+
+  ========
+  hi.good:
+  ========
+  Hi!
+
+The test system can be exercised by invoking:
+
+  prompt% start_test hi.chpl
+
+This will cause the compiler to compile hi.chpl then execute the
+resulting binary.  The concatenation of the compiler and executable
+output will then be compared against the .good file.  A transcript of
+the test system's actions is printed to the console and also stored in
+$CHPL_HOME/test/Logs/ by default.
+
+
+Invoking start_test
+-------------------
+
+The simple example above demonstrates invoking start_test on a single
+explicitly-named file.  More generally, start_test takes a list of
+test and directory names on the command line and will run all tests
+explicitly named or contained within the directories (or their
+subdirectories).  For example:
+
+  start_test foo.chpl bar/baz.chpl typeTests/ OOPTests/
+
+will test the two explicitly-named tests (foo.chpl and baz.chpl stored
+in the bar/ directory).  It will also recursively search for any tests
+stored in the typeTests/ and OOPTests/ subdirectories.
+
+If invoked without any arguments, start_test will start in the current
+directory and recursively look for tests in subdirectories.
+
+
+More complex tests
+------------------
+In addition to the simplest form of test shown above, the test system
+supports a number of additional options for creating more complex
+tests.  For example, capabilities exist to specify compilation and
+execution command-line flags for a test, to post-process the test
+output (e.g., to remove nondeterminism), to skip over the test under
+certain conditions, to track performance characteristics of a test,
+etc.  These options are all specified using files in the same
+directory as the test.  Some files apply to a directory as a whole
+while others will apply to a single test by sharing the same base
+filename.  As an example, the file COMPOPTS specifies compiler options
+that should be used for all tests in the given directory while
+hi.compopts would specify compiler options that should only be used
+for the hi.chpl test.
+
+For more information on these capabilities, review the comments at the
+top of start_test which is currently the most complete documentation
+on the testing system.  (NOTE: We may want to migrate that
+documentation over to this text file).
+
+
+Futures
+-------
+
+The testing system also serves as our current system for tracking
+code-driven bugs and open issues.  In particular, any test can be
+marked as being a "future" test indicating that it doesn't work today
+but should in the future (or else be removed from the testing system).
+To mark a test as a future, you add a .future file sharing the same
+base name as the test.  For example, adding hi.future would make the
+simple test above into a future test.  Marking a test as a .future
+causes it to be run every night, but not to be counted against the
+compiler's success/failure statisics.  Future tests still need to have
+a .good file indicating their expected output so that if they start
+working, we will become aware of it.
+
+The format of the future file is minimally structured.  The first line
+should contain the type of future (see list below) followed by a brief
+(few word) description of the future.  The rest of the file is
+free-form and can be used over the future's lifetime to describe in
+what way the test isn't working or should be working, implementation
+notes, philosophical arguments, etc.  The one-line summaries of all
+outstanding futures can be viewed by running
+$CHPL_HOME/util/devel/test/list_futures.
+
+The current categories of future are:
+
+* bug: this test exhibits a bug in the implementation
+
+* error message: this test correctly generates an error message, but
+    the error message needs clarification/improvement
+
+* feature request: a way of filing a request for a particular feature
+  in Chapel
+
+* memory: indicates a test that exhibits a problem with memory usage
+  (such as a memory leak)
+
+* multilocale: shows a problem that only relates to multi-locale
+    executions
+
+* performance: indicates a performance issue that needs to be addressed
+
+* semantic:  this test raises a question about Chapel's semantics
+    that we ultimately need to address
+
+* unimplemented feature: this test uses features that are specified, but
+    which have not yet been implemented.

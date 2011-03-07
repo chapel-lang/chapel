@@ -1,4 +1,4 @@
-def foo {
+proc foo {
   writeln("in foo");
 }
 

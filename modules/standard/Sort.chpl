@@ -1,4 +1,4 @@
-def InsertionSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
+proc InsertionSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
   const lo = Dom.low;
   for i in Dom {
     const ithVal = Data(i);
@@ -24,7 +24,7 @@ def InsertionSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
 }
 
 
-def QuickSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
+proc QuickSort(Data: [?Dom], doublecheck = false) where Dom.rank == 1 {
   // grab obvious indices
   const lo = Dom.low, 
         hi = Dom.high,

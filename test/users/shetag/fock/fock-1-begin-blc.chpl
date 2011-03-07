@@ -3,7 +3,7 @@ const n = (natom/2)*10 + ((natom+1)/2)*5;
 // const bas_info : [[1..natom, 1..2]] int = [(i,j) in [1..natom, 1..2]] 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
 const bas_info : [[1..natom, 1..2]] int = [(i,j) in [1..natom, 1..2]] bas_init(i,j);
 
-def bas_init(i,j) {
+proc bas_init(i,j) {
   return 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
 }
 
@@ -15,7 +15,7 @@ var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType;
 class blockIndices {
   const ilo, ihi, jlo, jhi, klo, khi, llo, lhi : int;
   
-  def blockIndices(ilo, ihi, jlo, jhi, klo, khi, llo, lhi) {
+  proc blockIndices(ilo, ihi, jlo, jhi, klo, khi, llo, lhi) {
     this.ilo = ilo;
     this.ihi = ihi;
     this.jlo = jlo;
@@ -32,7 +32,7 @@ var task : sync blockIndices;
 
 var numTasksDone : sync int = 0;
  
-def buildjk() {
+proc buildjk() {
   cobegin {
     for l in 1..nlocales do
       begin  
@@ -89,7 +89,7 @@ def buildjk() {
 
 var oneAtATime: sync bool = true;
 
-def buildjk_atom4(bI) {
+proc buildjk_atom4(bI) {
   const ilo = bI.ilo, ihi = bI.ihi, jlo = bI.jlo, jhi = bI.jhi, klo = bI.klo, khi = bI.khi, llo = bI.llo, lhi = bI.lhi;
   
   const ijD = [ilo..ihi, jlo..jhi];
@@ -154,10 +154,10 @@ def buildjk_atom4(bI) {
   oneAtATime = tmp;
 }
 
-def g(i,j,k,l) {
+proc g(i,j,k,l) {
   return 1.0/(i*j + k*l);
 }
 
-def main() {
+proc main() {
   buildjk();
 }

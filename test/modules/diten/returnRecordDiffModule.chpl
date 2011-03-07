@@ -1,18 +1,18 @@
 module M1 {
   record R {
     var a = 2;
-    def foo() {
+    proc foo() {
       return a;
     }
   }
 }
 
 module M2 {
-  def main {
+  proc main {
     var r = retRecord();
     //writeln(r.a);
 
-    def retRecord() {
+    proc retRecord() {
       use M1;
       return new R();
     }

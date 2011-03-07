@@ -1,9 +1,9 @@
-def foo(n: int) {
+iter foo(n: int) {
   for i in 0..n-1 do
     yield i;
 }
 
-def bar(n: int) {
+iter bar(n: int) {
   for i in 0..n-1 do
     for x in foo(n) do
       yield x+i;

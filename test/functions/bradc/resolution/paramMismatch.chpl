@@ -1,4 +1,4 @@
-def foo(x: int(32)) {
+proc foo(x: int(32)) {
   writeln("In foo!");
 }
 

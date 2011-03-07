@@ -1,7 +1,7 @@
 class C {
   var y: 3*int;
-  def x return y;
-  def x(i: real) return 4;
+  proc x return y;
+  proc x(i: real) return 4;
 }
 
 var c = new C();

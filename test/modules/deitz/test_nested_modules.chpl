@@ -8,7 +8,7 @@ module M1 {
 
     module M3 {
 
-      def foo() {
+      proc foo() {
         writeln(x);
       }
 
@@ -19,7 +19,7 @@ module M1 {
 }
 
 module M {
-  def main() {
+  proc main() {
     use M1.M2.M3;
     foo();
   }

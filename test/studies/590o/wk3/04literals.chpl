@@ -15,7 +15,7 @@ printVarInfo(i4, 4);
 printVarInfo(i5, 5);
 printVarInfo(i6, 6);
 
-def printVarInfo(val, num) {
+proc printVarInfo(val, num) {
   writeln("for i", num, "...");
   writeln("  value is: ", val);
   writeln("  #bits is: ", numBits(val.type));

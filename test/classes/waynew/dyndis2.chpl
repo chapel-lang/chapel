@@ -8,7 +8,7 @@ class somedata {
 
 
 class base {
-  def jam( x: int, d: somedata(int)) {
+  proc jam( x: int, d: somedata(int)) {
     writeln( "base ", " : ", d);
   }
 }
@@ -16,7 +16,7 @@ class base {
 class aclass: base {
   type dtype;
   var data: dtype;
-  def jam( x: int, d: somedata(int)) {
+  proc jam( x: int, d: somedata(int)) {
     writeln( "aclass ", data, " ", x, " : ", d);
   }
 }
@@ -24,7 +24,7 @@ class aclass: base {
 class bclass: base {
   type dtype;
   var y: dtype;
-  def jam( x:int, d: somedata(int)) {
+  proc jam( x:int, d: somedata(int)) {
     writeln( "bclass ", y, " ", x, " : ", d);
   }
 }
@@ -32,7 +32,7 @@ class bclass: base {
 class contain {
   var objs: list(base);
 
-  def xxx() {
+  proc xxx() {
     var something: somedata(int);
     something = new somedata( int, 10);
     for e in objs do
@@ -41,7 +41,7 @@ class contain {
 }
 
 
-def main () {
+proc main () {
   var a : aclass(int) = new aclass(int);
   var b : bclass(bool) = new bclass(bool);
 

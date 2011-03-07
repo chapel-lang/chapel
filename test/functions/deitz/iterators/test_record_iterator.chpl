@@ -1,6 +1,6 @@
 record R {
   var x, y, z: int;
-  def iterator() {
+  iter iterator() {
     x = 1;
     yield x;
     y = 2;

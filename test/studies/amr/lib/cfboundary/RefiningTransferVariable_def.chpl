@@ -14,7 +14,7 @@ class RefiningTransferVariable {
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
-  def clear() {
+  proc clear() {
     for multiarray in multiarrays do delete multiarray;
   }
   // /|''''''''''''''''/|
@@ -29,7 +29,7 @@ class RefiningTransferVariable {
   // Intended constructor signature:
   //     RefiningTransferVariable(cf_boundary: CFBoundary)
   //-------------------------------------------------
-  def initialize() {
+  proc initialize() {
     for grid in cf_boundary.fine_level.grids {
       multiarrays(grid) = new MultiArray(dimension,true,real);
       multiarrays(grid).allocate( cf_boundary.coarse_overlaps(grid).full_multidomain );
@@ -46,7 +46,7 @@ class RefiningTransferVariable {
   //-------------------------------------------------------
   // Return the MultiArray corresponding to a single Grid.
   //-------------------------------------------------------
-  def this(grid: Grid) {
+  proc this(grid: Grid) {
     return multiarrays(grid);
   }
   // /|''''''''''''''''''''/|

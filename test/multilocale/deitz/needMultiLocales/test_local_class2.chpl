@@ -2,7 +2,7 @@ class C {
   var x = 17;
 }
 
-def main {
+proc main {
   var c = new C(18);
   _debugWriteln(here.id, " ", c.x);
   on Locales(1) {

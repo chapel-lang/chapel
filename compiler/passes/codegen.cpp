@@ -73,7 +73,38 @@ static void legalizeName(Symbol* sym) {
     switch (*ch) {
     case '>': ch = subChar(sym, ch, "_GREATER_"); break;
     case '<': ch = subChar(sym, ch, "_LESS_"); break;
-    case '=': ch = subChar(sym, ch, "_EQUAL_"); break;
+    case '=':
+      {
+
+        /* To help generated code readability, we'd like to convert =
+           into "ASSIGN" and == into "EQUALS".  Unfortunately, because
+           of the character-at-a-time approach taken here combined
+           with the fact that subChar() returns a completely new
+           string on every call, the way I implemented this is a bit
+           ugly (in part because I didn't want to spend the time to
+           reimplement this whole function -BLC */
+
+        static const char* equalsStr = "_EQUALS_";
+        static int equalsLen = strlen(equalsStr);
+
+        if (*(ch+1) == '=') {
+          // If we're in the == case, replace the first = with EQUALS
+          ch = subChar(sym, ch, equalsStr);
+        } else {
+          if ((ch-equalsLen >= sym->cname) && 
+              strncmp(ch-equalsLen, equalsStr, equalsLen) == 0) {
+            // Otherwise, if the thing preceding this '=' is the
+            // string _EQUALS_, we must have been the second '=' and
+            // we should just replace ourselves with an underscore to
+            // make things legal.
+            ch = subChar(sym, ch, "_");
+          } else {
+            // Otherwise, this must have simply been a standalone '='
+            ch = subChar(sym, ch, "_ASSIGN_");
+          }
+        }
+        break;
+    }
     case '*': ch = subChar(sym, ch, "_ASTERISK_"); break;
     case '/': ch = subChar(sym, ch, "_SLASH_"); break;
     case '%': ch = subChar(sym, ch, "_PERCENT_"); break;
@@ -87,6 +118,7 @@ static void legalizeName(Symbol* sym) {
     case '?': ch = subChar(sym, ch, "_QUESTION_"); break;
     case '$': ch = subChar(sym, ch, "_DOLLAR_"); break;
     case '~': ch = subChar(sym, ch, "_TILDA_"); break;
+    case '.': ch = subChar(sym, ch, "_DOT_"); break;
     default: break;
     }
   }
@@ -582,6 +614,11 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
     fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
             (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
+    fprintf(hdrfile, "\nconst int chpl_heterogeneous = ");
+    if (fHeterogeneous)
+      fprintf(hdrfile, " 1;\n");
+    else
+      fprintf(hdrfile, " 0;\n");
     fprintf(hdrfile, "\nconst char* chpl_memDescs[] = {\n");
     bool first = true;
     forv_Vec(const char*, memDesc, memDescsVec) {
@@ -630,6 +667,11 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       fprintf(hdrfile, "\nextern const int chpl_numGlobalsOnHeap;\n");
       fprintf(hdrfile, "\nextern void** chpl_globals_registry;\n");
       fprintf(hdrfile, "\nextern void* chpl_globals_registry_static[];\n");
+      fprintf(hdrfile, "\nconst int chpl_heterogeneous = ");
+      if (fHeterogeneous)
+        fprintf(hdrfile, " 1;\n");
+      else
+        fprintf(hdrfile, " 0;\n");
       fprintf(hdrfile, "\nextern const char* chpl_memDescs[];\n");
       fprintf(hdrfile, "\nextern const int chpl_num_memDescs;\n");
     }
@@ -700,12 +742,6 @@ void codegen(void) {
   openCFile(&mainfile, "_main", "c");
   fprintf(mainfile.fptr, "#include \"chpl__header.h\"\n");
 
-  if (fHeterogeneous) {
-    fprintf(hdrfile.fptr, "#ifndef CHPL_COMM_HETEROGENEOUS\n");
-    fprintf(hdrfile.fptr, "#define CHPL_COMM_HETEROGENEOUS\n");
-    fprintf(hdrfile.fptr, "#endif\n");
-  }
-
   if (fGPU) {
     openCFile(&gpusrcfile, "chplGPU", "cu");
     forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -735,8 +771,17 @@ void codegen(void) {
   if (!fRuntime)
     codegen_config(mainfile.fptr);
 
-  if (fHeterogeneous)
+  if (fHeterogeneous) {
     codegenTypeStructureInclude(mainfile.fptr);
+    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+      if ((ts->type != dtOpaque) &&
+          (!toPrimitiveType(ts->type) ||
+           (toPrimitiveType(ts->type) &&
+            !toPrimitiveType(ts->type)->isInternalType))) {
+      registerTypeToStructurallyCodegen(ts);
+      }
+    }
+  }
 
   ChainHashMap<char*, StringHashFns, int> filenames;
   forv_Vec(ModuleSymbol, currentModule, allModules) {

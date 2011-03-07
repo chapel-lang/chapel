@@ -7,7 +7,7 @@ record Numbers {
   var maxIntWeight : int;
 }
 
-def f(x) {
+proc f(x) {
   return x + 1;
 }
 

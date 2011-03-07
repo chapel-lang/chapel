@@ -1,11 +1,11 @@
 config param debugCSR = false;
 
 class CSR: BaseDist {
-  def dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
+  proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
     return new CSRDom(rank=rank, idxType=idxType, dist=this, parentDom=dom);
   }
 
-  def dsiClone() return new CSR();
+  proc dsiClone() return new CSR();
 }
 
 class CSRDom: BaseSparseDom {
@@ -26,9 +26,9 @@ class CSRDom: BaseSparseDom {
   var rowStart: [rowDom] idxType;      // would like index(nnzDom)
   var colIdx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
-  def getBaseDist() return dist;
+  proc getBaseDist() return dist;
 
-  def CSRDom(param rank, type idxType, 
+  proc CSRDom(param rank, type idxType, 
                                dist: CSR,
                                parentDom: domain(rank, idxType)) {
     if (rank != 2) then
@@ -44,15 +44,15 @@ class CSRDom: BaseSparseDom {
     dsiClear();
   }
 
-  def dsiNumIndices return nnz;
+  proc dsiNumIndices return nnz;
 
-  def dsiGetIndices() return 0;
-  def dsiSetIndices(x) { }
+  proc dsiGetIndices() return 0;
+  proc dsiSetIndices(x) { }
 
-  def dsiBuildArray(type eltType)
+  proc dsiBuildArray(type eltType)
     return new CSRArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
 
-  def dsiIndsIterSafeForRemoving() {
+  iter dsiIndsIterSafeForRemoving() {
     var cursorRow = rowRange.high;
     for i in 1..nnz by -1 {
       while (rowStart(cursorRow) > i) {
@@ -62,7 +62,7 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  def these() {
+  iter these() {
     //writeln("serial- rowRange=", rowRange, " colRange=", colRange, "\n",
     //        "        rowStart=", rowStart, " colIdx=", colIdx);
 
@@ -76,7 +76,7 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     // same as DefaultSparseDom's leader
     const numElems = nnz;
     if numElems <= 0 then {
@@ -101,7 +101,7 @@ class CSRDom: BaseSparseDom {
     }  // if numElems
   }
 
-  def these(param tag: iterator, follower: (?,?,?)) where tag == iterator.follower {
+  iter these(param tag: iterator, follower: (?,?,?)) where tag == iterator.follower {
     var (followerDom, startIx, endIx) = follower;
     if boundsChecking then
       assert(startIx <= endIx, "CSRDom follower - got nothing to iterate over");
@@ -122,17 +122,18 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     compilerError("Sparse iterators can't yet be zippered with others (CSR layout)");
+    yield 0;	// Dummy.
   }
 
   // Helper: find 'ix' s.t. rowStart(ix) <= startIx < rowStart(ix+1)
   // or a number at most 'approx' smaller than that.
   // There MUST exist a solution within low..high.
-  def _private_findStartRow(startIx) {
+  proc _private_findStartRow(startIx) {
     return _private_findStartRow(startIx, rowDom.low, rowDom.high);
   }
-  def _private_findStartRow(startIx, low, high) {
+  proc _private_findStartRow(startIx, low, high) {
     var approx = 2; // Indicates when to switch to linear search.
                     // This number could be tuned for performance.
     // simple binary search (should be fewer comparisons than BinarySearch())
@@ -158,7 +159,7 @@ class CSRDom: BaseSparseDom {
     return l;
   }
 
-  def dsiDim(d : int) {
+  proc dsiDim(d : int) {
     if (d == 1) {
       return rowRange;
     } else {
@@ -166,18 +167,18 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  def boundsCheck(ind: rank*idxType):void {
+  proc boundsCheck(ind: rank*idxType):void {
     if boundsChecking then
       if !(parentDom.member(ind)) then
         halt("CSR domain/array index out of bounds: ", ind,
              " (expected to be within ", parentDom, ")");
   }
 
-  def rowStop(row) {
+  proc rowStop(row) {
     return rowStart(row+1)-1;
   }
 
-  def find(ind: rank*idxType) {
+  proc find(ind: rank*idxType) {
     use Search;
 
     const (row, col) = ind;
@@ -185,12 +186,12 @@ class CSRDom: BaseSparseDom {
     return BinarySearch(colIdx, col, rowStart(row), rowStop(row));
   }
 
-  def dsiMember(ind: rank*idxType) {
+  proc dsiMember(ind: rank*idxType) {
     const (found, loc) = find(ind);
     return found;
   }
 
-  def dsiAdd(ind: rank*idxType) {
+  proc dsiAdd(ind: rank*idxType) {
     boundsCheck(ind);
 
     // find position in nnzDom to insert new index
@@ -227,7 +228,7 @@ class CSRDom: BaseSparseDom {
     // shift all of the arrays up and initialize nonzeroes if
     // necessary 
     //
-    // BLC: Note: if arithmetic arrays had a user-settable
+    // BLC: Note: if rectangular arrays had a user-settable
     // initialization value, we could set it to be the IRV and skip
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
@@ -236,7 +237,7 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  def dsiRemove(ind: rank*idxType) {
+  proc dsiRemove(ind: rank*idxType) {
     // find position in nnzDom to remove old index
     const (found, insertPt) = find(ind);
 
@@ -271,7 +272,7 @@ class CSRDom: BaseSparseDom {
     // shift all of the arrays up and initialize nonzeroes if
     // necessary 
     //
-    // BLC: Note: if arithmetic arrays had a user-settable
+    // BLC: Note: if rectangular arrays had a user-settable
     // initialization value, we could set it to be the IRV and skip
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
@@ -280,12 +281,12 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  def dsiClear() {
+  proc dsiClear() {
     nnz = 0;
     rowStart = 1;
   }
 
-  def dimIter(param d, ind) {
+  iter dimIter(param d, ind) {
     if (d != 2) {
       compilerError("dimIter(1, ...) not supported on CSR domains");
     }
@@ -304,12 +305,12 @@ class CSRArr: BaseArr {
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
-  def dsiGetBaseDom() return dom;
+  proc dsiGetBaseDom() return dom;
 
-  //  def this(ind: idxType ... 1) var where rank == 1
+  //  proc this(ind: idxType ... 1) var where rank == 1
   //    return this(ind);
 
-  def dsiAccess(ind: rank*idxType) var {
+  proc dsiAccess(ind: rank*idxType) var {
     // make sure we're in the dense bounding box
     dom.boundsCheck(ind);
 
@@ -323,11 +324,11 @@ class CSRArr: BaseArr {
       return irv;
   }
 
-  def these() var {
+  iter these() var {
     for e in data[1..dom.nnz] do yield e;
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     // forward to the leader iterator on our domain
     // Note: this is so that arrays can be zippered with domains;
     // otherwise just chunk up data[1..dom.nnz] a-la DefaultSparseArr.
@@ -335,7 +336,7 @@ class CSRArr: BaseArr {
       yield follower;
   }
 
-  def these(param tag: iterator, follower: (?,?,?)) var where tag == iterator.follower {
+  iter these(param tag: iterator, follower: (?,?,?)) var where tag == iterator.follower {
     // simpler than CSRDom's follower - no need to deal with rows (or columns)
     var (followerDom, startIx, endIx) = follower;
 
@@ -347,15 +348,16 @@ class CSRArr: BaseArr {
     for e in data[startIx..endIx] do yield e;
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     compilerError("Sparse iterators can't yet be zippered with others (CSR layout)");
+    yield 0;	// Dummy.
   }
 
-  def IRV var {
+  proc IRV var {
     return irv;
   }
 
-  def sparseShiftArray(shiftrange, initrange) {
+  proc sparseShiftArray(shiftrange, initrange) {
     for i in initrange {
       data(i) = irv;
     }
@@ -365,7 +367,7 @@ class CSRArr: BaseArr {
     data(shiftrange.low) = irv;
   }
 
-  def sparseShiftArrayBack(shiftrange) {
+  proc sparseShiftArrayBack(shiftrange) {
     for i in shiftrange {
       data(i) = data(i+1);
     }
@@ -373,7 +375,7 @@ class CSRArr: BaseArr {
 }
 
 
-def CSRDom.dsiSerialWrite(f: Writer) {
+proc CSRDom.dsiSerialWrite(f: Writer) {
   f.writeln("[");
   for r in rowRange {
     const lo = rowStart(r);
@@ -386,7 +388,7 @@ def CSRDom.dsiSerialWrite(f: Writer) {
 }
 
 
-def CSRArr.dsiSerialWrite(f: Writer) {
+proc CSRArr.dsiSerialWrite(f: Writer) {
   for r in dom.rowRange {
     const lo = dom.rowStart(r);
     const hi = dom.rowStop(r);

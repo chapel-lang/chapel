@@ -10,7 +10,7 @@ module BFS
   // connected component of the graph g and the diameter of the graph.
   // =======================================================================
 
-  def breadth_first_search ( root, n_nodes, adj, out min_dist, 
+  proc breadth_first_search ( root, n_nodes, adj, out min_dist, 
                              out max_min_dist, out max_width )
 
      { 
@@ -83,7 +83,7 @@ module BFS
    // examine neighbor list of a given node
    // =====================================
 
-   def expand_nbr_set ( node, adj, min_dist, Next_Level, current_distance )
+   proc expand_nbr_set ( node, adj, min_dist, Next_Level, current_distance )
 
      {
 

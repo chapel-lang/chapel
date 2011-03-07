@@ -1,7 +1,7 @@
 class C {
   var x: int;
 
-  def C() {
+  proc C() {
     x = 5;
   }
 }

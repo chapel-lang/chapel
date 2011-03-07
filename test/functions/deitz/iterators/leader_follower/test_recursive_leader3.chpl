@@ -1,9 +1,9 @@
-def bar(lo: int, hi: int) {
+iter bar(lo: int, hi: int) {
   for i in lo..hi do
     yield i;
 }
 
-def bar(param tag: iterator, lo: int, hi: int): int where tag == iterator.leader {
+iter bar(param tag: iterator, lo: int, hi: int): int where tag == iterator.leader {
   yield lo;
   if hi > lo then
     on Locales((here.id+1)%numLocales) do
@@ -11,7 +11,7 @@ def bar(param tag: iterator, lo: int, hi: int): int where tag == iterator.leader
         yield i;
 }
 
-def bar(param tag: iterator, follower, lo: int, hi: int) where tag == iterator.follower {
+iter bar(param tag: iterator, follower, lo: int, hi: int) where tag == iterator.follower {
   yield follower;
 }
 

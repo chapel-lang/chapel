@@ -1,4 +1,4 @@
-def foo(x) {
+proc foo(x) {
   x = [1..0];
 }
 

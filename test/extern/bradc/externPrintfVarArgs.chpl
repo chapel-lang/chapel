@@ -1,4 +1,4 @@
-_extern def printf(fmt: string, vals...?numvals): int;
+_extern proc printf(fmt: string, vals...?numvals): int;
 
 var x = 12.34;
 

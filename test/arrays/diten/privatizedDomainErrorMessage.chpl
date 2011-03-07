@@ -1,6 +1,6 @@
 class C {}
 
-def foo(A: C) {
+proc foo(A: C) {
 
 }
 

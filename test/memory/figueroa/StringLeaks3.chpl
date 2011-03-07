@@ -5,7 +5,7 @@ use Memory;
 
 config const n = 1;
 
-def foo () {
+proc foo () {
   var s1 = "Good bye",
       s2 = s1;
   if n > 0 then

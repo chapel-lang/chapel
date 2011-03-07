@@ -9,8 +9,7 @@ include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.stm-$(CHPL_MAKE_STM)
 
-GEN_CFLAGS += -DCHPL_TASK_LAYER_NAME=$(CHPL_MAKE_TASKS_UBAR) \
-              -DCHPL_TASKS_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
+GEN_CFLAGS += -DCHPL_TASKS_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
               -DCHPL_THREADS_H=\"threads-$(CHPL_MAKE_THREADS).h\" \
               -DCHPL_STM_H=\"stm-$(CHPL_MAKE_STM).h\"
 	   	

@@ -1,9 +1,9 @@
-def foo(x: int(8)) {
+proc foo(x: int(8)) {
   writeln("int8 version of foo called");
 }
 
 
-def foo(x: int) {
+proc foo(x: int) {
   writeln("int version of foo called");
 }
 

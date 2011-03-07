@@ -10,7 +10,7 @@ var ual:uint(64), ubl:uint(64);
 
 config param t = 0;
 
-def dit(a, b) {
+proc dit(a, b) {
   if a < 0 {
     if b >= 0 then return true;
     else return false;
@@ -20,7 +20,7 @@ def dit(a, b) {
   }
 }
 
-def do_dit(a, b) {
+proc do_dit(a, b) {
   if dit(a, b) then writeln("dit(", a, ",", b, ")");
   else if dit(b, a) then writeln("dit(", b, ",", a, ")");
   else writeln("whatever");

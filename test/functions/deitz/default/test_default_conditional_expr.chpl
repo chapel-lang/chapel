@@ -1,4 +1,4 @@
-def f(x, y = if x > 2 then 3 else 4) {
+proc f(x, y = if x > 2 then 3 else 4) {
   writeln(x, y);
 }
 

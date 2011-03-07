@@ -1,6 +1,6 @@
 use MatrixMult;
 
-def main() {
+proc main() {
 
   const D = [1..3,1..3];
   const DB = [2..4,2..4];

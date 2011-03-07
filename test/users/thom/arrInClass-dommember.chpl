@@ -2,7 +2,7 @@ class StoreSomeInts {
   var intsDom: domain(1);
   var m_someints: [intsDom] int;
 
-  def StoreSomeInts(m_someints: [] int) {
+  proc StoreSomeInts(m_someints: [] int) {
     intsDom = m_someints.domain;
     this.m_someints = m_someints;
   }

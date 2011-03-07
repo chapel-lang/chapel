@@ -1,0 +1,1 @@
+val-fun-as-type-error-message.chpl:2: error: cannot use a function as a type, unless it is an invocation of a type function

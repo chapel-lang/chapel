@@ -7,7 +7,7 @@ forall-statement and the forall-expression) and several idioms that
 support data parallelism implicitly (whole-array assignment, function
 and operator promotion, reductions, and scans).
 
-\subsection{The Forall Statement}
+\section{The Forall Statement}
 \label{Forall}
 \index{forall@\chpl{forall}}
 \index{forall loops}
@@ -15,7 +15,7 @@ and operator promotion, reductions, and scans).
 The forall statement is a concurrent variant of the for statement
 described in~\rsec{The_For_Loop}.
 
-\subsubsection{Syntax}
+\subsection{Syntax}
 \label{forall_syntax}
 
 The syntax of the forall statement is given by
@@ -32,7 +32,7 @@ As with the for statement, the indices may be omitted if they are
 unnecessary and the \chpl{do} keyword may be omitted before a block
 statement.  The bracketed form is a syntactic convenience.
 
-\subsubsection{Execution and Serializability}
+\subsection{Execution and Serializability}
 \label{forall_semantics}
 
 The forall statement evaluates the loop body once for each element in
@@ -84,7 +84,7 @@ writeln(a);
 \end{chapeloutput}
 \end{example}
 
-\subsubsection{Parallelism}
+\subsection{Parallelism}
 \label{forall_parallelism}
 
 The iterator expression determines the number of tasks that implement
@@ -99,7 +99,7 @@ current locale.  Domains and arrays that are distributed across
 multiple locales will typically implement forall loops with multiple
 tasks on multiple locales.
 
-\subsubsection{Zipper Iteration}
+\subsection{Zipper Iteration}
 \label{forall_zipper}
 \index{zipper iteration}
 
@@ -109,7 +109,7 @@ left-most iterator expression determines the number of tasks, the
 iterations each task executes, and the locales on which these tasks
 execute.
 
-\subsubsection{Tensor Product Iteration}
+\subsection{Tensor Product Iteration}
 \label{forall_tensor}
 \index{tensor product iteration}
 
@@ -120,14 +120,14 @@ loops.  The degree of nested parallelism for ranges, default domains,
 and default arrays can be controlled via the configuration
 constant \chpl{dataParIgnoreRunningTasks}~(\rsec{data_parallel_knobs}).
 
-\subsection{The Forall Expression}
+\section{The Forall Expression}
 \label{Forall_Expressions}
 \index{forall expressions}
 
 The forall expression is a concurrent variant of the for expression
 described in~\rsec{For_Expressions}.
 
-\subsubsection{Syntax}
+\subsection{Syntax}
 \label{forall_expr_syntax}
 
 The syntax of a forall expression is given by
@@ -142,7 +142,7 @@ As with the for expression, the indices may be omitted if they are
 unnecessary.  The \chpl{do} keyword is always required.  The bracketed
 form is a syntactic convenience.
 
-\subsubsection{Execution, Serializability, and Parallelism}
+\subsection{Execution, Serializability, and Parallelism}
 
 As with the forall statement, the forall expression must be
 serializable.  In addition, the iterator expression determines the
@@ -170,7 +170,7 @@ applies a reduction to a forall-expression that evaluates the square
 of the indices in the range \chpl{1..10}.
 \end{example}
 
-\subsubsection{Filtering Predicates in Forall Expressions}
+\subsection{Filtering Predicates in Forall Expressions}
 \label{Filtering_Predicates_Forall}
 \index{forall expressions!and conditional expressions}
 
@@ -196,7 +196,7 @@ writeln(result);
 \end{chapeloutput}
 \end{example}
 
-\subsection{Whole Array Assignment}
+\section{Whole Array Assignment}
 \index{whole array assignment}
 
 Whole array assignment is implicitly parallel.  The assignment
@@ -210,7 +210,7 @@ forall (e1,e2) in (LHS,RHS) do
   e1 = e2;
 \end{chapel}
 
-\subsection{Promotion}
+\section{Promotion}
 \label{Promotion}
 \index{promotion}
 
@@ -237,7 +237,7 @@ var A: [1..5] int = [i in 1..5] i;
 \end{chapel}
 and the function
 \begin{chapel}
-def square(x: int) return x**2;
+proc square(x: int) return x**2;
 \end{chapel}
 then the call \chpl{square(A)} results in the promotion of
 the \chpl{square} function over the values in the array \chpl{A}.  The
@@ -247,7 +247,7 @@ values \chpl{1}, \chpl{4}, \chpl{9}, \chpl{16}, and \chpl{25}.
 
 Whole array operations are a form of promotion.
 
-\subsubsection{Zipper Promotion}
+\subsection{Zipper Promotion}
 \label{Zipper_Promotion}
 \index{promotion!zipper iteration}
 
@@ -267,7 +267,7 @@ the promoted actuals must have the same shape.
 \begin{example}
 Given a function defined as
 \begin{chapel}
-def foo(i: int, j: int) {
+proc foo(i: int, j: int) {
   write(i, " ", j, " ");
 }
 \end{chapel}
@@ -278,7 +278,7 @@ foo(1..3, 4..6);
 then the output is ``1 4 2 5 3 6 ''.
 \end{example}
 
-\subsubsection{Tensor Product Promotion}
+\subsection{Tensor Product Promotion}
 \label{Tensor_Product_Promotion}
 \index{promotion!tensor product iteration}
 
@@ -292,7 +292,7 @@ There are no constraints on tensor product promotion.
 \begin{example}
 Given a function defined as
 \begin{chapel}
-def foo(i: int, j: int) {
+proc foo(i: int, j: int) {
   write(i, " ", j, " ");
 }
 \end{chapel}
@@ -303,7 +303,7 @@ foo[1..3, 4..6];
 then the output is ``1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 ''.
 \end{example}
 
-\subsection{Reductions and Scans}
+\section{Reductions and Scans}
 \label{Reductions_and_Scans}
 \index{reductions}
 \index{scans}
@@ -318,7 +318,7 @@ reduction and scan operators, and also supports a mechanism for the
 user to define additional reductions and
 scans~(\rsec{User_Defined_Reductions_and_Scans}).
 
-\subsubsection{Reduction Expressions}
+\subsection{Reduction Expressions}
 \label{reduce}
 \index{reduction expressions}
 
@@ -381,7 +381,7 @@ User-defined reductions are specified by preceding the
 keyword \chpl{reduce} by the class type that implements the reduction
 interface as described in~\rsec{User_Defined_Reductions_and_Scans}.
 
-\subsubsection{Scan Expressions}
+\subsection{Scan Expressions}
 \label{scan}
 \index{scan expressions}
 
@@ -424,7 +424,7 @@ output is
 \end{chapel}
 \end{example}
 
-\subsection{Data Parallelism and Evaluation Order}
+\section{Data Parallelism and Evaluation Order}
 \index{data parallelism!and evaluation order}
 
 Temporary arrays are never inserted by the Chapel compiler.  The
@@ -447,7 +447,7 @@ are assigned to \chpl{A} may be read to compute the sum depending on
 the number of tasks used to implement the data parallel statement.
 \end{example}
 
-\subsection{Knobs for Default Data Parallelism}
+\section{Knobs for Default Data Parallelism}
 \label{data_parallel_knobs}
 \index{data parallelism!knobs for default data parallelism}
 

@@ -5,7 +5,7 @@ config const n: int = 10000;
 for i in 1..n do
   foo(i);
 
-def foo(i: int) {
+proc foo(i: int) {
   const D: domain(2) dmapped Dist2D = [1..20, 1..20];
   var A: [D] int;
 

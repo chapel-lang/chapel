@@ -2,11 +2,11 @@ record R { var x: int; }
 
 var r1 = new R(1);
 
-def foo() {
+proc foo() {
   return r1;
 }
 
-def bar() {
+proc bar() {
   var r2 = new R(2);
   return r2;
 }

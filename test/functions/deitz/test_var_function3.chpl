@@ -1,6 +1,6 @@
 var x: int;
 
-def foo() var {
+proc foo() var {
   writeln(setter);
   return x;
 }

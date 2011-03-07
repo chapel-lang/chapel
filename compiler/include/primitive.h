@@ -223,11 +223,11 @@ enum PrimitiveTag {
   PRIM_CAPTURE_FN,
   PRIM_CREATE_FN_TYPE,
 
-  PRIM_CHPL_NUMTHREADS,
-  PRIM_CHPL_NUMIDLETHREADS,
-  PRIM_CHPL_NUMQUEUEDTASKS,
-  PRIM_CHPL_NUMRUNNINGTASKS,
-  PRIM_CHPL_NUMBLOCKEDTASKS,
+  PRIM_chpl_numThreads,
+  PRIM_chpl_numIdleThreads,
+  PRIM_chpl_numQueuedTasks,
+  PRIM_chpl_numRunningTasks,
+  PRIM_chpl_numBlockedTasks,
 
   PRIM_RT_ERROR,
   PRIM_RT_WARNING,

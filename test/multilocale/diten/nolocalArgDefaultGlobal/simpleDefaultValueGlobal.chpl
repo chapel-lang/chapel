@@ -1,6 +1,6 @@
 var b = 1;
 
-def foo(a = b) {
+proc foo(a = b) {
   return a;
 }
 

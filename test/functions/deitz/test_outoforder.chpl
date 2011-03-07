@@ -2,6 +2,6 @@ foo();
 
 var hop = 2;
 
-def foo() {
+proc foo() {
   writeln(hop);
 }

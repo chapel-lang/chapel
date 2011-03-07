@@ -46,7 +46,7 @@ module block_2D_outer_product_cholesky {
       block_triangular_solve_variants, 
       matrix_matrix_multiply_schur_complement;
 
-  def block_2D_outer_product_cholesky ( A : [] )
+  proc block_2D_outer_product_cholesky ( A : [] )
 
     where ( A.domain.rank == 2 ) {
 

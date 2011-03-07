@@ -2,7 +2,7 @@ use Time;
 
 foo();
 
-def foo() {
+proc foo() {
   var x = 17;
   begin {
     sleep(1);

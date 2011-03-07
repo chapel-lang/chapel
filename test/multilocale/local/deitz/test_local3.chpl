@@ -1,7 +1,7 @@
-def main() {
+proc main() {
   var x, y, z: int;
 
-  def foo() var {
+  proc foo() var {
     return z;
   }
 

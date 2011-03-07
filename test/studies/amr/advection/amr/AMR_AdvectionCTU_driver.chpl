@@ -2,38 +2,81 @@ use AMRHierarchy_AdvectionCTU;
 use AMRBC_AdvectionCTU;
 
 
-//===> Flagger definition ===>
+//|\"""""""""""""""""""""""""""""""""""""""|\
+//| >    derived class: GradientFlagger    | >
+//|/_______________________________________|/
+//-----------------------------------------------------------------
+// This Flagger flags a cell if the largest-magnitude differential
+// with its neighbors exceeds the threshold 'tolerance'.  It's one
+// of the simplest approaches to flagging that's sensible, in a
+// somewhat heuristic sense.
+//-----------------------------------------------------------------
+
 class GradientFlagger: Flagger {
   
   const tolerance: real = 0.05;
+
+  //|\"""""""""""""""""""""""""|\
+  //| >    method: setFlags    | >
+  //|/_________________________|/
+  //----------------------------------------------------------------------
+  // At each cell, this method finds the maximum (magnitude) differential
+  // of 'level_solution' with neighboring cells.  The cell is flagged
+  // if this value exceeds 'tolerance'.
+  //----------------------------------------------------------------------
   
-  def setFlags(
+  proc setFlags (
     level_solution: LevelSolution, 
-    flags:          [level_solution.level.possible_cells] bool)
+    flags:          [level_solution.level.possible_cells] bool )
   {
+    
+    //---- Alias and prepare level_solution.current_data ----
     const current_data = level_solution.current_data;
     current_data.extrapolateGhostData();
     current_data.fillOverlaps();
     
+    
+    //===> Test each cell for flagging ===>
+    
     for grid in level_solution.level.grids {
+
       const value => current_data(grid).value;
       
       for cell in grid.cells {
+        
+        //---- Calculate the maximum-magnitude differential ----
         var max_differential, differential: real;
         for nbr in neighbors(cell) {
           differential = abs(value(cell) - value(nbr));
           max_differential = max(differential, max_differential);
         }
         
+        //---- Flag if necessary ----
         if max_differential > tolerance {
           flags(cell) = true;
         }
+        
       }
     }
+    //<=== Test each cell for flagging <===
    
   }
+  // /|"""""""""""""""""""""""""/|
+  //< |    method: setFlags    < |
+  // \|_________________________\|
   
-  def neighbors(cell: dimension*int) {
+  
+  //|\""""""""""""""""""""""""""""|\
+  //| >    iterator: neighbors    | >
+  //|/____________________________|/
+  //-----------------------------------------------------------------
+  // This iterates over the neighbors of the input 'cell', where
+  // neighbors are defined as sharing an interface of codimension 1.
+  // (Hence, only edges count in 2D, faces in 3D, etc.)
+  //-----------------------------------------------------------------
+  
+  iter neighbors ( cell: dimension*int )
+  {
     var shift: dimension*int;
     for d in dimensions {
       shift(d) = -2;
@@ -43,15 +86,22 @@ class GradientFlagger: Flagger {
       shift(d) = 0;
     }
   }
+  // /|""""""""""""""""""""""""""""/|
+  //< |    iterator: neighbors    < |
+  // \|____________________________\|
+  
 }
-//<=== Flagger definition <===
+// /|"""""""""""""""""""""""""""""""""""""""/|
+//< |    derived class: GradientFlagger    < |
+// \|_______________________________________\|
 
 
 
 
-def main {
+proc main {
   
   //===> Get names of input files ===>
+  
   const pointer_file = new file("input_files.txt", FileAccessMode.read);
   var time_file_name:      string;
   var hierarchy_file_name: string;
@@ -65,11 +115,14 @@ def main {
   
   writeln(hierarchy_file_name);
   writeln(velocity_file_name);
+  
   //<=== Get names of input files <===
   
   
+  
   //===> Set up AMR hierarchy ===>
-  def elevatedRectangle (x: dimension*real)
+
+  proc elevatedRectangle (x: dimension*real)
   {
     var f: real = 1.0;
     for d in dimensions do
@@ -77,7 +130,7 @@ def main {
     return f;
   }
 
-  def elevatedCircle (x: dimension*real) {
+  proc elevatedCircle (x: dimension*real) {
     var r: real = 0.0;
     for d in dimensions do
       r += (x(d)+0.5)**2;
@@ -90,10 +143,13 @@ def main {
   const hierarchy = new AMRHierarchy(hierarchy_file_name,
                                      flagger,
                                      elevatedCircle);
+
   //<=== Set up AMR hierarchy <===
   
 
-  //==== Advection velocity ====
+
+  //---- Advection velocity ----
+
   var velocity: dimension*real;
   const velocity_file = new file(velocity_file_name, FileAccessMode.read);
   velocity_file.open();
@@ -102,37 +158,43 @@ def main {
 
 
 
-  //==== Initialize output ====
+  //---- Initialize output ----
   var output_times = setOutputTimes(time_file_name);
 
 
 
 
-  //==== Set boundary conditions ====
+  //---- Set boundary conditions ----
   var bc = new ZeroInflowBC(hierarchy = hierarchy);
 
 
 
   //===> Generate output ===>
-  //==== Initial time ====
+
+  //---- Initial output ----
   var frame_number: int = 0;
   write("Writing initial output...");
   hierarchy.clawOutput(frame_number);
   write("done.\n");
   
   writeln("Current time of AMRHierarchy: " + format("%8.4E",hierarchy.time));
+
   
-  //==== Subsequent times ====
+  //---- Subsequent outputs ----
+  
   for output_time in output_times(1..) do {
-    //==== Advance solution to output time ====
+
+    //---- Advance solution to output time ----
     hierarchy.advance_AdvectionCTU(bc, velocity, output_time);
   
-    //==== Write output to file ====
+    //---- Write output to file ----
     frame_number += 1;
     write("Writing frame ", frame_number, "...");
     hierarchy.clawOutput(frame_number);
     write("done.\n");
+
   }
+
   //<=== Generate output <===
   
   

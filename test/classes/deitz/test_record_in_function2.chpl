@@ -1,7 +1,7 @@
-def foo() {
+proc foo() {
   record bar {
     var x : int = 2;
-    def f() {
+    proc f() {
       writeln(x);
     }
   }

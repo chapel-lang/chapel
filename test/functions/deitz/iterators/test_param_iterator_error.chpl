@@ -1,4 +1,4 @@
-def f() param {
+iter f() param {
   yield 1;
   yield 2;
 }

@@ -236,6 +236,8 @@ returnRecordsByReferenceArguments() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
       if (FnSymbol* fn = requiresImplicitDestroy(call)) {
+        if (fn->hasFlag(FLAG_EXTERN))
+          continue;
         CallExpr* move = toCallExpr(call->parentExpr);
         INT_ASSERT(move->isPrimitive(PRIM_MOVE));
         SymExpr* lhs = toSymExpr(move->get(1));

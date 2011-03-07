@@ -31,7 +31,7 @@ testReduceDom(DomUintType, AUint);
 testReduceArr(AReal);
 testReduceDom(DomRealType, AReal);
 
-def testReduceArr(AA) {
+proc testReduceArr(AA) {
   type idxType = AA.domain._value.idxType;
   var minAA = min reduce AA;
   var checkMin = max(idxType);
@@ -43,7 +43,7 @@ def testReduceArr(AA) {
           if checkMin==minAA then "SUCCESS" else "FAILED");
 }
 
-def testReduceDom(Dom, AA) {
+proc testReduceDom(Dom, AA) {
   type idxType = Dom._value.idxType;
   var minAA = min reduce [ai in Dom] AA(ai);
   var checkMin = max(idxType);

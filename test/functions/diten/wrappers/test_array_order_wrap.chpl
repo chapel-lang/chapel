@@ -1,4 +1,4 @@
-def f(out a: [] int, out b: [] int) {
+proc f(out a: [] int, out b: [] int) {
   a = 1;
   b = 2;
 }

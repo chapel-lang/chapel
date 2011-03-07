@@ -3,24 +3,24 @@ class LastOp: ReduceScanOp {
   type eltType;
   var last: eltType;
 
-  def LastOp(type eltType) {
+  proc LastOp(type eltType) {
     count$ += 1;
   }
-  def ~LastOp() {
+  proc ~LastOp() {
     count$ -= 1;
   }
-  def accumulate(x) {
+  proc accumulate(x) {
     last = x;
   }
-  def combine(x) {
+  proc combine(x) {
     last = x.last;
   }
-  def generate() {
+  proc generate() {
     return last;
   }
 }
 
-def main {
+proc main {
   var A: [1..5] int = 1..5;
   var x: int;
   x = LastOp reduce A;

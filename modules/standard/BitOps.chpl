@@ -3,7 +3,7 @@
 //
 
 // reimplementation note: one bitPop routine when numBits is a parameter
-def bitPop(i: integral) where (i.type == int(64)) || (i.type == uint(64)) {
+proc bitPop(i: integral) where (i.type == int(64)) || (i.type == uint(64)) {
   const u1 = 10540996613548315209:uint(64);
   const u3 = 13176245766935394011:uint(64);
   const u7 = 9349719599003471367:uint(64);
@@ -12,7 +12,7 @@ def bitPop(i: integral) where (i.type == int(64)) || (i.type == uint(64)) {
   return ((((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511):int;
 }
 
-def bitPop(i: integral) where (i.type == int(32)) || (i.type == uint(32)) {
+proc bitPop(i: integral) where (i.type == int(32)) || (i.type == uint(32)) {
   const u1 = 10540996613548315209:uint(32);
   const u3 = 13176245766935394011:uint(32);
   const u7 = 9349719599003471367:uint(32);
@@ -21,7 +21,7 @@ def bitPop(i: integral) where (i.type == int(32)) || (i.type == uint(32)) {
   return ((((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511):int;
 }
 
-def bitPop(i: integral) where (i.type == int(16)) || (i.type == uint(16)) {
+proc bitPop(i: integral) where (i.type == int(16)) || (i.type == uint(16)) {
   const u1 = 10540996613548315209:uint(16);
   const u3 = 13176245766935394011:uint(16);
   const u7 = 9349719599003471367:uint(16);
@@ -30,7 +30,7 @@ def bitPop(i: integral) where (i.type == int(16)) || (i.type == uint(16)) {
   return ((((tmp + (tmp >> 3)) & u7) + ((tmp >> 6) & u7)) % 511):int;
 }
 
-def bitPop(i: integral) where (i.type == int(8)) || (i.type == uint(8)) {
+proc bitPop(i: integral) where (i.type == int(8)) || (i.type == uint(8)) {
   const u1 = 10540996613548315209:uint(8);
   const u3 = 13176245766935394011:uint(8);
   const u7 = 9349719599003471367:uint(8);
@@ -45,10 +45,10 @@ def bitPop(i: integral) where (i.type == int(8)) || (i.type == uint(8)) {
 // function.  There should be a similar version using xor
 // as the combinator, but I'm not sure where that would
 // go to be perfectly truthful
-def bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
+proc bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
 
   // return the transpose of x, treating it as an 8x8 bit-matrix.
-  def bitMatTrans(x: uint(64))
+  proc bitMatTrans(x: uint(64))
     return ((x & 0x8040201008040201)       |
             (x & 0x0080402010080402) <<  7 |
             (x & 0x0000804020100804) << 14 |
@@ -67,7 +67,7 @@ def bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
 
   // set every eighth bit to one or zero based on the results of the
   // eight reductions of the sets of eight bits
-  pragma "inline" def byteOrReduce(u: uint(64)) {
+  pragma "inline" proc byteOrReduce(u: uint(64)) {
     var t1 = u | (u >> 4);
     var t2 = t1 | (t1 >> 2);
     var t3 = t2 | (t2 >> 1);
@@ -75,7 +75,7 @@ def bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
   }
 
   // set every bit in sets of eight to one if the last one is one
-  pragma "inline" def byteExpand(u: uint(64))
+  pragma "inline" proc byteExpand(u: uint(64))
     return 0x8080808080808080 ^ (0x8080808080808080 - u);
 
   var result:uint(64) = 0;
@@ -99,13 +99,13 @@ def bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
 }
 
 
-pragma "inline" def bitRotLeft(x, shift) {
+pragma "inline" proc bitRotLeft(x, shift) {
   var backshift = numBits(x.type) - shift;
   return (x << shift:int) | (x >> backshift:int);
 }
 
 
-pragma "inline" def bitRotRight(x: uint(64), shift) {
+pragma "inline" proc bitRotRight(x: uint(64), shift) {
   var backshift = numBits(x.type) - shift;
   return (x >> shift:int) | (x << backshift:int);
 }

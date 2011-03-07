@@ -4,7 +4,7 @@ class F {
 
 class D {
   var f : F = new F();
-  def this() var : F
+  proc this() var : F
     return f;
 }
 

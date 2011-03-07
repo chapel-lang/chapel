@@ -1,12 +1,12 @@
-def foo() {
+proc foo() {
   writeln("function foo called");
 }
 
 class bar {
-  def foo() {
+  proc foo() {
     writeln("method foo called");
   }
-  def goo() {
+  proc goo() {
     foo();
   }
 }

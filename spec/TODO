@@ -41,6 +41,10 @@ Domains and Arrays
 * clarify distinction between sparse domains and associative domains
   of integers?
 
+* clarify distinction between rank-change slice and non- (e.g.,
+  A[1..n, 2] vs. A[1..n, 2..2].  See "Array Slicing etc" email from
+  Damian McGuckin date Jan 28th, 2011 and references to 19.11 and 20.6.
+
 * summary implies that an associative domain is the same thing as a
   domain?
 
@@ -66,10 +70,12 @@ Generics
 --------
 * add mention of the new 'depth' argument for compilerWarning/Error
 
-I/O
----
+Input and Output
+----------------
+* show file constructor or at least mention that the default constructor
+  exists
+* show default values for fields of file
 * examples showing how to open and close a file
-* improve description of readln() (and maybe all 4 I/O commands)
 
 Task Parallelism and Synchronization
 ------------------------------------

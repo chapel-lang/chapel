@@ -46,7 +46,7 @@ var bucketPtrs: [0..numBuckets-1] int;
  
 var passedVerifications = 0;
 
-def main() {
+proc main() {
   var time = new Timer();
   var randomStream = new RandomStream(seed);
   var tempreals: [1..4] real;
@@ -96,7 +96,7 @@ def main() {
 } 
 
 
-def setupPartialVerify() {
+proc setupPartialVerify() {
   // Would like to use an array over an enumerated domain of arrays instead
   select probClass {
     when classVals.S do {
@@ -123,7 +123,7 @@ def setupPartialVerify() {
 }
 
 
-def rank(iteration: int) {
+proc rank(iteration: int) {
   var shift = log2(maxKey) - log2(numBuckets);
 
   keyArray(iteration) = iteration;
@@ -155,7 +155,7 @@ def rank(iteration: int) {
 }
 
 
-def partialVerification(iteration: int) {
+proc partialVerification(iteration: int) {
   for i in 0..4 {
     var k = partialVerifyVals(i);//keyArray(testIndexArray(i));
     select probClass {
@@ -248,7 +248,7 @@ def partialVerification(iteration: int) {
   }
 }
 
-def fullVerify() {
+proc fullVerify() {
   var failures = 0;
   buffer = keyArray;
 

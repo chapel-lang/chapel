@@ -1,4 +1,4 @@
-def f(x): int {
+proc f(x): int {
     if x == 0 {
         return 1024;
     }

@@ -22,7 +22,7 @@ config const numRandoms = 128;
 config const errorTolerance = 0.01;
 
 
-def main() {
+proc main() {
   writeln("Main table size = 2**", logTableSize, " = ", tableSize, " words");
   writeln("Number of updates = ", numUpdates);
 
@@ -37,7 +37,7 @@ def main() {
 
 
 // BLC: eliminate Ran array -- replace with per-thread local variable
-def randomAccessUpdate() {
+proc randomAccessUpdate() {
   Table = tableDom;
 
   if debug then writeln("Table is: ", Table);
@@ -60,7 +60,7 @@ def randomAccessUpdate() {
 }
 
 
-def verifyResults() {
+proc verifyResults() {
 
   var temp: tableElem = 0x1;  // BLC: Can we rename this?
   for i in updateDom {
@@ -83,7 +83,7 @@ def verifyResults() {
 }
 
 
-def HPCCstarts(in n:int(64)) {
+proc HPCCstarts(in n:int(64)) {
   param period = 1317624576693539401;
 
   while (n < 0) do
@@ -126,7 +126,7 @@ def HPCCstarts(in n:int(64)) {
 
 // BLC: would also like to see this fn inlined -- how to specify?
 // BLC: better name for this fn?
-def bitMunge(inout x) {
+proc bitMunge(inout x) {
   param POLY = 0x7:tableElem;
   param hibit = 0x1:tableElem << 63;
   x = (x << 1) ^ (if (x & hibit) then POLY else 0);

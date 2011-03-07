@@ -51,7 +51,7 @@ writeln();
 writeln("Pivot Vector:");
 writeln(piv);
 
-def initA(A,filename:string){
+proc initA(A,filename:string){
 
   var Adat = new file(filename,path='./',mode=FileAccessMode.read);
 

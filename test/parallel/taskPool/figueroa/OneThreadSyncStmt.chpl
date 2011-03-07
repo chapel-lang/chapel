@@ -1,7 +1,7 @@
 config const n = 10;
 var total: sync int = 0;
 
-def foo (x) {
+proc foo (x) {
     total += x;
 }
 

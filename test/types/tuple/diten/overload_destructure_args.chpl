@@ -3,11 +3,11 @@
  * and c getting the tuple (3,4). Check that this is an error.
  */
 
-def foo(a: int, (b, (c, d))) {
+proc foo(a: int, (b, (c, d))) {
   writeln("One normal arg, one nested tuple arg.");
 }
 
-def foo(a: int, (b, c)) {
+proc foo(a: int, (b, c)) {
   writeln("One int arg, one two-tuple arg.");
 }
 

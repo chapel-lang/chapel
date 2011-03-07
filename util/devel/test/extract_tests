@@ -43,7 +43,6 @@
 #   only additional LaTex formatting that is removed from the output is
 #   new line ('//').
 
-
 import os, sys
 
 #
@@ -59,7 +58,7 @@ def GenTestName(lineno):
 
 # Extract the test name from a source line
 def GetTestName(line):
-    outfile = line.strip().strip('%').strip().rstrip('.chpl')
+    outfile = line.strip().strip('%').strip().replace('.chpl', '')
     if options.debug:
         print outfile
     curTestNames.append(outfile)
@@ -115,7 +114,9 @@ def WriteGoodFile(fh, output, testName):
 
 # Write out the test files
 def OutputTest(lineno, seenChapelPre, seenChapelOutput):
+    global TotalTests, TotalIgnored, TotalOthers
     if seenChapelPre and seenChapelOutput:
+        TotalTests += 1
         # writeout the actual test program
         if len(chapelpre) > 0 and chapelpre[0][0] == '%':
             testName = GetTestName(chapelpre[0])
@@ -174,10 +175,13 @@ def OutputTest(lineno, seenChapelPre, seenChapelOutput):
             fh.close()
 
     else:
-    # invalid format or ignored test
+        # invalid format or ignored test
         if lineno != 0:
+            TotalIgnored += 1
             if options.verbose:
                 sys.stdout.write('Ignoring test on line %d\n'%(lineno))
+        else:
+            TotalOthers += 1
 
     seenChapelPre = False
     seenChapelOutput = False
@@ -215,6 +219,10 @@ chapeloutput = list()
 chapelprintoutput = list()
 current = None
 curTestNames = list()
+
+TotalTests = 0
+TotalIgnored = 0
+TotalOthers = 0
 
 #
 # Parse command line args
@@ -342,3 +350,8 @@ for infile in args:
                 current = chapelprintoutput;
 
     OutputTest(testlineno, seenChapelPre, seenChapelOutput)
+
+sys.stdout.write('\nSaw %d Chapel examples\n'%(TotalTests+TotalIgnored+TotalOthers))
+sys.stdout.write('\t%d tests\n'%(TotalTests))
+sys.stdout.write('\t%d ignored\n'%(TotalIgnored))
+sys.stdout.write('\t%d others\n'%(TotalOthers))

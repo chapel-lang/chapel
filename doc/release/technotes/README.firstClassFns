@@ -18,7 +18,7 @@ values may be passed around as other value types.
 
 For example:
 
-  def myfunc(x:int) { return x + 1; }
+  proc myfunc(x:int) { return x + 1; }
   var f = myfunc;
   writeln(f(3));  // outputs: 4
 
@@ -74,7 +74,7 @@ on the stack, i.e. while these functions are still executing.
 
 Example. For example the following is acceptable:
 
-  def myfunc() {
+  proc myfunc() {
     var x = 3;
     var f = lambda() { x = 4; };
     f();
@@ -93,13 +93,13 @@ The types of first-class functions can be obtained by using
 the 'func' type functions that are provided as follows:
 
   // no arguments, void return type (returns no value)
-  def func() type
+  proc func() type
 
   // no arguments, the return type is 'rettype' 
-  def func(type rettype) type
+  proc func(type rettype) type
 
   // argument types are 'argtypes'
-  def func(type argtypes...?n, type rettype) type
+  proc func(type argtypes...?n, type rettype) type
 
 For example:
 

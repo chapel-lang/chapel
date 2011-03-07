@@ -1,4 +1,4 @@
-def foo(x: real) { 
+proc foo(x: real) { 
   writeln("and got the real foo.");
 
 }
@@ -10,7 +10,7 @@ class C {
 
 var myC = new C();
 
-def foo(c: C = myC, fmt: string = "foo", x: int) {
+proc foo(c: C = myC, fmt: string = "foo", x: int) {
   writeln("and got the int foo.");
 
 }

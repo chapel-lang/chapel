@@ -60,7 +60,7 @@ module dataflow_block_cholesky {
     
   use block_partition_iterators, symmetric_blas;
 
-  def dataflow_block_cholesky ( A : [] )
+  proc dataflow_block_cholesky ( A : [] )
 
     where ( A.domain.rank == 2 ) {
 
@@ -192,7 +192,7 @@ module dataflow_block_cholesky {
     // ==============================================================
 
 
-    def compute_subdiagonal_block_launch_Schur_complement 
+    proc compute_subdiagonal_block_launch_Schur_complement 
       ( L_diag : [], L_offdiag : [], A : [], trailing_rows ) {
 
       // block indices for offdiagonal block 
@@ -242,7 +242,7 @@ module dataflow_block_cholesky {
     // to a diagonal subblock.
     // ====================================================
    
-    def modify_Schur_complement_diagonal_block ( L : [], A : [] ) {
+    proc modify_Schur_complement_diagonal_block ( L : [], A : [] ) {
 
       // block indices for offdiagonal block 
 
@@ -291,7 +291,7 @@ module dataflow_block_cholesky {
     // to a off-diagonal subblock.
     // ====================================================
 
-    def modify_Schur_complement_off_diagonal_block 
+    proc modify_Schur_complement_off_diagonal_block 
                                              ( L1 : [], L2 : [], A : [] ) {
 
       // block indices for pair of offdiagonal blocks 

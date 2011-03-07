@@ -36,7 +36,7 @@ module performance_cholesky_test {
 
   use cholesky_scalar_algorithms;
 
-  def main {
+  proc main {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
@@ -271,7 +271,7 @@ module performance_cholesky_test {
   }
 
 
-  def check_factorization ( A : [], L : [] )
+  proc check_factorization ( A : [], L : [] )
 
     // -----------------------------------------------------------------------
     // Check the factorization by forming L L^T and comparing the result to A.
@@ -318,7 +318,7 @@ module performance_cholesky_test {
   }
 
 
-  def print_lower_triangle ( L : [] ) {
+  proc print_lower_triangle ( L : [] ) {
    
     if print_matrix_details then
       for (i_row, i_col) in ( L.domain.dim(1), L.domain.dim(2) ) do

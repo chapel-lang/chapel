@@ -35,12 +35,17 @@ General (see also portability section at the bottom of this file)
 
 Types, Variables, Conversions, Expressions, and Statements
 ----------------------------------------------------------
+
 - Unlabeled break and continue statements fail to compile in param for loops.
   # statements/sungeun/break_nolabel_param.future
   # statements/sungeun/continue_nolabel_param.future
 - Multiple configuration parameters with different types declared in a
   single statement result in an internal error.
   # functions/bradc/paramFnNonParamArgs/multConfigTypes.future
+- Casts and relational operations involving enum constants do not
+  always work.
+  # types/enum/sungeun/*.future
+
 
 Modules and Functions
 ---------------------
@@ -106,6 +111,11 @@ Ranges, Domains, and Arrays
 ---------------------------
 - Arrays of arrays where the inner arrays vary in size are not supported.
   # arrays/deitz/test_skyline_array.future
+- Modifications to Associative and Sparse domains are not thread-safe.
+  # domains/sungeun/assoc/forall.future
+  # domains/sungeun/assoc/stress.future
+  # domains/sungeun/sparse/forall.future
+  # domains/sungeun/sparse/stress.future
 - Sparse domain/array slicing is not supported.
 - Constant checking for domains and arrays is incomplete.
 - There are no bounds checks on index types.
@@ -182,6 +192,7 @@ Task Parallelism and Synchronization
 Data Parallelism
 ----------------
 - Reductions and scans of arrays of arrays may result in errors.
+  # arrays/sungeun/arrays_of_arrays/*reduce.chpl
 - Records in reduction classes may results in out-of-bound indexing
   problems.
   # studies/kmeans/kmeansonepassreduction-mystery.future
@@ -198,7 +209,9 @@ Data Parallelism
   2. Assignments from ranges to multidimensional arrays are always serialized.
   3. Assignment, reductions, and parallel iteration over opaque domains and
      arrays are always serialized.
-
+- Whole-domain assignment operations on sparse domains are not all serialized.
+  # domains/sungeun/sparse/minus_equals.future
+  # domains/sungeun/sparse/plus_equals.future
 
 Locales and Domain Maps
 -----------------------

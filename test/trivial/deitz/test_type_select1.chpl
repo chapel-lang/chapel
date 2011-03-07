@@ -1,7 +1,7 @@
 var i = 12;
 var f = 12.0;
 
-def mywrite(x) {
+proc mywrite(x) {
   type select x {
     when int do writeln("mywrite int for       ", x);
     when real do   writeln("myrite real for          ", x);

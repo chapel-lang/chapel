@@ -1,4 +1,4 @@
-\documentclass[10pt,twoside,titlepage]{article}
+\documentclass[10pt,twoside,titlepage]{spec}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{color}
@@ -72,6 +72,13 @@
 \end{quote}
 }
 
+\newenvironment{future}{
+\begin{quote}
+{\it Future}.
+}{
+\end{quote}
+}
+
 \newenvironment{craychapel}{
 \begin{quote}
 {\it Cray's Chapel Implementation}.
@@ -92,7 +99,7 @@
 % courtesy: http://www.iam.ubc.ca/~newbury/tex/page-set-up.html
 \newcommand{\sekshun}[1]
            {
-             \section{#1}
+             \chapter{#1}
              \markboth{Chapel Language Specification}{#1}
            }
 
@@ -105,20 +112,20 @@
 \textheight 8.5in
 
 \makeindex
-\title{Chapel Language Specification 0.796\\\large~\\\large October 21, 2010}
+\title{Chapel Language Specification\\Version 0.799}
 
 \author{Cray Inc\\
 901 Fifth Avenue, Suite 1000\\
 Seattle, WA 98164}
 
-\date{}
+\date{2011/02/11}
 
 \setcounter{tocdepth}{3}
 
 \begin{document}
 
 \pagestyle{empty}
-\pagenumbering{alph}
+%\pagenumbering{alph}
 
 \ifpdf
 \pdfbookmark[1]{Title}{titlepage}
@@ -131,7 +138,7 @@ Seattle, WA 98164}
 
 \pagestyle{myheadings}
 \markboth{Chapel Language Specification}{Chapel Language Specification}
-\pagenumbering{roman}
+%\pagenumbering{roman}
 
 \ifpdf
 \pdfbookmark[1]{Table of Contents}{tablecontents}
@@ -141,7 +148,7 @@ Seattle, WA 98164}
 \cleardoublepage
 
 \pagestyle{myheadings}
-\pagenumbering{arabic}
+%\pagenumbering{arabic}
 
 \setlength{\parindent}{0in}
 \setlength{\parskip}{4mm plus2mm minus1mm}

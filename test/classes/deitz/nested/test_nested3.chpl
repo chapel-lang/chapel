@@ -1,12 +1,12 @@
 class B {
-  def bar() { writeln("right bar"); }
+  proc bar() { writeln("right bar"); }
 }
 
 class C {
   class D: B {
-    def foo() { bar(); }
+    proc foo() { bar(); }
   }
-  def bar() { writeln("wrong bar"); }
+  proc bar() { writeln("wrong bar"); }
   var d = new D();
 }
 

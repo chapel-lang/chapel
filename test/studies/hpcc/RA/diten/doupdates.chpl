@@ -1,11 +1,11 @@
 use ra;
 
-def doUpdates(A, nu) {
+proc doUpdates(A, nu) {
   var numUps = nu;
   var start = 0;
   param maxTransfer = 1024;
 
-  def updateBlock(param n, nu: int) {
+  proc updateBlock(param n, nu: int) {
     var t: n*uint(64);
     //printf("n = " + n + " nu = " + nu + "\n");
     local {
@@ -23,7 +23,7 @@ def doUpdates(A, nu) {
     }
   }
 
-  def msb(in x: int) {
+  proc msb(in x: int) {
     // http://aggregate.org/MAGIC
     x |= (x >> 1);
     x |= (x >> 2);
@@ -84,7 +84,7 @@ def doUpdates(A, nu) {
   }
 }
 /*
-def main {
+proc main {
   var A: [1..10000] int;
 
   writeln("n is ", 1031);

@@ -5,7 +5,7 @@ module SSCA2_main
 
   config param Torus_Base_Index = 1;
 
-  def main () {
+  proc main () {
 
     use BlockDist;
 

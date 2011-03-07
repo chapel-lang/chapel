@@ -43,7 +43,7 @@ var keyBuff1: [E] int;
  
 var passedVerifications = 0;
 
-def main() {
+proc main() {
   var time = new Timer();
   var randomStream = new RandomStream(seed);
   var tempreals: [1..4] real;
@@ -93,7 +93,7 @@ def main() {
 } 
 
 
-def setupPartialVerify() {
+proc setupPartialVerify() {
   // Would like to use an array over an enumerated domain of arrays instead
   select probClass {
     when classVals.S do {
@@ -119,7 +119,7 @@ def setupPartialVerify() {
   }
 }
 
-def rank(iteration: int) {
+proc rank(iteration: int) {
   const blkSize = totalKeys / nThreads;
 
   keyArray(iteration) = iteration;
@@ -138,7 +138,7 @@ def rank(iteration: int) {
 }
 
 
-def partialVerification(iteration: int) {
+proc partialVerification(iteration: int) {
   for i in 0..4 {
     var k = partialVerifyVals(i);
     var val = + reduce keyBuff1(k-1, 0..nThreads-1);
@@ -232,7 +232,7 @@ def partialVerification(iteration: int) {
   }
 }
 
-def fullVerify() {
+proc fullVerify() {
   var failures = 0;
   for i in 0..maxKey-1 do
     keyBuff1(i, 0) = + reduce keyBuff1(i, 0..nThreads-1);

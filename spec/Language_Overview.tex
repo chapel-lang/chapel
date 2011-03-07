@@ -9,7 +9,7 @@ This section provides a brief overview of the Chapel language by
 discussing first the guiding principles behind the design of the
 language and second how to get started with Chapel.
 
-\subsection{Guiding Principles}
+\section{Guiding Principles}
 
 The following four principles guided the design of Chapel:
 \begin{enumerate}
@@ -24,13 +24,13 @@ abstractions.  The second two principles were motivated by a desire to
 narrow the gulf between high-performance parallel programming
 languages and mainstream programming and scripting languages.
 
-\subsubsection{General Parallel Programming}
+\subsection{General Parallel Programming}
 
 First and foremost, Chapel is designed to support general parallel
 programming through the use of high-level language abstractions.
 Chapel supports a \emph{global-view programming model} that raises the
-level of abstraction of expressing both data and control flow when
-compared to parallel programming models currently used in production.
+level of abstraction in expressing both data and control flow as
+compared to parallel programming models currently in use.
 A global-view programming model is best defined in terms
 of \emph{global-view data structures} and a \emph{global view of
 control}.
@@ -66,64 +66,61 @@ execution with a single logical thread of control and then introduces
 additional parallelism through the use of certain language concepts.
 All parallelism in Chapel is implemented via multithreading, though
 these threads are created via high-level language concepts and managed
-by the compiler and runtime, rather than through explicit
+by the compiler and runtime rather than through explicit
 fork/join-style programming.  An impact of this approach is that
 Chapel can express parallelism that is more general than the Single
 Program, Multiple Data~(SPMD) model that today's most common parallel
-programming approaches use as the basis for their programming and
-execution models.  Chapel's general support for parallelism does not
+programming approaches use.  Chapel's general support for parallelism does not
 preclude users from coding in an SPMD style if they wish.
 
 Supporting general parallel programming also means targeting a broad
 range of parallel architectures.  Chapel is designed to target a wide
 spectrum of HPC hardware including clusters of commodity processors
 and SMPs; vector, multithreading, and multicore processors; custom
-vendor architectures; distributed-memory, shared-memory, and shared
-address space architectures; and networks of any topology.  Our
+vendor architectures; distributed-memory, shared-memory, and 
+shared address-space architectures; and networks of any topology.  Our
 portability goal is to have any legal Chapel program run correctly on
 all of these architectures, and for Chapel programs that express
 parallelism in an architecturally-neutral way to perform reasonably on
-all of them.  Naturally, Chapel programmers can tune their codes to
-more closely match a particular machine's characteristics, though
-doing so may cause the program to be a poorer match for other
-architectures.
+all of them.  Naturally, Chapel programmers can tune their code to
+more closely match a particular machine's characteristics.
 
-\subsubsection{Locality-Aware Programming}
+\subsection{Locality-Aware Programming}
 
 A second principle in Chapel is to allow the user to optionally and
 incrementally specify where data and computation should be placed on
 the physical machine.  Such control over program locality is essential
-to achieve scalable performance on large machine sizes.  Such control
+to achieve scalable performance on distributed-memory architectures.  Such control
 contrasts with shared-memory programming models which present the user
-with a flat memory model.  It also contrasts with SPMD-based
+with a simple flat memory model.  It also contrasts with SPMD-based
 programming models in which such details are explicitly specified by
 the programmer on a process-by-process basis via the multiple
 cooperating program instances.
 
-\subsubsection{Object-Oriented Programming}
+\subsection{Object-Oriented Programming}
 
 A third principle in Chapel is support for object-oriented
 programming.  Object-oriented programming has been instrumental in
 raising productivity in the mainstream programming community due to
-its encapsulation of related data and functions into a single software
+its encapsulation of related data and functions within a single software
 component, its support for specialization and reuse, and its use as a
 clean mechanism for defining and implementing interfaces.  Chapel
 supports objects in order to make these benefits available in a
-parallel language setting, and to provide a familiar paradigm for
+parallel language setting, and to provide a familiar coding paradigm for
 members of the mainstream programming community.  Chapel supports
 traditional reference-based classes as well as value classes that are
 assigned and passed by value.
 
 Chapel does not require the programmer to use an object-oriented style
 in their code, so that traditional Fortran and C programmers in the
-HPC community need not adopt a new programming paradigm in order to
+HPC community need not adopt a new programming paradigm to
 use Chapel effectively.  Many of Chapel's standard library
 capabilities are implemented using objects, so such programmers may
 need to utilize a method-invocation style of syntax to use these
 capabilities.  However, using such libraries does not necessitate
 broader adoption of object-oriented methodologies.
 
-\subsubsection{Generic Programming}
+\subsection{Generic Programming}
 
 Chapel's fourth principle is support for generic programming and
 polymorphism.  These features allow code to be written in a style that
@@ -137,7 +134,7 @@ the compiler create versions of the code for each required type
 signature rather than by relying on dynamic typing which would result
 in unacceptable runtime overheads for the HPC community.
 
-\subsection{Getting Started}
+\section{Getting Started}
 
 A Chapel version of the standard ``hello, world'' computation is as
 follows:

@@ -5,8 +5,8 @@
 #include "parser.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "chapel.tab.h"
 #include "yy.h"
+#include "chapel.tab.h"
 
 BlockStmt* yyblock = NULL;
 const char* yyfilename;
@@ -47,8 +47,8 @@ static const char* filenameToModulename(const char* filename) {
   if (lastslash) {
     modulename = lastslash+1;
   }
-  const char* dot = strchr(modulename, '.');
-  return asubstr(modulename, dot);
+  const char* lastdot = strrchr(modulename, '.');
+  return asubstr(modulename, lastdot);
 }
 
 static bool
@@ -56,8 +56,8 @@ containsOnlyModules(BlockStmt* block, const char* filename) {
   int moduleDefs = 0;
   bool hasUses = false;
   bool hasOther = false;
-  ModuleSymbol* lastmodsym;
-  BaseAST* lastmodsymstmt;
+  ModuleSymbol* lastmodsym = NULL;
+  BaseAST* lastmodsymstmt = NULL;
   for_alist(stmt, block->body) {
     if (BlockStmt* block = toBlockStmt(stmt))
       stmt = block->body.first();

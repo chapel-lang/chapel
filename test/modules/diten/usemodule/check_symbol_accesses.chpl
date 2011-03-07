@@ -5,19 +5,19 @@ module outermost {
   var a = 3;
   module middlemost {
     module innermost {
-      def foo() {
+      proc foo() {
         a = 4;
       }
     }
   }
 }
 
-def main() {
+proc main() {
   use outermost.middlemost.innermost;
   bar(); foo(); bar();
 }
 
-def bar() {
+proc bar() {
   use outermost;
   writeln(a);
 }

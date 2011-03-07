@@ -1,4 +1,4 @@
-def by(a, b) where !a:range {
+proc by(a, b) where !a:range {
   return a * b;
 }
 

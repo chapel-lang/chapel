@@ -45,4 +45,15 @@ void viewFlags(BaseAST* sym);
 TypeSymbol* getDataClassType(TypeSymbol* ts);
 void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
 
+// For the purposes of gdb support
+bool hasFlag(BaseAST* ast, int flag);
+void addFlag(BaseAST* ast, int flag);
+void removeFlag(BaseAST* ast, int flag);
+
+bool hasFlag(BaseAST* ast, Flag flag);
+void addFlag(BaseAST* ast, Flag flag);
+void removeFlag(BaseAST* ast, Flag flag);
+// End gdb support
+
+
 #endif

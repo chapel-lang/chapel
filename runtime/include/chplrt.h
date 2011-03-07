@@ -6,7 +6,7 @@
 #ifndef LAUNCHER
 
 #include <stdint.h>
-#include <comm_printf_macros.h>
+#include <chpl-comm-printf-macros.h>
 
 extern chpl_fn_p chpl_ftable[];
 

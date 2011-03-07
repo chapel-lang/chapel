@@ -5,7 +5,7 @@ param SIZE = 10;
 var idomain: domain(int);
 var A: [idomain] real;
 
-def jam() {
+proc jam() {
   writelnSorted(idomain);
   writeln( "numIndices = ", idomain.numIndices);
   writelnSortedByDom(A);

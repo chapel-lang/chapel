@@ -9,7 +9,7 @@ record Y {
   param i : int;
 }
 
-def main() {
+proc main() {
   const x : X("foo");
   writeln(typeToString(x.type));
 

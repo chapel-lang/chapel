@@ -1,6 +1,6 @@
 type mytup = (int, real);
 
-def returntwo(): mytup {
+proc returntwo(): mytup {
   return (1, 2.3);
 }
 

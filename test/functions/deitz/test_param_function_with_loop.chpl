@@ -1,4 +1,4 @@
-def foo(i: int) param {
+proc foo(i: int) param {
   var ii: int;
   while ii < i {
     ii += 1;

@@ -4,12 +4,12 @@ record fixed_length_string {
   var contents : string;
 }
 
-def fixed_string(param s:string) {
+proc fixed_string(param s:string) {
   const x = new fixed_length_string(stringLen = s.length, contents = s);
   return x;
 }
 
-def =(a:fixed_length_string, param b:string) {
+proc =(a:fixed_length_string, param b:string) {
   return fixed_string(b);
 }
 

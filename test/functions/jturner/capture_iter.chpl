@@ -1,4 +1,4 @@
-def iter() {
+proc iter() {
   for i in 1..4 {
     yield i;
   }       

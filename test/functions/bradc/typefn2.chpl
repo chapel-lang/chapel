@@ -1,4 +1,4 @@
-def mymymin(type t): t {
+proc mymymin(type t): t {
   return -999;
 }
 

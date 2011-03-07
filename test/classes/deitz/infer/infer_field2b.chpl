@@ -2,7 +2,7 @@
 use List;
 use infer_field2_common;
 
-def foo() {
+proc foo() {
   var c = new C();
   var cc = c;
   c = next_foo(c);
@@ -15,7 +15,7 @@ def foo() {
   return s;
 }
 
-def main {
+proc main {
   writeln( bar());
   writeln(foo());
 

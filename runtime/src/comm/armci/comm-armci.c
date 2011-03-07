@@ -7,8 +7,8 @@
 #include <string.h>
 #include <strings.h>
 
-#include "chplcomm.h"
-#include "comm_heap_macros.h"
+#include "chpl-comm.h"
+#include "chpl-comm-heap-macros.h"
 #include "chpl_mem.h"
 #include "chplrt.h"
 #include "error.h"
@@ -123,7 +123,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   int nprocs, me;
   armci_size_t sz;
 
-  CHPL_SYNC_INIT_AUX(&armci_sync);
+  chpl_sync_initAux(&armci_sync);
 
   MPI_SAFE(MPI_Init(argc_p, argv_p));
   ARMCI_SAFE(ARMCI_Init());
@@ -177,7 +177,8 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 
   if (chpl_localeID != 0) {
     for (i = 0; i < numGlobals; i++)
-      chpl_comm_get(chpl_globals_registry[i], 0, &((void **)globalPtrs[0])[i], sizeof(void *), 0, "");
+      chpl_comm_get(chpl_globals_registry[i], 0, &((void **)globalPtrs[0])[i],
+                    sizeof(void *), -1, 1, 0, "");
   }
 }
 
@@ -191,10 +192,11 @@ typedef struct __broadcast_private_helper {
 static void _broadcastPrivateHelperFn(struct __broadcast_private_helper *arg);
 
 void _broadcastPrivateHelperFn(struct __broadcast_private_helper *arg) {
-  chpl_comm_get(chpl_private_broadcast_table[arg->locid], arg->locale, arg->raddr, arg->size, 0, "");
+  chpl_comm_get(chpl_private_broadcast_table[arg->locid],
+                arg->locale, arg->raddr, arg->size, -1, 1, 0, "");
 }
 
-void chpl_comm_broadcast_private(int id, int size) {
+void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   int i;
   _broadcast_private_helper bph;
   void* heapAddr = NULL;
@@ -208,7 +210,7 @@ void chpl_comm_broadcast_private(int id, int size) {
       bph.locale = chpl_localeID;
       bph.size = size;
 
-      chpl_comm_fork(i, -1, &bph, sizeof(_broadcast_private_helper));
+      chpl_comm_fork(i, -1, &bph, sizeof(_broadcast_private_helper), -1);
     }
 }
 
@@ -276,15 +278,17 @@ void chpl_comm_exit_any(int status) {
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
+                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    int ln, chpl_string fn) {
   // this should be an ARMCI put call
-
+  const int size = elemSize*len;
   if (chpl_localeID == locale)
     memmove(raddr, addr, size);
   else {
-    CHPL_SYNC_LOCK(&armci_sync);
+    chpl_sync_lock(&armci_sync);
     ARMCI_SAFE(ARMCI_Put(addr, raddr, size, locale));
-    CHPL_SYNC_UNLOCK(&armci_sync);
+    chpl_sync_unlock(&armci_sync);
   }
 }
 
@@ -296,15 +300,17 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_get(void *addr, int32_t locale, void* raddr,
+                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    int ln, chpl_string fn) {
   // this should be an ARMCI get call
-
+  const int size = elemSize*len;
   if (chpl_localeID == locale)
     memmove(addr, raddr, size);
   else {
-    CHPL_SYNC_LOCK(&armci_sync);
+    chpl_sync_lock(&armci_sync);
     ARMCI_SAFE(ARMCI_Get((void*)raddr, addr, size, locale));
-    CHPL_SYNC_UNLOCK(&armci_sync);
+    chpl_sync_unlock(&armci_sync);
   }
 }
 
@@ -345,7 +351,7 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   info = (dist_fork_t *)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
 
   info->caller = chpl_localeID;
-  info->serial_state = CHPL_GET_SERIAL();
+  info->serial_state = chpl_task_getSerial();
   info->fid = fid;
   info->arg_size = arg_size;
   info->block = block;
@@ -369,10 +375,10 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   done = rheader;
   *done = 0;
 
-  CHPL_SYNC_LOCK(&armci_sync);
+  chpl_sync_lock(&armci_sync);
   ret = ARMCI_Gpc_exec(ghndl, locale, header, sizeof(void *), info, info_size, (void *)rheader, rhdr_size,
                        rdata, rdlen, NULL);
-  CHPL_SYNC_UNLOCK(&armci_sync);
+  chpl_sync_unlock(&armci_sync);
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
@@ -386,7 +392,7 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
 
   while (block && *done == 0) {
 #ifdef CHPL_COMM_YIELD_TASK_WHILE_POLLING
-    CHPL_TASK_YIELD();
+    chpl_task_yield();
 #endif
   }
 
@@ -400,16 +406,19 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   chpl_free((void *)rheader, 0, 0);
 }
 
-void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void  chpl_comm_fork(int locale, chpl_fn_int_t fid,
+                     void *arg, int32_t arg_size, int32_t arg_tid) {
   chpl_comm_fork_common(locale, fid, arg, arg_size, true);
 }
 
-void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid,
+                        void *arg, int32_t arg_size, int32_t arg_tid) {
   chpl_comm_fork_common(locale, fid, arg, arg_size, false);
 }
 
 // Same as chpl_comm_fork()
-void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid,
+                          void *arg, int32_t arg_size, int32_t arg_tid) {
   chpl_comm_fork_common(locale, fid, arg, arg_size, true);
 }
 
@@ -449,7 +458,7 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   prhdr = *(intptr_t *)hdr;
   ginfo->rhdr = (int *)prhdr;
 
-  CHPL_BEGIN(_gpc_thread_handler, ginfo, true, finfo->serial_state, NULL);
+  chpl_task_begin(_gpc_thread_handler, ginfo, true, finfo->serial_state, NULL);
 
   /* Small return header */
   *rhsize = sizeof(int);
@@ -478,7 +487,7 @@ void _gpc_thread_handler(void *arg)
   *done = 1;
 
   if (ginfo->info->block)
-    chpl_comm_put(done, ginfo->info->caller, ginfo->rhdr, sizeof(int), 0, "");
+    chpl_comm_put(done, ginfo->info->caller, ginfo->rhdr, sizeof(int), -1, 1, 0, "");
 
   ARMCI_Free_local(done);
 

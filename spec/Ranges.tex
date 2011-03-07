@@ -19,17 +19,22 @@ Unbounded ranges are those in which the low and/or high bounds are
 omitted.  Unbounded ranges conceptually represent a countably infinite
 number of values.
 
-\subsection{Range Types}
+\section{Range Types}
 \label{Range_Types}
 \index{ranges!types}
 
-The type of a range is characterized by three things:
-(1)~the type of the values being represented, (2)~the boundedness of
-the range, and (3)~whether or not the range is \emph{stridable}.
+The type of a range is characterized by four things:
+\begin{enumerate}
+\item the type of the values being represented, 
+\item the boundedness of the range,
+\item whether or not the range is \emph{stridable}, and
+\item whether or not the rante is \emph{aligned}.
+\end{enumerate}
 
 The type of the range's values is represented using a type parameter
 named \emph{idxType}.  This must be one of the \chpl{int} or
 \chpl{uint} types.  The default type is \chpl{int}.
+The type of a range's stride is the signed equivalent of its \emph{idxType}.
 
 \begin{openissue}
 It has been hypothesized that ranges of other types, such as floating
@@ -52,6 +57,15 @@ stride can take on any signed integer value other than 0 of the same
 bit-width as \chpl{idxType}.  If set to false, the range's stride is
 fixed to 1.  The default value is \chpl{false}.
 
+The alignedness of a range is represented by a boolean parameter
+named \emph{aligned}.  If this parameter is set to true, the range's alignment
+value can tack on any integer value representable by its \emph{idxType}.  If it
+is false, the range's alignment is set to 0.  The default value is \chpl{false}.
+An alignment of zero means that the stride is aligned on the low bound
+for \chpl{boundedLow} and \chpl{bounded} ranges, and on the high bound
+for \chpl{boundedHigh} ranges.  If an unbounded range is aligned, then the
+alignment is absolute.
+
 \begin{rationale}
 The \emph{boundedType} and \emph{stridable} values of a range are used
 to optimize the generated code for common cases of ranges, as well as
@@ -68,29 +82,29 @@ range-type:
 \begin{example}
 The following declaration declares a variable \chpl{r}
 of range type that can represent ranges of 64-bit integers, with both
-high and low bounds specified, and the ability to have a stride other
-than 1.
+high and low bounds specified, the ability to have a stride other
+than 1 and an alignment other than zero.
 \begin{chapelpre}
 % test_rangeVariable.chpl
 \end{chapelpre}
 \begin{chapel}
-var r: range(int(64), BoundedRangeType.bounded, stridable=true);
+var r: range(int(64), BoundedRangeType.bounded, stridable=true, aligned=true);
 \end{chapel}
 \begin{chapelpost}
 writeln(r);
 var i64: int(64) = 3;
-r = i64..13 by 3;
+r = i64..13 by 3 align 1;
 writeln(r);
 \end{chapelpost}
 \begin{chapeloutput}
 1..0
-3..12 by 3
+3..13 by 3 align 1
 \end{chapeloutput}
 \end{example}
 
 The default value for a range is \chpl{1..0}.
 
-\subsection{Literal Range Values}
+\section{Literal Range Values}
 \label{Range_Literals}
 \index{ranges!literals} 
 
@@ -101,7 +115,7 @@ range-literal:
   unbounded-range-literal
 \end{syntax}
 
-\subsubsection{Bounded Range Literals}
+\subsection{Bounded Range Literals}
 \label{Bounded_Ranges}
 \index{ranges!bounded}
 
@@ -118,12 +132,12 @@ in~\rsec{By_Operator_For_Ranges}.
 \index{ranges!integral element type}
 The element type of the range type is determined by the type of the
 low and high bound.  It is either \chpl{int}, \chpl{uint},
-\chpl{int(64)}, or \chpl{uint(64)}.  The type is determined by
-conceptually adding the low and high bounds together.  The boundedness
+\chpl{int(64)}, or \chpl{uint(64)}.  The index type of the range is obtained by
+applying integral promotions to the low and high bounds.  The boundedness
 of such a range is \chpl{BoundedRangeType.bounded}.  The stridability of
 the range is \chpl{false}.
 
-\subsubsection{Unbounded Range Literals}
+\subsection{Unbounded Range Literals}
 \label{Unbounded_Ranges}
 \index{ranges!unbounded}
 
@@ -139,9 +153,9 @@ The first form results in a \chpl{BoundedRangeType.boundedLow} range, the
 second in a \chpl{BoundedRangeType.boundedHigh} range, and the third in
 a \chpl{BoundedRangeType.boundedNone} range.
 
-Unbounded ranges can be iterated over with zipper iteration
-(~\rsec{Zipper_Iteration}) and their shape conforms to the shape of the
-other iterators they are being iterated over with.
+When used in zippered iteration (~\rsec{Zipper_Iteration}), the shape of an
+unbounded range conforms to that of the other iterator.
+
 \begin{example}
 The code
 \begin{chapelpre}
@@ -169,7 +183,7 @@ arrays, and strings.  In these cases, omitted bounds are inherited
 from the bounds of the expression being indexed.
 
 
-\subsection{Range Assignment}
+\section{Range Assignment}
 \label{Range_Assignment}
 \index{ranges!assignment}
 
@@ -184,11 +198,11 @@ range, but illegal to assign a stridable range to a non-stridable
 range unless the stridable range has a stride value of 1.
 
 
-\subsection{Range Operators}
+\section{Range Operators}
 \label{Range_Operators}
 \index{ranges!operators}
 
-\subsubsection{By Operator}
+\subsection{By Operator}
 \label{By_Operator_For_Ranges}
 \index{ranges!strided}
 \index{ranges!by operator}
@@ -201,8 +215,9 @@ The \chpl{by} operator takes a range and an integer value to yield a
 new range that is strided by the integer.  Striding a strided range
 results in a stride whose value is the product of the two strides.
 The stride argument can either be of type \chpl{idxType} or some other
-integer value that can coerce to a signed integer value of the same
-bit-width as \chpl{idxType}.
+integer value that can be coerced to a signed integer value of the same
+bit-width as \chpl{idxType}.  The effective alignment of a range is unchanged by
+the \chpl{by} operator.
 
 \begin{example}
 In the following declarations, range \chpl{r1} represents the odd integers
@@ -220,8 +235,8 @@ writeln(r1);
 writeln(r2);
 \end{chapelpost}
 \begin{chapeloutput}
-1..19 by 2
-1..17 by 4
+1..20 by 2
+1..20 by 4
 \end{chapeloutput}
 \end{example}
 
@@ -230,24 +245,70 @@ writeln(r2);
 negative?}  The reason for this choice is that the \chpl{by} operator
 is binary, not ternary.  Given a range \chpl{R} initialized
 to \chpl{1..3}, we want \chpl{R by -1} to contain the ordered sequence
-$3,2,1$.  But then \chpl{R by -1} would be different than \chpl{3..1
+$3,2,1$.  But then \chpl{R by -1} would be different from \chpl{3..1
 by -1} even though it should be identical by substituting the value in
 R into the expression.
 \end{rationale}
 
-\subsubsection{Count Operator}
+\subsection{Align Operator}
+\label{Align_Operator}
+\index{ranges!align operator}
+
+The \chpl{align} operator can be applied to any range, and creates a new range
+with the given alignment.  If the range is \chpl{bounded} or \chpl{boundedLow},
+then the alignment is relative to the low bound.  If the range
+is \chpl{boundedHigh}, then the alignment is relative to the high bound.  If the
+range is \chpl{boundedNone}, then the alignment is absolute.
+
+The operand of the \chpl{align} operator (the new alignment) must be compatible
+with the index type of the resulting range.  If the sum of the alignment and its
+related bound lie outside the bounds representable by the index type of the
+operand range, the index type of the resulting range is the smallest integer
+type that can accommodate that sum.  The signedness of the new index type is
+that same as that of the index type of the operand range.  If no such type
+exists, it is a compile-time error.
+
+\begin{example}
+\begin{chapelpre}
+% test_rangeAlignOperator.chpl
+\end{chapelpre}
+\begin{chapel}
+var r1 = 1 .. 10 by 2;
+var r2 = r1 align 1;
+\end{chapel}
+\begin{chapelpost}
+writeln(r1, " is:");
+for i in r1 do write(" ", i);
+writeln();
+writeln(r2, " is:");
+for i in r2 do write(" ", i);
+writeln();
+\end{chapelpost}
+\begin{chapeloutput}
+1..10 by 2 is:
+ 1 3 5 7 9
+1..10 by 2 align 1 is:
+ 2 4 6 8 10
+\end{chapeloutput}
+\end{example}
+
+\subsection{Count Operator}
 \label{Count_Operator}
 \index{ranges!count operator}
 
 The \chpl{#} operator can be applied to a range that has a high bound,
 a low bound, or both.
 
-The \chpl{#} operator takes a range and an integral count and creates
-a new range with \emph{count} elements. The stride of the resulting range is
-the same as that of the initial range. It is an error for the count to
-be negative.  The \emph{idxType} of the resulting range is the same
-type that would be obtained by adding the integral count value to a value
-with the range's \emph{idxType}.
+The \chpl{#} operator takes a range and an integral count and creates a new
+range with \emph{count} elements. It is an error for the count to be negative.
+The stride of the resulting range is the same as that of the initial
+range. The \emph{idxType} of the resulting range is the same type that would be
+obtained by adding the integral count value to a value with the
+range's \emph{idxType}.  The alignment of the resulting range is the same as
+that of the initial range.\footnote{When applied to a \chpl{boundedHigh} range,
+the alignment \emph{value} of the range may change.  This is because
+the \chpl{#} operator supplies a low bound, and alignment is computed relative
+to the low bound if one is present.}
 
 When applied to a \chpl{BoundedRangeType.bounded} range with a positive
 stride, \emph{count} elements are taken starting from the low
@@ -255,13 +316,11 @@ bound. When the stride is negative, \emph{count} elements are taken
 starting from the high bound. It is an error for \emph{count} to be larger
 than the length of the range.
 
-When applied to a \chpl{BoundedRangeType.boundedLow} range, the low bound
-is fixed and and the high bound is set based on the count and the
-absolute value of the stride.
-
-When applied to a \chpl{BoundedRangeType.boundedHigh} range, the high
-bound is fixed and the low bound is set based on the count and the
-absolute value of the stride.
+When applied to a \chpl{BoundedRangeType.boundedLow} range, the low bound is
+fixed and and the high bound is set based on the count and the absolute value of
+the stride.  When applied to a \chpl{BoundedRangeType.boundedHigh} range, the
+high bound is fixed and the low bound is set based on the count and the absolute
+value of the stride.
 
 It is an error to apply the count operator to a
 \chpl{BoundedRangeType.boundedNone} range.
@@ -275,7 +334,7 @@ The following declarations result in equivalent ranges.
 var r1 = 2.. by -2 # 3;
 var r2 = ..6 by -2 # 3;
 var r3 = 0..6 by -2 # 3;
-var r4 = 1..#6 by -2;
+var r4 = 2..#5 by -2;
 \end{chapel}
 \begin{chapelpost}
 writeln(r1 == r2 \&\& r2 == r3 \&\& r3 == r4);
@@ -288,7 +347,7 @@ true
 Each of these ranges represents the ordered set of three values: 6, 4, 2.
 \end{example}
 
-\subsubsection{Arithmetic Operators}
+\subsection{Arithmetic Operators}
 \label{Range_Arithmetic}
 \index{ranges!arithmetic operators}
 
@@ -296,9 +355,9 @@ The following arithmetic operators are defined on ranges and integral
 types:
 
 \begin{chapel}
-def +(r: range, s: integral): range
-def +(s: integral, r: range): range
-def -(r: range, s: integral): range
+proc +(r: range, s: integral): range
+proc +(s: integral, r: range): range
+proc -(r: range, s: integral): range
 \end{chapel}
 
 The \chpl{+} and \chpl{-} operators apply the scalar via the operator
@@ -331,7 +390,7 @@ writeln((r, r2));
 \end{example}
 
 
-\subsubsection{Range Slicing}
+\subsection{Range Slicing}
 \label{Range_Slicing}
 \index{ranges!slicing}
 
@@ -361,77 +420,123 @@ var r4 = r3[0.. by 3];
 writeln((r, r2, r3, r4));
 \end{chapelpost}
 \begin{chapeloutput}
-(1..20, 3..20, 1..19 by 2, 3..15 by 6)
+(1..20, 3..20, 1..20 by 2, 1..20 by 6 align 2)
 \end{chapeloutput}
 \end{example}
 
-\subsection{Predefined Functions and Methods on Ranges}
+\section{Predefined Functions and Methods on Ranges}
 \index{ranges!predefined functions}
 \begin{protohead}
-def $range$.idxType type
+proc $range$.idxType type
 \end{protohead}
 \begin{protobody}
 Returns the index type of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.stridable type
+proc $range$.stridable type
 \end{protohead}
 \begin{protobody}
 Returns true if the range is stridable, false otherwise.
 \end{protobody}
 
 \begin{protohead}
-def $range$.boundedType type
+proc $range$.boundedType type
 \end{protohead}
 \begin{protobody}
 Returns boundedType of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.low : idxType
+proc $range$.low : idxType
 \end{protohead}
 \begin{protobody}
 Returns the low bound of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.high : idxType
+proc $range$.high : idxType
 \end{protohead}
 \begin{protobody}
 Returns the high bound of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.stride : int(numBits(idxType))
+proc $range$.alignedLow : idxType
+\end{protohead}
+\begin{protobody}
+Returns the aligned low bound of the range.  If the stride is less than -1, the
+aligned low bound may be greater than the declared low bound.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.alignedHigh : idxType
+\end{protohead}
+\begin{protobody}
+Returns the aligned high bound of the range.  If the stride is greater than 1,
+the aligned high bound may be greater than the declared high bound.
+\end{protobody}
+\begin{example}
+The following code:
+\begin{chapelpre}
+% alignedHigh.chpl
+\end{chapelpre}
+\begin{chapel}
+var r = 0..20 by 3;
+writeln(r.alignedHigh);
+\end{chapel}
+\begin{chapeloutput}
+18
+\end{chapeloutput}
+produces the output ``18''.
+\end{example}
+
+\begin{protohead}
+proc $range$.first : idxType
+\end{protohead}
+\begin{protobody}
+Returns the first index in the range.  If the stride is positive, the 
+\chpl{low} value is returned; otherwise, the \chpl{high} value is returned.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.last : idxType
+\end{protohead}
+\begin{protobody}
+Returns the last index within the range.  In general, this is given
+by \chpl{start + length * stride}.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.stride : int(numBits(idxType))
 \end{protohead}
 \begin{protobody}
 Returns the stride of the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.length : idxType
+proc $range$.length : idxType
 \end{protohead}
 \begin{protobody}
 Returns the number of elements in the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.member(i: idxType): bool
+proc $range$.member(i: idxType): bool
 \end{protohead}
 \begin{protobody}
 Returns whether or not \chpl{i} is in the range.
 \end{protobody}
 
 \begin{protohead}
-def $range$.member(other: range): bool
+proc $range$.member(other: range): bool
 \end{protohead}
 \begin{protobody}
 Returns whether or not every element in other is also in this.
 \end{protobody}
 
 \begin{protohead}
-def $range$.indexOrder(i: idxType): idxType
+proc $range$.indexOrder(i: idxType): idxType
 \end{protohead}
 \begin{protobody}
 If \chpl{i} is a member of the range, returns an integer giving

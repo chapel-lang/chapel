@@ -1,4 +1,4 @@
-def foo(x: integral = 1..3) {
+proc foo(x: integral = 1..3) {
   writeln(x);
 }
 

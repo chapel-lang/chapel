@@ -1,0 +1,4 @@
+bug: warnMaximalRange not yet implemented
+This ought to work, but a kink in compilation for runtime prevents the
+type of the warnMaximalRange parameter from being determined.
+Very likely a 5 minute (TM) fix.

@@ -8,6 +8,6 @@ writeln("myR is: ", myR);
 baz(myR, 19);
 writeln("myR is: ", myR);
 
-def baz(inout x,y) {
+proc baz(inout x,y) {
   x.A(1) = y;
 }

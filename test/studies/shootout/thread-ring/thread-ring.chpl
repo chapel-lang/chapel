@@ -24,7 +24,7 @@ config param use_coforall = true;
 var D: domain(1) = [1..nthreads];
 var token: [D] sync int;
 
-def main() {
+proc main() {
   // init (not strictly needed, i.e., MTA semantics)
   [i in D] token(i).reset();
 
@@ -48,7 +48,7 @@ def main() {
   }
 }
 
-def ring_link(id: int) {
+proc ring_link(id: int) {
   if (id > 0) {
     while (true) {
       const t = token(id).readFE();

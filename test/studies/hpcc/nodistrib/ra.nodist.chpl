@@ -83,7 +83,7 @@ var T: [TableSpace] elemType;
 //
 // The program entry point
 //
-def main() {
+proc main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
   //
@@ -117,7 +117,7 @@ def main() {
 //
 // Print the problem size and number of updates
 //
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     if (printStats) then printLocalesTasks(tasksPerLocale);
     printProblemSize(elemType, numTables, m);
@@ -128,7 +128,7 @@ def printConfiguration() {
 //
 // Verify that the computation is correct
 //
-def verifyResults() {
+proc verifyResults() {
   //
   // Print the table, if requested
   //
@@ -164,7 +164,7 @@ def verifyResults() {
 //
 // Print out success/failure, the execution time, and the GUPS value
 //
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);

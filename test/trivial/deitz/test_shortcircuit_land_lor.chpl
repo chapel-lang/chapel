@@ -1,4 +1,4 @@
-def foo(i: int, j: int) {
+proc foo(i: int, j: int) {
   if (i / j > 2) then return true;
   return false;
 }

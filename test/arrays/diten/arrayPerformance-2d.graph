@@ -1,4 +1,5 @@
 perfkeys: Two Dimensional         :, Two Dimensional strided :
 files: arrayPerformance.dat, arrayPerformance.dat
+ylabel: Time (milliseconds)
 graphname: arrayPerformance-2d
 

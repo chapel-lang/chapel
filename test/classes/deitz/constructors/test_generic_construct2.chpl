@@ -4,11 +4,11 @@ class C {
   var x: ct;
   var y: bt;
 
-  def C(type ct, type bt, y: ct) {
+  proc C(type ct, type bt, y: ct) {
     x = y;
   }
 
-  def C(type ct, y: ct) {
+  proc C(type ct, y: ct) {
     x = y;
   }
 }

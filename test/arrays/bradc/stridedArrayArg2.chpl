@@ -1,4 +1,4 @@
-def foo(X: [1..3] int) {
+proc foo(X: [1..3] int) {
   X *= -1;
 }
 

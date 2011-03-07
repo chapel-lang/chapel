@@ -6,15 +6,15 @@ class D {
   var y : real = 2.0;
 }
 
-def foo(c : C) {
+proc foo(c : C) {
   writeln(c.x);
 }
 
-def foo(d : D) {
+proc foo(d : D) {
   writeln(d.y);
 }
 
-def bar(e) {
+proc bar(e) {
   foo(e);
 }
 

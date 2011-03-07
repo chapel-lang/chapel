@@ -4,7 +4,7 @@ var A: [D] real;
 
 
 
-def foo(X = A) {
+proc foo(X = A) {
   writeln("X is: ", X);
   X += 0.1;
   writeln("X is: ", X);

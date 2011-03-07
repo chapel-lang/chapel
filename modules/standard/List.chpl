@@ -10,7 +10,7 @@ record list {
   var last: listNode(eltType);
   var length: int;
 
-  def destroy() {
+  proc destroy() {
     var current = first;
     while (current != nil) {
       var next = current.next;
@@ -19,7 +19,7 @@ record list {
     }
   }
 
-  def remove(x: eltType) {
+  proc remove(x: eltType) {
     var tmp = first,
         prev: first.type = nil;
     while tmp != nil && tmp.data != x {
@@ -38,7 +38,7 @@ record list {
     }
   }
 
-  def these() {
+  iter these() {
     var tmp = first;
     while tmp != nil {
       yield tmp.data;
@@ -46,7 +46,7 @@ record list {
     }
   }
 
-  def append(e : eltType) {
+  proc append(e : eltType) {
     if last {
       last.next = new listNode(eltType, e);
       last = last.next;
@@ -57,25 +57,25 @@ record list {
     length += 1;
   }
 
-  def append(e: eltType, es: eltType ...?k) {
+  proc append(e: eltType, es: eltType ...?k) {
     append(e);
     for param i in 1..k do
       append(es(i));
   }
 
-  def prepend(e : eltType) {
+  proc prepend(e : eltType) {
     first = new listNode(eltType, e, first);
     if last == nil then
       last = first;
     length += 1;
   }
 
-  def concat(l: list(eltType)) {
+  proc concat(l: list(eltType)) {
     for e in l do
       append(e);
   }
 
-  def writeThis(f: Writer) {
+  proc writeThis(f: Writer) {
     var first: bool = true;
     for e in this {
       if !first then
@@ -87,7 +87,7 @@ record list {
   }
 }
 
-def makeList(x ...?k) {
+proc makeList(x ...?k) {
   var s: list(x(1).type);
   for param i in 1..k do
     s.append(x(i));

@@ -1,3 +1,3 @@
-_extern def hello();
+_extern proc hello();
 
 hello();

@@ -5,7 +5,7 @@ class Foo {
   var z : int;
 }
 
-def main() {
+proc main() {
   var f : Foo = new Foo();
   f.x = 1;
   f.y = 2;

@@ -34,7 +34,7 @@ module SSCA2_driver
   }
 
        
-  def execute_SSCA2 ( G )
+  proc execute_SSCA2 ( G )
     {
       // ---------------------------------
       // execute SSCA2 kernels 2 through 4

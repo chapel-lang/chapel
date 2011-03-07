@@ -6,9 +6,9 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <string.h>
-#include <comm_printf_macros.h>
+#include <chpl-comm-printf-macros.h>
 #include "chplcgfns.h"
-#include "chplcomm_locales.h"
+#include "chpl-comm-locales.h"
 #include "chpllaunch.h"
 #include "chpl_mem.h"
 #include "chpltypes.h"
@@ -25,7 +25,7 @@ static void chpl_launch_sanity_checks(const char* argv0) {
   if (stat(chpl_get_real_binary_name(), &statBuf) != 0) {
     char errorMsg[256];
     sprintf(errorMsg, "unable to locate file: %s", chpl_get_real_binary_name());
-    chpl_internal_error(errorMsg);
+    chpl_error(errorMsg, 0, 0);
   }
 }
 

@@ -18,14 +18,6 @@ typedef struct {
 } chpl_sync_aux_t;
 
 //
-// Single variables
-//
-typedef struct {
-  sync int64_t is_full;      // also serves as lock - need to acquire before writing to corresponding _singlevar
-  sync int64_t signal_full;  // wait for full; signal this when full
-} chpl_single_aux_t;
-
-//
 // Architectural intrinsics
 //
 #define chpl_read_FE(x) readfe(&((x)->value))
@@ -36,9 +28,9 @@ typedef struct {
 #define chpl_write_XF(x,y) writexf(&((x)->value), (y))
 #define chpl_sync_reset(x) purge(&((x)->value))
 
-#define chpl_single_read_FF(x) readff(&((x)->value))
-#define chpl_single_read_XX(x) readxx(&((x)->value))
-#define chpl_single_write_EF(x,y) writeef(&((x)->value), (y))
-#define chpl_single_reset(x) purge(&((x)->value))
+#define chpl_single_read_FF(x)    chpl_sync_read_FF(x)
+#define chpl_single_read_XX(x)    chpl_sync_read_XX(x)
+#define chpl_single_write_EF(x,y) chpl_sync_write_EF(x,y)
+#define chpl_single_reset(x)      chpl_sync_reset(x)
 
 #endif

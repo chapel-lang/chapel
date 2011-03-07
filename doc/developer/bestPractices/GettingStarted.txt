@@ -52,12 +52,10 @@ project via the following steps:
    - add $CHPL_HOME/util and $CHPL_HOME/util/devel to your PATH,
    - set CHPL_DEVELOPER to 'true' (see also CHPL_DEVELOPER.txt).
 
-* Get aquainted with the testing system, located in $CHPL_HOME/test
-  and driven by $CHPL_HOME/util/start_test.  We rely on it heavily in
-  the project to support a test-first development philosophy, to avoid
-  regressions, to track performance, and to track open issues.
-  Getting really comfortable with it is one of the most important
-  things a developer can do early in the development cycle.  The
-  comments at the top of $CHPL_HOME/util/start_test are the best
-  documentation.  Looking through the test system for uses of the
-  various files is also a good way to get started with it.
+* Get aquainted with the testing system which is a crucial technology
+  for the development team for test-first development, pre-commit
+  sanity checks, and nightly correctness and performance regression
+  testing.  See TestSystem.txt in this directory for an introduction.
+
+* Get aquainted with the compiler architecture via the compiler
+  overview document in $CHPL_HOME/doc/developer/compilerOverview/

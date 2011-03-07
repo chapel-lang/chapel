@@ -1,4 +1,4 @@
-def foo(inout x) {
+proc foo(inout x) {
   writeln(x);
   x = 4;
   writeln(x);

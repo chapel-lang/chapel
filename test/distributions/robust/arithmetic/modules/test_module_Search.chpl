@@ -12,13 +12,13 @@ var foundIdx: int;
 var idx = n1/2+1;
 var elem: real;
 
-def reset(A) {
+proc reset(A) {
   rng.fillRandom(A);
   QuickSort(A);
   elem = A[idx];
 }
 
-def checkSearch(found, foundIdx, A, searchType) {
+proc checkSearch(found, foundIdx, A, searchType) {
   if found && (foundIdx==idx) then
     writeln("\t", searchType, ": SUCCESS");
   else
@@ -44,13 +44,13 @@ reset(R1D);
 checkSearch(found, foundIdx, R1D, "BinarySearch");
 
 writeln("Search reindexed array");
-def foo(D: domain, A: [D], useLinear=true) {
+proc foo(D: domain, A: [D], useLinear=true) {
   if useLinear then
     return LinearSearch(A, elem);
   else
     return BinarySearch(A, elem);
 }
-const TD1D: domain(1) = Space1 - (o5);
+const TD1D: domain(1) = Space1.translate(-o5);
 reset(R1D);
 (found, foundIdx) = foo(TD1D, R1D);
 checkSearch(found, foundIdx+o5, R1D, "LinearSearch");

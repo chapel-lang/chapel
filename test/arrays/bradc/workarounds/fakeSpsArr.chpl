@@ -3,7 +3,7 @@ record sps33 {
 
   var data:[-1..1, 0..1] real;
 
-  def this(i, j) var {
+  proc this(i, j) var {
     if (i == j) {
       return irv;
     } else if (i==-1) {
@@ -13,12 +13,12 @@ record sps33 {
     }
   }
 
-  def this(ij: 2*int) var {
+  proc this(ij: 2*int) var {
     return this(ij(1), ij(2));
   }
 }
 
-def SpsStencDom() {
+iter SpsStencDom() {
   for (i,j) in [-1..1, -1..1] do
     if (i != j) then
       yield (i,j);

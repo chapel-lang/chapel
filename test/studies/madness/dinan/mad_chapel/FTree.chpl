@@ -20,7 +20,7 @@ record Coeff {
 var None: [0..-1] real;
 
 // Check if we have None.
-def isNone(x) {
+proc isNone(x) {
     return x.numElements == 0;
 }
 
@@ -35,7 +35,7 @@ class FTree {
                                     // something that has not yet been set.
 
 
-    def initialize() {
+    proc initialize() {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
     }
@@ -51,7 +51,7 @@ class FTree {
         middle of the tree you will short circuit a whole subtree!
         
      */
-    def this(lvl: int, idx: int) var {
+    proc this(lvl: int, idx: int) var {
         if !indices.member((lvl, idx)) {
             if setter {
               indices += ((lvl, idx));
@@ -72,7 +72,7 @@ class FTree {
     /** Access an element in the FTree.  If it doesn't exist, 
         return None.
      */  
-    def peek(lvl: int, idx: int) var {
+    proc peek(lvl: int, idx: int) var {
         if has_coeffs(lvl, idx) then
             return this(lvl, idx);
         else
@@ -82,7 +82,7 @@ class FTree {
 
     /** Unordered iterator over all coefficients
      */
-    def these() {
+    iter these() {
         for n in nodes do yield n.data;
     }
 
@@ -94,7 +94,7 @@ class FTree {
         A sparse array or an array of associative arrays may be more conducive
         to this type of iteration vs. the associative domain used here.
      */ 
-    def lvl_iter(lvl: int) {
+    iter lvl_iter(lvl: int) {
         for i in indices do
             if i(1) == lvl && indices.member(i) then yield nodes[i].data;
     }
@@ -102,7 +102,7 @@ class FTree {
 
     /** Return a copy of this FTree
      */
-    def copy() {
+    proc copy() {
         var t = new FTree(order);
         t.indices = indices;
         // get around restriction of matching domains for assoc arrays
@@ -113,7 +113,7 @@ class FTree {
 
     /** Check if there are coefficients in box (lvl, idx)
      */
-    def has_coeffs(lvl: int, idx: int) {
+    proc has_coeffs(lvl: int, idx: int) {
         return indices.member((lvl, idx));
     }
 
@@ -121,13 +121,13 @@ class FTree {
     /** Remove an element from the associative domain.  If the element
         does not exist, it is ignored.
      */
-    def remove(lvl: int, idx: int) {
+    proc remove(lvl: int, idx: int) {
         if indices.member((lvl, idx)) then indices.remove((lvl, idx));
     }
 }
 
 
-def main() {
+proc main() {
     var f = new FTree(2);
 
     for (i, j) in [0..2, 0..2] do f[i, j] = (i, j);

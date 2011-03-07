@@ -106,5 +106,5 @@ writeln("A = ", A);
 // Define slowFibonacci function to return the ith Fibonacci number
 // using a naive recursive algorithm.
 //
-def slowFibonacci(i: int(64)): int(64)
+proc slowFibonacci(i: int(64)): int(64)
   return if i <= 1 then i else slowFibonacci(i-1) + slowFibonacci(i-2);

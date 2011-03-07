@@ -1,9 +1,9 @@
-def foo(a: [] real) {
+proc foo(a: [] real) {
   writeln("array of reals");
   writeln(a);
 }
 
-def foo(a: [] int) {
+proc foo(a: [] int) {
   writeln("array of ints");
   writeln(a);
 }

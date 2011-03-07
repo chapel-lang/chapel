@@ -595,11 +595,11 @@ initPrimitive() {
   prim_def("chpl_localeName", returnInfoString);
   prim_def("chpl_maxThreads", returnInfoInt32);
   prim_def("chpl_maxThreadsLimit", returnInfoInt32);
-  prim_def(PRIM_CHPL_NUMTHREADS, "chpl_numThreads", returnInfoUInt32);
-  prim_def(PRIM_CHPL_NUMIDLETHREADS, "chpl_numIdleThreads", returnInfoUInt32);
-  prim_def(PRIM_CHPL_NUMQUEUEDTASKS, "chpl_numQueuedTasks", returnInfoUInt32);
-  prim_def(PRIM_CHPL_NUMRUNNINGTASKS, "chpl_numRunningTasks", returnInfoUInt32);
-  prim_def(PRIM_CHPL_NUMBLOCKEDTASKS, "chpl_numBlockedTasks", returnInfoInt32);
+  prim_def(PRIM_chpl_numThreads, "chpl_numThreads", returnInfoUInt32);
+  prim_def(PRIM_chpl_numIdleThreads, "chpl_numIdleThreads", returnInfoUInt32);
+  prim_def(PRIM_chpl_numQueuedTasks, "chpl_numQueuedTasks", returnInfoUInt32);
+  prim_def(PRIM_chpl_numRunningTasks, "chpl_numRunningTasks", returnInfoUInt32);
+  prim_def(PRIM_chpl_numBlockedTasks, "chpl_numBlockedTasks", returnInfoInt32);
 
   prim_def("chpl_setMemFlags", returnInfoVoid, true);
 

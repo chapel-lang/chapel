@@ -12,7 +12,7 @@ use driver_domains;
 config var epsilon = 0.00001,           // convergence tolerance
            verbose = false;             // printing control
 
-def main() {
+proc main() {
   const ProblemSpace = Dom2D,           // domain for grid points
     BigDomain = ProblemSpace.expand(1); // domain including boundary points
 

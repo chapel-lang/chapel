@@ -1,16 +1,16 @@
 module a {
 
-  def runa() {
+  proc runa() {
     writeln("in runa() in module a");
   }
 
   module aSubB {
 
-    def runab() {
+    proc runab() {
       writeln("in runab() in module aSubB");
     }
 
-    def main() {
+    proc main() {
       runa();
       runab();
     }  

@@ -1,6 +1,6 @@
 class foo {
   var x : int = 12;
-  def bar(x : int) {
+  proc bar(x : int) {
     writeln(x);
   }
 }

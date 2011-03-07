@@ -1,4 +1,4 @@
-def foo(param rank : int, x : rank*int) {
+proc foo(param rank : int, x : rank*int) {
   writeln(x);
 }
 

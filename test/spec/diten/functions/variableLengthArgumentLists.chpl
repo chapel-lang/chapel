@@ -1,4 +1,4 @@
-def mywriteln(x: int ...?k) {
+proc mywriteln(x: int ...?k) {
   for param i in 1..k do
   writeln(x(i));
 }

@@ -1,7 +1,7 @@
 class C {
   var x: int = 1;
 
-  def x var {
+  proc x var {
     if !setter && x < 0 then
       halt("x accessed when negative");
     return x;

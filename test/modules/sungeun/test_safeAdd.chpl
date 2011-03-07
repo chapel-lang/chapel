@@ -1,4 +1,4 @@
-def testSafeAdd(a, b, expected) {
+proc testSafeAdd(a, b, expected) {
   const safe = safeAdd(a,b);
   const res = if safe==true then "safe" else "not-safe";
   write(a, " + ", b, ": ", res);

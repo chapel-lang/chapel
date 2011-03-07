@@ -2,7 +2,7 @@ use BlockDist;
 
 config const n: int = 10;
 
-def main() {
+proc main() {
   on Locales(2) {
     const Dist = new dmap(new Block(rank=1,idxType=int,boundingBox=[1..n],
                                     dataParTasksPerLocale=1,

@@ -30,7 +30,7 @@ class GridVariable {
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
-  def clear() {
+  proc clear() {
     // Nothing to do!
   }
   // /|''''''''''''''''/|
@@ -45,7 +45,7 @@ class GridVariable {
   // Provides an alias directly into the 'value' array.
   //----------------------------------------------------
 
-  def this(D: domain) var{
+  proc this(D: domain) var{
     var alias => value(D);
     return alias;
   }
@@ -70,7 +70,7 @@ class GridVariable {
 // done when setting up the initial condition for a PDE.
 //-------------------------------------------------------
 
-def GridVariable.setToFunction(
+proc GridVariable.setToFunction(
   f: func(dimension*real, real)
 ){
 
@@ -108,7 +108,7 @@ def GridVariable.setToFunction(
 // just formats a few parameters.
 //-------------------------------------------------------------
 
-def writeTimeFile(
+proc writeTimeFile(
   time:    real,
   meqn:    int,
   ngrids:  int,
@@ -141,7 +141,7 @@ def writeTimeFile(
 //| >    GridVariable.writeData    | >
 //|/_______________________________|/
 
-def GridVariable.writeData (
+proc GridVariable.writeData (
   grid_number: int,
   AMR_level:   int,
   outfile:     file)
@@ -261,7 +261,7 @@ def GridVariable.writeData (
 // time and frame_number.
 //-------------------------------------------------------------------
 
-def GridVariable.clawOutput(
+proc GridVariable.clawOutput(
   time:         real,
   frame_number: int)
 {

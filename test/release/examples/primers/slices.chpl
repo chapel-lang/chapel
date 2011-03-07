@@ -27,7 +27,7 @@
 config const n = 10,
              blk = 2;
 
-def main() {
+proc main() {
 
   // Variable declarations for the range vec, and for the domain D
   // and array A.  Vec is used to define the ranges of each dimension
@@ -90,7 +90,7 @@ def main() {
 
 // The iterator blockIter yields a range that defines a subset
 // of vec, which is always of length blk.  
-def blockIter(vec:range,blk) {
+iter blockIter(vec:range,blk) {
   for i in vec by blk {
     if (i + blk-1 <= vec.high) then 
       yield i..i+blk-1;
@@ -99,7 +99,7 @@ def blockIter(vec:range,blk) {
 
 // This function sets each element of A to be the value of its
 // row index.
-def initBlock(A) {
+proc initBlock(A) {
   for (i,j) in A.domain {
     A(i,j) = i;
   }
@@ -109,7 +109,7 @@ def initBlock(A) {
 // be of [1..blk,1..blk].  It expects arrays to be blk x blk.
 // This function sets each element of A to be the value of its
 // row index.
-def initBlock2(A: [1..blk,1..blk]) {
+proc initBlock2(A: [1..blk,1..blk]) {
   for (i,j) in A.domain {
     A(i,j) = i;
   }

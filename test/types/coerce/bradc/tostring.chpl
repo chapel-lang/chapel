@@ -21,14 +21,14 @@ var c64: complex(64) = (17.18 + 19.20i):complex(64);
 var c128: complex(128) = 21.22 + 23.24i;
 var cdf: complex = 25.26 + 27.28i;
 
-def dobool(x) {
+proc dobool(x) {
   var s: string;
   s = x:string;
   writeln("s is: ", s);
   writeln();
 }
 
-def dotype(x: ?t) {
+proc dotype(x: ?t) {
   var s: string;
   s = x:string;
   writeln("s is: ", s);

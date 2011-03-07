@@ -22,7 +22,7 @@ config const printParams = true,
              printStats = true;
 
 
-def main() {
+proc main() {
   printConfiguration();
 
   const ProblemSpace: domain(1, indexType) = [1..m];
@@ -55,7 +55,7 @@ def main() {
 }
 
 
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     printProblemSize(elemType, numVectors, m);
     writeln("Number of trials = ", numTrials, "\n");
@@ -63,7 +63,7 @@ def printConfiguration() {
 }
 
 
-def initVectors(B, C, ProblemSpace, print) {
+proc initVectors(B, C, ProblemSpace, print) {
   var randlist = new RandomStream(seed);
 
   randlist.skipToNth(B.domain.low);
@@ -80,7 +80,7 @@ def initVectors(B, C, ProblemSpace, print) {
 }
 
 
-def verifyResults(A, B, C, print) {
+proc verifyResults(A, B, C, print) {
   if (printArrays && print) then writelnFragArray("A is: ", A, "\n");
 
   const infNorm = max reduce [i in A.domain] abs(A(i) - (B(i) + alpha * C(i)));
@@ -89,7 +89,7 @@ def verifyResults(A, B, C, print) {
 }
 
 
-def printResults(successful, execTimes) {
+proc printResults(successful, execTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     const totalTime = + reduce execTimes,

@@ -13,7 +13,7 @@ module blocked_elemental_schur_complement {
 
   use cholesky_execution_config_consts;
  
-  def blocked_elemental_schur_complement ( A : [] , L12 : [], L21 : [] )
+  proc blocked_elemental_schur_complement ( A : [] , L12 : [], L21 : [] )
 
     where ( A.domain.rank   == 2 && 
 	    L12.domain.rank == 2 && 

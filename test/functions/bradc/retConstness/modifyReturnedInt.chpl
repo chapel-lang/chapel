@@ -1,10 +1,10 @@
 var i1 = 1;
 
-def foo() {
+proc foo() {
   return i1;
 }
 
-def bar() {
+proc bar() {
   var i2 = 2;
   return i2;
 }

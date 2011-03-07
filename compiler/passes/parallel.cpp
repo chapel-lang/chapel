@@ -6,14 +6,12 @@
 #include "expr.h"
 #include "optimizations.h"
 #include "passes.h"
+#include "../resolution/resolution.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "stringutil.h"
 #include "driver.h"
 #include "files.h"
-
-FnSymbol* getAutoCopy(Type* t);
-FnSymbol* getAutoDestroy(Type* t);
 
 // Package args into a class and call a wrapper function with that
 // object. The wrapper function will then call the function

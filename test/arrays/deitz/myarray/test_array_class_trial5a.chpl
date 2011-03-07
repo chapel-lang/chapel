@@ -3,7 +3,7 @@ class array1d {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  def this(i : int) var {
+  proc this(i : int) var {
     select i {
       when 1 do return x1;
       when 2 do return x2;
@@ -24,7 +24,7 @@ writeln(a(1), a(2), a(3));
 class array2d {
   type t;
   var data : array1d(t) = new array1d(t);
-  def this(i : int, j : int) var {
+  proc this(i : int, j : int) var {
     return data((i - 1) * 2 + j);
   }
 }

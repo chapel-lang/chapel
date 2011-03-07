@@ -1,5 +1,5 @@
 class C {
-  def bbox(x: int) {
+  proc bbox(x: int) {
     halt("bbox() not implemented for this class");
   }
 }
@@ -8,12 +8,12 @@ class D : C {
   param rank: int;
   var ranges : rank*range(int, BoundedRangeType.bounded, false);
 
-  def initialize() {
+  proc initialize() {
     for i in 1..rank do
       ranges(i) = 1..i;
   }
 
-  def bbox(x: int) {
+  proc bbox(x: int) {
     return ranges(x);
   }
 }

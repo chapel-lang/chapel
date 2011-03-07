@@ -27,7 +27,7 @@ will begin as user-defined domain maps and later become part of the
 standard set of distributions.
 \end{rationale}
 
-\subsection{The Standard Block Distribution}
+\section{The Standard Block Distribution}
 \label{Block_Dist}
 
 The standard Block distribution, defined in the
@@ -61,7 +61,7 @@ j_k = \left\{
 
 The Block class constructor is defined as follows:
 \begin{chapel}
-def Block(boundingBox: domain,
+proc Block(boundingBox: domain,
           targetLocales: [] locale = Locales, 
           dataParTasksPerLocale = $\mbox{{\it value in global config const of the same name}}$,
           dataParIgnoreRunningTasks = $\mbox{{\it value in global config const of the same name}}$,
@@ -125,7 +125,7 @@ When run on 6 locales, the output is:
 \end{chapel}
 \end{example}
 
-\subsection{The Standard Cyclic Distribution}
+\section{The Standard Cyclic Distribution}
 \label{Cyclic_Dist}
 The standard Cyclic distribution, defined in the
 module \chpl{CyclicDist}, maps indices to locales in a round-robin
@@ -150,7 +150,7 @@ formula:
 
 The Cyclic class constructor is defined as follows:
 \begin{chapel}
-def Cyclic(startIdx,
+proc Cyclic(startIdx,
            targetLocales: [] locale = Locales,
            dataParTasksPerLocale = $\mbox{{\it value in global config const of the same name}}$,
            dataParIgnoreRunningTasks = $\mbox{{\it value in global config const of the same name}}$,

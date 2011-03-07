@@ -21,7 +21,7 @@ class CoarseningTransferZone {
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
-  def clear() {
+  proc clear() {
     neighbors.clear();
   }
   // /|''''''''''''''''/|
@@ -32,7 +32,7 @@ class CoarseningTransferZone {
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def CoarseningTransferZone(
+  proc CoarseningTransferZone(
     coarse_level: Level,
     fine_level:   Level,
     coarse_grid:  Grid)
@@ -59,7 +59,7 @@ class CoarseningTransferZone {
   //|\'''''''''''''''''''''''''|\
   //| >    these() iterator    | >
   //|/.........................|/
-  def these() {
+  iter these() {
     for nbr in neighbors do
       yield (nbr, domains(nbr));
   }
@@ -100,7 +100,7 @@ class RefiningTransferZone {
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
-  def clear() {
+  proc clear() {
     delete full_multidomain;
     for neighbor in neighbors do delete multidomains(neighbor);
     neighbors.clear();
@@ -113,7 +113,7 @@ class RefiningTransferZone {
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def RefiningTransferZone(
+  proc RefiningTransferZone(
     coarse_level: Level,
     fine_level:   Level,
     grid:         Grid)
@@ -154,7 +154,7 @@ class RefiningTransferZone {
   //|\'''''''''''''''''''''''''|\
   //| >    these() iterator    | >
   //|/.........................|/
-  def these() {
+  iter these() {
     for nbr in neighbors do
       yield (nbr, multidomains(nbr), subranges(nbr));
   }
@@ -192,7 +192,7 @@ class CFBoundary {
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
-  def clear() {
+  proc clear() {
     for grid in fine_level.grids {
       coarse_overlaps(grid).clear();
       delete coarse_overlaps(grid);
@@ -215,7 +215,7 @@ class CFBoundary {
   // Intended signature is 
   //     CFBoundary(coarse_level: Level, fine_level: Level)
   //----------------------------------------------------------
-  def initialize() {
+  proc initialize() {
     ref_ratio = refinementRatio(coarse_level, fine_level);
     
     for fine_grid in fine_level.grids do

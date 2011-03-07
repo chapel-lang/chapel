@@ -1,4 +1,4 @@
-def tupleToArray(t:?eltType...3) : [1..3] eltType
+proc tupleToArray(t:?eltType...3) : [1..3] eltType
 {
         var retr : [1..3] eltType;
         for i in 1..3

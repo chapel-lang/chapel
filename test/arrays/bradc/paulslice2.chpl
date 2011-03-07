@@ -11,6 +11,6 @@ for span in 1..n/radix {
   foo(A[1.. by span # radix]);
 }
 
-def foo(B:[1..4] int) {
+proc foo(B:[1..4] int) {
   writeln("B is: ", B);
 }

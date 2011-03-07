@@ -35,7 +35,7 @@ record Panel2D {
     const rows : int;
     const cols : int;
 
-    def panel {
+    proc panel {
         var pnl : [1..rows, 1..cols] =>
             matrix[rowOffset..rowOffset+rows-1, colOffset..colOffset+cols-1];
         return pnl;
@@ -47,7 +47,7 @@ record Panel2D {
 
 
 // calculate C = C - A * B.
-def dgemm(A : Panel2D, B : Panel2D, C : Panel2D)
+proc dgemm(A : Panel2D, B : Panel2D, C : Panel2D)
 {
     assert(A.cols == B.rows);
     assert(C.rows == A.rows);
@@ -66,7 +66,7 @@ def dgemm(A : Panel2D, B : Panel2D, C : Panel2D)
 
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
-def panelSolve(pnl : Panel2D, piv : [1..pnl.rows] int)
+proc panelSolve(pnl : Panel2D, piv : [1..pnl.rows] int)
 {
     var matrix => pnl.matrix;
     var panel  => pnl.panel;
@@ -109,7 +109,7 @@ def panelSolve(pnl : Panel2D, piv : [1..pnl.rows] int)
 // Each step of the LU decomposition will solve for a submatrix using an
 // unblocked algorithm. This function solves the rows to the right of the
 // block.
-def updateBlockRow(blockPnl : Panel2D, blockRow : Panel2D) {
+proc updateBlockRow(blockPnl : Panel2D, blockRow : Panel2D) {
     assert(blockPnl.rows == blockPnl.cols);
     const block => blockPnl.panel;
     const panel => blockRow.panel;
@@ -125,7 +125,7 @@ def updateBlockRow(blockPnl : Panel2D, blockRow : Panel2D) {
 
 // blocked LU factorization with pivoting for matrix augmented with vector of
 // RHS values.
-def LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
+proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
     param blkSize = 3;
 
     forall i in 1..n do
@@ -156,7 +156,7 @@ def LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
 //   TESTING SYSTEM:
 // -------------------------------------------------------------------------- 
 
-def matrixMult(
+proc matrixMult(
     const m : int,
     const p : int,
     const n : int,
@@ -173,7 +173,7 @@ def matrixMult(
 
 // given a matrix in A in form: [L, U] multiply the L and U parts into
 // a resulting matrix C.
-def selfMult(n : int, A : [1..n,1..n] real, C : [1..n,1..n] real) {
+proc selfMult(n : int, A : [1..n,1..n] real, C : [1..n,1..n] real) {
     C = 0;
 
     forall (i,j) in C.domain {
@@ -195,7 +195,7 @@ def selfMult(n : int, A : [1..n,1..n] real, C : [1..n,1..n] real) {
 // QUESTION: I'm intending vectorIn to be passed by value in this instance
 // (since I modify it in the function but I don't want the result sent out).
 // is this function doing the trick?
-def permuteMatrix(matrix : [?dmn], in vector) {
+proc permuteMatrix(matrix : [?dmn], in vector) {
     //var pdmn : sparse subdomain(dmn);
     var pdmn =
         [1..vector.domain.dim(1).length, 1..vector.domain.dim(1).length];
@@ -220,7 +220,7 @@ def permuteMatrix(matrix : [?dmn], in vector) {
     matrix = permuted;
 }
 
-def permuteBack(matrix : [?dmn], in vector) {
+proc permuteBack(matrix : [?dmn], in vector) {
     // this just does a bubblesort of the permutation vector swapping the
     // rows of the matrix alongside. Yes the performance here will be horrible,
     // not to mention all the data being shuffled around, but this function
@@ -239,7 +239,7 @@ def permuteBack(matrix : [?dmn], in vector) {
     }
 }
 
-def test_permuteMatrix(rprt = true) : bool {
+proc test_permuteMatrix(rprt = true) : bool {
     // test one of the testing functions: permuteMatrix (is this getting a
     // little too meta here?)
 
@@ -277,7 +277,7 @@ def test_permuteMatrix(rprt = true) : bool {
     }
 }
 
-def test_panelSolve(rprt = true) : bool {
+proc test_panelSolve(rprt = true) : bool {
     var rand = new RandomStream();
 
     var piv : [1..8] int = [i in 1..8] i;
@@ -317,7 +317,7 @@ def test_panelSolve(rprt = true) : bool {
     }
 }
 
-def test_updateBlockRow(rprt = true) : bool {
+proc test_updateBlockRow(rprt = true) : bool {
     var rand = new RandomStream();
 
     // construct a matrix A = [X | Y], where X is an already LU-factorized
@@ -363,7 +363,7 @@ def test_updateBlockRow(rprt = true) : bool {
     }
 }
 
-def test_LUFactorize(rprt = true) : bool {
+proc test_LUFactorize(rprt = true) : bool {
     var rand = new RandomStream();
 
     var randomN : int = (rand.getNext() * 10):int + 1;
@@ -389,7 +389,7 @@ def test_LUFactorize(rprt = true) : bool {
     }
 }
 
-def main() {
+proc main() {
     var result = true;
     write("test_permuteMatrix: ");
     for i in 1..100 do

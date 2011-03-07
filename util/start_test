@@ -340,6 +340,18 @@
 # errors, warnings, and correct programs to all be tested using the
 # same mechanisms.  
 #
+# If a test generates files that should be cleaned up before running
+# the test again the next time (to start with a blank slate), these
+# files can be listed in a .cleanfiles or a directory-level file
+# called CLEANFILES.  Before each file or directory is tested (or when
+# the --clean-only flag is specified) the files listed in .cleanfiles
+# and/or CLEANFILES will be removed.  If a particular Chapel file is
+# specified, only the files listed in the .cleanfiles for that Chapel
+# file will be removed.  Both .cleanfiles and CLEANFILES will accept
+# the UNIX shell wildcard character '*', but not all shell expansions
+# (e.g., ~).  See the Python documentation for the glob module for
+# more info.
+#
 # If the output for a test varies by machine, communication layer, or
 # platform name, files named <testname>.<machname>.good,
 # <testname>.comm-<commlayer>.good, or <testname>.<platform>.good can
@@ -653,6 +665,8 @@ while ( $#argv > 0 )
                 set launchcmd = "$argv[1]"
                 shift
                 breaksw
+	case -cleanonly:
+	case --cleanonly:
 	case -clean-only:
 	case --clean-only:
 		shift
@@ -697,6 +711,8 @@ while ( $#argv > 0 )
                 shift
                 set testfutures = 1
                 breaksw
+        case -futures-only
+        case --futures-only
         case -futuresonly
         case --futuresonly
                 shift
@@ -727,11 +743,13 @@ while ( $#argv > 0 )
 		breaksw
         case -norecurse:
         case --norecurse:
+        case -no-recurse:
+        case --no-recurse:
                 shift
                 set recurse = 0
                 breaksw
-	case -componly:
-	case --componly:
+	case -comp-only:
+	case --comp-only:
 		shift
 		setenv CHPL_COMPONLY true
 		breaksw
@@ -1077,9 +1095,9 @@ foreach test ($testlist)
     else
         set sub_clean = $utildir/sub_clean
     endif
-    echo "[Starting $sub_clean `date`]" |& $tee -a $logfile
+    echo "[Starting $sub_clean $testname `date`]" |& $tee -a $logfile
 
-    $sub_clean |& $tee -a $logfile
+    $sub_clean $testname |& $tee -a $logfile
 
     if ($clean_only == 0) then
         # run the test

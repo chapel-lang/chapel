@@ -28,7 +28,7 @@ class WakeupSyncVarHack {
 pragma "private" var wakeup: WakeupSyncVarHack;
 pragma "private" var endCount: MyEndCount;
 
-def setupTerminationDetection() {
+proc setupTerminationDetection() {
   for loc in Locales do on loc {
     endCount = new MyEndCount();
     wakeup = new WakeupSyncVarHack();
@@ -44,7 +44,7 @@ def setupTerminationDetection() {
   }
 }
 
-def passToken(wakeupType) {
+proc passToken(wakeupType) {
   var next = if here.id == 0 then numLocales-1 else here.id-1;
   var token = endCount.token;
   if endCount.localColor == TerminationColor.black then
@@ -63,7 +63,7 @@ def passToken(wakeupType) {
 
 var finishedProg: single bool;
 
-def tokenWaiter() {
+proc tokenWaiter() {
   var wakeupType = wakeup.wakeup;
   while wakeupType != WakeupType.die {
     var nextWakeupType = wakeupType;
@@ -94,7 +94,7 @@ def tokenWaiter() {
     passToken(WakeupType.die);
 }
 
-def decEndCount {
+proc decEndCount {
   endCount.count -= 1;
   if debug then
     writeln(here, ": decEndCount: It is now: ", endCount.count.readFF());
@@ -102,13 +102,13 @@ def decEndCount {
     wakeup.wakeup = WakeupType.beginFinish;
 }
 
-def incEndCount {
+proc incEndCount {
   endCount.count += 1;
   if debug then
     writeln(here, ": incEndCount: It is now: ", endCount.count.readFF());
 }
 
-def turnBlack {
+proc turnBlack {
   if debug then
     writeln(here, ": turning black");
   endCount.localColor.writeXF(TerminationColor.black);
@@ -119,7 +119,7 @@ var a: sync int = 0;
 
 use Time;
 
-def foo() {
+proc foo() {
   sleep(5);
   turnBlack;
   on Locales(0) {
@@ -138,7 +138,7 @@ def foo() {
 // A possible main program after compiler transformations for termination
 // detection.
 //
-def main {
+proc main {
   setupTerminationDetection();
   incEndCount;
   begin {

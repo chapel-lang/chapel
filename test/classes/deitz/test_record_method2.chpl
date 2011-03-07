@@ -1,7 +1,7 @@
 record point {
   var x : real;
   var y : real;
-  def setx(newx : real) {
+  proc setx(newx : real) {
     x = newx;
   }
 }

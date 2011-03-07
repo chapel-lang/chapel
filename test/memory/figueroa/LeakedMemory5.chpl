@@ -7,7 +7,7 @@ const N = 5;
 var D = [2..N];
 var B: [D] int = 1;
 
-def foo () {
+proc foo () {
   var sum = 0;
   var A: [D] int = 7;
   D = [1..N];

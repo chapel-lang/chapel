@@ -12,12 +12,12 @@ record Stack {
   var top: OneWayNode(data_type);
   var size: int=0;
   
-  def push(data: data_type) {
+  proc push(data: data_type) {
     top = new OneWayNode(data_type, data, top);
     size += 1;
   }
   
-  def pop() {
+  proc pop() {
     if isEmpty() then 
       halt("Attempting to pop off an empty stack.");
     var old_top = top;
@@ -26,7 +26,7 @@ record Stack {
     return old_top.data;
   }
   
-  def isEmpty() {
+  proc isEmpty() {
     return top==nil;
   }
 }
@@ -41,14 +41,14 @@ record Stack {
 //|\""""""""""""""""""""""""""""""""|\
 //| >    Scalar-tuple arithmetic    | >
 //|/________________________________|/
-def =(T,a)
+proc =(T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 {
   for i in 1..T.size do
     T(i) = a;
 }
 
-def +(a,T)
+proc +(a,T)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 {
   var U: T.type;
@@ -57,7 +57,7 @@ def +(a,T)
   return U;
 }
 
-def +(T,a)
+proc +(T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 {
   var U: T.type;
@@ -66,7 +66,7 @@ def +(T,a)
   return U;
 }
 
-def -(a,T)
+proc -(a,T)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 {
   var U: T.type;
@@ -75,7 +75,7 @@ def -(a,T)
   return U;
 }
 
-def -(T,a)
+proc -(T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 {
   var U: T.type;
@@ -84,7 +84,7 @@ def -(T,a)
   return U;
 }
 
-def -(T)
+proc -(T)
   where isTuple(T) && isHomogeneousTuple(T)
 {
   var U: T.type;
@@ -93,7 +93,7 @@ def -(T)
   return U;
 }
 
-def *(a, T)
+proc *(a, T)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 {
   var U: T.type;
@@ -102,7 +102,7 @@ def *(a, T)
   return U;;
 }
 
-def *(T,a)
+proc *(T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 {
   var U: T.type;
@@ -111,7 +111,7 @@ def *(T,a)
   return U;;
 }
 
-def /(a, T)
+proc /(a, T)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 {
   var U: T.type;
@@ -120,7 +120,7 @@ def /(a, T)
   return U;;
 }
 
-def /(T,a)
+proc /(T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 {
   var U: T.type;
@@ -129,7 +129,7 @@ def /(T,a)
   return U;;
 }
 
-def abs(T)
+proc abs(T)
   where isTuple(T) && isHomogeneousTuple(T) 
     && (T(1).type==int || T(1).type==real)
 {
@@ -149,7 +149,7 @@ def abs(T)
 //| >    Range/domain arithmetic    | >
 //|/________________________________|/
 //==== Range exponentiation ====
-def **(R: range(stridable=?s), param n: int) {
+proc **(R: range(stridable=?s), param n: int) {
   var ranges: n*R.type;
   for i in [1..n] do ranges(i) = R;
 
@@ -158,7 +158,7 @@ def **(R: range(stridable=?s), param n: int) {
 }
 
 //==== range * domain ====
-def *(R: range(stridable=?s), D: domain)
+proc *(R: range(stridable=?s), D: domain)
 {
   param stridable = s || D.stridable;
 
@@ -171,7 +171,7 @@ def *(R: range(stridable=?s), D: domain)
 }
 
 //==== domain * range ====
-def *(D: domain, R: range(stridable=?s))
+proc *(D: domain, R: range(stridable=?s))
 {
   param stridable = s || D.stridable;
 
@@ -184,7 +184,7 @@ def *(D: domain, R: range(stridable=?s))
 }
 
 //==== domain * domain ====
-def *(D1: domain, D2: domain)
+proc *(D1: domain, D2: domain)
 {
   param stridable = D1.stridable || D2.stridable;
   param rank = D1.rank + D2.rank;
@@ -213,7 +213,7 @@ def *(D1: domain, D2: domain)
 // encloses the object in a tuple.  Useful for handling the
 // 1D/tuple problem.
 //-------------------------------------------------------------
-def tuplify(obj) {
+proc tuplify(obj) {
   if isTuple(obj) then return obj;
   else return tuple(obj);
 }
@@ -247,7 +247,7 @@ class IndependentArray {
   //|\''''''''''''''|\
   //| >    clear    | >
   //|/..............|/
-  def clear () {
+  proc clear () {
     Domain.clear();
   }
   // /|''''''''''''''/|
@@ -261,7 +261,7 @@ class IndependentArray {
 
 
 
-def main {
+proc main {
   var T = (1,5,-2);
   writeln("T   = ", T);
   writeln("T+1 = ", T+1);

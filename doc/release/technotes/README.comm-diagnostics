@@ -30,7 +30,7 @@ remote blocking forks, and remote non-blocking forks are reported.
 
 For example, given a program mytest.chpl:
 
-  def main() {
+  proc main() {
     startVerboseComm();
     var x: int = 1;
     on Locales(1) {     // should fork a blocking task onto locale 1
@@ -82,7 +82,7 @@ that contains these counts for each locale:
 
 For example, given a program mytest.chpl:
 
-  def main() {
+  proc main() {
     startCommDiagnostics();
     var x: int = 1;
     on Locales(1) {     // should fork a blocking task onto locale 1

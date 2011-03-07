@@ -1,6 +1,6 @@
 class C {
   var x: int;
-  def x var {
+  proc x var {
     if setter then
       writeln("setter invoked");
     else

@@ -30,7 +30,7 @@ class Board {
 // Create an empty board of the given size.
 // NB could not do this by writing our own constructor.
 //
-def createBoard(boardSize:int) {
+proc createBoard(boardSize:int) {
   return new Board(boardSize = boardSize);
 }
 
@@ -39,7 +39,7 @@ def createBoard(boardSize:int) {
 // If placing a queen at (row,col) is legal, do so and return true.
 // Otherwise, don't and return false.
 //
-def Board.placeNextIfLegal(row: int, col: int): bool {
+proc Board.placeNextIfLegal(row: int, col: int): bool {
   debug("adding   ", row, ", ", col);
   if !(lastfilled < boardSize) then
     halt("attempting to add a queen past the board's capacity");
@@ -66,7 +66,7 @@ def Board.placeNextIfLegal(row: int, col: int): bool {
 // Public interface.
 // Remove a queen in the LIFO order.
 //
-def Board.removeLast(row: int, col: int): void {
+proc Board.removeLast(row: int, col: int): void {
   debug("removing ", row, ", ", col, "\n");
   if !(row == lastfilled) then
     halt("attempted to remove a queen in a non-LIFO order",
@@ -83,7 +83,7 @@ def Board.removeLast(row: int, col: int): void {
 // Private helper: would the proposed placement be legal?
 // Assume the existing placement is legal.
 //
-def Board.nextPlacementIsLegal(row: int, col: int): bool {
+proc Board.nextPlacementIsLegal(row: int, col: int): bool {
   for i in 1..lastfilled {
     if
       queenvec(i) == col ||
@@ -106,7 +106,7 @@ def Board.nextPlacementIsLegal(row: int, col: int): bool {
 //
 config var show1line: bool = true;
 
-def Board.show(msg...): void {
+proc Board.show(msg...): void {
   if boardSize <= 0 then {
     writeln("the board is empty", (...msg));
     return;
@@ -135,7 +135,7 @@ def Board.show(msg...): void {
 
 // show debugging info?
 config var dbg: bool = false;
-def debug(arg...)  { if dbg  then write((...arg)); }
+proc debug(arg...)  { if dbg  then write((...arg)); }
 
 /////////////////////////////////////////////////////////////////////////////
 // the algorithm
@@ -152,7 +152,7 @@ config var showEachSolution: bool = true;
 // If the column succeeds, we proceed to the next row
 // (or show the result if we have filled all rows).
 //
-def tryQueenInNextRow(board: Board): void {
+proc tryQueenInNextRow(board: Board): void {
   // the row we will be placing in
   var nextRow = board.lastfilled + 1;
 
@@ -180,7 +180,7 @@ def tryQueenInNextRow(board: Board): void {
 // Find all solutions for the given board size, optionally showing each,
 // and print their count.
 //
-def countSolutions(boardSize: int, showEachSoln: bool) {
+proc countSolutions(boardSize: int, showEachSoln: bool) {
   solutionCount = 0;
   showEachSolution = showEachSoln;
   if showEachSoln then
@@ -198,7 +198,7 @@ config var N_counts_only = 11;
 //
 // The main program.
 //
-def main() {
+proc main() {
   if N > 0 then
     countSolutions(N, showEachSolution);
   for n in 1..N_counts_only do

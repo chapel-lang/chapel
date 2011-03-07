@@ -17,7 +17,7 @@ use LevelBC_def;
 // GridVariable.storeCTUOperator.
 //-----------------------------------------------------------
 
-def LevelSolution.advance_AdvectionCTU(
+proc LevelSolution.advance_AdvectionCTU(
   bc:             LevelBC,
   velocity:       dimension*real,
   time_requested: real)
@@ -70,7 +70,7 @@ def LevelSolution.advance_AdvectionCTU(
 // Takes a time step of length dt via the CTU method.
 //----------------------------------------------------
 
-def LevelSolution.step_AdvectionCTU(
+proc LevelSolution.step_AdvectionCTU(
   velocity: dimension*real, 
   dt:       real)
 {

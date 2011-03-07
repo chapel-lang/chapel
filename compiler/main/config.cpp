@@ -2,11 +2,11 @@
 #include "expr.h"
 #include "stmt.h"
 #include "config.h"
+#include "../parser/lexyacc.h"
 
 static Map<const char *, Expr*> configMap;
 static Vec<const char*> usedConfigParams;
 
-extern BlockStmt *parseString(const char *string, const char *filename, const char *msg);
 void
 checkConfigs(void) {
   bool anyBadConfigParams = false;

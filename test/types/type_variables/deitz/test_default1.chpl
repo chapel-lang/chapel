@@ -1,4 +1,4 @@
-def foo(type t = int) {
+proc foo(type t = int) {
   var x: t;
   writeln(x);
 }

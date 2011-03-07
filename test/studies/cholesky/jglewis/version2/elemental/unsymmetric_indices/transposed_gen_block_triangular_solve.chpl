@@ -11,7 +11,7 @@ module transposed_gen_block_triangular_solve {
   // Inner and Outer Product Cholesky codes
   // ============================================
 
-  def transposed_gen_block_triangular_solve ( L_diag    : [],
+  proc transposed_gen_block_triangular_solve ( L_diag    : [],
 					      L_offdiag : [] ) {
     
     // ------------------------------------------------------

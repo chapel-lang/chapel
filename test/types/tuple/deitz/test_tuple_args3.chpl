@@ -1,4 +1,4 @@
-def f((x, y) = (3, 4)) {
+proc f((x, y) = (3, 4)) {
   writeln(x + y);
 }
 

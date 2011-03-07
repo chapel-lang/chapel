@@ -1,6 +1,6 @@
 use Time;
 
-def foo() {
+proc foo() {
   var x: int = 17;
   bar(x);
   x=18;
@@ -9,7 +9,7 @@ def foo() {
   writeln("---");
 }
 
-def bar(inout x) {
+proc bar(inout x) {
   begin {
     sleep(1);
     writeln(x);

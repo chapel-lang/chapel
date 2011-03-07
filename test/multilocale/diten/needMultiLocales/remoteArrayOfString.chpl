@@ -1,4 +1,4 @@
-def main {
+proc main {
   var a: [1..3] string;
   a(1) = "one";
   a(2) = "two";

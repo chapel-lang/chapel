@@ -100,7 +100,7 @@ writeln("After decrementing B's elements, B is:\n", B, "\n");
 
 printArr(B);
 
-def printArr(X: [?D] real) {
+proc printArr(X: [?D] real) {
   writeln("within printArr, D is: ", D, "\n");
   forall (i,j) in D do
     X(i,j) = -X(i,j);
@@ -362,7 +362,7 @@ writeln("VarArr should now be reset: ", VarArr, "\n");
 //
 // nor:
 //
-//   def foo(X: [?D]) {  D = [1..2*n];  }
+//   proc foo(X: [?D]) {  D = [1..2*n];  }
 //
 // Only a domain variable or a domain function argument can be
 // reassigned to reallocate arrays.  This is to avoid confusion

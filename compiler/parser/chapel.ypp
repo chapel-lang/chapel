@@ -50,6 +50,7 @@
   EnumType* penumtype;
   FnSymbol* pfnsymbol;
   Flag flag;
+  ProcIter procIter;
 };
 
 //
@@ -61,11 +62,11 @@
 //
 // keywords (alphabetical)
 //
-%token TATOMIC TBEGIN TBREAK TBY TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST
+%token TALIGN TATOMIC TBEGIN TBREAK TBY TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST
 %token TCONTINUE TDEF TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXTERN TFOR
-%token TFORALL TIF TIN TINDEX TINOUT TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS
+%token TFORALL TIF TIN TINDEX TINOUT TITER TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS
 %token TMODULE TNEW TNIL TON TOTHERWISE TOUT TPARAM TPLUSPLUS TPRAGMA
-%token TPRIMITIVE TPRIMITIVELOOP TRECORD TREDUCE TRETURN TSCAN TSELECT TSERIAL
+%token TPRIMITIVE TPRIMITIVELOOP TPROC TRECORD TREDUCE TRETURN TSCAN TSELECT TSERIAL
 %token TSINGLE TSPARSE TSUBDOMAIN TSYNC TTHEN TTYPE TUNION TUSE TVAR TWHEN
 %token TWHERE TWHILE TYIELD
 
@@ -91,7 +92,7 @@
 %left TELSE
 %left TCOMMA
 %left TFOR TFORALL TIF TSYNC TSINGLE
-%left TBY THASH
+%left TALIGN TBY THASH
 %left TIN
 %left TDOTDOT
 %left TOR
@@ -159,6 +160,7 @@
 %type <pcallexpr> opt_actual_ls actual_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
+%type <procIter> proc_or_iter_or_def
 
 %% 
 
@@ -336,7 +338,7 @@ class_tag:
 ;
 
 opt_inherit:
-                  { $$ = new CallExpr(PRIM_ACTUALS_LIST); }
+                  { $$ = NULL; }
 | TCOLON expr_ls  { $$ = $2; }
 ;
 
@@ -412,7 +414,7 @@ lambda_decl_expr:
 
 fn_decl_stmt:
   extern_fn_decl_stmt
-| TDEF
+| proc_or_iter_or_def
     {
       captureTokens = 1;
       captureString[0] = '\0';
@@ -424,23 +426,37 @@ fn_decl_stmt:
     }
   opt_ret_tag opt_type opt_where_part function_body_stmt
     {
-      $3->retTag = $5;
+      FnSymbol* fn = $3;
+      // ProcIter: remove this outer 'if' after transition
+      if ($1 == ProcIter_DEF) {
+          // nothing
+      } else {
+          fn->addFlag(FLAG_PROC_ITER_KW_USED);
+          if ($1 == ProcIter_ITER)
+            fn->addFlag(FLAG_ITERATOR_FN);
+      }
+      fn->retTag = $5;
       if ($5 == RET_VAR)
-        $3->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
+        fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
       if ($6)
-        $3->retExprType = new BlockStmt($6, BLOCK_SCOPELESS);
+        fn->retExprType = new BlockStmt($6, BLOCK_SCOPELESS);
       if ($7)
-        $3->where = new BlockStmt($7);
-      $3->insertAtTail($8);
-      $$ = buildChapelStmt(new DefExpr($3));
+        fn->where = new BlockStmt($7);
+      fn->insertAtTail($8);
+      $$ = buildChapelStmt(new DefExpr(fn));
     }
 ;
 
 extern_fn_decl_stmt:
-  TEXTERN TDEF fn_decl_stmt_inner opt_type TSEMI
+  TEXTERN proc_or_iter_or_def fn_decl_stmt_inner opt_type TSEMI
     {
       FnSymbol* fn = $3;
       fn->addFlag(FLAG_EXTERN);
+      if ($2 == ProcIter_ITER)
+        USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
+      // ProcIter: remove this 'if' altogether after transition
+      if ($2 == ProcIter_PROC)
+        fn->addFlag(FLAG_PROC_ITER_KW_USED);
       if ($4)
         fn->retExprType = new BlockStmt($4, BLOCK_SCOPELESS);
       else
@@ -498,6 +514,7 @@ fn_ident:
 | TNOT           { $$ = "!"; }
 | TBY            { $$ = "by"; } 
 | THASH          { $$ = "#"; }
+| TALIGN	 { $$ = "align"; }
 ;
 
 opt_formal_ls:
@@ -539,6 +556,12 @@ opt_intent_tag:
 opt_this_intent_tag:
          { $$ = INTENT_BLANK; }
 | TPARAM { $$ = INTENT_PARAM; }
+;
+
+proc_or_iter_or_def:
+  TDEF   { $$ = ProcIter_DEF; }
+| TPROC  { $$ = ProcIter_PROC; }
+| TITER  { $$ = ProcIter_ITER; }
 ;
 
 opt_ret_tag:
@@ -880,6 +903,7 @@ binary_op_expr:
 | expr TOR expr            { $$ = buildLogicalOrExpr($1, $3); }
 | expr TEXP expr           { $$ = new CallExpr("**", $1, $3); }
 | expr TBY expr            { $$ = new CallExpr("by", $1, $3); }
+| expr TALIGN expr         { $$ = new CallExpr("align", $1, $3); }
 | expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
 | expr TDMAPPED expr  {
                         if (strcmp(CHPL_TARGET_PLATFORM, "xmt")) {

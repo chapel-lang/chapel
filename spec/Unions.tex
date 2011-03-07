@@ -8,7 +8,7 @@ execution.  Unions are safe so that an access to a field that does not
 contain data is a runtime error.  When a union is constructed, it is
 in an unset state so that no field contains data.
 
-\subsection{Union Types}
+\section{Union Types}
 \label{Union_Types}
 
 The syntax of a union type is summarized as follows:
@@ -20,7 +20,7 @@ The union type is specified by the name of the union type.  This
 simplification from class and record types is possible because generic
 unions are not supported.
 
-\subsection{Union Declarations}
+\section{Union Declarations}
 \label{Union_Declarations}
 
 \index{union@\chpl{union}}
@@ -35,12 +35,13 @@ union-statement-list:
 
 union-statement:
   type-declaration-statement
-  function-declaration-statement
+  procedure-declaration-statement
+  iterator-declaration-statement
   variable-declaration-statement
   empty-statement
 \end{syntax}
 
-\subsubsection{Union Fields}
+\subsection{Union Fields}
 \label{Union_Fields}
 \index{unions!fields}
 
@@ -50,7 +51,7 @@ currently set.
 
 Union fields should not be specified with initialization expressions.
 
-\subsection{Union Assignment}
+\section{Union Assignment}
 \label{Union_Assignment}
 \index{unions!assignment}
 
@@ -58,7 +59,7 @@ Union assignment is by value.  The field set by the union on the
 right-hand side of the assignment is assigned to the union on the
 left-hand side of the assignment and this same field is marked as set.
 
-\subsection{The Type Select Statement and Unions}
+\section{The Type Select Statement and Unions}
 \label{The_Type_Select_Statement_and_Unions}
 \index{unions!type select@\chpl{type select}}
 

@@ -1,15 +1,15 @@
 
-def foo_bool_v	(b  : volatile bool) { writeln("b = ", b); }
-def foo_int_v	(i  : volatile int) { writeln("i = ", i); }
-def foo_uint_v	(ui : volatile uint) { writeln("ui = ", ui); }
-def foo_real_v	(r  : volatile real) { writeln("r = ", r); }
-def foo_bool	(b  : bool) { writeln("b = ", b); }
-def foo_int	(i  : int) { writeln("i = ", i); }
-def foo_uint	(ui : uint) { writeln("ui = ", ui); }
-def foo_real	(r  : real) { writeln("r = ", r); }
+proc foo_bool_v	(b  : volatile bool) { writeln("b = ", b); }
+proc foo_int_v	(i  : volatile int) { writeln("i = ", i); }
+proc foo_uint_v	(ui : volatile uint) { writeln("ui = ", ui); }
+proc foo_real_v	(r  : volatile real) { writeln("r = ", r); }
+proc foo_bool	(b  : bool) { writeln("b = ", b); }
+proc foo_int	(i  : int) { writeln("i = ", i); }
+proc foo_uint	(ui : uint) { writeln("ui = ", ui); }
+proc foo_real	(r  : real) { writeln("r = ", r); }
 
 
-def main() {
+proc main() {
   var w : volatile bool = false;
   var x : volatile int = 1;
   var y : volatile uint = 2;

@@ -1,10 +1,10 @@
 use List;
 
-def foo(i: int) {
+proc foo(i: int) {
   writeln(i);
 }
 
-def foo(s) {
+proc foo(s) {
   writeln(s);
 }
 

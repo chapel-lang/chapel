@@ -17,7 +17,7 @@
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "error.h"
 
 #ifndef chplGetPageSize
@@ -86,7 +86,7 @@ int32_t chpl_coresPerLocale(void) {
 
 int32_t chpl_maxThreads(void) {
   int32_t comm_max = chpl_comm_getMaxThreads();
-  int32_t threads_max = CHPL_THREADS_GETMAXTHREADS();
+  int32_t threads_max = chpl_task_getMaxThreads();
 
   if (comm_max == 0)
     return threads_max;
@@ -99,7 +99,7 @@ int32_t chpl_maxThreads(void) {
 
 int32_t chpl_maxThreadsLimit(void) {
   int32_t comm_max = chpl_comm_maxThreadsLimit();
-  int32_t threads_max = CHPL_THREADS_MAXTHREADSLIMIT();
+  int32_t threads_max = chpl_task_getMaxThreadsLimit();
 
   if (comm_max == 0)
     return threads_max;

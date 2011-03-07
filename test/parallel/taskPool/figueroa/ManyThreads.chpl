@@ -8,9 +8,9 @@ config const numThreads = 3000;
 var total: sync int = 0;
 var seed = getCurrentTime() : uint;
 
-def foo (x) {
+proc foo (x) {
 
-  def RandomNumber (y) {
+  proc RandomNumber (y) {
     const multiplier: int(64) = 16807,
           modulus: int(64) = 2147483647;
     // The following calculation must be done in at least 46-bit arithmetic!

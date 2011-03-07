@@ -43,7 +43,7 @@ module cholesky_block_algorithms {
     
   const empty_range = 1..0;
 
-  def block_outer_product_cholesky ( A : [], block_size : int )
+  proc block_outer_product_cholesky ( A : [], block_size : int )
 
     where ( A.domain.rank == 2 ) 
 
@@ -100,7 +100,7 @@ module cholesky_block_algorithms {
   // Block Triangular Solve
   // ======================
 
-  def transposed_block_triangular_solve ( L_diag    : [],
+  proc transposed_block_triangular_solve ( L_diag    : [],
 					  L_offdiag : [] ) {
     
     // ------------------------------------------------------
@@ -127,7 +127,7 @@ module cholesky_block_algorithms {
   // Symmetric Block Outer Product_Modification
   // ==========================================
 
-  def symmetric_block_schur_complement ( A : [] , L : [], block_size )
+  proc symmetric_block_schur_complement ( A : [] , L : [], block_size )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) 
 
@@ -153,7 +153,7 @@ module cholesky_block_algorithms {
   // Symmetric Block Outer Product Modification for a single diagonal block
   // ======================================================================
 
-  def symmetric_diagonal_low_rank_modification ( L : [], A : [] ) {
+  proc symmetric_diagonal_low_rank_modification ( L : [], A : [] ) {
 
     // -----------------------------------------------------------
     // form diagonal block A (K,K) = A (K,K) - L (K,J) L^T (J,K) 
@@ -178,7 +178,7 @@ module cholesky_block_algorithms {
   // Symmetric Block Outer Product Modification for a single offdiagonal block
   // =========================================================================
 
-  def symmetric_offdiagonal_low_rank_modification ( L : [], A : [] ) {
+  proc symmetric_offdiagonal_low_rank_modification ( L : [], A : [] ) {
 
     // -------------------------------------------------------------
     // Form a single offdiagonal block 
@@ -200,7 +200,7 @@ module cholesky_block_algorithms {
   // of a Block Lower Triangular Matrix
   // =============================================
 
-  def iterated_block_column_partition ( idx_range, block_size ) {
+  iter iterated_block_column_partition ( idx_range, block_size ) {
 
     // -----------------------------------------------------
     // Deliver as ranges the block partitioning of the block 
@@ -238,7 +238,7 @@ module cholesky_block_algorithms {
   // (or the rows or columns of a Matrix)
   // ====================================
 
-  def block_partition ( idx_range, block_size )
+  iter block_partition ( idx_range, block_size )
   {
     var n_block_steps = ( idx_range.length  + block_size - 1 ) / block_size;
 
@@ -267,7 +267,7 @@ module cholesky_block_algorithms {
   // matrix-vector product form.
   // =========================================================================
     
-  def block_inner_product_cholesky ( A : [] ) 
+  proc block_inner_product_cholesky ( A : [] ) 
 
     where ( A.domain.rank == 2 ) 
     {
@@ -310,7 +310,7 @@ module cholesky_block_algorithms {
   // this ordering of operations is rarely used.
   // =========================================================================
     
-  def block_bordering_cholesky ( A : [] )  
+  proc block_bordering_cholesky ( A : [] )  
 
     where ( A.domain.rank == 2 ) {
 

@@ -1,6 +1,6 @@
 -- is this legal?? we have code like this with print on line 94 of SSCA #2
 
-def f x : string {
+proc f x : string {
   return x.length;
 }
 

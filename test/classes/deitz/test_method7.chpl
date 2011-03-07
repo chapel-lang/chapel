@@ -1,14 +1,14 @@
-def printout(s : string) {
+proc printout(s : string) {
   writeln("The string is '", s, "'");
 }
 
-def printout(i : int) {
+proc printout(i : int) {
   writeln("The int is ", i);
 }
 
 class foo {
   var x : int;
-  def print() {
+  proc print() {
     printout(x);
   }
 }

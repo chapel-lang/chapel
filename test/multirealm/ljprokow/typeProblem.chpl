@@ -1,4 +1,4 @@
-def main {
+proc main {
 
   var b: bool = true,
       x: int(64) = 9223372036854775800,

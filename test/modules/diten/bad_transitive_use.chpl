@@ -1,19 +1,19 @@
 module M2 {
-  def bar() {
+  proc bar() {
     writeln("bar");
   }
 }
 module M1 {
   use M2;
 
-  def foo() {
+  proc foo() {
     writeln("foo");
   }
 }
 
 module M3 {
   use M1;
-  def main() {
+  proc main() {
     bar();
   }
 }

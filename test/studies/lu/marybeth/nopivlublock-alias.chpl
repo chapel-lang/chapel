@@ -78,7 +78,7 @@ writeln();
 writeln("Factored Matrix:");
 writeln(A);
 
-def IterateByBlocks(D:range,blksize) {
+iter IterateByBlocks(D:range,blksize) {
   var n = D.length;
   var lo,hi: int;
 
@@ -89,7 +89,7 @@ def IterateByBlocks(D:range,blksize) {
   }   
 }
   
-def initA(A,filename:string){
+proc initA(A,filename:string){
 
 // Create full permutation matrix to permute A.
 // Very expensive, but easy way to permute the matrix

@@ -46,16 +46,19 @@ explainInstantiation(FnSymbol* fn) {
         INT_ASSERT(arg);
         if (strcmp(fn->name, "_construct__tuple"))
           len += sprintf(msg+len, "%s = ", arg->name);
-        if (TypeSymbol* ts = toTypeSymbol(e->value))
-          len += sprintf(msg+len, "%s", ts->name);
-        else if (VarSymbol* vs = toVarSymbol(e->value)) {
+        if (VarSymbol* vs = toVarSymbol(e->value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
             len += sprintf(msg+len, "%"PRId64, vs->immediate->int_value());
           else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
             len += sprintf(msg+len, "\"%s\"", vs->immediate->v_string);
           else
             len += sprintf(msg+len, "%s", vs->name);
-        } else
+        }
+    else if (Symbol* s = toSymbol(e->value))
+      // For a generic symbol, just print the name.
+      // Additional clauses for specific symbol types should precede this one.
+          len += sprintf(msg+len, "%s", s->name);
+    else
           INT_FATAL("unexpected case using --explain-instantiation");
       }
     }

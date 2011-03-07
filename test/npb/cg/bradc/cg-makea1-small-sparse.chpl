@@ -23,7 +23,7 @@ config const n = probSizes(probClass),
 type elemType = real(64);
 
 
-def main() {
+proc main() {
   const DenseSpace = [1..n, 1..n];
 
   // This version builds the domain first

@@ -4,9 +4,9 @@ class C {
 
 var c = new C(x = 2);
 
-def foo(type t) {
+proc foo(type t) {
   var x : t;
-  def bar(c : C) {
+  proc bar(c : C) {
     writeln(c);
   }
   writeln(x);

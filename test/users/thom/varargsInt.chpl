@@ -1,4 +1,4 @@
-def tupleToArray(t:int...?k) : [1..k] int
+proc tupleToArray(t:int...?k) : [1..k] int
 {
         var retr : [1..k] int;
         for i in 1..k

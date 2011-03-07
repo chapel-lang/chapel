@@ -1,5 +1,5 @@
 record Foo {    
-    def Foo(s : string) {
+    proc Foo(s : string) {
         msg = "constructed with: " + s;
     }
 

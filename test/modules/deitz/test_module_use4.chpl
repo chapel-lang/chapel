@@ -10,7 +10,7 @@ module M2 {
 module M3 {
   use M2;
   use M1;
-  def main {
+  proc main {
     writeln("hello world");
   }
 }

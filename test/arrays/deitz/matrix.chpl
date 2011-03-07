@@ -4,21 +4,21 @@ record Matrix {
   var D: domain(2) = [1..m, 1..n];
   var A: [D] elt_type;
 
-  def this(i: int, j: int) var return A(i,j);
+  proc this(i: int, j: int) var return A(i,j);
 }
 
-def Matrix.writeThis(f: Writer) {
+proc Matrix.writeThis(f: Writer) {
   f.write(A);
 }
 
-def Matrix.transpose() {
+proc Matrix.transpose() {
   var M = new Matrix(elt_type, n, m);
   for (i,j) in D do
     M(j,i) = this(i,j);
   return M;
 }
 
-def +(M1: Matrix, M2: Matrix) {
+proc +(M1: Matrix, M2: Matrix) {
   if M1.m != M2.m || M1.n != M2.n then
     halt("illegal matrix + operation");
   var M3 = new Matrix((M1(1,1)+M2(1,1)).type, M1.m, M1.n);
@@ -26,7 +26,7 @@ def +(M1: Matrix, M2: Matrix) {
   return M3;
 }
 
-def *(M1: Matrix, M2: Matrix) {
+proc *(M1: Matrix, M2: Matrix) {
   if M1.n != M2.m then
     halt("illegal matrix * operation");
   var M3 = new Matrix((M1(1,1)*M2(1,1)).type, M1.m, M2.n);

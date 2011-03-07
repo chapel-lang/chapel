@@ -1,13 +1,16 @@
 \sekshun{Lexical Structure}
 \label{Lexical_Structure}
+\index{lexical structure}
 
 This section describes the lexical components of Chapel programs.
-Note that the productions in this section are lexical; the components
-are not delimited by white space.
+The purpose of lexical analysis is
+to separate the raw input stream into a sequence of tokens suitable
+for input to the parser.  
 
-\subsection{Comments}
+\section{Comments}
 \label{Comments}
 \index{comments}
+\index{lexical structure!comment}
 
 Two forms of comments are supported.  All text following the
 consecutive characters {\tt //} and before the end of the line is in a
@@ -25,13 +28,13 @@ The following program makes use of both forms of comment:
 /*
  *  main function
  */
-def main() {
+proc main() {
   writeln("hello, world"); // output greeting with new line
 }
 \end{chapel}
 \end{example}
 
-\subsection{White Space}
+\section{White Space}
 \label{White_Space}
 \index{white space}
 
@@ -39,9 +42,10 @@ White-space characters are spaces, tabs, line feeds, and carriage
 returns.  Along with comments, they delimit tokens, but are otherwise
 ignored.
 
-\subsection{Case Sensitivity}
+\section{Case Sensitivity}
 \label{Case_Sensitivity}
 \index{case sensitivity}
+\index{lexical structure!case sensitivity}
 
 Chapel is a case sensitive language.
 
@@ -50,15 +54,17 @@ The following identifiers are considered
 distinct: \chpl{chapel}, \chpl{Chapel}, and \chpl{CHAPEL}.
 \end{example}
 
-\subsection{Tokens}
+\section{Tokens}
 \label{Tokens}
+\index{lexical structure!token}
 
 Tokens include identifiers, keywords, literals, operators, and
 punctuation.
 
-\subsubsection{Identifiers}
+\subsection{Identifiers}
 \label{Identifiers}
 \index{identifiers}
+\index{lexical structure!identifier}
 
 An identifier in Chapel is a sequence of characters that starts with a
 lowercase or uppercase letter or an underscore and is optionally
@@ -76,6 +82,7 @@ legal-identifier-chars:
 legal-identifier-char:
   letter
   digit
+  `_'
   `$\mbox{{\bf \$}}$'
 
 letter: one of
@@ -101,14 +108,15 @@ identifiers: \chpl{Cray1}, \chpl{syncvar$\mbox{{\tt \$}}$},
 \chpl{legalIdentifier}, and \chpl{legal_identifier}.
 \end{example}
 
-\subsubsection{Keywords}
+\subsection{Keywords}
 \label{Keywords}
 \index{keywords}
-\index{reserved words}
+\index{lexical structure!keyword}
 
 The following identifiers are reserved as keywords:
 
-\begin{tabular}{lllll}
+\begin{tabular}{llllll}
+&
 \begin{chapel}
 atomic
 begin
@@ -120,10 +128,9 @@ coforall
 config
 const
 continue
-def
-\end{chapel} & \begin{chapel}
 delete
 dmapped
+\end{chapel} & \begin{chapel}
 do
 domain
 else
@@ -133,45 +140,51 @@ for
 forall
 if
 in
-\end{chapel} & \begin{chapel}
 index
 inout
+iter
+\end{chapel} & \begin{chapel}
 label
-lambda
 let
 local
+locale
 module
 new
 nil
 on
+opaque
 otherwise
 out
-\end{chapel} & \begin{chapel}
 param
-record      
-reduce      
-return      
-scan        
+\end{chapel} & \begin{chapel}
+proc
+range
+record
+reduce
+return
+scan
 select
-serial      
-single      
+serial
+single
 sparse
 subdomain
-sync        
+sync
 \end{chapel} & \begin{chapel}
-then        
+then
 true
-type        
-union       
-use         
+type
+union
+use
 var
-when        
-where       
-while       
+when
+where
+while
 yield
 $$
 \end{chapel} \\
 \begin{invisible}
+by
+\end{invisible} & \begin{invisible}
 otherwise
 \end{invisible} & \begin{invisible}
 otherwise
@@ -184,9 +197,21 @@ otherwise
 \end{invisible}
 \end{tabular}
 
-\subsubsection{Literals}
+The following identifiers are keywords reserved for future use:
+
+\begin{tabular}{l}
+\begin{chapel}
+lambda
+\end{chapel} \\
+\begin{invisible}
+otherwise
+\end{invisible}
+\end{tabular}
+
+\subsection{Literals}
 \label{Literals}
 \label{Primitive_Type_Literals}
+\index{lexical structure!literal}
 
 \index{literals!primitive type}
 Bool literals are designated by the following syntax:
@@ -237,7 +262,7 @@ Real literals are designated by the following syntax:
 \begin{syntax}
 real-literal:
   digits[OPT] . digits exponent-part[OPT]
-  digits exponent-part
+  digits .[OPT] exponent-part
 
 exponent-part:
   `e' sign[OPT] digits
@@ -247,13 +272,11 @@ sign: one of
   + -
 \end{syntax}
 \begin{rationale}
-Why can't a real literal end with '.'?  There is an ambiquity between
-real literals ending in '.' and the range operator '..' that makes it
-difficult to parse.  For example, we want to parse \chpl{1..10} as a
-range from 1 to 10 without concern that \chpl{1.} is a real literal.
-There is also an ambiquity between methods invoked on literals.  For
-example, if there is a method named \chpl{e} defined on integers,
-than \chpl{1.e} should invoke that method.
+Why can't a real literal end with '.'?  There is a lexical ambiquity
+between real literals ending in '.' and the range operator '..' that
+makes it difficult to parse.  For example, we want to
+parse \chpl{1..10} as a range from 1 to 10 without concern
+that \chpl{1.} is a real literal.
 \end{rationale}
 The type of a real literal is \chpl{real}.  Explicit conversions are
 necessary to change the size of the literal.
@@ -303,8 +326,11 @@ hexadecimal-escape-character:
   `$\backslash$x' hexadecimal-digits
 \end{syntax}
 
-\subsubsection{Operators and Punctuation}
+\subsection{Operators and Punctuation}
 \label{Operators_and_Punctuation}
+\index{lexical structure!operator}
+\index{operator!lexical structure}
+\index{lexical structure!punctuation}
 
 The following operators and punctuation are defined in the syntax of
 the language:
@@ -333,8 +359,11 @@ the language:
 \end{tabular}
 \end{center}
 
-\subsubsection{Grouping Tokens}
+\subsection{Grouping Tokens}
 \label{Grouping_Tokens}
+\index{lexical structure!braces}
+\index{lexical structure!parentheses}
+\index{lexical structure!brackets}
 
 The following braces are part of the Chapel language:
 \begin{center}

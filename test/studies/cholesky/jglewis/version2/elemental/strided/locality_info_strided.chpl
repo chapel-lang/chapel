@@ -1,6 +1,6 @@
 module locality_info_strided {
 
-  def my_local_cyclic_data_strided 
+  proc my_local_cyclic_data_strided 
     ( A_domain, A_grid_domain, processor : 2*int ) {
 
     // general code, for arbitrary (unrelated) row and column index ranges 

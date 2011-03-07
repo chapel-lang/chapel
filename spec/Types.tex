@@ -3,7 +3,7 @@
 
 Chapel is a statically typed language with a rich set of types.  These
 include a set of predefined primitive types, enumerated types,
-locality types, structured types (classes, records, unions, tuples),
+locale types, structured types (classes, records, unions, tuples),
 data parallel types (ranges, domains, arrays), and synchronization
 types (sync, single).
 
@@ -16,7 +16,7 @@ The syntax of a type is summarized by the following syntax:
 type-specifier:
   primitive-type
   enum-type
-  locality-type
+  locale-type
   structured-type
   dataparallel-type
   synchronization-type
@@ -74,11 +74,11 @@ type-declaration-statement:
   type-alias-declaration-statement
 \end{syntax}
 
-\subsection{Primitive Types}
+\section{Primitive Types}
 \label{Primitive_Types}
 \index{types!primitive}
 
-The primitive types include the following types: \chpl{bool},
+The primitive types include the following types: \chpl{void}, chpl{bool},
 \chpl{int}, \chpl{uint}, \chpl{real}, \chpl{imag}, \chpl{complex},
 \chpl{string}, and \chpl{locale}.  These primitive types are defined
 in this section.
@@ -86,6 +86,7 @@ in this section.
 The primitive types are summarized by the following syntax:
 \begin{syntax}
 primitive-type:
+  `void'
   `bool' primitive-type-parameter-part[OPT]
   `int' primitive-type-parameter-part[OPT]
   `uint' primitive-type-parameter-part[OPT]
@@ -101,6 +102,8 @@ integer-parameter-expression:
   expression
 \end{syntax}
 
+If present, the parenthesized \sntx{integer-parameter-expression} must
+evaluate to a compile-time constant of integer type.  See~\rsec{Compile-Time_Constants}
 
 \begin{openissue}
 There is an expectation of future support for larger bit width
@@ -108,15 +111,24 @@ primitive types depending on a platform's native support for those
 types.
 \end{openissue}
 
+\subsection{The Void Type}
+\label{The_Void_Type}
+\index{void@\chpl{void}}
 
-\subsubsection{The Bool Type}
+The \chpl{void} type is used to represent the lack of a value, for
+example when a function has no arguments and/or no return type.  
+
+There may be storage associated with a value of type \chpl{void}, in which
+case its lifetime obeys the same rules as a value of type \chpl{int}.
+
+\subsection{The Bool Type}
 \label{The_Bool_Type}
 \index{bool@\chpl{bool}}
 
 Chapel defines a logical data type designated by the symbol
 \chpl{bool} with the two predefined values \chpl{true} and
 \chpl{false}.  This default boolean type is stored using an
-implementation-dependent number of bits.  A particular number of bits
+implementation-defined number of bits.  A particular number of bits
 can be specified using a parameter value following the \chpl{bool}
 keyword, such as \chpl{bool(8)} to request an 8-bit boolean value.
 Legal sizes are 8, 16, 32, and 64 bits.
@@ -128,13 +140,14 @@ Some statements require expressions of \chpl{bool} type and Chapel
 supports a special conversion of values to \chpl{bool} type when used
 in this context~(\rsec{Implicit_Statement_Bool_Conversions}).
 
-\subsubsection{Signed and Unsigned Integral Types}
+\subsection{Signed and Unsigned Integral Types}
 \label{Signed_and_Unsigned_Integral_Types}
 \index{uint@\chpl{uint}}
 \index{int@\chpl{int}}
 
 The integral types can be parameterized by the number of bits used to
-represent them.  The default signed integral type, \chpl{int}, and the
+represent them.  Valid bit-sizes are 8, 16, 32, and 64.  
+The default signed integral type, \chpl{int}, and the
 default unsigned integral type, \chpl{uint}, are 32 bits.
 
 The integral types and their ranges are given in the following table:
@@ -167,7 +180,7 @@ integral types should be changed to 64 bits.
 \end{openissue}
 
 
-\subsubsection{Real Types}
+\subsection{Real Types}
 \label{Real_Types}
 \index{real@\chpl{real}}
 
@@ -176,9 +189,9 @@ number of bits used to represent them.  The default real
 type, \chpl{real}, is 64 bits.  The real types that are supported are
 machine-dependent, but usually include \chpl{real(32)} (single
 precision) and \chpl{real(64)} (double precision) following the IEEE
-754 standard.
+754 standard.  
 
-\subsubsection{Imaginary Types}
+\subsection{Imaginary Types}
 \label{Imaginary_Types}
 \index{imaginary@\chpl{imaginary}}
 
@@ -193,7 +206,7 @@ under-optimized code stemming from always coercing real values to
 complex values with a zero imaginary part.
 \end{rationale}
 
-\subsubsection{Complex Types}
+\subsection{Complex Types}
 \label{Complex_Types}
 \index{complex@\chpl{complex}}
 
@@ -210,8 +223,8 @@ The real and imaginary components can be accessed via the methods
 \chpl{re} and \chpl{im}.  The type of these components is real.
 See~\rsec{Math} for math routines for complex types.
 
-%
-% Add something in the standard modules section
+%TODO: hilde
+% Add these functions in the standard modules section.
 %
 
 \begin{example}
@@ -220,7 +233,7 @@ expressions \chpl{c.re} and \chpl{c.im} refer to \chpl{3.14}
 and \chpl{2.72} respectively.
 \end{example}
 
-\subsubsection{The String Type}
+\subsection{The String Type}
 \label{The_String_Type}
 \index{string@\chpl{string}}
 
@@ -238,7 +251,7 @@ There is an expectation of future support for different character
 sets, possibly including internationalization.
 \end{openissue}
 
-\subsection{Enumerated Types}
+\section{Enumerated Types}
 \label{Enumerated_Types}
 \index{enumerated types}
 
@@ -280,7 +293,7 @@ enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
 \end{chapel}
 defines an enumerated type with four constants.  The function
 \begin{chapel}
-def quote(s: statesman) {
+proc quote(s: statesman) {
   select s {
     when statesman.Aristotle do
        writeln("All paid jobs absorb and degrade the mind.");
@@ -298,28 +311,29 @@ outputs a quote from the given statesman.  Note that enumerated
 constants must be prefixed by the enumerated type and a dot.
 \end{example}
 
-\subsection{Locality Types}
-\label{Locality_Types}
-\index{types!locality}
+
+\section{Locale Types}
+\label{Locale_Types}
+\index{types!locale}
 
 Locale types are summarized by the following syntax:
 
 \begin{syntax}
-locality-type:
+locale-type:
   `locale'
 \end{syntax}
 
 The \chpl{locale} type is defined in~\rsec{The_Locale_Type}.
 
 \begin{openissue}
-We expect to support \emph{realms} as another locality type.
+We expect to support \emph{realms} as another locale type.
 \end{openissue}
 
-\subsection{Structured Types}
+\section{Structured Types}
 \label{Structured_Types}
 \index{types!structured}
 
-\subsubsection{Class Types}
+\subsection{Class Types}
 
 The class type defines a type that contains variables and constants,
 called fields, and functions, called methods.  Classes are defined
@@ -327,34 +341,34 @@ in~\rsec{Classes}.  The class type can also contain type aliases and
 parameters.  Such a class is generic and is defined
 in~\rsec{Generic_Types}.
 
-\subsubsection{Record Types}
+\subsection{Record Types}
 
 The record type is similar to a class type; the primary difference is
 that a record is a value rather than a reference.  Records are defined
 in~\rsec{Records}.
 
-\subsubsection{Union Types}
+\subsection{Union Types}
 
 The union type defines a type that contains one of a set of variables.
 Like classes and records, unions may also define methods.  Unions are
 defined in~\rsec{Unions}.
 
-\subsubsection{Tuple Types}
+\subsection{Tuple Types}
 
 A tuple is a light-weight record that consists of one or more
 anonymous fields.  If all the fields are of the same type, the tuple
 is homogeneous.  Tuples are defined in~\rsec{Tuples}.
 
-\subsection{Data Parallel Types}
+\section{Data Parallel Types}
 \label{Data_Parallel_Types}
 \index{types!dataparallel}
 
-\subsubsection{Range Types}
+\subsection{Range Types}
 
 A range defines an integral sequence of some integral type.  Ranges
 are defined in~\rsec{Ranges}.
 
-\subsubsection{Domain, Array, and Index Types}
+\subsection{Domain, Array, and Index Types}
 \label{Domain_and_Array_Types}
 
 A domain defines a set of indices and an array defines a set of
@@ -362,7 +376,7 @@ elements that are mapped by the indices in an associated domain.  A
 domain's indicies can be of any type.  Domains, arrays, and index
 types are defined in~\rsec{Domains}~and~\rsec{Arrays}.
 
-\subsection{Type Aliases}
+\section{Type Aliases}
 \label{Type_Aliases}
 \index{type aliases}
 
@@ -385,8 +399,8 @@ the type specified by \sntx{type-part} directly.
 
 If the keyword \chpl{config} precedes the keyword \chpl{type}, the
 type alias is called a configuration type alias.  Configuration type
-aliases are set at compilation time via compilation flags or other
-implementation dependent means.  The \chpl{type-specifier} in the
+aliases can be set at compilation time via compilation flags or other
+implementation-defined means.  The \chpl{type-specifier} in the
 program is ignored if the type-alias is alternatively set.
 
 The \sntx{type-part} is optional in the definition of a class or
@@ -398,4 +412,6 @@ unspecified, are generic~(\rsec{Type_Aliases_in_Generic_Types}).
 There is on going discussion on whether a type alias is a new
 type or simply an alias.  The former should enable redefinition of
 default values, identity elements, etc.
+%hilde
+% Would inheritance work?
 \end{openissue}

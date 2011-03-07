@@ -1,7 +1,7 @@
 class C {
   const x: int;
 
-  def C(y, z) {
+  proc C(y, z) {
     x = y+z;
     x -= 1;
   }

@@ -4,10 +4,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define chpl_rt_type_id_chpl__class_id CHPL_TYPE_enum
-
 typedef enum {
   CHPL_TYPE_chpl_bool,
+  CHPL_TYPE_chpl_bool8,
+  CHPL_TYPE_chpl_bool16,
+  CHPL_TYPE_chpl_bool32,
+  CHPL_TYPE_chpl_bool64,
   CHPL_TYPE_enum,
   CHPL_TYPE_int8_t,
   CHPL_TYPE_int16_t,
@@ -28,6 +30,10 @@ typedef enum {
   CHPL_TYPE__cfile,
   CHPL_TYPE_chpl_task_list_p,
   CHPL_TYPE__timervalue,
+  CHPL_TYPE_chpl_sync_aux_t,
+  CHPL_TYPE_chpl_single_aux_t,
+  CHPL_TYPE_chpl_taskID_t,
+  CHPL_TYPE__symbol,
   CHPL_TYPE_CLASS_REFERENCE,
   CHPL_TYPE_DONE
 } chplType;

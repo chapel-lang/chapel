@@ -33,13 +33,13 @@ module analyze_torus_graphs {
     var   torus_stencil : sparse subdomain (dense_stencil);
     const vertices = vertex_domain;
     
-    def   Neighbors (v : index (vertices) ){
+    iter   Neighbors (v : index (vertices) ){
       for s in torus_stencil do
 	yield torus_vertex (v+s);
     }
 
     var edge_weight : [vertex_domain] [torus_stencil] int;
-    def n_Neighbors (v : index (vertices) ) return 2*dimensions;
+    proc n_Neighbors (v : index (vertices) ) return 2*dimensions;
   }
 
 
@@ -55,7 +55,7 @@ module analyze_torus_graphs {
   // generic procedure to document and execute kernels 2, 3 and 4 of SSCA2
   // =====================================================================
   
-  def analyze_nD_torus_semi_implicit_stencil_graph 
+  proc analyze_nD_torus_semi_implicit_stencil_graph 
                                          ( const vertex_domain : domain,
 					   const dense_stencil : domain,
 					   const torus_vertex  ) {
@@ -110,7 +110,7 @@ module analyze_torus_graphs {
   // vertices, then execute Kernels 2, 3 and 4 of SSCA #2
   // ====================================================
 
-  def generate_and_analyze_1D_torus {
+  proc generate_and_analyze_1D_torus {
 
     const d = 2**SCALE;
 
@@ -163,7 +163,7 @@ module analyze_torus_graphs {
   // execute Kernels 2, 3 and 4 of SSCA #2
   // ==============================================
 
-  def generate_and_analyze_2D_torus {
+  proc generate_and_analyze_2D_torus {
 
     const lg2d1 : int = SCALE / 2,
           lg2d2 = SCALE - lg2d1,
@@ -234,7 +234,7 @@ module analyze_torus_graphs {
   // execute Kernels 2, 3 and 4 of SSCA #2
   // ===============================================
 	    
-  def generate_and_analyze_3D_torus {
+  proc generate_and_analyze_3D_torus {
 
     const lg2d1 : int = SCALE / 3,
           lg2d2 : int = lg2d1,
@@ -297,7 +297,7 @@ module analyze_torus_graphs {
   // 2^SCALE vertices, then execute Kernels 2, 3 and 4 of SSCA #2
   // ============================================================
 
-  def generate_and_analyze_4D_torus {
+  proc generate_and_analyze_4D_torus {
 
     const lg2d1 : int = SCALE / 4,
           lg2d2 : int = lg2d1,

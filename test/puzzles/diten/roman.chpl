@@ -3,7 +3,7 @@
 enum numeral {I=1, V=5, X=10, L=50, C=100, D=500, M=1000};
 config var roman: string = "I";
 
-def main() {
+proc main() {
   var i = 1;
   var sum = 0;
 

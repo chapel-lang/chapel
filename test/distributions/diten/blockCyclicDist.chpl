@@ -6,7 +6,7 @@ class BlockCyclicDist {
   const localeDomain: domain(nDims);
   const locales: [localeDomain] locale;
 
-  def idxToLocaleInd(ind: idxType...nDims) {
+  proc idxToLocaleInd(ind: idxType...nDims) {
     var locInd: nDims*idxType;
     for i in 1..nDims {
       locInd(i) = (startLoc(i) + (ind(i)-1)/blockSize(i)) % localeDomain.dim(i).length;
@@ -14,24 +14,24 @@ class BlockCyclicDist {
     return locInd;
   }
 
-  def idxToLocale(ind: idxType...nDims) {
+  proc idxToLocale(ind: idxType...nDims) {
     return locales(idxToLocaleInd((...ind)));
   }
-  def getBlock(ind: idxType...nDims) {
+  proc getBlock(ind: idxType...nDims) {
     var locInd: nDims*idxType;
     for i in 1..nDims {
       locInd(i) = (ind(i) - 1) / (localeDomain.dim(i).length*blockSize(i));
     }
     return locInd;
   }
-  def getBlockPosition(ind: idxType...nDims) {
+  proc getBlockPosition(ind: idxType...nDims) {
     var locInd: nDims*idxType;
     for i in 1..nDims {
       locInd(i) = ((ind(i)-1) % blockSize(i)) + 1;
     }
     return locInd;
   }
-  def getLocalPosition(ind:idxType...nDims) {
+  proc getLocalPosition(ind:idxType...nDims) {
     var blk = getBlock((...ind));
     var blkPos = getBlockPosition((...ind));
     var position: nDims*idxType;
@@ -41,7 +41,7 @@ class BlockCyclicDist {
     return position;
   }
 
-  def buildDomain(d: domain(nDims)) {
+  proc buildDomain(d: domain(nDims)) {
     return new BlockCyclicDom(nDims, idxType, d, this);
   }
 
@@ -53,7 +53,7 @@ class BlockCyclicDom {
   const whole: domain(nDims, idxType);
   const dist: BlockCyclicDist(idxType);
   const locDoms: [dist.localeDomain] LocBlockCyclicDom(nDims, idxType);
-  def initialize() {
+  proc initialize() {
     var blksInDim: nDims*idxType;
     for i in 1..nDims {
       blksInDim(i) = ceil(whole.dim(i).length:real(64) /
@@ -84,7 +84,7 @@ class BlockCyclicDom {
     }
   }
 
-  def buildArray(type eltType) {
+  proc buildArray(type eltType) {
     return new BlockCyclicArr(nDims, idxType, eltType, this);
   }
 
@@ -97,7 +97,7 @@ class LocBlockCyclicDom {
   const whole: BlockCyclicDom(nDims, idxType);
   const locRanges: nDims*range(idxType, BoundedRangeType.bounded);
   const locDom: domain(nDims);
-  def initialize() {
+  proc initialize() {
     locDom.setIndices(locRanges);
   }
 }
@@ -109,14 +109,14 @@ class BlockCyclicArr {
   type eltType;
   const dom: BlockCyclicDom(nDims, idxType);
   const locArrs: [dom.dist.localeDomain] LocBlockCyclicArr(nDims, idxType, eltType);
-  def initialize() {
+  proc initialize() {
     for ind in dom.dist.localeDomain {
       on dom.dist.locales(ind) {
         locArrs(ind) = new LocBlockCyclicArr(nDims, idxType, eltType, this, dom.locDoms(ind));
       }
     }
   }
-  def this(ind:idxType...nDims) var {
+  proc this(ind:idxType...nDims) var {
     return locArrs(dom.dist.idxToLocaleInd((...ind))).arr(dom.dist.getLocalPosition((...ind)));
   }
 }
@@ -133,7 +133,7 @@ class LocBlockCyclicArr {
 config const m, n = 2;
 
 
-def main {
+proc main {
   var locDom: domain(2) = [0..#m, 0..#n];
   var locs: [locDom] locale;
   var undistributedDom: domain(2) = [1..5, 1..5];

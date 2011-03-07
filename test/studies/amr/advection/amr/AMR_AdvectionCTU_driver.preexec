@@ -1,4 +1,2 @@
 #!/bin/bash --norc
-
-rm -rf _output/ *.out
 mkdir _output

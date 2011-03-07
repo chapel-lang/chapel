@@ -1,13 +1,13 @@
-def foo(A: []) {
+proc foo(A: []) {
   writeln(A);
 }
 
-def bar(A: [2..4]) {
+proc bar(A: [2..4]) {
   for i in 2..4 do
     writeln((i, A(i)));
 }
 
-def bar2(A: [2..4] real) {
+proc bar2(A: [2..4] real) {
   for i in 2..4 do
     writeln((i, A(i)));
 }

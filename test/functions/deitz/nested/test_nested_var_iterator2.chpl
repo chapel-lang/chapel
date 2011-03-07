@@ -1,4 +1,4 @@
-def foo() {
+proc foo() {
   var x, y: int;
 
   for i in bar() {
@@ -8,7 +8,7 @@ def foo() {
   }
   writeln(y);
 
-  def bar() var {
+  iter bar() var {
     yield x;
   }
 }

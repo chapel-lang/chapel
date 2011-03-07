@@ -1,7 +1,7 @@
 class C {
   type t;
   var x: t;
-  def foo() {
+  proc foo() {
     for i in x do
       writeln(i);
   }

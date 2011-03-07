@@ -3,7 +3,7 @@ config const myLow = 4, myHigh = 12; // iterator arguments (config for testing)
 
 enum IteratorType { solo, leader, follower };
 
-def singleLocaleIterator(param iterator: IteratorType, iterRange:range) {
+iter singleLocaleIterator(param iterator: IteratorType, iterRange:range) {
   var low  = iterRange.low;
   var high = iterRange.high;
   select iterator {

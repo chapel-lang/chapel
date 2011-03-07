@@ -58,12 +58,12 @@ class Function {
     var   r0    : [dcDom] real;
     var   rp    : [dcDom] real;
 
-    def ~Function() {
+    proc ~Function() {
         delete s;
         delete d;
     }
 
-    def initialize() {
+    proc initialize() {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
 
         if debug then writeln("  initializing quadrature coefficients");
@@ -86,7 +86,7 @@ class Function {
 
     /** Initialize the quadrature coefficient matricies.
      */
-    def init_quadrature(order: int) {
+    proc init_quadrature(order: int) {
         for i in quad_phiDom.dim(1) {
             var p = phi(quad_x[i], k);
             quad_phi [i, ..] = p;
@@ -100,7 +100,7 @@ class Function {
         difference derivative operator with periodic boundary
         conditions on either side.
      */
-    def make_dc_periodic() {
+    proc make_dc_periodic() {
         var iphase = 1.0;
         for i in dcDom.dim(1) {
             var jphase = 1.0;
@@ -121,7 +121,7 @@ class Function {
 
     /** Return a deep copy of this Function
      */
-    def copy() {
+    proc copy() {
         return new Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine, compressed=compressed,
                 s=s.copy(), d=d.copy());
@@ -130,7 +130,7 @@ class Function {
 
     /** Return a copy of this function's skeleton
      */
-    def skeletonCopy() {
+    proc skeletonCopy() {
         // Omit: f, compressed, s, d
         return new Function(k=k, thresh=thresh, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine);
@@ -141,7 +141,7 @@ class Function {
         for box (n,l) project f(x) using quadrature rule
         into scaling function basis
      */
-    def project(n: int, l: int) {
+    proc project(n: int, l: int) {
         var s     : [quadDom] real;
         var h     = 0.5 ** n;
         var scale = sqrt(h);
@@ -159,7 +159,7 @@ class Function {
 
     /** Refine numerical representation of f(x) to desired tolerance
      */
-    def refine(n, l) {
+    proc refine(n, l) {
         // project f(x) at next level
         var s0 = project(n+1, 2*l);
         var s1 = project(n+1, 2*l+1);
@@ -191,7 +191,7 @@ class Function {
     /** Evaluate numerical representation of f at x.  Performed in scaling
         function basis only.
      */
-    def this(x) {
+    proc this(x) {
         if compressed then reconstruct();
         return evaluate(0, 0, x);
     }
@@ -203,7 +203,7 @@ class Function {
         Descend tree looking for box (n,l) with scaling function
         coefficients containing the point x.
      */
-    def evaluate(in n=0, in l=0, in x): real {
+    proc evaluate(in n=0, in l=0, in x): real {
         if s.has_coeffs(n, l) {
             var p = phi(x, k);
             return inner(s[n, l], p)*sqrt(2.0**n);
@@ -221,7 +221,7 @@ class Function {
         n is level in tree
         l is box index
      */
-    def compress(n=0, l=0) {
+    proc compress(n=0, l=0) {
         if compressed then return;
 
         // sub-trees can be done in parallel
@@ -251,7 +251,7 @@ class Function {
         n is level in tree
         l is box index
      */
-    def reconstruct(n=0, l=0) {
+    proc reconstruct(n=0, l=0) {
         if !compressed then return;
 
         if d.has_coeffs(n, l) {
@@ -281,7 +281,7 @@ class Function {
         the corresponding coefficients on level n+1 and insert the results into
         the tree of scaling function coefficients.
      */
-    def recur_down(n, l) {
+    proc recur_down(n, l) {
         if debug then writeln(" + recur_down(", n, ", ", l, ")");
 
         var sc : [0..2*k-1] real;
@@ -304,7 +304,7 @@ class Function {
 
         Else, return None (corresponding child boxes exist at a finer scale)
      */
-    def get_coeffs(_n, _l) {
+    proc get_coeffs(_n, _l) {
         if debug then writeln(" @ get_coeffs(", _n, ", ", _l, ")");
         var n = _n, l = _l;
 
@@ -339,7 +339,7 @@ class Function {
         locally first box with scaling function coefficients.
         Delete all children below there. 
      */
-    def sclean(n=0, l=0, in cleaning=false) {
+    proc sclean(n=0, l=0, in cleaning=false) {
         if cleaning { //then
             if debug then writeln(" + sclean deleting (", n, ", ", l, ")");
             s.remove(n, l);
@@ -361,8 +361,8 @@ class Function {
         target function we may need to refine boxes down until three
         boxes exist in the same scale.
      */
-    def diff() {
-        def diffHelper(n = 0, l = 0, result) {
+    proc diff() {
+        proc diffHelper(n = 0, l = 0, result) {
             if debug then writeln(" * diff(", n, ", ", l, ")");
             if !s.has_coeffs(n, l) {
                 // Sub trees can run in parallel
@@ -402,7 +402,7 @@ class Function {
 
     /** Return sqrt(integral(f(x)**2))
      */
-    def norm2() {
+    proc norm2() {
         if compressed then reconstruct();
         return sqrt(+ reduce [i in s] normf(i)**2);
     }
@@ -411,9 +411,9 @@ class Function {
     /** Perform GAXPY in the multi-wavelet (compressed) basis
         this = alpha*this + beta*other (other is not changed).
      */
-    def gaxpy(alpha, other, beta) {
+    proc gaxpy(alpha, other, beta) {
         // recursive "iteration" for gaxpy
-        def gaxpy_iter(n=0, l=0) {
+        proc gaxpy_iter(n=0, l=0) {
             if d.has_coeffs(n, l) || other.d.has_coeffs(n, l) {
                 if d.has_coeffs(n, l) && other.d.has_coeffs(n, l) then
                     d[n, l] = d[n, l]*alpha + other.d[n, l]*beta;
@@ -444,7 +444,7 @@ class Function {
     /** Add this function to another and return the result in a new
         function.  This and other are unchanged.
      */ 
-    def add(other) {
+    proc add(other) {
         return copy().gaxpy(1.0, other, 1.0);
     }
 
@@ -452,14 +452,14 @@ class Function {
     /** Subtract this function from another and return the result in a new
         function.  This and other are unchanged.
      */ 
-    def subtract(other) {
+    proc subtract(other) {
         return copy().gaxpy(1.0, other, -1.0);
     }
 
     
     /** Recursively multiply f1 and f2 put the result into this
      */ 
-    def multiply(f1, f2, n=0, l=0) {
+    proc multiply(f1, f2, n=0, l=0) {
         if f1.s.has_coeffs(n, l) && f2.s.has_coeffs(n, l) {
             if autorefine && n+1 <= max_level {
                 // if autorefine is set we are multiplying two polynomials
@@ -516,7 +516,7 @@ class Function {
         For multiply, both operands need to be in the scaling function basis
         so possibly call reconstruct on one or both of them first
      */
-    def multiply(other) {
+    proc multiply(other) {
         if compressed then reconstruct();
         if other.compressed then other.reconstruct();
 
@@ -534,7 +534,7 @@ class Function {
     /** Mostly for debugging, print summary of coefficients,
         optionally printing the norm of each block
      */
-    def summarize() {
+    proc summarize() {
         writeln("\n-----------------------------------------------------");
         writeln("k=", k, " thresh=", thresh, " compressed=", compressed);
         writeln("sum coefficients:");
@@ -568,7 +568,7 @@ class Function {
     /** Evaluate the analytic and numerical functions over the given interval
         and print the error.
      */
-    def evalNPT(npt) {
+    proc evalNPT(npt) {
         for i in 0..npt {
             var (fval, Fval) = (truncate(f(i/npt:real)), truncate(this(i/npt:real)));
             //writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.5e", Fval),
@@ -587,14 +587,14 @@ class Function {
 /*************************************************************************/
 
 
-def +(F: Function, G: Function): Function {
+proc +(F: Function, G: Function): Function {
     return F.add(G);
 }
 
-def -(F: Function, G: Function): Function {
+proc -(F: Function, G: Function): Function {
     return F.subtract(G);
 }
     
-def *(F: Function, G: Function): Function {
+proc *(F: Function, G: Function): Function {
     return F.multiply(G);
 }

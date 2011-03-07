@@ -4,11 +4,11 @@ const D = [1..n];
 
 var A: [D] real;
 
-def foo(X, val) {
+proc foo(X, val) {
   X = val;
 }
 
-def bar(X: [?Dom]) {
+proc bar(X: [?Dom]) {
   const lo = Dom.low,
         hi = Dom.high,
         mid = lo + (hi-lo+1)/2;

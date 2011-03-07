@@ -4,7 +4,7 @@ class C {
   var x: int;
 }
 
-def foo() {
+proc foo() {
   var c: [1..10] C = [i in 1..10]new C();
   for cc in c do delete cc;
 }

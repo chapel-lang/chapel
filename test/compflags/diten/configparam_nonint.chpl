@@ -1,7 +1,7 @@
 config param areal: real = 3.14;
 config param astring: string = "hello";
 
-def main() {
+proc main() {
   writeln(areal);
   writeln(astring);
 }

@@ -1,4 +1,4 @@
-def foo(param n : int, ys : string ...n) {
+proc foo(param n : int, ys : string ...n) {
   for i in 1..n do
     writeln(ys(i));
 }

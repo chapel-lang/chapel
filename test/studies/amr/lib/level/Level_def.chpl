@@ -45,12 +45,12 @@ class Level {
   // type Grid.  It initializes to empty, and new indices are added via
   // the 'add' method.
   //
-  // The fields 'sibling_overlaps' and 'boundary' are arrays declared
+  // The fields 'sibling_ghost_regions' and 'boundary' are arrays declared
   // on 'grids'; as seen here, the syntax is identical to that for
   // arithmetic domains.  Iteration syntax is the same as well.
   //---------------------------------------------------------------------
   var grids:            domain(Grid);
-  var sibling_overlaps: [grids] SiblingOverlap;
+  var sibling_ghost_regions: [grids] SiblingOverlap;
   var boundary:         [grids] MultiDomain(dimension,stridable=true);
 
 
@@ -58,9 +58,9 @@ class Level {
   //| >    clear    | >
   //|/..............|/
   
-  def clear () {
+  proc clear () {
     for grid in grids {
-      delete sibling_overlaps(grid);
+      delete sibling_ghost_regions(grid);
       delete boundary(grid);
     }
   }
@@ -73,7 +73,7 @@ class Level {
   //| >    constructor    | >
   //|/....................|/
 
-  def Level(
+  proc Level(
     x_low: dimension*real,
     x_high: dimension*real,
     n_cells: dimension*int,
@@ -91,7 +91,7 @@ class Level {
     //==== Possible cells ====
     var ranges: dimension*range(stridable = true);
     for d in dimensions do
-      ranges(d) = 1 .. #2*n_cells(d) by 2;
+      ranges(d) = (1.. by 2) #n_cells(d);
     possible_cells = ranges;
 
     //==== Possible ghost cells ====
@@ -117,7 +117,7 @@ class Level {
   // its real bounds.
   //------------------------------------------------------
 
-  def snapToVertex (x: dimension*real) {
+  proc snapToVertex (x: dimension*real) {
 
     var idx: dimension*int;
 
@@ -143,7 +143,7 @@ class Level {
   // sensible.  Mainly for testing and debugging.
   //-----------------------------------------------------------
   
-  def writeThis(w: Writer) {
+  proc writeThis(w: Writer) {
     writeln("Level bounds: ", x_low, "  ", x_high);
     writeln("Number of cells: ", n_cells);
     writeln("Number of ghost cells: ", n_ghost_cells);
@@ -179,7 +179,7 @@ class Level {
 // real arithmetic.
 //--------------------------------------------------------
 
-def Level.addGrid(
+proc Level.addGrid(
   i_low_grid:  dimension*int,
   i_high_grid: dimension*int)
 {
@@ -214,9 +214,12 @@ def Level.addGrid(
 // This version takes the full domain of grid cells.
 //---------------------------------------------------
 
-def Level.addGrid (grid_cells: domain(dimension,stridable=true))
+proc Level.addGrid (grid_cells: domain(dimension,stridable=true))
 {
+  // Review: hilde
+  // Not +/- stride here?
   addGrid(grid_cells.low-1, grid_cells.high+1);
+  
 }
 
 
@@ -224,7 +227,7 @@ def Level.addGrid (grid_cells: domain(dimension,stridable=true))
 // This version takes in real bounds, and snaps them to the
 // level's discretization.
 //----------------------------------------------------------
-def Level.addGrid(
+proc Level.addGrid(
   x_low_grid:  dimension*real,
   x_high_grid: dimension*real)
 {
@@ -252,7 +255,7 @@ def Level.addGrid(
 // can safely compute how they overlap with one another.
 //----------------------------------------------------------------
 
-def Level.complete () {
+proc Level.complete () {
 
   //==== Safety check ====
   assert(is_complete == false,
@@ -260,11 +263,11 @@ def Level.complete () {
 
   //==== Set overlap and boundary data ====
   for grid in grids {
-    sibling_overlaps(grid) = new SiblingOverlap(this,grid);
+    sibling_ghost_regions(grid) = new SiblingOverlap(this,grid);
     
     boundary(grid) = new MultiDomain(dimension,stridable=true);
     boundary(grid).add(grid.ghost_multidomain);
-    for overlap_domain in sibling_overlaps(grid).domains do
+    for overlap_domain in sibling_ghost_regions(grid).domains do
       boundary(grid).subtract(overlap_domain);
   }
 
@@ -302,7 +305,7 @@ class SiblingOverlap {
   //|\''''''''''''''''|\
   //| >    clear()    | >
   //|/................|/
-  def clear() {
+  proc clear() {
     neighbors.clear();
   }
   // /|''''''''''''''''/|
@@ -314,7 +317,7 @@ class SiblingOverlap {
   //| >    constructor    | >
   //|/....................|/
   
-  def SiblingOverlap (
+  proc SiblingOverlap (
     level: Level,
     grid:  Grid)
   {
@@ -339,14 +342,14 @@ class SiblingOverlap {
   
   //--------------------------------------------------------------
   // A these() iterator allows iteration over the object:
-  //    for (nbr,overlap) in sibling_overlaps(grid) ...
+  //    for (nbr,overlap) in sibling_ghost_regions(grid) ...
   // In this case, it's designed so that iteration will provide
   // both each neighboring grid and the associated domain of
   // overlap, which is what will be needed to access the relevant
   // storage in a LevelVariable.
   //--------------------------------------------------------------
   
-  def these() {
+  iter these() {
     for nbr in neighbors do
       yield (nbr, domains(nbr));
   }
@@ -385,7 +388,7 @@ class SiblingOverlap {
 // ordering isn't done in a particularly sophisticated fashion.
 //---------------------------------------------------------------
 
-def Level.ordered_grids {    
+iter Level.ordered_grids {    
   var grid_list = grids;
   
   while grid_list.numIndices > 0 {
@@ -424,7 +427,7 @@ def Level.ordered_grids {
 // the name of which is provided as a string.
 //------------------------------------------------------------------
 
-def readLevel(file_name: string){
+proc readLevel(file_name: string){
 
   var input_file = new file(file_name, FileAccessMode.read);
   input_file.open();
@@ -474,7 +477,7 @@ def readLevel(file_name: string){
 
 
 
-// def main {
+// proc main {
 // 
 //   var level = readLevel("input_level.txt");
 // 

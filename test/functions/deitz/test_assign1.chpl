@@ -6,7 +6,7 @@ record D {
   var j : int = 3;
 }
 
-def =(d : D, c : C) {
+proc =(d : D, c : C) {
   d.j = c.i;
   return d;
 }

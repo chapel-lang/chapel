@@ -2,13 +2,13 @@ var A: [1..4] int;
 
 writeln(A);
 
-def f() var return A;
+proc f() var return A;
 
 f() = 1;
 
 writeln(A);
 
-def g() return A;
+proc g() return A;
 
 g() = 2;
 

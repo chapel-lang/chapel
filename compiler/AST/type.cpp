@@ -75,16 +75,17 @@ Symbol* Type::getField(const char* name, bool fatal) {
 }
 
 
-PrimitiveType::PrimitiveType(Symbol *init) :
+PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
   Type(E_PrimitiveType, init)
 {
+  isInternalType = internalType;
   gPrimitiveTypes.add(this);
 }
 
 
 PrimitiveType*
 PrimitiveType::copyInner(SymbolMap* map) {
-  INT_FATAL(this, "unexpected call to PrimitiveType::copyInner");
+  INT_FATAL(this, "Unexpected call to PrimitiveType::copyInner");
   return this;
 }
 
@@ -102,12 +103,13 @@ void PrimitiveType::verify() {
   }
 }
 
-
 int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  fprintf(outfile, "{CHPL_TYPE_%s, %s},\n", symbol->cname, baseoffset);
+  if (!isInternalType)
+    fprintf(outfile, "{CHPL_TYPE_%s, %s},\n", symbol->cname, baseoffset);
+  else
+    INT_FATAL(this, "Cannot codegen an internal type");
   return 1;
 }
-
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
@@ -470,7 +472,13 @@ Symbol* ClassType::getField(const char* name, bool fatal) {
     next_p->clear();
   }
   if (fatal) {
-    INT_FATAL(this, "field '%s' not in class in getField", name);
+    const char *className = (char*)"<no name>";
+    if (this->symbol) { // this is always true?
+      className = this->symbol->name;
+    }
+    // TODO: report as a user error in certain cases
+    INT_FATAL(this, "no field '%s' in class '%s' in getField()",
+              name, className);
   }
   return NULL;
 }
@@ -482,12 +490,17 @@ Symbol* ClassType::getField(int i) {
 
 
 static PrimitiveType* 
-createPrimitiveType(const char *name, const char *cname) {
-  PrimitiveType* pt = new PrimitiveType(NULL);
+createPrimitiveType(const char *name, const char *cname, bool internalType=false) {
+  PrimitiveType* pt = new PrimitiveType(NULL, internalType);
   TypeSymbol* ts = new TypeSymbol(name, pt);
   ts->cname = cname;
   rootModule->block->insertAtTail(new DefExpr(ts));
   return pt;
+}
+
+static PrimitiveType*
+createInternalType(const char *name, const char *cname) {
+  return createPrimitiveType(name, cname, true /* internalType */);
 }
 
 
@@ -537,23 +550,41 @@ void initChplProgram(void) {
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
 
+// This should probably be renamed since it create primitive types, as
+//  well as internal types and other types used in the generated code
 void initPrimitiveTypes(void) {
-  dtNil = createPrimitiveType ("_nilType", "_nilType");
+  dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
 
-  dtUnknown = createPrimitiveType ("_unknown", "_unknown");
+  dtUnknown = createInternalType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
 
-  dtVoid = createPrimitiveType ("void", "void");
+  dtVoid = createInternalType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
   dtBool = createPrimitiveType ("bool", "chpl_bool");
 
-  DefExpr* objectDef = buildClassDefExpr("object", new ClassType(CLASS_CLASS), NULL, new BlockStmt(), false);
+  // The base object class looks like this:
+  //
+  //   class object {
+  //     chpl__class_id chpl__cid;
+  //   }
+  //
+  // chpl__class_id is an enumerated type identifying the classes
+  //  in the program.  We never create the actual field or the
+  //  enumerated type (it is directly generated in the C code).  It might
+  //  be the right thing to do, so I made an attempt at adding the
+  //  field.  Unfortunately, we would need some significant changes
+  //  throughout compilation, and it seemed to me that the it might result
+  //  in possibly more special case code.
+  //
+  DefExpr* objectDef = buildClassDefExpr("object", new ClassType(CLASS_CLASS),
+                                         NULL, new BlockStmt(), false);
   objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
   objectDef->sym->addFlag(FLAG_NO_OBJECT);
   dtObject = objectDef->sym->type;
-  dtValue = createPrimitiveType("value", "_chpl_value");
+
+  dtValue = createInternalType("value", "_chpl_value");
 
   createInitFn(theProgram);
   if (!fRuntime) {
@@ -651,27 +682,28 @@ void initPrimitiveTypes(void) {
   CREATE_DEFAULT_SYMBOL(dtTxEnv, gTxEnv, "chpl_stm_null_tx_env_p");
   gTxEnv->cname = "NULL";
 
-  dtAny = createPrimitiveType ("_any", "_any");
+  dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
-  dtIntegral = createPrimitiveType ("integral", "integral");
+  dtIntegral = createInternalType ("integral", "integral");
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
-  dtAnyComplex = createPrimitiveType("chpl_anycomplex", "complex");
+  dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
-  dtNumeric = createPrimitiveType ("numeric", "numeric");
+  dtNumeric = createInternalType ("numeric", "numeric");
   dtNumeric->symbol->addFlag(FLAG_GENERIC);
-  dtIteratorRecord = createPrimitiveType("_iteratorRecord", "_iteratorRecord");
+  dtIteratorRecord = createInternalType("_iteratorRecord", "_iteratorRecord");
   dtIteratorRecord->symbol->addFlag(FLAG_GENERIC);
-  dtIteratorClass = createPrimitiveType("_iteratorClass", "_iteratorClass");
+  dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
-  dtMethodToken = createPrimitiveType ("_MT", "_MT");
+  dtMethodToken = createInternalType ("_MT", "_MT");
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
-  dtTypeDefaultToken = createPrimitiveType("_TypeDefaultT", "_TypeDefaultT");
+  dtTypeDefaultToken = createInternalType("_TypeDefaultT", "_TypeDefaultT");
   CREATE_DEFAULT_SYMBOL(dtTypeDefaultToken, gTypeDefaultToken, "_typeDefaultT");
-  dtModuleToken = createPrimitiveType("tmodule=", "tmodule=");
+  dtModuleToken = createInternalType("tmodule=", "tmodule=");
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
 
-  dtEnumerated = createPrimitiveType ("enumerated", "enumerated");
-  dtEnumerated->symbol->addFlag(FLAG_GENERIC);
+  dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
+  dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
+
 }
 
 void initCompilerGlobals(void) {
@@ -829,15 +861,24 @@ bool isReferenceType(Type* t) {
 static Vec<TypeSymbol*> typesToStructurallyCodegen;
 static Vec<TypeSymbol*> typesToStructurallyCodegenList;
 
-
 void registerTypeToStructurallyCodegen(TypeSymbol* type) {
   //  printf("registering chpl_rt_type_id_%s\n", type->cname);
+  if (!typesToStructurallyCodegen.set_in(type)) {
+    typesToStructurallyCodegenList.add(type);
+    typesToStructurallyCodegen.set_add(type);
+  }
+}
+
+void genTypeStructureIndex(FILE *outfile, TypeSymbol* typesym) {
   if (fHeterogeneous) {
-    if (!typesToStructurallyCodegen.set_in(type)) {
-      typesToStructurallyCodegenList.add(type);
-      typesToStructurallyCodegen.set_add(type);
+    // strings are special
+    if (toPrimitiveType(typesym) == dtString) {
+      fprintf(outfile, "-%s", typesym->cname);
+    } else {
+      fprintf(outfile, "%s", genChplTypeEnumString(typesym));
     }
- 
+  } else {
+    fprintf(outfile, "-1");
   }
 }
 
@@ -892,7 +933,7 @@ void codegenTypeStructures(FILE* hdrfile) {
     fprintf(outfile, "}");
     num++;
   }
-  fprintf(outfile, "};\n");
+  fprintf(outfile, "};\n\n");
 
   fprintf(outfile, "size_t chpl_sizeType[] = {\n");
   num = 0;
@@ -903,7 +944,7 @@ void codegenTypeStructures(FILE* hdrfile) {
     fprintf(outfile, "%s", genSizeofStr(typesym));
     num++;
   }
-  fprintf(outfile, "};\n\n");
+  fprintf(outfile, "\n};\n\n");
 
   fprintf(outfile, "chplType chpl_getFieldType(int typeNum, int fieldNum) {\n");
   fprintf(outfile, "return chpl_structType[typeNum][fieldNum].type;\n");

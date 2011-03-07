@@ -6,7 +6,7 @@ var R3D: [Dom3D] real;
 var R4D: [Dom4D] real;
 var R2D64: [Dom2D64] real;
 
-def outputRealArrays() {
+proc outputRealArrays() {
   write("R1D  :"); for i in Space1 do write(" ", R1D[i]); writeln();
   write("R2D  :"); for i in Space2 do write(" ", R2D[i]); writeln();
   write("R3D  :"); for i in Space3 do write(" ", R3D[i]); writeln();

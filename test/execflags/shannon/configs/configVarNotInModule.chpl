@@ -1,6 +1,6 @@
 module module1 {
   config var x = 1;
-  def main() {
+  proc main() {
     writeln("x is: ", x);
   }
 }

@@ -1,9 +1,9 @@
 class C {
-  def chpl_destroy() {
+  proc chpl_destroy() {
     writeln("chpl_destroy");
   }
 }
-def main {
+proc main {
   var c = new C();
   delete c;
 }

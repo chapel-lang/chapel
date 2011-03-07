@@ -13,9 +13,9 @@ class DefaultSparseDom: BaseSparseDom {
 
   var indices: [nnzDom] index(rank);
 
-  def linksDistribution() param return false;
+  proc linksDistribution() param return false;
 
-  def DefaultSparseDom(param rank, type idxType, 
+  proc DefaultSparseDom(param rank, type idxType, 
                                dist: DefaultDist,
                                parentDom: domain) {
     this.parentDom = parentDom;
@@ -23,25 +23,25 @@ class DefaultSparseDom: BaseSparseDom {
     nnz = 0;
   }
 
-  def dsiNumIndices return nnz;
+  proc dsiNumIndices return nnz;
 
-  def dsiBuildArray(type eltType)
+  proc dsiBuildArray(type eltType)
     return new DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
                                 dom=this);
 
-  def dsiIndsIterSafeForRemoving() {
+  iter dsiIndsIterSafeForRemoving() {
     for i in 1..nnz by -1 {
       yield indices(i);
     }
   }
 
-  def these() {
+  iter these() {
     for i in 1..nnz {
       yield indices(i);
     }
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     const numElems = nnz;
     const numChunks = _computeNumChunks(numElems);
     if debugDefaultSparse then
@@ -57,7 +57,7 @@ class DefaultSparseDom: BaseSparseDom {
         yield (this, (..._computeChunkStartEnd(numElems, numChunks, chunk)));
   }
 
-  def these(param tag: iterator, follower:(?,?,?)) where tag == iterator.follower {
+  iter these(param tag: iterator, follower:(?,?,?)) where tag == iterator.follower {
     var (followerDom, startIx, endIx) = follower;
 
     if (followerDom != this) then
@@ -69,16 +69,17 @@ class DefaultSparseDom: BaseSparseDom {
       yield indices(i);
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     compilerError("Sparse iterators can't yet be zippered with others");
+    yield 0;	// dummy.
   }
 
-  def dsiDim(d : int) {
+  proc dsiDim(d : int) {
     return parentDom.dim(d);
   }
 
   // private
-  def find(ind) {
+  proc find(ind) {
     //
     // sjd: unfortunate specialization for rank == 1
     // sjd: would it be better if indices were an array of rank*idxType?
@@ -90,12 +91,12 @@ class DefaultSparseDom: BaseSparseDom {
       return BinarySearch(indices, ind, 1, nnz);
   }
 
-  def dsiMember(ind) { // ind should be verified to be index type
+  proc dsiMember(ind) { // ind should be verified to be index type
     const (found, loc) = find(ind);
     return found;
   }
 
-  def add_help(ind) {
+  proc add_help(ind) {
     // find position in nnzDom to insert new index
     const (found, insertPt) = find(ind);
 
@@ -121,7 +122,7 @@ class DefaultSparseDom: BaseSparseDom {
     // shift all of the arrays up and initialize nonzeroes if
     // necessary 
     //
-    // BLC: Note: if arithmetic arrays had a user-settable
+    // BLC: Note: if rectangular arrays had a user-settable
     // initialization value, we could set it to be the IRV and skip
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
@@ -130,12 +131,13 @@ class DefaultSparseDom: BaseSparseDom {
     }
   }
 
-  def rem_help(ind) {
+  proc rem_help(ind) {
     // find position in nnzDom to insert new index
     const (found, insertPt) = find(ind);
 
-    // if the index already existed, then return
-    if (!found) then return;
+    // if the index does not exist, then halt
+    if (!found) then
+      halt("index not in domain: ", ind);
 
     // increment number of nonzeroes
     nnz -= 1;
@@ -157,7 +159,7 @@ class DefaultSparseDom: BaseSparseDom {
     // shift all of the arrays up and initialize nonzeroes if
     // necessary 
     //
-    // BLC: Note: if arithmetic arrays had a user-settable
+    // BLC: Note: if rectangular arrays had a user-settable
     // initialization value, we could set it to be the IRV and skip
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
@@ -166,27 +168,27 @@ class DefaultSparseDom: BaseSparseDom {
     }
   }
 
-  def dsiAdd(ind: idxType) where rank == 1 {
+  proc dsiAdd(ind: idxType) where rank == 1 {
     add_help(ind);
   }
 
-  def dsiRemove(ind: idxType) where rank == 1 {
+  proc dsiRemove(ind: idxType) where rank == 1 {
     rem_help(ind);
   }
 
-  def dsiAdd(ind: rank*idxType) {
+  proc dsiAdd(ind: rank*idxType) {
     add_help(ind);
   }
 
-  def dsiRemove(ind: rank*idxType) {
+  proc dsiRemove(ind: rank*idxType) {
     rem_help(ind);
   }
 
-  def dsiClear() {
+  proc dsiClear() {
     nnz = 0;
   }
 
-  def dimIter(param d, ind) {
+  iter dimIter(param d, ind) {
     if (d != rank-1) {
       compilerError("dimIter() not supported on sparse domains for dimensions other than the last");
     }
@@ -205,9 +207,9 @@ class DefaultSparseArr: BaseArr {
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 
-  def dsiGetBaseDom() return dom;
+  proc dsiGetBaseDom() return dom;
 
-  def dsiAccess(ind: idxType) var where rank == 1 {
+  proc dsiAccess(ind: idxType) var where rank == 1 {
     // make sure we're in the dense bounding box
     if boundsChecking then
       if !(dom.parentDom.member(ind)) then
@@ -223,7 +225,7 @@ class DefaultSparseArr: BaseArr {
       return irv;
   }
 
-  def dsiAccess(ind: rank*idxType) var {
+  proc dsiAccess(ind: rank*idxType) var {
     // make sure we're in the dense bounding box
     if boundsChecking then
       if !(dom.parentDom.member(ind)) then
@@ -239,18 +241,18 @@ class DefaultSparseArr: BaseArr {
       return irv;
   }
 
-  def these() var {
+  iter these() var {
     for e in data[1..dom.nnz] do yield e;
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     // forward to the leader iterator on our domain
     for follower in dom.these(tag) do
       yield follower;
   }
 
   // same as DefaultSparseDom's follower, except here we index into 'data'
-  def these(param tag: iterator, follower:(?,?,?)) var where tag == iterator.follower {
+  iter these(param tag: iterator, follower:(?,?,?)) var where tag == iterator.follower {
     var (followerDom, startIx, endIx) = follower;
 
     if (followerDom != this.dom) then
@@ -261,15 +263,16 @@ class DefaultSparseArr: BaseArr {
     for e in data[startIx..endIx] do yield e;
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     compilerError("Sparse iterators can't yet be zippered with others");
+    yield 0;	// dummy
   }
 
-  def IRV var {
+  proc IRV var {
     return irv;
   }
 
-  def sparseShiftArray(shiftrange, initrange) {
+  proc sparseShiftArray(shiftrange, initrange) {
     for i in initrange {
       data(i) = irv;
     }
@@ -279,7 +282,7 @@ class DefaultSparseArr: BaseArr {
     data(shiftrange.low) = irv;
   }
 
-  def sparseShiftArrayBack(shiftrange) {
+  proc sparseShiftArrayBack(shiftrange) {
     for i in shiftrange {
       data(i) = data(i+1);
     }
@@ -287,7 +290,7 @@ class DefaultSparseArr: BaseArr {
 }
 
 
-def DefaultSparseDom.dsiSerialWrite(f: Writer) {
+proc DefaultSparseDom.dsiSerialWrite(f: Writer) {
   if (rank == 1) {
     f.write("[");
     if (nnz >= 1) {
@@ -316,7 +319,7 @@ def DefaultSparseDom.dsiSerialWrite(f: Writer) {
 }
 
 
-def DefaultSparseArr.dsiSerialWrite(f: Writer) {
+proc DefaultSparseArr.dsiSerialWrite(f: Writer) {
   if (rank == 1) {
     if (dom.nnz >= 1) {
       f.write(data(1));

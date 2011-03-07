@@ -28,9 +28,13 @@ General (see also portability section at the bottom of this file)
 
 Types, Variables, Conversions, Expressions, and Statements
 ----------------------------------------------------------
+
 - Unlabeled break and continue statements fail to compile in param for loops.
 - Multiple configuration parameters with different types declared in a
   single statement result in an internal error.
+- Casts and relational operations involving enum constants do not
+  always work.
+
 
 Modules and Functions
 ---------------------
@@ -71,6 +75,7 @@ Tuples, Classes, Records, and Unions
 Ranges, Domains, and Arrays
 ---------------------------
 - Arrays of arrays where the inner arrays vary in size are not supported.
+- Modifications to Associative and Sparse domains are not thread-safe.
 - Sparse domain/array slicing is not supported.
 - Constant checking for domains and arrays is incomplete.
 - There are no bounds checks on index types.
@@ -141,7 +146,7 @@ Data Parallelism
   2. Assignments from ranges to multidimensional arrays are always serialized.
   3. Assignment, reductions, and parallel iteration over opaque domains and
      arrays are always serialized.
-
+- Whole-domain assignment operations on sparse domains are not all serialized.
 
 Locales and Domain Maps
 -----------------------

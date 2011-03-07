@@ -10,7 +10,7 @@ record foo {
   var first : node(t);
   var last : node(t);
 
-  def append(e : t) {
+  proc append(e : t) {
    var anew : node(t) = new node(t);
     anew.element = e;
     if length > 0 {
@@ -25,7 +25,7 @@ record foo {
   }
 }
 
-def foo.writeThis(fp : Writer) {
+proc foo.writeThis(fp : Writer) {
   fp.write("(/");
   var tmp = first;
   while tmp != nil {

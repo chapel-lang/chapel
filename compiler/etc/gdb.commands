@@ -24,6 +24,9 @@ define rerun
   set $forcecmd = 1
   run
 end
+define aid
+ p aid($arg0)
+end
 define view
   call print_view($arg0)
 end
@@ -40,7 +43,7 @@ define flags
   call viewFlags($arg0)
 end
 define loc
-  p ($arg0)->stringLoc()
+ p ::stringLoc($arg0)
 end
 break gdbShouldBreakHere
 commands

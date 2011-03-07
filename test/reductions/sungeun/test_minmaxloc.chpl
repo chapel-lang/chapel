@@ -5,13 +5,13 @@ class lastmaxloc: ReduceScanOp {
   var value: eltType = min(eltType);
   var uninitialized = true;
 
-  def accumulate(x) {
+  proc accumulate(x) {
     if uninitialized || (x(1) > value(1)) ||
       ((x(1) == value(1)) && (x(2) > value(2))) then
       value = x;
     uninitialized = false;
   }
-  def combine(x) {
+  proc combine(x) {
     if uninitialized || (x.value(1) > value(1)) ||
       ((x.value(1) == value(1)) && (x.value(2) > value(2))) {
       if !x.uninitialized {
@@ -20,7 +20,7 @@ class lastmaxloc: ReduceScanOp {
       }
     }
   }
-  def generate() return value;
+  proc generate() return value;
 }
 
 class lastminloc: ReduceScanOp {
@@ -28,13 +28,13 @@ class lastminloc: ReduceScanOp {
   var value: eltType = max(eltType);
   var uninitialized = true;
 
-  def accumulate(x) {
+  proc accumulate(x) {
     if uninitialized || (x(1) < value(1)) ||
       ((x(1) == value(1)) && (x(2) > value(2))) then
       value = x;
     uninitialized = false;
   }
-  def combine(x) {
+  proc combine(x) {
     if uninitialized || (x.value(1) < value(1)) ||
       ((x.value(1) == value(1)) && (x.value(2) > value(2))) {
       if !x.uninitialized {
@@ -43,7 +43,7 @@ class lastminloc: ReduceScanOp {
       }
     }
   }
-  def generate() return value;
+  proc generate() return value;
 }
 
 config const seed = 889;
@@ -56,7 +56,7 @@ var A: [1..n] int;
 
 fillRandom(R, seed);
 
-def getSigDigit(r: real) {
+proc getSigDigit(r: real) {
   var rn = r*10;
   while (rn < 10**(sigfigs-1)) do rn *= 10;
   return rn:int;
