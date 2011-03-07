@@ -87,6 +87,10 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
+nondet. valgrind "the impossible has happened"
+----------------------------------------------
+[Error matching program output for distributions/nelson/MultiBlockDist2DLocales] (03/02/11)
+
 invalid write of size 1 (02/27/11)
 ----------------------------------
 [Error matching compiler output for memory/shannon/outofmemory/mallocOutOfMemory]
@@ -119,10 +123,47 @@ block distribution regressions
 cyclic distribution regressions
 ===============================
 
+failures in output (slicing, reindexing, ...)
+---------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_iteration1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_of_distributed_array1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_array_of_distributed_array2]
+[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_distributed_array1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_domain_iteration1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
+[Error matching program output for distributions/robust/arithmetic/basics/test_record_of_distributed_array]
+[Error matching program output for distributions/robust/arithmetic/basics/test_reduce1]
+[Error matching program output for distributions/robust/arithmetic/basics/test_reshape]
+[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_default]
+[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_range]
+[Error matching program output for distributions/robust/arithmetic/composite/test_composite1]
+[Error matching program output for distributions/robust/arithmetic/composite/test_composite2]
+[Error matching program output for distributions/robust/arithmetic/kernels/hpl]
+[Error matching program output for distributions/robust/arithmetic/kernels/stream]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Random]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Search]
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Sort]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias2]
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias4]
+[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing2]
+[Error matching program output for distributions/robust/arithmetic/stress/test_many_domains]
+[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_expand]
+
 
 ====================
 no-local regressions
 ====================
+
+weird stuff -- files going missing (due to multiple overlapping test runs?)
+---------------------------------------------------------------------------
+[Error matching compiler output for ./test/trivial/sungeun/no_chpl/blah.c]
+[Error matching compiler output for ./test/trivial/sungeun/no_chpl/blah.chpl]
+[Error matching compiler output for ./test/trivial/sungeun/no_chpl/blah.h]
+[Error matching compiler output for exercises/RandomNumber6]
+[Error matching compiler output for exercises/histogram2]
+[Error matching compiler output for exercises/life]
+[Error matching compiler output for puzzles/diten/roman]
 
 never worked due to type mismtach in generated code (01/19/11)
 --------------------------------------------------------------
@@ -130,7 +171,7 @@ never worked due to type mismtach in generated code (01/19/11)
 
 nondet. prediff error (linefeeds go awry)
 -----------------------------------------
-[Error matching program output for release/examples/primers/taskParallel] (12/03/10, 12/04/10, 12/07/10, 02/17/11)
+[Error matching program output for release/examples/primers/taskParallel] (12/03/10, 12/04/10, 12/07/10, 02/17/11, 03/04/11)
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -154,6 +195,20 @@ memory stuff in flux (05/28/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+optimization not always firing (03/05/11)
+-----------------------------------------
+[Error matching compiler output for optimizations/sungeun/optimized-on/test_OptimizedOn_RA]
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1]
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block2]
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3]
+
+wrong answer (03/05/11)
+-----------------------
+[Error matching program output for distributions/deitz/test_distribution_syntax2]
+[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
+[Error matching program output for distributions/jglewis/cyclicOnEvenNumLocales]
+[Error matching program output for distributions/vass/wrapper_nl4_testReplicatedDist1]
 
 AMUDP resource error (01/19/11)
 -------------------------------
@@ -188,8 +243,8 @@ gasnet-fast regressions (other than the above)
 
 nondet. lost update to element to value 5
 -----------------------------------------
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1] (02/24/11)
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3] (02/26/11)
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1] (02/24/11, 03/01/11)
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3] (02/26/11, 03/04/11)
 
 nondet. zippered iterations having unequal lengths
 --------------------------------------------------
@@ -574,6 +629,10 @@ output being treated as binary causing diff message to change (05/08/10)
 cray-xt-cray/cce-specific regressions
 =====================================
 
+loop not reachable warning (03/07/11)
+-------------------------------------
+** almost everything **
+
 incorrect output (integral?) (01/24/11)
 ---------------------------------------
 [Error matching program output for modules/sungeun/test_safeSub]
@@ -828,13 +887,45 @@ sig_send: wait for sig_complete event failed
 xmt-specific regressions
 ========================
 
+non-reachable code warning in generated code (03/05/11)
+-------------------------------------------------------
+[Error matching program output for release/examples/hello-module]
+[Error matching program output for release/examples/hello-multicore]
+[Error matching program output for release/examples/hello-multiloc]
+[Error matching program output for release/examples/hello]
+[Error matching program output for release/examples/hpcc/fft]
+[Error matching program output for release/examples/hpcc/ra]
+[Error matching program output for release/examples/hpcc/stream-ep]
+[Error matching program output for release/examples/hpcc/stream]
+[Error matching program output for release/examples/primers/arrays]
+[Error matching program output for release/examples/primers/classes]
+[Error matching program output for release/examples/primers/distributions]
+[Error matching program output for release/examples/primers/fileIO]
+[Error matching program output for release/examples/primers/genericClasses]
+[Error matching program output for release/examples/primers/iterators]
+[Error matching program output for release/examples/primers/multilocale]
+[Error matching program output for release/examples/primers/opaque]
+[Error matching program output for release/examples/primers/ranges]
+[Error matching program output for release/examples/primers/reductions]
+[Error matching program output for release/examples/primers/slices]
+[Error matching program output for release/examples/primers/sparse]
+[Error matching program output for release/examples/primers/taskParallel]
+[Error matching program output for release/examples/primers/varargs]
+[Error matching program output for release/examples/primers/variables]
+[Error matching program output for release/examples/programs/beer]
+[Error matching program output for release/examples/programs/genericStack]
+[Error matching program output for release/examples/programs/jacobi]
+[Error matching program output for release/examples/programs/linkedList]
+[Error matching program output for release/examples/programs/norm]
+[Error matching program output for release/examples/programs/tree]
+
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for release/examples/programs/jacobi] (11/17/10)
 [Error: Timed out executing program release/examples/primers/taskParallel] (11/17/10)
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
-[Error: Timed out compilation for release/examples/hello] (07/11/10, 07/18/10, 07/21/10, 07/25/10, 08/01/10, 08/08/10, 08/13/10, 09/20/10, 09/26/10, 09/30/10, 10/03/10, 10/10/10, 10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11)
+[Error: Timed out compilation for release/examples/hello] (07/11/10, 07/18/10, 07/21/10, 07/25/10, 08/01/10, 08/08/10, 08/13/10, 09/20/10, 09/26/10, 09/30/10, 10/03/10, 10/10/10, 10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11)
 
 compilation timeouts
 --------------------
