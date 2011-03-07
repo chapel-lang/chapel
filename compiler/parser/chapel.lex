@@ -61,7 +61,7 @@ floatLiteral     {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
 
 %%
 
-align		 processToken(TALIGN);
+align            processToken(TALIGN);
 atomic           processToken(TATOMIC);
 begin            processToken(TBEGIN);
 break            processToken(TBREAK);

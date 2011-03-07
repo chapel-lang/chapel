@@ -514,7 +514,7 @@ fn_ident:
 | TNOT           { $$ = "!"; }
 | TBY            { $$ = "by"; } 
 | THASH          { $$ = "#"; }
-| TALIGN	 { $$ = "align"; }
+| TALIGN         { $$ = "align"; }
 ;
 
 opt_formal_ls:
