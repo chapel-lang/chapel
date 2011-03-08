@@ -119,32 +119,36 @@ proc _build_range(param bt: BoundedRangeType)
 proc range.first
 {
   if ! stridable then return _low;
-  return if _stride > 0 then this.alignedLow else this.alignedHigh;
+  else return if _stride > 0 then this.alignedLow else this.alignedHigh;
 }
 
 // Returns the ending index (with minimal checks).
 proc range.last
 {
   if ! stridable then return _high;
-  return if _stride > 0 then this.alignedHigh else this.alignedLow;
+  else return if _stride > 0 then this.alignedHigh else this.alignedLow;
 }
 
 // Returns the low index, properly aligned.
 proc range.alignedLow : idxType
 {
   if ! stridable then return _low;
-  if _low > _high then return _low;
-
-  return _low + chpl__mod(_alignment, _stride);
+  else
+  {
+    if _low > _high then return _low;
+    return _low + chpl__mod(_alignment, _stride);
+  }
 }
 
 // Returns the high index, properly aligned.
 proc range.alignedHigh : idxType
 {
   if ! stridable then return _high;
-  if _low > _high then return _high;
-
-  return _high - chpl__diffMod(_high, _low + _alignment, _stride);
+  else
+  {
+    if _low > _high then return _high;
+    return _high - chpl__diffMod(_high, _low + _alignment, _stride);
+  }
 }
 
 // Returns the number of elements in this range.
