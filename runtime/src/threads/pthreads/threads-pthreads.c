@@ -40,19 +40,23 @@ struct thread_list {
   thread_list_p next;
 };
 
-static pthread_mutex_t thread_list_lock;        // mutual exclusion lock
+static pthread_mutex_t thread_info_lock;        // mutual exclusion lock
+
+static int64_t         curr_thread_id = threadlayer_nullThreadID;
+
 static thread_list_p   thread_list_head = NULL; // head of thread_list
 static thread_list_p   thread_list_tail = NULL; // tail of thread_list
 
-static pthread_attr_t thread_attributes;
+static pthread_attr_t  thread_attributes;
 
-static pthread_key_t  thread_private_key;
+static pthread_key_t   thread_id_key;
+static pthread_key_t   thread_private_key;
 
 static int32_t         threadMaxThreadsPerLocale  = -1;
 static uint32_t        threadNumThreads           =  1;  // count main thread
 static pthread_mutex_t threadNumThreadsLock;
 
-static uint64_t threadCallStackSize = 0;
+static uint64_t        threadCallStackSize = 0;
 
 
 static void*           initial_pthread_func(void*);
@@ -90,7 +94,11 @@ void threadlayer_mutex_unlock(threadlayer_mutex_p mutex) {
 // Thread id
 
 threadlayer_threadID_t threadlayer_thread_id(void) {
-  return (threadlayer_threadID_t) pthread_self();
+  void* val = pthread_getspecific(thread_id_key);
+
+  if (val == NULL)
+    return threadlayer_nullThreadID;
+  return (threadlayer_threadID_t) (intptr_t) val;
 }
 
 
@@ -157,10 +165,16 @@ void threadlayer_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   }
   threadCallStackSize = callStackSize;
 
-  if (pthread_key_create(&thread_private_key, destroy_thread_private_data))
-    chpl_internal_error("pthread_key_create failed");
+  if (pthread_key_create(&thread_id_key, NULL))
+    chpl_internal_error("pthread_key_create(thread_id_key) failed");
 
-  pthread_mutex_init(&thread_list_lock, NULL);
+  if (pthread_setspecific(thread_id_key, (void*) (intptr_t) --curr_thread_id))
+    chpl_internal_error("thread id data key doesn't work");
+
+  if (pthread_key_create(&thread_private_key, destroy_thread_private_data))
+    chpl_internal_error("pthread_key_create(thread_private_key) failed");
+
+  pthread_mutex_init(&thread_info_lock, NULL);
   pthread_mutex_init(&threadNumThreadsLock, NULL);
 
   //
@@ -219,8 +233,11 @@ void threadlayer_exit(void) {
     chpl_free(tlp, 0, 0);
   }
 
+  if (pthread_key_delete(thread_id_key) != 0)
+    chpl_internal_error("pthread_key_delete(thread_id_key) failed");
+
   if (pthread_key_delete(thread_private_key) != 0)
-    chpl_internal_error("pthread_key_delete() failed");
+    chpl_internal_error("pthread_key_delete(thread_private_key) failed");
 
   if (pthread_attr_destroy(&thread_attributes) != 0)
     chpl_internal_error("pthread_attr_destroy() failed");
@@ -231,8 +248,7 @@ chpl_bool threadlayer_can_start_thread(void) {
           threadNumThreads < (uint32_t) threadMaxThreadsPerLocale);
 }
 
-int threadlayer_thread_create(threadlayer_threadID_t* thread,
-                              void*(*fn)(void*), void* arg)
+int threadlayer_thread_create(void*(*fn)(void*), void* arg)
 {
   //
   // An implementation note:
@@ -274,16 +290,15 @@ int threadlayer_thread_create(threadlayer_threadID_t* thread,
     return -1;
   }
 
-  if (thread != NULL)
-    *thread = (threadlayer_threadID_t) pthread;
   return 0;
 }
 
 static void* pthread_func(void* void_f) {
-  thread_func_t* f = (thread_func_t*) void_f;
-  void*          (*fn)(void*) = f->fn;
-  void*          arg = f->arg;
-  thread_list_p  tlp;
+  thread_func_t*         f = (thread_func_t*) void_f;
+  void*                  (*fn)(void*) = f->fn;
+  void*                  arg = f->arg;
+  threadlayer_threadID_t my_thread_id;
+  thread_list_p          tlp;
 
   chpl_free(f, 0, 0);
 
@@ -298,13 +313,20 @@ static void* pthread_func(void* void_f) {
   tlp->thread = pthread_self();
   tlp->next   = NULL;
 
-  pthread_mutex_lock(&thread_list_lock);
+  pthread_mutex_lock(&thread_info_lock);
+
+  my_thread_id = --curr_thread_id;
+
   if (thread_list_head == NULL)
     thread_list_head = tlp;
   else
     thread_list_tail->next = tlp;
   thread_list_tail = tlp;
-  pthread_mutex_unlock(&thread_list_lock);
+
+  pthread_mutex_unlock(&thread_info_lock);
+
+  if (pthread_setspecific(thread_id_key, (void*) (intptr_t) my_thread_id))
+    chpl_internal_error("thread id data key doesn't work");
 
   return (*(fn))(arg);
 }

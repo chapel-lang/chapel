@@ -1066,7 +1066,7 @@ launch_next_task_in_new_thread(void) {
     return;
 
   if ((ptask = task_pool_head)) {
-    if (threadlayer_thread_create(NULL, chpl_begin_helper, ptask)) {
+    if (threadlayer_thread_create(chpl_begin_helper, ptask)) {
       int32_t max_threads = threadlayer_get_max_threads();
       uint32_t num_threads = threadlayer_get_num_threads();
       char msg[256];

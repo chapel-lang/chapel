@@ -113,7 +113,7 @@ chpl_bool threadlayer_can_start_thread(void);
 //
 // Create a new thread.
 //
-int threadlayer_thread_create(threadlayer_threadID_t*, void*(*)(void*), void*);
+int threadlayer_thread_create(void*(*)(void*), void*);
 
 //
 // Destroy the calling thread.  The threading layer is allowed to return
