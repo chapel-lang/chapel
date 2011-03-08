@@ -110,7 +110,7 @@ symbolFlag( FLAG_WIDE , npr, "wide" , ncm )
 symbolFlag( FLAG_WIDE_CLASS , npr, "wide class" , ncm )
 symbolFlag( FLAG_WRAPPER , npr, "wrapper" , "wrapper function" )
 symbolFlag( FLAG_WRAP_OUT_INTENT , npr, "wrap out or inout intent formal" , "formal argument for wrapper for out/inout intent" )
-
+symbolFlag( FLAG_TX_ON_BLOCK, npr, "transactional on block", "on blocks encountered within atomic transactions")
 #undef ypr
 #undef npr
 #undef ncm
