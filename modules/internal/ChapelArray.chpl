@@ -165,7 +165,7 @@ proc chpl__convertValueToRuntimeType(dom: domain) type
   return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
 
 proc chpl__convertValueToRuntimeType(dom: domain) type {
-  compilerError("the global domain class of each domain map implementation must be a subclass of BaseArithmeticDom, BaseAssociativeDom, BaseOpaqueDom, or BaseSparseDom", 0);
+  compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, BaseOpaqueDom, or BaseSparseDom", 0);
   return 0; // dummy
 }
 

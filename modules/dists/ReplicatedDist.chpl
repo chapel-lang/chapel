@@ -112,7 +112,7 @@ class LocReplicatedDom {
   type idxType;
   param stridable: bool;
 
-  // our index set (copied from 
+  // our index set, copied from the global domain
   var domLocalRep: domain(rank, idxType, stridable);
 }
 
