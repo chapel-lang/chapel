@@ -117,7 +117,7 @@ static void                    initializeLockReportForThread(void);
 static chpl_bool               set_block_loc(int, chpl_string);
 static void                    unset_block_loc(void);
 static void                    check_for_deadlock(void);
-static void*                   chpl_begin_helper(void*);
+static void                    thread_wrapper(void*);
 static void                    launch_next_task_in_new_thread(void);
 static void                    schedule_next_task(int);
 static task_pool_p             add_to_task_pool(chpl_fn_p,
@@ -226,8 +226,7 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   extra_task_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
 
-  threadlayer_init(maxThreadsPerLocale, callStackSize);
-
+  threadlayer_init(maxThreadsPerLocale, callStackSize, thread_wrapper);
 
   if (taskreport) {
     threadlayer_mutex_init(&taskTable_lock);
@@ -922,8 +921,8 @@ static void check_for_deadlock(void) {
 // When we create a thread it runs this wrapper function, which just
 // executes tasks out of the pool as they become available.
 //
-static void*
-chpl_begin_helper(void* ptask_void) {
+static void
+thread_wrapper(void* ptask_void) {
   task_pool_p ptask = (task_pool_p) ptask_void;
   thread_private_data_t *tp;
 
@@ -1047,8 +1046,6 @@ chpl_begin_helper(void* ptask_void) {
     // end critical section
     threadlayer_mutex_unlock(&threading_lock);
   }
-
-  return NULL;
 }
 
 
@@ -1066,7 +1063,7 @@ launch_next_task_in_new_thread(void) {
     return;
 
   if ((ptask = task_pool_head)) {
-    if (threadlayer_thread_create(chpl_begin_helper, ptask)) {
+    if (threadlayer_thread_create(ptask)) {
       int32_t max_threads = threadlayer_get_max_threads();
       uint32_t num_threads = threadlayer_get_num_threads();
       char msg[256];

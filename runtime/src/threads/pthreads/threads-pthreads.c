@@ -58,6 +58,7 @@ static pthread_mutex_t threadNumThreadsLock;
 
 static uint64_t        threadCallStackSize = 0;
 
+static void            (*saved_threadHomeFn)(void*);
 
 static void*           initial_pthread_func(void*);
 static void            destroy_thread_private_data(void*);
@@ -118,7 +119,9 @@ void threadlayer_yield(void) {
 
 // Thread callbacks for the FIFO tasking layer
 
-void threadlayer_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+void threadlayer_init(int32_t maxThreadsPerLocale,
+                      uint64_t callStackSize,
+                      void(*threadHomeFn)(void*)) {
   //
   // Tuck maxThreadsPerLocale away in a static global for use by other routines
   //
@@ -164,6 +167,8 @@ void threadlayer_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
       chpl_internal_error("pthread_attr_setstacksize() failed");
   }
   threadCallStackSize = callStackSize;
+
+  saved_threadHomeFn = threadHomeFn;
 
   if (pthread_key_create(&thread_id_key, NULL))
     chpl_internal_error("pthread_key_create(thread_id_key) failed");
@@ -248,7 +253,7 @@ chpl_bool threadlayer_can_start_thread(void) {
           threadNumThreads < (uint32_t) threadMaxThreadsPerLocale);
 }
 
-int threadlayer_thread_create(void*(*fn)(void*), void* arg)
+int threadlayer_thread_create(void* arg)
 {
   //
   // An implementation note:
@@ -271,18 +276,13 @@ int threadlayer_thread_create(void*(*fn)(void*), void* arg)
   // the likelihood that everyone will see accurate counter values.
   //
 
-  thread_func_t* f;
   pthread_t pthread;
 
-  f = (thread_func_t*) chpl_alloc(sizeof(thread_func_t),
-                                  CHPL_RT_MD_THREAD_CALLEE, 0, 0);
-  f->fn  = fn;
-  f->arg = arg;
   pthread_mutex_lock(&threadNumThreadsLock);
   threadNumThreads++;
   pthread_mutex_unlock(&threadNumThreadsLock);
 
-  if (pthread_create(&pthread, &thread_attributes, pthread_func, f)) {
+  if (pthread_create(&pthread, &thread_attributes, pthread_func, arg)) {
     pthread_mutex_lock(&threadNumThreadsLock);
     threadNumThreads--;
     pthread_mutex_unlock(&threadNumThreadsLock);
@@ -293,14 +293,9 @@ int threadlayer_thread_create(void*(*fn)(void*), void* arg)
   return 0;
 }
 
-static void* pthread_func(void* void_f) {
-  thread_func_t*         f = (thread_func_t*) void_f;
-  void*                  (*fn)(void*) = f->fn;
-  void*                  arg = f->arg;
+static void* pthread_func(void* arg) {
   threadlayer_threadID_t my_thread_id;
   thread_list_p          tlp;
-
-  chpl_free(f, 0, 0);
 
   // disable cancellation immediately
   // enable only while waiting for new work
@@ -328,7 +323,9 @@ static void* pthread_func(void* void_f) {
   if (pthread_setspecific(thread_id_key, (void*) (intptr_t) my_thread_id))
     chpl_internal_error("thread id data key doesn't work");
 
-  return (*(fn))(arg);
+  (*saved_threadHomeFn)(arg);
+
+  return NULL;
 }
 
 void threadlayer_thread_destroy(void) {
