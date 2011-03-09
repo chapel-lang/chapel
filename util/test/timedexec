@@ -1,14 +1,13 @@
 #!/usr/bin/env perl
 
 #
-# @ARGV[0] = "-S"
-# @ARGV[1] = <timeout value>
-# @ARGV[2...] = command to run
+# @ARGV[0] = <timeout value>
+# @ARGV[1] = command line to run
 #
 
 $| = 1;					# will flush buffers after write
 
-#setpgrp(0,0);
+die "usage: timedexec timeout \"commandline\"\n" unless $#ARGV == 1;
 
 eval {
     local $SIG{ALRM} = sub { die "alarm\n" };
@@ -18,7 +17,7 @@ eval {
         exit(1);
     } elsif ($child_pid == 0) {
         setpgrp(0,0);
-        exec @ARGV[1..$#ARGV];
+        exec @ARGV[1];
         die "timedexec failed to execute: $1\n";
     } else {
         waitpid($child_pid, 0);
@@ -36,12 +35,24 @@ eval {
     }        
     alarm 0;
 };
-die if $@ && $@ ne "alarm\n";
 if ($@) {
+    die unless $@ eq "alarm\n";
     print "timedexec Alarm Clock\n";
-#    $child_pgrp = getpgrp($child_pid);
-#    $self_pgrp = getpgrp($$);
-    kill (-15, $child_pid);
+    eval {
+        local $SIG{ALRM} = sub { die "alarm\n" };
+        alarm @ARGV[0];
+        # allow proper cleanup if possible
+        print "timedexec sending SIGTERM\n";
+        kill SIGTERM, $child_pid;
+        waitpid($child_pid, 0);
+        alarm 0;
+    };
+    if ($@) {
+        die unless $@ eq "alarm\n";
+        # hit it with the big hammer
+        print "timedexec sending SIGKILL\n";
+        kill SIGKILL, $child_pid;
+    }
     exit(222);
 } else {
     exit($cmdStatus);
