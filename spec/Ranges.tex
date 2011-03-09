@@ -5,15 +5,16 @@
 Ranges represent a sequence of integral values.  Ranges are
 either \emph{bounded} or \emph{unbounded}.
 
-Bounded ranges are characterized by a low bound~$l$, a high bound~$h$,
-and a stride~$s$.  If the stride is positive, the values described by
-the range are $l, l+s, l+2s, l+3s, ...$ such that all of the values in
-the sequence are less than or equal to $h$.  If the stride is negative,
-the values described by the range are $h, h+s, h+2s, h+3s, ...$ such
-that all of the values in the sequence are greater than or equal to
-$l$.  If $l > h$, the range is considered degenerate and represents an
-empty sequence. Ranges support iteration over the values they represent
-as described in ~\rsec{The_For_Loop}.
+Bounded ranges are characterized by a low bound~$l$, a high bound~$h$, a
+stride~$s$ and an alignment $a$.  If the stride is positive, the values
+described by the range are $b, b+s, b+2s, b+3s, ...$ where $b$ is the first
+integer greater than or equal to $l$ such that $b \mod s = a$, and all of the
+values are less than or equal to $h$.  If the stride is negative, the values
+described by the range are $e, e+s, e+2s, e+3s, ...$ where $e$ is the first
+integer less than or equal to $h$ such that $e \mod s = a$, and all of the
+values are greater than or equl to $l$.  If $l > h$, the range is considered
+degenerate and represents an empty sequence. Ranges support iteration over the
+values they represent as described in ~\rsec{The_For_Loop}.
 
 Unbounded ranges are those in which the low and/or high bounds are
 omitted.  Unbounded ranges conceptually represent a countably infinite
@@ -28,7 +29,7 @@ The type of a range is characterized by four things:
 \item the type of the values being represented, 
 \item the boundedness of the range,
 \item whether or not the range is \emph{stridable}, and
-\item whether or not the rante is \emph{aligned}.
+\item whether or not the range is \emph{aligned}.
 \end{enumerate}
 
 The type of the range's values is represented using a type parameter
@@ -59,7 +60,7 @@ fixed to 1.  The default value is \chpl{false}.
 
 The alignedness of a range is represented by a boolean parameter
 named \emph{aligned}.  If this parameter is set to true, the range's alignment
-value can tack on any integer value representable by its \emph{idxType}.  If it
+value can take on any integer value representable by its \emph{idxType}.  If it
 is false, the range's alignment is set to 0.  The default value is \chpl{false}.
 An alignment of zero means that the stride is aligned on the low bound
 for \chpl{boundedLow} and \chpl{bounded} ranges, and on the high bound
@@ -67,10 +68,9 @@ for \chpl{boundedHigh} ranges.  If an unbounded range is aligned, then the
 alignment is absolute.
 
 \begin{rationale}
-The \emph{boundedType} and \emph{stridable} values of a range are used
+The \emph{boundedType}, \emph{stridable} and \emph{aligned} parameters are used
 to optimize the generated code for common cases of ranges, as well as
-to optimize the implementation of domains and arrays defined using
-ranges.
+to optimize the implementation of domains and arrays defined using ranges.
 \end{rationale}
 
 The syntax of a range type is summarized as follows:
@@ -202,6 +202,19 @@ range unless the stridable range has a stride value of 1.
 \label{Range_Operators}
 \index{ranges!operators}
 
+Operations can be applied to range literals and expressions of range type to
+derive new range values.  The stride and alignment operators \chpl{by}
+and \chpl{align} have special syntax.  Otherwise, they follow the standard
+expression or function-call syntax.
+\begin{syntax}
+range-expression:
+  expression
+  strided-range-expression
+  aligned-range-expression
+\end{syntax}
+
+Range operators are discussed in detail in the following subsections.
+
 \subsection{By Operator}
 \label{By_Operator_For_Ranges}
 \index{ranges!strided}
@@ -209,7 +222,11 @@ range unless the stridable range has a stride value of 1.
 \index{by@\chpl{by}}
 
 The \chpl{by} operator can be applied to any range to create a strided
-range.
+range.  Its syntax is given by:
+\begin{syntax}
+strided-range-expression:
+  range-expression `by' expression
+\end{syntax}
 
 The \chpl{by} operator takes a range and an integer value to yield a
 new range that is strided by the integer.  Striding a strided range
@@ -250,6 +267,7 @@ by -1} even though it should be identical by substituting the value in
 R into the expression.
 \end{rationale}
 
+
 \subsection{Align Operator}
 \label{Align_Operator}
 \index{ranges!align operator}
@@ -259,6 +277,18 @@ with the given alignment.  If the range is \chpl{bounded} or \chpl{boundedLow},
 then the alignment is relative to the low bound.  If the range
 is \chpl{boundedHigh}, then the alignment is relative to the high bound.  If the
 range is \chpl{boundedNone}, then the alignment is absolute.
+
+The syntax for
+the \chpl{align} operator is given by:
+\begin{syntax}
+aligned-range-expression:
+  range-expression `align' expression
+\end{syntax}
+\noindent An alignment value $a$ causes the indices $i$ produced by an iterator
+to obey the equation:
+\begin{equation}
+i \mod stride = a \mod stride.
+\end{equation}
 
 The operand of the \chpl{align} operator (the new alignment) must be compatible
 with the index type of the resulting range.  If the sum of the alignment and its
@@ -270,27 +300,48 @@ exists, it is a compile-time error.
 
 \begin{example}
 \begin{chapelpre}
-% test_rangeAlignOperator.chpl
+% alignedStride.chpl
 \end{chapelpre}
 \begin{chapel}
-var r1 = 1 .. 10 by 2;
-var r2 = r1 align 1;
+var ru = 0 .. 10 by 3;			// An unaligned strided range.
+for i in ru do
+  write(" ", i);			// Produces ``0 3 6 9''.
+writeln();
+
+var ra = 0 .. 10 by 3 align 1;		// An aligned strided range.
+for i in ra do
+  write(" ", i);			// Produces ``1 4 7 10''.
+writeln();
 \end{chapel}
-\begin{chapelpost}
-writeln(r1, " is:");
-for i in r1 do write(" ", i);
-writeln();
-writeln(r2, " is:");
-for i in r2 do write(" ", i);
-writeln();
-\end{chapelpost}
 \begin{chapeloutput}
-1..10 by 2 is:
- 1 3 5 7 9
-1..10 by 2 align 1 is:
- 2 4 6 8 10
+ 0 3 6 9
+ 1 4 7 10
 \end{chapeloutput}
 \end{example}
+
+When the stride is negative, the same indices are printed in reverse:
+\begin{example}
+\begin{chapelpre}
+% alignedNegStride.chpl
+\end{chapelpre}
+\begin{chapel}
+var ru = 0 .. 10 by -3;
+for i in ru do write(" ", i);		// Produces ``9 6 3 0''.
+writeln();
+
+var ra = 0 .. 10 by -3 align 1;
+for i in ra do write(" ", i);		// Produces ``10 7 4 1''.
+writeln();
+\end{chapel}
+\begin{chapeloutput}
+ 9 6 3 0
+ 10 7 4 1
+\end{chapeloutput}
+\end{example}
+
+To align a range relative to its \chpl{start} value, use
+the \chpl{offset} method (\rsec{Range_Offset_Method}).
+
 
 \subsection{Count Operator}
 \label{Count_Operator}
@@ -426,6 +477,25 @@ writeln((r, r2, r3, r4));
 
 \section{Predefined Functions and Methods on Ranges}
 \index{ranges!predefined functions}
+
+\subsection{Range Predicates}
+
+\begin{protohead}
+proc $range$.member(i: idxType): bool
+\end{protohead}
+\begin{protobody}
+Returns whether or not \chpl{i} is in the range.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.member(other: range): bool
+\end{protohead}
+\begin{protobody}
+Returns whether or not every element in other is also in this.
+\end{protobody}
+
+\subsection{Range Type Accessors}
+
 \begin{protohead}
 proc $range$.idxType type
 \end{protohead}
@@ -447,6 +517,16 @@ proc $range$.boundedType type
 Returns boundedType of the range.
 \end{protobody}
 
+\subsection{Range Field Accessors}
+
+\begin{protohead}
+proc $range$.align : idxType
+\end{protohead}
+\begin{protobody}
+Returns the alignment of the indices yielded by an iterator.  Alignments are
+relative to 0, not the low or high bound.
+\end{protobody}
+
 \begin{protohead}
 proc $range$.low : idxType
 \end{protohead}
@@ -460,6 +540,15 @@ proc $range$.high : idxType
 \begin{protobody}
 Returns the high bound of the range.
 \end{protobody}
+
+\begin{protohead}
+proc $range$.stride : int(numBits(idxType))
+\end{protohead}
+\begin{protobody}
+Returns the stride of the range.
+\end{protobody}
+
+\subsection{Other Range Methods}
 
 \begin{protohead}
 proc $range$.alignedLow : idxType
@@ -500,42 +589,6 @@ Returns the first index in the range.  If the stride is positive, the
 \end{protobody}
 
 \begin{protohead}
-proc $range$.last : idxType
-\end{protohead}
-\begin{protobody}
-Returns the last index within the range.  In general, this is given
-by \chpl{start + length * stride}.
-\end{protobody}
-
-\begin{protohead}
-proc $range$.stride : int(numBits(idxType))
-\end{protohead}
-\begin{protobody}
-Returns the stride of the range.
-\end{protobody}
-
-\begin{protohead}
-proc $range$.length : idxType
-\end{protohead}
-\begin{protobody}
-Returns the number of elements in the range.
-\end{protobody}
-
-\begin{protohead}
-proc $range$.member(i: idxType): bool
-\end{protohead}
-\begin{protobody}
-Returns whether or not \chpl{i} is in the range.
-\end{protobody}
-
-\begin{protohead}
-proc $range$.member(other: range): bool
-\end{protohead}
-\begin{protobody}
-Returns whether or not every element in other is also in this.
-\end{protobody}
-
-\begin{protohead}
 proc $range$.indexOrder(i: idxType): idxType
 \end{protohead}
 \begin{protobody}
@@ -555,3 +608,28 @@ ranges:
 (3..5 by 2).indexOrder(4) == -1
 \end{chapel}
 \end{example}
+\begin{protohead}
+
+proc $range$.last : idxType
+\end{protohead}
+\begin{protobody}
+Returns the last index within the range.  In general, this is given
+by \chpl{start + length * stride}.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.length : idxType
+\end{protohead}
+\begin{protobody}
+Returns the number of elements in the range.
+\end{protobody}
+
+\label{Range_Offset_Method}
+\begin{protohead}
+proc $range$.offset(n: idxType)
+\end{protohead}
+\begin{protobody}
+Sets the \chpl{align} field such that indices produced by the iterator are
+aligned with \chpl{start + n}
+\end{protobody}
+
