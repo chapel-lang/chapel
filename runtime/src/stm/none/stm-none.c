@@ -1,6 +1,6 @@
 #include <string.h>
 #include "chplrt.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chplexit.h"
 #include "error.h"
 #include "chpl_mem.h"
@@ -30,11 +30,11 @@ chpl_stm_tx_env_p chpl_stm_tx_get_env(chpl_stm_tx_p tx) { return NULL; }
 
 chpl_stm_tx_p chpl_stm_tx_create() { 
   chpl_stm_tx_p tx = (chpl_stm_tx_p) chpl_malloc(1, sizeof(chpl_stm_tx_t), 
-						 CHPL_RT_MD_STM_TX_DESCRIPTOR,
-						 0, 0);
+                                                 CHPL_RT_MD_STM_TX_DESCRIPTOR,
+                                                 0, 0);
 
   tx->remlocales = (int32_t*) chpl_malloc(NLOCALES, sizeof(int32_t), 
-					  CHPL_RT_MD_STM_TX_REMLOCALES, 0, 0);
+                                          CHPL_RT_MD_STM_TX_REMLOCALES, 0, 0);
   tx->numremlocales = -1;
   tx->counters = chpl_stm_stats_create();
   return tx;
