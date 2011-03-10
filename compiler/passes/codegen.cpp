@@ -541,8 +541,8 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "chpl_txfn_p chpl_txftable[] = {\n");
     forv_Vec(FnSymbol, fn, functions) {
       if (fn->hasFlag(FLAG_TX_ON_BLOCK)) {
-	txftableVec.add(fn);
-	txftableMap.put(fn, txftableVec.n-1);
+        txftableVec.add(fn);
+        txftableMap.put(fn, txftableVec.n-1);
       }
     }
     first = true;
