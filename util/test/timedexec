@@ -2,12 +2,12 @@
 
 #
 # @ARGV[0] = <timeout value>
-# @ARGV[1] = command line to run
+# @ARGV[1..@#ARGV] = command line to run
 #
 
 $| = 1;					# will flush buffers after write
 
-die "usage: timedexec timeout \"commandline\"\n" unless $#ARGV == 1;
+die "usage: timedexec timeout \"commandline\"\n" unless $#ARGV >= 1;
 
 eval {
     local $SIG{ALRM} = sub { die "alarm\n" };
@@ -17,7 +17,7 @@ eval {
         exit(1);
     } elsif ($child_pid == 0) {
         setpgrp(0,0);
-        exec @ARGV[1];
+        exec @ARGV[1..$#ARGV];
         die "timedexec failed to execute: $1\n";
     } else {
         waitpid($child_pid, 0);
