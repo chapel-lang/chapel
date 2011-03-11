@@ -902,8 +902,7 @@ for testname in testsrc:
                     my_stdin = sys.stdin
                 else:
                     my_stdin = file(redirectin, 'r')
-                p = subprocess.Popen([timedexec, str(timeout),
-                                      cmd]+map(ShellEscape, args),
+                p = subprocess.Popen([timedexec, str(timeout), wholecmd],
                                      stdin=my_stdin,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
