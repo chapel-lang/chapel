@@ -173,9 +173,9 @@ on Locales(1) {
       c = new C();
       r = new R();
     }
-    writeln(x.locale);
-    writeln(c.locale);
-    writeln(r.locale);
+    writeln(x.locale.id);
+    writeln(c.locale.id);
+    writeln(r.locale.id);
   }
 }
 \end{chapel}
@@ -185,7 +185,7 @@ results in the output
 3
 1
 \end{chapel}
-The variable \chpl{x} is declared and exists on \chpl{Locales(0)}.
+The variable \chpl{x} is declared and exists on \chpl{Locales(1)}.
 The variable \chpl{c} is a class reference.  The reference exists
 on \chpl{Locales(1)} but the object itself exists
 on \chpl{Locales(3)}.  The locale access returns the locale where the
@@ -204,15 +204,15 @@ For example, the following code:
 \begin{chapel}
 const c = 10;
 for loc in Locales do on loc do
-    writeln(c.locale);
+    writeln(c.locale.id);
 \end{chapel}
 outputs
 \begin{chapel}
-LOCALE0
-LOCALE1
-LOCALE2
-LOCALE3
-LOCALE4
+0
+1
+2
+3
+4
 \end{chapel}
 when running on 5 locales.
 \end{example}
