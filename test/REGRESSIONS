@@ -15,14 +15,19 @@
 general regressions
 ===================
 
-line numbers don't match (02/26/11)
------------------------------------
-[Error matching program output for classes/hilde/explainInstantiation]
-
-depth of compiler warning exceeds callstack depth (02/25/11)
-------------------------------------------------------------
-[Error matching program output for functions/diten/compilerWarningDepth]
-
+problems with spaces in arguments (03/11/11)
+--------------------------------------------
+[Error matching program output for execflags/bradc/configForgotArg]
+[Error matching program output for execflags/bradc/configWithSpace]
+[Error matching program output for execflags/bradc/strayArg2]
+[Error matching program output for execflags/bradc/strayArg]
+[Error matching program output for execflags/diten/configComplex]
+[Error matching program output for execflags/shannon/configs/help/configVar-Dash]
+[Error matching program output for execflags/shannon/configs/help/configVarModStrings1]
+[Error matching program output for execflags/shannon/configs/help/configVarModStrings2]
+[Error matching program output for execflags/shannon/configs/help/configVarSetTwoTypes]
+[Error matching program output for multirealm/bradc/zeroLocalesPerRealm]
+ 
 tests print number of cores which differs between platforms (12/24/10)
 ----------------------------------------------------------------------
 [Error matching program output for studies/cholesky/jglewis/version2/elemental/block_distribution/test_elemental_cholesky_block]
@@ -247,6 +252,10 @@ nondet. compilation timeouts
 [Error: Timed out compilation for release/examples/primers/opaque] (12/12/10)
 [Error: Timed out compilation for release/examples/programs/norm] (12/12/10)
 
+spaces in args issue (03/11/11)
+-------------------------------
+[Error matching program output for release/examples/primers/multirealm]
+
 timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 ----------------------------------------------------------------------
 [Error: Timed out executing program release/examples/hello-multiloc]
@@ -256,12 +265,15 @@ timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
 [Error: Timed out executing program release/examples/hpcc/stream]
 [Error: Timed out executing program release/examples/primers/distributions]
 [Error: Timed out executing program release/examples/primers/multilocale]
-[Error: Timed out executing program release/examples/primers/multirealm]
 
 
 =====================
 mpi-specific failures
 =====================
+
+spaces in args issue (03/11/11)
+-------------------------------
+[Error matching program output for release/examples/primers/multirealm]
 
 ??? (06/29/10)
 --------------
@@ -502,10 +514,6 @@ general failures
 x2-specific regressions
 =======================
 
-compilation timeouts
---------------------
-[Error: Timed out compilation for release/examples/hpcc/fft]
-
 threads-none causes serial iterator to be used rather than follower (11/25/08)
 ------------------------------------------------------------------------------
 [Error matching program output for release/examples/hpcc/ra]
@@ -594,6 +602,15 @@ gdb output differences
 ========================
 xt-cle-specific failures
 ========================
+
+persisting unreachable loop warnings (03/11/11)
+-----------------------------------------------
+[Error matching program output for release/examples/hpcc/fft]
+[Error matching program output for release/examples/hpcc/hpl]
+[Error matching program output for release/examples/hpcc/stream-ep]
+[Error matching program output for release/examples/hpcc/stream]
+[Error matching program output for release/examples/primers/reductions]
+[Error matching program output for release/examples/programs/quicksort]
 
 redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
@@ -866,6 +883,13 @@ sig_send: wait for sig_complete event failed
 xmt-specific regressions
 ========================
 
+unreachable code warning (persisting on 03/11/11)
+-------------------------------------------------
+[Error matching program output for release/examples/hpcc/fft]
+[Error matching program output for release/examples/hpcc/stream-ep]
+[Error matching program output for release/examples/hpcc/stream]
+[Error matching program output for release/examples/primers/reductions]
+
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for release/examples/programs/jacobi] (11/17/10)
@@ -873,9 +897,6 @@ nondet. compilation timeout
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
 [Error: Timed out compilation for release/examples/hello] (10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11, 03/08/11)
-
-compilation timeouts
---------------------
 
 execution timeouts
 ------------------
