@@ -186,13 +186,6 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-optimization not always firing (03/05/11)
------------------------------------------
-[Error matching compiler output for optimizations/sungeun/optimized-on/test_OptimizedOn_RA]
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1]
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block2]
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3]
-
 wrong answer (03/05/11)
 -----------------------
 [Error matching program output for distributions/deitz/test_distribution_syntax2]
@@ -619,10 +612,6 @@ output being treated as binary causing diff message to change (05/08/10)
 cray-xt-cray/cce-specific regressions
 =====================================
 
-loop not reachable warning (03/07/11)
--------------------------------------
-** almost everything **
-
 incorrect output (integral?) (01/24/11)
 ---------------------------------------
 [Error matching program output for modules/sungeun/test_safeSub]
@@ -876,38 +865,6 @@ sig_send: wait for sig_complete event failed
 ========================
 xmt-specific regressions
 ========================
-
-non-reachable code warning in generated code (03/05/11)
--------------------------------------------------------
-[Error matching program output for release/examples/hello-module]
-[Error matching program output for release/examples/hello-multicore]
-[Error matching program output for release/examples/hello-multiloc]
-[Error matching program output for release/examples/hello]
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/hpcc/ra]
-[Error matching program output for release/examples/hpcc/stream-ep]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for release/examples/primers/arrays]
-[Error matching program output for release/examples/primers/classes]
-[Error matching program output for release/examples/primers/distributions]
-[Error matching program output for release/examples/primers/fileIO]
-[Error matching program output for release/examples/primers/genericClasses]
-[Error matching program output for release/examples/primers/iterators]
-[Error matching program output for release/examples/primers/multilocale]
-[Error matching program output for release/examples/primers/opaque]
-[Error matching program output for release/examples/primers/ranges]
-[Error matching program output for release/examples/primers/reductions]
-[Error matching program output for release/examples/primers/slices]
-[Error matching program output for release/examples/primers/sparse]
-[Error matching program output for release/examples/primers/taskParallel]
-[Error matching program output for release/examples/primers/varargs]
-[Error matching program output for release/examples/primers/variables]
-[Error matching program output for release/examples/programs/beer]
-[Error matching program output for release/examples/programs/genericStack]
-[Error matching program output for release/examples/programs/jacobi]
-[Error matching program output for release/examples/programs/linkedList]
-[Error matching program output for release/examples/programs/norm]
-[Error matching program output for release/examples/programs/tree]
 
 nondet. compilation timeout
 ---------------------------
