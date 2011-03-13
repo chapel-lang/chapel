@@ -302,7 +302,7 @@ class DefaultRectangularDom: BaseRectangularDom {
     if rank == 1 {
       return ranges(1)._stride;
     } else {
-      var result: rank*chpl__idxTypeToStrType(idxType);
+      var result: rank*chpl__signedType(idxType);
       for param i in 1..rank do
         result(i) = ranges(i)._stride;
       return result;
@@ -368,7 +368,7 @@ class DefaultRectangularArr: BaseArr {
                                          stridable=stridable);
   var off: rank*idxType;
   var blk: rank*idxType;
-  var str: rank*chpl__idxTypeToStrType(idxType);
+  var str: rank*chpl__signedType(idxType);
   var origin: idxType;
   var factoredOffs: idxType;
   var data : _ddata(eltType);
@@ -408,7 +408,7 @@ class DefaultRectangularArr: BaseArr {
         // "single loop iterator" optimization
         var first = getDataIndex(dom.dsiLow);
         var second = getDataIndex(dom.dsiLow+dom.ranges(1).stride:idxType);
-        var step = (second-first):chpl__idxTypeToStrType(idxType);
+        var step = (second-first):chpl__signedType(idxType);
         var last = first + (dom.dsiNumIndices-1) * step:idxType;
         for i in first..last by step do
           yield data(i);
@@ -417,7 +417,7 @@ class DefaultRectangularArr: BaseArr {
               start  = if stride > 0 then dom.dsiLow else dom.dsiHigh,
               first  = getDataIndex(start),
               second = getDataIndex(start + stride),
-              step   = (second-first):chpl__idxTypeToStrType(idxType),
+              step   = (second-first):chpl__signedType(idxType),
               last   = first + (dom.dsiNumIndices-1) * step:idxType;
         if step > 0 then
           for i in first..last by step do

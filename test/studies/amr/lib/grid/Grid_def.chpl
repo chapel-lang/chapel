@@ -126,7 +126,7 @@ class Grid {
                       else if loc(d) == loc1d.inner then
                         cells.dim(d)
                       else
-                        (..extended_cells.high(d) by 2) #n_ghost_cells(d);
+                        (..extended_cells.high(d) by 2) #-n_ghost_cells(d);
         
         ghost_domain = ranges;
         ghost_multidomain.add(ghost_domain);

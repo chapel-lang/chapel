@@ -1,3 +1,5 @@
+use Types;
+
 use ChapelBase;
 use ChapelNumLocales;
 use ChapelThreads;
@@ -18,5 +20,4 @@ use DefaultSparse;
 use DefaultOpaque;
 use ChapelUtil;
 
-use Types;
 use Math;

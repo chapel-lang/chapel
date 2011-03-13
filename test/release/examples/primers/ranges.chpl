@@ -88,8 +88,8 @@ var numElements = 5;
 writeRange(0..#numElements);
 writeRange(r # 4);
 writeRange(r by -1 # 4);
-writeRange(..5 # 3);
-writeRange(..5 by 2 # 3);
+writeRange(..5 # -3);
+writeRange(..5 by 2 # -3);
 writeln();
 
 //
@@ -141,7 +141,7 @@ proc writeRange(r: range(?)) {
     }
     when BoundedRangeType.boundedHigh {
       write("...");
-      for i in r # 3 do
+      for i in r # -3 do
         write(", ", i);
       writeln();
     }

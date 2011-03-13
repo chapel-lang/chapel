@@ -208,7 +208,7 @@ class GPURectangularDom: BaseRectangularDom {
     if rank == 1 {
       return ranges(1)._stride;
     } else {
-      var result: rank*chpl__idxTypeToStrType(idxType);
+      var result: rank*chpl__signedType(idxType);
       for param i in 1..rank do
         result(i) = ranges(i)._stride;
       return result;

@@ -1063,19 +1063,30 @@ proc _isRealType(type t) param return
 proc _isImagType(type t) param return
   (t == imag(32)) | (t == imag(64));
 
-proc chpl__idxTypeToStrType(type t) type {
-  if (t == uint(8)) {
-    return int(8);
-  } else if (t == uint(16)) {
-    return int(16);
-  } else if (t == uint(32)) {
-    return int(32);
-  } else if (t == uint(64)) {
-    return int(64);
-  } else if (t == int(8) || t == int(16) || t == int(32) || t == int(64)) {
-    return t;
-  } else {
+// Returns the signed equivalent of the input type.
+proc chpl__signedType(type t) type 
+{
+  if ! _isIntegralType(t) then
     compilerError("range idxType is non-integral: ", typeToString(t));
+
+  return int(numBits(t));
+}
+
+// Returns true if it is legal to coerce t1 to t2, false otherwise.
+proc chpl__legalIntCoerce(type t1, type t2) param
+{
+  if (_isSignedType(t2)) {
+    if (_isSignedType(t1)) {
+      return (numBits(t1) <= numBits(t2));
+    } else {
+      return (numBits(t1) < numBits(t2));
+    }
+  } else {
+    if (_isSignedType(t1)) {
+      return false;
+    } else {
+      return (numBits(t1) <= numBits(t2));
+    }
   }
 }
 
