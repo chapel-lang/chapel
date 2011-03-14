@@ -1,9 +1,9 @@
 class C {
-  def foo() { writeln("isa C"); }
+  proc foo() { writeln("isa C"); }
 }
 
 class D : C {
-  def foo() { writeln("isa D"); }
+  proc foo() { writeln("isa D"); }
 }
 
 var c = new C();

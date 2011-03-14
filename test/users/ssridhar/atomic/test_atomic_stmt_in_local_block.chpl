@@ -1,4 +1,4 @@
-def main() {
+proc main() {
   var x: [1..10] uint(64);
   for i in 1..10 do
     local {

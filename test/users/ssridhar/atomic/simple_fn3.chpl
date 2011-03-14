@@ -1,6 +1,6 @@
 var x: uint(64);
 
-def main() {
+proc main() {
   var i, j: int;
   coforall i in 1..10 {
     foo(j); // check if the non-transactional copy is called
@@ -12,11 +12,11 @@ def main() {
   }
 }
 
-def foo(i: int) {
+proc foo(i: int) {
   x = x + 1;
   atomic bar(i);
 }
 
-def bar(i: int) {
+proc bar(i: int) {
   foo(i);
 }

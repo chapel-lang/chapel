@@ -16,7 +16,7 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1];
 
 var T: [TableSpace] elemType;
 
-def main() {
+proc main() {
   var i: indexType;
 
   [i in TableSpace] T(i) = i;

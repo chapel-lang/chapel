@@ -1,6 +1,6 @@
 var x: [1..10] int;
 
-def main() {
+proc main() {
   var i: int = 1;
   on x(i).locale do writeln("Locale id ", x(i).locale.id);
   atomic {

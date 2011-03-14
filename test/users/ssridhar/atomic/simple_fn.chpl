@@ -1,6 +1,6 @@
 var x: uint(64);
 
-def main() {
+proc main() {
   var i, j: int;
   coforall i in 1..10 {
     //foo(i); // check if the non-transactional copy is called
@@ -12,7 +12,7 @@ def main() {
   }
 }
 
-def foo() {
+proc foo() {
   //  writeln(i);
   x = x + 1;
 }

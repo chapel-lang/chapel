@@ -1,10 +1,10 @@
 var x: uint(64);
 
-def main() {
+proc main() {
   bar();
 }
 
-def bar() {
+proc bar() {
   var i, j: int;
   coforall i in 1..10 {
     atomic {
@@ -15,6 +15,6 @@ def bar() {
   }
 }
 
-def foo() {
+proc foo() {
   x = x + 1;
 }

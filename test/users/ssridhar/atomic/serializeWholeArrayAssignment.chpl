@@ -5,7 +5,7 @@ var D: domain(1) = [1..n];
 var A: [D] int;
 var B: [D] int;
 
-def main() {
+proc main() {
   for i in D do A(i) = i;
 
   writeln("A is: ", A);

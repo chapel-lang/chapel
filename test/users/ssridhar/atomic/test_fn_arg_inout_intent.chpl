@@ -1,6 +1,6 @@
 var x: uint(64);
 
-def main() {
+proc main() {
   x = 0; 
   writeln("Before foo x = ", x);
   coforall i in 1..10 {
@@ -11,6 +11,6 @@ def main() {
   writeln("After foo x = ", x);
 }
 
-def foo(inout y: uint(64)) {
+proc foo(inout y: uint(64)) {
   y = y + 1;
 }

@@ -11,12 +11,12 @@ class Bar {
   var f: Foo;
 }
 
-def main {
+proc main {
   begin atomic x = x + 1;
   foobar;
 }
 
-def foobar  {
+proc foobar  {
   var i: int;
   var c = new Bar(x = 4, new Foo(5, (1,2)));
   var d: Bar = c;

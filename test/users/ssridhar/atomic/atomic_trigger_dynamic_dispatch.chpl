@@ -1,16 +1,16 @@
 class C {
-  def x() {
+  proc x() {
     writeln("In C's x");
   }
 }
 
 class D : C {
-  def x() {
+  proc x() {
     writeln("In D's x");
   }
 }
 
-def main {
+proc main {
   var c = new C(); 
   var d = new D(); 
   atomic c.x();

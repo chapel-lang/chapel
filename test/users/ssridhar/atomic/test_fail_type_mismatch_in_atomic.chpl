@@ -1,5 +1,5 @@
 var x: uint(64);
-def main() {
+proc main() {
   var y: int; 
   coforall i in 1..10 do
     atomic {
