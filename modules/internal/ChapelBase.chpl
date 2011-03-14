@@ -1652,7 +1652,7 @@ pragma "inline" proc <=(param a: int(64), b: uint(64)) {
 //
 config param atomicSupport: bool = false;
 
-def startStmStats() { __primitive("chpl_startStmStats"); }
-def stopStmStats() { __primitive("chpl_stopStmStats"); }
+proc startStmStats() { __primitive("chpl_startStmStats"); }
+proc stopStmStats() { __primitive("chpl_stopStmStats"); }
 
 
