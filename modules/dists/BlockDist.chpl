@@ -706,7 +706,7 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
                                    param stridable: bool,
                                    ranges: rank*range(idxType,
                                                       BoundedRangeType.bounded,
-                                                      stridable, stridable)) {
+                                                      stridable)) {
   if idxType != dist.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != dist.rank then

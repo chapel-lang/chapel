@@ -28,8 +28,7 @@ The type of a range is characterized by four things:
 \begin{enumerate}
 \item the type of the values being represented, 
 \item the boundedness of the range,
-\item whether or not the range is \emph{stridable}, and
-\item whether or not the range is \emph{aligned}.
+\item whether or not the range is \emph{stridable}.
 \end{enumerate}
 
 The type of the range's values is represented using a type parameter
@@ -58,17 +57,16 @@ stride can take on any signed integer value other than 0 of the same
 bit-width as \chpl{idxType}.  If set to false, the range's stride is
 fixed to 1.  The default value is \chpl{false}.
 
-The alignedness of a range is represented by a boolean parameter
-named \emph{aligned}.  If this parameter is set to true, the range's alignment
+The range's alignment
 value can take on any integer value representable by its \emph{idxType}.  If it
 is false, the range's alignment is set to 0.  The default value is \chpl{false}.
 An alignment of zero means that the stride is aligned on the low bound
 for \chpl{boundedLow} and \chpl{bounded} ranges, and on the high bound
 for \chpl{boundedHigh} ranges.  If an unbounded range is aligned, then the
-alignment is absolute.
+alignment is absolute.  Alignments are ignored unless the range is \emph{stridable}.
 
 \begin{rationale}
-The \emph{boundedType}, \emph{stridable} and \emph{aligned} parameters are used
+The \emph{boundedType} and \emph{stridable} parameters are used
 to optimize the generated code for common cases of ranges, as well as
 to optimize the implementation of domains and arrays defined using ranges.
 \end{rationale}
@@ -88,7 +86,7 @@ than 1 and an alignment other than zero.
 % test_rangeVariable.chpl
 \end{chapelpre}
 \begin{chapel}
-var r: range(int(64), BoundedRangeType.bounded, stridable=true, aligned=true);
+var r: range(int(64), BoundedRangeType.bounded, stridable=true);
 \end{chapel}
 \begin{chapelpost}
 writeln(r);

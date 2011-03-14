@@ -88,7 +88,7 @@ class Grid {
       i_high(d) = i_low(d) + 2*n_cells(d);
 
     //==== Physical cells ====
-    var ranges: dimension*range(stridable = true, aligned = true);
+    var ranges: dimension*range(stridable = true);
     for d in dimensions do ranges(d) = (i_low(d)+1 .. by 2) #n_cells(d);
     cells = ranges;
 
