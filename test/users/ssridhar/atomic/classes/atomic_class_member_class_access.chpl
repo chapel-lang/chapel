@@ -24,7 +24,6 @@ proc foobar  {
   atomic d.f.x = d.f.x + 1;
   [i in 1..3] d.f.z(i) = 0;
   [i in 1..3] atomic d.f.z(i) = d.f.z(i) + 1;
-  atomic [i in 1..3] d.f.z(i) = d.f.z(i) + 1;
   writeln("c = ", c);
   writeln("d = ", d);
 }
