@@ -40,6 +40,8 @@ struct thread_list {
   thread_list_p next;
 };
 
+static chpl_bool       exiting = false;         // are we shutting down?
+
 static pthread_mutex_t thread_info_lock;        // mutual exclusion lock
 
 static int64_t         curr_thread_id = threadlayer_nullThreadID;
@@ -228,11 +230,17 @@ void threadlayer_exit(void) {
   chpl_bool debug = false;
   thread_list_p tlp;
 
+  pthread_mutex_lock(&thread_info_lock);
+  exiting = true;
+
   // shut down all threads
   for (tlp = thread_list_head; tlp != NULL; tlp = tlp->next) {
     if (pthread_cancel(tlp->thread) != 0)
       chpl_internal_error("thread cancel failed");
   }
+
+  pthread_mutex_unlock(&thread_info_lock);
+
   while (thread_list_head != NULL) {
     if (pthread_join(thread_list_head->thread, NULL) != 0)
       chpl_internal_error("thread join failed");
@@ -315,6 +323,12 @@ static void* pthread_func(void* arg) {
   tlp->next   = NULL;
 
   pthread_mutex_lock(&thread_info_lock);
+
+  if (exiting) {
+    pthread_mutex_unlock(&thread_info_lock);
+    chpl_free(tlp, 0, 0);
+    return NULL;
+  }
 
   my_thread_id = --curr_thread_id;
 
