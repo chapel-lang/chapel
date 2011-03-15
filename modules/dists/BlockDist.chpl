@@ -769,39 +769,8 @@ iter BlockArr.these() var {
 // somehow?
 //
 iter BlockArr.these(param tag: iterator) where tag == iterator.leader {
-  const maxTasks = dom.dist.dataParTasksPerLocale;
-  const ignoreRunning = dom.dist.dataParIgnoreRunningTasks;
-  const minSize = dom.dist.dataParMinGranularity;
-  const wholeLow = dom.whole.low;
-  coforall locDom in dom.locDoms do on locDom {
-    // Use the internal function for untranslate to avoid having to do
-    // extra work to negate the offset
-    var tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
-    const (numTasks, parDim) =
-      _computeChunkStuff(maxTasks, ignoreRunning, minSize,
-                         locDom.myBlock.dims());
-    var locBlock: rank*range(idxType);
-    for param i in 1..tmpBlock.rank {
-      locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
-    }
-
-
-    if (numTasks == 1) {
-      yield locBlock;
-    } else {
-      coforall taskid in 0:uint(64)..#numTasks {
-        var tuple: rank*range(idxType) = locBlock;
-        const (lo,hi) = _computeBlock(locBlock(parDim).length, numTasks, taskid,
-                                      locBlock(parDim).high,
-                                      locBlock(parDim).low,
-                                      locBlock(parDim).low);
-          
-        tuple(parDim) = lo..hi;
-        yield tuple;
-
-      }
-    }
-  }
+  for follower in dom.these(tag) do
+    yield follower;
 }
 
 proc BlockArr.dsiStaticFastFollowCheck(type leadType) param
