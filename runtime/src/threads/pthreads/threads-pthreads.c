@@ -52,8 +52,8 @@ static pthread_attr_t  thread_attributes;
 static pthread_key_t   thread_id_key;
 static pthread_key_t   thread_private_key;
 
-static int32_t         threadMaxThreadsPerLocale  = -1;
-static uint32_t        threadNumThreads           =  1;  // count main thread
+static int32_t         threadMaxThreadsPerLocale  = 0;
+static uint32_t        threadNumThreads           = 1;  // count main thread
 static pthread_mutex_t threadNumThreadsLock;
 
 static uint64_t        threadCallStackSize = 0;
@@ -108,12 +108,15 @@ threadlayer_threadID_t threadlayer_thread_id(void) {
 void threadlayer_yield(void) {
   int last_cancel_state;
 
-  // check for cancellation, or we won't be able to terminate
+  //
+  // Yield the processor.  To support orderly shutdown, we check
+  // for cancellation once the thread regains the processor.
+  //
+  sched_yield();
+
   (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
   pthread_testcancel();
   (void) pthread_setcancelstate(last_cancel_state, NULL);
-
-  sched_yield();
 }
 
 
@@ -166,7 +169,11 @@ void threadlayer_init(int32_t maxThreadsPerLocale,
     if (pthread_attr_setstacksize(&thread_attributes, callStackSize) != 0)
       chpl_internal_error("pthread_attr_setstacksize() failed");
   }
-  threadCallStackSize = callStackSize;
+
+  if (pthread_attr_getstacksize(&thread_attributes,
+                                (size_t*) &threadCallStackSize)
+      != 0)
+      chpl_internal_error("pthread_attr_getstacksize() failed");
 
   saved_threadHomeFn = threadHomeFn;
 
@@ -222,9 +229,6 @@ void threadlayer_exit(void) {
   chpl_bool debug = false;
   thread_list_p tlp;
 
-  if (debug)
-    fprintf(stderr, "A total of %u threads were created\n", threadNumThreads);
-
   // shut down all threads
   for (tlp = thread_list_head; tlp != NULL; tlp = tlp->next) {
     if (pthread_cancel(tlp->thread) != 0)
@@ -246,6 +250,9 @@ void threadlayer_exit(void) {
 
   if (pthread_attr_destroy(&thread_attributes) != 0)
     chpl_internal_error("pthread_attr_destroy() failed");
+
+  if (debug)
+    fprintf(stderr, "A total of %u threads were created\n", threadNumThreads);
 }
 
 chpl_bool threadlayer_can_start_thread(void) {
@@ -329,8 +336,22 @@ static void* pthread_func(void* arg) {
 }
 
 void threadlayer_thread_destroy(void) {
-  // for the sake of simplicity, we never destroy a thread
-  return;
+  int last_cancel_state;
+
+  //
+  // Creating threads is expensive, so we don't destroy them once we
+  // have them.  Instead we just yield the processor.  Eventually, the
+  // thread will return to its caller, which is allowed behavior under
+  // the threadlayer API.
+  //
+  // To support orderly shutdown, we check for cancellation once the
+  // thread regains the processor.
+  //
+  sched_yield();
+
+  (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
+  pthread_testcancel();
+  (void) pthread_setcancelstate(last_cancel_state, NULL);
 }
 
 void* threadlayer_get_thread_private_data(void) {
