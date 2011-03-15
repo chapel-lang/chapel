@@ -87,7 +87,7 @@ typedef struct {
 // These are called once each, from chpl_task_init(), chpl_task_exit(),
 // and chpl_task_perPthreadInit(), respectively.
 //
-void threadlayer_init(int32_t, uint64_t, void(*)(void*));
+void threadlayer_init(int32_t, uint64_t, void(*)(void*), void(*)(void));
 void threadlayer_exit(void);
 void threadlayer_perPthreadInit(void);
 

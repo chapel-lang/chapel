@@ -58,10 +58,10 @@ static pthread_mutex_t threadNumThreadsLock;
 
 static uint64_t        threadCallStackSize = 0;
 
-static void            (*saved_threadHomeFn)(void*);
+static void            (*saved_threadBeginFn)(void*);
+static void            (*saved_threadEndFn)(void);
 
 static void*           initial_pthread_func(void*);
-static void            destroy_thread_private_data(void*);
 static void*           pthread_func(void*);
 
 
@@ -124,7 +124,8 @@ void threadlayer_yield(void) {
 
 void threadlayer_init(int32_t maxThreadsPerLocale,
                       uint64_t callStackSize,
-                      void(*threadHomeFn)(void*)) {
+                      void(*threadBeginFn)(void*),
+                      void(*threadEndFn)(void)) {
   //
   // Tuck maxThreadsPerLocale away in a static global for use by other routines
   //
@@ -175,7 +176,8 @@ void threadlayer_init(int32_t maxThreadsPerLocale,
       != 0)
       chpl_internal_error("pthread_attr_getstacksize() failed");
 
-  saved_threadHomeFn = threadHomeFn;
+  saved_threadBeginFn = threadBeginFn;
+  saved_threadEndFn   = threadEndFn;
 
   if (pthread_key_create(&thread_id_key, NULL))
     chpl_internal_error("pthread_key_create(thread_id_key) failed");
@@ -183,7 +185,7 @@ void threadlayer_init(int32_t maxThreadsPerLocale,
   if (pthread_setspecific(thread_id_key, (void*) (intptr_t) --curr_thread_id))
     chpl_internal_error("thread id data key doesn't work");
 
-  if (pthread_key_create(&thread_private_key, destroy_thread_private_data))
+  if (pthread_key_create(&thread_private_key, NULL))
     chpl_internal_error("pthread_key_create(thread_private_key) failed");
 
   pthread_mutex_init(&thread_info_lock, NULL);
@@ -221,11 +223,6 @@ static void* initial_pthread_func(void* ignore) {
 }
 
 void threadlayer_perPthreadInit(void) { }
-
-static void destroy_thread_private_data(void* p) {
-  if (p)
-    chpl_free(p, 0, 0);
-}
 
 void threadlayer_exit(void) {
   chpl_bool debug = false;
@@ -332,7 +329,13 @@ static void* pthread_func(void* arg) {
   if (pthread_setspecific(thread_id_key, (void*) (intptr_t) my_thread_id))
     chpl_internal_error("thread id data key doesn't work");
 
-  (*saved_threadHomeFn)(arg);
+  if (saved_threadEndFn == NULL)
+    (*saved_threadBeginFn)(arg);
+  else {
+    pthread_cleanup_push((void (*)(void*)) saved_threadEndFn, NULL);
+    (*saved_threadBeginFn)(arg);
+    pthread_cleanup_pop(0);
+  }
 
   return NULL;
 }

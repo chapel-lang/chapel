@@ -117,7 +117,8 @@ static void                    initializeLockReportForThread(void);
 static chpl_bool               set_block_loc(int, chpl_string);
 static void                    unset_block_loc(void);
 static void                    check_for_deadlock(void);
-static void                    thread_wrapper(void*);
+static void                    thread_begin(void*);
+static void                    thread_end(void);
 static void                    launch_next_task_in_new_thread(void);
 static void                    schedule_next_task(int);
 static task_pool_p             add_to_task_pool(chpl_fn_p,
@@ -226,7 +227,8 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   extra_task_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
 
-  threadlayer_init(maxThreadsPerLocale, callStackSize, thread_wrapper);
+  threadlayer_init(maxThreadsPerLocale, callStackSize,
+                   thread_begin, thread_end);
 
   if (taskreport) {
     threadlayer_mutex_init(&taskTable_lock);
@@ -922,7 +924,7 @@ static void check_for_deadlock(void) {
 // executes tasks out of the pool as they become available.
 //
 static void
-thread_wrapper(void* ptask_void) {
+thread_begin(void* ptask_void) {
   task_pool_p ptask = (task_pool_p) ptask_void;
   thread_private_data_t *tp;
 
@@ -1045,6 +1047,23 @@ thread_wrapper(void* ptask_void) {
 
     // end critical section
     threadlayer_mutex_unlock(&threading_lock);
+  }
+}
+
+
+//
+// When a thread is destroyed it calls this ending function.
+//
+static void thread_end(void)
+{
+  thread_private_data_t* tp;
+
+  tp = (thread_private_data_t*) threadlayer_get_thread_private_data();
+  if (tp != NULL) {
+    if (blockreport && tp->lockRprt != NULL)
+      chpl_free(tp->lockRprt, 0, 0);
+    chpl_free(tp, 0, 0);
+    threadlayer_set_thread_private_data(NULL);
   }
 }
 
