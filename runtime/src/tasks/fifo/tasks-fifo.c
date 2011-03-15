@@ -274,6 +274,8 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   tp->ptask->lineno       = 0;
   tp->ptask->next         = NULL;
 
+  tp->lockRprt = NULL;
+
   threadlayer_set_thread_private_data(tp);
 
   if (taskreport) {
@@ -931,7 +933,8 @@ thread_begin(void* ptask_void) {
   tp = (thread_private_data_t*) chpl_alloc(sizeof(thread_private_data_t),
                                            CHPL_RT_MD_THREAD_PRIVATE_DATA,
                                            0, 0);
-  tp->ptask = ptask;
+  tp->ptask    = ptask;
+  tp->lockRprt = NULL;
   threadlayer_set_thread_private_data(tp);
 
   if (blockreport)
@@ -1060,8 +1063,10 @@ static void thread_end(void)
 
   tp = (thread_private_data_t*) threadlayer_get_thread_private_data();
   if (tp != NULL) {
-    if (blockreport && tp->lockRprt != NULL)
+    if (tp->lockRprt != NULL) {
       chpl_free(tp->lockRprt, 0, 0);
+      tp->lockRprt = NULL;
+    }
     chpl_free(tp, 0, 0);
     threadlayer_set_thread_private_data(NULL);
   }
