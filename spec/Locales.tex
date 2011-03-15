@@ -43,12 +43,43 @@ the equality and inequality comparison operators.
 
 The locale type supports the following methods:
 
+%% \begin{protohead}
+%% proc locale.blockedTasks() : int ;
+%% \end{protohead}
+%% \begin{protobody}
+%% Returns the number of tasks on this locale which are blocked at the time of the
+%% call.
+%% \end{protobody}
+
+\begin{protohead}
+proc locale.callStackSize: uint(64);
+\end{protohead}
+\begin{protobody}
+Returns the per-task call stack size used when creating tasks on the
+locale in question.  A value of 0 indicates that the call stack size
+is determined by the system.
+\end{protobody}
+
 \begin{protohead}
 proc locale.id: int;
 \end{protohead}
 \begin{protobody}
 Returns a unique integer for each locale, from 0 to the number of
 locales less one.
+\end{protobody}
+
+%% \begin{protohead}
+%% proc locale.idleThreads() : uint ;
+%% \end{protohead}
+%% \begin{protobody}
+%% Returns the number of threads which are currently idle on this locale.
+%% \end{protobody}
+
+\begin{protohead}
+proc locale.name: string;
+\end{protohead}
+\begin{protobody}
+Returns the name of the locale.
 \end{protobody}
 
 \begin{protohead}
@@ -68,14 +99,27 @@ terms of the specified memory units (Bytes, KB, MB, or GB) using a
 value of the specified return type.
 \end{protobody}
 
-\begin{protohead}
-proc locale.callStackSize: uint(64);
-\end{protohead}
-\begin{protobody}
-Returns the per-task call stack size used when creating tasks on the
-locale in question.  A value of 0 indicates that the call stack size
-is determined by the system.
-\end{protobody}
+%% \begin{protohead}
+%% proc locale.queuedTasks() : uint ;
+%% \end{protohead}
+%% \begin{protobody}
+%% Returns the number of tasks on this locale which are currently on the task queue.
+%% \end{protobody}
+
+%% \begin{protohead}
+%% proc locale.runningTasks() : uint ;
+%% \end{protohead}
+%% \begin{protobody}
+%% Returns the number of tasks on this locale that are currently running.
+%% \end{protobody}
+
+%% \begin{protohead}
+%% proc locale.totalThreads() : uint ;
+%% \end{protohead}
+%% \begin{protobody}
+%% Returns the total number of threads (active + idle) that currently exist on this
+%% locale.
+%% \end{protobody}
 
 \subsection{The Predefined Locales Array}
 \label{Predefined_Locales_Array}
