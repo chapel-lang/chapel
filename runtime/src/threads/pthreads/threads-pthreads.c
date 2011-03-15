@@ -220,6 +220,8 @@ static void* initial_pthread_func(void* ignore) {
   return NULL;
 }
 
+void threadlayer_perPthreadInit(void) { }
+
 static void destroy_thread_private_data(void* p) {
   if (p)
     chpl_free(p, 0, 0);

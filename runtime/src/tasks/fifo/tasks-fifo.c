@@ -290,7 +290,7 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 
 
 void chpl_task_perPthreadInit(void) {
-  return;
+  threadlayer_perPthreadInit();
 }
 
 
