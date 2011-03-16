@@ -2,7 +2,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include "chplrt.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
@@ -93,12 +93,14 @@ _real64 durFree;
 
 void chpl_startStmStats() {
   chpl_stm_stats = 1;
-  chpl_comm_broadcast_private(3 /* &chpl_stm_stats */, sizeof(int));
+  chpl_comm_broadcast_private(3 /* &chpl_stm_stats */, sizeof(int), 
+			      -1 /* typeIndex: unused */);
 }
 
 void chpl_stopStmStats() {
   chpl_stm_stats = 0;
-  chpl_comm_broadcast_private(3 /* &chpl_stm_stats */, sizeof(int));
+  chpl_comm_broadcast_private(3 /* &chpl_stm_stats */, sizeof(int), 
+			      -1 /* typeIndex: unused */);
 }
 
 void chpl_stm_stats_init() {

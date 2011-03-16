@@ -4,7 +4,7 @@
 #include <string.h>
 #include <assert.h>
 #include "chplrt.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
@@ -306,7 +306,7 @@ void AM_tx_fork(gasnet_token_t token, void* msg, size_t nbytes) {
 					    CHPL_RT_MD_STM_AM_FORK_T,
 					    __LINE__, __FILE__);
   memcpy(buf, msg, nbytes);
-  CHPL_BEGIN((chpl_fn_p)tx_fork_wrapper, (void*)buf, true, true, NULL);
+  chpl_task_begin((chpl_fn_p)tx_fork_wrapper, (void*)buf, true, true, NULL);
 }
 
 int gtm_tx_comm_fork(chpl_stm_tx_p tx, int32_t remlocale, chpl_fn_int_t fid, void *arg, size_t argsize) {
