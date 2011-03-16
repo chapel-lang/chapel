@@ -7,7 +7,7 @@ use BlockDist, Time;
 // Use the user modules for computing HPCC problem sizes and for
 // defining RA's random stream of values
 //
-use HPCCProblemSize, RARandomStream;
+use HPCCProblemSize, RARandomStream, myParams;
 
 //
 // The number of tables as well as the element and index types of
@@ -73,32 +73,9 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 var T$: [TableSpace] sync elemType;
 
 //
-// config param to choose whether update loops need to be protected
-// declared as param to avoid the additional check at runtime 
-//
-config param safeUpdates: bool = false;
-
-//
-// config param to use the LCG random number generator
-//
-config param useLCG: bool = true;
-
-//
-// turn on/off stm statistics collection
-//
-config param trackStmStats = false;
-
-def indexMask(r: randType): randType {
-  if useLCG then
-    return r >> (64 - n);
-  else
-    return r & (m - 1);
-}
-
-//
 // The program entry point
 //
-def main() {
+proc main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
   //
@@ -119,14 +96,23 @@ def main() {
   // communications.  Compute the update using r both to compute the
   // index and as the update value.
   //
-  forall ( , r) in (Updates, RAStream(0, useLCG)) do
-    on TableDist.idxToLocale(indexMask(r)) {
+  forall ( , r) in (Updates, RAStream(seed)) do
+    on TableDist.idxToLocale(indexMask(r, n)) {
       const myR = r;
-      const myIndex = indexMask(myR);
-      if safeUpdates then
-	local T$(myIndex) ^= myR; 
-      else 
-	local T$(myIndex).writeXF(T$(myIndex).readXX() ^ myR);
+      const myIndex = indexMask(myR, n);
+      if forkFast {
+	local {
+	  if safeUpdates then
+	    T$(myIndex) ^= myR; 
+	  else 
+	    T$(myIndex).writeXF(T$(myIndex).readXX() ^ myR);
+	}
+      } else {
+	if safeUpdates then
+	  T$(myIndex) ^= myR; 
+	else 
+	  T$(myIndex).writeXF(T$(myIndex).readXX() ^ myR);
+      }
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -138,12 +124,11 @@ def main() {
 //
 // Print the problem size and number of updates
 //
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numTables, m);
-    writeln("Atomic Update = ", safeUpdates);
-    writeln("Use LCG = ", useLCG);
+    writeln("RNG = ", whichRNG());
     writeln("Number of updates = ", N_U, "\n");
   }
 }
@@ -151,7 +136,7 @@ def printConfiguration() {
 //
 // Verify that the computation is correct
 //
-def verifyResults() {
+proc verifyResults() {
   //
   // Print the table, if requested
   //
@@ -165,11 +150,14 @@ def verifyResults() {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  forall ( , r) in (Updates, RAStream(0, useLCG)) do
-    on TableDist.idxToLocale(indexMask(r)) {
+  forall ( , r) in (Updates, RAStream(seed)) do
+    on TableDist.idxToLocale(indexMask(r, n)) {
       const myR = r;
-      const myIndex = indexMask(myR);
-      local T$(myIndex) ^= myR; 
+      const myIndex = indexMask(myR, n);
+      if forkFast then
+	local T$(myIndex) ^= myR; 
+      else
+	T$(myIndex) ^= myR;
     }
 
   const verifyTime = getCurrentTime() - startTime;
@@ -204,7 +192,7 @@ def verifyResults() {
 //
 // Print out success/failure, the execution time, and the GUPS value
 //
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);

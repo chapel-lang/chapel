@@ -9,7 +9,7 @@ module RARandomStream {
   param LCGMUL64 = 0x5851F42D4C957F2D;
   param LCGADD64 = 1;
 
-  def whichRNG(): string {
+  proc whichRNG(): string {
     return "LCG";
   }
 
@@ -17,7 +17,7 @@ module RARandomStream {
   // A serial iterator for the random stream that resets the stream
   // to its 0th element and yields values endlessly.
   //
-  def RAStream(seed: randType) {
+  iter RAStream(seed: randType) {
     var val = LCGgetNthRandom(0, seed);
     while (1) {
       LCGgetNextRandom(val);
@@ -31,7 +31,7 @@ module RARandomStream {
   // corresponding to those indices.  Follower iterators like these
   // are required for parallel zippered iteration.
   //
-  def RAStream(param tag: iterator, follower, seed: randType) where tag == iterator.follower {
+  iter RAStream(param tag: iterator, follower, seed: randType) where tag == iterator.follower {
     if follower.size != 1 then
       halt("RAStream cannot use multi-dimensional iterator");
     var val = LCGgetNthRandom(follower(1).low, seed);
@@ -45,7 +45,7 @@ module RARandomStream {
   // A helper function for "fast-forwarding" the random stream to
   // position n in O(log2(n)) time
   //
-  def LCGgetNthRandom(in n: uint(64), seed: randType) {
+  proc LCGgetNthRandom(in n: uint(64), seed: randType) {
     var mulk, addk, un: randType;        
     var ran: randType = seed * LCGMUL64;
 
@@ -68,11 +68,12 @@ module RARandomStream {
   // A helper function for advancing a value from the random stream,
   // x, to the next value
   //
-  def LCGgetNextRandom(inout x: randType) {  
+  proc LCGgetNextRandom(inout x: randType) {  
     x = LCGMUL64 * x + LCGADD64;
   }
 
-  def indexMask(r: randType, n): randType {
+  pragma "inline"
+  proc indexMask(r: randType, n): randType {
     return r >> (64 - n);
   }
 }

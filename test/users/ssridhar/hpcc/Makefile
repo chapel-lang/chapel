@@ -1,4 +1,5 @@
 CHPL = chpl
+USERNG = LCG
 RNG = $(USERNG)RARandomStream
 FLAGS += --conditional-dynamic-dispatch-limit 100
 
@@ -34,23 +35,23 @@ all: $(TARGETS)
 clean: FORCE
 	rm -rf $(TARGETS) *_real c_* 
 
-ra: HPCCProblemSize.chpl $(RNG).chpl ra.chpl
+ra: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl ra.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
-raSTM: HPCCProblemSize.chpl $(RNG).chpl ra.chpl dummystm.h
+raSTM: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl ra.chpl dummystm.h
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 	rm raSTM
 	sed -i -f dummystm.sed c_$@/ra.c
 	grep -e LOAD_REF -e STM_COMM_WIDE_GET c_$@/ra.c
 	make -f c_$@/Makefile
 
-raMLA: HPCCProblemSize.chpl $(RNG).chpl MutexLock.chpl MutexLock.h ra_mutex_lock_array.chpl
+raMLA: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl MutexLock.chpl MutexLock.h ra_mutex_lock_array.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^ 
 
-raSLA: HPCCProblemSize.chpl $(RNG).chpl ra_sync_lock_array.chpl
+raSLA: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl ra_sync_lock_array.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^ 
 
-raSDA: HPCCProblemSize.chpl $(RNG).chpl ra_sync_data_array.chpl
+raSDA: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl ra_sync_data_array.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^ 
 
 ra2: $(RNG).chpl ra2.chpl
@@ -75,22 +76,22 @@ ra2STM: $(RNG).chpl ra2.chpl dummystm.h
 	grep -e LOAD_REF -e STM_COMM_WIDE_GET c_$@/ra2.c
 	make -f c_$@/Makefile
 
-ra2MLA: HPCCProblemSize.chpl $(RNG).chpl MutexLock.chpl MutexLock.h ra2_mutex_lock_array.chpl
+ra2MLA: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl MutexLock.chpl MutexLock.h ra2_mutex_lock_array.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
-ra2SLA: $(RNG).chpl ra2_sync_lock_array.chpl
+ra2SLA: myParams.chpl $(RNG).chpl ra2_sync_lock_array.chpl
 	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
 
-ra2SDA: $(RNG).chpl ra2_sync_data_array.chpl
+ra2SDA: myParams.chpl $(RNG).chpl ra2_sync_data_array.chpl
 	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
 
-testLCG: HPCCProblemSize.chpl $(RNG).chpl testLCG.chpl
+testLCG: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl testLCG.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
-testRAR: HPCCProblemSize.chpl $(RNG).chpl testLCG.chpl
+testRAR: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl testLCG.chpl
 	$(CHPL) -o $@ -suseLCG=false $(FLAGS) --savec c_$@ $^
 
-aswap: HPCCProblemSize.chpl $(RNG).chpl atomicswap.chpl
+aswap: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl atomicswap.chpl
 	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
 
 FORCE:

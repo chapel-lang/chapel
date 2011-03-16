@@ -35,7 +35,7 @@ config param seed1: randType = 0;
 config param seed2: randType = 0x7fff;
 config param forkFast: bool = false;
 
-def updateValues(myR: indexType, myS: indexType, factor: int(64), mySLocale: locale) {
+proc updateValues(myR: indexType, myS: indexType, factor: int(64), mySLocale: locale) {
   const myRIdx = indexMask(myR, n);
   const mySIdx = indexMask(myS, n);
   const myRVal = myS * factor:uint(64);
@@ -127,7 +127,7 @@ def updateValues(myR: indexType, myS: indexType, factor: int(64), mySLocale: loc
   }
 }
 
-def updateValuesNoSync(myR: indexType, myS: indexType, mySLocale: locale) {
+proc updateValuesNoSync(myR: indexType, myS: indexType, mySLocale: locale) {
   const myRIdx = indexMask(myR, n);
   const mySIdx = indexMask(myS, n);
   const myRVal = myS;
@@ -149,7 +149,7 @@ def updateValuesNoSync(myR: indexType, myS: indexType, mySLocale: locale) {
   }
 }
 
-def main() {
+proc main() {
   printConfiguration(); 
   
   [i in TableSpace] T(i) = 0;
@@ -176,7 +176,7 @@ def main() {
   printResults(validAnswer, execTime);             // print the results
 }
 
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     if (printStats) then writeln("Number of Locales = ", numLocales);
     printProblemSize(elemType, 1, m);
@@ -187,7 +187,7 @@ def printConfiguration() {
   }
 }
 
-def verifyResults() {
+proc verifyResults() {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   var startTime = getCurrentTime();
@@ -214,7 +214,7 @@ def verifyResults() {
   return numErrors <= (errorTolerance * N_U);
 }
 
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
