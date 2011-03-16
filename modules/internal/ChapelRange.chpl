@@ -15,7 +15,6 @@ config param debugChapelRange = ChapelRangeMethod.nothing;
 //        1) an integral element type,
 //        2) whether low and/or high bounds exist, and
 //        3) whether the stride is one or not.
-//        4) whether the alignment is nonzero.
 //
 // A range can only be aligned if it is strided.  Since alignments are taken
 // modulo the stride, if the stride is one, even a nonzero alignment has no effect.
@@ -119,6 +118,7 @@ proc _build_range(param bt: BoundedRangeType)
 //#
 
 // Returns the starting index (with minimal checks).
+pragma "inline" 
 proc range.first
 {
   if ! stridable then return _low;
@@ -126,6 +126,7 @@ proc range.first
 }
 
 // Returns the ending index (with minimal checks).
+pragma "inline" 
 proc range.last
 {
   if ! stridable then return _high;
@@ -133,6 +134,8 @@ proc range.last
 }
 
 // Returns the low index, properly aligned.
+// The aligned low bound may be higher than the high bound.
+pragma "inline"
 proc range.alignedLow : idxType
 {
   if ! this.hasLowBound() then
@@ -141,14 +144,14 @@ proc range.alignedLow : idxType
   {
     if ! stridable then return _low;
     else
-    {
-      if _low > _high then return _low;
-      return _low + chpl__mod(_alignment, _stride);
-    }
+      // Adjust _low upward by the difference between _alignment and _low.
+      return _low + chpl__diffMod(_alignment, _low, _stride);
   }
 }
 
 // Returns the high index, properly aligned.
+// The aligned high bound may be lower than the low bound.
+pragma "inline"
 proc range.alignedHigh : idxType
 {
   if ! this.hasHighBound() then
@@ -157,15 +160,8 @@ proc range.alignedHigh : idxType
   {
     if ! stridable then return _high;
     else
-    {
-      if _low > _high then return _high;
-
-      // I don't think this will work, since we tested boundedType above.
-      if this.hasLowBound() then
-        return _high - chpl__diffMod(_high, _low + _alignment, _stride);
-      else
-        return _high - chpl__mod(_alignment, _stride);
-    }
+      // Adjust _high downward by the difference between _high and _alignment.
+      return _high - chpl__diffMod(_high, _alignment, _stride);
   }
 }
 
@@ -196,6 +192,7 @@ proc range.hasLowBound() param
 proc range.hasHighBound() param
   return boundedType == BoundedRangeType.bounded || boundedType == BoundedRangeType.boundedHigh;
 
+pragma "inline" 
 proc range.hasFirst()
 {
   if stridable
@@ -212,6 +209,7 @@ proc range.hasFirst()
   return true;
 }
     
+pragma "inline" 
 proc range.hasLast()
 {
   if stridable
@@ -226,6 +224,39 @@ proc range.hasLast()
     }
   }
   return true;
+}
+
+// Returns true if this range is naturally aligned, false otherwise.
+proc range.isAligned()
+  where this.boundedType == BoundedRangeType.bounded
+{
+  // If the stride is positive, we must be aligned on the low bound.
+  if _stride > 0 then return this.alignedLow == _low;
+  // If the stride is negative, we must be aligned on the high bound.
+  if _stride < 0 then return this.alignedHigh == _high;
+  // _stride == 0: ???
+  return false;
+}
+
+pragma "inline"
+proc range.isAligned()
+  where this.boundedType == BoundedRangeType.boundedLow
+{
+  return this.alignedLow == _low;
+}
+
+pragma "inline"
+proc range.isAligned()
+  where this.boundedType == BoundedRangeType.boundedHigh
+{
+  return this.alignedHigh == _high;
+}
+
+pragma "inline"
+proc range.isAligned()
+{
+  if _alignment == 0 then return true;
+  return false;
 }
     
 // Returns true if i is in this range.
@@ -254,6 +285,7 @@ proc range.member(i: idxType)
 }
 
 // Returns true if the other range is contained within this one.
+pragma "inline"
 proc range.member(other: range(?))
 {
   return other == this(other);
@@ -276,14 +308,21 @@ proc ==(r1: range(?), r2: range(?))
 // This makes use of the fact that the default values for the
 // stride and alignment fields are consistent, whether the two ranges
 // being compared are stridable or not.
-proc range.equiv(other: range(?))
+proc ident(r1: range(?), r2: range(?))
+  where r1.idxType == r2.idxType &&
+  r1.boundedType == r2.boundedType &&
+  r1.stridability == r2.stridability
 {
-  if this._low != other._low then return false;
-  if this._high != other._high then return false;
-  if this._stride != other._stride then return false;
-  if this._alignment != other._alignment then return false;
+  if r1._low != r2._low then return false;
+  if r1._high != r2._high then return false;
+  if r1._stride != r2._stride then return false;
+  if r1._alignment != r2._alignment then return false;
   return true;
 }
+
+proc ident(r1: range(?), r2: range(?))
+  return false;
+
 
 //////////////////////////////////////////////////////////////////////////////////
 // Bounds checking
@@ -328,20 +367,13 @@ proc range.boundsCheck(other: idxType)
 //# Member functions
 //#
 
-// Align the low bound of this range to its alignment.
-//
-// Moves the low bound of the range up to the next alignment point,
-// and sets the alignment to zero.
-// This preserves the invariant that alignment is relative to _low.
+// Moves the low bound of the range up to the next alignment point.
 proc range.alignLow()
 {
   if ! stridable then return;
   _low = this.alignedLow;
-  _alignment = 0;
 }
 
-// Align the high bound of this range to its alignment.
-//
 // Moves the high bound of the range down to the next alignment point.
 proc range.alignHigh()
 {
@@ -412,8 +444,7 @@ proc range.interior(i: idxType)
                      _low, _low-1-i, _stride, _alignment);
   if i > 0 then
     return new range(idxType, boundedType, true,
-                     _high + 1 - i, _high, _stride,
-                     chpl__diffMod(_low + _alignment, _high + 1 - i, _stride));
+                     _high + 1 - i, _high, _stride, _alignment);
   // if i == 0 then
   return new range(idxType, boundedType, true,
                   _low, _high, _stride, _alignment);
@@ -444,11 +475,10 @@ proc range.exterior(i: idxType)
 {
   if i < 0 then
     return new range(idxType, boundedType, true,
-                     _low - i, _low - 1, _stride, _alignment - i);
+                     _low - i, _low - 1, _stride, _alignment);
   if i > 0 then
     return new range(idxType, boundedType, true,
-                     _high + 1, _high + i, _stride,
-                     chpl__diffMod(_low + _alignment, _high + 1, _stride));
+                     _high + 1, _high + i, _stride, _alignment);
   // if i == 0 then
   return new range(idxType, boundedType, true,
                    _low, _high, _stride, _alignment);
@@ -465,7 +495,7 @@ proc range.expand(i: idxType)
 proc range.expand(i: idxType)
 {
   return new range(idxType, boundedType, stridable,
-                   _low-i, _high+i, _stride, _alignment+i);
+                   _low-i, _high+i, _stride, _alignment);
 }
 
 
@@ -505,7 +535,7 @@ proc +(r: range(?e,?b,?s), i: integral)
 
   return new range(resultType, b, s,
                    r._low + i, r._high + i,
-		   r._stride : strType, r._alignment : resultType);
+		   r._stride : strType, r._alignment + i : resultType);
 }
 
 pragma "inline"
@@ -519,7 +549,7 @@ proc -(r: range(?e,?b,?s), i: integral)
 
   return new range(resultType, b, s,
                    r._low - i, r._high - i,
-		   r._stride : strType, r._alignment : resultType);
+		   r._stride : strType, r._alignment - i : resultType);
 }
 
 // This is the syntax processing routine for the "by" keyword.
@@ -528,13 +558,15 @@ proc by(r : range(?), str)
 {
   proc byHelp(r : range(?e, ?b, ?s), str : chpl__signedType(e))
   {
-    var al : e;
-    if (r.hasLowBound()) then al = chpl__diffMod(r.alignedLow, r._low, r._stride);
-    else if (b == BoundedRangeType.boundedHigh) then al = chpl__diffMod(r.alignedHigh, r._high, r._stride);
-    else al = 0;
+    var s = r._stride * str;
+    var al : e = 0;
+    if b == BoundedRangeType.boundedLow then al = r.alignedLow;
+    if b == BoundedRangeType.boundedHigh then al = r.alignedHigh;
+    if b == BoundedRangeType.bounded then
+      al = if s > 0 then r.alignedLow else r.alignedHigh;
 
     return new range(e, b, true,
-                     r._low, r._high, r._stride*str, al);
+                     r._low, r._high, s, al);
   }
   
   if str == 0 then
@@ -570,19 +602,19 @@ proc align(r : range(?e, ?b, ?s), algn)
                   ") with ", typeToString(argType));
 }
 
-// Apply an absolute alignment to an existing range.
-proc range.absAlign(algn)
+// Apply a natural alignment to an existing range.
+proc range.offset(offs : integral)
 {
-  type argType = algn.type;
+  type argType = offs.type;
 
   if argType == idxType || chpl__legalIntCoerce(argType, idxType)
   {
     if this.hasLowBound() then
-      this._alignment = algn - _low;
+      this._alignment = _low + offs;
     else if this.boundedType == BoundedRangeType.boundedHigh then
-      this._alignment = algn - _high;
+      this._alignment = _high + offs;
     else
-      this._alignment = algn;
+      this._alignment = offs;
   }
   else
     compilerError("type mismatch applying 'absAlign' to range(",
@@ -664,18 +696,14 @@ proc range.this(other: range(?idxType2, ?boundedType, ?stridable))
                          min(hi1, hi2):idxType,
                          lcm:chpl__signedType(idxType));
 
-  // hilde: We may be able to eliminate this test.
-  if result.boundedType == BoundedRangeType.bounded &&
-     result._low > result._high then
-    // empty intersection
-    return result;
-
-  var al1 = (this.first % st1:idxType):int;
-  var al2 = (other.first % st2:other.idxType):int;
+  var al1 = (this._alignment % st1:idxType):int;
+  var al2 = (other._alignment % st2:other.idxType):int;
 
   if (al2 - al1) % g != 0 then
     // empty intersection, return degenerate result
-    (result._low, result._high) = (1:idxType, 0:idxType);
+    (result._low, result._high, result._alignment) =
+    (1:idxType, 0:idxType, 1:idxType);
+    // _alignment == _low, so it won't print.
   else
   { // non-empty intersection
 
@@ -685,19 +713,7 @@ proc range.this(other: range(?idxType2, ?boundedType, ?stridable))
     if offset < 0 then offset += lcm;
 
     // Now offset can be safely cast to idxType.
-    var al = al1:idxType + offset:idxType * st1:idxType / g:idxType;
-
-
-    if result.hasLowBound()
-    {
-      result._alignment = chpl__diffMod(al, result._low, lcm);
-    }
-    else if result.boundedType == BoundedRangeType.boundedHigh
-    {
-      result._alignment = chpl__diffMod(al, result._high, lcm);
-    }
-    else
-      result._alignment = al;
+    result._alignment = al1:idxType + offset:idxType * st1:idxType / g:idxType;
 
     // We inherit the sign of the stride from the operand.
     if other._stride < 0 then 
@@ -738,7 +754,7 @@ proc #(r:range(?), i:integral)
                      _low = 1,
                      _high = 0,
                      _stride = r._stride,
-                     _alignment = 0);
+                     _alignment = 1);
 
   if i > 0 && !r.hasFirst() then
     halt("With a positive count, the range must have a first index.");
@@ -782,7 +798,7 @@ proc #(r:range(?), i:integral)
                    _low = lo,
                    _high = hi,
                    _stride = r._stride : strType,
-                   _alignment = chpl__diffMod(al, lo, s): resultType);
+                   _alignment = al);
 }
 
 
@@ -970,8 +986,11 @@ proc range.writeThis(f: Writer)
     f.write(_high);
   if _stride != 1 then
     f.write(" by ", _stride);
-  if _alignment != 0 then
-    f.write(" align ", _alignment);
+
+  // Write out the alignment only if it differs from natural alignment.
+  // We take alignment modulo the stride for consistency.
+  if ! isAligned() then
+    f.write(" align ", chpl__mod(_alignment, _stride));
 }
 
 // Return a substring of a string with a range of indices.

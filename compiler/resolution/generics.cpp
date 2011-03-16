@@ -302,9 +302,9 @@ static void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
   char * name_p = &name[0]; 
   char * immediate_p = &immediate[0];
   for ( ; 
-	name_p < &name[bufSize-1] && // don't overflow buffer
-	  '\0' != *immediate_p;      // stop at null in source
-	name_p++, immediate_p++) {
+        name_p < &name[bufSize-1] && // don't overflow buffer
+          '\0' != *immediate_p;      // stop at null in source
+        name_p++, immediate_p++) {
     if ('"' == *immediate_p) { // escape quotes
       *name_p++ = '\\';
     }
@@ -325,13 +325,13 @@ static void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
   size_t maxNameLength = 32; // add "_etc" after this many characters
 
   for ( ; immediate_p < &immediate_p[bufSize-1] &&  // don't overflow buffer
-	  cname_p < &cname[maxNameLength-1] &&      // stop at max length
-	  '\0' != *immediate_p; 
-	immediate_p++ ) { 
+          cname_p < &cname[maxNameLength-1] &&      // stop at max length
+          '\0' != *immediate_p; 
+        immediate_p++ ) { 
     if (('A' <= *immediate_p && *immediate_p <= 'Z') ||
-	('a' <= *immediate_p && *immediate_p <= 'z') ||
-	('0' <= *immediate_p && *immediate_p <= '9') ||
-	('_' == *immediate_p)) {
+        ('a' <= *immediate_p && *immediate_p <= 'z') ||
+        ('0' <= *immediate_p && *immediate_p <= '9') ||
+        ('_' == *immediate_p)) {
       *cname_p = *immediate_p;
       cname_p++;
     }
@@ -389,17 +389,17 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
         }
         VarSymbol* var = toVarSymbol(value);
         if (var && var->immediate) {
-	  Immediate* immediate = var->immediate;
+          Immediate* immediate = var->immediate;
           if (var->type == dtString)
-	    renameInstantiatedTypeString(sym, var);
+            renameInstantiatedTypeString(sym, var);
           else if (immediate->const_kind == NUM_KIND_UINT &&
-		   immediate->num_index == INT_SIZE_1) {
+                   immediate->num_index == INT_SIZE_1) {
             // Handle boolean types specially.
-	    const char* name4bool = immediate->uint_value() ? "true" : "false";
-	    const char* cname4bool = immediate->uint_value() ? "T" : "F";
-	    sym->name = astr(sym->name, name4bool);
-	    sym->cname = astr(sym->cname, cname4bool);
-	  } else {
+            const char* name4bool = immediate->uint_value() ? "true" : "false";
+            const char* cname4bool = immediate->uint_value() ? "T" : "F";
+            sym->name = astr(sym->name, name4bool);
+            sym->cname = astr(sym->cname, cname4bool);
+          } else {
             const size_t bufSize = 128;
             char imm[bufSize];
             snprint_imm(imm, bufSize, *var->immediate);

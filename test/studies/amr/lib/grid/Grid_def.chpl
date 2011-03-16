@@ -122,7 +122,7 @@ class Grid {
       if loc != inner_location {
         for d in dimensions do
           ranges(d) = if loc(d) == loc1d.below then 
-                        (extended_cells.low(d).. by 2 align 0) #n_ghost_cells(d)
+                        (extended_cells.low(d).. by 2) #n_ghost_cells(d)
                       else if loc(d) == loc1d.inner then
                         cells.dim(d)
                       else

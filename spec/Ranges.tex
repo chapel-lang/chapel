@@ -71,8 +71,9 @@ sets, depending on its alignment.  For a given alignment $a$, each element $i$
 in the range's index set obeys the relation $i \mod s = a \mod s$.  
 
 A range is \emph{naturally aligned} if its alignment coincides with its low or
-high bound.  If the range has both high and low bounds, the low bound takes
-precedence.  When a range is printed, the alignment is printed only if the range
+high bound.  If the range is \chpl{bounded} and the stride is positive, the low
+bound is given preference; if the stride is negative, the high bound is given preference.
+When a range is printed, the alignment is printed only if the range
 is not naturally aligned.
 
 \begin{rationale}
@@ -326,16 +327,16 @@ When the stride is negative, the same indices are printed in reverse:
 \end{chapelpre}
 \begin{chapel}
 var ru = 0 .. 10 by -3;
-for i in ru do write(" ", i);		// Produces ``9 6 3 0''.
+for i in ru do write(" ", i);		// Produces ``10 7 4 1''.
 writeln();
 
-var ra = 0 .. 10 by -3 align 1;
-for i in ra do write(" ", i);		// Produces ``10 7 4 1''.
+var ra = 0 .. 10 by -3 align 0;
+for i in ra do write(" ", i);		// Produces ``9 6 3 0''.
 writeln();
 \end{chapel}
 \begin{chapeloutput}
- 9 6 3 0
  10 7 4 1
+ 9 6 3 0
 \end{chapeloutput}
 \end{example}
 
@@ -477,7 +478,7 @@ var r4 = r3[0.. by 3];
 writeln((r, r2, r3, r4));
 \end{chapelpost}
 \begin{chapeloutput}
-(1..20, 3..20, 1..20 by 2, 1..20 by 6 align 2)
+(1..20, 3..20, 1..20 by 2, 1..20 by 6 align 3)
 \end{chapeloutput}
 \end{example}
 
