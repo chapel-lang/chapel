@@ -1,6 +1,6 @@
 #include <string.h>
 #include "chplrt.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
@@ -12,7 +12,7 @@
 extern void* globalHeapStart;   // see src/comm/gasnet
 extern size_t globalHeapSize; 
 
-static int isHeapAddr(void* addr) {
+int isHeapAddr(void* addr) {
   if (!(globalHeapStart && globalHeapSize))
     return 1;
   if ((char*) addr >= (char*) globalHeapStart)
@@ -362,6 +362,6 @@ void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memD
 
 void chpl_stm_tx_free(chpl_stm_tx_p tx, void* ptr, int32_t ln, chpl_string fn) { 
   CHPL_STM_STATS_START(tx->counters, STATS_TX_FREE);
-  gtm_tx_free_memset(tx, ptr, ln, fn);
+  GTM_Safe(tx, gtm_tx_free_memset(tx, ptr, ln, fn));
   CHPL_STM_STATS_STOP(tx->counters, STATS_TX_FREE, 0);
 }

@@ -1,6 +1,6 @@
 #include <string.h>
 #include "chplrt.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
@@ -129,6 +129,8 @@ int gtm_tx_load_word(chpl_stm_tx_t* tx, gtm_word_p dstaddr, gtm_word_p srcaddr) 
   read_entry_t* rentry;
   write_entry_t* wentry;
 
+  assert(isHeapAddr(srcaddr));
+
   lock = GET_LOCK(srcaddr);
   lockval = ATOMIC_LOAD_MB(lock);
  restart:
@@ -181,7 +183,9 @@ int gtm_tx_store_word(chpl_stm_tx_t* tx, gtm_word_p srcaddr, gtm_word_p dstaddr,
   write_entry_t* prev;
   write_entry_t* wentry;
 
+  assert(isHeapAddr(dstaddr));
   assert(mask != 0);
+
   value = *srcaddr; 
   lock = GET_LOCK(dstaddr);
  restart:

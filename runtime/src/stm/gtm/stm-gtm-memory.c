@@ -3,7 +3,7 @@
 //
 
 #include "chplrt.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
 #include "chpltasks.h"
@@ -33,22 +33,30 @@ void gtm_tx_cleanup_memset(void* txptr) {
 void* gtm_tx_malloc_memset(void* txptr, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) {
   chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
   memset_entry_t* entry = (memset_entry_t*) chpl_malloc(1, sizeof(memset_entry_t), CHPL_RT_MD_STM_TX_MEMSET_ENTRY, ln, fn);
+  size = (size + 7) & ~(size_t)0x07;
   entry->addr = (void *) chpl_malloc(number, size, description, ln, fn);
   entry->next = tx->memset->allocated; 
   tx->memset->allocated = entry;
   return entry->addr;
 }
 
-void gtm_tx_free_memset(void* txptr, void* addr, int32_t ln, chpl_string fn) {
+int gtm_tx_free_memset(void* txptr, void* addr, int32_t ln, chpl_string fn) {
   chpl_stm_tx_p tx = (chpl_stm_tx_p) txptr;
   memset_entry_t* entry = (memset_entry_t*) chpl_malloc(1, sizeof(memset_entry_t), CHPL_RT_MD_STM_TX_MEMSET_ENTRY, ln, fn);
+  int status = TX_FAIL;
   
-  // Need to write 0s to addr to prevent inconsistent reads,
-  // but there doesn't seem to be an easy way to determine the size
-
   entry->addr = addr;
   entry->next = tx->memset->freed; 
   tx->memset->freed = entry;
+  if (((gtm_word_t) addr & (gtm_word_t) 0x07) != 0) {
+    chpl_error("Must be multiples of 8", ln, fn);
+  } else {
+    // Need to write 0s to addr to prevent inconsistent reads,
+    // but there doesn't seem to be an easy way to determine the size
+    // status = gtm_tx_store_word(tx, &w, addr,~(gtm_word_t)0);
+    status = TX_OK;
+  }
+  return status;
 }
 
 void gtm_tx_commit_memset(void* txptr) {

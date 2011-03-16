@@ -22,6 +22,6 @@ void gtm_tx_cleanup_memset(void*);
 void gtm_tx_commit_memset(void*);
 void gtm_tx_abort_memset(void*);
 void* gtm_tx_malloc_memset(void*, size_t, size_t, chpl_memDescInt_t, int32_t, chpl_string);
-void gtm_tx_free_memset(void*, void*, int32_t, chpl_string);
+int gtm_tx_free_memset(void*, void*, int32_t, chpl_string);
 
 #endif

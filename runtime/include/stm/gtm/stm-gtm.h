@@ -155,4 +155,9 @@ int gtm_tx_comm_put(chpl_stm_tx_t* tx, void* srcaddr, int32_t dstlocale, void* d
 int gtm_tx_comm_fork(chpl_stm_tx_t* tx, int32_t dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize);
 int gtm_tx_comm_fork_fast(chpl_stm_tx_t* tx, int32_t dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize);
 
+// 
+// Misc
+// 
+int isHeapAddr(void*);
+
 #endif
