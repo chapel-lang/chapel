@@ -388,7 +388,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // INTERNAL INTERFACE
   //
-  proc getDist(): UserMapAssoc(idxType) {
+  proc dsiMyDist(): UserMapAssoc(idxType) {
     return dist;
   }
 

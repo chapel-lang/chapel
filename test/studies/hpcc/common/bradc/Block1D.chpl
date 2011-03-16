@@ -448,7 +448,7 @@ class Block1DDom: BaseArithmeticDomain {
   //
   // INTERNAL INTERFACE
   //
-  proc getDist(): Block1D(idxType) {
+  proc dsiMyDist(): Block1D(idxType) {
     return dist;
   }
 

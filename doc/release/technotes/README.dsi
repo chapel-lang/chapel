@@ -114,7 +114,7 @@ class GlobalDomain ... {
   parenthesesless functions of the same names and param/type intents.)
 
   The field 'dist' must contain a reference to the GlobalDistribution object
-  that created this GlobalDomain. This is used when creating the (runtime)
+  that created this GlobalDomain. It is used when creating the (runtime)
   type for this domain, which contains the domain's distribution.
 
 proc GlobalDomain.GlobalDomain() // or with arguments
@@ -124,20 +124,34 @@ proc GlobalDomain.GlobalDomain() // or with arguments
 proc GlobalDomain.dsiSupportsPrivatization() param: bool return false;
   This procedure should be provided as-is unless privatization is supported.
 
+proc GlobalDomain.dsiMyDist() return dist;
+  Returns this domain's domain map. This procedure should be provided as-is.
+  (Exception: see dsiLinksDistribution().)
+
+proc GlobalDomain.linksDistribution() param
+proc GlobalDomain.dsiLinksDistribution()
+  Typically these should not be defined.
+
+  If the domains mapped using GlobalDistribution do NOT need to be tracked
+  and the GlobalDistribution itself does NOT need to be reference counted,
+  these two methods should be defined to return 'false';
+  Also in this case dsiMyDist() does not need to be defined.
+
 proc GlobalDistribution.dsiNewRectangularDom(param rank: int,
                                              type idxType,
                                              param stridable: bool)
                                       : GlobalDomain(rank, idxType, stridable)
-  Returns a new GlobalDomain instance that will correspond to a newly-created
-  Chapel domain value mapped using the distribution 'this'.
-  The value is a domain(rank, idxType, stridable).
-  The returned instance's field 'dist' must point to 'this'.
+  This method is invoked when the Chapel program is creating
+  a domain value of the type domain(rank, idxType, stridable)
+  mapped using the domain map 'this'.
+  This method returns a new GlobalDomain instance that will correspond to
+  that Chapel domain value, i.e., be that value's runtime representation.
+  The field 'dist' of the returned GlobalDomain must point to 'this'.
 
-[TODO: this one does not seem to be used - how about we leave it out for now?]
 proc GlobalDistribution.dsiIndexLocale(indexx): locale
-  Given an index, returns the locale that "owns" that index,
+  Given an index 'indexx', returns the locale that "owns" that index,
   i.e. on which the corresponding data is located.
-  This is used only to implement idxToLocale() on the 'dmap' wrapper.
+  This is used to implement idxToLocale() on the 'dmap' wrapper.
 
 proc GlobalDomain.dsiGetIndices(): domain(rank, idxType, stridable)
   Returns a Chapel domain whose index set is the same as the index set
@@ -167,6 +181,7 @@ iter GlobalDomain.these(param tag: iterator) where tag == iterator.leader
 iter GlobalDomain.these(param tag: iterator, follower) where tag == iterator.follower
   The "leader" and "follower" iterators (defined below). They are
   invoked implicitly to implement parallel iteration over this domain.
+  (The serial iterator must also be defined for parallel iteration.)
 
   The job of the leader iterator is to:
    * subdivide the given domain into subdomains,
@@ -258,6 +273,17 @@ proc GlobalDomain.dsiSerialWrite(f: Writer): void
   This method should not invoke any write() methods or contain 'on' clauses,
   to avoid deadlock.
 
+proc GlobalDomain.dsiDim(dim: int): range(idxType)
+proc GlobalDomain.dsiDims(): rank * range(idxType)
+proc GlobalDomain.dsiLow
+proc GlobalDomain.dsiHigh
+proc GlobalDomain.dsiStride
+proc GlobalDomain.dsiNumIndices
+  These methods implement the corresponding queries (dim, dims, low, etc.)
+  of the domain value for which this GlobalDomain instance was created.
+  For example, dsiDim(d) returns the range describing the domain's
+  'd'-th dimension
+
 
 class GlobalArray
 -----------------
@@ -298,9 +324,11 @@ proc GlobalArray.idxType type return dom.idxType;
   (Could be a type field in GlobalArray instead.)
 
 proc GlobalDomain.dsiBuildArray(type eltType) : GlobalArray(eltType, this.type)
-  Returns a new GlobalArray instance that will correspond to a newly-created
-  Chapel array value over the domain 'this'.
-  The returned instance's field 'dom' must point to 'this'.
+  This method is invoked when the Chapel program is creating
+  an array value over the domain 'this' with the element type 'eltType'.
+  This method returns a new GlobalArray instance that will correspond to
+  that Chapel array value, i.e., be that value's runtime representation.
+  The field 'dom' of the returned GlobalDomain must point to 'this'.
 
 proc GlobalArray.dsiGetBaseDom() return dom;
   Returns this array's domain. This procedure should be provided as-is.

@@ -383,6 +383,8 @@ proc CyclicDom.dsiDim(d: int) return whole.dim(d);
 
 proc CyclicDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
+proc CyclicDom.dsiMyDist() return dist;
+
 
 
 proc CyclicDom.dsiGetIndices() {

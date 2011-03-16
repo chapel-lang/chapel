@@ -39,6 +39,7 @@ class DefaultRectangularDom: BaseRectangularDom {
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
   proc linksDistribution() param return false;
+  proc dsiLinksDistribution()     return false;
 
   proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;

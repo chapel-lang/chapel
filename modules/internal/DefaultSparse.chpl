@@ -14,6 +14,7 @@ class DefaultSparseDom: BaseSparseDom {
   var indices: [nnzDom] index(rank);
 
   proc linksDistribution() param return false;
+  proc dsiLinksDistribution()     return false;
 
   proc DefaultSparseDom(param rank, type idxType, 
                                dist: DefaultDist,

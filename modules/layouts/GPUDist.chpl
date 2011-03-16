@@ -72,6 +72,8 @@ class GPURectangularDom: BaseRectangularDom {
       ranges(i) = emptyRange;
   }
   
+  proc dsiMyDist() return dist;
+
   proc dsiGetIndices() return ranges;
 
   proc dsiSetIndices(x) {

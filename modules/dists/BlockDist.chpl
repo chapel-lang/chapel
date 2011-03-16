@@ -468,7 +468,7 @@ proc LocBlock.LocBlock(param rank: int,
   }
 }
 
-proc BlockDom.getBaseDist() return dist;
+proc BlockDom.dsiMyDist() return dist;
 
 proc BlockDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
@@ -664,11 +664,6 @@ proc BlockDom.dsiSetIndices(x) {
 
 proc BlockDom.dsiGetIndices() {
   return whole.getIndices();
-}
-
-// remove all instances of getDist
-proc BlockDom.getDist(): Block(idxType) {
-  return dist;
 }
 
 // dsiLocalSlice

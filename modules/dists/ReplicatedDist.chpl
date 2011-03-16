@@ -121,6 +121,9 @@ class LocReplicatedDom {
 proc ReplicatedDist.dsiSupportsPrivatization() param: bool return false;
 proc ReplicatedDom.dsiSupportsPrivatization() param: bool return false;
 
+// The same across all domain maps
+proc ReplicatedDom.dsiMyDist() return dist;
+
 
 proc ReplicatedDist.dsiClone(): this.type {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiClone");

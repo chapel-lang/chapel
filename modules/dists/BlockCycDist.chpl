@@ -291,8 +291,6 @@ class BlockCyclicDom: BaseRectangularDom {
   //  const startLoc: index(dist.targetLocDom);
 
   var pid: int = -1; // privatized object id
-
-  proc getBaseDist() return dist;
 }
 
 proc BlockCyclicDom.dsiDims() return whole.dims();
@@ -410,9 +408,7 @@ proc BlockCyclicDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
-proc BlockCyclicDom.getDist(): BlockCyclic(idxType) {
-  return dist;
-}
+proc BlockCyclicDom.dsiMyDist() return dist;
 
 proc BlockCyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom do

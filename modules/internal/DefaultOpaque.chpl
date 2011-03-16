@@ -4,6 +4,7 @@ class DefaultOpaqueDom: BaseOpaqueDom {
   var adomain: DefaultAssociativeDom(idxType=_OpaqueIndex);
 
   proc linksDistribution() param return false;
+  proc dsiLinksDistribution()     return false;
 
   proc DefaultOpaqueDom(dist: DefaultDist) {
     this.dist = dist;
