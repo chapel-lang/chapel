@@ -86,6 +86,7 @@ Task Parallelism and Synchronization
 
 Standard Modules
 ----------------
+* document logBasePow2() in Math.chpl (if we want to keep it)
 * in Sort module, add definition that < is used to do the sort.
 * add description of List module such as it is
 
