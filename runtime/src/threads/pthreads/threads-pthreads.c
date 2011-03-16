@@ -58,7 +58,7 @@ static int32_t         threadMaxThreadsPerLocale  = 0;
 static uint32_t        threadNumThreads           = 1;  // count main thread
 static pthread_mutex_t threadNumThreadsLock;
 
-static uint64_t        threadCallStackSize = 0;
+static size_t          threadCallStackSize = 0;
 
 static void            (*saved_threadBeginFn)(void*);
 static void            (*saved_threadEndFn)(void);
@@ -173,9 +173,7 @@ void threadlayer_init(int32_t maxThreadsPerLocale,
       chpl_internal_error("pthread_attr_setstacksize() failed");
   }
 
-  if (pthread_attr_getstacksize(&thread_attributes,
-                                (size_t*) &threadCallStackSize)
-      != 0)
+  if (pthread_attr_getstacksize(&thread_attributes, &threadCallStackSize) != 0)
       chpl_internal_error("pthread_attr_getstacksize() failed");
 
   saved_threadBeginFn = threadBeginFn;
@@ -391,5 +389,5 @@ uint32_t threadlayer_get_num_threads(void) {
 }
 
 uint64_t threadlayer_call_stack_size(void) {
-  return threadCallStackSize;
+    return (uint64_t) threadCallStackSize;
 }
