@@ -55,6 +55,12 @@ end
 ## SS additions
 set $stmvar = 0
 
+define loc
+  p ::stringLoc($arg0)
+  p $arg0->getFunction()->cname 
+  p $arg0->getFunction()->id
+end
+
 # extending nview to print tag info
 define sview
   call nprint_view_noline($arg0)
