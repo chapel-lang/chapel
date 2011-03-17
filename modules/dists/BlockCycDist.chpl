@@ -175,8 +175,19 @@ proc BlockCyclic.getStarts(inds, locid) {
     const mystr = locDist(locid).myStarts(i).stride;
     if (domlo != lowIdx(i)) {
       if (domlo <= domhi) {
-        writeln("domlo = ", domlo, "; lowIdx(", i, ") = ", lowIdx(i));
-        halt("BLC: need to handle the case where low bound is not the start");
+        if (domlo > lowIdx(i)) {
+	  const off = (domlo - lowIdx(i))%blocksize(i);
+	  if (off == 0) {
+	    lo = domlo;
+	    hi = domhi;
+	  } else {
+	    lo = domlo-off;
+	    hi = domhi;
+//	    halt("BLC: need to handle unaligned low");
+	  }
+	} else {
+	  halt("BLC: need to handle domain low less than lowIdx");
+        }	  
       } else {
         lo = domlo;
         hi = domhi;
@@ -291,8 +302,6 @@ class BlockCyclicDom: BaseRectangularDom {
   //  const startLoc: index(dist.targetLocDom);
 
   var pid: int = -1; // privatized object id
-
-  proc getBaseDist() return dist;
 }
 
 proc BlockCyclicDom.dsiDims() return whole.dims();
@@ -319,8 +328,8 @@ iter BlockCyclicDom.these(param tag: iterator) where tag == iterator.leader {
           lo = i;
         else
           lo = i(j);
-        tmpblock(j) = lo..min(lo + dist.blocksize(j)-1, 
-                              whole.dim(j).high);
+        tmpblock(j) = max(lo, whole.dim(j).low)..
+	              min(lo + dist.blocksize(j)-1, whole.dim(j).high);
       }
 
       var retblock: rank*range(idxType);
@@ -410,9 +419,7 @@ proc BlockCyclicDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
-proc BlockCyclicDom.getDist(): BlockCyclic(idxType) {
-  return dist;
-}
+proc BlockCyclicDom.dsiMyDist() return dist;
 
 proc BlockCyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom do
@@ -591,7 +598,7 @@ proc BlockCyclicArr.dsiGetBaseDom() return dom;
 proc BlockCyclicArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
-      locArr(localeIdx) = new LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx));
+      locArr(localeIdx) = new LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx), dom.locDoms(localeIdx));
       if this.locale == here then
         myLocArr = locArr(localeIdx);
     }
@@ -621,7 +628,7 @@ proc BlockCyclicArr.dsiPrivatize(privatizeData) {
 //
 proc BlockCyclicArr.dsiAccess(i: idxType) var where rank == 1 {
   if myLocArr then /* TODO: reenable */ /* local */ {
-    if myLocArr.locDom.myStarts.member(i) then
+    if myLocArr.indexDom.myStarts.member(i) then
       return myLocArr.this(i);
   }
   //  var loci = dom.dist.idxToLocaleInd(i);
@@ -670,8 +677,8 @@ iter BlockCyclicArr.these(param tag: iterator) where tag == iterator.leader {
           lo = i;
         else
           lo = i(j);
-        tmpblock(j) = lo..min(lo + dom.dist.blocksize(j)-1, 
-                              dom.whole.dim(j).high);
+        tmpblock(j) = max(lo, dom.whole.dim(j).low)..
+                      min(lo + dom.dist.blocksize(j)-1, dom.whole.dim(j).high);
       }
 
       var retblock: rank*range(idxType);
@@ -754,7 +761,7 @@ proc BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
   var alias = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
   for i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
-      alias.locArr[i] = new LocBlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems);
+      alias.locArr[i] = new LocBlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, allocDom=locArr[i].allocDom, indexDom=d.locDoms[i], myElems=>locArr[i].myElems);
     }
   }
 
@@ -777,7 +784,8 @@ class LocBlockCyclicArr {
   //
   // LEFT LINK: a reference to the local domain class for this array and locale
   //
-  const locDom: LocBlockCyclicDom(rank, idxType, stridable);
+  const allocDom: LocBlockCyclicDom(rank, idxType, stridable);
+  const indexDom: LocBlockCyclicDom(rank, idxType, stridable);
 
 
   // STATE:
@@ -785,13 +793,13 @@ class LocBlockCyclicArr {
   //
   // the block of local array data
   //
-  var myElems: [locDom.myFlatInds] eltType;
+  var myElems: [allocDom.myFlatInds] eltType;
 
   // TODO: need to be able to access these, but is this the right place?
-  const blocksize: [1..rank] int(64) = [d in 1..rank] locDom.globDom.dist.blocksize(d): int(64);
-  const low = locDom.globDom.dsiLow;
-  const locsize: [1..rank] int(64) = [d in 1..rank] locDom.globDom.dist.targetLocDom.dim(d).length: int(64);
-  const numblocks: [1..rank] int(64) = [d in 1..rank] (locDom.myStarts.dim(d).length):int(64);
+  const blocksize: [1..rank] int(64) = [d in 1..rank] allocDom.globDom.dist.blocksize(d): int(64);
+  const low = allocDom.globDom.dsiLow;
+  const locsize: [1..rank] int(64) = [d in 1..rank] allocDom.globDom.dist.targetLocDom.dim(d).length: int(64);
+  const numblocks: [1..rank] int(64) = [d in 1..rank] (allocDom.myStarts.dim(d).length):int(64);
 
 }
 

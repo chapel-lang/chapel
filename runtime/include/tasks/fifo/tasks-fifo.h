@@ -84,11 +84,12 @@ typedef struct {
 //
 
 //
-// These are called once each, from chpl_task_init() and
-// chpl_task_exit().
+// These are called once each, from chpl_task_init(), chpl_task_exit(),
+// and chpl_task_perPthreadInit(), respectively.
 //
-void threadlayer_init(int32_t maxThreadsPerLocale, uint64_t callStackSize);
+void threadlayer_init(int32_t, uint64_t, void(*)(void*), void(*)(void));
 void threadlayer_exit(void);
+void threadlayer_perPthreadInit(void);
 
 
 //
@@ -113,7 +114,7 @@ chpl_bool threadlayer_can_start_thread(void);
 //
 // Create a new thread.
 //
-int threadlayer_thread_create(threadlayer_threadID_t*, void*(*)(void*), void*);
+int threadlayer_thread_create(void*);
 
 //
 // Destroy the calling thread.  The threading layer is allowed to return

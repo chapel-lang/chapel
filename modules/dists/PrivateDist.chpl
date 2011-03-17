@@ -19,7 +19,6 @@ class PrivateDom: BaseRectangularDom {
   var pid: int = -1;
   var dist: Private;
 
-  proc getDist() return dist;
   iter these() { for i in 0..numLocales-1 do yield i; }
 
   iter these(param tag: iterator) where tag == iterator.leader {
@@ -49,6 +48,7 @@ class PrivateDom: BaseRectangularDom {
 
   proc dsiRequiresPrivatization() param return true;
   proc linksDistribution() param return false;
+  proc dsiLinksDistribution()     return false;
 
   proc dsiGetPrivatizeData() return 0;
 

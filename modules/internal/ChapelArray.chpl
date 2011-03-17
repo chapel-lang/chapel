@@ -166,7 +166,7 @@ proc chpl__convertValueToRuntimeType(dom: domain) type
   return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
 
 proc chpl__convertValueToRuntimeType(dom: domain) type {
-  compilerError("the global domain class of each domain map implementation must be a subclass of BaseArithmeticDom, BaseAssociativeDom, BaseOpaqueDom, or BaseSparseDom", 0);
+  compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, BaseOpaqueDom, or BaseSparseDom", 0);
   return 0; // dummy
 }
 
@@ -538,7 +538,7 @@ record _domain {
     param stridable = _value.stridable || chpl__anyStridable(ranges);
     var r: rank*range(_value.idxType,
                       BoundedRangeType.bounded,
-                      stridable, stridable);
+                      stridable);
 
     for param i in 1..rank {
       r(i) = _value.dsiDim(i)(ranges(i));
@@ -552,7 +552,7 @@ record _domain {
   proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
     var ranges = _getRankChangeRanges(args);
     param newRank = ranges.size, stridable = chpl__anyStridable(ranges);
-    var newRanges: newRank*range(idxType=_value.idxType, stridable=stridable, aligned=stridable);
+    var newRanges: newRank*range(idxType=_value.idxType, stridable=stridable);
     var newDistVal = _value.dist.dsiCreateRankChangeDist(newRank, args);
     var newDist = _getNewDist(newDistVal);
     var j = 1;
@@ -1292,7 +1292,7 @@ proc =(d: domain, r: range(?)) {
 //
 proc chpl__isLegalRectTupDomAssign(d, t) param {
   proc isRangeTuple(a) param {
-    proc isRange(r: range(?e,?b,?s,?a)) param return true;
+    proc isRange(r: range(?e,?b,?s)) param return true;
     proc isRange(r) param return false;
     proc peelArgs(first, rest...) param {
       return if rest.size > 1 then
@@ -1439,7 +1439,7 @@ proc =(a: [], b: _desync(a.eltType)) {
 proc by(a: domain, b) {
   var r: a.rank*range(a._value.idxType,
                     BoundedRangeType.bounded,
-                    true,true);
+                    true);
   var t = _makeIndexTuple(a.rank, b, expand=true);
   for param i in 1..a.rank do
     r(i) = a.dim(i) by t(i);

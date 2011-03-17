@@ -26,8 +26,6 @@ class CSRDom: BaseSparseDom {
   var rowStart: [rowDom] idxType;      // would like index(nnzDom)
   var colIdx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
-  proc getBaseDist() return dist;
-
   proc CSRDom(param rank, type idxType, 
                                dist: CSR,
                                parentDom: domain(rank, idxType)) {
@@ -43,6 +41,8 @@ class CSRDom: BaseSparseDom {
     nnzDom = [1..nnzDomSize];
     dsiClear();
   }
+
+  proc dsiMyDist() return dist;
 
   proc dsiNumIndices return nnz;
 

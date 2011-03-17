@@ -64,7 +64,8 @@ class BaseDom {
   var _domCnt: int = 0; // domain reference count
   var _arrs: list(BaseArr);   // arrays declared over this domain
 
-  proc getBaseDist(): BaseDist {
+  proc dsiMyDist(): BaseDist {
+    halt("internal error: dsiMyDist is not implemented");
     return nil;
   }
 
@@ -80,9 +81,9 @@ class BaseDom {
 	  _arrs.remove(arr);
       _domCnt = cnt;
     }
-    if cnt == 0 {
-      var dist = getBaseDist();
-      if dist then on dist {
+    if cnt == 0 && dsiLinksDistribution() {
+      var dist = dsiMyDist();
+      on dist {
         var cnt = dist.destroyDist(this);
         if cnt == 0 then
           delete dist;
@@ -114,6 +115,9 @@ class BaseDom {
   // default distribution's reference count and add domains to the
   // default distribution's list of domains
   proc linksDistribution() param return true;
+
+  // dynamically-dispatched counterpart of linksDistribution
+  proc dsiLinksDistribution() return true;
 }
 
 class BaseRectangularDom : BaseDom {

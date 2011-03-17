@@ -149,7 +149,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-other-kwds
   "Keywords not accounted for by any other `*-kwds' language constant."
-  chpl '("begin" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "local" "on" "reduce" "scan" "serial" "single" "sparse" "sync" "where"))
+  chpl '("begin" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "on" "out" "reduce" "scan" "serial" "single" "sparse" "sync" "where"))
 
 ;;; Chpl.
 

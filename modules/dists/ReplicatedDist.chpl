@@ -112,7 +112,7 @@ class LocReplicatedDom {
   type idxType;
   param stridable: bool;
 
-  // our index set (copied from 
+  // our index set, copied from the global domain
   var domLocalRep: domain(rank, idxType, stridable);
 }
 
@@ -120,6 +120,9 @@ class LocReplicatedDom {
 // privatization is not implemented currently
 proc ReplicatedDist.dsiSupportsPrivatization() param: bool return false;
 proc ReplicatedDom.dsiSupportsPrivatization() param: bool return false;
+
+// The same across all domain maps
+proc ReplicatedDom.dsiMyDist() return dist;
 
 
 proc ReplicatedDist.dsiClone(): this.type {

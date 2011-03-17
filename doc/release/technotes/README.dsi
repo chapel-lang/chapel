@@ -1,0 +1,425 @@
+======================================
+DSI: the Domain map Standard Interface
+======================================
+
+This README documents DSI - the interface that a domain map must implement.
+This interface is currently in place and is implemented by the standard
+domain maps provided with this Chapel distribution.
+
+The high level motivation and overview of DSI is given in our HotPar '2011
+paper, available at:
+  http://chapel.cray.com/publications/hotpar10-final.pdf
+
+Implementations of the standard domain maps could be consulted as examples.
+They are available in:
+  $CHPL_HOME/modules/dists
+  $CHPL_HOME/modules/layouts
+
+Overview
+--------
+
+A domain map must provide three (or more) "global descriptor" classes.
+Here they are called GlobalDistribution, GlobalDomain, and GlobalArray.
+Their required fields and methods, as well as suggested naming,
+are specified below.
+
+A domain map is also allowed to provide data structures and
+functionality (internally to facilitate implementation and/or
+externally for users' benefit) beyond the DSI requirements.
+
+For example, a distribution (i.e. a domain map that distributes data across
+multiple locales) will typically define "local descriptor" classes as well.
+
+Status of this document
+-----------------------
+
+The following aspects are not documented yet:
+* a reference to slides with the six descriptor classes
+* the requirements for a domain map to support
+  associative, opaque, or sparse domains;
+* the requirements to support privatization;
+* the significance of dsiClone();
+* the "local descriptor" classes;
+* some required methods.
+
+======================================
+
+
+class GlobalDistribution
+------------------------
+
+  This class is visible to the users of the domain map: the 'dmap' wrapper
+  in Chapel's 'dmapped' clauses wraps instances of this class.
+  This class must be a subclass of 'BaseDist'.
+
+proc GlobalDistribution.GlobalDistribution() // or with arguments
+  Constructor(s)  These are not regulated by DSI - their specifics are
+  at the distribution implementer's discretion.
+
+  We suggest providing constructor(s) that accept, as an argument,
+  an array of locales over which to distribute, with 'Locales'
+  as the default value.
+
+proc GlobalDistribution.dsiSupportsPrivatization() param: bool return false;
+  This procedure should be provided as-is unless privatization is supported.
+  (Documentation on privatization is forthcoming.)
+
+proc GlobalDistribution.dsiClone(): GlobalDistribution
+  Returns a duplicate of 'this'.
+
+  The specifics are forthcoming. E.g. we need to specify when it is not
+  enough simply to return 'this'. (The default distribution returns 'this'.)
+
+
+class GlobalDomain
+------------------
+  An instance of this class is created whenever a GlobalDistribution-mapped
+  Chapel domain is created (e.g. when a domain variable is declared).
+  There is a one-to-one correspondence at run time between a
+  (conceptual) Chapel domain value and an instance of GlobalDomain.
+  For presentation simplicity, GlobalDomain's properties refer to
+  the properties of the corresponding Chapel domain value, when
+  clear from the context.
+
+  Depending on the domain kind, this class is returned by the following
+  method on GlobalDistribution and must be a subclass of the following class:
+
+    domain kind   creating method         required superclass
+
+    rectangular   dsiNewRectangularDom    BaseRectangularDom
+    associative   dsiNewAssociativeDom    BaseAssociativeDom
+    opaque        dsiNewOpaqueDom         BaseOpaqueDom
+    sparse        dsiNewSparseDom         BaseSparseDom
+
+  It is legal for these methods to return instances of different classes
+  in different circumstances. (For example, due to the absence of multiple
+  inheritance, different domain kinds require different classes.)
+
+  The DSI requirements apply to each of those classes.
+  "GlobalDomain" is used in this document to refer to each such class.
+
+  The DSI requirements depend on the domain kind that is supported.
+  The following requirements apply when supporting rectangular domains.
+  Requirements for the other domain kinds are forthcoming.
+
+class GlobalDomain ... {
+  param rank: int;
+  type idxType;
+  param stridable: bool;
+  var dist;
+  ...
+}
+  The fields 'rank', 'idxType', 'stridable' are the corresponding attributes
+  of the domain to be distributed. (They could be replaced with
+  parenthesesless functions of the same names and param/type intents.)
+
+  The field 'dist' must contain a reference to the GlobalDistribution object
+  that created this GlobalDomain. It is used when creating the (runtime)
+  type for this domain, which contains the domain's distribution.
+
+proc GlobalDomain.GlobalDomain() // or with arguments
+  Constructor(s)  These are not regulated by DSI - their specifics are
+  at the distribution implementer's discretion.
+
+proc GlobalDomain.dsiSupportsPrivatization() param: bool return false;
+  This procedure should be provided as-is unless privatization is supported.
+
+proc GlobalDomain.dsiMyDist() return dist;
+  Returns this domain's domain map. This procedure should be provided as-is.
+  (Exception: see dsiLinksDistribution().)
+
+proc GlobalDomain.linksDistribution() param
+proc GlobalDomain.dsiLinksDistribution()
+  Typically these should not be defined.
+
+  If the domains mapped using GlobalDistribution do NOT need to be tracked
+  and the GlobalDistribution itself does NOT need to be reference counted,
+  these two methods should be defined to return 'false';
+  Also in this case dsiMyDist() does not need to be defined.
+
+proc GlobalDistribution.dsiNewRectangularDom(param rank: int,
+                                             type idxType,
+                                             param stridable: bool)
+                                      : GlobalDomain(rank, idxType, stridable)
+  This method is invoked when the Chapel program is creating
+  a domain value of the type domain(rank, idxType, stridable)
+  mapped using the domain map 'this'.
+  This method returns a new GlobalDomain instance that will correspond to
+  that Chapel domain value, i.e., be that value's runtime representation.
+  The field 'dist' of the returned GlobalDomain must point to 'this'.
+
+proc GlobalDistribution.dsiIndexLocale(indexx): locale
+  Given an index 'indexx', returns the locale that "owns" that index,
+  i.e. on which the corresponding data is located.
+  This is used to implement idxToLocale() on the 'dmap' wrapper.
+
+proc GlobalDomain.dsiGetIndices(): domain(rank, idxType, stridable)
+  Returns a Chapel domain whose index set is the same as the index set
+  of the domain value for which this GlobalDomain instance was created.
+
+proc GlobalDomain.dsiSetIndices(dom: domain(rank, idxType, stridable)): void
+  Updates the internal representation of 'this' to match the index set of 'dom'.
+
+  'dsiSetIndices' and 'dsiGetIndices' are used to assign a domain value to
+  a domain variable (or any domain l-value).
+  Note: the arrays associated with this domain will be updated
+  outside these method.
+
+proc GlobalDomain.dsiSetIndices(ranges: rank * range(idxType)): void
+  The same as the other 'dsiSetIndices'. Could be implemented like this:
+  { dsiSetIndices([(...rangesArg)]); }
+
+  It is used to initialize the index set of the object returned by
+  dsiNewRectangularDom() to the index set of the corresponding Chapel
+  domain value.
+
+iter GlobalDomain.these()
+  The serial iterator over the indices of this domain.
+  Yields values of the type idxType if rank==1, rank*idxType otherwise.
+
+iter GlobalDomain.these(param tag: iterator) where tag == iterator.leader
+iter GlobalDomain.these(param tag: iterator, follower) where tag == iterator.follower
+  The "leader" and "follower" iterators (defined below). They are
+  invoked implicitly to implement parallel iteration over this domain.
+  (The serial iterator must also be defined for parallel iteration.)
+
+  The job of the leader iterator is to:
+   * subdivide the given domain into subdomains,
+   * introduce parallelism between these subdomains, and
+   * place computations for each subdomain on the desired locale,
+  as appropriate for this domain map.
+
+  The leader iterator must yield, for each subdomain it chooses,
+  a description of that subdomain, created as defined below.
+  Parallelism and placement are achieved, for example, by placing the
+  yield statements within parallel loops and 'on' statements.
+  The leader is invoked (implicitly) once per parallel loop or expression
+  over the corresponding domain.
+
+  The job of the follower iterator is simply to iterate sequentially
+  over a subdomain whose description is yielded by the leader iterator,
+  yielding all indices in that subdomain.
+  Each time the leader yields a description, the follower is invoked
+  (implicitly) with that description passed to its 'follower' argument.
+  (The argument name must be exactly "follower".)
+
+  For a zippered loop, only the leader for the first of the zippered
+  items is invoked. Each time that leader yields a description,
+  all followers are invoked in a zippered manner, with that description
+  passed to their 'follower' arguments.
+
+  In general, it is up to the implementer of the leaders/followers
+  whether and how to support their interoperability in this situation.
+  That is, whether and how the description from the leader of one
+  zippered item is handled by the follower of another item.
+  One approach could be to support zippering of like items
+  [example? e.g. associative domains over the same type?]
+  and generate a compile-time or run-time error otherwise.
+
+  DSI requires interoperability betweem domain maps only
+  for *rectangular* domains, by prescribing:
+   (a) how the leader builds the description of a subdomain, and
+   (b) in what order the follower yields the indices of that subdomain.
+
+  (a) - subdomain description
+
+  Let 'Dwhole' be the Chapel domain corresponding to this GlobalDomain.
+  Let 'Dsub' be a subdomain chosen by the leader iterator.
+  Let 'DD' be the number of dimensions in Dwhole and Dsub.
+  The description of Dsub is its "densification" w.r.t. Dwhole:
+
+    // densification of a domain is a tuple of densifications
+    // of ranges for each dimension
+    densify(Dwhole, Dsub) =
+      ( densify(Dwhole.dim(1), Dsub.dim(1)),
+        ...,
+        densify(Dwhole.dim(DD), Dsub.dim(DD)) )
+
+    // densification of a range is the sequence of densifications
+    // of its elements, preserving their order
+    if Rsub describes the sequence
+      i_1, ..., i_N
+    densify(Rwhole, Rsub) describes the sequence
+      densify(Rwhole, i_1), ..., densify(Rwhole, i_N)
+
+    For example, densify(Rwhole, Rwhole) == 0.. #(Rwhole.length)
+
+    [TODO: define densification of a range via its low, high, stride
+     and put the corresponding procedure (and its reversal) in DSIUtil.chpl.]
+
+    // densification of an index is its indexOrder
+    densify(Rwhole, i) = Rwhole.indexOrder(i)
+
+  Hint: when developing a new domain map, skip densification and
+  de-densification, but ensure it is used in zippering only
+  with domains/arrays of the same domain map.
+
+  (b) - follower yield order
+
+  The follower iterator must traverse the subdomain for which the above
+  description is created in the order given by the default domain map.
+  (That order can be observed, e.g., by assigning Rsub to a domain
+   variable whose type does not specify a domain map explicitly,
+   then invoking write() on that variable.)
+
+  (Interoperability of domain maps implies that the follower must
+   accept a densification of any subdomain of Dwhole, not just the
+   ones that can be generated by its leader.)
+
+proc GlobalDomain.dsiSerialWrite(f: Writer): void
+  Writes out the domain to the given Writer serially.
+  Is used to implement write() on the corresponding domain.
+
+  This method should not invoke any write() methods or contain 'on' clauses,
+  to avoid deadlock.
+
+proc GlobalDomain.dsiDim(dim: int): range(idxType)
+proc GlobalDomain.dsiDims(): rank * range(idxType)
+proc GlobalDomain.dsiLow
+proc GlobalDomain.dsiHigh
+proc GlobalDomain.dsiStride
+proc GlobalDomain.dsiNumIndices
+  These methods implement the corresponding queries (dim, dims, low, etc.)
+  of the domain value for which this GlobalDomain instance was created.
+  For example, dsiDim(d) returns the range describing the domain's
+  'd'-th dimension
+
+
+class GlobalArray
+-----------------
+
+  An instance of this class is created whenever a Chapel array is created
+  over a domain represented by a GlobalDomain.
+  There is a one-to-one correspondence at run time between a
+  (conceptual) Chapel array value and an instance of GlobalArray.
+
+  This class is returned by 'GlobalDomain.dsiBuildArray'.
+  It must be a subclass of 'BaseArr'.
+
+  It is legal for 'GlobalDomain.dsiBuildArray' to return instances of
+  different classes in different circumstances.
+  The DSI requirements apply to each of those classes.
+  Here "GlobalArray" refers to each such class.
+
+class GlobalArray ... {
+  type eltType;
+  var dom;
+  ...
+}
+  The field 'eltType' gives the type of the array elements.
+
+  The field 'dom' must contain a reference to the GlobalDomain object
+  that created this GlobalArray. This is used when creating the (runtime)
+  type for this array, which contains the array's domain.
+
+proc GlobalArray.GlobalArray() // or with arguments
+  Constructor(s)  These are not regulated by DSI - their specifics are
+  at the distribution implementer's discretion.
+
+proc GlobalArray.dsiSupportsPrivatization() param: bool return false;
+  This procedure should be provided as-is unless privatization is supported.
+
+proc GlobalArray.idxType type return dom.idxType;
+  Returns the index type of the corresponding domain.
+  (Could be a type field in GlobalArray instead.)
+
+proc GlobalDomain.dsiBuildArray(type eltType) : GlobalArray(eltType, this.type)
+  This method is invoked when the Chapel program is creating
+  an array value over the domain 'this' with the element type 'eltType'.
+  This method returns a new GlobalArray instance that will correspond to
+  that Chapel array value, i.e., be that value's runtime representation.
+  The field 'dom' of the returned GlobalDomain must point to 'this'.
+
+proc GlobalArray.dsiGetBaseDom() return dom;
+  Returns this array's domain. This procedure should be provided as-is.
+
+proc GlobalArray.dsiAccess(indexx) var: eltType {
+  Given an index, returns the corresponding array element (as an l-value).
+
+proc GlobalArray.dsiSerialWrite(f: Writer): void
+  Writes out the array to the given Writer serially.
+  Is used to implement write() on the corresponding array.
+
+  This method should not invoke any write() methods or contain 'on' clauses,
+  to avoid deadlock.
+
+iter GlobalArray.these() var: eltType
+  The serial iterator over the elements of this array.
+
+iter GlobalArray.these(param tag: iterator) where tag == iterator.leader
+iter GlobalArray.these(param tag: iterator, follower)  var  where tag == iterator.follower
+  The leader and follower iterators.
+
+  These are defined in the same way as the leader and follower for
+  GlobalDomain, except the follower must yield array locations.
+
+  Given a subdomain description passed to the 'follower' argument,
+  the GlobalArray follower iterator must yield array locations
+  corresponding to the indicies yielded by the GlobalDomain follower,
+  in the same order.
+
+proc GlobalArray.dsiReallocate(d: domain): void
+  When this array's domain is assigned a new value, say 'newDom',
+  first this method is invoked on 'newDom'.
+  Then, dsiSetIndices(newDom) is invoked on this GlobalArray's 'dom'.
+
+  Correspondingly, 'dsiReallocate' needs to adjust everything
+  that won't be taken care of in 'dsiSetIndices'.
+
+  -----------
+  This method can/should be a no-op if:
+   * GlobalArray stores its array elements in Chapel array(s), and
+   * the domain(s) of those array(s) are updated by 'dsiSetIndices',
+  as in the following simplified example:
+
+    class GlobalDomain : BaseRectangularDom {
+      // required
+      param rank: int;
+      type idxType;
+      param stridable: bool;
+      var dist;
+      // for example, store indices as a single Chapel domain
+      var myIndices: domain(rank, idxType, stridable);
+    }
+
+    proc GlobalDomain.dsiSetIndices(dom: domain(rank,idxType,stridable)): void
+    { myIndices = dom; }
+
+    class GlobalArray : BaseArr {
+      // required
+      type eltType;
+      var dom;
+      // for example, store elements as a single Chapel array
+      var myElements: [dom.myIndices] eltType;
+    }
+
+  Given one instance of each class, say 'gd' and 'ga', where ga.dom == gd,
+  the domain of ga.myElements is gd.myIndices.
+  A call gd.dsiSetIndices(newDom) updates gd.myIndices, which, in turn,
+  resizes ga.myElements, according to Chapel's array semantics.
+  Nothing remains to do in dsiReallocate().
+
+  (Behind the scene, resizing of ga.myElements is implemented by
+   'dsiReallocate' of the default distribution. That's the distribution
+   that 'myIndices' is distributed with, since myIndices's type provides
+   no explicit distribution.)
+  -----------
+
+
+Naming
+------
+
+Once you have chosen the name for your domain map, say, MyMap,
+we suggest naming the descriptor classes as follows:
+
+  in this document     in your code
+
+  GlobalDistribution   MyMapDist
+  GlobalDomain         MyMapDom
+  GlobalArray          MyMapArr
+  LocalDistribution    LocMyMapDist
+  LocalDomain          LocMyMapDom
+  LocalArray           LocMyMapArr
+
+Some domain maps in this Chapel distribution use just the domain map
+name for their GlobalDistribution classes, e.g. Block and Cyclic.

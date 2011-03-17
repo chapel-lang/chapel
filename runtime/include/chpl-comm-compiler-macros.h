@@ -304,10 +304,10 @@
     local = chpl_macro_tmp == cid;                                      \
   } while (0)
 
-#define CHPL_TEST_LOCAL(wide, ln, fn)                                   \
+#define CHPL_TEST_LOCAL(wide, ln, fn, str)                              \
   do {                                                                  \
     if ((wide).locale != chpl_localeID)                                 \
-      chpl_error("cannot access remote data in local block", ln, fn);   \
+      chpl_error(str, ln, fn);                                          \
   } while (0)
 
 #define CHPL_HEAP_REGISTER_GLOBAL_VAR(i, wide)            \

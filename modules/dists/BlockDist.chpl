@@ -468,7 +468,7 @@ proc LocBlock.LocBlock(param rank: int,
   }
 }
 
-proc BlockDom.getBaseDist() return dist;
+proc BlockDom.dsiMyDist() return dist;
 
 proc BlockDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
@@ -666,11 +666,6 @@ proc BlockDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
-// remove all instances of getDist
-proc BlockDom.getDist(): Block(idxType) {
-  return dist;
-}
-
 // dsiLocalSlice
 proc BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
@@ -706,7 +701,7 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
                                    param stridable: bool,
                                    ranges: rank*range(idxType,
                                                       BoundedRangeType.bounded,
-                                                      stridable, stridable)) {
+                                                      stridable)) {
   if idxType != dist.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != dist.rank then
@@ -769,39 +764,8 @@ iter BlockArr.these() var {
 // somehow?
 //
 iter BlockArr.these(param tag: iterator) where tag == iterator.leader {
-  const maxTasks = dom.dist.dataParTasksPerLocale;
-  const ignoreRunning = dom.dist.dataParIgnoreRunningTasks;
-  const minSize = dom.dist.dataParMinGranularity;
-  const wholeLow = dom.whole.low;
-  coforall locDom in dom.locDoms do on locDom {
-    // Use the internal function for untranslate to avoid having to do
-    // extra work to negate the offset
-    var tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
-    const (numTasks, parDim) =
-      _computeChunkStuff(maxTasks, ignoreRunning, minSize,
-                         locDom.myBlock.dims());
-    var locBlock: rank*range(idxType);
-    for param i in 1..tmpBlock.rank {
-      locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
-    }
-
-
-    if (numTasks == 1) {
-      yield locBlock;
-    } else {
-      coforall taskid in 0:uint(64)..#numTasks {
-        var tuple: rank*range(idxType) = locBlock;
-        const (lo,hi) = _computeBlock(locBlock(parDim).length, numTasks, taskid,
-                                      locBlock(parDim).high,
-                                      locBlock(parDim).low,
-                                      locBlock(parDim).low);
-          
-        tuple(parDim) = lo..hi;
-        yield tuple;
-
-      }
-    }
-  }
+  for follower in dom.these(tag) do
+    yield follower;
 }
 
 proc BlockArr.dsiStaticFastFollowCheck(type leadType) param

@@ -383,6 +383,8 @@ proc CyclicDom.dsiDim(d: int) return whole.dim(d);
 
 proc CyclicDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
+proc CyclicDom.dsiMyDist() return dist;
+
 
 
 proc CyclicDom.dsiGetIndices() {
@@ -506,7 +508,7 @@ proc CyclicDom.dsiBuildRectangularDom(param rank, type idxType,
                                     param stridable: bool,
                                     ranges: rank*range(idxType,
                                                        BoundedRangeType.bounded,
-                                                       stridable, stridable)) {
+                                                       stridable)) {
   if idxType != dist.idxType then
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != dist.rank then
@@ -692,49 +694,8 @@ iter CyclicArr.these() var {
 }
 
 iter CyclicArr.these(param tag: iterator) where tag == iterator.leader {
-  const maxTasks = dom.dist.dataParTasksPerLocale;
-  const ignoreRunning = dom.dist.dataParIgnoreRunningTasks;
-  const minSize = dom.dist.dataParMinGranularity;
-  const wholeLow = dom.whole.low;
-  coforall locDom in dom.locDoms do on locDom {
-    const (numTasks, parDim) = _computeChunkStuff(maxTasks, ignoreRunning,
-                                                  minSize,
-                                                  locDom.myBlock.dims());
-
-    var result: rank*range(idxType=idxType, stridable=true);
-    // Use the internal function for untranslate to avoid having to do
-    // extra work to negate the offset
-    var zeroedLocalPart = dom.whole((...locDom.myBlock.getIndices())).chpl__unTranslate(wholeLow);
-    for param i in 1..rank {
-      var dim = zeroedLocalPart.dim(i);
-      var wholestride = dom.whole.dim(i).stride;
-      if dim.high >= dim.low then
-        result(i) = (dim.low / wholestride)..(dim.high / wholestride) by (dim.stride / wholestride);
-      else
-        result(i) = 1..0 by 1;
-    }
-    if numTasks == 1 {
-      if debugCyclicDist then
-        writeln(here.id, ": leader whole: ", dom.whole,
-                         " result: ", result,
-                         " myblock: ", locDom.myBlock);
-      yield result;
-    } else {
-
-      coforall taskid in 0:uint(64)..#numTasks {
-        var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
-        const low = result(parDim).low, high = result(parDim).high;
-        const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
-                                      high, low, low);
-        splitRanges(parDim) = result(parDim)(lo..hi);
-        if debugCyclicDist then
-          writeln(here.id, ": leader whole: ", dom.whole,
-                           " result: ", result,
-                           " splitRanges: ", splitRanges);
-        yield splitRanges;
-      }
-    }
-  }
+  for follower in dom.these(tag) do
+    yield follower;
 }
 
 proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param

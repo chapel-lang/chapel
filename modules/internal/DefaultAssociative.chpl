@@ -41,6 +41,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   var postponeResize = false;
 
   proc linksDistribution() param return false;
+  proc dsiLinksDistribution()     return false;
 
   proc DefaultAssociativeDom(type idxType, dist: DefaultDist) {
     this.dist = dist;

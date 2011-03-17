@@ -1666,7 +1666,15 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "CHPL_TEST_LOCAL(");
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
         fprintf(outfile, "*");
-      gen(outfile, "%A, %A, %A)", get(1), get(2), get(3));
+      gen(outfile, "%A, %A, %A, ", get(1), get(2), get(3));
+      INT_ASSERT(get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+                 get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS));
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+          get(1)->typeInfo()->getField("addr")->typeInfo()->symbol->hasFlag(FLAG_EXTERN)) {
+        gen(outfile, "\"cannot pass non-local extern class to extern procedure\")");
+      } else {
+        gen(outfile, "\"cannot access remote data in local block\")");
+      }
       break;
     case PRIM_SYNC_INIT:
     case PRIM_SYNC_DESTROY:
