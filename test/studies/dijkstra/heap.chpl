@@ -49,11 +49,11 @@ module Heap {
       var rightChildId: int = heap.Ids[rightChild];
 
       var distanceLeftChild: real;
-      if (leftChildId == -1) then distanceLeftChild = 1.0/0.0;
+      if (leftChildId == -1) then distanceLeftChild = INFINITY;
       else distanceLeftChild = records[leftChildId].distance;
 
       var distanceRightChild: real;
-      if (rightChildId == -1) then distanceRightChild = 1.0/0.0;
+      if (rightChildId == -1) then distanceRightChild = INFINITY;
       else distanceRightChild = records[rightChildId].distance;
 
       // Swap node with smallest of its two children

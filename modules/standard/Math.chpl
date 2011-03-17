@@ -1,3 +1,6 @@
+_extern const INFINITY: real(64);
+_extern const NAN: real(64);
+
 pragma "inline" proc abs(i : int(?w)) return if i < 0 then -i else i;
 pragma "inline" proc abs(i : uint(?w)) return i;
 pragma "inline" proc abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
