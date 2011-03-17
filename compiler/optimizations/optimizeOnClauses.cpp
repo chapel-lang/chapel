@@ -8,6 +8,9 @@
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
+#ifdef DEBUG
+#include "stmt.h"
+#endif
 
 //
 // Return true if this primitive function is safe for fast on optimization
