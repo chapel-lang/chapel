@@ -371,23 +371,25 @@ proc range.boundsCheck(other: idxType)
 proc range.alignLow()
 {
   if ! stridable then return;
-  _low = this.alignedLow;
+  else _low = this.alignedLow;
 }
 
 // Moves the high bound of the range down to the next alignment point.
 proc range.alignHigh()
 {
   if ! stridable then return;
-  _high = this.alignedHigh;
+  else _high = this.alignedHigh;
 }
 
 proc range.indexOrder(i: idxType)
 {
   if ! member(i) then return (-1):idxType;
   if ! stridable then return i - _low;
-
-  var s = abs(_stride):idxType;
-  return (i - this.alignedLow) / s;
+  else
+  {
+    var s = abs(_stride):idxType;
+    return (i - this.alignedLow) / s;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////////
