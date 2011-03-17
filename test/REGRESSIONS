@@ -161,9 +161,9 @@ failures in output (slicing, reindexing, ...)
 no-local regressions
 ====================
 
-nondet. bad output (03/16/11)
------------------------------
-[Error matching program output for studies/dijkstra/driverEdgeBtw]
+nondet. bad output
+------------------
+[Error matching program output for studies/dijkstra/driverEdgeBtw] (03/16/11)
 
 nondet. prediff error (linefeeds go awry)
 -----------------------------------------
@@ -890,6 +890,10 @@ sig_send: wait for sig_complete event failed
 ========================
 xmt-specific regressions
 ========================
+
+sparse regression recurred after latest range changes (03/17/11)
+----------------------------------------------------------------
+[Error matching program output for release/examples/primers/sparse]
 
 unreachable code warning (persisting on 03/11/11)
 -------------------------------------------------
