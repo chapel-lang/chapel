@@ -7,6 +7,10 @@ pragma "inline" proc abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
 
 pragma "inline" proc conjg(a: complex(?w)) return (a.re, -a.im):complex;
 
+_extern proc isinf(x: real(64)): bool;
+_extern proc isinf(x: real(32)): bool;
+_extern proc isfinite(x: real(64)): bool;
+_extern proc isfinite(x: real(32)): bool;
 _extern proc isnan(x: real(64)): bool;
 _extern proc isnan(x: real(32)): bool;
 

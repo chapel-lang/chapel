@@ -59,7 +59,7 @@ module BC_dijkstra {
         // First shortest path from S to neighbor is found
         //     set neighbor's distance and sigma and insert record in heap
         //     node is the pre node of neighbor
-        if (neighborDistance == INFINITY) {
+        if (isinf(neighborDistance)) {
 
           Records[neighbor].distance = newDistance;
           Records[neighbor].sigma = sigma;
