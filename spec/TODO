@@ -1,6 +1,8 @@
 Classes
 -------
 * add destructors description
+* indicate that parentheses-less methods are statically dispatched,
+  just like fields
 
 Expressions
 -----------
@@ -33,6 +35,10 @@ Functions
 * define function resolution for type functions (perhaps by difference from
   resolution for regular functions)
   ** insert a reference to that in the Generics' Type Constructor section
+* rename "function" to "procedure" throughout the spec; add the "non-iterator"
+  specifier (where appropriate), which was removed in r18389/r18390;
+  perhaps also add the "non-method" specifier, at least at the top
+  of the Procedures chapter
 
 
 Domains and Arrays
