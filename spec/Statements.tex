@@ -437,11 +437,9 @@ parameters.  The loop is then unrolled for each iteration.
 \index{break@\chpl{break}}
 \index{continue@\chpl{continue}}
 
-The label-statement is used to name a specific loop which can then
-be the target of a break- or continue-statement.  If a break-
-or continue-statement has no label, the target is the lexically
-inner-most loop. Labels can only be given to for-, while-do- and
-do-while-statements.
+The label-statement is used to name a specific loop nest for a break-
+or continue-statement.  If a break- or continue-statement has no
+label, the lexically inner-most loop is assumed.
 
 The syntax for label, break, and continue statements is given by:
 \begin{syntax}
@@ -456,11 +454,21 @@ continue-statement:
 \end{syntax}
 
 If a break-statement is encountered, control will be transferred to
-after the associated loop.  If a continue-statement is encountered,
-control will be transferred to the end of the associated loop, but
-still inside the loop.  Break-statements cannot be used to break out of
-parallel loops.  Neither break- nor continue-statements can
-cross out of cobegin-, coforall-, begin-, or sync-statements.
+the statement after the associated loop.  If a continue-statement is
+encountered, control will be transferred to the end of the associated
+loop, but still inside the loop.  Break-statements cannot be used to
+break out of parallel loops.
+
+\begin{rationale}
+Breaks are not permitted in parallel loops because the execution order
+of the iterations of parallel loops is not defined.
+\end{rationale}
+
+\begin{future}
+We expect to support a \emph{eureka} concept which would enable one or
+more tasks to stop the execution of all current and future iterations
+of the loop.
+\end{future}
 
 \begin{example}
 In the following code, the index of the first element in each row of
