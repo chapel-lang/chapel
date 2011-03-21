@@ -372,7 +372,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         break;
       }
       if (rhs->isPrimitive(PRIM_STRING_COPY)) {
-	USR_WARN(call, "Ignoring STRING_COPY primitive");
+        USR_WARN(call, "Ignoring STRING_COPY primitive");
         break;
       }
       if (rhs->isPrimitive(PRIM_SYNC_ISFULL)) {
@@ -580,9 +580,6 @@ bool isBadFunction(FnSymbol* fn) {
       strstr(fn->name, "compilerWarning")) 
     return true;
   
-  if (strstr(fn->name, "__tx_clone")) 
-    USR_WARN("Recursive cloning of cloned function %s", fn->name, fn);
-  
   return false;
 } 
 
@@ -609,7 +606,7 @@ void handleFunctionCalls(BlockStmt* block, CallExpr* call, FnSymbol* fn, Symbol*
   }
 
   // add clone to queue and insert fnTxClone's function definition
-  // this case is required to deal with functions that were cloned in
+  // this case is required to deal with functions that were cloned
   // but did not get added to the queue since we did not have enough 
   // information at that time to even determine in such a clone will 
   // actually be required. 
@@ -635,7 +632,7 @@ insertTransactions(void) {
         block->blockInfo &&
         block->blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC)) 
       queue.add(block);
-  
+
   // iteratively process each block in the queue
   forv_Vec(BlockStmt, block, queue) {
     Vec<CallExpr*> calls;
@@ -645,30 +642,36 @@ insertTransactions(void) {
     INT_ASSERT(fn);
     // USR_PRINT("Processing function %s %p", fn->name, fn); 
 
-    if (strstr(fn->name, "__tx_clone_")) {
-      // fn is already a transactional clone, get the tx descriptor 
-      // from its formal arg list. Note, we will be processing
-      // the entire function body for cloned functions.
-      tx = fn->getFormal(1); 
-    } else {
-      // fn may be cloned later, but for now we create a clone so 
-      // that we have a "fresh" version of the function. We process
-      // function clones later as and when they are called. Note,
-      // we will be processing only atomic blocks within regular fns.
+    if (!strstr(fn->name, "__tx_clone_")) {
+      // fn is a regular function, i.e. has an atomic block. however,
+      // we create a clone of fn as a precaution in case it may be 
+      // called from inside an atomic block. For clone functions,
+      // we need to process the entire function body, but for
+      // regular functions we only need to process the atomic block
       INT_ASSERT(block->blockInfo->isPrimitive(PRIM_BLOCK_ATOMIC));
-      // USR_PRINT("Creating clone for function %s %p", fn->name, fn);
       FnSymbol* fnTxClone = fnCache.get(fn);
       if (!fnTxClone) {
+        // USR_PRINT("Creating clone for function %s %p", fn->name, fn);
         fnTxClone = createTxFnClone(fn);
         fnCache.put(fn, fnTxClone);
         fnCache.put(fnTxClone, fnTxClone);
       }
+
+      // For regular functions, we need to create the tx descriptor
+      // and tx environment variable that holds the state. We also
+      // insert TX_BEGIN and TX_COMMIT calls to mark each atomic block
       tx = newTemp("tx", dtTransaction);
       block->insertAtHead(new DefExpr(tx));
       env = newTemp("local_env", dtTxEnv);
       block->insertAtHead(new DefExpr(env));
       block->insertAtHead(new CallExpr(PRIM_TX_BEGIN, tx, env));
       block->insertAtTailBeforeGoto(new CallExpr(PRIM_TX_COMMIT, tx));
+    } else {
+      // fn is already a transactional clone, get the tx descriptor 
+      // from its formal arg list. Note, we will be processing
+      // the entire function body for cloned functions.
+      tx = fn->getFormal(1); 
+      // USR_PRINT("Getting tx arg from definition %s %p", fn->cname, fn); 
     }  
 
     forv_Vec(CallExpr, call, calls) {
@@ -680,7 +683,7 @@ insertTransactions(void) {
       FnSymbol* cloneFn = call->isResolved();
       INT_ASSERT(cloneFn);
       if (!isBadFunction(cloneFn)) {
-	handleFunctionCalls(block, call, cloneFn, tx);
+        handleFunctionCalls(block, call, cloneFn, tx);
       }
     }
   }

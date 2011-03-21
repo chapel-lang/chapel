@@ -2407,7 +2407,7 @@ void CallExpr::codegen(FILE* outfile) {
         gen(outfile, "CHPL_STM_COMM_WIDE_SET_TUPLE_COMPONENT_VALUE_SVEC");
       else
         gen(outfile, "CHPL_STM_COMM_WIDE_SET_TUPLE_COMPONENT_VALUE");
-      gen(outfile, "(%A, %A, %A, %A, %A", 
+      gen(outfile, "(%A, %A, %A, %A, %A, ", 
           get(1), fieldType, get(2), get(4), valueType);
       codegenExprMinusOne(outfile, get(3));
       gen(outfile, ", %A, %A)", get(5), get(6));
