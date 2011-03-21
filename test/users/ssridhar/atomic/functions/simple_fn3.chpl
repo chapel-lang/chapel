@@ -1,22 +1,21 @@
 var x: uint(64);
 
 proc main() {
-  var i, j: int;
+  var i: int;
   coforall i in 1..10 {
-    foo(j); // check if the non-transactional copy is called
+    foo(i); // check if the non-transactional copy is called
     atomic {
-      foo(j);
-      j += 1;
-      foo(j); // check if the cache works
+      foo(i);
+      foo(i); // check if the cache works
     }
   }
+  writeln("x = ", x);
 }
 
-proc foo(i: int) {
+proc foo(i: int) { // 1 argument
+  atomic bar();
+}
+
+proc bar() { // 0 arguments
   x = x + 1;
-  atomic bar(i);
-}
-
-proc bar(i: int) {
-  foo(i);
 }

@@ -1,11 +1,10 @@
-var x: int; 
+var x: int;
 
 proc main() {
-  writeln("In main before foo x = ", x);
   atomic {
     foo();
   }
-  writeln("In main after foo x = ", x);
+  writeln("x = ", x);
 }
 
 proc foo() {
