@@ -162,7 +162,7 @@ extern chpl_txfn_p chpl_txftable[];
   do {                                                                  \
     wide_type chpl_macro_tmp;                                           \
     CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype,           \
-                             sfield, etype, ln, fn);                    \
+                             sfield, etype, -1, ln, fn);		\
     CHPL_STM_COMM_WIDE_GET(tx, local, chpl_macro_tmp, etype2, ln, fn);  \
   } while(0)
 
@@ -174,12 +174,12 @@ extern chpl_txfn_p chpl_txftable[];
 
 #define CHPL_STM_COMM_WIDE_PUT(tx, wide, local, type, ln, fn)           \
   do {                                                                  \
-    type chpl_macro_tmp = local;                                        \
+    type chpl_macro_tmp2 = local;					\
     if (chpl_localeID == (wide).locale)                                 \
-      chpl_stm_tx_store(tx, &chpl_macro_tmp, (wide).addr,               \
+      chpl_stm_tx_store(tx, &chpl_macro_tmp2, (wide).addr,		\
                         sizeof(type), ln, fn);                          \
     else                                                                \
-      chpl_stm_tx_put(tx, &chpl_macro_tmp, (wide).locale, (wide).addr,  \
+      chpl_stm_tx_put(tx, &chpl_macro_tmp2, (wide).locale, (wide).addr,	\
                       sizeof(type), ln, fn);                            \
   } while(0)
 
@@ -200,7 +200,7 @@ extern chpl_txfn_p chpl_txftable[];
                       sizeof(type), ln, fn);                            \
   } while(0)
 
-#define CHPL_STM_STORE_REF_SVEC(tx, dst, src, type, ln, fn)             \
+#define CHPL_STM_STORE_REF_SVEC(tx, dst, src, type, ln, fn)	\
   chpl_stm_tx_store(tx, &src, dst, sizeof(type), ln, fn);
 
 #define CHPL_STM_STORE(tx, dst, src, type, ln, fn)                      \
@@ -263,18 +263,18 @@ extern chpl_txfn_p chpl_txftable[];
 
 #define CHPL_STM_COMM_WIDE_SET_TUPLE_COMPONENT_VALUE(tx, type, wide, local, stype, index, ln, fn) \
   do {                                                                  \
-  type chpl_macro_tmp = local;                                          \
-  if (chpl_localeID == (wide).locale)                                   \
-    chpl_stm_tx_store(tx,                                               \
-                      &chpl_macro_tmp,                                  \
-                      &(*(wide).addr)[index],                           \
-                      sizeof(type), ln, fn);                            \
-  else                                                                  \
-    chpl_stm_tx_put(tx,                                                 \
-                    &chpl_macro_tmp,                                    \
-                    (wide).locale,                                      \
-                    &(*(wide).addr)[index],                             \
-                    sizeof(type), ln, fn);                              \
+    type chpl_macro_tmp = local;					\
+    if (chpl_localeID == (wide).locale)					\
+      chpl_stm_tx_store(tx,						\
+			&chpl_macro_tmp,				\
+			&(*(wide).addr)[index],				\
+			sizeof(type), ln, fn);				\
+    else								\
+      chpl_stm_tx_put(tx,						\
+		      &chpl_macro_tmp,					\
+		      (wide).locale,					\
+		      &(*(wide).addr)[index],				\
+		      sizeof(type), ln, fn);				\
   } while(0)
 
 #define CHPL_STM_COMM_WIDE_SET_TUPLE_COMPONENT_VALUE_SVEC(tx, type, wide, local, stype, index, ln, fn) \
@@ -293,17 +293,17 @@ extern chpl_txfn_p chpl_txftable[];
   } while(0)
 
 #define CHPL_STM_COMM_WIDE_ARRAY_SET_VALUE(tx, wide_type, cls, ind, stype, sfield, etype, val, ln, fn) \
-  do {                                                                  \
-    wide_type chpl_macro_tmp;                                           \
-    CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype,           \
-                             sfield, etype, ln, fn);                    \
-    CHPL_STM_COMM_WIDE_PUT(tx, chpl_macro_tmp, val, etype, ln, fn);     \
+  do {									\
+    wide_type chpl_macro_tmp;						\
+    CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype, sfield,	\
+			     etype, -1, ln, fn);			\
+    CHPL_STM_COMM_WIDE_PUT(tx, chpl_macro_tmp, val, etype, ln, fn);	\
   } while(0)
-
+    
 #define CHPL_STM_ARRAY_STORE_VALUE(tx, dst, ind, src, type, ln, fn)     \
-  do {                                                                  \
-    type chpl_macro_tmp = src;                                          \
-    chpl_stm_tx_store(tx, &chpl_macro_tmp, &((dst)->_data[ind]),        \
+    do {								\
+      type chpl_macro_tmp = src;					\
+      chpl_stm_tx_store(tx, &chpl_macro_tmp, &((dst)->_data[ind]),	\
                       sizeof(type), ln, fn);                            \
   } while(0)
 
