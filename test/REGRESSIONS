@@ -161,13 +161,17 @@ failures in output (slicing, reindexing, ...)
 no-local regressions
 ====================
 
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for trivial/deitz/test_param_fold2] (03/20/11)
+
 nondet. bad output
 ------------------
 [Error matching program output for studies/dijkstra/driverEdgeBtw] (03/16/11)
 
 nondet. prediff error (linefeeds go awry)
 -----------------------------------------
-[Error matching program output for release/examples/primers/taskParallel] (12/03/10, 12/04/10, 12/07/10, 02/17/11, 03/04/11)
+[Error matching program output for release/examples/primers/taskParallel] (12/03/10, 12/04/10, 12/07/10, 02/17/11, 03/04/11, 03/18/11)
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -191,6 +195,10 @@ memory stuff in flux (05/28/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+nondet. execution timeout
+-------------------------
+[Error: Timed out executing program studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc] (03/21/11)
 
 non-equal zippered iteration (03/15/11)
 ---------------------------------------
@@ -236,8 +244,9 @@ gasnet-fast regressions (other than the above)
 
 nondet. lost update to element to value 5
 -----------------------------------------
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1] (02/24/11, 03/01/11)
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3] (02/26/11, 03/04/11)
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1] (02/24/11, 03/01/11, 03/18/11)
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block2] (03/20/11)
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3] (02/26/11, 03/04/11, 03/18/11)
 
 nondet. zippered iterations having unequal lengths
 --------------------------------------------------
@@ -247,6 +256,12 @@ nondet. zippered iterations having unequal lengths
 ==================
 pvm-specific tests
 ==================
+
+nondet. problems due to "address already in use" errors
+-------------------------------------------------------
+[Error matching program output for release/examples/primers/classes] (03/20/11)
+[Error matching program output for release/examples/primers/fileIO] (03/20/11)
+[Error matching program output for release/examples/programs/tree] (03/20/11)
 
 nondet. compilation timeouts
 ----------------------------
@@ -608,12 +623,6 @@ divide by zero in generated code (03/14/11)
 persisting unreachable loop warnings (03/11/11)
 -----------------------------------------------
 [Error matching compiler output for studies/hpcc/HPL/bradc/hpl-blc-noreindex]
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/hpcc/hpl]
-[Error matching program output for release/examples/hpcc/stream-ep]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for release/examples/primers/reductions]
-[Error matching program output for release/examples/programs/quicksort]
 * and a bunch of others*
 
 redeclaration of identifier in scope (01/24/11)
@@ -895,20 +904,13 @@ sparse regression recurred after latest range changes (03/17/11)
 ----------------------------------------------------------------
 [Error matching program output for release/examples/primers/sparse]
 
-unreachable code warning (persisting on 03/11/11)
--------------------------------------------------
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/hpcc/stream-ep]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for release/examples/primers/reductions]
-
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for release/examples/programs/jacobi] (11/17/10)
 [Error: Timed out executing program release/examples/primers/taskParallel] (11/17/10)
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
-[Error: Timed out compilation for release/examples/hello] (10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11, 03/08/11, 03/12/11)
+[Error: Timed out compilation for release/examples/hello] (10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11, 03/08/11, 03/12/11, 03/19/11)
 
 execution timeouts
 ------------------
