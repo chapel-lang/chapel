@@ -431,33 +431,41 @@ Parameter for loops are restricted to iteration over range literals
 with an optional by expression where the bounds and stride must be
 parameters.  The loop is then unrolled for each iteration.
 
-\section{The Label, Break, and Continue Statements}
+\section{The Break, Continue and Label Statements}
 \label{Label_Break_Continue}
 \index{label@\chpl{label}}
 \index{break@\chpl{break}}
 \index{continue@\chpl{continue}}
 
-The label-statement is used to name a specific loop nest for a break-
-or continue-statement.  If a break- or continue-statement has no
-label, the lexically inner-most loop is assumed.
+The break- and continue-statements are used to alter the flow of control within a
+loop construct.  A break-statement causes flow to exit the containing loop and
+resume with the statement immediately following it.  A continue-statement causes
+control to jump to the end of the body of the containing loop and resume
+execution from there.  By default, break- and continue-statements exit
+or skip the body of the immediately-containing loop construct.
+
+The label-statement is used to name a specific loop so that \chpl{break}
+and \chpl{continue} can exit or resume a less-nested loop.
+Labels can only be attached to for-, while-do- and do-while-statements.
+When a break statement has a label, execution continues with the first statement
+following the loop statement with the matching label.  When a continue statement
+has a label, execution continues at the end of the body of the loop with the
+matching label.  If there is no containing loop construct with a matching label,
+a compile-time error occurs.
 
 The syntax for label, break, and continue statements is given by:
 \begin{syntax}
-label-statement:
-  `label' identifier statement
-
 break-statement:
   `break' identifier[OPT] ;
 
 continue-statement:
   `continue' identifier[OPT] ;
+
+label-statement:
+  `label' identifier statement
 \end{syntax}
 
-If a break-statement is encountered, control will be transferred to
-the statement after the associated loop.  If a continue-statement is
-encountered, control will be transferred to the end of the associated
-loop, but still inside the loop.  Break-statements cannot be used to
-break out of parallel loops.
+Break-statements cannot be used to exit parallel loops.  
 
 \begin{rationale}
 Breaks are not permitted in parallel loops because the execution order
