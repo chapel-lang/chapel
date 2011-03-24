@@ -26,7 +26,7 @@ enum {TX_FAIL = 0, TX_OK, TX_BUSY};
     }						\
   } while (0)
 
-#define RWSETSIZE 1024
+#define RWSETSIZE 4096
 
 #define NOLOCALE -1
 
@@ -111,7 +111,9 @@ typedef struct __chpl_stm_tx_t {
 #define GET_CLOCK              ATOMIC_LOAD_MB(&CLOCK)
 #define FETCH_AND_INC_CLOCK    ATOMIC_FETCH_AND_INC_MB(&CLOCK)
 
-static volatile gtm_word_t locks[LOCK_ARRAY_SIZE];
+//static volatile gtm_word_t locks[LOCK_ARRAY_SIZE];
+//static 
+volatile gtm_word_t *locks;
 
 static volatile gtm_word_t gclock;
 
@@ -154,10 +156,5 @@ int gtm_tx_comm_get(chpl_stm_tx_t* tx, void* dstaddr, int32_t srclocale, void* s
 int gtm_tx_comm_put(chpl_stm_tx_t* tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size);
 int gtm_tx_comm_fork(chpl_stm_tx_t* tx, int32_t dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize);
 int gtm_tx_comm_fork_fast(chpl_stm_tx_t* tx, int32_t dstlocale, chpl_fn_int_t fid, void *arg, size_t argsize);
-
-// 
-// Misc
-// 
-int isHeapAddr(void*);
 
 #endif

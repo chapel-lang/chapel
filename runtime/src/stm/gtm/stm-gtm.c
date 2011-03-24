@@ -12,6 +12,7 @@
 extern void* globalHeapStart;   // see src/comm/gasnet
 extern size_t globalHeapSize; 
 
+static
 int isHeapAddr(void* addr) {
   if (!(globalHeapStart && globalHeapSize))
     return 1;
@@ -25,6 +26,7 @@ void chpl_stm_init() {
   assert(sizeof(gtm_word_t) == sizeof(void*));
   assert(sizeof(gtm_word_t) == sizeof(atomic_t));
   assert(sizeof(gtm_word_t) == sizeof(unsigned long));
+  locks = (gtm_word_t*) chpl_malloc(LOCK_ARRAY_SIZE, sizeof(gtm_word_t), CHPL_RT_MD_STM_TX_LOCKARRAY, __LINE__, __FILE__);
   memset((void *)locks, 0, LOCK_ARRAY_SIZE * sizeof(gtm_word_t));
   CLOCK = 0;
   gtm_tx_init();
