@@ -1,4 +1,2 @@
-test_fn_arg_inout_intent.chpl:6: In function 'coforall_fn':
-test_fn_arg_inout_intent.chpl:8: warning: Heap load not instrumented (GET_MEMBER)
 Before foo x = 0
 After foo x = 10

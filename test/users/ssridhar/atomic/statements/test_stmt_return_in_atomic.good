@@ -1,1 +1,3 @@
+test_stmt_return_in_atomic.chpl:10: In function 'foo':
+test_stmt_return_in_atomic.chpl:10: warning: control reaches end of function that returns a value
 In main x = 10 y = 10

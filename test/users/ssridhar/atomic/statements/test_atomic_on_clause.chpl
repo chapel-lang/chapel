@@ -1,11 +1,8 @@
-var x: [1..10] int;
+var x: int;
 
 proc main() {
-  var i: int = 1;
-  on x(i).locale do writeln("Locale id ", x(i).locale.id);
-  atomic {
-    on x(i).locale do x(i) = x(i) + 1;
-  }
+  coforall i in 1..1000 do
+    atomic on x.locale do x = x + 1;
   writeln("x = ", x);
 }
 

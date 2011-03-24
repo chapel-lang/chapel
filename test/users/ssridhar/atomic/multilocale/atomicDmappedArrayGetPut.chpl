@@ -3,12 +3,13 @@ use BlockDist, Time;
 type indexType = int(64),
   elemType = int(64);
 
-config const n: indexType = 4;
+config const n: indexType = 10;
 
 const m = 2**n;
 
 config const printArrays = false,
-  printStats = true;
+  printStats = false,
+  trackStmStats = false;
 
 const TableDist = new dmap(new Block(boundingBox=[0..m-1]));
 
@@ -23,9 +24,11 @@ proc main() {
 
   if (printArrays) then writeln("Before updates T = \n", T);
 
+  if (trackStmStats) then startStmStats();
+
   const startTime = getCurrentTime();
 
-  for i in 0..m-1 {
+  coforall i in 0..m-1 {
     atomic {
       T(i) += 1;
       T((i+1) % m) += 1;
@@ -33,6 +36,8 @@ proc main() {
   }
 
   const endTime = getCurrentTime() - startTime;
+
+  if (trackStmStats) then stopStmStats();
 
   if (printArrays) then writeln("After updates T = \n", T);
 

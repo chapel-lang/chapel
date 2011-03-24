@@ -1,0 +1,5 @@
+feature request: need to support GETCID primitive and VMT tables
+
+error: FIXME: GETCID primitive
+error: FIXME: VMT_CALL primitive
+

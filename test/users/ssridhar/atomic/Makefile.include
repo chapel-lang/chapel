@@ -1,0 +1,33 @@
+CHPL = chpl
+
+FLAGS += --conditional-dynamic-dispatch-limit 100
+FLAGS += --print-commands --print-passes
+
+ifeq ($(F), --ignore-atomic)
+  IA=-ia
+else
+  IA=""
+endif
+
+ifeq ($(CHPL_DEVELOPER), true)
+  FLAGS += $(F) --devel --gen-ids -g 
+else 
+  FLAGS += $(F) --no-devel --fast 
+endif
+
+TARGET_SRCS = $(wildcard *.chpl)
+TARGETS = $(TARGET_SRCS:%.chpl=%)
+
+default: all 
+
+all: $(TARGETS)
+
+%: %.chpl
+	$(CHPL) --savec c_$@$(IA) $(FLAGS) -o $@$(IA) $^
+
+clean:
+	rm -f $(TARGETS) *_real 
+
+clobber: clean
+	rm -rf *_c c_*
+

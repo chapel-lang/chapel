@@ -1,14 +1,18 @@
+var x: int = 2;
+
 class C {
-  proc foo() { writeln("isa C"); }
+  proc foo(i: int) { x += i; }
 }
 
 class D : C {
-  proc foo() { writeln("isa D"); }
+  proc foo(i: int) { x -= i; }
 }
 
 var c = new C();
-atomic c.foo();
+atomic c.foo(2);
 delete c;
 c = new D();
-c.foo();
+c.foo(2);
 delete c;
+
+writeln("x = ", x);
