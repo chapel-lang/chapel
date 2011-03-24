@@ -66,6 +66,7 @@ atomic           processToken(TATOMIC);
 begin            processToken(TBEGIN);
 break            processToken(TBREAK);
 by               processToken(TBY);
+checked          processToken(TCHECKED);
 class            processToken(TCLASS);
 cobegin          processToken(TCOBEGIN);
 coforall         processToken(TCOFORALL);

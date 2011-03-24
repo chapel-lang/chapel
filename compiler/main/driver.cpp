@@ -38,6 +38,7 @@ static char moduleSearchPath[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
 bool fRuntime = false;
+bool fLibraryCompile = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
@@ -543,6 +544,7 @@ static ArgumentDescription arg_desc[] = {
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
+ {"library", ' ', NULL, "compile Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {0}

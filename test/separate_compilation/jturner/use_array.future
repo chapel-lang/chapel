@@ -1,0 +1,3 @@
+bug: array types are can't be used in separate compilation
+
+Array types can't be fully-specified by the user, which makes separately compiling a function that takes them as formal arguments impossible.

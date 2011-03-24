@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+if [ "$#" != "1" ];
+then
+    echo "usage: sub_test compiler"
+    exit 1;
+fi
+
+
+# This substitution isn't perfect, but it'll do
+localdir=`echo $PWD | sed "s|$CHPL_HOME|.|g"`
+
+libs="array classextern classextern2 fcfunc iterator methodextern methodextern2 overload record simplefloat subclass"
+
+for l in $libs; do
+    f="use_$l"
+
+    if [ -e $f.future ] && [ "$CHPL_TEST_FUTURES" -eq "0" ]; then
+        echo "[Skipping future test: $localdir/$f]"
+        continue
+    fi
+
+    if [ ! -e $f.future ] && [ "$CHPL_TEST_FUTURES" -eq "2" ]; then
+        continue
+    fi
+
+    if [ -e $f.future ]; then
+        futuretest=`head -n 1 $f.future`
+    else
+        futuretest=""
+    fi
+
+    echo "[Executing $1 $COMPOPTS $f.chpl]"
+    $1 $COMPOPTS --library "$l.chpl" -o "lib$l.so" 
+    $1 $COMPOPTS -L. -l $l $f.chpl 2>&1 -o "$f.comp.out"
+    LD_LIBRARY_PATH=. ./$f.comp.out > $f.comp.out.tmp
+    diff $f.comp.out.tmp $f.good
+    retval=$?
+    rm $f.comp.out
+    rm "lib$l.so"
+    rm "lib$l.so.o"
+
+    if [ "$futuretest" != "" ]; then
+        s="Future ($futuretest) "
+    else
+        s=""
+    fi
+    if [ $retval = 0 ]; then
+        rm $f.comp.out.tmp
+        s="$s[Success"
+    else
+        s="$s[Error"
+    fi
+        
+    echo "$s matching compiler output for $localdir/$f]"
+
+done
+
+exit 0

@@ -196,6 +196,28 @@ static const char* uniquifyName(const char* name,
   return newName;
 }
 
+static const char* mangleFnName(FnSymbol *fn, Vec<const char*>* set1) {
+  const char* newName;
+  const int mangled_max = 256;
+  char mangledName[mangled_max];
+  int currentLen = 0;
+
+  //FIXME: I don't like this special-casing
+  if ((((strncmp("_chpl_", fn->cname, 6) == 0) || (strncmp("chpl_", fn->cname, 5) == 0)) && (strncmp("chpl__", fn->cname, 6) != 0)) || (strcmp("chpl__heapAllocateGlobals", fn->cname) == 0) || (strcmp("chpl__init_ChapelThreads", fn->cname) == 0) ) {
+    return fn->cname;
+  }
+
+  snprintf(mangledName, mangled_max - currentLen, "_F_%s", fn->cname);
+  currentLen = strlen(mangledName);
+  
+  for_formals(formal, fn) {
+    snprintf(&mangledName[currentLen], mangled_max - currentLen, "_%s", formal->type->symbol->cname);
+    currentLen = strlen(mangledName);
+  }
+  newName = astr(mangledName);
+  return uniquifyName(newName, set1);
+}
+
 
 static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   Vec<const char*> cnames;
@@ -296,8 +318,12 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   // global variables, or other functions
   //
   forv_Vec(FnSymbol, fn, functions) {
-    if (!fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_EXTERN))
-      fn->cname = uniquifyName(fn->cname, &cnames);
+    if (!(fn->hasFlag(FLAG_EXPORT) && fRuntime) && !fn->hasFlag(FLAG_EXTERN)) {
+      fn->cname = mangleFnName(fn, &cnames);
+    }
+    else {
+      cnames.set_add(fn->cname);
+    }
   }
   uniquifyNameCounts.clear();
 

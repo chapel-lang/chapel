@@ -419,7 +419,7 @@ prune() {
     if (virtualMethodTable.v[i].key)
       for (int j = 0; j < virtualMethodTable.v[i].value->n; j++)
         pruneVisit(virtualMethodTable.v[i].value->v[j], fns, types);
-  if (fRuntime) {
+  if (fRuntime || fLibraryCompile) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXPORT))
         pruneVisit(fn, fns, types);

@@ -285,11 +285,11 @@ static void build_chpl_entry_points(void) {
   //                                                                          
   FnSymbol* chpl_user_main = chpl_main_exists();                              
 
-  if (fRuntime) {
+  if (fRuntime || fLibraryCompile) {
     if (chpl_user_main)                                                       
-      INT_FATAL(chpl_user_main, "'main' found when compiling runtime file");
+      INT_FATAL(chpl_user_main, "'main' found when compiling runtime/library file");
     if (mainModules.n != 1)
-      INT_FATAL("expected one module when compiling runtime file");
+      INT_FATAL("expected one module when compiling runtime/library file");
   }
 
   if (!chpl_user_main) {
@@ -345,7 +345,7 @@ static void build_chpl_entry_points(void) {
   mainModule->block->insertAtTail(new DefExpr(chpl_main));
   normalize(chpl_main);
 
-  if (!fRuntime) {
+  if (!(fRuntime || fLibraryCompile)) {
     SET_LINENO(chpl_main);
     chpl_main->insertAtHead(new CallExpr("main"));
   }

@@ -857,7 +857,7 @@ void ModuleSymbol::codegenDef(FILE* outfile) {
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym))
-        if (!fn->hasFlag(FLAG_EXTERN))
+        if ((!fn->hasFlag(FLAG_EXTERN))&&(!fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
           fns.add(fn);
   }
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);

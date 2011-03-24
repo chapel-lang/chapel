@@ -444,13 +444,21 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   }
   fprintf(makefile.fptr, " %s\n", ccflags);
   fprintf(makefile.fptr, "COMP_GEN_LFLAGS =");
-  fprintf(makefile.fptr, " %s\n", ldflags);
-  fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
-  fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
-  // BLC: This munging is done so that cp won't complain if the source
-  // and destination are the same file (e.g., a.out and ./a.out)
-  fprintf(makefile.fptr, "TMPBINNAME = $(TMPDIRNAME)/%s.tmp\n", 
-          strippedExeFilename);
+  if (fLibraryCompile) {
+    fprintf(makefile.fptr, " -shared" );
+    fprintf(makefile.fptr, " %s\n", ldflags);
+    fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
+    fprintf(makefile.fptr, "TMPBINNAME = $(BINNAME)\n");  
+  }
+  else {
+    fprintf(makefile.fptr, " %s\n", ldflags);
+    fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
+    fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
+    // BLC: This munging is done so that cp won't complain if the source
+    // and destination are the same file (e.g., a.out and ./a.out)
+    fprintf(makefile.fptr, "TMPBINNAME = $(TMPDIRNAME)/%s.tmp\n", 
+          strippedExeFilename);  
+  }
   // BLC: We generate a TMPBINNAME which is the name that will be used
   // by the C compiler in creating the executable, and is in the
   // --savec directory (a /tmp directory by default).  We then copy it
