@@ -1,2 +1,2 @@
 $CHPL_HOME/modules/internal/ChapelBase.chpl:: In function '__tx_clone_on_fn':
-$CHPL_HOME/modules/internal/ChapelBase.chpl:: error: Sync operations are not permitted in atomic statements.
+$CHPL_HOME/modules/internal/ChapelBase.chpl:: error: Sync operations are not permitted inside atomic transactions.

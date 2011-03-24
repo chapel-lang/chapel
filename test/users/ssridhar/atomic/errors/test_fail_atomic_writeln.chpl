@@ -1,0 +1,1 @@
+atomic writeln("This should fail");

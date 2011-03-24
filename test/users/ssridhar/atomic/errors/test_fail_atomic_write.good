@@ -1,0 +1,1 @@
+error: I/O operations are not permitted inside atomic transactions.
