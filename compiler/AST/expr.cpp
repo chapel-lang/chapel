@@ -2178,13 +2178,11 @@ void CallExpr::codegen(FILE* outfile) {
     }
     case PRIM_TX_ARRAY_ALLOC: {
       if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        Type* arrayType = getDataClassType(get(2)->typeInfo()->getField("addr")->type->symbol)->type;
         gen(outfile, "CHPL_STM_WIDE_ARRAY_ALLOC(%A, %A, %A, %A, %A, %A)", 
-            get(1), get(2), arrayType, get(4), get(5), get(6));
+            get(1), get(2), getDataClassType(get(2)->typeInfo()->getField("addr")->type->symbol), get(4), get(5), get(6));
       } else {
-        Type* arrayType = getDataClassType(get(2)->typeInfo()->symbol)->type;
         gen(outfile, "CHPL_STM_ARRAY_ALLOC(%A, %A, %A, %A, %A, %A)", 
-            get(1), get(2), arrayType, get(4), get(5), get(6));
+            get(1), get(2), getDataClassType(get(2)->typeInfo()->symbol), get(4), get(5), get(6));
       }
       break;
     }
@@ -2199,12 +2197,14 @@ void CallExpr::codegen(FILE* outfile) {
             get(1), get(2), get(3), get(4));
       break;      
     case PRIM_TX_GET_LOCALEID:
-      gen(outfile, "CHPL_STM_COMM_WIDE_GET_LOCALEID(%A, %A, %A, %A, %A)",
-          get(1), get(2), get(3), get(4), get(5));      
+      gen(outfile, "CHPL_STM_COMM_WIDE_GET_LOCALE");
+      gen(outfile, "(%A, %A, %A, %A, %A, %A)", get(1), get(2), get(3), 
+	  dtLocale->getField("chpl_id")->typeInfo(), get(4), get(5));      
       break;
     case PRIM_TX_LOAD_LOCALEID:
-      gen(outfile, "CHPL_STM_LOAD_LOCALEID(%A, %A, %A, %A, %A)",
-          get(1), get(2), get(3), get(4), get(5));      
+      gen(outfile, "CHPL_STM_LOAD_LOCALE");
+      gen(outfile, "(%A, %A, %A, %A, %A, %A)", get(1), get(2), get(3),
+          dtLocale->getField("chpl_id")->typeInfo(), get(4), get(5));      
       break;
     case PRIM_TX_GET_REF: {
       Type* type = get(2)->typeInfo();
@@ -2338,13 +2338,13 @@ void CallExpr::codegen(FILE* outfile) {
        break; 
      }
     case PRIM_TX_GET_TEST_CID:
-      gen(outfile, "CHPL_STM_COMM_WIDE_CLASS_GET_TEST_CID");
+      gen(outfile, "CHPL_STM_COMM_WIDE_CLASS_TEST_CID");
       gen(outfile, "(%A, %A, %A, chpl__cid_%A, object, chpl__cid, %A, %A)", 
           get(1), get(2), get(3), get(4)->typeInfo(), get(5), get(6));    
       break;
     case PRIM_TX_LOAD_TEST_CID:
       INT_ASSERT(get(3)->typeInfo() != dtNil);
-      gen(outfile, "CHPL_STM_CLASS_LOAD_TEST_CID(%A, %A, ", get(1), get(2));
+      gen(outfile, "CHPL_STM_CLASS_TEST_CID(%A, %A, ", get(1), get(2));
       fprintf(outfile, "((object)");
       get(3)->codegen(outfile);
       fprintf(outfile, ")->chpl__cid, ");

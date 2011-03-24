@@ -135,7 +135,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
           if (!isOnStack(se))
             call->replace(new CallExpr(PRIM_TX_LOAD_LOCALEID, 
                                        tx, lhs->var, se->var));
-        }       
+        }
         break;
       }
       if (rhs->isPrimitive(PRIM_GET_REF)) {
@@ -150,18 +150,20 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
             valueType = se->typeInfo()->getField("addr")->type;
           INT_ASSERT(valueType == lhs->typeInfo());
           if (valueType == dtString)
-            USR_WARN(call, "FIXME: string type (FLAG_WIDE GET_REF)");
+            INT_FATAL(call, "FIXME: string type (FLAG_WIDE GET_REF)");
           else {
             call->replace(new CallExpr(PRIM_TX_GET_REF, 
                                        tx, lhs->var, se->var));
           }
-        } else if (se->typeInfo() == dtString) {
-          USR_WARN(call, "FIXME: string type (GET_REF)");
+        } else if (se->typeInfo() == dtString ||
+		   se->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING)) {
+          INT_FATAL(call, "FIXME: string type (GET_REF)");
         } else {
-          INT_ASSERT(se->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) ||
+	  INT_ASSERT(se->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) ||
                      se->typeInfo()->symbol->hasFlag(FLAG_REF));
-          call->replace(new CallExpr(PRIM_TX_LOAD_REF, tx, lhs->var, se->var));
-        } 
+          call->replace(new CallExpr(PRIM_TX_LOAD_REF, 
+				     tx, lhs->var, se->var));
+	}
         break;
       } 
       if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
@@ -303,6 +305,10 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         }
         break;
       }
+      if (rhs->isPrimitive(PRIM_GETCID)) {
+	INT_FATAL(call, "FIXME: GETCID primitive");
+	break;
+      }
       if (rhs->isPrimitive(PRIM_CAST)           ||
           rhs->isPrimitive(PRIM_GET_PRIV_CLASS) ||
           rhs->isPrimitive(PRIM_SET_REF)) {
@@ -312,7 +318,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       }
       if (rhs->isPrimitive(PRIM_GET_SERIAL)) { 
         // indicates the use of serial clause in atomic
-        // thread-local storage so no STM instrumentation required
+        // thread-local storage so STM not required
         break;
       }
       if (rhs->isPrimitive(PRIM_CHPL_ALLOC)) {
@@ -363,34 +369,32 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
           rhs->isPrimitive(PRIM_MIN)            ||
           rhs->isPrimitive(PRIM_MAX)            ||
           rhs->primitive == NULL) {
-        // Operates on stack variables, no STM instrumentation required
+        // Operates on stack variables, STM not required
         break;
       } 
       if (rhs->isPrimitive(PRIM_TASK_ID)        ||
           rhs->isPrimitive(PRIM_GET_SERIAL)) {
-        // Reads thread-local storage, no STM instrumentation required
+        // Operates on thread-local storage, STM not required
         break;
       }
       if (rhs->isPrimitive(PRIM_STRING_COPY)) {
         USR_WARN(call, "Ignoring STRING_COPY primitive");
         break;
       }
-      if (rhs->isPrimitive(PRIM_SYNC_ISFULL)) {
-        USR_WARN(call, "Ignoring PRIM_SYNC_ISFULL primitive");
-        break;
-      }
+      if (rhs->isPrimitive(PRIM_SYNC_ISFULL))
+	USR_FATAL(call, "Sync operations are not permitted inside atomic transactions.");
       txUnknownMovePrimitive(call, rhs);
     }
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
         !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       INT_ASSERT(isOnStack(lhs)); 
-      // Generates CHPL_WIDEN, no STM instrumentation required
+      // Generates CHPL_WIDEN, STM not required
       break;
     }
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
         call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {    
       INT_ASSERT(isOnStack(lhs)); 
-      // Generates CHPL_WIDEN, no STM instrumentation required
+      // Generates CHPL_WIDEN, STM not required
       break;
     }
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE) && 
@@ -404,14 +408,14 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_REF) &&
         call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
       INT_ASSERT(isOnStack(lhs)); 
-      // Generates CHPL_NARROW, no STM instrumentation required
+      // Generates CHPL_NARROW, STM not required
       break;
     }
     if (!lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
         !lhs->typeInfo()->symbol->hasFlag(FLAG_REF) &&
         call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       INT_ASSERT(isOnStack(lhs)); 
-      // Generates CHPL_NARROW, no STM instrumentation required
+      // Generates CHPL_NARROW, STM not required
       break;
     }   
     if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
@@ -514,19 +518,22 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
   case PRIM_SYNC_LOCK:
   case PRIM_SYNC_UNLOCK:
   case PRIM_SYNC_ISFULL:
-    USR_FATAL(call, "Sync operations are not permitted in atomic statements.");
+    USR_FATAL(call, "Sync operations are not permitted inside atomic transactions.");
     break;
   case PRIM_PROCESS_TASK_LIST:
-    USR_WARN("Ignoring PROCESS_TASK_LIST primitive");
+    INT_FATAL(call, "FIXME: Ignoring PROCESS_TASK_LIST primitive");
     break;
   case PRIM_EXECUTE_TASKS_IN_LIST:
-    USR_WARN("Ignoring EXECUTE_TASKS_IN_LIST primitive");
+    INT_FATAL(call, "FIXME: EXECUTE_TASKS_IN_LIST primitive");
     break;
   case PRIM_FREE_TASK_LIST:
-    USR_WARN("Ignoring FREE_TASK_LIST primitive");
+    INT_FATAL(call, "FIXME: FREE_TASK_LIST primitive");
+    break;
+  case PRIM_VMT_CALL: 
+    INT_FATAL(call, "FIXME: VMT_CALL primitive");
     break;
   case PRIM_SET_SERIAL:
-    // Writing thread-local storage, no STM instrumentation required
+    // Writing thread-local storage, STM not required
     break;
   case PRIM_CHPL_FREE: {
     SymExpr* se = toSymExpr(call->get(1));
@@ -580,9 +587,11 @@ bool isBadFunction(FnSymbol* fn) {
       strstr(fn->name, "compilerWarning")) 
     return true;
   
+  if (strstr(fn->name, "writeln") || strcmp(fn->name, "write") == 0)
+    USR_FATAL("I/O operations are not permitted inside atomic transactions.");
+
   return false;
 } 
-
 
 static
 void handleFunctionCalls(BlockStmt* block, CallExpr* call, FnSymbol* fn, Symbol* tx) {
@@ -597,9 +606,9 @@ void handleFunctionCalls(BlockStmt* block, CallExpr* call, FnSymbol* fn, Symbol*
   }
    
   if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
-    USR_FATAL("begin statements not permitted in atomic.");
+    USR_FATAL("begin statements are not permitted inside atomic transactions.");
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
-    USR_FATAL("cobegin/coforall statements not permitted in atomic.");
+    USR_FATAL("cobegin/coforall statements are not permitted inside atomic transactions.");
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     fnTxClone->removeFlag(FLAG_ON_BLOCK);
     fnTxClone->addFlag(FLAG_TX_ON_BLOCK);
