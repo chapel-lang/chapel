@@ -55,7 +55,7 @@ Modules and Functions
 
 Tuples, Classes, Records, and Unions
 ------------------------------------
-- Multiple inheritance is not implemented.
+- Multiple inheritance (of classes with methods only) is not implemented.
 - Type select on unions is not implemented.
 - User-defined constructors are not robust.
 - Constant checking for fields of constant records is incomplete.
@@ -186,6 +186,11 @@ Miscellaneous
 - Overloading operations such as multiplcation for domain literal not supported.
 - Name mangling for generics may result in errors during C compilation.
 - Leaving off () when calling exit results in an internal error.
+
+
+Multi-locale/GASNet executions
+------------------------------
+- stdin does not work for multi-locale/GASNet executions
 
 
 Portability
