@@ -121,6 +121,10 @@ system("cd chapel/runtime/src/launch && rm -r mpirun");
 system("cd chapel/runtime/src/launch && rm -r zebra");
 system("cd chapel/runtime/include && rm -r sunos_old");
 
+print "Chmodding the hierarchy\n";
+system("chmod -R ugo+rX chapel");
+system("chmod -R go-w chapel");
+
 chdir "$tmpdir";
 
 foreach $file (@files) {
