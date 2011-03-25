@@ -23,37 +23,3 @@ helper(2..6);
 helper(6..12);
 helper(15..19);
 helper(2..24);
-
-/*
-
-forall i in D do
-  A(i) = i;
-
-writeln(A);
-
-forall a in A[1..5] do
-  a = -a;
-
-writeln(A);
-
-forall a in A[5..7] do
-  a = -a;
-writeln(A);
-
-forall a in A[2..6] do
-  a = -a;
-writeln(A);
-
-forall a in A[6..12] do
-  a = -a;
-writeln(A);
-
-forall a in A[15..19] do
-  a = -a;
-writeln(A);
-
-forall a in A[2..24] do
-  a = -a;
-writeln(A);
-
-*/

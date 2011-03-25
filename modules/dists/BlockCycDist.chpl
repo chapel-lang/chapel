@@ -176,7 +176,7 @@ proc BlockCyclic.getStarts(inds, locid) {
     if (domlo != lowIdx(i)) {
       if (domlo <= domhi) {
         if (domlo > lowIdx(i)) {
-	  const off = (domlo - lowIdx(i))%blocksize(i);
+	  const off = (domlo - mylo)%mystr;
 	  if (off == 0) {
 	    lo = domlo;
 	    hi = domhi;
