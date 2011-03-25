@@ -93,6 +93,9 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
+
+  // Signal that the handler has completed
+  GASNET_Safe(gasnet_AMReplyMedium0(token, SIGNAL, &(f->ack), sizeof(f->ack)));
 }
 
 static void fork_wrapper(fork_t *f) {
@@ -692,7 +695,15 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
       if (arg_size)
         memcpy(&(info->arg), arg, arg_size);
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_FAST, info, info_size));
-
+      // NOTE: We still have to wait for the handler to complete
+#ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
+      GASNET_BLOCKUNTIL(done==1);
+#else
+      while (done != 1) {
+        (void) gasnet_AMPoll();
+        chpl_task_yield();
+      }
+#endif
     } else {
       // Call the normal chpl_comm_fork()
       chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
