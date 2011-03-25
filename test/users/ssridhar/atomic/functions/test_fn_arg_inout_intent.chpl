@@ -3,7 +3,7 @@ var x: uint(64);
 proc main() {
   x = 0; 
   writeln("Before foo x = ", x);
-  coforall i in 1..10 {
+  coforall i in 1..1000 {
     atomic {
       foo(x);  
     }
