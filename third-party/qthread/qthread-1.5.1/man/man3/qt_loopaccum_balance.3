@@ -1,0 +1,243 @@
+.TH qt_loop_balance 3 "JUNE 2007" libqthread "libqthread"
+.SH NAME
+.BR qt_loopaccum_balance ,
+.B qt_loopaccum_balance_future
+\- a slightly intelligent implementation of a threaded loop that returns values
+.SH SYNOPSIS
+.B #include <qthread/qloop.h>
+
+.I void
+.br
+.B qt_loopaccum_balance
+.RI "(const size_t " start ", const size_t " stop ,
+.ti +22
+.RI "const size_t " size ", void *" out ,
+.ti +22
+.RI "const qt_loopr_f " func ", void *" argptr ,
+.ti +22
+.RI "const qt_accum_f " acc );
+.PP
+.I void
+.br
+.B qt_loopaccum_balance_future
+.RI "(const size_t " start ", const size_t " stop ,
+.ti +29
+.RI "const size_t " size ", void *" out ,
+.ti +29
+.RI "const qt_loopr_f " func ", void *" argptr ,
+.ti +29
+.RI "const qt_accum_f " acc );
+.SH DESCRIPTION
+This function provides a simple C implementation of a threaded accumulating
+loop. Rather than using a predictable number of threads, however, the number of
+threads generated depends directly upon the number of shepherds available. The
+difference between
+.BR qt_loopaccum_balance ()
+and
+.BR qt_loopaccum_balance_future ()
+is that the former uses qthreads and the latter uses futures. The idea with the
+accumulation is that they can be used to collect values from multiple threads.
+For example, if there is a running tally of outputs, or if the maximum return
+value must be retained, this is a way to do it.
+.PP
+These function can be thought of as akin to (but not replicating exactly) the
+following code:
+.RS
+.PP
+unsigned int i;
+.br
+for (i =
+.IR start ;
+i <
+.IR stop ;
+i ++) {
+.RS
+.br
+.I func
+.RI "(NULL, " argptr ,
+ret);
+.br
+.I acc
+(tmp, ret);
+.RE
+.br
+}
+.RE
+.PP
+One qthread (or future) is spawned for each shepherd. The set of values of
+.I i
+(iterations) is divided evenly among the shepherds, and each qthread
+(or future) is assigned a set of iterations to perform.
+.PP
+The
+.I func
+argument must be a function pointer with a
+.B qt_loopr_f
+prototype. Note that this is NOT the same as
+.B qt_loop_f
+functions, as it has the extra
+.I ret
+argument. Its basic code structure is expected to look like this:
+.RS
+.PP
+void
+.B func
+(qthread_t *me, const size_t startat,
+.ti +10
+const size_t stopat,
+.RI "void *" argptr ,
+void *ret)
+.br
+{
+.RS
+.br
+for (unsigned int i = startat; i < stopat; i++) {
+.RS
+.br
+/* do work */
+.RE
+.br
+}
+.RE
+.br
+}
+.RE
+.PP
+The arguments
+.I startat
+and
+.I stopat
+are determined by the library, and tell the function what range of
+.I i
+values (iterations) it is responsible for.
+.BR qt_loop_balance ()
+and
+.BR qt_loop_balance_future ()
+will not return until all of the qthreads (or futures) it spawned have exited.
+.PP
+The
+.I acc
+argument must be a function pointer with a
+.B qt_accum_f
+prototype. This prototype looks like this:
+.RS
+.PP
+void
+.B acc
+(void *a, void *b);
+.RE
+.PP
+The accumulating value is stored in the memory pointed to by the
+.I a
+argument, and a new value is passed in via the
+.I b
+argument. Keep in mind that when there is only a single shepherd, this function
+is never called, as the entire set of iterations will be given to a single
+instance of
+.I func
+to perform. Because of this, and because there is no guarantee as to how the
+iterations will be divided,
+.I func
+is expected to perform essentially the same accumulation operation that
+.I acc
+does. There is also no guarantee as to what order things will be accumulated
+in, so the operation needs to be commutative if all runs of the program are
+expected to return the same result.
+.PP
+The result of the accumulations
+.RI ( acc ),
+if any, of the output
+.RI ( ret )
+of
+.I func
+will be stored in the memory pointed to by
+.IR out .
+This memory is assumed to be at least
+.I size
+bytes, and
+.I size
+bytes will be used for storage of all
+.I ret
+arguments to
+.I func
+calls.
+.SH EXAMPLE
+Since this is a bit complicated a simple example may be useful. The example is
+the
+.BR qt_double_sum ()
+function in the library; for simplicity's sake, the
+.I checkfeb
+option has been removed from this example. This function is extremely simple:
+.PP
+double qt_double_sum (double *array,
+.ti +22
+size_t length)
+.br
+{
+.RS
+double ret;
+.br
+.B qt_loopaccum_balance_future
+(0, length, sizeof(double),
+.ti +29
+&ret, qtds_worker, array,
+.ti +29
+qtds_acc);
+.br
+return ret;
+.RE
+}
+.PP
+There are two function arguments to the
+.BR qt_loopaccum_balance_future ()
+call,
+.I qtds_worker
+(as the
+.I func
+argument) and
+.I qtds_acc
+(as the
+.I acc
+or "accumulator" argument).
+.I qtds_acc
+is extremely simple:
+.PP
+static void qtds_acc (void *a, void *b)
+.br
+{
+.RS
+*(double*)a += *(double*)b;
+.RE
+}
+.PP
+The
+.I qtds_worker
+function does the real work of adding up the numbers:
+.PP
+static void qtds_worker (qthread_t *me,
+const size_t startat,
+.ti +25
+const size_t stopat,
+void *array,
+void *ret)
+.br
+{
+.RS
+size_t i;
+.br
+double sum = (double *)array[startat];
+.br
+for (i = startat + 1; i < stopat; i++) {
+.RS
+sum += (double *)array[i];
+.RE
+}
+.br
+*(double *)ret = sum;
+.RE
+}
+.SH SEE ALSO
+.BR qt_loop (3),
+.BR qt_loop_future (3),
+.BR qt_loop_balance (3),
+.BR qt_loop_balance_future (3)

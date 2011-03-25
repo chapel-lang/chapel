@@ -1,0 +1,17 @@
+.TH qpool_alloc 3 "MAY 2009" libqthread "libqthread"
+.SH NAME
+.BR qpool_alloc " \- allocate memory from a distributed memory pool"
+.SH SYNOPSIS
+.B #include <qthread/qpool.h>
+
+.I void *
+.br
+.B qpool_alloc
+.RI "(qthread_t *" me ", qpool *" pool );
+.SH DESCRIPTION
+This function pulls a memory block from the specified memory pool. The memory
+may not be local, but will be from nearby if local memory cannot be found.
+.SH SEE ALSO
+.BR qpool_destroy (3),
+.BR qpool_create (3),
+.BR qpool_free (3)
