@@ -283,6 +283,14 @@ extern chpl_txfn_p chpl_txftable[];
 			     etype, -1, ln, fn);			\
     CHPL_STM_COMM_WIDE_PUT(tx, chpl_macro_tmp, val, etype, ln, fn);	\
   } while(0)
+
+#define CHPL_STM_COMM_WIDE_ARRAY_SET_VALUE_SVEC(tx, wide_type, cls, ind, stype, sfield, etype, val, ln, fn) \
+  do {									\
+    wide_type chpl_macro_tmp;						\
+    CHPL_COMM_WIDE_ARRAY_GET_SVEC(chpl_macro_tmp, cls, ind, stype, sfield, \
+				  etype, -1, ln, fn);			\
+    CHPL_STM_COMM_WIDE_PUT_SVEC(tx, chpl_macro_tmp, val, etype, ln, fn);	\
+  } while(0)
     
 #define CHPL_STM_ARRAY_STORE_VALUE(tx, dst, ind, src, type, ln, fn)     \
     do {								\

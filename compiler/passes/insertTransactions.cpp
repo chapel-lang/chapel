@@ -161,8 +161,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         } else {
 	  INT_ASSERT(se->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) ||
                      se->typeInfo()->symbol->hasFlag(FLAG_REF));
-          call->replace(new CallExpr(PRIM_TX_LOAD_REF, 
-				     tx, lhs->var, se->var));
+	  if (!isOnStack(se))
+	    call->replace(new CallExpr(PRIM_TX_LOAD_REF, 
+				       tx, lhs->var, se->var));
 	}
         break;
       } 
@@ -436,8 +437,9 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_REF) && 
         !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       SymExpr* rhs = toSymExpr(call->get(2));
-      INT_ASSERT(rhs && isOnStack(rhs));
-      call->replace(new CallExpr(PRIM_TX_STORE_REF, tx, lhs->var, rhs->var));
+      INT_ASSERT(rhs); // && isOnStack(rhs));
+      if (!isOnStack(lhs))
+	call->replace(new CallExpr(PRIM_TX_STORE_REF, tx, lhs->var, rhs->var));
       break;
     } else {
       SymExpr* rhs = toSymExpr(call->get(2));
@@ -576,21 +578,28 @@ FnSymbol* createTxFnClone(FnSymbol* fn) {
 }
 
 static
-bool isBadFunction(FnSymbol* fn) {
+bool canInstrumentFn(FnSymbol* fn) {
+  if (strstr(fn->name, "tx_clone_wrapon_fn"))
+    return false;
+  return true;
+}
+
+static
+bool canCloneFn(FnSymbol* fn) {
   if (strstr(fn->name, "waitEndCount") || 
       strstr(fn->name, "readFE")) {
     gdbShouldBreakHere();
-    return true;
+    return false;
   }
 
   if (strstr(fn->name, "halt") || 
       strstr(fn->name, "compilerWarning")) 
-    return true;
+    return false;
   
   if (strstr(fn->name, "writeln") || strcmp(fn->name, "write") == 0)
     USR_FATAL("I/O operations are not permitted inside atomic transactions.");
 
-  return false;
+  return true;
 } 
 
 static
@@ -685,13 +694,13 @@ insertTransactions(void) {
 
     forv_Vec(CallExpr, call, calls) {
       if (call->primitive) {
-        if (!(strstr(fn->name, "tx_clone_wrapon"))) 
+        if (canInstrumentFn(fn)) 
           handleMemoryOperations(block, call, tx);
         continue;
       }
       FnSymbol* cloneFn = call->isResolved();
       INT_ASSERT(cloneFn);
-      if (!isBadFunction(cloneFn)) {
+      if (canCloneFn(cloneFn)) {
         handleFunctionCalls(block, call, cloneFn, tx);
       }
     }

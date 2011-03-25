@@ -2163,7 +2163,10 @@ void CallExpr::codegen(FILE* outfile) {
         Type* classType = get(2)->typeInfo()->getField("addr")->type;
         Type* elementType = getDataClassType(classType->symbol)->type;
         Type* wideElementType = wideRefMap.get(elementType->refType);
-        gen(outfile, "CHPL_STM_COMM_WIDE_ARRAY_SET_VALUE");
+        if (elementType->symbol->hasFlag(FLAG_STAR_TUPLE))
+          gen(outfile, "CHPL_STM_COMM_WIDE_ARRAY_SET_VALUE_SVEC");
+        else
+	  gen(outfile, "CHPL_STM_COMM_WIDE_ARRAY_SET_VALUE");
         gen(outfile, "(%A, %A, %A, %A, %A, _data, %A, %A, %A, %A)",
             get(1), wideElementType, get(2), get(3), classType,
             elementType, get(4), get(5), get(6));
