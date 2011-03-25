@@ -7,6 +7,7 @@ var B: [D] int;
 
 [i in D] A(i) = i;
 
-atomic B = A;
+coforall i in 1..1000 do
+  atomic B = A;
 
-writeln("B is: ", B);
+writeln("B = ", B);

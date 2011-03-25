@@ -8,9 +8,9 @@ var B: [D] int;
 proc main() {
   for i in D do A(i) = i;
 
-  writeln("A is: ", A);
+  coforall i in 1..1000 do
+    atomic serial true do B = A;
 
-  atomic serial true do B = A;
-
-  writeln("B is: ", B);
+  writeln("A = ", A);
+  writeln("B = ", B);
 }
