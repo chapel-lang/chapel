@@ -267,9 +267,11 @@ const char* toString(FnSymbol* fn) {
     ArgSymbol* arg = fn->getFormal(i+1);
     if (arg->hasFlag(FLAG_IS_MEME))
       continue;
-    if (!first)
+    if (!first) {
       first = true;
-    else
+      if (skipParens)
+        str = astr(str, " ");
+    } else
       str = astr(str, ", ");
     if (arg->intent == INTENT_PARAM)
       str = astr(str, "param ");
