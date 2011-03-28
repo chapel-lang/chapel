@@ -7,7 +7,8 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 
 default: all
 
-all: comprt man
+all: comprt
+	@test -r Makefile.devel && $(MAKE) develall || echo ""
 
 comprt: FORCE
 	@$(MAKE) compiler
@@ -16,28 +17,11 @@ comprt: FORCE
 compiler: FORCE
 	cd compiler && $(MAKE)
 
-man: FORCE
-	@test -r man/Makefile && $(MAKE) manhelp || echo ""
-
-manhelp: FORCE
-	cd man && $(MAKE)
-
 runtime: FORCE
 	cd runtime && $(MAKE)
 
 third-party: FORCE
 	cd third-party && $(MAKE)
-
-test: FORCE
-	cd test && start_test
-
-SPECTEST_DIR = ./test/spec/autogen
-spectests: FORCE
-	rm -rf $(SPECTEST_DIR)
-	util/devel/test/extract_tests -o $(SPECTEST_DIR) spec/*.tex
-
-STATUS: STATUS.devel
-	grep -v "^\ *#" STATUS.devel > STATUS
 
 clean: FORCE
 	cd compiler && $(MAKE) clean
@@ -52,5 +36,7 @@ clobber: FORCE
 depend: FORCE
 	cd compiler && $(MAKE) depend
 	cd runtime && $(MAKE) depend
+
+-include Makefile.devel
 
 FORCE:

@@ -78,7 +78,8 @@ Modules and Functions
 
 Tuples, Classes, Records, and Unions
 ------------------------------------
-- Multiple inheritance is not implemented.
+- Multiple inheritance as defined in the spec (multiple method-only classes)
+  is not implemented.
 - Type select on unions is not implemented.
 - User-defined constructors are not robust.
   # classes/claridge/baseConstructorCall.future, et al.
@@ -264,6 +265,11 @@ Miscellaneous
 # OMITTED: classes/claridge/recordInClass2.future
 - Leaving off () when calling exit results in an internal error.
   # exits/sungeun/exitWithNoParensNoArgs.chpl
+
+
+Multi-locale/GASNet executions
+------------------------------
+- stdin does not work for multi-locale/GASNet executions
 
 
 Portability
