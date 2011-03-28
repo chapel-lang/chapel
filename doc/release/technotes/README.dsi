@@ -23,15 +23,17 @@ Here they are called GlobalDistribution, GlobalDomain, and GlobalArray.
 Their required fields and methods, as well as suggested naming,
 are specified below.
 
-A domain map is also allowed to provide data structures and
-functionality (internally to facilitate implementation and/or
+A domain map is allowed to contain/provide features, data structures
+and functionality (internally to facilitate implementation and/or
 externally for users' benefit) beyond the DSI requirements.
-
 For example, a distribution (i.e. a domain map that distributes data across
 multiple locales) will typically define "local descriptor" classes as well.
 
 Status of this document
 -----------------------
+
+This document, as well as the DSI interface itself, are work in progress.
+We solicit feedback on both.
 
 The following aspects are not documented yet:
 * a reference to slides with the six descriptor classes
@@ -42,9 +44,18 @@ The following aspects are not documented yet:
 * the "local descriptor" classes;
 * some required methods.
 
+The specification is split into "phases". The intention is to suggest
+an implementation order. The requirements of first phase are relied
+upon by the more essential operations on domains and arrays. Later
+phases support additional functionality and/or improved performance.
+The phasing is approximate and is not required.
+
+
+======================================
+PHASE 1: the essentials
 ======================================
 
-
+------------------------
 class GlobalDistribution
 ------------------------
 
@@ -62,17 +73,22 @@ proc GlobalDistribution.GlobalDistribution() // or with arguments
 
 proc GlobalDistribution.dsiSupportsPrivatization() param: bool return false;
   This procedure should be provided as-is unless privatization is supported.
-  (Documentation on privatization is forthcoming.)
+  [TODO: documentation on privatization.]
 
 proc GlobalDistribution.dsiClone(): GlobalDistribution
   Returns a duplicate of 'this'.
 
-  The specifics are forthcoming. E.g. we need to specify when it is not
-  enough simply to return 'this'. (The default distribution returns 'this'.)
+  [TODO: the specifics. E.g. we need to specify when it is not enough
+   simply to return 'this'. (Cf. the default distribution returns 'this'.)]
 
+proc GlobalDistribution.dsiDisplayRepresentation(): void
+  A debugging method. It implements displayRepresentation()
+  on the dmap wrapper.
 
+------------------
 class GlobalDomain
 ------------------
+
   An instance of this class is created whenever a GlobalDistribution-mapped
   Chapel domain is created (e.g. when a domain variable is declared).
   There is a one-to-one correspondence at run time between a
@@ -100,7 +116,7 @@ class GlobalDomain
 
   The DSI requirements depend on the domain kind that is supported.
   The following requirements apply when supporting rectangular domains.
-  Requirements for the other domain kinds are forthcoming.
+  [TODO: requirements for the other domain kinds.]
 
 class GlobalDomain ... {
   param rank: int;
@@ -128,34 +144,24 @@ proc GlobalDomain.dsiMyDist() return dist;
   Returns this domain's domain map. This procedure should be provided as-is.
   (Exception: see dsiLinksDistribution().)
 
-proc GlobalDomain.linksDistribution() param
-proc GlobalDomain.dsiLinksDistribution()
-  Typically these should not be defined.
-
-  If the domains mapped using GlobalDistribution do NOT need to be tracked
-  and the GlobalDistribution itself does NOT need to be reference counted,
-  these two methods should be defined to return 'false';
-  Also in this case dsiMyDist() does not need to be defined.
-
 proc GlobalDistribution.dsiNewRectangularDom(param rank: int,
                                              type idxType,
                                              param stridable: bool)
                                       : GlobalDomain(rank, idxType, stridable)
-  This method is invoked when the Chapel program is creating
-  a domain value of the type domain(rank, idxType, stridable)
+  This method is invoked when the Chapel program is creating an uninitialized
+  domain value of the type domain(rank, idxType, stridable)
   mapped using the domain map 'this'.
   This method returns a new GlobalDomain instance that will correspond to
   that Chapel domain value, i.e., be that value's runtime representation.
   The field 'dist' of the returned GlobalDomain must point to 'this'.
 
-proc GlobalDistribution.dsiIndexLocale(indexx): locale
-  Given an index 'indexx', returns the locale that "owns" that index,
-  i.e. on which the corresponding data is located.
-  This is used to implement idxToLocale() on the 'dmap' wrapper.
+proc GlobalDomain.dsiGetIndices(): rank * range(idxType,
+                                                BoundedRangeType.bounded,
+                                                stridable)
+  Returns a tuple of ranges describing the dimensions of this domain.
 
-proc GlobalDomain.dsiGetIndices(): domain(rank, idxType, stridable)
-  Returns a Chapel domain whose index set is the same as the index set
-  of the domain value for which this GlobalDomain instance was created.
+  dsiDims() and dsiGetIndices() have the same specification
+  and so may be implemented in terms of one another.
 
 proc GlobalDomain.dsiSetIndices(dom: domain(rank, idxType, stridable)): void
   Updates the internal representation of 'this' to match the index set of 'dom'.
@@ -273,18 +279,11 @@ proc GlobalDomain.dsiSerialWrite(f: Writer): void
   This method should not invoke any write() methods or contain 'on' clauses,
   to avoid deadlock.
 
-proc GlobalDomain.dsiDim(dim: int): range(idxType)
-proc GlobalDomain.dsiDims(): rank * range(idxType)
-proc GlobalDomain.dsiLow
-proc GlobalDomain.dsiHigh
-proc GlobalDomain.dsiStride
-proc GlobalDomain.dsiNumIndices
-  These methods implement the corresponding queries (dim, dims, low, etc.)
-  of the domain value for which this GlobalDomain instance was created.
-  For example, dsiDim(d) returns the range describing the domain's
-  'd'-th dimension
+proc GlobalDomain.dsiDisplayRepresentation(): void
+  A debugging method. It implements displayRepresentation()
+  on the corresponding Chapel domain value.
 
-
+-----------------
 class GlobalArray
 -----------------
 
@@ -405,7 +404,11 @@ proc GlobalArray.dsiReallocate(d: domain): void
    no explicit distribution.)
   -----------
 
+proc GlobalArray.dsiDisplayRepresentation(): void
+  A debugging method. It implements displayRepresentation()
+  on the corresponding Chapel array value.
 
+------
 Naming
 ------
 
@@ -423,3 +426,113 @@ we suggest naming the descriptor classes as follows:
 
 Some domain maps in this Chapel distribution use just the domain map
 name for their GlobalDistribution classes, e.g. Block and Cyclic.
+
+
+=================================
+PHASE 2: additional operations
+=================================
+
+If desired, these operations could be implemented when the need arises.
+The "unresolved call" compilation errors could be used
+as an indication of what procedure(s) need to be defined.
+
+proc GlobalDistribution.dsiIndexLocale(indexx): locale
+  Given an index 'indexx', returns the locale that "owns" that index,
+  i.e. on which the corresponding data is located.
+  This is used to implement idxToLocale() on the 'dmap' wrapper.
+
+proc GlobalDomain.dsiDim(dim: int): range(idxType,
+                                          BoundedRangeType.bounded,
+                                          stridable)
+proc GlobalDomain.dsiDims(): rank * range(idxType,
+                                          BoundedRangeType.bounded,
+                                          stridable)
+proc GlobalDomain.dsiLow
+proc GlobalDomain.dsiHigh
+proc GlobalDomain.dsiStride
+proc GlobalDomain.dsiNumIndices
+proc GlobalDomain.dsiMember(indexx)
+proc GlobalDomain.dsiIndexOrder(indexx)
+  These methods implement the corresponding queries (dim, dims, low, etc.)
+  of the domain value for which this GlobalDomain instance was created.
+  For example, dsiDim(d) returns the range describing the domain's
+  'd'-th dimension.
+
+  dsiDims() and dsiGetIndices() have the same specification
+  and so may be implemented in terms of one another.
+
+proc GlobalDomain.dsiBuildRectangularDom(param rank: int,
+                                         type idxType,
+                                         param stridable: bool,
+                                         ranges: rank * range(idxType,
+                                               BoundedRangeType.bounded,
+                                                              stridable))
+  This method is similar to dsiNewRectangularDom(), except it is used
+  in the cases where a new Chapel domain is created from an existing
+  Chapel domain (represented by 'this') and the index set of the desired
+  domain is known (it is defined by the 'ranges' argument). For example,
+  it is invoked upon domain slicing and when applying domain operations
+  such as expand, exterior, interior, translate.
+
+  This method returns a new instance of GlobalDomain(rank, idxType, stridable)
+  that will be the runtime representation of a Chapel domain whose index set
+  is initialized as defined by 'ranges'. Other that that, this instance must
+  satisfy the same constraints as the result of dsiNewRectangularDom().
+
+  This method can be implemented as follows,
+  unless a more efficient implementation is desired:
+
+    var result = dist.dsiNewRectangularDom(rank, idxType, stridable);
+    result.dsiSetIndices(ranges);
+    return result;
+
+  [TODO: the following seems correct. The returned object can be an instance
+  of a different class than the receiver, at the implementer's discretion.
+  That class must satisfy the requirements on "GlobalDomain" defined in this
+  document.]
+
+proc GlobalArray.dsiSlice(sliceDef: GlobalDomain)
+  Returns a GlobalArray object representing a slice of the array
+  corresponding to 'this'. Like generally in Chapel, the array elements
+  in the slice must be aliases of the corresponding elements of 'this'.
+  The argument 'sliceDef' defines the slice, i.e., which of the elements
+  of 'this' are to be included in the result.
+
+  [TODO: the following seems correct. The returned object can be an instance
+  of a different class than the receiver, at the implementer's discretion.
+  That class must satisfy the requirements on "GlobalArray" defined in this
+  document.]
+
+proc GlobalArray.dsiReindex(reindexDef: GlobalDomain)
+  Similar to dsiSlice, except: The array alias represented by the
+  returned object is a reindexing, rather than a slice, of the array
+  represented by 'this'. The argument 'reindexDef' represents the
+  reindexing expression. The callers of dsiReindex must ensure that
+  the domain of this array and 'reindexDef' have the same number of
+  dimensions and the same number of indices along each dimension.
+
+proc GlobalArray.dsiRankChange(reindexDef: GlobalDomain,
+                               param newRank: int,
+                               param newStridable: bool,
+			       args)
+  Similar to dsiReindex, except reindexing changes the rank.
+  [TODO: explain the arguments.]
+
+[TODO: the following seem to support dsiReindex and dsiRankChange:]
+proc GlobalDistribution.dsiCreateReindexDist(newSpace, oldSpace)
+proc GlobalDistribution.dsiCreateRankChangeDist(param newRank: int, args)
+  [TODO: the following seems correct. The returned object can be an instance
+  of a different class than the receiver, at the implementer's discretion.
+  That class must satisfy the requirements on "GlobalDistribution"
+  defined in this document.]
+
+proc GlobalDomain.linksDistribution() param
+proc GlobalDomain.dsiLinksDistribution()
+  Typically these should not be defined.
+
+  If the domains mapped using GlobalDistribution do NOT need to be tracked
+  and the GlobalDistribution itself does NOT need to be reference counted,
+  these two methods should be defined to return 'false';
+  Also in this case dsiMyDist() does not need to be defined.
+
+
