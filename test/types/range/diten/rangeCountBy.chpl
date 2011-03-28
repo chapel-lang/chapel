@@ -28,6 +28,6 @@ proc main {
   rangewrite(0.. by -2 # -3);  // 4 2 0
   rangewrite(0.. by 2 # 3);   // 0 2 4
 //  rangewrite(..10 by 2 # 3);  // 6 8 10
-  rangewrite(..10 by 2 # -3);  // 6 8 10
+//  rangewrite(..10 by 2 # -3);  // 6 8 10
   rangewrite(..10 by -2 # 3); // 10 8 6
 }

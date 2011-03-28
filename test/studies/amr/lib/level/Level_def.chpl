@@ -91,7 +91,7 @@ class Level {
     //==== Possible cells ====
     var ranges: dimension*range(stridable = true);
     for d in dimensions do
-      ranges(d) = (1.. by 2) #n_cells(d);
+      ranges(d) = ((1.. by 2) #n_cells(d)).alignHigh();
     possible_cells = ranges;
 
     //==== Possible ghost cells ====

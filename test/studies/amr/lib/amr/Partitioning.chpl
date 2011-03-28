@@ -28,6 +28,7 @@ proc partitionFlags(
   while unprocessed_domain_stack.isEmpty()==false {
     //==== Pop top domain ====
     var D = unprocessed_domain_stack.pop();
+
     var candidate = new CandidateDomain(rank,D,flags(D),min_width);
     
     //===> If candidate is inefficient, then split ===>
@@ -162,7 +163,7 @@ proc CandidateDomain.trim()
     if R.length < min_width(d) {
       //==== Approximately center the enlarged range ====
       var n_overflow_low = (min_width(d) - R.length) / 2;
-      R = (trim_low - n_overflow_low*stride .. by stride) #min_width(d);
+      R = ((trim_low - n_overflow_low*stride .. by stride) #min_width(d)).alignHigh();
 
       //==== Enforce low bound of D ====
       if R.low < D.low(d) then
@@ -253,10 +254,11 @@ proc CandidateDomain.removeHole()
     // after the split.
     //--------------------------------------------------------
     var stride = D.stride(d);
+
     var allowable_hole_bounds = D.low(d) + stride*min_width(d) 
                                 .. D.high(d) - stride*min_width(d)
                                 by stride;
-  
+
     for i in allowable_hole_bounds {
       if !low_active && signatures(d).value(i)==0 {
         hole_low   = i;
