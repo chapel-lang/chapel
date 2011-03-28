@@ -18,9 +18,6 @@ proc main () {
 }
 
 proc foobar(): int {
-  // x will be moved to the stack since we are accessing x within bar. 
-  // this will take place in the parallel pass
-  // each call to foobar will point to the different locations in memory
   var x: int;
   proc foo() {
     var y: int;

@@ -1,2 +1,1 @@
-x = 10
-y = 10
+test_atomic_expr_in_return_stmt.chpl:12: syntax error: near 'atomic'

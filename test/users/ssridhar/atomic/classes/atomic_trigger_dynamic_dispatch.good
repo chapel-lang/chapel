@@ -1,1 +1,2 @@
-a = 2
+atomic_trigger_dynamic_dispatch.chpl:18: In function 'atomic_fn':
+atomic_trigger_dynamic_dispatch.chpl:18: error: PRIM_GETCID primitive not supported.
