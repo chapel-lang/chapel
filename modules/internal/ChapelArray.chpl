@@ -986,7 +986,7 @@ record _array {
     return this((...d.getIndices()));
 
   proc checkSlice(ranges: range(?) ...rank) {
-    for param i in 1.._value.rank do
+    for param i in 1.._value.dom.rank do
       if !_value.dom.dsiDim(i).boundsCheck(ranges(i)) then
         halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
