@@ -364,6 +364,6 @@ void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memD
 
 void chpl_stm_tx_free(chpl_stm_tx_p tx, void* ptr, int32_t ln, chpl_string fn) { 
   CHPL_STM_STATS_START(tx->counters, STATS_TX_FREE);
-  GTM_Safe(tx, gtm_tx_free_memset(tx, ptr, ln, fn));
+  gtm_tx_free_memset(tx, ptr, ln, fn);
   CHPL_STM_STATS_STOP(tx->counters, STATS_TX_FREE, 0);
 }

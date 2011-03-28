@@ -63,17 +63,19 @@ int gtm_tx_readset_validate(chpl_stm_tx_p tx) {
 } 
 
 static inline
-int gtm_tx_resize_readset(chpl_stm_tx_p tx) {
-  if (tx->readset.numentries == tx->readset.size)
-    chpl_error("STM Error: cannot resize readset", 0, 0);
-  return TX_OK;
+void gtm_tx_resize_readset(chpl_stm_tx_p tx) {
+  if (tx->readset.numentries == tx->readset.size) {
+    tx->readset.size *= 2;
+    tx->readset.entries = (read_entry_t*) chpl_realloc(tx->readset.entries, tx->readset.size, sizeof(read_entry_t), CHPL_RT_MD_STM_TX_READSET, 0, 0);
+  }
 }
 
 static inline
-int gtm_tx_resize_writeset(chpl_stm_tx_p tx) {
-  if (tx->writeset.numentries == tx->writeset.size)
-    chpl_error("STM Error: cannot resize writeset", 0, 0);
-  return TX_OK;
+void gtm_tx_resize_writeset(chpl_stm_tx_p tx) {
+  if (tx->writeset.numentries == tx->writeset.size) {
+    tx->writeset.size *= 2;
+    tx->writeset.entries = (write_entry_t*) chpl_realloc(tx->writeset.entries, tx->writeset.size, sizeof(write_entry_t), CHPL_RT_MD_STM_TX_WRITESET, 0, 0);
+  }
 }
 
 int gtm_tx_commitPh1(chpl_stm_tx_t* tx) {
@@ -163,7 +165,7 @@ int gtm_tx_load_word(chpl_stm_tx_t* tx, gtm_word_p dstaddr, gtm_word_p srcaddr) 
     if (lockval != lockval2) goto restart;
   }
 
-  if (gtm_tx_resize_readset(tx) == TX_FAIL) return TX_FAIL;
+  gtm_tx_resize_readset(tx);
 
   // FIXME why add to the readset if this is going to fail ?
   // ideally do the validate later and add to readset later
@@ -206,8 +208,7 @@ int gtm_tx_store_word(chpl_stm_tx_t* tx, gtm_word_p srcaddr, gtm_word_p dstaddr,
 	  break;
 	prev = prev->next;
       }
-      if (gtm_tx_resize_writeset(tx) == TX_FAIL)
-	return TX_FAIL;
+      gtm_tx_resize_writeset(tx); 
       wentry = &tx->writeset.entries[tx->writeset.numentries];
       prev->next = wentry;
       version = prev->version;
@@ -222,7 +223,7 @@ int gtm_tx_store_word(chpl_stm_tx_t* tx, gtm_word_p srcaddr, gtm_word_p dstaddr,
       if (rentry->version < version)
         return TX_FAIL;
     }
-    if (gtm_tx_resize_writeset(tx) == TX_FAIL) return TX_FAIL;
+    gtm_tx_resize_writeset(tx);
     wentry = &tx->writeset.entries[tx->writeset.numentries];
     if (ATOMIC_CAS_MB(lock, lockval, (gtm_word_t) OWNED_MASK) == 0)
       goto restart;

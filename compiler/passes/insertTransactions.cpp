@@ -307,7 +307,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         break;
       }
       if (rhs->isPrimitive(PRIM_GETCID)) {
-	INT_FATAL(call, "FIXME: GETCID primitive");
+	USR_FATAL(call, "PRIM_GETCID primitive not supported.");
 	break;
       }
       if (rhs->isPrimitive(PRIM_CAST)           ||
@@ -532,7 +532,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
     INT_FATAL(call, "FIXME: FREE_TASK_LIST primitive");
     break;
   case PRIM_VMT_CALL: 
-    INT_FATAL(call, "FIXME: VMT_CALL primitive");
+    USR_FATAL(call, "PRIM_VMT_CALL primitive not supported.");
     break;
   case PRIM_SET_SERIAL:
     // Writing thread-local storage, STM not required

@@ -2502,7 +2502,7 @@ void CallExpr::codegen(FILE* outfile) {
       gen(outfile, ", %A, %A)", get(4), get(5));
       break;
     }
-    case PRIM_TX_CHPL_FREE:
+    case PRIM_TX_CHPL_FREE: {
       INT_ASSERT(numActuals() == 4);
       fprintf(outfile, "%s", this->primitive->name);
       gen(outfile, "(%A, (void*)", get(1));
@@ -2513,8 +2513,29 @@ void CallExpr::codegen(FILE* outfile) {
       if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE))
         fputs(".addr", outfile);     
-      gen(outfile, ", %A, %A)", get(3), get(4));
+      gen(outfile, ", %A, %A);\n", get(3), get(4));
+ 
+      // STM equivalent of setting pointer to NULL
+      gen(outfile, "CHPL_STM_STORE(%A, ", get(1));
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+          get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+        fputc('*', outfile);
+      get(2)->codegen(outfile);
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+          get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) 
+        fputs(".addr", outfile);     
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        Type* classType = get(2)->typeInfo()->getField("addr")->type;
+	gen(outfile, ", NULL, %A, %A, %A)", classType, get(3), get(4));
+      } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+	Type* fieldType = get(2)->typeInfo();
+	gen(outfile, ", NULL, %A*, %A, %A)", fieldType, get(3), get(4));
+      } else {
+	Type* fieldType = get(2)->typeInfo();
+	gen(outfile, ", NULL, %A, %A, %A)", fieldType, get(3), get(4));
+      }
       break;
+    }
     case PRIM_COUNT_NUM_REALMS:
       INT_FATAL(this, "count num realms primitive should no longer be in AST");
       break;
@@ -2743,7 +2764,7 @@ void CallExpr::codegen(FILE* outfile) {
     if (argType == NULL) {
       INT_FATAL("typeInfo() didn't return a type symbol");
     }
-    gen(outfile, ", sizeof(_%A));", argType);
+    gen(outfile, ", sizeof(_%A));\n", argType);
     return;
   }
 
