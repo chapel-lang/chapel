@@ -115,6 +115,12 @@ proc locale.blockedTasks() {
   return blockedTasks;
 }
 
+proc chpl_privateInstance(originalInstance, instancePid:int)
+  return chpl_privateInstance(originalInstance.type, instancePid);
+
+proc chpl_privateInstance(type instanceType, instancePid:int)
+  return __primitive("chpl_getPrivatizedClass", nil:instanceType, instancePid);
+
 
 //
 // multi-locale diagnostics/debugging support

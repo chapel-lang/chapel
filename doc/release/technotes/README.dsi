@@ -39,7 +39,6 @@ The following aspects are not documented yet:
 * a reference to slides with the six descriptor classes
 * the requirements for a domain map to support
   associative, opaque, or sparse domains;
-* the requirements to support privatization;
 * the significance of dsiClone();
 * the "local descriptor" classes;
 * some required methods.
@@ -65,21 +64,20 @@ class GlobalDistribution
 
 proc GlobalDistribution.GlobalDistribution() // or with arguments
   Constructor(s)  These are not regulated by DSI - their specifics are
-  at the distribution implementer's discretion.
+  at the domain map implementer's discretion.
 
   We suggest providing constructor(s) that accept, as an argument,
   an array of locales over which to distribute, with 'Locales'
   as the default value.
 
 proc GlobalDistribution.dsiSupportsPrivatization() param: bool return false;
-  This procedure should be provided as-is unless privatization is supported.
-  [TODO: documentation on privatization.]
+  This procedure should be provided as shown unless privatization is supported.
 
 proc GlobalDistribution.dsiClone(): GlobalDistribution
   Returns a duplicate of 'this'.
 
   [TODO: the specifics. E.g. we need to specify when it is not enough
-   simply to return 'this'. (Cf. the default distribution returns 'this'.)]
+   simply to return 'this'. (Cf. the default domain map returns 'this'.)]
 
 proc GlobalDistribution.dsiDisplayRepresentation(): void
   A debugging method. It implements displayRepresentation()
@@ -125,23 +123,23 @@ class GlobalDomain ... {
   var dist;
   ...
 }
-  The fields 'rank', 'idxType', 'stridable' are the corresponding attributes
-  of the domain to be distributed. (They could be replaced with
+  The fields 'rank', 'idxType', 'stridable' are the attributes
+  of the corresponding Chapel domain. (They could be replaced with
   parenthesesless functions of the same names and param/type intents.)
 
   The field 'dist' must contain a reference to the GlobalDistribution object
   that created this GlobalDomain. It is used when creating the (runtime)
-  type for this domain, which contains the domain's distribution.
+  type for this domain, which contains the domain's domain map.
 
 proc GlobalDomain.GlobalDomain() // or with arguments
   Constructor(s)  These are not regulated by DSI - their specifics are
-  at the distribution implementer's discretion.
+  at the domain map implementer's discretion.
 
 proc GlobalDomain.dsiSupportsPrivatization() param: bool return false;
-  This procedure should be provided as-is unless privatization is supported.
+  This procedure should be provided as shown unless privatization is supported.
 
 proc GlobalDomain.dsiMyDist() return dist;
-  Returns this domain's domain map. This procedure should be provided as-is.
+  Returns this domain's domain map. This procedure should be provided as shown.
   (Exception: see dsiLinksDistribution().)
 
 proc GlobalDistribution.dsiNewRectangularDom(param rank: int,
@@ -313,14 +311,16 @@ class GlobalArray ... {
 
 proc GlobalArray.GlobalArray() // or with arguments
   Constructor(s)  These are not regulated by DSI - their specifics are
-  at the distribution implementer's discretion.
+  at the domain map implementer's discretion.
 
 proc GlobalArray.dsiSupportsPrivatization() param: bool return false;
-  This procedure should be provided as-is unless privatization is supported.
+  This procedure should be provided as shown unless privatization is supported.
 
 proc GlobalArray.idxType type return dom.idxType;
   Returns the index type of the corresponding domain.
   (Could be a type field in GlobalArray instead.)
+  [TODO: remove its use in _array.this(i: _value.idxType ...rank)
+   and eliminate this requirement.]
 
 proc GlobalDomain.dsiBuildArray(type eltType) : GlobalArray(eltType, this.type)
   This method is invoked when the Chapel program is creating
@@ -330,7 +330,7 @@ proc GlobalDomain.dsiBuildArray(type eltType) : GlobalArray(eltType, this.type)
   The field 'dom' of the returned GlobalDomain must point to 'this'.
 
 proc GlobalArray.dsiGetBaseDom() return dom;
-  Returns this array's domain. This procedure should be provided as-is.
+  Returns this array's domain. This procedure should be provided as shown.
 
 proc GlobalArray.dsiAccess(indexx) var: eltType {
   Given an index, returns the corresponding array element (as an l-value).
@@ -399,9 +399,9 @@ proc GlobalArray.dsiReallocate(d: domain): void
   Nothing remains to do in dsiReallocate().
 
   (Behind the scene, resizing of ga.myElements is implemented by
-   'dsiReallocate' of the default distribution. That's the distribution
+   'dsiReallocate' of the default domain map. That's the domain map
    that 'myIndices' is distributed with, since myIndices's type provides
-   no explicit distribution.)
+   no explicit domain map.)
   -----------
 
 proc GlobalArray.dsiDisplayRepresentation(): void
@@ -432,7 +432,10 @@ name for their GlobalDistribution classes, e.g. Block and Cyclic.
 PHASE 2: additional operations
 =================================
 
-If desired, these operations could be implemented when the need arises.
+The operations in this phase are required by DSI.
+However, if a domain map is in use by a limited set of applications,
+these operations do not need to be implemented up front. Instead,
+each of them could be implemented later, when the need arises.
 The "unresolved call" compilation errors could be used
 as an indication of what procedure(s) need to be defined.
 
@@ -536,3 +539,262 @@ proc GlobalDomain.dsiLinksDistribution()
   Also in this case dsiMyDist() does not need to be defined.
 
 
+=================================
+PHASE 3: privatization
+=================================
+
+What is privatization?
+----------------------
+
+Privatization of an object 'X' means providing a local copy of X on
+each locale. Such a copy is called the "privatized" object.
+On X.locale, X itself serves as the privatized object.
+We refer to X as the "original" object.
+
+Privatization aims at reducing communication between locales.
+When X needs to be accessed (by reading its fields or invoking
+its methods) from another locale, its privatized copy
+on the current locale is used instead.
+Therefore, communication to X.locale is eliminated.
+
+How does privatization work with DSI?
+-------------------------------------
+
+Privatization is optional in DSI. Each of the global descriptor classes
+can support privatization independently of the others. A class indicates
+to the Chapel implementation whether it supports privatization via
+its method dsiSupportsPrivatization() (see below).
+
+Layouts (i.e. the domain maps that do not distribute domains across locales)
+can potentially benefit from privatization. However, the standard
+layouts do not support it.
+
+The remainder of DSI privatization requirements must be implemented
+by each global descriptor class that chooses to support privatization.
+
+The domain map implementation must provide methods to:
+* create a privatized copy given the original object, and
+* update a privatized copy when the original object changes
+  (see "reprivatization" below).
+
+The Chapel implementation:
+* invokes DSI privatization methods to create or update privatized copies, and
+* redirects original object accesses to its privatized copies.
+
+What is reprivatization?
+------------------------
+
+Should a privatized object be modified (either the original object
+or any of its privatized copies), the changes need to be propagated
+to all the other privatized copies.
+This propagation is called reprivatization.
+
+The domain map implementation provides methods to update a privatized copy.
+The Chapel implementation invokes these methods when necessary.
+
+DSI privatization requirements
+------------------------------
+
+The following requirements apply individually to each global descriptor
+class that chooses to support privatization.
+"Global" denotes such a class.
+
+proc Global.dsiSupportsPrivatization() param return true;
+  Returns 'true' to indicate that privatization is supported.
+  (This is a change to the earlier definitions.)
+  NOTE: do not specify the return type (due to a bug in the compiler).
+
+class Global ... {
+  ...
+  var pid: int = -1;
+  ...
+}
+  The field 'pid' should be provided as shown.
+  It should not be accessed by the DSI implementation except
+  in conjunction with chpl_privateInstance() as discussed later.
+
+proc Global.dsiGetPrivatizeData()
+  Returns the data to be used as the argument to dsiPrivatize().
+  It can be a tuple of values or any other type, at the implementer's
+  discretion. See dsiPrivatize() for explanation.
+
+proc Global.dsiPrivatize(privatizeData): Global
+  Returns a privatized copy of 'this'. The Chapel implementation
+  invokes this method as follows:
+  * on the locale where the privatized copy is to be located,
+  * 'this' is either the original object or its privatized copy
+    created by dsiPrivatize on some other locale,
+  * 'privatizeData' is the result of invoking dsiGetPrivatizeData()
+    on the original object.
+
+  Typically dsiPrivatize() will need to copy and/or privatize
+  some information from the original object into the privatized copy
+  being created. This information could be obtained by quering 'this'
+  directly. Alternatively, it could be passed from the original object
+  via 'privatizeData'. This approach could allow the needed information
+  to be bundled into the original active message, rather than requiring
+  additional communications when accessing 'this'.
+
+proc Global.dsiGetReprivatizeData()
+  Similar do dsiGetPrivatizeData(), except the result is used
+  as the argument to dsiReprivatize().
+
+proc Global.dsiReprivatize(other: Global, reprivatizeData): void
+  Updates a privatized copy.
+
+  'this' is the object to be updated as part of reprivatization.
+  'other' is either the object whose modification originally
+    necessitated reprivatization or one of the privatized copies
+    that have already been updated for that modification
+    by dsiReprivatize().
+  'reprivatizeData' is the result of invoking dsiGetReprivatizeData()
+    on the originally-modified object.
+
+  Q: What modifications must dsiReprivatize() reflect?
+  A: Any changes that the domain map implementation may perform on
+  an instance of Global (or its privatized copy) after that instance
+  has been created and privatized.
+  For example, GlobalDomain.dsiReprivatize() must reflect any changes
+  that GlobalDomain.dsiSetIndices() may perform.
+
+Tip: testing privatization
+--------------------------
+
+In addition to the usual correctness testing, a useful check is whether
+array access is purely local, i.e., results in no communication.
+This can be done using 'local' blocks.
+(The 'local' block performs runtime checks that report an error
+whenever any communication occurs within the its body.)
+
+Here is a simple example:
+
+  // declare an array that uses the domain map to be tested
+  var A: ...;
+
+  // initialize it
+  A = value 1;
+
+  forall loc in (locales that A is distributed over) do
+    // run the check on each locale
+    on loc {
+      // value 2 to be different from value 1
+      var temp = value 2;
+      local {
+        // Access the array.
+	// The 'local' block succeeds if there is no communication.
+        temp = A[an index that is mapped to the locale 'loc'];
+      }
+      // reference the read value
+      assert(temp == value 1);
+    }
+
+Tip: privatized copies should reference privatized copies
+---------------------------------------------------------
+
+The global descriptor classes are required to reference each other
+(e.g. GlobalArray.dom references GlobalDomain; GlobalDomain.dist
+references GlobalDistribution). Therefore, if it is desired to
+eliminate communication completely upon array references,
+all the three global descriptor classes may have to be privatized.
+When one descriptor object references another, a privatized copy of
+the former needs to reference a privatized copy of the latter.
+
+To obtain a privatized copy of an object, e.g. for use within
+dsiPrivatize(), the following overloaded procedure can be used:
+
+  proc chpl_privateInstance(originalInstance, instancePid:int)
+  proc chpl_privateInstance(type instanceType, instancePid:int)
+
+Notes:
+* The first argument is the original object or its type
+  (if the object is passed, only its type is used).
+* The second argument is the original object's 'pid field.
+* The procedure returns a privatized copy of the original object.
+* The procedure can be applied only to objects that have already
+  been privatized.
+** A GlobalArray is privatized after its GlobalDomain, which is
+   privatized after its GlobalDistribution.
+** The 'pid' field is set to a non-negative value when
+   an object is privatized.
+
+Here is an example of using it for privatizing GlobalDomain,
+assuming that GlobalDistribution also supports privatization:
+
+  proc GlobalDomain.dsiGetPrivatizeData() {
+    // include the desired 'pid'
+    return (this.dist.pid, ... other data as needed ...);
+  }
+
+  proc GlobalDomain.dsiPrivatize(privatizeData) {
+    // extract the 'pid' provided above
+    var distPid = privatizeData(1);
+    // obtain the privatized copy of the GlobalDistribution instance
+    var privatizedDMap = chpl_privateInstance(this.dist.type, distPid);
+
+    return new GlobalDomain(dist = privatizedDMap,
+                            ... other fields as needed ...)
+  }
+
+Tip: "privatize" the domains and arrays used in the implementation
+------------------------------------------------------------------
+
+If a global descriptor class to be privatized uses domains and arrays,
+those need to be "privatized", too, to reduce communication. In the
+case of domains and arrays mapped using the default layout,
+their "privatization" is achieved by copying.
+
+Careful consideration is needed to eliminate all communication.
+For example:
+* Copying an array preserves the source's domain - unless
+  the destination's domain is declared explicitly.
+* Copying a domain preserves the source's domain map - unless
+  the destination's type is declared explicitly.
+* If an array's domain or a domain's domain map is declared explicitly,
+  ensure that privatized copies of those are used.
+* There is no need to privatize the default layout.
+  Specifically, copying a domain declared without an explicit domain map
+  is sufficient to privatize that domain.
+* The same considerations are valid for reprivatization.
+
+Here is an example of "privatizing" domains/arrays within GlobalDomain.
+The key insight here is that auxArrayG's domain needs to be "privatized",
+whereas the domains of auxArrayED1 and auxArrayED2 are created implicitly
+for each GlobalDomain object and so will be local in any case.
+
+  class GlobalDomain ... {
+    ...
+
+    // this field is generic
+    var auxArrayG;
+
+    // domain is specified explicitly
+    var auxArrayED1: [1..10] int;
+
+    // similar
+    var auxDomain: domain(1);
+    var auxArrayED2: [auxDomain] int;
+  }
+
+  proc GlobalDomain.dsiGetPrivatizeData() {
+    return (this.dist.pid, auxArrayG,
+            auxArrayED1, auxDomain, auxArrayED2, ...);
+  }
+
+  proc GlobalDomain.dsiPrivatize(privatizeData) {
+
+    // To privatize auxArrayG, we must "privatize" its domain first.
+    // No need to declare privDom's type if auxArrayG uses the default layout.
+    var privDom = privatizeData(2).domain;
+    var privArr: [privDom] privatizeData(2).eltType = privatizeData(2);
+
+    // If the following were used, privArr.domain would be the same
+    // as privatizeData(2).domain, i.e., it would not be privatized.
+    //var privArr = privatizeData(2);
+
+    return new GlobalDomain(..., auxArrayG = privArr,
+      // the other fields can be simply copied
+      auxArrayED1 = privatizeData(3),
+      auxDomain   = privatizeData(4),
+      auxArrayED2 = privatizeData(5));
+
+  }
