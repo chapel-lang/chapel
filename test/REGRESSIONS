@@ -506,9 +506,10 @@ threads-none causes serial iterator to be used rather than follower (11/25/08)
 intel-specific regressions
 ==========================
 
-can't find -lsci (12/10/10)
----------------------------
-*all*
+NAN/INFINITY undefined in generated code (03/28/11)
+---------------------------------------------------
+[Error matching compiler output for modules/standard/math/infinity]
+[Error matching compiler output for studies/dijkstra/driverEdgeBtw]
 
 ??? (07/13/10)
 --------------
