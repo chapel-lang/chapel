@@ -621,6 +621,7 @@ proc range.offset(offs : integral)
     compilerWarning("Applying an alignment to an unstrided range has no effect."); 
     this._alignment = 0; // Maintain the invariant.
   }
+  return this;
 }
 
 // Composition
