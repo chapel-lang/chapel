@@ -48,7 +48,7 @@ relation to the file in terms of their names.
 The following file contains two explicitly named modules
 (\rsec{Explicit_Naming}), MX and MY.
 \begin{chapelpre}
-% test_two_modules.chpl
+% two_modules.chpl
 \end{chapelpre}
 \begin{chapel}
 module MX {
@@ -92,7 +92,7 @@ identifier, it cannot be referenced in a use statement.
 The following file, named myModule.chpl, defines an implicitly named
 module called myModule.
 \begin{chapelpre}
-% test_implicit.chpl
+% implicit.chpl
 \end{chapelpre}
 \begin{chapel}
 var x: int = 0;
@@ -132,7 +132,7 @@ explicitly naming the outer module in the use statement.
 \begin{example}
 The code
 \begin{chapelpre}
-% test_nested_use.chpl
+% nested_use.chpl
 module libsci {
   writeln("Initializing libsci");
   module blas {
@@ -161,7 +161,7 @@ The following file, named myModule.chpl, defines an
 implicitly named module called myModule, with nested modules
 MX and MY.
 \begin{chapelpre}
-% test_nested.chpl
+% nested.chpl
 \end{chapelpre}
 \begin{chapel}
 module MX {
@@ -236,7 +236,7 @@ usage.
 \begin{example}
 In the following example,
 \begin{chapelpre}
-% test_ambiguity.chpl
+% ambiguity.chpl
 \end{chapelpre}
 \begin{chapel}
 module M1 {
@@ -278,10 +278,10 @@ module M3 {
 }
 \end{chapel}
 \begin{chapeloutput}
-test\_ambiguity.chpl:22: In function 'main':
-test\_ambiguity.chpl:27: error: ambiguous call 'printY()'
-test\_ambiguity.chpl:34: note: candidates are: printY()
-test\_ambiguity.chpl:7: note:                 printY()
+ambiguity.chpl:22: In function 'main':
+ambiguity.chpl:27: error: ambiguous call 'printY()'
+ambiguity.chpl:34: note: candidates are: printY()
+ambiguity.chpl:7: note:                 printY()
 \end{chapeloutput}
 The call to printX() is not ambiguous because M2's definition shadows
 that of M1.  On the other hand, the call to printY() is ambiguous
@@ -301,7 +301,7 @@ executed during module initialization.
 \begin{example}
 In the code,
 \begin{chapelpre}
-% test_init.chpl
+% init.chpl
 proc foo() {
     return 1;
 }
@@ -353,7 +353,7 @@ unless the \emph{-- --main-module} flag is used.
 If the following code is compiled without specifying a main module, it
 will yield an error.
 \begin{chapelpre}
-% test_main_module.chpl
+% main_module.chpl
 \end{chapelpre}
 \begin{chapel}
 module M1 {
@@ -374,17 +374,17 @@ module M2 {
 }
 \end{chapel}
 \begin{chapelcompopts}
---main-module M1 \# test\_main\_module.M1.good
---main-module M2 \# test\_main\_module.M2.good
+--main-module M1 \# main\_module.M1.good
+--main-module M2 \# main\_module.M2.good
 \end{chapelcompopts}
 If M1 is specified as the main module, the program will output:
 \begin{chapelprintoutput}
-% test_main_module.M1.good
+% main_module.M1.good
 M1's main
 \end{chapelprintoutput}
 If M2 is specified as the main module the program will output:
 \begin{chapelprintoutput}
-% test_main_module.M2.good
+% main_module.M2.good
 M1's main\\
 M2's main
 \end{chapelprintoutput}
@@ -404,7 +404,7 @@ created to execute the module initialization code.
 \begin{example}
 The code
 \begin{chapelpre}
-% test_no_main.chpl
+% no_main.chpl
 \end{chapelpre}
 \begin{chapel}
 writeln("hello, world");
@@ -434,7 +434,7 @@ parent module are initialized before uses in the nested module.
 \begin{example}
 The code
 \begin{chapelpre}
-% test_init_order.chpl
+% init_order.chpl
 \end{chapelpre}
 \begin{chapel}
 module M1 {

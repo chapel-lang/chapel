@@ -321,6 +321,37 @@ The do-while loop is executed as follows:
 In this second form of the loop, note that the statement is executed
 unconditionally the first time.
 
+\begin{example}
+The following example illustrates the difference between
+the \sntx{do-while-statement} and the \sntx{while-do-statement}.  The body of
+the do-while loop is always executed at least once, even if the loop conditional
+is already false when it is entered.
+\begin{chapelpre}
+% while.chpl
+\end{chapelpre}
+\begin{chapel}
+var t = 11;
+
+writeln("Scope of do while loop:");
+do {
+  t += 1;
+  writeln(t);
+} while (t <= 10);
+
+t = 11;
+writeln("Scope of while loop:");
+while (t <= 10) {
+  t += 1;
+  writeln(t);
+}
+\end{chapel}
+\begin{chapeloutput}
+Scope of do while loop:
+12
+Scope of while loop:
+\end{chapeloutput}
+\end{example}
+
 \section{The For Loop}
 \label{The_For_Loop}
 
@@ -378,11 +409,20 @@ dimension, must be identical.
 
 \begin{example}
 The output of
+\begin{chapelpre}
+% zipper.chpl
+\end{chapelpre}
 \begin{chapel}
 for (i, j) in (1..3, 4..6) do
   write(i, " ", j, " ");
 \end{chapel}
-is ``1 4 2 5 3 6 ''.
+\begin{chapelpost}
+writeln();
+\end{chapelpost}
+is
+\begin{chapeloutput}
+1 4 2 5 3 6 
+\end{chapeloutput}
 \end{example}
 
 \subsection{Tensor Product Iteration}
@@ -395,11 +435,21 @@ context.
 
 \begin{example}
 The output of
+\begin{chapelpre}
+% tensor.chpl
+\end{chapelpre}
 \begin{chapel}
 for (i, j) in [1..3, 4..6] do
   write(i, " ", j, " ");
 \end{chapel}
-is ``1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 ''. The statement is
+\begin{chapelpost}
+writeln();
+\end{chapelpost}
+is
+\begin{chapeloutput}
+1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 
+\end{chapeloutput}
+The statement is
 equivalent to
 \begin{chapel}
 for i in 1..3 do
@@ -533,6 +583,30 @@ the programmer to restrict which symbols are 'used' as well as to
 rename symbols that are used.
 \end{openissue}
 
+\begin{example}
+The following example illustrates how the use statement brings in the definition
+of the \chpl{Timer} class, so it can be used to time program execution.
+\begin{chapelpre}
+% use.chpl
+\end{chapelpre}
+\begin{chapel}
+use Time;
+
+var programTimer:Timer;
+
+programTimer.start();
+writeln("Write one line.");
+programTimer.stop();
+var totalTime = programTimer.elapsed();
+
+if (totalTime > 0) then writeln("Non-zero time for writing one line.");
+\end{chapel}
+\begin{chapeloutput}
+Write one line.
+Non-zero time for writing one line.
+\end{chapeloutput}
+\end{example}
+
 \section{The Type Select Statement}
 \label{The_Type_Select_Statement}
 
@@ -583,6 +657,47 @@ As with function resolution, this can result in an ambiguous
 situation.  Unlike with function resolution, in the event of an
 ambiguity, the first statement in the list of when statements is
 chosen.
+
+\begin{example}
+The following example shows how the type select statement can be used to perform
+a different action based on the static type of the operand.
+\begin{chapelpre}
+% typeselect.chpl
+\end{chapelpre}
+\begin{chapel}
+var x = 32, y = 15.5; 
+var z: int(8);
+var coord = (0.0,0.0);
+var yes: bool;
+
+writetype(x);
+writetype(y);
+writetype(z);
+writetype(coord);
+writetype(yes);
+writetype("no");
+
+proc writetype(x) {
+  type select x {
+    when int do writeln("Integer type");
+    when uint do writeln("Unsigned integer type");
+    when real do writeln("Real type");
+    when complex do writeln("Complex type");
+    when string do writeln("String type");
+    when bool do writeln("Boolean type");
+    otherwise writeln("Non-primitive type");
+  }
+}
+\end{chapel}
+\begin{chapeloutput}
+Integer type
+Real type
+Integer type
+Non-primitive type
+Boolean type
+String type
+\end{chapeloutput}
+\end{example}
 
 \section{The Empty Statement}
 \label{The_Empty_Statement}

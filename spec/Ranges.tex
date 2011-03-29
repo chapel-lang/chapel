@@ -102,7 +102,7 @@ of range type that can represent ranges of 64-bit integers, with both
 high and low bounds specified, the ability to have a stride other
 than 1 and an alignment other than zero.
 \begin{chapelpre}
-% test_rangeVariable.chpl
+% rangeVariable.chpl
 \end{chapelpre}
 \begin{chapel}
 var r: range(int(64), BoundedRangeType.bounded, stridable=true);
@@ -219,7 +219,7 @@ unbounded range conforms to that of the other iterator.
 \begin{example}
 The code
 \begin{chapelpre}
-% test_zipWithUnbounded.chpl
+% zipWithUnbounded.chpl
 \end{chapelpre}
 \begin{chapel}
 for i in (1..5, 3..) do
@@ -316,7 +316,7 @@ In the following declarations, range \chpl{r1} represents the odd integers
 between 1 and 20. Range \chpl{r2} strides \chpl{r1} by two and represents
 every other odd integer between 1 and 20: 1, 5, 9, 13 and 17.
 \begin{chapelpre}
-% test_rangeByOperator.chpl
+% rangeByOperator.chpl
 \end{chapelpre}
 \begin{chapel}
 var r1 = 1..20 by 2;
@@ -476,7 +476,7 @@ end of the range.  In that case, the end bound must also be established.
 \begin{example}
 The following declarations result in equivalent ranges.
 \begin{chapelpre}
-% test_rangeCountOperator.chpl
+% rangeCountOperator.chpl
 \end{chapelpre}
 \begin{chapel}
 var r1 = 1..10 by -2 # -3;
@@ -527,7 +527,7 @@ create a second range \chpl{r2} representing the indices ${1, 2, 3,
   4}$.  The \chpl{r2} range is bounded, non-stridable, and is represented by
 indices of type \chpl{int}.
 \begin{chapelpre}
-% test_rangeAdd.chpl
+% rangeAdd.chpl
 \end{chapelpre}
 \begin{chapel}
 var r = 0..3;
@@ -564,7 +564,7 @@ slices and represent the indices from 3 to 20 and the odd integers
 between 1 and 20 respectively. Range \chpl{r4} represents the odd
 integers between 1 and 20 that are also divisible by 3.
 \begin{chapelpre}
-% test_rangeSlicing.chpl
+% rangeSlicing.chpl
 \end{chapelpre}
 \begin{chapel}
 var r = 1..20;

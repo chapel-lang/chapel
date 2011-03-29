@@ -228,7 +228,7 @@ lists must be called without parentheses.
 \begin{example}
 Given the definitions
 \begin{chapelpre}
-% test_function_no_parens.chpl
+% function_no_parens.chpl
 \end{chapelpre}
 \begin{chapel}
 proc foo { writeln("In foo"); }
@@ -276,7 +276,7 @@ actual argument to a formal argument.
 \begin{example}
 In the code
 \begin{chapelpre}
-% test_named_args.chpl
+% named_args.chpl
 \end{chapelpre}
 \begin{chapel}
 proc foo(x: int, y: int) { writeln(x); writeln(y); }
@@ -315,7 +315,7 @@ it were passed from the call site.
 \begin{example}
 In the code
 \begin{chapelpre}
-% test_default_values.chpl
+% default_values.chpl
 \end{chapelpre}
 \begin{chapel}
 proc foo(x: int = 5, y: int = 7) { writeln(x); writeln(y); }
@@ -433,7 +433,7 @@ arguments.
 \begin{example}
 The code
 \begin{chapelpre}
-% test_varargs.chpl
+% varargs.chpl
 \end{chapelpre}
 \begin{chapel}
 proc mywriteln(x ...?k) {
@@ -468,7 +468,7 @@ Either or both the number of variable arguments and their types can be
 specified.  For example, a basic procedure to sum the values of three
 integers can be wrtten as
 \begin{chapelpre}
-% test_varargs_with_type.chpl
+% varargs_with_type.chpl
 \end{chapelpre}
 \begin{chapel}
 proc sum(x: int...3) return x(1) + x(2) + x(3);
@@ -490,7 +490,7 @@ parameter.
 \begin{example}
 The code
 \begin{chapelpre}
-% test_varargs_returns_tuples.chpl
+% varargs_returns_tuples.chpl
 \end{chapelpre}
 \begin{chapel}
 proc tuple(x ...) return x;
@@ -546,7 +546,7 @@ The following code defines a procedure that can be interpreted as a
 simple two-element array where the elements are actually global
 variables:
 \begin{chapelpre}
-% test_variable_functions.chpl
+% variable_functions.chpl
 % This test spans the next 3 chapel code segments
 \end{chapelpre}
 \begin{chapel}
@@ -583,7 +583,7 @@ example, that the second element in the pseudo-array is only assigned
 a value if the first argument is positive.  To do this, add the
 following:
 \begin{chapelpre}
-% test_setter.chpl
+% setter.chpl
 var x, y = 0;
 proc A(i: int) var { // } to fool latex
   if i < 0 || i > 1 then
@@ -603,7 +603,7 @@ if setter && i == 1 && x <= 0 then
 A(1) = 1;
 \end{chapelpost}
 \begin{chapeloutput}
-test\_setter.chpl:6: error: halt reached - cannot assign value to A(1) if A(0) <= 0
+setter.chpl:6: error: halt reached - cannot assign value to A(1) if A(0) <= 0
 \end{chapeloutput}
 \end{example}
 
@@ -626,7 +626,7 @@ during compilation and substituted for the call expression.
 \begin{example}
 In the code
 \begin{chapelpre}
-% test_param_functions.chpl
+% param_functions.chpl
 \end{chapelpre}
 \begin{chapel}
 proc sumOfSquares(param a: int, param b: int) param
@@ -672,7 +672,7 @@ conditionals with a conditional expression that is not a parameter.
 \begin{example}
 In the code
 \begin{chapelpre}
-% test_type_functions.chpl
+% type_functions.chpl
 \end{chapelpre}
 \begin{chapel}
 proc myType(x) type {
@@ -719,7 +719,7 @@ return-statement:
 The following code defines a procedure that returns the sum of three
 integers:
 \begin{chapelpre}
-% test_return.chpl
+% return.chpl
 \end{chapelpre}
 \begin{chapel}
 proc sum(i1: int, i2: int, i3: int)

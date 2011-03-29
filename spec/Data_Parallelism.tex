@@ -59,7 +59,7 @@ statements in parallel iterators~\rsec{Parallel_Iterators}.
 \begin{example}
 In the code
 \begin{chapelpre}
-% test_forallStmt.chpl
+% forallStmt.chpl
 config const N = 5;
 var a: [1..N] int;
 var b = [i in 1..N] i;
@@ -158,7 +158,7 @@ loop expression is yielded~(\rsec{Parallel_Iterators}).
 \begin{example}
 The code
 \begin{chapelpre}
-% test_forallExpr.chpl
+% forallExpr.chpl
 \end{chapelpre}
 \begin{chapel}
 writeln(+ reduce [i in 1..10] i**2);
@@ -180,7 +180,7 @@ does not require an else part.
 The following expression returns every other element starting with the
 first:
 \begin{chapelpre}
-% test_forallFilter.chpl
+% forallFilter.chpl
 var s: [1..10] int = [i in 1..10] i;
 var result =
 \end{chapelpre}

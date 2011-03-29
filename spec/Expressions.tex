@@ -1180,6 +1180,29 @@ is immediately nested inside a forall expression.  Such an expression
 is used to filter predicates as described
 in~\rsec{Filtering_Predicates_For} and~\rsec{Filtering_Predicates_Forall}.
 
+\begin{example}
+This example shows how if-then-else can be used in a context in which an
+expression is expected.
+\begin{chapelpre}
+% condexp.chpl
+\end{chapelpre}
+\begin{chapel}
+writehalf(8);
+writehalf(21);
+writehalf(1000);
+
+proc writehalf(i: int) {
+  var half = if (i % 2) then i/2 +1 else i/2;
+  writeln("Half of ",i," is ",half); 
+}
+\end{chapel}
+\begin{chapeloutput}
+Half of 8 is 4
+Half of 21 is 11
+Half of 1000 is 500
+\end{chapeloutput}
+\end{example}
+
 \section{For Expressions}
 \label{For_Expressions}
 \index{for@\chpl{for}}
@@ -1201,14 +1224,23 @@ each iteration.
 
 A conditional expression that is immediately enclosed in a for
 expression does not require an else-part.  Such a conditional
-expression filters the evaluated expressions and only returns an
-expression if the condition holds.
+expression filters the expressions yielded by an iterator and only executes the
+enclosed statement when the condition holds.
 
 \begin{example}
 The code
+\begin{chapelpre}
+% yieldPredicates.chpl
+\end{chapelpre}
 \begin{chapel}
 var A = for i in 1..10 do if i % 3 != 0 then i;
 \end{chapel}
+\begin{chapelpost}
+writeln(A);
+\end{chapelpost}
+\begin{chapeloutput}
+1 2 4 5 7 8 10
+\end{chapeloutput}
 declares an array A that is initialized to the integers between
 1 and 10 that are not divisible by 3.
 \end{example}
