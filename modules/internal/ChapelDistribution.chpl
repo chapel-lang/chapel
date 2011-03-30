@@ -19,8 +19,13 @@ class BaseDist {
   pragma "dont disable remote value forwarding"
   proc destroyDist(dom: BaseDom = nil) {
     var cnt = _distCnt$ - 1;
-    if cnt < 0 then
-      halt("distribution reference count is negative!");
+    if !noRefCount {
+      if cnt < 0 then
+        halt("distribution reference count is negative!");
+    } else {
+      if cnt > 0 then
+        halt("distribution reference count has been modified!");
+    }
     if dom then
       on dom do
         _doms.remove(dom);
@@ -69,18 +74,25 @@ class BaseDom {
   pragma "dont disable remote value forwarding"
   proc destroyDom(arr: BaseArr = nil) {
     var cnt = _domCnt$ - 1;
-    if cnt < 0 then
-      halt("domain reference count is negative!");
+    if !noRefCount {
+      if cnt < 0 then
+        halt("domain reference count is negative!");
+    } else {
+      if cnt > 0 then
+        halt("domain reference count has been modified!");
+    }
     if arr then
       on arr do
         _arrs.remove(arr);
     _domCnt$ = cnt;
-    if cnt == 0 && dsiLinksDistribution() {
-      var dist = dsiMyDist();
-      on dist {
-        var cnt = dist.destroyDist(this);
-        if cnt == 0 then
-          delete dist;
+    if !noRefCount {
+      if cnt == 0 && dsiLinksDistribution() {
+        var dist = dsiMyDist();
+        on dist {
+          var cnt = dist.destroyDist(this);
+          if cnt == 0 then
+            delete dist;
+        }
       }
     }
     return cnt;
@@ -182,8 +194,13 @@ class BaseArr {
   pragma "dont disable remote value forwarding"
   proc destroyArr(): int {
     var cnt = _arrCnt$ - 1;
-    if cnt < 0 then
-      halt("array reference count is negative!");
+    if !noRefCount {
+      if cnt < 0 then
+        halt("array reference count is negative!");
+    } else {
+      if cnt > 0 then
+        halt("array reference count has been modified!");
+    }
     _arrCnt$ = cnt;
     if cnt == 0 {
       if _arrAlias {
@@ -195,11 +212,15 @@ class BaseArr {
       } else {
         dsiDestroyData();
       }
-      var dom = dsiGetBaseDom();
-      on dom {
-        var cnt = dom.destroyDom(this);
-        if cnt == 0 then
-          delete dom;
+    }
+    if !noRefCount {
+      if cnt == 0 {
+        var dom = dsiGetBaseDom();
+        on dom {
+          var cnt = dom.destroyDom(this);
+          if cnt == 0 then
+            delete dom;
+        }
       }
     }
     return cnt;

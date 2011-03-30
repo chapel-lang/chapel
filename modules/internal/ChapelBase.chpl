@@ -1294,20 +1294,23 @@ pragma "inline" proc chpl__initCopy(x: _tuple) {
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: _distribution) {
-  if x._value then
-    on x._value do x._value._distCnt$ += 1;
+  if !noRefCount then
+    if x._value then
+      on x._value do x._value._distCnt$ += 1;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: domain) {
-  on x._value do x._value._domCnt$ += 1;
+  if !noRefCount then
+    on x._value do x._value._domCnt$ += 1;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: []) {
-  on x._value do x._value._arrCnt$ += 1;
+  if !noRefCount then
+    on x._value do x._value._arrCnt$ += 1;
   return x;
 }
 
