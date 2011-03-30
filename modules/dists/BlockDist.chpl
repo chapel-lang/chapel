@@ -560,7 +560,7 @@ iter BlockDom.these(param tag: iterator) where tag == iterator.leader {
                          locDom.myBlock.dims());
     var locBlock: rank*range(idxType);
     for param i in 1..tmpBlock.rank {
-      locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
+      locBlock(i) = (tmpBlock.dim(i).first/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
     }
     if (numTasks == 1) {
       yield locBlock;
