@@ -144,6 +144,12 @@ form is a syntactic convenience.
 
 \subsection{Execution, Serializability, and Parallelism}
 
+The forall expression executes a forall loop (\rsec{Forall}),
+evaluates the body expression on each iteration of the loop,
+and returns the resulting values as a collection.
+The size and shape of that collection
+are determined by the iterator-expression.
+
 As with the forall statement, the forall expression must be
 serializable.  In addition, the iterator expression determines the
 number of tasks, the iterations each task executes, and the locales on
@@ -151,9 +157,6 @@ which these tasks execute.  When multiple iterator expressions are
 used in a zipper context, the left-most iterator determines the number
 of tasks, the iterations each task executes, and the locales on which
 these tasks execute.
-
-The semantics are equivalent to calling a parallel iterator where the
-loop expression is yielded~(\rsec{Parallel_Iterators}).
 
 \begin{example}
 The code
@@ -175,7 +178,11 @@ of the indices in the range \chpl{1..10}.
 \index{forall expressions!and conditional expressions}
 
 An if expression that is immediately enclosed by a forall expression
-does not require an else part.
+does not require an else clause. Such an if
+expression filters the iterations of the forall expression.
+The iterations for which the condition does not hold
+are not reflected in the result of the forall expression.
+
 \begin{example}
 The following expression returns every other element starting with the
 first:
