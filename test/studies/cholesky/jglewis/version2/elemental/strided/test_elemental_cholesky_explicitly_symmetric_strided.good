@@ -6,7 +6,6 @@ Cholesky Factorization Tests for Strided Index Ranges
 
 Parallel Environment
    Number of Locales         : 1
-   Number of cores per locale: 2
 
 
 
