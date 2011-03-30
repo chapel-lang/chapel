@@ -1,38 +1,38 @@
-//|\""""""""""""""""""""""""""""""|\
-//| >    Basic data structures    | >
-//|/______________________________|/
-class OneWayNode {
-  type data_type;
-  var  data: data_type;
-  var  next: OneWayNode(data_type);
-}
-
-record Stack {
-  type data_type;
-  var top: OneWayNode(data_type);
-  var size: int=0;
-  
-  proc push(data: data_type) {
-    top = new OneWayNode(data_type, data, top);
-    size += 1;
-  }
-  
-  proc pop() {
-    if isEmpty() then 
-      halt("Attempting to pop off an empty stack.");
-    var old_top = top;
-    top = old_top.next;
-    size -= 1;
-    return old_top.data;
-  }
-  
-  proc isEmpty() {
-    return top==nil;
-  }
-}
-// /|""""""""""""""""""""""""""""""/|
-//< |    Basic data structures    < |
-// \|______________________________\|
+// //|\""""""""""""""""""""""""""""""|\
+// //| >    Basic data structures    | >
+// //|/______________________________|/
+// class OneWayNode {
+//   type data_type;
+//   var  data: data_type;
+//   var  next: OneWayNode(data_type);
+// }
+// 
+// record Stack {
+//   type data_type;
+//   var top: OneWayNode(data_type);
+//   var size: int=0;
+//   
+//   proc push(data: data_type) {
+//     top = new OneWayNode(data_type, data, top);
+//     size += 1;
+//   }
+//   
+//   proc pop() {
+//     if isEmpty() then 
+//       halt("Attempting to pop off an empty stack.");
+//     var old_top = top;
+//     top = old_top.next;
+//     size -= 1;
+//     return old_top.data;
+//   }
+//   
+//   proc isEmpty() {
+//     return top==nil;
+//   }
+// }
+// // /|""""""""""""""""""""""""""""""/|
+// //< |    Basic data structures    < |
+// // \|______________________________\|
 
 
 

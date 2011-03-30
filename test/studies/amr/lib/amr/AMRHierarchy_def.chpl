@@ -427,10 +427,12 @@ proc AMRHierarchy.buildRefinedLevel(i_refining: int)
   // do it justice.) 
   //------------------------------------------------------------------------
 
-  var domains_to_refine = new MultiDomain(dimension,stridable=true);
+  // var domains_to_refine = new MultiDomainNew(dimension,stridable=true);
+  var domains_to_refine = new ArrayBasedList( domain(dimension,stridable=true) );
 
-  for D in partitioned_domains {
-    var adjacent_coarse_region = new MultiDomain(dimension,stridable=true);
+  for D in partitioned_domains
+  {
+    var adjacent_coarse_region = new MultiDomainNew(dimension,stridable=true);
     
     //==== Initialize to D expanded by one cell ====
     adjacent_coarse_region.add( D.expand(2) );
@@ -442,18 +444,24 @@ proc AMRHierarchy.buildRefinedLevel(i_refining: int)
     for grid in levels(i_refining).grids do
       adjacent_coarse_region.subtract(grid.cells);
       
-    var properly_nested_domains = new MultiDomain(dimension,stridable=true);
+    var properly_nested_domains = new MultiDomainNew(dimension,stridable=true);
     properly_nested_domains.add(D);
     
     for adjacent_coarse_domain in adjacent_coarse_region do
       properly_nested_domains.subtract( adjacent_coarse_domain.expand(2) );
     
-    domains_to_refine.add( properly_nested_domains );
-    
+    for D in properly_nested_domains {
+      domains_to_refine.add( D );
+    }
+
+    adjacent_coarse_region.clear();
     delete adjacent_coarse_region;
+    
+    properly_nested_domains.clear();
     delete properly_nested_domains;
   }
     
+  partitioned_domains.clear();
   delete partitioned_domains;
   //<=== Ensure proper nesting <===
   
@@ -467,6 +475,8 @@ proc AMRHierarchy.buildRefinedLevel(i_refining: int)
   for domain_to_refine in domains_to_refine do
     new_level.addGrid( refine(domain_to_refine, ref_ratio) ); //# need to add this method to the level
   
+  
+  domains_to_refine.clear();
   delete domains_to_refine;
     
   new_level.complete();
@@ -563,7 +573,7 @@ proc AMRHierarchy.deleteBoundaryStructures( i: int )
 class PhysicalBoundary {
   const level:        Level;
   const grids:        domain(Grid);
-  const multidomains: [grids] MultiDomain(dimension,stridable=true);
+  const multidomains: [grids] MultiDomainNew(dimension,stridable=true);
 
 
 
@@ -575,11 +585,14 @@ class PhysicalBoundary {
   {
     for grid in level.grids {
 
-      var boundary_multidomain = new MultiDomain(dimension,stridable=true);
-      boundary_multidomain.add(grid.ghost_multidomain);
+      var boundary_multidomain = new MultiDomainNew(dimension,stridable=true);
+
+      //## boundary_multidomain.add(grid.ghost_multidomain);
+      for D in grid.ghost_multidomain do boundary_multidomain.add( D );
+
       boundary_multidomain.subtract(level.possible_cells);
 
-      if boundary_multidomain.domains.numElements > 0 {
+      if !boundary_multidomain.isEmpty() {
         grids.add(grid);
         multidomains(grid) = boundary_multidomain;
       } 
@@ -597,8 +610,10 @@ class PhysicalBoundary {
   //|/......................|/
   proc clear () 
   {
-    for multidomain in multidomains do 
-      delete multidomain;  // MultiDomain doesn't require clearing
+    for multidomain in multidomains {
+      multidomain.clear();
+      delete multidomain;
+    }
   }
   // /|''''''''''''''''/|
   //< |    clear()    < |
@@ -773,7 +788,7 @@ proc LevelSolution.initialFill (
 // level.
 //----------------------------------------------------------------
 
-proc LevelVariable.initialFill(
+proc LevelVariable.initialFill (
   q_old:     LevelVariable,
   q_coarse:  LevelVariable)
 {
@@ -792,21 +807,27 @@ proc LevelVariable.initialFill(
   for grid in level.grids {
 
     //---- Initialize unfilled cell blocks ----
-    var unfilled_cell_blocks = new MultiDomain(dimension, true);
-    unfilled_cell_blocks.add(grid.cells);
+    var unfilled_cell_blocks = new MultiDomainNew(dimension, true);
+    unfilled_cell_blocks.add( grid.cells );
 
 
     //===> Copy from q_old where possible ===>
+    //-------------------------------------------------------
+    // Possible speedup if old level's grid cells are stored
+    // as a MultiDomain. #inefficiency
+    //-------------------------------------------------------
 
     if q_old != nil {
 
-      for old_grid in q_old.level.grids {
+      for old_grid in q_old.level.grids
+      {
       
         var overlap = grid.cells( old_grid.cells );
 
-        if overlap.numIndices > 0 {
+        if overlap.numIndices > 0 
+        {
           this(grid,overlap) = q_old(old_grid, overlap);
-          unfilled_cell_blocks.subtract(overlap);
+          unfilled_cell_blocks.subtract( overlap );
         }
       }
     }
@@ -815,6 +836,9 @@ proc LevelVariable.initialFill(
 
   
     //===> Interpolate from q_coarse everywhere else ===>
+    //------------------------------------------------
+    // This looks really inefficient... #inefficiency
+    //------------------------------------------------
 
     for coarse_grid in q_coarse.level.grids {
       
@@ -839,6 +863,9 @@ proc LevelVariable.initialFill(
       }
       
     }
+    
+    unfilled_cell_blocks.clear();
+    delete unfilled_cell_blocks;
     //<=== Interpolate from q_coarse everywhere else <===
 
   }

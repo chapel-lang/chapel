@@ -12,7 +12,7 @@
 
 use SpaceDimension;
 use LanguageExtensions;
-use MultiDomain_def;
+use BasicDataStructures;
 
 
 
@@ -43,7 +43,8 @@ class Grid {
   const extended_cells: domain(dimension, stridable=true);
   const cells:          subdomain(extended_cells);
   
-  const ghost_multidomain: MultiDomain(dimension, stridable=true);
+  // const ghost_multidomain: MultiDomain(dimension, stridable=true);
+  const ghost_multidomain: List( domain(dimension, stridable=true) );
 
 
   //|\''''''''''''''|\
@@ -51,6 +52,7 @@ class Grid {
   //|/..............|/
 
   proc clear () {
+    ghost_multidomain.clear();
     delete ghost_multidomain;
   }
   // /|''''''''''''''/|
@@ -116,7 +118,8 @@ class Grid {
     //   (upper,lower), (upper,inner), (upper,upper)
     //----------------------------------------------------------------
 
-    ghost_multidomain = new MultiDomain(dimension, stridable=true);
+    // ghost_multidomain = new MultiDomain(dimension, stridable=true);
+    ghost_multidomain = new List( domain(dimension,stridable=true) );
 
     var inner_location: dimension*int;
     for d in dimensions do inner_location(d) = loc1d.inner;

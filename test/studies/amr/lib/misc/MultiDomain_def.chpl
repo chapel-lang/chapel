@@ -1,5 +1,8 @@
 
 use LanguageExtensions;
+use BasicDataStructures;
+
+
 
 
 //|\"""""""""""""""""""""""""""|\
@@ -22,6 +25,10 @@ class MultiDomain {
   var subindices: domain(1) = [1..0];
   var domains:    [subindices] domain(rank, stridable=stridable);
 
+
+
+  proc isEmpty() { return subindices.numIndices==0; }
+  proc clear() {}  // Need this for transition to new MultiDomain
 
 
 
@@ -498,116 +505,7 @@ proc MultiDomain.subtract(E: domain)
 
 
 
-//|\""""""""""""""""""""""""""|\
-//| >    class: MultiArray    | >
-//|/__________________________|/
 
-//-----------------------------------------------------
-// A collection of arrays, designed to store values on
-// all domains in a MultiDomain.  Enforcement of this
-// is fairly weak.
-//-----------------------------------------------------
-
-class MultiArray {
-  
-  //|\'''''''''''''''|\
-  //| >    fields    | >
-  //|/...............|/
-
-  param rank: int;
-  param stridable: bool;
-  type  eltType;
-  
-  var subindices:         domain(1);
-  var independent_arrays: [subindices] IndependentArray(rank, stridable, eltType);
-
-  // /|'''''''''''''''/|
-  //< |    fields    < |
-  // \|...............\|
-  
-  
-  proc length return subindices.high;
-
-
-  
-  
-  //|\'''''''''''''''''''''''''''''|\
-  //| >    special method: this    | >
-  //|/.............................|/
-  
-  proc this (subindex: int) var
-  {
-    return independent_arrays(subindex).value;
-  }
-  // /|'''''''''''''''''''''''''''''/|
-  //< |    special method: this    < |
-  // \|.............................\|
-  
-  
-  
-  //|\''''''''''''''''''''''''''''''|\
-  //| >    special method: these    | >
-  //|/..............................|/
-  
-  //------------------------------------------------------
-  // Iterates over the IndependentArrays that make up the
-  // MultiArray.
-  //------------------------------------------------------
-
-  iter these () var 
-  {
-    for independent_array in independent_arrays do 
-      yield independent_array.value;
-  }
-  // /|''''''''''''''''''''''''''''''/|
-  //< |    special method: these    < |
-  // \|..............................\|
-
-
-
-  //|\'''''''''''''''''''''''''|\
-  //| >    method: allocate    | >
-  //|/.........................|/
-  
-  //----------------------------------------------------------
-  // Allocates storage in the MultiArray corresponding to the
-  // domains in a MultiDomain.
-  //----------------------------------------------------------
-
-  proc allocate ( mD: MultiDomain(rank,stridable) ) 
-  {
-    subindices = mD.subindices;
-    
-    for i in subindices {
-      independent_arrays(i) = new IndependentArray(rank, stridable, eltType);
-      independent_arrays(i).Domain = mD.domains(i);      
-    }
-  }
-  // /|'''''''''''''''''''''''''/|
-  //< |    method: allocate    < |
-  // \|.........................\|
- 
- 
- 
-  //|\''''''''''''''''''''''|\
-  //| >    method: clear    | >
-  //|/......................|/
-  
-  proc clear () 
-  {
-    for subindex in subindices {
-      independent_arrays(subindex).clear();
-      delete independent_arrays(subindex);
-    }
-  }
-  // /|''''''''''''''''''''''/|
-  //< |    method: clear    < |
-  // \|......................\|
-  
-}
-// /|""""""""""""""""""""""""""/|
-//< |    class: MultiArray    < |
-// \|__________________________\|
 
 
 
@@ -631,54 +529,54 @@ class MultiArray {
 // // \|__________________________\|
 
 
-proc main {
-  
-  var full_D = [1..10, 1..10];
- 
-  var mD = new MultiDomain(2, false);
-  mD.add(full_D);
-  mD.subtract([3..5, 4..9]);
-  mD.subtract([4..8, 1..5]);
-
-  var I: [full_D] int;
-  for D in mD do I(D)=1;
-
-  writeln("");
-  writeln("Full domain: ", full_D);
-  writeln("MultiDomain: ", mD);  
-  writeln(I);
-
-  var mArray = new MultiArray(2, false, int);
-  mArray.allocate(mD);
-  for A in mArray do A.value = 2;
-  
-  for (D,A) in (mD,mArray) do I(D) = A.value;
-  writeln("");
-  writeln(I);
-
-
-
-
-  var full_D_strided = [1..21 by 2, -5..31 by 3];
-  var mD_strided = new MultiDomain(2,true);
-  mD_strided.add(full_D_strided);
-  mD_strided.subtract([5..13 by 2, -5..1 by 3]);
-  mD_strided.subtract([9..15 by 2, 1..38 by 3]);
-
-  var I_strided: [full_D_strided] int;
-  for D in mD_strided do I_strided(D)=1;
-
-  writeln("");
-  writeln("Full domain: ", full_D_strided);
-  writeln("MultiDomain: ", mD_strided);  
-  writeln(I_strided );
-  
-  var mArray_strided = new MultiArray(2,true,int);
-  mArray_strided.allocate(mD_strided);
-  for A in mArray_strided do A.value = 2;
-  
-  for (D,A) in (mD_strided,mArray_strided) do I_strided(D) = A.value;
-  writeln("");
-  writeln(I_strided);
-
-}
+// proc main {
+//   
+//   var full_D = [1..10, 1..10];
+//  
+//   var mD = new MultiDomain(2, false);
+//   mD.add(full_D);
+//   mD.subtract([3..5, 4..9]);
+//   mD.subtract([4..8, 1..5]);
+// 
+//   var I: [full_D] int;
+//   for D in mD do I(D)=1;
+// 
+//   writeln("");
+//   writeln("Full domain: ", full_D);
+//   writeln("MultiDomain: ", mD);  
+//   writeln(I);
+// 
+//   var mArray = new MultiArray(2, false, int);
+//   mArray.allocate(mD);
+//   for A in mArray do A.value = 2;
+//   
+//   for (D,A) in (mD,mArray) do I(D) = A.value;
+//   writeln("");
+//   writeln(I);
+// 
+// 
+// 
+// 
+//   var full_D_strided = [1..21 by 2, -5..31 by 3];
+//   var mD_strided = new MultiDomain(2,true);
+//   mD_strided.add(full_D_strided);
+//   mD_strided.subtract([5..13 by 2, -5..1 by 3]);
+//   mD_strided.subtract([9..15 by 2, 1..38 by 3]);
+// 
+//   var I_strided: [full_D_strided] int;
+//   for D in mD_strided do I_strided(D)=1;
+// 
+//   writeln("");
+//   writeln("Full domain: ", full_D_strided);
+//   writeln("MultiDomain: ", mD_strided);  
+//   writeln(I_strided );
+//   
+//   var mArray_strided = new MultiArray(2,true,int);
+//   mArray_strided.allocate(mD_strided);
+//   for A in mArray_strided do A.value = 2;
+//   
+//   for (D,A) in (mD_strided,mArray_strided) do I_strided(D) = A.value;
+//   writeln("");
+//   writeln(I_strided);
+// 
+// }
