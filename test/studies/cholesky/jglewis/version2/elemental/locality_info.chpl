@@ -1,6 +1,6 @@
 module locality_info {
 
-  def my_local_cyclic_data ( A_domain, A_grid_domain, processor : 2*int ) {
+  proc my_local_cyclic_data ( A_domain, A_grid_domain, processor : 2*int ) {
 
     const r                = A_grid_domain.high (1) + 1;
     const c                = A_grid_domain.high (2) + 1;

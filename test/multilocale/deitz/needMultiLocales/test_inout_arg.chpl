@@ -1,4 +1,4 @@
-def foo(inout x: int) {
+proc foo(inout x: int) {
   writeln(x);
   on Locales(1) {
     writeln(x);

@@ -1,5 +1,5 @@
 class D {
-  def this(x:int) {
+  proc this(x:int) {
     return 1..10;
   }
 }

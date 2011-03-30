@@ -10,7 +10,7 @@
 class A {
   type t;
   var x:t;
-  def A(type t) { }
+  proc A(type t) { }
   // constructor for class 'A' requires a generic argument called 't'
 }
 
@@ -19,7 +19,7 @@ writeln(a);
 
 class B {
   param p;
-  def B(param p) { }
+  proc B(param p) { }
   // constructor for class 'B' requires a generic argument called 'p'
 }
 
@@ -28,7 +28,7 @@ writeln(b);
 
 class C {
   const cst;
-  def C(cst) { }
+  proc C(cst) { }
   // constructor for class 'C' requires a generic argument called 'cst'
 }
 
@@ -37,7 +37,7 @@ writeln(c);
 
 class D {
   var vbl;
-  def D(vbl) { }
+  proc D(vbl) { }
   // constructor for class 'D' requires a generic argument called 'vbl'
 }
 

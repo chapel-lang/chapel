@@ -77,7 +77,7 @@ module elemental_cholesky_symmetric_strided {
       scalar_inner_product_cholesky_strided,
       transposed_block_triangular_solve;
 
-  def elemental_cholesky_strided ( A : [] )
+  proc elemental_cholesky_strided ( A : [] )
 
     where ( A.domain.rank == 2 ) {
 

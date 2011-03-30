@@ -1,5 +1,5 @@
-def foo(i : int) {
-  def bar(i : int) {
+proc foo(i : int) {
+  proc bar(i : int) {
     writeln(i);
   }
   bar(i);

@@ -1,11 +1,11 @@
-def foo(type t, x : t, y : t) {
+proc foo(type t, x : t, y : t) {
   if x == y then
     writeln("foo of ", x, " and itself");
   else
     writeln("foo of ", x, " and ", y);
 }
 
-def foo(type t, x : t, y : real) {
+proc foo(type t, x : t, y : real) {
   writeln("foo (2) of ", x, " and ", y);
 }
 

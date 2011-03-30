@@ -8,7 +8,7 @@ forall i in D {
   A(i) = i;
 }
 
-def foo(X) {
+proc foo(X) {
   writeln("X is: ", X);
 }
 

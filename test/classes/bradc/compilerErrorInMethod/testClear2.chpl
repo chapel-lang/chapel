@@ -4,7 +4,7 @@ record Wrap {
   var _value;
 }
 
-def =(lhs:Wrap, rhs) {
+proc =(lhs:Wrap, rhs) {
   lhs._value.clearHelp();
   return lhs;
 }
@@ -16,33 +16,33 @@ class Arithmetic : Abstract {
 }
 
 class AbsDense: Arithmetic {
-  def clear() {
+  proc clear() {
     compilerError("Can't clear a dense domain");
   }
 
-  def clearHelp() {
+  proc clearHelp() {
     compilerError("Illegal assignment to a dense domain");
   }
 }
 
 class AbsSparse: Arithmetic {
-  def clearHelp() {
+  proc clearHelp() {
     writeln("In abstract sparse domain clearHelp");
     clear();
   }
 
-  def clear() {
+  proc clear() {
     halt("This distribution does not implement clear");
   }
 }
 
 class AbsAssoc: Abstract {
-  def clearHelp() {
+  proc clearHelp() {
     writeln("In abstract associative domain clearHelp");
     clear();
   }
 
-  def clear() {
+  proc clear() {
     halt("This distribution does not implement clear");
   }
 }
@@ -51,13 +51,13 @@ class Dense : AbsDense {
 }
 
 class Sparse : AbsSparse {
-  def clear() {
+  proc clear() {
     writeln("Clearing a sparse domain");
   }
 }
 
 class Assoc : AbsAssoc {
-  def clear() {
+  proc clear() {
     writeln("Clearing an associative domain");
   }
 }

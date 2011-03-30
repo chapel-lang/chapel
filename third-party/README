@@ -55,3 +55,18 @@ pvm/
            http://www.csm.ornl.gov/pvm/)
 
   See also: pvm/README
+
+
+qthread/
+  Summary: the qthreads user-level tasking package.  We are working on
+           using this to provide a lighter-weight tasking alternative
+           to pthreads.
+
+  License: qthreads is released under the New BSD License, which can
+           be found in qthread/qthread-<version>/COPYING
+
+  Contact: For more information, please refer to:
+           http://code.google.com/p/qthreads/
+           http://www.cs.sandia.gov/qthreads/
+
+  See also: qthread/qthread-<version>/README

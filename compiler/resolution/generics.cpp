@@ -46,16 +46,19 @@ explainInstantiation(FnSymbol* fn) {
         INT_ASSERT(arg);
         if (strcmp(fn->name, "_construct__tuple"))
           len += sprintf(msg+len, "%s = ", arg->name);
-        if (TypeSymbol* ts = toTypeSymbol(e->value))
-          len += sprintf(msg+len, "%s", ts->name);
-        else if (VarSymbol* vs = toVarSymbol(e->value)) {
+        if (VarSymbol* vs = toVarSymbol(e->value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
             len += sprintf(msg+len, "%"PRId64, vs->immediate->int_value());
           else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
             len += sprintf(msg+len, "\"%s\"", vs->immediate->v_string);
           else
             len += sprintf(msg+len, "%s", vs->name);
-        } else
+        }
+    else if (Symbol* s = toSymbol(e->value))
+      // For a generic symbol, just print the name.
+      // Additional clauses for specific symbol types should precede this one.
+          len += sprintf(msg+len, "%s", s->name);
+    else
           INT_FATAL("unexpected case using --explain-instantiation");
       }
     }
@@ -288,6 +291,61 @@ checkInstantiationLimit(FnSymbol* fn) {
 }
 
 
+static void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
+{
+  const size_t bufSize = 128;
+  char immediate[bufSize]; 
+  snprint_imm(immediate, bufSize, *var->immediate);
+
+  // escape quote characters in name string
+  char name[bufSize];
+  char * name_p = &name[0]; 
+  char * immediate_p = &immediate[0];
+  for ( ; 
+        name_p < &name[bufSize-1] && // don't overflow buffer
+          '\0' != *immediate_p;      // stop at null in source
+        name_p++, immediate_p++) {
+    if ('"' == *immediate_p) { // escape quotes
+      *name_p++ = '\\';
+    }
+    *name_p = *immediate_p;
+  }
+  *name_p = '\0';
+  sym->name = astr(sym->name, name);
+            
+  // add ellipsis if too long for buffer
+  if (name_p == &name[bufSize-1]) {       
+    sym->name = astr(sym->name, "...");
+  }
+
+  // filter unacceptable characters for cname string
+  char cname[bufSize];
+  char * cname_p = &cname[0];
+  immediate_p = &immediate[0];
+  size_t maxNameLength = 32; // add "_etc" after this many characters
+
+  for ( ; immediate_p < &immediate_p[bufSize-1] &&  // don't overflow buffer
+          cname_p < &cname[maxNameLength-1] &&      // stop at max length
+          '\0' != *immediate_p; 
+        immediate_p++ ) { 
+    if (('A' <= *immediate_p && *immediate_p <= 'Z') ||
+        ('a' <= *immediate_p && *immediate_p <= 'z') ||
+        ('0' <= *immediate_p && *immediate_p <= '9') ||
+        ('_' == *immediate_p)) {
+      *cname_p = *immediate_p;
+      cname_p++;
+    }
+  }
+  *cname_p = '\0';
+  sym->cname = astr(sym->cname, cname);
+
+  // add _etc if too long
+  if (immediate_p == &immediate[bufSize-1] || // too long for buffer
+      cname_p == &cname[maxNameLength-1]) {   // exceeds max length
+    sym->cname = astr(sym->cname, "_etc");
+  }                   
+}
+
 static void
 renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
   if (sym->name[strlen(sym->name)-1] == ')') {
@@ -331,60 +389,16 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
         }
         VarSymbol* var = toVarSymbol(value);
         if (var && var->immediate) {
-          if (var->type == dtString) {
-            
-            const size_t bufSize = 128;
-            char immediate[bufSize]; 
-            snprint_imm(immediate, bufSize, *var->immediate);
-
-            // escape quote characters in name string
-            char name[bufSize];
-            char * name_p = &name[0]; 
-            char * immediate_p = &immediate[0];
-            for ( ; 
-                  name_p < &name[bufSize-1] && // don't overflow buffer
-                    '\0' != *immediate_p;      // stop at null in source
-                  name_p++, immediate_p++) {
-              if ('"' == *immediate_p) { // escape quotes
-                *name_p++ = '\\';
-              }
-              *name_p = *immediate_p;
-            }
-            *name_p = '\0';
-            sym->name = astr(sym->name, name);
-            
-            // add ellipsis if too long for buffer
-            if (name_p == &name[bufSize-1]) {       
-              sym->name = astr(sym->name, "...");
-            }
-
-            // filter unacceptable characters for cname string
-            char cname[bufSize];
-            char * cname_p = &cname[0];
-            immediate_p = &immediate[0];
-            size_t maxNameLength = 32; // add "_etc" after this many characters
-
-            for ( ; immediate_p < &immediate_p[bufSize-1] &&  // don't overflow buffer
-                    cname_p < &cname[maxNameLength-1] &&      // stop at max length
-                    '\0' != *immediate_p; 
-                  immediate_p++ ) { 
-              if (('A' <= *immediate_p && *immediate_p <= 'Z') ||
-                  ('a' <= *immediate_p && *immediate_p <= 'z') ||
-                  ('0' <= *immediate_p && *immediate_p <= '9') ||
-                  ('_' == *immediate_p)) {
-                *cname_p = *immediate_p;
-                cname_p++;
-              }
-            }
-            *cname_p = '\0';
-            sym->cname = astr(sym->cname, cname);
-
-            // add _etc if too long
-            if (immediate_p == &immediate[bufSize-1] || // too long for buffer
-                cname_p == &cname[maxNameLength-1]) {   // exceeds max length
-              sym->cname = astr(sym->cname, "_etc");
-            }                   
-
+          Immediate* immediate = var->immediate;
+          if (var->type == dtString)
+            renameInstantiatedTypeString(sym, var);
+          else if (immediate->const_kind == NUM_KIND_UINT &&
+                   immediate->num_index == INT_SIZE_1) {
+            // Handle boolean types specially.
+            const char* name4bool = immediate->uint_value() ? "true" : "false";
+            const char* cname4bool = immediate->uint_value() ? "T" : "F";
+            sym->name = astr(sym->name, name4bool);
+            sym->cname = astr(sym->cname, cname4bool);
           } else {
             const size_t bufSize = 128;
             char imm[bufSize];

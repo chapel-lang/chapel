@@ -3,7 +3,7 @@ const n = (natom/2)*10 + ((natom+1)/2)*5;
 // const bas_info : [[1..natom, 1..2]] int = [(i,j) in [1..natom, 1..2]] 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
 const bas_info : [[1..natom, 1..2]] int = [(i,j) in [1..natom, 1..2]] bas_init(i,j);
 
-def bas_init(i,j) {
+proc bas_init(i,j) {
   return 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
 }
 
@@ -17,7 +17,7 @@ class blockIndices {
   const ilo, ihi, jlo, jhi, klo, khi, llo, lhi : int;
 }
 
-def buildjk() {
+proc buildjk() {
   for bI in gen() do // sjd: changed forall to for
     buildjk_atom4(bI);
   
@@ -37,7 +37,7 @@ def buildjk() {
   writeln("\n1st col of exchange matrix:-\n", kmat2(1..n,1..1));
 }
 
-def gen() {
+iter gen() {
   for iat in 1..natom { // sjd: changed forall to for because of yield
     for jat in 1..iat { // sjd: changed forall to for because of yield
       for kat in 1..iat { // sjd: changed forall to for because of yield
@@ -51,7 +51,7 @@ def gen() {
   }
 }
 
-def buildjk_atom4(bI) {
+proc buildjk_atom4(bI) {
   const (ilo,ihi,jlo,jhi,klo,khi,llo,lhi) = (bI.ilo,bI.ihi,bI.jlo,bI.jhi,bI.klo,bI.khi,bI.llo,bI.lhi);
   
   const (ijD,ikD,ilD,jkD,jlD,klD) = ([ilo..ihi,jlo..jhi],[ilo..ihi,klo..khi],[ilo..ihi,llo..lhi],[jlo..jhi,klo..khi],[jlo..jhi,llo..lhi],[klo..khi,llo..lhi]);
@@ -108,10 +108,10 @@ def buildjk_atom4(bI) {
   oneAtATime = tmp;	
 }
 
-def g(i,j,k,l) {
+proc g(i,j,k,l) {
   return 1.0/(i*j + k*l);
 }
 
-def main() {
+proc main() {
   buildjk();
 }

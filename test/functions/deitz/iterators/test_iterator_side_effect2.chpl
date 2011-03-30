@@ -1,6 +1,6 @@
 var j = 0;
 
-def myIterator(n: int) {
+iter myIterator(n: int) {
   for i in 1..n {
     j += 1;
     yield i;

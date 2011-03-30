@@ -2,7 +2,7 @@ class C {
   var n;
 }
 
-def foo(): C {
+proc foo(): C {
   return new C(3);
 }
 

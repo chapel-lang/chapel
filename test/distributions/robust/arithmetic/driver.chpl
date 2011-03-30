@@ -17,7 +17,7 @@ const Space3 = [1..n3, 1..n3, 1..n3];
 const Space4 = [1..n4, 1..n4, 1..n4, 1..n4];
 const Space2D64 = [n5-o5..n5, n5-o5..n5];
 
-def setupDistributions() {
+proc setupDistributions() {
   if distType == DistType.default {
     return (
             new dmap(new DefaultDist()),
@@ -47,11 +47,11 @@ def setupDistributions() {
   }
   if distType == DistType.blockcyclic {
     return (
-            new dmap(new BlockCyclic(rank=1, idxType=int, low=tuple(0), blk=tuple(3))),
-            new dmap(new BlockCyclic(rank=2, idxType=int, low=(0,0), blk=(3,3))),
-            new dmap(new BlockCyclic(rank=3, idxType=int, low=(0,0,0), blk=(3,3,3))),
-            new dmap(new BlockCyclic(rank=4, idxType=int, low=(0,0,0,0), blk=(3,3,3,3))),
-            new dmap(new BlockCyclic(rank=2, idxType=int(64), low=(0:int(64),0:int(64)), blk=(2,3)))
+            new dmap(new BlockCyclic(startIdx=tuple(0), blocksize=tuple(3))),
+            new dmap(new BlockCyclic(startIdx=(0,0), blocksize=(3,3))),
+            new dmap(new BlockCyclic(startIdx=(0,0,0), blocksize=(3,3,3))),
+            new dmap(new BlockCyclic(startIdx=(0,0,0,0), blocksize=(3,3,3,3))),
+            new dmap(new BlockCyclic(startIdx=(0:int(64),0:int(64)), blocksize=(2,3)))
            );
   }
 }
@@ -61,7 +61,7 @@ const (Dist1D, Dist2D, Dist3D, Dist4D, Dist2D64) = setupDistributions();
 //
 // creates a tuple of size 'rank' initialized with values 'x'
 //
-def fill(param rank, x) {
+proc fill(param rank, x) {
   if rank == 1 {
     var y: 1*x.type;
     y(1) = x;
@@ -76,7 +76,7 @@ def fill(param rank, x) {
 //
 // creates a domain of rank 'rank' with each dimension equal to 'extent'
 //
-def rankDomain(param rank, extent) {
+proc rankDomain(param rank, extent) {
   return [(...fill(rank, extent))];
 }
 
@@ -84,4 +84,4 @@ def rankDomain(param rank, extent) {
 // returns a next integer starting at 1
 //
 var next_i = 0;
-def next() { next_i += 1; return next_i; }
+proc next() { next_i += 1; return next_i; }

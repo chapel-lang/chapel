@@ -30,23 +30,23 @@ record edgeTuple {
 }
 
 
-def randomInt(maxint: int) {
+proc randomInt(maxint: int) {
   halt("Need to implement randomInt()");
   return 0;
 }
 
-def randomString(strlen: int) {
+proc randomString(strlen: int) {
   halt("Need to implement randomString()");
   return "<empty>";
 }
 
-def randomFloat(maxval: real = 1.0) {
+proc randomFloat(maxval: real = 1.0) {
   halt("Need to implement randomFloat()");
   return 0.0;
 }
 
 
-def generateDirectedEdges(start, stop) {
+proc generateDirectedEdges(start, stop) {
   var edges: list(edgeTuple);
   var numParallelEdges: int = randomInt(maxParallelEdges);
   forall parEdge in 1..numParallelEdges { // could drop "parEdge"
@@ -74,7 +74,7 @@ def generateDirectedEdges(start, stop) {
 }
 
 
-def generateEdges(start, stop) {
+proc generateEdges(start, stop) {
   var edges: list(edgeTuple);
   var forward = true,   // generate forward edges?
       backward = true;  // generate backward edges?
@@ -97,7 +97,7 @@ def generateEdges(start, stop) {
 }
 
 
-def generateEdgeList() {
+proc generateEdgeList() {
   var edgeTuples: list(edgeTuple);
   var numVerticesRemaining = totVertices;
 
@@ -119,19 +119,19 @@ def generateEdgeList() {
 }
 
 
-def kernel2(soughtString: string) {
+proc kernel2(soughtString: string) {
 }
 
 
-def kernel3(subGraphEdgeLength: int) {
+proc kernel3(subGraphEdgeLength: int) {
 }
 
 
-def kernel4(maxClusterSize: int, k4alpha) {
+proc kernel4(maxClusterSize: int, k4alpha) {
 }
 
 
-def writeConfigs() {
+proc writeConfigs() {
   writeln("scale = ", scale);
   writeln("totVertices = ", totVertices);
   writeln("maxCliqueSize = ", maxCliqueSize);
@@ -143,7 +143,7 @@ def writeConfigs() {
   writeln("maxStrLen = ", maxStrLen);
 }
 
-def main() {
+proc main() {
   writeConfigs();
   generateEdgeList();
 }

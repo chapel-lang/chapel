@@ -3,15 +3,15 @@ class mysumreduce {
   type statetype;
   type outtype;
   
-  def ident(): statetype {
+  proc ident(): statetype {
     return 0;
   }
 
-  def combine(x: statetype, y: intype): statetype {
+  proc combine(x: statetype, y: intype): statetype {
     return x + y;
   }
 
-  def result(x: statetype): outtype {
+  proc result(x: statetype): outtype {
     return x;
   }
 }

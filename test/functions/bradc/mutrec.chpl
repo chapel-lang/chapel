@@ -1,4 +1,4 @@
-def foo(a) {
+proc foo(a) {
   writeln("in foo");
   if (a == 0) {
     bar(1);
@@ -7,7 +7,7 @@ def foo(a) {
   }
 }
 
-def bar(a) {
+proc bar(a) {
   writeln("in bar");
   if (a == 0) {
     foo(1);

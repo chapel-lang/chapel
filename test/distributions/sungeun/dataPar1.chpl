@@ -2,7 +2,7 @@ use BlockDist, CyclicDist;
 config const n = 3;
 const Space = [1..n,1..n,1..n,1..n,1..n,1..n];
 
-def dit(D, A, B, C) {
+proc dit(D, A, B, C) {
   forall i in D {
     var (i0,i1,i2,i3,i4,i5) = (i);
     A(i) = (i0+i1)/i2:real;
@@ -19,7 +19,7 @@ for i in Space {
   RC(i) = RA(i) + RB(i);
 }
 
-def checkdit(distName, A, B, C) {
+proc checkdit(distName, A, B, C) {
   var allerr, err = 0;
 
   for (ra, a) in (RA, A) do

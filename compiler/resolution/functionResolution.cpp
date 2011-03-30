@@ -9,6 +9,7 @@
 #include "iterator.h"
 #include "passes.h"
 #include "resolution.h"
+#include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -16,9 +17,6 @@
 
 bool resolved = false;
 bool inDynamicDispatchResolution = false;
-
-extern void build_constructor(ClassType* ct);
-extern void build_type_constructor(ClassType* ct);
 
 SymbolMap paramMap;
 static Expr* dropUnnecessaryCast(CallExpr* call);
@@ -269,9 +267,11 @@ const char* toString(FnSymbol* fn) {
     ArgSymbol* arg = fn->getFormal(i+1);
     if (arg->hasFlag(FLAG_IS_MEME))
       continue;
-    if (!first)
+    if (!first) {
       first = true;
-    else
+      if (skipParens)
+        str = astr(str, " ");
+    } else
       str = astr(str, ", ");
     if (arg->intent == INTENT_PARAM)
       str = astr(str, "param ");
@@ -578,7 +578,7 @@ canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (formalType == dtIntegral && (is_int_type(actualType) || is_uint_type(actualType)))
     return true;
-  if (formalType == dtEnumerated && (is_enum_type(actualType)))
+  if (formalType == dtAnyEnumerated && (is_enum_type(actualType)))
     return true;
   if (formalType == dtNumeric &&
       (is_int_type(actualType) || is_uint_type(actualType) || is_imag_type(actualType) ||
@@ -4338,6 +4338,7 @@ resolve() {
   }
 
   resolveFns(chpl_main);
+  USR_STOP();
 
   if (fRuntime) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -5095,15 +5096,19 @@ is_array_type(Type* type) {
 
 
 static void
-fixTypeNames(ClassType* ct) {
-  if (is_array_type(ct)) {
+fixTypeNames(ClassType* ct)
+{
+  const char default_domain_name[] = "DefaultRectangularDom";
+
+  if (is_array_type(ct))
+  {
     const char* domain_type = ct->getField("dom")->type->symbol->name;
     const char* elt_type = ct->getField("eltType")->type->symbol->name;
     ct->symbol->name = astr("[", domain_type, "] ", elt_type);
   }
   if (ct->instantiatedFrom &&
-      !strcmp(ct->instantiatedFrom->symbol->name, "DefaultArithmeticDom")) {
-    ct->symbol->name = astr("domain", ct->symbol->name+20);
+      !strcmp(ct->instantiatedFrom->symbol->name, default_domain_name)) {
+    ct->symbol->name = astr("domain", ct->symbol->name+strlen(default_domain_name));
   }
   if (ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN)) {
     ct->symbol->name = ct->getField("_valueType")->type->symbol->name;

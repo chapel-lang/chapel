@@ -2,7 +2,7 @@ module local_reduced_matrix_cyclic_partition_alt {
 
   use cholesky_execution_config_consts;
 
-  def local_reduced_matrix_cyclic_partition_alt 
+  iter local_reduced_matrix_cyclic_partition_alt 
     ( idx_range, processor : 2*int, r, c ) {
 
     // -------------------------------------------------------------------

@@ -3,10 +3,10 @@ module M1 {
 }
 
 module M2 {
-  def main {
+  proc main {
     foo(3.0);
   }
-  def foo(a: real) {
+  proc foo(a: real) {
     var a: complex = 1 + 2i;
     use M1;
     writeln(a);

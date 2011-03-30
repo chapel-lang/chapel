@@ -6,12 +6,12 @@ class taskpool {
   const poolSize;
   var taskarr$ : [0..poolSize-1] sync blockIndices; // describe blockIndices?
   var head$, tail$ : sync int = 0;
-  def add(blk: blockIndices) {
+  proc add(blk: blockIndices) {
     const pos = tail$;
     tail$ = (pos+1)%poolSize;
     taskarr$(pos) = blk;
   }
-  def remove() {
+  proc remove() {
     const pos = head$;
     head$ = (pos+1)%poolSize;
     return taskarr$(pos);
@@ -34,7 +34,7 @@ cobegin {
 /*-------------------------------------------------
 Code 7 Producer of integral blocks - Chapel
 -------------------------------------------------*/
-def producer() {
+proc producer() {
   forall blk in genBlocks() do
     t.add(blk);
 }
@@ -43,7 +43,7 @@ def producer() {
 /*-------------------------------------------------
 Code 8 Fock index space iterator - Chapel
 -------------------------------------------------*/
-def genBlocks() {
+iter genBlocks() {
   forall iat in 1..natom do
     forall (jat, kat) in [1..iat, 1..iat] {
       const lattop = if (kat==iat) then jat
@@ -59,7 +59,7 @@ def genBlocks() {
 /*-------------------------------------------------
 Code 9 Consumer of integral blocks - Chapel
 -------------------------------------------------*/
-def consumer() {
+proc consumer() {
   var blk = t.remove();
   while (blk != nil) {
     const copyofblk = blk;

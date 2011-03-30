@@ -1,6 +1,6 @@
 use Time;
 
-def main {
+proc main {
   var a: int;
   on Locales(1) {
     begin {

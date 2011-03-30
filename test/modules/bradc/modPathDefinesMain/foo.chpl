@@ -1,5 +1,5 @@
 use bar;
 
-def main() {
+proc main() {
   writeln("In foo's main!");
 }

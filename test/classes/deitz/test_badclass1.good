@@ -1,1 +1,1 @@
-test_badclass1.chpl:4 syntax error: near 'f'
+test_badclass1.chpl:4: syntax error: near 'f'

@@ -40,4 +40,8 @@ remoteValueForwarding(Vec<FnSymbol*>& fns);
 void
 narrowWideReferences();
 
+// Debug functions from narrowWideReferences.cpp
+void printNode(BaseAST*);
+void printNode(int id);
+
 #endif

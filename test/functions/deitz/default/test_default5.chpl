@@ -1,6 +1,6 @@
-def foo(x : int = 4) : real return x / 2.0;
+proc foo(x : int = 4) : real return x / 2.0;
 
-def foo(x : real) {
+proc foo(x : real) {
   writeln(x);
 }
 

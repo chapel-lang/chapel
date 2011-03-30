@@ -1,6 +1,6 @@
 var A: [1..3] domain(1);
 
-def foo() {
+iter foo() {
   for i in 1..3 do
     yield [i..5];
 }

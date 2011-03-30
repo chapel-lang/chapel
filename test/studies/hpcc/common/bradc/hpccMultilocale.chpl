@@ -2,12 +2,12 @@ var myTurn$: [LocaleSpace] sync bool;
 myTurn$(0) = true;
 
 
-def waitForTurn() {
+proc waitForTurn() {
   myTurn$(here.id);
 }
 
 
-def passTurn() {
+proc passTurn() {
   myTurn$((here.id + 1) % numLocales) = true;
   if (here.id == 0) then {
     myTurn$(here.id);
@@ -16,7 +16,7 @@ def passTurn() {
 }
 
 
-def writelnFragArray(startStr, X, endStr) {
+proc writelnFragArray(startStr, X, endStr) {
   if (here.id == 0) {
     write(startStr);
   }
@@ -32,7 +32,7 @@ def writelnFragArray(startStr, X, endStr) {
 }
 
 
-def BlockPartition(D, myBlock, numBlocks) {
+proc BlockPartition(D, myBlock, numBlocks) {
   const lo = D.dim(1)._low;
   const hi = D.dim(1)._high;
   const numelems = hi - lo + 1;

@@ -104,7 +104,7 @@ module SSCA2_main
 // +===========================================================================+
 
 {
-  def main () {
+  proc main () {
 
     use SSCA2_compilation_config_params, 
         SSCA2_execution_config_consts,

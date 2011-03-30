@@ -1,11 +1,11 @@
 use driver;
 config const shift = o5-1;
 
-const TDom1D: domain(1) dmapped Dist1D = Space1 - (shift);
-const TDom2D: domain(2) dmapped Dist2D = Space2 - (shift,shift);
-const TDom3D: domain(3) dmapped Dist3D = Space3 - (shift,shift,shift);
-const TDom4D: domain(4) dmapped Dist4D = Space4 - (shift,shift,shift,shift);
-const TDom2D64: domain(2,int(64)) dmapped Dist2D64 = Space2D64 - (shift:int(64),shift:int(64));
+const TDom1D: domain(1) dmapped Dist1D = Space1.translate(-shift);
+const TDom2D: domain(2) dmapped Dist2D = Space2.translate(-shift,-shift);
+const TDom3D: domain(3) dmapped Dist3D = Space3.translate(-shift,-shift,-shift);
+const TDom4D: domain(4) dmapped Dist4D = Space4.translate(-shift,-shift,-shift,-shift);
+const TDom2D64: domain(2,int(64)) dmapped Dist2D64 = Space2D64.translate(-shift:int(64),-shift:int(64));
 
 var TA1D: [TDom1D] int;
 var TA2D: [TDom2D] int;
@@ -13,13 +13,13 @@ var TA3D: [TDom3D] int;
 var TA4D: [TDom4D] int;
 var TA2D64: [TDom2D64] int;
 
-const TD1D: domain(1) = Space1 - (o5);
-const TD2D: domain(2) = Space2 - (o5,o5);
-const TD3D: domain(3) = Space3 - (o5,o5,o5);
-const TD4D: domain(4) = Space4 - (o5,o5,o5,o5);
-const TD2D64: domain(2,int(64)) = Space2D64 - (o5:int(64),o5:int(64));
+const TD1D: domain(1) = Space1.translate(-o5);
+const TD2D: domain(2) = Space2.translate(-o5,-o5);
+const TD3D: domain(3) = Space3.translate(-o5,-o5,-o5);
+const TD4D: domain(4) = Space4.translate(-o5,-o5,-o5,-o5);
+const TD2D64: domain(2,int(64)) = Space2D64.translate(-o5:int(64),-o5:int(64));
 
-def foo(TD: domain, A: [TD] int, TA) {
+proc foo(TD: domain, A: [TD] int, TA) {
   var errs = 0;
   var offset = if (TD.rank==1) then o5-shift else fill(TD.rank, o5-shift);
   for i in [TD] do

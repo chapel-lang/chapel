@@ -1,7 +1,7 @@
 module MemAlloc {
-  _extern def chpl_malloc(number, size, description,
+  _extern proc chpl_malloc(number, size, description,
                           lineno=-1, filename=""): opaque;
-  _extern def chpl_realloc(ptr, number, size, description,
+  _extern proc chpl_realloc(ptr, number, size, description,
                            lineno=-1, filename=""): opaque;
-  _extern def chpl_free(ptr, lineno=-1, filename="");
+  _extern proc chpl_free(ptr, lineno=-1, filename="");
 }

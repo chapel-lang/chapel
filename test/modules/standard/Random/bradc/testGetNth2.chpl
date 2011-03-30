@@ -64,7 +64,7 @@ checkArrays("7: ");
 
 writeln("Done!");
 
-def checkArrays(str) {
+proc checkArrays(str) {
   for i in 1..n {
     if (A(i) != B(i)) {
       writeln(str, "mismatch at #", i, ": ", A(i), " != ", B(i));

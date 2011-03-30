@@ -1,4 +1,4 @@
-def f(n) {
+iter f(n) {
   coforall i in 1..n {
     yield i;
   }

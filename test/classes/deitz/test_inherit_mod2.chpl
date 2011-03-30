@@ -14,7 +14,7 @@ var c2 : C = new D2();
 writeln(c1);
 writeln(c2);
 
-def foo(c : C) {
+proc foo(c : C) {
   var y = c.x;
   writeln(y);
 }

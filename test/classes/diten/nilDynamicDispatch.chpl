@@ -1,11 +1,11 @@
 class C {
-  def foo() {
+  proc foo() {
     writeln("C.foo()");
   }
 }
 
 class D:C {
-  def foo() {
+  proc foo() {
     writeln("D.foo()");
   }
 }

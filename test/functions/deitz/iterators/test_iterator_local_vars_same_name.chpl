@@ -1,4 +1,4 @@
-def foo() {
+iter foo() {
   for i in 1..5 do
     yield i;
   for i in 1..5 by -1 do

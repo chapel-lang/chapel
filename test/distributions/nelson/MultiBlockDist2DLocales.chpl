@@ -5,7 +5,7 @@ config const size : int = 8;
 const sizeRange = 0..#(size : int(64));
 
 
-def printBlockLocaleAssignments(locs) {
+proc printBlockLocaleAssignments(locs) {
   const blockDist = new dmap(new Block(rank=2, idxType=int(64),
                                                 targetLocales=locs,
                                                 boundingBox=[sizeRange, sizeRange]));
@@ -20,7 +20,7 @@ def printBlockLocaleAssignments(locs) {
 }
 
 
-def main() {
+proc main() {
 
   writeln("Number of locales = ", numLocales);
 

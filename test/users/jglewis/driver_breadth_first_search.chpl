@@ -19,7 +19,7 @@ config const useRandomSeed = true,
 
 
 
-def main {}
+proc main {}
    {
 
    type Nbr_List = domain (int);

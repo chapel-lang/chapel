@@ -1,4 +1,4 @@
-def foo(param i : int) 
+proc foo(param i : int) 
   where i == 1
 {
 // this syntax is nolonger legal
@@ -6,7 +6,7 @@ def foo(param i : int)
   writeln("Alpha");
 }
 
-def foo(param i : int) 
+proc foo(param i : int) 
   where i == 2
 {
 // this syntax is nolonger legal

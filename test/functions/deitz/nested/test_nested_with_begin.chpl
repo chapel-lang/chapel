@@ -1,9 +1,9 @@
 var s: sync bool;
 
-def foo() {
+proc foo() {
   var i: int = 2;
 
-  def bar() {
+  proc bar() {
     writeln(i);
   }
 
@@ -13,7 +13,7 @@ def foo() {
   }
 }
 
-def goo() {
+proc goo() {
   var i: int = 1;
   writeln(i);
 }

@@ -1,4 +1,4 @@
-def foo(x: complex) {
+proc foo(x: complex) {
   writeln("x is: ", x);
 }
 

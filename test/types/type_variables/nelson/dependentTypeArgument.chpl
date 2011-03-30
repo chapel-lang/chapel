@@ -1,13 +1,13 @@
 class A {
-  def hello() { writeln("hello from A!"); }
+  proc hello() { writeln("hello from A!"); }
 }
 
-def bar(type T) {
+proc bar(type T) {
   var t = new T();
   t.hello();
 }
 
 
-def main() {
+proc main() {
   bar(A);
 }

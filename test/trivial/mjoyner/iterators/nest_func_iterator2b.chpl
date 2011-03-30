@@ -1,4 +1,4 @@
-def basic(inout z: int) : int {
+iter basic(inout z: int) : int {
   var i : int;
   z += 1;
   while i < 10 {
@@ -9,7 +9,7 @@ def basic(inout z: int) : int {
 
 
 
-def main() {
+proc main() {
 var x : int = 5;
 var a: int = 9;
 writeln("initially, a is: ", a);

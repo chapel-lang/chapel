@@ -1,7 +1,7 @@
-def f(param x: string) param
+proc f(param x: string) param
   return x;
 
-def main() {
+proc main() {
     param x = f("foo");
     writeln(x);
 }

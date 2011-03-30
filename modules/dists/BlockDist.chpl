@@ -119,7 +119,7 @@ class LocBlock {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class BlockDom: BaseArithmeticDom {
+class BlockDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
@@ -188,7 +188,7 @@ class LocBlockArr {
 //
 // Block constructor for clients of the Block distribution
 //
-def Block.Block(boundingBox: domain,
+proc Block.Block(boundingBox: domain,
                 targetLocales: [] locale = thisRealm.Locales,
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
@@ -225,7 +225,7 @@ def Block.Block(boundingBox: domain,
   }
 }
 
-def Block.dsiAssign(other: this.type) {
+proc Block.dsiAssign(other: this.type) {
   coforall locid in targetLocDom do
     on targetLocales(locid) do
       delete locDist(locid);
@@ -243,20 +243,20 @@ def Block.dsiAssign(other: this.type) {
                                     targetLocDomDims);
 }
 
-def Block.dsiClone() {
+proc Block.dsiClone() {
   return new Block(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
                    dataParMinGranularity);
 }
 
-def Block.dsiDestroyDistClass() {
+proc Block.dsiDestroyDistClass() {
   coforall ld in locDist do {
     on ld do
       delete ld;
   }
 }
 
-def Block.dsiDisplayRepresentation() {
+proc Block.dsiDisplayRepresentation() {
   writeln("boundingBox = ", boundingBox);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocales = ", for tl in targetLocales do tl.id);
@@ -267,7 +267,7 @@ def Block.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
-def Block.dsiNewArithmeticDom(param rank: int, type idxType,
+proc Block.dsiNewRectangularDom(param rank: int, type idxType,
                               param stridable: bool) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
@@ -286,7 +286,7 @@ def Block.dsiNewArithmeticDom(param rank: int, type idxType,
 //
 // output distribution
 //
-def Block.writeThis(x:Writer) {
+proc Block.writeThis(x:Writer) {
   x.writeln("Block");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);
@@ -297,11 +297,11 @@ def Block.writeThis(x:Writer) {
     x.writeln("  [", locid, "] locale ", locDist(locid).locale.uid, " owns chunk: ", locDist(locid).myChunk);
 }
 
-def Block.dsiIndexLocale(ind: idxType) where rank == 1 {
+proc Block.dsiIndexLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-def Block.dsiIndexLocale(ind: rank*idxType) where rank > 1 {
+proc Block.dsiIndexLocale(ind: rank*idxType) where rank > 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -309,7 +309,7 @@ def Block.dsiIndexLocale(ind: rank*idxType) where rank > 1 {
 // compute what chunk of inds is owned by a given locale -- assumes
 // it's being called on the locale in question
 //
-def Block.getChunk(inds, locid) {
+proc Block.getChunk(inds, locid) {
   // use domain slicing to get the intersection between what the
   // locale owns and the domain's index set
   //
@@ -333,11 +333,11 @@ def Block.getChunk(inds, locid) {
 //
 // get the index into the targetLocales array for a given distributed index
 //
-def Block.targetLocsIdx(ind: idxType) where rank == 1 {
+proc Block.targetLocsIdx(ind: idxType) where rank == 1 {
   return targetLocsIdx(tuple(ind));
 }
 
-def Block.targetLocsIdx(ind: rank*idxType) {
+proc Block.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 1..rank do
     result(i) = max(0, min((targetLocDom.dim(i).length-1):int,
@@ -347,8 +347,8 @@ def Block.targetLocsIdx(ind: rank*idxType) {
   return if rank == 1 then result(1) else result;
 }
 
-def Block.dsiCreateReindexDist(newSpace, oldSpace) {
-  def anyStridable(space, param i=1) param
+proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
+  proc anyStridable(space, param i=1) param
     return if i == space.size then space(i).stridable
            else space(i).stridable || anyStridable(space, i+1);
 
@@ -388,7 +388,7 @@ def Block.dsiCreateReindexDist(newSpace, oldSpace) {
    *    newBbLow = t-oldLow;
    *
    */
-  def adjustBound(bbound, oldBound, newBound) {
+  proc adjustBound(bbound, oldBound, newBound) {
     var t: bbound.type;
     if safeSub(oldBound, newBound) {
       t = oldBound-newBound;
@@ -440,7 +440,7 @@ def Block.dsiCreateReindexDist(newSpace, oldSpace) {
 }
 
 
-def LocBlock.LocBlock(param rank: int,
+proc LocBlock.LocBlock(param rank: int,
                       type idxType, 
                       locid, // the locale index from the target domain
                       boundingBox: rank*range(idxType),
@@ -468,20 +468,20 @@ def LocBlock.LocBlock(param rank: int,
   }
 }
 
-def BlockDom.getBaseDist() return dist;
+proc BlockDom.dsiMyDist() return dist;
 
-def BlockDom.dsiDisplayRepresentation() {
+proc BlockDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
   for tli in dist.targetLocDom do
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
 }
 
-def BlockDom.dsiDims() return whole.dims();
+proc BlockDom.dsiDims() return whole.dims();
 
-def BlockDom.dsiDim(d: int) return whole.dim(d);
+proc BlockDom.dsiDim(d: int) return whole.dim(d);
 
 // stopgap to avoid accessing locDoms field (and returning an array)
-def BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
+proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
 
 //
@@ -490,9 +490,9 @@ def BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 // _matchArgsShape(range(int), int, (1:int(64), 1:int(64)..5, 1:int(64)..5))
 // returns the type: (int, range(int), range(int))
 //
-def _matchArgsShape(type rangeType, type scalarType, args) type {
-  def tuple(type t ...) type return t;
-  def helper(param i: int) type {
+proc _matchArgsShape(type rangeType, type scalarType, args) type {
+  proc tuple(type t ...) type return t;
+  proc helper(param i: int) type {
     if i == args.size {
       if isCollapsedDimension(args(i)) then
         return tuple(scalarType);
@@ -509,7 +509,7 @@ def _matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 
-def Block.dsiCreateRankChangeDist(param newRank: int, args) {
+proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
   var collapsedDimLocs: rank*idxType;
 
   for param i in 1..rank {
@@ -541,18 +541,20 @@ def Block.dsiCreateRankChangeDist(param newRank: int, args) {
                    dataParMinGranularity);
 }
 
-def BlockDom.these() {
+iter BlockDom.these() {
   for i in whole do
     yield i;
 }
 
-def BlockDom.these(param tag: iterator) where tag == iterator.leader {
+iter BlockDom.these(param tag: iterator) where tag == iterator.leader {
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
-  const precomputedWholeLow = whole.low;
+  const wholeLow = whole.low;
   coforall locDom in locDoms do on locDom {
-    var tmpBlock = locDom.myBlock - precomputedWholeLow;
+    // Use the internal function for untranslate to avoid having to do
+    // extra work to negate the offset
+    var tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
     const (numTasks, parDim) =
       _computeChunkStuff(maxTasks, ignoreRunning, minSize,
                          locDom.myBlock.dims());
@@ -588,8 +590,8 @@ def BlockDom.these(param tag: iterator) where tag == iterator.leader {
 // natural composition and might help with my fears about how
 // stencil communication will be done on a per-locale basis.
 //
-def BlockDom.these(param tag: iterator, follower) where tag == iterator.follower {
-  def anyStridable(rangeTuple, param i: int = 1) param
+iter BlockDom.these(param tag: iterator, follower) where tag == iterator.follower {
+  proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
@@ -609,29 +611,29 @@ def BlockDom.these(param tag: iterator, follower) where tag == iterator.follower
 //
 // output domain
 //
-def BlockDom.dsiSerialWrite(x:Writer) {
+proc BlockDom.dsiSerialWrite(x:Writer) {
   x.write(whole);
 }
 
 //
 // how to allocate a new array over this domain
 //
-def BlockDom.dsiBuildArray(type eltType) {
+proc BlockDom.dsiBuildArray(type eltType) {
   var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   arr.setup();
   return arr;
 }
 
-def BlockDom.dsiNumIndices return whole.numIndices;
-def BlockDom.dsiLow return whole.low;
-def BlockDom.dsiHigh return whole.high;
-def BlockDom.dsiStride return whole.stride;
+proc BlockDom.dsiNumIndices return whole.numIndices;
+proc BlockDom.dsiLow return whole.low;
+proc BlockDom.dsiHigh return whole.high;
+proc BlockDom.dsiStride return whole.stride;
 
 //
-// INTERFACE NOTES: Could we make dsiSetIndices() for an arithmetic
+// INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
 // domain take a domain rather than something else?
 //
-def BlockDom.dsiSetIndices(x: domain) {
+proc BlockDom.dsiSetIndices(x: domain) {
   if x.rank != rank then
     compilerError("rank mismatch in domain assignment");
   if x._value.idxType != idxType then
@@ -644,7 +646,7 @@ def BlockDom.dsiSetIndices(x: domain) {
   }
 }
 
-def BlockDom.dsiSetIndices(x) {
+proc BlockDom.dsiSetIndices(x) {
   if x.size != rank then
     compilerError("rank mismatch in domain assignment");
   if x(1).idxType != idxType then
@@ -660,21 +662,16 @@ def BlockDom.dsiSetIndices(x) {
   }
 }
 
-def BlockDom.dsiGetIndices() {
+proc BlockDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
-// remove all instances of getDist
-def BlockDom.getDist(): Block(idxType) {
-  return dist;
-}
-
 // dsiLocalSlice
-def BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
+proc BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
   return whole((...ranges));
 }
 
-def BlockDom.setup() {
+proc BlockDom.setup() {
   if locDoms(dist.targetLocDom.low) == nil {
     coforall localeIdx in dist.targetLocDom do {
       on dist.targetLocales(localeIdx) do
@@ -689,18 +686,18 @@ def BlockDom.setup() {
   }
 }
 
-def BlockDom.dsiMember(i) {
+proc BlockDom.dsiMember(i) {
   return whole.member(i);
 }
 
-def BlockDom.dsiIndexOrder(i) {
+proc BlockDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 
 //
-// build a new arithmetic domain using the given range
+// build a new rectangular domain using the given range
 //
-def BlockDom.dsiBuildArithmeticDom(param rank: int, type idxType,
+proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
                                    param stridable: bool,
                                    ranges: rank*range(idxType,
                                                       BoundedRangeType.bounded,
@@ -719,16 +716,16 @@ def BlockDom.dsiBuildArithmeticDom(param rank: int, type idxType,
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-def LocBlockDom.member(i) return myBlock.member(i);
+proc LocBlockDom.member(i) return myBlock.member(i);
 
-def BlockArr.dsiDisplayRepresentation() {
+proc BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom do
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
 }
 
-def BlockArr.dsiGetBaseDom() return dom;
+proc BlockArr.dsiGetBaseDom() return dom;
 
-def BlockArr.setup() {
+proc BlockArr.setup() {
   var thisid = this.locale.uid;
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
@@ -745,7 +742,7 @@ def BlockArr.setup() {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
-def BlockArr.dsiAccess(i: rank*idxType) var {
+proc BlockArr.dsiAccess(i: rank*idxType) var {
   if myLocArr then local {
     if myLocArr.locDom.member(i) then
       return myLocArr.this(i);
@@ -753,10 +750,10 @@ def BlockArr.dsiAccess(i: rank*idxType) var {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
-def BlockArr.dsiAccess(i: idxType...rank) var
+proc BlockArr.dsiAccess(i: idxType...rank) var
   return dsiAccess(i);
 
-def BlockArr.these() var {
+iter BlockArr.these() var {
   for i in dom do
     yield dsiAccess(i);
 }
@@ -766,51 +763,22 @@ def BlockArr.these() var {
 // logic?  (e.g., can we forward the forall to the global domain
 // somehow?
 //
-def BlockArr.these(param tag: iterator) where tag == iterator.leader {
-  const maxTasks = dom.dist.dataParTasksPerLocale;
-  const ignoreRunning = dom.dist.dataParIgnoreRunningTasks;
-  const minSize = dom.dist.dataParMinGranularity;
-  const precomputedWholeLow = dom.whole.low;
-  coforall locDom in dom.locDoms do on locDom {
-    var tmpBlock = locDom.myBlock - precomputedWholeLow;
-    const (numTasks, parDim) =
-      _computeChunkStuff(maxTasks, ignoreRunning, minSize,
-                         locDom.myBlock.dims());
-    var locBlock: rank*range(idxType);
-    for param i in 1..tmpBlock.rank {
-      locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
-    }
-
-
-    if (numTasks == 1) {
-      yield locBlock;
-    } else {
-      coforall taskid in 0:uint(64)..#numTasks {
-        var tuple: rank*range(idxType) = locBlock;
-        const (lo,hi) = _computeBlock(locBlock(parDim).length, numTasks, taskid,
-                                      locBlock(parDim).high,
-                                      locBlock(parDim).low,
-                                      locBlock(parDim).low);
-          
-        tuple(parDim) = lo..hi;
-        yield tuple;
-
-      }
-    }
-  }
+iter BlockArr.these(param tag: iterator) where tag == iterator.leader {
+  for follower in dom.these(tag) do
+    yield follower;
 }
 
-def BlockArr.dsiStaticFastFollowCheck(type leadType) param
+proc BlockArr.dsiStaticFastFollowCheck(type leadType) param
   return leadType == this.type || leadType == this.dom.type;
 
-def BlockArr.dsiDynamicFastFollowCheck(lead: [])
+proc BlockArr.dsiDynamicFastFollowCheck(lead: [])
   return lead.domain._value == this.dom;
 
-def BlockArr.dsiDynamicFastFollowCheck(lead: domain)
+proc BlockArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
-def BlockArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
-  def anyStridable(rangeTuple, param i: int = 1) param
+iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
+  proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
@@ -856,7 +824,7 @@ def BlockArr.these(param tag: iterator, follower, param fast: bool = false) var 
     //
     // we don't own all the elements we're following
     //
-    def accessHelper(i) var {
+    proc accessHelper(i) var {
       if myLocArr then local {
         if myLocArr.locDom.member(i) then
           return myLocArr.this(i);
@@ -872,7 +840,7 @@ def BlockArr.these(param tag: iterator, follower, param fast: bool = false) var 
 //
 // output array
 //
-def BlockArr.dsiSerialWrite(f: Writer) {
+proc BlockArr.dsiSerialWrite(f: Writer) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
@@ -898,7 +866,7 @@ def BlockArr.dsiSerialWrite(f: Writer) {
   }
 }
 
-def BlockArr.dsiSlice(d: BlockDom) {
+proc BlockArr.dsiSlice(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
   var thisid = this.locale.uid;
   coforall i in d.dist.targetLocDom {
@@ -912,7 +880,7 @@ def BlockArr.dsiSlice(d: BlockDom) {
   return alias;
 }
 
-def BlockArr.dsiLocalSlice(ranges) {
+proc BlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
     low(i) = ranges(i).low;
@@ -921,7 +889,7 @@ def BlockArr.dsiLocalSlice(ranges) {
   return A;
 }
 
-def _extendTuple(type t, idx: _tuple, args) {
+proc _extendTuple(type t, idx: _tuple, args) {
   var tup: args.size*t;
   var j: int = 1;
   
@@ -936,7 +904,7 @@ def _extendTuple(type t, idx: _tuple, args) {
   return tup;
 }
 
-def _extendTuple(type t, idx, args) {
+proc _extendTuple(type t, idx, args) {
   var tup: args.size*t;
   var idxTup = tuple(idx);
   var j: int = 1;
@@ -953,7 +921,7 @@ def _extendTuple(type t, idx, args) {
 }
 
 
-def BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
+proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
   var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
   var thisid = this.locale.uid;
   coforall ind in d.dist.targetLocDom {
@@ -1007,7 +975,7 @@ def BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
   return alias;
 }
 
-def BlockArr.dsiReindex(d: BlockDom) {
+proc BlockArr.dsiReindex(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
                            stridable=d.stridable, dom=d);
 
@@ -1029,11 +997,11 @@ def BlockArr.dsiReindex(d: BlockDom) {
   return alias;
 }
 
-def BlockArr.dsiReallocate(d: domain) {
+proc BlockArr.dsiReallocate(d: domain) {
   //
-  // For the default arithmetic array, this function changes the data
+  // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default
-  // arithmetic domain is changed.  For this distributed array class,
+  // rectangular domain is changed.  For this distributed array class,
   // we don't need to do anything, because changing the domain will
   // change the domain in the local array class which will change the
   // data in the local array class.  This will only work if the domain
@@ -1046,14 +1014,14 @@ def BlockArr.dsiReallocate(d: domain) {
 //
 // the accessor for the local array -- assumes the index is local
 //
-def LocBlockArr.this(i) var {
+proc LocBlockArr.this(i) var {
   return myElems(i);
 }
 
 //
 // Privatization
 //
-def Block.Block(other: Block, privateData,
+proc Block.Block(other: Block, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType) {
   boundingBox = [(...privateData(1))];
@@ -1068,20 +1036,20 @@ def Block.Block(other: Block, privateData,
   }
 }
 
-def Block.dsiSupportsPrivatization() param return true;
+proc Block.dsiSupportsPrivatization() param return true;
 
-def Block.dsiGetPrivatizeData() {
+proc Block.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
           dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
 }
 
-def Block.dsiPrivatize(privatizeData) {
+proc Block.dsiPrivatize(privatizeData) {
   return new Block(this, privatizeData);
 }
 
-def Block.dsiGetReprivatizeData() return boundingBox.dims();
+proc Block.dsiGetReprivatizeData() return boundingBox.dims();
 
-def Block.dsiReprivatize(other, reprivatizeData) {
+proc Block.dsiReprivatize(other, reprivatizeData) {
   boundingBox = [(...reprivatizeData)];
   targetLocDom = other.targetLocDom;
   targetLocales = other.targetLocales;
@@ -1091,11 +1059,11 @@ def Block.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-def BlockDom.dsiSupportsPrivatization() param return true;
+proc BlockDom.dsiSupportsPrivatization() param return true;
 
-def BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
+proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
-def BlockDom.dsiPrivatize(privatizeData) {
+proc BlockDom.dsiPrivatize(privatizeData) {
   var distpid = privatizeData(1);
   var thisdist = dist;
   var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
@@ -1106,19 +1074,19 @@ def BlockDom.dsiPrivatize(privatizeData) {
   return c;
 }
 
-def BlockDom.dsiGetReprivatizeData() return whole.dims();
+proc BlockDom.dsiGetReprivatizeData() return whole.dims();
 
-def BlockDom.dsiReprivatize(other, reprivatizeData) {
+proc BlockDom.dsiReprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
     locDoms(i) = other.locDoms(i);
   whole = [(...reprivatizeData)];
 }
 
-def BlockArr.dsiSupportsPrivatization() param return true;
+proc BlockArr.dsiSupportsPrivatization() param return true;
 
-def BlockArr.dsiGetPrivatizeData() return dom.pid;
+proc BlockArr.dsiGetPrivatizeData() return dom.pid;
 
-def BlockArr.dsiPrivatize(privatizeData) {
+proc BlockArr.dsiPrivatize(privatizeData) {
   var dompid = privatizeData;
   var thisdom = dom;
   var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);

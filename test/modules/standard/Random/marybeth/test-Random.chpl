@@ -1,4 +1,4 @@
-def main() {
+proc main() {
 
 use Random;
 

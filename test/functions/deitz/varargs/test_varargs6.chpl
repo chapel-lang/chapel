@@ -1,5 +1,5 @@
 class C {
-  def this(ii : int ...3) : int {
+  proc this(ii : int ...3) : int {
     for i in 1..3 do
       writeln(ii(i));
     return 4;

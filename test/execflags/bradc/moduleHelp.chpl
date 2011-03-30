@@ -3,7 +3,7 @@ module bradModule() {
 
   writeln("n is: ", n);
 
-  def help() {
+  proc help() {
     writeln("bradModule flags");
     writeln("================");
     writeln("  --n=<val> : set the problem size (default = 10)");

@@ -61,7 +61,7 @@ module block_2D_bordering_cholesky {
   // block rows and columns (I+1..).
   // =========================================================================
     
-  def block_2D_bordering_cholesky ( A : [] )  
+  proc block_2D_bordering_cholesky ( A : [] )  
 
     where ( A.domain.rank == 2 ) {
 

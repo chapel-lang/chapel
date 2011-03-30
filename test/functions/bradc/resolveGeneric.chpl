@@ -6,7 +6,7 @@ class D : C {
   param rank: int;
   var x: string;
 
-  def foo(x) {
+  proc foo(x) {
     x.x = this.x;
   }
 }
@@ -20,7 +20,7 @@ myD.foo(myD2);
 
 writeln("myD2.x = ", myD2.x);
 
-def bar(x) {
+proc bar(x) {
   var xx: x.type = new x.type();
   x.foo(xx);
   writeln("xx.x = ", xx.x);

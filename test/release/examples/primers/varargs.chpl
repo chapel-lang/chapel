@@ -10,7 +10,7 @@
 // number of arguments passed to the current call. The args argument is an
 // n-tuple of int values.
 //
-def intWriteln(args: int ...?n) {
+proc intWriteln(args: int ...?n) {
   for i in 1..n {
     if i != n then
       write(args(i), " ");
@@ -28,7 +28,7 @@ intWriteln(1, 2, 3, 4);
 // parameter for loop is used to unroll the loop body so that the index "i"
 // is a parameter and each write() call can be instantiated independently.
 //
-def anyTypeWriteln(args...?n) {
+proc anyTypeWriteln(args...?n) {
   for param i in 1..n {
     if i != n then
       write(args(i), " ");
@@ -44,7 +44,7 @@ anyTypeWriteln(1, 2.0, 3.14 + 2.72i);
 // accepts a variable number of types and returns a tuple containing the
 // default values for each type.
 //
-def defaultValues(type args...?n) {
+proc defaultValues(type args...?n) {
   var val: args;
   return val;
 }
@@ -61,7 +61,7 @@ anyTypeWriteln((...defaultValues(int, complex, bool, 2*real)));
 // divisor of two integers. It is the base case for a version below that
 // finds the gcd of any number of integers.
 //
-def gcd(in a:int, in b:int) {
+proc gcd(in a:int, in b:int) {
   while b != 0 {
     var temp = b;
     b = a % b;
@@ -75,7 +75,7 @@ def gcd(in a:int, in b:int) {
 // defined above for the first two arguments, and recursively compare that
 // against the gcd of the rest of the arguments.
 //
-def gcd(a:int, b:int, c:int ...?n) {
+proc gcd(a:int, b:int, c:int ...?n) {
   return gcd(gcd(a, b), (...c));
 }
 

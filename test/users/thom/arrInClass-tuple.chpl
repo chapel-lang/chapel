@@ -2,7 +2,7 @@ class StoreSomeInts {
   var intsDom: domain(1);
   var m_someints: [intsDom] int;
 
-  def StoreSomeInts(intTuple:int...?k) {
+  proc StoreSomeInts(intTuple:int...?k) {
     intsDom = [1..k];
     this.m_someints = intTuple;
   }

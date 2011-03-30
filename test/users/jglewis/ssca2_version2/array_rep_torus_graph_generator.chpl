@@ -14,7 +14,7 @@ module array_rep_torus_graph_generator
   //  allowing for wrap around at either end of the dimension.
   //  ----------------------------------------------------------------------
 
-  def right_nbr ( i, low, high ) : int
+  proc right_nbr ( i, low, high ) : int
     {
       if ( i != high ) then
 	return i+1;
@@ -22,7 +22,7 @@ module array_rep_torus_graph_generator
 	return low;
     }
 
-  def left_nbr ( i, low, high ) : int
+  proc left_nbr ( i, low, high ) : int
     {
       if ( i != low ) then
 	return i-1;
@@ -35,7 +35,7 @@ module array_rep_torus_graph_generator
   // generate graph corresponding to a one dimensional torus
   // =======================================================
 
-  def gen_1D_torus_array_representation ( G ) 
+  proc gen_1D_torus_array_representation ( G ) 
      where G.vertices.rank == 1
 
     {
@@ -65,7 +65,7 @@ module array_rep_torus_graph_generator
   // generate graph corresponding to a two dimensional torus
   // =======================================================
 
-  def gen_2D_torus_array_representation ( G ) 
+  proc gen_2D_torus_array_representation ( G ) 
     where G.vertices.rank == 2
 
     {
@@ -98,7 +98,7 @@ module array_rep_torus_graph_generator
   // generate graph corresponding to a three dimensional torus
   // =========================================================
 
-   def gen_3D_torus_array_representation ( G ) 
+   proc gen_3D_torus_array_representation ( G ) 
     where G.vertices.rank == 3
 
     {
@@ -135,7 +135,7 @@ module array_rep_torus_graph_generator
    // generate graph corresponding to a four dimensional torus
    // ========================================================
 
-   def gen_4D_torus_array_representation ( G ) 
+   proc gen_4D_torus_array_representation ( G ) 
     where G.vertices.rank == 4
 
     {

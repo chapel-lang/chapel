@@ -1,14 +1,14 @@
-def foo(r: range(?et, ?bt, ?sbl), s: et) {
+proc foo(r: range(?et, ?bt, ?sbl), s: et) {
   compilerWarning("Got into my foo!");
 }
 
 /*
-def foo(r: range(?et, ?bt, ?sbl), s: typeToSignedType(et)) where (et != typeToSignedType(et)) {
+proc foo(r: range(?et, ?bt, ?sbl), s: typeToSignedType(et)) where (et != typeToSignedType(et)) {
   compilerWarning("Got into my second foo!  ", typeToString(typeToSignedType(et)));
 }
 */
 
-def foo(r: range(?), x) {
+proc foo(r: range(?), x) {
   compilerError("Didn't get into my foos!");
 }
 

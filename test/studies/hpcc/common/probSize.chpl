@@ -1,7 +1,7 @@
 module HPCCProblemSize {
   use Memory, Types;
 
-  def computeProblemSize(
+  proc computeProblemSize(
     type elemType, numArrays, returnLog2 = false, memRatio=4)
   {
     const totalMem = + reduce Locales.physicalMemory(unit = MemUnits.Bytes),
@@ -27,7 +27,7 @@ module HPCCProblemSize {
   }
 
 
-  def printProblemSize(type elemType, numArrays, problemSize: ?psType) {
+  proc printProblemSize(type elemType, numArrays, problemSize: ?psType) {
     const bytesPerArray = problemSize * numBytes(elemType),
           totalMemInGB = (numArrays * bytesPerArray:real) / (1024**3),
           lgProbSize = log2(problemSize):psType;

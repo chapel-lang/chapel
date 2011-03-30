@@ -2,7 +2,7 @@ use Random;
 
 config const n = 100, trials = 100, useRndSeed = true;
 
-def main {
+proc main {
   var A: [1..n] real;
   var initSeed = if useRndSeed then SeedGenerator.currentTime else 31415;
   var diffCnt: int;

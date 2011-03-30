@@ -1,5 +1,5 @@
 config var size = 5;
-def main {
+proc main {
   var D: domain(locale);
   for loc in Locales {
     D += loc;

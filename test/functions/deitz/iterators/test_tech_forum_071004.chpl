@@ -1,4 +1,4 @@
-def iter_string_chars(s: string) {
+iter iter_string_chars(s: string) {
   var i = 1, limit = s.length;
   while i <= limit {
     yield s.substring(i);
@@ -20,14 +20,14 @@ class IC {
   var limit: int;
 }
 
-def fun_string_chars(s: string) {
+proc fun_string_chars(s: string) {
   var ic = new IC(cursor=1, s=s);
   ic.next();
   return ic;
 }
 
 /*
-def IC.next() {
+proc IC.next() {
   select cursor {
     when 1 do goto L1;
     when 2 do goto L2;
@@ -43,7 +43,7 @@ def IC.next() {
   cursor = 0;
 }
 */
-def IC.next() {
+proc IC.next() {
   if cursor == 1 {
     i = 1;
     limit = s.length;
@@ -63,7 +63,7 @@ def IC.next() {
   cursor = 0;
 }
 
-def special_fun_string_chars(s: string) {
+proc special_fun_string_chars(s: string) {
   var ic = new IC(cursor=1, s=s);
   ic.i = 1;
   ic.limit = ic.s.length;
@@ -73,7 +73,7 @@ def special_fun_string_chars(s: string) {
   return ic;
 }
 
-def IC.special_next() {
+proc IC.special_next() {
   i += 1;
   cursor = i <= limit;
   if cursor then

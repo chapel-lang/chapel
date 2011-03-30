@@ -6,7 +6,7 @@ config var n = 9,                 // the problem size
            filename = "Arr.dat";  // the filename for writing/reading the array
 
 
-def main {
+proc main {
 
   const ADom = [1..n, 1..n];  // Create a domain of the specified problem size
 
@@ -29,7 +29,7 @@ def main {
 //
 // this function writes a square array out to a file
 //
-def writeSquareArray(n, X, filename) {
+proc writeSquareArray(n, X, filename) {
   // Create an output file with the specified filename in write (FileAccessMode.write) mode
   var outfile = new file(filename, FileAccessMode.write);
 
@@ -50,7 +50,7 @@ def writeSquareArray(n, X, filename) {
 //
 // This function reads a new array out of a file and returns it
 //
-def readArray(filename) {
+proc readArray(filename) {
   // Create an input file with the specified filename in read (FileAccessMode.read) mode
   var infile = new file(filename, FileAccessMode.read);
 
@@ -80,14 +80,14 @@ def readArray(filename) {
   return X;
 }
 
-def SQR(const A)
+proc SQR(const A)
 {
 	var R = A;
 	forall (i) in (A.domain) do R(i) *= R(i);
 	return R;
 }	
 
-def AverageImage(filename, n)
+proc AverageImage(filename, n)
 {
 
 	var image = readArray( filename + "_" +1 +".txt" );  //image values ideal range = 0-1, single channel

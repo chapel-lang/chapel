@@ -2,7 +2,7 @@
 module Util
 {
 
-    def stringMultiply(s : string, m : int) : string
+    proc stringMultiply(s : string, m : int) : string
     {
         var retr : string;
         for i in 1..m
@@ -13,7 +13,7 @@ module Util
     }
 
     //untested, probably wont compile
-    def tupleToArray(t...?k) : [1..k] int
+    proc tupleToArray(t...?k) : [1..k] int
     {
         var retr : [1..k] int;
         for i in 1..k
@@ -42,7 +42,7 @@ module Util
 
 
 
-    def arrayEquals(A : [?D] real, B : [D] real, tolerance : real = 1e-15): bool
+    proc arrayEquals(A : [?D] real, B : [D] real, tolerance : real = 1e-15): bool
     {
         //Check if any array entries do not fall within tolerance
         for ij in D do

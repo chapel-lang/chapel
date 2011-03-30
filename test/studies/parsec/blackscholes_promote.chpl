@@ -40,7 +40,7 @@ var otype : [Dom] bool;
 // See Hull, Section 11.8, P.243-244
 param inv_sqrt_2xPI = 0.39894228040143270286;
 
-def CNDF ( in InputX : fptype )  : fptype
+proc CNDF ( in InputX : fptype )  : fptype
 {
     var sign : int;
     // Check for negative value of InputX
@@ -80,7 +80,7 @@ def CNDF ( in InputX : fptype )  : fptype
     return xLocal;
 } 
 
-def BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
+proc BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
                          volatility : fptype, time : fptype, otype : bool) : fptype
 {
 	// local private working variables for the calculation
@@ -108,7 +108,7 @@ def BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
 	return OptionPrice;
 }
 
-def errChk(i, refval, price) : bool {
+proc errChk(i, refval, price) : bool {
 	var priceDelta = refval - price;
 	if (abs(priceDelta) >= 1e-4) then {
 				    writeln("Error on ",i,". Computed=",price,
@@ -119,7 +119,7 @@ def errChk(i, refval, price) : bool {
 	else return false;
 }
 
-def bs() {
+proc bs() {
 	for 0..#NUM_RUNS do {
 		/* Calling main function to calculate option value based on 
 		 * Black & Sholes's equation.
@@ -131,7 +131,7 @@ def bs() {
 		numError = + reduce [i in [Dom]] errChk(i, data(i).DGrefval, prices(i));
 }
 
-def main() {
+proc main() {
 	var infile = new file(filename, FileAccessMode.read);
 	infile.open();
 

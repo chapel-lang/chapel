@@ -114,10 +114,11 @@ for data_file in data_files:
             for line in diff_results:
                 output_file.write(line + "\n")
                 difference_detected = True
-    except:
+    except Exception as exn:
         #---- If the diff fails, indicate the file with which it crashed ----
         output_file.write("Test failed.\n")
         output_file.write("Could not use approximateDiff with file " + data_file + ".\n")
+        output_file.write('%s\n'%(exn))
         failure = True
         break
 

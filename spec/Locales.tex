@@ -15,7 +15,7 @@ this locale, and any tasks running on this locale.  The
 term \emph{remote} will be used to describe another locale, the data
 on another locale, and the tasks running on another locale.
 
-\subsection{Locales}
+\section{Locales}
 \index{locales}
 
 A \emph{locale} is a portion of the target parallel architecture that
@@ -28,7 +28,7 @@ nodes or SMPs would typically define each node to be a locale.  In
 contrast a pure shared memory machine would be defined as a single
 locale.
 
-\subsubsection{Locale Types}
+\subsection{Locale Types}
 \label{The_Locale_Type}
 \index{locale@\chpl{locale}}
 
@@ -37,39 +37,22 @@ locale as described above.  Both data and tasks can be associated with
 a value of locale type. The only operators defined over locales are
 the equality and inequality comparison operators.
 
-\subsubsection{Locale Methods}
+\subsection{Locale Methods}
 \label{Locale_Methods}
 \index{Locales!methods}
 
 The locale type supports the following methods:
 
-\begin{protohead}
-def locale.id: int;
-\end{protohead}
-\begin{protobody}
-Returns a unique integer for each locale, from 0 to the number of
-locales less one.
-\end{protobody}
+%% \begin{protohead}
+%% proc locale.blockedTasks() : int ;
+%% \end{protohead}
+%% \begin{protobody}
+%% Returns the number of tasks on this locale which are blocked at the time of the
+%% call.
+%% \end{protobody}
 
 \begin{protohead}
-def locale.numCores: int;
-\end{protohead}
-\begin{protobody}
-Returns the number of processor cores available on a given locale.
-\end{protobody}
-
-\begin{protohead}
-use Memory;
-def locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)): retType;
-\end{protohead}
-\begin{protobody}
-Returns the amount of physical memory available on a given locale in
-terms of the specified memory units (Bytes, KB, MB, or GB) using a
-value of the specified return type.
-\end{protobody}
-
-\begin{protohead}
-def locale.callStackSize: uint(64);
+proc locale.callStackSize: uint(64);
 \end{protohead}
 \begin{protobody}
 Returns the per-task call stack size used when creating tasks on the
@@ -77,7 +60,68 @@ locale in question.  A value of 0 indicates that the call stack size
 is determined by the system.
 \end{protobody}
 
-\subsubsection{The Predefined Locales Array}
+\begin{protohead}
+proc locale.id: int;
+\end{protohead}
+\begin{protobody}
+Returns a unique integer for each locale, from 0 to the number of
+locales less one.
+\end{protobody}
+
+%% \begin{protohead}
+%% proc locale.idleThreads() : uint ;
+%% \end{protohead}
+%% \begin{protobody}
+%% Returns the number of threads which are currently idle on this locale.
+%% \end{protobody}
+
+\begin{protohead}
+proc locale.name: string;
+\end{protohead}
+\begin{protobody}
+Returns the name of the locale.
+\end{protobody}
+
+\begin{protohead}
+proc locale.numCores: int;
+\end{protohead}
+\begin{protobody}
+Returns the number of processor cores available on a given locale.
+\end{protobody}
+
+\begin{protohead}
+use Memory;
+proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)): retType;
+\end{protohead}
+\begin{protobody}
+Returns the amount of physical memory available on a given locale in
+terms of the specified memory units (Bytes, KB, MB, or GB) using a
+value of the specified return type.
+\end{protobody}
+
+%% \begin{protohead}
+%% proc locale.queuedTasks() : uint ;
+%% \end{protohead}
+%% \begin{protobody}
+%% Returns the number of tasks on this locale which are currently on the task queue.
+%% \end{protobody}
+
+%% \begin{protohead}
+%% proc locale.runningTasks() : uint ;
+%% \end{protohead}
+%% \begin{protobody}
+%% Returns the number of tasks on this locale that are currently running.
+%% \end{protobody}
+
+%% \begin{protohead}
+%% proc locale.totalThreads() : uint ;
+%% \end{protohead}
+%% \begin{protobody}
+%% Returns the total number of threads (active + idle) that currently exist on this
+%% locale.
+%% \end{protobody}
+
+\subsection{The Predefined Locales Array}
 \label{Predefined_Locales_Array}
 \index{Locales@\chpl{Locales}}
 \index{numLocales@\chpl{numLocales}}
@@ -124,7 +168,7 @@ the \chpl{Locales} array.  Each locale is added to
 the \chpl{MyLocales} array four times in a round-robin fashion.
 \end{example}
 
-\subsubsection{The {\em here} Locale}
+\subsection{The {\em here} Locale}
 \label{here}
 \index{here@\chpl{here}}
 
@@ -145,7 +189,7 @@ executed on locale 1.
 
 The identifier \chpl{here} is not a keyword and can be overridden.
 
-\subsubsection{Querying the Locale of an Expression}
+\subsection{Querying the Locale of an Expression}
 \label{Querying_the_Locale_of_a_Variable}
 \index{locale@\chpl{locale}}
 
@@ -173,9 +217,9 @@ on Locales(1) {
       c = new C();
       r = new R();
     }
-    writeln(x.locale);
-    writeln(c.locale);
-    writeln(r.locale);
+    writeln(x.locale.id);
+    writeln(c.locale.id);
+    writeln(r.locale.id);
   }
 }
 \end{chapel}
@@ -185,7 +229,7 @@ results in the output
 3
 1
 \end{chapel}
-The variable \chpl{x} is declared and exists on \chpl{Locales(0)}.
+The variable \chpl{x} is declared and exists on \chpl{Locales(1)}.
 The variable \chpl{c} is a class reference.  The reference exists
 on \chpl{Locales(1)} but the object itself exists
 on \chpl{Locales(3)}.  The locale access returns the locale where the
@@ -204,21 +248,21 @@ For example, the following code:
 \begin{chapel}
 const c = 10;
 for loc in Locales do on loc do
-    writeln(c.locale);
+    writeln(c.locale.id);
 \end{chapel}
 outputs
 \begin{chapel}
-LOCALE0
-LOCALE1
-LOCALE2
-LOCALE3
-LOCALE4
+0
+1
+2
+3
+4
 \end{chapel}
 when running on 5 locales.
 \end{example}
 
 
-\subsection{The On Statement}
+\section{The On Statement}
 \label{On}
 \index{on@\chpl{on}}
 
@@ -239,7 +283,7 @@ Return statements may not be lexically enclosed in on statements.
 Yield statement may only be lexically enclosed in on statements in
 parallel iterators~\rsec{Parallel_Iterators}.
 
-\subsubsection{Remote Variable Declarations}
+\subsection{Remote Variable Declarations}
 \label{remote_variable_declarations}
 
 By default, when new variables and data objects are created, they are

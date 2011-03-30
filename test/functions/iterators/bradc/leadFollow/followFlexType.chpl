@@ -1,30 +1,30 @@
 class C {
-  def these() {
+  iter these() {
     yield 0.0;
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     var D: domain(1, int(32)) = [1..10];
     yield D;
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     for i in follower do
       yield i:real;
   }
 }
 
 class D {
-  def these() {
+  iter these() {
     yield 0.0;
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     var D: domain(1, int(64)) = [1..10:int(64)];
     yield D;
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     for i in follower do
       yield (-i):real;
   }

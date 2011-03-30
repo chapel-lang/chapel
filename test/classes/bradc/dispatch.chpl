@@ -6,15 +6,15 @@ class D {
   var y: C;
 }
 
-def foo(c: C) {
+proc foo(c: C) {
   writeln("x is: ", c.x);
 }
 
-def foo(d: D) {
+proc foo(d: D) {
   foo(d.y);
 }
 
-def main() {
+proc main() {
   var myC = new C(x=1);
   foo(myC);
   var myD = new D();

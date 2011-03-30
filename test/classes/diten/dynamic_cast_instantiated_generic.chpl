@@ -3,7 +3,7 @@ class C {
   var a, b: t;
 }
 
-def main {
+proc main {
   var c = new C(int, 1, 2);
   var o: object = c;
   writeln((o:c.type).a);

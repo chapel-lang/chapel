@@ -1,9 +1,9 @@
-def main()
+proc main()
 {
    //do stuff
 }
 
-def something();
+proc something();
 {
    //this code is always executed
 }

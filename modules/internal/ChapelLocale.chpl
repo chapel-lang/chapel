@@ -1,4 +1,4 @@
-use DefaultArithmetic;
+use DefaultRectangular;
 
 class locale {
   const myRealm: realm;
@@ -6,7 +6,7 @@ class locale {
   const chpl_uid: int;
   const myNumCores: int;
 
-  def locale(r: realm = nil, id = -1, uid = -1,
+  proc locale(r: realm = nil, id = -1, uid = -1,
              numCores = __primitive("chpl_coresPerLocale")) {
     if doneCreatingLocales {
       halt("locales cannot be created");
@@ -17,26 +17,29 @@ class locale {
     myNumCores = numCores;
   }
 
-  def id {
+  proc id {
     return chpl_id;
   }
 
-  def uid {
+  proc uid {
     return chpl_uid;
   }
 
-  def name {
+  proc name {
     var locName: string;
     on this do locName = __primitive("chpl_localeName");
     return locName;
   }
 
-  def callStackSize: uint(64) {
-    _extern def chpl_task_callstacksize(): uint(64);
-    return chpl_task_callstacksize();
+  proc callStackSize: uint(64) {
+    // Locales may have differing call stack sizes.
+    _extern proc chpl_task_getCallStackSize(): uint(64);
+    var retval: uint(64);
+    on this do retval = chpl_task_getCallStackSize();
+    return retval;
   }
 
-  def writeThis(f: Writer) {
+  proc writeThis(f: Writer) {
     if (numRealms == 1) {
       f.write("LOCALE", id);
     } else {
@@ -45,7 +48,7 @@ class locale {
   }
 }
 
-def chpl_setupLocale(uid) {
+proc chpl_setupLocale(uid) {
   var tmp: locale;
   on __primitive("chpl_on_locale_num", uid) {
     tmp = new locale(uid=uid);
@@ -57,11 +60,11 @@ def chpl_setupLocale(uid) {
   return tmp;
 }
 
-def locale.numCores {
+proc locale.numCores {
   return myNumCores;
 }
 
-def chpl_int_to_locale(in id) {
+proc chpl_int_to_locale(in id) {
   for r in Realms {
     if id < r.numLocales then
       return r.Locales[id];
@@ -72,7 +75,7 @@ def chpl_int_to_locale(in id) {
 }
 
 
-def locale.totalThreads() {
+proc locale.totalThreads() {
   var totalThreads: uint;
 
   on this do totalThreads = __primitive("chpl_numThreads");
@@ -80,7 +83,7 @@ def locale.totalThreads() {
   return totalThreads;
 }
 
-def locale.idleThreads() {
+proc locale.idleThreads() {
   var idleThreads: uint;
 
   on this do idleThreads = __primitive("chpl_numIdleThreads");
@@ -88,7 +91,7 @@ def locale.idleThreads() {
   return idleThreads;
 }
 
-def locale.queuedTasks() {
+proc locale.queuedTasks() {
   var queuedTasks: uint;
 
   on this do queuedTasks = __primitive("chpl_numQueuedTasks");
@@ -96,7 +99,7 @@ def locale.queuedTasks() {
   return queuedTasks;
 }
 
-def locale.runningTasks() {
+proc locale.runningTasks() {
   var numTasks: uint;
 
   on this do numTasks = __primitive("chpl_numRunningTasks");
@@ -104,7 +107,7 @@ def locale.runningTasks() {
   return numTasks;
 }
 
-def locale.blockedTasks() {
+proc locale.blockedTasks() {
   var blockedTasks: int;
 
   on this do blockedTasks = __primitive("chpl_numBlockedTasks");
@@ -112,39 +115,45 @@ def locale.blockedTasks() {
   return blockedTasks;
 }
 
+proc chpl_privateInstance(originalInstance, instancePid:int)
+  return chpl_privateInstance(originalInstance.type, instancePid);
+
+proc chpl_privateInstance(type instanceType, instancePid:int)
+  return __primitive("chpl_getPrivatizedClass", nil:instanceType, instancePid);
+
 
 //
 // multi-locale diagnostics/debugging support
 //
-_extern def chpl_startVerboseComm();
-_extern def chpl_stopVerboseComm();
-_extern def chpl_startVerboseCommHere();
-_extern def chpl_stopVerboseCommHere();
-_extern def chpl_startCommDiagnostics();
-_extern def chpl_stopCommDiagnostics();
-_extern def chpl_startCommDiagnosticsHere();
-_extern def chpl_stopCommDiagnosticsHere();
+_extern proc chpl_startVerboseComm();
+_extern proc chpl_stopVerboseComm();
+_extern proc chpl_startVerboseCommHere();
+_extern proc chpl_stopVerboseCommHere();
+_extern proc chpl_startCommDiagnostics();
+_extern proc chpl_stopCommDiagnostics();
+_extern proc chpl_startCommDiagnosticsHere();
+_extern proc chpl_stopCommDiagnosticsHere();
 
-def startVerboseComm() { chpl_startVerboseComm(); }
-def stopVerboseComm() { chpl_stopVerboseComm(); }
-def startVerboseCommHere() { chpl_startVerboseCommHere(); }
-def stopVerboseCommHere() { chpl_stopVerboseCommHere(); }
+proc startVerboseComm() { chpl_startVerboseComm(); }
+proc stopVerboseComm() { chpl_stopVerboseComm(); }
+proc startVerboseCommHere() { chpl_startVerboseCommHere(); }
+proc stopVerboseCommHere() { chpl_stopVerboseCommHere(); }
 
-def startCommDiagnostics() { chpl_startCommDiagnostics(); }
-def stopCommDiagnostics() { chpl_stopCommDiagnostics(); }
-def startCommDiagnosticsHere() { chpl_startCommDiagnosticsHere(); }
-def stopCommDiagnosticsHere() { chpl_stopCommDiagnosticsHere(); }
+proc startCommDiagnostics() { chpl_startCommDiagnostics(); }
+proc stopCommDiagnostics() { chpl_stopCommDiagnostics(); }
+proc startCommDiagnosticsHere() { chpl_startCommDiagnosticsHere(); }
+proc stopCommDiagnosticsHere() { chpl_stopCommDiagnosticsHere(); }
 
 
 // TODO: generalize this for multiple realms by returning a manhattan
 // array
-_extern def chpl_numCommGets(): int(32);
-_extern def chpl_numCommPuts(): int(32);
-_extern def chpl_numCommForks(): int(32);
-_extern def chpl_numCommFastForks(): int(32);
-_extern def chpl_numCommNBForks(): int(32);
+_extern proc chpl_numCommGets(): int(32);
+_extern proc chpl_numCommPuts(): int(32);
+_extern proc chpl_numCommForks(): int(32);
+_extern proc chpl_numCommFastForks(): int(32);
+_extern proc chpl_numCommNBForks(): int(32);
 
-def getCommDiagnostics(realmID: int(32) = 0) {
+proc getCommDiagnostics(realmID: int(32) = 0) {
   var D: [Realms(realmID).LocaleSpace] 5*int;
   const r = Realms(realmID);
   for loc in r.Locales do on loc {
@@ -172,7 +181,7 @@ pragma "no auto destroy"
 config const
   memLeaksLog: string = "";
 
-def chpl_startTrackingMemory() {
+proc chpl_startTrackingMemory() {
   coforall r in Realms {
     if r.Locales(0) == here {
       coforall loc in r.Locales {

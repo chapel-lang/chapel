@@ -2,7 +2,7 @@ config const lo = min(int)+1;
 config const hi = max(int);
 config const noisy = false;
 
-def checkLen(lo, hi) {
+proc checkLen(lo, hi) {
   var r1: range = (lo..hi);
   var len = if lo<=hi then hi-lo+1 else 0;
   if noisy {

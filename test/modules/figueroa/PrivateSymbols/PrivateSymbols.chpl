@@ -1,7 +1,7 @@
 config const seed: uint = 113579,
              arraySize = 20;
 
-def main () {
+proc main () {
   use RandomNumber;
   if arraySize % 2 != 0 then
     halt ("arraySize must be even!");

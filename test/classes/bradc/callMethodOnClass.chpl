@@ -2,7 +2,7 @@ class C {
   var x = 1.2;
 }
 
-def newC() {
+proc newC() {
   var c = new C();
   c.x = 2.3;
   return c;
@@ -11,16 +11,16 @@ def newC() {
 class D {
   var y: C;
 
-  def start {
+  proc start {
     y = newC();
   }
 
-  def testit {
+  proc testit {
     writeln("y.x is: ", y.x);
   }
 }
 
-def main() {
+proc main() {
   var myD = new D();
   D.start;  // BUG if I call this on D!!
   D.testit;

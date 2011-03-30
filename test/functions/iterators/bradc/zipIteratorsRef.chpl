@@ -1,7 +1,7 @@
 class C {
   var x: real = 1.2;
 
-  def these() var {
+  iter these() var {
     yield x;
   }
 }

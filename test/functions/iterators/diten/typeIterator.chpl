@@ -1,4 +1,4 @@
-def foo() type {
+iter foo() type {
   yield int;
   yield int;
 }

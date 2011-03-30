@@ -12,7 +12,7 @@
 
 use SpaceDimension;
 use LanguageExtensions;
-use MultiDomain_def;
+use BasicDataStructures;
 
 
 
@@ -43,14 +43,16 @@ class Grid {
   const extended_cells: domain(dimension, stridable=true);
   const cells:          subdomain(extended_cells);
   
-  const ghost_multidomain: MultiDomain(dimension, stridable=true);
+  // const ghost_multidomain: MultiDomain(dimension, stridable=true);
+  const ghost_multidomain: List( domain(dimension, stridable=true) );
 
 
   //|\''''''''''''''|\
   //| >    clear    | >
   //|/..............|/
 
-  def clear () {
+  proc clear () {
+    ghost_multidomain.clear();
     delete ghost_multidomain;
   }
   // /|''''''''''''''/|
@@ -62,7 +64,7 @@ class Grid {
   //| >    Constructor    | >
   //|/....................|/
   
-  def Grid(
+  proc Grid(
     x_low:         dimension*real,
     x_high:        dimension*real,
     i_low:         dimension*int,
@@ -89,7 +91,11 @@ class Grid {
 
     //==== Physical cells ====
     var ranges: dimension*range(stridable = true);
-    for d in dimensions do ranges(d) = (i_low(d)+1 .. by 2) #n_cells(d);
+    for d in dimensions
+    {
+      ranges(d) = (i_low(d)+1 .. by 2) #n_cells(d);
+      ranges(d).alignHigh();
+    }
     cells = ranges;
 
 
@@ -112,7 +118,8 @@ class Grid {
     //   (upper,lower), (upper,inner), (upper,upper)
     //----------------------------------------------------------------
 
-    ghost_multidomain = new MultiDomain(dimension, stridable=true);
+    // ghost_multidomain = new MultiDomain(dimension, stridable=true);
+    ghost_multidomain = new List( domain(dimension,stridable=true) );
 
     var inner_location: dimension*int;
     for d in dimensions do inner_location(d) = loc1d.inner;
@@ -122,12 +129,11 @@ class Grid {
       if loc != inner_location {
         for d in dimensions do
           ranges(d) = if loc(d) == loc1d.below then 
-                        (extended_cells.low(d).. by 2) #n_ghost_cells(d)
+                        ((extended_cells.low(d).. by 2) #n_ghost_cells(d)).alignHigh()
                       else if loc(d) == loc1d.inner then
                         cells.dim(d)
                       else
-                        (..extended_cells.high(d) by 2) #n_ghost_cells(d);
-        
+                        ((..extended_cells.high(d) by 2) #-n_ghost_cells(d)).alignLow();
         ghost_domain = ranges;
         ghost_multidomain.add(ghost_domain);
       }
@@ -149,7 +155,7 @@ class Grid {
   // Performs some basic sanity checks on the constructor inputs.
   //--------------------------------------------------------------
 
-  def sanityChecks () {
+  proc sanityChecks () {
     var d_string: string;
     for d in dimensions do {
       d_string = format("%i", d);
@@ -174,7 +180,7 @@ class Grid {
   //| >    relativeLocation method    | >
   //|/................................|/
   
-  def relativeLocation(idx: dimension*int) {
+  proc relativeLocation(idx: dimension*int) {
     var loc: dimension*int;
 
     for d in dimensions {
@@ -188,7 +194,7 @@ class Grid {
     return loc;
   }
 
-  def relativeLocation(D: domain(dimension, stridable=true)){
+  proc relativeLocation(D: domain(dimension, stridable=true)){
     var loc_low  = relativeLocation(D.low);
     var loc_high = relativeLocation(D.high);
 
@@ -214,7 +220,7 @@ class Grid {
   // sensible.  Mainly for testing and debugging.
   //-----------------------------------------------------------
   
-  def writeThis (w: Writer) {
+  proc writeThis (w: Writer) {
     writeln("x_low: ", x_low, ",  x_high: ", x_high);
     write("i_low: ", i_low, ",  i_high: ", i_high);
   }
@@ -243,7 +249,7 @@ class Grid {
 // as when setting up in initial condition.
 //-------------------------------------------------------------
 
-def Grid.xValue (point_index: dimension*int) {
+proc Grid.xValue (point_index: dimension*int) {
 
   var coord: dimension*real;
 
@@ -275,7 +281,7 @@ def Grid.xValue (point_index: dimension*int) {
 // single-grid problems, but not for AMR.
 //---------------------------------------------------------------
 
-def readGrid(file_name: string) {
+proc readGrid(file_name: string) {
 
   var input_file = new file(file_name, FileAccessMode.read);
   input_file.open();
@@ -318,7 +324,7 @@ def readGrid(file_name: string) {
 //| >    setOutputTimes routine    | >
 //|/_______________________________|/
 
-def setOutputTimes (file_name: string) {
+proc setOutputTimes (file_name: string) {
 
   var input_file = new file(file_name, FileAccessMode.read);
   input_file.open();
@@ -355,7 +361,7 @@ def setOutputTimes (file_name: string) {
 
 
 
-// def main {
+// proc main {
 // 
 //   var x_low = (0.0,1.0);
 //   var x_high = (2.0,3.0);

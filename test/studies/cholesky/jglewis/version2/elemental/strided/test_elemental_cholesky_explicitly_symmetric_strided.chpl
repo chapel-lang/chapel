@@ -23,7 +23,7 @@ module test_elemental_explicitly_strided_cholesky {
   use elemental_cholesky_symmetric_strided,
       elemental_cholesky_symmetric_index_ranges;
 
-  def main {
+  proc main {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
@@ -57,6 +57,7 @@ module test_elemental_explicitly_strided_cholesky {
     writeln ("");
     writeln ("Parallel Environment");
     writeln ("   Number of Locales         : ", numLocales );
+   if !reproducible_output then
     writeln ("   Number of cores per locale: ", Locales.numCores );
 
     // ---------------------------------------------------------------
@@ -141,7 +142,7 @@ module test_elemental_explicitly_strided_cholesky {
   }
 
 
-  def check_factorization ( A : [], L_formal : [] )
+  proc check_factorization ( A : [], L_formal : [] )
 
     // -----------------------------------------------------------------------
     // Check the factorization by forming L L^T and comparing the result to A.
@@ -192,7 +193,7 @@ module test_elemental_explicitly_strided_cholesky {
   }
 
 
-  def print_lower_triangle ( L : [] ) {
+  proc print_lower_triangle ( L : [] ) {
    
     if print_matrix_details then
       for (i_row, i_col) in ( L.domain.dim(1), L.domain.dim(2) ) do

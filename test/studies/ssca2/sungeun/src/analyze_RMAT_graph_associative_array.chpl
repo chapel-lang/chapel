@@ -6,7 +6,7 @@ module analyze_RMAT_graph_associative_array {
   // |  of a specified size and execute and verify SSCA2 kernels 2 through 4. |
   // =========================================================================+
 
-  def  generate_and_analyze_associative_array_RMAT_graph_representation {
+  proc  generate_and_analyze_associative_array_RMAT_graph_representation {
 
     // -----------------------------------------------------------------
     // compute a random power law graph with 2^SCALE vertices, using 
@@ -76,16 +76,16 @@ module analyze_RMAT_graph_associative_array {
       const vertices;
       var   Row      : [vertices] row_struct (index (vertices));
 
-      def   Neighbors  ( v : index (vertices) ) {return Row (v).Row_Neighbors;}
+      proc   Neighbors  ( v : index (vertices) ) {return Row (v).Row_Neighbors;}
 
       // NEED PARALLEL ITERATOR FOR EDGE_WEIGHT BELOW.  
       // Not implemented yet in compiler. 
 
-      def   edge_weight (v : index (vertices) ) var {
+      iter   edge_weight (v : index (vertices) ) var {
 	for w in Row (v).Weight do
 	  yield w;}  // var iterator to avoid a copy
 
-      def   n_Neighbors (v : index (vertices) ) 
+      proc   n_Neighbors (v : index (vertices) ) 
       {return Row (v).Row_Neighbors.numIndices;}
     }
 

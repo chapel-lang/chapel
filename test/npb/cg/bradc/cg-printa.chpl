@@ -16,7 +16,7 @@ config const n = probSizes(probClass),
              nonzer = nonZeroes(probClass),
              shift = shifts(probClass);
 
-def main() {
+proc main() {
   const DenseSpace = [1..n, 1..n];
   const MatrixSpace: sparse subdomain(DenseSpace) // dist(CSR);
                    = genAIndsSorted(elemType, n, nonzer, shift);

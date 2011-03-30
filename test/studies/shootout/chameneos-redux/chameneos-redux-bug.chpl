@@ -20,7 +20,7 @@ class MeetingPlace {
 	var id1$, id2$: sync int;	
 	var meetingsLeft$ : sync int;
 
-	def fill(numMeetings : int) {
+	proc fill(numMeetings : int) {
 		meetingsLeft$.writeXF(numMeetings);
 	}
 			
@@ -29,7 +29,7 @@ class MeetingPlace {
 	   returns color of chameneos who arrives 2nd
 	   otherwise returns color of chameneos who arrives 1st
            (denies meetings of 3+ chameneos) */
-	def meet(chameneos : Chameneos) {
+	proc meet(chameneos : Chameneos) {
 		var otherColor : Color;
 		var meetingsLeftTemp = meetingsLeft$; 	
 		writeln("id = " + chameneos.id + ", meetingsLeftTemp = " + meetingsLeftTemp);	
@@ -67,7 +67,7 @@ class Color {
 	/* returns the compliment of this and another color:
 	   if this and the other color are of the same value, return own value
   	   otherwise return the color that is neither this or the other color */
-	def getComplement(otherColor: Color) {
+	proc getComplement(otherColor: Color) {
 		var result : Color;
 		if (value == otherColor.value) {
 			result = new Color(value);
@@ -78,7 +78,7 @@ class Color {
 	}
 
 	/* returns string representation of this color */
-	def string() {
+	proc string() {
 		select value {
 			when 0 do return "blue";
 			when 1 do return "red";
@@ -98,7 +98,7 @@ class Chameneos {
 //	var openToMeet : bool = true;
 	var result : (bool, Color);
 
-	def start() {
+	proc start() {
 		var openToMeet : bool = true;
 		var otherColor : Color;
 
@@ -110,7 +110,7 @@ class Chameneos {
 	}
 }
 
-def printColorChange(meetingPlace : MeetingPlace, color1 : Color,  color2 : Color) {
+proc printColorChange(meetingPlace : MeetingPlace, color1 : Color,  color2 : Color) {
 	/* use enum for colors instead of string (clumsy).. ?*/
 	var ch1 : Chameneos = new Chameneos(0, meetingPlace, color1);
 	var ch2 : Chameneos = new Chameneos(1, meetingPlace, color2);
@@ -130,7 +130,7 @@ def printColorChange(meetingPlace : MeetingPlace, color1 : Color,  color2 : Colo
 	}
 }
 
-def main() {
+proc main() {
 	/* throw exception if numChameneos or numMeetings < 0, or if numChameneos < 2 */
 	const forest : MeetingPlace = new MeetingPlace();
 	

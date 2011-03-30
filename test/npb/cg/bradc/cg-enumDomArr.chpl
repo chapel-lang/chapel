@@ -17,7 +17,7 @@ const probSizes:   [Class] int = ( 1400, 7000, 14000, 75000, 150000, 150000, 140
 type elemType = real(64);
 
 
-def main() {
+proc main() {
   const n = probSizes(probClass),
         nonzer = nonZeroes(probClass),
         shift = shifts(probClass),

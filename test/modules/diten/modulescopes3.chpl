@@ -8,16 +8,16 @@ module M1 {
 
 module M4 {
   var a = 4;
-  def main() {
+  proc main() {
     foo();
     writeln(M1.M2.M3.a);
     writeln(a);
   }
-  def foo() {
+  proc foo() {
     writeln(a);
     bar();
   }
-  def bar() {
+  proc bar() {
     // initialize these modules, but keep them out of other function scopes
     use M1.M2.M3;
   }

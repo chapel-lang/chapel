@@ -1,8 +1,8 @@
 var a: int = 1;                      // module scope
 var n: int = 14;
 
-def b(c: int): int {        // def param scope
-  var d: int = 4;                    // def scope
+proc b(c: int): int {        // proc param scope
+  var d: int = 4;                    // proc scope
   writeln("c is: ", c);
   writeln("d is: ", d);
 
@@ -11,7 +11,7 @@ def b(c: int): int {        // def param scope
 
 class e {
   var f: int = 6;                    // class scope
-  def g(h: int): int {
+  proc g(h: int): int {
     var i: int = 9;
 //    writeln("f is: ", f);
     writeln("h is: ", h);
@@ -20,7 +20,7 @@ class e {
   }
 }
 
-def main() {
+proc main() {
   writeln("a is: ", a);
   var myB: int;
   myB = b(3);

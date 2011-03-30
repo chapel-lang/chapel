@@ -1,7 +1,7 @@
 use ChapelBase;
 use ChapelIO;
 use ChapelArray;
-use DefaultArithmetic;
+use DefaultRectangular;
 use DefaultAssociative;
 
 /* 
@@ -37,7 +37,7 @@ record chpldev_Task {
 var chpldev_taskTableD : domain(chpl_taskID_t);
 var chpldev_taskTable : [chpldev_taskTableD] chpldev_Task;
 
-pragma "export" def chpldev_taskTable_add(taskID   : chpl_taskID_t,
+pragma "export" proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
                                           lineno   : uint(32),
                                           filename : string,
                                           tl_info  : uint(64))
@@ -49,27 +49,27 @@ pragma "export" def chpldev_taskTable_add(taskID   : chpl_taskID_t,
                                                lineno, filename, tl_info);
 }
 
-pragma "export" def chpldev_taskTable_remove(taskID : chpl_taskID_t)
+pragma "export" proc chpldev_taskTable_remove(taskID : chpl_taskID_t)
 {
   chpldev_taskTableD.remove(taskID);
 }
 
-pragma "export" def chpldev_taskTable_set_active(taskID : chpl_taskID_t)
+pragma "export" proc chpldev_taskTable_set_active(taskID : chpl_taskID_t)
 {
   chpldev_taskTable[taskID].state = taskState.active;
 }
 
-pragma "export" def chpldev_taskTable_set_suspended(taskID : chpl_taskID_t)
+pragma "export" proc chpldev_taskTable_set_suspended(taskID : chpl_taskID_t)
 {
   chpldev_taskTable[taskID].state = taskState.suspended;
 }
 
-pragma "export" def chpldev_taskTable_get_tl_info(taskID : chpl_taskID_t)
+pragma "export" proc chpldev_taskTable_get_tl_info(taskID : chpl_taskID_t)
 {
   return chpldev_taskTable[taskID].tl_info;
 }
 
-pragma "export" def chpldev_taskTable_print() 
+pragma "export" proc chpldev_taskTable_print() 
 {
   for taskID in chpldev_taskTableD {
     stderr.writeln("- ", chpldev_taskTable[taskID].filename,

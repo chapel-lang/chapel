@@ -19,7 +19,7 @@ var phi_initialized = false;
 
 /** Read two scale coeffs from the input file.
  */
-def hg_readCoeffs(inputfile) {
+proc hg_readCoeffs(inputfile) {
     var max_k: int;
     var coeffData = new file(inputfile, path='./', mode=FileAccessMode.read);
 
@@ -45,14 +45,14 @@ def hg_readCoeffs(inputfile) {
 
 /** Return maximum k.
  */
-def hg_getMaxK(): int {
+proc hg_getMaxK(): int {
     return hg_MaxK;
 }
 
 
 /** Return the twoscale coefficients for the multiwavelets of order k.
  */
-def hg_getCoeffs(k: int) {
+proc hg_getCoeffs(k: int) {
     var kthCoeffs: [0..2*k-1, 0..2*k-1] real;
     // FIXME: Ideally I want to slice a 2d matrix out of the 3d matrix.
     //        Current copy code is a workaround.
@@ -74,7 +74,7 @@ def hg_getCoeffs(k: int) {
      * order   max order of polynomials to evaluate
      * return  [] real first k polynomials evaluated at point x
  */
-def pn(x: real, order: int) {
+proc pn(x: real, order: int) {
     var p: [0..order] real;
 
     p[0] = 1.0;
@@ -101,7 +101,7 @@ def pn(x: real, order: int) {
      * k       evaluate first k polynomials
      * return  double[] first k polynomials evaluated at point x
  */ 
-def phi(x: real, k: int) {
+proc phi(x: real, k: int) {
     var p: [0..k-1] real = 0.0;
     var order = k-1;
 
@@ -125,8 +125,8 @@ hg_readCoeffs(hg_inputfile);
 // --- End   Initialization --- //
 
 
-def main () {
-    def mxmt(a: [] real, b: [] real) where a.rank == 2 && b.rank == 2 {
+proc main () {
+    proc mxmt(a: [] real, b: [] real) where a.rank == 2 && b.rank == 2 {
         var c: [a.domain] real;
 
         for (i, j) in a.domain do
@@ -136,7 +136,7 @@ def main () {
         return c;
     }
 
-    def err(a: [] real): real where a.rank == 2 {
+    proc err(a: [] real): real where a.rank == 2 {
         var sum = 0.0;
 
         for i in a.domain.dim(1) {

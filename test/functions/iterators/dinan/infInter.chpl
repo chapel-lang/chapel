@@ -1,4 +1,4 @@
-def wraparound(n: int): int {
+iter wraparound(n: int): int {
   while true do
     for i in 1..n do yield i;
 }

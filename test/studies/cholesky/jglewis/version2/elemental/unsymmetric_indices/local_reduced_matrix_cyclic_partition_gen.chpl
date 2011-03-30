@@ -2,7 +2,7 @@ module local_reduced_matrix_cyclic_partition_gen {
 
   use cholesky_execution_config_consts;
 
-  def local_reduced_matrix_cyclic_partition_gen ( A_domain ) {
+  iter local_reduced_matrix_cyclic_partition_gen ( A_domain ) {
 
     // -------------------------------------------------------------------
     // Deliver as ranges the sequence of reduced matrices that arise in a

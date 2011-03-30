@@ -25,7 +25,7 @@ config const printParams = true,
              printStats = true;
 
 
-def main() {
+proc main() {
   printConfiguration();
 
   const TwiddleDom: domain(1) = [0..#m/4];
@@ -49,7 +49,7 @@ def main() {
 }
 
 
-def dfft(Z, Twiddles) {
+proc dfft(Z, Twiddles) {
   cft1st(Z, Twiddles);
 
   var span = radix;
@@ -75,12 +75,12 @@ def dfft(Z, Twiddles) {
 }
 
 
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) then printProblemSize(elemType, numVectors, m);
 }
 
 
-def initVectors(Twiddles, z) {
+proc initVectors(Twiddles, z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
@@ -93,7 +93,7 @@ def initVectors(Twiddles, z) {
 }
 
 
-def computeTwiddles(Twiddles) {
+proc computeTwiddles(Twiddles) {
   const numTwdls = Twiddles.numElements,
         delta = 2.0 * atan(1.0) / numTwdls;
 
@@ -109,7 +109,7 @@ def computeTwiddles(Twiddles) {
 }
 
 
-def bitReverseShuffle(Vect: [?Dom]) {
+proc bitReverseShuffle(Vect: [?Dom]) {
   const numBits = log2(Vect.numElements),
         Perm: [Dom] index(Dom) = [i in Dom] bitReverse(i, revBits = numBits),
         Temp = Vect(Perm);
@@ -117,7 +117,7 @@ def bitReverseShuffle(Vect: [?Dom]) {
 }
 
 
-def bitReverse(val: ?valType, revBits = 64) {
+proc bitReverse(val: ?valType, revBits = 64) {
   param mask = 0x0102040810204080;
   const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask)),
         valReverse = bitRotLeft(valReverse64, revBits);
@@ -125,7 +125,7 @@ def bitReverse(val: ?valType, revBits = 64) {
 }
 
 
-def verifyResults(z, Z, Twiddles) {
+proc verifyResults(z, Z, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
   Z = conjg(Z) / m;
@@ -142,7 +142,7 @@ def verifyResults(z, Z, Twiddles) {
 }
 
 
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
@@ -151,7 +151,7 @@ def printResults(successful, execTime) {
 }
 
 
-def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
+proc butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
   var x0 = A(1) + A(2),
       x1 = A(1) - A(2),
       x2 = A(3) + A(4),
@@ -167,7 +167,7 @@ def butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
 }
 
 
-def cft1st(A, W) {
+proc cft1st(A, W) {
   var x0 = A(0) + A(1),
       x1 = A(0) - A(1),
       x2 = A(2) + A(3),
@@ -207,7 +207,7 @@ def cft1st(A, W) {
 }
 
 
-def cftmd0(span, A, W) {
+proc cftmd0(span, A, W) {
   const wk1r = W(1).re,
         m = radix*span;
 
@@ -220,7 +220,7 @@ def cftmd0(span, A, W) {
 }
 
 
-def cftmd1(span, A, W) {
+proc cftmd1(span, A, W) {
   const m = radix*span,
         m2 = 2*m;
 
@@ -241,7 +241,7 @@ def cftmd1(span, A, W) {
 }
 
 
-def cftmd2(span, A, W) {
+proc cftmd2(span, A, W) {
   const m = radix*span,
         m2 = 2*m,
         numElems = A.numElements;
@@ -272,7 +272,7 @@ def cftmd2(span, A, W) {
 }
 
 
-def cftmd21(span, A, W) {
+proc cftmd21(span, A, W) {
   const m = radix*span,
         m2 = 2*m;
 
@@ -294,9 +294,9 @@ def cftmd21(span, A, W) {
 }
 
 
-def interpIm(a, b)
+proc interpIm(a, b)
   return (a.re - 2*b.im*a.im, 2*b.im*a.re - a.im):complex;
 
 
-def interpRe(a, b) 
+proc interpRe(a, b) 
   return (a.re - 2*b.re*a.im, 2*b.re*a.re - a.im):complex;

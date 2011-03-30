@@ -527,9 +527,9 @@ void setupModulePaths(void) {
   if (envvarpath) {
     char path[FILENAME_MAX+1];
     strncpy(path, envvarpath, FILENAME_MAX);
-    char* colon = path-1;
+    char* colon = NULL;
     do {
-      char* start = colon+1;
+      char* start = colon ? colon+1 : path;
       colon = strchr(start, ':');
       if (colon) {
         *colon = '\0';

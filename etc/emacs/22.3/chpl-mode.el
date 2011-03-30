@@ -55,7 +55,7 @@
 ;; Define chpl primitive types
 
 (c-lang-defconst c-primitive-type-kwds
-  chpl '("bool" "complex" "domain" "imag" "int" "locale" "opaque" "range" "real" "string" "subdomain" "uint"))
+  chpl '("bool" "complex" "domain" "imag" "index" "int" "locale" "opaque" "range" "real" "string" "subdomain" "uint"))
 
 ;; Define chpl type modifiers
 (c-lang-defconst c-type-modifier-kwds
@@ -63,7 +63,7 @@
 but they don't build a type of themselves.  Unlike the keywords on
 `c-primitive-type-kwds', they are fontified with the keyword face and
 not the type face."
-  chpl '("const" "config" "def" "module" "param" "type" "use" "var" "_extern"))
+  chpl '("const" "config" "iter" "module" "param" "proc" "type" "use" "var" "_extern"))
 
 ;; Class-style declarations
 (c-lang-defconst c-class-decl-kwds
@@ -106,7 +106,7 @@ will be handled."
   ;; Default to `c-class-decl-kwds' and `c-brace-list-decl-kwds'
   ;; (since e.g. "Foo" is the identifier being defined in "class Foo
   ;; {...}").
-  chpl '("const" "def" "module" "param" "type" "var" "_extern"))
+  chpl '("const" "iter" "module" "param" "proc" "type" "var" "_extern"))
 
 (c-lang-defconst c-ref-list-kwds
   "Keywords that may be followed by a comma separated list of
@@ -144,12 +144,12 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-primary-expr-kwds
   "Keywords besides constants and operators that start primary expressions."
-  chpl '("this" "new" "delete")) ;; Not really a keyword, but practically works as one.
+  chpl '("new" "delete")) ;; Not really a keyword, but practically works as one.
 
 
 (c-lang-defconst c-other-kwds
   "Keywords not accounted for by any other `*-kwds' language constant."
-  chpl '("begin" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "local" "on" "reduce" "scan" "serial" "single" "sparse" "sync" "where"))
+  chpl '("begin" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "on" "out" "reduce" "scan" "serial" "single" "sparse" "sync" "where"))
 
 ;;; Chpl.
 

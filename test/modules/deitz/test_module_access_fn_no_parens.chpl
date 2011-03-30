@@ -1,9 +1,9 @@
 module M1 {
-  def f return 3;
+  proc f return 3;
 }
 
 module M2 {
-  def main {
+  proc main {
     var f = 4;
     writeln(f);
     writeln(M1.f);

@@ -12,7 +12,7 @@ class cPair {
 
 config type myType = rPair;
 
-def f(p) {
+proc f(p) {
   writeln("p = ", p);
 }
 

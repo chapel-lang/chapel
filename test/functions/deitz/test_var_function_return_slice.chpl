@@ -1,6 +1,6 @@
 var A: [1..5] int;
 
-def foo() var {
+proc foo() var {
   return A(2..4);
 }
 

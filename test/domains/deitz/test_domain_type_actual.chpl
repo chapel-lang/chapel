@@ -1,4 +1,4 @@
-def bar(type t, value) {
+proc bar(type t, value) {
   var Dom: t;
   var A: [Dom] real;
   writeln(A);

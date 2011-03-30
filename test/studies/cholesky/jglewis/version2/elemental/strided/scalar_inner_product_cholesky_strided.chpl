@@ -9,7 +9,7 @@ module scalar_inner_product_cholesky_strided {
   // matrix-vector product form.
   // =========================================================================
     
-  def scalar_inner_product_cholesky_strided ( A : [] ) 
+  proc scalar_inner_product_cholesky_strided ( A : [] ) 
 
     where ( A.domain.rank == 2 ) 
     {

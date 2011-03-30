@@ -1,14 +1,14 @@
 var i = 12;
 var f = 12.0;
 
-def mywrite(x) {
-  def bar(tmp:int) {
+proc mywrite(x) {
+  proc bar(tmp:int) {
     writeln("mywrite int for       ", x);
   }
-  def bar(tmp:real) {
+  proc bar(tmp:real) {
     writeln("myrite real for          ", x);
   }
-  def bar(tmp) {
+  proc bar(tmp) {
     writeln("mywrite not supported for ", x);
   }
   bar(x);

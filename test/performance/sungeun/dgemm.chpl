@@ -8,7 +8,7 @@ type indexType = int;
 
 use Random, Time;
 
-def dgemm(p: indexType,       // number of rows in A
+proc dgemm(p: indexType,       // number of rows in A
           q: indexType,       // number of cols in A, number of rows in B
           r: indexType,       // number of cols in B
           A: [1..p, 1..q] ?t,
@@ -27,7 +27,7 @@ def dgemm(p: indexType,       // number of rows in A
     writeln("dgemm: ", dt);
 }
 
-def dgemm_local(p: indexType,       // number of rows in A
+proc dgemm_local(p: indexType,       // number of rows in A
                 q: indexType,       // number of cols in A, number of rows in B
                 r: indexType) {     // number of cols in B
   var A: [1..p,1..q] real;

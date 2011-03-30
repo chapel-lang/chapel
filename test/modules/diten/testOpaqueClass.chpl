@@ -8,19 +8,19 @@ module M1 {
     var n: int;
     class C {
       var a = 2;
-      def foo() {
+      proc foo() {
         return a;
       }
     }
   }
-  def retCs() {
+  proc retCs() {
     use M1Inner;
     return new C();
   }
 }
 
 module M2 {
-  def main {
+  proc main {
     use M1;
     var c = retCs();
     writeln(c);

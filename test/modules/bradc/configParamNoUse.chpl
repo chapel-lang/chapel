@@ -1,7 +1,7 @@
 module M1 {
   config param debug: bool = false;
 
-  def foo() {
+  proc foo() {
     if debug then
       writeln("Debug on!");
     writeln("In M1.foo()");
@@ -9,7 +9,7 @@ module M1 {
 }
 
 module M2 {
-  def main() {
+  proc main() {
     M1.foo();
   }
 }

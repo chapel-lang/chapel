@@ -22,7 +22,7 @@ config const printParams = true,
              printStats = true;
 
 
-def main() {
+proc main() {
   printConfiguration();
 
   const TableSpace: domain(1, indexType) = [0:indexType..#m];
@@ -44,7 +44,7 @@ def main() {
 }
 
 
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     printProblemSize(elemType, numTables, m);
     writeln("Number of updates = ", N_U, "\n");
@@ -52,7 +52,7 @@ def printConfiguration() {
 }
 
 
-def verifyResults(T: [?TDom], UpdateSpace) {
+proc verifyResults(T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   if (sequentialVerify) then
@@ -73,7 +73,7 @@ def verifyResults(T: [?TDom], UpdateSpace) {
 }
 
 
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);

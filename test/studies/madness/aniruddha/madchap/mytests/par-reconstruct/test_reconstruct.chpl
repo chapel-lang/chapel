@@ -1,7 +1,7 @@
 use MRA;
 use MadAnalytics;
 
-def main() {
+proc main() {
     var npt = 10;
 
     writeln("Mad Chapel -- Concurrent Reconstruction Test\n");

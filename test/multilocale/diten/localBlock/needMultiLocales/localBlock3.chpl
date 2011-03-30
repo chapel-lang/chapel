@@ -3,7 +3,7 @@ class C {
   var b: real;
 }
 
-def main {
+proc main {
   var c = new C(1, 1.0);
   var A: [1..5] int;
   on Locales(1) {
@@ -16,13 +16,13 @@ def main {
   writeln(A);
 }
 
-def foo(c: C) {
+iter foo(c: C) {
   for i in 1..5 {
     yield bar(c) + i;
   }
 }
 
-def bar(c: C) {
+proc bar(c: C) {
   var ret = c.a + 1; // error, c.a is remote
   return ret;
 }

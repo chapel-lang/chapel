@@ -3,7 +3,7 @@ class Foo {
 }
 
 
-def main() {
+proc main() {
 	var foo1 : Foo = new Foo(1);
 	writeln("a = ", foo1.x);
 

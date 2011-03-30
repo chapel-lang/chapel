@@ -1,4 +1,4 @@
-def foo() {
+proc foo() {
   label outer for i in 1..4 {
     var B: [1..3] int;
     for j in 1..4 {

@@ -1,18 +1,18 @@
 class A {
     var k: int;
-    def A(k=5) {
+    proc A(k=5) {
         this.k = k;
     }
 }
 
 class B {
     var a: A;
-    def B(a = nil) {
+    proc B(a = nil) {
         this.a = a;
     }
 }
 
-def main() {
+proc main() {
     const a1: A = new A();
     writeln(a1);
     const a2: A = new A(k=6);

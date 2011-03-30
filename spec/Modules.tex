@@ -14,7 +14,7 @@ in~\rsec{Nested_Modules}.  Module uses and explicit naming of symbols
 are described in~\rsec{Using_Modules}.  The execution of a program and
 module initialization is described in~\rsec{Program_Execution}.
 
-\subsection{Module Definitions}
+\section{Module Definitions}
 \label{Module_Definitions}
 
 \index{module@\chpl{module}}
@@ -37,7 +37,7 @@ Module declaration statements must be top-level statements within a
 module.  A module that is declared within another module is called a
 nested module~(\rsec{Nested_Modules}).
 
-\subsection{Files and Implicit Modules}
+\section{Files and Implicit Modules}
 \label{Implicit_Modules}
 \index{modules!and files}
 
@@ -48,19 +48,19 @@ relation to the file in terms of their names.
 The following file contains two explicitly named modules
 (\rsec{Explicit_Naming}), MX and MY.
 \begin{chapelpre}
-% test_two_modules.chpl
+% two_modules.chpl
 \end{chapelpre}
 \begin{chapel}
 module MX {
   var x: int = 0;
-  def printX() {
+  proc printX() {
     writeln(x);
   }
 }
 
 module MY {
   var y: int = 0;
-  def printY() {
+  proc printY() {
     writeln(y);
   }
 }
@@ -73,7 +73,7 @@ MY.printY();
 0
 0
 \end{chapeloutput}
-Module MX defines top-level module symbols x and printX, while MX
+Module MX defines top-level module symbols x and printX, while MY
 defines top-level module symbols y and printY.
 \end{example}
 
@@ -82,24 +82,26 @@ declarations, the file itself is treated as the module declaration.
 In this case,
 \index{implicit modules}
 \index{modules!implicit}
-the module is implicit and takes its name from the file.  If the file name is
-not a legal Chapel identifier, the module name cannot be used in a use
-statement.
+the module is implicit and takes its name from the base filename.  In
+particular, the module name is defined as the remaining string after
+removing the \chpl{.chpl} suffix and any path specification from the
+specified filename.  If the resulting name is not a legal Chapel
+identifier, it cannot be referenced in a use statement.
 
 \begin{example}
 The following file, named myModule.chpl, defines an implicitly named
 module called myModule.
 \begin{chapelpre}
-% test_implicit.chpl
+% implicit.chpl
 \end{chapelpre}
 \begin{chapel}
 var x: int = 0;
 var y: int = 0;
 
-def printX() {
+proc printX() {
   writeln(x);
 }
-def printY() {
+proc printY() {
   writeln(y);
 }
 \end{chapel}
@@ -116,7 +118,7 @@ printY.
 \end{example}
 
 
-\subsection{Nested Modules}
+\section{Nested Modules}
 \label{Nested_Modules}
 \index{modules!nested}
 
@@ -126,11 +128,11 @@ symbols in the outer module.  However, the outer module needs to
 explicitly use a nested module to have access to its symbols.
 
 A nested module can be used without using the outer module by
-explicitly naming the module in the use statement.
+explicitly naming the outer module in the use statement.
 \begin{example}
 The code
 \begin{chapelpre}
-% test_nested_use.chpl
+% nested_use.chpl
 module libsci {
   writeln("Initializing libsci");
   module blas {
@@ -159,7 +161,7 @@ The following file, named myModule.chpl, defines an
 implicitly named module called myModule, with nested modules
 MX and MY.
 \begin{chapelpre}
-% test_nested.chpl
+% nested.chpl
 \end{chapelpre}
 \begin{chapel}
 module MX {
@@ -172,11 +174,11 @@ module MY {
 
 use MX, MY;
 
-def printX() {
+proc printX() {
   writeln(x);
 }
 
-def printY() {
+proc printY() {
   writeln(y);
 }
 \end{chapel}
@@ -191,7 +193,7 @@ printY();
 \end{example}
 
 
-\subsection{Using Modules}
+\section{Using Modules}
 \label{Using_Modules}
 \index{modules!using}
 
@@ -200,7 +202,7 @@ access to the top-level module symbols without the need for explicit
 naming~(\rsec{Explicit_Naming}).  Using modules is accomplished via
 the use statement as defined in~\rsec{The_Use_Statement}.
 
-\subsubsection{Explicit Naming}
+\subsection{Explicit Naming}
 \label{Explicit_Naming}
 \index{modules!explicitly named}
 
@@ -224,19 +226,26 @@ If code refers to symbols that are defined by multiple modules, the
 compiler will issue an error.  Explicit naming can be used to
 disambiguate the symbols in this case.
 
+\begin{openissue}
+It is currently unspecified whether the
+first-named module is always at the global scope, or whether a
+scope-search mechanism is used starting at the scope containing the
+usage.
+\end{openissue}
+
 \begin{example}
 In the following example,
 \begin{chapelpre}
-% test_ambiguity.chpl
+% ambiguity.chpl
 \end{chapelpre}
 \begin{chapel}
 module M1 {
   var x: int = 1;
   var y: int = -1;
-  def printX() {
+  proc printX() {
     writeln("M1's x is: ", x);
   }
-  def printY() {
+  proc printY() {
     writeln("M1's y is: ", y);
   }
 }
@@ -247,11 +256,11 @@ module M2 {
 
   var x: int = 2;
 
-  def printX() {
+  proc printX() {
     writeln("M2's x is: ", x);
   }
 
-  def main() {
+  proc main() {
     M1.x = 4;
     M1.printX();
     writeln(x);
@@ -263,27 +272,25 @@ module M2 {
 module M3 {
   var x: int = 3;
   var y: int = -3;
-  def printY() {
+  proc printY() {
     writeln("M3's y is: ", y);
   }
 }
 \end{chapel}
 \begin{chapeloutput}
-test\_ambiguity.chpl:22: In function 'main':
-test\_ambiguity.chpl:27: error: ambiguous call 'printY()'
-test\_ambiguity.chpl:34: note: candidates are: printY()
-test\_ambiguity.chpl:7: note:                 printY()
+ambiguity.chpl:22: In function 'main':
+ambiguity.chpl:27: error: ambiguous call 'printY()'
+ambiguity.chpl:34: note: candidates are: printY()
+ambiguity.chpl:7: note:                 printY()
 \end{chapeloutput}
 The call to printX() is not ambiguous because M2's definition shadows
 that of M1.  On the other hand, the call to printY() is ambiguous
 because it is defined in both M1 and M3.  This will result in a
 compiler error.
-
-
 \end{example}
 
 
-\subsubsection{Module Initialization}
+\subsection{Module Initialization}
 \label{Module_Initialization}
 \index{modules!initialization}
 
@@ -294,15 +301,15 @@ executed during module initialization.
 \begin{example}
 In the code,
 \begin{chapelpre}
-% test_init.chpl
-def foo() {
+% init.chpl
+proc foo() {
     return 1;
 }
 \end{chapelpre}
 \begin{chapel}
 var x = foo();       // executed at module initialization
 writeln("Hi!");      // executed at module initialization
-def sayGoodbye {
+proc sayGoodbye {
   writeln("Bye!");   // not executed at module initialization
 }
 \end{chapel}
@@ -317,14 +324,13 @@ Module initialization order is discussed
 in~\rsec{Module_Initialization_Order}.
 
 
-
-\subsection{Program Execution}
+\section{Program Execution}
 \label{Program_Execution}
 
 Chapel programs start by initializing all modules and then executing
 the main function~(\rsec{The_main_Function}).
 
-\subsubsection{The {\em main} Function}
+\subsection{The {\em main} Function}
 \label{The_main_Function}
 
 \index{main@\chpl{main}}
@@ -347,12 +353,12 @@ unless the \emph{-- --main-module} flag is used.
 If the following code is compiled without specifying a main module, it
 will yield an error.
 \begin{chapelpre}
-% test_main_module.chpl
+% main_module.chpl
 \end{chapelpre}
 \begin{chapel}
 module M1 {
   const x = 1;
-  def main() {
+  proc main() {
     writeln("M", x, "'s main");
   }
 }
@@ -361,34 +367,34 @@ module M2 {
   use M1;
 
   const x = 2;
-  def main() {
+  proc main() {
     M1.main();
     writeln("M", x, "'s main");
   }
 }
 \end{chapel}
 \begin{chapelcompopts}
---main-module M1 \# test\_main\_module.M1.good
---main-module M2 \# test\_main\_module.M2.good
+--main-module M1 \# main\_module.M1.good
+--main-module M2 \# main\_module.M2.good
 \end{chapelcompopts}
 If M1 is specified as the main module, the program will output:
 \begin{chapelprintoutput}
-% test_main_module.M1.good
+% main_module.M1.good
 M1's main
 \end{chapelprintoutput}
 If M2 is specified as the main module the program will output:
 \begin{chapelprintoutput}
-% test_main_module.M2.good
+% main_module.M2.good
 M1's main\\
 M2's main
 \end{chapelprintoutput}
-Notice that main is treated like just another function if it not in
+Notice that main is treated like just another function if it is not in
 the main module and can be called as such.
 \end{example}
 
 \index{exploratory programming}
 
-%% \subsubsection{Programs with a Single Module}
+%subsubsection{Programs with a Single Module}
 %% \label{Programs_with_a_Single_Module}
 
 To aid in exploratory programming, if the file(s) listed on the
@@ -398,7 +404,7 @@ created to execute the module initialization code.
 \begin{example}
 The code
 \begin{chapelpre}
-% test_no_main.chpl
+% no_main.chpl
 \end{chapelpre}
 \begin{chapel}
 writeln("hello, world");
@@ -413,7 +419,7 @@ as described in~\rsec{Implicit_Modules}.
 \end{example}
 
 
-\subsubsection{Module Initialization Order}
+\subsection{Module Initialization Order}
 \label{Module_Initialization_Order}
 
 Module initialization is performed using the following algorithm.
@@ -428,14 +434,14 @@ parent module are initialized before uses in the nested module.
 \begin{example}
 The code
 \begin{chapelpre}
-% test_init_order.chpl
+% init_order.chpl
 \end{chapelpre}
 \begin{chapel}
 module M1 {
   use M2.M3;
   use M2;
   writeln("In M1's initializer");
-  def main() {
+  proc main() {
     writeln("In main");
   }
 }

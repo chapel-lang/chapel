@@ -3,7 +3,7 @@
 \index{class@\chpl{class}}
 \index{classes}
 
-Classes are data structures with associated state and methods. Storage for
+Classes are data structures with associated state and functions. Storage for
 \index{classes!instances}
 \index{objects}
 a class instance, or object, is allocated independently of the scope of
@@ -20,24 +20,10 @@ instance of that class or any of its derived classes.
 A class is generic if it has generic fields. Generic classes and fields
 are discussed in~\rsec{Generic_Types}.
 
-\subsection{Class Types}
-\label{Class_Types}
-\index{classes!class types}
-
-The syntax of a class type is summarized as follows:
-\begin{syntax}
-class-type:
-  identifier
-  identifier ( named-expression-list )
-\end{syntax}
-For non-generic classes, the class name is sufficient to specify the
-type.  Generic classes must be instantiated to serve as a fully-specified
-type, for example to declare a variable.  This is done with
-type constructors, which are defined in Section~\ref{Type_Constructors}.
-
-\subsection{Class Declarations}
+\section{Class Declarations}
 \label{Class_Declarations}
 \index{classes!declarations}
+\index{class@\chpl{class}}
 
 A class is defined with the following syntax:
 \begin{syntax}
@@ -46,53 +32,107 @@ class-declaration-statement:
     class-statement-list[OPT] }
 
 class-inherit-list:
-  : class-type-list
+  : class-or-record-type-list
 
-class-type-list:
+class-or-record-type-list:
   class-type
-  class-type , class-type-list
+  record-type
+  class-type , class-or-record-type-list
+  record-type , class-or-record-type-list
 
 class-statement-list:
   class-statement
   class-statement class-statement-list
 
 class-statement:
-  type-declaration-statement
-  function-declaration-statement
   variable-declaration-statement
+  method-declaration-statement
+  type-declaration-statement
   empty-statement
 \end{syntax}
+
 A \sntx{class-declaration-statement} defines a new type symbol
 specified by the identifier.  Classes inherit data and functionality
-from other classes if the \sntx{inherit-type-list} is specified.
+from other classes and/or records if the \sntx{inherit-type-list} is specified.
 Inheritance is described in~\rsec{Inheritance}.
 
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
-field), a function (called a method), or a type alias.  In addition, empty
+field), a procedure or iterator (called a method), or a type alias.  In addition, empty
 statements are allowed in class declarations, and they have no effect.
 
-If a class contains a type alias or a parameter field, or it contains a variable or
-constant without a specified type or an initialization
-expression, the class is generic.  Generic classes are described
+If a class declaration contains a type alias or a parameter field, or it contains a variable or
+constant without a specified type and without an initialization
+expression, then it declares a generic class type.  Generic classes are described
 in~\rsec{Generic_Types}.
 
-\subsection{Class Assignment}
-\label{Class_Assignment}
-\index{classes!assignment}
+\subsection{Class Types}
+\label{Class_Types}
+\index{classes!class type}
+\index{class type}
 
-Classes are assigned by reference.  After an assignment from one
-variable of class type to another, the variables reference the same
-class instance, i.e. the same storage location.
+A class type is given simply by the class name for non-generic classes.
+Generic classes must be instantiated to serve as a fully-specified
+type, for example to declare a variable.  This is done with
+type constructors, which are defined in Section~\ref{Type_Constructors}.
+
+\begin{syntax}
+class-type:
+  identifier
+  identifier ( named-expression-list )
+\end{syntax}
+
+A class type may appear in inheritance lists of
+other class declarations.
+
+\subsection{Class Values}
+\label{Class_Values}
+\index{classes!class value}
+\index{class value}
+
+A class value is either a reference to an instance of a class
+or \chpl{nil} (\rsec{Class_nil_value}). Class instances can be created
+using the \chpl{new} operator (\rsec{Class_New}) and deleted using
+the \chpl{delete} operator (\rsec{Class_Delete}).
+
+For a given class type, a legal value of that type is a reference to
+an instance of either that class or a class inheriting, directly or
+indirectly, from that class.
+\chpl{nil} is a legal value of any class type.
+
+The default value of a class type is \chpl{nil}.
+
+\begin{example}
+\begin{chapelpre}
+% declaration.chpl
+\end{chapelpre}
+\begin{chapel}
+class C { }
+var c : C;	// c has the class type C, initialized with the value nil.
+c = new C();	// Now c refers to an object of type C.
+var c2 = new C();	// The type of c2 is also C.
+class D : C {}	// Class D is derived from C.
+c = new D();	// Now c refers to an object of type D.
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+When the variable \chpl{c} is declared, it initially has the value
+of \chpl{nil}.  The next statement assigned to it an instance of the
+class \chpl{C}.  The declaration of variable \chpl{c2} shows that these steps can
+be combined.  The type of \chpl{c2} is also \chpl{C}, determined implicitly from
+the the initialization expression.  Finally, an object of type \chpl{D} is created and
+assigned to \chpl{c}.  The object previously referenced by \chpl{c} is no longer
+referenced anywhere. It could be reclaimed by the garbage collector.
+\end{example}
 
 \subsection{Class Fields}
 \label{Class_Fields}
 \index{classes!fields}
 \index{fields}
 
-Variable declarations within a class define
+Variable declarations within a class declaration define
 fields within that class.  Parameter fields make a class generic.
-Variable and constant fields define the storage associated with a class.
+Variable fields define the storage associated with a class instance.
 
 \begin{example}
 The code
@@ -111,55 +151,21 @@ defines a new class type called \chpl{Actor} that has two fields: the
 string field \chpl{name} and the unsigned integer field \chpl{age}.
 \end{example}
 
-\subsubsection{Class Field Accesses}
-\label{Class_Field_Accesses}
-\index{member access}
-
-The field in a class is accessed via a member access expression as
-described in~\rsec{Member_Access_Expressions}.  Fields in a class can
-be modified via an assignment statement where the left-hand side of
-the assignment is a member access expression.
-Accessing a parameter field returns a parameter.
-\begin{example}
-Given a variable \chpl{anActor} of type \chpl{Actor}, defined above,
-the code
-\begin{chapelpre}
-% useActor1.chpl
-use defineActor;
-var anActor = new Actor(name="Tommy", age=26);
-\end{chapelpre}
-\begin{chapel}
-var s: string = anActor.name;
-anActor.age = 27;
-\end{chapel}
-\begin{chapelpost}
-writeln((s, anActor));
-\end{chapelpost}
-\begin{chapeloutput}
-(Tommy, {name = Tommy, age = 27})
-\end{chapeloutput}
-reads the field \chpl{name} and assigns the value to the variable
-\chpl{s}, and assigns the storage location in the object
-\chpl{anActor} associated with the field \chpl{age} the value
-\chpl{27}.
-\end{example}
+Field access is described in \rsec{Class_Field_Accesses}.
 
 \subsection{Class Methods}
 \label{Class_Methods}
 \index{classes!methods}
 
-A method is a function or iterator that is bound to a class.  A method
-is called by passing an instance of the class to the method via a
-special syntax that is similar to a field access.
-
-\subsubsection{Class Method Declarations}
-\label{Class_Method_Declarations}
+A class method is a procedure or iterator that is bound to a class.
 
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  `def' param-clause[OPT] type-binding function-name argument-list[OPT] var-param-type-clause[OPT]
-    return-type[OPT] where-clause[OPT] function-body
+  `proc' param-clause[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT]
+    where-clause[OPT] function-body
+  `iter' param-clause[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT]
+    where-clause[OPT] function-body
 
 param-clause:
   `param'
@@ -174,166 +180,177 @@ method declaration contains the optional \sntx{param-clause}, it
 implies that it can only be applied to param objects of the given type
 binding.
 
-\subsubsection{Class Method Calls}
-\label{Class_Method_Calls}
+Method calls are described in \rsec{Class_Method_Calls}.
 
-A method is called by using the member access syntax as described
-in~\rsec{Member_Access_Expressions} where the accessed expression is
-the name of the method.
+\subsection{Nested Classes}
+\label{Nested_Classes}
+\index{classes!nested classes}
+\index{nested classes}
 
-\begin{example}
-A method to output information about an instance of the \chpl{Actor}
-class can be defined as follows:
-\begin{chapelpre}
-% defineMethod.chpl
-use useActor1;
-\end{chapelpre}
-\begin{chapel}
-def Actor.print() {
-  writeln("Actor ", name, " is ", age, " years old");
-}
-\end{chapel}
-\begin{chapelpost}
-anActor.print();
-\end{chapelpost}
-\begin{chapeloutput}
-(Tommy, {name = Tommy, age = 27})
-Actor Tommy is 27 years old
-\end{chapeloutput}
-This method can be called on an instance of the \chpl{Actor}
-class, \chpl{anActor}, by writing \chpl{anActor.print()}.
-\end{example}
+A class or record defined within another class is a nested class (or record).
 
-\subsubsection{The {\em this} Reference}
-\label{The_em_this_Reference}
-\index{this@\chpl{this}}
+Nested classes or records can refer to fields and methods in the outer class (or
+record) implicitly, or explicitly by means of an \chpl{outer} reference.
 
-The instance of a class is passed to a method using special syntax.
-It does not appear in the argument list to the method.  The
-reference \chpl{this} is an alias to the instance of the class on
-which the method is called.
+\section{Inheritance}
+\label{Inheritance}
+\index{inheritance}
+\index{classes!inheritance}
+\index{derived class}
+\index{classes!derived class}
 
-\begin{example}
-Let class \chpl{C}, method \chpl{foo}, and function \chpl{bar} be
-defined as
-\begin{chapelpre}
-% implicitThis.chpl
-\end{chapelpre}
-\begin{chapel}
-class C {
-  def foo() {
-    bar(this);
-  }
-}
-def bar(c: C) { writeln(c); }
-\end{chapel}
-\begin{chapelpost}
-var c: C = new C();
-c.foo();
-\end{chapelpost}
-\begin{chapeloutput}
-{}
-\end{chapeloutput}
-Then given an instance of \chpl{C} called \chpl{c}, the method
-call \chpl{c.foo()} results in a call to \chpl{bar} where the argument
-is \chpl{c}.
-\end{example}
+A \emph{derived} class can inherit from one or more other classes by
+listing those classes in the derived class declaration.
+When inheriting from multiple base classes, only one of the base classes
+may contain fields.  The other classes can only define methods.  Note
+that a class can still be derived from a class that contains fields
+which is itself derived from a class that contains fields.  
 
-\subsubsection{The {\em this} Method}
-\label{The_em_this_Method}
-\index{this@\chpl{this}}
-\index{classes!indexing}
+These restrictions on inheritance induce a class hierarchy which has the form of
+an acyclic tree.  A variable containing an instance of class \chpl{C} can be
+cast to any type that is an ancestor of \chpl{C}.  Note that casts to more- and
+less-derived classes are both permitted.
 
-A method declared with the name \chpl{this} allows a class to be
-``indexed'' similarly to how an array is indexed.  Indexing into a
-class has the semantics of calling a method on the class
-named \chpl{this}.  There is no other way to call a method
-called \chpl{this}.  The \chpl{this} method must be declared with
-parentheses even if the argument list is empty.
+A derived class may also incorporate any number of records by listing them
+in the derived class declaration.
+As with record inheritance, this has the effect of injecting the record's fields and
+methods into the new class type.  Record inheritance does not induce a
+well-defined class hierarchy.  See~\rsec{Record_Inheritance} for details.
 
-\begin{example}
-In the following code, the \chpl{this} method is used to create a
-class that acts like a simple array that contains three integers
-indexed by 1, 2, and 3.
-\begin{chapelpre}
-% thisMethod.chpl
-\end{chapelpre}
-\begin{chapel}
-class ThreeArray {
-  var x1, x2, x3: int;
-  def this(i: int) var {
-    select i {
-      when 1 do return x1;
-      when 2 do return x2;
-      when 3 do return x3;
-    }
-    halt("ThreeArray index out of bounds: ", i);
-  }
-}
-\end{chapel}
-\begin{chapelpost}
-var ta = new ThreeArray();
-ta(1) = 1;
-ta(2) = 2;
-ta(3) = 3;
-for i in 1..3 do
-  writeln(ta(i));
-ta(4) = 4;
-\end{chapelpost}
-\begin{chapeloutput}
-1
-2
-3
-thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
-\end{chapeloutput}
-\end{example}
+\subsection{The object Class}
+\label{The_object_Class}
 
-\subsubsection{The {\em these} Method}
-\label{The_these_Method}
-\index{these@\chpl{these}}
-\index{classes!iterating}
+All classes are derived from the \chpl{object} class, either directly or
+indirectly.  If no class name appears in the inheritance list, the class derives
+implicitly from \chpl{object}.  Otherwise, a class derives from \chpl{object}
+indirectly through the class or classes it inherits.  A variable of type \chpl{object}
+can hold a reference to an object of any class type. 
 
-A method declared with the name \chpl{these} allows a class to be
-``iterated over'' similarly to how a domain or array is iterated over.
-Using a class in the context of a loop where
-an \sntx{iterator-expression} is expected has the semantics of calling
-a method on the class named \chpl{these}.
+\subsection{Accessing Base Class Fields}
+\label{Accessing_Base_Class_Fields}
 
-\begin{example}
-In the following code, the \chpl{these} method is used to create a
-class that acts like a simple array that can be iterated over and
-contains three integers.
-\begin{chapelpre}
-% theseIterator.chpl
-\end{chapelpre}
-\begin{chapel}
-class ThreeArray {
-  var x1, x2, x3: int;
-  def these() var {
-    yield x1;
-    yield x2;
-    yield x3;
-  }
-}
-\end{chapel}
-\begin{chapelpost}
-var ta = new ThreeArray();
-for (i, j) in (ta, 1..) do
-  i = j;
+A derived class contains data associated with the fields in its base
+classes.  The fields can be accessed in the same way that they are
+accessed in their base class unless the getter or setter method is
+overridden in the derived class, as discussed
+in~\rsec{Overriding_Base_Class_Methods}.
 
-for i in ta do
-  writeln(i);
-\end{chapelpost}
-\begin{chapeloutput}
-1
-2
-3
-\end{chapeloutput}
+\subsection{Derived Class Constructors}
+\label{Derived_Class_Constructors}
+\index{constructors!for derived classes}
 
-\end{example}
+The default initializer of a derived class automatically calls the default
+initializer of each of its base classes and records.  The same is not true for constructors:
+To initialize inherited fields to anything other than its default-initialized
+value, a constructor defined in a derived class must either call base class
+constructors or manipulate those base-class fields directly.
 
-\subsection{Class Constructors}
+\begin{openissue}
+The syntax for calling a base-class constructor from a derived-class constructor
+has not yet been defined.
+
+There is an expectation that a more standard way
+of chaining constructor calls will be supported.
+\end{openissue}
+
+\subsection{Shadowing Base Class Fields}
+\label{Shadowing_Base_Class_Fields}
+
+A field in the derived class can be declared with the same name as a
+field in the base class.  Such a field shadows the field in the base
+class in that it is always referenced when it is accessed in the
+context of the derived class.  
+
+\begin{openissue}
+There is an expectation that there will
+be a way to reference the field in the base class but this is not
+defined at this time.
+\end{openissue}
+
+\subsection{Overriding Base Class Methods}
+\label{Overriding_Base_Class_Methods}
+\index{dynamic dispatch}
+
+If a method in a derived class is declared with a
+signature identical to that of a method in a base class, then it is said to override the
+base class's method.  Such a method is a candidate for dynamic
+dispatch in the event that a variable that has the base class type
+references an object that has the derived class type.
+
+The identical signature requires that the names, types, and order of
+the formal arguments be identical. The return type of the overriding
+method must be the same as the return type of the base class's method,
+or must be a subclass of the base class method's return type.
+
+Methods without parentheses are not candidates for dynamic dispatch.
+\begin{rationale}
+Methods without parentheses are primarily used for field accessors.  
+A default is created if none is specified.  The field accessor
+should not dispatch dynamically since that would make it
+impossible to access a base field within a base method should that
+field be shadowed by a subclass.
+\end{rationale}
+
+\subsection{Inheriting from Multiple Classes}
+\label{Inheriting_from_Multiple_Classes}
+\index{multiple inheritance}
+\index{classes!inheritance!multiple}
+
+A class can be derived from multiple base classes provided that only
+one of the base classes contains fields either directly or from base
+classes that it is derived from.  The methods defined by the other
+base classes can be overridden.  This provides functionality similar to the C\#
+concept of interfaces.
+
+\begin{openissue}
+It is an open question whether the language will support \chpl{interface}
+declarations and multiple inheritance. This is currently under study
+at the University of Colorado (Boulder).
+\end{openissue}
+
+\subsection{Class Assignment}
+\label{Class_Assignment}
+\index{classes!assignment}
+
+Classes are assigned by reference.  After an assignment from one
+variable of class type to another, the variables reference the same
+class instance.
+
+\subsection{The {\em nil} Value}
+\label{Class_nil_value}
+\index{classes!nil}
+\index{nil@\chpl{nil}}
+
+Chapel provides \chpl{nil} to indicate the absence of a reference to
+any object.  \chpl{nil} can be assigned to a variable of any class
+type.  Invoking a class method or accessing a field of the \chpl{nil}
+value results in a run-time error.
+
+\subsection{Default Initialization}
+\label{Default_Initialization}
+\index{classes!initialization}
+\index{initialization!classes}
+\index{classes!initialization!default}
+\index{classes!default initialization}
+\index{default initialization!classes}
+\index{initialization!classes!default}
+
+When an instance of a class (an object) is created, it is brought to a
+known and legal state first, before it can be accessed or operated upon.
+This is done through default initialization.
+
+An object is default-initialized by initializing all of its fields in
+the order of the field declarations within the class. Fields inherited
+from a superclass are initialized before fields declared in current class.
+
+If a field in the class is declared with an initialization expression, that
+expression is used to initialize the field.  Otherwise, the field is
+initialized to the default value of its type
+(\rsec{Default_Values_For_Types}).
+
+\section{Class Constructors}
 \label{Class_Constructors}
+\label{Class_New}
 \index{classes!constructors}
 \index{classes!new}
 \index{new!classes}
@@ -347,34 +364,41 @@ class name and constructor arguments are preceded with the
 \chpl{new} keyword.
 
 When the constructor is called, memory is allocated to store
-a class instance, its fields are initialized to default values
-(field defaults when specified in the class declaration, type defaults
-otherwise), then the constructor method is invoked on this newly-created
+a class instance, the instance undergoes default initialization, and
+then the constructor method is invoked on this newly-created
 instance.
 
 If the program declares a class constructor method,
-it is a user-defined constructor. There is also the default
-constructor that is automatically created for each class.
-The default constructor is invoked by the \chpl{new} operator
-when there are no user-defined constructors for that class,
-otherwise it cannot be accessed explicitly.
+it is a user-defined constructor.  
+If the program declares no constructors for a class,
+a compiler-generated constructor for that class is created automatically.
 
-\subsubsection{User-Defined Constructors}
+\subsection{User-Defined Constructors}
 \label{User_Defined_Constructors}
 \index{classes!constructors!user-defined}
 \index{user-defined constructors}
 \index{constructors!user-defined}
 
 A user-defined constructor is a constructor method explicitly declared
-in the program.  The usual function resolution mechanism
+in the program.  A constructor declaration has the same
+syntax as a function declaration, except that the name of the function matches
+the name of the class, and there is no return type specifier.
+
+A constructor for a given class is called by placing the \chpl{new} operator
+in front of the class name.  Any constructor arguments follow the class name in a
+parenthesized list.
+
+\begin{syntax}
+constructor-call-expression:
+  `new' class-name ( argument-list )
+
+class-name:
+  identifier
+\end{syntax}
+
+When a constructor is called, the usual function resolution mechanism
 (\rsec{Function_Resolution}) is applied to determine which
 user-defined constructor to invoke.
-
-Any user-defined constructor begins with an implicit call to the
-default constructor (\rsec{The_Default_Constructor}) for that class.
-This call passes no arguments explicitly, so each field is set
-to the initializer expression if given in the field's declaration and
-to the default value for the field's type otherwise.
 
 \begin{example}
 The following example shows a class with two constructors:
@@ -386,13 +410,13 @@ class MessagePoint {
   var x, y: real;
   var message: string;
 
-  def MessagePoint(x: real, y: real) {
+  proc MessagePoint(x: real, y: real) {
     this.x = x;
     this.y = y;
     this.message = "a point";
   }
 
-  def MessagePoint(message: string) {
+  proc MessagePoint(message: string) {
     this.x = 0;
     this.y = 0;
     this.message = message;
@@ -420,45 +444,68 @@ Constructors for generic classes (\rsec{Generic_Types}) handle certain
 arguments differently and may need to satisfy additional
 requirements. See Section~\ref{Generic_User_Constructors} for details.
 
-\subsubsection{The Default Constructor}
-\label{The_Default_Constructor}
-\index{classes!constructors!default}
-\index{default constructors}
-\index{constructors!default}
+\subsection{The Compiler-Generated Constructor}
+\label{The_Compiler_Generated_Constructor}
+\index{classes!constructors!compiler-generated}
+\index{constructors!compiler-generated}
+\index{compiler-generated constructors}
 
-The default constructor is automatically created for every class in
-the Chapel program. It has one argument for every field in the class
-with the argument name matching the field's name.
-This includes fields inherited from superclasses, type aliases
+A compiler-generated constructor for a class is created automatically
+if there are no constructors for that class in the program.
+The compiler-generated constructor has one argument for every field in the class.
+%REVIEW: hilde
+% Do you really want to say this ? {
+The list of fields (and hence arguments) includes fields inherited from superclasses, type aliases
 and parameter fields, if any.
-The order of the arguments matches the order of the field declarations
+% }
+The order of the arguments in the argument list matches the order of the field declarations
 within the class, with the arguments for a superclass's fields occurring
-before the arguments for a subclass's fields.
-Each argument has a default value.
-For a field that has an initializer expression,
-the default value is that expression.
-Otherwise, it is the default value for the field's type
-(\rsec{Default_Initialization}).
-This rule does not apply to generic fields without initializers,
-which are discussed in Section~\ref{Generic_Default_Constructors}.
+before the arguments for the fields declared in current class.
 
-The default constructor for a class can be invoked by a \chpl{new}
-operator only when the class does not have any user-defined constructors.
-In this case the usual function resolution mechanism
-(\rsec{Function_Resolution}) determines whether an invocation of the
-default constructor is legal.
+Generic fields are treated separately
+which are discussed in Section~\rsec{Generic_Compiler_Generated_Constructors}.
 
-When invoked, the default constructor initializes each field in the class to the
-value of the corresponding actual.
-This ensures that upon return from the constructor it is safe to use
-the object being created, as each field contains a legal value for its type.
-The initialization is done in the order the fields are declared, with
-a superclass's fields initialized before a subclass's fields.
+When invoked, the compiler-generated constructor initializes each field in the class to the
+value of the corresponding actual argument.  
 
-The program may define a constructor with the same arguments and types
-as the default constructor for that class. If there is such a constructor,
-it is a user-defined constructor and is distinct from the default
-constructor.
+In contrast to an actual function
+call (including calls to user-defined constructors), the compiler-generated
+constructor only initializes fields for which arguments are supplied.  All other
+fields retain their default-initialized values.  In this sense the
+compiler-generated constructor is actually a family of constructors, one for
+each permissible combination of named and unnamed arguments.\footnote{This makes
+it clear why the compiler-generated constructor is visible only if no
+user-defined constructors are present.}
+
+%REVIEW: vass
+% I am unhappy with having to present this as "not an actual function call".
+% Background: two ways for presenting constructors have been used.
+% Previously:
+% - compiler-generated constructor is always there
+% - it is implicitly invoked at the beginning of a user-defined constructor
+% - there is no default initialization
+% Currently
+% - compiler-generated constructor exists only if no user-defined constructors
+% - default initialization always happens before a constructor is invoked
+% - compiler-generated constructor initializes only the fields for which
+%   its invocation provides actual arguments
+%   (hence it is magic, unlike a function call)
+% 
+% The motivation for this refactoring is:
+% - give the reader a firm understanding that an object is zeroed-out
+%   before they can do anything with it, and
+% - eliminate compiler-generated constructor when there is a user-defined one
+% This leads us to the "unlike a function call" semantics here -
+% to avoid duplicate invocation of fields' default initializers
+% (which otherwise would happen once during the object's default initialization
+% and the second time upon invoking the compiler-generated constructor).
+% But overall I do not feel that this refactoring is a win, especially
+% because we now need to define the magic (and I am not sure presently
+% it is defined formally enough).
+% 
+% Higher-level remark: we may want to leave this as-is for now
+% in light of an upcoming discussion (and potential revision) of Chapel's
+% constructor story.
 
 \begin{example}
 Given the class
@@ -484,12 +531,12 @@ writeln((c1, c2, c3, c4, c5));
 ({x = 0, y = 3.14, z = Hello, World!}, {x = 2, y = 3.14, z = Hello, World!}, {x = 0, y = 3.14, z = }, {x = 2, y = 3.14, z = }, {x = 0, y = 0.0, z = })
 \end{chapeloutput}
 there are no user-defined constructors for \chpl{C}, so \chpl{new} operators
-will invoke \chpl{C}'s default constructor. The \chpl{x} argument
-of the default constructor has the default value \chpl{0}.
+will invoke \chpl{C}'s compiler-generated constructor. The \chpl{x} argument
+of the compiler-generated constructor has the default value \chpl{0}.
 The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
 \chpl{"Hello, World!"}, respectively.
 
-\chpl{C} instances can be created by calling the default constructor as follows:
+\chpl{C} instances can be created by calling the compiler-generated constructor as follows:
 \begin{itemize}
 \item The call \chpl{new C()} is equivalent to \chpl{C(0,3.14,"Hello, World!")}.
 \item The call \chpl{new C(2)} is equivalent to \chpl{C(2,3.14,"Hello, World!")}.
@@ -499,15 +546,74 @@ The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
 \end{itemize}
 \end{example}
 
+\section{Field Accesses}
+\label{Class_Field_Accesses}
+\index{classes!field access}
+\index{field access}
+
+The field in a class is accessed via a field access expression.
+
+\begin{syntax}
+field-access-expression:
+  receiver-clause[OPT] identifier
+
+receiver-clause:
+  expression .
+\end{syntax}
+
+\index{classes!receiver}
+\index{receiver}
+% TODO: these are the rules to determine the receiver - move them
+% to a separate section so they can be uniformly referenced from everywhere.
+The receiver-clause specifies the \emph{receiver}, which is the class
+instance whose field is being accessed.
+The receiver clause can be omitted when the field access is within a method.
+In this case the receiver is the method's receiver \rsec{The_em_this_Reference}.
+The receiver clause can also be omitted when the field access is within
+a class declaration. In this case the receiver is the instance
+being implicitly defined or referenced.
+
+The identifier in the field access expression indicates which field is accessed.
+
+% TODO: rephrase all this in terms of the getter methods
+
+A fields can
+be modified via an assignment statement where the left-hand side of
+the assignment is a field access expression.
+Accessing a parameter field returns a parameter.
+
+\begin{example}
+Given a variable \chpl{anActor} of type \chpl{Actor} as defined above,
+the code
+\begin{chapelpre}
+% useActor1.chpl
+use defineActor;
+var anActor = new Actor(name="Tommy", age=26);
+\end{chapelpre}
+\begin{chapel}
+var s: string = anActor.name;
+anActor.age = 27;
+\end{chapel}
+\begin{chapelpost}
+writeln((s, anActor));
+\end{chapelpost}
+\begin{chapeloutput}
+(Tommy, {name = Tommy, age = 27})
+\end{chapeloutput}
+reads the field \chpl{name} and assigns the value to the variable
+\chpl{s}, and assigns the field \chpl{age} in the object
+\chpl{anActor} the value \chpl{27}.
+\end{example}
+
 \subsection{Variable Getter Methods}
 \label{Getter_Methods}
-\index{classes!getters}
-\index{classes!setters}
+\index{classes!getter method}
+\index{getter method}
 
 All field accesses are resolved via getters that are variable
 methods~(\rsec{Variable_Functions}) defined in the class with the same
 name as the field.  The default getter is defined to simply return the
-field if the user does not define their own.
+field if the user does not redefine it.
 
 \begin{example}
 In the code
@@ -518,7 +624,7 @@ In the code
 class C {
   var setCount: int;
   var x: int;
-  def x var {
+  proc x var {
     if setter then
       setCount += 1;
     return x;
@@ -546,104 +652,189 @@ returns the field \chpl{x} and increments another field that records
 the number of times x was assigned a value.
 \end{example}
 
-\subsection{Inheritance}
-\label{Inheritance}
-\index{inheritance}
-\index{classes!inheritance}
+\section{Class Method Calls}
+\label{Class_Method_Calls}
+\index{classes!method calls}
+\index{method calls}
 
-A ``derived'' class can inherit from one or more other classes by
-specifying those classes, the base classes, following the name of the
-derived class in the declaration of the derived class.  When
-inheriting from multiple base classes, only one of the base classes
-may contain fields.  The other classes can only define methods.  Note
-that a class can still be derived from a class that contains fields
-which is itself derived from a class that contains fields.
-\subsubsection{The object Class}
-\label{The_object_Class}
+A method is invoked with a method call, which is similar to a non-method
+call expression.
 
-All classes are derived from the \chpl{object} class either directly, or
-through the classes they are derived from. A variable of type \chpl{object}
-can hold a reference to an object of any class type. 
+\begin{syntax}
+method-call-expression:
+  receiver-clause[OPT] expression ( named-expression-list )
+  receiver-clause[OPT] expression [ named-expression-list ]
+  receiver-clause[OPT] parenthesesless-function-identifier
+\end{syntax}
 
-\subsubsection{Accessing Base Class Fields}
-\label{Accessing_Base_Class_Fields}
+The receiver-clause (or its absence) specifies the method's receiver
+\rsec{The_em_this_Reference} in the same way it does for field accesses
+\rsec{Class_Field_Accesses}.
 
-A derived class contains data associated with the fields in its base
-classes.  The fields can be accessed in the same way that they are
-accessed in their base class unless the getter or setter method is
-overridden in the derived class, as discussed
-in~\rsec{Overriding_Base_Class_Methods}.
+\begin{example}
+A method to output information about an instance of the \chpl{Actor}
+class can be defined as follows:
+\begin{chapelpre}
+% defineMethod.chpl
+use useActor1;
+\end{chapelpre}
+\begin{chapel}
+proc Actor.print() {
+  writeln("Actor ", name, " is ", age, " years old");
+}
+\end{chapel}
+\begin{chapelpost}
+anActor.print();
+\end{chapelpost}
+\begin{chapeloutput}
+(Tommy, {name = Tommy, age = 27})
+Actor Tommy is 27 years old
+\end{chapeloutput}
+This method can be called on an instance of the \chpl{Actor}
+class, \chpl{anActor}, with the call expression \chpl{anActor.print()}.
+\end{example}
 
-\subsubsection{Derived Class Constructors}
-\label{Derived_Class_Constructors}
-\index{constructors!for derived classes}
+The actual arguments supplied in the method call are bound to the
+formal arguments in the method declaration following the rules specified for
+procedures (\rsec{Functions}). The exception is the receiver
+\rsec{The_em_this_Reference}.
 
-Derived class constructors automatically call the default constructor
-of the base class.  There is an expectation that a more standard way
-of chaining constructor calls will be supported.
+\subsection{The Method Receiver and the {\em this} Argument}
+\label{The_em_this_Reference}
+\index{this@\chpl{this}}
+\index{classes!receiver}
+\index{receiver}
 
-\subsubsection{Shadowing Base Class Fields}
-\label{Shadowing_Base_Class_Fields}
+A method's \emph{receiver} is its implicit argument, 
+the class instance on which the method is invoked.
+Its type is the class in which the method is defined.
+The receiver actual argument is specified
+by the receiver-clause of a method-call-expression
+as specified in \rsec{Class_Field_Accesses}.
+% TODO: specify how the receiver affects the choice of the method.
+The receiver formal argument can be referred to within the method
+using the identifier \chpl{this}.
 
-A field in the derived class can be declared with the same name as a
-field in the base class.  Such a field shadows the field in the base
-class in that it is always referenced when it is accessed in the
-context of the derived class.  There is an expectation that there will
-be a way to reference the field in the base class but this is not
-defined at this time.
+\begin{example}
+Let class \chpl{C}, method \chpl{foo}, and function \chpl{bar} be
+defined as
+\begin{chapelpre}
+% implicitThis.chpl
+\end{chapelpre}
+\begin{chapel}
+class C {
+  proc foo() {
+    bar(this);
+  }
+}
+proc bar(c: C) { writeln(c); }
+\end{chapel}
+\begin{chapelpost}
+var c1: C = new C();
+c1.foo();
+\end{chapelpost}
+\begin{chapeloutput}
+{}
+\end{chapeloutput}
+Then given an instance of \chpl{C} called \chpl{c1}, the method
+call \chpl{c1.foo()} results in a call to \chpl{bar} where the argument
+is \chpl{c1}.
+\end{example}
 
-\subsubsection{Overriding Base Class Methods}
-\label{Overriding_Base_Class_Methods}
-\index{dynamic dispatch}
+\section{The {\em this} Method}
+\label{The_em_this_Method}
+\index{this@\chpl{this}}
+\index{classes!indexing}
 
-If a method in a derived class is declared with the identical
-signature as a method in a base class, then it is said to override the
-base class's method.  Such a method is a candidate for dynamic
-dispatch in the event that a variable that has the base class type
-references a variable that has the derived class type.
+A procedure method declared with the name \chpl{this} allows a class to be
+``indexed'' similarly to how an array is indexed.  Indexing into a
+class has the semantics of calling a method on the class
+named \chpl{this}.  There is no other way to call a method
+called \chpl{this}.  The \chpl{this} method must be declared with
+parentheses even if the argument list is empty.
 
-The identical signature requires that the names, types, and order of
-the formal arguments be identical. The return type of the overriding
-method must be the same as the return type of the base class's method,
-or must be a subclass of the base class method's return type.
+\begin{example}
+In the following code, the \chpl{this} method is used to create a
+class that acts like a simple array that contains three integers
+indexed by 1, 2, and 3.
+\begin{chapelpre}
+% thisMethod.chpl
+\end{chapelpre}
+\begin{chapel}
+class ThreeArray {
+  var x1, x2, x3: int;
+  proc this(i: int) var {
+    select i {
+      when 1 do return x1;
+      when 2 do return x2;
+      when 3 do return x3;
+    }
+    halt("ThreeArray index out of bounds: ", i);
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+var ta = new ThreeArray();
+ta(1) = 1;
+ta(2) = 2;
+ta(3) = 3;
+for i in 1..3 do
+  writeln(ta(i));
+ta(4) = 4;
+\end{chapelpost}
+\begin{chapeloutput}
+1
+2
+3
+thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
+\end{chapeloutput}
+\end{example}
 
-Methods without parentheses are not candidates for dynamic dispatch.
-\begin{rationale}
-Methods without parentheses are primarily used for field accessors of
-which a default is created if none is specified.  The field accessor
-should not dynamically dispatch in general since that would make it
-impossible to access a base field within a base method should that
-field be shadowed by a subclass.
-\end{rationale}
+\section{The {\em these} Method}
+\label{The_these_Method}
+\index{these@\chpl{these}}
+\index{classes!iterating}
 
-\subsubsection{Inheriting from Multiple Classes}
-\label{Inheriting_from_Multiple_Classes}
-\index{multiple inheritance}
+An iterator method declared with the name \chpl{these} allows a class to be
+``iterated over'' similarly to how a domain or array is iterated over.
+Using a class in the context of a loop where
+an \sntx{iterator-expression} is expected has the semantics of calling
+a method on the class named \chpl{these}.
 
-A class can be derived from multiple base classes provided that only
-one of the base classes contains fields either directly or from base
-classes that it is derived from.  The methods defined by the other
-base classes can be overridden.
+\begin{example}
+In the following code, the \chpl{these} method is used to create a
+class that acts like a simple array that can be iterated over and
+contains three integers.
+\begin{chapelpre}
+% theseIterator.chpl
+\end{chapelpre}
+\begin{chapel}
+class ThreeArray {
+  var x1, x2, x3: int;
+  iter these() var {
+    yield x1;
+    yield x2;
+    yield x3;
+  }
+}
+\end{chapel}
+\begin{chapelpost}
+var ta = new ThreeArray();
+for (i, j) in (ta, 1..) do
+  i = j;
 
-\subsection{Nested Classes}
-\label{Nested_Classes}
-\index{classes!nested}
+for i in ta do
+  writeln(i);
+\end{chapelpost}
+\begin{chapeloutput}
+1
+2
+3
+\end{chapeloutput}
 
-A class defined within another class is a nested class.
+\end{example}
 
-Nested classes can refer to fields and methods in the outer class
-implicitly or explicitly with an \chpl{outer} reference.
-
-\subsection{The {\em nil} Value}
-\index{classes!nil}
-\index{nil@\chpl{nil}}
-
-Chapel provides \chpl{nil} to indicate the absence of a reference to
-any object.  \chpl{nil} can be assigned to a variable of any class
-type.  Invoking a class method or accessing a field of the \chpl{nil}
-value results in a run-time error.
-
-\subsection{Dynamic Memory Management}
+\section{Dynamic Memory Management}
 \label{Dynamic_Memory_Management}
 \label{Class_Delete}
 \index{memory management}

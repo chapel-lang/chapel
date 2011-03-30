@@ -49,7 +49,7 @@ config const printParams = true,
 //
 // The program entry point
 //
-def main() {
+proc main() {
   printConfiguration();
 
   //
@@ -89,7 +89,7 @@ def main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-def LUFactorize(n: indexType, Ab: [?AbD] elemType,
+proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
                 piv: [1..n] indexType) {
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
@@ -136,7 +136,7 @@ def LUFactorize(n: indexType, Ab: [?AbD] elemType,
     //
     // update trailing submatrix (if any)
     //
-    schurComplement(Ab, blk);
+    schurComplement(Ab, bl, tr, br);
   }
 }
 
@@ -150,11 +150,11 @@ def LUFactorize(n: indexType, Ab: [?AbD] elemType,
 //     |     |bbbbb|bbbbb|bbbbb|  The 'a' region is a block column, the
 //     +----[2]----+-----+-----+  'b' region is a block row.
 //     |aaaaa|.....|.....|.....|
-//     |aaaaa|.....|.....|.....|  The vertex labeled [1] is location
-//     |aaaaa|.....|.....|.....|  (ptOp, ptOp) in the code below.
-//     +-----+-----+-----+-----+
-//     |aaaaa|.....|.....|.....|  The vertex labeled [2] is location
-//     |aaaaa|.....|.....|.....|  (ptSol, ptSol)
+//     |aaaaa|.....|.....|.....|  The 'a' region was 'bl' in the calling
+//     |aaaaa|.....|.....|.....|  function but called AD here.  Similarly,
+//     +-----+-----+-----+-----+  'b' was 'tr' in the calling code, but BD
+//     |aaaaa|.....|.....|.....|  here.
+//     |aaaaa|.....|.....|.....|  
 //     |aaaaa|.....|.....|.....|
 //     +-----+-----+-----+-----+
 //
@@ -169,12 +169,7 @@ def LUFactorize(n: indexType, Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-def schurComplement(Ab: [?AbD] elemType, ptOp: indexType) {
-  //
-  // Calculate location of ptSol (see diagram above)
-  //
-  const ptSol = ptOp+blkSize;
-
+proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
   //
   // Copy data into replicated array so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.  These
@@ -182,24 +177,23 @@ def schurComplement(Ab: [?AbD] elemType, ptOp: indexType) {
   // they look something like the following:
   //
   //var replAbD: domain(2) 
-  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) 
-  //          = AbD[ptSol.., 1..#blkSize];
+  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) = AbD[AD];
   //
-  const replAD: domain(2, indexType) = AbD[ptSol.., ptOp..#blkSize],
-        replBD: domain(2, indexType) = AbD[ptOp..#blkSize, ptSol..];
+  const replAD: domain(2, indexType) = AD,
+        replBD: domain(2, indexType) = BD;
     
   const replA : [replAD] elemType = Ab[replAD],
         replB : [replBD] elemType = Ab[replBD];
 
   // do local matrix-multiply on a block-by-block basis
-  forall (row,col) in AbD[ptSol.., ptSol..] by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) {
     //
     // At this point, the dgemms should all be local, so assert that
     // fact
     //
     local {
-      const aBlkD = replAD[row..#blkSize, ptOp..#blkSize],
-            bBlkD = replBD[ptOp..#blkSize, col..#blkSize],
+      const aBlkD = replAD[row..#blkSize, ..],
+            bBlkD = replBD[.., col..#blkSize],
             cBlkD = AbD[row..#blkSize, col..#blkSize];
 
       dgemmNativeInds(replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
@@ -217,7 +211,7 @@ def schurComplement(Ab: [?AbD] elemType, ptOp: indexType) {
 //
 // calculate C = C - A * B.
 //
-def dgemmNativeInds(A: [] elemType,
+proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
                     C: [] elemType) {
   for (iA, iC) in (A.domain.dim(1), C.domain.dim(1)) do
@@ -226,7 +220,7 @@ def dgemmNativeInds(A: [] elemType,
         C[iC,jC] -= A[iA, jA] * B[iB, jB];
 }
 
-def dgemmReindexed(p: indexType,    // number of rows in A
+proc dgemmReindexed(p: indexType,    // number of rows in A
                    q: indexType,    // number of cols in A, number of rows in B
                    r: indexType,    // number of cols in B
                    A: [1..p, 1..q] elemType,
@@ -239,7 +233,7 @@ def dgemmReindexed(p: indexType,    // number of rows in A
         C[i,j] -= A[i, k] * B[k, j];
 }
 
-def dgemmIdeal(A: [1.., 1..] elemType,
+proc dgemmIdeal(A: [1.., 1..] elemType,
                B: [1.., 1..] elemType,
                C: [1.., 1..] elemType) {
   for i in C.domain.dim(1) do
@@ -253,7 +247,7 @@ def dgemmIdeal(A: [1.., 1..] elemType,
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-def panelSolve(Ab: [] elemType,
+proc panelSolve(Ab: [] elemType,
                panel: domain,
                piv: [] indexType) {
 
@@ -300,7 +294,7 @@ def panelSolve(Ab: [] elemType,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-def updateBlockRow(Ab: [] elemType,
+proc updateBlockRow(Ab: [] elemType,
                    tl: domain,
                    tr: domain) {
 
@@ -318,14 +312,14 @@ def updateBlockRow(Ab: [] elemType,
 //
 // compute the backwards substitution
 //
-def backwardSub(n: indexType,
+proc backwardSub(n: indexType,
                 A: [] elemType,
                 b: [?bd] elemType) {
   var x: [bd] elemType;
 
-  for i in bd by -1 {
+  // TODO: Really want a partial reduction here
+  for i in bd by -1 do
     x[i] = (b[i] - (+ reduce [j in i+1..bd.high] (A[i,j] * x[j]))) / A[i,i];
-  }
 
   return x;
 }
@@ -333,7 +327,7 @@ def backwardSub(n: indexType,
 //
 // print out the problem size and block size if requested
 //
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     if (printStats) then printLocalesTasks();
     printProblemSize(elemType, numMatrices, n, rank=2);
@@ -345,7 +339,7 @@ def printConfiguration() {
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-def initAB(Ab: [] elemType) {
+proc initAB(Ab: [] elemType) {
   fillRandom(Ab, seed);
   Ab = Ab * 2.0 - 1.0;
 }
@@ -353,7 +347,7 @@ def initAB(Ab: [] elemType) {
 //
 // calculate norms and residuals to verify the results
 //
-def verifyResults(Ab, MatrixSpace, x) {
+proc verifyResults(Ab, MatrixSpace, x) {
   var A => Ab[MatrixSpace],
       b => Ab[.., n+1];
 
@@ -382,7 +376,7 @@ def verifyResults(Ab, MatrixSpace, x) {
 //
 // print success/failure, the execution time and the Gflop/s value
 //
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
@@ -394,7 +388,7 @@ def printResults(successful, execTime) {
 //
 // simple matrix-vector multiplication, solve equation A*x-y
 //
-def gaxpyMinus(A: [?AD],
+proc gaxpyMinus(A: [?AD],
                x: [?xD],
                y: [?yD]) {
   var res: [yD] elemType;

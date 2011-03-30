@@ -1,0 +1,20 @@
+feature request: align operator
+
+This feature request argues that if ranges are to store an alignment
+(as suggested by other tests in this directory), then the user should
+be able to change the alignment via an operator like "align" which
+sets the new alignment.  I would say that the align operator should
+take any value of range.idxType as its argument.  There's an open
+question over whether the range would store the alignment (and print
+it) in its raw value or as a value in the range 0..#abs(stride) --
+i.e., in a somewhat normalized form.  The advantage of the normalized
+form is that it would be less likely not to wrap around in the
+presence of translate operators (for example).  The advantage of the
+non-normalized form is that it is more consistent with what we do for
+low/high values.  I think I'm currently leaning towards the
+unnormalized form, which surprises me a little.
+
+In this test, I've done obvious even/odd alignments as well as with
+positive and negative values that are outside of the 0..#abs(stride)
+range just to make sure that they work as well (and don't fall afoul
+of C % operator weirness in the negative case).

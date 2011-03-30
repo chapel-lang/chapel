@@ -1,4 +1,4 @@
-def main() {
+proc main() {
   var b     : volatile bool = false;
   var i     : volatile int = 1;
   var ui    : volatile uint = 2;

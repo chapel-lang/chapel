@@ -1,12 +1,12 @@
-def foo(param i : int, param j : int) where i < j {
+proc foo(param i : int, param j : int) where i < j {
   writeln(i, " is less than ", j);
 }
 
-def foo(param i : int, param j : int) where i == j {
+proc foo(param i : int, param j : int) where i == j {
   writeln(i, " is equal to ", j);
 }
 
-def foo(param i : int, param j : int) where i > j {
+proc foo(param i : int, param j : int) where i > j {
   writeln(i, " is greater than ", j);
 }
 

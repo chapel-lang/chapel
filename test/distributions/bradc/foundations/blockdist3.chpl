@@ -59,11 +59,11 @@ for loc in localeD {
 }
 
 
-def mymin(type t): int {
+proc mymin(type t): int {
   return -999;
 }
 
 
-def mymax(type t): int {
+proc mymax(type t): int {
   return 999;
 }

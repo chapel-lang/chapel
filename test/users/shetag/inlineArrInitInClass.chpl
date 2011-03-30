@@ -4,7 +4,7 @@ class A {
     const arrA: [arrD] int = [i in arrD]i*2;
 }
 
-def main() {
+proc main() {
     const a = new A(6);
     writeln(a);
 }

@@ -6,7 +6,7 @@ class C {
   var d = new D();
 }
 
-def main {
+proc main {
   var c = new C();
   writeln(c);
   on Locales(1) {

@@ -19,20 +19,20 @@ module Rosslyn
 
         var hasBeenRun = false;
 
-        def runKernel() 
+        proc runKernel() 
         {
             assert(false,"runKernel() method not overridden in Benchmark ",
                    name," subclass");
         }
 
-        def validate() : bool
+        proc validate() : bool
         {
             writeln("WARNING: No validation code written, assuming run was valid");
             return true;
         }
 
         /* Time runKernel() method, return results in ms or given time unit*/
-        def timeKernel(units = TimeUnits.milliseconds) : real
+        proc timeKernel(units = TimeUnits.milliseconds) : real
         {
             assert(!hasBeenRun,"Benchmark instance has already been run, ",
                                "create new class instance");
@@ -55,7 +55,7 @@ module Rosslyn
     class BenchmarkFactory
     {   
         //abstract
-        def getInstance() : Benchmark
+        proc getInstance() : Benchmark
         {
             assert(false,"BenchmarkFactory.getInstance() should be",
                          "overridden in the subclass");
@@ -63,7 +63,7 @@ module Rosslyn
         }
 
 
-        def writeThis(w : Writer)
+        proc writeThis(w : Writer)
         {
             assert(false,"BenchmarkFactory.writeThis() should be",
                          "overridden in the subclass");
@@ -78,13 +78,13 @@ module Rosslyn
            
 
         /** Explicit form of default constructor */
-        def BenchmarkRunner(factory : BenchmarkFactory, repeats = 5 )
+        proc BenchmarkRunner(factory : BenchmarkFactory, repeats = 5 )
         {
             this.factory = factory;
             this.repeats = repeats;
         }
 
-        def runBenchmark()// : ResultSet
+        proc runBenchmark()// : ResultSet
         {
             var benchmark : Benchmark;
             writeln("Running benchmark: \"",factory,"\", ",repeats," runs");

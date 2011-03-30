@@ -1,15 +1,15 @@
-pragma "insert line file info" _extern def chpl_printMemTable(thresh);
-pragma "insert line file info" _extern def chpl_printMemStat();
-_extern def chpl_startVerboseMem();
-_extern def chpl_stopVerboseMem();
-_extern def chpl_startVerboseMemHere();
-_extern def chpl_stopVerboseMemHere();
-_extern def chpl_bytesPerLocale(): uint(64);
-pragma "insert line file info" _extern def chpl_memoryUsed(): uint(64);
+pragma "insert line file info" _extern proc chpl_printMemTable(thresh);
+pragma "insert line file info" _extern proc chpl_printMemStat();
+_extern proc chpl_startVerboseMem();
+_extern proc chpl_stopVerboseMem();
+_extern proc chpl_startVerboseMemHere();
+_extern proc chpl_stopVerboseMemHere();
+_extern proc chpl_bytesPerLocale(): uint(64);
+pragma "insert line file info" _extern proc chpl_memoryUsed(): uint(64);
 
 enum MemUnits {Bytes, KB, MB, GB};
 
-def locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
+proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
   var bytesInLocale: uint(64);
 
   on this do bytesInLocale = chpl_bytesPerLocale();
@@ -25,30 +25,30 @@ def locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
   return retVal;
 }
 
-def memoryUsed() {
+proc memoryUsed() {
   return chpl_memoryUsed();
 }
 
-def printMemTable(thresh=0) {
+proc printMemTable(thresh=0) {
   chpl_printMemTable(thresh);
 }
 
-def printMemStat() {
+proc printMemStat() {
   chpl_printMemStat();
 }
 
-def startVerboseMem() { 
+proc startVerboseMem() { 
   chpl_startVerboseMem();
 }
 
-def stopVerboseMem() {
+proc stopVerboseMem() {
   chpl_stopVerboseMem();
 }
 
-def startVerboseMemHere() {
+proc startVerboseMemHere() {
   chpl_startVerboseMemHere();
 }
 
-def stopVerboseMemHere() {
+proc stopVerboseMemHere() {
   chpl_stopVerboseMemHere();
 }

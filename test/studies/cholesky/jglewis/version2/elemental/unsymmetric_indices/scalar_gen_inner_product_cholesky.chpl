@@ -9,7 +9,7 @@ module scalar_gen_inner_product_cholesky {
   // matrix-vector product form.
   // =========================================================================
     
-  def scalar_gen_inner_product_cholesky ( A : [] ) 
+  proc scalar_gen_inner_product_cholesky ( A : [] ) 
 
     where ( A.domain.rank == 2 ) 
     {

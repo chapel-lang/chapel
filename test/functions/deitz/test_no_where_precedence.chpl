@@ -1,34 +1,34 @@
-def foo(A: []) where A.rank == 1 && A.eltType == 3*int {
+proc foo(A: []) where A.rank == 1 && A.eltType == 3*int {
   writeln("1");  
 }
 
-def foo(A: []) where A.rank == 2 && A.eltType == 2*int {
+proc foo(A: []) where A.rank == 2 && A.eltType == 2*int {
   writeln("2");  
 }
 
-def foo(A: []) where A.rank == 3 && A.eltType == int {
+proc foo(A: []) where A.rank == 3 && A.eltType == int {
   writeln("3");  
 }
 
-def foo(A: []) where !(A.rank == 1 && A.eltType == 3*int) &&
+proc foo(A: []) where !(A.rank == 1 && A.eltType == 3*int) &&
                      !(A.rank == 2 && A.eltType == 2*int) &&
                      !(A.rank == 3 && A.eltType == int) {
   writeln("4");
 }
 
-def bar(A: []) where A.rank == 1 && A.eltType == 3*int {
+proc bar(A: []) where A.rank == 1 && A.eltType == 3*int {
   writeln("1");  
 }
 
-def bar(A: []) where A.rank == 2 && A.eltType == 2*int {
+proc bar(A: []) where A.rank == 2 && A.eltType == 2*int {
   writeln("2");  
 }
 
-def bar(A: []) where A.rank == 3 && A.eltType == int {
+proc bar(A: []) where A.rank == 3 && A.eltType == int {
   writeln("3");  
 }
 
-def bar(A: []) {
+proc bar(A: []) {
   writeln("4");
 }
 

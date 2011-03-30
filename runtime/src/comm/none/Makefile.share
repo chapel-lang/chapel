@@ -1,5 +1,5 @@
 COMM_LAUNCHER_SRCS = \
-        comm-none_locales.c \
+        comm-none-locales.c \
 
 COMM_SRCS = \
 	$(COMM_LAUNCHER_SRCS) \

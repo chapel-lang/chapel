@@ -1,5 +1,5 @@
-def f(x: (?u,int)) { writeln("(?,int): ", x); }
-def f(x: (?v,real)) { writeln("(?,real): ", x); }
+proc f(x: (?u,int)) { writeln("(?,int): ", x); }
+proc f(x: (?v,real)) { writeln("(?,real): ", x); }
 
 f((1, 2));
 f((1.0, 2));

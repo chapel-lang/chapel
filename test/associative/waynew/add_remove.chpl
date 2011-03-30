@@ -17,6 +17,6 @@ intd.add(4);
 icheck(4);
 intd.remove(53);
 
-def icheck( i:int) {
+proc icheck( i:int) {
   writeln( "member(", i, ") = ", intd.member( i));
 }

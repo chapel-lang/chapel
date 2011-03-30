@@ -7,7 +7,7 @@ is known at compile-time and the compiler enforces that values
 assigned to the variable can be stored in that variable as specified
 by its type.
 
-\subsection{Variable Declarations}
+\section{Variable Declarations}
 \label{Variable_Declarations}
 \index{variables!declarations}
 
@@ -21,7 +21,7 @@ variable-kind: one of
 
 variable-declaration-list:
   variable-declaration
-  variable-declaration-list , variable-declaration
+  variable-declaration , variable-declaration-list
 
 variable-declaration:
   identifier-list type-part[OPT] initialization-part
@@ -35,10 +35,10 @@ initialization-part:
   = expression
 
 identifier-list:
-  identifier-list , tuple-grouped-identifier-list
-  identifier-list , identifier
-  tuple-grouped-identifier-list
   identifier
+  identifier , identifier-list
+  tuple-grouped-identifier-list
+  tuple-grouped-identifier-list , identifier-list
 
 tuple-grouped-identifier-list:
   ( identifier-list )
@@ -68,11 +68,11 @@ in~\rsec{Local_Type_Inference}.
 The \sntx{initialization-part} of a variable declaration specifies an
 initial expression to assign to the variable.  If
 the \sntx{initialization-part} is omitted, the variable is initialized
-to a default value described in~\rsec{Default_Initialization}.
+to a default value described in~\rsec{Default_Values_For_Types}.
 
 Multiple variables can be defined in the
 same \sntx{variable-declaration-list}.  The semantics of declaring
-multiple variables that share a \sntx{initialization-part}
+multiple variables that share an \sntx{initialization-part}
 and/or \sntx{type-part} is defined in~\rsec{Multiple_Variable_Declarations}.
 
 Multiple variables can be grouped together using a tuple notation as
@@ -81,9 +81,11 @@ described in~\rsec{Variable_Declarations_in_a_Tuple}.
 The \sntx{array-alias-declaration} is defined
 in~\rsec{Array_Aliases}.
 
-\subsubsection{Default Initialization}
-\label{Default_Initialization}
+\subsection{Default Initialization}
+\label{Default_Values_For_Types}
+\index{default initialization!variables}
 \index{variables!default initialization}
+\index{variables!default values}
 
 If a variable declaration has no initialization expression, a variable
 is initialized to the default value of its type.  The default values
@@ -103,7 +105,7 @@ are as follows:
 enums & first enum constant \\
 classes & {\tt nil} \\
 records & default constructed record \\
-ranges & {\tt 1..0} \\
+ranges & {\tt 1..0} $ $ $ $ (empty sequence) \\
 arrays & elements are default values \\
 tuples & components are default values \\
 sync/single & base default value and \emph{empty} status \\
@@ -112,12 +114,26 @@ sync/single & base default value and \emph{empty} status \\
 \end{center}
 
 \begin{openissue}
+In the case that the first enumerator in an enumeration type is offset
+from zero, as in
+\begin{example}
+enum foo \{ red = 0xff0000, green = 0xff00, blue = 0xff \} ;
+\end{example}
+the compiler has to look up the first named type to see what to use as
+the default.  
+
+An alternative would be to specify that the default
+value is the enumerator whose underlying value is zero.  But that approach also
+has issues, since the default value does not conform to any named enumerator.
+\end{openissue}
+
+\begin{openissue}
 Array initialization is potentially time-consuming.  There is an
 expectation that there will be a way to declare an array that is
 explicitly left uninitialized in order to address this concern.
 \end{openissue}
 
-\subsubsection{Local Type Inference}
+\subsection{Local Type Inference}
 \label{Local_Type_Inference}
 \index{type inference}
 
@@ -138,7 +154,7 @@ of \chpl{e} results in a default read of this expression.  The type of
 the variable is thus equal to the base type of the sync or single
 expression.
 
-\subsubsection{Multiple Variable Declarations}
+\subsection{Multiple Variable Declarations}
 \label{Multiple_Variable_Declarations}
 
 All variables defined in the same \sntx{identifier-list} are defined
@@ -148,7 +164,7 @@ initialization expression are evaluated only once.
 \begin{example}
 In the declaration
 \begin{chapel}
-def g() { writeln("side effect"); return "a string"; }
+proc g() { writeln("side effect"); return "a string"; }
 var a, b = 1.0, c, d:int, e, f = g();
 \end{chapel}
 variables \chpl{a} and \chpl{b} are of type \chpl{real} with
@@ -204,9 +220,9 @@ var v1: t = e; var v2: v1.type = readXX(v1); var v3: v1.type = readXX(v1);
 \end{chapel}
 where the function \chpl{readXX} is defined as follows:
 \begin{chapel}
-def readXX(x: sync) return x.readXX();
-def readXX(x: single) return x.readXX();
-def readXX(x) return x;
+proc readXX(x: sync) return x.readXX();
+proc readXX(x: single) return x.readXX();
+proc readXX(x) return x;
 \end{chapel}
 Note that the \chpl{readXX} function cannot be called directly by a
 Chapel programmer and that adding an additional overload or shadowing
@@ -226,7 +242,7 @@ to avoid unintentional changes to their \emph{full}/\emph{empty}
 state.
 \end{rationale}
 
-\subsection{Global Variables}
+\section{Global Variables}
 \label{Global_Variables}
 \index{variables!global}
 
@@ -236,7 +252,7 @@ variables can be accessed anywhere within that module after the
 declaration of that variable.  They can also be accessed in other
 modules that use that module.
 
-\subsection{Local Variables}
+\section{Local Variables}
 \label{Local_Variables}
 \index{variables!local}
 
@@ -254,14 +270,14 @@ types create storage that is not associated with any scope.  Such
 storage can be reclaimed as described
 in~\rsec{Dynamic_Memory_Management}.
 
-\subsection{Constants}
+\section{Constants}
 \label{Constants}
 
 Constants are divided into two categories: parameters, specified with
 the keyword \chpl{param}, are compile-time constants and constants,
 specified with the keyword \chpl{const}, are runtime constants.
 
-\subsubsection{Compile-Time Constants}
+\subsection{Compile-Time Constants}
 \label{Compile-Time_Constants}
 \index{constants!compile-time}
 \index{parameters}
@@ -285,7 +301,16 @@ Parameter expressions are restricted to the following constructs:
  and \verb@~@ on operands that are bool or integral parameter
  expressions.
 \item
+ Applications of the unary operators \verb@+@ and \verb@-@ on operands that are
+ real, imaginary or complex parameter
+ expressions.
+\item
  Applications of the binary operators \verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@%@, \verb@**@, \verb@&&@, \verb@||@, \verb@&@, \verb@|@, \verb@^@, \verb@<<@, \verb@>>@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, and \verb@>@ on operands that are bool or integral parameter expressions.
+\item
+\item
+ Applications of the binary
+ operators \verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@**@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@,
+ and \verb@>@ on operands that are real, imaginary or complex parameter expressions.
 \item
  Applications of the string concatenation operator \verb@+@, string comparison operators \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, \verb@>@, and the string length and ascii functions on parameter string expressions.
 \item
@@ -295,10 +320,14 @@ Parameter expressions are restricted to the following constructs:
  Call expressions of parameter functions.  See~\rsec{Parameter_Functions}.
 \end{itemize}
 
+\begin{openissue}
 There is an expectation that parameters will be expanded to more types
 and more operations.
+%REVIEW: hilde
+% Which ones did I miss?
+\end{openissue}
 
-\subsubsection{Runtime Constants}
+\subsection{Runtime Constants}
 \label{Runtime_Constants}
 \index{constants!runtime}
 \index{constants}
@@ -306,7 +335,7 @@ and more operations.
 
 Runtime constants, or simply ``constants'',
 do not have the restrictions that are associated with
-parameters.  Constants can be any type.  They require an initialization
+parameters.  Constants can be of any type.  They require an initialization
 expression and contain the value of that expression throughout their lifetime.
 
 A variable of a class type that is a constant is a constant reference.
@@ -314,7 +343,7 @@ That is, the variable always
 points to the object that it was initialized to reference.
 However, the fields of that object are allowed to be modified.
 
-\subsection{Configuration Variables}
+\section{Configuration Variables}
 \label{Configuration_Variables}
 \index{variables!configuration}
 \index{constants!configuration}
@@ -333,17 +362,21 @@ the initialization is alternatively set.
 
 \index{parameters!configuration}
 Configuration parameters are set at compilation time via compilation
-flags or other implementation dependent means.  The value passed via
+flags or other implementation-defined means.  The value passed via
 these means can be an arbitrary Chapel expression as long as the
-expression can be evaluated at compile-time.
+expression can be evaluated at compile-time.  If present, the value thus
+supplied overrides the default value appearing in the Chapel code.
+
 \begin{example}
-A configuration parameter can be set via a compiler flag.  For example,
+For example,
 \begin{chapel}
 config param rank = 2;
 \end{chapel}
 sets a integer parameter \chpl{rank} to \chpl{2}.  At
-compile-time, \chpl{rank} can be set via to \chpl{3} or \chpl{2*n}
-(assuming \chpl{n} is also a param variable) or any other expression
-that can be evaluated at compile-time.  This can be used to write
-rank-independent code.
+compile-time, \chpl{rank} can be set via a configuration file or compile-line
+override to \chpl{3} or \chpl{2*n}\footnote{It is assumed here that \chpl{n} is
+also a param variable.} or indeed to any other expression
+that can be evaluated at compile-time.  The value supplied at compile time
+overrides the value \chpl{2} appearing in the code.  In this example, the \chpl{rank}
+configuration variable can be used to write rank-independent code.
 \end{example}

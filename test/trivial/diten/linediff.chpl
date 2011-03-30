@@ -2,7 +2,7 @@
 config const s1 = "string 1";
 config const s2 = "string 2";
 
-def main(){
+proc main(){
   var temp_str = "";
   var l1 = (s1.length);
   var l2 = (s2.length);

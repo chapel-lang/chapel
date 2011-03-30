@@ -1,4 +1,4 @@
-def main {
+proc main {
   use MemAlloc, Memory;
   var m1, m2, m3: uint(64);
   var o: opaque;

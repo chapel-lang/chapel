@@ -1,7 +1,7 @@
 // Test record indefinite domain add/remove
 type T = (int, int);
 
-def _indefinite_hash( t: T) {
+proc _indefinite_hash( t: T) {
   return 0;
 }
 
@@ -25,6 +25,6 @@ intd.add((4,4));
 icheck(4);
 intd.remove((53, 0));
 
-def icheck( i:int) {
+proc icheck( i:int) {
   writeln( "member(", (i,i), ") = ", intd.member( (i,i)));
 }

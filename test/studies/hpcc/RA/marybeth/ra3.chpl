@@ -33,7 +33,7 @@ const UpdateDomain: domain(2) = [0..#numStreams,0..#bigStep];
 var realTime:real;
 var GUPs:real;
 
-def main() {
+proc main() {
 
   use Time;
   var t:Timer;
@@ -59,7 +59,7 @@ def main() {
 
 }
 
-def randomAccessUpdate() {
+proc randomAccessUpdate() {
  
   [i in TableDomain] Table(i) = i;
   var lock: sync bool = true;
@@ -78,7 +78,7 @@ def randomAccessUpdate() {
   }
 }
 
-def randomStart(step0:int):uint(64) {
+proc randomStart(step0:int):uint(64) {
 
   var i:int;
   var ran:uint(64) = 2;
@@ -101,7 +101,7 @@ def randomStart(step0:int):uint(64) {
   return ran;
 }
 
-def initRandomSteps() {
+proc initRandomSteps() {
   
   var temp:uint(64) = 1;
 
@@ -112,7 +112,7 @@ def initRandomSteps() {
   }
 }
 
-def verifyResults() {
+proc verifyResults() {
 
   var temp: uint(64) = 1;  
   for i in UpdateDomain {
@@ -136,7 +136,7 @@ def verifyResults() {
   }
 }
 
-def writeRAdata() {
+proc writeRAdata() {
 
   writeln("Main table size = 2^",logTableSize," = ",tableSize," words");
   writeln("Number of updates = ",numUpdates);
@@ -146,7 +146,7 @@ def writeRAdata() {
   writeln();
 }
 
-def writeRAresults() {
+proc writeRAresults() {
 
   writeln("Real time used = ", realTime, " seconds");
   writeln(GUPs, " Billion(10^9) Updates    per second [GUP/s]");

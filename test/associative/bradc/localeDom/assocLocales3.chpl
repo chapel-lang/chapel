@@ -15,7 +15,7 @@ class C {
 
   var A: [D] LocC(idxType);
 
-  def initialize() {
+  proc initialize() {
     for (loc, locid) in (targetLocs, 0..) do
       on loc do
         A(loc) = new LocC(idxType);

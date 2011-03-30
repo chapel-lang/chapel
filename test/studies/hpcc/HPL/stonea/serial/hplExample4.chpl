@@ -22,7 +22,7 @@ config const blksVert  : int = ceil(n:real/blkSize:real):int;
 
 
 // calculate C = C - A * B.
-def dgemm(
+proc dgemm(
     p : int,    // number of rows in A
     q : int,    // number of cols in A, number of rows in B
     r : int,    // number of cols in B
@@ -62,7 +62,7 @@ def dgemm(
 // locale in the dotted region to perform the necessary matrix multiply it will
 // need a copy of the block in the 'a' region in the same block-row and a copy
 // of the block in the 'b' region in the same block-column.
-def luLikeMultiply(
+proc luLikeMultiply(
     A         : [1..n, 1..n+1] real,
     blk       : int)
 {
@@ -122,7 +122,7 @@ def luLikeMultiply(
 
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
-def panelSolve(
+proc panelSolve(
     A : [] ?t,
     panel : domain(2),
     piv : [] int)
@@ -171,7 +171,7 @@ def panelSolve(
 // LU decomposition.  Each step of the LU decomposition will solve a block
 // (tl for top-left) portion of a matrix. This function solves the rows to the
 // right of the block.
-def updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
+proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 {
     var tlRows = tl.dim(1);
     var tlCols = tl.dim(2);
@@ -191,7 +191,7 @@ def updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 
 // blocked LU factorization with pivoting for matrix augmented with vector of
 // RHS values.
-def LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
+proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
     const AD = A.domain;    // alias A.domain to save typing
 
     // Initialize the pivot vector to represent the initially unpivoted matrix.
@@ -245,7 +245,7 @@ def LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
 //   TESTING SYSTEM:
 // -------------------------------------------------------------------------- 
 // matrix-vector multiplication, solve equation A*x-y
-def gaxpyMinus(
+proc gaxpyMinus(
     n : int,
     m : int,
     A : [1..n, 1..m],
@@ -267,7 +267,7 @@ def gaxpyMinus(
     return res;
 }
 
-def backwardSub(
+proc backwardSub(
     n : int,
     A : [1..n, 1..n] real,
     b : [1..n] real)
@@ -287,7 +287,7 @@ def backwardSub(
     return x;
 }
 
-def test_LUFactorizeNorms(
+proc test_LUFactorizeNorms(
     n    : int,
     A    : [1..n, 1..n] real,
     b    : [1..n] real,
@@ -320,7 +320,7 @@ def test_LUFactorizeNorms(
     return max(resid1, resid2, resid3) < 16.0;
 }
 
-def test_LUFactorize(rprt = true) : bool {
+proc test_LUFactorize(rprt = true) : bool {
     // construct a 100x100 matrix filled with random values
     var rand = new RandomStream(seed);
     var A : [1..n, 1..n+1] real;
@@ -359,7 +359,7 @@ def test_LUFactorize(rprt = true) : bool {
     }
 }
 
-def main() {
+proc main() {
     var numPassed = 0;
     write("test_LUFactorize: ");
     for i in 1..trials do

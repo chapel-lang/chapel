@@ -19,7 +19,7 @@ record chpl_TableEntry {
   var idx: idxType;
 }
 
-def chpl__primes return (23, 53, 97, 193, 389, 769, 1543,
+proc chpl__primes return (23, 53, 97, 193, 389, 769, 1543,
                          3079, 6151, 12289, 24593, 49157, 98317, 196613,
                          393241, 786433, 1572869, 3145739, 6291469, 12582917, 25165843,
                          50331653, 100663319, 201326611, 402653189, 805306457, 1610612741);
@@ -40,21 +40,22 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   //       replace with a named constant/param?
   var postponeResize = false;
 
-  def linksDistribution() param return false;
+  proc linksDistribution() param return false;
+  proc dsiLinksDistribution()     return false;
 
-  def DefaultAssociativeDom(type idxType, dist: DefaultDist) {
+  proc DefaultAssociativeDom(type idxType, dist: DefaultDist) {
     this.dist = dist;
   }
 
   //
   // Standard Internal Domain Interface
   //
-  def dsiBuildArray(type eltType) {
+  proc dsiBuildArray(type eltType) {
     return new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
                                      dom=this); 
   }
 
-  def dsiSerialWrite(f: Writer) {
+  proc dsiSerialWrite(f: Writer) {
     var first = true;
     f.write("[");
     for idx in this {
@@ -72,11 +73,11 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   //
 
   pragma "inline"
-  def dsiNumIndices {
+  proc dsiNumIndices {
     return numEntries;
   }
 
-  def dsiIndsIterSafeForRemoving() {
+  iter dsiIndsIterSafeForRemoving() {
     postponeResize = true;
     for i in this.these() do
       yield i;
@@ -86,7 +87,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     }
   }
 
-  def these() {
+  iter these() {
     if !_isEnumeratedType(idxType) {
       for slot in _fullSlots() {
         yield table(slot).idx;
@@ -100,7 +101,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     }
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultAssoc then
       writeln("*** In domain leader code:");
     const numTasks = if dataParTasksPerLocale==0 then here.numCores
@@ -144,7 +145,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     }
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     var (chunk, followerDom) = follower;
     if followerDom != this {
       // check to see if domains match
@@ -172,18 +173,18 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   //
   // Associative Domain Interface
   //
-  def dsiClear() {
+  proc dsiClear() {
     for slot in tableDom {
       table(slot).status = chpl__hash_status.empty;
     }
     numEntries = 0;
   }
 
-  def dsiMember(idx: idxType): bool {
+  proc dsiMember(idx: idxType): bool {
     return _findFilledSlot(idx)(1);
   }
 
-  def dsiAdd(idx: idxType): index(tableDom) {
+  proc dsiAdd(idx: idxType): index(tableDom) {
     if ((numEntries+1)*2 > tableSize) {
       _resize(grow=true);
     }
@@ -202,7 +203,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     return slotNum;
   }
 
-  def dsiRemove(idx: idxType) {
+  proc dsiRemove(idx: idxType) {
     const (foundSlot, slotNum) = _findFilledSlot(idx);
     if (foundSlot) {
       for a in _arrs do
@@ -217,7 +218,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     }
   }
 
-  def dsiSorted() {
+  iter dsiSorted() {
     var tableCopy: [0..#numEntries] idxType;
 
     for (tmp, slot) in (tableCopy.domain, _fullSlots()) do
@@ -232,7 +233,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   //
   // Internal interface (private)
   //
-  def _resize(grow:bool) {
+  proc _resize(grow:bool) {
     if postponeResize then return;
     // back up the arrays
     _backupArrays();
@@ -258,7 +259,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     _removeArrayBackups();
   }
 
-  def _findFilledSlot(idx: idxType, tab = table): (bool, index(tableDom)) {
+  proc _findFilledSlot(idx: idxType, tab = table): (bool, index(tableDom)) {
     for slotNum in _lookForSlots(idx, tab.domain.high+1) {
       const slotStatus = tab(slotNum).status;
       if (slotStatus == chpl__hash_status.empty) {
@@ -272,7 +273,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     return (false, -1);
   }
 
-  def _findEmptySlot(idx: idxType): (bool, index(tableDom)) {
+  proc _findEmptySlot(idx: idxType): (bool, index(tableDom)) {
     for slotNum in _lookForSlots(idx) {
       const slotStatus = table(slotNum).status;
       if (slotStatus == chpl__hash_status.empty ||
@@ -285,14 +286,14 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     return (false, -1);
   }
     
-  def _lookForSlots(idx: idxType, numSlots = tableSize) {
+  iter _lookForSlots(idx: idxType, numSlots = tableSize) {
     const baseSlot = chpl__defaultHashWrapper(idx);
     for probe in 0..numSlots/2 {
       yield (baseSlot + probe**2)%numSlots;
     }
   }
 
-  def _fullSlots(tab = table) {
+  iter _fullSlots(tab = table) {
     for slot in tab.domain {
       if tab(slot).status == chpl__hash_status.full then
         yield slot;
@@ -315,14 +316,14 @@ class DefaultAssociativeArr: BaseArr {
   // Standard internal array interface
   // 
 
-  def dsiGetBaseDom() return dom;
+  proc dsiGetBaseDom() return dom;
 
-  def clearEntry(idx: idxType) {
+  proc clearEntry(idx: idxType) {
     const initval: eltType;
     dsiAccess(idx) = initval;
   }
 
-  def dsiAccess(idx : idxType) var : eltType {
+  proc dsiAccess(idx : idxType) var : eltType {
     const (found, slotNum) = dom._findFilledSlot(idx);
     if (found) then
       return data(slotNum);
@@ -332,13 +333,13 @@ class DefaultAssociativeArr: BaseArr {
     }
   }
 
-  def these() var {
+  iter these() var {
     for slot in dom {
       yield dsiAccess(slot);
     }
   }
 
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     if debugDefaultAssoc then
       writeln("*** In array leader code:");
     const numTasks = if dataParTasksPerLocale==0 then here.numCores
@@ -382,7 +383,7 @@ class DefaultAssociativeArr: BaseArr {
     }
   }
 
-  def these(param tag: iterator, follower) var where tag == iterator.follower {
+  iter these(param tag: iterator, follower) var where tag == iterator.follower {
     var (chunk, followerDom) = follower;
     if followerDom != dom {
       // check to see if domains match
@@ -406,7 +407,7 @@ class DefaultAssociativeArr: BaseArr {
         yield data(slot);
   }
 
-  def dsiSerialWrite(f: Writer) {
+  proc dsiSerialWrite(f: Writer) {
     var first = true;
     for val in this {
       if (first) then
@@ -422,7 +423,7 @@ class DefaultAssociativeArr: BaseArr {
   // Associative array interface
   //
 
-  def dsiSorted() {
+  iter dsiSorted() {
     var tableCopy: [0..dom.dsiNumIndices-1] eltType;
     for (copy, slot) in (tableCopy.domain, dom._fullSlots()) do
       tableCopy(copy) = data(slot);
@@ -438,29 +439,29 @@ class DefaultAssociativeArr: BaseArr {
   // Internal associative array interface
   //
 
-  def _backupArray() {
+  proc _backupArray() {
     tmpDom = dom.tableDom;
     tmpTable = data;
   }
 
-  def _removeArrayBackup() {
+  proc _removeArrayBackup() {
     tmpDom = [0..-1:chpl_table_index_type];
   }
 
-  def _preserveArrayElement(oldslot, newslot) {
+  proc _preserveArrayElement(oldslot, newslot) {
     data(newslot) = tmpTable(oldslot);
   }
 }
 
 
-def chpl__defaultHashWrapper(x): chpl_table_index_type {
+proc chpl__defaultHashWrapper(x): chpl_table_index_type {
   const hash = chpl__defaultHash(x); 
   return (hash & max(chpl_table_index_type)): chpl_table_index_type;
 }
 
 
 // Thomas Wang's 64b mix function from http://www.concentric.net/~Ttwang/tech/inthash.htm
-def _gen_key(i: int(64)): int(64) {
+proc _gen_key(i: int(64)): int(64) {
   var key = i;
   key += ~(key << 32);
   key = key ^ (key >> 22);
@@ -474,7 +475,7 @@ def _gen_key(i: int(64)): int(64) {
 }
 
 pragma "inline"
-def chpl__defaultHash(b: bool): int(64) {
+proc chpl__defaultHash(b: bool): int(64) {
   if (b) then
     return 0;
   else
@@ -482,33 +483,33 @@ def chpl__defaultHash(b: bool): int(64) {
 }
 
 pragma "inline"
-def chpl__defaultHash(i: int(64)): int(64) {
+proc chpl__defaultHash(i: int(64)): int(64) {
   return _gen_key(i);
 }
 
 pragma "inline"
-def chpl__defaultHash(u: uint(64)): int(64) {
+proc chpl__defaultHash(u: uint(64)): int(64) {
   return _gen_key(u:int(64));
 }
 
 pragma "inline"
-def chpl__defaultHash(f: real): int(64) {
+proc chpl__defaultHash(f: real): int(64) {
   return _gen_key(__primitive( "real2int", f));
 }
 
 pragma "inline"
-def chpl__defaultHash(c: complex): int(64) {
+proc chpl__defaultHash(c: complex): int(64) {
   return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im)); 
 }
 
 pragma "inline"
-def chpl__defaultHash(u: chpl_taskID_t): int(64) {
+proc chpl__defaultHash(u: chpl_taskID_t): int(64) {
   return _gen_key(u:int(64));
 }
 
 // Use djb2 (Dan Bernstein in comp.lang.c.
 pragma "inline"
-def chpl__defaultHash(x : string): int(64) {
+proc chpl__defaultHash(x : string): int(64) {
   var hash: int(64) = 0;
   for c in 1..(x.length) {
     hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
@@ -517,6 +518,6 @@ def chpl__defaultHash(x : string): int(64) {
 }
 
 pragma "inline"
-def chpl__defaultHash(o: object): int(64) {
+proc chpl__defaultHash(o: object): int(64) {
   return _gen_key(__primitive( "object2int", o));
 }

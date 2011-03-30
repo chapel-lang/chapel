@@ -1,14 +1,14 @@
 class A {
   var n = 0;
   
-  def these() {
+  iter these() {
     for i in 1..n do
       yield i;
   }
 }
 
 class B:A {
-  def these() {
+  iter these() {
     for i in 1..n by -1 do
       yield i;
   }

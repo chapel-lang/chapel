@@ -1,21 +1,21 @@
-def output(xs ...?n) {
+proc output(xs ...?n) {
   for param i in 1..n do
     foutput(xs(i));
 }
 
-def foutput(x : int) {
+proc foutput(x : int) {
   writeln("output int ", x);
 }
 
-def foutput(x : real) {
+proc foutput(x : real) {
   writeln("output real ", x);
 }
 
-def foutput(x : string) {
+proc foutput(x : string) {
   writeln("output string ", x);
 }
 
-def foutput(x : bool) {
+proc foutput(x : bool) {
   writeln("output bool ", x);
 }
 

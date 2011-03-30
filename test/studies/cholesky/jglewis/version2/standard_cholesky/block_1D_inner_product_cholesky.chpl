@@ -47,7 +47,7 @@ module block_1D_inner_product_cholesky  {
       matrix_matrix_multiply_inner_product;
       
 
-  def block_1D_inner_product_cholesky ( A : [] ) 
+  proc block_1D_inner_product_cholesky ( A : [] ) 
 
     where ( A.domain.rank == 2 ) 
     {

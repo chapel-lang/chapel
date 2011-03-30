@@ -6,11 +6,11 @@ class D: C {
   var y: int;
 }
 
-def C.foo(z: int = 2) {
+proc C.foo(z: int = 2) {
   writeln((this, z));
 }
 
-def D.foo(z: int = 3) {
+proc D.foo(z: int = 3) {
   writeln((this, z));
 }
 

@@ -6,7 +6,7 @@ var stackdom = [0..#depth];
 
 var x: [stackdom] mpz_t;
 
-def main() {
+proc main() {
   mpz_init(x[0]);
   mpz_set_ui(x[0], 123);
 

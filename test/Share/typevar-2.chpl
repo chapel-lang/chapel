@@ -1,7 +1,7 @@
 class Subgraph {
   type wtype;
   var x : wtype;
-  def Subgraph(y : int) : x(y) {
+  proc Subgraph(y : int) : x(y) {
   }
 }
 

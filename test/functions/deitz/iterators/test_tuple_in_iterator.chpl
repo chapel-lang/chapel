@@ -1,4 +1,4 @@
-def foo() {
+iter foo() {
   var c: 2*int;
   while c(2) < 3 {
     //c = c;

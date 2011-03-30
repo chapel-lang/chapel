@@ -1,16 +1,16 @@
 module M1 {
 
   module M2 {
-    def main() {
+    proc main() {
       foo();
     }
   }
 
-  def foo() {
+  proc foo() {
     M2();
   }
 }
 
-def M2() {
+proc M2() {
   writeln("this should be shadowed");
 }

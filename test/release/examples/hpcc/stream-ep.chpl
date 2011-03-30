@@ -72,7 +72,7 @@ config const printParams = true,
 //
 // The program entry point
 //
-def main() {
+proc main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
   //
@@ -146,7 +146,7 @@ def main() {
 //
 // Print the problem size and number of trials
 //
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) {
     //
     // *** Here we multiply m by the number of locales so that we can
@@ -171,7 +171,7 @@ def printConfiguration() {
 //
 // Initialize vectors B and C using a random stream of values
 //
-def initVectors(B, C) {
+proc initVectors(B, C) {
   var randlist = new RandomStream(seed);
 
   randlist.fillRandom(B);
@@ -183,7 +183,7 @@ def initVectors(B, C) {
 //
 // Verify that the computation is correct
 //
-def verifyResults(A, B, C) {
+proc verifyResults(A, B, C) {
 
   //
   // recompute the computation, destructively storing into B to save space
@@ -207,7 +207,7 @@ def verifyResults(A, B, C) {
 // *** Here we report maximum, average, and minimum times instead of
 // *** total, average, and minimum.
 //
-def printResults(successful, minTimes) {
+proc printResults(successful, minTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     const maxTime = max reduce minTimes,

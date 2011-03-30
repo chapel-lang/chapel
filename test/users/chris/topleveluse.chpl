@@ -1,7 +1,7 @@
 use Time;
 
 module b {
-  def main() {
+  proc main() {
     writeln("But the code runs anyway!");
   }
 }

@@ -1,4 +1,4 @@
-def zero(A : [?D] real) {
+proc zero(A : [?D] real) {
   forall i in D {
     A(i) = 0;
   }

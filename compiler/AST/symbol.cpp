@@ -456,6 +456,9 @@ FnSymbol::FnSymbol(const char* initName) :
   substitutions.clear();
   gFnSymbols.add(this);
   formals.parent = this;
+  // ProcIter: remove this entire 'if'
+  if (markNewFnSymbolsWithProcIter)
+    this->addFlag(FLAG_PROC_ITER_KW_USED);
 }
 
 
@@ -502,6 +505,7 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 FnSymbol*
 FnSymbol::copyInner(SymbolMap* map) {
   FnSymbol* copy = new FnSymbol(name);
+  copy->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   if (hasFlag(FLAG_CONSTRUCTOR))
     copy->addFlag(FLAG_CONSTRUCTOR);
   for_formals(formal, this) {

@@ -22,7 +22,7 @@ record Planet {
 	var mass : real;
 }
 
-def advance(nbodies:int, B: [] Planet, dt: real) {
+proc advance(nbodies:int, B: [] Planet, dt: real) {
 	var b2 : Planet;
 
 	for (b1, i) in (B, 0..) do {
@@ -50,7 +50,7 @@ def advance(nbodies:int, B: [] Planet, dt: real) {
 	}
 }
 
-def energy(nbodies:int, B : [] Planet) : real {
+proc energy(nbodies:int, B : [] Planet) : real {
 	var b2 : Planet;
 	var e : real;
 
@@ -68,7 +68,7 @@ def energy(nbodies:int, B : [] Planet) : real {
 	return e;
 }
 
-def offset_momentum(nbodies:int, B : [] Planet) {
+proc offset_momentum(nbodies:int, B : [] Planet) {
 	var px,py,pz : real;
 	for b in B do {
 		px += b.vx * b.mass;
@@ -80,7 +80,7 @@ def offset_momentum(nbodies:int, B : [] Planet) {
 	B(0).vz = -pz / solar_mass;
 }
 
-def main() {
+proc main() {
 	if timer then
 		t.start();
 

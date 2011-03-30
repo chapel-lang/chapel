@@ -7,7 +7,7 @@ module torus_graph_generator_utilities {
   // iterated together in zipper fashion.
   // ----------------------------------------------------------------
 
-  def torus_random_edge_weights ( MAX_EDGE_WEIGHT : int, G ) {
+  proc torus_random_edge_weights ( MAX_EDGE_WEIGHT : int, G ) {
     use SSCA2_compilation_config_params, Random;
 
     var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 

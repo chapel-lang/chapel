@@ -24,7 +24,7 @@ module analyze_torus_graphs {
   // between a one-tuple and a simple scalar.
   // ========================================
 
-  def tuple_index (D: domain) type
+  proc tuple_index (D: domain) type
     return if D.rank == 1 then 1*index(D) else index(D);
 
 
@@ -59,7 +59,7 @@ module analyze_torus_graphs {
 
     type  vertex_tuple = tuple_index (vertex_domain);
 
-    def Neighbors (v_ : index (vertices) ){
+    iter Neighbors (v_ : index (vertices) ){
       const v = if vertex_domain.rank == 1 then tuple (v_) else v_;
       for s_ in torus_stencil do {
 	const s = if vertex_domain.rank == 1 then tuple (s_) else s_;
@@ -78,7 +78,7 @@ module analyze_torus_graphs {
     }
 
     var edge_weight : [vertex_domain] [torus_stencil] int;
-    def n_Neighbors (v : index (vertices) ) return 2*dimensions;
+    proc n_Neighbors (v : index (vertices) ) return 2*dimensions;
   }
 
 
@@ -87,7 +87,7 @@ module analyze_torus_graphs {
   // document and execute kernels 2, 3 and 4 of SSCA2
   // ========================================================
   
-  def generate_and_analyze_nD_torus ( const vertex_domain : domain, 
+  proc generate_and_analyze_nD_torus ( const vertex_domain : domain, 
                                       const dense_stencil : domain ) {
 
     // -----------------
@@ -144,7 +144,7 @@ module analyze_torus_graphs {
   // vertices, then execute Kernels 2, 3 and 4 of SSCA #2
   // ====================================================
 
-  def generate_and_analyze_1D_torus {
+  proc generate_and_analyze_1D_torus {
 
     const d = 2**SCALE;
 
@@ -177,7 +177,7 @@ module analyze_torus_graphs {
   // execute Kernels 2, 3 and 4 of SSCA #2
   // ==============================================
 
-  def generate_and_analyze_2D_torus {
+  proc generate_and_analyze_2D_torus {
 
     const lg2d1 : int = SCALE / 2,
           lg2d2 = SCALE - lg2d1,
@@ -224,7 +224,7 @@ module analyze_torus_graphs {
   // execute Kernels 2, 3 and 4 of SSCA #2
   // ===============================================
 	    
-  def generate_and_analyze_3D_torus {
+  proc generate_and_analyze_3D_torus {
 
     const lg2d1 : int = SCALE / 3,
           lg2d2 : int = lg2d1,
@@ -260,7 +260,7 @@ module analyze_torus_graphs {
   // 2^SCALE vertices, then execute Kernels 2, 3 and 4 of SSCA #2
   // ============================================================
 
-  def generate_and_analyze_4D_torus {
+  proc generate_and_analyze_4D_torus {
 
     const lg2d1 : int = SCALE / 4,
           lg2d2 : int = lg2d1,

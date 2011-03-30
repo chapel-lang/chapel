@@ -15,7 +15,7 @@ module M1 {
     var y: int;
   }
 
-  def main {
+  proc main {
     var c = new C();
     writeln(c);
   }

@@ -11,7 +11,7 @@ locales without explicitly partitioning them using Chapel's Domain
 Maps~(\rsec{Domain_Maps}).
 
 
-\subsection{Array Types}
+\section{Array Types}
 \label{Array_Types}
 \index{arrays!types}
 
@@ -22,10 +22,6 @@ given by the following syntax:
 \begin{syntax}
 array-type:
   [ domain-expression ] type-specifier
-
-domain-expression:
-  domain-literal
-  expression
 \end{syntax}
 The \sntx{domain-expression} must specify a domain that the array can
 be declared over.  This can be a domain literal.  If it is a domain
@@ -58,7 +54,7 @@ writeln(A);
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 \end{chapeloutput}
-\chpl{A} is declared to be an arithmetic array over arithmetic
+\chpl{A} is declared to be an arithmetic array over rectangular
 domain \chpl{D} with elements of type \chpl{real}.  As a result, it
 represents a 2-dimensional $10 \times 10$ real floating point
 variables indexed using the indices $(1, 1), (1, 2), \ldots, (1, 10),
@@ -95,7 +91,7 @@ real
 \end{chapeloutput}
 \end{example}
 
-\subsection{Array Values}
+\section{Array Values}
 \label{Array_Values}
 \index{arrays!values}
 \index{arrays!initialization}
@@ -135,7 +131,7 @@ writeln(A.domain);
 An array's default value is to have its elements all initialized to
 the default values for their types.
 
-\subsubsection{Runtime Representation of Array Values}
+\subsection{Runtime Representation of Array Values}
 \label{Array_Runtime_Representation}
 \index{arrays!runtime representation}
 \index{arrays!domain maps}
@@ -146,7 +142,7 @@ and control the runtime representation of an array's elements.  See
 ~\rsec{Domain_Maps} for more details.
 
 
-\subsection{Array Indexing}
+\section{Array Indexing}
 \label{Array_Indexing}
 \index{arrays!indexing}
 \index{indexing!arrays}
@@ -198,17 +194,17 @@ index set, the reference is considered out-of-bounds and a runtime
 error will occur, halting the program.
 
 
-\subsubsection{Arithmetic Array Indexing}
-\label{Arithmetic_Array_Indexing}
-\index{indexing!arithmetic arrays}
-\index{arithmetic arrays!indexing}
+\subsection{Rectangular Array Indexing}
+\label{Rectangular_Array_Indexing}
+\index{indexing!rectangular arrays}
+\index{rectangular arrays!indexing}
 
-Since the indices for multidimensional arithmetic domains are tuples,
-for convenience, arithmetic arrays can be indexed using the list of
+Since the indices for multidimensional rectangular domains are tuples,
+for convenience, rectangular arrays can be indexed using the list of
 integer values that make up the tuple index.  This is semantically
 equivalent to creating a tuple value out of the integer values and
 using that tuple value to index the array.  For symmetry,
-1-dimensional arithmetic arrays can be accessed using 1-tuple indices
+1-dimensional rectangular arrays can be accessed using 1-tuple indices
 even though their index type is an integral value.  This is
 semantically equivalent to de-tupling the integral value from the
 1-tuple and using it to index the array.
@@ -268,7 +264,7 @@ The code
 % index-using-var-arg-tuple.chpl
 \end{chapelpre}
 \begin{chapel}
-def f(A: [], is...)
+proc f(A: [], is...)
   return A(is);
 \end{chapel}
 \begin{chapelpost}
@@ -291,7 +287,7 @@ indexed into by 1-tuples.
 \end{example}
 
 
-\subsection{Iteration over Arrays}
+\section{Iteration over Arrays}
 \label{Iteration_over_Arrays}
 \index{arrays!iteration}
 \index{iteration!over arrays}
@@ -318,7 +314,7 @@ Thus, the iterator variable for an array traversal is a reference to
 the array element type.
 
 
-\subsection{Array Assignment}
+\section{Array Assignment}
 \label{Array_Assignment}
 \index{arrays!assignment}
 
@@ -426,7 +422,7 @@ writeln(A);
 \end{chapeloutput}
 
 
-\subsection{Array Slicing}
+\section{Array Slicing}
 \label{Array_Slicing}
 \index{arrays!slicing}
 \index{slicing!arrays}
@@ -495,29 +491,29 @@ assigns the elements in the interior of \chpl{B} to the elements in
 the interior of \chpl{A}.
 \end{example}
 
-\subsubsection{Arithmetic Array Slicing}
-\label{Arithmetic_Array_Slicing}
+\subsection{Rectangular Array Slicing}
+\label{Rectangular_Array_Slicing}
 \index{arrays!slice}
 
-An arithmetic array can be sliced by any arithmetic domain that is a
+a rectangular array can be sliced by any rectangular domain that is a
 subdomain of the array's defining domain.  If the subdomain
 relationship is not met, an out-of-bounds error will occur.  The
 result is a subarray whose indices are those of the slicing domain and
 whose elements are an alias of the original array's.
 
-Arithmetic arrays also support slicing by ranges directly.  If each
+Rectangular arrays also support slicing by ranges directly.  If each
 dimension is indexed by a range, this is equivalent to slicing the
-array by the arithmetic domain defined by those ranges.  These
+array by the rectangular domain defined by those ranges.  These
 range-based slices may also be expressed using partially unbounded or
 completely unbounded ranges.  This is equivalent to slicing the
 array's defining domain by the specified ranges to create a subdomain
-as described in~\rsec{Slicing} and then using that subdomain to slice
+as described in~\rsec{Array_Slicing} and then using that subdomain to slice
 the array.
 
-For multidimensional arithmetic arrays, slicing with a rank change is
+For multidimensional rectangular arrays, slicing with a rank change is
 supported by substituting integral values within a dimension's range
 for an actual range.  The resulting array will have a rank less than
-the arithmetic array's rank and equal to the number of ranges that are
+the rectangular array's rank and equal to the number of ranges that are
 passed in to take the slice.
 
 \begin{example}
@@ -544,7 +540,7 @@ are the first column of \chpl{A}.
 
 
 
-\subsection{Array Arguments to Functions}
+\section{Array Arguments to Functions}
 \label{Array_Arguments_To_Functions}
 \index{arrays!function arguments}
 
@@ -567,18 +563,18 @@ in~\rsec{Formal_Arguments_of_Generic_Array_Types}.
 If a non-queried domain is specified in the array type of a formal
 argument, the domain must match the domain of the actual argument.
 This is verified at runtime.  There is an exception if the domain is
-an arithmetic domain, described
-in~\rsec{Formal_Arguments_of_Arithmetic_Array_Type}.
+a rectangular domain, described
+in~\rsec{Formal_Arguments_of_Rectangular_Array_Type}.
 
 
-\subsubsection{Formal Arguments of Arithmetic Array Type}
-\label{Formal_Arguments_of_Arithmetic_Array_Type}
-\index{formal arguments!arithmetic arrays}
+\subsection{Formal Arguments of Rectangular Array Type}
+\label{Formal_Arguments_of_Rectangular_Array_Type}
+\index{formal arguments!rectangular arrays}
 \index{arrays!as formal arguments}
 
-Formal arguments of arithmetic array type allow an arithmetic domain
-to be specified that does not match the arithmetic domain of the
-actual arithmetic array that is passed to the formal argument.  In
+Formal arguments of rectangular array type allow a rectangular domain
+to be specified that does not match the rectangular domain of the
+actual rectangular array that is passed to the formal argument.  In
 this case, the shape (size in each dimension and rank) of the domain
 of the actual array must match the shape of the domain of the formal
 array.  The indices are translated in the formal array, which is a
@@ -591,7 +587,7 @@ In the code
 config const c = 55;
 \end{chapelpre}
 \begin{chapel}
-def foo(X: [1..5] int) { X = c; }
+proc foo(X: [1..5] int) { X = c; }
 var A: [1..10 by 2] int;
 foo(A);
 \end{chapel}
@@ -608,7 +604,7 @@ indexed by the integers between one and five.
 \end{example}
 
 
-\subsubsection{Array Promotion of Scalar Functions}
+\subsection{Array Promotion of Scalar Functions}
 \label{Array_Promotion_of_Scalar_Functions}
 \index{arrays!promotion}
 
@@ -650,7 +646,7 @@ and \chpl{C}.
 %
 
 
-\subsubsection{Array Aliases}
+\subsection{Array Aliases}
 \label{Array_Aliases}
 \index{=>@\chpl{=>}}
 
@@ -721,7 +717,7 @@ equivalent to \chpl{A(3,3)}.
 %
 
 
-\subsection{Sparse Arrays}
+\section{Sparse Arrays}
 \label{Sparse_Arrays}
 \index{arrays!sparse}
 
@@ -784,7 +780,7 @@ sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value i
 
 
 
-\subsection{Association of Arrays to Domains}
+\section{Association of Arrays to Domains}
 \label{Association_of_Arrays_to_Domains}
 \index{domains!association to arrays}
 \index{arrays!association to domains}
@@ -842,28 +838,28 @@ convenient syntax support a common, optimizable case seems prudent.
 \end{rationale}
 
 
-\subsection{Predefined Functions and Methods on Arrays}
+\section{Predefined Functions and Methods on Arrays}
 \index{arrays!predefined functions}
 
 There is an expectation that this list of predefined functions and
 methods will grow.
 
 \begin{protohead}
-def $Array$.eltType type
+proc $Array$.eltType type
 \end{protohead}
 \begin{protobody}
 Returns the element type of the array.
 \end{protobody}
 
 \begin{protohead}
-def $Array$.rank param
+proc $Array$.rank param
 \end{protohead}
 \begin{protobody}
 Returns the rank of the array.
 \end{protobody}
 
 \begin{protohead}
-def $Array$.domain: this.domain
+proc $Array$.domain: this.domain
 \end{protohead}
 \begin{protobody}
 Returns the domain of the given array.  This domain is constant,
@@ -872,14 +868,14 @@ field, only by modifying the domain directly.
 \end{protobody}
 
 \begin{protohead}
-def $Array$.numElements: this.domain.dim_type
+proc $Array$.numElements: this.domain.dim_type
 \end{protohead}
 \begin{protobody}
 Returns the number of elements in the array.
 \end{protobody}
 
 \begin{protohead}
-def reshape(A: $Array$, D: $Domain$): $Array$
+proc reshape(A: $Array$, D: $Domain$): $Array$
 \end{protohead}
 \begin{protobody}
 Returns a copy of the array containing the same values but in the

@@ -31,18 +31,40 @@ typedef struct {
 } thread_func_t;
 
 
-static pthread_attr_t thread_attributes;
+//
+// Types and variables for our list of threads.
+//
+typedef struct thread_list* thread_list_p;
+struct thread_list {
+  pthread_t     thread;
+  thread_list_p next;
+};
 
-static pthread_cond_t wakeup_cond = PTHREAD_COND_INITIALIZER;
-static pthread_key_t  thread_private_key;
+static chpl_bool       exiting = false;         // are we shutting down?
 
-static void            threadlayer_condvar_init(threadlayer_condvar_t*);
+static pthread_mutex_t thread_info_lock;        // mutual exclusion lock
+
+static int64_t         curr_thread_id = threadlayer_nullThreadID;
+
+static thread_list_p   thread_list_head = NULL; // head of thread_list
+static thread_list_p   thread_list_tail = NULL; // tail of thread_list
+
+static pthread_attr_t  thread_attributes;
+
+static pthread_key_t   thread_id_key;
+static pthread_key_t   thread_private_key;
+
+static int32_t         threadMaxThreadsPerLocale  = 0;
+static uint32_t        threadNumThreads           = 1;  // count main thread
+static pthread_mutex_t threadNumThreadsLock;
+
+static size_t          threadCallStackSize = 0;
+
+static void            (*saved_threadBeginFn)(void*);
+static void            (*saved_threadEndFn)(void);
+
 static void*           initial_pthread_func(void*);
-static void            destroy_thread_private_data(void*);
 static void*           pthread_func(void*);
-static void            pool_suspend_cancel_cleanup(void*);
-
-static uint64_t threadCallStackSize = 0;
 
 
 // Mutexes
@@ -75,109 +97,42 @@ void threadlayer_mutex_unlock(threadlayer_mutex_p mutex) {
 // Thread id
 
 threadlayer_threadID_t threadlayer_thread_id(void) {
-  return (threadlayer_threadID_t) pthread_self();
+  void* val = pthread_getspecific(thread_id_key);
+
+  if (val == NULL)
+    return threadlayer_nullThreadID;
+  return (threadlayer_threadID_t) (intptr_t) val;
 }
 
 
 // Thread yield
 
 void threadlayer_yield(void) {
+  int last_cancel_state;
+
+  //
+  // Yield the processor.  To support orderly shutdown, we check
+  // for cancellation once the thread regains the processor.
+  //
   sched_yield();
+
+  (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
+  pthread_testcancel();
+  (void) pthread_setcancelstate(last_cancel_state, NULL);
 }
-
-// Thread cancellation
-
-void threadlayer_thread_cancel(threadlayer_threadID_t thread) {
-  if (0 != pthread_cancel((pthread_t) thread)) {
-    chpl_internal_error("thread cancel failed");
-  }
-}    
-
-
-// Thread join (wait for completion)
-
-void threadlayer_thread_join(threadlayer_threadID_t thread) {
-  if (0 != pthread_join((pthread_t) thread, NULL)) {
-    chpl_internal_error("thread join failed");
-  }
-}    
-
-
-// Condition variables
-
-static void threadlayer_condvar_init(threadlayer_condvar_t* cv) {
-  if (pthread_cond_init((pthread_cond_t*) cv, NULL))
-    chpl_internal_error("pthread_cond_init() failed");
-}
-
-
-// Sync variable callbacks for the FIFO tasking layer
-
-chpl_bool threadlayer_sync_suspend(chpl_sync_aux_t *s,
-                                   struct timeval *deadline) {
-  threadlayer_condvar_t* cond;
-  cond = s->is_full ? &s->tl_aux.signal_empty : &s->tl_aux.signal_full;
-
-  if (deadline == NULL) {
-    (void) pthread_cond_wait(cond, (pthread_mutex_t*) &s->lock);
-    return false;
-  }
-  else {
-    struct timespec ts;
-    ts.tv_sec  = deadline->tv_sec;
-    ts.tv_nsec = deadline->tv_usec * 1000UL;
-    return (pthread_cond_timedwait(cond, (pthread_mutex_t*) &s->lock, &ts)
-            == ETIMEDOUT);
-  }
-}
-
-void threadlayer_sync_awaken(chpl_sync_aux_t *s) {
-  if (pthread_cond_signal(s->is_full ?
-                          &s->tl_aux.signal_full : &s->tl_aux.signal_empty))
-    chpl_internal_error("pthread_cond_signal() failed");
-}
-
-void threadlayer_sync_init(chpl_sync_aux_t *s) {
-  threadlayer_condvar_init(&s->tl_aux.signal_full);
-  threadlayer_condvar_init(&s->tl_aux.signal_empty);
-}
-
-void threadlayer_sync_destroy(chpl_sync_aux_t *s) { }
-
-// Single variable callbacks for the FIFO tasking layer
-
-chpl_bool threadlayer_single_suspend(chpl_single_aux_t *s,
-                                     struct timeval *deadline) {
-  if (deadline == NULL) {
-    (void) pthread_cond_wait(&s->tl_aux.signal_full,
-                             (pthread_mutex_t*) &s->lock);
-    return false;
-  }
-  else {
-    struct timespec ts;
-    ts.tv_sec  = deadline->tv_sec;
-    ts.tv_nsec = deadline->tv_usec * 1000UL;
-    return (pthread_cond_timedwait(&s->tl_aux.signal_full,
-                                   (pthread_mutex_t*) &s->lock, &ts)
-            == ETIMEDOUT);
-  }
-}
-
-void threadlayer_single_awaken(chpl_single_aux_t *s) {
-  if (pthread_cond_signal(&s->tl_aux.signal_full))
-    chpl_internal_error("pthread_cond_signal() failed");
-}
-
-void threadlayer_single_init(chpl_single_aux_t *s) {
-  threadlayer_condvar_init(&s->tl_aux.signal_full);
-}
-
-void threadlayer_single_destroy(chpl_single_aux_t *s) { }
 
 
 // Thread callbacks for the FIFO tasking layer
 
-void threadlayer_init(uint64_t callStackSize) {
+void threadlayer_init(int32_t maxThreadsPerLocale,
+                      uint64_t callStackSize,
+                      void(*threadBeginFn)(void*),
+                      void(*threadEndFn)(void)) {
+  //
+  // Tuck maxThreadsPerLocale away in a static global for use by other routines
+  //
+  threadMaxThreadsPerLocale = maxThreadsPerLocale;
+
   //
   // If a value was specified for the call stack size config const, use
   // that (rounded up to a whole number of pages) to set the system and
@@ -216,12 +171,25 @@ void threadlayer_init(uint64_t callStackSize) {
 
     if (pthread_attr_setstacksize(&thread_attributes, callStackSize) != 0)
       chpl_internal_error("pthread_attr_setstacksize() failed");
-
   }
-  threadCallStackSize = callStackSize;
 
-  if (pthread_key_create(&thread_private_key, destroy_thread_private_data))
-    chpl_internal_error("pthread_key_create failed");
+  if (pthread_attr_getstacksize(&thread_attributes, &threadCallStackSize) != 0)
+      chpl_internal_error("pthread_attr_getstacksize() failed");
+
+  saved_threadBeginFn = threadBeginFn;
+  saved_threadEndFn   = threadEndFn;
+
+  if (pthread_key_create(&thread_id_key, NULL))
+    chpl_internal_error("pthread_key_create(thread_id_key) failed");
+
+  if (pthread_setspecific(thread_id_key, (void*) (intptr_t) --curr_thread_id))
+    chpl_internal_error("thread id data key doesn't work");
+
+  if (pthread_key_create(&thread_private_key, NULL))
+    chpl_internal_error("pthread_key_create(thread_private_key) failed");
+
+  pthread_mutex_init(&thread_info_lock, NULL);
+  pthread_mutex_init(&threadNumThreadsLock, NULL);
 
   //
   // This is something of a hack, but it makes us a bit more resilient
@@ -254,85 +222,153 @@ static void* initial_pthread_func(void* ignore) {
   return NULL;
 }
 
-static void destroy_thread_private_data(void* p) {
-  if (p)
-    chpl_free(p, 0, 0);
-}
+void threadlayer_perPthreadInit(void) { }
 
 void threadlayer_exit(void) {
+  chpl_bool debug = false;
+  thread_list_p tlp;
+
+  pthread_mutex_lock(&thread_info_lock);
+  exiting = true;
+
+  // shut down all threads
+  for (tlp = thread_list_head; tlp != NULL; tlp = tlp->next) {
+    if (pthread_cancel(tlp->thread) != 0)
+      chpl_internal_error("thread cancel failed");
+  }
+
+  pthread_mutex_unlock(&thread_info_lock);
+
+  while (thread_list_head != NULL) {
+    if (pthread_join(thread_list_head->thread, NULL) != 0)
+      chpl_internal_error("thread join failed");
+    tlp = thread_list_head;
+    thread_list_head = thread_list_head->next;
+    chpl_free(tlp, 0, 0);
+  }
+
+  if (pthread_key_delete(thread_id_key) != 0)
+    chpl_internal_error("pthread_key_delete(thread_id_key) failed");
+
   if (pthread_key_delete(thread_private_key) != 0)
-    chpl_internal_error("pthread_key_delete() failed");
+    chpl_internal_error("pthread_key_delete(thread_private_key) failed");
 
   if (pthread_attr_destroy(&thread_attributes) != 0)
     chpl_internal_error("pthread_attr_destroy() failed");
+
+  if (debug)
+    fprintf(stderr, "A total of %u threads were created\n", threadNumThreads);
 }
 
-int threadlayer_thread_create(threadlayer_threadID_t* thread,
-                              void*(*fn)(void*), void* arg) {
-  thread_func_t* f;
+chpl_bool threadlayer_can_start_thread(void) {
+  return (threadMaxThreadsPerLocale == 0 ||
+          threadNumThreads < (uint32_t) threadMaxThreadsPerLocale);
+}
+
+int threadlayer_thread_create(void* arg)
+{
+  //
+  // An implementation note:
+  //
+  // It's important to keep the thread counter as accurate as possible,
+  // because it's used to throttle thread creation so that we don't go
+  // over the user's specified limit.  We could count the new thread
+  // when it starts executing, in pthread_func().  But if the kernel
+  // executed parent threads in preference to children, the resulting
+  // delay in updating the counter could cause us to create many more
+  // threads than the limit.  Or we could count them after creating
+  // them, here.  But if grabbing the mutex that protects the counter
+  // stalled the parent and led the kernel to schedule other threads,
+  // updates to the counter could again be delayed and too many threads
+  // created.  The solution adopted is to update the counter in the
+  // parent before creating the new thread, and then decrement it if
+  // thread creation fails.  The idea is that if the only thing that
+  // separates the counter update from the thread creation is a mutex
+  // unlock which won't cause the parent to be rescheduled, we maximize
+  // the likelihood that everyone will see accurate counter values.
+  //
+
   pthread_t pthread;
 
-  f = (thread_func_t*) chpl_alloc(sizeof(thread_func_t),
-                                  CHPL_RT_MD_THREAD_CALLEE, 0, 0);
-  f->fn  = fn;
-  f->arg = arg;
-  if (pthread_create(&pthread, &thread_attributes, pthread_func, f))
+  pthread_mutex_lock(&threadNumThreadsLock);
+  threadNumThreads++;
+  pthread_mutex_unlock(&threadNumThreadsLock);
+
+  if (pthread_create(&pthread, &thread_attributes, pthread_func, arg)) {
+    pthread_mutex_lock(&threadNumThreadsLock);
+    threadNumThreads--;
+    pthread_mutex_unlock(&threadNumThreadsLock);
+
     return -1;
-  if (thread != NULL)
-    *thread = (threadlayer_threadID_t) pthread;
+  }
+
   return 0;
 }
 
-static void* pthread_func(void* void_f) {
-  thread_func_t* f = (thread_func_t*) void_f;
-  void* (*fn)(void*) = f->fn;
-  void* arg = f->arg;
-
-  chpl_free(f, 0, 0);
+static void* pthread_func(void* arg) {
+  threadlayer_threadID_t my_thread_id;
+  thread_list_p          tlp;
 
   // disable cancellation immediately
   // enable only while waiting for new work
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); 
 
-  return (*(fn))(arg);
-}
+  // add us to the list of threads
+  tlp = (thread_list_p) chpl_alloc(sizeof(struct thread_list),
+                                   CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
 
-chpl_bool threadlayer_pool_suspend(threadlayer_mutex_p lock,
-                                   struct timeval *deadline) {
-  int last_cancel_state;
-  chpl_bool res;
+  tlp->thread = pthread_self();
+  tlp->next   = NULL;
 
-  // enable cancellation with cleanup handler before waiting for wakeup signal
-  pthread_cleanup_push(pool_suspend_cancel_cleanup, lock);
-  (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
-  assert(last_cancel_state == PTHREAD_CANCEL_DISABLE); // sanity check
+  pthread_mutex_lock(&thread_info_lock);
 
-  if (deadline == NULL) {
-    (void) pthread_cond_wait(&wakeup_cond, (pthread_mutex_t*) lock);
-    res = false;
+  if (exiting) {
+    pthread_mutex_unlock(&thread_info_lock);
+    chpl_free(tlp, 0, 0);
+    return NULL;
   }
+
+  my_thread_id = --curr_thread_id;
+
+  if (thread_list_head == NULL)
+    thread_list_head = tlp;
+  else
+    thread_list_tail->next = tlp;
+  thread_list_tail = tlp;
+
+  pthread_mutex_unlock(&thread_info_lock);
+
+  if (pthread_setspecific(thread_id_key, (void*) (intptr_t) my_thread_id))
+    chpl_internal_error("thread id data key doesn't work");
+
+  if (saved_threadEndFn == NULL)
+    (*saved_threadBeginFn)(arg);
   else {
-    struct timespec ts;
-    ts.tv_sec  = deadline->tv_sec;
-    ts.tv_nsec = deadline->tv_usec * 1000UL;
-    res = (pthread_cond_timedwait(&wakeup_cond, (pthread_mutex_t*) lock, &ts)
-           == ETIMEDOUT);
+    pthread_cleanup_push((void (*)(void*)) saved_threadEndFn, NULL);
+    (*saved_threadBeginFn)(arg);
+    pthread_cleanup_pop(0);
   }
 
-  // disable cancellation again
+  return NULL;
+}
+
+void threadlayer_thread_destroy(void) {
+  int last_cancel_state;
+
+  //
+  // Creating threads is expensive, so we don't destroy them once we
+  // have them.  Instead we just yield the processor.  Eventually, the
+  // thread will return to its caller, which is allowed behavior under
+  // the threadlayer API.
+  //
+  // To support orderly shutdown, we check for cancellation once the
+  // thread regains the processor.
+  //
+  sched_yield();
+
+  (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
+  pthread_testcancel();
   (void) pthread_setcancelstate(last_cancel_state, NULL);
-  pthread_cleanup_pop(0);
-
-  return res;
-}
-
-static void pool_suspend_cancel_cleanup(void* void_lock) {
-  threadlayer_mutex_unlock((threadlayer_mutex_p) void_lock);
-}
-
-void threadlayer_pool_awaken(void) {
-  if (pthread_cond_signal(&wakeup_cond))
-    chpl_internal_error("pthread_cond_signal() failed");
 }
 
 void* threadlayer_get_thread_private_data(void) {
@@ -344,6 +380,14 @@ void threadlayer_set_thread_private_data(void* p) {
     chpl_internal_error("thread private data key doesn't work");
 }
 
+uint32_t threadlayer_get_max_threads(void) {
+  return threadMaxThreadsPerLocale;
+}
+
+uint32_t threadlayer_get_num_threads(void) {
+  return threadNumThreads;
+}
+
 uint64_t threadlayer_call_stack_size(void) {
-  return threadCallStackSize;
+    return (uint64_t) threadCallStackSize;
 }

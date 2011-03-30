@@ -17,7 +17,7 @@ local {
   B.next = new C(B.a + 1);
 }
 
-def foo(c: C) {
+proc foo(c: C) {
   c.a = c.a - 3;
 }
 

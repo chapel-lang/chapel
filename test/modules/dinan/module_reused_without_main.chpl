@@ -1,5 +1,5 @@
 module test {
-  def getString() return "Hello World";
+  proc getString() return "Hello World";
 }
 
 use test;

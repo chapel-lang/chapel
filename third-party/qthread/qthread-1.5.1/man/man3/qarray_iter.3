@@ -1,0 +1,122 @@
+.TH qarray_iter 3 "MAY 2009" libqthread "libqthread"
+.SH NAME
+.BR qarray_iter " \- iterate through a distributed array"
+.SH SYNOPSIS
+.B #include <qthread/qarray.h>
+
+.I void
+.br
+.B qarray_iter
+.RI "(qthread_t *" me ", qarray *" a ", const size_t " startat ,
+.ti +13
+.RI "const size_t " stopat ", qthread_f " func );
+.PP
+.I void
+.br
+.B qarray_iter_loop
+.RI "(qthread_t *" me ", qarray *" a ", const size_t " startat ,
+.ti +18
+.RI "const size_t " stopat ", qa_loop_f " func ,
+.ti +18
+.RI "void *" arg );
+.PP
+.I void
+.br
+.B qarray_iter_constloop
+.RI "(qthread_t *" me ", qarray *" a ", const size_t " startat ,
+.ti +23
+.RI "const size_t " stopat ", qa_loop_f " func ,
+.ti +23
+.RI "void *" arg );
+.PP
+.I void
+.br
+.B qarray_iter_loopaccum
+.RI "(qthread_t *" me ", qarray *" a ", const size_t " startat ,
+.ti +23
+.RI "const size_t " stopat ", qa_loopr_f " func ,
+.ti +23
+.RI "void *" arg ", void *" ret ", const size_t " retsize ,
+.ti +23
+.RI "qt_accum_f " acc );
+.SH DESCRIPTION
+These functions iterate efficiently over the distributed arrays. The most basic
+and naive of the set is
+.BR qarray_iter (),
+which applies the
+.I func
+function to each element in the array, guaranteeing that the function will be
+executed near the specified data. The
+.I func
+function is a basic qthread function, of the following form:
+.RS
+.PP
+void
+.I func
+(qthread_t *me, void *arg);
+.RE
+.PP
+The 
+.I arg
+argument to the
+.I func
+function is a pointer to an array element.
+.PP
+The
+.BR qarray_iter_loop (), qarray_iter_constloop (),
+and
+.BR qarray_iter_loopaccum ()
+functions are more powerful iteration functions. They are largely identical, with the following distinctions:
+the
+.BR qarray_iter_constloop ()
+function forbids modifying the input qarray, and the
+.BR qarray_iter_loopaccum ()
+function requires an accumulator function,
+.IR acc ,
+and allows the calculation of an accumulated value similar to
+.BR qt_loopaccum_balance ().
+Both functions iterate over a range of values within the qarray, which is
+defined by the
+.I startat
+and
+.I stopat
+arguments. The
+.I func
+argument is expected to be a function of the following form:
+.RS
+.PP
+void 
+.I func
+(qthread_t *me, const size_t startat, const size_t stopat, qarray *array, void *arg)
+.br
+{
+.RS
+size_t i;
+.br
+for (i = 
+.IR startat ;
+i <
+.IR stopat ;
+i ++) {
+.RS
+/* do work */
+.RE
+}
+.RE
+}
+.RE
+.PP
+The function
+.I func
+is given a sub-range of the qarray to iterate over. The
+.I arg
+argument passed to the
+.I func
+function is the same argument as is passed to the
+.BR qarray_iter_loop ()
+argument.
+.SH SEE ALSO
+.BR qarray_create (3),
+.BR qarray_destroy (3),
+.BR qarray_shepof (3),
+.BR qarray_elem (3)

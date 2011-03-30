@@ -1,11 +1,11 @@
 
-def g(x) {
+proc g(x) {
  if (x > 19) then
    return x;
   return g(x + 1);
 }
 
-def f(x) {
+proc f(x) {
   return g(x);
 }
 

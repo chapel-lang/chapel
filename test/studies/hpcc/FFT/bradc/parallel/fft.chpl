@@ -23,7 +23,7 @@ config const printParams = true,
              printStats = true;
 
 
-def main() {
+proc main() {
   printConfiguration();
 
   const TwiddleDist = new Block1D(bbox=[0..m/4-1]);
@@ -49,12 +49,12 @@ def main() {
 }
 
 
-def printConfiguration() {
+proc printConfiguration() {
   if (printParams) then printProblemSize(elemType, numVectors, m);
 }
 
 
-def initVectors(Twiddles, z) {
+proc initVectors(Twiddles, z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
@@ -67,7 +67,7 @@ def initVectors(Twiddles, z) {
 }
 
 
-def computeTwiddles(Twiddles) {
+proc computeTwiddles(Twiddles) {
   const numTwdls = Twiddles.numElements,
         delta = 2.0 * atan(1.0) / numTwdls;
 
@@ -83,14 +83,14 @@ def computeTwiddles(Twiddles) {
 }
 
 
-def bitReverseShuffle(Vect: [?Dom]) {
+proc bitReverseShuffle(Vect: [?Dom]) {
   const numBits = log2(Vect.numElements),
         Perm: [i in Dom] Vect.eltType = Vect(bitReverse(i, revBits=numBits));
   Vect = Perm;
 }
 
 
-def bitReverse(val: ?valType, revBits = 64) {
+proc bitReverse(val: ?valType, revBits = 64) {
   param mask = 0x0102040810204080;
   const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask)),
         valReverse = bitRotLeft(valReverse64, revBits);
@@ -98,7 +98,7 @@ def bitReverse(val: ?valType, revBits = 64) {
 }
 
 
-def dfft(A: [?ADom], W) {
+proc dfft(A: [?ADom], W) {
   const numElements = A.numElements;
 
   for (str, span) in genDFTPhases(numElements, radix) {
@@ -135,7 +135,7 @@ def dfft(A: [?ADom], W) {
 }
 
 
-def genDFTPhases(numElements, radix) {
+proc genDFTPhases(numElements, radix) {
   var stride = 1;
   for 1..log4(numElements-1) {
     const span = stride * radix;
@@ -145,7 +145,7 @@ def genDFTPhases(numElements, radix) {
 }
 
 
-def butterfly(wk1, wk2, wk3, A) {
+proc butterfly(wk1, wk2, wk3, A) {
   var X: [0..#radix] elemType = A;
   var x0 = X(0) + X(1),
       x1 = X(0) - X(1),
@@ -164,10 +164,10 @@ def butterfly(wk1, wk2, wk3, A) {
 }
 
 
-def log4(x) return logBasePow2(x, 2);
+proc log4(x) return logBasePow2(x, 2);
 
 
-def verifyResults(z, Z, Twiddles) {
+proc verifyResults(z, Z, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
   Z = conjg(Z) / m;
@@ -184,7 +184,7 @@ def verifyResults(z, Z, Twiddles) {
 }
 
 
-def printResults(successful, execTime) {
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);

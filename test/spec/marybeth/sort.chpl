@@ -1,5 +1,5 @@
 // This is rewritten from a version that used sequences.
-//def main() {
+//proc main() {
 //  const D = [1..10];
 //  var x: [D] int;
 //  var y: [D] real;
@@ -25,7 +25,7 @@
 //  writeln();
 //}
 //
-//def insertionSort(x) {
+//proc insertionSort(x) {
 //  var order: list(int);
 //
 //  for i in x.domain {
@@ -39,7 +39,7 @@
 //  return order;
 //}
 
-def main() {
+proc main() {
   const D = [1..10];
   var x: [D] int;
   var y: [D] real;
@@ -65,7 +65,7 @@ def main() {
   writeln();
 }
 
-def insertionSort(x:[?D]) {
+proc insertionSort(x:[?D]) {
   var order: [D] int;
 
   for i in D {

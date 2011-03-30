@@ -1,7 +1,7 @@
-def main() {  
+proc main() {  
   nested();            
   
-  def nested() {
+  proc nested() {
     var x : int = 3;
     writeln(x);
   } 

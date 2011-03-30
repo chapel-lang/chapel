@@ -21,19 +21,19 @@ class StaticMRHierarchy {
   //|\''''''''''''''''''''''''''''''''''''|\
   //| >    Basic methods and iterators    | >
   //|/....................................|/
-  def n_levels { return level_indices.numIndices; };
+  proc n_levels { return level_indices.numIndices; };
 
-  def coarse_levels {
+  proc coarse_levels {
     for level_idx in 1..n_levels-1 do
       yield level(level_idx);
   }
 
-  def fine_levels {
+  proc fine_levels {
     for level_idx in 2..n_levels do
       yield level(level_idx);
   }
   
-  def coarse_boundaries(i: int) var {
+  proc coarse_boundaries(i: int) var {
     return fine_boundaries(i-1);
   }
   // /|''''''''''''''''''''''''''''''''''''/|
@@ -46,7 +46,7 @@ class StaticMRHierarchy {
   //|\''''''''''''''''''''|\
   //| >    Constructor    | >
   //|/....................|/
-  def StaticMRHierarchy(
+  proc StaticMRHierarchy(
     x_low:            dimension*real,
     x_high:           dimension*real,
     n_coarsest_cells: dimension*int,
@@ -100,7 +100,7 @@ class PhysicalBoundary {
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  def PhysicalBoundary(level: Level) {
+  proc PhysicalBoundary(level: Level) {
     for grid in level.grids {
 
       var boundary_multidomain = new MultiDomain(dimension,stridable=true);
@@ -122,7 +122,7 @@ class PhysicalBoundary {
   //|\'''''''''''''''''''''''|\
   //| >    these iterator    | >
   //|/.......................|/
-  def these() {
+  proc these() {
     for grid in grids do
       yield (grid, multidomains(grid));
   }
@@ -147,7 +147,7 @@ class PhysicalBoundary {
 // Provided a refinement ratio, this creates a new level which refines
 // the current bottom level.
 //---------------------------------------------------------------------
-def StaticMRHierarchy.addLevel(ref_ratio: dimension*int) {
+proc StaticMRHierarchy.addLevel(ref_ratio: dimension*int) {
   
   var i_finest = level_indices.high;
   var n_refined_cells  = levels(i_finest).n_cells * ref_ratio;
@@ -178,7 +178,7 @@ def StaticMRHierarchy.addLevel(ref_ratio: dimension*int) {
 // should be handled by the regridding algorithm, but this simplifies
 // the manual development of some test hierarchies.
 //-----------------------------------------------------------------------
-def StaticMRHierarchy.addGrid(
+proc StaticMRHierarchy.addGrid(
   x_low:  dimension*real,
   x_high: dimension*real)
 {
@@ -218,7 +218,7 @@ def StaticMRHierarchy.addGrid(
 // At this point, it is safe to compute its boundary ghosts, and to
 // complete its coarse interface.
 //---------------------------------------------------------------------
-def StaticMRHierarchy.completeLevel() {
+proc StaticMRHierarchy.completeLevel() {
 
   const i_bottom = level_indices.high;
   
@@ -254,7 +254,7 @@ def StaticMRHierarchy.completeLevel() {
 //|\""""""""""""""""""""""""""""""""""""""|\
 //| >    readStaticMRHierarchy routine    | >
 //|/______________________________________|/
-def readHierarchy(file_name: string){
+proc readHierarchy(file_name: string){
  
   //==== Open input file ====
   var input_file = new file(file_name, FileAccessMode.read);
@@ -331,7 +331,7 @@ def readHierarchy(file_name: string){
 
 
 
-def main {
+proc main {
 
   var hierarchy = readHierarchy("input_hierarchy.txt");
 

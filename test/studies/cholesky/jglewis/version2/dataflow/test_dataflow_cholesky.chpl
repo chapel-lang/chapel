@@ -82,7 +82,7 @@ module test_dataflow_cholesky {
   use scalar_inner_product_cholesky,
       dataflow_block_cholesky;
 
-  def main {
+  proc main {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
@@ -179,7 +179,7 @@ module test_dataflow_cholesky {
   }
 
 
-  def check_factorization ( A : [], L : [] )
+  proc check_factorization ( A : [], L : [] )
 
     // -----------------------------------------------------------------------
     // Check the factorization by forming L L^T and comparing the result to A.
@@ -226,7 +226,7 @@ module test_dataflow_cholesky {
   }
 
 
-  def print_lower_triangle ( L : [] ) {
+  proc print_lower_triangle ( L : [] ) {
    
     if print_matrix_details then
       for (i_row, i_col) in ( L.domain.dim(1), L.domain.dim(2) ) do

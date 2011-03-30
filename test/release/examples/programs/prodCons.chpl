@@ -28,7 +28,7 @@ var buff$: [0..buffersize-1] sync int;
 // The main procedure simply creates a producer and a consumer task to
 // run in parallel
 //
-def main() {
+proc main() {
   cobegin {
     producer();
     consumer();
@@ -42,7 +42,7 @@ def main() {
 // hits the end of the buffer.  It then writes the value -1 as a
 // sentinel to the next position.
 //
-def producer() {
+proc producer() {
   for i in 1..numItems {
     const buffInd = (i-1) % buffersize;
     buff$(buffInd) = i;
@@ -57,7 +57,7 @@ def producer() {
 // the consumer invokes an iterator to control its loop and yield
 // values from the shared buffer.  It writes them out to the console.
 //
-def consumer() {
+proc consumer() {
   for buffVal in readFromBuff() {
     writeln("Consumer got: ", buffVal);
   }
@@ -69,7 +69,7 @@ def consumer() {
 // buffer starting at the 0th position and yields them.  Once it finds
 // the sentinel value of -1, it exits.
 //
-def readFromBuff() {
+iter readFromBuff() {
   var ind = 0,              
       nextVal = buff$(0);
 

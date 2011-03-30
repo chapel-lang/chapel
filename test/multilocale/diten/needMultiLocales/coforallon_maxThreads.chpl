@@ -1,6 +1,6 @@
 use Time;
 
-def main {
+proc main {
   var a: sync int = 0;
   coforall loc in Locales {
     on loc {

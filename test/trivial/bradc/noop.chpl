@@ -1,7 +1,7 @@
 
 ;
 
-def foo() { ; }
+proc foo() { ; }
 
 var D = 1..3;
 

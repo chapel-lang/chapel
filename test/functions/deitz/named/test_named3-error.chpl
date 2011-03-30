@@ -1,8 +1,8 @@
-def foo(i : int, j : int, k : int) {
+proc foo(i : int, j : int, k : int) {
   writeln("foo1 of ", i, ", ", j, ", ", k);
 }
 
-def foo(l : int, m : int, n : int) {
+proc foo(l : int, m : int, n : int) {
   writeln("foo2 of ", l, ", ", m, ", ", n);
 }
 

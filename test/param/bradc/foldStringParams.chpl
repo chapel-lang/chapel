@@ -1,6 +1,6 @@
 config param s: string = "true";
 
-def main() {
+proc main() {
   if (s == "true") then
     compilerWarning("s is true");
   else if (s == "false") then

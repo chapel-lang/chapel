@@ -2,7 +2,7 @@ class foo {
   type t;
   var x : t;
   var y : t;
-  def print() {
+  proc print() {
     writeln(x, " and ", y);
   }
 }

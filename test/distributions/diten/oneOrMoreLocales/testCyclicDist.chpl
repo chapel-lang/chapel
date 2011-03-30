@@ -2,7 +2,7 @@ use CyclicDist;
 
 config const tpl = 2;
 
-def test1d() {
+proc test1d() {
   const r = 3.0;
   const Dist = new dmap(new Cyclic(startIdx=min(int(64)), dataParTasksPerLocale=tpl));
 
@@ -21,7 +21,7 @@ def test1d() {
   writeln(B);
 }
 
-def test2d() {
+proc test2d() {
   var Dist = new dmap(new Cyclic(startIdx=(min(int), min(int)), dataParTasksPerLocale=tpl));
   var Dom: domain(2, int) dmapped Dist = [1..5, 1..5];
   var A: [Dom] real;
@@ -35,7 +35,7 @@ def test2d() {
   writeln(A);
 }
 
-def main {
+proc main {
   test1d();
   test2d();
 }

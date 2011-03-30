@@ -1,5 +1,5 @@
 class C {
-  def shortMethod return 3;
+  proc shortMethod return 3;
 }
 
 class D {

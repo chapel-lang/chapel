@@ -20,7 +20,7 @@ module M5 {
 
 module M6 {
   var aaa = 6;
-  def main() {
+  proc main() {
     use M2, M5;
     writeln(aaa); // M2.M1.aaa and M5.M4.aaa are defined at the same use-depth
   }

@@ -1,4 +1,4 @@
-def f(x) {
+proc f(x) {
     if x == 0 {
         var y : [1..10] int;
         return y;
@@ -7,6 +7,6 @@ def f(x) {
     return 5;
 }
 
-def main() {
+proc main() {
   var x = f(10);
 }

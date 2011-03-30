@@ -37,7 +37,7 @@ use omega;
 var  buf3: [0..255] complex;
 var  dat3: [0..255] complex;
 
-def init_fft256() {
+proc init_fft256() {
     for i1429 in 0..15 {
         for i1434 in 0..3 {
             for i1442 in 0..1 {
@@ -49,7 +49,7 @@ def init_fft256() {
 
 }
 
-def fft256(Y: [] complex, X: [] complex) {
+proc fft256(Y: [] complex, X: [] complex) {
     for i1430 in 0..15 {
         var s2987, s2988, s2989, s2990, s2991, s2992, s2993, 
     s2994, s2995, s2996, s2997, s2998, s2999, s3000, s3001, 

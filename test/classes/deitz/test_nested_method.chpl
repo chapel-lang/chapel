@@ -1,9 +1,9 @@
 class C {
   var x : int = 2;
-  def foo() {
+  proc foo() {
     var y : int = x;
     writeln(y);
-    def bar() {
+    proc bar() {
       writeln(x + y);
     }
     bar();

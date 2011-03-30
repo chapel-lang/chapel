@@ -1,4 +1,4 @@
-def int.print() {
+proc int.print() {
   writeln("int.print = ", this);
 }
 

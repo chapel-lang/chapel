@@ -1,7 +1,7 @@
 class C {
   var x = 2;
-  def foo return 3;
-  def bar return foo;
+  proc foo return 3;
+  proc bar return foo;
 }
 
 var c = new C(4);

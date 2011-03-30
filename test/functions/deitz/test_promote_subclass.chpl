@@ -9,7 +9,7 @@ class D: C {
 
 var A: [1..3] D = [i in 1..3] new D(x=i);
 
-def foo(c: C) { writeln(c); }
+proc foo(c: C) { writeln(c); }
 
 writeln(A);
 serial true {

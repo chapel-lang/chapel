@@ -1,6 +1,6 @@
 class foo {
   var x;
-  def print() {
+  proc print() {
     writeln(x);
   }
 }

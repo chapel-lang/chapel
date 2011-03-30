@@ -17,7 +17,7 @@ config param debugUserMapAssoc = false;
 
 // TODO: Need to make this generic
 class AbstractMapper {
-  def idxToLocaleInd(ind, numlocs: int) {
+  proc idxToLocaleInd(ind, numlocs: int) {
     return 0;
   }
 }
@@ -60,7 +60,7 @@ class UserMapAssoc : BaseDist {
 
   // CONSTRUCTORS:
 
-  def UserMapAssoc(type idxType = int(64), initMapper: AbstractMapper,
+  proc UserMapAssoc(type idxType = int(64), initMapper: AbstractMapper,
                    targetLocales: [] locale = Locales) {
     mapper = initMapper;
     //
@@ -81,7 +81,7 @@ class UserMapAssoc : BaseDist {
   //
   // builds up a privatized (replicated copy)
   //
-  def UserMapAssoc(type idxType = int(64),
+  proc UserMapAssoc(type idxType = int(64),
                    other: UserMapAssoc(idxType)) {
     mapper = other.mapper;
     targetLocDom = other.targetLocDom;
@@ -89,7 +89,7 @@ class UserMapAssoc : BaseDist {
     locDist = other.locDist;
   }
 
-  def dsiClone() {
+  proc dsiClone() {
     return new UserMapAssoc(idxType, mapper, targetLocs);
   }
 
@@ -101,7 +101,7 @@ class UserMapAssoc : BaseDist {
   //
   // TODO: What should we do if domIdxType did not match idxType?
   //
-  def dsiNewAssociativeDom(type domIdxType) where domIdxType != idxType {
+  proc dsiNewAssociativeDom(type domIdxType) where domIdxType != idxType {
     compilerError("Trying to create a domain whose index type does not match the distribution's");
   }
 
@@ -110,7 +110,7 @@ class UserMapAssoc : BaseDist {
   // initial index set if one exists?  If not, we should rewrite the
   // global domain construction to not do anything with whole...
   //
-  def dsiNewAssociativeDom(type idxType) {
+  proc dsiNewAssociativeDom(type idxType) {
     var dom = new UserMapAssocDom(idxType=idxType, dist=this);
     dom.setup();
     return dom;
@@ -120,7 +120,7 @@ class UserMapAssoc : BaseDist {
   //
   // print out the distribution
   //
-  def WriteThis(x:Writer) {
+  proc WriteThis(x:Writer) {
     x.writeln("UserMapAssoc");
     x.writeln("-------");
     x.writeln("distributed using: ", mapper);
@@ -134,11 +134,11 @@ class UserMapAssoc : BaseDist {
   //
   // convert an index into a locale value
   //
-  def idxToLocale(ind: idxType) {
+  proc idxToLocale(ind: idxType) {
     return targetLocs(idxToLocaleInd(ind));
   }
 
-  def idxToLocaleInd(ind: idxType) {
+  proc idxToLocaleInd(ind: idxType) {
     return mapper.idxToLocaleInd(ind, targetLocDom.numIndices);
   }
 }
@@ -172,7 +172,7 @@ class LocUserMapAssocDist {
   // Constructor computes what chunk of index(1) is owned by the
   // current locale
   //
-  def LocUserMapAssocDist(type idxType, 
+  proc LocUserMapAssocDist(type idxType, 
                           _localeIdx: int, // the locale index from the target domain
                           dist: UserMapAssoc(idxType) // reference to glob dist
                          ) {
@@ -195,7 +195,7 @@ class LocUserMapAssocDist {
   //
   // print out the local distribution class
   //
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.write("locale ", loc.id, " owns some indices");
   }
 }
@@ -244,7 +244,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   // GLOBAL DOMAIN INTERFACE:
 
-  def dsiAdd(i: idxType) {
+  proc dsiAdd(i: idxType) {
     locDoms(dist.idxToLocaleInd(i)).add(i);
   }
 
@@ -255,7 +255,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // TODO: This really should go over the elements in row-major order,
   // not the block orders.
   //
-  def these() {
+  iter these() {
     for blk in locDoms do
       // TODO: Would want to do something like:     
       // on blk do
@@ -283,7 +283,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // clause interact with a loop that used an on clause explicitly
   // within its body?  How would it be done efficiently?
   //
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     //
     // TODO: This currently only results in a single level of
     // per-locale parallelism -- no per-core parallelism; maybe
@@ -314,7 +314,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       }
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     //
     // TODO: Abstract this addition of low into a function?
     // Note relationship between this operation and the
@@ -335,7 +335,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // the print method for the domain
   //
-  def dsiSerialWrite(x:Writer) {
+  proc dsiSerialWrite(x:Writer) {
     for locDom in locDoms do
       // TODO: This doesn't work -- accesses a bad file descriptor
       //      on locDom {
@@ -356,7 +356,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // how to allocate a new array over this domain
   //
-  def dsiBuildArray(type elemType) {
+  proc dsiBuildArray(type elemType) {
     var arr = new UserMapAssocArr(idxType=idxType, eltType=elemType, dom=this);
     arr.setup();
     return arr;
@@ -365,7 +365,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // queries for the number of indices, low, and high bounds
   //
-  def dsiNumIndices {
+  proc dsiNumIndices {
     halt("numIndices not yet implemented");
   }
 
@@ -373,26 +373,26 @@ class UserMapAssocDom: BaseAssociativeDom {
   // INTERFACE NOTES: Could we make setIndices() for an arithmetic
   // domain take a domain rather than something else?
   //
-  def dsiSetIndices(x: domain) {
+  proc dsiSetIndices(x: domain) {
     writeln("setIndices not yet implemented");
   }
 
-  def dsiSetIndices(x) {
+  proc dsiSetIndices(x) {
     writeln("setIndices not yet implemented");
   }
 
-  def dsiGetIndices() {
+  proc dsiGetIndices() {
     writeln("getIndices not yet implemented");
   }
 
   //
   // INTERNAL INTERFACE
   //
-  def getDist(): UserMapAssoc(idxType) {
+  proc dsiMyDist(): UserMapAssoc(idxType) {
     return dist;
   }
 
-  def setup() {
+  proc setup() {
     for localeIdx in dist.targetLocDom do
       on dist.targetLocs(localeIdx) do
         if (locDoms(localeIdx) == nil) then
@@ -402,15 +402,15 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   }
 
-  def dsiSupportsPrivatization() param return true;
-  def dsiGetPrivatizeData() return 0;
-  def dsiPrivatize(privatizeData) {
+  proc dsiSupportsPrivatization() param return true;
+  proc dsiGetPrivatizeData() return 0;
+  proc dsiPrivatize(privatizeData) {
     var privateDist = new UserMapAssoc(idxType, dist);
     var c = new UserMapAssocDom(idxType=idxType, dist=privateDist);
     c.locDoms = locDoms;
     return c;
   }
-  def dsiReprivatize(other) {
+  proc dsiReprivatize(other) {
     locDoms = other.locDoms;
   }
 }
@@ -454,14 +454,14 @@ class LocUserMapAssocDom {
 
   // LOCAL DOMAIN INTERFACE:
 
-  def add(i: idxType) {
+  proc add(i: idxType) {
     myInds += i;
   }
 
   //
   // iterator over this locale's indices
   //
-  def these() {
+  iter these() {
     // May want to do something like:     
     // on this do
     // But can't currently have yields in on clauses
@@ -473,12 +473,12 @@ class LocUserMapAssocDom {
   // this is the parallel iterator for the local domain, see global
   // domain parallel iterators for general notes on the approach
   //
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     halt("This is bogus");
     yield [1..100];
   }
 
-  def these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterator, follower) where tag == iterator.follower {
     halt("This is bogus");
     yield 2;
   }
@@ -486,7 +486,7 @@ class LocUserMapAssocDom {
   //
   // how to write out this locale's indices
   //
-  def writeThis(x:Writer) {
+  proc writeThis(x:Writer) {
     x.write(myInds);
   }
 
@@ -499,7 +499,7 @@ class LocUserMapAssocDom {
   // TODO: I believe these are only used by the random number generator
   // in stream -- will they always be required once that is rewritten?
   //
-  def numIndices {
+  proc numIndices {
     return myInds.numIndices;
   }
 }
@@ -543,17 +543,17 @@ class UserMapAssocArr: BaseArr {
 
   var pid: int = -1; // privatized object id
 
-  def dsiGetBaseDom() return dom;
+  proc dsiGetBaseDom() return dom;
 
-  def setup() {
+  proc setup() {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
         locArrs(localeIdx) = new LocUserMapAssocArr(idxType, eltType, dom.locDoms(localeIdx));
   }
 
-  def dsiSupportsPrivatization() param return true;
-  def dsiGetPrivatizeData() return 0;
-  def dsiPrivatize(privatizeData) {
+  proc dsiSupportsPrivatization() param return true;
+  proc dsiGetPrivatizeData() return 0;
+  proc dsiPrivatize(privatizeData) {
     var dompid = dom.pid;
     var thisdom = dom;
     var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
@@ -570,7 +570,7 @@ class UserMapAssocArr: BaseArr {
   //
   // TODO: Do we need a global bounds check here or in idxToLocaleind?
   //
-  def dsiAccess(i: idxType) var {
+  proc dsiAccess(i: idxType) var {
     const myLocArr = locArrs(here.id);
     local {
       if myLocArr.locDom.myInds.member(i) then
@@ -582,7 +582,7 @@ class UserMapAssocArr: BaseArr {
   //
   // the iterator over the array's elements, currently sequential
   //
-  def these() var {
+  iter these() var {
     for loc in dom.dist.targetLocDom {
       // TODO: May want to do something like:     
       // on this do
@@ -597,7 +597,7 @@ class UserMapAssocArr: BaseArr {
   // this is the parallel iterator for the global array, see the
   // example for general notes on the approach
   //
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     //
     // TODO: Rewrite this to reuse more of the global domain iterator
     // logic?  (e.g., can we forward the forall to the global domain
@@ -609,9 +609,9 @@ class UserMapAssocArr: BaseArr {
       }
   }
 
-  def supportsAlignedFollower() param return true;
+  proc supportsAlignedFollower() param return true;
 
-  def these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
+  iter these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
     //
     // TODO: Would like to write this as follower += dom.low;
     //
@@ -634,7 +634,7 @@ class UserMapAssocArr: BaseArr {
       //
       // TODO: could do something smarter to only bring the non-local
       // elements over.
-      def accessHelper(i) var {
+      proc accessHelper(i) var {
         local {
           if myLocArr.locDom.myInds.member(i) then
             return myLocArr.this(i);
@@ -686,7 +686,7 @@ class UserMapAssocArr: BaseArr {
   //
   // how to print out the whole array, sequentially
   //
-  def dsiSerialWrite(x: Writer) {
+  proc dsiSerialWrite(x: Writer) {
 
     var first = true;
     for locArr in locArrs {
@@ -705,7 +705,7 @@ class UserMapAssocArr: BaseArr {
   //
   // a query for the number of elements in the array
   //
-  def dsiNumElements {
+  proc dsiNumElements {
     return dom.dsiNumIndices;
   }
 }
@@ -751,14 +751,14 @@ class LocUserMapAssocArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  def this(i: idxType) var {
+  proc this(i: idxType) var {
     return myElems(i);
   }
 
   //
   // iterator over the elements owned by this locale
   //
-  def these() var {
+  iter these() var {
     for elem in myElems {
       yield elem;
     }
@@ -768,12 +768,12 @@ class LocUserMapAssocArr {
   // this is the parallel iterator for the local array, see global
   // domain parallel iterators for general notes on the approach
   //
-  def these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterator) where tag == iterator.leader {
     halt("This is bogus");
     yield [1..100];
   }
 
-  def these(param tag: iterator, follower) var where tag == iterator.follower {
+  iter these(param tag: iterator, follower) var where tag == iterator.follower {
     yield myElems(0);
   }
 
@@ -781,7 +781,7 @@ class LocUserMapAssocArr {
   //
   // prints out this locale's piece of the array
   //
-  def writeThis(x: Writer) {
+  proc writeThis(x: Writer) {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
@@ -791,13 +791,13 @@ class LocUserMapAssocArr {
   //
   // query for the number of local array elements
   //
-  def numElements {
+  proc numElements {
     return myElems.numElements;
   }
 
   // INTERNAL INTERFACE:
 
-  def owns(x) {
+  proc owns(x) {
     //
     // TODO: When this is multidimensional need to do a reduction or something:
     //
@@ -810,8 +810,8 @@ class LocUserMapAssocArr {
 // a helper function for blocking index ranges:
 //
 
-def chpl_computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
-  def procToData(x, lo)
+proc chpl_computeBlock(waylo, numelems, lo, wayhi, numblocks, blocknum) {
+  proc procToData(x, lo)
     return lo + (x: lo.type) + (x:real != x:int:real): lo.type;
 
   const blo = if (blocknum == 0) then waylo

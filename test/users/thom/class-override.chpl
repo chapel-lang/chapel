@@ -2,7 +2,7 @@ class A
 {
    var a = "Some value";
    
-   def usea()
+   proc usea()
    {
        writeln(a);
    }

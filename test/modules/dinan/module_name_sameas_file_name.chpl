@@ -1,9 +1,9 @@
 module module_name_sameas_file_name {
-  def hi() {
+  proc hi() {
     writeln("hello world");
   }
 
-  def main() {
+  proc main() {
       hi();
   }
 }

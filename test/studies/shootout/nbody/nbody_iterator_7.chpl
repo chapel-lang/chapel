@@ -25,7 +25,7 @@ class Planet {
 	var mass : real;
 }
 
-def TriangleIter(B: [] Planet) {
+iter TriangleIter(B: [] Planet) {
 	for (b1,i) in (B,NBODIES) do {
 		for b2 in B[i+1..] do {
 			yield (b1,b2);
@@ -33,7 +33,7 @@ def TriangleIter(B: [] Planet) {
 	}
 }
 
-def advance(B: [] Planet, dt: real) {
+proc advance(B: [] Planet, dt: real) {
 	for (b1,b2) in TriangleIter(B) do {
 			var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
 			var distance = sqrt(+ reduce d**2);
@@ -46,7 +46,7 @@ def advance(B: [] Planet, dt: real) {
 	}
 }
 
-def energy(B : [] Planet) : real {
+proc energy(B : [] Planet) : real {
 	var e : real;
 	for (b1,i) in (B,NBODIES) do {
 		e += 0.5 * b1.mass * (+ reduce b1.vel_vector**2);
@@ -59,14 +59,14 @@ def energy(B : [] Planet) : real {
 	return e;
 }
 
-def offset_momentum(B : [] Planet) {
+proc offset_momentum(B : [] Planet) {
 	var p : [vecLen] real;
 	for b in B do
 		p += b.vel_vector * b.mass;
 	B(0).vel_vector = -p / solar_mass;
 }
 
-def main() {
+proc main() {
 	if timer then
 		t.start();
 

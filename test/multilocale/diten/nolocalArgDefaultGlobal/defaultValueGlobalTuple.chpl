@@ -1,5 +1,5 @@
 var t = (1, 2);
-def foo(a=t(1)) {
+proc foo(a=t(1)) {
   return a;
 }
 

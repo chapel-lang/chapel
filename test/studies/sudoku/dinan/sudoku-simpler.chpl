@@ -3,7 +3,7 @@ config const inputfile = "easy.dat";
 
 // Attempt to solve the given Sudoku board.  Note: the simple solver
 // isn't able to completely solve really hard puzzles.
-def solveBoard(inout board: [] int) {
+proc solveBoard(inout board: [] int) {
   var elimBoard: [1..9, 1..9, 1..9] bool = true;
   var nUpdates = 0;
 
@@ -46,7 +46,7 @@ def solveBoard(inout board: [] int) {
 }
 
 
-def main() {
+proc main() {
   var board: [1..9, 1..9] int;
   var boardData = new file(inputfile, path='./', mode=FileAccessMode.read);
 

@@ -1,24 +1,24 @@
 class NilClass { }
 
-def Nil(): NilClass
+proc Nil(): NilClass
   return nil;
 
-def isNil(x): bool {
+proc isNil(x): bool {
   if x.type == NilClass then
     return true;
   else
     return false;
 }
 
-def car(x: (?T1, ?T2)) var: T1 {
+proc car(x: (?T1, ?T2)) var: T1 {
   return x(1);
 }
 
-def cdr(x: (?T1, ?T2)) var: T2 {
+proc cdr(x: (?T1, ?T2)) var: T2 {
   return x(2);
 }
 
-def cons(x: ?T1, y: ?T2): (T1, T2) {
+proc cons(x: ?T1, y: ?T2): (T1, T2) {
   return (x, y);
 }
   

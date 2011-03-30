@@ -10,7 +10,7 @@ class myseq {
   var first : myseq_node(elementType);
   var last : myseq_node(elementType);
 
-  def append(e : elementType) : myseq(elementType) {
+  proc append(e : elementType) : myseq(elementType) {
     var anew : myseq_node(elementType) = new myseq_node(elementType);
     anew.element = e;
     if length > 0 {
@@ -24,7 +24,7 @@ class myseq {
     return this;
   }
 
-  def print() {
+  proc print() {
     write("Sequence (length = ", length, ") (/");
     var tmp = first;
     while tmp != nil {

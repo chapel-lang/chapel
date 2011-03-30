@@ -88,8 +88,8 @@ var numElements = 5;
 writeRange(0..#numElements);
 writeRange(r # 4);
 writeRange(r by -1 # 4);
-writeRange(..5 # 3);
-writeRange(..5 by 2 # 3);
+writeRange(..5 # -3);
+writeRange(..5 by 2 # -3);
 writeln();
 
 //
@@ -122,7 +122,7 @@ writeRange(r2(1..20 by 2));
 // values nearest to the bound.  If it is fully unbounded, it just
 // prints "all integers".
 //
-def writeRange(r: range(?)) {
+proc writeRange(r: range(?)) {
   write("Range ", r, " = ");
   select r.boundedType {
     when BoundedRangeType.bounded {
@@ -141,7 +141,7 @@ def writeRange(r: range(?)) {
     }
     when BoundedRangeType.boundedHigh {
       write("...");
-      for i in r # 3 do
+      for i in r # -3 do
         write(", ", i);
       writeln();
     }

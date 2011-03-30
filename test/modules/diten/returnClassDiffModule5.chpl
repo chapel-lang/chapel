@@ -2,10 +2,10 @@ module M1 {
   var a = 1;
   class C {
     var b = 2;
-    def foo() {
+    proc foo() {
       return a+b;
     }
-    def writeThis(f: Writer) {
+    proc writeThis(f: Writer) {
       f.writeln("How does this get found?");
       f.write("{a = ", a, ", b = ", b, "}");
     }
@@ -13,17 +13,17 @@ module M1 {
 }
 
 module M2 {
-  def main {
+  proc main {
     var c = bar();
     writeln(baz(c));
     writeln(c);
     delete c;
   }
-  def bar() {
+  proc bar() {
     use M1;
     return new C();
   }
-  def baz(obj:object) {
+  proc baz(obj:object) {
     use M1;
     return (obj:C).foo();
   }

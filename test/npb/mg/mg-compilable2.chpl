@@ -18,9 +18,9 @@
 
 /*
 class timer {
-  def start();
-  def stop();
-  def read() { return -1.0; }
+  proc start();
+  proc stop();
+  proc read() { return -1.0; }
 }
 */
 
@@ -133,7 +133,7 @@ const Stencil: domain(3) = [-1..1, -1..1, -1..1];
 
 // ENTRY POINT:
 
-def main() {
+proc main() {
   // two timer variables that are used to time the initialization and
   // the benchmark time, respectively
   //  var initTimer = new timer(), benchTimer = timer();
@@ -167,7 +167,7 @@ def main() {
 
 // initializeMG() gets things set up
 
-def initializeMG(V, U, R) {
+proc initializeMG(V, U, R) {
   // print some standard heading information
   writeln(" NAS Parallel Benchmarks 3.0 (Chapel version) - MG Benchmark");
   writeln(" Size: ", nx, "x", ny, "x", nz);
@@ -187,7 +187,7 @@ def initializeMG(V, U, R) {
 
 // computeMG() runs the computation, returning the computed checksum
 
-def computeMG(V, U, R) {
+proc computeMG(V, U, R) {
   resid(R(1), V, U(1));
   norm2u3(R(1));
   for it in 1..numIters {
@@ -202,7 +202,7 @@ def computeMG(V, U, R) {
 // printResults() performs the checksum verification and prints out
 // some general information about the run
 
-def printResults(rnm2, inittime, runtime) {
+proc printResults(rnm2, inittime, runtime) {
   var verified = false;
 
   if (verifyValue != 0.0) {
@@ -240,7 +240,7 @@ def printResults(rnm2, inittime, runtime) {
 // running one iteration means running a round of mg3P followed by
 // one residual
 
-def runOneIteration(V, U, R) {
+proc runOneIteration(V, U, R) {
   mg3P(V, U, R);
   resid(R(1), V, U(1));
 }
@@ -248,7 +248,7 @@ def runOneIteration(V, U, R) {
 
 // mg3P() contains all the work needed to run a single multigrid cycle
 
-def mg3P(V, U, R) {
+proc mg3P(V, U, R) {
   // project up the hierarchy
   for lvl in (2..numLevels) {
     rprj3(R(lvl), R(lvl-1));
@@ -285,7 +285,7 @@ def mg3P(V, U, R) {
 // resid() applies a 27-point stencil to U, subtracts the result from
 // V, and assigns to R.
 
-def resid(R, V, U) {
+proc resid(R, V, U) {
   // these are the weight values for the stencil
   const a: coeff = (-8.0/3.0, 0.0, 1.0/6.0, 1.0/12.0);
 
@@ -332,7 +332,7 @@ def resid(R, V, U) {
 // size for some reason (maybe there was a bug in the early version of
 // the benchmark that has been preserved for backwards compatability?)
 
-def psinv(U, R) {
+proc psinv(U, R) {
   const c: coeff = initCValues();
   //  const c3d: [(i,j,k) in Stencil] real = c((i!=0) + (j!=0) + (k!=0));
   var c3d: [Stencil] real;
@@ -349,7 +349,7 @@ def psinv(U, R) {
 // array, so the main loop iterates over the domain of S rather than
 // R.
 
-def rprj3(S, R) {
+proc rprj3(S, R) {
   const w: coeff = (0.5, 0.25, 0.125, 0.0625);
   //  const w3d: [(i,j,k) in Stencil] real = w((i!=0) + (j!=0) + (k!=0));
   var w3d: [Stencil] real;
@@ -383,7 +383,7 @@ def rprj3(S, R) {
 // the finer (R) array offsets in order to get the different
 // topologies.
 
-def interp(R, S) {
+proc interp(R, S) {
   const IDom: domain(3) = [-1..0, -1..0, -1..0];
   //  const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
   var IStn: [IDom] domain(3);
@@ -408,7 +408,7 @@ def interp(R, S) {
 // is used in this benchmark // the other is dropped on the floor at
 // the callsite).
 
-def norm2u3(R) {
+proc norm2u3(R) {
   const rnm2 = sqrt((+ reduce R**2)/(nx*ny*nz)),
         rnmu = max reduce abs(R);
 
@@ -418,7 +418,7 @@ def norm2u3(R) {
 
 // initCValues() sets the c values for the psinv() stencil
 
-def initCValues(Class) {
+proc initCValues(Class) {
   if (Class == classVals.A || Class == classVals.S || Class == classVals.W) {
     return (-3.0/8.0,  1.0/32.0, -1.0/64.0, 0.0);
   } else {
@@ -432,7 +432,7 @@ def initCValues(Class) {
 
 // initArrays() initializes the arrays used in the computation.
 
-def initArrays(V, U, R) {
+proc initArrays(V, U, R) {
   // conservatively, one might want to do "V=0.0; U=0.0; R=0.0; zran3(V);", 
   // but the following is minimal:
   zran3(V);
@@ -475,7 +475,7 @@ def initArrays(V, U, R) {
 // version could be written on request // if we did our job right,
 // just the declaration of V would change)
 
-def zran3(V) {
+proc zran3(V) {
   const numCharges = 10;
   var pos, neg: [1..numCharges] index(Base);
 
@@ -509,7 +509,7 @@ def zran3(V) {
 // supplies in randdp.f; I don't claim to understand them in any
 // depth.
 
-def longRandlc(n) {
+proc longRandlc(n) {
   const s = 314159265.0,
         arand = 5.0**13;
 
@@ -533,7 +533,7 @@ def longRandlc(n) {
 }
 
 
-def randlc(x, a) {
+proc randlc(x, a) {
   const r23 = 0.5**23,
         t23 = 2.0**23,
         r46 = 0.5**46,
@@ -562,7 +562,7 @@ def randlc(x, a) {
 // simple math helper fun; perhaps this will be part of the
 // standard library, but it was easy enough to write
 
-def lg2(x) {
+proc lg2(x) {
   var lg = -1;
   while (x) {
     x *= 2;

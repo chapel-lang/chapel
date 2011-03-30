@@ -1,8 +1,8 @@
-def foo(type t, x: range(t, BoundedRangeType.bounded, ?stridable) ... ?k) {
+proc foo(type t, x: range(t, BoundedRangeType.bounded, ?stridable) ... ?k) {
   writeln(x);
 }
 
-def foo(type t, x: t ...?k) {
+proc foo(type t, x: t ...?k) {
   writeln(x);
 }
 

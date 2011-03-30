@@ -2,7 +2,7 @@ class mysumreduce {
   type t;
   var ident: t = 0;
   
-  def combine(x: t, y: t): t {
+  proc combine(x: t, y: t): t {
     return x + y;
   }
 }

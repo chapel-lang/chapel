@@ -16,11 +16,11 @@
 
 use Random;
 
-def dotProd(n : int, A : [1..n] int, B : [1..n] int) : int {
+proc dotProd(n : int, A : [1..n] int, B : [1..n] int) : int {
     return + reduce(A * B);
 }
 
-def saxpy(
+proc saxpy(
     n : int,
     alpha : int,
     x : [1..n] int,
@@ -31,7 +31,7 @@ def saxpy(
     return alpha * x + y;
 }
 
-def matrixMult_ijk(
+proc matrixMult_ijk(
     const m : int,
     const p : int,
     const n : int,
@@ -49,7 +49,7 @@ def matrixMult_ijk(
     }
 }
 
-def matrixMult_ijk_clever(
+proc matrixMult_ijk_clever(
     const m : int,
     const p : int,
     const n : int,
@@ -64,7 +64,7 @@ def matrixMult_ijk_clever(
     }
 }
 
-def matrixMult_kij_clever(
+proc matrixMult_kij_clever(
     const m : int,
     const p : int,
     const n : int,
@@ -81,7 +81,7 @@ def matrixMult_kij_clever(
     }
 }
 
-def matrixMult_tensored(
+proc matrixMult_tensored(
     const m : int,
     const p : int,
     const n : int,
@@ -98,7 +98,7 @@ def matrixMult_tensored(
 
 
 // what are the implications of doing it like this for sparse matrices?
-def matrixMult_tensored_no_indices_no_reindexing(
+proc matrixMult_tensored_no_indices_no_reindexing(
     const A : [] int,
     const B : [] int,
     C : [] int)
@@ -124,7 +124,7 @@ def matrixMult_tensored_no_indices_no_reindexing(
 }
 
 // what are the implications of doing it like this for sparse matrices?
-def matrixMult_tensored_no_indices(
+proc matrixMult_tensored_no_indices(
     const A : [] int,
     const B : [] int,
     C : [] int)
@@ -157,7 +157,7 @@ def matrixMult_tensored_no_indices(
 
 
 
-def checkMult(msg : string, C, D : [] int) {
+proc checkMult(msg : string, C, D : [] int) {
     write(msg);
     if & reduce(C == D) then
         writeln("PASSED");
@@ -165,7 +165,7 @@ def checkMult(msg : string, C, D : [] int) {
         writeln("FAILED");
 }
 
-def main() {
+proc main() {
     var A : [3..6, 8..10] int = 
         ((8, 9, 0),
          (7, 6, 1),

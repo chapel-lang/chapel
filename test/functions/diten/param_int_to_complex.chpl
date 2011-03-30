@@ -1,7 +1,7 @@
-def foo(param c: complex) {
+proc foo(param c: complex) {
   writeln("param ", c);
 }
-def foo(c: complex) {
+proc foo(c: complex) {
   writeln("non-param ", c);
 }
 

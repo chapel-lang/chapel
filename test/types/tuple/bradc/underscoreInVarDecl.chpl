@@ -1,4 +1,4 @@
-def foo() {
+proc foo() {
   return (1, 2.3, "hi");
 }
 

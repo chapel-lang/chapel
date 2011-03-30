@@ -10,7 +10,7 @@ use d;
 use e;
 use f;
 
-def main() {
+proc main() {
   writeln("x is: ", x);
   runa();
   runb();

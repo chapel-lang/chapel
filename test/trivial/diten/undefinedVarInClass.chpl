@@ -3,7 +3,7 @@ class C {
   var b: int;
 }
 
-def main {
+proc main {
   var c = new C();
   writeln(c);
 }

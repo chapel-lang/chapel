@@ -1,8 +1,8 @@
-def foo(type t, a : t) where t:A {
+proc foo(type t, a : t) where t:A {
   writeln("foo1 ", a.x);
 }
 
-def foo(type t, c : t) where t:C {
+proc foo(type t, c : t) where t:C {
   writeln("foo2 ", c.x);
 }
 

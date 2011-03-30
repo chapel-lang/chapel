@@ -1,0 +1,18 @@
+.TH qdqueue_destroy 3 "OCTOBER 2009" libqthread "libqthread"
+.SH NAME
+.BR qdqueue_destroy " \- deallocate a distributed queue"
+.SH SYNOPSIS
+.B #include <qthread/qdqueue.h>
+
+.I void
+.br
+.B qdqueue_destroy
+.RI "(qthread_t *" me ", qdqueue_t *" q );
+.SH DESCRIPTION
+This function deallocates a qdqueue safely.
+.SH SEE ALSO
+.BR qlfqueue_destroy (3),
+.BR qdqueue_create (3),
+.BR qdqueue_enqueue (3),
+.BR qdqueue_dequeue (3),
+.BR qdqueue_empty (3)

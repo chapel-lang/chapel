@@ -61,7 +61,7 @@ writeln();
 // positions, since those are the only ones that are explicitly
 // stored.
 //
-def writeSpsArr() {
+proc writeSpsArr() {
   for (i,j) in dnsDom {
     write(spsArr(i,j), " ");
     if (j == n) then writeln();
@@ -125,7 +125,7 @@ writeln();
 // Or by assigning the array elements corresponding to the corners
 // and using our dense printing function:
 //
-def computeVal(row, col) return row + col/10.0;
+proc computeVal(row, col) return row + col/10.0;
 
 spsArr(1,1) = computeVal(1,1);
 spsArr(1,n) = computeVal(1,n);
@@ -204,7 +204,7 @@ writeSpsArr();
 // indices:
 //
 
-def antiDiag(n) {
+iter antiDiag(n) {
   for i in 1..n do
     yield (i, n-i+1);
 }

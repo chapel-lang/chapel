@@ -17,10 +17,15 @@ class BaseDist {
   var _doms: list(BaseDom);    // arrays declared over this domain
 
   pragma "dont disable remote value forwarding"
-  def destroyDist(dom: BaseDom = nil) {
+  proc destroyDist(dom: BaseDom = nil) {
     var cnt = _distCnt$ - 1;
-    if cnt < 0 then
-      halt("distribution reference count is negative!");
+    if !noRefCount {
+      if cnt < 0 then
+        halt("distribution reference count is negative!");
+    } else {
+      if cnt > 0 then
+        halt("distribution reference count has been modified!");
+    }
     if dom then
       on dom do
         _doms.remove(dom);
@@ -28,30 +33,30 @@ class BaseDist {
     return cnt;
   }
 
-  def dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
-    compilerError("arithmetic domains not supported by this distribution");
+  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
+    compilerError("rectangular domains not supported by this distribution");
   }
 
-  def dsiNewAssociativeDom(type idxType) {
+  proc dsiNewAssociativeDom(type idxType) {
     compilerError("associative domains not supported by this distribution");
   }
 
-  def dsiNewAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
+  proc dsiNewAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
     compilerError("enumerated domains not supported by this distribution");
   }
 
-  def dsiNewOpaqueDom(type idxType) {
+  proc dsiNewOpaqueDom(type idxType) {
     compilerError("opaque domains not supported by this distribution");
   }
 
-  def dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
+  proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
     compilerError("sparse domains not supported by this distribution");
   }
 
-  def dsiSupportsPrivatization() param return false;
-  def dsiRequiresPrivatization() param return false;
+  proc dsiSupportsPrivatization() param return false;
+  proc dsiRequiresPrivatization() param return false;
 
-  def dsiDestroyDistClass() { }
+  proc dsiDestroyDistClass() { }
 }
 
 //
@@ -61,95 +66,110 @@ class BaseDom {
   var _domCnt$: sync int = 0; // domain reference count and lock
   var _arrs: list(BaseArr);   // arrays declared over this domain
 
-  def getBaseDist(): BaseDist {
+  proc dsiMyDist(): BaseDist {
+    halt("internal error: dsiMyDist is not implemented");
     return nil;
   }
 
   pragma "dont disable remote value forwarding"
-  def destroyDom(arr: BaseArr = nil) {
+  proc destroyDom(arr: BaseArr = nil) {
     var cnt = _domCnt$ - 1;
-    if cnt < 0 then
-      halt("domain reference count is negative!");
+    if !noRefCount {
+      if cnt < 0 then
+        halt("domain reference count is negative!");
+    } else {
+      if cnt > 0 then
+        halt("domain reference count has been modified!");
+    }
     if arr then
       on arr do
         _arrs.remove(arr);
     _domCnt$ = cnt;
-    if cnt == 0 {
-      var dist = getBaseDist();
-      if dist then on dist {
-        var cnt = dist.destroyDist(this);
-        if cnt == 0 then
-          delete dist;
+    if !noRefCount {
+      if cnt == 0 && dsiLinksDistribution() {
+        var dist = dsiMyDist();
+        on dist {
+          var cnt = dist.destroyDist(this);
+          if cnt == 0 then
+            delete dist;
+        }
       }
     }
     return cnt;
   }
 
   // used for associative domains/arrays
-  def _backupArrays() {
+  proc _backupArrays() {
     for arr in _arrs do
       arr._backupArray();
   }
 
-  def _removeArrayBackups() {
+  proc _removeArrayBackups() {
     for arr in _arrs do
       arr._removeArrayBackup();
   }
 
-  def _preserveArrayElements(oldslot, newslot) {
+  proc _preserveArrayElements(oldslot, newslot) {
     for arr in _arrs do
       arr._preserveArrayElement(oldslot, newslot);
   }
 
-  def dsiSupportsPrivatization() param return false;
-  def dsiRequiresPrivatization() param return false;
+  proc dsiSupportsPrivatization() param return false;
+  proc dsiRequiresPrivatization() param return false;
 
   // false for default distribution so that we don't increment the
   // default distribution's reference count and add domains to the
   // default distribution's list of domains
-  def linksDistribution() param return true;
+  proc linksDistribution() param return true;
+
+  // dynamically-dispatched counterpart of linksDistribution
+  proc dsiLinksDistribution() return true;
 }
 
-class BaseArithmeticDom : BaseDom {
-  def dsiClear() {
+class BaseRectangularDom : BaseDom {
+  proc dsiClear() {
     halt("clear not implemented for this distribution");
   }
 
-  def clearForIteratableAssign() {
-    compilerError("Illegal assignment to an arithmetic domain");
+  proc clearForIteratableAssign() {
+    compilerError("Illegal assignment to a rectangular domain");
   }
 
-  def dsiAdd(x) {
-    compilerError("Cannot add indices to an arithmetic domain");
+  proc dsiAdd(x) {
+    compilerError("Cannot add indices to a rectangular domain");
+  }
+
+  proc dsiRemove(x) {
+    compilerError("Cannot remove indices from a rectangular domain");
   }
 }
 
 class BaseSparseDom : BaseDom {
-  def dsiClear() {
+  proc dsiClear() {
     halt("clear not implemented for this distribution");
   }
 
-  def clearForIteratableAssign() {
+  proc clearForIteratableAssign() {
     dsiClear();
   }
 }
 
 class BaseAssociativeDom : BaseDom {
-  def dsiClear() {
+  proc dsiClear() {
     halt("clear not implemented for this distribution");
   }
 
-  def clearForIteratableAssign() {
+  proc clearForIteratableAssign() {
     dsiClear();
   }
 }
 
 class BaseOpaqueDom : BaseDom {
-  def dsiClear() {
+  proc dsiClear() {
     halt("clear not implemented for this distribution");
   }
 
-  def clearForIteratableAssign() {
+  proc clearForIteratableAssign() {
     dsiClear();
   }
 }
@@ -162,20 +182,25 @@ class BaseArr {
   var _arrCnt$: sync int = 0; // array reference count (and eventually lock)
   var _arrAlias: BaseArr;     // reference to base array if an alias
 
-  def dsiStaticFastFollowCheck(type leadType) param return false;
+  proc dsiStaticFastFollowCheck(type leadType) param return false;
 
-  def canCopyFromDevice param return false;
-  def canCopyFromHost param return false;
+  proc canCopyFromDevice param return false;
+  proc canCopyFromHost param return false;
 
-  def dsiGetBaseDom(): BaseDom {
+  proc dsiGetBaseDom(): BaseDom {
     return nil;
   }
 
   pragma "dont disable remote value forwarding"
-  def destroyArr(): int {
+  proc destroyArr(): int {
     var cnt = _arrCnt$ - 1;
-    if cnt < 0 then
-      halt("array reference count is negative!");
+    if !noRefCount {
+      if cnt < 0 then
+        halt("array reference count is negative!");
+    } else {
+      if cnt > 0 then
+        halt("array reference count has been modified!");
+    }
     _arrCnt$ = cnt;
     if cnt == 0 {
       if _arrAlias {
@@ -187,29 +212,33 @@ class BaseArr {
       } else {
         dsiDestroyData();
       }
-      var dom = dsiGetBaseDom();
-      on dom {
-        var cnt = dom.destroyDom(this);
-        if cnt == 0 then
-          delete dom;
+    }
+    if !noRefCount {
+      if cnt == 0 {
+        var dom = dsiGetBaseDom();
+        on dom {
+          var cnt = dom.destroyDom(this);
+          if cnt == 0 then
+            delete dom;
+        }
       }
     }
     return cnt;
   }
 
-  def dsiDestroyData() { }
+  proc dsiDestroyData() { }
 
-  def dsiReallocate(d: domain) {
+  proc dsiReallocate(d: domain) {
     halt("reallocating not supported for this array type");
   }
 
   // This method is unsatisfactory -- see bradc's commit entries of
   // 01/02/08 around 14:30 for details
-  def _purge( ind: int) {
+  proc _purge( ind: int) {
     halt("purging not supported for this array type");
   }
 
-  def _resize( length: int, old_map) {
+  proc _resize( length: int, old_map) {
     halt("resizing not supported for this array type");
   }
 
@@ -222,33 +251,33 @@ class BaseArr {
   // would require better subclassing of generic classes.  A good
   // summer project for Jonathan?
   //
-  def sparseShiftArray(shiftrange, initrange) {
+  proc sparseShiftArray(shiftrange, initrange) {
     halt("sparseGrowDomain not supported for non-sparse arrays");
   }
 
-  def sparseShiftArrayBack(shiftrange) {
+  proc sparseShiftArrayBack(shiftrange) {
     halt("sparseShiftArrayBack not supported for non-sparse arrays");
   }
 
   // methods for associative arrays
-  def clearEntry(idx) {
+  proc clearEntry(idx) {
     halt("clearEntry() not supported for non-associative arrays");
   }
 
-  def _backupArray() {
+  proc _backupArray() {
     halt("_backupArray() not supported for non-associative arrays");
   }
 
-  def _removeArrayBackup() {
+  proc _removeArrayBackup() {
     halt("_removeArrayBackup() not supported for non-associative arrays");
   }
 
-  def _preserveArrayElement(oldslot, newslot) {
+  proc _preserveArrayElement(oldslot, newslot) {
     halt("_preserveArrayElement() not supported for non-associative arrays");
   }
 
-  def dsiSupportsAlignedFollower() param return false;
+  proc dsiSupportsAlignedFollower() param return false;
 
-  def dsiSupportsPrivatization() param return false;
-  def dsiRequiresPrivatization() param return false;
+  proc dsiSupportsPrivatization() param return false;
+  proc dsiRequiresPrivatization() param return false;
 }

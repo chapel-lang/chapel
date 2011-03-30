@@ -1,6 +1,6 @@
 var x: int;
 
-def foo() var {
+proc foo() var {
   if !setter then
     compilerError("foo() used in value context!");
 }

@@ -37,7 +37,7 @@ use omega;
 var  buf4: [0..511] complex;
 var  dat4: [0..511] complex;
 
-def init_fft512() {
+proc init_fft512() {
     for i1562 in 0..31 {
         for i1567 in 0..3 {
             for i1573 in 0..1 {
@@ -49,7 +49,7 @@ def init_fft512() {
 
 }
 
-def fft512(Y: [] complex, X: [] complex) {
+proc fft512(Y: [] complex, X: [] complex) {
     for i1563 in 0..15 {
         var s3313, s3314, s3315, s3316, s3317, s3318, s3319, 
     s3320, s3321, s3322, s3323, s3324, s3325, s3326, s3327, 

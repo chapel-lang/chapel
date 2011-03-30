@@ -1,18 +1,18 @@
 class C {
   var x : int = 1;
-  def print() {
+  proc print() {
     writeln(this);
   }
 }
 
 class D : C {
   var y : real = 2.0;
-  def print() {
+  proc print() {
     writeln(this);
   }
 }
 
-def foo(c : C) {
+proc foo(c : C) {
   c.print();
 }
 

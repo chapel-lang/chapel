@@ -1,7 +1,7 @@
 record myarr {
   var x: real;
 
-  def this(i:int, j: int) var {
+  proc this(i:int, j: int) var {
     if (i==0 && j == 0) {
       return 0.0;
     } else {

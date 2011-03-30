@@ -4,7 +4,7 @@
 config const inputfile = "lehmer10.dat";
 config const upper = true;
 
-def main() {
+proc main() {
   var Adat = new file(inputfile,path='./',mode=FileAccessMode.read);
   Adat.open();
 
@@ -35,7 +35,7 @@ def main() {
   writeln();
 }
 
-def blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
+proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
   if (D.dim(1) != D.dim(2)) then
     halt("error:  blockChol requires a square matrix with same dimensions");
 
@@ -117,7 +117,7 @@ def blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
   }
 }
 
-def IterateByBlocks(D:range,blksize) {
+iter IterateByBlocks(D:range,blksize) {
   var start = D.low;
   var stop = D.high;
   var hi: int;
@@ -128,27 +128,27 @@ def IterateByBlocks(D:range,blksize) {
   }
 }
 
-def readSize(Adat) {
+proc readSize(Adat) {
   var n: int;
 
   Adat.read(n);
   return n;
 } 
 
-def readBlk(Adat) {
+proc readBlk(Adat) {
   var blk: int;
 
   Adat.read(blk);
   return blk;
 } 
 
-def initA(A,Adat){
+proc initA(A,Adat){
   for ij in A.domain {
     Adat.read(A(ij));
   }
 }
 
-def writeCholFactor(A:[?D],fac:string) {
+proc writeCholFactor(A:[?D],fac:string) {
   var G:[D] A.eltType;
 
   if (fac == "U") {

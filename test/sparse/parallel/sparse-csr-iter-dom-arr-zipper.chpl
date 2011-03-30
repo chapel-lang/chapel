@@ -7,7 +7,7 @@ test(2, d2);
 
 // main test driver
 
-def test(param dim:int, d: domain(dim)) {
+proc test(param dim:int, d: domain(dim)) {
   writeln("=== ", dim, " ===");
   // This is our sparse domain that everything will spin around.
   var sd: sparse subdomain(d) dmapped new dmap(new CSR());
@@ -18,10 +18,10 @@ def test(param dim:int, d: domain(dim)) {
   var X, Y, Z: [sd] real;
 
   // conveniences
-  def showA { show(A, "A ="); } def showB { show(B, "B ="); }
-  def showC { show(C, "C ="); } def showX { show(X, "X ="); }
-  def showY { show(Y, "Y ="); } def showZ { show(Z, "Z ="); }
-  def hd(msg:string) { write(msg, "\n "); }
+  proc showA { show(A, "A ="); } proc showB { show(B, "B ="); }
+  proc showC { show(C, "C ="); } proc showX { show(X, "X ="); }
+  proc showY { show(Y, "Y ="); } proc showZ { show(Z, "Z ="); }
+  proc hd(msg:string) { write(msg, "\n "); }
 
   seed(B, 1); seed(C, 100); seed(Y, 1.0); seed(Z, 100.0);
   writeln("seeded"); showB; showC; showY; showZ;
@@ -37,7 +37,7 @@ def test(param dim:int, d: domain(dim)) {
 
   var D: [sd] int;
   var Q: [sd] real;
-  def showD { show(D, "D ="); } def showQ { show(Q, "Q ="); }
+  proc showD { show(D, "D ="); } proc showQ { show(Q, "Q ="); }
 
   forall (a,d) in (A,D) { d = a; }
   hd("forall(arr,arr) { ivar = ivar }"); showD;
@@ -93,12 +93,12 @@ def test(param dim:int, d: domain(dim)) {
 
 // helpers
 
-def populateDomain(param dim, sd) where dim == 1 {
+proc populateDomain(param dim, sd) where dim == 1 {
   // for 1-D, use half of the values; domain members are not tuples
   for i in 1..n by 2 do sd += i;
 }
 
-def populateDomain(param dim, sd) where dim > 1 {
+proc populateDomain(param dim, sd) where dim > 1 {
   for i in 1..n-1 {
     var member: index(sd);
     for param dm in 1..dim do member(dm) =
@@ -108,24 +108,24 @@ def populateDomain(param dim, sd) where dim > 1 {
   }
 }
 
-def seed(A,f) {
+proc seed(A,f) {
   var cnt = f;
   // the following needs to be deterministic so the output is, too
   for a in A { a = cnt; cnt += f; }    
 }
 
-def show(A, msg...) {
+proc show(A, msg...) {
   // the following needs to be deterministic so the output is, too
   write((...msg));
   for a in A do write(" ", a);
   writeln();
 }
 
-//def firstComp(arg:int) { return arg; }
-//def firstComp(arg) where isTuple(arg) { return arg(1); }
+//proc firstComp(arg:int) { return arg; }
+//proc firstComp(arg) where isTuple(arg) { return arg(1); }
 
-def sumComps(arg:int) { return arg; }
-def sumComps(arg) where isTuple(arg) {
+proc sumComps(arg:int) { return arg; }
+proc sumComps(arg) where isTuple(arg) {
   var result: arg(1).type = 0;
   for param ix in 1..arg.size do result += arg(ix);
   return result;

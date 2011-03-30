@@ -1,6 +1,6 @@
 use List;
 
-def main {
+proc main {
   var lst: list(int);
   lst.append(1);
   on Locales(1) do

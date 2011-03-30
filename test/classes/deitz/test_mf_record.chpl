@@ -1,11 +1,11 @@
 record foo {
   var x : int;
-  def bar() {
+  proc bar() {
     writeln("method bar ", x);
   }
 }
 
-def bar(f : foo) {
+proc bar(f : foo) {
   writeln("function bar ", f.x);
 }
 

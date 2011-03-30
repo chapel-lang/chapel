@@ -1,5 +1,5 @@
 class A {
-  def X.fooA() { writeln("X.fooA()"); }  // error: X is undefined
+  proc X.fooA() { writeln("X.fooA()"); }  // error: X is undefined
 }
 
 var myA = new A();

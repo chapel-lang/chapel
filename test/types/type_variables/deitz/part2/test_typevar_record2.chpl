@@ -1,7 +1,7 @@
 record foo {
   type eltType;
   var x : eltType;
-  def print() {
+  proc print() {
     writeln(x);
   }
 }

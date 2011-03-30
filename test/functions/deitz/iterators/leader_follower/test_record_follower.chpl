@@ -4,18 +4,18 @@ record R {
 
 var AR: [1..3] R;
 
-def foo() {
+iter foo() {
   for i in 1..3 do
     for j in AR(i).A do
       yield j;
 }
 
-def foo(param tag: iterator) where tag == iterator.leader {
+iter foo(param tag: iterator) where tag == iterator.leader {
   for i in 1..3 do
     yield AR(i);
 }
 
-def foo(param tag: iterator, follower) where tag == iterator.follower {
+iter foo(param tag: iterator, follower) where tag == iterator.follower {
   for j in follower.A do
     yield j;
 }

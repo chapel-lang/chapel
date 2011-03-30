@@ -42,7 +42,7 @@ config const EPS = 1.0E-5;
 
 config param printTimings = true;
 
-def main() {
+proc main() {
   var startTime:real, execTime:real;
   var numruns : int = NUMRUNS;
 

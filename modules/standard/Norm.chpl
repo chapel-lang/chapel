@@ -20,7 +20,7 @@
 enum normType {norm1, norm2, normInf, normFrob};
 
 // vector norms
-def norm(x: [], p: normType) where x.rank == 1 {
+proc norm(x: [], p: normType) where x.rank == 1 {
   select (p) {
   when normType.norm1 do return + reduce abs(x);
   when normType.norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
@@ -31,7 +31,7 @@ def norm(x: [], p: normType) where x.rank == 1 {
 }
 
 // matrix norms
-def norm(x: [?D], p: normType) where x.rank == 2 {
+proc norm(x: [?D], p: normType) where x.rank == 2 {
   select (p) {
   when normType.norm1 do
     return max reduce forall j in D.dim(2) do (+ reduce abs(x[D.dim(1), j..j]));
@@ -50,12 +50,12 @@ def norm(x: [?D], p: normType) where x.rank == 2 {
 
 // this module doesn't implement norms for > 2D arrays, so generate
 // a compile-timem error if the user tries to call one
-def norm(x: [], p: normType) where x.rank > 2 {
+proc norm(x: [], p: normType) where x.rank > 2 {
   compilerError("Norms not implemented for array ranks > 2D");
 }
 
 //  default norms
-def norm(x: []) {
+proc norm(x: []) {
   select (x.rank) {
   when 1 do return norm(x, normType.norm2);
   when 2 do return norm(x, normType.normFrob);

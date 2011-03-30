@@ -64,7 +64,7 @@ var error : real = 0;
 var counts: [1..k] int = 0;
 var c1:[1..k] Data;
 
-def accumulate (da: eltType)
+proc accumulate (da: eltType)
 {
     //find nearest Cluster for this point
     
@@ -100,7 +100,7 @@ def accumulate (da: eltType)
     }
 }
 
-def combine(km: kmeansReduction(eltType))
+proc combine(km: kmeansReduction(eltType))
 {
     counts = counts + km.counts;
     error = error + km.error;
@@ -114,7 +114,7 @@ def combine(km: kmeansReduction(eltType))
     }
 }
 
-def generate()
+proc generate()
 {
   return (error, counts, c1);
 }

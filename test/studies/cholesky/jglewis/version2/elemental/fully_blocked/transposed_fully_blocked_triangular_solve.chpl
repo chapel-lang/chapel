@@ -9,7 +9,7 @@ module transposed_fully_blocked_triangular_solve {
   use cholesky_execution_config_consts,
       fully_blocked_partition_iterators;
 
-  def transposed_fully_blocked_triangular_solve ( L_diag    : [],
+  proc transposed_fully_blocked_triangular_solve ( L_diag    : [],
 					  L_offdiag : [] ) {
     
     // ------------------------------------------------------

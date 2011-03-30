@@ -3,12 +3,12 @@ use MadAnalytics;
 
 class Square: AFcn {
     var f: AFcn;
-    def this(x: real): real {
+    proc this(x: real): real {
         return f(x)**2;
     }
 }
 
-def main() {
+proc main() {
     var npt = 10;
 
     writeln("Mad Chapel -- Multiplication Test\n");

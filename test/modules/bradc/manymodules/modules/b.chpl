@@ -1,5 +1,5 @@
 module b {
-  def runb() {
+  proc runb() {
     writeln("in runb() from module b");
   }
 }

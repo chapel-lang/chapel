@@ -1,6 +1,6 @@
 config const n = 4;
  
-def main
+proc main
 {
   const mat_dom : domain (2) = [1..n, 1..n];
   var A : [mat_dom] real,
@@ -9,7 +9,7 @@ def main
   traditional_outer_product_cholesky ( A, L );
 }
  
-def traditional_outer_product_cholesky ( A : [], L : [] )
+proc traditional_outer_product_cholesky ( A : [], L : [] )
 {
   assert ( A.domain.dim (1) == A.domain.dim (2)  &&
            L.domain == A.domain );

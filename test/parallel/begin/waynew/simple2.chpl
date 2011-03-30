@@ -4,7 +4,7 @@ var a: sync int;
 
 var c = 1;
 
-def work() {
+proc work() {
   var b = 2;
 
   begin {
@@ -18,7 +18,7 @@ def work() {
 }
 
 
-def jam_records() {
+proc jam_records() {
   cobegin {
     work();
     begin {

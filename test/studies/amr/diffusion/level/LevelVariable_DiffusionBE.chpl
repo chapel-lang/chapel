@@ -6,7 +6,7 @@ use LevelBC_def;
 //|""""""""""""""""""""""""""""""""""\
 //|===> LevelVariable.storeCGSolution ===>
 //|__________________________________/
-def LevelVariable.storeCGSolution(
+proc LevelVariable.storeCGSolution(
   rhs: LevelVariable,
   bc:  LevelBC,
   diffusivity: real,
@@ -51,7 +51,7 @@ def LevelVariable.storeCGSolution(
   //::::::::::::::::::::\
   //===> CG iteration ===>
   //::::::::::::::::::::/
-  for iter in 1..max_iterations {
+  for iter_no in 1..max_iterations {
 
     //===> Update solution and residual ===>
     for grid in level.grids do
@@ -72,9 +72,9 @@ def LevelVariable.storeCGSolution(
     //==== Update residual norm, and check for convergence ====
     old_level_res_norm_square = level_res_norm_square;
     level_res_norm_square     = +reduce(grid_res_norm_squares);
-    writeln("Iteration ", iter, ": residual_norm = ", sqrt(level_res_norm_square));
+    writeln("Iteration ", iter_no, ": residual_norm = ", sqrt(level_res_norm_square));
     if sqrt(level_res_norm_square) < tolerance then break;
-    if iter == max_iterations then 
+    if iter_no == max_iterations then 
       writeln("Warning: conjugate gradient method failed to converge.");
 
 
@@ -103,7 +103,7 @@ def LevelVariable.storeCGSolution(
 //|""""""""""""""""""""""""""""""""""\
 //|===> LevelVariable.storeBEOperator ===>
 //|__________________________________/
-def LevelVariable.storeBEOperator(
+proc LevelVariable.storeBEOperator(
   q:           LevelVariable,
   diffusivity: real,
   dt:          real)
@@ -122,7 +122,7 @@ def LevelVariable.storeBEOperator(
 
 
 
-def LevelVariable.storeFluxDivergence(
+proc LevelVariable.storeFluxDivergence(
   q:           LevelVariable,
   diffusivity: real)
 {

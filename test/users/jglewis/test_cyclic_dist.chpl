@@ -30,7 +30,7 @@ module test_elemental_explicitly_strided_cholesky {
 
   config const print_matrix_details = true;
 
-  def main {
+  proc main {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
@@ -92,7 +92,7 @@ module test_elemental_explicitly_strided_cholesky {
     check_procedural_alias ( A, L );
   }
 
-  def check_procedural_alias ( A : [], L_formal : [] )
+  proc check_procedural_alias ( A : [], L_formal : [] )
 
     where ( A.domain.rank == 2 ) {
 
@@ -117,7 +117,7 @@ module test_elemental_explicitly_strided_cholesky {
   }
 
 
-  def print_lower_triangle ( L : [] ) {
+  proc print_lower_triangle ( L : [] ) {
    
     if print_matrix_details then
       for (i_row, i_col) in ( L.domain.dim(1), L.domain.dim(2) ) do

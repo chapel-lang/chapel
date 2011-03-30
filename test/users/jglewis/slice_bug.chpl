@@ -20,7 +20,7 @@ module slice_bug
     var end   = 1: int; 
   }
     
-  def +(l: directed_vertex_pair, r: directed_vertex_pair) 
+  proc +(l: directed_vertex_pair, r: directed_vertex_pair) 
       return new directed_vertex_pair (l.start + r.start, l.end + r.end);
 
 
@@ -28,7 +28,7 @@ module slice_bug
   // Quadrant selection algorithm
   // ============================
 
-  def assign_quadrant ( u: real, a: real, b: real, c: real, d : real, 
+  proc assign_quadrant ( u: real, a: real, b: real, c: real, d : real, 
 			bit : int ) : directed_vertex_pair
     {
       var start_inc = 0;
@@ -45,7 +45,7 @@ module slice_bug
   // Main RMAT Graph Generation Procedure
   // ====================================~
 
-  def main {
+  proc main {
     const vertex_range = 1..n_vertices, 
           edge_range   = 1..n_raw_edges,
           expanded_edge_range = 1..n_raw_edges + 1;

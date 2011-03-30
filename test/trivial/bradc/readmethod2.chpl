@@ -1,10 +1,10 @@
 class G {
-  def read(): int {
+  proc read(): int {
     return 1;
   }
 }
 
-def main() {
+proc main() {
   var goo = new G();
   var gooResult = goo.read();
   writeln("gooResult = ", gooResult);

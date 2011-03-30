@@ -1,4 +1,4 @@
-pragma "inline" def basic() : int {
+pragma "inline" iter basic() : int {
   var a : int;
   while a < 4 {
     yield a * 4;
@@ -6,7 +6,7 @@ pragma "inline" def basic() : int {
   }
 }
 
-pragma "inline" def simple() : int {
+pragma "inline" iter simple() : int {
   var b : int;
   while b < 6 {
     yield b * 10;
@@ -14,7 +14,7 @@ pragma "inline" def simple() : int {
   }
 }
 
-pragma "inline" def easy() : int {
+pragma "inline" iter easy() : int {
   var c : int;
   while c < 4 {
     yield c * 2;
@@ -22,7 +22,7 @@ pragma "inline" def easy() : int {
   }
 }
 
-pragma "inline" def trivial() : int {
+pragma "inline" iter trivial() : int {
   var d : int;
   while d < 4 {
     yield d * 3;
@@ -30,7 +30,7 @@ pragma "inline" def trivial() : int {
   }
 }
 
-def main() {
+proc main() {
 var x : int = 5;
   for i in basic() {
     for j in simple() {

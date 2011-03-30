@@ -8,12 +8,12 @@ var lock: sync int = 0;
 
 class XmlElement {
   var length: int;
-  def print { printHelp(""); }
-  def printHelp(indent) { }
+  proc print { printHelp(""); }
+  proc printHelp(indent) { }
 }
 class XmlPCData : XmlElement {
   var data: string;
-  def printHelp(indent) { writeln(indent, "PCData(", data, ")"); }
+  proc printHelp(indent) { writeln(indent, "PCData(", data, ")"); }
 }
 class XmlTag : XmlElement {
   var name: string;
@@ -22,7 +22,7 @@ class XmlTag : XmlElement {
   var numChildren: int;
   var childrenValueSpace: domain(1) = [1..2];
   var childrenValues: [childrenValueSpace] XmlElement;
-  def printHelp(indent) {
+  proc printHelp(indent) {
     writeln(indent, "<", name, ">");
     for child in [1..numChildren] do
        childrenValues[child].printHelp(indent + "  ");
@@ -31,7 +31,7 @@ class XmlTag : XmlElement {
 
 var parsedElements: [AllPairs] single XmlElement;
 
-def main {
+proc main {
   forall z in AllIndices do {
     if sourceText.substring[z] == '<' then {
       lock;
@@ -69,17 +69,17 @@ def main {
     }
 }
 
-def hasIndex(start, stop, indices) {
+proc hasIndex(start, stop, indices) {
   return || reduce ([i in indices] (i >= start && i <= stop));
 }
 
-def hasSpace(str) {
+proc hasSpace(str) {
   for i in [1..(str.length)] do
      if str.substring(i) == " " then return true;
   return false;
 }
 
-def processTag(i,j) {
+proc processTag(i,j) {
   if (i > j) then {
     /* invalid range */
     parsedElements(i,j) = nil;

@@ -2,7 +2,7 @@ class C {
   type t;
 }
 
-def f(a: 3*C(?)) {
+proc f(a: 3*C(?)) {
   writeln(typeToString(a.type));
 }
 

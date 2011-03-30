@@ -46,7 +46,7 @@ if doString {
   testParallel(DomStringType, D, ArithString, ArithStringRef);
 }
 
-def testSerial(Dom, D, Arr, ArrRef) {
+proc testSerial(Dom, D, Arr, ArrRef) {
   type idxType = Dom._value.idxType;
   for ai in Dom {
     if idxType != string then
@@ -71,7 +71,7 @@ def testSerial(Dom, D, Arr, ArrRef) {
 
 
 // could probably use serial true on testSerial
-def testParallel(Dom, D, Arr, ArrRef) {
+proc testParallel(Dom, D, Arr, ArrRef) {
   type idxType = Dom._value.idxType;
   forall ai in Dom {
     if idxType != string then

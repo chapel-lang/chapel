@@ -1,9 +1,9 @@
 
-def foo(x:int, y:int, z:int) {
+proc foo(x:int, y:int, z:int) {
   return (x, y, z);
 }
 
-def main() {
+proc main() {
 
   var (x,  , z) = foo(1, 2, 3);
   //writeln(_);

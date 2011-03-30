@@ -28,7 +28,7 @@ config const numTrials = 1,
              printTiming = false;
 
 
-def main() {
+proc main() {
   const MatrixSpace = [1..n, 1..n];
   var A: [MatrixSpace] elemType;
   // WANT the above to be:
@@ -80,7 +80,7 @@ def main() {
 }
 
 
-def conjGrad(A: [?MatDom], X: [?VectDom]) {
+proc conjGrad(A: [?MatDom], X: [?VectDom]) {
   const cgitmax = 25;
 
   var Z: [VectDom] elemType = 0.0,

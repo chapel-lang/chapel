@@ -1,4 +1,4 @@
-def foo(i) where foo(2).type == real {
+proc foo(i) where foo(2).type == real {
   writeln("hello world");
 }
 

@@ -33,10 +33,10 @@ writeln("t1(1) is: ", t1(1));
 writeln("t2(1) is: ", t2(1));
 writeln();
 
-def foo(x,y) {
+proc foo(x,y) {
   x(1) = y;
 }
 
-def bar((x,y)) {
+proc bar((x,y)) {
   x(1) = y;
 }

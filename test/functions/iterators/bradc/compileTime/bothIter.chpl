@@ -1,4 +1,4 @@
-def intSizes() param {
+proc intSizes() param {
   yield 8;
   yield 16;
   yield 32;
@@ -6,7 +6,7 @@ def intSizes() param {
 }
   
 
-def intTypes() type {
+proc intTypes() type {
   for param z in intSizes() do
     yield int(z);
 }

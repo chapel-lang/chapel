@@ -5,7 +5,7 @@ module Strassen_Main
 
     config var n = 4;
 
-    def main()
+    proc main()
     {
         var factory = new StrassenFactory(n);
         var runner = new BenchmarkRunner(factory,10);

@@ -38,7 +38,7 @@ var  buf2: [0..127] complex;
 var  dat3: [0..55] complex;
 var  dat4: [0..55] complex;
 
-def init_fft128() {
+proc init_fft128() {
   for i3883 in 0..6 {
     for i3898 in 0..3 {
       dat3(((i3883*8) + (i3898*2))) = omega(128, ((i3883 + 1)*i3898));
@@ -54,7 +54,7 @@ def init_fft128() {
 
 }
 
-def fft128(Y: [] complex, X: [] complex) {
+proc fft128(Y: [] complex, X: [] complex) {
   var a6079, s2448, s2449, s2450, s2451, t6445, t6446, t6447, t6448, t6449, t6450, t6451, t6452, t6453, t6454, t6455:complex;
   t6445 = (X(0) + X(64));
   t6446 = (X(0) - X(64));

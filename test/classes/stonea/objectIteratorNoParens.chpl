@@ -2,14 +2,14 @@ class Foo {
     type eltType;
     var elements : [1..3] eltType;
 
-    def Foo (type eltType, first : eltType, second : eltType, third : eltType)
+    proc Foo (type eltType, first : eltType, second : eltType, third : eltType)
     {
         elements[1] = first;
         elements[2] = second;
         elements[3] = third;
     }
 
-    def these var : eltType {
+    iter these var : eltType {
         for el in elements do
             yield el;
     }

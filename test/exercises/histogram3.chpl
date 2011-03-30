@@ -54,7 +54,7 @@ writeln("Histogram computed in ", timer.elapsed(), " seconds\n");
 if printHistogram then
   outputHistogram(Y);
 
-def computeHistogram(X: [] real, Y: [] int) {
+proc computeHistogram(X: [] real, Y: [] int) {
   var lock$: sync bool;
   coforall t in 1..numThreads {
     var low = 1+(t-1)*numNumbers/numThreads;
@@ -69,7 +69,7 @@ def computeHistogram(X: [] real, Y: [] int) {
 }
 
 // outputHistogram: output histogram array
-def outputHistogram(Y: [] int) {
+proc outputHistogram(Y: [] int) {
   var bucketMax = max reduce Y;
   var rowSize = ceil(bucketMax:real/10):int;
   var numRows = ceil(bucketMax:real/rowSize):int;

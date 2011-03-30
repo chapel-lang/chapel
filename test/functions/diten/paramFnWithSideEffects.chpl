@@ -1,14 +1,14 @@
-def bar(x) {
+proc bar(x) {
   for i in 1..x do
     writeln(i);
 }
 
-def foo(x: int) param {
+proc foo(x: int) param {
   bar(x);
   return 7;
 }
 
-def main {
+proc main {
   param n: int = foo(4);
   writeln(n);
 }

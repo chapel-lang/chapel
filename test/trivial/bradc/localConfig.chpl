@@ -1,6 +1,6 @@
 config var x = 1;
 
-def main() {
+proc main() {
   config var y = 2;
 
   for i in 1..10 {

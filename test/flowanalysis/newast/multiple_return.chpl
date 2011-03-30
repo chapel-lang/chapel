@@ -1,4 +1,4 @@
-def f(a,b,c) {
+proc f(a,b,c) {
   if (a) then
     return b;
   else

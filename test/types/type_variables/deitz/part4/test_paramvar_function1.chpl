@@ -1,4 +1,4 @@
-def instantiateme(param x : int, y : string) {
+proc instantiateme(param x : int, y : string) {
   writeln(y);
   writeln(x);
 }

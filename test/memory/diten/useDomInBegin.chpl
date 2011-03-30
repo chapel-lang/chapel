@@ -1,4 +1,4 @@
-def f() {
+proc f() {
   use Time;
   var D = [1..10];
   begin {
@@ -9,7 +9,7 @@ def f() {
 
 config const n = 10;
 
-def main {
+proc main {
   for i in 1..n do
     f();
 }
