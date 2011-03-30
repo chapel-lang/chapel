@@ -101,13 +101,13 @@ ranges, regular domain values typically require only $O(1)$ space.
 
 Rectangular domain types are parameterized by three things:
 \begin{itemize}
-\item[\chpl{rank}] a positive \chpl{int} value indicating the number
+\item \chpl{rank} a positive \chpl{int} value indicating the number
 of dimensions that the domain represents;
-\item[\chpl{idxType}] a type member representing the index type for
+\item \chpl{idxType} a type member representing the index type for
 each dimension; and
 % BLC: we should potentially rename idxType to idxDimType to make it
 % more consistent with the irregular case
-\item \chpl{stridable}, a \chpl{bool} parameter indicating whether
+\item \chpl{stridable} a \chpl{bool} parameter indicating whether
 any of the domain's dimensions will be characterized by a strided
 range.
 \end{itemize}
@@ -157,8 +157,14 @@ described by its singleton range.  The index set for a rank~$n$
 domain is the set of all \chpl{n*idxType} tuples described by the
 tensor product of its ranges.  When expanded (as by an iterator), rectangular domain indices are ordered
 according to the lexicographic order of their values.  That is, the index with
-the highest rank is listed first and changes most slowly\footnote{This is also
+the highest rank is listed first and changes most slowly.\footnote{This is also
 known as row-major ordering.}
+
+%REVIEW: vass: we have not settled on the lexicographic order of the values.
+% That needs to be reflected here.
+
+%REVIEW: vass: rephrase the futures below to (a) be more formal
+% and (b) motivate why we are considering them (or add some contents)?
 
 \begin{future}
 Unbounded ranges may be supported.
@@ -881,6 +887,7 @@ for rectangular domains.  That observation provides some motivation to normalize
 the behavior.
 \end{openissue}
 
+%REVIEW: vass: need to define 'capType' or replace with something that is defined
 \begin{protohead}
 proc $Domain$.numIndices: capType
 \end{protohead}
@@ -912,6 +919,13 @@ domain \chpl{D} is iterated over by two nested loops.  The first
 dimension of \chpl{D} is iterated over in the outer loop.  The second
 dimension is iterated over in the inner loop.
 \end{example}
+
+\begin{protohead}
+proc $Domain$.dims(): rank*range
+\end{protohead}
+\begin{protobody}
+Returns a tuple of ranges describing the dimensions of the domain.
+\end{protobody}
 
 % BLC: ``integral'' isn't really correct in the two 1D cases below,
 % however, we don't really seem to have a user-level name for the
