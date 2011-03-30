@@ -15,14 +15,6 @@
 general regressions
 ===================
 
-tests print number of cores which differs between platforms (12/24/10)
-----------------------------------------------------------------------
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/block_distribution/test_elemental_cholesky_block]
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/fully_blocked/test_fully_blocked_elemental_cholesky]
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/strided/test_elemental_cholesky_explicitly_symmetric_strided]
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky]
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/unsymmetric_indices/test_elemental_cholesky_unsymmetric_ranges]
-
 has always timed out (12/24/10)
 -------------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
@@ -123,6 +115,10 @@ internal valgrind stuff 'the impossible has happened'
 block distribution regressions
 ==============================
 
+array slice out-of-bounds (03/30/11)
+------------------------------------
+[Error matching program output for distributions/robust/arithmetic/slicing/test_strided_slice1]
+
 
 ===============================
 cyclic distribution regressions
@@ -177,6 +173,10 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+failure to open file (03/30/11)
+-------------------------------
+[Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
+
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc] (03/21/11)
@@ -211,12 +211,6 @@ verbose output now shows launch command (10/31/08) (bradc)
 ==============================================
 gasnet-fast regressions (other than the above)
 ==============================================
-
-nondet. lost update to element to value 5
------------------------------------------
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1] (02/24/11, 03/01/11, 03/18/11)
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block2] (03/20/11, 03/22/11)
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3] (02/26/11, 03/04/11, 03/18/11, 03/21/11)
 
 nondet. zippered iterations having unequal lengths
 --------------------------------------------------
