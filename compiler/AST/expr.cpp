@@ -208,11 +208,12 @@ void SymExpr::codegen(FILE* outfile) {
 }
 
 
-UnresolvedSymExpr::UnresolvedSymExpr(const char* iunresolved) :
+UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved, bool i_is_volatile) :
   Expr(E_UnresolvedSymExpr),
-  unresolved(astr(iunresolved))
+  unresolved(astr(i_unresolved)),
+  isVolatile(i_is_volatile)
 {
-  if (!iunresolved)
+  if (!i_unresolved)
     INT_FATAL(this, "bad call to UnresolvedSymExpr");
   gUnresolvedSymExprs.add(this);
 }
@@ -236,7 +237,7 @@ UnresolvedSymExpr::verify() {
 
 UnresolvedSymExpr*
 UnresolvedSymExpr::copyInner(SymbolMap* map) {
-  return new UnresolvedSymExpr(unresolved);
+  return new UnresolvedSymExpr(unresolved, isVolatile);
 }
 
 
@@ -2011,8 +2012,27 @@ void CallExpr::codegen(FILE* outfile) {
           get(2)->codegen(outfile);
           fprintf(outfile, "))");
       } else if (dst == dtString || src == dtString) {
+        // 
+        // hh: is it okay to drop volatile type on the floor here?
+        //     should we instead of avoiding to print out the volatile type 
+        //     (which we do because of the space between volatile and the type
+        //     expr), print out the volatile type but just replace the space
+        //     with an underscore?
+        //
+	const char* dst_cname = dst->symbol->cname;
+	const char* src_cname = src->symbol->cname;
+	if (PrimitiveType* p_dst = toPrimitiveType(dst)) {
+	  if (p_dst->nonvolType && !p_dst->volType) {
+	    dst_cname = p_dst->nonvolType->symbol->cname;  
+	  }
+	}
+	if (PrimitiveType* p_src = toPrimitiveType(src)) {
+	  if (p_src->nonvolType && !p_src->volType) {
+	    src_cname = p_src->nonvolType->symbol->cname;  
+	  }
+	}
         fprintf(outfile, *dst->symbol->cname == '_' ? "%s_to%s(" : "%s_to_%s(",
-                src->symbol->cname, dst->symbol->cname);
+                src_cname, dst_cname);
         get(2)->codegen(outfile);
         if (src == dtString) {
           fprintf(outfile, ", ");

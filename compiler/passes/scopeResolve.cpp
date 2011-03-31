@@ -507,9 +507,11 @@ void build_type_constructor(ClassType* ct) {
                                           new_StringSymbol(field->name),
                                           new CallExpr(PRIM_INIT, arg)));
         } else if (exprType) {
-          fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
+          CallExpr* newInit = new CallExpr(PRIM_INIT, exprType->copy());
+          CallExpr* newSet = new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name),
-                                          new CallExpr(PRIM_INIT, exprType->copy())));
+                                          newInit);
+          fn->insertAtTail(newSet);
         } else if (init) {
           fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                         new_StringSymbol(field->name),
@@ -1093,8 +1095,26 @@ void scopeResolve(void) {
 
     SymExpr* symExpr = NULL;
 
+    //
+    // hh: if the result of the unresolvedSymExpr look up is not a function,
+    //     try to resolve it here.  in addition, if the unresolvedSymExpr was marked
+    //     as volatile, and its look up returns a primitive type, replace the 
+    //     unresolvedSymExpr with the volatile version of that primitive type.
+    //
     if (sym) {
       if (!isFnSymbol(sym)) {
+	if (unresolvedSymExpr->isVolatile) {
+	  if (TypeSymbol* typeSym = toTypeSymbol(sym)) {
+ 	    if (PrimitiveType* primType = toPrimitiveType(typeSym->type)) {
+	      if (!primType->volType) {
+	        INT_FATAL("No volatile primitive type exists for %s, %s", typeSym->name);
+	      } 
+	      sym = primType->volType->symbol;
+	    } else {
+	      USR_FATAL("Volatile applied to non-primitive type expr");
+	    }
+	  }
+        }
         symExpr = new SymExpr(sym);
         unresolvedSymExpr->replace(symExpr);
       }
