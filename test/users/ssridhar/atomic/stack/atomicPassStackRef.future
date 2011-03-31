@@ -1,0 +1,19 @@
+bug: incorrect handling of stack references.
+
+The basic problem here is that we implicitly assume wide
+references always point to the heap. It turns out that
+this assumption is incorrect.
+
+In this test, 'z' and 'a' in main as well as 'x' in foo
+land up being wide-references. This works to the favor
+of 'z' and 'a'. However, the problem is with 'x'. In
+transactional version of foo we do not instrument 'x'
+since it is declared within foo. However, we instrument
+'x' in bar since it is passed in as a wide-reference. This
+results in a bug because x is incremented by one in bar, but
+the update in foo is lost when the transaction commit.
+
+In the comm=none case, we have an even adverse problem. In this
+case, we don't instrument any of the three variables: a, z, or x.
+This results in a race-condition since 'a' and 'z' needs to be 
+instrumented correctly. 
