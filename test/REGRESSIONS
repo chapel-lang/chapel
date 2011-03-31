@@ -11,13 +11,9 @@
 # can be added to the description as well.
 
 
-===================
-general regressions
-===================
-
-has always timed out (12/24/10)
--------------------------------
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
+===========================================================
+general regressions (seem to happen in most configurations)
+===========================================================
 
 nondet. seg fault in sh
 line 1: 32436 Segmentation fault      ./cobegin1a < /dev/null
@@ -29,10 +25,6 @@ line 1: 32436 Segmentation fault      ./cobegin1a < /dev/null
 [Error matching program output for parallel/taskPool/figueroa/TotalThreads] (02/07/11)
 [Error matching program output for studies/cholesky/jglewis/version2/elemental/fully_blocked/test_fully_blocked_elemental_cholesky] (02/12/11)
 [Error matching program output for users/ren/mink-blc-infer] (02/26/11)
-
-not yet working consistently
-----------------------------
-[Error: Timed out executing program studies/shootout/chameneos-redux/chameneos-redux-multiple-meeting-places]
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -114,10 +106,6 @@ internal valgrind stuff 'the impossible has happened'
 ==============================
 block distribution regressions
 ==============================
-
-array slice out-of-bounds (03/30/11)
-------------------------------------
-[Error matching program output for distributions/robust/arithmetic/slicing/test_strided_slice1]
 
 
 ===============================
@@ -499,6 +487,10 @@ threads-none causes serial iterator to be used rather than follower (11/25/08)
 ==========================
 intel-specific regressions
 ==========================
+
+never failed to time out
+------------------------
+[Error: Timed out executing program studies/shootout/chameneos-redux/chameneos-redux-multiple-meeting-places]
 
 NAN/INFINITY undefined in generated code (03/28/11)
 ---------------------------------------------------
