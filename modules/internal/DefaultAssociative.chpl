@@ -83,10 +83,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
       yield i;
     postponeResize = false;
     if (numEntries*8 < tableSize && tableSizeNum > 1) {
-      if atomicSupport then
-	_resize(grow=true);
-      else
-	halt("manually increase size of table");
+      _resize(grow=true);
     }
   }
 
@@ -189,10 +186,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
   proc dsiAdd(idx: idxType): index(tableDom) {
     if ((numEntries+1)*2 > tableSize) {
-      if atomicSupport then
-	_resize(grow=true);
-      else
-	halt("manually increase size of table");
+      _resize(grow=true);
     }
     const (foundSlot, slotNum) = _findEmptySlot(idx);
     if (foundSlot) {
@@ -220,10 +214,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
       halt("index not in domain: ", idx);
     }
     if (numEntries*8 < tableSize && tableSizeNum > 1) {
-      if atomicSupport then
-	_resize(grow=false);
-      else
-	halt("manually increase size of table");
+      _resize(grow=false);
     }
   }
 
@@ -268,6 +259,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     _removeArrayBackups();
   }
 
+  pragma "inline" // SS: added inline pragma
   proc _findFilledSlot(idx: idxType, tab = table): (bool, index(tableDom)) {
     for slotNum in _lookForSlots(idx, tab.domain.high+1) {
       const slotStatus = tab(slotNum).status;
@@ -296,6 +288,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     return (false, -1);
   }
     
+  pragma "inline" // SS: added inline pragma
   iter _lookForSlots(idx: idxType, numSlots = tableSize) {
     const baseSlot = chpl__defaultHashWrapper(idx);
     for probe in 0..numSlots/2 {
@@ -303,6 +296,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     }
   }
 
+  pragma "inline" // SS: added inline pragma
   iter _fullSlots(tab = table) {
     for slot in tab.domain {
       if tab(slot).status == chpl__hash_status.full then

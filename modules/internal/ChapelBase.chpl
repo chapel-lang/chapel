@@ -1661,8 +1661,6 @@ pragma "inline" proc <=(param a: int(64), b: uint(64)) {
 //
 // STM Statistics and Flags
 //
-config param atomicSupport: bool = false;
-
 proc startStmStats() { __primitive("chpl_startStmStats"); }
 proc stopStmStats() { __primitive("chpl_stopStmStats"); }
 
