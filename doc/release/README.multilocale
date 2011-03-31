@@ -61,7 +61,7 @@ To run Chapel on multiple locales, the following steps are required:
      cd $CHPL_HOME
 
 
-6) Re-make the compiler and runtime as necessary:
+6) Re-make the compiler and runtime:
 
      gmake
 
