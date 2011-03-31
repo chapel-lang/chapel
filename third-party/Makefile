@@ -6,7 +6,7 @@ THIRD_PARTY_ABS_DIR = $(shell pwd)
 
 default: all
 
-all: gasnet
+all: dlmalloc gasnet gmp nanox qthread
 
 clean: FORCE
 	cd gasnet && $(MAKE) clean
@@ -14,18 +14,26 @@ clean: FORCE
 clobber: FORCE
 	cd gasnet && $(MAKE) clobber
 
-# See gasnet/Makefile for explanatin of the post-install step
+depend:
+
+
+dlmalloc: FORCE
+	cd dlmalloc && $(MAKE)
+
+# See gasnet/Makefile for explanation of the post-install step
 gasnet: FORCE
 	cd gasnet && $(MAKE) && $(MAKE) post-install
 
 gmp: FORCE
 	cd gmp && $(MAKE)
 
-pvm: FORCE
-	cd pvm && $(MAKE)
+nanox: FORCE
+	cd nanox && $(MAKE)
 
-dlmalloc: FORCE
-	cd dlmalloc && $(MAKE)
+qthread: FORCE
+	cd qthread && $(MAKE)
+
+qthreads: qthread
 
 -include Makefile.devel
 
