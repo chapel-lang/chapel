@@ -23,7 +23,7 @@ proc partitionFlags(
   
   
   //==== MultiDomain for finished domains ====
-  var finished_mDomain = new ArrayBasedList( domain(rank, stridable=true) );
+  var finished_mDomain = new List( domain(rank, stridable=true) );
   
   while unprocessed_domain_stack.isEmpty()==false {
     //==== Pop top domain ====

@@ -52,8 +52,8 @@ class Grid {
   //|/..............|/
 
   proc clear () {
-    ghost_multidomain.clear();
-    delete ghost_multidomain;
+    ghost_multidomain.clear();  // This is a record; doesn't need deletion. #recordcleanup
+    // delete ghost_multidomain;
   }
   // /|''''''''''''''/|
   //< |    clear    < |
@@ -257,7 +257,7 @@ proc Grid.xValue (point_index: dimension*int) {
     coord(1) = x_low(1) + (point_index(1) - i_low(1)) * dx(1)/2.0;
   }
   else {
-    forall d in dimensions do
+    for d in dimensions do
       coord(d) = x_low(d) + (point_index(d) - i_low(d)) * dx(d)/2.0;
   }
 
