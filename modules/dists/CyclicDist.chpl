@@ -454,7 +454,7 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
 
       coforall taskid in 0:uint(64)..#numTasks {
         var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
-        const low = result(parDim).low, high = result(parDim).high;
+        const low = result(parDim).first, high = result(parDim).high;
         const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
                                       high, low, low);
         splitRanges(parDim) = result(parDim)(lo..hi);
