@@ -655,13 +655,13 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
       if (actualPrimType->nonvolType != formalPrimType->nonvolType) {
         return canCoerce(actualPrimType->nonvolType, actualPrimType->nonvolType->symbol, formalPrimType->nonvolType, fn, promotes);
       } else {
-  	return true;
+        return true;
       }
     } else {
       if (actualPrimType->nonvolType != formalType) {
         return canCoerce(actualPrimType->nonvolType, actualPrimType->nonvolType->symbol, formalType, fn, promotes);
       } else {
-	return true;
+        return true;
       }
     }
   } else if (formalPrimType && formalPrimType->nonvolType) {
@@ -723,13 +723,13 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
       if (actualPrimType->nonvolType != formalPrimType->nonvolType) {
         return canDispatch(actualPrimType->nonvolType, actualPrimType->nonvolType->symbol, formalPrimType->nonvolType, fn, promotes, paramCoerce);
       } else {
-	return true;
+        return true;
       }
     } else {
       if (actualPrimType->nonvolType != formalType) {
         return canDispatch(actualPrimType->nonvolType, actualPrimType->nonvolType->symbol, formalType, fn, promotes, paramCoerce);
       } else {
-	return true;
+        return true;
       }
     }
   } else if (formalPrimType && formalPrimType->nonvolType) {
@@ -2051,19 +2051,19 @@ resolveCall(CallExpr* call, bool errorCheck) {
         if (field->type == dtUnknown)
           field->type = t;
         if (t != field->type && t != dtNil && t != dtObject) {
-    	  PrimitiveType* fieldPrimType = toPrimitiveType(field->type);
-    	  PrimitiveType* pt = toPrimitiveType(t);
-    	  if ((fieldPrimType && fieldPrimType->nonvolType && !fieldPrimType->volType) ||
-	      (pt && pt->nonvolType && !pt->volType)) {
-	    Expr* typeExpr = call->get(3)->remove();
-	    Symbol* tmp = newTemp("cast_tmp", t);
-	    call->insertBefore(new DefExpr(tmp));
-	    call->insertBefore(new CallExpr(PRIM_MOVE, tmp, typeExpr));
-	    call->insertAtTail(new CallExpr(PRIM_CAST, field->type->symbol, tmp));
-    	  } else {
+          PrimitiveType* fieldPrimType = toPrimitiveType(field->type);
+          PrimitiveType* pt = toPrimitiveType(t);
+          if ((fieldPrimType && fieldPrimType->nonvolType && !fieldPrimType->volType) ||
+              (pt && pt->nonvolType && !pt->volType)) {
+            Expr* typeExpr = call->get(3)->remove();
+            Symbol* tmp = newTemp("cast_tmp", t);
+            call->insertBefore(new DefExpr(tmp));
+            call->insertBefore(new CallExpr(PRIM_MOVE, tmp, typeExpr));
+            call->insertAtTail(new CallExpr(PRIM_CAST, field->type->symbol, tmp));
+          } else {
             USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s",
                       toString(t), toString(field->type));
-	  }
+          }
         }
         found = true;
       }
@@ -2793,10 +2793,10 @@ preFold(Expr* expr) {
                   //     expr with a SymExpr with knowledge of the width, and with the 
                   //     volatile type, if necessary
                   //
-		  PrimitiveType* ptype = toPrimitiveType(type->type);
-		  bool volatileType = ptype && ptype->nonvolType && !ptype->volType;
-	     	  if (volatileType)
-		    type = ptype->nonvolType->symbol;
+                  PrimitiveType* ptype = toPrimitiveType(type->type);
+                  bool volatileType = ptype && ptype->nonvolType && !ptype->volType;
+                  if (volatileType)
+                    type = ptype->nonvolType->symbol;
                   TypeSymbol* tsize = NULL;
                   if (type == dtBools[BOOL_SIZE_SYS]->symbol) {
                     switch (size) {
@@ -2807,8 +2807,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for bool", size);
                     }
-		    if (volatileType)
-		      tsize = toPrimitiveType(tsize->type)->volType->symbol;
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtInt[INT_SIZE_32]->symbol) {
@@ -2820,8 +2820,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for int", size);
                     }
-		    if (volatileType)
-		      tsize = toPrimitiveType(tsize->type)->volType->symbol;
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtUInt[INT_SIZE_32]->symbol) {
@@ -2833,8 +2833,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for uint", size);
                     }
-		    if (volatileType)
-		      tsize = toPrimitiveType(tsize->type)->volType->symbol;
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtReal[FLOAT_SIZE_64]->symbol) {
@@ -2844,8 +2844,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for real", size);
                     }
-		    if (volatileType)
-		      tsize = toPrimitiveType(tsize->type)->volType->symbol;
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtImag[FLOAT_SIZE_64]->symbol) {
@@ -2855,8 +2855,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for imag", size);
                     }
-		    if (volatileType)
-		      tsize = toPrimitiveType(tsize->type)->volType->symbol;
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtComplex[COMPLEX_SIZE_128]->symbol) {
@@ -2866,8 +2866,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for complex", size);
                     }
-		    if (volatileType)
-		      tsize = toPrimitiveType(tsize->type)->volType->symbol;
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   }

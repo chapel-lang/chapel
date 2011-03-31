@@ -1103,17 +1103,17 @@ void scopeResolve(void) {
     //
     if (sym) {
       if (!isFnSymbol(sym)) {
-	if (unresolvedSymExpr->isVolatile) {
-	  if (TypeSymbol* typeSym = toTypeSymbol(sym)) {
- 	    if (PrimitiveType* primType = toPrimitiveType(typeSym->type)) {
-	      if (!primType->volType) {
-	        INT_FATAL("No volatile primitive type exists for %s, %s", typeSym->name);
-	      } 
-	      sym = primType->volType->symbol;
-	    } else {
-	      USR_FATAL("Volatile applied to non-primitive type expr");
-	    }
-	  }
+        if (unresolvedSymExpr->isVolatile) {
+          if (TypeSymbol* typeSym = toTypeSymbol(sym)) {
+            if (PrimitiveType* primType = toPrimitiveType(typeSym->type)) {
+              if (!primType->volType) {
+                INT_FATAL("No volatile primitive type exists for %s, %s", typeSym->name);
+              } 
+              sym = primType->volType->symbol;
+            } else {
+              USR_FATAL("Volatile applied to non-primitive type expr");
+            }
+          }
         }
         symExpr = new SymExpr(sym);
         unresolvedSymExpr->replace(symExpr);

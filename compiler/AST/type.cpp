@@ -549,10 +549,10 @@ createInternalType(const char *name, const char *cname) {
   dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width, true); \
   dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
                                   "_chpl_complex" #width "(0.0, 0.0)",         \
-                                   0.0, 0.0, COMPLEX_SIZE_ ## width);	       \
+                                   0.0, 0.0, COMPLEX_SIZE_ ## width);          \
   dtComplex[COMPLEX_SIZE_ ## width]->volType->defaultValue = new_ComplexSymbol(         \
                                   "_chpl_complex" #width "(0.0, 0.0)",         \
-                                   0.0, 0.0, COMPLEX_SIZE_ ## width, true)	       
+                                   0.0, 0.0, COMPLEX_SIZE_ ## width, true)             
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
