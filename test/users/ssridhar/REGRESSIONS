@@ -1,0 +1,57 @@
+# USAGE: this file compelements $(CHPL_HOME)/test/REGRESSIONS and
+# keeps track of current 'atomic' regressions.
+
+===================
+general regressions
+===================
+
+Return statement inside atomic block  (03/28/11)
+------------------------------------------------
+[Error matching compiler output for users/ssridhar/atomic/statements/test_stmt_return_in_atomic]
+
+GET_MEMBER heap warning (03/28/11)
+----------------------------------
+[Error matching compiler output for users/ssridhar/atomic/statements/test_stmt_return_in_atomic]
+[Error matching program output for users/ssridhar/atomic/statements/test_atomic_on_clause]
+[Error matching program output for users/ssridhar/atomic/statements/test_atomic_on_clause_nested]
+[Error matching program output for users/ssridhar/atomic/functions/test_fn_arg_inout_intent]
+
+STRING_COPY not handled (03/18/11)
+----------------------------------
+[Error matching program output for users/ssridhar/atomic/associative/test_associative_domain]
+[Error matching program output for users/ssridhar/atomic/associative/assocDomainInt]
+
+Non-deterministic errors (03/29/2011)
+-------------------------------------
+HPCC Stream
+HPCC Stream-ep 
+
+================================
+performance-specific regressions
+================================
+<?>
+
+========================
+memory leaks regressions
+========================
+<?>
+
+=============================
+valgrind-specific regressions
+=============================
+<?>
+
+====================
+no-local regressions
+====================
+<?>
+
+====================================================
+gasnet-everything regressions (other than the above)
+====================================================
+<?>
+
+==============================================
+gasnet-fast regressions (other than the above)
+==============================================
+<?>
