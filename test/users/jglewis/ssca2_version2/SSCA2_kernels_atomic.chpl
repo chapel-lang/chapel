@@ -171,17 +171,20 @@ module SSCA2_kernels
 
 	    for w in G.Neighbors (v) do { // eventually, will be forall
 
+	      var tmpHES = Heavy_Edge_Subgraph( (x,y)).nodes;
+
 	      atomic if min_distance (w) < 0 then {
 		Next_Level.add (w);
-		Heavy_Edge_Subgraph ( (x, y) ).nodes.add (w);
+		tmpHES.add (w);
 		min_distance (w) = path_length;
 	      }
 			 
 	      // min_distance must have been set by some thread by now
 
-	      if min_distance (w) == path_length then
-		atomic
+	      atomic {
+		if min_distance (w) == path_length then
 		  Heavy_Edge_Subgraph ( (x, y) ).edges.add ( (v, w) );
+	      }
 	    }
 	  }
   
@@ -337,8 +340,10 @@ module SSCA2_kernels
 		// the previous, the current or the next level.
 		// ------------------------------------------------
   
-		if  min_distance (v)== current_distance then
-		  atomic path_count (v) += path_count (u);
+		atomic {
+		  if  min_distance (v)== current_distance then
+		    path_count (v) += path_count (u);
+		}
 	      }
 	    };
   
@@ -384,7 +389,7 @@ module SSCA2_kernels
 		( ( FILTERING && w % 8 != 0 || !FILTERING ) )
 		then
 		  ( path_count (u) / path_count (v) )
-		    * ( 1 + depend (v) );
+		    * ( 1.0 + depend (v) );
 
 	      // do not need conditional u != s
 
@@ -411,7 +416,7 @@ module SSCA2_kernels
 	writeln ( " edge count adjusted TEPS: ", Adjusted_TEPS );
       }
 
-      Between_Cent = Between_Cent;
+      // Between_Cent = Between_Cent;
   
     } // end of Brandes' betweenness centrality calculation
 
