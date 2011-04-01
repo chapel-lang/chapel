@@ -1,3 +1,5 @@
+config param noRefCount = false;
+
 var privatizeLock$: sync int;
 
 pragma "privatized class"
@@ -187,7 +189,8 @@ proc chpl__getDomainFromArrayType(type arrayType) {
   proc help() {
     atomic D._value._domCnt += 1;
   }
-  help();
+  if !noRefCount then
+    help();
   return D;
 }
 
@@ -378,8 +381,10 @@ record _distribution {
       on _value {
         var cnt = _value.destroyDist();
         if cnt == 0 {
-          _value.dsiDestroyDistClass();
-          delete _value;
+          if !noRefCount {
+            _value.dsiDestroyDistClass();
+            delete _value;
+          }
         }
       }
     }
@@ -396,7 +401,10 @@ record _distribution {
       atomic {
 	var cnt = _value._distCnt;
 	_value._doms.append(x);
-	_value._distCnt = cnt + 1;
+      	if !noRefCount then
+	  _value._distCnt = cnt + 1;
+	else
+	  _value._distCnt = cnt;
       }
     }
     return x;
@@ -408,7 +416,10 @@ record _distribution {
       atomic {
 	var cnt = _value._distCnt;
 	_value._doms.append(x);
-	_value._distCnt = cnt + 1;
+	if !noRefCount then
+	  _value._distCnt = cnt + 1;
+	else
+	  _value._distCnt = cnt;
       }
     }
     return x;
@@ -420,7 +431,10 @@ record _distribution {
       atomic {
 	var cnt = _value._distCnt;
 	_value._doms.append(x);
-	_value._distCnt = cnt + 1;
+	if !noRefCount then
+	  _value._distCnt = cnt + 1;
+	else
+	  _value._distCnt = cnt;
       }
     }
     const enumTuple = _enum_enumerate(idxType);
@@ -435,7 +449,10 @@ record _distribution {
       atomic {
 	var cnt = _value._distCnt;
 	_value._doms.append(x);
-	_value._distCnt = cnt + 1;
+	if !noRefCount then
+	  _value._distCnt = cnt + 1;
+	else
+	  _value._distCnt = cnt;
       }
     }
     return x;
@@ -447,7 +464,10 @@ record _distribution {
       atomic {
 	var cnt = _value._distCnt;
 	_value._doms.append(x);
-	_value._distCnt = cnt + 1;
+	if !noRefCount then
+	  _value._distCnt = cnt + 1;
+	else
+	  _value._distCnt = cnt;
       }
     }
     return x;
@@ -489,8 +509,9 @@ record _domain {
     if !_isPrivatized(_valueType) {
       on _value {
         var cnt = _value.destroyDom();
-        if cnt == 0 then
-          delete _value;
+        if !noRefCount then
+          if cnt == 0 then
+            delete _value;
       }
     }
   }
@@ -544,8 +565,9 @@ record _domain {
       r(i) = _value.dsiDim(i)(ranges(i));
     }
     var d = _value.dsiBuildRectangularDom(rank, _value.idxType, stridable, r);
-    if d.linksDistribution() then
-      atomic d.dist._distCnt += 1;
+    if !noRefCount then
+      if d.linksDistribution() then
+	atomic d.dist._distCnt += 1;
     return _newDomain(d);
   }
 
@@ -593,7 +615,10 @@ record _domain {
       atomic {
 	var cnt = _value._domCnt;
 	_value._arrs.append(x);
-	_value._domCnt = cnt + 1;
+	if !noRefCount then
+	  _value._domCnt = cnt + 1;
+	else
+	  _value._domCnt = cnt;
       }
     }
     help();
@@ -669,8 +694,9 @@ record _domain {
 
     var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
-      atomic d.dist._distCnt += 1;
+    if !noRefCount then
+      if (d.linksDistribution()) then
+	atomic d.dist._distCnt += 1;
     return _newDomain(d);
   }
   proc expand(off: _value.idxType) where rank > 1 {
@@ -679,7 +705,8 @@ record _domain {
       ranges(i) = dim(i).expand(off);
     var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
+    if !noRefCount then
+      if (d.linksDistribution()) then
       atomic d.dist._distCnt += 1;
     return _newDomain(d);
   }
@@ -701,8 +728,9 @@ record _domain {
       ranges(i) = dim(i).exterior(off(i));
     var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
-      atomic d.dist._distCnt += 1;
+    if !noRefCount then
+      if (d.linksDistribution()) then
+	atomic d.dist._distCnt += 1;
     return _newDomain(d);
    }
                   
@@ -728,8 +756,9 @@ record _domain {
     }
     var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
-      atomic d.dist._distCnt += 1;
+    if !noRefCount then
+      if (d.linksDistribution()) then
+	atomic d.dist._distCnt += 1;
     return _newDomain(d);
   }
 
@@ -759,8 +788,9 @@ record _domain {
       ranges(i) = _value.dsiDim(i).translate(off(i));
     var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
-      atomic d.dist._distCnt += 1;
+    if !noRefCount then
+      if (d.linksDistribution()) then
+	atomic d.dist._distCnt += 1;
     return _newDomain(d);
    }
 
@@ -774,8 +804,9 @@ record _domain {
       ranges(i) = dim(i).chpl__unTranslate(off(i));
     var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
-      atomic d.dist._distCnt += 1;
+    if !noRefCount then
+      if (d.linksDistribution()) then
+	atomic d.dist._distCnt += 1;
     return _newDomain(d);
   }
 
@@ -967,8 +998,9 @@ record _array {
     if !_isPrivatized(_valueType) {
       on _value {
         var cnt = _value.destroyArr();
-        if cnt == 0 then
-          delete _value;
+        if !noRefCount then
+          if cnt == 0 then
+            delete _value;
       }
     }
   }
@@ -1003,7 +1035,7 @@ record _array {
     return this((...d.getIndices()));
 
   proc checkSlice(ranges: range(?) ...rank) {
-    for param i in 1.._value.rank do
+    for param i in 1.._value.dom.rank do
       if !_value.dom.dsiDim(i).boundsCheck(ranges(i)) then
         halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
@@ -1019,7 +1051,8 @@ record _array {
       atomic d._value._domCnt += 1;
       atomic a._arrAlias._arrCnt += 1;
     }
-    help();
+    if !noRefCount then
+      help();
     return _newArray(a);
   }
 
@@ -1029,10 +1062,12 @@ record _array {
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
     var d = _dom((...args));
-    atomic d._value._domCnt += 1;
+    if !noRefCount then
+      atomic d._value._domCnt += 1;
     var a = _value.dsiRankChange(d._value, rank, stridable, args);
     a._arrAlias = _value;
-    atomic a._arrAlias._arrCnt += 1;
+    if !noRefCount then
+      atomic a._arrAlias._arrCnt += 1;
     return _newArray(a);
   }
 
@@ -1092,7 +1127,8 @@ record _array {
       atomic _value.dom._domCnt += 1;
       atomic x._arrAlias._arrCnt += 1;
     }
-    help();
+    if !noRefCount then
+      help();
     return _newArray(x);
   }
 
@@ -1113,7 +1149,8 @@ record _array {
       atomic newDom._value._domCnt += 1;
       atomic x._arrAlias._arrCnt += 1;
     }
-    help();
+    if !noRefCount then
+      help();
     return _newArray(x);
   }
 
@@ -1444,8 +1481,9 @@ proc by(a: domain, b) {
   for param i in 1..a.rank do
     r(i) = a.dim(i) by t(i);
   var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
-  if (d.linksDistribution()) then
-    atomic d.dist._distCnt += 1;
+  if !noRefCount then
+    if (d.linksDistribution()) then
+      atomic d.dist._distCnt += 1;
   return _newDomain(d);
 }
 

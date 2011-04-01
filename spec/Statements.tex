@@ -276,7 +276,7 @@ statement does not matter.
 Each statement embedded in the {\em when-statement} has its own scope
 whether or not an explicit block surrounds it.
 
-\section{The While and Do While Loops}
+\section{The While Do and Do While Loops}
 \label{The_While_and_Do_While_Loops}
 
 \index{while loops}
@@ -320,6 +320,37 @@ The do-while loop is executed as follows:
 \end{enumerate}
 In this second form of the loop, note that the statement is executed
 unconditionally the first time.
+
+\begin{example}
+The following example illustrates the difference between
+the \sntx{do-while-statement} and the \sntx{while-do-statement}.  The body of
+the do-while loop is always executed at least once, even if the loop conditional
+is already false when it is entered.
+\begin{chapelpre}
+% while.chpl
+\end{chapelpre}
+\begin{chapel}
+var t = 11;
+
+writeln("Scope of do while loop:");
+do {
+  t += 1;
+  writeln(t);
+} while (t <= 10);
+
+t = 11;
+writeln("Scope of while loop:");
+while (t <= 10) {
+  t += 1;
+  writeln(t);
+}
+\end{chapel}
+\begin{chapeloutput}
+Scope of do while loop:
+12
+Scope of while loop:
+\end{chapeloutput}
+\end{example}
 
 \section{The For Loop}
 \label{The_For_Loop}
@@ -378,11 +409,20 @@ dimension, must be identical.
 
 \begin{example}
 The output of
+\begin{chapelpre}
+% zipper.chpl
+\end{chapelpre}
 \begin{chapel}
 for (i, j) in (1..3, 4..6) do
   write(i, " ", j, " ");
 \end{chapel}
-is ``1 4 2 5 3 6 ''.
+\begin{chapelpost}
+writeln();
+\end{chapelpost}
+is
+\begin{chapeloutput}
+1 4 2 5 3 6 
+\end{chapeloutput}
 \end{example}
 
 \subsection{Tensor Product Iteration}
@@ -395,11 +435,21 @@ context.
 
 \begin{example}
 The output of
+\begin{chapelpre}
+% tensor.chpl
+\end{chapelpre}
 \begin{chapel}
 for (i, j) in [1..3, 4..6] do
   write(i, " ", j, " ");
 \end{chapel}
-is ``1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 ''. The statement is
+\begin{chapelpost}
+writeln();
+\end{chapelpost}
+is
+\begin{chapeloutput}
+1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 
+\end{chapeloutput}
+The statement is
 equivalent to
 \begin{chapel}
 for i in 1..3 do
@@ -431,36 +481,52 @@ Parameter for loops are restricted to iteration over range literals
 with an optional by expression where the bounds and stride must be
 parameters.  The loop is then unrolled for each iteration.
 
-\section{The Label, Break, and Continue Statements}
+\section{The Break, Continue and Label Statements}
 \label{Label_Break_Continue}
 \index{label@\chpl{label}}
 \index{break@\chpl{break}}
 \index{continue@\chpl{continue}}
 
-The label-statement is used to name a specific loop which can then
-be the target of a break- or continue-statement.  If a break-
-or continue-statement has no label, the target is the lexically
-inner-most loop. Labels can only be given to for-, while-do- and
-do-while-statements.
+The break- and continue-statements are used to alter the flow of control within a
+loop construct.  A break-statement causes flow to exit the containing loop and
+resume with the statement immediately following it.  A continue-statement causes
+control to jump to the end of the body of the containing loop and resume
+execution from there.  By default, break- and continue-statements exit
+or skip the body of the immediately-containing loop construct.
+
+The label-statement is used to name a specific loop so that \chpl{break}
+and \chpl{continue} can exit or resume a less-nested loop.
+Labels can only be attached to for-, while-do- and do-while-statements.
+When a break statement has a label, execution continues with the first statement
+following the loop statement with the matching label.  When a continue statement
+has a label, execution continues at the end of the body of the loop with the
+matching label.  If there is no containing loop construct with a matching label,
+a compile-time error occurs.
 
 The syntax for label, break, and continue statements is given by:
 \begin{syntax}
-label-statement:
-  `label' identifier statement
-
 break-statement:
   `break' identifier[OPT] ;
 
 continue-statement:
   `continue' identifier[OPT] ;
+
+label-statement:
+  `label' identifier statement
 \end{syntax}
 
-If a break-statement is encountered, control will be transferred to
-after the associated loop.  If a continue-statement is encountered,
-control will be transferred to the end of the associated loop, but
-still inside the loop.  Break-statements cannot be used to break out of
-parallel loops.  Neither break- nor continue-statements can
-cross out of cobegin-, coforall-, begin-, or sync-statements.
+Break-statements cannot be used to exit parallel loops.  
+
+\begin{rationale}
+Breaks are not permitted in parallel loops because the execution order
+of the iterations of parallel loops is not defined.
+\end{rationale}
+
+\begin{future}
+We expect to support a \emph{eureka} concept which would enable one or
+more tasks to stop the execution of all current and future iterations
+of the loop.
+\end{future}
 
 \begin{example}
 In the following code, the index of the first element in each row of
@@ -502,7 +568,7 @@ module-name:
 The use statement makes symbols in each listed module's scope available
 from the scope where the use statement occurs.
 
-Symbols injected by a use statement are at an outer scope from those
+Symbols made available by a use statement are at an outer scope from those
 defined directly in the scope where the use statement occurs, but at a
 nearer scope than symbols defined in the scope containing the scope where
 the use statement occurs.
@@ -516,6 +582,30 @@ There is an expectation that this statement will be extended to allow
 the programmer to restrict which symbols are 'used' as well as to
 rename symbols that are used.
 \end{openissue}
+
+\begin{example}
+The following example illustrates how the use statement brings in the definition
+of the \chpl{Timer} class, so it can be used to time program execution.
+\begin{chapelpre}
+% use.chpl
+\end{chapelpre}
+\begin{chapel}
+use Time;
+
+var programTimer:Timer;
+
+programTimer.start();
+writeln("Write one line.");
+programTimer.stop();
+var totalTime = programTimer.elapsed();
+
+if (totalTime > 0) then writeln("Non-zero time for writing one line.");
+\end{chapel}
+\begin{chapeloutput}
+Write one line.
+Non-zero time for writing one line.
+\end{chapeloutput}
+\end{example}
 
 \section{The Type Select Statement}
 \label{The_Type_Select_Statement}
@@ -567,6 +657,47 @@ As with function resolution, this can result in an ambiguous
 situation.  Unlike with function resolution, in the event of an
 ambiguity, the first statement in the list of when statements is
 chosen.
+
+\begin{example}
+The following example shows how the type select statement can be used to perform
+a different action based on the static type of the operand.
+\begin{chapelpre}
+% typeselect.chpl
+\end{chapelpre}
+\begin{chapel}
+var x = 32, y = 15.5; 
+var z: int(8);
+var coord = (0.0,0.0);
+var yes: bool;
+
+writetype(x);
+writetype(y);
+writetype(z);
+writetype(coord);
+writetype(yes);
+writetype("no");
+
+proc writetype(x) {
+  type select x {
+    when int do writeln("Integer type");
+    when uint do writeln("Unsigned integer type");
+    when real do writeln("Real type");
+    when complex do writeln("Complex type");
+    when string do writeln("String type");
+    when bool do writeln("Boolean type");
+    otherwise writeln("Non-primitive type");
+  }
+}
+\end{chapel}
+\begin{chapeloutput}
+Integer type
+Real type
+Integer type
+Non-primitive type
+Boolean type
+String type
+\end{chapeloutput}
+\end{example}
 
 \section{The Empty Statement}
 \label{The_Empty_Statement}

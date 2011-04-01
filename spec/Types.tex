@@ -10,7 +10,7 @@ types (sync, single).
 % This section defines the primitive
 % types, enumerated types, and type aliases.  
 
-The syntax of a type is summarized by the following syntax:
+The syntax of a type is as follows:
 
 \begin{syntax}
 type-specifier:
@@ -22,49 +22,9 @@ type-specifier:
   synchronization-type
 \end{syntax}
 
-The structured types are summarized by the following syntax:
-
-\begin{syntax}
-structured-type:
-  class-type
-  record-type
-  union-type
-  tuple-type
-\end{syntax}
-% in README.firstClassFns: function-type
-
-Classes are discussed in~\rsec{Classes}.  Records are discussed
-in~\rsec{Records}.  Unions are discussed in~\rsec{Unions}.  Tuples are
-discussed in~\rsec{Tuples}.  
-
-The data parallel types are summarized by the following syntax:
-
-\begin{syntax}
-dataparallel-type:
-  range-type
-  domain-type
-  mapped-domain-type
-  array-type
-  index-type
-\end{syntax}
-
-Ranges are discussed in~\rsec{Ranges}.  Domains, arrays, and index
-types are discussed in~\rsec{Domains} and~\rsec{Arrays}.
-
-The synchronization types are summarized by the following syntax:
-
-\begin{syntax}
-synchronization-type:
-  sync-type
-  single-type
-\end{syntax}
-
-Sync and single types are discussed in~\rsec{Sync_Variables}
-and~\rsec{Single_Variables}.
-
 Programmers can define their own enumerated types, classes, records,
-unions, and type aliases in type declaration statements summarized by
-the following syntax:
+unions, and type aliases using type declaration statements:
+
 \begin{syntax}
 type-declaration-statement:
   enum-declaration-statement
@@ -73,6 +33,10 @@ type-declaration-statement:
   union-declaration-statement
   type-alias-declaration-statement
 \end{syntax}
+
+These statements are defined in Sections \rsec{Enumerated_Types},
+\rsec{Class_Declarations}, \rsec{Record_Declarations},
+\rsec{Union_Declarations}, and \rsec{Type_Aliases}, respectively.
 
 \section{Primitive Types}
 \label{Primitive_Types}
@@ -256,6 +220,7 @@ sets, possibly including internationalization.
 \index{enumerated types}
 
 Enumerated types are declared with the following syntax:
+
 \begin{syntax}
 enum-declaration-statement:
   `enum' identifier { enum-constant-list }
@@ -271,8 +236,9 @@ init-part:
   = expression
 \end{syntax}
 
-The enumerated type can then be specified with its name as summarized
+The enumerated type can then be referenced by its name, as summarized
 by the following syntax:
+
 \begin{syntax}
 enum-type:
   identifier
@@ -333,6 +299,21 @@ We expect to support \emph{realms} as another locale type.
 \label{Structured_Types}
 \index{types!structured}
 
+The structured types are summarized by the following syntax:
+
+\begin{syntax}
+structured-type:
+  class-type
+  record-type
+  union-type
+  tuple-type
+\end{syntax}
+% in README.firstClassFns: function-type
+
+Classes are discussed in \rsec{Classes}.  Records are discussed
+in \rsec{Records}.  Unions are discussed in \rsec{Unions}.  Tuples are
+discussed in \rsec{Tuples}.
+
 \subsection{Class Types}
 
 The class type defines a type that contains variables and constants,
@@ -363,18 +344,49 @@ is homogeneous.  Tuples are defined in~\rsec{Tuples}.
 \label{Data_Parallel_Types}
 \index{types!dataparallel}
 
+The data parallel types are summarized by the following syntax:
+
+\begin{syntax}
+dataparallel-type:
+  range-type
+  domain-type
+  mapped-domain-type
+  array-type
+  index-type
+\end{syntax}
+
+Ranges and their index types are discussed in \rsec{Ranges}.
+Domains and their index types are discussed in \rsec{Domains}.
+Arrays are discussed in \rsec{Arrays}.
+
 \subsection{Range Types}
 
 A range defines an integral sequence of some integral type.  Ranges
-are defined in~\rsec{Ranges}.
+are defined in \rsec{Ranges}.
 
 \subsection{Domain, Array, and Index Types}
 \label{Domain_and_Array_Types}
 
-A domain defines a set of indices and an array defines a set of
-elements that are mapped by the indices in an associated domain.  A
-domain's indicies can be of any type.  Domains, arrays, and index
-types are defined in~\rsec{Domains}~and~\rsec{Arrays}.
+A domain defines a set of indices. An array defines a set of
+elements that correspond to the indices in its domain.
+A domain's indicies can be of any type.
+Domains, arrays, and their index
+types are defined in \rsec{Domains} and \rsec{Arrays}.
+
+\section{Synchronisation Types}
+\label{Synchronisation_Types}
+\index{types!synchronisation}
+
+The synchronization types are summarized by the following syntax:
+
+\begin{syntax}
+synchronization-type:
+  sync-type
+  single-type
+\end{syntax}
+
+Sync and single types are discussed in \rsec{Sync_Variables}
+and \rsec{Single_Variables}.
 
 \section{Type Aliases}
 \label{Type_Aliases}

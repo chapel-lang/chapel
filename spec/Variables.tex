@@ -21,7 +21,7 @@ variable-kind: one of
 
 variable-declaration-list:
   variable-declaration
-  variable-declaration-list , variable-declaration
+  variable-declaration , variable-declaration-list
 
 variable-declaration:
   identifier-list type-part[OPT] initialization-part
@@ -35,10 +35,10 @@ initialization-part:
   = expression
 
 identifier-list:
-  identifier-list , tuple-grouped-identifier-list
-  identifier-list , identifier
-  tuple-grouped-identifier-list
   identifier
+  identifier , identifier-list
+  tuple-grouped-identifier-list
+  tuple-grouped-identifier-list , identifier-list
 
 tuple-grouped-identifier-list:
   ( identifier-list )
@@ -105,7 +105,7 @@ are as follows:
 enums & first enum constant \\
 classes & {\tt nil} \\
 records & default constructed record \\
-ranges & {\tt 1..0} \\
+ranges & {\tt 1..0} $ $ $ $ (empty sequence) \\
 arrays & elements are default values \\
 tuples & components are default values \\
 sync/single & base default value and \emph{empty} status \\

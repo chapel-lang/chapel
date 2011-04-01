@@ -3,10 +3,8 @@
 
 use DSIUtil;
 
-enum ChapelRangeMethod { nothing, count, these };
-
 // Turns on range iterator debugging.
-config param debugChapelRange = ChapelRangeMethod.nothing;
+config param debugChapelRange = false;
 
 //
 // range type
@@ -196,16 +194,13 @@ proc range.hasHighBound() param
 pragma "inline" 
 proc range.hasFirst()
 {
-  if stridable
+  if _stride > 0
   {
-    if _stride > 0
-    {
-      if ! hasLowBound() then return false;
-    }
-    else
-    {
-      if ! hasHighBound() then return false;
-    }
+    if ! hasLowBound() then return false;
+  }
+  else
+  {
+    if ! hasHighBound() then return false;
   }
   return true;
 }
@@ -213,16 +208,13 @@ proc range.hasFirst()
 pragma "inline" 
 proc range.hasLast()
 {
-  if stridable
+  if _stride > 0
   {
-    if _stride > 0
-    {
-      if ! hasHighBound() then return false;
-    }
-    else
-    {
-      if ! hasLowBound() then return false;
-    }
+    if ! hasHighBound() then return false;
+  }
+  else
+  {
+    if ! hasLowBound() then return false;
   }
   return true;
 }
@@ -371,24 +363,28 @@ proc range.boundsCheck(other: idxType)
 // Moves the low bound of the range up to the next alignment point.
 proc range.alignLow()
 {
-  if ! stridable then return;
-  _low = this.alignedLow;
+  if ! stridable then return this;
+  else _low = this.alignedLow;
+  return this;
 }
 
 // Moves the high bound of the range down to the next alignment point.
 proc range.alignHigh()
 {
-  if ! stridable then return;
-  _high = this.alignedHigh;
+  if ! stridable then return this;
+  else _high = this.alignedHigh;
+  return this;
 }
 
 proc range.indexOrder(i: idxType)
 {
   if ! member(i) then return (-1):idxType;
   if ! stridable then return i - _low;
-
-  var s = abs(_stride):idxType;
-  return (i - this.alignedLow) / s;
+  else
+  {
+    var s = abs(_stride):idxType;
+    return (i - this.alignedLow) / s;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -626,6 +622,7 @@ proc range.offset(offs : integral)
     compilerWarning("Applying an alignment to an unstrided range has no effect."); 
     this._alignment = 0; // Maintain the invariant.
   }
+  return this;
 }
 
 // Composition
@@ -758,40 +755,26 @@ proc #(r:range(?), i:integral)
                      _alignment = 1);
 
   if i > 0 && !r.hasFirst() then
-    halt("With a positive count, the range must have a first index.");
+    halt("With a nonzero count, the range must have a first index.");
   if i < 0 && !r.hasLast() then
     halt("With a negative count, the range must have a last index.");
   if r.boundedType == BoundedRangeType.bounded && i > r.length then
     halt("bounded range is too small to access ", i, " elements");
 
-  if debugChapelRange == ChapelRangeMethod.count then
-    writeln((typeToString(resultType), typeToString(strType)));
-
   // The distance between the first and last indices.
   var s = r._stride : strType;
   var diff = i : strType * s;
 
-  if debugChapelRange == ChapelRangeMethod.count then
-    writeln("r = ", r, " # = ", i);
-
   var lo : resultType =
-    if diff > 0 then r.alignedLow
-    else r.alignedHigh : resultType - (abs(diff) - abs(s)) : resultType;
+    if diff > 0 then r._low
+    else chpl__add(r._high : resultType, (diff + 1): resultType);
   var hi : resultType =
-    if diff < 0 then r.alignedHigh
-    else r.alignedLow : resultType + (diff - abs(s)) : resultType;
-  var al : resultType =
-    if diff > 0 then r.alignedLow else r.alignedHigh;
-
-  if debugChapelRange == ChapelRangeMethod.count then
-    writeln("lo = ", lo, " hi = ", hi, " al = ", al);
+    if diff < 0 then r._high
+    else chpl__add(r._low : resultType, diff : resultType - 1);
 
   if r.hasLowBound() && lo < r._low ||
      r.hasHighBound() && hi > r._high then
     halt("Range is too small to count off ", i, " elements.");
-
-  if debugChapelRange == ChapelRangeMethod.count then
-    writeln((typeToString(lo.type), typeToString(strType)));
 
   return new range(idxType = resultType,
                    boundedType = BoundedRangeType.bounded,
@@ -799,9 +782,8 @@ proc #(r:range(?), i:integral)
                    _low = lo,
                    _high = hi,
                    _stride = r._stride : strType,
-                   _alignment = al);
+                   _alignment = r._alignment);
 }
-
 
 
 //################################################################################
@@ -881,13 +863,13 @@ iter range.these(param tag: iterator) where tag == iterator.leader
   if boundedType == BoundedRangeType.boundedNone then
     halt("iteration over a range with no bounds");
 
-  if debugChapelRange == ChapelRangeMethod.these then
+  if debugChapelRange then
     writeln("*** In range leader:"); // ", this);
 
   var v = this.length;
   var numChunks = _computeNumChunks(v);
 
-  if debugChapelRange == ChapelRangeMethod.these
+  if debugChapelRange
   {
     writeln("*** RI: length=", v, " numChunks=", numChunks);
     writeln("*** RI: Using ", numChunks, " chunk(s)");
@@ -913,7 +895,7 @@ iter range.these(param tag: iterator) where tag == iterator.leader
       coforall chunk in 0..numChunks-1
       {
         const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
-        if debugChapelRange == ChapelRangeMethod.these then
+        if debugChapelRange then
           writeln("*** RI: tuple = ", tuple(lo..hi));
         yield tuple(lo..hi);
       }
@@ -928,12 +910,12 @@ iter range.these(param tag: iterator, follower) where tag == iterator.follower
   if follower.size != 1 then
     halt("iteration over a range with multi-dimensional iterator");
 
-  if debugChapelRange == ChapelRangeMethod.these then
+  if debugChapelRange then
     writeln("In range follower code: Following ", follower);
 
   var followThis = follower(1);
 
-  if debugChapelRange == ChapelRangeMethod.these then
+  if debugChapelRange then
     writeln("Range = ", followThis);
 
   // It would be nice to be able to factor out the repeated code below,
@@ -948,7 +930,7 @@ iter range.these(param tag: iterator, follower) where tag == iterator.follower
         _high + followThis._high*_stride:idxType.._high+followThis._low*_stride:idxType
       ) by _stride by followThis._stride;
 
-    if debugChapelRange == ChapelRangeMethod.these then
+    if debugChapelRange then
       writeln("Expanded range = ",r);
     
     for i in r
@@ -961,7 +943,7 @@ iter range.these(param tag: iterator, follower) where tag == iterator.follower
   {
     var r = _low+followThis;
 
-    if debugChapelRange == ChapelRangeMethod.these then
+    if debugChapelRange then
       writeln("Expanded range = ",r);
     
     for i in r
@@ -1067,6 +1049,19 @@ proc chpl__diffMod(minuend : integral,
                    in modulus : integral)
 {
   compilerError("chpl__diffMod -- Operand types must match.");
+}
+
+// Add two numbers together, and peg them to the min or max representable value
+// if there is overflow.
+// We might wish to add dialable run-time warning messages.
+proc chpl__add(a: ?t, b: t)
+{
+  if !_isIntegralType(t) then
+    compilerError("Values must be of integral type.");
+
+  if a > 0 && b > 0 && b > max(t) - a then return max(t);
+  if a < 0 && b < 0 && b < min(t) - a then return min(t);
+  return a + b;
 }
 
 proc range.chpl__unTranslate(i: idxType)

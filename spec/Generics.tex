@@ -268,6 +268,31 @@ proc f(tuple: (?t,?tt)) where tuple.size == 2 && tt == real {
 \end{chapel}
 \end{example}
 
+\begin{example}
+Type queries can also be used to constrain the types of other function arguments
+and/or the return type.  In this example, the type query on the first argument
+establishes type constraints on the other arguments and also determines the
+return type.
+\begin{chapelpre}
+% query.chpl
+\end{chapelpre}
+\begin{chapel}
+writeln(sumOfThree(1,2,3));
+writeln(sumOfThree(4.0,5.0,3.0));
+
+proc sumOfThree(x: ?t, y:t, z:t):t {
+   var sum: t;
+   
+   sum = x + y + z;
+   return sum;
+}
+\end{chapel}
+\begin{chapeloutput}
+6
+12.0
+\end{chapeloutput}
+\end{example}
+
 \index{integral@\chpl{integral}}
 \index{numeric@\chpl{numeric}}
 \index{enumerated@\chpl{enumerated}}

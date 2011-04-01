@@ -1,1 +1,0 @@
-unimplemented feature: successful codegen of "volatile <type expr>" should result in telling the compiler the value of the volatile variable (x) can change at anytime.  the compiler should poll for the value of x in the while loop instead of optimizing out the check under --fast.

@@ -136,6 +136,8 @@ proc Cyclic.getChunk(inds, locid) {
       sliceBy(i) = inds.dim(i).low + (distStride + offset)..inds.dim(i).high by distStride;
     else
       sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
+    // remove alignment
+    sliceBy(i) = sliceBy(i).first..sliceBy(i).last by distStride;
   }
   return inds((...sliceBy));
   //
@@ -315,7 +317,7 @@ class LocCyclic {
     for param i in 1..rank {
       const lower = min(idxType)..(startIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length;
       const upper = (startIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length;
-      const lo = lower.low, hi = upper.high;
+      const lo = lower.last, hi = upper.last;
       tuple(i) = lo..hi by dist.targetLocDom.dim(i).length;
     }
     myChunk = [(...tuple)];
@@ -452,7 +454,7 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
 
       coforall taskid in 0:uint(64)..#numTasks {
         var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
-        const low = result(parDim).low, high = result(parDim).high;
+        const low = result(parDim).first, high = result(parDim).high;
         const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
                                       high, low, low);
         splitRanges(parDim) = result(parDim)(lo..hi);
@@ -460,6 +462,8 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
           writeln(here.id, ": leader whole: ", whole,
                            " result: ", result,
                            " splitRanges: ", splitRanges);
+        // remove alignment
+        splitRanges(parDim) = splitRanges(parDim).first..splitRanges(parDim).last by splitRanges(parDim).stride;
         yield splitRanges;
       }
     }

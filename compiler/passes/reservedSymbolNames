@@ -204,3 +204,4 @@
   // reserved words in c++
   this
 
+  assert

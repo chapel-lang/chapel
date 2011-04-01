@@ -189,13 +189,21 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
   const replA : [replAD] elemType = Ab[replAD],
         replB : [replBD] elemType = Ab[replBD];
 
+  //  writeln("Rest = ", Rest);
+  //  writeln("Rest by blkSize = ", Rest by (blkSize, blkSize));
   // do local matrix-multiply on a block-by-block basis
+  // TODO: re-enable parallel loop
   forall (row,col) in Rest by (blkSize, blkSize) {
+    //for (row,col) in Rest by (blkSize, blkSize) {
     //
     // At this point, the dgemms should all be local, so assert that
     // fact
     //
-    local {
+    //    writeln("On ", here.id, ", trying to access ", 
+    //            (row..#blkSize, col..#blkSize));
+
+    // TODO: enable this on distributed memory
+    //    local {
       const aBlkD = replAD[row..#blkSize, ..],
             bBlkD = replBD[.., col..#blkSize],
             cBlkD = AbD[row..#blkSize, col..#blkSize];
@@ -208,7 +216,7 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
       /*
       dgemmIdeal(replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
       */
-    }
+      //    }
   }
 }
 

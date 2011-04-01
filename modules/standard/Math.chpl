@@ -1,9 +1,16 @@
+_extern const INFINITY: real(64);
+_extern const NAN: real(64);
+
 pragma "inline" proc abs(i : int(?w)) return if i < 0 then -i else i;
 pragma "inline" proc abs(i : uint(?w)) return i;
 pragma "inline" proc abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
 
 pragma "inline" proc conjg(a: complex(?w)) return (a.re, -a.im):complex;
 
+_extern proc isinf(x: real(64)): bool;
+_extern proc isinf(x: real(32)): bool;
+_extern proc isfinite(x: real(64)): bool;
+_extern proc isfinite(x: real(32)): bool;
 _extern proc isnan(x: real(64)): bool;
 _extern proc isnan(x: real(32)): bool;
 

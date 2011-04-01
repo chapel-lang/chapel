@@ -12,7 +12,7 @@
 
 use SpaceDimension;
 use LanguageExtensions;
-use MultiDomain_def;
+use BasicDataStructures;
 
 
 
@@ -43,7 +43,8 @@ class Grid {
   const extended_cells: domain(dimension, stridable=true);
   const cells:          subdomain(extended_cells);
   
-  const ghost_multidomain: MultiDomain(dimension, stridable=true);
+  // const ghost_multidomain: MultiDomain(dimension, stridable=true);
+  const ghost_multidomain: List( domain(dimension, stridable=true) );
 
 
   //|\''''''''''''''|\
@@ -51,7 +52,8 @@ class Grid {
   //|/..............|/
 
   proc clear () {
-    delete ghost_multidomain;
+    ghost_multidomain.clear();  // This is a record; doesn't need deletion. #recordcleanup
+    // delete ghost_multidomain;
   }
   // /|''''''''''''''/|
   //< |    clear    < |
@@ -89,7 +91,11 @@ class Grid {
 
     //==== Physical cells ====
     var ranges: dimension*range(stridable = true);
-    for d in dimensions do ranges(d) = (i_low(d)+1 .. by 2) #n_cells(d);
+    for d in dimensions
+    {
+      ranges(d) = (i_low(d)+1 .. by 2) #n_cells(d);
+      ranges(d).alignHigh();
+    }
     cells = ranges;
 
 
@@ -112,7 +118,8 @@ class Grid {
     //   (upper,lower), (upper,inner), (upper,upper)
     //----------------------------------------------------------------
 
-    ghost_multidomain = new MultiDomain(dimension, stridable=true);
+    // ghost_multidomain = new MultiDomain(dimension, stridable=true);
+    ghost_multidomain = new List( domain(dimension,stridable=true) );
 
     var inner_location: dimension*int;
     for d in dimensions do inner_location(d) = loc1d.inner;
@@ -122,12 +129,11 @@ class Grid {
       if loc != inner_location {
         for d in dimensions do
           ranges(d) = if loc(d) == loc1d.below then 
-                        (extended_cells.low(d).. by 2) #n_ghost_cells(d)
+                        ((extended_cells.low(d).. by 2) #n_ghost_cells(d)).alignHigh()
                       else if loc(d) == loc1d.inner then
                         cells.dim(d)
                       else
-                        (..extended_cells.high(d) by 2) #-n_ghost_cells(d);
-        
+                        ((..extended_cells.high(d) by 2) #-n_ghost_cells(d)).alignLow();
         ghost_domain = ranges;
         ghost_multidomain.add(ghost_domain);
       }
@@ -251,7 +257,7 @@ proc Grid.xValue (point_index: dimension*int) {
     coord(1) = x_low(1) + (point_index(1) - i_low(1)) * dx(1)/2.0;
   }
   else {
-    forall d in dimensions do
+    for d in dimensions do
       coord(d) = x_low(d) + (point_index(d) - i_low(d)) * dx(d)/2.0;
   }
 

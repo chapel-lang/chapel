@@ -176,7 +176,7 @@ proc BlockCyclic.getStarts(inds, locid) {
     if (domlo != lowIdx(i)) {
       if (domlo <= domhi) {
         if (domlo > lowIdx(i)) {
-	  const off = (domlo - lowIdx(i))%blocksize(i);
+	  const off = (domlo - mylo)%mystr;
 	  if (off == 0) {
 	    lo = domlo;
 	    hi = domhi;
@@ -319,8 +319,9 @@ iter BlockCyclicDom.these(param tag: iterator) where tag == iterator.leader {
   if (precomputedNumTasks != 1) then
     halt("Can't use more than one task per locale with Block-Cyclic currently");
   coforall locDom in locDoms do on locDom {
-    var tmpblock:rank*range(idxType);
+      var tmpblock:rank*range(idxType, stridable=stridable);
     for i in locDom.myStarts {
+      //      writeln("[", here.id, "] starting at ", i);
       for param j in 1..rank {
         // TODO: support a tuple-oriented iteration of vectors to avoid this?
         var lo: idxType;
@@ -330,11 +331,23 @@ iter BlockCyclicDom.these(param tag: iterator) where tag == iterator.leader {
           lo = i(j);
         tmpblock(j) = max(lo, whole.dim(j).low)..
 	              min(lo + dist.blocksize(j)-1, whole.dim(j).high);
+        //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
+        tmpblock(j) = whole.dim(j)[tmpblock(j)];
+        //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
+        if rank == 1 then
+          lo = whole.low;
+        else
+          lo = whole.low(j);
+        //        writeln("lo = ", lo);
+        tmpblock(j) = tmpblock(j).chpl__unTranslate(lo);
+        //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
       }
 
       var retblock: rank*range(idxType);
       for param i in 1..rank {
-        retblock(i) = tmpblock(i) - whole.dim(i).low;
+        retblock(i) = (tmpblock(i).low / whole.dim(i).stride:idxType)..
+                        #tmpblock(i).length;
+          //        retblock(i) = (tmpblock(i) - whole.dim(i).low);
       }
       //      writeln(here.id, ": Domain leader yielding", retblock);
       yield retblock;
@@ -668,8 +681,9 @@ iter BlockCyclicArr.these(param tag: iterator) where tag == iterator.leader {
   if (precomputedNumTasks != 1) then
     halt("Can't use more than one task per locale with Block-Cyclic currently");
   coforall locDom in dom.locDoms do on locDom {
-    var tmpblock:rank*range(idxType);
+      var tmpblock:rank*range(idxType, stridable=stridable);
     for i in locDom.myStarts {
+      //      writeln("[", here.id, "] starting at ", i);
       for param j in 1..rank {
         // TODO: support a tuple-oriented iteration of vectors to avoid this?
         var lo: idxType;
@@ -678,14 +692,26 @@ iter BlockCyclicArr.these(param tag: iterator) where tag == iterator.leader {
         else
           lo = i(j);
         tmpblock(j) = max(lo, dom.whole.dim(j).low)..
-                      min(lo + dom.dist.blocksize(j)-1, dom.whole.dim(j).high);
+	              min(lo + dom.dist.blocksize(j)-1, dom.whole.dim(j).high);
+        //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
+        tmpblock(j) = dom.whole.dim(j)[tmpblock(j)];
+        //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
+        if rank == 1 then
+          lo = dom.whole.low;
+        else
+          lo = dom.whole.low(j);
+        //        writeln("lo = ", lo);
+        tmpblock(j) = tmpblock(j).chpl__unTranslate(lo);
+        //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
       }
 
       var retblock: rank*range(idxType);
       for param i in 1..rank {
-        retblock(i) = tmpblock(i) - dom.whole.dim(i).low;
+        retblock(i) = (tmpblock(i).low / dom.whole.dim(i).stride:idxType)..
+                        #tmpblock(i).length;
+          //        retblock(i) = (tmpblock(i) - dom.whole.dim(i).low);
       }
-      //      writeln(here.id, ": Array leader yielding", retblock);
+      //      writeln(here.id, ": Domain leader yielding", retblock);
       yield retblock;
     }
   }
@@ -769,7 +795,7 @@ proc BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
 }
 
 proc BlockCyclicArr.dsiReindex(dom) {
-  
+  compilerError("reindexing not yet implemented for Block-Cyclic");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

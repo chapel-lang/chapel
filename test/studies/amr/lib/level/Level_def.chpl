@@ -1,5 +1,6 @@
 
 use Grid_def;
+use MultiDomainNew_def;
 
 
 //|\""""""""""""""""""""|\
@@ -51,7 +52,7 @@ class Level {
   //---------------------------------------------------------------------
   var grids:            domain(Grid);
   var sibling_ghost_regions: [grids] SiblingOverlap;
-  var boundary:         [grids] MultiDomain(dimension,stridable=true);
+  var boundary:         [grids] MultiDomainNew(dimension,stridable=true);
 
 
   //|\''''''''''''''|\
@@ -60,7 +61,10 @@ class Level {
   
   proc clear () {
     for grid in grids {
+
       delete sibling_ghost_regions(grid);
+
+      boundary(grid).clear();
       delete boundary(grid);
     }
   }
@@ -91,7 +95,7 @@ class Level {
     //==== Possible cells ====
     var ranges: dimension*range(stridable = true);
     for d in dimensions do
-      ranges(d) = (1.. by 2) #n_cells(d);
+      ranges(d) = ((1.. by 2) #n_cells(d)).alignHigh();
     possible_cells = ranges;
 
     //==== Possible ghost cells ====
@@ -265,10 +269,13 @@ proc Level.complete () {
   for grid in grids {
     sibling_ghost_regions(grid) = new SiblingOverlap(this,grid);
     
-    boundary(grid) = new MultiDomain(dimension,stridable=true);
-    boundary(grid).add(grid.ghost_multidomain);
+    boundary(grid) = new MultiDomainNew(dimension,stridable=true);
+
+    //## boundary(grid).add(grid.ghost_multidomain);
+    for D in grid.ghost_multidomain do boundary(grid).add( D );
+
     for overlap_domain in sibling_ghost_regions(grid).domains do
-      boundary(grid).subtract(overlap_domain);
+      boundary(grid).subtract( overlap_domain );
   }
 
   //==== Finish ====

@@ -11,21 +11,9 @@
 # can be added to the description as well.
 
 
-===================
-general regressions
-===================
-
-tests print number of cores which differs between platforms (12/24/10)
-----------------------------------------------------------------------
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/block_distribution/test_elemental_cholesky_block]
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/fully_blocked/test_fully_blocked_elemental_cholesky]
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/strided/test_elemental_cholesky_explicitly_symmetric_strided]
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky]
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/unsymmetric_indices/test_elemental_cholesky_unsymmetric_ranges]
-
-has always timed out (12/24/10)
--------------------------------
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
+===========================================================
+general regressions (seem to happen in most configurations)
+===========================================================
 
 nondet. seg fault in sh
 line 1: 32436 Segmentation fault      ./cobegin1a < /dev/null
@@ -37,10 +25,6 @@ line 1: 32436 Segmentation fault      ./cobegin1a < /dev/null
 [Error matching program output for parallel/taskPool/figueroa/TotalThreads] (02/07/11)
 [Error matching program output for studies/cholesky/jglewis/version2/elemental/fully_blocked/test_fully_blocked_elemental_cholesky] (02/12/11)
 [Error matching program output for users/ren/mink-blc-infer] (02/26/11)
-
-not yet working consistently
-----------------------------
-[Error: Timed out executing program studies/shootout/chameneos-redux/chameneos-redux-multiple-meeting-places]
 
 nondet. verification failures on RA (probably due to intentional races)
 -----------------------------------------------------------------------
@@ -79,23 +63,22 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
-valgrind error with args with spaces? (03/13/11)
-------------------------------------------------
+??? (03/13/11)
+--------------
 [Error matching program output for distributions/diten/Dimensional]
-[Error matching program output for execflags/bradc/configForgotArg]
-[Error matching program output for execflags/bradc/configWithSpace]
-[Error matching program output for execflags/bradc/strayArg2]
-[Error matching program output for execflags/bradc/strayArg]
-[Error matching program output for execflags/diten/configComplex]
-[Error matching program output for execflags/shannon/configs/help/configVar-Dash]
-[Error matching program output for execflags/shannon/configs/help/configVarModStrings1]
-[Error matching program output for execflags/shannon/configs/help/configVarModStrings2]
-[Error matching program output for execflags/shannon/configs/help/configVarSetTwoTypes]
-[Error matching program output for multirealm/bradc/zeroLocalesPerRealm]
+
+stack overflow (???)
+--------------------
+[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
+
+invalid read (???)
+------------------
+[Error matching program output for classes/claridge/recordInClass1]
 
 nondet. valgrind "the impossible has happened"
 ----------------------------------------------
 [Error matching program output for distributions/nelson/MultiBlockDist2DLocales] (03/02/11)
+[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce] (03/27/11)
 
 invalid write of size 1 (02/27/11)
 ----------------------------------
@@ -129,45 +112,31 @@ block distribution regressions
 cyclic distribution regressions
 ===============================
 
-failures in output (slicing, reindexing, ...)
----------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_iteration1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_of_distributed_array1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_of_distributed_array2]
-[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_distributed_array1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_domain_iteration1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
-[Error matching program output for distributions/robust/arithmetic/basics/test_record_of_distributed_array]
-[Error matching program output for distributions/robust/arithmetic/basics/test_reduce1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_reshape]
-[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_default]
-[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_range]
-[Error matching program output for distributions/robust/arithmetic/composite/test_composite1]
-[Error matching program output for distributions/robust/arithmetic/composite/test_composite2]
+verification fails (03/05/11)
+-----------------------------
 [Error matching program output for distributions/robust/arithmetic/kernels/hpl]
-[Error matching program output for distributions/robust/arithmetic/kernels/stream]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Random]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Search]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Sort]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias2]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias4]
-[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing2]
-[Error matching program output for distributions/robust/arithmetic/stress/test_many_domains]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_expand]
+
+timeouts (???)
+--------------
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
 
 
 ====================
 no-local regressions
 ====================
 
-nondet. bad output (03/16/11)
------------------------------
-[Error matching program output for studies/dijkstra/driverEdgeBtw]
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for trivial/deitz/test_param_fold2] (03/20/11)
+
+nondet. bad output
+------------------
+[Error matching program output for studies/dijkstra/driverEdgeBtw] (03/16/11, 03/23/11, 03/27/11)
 
 nondet. prediff error (linefeeds go awry)
 -----------------------------------------
-[Error matching program output for release/examples/primers/taskParallel] (12/03/10, 12/04/10, 12/07/10, 02/17/11, 03/04/11)
+[Error matching program output for release/examples/primers/taskParallel] (12/03/10, 12/04/10, 12/07/10, 02/17/11, 03/04/11, 03/18/11, 03/26/11)
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -192,16 +161,13 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-non-equal zippered iteration (03/15/11)
----------------------------------------
-[Error matching program output for arrays/deitz/test_remote_cyclic_slicing]
+failure to open file (03/30/11)
+-------------------------------
+[Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
 
-wrong answer (03/05/11)
------------------------
-[Error matching program output for distributions/deitz/test_distribution_syntax2]
-[Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
-[Error matching program output for distributions/jglewis/cyclicOnEvenNumLocales]
-[Error matching program output for distributions/vass/wrapper_nl4_testReplicatedDist1]
+nondet. execution timeout
+-------------------------
+[Error: Timed out executing program studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc] (03/21/11)
 
 AMUDP resource error (01/19/11)
 -------------------------------
@@ -234,11 +200,6 @@ verbose output now shows launch command (10/31/08) (bradc)
 gasnet-fast regressions (other than the above)
 ==============================================
 
-nondet. lost update to element to value 5
------------------------------------------
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1] (02/24/11, 03/01/11)
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3] (02/26/11, 03/04/11)
-
 nondet. zippered iterations having unequal lengths
 --------------------------------------------------
 [Error matching program output for domains/sungeun/assoc/minus_equals] (02/05/11, 02/19/11)
@@ -247,6 +208,12 @@ nondet. zippered iterations having unequal lengths
 ==================
 pvm-specific tests
 ==================
+
+nondet. problems due to "address already in use" errors
+-------------------------------------------------------
+[Error matching program output for release/examples/primers/classes] (03/20/11)
+[Error matching program output for release/examples/primers/fileIO] (03/20/11)
+[Error matching program output for release/examples/programs/tree] (03/20/11)
 
 nondet. compilation timeouts
 ----------------------------
@@ -521,9 +488,14 @@ threads-none causes serial iterator to be used rather than follower (11/25/08)
 intel-specific regressions
 ==========================
 
-can't find -lsci (12/10/10)
----------------------------
-*all*
+never failed to time out
+------------------------
+[Error: Timed out executing program studies/shootout/chameneos-redux/chameneos-redux-multiple-meeting-places]
+
+NAN/INFINITY undefined in generated code (03/28/11)
+---------------------------------------------------
+[Error matching compiler output for modules/standard/math/infinity]
+[Error matching compiler output for studies/dijkstra/driverEdgeBtw]
 
 ??? (07/13/10)
 --------------
@@ -605,17 +577,6 @@ divide by zero in generated code (03/14/11)
 -------------------------------------------
 [Error matching program output for studies/dijkstra/driverEdgeBtw]
 
-persisting unreachable loop warnings (03/11/11)
------------------------------------------------
-[Error matching compiler output for studies/hpcc/HPL/bradc/hpl-blc-noreindex]
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/hpcc/hpl]
-[Error matching program output for release/examples/hpcc/stream-ep]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for release/examples/primers/reductions]
-[Error matching program output for release/examples/programs/quicksort]
-* and a bunch of others*
-
 redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
 [Error matching compiler output for associative/waynew/indef2]
@@ -687,6 +648,10 @@ precision issues (?) -- is there a floating point flag we need to throw?
 =============================================================
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
+
+floating point overflow warning in compilation (since added)
+------------------------------------------------------------
+[Error matching program output for modules/standard/math/infinity]
 
 divide by zero in generated code (03/12/11)
 -------------------------------------------
@@ -891,12 +856,9 @@ sig_send: wait for sig_complete event failed
 xmt-specific regressions
 ========================
 
-unreachable code warning (persisting on 03/11/11)
--------------------------------------------------
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/hpcc/stream-ep]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for release/examples/primers/reductions]
+sparse regression recurred after latest range changes (03/17/11)
+----------------------------------------------------------------
+[Error matching program output for release/examples/primers/sparse]
 
 nondet. compilation timeout
 ---------------------------
@@ -904,7 +866,7 @@ nondet. compilation timeout
 [Error: Timed out executing program release/examples/primers/taskParallel] (11/17/10)
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
-[Error: Timed out compilation for release/examples/hello] (10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11, 03/08/11, 03/12/11)
+[Error: Timed out compilation for release/examples/hello] (10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11, 03/08/11, 03/12/11, 03/19/11, 03/26/11)
 
 execution timeouts
 ------------------

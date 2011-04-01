@@ -1,6 +1,7 @@
 
 use LevelSolution_def;
 use CFUtilities;
+use MultiArray_def;
 
 
 //|\""""""""""""""""""""""""""""""""|\
@@ -21,7 +22,7 @@ class GridCFGhostRegion {
 
   const grid:             Grid;
   const coarse_neighbors: domain(Grid);
-  const multidomains:     [coarse_neighbors] MultiDomain(dimension,stridable=true);
+  const multidomains:     [coarse_neighbors] MultiDomainNew(dimension,stridable=true);
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -53,7 +54,11 @@ class GridCFGhostRegion {
       if fine_intersection.numIndices > 0 {
         
         //---- Initialize a MultiDomain to the intersection, less grid's interior ----
-        var boundary_multidomain = fine_intersection - grid.cells;
+        // var boundary_multidomain = fine_intersection - grid.cells;
+        var boundary_multidomain = new MultiDomainNew(dimension, stridable=true);
+        boundary_multidomain.add( fine_intersection );
+        boundary_multidomain.subtract( grid.cells );
+        
 
 
         //----Remove neighbor ghost regions ----
@@ -66,7 +71,7 @@ class GridCFGhostRegion {
         
 
         //---- If boundary_multidomain is still nonempty, update coarse_neighbors and multidomains ----
-        if boundary_multidomain.length > 0 {
+        if !boundary_multidomain.isEmpty() > 0 {
           coarse_neighbors.add(coarse_grid);
           multidomains(coarse_grid) = boundary_multidomain;
         }
@@ -90,7 +95,8 @@ class GridCFGhostRegion {
   proc clear() {
           
     for multidomain in multidomains {
-      delete multidomain;    // MultiDomain doesn't require clearing
+      multidomain.clear();
+      delete multidomain;
     }
   }
   // /|''''''''''''''''''''''/|
@@ -285,12 +291,14 @@ class GridCFGhostSolution {
     for c_neighbor in grid_cf_ghost_region.coarse_neighbors {
 
       //==== This is a zipper iteration over three objects ====
-      for (Domain, old_array, current_array) in
-          ( grid_cf_ghost_region.multidomains(c_neighbor), 
-            old_multiarrays(c_neighbor), 
-            current_multiarrays(c_neighbor) )
+      // for (Domain, old_array, current_array) in
+      //     ( grid_cf_ghost_region.multidomains(c_neighbor), 
+      //       old_multiarrays(c_neighbor), 
+      //       current_multiarrays(c_neighbor) )
+      for ( old_array,                   current_array                   ) in
+          ( old_multiarrays(c_neighbor), current_multiarrays(c_neighbor) )
       do
-        yield (Domain, old_array, current_array);
+        yield ( old_array, current_array );
     }
   }
   // /|''''''''''''''''''''''''''''''/|
@@ -348,10 +356,14 @@ class GridCFGhostSolution {
 
 
       //---- Refine data from the coarse grid solution into this structure ----
-      for ( boundary_domain,                               old_array,                   current_array                   )
-      in  ( grid_cf_ghost_region.multidomains(c_neighbor), old_multiarrays(c_neighbor), current_multiarrays(c_neighbor) )
+      // for ( boundary_domain,                               old_array,                   current_array                   )
+      // in  ( grid_cf_ghost_region.multidomains(c_neighbor), old_multiarrays(c_neighbor), current_multiarrays(c_neighbor) )
+      for ( old_array,                   current_array                   )
+      in  ( old_multiarrays(c_neighbor), current_multiarrays(c_neighbor) )
       {
-        old_array     =     old_data.refineValues(     boundary_domain, ref_ratio );
+        var boundary_domain = old_array.domain;
+        // writeln("RefiningTransfer: ", boundary_domain, old_array.domain, current_array.domain);
+        old_array     = old_data.refineValues(     boundary_domain, ref_ratio );
         current_array = current_data.refineValues( boundary_domain, ref_ratio );
       }
 
@@ -567,8 +579,11 @@ proc GridVariable.fillCFGhostRegion (
   const c2 = (time - t1) / (t2 - t1);
   const c1 = 1 - c2;
 
-  for (boundary_domain, array1, array2) in grid_cf_ghost_solution do
+  for (array1, array2) in grid_cf_ghost_solution 
+  {
+    var boundary_domain = array1.domain;
     value(boundary_domain) = c1*array1 + c2*array2;
+  }
   
 }
 // /|"""""""""""""""""""""""""""""""""""""""""""""""""""""/|

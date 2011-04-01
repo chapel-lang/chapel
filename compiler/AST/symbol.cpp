@@ -921,15 +921,33 @@ void LabelSymbol::codegenDef(FILE* outfile) { }
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 
-
-VarSymbol *new_StringSymbol(const char *str) {
+//
+// hh: The following functions are called when we initialize the defaultValue 
+//     field for each PrimitiveType. A unique VarSymbol should represent the 
+//     default value for any specific type, where volatile types and their base 
+//     types are considered distinct types.  Although elsewhere in the compiler, 
+//     volatile types and their base types are not considered distinct (for 
+//     example, is_int_type(t) should return true whether t is an int or a volatile
+//     int), a distinction is made here to prevent ambiguity if a defaultValue or 
+//     its immediate is used to infer the type of its variable/expr. 
+//
+VarSymbol *new_StringSymbol(const char *str, bool hasVolatileType) {
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;
   imm.v_string = astr(str);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
-  if (s)
+  PrimitiveType* dtRetType = dtString;
+  if (s) {
+    if (hasVolatileType) {
+      dtRetType = dtString->volType;
+      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+      rootModule->block->insertAtTail(new DefExpr(s));
+      s->immediate = new Immediate;
+      *s->immediate = imm;
+    }
     return s;
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtString);
+  }
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   *s->immediate = imm;
@@ -938,7 +956,7 @@ VarSymbol *new_StringSymbol(const char *str) {
 }
 
 
-VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
+VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size, bool hasVolatileType) {
   Immediate imm;
   switch (size) {
   case BOOL_SIZE_8  : imm.v_bool = b; break;
@@ -952,14 +970,18 @@ VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   imm.const_kind = NUM_KIND_UINT;
   imm.num_index = INT_SIZE_1;
   VarSymbol *s;
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtBools[size]);
+  PrimitiveType* dtRetType = dtBools[size];
+  if (hasVolatileType) {
+    dtRetType = dtBools[size]->volType;
+  }
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   *s->immediate = imm;
   return s;
 }
 
-VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size) {
+VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size, bool hasVolatileType) {
   Immediate imm;
   switch (size) {
   case INT_SIZE_8  : imm.v_int8   = b; break;
@@ -973,9 +995,18 @@ VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size) {
   imm.const_kind = NUM_KIND_INT;
   imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
-  if (s)
+  PrimitiveType* dtRetType = dtInt[size];
+  if (s) {
+    if (hasVolatileType) {
+      dtRetType = dtInt[size]->volType;
+      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+      rootModule->block->insertAtTail(new DefExpr(s));
+      s->immediate = new Immediate;
+      *s->immediate = imm;
+    }
     return s;
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtInt[size]);
+  }
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   *s->immediate = imm;
@@ -983,7 +1014,7 @@ VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size) {
   return s;
 }
 
-VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
+VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size, bool hasVolatileType) {
   Immediate imm;
   switch (size) {
   case INT_SIZE_8  : imm.v_uint8   = b; break;
@@ -997,9 +1028,18 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
   imm.const_kind = NUM_KIND_UINT;
   imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
-  if (s)
+  PrimitiveType* dtRetType = dtUInt[size];
+  if (s) {
+    if (hasVolatileType) {
+      dtRetType = dtUInt[size]->volType;
+      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+      rootModule->block->insertAtTail(new DefExpr(s));
+      s->immediate = new Immediate;
+      *s->immediate = imm;
+    }
     return s;
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtUInt[size]);
+  }
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   *s->immediate = imm;
@@ -1007,7 +1047,7 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
   return s;
 }
 
-VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
+VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size, bool hasVolatileType) {
   Immediate imm;
   switch (size) {
   case FLOAT_SIZE_32  : imm.v_float32  = b; break;
@@ -1018,9 +1058,19 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
   imm.const_kind = NUM_KIND_FLOAT;
   imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
-  if (s)
+  PrimitiveType* dtRetType = dtReal[size];
+  if (s) {
+    if (hasVolatileType) {
+      dtRetType = dtReal[size]->volType;
+      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+      rootModule->block->insertAtTail(new DefExpr(s));
+      s->cname = astr(n);
+      s->immediate = new Immediate;
+      *s->immediate = imm;
+    }
     return s;
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtReal[size]);
+  }
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->cname = astr(n);
   s->immediate = new Immediate;
@@ -1029,7 +1079,7 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
   return s;
 }
 
-VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
+VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size, bool hasVolatileType) {
   Immediate imm;
   switch (size) {
   case FLOAT_SIZE_32  : imm.v_float32  = b; break;
@@ -1040,9 +1090,19 @@ VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
   imm.const_kind = NUM_KIND_IMAG;
   imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
-  if (s)
+  PrimitiveType* dtRetType = dtImag[size];
+  if (s) {
+    if (hasVolatileType) {
+      dtRetType = dtImag[size]->volType;
+      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+      rootModule->block->insertAtTail(new DefExpr(s));
+      s->cname = astr(n);
+      s->immediate = new Immediate;
+      *s->immediate = imm;
+    }
     return s;
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtImag[size]);
+  }
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->cname = astr(n);
   s->immediate = new Immediate;
@@ -1051,7 +1111,7 @@ VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
   return s;
 }
 
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size) {
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size, bool hasVolatileType) {
   Immediate imm;
   switch (size) {
   case COMPLEX_SIZE_64: 
@@ -1068,9 +1128,19 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   imm.const_kind = NUM_KIND_COMPLEX;
   imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
-  if (s)
+  PrimitiveType* dtRetType = dtComplex[size];
+  if (s) {
+    if (hasVolatileType) {
+      dtRetType = dtComplex[size]->volType;
+      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+      rootModule->block->insertAtTail(new DefExpr(s));
+      s->cname = astr(n);
+      s->immediate = new Immediate;
+      *s->immediate = imm;
+    }
     return s;
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtComplex[size]);
+  }
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   s->cname = astr(n);

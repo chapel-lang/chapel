@@ -101,6 +101,9 @@ system("cd chapel/util && cp start_test ../examples/");
 print "Building the man page...\n";
 system("cd chapel && make man");
 
+print "Building the STATUS file...\n";
+system("cd chapel && make STATUS");
+
 print "Creating the docs directory...\n";
 system("cd chapel && mv doc doctmp");
 system("cd chapel && mv doctmp/release doc");
@@ -120,6 +123,10 @@ system("cd chapel/runtime/src/launch && rm -r dummy");
 system("cd chapel/runtime/src/launch && rm -r mpirun");
 system("cd chapel/runtime/src/launch && rm -r zebra");
 system("cd chapel/runtime/include && rm -r sunos_old");
+
+print "Chmodding the hierarchy\n";
+system("chmod -R ugo+rX chapel");
+system("chmod -R go-w chapel");
 
 chdir "$tmpdir";
 

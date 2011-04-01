@@ -195,6 +195,9 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
   if (fn->hasFlag(FLAG_NON_BLOCKING))
     return false;
 
+  if (fn->hasFlag(FLAG_EXTERN))
+    return false;
+
   visited->add_exclusive(fn);
 
   Vec<CallExpr*> calls;
