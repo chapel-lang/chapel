@@ -156,15 +156,15 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
                                        tx, lhs->var, se->var));
           }
         } else if (se->typeInfo() == dtString ||
-		   se->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING)) {
+                   se->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING)) {
           INT_FATAL(call, "FIXME: string type (GET_REF)");
         } else {
-	  INT_ASSERT(se->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) ||
+          INT_ASSERT(se->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) ||
                      se->typeInfo()->symbol->hasFlag(FLAG_REF));
-	  if (!isOnStack(se))
-	    call->replace(new CallExpr(PRIM_TX_LOAD_REF, 
-				       tx, lhs->var, se->var));
-	}
+          if (!isOnStack(se))
+            call->replace(new CallExpr(PRIM_TX_LOAD_REF, 
+                                       tx, lhs->var, se->var));
+        }
         break;
       } 
       if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
@@ -307,8 +307,8 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         break;
       }
       if (rhs->isPrimitive(PRIM_GETCID)) {
-	USR_FATAL(call, "PRIM_GETCID primitive not supported.");
-	break;
+        USR_FATAL(call, "PRIM_GETCID primitive not supported.");
+        break;
       }
       if (rhs->isPrimitive(PRIM_CAST)           ||
           rhs->isPrimitive(PRIM_GET_PRIV_CLASS) ||
@@ -383,7 +383,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         break;
       }
       if (rhs->isPrimitive(PRIM_SYNC_ISFULL))
-	USR_FATAL(call, "Sync operations are not permitted inside atomic transactions.");
+        USR_FATAL(call, "Sync operations are not permitted inside atomic transactions.");
       txUnknownMovePrimitive(call, rhs);
     }
     if (lhs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
@@ -439,7 +439,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       SymExpr* rhs = toSymExpr(call->get(2));
       INT_ASSERT(rhs); // && isOnStack(rhs));
       if (!isOnStack(lhs))
-	call->replace(new CallExpr(PRIM_TX_STORE_REF, tx, lhs->var, rhs->var));
+        call->replace(new CallExpr(PRIM_TX_STORE_REF, tx, lhs->var, rhs->var));
       break;
     } else {
       SymExpr* rhs = toSymExpr(call->get(2));
@@ -586,17 +586,11 @@ bool canInstrumentFn(FnSymbol* fn) {
 
 static
 bool canCloneFn(FnSymbol* fn) {
-  if (strstr(fn->name, "waitEndCount") || 
-      strstr(fn->name, "readFE")) {
-    gdbShouldBreakHere();
-    return false;
-  }
-
-  if (strstr(fn->name, "halt") || 
-      strstr(fn->name, "compilerWarning")) 
+  if (strstr(fn->name, "halt") || strstr(fn->name, "compilerWarning"))
     return false;
   
-  if (strstr(fn->name, "writeln") || strcmp(fn->name, "write") == 0)
+  if (strstr(fn->name, "writeln") || strcmp(fn->name, "write") == 0 ||
+      strstr(fn->name, "readln") || strcmp(fn->name, "read") == 0)
     USR_FATAL("I/O operations are not permitted inside atomic transactions.");
 
   return true;
