@@ -2,10 +2,12 @@ use BlockDist, Time;
 
 use HPCCProblemSize, RARandomStream, myParams; 
 
+const numTables = 1;
 type indexType = randType,
   elemType = randType;
 
-config const n: indexType = 10,
+config const n = computeProblemSize(numTables, elemType,
+				    returnLog2=true, retType=indexType),
   N_U = 2**(n+2);
 
 const m = 2**n;
@@ -24,47 +26,36 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 
 var T: [TableSpace] elemType;
 
-proc updateValues(myR: indexType, myS: indexType, factor: int(64), mySLocale: locale) {
-  const myRIdx = indexMask(myR, n);
-  const mySIdx = indexMask(myS, n);
-  const myRVal = myS * factor:uint(64);
-  const mySVal = myR * factor:uint(64);
-  var x: elemType;
-  if (myRIdx != mySIdx) {
-    local T(myRIdx) += myRVal;
-    if useOn then
-      on mySLocale {
-	const mySIdx1 = mySIdx;
-	const mySVal1 = mySVal;
-	if forkFast then
-	  local T(mySIdx1) += mySVal1;
-	else
-	  T(mySIdx1) += mySVal1;
-      }
-    else {
-      T(mySIdx) += mySVal;
-    }
+proc swapValues(i: indexType, j: indexType) {
+  var x, y: elemType;
+  x = T(i);
+  if useOn {
+    on TableDist.idxToLocale(j) {
+      y = T(j);
+      T(j) = x;      
+    }      
   } else {
-    local T(myRIdx) += (2 * myRVal);
+    y = T(j);
+    T(j) = x;
   }
+  T(i) = y;
 }
 
 proc main() {
   printConfiguration(); 
   
-  [i in TableSpace] T(i) = 0;
- 
+  [i in TableSpace] T(i) = i;
+  
   const startTime = getCurrentTime();               // capture the start time
 
   forall ( , r, s) in (Updates, RAStream(seed1), RAStream(seed2)) do
-    on TableDist.idxToLocale(indexMask(r, n)) { 
-      const myR = r;
-      const myS = s;
-      const mySLocale = TableDist.idxToLocale(indexMask(myS, n));
+    on TableDist.idxToLocale(indexMask(r, n)) {
+      const myR = indexMask(r, n);
+      const myS = indexMask(s, n);
       if safeUpdates then
-  	atomic updateValues(myR, myS, 1, mySLocale);
+	atomic swapValues(myR, myS);
       else 
-	updateValues(myR, myS, 1, mySLocale);
+        swapValues(myR, myS);
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
@@ -79,38 +70,33 @@ proc printConfiguration() {
     printProblemSize(elemType, 1, m);
     writeln("Atomic Update = ", safeUpdates);
     writeln("UseOn = ", useOn);
-    writeln("RNG = ", whichRNG());
     writeln("Number of updates = ", N_U, "\n");
   }
 }
 
 proc verifyResults() {
-  writeln("Verification Begins");
-  if (printArrays) then writeln("After updates, T is: ", T, "\n");
+  var numErrors: int;
 
-  if (trackStmStats) then startStmStats();
+  if (printArrays) then writeln("After swap, T is: ", T, "\n");
 
   var startTime = getCurrentTime();
 
   forall ( , r, s) in (Updates, RAStream(seed1), RAStream(seed2)) do
-    on TableDist.idxToLocale(indexMask(r, n)) { 
-      const myR = r;
-      const myS = s;
-      const mySLocale = TableDist.idxToLocale(indexMask(myS, n));
-      atomic updateValues(myR, myS, -1, mySLocale);
+    on TableDist.idxToLocale(indexMask(r, n)) {
+      const myR = indexMask(r, n);
+      const myS = indexMask(s, n);
+      atomic swapValues(myS, myR);
     }
 
   const verifyTime = getCurrentTime() - startTime; 
-  
-  if trackStmStats then stopStmStats();
 
   if (printArrays) then writeln("After verification, T is: ", T, "\n");
+ 
+  numErrors = + reduce [i in TableSpace] (T(i) != i);
 
-  const numErrors = + reduce [i in TableSpace] (T(i) != 0);
   if (printStats) {
     writeln("Number of errors is: ", numErrors, "\n");
     writeln("Verification time = ", verifyTime);
-    writeln("Verification (GUPS) = ", (N_U / verifyTime) * 1e-9);
   }
 
   return numErrors <= (errorTolerance * N_U);

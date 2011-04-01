@@ -2,7 +2,7 @@ use BlockDist, Time;
 
 use HPCCProblemSize, RARandomStream; 
 
-use MutexLock;
+use MutexLock, myParams;
 
 type indexType = randType,
   elemType = randType;
@@ -30,13 +30,6 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 
 var T: [TableSpace] elemType;
 var TLock: [LockSpace] mutex_p;
-
-config param safeUpdates: bool = false;
-config param useOn: bool = false;
-config param useLCG: bool = true;
-config param seed1: randType = 0x2;
-config param seed2: randType = 0x7fff;
-config param forkFast: bool = false;
 
 proc updateValues(myR: indexType, myS: indexType, factor: int(64), mySLocale: locale) {
   const myRIdx = indexMask(myR, n);

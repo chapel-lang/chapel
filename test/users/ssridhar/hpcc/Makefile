@@ -1,19 +1,25 @@
 CHPL = chpl
+
 USERNG = LCG
 RNG = $(USERNG)RARandomStream
+
 FLAGS += --conditional-dynamic-dispatch-limit 100
+FLAGS += --print-commands --print-passes
 
 ifeq ($(CHPL_DEVELOPER), true)
 
-FLAGS += $(F) --devel --gen-ids -g --print-commands --print-passes
+FLAGS += $(F) --devel --gen-ids -g
 
 else
 
-FLAGS += $(F) --no-devel --fast --print-commands --print-passes
+FLAGS += $(F) --no-devel --fast
 
 endif
 
-TARGETS = \
+TARGET_SRCS = $(wildcard *.chpl)
+TARGETS = $(TARGET_SRCS:%.chpl=%)
+
+TARGETS1 = \
 	ra \
 	raSTM \
 	raMLA \
@@ -91,7 +97,10 @@ testLCG: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl testLCG.chpl
 testRAR: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl testLCG.chpl
 	$(CHPL) -o $@ -suseLCG=false $(FLAGS) --savec c_$@ $^
 
-aswap: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl atomicswap.chpl
+atomicswap: myParams.chpl HPCCProblemSize.chpl $(RNG).chpl atomicswap.chpl
 	$(CHPL) -o $(CHPLSVN)$@ $(FLAGS) --savec c_$@ $^
+
+%: %.chpl
+	$(CHPL) --savec c_$@$(IA) $(FLAGS) -o $@$(IA) $^
 
 FORCE:
