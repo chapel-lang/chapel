@@ -31,6 +31,9 @@ ra: ra.chpl HPCCProblemSize.chpl RARandomStream.chpl
 fft: fft.chpl HPCCProblemSize.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
+ptrans: ptrans.chpl HPCCProblemSize.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
 hpl: hpl.chpl HPCCProblemSize.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
