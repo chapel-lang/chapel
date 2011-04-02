@@ -10,6 +10,11 @@ use Norm, Random, Time;
 use HPCCProblemSize;
 
 //
+// Use the distributions we need for this computation
+//
+use BlockCycDist;
+
+//
 // The number of matrices and the element type of those matrices
 // indexType can be int or int(64), elemType can be real or complex
 //
@@ -60,15 +65,13 @@ proc main() {
   // standard distribution library is filled out, MatVectSpace will be
   // distributed using a BlockCyclic(blkSize) distribution.
   //
-  const MatVectSpace: domain(2, indexType) = [1..n, 1..n+1],
+  const MatVectSpace: domain(2, indexType) 
+                      dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize)) 
+                    = [1..n, 1..n+1],
         MatrixSpace = MatVectSpace[.., ..n];
 
   var Ab : [MatVectSpace] elemType,  // the matrix A and vector b
-      piv: [1..n] indexType,         // a vector of pivot values
-      x  : [1..n] elemType;          // the solution vector, x
-
-  var A => Ab[MatrixSpace],          // an alias for the Matrix part of Ab
-      b => Ab[.., n+1];              // an alias for the last column of Ab
+      piv: [1..n] indexType;         // a vector of pivot values
 
   initAB(Ab);
 
@@ -76,7 +79,7 @@ proc main() {
 
   LUFactorize(n, Ab, piv);                 // compute the LU factorization
 
-  x = backwardSub(n, A, b);  // perform the back substitution
+  var x = backwardSub(n, Ab);  // perform the back substitution
 
   const execTime = getCurrentTime() - startTime;  // store the elapsed time
 
@@ -90,9 +93,8 @@ proc main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
+proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
                 piv: [1..n] indexType) {
-  const AbD = Ab.domain;    // alias Ab.domain to save typing
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
@@ -133,14 +135,12 @@ proc LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
     // computation:
     //
     panelSolve(Ab, l, piv);
-    if (tr.numIndices > 0) then
-      updateBlockRow(Ab, tl, tr);
+    updateBlockRow(Ab, tl, tr);
     
     //
     // update trailing submatrix (if any)
     //
-    if (br.numIndices > 0) then
-      schurComplement(Ab, blk);
+    schurComplement(Ab, bl, tr, br);
   }
 }
 
@@ -154,11 +154,11 @@ proc LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
 //     |     |bbbbb|bbbbb|bbbbb|  The 'a' region is a block column, the
 //     +----[2]----+-----+-----+  'b' region is a block row.
 //     |aaaaa|.....|.....|.....|
-//     |aaaaa|.....|.....|.....|  The vertex labeled [1] is location
-//     |aaaaa|.....|.....|.....|  (ptOp, ptOp) in the code below.
-//     +-----+-----+-----+-----+
-//     |aaaaa|.....|.....|.....|  The vertex labeled [2] is location
-//     |aaaaa|.....|.....|.....|  (ptSol, ptSol)
+//     |aaaaa|.....|.....|.....|  The 'a' region was 'bl' in the calling
+//     |aaaaa|.....|.....|.....|  function but called AD here.  Similarly,
+//     +-----+-----+-----+-----+  'b' was 'tr' in the calling code, but BD
+//     |aaaaa|.....|.....|.....|  here.
+//     |aaaaa|.....|.....|.....|  
 //     |aaaaa|.....|.....|.....|
 //     +-----+-----+-----+-----+
 //
@@ -173,14 +173,7 @@ proc LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
-  const AbD = Ab.domain;
-
-  //
-  // Calculate location of ptSol (see diagram above)
-  //
-  const ptSol = ptOp+blkSize;
-
+proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
   //
   // Copy data into replicated array so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.  These
@@ -188,97 +181,83 @@ proc schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
   // they look something like the following:
   //
   //var replAbD: domain(2) 
-  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) 
-  //          = AbD[ptSol.., 1..#blkSize];
+  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) = AbD[AD];
   //
-  const replAD: domain(2, indexType) = AbD[ptSol.., ptOp..#blkSize],
-        replBD: domain(2, indexType) = AbD[ptOp..#blkSize, ptSol..];
+  const replAD: domain(2, indexType) = AD,
+        replBD: domain(2, indexType) = BD;
     
-  const replA : [replAD] elemType = Ab[ptSol.., ptOp..#blkSize],
-        replB : [replBD] elemType = Ab[ptOp..#blkSize, ptSol..];
+  const replA : [replAD] elemType = Ab[replAD],
+        replB : [replBD] elemType = Ab[replBD];
 
+  //  writeln("Rest = ", Rest);
+  //  writeln("Rest by blkSize = ", Rest by (blkSize, blkSize));
   // do local matrix-multiply on a block-by-block basis
-  forall (row,col) in AbD[ptSol.., ptSol..] by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) {
     //
-    // At this point, the dgemms should all be local, so assert that
-    // fact
+    // At this point, the dgemms should all be local once we have
+    // replication correct, so we'll want to assert that fact
     //
-    local {
-      const aBlkD = replAD[row..#blkSize, ptOp..#blkSize],
-            bBlkD = replBD[ptOp..#blkSize, col..#blkSize],
+    //    local {
+      const aBlkD = replAD[row..#blkSize, ..],
+            bBlkD = replBD[.., col..#blkSize],
             cBlkD = AbD[row..#blkSize, col..#blkSize];
 
-      dgemm(aBlkD.dim(1).length,
-            aBlkD.dim(2).length,
-            bBlkD.dim(2).length,
-            replA(aBlkD),
-            replB(bBlkD),
-            Ab(cBlkD));
-    }
+      dgemmNativeInds(replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
+      //    }
   }
 }
 
 //
 // calculate C = C - A * B.
 //
-proc dgemm(p: indexType,       // number of rows in A
-          q: indexType,       // number of cols in A, number of rows in B
-          r: indexType,       // number of cols in B
-          A: [1..p, 1..q] ?t,
-          B: [1..q, 1..r] t,
-          C: [1..p, 1..r] t) {
-  // Calculate (i,j) using a dot product of a row of A and a column of B.
-  for i in 1..p do
-    for j in 1..r do
-      for k in 1..q do
-        C[i,j] -= A[i, k] * B[k, j];
+proc dgemmNativeInds(A: [] elemType,
+                    B: [] elemType,
+                    C: [] elemType) {
+  for (iA, iC) in (A.domain.dim(1), C.domain.dim(1)) do
+    for (jA, iB) in (A.domain.dim(2), B.domain.dim(1)) do
+      for (jB, jC) in (B.domain.dim(2), C.domain.dim(2)) do
+        C[iC,jC] -= A[iA, jA] * B[iB, jB];
 }
+
+
 
 //
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-proc panelSolve(Ab: [] ?t,
-               panel: domain(2, indexType),
+proc panelSolve(Ab: [] elemType,
+               panel: domain,
                piv: [] indexType) {
-  const pnlRows = panel.dim(1),
-        pnlCols = panel.dim(2);
 
-  //
-  // Ideally some type of assertion to ensure panel is embedded in Ab's
-  // domain
-  //
-  assert(piv.domain.dim(1) == Ab.domain.dim(1));
-  
-  if (pnlCols.length == 0) then return;
-  
-  for k in pnlCols {             // iterate through the columns
+  for k in panel.dim(2) {             // iterate through the columns
     var col = panel[k.., k..k];
     
     // If there are no rows below the current column return
-    if col.dim(1).length == 0 then return;
+    if col.numIndices == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
-    const ( , (pivotRow, )) = maxloc reduce(abs(Ab(col)), col),
-          pivot = Ab[pivotRow, k];
+    const ( , (pivotRow, )) = maxloc reduce(abs(Ab(col)), col);
+
+    // Capture the pivot value explicitly (note that result of maxloc
+    // is absolute value, so it can't be used directly).
+    //
+    const pivotVal = Ab[pivotRow, k];
     
-    // Swap the current row with the pivot row
+    // Swap the current row with the pivot row and update the pivot vector
+    // to reflect that
+    Ab[k..k, ..] <=> Ab[pivotRow..pivotRow, ..];
     piv[k] <=> piv[pivotRow];
 
-    Ab[k, ..] <=> Ab[pivotRow, ..];
-    
-    if (pivot == 0) then
-      halt("Matrix can not be factorized");
+    if (pivotVal == 0) then
+      halt("Matrix cannot be factorized");
     
     // divide all values below and in the same col as the pivot by
-    // the pivot
-    if k+1 <= pnlRows.high then
-      Ab(col)[k+1.., k..k] /= pivot;
+    // the pivot value
+    Ab[k+1.., k..k] /= pivotVal;
     
     // update all other values below the pivot
-    if k+1 <= pnlRows.high && k+1 <= pnlCols.high then
-      forall (i,j) in panel[k+1.., k+1..] do
-        Ab[i,j] -= Ab[i,k] * Ab[k,j];
+    forall (i,j) in panel[k+1.., k+1..] do
+      Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
 
@@ -288,43 +267,32 @@ proc panelSolve(Ab: [] ?t,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-proc updateBlockRow(Ab: [] ?t,
-                   tl: domain(2, indexType),
-                   tr: domain(2, indexType)) {
-  const tlRows = tl.dim(1),
-        tlCols = tl.dim(2),
-        trRows = tr.dim(1),
-        trCols = tr.dim(2);
-  
-  assert(tlCols == trRows);
+proc updateBlockRow(Ab: [] elemType,
+                   tl: domain,
+                   tr: domain) {
 
-  //
-  // Ultimately, we will probably want to do some replication of the
-  // tl block in order to make this operation completely localized as
-  // in the dgemm.  We have not yet undertaken that optimization.
-  //
-  for i in trRows do
-    forall j in trCols do
-      for k in tlRows.low..i-1 do
+  for row in tr.dim(1) {
+    const activeRow = tr[row..row, ..],
+          prevRows = tr.dim(1).low..row-1;
+
+    forall (i,j) in activeRow do
+      for k in prevRows do
         Ab[i, j] -= Ab[i, k] * Ab[k,j];
+  }
 }
+
 
 //
 // compute the backwards substitution
 //
 proc backwardSub(n: indexType,
-                A: [1..n, 1..n] elemType,
-                b: [1..n] elemType) {
-  var x: [b.domain] elemType;
+                 Ab: [] elemType) {
+  const bd = Ab.domain.dim(1);
+  var x: [bd] elemType;
 
-  for i in [b.domain by -1] {
-    x[i] = b[i];
-    
-    for j in [i+1..b.domain.high] do
-      x[i] -= A[i,j] * x[j];
-
-    x[i] /= A[i,i];
-  }
+  for i in bd by -1 do
+    x[i] = (Ab[n+1,i] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
+            / Ab[i,i];
 
   return x;
 }
@@ -353,17 +321,14 @@ proc initAB(Ab: [] elemType) {
 // calculate norms and residuals to verify the results
 //
 proc verifyResults(Ab, MatrixSpace, x) {
-  var A => Ab[MatrixSpace],
-      b => Ab[.., n+1];
-
   initAB(Ab);
-  
-  const axmbNorm = norm(gaxpyMinus(n, n, A, x, b), normType.normInf);
 
-  const a1norm   = norm(A, normType.norm1),
-        aInfNorm = norm(A, normType.normInf),
-        x1Norm   = norm(x, normType.norm1),
-        xInfNorm = norm(x, normType.normInf);
+  const axmbNorm = norm(gaxpyMinus(Ab[.., 1..n], x, Ab[.., n+1..n+1]), normType.normInf);
+
+  const a1norm   = norm(Ab[.., 1..n], normType.norm1),
+        aInfNorm = norm(Ab[.., 1..n], normType.normInf),
+        x1Norm   = norm(Ab[.., n+1..n+1], normType.norm1),
+        xInfNorm = norm(Ab[.., n+1..n+1], normType.normInf);
 
   const resid1 = axmbNorm / (epsilon * a1norm * n),
         resid2 = axmbNorm / (epsilon * a1norm * x1Norm),
@@ -393,19 +358,13 @@ proc printResults(successful, execTime) {
 //
 // simple matrix-vector multiplication, solve equation A*x-y
 //
-proc gaxpyMinus(n: indexType,
-               m: indexType,
-               A: [1..n, 1..m],
-               x: [1..m],
-               y: [1..n]) {
+proc gaxpyMinus(A: [],
+                x: [?xD],
+                y: [?yD]) {
   var res: [1..n] elemType;
 
-  for i in 1..n do
-    for j in 1..m do
-      res[i] += A[i,j]*x[j];
-
-  for i in 1..n do
-    res[i] -= y[i];
+  forall i in 1..n do
+    res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[n+1, i];
 
   return res;
 }
