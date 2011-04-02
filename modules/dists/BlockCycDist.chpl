@@ -623,9 +623,7 @@ proc BlockCyclicArr.dsiSupportsPrivatization() param return true;
 proc BlockCyclicArr.dsiGetPrivatizeData() return 0;
 
 proc BlockCyclicArr.dsiPrivatize(privatizeData) {
-  var dompid = dom.pid;
-  var thisdom = dom;
-  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+  var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
   var c = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   c.locArr = locArr;
   for localeIdx in dom.dist.targetLocDom do

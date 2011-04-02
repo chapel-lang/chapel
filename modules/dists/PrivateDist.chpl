@@ -79,9 +79,7 @@ proc PrivateArr.dsiRequiresPrivatization() param return true;
 proc PrivateArr.dsiGetPrivatizeData() return 0;
 
 proc PrivateArr.dsiPrivatize(privatizeData) {
-  var dompid = dom.pid;
-  var thisdom = dom;
-  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+  var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
   return new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
 }
 
@@ -94,10 +92,9 @@ proc PrivateArr.dsiAccess(i: idxType) var {
     if boundsChecking then
       if i < 0 || i >= numLocales then
         halt("array index out of bounds: ", i);
-    var arrpid = this.pid;
     var privarr = this;
     on Locales(i) {
-      privarr = __primitive("chpl_getPrivatizedClass", privarr, arrpid);
+      privarr = chpl_getPrivatizedCopy(this.type, this.pid);
     }
     return privarr.data;
   }

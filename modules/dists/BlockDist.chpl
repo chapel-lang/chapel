@@ -1064,9 +1064,7 @@ proc BlockDom.dsiSupportsPrivatization() param return true;
 proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc BlockDom.dsiPrivatize(privatizeData) {
-  var distpid = privatizeData(1);
-  var thisdist = dist;
-  var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
+  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
   var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
@@ -1087,9 +1085,7 @@ proc BlockArr.dsiSupportsPrivatization() param return true;
 proc BlockArr.dsiGetPrivatizeData() return dom.pid;
 
 proc BlockArr.dsiPrivatize(privatizeData) {
-  var dompid = privatizeData;
-  var thisdom = dom;
-  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+  var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
   var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);

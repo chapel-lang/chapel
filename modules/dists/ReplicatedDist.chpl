@@ -294,7 +294,7 @@ proc ReplicatedDom.dsiGetPrivatizeData() {
 proc ReplicatedDom.dsiPrivatize(privatizeData): this.type {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiPrivatize on ", here);
 
-  var privdist = chpl_privateInstance(this.dist.type, privatizeData(1));
+  var privdist = chpl_getPrivatizedCopy(this.dist.type, privatizeData(1));
   return new ReplicatedDom(rank=rank, idxType=idxType, stridable=stridable,
                            dist = privdist,
                            domRep = privatizeData(2),
@@ -514,9 +514,6 @@ proc ReplicatedArr.ReplicatedArr(type eltType, dom: ReplicatedDom) {
   // initializes the fields 'eltType', 'dom' by name
 }
 
-// could store as a field in ReplicatedArr
-proc ReplicatedArr.idxType type return dom.idxType;
-
 // The same across all domain maps
 proc ReplicatedArr.dsiGetBaseDom() return dom;
 
@@ -536,7 +533,7 @@ proc ReplicatedArr.dsiGetPrivatizeData() {
 proc ReplicatedArr.dsiPrivatize(privatizeData) {
   if traceReplicatedDist then writeln("ReplicatedArr.dsiPrivatize on ", here);
 
-  var privdom = chpl_privateInstance(this.dom.type, privatizeData(1));
+  var privdom = chpl_getPrivatizedCopy(this.dom.type, privatizeData(1));
   var result = new ReplicatedArr(eltType, privdom);
   result.localArrs = privatizeData(2);
   return result;

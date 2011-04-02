@@ -490,11 +490,7 @@ proc CyclicDom.dsiSupportsPrivatization() param return true;
 proc CyclicDom.dsiGetPrivatizeData() return 0;
 
 proc CyclicDom.dsiPrivatize(privatizeData) {
-  // These two variables are actually necessary even though it looks like
-  // dist and dist.pid could be passed to the primitive directly.
-  var distpid = dist.pid;
-  var thisdist = dist;
-  var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
+  var privdist = chpl_getPrivatizedCopy(dist.type, dist.pid);
   var c = new CyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
   c.locDoms = locDoms;
   c.whole = whole;
@@ -667,11 +663,7 @@ proc CyclicArr.dsiSupportsPrivatization() param return true;
 proc CyclicArr.dsiGetPrivatizeData() return 0;
 
 proc CyclicArr.dsiPrivatize(privatizeData) {
-  // These two variables are actually necessary even though it looks like
-  // dist and dist.pid could be passed to the primitive directly.
-  var dompid = dom.pid;
-  var thisdom = dom;
-  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+  var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
   var c = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   c.locArr = locArr;
   for localeIdx in dom.dist.targetLocDom do

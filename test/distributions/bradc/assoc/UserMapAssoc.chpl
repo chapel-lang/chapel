@@ -554,9 +554,7 @@ class UserMapAssocArr: BaseArr {
   proc dsiSupportsPrivatization() param return true;
   proc dsiGetPrivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
-    var dompid = dom.pid;
-    var thisdom = dom;
-    var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+    var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
     var c = new UserMapAssocArr(idxType=idxType, eltType=eltType, dom=privdom);
     c.locArrs = locArrs;
     return c;

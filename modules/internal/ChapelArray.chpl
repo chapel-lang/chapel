@@ -47,7 +47,7 @@ proc _reprivatize(value) {
   proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
     var newValue = originalValue;
     if hereID != here.uid {
-      newValue = __primitive("chpl_getPrivatizedClass", newValue, pid);
+      newValue = chpl_getPrivatizedCopy(newValue.type, pid);
       newValue.dsiReprivatize(parentValue, reprivatizeData);
     }
     cobegin {
@@ -366,10 +366,7 @@ record _distribution {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -484,10 +481,7 @@ record _domain {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -969,10 +963,7 @@ record _array {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -994,7 +985,7 @@ record _array {
   proc rank param return this.domain.rank;
 
   pragma "inline"
-  proc this(i: rank*_value.idxType) var {
+  proc this(i: rank*_value.dom.idxType) var {
     if isRectangularArr(this) || isSparseArr(this) then
       return _value.dsiAccess(i);
     else
@@ -1002,7 +993,7 @@ record _array {
   }
 
   pragma "inline"
-  proc this(i: _value.idxType ...rank) var
+  proc this(i: _value.dom.idxType ...rank) var
     return this(i);
 
   //
@@ -1039,7 +1030,7 @@ record _array {
     return _newArray(a);
   }
 
-  proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
+  proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
     if boundsChecking then
       checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
