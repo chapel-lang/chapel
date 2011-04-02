@@ -126,13 +126,24 @@ timeouts (???)
 no-local regressions
 ====================
 
+volatile breaks in --no-local (04/01/11)
+----------------------------------------
+[Error matching compiler output for classes/hannah/volatile_argument_passing]
+[Error matching compiler output for classes/hannah/volatile_class_field]
+[Error matching compiler output for classes/hannah/volatile_coercion]
+[Error matching compiler output for classes/hannah/volatile_decl]
+[Error matching compiler output for classes/hannah/volatile_while_loop2]
+[Error matching compiler output for classes/hannah/volatile_while_loop3]
+[Error matching compiler output for classes/hannah/volatile_while_loop]
+[Error matching compiler output for studies/shootout/chameneos-redux/chameneos-redux-cas]
+
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for trivial/deitz/test_param_fold2] (03/20/11)
 
 nondet. bad output
 ------------------
-[Error matching program output for studies/dijkstra/driverEdgeBtw] (03/16/11, 03/23/11, 03/27/11)
+[Error matching program output for studies/dijkstra/driverEdgeBtw] (03/16/11, 03/23/11, 03/27/11, 04/01/11)
 
 nondet. prediff error (linefeeds go awry)
 -----------------------------------------
@@ -160,6 +171,10 @@ memory stuff in flux (05/28/09)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
+
+nondet. zippered iterations having unequal lengths
+--------------------------------------------------
+[Error matching program output for domains/sungeun/assoc/minus_equals] (02/05/11, 02/19/11, 04/01/11)
 
 failure to open file (03/30/11)
 -------------------------------
@@ -200,14 +215,14 @@ verbose output now shows launch command (10/31/08) (bradc)
 gasnet-fast regressions (other than the above)
 ==============================================
 
-nondet. zippered iterations having unequal lengths
---------------------------------------------------
-[Error matching program output for domains/sungeun/assoc/minus_equals] (02/05/11, 02/19/11)
-
 
 ==================
 pvm-specific tests
 ==================
+
+some sort of problem in generated types, probably due to volatile (04/01/11)
+----------------------------------------------------------------------------
+*all*
 
 nondet. problems due to "address already in use" errors
 -------------------------------------------------------
@@ -451,6 +466,7 @@ general failures
 
 --no-local --heterogeneous
 --------------------------
+*all* (04/01/11 due to volatile change?)
 [Error matching compiler output for arrays/bradc/workarounds/arrayOfArray-workaround]
 [Error matching program output for arrays/deitz/test_block_array_of_syncs]
 [Error matching compiler output for arrays/deitz/part4/test_array_type_alias]
