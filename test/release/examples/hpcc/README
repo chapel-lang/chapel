@@ -14,12 +14,13 @@ approximately as follows:
   performance and elegance improvements that we plan to address.
 
 * The FFT, PTRANS, and HPL benchmarks run on distributed memory, but
-  have not yet been written or optimized to perform well or scalably.
+  need additional work (both in the source code and the Chapel
+  implementation) to scale and perform well.
 
 Our intention is to continue improving the implementation of all of
 these benchmarks over time.  Please refer to the Chapel website
-(http://chapel.cray.com) for past reports that evaluate these
-benchmarks.
+(http://chapel.cray.com) for an archive of past reports that evaluate
+these benchmarks.
 
 The main files for these benchmarks are as follows:
 
