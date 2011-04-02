@@ -327,7 +327,8 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "chpl__class_id chpl__cid;\n");
   } else if (classTag == CLASS_UNION) {
     fprintf(outfile, "int64_t _uid;\n");
-    fprintf(outfile, "union {\n");
+    if (this->fields.length != 0)
+      fprintf(outfile, "union {\n");
   } else if (this->fields.length == 0) {
     fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
   }
@@ -339,7 +340,8 @@ void ClassType::codegenDef(FILE* outfile) {
   }
 
   if (classTag == CLASS_UNION) {
-    fprintf(outfile, "} _u;\n");
+    if (this->fields.length != 0)
+      fprintf(outfile, "} _u;\n");
   }
   if (symbol->hasFlag(FLAG_DATA_CLASS)) {
     getDataClassType(symbol)->codegen(outfile);
