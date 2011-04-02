@@ -6,60 +6,83 @@ use BasicDataStructures;
 //|\""""""""""""""""""""""""""""""|\
 //| >    partitionFlags routine   | >
 //|/______________________________|/
+
 //---------------------------------------------------------
 // Returns a MultiDomain that partitions the boolean array
 // 'flags' with the target efficiency, if possible.
 //---------------------------------------------------------
-proc partitionFlags(
+
+proc partitionFlags (
   flags:             [?full_domain] bool, 
   target_efficiency: real,
   min_width:         full_domain.rank*int)
 {
+    
   param rank = full_domain.rank;
 
-  //==== Create stack of unprocessed domains ====
+  //---- Create stack of unprocessed domains ----
+  
   var unprocessed_domain_stack = new Stack( domain(rank,stridable=true) );
   unprocessed_domain_stack.push(full_domain);
   
   
-  //==== MultiDomain for finished domains ====
-  var finished_mDomain = new List( domain(rank, stridable=true) );
+  //---- List of finished domains ----
   
-  while unprocessed_domain_stack.isEmpty()==false {
-    //==== Pop top domain ====
-    var D = unprocessed_domain_stack.pop();
+  var finished_domain_list = new List( domain(rank, stridable=true) );
+  
+  
+  while !unprocessed_domain_stack.isEmpty()
+  {
 
+    //---- Make the top domain a candidate ----
+    
+    var D = unprocessed_domain_stack.pop();
     var candidate = new CandidateDomain(rank,D,flags(D),min_width);
     
+    
     //===> If candidate is inefficient, then split ===>
-    if candidate.efficiency() < target_efficiency {
-      //==== Generate new domains ====
+
+    if candidate.efficiency() < target_efficiency
+    {
+
+      //---- Generate new domains ----
+      
       var D1, D2: domain(rank,stridable=true);
       (D1,D2) = candidate.split();
+
       
-      //==== If D2 is empty, split was unsuccessful ====
-      if D2.numIndices==0 {
-        // writeln("Warning: FlaggedDomain.partition\n" +
-        //         "  Could not meet target efficiency on domain ", candidate.D, ".");
-        finished_mDomain.add(candidate.D);
-      }
-      //==== Otherwise, push new candidates to stack ====
+      //---- If D2 is empty, split was unsuccessful ----
+      
+      if D2.numIndices==0 then finished_domain_list.add(candidate.D);
+
+
+      //---- Otherwise, push new candidates to stack ----
+      
       else {
+        
         unprocessed_domain_stack.push(D1);
         unprocessed_domain_stack.push(D2);
       }
+      
     }
     //<=== If candidate is inefficient, then split <===
-    //==== Otherwise, add to domain_set of finished domains ====
-    else
-      finished_mDomain.add(candidate.D);
+
+    //---- Otherwise, add to domain_set of finished domains ----
     
-    //==== Clean up ====
-    candidate.clear();
+    else finished_domain_list.add(candidate.D);
+    
+    
+  
+    //---- Clean up ----
+
     delete candidate;
   }
   
-  return finished_mDomain;
+  
+  
+  delete unprocessed_domain_stack;
+  
+  return finished_domain_list;
 }
 // /|"""""""""""""""""""""""""""""""/|
 //< |    partitionFlags routine    < |
@@ -70,6 +93,7 @@ proc partitionFlags(
 //|\""""""""""""""""""""""""""""""|\
 //| >    CandidateDomain class    | >
 //|/______________________________|/
+
 class CandidateDomain {
   
   param rank:       int;
@@ -90,12 +114,16 @@ class CandidateDomain {
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
+
   //------------------------------------------------------------------
   // Currently forced to use initialize rather than a constructor, as
   // this class is generic.
   //------------------------------------------------------------------
-  proc initialize() {
-    //===> Calculate signatures ===>
+  
+  proc initialize ()
+  {
+    
+    //---- Calculate signatures ----
     for d in 1..rank do
       signatures(d) = new ArrayWrapper( [D.dim(d)] );
       
@@ -104,14 +132,30 @@ class CandidateDomain {
         for d in 1..rank do
           signatures(d).array(idx(d)) += 1;
     }
-    //<=== Calculate signatures <===
 
-    //==== Trim ====
+
+    //---- Trim ----
     trim();
+    
   }
   // /|''''''''''''''''''''/|
   //< |    constructor    < |
   // \|....................\|
+
+
+
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
+
+  proc ~CandidateDomain ()
+  { 
+    for i in 1..rank do delete signatures(i);
+  }
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
+
 
 
   //|\'''''''''''''''''''|\
@@ -125,17 +169,11 @@ class CandidateDomain {
   //< |    efficiency    < |
   // \|...................\|
 
-  
-  //|\''''''''''''''|\
-  //| >    clear    | >
-  //|/..............|/
-  proc clear() { 
-    for i in 1..rank do delete signatures(i);
-  }
-  // /|''''''''''''''/|
-  //< |    clear    < |
-  // \|..............\|
+
 }
+// /|"""""""""""""""""""""""""""""""/|
+//< |    class: CandidateDomain    < |
+// \|_______________________________\|
 
 
 
@@ -151,52 +189,62 @@ proc CandidateDomain.trim()
   var trim_low, trim_high: int;
   
   for d in 1..rank {
-    //==== Low bound ====
+    
+    //---- Low bound ----
+    
     for i in D.dim(d) do
       if signatures(d).array(i)>0 {
         trim_low = i;
         break;
       }
+
       
-    //==== High bound ====
+    //---- High bound ----
+    
     for i in D.dim(d) by -1 do
       if signatures(d).array(i)>0 {
         trim_high = i;
         break;
       }
     
-    //==== Create range ====
+    
+    //---- Create range ----
+
     var stride = D.stride(d);
     var R = trim_low .. trim_high by stride;
 
-    //==== Comply with minimum width ====
-    if R.length < min_width(d) {
-      //==== Approximately center the enlarged range ====
+
+    //---- Comply with minimum width ----
+
+    if R.length < min_width(d) 
+    {
+      
+      //---- Approximately center the enlarged range ----
+      
       var n_overflow_low = (min_width(d) - R.length) / 2;
       R = ((trim_low - n_overflow_low*stride .. by stride) #min_width(d)).alignHigh();
 
-      //==== Enforce low bound of D ====
-      if R.low < D.low(d) then
-        R += D.low(d) - R.low;
 
-      //==== Enforce high bound of D ====
-      if R.high > D.high(d) then 
-        R -= R.high - D.high(d);
+      //---- Enforce bounds of D ----
+      
+      if R.low  < D.low(d)  then R += D.low(d) - R.low;
+      if R.high > D.high(d) then R -= R.high - D.high(d);
     }
     
-    //==== Assign range ====
+    
+    //---- Assign range ----
+    
     trimmed_ranges(d) = R;
     
   }
   //<=== Find bounds of trimmed domain <===
   
 
-  //==== Resize domain ====
-  D = trimmed_ranges;
+  //---- Resize domain and signatures ----
   
-  //==== Resize signatures ====
-  for d in 1..rank do
-    signatures(d).Domain = [D.dim(d)];
+  D = trimmed_ranges;
+  for d in 1..rank do signatures(d).Domain = [D.dim(d)];
+
 }
 // /|"""""""""""""""""""""""""""""/|
 //< |    CandidateDomain.trim    < |
@@ -266,6 +314,7 @@ proc CandidateDomain.removeHole()
     // Hole bounds outside this range would violate min_width
     // after the split.
     //--------------------------------------------------------
+    
     stride = D.stride(d);
 
     var allowable_hole_bounds = D.low(d) + stride*min_width(d) 
@@ -342,7 +391,7 @@ proc CandidateDomain.removeHole()
 //| >    CandidateDomain.inflectionCut    | >
 //|/______________________________________|/
 
-proc CandidateDomain.inflectionCut()
+proc CandidateDomain.inflectionCut ()
 {
 
   var ranges: rank*range(stridable=true);
@@ -355,16 +404,20 @@ proc CandidateDomain.inflectionCut()
   var cut_dimension, cut_magnitude, D1_high: int;
 
 
-  //===> Generate stack of possible cuts ===>
+  //===> Locate optimal cut ===>
+  
   for d in 1..rank {
-    //==== Must be at least 4 cells wide for an inflection cut ====
+    
+    //---- Must be at least 4 cells wide for an inflection cut ----
+    
     if D.dim(d).length >= 4 {
 
       var sig => signatures(d).array;
       var stride = D.stride(d);
 
       //===> Search for cuts ===>
-      //==== Allowable D1 high limits ====
+      
+      //---- Allowable D1 high limits ----
       var allowable_D1_highs = D.low(d) + stride*(min_width(d)-1) 
                                .. D.high(d) - stride*min_width(d)
                                by stride;
@@ -392,13 +445,14 @@ proc CandidateDomain.inflectionCut()
       //<=== Search for cuts <===
     }
   }
-  //<=== Generate stack of possible cuts <===
+  
+  //<=== Locate optimal cut <===
 
 
   //===> Apply the optimal cut ===>
+  
   if cut_magnitude > 0 {
 
-    //===> Apply cut ===>
     for d in 1..rank do ranges(d) = D.dim(d);
 
     var stride = D.stride(cut_dimension);
@@ -407,8 +461,9 @@ proc CandidateDomain.inflectionCut()
 
     ranges(cut_dimension) = D1_high+stride .. D.high(cut_dimension) by stride;
     D2 = ranges;
-    //<=== Apply cut <===
+
   }
+  
   //<=== Apply the optimal cut <===
 
 
@@ -424,18 +479,22 @@ proc CandidateDomain.inflectionCut()
 //|\"""""""""""""""""""""""""""|\
 //| >    writeFlags routine    | >
 //|/___________________________|/
+
 //--------------------------------------------------------
 // For testing purposes.  Writes a boolean array of flags
 // in a more readable form (0s and 1s).
 //--------------------------------------------------------
-proc writeFlags(flags: [?D] bool) 
+
+proc writeFlags( flags: [?D] bool )
 {
+
   var I: [D] int;
   for (i,flag) in (I,flags) do
     if flag then i=1;
     
   writeln("On domain ", flags.domain, ":");
   writeln(I);
+
 }
 // /|"""""""""""""""""""""""""""/|
 //< |    writeFlags routine    < |

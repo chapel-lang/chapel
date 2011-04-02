@@ -36,6 +36,7 @@ class Level {
   // These domains index the possible cells occupied by a grid on 
   // the level.
   //--------------------------------------------------------------
+  
   const possible_ghost_cells: domain(dimension, stridable=true);
   const possible_cells:       subdomain(possible_ghost_cells);
 
@@ -50,27 +51,11 @@ class Level {
   // on 'grids'; as seen here, the syntax is identical to that for
   // arithmetic domains.  Iteration syntax is the same as well.
   //---------------------------------------------------------------------
-  var grids:            domain(Grid);
-  var sibling_ghost_regions: [grids] SiblingOverlap;
-  var boundary:         [grids] MultiDomainNew(dimension,stridable=true);
 
+  var grids:                 domain(Grid);
+  var sibling_ghost_regions: [grids] SiblingGhostRegion;
+  var boundary:              [grids] MultiDomainNew(dimension,stridable=true);
 
-  //|\''''''''''''''|\
-  //| >    clear    | >
-  //|/..............|/
-  
-  proc clear () {
-    for grid in grids {
-
-      delete sibling_ghost_regions(grid);
-
-      boundary(grid).clear();
-      delete boundary(grid);
-    }
-  }
-  // /|''''''''''''''/|
-  //< |    clear    < |
-  // \|..............\|
 
 
   //|\''''''''''''''''''''|\
@@ -109,6 +94,26 @@ class Level {
   // /|''''''''''''''''''''/|
   //< |    constructor    < |
   // \|....................\|
+  
+  
+  
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
+  
+  proc ~Level () 
+  {
+    for grid in grids
+    {
+      delete sibling_ghost_regions(grid);
+      delete boundary(grid);      
+      delete grid;
+    }
+  }
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
+  
   
 
   //|\''''''''''''''''''''''''''''|\
@@ -259,26 +264,30 @@ proc Level.addGrid(
 // can safely compute how they overlap with one another.
 //----------------------------------------------------------------
 
-proc Level.complete () {
+proc Level.complete ()
+{
 
-  //==== Safety check ====
-  assert(is_complete == false,
-	 "Attempted to complete a completed level.");
+  //---- Safety check ----
+  assert( !is_complete, "Attempted to complete a completed level." );
 
-  //==== Set overlap and boundary data ====
-  for grid in grids {
-    sibling_ghost_regions(grid) = new SiblingOverlap(this,grid);
+
+  //---- Set overlap and boundary data ----
+
+  for grid in grids 
+  {
+    sibling_ghost_regions(grid) = new SiblingGhostRegion(this,grid);
     
     boundary(grid) = new MultiDomainNew(dimension,stridable=true);
 
-    //## boundary(grid).add(grid.ghost_multidomain);
-    for D in grid.ghost_multidomain do boundary(grid).add( D );
+    for D in grid.ghost_domains do boundary(grid).add( D );
 
-    for overlap_domain in sibling_ghost_regions(grid).domains do
-      boundary(grid).subtract( overlap_domain );
+    for shared_domain in sibling_ghost_regions(grid).domains do
+      boundary(grid).subtract( shared_domain );
   }
 
-  //==== Finish ====
+
+  //---- Finish ----
+  
   is_complete = true;
 
 }
@@ -289,9 +298,9 @@ proc Level.complete () {
 
 
 
-//|\"""""""""""""""""""""""""""""|\
-//| >    SiblingOverlap class    | >
-//|/_____________________________|/
+//|\"""""""""""""""""""""""""""""""""|\
+//| >    SiblingGhostRegion class    | >
+//|/_________________________________|/
 
 //----------------------------------------------------------------------
 // Describes the overlap of a Grid with its siblings on a Level.
@@ -303,28 +312,17 @@ proc Level.complete () {
 // only be built once all grids have been added to a level.
 //----------------------------------------------------------------------
 
-class SiblingOverlap {
+class SiblingGhostRegion {
 
   const neighbors: domain(Grid);
   const domains:   [neighbors] domain(dimension,stridable=true);
-
-
-  //|\''''''''''''''''|\
-  //| >    clear()    | >
-  //|/................|/
-  proc clear() {
-    neighbors.clear();
-  }
-  // /|''''''''''''''''/|
-  //< |    clear()    < |
-  // \|................\|
   
   
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
   
-  proc SiblingOverlap (
+  proc SiblingGhostRegion (
     level: Level,
     grid:  Grid)
   {
@@ -341,6 +339,19 @@ class SiblingOverlap {
   // /|''''''''''''''''''''/|
   //< |    constructor    < |
   // \|....................\|
+  
+  
+  
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
+  
+  proc ~SiblingGhostRegion () {}
+
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
+  
   
  
   //|\'''''''''''''''''''''''''|\
@@ -365,9 +376,9 @@ class SiblingOverlap {
   // \|.........................\|
   
 }
-// /|"""""""""""""""""""""""""""""/|
-//< |    SiblingOverlap class    < |
-// \|_____________________________\|
+// /|"""""""""""""""""""""""""""""""""/|
+//< |    SiblingGhostRegion class    < |
+// \|_________________________________\|
 
 
 

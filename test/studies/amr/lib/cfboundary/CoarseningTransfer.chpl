@@ -73,17 +73,15 @@ class GridInvalidRegion {
   
   
   
-  //|\''''''''''''''''''''''|\
-  //| >    method: clear    | >
-  //|/......................|/
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
   
-  proc clear () 
-  {
-    fine_neighbors.clear();
-  }
-  // /|''''''''''''''''''''''/|
-  //< |    method: clear    < |
-  // \|......................\|
+  proc ~GridInvalidRegion () {}
+
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
   
 }
 // /|"""""""""""""""""""""""""""""""""/|
@@ -138,20 +136,17 @@ class LevelInvalidRegion {
 
 
 
-  //|\''''''''''''''''''''''|\
-  //| >    method: clear    | >
-  //|/......................|/
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
   
-  proc clear ()
+  proc ~LevelInvalidRegion ()
   {
-    for region in grid_invalid_regions {
-      region.clear();
-      delete region;
-    }
+    for region in grid_invalid_regions do delete region;
   }
-  // /|''''''''''''''''''''''/|
-  //< |    method: clear    < |
-  // \|......................\|
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
   
 
 

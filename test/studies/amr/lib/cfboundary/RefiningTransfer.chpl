@@ -22,7 +22,7 @@ class GridCFGhostRegion {
 
   const grid:             Grid;
   const coarse_neighbors: domain(Grid);
-  const multidomains:     [coarse_neighbors] MultiDomainNew(dimension,stridable=true);
+  const transfer_regions:  [coarse_neighbors] MultiDomainNew(dimension,stridable=true);
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -54,14 +54,14 @@ class GridCFGhostRegion {
       if fine_intersection.numIndices > 0 {
         
         //---- Initialize a MultiDomain to the intersection, less grid's interior ----
-        // var boundary_multidomain = fine_intersection - grid.cells;
+        
         var boundary_multidomain = new MultiDomainNew(dimension, stridable=true);
         boundary_multidomain.add( fine_intersection );
         boundary_multidomain.subtract( grid.cells );
         
 
-
-        //----Remove neighbor ghost regions ----
+        //----Remove sibling ghost regions ----
+        
         for (neighbor, region) in parent_level.sibling_ghost_regions(grid) {
           
           if fine_intersection(region).numIndices > 0 {
@@ -71,12 +71,13 @@ class GridCFGhostRegion {
         
 
         //---- If boundary_multidomain is still nonempty, update coarse_neighbors and multidomains ----
-        if !boundary_multidomain.isEmpty() > 0 {
+        
+        if !boundary_multidomain.isEmpty()
+        {
           coarse_neighbors.add(coarse_grid);
-          multidomains(coarse_grid) = boundary_multidomain;
+          transfer_regions(coarse_grid) = boundary_multidomain;
         }
-        else 
-          delete boundary_multidomain;
+        else delete boundary_multidomain;
         
       }
     }
@@ -88,20 +89,17 @@ class GridCFGhostRegion {
 
 
 
-  //|\''''''''''''''''''''''|\
-  //| >    method: clear    | >
-  //|/......................|/
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
   
-  proc clear() {
-          
-    for multidomain in multidomains {
-      multidomain.clear();
-      delete multidomain;
-    }
+  proc ~GridCFGhostRegion ()
+  {       
+    for multidomain in transfer_regions do delete multidomain;
   }
-  // /|''''''''''''''''''''''/|
-  //< |    method: clear    < |
-  // \|......................\|
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
   
 
 
@@ -109,9 +107,10 @@ class GridCFGhostRegion {
   //| >    special method: these    | >
   //|/..............................|/
   
-  iter these() {
-    for c_neighbor in coarse_neighbors do
-      yield (c_neighbor, multidomains(c_neighbor));
+  iter these() 
+  {
+    for neighbor in coarse_neighbors do
+      yield ( neighbor, transfer_regions(neighbor) );
   }
   // /|''''''''''''''''''''''''''''''/|
   //< |    special method: these    < |
@@ -178,20 +177,17 @@ class LevelCFGhostRegion {
   
   
   
-  //|\''''''''''''''''''''''|\
-  //| >    method: clear    | >
-  //|/......................|/
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
   
-  proc clear ()
+  proc ~LevelCFGhostRegion ()
   {
-    for region in grid_cf_ghost_regions {
-      region.clear();
-      delete region;
-    }
+    for region in grid_cf_ghost_regions do delete region;
   }
-  // /|''''''''''''''''''''''/|
-  //< |    method: clear    < |
-  // \|......................\|
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
   
   
   //|\'''''''''''''''''''''''''''''|\
@@ -232,18 +228,23 @@ class GridCFGhostSolution {
   //|/...............|/
   
   const grid_cf_ghost_region: GridCFGhostRegion;
-  const grid:                 Grid;
   
-  var old_multiarrays:     [grid_cf_ghost_region.coarse_neighbors] MultiArray(dimension,true,real);
+  var old_data: [grid_cf_ghost_region.coarse_neighbors] MultiArray(dimension,true,real);
   var old_time: real;
 
-  var current_multiarrays: [grid_cf_ghost_region.coarse_neighbors] MultiArray(dimension,true,real);
+  var current_data: [grid_cf_ghost_region.coarse_neighbors] MultiArray(dimension,true,real);
   var current_time: real;
+
+
+  //---- Not a field, but acts like one ----
+  proc grid { return grid_cf_ghost_region.grid; }
 
   // /|'''''''''''''''/|
   //< |    fields    < |
   // \|...............\|
   
+  
+
   
   
   //|\'''''''''''''''''''''''''''''''''''|\
@@ -259,16 +260,14 @@ class GridCFGhostSolution {
   //-----------------------------------------------------------------------------
   
   proc initialize ()
-  {  
-    grid = grid_cf_ghost_region.grid;
-    
+  {      
     for c_neighbor in grid_cf_ghost_region.coarse_neighbors {
 
-      old_multiarrays(c_neighbor) = new MultiArray(dimension,true,real);
-      old_multiarrays(c_neighbor).allocate( grid_cf_ghost_region.multidomains(c_neighbor) );
+      old_data(c_neighbor) = new MultiArray(dimension,true,real);
+      old_data(c_neighbor).allocate( grid_cf_ghost_region.transfer_regions(c_neighbor) );
 
-      current_multiarrays(c_neighbor) = new MultiArray(dimension,true,real);
-      current_multiarrays(c_neighbor).allocate( grid_cf_ghost_region.multidomains(c_neighbor) );
+      current_data(c_neighbor) = new MultiArray(dimension,true,real);
+      current_data(c_neighbor).allocate( grid_cf_ghost_region.transfer_regions(c_neighbor) );
     }
   }
   // /|'''''''''''''''''''''''''''''''''''/|
@@ -290,13 +289,10 @@ class GridCFGhostSolution {
   {  
     for c_neighbor in grid_cf_ghost_region.coarse_neighbors {
 
-      //==== This is a zipper iteration over three objects ====
-      // for (Domain, old_array, current_array) in
-      //     ( grid_cf_ghost_region.multidomains(c_neighbor), 
-      //       old_multiarrays(c_neighbor), 
-      //       current_multiarrays(c_neighbor) )
-      for ( old_array,                   current_array                   ) in
-          ( old_multiarrays(c_neighbor), current_multiarrays(c_neighbor) )
+      //---- This is a zipper iteration over two objects ----
+
+      for ( old_array,            current_array            ) 
+      in  ( old_data(c_neighbor), current_data(c_neighbor) )
       do
         yield ( old_array, current_array );
     }
@@ -307,26 +303,20 @@ class GridCFGhostSolution {
   
   
   
-  //|\''''''''''''''''''''''|\
-  //| >    method: clear    | >
-  //|/......................|/
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
   
-  proc clear () {
+  proc ~GridCFGhostSolution () {
     
-    for multiarray in old_multiarrays {
-      multiarray.clear();
-      delete multiarray;
-    }
+    for multiarray in old_data do delete multiarray;
     
-    for multiarray in current_multiarrays {
-      multiarray.clear();
-      delete multiarray;
-    }
+    for multiarray in current_data do delete multiarray;
 
   }
-  // /|''''''''''''''''''''''/|
-  //< |    method: clear    < |
-  // \|......................\|
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
 
 
 
@@ -351,20 +341,19 @@ class GridCFGhostSolution {
     for c_neighbor in grid_cf_ghost_region.coarse_neighbors {
 
       //---- Alias old and current data corresponding to 'c_neighbor' ----
-      const old_data     = coarse_level_solution.old_data( c_neighbor );
-      const current_data = coarse_level_solution.current_data( c_neighbor );
+      
+      const old_coarse     = coarse_level_solution.old_data( c_neighbor );
+      const current_coarse = coarse_level_solution.current_data( c_neighbor );
 
 
       //---- Refine data from the coarse grid solution into this structure ----
-      // for ( boundary_domain,                               old_array,                   current_array                   )
-      // in  ( grid_cf_ghost_region.multidomains(c_neighbor), old_multiarrays(c_neighbor), current_multiarrays(c_neighbor) )
-      for ( old_array,                   current_array                   )
-      in  ( old_multiarrays(c_neighbor), current_multiarrays(c_neighbor) )
+
+      for ( old_array,            current_array            )
+      in  ( old_data(c_neighbor), current_data(c_neighbor) )
       {
         var boundary_domain = old_array.domain;
-        // writeln("RefiningTransfer: ", boundary_domain, old_array.domain, current_array.domain);
-        old_array     = old_data.refineValues(     boundary_domain, ref_ratio );
-        current_array = current_data.refineValues( boundary_domain, ref_ratio );
+        old_array     = old_coarse.refineValues( boundary_domain, ref_ratio );
+        current_array = current_coarse.refineValues( boundary_domain, ref_ratio );
       }
 
     }
@@ -372,6 +361,7 @@ class GridCFGhostSolution {
 
 
     //---- Copy times ----
+    
     this.old_time     = coarse_level_solution.old_time;
     this.current_time = coarse_level_solution.current_time;
 
@@ -458,20 +448,17 @@ class LevelCFGhostSolution {
  
  
  
-  //|\''''''''''''''''''''''|\
-  //| >    method: clear    | >
-  //|/......................|/
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
   
-  proc clear() {
-    
-    for solution in grid_cf_ghost_solutions {
-      solution.clear();
-      delete solution;
-    }
+  proc ~LevelCFGhostSolution () 
+  {  
+    for solution in grid_cf_ghost_solutions do delete solution;
   }
-  // /|''''''''''''''''''''''/|
-  //< |    method: clear    < |
-  // \|......................\|
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
   
   
   
@@ -559,7 +546,7 @@ proc GridVariable.fillCFGhostRegion (
   time:                   real )
 {
   //==== Safety check ====
-  assert(this.grid == grid_cf_ghost_solution.grid);
+  assert( this.grid == grid_cf_ghost_solution.grid );
   
   
   //==== Pull times from the fine boundary solution ====

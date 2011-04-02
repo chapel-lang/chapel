@@ -69,13 +69,13 @@ class MultiArray
   }
 
 
+  proc initialize () { array_wrappers = new List(ArrayWrapper); }
 
-  proc clear () 
+
+  proc ~MultiArray ()
   {
-    for wrapper in array_wrappers do
-      delete wrapper;
-      
-    array_wrappers.clear();
+    for wrapper in array_wrappers do delete wrapper;
+    delete array_wrappers;
   }
   
 
@@ -106,8 +106,7 @@ class MultiArray
   
   proc allocate ( mD: MultiDomainNew(rank,stridable) )
   {
-    for D in mD do
-      array_wrappers.add( new ArrayWrapper(D) ); 
+    for D in mD do array_wrappers.add( new ArrayWrapper(D) ); 
   }
   // /|'''''''''''''''''''''''''/|
   //< |    method: allocate    < |
