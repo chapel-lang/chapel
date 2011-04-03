@@ -186,33 +186,33 @@ class GPURectangularDom: BaseRectangularDom {
 
   proc dsiLow {
     if rank == 1 {
-      return ranges(1)._low;
+      return ranges(1).low;
     } else {
       var result: rank*idxType;
       for param i in 1..rank do
-        result(i) = ranges(i)._low;
+        result(i) = ranges(i).low;
       return result;
     }
   }
 
   proc dsiHigh {
     if rank == 1 {
-      return ranges(1)._high;
+      return ranges(1).high;
     } else {
       var result: rank*idxType;
       for param i in 1..rank do
-        result(i) = ranges(i)._high;
+        result(i) = ranges(i).high;
       return result;
     }
   }
 
   proc dsiStride {
     if rank == 1 {
-      return ranges(1)._stride;
+      return ranges(1).stride;
     } else {
       var result: rank*chpl__signedType(idxType);
       for param i in 1..rank do
-        result(i) = ranges(i)._stride;
+        result(i) = ranges(i).stride;
       return result;
     }
   }
@@ -272,8 +272,8 @@ class GPURectangularDom: BaseRectangularDom {
   proc interior(off: rank*idxType) {
     var x = new GPURectangularDom(rank, idxType, stridable, dist);
     for i in 1..rank do {
-      if ((off(i) > 0) && (dsiDim(i)._high+1-off(i) < dsiDim(i)._low) ||
-          (off(i) < 0) && (dsiDim(i)._low-1-off(i) > dsiDim(i)._high)) {
+      if ((off(i) > 0) && (dsiDim(i).high+1-off(i) < dsiDim(i).low) ||
+          (off(i) < 0) && (dsiDim(i).low-1-off(i) > dsiDim(i).high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
       x.ranges(i) = dsiDim(i).interior(off(i));
@@ -292,7 +292,7 @@ class GPURectangularDom: BaseRectangularDom {
     var x = new GPURectangularDom(rank, idxType, stridable, dist);
     for i in 1..rank do {
       x.ranges(i) = ranges(i).expand(off(i));
-      if (x.ranges(i)._low > x.ranges(i)._high) {
+      if (x.ranges(i).low > x.ranges(i).high) {
         halt("***Error: Degenerate dimension created in dimension ", i, "***");
       }
     }
@@ -360,8 +360,8 @@ class GPURectangularArr: BaseArr {
 
   proc initialize() {
     for param dim in 1..rank {
-      off(dim) = dom.dsiDim(dim)._low;
-      str(dim) = dom.dsiDim(dim)._stride;
+      off(dim) = dom.dsiDim(dim).low;
+      str(dim) = dom.dsiDim(dim).stride;
     }
     blk(rank) = 1:idxType;
     for param dim in 1..rank-1 by -1 do
@@ -395,9 +395,9 @@ class GPURectangularArr: BaseArr {
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
-      alias.off(i) = d.dsiDim(i)._low;
-      alias.blk(i) = (blk(i) * dom.dsiDim(i)._stride / str(i)) : d.idxType;
-      alias.str(i) = d.dsiDim(i)._stride;
+      alias.off(i) = d.dsiDim(i).low;
+      alias.blk(i) = (blk(i) * dom.dsiDim(i).stride / str(i)) : d.idxType;
+      alias.str(i) = d.dsiDim(i).stride;
     }
     alias.computeFactoredOffs();
     return alias;
@@ -413,7 +413,7 @@ class GPURectangularArr: BaseArr {
     alias.blk = blk;
     alias.str = str;
     for param i in 1..rank {
-      alias.off(i) = d.dsiDim(i)._low;
+      alias.off(i) = d.dsiDim(i).low;
     }
     alias.computeFactoredOffs();
     return alias;
@@ -441,7 +441,7 @@ class GPURectangularArr: BaseArr {
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
-        alias.off(i) = d.dsiDim(i)._low;
+        alias.off(i) = d.dsiDim(i).low;
         alias.blk(i) = blk(j);
         alias.str(i) = str(j);
         i += 1;
@@ -485,19 +485,19 @@ proc GPURectangularArr.dsiSerialWrite(f: Writer) {
   if dom.numIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim)._low;
+    i(dim) = dom.dsiDim(dim).low;
   label next while true {
     f.write(dsiAccess(i));
-    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
+    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
       f.write(" ");
-      i(rank) += dom.dsiDim(rank)._stride:idxType;
+      i(rank) += dom.dsiDim(rank).stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
-          i(dim) += dom.dsiDim(dim)._stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
+          i(dim) += dom.dsiDim(dim).stride:idxType;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom.dsiDim(dim2)._low;
+            i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
         }

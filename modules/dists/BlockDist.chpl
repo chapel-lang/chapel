@@ -413,21 +413,21 @@ proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
 
   var myNewBbox = boundingBox.dims();
   for param r in 1..rank {
-    var oldLow = oldSpace(r)._low;
-    var newLow = newSpace(r)._low;
-    var oldHigh = oldSpace(r)._high;
-    var newHigh = newSpace(r)._high;
+    var oldLow = oldSpace(r).low;
+    var newLow = newSpace(r).low;
+    var oldHigh = oldSpace(r).high;
+    var newHigh = newSpace(r).high;
     var valid: bool;
     if oldLow != newLow {
-      (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
+      (myNewBbox(r).low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
       if !valid then // try with high
-        (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
+        (myNewBbox(r).low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
       if !valid then
         halt("invalid reindex for Block: distribution bounding box (low) out of range in dimension ", r);
 
-      (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
+      (myNewBbox(r).high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
       if !valid then
-        (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
+        (myNewBbox(r).high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
       if !valid then // try with low
         halt("invalid reindex for Block: distribution bounding box (high) out of range in dimension ", r);
     }
@@ -844,19 +844,19 @@ proc BlockArr.dsiSerialWrite(f: Writer) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim)._low;
+    i(dim) = dom.dsiDim(dim).low;
   label next while true {
     f.write(dsiAccess(i));
-    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
+    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
       f.write(" ");
-      i(rank) += dom.dsiDim(rank)._stride:idxType;
+      i(rank) += dom.dsiDim(rank).stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
-          i(dim) += dom.dsiDim(dim)._stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
+          i(dim) += dom.dsiDim(dim).stride:idxType;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom.dsiDim(dim2)._low;
+            i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
         }

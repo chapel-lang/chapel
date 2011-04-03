@@ -665,7 +665,7 @@ record _domain {
     var ranges = dims();
     for i in 1..rank do {
       ranges(i) = ranges(i).expand(off(i));
-      if (ranges(i)._low > ranges(i)._high) {
+      if (ranges(i).low > ranges(i).high) {
         halt("***Error: Degenerate dimension created in dimension ", i, "***");
       }
     }
@@ -726,8 +726,8 @@ record _domain {
   proc interior(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do {
-      if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
-          (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
+      if ((off(i) > 0) && (dim(i).high+1-off(i) < dim(i).low) ||
+          (off(i) < 0) && (dim(i).low-1-off(i) > dim(i).high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
       ranges(i) = _value.dsiDim(i).interior(off(i));
@@ -1440,7 +1440,7 @@ proc =(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e = b;
   } else {
-    compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+    compilerWarning("Whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for e in a do
       e = b;
   }

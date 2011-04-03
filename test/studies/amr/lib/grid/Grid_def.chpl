@@ -110,13 +110,16 @@ class Grid {
     var ghost_domain: domain(dimension, stridable=true);
     for loc in (loc1d.below .. loc1d.above by 2)**dimension {
       if loc != inner_location {
-        for d in dimensions do
-          ranges(d) = if loc(d) == loc1d.below then 
-                        ((extended_cells.low(d).. by 2) #n_ghost_cells(d)).alignHigh()
-                      else if loc(d) == loc1d.inner then
-                        cells.dim(d)
-                      else
-                        ((..extended_cells.high(d) by 2) #-n_ghost_cells(d)).alignLow();
+        for d in dimensions {
+          if loc(d) == loc1d.below then 
+            ranges(d) = ((extended_cells.low(d).. by 2) #n_ghost_cells(d)).alignHigh();
+          else if loc(d) == loc1d.inner then
+            ranges(d) = cells.dim(d);
+          else
+            // ((..extended_cells.high(d) by 2) #-n_ghost_cells(d)).alignLow();
+            // hilde sez: Mathematical precision meets ease of use
+            ranges(d) = ((..extended_cells.high(d) by 2 align extended_cells.high(d)) #-n_ghost_cells(d)).alignLow();
+        }
         ghost_domain = ranges;
         ghost_domains.add(ghost_domain);
       }

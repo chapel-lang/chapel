@@ -8,4 +8,4 @@ for i in r do
   writeln(i);
 
 writeln("r.type = ", typeToString(r.type));
-writeln("r.str.type = ", typeToString(r._stride.type));
+writeln("r.str.type = ", typeToString(r.stride.type));

@@ -574,7 +574,7 @@ pragma "inline" proc _cond_test(x) {
 }
 
 pragma "inline" proc _cond_test(x: _iteratorRecord) {
-  compilerError("iterator or promoted expression used in if or while condition");
+  compilerError("iterator or promoted expression ", typeToString(x.type), " used in if or while condition");
 }
 
 proc _cond_invalid(x: object) param return false;

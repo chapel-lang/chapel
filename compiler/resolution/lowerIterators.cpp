@@ -913,6 +913,9 @@ expand_for_loop(CallExpr* call) {
 
       block->insertAtTail(buildIteratorCall(NULL, ZIP3, iterators.v[i], children));
       block->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
+
+      // hilde sez: This seems like a kludge.
+      // Why is the pragma applied to the default constructor rather than the type itself?
       if (isBoundedIterator(iterators.v[i]->type->defaultConstructor->getFormal(1)->type->defaultConstructor)) {
         if (!firstCond) {
           firstCond = cond;

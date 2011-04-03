@@ -153,7 +153,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
       var myTab = table;
       var mismatch = false;
       // could use a reduction
-      for slot in chunk._low..chunk._high do
+      for slot in chunk.low..chunk.high do
         if followerTab(slot).status != myTab(slot).status {
           mismatch = true;
           break;
@@ -165,7 +165,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     if debugDefaultAssoc then
       writeln("In domain follower code: Following ", chunk);
 
-    for slot in chunk._low..chunk._high do
+    for slot in chunk.low..chunk.high do
       if table(slot).status == chpl__hash_status.full then
         yield table(slot).idx;
   }
@@ -391,7 +391,7 @@ class DefaultAssociativeArr: BaseArr {
       var myTab = dom.table;
       var mismatch = false;
       // could use a reduction
-      for slot in chunk._low..chunk._high do
+      for slot in chunk.low..chunk.high do
         if followerTab(slot).status != myTab(slot).status {
           mismatch = true;
           break;
@@ -402,7 +402,7 @@ class DefaultAssociativeArr: BaseArr {
     if debugDefaultAssoc then
       writeln("In array follower code: Following ", chunk);
     var tab = dom.table;  // cache table for performance
-    for slot in chunk._low..chunk._high do
+    for slot in chunk.low..chunk.high do
       if tab(slot).status == chpl__hash_status.full then
         yield data(slot);
   }
