@@ -8,7 +8,8 @@
 
 //
 // Ranges represent sequences of integral numbers.  A range literal is
-// defined using the '..' operator.
+// defined using the '..' operator.  The lower bound is always on the left;
+// the upper bound is always on the right.
 //
 writeln("Basic range");
 var r = 1..10;
@@ -45,9 +46,9 @@ writeln();
 
 //
 // Ranges don't have to be fully bounded.  A range without a low bound
-// represents an infinite number of values that are lesser or equal to
+// represents an infinite number of values that are less than or equal to
 // the high bound.  Similarly a range without a high bound represents
-// an infinity of values greater or equal to the low bound.  A range
+// an infinitude of values greater or equal to the low bound.  A range
 // with no bounds is allowed as well.  Unbounded ranges are useful for
 // zippered iteration and range slicing.
 //
@@ -63,8 +64,15 @@ writeln();
 writeln();
 
 //
-// There are several operators for working with ranges.  The 'by'
-// operator applies a stride to a range.  If the range was already
+// There are several operators for working with ranges:  
+//   =  by  #  align  +  -  ==
+//
+// Operators such as '#' and 'by' can be
+// combined to make more complex range values.
+//
+
+//
+// The 'by' operator applies a stride to a range.  If the range was already
 // strided, the effect is multiplicative.  If the stride is negative,
 // the range starts at the high bound and counts backward to the low
 // bound.  It is an error to apply a positive stride to a range with
@@ -79,9 +87,11 @@ writeln();
 
 //
 // Another range operator is the count operator '#'.  It is used to
-// count a number of elements from a range.  It is an error to count a
-// range with no bounds.  Operators such as '#' and 'by' can be
-// combined to make more complex range values.
+// count off a number of elements from the start of a range.  
+// If the count is negative, the elements are taken from the end of the
+// range, instead.  It is an error to take a positive count of indices
+// from a range with no starting index, or a negative count of indices
+// from a range with no ending index.
 //
 writeln("The count operator");
 var numElements = 5;
@@ -89,7 +99,24 @@ writeRange(0..#numElements);
 writeRange(r # 4);
 writeRange(r by -1 # 4);
 writeRange(..5 # -3);
-//UEB writeRange(..5 by 2 # -3);
+writeln();
+
+// 
+// When defining a strided range, it is useful to specify the alignment.
+// The align operator makes it easy to do so.
+// These two ranges specify all odd and even numbers, respectively.
+var odds = .. by 2 align 1;
+var evens = .. by 2 align 2;
+// The alignment is always taken modulo the stride, so one could also say:
+//  var evens = .. by 2 align 0;
+//  var evens = .. by 2 align -2;
+//  etc.
+//
+writeln("The align operator");
+var oddsBetween1and10 = r by 2 align 1;
+writeRange(oddsBetween1and10);
+var evensBetween1and10 = r by 2 align 0;
+writeRange(evensBetween1and10);
 writeln();
 
 //
@@ -113,6 +140,20 @@ writeln("Range Slicing");
 writeRange(r(2..9));
 writeRange(r(2.. by 2));
 writeRange(r2(1..20 by 2));
+// The odds between 1 and 10 (using range slicing):
+writeRange(r(odds));
+// The evens between 1 and 10 (using range slicing):
+writeRange(r(evens));
+writeln();
+
+//
+// The == operator can be used to test if two ranges are equivalent.
+// Equivalence means they produce the same sequence when iterated.
+//
+writeln("Range equivalence");
+writeln(r(odds) == oddsBetween1and10);          // true
+writeln(r(evens) == evensBetween1and10);        // true
+writeln();
 
 //
 // The function that has been used throughout this example to print
