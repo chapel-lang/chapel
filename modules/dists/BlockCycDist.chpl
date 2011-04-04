@@ -226,7 +226,7 @@ proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   var locInd: rank*int;
   for param i in 1..rank {
     const ind0 = ind(i) - lowIdx(i);
-    locInd(i) = ((ind(i) / blocksize(i)) % targetLocDom.dim(i).length): int; 
+    locInd(i) = ((ind0 / blocksize(i)) % targetLocDom.dim(i).length): int; 
   }
   return locInd;
 }
@@ -639,7 +639,7 @@ proc BlockCyclicArr.dsiPrivatize(privatizeData) {
 //
 proc BlockCyclicArr.dsiAccess(i: idxType) var where rank == 1 {
   if myLocArr then /* TODO: reenable */ /* local */ {
-    if myLocArr.indexDom.myStarts.member(i) then
+    if myLocArr.indexDom.myStarts.member(i) then  // TODO: This could be beefed up; true for indices other than starts
       return myLocArr.this(i);
   }
   //  var loci = dom.dist.idxToLocaleInd(i);
