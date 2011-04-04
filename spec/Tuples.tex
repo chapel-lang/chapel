@@ -44,7 +44,7 @@ proc *(param p: int, type t) type
 
 \begin{rationale}
 Homogeneous tuples require the size to be specified as a parameter
-(compile-time constant).  This avoids any overhead associated with
+(a compile-time constant).  This avoids any overhead associated with
 storing the runtime size in the tuple.  It also avoids the question as
 to whether a non-parameter size should be part of the type of the
 tuple.  If a programmer requires a non-parameter value to define a
@@ -188,7 +188,7 @@ etc.).
 \label{Tuple_Destructuring}
 \index{tuples!destructuring}
 
-Tuples can be split into their components in four ways:
+Tuples can be split into their components in the following ways:
 \begin{itemize}
 \item In assignment where multiple expression on the left-hand side of
 the assignment operator are grouped using tuple notation.
@@ -286,7 +286,7 @@ writeln(x);
 \end{chapeloutput}
 \end{example}
 
-\subsection{Splitting a Tuple into Multiple Variables}
+\subsection{Splitting a Tuple in a Declaration}
 \label{Variable_Declarations_in_a_Tuple}
 \index{tuples!variable declarations grouped as}
 
@@ -340,7 +340,7 @@ writeln(a);
 \index{tuples!omitting components}
 When splitting a tuple into multiple variable declarations, variable
 names in the declarator on the left-hand side may be omitted.  In
-this case, a variable is not defined for any omitted component.
+this case, no variables are defined for the omitted components.
 
 \begin{example}
 \begin{chapelpre}
@@ -364,7 +364,7 @@ writeln(x);
 \end{chapeloutput}
 \end{example}
 
-\subsection{Splitting a Tuple into Mutiple Indices}
+\subsection{Splitting a Tuple into Mutiple Indices of a Loop}
 \label{Indices_in_a_Tuple}
 \index{tuples!indices grouped as}
 
@@ -399,8 +399,8 @@ their values from the iterator.
 
 \index{tuples!omitting components}
 When a tuple is split across an index tuple, indices in the index
-tuple (left-hand side) may be omitted.  In this case, no index is
-defined for any omitted component.  
+tuple (left-hand side) may be omitted.  In this case, no indices are
+defined for the omitted components.
 
 However even when indices are omitted, the iterator is
 evaluated as if an index were defined.  Execution proceeds as if the
@@ -408,7 +408,7 @@ omitted indices are present but invisible.  This means that the loop body
 controlled by the iterator may be executed multiple times with the
 same set of (visible) indices.
 
-\subsection{Splitting a Tuple into Multiple Formal Arguments}
+\subsection{Splitting a Tuple into Multiple Formal Arguments in a Function Call}
 \label{Formal_Argument_Declarations_in_a_Tuple}
 \index{tuples!formal arguments grouped as}
 
@@ -503,7 +503,7 @@ f(y);
 \index{tuples!omitting components}
 When splitting a tuple into multiple formal arguments, the arguments
 that are grouped using the tuple notation may be omitted.  In this
-case, no name is associated with any omitted component.  The
+case, no names are associated with the omitted components.  The
 call is evaluated as if an argument were defined.
 %TODO: hilde
 % Example required.
@@ -574,9 +574,9 @@ writeln(rest((1, 2, 3)));
 \label{Tuple_Indexing}
 \index{tuples!indexing}
 
-A tuple may be accessed by an integral parameter (compile-time
-constant) as if it were an array.  Tuples are \emph{1-based} so the
-first component in the tuple is accessed by the value \chpl{1}, and so
+A tuple component may be accessed by an integral parameter (a compile-time
+constant) as if the tuple were an array.  Indexing is 1-based, so the
+first component in the tuple is accessed by the index \chpl{1}, and so
 forth.
 
 \begin{example}
@@ -584,9 +584,9 @@ forth.
 \end{chapelpre}
 The loop
 \begin{chapel}
-var tuple = (1, 2.0, "three");
+var myTuple = (1, 2.0, "three");
 for param i in 1..3 do
-  writeln(tuple(i));
+  writeln(myTuple(i));
 \end{chapel}
 uses a param loop to output the components of a tuple.
 \begin{chapelpost}
@@ -606,9 +606,9 @@ necessarily compile-time constants.
 \end{chapelpre}
 The loop
 \begin{chapel}
-var tuple = (1, 2, 3);
+var myHTuple = (1, 2, 3);
 for i in 1..3 do
-  writeln(tuple(i));
+  writeln(myHTuple(i));
 \end{chapel}
 uses a serial loop to output the components of a homogeneous tuple.
 Since the index is not a compile-time constant, this would result in
