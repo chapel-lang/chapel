@@ -78,7 +78,7 @@
   CHPL_TASK_COMM_PUT(localvar, locale, (addr), tid, sizeof(type) len, ln, fn)
 #else
 #define CHPL_COMM_PUT(localvar, locale, addr, type, tid, len, ln, fn)  \
-  chpl_comm_put(&(localvar), locale, addr, sizeof(type), tid, len, ln, fn)
+  chpl_comm_put((void*)(&(localvar)), locale, (void*)addr, sizeof(type), tid, len, ln, fn)
 #endif
 
 #define CHPL_COMM_WIDE_GET(local, wide, type, tid, len, ln, fn)  \
