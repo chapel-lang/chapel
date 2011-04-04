@@ -46,9 +46,12 @@ linux32 regressions (in addition to the above)
 performance-specific regressions
 ================================
 
+nondet. execution timeout
+-------------------------
+[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/01/11)
+
 execution timeouts (08/29/09)
 -----------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3]
 [Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
 [Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
 [Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6]
@@ -107,6 +110,27 @@ internal valgrind stuff 'the impossible has happened'
 block distribution regressions
 ==============================
 
+illegal lvalue in assignment in dsiCreateReindexDist
+----------------------------------------------------
+[Error cannot locate compiler output comparison file distributions/robust/arithmetic/reindexing/test_reindexing6.good]
+[Error cannot locate compiler output comparison file distributions/robust/arithmetic/reindexing/test_strided_reindex2.good]
+[Error matching compiler output for distributions/robust/arithmetic/composite/test_composite1]
+[Error matching compiler output for distributions/robust/arithmetic/composite/test_composite2]
+[Error matching compiler output for distributions/robust/arithmetic/kernels/hpl]
+[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Norm]
+[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Random]
+[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Search]
+[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Sort]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias1]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias2]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing1]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing2]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing3]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing4]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing5]
+[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
+
+
 
 ===============================
 cyclic distribution regressions
@@ -126,12 +150,16 @@ timeouts (???)
 no-local regressions
 ====================
 
+out-of-bounds indexing error (04/02/11)
+---------------------------------------
+[Error matching program output for release/examples/hpcc/ptrans]
+
+nondet. zippered iterations having unequal lengths
+--------------------------------------------------
+[Error matching program output for domains/sungeun/assoc/minus_equals] (02/05/11, 02/19/11, 04/01/11, 04/02/11)
+
 volatile breaks in --no-local (04/01/11)
 ----------------------------------------
-[Error matching compiler output for classes/hannah/volatile_argument_passing]
-[Error matching compiler output for classes/hannah/volatile_class_field]
-[Error matching compiler output for classes/hannah/volatile_coercion]
-[Error matching compiler output for classes/hannah/volatile_decl]
 [Error matching compiler output for classes/hannah/volatile_while_loop2]
 [Error matching compiler output for classes/hannah/volatile_while_loop3]
 [Error matching compiler output for classes/hannah/volatile_while_loop]
@@ -143,7 +171,7 @@ nondet. compilation timeout
 
 nondet. bad output
 ------------------
-[Error matching program output for studies/dijkstra/driverEdgeBtw] (03/16/11, 03/23/11, 03/27/11, 04/01/11)
+[Error matching program output for studies/dijkstra/driverEdgeBtw] (03/16/11, 03/23/11, 03/27/11, 04/01/11, 04/02/11)
 
 nondet. prediff error (linefeeds go awry)
 -----------------------------------------
@@ -172,10 +200,6 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-nondet. zippered iterations having unequal lengths
---------------------------------------------------
-[Error matching program output for domains/sungeun/assoc/minus_equals] (02/05/11, 02/19/11, 04/01/11)
-
 failure to open file (03/30/11)
 -------------------------------
 [Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
@@ -183,6 +207,7 @@ failure to open file (03/30/11)
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc] (03/21/11)
+[Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/04/11)
 
 AMUDP resource error (01/19/11)
 -------------------------------
@@ -220,9 +245,19 @@ gasnet-fast regressions (other than the above)
 pvm-specific tests
 ==================
 
-some sort of problem in generated types, probably due to volatile (04/01/11)
-----------------------------------------------------------------------------
-*all*
+timeouts for all multilocale testing
+(as of 03/25/10 when --gen-communicated-structures got fixed)
+----------------------------------------------------------------------
+[Error: Timed out executing program release/examples/hello-multiloc]
+[Error: Timed out executing program release/examples/hpcc/fft]
+[Error: Timed out executing program release/examples/hpcc/hpl]
+[Error: Timed out executing program release/examples/hpcc/ptrans]
+[Error: Timed out executing program release/examples/hpcc/ra]
+[Error: Timed out executing program release/examples/hpcc/stream-ep]
+[Error: Timed out executing program release/examples/hpcc/stream]
+[Error: Timed out executing program release/examples/primers/distributions]
+[Error: Timed out executing program release/examples/primers/multilocale]
+[Error: Timed out executing program release/examples/primers/multirealm]
 
 nondet. problems due to "address already in use" errors
 -------------------------------------------------------
@@ -234,21 +269,9 @@ nondet. compilation timeouts
 ----------------------------
 [Error: Timed out compilation for release/examples/primers/distributions] (12/11/10)
 [Error: Timed out compilation for release/examples/hpcc/fft] (12/09/10)
-[Error: Timed out compilation for release/examples/hpcc/hpl] (12/12/10)
 [Error: Timed out compilation for release/examples/primers/arrays] (12/12/10)
 [Error: Timed out compilation for release/examples/primers/opaque] (12/12/10)
 [Error: Timed out compilation for release/examples/programs/norm] (12/12/10)
-
-timeouts (as of 03/25/10 when --gen-communicated-structures got fixed)
-----------------------------------------------------------------------
-[Error: Timed out executing program release/examples/hello-multiloc]
-[Error: Timed out executing program release/examples/hpcc/fft]
-[Error: Timed out executing program release/examples/hpcc/ra]
-[Error: Timed out executing program release/examples/hpcc/stream-ep]
-[Error: Timed out executing program release/examples/hpcc/stream]
-[Error: Timed out executing program release/examples/primers/distributions]
-[Error: Timed out executing program release/examples/primers/multilocale]
-[Error: Timed out executing program release/examples/primers/multirealm]
 
 
 =====================
@@ -589,6 +612,10 @@ gdb output differences
 xt-cle-specific failures
 ========================
 
+test is using gnu-specific flags (04/02/11)
+-------------------------------------------
+[Error matching compiler output for studies/shootout/chameneos-redux/chameneos-redux-cas]
+
 divide by zero in generated code (03/14/11)
 -------------------------------------------
 [Error matching program output for studies/dijkstra/driverEdgeBtw]
@@ -596,10 +623,6 @@ divide by zero in generated code (03/14/11)
 redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
 [Error matching compiler output for associative/waynew/indef2]
-
-cce doesn't like empty unions? (solve like our empty record fix?) (12/12/10)
-----------------------------------------------------------------------------
-[Error matching compiler output for classes/vass/union-empty-OK]
 
 output being treated as binary causing diff message to change (05/08/10)
 ------------------------------------------------------------------------
@@ -660,10 +683,24 @@ precision issues (?) -- is there a floating point flag we need to throw?
 [Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
 
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3a] (04/04/11)
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3b] (04/04/11)
+[Error: Timed out compilation for studies/amr/diffusion/grid/Grid_DiffusionBE_driver] (04/04/11)
+[Error: Timed out compilation for studies/madness/common/test_mul] (04/04/11)
+[Error: Timed out compilation for users/franzf/v1/chpl/main] (04/04/11)
+[Error: Timed out compilation for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky] (04/04/11)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (04/04/11)
+
 
 =============================================================
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
+
+internal sst_zero problem (04/02/11)
+------------------------------------
+[Error matching compiler output for classes/hannah/volatile_decl]
 
 floating point overflow warning in compilation (since added)
 ------------------------------------------------------------
@@ -872,6 +909,11 @@ sig_send: wait for sig_complete event failed
 xmt-specific regressions
 ========================
 
+array index out of bounds (04/02/11)
+------------------------------------
+[Error matching program output for release/examples/hpcc/hpl]
+[Error matching program output for release/examples/hpcc/ptrans]
+
 sparse regression recurred after latest range changes (03/17/11)
 ----------------------------------------------------------------
 [Error matching program output for release/examples/primers/sparse]
@@ -882,7 +924,7 @@ nondet. compilation timeout
 [Error: Timed out executing program release/examples/primers/taskParallel] (11/17/10)
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
-[Error: Timed out compilation for release/examples/hello] (10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11, 03/08/11, 03/12/11, 03/19/11, 03/26/11)
+[Error: Timed out compilation for release/examples/hello] (10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11, 03/08/11, 03/12/11, 03/19/11, 03/26/11, 04/02/11)
 
 execution timeouts
 ------------------
