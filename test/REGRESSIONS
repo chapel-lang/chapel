@@ -48,7 +48,7 @@ performance-specific regressions
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/01/11)
+[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/01/11, 04/05/11)
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -110,28 +110,6 @@ internal valgrind stuff 'the impossible has happened'
 block distribution regressions
 ==============================
 
-illegal lvalue in assignment in dsiCreateReindexDist
-----------------------------------------------------
-[Error cannot locate compiler output comparison file distributions/robust/arithmetic/reindexing/test_reindexing6.good]
-[Error cannot locate compiler output comparison file distributions/robust/arithmetic/reindexing/test_strided_reindex2.good]
-[Error matching compiler output for distributions/robust/arithmetic/composite/test_composite1]
-[Error matching compiler output for distributions/robust/arithmetic/composite/test_composite2]
-[Error matching compiler output for distributions/robust/arithmetic/kernels/hpl]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Norm]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Random]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Search]
-[Error matching compiler output for distributions/robust/arithmetic/modules/test_module_Sort]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias1]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_array_alias2]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing1]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing2]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing3]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing4]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_reindexing5]
-[Error matching compiler output for distributions/robust/arithmetic/reindexing/test_strided_reindex1]
-
-
-
 ===============================
 cyclic distribution regressions
 ===============================
@@ -150,20 +128,9 @@ timeouts (???)
 no-local regressions
 ====================
 
-out-of-bounds indexing error (04/02/11)
----------------------------------------
-[Error matching program output for release/examples/hpcc/ptrans]
-
 nondet. zippered iterations having unequal lengths
 --------------------------------------------------
 [Error matching program output for domains/sungeun/assoc/minus_equals] (02/05/11, 02/19/11, 04/01/11, 04/02/11)
-
-volatile breaks in --no-local (04/01/11)
-----------------------------------------
-[Error matching compiler output for classes/hannah/volatile_while_loop2]
-[Error matching compiler output for classes/hannah/volatile_while_loop3]
-[Error matching compiler output for classes/hannah/volatile_while_loop]
-[Error matching compiler output for studies/shootout/chameneos-redux/chameneos-redux-cas]
 
 nondet. compilation timeout
 ---------------------------
