@@ -22,7 +22,6 @@ iterators      : iterators of various styles
 jacobi         : 2D domains and arrays; stencil operations; reductions
 linkedList     : nested generic classes; iterators, writeThis methods
 multilocale    : multiple locales, on clauses, multi-locale task parallelism
-multirealm     : multiple realms, on clauses, realm variables and methods
 norm           : reductions; function overloading and where clauses; modules
 opaque         : opaque domains and arrays; graph-based data structures
 prodCons       : synchronization variables; task parallelism using cobegin
@@ -78,7 +77,6 @@ iterators      |       |   x   |       |       |       |       |       |
 jacobi         |       |   *   |       |       |       |       |       |
 linkedList     |       |   x   |       |       |   *   |       |       |
 multilocale    |       |   x   |       |       |       |       |       |
-multirealm     |       |   x   |       |   x   |       |       |       |
 norm           |       |   x   |       |   x   |       |       |       |
 opaque         |       |   x   |       |       |       |       |       |
 prodCons       |       |   x   |       |       |       |       |       |
@@ -128,7 +126,6 @@ iterators      |       |       |       |       |   *   |       |       |
 jacobi         |       |       |   x   |       |       |   x   |       |
 linkedList     |       |   *   |   x   |   x   |   x   |   x   |   *   |
 multilocale    |       |   x   |       |   x   |       |   x   |       |
-multirealm     |       |       |       |       |       |   x   |       |
 norm           |   *   |       |   x   |   x   |       |       |       |
 opaque         |       |   x   |       |   x   |       |   x   |       |
 prodCons       |       |       |   x   |   x   |   x   |   x   |       |
@@ -181,7 +178,6 @@ iterators      |   x   |   x   |       |   x   |       |   x   |       |
 jacobi         |       |   x   |       |       |       |   x   |       |
 linkedList     |       |       |       |   *   |   *   |   x   |       |
 multilocale    |       |       |       |   x   |       |   x   |       |
-multirealm     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |   x   |   x   |   x
 opaque         |   x   |       |       |       |       |   x   |       |
 prodCons       |       |       |       |       |       |   x   |       |
@@ -232,7 +228,6 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |   x   |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |    
 multilocale    |   x   |       |       |       |       |       |       |
-multirealm     |   x   |       |       |       |       |       |       |
 norm           |   x   |       |       |       |       |       |       |
 opaque         |       |       |       |       |   *   |       |   x   |   x
 prodCons       |   x   |       |       |       |       |       |       |
@@ -283,7 +278,6 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |   *   |       |   *   |       |   *   |       |       |
 linkedList     |       |       |       |       |       |       |       |
 multilocale    |       |       |       |       |       |       |       |
-multirealm     |       |       |       |       |       |       |       |
 norm           |   x   |   x   |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
@@ -333,7 +327,6 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
 multilocale    |       |       |   *   |   *   |       |       |       |
-multirealm     |       |       |   x   |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |   *   |       |       |   *   |       |       |
@@ -385,7 +378,6 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
 multilocale    |   *   |   *   |   *   |   *   |   *   |   *   |   *   |
-multirealm     |   x   |   x   |   x   |   x   |   x   |       |   x   |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
@@ -438,7 +430,6 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
 multilocale    |       |       |       |       |       |       |       |
-multirealm     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |
@@ -481,7 +472,6 @@ iterators      |       |       |       |       |       |       |       |
 jacobi         |       |       |       |       |       |       |       |
 linkedList     |       |       |       |       |       |       |       |
 multilocale    |       |       |       |       |       |       |       |
-multirealm     |       |       |       |       |       |       |       |
 norm           |       |       |       |       |       |       |       |
 opaque         |       |       |       |       |       |       |       |
 prodCons       |       |       |       |       |       |       |       |

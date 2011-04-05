@@ -39,7 +39,6 @@ This directory contains the following documentation:
     README.firstClassFns    : technical note on first-class functions
     README.format           : technical note on value-to-string formatting
     README.gmp              : technical note on a prototype GMP module
-    README.multirealm       : technical note on multi-realm execution
 
 
 --------------------
