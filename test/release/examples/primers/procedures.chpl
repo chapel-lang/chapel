@@ -183,7 +183,7 @@ proc atan(x : real, out result : real)
   for i in 1.. by 2
   {
     var twoIP1 = 2 * count + 1;
-    var term = pow(x, twoIP1) / twoIP1;
+    var term = x ** twoIP1 / twoIP1;
     result += if count % 2 == 0 then term else -term;
     count += 1;
     if abs(result - lastresult) < 1.0e-3 then break;
