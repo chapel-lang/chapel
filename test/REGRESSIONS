@@ -527,6 +527,33 @@ threads-none causes serial iterator to be used rather than follower (11/25/08)
 intel-specific regressions
 ==========================
 
+end__EQUALS label defined but not used
+--------------------------------------
+[Error matching program output for distributions/jglewis/cyclicOnEvenNumLocales]
+[Error matching program output for distributions/robust/arithmetic/kernels/hpl]
+[Error matching program output for studies/cholesky/jglewis/test_cholesky]
+[Error matching program output for studies/cholesky/jglewis/test_dataflow_cholesky]
+[Error matching program output for studies/cholesky/jglewis/version2/dataflow/test_dataflow_cholesky]
+[Error matching program output for studies/cholesky/jglewis/version2/elemental/block_distribution/test_elemental_cholesky_block]
+[Error matching program output for studies/cholesky/jglewis/version2/elemental/fully_blocked/test_fully_blocked_elemental_cholesky]
+[Error matching program output for
+studies/cholesky/jglewis/version2/elemental/strided/test_elemental_cholesky_explicitly_symmetric_strided]
+[Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky]
+[Error matching program output for studies/cholesky/jglewis/version2/elemental/unsymmetric_indices/test_elemental_cholesky_unsymmetric_ranges]
+[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
+[Error matching program output for studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky]
+[Error matching program output for studies/hpcc/2008/hpl]
+[Error matching program output for studies/hpcc/HPL/stonea/errors/writelnCausesError]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample2]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample3]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample4]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
+[Error matching program output for studies/hpcc/nodistrib/hpl.nodist]
+[Error matching program output for studies/shootout/chameneos-redux/chameneos-redux-cas]
+[Error matching program output for users/jglewis/cholesky_version_1/test_cholesky]
+[Error matching program output for users/jglewis/domain-equality-operator-1]
+[Error matching program output for users/jglewis/domain-equality-operator-2]
+
 never failed to time out
 ------------------------
 [Error: Timed out executing program studies/shootout/chameneos-redux/chameneos-redux-multiple-meeting-places]
