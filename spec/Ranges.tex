@@ -161,7 +161,8 @@ and \chpl{alignment} values of $l$, $h$, $s$ and $a$ (respectively) is naturally
 \end{itemize}
 \noindent The \chpl{isAligned} predicate returns \chpl{true} when the operand
 range is naturally aligned.  When a range is formatted for output, the alignment
-is printed only if the range is not naturally aligned.
+is printed only if the range is not naturally aligned, or if the alignment has
+been set explicitly.
 
 \section{Literal Range Values}
 \label{Range_Literals}
@@ -194,7 +195,8 @@ low and high bound.  It is either \chpl{int}, \chpl{uint},
 \chpl{int(64)}, or \chpl{uint(64)}.  The index type of the range is obtained by
 applying integral promotions to the low and high bounds.  The boundedness
 of such a range is \chpl{bounded}.  The stridability of a range literal
-is \chpl{false}.
+is \chpl{false} unless modified using the \chpl{by} operator as described 
+in~\rsec{By_Operator_For_Ranges}.
 
 \subsection{Unbounded Range Literals}
 \label{Unbounded_Ranges}
@@ -252,8 +254,8 @@ values being copied from the source range to the destination range.
 
 In order for range assignment to be legal, the index type of the
 source range must be implicitly coercible to the index type of the
-destination range, and the two range types must have the same boundedness
-parameter.  It is legal to assign a non-stridable range to a stridable
+destination range, and the two range types must have the same boundedness.
+It is legal to assign a non-stridable range to a stridable
 range, but illegal to assign a stridable range to a non-stridable
 range unless the stridable range has a stride of 1.
 
