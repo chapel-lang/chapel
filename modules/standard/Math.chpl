@@ -38,6 +38,7 @@ _extern proc log2(x: real(64)): real(64);
 _extern proc log10(x: real(64)): real(64);
 _extern proc log1p(x: real(64)): real(64);
 _extern proc nearbyint(x: real(64)): real(64);
+_extern proc pow(x: real(64), y: real(64)): real(64);
 _extern proc rint(x: real(64)): real(64);
 _extern proc round(x: real(64)): real(64);
 _extern proc sin(x: real(64)): real(64);
