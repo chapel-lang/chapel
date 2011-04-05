@@ -196,9 +196,10 @@ pragma "inline" proc range.member(other: range(?))
 proc ==(r1: range(?), r2: range(?))
 {
   // Ambiguous ranges cannot be equal even if all their parameters match.
-  if r1.isAmbiguous() || r2.isAmbiguous() then return false;
-
-  return r1._base == r2._base;
+  if r1.isAmbiguous() || r2.isAmbiguous() then
+    return false;
+  else
+    return r1._base == r2._base;
 }
 
 // This makes use of the fact that the default values for the
