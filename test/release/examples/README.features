@@ -8,10 +8,11 @@ demonstrates:
 test             Primary features it was designed to demonstrate
 ---------------+---------------------------------------------------------------
 hello          : write() function; string literals; unstructured coding
-hello-module   : configuration vars; module structure; main() entry point
-hello-datapar  : forall loop
-hello-multicore: coforall loop
-hello-multiloc : coforalls, on clauses, locales
+hello2-module  : configuration vars; module structure; main() entry point
+hello3-datapar : forall loop
+hello4-datapar-dist : distributed domain, forall loop
+hello5-taskpar : task parallelism via coforall loop
+hello6-taskpar-dist : coforall, on clauses, locales
 arrays         : arithmetic domains and arrays; slicing; iteration; reallocation
 beer           : 1D domains and arrays; string manipulation; generic functions
 classes        : classes and objects; dynamic dispatch; 'this' and 'these'

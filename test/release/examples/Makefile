@@ -5,11 +5,11 @@ CHPL = chpl
 
 TARGETS = \
 	hello \
-	hello-module \
-	hello-datapar \
-	hello-datapar-dist \
-	hello-taskpar \
-	hello-taskpar-dist \
+	hello2-module \
+	hello3-datapar \
+	hello4-datapar-dist \
+	hello5-taskpar \
+	hello6-taskpar-dist \
 
 REALS = $(TARGETS:%=%_real)
 

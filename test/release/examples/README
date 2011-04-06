@@ -6,11 +6,11 @@ This directory contains a few simple "Hello, world!" example codes to
 get started with Chapel program structure:
 
      hello.chpl              : a one-line Chapel "Hello, world!" program
-     hello-module.chpl       : a more structured "Hello, world!" program
-     hello-datapar.chpl      : a data parallel version of "Hello, World!"
-     hello-datapar-dist.chpl : a distributed data parallel version
-     hello-taskpar.chpl      : a task parallel version of "Hello, World!"
-     hello-taskpar-dist.chpl : a distributed task parallel version
+     hello2-module.chpl       : a more structured "Hello, world!" program
+     hello3-datapar.chpl      : a data parallel version of "Hello, World!"
+     hello4-datapar-dist.chpl : a distributed data parallel version
+     hello5-taskpar.chpl      : a task parallel version of "Hello, World!"
+     hello6-taskpar-dist.chpl : a distributed task parallel version
 
 It also contains subdirectories that contain more interesting
 examples:
@@ -61,11 +61,14 @@ Other files
   README.testing  : provides an introduction to using the Chapel testing system
   start_test      : the main script for the Chapel testing system
   Logs/           : directory created by the test system to store logs
-  *.compopts      : used by the Chapel testing system -- see README.testing
+  NUMLOCALES      : used by the Chapel testing system -- see README.testing
+  PREDIFF         : "
+  *.compopts      : "
   *.execopts      : "
   *.good          : "
+  *.graph         : "
   *.notest        : "
   *.numlocales    : "
-  *.skipif        : "
+  *.prediff       : "
   *.perfkeys      : "
   *.timeout       : "
