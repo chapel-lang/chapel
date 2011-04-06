@@ -10,6 +10,12 @@ A is:
 0.599488 0.387459 0.875501 0.539785 0.560602 0.0807004 0.714441 0.332578 0.922053 0.944132
 0.854414 0.159119 0.342414 0.346733 0.0200889 0.0778806 0.237468 0.278605 0.920042 0.855796
 
+The average element of A has the value 0.514321
+
+The 1-norm of A is 51.4321
+
+The Frobenius norm of A is 5.9546
+
 The maximum value in A is: A(2, 8) = 0.967948
 The minimum value in A is: A(8, 4) = 0.00447614
 The difference is: 0.963472

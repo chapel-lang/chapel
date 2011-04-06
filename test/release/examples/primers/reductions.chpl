@@ -20,6 +20,40 @@ writeln("A is: "); writeln(A);
 writeln();
 
 //
+// Find the average value of the array, but summing over its elements
+// and dividing by the number of elements it contains.
+//
+var eltAvg = (+ reduce A) / size**2;
+writeln("The average element of A has the value ", eltAvg);
+writeln();
+
+//
+// We can find the 1-norm of A by summing over the absolute value of the elements.
+//
+// The expression "abs(A)" creates a new matrix which contains in each of its elements
+// the absolute value of the corresponding element in A.
+// The "+ reduce" clause just sums these up.
+// 
+var oneNorm = + reduce abs(A);
+writeln("The 1-norm of A is ", oneNorm);
+writeln();
+
+//
+// The Frobenius norm is the square root of the sum over all elements of their
+// respective squares.
+//
+// The expression below can be broken down thus:
+//  1) The Frobenius norm is the square root of sum quantity.
+//  2) The quantity the sum over all elements of a matrix.
+//  3) The matrix is the promotion of A by "**2".
+//     That is, a matrix each of whose elements the square of the corresponding
+//       element in A.
+//
+var frobNorm = sqrt(+ reduce A**2);
+writeln("The Frobenius norm of A is ", frobNorm);
+writeln();
+
+//
 // Apply minloc and maxloc reductions. Capture the results into
 // the maxVal, maxLoc, minVal, minLoc variables.
 //
