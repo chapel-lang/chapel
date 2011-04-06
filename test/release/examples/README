@@ -5,11 +5,12 @@ Chapel Example Codes
 This directory contains a few simple "Hello, world!" example codes to
 get started with Chapel program structure:
 
-     hello.chpl             : the simplest Chapel "Hello, world!" program
-     hello-module.chpl      : a version using a more structured form of Chapel
-     hello-datapar.chpl     : a data parallel version of "Hello, World!"
-     hello-multicore.chpl   : a multi-tasking "Hello, world!" program 
-     hello-multiloc.chpl    : a multi-locale "Hello, world!" program
+     hello.chpl              : a one-line Chapel "Hello, world!" program
+     hello-module.chpl       : a more structured "Hello, world!" program
+     hello-datapar.chpl      : a data parallel version of "Hello, World!"
+     hello-datapar-dist.chpl : a distributed data parallel version
+     hello-taskpar.chpl      : a task parallel version of "Hello, World!"
+     hello-taskpar-dist.chpl : a distributed task parallel version
 
 It also contains subdirectories that contain more interesting
 examples:

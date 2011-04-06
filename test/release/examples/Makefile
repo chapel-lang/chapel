@@ -7,8 +7,9 @@ TARGETS = \
 	hello \
 	hello-module \
 	hello-datapar \
-	hello-multicore \
-	hello-multiloc \
+	hello-datapar-dist \
+	hello-taskpar \
+	hello-taskpar-dist \
 
 REALS = $(TARGETS:%=%_real)
 
