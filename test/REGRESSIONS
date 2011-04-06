@@ -167,6 +167,10 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+lots of debugging output? (Brad probably moved test incorrectly?) (04/06/11)
+----------------------------------------------------------------------------
+[Error matching program output for multirealm/multirealm]
+
 failure to open file (03/30/11)
 -------------------------------
 [Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
@@ -211,6 +215,17 @@ gasnet-fast regressions (other than the above)
 ==================
 pvm-specific tests
 ==================
+
+timouts for newly-added tests -- maybe because Lee's on the road? (04/06/11)
+----------------------------------------------------------------------------
+[Error: Timed out executing program release/examples/hello2-module]
+[Error: Timed out executing program release/examples/hello3-datapar]
+[Error: Timed out executing program release/examples/hello4-datapar-dist]
+[Error: Timed out executing program release/examples/hello5-taskpar]
+[Error: Timed out executing program release/examples/hello6-taskpar-dist]
+[Error: Timed out executing program release/examples/hello]
+[Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop]
+[Error: Timed out executing program release/examples/hpcc/variants/stream-promoted]
 
 timeouts for all multilocale testing
 (as of 03/25/10 when --gen-communicated-structures got fixed)
@@ -488,6 +503,7 @@ x2-specific regressions
 threads-none causes serial iterator to be used rather than follower (11/25/08)
 ------------------------------------------------------------------------------
 [Error matching program output for release/examples/hpcc/ra]
+[Error matching program output for release/examples/hpcc/variants/ra-cleanloop]
 
 
 ==========================
