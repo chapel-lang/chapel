@@ -32,18 +32,18 @@ or:
     ./a.out -s<cfgVar>=<val>
 
 
-As an example, compile the hello-module.chpl example which prints a
+As an example, compile the hello2-module.chpl example which prints a
 user-definable message:
 
-     chpl -o hello-module $CHPL_HOME/examples/hello-module.chpl
+     chpl -o hello2-module $CHPL_HOME/examples/hello2-module.chpl
 
 This program defines a configuration constant -- message -- indicating
 the string to print to the console, set to "Hello, world!" by default.
 To override the default, you can use:
 
-     ./hello-module --message='Hello, Chapel users!'
+     ./hello2-module --message='Hello, Chapel users!'
 or:
-     ./hello-module -smessage='Hello, Chapel users!'
+     ./hello2-module -smessage='Hello, Chapel users!'
 
 
 -----------------------------

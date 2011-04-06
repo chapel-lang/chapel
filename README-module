@@ -17,17 +17,17 @@ Quick Start
 
 1) Load the Chapel module:
 
-        module load chapel
+     module load chapel
 
 
 2) Compile an example program using:
 
-        chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
+     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
 3) Execute the resulting executable (on four locales):
 
-        ./hello-multiloc -nl 4
+     ./hello6-taskpar-dist -nl 4
 
 
 ------------
