@@ -12,7 +12,7 @@ more of these.
      fileIO.chpl            : simple file I/O example using arrays
      genericClasses.chpl    : examples of defining and using generic classes
      iterators.chpl         : sample iterators
-     multilocale.chpl       : demonstration of multi-locale concepts
+     locales.chpl           : demonstration of multi-locale concepts
      opaque.chpl            : tutorial for Chapel opaque arrays
      ranges.chpl            : uses of ranges and operations on ranges
      reductions.chpl        : applies several array reductions on a 2D array

@@ -30,7 +30,7 @@ primers/
   fileIO         : file I/O of scalars and arrays
   genericClasses : generic classes and objects; generic types
   iterators      : iterators of various styles
-  multilocale    : multiple locales, on clauses, multi-locale task parallelism
+  locales        : multiple locales, on clauses, multi-locale task parallelism
   opaque         : opaque domains and arrays; graph-based data structures
   ranges         : ranges; .., #, by operators; range iteration; range slicing
   reductions     : minloc, maxloc, + and && array reductions
