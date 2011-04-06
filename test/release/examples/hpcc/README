@@ -31,6 +31,10 @@ The main files for these benchmarks are as follows:
      ptrans.chpl            : the global PTRANS benchmark
      hpl.chpl               : the High Performance Linpack benchmark
 
+A subdirectory contains variants -- particularly more elegant
+implementations that do not yet perform as well as the ones in this
+directory.
+
 There are also helper modules for these benchmarks:
 
      HPCCProblemSize.chpl   : a common module for computing problem sizes

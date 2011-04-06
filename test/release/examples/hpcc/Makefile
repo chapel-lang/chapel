@@ -12,12 +12,13 @@ TARGETS = \
 
 REALS = $(TARGETS:%=%_real)
 
-default: all
+default: all variants
 
 all: $(TARGETS)
 
 clean: FORCE
 	rm -f $(TARGETS) $(REALS)
+	cd variants && $(MAKE) clean
 
 stream: stream.chpl HPCCProblemSize.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
@@ -36,5 +37,8 @@ ptrans: ptrans.chpl HPCCProblemSize.chpl
 
 hpl: hpl.chpl HPCCProblemSize.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+variants: FORCE
+	cd variants && $(MAKE)
 
 FORCE:
