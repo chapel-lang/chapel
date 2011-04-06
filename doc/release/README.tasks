@@ -180,8 +180,8 @@ CHPL_TASKS == nanox, CHPL_THREADS == none
 We have recently been working with the Nanos++ team at BSC to
 implement Chapel tasking over their user-level tasking layer ('nanox')
 in order to create a lighter-weight implementation of Chapel tasks.
-In this release, nanox tasking is only supported for single-locale
-(CHPL_COMM == none) executions.  To try nanox tasking, please take
+In this release, Nanos++ tasking is only supported for single-locale
+(CHPL_COMM == none) executions.  To try Nanos++ tasking, please take
 the following steps:
 
 1) cd $CHPL_HOME/third-party
@@ -198,8 +198,8 @@ the following steps:
    and   <compiler> == $CHPL_HOME/util/compiler --target
 7) compile and run your Chapel program as usual
 
-Please refer any apparent bugs in nanox tasking to the Chapel team.
-For more information on Nanos++, please refer to
+Please refer any apparent bugs in the Nanos++ tasking layer to the
+Chapel team.  For more information on Nanos++, please refer to
 $CHPL_HOME/third-party/README
 
 
@@ -210,8 +210,8 @@ We have also been working with the Qthreads team at Sandia National
 Labs to implement Chapel tasking over their user-level tasking layer
 ('qthreads') in order to create a lighter-weight implementation of
 Chapel tasks and ultimately an optimized implementation of sync
-variables.  In this release, qthreads tasking is only supported for
-single-locale (CHPL_COMM == none) executions.  To try qthreads
+variables.  In this release, Qthreads tasking is only supported for
+single-locale (CHPL_COMM == none) executions.  To try Qthreads
 tasking, please take the following steps:
 
 1) cd $CHPL_HOME/third-party
@@ -228,7 +228,7 @@ tasking, please take the following steps:
    and   <compiler> == $CHPL_HOME/util/compiler --target
 7) compile and run your Chapel program as usual
 
-Please refer any apparent bugs in qthreads tasking to the Chapel team.
+Please refer any apparent bugs in Qthreads tasking to the Chapel team.
 For more information on Qthreads, please refer to
 $CHPL_HOME/third-party/README
 
@@ -277,7 +277,7 @@ CHPL_TASKS == mta, CHPL_THREADS == none
 CHPL_TASKS == nanox, CHPL_THREADS == none
   Nanox tasks have a typical call stack size of 32k * sizeof(size_t)
   (though in practice some tasks may have the system pthread call
-  stack size limit).  In the current nanox tasking implementation,
+  stack size limit).  In the current Nanos++ tasking implementation,
   user overrides of the dfeault call stack size are ignored.
 
 CHPL_TASKS == qthreads, CHPL_THREADS == none

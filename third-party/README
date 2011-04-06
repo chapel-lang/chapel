@@ -56,7 +56,7 @@ nanox/
   Contact: For more information, please refer to:
            http://pm.bsc.es/projects/nanox
 
-  See also: nanox/README and 
+  See also: nanox/README and nanox/nanox-*/*
 
 
 qthread/ 
@@ -71,4 +71,4 @@ qthread/
            http://code.google.com/p/qthreads/
            http://www.cs.sandia.gov/qthreads/
 
-  See also: qthread/qthread-<version>/README
+  See also: qthread/qthread-*/README

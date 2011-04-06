@@ -14,4 +14,4 @@ Local modifications:
 * We made one change to src/pms/chapel/chpl_main.cpp to move the
   #include "chpl_nanos.h" header down which was causing our older
   versions of gcc to choke.  (This same change has since been made
-  in the Nanox source base).
+  in the Nanos++ source base).
