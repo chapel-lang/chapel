@@ -10,11 +10,12 @@
 #  for more info.
 #
 # SUPPORTED ENVIROMENTS:
-# - chapelpre (REQUIRED)
+# - chapelexample (REQUIRED)
 #   If a filename is not given on the first line, the filename is
 #   generated from the input filename and the line number.
 #
-# - chapel|chapelcode
+# - chapelpre
+# - chapel|chapelcode|chapelnoprint
 # - chapelpost
 # - chapelfuture
 # - chapelcompopts
@@ -49,27 +50,16 @@ import os, sys
 # Helper functions
 #
 
-# Generate the test name prefix
-def GenTestName(lineno):
-    infileSplit = curinfile.rsplit('/', 1)[1]
-    newof = infileSplit+'.'+str(lineno)
-    curTestNames.append(newof)
-    return outdir+'/'+curdir+'/'+newof
-
-# Extract the test name from a source line
-def GetTestName(line):
-    outfile = line.strip().strip('%').strip().replace('.chpl', '')
+# Extract the good file name from a source line
+def GetGoodName(line):
+    outfile = line.strip().strip('%').strip().replace('.good', '')
     if options.debug:
-        print outfile
-    curTestNames.append(outfile)
-    if curTestNames.count(outfile) > 1:
-        sys.stdout.write("Warning: Test name '%s' already specified\n"%
-                         (outfile));
-        newof = outfile + "." + str(curTestNames.count(outfile))
-        curTestNames.append(newof)
-        sys.stdout.write("         Renaming it to %s\n"%(newof));
-        outfile = newof
-    return outdir+'/'+curdir+'/'+outfile
+        sys.stdout.write('>>> %s\n'%(outfile))
+    currTestNames.append(outfile)
+    if currTestNames.count(outfile) > 1:
+        sys.stdout.write("Warning: Test name '%s' already specified.  Good filename may conflict\n"%
+                         (outfile))
+    return outdir+'/'+curdir+'/'+outfile+'.good'
 
 # Helper functions for de-LaTeX-ifying output line
 def RemoveLaTeXFormatting(line, nlrepl):
@@ -96,14 +86,14 @@ def WriteGoodFile(fh, output, testName):
             if opened:
                 fh.close()
             opened = True
-            goodTestName = GetTestName(line)
+            goodTestName = GetGoodName(line)
             if options.debug:
-                sys.stdout.write('Opening %s\n'%(goodTestName))
+                sys.stdout.write('>>> Opening %s\n'%(goodTestName))
             fh = open(goodTestName, 'w')
         else:
             if not opened:
                 if options.debug:
-                    sys.stdout.write('Opening %s\n'%(goodTestName))
+                    sys.stdout.write('>>> Opening %s\n'%(goodTestName))
                 fh = open(goodTestName, 'w')
                 opened = True
             fh.write(RemoveLaTeXFormatting(line, ''))
@@ -112,81 +102,7 @@ def WriteGoodFile(fh, output, testName):
         fh.close()
 
 
-# Write out the test files
-def OutputTest(lineno, seenChapelPre, seenChapelOutput):
-    global TotalTests, TotalIgnored, TotalOthers
-    if seenChapelPre and seenChapelOutput:
-        TotalTests += 1
-        # writeout the actual test program
-        if len(chapelpre) > 0 and chapelpre[0][0] == '%':
-            testName = GetTestName(chapelpre[0])
-        else:
-            testName = GenTestName(lineno)
-        if options.verbose:
-            sys.stdout.write('Writing %s (line %d)\n'
-                             %(testName.rsplit('/', 1)[1], lineno))
-
-        fh = open(testName+'.chpl', 'w')
-        if options.debug:
-            sys.stdout.write('Opening %s\n'%(testName+'.chpl'))
-
-        WriteTestFile(fh, chapelpre)
-        WriteTestFile(fh, chapelcode)
-        WriteTestFile(fh, chapelpost)
-
-        fh.close()
-
-        # write out the future file
-        if len(chapelfuture) > 0:
-            if options.debug:
-                sys.stdout.write('Opening %s\n'%(testName+'.future'))
-            fh = open(testName+'.future', 'w')
-            WriteTestFile(fh, chapelfuture)
-
-        # write out the .compopts file
-        if len(chapelcompopts) > 0:
-            if options.debug:
-                sys.stdout.write('Opening %s\n'%(testName+'.compopts'))
-            fh = open(testName+'.compopts', 'w')
-            WriteTestFile(fh, chapelcompopts)
-
-        # write out the .execopts files
-        if len(chapelexecopts) > 0:
-            if options.debug:
-                sys.stdout.write('Opening %s\n'%(testName+'.execopts'))
-            fh = open(testName+'.execopts', 'w')
-            WriteTestFile(fh, chapelexecopts)
-
-	# write out the .prediff file
-	if len(chapelprediff) > 0:
-	    if options.debug:
-		sys.stdout.write('Opening %s\n'%(testName+'.prediff'))
-	    fh = open(testName+'.prediff', 'w')
-	    WriteTestFile(fh, chapelprediff)
-	    os.chmod(testName+'.prediff', 0755)
-
-        # write out .good files
-        if len(chapeloutput) > 0 or len(chapelprintoutput) > 0:
-            WriteGoodFile(fh, chapeloutput, testName)
-            WriteGoodFile(fh, chapelprintoutput, testName)
-        else:
-            # write an empty .good file
-            fh = open(testName+'.good', 'w')
-            fh.close()
-
-    else:
-        # invalid format or ignored test
-        if lineno != 0:
-            TotalIgnored += 1
-            if options.verbose:
-                sys.stdout.write('Ignoring test on line %d\n'%(lineno))
-        else:
-            TotalOthers += 1
-
-    seenChapelPre = False
-    seenChapelOutput = False
-
-    # clear lists
+def ClearLists():
     del chapelpre[:]
     del chapelcode[:]
     del chapelpost[:]
@@ -196,6 +112,82 @@ def OutputTest(lineno, seenChapelPre, seenChapelOutput):
     del chapelprediff[:]
     del chapeloutput[:]
     del chapelprintoutput[:]
+
+# Write out the test files
+def OutputTest(lineno, currTestName):
+    global TotalTests, TotalIgnored
+    TotalTests += 1
+    # writeout the actual test program
+    if (len(currTestName)-currTestName.rfind('.chpl')) == 5:
+        testName = currTestName[:currTestName.rfind('.chpl')]
+    else:
+        testName = currTestName
+
+    currTestNames.append(testName)
+    if currTestNames.count(testName) > 1:
+        sys.stdout.write("Warning: Test name '%s' already specified\n"%
+                         (testName))
+        newof = testName + "." + str(currTestNames.count(testName))
+        currTestNames.append(newof)
+        sys.stdout.write("         Renaming it to %s\n"%(newof));
+        testName = newof
+
+    # add full path
+    testName = outdir+'/'+curdir+'/'+testName
+
+    if options.verbose:
+        sys.stdout.write('Writing %s.chpl (line %d)\n'
+                         %(testName.rsplit('/', 1)[1], lineno))
+
+    fh = open(testName+'.chpl', 'w')
+    if options.debug:
+        sys.stdout.write('>>> Opening %s\n'%(testName+'.chpl'))
+
+    WriteTestFile(fh, chapelpre)
+    WriteTestFile(fh, chapelcode)
+    WriteTestFile(fh, chapelpost)
+
+    fh.close()
+
+    # write out the future file
+    if len(chapelfuture) > 0:
+        if options.debug:
+            sys.stdout.write('>>> Opening %s\n'%(testName+'.future'))
+        fh = open(testName+'.future', 'w')
+        WriteTestFile(fh, chapelfuture)
+
+        # write out the .compopts file
+    if len(chapelcompopts) > 0:
+        if options.debug:
+            sys.stdout.write('>>> Opening %s\n'%(testName+'.compopts'))
+        fh = open(testName+'.compopts', 'w')
+        WriteTestFile(fh, chapelcompopts)
+
+    # write out the .execopts files
+    if len(chapelexecopts) > 0:
+        if options.debug:
+            sys.stdout.write('>>> Opening %s\n'%(testName+'.execopts'))
+        fh = open(testName+'.execopts', 'w')
+        WriteTestFile(fh, chapelexecopts)
+
+    # write out the .prediff file
+    if len(chapelprediff) > 0:
+        if options.debug:
+            sys.stdout.write('>>> Opening %s\n'%(testName+'.prediff'))
+        fh = open(testName+'.prediff', 'w')
+        WriteTestFile(fh, chapelprediff)
+        os.chmod(testName+'.prediff', 0755)
+
+    # write out .good files
+    if len(chapeloutput) > 0 or len(chapelprintoutput) > 0:
+        WriteGoodFile(fh, chapeloutput, testName)
+        WriteGoodFile(fh, chapelprintoutput, testName)
+    else:
+        # write an empty .good file
+        fh = open(testName+'.good', 'w')
+        fh.close()
+
+    ClearLists()
 
 
 
@@ -218,11 +210,13 @@ chapelprediff = list()
 chapeloutput = list()
 chapelprintoutput = list()
 current = None
-curTestNames = list()
+currTestNames = list()
 
+#
+# Accounting
+#
 TotalTests = 0
 TotalIgnored = 0
-TotalOthers = 0
 
 #
 # Parse command line args
@@ -252,6 +246,8 @@ outdir = os.path.realpath(options.outdir)
 if not os.path.isdir(outdir):
     os.mkdir(outdir)
 
+currTestName = None
+
 for infile in args:
     #
     # Open the input file
@@ -262,10 +258,11 @@ for infile in args:
     fh.close()
 
     # Clean up table of testname
-    del curTestNames[:]
+    del currTestNames[:]
 
     curinfile = realinfile
-    curdir = realinfile.rsplit('/', 1)[1]+'.tests'
+    # curdir = realinfile.rsplit('/, 1)[1]+'.tests'
+    curdir = (realinfile.rsplit('/', 1)[1]).rsplit('.', 1)[0]
     if not os.path.isdir(outdir+'/'+curdir):
         os.mkdir(outdir+'/'+curdir)
     if options.verbose:
@@ -278,14 +275,20 @@ for infile in args:
     lineno = 0
     testlineno = lineno
     printToOutfile = False
-    seenChapelPre = False
-    seenChapelOutput = False
 
     for line in myLines:
         lineno += 1
         pos = line.find('\\end{chapel')
         if pos > -1:
             pos += 11
+            if line.find('example}', pos) == pos:
+                if options.debug:
+                    sys.stdout.write('>>> Writing out test example: %s\n'%(currTestName))
+                OutputTest(testlineno, currTestName)
+                currTestName = None
+                ClearLists()
+                continue
+
             printToOutfile = False
             current = None
             continue
@@ -298,29 +301,30 @@ for infile in args:
         if pos > -1:
             pos += 13
             if options.debug:
-                print line
-            if (line.find('pre}', pos) == pos):
-                OutputTest(testlineno, seenChapelPre, seenChapelOutput)
+                sys.stdout.write('>>> %s\n'%(line))
+            if (line.find('example}{', pos) == pos):
                 testlineno = lineno
-                printToOutfile = True
-                seenChapelPre = True
-                seenChapelOutput = False
-                current = chapelpre;
+                currTestName = line[pos+9:-2]
+                current = None
+                if options.debug:
+                    sys.stdout.write('>>> Found Chapel test example: %s\n'%(currTestName))
                 continue
 
+            if currTestName == None:
+                if ((line.find('}', pos) == pos) or
+                    (line.find('code}', pos) == pos)):
+                    TotalIgnored += 1
+                continue
+
+            if (line.find('pre}', pos) == pos):
+                printToOutfile = True
+                current = chapelpre;
+
             elif ((line.find('}', pos) == pos) or
-                  (line.find('code}', pos) == pos)):
-                if ((seenChapelPre and seenChapelOutput) or
-                    not (seenChapelPre or seenChapelOutput)):
-                    # output the previous test, but ignore this one
-                    #  (no \begin{chapelpre} encountered)
-                    OutputTest(testlineno, seenChapelPre, seenChapelOutput)
-                    testlineno = lineno
-                    seenChapelPre = False
-                    seenChapelOutput = False
-                else:
-                    printToOutfile = True
-                    current = chapelcode;
+                  (line.find('code}', pos) == pos) or
+                  (line.find('noprint}', pos) == pos)):
+                printToOutfile = True
+                current = chapelcode;
 
             elif line.find('post}', pos) == pos:
                 printToOutfile = True
@@ -342,16 +346,20 @@ for infile in args:
 
             elif line.find('output}', pos) == pos:
                 printToOutfile = True
-                seenChapelOutput = True
                 current = chapeloutput;
             elif line.find('printoutput}', pos) == pos:
                 printToOutfile = True
-                seenChapelOutput = True
                 current = chapelprintoutput;
 
-    OutputTest(testlineno, seenChapelPre, seenChapelOutput)
+    if not os.listdir(outdir+'/'+curdir):
+        os.rmdir(outdir+'/'+curdir)
+        if options.verbose:
+            sys.stdout.write('***\n')
+            sys.stdout.write('*** Removing empty directory %s/%s\n'%
+                             (options.outdir,curdir))
+            sys.stdout.write('***\n')
 
-sys.stdout.write('\nSaw %d Chapel examples\n'%(TotalTests+TotalIgnored+TotalOthers))
+
+sys.stdout.write('\nSaw %d Chapel examples\n'%(TotalTests+TotalIgnored))
 sys.stdout.write('\t%d tests\n'%(TotalTests))
 sys.stdout.write('\t%d ignored\n'%(TotalIgnored))
-sys.stdout.write('\t%d others\n'%(TotalOthers))

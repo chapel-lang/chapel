@@ -321,14 +321,11 @@ The do-while loop is executed as follows:
 In this second form of the loop, note that the statement is executed
 unconditionally the first time.
 
-\begin{example}
+\begin{chapelexample}{while.chpl}
 The following example illustrates the difference between
 the \sntx{do-while-statement} and the \sntx{while-do-statement}.  The body of
 the do-while loop is always executed at least once, even if the loop conditional
 is already false when it is entered.
-\begin{chapelpre}
-% while.chpl
-\end{chapelpre}
 \begin{chapel}
 var t = 11;
 
@@ -350,7 +347,7 @@ Scope of do while loop:
 12
 Scope of while loop:
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \section{The For Loop}
 \label{The_For_Loop}
@@ -407,11 +404,8 @@ statement is executed.
 The shape of each iterator, the rank and the extents in each
 dimension, must be identical.
 
-\begin{example}
+\begin{chapelexample}{zipper.chpl}
 The output of
-\begin{chapelpre}
-% zipper.chpl
-\end{chapelpre}
 \begin{chapel}
 for (i, j) in (1..3, 4..6) do
   write(i, " ", j, " ");
@@ -423,7 +417,7 @@ is
 \begin{chapeloutput}
 1 4 2 5 3 6 
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \subsection{Tensor Product Iteration}
 \label{Tensor_Product_Iteration}
@@ -433,11 +427,8 @@ they are iterated over as if they were nested in distinct for loops.
 There is no constraint on the iterators as there is in the zipper
 context.
 
-\begin{example}
+\begin{chapelexample}{tensor.chpl}
 The output of
-\begin{chapelpre}
-% tensor.chpl
-\end{chapelpre}
 \begin{chapel}
 for (i, j) in [1..3, 4..6] do
   write(i, " ", j, " ");
@@ -446,9 +437,6 @@ for (i, j) in [1..3, 4..6] do
 writeln();
 \end{chapelpost}
 is
-\begin{chapeloutput}
-1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 
-\end{chapeloutput}
 The statement is
 equivalent to
 \begin{chapel}
@@ -456,7 +444,10 @@ for i in 1..3 do
   for j in 4..6 do
     write(i, " ", j, " ");
 \end{chapel}
-\end{example}
+\begin{chapeloutput}
+1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 
+\end{chapeloutput}
+\end{chapelexample}
 
 \subsection{Parameter For Loops}
 \label{Parameter_For_Loops}
@@ -583,12 +574,9 @@ the programmer to restrict which symbols are 'used' as well as to
 rename symbols that are used.
 \end{openissue}
 
-\begin{example}
+\begin{chapelexample}{use.chpl}
 The following example illustrates how the use statement brings in the definition
 of the \chpl{Timer} class, so it can be used to time program execution.
-\begin{chapelpre}
-% use.chpl
-\end{chapelpre}
 \begin{chapel}
 use Time;
 
@@ -605,7 +593,7 @@ if (totalTime > 0) then writeln("Non-zero time for writing one line.");
 Write one line.
 Non-zero time for writing one line.
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \section{The Type Select Statement}
 \label{The_Type_Select_Statement}
@@ -658,12 +646,9 @@ situation.  Unlike with function resolution, in the event of an
 ambiguity, the first statement in the list of when statements is
 chosen.
 
-\begin{example}
+\begin{chapelexample}{typeselect.chpl}
 The following example shows how the type select statement can be used to perform
 a different action based on the static type of the operand.
-\begin{chapelpre}
-% typeselect.chpl
-\end{chapelpre}
 \begin{chapel}
 var x = 32, y = 15.5; 
 var z: int(8);
@@ -697,7 +682,7 @@ Non-primitive type
 Boolean type
 String type
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \section{The Empty Statement}
 \label{The_Empty_Statement}

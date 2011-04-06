@@ -96,14 +96,11 @@ range-type:
 \noindent The \sntx{named-expression-list} contains any combination of
   the \chpl{idxType}, \chpl{boundedType} and \chpl{stridable} parameters.
 
-\begin{example}
+\begin{chapelexample}{rangeVariable.chpl}
 The following declaration declares a variable \chpl{r}
 of range type that can represent ranges of 64-bit integers, with both
 high and low bounds specified, the ability to have a stride other
 than 1 and an alignment other than zero.
-\begin{chapelpre}
-% rangeVariable.chpl
-\end{chapelpre}
 \begin{chapel}
 var r: range(int(64), BoundedRangeType.bounded, stridable=true);
 \end{chapel}
@@ -117,7 +114,7 @@ writeln(r);
 1..0
 3..13 by 3 align 1
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \section{Range Fields and Accessors}
 \label{Range_Fields}
@@ -218,11 +215,8 @@ by that bound.
 When used in zippered iteration (~\rsec{Zipper_Iteration}), the shape of an
 unbounded range conforms to that of the other iterator.
 
-\begin{example}
+\begin{chapelexample}{zipWithUnbounded.chpl}
 The code
-\begin{chapelpre}
-% zipWithUnbounded.chpl
-\end{chapelpre}
 \begin{chapel}
 for i in (1..5, 3..) do
   write(i, "; ");
@@ -234,7 +228,7 @@ writeln();
 (1, 3); (2, 4); (3, 5); (4, 6); (5, 7); 
 \end{chapeloutput}
 produces the output ``(1, 3); (2, 4); (3, 5); (4, 6); (5, 7); ''.
-\end{example}
+\end{chapelexample}
 
 It is an error to iterate over a \chpl{boundedNone} range,
 a \chpl{boundedLow} range with negative stride or a
@@ -313,13 +307,10 @@ negative, it is aligned with respect to the operand's \chpl{alignedHigh} value.
 \item Otherwise, it has the same alignment as the operand range.
 \end{itemize}
 
-\begin{example}
+\begin{chapelexample}{rangeByOperator.chpl}
 In the following declarations, range \chpl{r1} represents the odd integers
 between 1 and 20. Range \chpl{r2} strides \chpl{r1} by two and represents
 every other odd integer between 1 and 20: 1, 5, 9, 13 and 17.
-\begin{chapelpre}
-% rangeByOperator.chpl
-\end{chapelpre}
 \begin{chapel}
 var r1 = 1..20 by 2;
 var r2 = r1 by 2;
@@ -332,7 +323,7 @@ writeln(r2);
 1..20 by 2
 1..20 by 4
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \begin{rationale}
 {\it Why isn't the high bound specified first if the stride is
@@ -364,10 +355,7 @@ same \chpl{low}, \chpl{high} and \chpl{stride} fields as the source range. The
 alignment is set equal to the \chpl{align} operator's right operand.  The type
 of the right operand must be compatible with the index type of the operand range.  
 
-\begin{example}
-\begin{chapelpre}
-% alignedStride.chpl
-\end{chapelpre}
+\begin{chapelexample}{alignedStride.chpl}
 \begin{chapel}
 var r1 = 0 .. 10 by 3 align 0;
 for i in r1 do
@@ -383,13 +371,10 @@ writeln();
  0 3 6 9
  1 4 7 10
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 When the stride is negative, the same indices are printed in reverse:
-\begin{example}
-\begin{chapelpre}
-% alignedNegStride.chpl
-\end{chapelpre}
+\begin{chapelexample}{alignedNegStride.chpl}
 \begin{chapel}
 var r3 = 0 .. 10 by -3 align 0;
 for i in r3 do
@@ -405,7 +390,7 @@ writeln();
  9 6 3 0
  10 7 4 1
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 To align a range relative to its \chpl{start} index, use
 the \chpl{offset} method (\rsec{Range_Offset_Method}).
@@ -475,11 +460,8 @@ are not well-defined.  When the count is negative, indices are taken from the
 end of the range.  In that case, the end bound must also be established.
 \end{rationale}
 
-\begin{example}
+\begin{chapelexample}{rangeCountOperator.chpl}
 The following declarations result in equivalent ranges.
-\begin{chapelpre}
-% rangeCountOperator.chpl
-\end{chapelpre}
 \begin{chapel}
 var r1 = 1..10 by -2 # -3;
 var r2 = ..6 by -2 # 3;
@@ -495,7 +477,7 @@ true
 (1..6 by -2, 1..6 by -2, 1..6 by -2, 1..6 by -2)
 \end{chapeloutput}
 Each of these ranges represents the ordered set of three indices: 6, 4, 2.
-\end{example}
+\end{chapelexample}
 
 \subsection{Arithmetic Operators}
 \label{Range_Arithmetic}
@@ -521,16 +503,13 @@ The stride of the resulting range is the same as the stride of the
 original. The alignment of the resulting range is shifted by the same amount as
 the high and low bounds.
 
-\begin{example}
+\begin{chapelexample}{rangeAdd.chpl}
 The following code creates a bounded, non-stridable range \chpl{r}
 which has an index type of \chpl{int} representing the indices ${0,
   1, 2, 3}$.  It then uses the \chpl{+} operator to
 create a second range \chpl{r2} representing the indices ${1, 2, 3,
   4}$.  The \chpl{r2} range is bounded, non-stridable, and is represented by
 indices of type \chpl{int}.
-\begin{chapelpre}
-% rangeAdd.chpl
-\end{chapelpre}
 \begin{chapel}
 var r = 0..3;
 var r2 = r + 1;
@@ -541,7 +520,7 @@ writeln((r, r2));
 \begin{chapeloutput}
 (0..3, 1..4)
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 
 \subsection{Range Slicing}
@@ -559,15 +538,12 @@ sliced-range-expression:
 \noindent If the slicing range is unbounded in one or both directions, it
 inherits its missing bounds from the range being sliced.
 
-\begin{example}
+\begin{chapelexample}{rangeSlicing.chpl}
 In the following example, \chpl{r} represents the integers from 1 to
 20 inclusive.  Ranges \chpl{r2} and \chpl{r3} are defined using range
 slices and represent the indices from 3 to 20 and the odd integers
 between 1 and 20 respectively. Range \chpl{r4} represents the odd
 integers between 1 and 20 that are also divisible by 3.
-\begin{chapelpre}
-% rangeSlicing.chpl
-\end{chapelpre}
 \begin{chapel}
 var r = 1..20;
 var r2 = r[3..];
@@ -580,7 +556,7 @@ writeln((r, r2, r3, r4));
 \begin{chapeloutput}
 (1..20, 3..20, 1..20 by 2, 1..20 by 6 align 3)
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \section{Predefined Functions and Methods on Ranges}
 \index{ranges!predefined functions}
@@ -775,11 +751,8 @@ is, if the high bound, stride and alignment are $h$, $s$ and $a$ respectively,
 the aligned high bound $e$ is the highest index such that $e \leq h, e\!\mod |s| =
 a\!\mod |s|$.
 \end{protobody}
-\begin{example}
+\begin{chapelexample}{alignedHigh.chpl}
 The following code:
-\begin{chapelpre}
-% alignedHigh.chpl
-\end{chapelpre}
 \begin{chapel}
 var r = 0..20 by 3;
 writeln(r.alignedHigh);
@@ -788,7 +761,7 @@ writeln(r.alignedHigh);
 18
 \end{chapeloutput}
 produces the output ``18''.
-\end{example}
+\end{chapelexample}
 
 \begin{protohead}
 proc $range$.alignHigh()

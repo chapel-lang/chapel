@@ -56,10 +56,9 @@ statements: break statements, continue statements, and return
 statements.  Yield statement may only be lexically enclosed in forall
 statements in parallel iterators~\rsec{Parallel_Iterators}.
 
-\begin{example}
+\begin{chapelexample}{forallStmt.chpl}
 In the code
 \begin{chapelpre}
-% forallStmt.chpl
 config const N = 5;
 var a: [1..N] int;
 var b = [i in 1..N] i;
@@ -82,7 +81,7 @@ writeln(a);
 \begin{chapeloutput}
 1 2 3 4 5
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \subsection{Parallelism}
 \label{forall_parallelism}
@@ -158,11 +157,8 @@ used in a zipper context, the left-most iterator determines the number
 of tasks, the iterations each task executes, and the locales on which
 these tasks execute.
 
-\begin{example}
+\begin{chapelexample}{forallExpr.chpl}
 The code
-\begin{chapelpre}
-% forallExpr.chpl
-\end{chapelpre}
 \begin{chapel}
 writeln(+ reduce [i in 1..10] i**2);
 \end{chapel}
@@ -171,7 +167,7 @@ writeln(+ reduce [i in 1..10] i**2);
 \end{chapeloutput}
 applies a reduction to a forall-expression that evaluates the square
 of the indices in the range \chpl{1..10}.
-\end{example}
+\end{chapelexample}
 
 \subsection{Filtering Predicates in Forall Expressions}
 \label{Filtering_Predicates_Forall}
@@ -183,11 +179,10 @@ expression filters the iterations of the forall expression.
 The iterations for which the condition does not hold
 are not reflected in the result of the forall expression.
 
-\begin{example}
+\begin{chapelexample}{forallFilter.chpl}
 The following expression returns every other element starting with the
 first:
 \begin{chapelpre}
-% forallFilter.chpl
 var s: [1..10] int = [i in 1..10] i;
 var result =
 \end{chapelpre}
@@ -201,7 +196,7 @@ writeln(result);
 \begin{chapeloutput}
 1 3 5 7 9
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \section{Whole Array Assignment}
 \index{whole array assignment}

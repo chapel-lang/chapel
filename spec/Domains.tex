@@ -132,18 +132,15 @@ rectangular-domain-type:
 \chpl{rank}, \chpl{idxType}, and \chpl{stridable} to be specified
 using standard type signature.
 
-\begin{example}
+\begin{chapelexample}{typeFunctionDomain.chpl}
 The following declarations both create an unintialized rectangular domain with three dimensions, with \chpl{int} indices:
-\begin{chapelpre}
-% typeFunctionDomain.chpl
-\end{chapelpre}
 \begin{chapel}
 var D1 : domain(rank=3, idxType=int, stridable=false);
 var D2 : domain(3*int);
 \end{chapel}
 \begin{chapeloutput}
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \subsubsection{Rectangular Domain Values}
 \label{Rectangular_Domain_Values}
@@ -806,12 +803,9 @@ proc $Domain$.clear()
 Resets this domain's index set to the empty set.
 \end{protobody}
 
-\begin{example}
+\begin{chapelexample}{emptyEnumeratedDomain}
 In the case of an enumerated domain, this function provides a way to produce an
 empty index set.
-\begin{chapelpre}
-% emptyEnumeratedDomain
-\end{chapelpre}
 \begin{chapel}
 enum Counter { one, two, three };
 var D : domain ( Counter );
@@ -823,7 +817,7 @@ writeln("D has ", D.numIndices, " indices.");
 D has 3 indices.
 D has 0 indices.
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \begin{protohead}
 proc $Domain$.indexOrder(i: index($Domain$)): dim_type

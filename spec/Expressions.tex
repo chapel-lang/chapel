@@ -1181,12 +1181,9 @@ is used to filter predicates as described
 in~\rsec{Filtering_Predicates_For} and~\rsec{Filtering_Predicates_Forall},
 respectively.
 
-\begin{example}
+\begin{chapelexample}{condexp.chpl}
 This example shows how if-then-else can be used in a context in which an
 expression is expected.
-\begin{chapelpre}
-% condexp.chpl
-\end{chapelpre}
 \begin{chapel}
 writehalf(8);
 writehalf(21);
@@ -1202,7 +1199,7 @@ Half of 8 is 4
 Half of 21 is 11
 Half of 1000 is 500
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \section{For Expressions}
 \label{For_Expressions}
@@ -1230,11 +1227,8 @@ expression filters the iterations of the for expression.
 The iterations for which the condition does not hold
 are not reflected in the result of the for expression.
 
-\begin{example}
+\begin{chapelexample}{yieldPredicates.chpl}
 The code
-\begin{chapelpre}
-% yieldPredicates.chpl
-\end{chapelpre}
 \begin{chapel}
 var A = for i in 1..10 do if i % 3 != 0 then i;
 \end{chapel}
@@ -1246,4 +1240,4 @@ writeln(A);
 \end{chapeloutput}
 declares an array A that is initialized to the integers between
 1 and 10 that are not divisible by 3.
-\end{example}
+\end{chapelexample}

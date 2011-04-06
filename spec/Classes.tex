@@ -102,10 +102,7 @@ indirectly, from that class.
 
 The default value of a class type is \chpl{nil}.
 
-\begin{example}
-\begin{chapelpre}
-% declaration.chpl
-\end{chapelpre}
+\begin{chapelexample}{declaration.chpl}
 \begin{chapel}
 class C { }
 var c : C;	// c has the class type C, initialized with the value nil.
@@ -123,7 +120,7 @@ be combined.  The type of \chpl{c2} is also \chpl{C}, determined implicitly from
 the the initialization expression.  Finally, an object of type \chpl{D} is created and
 assigned to \chpl{c}.  The object previously referenced by \chpl{c} is no longer
 referenced anywhere. It could be reclaimed by the garbage collector.
-\end{example}
+\end{chapelexample}
 
 \subsection{Class Fields}
 \label{Class_Fields}
@@ -134,11 +131,8 @@ Variable declarations within a class declaration define
 fields within that class.  Parameter fields make a class generic.
 Variable fields define the storage associated with a class instance.
 
-\begin{example}
+\begin{chapelexample}{defineActor.chpl}
 The code
-\begin{chapelpre}
-% defineActor.chpl
-\end{chapelpre}
 \begin{chapel}
 class Actor {
   var name: string;
@@ -149,7 +143,7 @@ class Actor {
 \end{chapeloutput}
 defines a new class type called \chpl{Actor} that has two fields: the
 string field \chpl{name} and the unsigned integer field \chpl{age}.
-\end{example}
+\end{chapelexample}
 
 Field access is described in \rsec{Class_Field_Accesses}.
 
@@ -400,11 +394,8 @@ When a constructor is called, the usual function resolution mechanism
 (\rsec{Function_Resolution}) is applied to determine which
 user-defined constructor to invoke.
 
-\begin{example}
+\begin{chapelexample}{simpleConstructors.chpl}
 The following example shows a class with two constructors:
-\begin{chapelpre}
-% simpleConstructors.chpl
-\end{chapelpre}
 \begin{chapel}
 class MessagePoint {
   var x, y: real;
@@ -438,7 +429,7 @@ writeln(mp2);
 The first constructor lets the user specify the initial coordinates
 and the second constructor lets the user specify the initial message
 when creating a MessagePoint.
-\end{example}
+\end{chapelexample}
 
 Constructors for generic classes (\rsec{Generic_Types}) handle certain
 arguments differently and may need to satisfy additional
@@ -507,11 +498,8 @@ user-defined constructors are present.}
 % in light of an upcoming discussion (and potential revision) of Chapel's
 % constructor story.
 
-\begin{example}
+\begin{chapelexample}{defaultConstructor.chpl}
 Given the class
-\begin{chapelpre}
-% defaultConstructor.chpl
-\end{chapelpre}
 \begin{chapel}
 class C {
   var x: int;
@@ -544,7 +532,7 @@ The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
 \item The call \chpl{new C(2, z="")} is equivalent to \chpl{C(2,3.14,"")}.
 \item The call \chpl{new C(0,0.0,"")} specifies the initial values for all fields explicitly.
 \end{itemize}
-\end{example}
+\end{chapelexample}
 
 \section{Field Accesses}
 \label{Class_Field_Accesses}
@@ -582,11 +570,10 @@ be modified via an assignment statement where the left-hand side of
 the assignment is a field access expression.
 Accessing a parameter field returns a parameter.
 
-\begin{example}
+\begin{chapelexample}{useActor1.chpl}
 Given a variable \chpl{anActor} of type \chpl{Actor} as defined above,
 the code
 \begin{chapelpre}
-% useActor1.chpl
 use defineActor;
 var anActor = new Actor(name="Tommy", age=26);
 \end{chapelpre}
@@ -603,7 +590,7 @@ writeln((s, anActor));
 reads the field \chpl{name} and assigns the value to the variable
 \chpl{s}, and assigns the field \chpl{age} in the object
 \chpl{anActor} the value \chpl{27}.
-\end{example}
+\end{chapelexample}
 
 \subsection{Variable Getter Methods}
 \label{Getter_Methods}
@@ -615,11 +602,8 @@ methods~(\rsec{Variable_Functions}) defined in the class with the same
 name as the field.  The default getter is defined to simply return the
 field if the user does not redefine it.
 
-\begin{example}
+\begin{chapelexample}{getterSetter.chpl}
 In the code
-\begin{chapelpre}
-% getterSetter.chpl
-\end{chapelpre}
 \begin{chapel}
 class C {
   var setCount: int;
@@ -650,7 +634,7 @@ writeln(c.setCount);
 an explicit variable getter method is defined for field \chpl{x}.  It
 returns the field \chpl{x} and increments another field that records
 the number of times x was assigned a value.
-\end{example}
+\end{chapelexample}
 
 \section{Class Method Calls}
 \label{Class_Method_Calls}
@@ -671,11 +655,10 @@ The receiver-clause (or its absence) specifies the method's receiver
 \rsec{The_em_this_Reference} in the same way it does for field accesses
 \rsec{Class_Field_Accesses}.
 
-\begin{example}
+\begin{chapelexample}{defineMethod.chpl}
 A method to output information about an instance of the \chpl{Actor}
 class can be defined as follows:
 \begin{chapelpre}
-% defineMethod.chpl
 use useActor1;
 \end{chapelpre}
 \begin{chapel}
@@ -692,7 +675,7 @@ Actor Tommy is 27 years old
 \end{chapeloutput}
 This method can be called on an instance of the \chpl{Actor}
 class, \chpl{anActor}, with the call expression \chpl{anActor.print()}.
-\end{example}
+\end{chapelexample}
 
 The actual arguments supplied in the method call are bound to the
 formal arguments in the method declaration following the rules specified for
@@ -715,12 +698,9 @@ as specified in \rsec{Class_Field_Accesses}.
 The receiver formal argument can be referred to within the method
 using the identifier \chpl{this}.
 
-\begin{example}
+\begin{chapelexample}{implicitThis.chpl}
 Let class \chpl{C}, method \chpl{foo}, and function \chpl{bar} be
 defined as
-\begin{chapelpre}
-% implicitThis.chpl
-\end{chapelpre}
 \begin{chapel}
 class C {
   proc foo() {
@@ -739,7 +719,7 @@ c1.foo();
 Then given an instance of \chpl{C} called \chpl{c1}, the method
 call \chpl{c1.foo()} results in a call to \chpl{bar} where the argument
 is \chpl{c1}.
-\end{example}
+\end{chapelexample}
 
 \section{The {\em this} Method}
 \label{The_em_this_Method}
@@ -753,13 +733,10 @@ named \chpl{this}.  There is no other way to call a method
 called \chpl{this}.  The \chpl{this} method must be declared with
 parentheses even if the argument list is empty.
 
-\begin{example}
+\begin{chapelexample}{thisMethod.chpl}
 In the following code, the \chpl{this} method is used to create a
 class that acts like a simple array that contains three integers
 indexed by 1, 2, and 3.
-\begin{chapelpre}
-% thisMethod.chpl
-\end{chapelpre}
 \begin{chapel}
 class ThreeArray {
   var x1, x2, x3: int;
@@ -788,7 +765,7 @@ ta(4) = 4;
 3
 thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \section{The {\em these} Method}
 \label{The_these_Method}
@@ -801,13 +778,10 @@ Using a class in the context of a loop where
 an \sntx{iterator-expression} is expected has the semantics of calling
 a method on the class named \chpl{these}.
 
-\begin{example}
+\begin{chapelexample}{theseIterator.chpl}
 In the following code, the \chpl{these} method is used to create a
 class that acts like a simple array that can be iterated over and
 contains three integers.
-\begin{chapelpre}
-% theseIterator.chpl
-\end{chapelpre}
 \begin{chapel}
 class ThreeArray {
   var x1, x2, x3: int;
@@ -832,7 +806,7 @@ for i in ta do
 3
 \end{chapeloutput}
 
-\end{example}
+\end{chapelexample}
 
 \section{Dynamic Memory Management}
 \label{Dynamic_Memory_Management}
@@ -844,11 +818,10 @@ for i in ta do
 Memory associated with class instances can be reclaimed with the \chpl{delete}
 keyword.
 
-\begin{example}
+\begin{chapelexample}{delete.chpl}
 The following example allocates a new object \chpl{c} of class type \chpl{C}
 and then deletes it.
 \begin{chapelpre}
-% delete.chpl
 class C {
   var i,j,k: int;
 }
@@ -873,7 +846,7 @@ Number of leaked allocations
 ==============================================================
 ==============================================================
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \begin{openissue}
 Chapel was originally specified without a \chpl{delete} keyword.  The intention

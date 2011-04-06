@@ -112,11 +112,8 @@ record type.  The presence of at least one parameter field causes the record
 type to become generic.  Variable fields define the storage associated with a
 record.
 
-\begin{example}
+\begin{chapelexample}{defineActorRecord.chpl}
 The code
-\begin{chapelpre}
-% defineActorRecord.chpl
-\end{chapelpre}
 \begin{chapel}
 record ActorRecord {
   var name: string;
@@ -129,7 +126,7 @@ defines a new record type called \chpl{ActorRecord} that has two fields: the
 string field \chpl{name} and the unsigned integer field \chpl{age}.  The data
 contained by a record of this type is exactly the same as that contained by
 an instance of the \chpl{Actor} class defined in the preceding chapter~\rsec{Class_Fields}.
-\end{example}
+\end{chapelexample}
 
 \subsection{Record Methods}
 \label{Record_Methods}
@@ -171,10 +168,7 @@ their semantics, records can also be legally cast to types with which they have
 no inheritance relationship.  Thus, records do not induce a well-defined type
 hierarchy.
 
-\begin{example}
-\begin{chapelpre}
-% recordInheritance.chpl
-\end{chapelpre}
+\begin{chapelexample}{recordInheritance.chpl}
 \begin{chapel}
 record Center { var x, y: real; }
 record Circle : Center {
@@ -191,7 +185,7 @@ the \chpl{Circle} and \chpl{Ellipse} records.  The \chpl{Circle} record contains
 three \chpl{real} fields named \chpl{x}, \chpl{y} and \chpl{radius}.  The
 \chpl{Ellipse} record contains four \chpl{real} fields named \chpl{x}, \chpl{y},
 \chpl{major} and \chpl{minor}.
-\end{example}
+\end{chapelexample}
 
 The syntax and semantics for accessing methods (including getter methods and
 hence fields) in a base
@@ -296,10 +290,7 @@ to the notion that record types are purely static.
 \end{rationale}
 
 The following example demonstrates record assignment.
-\begin{example}
-\begin{chapelpre}
-% assignment.chpl
-\end{chapelpre}
+\begin{chapelexample}{assignment.chpl}
 \begin{chapel}
 record R {
   var i: int;
@@ -331,7 +322,7 @@ values overwrite both values in \chpl{A}.
 The next clause demonstrates that \chpl{A} and \chpl{C} are distinct entities,
 rather than two references to the same object.  Assigning \chpl{3.14}
 to \chpl{C.x} does not affect the \chpl{x} field in \chpl{A}.
-\end{example}
+\end{chapelexample}
 
 \subsection{Assigning Objects to Records}
 \label{Assigning_Objects_to_Records}
@@ -347,10 +338,7 @@ and the left-hand expression until all elements in the left-hand expression have
 been overwritten.  The types are compatible if a element-wise assignment is
 legal for each pair of elements.
 
-\begin{example}
-\begin{chapelpre}
-% objectAssignment.chpl
-\end{chapelpre}
+\begin{chapelexample}{objectAssignment.chpl}
 \begin{chapel}
 record R {
   var i: int;
@@ -371,7 +359,7 @@ r.i = -3, r.x = 4.0
 \begin{chapelfuture}
 feature request: Allow classes to inherit from records.
 \end{chapelfuture}
-\end{example}
+\end{chapelexample}
 
 Since C is derived from R, its initial fields are in the same order and of the
 same type as in R.  Therefore, assignment from an instance of class \chpl{C} to
@@ -417,10 +405,7 @@ relationship between constructors and type specifiers for classes and
 records.
 \end{rationale}
 
-\begin{example}
-\begin{chapelpre}
-% recordCreation.chpl
-\end{chapelpre}
+\begin{chapelexample}{recordCreation.chpl}
 \begin{chapel}
 record TimeStamp {
   var time: string = "1/1/1011";
@@ -448,7 +433,7 @@ writeln(new UniqueID());
 \end{chapeloutput}
 The variable \chpl{timestampDefault} is initialized with \chpl{TimeStamp}'s
 default initializer. The \chpl{new TimeStamp} expression creates a record that is assigned to \chpl{timestampCustom}, effectively initializing \chpl{timestampCustom} via a call to the constructor with desired arguments. The records created with \chpl{new UniqueID()} are discarded after they are used.
-\end{example}
+\end{chapelexample}
 
 As with classes, the user can provide his own constructors
 (\rsec{User_Defined_Constructors}).  If any user-defined constructors are
@@ -470,10 +455,7 @@ When a record as passed as a function argument, it is copied into
 the corresponding formal argument, consistent with the semantics described for
 record assignment (\rsec{Record_Assignment}).
 
-\begin{example}
-\begin{chapelpre}
-% paramPassing.chpl
-\end{chapelpre}
+\begin{chapelexample}{paramPassing.chpl}
 \begin{chapel}
 record MyColor {
   var color: int;
@@ -504,7 +486,7 @@ in \chpl{mc1}. The record in \chpl{mc2} is not affected by
 the assignment to \chpl{mc1} or by the assignment in \chpl{printMyColor}.
 \chpl{mc2} is affected by the assignment in \chpl{modifyMyColor}
 because the intent \chpl{inout} is used.
-\end{example}
+\end{chapelexample}
 
 \section{Record Field Access}
 \label{Record_Field_Access}

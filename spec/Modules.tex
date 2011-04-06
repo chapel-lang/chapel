@@ -44,12 +44,9 @@ nested module~(\rsec{Nested_Modules}).
 Multiple modules can be defined in the same file and need not bear any
 relation to the file in terms of their names.
 
-\begin{example}
+\begin{chapelexample}{two-modules.chpl}
 The following file contains two explicitly named modules
 (\rsec{Explicit_Naming}), MX and MY.
-\begin{chapelpre}
-% two_modules.chpl
-\end{chapelpre}
 \begin{chapel}
 module MX {
   var x: int = 0;
@@ -75,7 +72,7 @@ MY.printY();
 \end{chapeloutput}
 Module MX defines top-level module symbols x and printX, while MY
 defines top-level module symbols y and printY.
-\end{example}
+\end{chapelexample}
 
 For any file that contains top-level statements other than module
 declarations, the file itself is treated as the module declaration.
@@ -88,12 +85,9 @@ removing the \chpl{.chpl} suffix and any path specification from the
 specified filename.  If the resulting name is not a legal Chapel
 identifier, it cannot be referenced in a use statement.
 
-\begin{example}
+\begin{chapelexample}{implicit.chpl}
 The following file, named myModule.chpl, defines an implicitly named
 module called myModule.
-\begin{chapelpre}
-% implicit.chpl
-\end{chapelpre}
 \begin{chapel}
 var x: int = 0;
 var y: int = 0;
@@ -115,7 +109,7 @@ printY();
 \end{chapeloutput}
 Module myModule defines the top-level module symbols x, y, printX, and
 printY.
-\end{example}
+\end{chapelexample}
 
 
 \section{Nested Modules}
@@ -129,10 +123,9 @@ explicitly use a nested module to have access to its symbols.
 
 A nested module can be used without using the outer module by
 explicitly naming the outer module in the use statement.
-\begin{example}
+\begin{chapelexample}{nested-use.chpl}
 The code
 \begin{chapelpre}
-% nested_use.chpl
 module libsci {
   writeln("Initializing libsci");
   module blas {
@@ -151,18 +144,15 @@ Initializing libsci
 \end{chapeloutput}
 uses a module named \chpl{blas} that is nested inside a module
 named \chpl{libsci}.
-\end{example}
+\end{chapelexample}
 
 Files with both module declarations and top-level statements result in
 nested modules.
 
-\begin{example}
+\begin{chapelexample}{nested.chpl}
 The following file, named myModule.chpl, defines an
 implicitly named module called myModule, with nested modules
 MX and MY.
-\begin{chapelpre}
-% nested.chpl
-\end{chapelpre}
 \begin{chapel}
 module MX {
   var x: int = 0;
@@ -190,7 +180,7 @@ printY();
 0
 0
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 
 \section{Using Modules}
@@ -233,11 +223,8 @@ scope-search mechanism is used starting at the scope containing the
 usage.
 \end{openissue}
 
-\begin{example}
+\begin{chapelexample}{ambiguity.chpl}
 In the following example,
-\begin{chapelpre}
-% ambiguity.chpl
-\end{chapelpre}
 \begin{chapel}
 module M1 {
   var x: int = 1;
@@ -287,7 +274,7 @@ The call to printX() is not ambiguous because M2's definition shadows
 that of M1.  On the other hand, the call to printY() is ambiguous
 because it is defined in both M1 and M3.  This will result in a
 compiler error.
-\end{example}
+\end{chapelexample}
 
 
 \subsection{Module Initialization}
@@ -298,10 +285,9 @@ Module initialization occurs at program start-up.  All top-level
 statements in a module other than function and type declarations are
 executed during module initialization.
 
-\begin{example}
+\begin{chapelexample}{init.chpl}
 In the code,
 \begin{chapelpre}
-% init.chpl
 proc foo() {
     return 1;
 }
@@ -318,7 +304,7 @@ Hi!
 \end{chapeloutput}
 The function foo() will be invoked and its result assigned to x.  Then
 ``Hi!'' will be printed.
-\end{example}
+\end{chapelexample}
 
 Module initialization order is discussed
 in~\rsec{Module_Initialization_Order}.
@@ -349,12 +335,9 @@ compiler on the command line will be searched for main functions
 unless the \emph{-- --main-module} flag is used.
 \end{craychapel}
 
-\begin{example}
+\begin{chapelexample}{main-module.chpl}
 If the following code is compiled without specifying a main module, it
 will yield an error.
-\begin{chapelpre}
-% main_module.chpl
-\end{chapelpre}
 \begin{chapel}
 module M1 {
   const x = 1;
@@ -390,7 +373,7 @@ M2's main
 \end{chapelprintoutput}
 Notice that main is treated like just another function if it is not in
 the main module and can be called as such.
-\end{example}
+\end{chapelexample}
 
 \index{exploratory programming}
 
@@ -401,11 +384,8 @@ To aid in exploratory programming, if the file(s) listed on the
 compiler's command line only define a single module, the module need
 not define a main function.  In this case, a default main function is
 created to execute the module initialization code.
-\begin{example}
+\begin{chapelexample}{no-main.chpl}
 The code
-\begin{chapelpre}
-% no_main.chpl
-\end{chapelpre}
 \begin{chapel}
 writeln("hello, world");
 \end{chapel}
@@ -416,7 +396,7 @@ is a legal and complete Chapel program.  Its initialization function,
 which also serves as the program's main function, is the top-level
 writeln() statement.  The module declaration is taken to be the file
 as described in~\rsec{Implicit_Modules}.
-\end{example}
+\end{chapelexample}
 
 
 \subsection{Module Initialization Order}
@@ -431,11 +411,8 @@ traversal of the graph.  Modules are initialized in the order in which
 they appear in the program text.  For nested modules, uses in the
 parent module are initialized before uses in the nested module.
 
-\begin{example}
+\begin{chapelexample}{init-order.chpl}
 The code
-\begin{chapelpre}
-% init_order.chpl
-\end{chapelpre}
 \begin{chapel}
 module M1 {
   use M2.M3;
@@ -470,4 +447,4 @@ M1, the main module, uses M2.M3 and then M2, thus M2.M3 must be
 initialized.  Because M2.M3 is a nested module, M4 (which is used by
 M2) must be initialized first.  M2 itself is initialized, followed by
 M2.M3.  Finally M1 is initialized, and the main function is run.
-\end{example}
+\end{chapelexample}

@@ -10,14 +10,21 @@
 %
 % Usage:
 %
-% - chapelpre (REQUIRED)
-%   This marks the start of a test.   Any Chapel code in this scope
-%   is put *before* the code in the chapel|chapelcode scope.  The
-%   first line of the scope may specify a test name via a LaTeX
-%   style comment (strongly recommended).
+% - chapelexample (REQUIRED) {f.chpl}
+%   This marks the start of a test.  This environment requires a
+%   single argument that is the name of the Chapel test program.  This
+%   filename will appear in the spec.
+%
+% - chapelpre
+%   Any Chapel code in this scope is put *before* the code in the
+%   chapel|chapelcode scope.
 %
 % - chapelcode|chapel
 %   This is the part of the code that is in the spec.
+%
+% - chapelnoprint
+%   This is the part of the code that goes in the test with chapelcode
+%   and chapel, but does not appear in the spec.
 %   
 % - chapelpost
 %   Any Chapel code in this scope is put *after* the code in the
@@ -60,6 +67,10 @@
 % (before and after the chapel code segment)
 %
 \newenvironment{chapelpre} {\begin{lrbox}{\teststuff}
+\begin{minipage}{6in}}
+{\end{minipage}\end{lrbox}}
+
+\newenvironment{chapelnoprint} {\begin{lrbox}{\teststuff}
 \begin{minipage}{6in}}
 {\end{minipage}\end{lrbox}}
 

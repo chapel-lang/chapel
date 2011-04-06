@@ -7,10 +7,12 @@ man: FORCE
 test: FORCE
 	cd test && start_test
 
-SPECTEST_DIR = ./test/spec/autogen
+SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE
 	rm -rf $(SPECTEST_DIR)
-	util/devel/test/extract_tests -o $(SPECTEST_DIR) spec/*.tex
+	./util/devel/test/extract_tests -o $(SPECTEST_DIR) spec/*.tex
 
 STATUS: STATUS.devel
 	grep -v "^\ *#" STATUS.devel > STATUS
+
+
