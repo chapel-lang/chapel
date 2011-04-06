@@ -16,34 +16,55 @@ var A: [1..size, 1..size] real; // The 2D work array
 // Fill A with random real values between 0 and 1.
 //
 fillRandom(A, seed);
+writeln("A is: "); writeln(A);
+writeln();
 
 //
 // Apply minloc and maxloc reductions. Capture the results into
 // the maxVal, maxLoc, minVal, minLoc variables.
 //
+// maxloc and minloc define reductions which expect a tuple of arrays
+// that can be iterated using zippered iteration 
+// (meaning that the iterator returns one value from each array in a 2-tuple).
+//
+// The reduce operator combines each successive element with a running result
+// which is also a tuple.  The first element of the result tuple is the running
+// maximum (or minimum); the second element is its index (i.e. location).
+//
 var (maxVal, maxLoc) = maxloc reduce (A, A.domain);
 var (minVal, minLoc) = minloc reduce (A, A.domain);
-
-//
-// Compute Euclidean norms for each column using + reductions
-//
-var vecNorms = [j in 1..size] sqrt(+ reduce A(1..size, j)**2);
-
-//
-// Use the && reduction to compute if all values in A are greater than 0.25
-//
-var onlyBigValues = && reduce (A > 0.25);
-
-//
-// Print the results of the reductions
-//
-writeln("A is: "); writeln(A);
 writeln("The maximum value in A is: A", maxLoc, " = ", maxVal);
 writeln("The minimum value in A is: A", minLoc, " = ", minVal);
 writeln("The difference is: ", maxVal - minVal);
-writeln("The Euclidean norms of each column are: ", vecNorms);
+writeln();
 
+//
+// Compute Euclidean norms for each column using + reductions.
+//
+// Breaking down the statement below:
+//  1) vecNorms is a 1-D array containing size elements (indexed by 1..size).
+//  2) The elements of vecNorms are the square-root of some quantity.
+//  3) The quantity is the sum over all of the elements of some vector.
+//  4) The vector consists of the promotion of the j-th column of A by **2.
+//     (That is, each element of that column vector is squared.)
+//
+var vecNorms = [j in 1..size] sqrt(+ reduce A(1..size, j)**2);
+writeln("The Euclidean norm of each column is: ", vecNorms);
+writeln();
+
+//
+// Use the && reduction to compute if all values in A are greater than 0.25.
+//
+// The parenthesized value is the promotion of A by "> 0.25".  This yields
+// an array of the same size as A, contining boolean values that are true
+// if the corresponding element in A exceeds 0.25 and false otherwise.
+//
+// The clause "&& reduce" applies the Boolean AND operator to each element in the
+// array, and accumulates the result.
+//
+var onlyBigValues = && reduce (A > 0.25);
 if onlyBigValues then
   writeln("The values in A are all greater than 0.25");
 else
   writeln("Some values in A are less than 0.25");
+writeln();
