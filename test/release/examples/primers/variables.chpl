@@ -25,6 +25,17 @@ writeln("myVariable2 = ", myVariable2, " (type = ",
         typeToString(myVariable2.type), ")");
 
 //
+// Variables can also be declared using type aliases.  Here we declare
+// a type alias myType to be uint(16) and declare myVariable3 to be of
+// type myType.
+//
+type myType = uint(16);
+var myVariable3: myType = 3;
+writeln("myType = ", typeToString(myType));
+writeln("myVariable3 = ", myVariable3, " (type = ",
+        typeToString(myVariable3.type), ")");
+
+//
 // Instead of 'var', 'const' and 'param' can be used to declare
 // runtime constants and compile-time constants respectively.  A
 // 'const' must be initialized in place, but can have its value
@@ -39,15 +50,18 @@ writeln("myConst = ", myConst, ", myParam = ", myParam);
 // 'config' keyword.  This allows the initial value to be overridden
 // on the command line.  A 'config var' or 'config const' may be
 // overridden when the program is executed; a 'config param' may be
-// overridden when the program is compiled.  The comment following
+// overridden when the program is compiled.  Similarly, type aliases
+// maybe be qualified by the 'config' keyword.  The comment following
 // each declaration shows how the value can be modified.
 //
 config var cfgVar = "hello";         // ./a.out --cfgVar="world"
 config const cfgConst: bool = false; // ./a.out --cfgConst=true
 config param cfgParam = 4;           // chpl variables.chpl -s cfgParam=1
+config type cfgType = complex;       // chpl variables.chpl -s cfgType=imag
 writeln("cfgVar = ", cfgVar,
         ", cfgConst = ", cfgConst,
-        ", cfgParam = ", cfgParam);
+        ", cfgParam = ", cfgParam,
+        ", cfgType = ", typeToString(cfgType));
 
 //
 // Variable types and values propagate to the left.  Here, 'a' is a
