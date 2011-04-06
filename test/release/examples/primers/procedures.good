@@ -5,10 +5,10 @@ Another simple procedure
 33! is 3400198294675128320
 
 Using operator overloading
-down + over = (x = 10.0, y = -5.0)
+down + over = (10.0, -5.0)
 
 Using named arguments
-{center = (x = 2.0, y = 0.0), radius = 1.5}
+{center = (2.0, 0.0), radius = 1.5}
 
 Using the "in" intent
 5 ...

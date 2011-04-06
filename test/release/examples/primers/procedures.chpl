@@ -77,10 +77,14 @@ proc +(p1: Point, p2: Point)
 //
 // We can also overload the writeThis() routine called by writeln.
 //
-proc Point.writeThis()
+proc Point.writeThis(w: Writer)
 {
   // Writes it out as a coordinate pair.
-  write((this.x, this.y));    // "this" is optional; added for clarity.
+  "(".writeThis(w);
+  this.x.writeThis(w);
+  ", ".writeThis(w);
+  this.y.writeThis(w);
+  ")".writeThis(w);
 }
 
 writeln("Using operator overloading");
