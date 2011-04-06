@@ -7,6 +7,7 @@ get started with Chapel program structure:
 
      hello.chpl             : the simplest Chapel "Hello, world!" program
      hello-module.chpl      : a version using a more structured form of Chapel
+     hello-datapar.chpl     : a data parallel version of "Hello, World!"
      hello-multicore.chpl   : a multi-tasking "Hello, world!" program 
      hello-multiloc.chpl    : a multi-locale "Hello, world!" program
 

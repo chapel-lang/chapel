@@ -84,8 +84,8 @@ coforall loc in Locales {
       // Print out the message.  Messages may come out in an arbitrary
       // order due to the use of task parallelism via the coforall
       // loops.  However, the writeln() procedure will prevent
-      // messages from getting spliced together due to fine-grain
-      // I/O races.
+      // messages from being interleaved at a finer level of
+      // granularity.
       //
       writeln(message);
     }

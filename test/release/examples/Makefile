@@ -6,6 +6,7 @@ CHPL = chpl
 TARGETS = \
 	hello \
 	hello-module \
+	hello-datapar \
 	hello-multicore \
 	hello-multiloc \
 

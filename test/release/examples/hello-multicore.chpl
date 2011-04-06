@@ -1,6 +1,6 @@
-/*  This test shows how to use Chapel's task parallel features to
- *  create a parallel hello world program that utilizes multiple cores
- *  on a single locale (node)
+/*  This test uses Chapel's task parallel features to create a
+ *  parallel hello world program that utilizes multiple cores on a
+ *  single locale (node)
  */
 
 
@@ -24,7 +24,7 @@ config const numTasks = here.numCores;
 // Each iteration prints out a message that is unique according to the
 // value of tid.  Due to the task parallelism, the messages may come
 // out in any order.  Hoever, the writeln() procedure will prevent
-// messages from getting spliced together due to fine-grain I/O races.
+// against finer-grained interleaving of the messages themselves.
 //
 coforall tid in 0..#numTasks do
   writeln("Hello, world! (from task " + tid + " of " + numTasks + ")");
