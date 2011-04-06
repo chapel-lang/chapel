@@ -15,30 +15,25 @@ get started with Chapel program structure:
 It also contains subdirectories that contain more interesting
 examples:
 
-     primers/               : introduce Chapel concepts using a narrative flow
-     programs/              : demonstrate Chapel using small programs
-     hpcc/                  : implementations of the HPC Challenge benchmarks
+     primers/   : introduce Chapel concepts narratively for new users
+     programs/  : demonstrate Chapel using small programs/idioms
+     hpcc/      : implementations of the HPC Challenge benchmarks
 
-See the READMEs in each subdirectory for a description of its
+The README.features file in this directory gives an overview of all
+the tests and what language features each one emphasizes.  See each
+subdirectory's README file for additional descriptions of its
 examples.
-
-If you are interested in finding examples that use a specific Chapel
-feature, refer to README.features, which contains a map of which tests
-demonstrate which language features.
 
 
 ------------------
 Building the tests
 ------------------
 
-Most of the examples can be compiled without referring to any
+Most of the examples can be compiled without explicitly listing any
 additional source files.  For example, the canonical "Hello, world!"
 program can be compiled as follows:
 
      chpl -o hello hello.chpl
-
-The hpcc benchmarks each use multiple source files -- see hpcc/README
-for details.
 
 We provide Makefiles in each directory that can be used to build a
 single test in that directory by name:
@@ -46,9 +41,9 @@ single test in that directory by name:
      gmake hello
 
 Alternatively, you can build all the tests in a directory and its
-subdirectories:
+subdirectories by simply using:
 
-     gmake all
+     gmake
 
 
 -----------
@@ -57,11 +52,12 @@ Other files
 
 ./
   Makefile        : Makefile for compiling the examples
-  README.features : maps out which tests use which Chapel features
+  README.features : describes the main features exercised by each test
   README.testing  : provides an introduction to using the Chapel testing system
   start_test      : the main script for the Chapel testing system
   Logs/           : directory created by the test system to store logs
-  NUMLOCALES      : used by the Chapel testing system -- see README.testing
+  COMPOPTS        : used by the Chapel testing system -- see README.testing
+  NUMLOCALES      : "
   PREDIFF         : "
   *.compopts      : "
   *.execopts      : "
