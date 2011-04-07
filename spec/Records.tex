@@ -76,6 +76,10 @@ incongruous with the definition of a record.  Moreover, space would have to be
 allocated in this special case, to store the record's run-time type.
 \end{rationale}
 
+\begin{future}
+Record inheritance is not yet implemented.
+\end{future}
+
 As in a class declarations, the body of a record declaration can contain
 variable, iterator and function declarations as well as nested type declarations.
 
@@ -168,28 +172,34 @@ their semantics, records can also be legally cast to types with which they have
 no inheritance relationship.  Thus, records do not induce a well-defined type
 hierarchy.
 
-\begin{chapelexample}{recordInheritance.chpl}
-\begin{chapel}
-record Center { var x, y: real; }
-record Circle : Center {
-  var radius: real;
-}
-record Ellipse : Center {
-  var major, minor: real;
-}
-\end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
-The record \chpl{Center} is defined and used as a shorthand in defining
-the \chpl{Circle} and \chpl{Ellipse} records.  The \chpl{Circle} record contains
-three \chpl{real} fields named \chpl{x}, \chpl{y} and \chpl{radius}.  The
-\chpl{Ellipse} record contains four \chpl{real} fields named \chpl{x}, \chpl{y},
-\chpl{major} and \chpl{minor}.
-\end{chapelexample}
+% \begin{chapelexample}{recordInheritance.chpl}
+% \begin{chapel}
+% record Center { var x, y: real; }
+% record Circle : Center {
+%   var radius: real;
+% }
+% record Ellipse : Center {
+%   var major, minor: real;
+% }
+% \end{chapel}
+% \begin{chapeloutput}
+% \end{chapeloutput}
+% The record \chpl{Center} is defined and used as a shorthand in defining
+% the \chpl{Circle} and \chpl{Ellipse} records.  The \chpl{Circle} record contains
+% three \chpl{real} fields named \chpl{x}, \chpl{y} and \chpl{radius}.  The
+% \chpl{Ellipse} record contains four \chpl{real} fields named \chpl{x}, \chpl{y},
+% \chpl{major} and \chpl{minor}.
+% \end{chapelexample}
 
 The syntax and semantics for accessing methods (including getter methods and
 hence fields) in a base
 record type is the same as for accessing fields in a base class (\rsec{Accessing_Base_Class_Fields}).
+
+\begin{future}
+Record inheritance has not yet been implemented.
+A compile-time error will be generated if a \sntx{record-inherit-list} is
+supplied in a record declaration.
+\end{future}
 
 \subsection{Shadowing Base Record Fields}
 \label{Shadowing_Base_Record_Fields}
@@ -217,6 +227,10 @@ The identical signature requires that the names, types, and order of
 the formal arguments be identical. The return type of the overriding
 method must be the same as the return type of the base record's method,
 or must be a subrecord of the base record method's return type.
+
+\begin{future}
+Record inheritance has not yet been implemented.
+\end{future}
 
 \section{Record Variable Declarations}
 \label{Record_Variable_Declarations}

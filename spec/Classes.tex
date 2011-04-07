@@ -32,13 +32,11 @@ class-declaration-statement:
     class-statement-list[OPT] }
 
 class-inherit-list:
-  : class-or-record-type-list
+  : class-type-list
 
-class-or-record-type-list:
+class-type-list:
   class-type
-  record-type
-  class-type , class-or-record-type-list
-  record-type , class-or-record-type-list
+  class-type , class-type-list
 
 class-statement-list:
   class-statement
@@ -53,8 +51,16 @@ class-statement:
 
 A \sntx{class-declaration-statement} defines a new type symbol
 specified by the identifier.  Classes inherit data and functionality
-from other classes and/or records if the \sntx{inherit-type-list} is specified.
+from other classes %and/or records
+if the \sntx{inherit-type-list} is specified.
 Inheritance is described in~\rsec{Inheritance}.
+
+\begin{future}
+Record inheritance is not currently implemented.  When enabled, it will have the
+same effect as creating a field of that record type within the class, except
+that all of the record's field and method names will appear within the scope of
+the inheriting class.
+\end{future}
 
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
@@ -205,11 +211,13 @@ an acyclic tree.  A variable containing an instance of class \chpl{C} can be
 cast to any type that is an ancestor of \chpl{C}.  Note that casts to more- and
 less-derived classes are both permitted.
 
+\begin{future}
 A derived class may also incorporate any number of records by listing them
 in the derived class declaration.
 As with record inheritance, this has the effect of injecting the record's fields and
 methods into the new class type.  Record inheritance does not induce a
 well-defined class hierarchy.  See~\rsec{Record_Inheritance} for details.
+\end{future}
 
 \subsection{The object Class}
 \label{The_object_Class}
@@ -234,7 +242,8 @@ in~\rsec{Overriding_Base_Class_Methods}.
 \index{constructors!for derived classes}
 
 The default initializer of a derived class automatically calls the default
-initializer of each of its base classes and records.  The same is not true for constructors:
+initializer of each of its base classes %and records.  
+The same is not true for constructors:
 To initialize inherited fields to anything other than its default-initialized
 value, a constructor defined in a derived class must either call base class
 constructors or manipulate those base-class fields directly.
