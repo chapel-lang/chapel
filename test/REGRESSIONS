@@ -167,10 +167,6 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-failure to open file (03/30/11)
--------------------------------
-[Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
-
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc] (03/21/11)
