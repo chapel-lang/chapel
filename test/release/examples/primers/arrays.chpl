@@ -1,5 +1,5 @@
 /*
- * This example is written to demonstrate arithmetic array features in
+ * This example is written to demonstrate rectangular array features in
  * Chapel in a tutorial-like fashion.
  *
  */
@@ -7,7 +7,7 @@
 //
 // Arrays in Chapel are specified using a square-bracketed expression
 // that specifies the array's index set, followed by the array's
-// element type.  Arithmetic arrays are those whose indices are
+// element type.  Rectangular arrays are those whose indices are
 // integers or tuples of integers, supporting standard
 // multidimensional, rectilinear array support.
 //
