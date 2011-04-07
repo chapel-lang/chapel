@@ -3,7 +3,7 @@
 // distributions.  To use these distributions in a Chapel program,
 // the respective module must be used:
 //
-use BlockDist, CyclicDist, BlockCycDist;
+use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist;
 
 //
 // For each distribution, we'll create a distributed domain and array
@@ -102,3 +102,84 @@ forall bca in BCA do
 writeln("Block-Cyclic Array Index Map");
 writeln(BCA);
 writeln();
+
+
+//
+// The ReplicatedDist distribution is different: each of the
+// original domain's indices - and the corresponding array elements -
+// is replicated onto each locale. (Note: consistency among these
+// array replicands is NOT maintained automatically.)
+// We will see some cases when this replication is and is not observable.
+//
+const ReplicatedSpace = Space dmapped ReplicatedDist();
+var RA: [ReplicatedSpace] int;
+
+// The replication is observable - this visits each replicand.
+forall ra in RA do
+  ra = here.id;
+
+writeln("Replicated Array Index Map, ", RA.numElements, " elements total");
+writeln(RA);
+writeln();
+
+//
+// The replication is observable when the replicated array is
+// on the left-hand side. If the right-hand side is not replicated,
+// it is copied into each replicand.
+// We illustrate this using a non-distributed array.
+//
+var A: [Space] int = [(i,j) in Space] i*100 + j;
+RA = A;
+writeln("Replicated Array after being array-assigned into");
+writeln(RA);
+writeln();
+
+//
+// Analogously, each replicand will be visited and
+// other participated expressions will be computed on each locale
+// (a) when the replicated array is assigned a scalar:
+//       RA = 5;
+// (b) when it appears first in a zippered forall loop:
+//       forall (ra, a) in (RA, A) do ...;
+// (c) when it appears in a for loop:
+//       for ra in RA do ...;
+//
+// Zippering (RA,A) or (A,RA) in a 'for' loop will generate
+// an error due to their different number of elements.
+
+// Let RA store the Index Map again, for the examples below.
+forall ra in RA do
+  ra = here.id;
+
+//
+// Only the local replicand is accessed - replication is NOT observable
+// and consistency is NOT maintained - when:
+// (a) the replicated array is indexed - an individual element is read...
+//
+on Locales(0) do
+  writeln("on ", here, ": ", RA(Space.low));
+on Locales(LocaleSpace.high) do
+  writeln("on ", here, ": ", RA(Space.low));
+writeln();
+
+// ...or an individual element is written...
+on Locales(LocaleSpace.high) do
+  RA(Space.low) = 7777;
+
+writeln("Replicated Array after being indexed into");
+writeln(RA);
+writeln();
+
+//
+// (b) the replicated array is on the right-hand side of an assignment...
+//
+on Locales(LocaleSpace.high) do
+  A = RA + 4;
+writeln("Non-Replicated Array after assignment from Replicated Array + 4");
+writeln(A);
+writeln();
+
+//
+// (c) does not appear first in a zippered forall loop:
+//       forall (a, ra) in (A, RA) do ...;
+//

@@ -20,7 +20,9 @@ Replication over locales is observable:
 - when printing with write() et al.
 - when zippering and the replicated domain/array is
   the first among the zippered items
+- when assigning into the replicated array
 - when inquiring about the domain's numIndices
+  or the array's numElements
 - when accessing array element(s) from a locale that was not included
   in the array passed explicitly to the ReplicatedDist constructor,
   an out-of-bounds error will result
@@ -33,7 +35,9 @@ Only the replicand *on the current locale* is accessed
 - when indexing into an array
 - when slicing an array  TODO: right?
 - when zippering and the first zippered item is not replicated
-- when there is only a single locale (trivially)
+- when assigning to a non-replicated array,
+  i.e. the replicated array is on the right-hand side of the assignment
+- when there is only a single locale (trivially: only one replicand)
 
 E.g. when iterating, the number of iterations will be (the number of
 locales involved) times (the number of iterations over this domain if
