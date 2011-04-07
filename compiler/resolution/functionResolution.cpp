@@ -4349,6 +4349,13 @@ resolve() {
     }
   }
 
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED)) {
+      resolveFormals(fn);
+      resolveFns(fn);
+    }
+  }
+
   // need to handle enumerated types better
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (EnumType* et = toEnumType(type->type)) {

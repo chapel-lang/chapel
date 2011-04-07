@@ -21,6 +21,7 @@ void complex2record();
 void copyPropagation();
 void cullOverReferences();
 void deadCodeElimination();
+void earlyTypeCheck();
 void flattenClasses();
 void flattenFunctions();
 void gpuFlattenArgs();
