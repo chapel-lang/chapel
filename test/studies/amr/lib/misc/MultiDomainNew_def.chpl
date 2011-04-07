@@ -7,21 +7,21 @@ proc main {
   
       
   var mD = new MultiDomainNew( 2, false );
-  mD.add( [1..10,1..10] );
+  mD.add( [1..6,1..8] );
   
   
-  mD.subtract( [3..5, 4..6] );
-  mD.subtract( [7..8, 2..9] );  
-  mD.add( [11..12, 13..14] );  
+  mD.subtract( [4..5, 2..5] );
+  // mD.subtract( [7..8, 2..9] );  
+  // mD.add( [11..12, 13..14] );  
 
   mD.prettyPrint();
-    
-  mD.subtract( [-3..15, -3..15] );
+  
+  // mD.subtract( [-3..15, -3..15] );
+  // // 
+  // // mD.add( [1..10,1..10] );
   // 
-  // mD.add( [1..10,1..10] );
-
-  writeln("");  
-  mD.prettyPrint();
+  // writeln("");  
+  // mD.prettyPrint();
   
   
   for node in mD.nodes() {

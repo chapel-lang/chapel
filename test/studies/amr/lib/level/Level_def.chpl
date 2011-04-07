@@ -77,19 +77,21 @@ class Level {
     dx = (x_high - x_low) / n_cells;
 
 
-    //==== Possible cells ====
+    //---- Possible cells ----
     var ranges: dimension*range(stridable = true);
-    for d in dimensions do
-      ranges(d) = ((1.. by 2) #n_cells(d)).alignHigh();
+    for d in dimensions do ranges(d) = 1 .. 2*n_cells(d)-1 by 2;
     possible_cells = ranges;
 
-    //==== Possible ghost cells ====
+
+    //---- Possible ghost cells ----
     //---------------------------------------------------------------
     // The 'expand' method of an arithmetic domain extends both its
     // lower and upper bounds by the input.  In this case, the input
     // must be multiplied by 2 because a cell is 2 indices wide.
     //---------------------------------------------------------------
+
     possible_ghost_cells = possible_cells.expand(2*n_ghost_cells);    
+
   }
   // /|''''''''''''''''''''/|
   //< |    constructor    < |

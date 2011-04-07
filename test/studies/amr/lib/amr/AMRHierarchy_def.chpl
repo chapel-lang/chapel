@@ -72,7 +72,7 @@ class AMRHierarchy {
     ref_ratio:         dimension*int,
     target_efficiency: real,
     flagger:           Flagger,
-    initialCondition:  func(dimension*real, real))
+    initialCondition:  func(dimension*real, real) )
   {
 
     this.x_low             = x_low;
@@ -85,7 +85,8 @@ class AMRHierarchy {
     this.flagger           = flagger;
 
 
-    //==== Create the top level ====
+    //---- Create the base level ----
+    
     levels(1) = new Level(x_low = x_low,  x_high = x_high,
                           n_cells       = n_coarsest_cells,
                           n_ghost_cells = n_ghost_cells);
@@ -95,7 +96,8 @@ class AMRHierarchy {
     physical_boundaries(1) = new PhysicalBoundary(levels(1));
 
 
-    //==== Create top solution ====
+    //---- Create base solution ----
+    
     level_solutions(1) = new LevelSolution(levels(1));
     level_solutions(1).setToFunction(initialCondition, time);
     
@@ -357,12 +359,15 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
   
   
   //---- Flag the level being refined ----
+
   var flags: [levels(i_refining).possible_cells] bool;
   flagger.setFlags(level_solutions(i_refining), flags);
   
   
   //---- Add flags for the level below the new one, if needed ----
-  if i_refining+2 <= n_levels {    
+
+  if i_refining+2 <= n_levels 
+  {    
     for super_fine_grid in levels(i_refining+2).grids {
       var cells_to_flag = coarsen( coarsen(super_fine_grid.cells, ref_ratio), ref_ratio);
       flags(cells_to_flag) = true;
@@ -370,15 +375,15 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
   }
   
   
-  
   //---- Add buffer region ----
+
   var buffered_flags = buffer(flags);
   
-  
-  
+    
   //---- Partition ----
+
   const min_width: dimension*int = 2;
-  var partitioned_domains = partitionFlags(buffered_flags, target_efficiency, min_width);
+  var partitioned_domains = partitionFlags( buffered_flags, target_efficiency, min_width );
   
     
   
@@ -430,8 +435,8 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
     for adjacent_coarse_domain in adjacent_coarse_region do
       properly_nested_domains.subtract( adjacent_coarse_domain.expand(2) );
     
-    for D in properly_nested_domains {
-      domains_to_refine.add( D );
+    for E in properly_nested_domains {
+      domains_to_refine.add( E );
     }
 
     delete adjacent_coarse_region;
@@ -647,7 +652,7 @@ class Flagger {
 // parameters to be changed without recompiling the code.
 //-----------------------------------------------------------------
 
-proc AMRHierarchy.AMRHierarchy(
+proc AMRHierarchy.AMRHierarchy (
   file_name:  string,
   flagger:    Flagger,
   inputIC:    func(dimension*real,real))

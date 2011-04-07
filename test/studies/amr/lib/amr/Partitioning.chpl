@@ -8,14 +8,16 @@ use BasicDataStructures;
 //|/______________________________|/
 
 //---------------------------------------------------------
-// Returns a MultiDomain that partitions the boolean array
-// 'flags' with the target efficiency, if possible.
+// Returns a List of domains that partitions the boolean 
+// array 'flags' with the target efficiency, if possible.
+// Clustering is performed by the Berger-Rigoutsos
+// algorithm.
 //---------------------------------------------------------
 
 proc partitionFlags (
   flags:             [?full_domain] bool, 
   target_efficiency: real,
-  min_width:         full_domain.rank*int)
+  min_width:         full_domain.rank*int )
 {
     
   param rank = full_domain.rank;
@@ -127,10 +129,10 @@ class CandidateDomain {
     for d in 1..rank do
       signatures(d) = new ArrayWrapper( [D.dim(d)] );
       
-    for idx in D {
+    for idx in D 
+    {
       if flags(idx) then
-        for d in 1..rank do
-          signatures(d).array(idx(d)) += 1;
+        for d in 1..rank do signatures(d).array(idx(d)) += 1;
     }
 
 
