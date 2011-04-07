@@ -639,35 +639,35 @@ output being treated as binary causing diff message to change (05/08/10)
 cray-xt-cray/cce-specific regressions
 =====================================
 
-incorrect output (integral?) (01/24/11)
+incorrect output (integral?) (01/24/11) -- should now be fixed
 ---------------------------------------
 [Error matching program output for modules/sungeun/test_safeSub]
 [Error matching program output for functions/deitz/nested/test_nested_write]
 
-incorrect output (floating point?) (01/24/11)
+incorrect output (floating point?) (01/24/11) -- should now be fixed
 ---------------------------------------------
 [Error matching program output for performance/sungeun/assign]
 [Error matching program output for performance/sungeun/dgemm]
 
-output incorrect (12/26/10)
+output incorrect (12/26/10) -- should now be fixed
 ---------------------------
 [Error matching program output for functions/deitz/test_default_conditional]
 
-ccom seg fault (06/21/10)
+ccom seg fault (06/21/10) -- should now be fixed
 -------------------------
 [Error matching compiler output for trivial/bradc/whilescope]
 [Error matching compiler output for trivial/deitz/test_multi_decl4]
 
-wrong answer (02/27/10, but hadn't run well in awhile)
-------------------------------------------------------
+wrong answer (02/27/10, but hadn't run well in awhile) -- possibly a CCE bug?
+-----------------------------------------------------------------------------
 [Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
 
 consistent compilation timeout
 ------------------------------
 [Error: Timed out compilation for arrays/deitz/many/test_many_arrays_of_records]
 
-wrong result -- bug in compiler?
---------------------------------
+wrong result due to reliance on wraparound in signed integers in test itself
+----------------------------------------------------------------------------
 [Error matching program output for expressions/bradc/uminusVsTimesPrec]
 
 warning about integer conversion causing change in sign
@@ -675,8 +675,8 @@ warning about integer conversion causing change in sign
 [Error matching program output for reductions/deitz/test_scan1]
 [Error matching program output for trivial/waynew/identity]
 
-error differs
--------------
+error differs but within acceptable margin; should squash error printing
+------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
 
 precision issues (?) -- is there a floating point flag we need to throw?
