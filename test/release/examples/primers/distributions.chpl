@@ -109,7 +109,9 @@ writeln();
 // original domain's indices - and the corresponding array elements -
 // is replicated onto each locale. (Note: consistency among these
 // array replicands is NOT maintained automatically.)
-// We will see some cases when this replication is and is not observable.
+//
+// This replication is observable in some cases but not others,
+// as shown below. Note: this behavior may change in the future.
 //
 const ReplicatedSpace = Space dmapped ReplicatedDist();
 var RA: [ReplicatedSpace] int;

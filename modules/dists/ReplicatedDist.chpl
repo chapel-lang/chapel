@@ -43,6 +43,8 @@ E.g. when iterating, the number of iterations will be (the number of
 locales involved) times (the number of iterations over this domain if
 it were distributed with the default distribution).
 
+Note that the above behavior may change in the future.
+
 Features/limitations:
 * Consistency/coherence among replicands' array elements is NOT maintained.
 * Only rectangular domains are presently supported.
