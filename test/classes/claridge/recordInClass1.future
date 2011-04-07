@@ -1,0 +1,16 @@
+bug: memory corruption
+
+Note: recordInClass1 and recordInClass2 are essentially the same.
+
+Symptoms:
+- recordInClass1 segfaults on Claridge's mac (when it was filed).
+- recordInClass2 segfaults on lnx-vass and on chap10.
+- recordInClass1 fails valgrind testing.
+  recordInClass2 will most likely fail valgrind as well
+  (it has been marked as a future so it has not been tested).
+
+Triage: a chunk of memory is chpl_free'ed but is still referenced
+(and modified) through another pointer. Valgrind points straight
+to the C code and address where that modification happens.
+It is the C representation of Chapel's 'c.r' that seems to get corrupted,
+possibly during the call to writeln().
