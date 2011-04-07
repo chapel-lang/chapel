@@ -167,10 +167,6 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-lots of debugging output? (Brad probably moved test incorrectly?) (04/06/11)
-----------------------------------------------------------------------------
-[Error matching program output for multirealm/multirealm]
-
 failure to open file (03/30/11)
 -------------------------------
 [Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
@@ -238,7 +234,7 @@ timeouts for all multilocale testing
 [Error: Timed out executing program release/examples/hpcc/stream-ep]
 [Error: Timed out executing program release/examples/hpcc/stream]
 [Error: Timed out executing program release/examples/primers/distributions]
-[Error: Timed out executing program release/examples/primers/multilocale]
+[Error: Timed out executing program release/examples/primers/locales]
 [Error: Timed out executing program release/examples/primers/multirealm]
 
 nondet. problems due to "address already in use" errors
@@ -919,10 +915,11 @@ sig_send: wait for sig_complete event failed
 xmt-specific regressions
 ========================
 
-array index out of bounds (04/02/11)
-------------------------------------
+array index out of bounds due to bug in XMT compiler
+----------------------------------------------------
 [Error matching program output for release/examples/hpcc/hpl]
 [Error matching program output for release/examples/hpcc/ptrans]
+[Error matching program output for release/examples/primers/distributions]
 
 sparse regression recurred after latest range changes (03/17/11)
 ----------------------------------------------------------------
