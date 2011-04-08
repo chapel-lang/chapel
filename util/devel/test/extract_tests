@@ -50,6 +50,25 @@ import os, sys
 # Helper functions
 #
 
+# read file removing lines starting with the comment character
+def ReadFileWithComments(f):
+    # sys.stdout.write('Opening: %s\n'%(f))
+    myfile = open(f, 'r')
+    mylines = myfile.readlines()
+    myfile.close()
+    mylist=list()
+    for line in mylines:
+        line = line.strip()
+        pos = line.find('%')
+        if pos > -1:
+            line = line[:pos+1]
+        line = line.strip()
+        # ignore blank lines
+        if not line: continue
+        # ignore comments
+        mylist.append(line)
+    return mylist
+
 # Extract the good file name from a source line
 def GetGoodName(line):
     outfile = line.strip().strip('%').strip().replace('.good', '')
@@ -259,12 +278,10 @@ currTestName = None
 
 for infile in args:
     #
-    # Open the input file
+    # Read the input file
     #
     realinfile = os.path.realpath(infile)
-    fh = open(realinfile, 'r')
-    myLines = fh.readlines()
-    fh.close()
+    myLines = ReadFileWithComments(realinfile)
 
     # Clean up table of testname
     del currTestNames[:]
@@ -313,7 +330,7 @@ for infile in args:
                 sys.stdout.write('>>> %s\n'%(line))
             if (line.find('example}{', pos) == pos):
                 testlineno = lineno
-                currTestName = line[pos+9:-2]
+                currTestName = line[pos+9:-1]
                 current = None
                 if options.debug:
                     sys.stdout.write('>>> Found Chapel test example: %s\n'%(currTestName))
