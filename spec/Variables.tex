@@ -161,7 +161,7 @@ All variables defined in the same \sntx{identifier-list} are defined
 such that they have the same type and value, and so that the type and
 initialization expression are evaluated only once.
 
-\begin{example}
+\begin{chapelexample}{multiple.chpl}
 In the declaration
 \begin{chapel}
 proc g() { writeln("side effect"); return "a string"; }
@@ -173,7 +173,10 @@ type \chpl{int} and are initialized to the default value of \chpl{0}.
 Variables \chpl{e} and \chpl{f} are of type \chpl{string} with
 value \chpl{"a string"}.  The string \chpl{"side effect"} has been
 written to the display once.  It is not evaluated twice.
-\end{example}
+\begin{chapeloutput}
+side effect
+\end{chapeloutput}
+\end{chapelexample}
 
 The exact way that multiple variables are declared is defined as
 follows:
@@ -360,11 +363,17 @@ these means can be an arbitrary Chapel expression as long as the
 expression can be evaluated at compile-time.  If present, the value thus
 supplied overrides the default value appearing in the Chapel code.
 
-\begin{example}
+\begin{chapelexample}{config-param.chpl}
 For example,
 \begin{chapel}
 config param rank = 2;
 \end{chapel}
+\begin{chapelnoprint}
+writeln(rank);
+\end{chapelnoprint}
+\begin{chapeloutput}
+2
+\end{chapeloutput}
 sets a integer parameter \chpl{rank} to \chpl{2}.  At
 compile-time, \chpl{rank} can be set via a configuration file or compile-line
 override to \chpl{3} or \chpl{2*n}\footnote{It is assumed here that \chpl{n} is
@@ -372,4 +381,4 @@ also a param variable.} or indeed to any other expression
 that can be evaluated at compile-time.  The value supplied at compile time
 overrides the value \chpl{2} appearing in the code.  In this example, the \chpl{rank}
 configuration variable can be used to write rank-independent code.
-\end{example}
+\end{chapelexample}
