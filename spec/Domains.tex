@@ -147,8 +147,8 @@ var D2 : domain(3*int);
 \index{rectangular domains!values}
 \index{domains!values!rectangular}
 
-A rectangular domain's value is represented as \chpl{rank} ranges of
-type \chpl{range(idxType,} \chpl{ BoundedRangeType.bounded,} \chpl{
+Each dimension of a rectangular domain is a range of
+type \chpl{range(idxType,} \chpl{BoundedRangeType.bounded,} \chpl{
 stridable)}.  The index set for a rank~1 domain is the set of indices
 described by its singleton range.  The index set for a rank~$n$
 domain is the set of all \chpl{n*idxType} tuples described by the
@@ -202,8 +202,10 @@ Otherwise, the domain literal is invalid.
 \begin{example}
 The expression \chpl{[1..5, 1..5]} defines a rectangular domain with
 type \chpl{domain(rank=2,} \chpl{ idxType=int,} \chpl{ strided=false)}.
-It is a $5 \times 5$ 
-domain with the indices $(1, 1), (1, 2), \ldots, (1, 5), (2, 1), \ldots (5, 5)$.
+It is a $5 \times 5$ domain with the indices:
+\begin{equation}
+(1, 1), (1, 2), \ldots, (1, 5), (2, 1), \ldots (5, 5).
+\end{equation}
 \end{example}
 
 A domain expression may contain bounds which are evaluated at runtime.
@@ -228,8 +230,23 @@ values for type:
 \chpl{range(idxType, BoundedRangeType.bounded, stridable)}
 \end{quote}
 
-% TODO: example here
-% I need a hint on what you want here. -- THH
+\begin{chapelexample}{rectangularDomain.chpl}
+The following creates a two-dimensional rectangular domain and then uses this to
+declare an array.  The domain's \chpl{dim()} accessor is used to fill the array with
+some values.  Then it is printed out.
+\begin{chapel}
+var D : domain(2) = [1..2, 1..7];
+var A : [D] int;
+for i in D.dim(1) do
+  for j in D.dim(2) do
+    A[i,j] = 7 * i**2 + j;
+writeln(A);
+\end{chapel}
+\begin{chapeloutput}
+8 9 10 11 12 13 14
+29 30 31 32 33 34 35
+\end{chapeloutput}
+\end{chapelexample}
 
 \subsection{Associative Domains}
 

@@ -453,11 +453,8 @@ requirements. See Section~\ref{Generic_User_Constructors} for details.
 A compiler-generated constructor for a class is created automatically
 if there are no constructors for that class in the program.
 The compiler-generated constructor has one argument for every field in the class.
-%REVIEW: hilde
-% Do you really want to say this ? {
 The list of fields (and hence arguments) includes fields inherited from superclasses, type aliases
 and parameter fields, if any.
-% }
 The order of the arguments in the argument list matches the order of the field declarations
 within the class, with the arguments for a superclass's fields occurring
 before the arguments for the fields declared in current class.

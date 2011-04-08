@@ -58,9 +58,15 @@ record-statement:
 \end{syntax}
 
 A \sntx{record-declaration-statement} defines a new type symbol specified by the
-identifier.  A record inherits data and functionality from other records
+identifier.  A record inherits data \[and methods\] from other records
 if the \sntx{record-inherit-list} is specified.  A record type can inherit from
 other record types, but not from class types.
+
+\begin{future}
+Records should inherit methods as well.  A record of a derived type contains all
+of the fields of the base record type, so a method in the base class should work
+without modification if invoked through a derived record instance.
+\end{future}
 
 \begin{rationale}
 Inheritance implies that the derived type can be cast to one of its base types.
@@ -75,10 +81,6 @@ record's type is supposed to be determined at compile time, this is a bit
 incongruous with the definition of a record.  Moreover, space would have to be
 allocated in this special case, to store the record's run-time type.
 \end{rationale}
-
-\begin{future}
-Record inheritance is not yet implemented.
-\end{future}
 
 As in a class declarations, the body of a record declaration can contain
 variable, iterator and function declarations as well as nested type declarations.
@@ -158,7 +160,7 @@ means of an \chpl{outer} reference.
 \index{inheritance!records}
 
 A \emph{derived} record type can inherit from other record types.  For each named
-base record type, inheritance effectively inserts all of its fields and methods
+base record type, inheritance effectively inserts all of its fields \[and methods\]
 into the new record type.  Inheriting from a class type is not permitted.
 
 Since record types are resolved statically, there is no type hierarchy implied
@@ -172,34 +174,28 @@ their semantics, records can also be legally cast to types with which they have
 no inheritance relationship.  Thus, records do not induce a well-defined type
 hierarchy.
 
-% \begin{chapelexample}{recordInheritance.chpl}
-% \begin{chapel}
-% record Center { var x, y: real; }
-% record Circle : Center {
-%   var radius: real;
-% }
-% record Ellipse : Center {
-%   var major, minor: real;
-% }
-% \end{chapel}
-% \begin{chapeloutput}
-% \end{chapeloutput}
-% The record \chpl{Center} is defined and used as a shorthand in defining
-% the \chpl{Circle} and \chpl{Ellipse} records.  The \chpl{Circle} record contains
-% three \chpl{real} fields named \chpl{x}, \chpl{y} and \chpl{radius}.  The
-% \chpl{Ellipse} record contains four \chpl{real} fields named \chpl{x}, \chpl{y},
-% \chpl{major} and \chpl{minor}.
-% \end{chapelexample}
+\begin{chapelexample}{recordInheritance.chpl}
+\begin{chapel}
+record Center { var x, y: real; }
+record Circle : Center {
+  var radius: real;
+}
+record Ellipse : Center {
+  var major, minor: real;
+}
+\end{chapel}
+\begin{chapeloutput}
+\end{chapeloutput}
+The record \chpl{Center} is defined and used as a shorthand in defining
+the \chpl{Circle} and \chpl{Ellipse} records.  The \chpl{Circle} record contains
+three \chpl{real} fields named \chpl{x}, \chpl{y} and \chpl{radius}.  The
+\chpl{Ellipse} record contains four \chpl{real} fields named \chpl{x}, \chpl{y},
+\chpl{major} and \chpl{minor}.
+\end{chapelexample}
 
 The syntax and semantics for accessing methods (including getter methods and
 hence fields) in a base
 record type is the same as for accessing fields in a base class (\rsec{Accessing_Base_Class_Fields}).
-
-\begin{future}
-Record inheritance has not yet been implemented.
-A compile-time error will be generated if a \sntx{record-inherit-list} is
-supplied in a record declaration.
-\end{future}
 
 \subsection{Shadowing Base Record Fields}
 \label{Shadowing_Base_Record_Fields}
@@ -227,10 +223,6 @@ The identical signature requires that the names, types, and order of
 the formal arguments be identical. The return type of the overriding
 method must be the same as the return type of the base record's method,
 or must be a subrecord of the base record method's return type.
-
-\begin{future}
-Record inheritance has not yet been implemented.
-\end{future}
 
 \section{Record Variable Declarations}
 \label{Record_Variable_Declarations}
@@ -342,6 +334,9 @@ to \chpl{C.x} does not affect the \chpl{x} field in \chpl{A}.
 \label{Assigning_Objects_to_Records}
 \index{records!assignment!objects}
 
+Assignment between objects and records has not yet been implemented.
+
+\begin{future}
 An object (class instance) can be assigned to a record.  The same rules apply as
 those that govern the assignment of one record to another.  Namely, the type on
 the right-hand side must initially contain all of the fields --- in the same
@@ -352,34 +347,35 @@ and the left-hand expression until all elements in the left-hand expression have
 been overwritten.  The types are compatible if a element-wise assignment is
 legal for each pair of elements.
 
-\begin{chapelexample}{objectAssignment.chpl}
-\begin{chapel}
-record R {
-  var i: int;
-  var x: real;
-}
-class C : R {
-  var u: uint;
-}
-
-var c = new C(-3, 4.0, 5);
-var r: R;
-r = c;
-writeln("r.i = ", r.i, ", r.x = ", r.x);
-\end{chapel}
-\begin{chapeloutput}
-r.i = -3, r.x = 4.0
-\end{chapeloutput}
-\begin{chapelfuture}
-feature request: Allow classes to inherit from records.
-\end{chapelfuture}
-\end{chapelexample}
+% \begin{chapelexample}{objectAssignment.chpl}
+% \begin{chapel}
+% record R {
+%   var i: int;
+%   var x: real;
+% }
+% class C : R {
+%   var u: uint;
+% }
+% 
+% var c = new C(-3, 4.0, 5);
+% var r: R;
+% r = c;
+% writeln("r.i = ", r.i, ", r.x = ", r.x);
+% \end{chapel}
+% \begin{chapeloutput}
+% r.i = -3, r.x = 4.0
+% \end{chapeloutput}
+% \begin{chapelfuture}
+% feature request: Allow classes to inherit from records.
+% \end{chapelfuture}
+% \end{chapelexample}
 
 Since C is derived from R, its initial fields are in the same order and of the
 same type as in R.  Therefore, assignment from an instance of class \chpl{C} to
 a record of type \chpl{R} is legal.
 The first two fields are copied out of \chpl{c} and into \chpl{r}.  The
 remaining field in the object referenced by \chpl{c} is ignored.
+\end{future}
 
 \begin{openissue}
 Whether reference assignment is to be supported is an open question.
@@ -446,7 +442,8 @@ writeln(new UniqueID());
 (id = 2)
 \end{chapeloutput}
 The variable \chpl{timestampDefault} is initialized with \chpl{TimeStamp}'s
-default initializer. The \chpl{new TimeStamp} expression creates a record that is assigned to \chpl{timestampCustom}, effectively initializing \chpl{timestampCustom} via a call to the constructor with desired arguments. The records created with \chpl{new UniqueID()} are discarded after they are used.
+default initializer. The expression \chpl{new TimeStamp} creates a record that
+is assigned to \chpl{timestampCustom}.  It effectively initializes \chpl{timestampCustom} via a call to the constructor with desired arguments. The records created with \chpl{new UniqueID()} are discarded after they are used.
 \end{chapelexample}
 
 As with classes, the user can provide his own constructors

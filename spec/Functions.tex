@@ -117,7 +117,7 @@ function-name:
 
 
 operator-name: one of
-  + $ $ $ $ - $ $ $ $ * $ $ $ $ / $ $ $ $ % $ $ $ $ ** $ $ $ $ ! $ $ $ $ == $ $ $ $ <= $ $ $ $ >= $ $ $ $ < $ $ $ $ > $ $ $ $ << $ $ $ $ >> $ $ $ $ & $ $ $ $ | $ $ $ $ ^ $ $ $ $ ~
+  + $ $ $ $ - $ $ $ $ * $ $ $ $ / $ $ $ $ % $ $ $ $ ** $ $ $ $ ! $ $ $ $ == $ $ $ $ != $ $ $ $ <= $ $ $ $ >= $ $ $ $ < $ $ $ $ > $ $ $ $ << $ $ $ $ >> $ $ $ $ & $ $ $ $ | $ $ $ $ ^ $ $ $ $ ~
 
 argument-list:
   ( formals[OPT] )
@@ -207,14 +207,6 @@ Function and operator overloading is supported in Chapel and is
 discussed in~\rsec{Function_Overloading}.
 Operator overloading is supported on the operators listed
 above (see \sntx{operator-name}).
-
-%REVIEW: hilde
-% <= may be considered symmetrical with > and >= with <.
-% Yet, I see only == and not != in the list above.
-% One could argue for complete control over the meaning of all six
-% relationals, and at the other extreme for a single overloaded signum
-% function that governed them all.  Compatibility with C# is not
-% sufficient motivation ... .
 
 
 \section{Functions without Parentheses}
