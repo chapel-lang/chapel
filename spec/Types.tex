@@ -252,7 +252,7 @@ omitted, the \sntx{enum-constant} has an integral value one higher
 than the previous \sntx{enum-constant} in the enum, with the first
 having the value \chpl{1}.
 
-\begin{example}
+\begin{chapelexample}{enum.chpl}
 The code
 \begin{chapel}
 enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
@@ -273,9 +273,19 @@ proc quote(s: statesman) {
   }
 }
 \end{chapel}
+\begin{chapelnoprint}
+for s in statesman.Aristotle..statesman.Kissinger do
+  quote(s:statesman);
+\end{chapelnoprint}
+\begin{chapeloutput}
+All paid jobs absorb and degrade the mind.
+Every reform movement has a lunatic fringe.
+A joke is a very serious thing.
+No one will ever win the battle of the sexes; there's too much fraternizing with the enemy.
+\end{chapeloutput}
 outputs a quote from the given statesman.  Note that enumerated
 constants must be prefixed by the enumerated type and a dot.
-\end{example}
+\end{chapelexample}
 
 
 \section{Locale Types}
