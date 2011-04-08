@@ -3,6 +3,145 @@ Release Changes List
 ====================
 
 =============
+version 1.3.0
+=============
+
+*** stopped at r18087 ***
+
+TODO: add cross-references
+
+Sixth public release of Chapel, April 21, 2011
+
+High-Level Themes
+-----------------
+
+Highlights
+----------
+
+Environment Changes
+-------------------
+
+Syntactic/Naming Changes
+------------------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+* added an end-of-file check to the file type
+  (e.g., 'while !infile.eof ...')
+* added a callStackSize query to the locale type
+  (e.g., 'here.callStackSize' returns the call stack size on the current locale)
+
+Newly Implemented Features
+--------------------------
+
+Standard Domain Maps
+--------------------
+
+Standard Modules
+----------------
+
+Platform-specific Notes
+-----------------------
+- for XMT, added support for parallel loops over ranges
+- for XMT, added generation of noalias pragmas to forall loop variables
+- added support for BSC's MareNostrum including docs and a special launcher
+  (see doc/platforms/README.marenostrum)
+
+for MareNostrum, added support for its slurm-based launcher and
+
+Documentation
+-------------
+- updated README.comm-diagnostics to mention fast fork statistics
+
+Example Codes
+-------------
+
+Packaging Changes
+-----------------
+
+Compiler Changes
+----------------
+
+Third Party Changes
+-------------------
+- made a post-install step for GASNet that changes absolute paths to relative
+
+Runtime Library Changes
+-----------------------
+- added an interface for non-blocking get operations to the comm. interface
+- added the capability for a tasking layer to launch chpl_main() as a task
+- changed tasking init function to take maxThreadsPerLocale/callStackSize args
+- added a task yield capability to the tasking layer interface
+
+Launcher-specific notes
+-----------------------
+- changed launchers to support exec-based (rather than system-based) commands
+- improved propagation of exit status codes through launchers
+- made launchers use 'unlink' rather than system('rm') to remove temporary files
+- added a launcher for BSC's MareNostrum
+- reduced number of temporary files used to capture output of 'system' commands
+- aprun launcher:
+  - added a --cc flag to specify CPU assignment w/in a node
+  - added a -q flag to run the launcher in quiet mode
+  - added debug capability via CHPL_LAUNCHER_DEBUG to keep tmp files around
+- pbs-aprun launcher:
+  - added a --cc flag to specify CPU assignment w/in a node
+  - added debug capability via CHPL_LAUNCHER_DEBUG to keep tmp files around
+  - cleaned up output to get rid of some extraneous printing
+  - made launcher support our testing system
+  - added --walltime and --queue flags to launcher as alternatives to env. vars.
+
+Compiler Flags
+--------------
+- added a --print-callstack-on-error flag to show what led to a bad call
+
+Execution Flags
+---------------
+
+Interoperability Changes
+------------------------
+
+Bug Fixes / New Semantic Checks (for old semantics)
+---------------------------------------------------
+- added an check against constructing classes without specifying generic fields
+- prevented config types from being set using execution time command-line flags
+- fixed the compiler's ability to handle unions with no fields
+- fixed the minloc/maxloc reductions to handle empty ranges/subranges of values
+
+Error Message Improvements
+--------------------------
+- added a warning orphaned 'use' statements outside of declared modules
+  (e.g., 'use M1; module M2 { }' should typically be 'module M2 { use M1; }')
+- generated an error message for referring to a class name in a primary method
+  (e.g., 'class C { def C.m() {...} }' now generates an error message)
+
+Compiler Analysis and Optimizations / Performance of Generated Code
+-------------------------------------------------------------------
+
+Testing System
+--------------
+- fixed a bug in which .preexec files only worked if '.' was in your path
+- added ability to avoid using any indirection of stdin
+- added an option to provide a system-wide prediff option
+- added ability to use a launcher's native timeout feature rather than Python's
+- made the performance testing and graphing capabilities much better
+  (see comments at the front of start_test for documentation)
+
+Internal
+--------
+- added ability for launchers to print out --help for their special flags
+- improved organization of util/ directory contents
+- changed the way version numbers are computed/displayed for SVN-based users
+- added a --break-on-id compiler flag for developers to locate AST node creates
+- added support for task-/thread-specific module code
+- added a capability to print the AST counts allocated between each pass
+- added a new gdb alias to compiler --gdb: 'loc' prints an AST node's location
+- greatly improved implementation of pragmas/flags to avoid error cases
+- removed several instances of unnecessary string comparisons in the compiler
+- removed error-prone use of CHPL_TASKS and CHPL_THREADS as preprocessor symbols
+
+
+=============
 version 1.2.0
 =============
 
