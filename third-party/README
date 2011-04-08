@@ -45,7 +45,7 @@ gmp/
 
 
 nanox/
-  Summary: The Nanos++ user-level tasking library being developed by
+  Summary: the Nanos++ user-level tasking library being developed by
            Barcelona Supercompting Center (BSC).  We are working on
            using this as a lighter-weight tasking alternative to
            pthreads.
@@ -64,7 +64,7 @@ qthread/
            Sandia National Laboratory.  We are working on using this
            as a lighter-weight tasking alternative to pthreads.
 
-  License: qthreads is released under the New BSD License, which can
+  License: Qthreads is released under the New BSD License, which can
            be found in qthread/qthread-<version>/COPYING
 
   Contact: For more information, please refer to:

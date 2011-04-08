@@ -80,7 +80,7 @@ constraints on maxThreadsPerLocale than this value, a warning will be
 generated when no more threads can be created.
 
 The user can set maxThreadsPerLocale just like any other configuration
-variable (e.g., by using --maxThreadsPerLocale=# on the generated
+variable (e.g., by using --maxThreadsPerLocale=<num> on the generated
 executable's command-line).
 
 If not set by the user, maxThreadsPerLocale typically defaults to 0
@@ -177,30 +177,54 @@ experiences you have at chapel_info@cray.com.
 CHPL_TASKS == nanox, CHPL_THREADS == none
 -----------------------------------------
 
-We have recently been working with the Nanos++ team at BSC to
-implement Chapel tasking over their user-level tasking layer ('nanox')
-in order to create a lighter-weight implementation of Chapel tasks.
-In this release, Nanos++ tasking is only supported for single-locale
-(CHPL_COMM == none) executions.  To try Nanos++ tasking, please take
-the following steps:
+We have recently been working with the Nanos++ team at Barcelona
+Supercompting Center (BSC) to implement Chapel tasking over their
+user-level tasking layer ('nanox') in order to create a lighter-weight
+implementation of Chapel tasks.  In this release, Nanos++ tasking is
+only supported for single-locale (CHPL_COMM == none) executions.  To
+try Nanos++ tasking, please take the following steps
+(sample commands are shown for bash):
 
-1) cd $CHPL_HOME/third-party
-2) gmake nanox
-3) export CHPL_TASKS=nanox
-4) ensure that CHPL_THREADS and CHPL_COMM are unset or set to 'none'
-4) cd $CHPL_HOME
-5) gmake runtime
-6) ensure that the following directory is in your dynamic library path:
+1) Set the environment variable CHPL_HOME to point to the directory
+   containing the top-level README file of the Chapel distribution, e.g.:
 
-    $CHPL_HOME/third-party/nanox/install/<platform>-<compiler>/lib/performance
+      export CHPL_HOME=~/chapel-1.3.0/chapel
 
-   where <platform> == $CHPL_HOME/util/platform --target
-   and   <compiler> == $CHPL_HOME/util/compiler --target
-7) compile and run your Chapel program as usual
+2) Set up your environment to use Nanos++:
 
-Please refer any apparent bugs in the Nanos++ tasking layer to the
-Chapel team.  For more information on Nanos++, please refer to
-$CHPL_HOME/third-party/README
+2a) Ensure these variables are unset (or set to "none"):
+
+      unset CHPL_THREADS
+      unset CHPL_COMM 
+
+2b) Ensure that your dynamic library path includes the directory
+
+      $CHPL_HOME/third-party/nanox/install/<platform>-<compiler>/lib/performance
+
+    where <platform> and <compiler> are the outputs of these commands,
+    respectively:
+
+      $CHPL_HOME/util/chplenv/platform --target
+      $CHPL_HOME/util/chplenv/compiler --target
+
+    for example, with this command:
+
+      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$CHPL_HOME/third-party/nanox/install/`$CHPL_HOME/util/chplenv/platform --target`-`$CHPL_HOME/util/chplenv/compiler --target`/lib/performance"
+
+2c) Set this variable:
+
+      export CHPL_TASKS=nanox
+
+3) Build the Nanos++ library:
+
+      cd $CHPL_HOME/third-party
+      gmake nanox
+
+4) Follow the "Quick Start" instructions in $CHPL_HOME/README
+   to set up, compile and run your Chapel programs.
+
+Please report any apparent bugs in Nanos++ tasking to the Chapel team.
+For more information on Nanos++, please see $CHPL_HOME/third-party/README
 
 
 CHPL_TASKS == qthreads, CHPL_THREADS == none
@@ -212,25 +236,53 @@ Labs to implement Chapel tasking over their user-level tasking layer
 Chapel tasks and ultimately an optimized implementation of sync
 variables.  In this release, Qthreads tasking is only supported for
 single-locale (CHPL_COMM == none) executions.  To try Qthreads
-tasking, please take the following steps:
+tasking, please take the following steps (bash commands are shown):
 
-1) cd $CHPL_HOME/third-party
-2) gmake qthreads
-3) export CHPL_TASKS=qthreads
-4) ensure that CHPL_THREADS and CHPL_COMM are unset or set to 'none'
-4) cd $CHPL_HOME
-5) gmake runtime
-6) ensure that the following directory is in your dynamic library path:
+1) Set the environment variable CHPL_HOME to point to the directory
+   containing the top-level README file of the Chapel distribution, e.g.:
 
-    $CHPL_HOME/third-party/nanox/install/<platform>-<compiler>/lib
+      export CHPL_HOME=~/chapel-1.3.0/chapel
 
-   where <platform> == $CHPL_HOME/util/platform --target
-   and   <compiler> == $CHPL_HOME/util/compiler --target
-7) compile and run your Chapel program as usual
+2) Set up your environment to use Qthreads:
 
-Please refer any apparent bugs in Qthreads tasking to the Chapel team.
-For more information on Qthreads, please refer to
-$CHPL_HOME/third-party/README
+2a) Ensure these variables are unset (or set to "none"):
+
+      unset CHPL_THREADS
+      unset CHPL_COMM 
+
+2b) Ensure that your dynamic library path includes the directory
+
+      $CHPL_HOME/third-party/qthread/install/<platform>-<compiler>/lib
+
+    where <platform> and <compiler> are the outputs of these commands,
+    respectively:
+
+      $CHPL_HOME/util/chplenv/platform --target
+      $CHPL_HOME/util/chplenv/compiler --target
+
+    for example, with this command:
+
+      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$CHPL_HOME/third-party/qthread/install/`$CHPL_HOME/util/chplenv/platform --target`-`$CHPL_HOME/util/chplenv/compiler --target`/lib"
+
+2c) Set this variable:
+
+      export CHPL_TASKS=qthreads
+
+3) Build the Qthreads library:
+
+      cd $CHPL_HOME/third-party
+      gmake qthreads
+
+4) Follow the "Quick Start" instructions in $CHPL_HOME/README
+   to set up, compile and run your Chapel programs.
+
+   You may need to specify a call stack size explicitly
+   (see "Limiting Per-Task Memory" below), e.g. with the option:
+
+      -scallStackSize=12000
+
+Please report any apparent bugs in Qthreads tasking to the Chapel team.
+For more information on Qthreads, please see $CHPL_HOME/third-party/README
 
 
 CHPL_TASKS == none, CHPL_THREADS == none
@@ -254,18 +306,18 @@ or single variable, the program will deadlock.
 Limiting Per-Task Memory
 ------------------------
 
-As documented in README.execution, the --callStackSize configuration
+As documented in README.executing, the callStackSize configuration
 constant can be used to adjust the call stack size for active tasks.
 This interacts with the tasking and threading models as follows:
 
 CHPL_TASKS == fifo, CHPL_THREADS == pthreads:
-  The call stack size is used to set the stack size for the process and
-  each pthread.  The tasks inherit this call stack size, because the
+  The value of callStackSize is used to set the stack size for the process
+  and each pthread.  The tasks inherit this call stack size, because the
   execution model is that a task occupies a pthread and uses its stack
   for the duration of the task's existence.
 
 CHPL_TASKS == mta, CHPL_THREADS == none
-  The --callStackSize configuration constant is ignored.  As in FIFO
+  The callStackSize configuration constant is ignored.  As in FIFO
   tasking, the execution model is that a task occupies a thread and uses
   its stack for the duration of the task's existence.  But on Cray
   MTA/XMT systems thread stacks are initially small, and are extended
@@ -278,14 +330,14 @@ CHPL_TASKS == nanox, CHPL_THREADS == none
   Nanox tasks have a typical call stack size of 32k * sizeof(size_t)
   (though in practice some tasks may have the system pthread call
   stack size limit).  In the current Nanos++ tasking implementation,
-  user overrides of the dfeault call stack size are ignored.
+  the callStackSize constant is ignored.
 
 CHPL_TASKS == qthreads, CHPL_THREADS == none
-  The default stack size for a task is modest -- one page.  The call
-  stack size can be used to override this default.
+  The default stack size for a task is modest -- one page.
+  Use -scallStackSize=<num bytes> to override this default.
 
 CHPL_TASKS == none, CHPL_THREADS == none
-  The call stack size is used to set the stack size for the process.
+  The value of callStackSize is used to set the stack size for the process.
   The tasks inherit this call stack size, because the execution model,
   as described above, is either serial or like FIFO tasking with a
   single thread.
@@ -305,4 +357,3 @@ load balanced manually).  Our hope is to leverage existing open source
 threading and task management software and to collaborate with others
 in these areas, so please contact us at chapel_info@cray.com if you'd
 like to work with us in this area.
-

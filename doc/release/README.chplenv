@@ -27,6 +27,7 @@ Recommended Settings
 
         (use appropriate commands for other shells)
 
+
 2) Set the CHPL_HOST_PLATFORM environment variable to represent the
    platform on which you're working.  For standard UNIX workstations,
    this can be done by running the $CHPL_HOME/util/chplenv/platform
@@ -182,7 +183,6 @@ Optional Settings
    If the CHPL_TASKS variable is set, the CHPL_THREADS variable will
    default to the corresponding value shown above.  If both are unset,
    they default to values based on $CHPL_TARGET_PLATFORM:
-
 
         platform     tasks    threads
         --------     -----    -------
