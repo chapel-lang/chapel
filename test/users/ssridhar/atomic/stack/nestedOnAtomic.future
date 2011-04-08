@@ -1,0 +1,12 @@
+bug: incorrect handling of wide-references that point to the stack.
+
+This test fails today when numLocales > 1. This is because
+y is made into a wide-ref but not narrowed down. Today, we assume
+all wide-refs point to the heap so we land up adding y to the read /
+write set of the transaction. When the transaction tries to commit
+(on a different locale) we run into the problem of invalid stack refs.
+
+It works fine if we (a) set --ignore-atomic, meaning the problem
+is with atomic (b) on a single locale. In the latter case, the
+stm_fork lands up being a regular function call, so the stack ref
+is still valid. 
