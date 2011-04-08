@@ -287,10 +287,8 @@ for infile in args:
 
     for line in myLines:
         lineno += 1
-        if line[0] == '%':
-            continue
         pos = line.find('\\end{chapel')
-        if pos > -1:
+        if (line[0].strip() != '%') and pos > -1:
             pos += 11
             if line.find('example}', pos) == pos:
                 if options.debug:
@@ -309,7 +307,7 @@ for infile in args:
             continue
 
         pos = line.find('\\begin{chapel')
-        if pos > -1:
+        if (line[0].strip() != '%') and pos > -1:
             pos += 13
             if options.debug:
                 sys.stdout.write('>>> %s\n'%(line))
