@@ -79,10 +79,8 @@ enum-constant-expression:
   enum-type . identifier
 \end{syntax}
 
-\begin{example}
 For an example of using enumeration constants,
 see~\rsec{Enumerated_Types}.
-\end{example}
 
 \section{Parenthesized Expressions}
 \label{Parenthesized_Expressions}
@@ -146,28 +144,54 @@ genericity of a generic type that defines default values for all of
 its generic fields when specifying a formal argument as discussed
 in~\rsec{Formal_Arguments_of_Generic_Type}.
 
-\begin{example}
+\begin{chapelexample}{query.chpl}
 The following code defines a generic function where the type of the
 first argument is queried and stored in the type alias \chpl{t} and
 the domain of the second argument is queried and stored in the
 variable \chpl{D}:
+\begin{chapelnoprint}
+{ // }
+\end{chapelnoprint}
 \begin{chapel}
 proc foo(x: ?t, y: [?D] t) {
   for i in D do
     y[i] = x;
 }
 \end{chapel}
+\begin{chapelnoprint}
+// {
+var x = 1.5;
+var y: [1..4] x.type;
+foo(x, y);
+writeln(y);
+}
+\end{chapelnoprint}
 This allows a generic specification of a function to assign a
 particular value to all elements of an array.  The value and the
 elements of the array are constrained to be the same type.  This
 function can be rewritten without query expression as follows:
+\begin{chapelnoprint}
+{ // }
+\end{chapelnoprint}
 \begin{chapel}
 proc foo(x, y: [] x.type) {
   for i in y.domain do
     y[i] = x;
 }
 \end{chapel}
-\end{example}
+\begin{chapelnoprint}
+// {
+var x = 1.5;
+var y: [1..4] x.type;
+foo(x, y);
+writeln(y);
+}
+\end{chapelnoprint}
+\begin{chapeloutput}
+1.5 1.5 1.5 1.5
+1.5 1.5 1.5 1.5
+\end{chapeloutput}
+\end{chapelexample}
 
 There is an expectation that query expressions will be allowed in more
 places in the future.
@@ -1103,15 +1127,27 @@ The string concatenation operator \chpl{+} is predefined over numeric, boolean,
 and enumerated types with strings. It casts its operands to string type and
 concatenates them together.
 
-\begin{example}
+\begin{chapelexample}{string-concat.chpl}
 The code
+\begin{chapelnoprint}
+var i:int = 3;
+writeln(
+\end{chapelnoprint}
 \begin{chapel}
 "result: "+i
 \end{chapel}
+\begin{chapelnoprint}
+);
+\end{chapelnoprint}
+\begin{chapeloutput}
+result: 3
+\end{chapeloutput}
 where \chpl{i} is an integer appends the string representation of \chpl{i} to the
 string literal \chpl{"result: "}.  If \chpl{i} is \chpl{3}, then the resulting string
 would be \chpl{"result: 3"}.
-\end{example}
+\begin{chapelnoprint}
+\end{chapelnoprint}
+\end{chapelexample}
 
 \subsection{The By Operator}
 \label{The_By_Operator}
@@ -1142,9 +1178,14 @@ let-expression:
   `let' variable-declaration-list `in' expression
 \end{syntax}
 The scope of the variables is the let-expression.
-\begin{example}
+\begin{chapelexample}{let.chpl}
 Let expressions are useful for defining variables in the context of
 expression.  In the code
+\begin{chapelnoprint}
+  var a:uint = 4;
+  var b:int = 5;
+  var l =
+\end{chapelnoprint}
 \begin{chapel}
   let x: real = a*b, y = x*x in 1/y
 \end{chapel}
@@ -1152,7 +1193,14 @@ the value determined by \chpl{a*b} is computed and converted to type
 real if it is not already a real.  The square of the real is then
 stored in \chpl{y} and the result of the expression is the reciprocal
 of that value.
-\end{example}
+\begin{chapelnoprint}
+  ;
+  writeln(l);
+\end{chapelnoprint}
+\begin{chapeloutput}
+0.0025
+\end{chapeloutput}
+\end{chapelexample}
 
 \section{Conditional Expressions}
 \label{Conditional_Expressions}
