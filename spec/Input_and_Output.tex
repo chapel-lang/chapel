@@ -101,13 +101,16 @@ returned.
 
 These functions are wrappers for the methods on files described next.
 
-\begin{example}
+\begin{chapelexample}{writeln.chpl}
 The \chpl{writeln} wrapper function allows for a simple implementation
 of the {\em Hello-World} program:
 \begin{chapel}
 writeln("Hello, World!");
 \end{chapel}
-\end{example}
+\begin{chapeloutput}
+Hello, World!
+\end{chapeloutput}
+\end{chapelexample}
 
 \begin{example}
 The following code shows three ways to read values into a pair of
@@ -165,7 +168,7 @@ class to allow user-defined classes to be written to.  If a class is
 defined to be a subclass of Writer, it must override
 the \chpl{writeIt} method that takes a \chpl{string} as an argument.
 
-\begin{example}
+\begin{chapelexample}{Writer.chpl}
 The following code defines a subclass of \chpl{Writer} that overrides
 the \chpl{writeIt} method to allow it to be written to.  It also
 overrides the \chpl{writeThis} method to override the default way that
@@ -185,9 +188,12 @@ var c = new C();
 c.write(41, 32, 23, 14);
 writeln(c);
 \end{chapel}
+\begin{chapeloutput}
+4321
+\end{chapeloutput}
 The \chpl{C} class filters the arguments sent to it, printing out only
 the first letter.  The output to the above is thus \chpl{4321}.
-\end{example}
+\end{chapelexample}
 
 
 \section{The {\em read} and {\em readln} methods on files}
