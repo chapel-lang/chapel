@@ -227,10 +227,7 @@ proc Level.addGrid(
 
 proc Level.addGrid (grid_cells: domain(dimension,stridable=true))
 {
-  // Review: hilde
-  // Not +/- stride here?
   addGrid(grid_cells.low-1, grid_cells.high+1);
-  
 }
 
 
