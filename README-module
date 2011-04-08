@@ -53,6 +53,7 @@ For more detailed information about...      refer to...
   ...how Chapel tasks are mapped to threads  ...doc/README.tasks
 
   ...using Chapel on a Cray XE (TM)          ...doc/platforms/README.xe-cle
+  ...using Chapel on a Cray XMT (TM)         ...doc/platforms/README.xmt
   ...using Chapel on a Cray XT (TM) (CLE)    ...doc/platforms/README.xt-cle
 
   ...calling C routines from Chapel          ...doc/technotes/README.extern
