@@ -439,8 +439,8 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
     for param i in 1..rank {
       var dim = zeroedLocalPart.dim(i);
       var wholestride = whole.dim(i).stride;
-      if dim.high >= dim.low then
-        result(i) = (dim.low / wholestride)..(dim.high / wholestride) by (dim.stride / wholestride);
+      if dim.last >= dim.first then
+        result(i) = (dim.first / wholestride)..(dim.last / wholestride) by (dim.stride / wholestride);
       else
         result(i) = 1..0 by 1;
     }
