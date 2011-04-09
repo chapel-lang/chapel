@@ -217,21 +217,21 @@ expression \chpl{e}, then the declarations are rewritten so that the
 first variable is declared to be of type \chpl{t} and initialized by
 expression \chpl{e}, and each later variable is declared to be of the
 type of the first variable and initialized by the result of calling
-the function \chpl{readXX} on the first variable as in
+the procedure \chpl{readXX} on the first variable as in
 \begin{chapel}
 var v1: t = e; var v2: v1.type = readXX(v1); var v3: v1.type = readXX(v1);
 \end{chapel}
-where the function \chpl{readXX} is defined as follows:
+where the procedure \chpl{readXX} is defined as follows:
 \begin{chapel}
 proc readXX(x: sync) return x.readXX();
 proc readXX(x: single) return x.readXX();
 proc readXX(x) return x;
 \end{chapel}
-Note that the \chpl{readXX} function cannot be called directly by a
-Chapel programmer and that adding an additional overload or shadowing
-this function will not change the semantics of variable declarations.
-This function is defined solely for the purposes of this
-specification.
+Note that the non-method procedure \chpl{readXX}
+is defined here solely for the purposes of this specification.
+It cannot be called directly by a
+Chapel programmer; adding an additional overload or shadowing
+this procedure will not change the semantics of variable declarations.
 \end{itemize}
 
 \begin{rationale}
@@ -250,7 +250,7 @@ state.
 \index{variables!global}
 
 Variables declared in statements that are in a module but not in a
-function or block within that module are global variables.  Global
+procedure or block within that module are global variables.  Global
 variables can be accessed anywhere within that module after the
 declaration of that variable.  They can also be accessed in other
 modules that use that module.
@@ -262,7 +262,7 @@ modules that use that module.
 Local variables are variables that are not global.  Local variables
 are declared within block statements.  They can only be accessed
 within the scope of that block statement (including all inner nested
-block statements and functions).
+block statements and procedures).
 
 A local variable only exists during the execution of code that lies
 within that block statement.  This time is called the lifetime of the
@@ -315,12 +315,12 @@ Parameter expressions are restricted to the following constructs:
  operators \verb@+@, \verb@-@, \verb@*@, \verb@/@, \verb@**@, \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@,
  and \verb@>@ on operands that are real, imaginary or complex parameter expressions.
 \item
- Applications of the string concatenation operator \verb@+@, string comparison operators \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, \verb@>@, and the string length and ascii functions on parameter string expressions.
+ Applications of the string concatenation operator \verb@+@, string comparison operators \verb@==@, \verb@!=@, \verb@<=@, \verb@>=@, \verb@<@, \verb@>@, and the string length and ascii procedures on parameter string expressions.
 \item
  The conditional expression where the condition is a parameter and the
  then- and else-expressions are parameters.
 \item
- Call expressions of parameter functions.  See~\rsec{Parameter_Functions}.
+ Call expressions of parameter procedures.  See~\rsec{Parameter_Procedures}.
 \end{itemize}
 
 \subsection{Runtime Constants}

@@ -179,7 +179,7 @@ passed by reference.
 
 For generic formal arguments with unspecified types
 (\rsec{Formal_Arguments_of_Generic_Type}), an actual that
-is \chpl{sync} is ``read'' before being passed to the function and the
+is \chpl{sync} is ``read'' before being passed to the procedure and the
 generic formal argument's type is set to the base type of the actual.
 
 \subsection{Single Variables}
@@ -236,7 +236,7 @@ until it has been assigned.
 \end{chapelexample}
 
 \subsection{Predefined Single and Sync Methods}
-\label{Functions_on_Synchronization_Variables}
+\label{Procedures_on_Synchronization_Variables}
 \index{synchronization variables!built-in methods on}
 
 The following methods are defined for variables of sync and single
@@ -441,7 +441,7 @@ s1$\mbox{{\bf \$}}$; s2$\mbox{{\bf \$}}$; s3$\mbox{{\bf \$}}$;
 \end{chapeloutput}
 Each begin statement is executed concurrently but control does not
 continue past the final line above until each of the single variables
-is written, thereby ensuring that each of the functions has finished.
+is written, thereby ensuring that each of the procedures has finished.
 \end{chapelexample}
 
 \subsection{The Coforall Loop}
@@ -563,9 +563,9 @@ writeln(tree.sum());
 4
 8
 \end{chapeloutput}
-defines a function \chpl{concurrentUpdate} that recursively walks over
+defines a procedure \chpl{concurrentUpdate} that recursively walks over
 a tree and spawns a new task to update a node if the
-function \chpl{requiresUpdate} evaluates to true.
+procedure \chpl{requiresUpdate} evaluates to true.
 (Both \chpl{requiresUpdate} and \chpl{update} are omitted as
 irrelevant.)  The call to \chpl{concurrentUpdate} is made within
 a \chpl{sync} statement to ensure that each of the spawned update
@@ -649,7 +649,7 @@ writeln(tree.sum());
 4
 8
 \end{chapeloutput}
-defines a function \chpl{concurrentUpdate} that recursively walks over
+defines a procedure \chpl{concurrentUpdate} that recursively walks over
 a tree using cobegin statements to update the left and right subtrees
 in parallel.  The serial statement inhibits concurrent execution on
 the tree for nodes that are deeper than four levels in the tree.  This

@@ -2,8 +2,7 @@
 \label{Input_and_Output}
 
 Chapel provides a built-in \chpl{file} class to handle input and
-output to files using functions and methods
-called \chpl{read}, \chpl{readln},
+output to files using procedures \chpl{read}, \chpl{readln},
 \chpl{write}, and \chpl{writeln}.
 
 \section{The {\em file} type}
@@ -67,8 +66,7 @@ The files \chpl{stdout}, \chpl{stdin}, and \chpl{stderr} are
 predefined and map to standard output, standard input, and standard
 error as implemented in a platform dependent fashion.
 
-\section{The {\em write}, {\em writeln}, {\em read}, and {\em readln} 
-functions}
+\section{The procedures {\em write}, {\em writeln}, {\em read}, and {\em readln}}
 \index{writeln@\chpl{writeln}}
 \index{write@\chpl{write}}
 \index{read@\chpl{read}}
@@ -76,33 +74,33 @@ functions}
 \index{read}
 \index{write}
 
-The built-in function \chpl{write} takes an arbitrary number of
+The built-in procedure \chpl{write} takes an arbitrary number of
 arguments and prints each out in turn to \chpl{stdout}.  The built-in
-function \chpl{writeln} is identical to \chpl{write} except that it
+procedure \chpl{writeln} is identical to \chpl{write} except that it
 outputs an additional {\em end-of-line} character after writing out
-the argument expressions.  Both of these functions will generate their
-output atomically with respect to other calls to these functions from
+the argument expressions.  Both of these procedures will generate their
+output atomically with respect to other calls to these procedures from
 other tasks.
 
-The built-in function \chpl{read} takes an arbitrary number of
+The built-in procedure \chpl{read} takes an arbitrary number of
 variable expressions and reads into each in turn from \chpl{stdin}.
 Any whitespace is skipped over and is used only to separate one
-argument from the next.  The built-in function \chpl{readln} is
+argument from the next.  The built-in procedure \chpl{readln} is
 identical except that upon reading all of its arguments it scans ahead
 in the input stream until just after the next {\em end-of-line}
 character.
 
-The \chpl{read} and \chpl{readln} functions are also defined to take
+The \chpl{read} and \chpl{readln} procedures are also defined to take
 an arbitrary number of types as arguments.  In this case, the
-functions read an expression of each argument type.  In the event that
+procedures read an expression of each argument type.  In the event that
 a single type is specified, the return value is the value that was
 read; if multiple types are specified, a tuple of the values is
 returned.
 
-These functions are wrappers for the methods on files described next.
+These procedures are wrappers for the methods on files described next.
 
 \begin{chapelexample}{writeln.chpl}
-The \chpl{writeln} wrapper function allows for a simple implementation
+The \chpl{writeln} wrapper procedure allows for a simple implementation
 of the {\em Hello-World} program:
 \begin{chapel}
 writeln("Hello, World!");

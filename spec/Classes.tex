@@ -3,7 +3,7 @@
 \index{class@\chpl{class}}
 \index{classes}
 
-Classes are data structures with associated state and functions. Storage for
+Classes are data structures with associated state and procedures. Storage for
 \index{classes!instances}
 \index{objects}
 a class instance, or object, is allocated independently of the scope of
@@ -64,7 +64,7 @@ the inheriting class.
 
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
-field), a procedure or iterator (called a method), or a type alias.  In addition, empty
+field), a procedure (called a method), or a type alias.  In addition, empty
 statements are allowed in class declarations, and they have no effect.
 
 If a class declaration contains a type alias or a parameter field, or it contains a variable or
@@ -156,16 +156,17 @@ Field access is described in \rsec{Class_Field_Accesses}.
 \subsection{Class Methods}
 \label{Class_Methods}
 \index{classes!methods}
+\index{method!declarations}
 
-A class method is a procedure or iterator that is bound to a class.
+A class method is a procedure that is bound to a class.
 
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  `proc' param-clause[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT]
-    where-clause[OPT] function-body
-  `iter' param-clause[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT]
-    where-clause[OPT] function-body
+  `proc' param-clause[OPT] type-binding procedure-name argument-list[OPT] return-intent[OPT] return-type[OPT]
+    where-clause[OPT] procedure-body
+  `iter' param-clause[OPT] type-binding procedure-name argument-list[OPT] return-intent[OPT] return-type[OPT]
+    where-clause[OPT] procedure-body
 
 param-clause:
   `param'
@@ -384,7 +385,7 @@ a compiler-generated constructor for that class is created automatically.
 
 A user-defined constructor is a constructor method explicitly declared
 in the program.  A constructor declaration has the same
-syntax as a function declaration, except that the name of the function matches
+syntax as a method declaration, except that the name of the method matches
 the name of the class, and there is no return type specifier.
 
 A constructor for a given class is called by placing the \chpl{new} operator
@@ -399,8 +400,8 @@ class-name:
   identifier
 \end{syntax}
 
-When a constructor is called, the usual function resolution mechanism
-(\rsec{Function_Resolution}) is applied to determine which
+When a constructor is called, the usual procedure resolution mechanism
+(\rsec{Procedure_Resolution}) is applied to determine which
 user-defined constructor to invoke.
 
 \begin{chapelexample}{simpleConstructors.chpl}
@@ -465,7 +466,7 @@ which are discussed in Section~\rsec{Generic_Compiler_Generated_Constructors}.
 When invoked, the compiler-generated constructor initializes each field in the class to the
 value of the corresponding actual argument.  
 
-In contrast to an actual function
+In contrast to an actual procedure
 call (including calls to user-defined constructors), the compiler-generated
 constructor only initializes fields for which arguments are supplied.  All other
 fields retain their default-initialized values.  In this sense the
@@ -475,7 +476,7 @@ it clear why the compiler-generated constructor is visible only if no
 user-defined constructors are present.}
 
 %REVIEW: vass
-% I am unhappy with having to present this as "not an actual function call".
+% I am unhappy with having to present this as "not an actual procedure call".
 % Background: two ways for presenting constructors have been used.
 % Previously:
 % - compiler-generated constructor is always there
@@ -486,13 +487,13 @@ user-defined constructors are present.}
 % - default initialization always happens before a constructor is invoked
 % - compiler-generated constructor initializes only the fields for which
 %   its invocation provides actual arguments
-%   (hence it is magic, unlike a function call)
+%   (hence it is magic, unlike a procedure call)
 % 
 % The motivation for this refactoring is:
 % - give the reader a firm understanding that an object is zeroed-out
 %   before they can do anything with it, and
 % - eliminate compiler-generated constructor when there is a user-defined one
-% This leads us to the "unlike a function call" semantics here -
+% This leads us to the "unlike a procedure call" semantics here -
 % to avoid duplicate invocation of fields' default initializers
 % (which otherwise would happen once during the object's default initialization
 % and the second time upon invoking the compiler-generated constructor).
@@ -604,7 +605,7 @@ reads the field \chpl{name} and assigns the value to the variable
 \index{getter method}
 
 All field accesses are resolved via getters that are variable
-methods~(\rsec{Variable_Functions}) defined in the class with the same
+methods~(\rsec{Variable_Procedures}) defined in the class with the same
 name as the field.  The default getter is defined to simply return the
 field if the user does not redefine it.
 
@@ -654,7 +655,7 @@ call expression.
 method-call-expression:
   receiver-clause[OPT] expression ( named-expression-list )
   receiver-clause[OPT] expression [ named-expression-list ]
-  receiver-clause[OPT] parenthesesless-function-identifier
+  receiver-clause[OPT] parenthesesless-procedure-identifier
 \end{syntax}
 
 The receiver-clause (or its absence) specifies the method's receiver
@@ -685,7 +686,7 @@ class, \chpl{anActor}, with the call expression \chpl{anActor.print()}.
 
 The actual arguments supplied in the method call are bound to the
 formal arguments in the method declaration following the rules specified for
-procedures (\rsec{Functions}). The exception is the receiver
+procedures (\rsec{Procedures}). The exception is the receiver
 \rsec{The_em_this_Reference}.
 
 \subsection{The Method Receiver and the {\em this} Argument}
@@ -705,7 +706,7 @@ The receiver formal argument can be referred to within the method
 using the identifier \chpl{this}.
 
 \begin{chapelexample}{implicitThis.chpl}
-Let class \chpl{C}, method \chpl{foo}, and function \chpl{bar} be
+Let class \chpl{C}, method \chpl{foo}, and procedure \chpl{bar} be
 defined as
 \begin{chapel}
 class C {
@@ -732,12 +733,13 @@ is \chpl{c1}.
 \index{this@\chpl{this}}
 \index{classes!indexing}
 
-A procedure method declared with the name \chpl{this} allows a class to be
+A method declared with the name \chpl{this} allows a class to be
 ``indexed'' similarly to how an array is indexed.  Indexing into a
-class has the semantics of calling a method on the class
+class instance has the semantics of calling a method on the class
 named \chpl{this}.  There is no other way to call a method
 called \chpl{this}.  The \chpl{this} method must be declared with
 parentheses even if the argument list is empty.
+% TODO: it must not be an iterator?
 
 \begin{chapelexample}{thisMethod.chpl}
 In the following code, the \chpl{this} method is used to create a

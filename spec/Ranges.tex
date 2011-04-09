@@ -142,7 +142,7 @@ corresponding limit.}, then it cannot be iterated
 upon.  If the range has a stride whose absolute value
 is 2 or greater and its \chpl{aligned} flag is \chpl{false}, then its alignment is
 \emph{ambiguous}.  If a range is ambiguously aligned, it cannot be iterated, and
-other actions are prohibited as well.  Refer to the description each operator or
+other actions are prohibited as well.  Refer to the description of each operator or
 range-related procedure for details.
 \index{ranges!alignment!ambiguous}
 
@@ -269,11 +269,13 @@ range unless the stridable range has a stride of 1.
 \label{Range_Operators}
 \index{ranges!operators}
 
-Operations can be applied to range literals and expressions of range type to
-derive new range values.  The stride, alignment, count and slicing
-operators (\chpl{by}, \chpl{align}, \chpl{\#} and \chpl{\(\)} or \chpl{\[\]})
-have special syntax.  Otherwise, they follow the standard expression or
-procedure-call syntax.
+The following operators can be applied to range literals and
+expressions and are described in this section: stride (\chpl{by}),
+alignment (\chpl{align}), count (\chpl{\#}) and slicing (\chpl{\(\)}
+or \chpl{\[\]}).
+Chapel also defines a set of procedures and methods that operate on ranges.
+They are described in \rsec{Predefined_Range_Procedures}.
+
 \begin{syntax}
 range-expression:
   expression
@@ -282,8 +284,6 @@ range-expression:
   aligned-range-expression
   sliced-range-expression
 \end{syntax}
-
-Range operators are discussed in detail in the following subsections.
 
 \subsection{By Operator}
 \label{By_Operator_For_Ranges}
@@ -599,8 +599,9 @@ writeln((r, r2, r3, r4));
 \end{chapeloutput}
 \end{chapelexample}
 
-\section{Predefined Functions and Methods on Ranges}
-\index{ranges!predefined functions}
+\section{Predefined Procedures on Ranges}
+\label{Predefined_Range_Procedures}
+\index{ranges!predefined procedures}
 
 \subsection{Range Type Accessors}
 

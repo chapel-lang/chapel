@@ -36,7 +36,7 @@ types and values of simple subdomains that can be created from those base
 domains.  In~\rsec{Sparse_Subdomains}, we discuss the types and values of sparse
 subdomains.  The remainder sections describe the important manipulations
 that can be perfomed with domains, as well as the built-in operators and
-functions defined for domains.
+procedures defined for domains.
 
 \section{Domain Roadmap}
 
@@ -132,7 +132,7 @@ rectangular-domain-type:
 \chpl{rank}, \chpl{idxType}, and \chpl{stridable} to be specified
 using standard type signature.
 
-\begin{chapelexample}{typeFunctionDomain.chpl}
+\begin{chapelexample}{regularDomainTypes.chpl}
 The following declarations both create an unintialized rectangular domain with three dimensions, with \chpl{int} indices:
 \begin{chapel}
 var D1 : domain(rank=3, idxType=int, stridable=false);
@@ -375,7 +375,7 @@ indices that the domain describes.
 
 There is no literal syntax for an opaque domain due to the fact that
 the indices have no inherent names.  The members of an opaque domain can only be
-created using the \chpl{add} function or \chpl{+} operator.
+created using the \chpl{add} procedure or \chpl{+} operator.
 
 \index{opaque domains!default values}
 
@@ -578,11 +578,11 @@ indices in order.
 
 \section{Domains as Arguments}
 \label{Domain_Arguments}
-\index{domains!function arguments}
-\index{function arguments!domains}
+\index{domains!as procedure arguments}
+\index{argument passing!domains}
 
 This section describes the semantics of passing domains as arguments
-to functions.
+to procedures.
 
 \subsection{Formal Arguments of Domain Type}
 
@@ -590,19 +590,19 @@ When a domain value is passed to a formal argument of compatible
 domain type by blank intent, it is passed by reference in order to
 preserve the domain's identity.
 
-\subsection{Domain Promotion of Scalar Functions}
-\label{Domain_Promotion_of_Scalar_Functions}
+\subsection{Domain Promotion of Scalar Procedures}
+\label{Domain_Promotion_of_Scalar_Procedures}
 \index{domains!promotion}
 
-Domain values may be passed to a scalar function argument whose type
+Domain values may be passed to a scalar procedure argument whose type
 matches the domain's index type.  This results in a promotion of the
-scalar function as defined in~\rsec{Promotion}.
+scalar procedure as defined in~\rsec{Promotion}.
 
 \begin{example}
-Given a function \chpl{foo()} that accepts real floating point values
+Given a procedure \chpl{foo()} that accepts real floating point values
 and an associative domain \chpl{D} of
 type \chpl{domain(real)}, \chpl{foo} can be called with \chpl{D} as
-its actual argument which will result in the function being invoked
+its actual argument which will result in the procedure being invoked
 for each value in the index set of \chpl{D}.
 \end{example}
 
@@ -624,7 +624,7 @@ forall (a,i) in (A,D) do
 
 \section{Domain Operations}
 
-Chapel supplies built-in operators and functions that can be used to manipulate
+Chapel supplies built-in operators and procedures that can be used to manipulate
 domains.  Unless otherwise noted, these operations are applicable to a domain of
 any type, whether a base domain or a subdomain.
 
@@ -801,17 +801,17 @@ domain being modified in this way will be reallocated as discussed
 in~\rsec{Association_of_Arrays_to_Domains}.
 
 
-\section{Predefined Methods on Domains}
-\index{domains!predefined functions}
+\section{Predefined Procedures on Domains}
+\index{domains!predefined procedures}
 
-This section gives a brief description of the library functions provided for
+This section gives a brief description of the predefined procedures provided for
 Domains.  These are categorized by the type of domain to which they apply: all,
 regular or irregular.  Within each subsection, entries are listed in
 alphabetical order.
 
-\subsection{Methods on All Domain Types}
+\subsection{Procedures on All Domain Types}
 
-The methods in this subsection can be applied to any domain.
+The procedures in this subsection can be applied to any domain.
 
 \begin{protohead}
 proc $Domain$.clear()
@@ -821,7 +821,7 @@ Resets this domain's index set to the empty set.
 \end{protobody}
 
 \begin{chapelexample}{emptyEnumeratedDomain}
-In the case of an enumerated domain, this function provides a way to produce an
+In the case of an enumerated domain, this procedure provides a way to produce an
 empty index set.
 \begin{chapel}
 enum Counter { one, two, three };
@@ -907,9 +907,9 @@ Returns the number of indices in the domain as a value of the capacity type.
 \end{protobody}
 
 
-\subsection{Methods on Regular Domains}
+\subsection{Procedures on Regular Domains}
 
-The methods described in this subsection can be applied to regular domains only.
+The procedures described in this subsection can be applied to regular domains only.
 
 \begin{protohead}
 proc $Domain$.dim(d: int): range
@@ -1034,9 +1034,9 @@ by \chpl{off} or \chpl{off(d)} for each dimension \chpl{d}.
 %% the domain. **/
 %% \end{protobody} **/
 
-\subsection{Methods on Irregular Domains}
+\subsection{Procedures on Irregular Domains}
 
-The following methods are available only on irregular domain types.
+The following procedures are available only on irregular domain types.
 
 \begin{protohead}
 proc +(d: domain, i: index(d))

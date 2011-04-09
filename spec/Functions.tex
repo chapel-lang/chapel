@@ -1,67 +1,67 @@
 \sekshun{Procedures}
-\label{Functions}
-\index{functions}
-\index{functions!call site}
+\label{Procedures}
+\index{procedures}
+\index{procedures!call site}
 \index{call site}
-\index{functions!formal argument}
+\index{procedures!formal argument}
 \index{formal argument}
-\index{functions!actual argument}
+\index{procedures!actual argument}
 \index{actual argument}
 
-A \emph{function} is a code abstraction that can be invoked by a call
-expression. Throughout this specification the term ``function''
-is used in this programming-languages sense, rather than
-in the mathematical sense.
-% TODO: the above is here until we substitute a different word for 'function'
-A function has zero or more \emph{formal arguments}, or simply
-\emph{formals}. Upon a function call each formal is associated
+A \emph{procedure} is a code abstraction that can be invoked by a call
+expression.
+A procedure has zero or more \emph{formal arguments}, or simply
+\emph{formals}. Upon a procedure call each formal is associated
 with the corresponding \emph{actual argument}, or simply
 \emph{actual}. Actual arguments are provided as part of the call
 expression, or at the the \emph{call site}.
 % TODO - move into a footnote?
 Direct and indirect recursion is supported.
 
-\index{functions!procedure}
-\index{procedure}
-\index{functions!operator}
-\index{operator!procedure}
-A function can be a \emph{procedure}, which completes and returns to
+\index{procedures}
+\index{procedures!non-iterator}
+\index{procedures!operator}
+\index{operators}
+%VASS - this paragraph and index entries; also check the above
+% emphasize that this chapter is about non-iterator procedures
+A \emph{non-iterator procedure} completes and returns to
 the call site exactly once, returning no result, a single result, or
-multiple results aggregated in a tuple. A function can also be an
-iterator, which can generate, or \emph{yield}, multiple results (in
-sequence and/or in parallel). A function (either a procedure or an
-iterator) can be a method if it is bound to a type (often a
+multiple results aggregated in a tuple. A procedure can also be an
+\emph{iterator}, which can generate, or \emph{yield}, multiple results (in
+sequence and/or in parallel). A procedure (either a non-iterator procedure or an
+iterator) can be a \emph{method} if it is bound to a type (often a
 class). An \emph{operator} in this chapter is a procedure
-with a special name, which can be invoked using infix notation,
+with a special name that can be invoked using infix notation,
 i.e., via a unary or binary expression.
-This chapter defines procedures, but most of its contents
+This chapter defines non-iterator, non-method procedures as well as operators. However, most of its contents
 apply to iterators and methods as well.
 
-Functions are presented as follows:
+Procedures are presented as follows:
 \begin{itemize}
-\item procedures (this chapter)
-\item operators \rsec{Function_Definitions}, \rsec{Binary_Expressions}
+\item non-iterator procedures (this chapter)
+\item operators \rsec{Procedure_Definitions}, \rsec{Binary_Expressions}
 \item iterators \rsec{Iterators}
 \item methods (when bound to a class) \rsec{Class_Methods}
-\item function calls \rsec{Function_Calls}
+\item procedure calls \rsec{Procedure_Calls}
 \item various aspects of defining a procedure
-      \rsec{Function_Definitions}--\rsec{Nested_Functions}
-\item determining the function to invoke for a given call site:
-      function and operator overloading \rsec{Function_Overloading},
-      function resolution \rsec{Function_Resolution}
+      \rsec{Procedure_Definition_Aspects__Start}--\rsec{Procedure_Definition_Aspects__End}
+\item determining the procedure to invoke for a given call site:
+      procedure and operator overloading \rsec{Procedure_Overloading},
+      procedure resolution \rsec{Procedure_Resolution}
 \end{itemize}
 
 
-\section{Function Calls}
-\label{Function_Calls}
-\index{function calls}
+\section{Procedure Calls}
+\label{Procedure_Calls}
+\index{procedure calls}
+\index{procedures!calls}
 
-The syntax to call a non-method function is given by:
+The syntax to call a non-method procedure is given by:
 \begin{syntax}
 call-expression:
   expression ( named-expression-list )
   expression [ named-expression-list ]
-  parenthesesless-function-identifier
+  parenthesesless-procedure-identifier
 
 named-expression-list:
   named-expression
@@ -71,28 +71,28 @@ named-expression:
   expression
   identifier = expression
 
-parenthesesless-function-identifier:
+parenthesesless-procedure-identifier:
   identifier
 \end{syntax}
 
 
-A \sntx{call-expression} is resolved to a particular function
-according to the algorithm for function resolution described
-in~\rsec{Function_Resolution}.
+A \sntx{call-expression} is resolved to a particular procedure
+according to the algorithm for procedure resolution described
+in~\rsec{Procedure_Resolution}.
 
-Functions can be called using either parentheses or brackets.  The
+Procedures can be called using either parentheses or brackets.  The
 only difference in the call has to do with promotion and is discussed
 in~\rsec{Promotion}.
 
-Functions that are defined without parentheses must be called without
-parentheses as defined by scope resolution.  Functions without
-parentheses are discussed in~\rsec{Functions_without_Parentheses}.
+Procedures that are defined without parentheses must be called without
+parentheses as defined by scope resolution.  Procedures without
+parentheses are discussed in~\rsec{Procedures_without_Parentheses}.
 
 A \sntx{named-expression} is an expression that may be optionally
 named.  It provides
 \index{actual argument}
-\index{functions!actual argument}
-an actual argument to the function being called.
+\index{procedures!actual argument}
+an actual argument to the procedure being called.
 The optional \sntx{identifier} refers to a named formal
 argument described in~\rsec{Named_Arguments}.
 
@@ -100,18 +100,19 @@ Calls to methods are defined in Section~\rsec{Class_Method_Calls}.
 
 
 \section{Procedure Definitions}
-\label{Function_Definitions}
-\index{functions!procedure definition}
-\index{procedure!definition}
+\label{Procedure_Definitions}
+\label{Procedure_Definition_Aspects__Start}
+\index{procedures!declarations, non-iterator non-method}
 
 \index{proc@\chpl{proc}}
-Procedures are defined with the following syntax:
+Procedures that are not iterators or methods are defined by declarations
+with the following syntax:
 \begin{syntax}
 procedure-declaration-statement:
-  `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
-    function-body
+  `proc' procedure-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
+    procedure-body
 
-function-name:
+procedure-name:
   identifier
   operator-name
 
@@ -156,7 +157,7 @@ return-type:
 where-clause:
   `where' expression
 
-function-body:
+procedure-body:
   block-statement
   return-statement
 \end{syntax}
@@ -164,8 +165,8 @@ function-body:
 %% This should be in the order that the sections appear in this
 %% chapter (if they appear in this chapter).
 
-Functions do not require parentheses if they have no arguments.  Such
-functions are described in~\rsec{Functions_without_Parentheses}.
+Procedures do not require parentheses if they have no arguments.  Such
+procedures are described in~\rsec{Procedures_without_Parentheses}.
 
 Formal arguments can be grouped together using a tuple notation as
 described in~\rsec{Formal_Argument_Declarations_in_a_Tuple}.
@@ -176,21 +177,22 @@ Default values are discussed in~\rsec{Default_Values}.
 
 The intents \chpl{in}, \chpl{out}, and \chpl{inout} are discussed
 in~\rsec{Intents}.  The intents \chpl{param} and \chpl{type} make
-a function generic and are discussed in~\rsec{Generic_Functions}.  If the
+a procedure generic and are discussed in~\rsec{Generic_Procedures}.  If the
 formal argument's type is omitted, generic, or prefixed with a question
-mark, the function is also generic and is discussed
-in~\rsec{Generic_Functions}.
+mark, the procedure is also generic and is discussed
+in~\rsec{Generic_Procedures}.
 
-Functions can take a variable number of arguments.  Such functions are
+Procedures can take a variable number of arguments.  Such procedures are
 discussed in~\rsec{Variable_Length_Argument_Lists}.
 
 The \sntx{return-intent} can be used to indicate
-a variable function \rsec{Variable_Functions},
-or a parameter function \rsec{Parameter_Functions},
-or a type function \rsec{Type_Functions}.
+a variable procedure \rsec{Variable_Procedures},
+or a parameter procedure \rsec{Parameter_Procedures},
+or a type procedure \rsec{Type_Procedures}.
 By default, or if the \sntx{return-intent} is \chpl{const},
-the function returns a value that cannot be used as an lvalue.
+the procedure returns a value that cannot be used as an lvalue.
 % TODO: define lvalue and rvalue
+% (see also section{LValue Expressions})
 
 \begin{openissue}
 Parameter and type procedures are supported. Parameter and type
@@ -198,26 +200,26 @@ iterators are currently not supported.
 \end{openissue}
 
 The \sntx{return-type} is optional and is discussed in~\rsec{Return_Types}.
-A type function may not specify a return type.
+A type procedure may not specify a return type.
 
-The optional \sntx{where-clause} is only applicable if the function is
+The optional \sntx{where-clause} is only applicable if the procedure is
 generic.  It is discussed in~\rsec{Where_Expressions}.
 
-Function and operator overloading is supported in Chapel and is
-discussed in~\rsec{Function_Overloading}.
+Procedure and operator overloading is supported in Chapel and is
+discussed in~\rsec{Procedure_Overloading}.
 Operator overloading is supported on the operators listed
 above (see \sntx{operator-name}).
 
 
-\section{Functions without Parentheses}
-\label{Functions_without_Parentheses}
-\index{functions!functions without parentheses}
+\section{Procedures without Parentheses}
+\label{Procedures_without_Parentheses}
+\index{procedures!procedures without parentheses}
 
-Functions do not require parentheses if they have empty argument
-lists.  Functions declared without parentheses around empty argument
+Procedures do not require parentheses if they have empty argument
+lists.  Procedures declared without parentheses around empty argument
 lists must be called without parentheses.
 
-\begin{chapelexample}{function-no-parens.chpl}
+\begin{chapelexample}{procedure-no-parens.chpl}
 Given the definitions
 \begin{chapel}
 proc foo { writeln("In foo"); }
@@ -241,7 +243,7 @@ when calling \chpl{bar}.
 \section{Formal Arguments}
 \label{Formal_Arguments}
 \index{formal argument}
-\index{functions!formal argument}
+\index{procedures!formal argument}
 
 Chapel supports an intuitive formal argument passing mechanism.  An
 actual argument is passed by value unless it is an array or domain, in
@@ -249,14 +251,14 @@ which case it is passed by reference.
 
 Intents~(\rsec{Intents}) may be used to override the default
 argument passing mechanism.  This may result in assignments to and from
-the formal argument during a function call.  For example, when passing an array by
+the formal argument during a procedure call.  For example, when passing an array by
 intent \chpl{in}, the actual argument array will be copied into the formal argument
-for use within the function.
+for use within the procedure.
 
 \subsection{Named Arguments}
 \label{Named_Arguments}
 \index{named arguments}
-\index{functions!named arguments}
+\index{procedures!named arguments}
 \index{formal arguments!naming}
 
 A formal argument can be named at the call site to explicitly map an
@@ -277,24 +279,24 @@ foo(y=3, x=2);
 3
 \end{chapeloutput}
 named argument passing is used to map the actual arguments to the
-formal arguments.  The two function calls are equivalent.
+formal arguments.  The two procedure calls are equivalent.
 \end{chapelexample}
 
 Named arguments are sometimes necessary to disambiguate calls or
-ignore arguments with default values.  For a function that has many
+ignore arguments with default values.  For a procedure that has many
 arguments, it is sometimes good practice to name the arguments at the
 call site for compiler-checked documentation.
 
 \subsection{Default Values}
 \label{Default_Values}
 \index{default values}
-\index{functions!default argument values}
+\index{procedures!default argument values}
 \index{formal arguments!defaults}
 
 Default values can be specified for a formal argument by appending the
 assignment operator and a default expression to the declaration of the
-formal argument.  If the actual argument is omitted from the function
-call, the default expression is evaluated when the function call is
+formal argument.  If the actual argument is omitted from the procedure
+call, the default expression is evaluated when the procedure call is
 made and the evaluated result is passed to the formal argument as if
 it were passed from the call site.
 
@@ -329,7 +331,7 @@ argument list.
 \section{Intents}
 \label{Intents}
 \index{intents}
-\index{functions!argument intents}
+\index{procedures!argument intents}
 
 Intents allow the actual arguments to be copied to a formal argument
 and also to be copied back.
@@ -342,11 +344,11 @@ If the intent is omitted, it is called a blank intent.  In such a
 case, the value is copied from the actual to the formal.  Thus
 class instances are passed by reference and records are passed by value.
 Furthermore, a formal that has blank intent
-cannot be assigned within the function.
+cannot be assigned within the procedure.
 
 The exception to this rule is made for formals of array, domain, \chpl{sync},
 and \chpl{single} types. Arguments of these types are passed by reference
-and can be modified within the function.
+and can be modified within the procedure.
 
 \subsection{The In Intent}
 \label{The_In_Intent}
@@ -356,7 +358,7 @@ and can be modified within the function.
 If \chpl{in} is specified as the intent, the actual argument is copied
 to the formal argument by value.
 The formal may also be assigned to within
-the function.  This assignment is not reflected back at the call site.
+the procedure.  This assignment is not reflected back at the call site.
 
 If an array is passed to a formal argument that has \chpl{in} intent,
 a copy of the array is made.  Changes to the elements
@@ -371,7 +373,7 @@ If \chpl{out} is specified as the intent, the actual argument is
 ignored when the call is made, but after the call, the formal argument
 is assigned to the actual argument at the call site.  The actual
 argument must be a valid lvalue.  The formal argument can be assigned
-to and read from within the function.
+to and read from within the procedure.
 
 The formal argument cannot not be generic and is treated as a variable
 declaration. It is initialized to the default value for its type,
@@ -387,18 +389,20 @@ both passed to the formal argument as if the \chpl{in} intent applied
 and then copied back as if the \chpl{out} intent applied.  The formal
 argument can be generic and takes its type from the actual argument.
 The formal argument can be assigned to and read from within the
-function.
+procedure.
 
 
 \section{Variable Number of Arguments}
 \label{Variable_Length_Argument_Lists}
-\index{functions!variable number of arguments}
+\index{procedures!variable number of arguments}
 
-Functions can be defined to take a variable number of arguments where
-those arguments can have any intent or can be types.  A variable
-number of parameters is not supported.  This allows the call site to
+Procedures can be defined to take a variable number of arguments
+by using a variable argument expression for a formal argument.
+That formal can have any intent; it can be a type argument
+but cannot be a parameter argument.
+This allows the call site to
 pass a different number of actual arguments.  There must be at least
-one actual argument.
+one actual argument corresponding to a variable-argument-expression formal.
 
 If the variable argument expression contains an identifier prepended by a
 question mark, the number of actual arguments can vary, and the identifier
@@ -407,11 +411,10 @@ arguments at a given call site.
 If the variable argument expression contains an expression without
 a question mark, that expression must evaluate to an integer parameter value
 requiring the call site to pass that number of arguments to the
-function.
+procedure.
 
-Within the function, the formal argument that is marked with a
-variable argument expression is a tuple of the actual
-arguments.
+Within the procedure, the value of a formal argument that is marked with a
+variable argument expression is a tuple of the values of the actual arguments.
 
 \begin{chapelexample}{varargs.chpl}
 The code
@@ -488,34 +491,34 @@ expressions \chpl{tuple(1)} and \chpl{(1)} are not equivalent.
 \end{chapelexample}
 
 
-\section{Variable Functions}
-\label{Variable_Functions}
-\index{functions!variable functions}
-\index{functions!as lvalues}
+\section{Variable Procedures}
+\label{Variable_Procedures}
+\index{procedures!variable procedures}
+\index{procedures!as lvalues}
 
-A variable function is a function whose call is an lvalue
-(specifically, a call expression for a variable procedure and
-an iterator variable for an variable iterator).
-This implies that a variable function produces a reference;
+A variable procedure is a procedure whose call is an lvalue
+(specifically, a call expression for a non-iterator procedure and
+an iterator variable for an iterator).
+This implies that a variable procedure produces a reference;
 however, this
 reference cannot be captured.
 
-A variable function is specified by following the argument list with
-the \chpl{var} keyword.  A variable function must return or yield an lvalue.
+A variable procedure is specified by following the argument list with
+the \chpl{var} keyword.  A variable procedure must return or yield an lvalue.
 
-When a variable procedure is called on the left-hand side of an
+When a variable non-iterator procedure is called on the left-hand side of an
 assignment statement or in the context of a call to a formal argument
 by out or inout intent, the lvalue that is returned by the procedure is
 assigned a value.
 
-Variable functions provide an implicit param formal argument \chpl{setter}
+Variable procedures provide an implicit param formal argument \chpl{setter}
 of type \chpl{bool}.  If the
-variable function is called in a context requiring an lvalue,
+variable procedure is called in a context requiring an lvalue,
 the actual argument for \chpl{setter} is implicitly \chpl{true};
 otherwise it is \chpl{false}.  This argument is useful for adjusting
 the behavior depending to the calling context.
 
-\begin{chapelexample}{variable-functions.chpl}
+\begin{chapelexample}{variable-procedures.chpl}
 The following code defines a procedure that can be interpreted as a
 simple two-element array where the elements are actually global
 variables:
@@ -544,7 +547,7 @@ writeln(A(0) + A(1));
 This code outputs the number \chpl{3}.
 
 \index{setter}
-\index{functions!setter argument}
+\index{procedures!setter argument}
 The implicit \chpl{setter} argument can be used to ensure, for
 example, that the second element in the pseudo-array is only assigned
 a value if the first argument is positive.  To do this, add the
@@ -570,27 +573,27 @@ A2(1) = 1;
 \end{chapelpost}
 \begin{chapeloutput}
 3
-variable-functions.chpl:18: error: halt reached - cannot assign value to A(1) if A(0) <= 0
+variable-procedures.chpl:18: error: halt reached - cannot assign value to A(1) if A(0) <= 0
 \end{chapeloutput}
 \end{chapelexample}
 
 
-\section{Parameter Functions}
-\label{Parameter_Functions}
-\index{functions!as parameters}
-\index{functions!parameter function}
-\index{parameter function}
+\section{Parameter Procedures}
+\label{Parameter_Procedures}
+\index{procedures!as parameters}
+\index{procedures!parameter procedure}
+\index{parameter procedure}
 
-A \emph{parameter function}, or a \emph{param function}, is a function that returns a parameter
-expression.  It is specified by following the function's argument list
+A \emph{parameter procedure}, or a \emph{param procedure}, is a procedure that returns a parameter
+expression.  It is specified by following the procedure's argument list
 by the keyword \chpl{param}.  It is often, but not necessarily,
 generic.
 
-It is a compile-time error if a parameter function does not return a
-parameter expression.  The result of a parameter function is computed
+It is a compile-time error if a parameter procedure does not return a
+parameter expression.  The result of a parameter procedure is computed
 during compilation and substituted for the call expression.
 
-\begin{chapelexample}{param-functions.chpl}
+\begin{chapelexample}{param-procedures.chpl}
 In the code
 \begin{chapel}
 proc sumOfSquares(param a: int, param b: int) param
@@ -611,29 +614,29 @@ call is used in the declaration of a homogeneous tuple and so is
 required to be a parameter.
 \end{chapelexample}
 
-Parameter functions may not contain control flow that is not resolved
+Parameter procedures may not contain control flow that is not resolved
 at compile-time.  This includes loops other than the parameter for
 loop~\rsec{Parameter_For_Loops} and conditionals with a conditional
 expressions that is not a parameter.
 
 
-\section{Type Functions}
-\label{Type_Functions}
-\index{functions!as types}
+\section{Type Procedures}
+\label{Type_Procedures}
+\index{procedures!as types}
 
-A \emph{type function} is a function that returns a type, not a value.  It is specified by
-following the function's argument list by the keyword \chpl{type}, without the subsequent return type.  It
+A \emph{type procedure} is a procedure that returns a type, not a value.  It is specified by
+following the procedure's argument list by the keyword \chpl{type}, without the subsequent return type.  It
 is often, but not necessarily, generic.
 
-It is a compile-time error if a type function does not return a type.
-The result of a type function is computed during compilation.
+It is a compile-time error if a type procedure does not return a type.
+The result of a type procedure is computed during compilation.
 
-As with parameter functions, type functions may not contain control
+As with parameter procedures, type procedures may not contain control
 flow that is not resolved at compile-time.  This includes loops other
 than the parameter for loop~\rsec{Parameter_For_Loops} and
 conditionals with a conditional expression that is not a parameter.
 
-\begin{chapelexample}{type-functions.chpl}
+\begin{chapelexample}{type-procedures.chpl}
 In the code
 \begin{chapel}
 proc myType(x) type {
@@ -663,12 +666,14 @@ procedure defined in the Types module~(\rsec{Types_standard_module}).
 \label{The_Return_Statement}
 \index{return@\chpl{return}}
 
-The return statement can only appear in a function.  It exits that
-function, returning control to the point at which that function was
-called.  A return statement in a procedure of a non-void return type
-must include an expression, which indicates the value to be returned,
+The return statement can only appear in a procedure.  It exits that
+procedure, returning control to the point at which that procedure was
+called.  A return statement in a non-iterator procedure whose
+return type is not void must include an expression.
+That expression indicates the value to be returned,
 i.e., the value that becomes the value of the invoking call expression.
-Other returns statements may not include an expression.
+Return statements in non-iterator procedures whose return type is void
+and return statements in iterators may not include an expression.
 
 The syntax of the return statement is given by
 \begin{syntax}
@@ -694,10 +699,10 @@ writeln(sum(1, 2, 3));
 
 \section{Return Types}
 \label{Return_Types}
-\index{return@\chpl{return}!types}
-\index{functions!return@\chpl{return} types}
+\index{return@\chpl{return}!type}
+\index{procedures!return types}
 
-A procedure can optionally return a value.  If the procedure does not
+A non-iterator procedure can optionally return a value.  If the procedure does not
 return a value, its return type is \chpl{void}.  Specifying the return
 type in a procedure declaration is optional.
 
@@ -705,9 +710,9 @@ type in a procedure declaration is optional.
 \label{Explicit_Return_Types}
 \index{explicit return type}
 
-If a return type is specified and is not \chpl{void}, the values that the procedure returns
+If a return type is specified and is not \chpl{void}, the values that the non-iterator procedure returns
 via return statements must be assignable to a variable of the return
-type.  For variable procedures~(\rsec{Variable_Functions}), the return
+type.  For variable procedures~(\rsec{Variable_Procedures}), the return
 type must match the type returned in all of the return statements
 exactly, when checked after generic instantiation and parameter folding
 (if applicable).
@@ -722,39 +727,40 @@ statements.  Given the types that are returned by the different
 statements, if exactly one of those types can be a target, via
 implicit conversions, of every other type, then that is the inferred
 return type.  Otherwise, it is an error.  For variable
-procedures~(\rsec{Variable_Functions}), every return statement must
+procedures~(\rsec{Variable_Procedures}), every return statement must
 return the same exact type and it becomes the inferred type.
-For procedures without any return statements, the return type is \chpl{void}.
+For non-iterator procedures without any return statements, the return type is \chpl{void}.
 
 
-\section{Nested Functions}
-\label{Nested_Functions}
-\index{functions!nested}
-\index{nested function}
+\section{Nested Procedures}
+\label{Nested_Procedures}
+\label{Procedure_Definition_Aspects__End}
+\index{procedures!nested}
+\index{nested procedure}
 
-A function defined in another function is called a nested function.
-Nesting of functions may be done to arbitrary degrees, i.e., a
-function can be nested in a nested function.
+A procedure defined in another procedure is called a nested procedure.
+Nesting of procedures may be done to arbitrary degrees, i.e., a
+procedure can be nested in a nested procedure.
 
-Nested functions are only visible to function calls within the lexical scope
+Nested procedures are only visible to procedure calls within the lexical scope
 in which they are defined.
 
-Nested functions may refer to variables defined in the function(s) in
+Nested procedures may refer to variables defined in the procedure(s) in
 which they are nested.
 
 
-\section{Function and Operator Overloading}
-\label{Function_Overloading}
-\index{functions!overloading}
+\section{Procedure and Operator Overloading}
+\label{Procedure_Overloading}
+\index{procedures!overloading}
 \index{operators!overloading}
-\index{function overloading}
+\index{procedure overloading}
 \index{operator overloading}
 
-Functions that have the same name but different argument lists are
-called overloaded functions.  Function calls to overloaded functions
-are resolved according to the function resolution algorithm in~\rsec{Function_Resolution}.
+Procedures that have the same name but different argument lists are
+called overloaded procedures.  Procedure calls to overloaded procedures
+are resolved according to the procedure resolution algorithm in~\rsec{Procedure_Resolution}.
 
-Operator overloading is achieved by defining a function with a name
+Operator overloading is achieved by defining a procedure with a name
 specified by that operator.  The operators that may be overloaded are
 listed in the following table:
 
@@ -771,68 +777,70 @@ binary & \verb@+ - * / % ** ! == <= >= < > << >> & | ^ @ by\\
 
 The arity and precedence of the operator must be maintained when it is
 overloaded.  Operator resolution follows the same algorithm as
-function resolution.
+procedure resolution.
 
 
-\section{Function Resolution}
-\label{Function_Resolution}
-\index{function resolution}
-\index{functions!resolution}
+\section{Procedure Resolution}
+\label{Procedure_Resolution}
+\index{procedure resolution}
+\index{procedures!resolution}
 
-\emph{Function resolution} is the algorithm that determines
-which function to invoke for a given call expression.
-Function resolution is defined as follows.
+\emph{Procedure resolution} is the algorithm that determines
+which procedure to invoke for a given call expression.
+Procedure resolution is defined as follows.
 \begin{itemize}
 \item
-Identify the set of visible functions for the function call.  A
-\emph{visible function} is any function that satisfies the criteria
-in~\rsec{Determining_Visible_Functions}.  If no visible function can
+Identify the set of visible procedures for the procedure call.  A
+\emph{visible procedure} is any procedure that satisfies the criteria
+in~\rsec{Determining_Visible_Procedures}.  If no visible procedure can
 be found, the compiler will issue an error stating that the call
 cannot be resolved.
 \item
-From the set of visible functions for the function call, determine the
-set of candidate functions for the function call.  A \emph{candidate
-function} is any function that satisfies the criteria
-in~\rsec{Determining_Candidate_Functions}.  If no candidate function
+From the set of visible procedures for the procedure call, determine the
+set of candidate procedures for the procedure call.  A \emph{candidate
+procedure} is any procedure that satisfies the criteria
+in~\rsec{Determining_Candidate_Procedures}.  If no candidate procedure
 can be found, the compiler will issue an error stating that the call
-cannot be resolved.  If exactly one candidate function is found, this
-is determined to be the function.
+cannot be resolved.  If exactly one candidate procedure is found, this
+is determined to be the procedure.
+\index{procedures!resolution!most specific}
 \item
-From the set of candidate functions, the most specific function is
-determined.  The most specific function is a candidate function that
-is \emph{more specific} than every other candidate function as defined
-in~\rsec{Determining_More_Specific_Functions}.  If there is no
-function that is more specific than every other candidate function,
+From the set of candidate procedures, the most specific procedure is
+determined.  The most specific procedure is a candidate procedure that
+is \emph{more specific} than every other candidate procedure as defined
+in~\rsec{Determining_More_Specific_Procedures}.  If there is no
+procedure that is more specific than every other candidate procedure,
 the compiler will issue an error stating that the call is ambiguous.
 \end{itemize}
 
-\subsection{Determining Visible Functions}
-\label{Determining_Visible_Functions}
-\index{functions!visible}
+\subsection{Determining Visible Procedures}
+\label{Determining_Visible_Procedures}
+\index{procedures!resolution!visible}
+\index{procedures!visible}
 
-Given a function call, a function is determined to be a \emph{visible
-function} if the name of the function is the same as the name of the
-function call and the function is defined in the same scope as the
-function call or a lexical outer scope of the function call, or if the
-function is defined in a module that is used from the same scope as
-the function call or a lexical outer scope of the function call.
-Function visibility in generic functions is discussed
-in~\rsec{Function_Visibility_in_Generic_Functions}.
+Given a procedure call, a procedure is determined to be a \emph{visible
+procedure} if the name of the procedure is the same as the name of the
+procedure call and the procedure is defined in the same scope as the
+procedure call or a lexical outer scope of the procedure call, or if the
+procedure is defined in a module that is used from the same scope as
+the procedure call or a lexical outer scope of the procedure call.
+Procedure visibility in generic procedures is discussed
+in~\rsec{Procedure_Visibility_in_Generic_Procedures}.
 
-\subsection{Determining Candidate Functions}
-\label{Determining_Candidate_Functions}
-\index{functions!candidates}
+\subsection{Determining Candidate Procedures}
+\label{Determining_Candidate_Procedures}
+\index{procedures!resolution!candidates}
 
-Given a function call, a function is determined to be
-a \emph{candidate function} if there is a \emph{valid mapping} from
-the function call to the function and each actual argument is mapped
+Given a procedure call, a procedure is determined to be
+a \emph{candidate procedure} if there is a \emph{valid mapping} from
+the procedure call to the procedure and each actual argument is mapped
 to a formal argument that is a \emph{legal argument mapping}.
 
 \subsubsection{Valid Mapping}
 \label{Valid_Mapping}
 
-The following algorithm determines a valid mapping from a function
-call to a function if one exists:
+The following algorithm determines a valid mapping from a procedure
+call to a procedure if one exists:
 \begin{itemize}
 \item
 Each actual argument that is passed by name is matched to the formal
@@ -861,32 +869,32 @@ type $T_F$ if any of the following conditions hold:
 \item $T_A$ is scalar promotable to $T_F$.
 \end{itemize}
 
-\subsection{Determining More Specific Functions}
-\label{Determining_More_Specific_Functions}
-\index{functions!most specific}
+\subsection{Determining More Specific Procedures}
+\label{Determining_More_Specific_Procedures}
+\index{procedures!resolution!more specific}
 
-Given two functions $F_1$ and $F_2$, the more specific function is
+Given two procedures $P_1$ and $P_2$, the more specific procedure is
 determined by the following steps:
 \begin{itemize}
-\item If $F_1$ does not require promotion and $F_2$ does require promotion, then $F_1$ is more specific.
-\item If $F_2$ does not require promotion and $F_1$ does require promotion, then $F_2$ is more specific.
+\item If $P_1$ does not require promotion and $P_2$ does require promotion, then $P_1$ is more specific.
+\item If $P_2$ does not require promotion and $P_1$ does require promotion, then $P_2$ is more specific.
 \item
-If at least one of the legal argument mappings to $F_1$ is a {\em more
+If at least one of the legal argument mappings to $P_1$ is a {\em more
 specific argument mapping} than the corresponding legal argument
-mapping to $F_2$ and none of the legal argument mappings to $F_2$ is a
+mapping to $P_2$ and none of the legal argument mappings to $P_2$ is a
 more specific argument mapping than the corresponding legal argument
-mapping to $F_1$, then $F_1$ is more specific.
+mapping to $P_1$, then $P_1$ is more specific.
 \item
-If at least one of the legal argument mappings to $F_2$ is a {\em more
+If at least one of the legal argument mappings to $P_2$ is a {\em more
 specific argument mapping} than the corresponding legal argument
-mapping to $F_1$ and none of the legal argument mappings to $F_1$ is a
+mapping to $P_1$ and none of the legal argument mappings to $P_1$ is a
 more specific argument mapping than the corresponding legal argument
-mapping to $F_2$, then $F_2$ is more specific.
-\item If $F_1$ shadows $F_2$, then $F_1$ is more specific.
-\item If $F_2$ shadows $F_1$, then $F_2$ is more specific.
-\item If $F_1$ has a where clause and $F_2$ does not have a where clause, then $F_1$ is more specific.
-\item If $F_2$ has a where clause and $F_1$ does not have a where clause, then $F_2$ is more specific.
-\item Otherwise neither function is more specific.
+mapping to $P_2$, then $P_2$ is more specific.
+\item If $P_1$ shadows $P_2$, then $P_1$ is more specific.
+\item If $P_2$ shadows $P_1$, then $P_2$ is more specific.
+\item If $P_1$ has a where clause and $P_2$ does not have a where clause, then $P_1$ is more specific.
+\item If $P_2$ has a where clause and $P_1$ does not have a where clause, then $P_2$ is more specific.
+\item Otherwise neither procedure is more specific.
 \end{itemize}
 
 Given an argument mapping, $M_1$, from an actual argument, $A$, of

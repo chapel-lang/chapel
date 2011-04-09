@@ -42,6 +42,8 @@ expression:
 
 \section{Literal Expressions}
 \label{Literal_Expressions}
+\index{literal expressions}
+\index{expressions!literal}
 
 A literal value for any of the built-in
 types~(\rsec{Primitive_Type_Literals}) is a literal expression.
@@ -59,6 +61,8 @@ literal-expression:
 
 \section{Variable Expressions}
 \label{Variable_Expressions}
+\index{variable expressions}
+\index{expressions!variable}
 
 A use of a variable, constant, parameter, or formal argument, is
 itself an expression.  The syntax of a variable expression is given
@@ -70,6 +74,8 @@ variable-expression:
 
 \section{Enumeration Constant Expression}
 \label{Enumeration_Constant_Expression}
+\index{enumeration constant expression}
+\index{expressions!enumeration constant}
 
 A use of an enumeration constant is itself an expression.  Such a
 constant must be preceded by the enumeration type name.  The syntax of
@@ -84,6 +90,8 @@ see~\rsec{Enumerated_Types}.
 
 \section{Parenthesized Expressions}
 \label{Parenthesized_Expressions}
+\index{parenthesized expressions}
+\index{expressions!parenthesized}
 
 A \sntx{parenthesized-expression} is an expression that is delimited
 by parentheses as given by:
@@ -96,21 +104,28 @@ ignored and have only a syntactical effect.
 
 \section{Call Expressions}
 \label{Call_Expressions}
-\index{function calls}
+\index{call expressions}
+\index{expressions!call}
+\index{procedure calls}
 
-Functions and function calls are defined in~\rsec{Functions}.
+Procedures and procedure calls are defined in~\rsec{Procedures}.
 
 \section{Indexing Expressions}
 \label{Indexing_Expressions}
 \index{indexing}
+\index{expressions!indexing}
 
-Indexing into arrays, tuples, and domains has the same syntax as a
-call expression.  Indexing, at its core, is nothing more than a call
-to the indexing function defined on these types.
+Indexing, for example into arrays, tuples, and domains,
+has the same syntax as a call expression.
+
+Indexing is performed by an implicit invocation of the \chpl{this} method
+on the value being indexed,
+passing the indices as the actual arguments.
 
 \section{Member Access Expressions}
 \label{Member_Access_Expressions}
 \index{member access}
+\index{expressions!member access}
 
 Member access expressions provide access to a field or invoke a method
 of an instance of a class, record, or union.
@@ -126,6 +141,7 @@ member-access-expression:
 \section{The Query Expression}
 \label{The_Query_Expression}
 \index{?@\chpl{?}}
+%TODO-how? \index{expressions!\?}
 
 A query expression is used to query a type or value within a formal
 argument type expression.  The syntax of a query expression is given
@@ -145,7 +161,7 @@ its generic fields when specifying a formal argument as discussed
 in~\rsec{Formal_Arguments_of_Generic_Type}.
 
 \begin{chapelexample}{query.chpl}
-The following code defines a generic function where the type of the
+The following code defines a generic procedure where the type of the
 first argument is queried and stored in the type alias \chpl{t} and
 the domain of the second argument is queried and stored in the
 variable \chpl{D}:
@@ -166,10 +182,10 @@ foo(x, y);
 writeln(y);
 }
 \end{chapelnoprint}
-This allows a generic specification of a function to assign a
+This allows a generic specification of assigning a
 particular value to all elements of an array.  The value and the
 elements of the array are constrained to be the same type.  This
-function can be rewritten without query expression as follows:
+procedure can be rewritten without query expression as follows:
 \begin{chapelnoprint}
 { // }
 \end{chapelnoprint}
@@ -199,6 +215,7 @@ places in the future.
 \section{Casts}
 \label{Casts}
 \index{casts}
+\index{expressions!cast}
 
 A cast is specified with the following syntax:
 \begin{syntax}
@@ -223,19 +240,20 @@ explicit conversion:
 \section{LValue Expressions}
 \label{lvalue}
 \index{lvalue}
+\index{expressions!lvalue}
 
 An {\em lvalue} is an expression that can be used on the left-hand
 side of an assignment statement or on either side of a swap statement,
-that can be passed to a formal argument of a function that
+that can be passed to a formal argument of a procedure that
 has \chpl{out} or \chpl{inout} intent, or that can be returned by a
-variable function.  Valid lvalue expressions include the following:
+variable procedure.  Valid lvalue expressions include the following:
 \begin{itemize}
 \item
  Variable expressions.
 \item
  Member access expressions.
 \item
- Call expressions of variable functions.
+ Call expressions of variable procedures.
 \item
  Indexing expressions.
 \end{itemize}
@@ -266,8 +284,8 @@ precedence than those listed later.
 {\bf Operator} & {\bf Associativity} & {\bf Use} \\
 \hline
 \verb@.@ & \multirow{3}{*}{left} & member access \\
-\verb@()@ & & function call or access (zipper) \\
-\verb@[]@ & & function call or access (tensor) \\
+\verb@()@ & & procedure call or access (zipper) \\
+\verb@[]@ & & procedure call or access (tensor) \\
 \hline
 \verb@new@ & right & constructor call \\
 \hline
@@ -432,8 +450,11 @@ expression is not a scalar as expected.
 \section{Operator Expressions}
 \label{Binary_Expressions}
 \label{Unary_Expressions}
+\index{operators!operator expressions}
+\index{expressions!operator}
 
 The application of operators to expressions is itself an expression.
+\index{operators!unary}
 The syntax of a unary expression is given by:
 \begin{syntax}
 unary-expression:
@@ -443,6 +464,7 @@ unary-operator: one of
   + - ~ !
 \end{syntax}
 
+\index{operators!binary}
 The syntax of a binary expression is given by:
 \begin{syntax}
 binary-expression:
@@ -460,10 +482,10 @@ The operators are defined in subsequent sections.
 
 This section describes the predefined arithmetic operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}).
+overloading~(\rsec{Procedure_Overloading}).
 
 For each operator, implicit conversions are applied to the operands of
-an operator such that they are compatible with one of the function
+an operator such that they are compatible with one of the procedure
 forms listed, those listed earlier in the list being given
 preference.  If no compatible implicit conversions exist, then a
 compile-time error occurs.  In these cases, an explict cast is required.
@@ -476,6 +498,7 @@ the 32-bit integers.  The result is a 32-bit integer.
 \subsection{Unary Plus Operators}
 \label{Unary_Plus_Operators}
 \index{+ (unary)@\chpl{+} (unary)}
+\index{operators!+, unary}
 
 The unary plus operators are predefined as follows:
 \begin{chapel}
@@ -495,6 +518,7 @@ For each of these definitions, the result is the value of the operand.
 \subsection{Unary Minus Operators}
 \label{Unary_Minus_Operators}
 \index{- (unary)@\chpl{-} (unary)}
+\index{operators!-, unary}
 
 The unary minus operators are predefined as follows:
 \begin{chapel}
@@ -522,6 +546,7 @@ to \chpl{int(64)} using an implicit conversion.
 \subsection{Addition Operators}
 \label{Addition_Operators}
 \index{+@\chpl{+}}
+\index{operators!+, numeric}
 
 The addition operators are predefined as follows:
 \begin{chapel}
@@ -568,6 +593,7 @@ type.
 \subsection{Subtraction Operators}
 \label{Subtraction_Operators}
 \index{-@\chpl{-}}
+\index{operators!-, numeric}
 
 The subtraction operators are predefined as follows:
 \begin{chapel}
@@ -617,6 +643,7 @@ versa, also produces a value of complex type.
 \subsection{Multiplication Operators}
 \label{Multiplication_Operators}
 \index{*@\chpl{*}}
+\index{operators!*}
 
 The multiplication operators are predefined as follows:
 \begin{chapel}
@@ -666,6 +693,7 @@ value of complex type.
 \subsection{Division Operators}
 \label{Division_Operators}
 \index{/@\chpl{/}}
+\index{operators!/}
 
 The division operators are predefined as follows:
 \begin{chapel}
@@ -715,6 +743,7 @@ type.
 \subsection{Modulus Operators}
 \label{Modulus_Operators}
 \index{\%@\chpl{\%}}
+\index{operators!\%}
 
 The modulus operators are predefined as follows:
 \begin{chapel}
@@ -738,6 +767,7 @@ extended to handle real, imaginary, and complex types in the future.
 \subsection{Exponentiation Operators}
 \label{Exponentiation_Operators}
 \index{**@\chpl{**}}
+\index{operators!**}
 
 The exponentiation operators are predefined as follows:
 \begin{chapel}
@@ -767,11 +797,12 @@ will be extended to handle imaginary and complex types in the future.
 
 This section describes the predefined bitwise operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}).
+overloading~(\rsec{Procedure_Overloading}).
 
 \subsection{Bitwise Complement Operators}
 \label{Bitwise_Complement_Operators}
 \index{\~@\chpl{\~}}
+%TODO-how? \index{operators!\~}
 
 The bitwise complement operators are predefined as follows:
 \begin{chapel}
@@ -787,6 +818,7 @@ the operand.
 \subsection{Bitwise And Operators}
 \label{Bitwise_And_Operators}
 \index{&@\chpl{&}}
+\index{operators!\&}
 
 The bitwise and operators are predefined as follows:
 \begin{chapel}
@@ -823,7 +855,8 @@ reflects the semantics of standard C.
 
 \subsection{Bitwise Or Operators}
 \label{Bitwise_Or_Operators}
-\index{|@\chpl{|}}
+\index{\|@\chpl{|}}
+%TODO-how? \index{operators!\|}
 
 The bitwise or operators are predefined as follows:
 \begin{chapel}
@@ -853,6 +886,7 @@ The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 \subsection{Bitwise Xor Operators}
 \label{Bitwise_Xor_Operators}
 \index{^@\chpl{^}}
+%TODO-how? \index{operators!\^}
 
 The bitwise xor operators are predefined as follows:
 \begin{chapel}
@@ -882,10 +916,12 @@ The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 \label{Shift_Operators}
 \index{<<@\chpl{<<}}
 \index{>>@\chpl{>>}}
+%TODO-how? \index{operators!\<\<}
+%TODO-how? \index{operators!\>\>}
 
 This section describes the predefined shift operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}).
+overloading~(\rsec{Procedure_Overloading}).
 
 The shift operators are predefined as follows:
 \begin{chapel}
@@ -915,11 +951,12 @@ The value of \chpl{b} must be non-negative.
 
 This section describes the predefined logical operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}).
+overloading~(\rsec{Procedure_Overloading}).
 
 \subsection{The Logical Negation Operator}
 \label{Logical_Negation_Operators}
 \index{!@\chpl{!}}
+%TODO-how? \index{operators!\!}
 
 The logical negation operator is predefined as follows:
 \begin{chapel}
@@ -930,6 +967,7 @@ The result is the logical negation of the operand.
 \subsection{The Logical And Operator}
 \label{Logical_And_Operators}
 \index{&&@\chpl{&&}}
+\index{operators!\&\&}
 
 The logical and operator is predefined over bool type.  It returns
 true if both operands evaluate to true; otherwise it returns false.
@@ -946,16 +984,17 @@ is evaluated as the expression
 if isTrue(a) then isTrue(b) else false
 \end{chapel}
 
-The function \chpl{isTrue} is predefined over bool type as follows:
+The procedure \chpl{isTrue} is predefined over bool type as follows:
 \begin{chapel}
 proc isTrue(a:bool) return a;
 \end{chapel}
 Overloading the logical and operator over other types is accomplished
-by overloading the \chpl{isTrue} function over other types.
+by overloading the \chpl{isTrue} procedure over other types.
 
 \subsection{The Logical Or Operator}
 \label{Logical_Or_Operators}
 \index{||@\chpl{||}}
+\index{operators!\&\&}
 
 The logical or operator is predefined over bool type.  It returns
 true if either operand evaluate to true; otherwise it returns false.
@@ -972,10 +1011,10 @@ is evaluated as the expression
 if isTrue(a) then true else isTrue(b)
 \end{chapel}
 
-The function \chpl{isTrue} is predefined over bool type as described
+The procedure \chpl{isTrue} is predefined over bool type as described
 in~\rsec{Logical_And_Operators}.  Overloading the logical or operator
 over other types is accomplished by overloading the \chpl{isTrue}
-function over other types.
+procedure over other types.
 
 \section{Relational Operators}
 \label{Relational_Operators}
@@ -983,12 +1022,14 @@ function over other types.
 
 This section describes the predefined relational operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}).
+overloading~(\rsec{Procedure_Overloading}).
 
 \subsection{Ordered Comparison Operators}
 \label{Ordered_Comparison_Operators}
+\index{operators!ordered comparison}
 
 \index{<@\chpl{<}}
+%TODO-how? \index{operators!\<}
 The ``less than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
@@ -1005,6 +1046,7 @@ The result of \chpl{a < b} is true if \chpl{a} is less than \chpl{b};
 otherwise the result is false.
 
 \index{>@\chpl{>}}
+%TODO-how? \index{operators!\>}
 The ``greater than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
@@ -1021,6 +1063,7 @@ The result of \chpl{a > b} is true if \chpl{a} is greater
 than \chpl{b}; otherwise the result is false.
 
 \index{<=@\chpl{<=}}
+%TODO-how? \index{operators!\<=}
 The ``less than or equal to'' comparison operators are predefined over
 numeric types as follows:
 \begin{chapel}
@@ -1037,6 +1080,7 @@ The result of \chpl{a <= b} is true if \chpl{a} is less than or equal
 to \chpl{b}; otherwise the result is false.
 
 \index{>=@\chpl{>=}}
+%TODO-how? \index{operators!\>=}
 The ``greater than or equal to'' comparison operators are predefined
 over numeric types as follows:
 \begin{chapel}
@@ -1068,6 +1112,8 @@ elementwise to the string's characters in order.
 \label{Equality_Comparison_Operators}
 \index{==@\chpl{==}}
 \index{!=@\chpl{!=}}
+\index{operators!==}
+%TODO-how? \index{operators!\!=}
 
 The equality comparison operators are predefined over bool and the
 numeric types as follows:
@@ -1117,11 +1163,12 @@ equivalent to \chpl{\!(a == b)}.
 
 This section describes several miscellaneous operators.  These
 operators can be redefined over different types using operator
-overloading~(\rsec{Function_Overloading}).
+overloading~(\rsec{Procedure_Overloading}).
 
 \subsection{The String Concatenation Operator}
 \label{The_String_Concatenation_Operator}
 \index{+@\chpl{+}}
+\index{operators!+, on strings}
 
 The string concatenation operator \chpl{+} is predefined over numeric, boolean,
 and enumerated types with strings. It casts its operands to string type and
@@ -1151,17 +1198,17 @@ would be \chpl{"result: 3"}.
 
 \subsection{The By Operator}
 \label{The_By_Operator}
-\index{arithmetic domains!strided}
-\index{arithmetic domains!by operator}
 \index{by@\chpl{by}}
+\index{operators!by}
 
-The operator \chpl{by} is predefined on ranges and arithmetic domains.
+The operator \chpl{by} is predefined on ranges and rectangular domains.
 It is described in~\rsec{By_Operator_For_Ranges} for ranges
 and~\rsec{Domain_Striding} for domains.
 
 \subsection{The Range Count Operator}
 \label{The_Range_Count_Operator}
 \index{#@\chpl{#}}
+\index{operators!\#}
 
 The operator \chpl{#} is predefined on ranges. It is described
 in ~\rsec{Count_Operator}.
@@ -1169,6 +1216,7 @@ in ~\rsec{Count_Operator}.
 \section{Let Expressions}
 \label{Let_Expressions}
 \index{let@\chpl{let}}
+\index{expressions!let}
 
 A let expression allows variables to be declared at the expression
 level and used within that expression.  The syntax of a let expression
@@ -1204,7 +1252,8 @@ of that value.
 
 \section{Conditional Expressions}
 \label{Conditional_Expressions}
-\index{conditional!expression}
+\index{conditional expression}
+\index{expressions!conditional}
 \index{if@\chpl{if}}
 \index{then@\chpl{then}}
 \index{else@\chpl{else}}
@@ -1252,6 +1301,7 @@ Half of 1000 is 500
 \section{For Expressions}
 \label{For_Expressions}
 \index{for@\chpl{for}}
+\index{expressions!for}
 
 A for expression is given by the following syntax:
 \begin{syntax}

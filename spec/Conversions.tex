@@ -12,7 +12,7 @@ explicit~(\rsec{Explicit_Conversions}).
 
 Implicit conversions can occur during an assignment (from the
 expression on the right-hand side to the variable on the left-hand
-side) or during a function call (from the actual expression to the
+side) or during a procedure call (from the actual expression to the
 formal argument).  An implicit conversion does not require a cast.
 
 Implicit conversions are allowed between numeric
@@ -64,7 +64,7 @@ to \chpl{real(32)} are supported and allow for a loss of precision.
 Since the default \chpl{real} size is 64 and the default \chpl{int}
 size is 32 in Chapel, we did not follow the lead of C\# in this regard
 since it seemed unfortunate to favor \chpl{real(32)} over \chpl{real}
-in the default case.  That is, given the \chpl{sqrt} function defined
+in the default case.  That is, given the \chpl{sqrt} procedure defined
 over \chpl{real(32)} and \chpl{real}, it is preferable to choose the
 version over \chpl{real} when calling with an actual of
 type \chpl{int} rather than lose precision and half of the bits to
@@ -206,7 +206,7 @@ of the truncated bits is true, an invalid cast exception is thrown.
 For integer conversions, the default behavior of a program should be to produce
 a run-time error if there is a loss of precision.  So explicit casts not only
 give rise to a value conversion at run time, but amount to an assertion
-that the required precision is preserved.  Explicit conversion functions are
+that the required precision is preserved.  Explicit conversion procedures are
 available in the run-time library so that one can perform explicit conversions that result in a loss
 of precision without generating a run-time diagnostic.
 \end{rationale}

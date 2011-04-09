@@ -3,7 +3,7 @@
 \index{records}
 
 A record is a data structure that is similar to a class but instead has value
-semantics, similar to primitive types.  Value semantics mean that assignment, argument passing and function
+semantics, similar to primitive types.  Value semantics mean that assignment, argument passing and procedure
 return values are by default all done by copying.  Value semantics also imply that a
 variable of record type is associated with only one piece of storage and has
 only one type throughout its lifetime.  Storage is allocated for a variable of
@@ -71,7 +71,7 @@ without modification if invoked through a derived record instance.
 \begin{rationale}
 Inheritance implies that the derived type can be cast to one of its base types.
 If the base type is a record type, casting to the base type has the effect of
-removing all of the data fields and all of functions that are not associated
+removing all of the data fields and all of methods that are not associated
 with the base type.  Thereafter, the record variable has the base record type,
 in both compile-time and run-time interpretations.
 
@@ -83,7 +83,7 @@ allocated in this special case, to store the record's run-time type.
 \end{rationale}
 
 As in a class declarations, the body of a record declaration can contain
-variable, iterator and function declarations as well as nested type declarations.
+variable, iterator and method declarations as well as nested type declarations.
 
 If a record declaration contains a type alias or parameter field, or it contains
 a variable or constant without a specified type and without an initialization
@@ -138,8 +138,8 @@ an instance of the \chpl{Actor} class defined in the preceding chapter~\rsec{Cla
 \label{Record_Methods}
 \index{records!methods}
 
-A record method is a function or iterator that is bound to a record.  Unlike
-functions that take a record as an argument, record methods access the record by
+A record method is a procedure that is bound to a record.  Unlike
+procedures that take a record as an argument, record methods access the record by
 reference, so that persistent field updates are possible.
 
 The syntax for record method declarations is identical to that for class method
@@ -237,7 +237,7 @@ allocated within the object as if they had been declared individually.  In this
 sense, records provide a way to group related fields within a containing class
 or record type. 
 
-In the contex of a function or iterator body, a record variable declaration
+In the contex of a procedure body, a record variable declaration
 causes storage to be allocated sufficient to store all of the fields in that
 record type.  The record variable is initialized through a call to its
 default initializer.  The default initializer for a record is defined in the
@@ -290,8 +290,8 @@ this kind of assignment would require carrying the type of the record as a
 run-time type within the class variable.  That further implies that invocation
 of a method associated with that class would be dispatched dynamically.  Either
 the class variable needs to have an auxilliary field that points to a virtual
-function table associated with the record type, or the record itself must now
-accommodate a virtual function table.  In any case, this runs somewhat counter
+method table associated with the record type, or the record itself must now
+accommodate a virtual method table.  In any case, this runs somewhat counter
 to the notion that record types are purely static.
 \end{rationale}
 
@@ -454,7 +454,7 @@ supplied, the default initializer cannot be called directly.
 \label{Record_Arguments}
 \index{records!arguments}
 
-A function declared with an argument of record type expects that argument to be
+A procedure declared with an argument of record type expects that argument to be
 passed by value unless intents (\rsec{Intents}) are used.  The type of the
 actual argument must be compatible with the type of the formal argument, as if
 the former is being assigned to the latter.  Specifically, for each field $f$
@@ -462,7 +462,7 @@ defined in the type of the formal argument, there must be a corresponding field
 in the actual argument which can be assigned to $f$.  If the actual argument
 type is derived from the formal argument type, this condition always holds.
 
-When a record as passed as a function argument, it is copied into
+When a record as passed as a procedure argument, it is copied into
 the corresponding formal argument, consistent with the semantics described for
 record assignment (\rsec{Record_Assignment}).
 
@@ -565,7 +565,7 @@ user-defined manner.
 \index{records!equality}
 \index{records!inequality}
 
-Default functions to overload \chpl{==} and \chpl{\!=} are defined for
+Default procedures to overload \chpl{==} and \chpl{\!=} are defined for
 records if none are explicitly defined.
 The default implementation of \chpl{==} applies \chpl{==} to each
 field of the two argument records and reduces the result with
@@ -581,7 +581,7 @@ The key differences between records and classes are listed below.
 
 \subsection{Declarations}
 \label{Declaration_Differences}
-\index{records!declarations}
+\index{records!declarations!differences with classes}
 
 Syntactically, class and record type declarations are identical, except that
 they begin with the \chpl{class} and \chpl{record} keywords, respectively.
@@ -629,7 +629,7 @@ Assignment of a record to a class variable is not permitted.
 \index{records!arguments}
 
 The semantics of argument passing is determined by the type of the formal
-argument (as declared inside the function header).  An actual argument is of a
+argument (as declared inside the procedure header).  An actual argument is of a
 type compatible with the formal argument only if it is legal to assign the
 actual to the formal.
 %REVIEW vass: how is this different from the general rule for argument passing?
