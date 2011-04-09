@@ -331,7 +331,7 @@ aggregate expressions in stylized ways.  Reduction expressions
 collapse the aggregate's values down to a summary value.  Scan
 expressions compute an aggregate of results where each result value
 stores the result of a reduction applied to all of the elements in the
-aggregate up to that expression.  Chapel provides a number of built-in
+aggregate up to that expression.  Chapel provides a number of predefined
 reduction and scan operators, and also supports a mechanism for the
 user to define additional reductions and
 scans~(\rsec{User_Defined_Reductions_and_Scans}).
@@ -356,7 +356,7 @@ reduce-scan-operator: one of
   + * && || & | ^ `min' `max' `minloc' `maxloc'
 \end{syntax}
 
-Chapel's built-in reduction operators are defined
+Chapel's predefined reduction operators are defined
 by \sntx{reduce-scan-operator} above.  In order, they are: sum,
 product, logical-and, logical-or, bitwise-and, bitwise-or,
 bitwise-exclusive-or, minimum, maximum, minimum-with-location, and
@@ -429,8 +429,8 @@ scan-expression:
   class-type `scan' expression
 \end{syntax}
 
-The built-in scans are defined in \sntx{reduce-scan-operator}.  These
-are identical to the built-in reductions and are described
+The predefined scans are defined in \sntx{reduce-scan-operator}.  These
+are identical to the predefined reductions and are described
 in~\rsec{reduce}.
 
 The expression on the right-hand side of the scan can be of any type
