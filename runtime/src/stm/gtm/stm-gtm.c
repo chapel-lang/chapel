@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <string.h>
 #include "chplrt.h"
 #include "chpl-comm.h"
@@ -9,10 +10,28 @@
 #include "stm-gtm.h"
 #include "stm-gtm-atomic.h"
 
-extern void* globalHeapStart;   // see src/comm/gasnet
-extern size_t globalHeapSize; 
+extern void* globalHeapStart;
+extern size_t globalHeapSize;
+
+//#define MEMCPYSTM 1
+
+/* static */
+/* int isHeapAddr(void* addr) { */
+/*     if (!(globalHeapStart && globalHeapSize)) */
+/*       return 1; */
+/*     if ((char*) addr >= (char*) globalHeapStart) */
+/*       if ((char*) addr <= (char*) globalHeapStart + globalHeapSize) */
+/* 	return 1; */
+/*     return 0; */
+/* } */
+
+static
+void handleSignals (int sig) {
+  chpl_msg(0, "Locale %d: Caught signal %d\n", chpl_localeID, sig);
+}
 
 void chpl_stm_init() { 
+  signal(SIGSEGV, handleSignals);
   assert(sizeof(gtm_word_t) == sizeof(void*));
   assert(sizeof(gtm_word_t) == sizeof(atomic_t));
   assert(sizeof(gtm_word_t) == sizeof(unsigned long));
@@ -28,7 +47,8 @@ void chpl_stm_exit() {
 }
 
 chpl_stm_tx_p chpl_stm_tx_create() { 
-  return gtm_tx_create(-1, MYLOCALE);
+  chpl_stm_tx_p tx = gtm_tx_create(-1, MYLOCALE);
+  return tx;
 }
 
 void chpl_stm_tx_destroy(chpl_stm_tx_p tx) {
@@ -75,11 +95,11 @@ void chpl_stm_tx_commit(chpl_stm_tx_p tx) {
 
     // commit phase 1
     CHPL_STM_STATS_START(tx->counters, STATS_TX_COMMITPH1);
-#ifndef GTM_COMM_COMBINED_COMMIT
+    //#ifndef GTM_COMM_COMBINED_COMMIT
     if (tx->numremlocales > -1) {
       GTM_Safe(tx, gtm_tx_comm_commitPh1(tx));
     }
-#endif
+    //#endif
     GTM_Safe(tx, gtm_tx_commitPh1(tx));
     CHPL_STM_STATS_STOP(tx->counters, STATS_TX_COMMITPH1, 0);
 
@@ -220,6 +240,13 @@ void chpl_stm_tx_load(chpl_stm_tx_p tx, void* dstaddr, void* srcaddr, size_t siz
   assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
 
+/* #ifdef MEMCPYSTM */
+/*   if (!isHeapAddr(srcaddr)) { */
+/*     memcpy(dstaddr, srcaddr, size); */
+/*     return; */
+/*   } */
+/* #endif */
+
   CHPL_STM_STATS_START(tx->counters, STATS_TX_LOAD);
   GTM_Safe(tx, gtm_tx_load_wrap(tx, dstaddr, srcaddr, size));
   CHPL_STM_STATS_STOP(tx->counters, STATS_TX_LOAD, size);
@@ -298,6 +325,13 @@ void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t si
   assert(tx != NULL);
   assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
+
+/* #ifdef MEMCPYSTM */
+/*   if (!isHeapAddr(dstaddr)) { */
+/*     memcpy(dstaddr, srcaddr, size); */
+/*     return; */
+/*   } */
+/* #endif */
 
   CHPL_STM_STATS_START(tx->counters, STATS_TX_STORE);
   GTM_Safe(tx, gtm_tx_store_wrap(tx, srcaddr, dstaddr, size));

@@ -13,6 +13,11 @@
 #include "gasnet.h"
 #include "comm-gasnet.h"
 
+void tx_abort_wrapper(tx_generic_t* buf);
+void tx_commitPh1_wrapper(tx_generic_t* buf);
+void tx_commitPh2_wrapper(tx_generic_t* buf);
+void tx_get_wrapper(tx_get_t* buf);
+void tx_put_wrapper(tx_put_t* buf);
 void tx_fork_wrapper(tx_fork_t* buf);
 
 void AM_tx_signal(gasnet_token_t token, void* buf, size_t nbytes, int status) {
@@ -20,6 +25,7 @@ void AM_tx_signal(gasnet_token_t token, void* buf, size_t nbytes, int status) {
   **commstatus = status;
 }
 
+#ifdef AM_TX_FORKFAST
 void AM_tx_abort(gasnet_token_t token, void* msg, size_t nbytes) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;
@@ -34,6 +40,32 @@ void AM_tx_abort(gasnet_token_t token, void* msg, size_t nbytes) {
 				    sizeof(int*), 
 				    status));
   CHPL_STM_COMM_STATS_STOP(tx->counters, STATS_TX_COMM_ABORT, status);
+}
+#endif
+
+void tx_abort_wrapper(tx_generic_t* buf) {
+  chpl_stm_tx_p tx = NULL;
+  int status = TX_OK;
+
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+  CHPL_STM_COMM_STATS_START(tx->counters, STATS_TX_COMM_ABORT);
+  gtm_tx_abort(tx);
+  GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, 
+				      TX_SIGNAL,
+				      &(buf->commstatus), 
+				      sizeof(int*), 
+				      status));
+  chpl_free(buf, __LINE__, __FILE__);
+  CHPL_STM_COMM_STATS_STOP(tx->counters, STATS_TX_COMM_ABORT, status);
+}
+
+void AM_tx_abort(gasnet_token_t token, void* msg, size_t nbytes) {
+  tx_generic_t *buf = (tx_generic_t*) chpl_malloc(nbytes, 
+						  sizeof(char),
+						  CHPL_RT_MD_STM_AM_GENERIC_T,
+						  __LINE__, __FILE__);
+  memcpy(buf, msg, nbytes);
+  chpl_task_begin((chpl_fn_p)tx_abort_wrapper, (void*)buf, true, true, NULL);
 }
 
 void gtm_tx_comm_abort(chpl_stm_tx_p tx) { 
@@ -59,6 +91,7 @@ void gtm_tx_comm_abort(chpl_stm_tx_p tx) {
   chpl_free(buf, __LINE__, __FILE__);
 }
 
+#ifdef AM_TX_FORKFAST
 void AM_tx_commitPh1(gasnet_token_t token, void* msg, size_t nbytes) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
@@ -73,7 +106,36 @@ void AM_tx_commitPh1(gasnet_token_t token, void* msg, size_t nbytes) {
 				    &(buf->commstatus), 
 				    sizeof(int*), 
 				    status));
+
   CHPL_STM_COMM_STATS_STOP(tx->counters, STATS_TX_COMM_COMMITPH1, status);
+}
+#endif
+
+void tx_commitPh1_wrapper(tx_generic_t* buf) {
+  chpl_stm_tx_p tx = NULL;
+  int status = TX_OK;  
+
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+  CHPL_STM_COMM_STATS_START(tx->counters, STATS_TX_COMM_COMMITPH1);
+  GTM_Safe(tx, gtm_tx_commitPh1(tx));
+  if (tx->status == TX_AMABORT) status = TX_FAIL;
+  GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, 
+				      TX_SIGNAL,
+				      &(buf->commstatus), 
+				      sizeof(int*), 
+				      status));
+
+  chpl_free(buf, __LINE__, __FILE__);
+  CHPL_STM_COMM_STATS_STOP(tx->counters, STATS_TX_COMM_COMMITPH1, status);
+}
+
+void AM_tx_commitPh1(gasnet_token_t token, void* msg, size_t nbytes) {
+  tx_generic_t *buf = (tx_generic_t*) chpl_malloc(nbytes, 
+						  sizeof(char),
+						  CHPL_RT_MD_STM_AM_GENERIC_T,
+						  __LINE__, __FILE__);
+  memcpy(buf, msg, nbytes);
+  chpl_task_begin((chpl_fn_p)tx_commitPh1_wrapper, (void*)buf, true, true, NULL);
 }
 
 int gtm_tx_comm_commitPh1(chpl_stm_tx_p tx) { 
@@ -103,6 +165,7 @@ int gtm_tx_comm_commitPh1(chpl_stm_tx_p tx) {
   return commstatus;
 }
 
+#ifdef AM_TX_FASTFORK
 void AM_tx_commitPh2(gasnet_token_t token, void* msg, size_t nbytes) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
@@ -134,6 +197,34 @@ void AM_tx_commitPh2(gasnet_token_t token, void* msg, size_t nbytes) {
 				    status));
   CHPL_STM_COMM_STATS_STOP(tx->counters, STATS_TX_COMM_COMMITPH2, status);
   gtm_tx_comm_destroy(tx);
+}
+#endif
+
+void tx_commitPh2_wrapper(tx_generic_t* buf) {
+  chpl_stm_tx_p tx = NULL;
+  int status = TX_OK;  
+
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+  CHPL_STM_COMM_STATS_START(tx->counters, STATS_TX_COMM_COMMITPH2);
+  GTM_Safe(tx, gtm_tx_commitPh2(tx));
+  if (tx->status == TX_AMABORT) status = TX_FAIL;
+  GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, 
+				      TX_SIGNAL,
+				      &(buf->commstatus), 
+				      sizeof(int*), 
+				      status));
+
+  chpl_free(buf, __LINE__, __FILE__);
+  CHPL_STM_COMM_STATS_STOP(tx->counters, STATS_TX_COMM_COMMITPH2, status);
+}
+
+void AM_tx_commitPh2(gasnet_token_t token, void* msg, size_t nbytes) {
+  tx_generic_t *buf = (tx_generic_t*) chpl_malloc(nbytes, 
+						  sizeof(char),
+						  CHPL_RT_MD_STM_AM_GENERIC_T,
+						  __LINE__, __FILE__);
+  memcpy(buf, msg, nbytes);
+  chpl_task_begin((chpl_fn_p)tx_commitPh2_wrapper, (void*)buf, true, true, NULL);
 }
 
 int gtm_tx_comm_commitPh2(chpl_stm_tx_p tx) { 
@@ -170,6 +261,7 @@ void AM_tx_getdata (gasnet_token_t token, void* msg, size_t nbytes, int status) 
   *commstatus = status; 
 }
 
+#ifdef AM_TX_FORKFAST
 void AM_tx_get(gasnet_token_t token, void* msg, size_t nbytes) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
@@ -205,6 +297,52 @@ void AM_tx_get(gasnet_token_t token, void* msg, size_t nbytes) {
   chpl_free(getdata, __LINE__, __FILE__);
   CHPL_STM_COMM_STATS_STOP(tx->counters, STATS_TX_COMM_GET, status);
 }
+#endif
+
+void tx_get_wrapper(tx_get_t* buf) {
+  chpl_stm_tx_p tx = NULL;
+  int status = TX_OK;  
+  tx_getdata_t* getdata;
+  size_t getdatasize = sizeof(tx_getdata_t) + buf->datasize;
+
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+  CHPL_STM_COMM_STATS_START(tx->counters, STATS_TX_COMM_GET);
+  // build the return payload
+  getdata = (tx_getdata_t*) chpl_malloc(1, getdatasize, CHPL_RT_MD_STM_AM_GETDATA_T, __LINE__, __FILE__);
+  getdata->retaddr = buf->retaddr;
+  getdata->commstatus = buf->commstatus;
+  getdata->datasize = buf->datasize;
+  // perform transactional load
+  GTM_Safe(tx, gtm_tx_load_wrap(tx, &(getdata->data), buf->remaddr, buf->datasize));
+  if (tx->status == TX_AMABORT) {
+    status = TX_FAIL;
+    GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, 
+					TX_SIGNAL,
+					&(buf->commstatus), 
+					sizeof(int*), 
+					status));
+  } else {
+    // return the data
+    GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, 
+					TX_GETDATA,
+					getdata, 
+					getdatasize, 
+					status));
+  }
+
+  chpl_free(getdata, __LINE__, __FILE__);
+  chpl_free(buf, __LINE__, __FILE__);
+  CHPL_STM_COMM_STATS_STOP(tx->counters, STATS_TX_COMM_GET, status);
+}
+
+void AM_tx_get(gasnet_token_t token, void* msg, size_t nbytes) {
+  tx_get_t *buf = (tx_get_t*) chpl_malloc(nbytes, 
+					  sizeof(char),
+					  CHPL_RT_MD_STM_AM_GET_T,
+					  __LINE__, __FILE__);
+  memcpy(buf, msg, nbytes);
+  chpl_task_begin((chpl_fn_p)tx_get_wrapper, (void*)buf, true, true, NULL);
+}
 
 int gtm_tx_comm_get(chpl_stm_tx_p tx, void* addr, int32_t remlocale, void* remaddr, size_t size) { 
   tx_get_t *buf;
@@ -230,6 +368,7 @@ int gtm_tx_comm_get(chpl_stm_tx_p tx, void* addr, int32_t remlocale, void* remad
   return commstatus;
 }
 
+#ifdef AM_TX_FORKFAST
 void AM_tx_put(gasnet_token_t token, void* msg, size_t nbytes) {
   chpl_stm_tx_p tx = NULL;
   int status = TX_OK;  
@@ -246,6 +385,34 @@ void AM_tx_put(gasnet_token_t token, void* msg, size_t nbytes) {
 				    status));
 
   CHPL_STM_COMM_STATS_STOP(tx->counters, STATS_TX_COMM_PUT, status);
+}
+#endif
+
+void tx_put_wrapper(tx_put_t* buf) {
+  chpl_stm_tx_p tx = NULL;
+  int status = TX_OK;  
+
+  tx = gtm_tx_comm_create(buf->txid, buf->txlocale, buf->txstatus);
+  CHPL_STM_COMM_STATS_START(tx->counters, STATS_TX_COMM_PUT);
+  GTM_Safe(tx, gtm_tx_store_wrap(tx, &(buf->data), buf->remaddr, buf->datasize));
+  if (tx->status == TX_AMABORT) status = TX_FAIL; 
+  GASNET_Safe(gasnet_AMRequestMedium1(buf->caller, 
+				      TX_SIGNAL,
+				      &(buf->commstatus), 
+				      sizeof(int*), 
+				      status));
+
+  chpl_free(buf, __LINE__, __FILE__);
+  CHPL_STM_COMM_STATS_STOP(tx->counters, STATS_TX_COMM_PUT, status);
+}
+
+void AM_tx_put(gasnet_token_t token, void* msg, size_t nbytes) {
+  tx_put_t *buf = (tx_put_t*) chpl_malloc(nbytes, 
+					   sizeof(char),
+					   CHPL_RT_MD_STM_AM_PUT_T,
+					   __LINE__, __FILE__);
+  memcpy(buf, msg, nbytes);
+  chpl_task_begin((chpl_fn_p)tx_put_wrapper, (void*)buf, true, true, NULL);
 }
 
 int gtm_tx_comm_put(chpl_stm_tx_p tx, void* addr, int32_t remlocale, void* remaddr, size_t size) { 
