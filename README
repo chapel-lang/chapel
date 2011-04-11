@@ -94,6 +94,7 @@ For more detailed information about...      refer to...
 
   ...calling C routines from Chapel          ...doc/technotes/README.extern
   ...formatting value-to-string conversions  ...doc/technotes/README.format
+  ...other user and technical details        ...doc/README
 
   ...third-party software that we use        ...third-party/README
   ...the GASNet communication library        ...third-party/gasnet/README

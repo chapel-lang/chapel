@@ -5,7 +5,7 @@ Chapel Example Codes
 This directory contains a few simple "Hello, world!" example codes to
 get started with Chapel program structure:
 
-     hello.chpl              : a one-line Chapel "Hello, world!" program
+     hello.chpl               : a one-line Chapel "Hello, world!" program
      hello2-module.chpl       : a more structured "Hello, world!" program
      hello3-datapar.chpl      : a data parallel version of "Hello, World!"
      hello4-datapar-dist.chpl : a distributed data parallel version

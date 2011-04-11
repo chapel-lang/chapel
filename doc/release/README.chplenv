@@ -199,11 +199,11 @@ Optional Settings
 
         none   : only supports single-locale execution
         gasnet : use the GASNet-based communication layer
-        pvm    : use the PVM-based communication layer
+        pvm    : use the PVM-based communication layer*
 
    If unset, CHPL_COMM defaults to "none".  See README.multilocale for
    more information on executing Chapel programs using multiple
-   locales.
+   locales.  *Note that PVM is not supported in this release (1.3.0).
 
 
 6) Optionally, the CHPL_MEM environment variable can be used to select
