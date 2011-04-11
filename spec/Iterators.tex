@@ -1,9 +1,9 @@
 \sekshun{Iterators}
 \label{Iterators}
-\index{procedures!iterators}
+\index{functions!iterators}
 \index{iterators}
 
-An \emph{iterator} is a procedure that can generate, or \emph{yield}, multiple values (consecutively or in parallel) via its yield statements.
+An \emph{iterator} is a function that can generate, or \emph{yield}, multiple values (consecutively or in parallel) via its yield statements.
 
 \begin{openissue}
 The parallel iterator story is under development.  It is expected that
@@ -11,8 +11,9 @@ the specification will be expanded regarding parallel iterators soon.
 \end{openissue}
 
 \section{Iterator Definitions}
-\label{Iterator_Definitions}
-\index{iterator!declarations}
+\label{Iterator_Function_Definitions}
+\index{iterator definitions}
+\index{iterator!definition}
 
 The syntax to declare an iterator is given
 by:
@@ -29,13 +30,13 @@ iterator-body:
   yield-statement
 \end{syntax}
 
-The syntax of an iterator declaration is similar to a non-iterator procedure declaration, with
+The syntax of an iterator declaration is similar to a procedure declaration, with
 some key differences:
 \begin{itemize}
 \item The keyword \chpl{iter} is used instead of the keyword \chpl{proc}.
 \item The name of the iterator cannot overload any operator.
 \item \chpl{yield} statements may appear in the body of an iterator, but not in
-a non-iterator procedure.
+a procedure.
 \item A \chpl{return} statement in the body of an iterator is not allowed to have an expression.
 \end{itemize}
 
@@ -73,10 +74,10 @@ iterator-call-expression:
   call-expression
 \end{syntax}
 
-All details of iterator calls, including argument passing, procedure
+All details of iterator calls, including argument passing, function
 resolution, the use of parentheses versus brackets to delimit the parameter
 list, and so on,
-are identical to non-iterator procedure calls as described in Chapter~\ref{Procedures}.
+are identical to procedure calls as described in Chapter~\ref{Functions}.
 
 However, the result of an iterator call depends upon its context, as described below.
 
@@ -91,7 +92,7 @@ iteration, the iterator yields a value and the body is executed.
 \label{Iterators_as_Arrays}
 \index{iterators!and arrays}
 
-If an iterator procedure is captured into a new variable declaration or
+If an iterator function is captured into a new variable declaration or
 assigned to an array, the iterator is iterated over in total and the
 expression evaluates to a one-dimensional arithmetic array that
 contains the values returned by the iterator on each iteration.
@@ -116,14 +117,14 @@ the expression \chpl{squares(5)} evaluates to the array \chpl{1, 4, 9, 16, 25}.
 \label{Iterators_and_Generics}
 \index{iterators!and generics}
 
-An iterator call expression can be passed to a generic procedure argument that
+An iterator call expression can be passed to a generic function argument that
 has neither a declared type nor default value
 (\rsec{Formal_Arguments_without_Types}).
 In this case the iterator is passed without being evaluated.
-Within the generic procedure the corresponding formal argument
+Within the generic function the corresponding formal argument
 can be used as an iterator, e.g. in for loops.
 The arguments to the iterator call expression, if any, are evaluated
-at the call site, i.e. prior to passing the iterator to the generic procedure.
+at the call site, i.e. prior to passing the iterator to the generic function.
 
 \subsection{Recursive Iterators}
 \label{Recursive_Iterators}

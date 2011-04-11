@@ -1,16 +1,16 @@
 \sekshun{Generics}
 \label{Generics}
 
-Chapel supports generic procedures and types that are parameterizable
-over both types and parameters.  The generic procedures and types generally
-look similar to non-generic procedures and types already discussed.
+Chapel supports generic functions and types that are parameterizable
+over both types and parameters.  The generic functions and types look
+similar to non-generic functions and types already discussed.
 
-\section{Generic Procedures}
-\label{Generic_Procedures}
-\index{procedures!generic}
-\index{generics!procedures}
+\section{Generic Functions}
+\label{Generic_Functions}
+\index{functions!generic}
+\index{generics!functions}
 
-A procedure is generic if any of the following conditions hold:
+A function is generic if any of the following conditions hold:
 \begin{itemize}
 \item
 Some formal argument is specified with an intent of \chpl{type} or
@@ -24,7 +24,7 @@ The type of some formal argument is a generic type, e.g., \chpl{List}.
 Queries may be inlined in generic types, e.g., \chpl{List(?eltType)}.
 \item
 The type of some formal argument is an array type where either the
-element type is queried and/or omitted or the domain is queried or
+element type is queried or omitted or the domain is queried or
 omitted.
 \end{itemize}
 These conditions are discussed in the next sections.
@@ -33,13 +33,13 @@ These conditions are discussed in the next sections.
 \label{Formal_Type_Arguments}
 \index{intents!type@\chpl{type}}
 
-If a formal argument is specified with intent \chpl{type}, then
-the corresponding actual argument must be a type.  A copy of the
-procedure is instantiated for each unique type that is passed to this
-procedure at a call site.  The formal argument has the semantics of a
+If a formal argument is specified with intent \chpl{type}, then a type
+must be passed to the function at the call site.  A copy of the
+function is instantiated for each unique type that is passed to this
+function at a call site.  The formal argument has the semantics of a
 type alias.
 \begin{chapelexample}{build2tuple.chpl}
-The following code defines a procedure that takes two types at the call
+The following code defines a function that takes two types at the call
 site and returns a 2-tuple where the types of the components of the
 tuple are defined by the two type arguments and the values are
 specified by the types default values.
@@ -50,8 +50,8 @@ proc build2Tuple(type t, type tt) {
   return (x1, x2);
 }
 \end{chapel}
-The following procedure is instantiated with ``normal'' procedure call syntax
-where the actual arguments are types:
+This function is instantiated with ``normal'' function call syntax
+where the arguments are types:
 \begin{chapel}
 var t2 = build2Tuple(int, string);
 t2 = (1, "hello");
@@ -69,13 +69,13 @@ writeln(t2);
 \index{intents!param@\chpl{param}}
 
 If a formal argument is specified with intent \chpl{param}, then a
-parameter must be passed to the procedure at the call site.  A copy of
-the procedure is instantiated for each unique parameter that is passed
-to this procedure at a call site.  The formal argument is a parameter.
+parameter must be passed to the function at the call site.  A copy of
+the function is instantiated for each unique parameter that is passed
+to this function at a call site.  The formal argument is a parameter.
 \begin{chapelexample}{fillTuple.chpl}
-The following code defines a procedure that takes an integer parameter
+The following code defines a function that takes an integer parameter
 \chpl{p} at the call site as well as a regular actual argument of
-integer type \chpl{x}.  The procedure returns a homogeneous tuple of
+integer type \chpl{x}.  The function returns a homogeneous tuple of
 size \chpl{p} where each component in the tuple has the value of
 \chpl{x}.
 \begin{chapel}
@@ -92,7 +92,7 @@ writeln(fillTuple(3,3));
 \begin{chapeloutput}
 (3, 3, 3)
 \end{chapeloutput}
-The procedure call \chpl{fillTuple(3, 3)} returns a 3-tuple where each
+The function call \chpl{fillTuple(3, 3)} returns a 3-tuple where each
 component contains the value \chpl{3}.
 \end{chapelexample}
 
@@ -102,13 +102,13 @@ component contains the value \chpl{3}.
 
 If the type of a formal argument is omitted, the type of the formal
 argument is taken to be the type of the actual argument passed to the
-procedure at the call site.  A copy of the procedure is instantiated for
+function at the call site.  A copy of the function is instantiated for
 each unique actual type.
 \begin{chapelexample}{fillTuple2.chpl}
 The example from the previous section can be extended to be generic on
 a parameter as well as the actual argument that is passed to it by
 omitting the type of the formal argument \chpl{x}.  The following code
-defines a procedure that returns a homogeneous tuple of size \chpl{p}
+defines a function that returns a homogeneous tuple of size \chpl{p}
 where each component in the tuple is initialized to \chpl{x}:
 \begin{chapel}
 proc fillTuple(param p: int, x) {
@@ -127,7 +127,7 @@ writeln(typeToString(x.type));
 (3.14, 3.14, 3.14)
 3*real
 \end{chapeloutput}
-In this procedure, the type of the tuple is taken to be the type of the
+In this function, the type of the tuple is taken to be the type of the
 actual argument.  The call \chpl{fillTuple(3, 3.14)} returns a 3-tuple
 of real values \chpl{(3.14, 3.14, 3.14)}.  The return type is
 \chpl{(real, real, real)}.
@@ -139,8 +139,8 @@ of real values \chpl{(3.14, 3.14, 3.14)}.  The return type is
 
 If the type of a formal argument is specified as a queried type, the
 type of the formal argument is taken to be the type of the actual
-argument passed to the procedure at the call site.  A copy of the
-procedure is instantiated for each unique actual type.  The queried
+argument passed to the function at the call site.  A copy of the
+function is instantiated for each unique actual type.  The queried
 type has the semantics of a type alias.
 \begin{chapelexample}{fillTuple3.chpl}
 The example from the previous section can be rewritten to use a
@@ -170,14 +170,14 @@ writeln(typeToString(x.type));
 
 If the type of a formal argument is a generic type, the type of the
 formal argument is taken to be the type of the actual argument passed
-to the procedure at the call site with the constraint that the type of
+to the function at the call site with the constraint that the type of
 the actual argument is an instantiation of the generic type.  A copy
-of the procedure is instantiated for each unique actual type.
+of the function is instantiated for each unique actual type.
 \begin{example}
-The following code defines a procedure \chpl{writeTop} that takes an
+The following code defines a function \chpl{writeTop} that takes an
 actual argument that is a generic stack
 (see~\rsec{Example_Generic_Stack}) and outputs the top element of the
-stack.  The procedure is generic on the type of its argument.
+stack.  The function is generic on the type of its argument.
 \begin{chapel}
 proc writeTop(s: Stack) {
   write(s.top.item);
@@ -196,18 +196,18 @@ specified and require a query to mark the argument as generic.  For
 simplicity, the identifier may be omitted.
 \begin{example}
 The following code defines a class with a type field that has a
-default value.  Procedure \chpl{p} is defined to take an argument of
+default value.  Function \chpl{f} is defined to take an argument of
 this class type where the type field is instantiated to the default.
-Procedure \chpl{q}, on the other hand, is generic on its argument
+Function \chpl{g}, on the other hand, is generic on its argument
 because of the use of the question mark.
 \begin{chapel}
 class C {
   type t = int;
 }
-proc p(c: C) {
+proc f(c: C) {
   // c.type is always int
 }
-proc q(c: C(?)) {
+proc g(c: C(?)) {
   // c.type may not be int
 }
 \end{chapel}
@@ -216,7 +216,7 @@ proc q(c: C(?)) {
 \index{where@\chpl{where}!implicit}
 The generic type may be specified with some queries and some exact
 values.  These exact values result in \emph{implicit where clauses}
-for the purpose of procedure resolution.
+for the purpose of function resolution.
 \begin{example}
 Given the class definition
 \begin{chapel}
@@ -225,15 +225,15 @@ class C {
   type tt;
 }
 \end{chapel}
-then the procedure definition
+then the function definition
 \begin{chapel}
-proc p(c: C(?t,real)) {
+proc f(c: C(?t,real)) {
   // body
 }
 \end{chapel}
 is equivalent to
 \begin{chapel}
-proc p(c: C(?t,?tt)) where tt == real {
+proc f(c: C(?t,?tt)) where tt == real {
   // body
 }
 \end{chapel}
@@ -242,22 +242,22 @@ For tuples with query arguments, an implicit where clause is always
 created to ensure that the size of the actual tuple matches the
 implicitly specified size of the formal tuple.
 \begin{example}
-The procedure definition
+The function definition
 \begin{chapel}
-proc p(tuple: (?t,real)) {
+proc f(tuple: (?t,real)) {
   // body
 }
 \end{chapel}
 is equivalent to
 \begin{chapel}
-proc p(tuple: (?t,?tt)) where tuple.size == 2 && tt == real {
+proc f(tuple: (?t,?tt)) where tuple.size == 2 && tt == real {
   // body
 }
 \end{chapel}
 \end{example}
 
 \begin{chapelexample}{query.chpl}
-Type queries can also be used to constrain the types of other procedure arguments
+Type queries can also be used to constrain the types of other function arguments
 and/or the return type.  In this example, the type query on the first argument
 establishes type constraints on the other arguments and also determines the
 return type.
@@ -293,30 +293,30 @@ enumerated types.
 If the type of a formal argument is an array where either the domain
 or the element type is queried or omitted, the type of the formal
 argument is taken to be the type of the actual argument passed to the
-procedure at the call site.  If the domain is omitted, the domain of
+function at the call site.  If the domain is omitted, the domain of
 the formal argument is taken to be the domain of the actual argument.
 
 A queried domain may not be modified via the name to which it is bound
 (see~\rsec{Association_of_Arrays_to_Domains} for rationale).
 
-\section{Procedure Visibility in Generic Procedures}
-\label{Procedure_Visibility_in_Generic_Procedures}
-\index{generics!procedure visibility}
+\section{Function Visibility in Generic Functions}
+\label{Function_Visibility_in_Generic_Functions}
+\index{generics!function visibility}
 
-Procedure visibility in generic procedures is altered depending on the
-instantiation.  When resolving procedure calls made within generic
-procedures, the visible procedures are taken from any call site at which
-the generic procedure is instantiated for each particular
+Function visibility in generic functions is altered depending on the
+instantiation.  When resolving function calls made within generic
+functions, the visible functions are taken from any call site at which
+the generic function is instantiated for each particular
 instantiation.  The specific call site chosen is arbitrary and it is
 referred to as the \emph{point of instantiation}.
 
-For procedure calls that specify the module
+For function calls that specify the module
 explicitly~(\rsec{Explicit_Naming}), an implicit use of the specified
 module exists at the call site.
 
 \begin{chapelexample}{point-of-instantiation.chpl}
 Consider the following code which defines a generic
-procedure \chpl{bar}:
+function \chpl{bar}:
 \begin{chapel}
 module M1 {
   record R {
@@ -341,25 +341,25 @@ module M3 {
 \end{chapel}
 \begin{chapeloutput}
 \end{chapeloutput}
-In the procedure \chpl{main}, the variable \chpl{r} is declared to be
+In the function \chpl{main}, the variable \chpl{r} is declared to be
 of type \chpl{R} defined in module \chpl{M1} and a call is made to the
-generic procedure \chpl{bar} which is defined in module \chpl{M2}.
+generic function \chpl{bar} which is defined in module \chpl{M2}.
 This is the only place where \chpl{bar} is called in this program and
 so it becomes the point of instantiation for \chpl{bar} when the
 argument \chpl{x} is of type \chpl{R}.  Therefore, the call to
 the \chpl{foo} method in \chpl{bar} is resolved by looking for visible
-procedures from within \chpl{main} and going through the use of
+functions from within \chpl{main} and going through the use of
 module \chpl{M1}.
 \end{chapelexample}
 
-If the generic procedure is only called indirectly through dynamic
+If the generic function is only called indirectly through dynamic
 dispatch, the point of instantiation is defined as the point at which
 the derived type (the type of the implicit \chpl{this} argument) is
 defined or instantiated (if the derived type is generic).
 
 \begin{rationale}
-Visible procedure lookup in Chapel's generic procedures is handled
-differently than in C++'s template procedures in that there is no split
+Visible function lookup in Chapel's generic functions is handled
+differently than in C++'s template functions in that there is no split
 between dependent and independent types.
 
 Also, dynamic dispatch and instantiation is handled differently.
@@ -594,7 +594,7 @@ as \chpl{Node(int)}.
 \index{constructors!type constructors}
 
 A type constructor is automatically created for each class or record.
-A type constructor is a type procedure (\rsec{Type_Procedures}) that has
+A type constructor is a type function (\rsec{Type_Functions}) that has
 the same name as the class or record.  It takes one argument per the
 class's or record's generic field, including fields inherited from the
 superclasses, if any.
@@ -742,16 +742,16 @@ under development, so the above specification may change.
 \index{where@\chpl{where}}
 \index{generics!where@\chpl{where}}
 
-The instantiation of a generic procedure can be constrained by {\em
+The instantiation of a generic function can be constrained by {\em
 where clauses}.  A where clause is specified in the definition of a
-procedure~(\rsec{Procedure_Definitions}).  When a procedure is
+function~(\rsec{Function_Definitions}).  When a function is
 instantiated, the expression in the where clause must be a parameter
 expression and must evaluate to either \chpl{true} or \chpl{false}.
 If it evaluates to \chpl{false}, the instantiation is rejected and the
-procedure is not a possible candidate for procedure resolution.
-Otherwise, the procedure is instantiated.
+function is not a possible candidate for function resolution.
+Otherwise, the function is instantiated.
 \begin{chapelexample}{whereClause.chpl}
-Given two overloaded procedure definitions
+Given two overloaded function definitions
 \begin{chapel}
 proc foo(x) where x.type == int { writeln("int"); }
 proc foo(x) where x.type == real { writeln("real"); }
@@ -765,7 +765,7 @@ int
 real
 \end{chapeloutput}
 the call foo(3) resolves to the first definition because when the
-second procedure is instantiated the where clause evaluates to false.
+second function is instantiated the where clause evaluates to false.
 \end{chapelexample}
 
 \section{User-Defined Compiler Diagnostics}
@@ -776,21 +776,21 @@ second procedure is instantiated the where clause evaluates to false.
 \index{compilerError}
 \index{compilerWarning}
 
-The special compiler diagnostic procedure calls \chpl{compilerError}
+The special compiler diagnostic function calls \chpl{compilerError}
 and \chpl{compilerWarning} generate compiler diagnostic of the
-indicated severity if the procedure containing these calls may be
-called when the program is executed and the procedure call is not
+indicated severity if the function containing these calls may be
+called when the program is executed and the function call is not
 eliminated by parameter folding.
 
 The compiler diagnostic is defined by the actual arguments which must
 be string parameters.  The diagnostic points to the spot in the Chapel
-program from which the procedure containing the call is called.
+program from which the function containing the call is called.
 Compilation halts if a \chpl{compilerError} is encountered whereas it
 will continue after encountering a \chpl{compilerWarning}.
 
-Note that when a variable procedure is called in a context where the
+Note that when a variable function is called in a context where the
 implicit \chpl{setter} argument is true or false, both versions of the
-variable procedure are resolved by the compiler.  Consequently,
+variable function are resolved by the compiler.  Consequently,
 the \chpl{setter} argument cannot be effectively used to guard a
 compiler diagnostic statements.
 

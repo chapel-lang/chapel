@@ -102,7 +102,7 @@ cooperating program instances.
 A third principle in Chapel is support for object-oriented
 programming.  Object-oriented programming has been instrumental in
 raising productivity in the mainstream programming community due to
-its encapsulation of related data and code within a single software
+its encapsulation of related data and functions within a single software
 component, its support for specialization and reuse, and its use as a
 clean mechanism for defining and implementing interfaces.  Chapel
 supports objects in order to make these benefits available in a
@@ -143,7 +143,7 @@ follows:
 writeln("hello, world");
 \end{chapel}
 This complete Chapel program contains a single line of code that makes
-a call to the standard \chpl{writeln} procedure.
+a call to the standard \chpl{writeln} function.
 
 \index{modules}
 \index{main@\chpl{main}}
@@ -151,7 +151,7 @@ a call to the standard \chpl{writeln} procedure.
 In general, Chapel programs define code using one or more named
 \emph{modules}, each of which supports top-level initialization code
 that is invoked the first time the module is used.  Programs also
-define a single entry point via a procedure named \chpl{main}.  To
+define a single entry point via a function named \chpl{main}.  To
 facilitate exploratory programming, Chapel allows programmers to
 define modules using files rather than an explicit module declaration
 and to omit the program entry point when the program only has a single
@@ -163,10 +163,10 @@ called \chpl{hello.chpl}, it would define a single user
 module, \chpl{hello}, whose name is taken from the filename.  Since
 the file defines a module, the top-level code in the file defines the
 module's initialization code.  And since the program is composed of
-the single \chpl{hello} module, the \chpl{main} procedure is omitted.
+the single \chpl{hello} module, the \chpl{main} function is omitted.
 Thus, when the program is executed, the single \chpl{hello} module
 will be initialized by executing its top-level code thus invoking the
-call to the \chpl{writeln} procedure.  Modules are described in more
+call to the \chpl{writeln} function.  Modules are described in more
 detail in~\rsec{Modules}.
 
 To compile and run the ``hello world'' program, execute the following

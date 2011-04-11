@@ -80,7 +80,7 @@ types.
 \index{void@\chpl{void}}
 
 The \chpl{void} type is used to represent the lack of a value, for
-example when a procedure has no arguments and/or no return type.  
+example when a function has no arguments and/or no return type.  
 
 There may be storage associated with a value of type \chpl{void}, in which
 case its lifetime obeys the same rules as a value of type \chpl{int}.
@@ -253,7 +253,7 @@ The code
 \begin{chapel}
 enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
 \end{chapel}
-defines an enumerated type with four constants.  The procedure
+defines an enumerated type with four constants.  The function
 \begin{chapel}
 proc quote(s: statesman) {
   select s {
@@ -314,6 +314,7 @@ structured-type:
   union-type
   tuple-type
 \end{syntax}
+% in README.firstClassFns: function-type
 
 Classes are discussed in \rsec{Classes}.  Records are discussed
 in \rsec{Records}.  Unions are discussed in \rsec{Unions}.  Tuples are
@@ -321,10 +322,8 @@ discussed in \rsec{Tuples}.
 
 \subsection{Class Types}
 
-% TODO: the first sentence does not make strict sense.
-% Overall, it does not feel like this paragraph has any value here.
 The class type defines a type that contains variables and constants,
-called fields, and procedures, called methods.  Classes are defined
+called fields, and functions, called methods.  Classes are defined
 in~\rsec{Classes}.  The class type can also contain type aliases and
 parameters.  Such a class is generic and is defined
 in~\rsec{Generic_Types}.

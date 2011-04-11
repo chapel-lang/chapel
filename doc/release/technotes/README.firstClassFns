@@ -1,18 +1,18 @@
 ===================================================
-Initial support for first-class procedures in Chapel
+Initial support for first-class functions in Chapel
 ===================================================
 
 This README describes some initial support that we have added to the
-compiler for first-class procedures in Chapel.  This mechanism should
+compiler for first-class functions in Chapel.  This mechanism should
 be considered a stopgap technology until we have developed and
 implemented a more robust story, which is why it's being described in
 this README rather than the language specification.
 
 
-Manipulating first-class procedures
------------------------------------
+Manipulating first-class functions
+----------------------------------
 
-Procedures defined with parentheses may be captured as values by
+Functions defined with parentheses may be captured as values by
 referring to them by name without parentheses.  Once captured, these
 values may be passed around as other value types.
 
@@ -22,37 +22,37 @@ For example:
   var f = myfunc;
   writeln(f(3));  // outputs: 4
 
-To be captured, a procedure must not be any of the following:
-- A generic procedure (all captured procedures must be fully-qualified
+To be captured, a function must not be any of the following:
+- A generic function (all captured functions must be fully-qualified
   with no generic arguments)
-- A procedure with special return types (type, param)
+- A function with special return types (type, param)
 - An iterator
 - The method of an object
 - An operator
-- An overloaded procedure
+- An overloaded function
 
-Rationale. Generic procedures would require manipulating generic,
+Rationale. Generic functions would require manipulating generic,
 uninstantiated types, which is currently not available in Chapel.
-Procedures with compile-time return types like type and param would
+Functions with compile-time return types like type and param would
 require the ability to have param classes, to fit with the current
 implementation. Param classes are not currently part of Chapel.
 Iterators would require a new type of capture, one that works
 similarly to the current implementation but respects the yielding that
 occurs inside an interator. Method capture requires the currying of
-the object as the first argument to the first-class procedure.
-Operators and overloaded procedures require a type-based multiple
+the object as the first argument to the first-class function.
+Operators and overloaded functions require a type-based multiple
 dispatch mechanism.
 
 
 Lambda functions
 ----------------
 
-Lambda functions are anonymous first-class procedure objects. In other
+Lambda functions are anonymous first-class function objects. In other
 words, they are expressions rather than formally-defined named
-procedures. They are available with the following syntax:
+functions. They are available with the following syntax:
 
   lambda-declaration-expression:
-    lambda argument-list return-type_opt procedure-body
+    lambda argument-list return-type_opt function-body
 
 where 'lambda' is a Chapel keyword and return-type_opt is an optional
 return-type.
@@ -64,13 +64,13 @@ For example:
 
 Lambdas can also "capture" variables that are defined outside of the
 lambda by referring to them in the body of the lambda. These form a
-"closure", a combination of a procedure and an associated execution
+"closure", a combination of a function and an associated execution
 environment.  This closure captures the variables in such a way that
 modifying them modifies the original variables (this is sometimes
 called "capturing the variables by reference").  Currently a lambda
 that captures variables can be used only while the activation records
-of the procedures that define these variables, if any, still exist
-on the stack, i.e. while these procedures are still executing.
+of the functions that define these variables, if any, still exist
+on the stack, i.e. while these functions are still executing.
 
 Example. For example the following is acceptable:
 
@@ -86,11 +86,11 @@ Example. For example the following is acceptable:
 whereas having myfunc() return its 'f' variable is not supported.
 
 
-Procedure types
----------------
+Function type signatures
+------------------------
 
-The types of first-class procedures can be obtained by using
-the 'func' type procedures that are provided as follows:
+The types of first-class functions can be obtained by using
+the 'func' type functions that are provided as follows:
 
   // no arguments, void return type (returns no value)
   proc func() type
@@ -103,15 +103,15 @@ the 'func' type procedures that are provided as follows:
 
 For example:
 
-  var p : func(void);  // A procedure with no arguments, no return value
-  var p1: func();      // A shortcut for the above
-  var q : func(int);   // A procedure with no arguments, returning int
-  var r : func(bool, int); // A procedure with one bool argument, returning int
+  var f : func(void);  // A function with no arguments, no return value
+  var f1: func();      // A shortcut for the above
+  var g : func(int);   // A function with no arguments, returning int
+  var h : func(bool, int); // A function with one bool argument, returning int
 
 
 Future Directions
 -----------------
 
-Over time, we will be improving the support for first-class procedures
+Over time, we will be improving the support for first-class functions
 and their syntax.  If you have specific feature requests or
 suggestions, please let us know at: chapel_info@cray.com.
