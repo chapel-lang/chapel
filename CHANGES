@@ -6,54 +6,43 @@ Release Changes List
 version 1.3.0
 =============
 
-*** stopped at r18654 ***
-
-TODO: add more cross-references ("to read more about")
-TODO: README.extern: extern consts, extern classes, extern record copies
-TODO: check all release/examples changes
-TODO: check all spec changes
-TODO: make sure Vass' script works OK
-TODO: are new launcher options mentioned in READMEs?  What about --help
-      in README.launcher
-TODO: review r18210 and r18234 and add notes below
-TODO: review r18319
-TODO: document volatile types
-TODO: ensure all non-spec examples listed in README.features
-
 Sixth public release of Chapel, April 21, 2011
 
-High-Level Themes
------------------
-
-Highlights
-----------
-
-Environment Changes
--------------------
-- added two new CHPL_TASKS options for single-locale runs: qthreads and nanox
+Highlights (see below for details)
+----------------------------------
+- split 'def' keyword into 'proc' (for procedures) and 'iter' (for iterators)
+  (see "Syntactic/Naming Changes" below)
+- added 'Replicated' distribution and improved 'Block-Cyclic' distribution
+  (see examples/primers/distributions.chpl for sample uses)
+- added single-locale task layers for Nanos++ (BSC) and Qthreads (Sandia)
+  (see doc/README.tasks)
+- major reworking of range semantics and implementation
+  (see "Semantic Changes / Changes to Chapel Language" below)
+- initial support for volatile types: bool, int, uint, real, imag
+- support for extern consts and classes
+  (see "Interoperability Changes" below)
+- improved support for data parallelism on the Cray XMT
+- extensive improvements to the sample codes in the examples/ directory
+  (see 'Example Codes' below)
+- added most code examples from the spec to a new examples/ directory
+  (see examples/spec/*)
+- added a technical note describing the user-defined domain map interface
+  (see doc/technotes/README.dsi)
+- extensive updates to the language specification
+  (see 'Documentation' below)
+- several improvements to the runtime tasking layer
+  (see "Runtime Library Changes" below)
 
 Syntactic/Naming Changes
 ------------------------
 - split 'def' keyword into 'proc' (for procedures) and 'iter' (for iterators)
   (see '$CHPL_HOME/util/convert-defs --help' for help updating existing code)
+- renamed 'arithmetic' domains/arrays to 'rectangular'
 - added support for floating point literals of the form '1.e...'
   (previously, only '1e...' and '1.0e...' were supported)
-- renamed 'arithmetic' domains/arrays to 'rectangular'
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-- added an end-of-file check to the file type
-  (e.g., 'while !infile.eof ...')
-- added a callStackSize query to the locale type
-  (e.g., 'here.callStackSize' returns the call stack size on the current locale)
-- removed the previously-required semicolon from the end of enum declarations
-  (e.g., 'enum colors {red, blue, green}' is now legal; previously needed ';')
-- added support for a single trailing comma at the end of enum lists
-  (e.g., 'enum colors {red, blue, green, }' is now legal)
-- added support to referencing modules without first 'use'-ing them
-  (e.g., module M1 { var x...} module M2 { ...M1.x... } is now legal)
-- removed support for treating 'return' in iterator as a 'yield'
-  (e.g., change 'iter foo() { return x; }' to 'iter foo() { yield x; return; }')
 - several improvements to ranges (see 'Ranges' chapter in the language spec):
   - added a concept of alignment to indicate an alignment modulo |stride|
   - added an 'align' operator and query to ranges to specify/query alignment
@@ -65,8 +54,20 @@ Semantic Changes / Changes to Chapel Language
   - defined ident(r1, r2) to say whether r1 and r2 are semantically identical
   - added support for a variety of new range query functions
     (e.g., alignLow(), hasFirst(), hasLowBound(), isAligned(), boundsCheck()...)
-- removed support for +/- operators on rectangular domains; use translate()
 - added support for volatile bool, int, uint, real, and imag types
+- added an end-of-file check to the file type
+  (e.g., 'while !infile.eof ...')
+- removed support for treating 'return' in iterator as a 'yield'
+  (e.g., change 'iter foo() { return x; }' to 'iter foo() { yield x; return; }')
+- added support to referencing modules without first 'use'-ing them
+  (e.g., module M1 { var x...} module M2 { ...M1.x... } is now legal)
+- added a callStackSize query to the locale type
+  (e.g., 'here.callStackSize' returns the call stack size on the current locale)
+- removed the previously-required semicolon from the end of enum declarations
+  (e.g., 'enum colors {red, blue, green}' is now legal; previously needed ';')
+- added support for a single trailing comma at the end of enum lists
+  (e.g., 'enum colors {red, blue, green, }' is now legal)
+- removed support for +/- operators on rectangular domains; use translate()
 
 Newly Implemented Features
 --------------------------
@@ -81,9 +82,9 @@ Standard Domain Maps
 
 Standard Modules
 ----------------
-- added a half dozen more routines to the GMP.chpl module
 - added INFINITY and NAN constants to the Math.chpl module
 - added isinf() and isfinite() test routines to the Math.chpl module
+- added a half dozen more routines to the GMP.chpl module
 
 Platform-specific Notes
 -----------------------
@@ -91,68 +92,73 @@ Platform-specific Notes
 - for XMT, added generation of noalias pragmas to forall loop variables
 - added support for BSC's MareNostrum including docs and a special launcher
   (see doc/platforms/README.marenostrum)
-- 
-
-for MareNostrum, added support for its slurm-based launcher and
+- improved the aprun and pbs-aprun launchers for xt-cle and xe-cle platforms
+  (see Launcher-specific notes below)
 
 Documentation
 -------------
 - added a new technical note describing the user-defined domain map interface
   (see doc/technotes/README.dsi)
-- updated README.comm-diagnostics to mention fast fork statistics
-- improved language specification
-  - clarifications to record construction
-  - fixed some problems in file fields ordering
-  - clarified text about class constructors
+- made many improvements to the language specification
   - major revisions to the Domains chapter to improve clarity/accuracy
   - improved and unified structure of Records and Classes chapters
   - major revisions to the Domain Maps chapter to improve clarity/accuracy
-  - various minor fixes of typos/mistakes
-  - reformatted the specification as a 'book' in LaTeX
-  - updated the descriptions of read[ln]/write[ln]
-  - improved definitions/descriptions of several terms
-  - added documentation ofr locale.name
-  - clarified the legality of label/break/continue in parallel loops
   - named example codes to provide cross-reference to examples/spec/ programs
-- updated various README files
+  - clarified the legality of label/break/continue in parallel loops
+  - updated the descriptions of read[ln]/write[ln]
+  - fixed some problems in file fields ordering
+  - reformatted the specification as a 'book' in LaTeX
+  - various minor fixes of typos/mistakes
+  - improved definitions/descriptions of several terms
+  - added documentation of locale.name
+  - and many more changes...
 - updated quick reference document to include def->proc/iter change, align op.
+- updated README.comm-diagnostics to mention fast fork statistics
+- updated various README files
 
 Example Codes
 -------------
-- added cleaner version of HPCC HPL to hpcc/ directory (hpl.chpl)
-- added first version of HPCC PTRANS to hpcc/ directory (ptrans.chpl)
 - placed most code examples from the language spec. to a new spec/ subdirectory
-- updated the range primer (primers/range.chpl)
-- added a new primer for using procedures (primers/procedures.chpl)
-- added comments to the various hello, world examples (examples/hello*.chpl)
-- renamed existing hello, world examples to suggest a logical reading order
-- added data parallel and distributed data parallel hello, world examples
-  (see examples/hello3-datapar.chpl, examples/hello3-datapar-dist.chpl)
-- improved the iterators primer (primers/iterators.chpl)
-- added a variants/ subdirectory to examples/hpcc to exhibit other approaches
-  - added stream-promoted.chpl to show use of promotion in global STREAM Triad
-  - added ra-cleanloop.chpl to show cleaner (but currently slower) way to do RA
-- improved reductions primer (primers/reductions.chpl)
-- added example of using getCurrentTime() to timers primer (primers/timers.chpl)
-- renamed the locales primer from multilocale.chpl to locales.chpl and improved
-- added descriptions of type aliases and config types to variables primer
-  (see primers/variables.chpl)
-- improved the distributions primer and added Block-Cyclic and Replicated uses
-- added a basic primer for domains (primers/domains.chpl)
+- improved the primers/ directory:
+  - added a new primer for using procedures (primers/procedures.chpl)
+  - added a basic primer for domains (primers/domains.chpl)
+  - renamed the locales primer to locales.chpl and improved it
+  - improved the distributions primer and added Block-Cyclic and Replicated uses
+  - updated the range primer (primers/range.chpl)
+  - improved the iterators primer (primers/iterators.chpl)
+  - improved the reductions primer (primers/reductions.chpl)
+  - added getCurrentTime() to the timers primer (primers/timers.chpl)
+  - added descriptions of type aliases and config types to variables primer
+    (see primers/variables.chpl)
+- improved hpcc/ benchmarks directory
+  - added first version of HPCC PTRANS to hpcc/ directory (ptrans.chpl)
+  - added cleaner version of HPCC HPL to hpcc/ directory (hpl.chpl)
+  - added a variants/ subdirectory to examples/hpcc to exhibit other approaches
+    - added stream-promoted.chpl to show use of promotion in global STREAM Triad
+    - added ra-cleanloop.chpl to show cleaner (but currently slower) RA kernel
+- improved top-level examples:
+  - renamed existing "hello, world" examples to suggest a logical reading order
+    (see examples/hello*.chpl)
+  - added data parallel and distributed data parallel hello, world examples
+    (see examples/hello3-datapar.chpl, examples/hello4-datapar-dist.chpl)
+  - added comments to the various hello, world examples (examples/hello*.chpl)
 
 Third-Party Software Changes
 ----------------------------
-- updated to GASNet 1.16.1
+- updated GASNet to version 1.16.1
 - added copies of BSC's Nanos++ and Sandia's Qthreads
+  (see third-party/README)
+- made a post-install step for GASNet that changes absolute paths to relative
 - removed PVM for the time being due to instability
 
 Packaging Changes
 -----------------
-- added coloring for '_extern', 'proc', 'iter', 'index', 'inout', 'out' to emacs mode
-- removed coloring for 'def', 'this', 'compilerError', 'compilerWarning' from emacs mode
-- updates to vim syntax coloring to reflect new 'proc'/'iter' keywords
 - added syntax highlighter code for GNU source-highlight
   (see etc/source-highlight/README)
+- improved emacs coloring support
+  (see etc/emacs/README)
+- updates to vim syntax coloring to reflect new 'proc'/'iter' keywords
+  (see etc/vim/README)
 - added a script for converting existing codes' use of 'def' to 'iter'/'proc'
   (see $CHPL_HOME/util/convert-defs)
 - removed multirealm examples & documentation for the time being
@@ -162,39 +168,39 @@ Compiler Changes
 - made the compiler print 'true'/'false' out in type signatures rather than 1/0
 - added config param 'noRefCount' to disable reference counting (may leak memory)
 
-Third Party Changes
--------------------
-- made a post-install step for GASNet that changes absolute paths to relative
-
 Runtime Library Changes
 -----------------------
-- added an interface for non-blocking get operations to the comm. interface
-- added a new interface for having the tasking layer call chpl_main()
-- changed tasking init function to take maxThreadsPerLocale/callStackSize args
-- added a task yield capability to the tasking layer interface
-- improved runtime code to avoid using sync vars before initializing tasking
-- removed macro-ized form of tasking interface; using standard names instead
-- unified all remote get operations to use CHPL_COMM_GET() macro
-- unified naming of all task layer routines to chpl_sync_*() and chpl_task_*()
-- removed requirement to implement the single variable interface
-- restructured the communication interface to support length/type arguments
-- refactored/renamed the communication interface headers
-- moved termination of threads from fifo tasking layer to pthreads threading
-- simplified the implementation of sync variables in the pthread threading layer
-- moved responsibility for thread counts from fifo tasking to pthread threading
+- added single-locale task layers for Nanos++ (BSC) and Qthreads (Sandia)
+- several improvements to the runtime tasking layer:
+  - added a new interface for having the tasking layer call chpl_main()
+  - changed tasking init function to take maxThreadsPerLocale/callStackSize args
+  - added a task yield capability to the tasking layer interface
+  - improved runtime code to avoid using sync vars before initializing tasking
+  - removed macro-ized form of tasking interface; using standard names instead
+  - unified naming of all task layer routines to chpl_sync_*() and chpl_task_*()
+  - removed requirement to implement the single variable interface
+  - moved termination of threads from fifo tasking layer to pthreads threading
+  - simplified implementation of sync variables in the pthread threading layer
+  - moved responsibility for thread counts from fifo tasking to pthread threading
+- several improvements to the runtime communication layer:
+  - restructured the communication interface to support length/type arguments
+  - added an interface for non-blocking get operations to the comm. interface
+  - unified all remote get operations to use CHPL_COMM_GET() macro
+  - refactored/renamed the communication interface headers
 
 Launcher-specific notes
 -----------------------
-- changed launchers to support exec-based (rather than system-based) commands
+- added launcher-specific options to --help capability
 - improved propagation of exit status codes through launchers
+- changed launchers to support exec-based (rather than system-based) commands
 - made launchers use 'unlink' rather than system('rm') to remove temporary files
 - added a launcher for BSC's MareNostrum
 - reduced number of temporary files used to capture output of 'system' commands
-- aprun launcher:
+- aprun launcher improvements:
   - added a --cc flag to specify CPU assignment w/in a node
   - added a -q flag to run the launcher in quiet mode
   - added debug capability via CHPL_LAUNCHER_DEBUG to keep tmp files around
-- pbs-aprun launcher:
+- pbs-aprun launcher improvements:
   - added a --cc flag to specify CPU assignment w/in a node
   - added debug capability via CHPL_LAUNCHER_DEBUG to keep tmp files around
   - cleaned up output to get rid of some extraneous printing
@@ -206,9 +212,6 @@ Compiler Flags
 - added a --print-callstack-on-error flag to show what led to a bad call
 - added a --no-codegen flag to skip the code-generation and linking phase
 
-Execution Flags
----------------
-
 Interoperability Changes
 ------------------------
 - added support for extern consts (see README.extern)
@@ -216,50 +219,46 @@ Interoperability Changes
 
 Bug Fixes / New Semantic Checks (for old semantics)
 ---------------------------------------------------
-- added an check against constructing classes without specifying generic fields
 - prevented config types from being set using execution time command-line flags
 - fixed the compiler's ability to handle unions with no fields
 - fixed the minloc/maxloc reductions to handle empty ranges/subranges of values
-- fixed a bug involving support for empty extern record types
-- fixed a bug involving extern functions that return records
 - fixed a bug in which the 'path' argument to file constructors was ignored
-- fixed implementation of +/- operators on associative/sparse domains
-- added an error for constructors/destructors with a specified return type
-- added error messages for expand/exterior/interior on irregular domains
-- fixed a bug related to copying external records
-- fixed a bug relating to filename-based module names containing multiple '.'s
-- fixed a pair of bugs relating to the 'fast on' optimization
 - made empty unions work correctly
 - fixed an overflow issue in chunking up ranges for distribution/parallelization
+- fixed a bug involving support for empty extern record types
+- fixed a bug involving extern functions that return records
+- fixed a bug related to copying external records
+- fixed implementation of +/- operators on associative/sparse domains
+- fixed a bug relating to filename-based module names containing multiple '.'s
+- added error messages for expand/exterior/interior on irregular domains
+- added an error for constructors/destructors with a specified return type
+- fixed a pair of bugs relating to the 'fast on' optimization
+- added a check against constructing classes without specifying generic fields
 
 Error Message Improvements
 --------------------------
 - added a warning orphaned 'use' statements outside of declared modules
   (e.g., 'use M1; module M2 { }' should typically be 'module M2 { use M1; }')
+- made parse-time error message use the standard 'filename:lineno:' format
 - generated an error message for referring to a class name in a primary method
   (e.g., 'class C { def C.m() {...} }' now generates an error message)
-- made parse-time error message use the standard 'filename:lineno:' format
-
-Compiler Analysis and Optimizations / Performance of Generated Code
--------------------------------------------------------------------
 
 Testing System
 --------------
-- fixed a bug in which .preexec files only worked if '.' was in your path
-- added ability to avoid using any indirection of stdin
-- added an option to provide a system-wide prediff option
-- added ability to use a launcher's native timeout feature rather than Python's
 - vastly improved the performance testing and graphing capabilities
   (see comments at the front of start_test for documentation)
 - improved the testing system's support for cleaning up after itself
+- added ability to avoid using any indirection of stdin
+- added an option to provide a system-wide prediff option
+- added ability to use a launcher's native timeout feature rather than Python's
 - improved how the testing system kills a test that times out
+- fixed a bug in which .preexec files only worked if '.' was in your path
 
 Internal
 --------
-- added ability for launchers to print out --help for their special flags
+- added a --break-on-id compiler flag for developers to locate AST node creates
 - improved organization of util/ directory contents
 - changed the way version numbers are computed/displayed for SVN-based users
-- added a --break-on-id compiler flag for developers to locate AST node creates
 - added support for task-/thread-specific module code
 - added a capability to print the AST counts allocated between each pass
 - added a new gdb alias to compiler --gdb: 'loc' prints an AST node's location
