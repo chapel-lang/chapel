@@ -19,8 +19,8 @@ Highlights (see below for details)
 - major reworking of range semantics and implementation
   (see "Semantic Changes / Changes to Chapel Language" below)
 - initial support for volatile types: bool, int, uint, real, imag
-- support for extern consts and classes
-  (see "Interoperability Changes" below)
+- support for extern consts and classes (pointers-to-structs)
+  (see doc/technotes/README.extern)
 - improved support for data parallelism on the Cray XMT
 - extensive improvements to the sample codes in the examples/ directory
   (see 'Example Codes' below)
@@ -36,7 +36,7 @@ Highlights (see below for details)
 Syntactic/Naming Changes
 ------------------------
 - split 'def' keyword into 'proc' (for procedures) and 'iter' (for iterators)
-  (see '$CHPL_HOME/util/convert-defs --help' for help updating existing code)
+  (see '$CHPL_HOME/util/convert-defs --help' for help updating existing codes)
 - renamed 'arithmetic' domains/arrays to 'rectangular'
 - added support for floating point literals of the form '1.e...'
   (previously, only '1e...' and '1.0e...' were supported)
@@ -113,6 +113,7 @@ Documentation
   - added documentation of locale.name
   - and many more changes...
 - updated quick reference document to include def->proc/iter change, align op.
+- rewrote/reorganized README.extern to clarify explanations and bring up-to-date
 - updated README.comm-diagnostics to mention fast fork statistics
 - updated various README files
 
@@ -142,6 +143,9 @@ Example Codes
   - added data parallel and distributed data parallel hello, world examples
     (see examples/hello3-datapar.chpl, examples/hello4-datapar-dist.chpl)
   - added comments to the various hello, world examples (examples/hello*.chpl)
+- updated all examples to current language semantics
+  - use 'proc'/'iter' rather than 'def'
+  - update to reflect new range semantics
 
 Third-Party Software Changes
 ----------------------------
@@ -214,8 +218,8 @@ Compiler Flags
 
 Interoperability Changes
 ------------------------
-- added support for extern consts (see README.extern)
 - added support for extern C "classes" (pointer-to-struct types)
+- added support for extern consts (see README.extern)
 
 Bug Fixes / New Semantic Checks (for old semantics)
 ---------------------------------------------------
