@@ -2,41 +2,29 @@
 \label{Ranges}
 \index{ranges}
 
-Ranges represent a sequence of integer indices.  Ranges have an integral base
-type, are either \emph{bounded} or \emph{unbounded} and are \emph{stridable} or not.
-Unbounded ranges are those in which the low and/or high bound is
-omitted.  
-If a range is stridable, it may have a stride and an
-\emph{alignment}.  The stride is the difference between neighboring indices; the
-alignment determines the starting index as described below.  If a range is not
-stridable, its stride $1$ and its alignment is $0$.
-\index{ranges!bounded}
-\index{ranges!unbounded}
-\index{ranges!stridable}
-\index{ranges!alignment}
-
-All ranges are characterized by a low bound~$l$, a high bound~$h$, stride~$s$
-and alignment~$a$.  When the range is strided, different alignments describe
-distinct ranges.  For example if the stride is 2, then an alignment of 0 means
-that the sequence contains only even numbers while an alignment of 1 means that the
-sequence contains only odd numbers.  The \emph{aligned low bound} $b$ is the first
-index greater than or equal to $l$ that matches the alignment.  That
-is, $b$ is the lowest index such that $b \geq l, b\!\mod |s| = a\!\mod |s|$.  Similarly,
-the \emph{aligned high bound} $e$ is the highest index such that $e \leq h, e\!\mod |s| =
-a\!\mod |s|$.
-\index{ranges!aligned bounds}
-
-If the stride is positive, the indices
-described by the range are $b, b+s, b+2s, b+3s, ...$ where all of the
-indices are less than or equal to $h$.  If the stride is negative, the indices
-described by the range are $e, e+s, e+2s, e+3s, ...$ where all of the
-indices are greater than or equal to $l$.  
-If $l > h$, the range is considered
-degenerate and represents an empty sequence. 
-
+Ranges represent a regular sequence of integer indices.  
 Ranges support iteration over the
 indices they represent as described in ~\rsec{The_For_Loop}.
 
+Ranges have an integral base type, one of four types of \emph{boundedness} and
+are \emph{stridable} or not (\rsec{Range_Types}).  The \emph{low
+bound}, \emph{high bound}, \emph{stride} and \emph{alignment} of a range
+determines the sequence of values it represents (\rsec{Range_Values}).
+
+The fields contained in a range are described in \rsec{Range_Fields}.
+Subsequent sections describe how to specify a range literally
+(\rsec{Range_Literals}), the effect of assigning one range to another
+(\rsec{Range_Assignment}), operators which apply a stride
+(\rsec{By_Operator_For_Ranges}) or an alignment (\rsec{Align_Operator}), and the
+count operator (\rsec{Count_Operator}).  Section \rsec{Range_Slicing} describes
+range slicing, which yields a range representing the intersection of the two
+operand ranges.
+
+The final section (\rsec{Predefined_Range_Procedures}) lists the remaining
+procedures in the range library, divided into the following subsections: type
+accessors (\rsec{Range_Type_Accessors}), field accessors
+(\rsec{Range_Field_Accessors}), predicates (\rsec{Range_Predicates}), queries
+(\rsec{Range_Queries}) and transformations (\rsec{Range_Transformations}).
 
 \section{Range Types}
 \label{Range_Types}
@@ -48,6 +36,11 @@ The type of a range is characterized by three things:
 \item the boundedness of the range,
 \item whether or not the range is \emph{stridable}.
 \end{enumerate}
+\index{ranges!bounded}
+\index{ranges!unbounded}
+\index{ranges!stridable}
+\index{ranges!alignment}
+
 
 In a range, the type of the low bound, the high bound and the alignment are
 determined by the type parameter \emph{idxType}.
@@ -76,16 +69,21 @@ a bounded range while the other three values specify a range in which
 the high bound is omitted, the low bound is omitted, or both bounds
 are omitted, respectively.  The default value is \chpl{bounded}.
 
+If a range is stridable, it may have a stride and an
+\emph{alignment}.  The stride is the difference between neighboring indices; the
+alignment determines the modulus of the indices described.  If a range is not
+stridable, its effective stride is $1$ and its alignment is $0$.
+% NOTE: bradc  Yeah? What if its stridable and |stride| is |1|?  Are we saying too
+% much too soon?
 The stridability of a range is represented by a boolean parameter
-named \chpl{stridable}.  If this parameter is set to \chpl{true}, the range's
-stride can take on any signed integer value other than 0 of the same
-bit-width as \chpl{idxType}.  If \chpl{stridable} is set to \chpl{false}, the range's stride is
-fixed to 1.  The default value is \chpl{false}.
+named \chpl{stridable}.  The default value is \chpl{false}.  If this parameter
+is set to \chpl{true}, the range's stride can take on any signed integer value
+other than 0 of the same bit-width as \chpl{idxType}.
 
 If \chpl{stridable} is set to \chpl{true}, the alignment value can also be set.
 It can take on any integer value representable by
 the \emph{idxType}.  For a given alignment $a$ and stride $s$, each index $i$
-in the range's sequence obeys the relation $i \!\mod |s| = a \!\mod |s|$.  
+in the range's sequence obeys the relation $i = a ({\rm modulo} s)$.
 
 \begin{rationale}
 The \emph{boundedType} and \emph{stridable} parameters are used
@@ -121,26 +119,65 @@ writeln(r);
 \end{chapeloutput}
 \end{chapelexample}
 
-\section{Range Fields and Accessors}
+\section{Range Values}
+\label{Range_Values}
+
+All ranges are characterized by a low bound~$l$, a high bound~$h$, stride~$s$
+and alignment~$a$.  The sequence produced by iterating upon a range is bounded
+below by $l$ and above by $h$.  The stride determines the difference between
+successive indices in the sequence.  An alignment value $a$ applied to a range
+with stride $s$ causes the indices $i$ produced by an iterator to obey the
+equation $i = a ({\rm modulo} s)$.
+
+The \emph{aligned low bound} $b$ is the first index greater than or equal to $l$
+that matches the alignment.  That is, $b$ is the lowest index such that $b \geq
+l, b = a ({\rm modulo} |s|)$.  Similarly, the \emph{aligned high bound} $e$ is
+the highest index such that $e \leq h, e = a ({\rm modulo} |s|)$.
+\index{ranges!aligned bounds}
+If the stride is positive, the indices
+described by the range are $b, b+s, b+2s, b+3s, ..., e$.
+If the stride is negative, the indices
+described by the range are $e, e+s, e+2s, e+3s, ..., b$.
+If $l > h$, the range is considered
+degenerate and represents an empty sequence. 
+
+\section{Range Fields}
 \label{Range_Fields}
 \index{ranges!fields}
 
+%NOTE: bradc: ``A range's semantics are defined by ?''
+%NOTE: hilde: That was the intent of the preceding section.  This section
+%introduces the fields which may be accessed through their respective accessors
+%and describes when they are valid.
 The fields in a range are given by:
-\begin{description}
-\item[low] the low bound,
-\item[high] the high bound,
-\item[stride] the stride,
-\item[alignment] the alignment, and
-\item[aligned] whether the alignment field has been set explicitly.
-\end{description}
+\begin{tabular}{rl}
+\chpl{low} the low bound,
+\chpl{high} the high bound,
+\chpl{stride} the stride,
+\chpl{alignment} the alignment, and
+%NOTE: bradc: These 4 are tautological.
+%NOTE: hilde: An excellent example of mnemonic naming!
+\chpl{aligned} whether the alignment field has been set explicitly.
+%NOTE: bradc: Does this have to be a distinct thing instead of a special
+%alignment value in semantics?
+%NOTE: hilde: There are pros and cons to using special values.  Whether this
+%field should be exposed to users is also worth discussing.
+\end{tabular}
 These fields are always valid, regardless of the choice of \chpl{boundedType}
-and \chpl{stridable} parameters.  However, certain cases are interpreted
-specially.  If the low bound exceeds the high bound, the range is degenerate: It contains no
-indices.  If the range has no \chpl{start} value\footnote{The \chpl{hasFirst()}
-and \chpl{hasLast()} predicates can be used to determine if a range possesses the
-corresponding limit.}, then it cannot be iterated
+and \chpl{stridable} parameters.  However, the accessors
+(\rsec{Range_Field_Accessors}) may report an error
+when specific values are entered, and certain cases are interpreted
+specially, as enumerated below.
+
+If the low bound exceeds the high bound, the range is degenerate: It contains no
+indices.  
+%REVIEW: bradc: Need to say what stride of 0 means? or say it cannot be 0?
+
+A range has no \chpl{first} value if it has a positive stride and is \chpl{boundedHigh}
+or \chpl{boundedNone} or if it has a negative stride and is \chpl{boundedLow}
+or \chpl{boundedNone}.  If the range has no \chpl{first} value, then it cannot be iterated
 upon.  If the range has a stride whose absolute value
-is 2 or greater and its \chpl{aligned} flag is \chpl{false}, then its alignment is
+is greater than 1 and its \chpl{aligned} flag is \chpl{false}, then its alignment is
 \emph{ambiguous}.  If a range is ambiguously aligned, it cannot be iterated, and
 other actions are prohibited as well.  Refer to the description of each operator or
 range-related procedure for details.
@@ -161,16 +198,26 @@ A range is \emph{naturally aligned} if its alignment coincides with its low or
 high bound.  Specifically, a range with \chpl{low}, \chpl{high}, \chpl{stride}
 and \chpl{alignment} values of $l$, $h$, $s$ and $a$ (respectively) is naturally aligned if:
 \begin{itemize}
-\item It is \chpl{bounded}, its stride is positive, and $a\!\mod |s| = l\!\mod s$,
-\item It is \chpl{bounded}, its stride is negative, and $a\!\mod |s| = h\!\mod s$,
-\item It is \chpl{boundedLow} and $a\!\mod |s| = l\!\mod s$,
-\item It is \chpl{boundedHigh} and $a\!\mod |s| = h\!\mod s$, or
+\item It is \chpl{bounded}, its stride is positive, and $a = l ({\rm modulo} s)$,
+\item It is \chpl{bounded}, its stride is negative, and $a = h ({\rm modulo} s)$,
+\item It is \chpl{boundedLow} and $a = l ({\rm modulo} s)$,
+\item It is \chpl{boundedHigh} and $a = h ({\rm modulo} s)$ or
 \item It is $boundedNone$ and $a = 0$.
 \end{itemize}
 \noindent The \chpl{isAligned} predicate returns \chpl{true} when the operand
 range is naturally aligned.  When a range is formatted for output, the alignment
 is printed only if the range is not naturally aligned.
+%TODO: bradc: so it doesn't correlate to the aligned field mention prev?
+%Confusing! Should be renamed to isNaturallyAligned.
 \index{ranges!alignment!natural}
+
+All ranges with a stride of $\pm 1$ are unambiguously aligned, regardless of the
+state of the \chpl{aligned} flag.\footnote{That is because the effective
+alignment is the \chpl{alignment} modulo the \chpl{stride}, which is
+unambiguously zero.}  However, when the absolute value of its stride is 2 or
+greater, a range may be ambiguously aligned.  See~\rsec{By_Operator_For_Ranges}
+for details.
+
 
 \section{Literal Range Values}
 \label{Range_Literals}
@@ -199,17 +246,20 @@ in~\rsec{By_Operator_For_Ranges}.
 
 \index{ranges!integral index type}
 The index type of the range type is determined by the type of the
-low and high bound.  It is either \chpl{int}, \chpl{uint},
+low and high bound.  
+%NOTE: bradc: Is this well-defined? clear?
+It is either \chpl{int}, \chpl{uint},
 \chpl{int(64)}, or \chpl{uint(64)}.  The index type of the range is obtained by
 applying integral promotions to the low and high bounds.  The boundedness
 of such a range is \chpl{bounded}.  The stridability of a range literal
-is \chpl{false} unless modified using the \chpl{by} operator as described 
-in~\rsec{By_Operator_For_Ranges}.
+is always \chpl{false}.
 
 \subsection{Unbounded Range Literals}
 \label{Unbounded_Ranges}
 \index{ranges!unbounded}
 
+Unbounded ranges are those in which the low and/or high bound is
+omitted.  
 An unbounded range is specified by the syntax
 \begin{syntax}
 unbounded-range-literal:
@@ -241,13 +291,8 @@ writeln();
 produces the output ``(1, 3); (2, 4); (3, 5); (4, 6); (5, 7); ''.
 \end{chapelexample}
 
-It is an error to iterate over a \chpl{boundedNone} range,
-a \chpl{boundedLow} range with negative stride or a
-\chpl{boundedHigh} range with positive stride.
-
-Unbounded ranges can also be used to index into ranges, domains,
-arrays, and strings.  In these cases, omitted bounds may be inherited
-from the bounds of the expression being indexed.
+It is an error to iterate over a range which lacks a \chpl{first} value.
+The \chpl{hasFirst} predicate is used internally to detect this (see~\rsec{Range_Predicates}).
 
 
 \section{Range Assignment}
@@ -319,23 +364,22 @@ negative, it is aligned with respect to the operand's \chpl{alignedHigh} value.
 \item Otherwise, it has the same alignment as the operand range.
 \end{itemize}
 
-All ranges with a stride of $\pm 1$ are unambiguously aligned, regardless of the
-state of the \chpl{aligned} flag.\footnote{That is because the effective
-alignment is the \chpl{alignment} modulo the \chpl{stride}, which is
-unambiguously zero.}  However, when the absolute value of its stride is 2 or
-greater, a range may be ambiguously aligned.
-
-When a stride whose absolute value is 2 or greater is applied to a range, the
-alignment of the result is determined as follows:
+The alignment of the result is determined as follows:
 \begin{itemize}
 \item If the operand range is ambiguously aligned, then \chpl{aligned} is set to
 false;
+%NOTE: bradc: Is this right?
+%NOTE: hilde: I think so ... .  It expresses the "poison bit" interpretation of
+%ambiguous alignment, so you can't turn an ambiguously aligned range into an
+%unambiguously aligned one by simply applying "by -1", for example.
 \item If the \chpl{aligned} flag of the operand is \chpl{true}, then the
 existing alignment is used; 
-\item Otherwise, if the range has a \chpl{first} value (i.e. 
-\chpl{r.hasFirst() == true}), then that value is used and \chpl{aligned} is set
+\item Otherwise, if stride of the resulting range has an absolute value greater
+than 1 and its \chpl{first} value is defined (i.e.
+\chpl{r.hasFirst() == true}), then \chpl{first} is used and \chpl{aligned} is set
 to true.
 \end{itemize}
+See~\rsec{Range_Predicates} or the definition of \chpl{hasFirst}.
 
 \begin{chapelexample}{rangeByOperator.chpl}
 In the following declarations, range \chpl{r1} represents the odd integers
@@ -371,8 +415,7 @@ R into the expression.
 \index{ranges!align operator}
 
 The \chpl{align} operator can be applied to any range, and creates a new range
-with the given alignment.  An alignment value $a$ applied to a range with stride $s$ causes the indices $i$ produced by an iterator
-to obey the equation $i\!\mod |s| = a\!\mod |s|$.
+with the given alignment.  
 
 The syntax for the \chpl{align} operator is:
 \begin{syntax}
@@ -381,7 +424,7 @@ aligned-range-expression:
 \end{syntax}
 \noindent The type of the resulting range expression is the same as that of the
 range appearing as the left operand.  The type of the right operand must be
-compatible with the index type of the operand range.  
+coercible to the index type of the operand range.  
 The resulting range has the
 same \chpl{low}, \chpl{high} and \chpl{stride} fields as the source range. The
 alignment is set equal to the \chpl{align} operator's right operand.
@@ -392,12 +435,12 @@ alignment has been supplied.
 \begin{chapel}
 var r1 = 0 .. 10 by 3 align 0;
 for i in r1 do
-  write(" ", i);			// Produces ``0 3 6 9''.
+  write(" ", i);			// Produces "0 3 6 9".
 writeln();
 
 var r2 = 0 .. 10 by 3 align 1;
 for i in r2 do
-  write(" ", i);			// Produces ``1 4 7 10''.
+  write(" ", i);			// Produces "1 4 7 10".
 writeln();
 \end{chapel}
 \begin{chapeloutput}
@@ -411,12 +454,12 @@ When the stride is negative, the same indices are printed in reverse:
 \begin{chapel}
 var r3 = 0 .. 10 by -3 align 0;
 for i in r3 do
-  write(" ", i);			// Produces ``9 6 3 0''.
+  write(" ", i);			// Produces "9 6 3 0".
 writeln();
 
 var r4 = 0 .. 10 by -3 align 1;
 for i in r4 do
-  write(" ", i);			// Produces ``10 7 4 1''.
+  write(" ", i);			// Produces "10 7 4 1".
 writeln();
 \end{chapel}
 \begin{chapeloutput}
@@ -425,7 +468,7 @@ writeln();
 \end{chapeloutput}
 \end{chapelexample}
 
-To align a range relative to its \chpl{start} index, use
+To align a range relative to its \chpl{first} index, use
 the \chpl{offset} method (\rsec{Range_Offset_Method}).
 
 
@@ -447,9 +490,10 @@ counted-range-expression:
 
 The \emph{idxType} of the resulting range is the same type that would be
 obtained by adding the integral count value to a value with the
-range's \emph{idxType}.  The stride of the resulting range is the same as that
-of the initial range.  The alignment of the resulting range is the same as the
-initial range.
+range's \emph{idxType}.  
+%NOTE: bradc: We should really define to use op. range's idxType.
+The stride and alignment of the resulting range are the same as those
+of the initial range.  
 
 Depending on the sign of the count and the stride, the high or low bound is
 unchanged and the other bound is adjusted so that it is $c * stride - 1$ units
@@ -481,18 +525,10 @@ r # 4 align 3   // Contains four indices.
 \end{chapel}
 \end{rationale}
 
-It is an error to apply the count operator to a range that
+It is an error to apply the count operator with a positive count to a range that
 has no starting index.  It is also an error to apply the count operator
 with a negative count to a range that has no end index.
 It is an error to apply the count operator to a range that is ambiguously aligned.
-
-\begin{rationale}
-The count operator is intended to select indices from an \emph{iteratable}
-range.  If the range has no \chpl{start} index, then its membership is
-indeterminate.  Therefore, indices taken from the start or the end of the range
-are not well-defined.  When the count is negative, indices are taken from the
-end of the range.  In that case, the end bound must also be established.
-\end{rationale}
 
 \begin{chapelexample}{rangeCountOperator.chpl}
 The following declarations result in equivalent ranges.
@@ -528,7 +564,9 @@ proc -(r: range, s: integral): range
 
 The \chpl{+} and \chpl{-} operators apply the scalar via the operator
 to the range's low and high bounds, producing a shifted version of the
-range.  The index type of the resulting range is the type of the value
+range.  If the operand range is unbounded above or below, the missing bounds
+are ignored.
+The index type of the resulting range is the type of the value
 that would result from an addition between the scalar value and a value
 with the range's index type.  The bounded and stridable parameters for
 the result range are the same as for the input range.
@@ -541,14 +579,14 @@ ambiguously aligned.
 
 \begin{chapelexample}{rangeAdd.chpl}
 The following code creates a bounded, non-stridable range \chpl{r}
-which has an index type of \chpl{int} representing the indices ${0,
-  1, 2, 3}$.  It then uses the \chpl{+} operator to
-create a second range \chpl{r2} representing the indices ${1, 2, 3,
-  4}$.  The \chpl{r2} range is bounded, non-stridable, and is represented by
-indices of type \chpl{int}.
+which has an index type of \chpl{int} representing the indices ${0, 1, 2, 3}$.  
+It then uses the \chpl{+} operator to create a second range \chpl{r2}
+representing the indices ${1, 2, 3, 4}$.  The \chpl{r2} range is bounded,
+non-stridable, and is represented by indices of type \chpl{int}.
+% REVIEW: bradc: More interesting example?
 \begin{chapel}
 var r = 0..3;
-var r2 = r + 1;
+var r2 = r + 1;    // 1..4
 \end{chapel}
 \begin{chapelpost}
 writeln((r, r2));
@@ -570,14 +608,25 @@ needed to make this true.  Range slicing is specified by the syntax:
 \begin{syntax}
 sliced-range-expression:
   range-expression ( range-expression )
+  range-expression [ range-expression ]
 \end{syntax}
-\noindent If the slicing range is unbounded in one or both directions, it
-inherits its missing bounds from the range being sliced.
 
 If either of the operand ranges is ambiguously aligned, then the resulting range
 is also ambiguously aligned.  In this case, the result is valid only if the
 strides of the operand ranges are relatively prime.  Otherwise, an error is
 generated at run time.
+
+\begin{rationale}
+If the strides of the two operand ranges are relatively prime, then they are
+guaranteed to have some elements in their intersection, regardless whether their
+relative alignment can be determined.  In that case, all fields in the resulting
+range are valid with respect to the given inputs except for the \chpl{alignment}
+field.  The alignment can be supplied later to create a valid range.
+
+If the strides are not relatively prime, then the result of the slicing
+operation would be completely ambiguous.  The only reasonable action for the
+implementation is to generate an error.
+\end{rationale}
 
 \begin{chapelexample}{rangeSlicing.chpl}
 In the following example, \chpl{r} represents the integers from 1 to
@@ -585,6 +634,7 @@ In the following example, \chpl{r} represents the integers from 1 to
 slices and represent the indices from 3 to 20 and the odd integers
 between 1 and 20 respectively. Range \chpl{r4} represents the odd
 integers between 1 and 20 that are also divisible by 3.
+%NOTE: bradc: Give <l,h,s,a> values?
 \begin{chapel}
 var r = 1..20;
 var r2 = r[3..];
@@ -599,22 +649,22 @@ writeln((r, r2, r3, r4));
 \end{chapeloutput}
 \end{chapelexample}
 
-\section{Predefined Procedures on Ranges}
+\section{Predefined Range Procedures}
 \label{Predefined_Range_Procedures}
 \index{ranges!predefined procedures}
 
 \subsection{Range Type Accessors}
+\label{Range_Type_Accessors}
 
 \begin{protohead}
-proc $range$.idxType type
+proc $range$.idxType : type
 \end{protohead}
 \begin{protobody}
-Returns the index type of the range.  The index type is one
-of \chpl{int}, \chpl{uint}, \chpl{int(64)} or \chpl{uint(64)}.
+Returns the index type of the range.  
 \end{protobody}
 
 \begin{protohead}
-proc $range$.boundedType type
+proc $range$.boundedType : BoundedRangeType
 \end{protohead}
 \begin{protobody}
 Returns boundedType of the range.  The boundedType of a range is a member of the
@@ -622,7 +672,7 @@ BoundedRangeType enumeration (\rsec{Range_Types}).
 \end{protobody}
 
 \begin{protohead}
-proc $range$.stridable type
+proc $range$.stridable : bool
 \end{protohead}
 \begin{protobody}
 Returns \chpl{true} if the range is stridable, \chpl{false} otherwise.  If \chpl{stridable} is
@@ -630,13 +680,13 @@ Returns \chpl{true} if the range is stridable, \chpl{false} otherwise.  If \chpl
 \end{protobody}
 
 \subsection{Range Field Accessors}
-
+\label{Range_Field_Accessors}
+%REVIEW: hilde: Should field accessors be read/write?
 \begin{protohead}
-proc $range$.align : idxType
+proc $range$.alignment : idxType
 \end{protohead}
 \begin{protobody}
-Returns the alignment of the indices yielded by an iterator.  Alignments are
-relative to 0, not the low or high bound.
+Returns the alignment of the indices yielded by an iterator.  
 \end{protobody}
 
 \begin{protohead}
@@ -657,26 +707,24 @@ Returns the high bound of the range.
 proc $range$.stride : int(numBits(idxType))
 \end{protohead}
 \begin{protobody}
-Returns the stride of the range.  If the stride is negative, indices within the
-range are enumerated from highest to lowest.
+Returns the stride of the range.  
+% The value of the operand must not be zero.
 \end{protobody}
 
 \begin{protohead}
 proc $range$.aligned : bool
 \end{protohead}
 \begin{protobody}
-Returns true if the absolute value of the stride is 2 or greater and the
-alignment of the range has been determined, or if the alignment of the range has
-been specified explicitly.  
+Returns the value of the aligned flag.
 \end{protobody}
 
 \subsection{Range Predicates}
+\label{Range_Predicates}
 
 \begin{protohead}
 proc ==(r1: range(?), r2: range(?)): bool
 \end{protohead}
 \begin{protobody}
-Returns \chpl{false} if either of the two ranges is ambiguously aligned.
 Returns \chpl{true} if the two ranges produce the same sequence
 and \chpl{false} otherwise.  The high and low bounds can differ between the two
 ranges, and they will still compare equal as long as the same sequence is
@@ -700,45 +748,49 @@ Returns \chpl{true} if the two ranges are the same in every respect: i.e. the
 two ranges have the same \chpl{idxType},
 \chpl{boundedType}, \chpl{stridable}, \chpl{low}, \chpl{high}, \chpl{stride} and
 \chpl{alignment} and \chpl{aligned} values.
+%NOTE: bradc: Might be nice if only the field values (and not the params) were
+%compared?  Types could be compared separately using '=='?
 \end{protobody}
 
 \begin{protohead}
 proc $range$.hasFirst(): bool
 \end{protohead}
 \begin{protobody}
-Returns \chpl{false} if this range is ambiguously aligned.
 Returns \chpl{true} if this range has a low bound and a positive stride, or a high
 bound and a negative stride.
+Always returns \chpl{false} if this range is ambiguously aligned.
+%NOTE: bradc: Define in terms of ident? Call start?
 \end{protobody}
 
 \begin{protohead}
 proc $range$.hasLast(): bool
 \end{protohead}
 \begin{protobody}
-Returns \chpl{false} if this range is ambiguously aligned.
 Returns \chpl{true} if this range has a high bound and a positive stride, or a low
 bound and a negative stride.
+Always returns \chpl{false} if this range is ambiguously aligned.
 \end{protobody}
 
 \begin{protohead}
 proc $range$.hasLowBound() param: bool
 \end{protohead}
 \begin{protobody}
-Returns \chpl{false} if this range is ambiguously aligned.
 Returns \chpl{true} if the range is bounded below (\chpl{boundedLow} or \chpl{bounded}).
+Always returns \chpl{false} if this range is ambiguously aligned.
 \end{protobody}
 
 \begin{protohead}
 proc $range$.hasHighBound() param: bool
 \end{protohead}
 \begin{protobody}
-Returns \chpl{false} if this range is ambiguously aligned.
 Returns \chpl{true} if the range is bounded above (\chpl{boundedHigh} or \chpl{bounded}).
+Always returns \chpl{false} if this range is ambiguously aligned.
 \end{protobody}
 
 \begin{protohead}
 proc $range$.isAligned() bool
 \end{protohead}
+%TODO: bradc: Rename as isNaturallyAligned.
 \begin{protobody}
 Returns \chpl{true} if the range is naturally aligned and \chpl{false} otherwise.
 Specifically,
@@ -772,25 +824,28 @@ Returns \chpl{true} if this range is ambiguously aligned, \chpl{false} otherwise
 proc $range$.member(i: idxType): bool
 \end{protohead}
 \begin{protobody}
-Returns \chpl{false} if this range is ambiguously aligned.
 Returns \chpl{true} if \chpl{i} is in the range; \chpl{false} otherwise.
+Always returns \chpl{false} if this range is ambiguously aligned.
 \end{protobody}
 
 \begin{protohead}
 proc $range$.member(other: range): bool
 \end{protohead}
 \begin{protobody}
-Returns \chpl{false} if either range is ambiguously aligned.
 Returns \chpl{true} if every index in \chpl{other} is also in \chpl{this}, \chpl{false} otherwise.
+Always returns \chpl{false} if this range is ambiguously aligned.
+%NOTE: bradc: How different than boundsCheck?
 \end{protobody}
 
-\subsection{Other Range Methods}
+\subsection{Range Queries}
+\label{Range_Queries}
 
 \begin{protohead}
 proc $range$.alignedHigh : idxType
 \end{protohead}
 \begin{protobody}
 Returns the aligned high bound of the range.  
+%REVIEW: bradc: What if alignment is not well-defined?
 The aligned high bound is the first
 index in the range less than or equal to the high bound that is
 aligned relative to the stored \chpl{stride} and \chpl{alignment} values.  That
@@ -821,22 +876,6 @@ aligned relative to the stored \chpl{stride} and \chpl{alignment} values.  That
 is, if the low bound, stride and alignment are $l$, $s$ and $a$ respectively,
 the aligned low bound $b$ is the lowest index such that $b \geq l, b\!\mod |s| =
 a\!\mod |s|$.
-\end{protobody}
-
-\begin{protohead}
-proc $range$.alignHigh()
-\end{protohead}
-\begin{protobody}
-Sets the alignment of this range to its high bound.
-If the operand range is ambiguously aligned, a run-time error is generated.
-\end{protobody}
-
-\begin{protohead}
-proc $range$.alignLow()
-\end{protohead}
-\begin{protobody}
-Sets the alignment of a range to its low bound.
-If the operand range is ambiguously aligned, a run-time error is generated.
 \end{protobody}
 
 \begin{protohead}
@@ -873,7 +912,7 @@ proc $range$.last : idxType
 \end{protohead}
 \begin{protobody}
 Returns the last index within the range.  In general, this is given
-by \chpl{start + length * stride}.
+by \chpl{first + length * stride}.
 \end{protobody}
 
 \begin{protohead}
@@ -883,15 +922,80 @@ proc $range$.length : idxType
 Returns the number of indices in the range.
 \end{protobody}
 
-\label{Range_Offset_Method}
+\subsection{Range Transformations}
+\label{Range_Transformations}
+
+\begin{protohead}
+proc $range$.alignHigh()
+\end{protohead}
+\begin{protobody}
+Sets the alignment of this range to its high bound.
+If the operand range is ambiguously aligned, a run-time error is generated.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.alignLow()
+\end{protohead}
+\begin{protobody}
+Sets the alignment of a range to its low bound.
+If the operand range is ambiguously aligned, a run-time error is generated.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.expand(i: idxType)
+\end{protohead}
+\begin{protobody}
+Returns a new range whose bounds are extended by $i$ units on each end.  If $i <
+0$ then the resulting range is contracted by its absolute value.  In symbols,
+given that the operand range is represented by the tuple $(l,h,s,a)$, the result
+is $(l-i,h+i,s,a)$.  The stride and alignment of the original range are preserved.
+If the operand range is ambiguously aligned, then so is the resulting range.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.exterior(i: idxType)
+\end{protohead}
+\begin{protobody}
+Returns a new range containing the indices just outside the low or high bound of
+the range (low if $i < 0$ and high otherwise).  The stride and alignment of the
+original range are preserved.  Let the operand range
+be denoted by the tuple $(l,h,s,a)$.  Then:
+\begin{itemize}
+\item[] if $i < 0$, the result is $(l+i,l-1,s,a)$,
+\item[] if $i > 0$, the result is $(h+1,h+i,s,a)$, and
+\item[] if $i = 0$, the result is $(l,h,s,a)$.
+\end{itemize}
+If the operand range is ambiguously aligned, then so is the resulting range.
+\end{protobody}
+
+\begin{protohead}
+proc $range$.interior(i: idxType)
+\end{protohead}
+\begin{protobody}
+Returns a new range containing the indices just inside the low or high bound of
+the range (low if $i < 0$ and high otherwise).  The stride and alignment of the
+original range are preserved.  Let the operand range
+be denoted by the tuple $(l,h,s,a)$.  Then:
+\begin{itemize}
+\item[] if $i < 0$, the result is $(l,l-(i-1),s,a)$,
+\item[] if $i > 0$, the result is $(h-(i-1),h,s,a)$, and
+\item[] if $i = 0$, the result is $(l,h,s,a)$.
+\end{itemize}
+This differs from the behavior of the count operator, in that \chpl{interior()}
+preserves the alignment, and it uses the low and high bounds rather
+than \chpl{first} and \chpl{last} to establish the bounds of the resulting range.
+If the operand range is ambiguously aligned, then so is the resulting range.
+\end{protobody}
+
 \begin{protohead}
 proc $range$.offset(n: idxType)
 \end{protohead}
+\label{Range_Offset_Method}
 \begin{protobody}
 Sets the \chpl{align} field such that indices produced by the iterator are
-aligned with \chpl{start + n}.  Sets the \chpl{aligned} flag to \chpl{true}.  
-If the range has no start value (as determined
-by the \chpl{hasStart} predicate), then a run-time error is generated.
+aligned with \chpl{first + n}.  Sets the \chpl{aligned} flag to \chpl{true}.  
+If the range has no \chpl{first} value (as determined
+by the \chpl{hasFirst} predicate), then a run-time error is generated.
 \end{protobody}
 
 \begin{protohead}
@@ -903,88 +1007,7 @@ adjusted by $i$.  The \chpl{stride} and \chpl{aligned} values are preserved.
 \end{protobody}
 
 \begin{protohead}
-proc $range$.interior(i: idxType)
-\end{protohead}
-\begin{protobody}
-Returns a new range containing the indices just inside the low or high bound of
-the range (low if $i < 0$ and high otherwise).
-This differs from the behavior of the count operator, in that \chpl{interior()}
-preserves the alignment, and it uses the low and high bounds rather
-than \chpl{first} and \chpl{last} to establish the bounds of the resulting range.
-If the operand range is ambiguously aligned, then so is the resulting range.
-\end{protobody}
-
-\begin{protohead}
-proc $range$.exterior(i: idxType)
-\end{protohead}
-\begin{protobody}
-Returns a new range containing the indices just outside the low or high bound of
-the range (low if $i < 0$ and high otherwise).  The stride and alignment of the
-original range are preserved.
-If the operand range is ambiguously aligned, then so is the resulting range.
-\end{protobody}
-
-\begin{protohead}
-proc $range$.expand(i: idxType)
-\end{protohead}
-\begin{protobody}
-Returns a new range whose bounds are extended by $i$ units on each end.  If $i <
-0$ then the resulting range is contracted by its absolute value.
-The stride and alignment of the original range are preserved.
-If the operand range is ambiguously aligned, then so is the resulting range.
-\end{protobody}
-
-\begin{protohead}
 \end{protohead}
 \begin{protobody}
 \end{protobody}
 
-\section{Quick Reference}
-
-The following table contains a examples which provide a quick reference for the
-syntax and semantics of ranges.  To describe the semantics precisely, we use the
-tuple notation $(l, h, s, a)$ in which $l$ is the low bound, $h$ is the high
-bound, $s$ is the stride and $a$ is the alignment.  The range $r = (l, h, s, a)$
-produces indices in the set.
-\begin{equation}
-r = (l, h, s, a) \rightarrow \{i | l \le i \le h, i\!\mod |s| = a\!\mod |s|\}.
-\end{equation}
-\noindent If the stride is positive, indices in this set are enumerated from lowest to
-highest; if the stride is negative, indices in this set are enumerated from
-highest to lowest.  
-
-In each line in the table, we assume that the input range has the
-standard form $(l, h, s, a)$.  The resulting range is relative to the input
-range.  For convenience, we use $b$ to denote the first index in sequence
-produced by the input range, and $e$ to denote the last index, as defined in
-the introduction above.
-
-\begin{tabular}{|l|l|l|l|}
-\hline
-Range Syntax & Semantics & Example & Sequence \\ \hline
-.. & $(-\infty,\infty,1,0)$ & .. & $\ldots$ -2 -1 0 1 2 $\ldots$ \\
-$l$.. & $(l,\infty,1,0)$ & 1.. & 1 2 3 $\dots$ \\
-..h &  $(-\infty,h,1,0)$ & ..5 & $\ldots$ 3 4 5 \\
-$l$..h & $(l,h,1,0)$ & 1..5 & 1 2 3 4 5 \\
-r by s, $s > 0$ & $(l,h,s,b)$ & 0..10 by 3 & 0 3 6 9 \\
-r by s, $s < 0$ & $(l,h,s,b)$ & 0..10 by -3 & 10 7 4 1 \\
-r align a & $(l,h,s,a)$ & 0..10 by 3 align 1 & 1 4 7 10 \\
-r.offset(d) & $(l,h,s,l+d)$ & (10..20 by 3).offset(-1) & 12 15 18 \\
-r \# c, $s > 0, c > 0$ & $(l, l - 1 + c * s, s, b)$ & 0..20 by 3 \# 4 & 0 3 6 9 \\
-r \# c, $s > 0, c < 0$ & $(h + 1 - c * s, e, s, e)$ & 0..20 by 3 \# -4 & 9 12 15 18 \\
-r \# c, $s < 0, c > 0$ & $(h + 1 + c * s, e, s, e)$ & 0..20 by -3 \# 4 & 20 17 14 11 \\
-r \# c, $s < 0, c < 0$ & $(l, l - 1 - c * s, s, b)$ & 0..20 by -3 \# -4 & 11 8 5 2 \\
-r + i & $(l + i, h + i, s, a + i)$ & (1..10 by 3) + 1 & 2 5 8 11 \\
-r - i & $(l - i, h - i, s, a - i)$ & (1..10 by 3) - 2 & -1 2 5 8 \\
-r1(r2) & $(\max(l_1, l_2), \min(h_1, h_2), s', a')$ & (1.. by 3)(..20 by -2) & 16 10 4 \\
-r.interior(i), $i < 0$ & $(l, l - (1-i), s, a)$ & (0..20).interior(-3) & 0 1 2 \\
-r.interior(i), $i > 0$ & $(h, h + (1-i), s, a)$ & (0..20).interior(3) & 18 19 20 \\
-r.interior(i), $i = 0$ & $(l, h, s, a)$ & (0..20).interior(0) & 0 1 2 \ldots 18 19 20 \\
-r.exterior(i), $i < 0$ & $(l - i, l - 1, s, a)$ & (0..20).exterior(-3) & -3 -2 -1 \\
-r.exterior(i), $i > 0$ & $(h + 1, h + i, s, a)$ & (0..20).exterior(3) & 21 22 23 \\
-r.exterior(i), $i = 0$ & $(1, h, s, a)$ & (0..20).exterior(0) & 0 1 2 \ldots 18 19 20 \\
-r.expand(i) & $(l - i, h + i, s, a)$ & (1..3).expand(1) & 0 1 2 3 4 \\
-\hline
-\end{tabular}
-
-\noindent where $s' = s_1 * s_2 /\!\gcd(s_1,s_2)$ and $a'$ is chosen such that the indices common to both ranges are selected.
