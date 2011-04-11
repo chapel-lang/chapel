@@ -1,0 +1,71 @@
+bug: incorrect handling of stack references with recursion.
+
+On the bright side, the copy-in and copy-out semantics of inout 
+works correctly. However, we have some problems because of 
+recusion. 
+
+Each call to __tx_clone_bar creates a new stack and adds a
+stack address passed in by its caller to the read/write set of
+the transaction. So when the transction attempts to commit, the
+updates are not propagated back since not all accesses to
+_formal_tmp_j are buffered by STM.
+
+In theory, we should be able to crash this program by calling
+a different function before the transaction commits. The .chpl
+code calls bar (not shown in this file). However, this does
+seem to happen in practice. I am wondering if the OS places
+the stack frame in someother place in memory... 
+
+proc main() {
+  var i: int = 0;
+  writeln("In main before foo i = ", i);
+  atomic {
+    foo(i);
+  }
+  writeln("In main after foo i = ", i);
+}
+
+proc foo(inout j: int) {
+  j += 1;
+  if j < 5 then foo(j);
+}
+
+/* test_fn_arg_inout_intent_recursive.chpl:1 */
+void chpl_user_main(void) {
+  int32_t i;
+  chpl_string T;
+  chpl_stm_tx_env_p local_env;
+  chpl_stm_tx_p tx;
+  chpl____wide__ref_int32_t T2 = {0,NULL};
+  chpl_string T3;
+  i = 0;
+  T = "In main before foo i = ";
+  writeln2(T, 0, 3, "test_fn_arg_inout_intent_recursive.chpl");
+  {
+    CHPL_STM_TX_BEGIN(tx, local_env);
+    CHPL_WIDEN(T2, &(i));
+    chpl____tx_clone_foo(tx, &(T2));
+    CHPL_STM_TX_COMMIT(tx);
+  }
+  T3 = "In main after foo i = ";
+  writeln2(T3, i, 7, "test_fn_arg_inout_intent_recursive.chpl");
+  return;
+}
+
+void chpl____tx_clone_foo(chpl_stm_tx_p tx, chpl____wide__ref_int32_t* const j) {
+  int32_t _formal_tmp_j;
+  int32_t T;
+  int32_t T2;
+  chpl_bool T3;
+  chpl____wide__ref_int32_t T4 = {0,NULL};
+  CHPL_STM_COMM_WIDE_GET(tx, T, (*j), int32_t, 98, "test_fn_arg_inout_intent_recursive.chpl");
+  T2 = (T + 1);
+  _formal_tmp_j = T2;
+  T3 = (T2 < 5);
+  if (T3) {
+    CHPL_WIDEN(T4, &(_formal_tmp_j));
+    chpl____tx_clone_foo(tx, &(T4));
+  }
+  CHPL_STM_COMM_WIDE_PUT(tx, (*j), _formal_tmp_j, int32_t, 98, "test_fn_arg_inout_intent_recursive.chpl");
+  return;
+}
