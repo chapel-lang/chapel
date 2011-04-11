@@ -35,12 +35,13 @@ This directory contains the following documentation:
 
   technotes/                : technical notes about our implementation:
     README.comm-diagnostics :  tracking communication events
+    README.dsi              :  requirements/guidelines on writing a domain map
     README.extern           :  calling external C routines
     README.firstClassFns    :  first-class functions
     README.format           :  value-to-string formatting
     README.gmp              :  a prototype GMP module
-    README.dsi              :  requirements/guidelines on writing a domain map
     README.local            :  the 'local' statement
+    README.volatile         :  support for volatile types
 
 
 --------------------

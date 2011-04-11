@@ -3,8 +3,8 @@ The 'local' statement
 =====================
 
 This README describes the 'local' statement in the Chapel language.
-Its implementation is presently work in progress and should not
-be relied on.
+Its definition and implementation is an area of ongoing work and it
+should be used with caution.
 
 
 Overview
