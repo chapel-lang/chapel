@@ -10,9 +10,10 @@ language:
 \hline
 {\bf Distribution} & {\bf Module} & {\bf Supported Domain Types} \\
 \hline
-\chpl{Block} & \chpl{BlockDist} & Arithmetic \\
-\chpl{Cyclic} & \chpl{CyclicDist} & Arithmetic \\
-\chpl{BlockCyclic} & \chpl{BlockCycDist} & Arithmetic \\
+\chpl{block} & \chpl{BlockDist} & Rectangular \\
+\chpl{cyclic} & \chpl{CyclicDist} & Rectangular \\
+\chpl{block-cyclic} & \chpl{BlockCycDist} & Rectangular \\
+\chpl{replicated} & \chpl{ReplicatedDist} & Rectangular \\
 \hline
 \end{tabular}
 \end{center}
@@ -30,7 +31,8 @@ will begin as user-defined domain maps and later become part of the
 standard set of distributions.
 \end{rationale}
 
-\section{The Standard Block Distribution}
+
+\section{The Block Distribution}
 \label{Block_Dist}
 \index{Block distribution}
 \index{distributions!standard!Block}
@@ -130,7 +132,8 @@ When run on 6 locales, the output is:
 \end{chapel}
 \end{example}
 
-\section{The Standard Cyclic Distribution}
+
+\section{The Cyclic Distribution}
 \label{Cyclic_Dist}
 \index{Cyclic distribution}
 \index{distributions!standard!Cyclic}
@@ -223,10 +226,7 @@ When run on 6 locales, the output is:
 \end{example}
 
 
-
-
-
-\section{The Standard Block-Cyclic Distribution}
+\section{The Block-Cyclic Distribution}
 \label{Block_Cyclic_Dist}
 \index{Block-Cyclic distribution}
 \index{distributions!standard!Block-Cyclic}
@@ -324,5 +324,123 @@ When run on 6 locales, the output is:
 4 4 4 5 5 5 4 4
 0 0 0 1 1 1 0 0
 0 0 0 1 1 1 0 0
+\end{chapel}
+\end{example}
+
+
+\section{The Replicated Distribution}
+\label{Replicated_Dist}
+\index{Replicated distribution}
+\index{distributions!standard!Replicated}
+
+The standard Replicated distribution is defined in the module
+\chpl{ReplicatedDist}.
+It causes a domain and its arrays to be replicated across the locales.
+% TODO: describe the option to replicate across only the given locales
+% (and the "consistency" requirement, commented out below).
+An array receives a distinct set of elements -- a \emph{replicand} --
+allocated on each locale.
+%
+In other words, mapping a domain with the replicated distribution gives it
+an implicit additional dimension -- over the locales,
+making it behave as if there is one copy of its indices per locale.
+
+Consistency among the replicands is \emph{not} preserved automatically.
+That is, changes to one replicand of an array are never propagated to
+the other replicands by the distribution implementation.
+
+Replication is observable only in some cases, as described below.
+
+\begin{future}
+This behavior may change in the future. In particular,
+we are considering changing it so that replication
+is never observable. For example, only the local replicand would
+be accessed in all cases.
+\end{future}
+
+Replication over locales is observable in the following cases:
+
+\begin{itemize}
+\item when iterating over a replicated domain or array
+\item when printing them out with write() and similar functions
+\item when zippering and the replicated domain/array is
+  the first among the zippered items
+\item when assigning into the replicated array
+  (each replicand gets a copy)
+\item when inquiring about the domain's \chpl{numIndices}
+  or the array's \chpl{numElements}
+%\item when accessing array element(s) from a locale that was not included
+%  in the array passed explicitly to the ReplicatedDist constructor,
+%  an out-of-bounds error will result
+\end{itemize}
+
+Replication is not observable, i.e., only the replicand
+\emph{on the current locale} is accessed in the following cases:
+
+\begin{itemize}
+\item when examining certain domain properties:
+  \chpl{dim(d)}, \chpl{dims()}, \chpl{low}, \chpl{high}, \chpl{stride};
+  but not \chpl{numIndices}
+\item when indexing into an array
+\item when slicing an array
+%  TODO: right?
+\item when zippering and the first zippered item is not replicated
+\item when assigning to a non-replicated array,
+  i.e. the replicated array is on the right-hand side of the assignment
+\item when there is only a single locale
+ (trivially: there is only one replicand in this case)
+\end{itemize}
+
+E.g. when iterating, the number of iterations will be ({\it the number of
+locales involved}) times ({\it the number of iterations over this domain if
+it were distributed with the default distribution}). Note that serial iteration
+visits the domain indices and array elements of all the replicands
+\emph{from the current locale}.
+
+% TODO
+%Features/limitations:
+%* Consistency/coherence among replicands' array elements is NOT maintained.
+%* Only rectangular domains are presently supported.
+%* Serial iteration over a replicated domain (or array) visits the indices
+%  (or array elements) of all replicands *from the current locale*.
+%* When replicating over user-provided array of locales, that array
+%  must be "consistent" (see below).
+%
+%"Consistent" array requirement:
+%* The array of locales passed to the ReplicatedDist constructor, if any,
+%  must be "consistent".
+%* A is "consistent" if for each ix in A.domain, A[ix].id == ix.
+%* Tip: the desired set of locales does not correspond to a rectangular
+%  (perhaps strided and/or multi-dimensional) domain, make the array's
+%  domain associative over int.
+
+\begin{example}
+The following code declares a replicated domain, \chpl{Drepl}, and a
+replicated array, \chpl{Arepl}, and accesses it in different ways:
+
+\begin{chapel}
+const Dbase = [1..5];
+const Drepl: domain(1) dmapped ReplicatedDist() = Dbase;
+var Abase: [Dbase] int;
+var Arepl: [Drepl] int;
+
+// only the current locale's replicand is accessed
+Arepl[3] = 4;
+
+// these iterate over Dbase, so
+// only the current locale's replicand is accessed
+forall (b,r) in (Abase,Arepl) b = r;
+Abase = Arepl;
+
+// these iterate over Drepl;
+// each replicand of Arepl will be zippered against
+// (and copied from) the entire Abase
+forall (r,b) in (Arepl,Abase) r = b;
+Arepl = Abase;
+
+// sequential zippering will detect difference in sizes
+// (if multiple locales)
+for (b,r) in (Abase,Arepl) ... // error
+for (r,b) in (Arepl,Abase) ... // error
 \end{chapel}
 \end{example}
