@@ -313,8 +313,8 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
       if (rhs->isPrimitive(PRIM_CAST)           ||
           rhs->isPrimitive(PRIM_GET_PRIV_CLASS) ||
           rhs->isPrimitive(PRIM_SET_REF)) {
-        // generate CHPL_STM_WIDE_CAST -- same reasoning as 
-        // in CHPL_STM_WIDE_GET_FIELD
+	INT_ASSERT(isOnStack(lhs)); 
+	// No STM required since lhs always on stack
         break;
       }
       if (rhs->isPrimitive(PRIM_GET_SERIAL)) { 
@@ -328,6 +328,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         INT_ASSERT(se1);
         INT_ASSERT(se2);
         INT_ASSERT(toVarSymbol(se2->var));
+	// get memory description string and prefix "stm"
         const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
         rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC, se1->var, tx, 
                                   newMemDesc(astr("stm ", memDescStr))));
@@ -339,6 +340,7 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         INT_ASSERT(se1);
         INT_ASSERT(se2);
         INT_ASSERT(toVarSymbol(se2->var));
+	// get memory description string and prefix "stm"
         const char* memDescStr = memDescsNameMap.get(toVarSymbol(se2->var));
         rhs->replace(new CallExpr(PRIM_TX_CHPL_ALLOC_PERMIT_ZERO, se1->var, 
                                   tx, newMemDesc(astr("stm ", memDescStr))));
@@ -379,8 +381,10 @@ void handleMemoryOperations(BlockStmt* block, CallExpr* call, Symbol* tx) {
         break;
       }
       if (rhs->isPrimitive(PRIM_STRING_COPY)) {
-        USR_WARN(call, "Ignoring STRING_COPY primitive");
-        break;
+        SymExpr* se = toSymExpr(rhs->get(1));
+	INT_ASSERT(se);
+	if (toVarSymbol(se->var)->immediate)
+	  break;
       }
       if (rhs->isPrimitive(PRIM_SYNC_ISFULL))
         USR_FATAL(call, "Sync operations are not permitted inside atomic transactions.");
