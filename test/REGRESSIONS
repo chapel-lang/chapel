@@ -15,6 +15,11 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+
+=======================================================================
+general nondeterministic regressions (could happen in any configuration
+=======================================================================
+
 nondet. seg fault in sh
 line 1: 32436 Segmentation fault      ./cobegin1a < /dev/null
 -----------------------------------------------------------------
@@ -42,6 +47,7 @@ linux64 regressions (in addition to the above)
 linux32 regressions (in addition to the above)
 ==============================================
 
+
 ================================
 performance-specific regressions
 ================================
@@ -66,22 +72,19 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
-??? (03/13/11)
---------------
-[Error matching program output for distributions/diten/Dimensional]
+nondet. source file empty error message from chpl
+-------------------------------------------------
+[Error matching compiler output for release/examples/spec/Records/recordInheritance] (04/10/11)
 
 stack overflow (???)
 --------------------
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
 
-invalid read (???)
-------------------
-[Error matching program output for classes/claridge/recordInClass1]
-
 nondet. valgrind "the impossible has happened"
 ----------------------------------------------
 [Error matching program output for distributions/nelson/MultiBlockDist2DLocales] (03/02/11)
 [Error matching program output for studies/sudoku/dinan/search/sudoku-reduce] (03/27/11)
+[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce3] (04/10/11)
 
 invalid write of size 1 (02/27/11)
 ----------------------------------
@@ -113,10 +116,6 @@ block distribution regressions
 ===============================
 cyclic distribution regressions
 ===============================
-
-verification fails (03/05/11)
------------------------------
-[Error matching program output for distributions/robust/arithmetic/kernels/hpl]
 
 timeouts (???)
 --------------
@@ -170,7 +169,7 @@ gasnet-everything regressions (other than the above)
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc] (03/21/11)
-[Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/04/11)
+[Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/04/11, 04/08/11, 04/11/11)
 
 AMUDP resource error (01/19/11)
 -------------------------------
@@ -203,6 +202,11 @@ verbose output now shows launch command (10/31/08) (bradc)
 gasnet-fast regressions (other than the above)
 ==============================================
 
+nondet. timeout
+---------------
+[Error: Timed out executing program functions/jturner/fun_type_annot_single] (04/08/11)
+[Error: Timed out executing program functions/mjoyner/labelret/label5] (04/08/11)
+
 
 ==================
 pvm-specific tests
@@ -233,8 +237,16 @@ timeouts for all multilocale testing
 [Error: Timed out executing program release/examples/primers/locales]
 [Error: Timed out executing program release/examples/primers/multirealm]
 
+nondet. problem starting pvm daemon errors
+------------------------------------------
+[Error matching program output for release/examples/hello5-taskpar] (04/09/11)
+
 nondet. problems due to "address already in use" errors
 -------------------------------------------------------
+[Error matching program output for release/examples/spec/Arrays/array-indexing] (04/09/11)
+[Error matching program output for release/examples/spec/Expressions/condexp] (04/09/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/beginOrdered] (04/09/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/syncStmt1] (04/09/11)
 [Error matching program output for release/examples/primers/classes] (03/20/11)
 [Error matching program output for release/examples/primers/fileIO] (03/20/11)
 [Error matching program output for release/examples/programs/tree] (03/20/11)
@@ -335,6 +347,10 @@ missing 1-tuple acccessor (03/03/10)
 =======================
 baseline-specific tests
 =======================
+
+timed out from first checkin (04/09/11)
+---------------------------------------
+[Error: Timed out executing program ranges/bradc/overflowInComputeBlock]
 
 never worked (02/24/11)
 -----------------------
@@ -524,7 +540,6 @@ studies/cholesky/jglewis/version2/elemental/strided/test_elemental_cholesky_expl
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample4]
 [Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
 [Error matching program output for studies/hpcc/nodistrib/hpl.nodist]
-[Error matching program output for studies/shootout/chameneos-redux/chameneos-redux-cas]
 [Error matching program output for users/jglewis/cholesky_version_1/test_cholesky]
 [Error matching program output for users/jglewis/domain-equality-operator-1]
 [Error matching program output for users/jglewis/domain-equality-operator-2]
@@ -614,10 +629,6 @@ gdb output differences
 xt-cle-specific failures
 ========================
 
-test is using gnu-specific flags (04/02/11)
--------------------------------------------
-[Error matching compiler output for studies/shootout/chameneos-redux/chameneos-redux-cas]
-
 divide by zero in generated code (03/14/11)
 -------------------------------------------
 [Error matching program output for studies/dijkstra/driverEdgeBtw]
@@ -626,41 +637,14 @@ redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
 [Error matching compiler output for associative/waynew/indef2]
 
-output being treated as binary causing diff message to change (05/08/10)
-------------------------------------------------------------------------
-[Error matching program output for compflags/bradc/html/testit]
-
 
 =====================================
 cray-xt-cray/cce-specific regressions
 =====================================
 
-incorrect output (integral?) (01/24/11) -- should now be fixed
----------------------------------------
-[Error matching program output for modules/sungeun/test_safeSub]
-[Error matching program output for functions/deitz/nested/test_nested_write]
-
-incorrect output (floating point?) (01/24/11) -- should now be fixed
----------------------------------------------
-[Error matching program output for performance/sungeun/assign]
-[Error matching program output for performance/sungeun/dgemm]
-
-output incorrect (12/26/10) -- should now be fixed
----------------------------
-[Error matching program output for functions/deitz/test_default_conditional]
-
-ccom seg fault (06/21/10) -- should now be fixed
--------------------------
-[Error matching compiler output for trivial/bradc/whilescope]
-[Error matching compiler output for trivial/deitz/test_multi_decl4]
-
 wrong answer (02/27/10, but hadn't run well in awhile) -- possibly a CCE bug?
 -----------------------------------------------------------------------------
 [Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
-
-consistent compilation timeout
-------------------------------
-[Error: Timed out compilation for arrays/deitz/many/test_many_arrays_of_records]
 
 wrong result due to reliance on wraparound in signed integers in test itself
 ----------------------------------------------------------------------------
@@ -711,29 +695,6 @@ floating point overflow warning in compilation (since added)
 divide by zero in generated code (03/12/11)
 -------------------------------------------
 [Error matching program output for studies/dijkstra/driverEdgeBtw]
-
-seg fault (06/19/10)
---------------------
-[Error matching program output for extern/bradc/types/smallCArr]
-
-output incorrect (06/12/10)
----------------------------
-[Error matching program output for optimizations/sungeun/scalar-replace/record_star_tuple   (--cc-warnings --report-scalar-replace -ss=20 --scalar-replace-limit=20) (2-0)]
-[Error matching program output for optimizations/sungeun/scalar-replace/record_star_tuple   (--cc-warnings --report-scalar-replace -ss=20) (1-0)]
-[Error matching program output for optimizations/sungeun/scalar-replace/star_tuple (--cc-warnings --report-scalar-replace -ss=20 --scalar-replace-limit=20) (2-0)]
-[Error matching program output for optimizations/sungeun/scalar-replace/star_tuple (--cc-warnings --report-scalar-replace -ss=20) (1-0)]
-
-problem compiling chplmemtrack.c using -O2 (06/04/10)
------------------------------------------------------
-*everything*
-
-internal failure MIS0216 (02/28/10 -- but first PGI runs in ages)
------------------------------------------------------------------
-[Error matching compiler output for compflags/bradc/html/testit]
-
-core dump (10/04/09)
---------------------
-[Error matching program output for users/shetag/fock/fock-1-latest]
 
 some sort of gdb compatability issue?
 -------------------------------------
@@ -911,6 +872,14 @@ sig_send: wait for sig_complete event failed
 xmt-specific regressions
 ========================
 
+unresolved sync variable calls (04/09/11 -- once spec examples added)
+---------------------------------------------------------------------
+[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1]
+[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar]
+[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/syncMethods]
+[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/syncStmt1]
+
+
 array index out of bounds due to bug in XMT compiler
 ----------------------------------------------------
 [Error matching program output for release/examples/hpcc/hpl]
@@ -927,7 +896,7 @@ nondet. compilation timeout
 [Error: Timed out executing program release/examples/primers/taskParallel] (11/17/10)
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
-[Error: Timed out compilation for release/examples/hello] (10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11, 03/08/11, 03/12/11, 03/19/11, 03/26/11, 04/02/11)
+[Error: Timed out compilation for release/examples/hello] (10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11, 03/08/11, 03/12/11, 03/19/11, 03/26/11, 04/02/11, 04/10/11)
 
 execution timeouts
 ------------------
