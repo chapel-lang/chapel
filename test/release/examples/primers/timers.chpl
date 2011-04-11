@@ -1,7 +1,7 @@
 /*
- * Timer Example
+ * Timers Primer
  *
- * This example demonstrates the use of a Timer from the Time module.
+ * This primer demonstrates the use of a Timer from the Time module.
  *
  */
 
@@ -22,9 +22,9 @@ config const quiet: bool = false;
 var t: Timer;
 
 //
-// To time a function, start the timer before calling the function and
-// stop it afterwards.  Here, we will time the sleep function, also
-// defined in the Time module.
+// To time a procedure, start the timer before calling the
+// procedure and stop it afterwards.  Here, we will time the sleep
+// procedure, also defined in the Time module.
 //
 t.start();
 sleep(1);

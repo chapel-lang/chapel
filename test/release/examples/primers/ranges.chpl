@@ -1,8 +1,7 @@
 /*
- * Range Example
+ * Range Primer
  *
- * This example demonstrates uses of the range type and operations on
- * ranges.
+ * This primer covers uses of the range type and operations on ranges.
  *
  */
 
@@ -132,8 +131,7 @@ writeln();
 //
 // A range can be "sliced" by another range to create a range that
 // represents the intersection of the original two.  Slicing a range
-// is accomplished by treating the range as a function and passing it
-// a second range.
+// is accomplished by indexing the range with a second range.
 //
 var r2 = 1..20 by 3;
 writeln("Range Slicing");
@@ -156,7 +154,7 @@ writeln(r(evens) == evensBetween1and10);        // true
 writeln();
 
 //
-// The function that has been used throughout this example to print
+// The procedure that has been used throughout this example to print
 // ranges is defined below.  It checks the boundedType of the range
 // argument and if the range is fully bounded, all of the values are
 // printed.  If the range has only one bound, it prints the three

@@ -1,7 +1,9 @@
 /*
- * This test shows off some of Chapel's initial support for sparse
- * domains and arrays.  These features are still under development,
- * so your feedback on them is particularly valuable.
+ * Sparse Primer
+ *
+ * This primer shows off some of Chapel's support for sparse domains
+ * and arrays.
+ *
  */
 
 
@@ -69,7 +71,7 @@ proc writeSpsArr() {
 
 
 //
-// Let's try that function we just wrote:
+// Let's try that procedure we just wrote:
 //
 writeln("Printing spsArr with a dense representation:");
 writeSpsArr();
@@ -121,7 +123,7 @@ writeln();
 
 //
 // Or by assigning the array elements corresponding to the corners
-// and using our dense printing function:
+// and using our dense printing procedure:
 //
 proc computeVal(row, col) return row + col/10.0;
 

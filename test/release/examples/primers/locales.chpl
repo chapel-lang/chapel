@@ -99,7 +99,7 @@ writeln();
 // Similarly, the user could arrange the locales into a
 // multidimensional virtual locale grid by storing the locale
 // values into a higher-dimensional array of locales (the array
-// reshape() function can be particularly useful for this purpose).
+// reshape() method can be particularly useful for this purpose).
 //
 
 //

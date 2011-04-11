@@ -1,8 +1,8 @@
 /*
- * Procedures Example
+ * Procedures Primer
  *
- * This example contains several types of procedure, to illustrate
- * function overloading, intents and dynamic dispatch.
+ * This primer covers procedures including overloading, argument
+ * intents and dynamic dispatch.
  * 
  * For examples of generic (template) functions, see generics.chpl.
  *
@@ -33,7 +33,7 @@
 proc factorial(x: int) : int
 {
   if x < 0 then
-    halt("factorial -- Sorry, this is not the gamma function!");
+    halt("factorial -- Sorry, this is not the gamma procedure!");
   return if x == 0 then 1 else x * factorial(x-1);
 }
 

@@ -1,10 +1,15 @@
 //
-// An example use of some reductions.  An array is filled with random values
-// and the locations of the maximum and minimum are found. The Euclidean norm
-// of the Array's columns is computed using + reductions over slices of A.
-// Finally, an && reduction is used to compute whether all values in A are
+// Reductions Primer
+//
+// This primer includes example reductions.
+//
+// An array is filled with random values and the locations of the
+// maximum and minimum are found. The Euclidean norm of the Array's
+// columns is computed using + reductions over slices of A.  Finally,
+// an && reduction is used to compute whether all values in A are
 // greater than 0.25 and the results of the computations are printed.
 //
+
 use Random; // For random number generation
 
 config const seed = 31415; // Random generation seed

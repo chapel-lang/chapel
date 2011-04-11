@@ -1,7 +1,7 @@
 /*
- * Iterators Example
+ * Iterators Primer
  *
- * This example contains several sample iterators:
+ * This primer contains several examples of iterators:
  *   an iterator to generate the Fibonacci numbers,
  *   an iterator defined by multiple loops
  *   and a recursive iterator over a tree.

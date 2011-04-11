@@ -1,6 +1,7 @@
 /*
- * This example is written to demonstrate rectangular array features in
- * Chapel in a tutorial-like fashion.
+ * Arrays Primer
+ *
+ * This primer is a tutorial on Chapel rectangular arrays.
  *
  */
 

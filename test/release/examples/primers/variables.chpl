@@ -1,7 +1,7 @@
 /*
- * Variables Example
+ * Variables Primer
  *
- * This example demonstrates variable declaration syntax.
+ * This primver demonstrates variable declaration syntax.
  *
  */ 
 
@@ -18,7 +18,7 @@ writeln("myVariable1 = ", myVariable1);
 // Here we declare a variable without a type.  Since 1.618 is a real
 // value, the variable is inferred to be of type real.  Note that we
 // print out the type by passing the type of the variable (via
-// myVariable2.type) to the typeToString function.
+// myVariable2.type) to the typeToString procedure.
 //
 var myVariable2 = 1.618;
 writeln("myVariable2 = ", myVariable2, " (type = ",

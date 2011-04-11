@@ -1,5 +1,7 @@
 //
-// This examples demonstrates uses of some of Chapel's standard
+// Distributions Primer
+//
+// This primer demonstrates uses of some of Chapel's standard
 // distributions.  To use these distributions in a Chapel program,
 // the respective module must be used:
 //
