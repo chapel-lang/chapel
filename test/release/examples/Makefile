@@ -24,13 +24,13 @@ clean: FORCE
 	cd hpcc && $(MAKE) clean
 
 primers: FORCE
-	cd primers && $(MAKE) all
+	cd primers && $(MAKE)
 
 programs: FORCE
-	cd programs && $(MAKE) all
+	cd programs && $(MAKE)
 
 hpcc: FORCE
-	cd hpcc && $(MAKE) all
+	cd hpcc && $(MAKE)
 
 %: %.chpl
 	$(CHPL) -o $@ $<

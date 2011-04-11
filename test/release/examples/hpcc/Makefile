@@ -8,6 +8,7 @@ TARGETS = \
 	stream-ep \
 	ra \
 	fft \
+	ptrans \
 	hpl \
 
 REALS = $(TARGETS:%=%_real)

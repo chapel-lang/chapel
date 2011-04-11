@@ -7,11 +7,13 @@ TARGETS = \
 	arrays \
 	classes \
 	distributions \
+	domains \
 	fileIO \
 	genericClasses \
 	iterators \
 	locales \
 	opaque \
+	procedures \
 	ranges \
 	reductions \
 	slices \
