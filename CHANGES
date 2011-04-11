@@ -6,7 +6,7 @@ Release Changes List
 version 1.3.0
 =============
 
-*** stopped at r18461 ***
+*** stopped at r18654 ***
 
 TODO: add more cross-references ("to read more about")
 TODO: README.extern: extern consts, extern classes, extern record copies
@@ -17,6 +17,8 @@ TODO: are new launcher options mentioned in READMEs?  What about --help
       in README.launcher
 TODO: review r18210 and r18234 and add notes below
 TODO: review r18319
+TODO: document volatile types
+TODO: ensure all non-spec examples listed in README.features
 
 Sixth public release of Chapel, April 21, 2011
 
@@ -28,6 +30,7 @@ Highlights
 
 Environment Changes
 -------------------
+- added two new CHPL_TASKS options for single-locale runs: qthreads and nanox
 
 Syntactic/Naming Changes
 ------------------------
@@ -63,6 +66,7 @@ Semantic Changes / Changes to Chapel Language
   - added support for a variety of new range query functions
     (e.g., alignLow(), hasFirst(), hasLowBound(), isAligned(), boundsCheck()...)
 - removed support for +/- operators on rectangular domains; use translate()
+- added support for volatile bool, int, uint, real, and imag types
 
 Newly Implemented Features
 --------------------------
@@ -71,7 +75,7 @@ Newly Implemented Features
 Standard Domain Maps
 --------------------
 - added a first-draft 'Replicated' distribution for storing data redundantly
-- improved 'Block-Cyclic' sufficient to correctly implement HPCC PTRANS and HPL
+- improved 'Block-Cyclic', sufficient to correctly implement HPCC PTRANS and HPL
   (see test/release/example/hpcc/ptrans.chpl, hpl.chpl)
 - removed redundancy in specification of leader iterators between domains/arrays
 
@@ -109,13 +113,38 @@ Documentation
   - improved definitions/descriptions of several terms
   - added documentation ofr locale.name
   - clarified the legality of label/break/continue in parallel loops
+  - named example codes to provide cross-reference to examples/spec/ programs
+- updated various README files
+- updated quick reference document to include def->proc/iter change, align op.
 
 Example Codes
 -------------
+- added cleaner version of HPCC HPL to hpcc/ directory (hpl.chpl)
+- added first version of HPCC PTRANS to hpcc/ directory (ptrans.chpl)
+- placed most code examples from the language spec. to a new spec/ subdirectory
+- updated the range primer (primers/range.chpl)
+- added a new primer for using procedures (primers/procedures.chpl)
+- added comments to the various hello, world examples (examples/hello*.chpl)
+- renamed existing hello, world examples to suggest a logical reading order
+- added data parallel and distributed data parallel hello, world examples
+  (see examples/hello3-datapar.chpl, examples/hello3-datapar-dist.chpl)
+- improved the iterators primer (primers/iterators.chpl)
+- added a variants/ subdirectory to examples/hpcc to exhibit other approaches
+  - added stream-promoted.chpl to show use of promotion in global STREAM Triad
+  - added ra-cleanloop.chpl to show cleaner (but currently slower) way to do RA
+- improved reductions primer (primers/reductions.chpl)
+- added example of using getCurrentTime() to timers primer (primers/timers.chpl)
+- renamed the locales primer from multilocale.chpl to locales.chpl and improved
+- added descriptions of type aliases and config types to variables primer
+  (see primers/variables.chpl)
+- improved the distributions primer and added Block-Cyclic and Replicated uses
+- added a basic primer for domains (primers/domains.chpl)
 
 Third-Party Software Changes
 ----------------------------
 - updated to GASNet 1.16.1
+- added copies of BSC's Nanos++ and Sandia's Qthreads
+- removed PVM for the time being due to instability
 
 Packaging Changes
 -----------------
@@ -126,10 +155,12 @@ Packaging Changes
   (see etc/source-highlight/README)
 - added a script for converting existing codes' use of 'def' to 'iter'/'proc'
   (see $CHPL_HOME/util/convert-defs)
+- removed multirealm examples & documentation for the time being
 
 Compiler Changes
 ----------------
 - made the compiler print 'true'/'false' out in type signatures rather than 1/0
+- added config param 'noRefCount' to disable reference counting (may leak memory)
 
 Third Party Changes
 -------------------
@@ -197,6 +228,9 @@ Bug Fixes / New Semantic Checks (for old semantics)
 - added error messages for expand/exterior/interior on irregular domains
 - fixed a bug related to copying external records
 - fixed a bug relating to filename-based module names containing multiple '.'s
+- fixed a pair of bugs relating to the 'fast on' optimization
+- made empty unions work correctly
+- fixed an overflow issue in chunking up ranges for distribution/parallelization
 
 Error Message Improvements
 --------------------------
