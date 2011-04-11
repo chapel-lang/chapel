@@ -162,7 +162,8 @@ Dynamic linking with the Cray Programming Environment
   static or dynamic linking.  The current default for the Cray
   Programming Environment compilers is static linking.  If you wish to
   override this, set the environment variable CHPL_ASYNCPE_USE_DYNAMIC
-  to 'true'.
+  to 'true'.  Note that it may not be possible to link dynamically
+  depending on your particular system configuration.
 
 
 --------------------------
