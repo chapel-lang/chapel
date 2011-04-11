@@ -18,11 +18,24 @@ examples:
      primers/   : introduce Chapel concepts narratively for new users
      programs/  : demonstrate Chapel using small programs/idioms
      hpcc/      : implementations of the HPC Challenge benchmarks
+     spec/      : example codes from the Chapel Specification (see below)
 
 The README.features file in this directory gives an overview of all
-the tests and what language features each one emphasizes.  See each
-subdirectory's README file for additional descriptions of its
-examples.
+the tests (except the spec tests) and what language features each one
+emphasizes.  See each subdirectory's README file for additional
+descriptions of its examples.
+
+
+------------------------
+The spec directory tests
+------------------------
+
+The tests in the spec directory are automatically extracted from
+selected examples in the Chapel Specification.  The examples for a
+particular chapter are in a directory specified by the chapter name
+(e.g., Arrays) and the name of the test is in parenthesis after the
+word "Example" in the spec.  Often times, additional code has been
+added to make the code a complete, testable program.
 
 
 ------------------
