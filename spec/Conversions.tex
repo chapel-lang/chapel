@@ -191,6 +191,13 @@ of the same size, its binary representation is unchanged.
 When an \chpl{int} or \chpl{uint} is converted to a smaller \chpl{int}
 or \chpl{uint}, its value is truncated to fit the new representation.
 
+\begin{future}
+There are several kinds of integer conversion which can result in a loss of
+precision.  Currently, the conversions are performed as specified, and no error
+is reported.  In the future, we intend to improve type checking, so the user can
+be informed of potential precision loss at compile time, and actual precision
+loss at run time.  These conversions are detailed below.
+
 % An exception is thrown if the source value cannot be represented in the target type.
 When an \chpl{int} is converted to a \chpl{uint} and the original value is
 negative, an invalid cast exception is thrown.
@@ -201,14 +208,15 @@ of the truncated bits differs from the original sign bit, an invalid cast
 exception is thrown.
 When a \chpl{uint} is converted to a smaller \chpl{int} or \chpl{uint} and any
 of the truncated bits is true, an invalid cast exception is thrown.
+\end{future}
 
 \begin{rationale}
 For integer conversions, the default behavior of a program should be to produce
-a run-time error if there is a loss of precision.  So explicit casts not only
+a run-time error if there is a loss of precision.  Thus, cast expressions not only
 give rise to a value conversion at run time, but amount to an assertion
-that the required precision is preserved.  Explicit conversion functions are
-available in the run-time library so that one can perform explicit conversions that result in a loss
-of precision without generating a run-time diagnostic.
+that the required precision is preserved.  Explicit conversion procedures would be
+available in the run-time library so that one can perform explicit conversions
+that result in a loss of precision but do not generate a run-time diagnostic.
 \end{rationale}
 
 When converting from a \chpl{real} type to a larger \chpl{real} type, the
@@ -273,9 +281,11 @@ target type's underlying integer type.
 The conversion from \chpl{complex} and \chpl{imag} types to an enumerated type is not
 permitted.
 
+\begin{future}
 When the source type is string, the enumerator whose name matches value of the input
 string is selected.  If no such enumerator exists, an invalid cast exception
-is thrown.
+is thrown.  (This string-to-enumerator conversion is not yet implemented.)
+\end{future}
 
 \subsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}
