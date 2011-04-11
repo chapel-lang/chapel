@@ -91,3 +91,11 @@ coforall loc in Locales {
     }
   }
 }
+
+//
+// For further examples of using task parallelism, refer to
+// examples/primers/taskParallel.chpl
+//
+// For further examples of using locales and on-clauses, refer to
+// examples/primers/locales.chpl
+//

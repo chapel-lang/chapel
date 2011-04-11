@@ -38,3 +38,9 @@ const MessageSpace = [1..numMessages] dmapped Cyclic(startIdx=1);
 forall msg in MessageSpace do
   writeln("Hello, world! (from iteration ", msg, " of ", numMessages, 
           "owned by locale ", here.id, " of ", numLocales);
+
+
+//
+// For further examples of using distributions, refer to
+// examples/primers/distributions.chpl
+//
