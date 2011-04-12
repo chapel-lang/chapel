@@ -217,6 +217,37 @@ Returns the value of the argument rounded down to the nearest integer.
 \end{protobody}
 
 \begin{protohead}
+const INFINITY: real(64);
+\end{protohead}
+\begin{protobody}
+Supplies the floating point constant for infinity.
+\end{protobody}
+
+\begin{protohead}
+proc isfinite(x: real): real
+proc isfinite(x: real(32)): real(32)
+\end{protohead}
+\begin{protobody}
+Returns whether or not a particular value is finite.
+\end{protobody}
+
+\begin{protohead}
+proc isinf(x: real): real
+proc isinf(x: real(32)): real(32)
+\end{protohead}
+\begin{protobody}
+Returns whether or not a particular value is infinite.
+\end{protobody}
+
+\begin{protohead}
+proc isnan(x: real): real
+proc isnan(x: real(32)): real(32)
+\end{protohead}
+\begin{protobody}
+Returns whether or not a particular value is not a number.
+\end{protobody}
+
+\begin{protohead}
 proc lgamma(x: real): real
 proc lgamma(x: real(32)): real(32)
 \end{protohead}
@@ -261,6 +292,13 @@ proc log2(x: real(32)): real(32)
 \begin{protobody}
 Returns the base 2 logarithm of the argument.  It is an error if the
 argument is less than or equal to zero.
+\end{protobody}
+
+\begin{protohead}
+const NAN: real(64);
+\end{protohead}
+\begin{protobody}
+Supplies the floating point constant for not a number.
 \end{protobody}
 
 \begin{protohead}

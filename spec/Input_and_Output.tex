@@ -1,9 +1,8 @@
 \sekshun{Input and Output}
 \label{Input_and_Output}
 
-Chapel provides a built-in \chpl{file} class to handle input and
-output to files using functions and methods
-called \chpl{read}, \chpl{readln},
+Chapel provides a predefined \chpl{file} class to handle input and
+output to files using the functions \chpl{read}, \chpl{readln},
 \chpl{write}, and \chpl{writeln}.
 
 \section{The {\em file} type}
@@ -76,18 +75,18 @@ functions}
 \index{read}
 \index{write}
 
-The built-in function \chpl{write} takes an arbitrary number of
-arguments and prints each out in turn to \chpl{stdout}.  The built-in
+The predefined function \chpl{write} takes an arbitrary number of
+arguments and prints each out in turn to \chpl{stdout}.  The predefined
 function \chpl{writeln} is identical to \chpl{write} except that it
 outputs an additional {\em end-of-line} character after writing out
 the argument expressions.  Both of these functions will generate their
 output atomically with respect to other calls to these functions from
 other tasks.
 
-The built-in function \chpl{read} takes an arbitrary number of
+The predefined function \chpl{read} takes an arbitrary number of
 variable expressions and reads into each in turn from \chpl{stdin}.
 Any whitespace is skipped over and is used only to separate one
-argument from the next.  The built-in function \chpl{readln} is
+argument from the next.  The predefined function \chpl{readln} is
 identical except that upon reading all of its arguments it scans ahead
 in the input stream until just after the next {\em end-of-line}
 character.
