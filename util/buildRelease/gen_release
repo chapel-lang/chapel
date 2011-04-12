@@ -71,6 +71,7 @@ system("cd $rootdir && svn export -q $svnroot chapel");
     "compiler/etc",
     "doc",
     "etc/emacs",
+    "etc/source-highlight",
     "etc/vim",
     "examples",
     "make",
