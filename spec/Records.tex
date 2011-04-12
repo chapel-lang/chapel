@@ -685,9 +685,12 @@ has no meaning with respect to records.
 
 \subsection{The {\em delete} operator}
 
-An explicit call to \chpl{delete} with a record argument has no effect.  The
-compiler may treat this as a hint that the record should not be accessed later
-within its scope and diagnose that case.
+Calling \chpl{delete} on a record is illegal.
+
+%REVIEW: we could discuss this:
+%An explicit call to \chpl{delete} with a record argument has no effect.  The
+%compiler may treat this as a hint that the record should not be accessed later
+%within its scope and diagnose that case.
 
 \subsection{Default Comparison Operators}
 \label{Comparison_Operator_Differences}

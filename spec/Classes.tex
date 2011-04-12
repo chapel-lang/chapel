@@ -829,7 +829,14 @@ for i in ta do
 \index{delete!classes}
 
 Memory associated with class instances can be reclaimed with the \chpl{delete}
-keyword.
+statement:
+
+\begin{syntax}
+delete-statement:
+  `delete' expression ;
+\end{syntax}
+
+where the expression is a reference to the instance that will be reclaimed.
 
 \begin{chapelexample}{delete.chpl}
 The following example allocates a new object \chpl{c} of class type \chpl{C}

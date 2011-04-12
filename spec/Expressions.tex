@@ -1,16 +1,8 @@
 \sekshun{Expressions}
 \label{Expressions}
 
-This section defines expressions in Chapel with the following
-exceptions: The forall expression, reduce expressions, and scan
-expressions are defined in~\rsec{Data_Parallelism}.  Module access
-expressions are defined in~\rsec{Explicit_Naming}.  Tuple expressions
-and tuple expand expressions are defined in~\rsec{Tuples}.  Locale
-access expressions are defined
-in~\rsec{Querying_the_Locale_of_a_Variable}.  Mapped domain
-expressions are defined in~\rsec{Domain_Maps}.
+Chapel provides the following expressions:
 
-The syntax for an expression is given by:
 \begin{syntax}
 expression:
   literal-expression
@@ -38,7 +30,20 @@ expression:
   mapped-domain-expression
 \end{syntax}
 % in README.firstClassFns: lambda-declaration-expression
-% TODO: add new and delete; then add cross-refs to top of Classes.tex
+
+Individual expressions are defined in the remainder of this chapter
+and additionally as follows:
+
+\begin{itemize}
+\item forall, reduce, and scan \rsec{Data_Parallelism}
+\item module access \rsec{Explicit_Naming}
+\item tuple and tuple expand \rsec{Tuples}
+\item locale access \rsec{Querying_the_Locale_of_a_Variable}
+\item mapped domain \rsec{Domain_Maps}
+\item constructor calls \rsec{Class_New}
+\end{itemize}
+
+
 
 \section{Literal Expressions}
 \label{Literal_Expressions}

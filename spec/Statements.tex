@@ -5,7 +5,8 @@
 
 Chapel is an imperative language with statements that may have side
 effects.  Statements allow for the sequencing of program execution.
-They are as follows:
+Chapel provides the following statements:
+
 \begin{syntax}
 statement:
   block-statement
@@ -41,13 +42,15 @@ statement:
   serial-statement
   atomic-statement
   forall-statement
+  delete-statement
 \end{syntax}
 
 Individual statements are defined in the remainder of this chapter
 and additionally as follows:
+
 \begin{itemize}
-\item return statement \rsec{The_Return_Statement}
-\item yield statement \rsec{The_Yield_Statement}
+\item return \rsec{The_Return_Statement}
+\item yield \rsec{The_Yield_Statement}
 \item module declaration \rsec{Modules}
 \item procedure declaration \rsec{Function_Definitions}
 \item iterator declaration \rsec{Iterator_Function_Definitions}
@@ -58,7 +61,8 @@ and additionally as follows:
 \item \chpl{on} statement \rsec{On}
 \item cobegin, coforall, begin, sync, serial and atomic statements
       \rsec{Task_Parallelism_and_Synchronization}
-\item forall statement \rsec{Data_Parallelism}
+\item forall \rsec{Data_Parallelism}
+\item delete \rsec{Class_Delete}
 \end{itemize}
 
 \section{Blocks}
