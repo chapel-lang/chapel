@@ -8,8 +8,8 @@ shape of arrays (\rsec{Arrays}), and to specify aggregate operations
 like slicing.
 A domain can specify a single- or multi-dimensional
 rectangular iteration space or represent a set of indices of
-a given type, be a subset of another domain's index set,
-and use either a dense or spar representation.
+a given type.  Domains can also represent a subset of another domain's index set,
+using either a dense or sparse representation.
 A domain's
 indices may potentially be distributed across multiple locales as
 described in~\rsec{Domain_Maps}, thus supporting global-view data
@@ -20,7 +20,7 @@ In~\rsec{Base_Domains}, we discuss the types and values that
 can be associated with a base domain.  In~\rsec{Simple_Subdomains}, we discuss the
 types and values of simple subdomains that can be created from those base
 domains.  In~\rsec{Sparse_Subdomains}, we discuss the types and values of sparse
-subdomains.  The remainder sections describe the important manipulations
+subdomains.  The remaining sections describe the important manipulations
 that can be perfomed with domains, as well as the predefined operators and
 functions defined for domains.
 
