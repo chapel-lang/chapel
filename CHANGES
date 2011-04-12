@@ -177,6 +177,7 @@ Compiler Changes
 ----------------
 - made the compiler print 'true'/'false' out in type signatures rather than 1/0
 - added config param 'noRefCount' to disable reference counting (may leak memory)
+
 Compiler Flags
 --------------
 - added a --print-callstack-on-error flag to show what led to a bad call
