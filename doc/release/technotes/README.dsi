@@ -654,10 +654,10 @@ proc Global.dsiReprivatize(other: Global, reprivatizeData): void
 Tip: testing privatization
 --------------------------
 
-In addition to the usual correctness testing, a useful check is whether
-array access is purely local, i.e., results in no communication.
-This can be done using 'local' blocks.
-(The 'local' block performs runtime checks that report an error
+In addition to the usual correctness testing, it may be useful to check
+whether array access is purely local, i.e., results in no communication.
+This can be done using 'local' statements.
+(A 'local' statement performs runtime checks that report an error
 whenever any communication occurs within the its body.)
 
 Here is a simple example:
@@ -666,20 +666,20 @@ Here is a simple example:
   var A: ...;
 
   // initialize it
-  A = value 1;
+  A = value1;
 
   forall loc in (locales that A is distributed over) do
     // run the check on each locale
     on loc {
-      // value 2 to be different from value 1
-      var temp = value 2;
+      // value2 to be different from value1
+      var temp = value2;
       local {
         // Access the array.
-	// The 'local' block succeeds if there is no communication.
+	// This statement succeeds if there is no communication.
         temp = A[an index that is mapped to the locale 'loc'];
       }
       // reference the read value
-      assert(temp == value 1);
+      assert(temp == value1);
     }
 
 Tip: privatized copies should reference privatized copies
