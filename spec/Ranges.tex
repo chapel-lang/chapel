@@ -314,11 +314,13 @@ range unless the stridable range has a stride of 1.
 \label{Range_Operators}
 \index{ranges!operators}
 
-Operations can be applied to range literals and expressions of range type to
-derive new range values.  The stride, alignment, count and slicing
-operators (\chpl{by}, \chpl{align}, \chpl{\#} and \chpl{\(\)} or \chpl{\[\]})
-have special syntax.  Otherwise, they follow the standard expression or
-procedure-call syntax.
+The following operators can be applied to range literals and
+expressions and are described in this section: stride (\chpl{by}),
+alignment (\chpl{align}), count (\chpl{\#}) and slicing (\chpl{\(\)}
+or \chpl{\[\]}).
+Chapel also defines a set of procedures and methods that operate on ranges.
+They are described in \rsec{Predefined_Range_Functions}.
+
 \begin{syntax}
 range-expression:
   expression
@@ -327,8 +329,6 @@ range-expression:
   aligned-range-expression
   sliced-range-expression
 \end{syntax}
-
-Range operators are discussed in detail in the following subsections.
 
 \subsection{By Operator}
 \label{By_Operator_For_Ranges}

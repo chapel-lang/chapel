@@ -5,10 +5,26 @@
 A \emph{domain} is a first-class representation of an index set.
 Domains are used to specify iteration spaces, to define the size and
 shape of arrays (\rsec{Arrays}), and to specify aggregate operations
-like slicing.  A domain's
+like slicing.
+A domain can specify a single- or multi-dimensional
+rectangular iteration space or represent a set of indices of
+a given type, be a subset of another domain's index set,
+and use either a dense or spar representation.
+A domain's
 indices may potentially be distributed across multiple locales as
 described in~\rsec{Domain_Maps}, thus supporting global-view data
 structures.
+
+In the next subsection, we introduce the key characteristics of domains.
+In~\rsec{Base_Domains}, we discuss the types and values that
+can be associated with a base domain.  In~\rsec{Simple_Subdomains}, we discuss the
+types and values of simple subdomains that can be created from those base
+domains.  In~\rsec{Sparse_Subdomains}, we discuss the types and values of sparse
+subdomains.  The remainder sections describe the important manipulations
+that can be perfomed with domains, as well as the predefined operators and
+functions defined for domains.
+
+\section{Domain Overview}
 
 There are three \emph{kinds} of domain, distinguished by their subset
 dependencies: \emph{base domains}, \emph{subdomains} and \emph{sparse
@@ -18,33 +34,18 @@ a base domain or another subdomain.  Sparse subdomains are subdomains which can
 represent sparse index subsets efficiently.  Simple subdomains are subdomains
 that are not sparse.  These relationships can be represented as follows:
 
-
 \begin{syntax}
 domain-type:
   base-domain-type
-  subdomain-type
-
-subdomain-type:
   simple-subdomain-type
   sparse-subdomain-type
 \end{syntax}
 
-In the next subsection, we introduce additional characteristics of domains.
-In~\rsec{Base_Domains}, we discuss the types and values that
-can be associated with a base domain.  In~\rsec{Simple_Subdomains}, we discuss the
-types and values of simple subdomains that can be created from those base
-domains.  In~\rsec{Sparse_Subdomains}, we discuss the types and values of sparse
-subdomains.  The remainder sections describe the important manipulations
-that can be perfomed with domains, as well as the predefined operators and
-functions defined for domains.
-
-\section{Domain Roadmap}
-
 Domains can be further classified according to whether they are \emph{regular}
-or \emph{irregular}.  A regular domain has a compact representation consisting
-of a range for each dimension.  The representation of a regular domain therefore
-requires only O(1) space.  Dense and strided rectangular domains are
-regular domains.
+or \emph{irregular}.  A regular domain represents a rectangular iteration
+space and can have a compact representation whose size is independent
+of the number of indices. Rectangular domains, with the exception of
+sparse subdomains, are regular.
 
 An irregular domain can store an arbitrary set of indices of an arbitrary but
 homogeneous index type.  Irregular domains typically require space proportional
@@ -69,6 +70,9 @@ and arrays~(\rsec{Association_of_Arrays_to_Domains}).
 In the future, it is likely that we will support a means of creating
 domain aliases, much as we support array aliases currently.
 \end{openissue}
+
+The runtime representation of a domain is controlled by its domain map.
+Domain maps are presented in \rsec{Domain_Maps}.
 
 
 \section{Base Domains}
@@ -578,8 +582,8 @@ indices in order.
 
 \section{Domains as Arguments}
 \label{Domain_Arguments}
-\index{domains!function arguments}
-\index{function arguments!domains}
+\index{domains!as arguments to functions}
+\index{argument passing!domains}
 
 This section describes the semantics of passing domains as arguments
 to functions.

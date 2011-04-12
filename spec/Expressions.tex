@@ -66,6 +66,7 @@ literal-expression:
 
 \section{Variable Expressions}
 \label{Variable_Expressions}
+\index{expressions!variable}
 
 A use of a variable, constant, parameter, or formal argument, is
 itself an expression.  The syntax of a variable expression is given
@@ -77,6 +78,7 @@ variable-expression:
 
 \section{Enumeration Constant Expression}
 \label{Enumeration_Constant_Expression}
+\index{expressions!enumeration constant}
 
 A use of an enumeration constant is itself an expression.  Such a
 constant must be preceded by the enumeration type name.  The syntax of
@@ -91,6 +93,7 @@ see~\rsec{Enumerated_Types}.
 
 \section{Parenthesized Expressions}
 \label{Parenthesized_Expressions}
+\index{expressions!parenthesized}
 
 A \sntx{parenthesized-expression} is an expression that is delimited
 by parentheses as given by:
@@ -104,20 +107,26 @@ ignored and have only a syntactical effect.
 \section{Call Expressions}
 \label{Call_Expressions}
 \index{function calls}
+\index{expressions!call}
 
 Functions and function calls are defined in~\rsec{Functions}.
 
 \section{Indexing Expressions}
 \label{Indexing_Expressions}
 \index{indexing}
+\index{expressions!indexing}
 
-Indexing into arrays, tuples, and domains has the same syntax as a
-call expression.  Indexing, at its core, is nothing more than a call
-to the indexing function defined on these types.
+Indexing, for example into arrays, tuples, and domains,
+has the same syntax as a call expression.
+ 
+Indexing is performed by an implicit invocation of the \chpl{this} method
+on the value being indexed,
+passing the indices as the actual arguments.
 
 \section{Member Access Expressions}
 \label{Member_Access_Expressions}
 \index{member access}
+\index{expressions!member access}
 
 Member access expressions provide access to a field or invoke a method
 of an instance of a class, record, or union.
@@ -133,6 +142,7 @@ member-access-expression:
 \section{The Query Expression}
 \label{The_Query_Expression}
 \index{?@\chpl{?}}
+%TODO-how? \index{expressions!\?}
 
 A query expression is used to query a type or value within a formal
 argument type expression.  The syntax of a query expression is given
@@ -173,7 +183,7 @@ foo(x, y);
 writeln(y);
 }
 \end{chapelnoprint}
-This allows a generic specification of a function to assign a
+This allows a generic specification of assigning a
 particular value to all elements of an array.  The value and the
 elements of the array are constrained to be the same type.  This
 function can be rewritten without query expression as follows:
@@ -206,6 +216,7 @@ places in the future.
 \section{Casts}
 \label{Casts}
 \index{casts}
+\index{expressions!cast}
 
 A cast is specified with the following syntax:
 \begin{syntax}
@@ -230,6 +241,7 @@ explicit conversion:
 \section{LValue Expressions}
 \label{lvalue}
 \index{lvalue}
+\index{expressions!lvalue}
 
 An {\em lvalue} is an expression that can be used on the left-hand
 side of an assignment statement or on either side of a swap statement,
@@ -439,7 +451,10 @@ expression is not a scalar as expected.
 \section{Operator Expressions}
 \label{Binary_Expressions}
 \label{Unary_Expressions}
+\index{operators!operator expressions}
+\index{expressions!operator}
 
+\index{operators!unary}
 The application of operators to expressions is itself an expression.
 The syntax of a unary expression is given by:
 \begin{syntax}
@@ -450,6 +465,7 @@ unary-operator: one of
   + - ~ !
 \end{syntax}
 
+\index{operators!binary}
 The syntax of a binary expression is given by:
 \begin{syntax}
 binary-expression:
@@ -1129,6 +1145,7 @@ overloading~(\rsec{Function_Overloading}).
 \subsection{The String Concatenation Operator}
 \label{The_String_Concatenation_Operator}
 \index{+@\chpl{+}}
+\index{operators!+, on strings}
 
 The string concatenation operator \chpl{+} is predefined over numeric, boolean,
 and enumerated types with strings. It casts its operands to string type and
@@ -1158,11 +1175,10 @@ would be \chpl{"result: 3"}.
 
 \subsection{The By Operator}
 \label{The_By_Operator}
-\index{arithmetic domains!strided}
-\index{arithmetic domains!by operator}
 \index{by@\chpl{by}}
+\index{operators!by}
 
-The operator \chpl{by} is predefined on ranges and arithmetic domains.
+The operator \chpl{by} is predefined on ranges and rectangular domains.
 It is described in~\rsec{By_Operator_For_Ranges} for ranges
 and~\rsec{Domain_Striding} for domains.
 
@@ -1211,7 +1227,8 @@ of that value.
 
 \section{Conditional Expressions}
 \label{Conditional_Expressions}
-\index{conditional!expression}
+\index{conditional expression}
+\index{expressions!conditional}
 \index{if@\chpl{if}}
 \index{then@\chpl{then}}
 \index{else@\chpl{else}}

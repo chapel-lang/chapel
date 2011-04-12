@@ -227,11 +227,11 @@ proc readXX(x: sync) return x.readXX();
 proc readXX(x: single) return x.readXX();
 proc readXX(x) return x;
 \end{chapel}
-Note that the \chpl{readXX} function cannot be called directly by a
-Chapel programmer and that adding an additional overload or shadowing
+Note that the non-method function \chpl{readXX}
+is defined here solely for the purposes of this specification.
+It cannot be called directly by a
+Chapel programmer; adding an additional overload or shadowing
 this function will not change the semantics of variable declarations.
-This function is defined solely for the purposes of this
-specification.
 \end{itemize}
 
 \begin{rationale}
