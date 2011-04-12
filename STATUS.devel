@@ -66,6 +66,8 @@ General (see also portability section at the bottom of this file)
   4. Data accessed in 'on' and/or 'begin' statements may be leaked.
   Workaround: Use memory tracking facilities (see README.executing).
   Workaround: Please ask us for help with your particular problem.
+- The --gdb flag is only supported for single-locale platforms that
+  support gdb.
 
 
 Types, Variables, Conversions, Expressions, and Statements
