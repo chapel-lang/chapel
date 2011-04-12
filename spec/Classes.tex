@@ -207,7 +207,7 @@ that a class can still be derived from a class that contains fields
 which is itself derived from a class that contains fields.  
 
 These restrictions on inheritance induce a class hierarchy which has the form of
-an acyclic tree.  A variable containing an instance of class \chpl{C} can be
+a tree.  A variable referring to an instance of class \chpl{C} can be
 cast to any type that is an ancestor of \chpl{C}.  Note that casts to more- and
 less-derived classes are both permitted.
 
@@ -452,7 +452,8 @@ requirements. See Section~\ref{Generic_User_Constructors} for details.
 
 A compiler-generated constructor for a class is created automatically
 if there are no constructors for that class in the program.
-The compiler-generated constructor has one argument for every field in the class.
+The compiler-generated constructor has one argument for every field in the class,
+each of which has a default value equal to the field's initializer (if present) or default value (if not).
 The list of fields (and hence arguments) includes fields inherited from superclasses, type aliases
 and parameter fields, if any.
 The order of the arguments in the argument list matches the order of the field declarations
@@ -465,14 +466,20 @@ which are discussed in Section~\rsec{Generic_Compiler_Generated_Constructors}.
 When invoked, the compiler-generated constructor initializes each field in the class to the
 value of the corresponding actual argument.  
 
-In contrast to an actual function
-call (including calls to user-defined constructors), the compiler-generated
-constructor only initializes fields for which arguments are supplied.  All other
-fields retain their default-initialized values.  In this sense the
-compiler-generated constructor is actually a family of constructors, one for
-each permissible combination of named and unnamed arguments.\footnote{This makes
-it clear why the compiler-generated constructor is visible only if no
-user-defined constructors are present.}
+%
+% BLC: I'm not comfortable enough with this to put it into the release;
+% I've made minor mods to the above to present what I hope is a sufficiently
+% consistent story.  We're going to need to revisit this whole section upon
+% finishing constructors anyway
+%
+%% In contrast to an actual function
+%% call (including calls to user-defined constructors), the compiler-generated
+%% constructor only initializes fields for which arguments are supplied.  All other
+%% fields retain their default-initialized values.  In this sense the
+%% compiler-generated constructor is actually a family of constructors, one for
+%% each permissible combination of named and unnamed arguments.\footnote{This makes
+%% it clear why the compiler-generated constructor is visible only if no
+%% user-defined constructors are present.}
 
 %REVIEW: vass
 % I am unhappy with having to present this as "not an actual function call".
@@ -571,7 +578,7 @@ The identifier in the field access expression indicates which field is accessed.
 
 % TODO: rephrase all this in terms of the getter methods
 
-A fields can
+A field can
 be modified via an assignment statement where the left-hand side of
 the assignment is a field access expression.
 Accessing a parameter field returns a parameter.
