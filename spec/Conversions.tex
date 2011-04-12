@@ -95,7 +95,7 @@ imag($i$) & & & & & $i<=j$ & $2i<=j$ \\
 complex($i$) & & & & & & $i<=j$ \\ \cline{2-7}
 \end{tabular}
 \end{center}
-, where $mant(i)$ represents the effective number of bits in the signed mantissa
+where $mant(i)$ represents the effective number of bits in the signed mantissa
 of the corresponding floating-point type.  In this table the
 default \chpl{int}, \chpl{uint} and \chpl{real} types map to their corresponding
 explicitly-sized types.
@@ -196,18 +196,18 @@ There are several kinds of integer conversion which can result in a loss of
 precision.  Currently, the conversions are performed as specified, and no error
 is reported.  In the future, we intend to improve type checking, so the user can
 be informed of potential precision loss at compile time, and actual precision
-loss at run time.  These conversions are detailed below.
-
+loss at run time.  Such cases include:
+%
 % An exception is thrown if the source value cannot be represented in the target type.
 When an \chpl{int} is converted to a \chpl{uint} and the original value is
-negative, an invalid cast exception is thrown.
+negative;
 When a \chpl{uint} is converted to an \chpl{int} and the sign bit of the result
-is true, an invalid cast excpetion is thrown.
+is true;
 When an \chpl{int} is converted to a smaller \chpl{int} or \chpl{uint} and any
-of the truncated bits differs from the original sign bit, an invalid cast
-exception is thrown.
+of the truncated bits differs from the original sign bit;
+%
 When a \chpl{uint} is converted to a smaller \chpl{int} or \chpl{uint} and any
-of the truncated bits is true, an invalid cast exception is thrown.
+of the truncated bits is true;
 \end{future}
 
 \begin{rationale}
@@ -281,11 +281,8 @@ target type's underlying integer type.
 The conversion from \chpl{complex} and \chpl{imag} types to an enumerated type is not
 permitted.
 
-\begin{future}
 When the source type is string, the enumerator whose name matches value of the input
-string is selected.  If no such enumerator exists, an invalid cast exception
-is thrown.  (This string-to-enumerator conversion is not yet implemented.)
-\end{future}
+string is selected.  If no such enumerator exists, a runtime error occurs.
 
 \subsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}
