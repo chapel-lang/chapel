@@ -710,17 +710,16 @@ proc chpl__count(r:rangeBase(?), i:integral)
     if diff < 0 then r._high
     else chpl__add(r._low : resultType, diff : resultType - 1);
 
-  if r.hasLowBound() && lo < r._low ||
-     r.hasHighBound() && hi > r._high then
-    halt("Range is too small to count off ", i, " elements.");
+  if r.hasLowBound() && lo < r._low then lo = r._low;
+  if r.hasHighBound() && hi > r._high then hi = r._high;
 
   return new rangeBase(idxType = resultType,
-                   boundedType = BoundedRangeType.bounded,
-                   stridable = r.stridable,
-                   _low = lo,
-                   _high = hi,
-                   _stride = r._stride : strType,
-                   _alignment = r._alignment);
+                       boundedType = BoundedRangeType.bounded,
+                       stridable = r.stridable,
+                       _low = lo,
+                       _high = hi,
+                       _stride = r._stride : strType,
+                       _alignment = r._alignment);
 }
 
 
