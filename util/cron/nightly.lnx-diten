@@ -3,7 +3,7 @@ export CHPL_NIGHTLY_TMPDIR=/tmp/`whoami`
 export CHPL_HOME_REPOSITORY="https://chapel.svn.sourceforge.net/svnroot/chapel/trunk"
 
 export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/NightlyDists
-export CHPL_NIGHTLY_STATDIR=/data/sea/cascade/chapel/Nightly/Stats
+export CHPL_NIGHTLY_STATDIR=/data/sea/cascade/chapel/NightlyDists/Stats.cyclic
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 export CHPL_HOME="/users/chapelu/chapel"
