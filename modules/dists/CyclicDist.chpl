@@ -129,15 +129,10 @@ proc Cyclic.getChunk(inds, locid) {
     locidtup = locid;
   for param i in 1..rank {
     var distStride = targetLocDom.dim(i).length;
-    var loclowidx = chpl__mod(startIdx(i) + locidtup(i), distStride);
-    var lowmod = chpl__mod(inds.dim(i).low, distStride);
-    var offset = loclowidx - lowmod;
-    if offset < 0 then
-      sliceBy(i) = inds.dim(i).low + (distStride + offset)..inds.dim(i).high by distStride;
-    else
-      sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
+    var offset = chpl__diffMod(startIdx(i) + locidtup(i), inds.dim(i).low, distStride);
+    sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
     // remove alignment
-    sliceBy(i) = sliceBy(i).first..sliceBy(i).last by distStride;
+    sliceBy(i).alignHigh();
   }
   return inds((...sliceBy));
   //
