@@ -108,7 +108,7 @@ module SSCA2_main
 
     use SSCA2_compilation_config_params, 
         SSCA2_execution_config_consts,
-        analyze_torus_graphs,
+      //        analyze_torus_graphs,
         analyze_RMAT_graph_associative_array,
         BlockDist;
     
@@ -162,7 +162,7 @@ module SSCA2_main
 
 	select this_graph_type {
 
-
+	    /*
 	  when graph_type.Torus_1D do
 	  
 	    // ----------------------------------------------------
@@ -204,7 +204,7 @@ module SSCA2_main
   
 	    if TEST_TORUS_4D then generate_and_analyze_4D_torus;
 
-
+	    */
 	  when graph_type.RMAT_associative do
 
 	    // -----------------------------------------------------------------

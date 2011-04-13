@@ -171,11 +171,9 @@ module SSCA2_kernels
 
 	    for w in G.Neighbors (v) do { // eventually, will be forall
 
-	      var tmpHES = Heavy_Edge_Subgraph( (x,y)).nodes;
-
 	      atomic if min_distance (w) < 0 then {
 		Next_Level.add (w);
-		tmpHES.add (w);
+		Heavy_Edge_Subgraph( (x,y) ).nodes.add (w);
 		min_distance (w) = path_length;
 	      }
 			 
@@ -183,7 +181,7 @@ module SSCA2_kernels
 
 	      atomic {
 		if min_distance (w) == path_length then
-		  Heavy_Edge_Subgraph ( (x, y) ).edges.add ( (v, w) );
+		  Heavy_Edge_Subgraph( (x,y) ).edges.add ( (v, w) );
 	      }
 	    }
 	  }
