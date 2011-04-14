@@ -16,3 +16,7 @@ STATUS: STATUS.devel
 	grep -v "^\ *#" STATUS.devel > STATUS
 
 
+FUTURES:
+	cd test && find . -wholename ".svn" -prune -o \( -name \*.future \) -exec head -n 1 {} + > FUTURES
+
+
