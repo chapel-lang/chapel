@@ -20,3 +20,5 @@ FUTURES:
 	cd test && find . -wholename ".svn" -prune -o \( -name \*.future \) -exec head -n 1 {} + > FUTURES
 
 
+future_stats: FUTURES
+	./util/devel/test/future_stats STATUS.devel test/FUTURES
