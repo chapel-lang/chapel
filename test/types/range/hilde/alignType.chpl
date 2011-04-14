@@ -1,4 +1,4 @@
-// countType.chpl
+// alignType.chpl
 //
 // Tests the type returned by the align operator.
 
