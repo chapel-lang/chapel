@@ -202,6 +202,9 @@ proc ==(r1: range(?), r2: range(?))
     return r1._base == r2._base;
 }
 
+proc !=(r1: range(?), r2: range(?))  return !(r1 == r2);
+
+
 // This makes use of the fact that the default values for the
 // stride and alignment fields are consistent, whether the two ranges
 // being compared are stridable or not.

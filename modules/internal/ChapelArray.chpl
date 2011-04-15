@@ -760,7 +760,7 @@ record _domain {
   proc translate(off: ?t ...rank) return translate(off);
   proc translate(off) where isTuple(off) {
     if off.size != rank then
-      compilerError("must be same size");
+      compilerError("the domain and offset arguments of translate() must be of the same rank");
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = _value.dsiDim(i).translate(off(i));
@@ -895,7 +895,7 @@ pragma "inline" proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return false;
   for param i in 1..d1._value.rank do
-    if (d1.dims() != d2.dims()) then return false;
+    if (d1.dim(i) != d2.dim(i)) then return false;
   return true;
 }
 
@@ -903,7 +903,7 @@ pragma "inline" proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return true;
   for param i in 1..d1._value.rank do
-    if (d1.dims() != d2.dims()) then return true;
+    if (d1.dim(i) != d2.dim(i)) then return true;
   return false;
 }
 
@@ -940,6 +940,8 @@ pragma "inline" proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
     if !d2.member(idx) then return true;
   return false;
 }
+
+// any combinations not handled by the above
 
 pragma "inline" proc ==(d1: domain, d2: domain) param {
   return false;
