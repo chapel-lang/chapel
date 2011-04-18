@@ -16,9 +16,13 @@ general regressions (seem to happen in most configurations)
 ===========================================================
 
 
-=======================================================================
-general nondeterministic regressions (could happen in any configuration
-=======================================================================
+========================================================================
+general nondeterministic regressions (could happen in any configuration)
+========================================================================
+
+nondet. bad output
+------------------
+[Error matching program output for studies/dijkstra/driverEdgeBtw] (03/16/11, 03/23/11, 03/27/11, 04/01/11, 04/02/11, 04/12/11, 04/17/11)
 
 nondet. seg fault in sh
 line 1: 32436 Segmentation fault      ./cobegin1a < /dev/null
@@ -54,7 +58,7 @@ performance-specific regressions
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/01/11, 04/05/11)
+[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/01/11, 04/05/11, 04/14/11)
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -134,10 +138,7 @@ nondet. zippered iterations having unequal lengths
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for trivial/deitz/test_param_fold2] (03/20/11)
-
-nondet. bad output
-------------------
-[Error matching program output for studies/dijkstra/driverEdgeBtw] (03/16/11, 03/23/11, 03/27/11, 04/01/11, 04/02/11)
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )] (04/14/11)
 
 nondet. prediff error (linefeeds go awry)
 -----------------------------------------
@@ -166,10 +167,14 @@ memory stuff in flux (05/28/09)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+nondet. race on which index generates error message?
+----------------------------------------------------
+[Error matching program output for domains/sungeun/sparse/index_not_in_domain_1] (04/12/11)
+
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc] (03/21/11)
-[Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/04/11, 04/08/11, 04/11/11)
+[Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/04/11, 04/08/11, 04/11/11, 04/15/11)
 
 AMUDP resource error (01/19/11)
 -------------------------------
@@ -264,6 +269,12 @@ nondet. compilation timeouts
 mpi-specific failures
 =====================
 
+mpi abort messages show up (since spec tests added to examples testing)
+-----------------------------------------------------------------------
+[Error matching program output for release/examples/spec/Arrays/sparse-error]
+[Error matching program output for release/examples/spec/Classes/thisMethod]
+[Error matching program output for release/examples/spec/Functions/variable-functions]
+
 ??? (06/29/10)
 --------------
 [Error matching program output for multilocale/deitz/needMultiLocales/test_termination2]
@@ -350,7 +361,7 @@ baseline-specific tests
 
 timed out from first checkin (04/09/11)
 ---------------------------------------
-[Error: Timed out executing program ranges/bradc/overflowInComputeBlock]
+[Error: Timed out executing program types/range/bradc/overflowInComputeBlock]
 
 never worked (02/24/11)
 -----------------------
@@ -596,6 +607,10 @@ getting warning about code size threshhold on David's runs once -O removed
 darwin-specific regressions
 ===========================
 
+??? (since checked in)
+----------------------
+[Error matching compiler output for studies/shootout/chameneos-redux/chameneos-redux-cas]
+
 python syntax errors (01/18/11)
 -------------------------------
 [Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
@@ -609,10 +624,6 @@ no native support for GMP
 [Error matching compiler output for studies/shootout/pidigits/hilde/pidigits]
 [Error matching compiler output for studies/shootout/pidigits/bradc/pidigits-blc]
 [Error matching compiler output for studies/shootout/pidigits/bradc/pidigits-iter]
-
-has always failed on Mac (10/01/10)
------------------------------------
-[Error matching program output for classes/claridge/recordInClass1]
 
 ??? (06/23/10)
 --------------
@@ -896,7 +907,7 @@ nondet. compilation timeout
 [Error: Timed out executing program release/examples/primers/taskParallel] (11/17/10)
 [Error: Timed out compilation for release/examples/hpcc/fft] (06/06/10)
 [Error: Timed out compilation for release/examples/hpcc/hpl] (06/06/10)
-[Error: Timed out compilation for release/examples/hello] (10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11, 03/08/11, 03/12/11, 03/19/11, 03/26/11, 04/02/11, 04/10/11)
+[Error: Timed out compilation for release/examples/hello] (10/19/10, 10/24/10, 10/31/10, 11/8/10, 11/14/10, 11/21/10, 11/28/10, 12/5/10, 12/12/10, 12/26/10, 02/02/11, 01/09/11, 01/16/11, 01/22/11, 01/25/11, 01/30/11, 02/05/11, 02/08/11, 02/13/11, 02/20/11, 03/06/11, 03/08/11, 03/12/11, 03/19/11, 03/26/11, 04/02/11, 04/10/11, 04/12/11, 04/14/11)
 
 execution timeouts
 ------------------
