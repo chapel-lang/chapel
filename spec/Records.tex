@@ -58,7 +58,7 @@ record-statement:
 \end{syntax}
 
 A \sntx{record-declaration-statement} defines a new type symbol specified by the
-identifier.  A record inherits data \[and methods\] from other records
+identifier.  A record inherits data from other records
 if the \sntx{record-inherit-list} is specified.  A record type can inherit from
 other record types, but not from class types.
 
@@ -168,11 +168,13 @@ by record inheritance.  It is merely a shorthand for including a list of fields
 in the record (or class) type being defined.  Record inheritance can be useful
 for grouping data common to several or class or record types.
 
+\begin{future}
 From the definition of record inheritance, it is apparent that a record of a
 derived type can be cast legally to any of its base record types.  But given
 their semantics, records can also be legally cast to types with which they have
 no inheritance relationship.  Thus, records do not induce a well-defined type
 hierarchy.
+\end{future}
 
 \begin{chapelexample}{recordInheritance.chpl}
 \begin{chapel}
@@ -212,6 +214,7 @@ A syntax for accessing shadowed fields has not yet been specified.
 \subsection{Overriding Base Record Methods}
 \label{Overriding_Base_Record_Methods}
 
+\begin{future}
 If a method in a derived record is declared with a signature identical to that
 of a method in a base record, then it is said to override the
 base record's method.  Since records do not support dynamic dispatch, method
@@ -223,6 +226,7 @@ The identical signature requires that the names, types, and order of
 the formal arguments be identical. The return type of the overriding
 method must be the same as the return type of the base record's method,
 or must be a subrecord of the base record method's return type.
+\end{future}
 
 \section{Record Variable Declarations}
 \label{Record_Variable_Declarations}
@@ -276,8 +280,8 @@ Fields on the right-hand side that do not exist on the left-hand side
 are ignored during record assignment.  For example, when a base record is
 assigned a derived record, just the fields that exist in the base
 record are assigned.
-Assignment from a class instance to a record is allowed, but assignment
-from record to a variable of class type is not.
+
+Assignment from record to a variable of class type is not permitted.
 
 \begin{rationale}
 If such an assignment were permitted, it would be reasonable to restrict the RHS
@@ -370,11 +374,11 @@ legal for each pair of elements.
 % \end{chapelfuture}
 % \end{chapelexample}
 
-Since C is derived from R, its initial fields are in the same order and of the
-same type as in R.  Therefore, assignment from an instance of class \chpl{C} to
-a record of type \chpl{R} is legal.
-The first two fields are copied out of \chpl{c} and into \chpl{r}.  The
-remaining field in the object referenced by \chpl{c} is ignored.
+% Since C is derived from R, its initial fields are in the same order and of the
+% same type as in R.  Therefore, assignment from an instance of class \chpl{C} to
+% a record of type \chpl{R} is legal.
+% The first two fields are copied out of \chpl{c} and into \chpl{r}.  The
+% remaining field in the object referenced by \chpl{c} is ignored.
 \end{future}
 
 \begin{openissue}
