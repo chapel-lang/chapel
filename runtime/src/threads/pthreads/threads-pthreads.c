@@ -44,7 +44,7 @@ static chpl_bool       exiting = false;         // are we shutting down?
 
 static pthread_mutex_t thread_info_lock;        // mutual exclusion lock
 
-static int64_t         curr_thread_id = threadlayer_nullThreadID;
+static int64_t         curr_thread_id = 0;
 
 static thread_list_p   thread_list_head = NULL; // head of thread_list
 static thread_list_p   thread_list_tail = NULL; // tail of thread_list

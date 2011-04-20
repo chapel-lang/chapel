@@ -2,6 +2,7 @@
 #define _threads_pthreads_h_
 
 #include <pthread.h>
+#include <stdint.h>
 
 
 //
@@ -12,7 +13,7 @@
 // could be either one or the other.
 //
 typedef int64_t threadlayer_threadID_t;
-#define threadlayer_nullThreadID (- (threadlayer_threadID_t) 1)
+#define threadlayer_nullThreadID INT64_MIN
 
 
 // Mutexes
