@@ -1,0 +1,8 @@
+==========================
+Qthreads README for Chapel
+==========================
+
+Local modifications:
+
+* On 2011/04/20 we changed "chpltasks.h" to "chpl-tasks.h" in
+  shims/chapel/src/tasks-qthreads.c.

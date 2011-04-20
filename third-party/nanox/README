@@ -15,3 +15,6 @@ Local modifications:
   #include "chpl_nanos.h" header down which was causing our older
   versions of gcc to choke.  (This same change has since been made
   in the Nanos++ source base).
+
+* On 2011/04/20 we changed "chpltasks.h" to "chpl-tasks.h" in
+  src/pms/chapel/chpl_nanos.h.
