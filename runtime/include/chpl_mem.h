@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include "arg.h"
 #include "chpltypes.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 
 //
 // chpl_rt_memDescs is an array of descriptions of memory allocations

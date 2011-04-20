@@ -5,7 +5,7 @@
 
 #include "chplrt.h"
 #include "chplmemtrack.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "chpl-comm.h"
 #include "error.h"
 

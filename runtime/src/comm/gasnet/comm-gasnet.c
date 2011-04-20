@@ -7,7 +7,7 @@
 #include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "error.h"
 
 #ifdef GASNET_NEEDS_MAX_SEGSIZE
