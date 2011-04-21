@@ -34,6 +34,9 @@ if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");
 }
 
+config param warnMaximalRange = false;	// Warns if integer rollover will cause
+					// the iterator to yield zero times.
+
 pragma "inline" proc +(s: string, x: numeric)
   return s + x:string;
 
@@ -571,7 +574,7 @@ pragma "inline" proc _cond_test(x) {
 }
 
 pragma "inline" proc _cond_test(x: _iteratorRecord) {
-  compilerError("iterator or promoted expression used in if or while condition");
+  compilerError("iterator or promoted expression ", typeToString(x.type), " used in if or while condition");
 }
 
 proc _cond_invalid(x: object) param return false;
@@ -1023,7 +1026,8 @@ proc _isPrimitiveType(type t) param return
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
   (t == real(32)) | (t == real(64)) |
-  (t == string);
+// BLC: Why aren't imaginaries here?  Someone should try this
+  (t == string) | (_isVolatileType(t) && _isPrimitiveType(_volToNon(t)));
 
 proc _isSimpleScalarType(type t) param return
   _isBooleanType(t) | _isIntegralType(t) | _isFloatType(t);
@@ -1060,19 +1064,84 @@ proc _isRealType(type t) param return
 proc _isImagType(type t) param return
   (t == imag(32)) | (t == imag(64));
 
-proc chpl__idxTypeToStrType(type t) type {
-  if (t == uint(8)) {
+proc _isVolatileType(type t) param
+  return ((t == volatile bool) | (t == volatile bool(8)) | 
+          (t == volatile bool(16)) | (t == volatile bool(32)) | 
+          (t == volatile bool(64)) |  (t == volatile int) | 
+          (t == volatile int(8)) | (t == volatile int(16)) | 
+          (t == volatile int(32)) | (t == volatile int(64)) | 
+          (t == volatile uint(8)) | (t == volatile uint(16)) | 
+          (t == volatile uint(32)) | (t == volatile uint(64)) | 
+          (t == volatile real(32)) | (t == volatile real(64)) | 
+          (t == volatile imag(32)) | (t == volatile imag(64))
+          );
+//  (t == volatile string);
+
+proc _volToNon(type t) type {
+  if (t == volatile bool) {
+    return bool;
+  } else if (t == volatile bool(8)) {
+    return bool(8);
+  } else if (t == volatile bool(16)) {
+    return bool(16);
+  } else if (t == volatile bool(32)) {
+    return bool(32);
+  } else if (t == volatile bool(64)) {
+    return bool(64);
+  } else if (t == volatile int(8)) {
     return int(8);
-  } else if (t == uint(16)) {
+  } else if (t == volatile int(16)) {
     return int(16);
-  } else if (t == uint(32)) {
+  } else if (t == volatile int(32)) {
     return int(32);
-  } else if (t == uint(64)) {
+  } else if (t == volatile int(64)) {
     return int(64);
-  } else if (t == int(8) || t == int(16) || t == int(32) || t == int(64)) {
-    return t;
+  } else if (t == volatile uint(8)) {
+    return uint(8);
+  } else if (t == volatile uint(16)) {
+    return uint(16);
+  } else if (t == volatile uint(32)) {
+    return uint(32);
+  } else if (t == volatile uint(64)) {
+    return uint(64); 
+  } else if (t == volatile real(32)) {
+    return real(32);
+  } else if (t == volatile real(64)) {
+    return real(64);
+  } else if (t == volatile imag(32)) {
+    return imag(32);
+  } else if (t == volatile imag(64)) {
+    return imag(64);
   } else {
+    compilerError(typeToString(t), " is not a volatile type");
+  }
+}
+
+
+// Returns the signed equivalent of the input type.
+proc chpl__signedType(type t) type 
+{
+  if ! _isIntegralType(t) then
     compilerError("range idxType is non-integral: ", typeToString(t));
+
+  return int(numBits(t));
+}
+
+// Returns true if it is legal to coerce t1 to t2, false otherwise.
+proc chpl__legalIntCoerce(type t1, type t2) param
+{
+  if (_isSignedType(t2)) {
+    if (_isSignedType(t1)) {
+      return (numBits(t1) <= numBits(t2));
+    } else {
+      return (numBits(t1) < numBits(t2));
+    }
+  } else {
+    if (_isSignedType(t1)) {
+      return false;
+    } else {
+      return (numBits(t1) <= numBits(t2));
+    }
   }
 }
 
@@ -1123,6 +1192,57 @@ pragma "inline" proc _cast(type t, x) where x:object && t:x && (x.type != t)
 
 pragma "inline" proc _cast(type t, x:_nilType) where t == _nilType
   return nil;
+
+pragma "inline" proc _cast(type t, x: volatile bool) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile bool(8)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile bool(16)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile bool(32)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile bool(64)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile int(8)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile int(16)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile int(32)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile int(64)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile uint(8)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile uint(16)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile uint(32)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile uint(64)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile real(32)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile real(64)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile imag(32)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile imag(64)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
 
 //
 // casts to complex
@@ -1280,20 +1400,23 @@ pragma "inline" proc chpl__initCopy(x: _tuple) {
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: _distribution) {
-  if x._value then
-    on x._value do x._value._distCnt$ += 1;
+  if !noRefCount then
+    if x._value then
+      on x._value do x._value._distCnt$ += 1;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: domain) {
-  on x._value do x._value._domCnt$ += 1;
+  if !noRefCount then
+    on x._value do x._value._domCnt$ += 1;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: []) {
-  on x._value do x._value._arrCnt$ += 1;
+  if !noRefCount then
+    on x._value do x._value._arrCnt$ += 1;
   return x;
 }
 

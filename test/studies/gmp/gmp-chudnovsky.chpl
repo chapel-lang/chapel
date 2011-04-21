@@ -49,6 +49,16 @@ proc CHECK_MEMUSAGE {
 ////////////////////////////////////////////////////////////////////////////
 
 
+// TODO:
+// Can variables be moved in to tighter scopes?
+// Can casts between ulong and long be avoided/minimized?
+// Can writeln be used to wrap gmp_printf and the like?
+// Would we want to overload operators on these types?
+// Refactor timing code into a routine
+// Implement memory checks
+// Fix timings -- currently they're bogus in some cases
+// Use classes rather than records for fac_t and/or sieve_t?
+
 var t1, t2: mpf_t;
 
 config param do_gcd_time = false;

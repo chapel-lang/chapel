@@ -23,7 +23,6 @@ are as follows:
 
 \begin{tabular}{lll}
 \hspace{1pc} & \chpl{BitOps} & Bit manipulation routines \\
-             & \chpl{Functions}   & Common higher-order functions \\
              & \chpl{Norm}   & Routines for computing vector and matrix norms \\
              & \chpl{Random} & Random number generation routines \\
              & \chpl{Search} & Generic searching routines \\
@@ -34,7 +33,7 @@ are as follows:
 There is an expectation that each of these modules will be extended
 and that more standard modules will be defined over time.
 
-\subsection{Automatic Modules}
+\section{Automatic Modules}
 \index{automatic modules}
 \index{standard modules!automatic}
 
@@ -42,7 +41,7 @@ Automatic modules are used by a Chapel program automatically.  There
 is currently no way to avoid their use by a program, although we
 anticipate adding such a capability in the future.
 
-\subsubsection{Math}
+\subsection{Math}
 \label{Math}
 \index{automatic modules!Math}
 
@@ -217,12 +216,43 @@ Returns the value of the argument rounded down to the nearest integer.
 \end{protobody}
 
 \begin{protohead}
+const INFINITY: real(64);
+\end{protohead}
+\begin{protobody}
+Supplies the floating point constant for infinity.
+\end{protobody}
+
+\begin{protohead}
+proc isfinite(x: real): real
+proc isfinite(x: real(32)): real(32)
+\end{protohead}
+\begin{protobody}
+Returns whether or not a particular value is finite.
+\end{protobody}
+
+\begin{protohead}
+proc isinf(x: real): real
+proc isinf(x: real(32)): real(32)
+\end{protohead}
+\begin{protobody}
+Returns whether or not a particular value is infinite.
+\end{protobody}
+
+\begin{protohead}
+proc isnan(x: real): real
+proc isnan(x: real(32)): real(32)
+\end{protohead}
+\begin{protobody}
+Returns whether or not a particular value is not a number.
+\end{protobody}
+
+\begin{protohead}
 proc lgamma(x: real): real
 proc lgamma(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
-Returns the natural logarithm of the absolute value of the gamma
-function of the argument.
+Returns the natural logarithm of the absolute value
+of the gamma function of the argument.
 \end{protobody}
 
 \begin{protohead}
@@ -261,6 +291,13 @@ proc log2(x: real(32)): real(32)
 \begin{protobody}
 Returns the base 2 logarithm of the argument.  It is an error if the
 argument is less than or equal to zero.
+\end{protobody}
+
+\begin{protohead}
+const NAN: real(64);
+\end{protohead}
+\begin{protobody}
+Supplies the floating point constant for not a number.
 \end{protobody}
 
 \begin{protohead}
@@ -351,7 +388,7 @@ than the argument in absolute value.
 \end{protobody}
 
 
-\subsubsection{Base}
+\subsection{Base}
 \label{Standard}
 \index{automatic modules!Base}
 
@@ -478,7 +515,7 @@ Returns a string parameter that represents the name of the
 type \chpl{t}.
 \end{protobody}
 
-\subsubsection{Types}
+\subsection{Types}
 \label{Types_standard_module}
 
 \begin{protohead}
@@ -518,14 +555,14 @@ is implemented for all numeric types.
 
 
 
-\subsection{Optional Modules}
+\section{Optional Modules}
 \index{optional modules}
 \index{standard modules!optional}
 
 Optional modules can be used by a Chapel program via the \chpl{use}
 keyword (\rsec{Using_Modules}).
 
-\subsubsection{BitOps}
+\subsection{BitOps}
 \label{BitOps}
 \index{optional modules!BitOps}
 
@@ -568,7 +605,7 @@ bits to the right \chpl{shift} number of times.
 \end{protobody}
 
 
-\subsubsection{Norm}
+\subsection{Norm}
 \label{Norm}
 \index{optional modules!Norm}
 
@@ -600,7 +637,7 @@ Compute the default norm on array \chpl{x}.  For a 1D array this is
 the 2-norm, for a 2D array, this is the Frobenius norm.
 \end{protobody}
 
-\subsubsection{Random}
+\subsection{Random}
 \label{Random}
 \index{optional modules!Random}
 
@@ -700,7 +737,7 @@ the \chpl{RandomStream} class.  If unspecified, the default for the
 class will be used.
 \end{protobody}
 
-\subsubsection{Search}
+\subsection{Search}
 \label{Search}
 \index{optional modules!Search}
 
@@ -734,7 +771,7 @@ it was not found.
 \end{protobody}
 
 
-\subsubsection{Sort}
+\subsection{Sort}
 \label{Sort}
 \index{optional modules!Sort}
 
@@ -758,7 +795,7 @@ Sorts the 1D array \chpl{Data} in-place using a sequential
 implementation of the QuickSort algorithm.
 \end{protobody}
 
-\subsubsection{Time}
+\subsection{Time}
 \label{Time}
 \index{optional modules!Time}
 

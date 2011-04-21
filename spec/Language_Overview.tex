@@ -9,7 +9,7 @@ This section provides a brief overview of the Chapel language by
 discussing first the guiding principles behind the design of the
 language and second how to get started with Chapel.
 
-\subsection{Guiding Principles}
+\section{Guiding Principles}
 
 The following four principles guided the design of Chapel:
 \begin{enumerate}
@@ -24,7 +24,7 @@ abstractions.  The second two principles were motivated by a desire to
 narrow the gulf between high-performance parallel programming
 languages and mainstream programming and scripting languages.
 
-\subsubsection{General Parallel Programming}
+\subsection{General Parallel Programming}
 
 First and foremost, Chapel is designed to support general parallel
 programming through the use of high-level language abstractions.
@@ -85,7 +85,7 @@ parallelism in an architecturally-neutral way to perform reasonably on
 all of them.  Naturally, Chapel programmers can tune their code to
 more closely match a particular machine's characteristics.
 
-\subsubsection{Locality-Aware Programming}
+\subsection{Locality-Aware Programming}
 
 A second principle in Chapel is to allow the user to optionally and
 incrementally specify where data and computation should be placed on
@@ -97,7 +97,7 @@ programming models in which such details are explicitly specified by
 the programmer on a process-by-process basis via the multiple
 cooperating program instances.
 
-\subsubsection{Object-Oriented Programming}
+\subsection{Object-Oriented Programming}
 
 A third principle in Chapel is support for object-oriented
 programming.  Object-oriented programming has been instrumental in
@@ -120,7 +120,7 @@ need to utilize a method-invocation style of syntax to use these
 capabilities.  However, using such libraries does not necessitate
 broader adoption of object-oriented methodologies.
 
-\subsubsection{Generic Programming}
+\subsection{Generic Programming}
 
 Chapel's fourth principle is support for generic programming and
 polymorphism.  These features allow code to be written in a style that
@@ -134,7 +134,7 @@ the compiler create versions of the code for each required type
 signature rather than by relying on dynamic typing which would result
 in unacceptable runtime overheads for the HPC community.
 
-\subsection{Getting Started}
+\section{Getting Started}
 
 A Chapel version of the standard ``hello, world'' computation is as
 follows:

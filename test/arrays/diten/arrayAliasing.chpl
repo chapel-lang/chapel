@@ -35,28 +35,28 @@ proc main {
   }
 
   {
-  var C: [aliasDom + 1] => A(1..5);
+  var C: [aliasDom.translate(1)] => A(1..5);
   writeArr(C);
   C = 1;
   writeArr(A);
   reset(A);
   }
   {
-  var C: [aliasDom + 1] => A(6..10);
+  var C: [aliasDom.translate(1)] => A(6..10);
   writeArr(C);
   C = 2;
   writeArr(A);
   reset(A);
   }
   {
-  var C: [aliasDom + 1] => A(1..20 by 4);
+  var C: [aliasDom.translate(1)] => A(1..20 by 4);
   writeArr(C);
   C = 3;
   writeArr(A);
   reset(A);
   }
   {
-  var C: [aliasDom + 1] => A(7.. by 2 #5);
+  var C: [aliasDom.translate(1)] => A(7.. by 2 #5);
   writeArr(C);
   C = 4;
   writeArr(A);

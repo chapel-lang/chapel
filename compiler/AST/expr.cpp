@@ -208,11 +208,12 @@ void SymExpr::codegen(FILE* outfile) {
 }
 
 
-UnresolvedSymExpr::UnresolvedSymExpr(const char* iunresolved) :
+UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved, bool i_is_volatile) :
   Expr(E_UnresolvedSymExpr),
-  unresolved(astr(iunresolved))
+  unresolved(astr(i_unresolved)),
+  isVolatile(i_is_volatile)
 {
-  if (!iunresolved)
+  if (!i_unresolved)
     INT_FATAL(this, "bad call to UnresolvedSymExpr");
   gUnresolvedSymExprs.add(this);
 }
@@ -236,7 +237,7 @@ UnresolvedSymExpr::verify() {
 
 UnresolvedSymExpr*
 UnresolvedSymExpr::copyInner(SymbolMap* map) {
-  return new UnresolvedSymExpr(unresolved);
+  return new UnresolvedSymExpr(unresolved, isVolatile);
 }
 
 
@@ -917,11 +918,10 @@ void CallExpr::codegen(FILE* outfile) {
               fprintf(outfile, "CHPL_COMM_WIDE_GET_FIELD_VALUE_SVEC");
             else
               fprintf(outfile, "CHPL_COMM_WIDE_GET_FIELD_VALUE");
-            gen(outfile, "(%A, %A, %A*, %A, ",
-                get(1), call->get(1), valueType, call->get(2));
+            gen(outfile, "(%A, %A, %A*, ", get(1), call->get(1), valueType);
             if (isUnion(valueType))
               fprintf(outfile, "_u.");
-            gen(outfile, "%A, ", fieldType);
+            gen(outfile, "%A, %A, ", call->get(2), fieldType);
             genTypeStructureIndex(outfile, fieldType->symbol);
             gen(outfile, ", %A, %A)", call->get(3), call->get(4));
           } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
@@ -1090,7 +1090,7 @@ void CallExpr::codegen(FILE* outfile) {
         if (call->isPrimitive(PRIM_UNION_GETID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             gen(outfile,
-                "CHPL_COMM_WIDE_GET_FIELD_VALUE(%A, %A, %A*, %A, _uid, ",
+                "CHPL_COMM_WIDE_GET_FIELD_VALUE(%A, %A, %A*, _uid, %A, ",
                 get(1), call->get(1), call->get(1)->getValType(),
                 get(1)->typeInfo());
             genTypeStructureIndex(outfile, get(1)->typeInfo()->symbol);
@@ -1510,7 +1510,7 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIM_UNION_SETID:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-        gen(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(%A, ", get(1)->typeInfo());
+        gen(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(int64_t, ");
         genTypeStructureIndex(outfile, get(1)->typeInfo()->symbol);
         gen(outfile, ", %A, %A", get(1), get(2));
         fprintf(outfile, ", %s*, _uid, ", get(1)->getValType()->symbol->cname);
@@ -1668,7 +1668,15 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "CHPL_TEST_LOCAL(");
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF))
         fprintf(outfile, "*");
-      gen(outfile, "%A, %A, %A)", get(1), get(2), get(3));
+      gen(outfile, "%A, %A, %A, ", get(1), get(2), get(3));
+      INT_ASSERT(get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+                 get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS));
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+          get(1)->typeInfo()->getField("addr")->typeInfo()->symbol->hasFlag(FLAG_EXTERN)) {
+        gen(outfile, "\"cannot pass non-local extern class to extern procedure\")");
+      } else {
+        gen(outfile, "\"cannot access remote data in local block\")");
+      }
       break;
     case PRIM_SYNC_INIT:
     case PRIM_SYNC_DESTROY:
@@ -2004,8 +2012,27 @@ void CallExpr::codegen(FILE* outfile) {
           get(2)->codegen(outfile);
           fprintf(outfile, "))");
       } else if (dst == dtString || src == dtString) {
+        // 
+        // hh: is it okay to drop volatile type on the floor here?
+        //     should we instead of avoiding to print out the volatile type 
+        //     (which we do because of the space between volatile and the type
+        //     expr), print out the volatile type but just replace the space
+        //     with an underscore?
+        //
+        const char* dst_cname = dst->symbol->cname;
+        const char* src_cname = src->symbol->cname;
+        if (PrimitiveType* p_dst = toPrimitiveType(dst)) {
+          if (p_dst->nonvolType && !p_dst->volType) {
+            dst_cname = p_dst->nonvolType->symbol->cname;  
+          }
+        }
+        if (PrimitiveType* p_src = toPrimitiveType(src)) {
+          if (p_src->nonvolType && !p_src->volType) {
+            src_cname = p_src->nonvolType->symbol->cname;  
+          }
+        }
         fprintf(outfile, *dst->symbol->cname == '_' ? "%s_to%s(" : "%s_to_%s(",
-                src->symbol->cname, dst->symbol->cname);
+                src_cname, dst_cname);
         get(2)->codegen(outfile);
         if (src == dtString) {
           fprintf(outfile, ", ");

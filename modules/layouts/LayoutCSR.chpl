@@ -26,8 +26,6 @@ class CSRDom: BaseSparseDom {
   var rowStart: [rowDom] idxType;      // would like index(nnzDom)
   var colIdx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
-  proc getBaseDist() return dist;
-
   proc CSRDom(param rank, type idxType, 
                                dist: CSR,
                                parentDom: domain(rank, idxType)) {
@@ -43,6 +41,8 @@ class CSRDom: BaseSparseDom {
     nnzDom = [1..nnzDomSize];
     dsiClear();
   }
+
+  proc dsiMyDist() return dist;
 
   proc dsiNumIndices return nnz;
 
@@ -228,7 +228,7 @@ class CSRDom: BaseSparseDom {
     // shift all of the arrays up and initialize nonzeroes if
     // necessary 
     //
-    // BLC: Note: if arithmetic arrays had a user-settable
+    // BLC: Note: if rectangular arrays had a user-settable
     // initialization value, we could set it to be the IRV and skip
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
@@ -272,7 +272,7 @@ class CSRDom: BaseSparseDom {
     // shift all of the arrays up and initialize nonzeroes if
     // necessary 
     //
-    // BLC: Note: if arithmetic arrays had a user-settable
+    // BLC: Note: if rectangular arrays had a user-settable
     // initialization value, we could set it to be the IRV and skip
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable

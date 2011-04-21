@@ -50,7 +50,7 @@ proc foo(D: domain, A: [D], useLinear=true) {
   else
     return BinarySearch(A, elem);
 }
-const TD1D: domain(1) = Space1 - (o5);
+const TD1D: domain(1) = Space1.translate(-o5);
 reset(R1D);
 (found, foundIdx) = foo(TD1D, R1D);
 checkSearch(found, foundIdx+o5, R1D, "LinearSearch");

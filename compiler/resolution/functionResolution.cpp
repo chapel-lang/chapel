@@ -267,9 +267,11 @@ const char* toString(FnSymbol* fn) {
     ArgSymbol* arg = fn->getFormal(i+1);
     if (arg->hasFlag(FLAG_IS_MEME))
       continue;
-    if (!first)
+    if (!first) {
       first = true;
-    else
+      if (skipParens)
+        str = astr(str, " ");
+    } else
       str = astr(str, ", ");
     if (arg->intent == INTENT_PARAM)
       str = astr(str, "param ");
@@ -640,6 +642,36 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
 //
 bool
 canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes) {
+  //
+  // hh: if either the formal or actual argument is a volatile primitive, return if its dtype canCoerce
+  //     with base type of the other argument, unless it and the other argument's base type are the same, 
+  //     in which we return true
+  //
+  PrimitiveType* actualPrimType = toPrimitiveType(actualType);
+  PrimitiveType* formalPrimType = toPrimitiveType(formalType);
+
+  if (actualPrimType && actualPrimType->nonvolType) {
+    if (formalPrimType && formalPrimType->nonvolType) {
+      if (actualPrimType->nonvolType != formalPrimType->nonvolType) {
+        return canCoerce(actualPrimType->nonvolType, actualPrimType->nonvolType->symbol, formalPrimType->nonvolType, fn, promotes);
+      } else {
+        return true;
+      }
+    } else {
+      if (actualPrimType->nonvolType != formalType) {
+        return canCoerce(actualPrimType->nonvolType, actualPrimType->nonvolType->symbol, formalType, fn, promotes);
+      } else {
+        return true;
+      }
+    }
+  } else if (formalPrimType && formalPrimType->nonvolType) {
+    if (actualType != formalPrimType->nonvolType) {
+      return canCoerce(actualType, actualSym, formalPrimType->nonvolType, fn, promotes);
+    } else {
+      return true;
+    }
+  }
+
   if (canParamCoerce(actualType, actualSym, formalType))
     return true;
   if (is_real_type(formalType)) {
@@ -678,6 +710,36 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
 // param is set if the actual is a parameter (compile-time constant).
 bool
 canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes, bool paramCoerce) {
+  //
+  // hh: if either the formal or actual argument is a volatile primitive, return if its dtype canDispatch
+  //     with base type of the other argument, unless it and the other argument's base type are the same, 
+  //     in which we return true
+  //
+  PrimitiveType* actualPrimType = toPrimitiveType(actualType);
+  PrimitiveType* formalPrimType = toPrimitiveType(formalType);
+
+  if (actualPrimType && actualPrimType->nonvolType) {
+    if (formalPrimType && formalPrimType->nonvolType) { 
+      if (actualPrimType->nonvolType != formalPrimType->nonvolType) {
+        return canDispatch(actualPrimType->nonvolType, actualPrimType->nonvolType->symbol, formalPrimType->nonvolType, fn, promotes, paramCoerce);
+      } else {
+        return true;
+      }
+    } else {
+      if (actualPrimType->nonvolType != formalType) {
+        return canDispatch(actualPrimType->nonvolType, actualPrimType->nonvolType->symbol, formalType, fn, promotes, paramCoerce);
+      } else {
+        return true;
+      }
+    }
+  } else if (formalPrimType && formalPrimType->nonvolType) {
+    if (actualType != formalPrimType->nonvolType) {
+      return canDispatch(actualType, actualSym, formalPrimType->nonvolType, fn, promotes, paramCoerce);
+    } else {
+      return true;
+    }
+  }
+
   if (promotes)
     *promotes = false;
   if (actualType == formalType)
@@ -1200,12 +1262,12 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
           Symbol* actual = actuals->v[k];
 
           ArgSymbol* arg = actualFormals1->v[k];
-          bool argPromotes1;
+          bool argPromotes1 = false;
           canDispatch(actual->type, actual, arg->type, fn1, &argPromotes1);
           fnPromotes1 |= argPromotes1;
 
           ArgSymbol* arg2 = actualFormals2->v[k];
-          bool argPromotes2;
+          bool argPromotes2 = false;
           canDispatch(actual->type, actual, arg2->type, fn1, &argPromotes2);
           fnPromotes2 |= argPromotes2;
 
@@ -1988,9 +2050,21 @@ resolveCall(CallExpr* call, bool errorCheck) {
           USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
         if (field->type == dtUnknown)
           field->type = t;
-        if (t != field->type && t != dtNil && t != dtObject)
-          USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s",
-                    toString(t), toString(field->type));
+        if (t != field->type && t != dtNil && t != dtObject) {
+          PrimitiveType* fieldPrimType = toPrimitiveType(field->type);
+          PrimitiveType* pt = toPrimitiveType(t);
+          if ((fieldPrimType && fieldPrimType->nonvolType && !fieldPrimType->volType) ||
+              (pt && pt->nonvolType && !pt->volType)) {
+            Expr* typeExpr = call->get(3)->remove();
+            Symbol* tmp = newTemp("cast_tmp", t);
+            call->insertBefore(new DefExpr(tmp));
+            call->insertBefore(new CallExpr(PRIM_MOVE, tmp, typeExpr));
+            call->insertAtTail(new CallExpr(PRIM_CAST, field->type->symbol, tmp));
+          } else {
+            USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s",
+                      toString(t), toString(field->type));
+          }
+        }
         found = true;
       }
     }
@@ -2073,6 +2147,16 @@ resolveCall(CallExpr* call, bool errorCheck) {
                 toString(lhsType));
     Type* lhsBaseType = lhsType->getValType();
     Type* rhsBaseType = rhsType->getValType();
+    PrimitiveType* rhsBasePrimType = toPrimitiveType(rhsBaseType);
+    PrimitiveType* lhsBasePrimType = toPrimitiveType(lhsBaseType);
+    if ((rhsBaseType != lhsBaseType && rhsBaseType != dtNil && rhsBaseType != dtObject) && ((rhsBasePrimType && rhsBasePrimType->nonvolType && !rhsBasePrimType->volType) ||
+                                                                                            (lhsBasePrimType && lhsBasePrimType->nonvolType && !lhsBasePrimType->volType))) {
+      Expr* typeExpr = rhs->remove();
+      Symbol* tmp = newTemp("cast_tmp", rhsBasePrimType);
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, typeExpr));
+      call->insertAtTail(new CallExpr(PRIM_CAST, lhsBasePrimType->symbol, tmp));
+    } else
     if (rhsType != dtNil &&
         rhsBaseType != lhsBaseType &&
         !isDispatchParent(rhsBaseType, lhsBaseType))
@@ -2703,6 +2787,16 @@ preFold(Expr* expr) {
                   } else {
                     size = (int)var->immediate->uint_value();
                   }
+                  // 
+                  // hh: if we want to resolve the width of a volatile primitive,
+                  //     figure out the width based on its base type, but replace this
+                  //     expr with a SymExpr with knowledge of the width, and with the 
+                  //     volatile type, if necessary
+                  //
+                  PrimitiveType* ptype = toPrimitiveType(type->type);
+                  bool volatileType = ptype && ptype->nonvolType && !ptype->volType;
+                  if (volatileType)
+                    type = ptype->nonvolType->symbol;
                   TypeSymbol* tsize = NULL;
                   if (type == dtBools[BOOL_SIZE_SYS]->symbol) {
                     switch (size) {
@@ -2713,6 +2807,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for bool", size);
                     }
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtInt[INT_SIZE_32]->symbol) {
@@ -2724,6 +2820,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for int", size);
                     }
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtUInt[INT_SIZE_32]->symbol) {
@@ -2735,6 +2833,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for uint", size);
                     }
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtReal[FLOAT_SIZE_64]->symbol) {
@@ -2744,6 +2844,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for real", size);
                     }
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtImag[FLOAT_SIZE_64]->symbol) {
@@ -2753,6 +2855,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for imag", size);
                     }
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   } else if (type == dtComplex[COMPLEX_SIZE_128]->symbol) {
@@ -2762,6 +2866,8 @@ preFold(Expr* expr) {
                     default:
                       USR_FATAL( call, "illegal size %d for complex", size);
                     }
+                    if (volatileType)
+                      tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
                   }
@@ -5094,15 +5200,19 @@ is_array_type(Type* type) {
 
 
 static void
-fixTypeNames(ClassType* ct) {
-  if (is_array_type(ct)) {
+fixTypeNames(ClassType* ct)
+{
+  const char default_domain_name[] = "DefaultRectangularDom";
+
+  if (is_array_type(ct))
+  {
     const char* domain_type = ct->getField("dom")->type->symbol->name;
     const char* elt_type = ct->getField("eltType")->type->symbol->name;
     ct->symbol->name = astr("[", domain_type, "] ", elt_type);
   }
   if (ct->instantiatedFrom &&
-      !strcmp(ct->instantiatedFrom->symbol->name, "DefaultArithmeticDom")) {
-    ct->symbol->name = astr("domain", ct->symbol->name+20);
+      !strcmp(ct->instantiatedFrom->symbol->name, default_domain_name)) {
+    ct->symbol->name = astr("domain", ct->symbol->name+strlen(default_domain_name));
   }
   if (ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN)) {
     ct->symbol->name = ct->getField("_valueType")->type->symbol->name;

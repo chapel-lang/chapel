@@ -1,8 +1,7 @@
-This is ../../gmp/doc/gmp.info, produced by makeinfo version 4.8 from
-../../gmp/doc/gmp.texi.
+This is gmp.info, produced by makeinfo version 4.13 from gmp.texi.
 
-   This manual describes how to install and use the GNU multiple
-precision arithmetic library, version 5.0.1.
+This manual describes how to install and use the GNU multiple precision
+arithmetic library, version 5.0.1.
 
    Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010 Free
@@ -14,7 +13,7 @@ document under the terms of the GNU Free Documentation License, Version
 with no Invariant Sections, with the Front-Cover Texts being "A GNU
 Manual", and with the Back-Cover Texts being "You have freedom to copy
 and modify this GNU Manual, like GNU software".  A copy of the license
-is included in *Note GNU Free Documentation License::.
+is included in *note GNU Free Documentation License::.
 
 INFO-DIR-SECTION GNU libraries
 START-INFO-DIR-ENTRY
@@ -494,8 +493,8 @@ formulas is used, according as n is odd or even.
      F[2k+1] = (2F[k]+F[k-1])*(2F[k]-F[k-1]) + 2*(-1)^k
 
    F[2k+1] here is the same as above, just rearranged to be a multiply.
-For interest, the 2*(-1)^k term both here and above can be applied
-just to the low limb of the calculation, without a carry or borrow into
+For interest, the 2*(-1)^k term both here and above can be applied just
+to the low limb of the calculation, without a carry or borrow into
 further limbs, which saves some code size.  See comments with
 `mpz_fib_ui' and the internal `mpn_fib2_ui' for how this is done.
 
@@ -1100,7 +1099,7 @@ GCDs necessary, not four.
 
    This general approach to common factors is badly sub-optimal in the
 presence of simple factorizations or little prospect for cancellation,
-but GMP has no way to know when this will occur.  As per *Note
+but GMP has no way to know when this will occur.  As per *note
 Efficiency::, that's left to applications.  The `mpq_t' framework might
 still suit, with `mpq_numref' and `mpq_denref' for direct access to the
 numerator and denominator, or of course `mpz_t' variables can be used
@@ -1397,12 +1396,12 @@ File: gmp.info,  Node: Contributors,  Next: References,  Prev: Internals,  Up: T
 Appendix A Contributors
 ***********************
 
-Torbjo"rn Granlund wrote the original GMP library and is still the main
+Torbjörn Granlund wrote the original GMP library and is still the main
 developer.  Code not explicitly attributed to others, was contributed by
-Torbjo"rn.  Several other individuals and organizations have contributed
+Torbjörn.  Several other individuals and organizations have contributed
 GMP.  Here is a list in chronological order on first contribution:
 
-   Gunnar Sjo"din and Hans Riesel helped with mathematical problems in
+   Gunnar Sjödin and Hans Riesel helped with mathematical problems in
 early versions of the library.
 
    Richard Stallman helped with the interface design and revised the
@@ -1415,12 +1414,12 @@ the library and made creative suggestions.
 `mpz_probab_prime_p'.
 
    Paul Zimmermann wrote the REDC-based mpz_powm code, the
-Scho"nhage-Strassen FFT multiply code, and the Karatsuba square root
+Schönhage-Strassen FFT multiply code, and the Karatsuba square root
 code.  He also improved the Toom3 code for GMP 4.2.  Paul sparked the
 development of GMP 2, with his comparisons between bignum packages.
 The ECMNET project Paul is organizing was a driving force behind many
 of the optimizations in GMP 3.  Paul also wrote the new GMP 4.3 nth
-root code (with Torbjo"rn).
+root code (with Torbjörn).
 
    Ken Weber (Kent State University, Universidade Federal do Rio Grande
 do Sul) contributed now defunct versions of `mpz_gcd', `mpz_divexact',
@@ -1473,8 +1472,8 @@ elsewhere.
    Pedro Gimeno implemented the Mersenne Twister and made other random
 number improvements.
 
-   Niels Mo"ller wrote the sub-quadratic GCD and extended GCD code, the
-quadratic Hensel division code, and (with Torbjo"rn) the new divide and
+   Niels Möller wrote the sub-quadratic GCD and extended GCD code, the
+quadratic Hensel division code, and (with Torbjörn) the new divide and
 conquer division code for GMP 4.3.  Niels also helped implement the new
 Toom multiply code for GMP 4.3 and implemented helper functions to
 simplify Toom evaluations for GMP 5.0.  He wrote the original version
@@ -1560,16 +1559,16 @@ B.2 Papers
      Max-Planck-Institut fuer Informatik Research Report MPI-I-98-1-022,
      `http://data.mpi-sb.mpg.de/internet/reports.nsf/NumberView/1998-1-022'
 
-   * Torbjo"rn Granlund and Peter L. Montgomery, "Division by Invariant
+   * Torbjörn Granlund and Peter L. Montgomery, "Division by Invariant
      Integers using Multiplication", in Proceedings of the SIGPLAN
      PLDI'94 Conference, June 1994.  Also available
      `ftp://ftp.cwi.nl/pub/pmontgom/divcnst.psa4.gz' (and .psl.gz).
 
-   * Niels Mo"ller and Torbjo"rn Granlund, "Improved division by
-     invariant integers", to appear.
+   * Niels Möller and Torbjörn Granlund, "Improved division by invariant
+     integers", to appear.
 
-   * Torbjo"rn Granlund and Niels Mo"ller, "Division of integers large
-     and small", to appear.
+   * Torbjörn Granlund and Niels Möller, "Division of integers large and
+     small", to appear.
 
    * Tudor Jebelean, "An algorithm for exact division", Journal of
      Symbolic Computation, volume 15, 1993, pp. 169-180.  Research
@@ -1612,7 +1611,7 @@ B.2 Papers
      Modular Transforms", Journal of Computer and System Sciences,
      volume 8, number 3, June 1974, pp. 366-386.
 
-   * Niels Mo"ller, "On Scho"nhage's algorithm and subquadratic integer
+   * Niels Möller, "On Schönhage's algorithm and subquadratic integer
      GCD   computation", in Mathematics of Computation, volume 77,
      January 2008, pp.    589-607.
 
@@ -1620,7 +1619,7 @@ B.2 Papers
      Division", in Mathematics of Computation, volume 44, number 170,
      April 1985.
 
-   * Arnold Scho"nhage and Volker Strassen, "Schnelle Multiplikation
+   * Arnold Schönhage and Volker Strassen, "Schnelle Multiplikation
      grosser Zahlen", Computing 7, 1971, pp. 281-292.
 
    * Kenneth Weber, "The accelerated integer GCD algorithm", ACM
@@ -2157,12 +2156,11 @@ Concept Index
                                                               (line  80)
 * 80x86:                                 Notes for Particular Systems.
                                                               (line 126)
-* ABI <1>:                               Build Options.       (line 171)
-* ABI:                                   ABI and ISA.         (line   6)
+* ABI <1>:                               ABI and ISA.         (line   6)
+* ABI:                                   Build Options.       (line 171)
 * About this manual:                     Introduction to GMP. (line  58)
 * AC_CHECK_LIB:                          Autoconf.            (line  11)
-* AIX <1>:                               ABI and ISA.         (line 184)
-* AIX <2>:                               Notes for Particular Systems.
+* AIX <1>:                               Notes for Particular Systems.
                                                               (line   7)
 * AIX:                                   ABI and ISA.         (line 169)
 * Algorithms:                            Algorithms.          (line   6)
@@ -2172,8 +2170,8 @@ Concept Index
 * Anonymous FTP of latest version:       Introduction to GMP. (line  38)
 * Application Binary Interface:          ABI and ISA.         (line   6)
 * Arithmetic functions <1>:              Float Arithmetic.    (line   6)
-* Arithmetic functions <2>:              Integer Arithmetic.  (line   6)
-* Arithmetic functions:                  Rational Arithmetic. (line   6)
+* Arithmetic functions <2>:              Rational Arithmetic. (line   6)
+* Arithmetic functions:                  Integer Arithmetic.  (line   6)
 * ARM:                                   Notes for Particular Systems.
                                                               (line  20)
 * Assembly cache handling:               Assembly Cache Handling.
@@ -2195,19 +2193,19 @@ Concept Index
                                                               (line   6)
 * Assertion checking <1>:                Debugging.           (line  79)
 * Assertion checking:                    Build Options.       (line 327)
-* Assignment functions <1>:              Assigning Floats.    (line   6)
-* Assignment functions <2>:              Initializing Rationals.
+* Assignment functions <1>:              Simultaneous Float Init & Assign.
                                                               (line   6)
-* Assignment functions <3>:              Simultaneous Integer Init & Assign.
+* Assignment functions <2>:              Assigning Floats.    (line   6)
+* Assignment functions <3>:              Initializing Rationals.
                                                               (line   6)
-* Assignment functions <4>:              Simultaneous Float Init & Assign.
+* Assignment functions <4>:              Simultaneous Integer Init & Assign.
                                                               (line   6)
 * Assignment functions:                  Assigning Integers.  (line   6)
 * Autoconf:                              Autoconf.            (line   6)
 * Basics:                                GMP Basics.          (line   6)
-* Berkeley MP compatible functions <1>:  Build Options.       (line 322)
-* Berkeley MP compatible functions:      BSD Compatible Functions.
+* Berkeley MP compatible functions <1>:  BSD Compatible Functions.
                                                               (line   6)
+* Berkeley MP compatible functions:      Build Options.       (line 322)
 * Binomial coefficient algorithm:        Binomial Coefficients Algorithm.
                                                               (line   6)
 * Binomial coefficient functions:        Number Theoretic Functions.
@@ -2222,9 +2220,9 @@ Concept Index
 * Bit shift right:                       Integer Division.    (line  53)
 * Bits per limb:                         Useful Macros and Constants.
                                                               (line   7)
-* BSD MP compatible functions <1>:       Build Options.       (line 322)
-* BSD MP compatible functions:           BSD Compatible Functions.
+* BSD MP compatible functions <1>:       BSD Compatible Functions.
                                                               (line   6)
+* BSD MP compatible functions:           Build Options.       (line 322)
 * Bug reporting:                         Reporting Bugs.      (line   6)
 * Build directory:                       Build Options.       (line  19)
 * Build notes for binary packaging:      Notes for Package Builds.
@@ -2255,9 +2253,9 @@ Concept Index
                                                               (line   6)
 * Compaq C++:                            Notes for Particular Systems.
                                                               (line  25)
-* Comparison functions <1>:              Integer Comparisons. (line   6)
+* Comparison functions <1>:              Float Comparison.    (line   6)
 * Comparison functions <2>:              Comparing Rationals. (line   6)
-* Comparison functions:                  Float Comparison.    (line   6)
+* Comparison functions:                  Integer Comparisons. (line   6)
 * Compatibility with older versions:     Compatibility with older versions.
                                                               (line   6)
 * Conditions for copying GNU MP:         Copying.             (line   6)
@@ -2271,14 +2269,14 @@ Concept Index
                                                               (line   6)
 * Conventions for variables:             Variable Conventions.
                                                               (line   6)
-* Conversion functions <1>:              Converting Integers. (line   6)
-* Conversion functions <2>:              Converting Floats.   (line   6)
-* Conversion functions:                  Rational Conversions.
+* Conversion functions <1>:              Converting Floats.   (line   6)
+* Conversion functions <2>:              Rational Conversions.
                                                               (line   6)
+* Conversion functions:                  Converting Integers. (line   6)
 * Copying conditions:                    Copying.             (line   6)
 * CPPFLAGS:                              Build Options.       (line 208)
-* CPU types <1>:                         Introduction to GMP. (line  24)
-* CPU types:                             Build Options.       (line 108)
+* CPU types <1>:                         Build Options.       (line 108)
+* CPU types:                             Introduction to GMP. (line  24)
 * Cross compiling:                       Build Options.       (line  66)
 * Custom allocation:                     Custom Allocation.   (line   6)
 * CXX:                                   Build Options.       (line 254)
@@ -2293,16 +2291,16 @@ Concept Index
 * Digits in an integer:                  Miscellaneous Integer Functions.
                                                               (line  23)
 * Divisibility algorithm:                Exact Remainder.     (line  29)
-* Divisibility functions:                Integer Division.    (line 124)
+* Divisibility functions:                Integer Division.    (line 112)
 * Divisibility testing:                  Efficiency.          (line  91)
 * Division algorithms:                   Division Algorithms. (line   6)
-* Division functions <1>:                Rational Arithmetic. (line  22)
-* Division functions <2>:                Integer Division.    (line   6)
-* Division functions:                    Float Arithmetic.    (line  33)
-* DJGPP <1>:                             Notes for Particular Systems.
-                                                              (line  43)
-* DJGPP:                                 Known Build Problems.
+* Division functions <1>:                Float Arithmetic.    (line  33)
+* Division functions <2>:                Rational Arithmetic. (line  22)
+* Division functions:                    Integer Division.    (line   6)
+* DJGPP <1>:                             Known Build Problems.
                                                               (line  18)
+* DJGPP:                                 Notes for Particular Systems.
+                                                              (line  43)
 * DLLs:                                  Notes for Particular Systems.
                                                               (line  56)
 * DocBook:                               Build Options.       (line 354)
@@ -2319,13 +2317,13 @@ Concept Index
 * Exec prefix:                           Build Options.       (line  32)
 * Execution profiling <1>:               Profiling.           (line   6)
 * Execution profiling:                   Build Options.       (line 331)
-* Exponentiation functions <1>:          Integer Exponentiation.
+* Exponentiation functions <1>:          Float Arithmetic.    (line  41)
+* Exponentiation functions:              Integer Exponentiation.
                                                               (line   6)
-* Exponentiation functions:              Float Arithmetic.    (line  41)
 * Export:                                Integer Import and Export.
                                                               (line  45)
 * Expression parsing demo:               Demonstration Programs.
-                                                              (line  18)
+                                                              (line  15)
 * Extended GCD:                          Number Theoretic Functions.
                                                               (line  45)
 * Factor removal functions:              Number Theoretic Functions.
@@ -2413,11 +2411,11 @@ Concept Index
 * Heap problems:                         Debugging.           (line  24)
 * Home page:                             Introduction to GMP. (line  34)
 * Host system:                           Build Options.       (line  66)
-* HP-UX:                                 ABI and ISA.         (line 107)
+* HP-UX:                                 ABI and ISA.         (line  68)
 * HPPA:                                  ABI and ISA.         (line  68)
-* I/O functions <1>:                     I/O of Integers.     (line   6)
+* I/O functions <1>:                     I/O of Floats.       (line   6)
 * I/O functions <2>:                     I/O of Rationals.    (line   6)
-* I/O functions:                         I/O of Floats.       (line   6)
+* I/O functions:                         I/O of Integers.     (line   6)
 * i386:                                  Notes for Particular Systems.
                                                               (line 126)
 * IA-64:                                 ABI and ISA.         (line 107)
@@ -2427,23 +2425,23 @@ Concept Index
 * Include files:                         Headers and Libraries.
                                                               (line   6)
 * info-lookup-symbol:                    Emacs.               (line   6)
-* Initialization functions <1>:          Initializing Integers.
+* Initialization functions <1>:          Random State Initialization.
                                                               (line   6)
-* Initialization functions <2>:          Initializing Rationals.
+* Initialization functions <2>:          Simultaneous Float Init & Assign.
                                                               (line   6)
-* Initialization functions <3>:          Random State Initialization.
-                                                              (line   6)
-* Initialization functions <4>:          Simultaneous Float Init & Assign.
+* Initialization functions <3>:          Initializing Floats. (line   6)
+* Initialization functions <4>:          Initializing Rationals.
                                                               (line   6)
 * Initialization functions <5>:          Simultaneous Integer Init & Assign.
                                                               (line   6)
-* Initialization functions:              Initializing Floats. (line   6)
-* Initializing and clearing:             Efficiency.          (line  21)
-* Input functions <1>:                   I/O of Integers.     (line   6)
-* Input functions <2>:                   I/O of Rationals.    (line   6)
-* Input functions <3>:                   I/O of Floats.       (line   6)
-* Input functions:                       Formatted Input Functions.
+* Initialization functions:              Initializing Integers.
                                                               (line   6)
+* Initializing and clearing:             Efficiency.          (line  21)
+* Input functions <1>:                   Formatted Input Functions.
+                                                              (line   6)
+* Input functions <2>:                   I/O of Floats.       (line   6)
+* Input functions <3>:                   I/O of Rationals.    (line   6)
+* Input functions:                       I/O of Integers.     (line   6)
 * Install prefix:                        Build Options.       (line  32)
 * Installing GMP:                        Installing GMP.      (line   6)
 * Instruction Set Architecture:          ABI and ISA.         (line   6)
@@ -2528,7 +2526,7 @@ Concept Index
 * Linear congruential algorithm:         Random Number Algorithms.
                                                               (line  25)
 * Linear congruential random numbers:    Random State Initialization.
-                                                              (line  32)
+                                                              (line  18)
 * Linking:                               Headers and Libraries.
                                                               (line  22)
 * Logical functions:                     Integer Logic and Bit Fiddling.
@@ -2566,7 +2564,7 @@ Concept Index
                                                               (line  21)
 * MPN_PATH:                              Build Options.       (line 335)
 * MS Windows:                            Notes for Particular Systems.
-                                                              (line  56)
+                                                              (line  43)
 * MS-DOS:                                Notes for Particular Systems.
                                                               (line  43)
 * Multi-threading:                       Reentrancy.          (line   6)
@@ -2596,17 +2594,17 @@ Concept Index
 * ostream output:                        C++ Formatted Output.
                                                               (line   6)
 * Other languages:                       Language Bindings.   (line   6)
-* Output functions <1>:                  I/O of Floats.       (line   6)
-* Output functions <2>:                  I/O of Rationals.    (line   6)
-* Output functions <3>:                  Formatted Output Functions.
+* Output functions <1>:                  Formatted Output Functions.
                                                               (line   6)
+* Output functions <2>:                  I/O of Floats.       (line   6)
+* Output functions <3>:                  I/O of Rationals.    (line   6)
 * Output functions:                      I/O of Integers.     (line   6)
 * Packaged builds:                       Notes for Package Builds.
                                                               (line   6)
 * Parameter conventions:                 Parameter Conventions.
                                                               (line   6)
 * Parsing expressions demo:              Demonstration Programs.
-                                                              (line  21)
+                                                              (line  15)
 * Particular systems:                    Notes for Particular Systems.
                                                               (line   6)
 * Past GMP versions:                     Compatibility with older versions.
@@ -2650,11 +2648,11 @@ Concept Index
                                                               (line   6)
 * Random number algorithms:              Random Number Algorithms.
                                                               (line   6)
-* Random number functions <1>:           Integer Random Numbers.
+* Random number functions <1>:           Random Number Functions.
                                                               (line   6)
 * Random number functions <2>:           Miscellaneous Float Functions.
                                                               (line  27)
-* Random number functions:               Random Number Functions.
+* Random number functions:               Integer Random Numbers.
                                                               (line   6)
 * Random number seeding:                 Random State Seeding.
                                                               (line   6)
@@ -2693,7 +2691,7 @@ Concept Index
                                                               (line   6)
 * Root extraction functions <1>:         Float Arithmetic.    (line  37)
 * Root extraction functions:             Integer Roots.       (line   6)
-* Root testing functions:                Integer Roots.       (line  36)
+* Root testing functions:                Integer Roots.       (line  27)
 * Rounding functions:                    Miscellaneous Float Functions.
                                                               (line   9)
 * Sample programs:                       Demonstration Programs.
@@ -2713,16 +2711,16 @@ Concept Index
 * Shared library versioning:             Notes for Package Builds.
                                                               (line   9)
 * Sign tests <1>:                        Float Comparison.    (line  33)
-* Sign tests <2>:                        Integer Comparisons. (line  28)
-* Sign tests:                            Comparing Rationals. (line  27)
+* Sign tests <2>:                        Comparing Rationals. (line  27)
+* Sign tests:                            Integer Comparisons. (line  28)
 * Size in digits:                        Miscellaneous Integer Functions.
                                                               (line  23)
 * Small operands:                        Efficiency.          (line   7)
-* Solaris <1>:                           ABI and ISA.         (line 201)
-* Solaris:                               Known Build Problems.
-                                                              (line  78)
+* Solaris <1>:                           Known Build Problems.
+                                                              (line  72)
+* Solaris:                               ABI and ISA.         (line 201)
 * Sparc:                                 Notes for Particular Systems.
-                                                              (line 108)
+                                                              (line 103)
 * Sparc V9:                              ABI and ISA.         (line 201)
 * Special integer functions:             Integer Special Functions.
                                                               (line   6)
@@ -2773,7 +2771,7 @@ Concept Index
                                                               (line  12)
 * Web page:                              Introduction to GMP. (line  34)
 * Windows:                               Notes for Particular Systems.
-                                                              (line  56)
+                                                              (line  43)
 * x86:                                   Notes for Particular Systems.
                                                               (line 126)
 * x87:                                   Notes for Particular Systems.
@@ -2801,22 +2799,20 @@ Function and Type Index
                                                               (line  12)
 * _mpz_realloc:                          Integer Special Functions.
                                                               (line  51)
-* abs <1>:                               C++ Interface Rationals.
-                                                              (line  43)
-* abs <2>:                               C++ Interface Integers.
-                                                              (line  42)
-* abs:                                   C++ Interface Floats.
+* abs <1>:                               C++ Interface Floats.
                                                               (line  70)
+* abs <2>:                               C++ Interface Rationals.
+                                                              (line  43)
+* abs:                                   C++ Interface Integers.
+                                                              (line  42)
 * ceil:                                  C++ Interface Floats.
                                                               (line  71)
 * cmp <1>:                               C++ Interface Floats.
                                                               (line  72)
 * cmp <2>:                               C++ Interface Rationals.
                                                               (line  44)
-* cmp <3>:                               C++ Interface Integers.
-                                                              (line  44)
-* cmp:                                   C++ Interface Rationals.
-                                                              (line  45)
+* cmp:                                   C++ Interface Integers.
+                                                              (line  43)
 * floor:                                 C++ Interface Floats.
                                                               (line  80)
 * gcd:                                   BSD Compatible Functions.
@@ -2854,7 +2850,7 @@ Function and Type Index
 * gmp_randclass::get_f:                  C++ Interface Random Numbers.
                                                               (line  45)
 * gmp_randclass::get_z_bits:             C++ Interface Random Numbers.
-                                                              (line  39)
+                                                              (line  38)
 * gmp_randclass::get_z_range:            C++ Interface Random Numbers.
                                                               (line  42)
 * gmp_randclass::gmp_randclass:          C++ Interface Random Numbers.
@@ -2975,7 +2971,7 @@ Function and Type Index
 * mpf_class::get_ui:                     C++ Interface Floats.
                                                               (line  86)
 * mpf_class::mpf_class:                  C++ Interface Floats.
-                                                              (line  38)
+                                                              (line  12)
 * mpf_class::operator=:                  C++ Interface Floats.
                                                               (line  47)
 * mpf_class::set_prec:                   C++ Interface Floats.
@@ -2983,7 +2979,7 @@ Function and Type Index
 * mpf_class::set_prec_raw:               C++ Interface Floats.
                                                               (line 102)
 * mpf_class::set_str:                    C++ Interface Floats.
-                                                              (line  88)
+                                                              (line  87)
 * mpf_clear:                             Initializing Floats. (line  37)
 * mpf_clears:                            Initializing Floats. (line  41)
 * mpf_cmp:                               Float Comparison.    (line   7)
@@ -3136,9 +3132,9 @@ Function and Type Index
 * mpq_class::get_str:                    C++ Interface Rationals.
                                                               (line  47)
 * mpq_class::mpq_class:                  C++ Interface Rationals.
-                                                              (line  22)
+                                                              (line  11)
 * mpq_class::set_str:                    C++ Interface Rationals.
-                                                              (line  49)
+                                                              (line  48)
 * mpq_clear:                             Initializing Rationals.
                                                               (line  16)
 * mpq_clears:                            Initializing Rationals.
@@ -3244,7 +3240,7 @@ Function and Type Index
 * mpz_class::mpz_class:                  C++ Interface Integers.
                                                               (line   7)
 * mpz_class::set_str:                    C++ Interface Integers.
-                                                              (line  56)
+                                                              (line  55)
 * mpz_clear:                             Initializing Integers.
                                                               (line  44)
 * mpz_clears:                            Initializing Integers.
@@ -3461,29 +3457,34 @@ Function and Type Index
 * operator/:                             C++ Interface Integers.
                                                               (line  29)
 * operator<<:                            C++ Formatted Output.
-                                                              (line  20)
-* operator>> <1>:                        C++ Formatted Input. (line  11)
-* operator>>:                            C++ Interface Rationals.
+                                                              (line  11)
+* operator>> <1>:                        C++ Interface Rationals.
                                                               (line  77)
+* operator>>:                            C++ Formatted Input. (line  11)
 * pow:                                   BSD Compatible Functions.
                                                               (line  71)
 * rpow:                                  BSD Compatible Functions.
                                                               (line  79)
 * sdiv:                                  BSD Compatible Functions.
                                                               (line  55)
-* sgn <1>:                               C++ Interface Rationals.
-                                                              (line  50)
-* sgn <2>:                               C++ Interface Integers.
-                                                              (line  57)
-* sgn:                                   C++ Interface Floats.
+* sgn <1>:                               C++ Interface Floats.
                                                               (line  89)
-* sqrt <1>:                              C++ Interface Integers.
-                                                              (line  58)
-* sqrt:                                  C++ Interface Floats.
+* sgn <2>:                               C++ Interface Rationals.
+                                                              (line  50)
+* sgn:                                   C++ Interface Integers.
+                                                              (line  57)
+* sqrt <1>:                              C++ Interface Floats.
                                                               (line  90)
+* sqrt:                                  C++ Interface Integers.
+                                                              (line  58)
 * trunc:                                 C++ Interface Floats.
                                                               (line  91)
 * xtom:                                  BSD Compatible Functions.
                                                               (line  34)
 
 
+
+
+Local Variables:
+coding: iso-8859-1
+End:

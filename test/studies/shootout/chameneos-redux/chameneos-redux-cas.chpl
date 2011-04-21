@@ -1,5 +1,6 @@
-_extern type volatileint32 = uint(32); // uintptr_t volatile
-_extern proc __sync_val_compare_and_swap_c(inout state_p : volatileint32, state : volatileint32, xchg : volatileint32) : volatileint32;
+_extern proc __sync_val_compare_and_swap(inout state_p : volatile uint(32), 
+                                         state : uint(32), 
+                                         xchg : uint(32)) : uint(32);
 _extern proc sched_yield();
 
 use Time;
@@ -32,7 +33,7 @@ config const MEET_COUNT_SHIFT = 8;
 
 
 class MeetingPlace {
-	var state : volatileint32;
+	var state : volatile uint(32);
 
 	/* constructor for MeetingPlace, sets the 
 	   number of meetings to take place */
@@ -62,12 +63,12 @@ class Chameneos {
 	var color : Color;
 	var meetings : int;
 	var meetingsWithSelf : int;
-	var meetingCompleted : volatileint32;
+	var meetingCompleted : volatile uint(32);
 	
 	/* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
 	   with another Chameneos.  If it does, it will get the complement of the color
 	   of the Chameneos it met with, and change to the complement of that color. */
-	proc start(population : [] Chameneos, inout state : volatileint32) {
+  proc start(population : [] Chameneos, meetingPlace: MeetingPlace) {
 		var stateTemp : uint;
 		var peer : Chameneos;
 		var peer_idx : uint;	
@@ -77,11 +78,11 @@ class Chameneos {
 		var newColor : Color;
 
 		//writeln("id ", id, ": in start");
-		stateTemp = state;	
+		stateTemp = meetingPlace.state;	
 					
 		while (true) {
 			peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
-			writeln("id ", id, ": peer_idx is ", peer_idx);
+                        //			writeln("id ", id, ": peer_idx is ", peer_idx);
 			if (peer_idx) {
 				xchg = stateTemp - peer_idx - (1 << MEET_COUNT_SHIFT):uint;
 			} else if (stateTemp) {
@@ -90,7 +91,7 @@ class Chameneos {
 				break;
 			}
 			//writeln("id ", id, ": xchg is ", xchg);
-			prev = __sync_val_compare_and_swap_c(state, stateTemp, xchg);
+			prev = __sync_val_compare_and_swap(meetingPlace.state, stateTemp, xchg);
 			if (prev == stateTemp) {
 				if (peer_idx) {
 					//writeln("id ", id, ": got here second");
@@ -116,7 +117,7 @@ class Chameneos {
 					}
 					//writeln("id ", id, ": exiting");
 					meetingCompleted = 0;
-					stateTemp = state;	
+					stateTemp = meetingPlace.state;	
 				}
 			} else {
 				stateTemp = prev; 
@@ -161,12 +162,12 @@ proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
 	for i in population { write(" ", i.color); }
 	writeln();
 
-	coforall i in population { i.start(population, meetingPlace.state); }
+	coforall i in population { i.start(population, meetingPlace); }
 	meetingPlace.reset();
 }
 
 proc runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
-	coforall i in population { i.start(population, meetingPlace.state); }
+	coforall i in population { i.start(population, meetingPlace); }
 	meetingPlace.reset();
 
 	const totalMeetings = + reduce population.meetings;

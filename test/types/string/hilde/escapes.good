@@ -1,0 +1,5 @@
+This is a string literal containing a backslash (\)
+This is a string literal ending in a backslash \
+This is a string literal	containing a tab
+and line-end.
+DONE.

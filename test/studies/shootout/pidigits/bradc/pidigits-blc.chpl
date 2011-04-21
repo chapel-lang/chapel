@@ -8,16 +8,16 @@
 
 use GMP, Time;
 
-config const n = 50,	// Compute 50 digits of Pi, by default
-             printTiming = true;
+config const n = 50;	// Compute 50 digits of Pi, by default
+config param printTiming = false;
 
 proc main() {
   var t: Timer;
 
-  t.start();
+  if printTiming then t.start();
   // Produce the number of digits of Pi specified in n.
   pidigits();
-  t.stop();
+  if printTiming then t.stop();
 
   if printTiming then
     writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));
@@ -46,30 +46,25 @@ proc pidigits() {
   for i in 1..n {
     const d = next_digit(k);
     write(d);
+    eliminate_digit(d);
 
     if i % 10 == 0 then
       writeln("\t:",i);
-
-    eliminate_digit(d);
   }
 }
 
 proc next_digit(inout k) {
   do {
-    var repeat = false;
-    k += 1;
-    const y2 = 2 * k + 1;
+    do {
+      k += 1;
+      const y2 = 2 * k + 1;
 
-    mpz_mul_2exp(tmp1, numer, 1:c_ulong);
-    mpz_add(accum, accum, tmp1);		// accum <- accum + numer * 2
-    mpz_mul_ui(accum, accum, y2);		// accum <- accum * (2k+1)
-    mpz_mul_ui(numer, numer, k);		// numer <- numer * k
-    mpz_mul_ui(denom, denom, y2);		// denom <- denom * (2k+1)
-
-    if mpz_cmp(numer, accum) > 0 {
-      repeat = true;
-      continue;
-    }
+      mpz_mul_2exp(tmp1, numer, 1:c_ulong);
+      mpz_add(accum, accum, tmp1);		// accum <- accum + numer * 2
+      mpz_mul_ui(accum, accum, y2);		// accum <- accum * (2k+1)
+      mpz_mul_ui(numer, numer, k);		// numer <- numer * k
+      mpz_mul_ui(denom, denom, y2);		// denom <- denom * (2k+1)
+    } while (mpz_cmp(numer, accum) > 0);
 
     // Compute (numer * 3 + accum)
     mpz_mul_2exp(tmp1, numer, 1);
@@ -82,7 +77,7 @@ proc next_digit(inout k) {
     // Now, if (numer * 3 + accum) % denom + numer
     // == (numer * 4 + accum) % denom
     mpz_add(tmp2, tmp2, numer);
-  } while (repeat || mpz_cmp(tmp2, denom) >= 0);
+  } while (mpz_cmp(tmp2, denom) >= 0);
 
   return mpz_get_ui(tmp1);
 }

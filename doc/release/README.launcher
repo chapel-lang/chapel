@@ -33,6 +33,10 @@ The goals of the launcher binary are:
 Executing a Chapel program using the verbose (-v) flag will typically
 print out the command(s) used to launch the program.  
 
+Executing using the help (-h/--help) flag will typically print out any
+launcher-specific options in addition to the normal help message for
+the program itself.
+
 Currently-supported launchers include:
 
   amudprun          : GASNet launcher for programs running over UDP

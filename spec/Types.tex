@@ -10,7 +10,7 @@ types (sync, single).
 % This section defines the primitive
 % types, enumerated types, and type aliases.  
 
-The syntax of a type is summarized by the following syntax:
+The syntax of a type is as follows:
 
 \begin{syntax}
 type-specifier:
@@ -22,49 +22,9 @@ type-specifier:
   synchronization-type
 \end{syntax}
 
-The structured types are summarized by the following syntax:
-
-\begin{syntax}
-structured-type:
-  class-type
-  record-type
-  union-type
-  tuple-type
-\end{syntax}
-% in README.firstClassFns: function-type
-
-Classes are discussed in~\rsec{Classes}.  Records are discussed
-in~\rsec{Records}.  Unions are discussed in~\rsec{Unions}.  Tuples are
-discussed in~\rsec{Tuples}.  
-
-The data parallel types are summarized by the following syntax:
-
-\begin{syntax}
-dataparallel-type:
-  range-type
-  domain-type
-  mapped-domain-type
-  array-type
-  index-type
-\end{syntax}
-
-Ranges are discussed in~\rsec{Ranges}.  Domains, arrays, and index
-types are discussed in~\rsec{Domains} and~\rsec{Arrays}.
-
-The synchronization types are summarized by the following syntax:
-
-\begin{syntax}
-synchronization-type:
-  sync-type
-  single-type
-\end{syntax}
-
-Sync and single types are discussed in~\rsec{Sync_Variables}
-and~\rsec{Single_Variables}.
-
 Programmers can define their own enumerated types, classes, records,
-unions, and type aliases in type declaration statements summarized by
-the following syntax:
+unions, and type aliases using type declaration statements:
+
 \begin{syntax}
 type-declaration-statement:
   enum-declaration-statement
@@ -74,7 +34,11 @@ type-declaration-statement:
   type-alias-declaration-statement
 \end{syntax}
 
-\subsection{Primitive Types}
+These statements are defined in Sections \rsec{Enumerated_Types},
+\rsec{Class_Declarations}, \rsec{Record_Declarations},
+\rsec{Union_Declarations}, and \rsec{Type_Aliases}, respectively.
+
+\section{Primitive Types}
 \label{Primitive_Types}
 \index{types!primitive}
 
@@ -111,7 +75,7 @@ primitive types depending on a platform's native support for those
 types.
 \end{openissue}
 
-\subsubsection{The Void Type}
+\subsection{The Void Type}
 \label{The_Void_Type}
 \index{void@\chpl{void}}
 
@@ -121,7 +85,7 @@ example when a function has no arguments and/or no return type.
 There may be storage associated with a value of type \chpl{void}, in which
 case its lifetime obeys the same rules as a value of type \chpl{int}.
 
-\subsubsection{The Bool Type}
+\subsection{The Bool Type}
 \label{The_Bool_Type}
 \index{bool@\chpl{bool}}
 
@@ -140,7 +104,7 @@ Some statements require expressions of \chpl{bool} type and Chapel
 supports a special conversion of values to \chpl{bool} type when used
 in this context~(\rsec{Implicit_Statement_Bool_Conversions}).
 
-\subsubsection{Signed and Unsigned Integral Types}
+\subsection{Signed and Unsigned Integral Types}
 \label{Signed_and_Unsigned_Integral_Types}
 \index{uint@\chpl{uint}}
 \index{int@\chpl{int}}
@@ -180,7 +144,7 @@ integral types should be changed to 64 bits.
 \end{openissue}
 
 
-\subsubsection{Real Types}
+\subsection{Real Types}
 \label{Real_Types}
 \index{real@\chpl{real}}
 
@@ -191,7 +155,7 @@ machine-dependent, but usually include \chpl{real(32)} (single
 precision) and \chpl{real(64)} (double precision) following the IEEE
 754 standard.  
 
-\subsubsection{Imaginary Types}
+\subsection{Imaginary Types}
 \label{Imaginary_Types}
 \index{imaginary@\chpl{imaginary}}
 
@@ -206,7 +170,7 @@ under-optimized code stemming from always coercing real values to
 complex values with a zero imaginary part.
 \end{rationale}
 
-\subsubsection{Complex Types}
+\subsection{Complex Types}
 \label{Complex_Types}
 \index{complex@\chpl{complex}}
 
@@ -223,17 +187,13 @@ The real and imaginary components can be accessed via the methods
 \chpl{re} and \chpl{im}.  The type of these components is real.
 See~\rsec{Math} for math routines for complex types.
 
-%TODO: hilde
-% Add these functions in the standard modules section.
-%
-
 \begin{example}
 Given a complex number \chpl{c} with the value \chpl{3.14+2.72i}, the
 expressions \chpl{c.re} and \chpl{c.im} refer to \chpl{3.14}
 and \chpl{2.72} respectively.
 \end{example}
 
-\subsubsection{The String Type}
+\subsection{The String Type}
 \label{The_String_Type}
 \index{string@\chpl{string}}
 
@@ -251,11 +211,12 @@ There is an expectation of future support for different character
 sets, possibly including internationalization.
 \end{openissue}
 
-\subsection{Enumerated Types}
+\section{Enumerated Types}
 \label{Enumerated_Types}
 \index{enumerated types}
 
 Enumerated types are declared with the following syntax:
+
 \begin{syntax}
 enum-declaration-statement:
   `enum' identifier { enum-constant-list }
@@ -271,8 +232,9 @@ init-part:
   = expression
 \end{syntax}
 
-The enumerated type can then be specified with its name as summarized
+The enumerated type can then be referenced by its name, as summarized
 by the following syntax:
+
 \begin{syntax}
 enum-type:
   identifier
@@ -286,7 +248,7 @@ omitted, the \sntx{enum-constant} has an integral value one higher
 than the previous \sntx{enum-constant} in the enum, with the first
 having the value \chpl{1}.
 
-\begin{example}
+\begin{chapelexample}{enum.chpl}
 The code
 \begin{chapel}
 enum statesman { Aristotle, Roosevelt, Churchill, Kissinger }
@@ -307,12 +269,22 @@ proc quote(s: statesman) {
   }
 }
 \end{chapel}
+\begin{chapelnoprint}
+for s in statesman.Aristotle..statesman.Kissinger do
+  quote(s:statesman);
+\end{chapelnoprint}
+\begin{chapeloutput}
+All paid jobs absorb and degrade the mind.
+Every reform movement has a lunatic fringe.
+A joke is a very serious thing.
+No one will ever win the battle of the sexes; there's too much fraternizing with the enemy.
+\end{chapeloutput}
 outputs a quote from the given statesman.  Note that enumerated
 constants must be prefixed by the enumerated type and a dot.
-\end{example}
+\end{chapelexample}
 
 
-\subsection{Locale Types}
+\section{Locale Types}
 \label{Locale_Types}
 \index{types!locale}
 
@@ -329,54 +301,102 @@ The \chpl{locale} type is defined in~\rsec{The_Locale_Type}.
 We expect to support \emph{realms} as another locale type.
 \end{openissue}
 
-\subsection{Structured Types}
+\section{Structured Types}
 \label{Structured_Types}
 \index{types!structured}
 
-\subsubsection{Class Types}
+The structured types are summarized by the following syntax:
 
+\begin{syntax}
+structured-type:
+  class-type
+  record-type
+  union-type
+  tuple-type
+\end{syntax}
+% in README.firstClassFns: function-type
+
+Classes are discussed in \rsec{Classes}.  Records are discussed
+in \rsec{Records}.  Unions are discussed in \rsec{Unions}.  Tuples are
+discussed in \rsec{Tuples}.
+
+\subsection{Class Types}
+
+% TODO: the first sentence does not make strict sense.
+% Overall, it does not feel like this paragraph has any value here.
 The class type defines a type that contains variables and constants,
 called fields, and functions, called methods.  Classes are defined
 in~\rsec{Classes}.  The class type can also contain type aliases and
 parameters.  Such a class is generic and is defined
 in~\rsec{Generic_Types}.
 
-\subsubsection{Record Types}
+\subsection{Record Types}
 
 The record type is similar to a class type; the primary difference is
 that a record is a value rather than a reference.  Records are defined
 in~\rsec{Records}.
 
-\subsubsection{Union Types}
+\subsection{Union Types}
 
 The union type defines a type that contains one of a set of variables.
 Like classes and records, unions may also define methods.  Unions are
 defined in~\rsec{Unions}.
 
-\subsubsection{Tuple Types}
+\subsection{Tuple Types}
 
 A tuple is a light-weight record that consists of one or more
 anonymous fields.  If all the fields are of the same type, the tuple
 is homogeneous.  Tuples are defined in~\rsec{Tuples}.
 
-\subsection{Data Parallel Types}
+\section{Data Parallel Types}
 \label{Data_Parallel_Types}
 \index{types!dataparallel}
 
-\subsubsection{Range Types}
+The data parallel types are summarized by the following syntax:
+
+\begin{syntax}
+dataparallel-type:
+  range-type
+  domain-type
+  mapped-domain-type
+  array-type
+  index-type
+\end{syntax}
+
+Ranges and their index types are discussed in \rsec{Ranges}.
+Domains and their index types are discussed in \rsec{Domains}.
+Arrays are discussed in \rsec{Arrays}.
+
+\subsection{Range Types}
 
 A range defines an integral sequence of some integral type.  Ranges
-are defined in~\rsec{Ranges}.
+are defined in \rsec{Ranges}.
 
-\subsubsection{Domain, Array, and Index Types}
+\subsection{Domain, Array, and Index Types}
 \label{Domain_and_Array_Types}
 
-A domain defines a set of indices and an array defines a set of
-elements that are mapped by the indices in an associated domain.  A
-domain's indicies can be of any type.  Domains, arrays, and index
-types are defined in~\rsec{Domains}~and~\rsec{Arrays}.
+A domain defines a set of indices. An array defines a set of
+elements that correspond to the indices in its domain.
+A domain's indicies can be of any type.
+Domains, arrays, and their index
+types are defined in \rsec{Domains} and \rsec{Arrays}.
 
-\subsection{Type Aliases}
+\section{Synchronisation Types}
+\label{Synchronisation_Types}
+\index{types!synchronisation}
+
+The synchronization types are summarized by the following syntax:
+
+\begin{syntax}
+synchronization-type:
+  sync-type
+  single-type
+\end{syntax}
+
+Sync and single types are discussed in \rsec{Sync_Variables}
+and \rsec{Single_Variables}.
+
+\section{Type Aliases}
 \label{Type_Aliases}
 \index{type aliases}
 
@@ -399,7 +419,7 @@ the type specified by \sntx{type-part} directly.
 
 If the keyword \chpl{config} precedes the keyword \chpl{type}, the
 type alias is called a configuration type alias.  Configuration type
-aliases are set at compilation time via compilation flags or other
+aliases can be set at compilation time via compilation flags or other
 implementation-defined means.  The \chpl{type-specifier} in the
 program is ignored if the type-alias is alternatively set.
 

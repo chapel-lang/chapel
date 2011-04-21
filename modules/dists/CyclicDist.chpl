@@ -72,7 +72,7 @@ class Cyclic: BaseDist {
     }
 
     for param i in 1..rank do
-      this.startIdx(i) = mod(tupleStartIdx(i), targetLocDom.dim(i).length);
+      this.startIdx(i) = chpl__mod(tupleStartIdx(i), targetLocDom.dim(i).length);
 
     // NOTE: When these knobs stop using the global defaults, we will need
     // to add checks to make sure dataParTasksPerLocale<0 and
@@ -129,13 +129,10 @@ proc Cyclic.getChunk(inds, locid) {
     locidtup = locid;
   for param i in 1..rank {
     var distStride = targetLocDom.dim(i).length;
-    var loclowidx = mod(startIdx(i) + locidtup(i), distStride);
-    var lowmod = mod(inds.dim(i).low, distStride);
-    var offset = loclowidx - lowmod;
-    if offset < 0 then
-      sliceBy(i) = inds.dim(i).low + (distStride + offset)..inds.dim(i).high by distStride;
-    else
-      sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
+    var offset = chpl__diffMod(startIdx(i) + locidtup(i), inds.dim(i).low, distStride);
+    sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
+    // remove alignment
+    sliceBy(i).alignHigh();
   }
   return inds((...sliceBy));
   //
@@ -175,7 +172,7 @@ proc Cyclic.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-proc Cyclic.dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
   if idxType != this.idxType then
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != this.rank then
@@ -270,7 +267,7 @@ proc Cyclic.idxToLocaleInd(i: idxType) {
   // this is wrong if i is less than startIdx
   //return ((i - startIdx(1)) % numLocs):int;
   // this works even if i is less than startIdx
-  return mod(mod(i, numLocs) - mod(startIdx(1), numLocs), numLocs):int;
+  return chpl__diffMod(i, startIdx(1), numLocs):int;
 }
 
 proc Cyclic.idxToLocaleInd(ind: rank*idxType) {
@@ -278,7 +275,7 @@ proc Cyclic.idxToLocaleInd(ind: rank*idxType) {
   for param i in 1..rank {
     var dimLen = targetLocDom.dim(i).length;
     //x(i) = ((ind(i) - startIdx(i)) % dimLen):int;
-    x(i) = mod(mod(ind(i), dimLen) - mod(startIdx(i), dimLen), dimLen):int;
+    x(i) = chpl__diffMod(ind(i), startIdx(i), dimLen):int;
   }
   if rank == 1 then
     return x(1);
@@ -315,7 +312,7 @@ class LocCyclic {
     for param i in 1..rank {
       const lower = min(idxType)..(startIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length;
       const upper = (startIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length;
-      const lo = lower.low, hi = upper.high;
+      const lo = lower.last, hi = upper.last;
       tuple(i) = lo..hi by dist.targetLocDom.dim(i).length;
     }
     myChunk = [(...tuple)];
@@ -323,7 +320,7 @@ class LocCyclic {
 }
 
 
-class CyclicDom : BaseArithmeticDom {
+class CyclicDom : BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
@@ -383,6 +380,8 @@ proc CyclicDom.dsiDim(d: int) return whole.dim(d);
 
 proc CyclicDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
+proc CyclicDom.dsiMyDist() return dist;
+
 
 
 proc CyclicDom.dsiGetIndices() {
@@ -429,12 +428,14 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
                                                   locDom.myBlock.dims());
 
     var result: rank*range(idxType=idxType, stridable=true);
-    var zeroedLocalPart = whole((...locDom.myBlock.getIndices())) - whole.low;
+    // Use the internal function for untranslate to avoid having to do
+    // extra work to negate the offset
+    var zeroedLocalPart = whole((...locDom.myBlock.getIndices())).chpl__unTranslate(wholeLow);
     for param i in 1..rank {
       var dim = zeroedLocalPart.dim(i);
       var wholestride = whole.dim(i).stride;
-      if dim.high >= dim.low then
-        result(i) = (dim.low / wholestride)..(dim.high / wholestride) by (dim.stride / wholestride);
+      if dim.last >= dim.first then
+        result(i) = (dim.first / wholestride)..(dim.last / wholestride) by (dim.stride / wholestride);
       else
         result(i) = 1..0 by 1;
     }
@@ -448,7 +449,7 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
 
       coforall taskid in 0:uint(64)..#numTasks {
         var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
-        const low = result(parDim).low, high = result(parDim).high;
+        const low = result(parDim).first, high = result(parDim).high;
         const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
                                       high, low, low);
         splitRanges(parDim) = result(parDim)(lo..hi);
@@ -456,6 +457,8 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
           writeln(here.id, ": leader whole: ", whole,
                            " result: ", result,
                            " splitRanges: ", splitRanges);
+        // remove alignment
+        splitRanges(parDim) = splitRanges(parDim).first..splitRanges(parDim).last by splitRanges(parDim).stride;
         yield splitRanges;
       }
     }
@@ -482,11 +485,7 @@ proc CyclicDom.dsiSupportsPrivatization() param return true;
 proc CyclicDom.dsiGetPrivatizeData() return 0;
 
 proc CyclicDom.dsiPrivatize(privatizeData) {
-  // These two variables are actually necessary even though it looks like
-  // dist and dist.pid could be passed to the primitive directly.
-  var distpid = dist.pid;
-  var thisdist = dist;
-  var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
+  var privdist = chpl_getPrivatizedCopy(dist.type, dist.pid);
   var c = new CyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
   c.locDoms = locDoms;
   c.whole = whole;
@@ -500,7 +499,7 @@ proc CyclicDom.dsiReprivatize(other, reprivatizeData) {
   whole = other.whole;
 }
 
-proc CyclicDom.dsiBuildArithmeticDom(param rank, type idxType,
+proc CyclicDom.dsiBuildRectangularDom(param rank, type idxType,
                                     param stridable: bool,
                                     ranges: rank*range(idxType,
                                                        BoundedRangeType.bounded,
@@ -659,11 +658,7 @@ proc CyclicArr.dsiSupportsPrivatization() param return true;
 proc CyclicArr.dsiGetPrivatizeData() return 0;
 
 proc CyclicArr.dsiPrivatize(privatizeData) {
-  // These two variables are actually necessary even though it looks like
-  // dist and dist.pid could be passed to the primitive directly.
-  var dompid = dom.pid;
-  var thisdom = dom;
-  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+  var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
   var c = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   c.locArr = locArr;
   for localeIdx in dom.dist.targetLocDom do
@@ -690,47 +685,8 @@ iter CyclicArr.these() var {
 }
 
 iter CyclicArr.these(param tag: iterator) where tag == iterator.leader {
-  const maxTasks = dom.dist.dataParTasksPerLocale;
-  const ignoreRunning = dom.dist.dataParIgnoreRunningTasks;
-  const minSize = dom.dist.dataParMinGranularity;
-  const wholeLow = dom.whole.low;
-  coforall locDom in dom.locDoms do on locDom {
-    const (numTasks, parDim) = _computeChunkStuff(maxTasks, ignoreRunning,
-                                                  minSize,
-                                                  locDom.myBlock.dims());
-
-    var result: rank*range(idxType=idxType, stridable=true);
-    var zeroedLocalPart = dom.whole((...locDom.myBlock.getIndices())) - wholeLow;
-    for param i in 1..rank {
-      var dim = zeroedLocalPart.dim(i);
-      var wholestride = dom.whole.dim(i).stride;
-      if dim.high >= dim.low then
-        result(i) = (dim.low / wholestride)..(dim.high / wholestride) by (dim.stride / wholestride);
-      else
-        result(i) = 1..0 by 1;
-    }
-    if numTasks == 1 {
-      if debugCyclicDist then
-        writeln(here.id, ": leader whole: ", dom.whole,
-                         " result: ", result,
-                         " myblock: ", locDom.myBlock);
-      yield result;
-    } else {
-
-      coforall taskid in 0:uint(64)..#numTasks {
-        var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
-        const low = result(parDim).low, high = result(parDim).high;
-        const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
-                                      high, low, low);
-        splitRanges(parDim) = result(parDim)(lo..hi);
-        if debugCyclicDist then
-          writeln(here.id, ": leader whole: ", dom.whole,
-                           " result: ", result,
-                           " splitRanges: ", splitRanges);
-        yield splitRanges;
-      }
-    }
-  }
+  for follower in dom.these(tag) do
+    yield follower;
 }
 
 proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param
@@ -784,19 +740,19 @@ proc CyclicArr.dsiSerialWrite(f: Writer) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim)._low;
+    i(dim) = dom.dsiDim(dim).low;
   label next while true {
     f.write(dsiAccess(i));
-    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
+    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
       f.write(" ");
-      i(rank) += dom.dsiDim(rank)._stride:idxType;
+      i(rank) += dom.dsiDim(rank).stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
-          i(dim) += dom.dsiDim(dim)._stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
+          i(dim) += dom.dsiDim(dim).stride:idxType;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom.dsiDim(dim2)._low;
+            i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
         }

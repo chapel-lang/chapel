@@ -1,0 +1,47 @@
+.TH future_acquire 3 "NOVEMBER 2006" libqthread "libqthread"
+.SH NAME
+.BR future_acquire " \- reactivate the calling thread"
+.SH SYNOPSIS
+.B #include <qthread/futurelib.h>
+
+.I void
+.br
+.B future_acquire
+.RI "(qthread_t *" me );
+.PP
+
+.SH DESCRIPTION
+In order to prevent deadlocks over resource acquisition, threads must yield
+active status before attempting to create or join with futures. After
+completing these actions, the thread reactivates itself with a call to
+.BR future_acquire ()
+which blocks until the number of active threads on its location is below a set
+threshold.
+.PP
+The argument is a pointer to the thread attempting to acquire. This can be
+found out with a call to
+.BR qthread_self ().
+.PP
+If a thread calls the acquire function with an argument which is not a qthread
+.B which was created as a future,
+the function will do nothing and will not block. This is acceptable behavior
+and it is generally expected that threads will attempt to acquire after
+creating or joining with futures in the chance that acquisition is necessary.
+.PP
+The typical sequence for creating futures is: 
+.RS
+.PP
+1) yield 
+.br
+2) loop creating futures
+.br 
+3) [optional: join with futures]
+.br
+4) acquire
+.RE
+.SH "SEE ALSO"
+.BR future_join_all (3),
+.BR future_init (3),
+.BR future_exit (3),
+.BR future_yield (3),
+.BR future_acquire (3)

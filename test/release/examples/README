@@ -5,38 +5,48 @@ Chapel Example Codes
 This directory contains a few simple "Hello, world!" example codes to
 get started with Chapel program structure:
 
-     hello.chpl             : the simplest Chapel "Hello, world!" program
-     hello-module.chpl      : a version using a more structured form of Chapel
-     hello-multicore.chpl   : a multi-tasking "Hello, world!" program 
-     hello-multiloc.chpl    : a multi-locale "Hello, world!" program
+     hello.chpl               : a one-line Chapel "Hello, world!" program
+     hello2-module.chpl       : a more structured "Hello, world!" program
+     hello3-datapar.chpl      : a data parallel version of "Hello, World!"
+     hello4-datapar-dist.chpl : a distributed data parallel version
+     hello5-taskpar.chpl      : a task parallel version of "Hello, World!"
+     hello6-taskpar-dist.chpl : a distributed task parallel version
 
 It also contains subdirectories that contain more interesting
 examples:
 
-     primers/               : introduce Chapel concepts using a narrative flow
-     programs/              : demonstrate Chapel using small programs
-     hpcc/                  : implementations of the HPC Challenge benchmarks
+     primers/   : introduce Chapel concepts narratively for new users
+     programs/  : demonstrate Chapel using small programs/idioms
+     hpcc/      : implementations of the HPC Challenge benchmarks
+     spec/      : example codes from the Chapel Specification (see below)
 
-See the READMEs in each subdirectory for a description of its
-examples.
+The README.features file in this directory gives an overview of all
+the tests (except the spec tests) and what language features each one
+emphasizes.  See each subdirectory's README file for additional
+descriptions of its examples.
 
-If you are interested in finding examples that use a specific Chapel
-feature, refer to README.features, which contains a map of which tests
-demonstrate which language features.
+
+------------------------
+The spec directory tests
+------------------------
+
+The tests in the spec directory are automatically extracted from
+selected examples in the Chapel Specification.  The examples for a
+particular chapter are in a directory specified by the chapter name
+(e.g., Arrays) and the name of the test is in parenthesis after the
+word "Example" in the spec.  Often times, additional code has been
+added to make the code a complete, testable program.
 
 
 ------------------
 Building the tests
 ------------------
 
-Most of the examples can be compiled without referring to any
+Most of the examples can be compiled without explicitly listing any
 additional source files.  For example, the canonical "Hello, world!"
 program can be compiled as follows:
 
      chpl -o hello hello.chpl
-
-The hpcc benchmarks each use multiple source files -- see hpcc/README
-for details.
 
 We provide Makefiles in each directory that can be used to build a
 single test in that directory by name:
@@ -44,9 +54,9 @@ single test in that directory by name:
      gmake hello
 
 Alternatively, you can build all the tests in a directory and its
-subdirectories:
+subdirectories by simply using:
 
-     gmake all
+     gmake
 
 
 -----------
@@ -55,15 +65,19 @@ Other files
 
 ./
   Makefile        : Makefile for compiling the examples
-  README.features : maps out which tests use which Chapel features
+  README.features : describes the main features exercised by each test
   README.testing  : provides an introduction to using the Chapel testing system
   start_test      : the main script for the Chapel testing system
   Logs/           : directory created by the test system to store logs
-  *.compopts      : used by the Chapel testing system -- see README.testing
+  COMPOPTS        : used by the Chapel testing system -- see README.testing
+  NUMLOCALES      : "
+  PREDIFF         : "
+  *.compopts      : "
   *.execopts      : "
   *.good          : "
+  *.graph         : "
   *.notest        : "
   *.numlocales    : "
-  *.skipif        : "
+  *.prediff       : "
   *.perfkeys      : "
   *.timeout       : "

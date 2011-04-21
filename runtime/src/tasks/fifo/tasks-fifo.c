@@ -12,7 +12,7 @@
 #include "chplexit.h"
 #include "chpl_mem.h"
 #include "chplrt.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "error.h"
 #include <stdio.h>
 #include <string.h>
@@ -58,14 +58,6 @@ struct chpl_task_list {
 };
 
 
-// This constitutes one entry on our list of threads.
-typedef struct thread_list* thread_list_p;
-struct thread_list {
-  threadlayer_threadID_t thread;
-  thread_list_p          next;
-};
-
-
 typedef struct lockReport {
   const char*        filename;
   int                lineno;
@@ -88,20 +80,24 @@ static threadlayer_mutex_t threading_lock;     // critical section lock
 static threadlayer_mutex_t extra_task_lock;    // critical section lock
 static threadlayer_mutex_t task_id_lock;       // critical section lock
 static threadlayer_mutex_t task_list_lock;     // critical section lock
-static task_pool_p         task_pool_head;     // head of task pool
-static task_pool_p         task_pool_tail;     // tail of task pool
-static threadlayer_mutex_t thread_list_lock;   // critical section lock
-static thread_list_p       thread_list_head;   // head of thread_list
-static thread_list_p       thread_list_tail;   // tail of thread_list
-static int                 queued_cnt;         // number of tasks in the task pool
-static int                 waking_cnt;         // number of threads signaled to wakeup
-static int                 running_cnt;        // number of running threads 
-static int                 threads_cnt;        // number of threads (total)
-static int                 blocked_thread_cnt; // number of threads waiting for something
-static int                 idle_cnt;           // number of threads that are idle
-static int64_t             extra_task_cnt;     // number of threads executing more than one task
-static uint64_t            progress_cnt;       // counts unblock operations, as a
-                                               //   proxy for progress
+static volatile task_pool_p
+                           task_pool_head;     // head of task pool
+static volatile task_pool_p
+                           task_pool_tail;     // tail of task pool
+
+static int                 queued_task_cnt;    // number of tasks in task pool
+static int                 running_task_cnt;   // number of running tasks
+static int64_t             extra_task_cnt;     // number of tasks being run by
+                                               //   threads occupied already
+static int                 waking_thread_cnt;  // number of threads created but
+                                               //   not yet running
+static int                 blocked_thread_cnt; // number of threads that
+                                               //   cannot make progress
+static int                 idle_thread_cnt;    // number of threads looking
+                                               //   for work
+static uint64_t            progress_cnt;       // number of unblock operations,
+                                               //   as a proxy for progress
+
 static threadlayer_mutex_t block_report_lock;  // critical section lock
 static threadlayer_mutex_t taskTable_lock;     // critical section lock
 
@@ -114,7 +110,6 @@ static chpl_taskID_t           get_next_task_id(void);
 static thread_private_data_t*  get_thread_private_data(void);
 static task_pool_p             get_current_ptask(void);
 static void                    set_current_ptask(task_pool_p);
-static void                    add_me_to_thread_list(void);
 static void                    report_locked_threads(void);
 static void                    report_all_tasks(void);
 static void                    SIGINT_handler(int sig);
@@ -122,14 +117,14 @@ static void                    initializeLockReportForThread(void);
 static chpl_bool               set_block_loc(int, chpl_string);
 static void                    unset_block_loc(void);
 static void                    check_for_deadlock(void);
-static void*                   chpl_begin_helper(void*);
+static void                    thread_begin(void*);
+static void                    thread_end(void);
 static void                    launch_next_task_in_new_thread(void);
 static void                    schedule_next_task(int);
 static task_pool_p             add_to_task_pool(chpl_fn_p,
                                                 void*,
                                                 chpl_bool,
                                                 chpl_task_list_p);
-static int taskMaxThreadsPerLocale = -1;
 
 
 // Sync variables
@@ -138,31 +133,37 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
                                chpl_bool want_full,
                                int32_t lineno, chpl_string filename) {
   threadlayer_mutex_lock(&s->lock);
+
   while (s->is_full != want_full) {
-    if (set_block_loc(lineno, filename)) {
-      // all other tasks appear to be blocked
-      struct timeval deadline, now;
-      chpl_bool timed_out;
-      gettimeofday(&deadline, NULL);
-      deadline.tv_sec += 1;
-      do {
-        timed_out = threadlayer_sync_suspend(s, &deadline);
-        if (s->is_full != want_full && !timed_out)
+    threadlayer_mutex_unlock(&s->lock);
+
+    while (s->is_full != want_full) {
+      if (set_block_loc(lineno, filename)) {
+        // all other tasks appear to be blocked
+        struct timeval deadline, now;
+        gettimeofday(&deadline, NULL);
+        deadline.tv_sec += 1;
+        do {
+          threadlayer_yield();
+          if (s->is_full != want_full)
             gettimeofday(&now, NULL);
-      } while (s->is_full != want_full
-               && !timed_out
-               && (now.tv_sec < deadline.tv_sec
-                   || (now.tv_sec == deadline.tv_sec
-                       && now.tv_usec < deadline.tv_usec)));
-      if (s->is_full != want_full)
-        check_for_deadlock();
+        } while (s->is_full != want_full
+                 && (now.tv_sec < deadline.tv_sec
+                     || (now.tv_sec == deadline.tv_sec
+                         && now.tv_usec < deadline.tv_usec)));
+        if (s->is_full != want_full)
+          check_for_deadlock();
+      }
+      else {
+        do {
+          threadlayer_yield();
+        } while (s->is_full != want_full);
+      }
+
+      unset_block_loc();
     }
-    else {
-      do {
-        (void) threadlayer_sync_suspend(s, NULL);
-      } while (s->is_full != want_full);
-    }
-    unset_block_loc();
+
+    threadlayer_mutex_lock(&s->lock);
   }
 
   if (blockreport)
@@ -189,13 +190,11 @@ void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
 
 void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s) {
   s->is_full = true;
-  threadlayer_sync_awaken(s);
   chpl_sync_unlock(s);
 }
 
 void chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *s) {
   s->is_full = false;
-  threadlayer_sync_awaken(s);
   chpl_sync_unlock(s);
 }
 
@@ -208,37 +207,28 @@ chpl_bool chpl_sync_isFull(void *val_ptr,
 void chpl_sync_initAux(chpl_sync_aux_t *s) {
   s->is_full = false;
   threadlayer_mutex_init(&s->lock);
-  threadlayer_sync_init(s);
 }
 
-void chpl_sync_destroyAux(chpl_sync_aux_t *s) {
-  threadlayer_sync_destroy(s);
-}
+void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 
 // Tasks
 
 void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
-  // Tuck maxThreadsPerLocale away in a static global for use by other routines
-  taskMaxThreadsPerLocale = maxThreadsPerLocale;
-
   threadlayer_mutex_init(&threading_lock);
   threadlayer_mutex_init(&extra_task_lock);
   threadlayer_mutex_init(&task_id_lock);
   threadlayer_mutex_init(&task_list_lock);
-  threadlayer_mutex_init(&thread_list_lock);
-  queued_cnt = 0;
-  running_cnt = 0;                     // only main thread running
-  waking_cnt = 0;
-  threads_cnt = 0;
+  queued_task_cnt = 0;
+  running_task_cnt = 1;                     // only main task running
+  waking_thread_cnt = 0;
   blocked_thread_cnt = 0;
-  idle_cnt = 0;
+  idle_thread_cnt = 0;
   extra_task_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
-  thread_list_head = thread_list_tail = NULL;
 
-  threadlayer_init(callStackSize);
-
+  threadlayer_init(maxThreadsPerLocale, callStackSize,
+                   thread_begin, thread_end);
 
   if (taskreport) {
     threadlayer_mutex_init(&taskTable_lock);
@@ -258,31 +248,15 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
 
 
 void chpl_task_exit(void) {
-  chpl_bool debug = false;
-  thread_list_p tlp;
-
   if (!initialized)
     return;
-
-  if (debug)
-    fprintf(stderr, "A total of %d threads were created; waking_cnt = %d\n", threads_cnt, waking_cnt);
-
-  // shut down all threads
-  for (tlp = thread_list_head; tlp != NULL; tlp = tlp->next)
-    threadlayer_thread_cancel(tlp->thread);
-  while (thread_list_head != NULL) {
-    threadlayer_thread_join(thread_list_head->thread);
-    tlp = thread_list_head;
-    thread_list_head = thread_list_head->next;
-    chpl_free(tlp, 0, 0);
-  }
 
   threadlayer_exit();
 }
 
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
-  thread_private_data_t *tp = (thread_private_data_t*) 
+  thread_private_data_t *tp = (thread_private_data_t*)
                                 chpl_alloc(sizeof(thread_private_data_t),
                                            CHPL_RT_MD_THREAD_PRIVATE_DATA,
                                            0, 0);
@@ -299,6 +273,8 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   tp->ptask->filename     = "main program";
   tp->ptask->lineno       = 0;
   tp->ptask->next         = NULL;
+
+  tp->lockRprt = NULL;
 
   threadlayer_set_thread_private_data(tp);
 
@@ -318,7 +294,7 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 
 
 void chpl_task_perPthreadInit(void) {
-  return;
+  threadlayer_perPthreadInit();
 }
 
 
@@ -517,10 +493,10 @@ void chpl_task_executeTasksInList(chpl_task_list_p task_list) {
         // will eventually be freed
         nested_ptask = ltask->ptask;
         ltask->ptask = NULL;
-        if (waking_cnt > 0)
-          waking_cnt--;
-        assert(queued_cnt > 0);
-        queued_cnt--;
+        if (waking_thread_cnt > 0)
+          waking_thread_cnt--;
+        assert(queued_task_cnt > 0);
+        queued_task_cnt--;
         if (nested_ptask->prev == NULL) {
           if ((task_pool_head = nested_ptask->next) == NULL)
             task_pool_tail = NULL;
@@ -668,7 +644,7 @@ uint64_t chpl_task_getCallStackSize(void) {
   return threadlayer_call_stack_size();
 }
 
-uint32_t chpl_task_getNumQueuedTasks(void) { return queued_cnt; }
+uint32_t chpl_task_getNumQueuedTasks(void) { return queued_task_cnt; }
 
 uint32_t chpl_task_getNumRunningTasks(void) {
   int numRunningTasks;
@@ -677,8 +653,7 @@ uint32_t chpl_task_getNumRunningTasks(void) {
   threadlayer_mutex_lock(&threading_lock);
   threadlayer_mutex_lock(&extra_task_lock);
 
-  // take the main thread into account
-  numRunningTasks = running_cnt + extra_task_cnt + 1;
+  numRunningTasks = running_task_cnt + extra_task_cnt;
 
   // end critical section
   threadlayer_mutex_unlock(&extra_task_lock);
@@ -695,7 +670,7 @@ int32_t  chpl_task_getNumBlockedTasks(void) {
     threadlayer_mutex_lock(&threading_lock);
     threadlayer_mutex_lock(&block_report_lock);
 
-    numBlockedTasks = blocked_thread_cnt - idle_cnt;
+    numBlockedTasks = blocked_thread_cnt - idle_thread_cnt;
 
     // end critical section
     threadlayer_mutex_unlock(&block_report_lock);
@@ -742,7 +717,7 @@ static thread_private_data_t* get_thread_private_data(void) {
 
 
 //
-// Set the descriptor for the task now running on my thread.
+// Get the descriptor for the task now running on my thread.
 //
 static task_pool_p get_current_ptask(void) {
   return get_thread_private_data()->ptask;
@@ -754,28 +729,6 @@ static task_pool_p get_current_ptask(void) {
 //
 static void set_current_ptask(task_pool_p ptask) {
   get_thread_private_data()->ptask = ptask;
-}
-
-
-//
-// Add the current thread (which is new) to our list of active threads.
-//
-static void add_me_to_thread_list(void) {
-    thread_list_p tlp;
-
-    tlp = (thread_list_p) chpl_alloc(sizeof(struct thread_list),
-                                     CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
-
-    tlp->thread = threadlayer_thread_id();
-    tlp->next   = NULL;
-
-    threadlayer_mutex_lock(&thread_list_lock);
-    if (thread_list_head == NULL)
-      thread_list_head = tlp;
-    else
-      thread_list_tail->next = tlp;
-    thread_list_tail = tlp;
-    threadlayer_mutex_unlock(&thread_list_lock);
 }
 
 
@@ -824,7 +777,7 @@ static void report_all_tasks(void) {
         pendingTask = pendingTask->next;
     }
     printf("\n");
-    
+
     // print out running tasks
     printf("Known tasks:\n");
     chpldev_taskTable_print();
@@ -913,7 +866,7 @@ static chpl_bool set_block_loc(int lineno, chpl_string filename) {
   threadlayer_mutex_lock(&block_report_lock);
 
   blocked_thread_cnt++;
-  if (blocked_thread_cnt > threads_cnt) {
+  if (blocked_thread_cnt >= threadlayer_get_num_threads()) {
     isLastUnblockedThread = true;
   }
 
@@ -972,23 +925,18 @@ static void check_for_deadlock(void) {
 // When we create a thread it runs this wrapper function, which just
 // executes tasks out of the pool as they become available.
 //
-static void*
-chpl_begin_helper(void* ptask_void) {
+static void
+thread_begin(void* ptask_void) {
   task_pool_p ptask = (task_pool_p) ptask_void;
   thread_private_data_t *tp;
 
   tp = (thread_private_data_t*) chpl_alloc(sizeof(thread_private_data_t),
                                            CHPL_RT_MD_THREAD_PRIVATE_DATA,
                                            0, 0);
-  tp->ptask = ptask;
+  tp->ptask    = ptask;
+  tp->lockRprt = NULL;
   threadlayer_set_thread_private_data(tp);
 
-  // add new thread to our thread list
-  add_me_to_thread_list();
-
-  // the chpldev_taskTable_set_active() call can end up temporarily
-  // waiting on a sync var, so if deadlock detection is enabled we
-  // have to set that up first
   if (blockreport)
     initializeLockReportForThread();
 
@@ -1026,63 +974,63 @@ chpl_begin_helper(void* ptask_void) {
     //
     // finished task; decrement running count and increment idle count
     //
-    assert(running_cnt > 0);
-    running_cnt--;
-    idle_cnt++;
+    assert(running_task_cnt > 0);
+    running_task_cnt--;
+    idle_thread_cnt++;
 
     //
     // wait for a not-yet-begun task to be present in the task pool
     //
-    do {
-      chpl_bool timed_out = false;
-      while (!task_pool_head || timed_out) {
-        timed_out = false;
+    while (!task_pool_head) {
+      threadlayer_mutex_unlock(&threading_lock);
+
+      while (!task_pool_head) {
         if (set_block_loc(0, idleTaskName)) {
           // all other tasks appear to be blocked
           struct timeval deadline, now;
           gettimeofday(&deadline, NULL);
           deadline.tv_sec += 1;
           do {
-            timed_out = threadlayer_pool_suspend(&threading_lock, &deadline);
-            if (!task_pool_head && !timed_out)
+            threadlayer_yield();
+            if (!task_pool_head)
               gettimeofday(&now, NULL);
           } while (!task_pool_head
-                   && !timed_out
                    && (now.tv_sec < deadline.tv_sec
                        || (now.tv_sec == deadline.tv_sec
                            && now.tv_usec < deadline.tv_usec)));
-          if (!task_pool_head) {
+          if (!task_pool_head)
             check_for_deadlock();
-            timed_out = true;
-          }
         }
         else {
           do {
-            (void) threadlayer_pool_suspend(&threading_lock, NULL);
+            threadlayer_yield();
           } while (!task_pool_head);
         }
+
         unset_block_loc();
       }
-    } while (!task_pool_head);
+
+      threadlayer_mutex_lock(&threading_lock);
+    }
 
     if (blockreport)
       progress_cnt++;
 
     assert(task_pool_head && !task_pool_head->begun);
 
-    if (waking_cnt > 0)
-      waking_cnt--;
+    if (waking_thread_cnt > 0)
+      waking_thread_cnt--;
 
     //
     // start new task; increment running count and remove task from pool
     // also add to task to task-table (structure in ChapelRuntime that keeps
-    // track of currently running tasks for task-reports on deadlock or 
+    // track of currently running tasks for task-reports on deadlock or
     // Ctrl+C).
     //
-    assert(queued_cnt > 0);
-    queued_cnt--;
-    idle_cnt--;
-    running_cnt++;
+    assert(queued_task_cnt > 0);
+    queued_task_cnt--;
+    idle_thread_cnt--;
+    running_task_cnt++;
     ptask = task_pool_head;
     if (ptask->ltask) {
       ptask->ltask->ptask = NULL;
@@ -1098,22 +1046,30 @@ chpl_begin_helper(void* ptask_void) {
       task_pool_tail = NULL;
     else {
       task_pool_head->prev = NULL;
-      if (waking_cnt > 0)
-        // Our technique for informing the threading layer that there is
-        // nothing, and then something, to do is inherently racy.  If we
-        // have more to do than just this one task, tell the threading
-        // layer so.  This may result in the threading layer being overly
-        // optimistic about the amount of available work, but if so that
-        // will correct itself, and it is better than activating too few
-        // threads to do the available work.
-        threadlayer_pool_awaken();
     }
 
     // end critical section
     threadlayer_mutex_unlock(&threading_lock);
   }
+}
 
-  return NULL;
+
+//
+// When a thread is destroyed it calls this ending function.
+//
+static void thread_end(void)
+{
+  thread_private_data_t* tp;
+
+  tp = (thread_private_data_t*) threadlayer_get_thread_private_data();
+  if (tp != NULL) {
+    if (tp->lockRprt != NULL) {
+      chpl_free(tp->lockRprt, 0, 0);
+      tp->lockRprt = NULL;
+    }
+    chpl_free(tp, 0, 0);
+    threadlayer_set_thread_private_data(NULL);
+  }
 }
 
 
@@ -1124,31 +1080,31 @@ chpl_begin_helper(void* ptask_void) {
 //
 static void
 launch_next_task_in_new_thread(void) {
-  task_pool_p             ptask;
-  static chpl_bool        warning_issued = false;
-  threadlayer_threadID_t  thread;
+  task_pool_p       ptask;
+  static chpl_bool  warning_issued = false;
 
   if (warning_issued)  // If thread creation failed previously, don't try again
     return;
 
   if ((ptask = task_pool_head)) {
-    if (threadlayer_thread_create(&thread, chpl_begin_helper, ptask)) {
+    if (threadlayer_thread_create(ptask)) {
+      int32_t max_threads = threadlayer_get_max_threads();
+      uint32_t num_threads = threadlayer_get_num_threads();
       char msg[256];
-      if (taskMaxThreadsPerLocale)
+      if (max_threads)
         sprintf(msg,
                 "maxThreadsPerLocale is %"PRId32", but unable to create more than %d threads",
-                taskMaxThreadsPerLocale, threads_cnt);
+                max_threads, num_threads);
       else
         sprintf(msg,
                 "maxThreadsPerLocale is unbounded, but unable to create more than %d threads",
-                threads_cnt);
+                num_threads);
       chpl_warning(msg, 0, 0);
       warning_issued = true;
     } else {
-      assert(queued_cnt > 0);
-      queued_cnt--;
-      threads_cnt++;
-      running_cnt++;
+      assert(queued_task_cnt > 0);
+      queued_task_cnt--;
+      running_task_cnt++;
       if (ptask->ltask) {
         ptask->ltask->ptask = NULL;
         // there is no longer any need to access the corresponding task
@@ -1174,23 +1130,20 @@ static void schedule_next_task(int howMany) {
   // Reduce the number of new threads to be started, by the number that
   // are already looking for work and will find it very soon.  Try to
   // launch each remaining task in a new thread, up to the maximum number
-  // of threads we are supposed to have.  (And keep in mind that the main
-  // thread is not included in threads_cnt, but is included in idle_cnt
-  // if it is idle.)
+  // of threads we are supposed to have.
   //
-  if (idle_cnt > waking_cnt) {
-    // increment waking_cnt by the number of idle threads
-    if (idle_cnt - waking_cnt >= howMany) {
-      waking_cnt += howMany;
+  if (idle_thread_cnt > waking_thread_cnt) {
+    // increment waking_thread_cnt by the number of idle threads
+    if (idle_thread_cnt - waking_thread_cnt >= howMany) {
+      waking_thread_cnt += howMany;
       howMany = 0;
     } else {
-      howMany -= (idle_cnt - waking_cnt);
-      waking_cnt = idle_cnt;
+      howMany -= (idle_thread_cnt - waking_thread_cnt);
+      waking_thread_cnt = idle_thread_cnt;
     }
-    threadlayer_pool_awaken();
   }
 
-  for (; howMany && (taskMaxThreadsPerLocale == 0 || threads_cnt + 1 < taskMaxThreadsPerLocale); howMany--)
+  for (; howMany && threadlayer_can_start_thread(); howMany--)
     launch_next_task_in_new_thread();
 }
 
@@ -1229,7 +1182,7 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->prev = task_pool_tail;
   task_pool_tail = ptask;
 
-  queued_cnt++;
+  queued_task_cnt++;
 
   if (taskreport) {
     threadlayer_mutex_lock(&taskTable_lock);
@@ -1245,12 +1198,17 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
 
 // Threads
 
-int32_t  chpl_task_getMaxThreads(void) { return 0; }
+int32_t  chpl_task_getMaxThreads(void) {
+  return 0;
+}
 
-int32_t  chpl_task_getMaxThreadsLimit(void) { return 0; }
+int32_t  chpl_task_getMaxThreadsLimit(void) {
+  return 0;
+}
 
-// take the main thread into account
-uint32_t chpl_task_getNumThreads(void) { return threads_cnt + 1; }
+uint32_t chpl_task_getNumThreads(void) {
+  return threadlayer_get_num_threads();
+}
 
 uint32_t chpl_task_getNumIdleThreads(void) {
   int numIdleThreads;
@@ -1258,22 +1216,11 @@ uint32_t chpl_task_getNumIdleThreads(void) {
   // begin critical section
   threadlayer_mutex_lock(&threading_lock);
 
-  numIdleThreads = idle_cnt - waking_cnt;
+  numIdleThreads = idle_thread_cnt - waking_thread_cnt;
 
   // end critical section
   threadlayer_mutex_unlock(&threading_lock);
 
   assert(numIdleThreads >= 0);
   return numIdleThreads;
-}
-
-
-//
-// Is the task pool empty?
-//
-// This can be used by a thread layer's threadlayer_pool_suspend() to
-// tell if the pool has become nonempty before the deadline passes.
-//
-chpl_bool chpl_pool_is_empty(void) {
-  return task_pool_head == NULL;
 }

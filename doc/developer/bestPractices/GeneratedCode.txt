@@ -73,6 +73,10 @@ double elapsedSeconds = gettimer(&mytimer) - start;
 Debugging the generated code
 ----------------------------
 
+Using gdb and other debugging features are also discussed in:
+
+      $CHPL_HOME/doc/release/README.executing
+
 * If you want to debug the runtime library as well, build your runtime so:
 
       cd $CHPL_HOME/runtime

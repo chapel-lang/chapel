@@ -43,7 +43,7 @@ proc foo(D: domain, A: [D], useQuickSort=true) {
   else
     InsertionSort(A);
 }
-const TD1D: domain(1) = Space1 - (o5);
+const TD1D: domain(1) = Space1.translate(-o5);
 rng.fillRandom(R1D);
 foo(TD1D, R1D);
 checkSort(R1D, n1, "QuickSort");

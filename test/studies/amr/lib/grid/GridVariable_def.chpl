@@ -27,16 +27,6 @@ class GridVariable {
   var  value: [grid.extended_cells] real;
 
 
-  //|\''''''''''''''''|\
-  //| >    clear()    | >
-  //|/................|/
-  proc clear() {
-    // Nothing to do!
-  }
-  // /|''''''''''''''''/|
-  //< |    clear()    < |
-  // \|................\|
-
 
   //|\'''''''''''''|\
   //| >    this    | >
@@ -45,7 +35,8 @@ class GridVariable {
   // Provides an alias directly into the 'value' array.
   //----------------------------------------------------
 
-  proc this(D: domain) var{
+  proc this(D: domain) var
+  {
     var alias => value(D);
     return alias;
   }
@@ -53,6 +44,17 @@ class GridVariable {
   //< |    this    < |
   // \|.............\|
   
+
+
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
+  
+  proc ~GridVariable () {}
+  
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
 
 }
 // /|"""""""""""""""""""""""""""/|

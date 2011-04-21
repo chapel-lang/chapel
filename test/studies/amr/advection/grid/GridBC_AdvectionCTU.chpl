@@ -2,31 +2,28 @@ use GridBC_def;
 
 
 
-//===> ZeroInflowAdvectionGridBC class ===>
-//========================================>
+//|\"""""""""""""""""""""""""""""""""""""""""""""|\
+//| >    derived class: ZeroInflowAdvectionBC    | >
+//|/_____________________________________________|/
+
 class ZeroInflowAdvectionBC: GridBC {
   
+  //---- This type of BC is homogeneous ----
   
-  proc apply(q: GridVariable, t: real) {
-    //==== This type of BC is homogeneous ====
-    apply_Homogeneous(q);
-  }
+  proc apply ( q: GridVariable, t: real ) { apply_Homogeneous(q); }
   
   
   proc apply_Homogeneous(q: GridVariable) {
 
-    for ghost_domain in grid.ghost_multidomain {
+    for ghost_domain in grid.ghost_domains {
       forall cell in ghost_domain do
         q.value(cell) = 0.0;
     }
-
-/*     for loc in ghost_locations { */
-/*       forall cell in grid.ghost_multidomain(loc) do */
-/* 	      q.value(cell) = 0.0; */
-/*     } */
     
   }
   
 }
-//<=== ZeroInflowAdvectionGridBC class <===
-//<========================================
+
+// /|"""""""""""""""""""""""""""""""""""""""""""""/|
+//< |    derived class: ZeroInflowAdvectionBC    < |
+// \|_____________________________________________\|

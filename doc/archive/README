@@ -1,0 +1,12 @@
+Archived docs
+=============
+
+README.multirealm:
+
+  This traditionally was in doc/release/technotes/README.multirealm;
+  in the 1.3 release, PVM wasn't working well for codes that use
+  multiple locales/distributions, so we pulled the PVM support for the
+  time being, which necessitated pulling the multirealm support for
+  the time being as well.  Eventually, we want to resurrect this, but
+  need to get PVM working better first.
+

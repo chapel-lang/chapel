@@ -32,7 +32,7 @@ CallInfo::CallInfo(CallExpr* icall) : call(icall), scope(NULL) {
     INT_ASSERT(se);
     Type* t = se->var->type;
     if (t == dtUnknown || t->symbol->hasFlag(FLAG_GENERIC))
-      INT_FATAL(call, "actual type is unknown or generic");
+      INT_FATAL(call, "the type of the actual argument '%s' is unknown or generic", se->var->name);
     actuals.add(se->var);
   }
 }

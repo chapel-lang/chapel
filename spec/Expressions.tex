@@ -1,23 +1,15 @@
 \sekshun{Expressions}
 \label{Expressions}
 
-This section defines expressions in Chapel with the following
-exceptions: The forall expression, reduce expressions, and scan
-expressions are defined in~\rsec{Data_Parallelism}.  Module access
-expressions are defined in~\rsec{Explicit_Naming}.  Tuple expressions
-and tuple expand expressions are defined in~\rsec{Tuples}.  Locale
-access expressions are defined
-in~\rsec{Querying_the_Locale_of_a_Variable}.  Mapped domain
-expressions are defined in~\rsec{Domain_Maps}.
+Chapel provides the following expressions:
 
-The syntax for an expression is given by:
 \begin{syntax}
 expression:
   literal-expression
   variable-expression
   enum-constant-expression
-  member-access-expression
   call-expression
+  member-access-expression
   constructor-call-expression
   query-expression
   cast-expression
@@ -38,12 +30,27 @@ expression:
   mapped-domain-expression
 \end{syntax}
 % in README.firstClassFns: lambda-declaration-expression
-% TODO: add new and delete; then add cross-refs to top of Classes.tex
 
-\subsection{Literal Expressions}
+Individual expressions are defined in the remainder of this chapter
+and additionally as follows:
+
+\begin{itemize}
+\item forall, reduce, and scan \rsec{Data_Parallelism}
+\item module access \rsec{Explicit_Naming}
+\item tuple and tuple expand \rsec{Tuples}
+\item locale access \rsec{Querying_the_Locale_of_a_Variable}
+\item mapped domain \rsec{Domain_Maps}
+\item constructor calls \rsec{Class_New}
+\end{itemize}
+
+
+
+\section{Literal Expressions}
 \label{Literal_Expressions}
+\index{literal expressions}
+\index{expressions!literal}
 
-A literal value for any of the built-in
+A literal value for any of the predefined
 types~(\rsec{Primitive_Type_Literals}) is a literal expression.
 Literal expressions are given by the following syntax:
 \begin{syntax}
@@ -57,8 +64,9 @@ literal-expression:
   domain-literal
 \end{syntax}
 
-\subsection{Variable Expressions}
+\section{Variable Expressions}
 \label{Variable_Expressions}
+\index{expressions!variable}
 
 A use of a variable, constant, parameter, or formal argument, is
 itself an expression.  The syntax of a variable expression is given
@@ -68,8 +76,9 @@ variable-expression:
   identifier
 \end{syntax}
 
-\subsection{Enumeration Constant Expression}
+\section{Enumeration Constant Expression}
 \label{Enumeration_Constant_Expression}
+\index{expressions!enumeration constant}
 
 A use of an enumeration constant is itself an expression.  Such a
 constant must be preceded by the enumeration type name.  The syntax of
@@ -79,13 +88,12 @@ enum-constant-expression:
   enum-type . identifier
 \end{syntax}
 
-\begin{example}
 For an example of using enumeration constants,
 see~\rsec{Enumerated_Types}.
-\end{example}
 
-\subsection{Parenthesized Expressions}
+\section{Parenthesized Expressions}
 \label{Parenthesized_Expressions}
+\index{expressions!parenthesized}
 
 A \sntx{parenthesized-expression} is an expression that is delimited
 by parentheses as given by:
@@ -96,36 +104,45 @@ parenthesized-expression:
 Such an expression evaluates to the expression.  The parentheses are
 ignored and have only a syntactical effect.
 
-\subsection{Call Expressions}
+\section{Call Expressions}
 \label{Call_Expressions}
 \index{function calls}
+\index{expressions!call}
 
 Functions and function calls are defined in~\rsec{Functions}.
 
-\subsection{Indexing Expressions}
+\section{Indexing Expressions}
 \label{Indexing_Expressions}
 \index{indexing}
+\index{expressions!indexing}
 
-Indexing into arrays, tuples, and domains has the same syntax as a
-call expression.  Indexing, at its core, is nothing more than a call
-to the indexing function defined on these types.
+Indexing, for example into arrays, tuples, and domains,
+has the same syntax as a call expression.
+ 
+Indexing is performed by an implicit invocation of the \chpl{this} method
+on the value being indexed,
+passing the indices as the actual arguments.
 
-\subsection{Member Access Expressions}
+\section{Member Access Expressions}
 \label{Member_Access_Expressions}
 \index{member access}
+\index{expressions!member access}
 
-Member access expressions are call expressions to members of classes,
-records, or unions.  The syntax for a member access is given by:
+Member access expressions provide access to a field or invoke a method
+of an instance of a class, record, or union.
+They are defined in \rsec{Class_Field_Accesses} and
+\rsec{Class_Method_Calls}, respectively.
+
 \begin{syntax}
 member-access-expression:
-  expression . identifier
+  field-access-expression
+  method-call-expression
 \end{syntax}
-The member access may be an access of a field or a function inside a
-class, record, or union.
 
-\subsection{The Query Expression}
+\section{The Query Expression}
 \label{The_Query_Expression}
 \index{?@\chpl{?}}
+%TODO-how? \index{expressions!\?}
 
 A query expression is used to query a type or value within a formal
 argument type expression.  The syntax of a query expression is given
@@ -144,35 +161,62 @@ genericity of a generic type that defines default values for all of
 its generic fields when specifying a formal argument as discussed
 in~\rsec{Formal_Arguments_of_Generic_Type}.
 
-\begin{example}
+\begin{chapelexample}{query.chpl}
 The following code defines a generic function where the type of the
 first argument is queried and stored in the type alias \chpl{t} and
 the domain of the second argument is queried and stored in the
 variable \chpl{D}:
+\begin{chapelnoprint}
+{ // }
+\end{chapelnoprint}
 \begin{chapel}
 proc foo(x: ?t, y: [?D] t) {
   for i in D do
     y[i] = x;
 }
 \end{chapel}
-This allows a generic specification of a function to assign a
+\begin{chapelnoprint}
+// {
+var x = 1.5;
+var y: [1..4] x.type;
+foo(x, y);
+writeln(y);
+}
+\end{chapelnoprint}
+This allows a generic specification of assigning a
 particular value to all elements of an array.  The value and the
 elements of the array are constrained to be the same type.  This
 function can be rewritten without query expression as follows:
+\begin{chapelnoprint}
+{ // }
+\end{chapelnoprint}
 \begin{chapel}
 proc foo(x, y: [] x.type) {
   for i in y.domain do
     y[i] = x;
 }
 \end{chapel}
-\end{example}
+\begin{chapelnoprint}
+// {
+var x = 1.5;
+var y: [1..4] x.type;
+foo(x, y);
+writeln(y);
+}
+\end{chapelnoprint}
+\begin{chapeloutput}
+1.5 1.5 1.5 1.5
+1.5 1.5 1.5 1.5
+\end{chapeloutput}
+\end{chapelexample}
 
 There is an expectation that query expressions will be allowed in more
 places in the future.
 
-\subsection{Casts}
+\section{Casts}
 \label{Casts}
 \index{casts}
+\index{expressions!cast}
 
 A cast is specified with the following syntax:
 \begin{syntax}
@@ -180,7 +224,7 @@ cast-expression:
   expression : type-specifier
 \end{syntax}
 The expression is converted to the specified type.  Except for the
-casts listed below, casts are restricted to valid explicit
+cast listed below, casts are restricted to valid explicit
 conversions~(\rsec{Explicit_Conversions}).
 
 The following cast has a special meaning and does not correspond to an
@@ -194,9 +238,10 @@ explicit conversion:
   implicit conversions.
 \end{itemize}
 
-\subsection{LValue Expressions}
+\section{LValue Expressions}
 \label{lvalue}
 \index{lvalue}
+\index{expressions!lvalue}
 
 An {\em lvalue} is an expression that can be used on the left-hand
 side of an assignment statement or on either side of a swap statement,
@@ -224,7 +269,7 @@ lvalue-expression:
 The syntax is less restrictive than the definition above.  For
 example, not all \sntx{call-expression}s are lvalues.
 
-\subsection{Precedence and Associativity}
+\section{Precedence and Associativity}
 \label{Operator_Precedence_and_Associativity}
 \index{operators!precedence}
 \index{operators!associativity}
@@ -403,10 +448,13 @@ expression is not a scalar as expected.
 
 \end{rationale}
 
-\subsection{Operator Expressions}
+\section{Operator Expressions}
 \label{Binary_Expressions}
 \label{Unary_Expressions}
+\index{operators!operator expressions}
+\index{expressions!operator}
 
+\index{operators!unary}
 The application of operators to expressions is itself an expression.
 The syntax of a unary expression is given by:
 \begin{syntax}
@@ -417,6 +465,7 @@ unary-operator: one of
   + - ~ !
 \end{syntax}
 
+\index{operators!binary}
 The syntax of a binary expression is given by:
 \begin{syntax}
 binary-expression:
@@ -428,7 +477,7 @@ binary-operator: one of
 
 The operators are defined in subsequent sections.
 
-\subsection{Arithmetic Operators}
+\section{Arithmetic Operators}
 \label{Arithmetic_Operators}
 \index{operators!arithmetic}
 
@@ -447,7 +496,7 @@ of size 32 and 64 bits only.  For example, adding two 8-bit integers
 is done by first converting them to 32-bit integers and then adding
 the 32-bit integers.  The result is a 32-bit integer.
 
-\subsubsection{Unary Plus Operators}
+\subsection{Unary Plus Operators}
 \label{Unary_Plus_Operators}
 \index{+ (unary)@\chpl{+} (unary)}
 
@@ -466,7 +515,7 @@ proc +(a: complex(128)): complex(128)
 \end{chapel}
 For each of these definitions, the result is the value of the operand.
 
-\subsubsection{Unary Minus Operators}
+\subsection{Unary Minus Operators}
 \label{Unary_Minus_Operators}
 \index{- (unary)@\chpl{-} (unary)}
 
@@ -493,7 +542,7 @@ It is an error to try to negate a value of type \chpl{uint(64)}.  Note
 that negating a value of type \chpl{uint(32)} first converts the type
 to \chpl{int(64)} using an implicit conversion.
 
-\subsubsection{Addition Operators}
+\subsection{Addition Operators}
 \label{Addition_Operators}
 \index{+@\chpl{+}}
 
@@ -539,7 +588,7 @@ produces a value of complex type.  Addition of values of complex type
 and either real or imaginary types also produces a value of complex
 type.
 
-\subsubsection{Subtraction Operators}
+\subsection{Subtraction Operators}
 \label{Subtraction_Operators}
 \index{-@\chpl{-}}
 
@@ -588,7 +637,7 @@ and vice versa, produces a value of complex type.  Subtraction of
 values of complex type from either real or imaginary types, and vice
 versa, also produces a value of complex type.
 
-\subsubsection{Multiplication Operators}
+\subsection{Multiplication Operators}
 \label{Multiplication_Operators}
 \index{*@\chpl{*}}
 
@@ -637,7 +686,7 @@ imaginary type produces a value of imaginary type.  Multiplication of
 values of complex type and either real or imaginary types produces a
 value of complex type.
 
-\subsubsection{Division Operators}
+\subsection{Division Operators}
 \label{Division_Operators}
 \index{/@\chpl{/}}
 
@@ -686,7 +735,7 @@ produces a value of imaginary type.  Division of values of complex
 type and either real or imaginary types produces a value of complex
 type.
 
-\subsubsection{Modulus Operators}
+\subsection{Modulus Operators}
 \label{Modulus_Operators}
 \index{\%@\chpl{\%}}
 
@@ -709,7 +758,7 @@ versa.
 There is an expectation that the predefined modulus operators will be
 extended to handle real, imaginary, and complex types in the future.
 
-\subsubsection{Exponentiation Operators}
+\subsection{Exponentiation Operators}
 \label{Exponentiation_Operators}
 \index{**@\chpl{**}}
 
@@ -735,7 +784,7 @@ versa.
 There is an expectation that the predefined exponentiation operators
 will be extended to handle imaginary and complex types in the future.
 
-\subsection{Bitwise Operators}
+\section{Bitwise Operators}
 \label{Bitwise_Operators}
 \index{operators!bitwise}
 
@@ -743,7 +792,7 @@ This section describes the predefined bitwise operators.  These
 operators can be redefined over different types using operator
 overloading~(\rsec{Function_Overloading}).
 
-\subsubsection{Bitwise Complement Operators}
+\subsection{Bitwise Complement Operators}
 \label{Bitwise_Complement_Operators}
 \index{\~@\chpl{\~}}
 
@@ -758,7 +807,7 @@ proc ~(a: uint(64)): uint(64)
 For each of these definitions, the result is the bitwise complement of
 the operand.
 
-\subsubsection{Bitwise And Operators}
+\subsection{Bitwise And Operators}
 \label{Bitwise_And_Operators}
 \index{&@\chpl{&}}
 
@@ -795,7 +844,7 @@ The choice of unsigned over signed as the result type in the mixed case
 reflects the semantics of standard C.
 \end{rationale}
 
-\subsubsection{Bitwise Or Operators}
+\subsection{Bitwise Or Operators}
 \label{Bitwise_Or_Operators}
 \index{|@\chpl{|}}
 
@@ -824,7 +873,7 @@ required conversions are performed.
 The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 \end{rationale}
 
-\subsubsection{Bitwise Xor Operators}
+\subsection{Bitwise Xor Operators}
 \label{Bitwise_Xor_Operators}
 \index{^@\chpl{^}}
 
@@ -852,7 +901,7 @@ conversions are performed.
 The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 \end{rationale}
 
-\subsection{Shift Operators}
+\section{Shift Operators}
 \label{Shift_Operators}
 \index{<<@\chpl{<<}}
 \index{>>@\chpl{>>}}
@@ -883,7 +932,7 @@ are set to one; otherwise the new high-order bits are set to zero.
 
 The value of \chpl{b} must be non-negative.
 
-\subsection{Logical Operators}
+\section{Logical Operators}
 \label{Logical_Operators}
 \index{operators!logical}
 
@@ -891,7 +940,7 @@ This section describes the predefined logical operators.  These
 operators can be redefined over different types using operator
 overloading~(\rsec{Function_Overloading}).
 
-\subsubsection{The Logical Negation Operator}
+\subsection{The Logical Negation Operator}
 \label{Logical_Negation_Operators}
 \index{!@\chpl{!}}
 
@@ -901,7 +950,7 @@ proc !(a: bool): bool
 \end{chapel}
 The result is the logical negation of the operand.
 
-\subsubsection{The Logical And Operator}
+\subsection{The Logical And Operator}
 \label{Logical_And_Operators}
 \index{&&@\chpl{&&}}
 
@@ -927,7 +976,7 @@ proc isTrue(a:bool) return a;
 Overloading the logical and operator over other types is accomplished
 by overloading the \chpl{isTrue} function over other types.
 
-\subsubsection{The Logical Or Operator}
+\subsection{The Logical Or Operator}
 \label{Logical_Or_Operators}
 \index{||@\chpl{||}}
 
@@ -951,7 +1000,7 @@ in~\rsec{Logical_And_Operators}.  Overloading the logical or operator
 over other types is accomplished by overloading the \chpl{isTrue}
 function over other types.
 
-\subsection{Relational Operators}
+\section{Relational Operators}
 \label{Relational_Operators}
 \index{operators!relational}
 
@@ -959,7 +1008,7 @@ This section describes the predefined relational operators.  These
 operators can be redefined over different types using operator
 overloading~(\rsec{Function_Overloading}).
 
-\subsubsection{Ordered Comparison Operators}
+\subsection{Ordered Comparison Operators}
 \label{Ordered_Comparison_Operators}
 
 \index{<@\chpl{<}}
@@ -1038,7 +1087,7 @@ character set used to represent the string, which is applied
 elementwise to the string's characters in order.
 
 
-\subsubsection{Equality Comparison Operators}
+\subsection{Equality Comparison Operators}
 \label{Equality_Comparison_Operators}
 \index{==@\chpl{==}}
 \index{!=@\chpl{!=}}
@@ -1086,49 +1135,61 @@ in \chpl{a} matches exactly the sequence of characters in \chpl{b};
 otherwise the result is false.  The result of \chpl{a \!= b} is
 equivalent to \chpl{\!(a == b)}.
 
-\subsection{Miscellaneous Operators}
+\section{Miscellaneous Operators}
 \label{Miscellaneous_Operators}
 
 This section describes several miscellaneous operators.  These
 operators can be redefined over different types using operator
 overloading~(\rsec{Function_Overloading}).
 
-\subsubsection{The String Concatenation Operator}
+\subsection{The String Concatenation Operator}
 \label{The_String_Concatenation_Operator}
 \index{+@\chpl{+}}
+\index{operators!+, on strings}
 
 The string concatenation operator \chpl{+} is predefined over numeric, boolean,
 and enumerated types with strings. It casts its operands to string type and
 concatenates them together.
 
-\begin{example}
+\begin{chapelexample}{string-concat.chpl}
 The code
+\begin{chapelnoprint}
+var i:int = 3;
+writeln(
+\end{chapelnoprint}
 \begin{chapel}
 "result: "+i
 \end{chapel}
+\begin{chapelnoprint}
+);
+\end{chapelnoprint}
+\begin{chapeloutput}
+result: 3
+\end{chapeloutput}
 where \chpl{i} is an integer appends the string representation of \chpl{i} to the
 string literal \chpl{"result: "}.  If \chpl{i} is \chpl{3}, then the resulting string
 would be \chpl{"result: 3"}.
-\end{example}
+\begin{chapelnoprint}
+\end{chapelnoprint}
+\end{chapelexample}
 
-\subsubsection{The By Operator}
+\subsection{The By Operator}
 \label{The_By_Operator}
-\index{arithmetic domains!strided}
-\index{arithmetic domains!by operator}
 \index{by@\chpl{by}}
+\index{operators!by}
 
-The operator \chpl{by} is predefined on ranges and arithmetic domains.
+The operator \chpl{by} is predefined on ranges and rectangular domains.
 It is described in~\rsec{By_Operator_For_Ranges} for ranges
 and~\rsec{Domain_Striding} for domains.
 
-\subsubsection{The Range Count Operator}
+\subsection{The Range Count Operator}
 \label{The_Range_Count_Operator}
 \index{#@\chpl{#}}
 
 The operator \chpl{#} is predefined on ranges. It is described
 in ~\rsec{Count_Operator}.
 
-\subsection{Let Expressions}
+\section{Let Expressions}
 \label{Let_Expressions}
 \index{let@\chpl{let}}
 
@@ -1140,9 +1201,14 @@ let-expression:
   `let' variable-declaration-list `in' expression
 \end{syntax}
 The scope of the variables is the let-expression.
-\begin{example}
+\begin{chapelexample}{let.chpl}
 Let expressions are useful for defining variables in the context of
 expression.  In the code
+\begin{chapelnoprint}
+  var a:uint = 4;
+  var b:int = 5;
+  var l =
+\end{chapelnoprint}
 \begin{chapel}
   let x: real = a*b, y = x*x in 1/y
 \end{chapel}
@@ -1150,11 +1216,19 @@ the value determined by \chpl{a*b} is computed and converted to type
 real if it is not already a real.  The square of the real is then
 stored in \chpl{y} and the result of the expression is the reciprocal
 of that value.
-\end{example}
+\begin{chapelnoprint}
+  ;
+  writeln(l);
+\end{chapelnoprint}
+\begin{chapeloutput}
+0.0025
+\end{chapeloutput}
+\end{chapelexample}
 
-\subsection{Conditional Expressions}
+\section{Conditional Expressions}
 \label{Conditional_Expressions}
-\index{conditional!expression}
+\index{conditional expression}
+\index{expressions!conditional}
 \index{if@\chpl{if}}
 \index{then@\chpl{then}}
 \index{else@\chpl{else}}
@@ -1173,12 +1247,33 @@ Otherwise, the expression following the \chpl{else} keyword is
 evaluated and taken to be the value of this expression.  In both
 cases, the unselected expression is not evaluated.
 
-The `else' keyword can be omitted only when the conditional expression
-is immediately nested inside a forall expression.  Such an expression
+The `else' clause can be omitted only when the conditional expression
+is nested immediately inside a for or forall expression.  Such an expression
 is used to filter predicates as described
-in~\rsec{Filtering_Predicates_For} and~\rsec{Filtering_Predicates_Forall}.
+in~\rsec{Filtering_Predicates_For} and~\rsec{Filtering_Predicates_Forall},
+respectively.
 
-\subsection{For Expressions}
+\begin{chapelexample}{condexp.chpl}
+This example shows how if-then-else can be used in a context in which an
+expression is expected.
+\begin{chapel}
+writehalf(8);
+writehalf(21);
+writehalf(1000);
+
+proc writehalf(i: int) {
+  var half = if (i % 2) then i/2 +1 else i/2;
+  writeln("Half of ",i," is ",half); 
+}
+\end{chapel}
+\begin{chapeloutput}
+Half of 8 is 4
+Half of 21 is 11
+Half of 1000 is 500
+\end{chapeloutput}
+\end{chapelexample}
+
+\section{For Expressions}
 \label{For_Expressions}
 \index{for@\chpl{for}}
 
@@ -1188,25 +1283,33 @@ for-expression:
   `for' index-var-declaration `in' iterator-expression `do' expression
   `for' iterator-expression `do' expression
 \end{syntax}
-The for-expression evaluates a for-loop~(\rsec{The_For_Loop}) in the
-context of an expression and has the semantics of calling an
-iterator~(\rsec{Iterators}) that yields the evaluated expressions on
-each iteration.
+The for expression executes a for loop (\rsec{The_For_Loop}),
+evaluates the body expression on each iteration of the loop,
+and returns the resulting values as a collection.
+The size and shape of that collection
+are determined by the iterator-expression.
 
-\subsubsection{Filtering Predicates in For Expressions}
+\subsection{Filtering Predicates in For Expressions}
 \label{Filtering_Predicates_For}
 \index{for expressions!and conditional expressions}
 
 A conditional expression that is immediately enclosed in a for
-expression does not require an else-part.  Such a conditional
-expression filters the evaluated expressions and only returns an
-expression if the condition holds.
+expression does not require an else clause.  Such a conditional
+expression filters the iterations of the for expression.
+The iterations for which the condition does not hold
+are not reflected in the result of the for expression.
 
-\begin{example}
+\begin{chapelexample}{yieldPredicates.chpl}
 The code
 \begin{chapel}
 var A = for i in 1..10 do if i % 3 != 0 then i;
 \end{chapel}
+\begin{chapelpost}
+writeln(A);
+\end{chapelpost}
+\begin{chapeloutput}
+1 2 4 5 7 8 10
+\end{chapeloutput}
 declares an array A that is initialized to the integers between
 1 and 10 that are not divisible by 3.
-\end{example}
+\end{chapelexample}

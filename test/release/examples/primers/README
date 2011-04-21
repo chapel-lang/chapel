@@ -1,25 +1,25 @@
-===============================
-Chapel Examples: Tutorial-style
-===============================
+==============
+Chapel Primers
+==============
 
-These examples are written in a narrative style, to demonstrate a
-specific Chapel feature area in detail.  Over time, we plan to add
-more of these.
+These primers are small Chapel program with narrative comments that
+demonstrate Chapel feature area in detail.
 
-     arrays.chpl            : tutorial for Chapel arithmetic arrays/domains
-     classes.chpl           : examples of defining and using classes
-     distributions.chpl     : example of using the Block and Cyclic distributions
-     fileIO.chpl            : simple file I/O example using arrays
-     genericClasses.chpl    : examples of defining and using generic classes
-     iterators.chpl         : sample iterators
-     multilocale.chpl       : demonstration of multi-locale concepts
-     multirealm.chpl        : demonstration of multi-realm concepts
-     opaque.chpl            : tutorial for Chapel opaque arrays
-     ranges.chpl            : uses of ranges and operations on ranges
-     reductions.chpl        : applies several array reductions on a 2D array
-     slices.chpl            : examples of array slicing and reindexing
-     sparse.chpl            : sparse domain/array tutorial example
-     taskParallel.chpl      : introduces task parallel language concepts
-     timers.chpl            : introduces timers, a built-in stopwatch
-     varargs.chpl           : demonstration of variable argument functions
-     variables.chpl         : examples of variables, constants, parameters
+     arrays.chpl            : Rectangular arrays/domains
+     classes.chpl           : Defining and using classes
+     distributions.chpl     : Chapel standard distributions
+     domains.chpl           : Domains and methods on domains
+     fileIO.chpl            : File I/O example using arrays
+     genericClasses.chpl    : Defining and using generic classes
+     iterators.chpl         : Iterator examples
+     locales.chpl           : Chapel Locale types
+     opaque.chpl            : Opaque arrays
+     procedures.chpl        : Procedure examples
+     ranges.chpl            : Range types and operations on ranges
+     reductions.chpl        : Reduction examples
+     slices.chpl            : Array slicing and reindexing examples
+     sparse.chpl            : Sparse domains and arrays
+     taskParallel.chpl      : Task parallel language concepts
+     timers.chpl            : Time standard module
+     varargs.chpl           : Variable argument procedures
+     variables.chpl         : Variables, constants and parameters

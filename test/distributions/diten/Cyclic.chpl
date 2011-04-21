@@ -255,7 +255,11 @@ class Cyclic1DDom {
       // on blk do
       // But can't currently have yields in on clauses
         for ind in blk do
+        {
+	  if debugCyclic1D then
+            writeln("yielding: ", ind, " in: ", blk);
           yield ind;
+	}
   }
 
   //
@@ -300,7 +304,7 @@ class Cyclic1DDom {
     // support? (esp. given how frequent this seems likely to be?)
     //
     for locDom in locDoms do
-      yield locDom.myBlock - whole.low;
+      yield locDom.myBlock.translate(-whole.low);
   }
 
 
@@ -317,7 +321,10 @@ class Cyclic1DDom {
     // parallelism is expressed at that level?  Seems like a nice
     // natural composition and might help with my fears about how
     // stencil communication will be done on a per-locale basis.
-    for i in followThis {
+    for i in followThis
+    {
+      if debugCyclic1D then
+        writeln("yielding: ", i);
       yield i + whole.low;
     }
   }
@@ -380,7 +387,11 @@ class LocCyclic1DDom {
     // on this do
     // But can't currently have yields in on clauses
     for ind in myBlock do
+    {
+      if debugCyclic1D then
+        writeln("now yielding: ", ind);
       yield ind;
+    }
   }
 
   //
@@ -491,6 +502,8 @@ class Cyclic1DArr {
   iter newThese(param iterator: IteratorType, followThis) var
         where iterator == IteratorType.follower {
     for i in followThis {
+      if debugCyclic1D then
+        writeln("yielding ", i + dom.low);
       yield this(i + dom.low);
     }
   }
@@ -510,6 +523,8 @@ class Cyclic1DArr {
           } else {
             x.write(" ");
           }
+	  if debugCyclic1D then
+            writeln("Writing elements on locale: ", loc);
           x.write(locArr(loc));
         }
         //    }

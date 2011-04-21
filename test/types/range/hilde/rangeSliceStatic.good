@@ -1,2 +1,1 @@
-int:     1..6[3..] = 3..6
-1..6 [3..] = 3..6
+rangeSliceStatic.chpl:8: error: unresolved access of 'int' by '(range(int,boundedLow,false))'

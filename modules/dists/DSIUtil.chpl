@@ -72,7 +72,7 @@ proc _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
 
 // How many tasks should be spawned to service numElems elements.
 proc _computeNumChunks(numElems) {
-  // copy some machinery from DefaultArithmeticDom
+  // copy some machinery from DefaultRectangularDom
   var numTasks = if dataParTasksPerLocale==0
                  then here.numCores
                  else dataParTasksPerLocale;
@@ -108,17 +108,18 @@ proc _computeChunkStartEnd(numElems, numChunks, myChunk) {
 //
 proc _computeBlock(numelems, numblocks, blocknum, wayhi,
                   waylo=0:wayhi.type, lo=0:wayhi.type) {
-  proc intCeilXDivByY(x, y) return ((x + (y-1)) / y);
+  proc intCeilXDivByY(x, y) return 1 + (x - 1)/y;
 
   if numelems == 0 then
     return (1:lo.type, 0:lo.type);
 
   const blo =
     if blocknum == 0 then waylo
-    else lo + intCeilXDivByY(numelems:lo.type * blocknum:lo.type, numblocks:lo.type);
+    else lo + intCeilXDivByY(numelems:uint(64) * blocknum:uint(64), numblocks:uint(64)):lo.type;
   const bhi =
     if blocknum == numblocks - 1 then wayhi
-    else lo + intCeilXDivByY(numelems:lo.type * (blocknum+1):lo.type, numblocks:lo.type) - 1;
+    else lo + intCeilXDivByY(numelems:uint(64) * (blocknum+1):uint(64), numblocks:uint(64)):lo.type - 1;
+    //else lo + intCeilXDivByY((numelems * ((blocknum+1):numelems.type)):uint(64), numblocks:uint(64)):lo.type - 1;
 
   return (blo, bhi);
 }
@@ -156,7 +157,7 @@ proc _factor(param rank: int, value) {
 }
 
 //
-// Returns a new default arithmetic domain of the same rank, index
+// Returns a new default rectangular domain of the same rank, index
 // type, and shape of 'dom' but for which the indices in each
 // dimension start at zero and have unit stride.
 //

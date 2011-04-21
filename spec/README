@@ -41,6 +41,11 @@ Guidelines for updating the spec:
      chapter or section
   -  state the organization and flow of the chapter or section (aka roadmap)
 
+- After the introduction, have a section on types followed by a section
+  on values. (If applicable - e.g. ranges, domains, arrays, etc.)
+  The section on values should include literals and default values,
+  by convention.
+
 [Some general principles highlighted by the spec review 8/10/2010:]
 
 - Group material into chapters by theme.

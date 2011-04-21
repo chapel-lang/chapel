@@ -1,4 +1,4 @@
-use DefaultArithmetic;
+use DefaultRectangular;
 
 class locale {
   const myRealm: realm;
@@ -32,8 +32,11 @@ class locale {
   }
 
   proc callStackSize: uint(64) {
+    // Locales may have differing call stack sizes.
     _extern proc chpl_task_getCallStackSize(): uint(64);
-    return chpl_task_getCallStackSize();
+    var retval: uint(64);
+    on this do retval = chpl_task_getCallStackSize();
+    return retval;
   }
 
   proc writeThis(f: Writer) {
@@ -111,6 +114,9 @@ proc locale.blockedTasks() {
 
   return blockedTasks;
 }
+
+proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
+  return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
 
 
 //

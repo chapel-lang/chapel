@@ -1,6 +1,6 @@
 use Time;
 
-var x : int;
+var x : volatile int;
 
 begin {
   while (x==0) {};

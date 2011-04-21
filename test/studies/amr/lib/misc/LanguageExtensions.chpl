@@ -1,38 +1,15 @@
-//|\""""""""""""""""""""""""""""""|\
-//| >    Basic data structures    | >
-//|/______________________________|/
-class OneWayNode {
-  type data_type;
-  var  data: data_type;
-  var  next: OneWayNode(data_type);
+proc main {
+  var T = (1,5,-2);
+  writeln("T   = ", T);
+  writeln("T+1 = ", T+1);
+  writeln("1+T = ", 1+T);
+  writeln("T-1 = ", T-1);
+  writeln("1-T = ", 1-T);
+  writeln("-T  = ", -T);
+  
+  T = 3;
+  writeln(T);
 }
-
-record Stack {
-  type data_type;
-  var top: OneWayNode(data_type);
-  var size: int=0;
-  
-  proc push(data: data_type) {
-    top = new OneWayNode(data_type, data, top);
-    size += 1;
-  }
-  
-  proc pop() {
-    if isEmpty() then 
-      halt("Attempting to pop off an empty stack.");
-    var old_top = top;
-    top = old_top.next;
-    size -= 1;
-    return old_top.data;
-  }
-  
-  proc isEmpty() {
-    return top==nil;
-  }
-}
-// /|""""""""""""""""""""""""""""""/|
-//< |    Basic data structures    < |
-// \|______________________________\|
 
 
 
@@ -41,6 +18,7 @@ record Stack {
 //|\""""""""""""""""""""""""""""""""|\
 //| >    Scalar-tuple arithmetic    | >
 //|/________________________________|/
+
 proc =(T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 {
@@ -223,53 +201,5 @@ proc tuplify(obj) {
 
 
 
-//|\"""""""""""""""""""""""""""""""|\
-//| >    IndependentArray class    | >
-//|/_______________________________|/
-
-//--------------------------------------------------------------
-// This class is designed to enable an "array of arrays".  The
-// array is "independent" in that its domain is tethered to it.
-// This ends up working like a Fortran allocatable array; after
-// it is declared, the IndependentArray may be "allocated" by
-// setting its Domain.
-//--------------------------------------------------------------
-
-class IndependentArray {
-  param rank: int;
-  param stridable: bool;
-  type  eltType;
-  
-  var Domain: domain(rank=rank, stridable=stridable);
-  var value: [Domain] eltType;
-  
-  
-  //|\''''''''''''''|\
-  //| >    clear    | >
-  //|/..............|/
-  proc clear () {
-    Domain.clear();
-  }
-  // /|''''''''''''''/|
-  //< |    clear    < |
-  // \|..............\|
-  
-}
-// /|"""""""""""""""""""""""""""""""/|
-//< |    IndependentArray class    < |
-// \|_______________________________\|
 
 
-
-proc main {
-  var T = (1,5,-2);
-  writeln("T   = ", T);
-  writeln("T+1 = ", T+1);
-  writeln("1+T = ", 1+T);
-  writeln("T-1 = ", T-1);
-  writeln("1-T = ", 1-T);
-  writeln("-T  = ", -T);
-  
-  T = 3;
-  writeln(T);
-}

@@ -76,7 +76,9 @@ Symbol* Type::getField(const char* name, bool fatal) {
 
 
 PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
-  Type(E_PrimitiveType, init)
+  Type(E_PrimitiveType, init),
+  volType(NULL),
+  nonvolType(NULL)
 {
   isInternalType = internalType;
   gPrimitiveTypes.add(this);
@@ -104,9 +106,19 @@ void PrimitiveType::verify() {
 }
 
 int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  if (!isInternalType)
-    fprintf(outfile, "{CHPL_TYPE_%s, %s},\n", symbol->cname, baseoffset);
-  else
+  if (!isInternalType) {
+    Symbol* cgsym = symbol;
+
+    // codegen volatile types as non-volatile equivalents
+    // (Alternatively, we could add new enums to the runtime header files
+    // for all volatile types if there was a reason to distinguish them)
+    //
+    if (nonvolType) {
+      cgsym = nonvolType->symbol;
+    }
+      
+    fprintf(outfile, "{CHPL_TYPE_%s, %s},\n", cgsym->cname, baseoffset);
+  } else
     INT_FATAL(this, "Cannot codegen an internal type");
   return 1;
 }
@@ -325,7 +337,8 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "chpl__class_id chpl__cid;\n");
   } else if (classTag == CLASS_UNION) {
     fprintf(outfile, "int64_t _uid;\n");
-    fprintf(outfile, "union {\n");
+    if (this->fields.length != 0)
+      fprintf(outfile, "union {\n");
   } else if (this->fields.length == 0) {
     fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
   }
@@ -337,7 +350,8 @@ void ClassType::codegenDef(FILE* outfile) {
   }
 
   if (classTag == CLASS_UNION) {
-    fprintf(outfile, "} _u;\n");
+    if (this->fields.length != 0)
+      fprintf(outfile, "} _u;\n");
   }
   if (symbol->hasFlag(FLAG_DATA_CLASS)) {
     getDataClassType(symbol)->codegen(outfile);
@@ -472,7 +486,13 @@ Symbol* ClassType::getField(const char* name, bool fatal) {
     next_p->clear();
   }
   if (fatal) {
-    INT_FATAL(this, "field '%s' not in class in getField", name);
+    const char *className = (char*)"<no name>";
+    if (this->symbol) { // this is always true?
+      className = this->symbol->name;
+    }
+    // TODO: report as a user error in certain cases
+    INT_FATAL(this, "no field '%s' in class '%s' in getField()",
+              name, className);
   }
   return NULL;
 }
@@ -497,35 +517,51 @@ createInternalType(const char *name, const char *cname) {
   return createPrimitiveType(name, cname, true /* internalType */);
 }
 
+static PrimitiveType* 
+createPrimitiveTypePlusVol(const char *name, const char *cname) {
+  PrimitiveType* pt = createPrimitiveType(name, cname);
+  PrimitiveType* vpt = createPrimitiveType(astr("volatile ", name), 
+                                           astr("chpl_volatile_", cname));
+  pt->volType = vpt;
+  vpt->nonvolType = pt;
+
+  return pt;
+}
+
 
 // Create new primitive type for integers. Specify name for now. Though it will 
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width (i.e., size).
 #define INIT_PRIM_BOOL(name, width)                                \
-  dtBools[BOOL_SIZE_##width] = createPrimitiveType(name, "chpl_bool" #width); \
-  dtBools[BOOL_SIZE_##width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width)
+  dtBools[BOOL_SIZE_##width] = createPrimitiveTypePlusVol(name, "chpl_bool" #width); \
+  dtBools[BOOL_SIZE_##width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width); \
+  dtBools[BOOL_SIZE_##width]->volType->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width, true)
 
 #define INIT_PRIM_INT( name, width)                                 \
-  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t"); \
-  dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width)
+  dtInt[INT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "int" #width "_t"); \
+  dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width); \
+  dtInt[INT_SIZE_ ## width]->volType->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width, true)
 
 #define INIT_PRIM_UINT( name, width)                                  \
-  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "uint" #width "_t"); \
-  dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width)
+  dtUInt[INT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "uint" #width "_t"); \
+  dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width); \
+  dtUInt[INT_SIZE_ ## width]->volType->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width, true)
 
 #define INIT_PRIM_REAL( name, width)                                     \
-  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width); \
-  dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
+  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "_real" #width); \
+  dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width); \
+  dtReal[FLOAT_SIZE_ ## width]->volType->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width, true)
   
 #define INIT_PRIM_IMAG( name, width)                               \
-  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width); \
-  dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
+  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "_imag" #width); \
+  dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width); \
+  dtImag[FLOAT_SIZE_ ## width]->volType->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width, true)
   
 #define INIT_PRIM_COMPLEX( name, width)                                   \
   dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
   dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
                                   "_chpl_complex" #width "(0.0, 0.0)",         \
-                                   0.0, 0.0, COMPLEX_SIZE_ ## width)
+                                   0.0, 0.0, COMPLEX_SIZE_ ## width);
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
@@ -556,7 +592,7 @@ void initPrimitiveTypes(void) {
   dtVoid = createInternalType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
-  dtBool = createPrimitiveType ("bool", "chpl_bool");
+  dtBool = createPrimitiveTypePlusVol ("bool", "chpl_bool");
 
   // The base object class looks like this:
   //
@@ -598,6 +634,7 @@ void initPrimitiveTypes(void) {
   gFalse->immediate->num_index = INT_SIZE_1;
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   dtBool->defaultValue = gFalse;
+  dtBool->volType->defaultValue = gFalse;
 
   gTrue = new VarSymbol("true", dtBool);
   gTrue->addFlag(FLAG_CONST);
@@ -729,7 +766,19 @@ void initCompilerGlobals(void) {
 
 }
 
+static Type* getNonVolType(Type *t) {
+  if (PrimitiveType* pt = toPrimitiveType(t)) {
+    if (pt->nonvolType && !pt->volType)
+      return pt->nonvolType;
+    return pt;
+  }  
+  INT_FATAL(t, "No base type exists for non-primitive type: %s", t->symbol->name);
+  return NULL;
+}
+
 bool is_bool_type(Type* t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   return 
     t == dtBools[BOOL_SIZE_SYS] ||
     t == dtBools[BOOL_SIZE_8] ||
@@ -740,6 +789,8 @@ bool is_bool_type(Type* t) {
 
 
 bool is_int_type(Type *t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   return
     t == dtInt[INT_SIZE_32] ||
     t == dtInt[INT_SIZE_8] ||
@@ -749,6 +800,8 @@ bool is_int_type(Type *t) {
 
 
 bool is_uint_type(Type *t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   return
     t == dtUInt[INT_SIZE_32] ||
     t == dtUInt[INT_SIZE_8] ||
@@ -758,6 +811,8 @@ bool is_uint_type(Type *t) {
 
 
 bool is_real_type(Type *t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   return
     t == dtReal[FLOAT_SIZE_64] ||
     t == dtReal[FLOAT_SIZE_32];
@@ -765,6 +820,8 @@ bool is_real_type(Type *t) {
 
 
 bool is_imag_type(Type *t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   return
     t == dtImag[FLOAT_SIZE_64] ||
     t == dtImag[FLOAT_SIZE_32];
@@ -772,6 +829,10 @@ bool is_imag_type(Type *t) {
 
 
 bool is_complex_type(Type *t) {
+  /*
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
+  */
   return
     t == dtComplex[COMPLEX_SIZE_128] ||
     t == dtComplex[COMPLEX_SIZE_64];
@@ -784,6 +845,8 @@ bool is_enum_type(Type *t) {
 
 
 int get_width(Type *t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   if (t == dtBools[BOOL_SIZE_SYS]) {
     return 1; 
     // BLC: This is a lie, but one I'm hoping we can get away with

@@ -1,14 +1,14 @@
 /*
- * Classes Example
+ * Classes Primer
  *
- * This example demonstrates the declaration and use of classes.
+ * This primer covers the declaration and use of classes.
  *
  */
 
 //
 // A class is a type that can contain variables and constants, called
-// fields, as well as functions, called methods.  A new class type is
-// declared using the 'class' keyword.
+// fields, as well as functions and iterators called methods.  A new
+// class type is declared using the 'class' keyword.
 //
 class C {
   var a, b: int;
@@ -104,8 +104,8 @@ class ArrayLike {
 // can be iterated over in a loop.
 //
 var a = new ArrayLike();
-a(2) = 1; // call to this function
-a(4) = 2; // call to this function
+a(2) = 1; // call to this method
+a(4) = 2; // call to this method
 
 for elt in a do // invocation of these iterator
   writeln(elt);

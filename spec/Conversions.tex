@@ -6,7 +6,7 @@ another type.  Conversions can be either
 implicit~(\rsec{Implicit_Conversions}) or
 explicit~(\rsec{Explicit_Conversions}).
 
-\subsection{Implicit Conversions}
+\section{Implicit Conversions}
 \label{Implicit_Conversions}
 \index{conversions!implicit}
 
@@ -28,7 +28,7 @@ implicit conversions are supported from integral and class types to
 bool in the context of a
 statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 
-\subsubsection{Implicit Bool and Numeric Conversions}
+\subsection{Implicit Bool and Numeric Conversions}
 \label{Implicit_Numeric_Conversions}
 \index{conversions!numeric}
 \index{conversions!bool}
@@ -95,12 +95,12 @@ imag($i$) & & & & & $i<=j$ & $2i<=j$ \\
 complex($i$) & & & & & & $i<=j$ \\ \cline{2-7}
 \end{tabular}
 \end{center}
-, where $mant(i)$ represents the effective number of bits in the signed mantissa
+where $mant(i)$ represents the effective number of bits in the signed mantissa
 of the corresponding floating-point type.  In this table the
 default \chpl{int}, \chpl{uint} and \chpl{real} types map to their corresponding
 explicitly-sized types.
 
-\subsubsection{Implicit Enumeration Conversions}
+\subsection{Implicit Enumeration Conversions}
 \label{Implicit_Enumeration_Conversions}
 \index{conversions!enumeration}
 
@@ -112,7 +112,7 @@ enumerated type are within range of the integral type.
 % to convert an integer to an enumerated type.
 % This is consistent with C# and later versions of C++.
 
-\subsubsection{Implicit Class Conversions}
+\subsection{Implicit Class Conversions}
 \label{Implicit_Class_Conversions}
 \index{conversions!class}
 
@@ -120,7 +120,7 @@ An expression of class type \chpl{D} can be implicitly converted to
 another class type \chpl{C} provided that \chpl{D} is a subclass
 of \chpl{C}.
 
-\subsubsection{Implicit Record Conversions}
+\subsection{Implicit Record Conversions}
 \label{Implicit_Record_Conversions}
 \index{conversions!record}
 
@@ -128,7 +128,7 @@ An expression of record type \chpl{D} can be implicitly converted to
 another record type \chpl{C} provided that \chpl{D} is a nominal
 subtype of \chpl{C}.
 
-\subsubsection{Implicit Compile-Time Constant Conversions}
+\subsection{Implicit Compile-Time Constant Conversions}
 \label{Implicit_Compile_Time_Constant_Conversions}
 \index{conversions!parameter}
 
@@ -141,18 +141,18 @@ value of the parameter is within the range of the target type.
 to \chpl{uint(64)} if the value of the parameter is nonnegative.
 \end{itemize}
 
-\subsubsection{Implicit Statement Bool Conversions}
+\subsection{Implicit Statement Bool Conversions}
 \label{Implicit_Statement_Bool_Conversions}
 \index{conversions!bool}
 
 In the condition of an if-statement, while-loop, and do-while-loop,
 the following implicit conversions are supported:
 \begin{itemize}
-\item An expression of integral type is taken to be true if it is non-zero and is false otherwise.
-\item An expression of a class type is taken to be true if it is not nil and is false otherwise.
+\item An expression of integral type is taken to be false if it is zero and is true otherwise.
+\item An expression of a class type is taken to be false if it is nil and is true otherwise.
 \end{itemize}
 
-\subsection{Explicit Conversions}
+\section{Explicit Conversions}
 \label{Explicit_Conversions}
 \index{conversions!explicit}
 
@@ -163,7 +163,7 @@ supported between all types.
 
 The explicit conversions are a superset of the implicit conversions.
 
-\subsubsection{Explicit Numeric Conversions}
+\subsection{Explicit Numeric Conversions}
 \label{Explicit_Numeric_Conversions}
 \index{conversions!numeric}
 
@@ -191,24 +191,32 @@ of the same size, its binary representation is unchanged.
 When an \chpl{int} or \chpl{uint} is converted to a smaller \chpl{int}
 or \chpl{uint}, its value is truncated to fit the new representation.
 
+\begin{future}
+There are several kinds of integer conversion which can result in a loss of
+precision.  Currently, the conversions are performed as specified, and no error
+is reported.  In the future, we intend to improve type checking, so the user can
+be informed of potential precision loss at compile time, and actual precision
+loss at run time.  Such cases include:
+%
 % An exception is thrown if the source value cannot be represented in the target type.
 When an \chpl{int} is converted to a \chpl{uint} and the original value is
-negative, an invalid cast exception is thrown.
+negative;
 When a \chpl{uint} is converted to an \chpl{int} and the sign bit of the result
-is true, an invalid cast excpetion is thrown.
+is true;
 When an \chpl{int} is converted to a smaller \chpl{int} or \chpl{uint} and any
-of the truncated bits differs from the original sign bit, an invalid cast
-exception is thrown.
+of the truncated bits differs from the original sign bit;
+%
 When a \chpl{uint} is converted to a smaller \chpl{int} or \chpl{uint} and any
-of the truncated bits is true, an invalid cast exception is thrown.
+of the truncated bits is true;
+\end{future}
 
 \begin{rationale}
 For integer conversions, the default behavior of a program should be to produce
-a run-time error if there is a loss of precision.  So explicit casts not only
+a run-time error if there is a loss of precision.  Thus, cast expressions not only
 give rise to a value conversion at run time, but amount to an assertion
-that the required precision is preserved.  Explicit conversion functions are
-available in the run-time library so that one can perform explicit conversions that result in a loss
-of precision without generating a run-time diagnostic.
+that the required precision is preserved.  Explicit conversion procedures would be
+available in the run-time library so that one can perform explicit conversions
+that result in a loss of precision but do not generate a run-time diagnostic.
 \end{rationale}
 
 When converting from a \chpl{real} type to a larger \chpl{real} type, the
@@ -233,7 +241,7 @@ The rules for converting from \chpl{imag} to \chpl{complex} are the same as for
 converting from real, except that the imaginary part of the result is set using
 the input value, and the real part of the result is set to zero.
 
-\subsubsection{Explicit Enumeration Conversions}
+\subsection{Explicit Enumeration Conversions}
 \label{Explicit_Enumeration_Conversions}
 \index{conversions!enumeration}
 
@@ -274,10 +282,9 @@ The conversion from \chpl{complex} and \chpl{imag} types to an enumerated type i
 permitted.
 
 When the source type is string, the enumerator whose name matches value of the input
-string is selected.  If no such enumerator exists, an invalid cast exception
-is thrown.
+string is selected.  If no such enumerator exists, a runtime error occurs.
 
-\subsubsection{Explicit Class Conversions}
+\subsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}
 \index{conversions!class}
 
@@ -288,7 +295,7 @@ that \chpl{D} is derived from \chpl{C}, it is a runtime error if the
 the dynamic class type of \chpl{C} is not derived from or equal
 to \chpl{D}.
 
-\subsubsection{Explicit Record Conversions}
+\subsection{Explicit Record Conversions}
 \label{Explicit_Record_Conversions}
 \index{conversions!record}
 

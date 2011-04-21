@@ -67,10 +67,10 @@
 
 #ifdef CHPL_TASK_COMM_GET
 #define CHPL_COMM_GET(localvar, locale, addr, type, tid, len, ln, fn)  \
-  CHPL_TASK_COMM_GET(localvar, locale, (addr), tid, sizeof(type), len, ln, fn)
+  CHPL_TASK_COMM_GET(localvar, locale, (addr), type, tid, len, ln, fn)
 #else
 #define CHPL_COMM_GET(localvar, locale, addr, type, tid, len, ln, fn)  \
-  chpl_comm_get(&(localvar), locale, addr, sizeof(type), tid, len, ln, fn)
+  chpl_comm_get((void*)(&(localvar)), locale, (void*)addr, sizeof(type), tid, len, ln, fn)
 #endif
 
 #ifdef CHPL_TASK_COMM_PUT
@@ -78,7 +78,7 @@
   CHPL_TASK_COMM_PUT(localvar, locale, (addr), tid, sizeof(type) len, ln, fn)
 #else
 #define CHPL_COMM_PUT(localvar, locale, addr, type, tid, len, ln, fn)  \
-  chpl_comm_put(&(localvar), locale, addr, sizeof(type), tid, len, ln, fn)
+  chpl_comm_put((void*)(&(localvar)), locale, (void*)addr, sizeof(type), tid, len, ln, fn)
 #endif
 
 #define CHPL_COMM_WIDE_GET(local, wide, type, tid, len, ln, fn)  \
@@ -304,10 +304,10 @@
     local = chpl_macro_tmp == cid;                                      \
   } while (0)
 
-#define CHPL_TEST_LOCAL(wide, ln, fn)                                   \
+#define CHPL_TEST_LOCAL(wide, ln, fn, str)                              \
   do {                                                                  \
     if ((wide).locale != chpl_localeID)                                 \
-      chpl_error("cannot access remote data in local block", ln, fn);   \
+      chpl_error(str, ln, fn);                                          \
   } while (0)
 
 #define CHPL_HEAP_REGISTER_GLOBAL_VAR(i, wide)            \

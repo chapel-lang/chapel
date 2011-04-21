@@ -99,9 +99,9 @@ writeln("Vector norm reindexed arrays");
 proc foo(D: domain, A: [D], loc) {
   doNorm(A, loc);
 }
-const TD1D: domain(1) = Space1 - (o5);
-const TD2D: domain(2) = Space2 - (o5,o5);
-const TD2D64: domain(2,int(64)) = Space2D64 - (o5:int(64),o5:int(64));
+const TD1D: domain(1) = Space1.translate(-o5);
+const TD2D: domain(2) = Space2.translate(-o5,-o5);
+const TD2D64: domain(2,int(64)) = Space2D64.translate(-o5:int(64),-o5:int(64));
 writeln("\tR1D:");
 foo(TD1D, R1D, 1);
 writeln("\tR2D:");

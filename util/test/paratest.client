@@ -31,7 +31,7 @@ sub systemd {
 }
 
 sub fatal {
-    print STDERR "Error: [$node] @_\n";
+    print STDERR "Error in paratest.client: [$node] @_\n";
     exit(2);
 }
 

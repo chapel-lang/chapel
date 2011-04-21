@@ -14,6 +14,7 @@ class DefaultSparseDom: BaseSparseDom {
   var indices: [nnzDom] index(rank);
 
   proc linksDistribution() param return false;
+  proc dsiLinksDistribution()     return false;
 
   proc DefaultSparseDom(param rank, type idxType, 
                                dist: DefaultDist,
@@ -122,7 +123,7 @@ class DefaultSparseDom: BaseSparseDom {
     // shift all of the arrays up and initialize nonzeroes if
     // necessary 
     //
-    // BLC: Note: if arithmetic arrays had a user-settable
+    // BLC: Note: if rectangular arrays had a user-settable
     // initialization value, we could set it to be the IRV and skip
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
@@ -159,7 +160,7 @@ class DefaultSparseDom: BaseSparseDom {
     // shift all of the arrays up and initialize nonzeroes if
     // necessary 
     //
-    // BLC: Note: if arithmetic arrays had a user-settable
+    // BLC: Note: if rectangular arrays had a user-settable
     // initialization value, we could set it to be the IRV and skip
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable

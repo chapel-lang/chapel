@@ -1,10 +1,20 @@
-bug: Range slicing using the statically-type procedure-call syntax does not work.
+feature request: Warn on range slicing an integer (literal syntax is confusing)
 
-Instead, we get:
+With 1..6 [3..] we get:
+
 rangeSliceStatic.chpl:8: error: unresolved access of 'int' by '[range(int,boundedLow,0)]'
 
 and that is all.
 
 This is probably a more general bug involving the semantics of the static function-call syntax, and not specific to range slicing --
 though perhaps related to the fact that range defines an overloaded 'this' function.
+
+**********
+
+This turns out to be expected behavior.  The indexing operators () []
+bind more tightly than than the range literal operator, so the
+expression is parsed as 1..(6[3..]), and there is no operator
+int[range].  The best we can do here is to give a better error
+message (or change the operator precedence which is arguable
+undesirable).
 

@@ -215,9 +215,30 @@ def cleanup(execname):
         os.unlink(execname+'_real')
     return
 
+# return true if string is an integer
+def IsInteger(str):
+    try:
+        int(str)
+        return True
+    except ValueError:
+        return False
+
+# read timeout file
+def ReadTimeoutValue(f):
+    to = ReadFileWithComments(f)
+    if to:
+        for l in to:
+            if l[0] == '#':
+                continue
+            if IsInteger(l):
+                return string.atoi(l)
+            else:
+                break
+    Fatal('Invalid timeout value in '+f);
+
 # report an error message and exit
 def Fatal(message):
-    sys.stdout.write('Error: '+message+'\n')
+    sys.stdout.write('[Error (sub_test): '+message+']\n')
     sys.exit(-1)
 
 #
@@ -284,8 +305,7 @@ machine=os.uname()[1].split('.', 1)[0]
 
 # Get global timeout
 if os.access('./TIMEOUT',os.R_OK):
-    gt=subprocess.Popen(['cat', './TIMEOUT'], stdout=subprocess.PIPE).communicate()[0]
-    globalTimeout=string.atoi(gt)
+    globalTimeout = ReadTimeoutValue('./TIMEOUT')
 elif os.getenv('CHPL_TEST_VGRND_COMP')=='on':
     globalTimeout=1000
 else:
@@ -294,8 +314,7 @@ else:
 
 # Get global timeout for kill
 if os.access('./KILLTIMEOUT',os.R_OK):
-    gt=subprocess.Popen(['cat', './KILLTIMEOUT'], stdout=subprocess.PIPE).communicate()[0]
-    globalKillTimeout=string.atoi(gt)
+    globalKillTimeout = ReadTimeoutValue('./KILLTIMEOUT')
 else:
     globalKillTimeout=10
 # sys.stdout.write('globalKillTimeout=%d\n'%(globalKillTimeout))
@@ -552,10 +571,10 @@ for testname in testsrc:
                 break
 
         elif (suffix=='.timeout' and os.access(f, os.R_OK)):
-            timeout=string.atoi(subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0])
+            timeout=ReadTimeoutValue(f)
 
         elif (suffix=='.killtimeout' and os.access(f, os.R_OK)):
-            killtimeout=string.atoi(subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0])
+            killtimeout=ReadTimeoutValue(f)
 
         elif (suffix=='.catfiles' and os.access(f, os.R_OK)):
             execcatfiles=subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip()
@@ -634,11 +653,6 @@ for testname in testsrc:
         sys.stdout.write('[Skipping interpretation of: %s/%s]\n'%(localdir,execname))
         continue # on to next test
 
-    if redirectin == None:
-        redirectinSpec = ''
-    else:
-        redirectinSpec = ' < ' + redirectin
-
     clist = list()
     # For all compopts + execopts combos..
     compoptsnum = 0
@@ -687,8 +701,9 @@ for testname in testsrc:
         sys.stdout.write(' < %s]\n'%(compstdin))
         sys.stdout.flush()
         if useTimedExec:
-            wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+' < '+compstdin
+            wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
             p = subprocess.Popen([timedexec, str(timeout), wholecmd],
+                                 stdin=open(compstdin, 'r'),
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
             output = p.communicate()[0]
@@ -704,8 +719,7 @@ for testname in testsrc:
                 continue # on to next compopts
             
         else:
-            my_stdin=file(compstdin, 'r')
-            p = subprocess.Popen([cmd]+args, stdin=my_stdin,
+            p = subprocess.Popen([cmd]+args, stdin=open(cmpstdin, 'r'),
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
             try:
@@ -855,7 +869,7 @@ for testname in testsrc:
                 sys.stdout.write(']\n')
                 break; # on to next compopts
 
-            args=list();
+            args=list()
             if launchcmd:
                 cmd=launchcmd
                 args+=['./'+execname]
@@ -871,8 +885,10 @@ for testname in testsrc:
             #
             # Run program (with timeout)
             #
-            sys.stdout.write('[Executing program %s %s%s]\n'%
-                             (cmd, ' '.join(args), redirectinSpec))
+            sys.stdout.write('[Executing program %s %s'%(cmd, ' '.join(args)))
+            if redirectin:
+                sys.stdout.write(' < %s'%(redirectin))
+            sys.stdout.write(']\n')
             sys.stdout.flush()
 
             if useLauncherTimeout:
@@ -899,8 +915,14 @@ for testname in testsrc:
                     sys.stdout.write(']\n')
 
             elif useTimedExec:
-                wholecmd = cmd+' '+' '.join(map(ShellEscape, args))+redirectinSpec
+                wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
+
+                if redirectin == None:
+                    my_stdin = sys.stdin
+                else:
+                    my_stdin = file(redirectin, 'r')
                 p = subprocess.Popen([timedexec, str(timeout), wholecmd],
+                                     stdin=my_stdin,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
                 output = p.communicate()[0]

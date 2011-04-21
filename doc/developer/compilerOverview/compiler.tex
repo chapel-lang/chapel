@@ -505,6 +505,10 @@ auxiliary types for sync and single variables, etc.
 This class has no fields, inheriting all of the information it needs
 from the Type class.
 
+Chapel's primitive types, as well as some internally-useful types, are
+stored in \cc{PrimitiveType*} global variables, e.g. \cc{dtVoid},
+\cc{dtNumeric}, \cc{dtBool}, etc. See \$CHPL\_HOME/compiler/include/type.h .
+
 \subsubsection{EnumType}
 \label{sec:enumtype}
 
@@ -537,6 +541,10 @@ records, and unions.  The fields of ClassType are:
 \item \cc{Symbol* outer} points to the outer class if this is an inner
   class.
 \end{itemize}
+
+Certain standard class types are stored in \cc{ClassType*} global
+variables, e.g. \cc{dtArray}, \cc{dtBaseDom}, \cc{dtTuple}, etc. See
+\$CHPL\_HOME/compiler/include/type.h .
 
 \subsection{Expr}
 
@@ -780,9 +788,9 @@ The fields in CallExpr are:
   \cc{primitive} field (see below) is used.  So in any case if
   \cc{baseExpr} is not \cc{NULL}, the above invariant of pointing to a
   SymExpr for a FnSymbol is be preserved.
-\item \cc{AList* argList} is a pointer to the expression list that
+\item \cc{AList argList} is a pointer to the expression list that
   makes up the actual arguments to this CallExpr.
-  This is a defining field.
+  This is a defining field, although not a pointer.
 \item \cc{PrimitiveOp* primitive} is a pointer to the primitive.  If
   this field is set, then \cc{baseExpr} will be \cc{NULL}.  It's a
   one-or-the-other situation.
@@ -2127,7 +2135,7 @@ already resolved or started to resolve.  The algorithmic flow of
 \item Insert casts on any \cc{MOVE} primitive that requires it.  This
   is almost certainly done to handle the case of a function returning
   different types of values in different return statements.  Now that
-  the return type has been determined, the appropriate cast can be
+  the return type has been determined, the appropriate casts can be
   inserted.
 \item If \cc{fn} is resolved as an iterator, prototype iterator
   records, classes, and methods.  (See Section~\ref{sec:resolveiter}.)

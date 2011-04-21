@@ -11,7 +11,7 @@ locales without explicitly partitioning them using Chapel's Domain
 Maps~(\rsec{Domain_Maps}).
 
 
-\subsection{Array Types}
+\section{Array Types}
 \label{Array_Types}
 \index{arrays!types}
 
@@ -22,21 +22,14 @@ given by the following syntax:
 \begin{syntax}
 array-type:
   [ domain-expression ] type-specifier
-
-domain-expression:
-  domain-literal
-  expression
 \end{syntax}
 The \sntx{domain-expression} must specify a domain that the array can
-be declared over.  This can be a domain literal.  If it is a domain
-literal, the duplicate square brackets around the domain literal can
+be declared over.  If it is a domain
+literal, the duplicate square brackets around the domain literal may
 be omitted.
 
-\begin{example}
+\begin{chapelexample}{decls.chpl}
 In the code
-\begin{chapelpre}
-% decls.chpl
-\end{chapelpre}
 \begin{chapel}
 const D: domain(2) = [1..10, 1..10];
 var A: [D] real;
@@ -63,7 +56,7 @@ domain \chpl{D} with elements of type \chpl{real}.  As a result, it
 represents a 2-dimensional $10 \times 10$ real floating point
 variables indexed using the indices $(1, 1), (1, 2), \ldots, (1, 10),
 (2, 1), \ldots, (10, 10)$.
-\end{example}
+\end{chapelexample}
 
 %
 % should the following be moved elsewhere?  Should handle these
@@ -74,11 +67,10 @@ variables indexed using the indices $(1, 1), (1, 2), \ldots, (1, 10),
 An array's element type can be referred to using the member symbol
 \chpl{eltType}.
 
-\begin{example}
+\begin{chapelexample}{eltType.chpl}
 In the following example, \chpl{x} is declared to be of type
 \chpl{real} since that is the element type of array \chpl{A}.
 \begin{chapelpre}
-% eltType.chpl
 const D: domain(2) = [1..10, 1..10];
 \end{chapelpre}
 \begin{chapel}
@@ -93,9 +85,9 @@ writeln(typeToString(A.eltType));
 real
 real
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
-\subsection{Array Values}
+\section{Array Values}
 \label{Array_Values}
 \index{arrays!values}
 \index{arrays!initialization}
@@ -112,13 +104,10 @@ Arrays do not have a literal format in Chapel, but arithmetic array
 variables can be initialized using tuple values.  These tuples must
 match the size and shape of the array itself.
 
-\begin{example}
+\begin{chapelexample}{decl-with-anon-domain.chpl}
 The following example declares a $2 \times 3$ array \chpl{A} using an
 anonymous domain value and initializes the elements of the array using
 a 2-tuple of 3-tuples which matches the array's size and shape.
-\begin{chapelpre}
-% decl-with-anon-domain.chpl
-\end{chapelpre}
 \begin{chapel}
 var A: [1..2, 1..3] real = ((1.1, 1.2, 1.3), (2.1, 2.2, 2.3));
 \end{chapel}
@@ -128,14 +117,14 @@ writeln(A.domain);
 \begin{chapeloutput}
 [1..2, 1..3]
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \index{arrays!default values}
 
 An array's default value is to have its elements all initialized to
 the default values for their types.
 
-\subsubsection{Runtime Representation of Array Values}
+\subsection{Runtime Representation of Array Values}
 \label{Array_Runtime_Representation}
 \index{arrays!runtime representation}
 \index{arrays!domain maps}
@@ -146,7 +135,7 @@ and control the runtime representation of an array's elements.  See
 ~\rsec{Domain_Maps} for more details.
 
 
-\subsection{Array Indexing}
+\section{Array Indexing}
 \label{Array_Indexing}
 \index{arrays!indexing}
 \index{indexing!arrays}
@@ -158,47 +147,33 @@ element that corresponds to the index value.
 
 % NEED SYNTAX DIAGRAM HERE?
 
-\begin{example}
+\begin{chapelexample}{array-indexing.chpl}
 Given:
-\begin{chapelpre}
-% array-indexing-decl.chpl
-\end{chapelpre}
 \begin{chapel}
 var A: [1..10] real;
 \end{chapel}
-\begin{chapelpost}
-writeln(A);
-writeln(A.domain);
-\end{chapelpost}
-\begin{chapeloutput}
-0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-[1..10]
-\end{chapeloutput}
-
 the first two elements of A can be assigned the value 1.2 and 3.4
 respectively using the assignment:
-\begin{chapelpre}
-% array-indexing.chpl
-var A: [1..10] real;
-\end{chapelpre}
 \begin{chapel}
 A(1) = 1.2;
 A[2] = 3.4;
 \end{chapel}
 \begin{chapelpost}
+writeln(A.domain);
 writeln(A);
 \end{chapelpost}
 \begin{chapeloutput}
+[1..10]
 1.2 3.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 If an array is indexed using an index that is not part of its domain's
 index set, the reference is considered out-of-bounds and a runtime
 error will occur, halting the program.
 
 
-\subsubsection{Rectangular Array Indexing}
+\subsection{Rectangular Array Indexing}
 \label{Rectangular_Array_Indexing}
 \index{indexing!rectangular arrays}
 \index{rectangular arrays!indexing}
@@ -213,35 +188,14 @@ even though their index type is an integral value.  This is
 semantically equivalent to de-tupling the integral value from the
 1-tuple and using it to index the array.
 
-\begin{example}
+\begin{chapelexample}{array-indexing-2.chpl}
 Given:
-\begin{chapelpre}
-% array-indexing-2-decl.chpl
-\end{chapelpre}
 \begin{chapel}
 var A: [1..5, 1..5] real;
 var ij: 2*int = (1, 1);
 \end{chapel}
-\begin{chapelpost}
-writeln(A);
-writeln(ij);
-\end{chapelpost}
-\begin{chapeloutput}
-0.0 0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0 0.0
-(1, 1)
-\end{chapeloutput}
-
 the elements of array A can be indexed using any of the following
 idioms:
-\begin{chapelpre}
-% array-indexing-2.chpl
-var A: [1..5, 1..5] real;
-var ij: 2*int = (1, 1);
-\end{chapelpre}
 \begin{chapel}
 A(ij) = 1.1;
 A((1, 2)) = 1.2;
@@ -251,22 +205,21 @@ A[(1, 4)] = 1.4;
 A[1, 5] = 1.5;
 \end{chapel}
 \begin{chapelpost}
+writeln(ij);
 writeln(A);
 \end{chapelpost}
 \begin{chapeloutput}
+(1, 1)
 -1.1 1.2 1.3 1.4 1.5
 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
-\begin{example}
+\begin{chapelexample}{index-using-var-arg-tuple.chpl}
 The code
-\begin{chapelpre}
-% index-using-var-arg-tuple.chpl
-\end{chapelpre}
 \begin{chapel}
 proc f(A: [], is...)
   return A(is);
@@ -288,10 +241,10 @@ variable-length argument list.  It then indexes into the array using
 the tuple that captures the actual arguments.  This function works
 even for one-dimensional arrays because one-dimensional arrays can be
 indexed into by 1-tuples.
-\end{example}
+\end{chapelexample}
 
 
-\subsection{Iteration over Arrays}
+\section{Iteration over Arrays}
 \label{Iteration_over_Arrays}
 \index{arrays!iteration}
 \index{iteration!over arrays}
@@ -318,46 +271,39 @@ Thus, the iterator variable for an array traversal is a reference to
 the array element type.
 
 
-\subsection{Array Assignment}
+\section{Array Assignment}
 \label{Array_Assignment}
 \index{arrays!assignment}
 
 Array assignment is by value.  Arrays can be assigned arrays, ranges,
-domains, iterators, or tuples.  If \chpl{A} is an lvalue of array type
-and \chpl{B} is an expression of either array, range, or domain type,
-or an iterator, then the assignment
+domains, iterators, or tuples.
+
+\begin{chapelexample}{assign.chpl}
+If \chpl{A} is an lvalue of array type and \chpl{B} is an expression
+of either array, range, or domain type, or an iterator, then the
+assignment
 \begin{chapelpre}
-% whole-array-assign.chpl
 var A: [1..3] int;
 var B: [1..3] int;
 A = -1;
 B = 1;
+\end{chapelpre}
+\begin{chapelnoprint}
 writeln(A);
 writeln(B);
-\end{chapelpre}
+\end{chapelnoprint}
 \begin{chapel}
 A = B;
 \end{chapel}
-\begin{chapelpost}
+\begin{chapelnoprint}
 writeln(A);
 writeln(B);
-\end{chapelpost}
-\begin{chapeloutput}
--1 -1 -1
-1 1 1
-1 1 1
-1 1 1
-\end{chapeloutput}
+A = -2;
+B = 2;
+writeln(A);
+writeln(B);
+\end{chapelnoprint}
 is equivalent to
-\begin{chapelpre}
-% zipper-iter-assign.chpl
-var A: [1..3] int;
-var B: [1..3] int;
-A = -1;
-B = 1;
-writeln(A);
-writeln(B);
-\end{chapelpre}
 \begin{chapel}
 forall (a,b) in (A,B) do
   a = b;
@@ -371,10 +317,15 @@ writeln(B);
 1 1 1
 1 1 1
 1 1 1
+-2 -2 -2
+2 2 2
+2 2 2
+2 2 2
 \end{chapeloutput}
 If the zipper iteration is illegal, then the assignment is illegal.
 Notice that the assignment is implemented with the semantics of
 a \chpl{forall} loop.
+\end{chapelexample}
 
 Arrays can be assigned tuples of values of their element type if the
 tuple contains the same number of elements as the array.  For
@@ -387,11 +338,11 @@ assigned element-wise.
 
 Arrays can also be assigned single values of their element type.  In
 this case, each element in the array is assigned this value.
+\begin{chapelexample}{assign-2.chpl}
 If \chpl{e} is an expression of the element type of the array or a
 type that can be implicitly converted to the element type of the
 array, then the assignment
 \begin{chapelpre}
-% promote-assign.chpl
 var A: [1..4] uint;
 writeln(A);
 var e: uint = 77;
@@ -399,20 +350,11 @@ var e: uint = 77;
 \begin{chapel}
 A = e;
 \end{chapel}
-\begin{chapelpost}
+\begin{chapelnoprint}
 writeln(A);
-\end{chapelpost}
-\begin{chapeloutput}
-0 0 0 0
-77 77 77 77
-\end{chapeloutput}
+e = 33;
+\end{chapelnoprint}
 is equivalent to
-\begin{chapelpre}
-% forall-assign.chpl
-var A: [1..4] uint;
-writeln(A);
-var e: uint = 77;
-\end{chapelpre}
 \begin{chapel}
 forall a in A do
   a = e;
@@ -423,10 +365,11 @@ writeln(A);
 \begin{chapeloutput}
 0 0 0 0
 77 77 77 77
+33 33 33 33
 \end{chapeloutput}
+\end{chapelexample}
 
-
-\subsection{Array Slicing}
+\section{Array Slicing}
 \label{Array_Slicing}
 \index{arrays!slicing}
 \index{slicing!arrays}
@@ -436,10 +379,9 @@ domain over which it was declared.  The result of an array slice is an
 alias to the subset of the array elements from the original array
 corresponding to the slicing domain's index set.
  
-\begin{example}
+\begin{chapelexample}{slicing.chpl}
 Given the definitions
 \begin{chapelpre}
-% slicing-decl.chpl
 config const n = 2;
 \end{chapelpre}
 \begin{chapel}
@@ -447,33 +389,12 @@ var OuterD: domain(2) = [0..n+1, 0..n+1];
 var InnerD: domain(2) = [1..n, 1..n];
 var A, B: [OuterD] real;
 \end{chapel}
-\begin{chapelpost}
+\begin{chapelnoprint}
 writeln(OuterD);
 writeln(InnerD);
-writeln(A);
-writeln(B);
-\end{chapelpost}
-\begin{chapeloutput}
-[0..3, 0..3]
-[1..2, 1..2]
-0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0
-\end{chapeloutput}
-the assignment given by
-\begin{chapelpre}
-% slicing.chpl
-config const n = 2;
-var OuterD: domain(2) = [0..n+1, 0..n+1];
-var InnerD: domain(2) = [1..n, 1..n];
-var A, B: [OuterD] real;
 B = 1;
-\end{chapelpre}
+\end{chapelnoprint}
+the assignment given by
 \begin{chapel}
 A[InnerD] = B[InnerD];
 \end{chapel}
@@ -482,6 +403,8 @@ writeln(A);
 writeln(B);
 \end{chapelpost}
 \begin{chapeloutput}
+[0..3, 0..3]
+[1..2, 1..2]
 0.0 0.0 0.0 0.0
 0.0 1.0 1.0 0.0
 0.0 1.0 1.0 0.0
@@ -493,9 +416,9 @@ writeln(B);
 \end{chapeloutput}
 assigns the elements in the interior of \chpl{B} to the elements in
 the interior of \chpl{A}.
-\end{example}
+\end{chapelexample}
 
-\subsubsection{Rectangular Array Slicing}
+\subsection{Rectangular Array Slicing}
 \label{Rectangular_Array_Slicing}
 \index{arrays!slice}
 
@@ -520,10 +443,9 @@ for an actual range.  The resulting array will have a rank less than
 the rectangular array's rank and equal to the number of ranges that are
 passed in to take the slice.
 
-\begin{example}
+\begin{chapelexample}{array-decl.chpl}
 Given an array
 \begin{chapelpre}
-% array-decl.chpl
 config const n = 4;
 \end{chapelpre}
 \begin{chapel}
@@ -540,13 +462,14 @@ writeln(A);
 \end{chapeloutput}
 the slice \chpl{A[1..n, 1]} is a one-dimensional array whose elements
 are the first column of \chpl{A}.
-\end{example}
+\end{chapelexample}
 
 
 
-\subsection{Array Arguments to Functions}
+\section{Array Arguments to Functions}
 \label{Array_Arguments_To_Functions}
-\index{arrays!function arguments}
+\index{arrays!arguments to functions}
+\index{argument passing!arrays}
 
 Arrays are passed to functions by reference.  Formal arguments that
 receive arrays are aliases of the actual arguments.
@@ -571,7 +494,7 @@ a rectangular domain, described
 in~\rsec{Formal_Arguments_of_Rectangular_Array_Type}.
 
 
-\subsubsection{Formal Arguments of Rectangular Array Type}
+\subsection{Formal Arguments of Rectangular Array Type}
 \label{Formal_Arguments_of_Rectangular_Array_Type}
 \index{formal arguments!rectangular arrays}
 \index{arrays!as formal arguments}
@@ -584,10 +507,9 @@ of the actual array must match the shape of the domain of the formal
 array.  The indices are translated in the formal array, which is a
 reference to the actual array.
 
-\begin{example}
+\begin{chapelexample}{actual-domain-strided.chpl}
 In the code
 \begin{chapelpre}
-% actual-domain-strided.chpl
 config const c = 55;
 \end{chapelpre}
 \begin{chapel}
@@ -605,10 +527,10 @@ the array \chpl{A} is strided and its elements can be indexed by the
 odd integers between one and nine.  In the function \chpl{foo}, the
 array \chpl{X} references array \chpl{A} and the same elements can be
 indexed by the integers between one and five.
-\end{example}
+\end{chapelexample}
 
 
-\subsubsection{Array Promotion of Scalar Functions}
+\subsection{Array Promotion of Scalar Functions}
 \label{Array_Promotion_of_Scalar_Functions}
 \index{arrays!promotion}
 
@@ -621,11 +543,10 @@ that is equal to the domain of the first argument to the function that
 enables promotion.  If the first argument is an iterator or a range,
 the result is a one-based one-dimensional array.
 
-\begin{example}
+\begin{chapelexample}{whole-array-ops.chpl}
 Whole array operations is a special case of array promotion of scalar
 functions.  In the code
 \begin{chapelpre}
-% whole-array-ops.chpl
 var A, B, C: [1..3] real;
 A = -1;
 B = 2;
@@ -643,14 +564,14 @@ writeln(A);
 if \chpl{A}, \chpl{B}, and \chpl{C} are arrays, this code assigns each
 element in \chpl{A} the element-wise sum of the elements in \chpl{B}
 and \chpl{C}.
-\end{example}
+\end{chapelexample}
 
 %
 % TODO: should have an example of promoting an actual function here
 %
 
 
-\subsubsection{Array Aliases}
+\subsection{Array Aliases}
 \label{Array_Aliases}
 \index{=>@\chpl{=>}}
 
@@ -677,11 +598,8 @@ the \sntx{reindexing-expression} must match the shape of the domain of
 the \sntx{array-expression}.  Indexing via the alias is governed by
 the new indices.
 
-\begin{example}
+\begin{chapelexample}{reindexing.chpl}
 In the code
-\begin{chapelpre}
-% reindexing.chpl
-\end{chapelpre}
 \begin{chapel}
 var A: [1..5, 1..5] int;
 var AA: [0..2, 0..2] => A[2..4, 2..4];
@@ -713,7 +631,7 @@ array \chpl{A} given by the slice \chpl{A[2..4, 2..4]}.  The
 reindexing expression changes the indices defined by the domain of the
 alias to be zero-based in both dimensions.  Thus \chpl{AA(1,1)} is
 equivalent to \chpl{A(3,3)}.
-\end{example}
+\end{chapelexample}
 
 %
 % TODO: need to insert something about using alias operator in
@@ -721,7 +639,7 @@ equivalent to \chpl{A(3,3)}.
 %
 
 
-\subsection{Sparse Arrays}
+\section{Sparse Arrays}
 \label{Sparse_Arrays}
 \index{arrays!sparse}
 
@@ -750,7 +668,7 @@ the array's element type.  The IRV can be set to any value of the
 array's element type by assigning to a pseudo-field named \chpl{IRV}
 in the array.
 
-\begin{example}
+\begin{chapelexample}{sparse-error.chpl}
 The following code example declares a sparse array, \chpl{SpsA} using
 the sparse domain \chpl{SpsD} (For this example, assume that
 \chpl{n}$>$1).  Line~2 assigns two indices to \chpl{SpsD}'s index set
@@ -764,7 +682,6 @@ assign to \chpl{SpsA} at an index not described by its domain,
 \chpl{SpsD}.
 
 \begin{chapelpre}
-% sparse-error.chpl
 config const n = 5;
 const D = [1..n, 1..n];
 \end{chapelpre}
@@ -780,11 +697,11 @@ SpsA(1,n) = 0.0;  // ERROR!
 \begin{chapeloutput}
 sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value in a sparse array: (1, 5)
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 
 
-\subsection{Association of Arrays to Domains}
+\section{Association of Arrays to Domains}
 \label{Association_of_Arrays_to_Domains}
 \index{domains!association to arrays}
 \index{arrays!association to domains}
@@ -842,11 +759,10 @@ convenient syntax support a common, optimizable case seems prudent.
 \end{rationale}
 
 
-\subsection{Predefined Functions and Methods on Arrays}
+\section{Predefined Functions and Methods on Arrays}
 \index{arrays!predefined functions}
 
-There is an expectation that this list of predefined functions and
-methods will grow.
+There is an expectation that this list of predefined functions will grow.
 
 \begin{protohead}
 proc $Array$.eltType type

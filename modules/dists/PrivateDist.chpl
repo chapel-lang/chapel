@@ -3,7 +3,7 @@
 //  Defines PrivateSpace, an instance of PrivateDom
 //
 class Private: BaseDist {
-  proc dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
+  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
     return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable);
   }
 
@@ -12,14 +12,13 @@ class Private: BaseDist {
   }
 }
 
-class PrivateDom: BaseArithmeticDom {
+class PrivateDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
   var pid: int = -1;
   var dist: Private;
 
-  proc getDist() return dist;
   iter these() { for i in 0..numLocales-1 do yield i; }
 
   iter these(param tag: iterator) where tag == iterator.leader {
@@ -49,6 +48,7 @@ class PrivateDom: BaseArithmeticDom {
 
   proc dsiRequiresPrivatization() param return true;
   proc linksDistribution() param return false;
+  proc dsiLinksDistribution()     return false;
 
   proc dsiGetPrivatizeData() return 0;
 
@@ -79,9 +79,7 @@ proc PrivateArr.dsiRequiresPrivatization() param return true;
 proc PrivateArr.dsiGetPrivatizeData() return 0;
 
 proc PrivateArr.dsiPrivatize(privatizeData) {
-  var dompid = dom.pid;
-  var thisdom = dom;
-  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+  var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
   return new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
 }
 
@@ -94,10 +92,9 @@ proc PrivateArr.dsiAccess(i: idxType) var {
     if boundsChecking then
       if i < 0 || i >= numLocales then
         halt("array index out of bounds: ", i);
-    var arrpid = this.pid;
     var privarr = this;
     on Locales(i) {
-      privarr = __primitive("chpl_getPrivatizedClass", privarr, arrpid);
+      privarr = chpl_getPrivatizedCopy(this.type, this.pid);
     }
     return privarr.data;
   }

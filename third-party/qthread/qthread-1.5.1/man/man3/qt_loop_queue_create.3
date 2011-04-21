@@ -1,0 +1,89 @@
+.TH qt_loop_queue_create 3 "JUNE 2010" libqthread "libqthread"
+.SH NAME
+.B qt_loop_queue_create
+\- allocate a loop queue handle
+.SH SYNOPSIS
+.B #include <qthread/qloop.h>
+
+.IR qqloop_handle_t *
+.br
+.BR qt_loop_queue_create (
+.RS
+.RI "const qt_loop_queue_type " type ,
+.br
+.RI "const size_t " start ,
+.br
+.RI "const size_t " stop ,
+.br
+.RI "const size_t " step ,
+.br
+.RI "const qt_loop_f " func ,
+.br
+.RI "void * const " argptr );
+.SH DESCRIPTION
+This function allocates a loop queue handle for use with
+.BR qt_loop_queue_run ()
+or
+.BR qt_loop_queue_run_there ().
+.PP
+The
+.I func
+argument must be a function pointer with a
+.B qt_loop_f
+prototype. Its basic code structure is expected to look like this:
+.RS
+.PP
+void
+.I func
+(qthread_t *me, const size_t startat, const size_t stopat, const size_t 
+.IR step ", void * " arg )
+.br
+{
+.RS
+for (unsigned int i = startat; i < stopat; i +=
+.IR step )
+{
+.RS
+/* do work */
+.RE
+}
+.RE
+}
+.RE
+.PP
+The arguments
+.I startat
+and
+.I stopat
+are determined by the library, and tell the function what range of
+.I i
+values (iterations) it is responsible for.
+.PP
+The
+.I type
+argument defines which adaptive scheduling technique should be used to schedule the processing of loop iterations. The possible values are:
+.TP 12
+.B CHUNK
+This is the lowest-overhead method, but is the least adaptive. A small default
+chunk size will be chosen by the library, and all available worker threads will
+process loop iterations in groups of that size.
+.TP
+.B GUIDED
+This specifies an implementation of guided self-scheduled loops; iterations are
+executed in chunks that are halved in size as the loop progresses. This is
+particularly efficient at slightly imbalanced loops.
+.TP
+.B FACTORED
+This specifies an implementation of factored self-scheduled loops; iterations are executed in chunks that are specified in sets. First, half of the iteration space is handed out in equal-sized chunks to all threads, then half of the remaining iterations are handed out in equal-sized chunks, and so forth. This is more effective than GUIDED when loops are more imbalanced.
+.TP
+.B TIMED
+This specifies an implementation of timed self-scheduled loops; iterations are timed and subsequent chunks of iterations are given to worker threads based on the length of time required by the previous iteration chunks. This method can account for overhead better and can potentially handle wildly imbalanced loops more efficiently than FACTORED.
+.SH RETURN VALUES
+A pointer to a valid qqloop_handle_t will be returned OR a NULL pointer if
+memory could not be allocated.
+.SH SEE ALSO
+.BR qt_loop (3),
+.BR qt_loop_future (3),
+.BR qt_loop_queue_run (3),
+.BR qt_loopaccum_balance (3),
+.BR qt_loopaccum_balance_future (3)

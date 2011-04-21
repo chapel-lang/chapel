@@ -12,7 +12,7 @@ use Level_def;
 // version is probably the best to use in practice.
 //----------------------------------------------------------
 
-proc refinementRatio(coarse_object, fine_object)
+proc refinementRatio( coarse_object, fine_object )
   where (coarse_object.type == Grid || coarse_object.type == Level)
      && (fine_object.type == Grid || fine_object.type == Level)
      && (coarse_object.type == Grid || fine_object.type == Grid)
@@ -25,7 +25,7 @@ proc refinementRatio(coarse_object, fine_object)
   return ref_ratio;
 }
 
-proc refinementRatio(coarse_level: Level, fine_level: Level)
+proc refinementRatio ( coarse_level: Level, fine_level: Level )
 {
   const ref_ratio = fine_level.n_cells / coarse_level.n_cells;
   return ref_ratio;
@@ -50,9 +50,9 @@ proc refinementRatio(coarse_level: Level, fine_level: Level)
 // coarse cell.
 //-----------------------------------------------------------------
 
-proc refine(
+proc refine (
   coarse_cell: dimension*int,
-  ref_ratio:   dimension*int)
+  ref_ratio:   dimension*int )
 {
 
   var fine_cells_low = coarse_cell;
@@ -90,9 +90,9 @@ proc refine(
 // lower and upper bounds.
 //---------------------------------------------------------------
 
-proc refine(
+proc refine (
   coarse_cells: domain(dimension,stridable=true),
-  ref_ratio:    dimension*int)
+  ref_ratio:    dimension*int )
 {
  
   //=== Index bounds for refined domain ====
@@ -132,7 +132,7 @@ proc refine(
 
 proc coarsen (
   fine_cell: dimension*int,
-  ref_ratio: dimension*int)
+  ref_ratio: dimension*int )
 {
 
   var coarse_cell: dimension*int;

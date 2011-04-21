@@ -1,7 +1,0 @@
-#!/bin/bash
-
-outfile=$2
-
-grep -v "Elapsed time" $outfile > $outfile.tmp
-mv $outfile.tmp $outfile
-
