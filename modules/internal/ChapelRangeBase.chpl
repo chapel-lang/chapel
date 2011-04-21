@@ -693,11 +693,11 @@ proc chpl__count(r:rangeBase(?), i:integral)
                      _alignment = 1);
 
   if i > 0 && !r.hasFirst() then
-    halt("With a nonzero count, the range must have a first index.");
+    halt("With a positive count, the range must have a first index.");
   if i < 0 && !r.hasLast() then
     halt("With a negative count, the range must have a last index.");
-  if r.boundedType == BoundedRangeType.bounded && i > r.length then
-    halt("bounded range is too small to access ", i, " elements");
+  if r.boundedType == BoundedRangeType.bounded && abs(i) > r.length then
+    halt("bounded range is too small to access ", abs(i), " elements");
 
   // The distance between the first and last indices.
   var s = r._stride : strType;

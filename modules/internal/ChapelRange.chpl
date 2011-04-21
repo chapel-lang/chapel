@@ -190,16 +190,17 @@ pragma "inline" proc range.member(other: range(?))
 
 // Returns true if this range is equivalent to the other.
 // Equivalent ranges produce the same index set.
-//
-// This routine relies on the assumption that
-// the stride of an unstrided range is set to 1.
 proc ==(r1: range(?), r2: range(?))
 {
-  // Ambiguous ranges cannot be equal even if all their parameters match.
-  if r1.isAmbiguous() || r2.isAmbiguous() then
-    return false;
-  else
-    return r1._base == r2._base;
+  // An ambiguous ranges cannot equal an unambiguous one
+  //  even if all their parameters match.
+  if r1.isAmbiguous() != r2.isAmbiguous() then return false;
+
+  // As a special case, two ambiguous ranges compare equal 
+  // if their representations are identical.
+  if r1.isAmbiguous() then return r1.ident(r2);
+
+  return r1._base == r2._base;
 }
 
 proc !=(r1: range(?), r2: range(?))  return !(r1 == r2);
