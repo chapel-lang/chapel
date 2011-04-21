@@ -198,7 +198,7 @@ proc ==(r1: range(?), r2: range(?))
 
   // As a special case, two ambiguous ranges compare equal 
   // if their representations are identical.
-  if r1.isAmbiguous() then return r1.ident(r2);
+  if r1.isAmbiguous() then return ident(r1, r2);
 
   return r1._base == r2._base;
 }
