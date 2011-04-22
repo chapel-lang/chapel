@@ -24,10 +24,10 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
 
     for pass in (0..(npasses-1)) {
       var Index: [D1] int(64);           // Index
-      var Offsets: [D2] int(64);         // Starting offset of 
+      var Offsets$: [D2] sync int(64);    // Starting offset of 
                                          // histogrammed values
       var Offsets_old: [D2] int(64);     // Old offsets
-      var Histogram: [D2] int(64);       // Histogram for counting sort
+      var Histogram$: [D2] sync int(64);  // Histogram for counting sort
       var All_counts: [D1] int(64);      // Storage for counting sort tallies
 
       var phaseTime: real;                        // timing of pass
@@ -36,46 +36,48 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
       // Mask of bits sorted on this pass
       var mask:int(64) = (nbuckets - 1) << (pass * radix);
 
-      for i in D1 { // was forall
+      Histogram$.writeEF(0);
+      forall i in D1 {
         var r:int(64) = ((mask & Values[Permute_old[i]]) >> (pass * radix));
-        Histogram[r] += 1;
+        Histogram$[r] += 1;
       }
 
 // write this loop with an aggregate array operation
+      Offsets$[0].writeXF(0);
       for i in (1..(nbuckets-1)) {
-        Offsets[i] = Offsets[(i-1)] + Histogram[(i-1)];
+        Offsets$[i].writeXF(Offsets$[(i-1)].readXX() + Histogram$[(i-1)].readXX());
       }
-      Offsets_old = Offsets;
+      Offsets_old = Offsets$.readXX();
 
-      for i in D1 { // was forall
+      forall i in D1 {
         var r:int(64) = ((mask & Values[Permute_old[i]]) >> (pass * radix));
-        var loc:int(64) = Offsets[r];
-        Offsets[r] += 1;
+        var loc:int(64) = Offsets$[r];
+        Offsets$[r] = loc + 1;
         Permute[loc] = Permute_old[i];
         Index[loc] = i;
       }
 
       for b in D2 {
         var base:int(64) = Offsets_old[b];
-        var Count = All_counts.localSlice(base..(nelem-1));
+        var Count$: [base..(nelem-1)] sync int(64) = All_counts.localSlice(base..(nelem-1));
 
-        for i in (0..(Histogram[b]-1)) { // was forall
-          Count[(i+base)] = 0;
+        forall i in (0..(Histogram$[b].readXX()-1)) {
+          Count$[(i+base)].writeXF(0);
           Permute_old[(i+base)] = Permute[(i+base)];
         }
 
-        for i in (1..(Histogram[b]-1)) {
-          for j in (0..(i-1)) { // was forall
+        for i in (1..(Histogram$[b].readXX()-1)) {
+          forall j in (0..(i-1)) {
             if (Index[(i+base)] < Index[(j+base)]) {
-              Count[(j+base)] += 1;
+              Count$[(j+base)] += 1;
             } else {
-              Count[(i+base)] += 1;
+              Count$[(i+base)] += 1;
             }
           }
         }
 
-        for i in (0..(Histogram[b]-1)) { //was forall
-          Permute[(Count[(i+base)]+base)] = Permute_old[(i+base)];
+        forall i in (0..(Histogram$[b].readXX()-1)) {
+          Permute[(Count$[(i+base)].readXX()+base)] = Permute_old[(i+base)];
         }
       }
 

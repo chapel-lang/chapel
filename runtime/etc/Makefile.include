@@ -8,8 +8,8 @@ include $(CHAPEL_ROOT)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 include $(CHAPEL_ROOT)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
 
-HEADER_CFLAGS = -DCHPL_TASKS_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
-		-DCHPL_THREADS_H=\"threads-$(CHPL_MAKE_THREADS).h\"
+HEADER_CFLAGS = -DCHPL_TASKS_MODEL_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
+		-DCHPL_THREADS_MODEL_H=\"threads-$(CHPL_MAKE_THREADS).h\"
 
 GEN_CFLAGS += $(HEADER_CFLAGS)
 

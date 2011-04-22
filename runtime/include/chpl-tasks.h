@@ -1,12 +1,12 @@
-#ifndef _chpltasks_h_
-#define _chpltasks_h_
+#ifndef _chpl_tasks_h_
+#define _chpl_tasks_h_
 
 #ifndef LAUNCHER
 
 #include <stdint.h>
-#include "arg.h"
-#ifdef CHPL_TASKS_H
-#include CHPL_TASKS_H
+
+#ifdef CHPL_TASKS_MODEL_H
+#include CHPL_TASKS_MODEL_H
 #endif
 
 

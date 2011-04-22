@@ -344,11 +344,11 @@ The requirements on the corresponding C code are:
 
 2) A pointer-to-_D type must be typedef'd to have the name D.
 
-3) The _C struct type must contain a field named 'x' of type double.
+3) The _D struct type must contain a field named 'x' of type double.
    Like external records/structs, it may also contain other fields
    that will simply be ignored by the Chapel compiler.
 
-Thus, the following C typedef would fulfill the external class
+Thus, the following C typedef would fulfill the external Chapel class
 declaration shown above:
 
    typedef struct __D {
