@@ -7,7 +7,7 @@
 #include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chplstm.h"
 #include "error.h"

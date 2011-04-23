@@ -102,7 +102,8 @@ module BC_dijkstra {
       var node: int = stack;
       stack = Records[node].onStack;
 
-      Nodes[node].vb += Records[node].delta;
+//      Nodes[node].vb += Records[node].delta;
+      Nodes[node].vb$ += Records[node].delta;
 
       var ptr: PreEdge = Records[node].preEdge;
 
@@ -118,7 +119,8 @@ module BC_dijkstra {
         factor *= (1.0 + Records[node].delta);
         Records[predecessor].delta += factor;
 
-        Edges[edge].vb += factor;
+//        Edges[edge].vb += factor;
+        Edges[edge].vb$ += factor;
       }
     }
   }

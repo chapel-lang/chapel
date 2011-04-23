@@ -106,9 +106,19 @@ void PrimitiveType::verify() {
 }
 
 int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  if (!isInternalType)
-    fprintf(outfile, "{CHPL_TYPE_%s, %s},\n", symbol->cname, baseoffset);
-  else
+  if (!isInternalType) {
+    Symbol* cgsym = symbol;
+
+    // codegen volatile types as non-volatile equivalents
+    // (Alternatively, we could add new enums to the runtime header files
+    // for all volatile types if there was a reason to distinguish them)
+    //
+    if (nonvolType) {
+      cgsym = nonvolType->symbol;
+    }
+      
+    fprintf(outfile, "{CHPL_TYPE_%s, %s},\n", cgsym->cname, baseoffset);
+  } else
     INT_FATAL(this, "Cannot codegen an internal type");
   return 1;
 }
@@ -327,7 +337,8 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "chpl__class_id chpl__cid;\n");
   } else if (classTag == CLASS_UNION) {
     fprintf(outfile, "int64_t _uid;\n");
-    fprintf(outfile, "union {\n");
+    if (this->fields.length != 0)
+      fprintf(outfile, "union {\n");
   } else if (this->fields.length == 0) {
     fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
   }
@@ -339,7 +350,8 @@ void ClassType::codegenDef(FILE* outfile) {
   }
 
   if (classTag == CLASS_UNION) {
-    fprintf(outfile, "} _u;\n");
+    if (this->fields.length != 0)
+      fprintf(outfile, "} _u;\n");
   }
   if (symbol->hasFlag(FLAG_DATA_CLASS)) {
     getDataClassType(symbol)->codegen(outfile);
@@ -492,22 +504,11 @@ Symbol* ClassType::getField(int i) {
 
 
 static PrimitiveType* 
-createPrimitiveTypeHelper(const char *name, const char *cname, bool internalType=false) {
+createPrimitiveType(const char *name, const char *cname, bool internalType=false) {
   PrimitiveType* pt = new PrimitiveType(NULL, internalType);
   TypeSymbol* ts = new TypeSymbol(name, pt);
   ts->cname = cname;
   rootModule->block->insertAtTail(new DefExpr(ts));
-  return pt;
-}
-
-static PrimitiveType* 
-createPrimitiveType(const char *name, const char *cname, bool createvtype=false) {
-  PrimitiveType* pt = createPrimitiveTypeHelper(name, cname);
-  if (createvtype) {
-    PrimitiveType* vpt = createPrimitiveTypeHelper(astr("volatile ", name), astr("chpl_volatile_", cname));
-    pt->volType = vpt;
-    vpt->nonvolType = pt;
-  }
   return pt;
 }
 
@@ -516,43 +517,51 @@ createInternalType(const char *name, const char *cname) {
   return createPrimitiveType(name, cname, true /* internalType */);
 }
 
+static PrimitiveType* 
+createPrimitiveTypePlusVol(const char *name, const char *cname) {
+  PrimitiveType* pt = createPrimitiveType(name, cname);
+  PrimitiveType* vpt = createPrimitiveType(astr("volatile ", name), 
+                                           astr("chpl_volatile_", cname));
+  pt->volType = vpt;
+  vpt->nonvolType = pt;
+
+  return pt;
+}
+
 
 // Create new primitive type for integers. Specify name for now. Though it will 
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width (i.e., size).
 #define INIT_PRIM_BOOL(name, width)                                \
-  dtBools[BOOL_SIZE_##width] = createPrimitiveType(name, "chpl_bool" #width, true); \
+  dtBools[BOOL_SIZE_##width] = createPrimitiveTypePlusVol(name, "chpl_bool" #width); \
   dtBools[BOOL_SIZE_##width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width); \
   dtBools[BOOL_SIZE_##width]->volType->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width, true)
 
 #define INIT_PRIM_INT( name, width)                                 \
-  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t", true); \
+  dtInt[INT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "int" #width "_t"); \
   dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width); \
   dtInt[INT_SIZE_ ## width]->volType->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width, true)
 
 #define INIT_PRIM_UINT( name, width)                                  \
-  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "uint" #width "_t", true); \
+  dtUInt[INT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "uint" #width "_t"); \
   dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width); \
   dtUInt[INT_SIZE_ ## width]->volType->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width, true)
 
 #define INIT_PRIM_REAL( name, width)                                     \
-  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width, true); \
+  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "_real" #width); \
   dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width); \
   dtReal[FLOAT_SIZE_ ## width]->volType->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width, true)
   
 #define INIT_PRIM_IMAG( name, width)                               \
-  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width, true); \
+  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "_imag" #width); \
   dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width); \
   dtImag[FLOAT_SIZE_ ## width]->volType->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width, true)
   
 #define INIT_PRIM_COMPLEX( name, width)                                   \
-  dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width, true); \
+  dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
   dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
                                   "_chpl_complex" #width "(0.0, 0.0)",         \
-                                   0.0, 0.0, COMPLEX_SIZE_ ## width);          \
-  dtComplex[COMPLEX_SIZE_ ## width]->volType->defaultValue = new_ComplexSymbol(         \
-                                  "_chpl_complex" #width "(0.0, 0.0)",         \
-                                   0.0, 0.0, COMPLEX_SIZE_ ## width, true)             
+                                   0.0, 0.0, COMPLEX_SIZE_ ## width);
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
@@ -583,7 +592,7 @@ void initPrimitiveTypes(void) {
   dtVoid = createInternalType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
-  dtBool = createPrimitiveType ("bool", "chpl_bool", true);
+  dtBool = createPrimitiveTypePlusVol ("bool", "chpl_bool");
 
   // The base object class looks like this:
   //

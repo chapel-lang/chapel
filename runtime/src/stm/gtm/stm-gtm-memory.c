@@ -6,7 +6,7 @@
 #include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "chplstm.h"
 #include "error.h"
 #include "stm-gtm.h"

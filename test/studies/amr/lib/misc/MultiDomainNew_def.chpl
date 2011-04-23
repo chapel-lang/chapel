@@ -7,21 +7,21 @@ proc main {
   
       
   var mD = new MultiDomainNew( 2, false );
-  mD.add( [1..10,1..10] );
+  mD.add( [1..6,1..8] );
   
   
-  mD.subtract( [3..5, 4..6] );
-  mD.subtract( [7..8, 2..9] );  
-  mD.add( [11..12, 13..14] );  
+  mD.subtract( [4..5, 2..5] );
+  // mD.subtract( [7..8, 2..9] );  
+  // mD.add( [11..12, 13..14] );  
 
   mD.prettyPrint();
-    
-  mD.subtract( [-3..15, -3..15] );
+  
+  // mD.subtract( [-3..15, -3..15] );
+  // // 
+  // // mD.add( [1..10,1..10] );
   // 
-  // mD.add( [1..10,1..10] );
-
-  writeln("");  
-  mD.prettyPrint();
+  // writeln("");  
+  // mD.prettyPrint();
   
   
   for node in mD.nodes() {
@@ -80,7 +80,7 @@ class MultiDomainNew
   }
 
 
-  proc clear ()
+  proc ~MultiDomainNew ()
   {
     root.clearChildren();
     delete root;
@@ -144,8 +144,8 @@ class MultiDomainNew
       root.clearChildren();
       root.Domain.clear();
       root.filled    = false;
-      root.sep_d     = 0;
-      root.sep_index = 0;
+      root.bisect_dim     = 0;
+      root.bisect_idx = 0;
     }
   }
   
@@ -231,8 +231,8 @@ class MultiDomainNew
 // 'filled' indicates that some subset of the node's Domain is filled
 // in, though it may be farther down the tree. 
 //
-// The separatrix is described by sep_d, the dimension to which it
-// is orthogonal, and sep_index, its index in that dimension, which
+// The separatrix is described by bisect_dim, the dimension to which it
+// is orthogonal, and bisect_idx, its index in that dimension, which
 // is the lower bound of the right child.
 //------------------------------------------------------------------
 
@@ -245,11 +245,10 @@ class MDNode
   var Domain:    domain(rank,stridable=stridable);
   var filled:    bool;
 
-  var sep_d:     int = 0;
-  var sep_index: int = 0;
+  var bisect_dim: int = 0;
+  var bisect_idx: int = 0;
 
-  var left:  MDNode(rank,stridable);
-  var right: MDNode(rank,stridable);
+  var left, right:  MDNode(rank,stridable);
 
   
   
@@ -270,7 +269,7 @@ class MDNode
 
   proc clearChildren () {
 
-    if sep_index > 0 {
+    if bisect_idx > 0 {
       
       left.clearChildren();
       right.clearChildren();
@@ -316,21 +315,21 @@ proc MDNode.incorporate( D: domain(rank,stridable=stridable), D_filled: bool )
   
   //---- If children exist, incorporate D into them, and possibly unsplit ----
   
-  if sep_d > 0 {
+  if bisect_dim > 0 {
         
-    if sep_index >  D.low(sep_d)  then left.incorporate( D, D_filled );
+    if bisect_idx >  D.low(bisect_dim)  then left.incorporate( D, D_filled );
       
-    if sep_index <= D.high(sep_d) then right.incorporate( D, D_filled );
+    if bisect_idx <= D.high(bisect_dim) then right.incorporate( D, D_filled );
 
 
     //---- Eliminate children if possible ----
     
-    if (left.sep_d==0 && right.sep_d==0) &&
+    if (left.bisect_dim==0 && right.bisect_dim==0) &&
        (left.filled == right.filled)
     {
         this.filled    = left.filled;
-        this.sep_d     = 0;
-        this.sep_index = 0;
+        this.bisect_dim     = 0;
+        this.bisect_idx = 0;
         
         delete left;
         left = nil;
@@ -350,7 +349,7 @@ proc MDNode.incorporate( D: domain(rank,stridable=stridable), D_filled: bool )
 
     var dim_length     = 0;
     var max_dim_length = 0;
-    sep_d = 0;
+    bisect_dim = 0;
     
     for d in 1..rank
     {
@@ -367,7 +366,7 @@ proc MDNode.incorporate( D: domain(rank,stridable=stridable), D_filled: bool )
 
         if dim_length > max_dim_length {
           max_dim_length = dim_length;
-          sep_d = d;
+          bisect_dim = d;
         }
 
       }
@@ -378,9 +377,9 @@ proc MDNode.incorporate( D: domain(rank,stridable=stridable), D_filled: bool )
   
     
     
-    //---- sep_d=0 indicates that D contains Domain, so the fill status should match D ----
+    //---- bisect_dim=0 indicates that D contains Domain, so the fill status should match D ----
     
-    if sep_d == 0 then filled = D_filled;
+    if bisect_dim == 0 then filled = D_filled;
 
     //---- Otherwise, split the node, and call 'incorporate' on a child ----
 
@@ -389,10 +388,10 @@ proc MDNode.incorporate( D: domain(rank,stridable=stridable), D_filled: bool )
       
       //---- Cut low or high to best balance the children ----
       
-      if D.low(sep_d) - Domain.low(sep_d) > Domain.high(sep_d) - D.high(sep_d) then
-        sep_index = D.low(sep_d);
+      if D.low(bisect_dim) - Domain.low(bisect_dim) > Domain.high(bisect_dim) - D.high(bisect_dim) then
+        bisect_idx = D.low(bisect_dim);
       else
-        sep_index = D.high(sep_d) + Domain.stride(sep_d);
+        bisect_idx = D.high(bisect_dim) + Domain.stride(bisect_dim);
     
     
     
@@ -401,15 +400,15 @@ proc MDNode.incorporate( D: domain(rank,stridable=stridable), D_filled: bool )
       var subranges: rank*range(stridable=stridable);
       var D_temp:    domain(rank, stridable=stridable);
     
-      for d in 1      ..sep_d-1 do subranges(d) = Domain.dim(d);
-      for d in sep_d+1..rank    do subranges(d) = Domain.dim(d);
+      for d in 1      ..bisect_dim-1 do subranges(d) = Domain.dim(d);
+      for d in bisect_dim+1..rank    do subranges(d) = Domain.dim(d);
 
-      subranges(sep_d) = Domain.dim(sep_d) ( ..sep_index-Domain.stride(sep_d) );
+      subranges(bisect_dim) = Domain.dim(bisect_dim) ( ..bisect_idx-Domain.stride(bisect_dim) );
       D_temp = subranges;
       left = new MDNode( rank, stridable, D_temp, filled );      
       // left = new MDNode(subranges, filled);
     
-      subranges(sep_d) = Domain.dim(sep_d) ( sep_index.. );
+      subranges(bisect_dim) = Domain.dim(bisect_dim) ( bisect_idx.. );
       D_temp = subranges;
       right = new MDNode( rank, stridable, D_temp, filled );
       // right = new MDNode(subranges, filled);
@@ -417,7 +416,7 @@ proc MDNode.incorporate( D: domain(rank,stridable=stridable), D_filled: bool )
 
       //---- Incorporate D into the approprate child ----
       
-      if D.low(sep_d) < sep_index then left.incorporate( D, D_filled );
+      if D.low(bisect_dim) < bisect_idx then left.incorporate( D, D_filled );
       else                             right.incorporate( D, D_filled );
     
     }
@@ -517,8 +516,8 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : MDNode(rank
       D_temp           = subranges;
 
       parent           = new MDNode( rank, stridable, D_temp, this.filled );
-      parent.sep_d     = ext_d;
-      parent.sep_index = ext_index;
+      parent.bisect_dim     = ext_d;
+      parent.bisect_idx = ext_index;
       
       parent.left  = sibling;
       parent.right = this;
@@ -534,16 +533,14 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : MDNode(rank
 
       subranges(ext_d) = ext_index .. D.high(ext_d) by s;
       D_temp           = subranges;
-      // sibling          = new MDNode( subranges, false );
       sibling          = new MDNode( rank, stridable, D_temp, false );
       sibling.filled   = false;
       
       subranges(ext_d)   = Domain.low(ext_d) .. D.high(ext_d) by s;
       D_temp             = subranges;
       parent             = new MDNode( rank, stridable, D_temp, this.filled );
-      // parent             = new MDNode( subranges, true );
-      parent.sep_d       = ext_d;
-      parent.sep_index   = ext_index;
+      parent.bisect_dim       = ext_d;
+      parent.bisect_idx   = ext_index;
       
       parent.left  = this;
       parent.right = sibling;
@@ -584,14 +581,14 @@ proc MDNode.intersect ( D: domain(rank,stridable=stridable) )
     
   //---- If the node is split... ----
   
-  if sep_d > 0 {
+  if bisect_dim > 0 {
 
     //---- Determine which children D intersects ----
 
     var intersects_left, intersects_right: bool = false;
 
-    if D.low(sep_d)  <  sep_index then intersects_left  = true;
-    if D.high(sep_d) >= sep_index then intersects_right = true;
+    if D.low(bisect_dim)  <  bisect_idx then intersects_left  = true;
+    if D.high(bisect_dim) >= bisect_idx then intersects_right = true;
   
   
     //---- Modify the children appropriately ----
@@ -649,12 +646,12 @@ proc MDNode.intersect ( D: domain(rank,stridable=stridable) )
 proc MDNode.merge( node: MDNode )
 {
   
-  this.Domain    = node.Domain;
-  this.filled    = node.filled;
-  this.sep_d     = node.sep_d;
-  this.sep_index = node.sep_index;
-  this.left      = node.left;
-  this.right     = node.right;
+  this.Domain     = node.Domain;
+  this.filled     = node.filled;
+  this.bisect_dim = node.bisect_dim;
+  this.bisect_idx = node.bisect_idx;
+  this.left       = node.left;
+  this.right      = node.right;
   
   delete node;
   

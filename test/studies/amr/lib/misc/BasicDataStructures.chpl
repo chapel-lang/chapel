@@ -42,7 +42,7 @@ proc main {
 //| >    List    | >
 //|/_____________|/
 
-record List
+class List
 {
   
   type data_type;
@@ -54,6 +54,9 @@ record List
     var data: outer.data_type;
     var next: Node;
   }
+  
+  
+  proc ~List () { clear(); }
   
   
   iter these ()
@@ -101,12 +104,11 @@ record List
 //| >    Stack    | >
 //|/______________|/
 
-record Stack
+class Stack
 {
 
   type data_type;
   var top:  Node;
-  var size: int=0;
 
   
   class Node {
@@ -114,11 +116,16 @@ record Stack
     var next: Node;
   }
 
+
+  proc ~Stack ()
+  {
+    while top do pop();
+  }
+  
   
   proc push ( data: data_type )
   {
     top = new Node(data, top);
-    size += 1;
   }
 
   
@@ -126,11 +133,13 @@ record Stack
   {
     if isEmpty() then halt("Attempting to pop off an empty stack.");
     
-    var old_top = top;
-    top = old_top.next;
-    size -= 1;
+    var data_out = top.data;
+    var new_top  = top.next;
+    delete top;
+    top = new_top;
 
-    return old_top.data;
+    return data_out;
+
   }
 
   
@@ -151,7 +160,7 @@ record Stack
 //| >    Queue    | >
 //|/______________|/
 
-record Queue
+class Queue
 {
   
   type data_type;
@@ -162,6 +171,13 @@ record Queue
     var data: outer.data_type;
     var prev: Node;
     var next: Node;
+  }
+
+
+
+  proc ~Queue ()
+  {
+    while head do dequeue();
   }
 
 

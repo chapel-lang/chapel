@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include "chpltypes.h"
 #include <chpl-comm-heap-macros.h>
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include <chpl-comm-task-decls.h>
 #include "chpl-comm-locales.h"
 

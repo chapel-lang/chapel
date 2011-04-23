@@ -25,7 +25,6 @@ clobber: FORCE
 
 
 nanox-config: FORCE
-	cd $(NANOX_SUBDIR) && autoreconf -f -i
 	mkdir -p $(NANOX_BUILD_DIR)
 	cd $(NANOX_BUILD_DIR) && $(NANOX_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(NANOX_INSTALL_DIR) --with-chapel=$(CURDIR)/$(CHAPEL_ROOT)
 
@@ -34,5 +33,12 @@ nanox-build: FORCE
 	cd $(NANOX_BUILD_DIR) && $(MAKE) install
 
 nanox: nanox-config nanox-build
+
+nanox-reconfig:
+	cd $(NANOX_SUBDIR) && autoreconf -f -i
+
+nanox-getgit:
+	git clone http://pm.bsc.es/git/nanox.git
+	mv nanox nanox-git
 
 FORCE:

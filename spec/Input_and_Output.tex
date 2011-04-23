@@ -1,9 +1,8 @@
 \sekshun{Input and Output}
 \label{Input_and_Output}
 
-Chapel provides a built-in \chpl{file} class to handle input and
-output to files using functions and methods
-called \chpl{read}, \chpl{readln},
+Chapel provides a predefined \chpl{file} class to handle input and
+output to files using the functions \chpl{read}, \chpl{readln},
 \chpl{write}, and \chpl{writeln}.
 
 \section{The {\em file} type}
@@ -76,18 +75,18 @@ functions}
 \index{read}
 \index{write}
 
-The built-in function \chpl{write} takes an arbitrary number of
-arguments and prints each out in turn to \chpl{stdout}.  The built-in
+The predefined function \chpl{write} takes an arbitrary number of
+arguments and prints each out in turn to \chpl{stdout}.  The predefined
 function \chpl{writeln} is identical to \chpl{write} except that it
 outputs an additional {\em end-of-line} character after writing out
 the argument expressions.  Both of these functions will generate their
 output atomically with respect to other calls to these functions from
 other tasks.
 
-The built-in function \chpl{read} takes an arbitrary number of
+The predefined function \chpl{read} takes an arbitrary number of
 variable expressions and reads into each in turn from \chpl{stdin}.
 Any whitespace is skipped over and is used only to separate one
-argument from the next.  The built-in function \chpl{readln} is
+argument from the next.  The predefined function \chpl{readln} is
 identical except that upon reading all of its arguments it scans ahead
 in the input stream until just after the next {\em end-of-line}
 character.
@@ -101,13 +100,16 @@ returned.
 
 These functions are wrappers for the methods on files described next.
 
-\begin{example}
+\begin{chapelexample}{writeln.chpl}
 The \chpl{writeln} wrapper function allows for a simple implementation
 of the {\em Hello-World} program:
 \begin{chapel}
 writeln("Hello, World!");
 \end{chapel}
-\end{example}
+\begin{chapeloutput}
+Hello, World!
+\end{chapeloutput}
+\end{chapelexample}
 
 \begin{example}
 The following code shows three ways to read values into a pair of
@@ -165,7 +167,7 @@ class to allow user-defined classes to be written to.  If a class is
 defined to be a subclass of Writer, it must override
 the \chpl{writeIt} method that takes a \chpl{string} as an argument.
 
-\begin{example}
+\begin{chapelexample}{Writer.chpl}
 The following code defines a subclass of \chpl{Writer} that overrides
 the \chpl{writeIt} method to allow it to be written to.  It also
 overrides the \chpl{writeThis} method to override the default way that
@@ -185,9 +187,12 @@ var c = new C();
 c.write(41, 32, 23, 14);
 writeln(c);
 \end{chapel}
+\begin{chapeloutput}
+4321
+\end{chapeloutput}
 The \chpl{C} class filters the arguments sent to it, printing out only
 the first letter.  The output to the above is thus \chpl{4321}.
-\end{example}
+\end{chapelexample}
 
 
 \section{The {\em read} and {\em readln} methods on files}

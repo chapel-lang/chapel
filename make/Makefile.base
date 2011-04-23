@@ -254,8 +254,8 @@ CHPL_TAGS_APPEND_FLAG = -a
 endif
 endif
 
-# handle flags_list.h as well
-CHPL_TAGS_FLAGS += --regex='/symbolFlag(\s-*\(FLAG[a-zA-Z0-9_]+\)/\1/'
+# non-portable means to handle flags_list.h as well
+#CHPL_TAGS_FLAGS += --regex='/symbolFlag(\s-*\(FLAG[a-zA-Z0-9_]+\)/\1/'
 
 
 #

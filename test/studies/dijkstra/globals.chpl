@@ -10,14 +10,14 @@ module NodesEdges {
     var n1: int;              // node 1 id, edge between node 1 and node 2
     var n2: int;              // node 2 id, edge between node 1 and node 2
     var dupl: int;            // edge is/is not a duplicate
-    var vb: real;             // edge betweenness
+    var vb$: sync real;       // edge betweenness
     var distance: real;       // edge distance
   }
 
   class Node {
     var id: int;              // node id
     var nNeighbors: int;      // number of neighbors (Out-degree)
-    var vb: real;             // node betweeneess
+    var vb$: sync real;       // node betweeneess
     var NeighborD: domain(1);
     var EdgeIndexD: domain(1);
     var Neighbors: [NeighborD] int;      // list of neighbor ids

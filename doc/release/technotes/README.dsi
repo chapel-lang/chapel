@@ -316,12 +316,6 @@ proc GlobalArray.GlobalArray() // or with arguments
 proc GlobalArray.dsiSupportsPrivatization() param: bool return false;
   This procedure should be provided as shown unless privatization is supported.
 
-proc GlobalArray.idxType type return dom.idxType;
-  Returns the index type of the corresponding domain.
-  (Could be a type field in GlobalArray instead.)
-  [TODO: remove its use in _array.this(i: _value.idxType ...rank)
-   and eliminate this requirement.]
-
 proc GlobalDomain.dsiBuildArray(type eltType) : GlobalArray(eltType, this.type)
   This method is invoked when the Chapel program is creating
   an array value over the domain 'this' with the element type 'eltType'.
@@ -611,7 +605,7 @@ class Global ... {
 }
   The field 'pid' should be provided as shown.
   It should not be accessed by the DSI implementation except
-  in conjunction with chpl_privateInstance() as discussed later.
+  in conjunction with chpl_getPrivatizedCopy() as discussed later.
 
 proc Global.dsiGetPrivatizeData()
   Returns the data to be used as the argument to dsiPrivatize().
@@ -660,10 +654,10 @@ proc Global.dsiReprivatize(other: Global, reprivatizeData): void
 Tip: testing privatization
 --------------------------
 
-In addition to the usual correctness testing, a useful check is whether
-array access is purely local, i.e., results in no communication.
-This can be done using 'local' blocks.
-(The 'local' block performs runtime checks that report an error
+In addition to the usual correctness testing, it may be useful to check
+whether array access is purely local, i.e., results in no communication.
+This can be done using 'local' statements.
+(A 'local' statement performs runtime checks that report an error
 whenever any communication occurs within the its body.)
 
 Here is a simple example:
@@ -672,20 +666,20 @@ Here is a simple example:
   var A: ...;
 
   // initialize it
-  A = value 1;
+  A = value1;
 
   forall loc in (locales that A is distributed over) do
     // run the check on each locale
     on loc {
-      // value 2 to be different from value 1
-      var temp = value 2;
+      // value2 to be different from value1
+      var temp = value2;
       local {
         // Access the array.
-	// The 'local' block succeeds if there is no communication.
+	// This statement succeeds if there is no communication.
         temp = A[an index that is mapped to the locale 'loc'];
       }
       // reference the read value
-      assert(temp == value 1);
+      assert(temp == value1);
     }
 
 Tip: privatized copies should reference privatized copies
@@ -699,16 +693,14 @@ all the three global descriptor classes may have to be privatized.
 When one descriptor object references another, a privatized copy of
 the former needs to reference a privatized copy of the latter.
 
-To obtain a privatized copy of an object, e.g. for use within
-dsiPrivatize(), the following overloaded procedure can be used:
+To obtain a privatized copy of an object, e.g. for use within dsiPrivatize(),
+use the following procedure:
 
-  proc chpl_privateInstance(originalInstance, instancePid:int)
-  proc chpl_privateInstance(type instanceType, instancePid:int)
+  proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
 
 Notes:
-* The first argument is the original object or its type
-  (if the object is passed, only its type is used).
-* The second argument is the original object's 'pid field.
+* The first argument is type of the object being privatized.
+* The second argument is the original object's 'pid' field.
 * The procedure returns a privatized copy of the original object.
 * The procedure can be applied only to objects that have already
   been privatized.
@@ -728,8 +720,8 @@ assuming that GlobalDistribution also supports privatization:
   proc GlobalDomain.dsiPrivatize(privatizeData) {
     // extract the 'pid' provided above
     var distPid = privatizeData(1);
-    // obtain the privatized copy of the GlobalDistribution instance
-    var privatizedDMap = chpl_privateInstance(this.dist.type, distPid);
+    // obtain the privatized copy of the GlobalDistribution object
+    var privatizedDMap = chpl_getPrivatizedCopy(this.dist.type, distPid);
 
     return new GlobalDomain(dist = privatizedDMap,
                             ... other fields as needed ...)

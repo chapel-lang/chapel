@@ -42,12 +42,17 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
   char buf[buflen];
   char *cur;
   int fdo[2], outfd;
+  int fde[2], errfd;
   fd_set set;
   pid_t pid;
   int status;
   int rv, numRead;
 
   if (pipe(fdo) < 0) {
+    sprintf(buf, "Unable to run utility '%s' (pipe failed): %s\n", command, strerror(errno));
+    chpl_internal_error(buf);
+  }
+  if (pipe(fde) < 0) {
     sprintf(buf, "Unable to run utility '%s' (pipe failed): %s\n", command, strerror(errno));
     chpl_internal_error(buf);
   }
@@ -58,6 +63,14 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     close(fdo[0]);
     if (fdo[1] != STDOUT_FILENO) {
       if (dup2(fdo[1], STDOUT_FILENO) != STDOUT_FILENO) {
+        sprintf(buf, "Unable to run utility '%s' (dup2 failed): %s",
+                command, strerror(errno));
+        chpl_internal_error(buf);
+      }
+    }
+    close(fde[0]);
+    if (fde[1] != STDERR_FILENO) {
+      if (dup2(fde[1], STDERR_FILENO) != STDERR_FILENO) {
         sprintf(buf, "Unable to run utility '%s' (dup2 failed): %s",
                 command, strerror(errno));
         chpl_internal_error(buf);
@@ -75,18 +88,39 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     return -1;
   default:
     outfd = fdo[0];
+    errfd = fde[0];
     close(fdo[1]);
+    close(fde[1]);
     numRead = 0;
     curlen = buflen > outbuflen ? outbuflen : buflen;
     cur = buf;
     while (numRead < buflen) {
+      struct timeval tv = { 1, 0 };
       FD_ZERO(&set);
       FD_SET(outfd, &set);
-      select(outfd+1, &set, NULL, NULL, NULL);
+      FD_SET(errfd, &set);
+      select(errfd+1, &set, NULL, NULL, &tv);
       if (FD_ISSET(outfd, &set)) {
         rv = read(outfd, cur, buflen);
         if (rv == 0) {
-          break;
+          if (waitpid(pid, &status, WNOHANG) == pid)
+            break;
+        } else if (rv > 0) {
+          cur += rv;
+          numRead += rv;
+          curlen -= rv;
+        } else {
+          sprintf(buf, "Unable to run utility '%s' (read failed): %s",
+                  command, strerror(errno));
+          chpl_warning(buf, 0, 0);
+          return -1;
+        }
+      }
+      if (FD_ISSET(errfd, &set)) {
+        rv = read(errfd, cur, buflen);
+        if (rv == 0) {
+          if (waitpid(pid, &status, WNOHANG) == pid)
+            break;
         } else if (rv > 0) {
           cur += rv;
           numRead += rv;
@@ -108,12 +142,8 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
       return -1;
     }
 
-    // do we really need to wait?
-    if (waitpid(pid, &status, 0) != pid) {
-      sprintf(buf, "'%s' (waitpid failed): %s",
-              command, strerror(errno));
-      chpl_warning(buf, 0, 0);
-    }
+    // NOTE: We don't do a waitpid() here, so the program may keep running.
+    //  That is a bad program, and I'm not going to deal with it here.
   }
   return numRead;
 }

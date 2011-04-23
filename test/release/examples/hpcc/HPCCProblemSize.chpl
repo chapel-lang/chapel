@@ -83,16 +83,17 @@ module HPCCProblemSize {
   // required by the arrays
   //
   proc printProblemSize(type elemType, numArrays, problemSize: ?psType, 
-                       param rank=1) {
+                        param rank=1, problemSize2=problemSize) {
     const bytesPerArray = problemSize**rank * numBytes(elemType),
           totalMemInGB = (numArrays * bytesPerArray:real) / (1024**3),
-          lgProbSize = log2(problemSize):psType;
+          lgProbSize = log2(problemSize):psType,
+          lgProbSize2 = log2(problemSize2):psType;
 
     write("Problem size = ", problemSize);
-    for i in 2..rank do write(" x ", problemSize);
-    if (2**lgProbSize == problemSize) {
+    for i in 2..rank do write(" x ", problemSize2);
+    if (2**lgProbSize == problemSize && 2**lgProbSize2 == problemSize2) {
       write(" (2**", lgProbSize);
-      for i in 2..rank do write(" x 2**", lgProbSize);
+      for i in 2..rank do write(" x 2**", lgProbSize2);
       write(")");
     }
     writeln();

@@ -41,7 +41,7 @@ typedef struct {
 } chpl_sync_aux_t;
 
 #include <chpltypes.h>
-#include <chpltasks.h>
+#include <chpl-tasks.h>
 
 void nanos_chapel_pre_init ( void * );
 void nanos_chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize);

@@ -624,9 +624,7 @@ class Block1DArr: BaseArray {
     return c;
   }
   proc privatize2(pid) {
-    var dompid = dom.pid;
-    var thisdom = dom;
-    this.dom = __primitive("chpl_getPrivateClass", thisdom, dompid);
+    this.dom = chpl_getPrivatizedCopy(dom.type, dom.pid);
   }
 
   // GLOBAL ARRAY INTERFACE:

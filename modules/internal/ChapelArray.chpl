@@ -47,7 +47,7 @@ proc _reprivatize(value) {
   proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
     var newValue = originalValue;
     if hereID != here.uid {
-      newValue = __primitive("chpl_getPrivatizedClass", newValue, pid);
+      newValue = chpl_getPrivatizedCopy(newValue.type, pid);
       newValue.dsiReprivatize(parentValue, reprivatizeData);
     }
     cobegin {
@@ -367,10 +367,7 @@ record _distribution {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -496,10 +493,7 @@ record _domain {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -687,7 +681,7 @@ record _domain {
     var ranges = dims();
     for i in 1..rank do {
       ranges(i) = ranges(i).expand(off(i));
-      if (ranges(i)._low > ranges(i)._high) {
+      if (ranges(i).low > ranges(i).high) {
         halt("***Error: Degenerate dimension created in dimension ", i, "***");
       }
     }
@@ -748,8 +742,8 @@ record _domain {
   proc interior(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do {
-      if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
-          (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
+      if ((off(i) > 0) && (dim(i).high+1-off(i) < dim(i).low) ||
+          (off(i) < 0) && (dim(i).low-1-off(i) > dim(i).high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
       ranges(i) = _value.dsiDim(i).interior(off(i));
@@ -782,7 +776,7 @@ record _domain {
   proc translate(off: ?t ...rank) return translate(off);
   proc translate(off) where isTuple(off) {
     if off.size != rank then
-      compilerError("must be same size");
+      compilerError("the domain and offset arguments of translate() must be of the same rank");
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = _value.dsiDim(i).translate(off(i));
@@ -917,7 +911,7 @@ pragma "inline" proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return false;
   for param i in 1..d1._value.rank do
-    if (d1.dims() != d2.dims()) then return false;
+    if (d1.dim(i) != d2.dim(i)) then return false;
   return true;
 }
 
@@ -925,7 +919,7 @@ pragma "inline" proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return true;
   for param i in 1..d1._value.rank do
-    if (d1.dims() != d2.dims()) then return true;
+    if (d1.dim(i) != d2.dim(i)) then return true;
   return false;
 }
 
@@ -963,6 +957,8 @@ pragma "inline" proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
   return false;
 }
 
+// any combinations not handled by the above
+
 pragma "inline" proc ==(d1: domain, d2: domain) param {
   return false;
 }
@@ -985,10 +981,7 @@ record _array {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -1011,7 +1004,7 @@ record _array {
   proc rank param return this.domain.rank;
 
   pragma "inline"
-  proc this(i: rank*_value.idxType) var {
+  proc this(i: rank*_value.dom.idxType) var {
     if isRectangularArr(this) || isSparseArr(this) then
       return _value.dsiAccess(i);
     else
@@ -1019,7 +1012,7 @@ record _array {
   }
 
   pragma "inline"
-  proc this(i: _value.idxType ...rank) var
+  proc this(i: _value.dom.idxType ...rank) var
     return this(i);
 
   //
@@ -1056,7 +1049,7 @@ record _array {
     return _newArray(a);
   }
 
-  proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
+  proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
     if boundsChecking then
       checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
@@ -1466,7 +1459,7 @@ proc =(a: [], b: _desync(a.eltType)) {
     for e in a do     // SS: changing forall to for
       e = b;
   } else {
-    compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+    compilerWarning("Whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for e in a do
       e = b;
   }

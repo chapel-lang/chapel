@@ -1,16 +1,8 @@
 \sekshun{Expressions}
 \label{Expressions}
 
-This section defines expressions in Chapel with the following
-exceptions: The forall expression, reduce expressions, and scan
-expressions are defined in~\rsec{Data_Parallelism}.  Module access
-expressions are defined in~\rsec{Explicit_Naming}.  Tuple expressions
-and tuple expand expressions are defined in~\rsec{Tuples}.  Locale
-access expressions are defined
-in~\rsec{Querying_the_Locale_of_a_Variable}.  Mapped domain
-expressions are defined in~\rsec{Domain_Maps}.
+Chapel provides the following expressions:
 
-The syntax for an expression is given by:
 \begin{syntax}
 expression:
   literal-expression
@@ -38,12 +30,27 @@ expression:
   mapped-domain-expression
 \end{syntax}
 % in README.firstClassFns: lambda-declaration-expression
-% TODO: add new and delete; then add cross-refs to top of Classes.tex
+
+Individual expressions are defined in the remainder of this chapter
+and additionally as follows:
+
+\begin{itemize}
+\item forall, reduce, and scan \rsec{Data_Parallelism}
+\item module access \rsec{Explicit_Naming}
+\item tuple and tuple expand \rsec{Tuples}
+\item locale access \rsec{Querying_the_Locale_of_a_Variable}
+\item mapped domain \rsec{Domain_Maps}
+\item constructor calls \rsec{Class_New}
+\end{itemize}
+
+
 
 \section{Literal Expressions}
 \label{Literal_Expressions}
+\index{literal expressions}
+\index{expressions!literal}
 
-A literal value for any of the built-in
+A literal value for any of the predefined
 types~(\rsec{Primitive_Type_Literals}) is a literal expression.
 Literal expressions are given by the following syntax:
 \begin{syntax}
@@ -59,6 +66,7 @@ literal-expression:
 
 \section{Variable Expressions}
 \label{Variable_Expressions}
+\index{expressions!variable}
 
 A use of a variable, constant, parameter, or formal argument, is
 itself an expression.  The syntax of a variable expression is given
@@ -70,6 +78,7 @@ variable-expression:
 
 \section{Enumeration Constant Expression}
 \label{Enumeration_Constant_Expression}
+\index{expressions!enumeration constant}
 
 A use of an enumeration constant is itself an expression.  Such a
 constant must be preceded by the enumeration type name.  The syntax of
@@ -79,13 +88,12 @@ enum-constant-expression:
   enum-type . identifier
 \end{syntax}
 
-\begin{example}
 For an example of using enumeration constants,
 see~\rsec{Enumerated_Types}.
-\end{example}
 
 \section{Parenthesized Expressions}
 \label{Parenthesized_Expressions}
+\index{expressions!parenthesized}
 
 A \sntx{parenthesized-expression} is an expression that is delimited
 by parentheses as given by:
@@ -99,20 +107,26 @@ ignored and have only a syntactical effect.
 \section{Call Expressions}
 \label{Call_Expressions}
 \index{function calls}
+\index{expressions!call}
 
 Functions and function calls are defined in~\rsec{Functions}.
 
 \section{Indexing Expressions}
 \label{Indexing_Expressions}
 \index{indexing}
+\index{expressions!indexing}
 
-Indexing into arrays, tuples, and domains has the same syntax as a
-call expression.  Indexing, at its core, is nothing more than a call
-to the indexing function defined on these types.
+Indexing, for example into arrays, tuples, and domains,
+has the same syntax as a call expression.
+ 
+Indexing is performed by an implicit invocation of the \chpl{this} method
+on the value being indexed,
+passing the indices as the actual arguments.
 
 \section{Member Access Expressions}
 \label{Member_Access_Expressions}
 \index{member access}
+\index{expressions!member access}
 
 Member access expressions provide access to a field or invoke a method
 of an instance of a class, record, or union.
@@ -128,6 +142,7 @@ member-access-expression:
 \section{The Query Expression}
 \label{The_Query_Expression}
 \index{?@\chpl{?}}
+%TODO-how? \index{expressions!\?}
 
 A query expression is used to query a type or value within a formal
 argument type expression.  The syntax of a query expression is given
@@ -146,28 +161,54 @@ genericity of a generic type that defines default values for all of
 its generic fields when specifying a formal argument as discussed
 in~\rsec{Formal_Arguments_of_Generic_Type}.
 
-\begin{example}
+\begin{chapelexample}{query.chpl}
 The following code defines a generic function where the type of the
 first argument is queried and stored in the type alias \chpl{t} and
 the domain of the second argument is queried and stored in the
 variable \chpl{D}:
+\begin{chapelnoprint}
+{ // }
+\end{chapelnoprint}
 \begin{chapel}
 proc foo(x: ?t, y: [?D] t) {
   for i in D do
     y[i] = x;
 }
 \end{chapel}
-This allows a generic specification of a function to assign a
+\begin{chapelnoprint}
+// {
+var x = 1.5;
+var y: [1..4] x.type;
+foo(x, y);
+writeln(y);
+}
+\end{chapelnoprint}
+This allows a generic specification of assigning a
 particular value to all elements of an array.  The value and the
 elements of the array are constrained to be the same type.  This
 function can be rewritten without query expression as follows:
+\begin{chapelnoprint}
+{ // }
+\end{chapelnoprint}
 \begin{chapel}
 proc foo(x, y: [] x.type) {
   for i in y.domain do
     y[i] = x;
 }
 \end{chapel}
-\end{example}
+\begin{chapelnoprint}
+// {
+var x = 1.5;
+var y: [1..4] x.type;
+foo(x, y);
+writeln(y);
+}
+\end{chapelnoprint}
+\begin{chapeloutput}
+1.5 1.5 1.5 1.5
+1.5 1.5 1.5 1.5
+\end{chapeloutput}
+\end{chapelexample}
 
 There is an expectation that query expressions will be allowed in more
 places in the future.
@@ -175,6 +216,7 @@ places in the future.
 \section{Casts}
 \label{Casts}
 \index{casts}
+\index{expressions!cast}
 
 A cast is specified with the following syntax:
 \begin{syntax}
@@ -199,6 +241,7 @@ explicit conversion:
 \section{LValue Expressions}
 \label{lvalue}
 \index{lvalue}
+\index{expressions!lvalue}
 
 An {\em lvalue} is an expression that can be used on the left-hand
 side of an assignment statement or on either side of a swap statement,
@@ -408,7 +451,10 @@ expression is not a scalar as expected.
 \section{Operator Expressions}
 \label{Binary_Expressions}
 \label{Unary_Expressions}
+\index{operators!operator expressions}
+\index{expressions!operator}
 
+\index{operators!unary}
 The application of operators to expressions is itself an expression.
 The syntax of a unary expression is given by:
 \begin{syntax}
@@ -419,6 +465,7 @@ unary-operator: one of
   + - ~ !
 \end{syntax}
 
+\index{operators!binary}
 The syntax of a binary expression is given by:
 \begin{syntax}
 binary-expression:
@@ -1098,28 +1145,40 @@ overloading~(\rsec{Function_Overloading}).
 \subsection{The String Concatenation Operator}
 \label{The_String_Concatenation_Operator}
 \index{+@\chpl{+}}
+\index{operators!+, on strings}
 
 The string concatenation operator \chpl{+} is predefined over numeric, boolean,
 and enumerated types with strings. It casts its operands to string type and
 concatenates them together.
 
-\begin{example}
+\begin{chapelexample}{string-concat.chpl}
 The code
+\begin{chapelnoprint}
+var i:int = 3;
+writeln(
+\end{chapelnoprint}
 \begin{chapel}
 "result: "+i
 \end{chapel}
+\begin{chapelnoprint}
+);
+\end{chapelnoprint}
+\begin{chapeloutput}
+result: 3
+\end{chapeloutput}
 where \chpl{i} is an integer appends the string representation of \chpl{i} to the
 string literal \chpl{"result: "}.  If \chpl{i} is \chpl{3}, then the resulting string
 would be \chpl{"result: 3"}.
-\end{example}
+\begin{chapelnoprint}
+\end{chapelnoprint}
+\end{chapelexample}
 
 \subsection{The By Operator}
 \label{The_By_Operator}
-\index{arithmetic domains!strided}
-\index{arithmetic domains!by operator}
 \index{by@\chpl{by}}
+\index{operators!by}
 
-The operator \chpl{by} is predefined on ranges and arithmetic domains.
+The operator \chpl{by} is predefined on ranges and rectangular domains.
 It is described in~\rsec{By_Operator_For_Ranges} for ranges
 and~\rsec{Domain_Striding} for domains.
 
@@ -1142,9 +1201,14 @@ let-expression:
   `let' variable-declaration-list `in' expression
 \end{syntax}
 The scope of the variables is the let-expression.
-\begin{example}
+\begin{chapelexample}{let.chpl}
 Let expressions are useful for defining variables in the context of
 expression.  In the code
+\begin{chapelnoprint}
+  var a:uint = 4;
+  var b:int = 5;
+  var l =
+\end{chapelnoprint}
 \begin{chapel}
   let x: real = a*b, y = x*x in 1/y
 \end{chapel}
@@ -1152,11 +1216,19 @@ the value determined by \chpl{a*b} is computed and converted to type
 real if it is not already a real.  The square of the real is then
 stored in \chpl{y} and the result of the expression is the reciprocal
 of that value.
-\end{example}
+\begin{chapelnoprint}
+  ;
+  writeln(l);
+\end{chapelnoprint}
+\begin{chapeloutput}
+0.0025
+\end{chapeloutput}
+\end{chapelexample}
 
 \section{Conditional Expressions}
 \label{Conditional_Expressions}
-\index{conditional!expression}
+\index{conditional expression}
+\index{expressions!conditional}
 \index{if@\chpl{if}}
 \index{then@\chpl{then}}
 \index{else@\chpl{else}}
@@ -1181,12 +1253,9 @@ is used to filter predicates as described
 in~\rsec{Filtering_Predicates_For} and~\rsec{Filtering_Predicates_Forall},
 respectively.
 
-\begin{example}
+\begin{chapelexample}{condexp.chpl}
 This example shows how if-then-else can be used in a context in which an
 expression is expected.
-\begin{chapelpre}
-% condexp.chpl
-\end{chapelpre}
 \begin{chapel}
 writehalf(8);
 writehalf(21);
@@ -1202,7 +1271,7 @@ Half of 8 is 4
 Half of 21 is 11
 Half of 1000 is 500
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \section{For Expressions}
 \label{For_Expressions}
@@ -1230,11 +1299,8 @@ expression filters the iterations of the for expression.
 The iterations for which the condition does not hold
 are not reflected in the result of the for expression.
 
-\begin{example}
+\begin{chapelexample}{yieldPredicates.chpl}
 The code
-\begin{chapelpre}
-% yieldPredicates.chpl
-\end{chapelpre}
 \begin{chapel}
 var A = for i in 1..10 do if i % 3 != 0 then i;
 \end{chapel}
@@ -1246,4 +1312,4 @@ writeln(A);
 \end{chapeloutput}
 declares an array A that is initialized to the integers between
 1 and 10 that are not divisible by 3.
-\end{example}
+\end{chapelexample}

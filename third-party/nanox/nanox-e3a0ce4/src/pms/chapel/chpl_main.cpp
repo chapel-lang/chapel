@@ -18,13 +18,13 @@
 /*      along with NANOS++.  If not, see <http://www.gnu.org/licenses/>.             */
 /*************************************************************************************/
 
-#include "chpl_nanos.h"
 #include <assert.h>
 
 #include "system.hpp"
 #include "basethread.hpp"
 #include "schedule.hpp"
 #include "smpdd.hpp"
+#include "chpl_nanos.h"
 
 // // TODO: include chpl headers?
 // typedef char * chpl_string;

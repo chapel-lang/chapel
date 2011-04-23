@@ -500,6 +500,7 @@ if ($valgrind == 0) {
 }
 if ($examples == 1) {
     if ($parnodefile eq "") {
+        mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
         $testflags = "$testflags release/examples";
     } else {
         mysystem("cd $testdir && find release/examples -type d > DIRFILE", 

@@ -6,7 +6,7 @@
 #include "chpl_mem.h"
 #include "chplcast.h"
 #include "chplrt.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "config.h"
 #include "error.h"
 #include <assert.h>

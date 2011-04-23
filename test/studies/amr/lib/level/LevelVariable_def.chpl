@@ -14,19 +14,9 @@ use GridVariable_def;
 
 class LevelVariable {
   
-  const level:     Level;
+  const level:        Level;
   var grid_variables: [level.grids] GridVariable;
 
-
-  //|\''''''''''''''''|\
-  //| >    clear()    | >
-  //|/................|/
-  proc clear() {
-    // Nothing to do
-  }
-  // /|''''''''''''''''/|
-  //< |    clear()    < |
-  // \|................\|
 
 
   //|\''''''''''''''''''''''''''''|\
@@ -47,6 +37,22 @@ class LevelVariable {
   // /|''''''''''''''''''''''''''''/|
   //< |    initialize() method    < |
   // \|............................\|
+
+
+
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
+
+  proc ~LevelVariable ()
+  {
+    for grid_var in grid_variables do delete grid_var;
+  }
+
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
+
 
 
   //|\'''''''''''''''''''''|\
@@ -169,7 +175,7 @@ proc LevelVariable.extrapolateGhostData () {
 
 proc GridVariable.extrapolateGhostData () {
 
-  for ghost_domain in grid.ghost_multidomain {
+  for ghost_domain in grid.ghost_domains {
     var loc = grid.relativeLocation(ghost_domain);
     var shift = -1*loc;
 

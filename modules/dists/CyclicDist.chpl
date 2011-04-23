@@ -129,15 +129,10 @@ proc Cyclic.getChunk(inds, locid) {
     locidtup = locid;
   for param i in 1..rank {
     var distStride = targetLocDom.dim(i).length;
-    var loclowidx = chpl__mod(startIdx(i) + locidtup(i), distStride);
-    var lowmod = chpl__mod(inds.dim(i).low, distStride);
-    var offset = loclowidx - lowmod;
-    if offset < 0 then
-      sliceBy(i) = inds.dim(i).low + (distStride + offset)..inds.dim(i).high by distStride;
-    else
-      sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
+    var offset = chpl__diffMod(startIdx(i) + locidtup(i), inds.dim(i).low, distStride);
+    sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
     // remove alignment
-    sliceBy(i) = sliceBy(i).first..sliceBy(i).last by distStride;
+    sliceBy(i).alignHigh();
   }
   return inds((...sliceBy));
   //
@@ -439,8 +434,8 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
     for param i in 1..rank {
       var dim = zeroedLocalPart.dim(i);
       var wholestride = whole.dim(i).stride;
-      if dim.high >= dim.low then
-        result(i) = (dim.low / wholestride)..(dim.high / wholestride) by (dim.stride / wholestride);
+      if dim.last >= dim.first then
+        result(i) = (dim.first / wholestride)..(dim.last / wholestride) by (dim.stride / wholestride);
       else
         result(i) = 1..0 by 1;
     }
@@ -490,11 +485,7 @@ proc CyclicDom.dsiSupportsPrivatization() param return true;
 proc CyclicDom.dsiGetPrivatizeData() return 0;
 
 proc CyclicDom.dsiPrivatize(privatizeData) {
-  // These two variables are actually necessary even though it looks like
-  // dist and dist.pid could be passed to the primitive directly.
-  var distpid = dist.pid;
-  var thisdist = dist;
-  var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
+  var privdist = chpl_getPrivatizedCopy(dist.type, dist.pid);
   var c = new CyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
   c.locDoms = locDoms;
   c.whole = whole;
@@ -667,11 +658,7 @@ proc CyclicArr.dsiSupportsPrivatization() param return true;
 proc CyclicArr.dsiGetPrivatizeData() return 0;
 
 proc CyclicArr.dsiPrivatize(privatizeData) {
-  // These two variables are actually necessary even though it looks like
-  // dist and dist.pid could be passed to the primitive directly.
-  var dompid = dom.pid;
-  var thisdom = dom;
-  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+  var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
   var c = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   c.locArr = locArr;
   for localeIdx in dom.dist.targetLocDom do
@@ -753,19 +740,19 @@ proc CyclicArr.dsiSerialWrite(f: Writer) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim)._low;
+    i(dim) = dom.dsiDim(dim).low;
   label next while true {
     f.write(dsiAccess(i));
-    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
+    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
       f.write(" ");
-      i(rank) += dom.dsiDim(rank)._stride:idxType;
+      i(rank) += dom.dsiDim(rank).stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
-          i(dim) += dom.dsiDim(dim)._stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
+          i(dim) += dom.dsiDim(dim).stride:idxType;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom.dsiDim(dim2)._low;
+            i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
         }

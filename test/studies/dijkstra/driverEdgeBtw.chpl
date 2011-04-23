@@ -119,19 +119,19 @@ proc main() {
 
       // Divide hyperlink score to component edges proportional
       // to (edge distance / total distance)
-      var vbHL: real = Edges[i].vb / sum;
-      Edges[i].vb = Edges[i].distance * vbHL;
+      var vbHL: real = Edges[i].vb$.readXX() / sum;
+      Edges[i].vb$.writeXF(Edges[i].distance * vbHL);
       
       for j in [(i+1)..(nEdges-1)] {
         if (Edges[j].dupl == 1) then break;
-        Edges[j].vb = Edges[j].distance * vbHL;
+        Edges[j].vb$.writeXF(Edges[j].distance * vbHL);
       }
     }
   }
 
   writeln("#     From     To     Betweenness");
   for i in D1 do writeln(Edges[i].id, "     ", Edges[i].n1+1, "     ",
-                         Edges[i].n2+1, "     ", Edges[i].vb);
+                         Edges[i].n2+1, "     ", Edges[i].vb$.readXX());
 
   return;
 }

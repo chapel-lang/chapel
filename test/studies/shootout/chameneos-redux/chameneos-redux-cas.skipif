@@ -1,0 +1,3 @@
+# The CAS routine used by this test (and flags to enable it) are only
+# supported by gcc
+CHPL_TARGET_COMPILER != gnu

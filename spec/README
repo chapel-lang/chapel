@@ -1,4 +1,4 @@
-There are five environments for use in the spec:
+There are six environments for use in the spec:
 
 - example    
   Example Chapel programs, along with explanation text
@@ -20,6 +20,11 @@ There are five environments for use in the spec:
 
 - openissue
   Unresolved issues can be noted in the openissue environment.
+
+- future
+  Architectural suggestions or notes on language features which are not yet
+  fully-designed or have not yet been implemented. 
+
 
 Guidelines for updating the spec:
 

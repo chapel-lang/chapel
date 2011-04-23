@@ -8,7 +8,7 @@
 #include "chplexit.h"
 #include "error.h"
 #include "chpl_mem.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 
 void* globalHeapStart;
 size_t globalHeapSize;

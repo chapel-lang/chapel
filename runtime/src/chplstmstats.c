@@ -5,7 +5,7 @@
 #include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplsys.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chplstm.h"
 #include "error.h"
@@ -15,8 +15,8 @@
 
 int printStmStats;    // hack to print stats only when we collect them
 
-static threadlayer_mutex_t stmStatsLock;
-static threadlayer_mutex_t stmStatsCommLock;
+static chpl_thread_mutex_t stmStatsLock;
+static chpl_thread_mutex_t stmStatsCommLock;
 
 unsigned int numSuccess;
 _real64 durSuccess;
@@ -104,8 +104,8 @@ void chpl_stopStmStats() {
 }
 
 void chpl_stm_stats_init() {
-  threadlayer_mutex_init(&stmStatsLock);
-  threadlayer_mutex_init(&stmStatsCommLock);
+  chpl_thread_mutexInit(&stmStatsLock);
+  chpl_thread_mutexInit(&stmStatsCommLock);
 }
 
 void chpl_stm_stats_exit() {
@@ -329,7 +329,7 @@ void chpl_stm_stats_stop(chpl_stm_stats_p counters, int op, int status, int valu
     counters->durCommCommitPh1 += nowtime - counters->starttime;
     break;
   case STATS_TX_COMMITPH2:
-    threadlayer_mutex_lock(&stmStatsLock);
+    chpl_thread_mutexLock(&stmStatsLock);
 
     // collect abort stats
     numAbort += counters->numAbort;
@@ -394,10 +394,10 @@ void chpl_stm_stats_stop(chpl_stm_stats_p counters, int op, int status, int valu
     numMFail += (counters->numMAbort) ? 1 : 0; 
     durMFail += counters->durMFail;
     
-    threadlayer_mutex_unlock(&stmStatsLock);
+    chpl_thread_mutexUnlock(&stmStatsLock);
     break;
   case STATS_TX_COMM_COMMITPH2:
-    threadlayer_mutex_lock(&stmStatsCommLock);
+    chpl_thread_mutexLock(&stmStatsCommLock);
     numCommAbort += counters->numCommAbort;
     durCommAbort += counters->durCommAbort;
     numCommCommitPh1 += counters->numCommCommitPh1;
@@ -410,7 +410,7 @@ void chpl_stm_stats_stop(chpl_stm_stats_p counters, int op, int status, int valu
     durCommPut += counters->durCommPut;
     numCommFork += counters->numCommFork;
     durCommFork += counters->durCommFork;
-    threadlayer_mutex_unlock(&stmStatsCommLock);
+    chpl_thread_mutexUnlock(&stmStatsCommLock);
     break;
   case STATS_TX_LOAD:
     counters->numLoad++;

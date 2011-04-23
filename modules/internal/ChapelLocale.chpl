@@ -115,11 +115,8 @@ proc locale.blockedTasks() {
   return blockedTasks;
 }
 
-proc chpl_privateInstance(originalInstance, instancePid:int)
-  return chpl_privateInstance(originalInstance.type, instancePid);
-
-proc chpl_privateInstance(type instanceType, instancePid:int)
-  return __primitive("chpl_getPrivatizedClass", nil:instanceType, instancePid);
+proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
+  return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
 
 
 //

@@ -1,7 +1,7 @@
 /*
- * Timer Example
+ * Timers Primer
  *
- * This example demonstrates the use of a Timer from the Time module.
+ * This primer demonstrates the use of a Timer from the Time module.
  *
  */
 
@@ -22,9 +22,9 @@ config const quiet: bool = false;
 var t: Timer;
 
 //
-// To time a function, start the timer before calling the function and
-// stop it afterwards.  Here, we will time the sleep function, also
-// defined in the Time module.
+// To time a procedure, start the timer before calling the
+// procedure and stop it afterwards.  Here, we will time the sleep
+// procedure, also defined in the Time module.
 //
 t.start();
 sleep(1);
@@ -76,3 +76,26 @@ for i in 1..n {
   iterationTimes(i) = t.elapsed(TimeUnits.microseconds);
 }
 t.stop();
+
+//
+// Finally, a lighter-weight, but less flexible, way of doing timings
+// is to use the procedure: getCurrentTime(unit: TimeUnits): real
+//
+// It returns the number of units (seconds by default) that have
+// passed since midnight as a floating-point value.  (Note that this
+// makes it not particularly useful for timing things that might run
+// across midnight).  As a simple example, we often use the following
+// idiom to time the number of seconds something will take:
+//
+
+const start = getCurrentTime();
+sleep(1);
+const elapsed = getCurrentTime() - start;
+
+if !quiet then
+  writeln("E. ", elapsed, " seconds");
+
+//
+// For more information on Chapel's timing capabilities, refer to the
+// Time section of the Standard Modules chapter of the spec
+//

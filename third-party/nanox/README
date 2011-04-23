@@ -7,4 +7,14 @@ e3a0ce4913df42c2e4bbd291ae26f51c307f49df (e3a0ce4 for short).  It is a
 snapshot that fell chronologically after official release 0.5 but
 before 0.6 was ready due to differences in our release timing.  It was
 cleared for use in this release by Alejandro Duran of the Nanos++ team
-at Barcelona Supercomputing Center.
+at Barcelona Supercomputing Center.  
+
+Local modifications:
+
+* We made one change to src/pms/chapel/chpl_main.cpp to move the
+  #include "chpl_nanos.h" header down which was causing our older
+  versions of gcc to choke.  (This same change has since been made
+  in the Nanos++ source base).
+
+* On 2011/04/20 we changed "chpltasks.h" to "chpl-tasks.h" in
+  src/pms/chapel/chpl_nanos.h.

@@ -40,14 +40,14 @@ language.
 5) Compile your Chapel program as usual.  See
    $CHPL_HOME/doc/README.compiling for details.  For example:
 
-     chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
+     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 6) The above settings will result in a multi-locale compilation.  When
    you compile a Chapel program, you should see two binaries (e.g.,
-   hello-multiloc and hello-multiloc_real).  The first binary contains
-   code to launch the Chapel program onto the compute nodes using
-   mnsubmit.  The second contains the program code itself; it is not
-   intended to be executed directly from the shell prompt.
+   hello6-taskpar-dist and hello6-taskpar-dist_real).  The first
+   binary contains code to launch the Chapel program onto the compute
+   nodes using mnsubmit.  The second contains the program code itself;
+   it is not intended to be executed directly from the shell prompt.
 
 7) On MareNostrum, a marenostrum-specific launcher is used by default
    to wrap the mnsubmit/slurm scripts required to launch a job on the
@@ -63,7 +63,7 @@ language.
    on the command line.  Other than this, execute your Chapel program
    as usual.  For example:
 
-     ./hello-multiloc -nl 2 --walltime 00:03:00 --queue debug
+     ./hello6-taskpar-dist -nl 2 --walltime 00:03:00 --queue debug
 
    You can use the -v flag to see the commands used to launch your
    program.  And by setting the CHPL_LAUNCHER_DEBUG environment
@@ -73,4 +73,4 @@ language.
 9) On MareNostrum, jobs cannot be run in an interactive mode, so all
    program will end up in a .out file whose name matches the
    executable.  For example, the program above would leave its output
-   in hello-multiloc.out
+   in hello6-taskpar-dist.out

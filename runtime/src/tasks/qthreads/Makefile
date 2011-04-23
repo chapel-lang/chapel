@@ -10,23 +10,24 @@ QTHREAD_FILES=\
 	tasks-qthreads.c \
 	../../../include/tasks/qthreads/tasks-qthreads.h \
 
-default: $(QTHREAD_FILES)
+default: copy_qthread_files
 	@make -f Makefile.main $@
 
-all: $(QTHREAD_FILES)
+all: copy_qthread_files
 	@make -f Makefile.main $@
 
-depend: $(QTHREAD_FILES)
+depend: copy_qthread_files
 	@make -f Makefile.main $@
 
-clean: $(QTHREAD_FILES)
-	@make -f Makefile.main $@
-	rm -f $(QTHREAD_FILES)
-
-clobber: $(QTHREAD_FILES)
+clean: copy_qthread_files
 	@make -f Makefile.main $@
 	rm -f $(QTHREAD_FILES)
 
+clobber: copy_qthread_files
+	@make -f Makefile.main $@
+	rm -f $(QTHREAD_FILES)
+
+copy_qthread_files: $(QTHREAD_FILES)
 
 Makefile.main: $(QTHREAD_SUBDIR)/shims/chapel/src/Makefile
 	cp $(QTHREAD_SUBDIR)/shims/chapel/src/Makefile $@

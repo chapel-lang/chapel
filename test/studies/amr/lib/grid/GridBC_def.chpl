@@ -38,7 +38,7 @@ class PeriodicGridBC: GridBC {
 
   proc apply_Homogeneous(q: GridVariable) {
 
-    for ghost_domain in grid.ghost_multidomain {
+    for ghost_domain in grid.ghost_domains {
       var loc = grid.relativeLocation(ghost_domain);
       var shift: dimension*int;
 

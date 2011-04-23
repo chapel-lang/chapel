@@ -1,4 +1,7 @@
-// This example illustrates Chapel's parallel tasking features,
+//
+// Task Parallel Primer
+//
+// This primer illustrates Chapel's parallel tasking features,
 // namely the begin, cobegin, and coforall statements.
 
 config const n = 10;
