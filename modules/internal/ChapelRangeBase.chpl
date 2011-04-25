@@ -188,7 +188,7 @@ proc rangeBase.hasLast()
 }
 
 // Returns true if this range is naturally aligned, false otherwise.
-proc rangeBase.isAligned()
+proc rangeBase.isNaturallyAligned()
   where this.boundedType == BoundedRangeType.bounded
 {
   // If the stride is positive, we must be aligned on the low bound.
@@ -200,21 +200,21 @@ proc rangeBase.isAligned()
 }
 
 pragma "inline"
-proc rangeBase.isAligned()
+proc rangeBase.isNaturallyAligned()
   where this.boundedType == BoundedRangeType.boundedLow
 {
   return this.alignedLow == _low;
 }
 
 pragma "inline"
-proc rangeBase.isAligned()
+proc rangeBase.isNaturallyAligned()
   where this.boundedType == BoundedRangeType.boundedHigh
 {
   return this.alignedHigh == _high;
 }
 
 pragma "inline"
-proc rangeBase.isAligned()
+proc rangeBase.isNaturallyAligned()
 {
   if _alignment == 0 then return true;
   return false;
@@ -909,7 +909,7 @@ proc rangeBase.writeThis(f: Writer)
 
   // Write out the alignment only if it differs from natural alignment.
   // We take alignment modulo the stride for consistency.
-  if ! isAligned() then
+  if ! isNaturallyAligned() then
     f.write(" align ", chpl__mod(_alignment, _stride));
 }
 

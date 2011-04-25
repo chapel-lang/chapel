@@ -159,8 +159,8 @@ proc range.hasLast()
 // Returns true if this range is naturally aligned, false otherwise.
 // Note that this does not indicate if the range is ambiguously aligned.
 pragma "inline"
-proc range.isAligned()
-  return _base.isAligned();
+proc range.isNaturallyAligned()
+  return _base.isNaturallyAligned();
 
 // Returns true if the alignment of this range is ambiguous.
 // After a stride whose absolute value is 2 or greater is applied, 
@@ -371,7 +371,7 @@ proc by(r : range(?), str)
   var temp = chpl__by(r._base, str);
   var result = new range(temp.idxType, temp.boundedType, temp.stridable);
   result._base = temp;
-  result._aligned = r._aligned || chpl__hasAlignment(result);
+  result._aligned = r._aligned || !r.isAmbiguous() && chpl__hasAlignment(result);
   return result;
 }
 

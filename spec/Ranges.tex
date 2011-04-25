@@ -194,8 +194,10 @@ high values appearing in the sequence.  The accessors \chpl{first} and \chpl{las
 the first and last indices in the sequence, regardless whether the stride is
 positive or negative.  
 
-A range is \emph{naturally aligned} if its alignment coincides with its low or
-high bound.  Specifically, a range with \chpl{low}, \chpl{high}, \chpl{stride}
+A range is \emph{naturally aligned} if it has a positive stride and its
+alignment coincides with its low bound, or it has a negative stride and its
+alignment coincides with its high bound.
+Specifically, a range with \chpl{low}, \chpl{high}, \chpl{stride}
 and \chpl{alignment} values of $l$, $h$, $s$ and $a$ (respectively) is naturally aligned if:
 \begin{itemize}
 \item It is \chpl{bounded}, its stride is positive, and $a = l ({\rm modulo} s)$,
@@ -204,11 +206,9 @@ and \chpl{alignment} values of $l$, $h$, $s$ and $a$ (respectively) is naturally
 \item It is \chpl{boundedHigh} and $a = h ({\rm modulo} s)$ or
 \item It is $boundedNone$ and $a = 0$.
 \end{itemize}
-\noindent The \chpl{isAligned} predicate returns \chpl{true} when the operand
+\noindent The \chpl{isNaturallyAligned} predicate returns \chpl{true} when the operand
 range is naturally aligned.  When a range is formatted for output, the alignment
 is printed only if the range is not naturally aligned.
-%TODO: bradc: so it doesn't correlate to the aligned field mention prev?
-%Confusing! Should be renamed to isNaturallyAligned.
 \index{ranges!alignment!natural}
 
 All ranges with a stride of $\pm 1$ are unambiguously aligned, regardless of the
@@ -788,9 +788,8 @@ Always returns \chpl{false} if this range is ambiguously aligned.
 \end{protobody}
 
 \begin{protohead}
-proc $range$.isAligned() bool
+proc $range$.isNaturallyAligned() bool
 \end{protohead}
-%TODO: bradc: Rename as isNaturallyAligned.
 \begin{protobody}
 Returns \chpl{true} if the range is naturally aligned and \chpl{false} otherwise.
 Specifically,
