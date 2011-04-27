@@ -1,0 +1,5 @@
+bug: equality on ranges returns false where it should return true
+
+All ranges in the code generate the same sequence (consisting
+of a single element, 0) and therefore should be equal,
+according to the definition of == on ranges in the spec.
