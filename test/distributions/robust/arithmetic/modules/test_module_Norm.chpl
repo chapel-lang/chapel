@@ -107,7 +107,7 @@ foo(TD1D, R1D, 1);
 writeln("\tR2D:");
 foo(TD2D, R2D, 2);
 writeln("\tR2D64:");
-foo(TD2D64, R2D64, 2);
+foo(TD2D64, R2D64, 3);
 
 
 writeln("Vector norm rank changed arrays (baseline)");
