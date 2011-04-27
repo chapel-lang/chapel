@@ -6,11 +6,11 @@ class DefaultDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
     return new DefaultRectangularDom(rank, idxType, stridable, this);
 
-  proc dsiNewAssociativeDom(type idxType)
-    return new DefaultAssociativeDom(idxType, this);
+  proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
+    return new DefaultAssociativeDom(idxType, parSafe, this);
 
-  proc dsiNewOpaqueDom(type idxType)
-    return new DefaultOpaqueDom(this);
+  proc dsiNewOpaqueDom(type idxType, param parSafe: bool)
+    return new DefaultOpaqueDom(this, parSafe);
 
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDom(rank, idxType, this, dom);

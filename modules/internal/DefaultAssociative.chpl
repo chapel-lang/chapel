@@ -26,11 +26,13 @@ proc chpl__primes return (23, 53, 97, 193, 389, 769, 1543,
 
 class DefaultAssociativeDom: BaseAssociativeDom {
   type idxType;
+  param parSafe: bool;
 
   var dist: DefaultDist;
 
   // The guts of the associative domain
   var numEntries: chpl_table_index_type = 0;
+  var tableLock: sync int = true;
   var tableSizeNum = 1;
   var tableSize = chpl__primes(tableSizeNum);
   var tableDom = [0..tableSize-1];
@@ -43,7 +45,9 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   proc linksDistribution() param return false;
   proc dsiLinksDistribution()     return false;
 
-  proc DefaultAssociativeDom(type idxType, dist: DefaultDist) {
+  proc DefaultAssociativeDom(type idxType,
+                             param parSafe: bool,
+                             dist: DefaultDist) {
     this.dist = dist;
   }
 
@@ -52,7 +56,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   //
   proc dsiBuildArray(type eltType) {
     return new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
-                                     dom=this); 
+                                     parSafeDom=parSafe, dom=this);
   }
 
   proc dsiSerialWrite(f: Writer) {
@@ -74,7 +78,11 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
   pragma "inline"
   proc dsiNumIndices {
-    return numEntries;
+    // I'm not sure if this is desirable
+    if parSafe then tableLock.readFE();
+    var ne = numEntries;
+    if parSafe then tableLock.writeEF(true);
+    return ne;
   }
 
   iter dsiIndsIterSafeForRemoving() {
@@ -83,7 +91,11 @@ class DefaultAssociativeDom: BaseAssociativeDom {
       yield i;
     postponeResize = false;
     if (numEntries*8 < tableSize && tableSizeNum > 1) {
-      _resize(grow=false);
+      if parSafe then tableLock.readFE();
+      if (numEntries*8 < tableSize && tableSizeNum > 1) {
+        _resize(grow=false);
+      }
+      if parSafe then tableLock.writeEF(true);
     }
   }
 
@@ -174,10 +186,12 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   // Associative Domain Interface
   //
   proc dsiClear() {
+    if parSafe then tableLock.readFE();
     for slot in tableDom {
       table(slot).status = chpl__hash_status.empty;
     }
     numEntries = 0;
+    if parSafe then tableLock.writeEF(true);
   }
 
   proc dsiMember(idx: idxType): bool {
@@ -185,9 +199,18 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   proc dsiAdd(idx: idxType): index(tableDom) {
+    if parSafe then tableLock.readFE();
     if ((numEntries+1)*2 > tableSize) {
       _resize(grow=true);
     }
+    var slotNum = _add(idx);
+    if parSafe then tableLock.writeEF(true);
+    return slotNum;
+  }
+
+  // This routine adds new indices without checking the table size and
+  //  is thus appropriate for use by routines like _resize().
+  proc _add(idx: idxType): index(tableDom) {
     const (foundSlot, slotNum) = _findEmptySlot(idx);
     if (foundSlot) {
       table(slotNum).status = chpl__hash_status.full;
@@ -204,6 +227,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   proc dsiRemove(idx: idxType) {
+    if parSafe then tableLock.readFE();
     const (foundSlot, slotNum) = _findFilledSlot(idx);
     if (foundSlot) {
       for a in _arrs do
@@ -216,6 +240,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     if (numEntries*8 < tableSize && tableSizeNum > 1) {
       _resize(grow=false);
     }
+    if parSafe then tableLock.writeEF(true);
   }
 
   iter dsiSorted() {
@@ -232,6 +257,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
   //
   // Internal interface (private)
+  //
+  // NOTE: Calls to this routine assume that the tableLock has been acquired.
   //
   proc _resize(grow:bool) {
     if postponeResize then return;
@@ -252,7 +279,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
     // insert old data into newly resized table
     for slot in _fullSlots(copyTable) {
-      const newslot = dsiAdd(copyTable(slot).idx);
+      const newslot = _add(copyTable(slot).idx);
       _preserveArrayElements(oldslot=slot, newslot=newslot);
     }
     
@@ -305,7 +332,8 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 class DefaultAssociativeArr: BaseArr {
   type eltType;
   type idxType;
-  var dom : DefaultAssociativeDom(idxType);
+  param parSafeDom: bool;
+  var dom : DefaultAssociativeDom(idxType, parSafe=parSafeDom);
 
   var data : [dom.tableDom] eltType;
 

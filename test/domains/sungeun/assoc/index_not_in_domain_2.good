@@ -3,4 +3,4 @@
 268435455 1073741823
 1073741823
 
-index_not_in_domain_2.chpl:20: error: halt reached - index not in domain: 536870911
+index_not_in_domain_2.chpl:22: error: halt reached - index not in domain: 536870911

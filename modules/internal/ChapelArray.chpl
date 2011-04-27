@@ -133,13 +133,15 @@ proc chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
   return _newDomain(d.newRectangularDom(rank, idxType, stridable));
 
 pragma "has runtime type"
-proc chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
-  return _newDomain(d.newAssociativeDom(idxType));
+proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+                                  param parSafe: bool = true) type
+  return _newDomain(d.newAssociativeDom(idxType, parSafe));
 
 pragma "has runtime type"
-proc chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
+proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+                                  param parSafe: bool = true) type
  where idxType == _OpaqueIndex
-  return _newDomain(d.newOpaqueDom(idxType));
+  return _newDomain(d.newOpaqueDom(idxType, parSafe));
 
 // This function has no 'has runtime type' pragma since the idxType of
 // opaque domains is _OpaqueIndex, not opaque.  This function is
@@ -159,7 +161,11 @@ proc chpl__convertValueToRuntimeType(dom: domain) type
                             dom._value.idxType, dom._value.stridable);
 
 proc chpl__convertValueToRuntimeType(dom: domain) type
- where dom._value:BaseAssociativeDom || dom._value:BaseOpaqueDom
+ where dom._value:BaseAssociativeDom
+  return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
+
+proc chpl__convertValueToRuntimeType(dom: domain) type
+ where dom._value:BaseOpaqueDom
   return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
 
 proc chpl__convertValueToRuntimeType(dom: domain) type
@@ -261,7 +267,7 @@ proc chpl__distributed(d: _distribution, type domainType) type {
     return chpl__buildSparseDomainRuntimeType(d, dom._value.parentDom);
   } else {
     var dom: domainType;
-    return chpl__buildDomainRuntimeType(d, dom._value.idxType);
+    return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
   }
 }
 
@@ -403,8 +409,8 @@ record _distribution {
     return x;
   }
 
-  proc newAssociativeDom(type idxType) {
-    var x = _value.dsiNewAssociativeDom(idxType);
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -416,8 +422,9 @@ record _distribution {
     return x;
   }
 
-  proc newAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
-    var x = _value.dsiNewAssociativeDom(idxType);
+  proc newAssociativeDom(type idxType, param parSafe: bool=true)
+  where _isEnumeratedType(idxType) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -432,8 +439,8 @@ record _distribution {
     return x;
   }
 
-  proc newOpaqueDom(type idxType) {
-    var x = _value.dsiNewOpaqueDom(idxType);
+  proc newOpaqueDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewOpaqueDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);

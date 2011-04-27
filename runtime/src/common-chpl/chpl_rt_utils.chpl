@@ -34,7 +34,7 @@ record chpldev_Task {
   var tl_info   : uint(64);
 }
 
-var chpldev_taskTableD : domain(chpl_taskID_t);
+var chpldev_taskTableD : domain(chpl_taskID_t, parSafe=false);
 var chpldev_taskTable : [chpldev_taskTableD] chpldev_Task;
 
 pragma "export" proc chpldev_taskTable_add(taskID   : chpl_taskID_t,

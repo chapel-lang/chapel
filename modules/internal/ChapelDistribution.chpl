@@ -37,15 +37,16 @@ class BaseDist {
     compilerError("rectangular domains not supported by this distribution");
   }
 
-  proc dsiNewAssociativeDom(type idxType) {
+  proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
     compilerError("associative domains not supported by this distribution");
   }
 
-  proc dsiNewAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
+  proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
+  where _isEnumeratedType(idxType) {
     compilerError("enumerated domains not supported by this distribution");
   }
 
-  proc dsiNewOpaqueDom(type idxType) {
+  proc dsiNewOpaqueDom(type idxType, param parSafe: bool) {
     compilerError("opaque domains not supported by this distribution");
   }
 

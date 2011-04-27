@@ -1,4 +1,6 @@
-var D1: domain(int);
+config param parSafe = true;
+
+var D1: domain(int, parSafe=parSafe);
 D1 += max(int);
 D1 += max(int)/2;
 D1 += max(int)/4;
