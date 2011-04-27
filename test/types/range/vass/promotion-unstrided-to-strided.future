@@ -1,0 +1,7 @@
+feature request: allow an unstridable range to be implicitly coerced to stridable when passing arguments to functions
+
+Currently this coersion is supported when assigning to a variable.
+Would be nice to allow this when passing ranges as arguments.
+
+Allowing the reverse coersion (with the runtime check)
+is perhaps less desirable/advisable.
