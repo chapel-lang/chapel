@@ -21,7 +21,7 @@
 # - chapelcompopts
 # - chapelexecopts
 # - chapelprediff
-# - chapeloutput|chapelprintoutput (REQUIRED)
+# - chapeloutput|chapelprintoutput
 #
 # GENERAL CAVEATS:
 # - All environments may contain special formatting due the fact that
@@ -57,8 +57,7 @@ def GetGoodName(line):
         sys.stdout.write('>>> %s\n'%(outfile))
     currTestNames.append(outfile)
     if currTestNames.count(outfile) > 1:
-        sys.stdout.write("Warning: Test name '%s' already specified.  Good filename may conflict\n"%
-                         (outfile))
+        sys.stdout.write("WARNING: Test name '%s' already specified.  Good filename may conflict\n"%(outfile))
     return outdir+'/'+curdir+'/'+outfile+'.good'
 
 # Helper functions for de-LaTeX-ifying output line
@@ -118,6 +117,8 @@ def OutputTest(lineno, currTestName):
     global TotalTests, TotalFutures, TotalIgnored
     if (len(chapelfuture) > 0) and not options.gen_futures:
         TotalIgnored += 1
+        if options.verbose:
+            sys.stdout.write('\tIgnoring future %s.chpl on line %d\n'%(currTestName, lineno))
         return;
 
     TotalTests += 1
@@ -129,18 +130,18 @@ def OutputTest(lineno, currTestName):
 
     currTestNames.append(testName)
     if currTestNames.count(testName) > 1:
-        sys.stdout.write("Warning: Test name '%s' already specified\n"%
+        sys.stdout.write("WARNING: Test name '%s' already specified\n"%
                          (testName))
-        newof = testName + "." + str(currTestNames.count(testName))
+        newof = testName + '.' + str(currTestNames.count(testName))
         currTestNames.append(newof)
-        sys.stdout.write("         Renaming it to %s\n"%(newof));
+        sys.stdout.write('         Renaming it to %s\n'%(newof));
         testName = newof
 
     # add full path
     testName = outdir+'/'+curdir+'/'+testName
 
     if options.verbose:
-        sys.stdout.write('Writing %s.chpl (line %d)\n'
+        sys.stdout.write('\tWriting %s.chpl (line %d)\n'
                          %(testName.rsplit('/', 1)[1], lineno))
 
     fh = open(testName+'.chpl', 'w')
@@ -221,6 +222,7 @@ currTestNames = list()
 # Accounting
 #
 TotalTests = 0
+TotalExamples = 0
 TotalFutures = 0
 TotalIgnored = 0
 
@@ -279,7 +281,6 @@ for infile in args:
         sys.stdout.write('*** Generating tests from from %s\n'%(infile))
         sys.stdout.write('***\tOutput directory: %s/%s\n'%
                          (options.outdir,curdir))
-        sys.stdout.write('***\n')
 
     lineno = 0
     testlineno = lineno
@@ -323,6 +324,8 @@ for infile in args:
                 if ((line.find('}', pos) == pos) or
                     (line.find('code}', pos) == pos)):
                     TotalIgnored += 1
+                    if options.verbose:
+                        sys.stdout.write('\tIgnoring Chapel code on line %d\n'%(lineno))
                 continue
 
             if (line.find('pre}', pos) == pos):
@@ -360,15 +363,16 @@ for infile in args:
                 printToOutfile = True
                 current = chapelprintoutput;
 
+        pos = line.find('\\begin{example}')
+        if (line[0].strip() != '%') and pos > -1:
+            TotalExamples += 1
+
     if not os.listdir(outdir+'/'+curdir):
         os.rmdir(outdir+'/'+curdir)
         if options.verbose:
-            sys.stdout.write('***\n')
             sys.stdout.write('*** Removing empty directory %s/%s\n'%
                              (options.outdir,curdir))
-            sys.stdout.write('***\n')
 
-
-sys.stdout.write('\nSaw %d Chapel examples\n'%(TotalTests+TotalIgnored))
-sys.stdout.write('\t%d tests (%d futures)\n'%(TotalTests, TotalFutures))
-sys.stdout.write('\t%d ignored\n'%(TotalIgnored))
+sys.stdout.write('\n%d total Chapel code environments\n'%(TotalTests+TotalIgnored))
+sys.stdout.write('\t%d tests generated (%d futures)\n'%(TotalTests, TotalFutures))
+sys.stdout.write('\t%d examples ignored (%d in examples)\n'%(TotalIgnored, TotalExamples))
