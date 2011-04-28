@@ -1067,6 +1067,14 @@ endif
 
 
 #
+# Environment setup complete, print out the current Chapel environment
+#
+echo "" | & $tee -a $logfile
+echo "### Chapel Environment ###" | & $tee -a $logfile
+$CHPL_HOME/util/printchplenv | & $tee -a $logfile
+echo "##########################" | & $tee -a $logfile
+
+#
 # Utility functions
 #
 set gsub_test = $utildir/sub_test
