@@ -14,121 +14,32 @@
 
 bool normalized = false;
 
-static void change_method_into_constructor(FnSymbol* fn);
+//
+// Static functions: forward declaration
+// 
+static void checkUseBeforeDefs();
+static void flattenGlobalFunctions();
+static void insertUseForExplicitModuleCalls(void);
+static bool isDistClass(Type* type);
+static void processSyntacticDistributions(CallExpr* call);
+static bool is_void_return(CallExpr* call);
 static void normalize_returns(FnSymbol* fn);
 static void call_constructor_for_class(CallExpr* call);
-static void hack_resolve_types(ArgSymbol* arg);
 static void applyGetterTransform(CallExpr* call);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
 static void fix_def_expr(VarSymbol* var);
+static void hack_resolve_types(ArgSymbol* arg);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
+static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
+                                                      DefExpr* def,
+                                                      int width);
+static void replace_query_uses(ArgSymbol* formal, DefExpr* def, CallExpr* query,
+                               Vec<SymExpr*>& symExprs);
+static void add_to_where_clause(ArgSymbol* formal, Expr* expr, CallExpr* query);
 static void fixup_query_formals(FnSymbol* fn);
-
-static void
-checkUseBeforeDefs() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint->parentSymbol) {
-      ModuleSymbol* mod = fn->getModule();
-      Vec<const char*> undeclared;
-      Vec<Symbol*> undefined;
-      Vec<BaseAST*> asts;
-      Vec<Symbol*> defined;
-      collect_asts_postorder(fn, asts);
-      forv_Vec(BaseAST, ast, asts) {
-        if (CallExpr* call = toCallExpr(ast)) {
-          if (call->isPrimitive(PRIM_MOVE))
-            if (SymExpr* se = toSymExpr(call->get(1)))
-              defined.set_add(se->var);
-        } else if (DefExpr* def = toDefExpr(ast)) {
-          if (isArgSymbol(def->sym))
-            defined.set_add(def->sym);
-        } else if (SymExpr* sym = toSymExpr(ast)) {
-          CallExpr* call = toCallExpr(sym->parentExpr);
-          if (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == sym)
-            continue;
-          if (toModuleSymbol(sym->var)) {
-            if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-              if (!call || !call->isPrimitive(PRIM_USED_MODULES_LIST)) {
-                SymExpr* prev = toSymExpr(sym->prev);
-                if (!prev || prev->var != gModuleToken)
-                  USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
-              }
-            }
-          }
-          if (isVarSymbol(sym->var) || isArgSymbol(sym->var)) {
-            if (sym->var->defPoint->parentExpr != rootModule->block &&
-                (sym->var->defPoint->parentSymbol == fn ||
-                 (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
-              if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
-                if (strcmp(sym->var->name, "this")) {
-                  USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
-                  undefined.set_add(sym->var);
-                }
-              }
-            }
-          }
-        } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ast)) {
-          CallExpr* call = toCallExpr(sym->parentExpr);
-          if (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == sym)
-            continue;
-          if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN))) && sym->unresolved) {
-            if (!undeclared.set_in(sym->unresolved)) {
-              if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-                USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
-                               sym->unresolved);
-                undeclared.set_add(sym->unresolved);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-
-static void
-flattenGlobalFunctions() {
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    for_alist(expr, mod->initFn->body->body) {
-      if (DefExpr* def = toDefExpr(expr)) {
-        if ((toVarSymbol(def->sym) && !def->sym->hasFlag(FLAG_TEMP)) ||
-            toTypeSymbol(def->sym) ||
-            toFnSymbol(def->sym)) {
-          FnSymbol* fn = toFnSymbol(def->sym);
-          if (!fn ||                    // always flatten non-functions
-              fn->numFormals() != 0 || // always flatten methods
-              !((!strncmp("_forallexpr", def->sym->name, 11)) ||
-                def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))) {
-            mod->block->insertAtTail(def->remove());
-          }
-        }
-      }
-    }
-  }
-}
-
-
-static void
-insertUseForExplicitModuleCalls(void) {
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->parentSymbol && se->var == gModuleToken) {
-      CallExpr* call = toCallExpr(se->parentExpr);
-      INT_ASSERT(call);
-      SymExpr* mse = toSymExpr(call->get(2));
-      INT_ASSERT(mse);
-      ModuleSymbol* mod = toModuleSymbol(mse->var);
-      INT_ASSERT(mod);
-      Expr* stmt = se->getStmtExpr();
-      BlockStmt* block = new BlockStmt();
-      stmt->insertBefore(block);
-      block->insertAtHead(stmt->remove());
-      block->addUse(mod);
-    }
-  }
-}
+static void change_method_into_constructor(FnSymbol* fn);
 
 
 void normalize(void) {
@@ -240,35 +151,6 @@ void normalize(void) {
   }
 }
 
-static bool
-isDistClass(Type* type) {
-  if (type->symbol->hasFlag(FLAG_BASE_DIST))
-    return true;
-  forv_Vec(Type, pt, type->dispatchParents)
-    if (isDistClass(pt))
-      return true;
-  return false;
-}
-
-static void
-processSyntacticDistributions(CallExpr* call) {
-  if (call->isPrimitive(PRIM_NEW))
-    if (CallExpr* type = toCallExpr(call->get(1)))
-      if (SymExpr* base = toSymExpr(type->baseExpr))
-        if (base->var->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
-          type->baseExpr->replace(new UnresolvedSymExpr("chpl__buildDistValue"));
-          call->replace(type->remove());
-        }
-  if (call->isNamed("chpl__distributed"))
-    if (CallExpr* distCall = toCallExpr(call->get(1)))
-      if (SymExpr* distClass = toSymExpr(distCall->baseExpr))
-        if (TypeSymbol* ts = toTypeSymbol(distClass->var))
-          if (isDistClass(ts->type))
-            call->insertAtHead(
-              new CallExpr("chpl__buildDistValue",
-                new CallExpr(PRIM_NEW, distCall->remove())));
-}
-
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
 void normalize(BaseAST* base) {
@@ -301,6 +183,137 @@ void normalize(BaseAST* base) {
   forv_Vec(CallExpr, call, calls) {
     call_constructor_for_class(call);
   }
+}
+
+static void
+checkUseBeforeDefs() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->defPoint->parentSymbol) {
+      ModuleSymbol* mod = fn->getModule();
+      Vec<const char*> undeclared;
+      Vec<Symbol*> undefined;
+      Vec<BaseAST*> asts;
+      Vec<Symbol*> defined;
+      collect_asts_postorder(fn, asts);
+      forv_Vec(BaseAST, ast, asts) {
+        if (CallExpr* call = toCallExpr(ast)) {
+          if (call->isPrimitive(PRIM_MOVE))
+            if (SymExpr* se = toSymExpr(call->get(1)))
+              defined.set_add(se->var);
+        } else if (DefExpr* def = toDefExpr(ast)) {
+          if (isArgSymbol(def->sym))
+            defined.set_add(def->sym);
+        } else if (SymExpr* sym = toSymExpr(ast)) {
+          CallExpr* call = toCallExpr(sym->parentExpr);
+          if (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == sym)
+            continue;
+          if (toModuleSymbol(sym->var)) {
+            if (!toFnSymbol(fn->defPoint->parentSymbol)) {
+              if (!call || !call->isPrimitive(PRIM_USED_MODULES_LIST)) {
+                SymExpr* prev = toSymExpr(sym->prev);
+                if (!prev || prev->var != gModuleToken)
+                  USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
+              }
+            }
+          }
+          if (isVarSymbol(sym->var) || isArgSymbol(sym->var)) {
+            if (sym->var->defPoint->parentExpr != rootModule->block &&
+                (sym->var->defPoint->parentSymbol == fn ||
+                 (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
+              if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
+                if (strcmp(sym->var->name, "this")) {
+                  USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
+                  undefined.set_add(sym->var);
+                }
+              }
+            }
+          }
+        } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(ast)) {
+          CallExpr* call = toCallExpr(sym->parentExpr);
+          if (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == sym)
+            continue;
+          if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN))) && sym->unresolved) {
+            if (!undeclared.set_in(sym->unresolved)) {
+              if (!toFnSymbol(fn->defPoint->parentSymbol)) {
+                USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
+                               sym->unresolved);
+                undeclared.set_add(sym->unresolved);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+static void
+flattenGlobalFunctions() {
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    for_alist(expr, mod->initFn->body->body) {
+      if (DefExpr* def = toDefExpr(expr)) {
+        if ((toVarSymbol(def->sym) && !def->sym->hasFlag(FLAG_TEMP)) ||
+            toTypeSymbol(def->sym) ||
+            toFnSymbol(def->sym)) {
+          FnSymbol* fn = toFnSymbol(def->sym);
+          if (!fn ||                    // always flatten non-functions
+              fn->numFormals() != 0 || // always flatten methods
+              !((!strncmp("_forallexpr", def->sym->name, 11)) ||
+                def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))) {
+            mod->block->insertAtTail(def->remove());
+          }
+        }
+      }
+    }
+  }
+}
+
+static void
+insertUseForExplicitModuleCalls(void) {
+  forv_Vec(SymExpr, se, gSymExprs) {
+    if (se->parentSymbol && se->var == gModuleToken) {
+      CallExpr* call = toCallExpr(se->parentExpr);
+      INT_ASSERT(call);
+      SymExpr* mse = toSymExpr(call->get(2));
+      INT_ASSERT(mse);
+      ModuleSymbol* mod = toModuleSymbol(mse->var);
+      INT_ASSERT(mod);
+      Expr* stmt = se->getStmtExpr();
+      BlockStmt* block = new BlockStmt();
+      stmt->insertBefore(block);
+      block->insertAtHead(stmt->remove());
+      block->addUse(mod);
+    }
+  }
+}
+
+static bool
+isDistClass(Type* type) {
+  if (type->symbol->hasFlag(FLAG_BASE_DIST))
+    return true;
+  forv_Vec(Type, pt, type->dispatchParents)
+    if (isDistClass(pt))
+      return true;
+  return false;
+}
+
+static void
+processSyntacticDistributions(CallExpr* call) {
+  if (call->isPrimitive(PRIM_NEW))
+    if (CallExpr* type = toCallExpr(call->get(1)))
+      if (SymExpr* base = toSymExpr(type->baseExpr))
+        if (base->var->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+          type->baseExpr->replace(new UnresolvedSymExpr("chpl__buildDistValue"));
+          call->replace(type->remove());
+        }
+  if (call->isNamed("chpl__distributed"))
+    if (CallExpr* distCall = toCallExpr(call->get(1)))
+      if (SymExpr* distClass = toSymExpr(distCall->baseExpr))
+        if (TypeSymbol* ts = toTypeSymbol(distClass->var))
+          if (isDistClass(ts->type))
+            call->insertAtHead(
+              new CallExpr("chpl__buildDistValue",
+                new CallExpr(PRIM_NEW, distCall->remove())));
 }
 
 static bool is_void_return(CallExpr* call) {
@@ -427,7 +440,6 @@ static void normalize_returns(FnSymbol* fn) {
     label->defPoint->remove();
 }
 
-
 static void call_constructor_for_class(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     if (TypeSymbol* ts = toTypeSymbol(se->var)) {
@@ -460,7 +472,6 @@ static void call_constructor_for_class(CallExpr* call) {
     }
   }
 }
-
 
 static void applyGetterTransform(CallExpr* call) {
   // Most generally:
@@ -495,7 +506,6 @@ static void applyGetterTransform(CallExpr* call) {
         call->partialTag = true;
   }
 }
-
 
 static void insert_call_temps(CallExpr* call) {
   if (!call->parentExpr || !call->getStmtExpr())
@@ -533,7 +543,6 @@ static void insert_call_temps(CallExpr* call) {
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
 }
 
-
 static void fix_user_assign(CallExpr* call) {
   if (!call->parentExpr ||
       call->getStmtExpr() == call->parentExpr ||
@@ -544,7 +553,6 @@ static void fix_user_assign(CallExpr* call) {
   call->replace(move);
   move->insertAtTail(call);
 }
-
 
 //
 // fix_def_expr removes DefExpr::exprType and DefExpr::init from a
@@ -721,7 +729,6 @@ fix_def_expr(VarSymbol* var) {
   }
 }
 
-
 static void hack_resolve_types(ArgSymbol* arg) {
   if (arg->type == dtUnknown || arg->type == dtAny) {
     if (!arg->hasFlag(FLAG_TYPE_VARIABLE) && !arg->typeExpr && arg->defaultExpr) {
@@ -742,7 +749,6 @@ static void hack_resolve_types(ArgSymbol* arg) {
     }
   }
 }
-
 
 static void fixup_array_formals(FnSymbol* fn) {
   for_formals(arg, fn) {
@@ -808,7 +814,6 @@ static void fixup_array_formals(FnSymbol* fn) {
   }
 }
 
-
 static void clone_parameterized_primitive_methods(FnSymbol* fn) {
   if (toArgSymbol(fn->_this)) {
     /* The following works but is not currently necessary:
@@ -842,7 +847,6 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn) {
     }
   }
 }
-
 
 static void
 clone_for_parameterized_primitive_formals(FnSymbol* fn,
@@ -1005,19 +1009,32 @@ fixup_query_formals(FnSymbol* fn) {
   }
 }
 
-
 static void change_method_into_constructor(FnSymbol* fn) {
   if (fn->numFormals() <= 1)
     return;
+
+  // This function must be a method.
   if (fn->getFormal(1)->type != dtMethodToken)
     return;
+
+  // The second argument is 'this'.
+  // For starters, it needs a known type.
   if (fn->getFormal(2)->type == dtUnknown)
-    INT_FATAL(fn, "this argument has unknown type");
+    INT_FATAL(fn, "'this' argument has unknown type");
+
+  // Now check that the function name matches the name of the type
+  // attached to 'this'.
   if (strcmp(fn->getFormal(2)->type->symbol->name, fn->name))
     return;
+
+  // The type must be a class type.
+  // No constructors for records? <hilde>
   ClassType* ct = toClassType(fn->getFormal(2)->type);
   if (!ct)
     INT_FATAL(fn, "constructor on non-class type");
+
+  // Ensure that the argument names of this function cover those of the default constructor.
+  // REVIEW <hilde>: Is this right?  What if the constructor being defined is not intended to be a default constructor?
   CallExpr* call = new CallExpr(ct->defaultConstructor);
   for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
     ArgSymbol* arg = NULL;
@@ -1033,15 +1050,18 @@ static void change_method_into_constructor(FnSymbol* fn) {
       call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));
     }
   }
+
   fn->_this = new VarSymbol("this");
   fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
   fn->insertAtHead(new DefExpr(fn->_this));
   fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));
+
   SymbolMap map;
   map.put(fn->getFormal(2), fn->_this);
   fn->formals.get(2)->remove();
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
+
   fn->name = astr("_construct_", fn->name);
   fn->addFlag(FLAG_CONSTRUCTOR);
   ct->defaultConstructor->addFlag(FLAG_INVISIBLE_FN);
