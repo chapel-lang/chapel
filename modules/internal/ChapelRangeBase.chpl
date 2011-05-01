@@ -38,7 +38,7 @@ record rangeBase
   
   pragma "inline" proc low return _low;       // public getter for low bound
   pragma "inline" proc high return _high;     // public getter for high bound
-  pragma "inline" proc stride return _stride; // public getter for stride
+  pragma "inline" proc stride return if stridable then _stride else 1;
   pragma "inline" proc alignment return _alignment;        // public getter for alignment
 
 }
@@ -61,11 +61,8 @@ proc rangeBase.rangeBase(type idxType = int,
 {
   this._low = _low;
   this._high = _high;
-  if stridable then
-  {
-    this._stride = _stride;
-    this._alignment = _alignment;
-  }
+  if stridable then this._stride = _stride;
+  this._alignment = _alignment;
 
   if warnMaximalRange
   {
@@ -223,23 +220,19 @@ proc rangeBase.isNaturallyAligned()
 // Returns true if i is in this range.
 proc rangeBase.member(i: idxType)
 {
-  var al : idxType;
+  var al : idxType = _alignment;
   if hasHighBound()
   {
     if i > _high then return false;
-    al = this.alignedHigh;
   }
   if hasLowBound()
   {
     if i < _low then return false;
-    al = this.alignedLow;
   }
   if stridable
   {
     var s = abs(_stride):idxType;
-    // We don't have to use chpl__mod here, because we only care
-    // whether the remainder is different from zero.
-    if (i % s - al % s) % s != 0
+    if (i - al) % s != 0
       then return false;
   }
   return true;
@@ -331,16 +324,14 @@ proc rangeBase.boundsCheck(other: idxType)
 // Moves the low bound of the range up to the next alignment point.
 proc rangeBase.alignLow()
 {
-  if ! stridable then return this;
-  else _low = this.alignedLow;
+  if stridable then _low = this.alignedLow;
   return this;
 }
 
 // Moves the high bound of the range down to the next alignment point.
 proc rangeBase.alignHigh()
 {
-  if ! stridable then return this;
-  else _high = this.alignedHigh;
+  if stridable then _high = this.alignedHigh;
   return this;
 }
 
@@ -348,11 +339,10 @@ proc rangeBase.indexOrder(i: idxType)
 {
   if ! member(i) then return (-1):idxType;
   if ! stridable then return i - _low;
+  if _stride > 0 then
+    return (i - this.alignedLow) / _stride;
   else
-  {
-    var s = abs(_stride):idxType;
-    return (i - this.alignedLow) / s;
-  }
+    return (this.alignedHigh - i) / (- _stride);
 }
 
 //////////////////////////////////////////////////////////////////////////////////
