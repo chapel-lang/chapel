@@ -1,5 +1,5 @@
 config param parSafe = true;
-config const n = 5000000;
+config const n = 50000;
 
 var D1: domain(int, parSafe=parSafe);
 
