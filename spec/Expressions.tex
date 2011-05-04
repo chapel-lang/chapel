@@ -375,7 +375,6 @@ exponentiation.  We chose to break the circularity by making unary
 minus have a lower precedence.  This means that for the second case
 above:
 
-
 \begin{center}
 \begin{tabular}{lcl}
 \chpl{-2:uint} & requires & \chpl{(-2):uint} \\
@@ -735,6 +734,11 @@ produces a value of imaginary type.  Division of values of complex
 type and either real or imaginary types produces a value of complex
 type.
 
+When the operands are integers, the result (quotient) is also an integer.  If \chpl{b}
+does not divide \chpl{a} exactly, then there are two candidate quotients $q1$ and $q2$
+such that $b * q1$ and $b * q2$ are the two multiples of \chpl{b} closest to \chpl{a}.
+The integer result $q$ is the candidate quotient which lies closest to zero.
+
 \subsection{Modulus Operators}
 \label{Modulus_Operators}
 \index{\%@\chpl{\%}}
@@ -750,6 +754,16 @@ proc %(a: int(64), b: uint(64))
 \end{chapel}
 For each of these definitions that return a value, the result is the
 remainder when the first operand is divided by the second operand.
+
+The sign of the result is the same as the sign of the dividend \chpl{a}, and the
+magnitude of the result is always smaller than that of the divisor \chpl{b}.
+For integer operands, the \chpl{\%} and \chpl{/} operators are related by the
+following identity:
+\begin{chapel}
+var q = a / b;
+var r = a % b;
+writeln(q * b + r == a);    // true
+\end{chapel}
 
 It is a compile-time error to take the remainder of a value of
 type \chpl{uint(64)} and a value of type \chpl{int(64)}, and vice
