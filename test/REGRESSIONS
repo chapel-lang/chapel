@@ -1,4 +1,4 @@
-# USAGE: the intent of this file is to keep track of current
+a# USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.  We start
 # with general regressions that are seen across a wide variety of
 # platforms, and then move onto linux64 regressions since those are
@@ -41,7 +41,7 @@ performance-specific regressions
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/14/11)
+[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/14/11, 04/22/11, 04/26/11, 04/29/11, 04/30/11, 05/04/11)
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -58,6 +58,10 @@ memory leaks regressions
 =============================
 valgrind-specific regressions
 =============================
+
+failed since added (05/01/11)
+-----------------------------
+[Error matching program output for domains/sungeun/assoc/stress --doSerial=false (--cc-warnings -sparSafe=true) (1-2)]
 
 nondet. source file empty error message from chpl
 -------------------------------------------------
@@ -87,9 +91,19 @@ internal valgrind stuff 'the impossible has happened'
 no-local regressions
 ====================
 
+nondet. out-of-memory error
+---------------------------
+[Error matching program output for stress/deitz/test_10k_begins]
+
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )] (04/14/11)
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )] (04/14/11, 04/22/11, 04/25/11, 05/01/11)
+
+nondet. execution timeout
+-------------------------
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (04/22/11)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky] (05/03/11)
+[Error: Timed out executing program studies/shootout/fannkuch-redux/fannkuch-redux  --N=10 (--cc-warnings --no-local  ) (0-2)] (04/22/11, 04/24/11, 04/28/11, 04/30/11, 05/01/11)
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -118,13 +132,19 @@ seg fault (?)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+exceeds maxThreadsPerLocale for GASNet (05/05/11 -- should now be fixed)
+------------------------------------------------------------------------
+[Error matching program output for domains/sungeun/assoc/stress --doSerial=false --maxThreadsPerLocale=500 -nl 1 (--cc-warnings -sparSafe=false) (2-2)]
+[Error matching program output for domains/sungeun/assoc/stress --doSerial=false --maxThreadsPerLocale=500 -nl 1 (--cc-warnings -sparSafe=true) (1-2)]
+
 nondet. race on which index generates error message?
 ----------------------------------------------------
 [Error matching program output for domains/sungeun/sparse/index_not_in_domain_1] (04/12/11)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/11/11, 04/15/11)
+[Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/11/11, 04/15/11, 04/22/11, 04/29/11, 05/03/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11)
 
 too many warnings/different warning format?
 -------------------------------------------
@@ -134,7 +154,6 @@ too many warnings/different warning format?
 execution timeouts
 ------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy]
@@ -206,6 +225,10 @@ gdb output differences
 xt-cle-specific failures
 ========================
 
+failed since added (04/30/11)
+-----------------------------
+[Error matching program output for domains/sungeun/assoc/stress --doSerial=false (--cc-warnings -sparSafe=true) (1-2)]
+
 redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
 [Error matching compiler output for associative/waynew/indef2]
@@ -215,9 +238,15 @@ redeclaration of identifier in scope (01/24/11)
 cray-xt-cray/cce-specific regressions
 =====================================
 
-wrong answer (02/27/10, but hadn't run well in awhile) -- possibly a CCE bug?
------------------------------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
+unreachable loop warning (05/03/11)
+-----------------------------------
+[Error matching program output for release/examples/hpcc/fft]
+[Error matching program output for release/examples/hpcc/hpl]
+[Error matching program output for release/examples/hpcc/stream-ep]
+[Error matching program output for release/examples/hpcc/stream]
+[Error matching program output for release/examples/hpcc/variants/stream-promoted]
+[Error matching program output for release/examples/primers/reductions]
+[Error matching program output for release/examples/programs/quicksort]
 
 wrong result due to reliance on wraparound in signed integers in test itself
 ----------------------------------------------------------------------------
@@ -241,6 +270,11 @@ precision issues (?) -- is there a floating point flag we need to throw?
 [Error matching program output for studies/madness/common/test_gaxpy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
+
+nondet. compilation timeouts
+----------------------------
+[Error: Timed out compilation for users/franzf/v0/chpl/main]
+[Error: Timed out compilation for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky]
 
 
 =============================================================
@@ -299,6 +333,10 @@ exp2 not supported:
 ==================================================================
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
+
+alignment prints out incorrectly (04/25/11)
+-------------------------------------------
+[Error matching program output for types/range/hilde/align]
 
 NAN/INFINITY undefined in generated code (03/28/11)
 ---------------------------------------------------
@@ -374,6 +412,14 @@ sig_send: wait for sig_complete event failed
 xmt-specific regressions
 ========================
 
+unreachable loop warning (05/03/11)
+-----------------------------------
+[Error matching program output for release/examples/hpcc/fft]
+[Error matching program output for release/examples/hpcc/stream-ep]
+[Error matching program output for release/examples/hpcc/stream]
+[Error matching program output for release/examples/hpcc/variants/stream-promoted]
+[Error matching program output for release/examples/primers/reductions]
+
 unresolved sync variable calls (04/09/11 -- once spec examples added)
 ---------------------------------------------------------------------
 [Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1]
@@ -393,7 +439,7 @@ sparse regression recurred after latest range changes (03/17/11)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11)
+[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11)
 
 execution timeouts
 ------------------
