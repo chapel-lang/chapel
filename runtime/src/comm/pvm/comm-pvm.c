@@ -1797,6 +1797,24 @@ void chpl_stopCommDiagnosticsHere() {
   chpl_comm_diagnostics = 0;
 }
 
+void chpl_resetCommDiagnosticsHere() {
+  chpl_sync_lock(&chpl_comm_diagnostics_sync);
+  chpl_comm_gets = 0;
+  chpl_comm_puts = 0;
+  chpl_comm_forks = 0;
+  chpl_comm_nb_forks = 0;
+  chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+}
+
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+  chpl_sync_lock(&chpl_comm_diagnostics_sync);
+  cd->get = chpl_comm_gets;
+  cd->put = chpl_comm_puts;
+  cd->fork = chpl_comm_forks;
+  cd->fork_nb = chpl_comm_nb_forks;
+  chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+}
+
 int32_t chpl_numCommGets(void) {
   return chpl_comm_gets;
 }
@@ -1817,6 +1835,11 @@ int32_t chpl_numCommNBForks(void) {
   return chpl_comm_nb_forks;
 }
 
+
+// This are not supported in this comm layer
+int32_t chpl_numCommNBGets(void) { return -1; }
+int32_t chpl_numCommTestNBGets(void) { return -1; }
+int32_t chpl_numCommWaitNBGets(void) { return -1; }
 
 /* TODO: eventually make this a bit more clever, as with the
    make_message call on the vsprintf man page, in order to remove the

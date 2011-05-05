@@ -186,6 +186,20 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid,
 void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
                          int32_t arg_size, int32_t arg_tid);
 
+//
+// Comm diagnostics stuff
+//
+typedef struct _chpl_commDiagnostics {
+  int32_t get;
+  int32_t get_nb;
+  int32_t get_nb_test;
+  int32_t get_nb_wait;
+  int32_t put;
+  int32_t fork;
+  int32_t fork_fast;
+  int32_t fork_nb;
+} chpl_commDiagnostics;
+
 void chpl_startVerboseComm(void);
 void chpl_stopVerboseComm(void);
 void chpl_startVerboseCommHere(void);
@@ -195,7 +209,13 @@ void chpl_startCommDiagnostics(void);
 void chpl_stopCommDiagnostics(void);
 void chpl_startCommDiagnosticsHere(void);
 void chpl_stopCommDiagnosticsHere(void);
+void chpl_resetCommDiagnosticsHere(void);
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
 
+//
+// These are still supported because our extern record support is
+//  still a bit lacking.
+//
 int32_t chpl_numCommGets(void);
 int32_t chpl_numCommNBGets(void);
 int32_t chpl_numCommTestNBGets(void);
