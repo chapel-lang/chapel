@@ -1,6 +1,18 @@
 module SSCA2_kernels
 
 //  +==========================================================================+
+//  | VERSION USING ATOMIC OPERATIONS:                                         |
+//  | As of March, 2010, the atomic keyword is NOT supported in Chapel.        |
+//  | This code, therefore, is only a sketch, which can only be executed       |
+//  | sequentially.  All potential parallel loops are instantiated as          |
+//  | "forall" loops, so execution will fail unless the code is compiled with  |
+//  | the "--serial" flag.                                                     |
+//  |                                                                          |
+//  | This code has NOT been tested running in parallel.  See the sync         |
+//  | variable version for a mostly parallel implementation.                   |
+//  +==========================================================================+
+
+//  +==========================================================================+
 //  |  Polymorphic Implementation of SSCA #2, Kernels 2-4                      |
 //  |                                                                          |
 //  |  Each kernel takes a graph argument which provides for each vertex       |
@@ -56,7 +68,7 @@ module SSCA2_kernels
     // for this task.
     {
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
-      var heaviest_edge_weight$ : sync int = 0;
+      var heaviest_edge_weight : int = 0;
 
       // ---------------------------------------------------------
       // find heaviest edge weight in a single pass over all edges
@@ -66,30 +78,25 @@ module SSCA2_kernels
       //        	                         [ w in G.edge_weight (s) ] w;
 
       forall s in G.vertices do
-	for w in G.edge_weight (s) do // eventually forall
-	  on heaviest_edge_weight$.locale do
-	    heaviest_edge_weight$ = max ( w, heaviest_edge_weight$ );
+	// for w in G.edge_weight (s) do // eventually forall
+        forall w in G.Row(s).Weight do
+	  atomic heaviest_edge_weight = max ( w, heaviest_edge_weight );
 
       // ---------------------------------------------
       // in a second pass over all edges, extract list 
       // of all edges  matching the heaviest weight
       // ---------------------------------------------
 
-      var domain_add_lock$ : sync bool = true; // associative domain add
-                                               // is not threadsafe
-
       forall s in G.vertices do
-	for (t, w) in ( G.Neighbors (s), G.edge_weight (s) )  do
+	// for (t, w) in ( G.Neighbors (s), G.edge_weight (s) )  do
+        forall (t, w) in ( G.Neighbors(s), G.Row(s).Weight ) do
 
 	  // should be forall, requires a custom parallel iterator in the 
 	  // random graph case and zippering for associative domains may 
 	  // also present a problem
 
-	  if w == heaviest_edge_weight$.readXX () then {
-	    domain_add_lock$.readFE ();
-	    heavy_edge_list.add ( (s,t) ); 
-	    domain_add_lock$.writeEF (true);
-	  };
+	  if w == heaviest_edge_weight then
+	      atomic heavy_edge_list.add ( (s,t) ); 
 
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();
@@ -105,8 +112,7 @@ module SSCA2_kernels
 
       if DEBUG_KERNEL2 then {
 	writeln ();
-	writeln ( "Heaviest weight      : ", 
-		  heaviest_edge_weight$ . readFF ()); 
+	writeln ( "Heaviest weight      : ", heaviest_edge_weight ); 
 	writeln ( "Number of heavy edges:", heavy_edge_list.numIndices );
 	writeln ();
 	writeln ( "Edges with largest weight and other neighbors:" );
@@ -147,14 +153,7 @@ module SSCA2_kernels
        
       forall ( x, y ) in Heavy_Edge_List do {
 	var Active_Level, Next_Level : domain ( index (vertex_domain) );
-
-	// the associative domain operations are not thread-safe.  So locks 
-	// are needed to protect domain add and domain membership cannot be 
-	// used to determine whether or not to add edges to the subgraph
-
-	var edge_add_lock$           : sync bool = true; 
-	var node_add_lock$           : sync bool = true; 
-	var min_distance$            : [vertex_domain] sync int = -1;
+	var min_distance             : [vertex_domain] int = -1;
 	  
 	if DEBUG_KERNEL3 then 
 	  writeln ( " Building heavy edge subgraph from pair:", (x,y) );
@@ -162,7 +161,7 @@ module SSCA2_kernels
 	Next_Level.clear ();
 	Heavy_Edge_Subgraph ( (x, y) ).nodes.clear ();
 	Heavy_Edge_Subgraph ( (x, y) ).edges.clear ();
-	min_distance$ ( y ).writeFF (0);
+	min_distance ( y ) = 0;
 
 	Heavy_Edge_Subgraph ( (x, y) ).edges.add ( (x, y) );
 	Heavy_Edge_Subgraph ( (x, y) ).nodes.add ( x );
@@ -172,27 +171,19 @@ module SSCA2_kernels
 	    
 	  forall v in Active_Level do {
 
-	    for w in G.Neighbors (v) do { // eventually, will be forall
+	    forall w in G.Neighbors (v) do { // eventually, will be forall
 
-	      if min_distance$ (w).readXX () < 0 then {
-
-		if min_distance$ (w).readFE () < 0 then {
-		  node_add_lock$.readFE ();
-		  Next_Level.add (w);
-		  Heavy_Edge_Subgraph ( (x, y) ).nodes.add (w);
-		  node_add_lock$.writeEF ( true );
-		  min_distance$ (w).writeEF (path_length);
-		}
-		else
-		  min_distance$ (w).writeEF (path_length);
+	      atomic if min_distance (w) < 0 then {
+		Next_Level.add (w);
+		Heavy_Edge_Subgraph( (x,y) ).nodes.add (w);
+		min_distance (w) = path_length;
 	      }
 			 
-	      // min_distance$ must have been set by some thread by now
+	      // min_distance must have been set by some thread by now
 
-	      if min_distance$ (w).readFF () == path_length then {
-		edge_add_lock$.readFE ();
-		Heavy_Edge_Subgraph ( (x, y) ).edges.add ( (v, w) );
-		edge_add_lock$.writeEF ( true );
+	      atomic {
+		if min_distance (w) == path_length then
+		  Heavy_Edge_Subgraph( (x,y) ).edges.add ( (v, w) );
 	      }
 	    }
 	  }
@@ -258,14 +249,13 @@ module SSCA2_kernels
     // process that executes instances of the outermost loop.
     // -----------------------------------------------------------------------
     {       
+      const vertex_domain = G.vertices;
+
       // Had to change declaration below
       //    type Sparse_Vertex_List = sparse subdomain ( G.vertices );
       // to accommodate block distribution of G.vertices
 
-      type Sparse_Vertex_List = sparse subdomain ( [(...G.vertices.dims())] );
-
-      var Between_Cent$ : [G.vertices] sync real = 0.0;
-      var Sum_Min_Dist$ : sync real = 0.0;
+      type Sparse_Vertex_List = sparse subdomain ( [(...vertex_domain.dims())] );
 
       // ------------------------------------------------------ 
       // Each iteration of the outer loop of Brandes's algorithm
@@ -275,7 +265,11 @@ module SSCA2_kernels
   
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
-      forall s in starting_vertices do {
+      Between_Cent = 0.0;
+      Sum_Min_Dist = 0.0;
+
+      forall s in starting_vertices do on vertex_domain.dist.idxToLocale(s) {
+      // forall s in starting_vertices do {// }
   
 	if DEBUG_KERNEL4 then writeln ( "expanding from starting node ", s );
 
@@ -284,15 +278,14 @@ module SSCA2_kernels
 	// for each instance of the parallel for loop
 	// --------------------------------------------------
   
-  	var min_distance$  : [G.vertices] sync int       = -1;
-	var path_count$    : [G.vertices] sync real (64) = 0.0;
-	var depend         : [G.vertices] real           = 0.0;
-	var Lcl_Sum_Min_Dist                             = 0.0;
+  	var min_distance : [vertex_domain] int       = -1;
+	var path_count   : [vertex_domain] real (64) = 0;
+	var depend       : [vertex_domain] real      = 0.0;
 
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
-	// the shortest path (min_distance$) from s to it. The array
-	// path_count$ will hold a count of the number of shortest
+	// the shortest path (min_distance) from s to it. The array
+	// path_count will hold a count of the number of shortest
 	// paths from s to this node.  The number of paths in moderate
 	// sized tori exceeds 2**64.
   
@@ -301,20 +294,16 @@ module SSCA2_kernels
   
 	var current_distance : int = 0;
   
-	// lock needed only because associative domain add is not threadsafe
-	var node_add_lock$ : sync bool = true;
- 
 	// establish the initial level sets for the
 	// breadth-first traversal from s
 
 	Active_Level.Members.add ( s );
 	Next_Level.Members.clear ();
 
-	min_distance$ (s) . writeFF (0);
+	min_distance (s)      = 0;
 	Active_Level.previous = nil;
 	Next_Level.previous   = Active_Level;
-  
-	path_count$ (s) . writeFF (1);
+	path_count (s)        = 1;
   
 	while Active_Level.Members.numIndices > 0 do { 
   
@@ -325,9 +314,10 @@ module SSCA2_kernels
       
 	    current_distance += 1;
 
-	    forall u in Active_Level.Members  do {
-
-	      for (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do {
+	    forall u in Active_Level.Members  do on vertex_domain.dist.idxToLocale(u) { // sparse
+		
+	      // for (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do {//}
+              forall (v, w) in ( G.Neighbors (u), G.Row(u).Weight ) do {
 
 		// should be forall, requires a custom parallel iterator in the
 		// random graph case and zippering for associative domains
@@ -337,32 +327,27 @@ module SSCA2_kernels
 		// --------------------------------------------
   
 		if  ( FILTERING &&  w % 8 != 0 ) || !FILTERING  then
-		  if  min_distance$ (v) . readXX () < 0  then
-		    { 
-		      if  min_distance$ (v) . readFE () < 0  then
-			{ 
-			  min_distance$ (v).writeEF (current_distance);
-			  node_add_lock$.readFE ();
-			  Next_Level.Members.add (v);
-			  if VALIDATE_BC then
-			    Lcl_Sum_Min_Dist += current_distance;
-			  node_add_lock$.writeEF ( true );
-			}
-		      else
-			min_distance$ (v) . writeEF (current_distance);
+		  atomic {
+		    if  min_distance (v) < 0  then {
+		      min_distance (v) = current_distance;
+		      Next_Level.Members.add (v);
+		      if VALIDATE_BC then
+			Sum_Min_Dist += current_distance;
 		    }
+		  };
 
 		// ------------------------------------------------
 		// only neighbors of  u  that are in the next level
 		// are on shortest paths from s through v.  Some
-		// thread will have set  min_distance$ (v) by the
+		// thread will have set  min_distance (v) by the
 		// time this code is reached, whether  v  lies in
 		// the previous, the current or the next level.
 		// ------------------------------------------------
   
-		if  min_distance$ (v).readFF () == current_distance  
-		  then
-		    path_count$ (v) += path_count$ (u).readFF ();
+		atomic {
+		  if  min_distance (v)== current_distance then
+		    path_count (v) += path_count (u);
+		}
 	      }
 	    };
   
@@ -373,9 +358,6 @@ module SSCA2_kernels
 	    Next_Level.previous = Active_Level;
 
 	  };  // end forward pass
-
-	if VALIDATE_BC then
-	  Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
 
 	// -------------------------------------------------------------
 	// compute the dependencies recursively, traversing the vertices 
@@ -406,17 +388,16 @@ module SSCA2_kernels
 	  forall u in Active_Level.Members do
 	    {
 	      depend (u) = + reduce 
-		[ (v, w)  in ( G.Neighbors (u), G.edge_weight (u) ) ]
-		if ( min_distance$ (v).readFF () == current_distance ) && 
+		[ (v, w)  in ( G.Neighbors (u), G.Row(u).Weight ) ]
+		if ( min_distance (v) == current_distance ) && 
 		( ( FILTERING && w % 8 != 0 || !FILTERING ) )
 		then
-		  ( path_count$ (u) . readFF () / 
-		    path_count$ (v) . readFF () )      *
-		    ( 1.0 + depend (v) );
+		  ( path_count (u) / path_count (v) )
+		    * ( 1.0 + depend (v) );
 
 	      // do not need conditional u != s
 
-	      Between_Cent$ (u) += depend (u);
+	      atomic Between_Cent (u) += depend (u);
 	    }
 	};
 	delete Active_Level;
@@ -429,9 +410,9 @@ module SSCA2_kernels
 	stopwatch.clear ();
 	writeln ( "Elapsed time for Kernel 4: ", K4_time, " seconds");
 
-	var n0            = + reduce [v in G.vertices] (G.n_Neighbors (v)== 0);
-	var n_edges       = + reduce [v in G.vertices] G.n_Neighbors (v);
-	var N_VERTICES    = G.vertices.numIndices;
+	var n0            = + reduce [v in vertex_domain] (G.n_Neighbors (v)== 0);
+	var n_edges       = + reduce [v in vertex_domain] G.n_Neighbors (v);
+	var N_VERTICES    = vertex_domain.numIndices;
 	var TEPS          = 7.0 * N_VERTICES * (N_VERTICES - n0) / K4_time;
 	var Adjusted_TEPS = n_edges * (N_VERTICES - n0) / K4_time;
 
@@ -439,11 +420,8 @@ module SSCA2_kernels
 	writeln ( " edge count adjusted TEPS: ", Adjusted_TEPS );
       }
 
-      if VALIDATE_BC then
-	Sum_Min_Dist = Sum_Min_Dist$;
-      
-      Between_Cent = Between_Cent$;
-  
+      // Between_Cent = Between_Cent;
+
     } // end of Brandes' betweenness centrality calculation
 
 }

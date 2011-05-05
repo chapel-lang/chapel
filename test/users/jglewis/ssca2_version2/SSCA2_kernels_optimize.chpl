@@ -66,9 +66,9 @@ module SSCA2_kernels
       //        	                         [ w in G.edge_weight (s) ] w;
 
       forall s in G.vertices do
-	for w in G.edge_weight (s) do // eventually forall
-	  on heaviest_edge_weight$.locale do
-	    heaviest_edge_weight$ = max ( w, heaviest_edge_weight$ );
+	// for w in G.edge_weight (s) do // eventually forall
+        forall w in G.Row(s).Weight do
+	  heaviest_edge_weight$ = max ( w, heaviest_edge_weight$ );
 
       // ---------------------------------------------
       // in a second pass over all edges, extract list 
@@ -79,7 +79,8 @@ module SSCA2_kernels
                                                // is not threadsafe
 
       forall s in G.vertices do
-	for (t, w) in ( G.Neighbors (s), G.edge_weight (s) )  do
+	// for (t, w) in ( G.Neighbors (s), G.edge_weight (s) )  do
+        forall (t, w) in ( G.Neighbors(s), G.Row(s).Weight ) do
 
 	  // should be forall, requires a custom parallel iterator in the 
 	  // random graph case and zippering for associative domains may 
@@ -144,7 +145,7 @@ module SSCA2_kernels
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
       const vertex_domain = G.vertices;
-       
+      
       forall ( x, y ) in Heavy_Edge_List do {
 	var Active_Level, Next_Level : domain ( index (vertex_domain) );
 
@@ -172,7 +173,7 @@ module SSCA2_kernels
 	    
 	  forall v in Active_Level do {
 
-	    for w in G.Neighbors (v) do { // eventually, will be forall
+	    forall w in G.Neighbors (v) do { // eventually, will be forall
 
 	      if min_distance$ (w).readXX () < 0 then {
 
@@ -258,13 +259,16 @@ module SSCA2_kernels
     // process that executes instances of the outermost loop.
     // -----------------------------------------------------------------------
     {       
+      if DEBUG_KERNEL4 then startVerboseComm();
+      const vertex_domain = G.vertices;
+       
       // Had to change declaration below
       //    type Sparse_Vertex_List = sparse subdomain ( G.vertices );
       // to accommodate block distribution of G.vertices
 
-      type Sparse_Vertex_List = sparse subdomain ( [(...G.vertices.dims())] );
+      type Sparse_Vertex_List = sparse subdomain ( [(...vertex_domain.dims())] );
 
-      var Between_Cent$ : [G.vertices] sync real = 0.0;
+      var Between_Cent$ : [vertex_domain] sync real = 0.0;
       var Sum_Min_Dist$ : sync real = 0.0;
 
       // ------------------------------------------------------ 
@@ -275,8 +279,9 @@ module SSCA2_kernels
   
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
-      forall s in starting_vertices do {
-  
+      forall s in starting_vertices do on vertex_domain.dist.idxToLocale(s) {
+      // forall s in starting_vertices do {// }
+
 	if DEBUG_KERNEL4 then writeln ( "expanding from starting node ", s );
 
 	// --------------------------------------------------
@@ -284,9 +289,9 @@ module SSCA2_kernels
 	// for each instance of the parallel for loop
 	// --------------------------------------------------
   
-  	var min_distance$  : [G.vertices] sync int       = -1;
-	var path_count$    : [G.vertices] sync real (64) = 0.0;
-	var depend         : [G.vertices] real           = 0.0;
+  	var min_distance$  : [vertex_domain] sync int       = -1;
+	var path_count$    : [vertex_domain] sync real (64) = 0.0;
+	var depend         : [vertex_domain] real           = 0.0;
 	var Lcl_Sum_Min_Dist                             = 0.0;
 
 	// The structure of the algorithm depends on a breadth-first
@@ -325,9 +330,10 @@ module SSCA2_kernels
       
 	    current_distance += 1;
 
-	    forall u in Active_Level.Members  do {
+	    forall u in Active_Level.Members  do on vertex_domain.dist.idxToLocale(u) { // sparse
 
-	      for (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do {
+	      // for (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do {//}
+              forall (v, w) in ( G.Neighbors (u), G.Row(u).Weight ) do {
 
 		// should be forall, requires a custom parallel iterator in the
 		// random graph case and zippering for associative domains
@@ -349,6 +355,7 @@ module SSCA2_kernels
 			  node_add_lock$.writeEF ( true );
 			}
 		      else
+                        // could min_distance$(v) be < current_distance?
 			min_distance$ (v) . writeEF (current_distance);
 		    }
 
@@ -406,7 +413,7 @@ module SSCA2_kernels
 	  forall u in Active_Level.Members do
 	    {
 	      depend (u) = + reduce 
-		[ (v, w)  in ( G.Neighbors (u), G.edge_weight (u) ) ]
+		[ (v, w)  in ( G.Neighbors (u), G.Row(u).Weight ) ]
 		if ( min_distance$ (v).readFF () == current_distance ) && 
 		( ( FILTERING && w % 8 != 0 || !FILTERING ) )
 		then
@@ -423,15 +430,17 @@ module SSCA2_kernels
 
       }; // closure of outer embarassingly parallel forall
   
+      if DEBUG_KERNEL4 then stopVerboseComm();
+
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();
 	var K4_time = stopwatch.elapsed ();
 	stopwatch.clear ();
 	writeln ( "Elapsed time for Kernel 4: ", K4_time, " seconds");
 
-	var n0            = + reduce [v in G.vertices] (G.n_Neighbors (v)== 0);
-	var n_edges       = + reduce [v in G.vertices] G.n_Neighbors (v);
-	var N_VERTICES    = G.vertices.numIndices;
+	var n0            = + reduce [v in vertex_domain] (G.n_Neighbors (v)== 0);
+	var n_edges       = + reduce [v in vertex_domain] G.n_Neighbors (v);
+	var N_VERTICES    = vertex_domain.numIndices;
 	var TEPS          = 7.0 * N_VERTICES * (N_VERTICES - n0) / K4_time;
 	var Adjusted_TEPS = n_edges * (N_VERTICES - n0) / K4_time;
 

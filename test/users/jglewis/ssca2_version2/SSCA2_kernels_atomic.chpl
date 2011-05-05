@@ -79,7 +79,8 @@ module SSCA2_kernels
 
       forall s in G.vertices do
 	for w in G.edge_weight (s) do // eventually forall
-	  atomic heaviest_edge_weight = max ( w, heaviest_edge_weight );
+	  on heaviest_edge_weight.locale do
+	    atomic heaviest_edge_weight = max ( w, heaviest_edge_weight );
 
       // ---------------------------------------------
       // in a second pass over all edges, extract list 

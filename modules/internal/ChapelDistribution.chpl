@@ -17,6 +17,7 @@ class BaseDist {
   var _doms: list(BaseDom);    // arrays declared over this domain
 
   pragma "dont disable remote value forwarding"
+  pragma "inline"
   proc destroyDist(dom: BaseDom = nil) {
     var cnt: int;
     atomic {

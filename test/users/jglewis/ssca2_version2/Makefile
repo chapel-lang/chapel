@@ -19,6 +19,7 @@ else
 endif
 
 CHPL = chpl
+#FLAGS += -snoRefCount=true
 FLAGS += --conditional-dynamic-dispatch-limit 100
 FLAGS += --print-commands --print-passes
 
@@ -30,10 +31,22 @@ TARGETS = \
 ssca: SSCA2_main.chpl SSCA2_execution_config_consts.chpl SSCA2_compilation_config_params.chpl SSCA2_kernels_atomic.chpl analyze_RMAT_graph_associative_array.chpl $(FILES)
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
+sscan: SSCA2_main.chpl SSCA2_execution_config_consts.chpl SSCA2_compilation_config_params.chpl SSCA2_kernels_atomic.chpl analyze_RMAT_graph_associative_array.chpl $(FILES)
+	$(CHPL) -o $@ $(FLAGS) -snoRefCount=true --savec c_$@ $^
+
+sscaopt: SSCA2_main.chpl SSCA2_execution_config_consts.chpl SSCA2_compilation_config_params.chpl SSCA2_kernels_atomic_optimize.chpl analyze_RMAT_graph_associative_array.chpl $(FILES)
+	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+
 sscaia: SSCA2_main.chpl SSCA2_execution_config_consts.chpl SSCA2_compilation_config_params.chpl SSCA2_kernels_atomic.chpl analyze_RMAT_graph_associative_array.chpl $(FILES)
 	$(CHPL) -o $@ $(FLAGS) --ignore-atomic --savec c_$@ $^
 
 sscafeb: SSCA2_main.chpl SSCA2_execution_config_consts.chpl SSCA2_compilation_config_params.chpl SSCA2_kernels.chpl analyze_RMAT_graph_associative_array.chpl $(FILES)
+	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
+
+sscafebn: SSCA2_main.chpl SSCA2_execution_config_consts.chpl SSCA2_compilation_config_params.chpl SSCA2_kernels.chpl analyze_RMAT_graph_associative_array.chpl $(FILES)
+	$(CHPL) -o $@ $(FLAGS) -snoRefCount=true --savec c_$@ $^
+
+sscafebopt: SSCA2_main.chpl SSCA2_execution_config_consts.chpl SSCA2_compilation_config_params.chpl SSCA2_kernels_optimize.chpl analyze_RMAT_graph_associative_array.chpl $(FILES)
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
 
 clean:
