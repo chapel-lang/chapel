@@ -1,0 +1,27 @@
+CHPL = chpl
+
+USERNG = LCG
+RNG = $(USERNG)RARandomStream
+
+FLAGS += --conditional-dynamic-dispatch-limit 100
+FLAGS += --print-commands --print-passes
+
+ifeq ($(CHPL_DEVELOPER), true)
+
+FLAGS += $(F) --devel --gen-ids -g
+
+else
+
+FLAGS += $(F) --no-devel --fast
+
+endif
+
+TARGET_SRCS = $(wildcard *.chpl)
+TARGETS = $(TARGET_SRCS:%.chpl=%)
+
+default: all
+
+all: $(TARGETS)
+
+clean:
+	rm -rf $(TARGETS) *_real c_*
