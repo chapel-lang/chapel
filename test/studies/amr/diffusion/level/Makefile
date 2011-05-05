@@ -14,7 +14,7 @@ LEVEL_SOURCES = \
 DIM = 2
 
 output: _output Level_DiffusionBE.out
-	./Level_DiffusionBE.out --dataParTasksPerLocale=2
+	./Level_DiffusionBE.out
 
 Level_DiffusionBE.out: $(LEVEL_SOURCES)
 	chpl $(LEVEL_SOURCES) -M $(MISC_LIB) -M $(GRID_LIB) -M $(LEVEL_LIB) --set dimension=$(DIM) -o Level_DiffusionBE.out

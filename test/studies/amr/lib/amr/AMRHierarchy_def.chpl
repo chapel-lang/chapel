@@ -1,6 +1,6 @@
 use CoarseningTransfer;
 use RefiningTransfer;
-use Partitioning;
+use BergerRigoutsosClustering;
 
 
 
@@ -171,6 +171,7 @@ class AMRHierarchy {
 proc AMRHierarchy.regrid ( i_base: int )
 {
 
+
   writeln("regrid called from base level ", i_base, ".");
 
   const i_finest_old = n_levels;
@@ -203,6 +204,7 @@ proc AMRHierarchy.regrid ( i_base: int )
       
       //---- Add new level ----
       levels(i_finest) = new_level;
+      
 
 
       //---- Create and fill new solution ----
@@ -212,7 +214,7 @@ proc AMRHierarchy.regrid ( i_base: int )
 
       //---- Create new boundary structures ----
       createBoundaryStructures( i_finest );
-
+      
       
       //---- Set regrid counter ----
       regrid_counters(i_finest) = steps_before_regrid;    
@@ -221,6 +223,7 @@ proc AMRHierarchy.regrid ( i_base: int )
     }
     else
       writeln("Refinement unnecessary.");
+
   }
   //<=== Create new level of refinement, if possible and necessary <===
   
@@ -247,6 +250,7 @@ proc AMRHierarchy.regrid ( i_base: int )
     
     //---- Remove old boundary structures ----
     deleteBoundaryStructures(i_regridding);
+    
 
     
     //---- Create new level ----
@@ -321,7 +325,8 @@ proc AMRHierarchy.regrid ( i_base: int )
   //---- Create new boundary structures ----
   
   for i in i_base+1..i_finest do createBoundaryStructures(i);
-  
+ 
+   
 }
 // /|""""""""""""""""""""""""""""/|
 //< |    AMRHierarchy.regrid    < |
@@ -359,8 +364,9 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
   
   
   //---- Flag the level being refined ----
-
-  var flags: [levels(i_refining).possible_cells] bool;
+  
+  const coarse_level = levels(i_refining);
+  var flags: [coarse_level.possible_cells] bool;
   flagger.setFlags(level_solutions(i_refining), flags);
   
   
@@ -380,71 +386,55 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
   var buffered_flags = buffer(flags);
   
     
-  //---- Partition ----
+  //---- Cluster ----
 
   const min_width: dimension*int = 2;
-  var partitioned_domains = partitionFlags( buffered_flags, target_efficiency, min_width );
+  var cluster_domains = clusterFlags( buffered_flags, target_efficiency, min_width );
   
     
   
   //===> Ensure proper nesting ===>
-  //------------------------------------------------------------------------
-  // Every domain to refine must be at least one cell away from the level's
-  // boundary with a coarser level (physical boundary is OK).  So for each
-  // partitioned domain, we locate the "adjacent coarse region," in terms
-  // of cells sized by the refining level that spill into the next-coarser
-  // level.
-  //
-  // This is done by growing the partitioned domain by 1 cell, and then
-  // subtracting the (interior) cells of every grid on the level.  The
-  // level's physical boundary is also removed.  Then
-  // this adjacent coarse region is expanded by 1 cell and removed from
-  // the original partitioned domain.
-  //
-  // (You'll probably want to draw a picture.  Verbal explanation doesn't
-  // do it justice.) 
-  //------------------------------------------------------------------------
 
-  var domains_to_refine = new List( domain(dimension,stridable=true) );
-
-
-  for D in partitioned_domains
+  var domains_to_refine = new List( domain(dimension,stridable=true) );  
+  
+  
+  //---- Form exterior of coarse level ----
+  
+  var coarse_exterior = new MultiDomain(dimension,stridable=true);
+  coarse_exterior.add( coarse_level.possible_cells );
+  
+  for grid in coarse_level.grids do
+    coarse_exterior.subtract( grid.cells );
+    
+    
+    
+  for D in cluster_domains
   {
-    var adjacent_coarse_region = new MultiDomainNew(dimension,stridable=true);
     
-    //---- Initialize to D expanded by one cell ----
+    //---- Remove any portion of D within 1 cell of coarse_exterior ----
     
-    adjacent_coarse_region.add( D.expand(2) );
-
-
-    //---- Physical boundary is OK; this trims it off ----
-
-    adjacent_coarse_region.intersect( levels(i_refining).possible_cells );
-
-
-    //---- Remove all grid cells from the level ----
-
-    for grid in levels(i_refining).grids do
-      adjacent_coarse_region.subtract(grid.cells);
-  
-  
-      
-    var properly_nested_domains = new MultiDomainNew(dimension,stridable=true);
+    var properly_nested_domains = new MultiDomain(dimension,stridable=true);
     properly_nested_domains.add(D);
-    
-    for adjacent_coarse_domain in adjacent_coarse_region do
-      properly_nested_domains.subtract( adjacent_coarse_domain.expand(2) );
-    
-    for E in properly_nested_domains {
-      domains_to_refine.add( E );
-    }
 
-    delete adjacent_coarse_region;
+    for exterior_D in coarse_exterior do 
+      properly_nested_domains.subtract( exterior_D.expand(2) );
     
+    
+    
+    //---- Add results to the list of domains to refine ----
+    
+    for E in properly_nested_domains do
+      domains_to_refine.add( E );
+      
+      
+    //---- Clean up ----
+      
     delete properly_nested_domains;
-  }
     
-  delete partitioned_domains;
+  }
+
+    
+  delete cluster_domains;
 
   //<=== Ensure proper nesting <===
   
@@ -462,10 +452,11 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
   
   
   delete domains_to_refine;
-    
+  
+  
   new_level.complete();
   
-  
+
   return new_level;
   
   //<=== Create new level, and return <===
@@ -556,7 +547,7 @@ class PhysicalBoundary
 
   const level:        Level;
   const grids:        domain(Grid);
-  const multidomains: [grids] MultiDomainNew(dimension,stridable=true);
+  const multidomains: [grids] MultiDomain(dimension,stridable=true);
 
 
 
@@ -568,7 +559,7 @@ class PhysicalBoundary
   {
     for grid in level.grids {
 
-      var boundary_multidomain = new MultiDomainNew(dimension,stridable=true);
+      var boundary_multidomain = new MultiDomain(dimension,stridable=true);
 
       for D in grid.ghost_domains do boundary_multidomain.add( D );
 
@@ -772,12 +763,13 @@ proc LevelVariable.initialFill (
   q_coarse:  LevelVariable)
 {
 
-  //---- Safety check ====
-  if q_old != nil then
-    assert(this.level.n_cells == q_old.level.n_cells);
+  //---- Safety check ----
+
+  if q_old != nil then assert(this.level.n_cells == q_old.level.n_cells);
 
   
-  //---- Refinement ratio ====
+  //---- Refinement ratio ----
+  
   const ref_ratio = refinementRatio(q_coarse.level, this.level);
 
   
@@ -787,8 +779,8 @@ proc LevelVariable.initialFill (
 
     //---- Initialize structure of unfilled cell blocks ----
     
-    var unfilled_cell_blocks = new MultiDomainNew(dimension, true);
-    unfilled_cell_blocks.add( grid.cells );
+    var unfilled_region = new MultiDomain(dimension, true);
+    unfilled_region.add( grid.cells );
 
 
     //===> Copy from q_old where possible ===>
@@ -808,7 +800,7 @@ proc LevelVariable.initialFill (
         if overlap.numIndices > 0 
         {
           this(grid,overlap) = q_old(old_grid, overlap);
-          unfilled_cell_blocks.subtract( overlap );
+          unfilled_region.subtract( overlap );
         }
         
       }
@@ -822,7 +814,7 @@ proc LevelVariable.initialFill (
     //------------------------------------------------
     // This looks really inefficient... #inefficiency
     //------------------------------------------------------------------
-    // Yep, the part that begins 'for block in unfilled_cells_blocks'
+    // Yep, the part that begins 'for block in unfilled_region'
     // is exactly the kind of comprehensive iteration I've been trying
     // to avoid.  Ideally, I'd like a combined intersect/subtract
     // operation on MultiDomains.  Can I make sense out of that?
@@ -832,28 +824,41 @@ proc LevelVariable.initialFill (
       
       //---- Calculate full overlap on the fine grid ----
       
-      var overlap = grid.cells( refine(coarse_grid.cells, ref_ratio) );
+      var refined_coarse = grid.cells( refine(coarse_grid.cells, ref_ratio) );
       
       
-      //----If there is an overlap, remove fragments that coincide with unfilled_cell_blocks ----
+      //----If there is an overlap, remove fragments that coincide with unfilled_region ----
       
-      if overlap.numIndices > 0 {
+      if refined_coarse.numIndices > 0 
+      {
         
-        for block in unfilled_cell_blocks {
-
-          var unfilled_overlap = overlap(block);
-
-          if unfilled_overlap.numIndices > 0 then
-            this(grid,unfilled_overlap) 
-                = q_coarse(coarse_grid).refineValues( unfilled_overlap, ref_ratio );
-        }
+        var unfilled_intersection = unfilled_region.copy();
+        unfilled_intersection.intersect( refined_coarse );
         
-        unfilled_cell_blocks.subtract(overlap);
+        for D in unfilled_intersection do
+          this(grid,D) = q_coarse(coarse_grid).refineValues(D, ref_ratio);
+        
+        delete unfilled_intersection;  unfilled_intersection=nil;
+        
+        unfilled_region.subtract( refined_coarse );
+        if unfilled_region.isEmpty() then break;
+        
+        
+        // for block in unfilled_region {
+        // 
+        //   var unfilled_overlap = refined_coarse(block);
+        // 
+        //   if unfilled_overlap.numIndices > 0 then
+        //     this(grid,unfilled_overlap) 
+        //         = q_coarse(coarse_grid).refineValues( unfilled_overlap, ref_ratio );
+        // }
+        // 
+        // unfilled_region.subtract(refined_coarse);
       }
       
     }
     
-    delete unfilled_cell_blocks;
+    delete unfilled_region;  unfilled_region = nil;
     
     //<=== Interpolate from q_coarse everywhere else <===
 

@@ -1,6 +1,6 @@
 
 use Grid_def;
-use MultiDomainNew_def;
+use MultiDomain_def;
 
 
 //|\""""""""""""""""""""|\
@@ -54,7 +54,7 @@ class Level {
 
   var grids:                 domain(Grid);
   var sibling_ghost_regions: [grids] SiblingGhostRegion;
-  var boundary:              [grids] MultiDomainNew(dimension,stridable=true);
+  var boundary:              [grids] MultiDomain(dimension,stridable=true);
 
 
 
@@ -107,8 +107,8 @@ class Level {
   {
     for grid in grids
     {
-      delete sibling_ghost_regions(grid);
-      delete boundary(grid);      
+      delete sibling_ghost_regions(grid);          
+      delete boundary(grid);    
       delete grid;
     }
   }
@@ -276,12 +276,12 @@ proc Level.complete ()
   {
     sibling_ghost_regions(grid) = new SiblingGhostRegion(this,grid);
     
-    boundary(grid) = new MultiDomainNew(dimension,stridable=true);
+    boundary(grid) = new MultiDomain(dimension,stridable=true);
 
     for D in grid.ghost_domains do boundary(grid).add( D );
 
-    for shared_domain in sibling_ghost_regions(grid).domains do
-      boundary(grid).subtract( shared_domain );
+    for overlap in sibling_ghost_regions(grid).overlaps do
+      boundary(grid).subtract( overlap );
   }
 
 
@@ -314,7 +314,7 @@ proc Level.complete ()
 class SiblingGhostRegion {
 
   const neighbors: domain(Grid);
-  const domains:   [neighbors] domain(dimension,stridable=true);
+  const overlaps:  [neighbors] domain(dimension,stridable=true);
   
   
   //|\''''''''''''''''''''|\
@@ -325,12 +325,15 @@ class SiblingGhostRegion {
     level: Level,
     grid:  Grid)
   {
-    for sibling in level.grids {
-      if sibling != grid {
+    for sibling in level.grids 
+    {
+      if sibling != grid 
+      {
         var overlap = grid.extended_cells( sibling.cells );
-        if overlap.numIndices>0 {
+        if overlap.numIndices>0 
+        {
           neighbors.add(sibling);
-          domains(sibling) = overlap;
+          overlaps(sibling) = overlap;
         }
       }      
     }
@@ -368,7 +371,7 @@ class SiblingGhostRegion {
   
   iter these() {
     for nbr in neighbors do
-      yield (nbr, domains(nbr));
+      yield (nbr, overlaps(nbr));
   }
   // /|'''''''''''''''''''''''''/|
   //< |    these() iterator    < |

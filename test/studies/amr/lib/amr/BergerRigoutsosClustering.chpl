@@ -3,18 +3,18 @@ use BasicDataStructures;
 
 
 
-//|\""""""""""""""""""""""""""""""|\
-//| >    partitionFlags routine   | >
-//|/______________________________|/
+//|\""""""""""""""""""""""""""""|\
+//| >    clusterFlags routine   | >
+//|/____________________________|/
 
-//---------------------------------------------------------
-// Returns a List of domains that partitions the boolean 
-// array 'flags' with the target efficiency, if possible.
-// Clustering is performed by the Berger-Rigoutsos
-// algorithm.
-//---------------------------------------------------------
+//-----------------------------------------------------------
+// Returns a List of domains that clusters flagged points
+// in the boolean array 'flags' into domains with the target 
+// efficiency, if possible.  Clustering is performed by the 
+// Berger-Rigoutsos algorithm.
+//-----------------------------------------------------------
 
-proc partitionFlags (
+proc clusterFlags (
   flags:             [?full_domain] bool, 
   target_efficiency: real,
   min_width:         full_domain.rank*int )
@@ -86,9 +86,9 @@ proc partitionFlags (
   
   return finished_domain_list;
 }
-// /|"""""""""""""""""""""""""""""""/|
-//< |    partitionFlags routine    < |
-// \|_______________________________\|
+// /|"""""""""""""""""""""""""""""/|
+//< |    clusterFlags routine    < |
+// \|_____________________________\|
 
 
 
@@ -533,9 +533,9 @@ proc main {
 
   writeln("");
 
-  var partitioned_blocks = partitionFlags(F, .8, (2,2));
+  var cluster_blocks = clusterFlags(F, .8, (2,2));
 
-  for block in partitioned_blocks {
+  for block in cluster_blocks {
     writeln("");
     writeFlags(F(block));
   }

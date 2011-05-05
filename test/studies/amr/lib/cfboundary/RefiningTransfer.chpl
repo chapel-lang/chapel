@@ -22,7 +22,7 @@ class GridCFGhostRegion {
 
   const grid:             Grid;
   const coarse_neighbors: domain(Grid);
-  const transfer_regions:  [coarse_neighbors] MultiDomainNew(dimension,stridable=true);
+  const transfer_regions:  [coarse_neighbors] MultiDomain(dimension,stridable=true);
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -55,7 +55,7 @@ class GridCFGhostRegion {
         
         //---- Initialize a MultiDomain to the intersection, less grid's interior ----
         
-        var boundary_multidomain = new MultiDomainNew(dimension, stridable=true);
+        var boundary_multidomain = new MultiDomain(dimension, stridable=true);
         boundary_multidomain.add( fine_intersection );
         boundary_multidomain.subtract( grid.cells );
         

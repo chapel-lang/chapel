@@ -1,10 +1,10 @@
-use MultiDomainNew_def;
+use MultiDomain_def;
 
 
 
 proc main {
   
-  var mD = new MultiDomainNew(2,false);
+  var mD = new MultiDomain(2,false);
   mD.add( [1..12, 1..12] );
   mD.subtract( [3..5, 4..7] );
   mD.subtract( [4..9, 6..8] );
@@ -104,7 +104,7 @@ class MultiArray
   //     array_wrappers.add( new ArrayWrapper(D) ); 
   // }
   
-  proc allocate ( mD: MultiDomainNew(rank,stridable) )
+  proc allocate ( mD: MultiDomain(rank,stridable) )
   {
     for D in mD do array_wrappers.add( new ArrayWrapper(D) ); 
   }

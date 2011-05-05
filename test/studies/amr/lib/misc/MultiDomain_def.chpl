@@ -1,6 +1,43 @@
 
-use LanguageExtensions;
 use BasicDataStructures;
+
+
+proc main {
+  
+      
+  const mD = new MultiDomain( 2, false );
+  
+  mD.add( [1..10,1..10] );
+  
+  // mD.subtract( [59..161 by 2, -1..17 by 2] );
+  // mD.subtract( [-1..45 by 2, 71..161 by 2] );
+  // mD.subtract( [43..61 by 2, -1..9 by 2] );
+  // mD.subtract( [71..161 by 2, 15..61 by 2] );
+  // mD.subtract( [63..161 by 2, 59..161 by 2] );
+  // mD.subtract( [-1..21 by 2, -1..17 by 2] );
+  // mD.subtract( [-1..9 by 2, 59..65 by 2] );
+  // mD.subtract( [-1..21 by 2, 63..73 by 2] );
+  // mD.subtract( [43..65 by 2, 71..161 by 2] );
+  // mD.subtract( [19..45 by 2, -1..9 by 2] );
+  // mD.subtract( [-1..9 by 2, 15..53 by 2] );
+  // mD.subtract( [-1..9 by 2, 51..61 by 2] );
+  // mD.subtract( [27..45 by 2, 31..53 by 2] );
+  // mD.subtract( [43..53 by 2, 31..49 by 2] );
+  // 
+  // 
+  // 
+  // for D in mD do writeln(D);
+  
+  mD.subtract( [7..8, 2..9] );  
+  mD.add( [11..12, 13..14] );  
+  
+
+  const mD2 = mD.copy();
+  mD2.prettyPrint();
+
+  
+}
+
 
 
 
@@ -9,574 +46,737 @@ use BasicDataStructures;
 //| >    class: MultiDomain    | >
 //|/___________________________|/
 
-//-------------------------------------------------------------
-// Stores a list of arithmetic domains.  Allows the subraction
-// of one domain from a collection of other domains.  Useful
-// for dealing with irregular but rectangular geometries.
-//-------------------------------------------------------------
+//--------------------------------------------------------------------
+// The MultiDomain class is used to describe an index set composed
+// of a union of domains.  It relies on a binary tree representation,
+// adapted from the kd-tree data structure, with nodes that are 
+// members of the MDNode class.
+//--------------------------------------------------------------------
 
-class MultiDomain {
-
+class MultiDomain
+{
+  
   param rank:      int;
-  param stridable: bool = false;
-  
-  var   stride:    rank*int;
-
-  var subindices: domain(1) = [1..0];
-  var domains:    [subindices] domain(rank, stridable=stridable);
-
-
-
-  proc isEmpty() { return subindices.numIndices==0; }
-  proc clear() {}  // Need this for transition to new MultiDomain
-
-
-
-  //|\'''''''''''''''''''''''''''''|\
-  //| >    special method: this    | >
-  //|/.............................|/
-  
-  proc this (subindex: int)
-  {
-    return domains(subindex);
-  }
-  // /|'''''''''''''''''''''''''''''/|
-  //< |    special method: this    < |
-  // \|.............................\|
-  
-  
-
-  //|\''''''''''''''''''''''''''''''|\
-  //| >    special method: these    | >
-  //|/..............................|/
-
-  iter these () 
-  {
-    for D in domains do yield D;
-  }
-  // /|''''''''''''''''''''''''''''''/|
-  //< |    speical method: these    < |
-  // \|..............................\|
-
-
-  proc length { return subindices.high; }
-
-
-
-  //|\''''''''''''''''''''''''''''''''''|\
-  //| >    special method: writeThis    | >
-  //|/..................................|/
-  
-  //-----------------------------------------------------------
-  // Defines the output of the intrinsic 'write' and 'writeln' 
-  // procedures, so that write(MultiDomain) will produce
-  // something sensible.  Mainly for testing and debugging.
-  //-----------------------------------------------------------
-
-  proc writeThis (w: Writer)
-  {
-    write(domains);
-  }
-  // /|''''''''''''''''''''''''''''''''''/|
-  //< |    special method: writeThis    < |
-  // \|..................................\|
-  
-
-}
-// /|""""""""""""""""""""""""""/|
-//< |    MultiDomain class    < |
-// \|__________________________\|
-
-
-
-
-//|\""""""""""""""""""""""""""""""|\
-//| >    MultiDomain.intersect    | >
-//|/______________________________|/
-//--------------------------------------------------
-// Replace each element of the domain list with its 
-// intersection with the input domain.
-//--------------------------------------------------
-proc MultiDomain.intersect(D_in)
-  where D_in.type == domains.eltType
-{
-  
-  var new_mD = new MultiDomain(rank,stridable=stridable);
-  
-  for D in domains {
-    var intersection = D(D_in);
-    if intersection.numIndices > 0 then
-      new_mD.add(intersection);
-  }
-  
-  subindices = new_mD.subindices;
-  domains = new_mD.domains;
-  
-  delete new_mD;
-
-}
-// /|""""""""""""""""""""""""""""""/|
-//< |    MultiDomain.intersect    < |
-// \|______________________________\|
-
-
-
-
-
-//|\""""""""""""""""""""""""""""""""|\
-//| >    MultiDomain.add methods    | >
-//|/________________________________|/
-proc MultiDomain.add(D: domain) 
-  where D.type==domains.eltType
-{
-  if D.numIndices>0 {
-    if this.length==0 then
-      stride = tuplify(D.stride);
-    else assert(tuplify(D.stride) == stride,
-                "error: Elements of a MultiDomain must have equal stride.");
-
-    subindices = [1..subindices.high+1];
-    domains(subindices.high) = D;
-  }
-}
-
-
-proc MultiDomain.add(mD: MultiDomain) 
-  where mD.rank==rank && mD.stridable==stridable
-{
-  // writeln("this.length = ", this.length);
-  // writeln("this.stride = ", this.stride);
-  // writeln("mD.stride = ", mD.stride);
-  // writeln("mD.length = ", mD.length);
-  
-  if this.length>0 && mD.length>0 then
-    assert(mD.stride == stride);
-  else if this.length==0 && mD.length>0 then
-    stride = mD.stride;
-    
-  
-  const prev_high = subindices.high;
-  subindices = [1..prev_high + mD.subindices.high];
-  domains(prev_high+1..subindices.high) = mD.domains;
-}
-// /|""""""""""""""""""""""""""""""""/|
-//< |    MultiDomain.add methods    < |
-// \|________________________________\|
-
-
-
-
-
-
-
-
-
-//|\"""""""""""""""""""""""""""""""""""|\
-//| >    MultiDomain multiplication    | >
-//|/___________________________________|/
-//==== range * MultiDomain ====
-proc *(R: range(stridable=?s), mD: MultiDomain) 
-{
-  param stridable = s || mD.stridable;
-
-  var mD_new = new MultiDomain(mD.rank+1, stridable=stridable);
-  for D in mD.domains do mD_new.add(R*D);
-  return mD_new;
-}
-
-//==== domain * MultiDomain ====
-proc *(D: domain, mD: MultiDomain)
-{
-  param stridable = D.stridable || mD.stridable;
-
-  var mD_new = new MultiDomain(D.rank+mD.rank, stridable=stridable);
-  for E in mD.domains do
-    mD_new.add(D*E);
-
-  return mD_new;
-}
-
-//==== MultiDomain * domain ====
-proc *(mD: MultiDomain, E: domain)
-{
-  param stridable = mD.stridable || E.stridable;
-  var mD_new = new MultiDomain(mD.rank+E.rank, stridable=stridable);
-  for D in mD do mD_new.add(D*E);
-
-  return mD_new;
-}
-
-//==== MultiDomain * MultiDomain ====
-proc *(mD1: MultiDomain, mD2: MultiDomain)
-{
-  param stridable = mD1.stridable || mD2.stridable;
-
-  var mD_new = new MultiDomain(mD1.rank+mD2.rank, stridable=stridable);
-  for (D1,D2) in [mD1,mD2] do
-    mD_new.add(D1*D2);
-
-  return mD_new;
-}
-// /|"""""""""""""""""""""""""""""""""""/|
-//< |    MultiDomain multiplication    < |
-// \|___________________________________\|
-
-
-
-
-
-
-
-
-
-//|\""""""""""""""""""""""""""""""|\
-//| >    Subtraction overloads    | >
-//|/______________________________|/
-
-//|\''''''''''''''''''''''''''''''''''''''|\
-//| >    MultiDomain = domain - domain    | >
-//|/......................................|/
-//---------------------------------------------------------------------------
-// This performs a "set minus" operation D-E between two domains of equal 
-// rank and stride, returning a MultiDomain.  This procedure is the backbone 
-// of MultiDomain calculations.
-//
-// The algorithm is recursive.  If the input domains are of rank 1, the 
-// result can be calculated explicitly.  If they are of rank > 1, then
-// the result is split into three segments -- low, interior, and high --
-// based on the structure of the difference in the leading dimension.
-//
-// The 'interior' section is determined by the range in the leading dimension
-// on which D and E overlap.  It is formed by the tensor product of this
-// range with the difference of D and E projected onto all non-leading
-// dimensions; this projected difference is computed by a lower-rank domain
-// subtraction.
-//
-// The 'low' and 'high' sections are determined by the portion of the
-// leading dimension that is either lower or higher than the 'interior'
-// section.  By definition, nothing is removed from D in these areas, and
-// they are directly calculated as full (but possibly empty) domains.
-//--------------------------------------------------------------------------
-proc -(D: domain, E: domain) where D.rank == E.rank
-{
-
-  param stridable = D.stridable || E.stridable;
-  param rank = D.rank;
-
-
-  //---- Require strides to be the same ----
-  //------------------------------------------------------------
-  // It might be possible to make sense out of this for unequal
-  // strides, but that's not a functionality I need.
-  //------------------------------------------------------------
-  assert(D.stride == E.stride,
-         "error: -(D: domain, E: domain)\n" +
-         "Strides of domains must be equal.");
-
-
-
-  //---- Initialize the new MultiDomain ----
-  var mD = new MultiDomain(D.rank, stridable=stridable);
-  mD.stride = tuplify(D.stride);
-  
-  
-  //---- Check whether D and E are disjoint ----
-  //--------------------------------------------------------------------
-  // Checking for this right away can provide a significant performance
-  // improvement.  Otherwise, disjointness may not be discovered until
-  // iterating down to a lower dimension.
-  //--------------------------------------------------------------------
-  var disjoint = false;
-  for i in 1..rank {
-    if D.high(i) < E.low(i) || D.low(i) > E.high(i) {
-      disjoint = true;
-      break;
-    }
-  }
-
-
-  //---- Fill the new MultiDomain ----
-  if disjoint {
-    mD.add(D);
-  }
-  else {
-    var domain_stack = nontrivialSubtraction(D,E);
-    mD.subindices = [1..domain_stack.size];
-    for i in 1..domain_stack.size do
-      mD.domains(i) = domain_stack.pop();
-  }
-  
-  
-  //---- Return ----
-  return mD;
-
-}
-
-
-proc nontrivialSubtraction(D: domain, E: domain) where D.rank == E.rank
-{
-  
-  param stridable = D.stridable || E.stridable;
-  param rank = D.rank;
-  
-  var domain_stack = new Stack(domain(rank, stridable=stridable));
-  
-
-  //==== Extract data from first dimension ====
-  //-----------------------------------------------------------
-  // The syntax here seems a little bulky, but it ensures that
-  // the results are always integers, regardless of D.rank.
-  //-----------------------------------------------------------
-  var stride1 = D.dim(1).stride;
-  var D1low  =  D.dim(1).low;
-  var D1high =  D.dim(1).high;
-  var E1low  =  E.dim(1).low;
-  var E1high =  E.dim(1).high;
-
-  var interior1_low  = max(D1low,  E1low);
-  var interior1_high = min(D1high, E1high);
-
-
-  //===> Rank 1: Terminal case ===>
-  if rank == 1 {
-
-    //==== Add the low section, if it exists ====
-    if D1low < interior1_low {
-      if stridable then
-        domain_stack.push( [D1low .. interior1_low-stride1 by stride1] );
-      else
-        domain_stack.push( [D1low .. interior1_low-1] );
-    }
-
-    //==== Add the high section, if it exists ====
-    if D1high > interior1_high {
-      if stridable then
-        domain_stack.push( [interior1_high+stride1 .. D1high by stride1] );
-      else
-        domain_stack.push( [interior1_high+1 .. D1high] );
-    }
-  }
-  //<=== Rank 1: Terminal case <===
-
-
-  //===> Rank > 1 ===>
-  else {
-    //==== Declarations ====
-    var D_projected: domain(rank-1, stridable=stridable);
-    var E_projected: domain(rank-1, stridable=stridable);
-    var ranges:      (rank-1) * range(stridable=stridable);
-
-    //==== Calculate projections of D and E onto upper dimensions ====
-    for i in 1..rank-1 do ranges(i) = D.dim(i+1);
-    D_projected = ranges;
-    for i in 1..rank-1 do ranges(i) = E.dim(i+1);
-    E_projected = ranges;
-
-
-    //==== Add the low section, if it exists ====
-    if D1low < interior1_low {
-      if stridable then
-        domain_stack.push( (D1low .. interior1_low-stride1 by stride1) * D_projected );
-      else
-        domain_stack.push( (D1low .. interior1_low-1) * D_projected );
-    }
-
-    //==== Compute the interior MultiDomain, and add ====
-    var projected_diff: Stack( domain(rank-1,stridable=stridable) ) 
-                          = nontrivialSubtraction(D_projected,E_projected);
-
-    var interior1_range: range(stridable=stridable);
-    if stridable then
-      interior1_range = interior1_low .. interior1_high by stride1;
-    else
-      interior1_range = interior1_low .. interior1_high;
+  param stridable: bool;
       
-
-    for i in 1..projected_diff.size do
-      domain_stack.push( interior1_range * projected_diff.pop() );
+  var root: MDNode(rank,stridable);
 
 
-    //==== Add the high section, if it exists ====
-    if D1high > interior1_high {
-      if stridable then
-        domain_stack.push( (interior1_high + stride1 .. D1high by stride1) * D_projected );
-      else
-        domain_stack.push( (interior1_high+1 .. D1high) * D_projected );
-    }
+  proc initialize ()
+  {
+    root = new MDNode( rank, stridable );
   }
-  //<=== Rank > 1 <===
-
-  return domain_stack;
-
-}
-// /|''''''''''''''''''''''''''''''''''''''/|
-//< |    MultiDomain = domain - domain    < |
-// \|......................................\|
 
 
-//|\'''''''''''''''''''''''''''''''''''''''''''|\
-//| >    MultiDomain = MultiDomain - domain    | >
-//|/...........................................|/
-proc -(mD: MultiDomain, E: domain) 
-  where mD.rank==E.rank && mD.stridable==E.dim(1).stridable
-{
+  proc ~MultiDomain () { root.clearChildren();  delete root; }
+
+
+  proc copy ()
+  {
+    const new_mD = new MultiDomain(rank,stridable);
+    new_mD.root = root.copy();
+    return new_mD;
+  }
+
+
+
+  proc isEmpty ()
+  {    
+    return (root.bisect_dim==-1 || root.Domain.numIndices==0);
+  }
+
+
+  proc subtract ( D: domain(rank,stridable=stridable) )
+  {
+    if !isEmpty() && root.Domain(D).numIndices>0 then 
+      root.subtract(D);
+    if root.bisect_dim==-1 then root.Domain.clear();
+  }  
   
-  var domain_stack = new Stack(domain(mD.rank, stridable = mD.stridable));
-  var domain_count: int;
   
-  for D in mD {
-    var difference = D-E;
-
-    for D_diff in difference { 
-      domain_stack.push(D_diff);
-      domain_count += 1;
+  proc add ( D: domain(rank,stridable=stridable) )
+  {
+    if !isEmpty() then
+    {
+      root = root.extendToContain( D );
+      
+      root.add( D );
+    }
+    else
+    {
+      root.Domain = D;
+      root.bisect_dim = 0;
     }
     
-    delete difference;
-  }
-
-
-  var mD_new = new MultiDomain(mD.rank, mD.stridable);
-  mD_new.subindices = [1..domain_count];
-  for i in mD_new.subindices do
-    mD_new.domains(i) = domain_stack.pop();
-
-  return mD_new;
-
-}
-// /|'''''''''''''''''''''''''''''''''''''''''''/|
-//< |    MultiDomain = MultiDomain - domain    < |
-// \|...........................................\|
-
-
-
-//|\''''''''''''''''''''''''''''''''''''''''''''''''|\
-//| >    MultiDomain = MultiDomain - MultiDomain    | >
-//|/................................................|/
-proc -(mD1: MultiDomain, mD2: MultiDomain)
-  where mD1.rank==mD2.rank && mD1.stridable==mD2.stridable
-{
-  var mD_new = new MultiDomain(mD1.rank, mD1.stridable);
-
-  mD_new.add(mD1);
-
-  for E in mD2 {
-    var mD_temp = mD_new - E;
-    delete mD_new;
-    mD_new = mD_temp;
   }
   
-  return mD_new;
+  
+  proc add ( domain_collection )
+    where domain_collection.type != domain(rank,stridable=stridable)
+  {
+    for D in domain_collection do add(D);
+  }
+  
+  
+  
+  proc intersect ( D: domain(rank,stridable=stridable) )
+  {
+    
+    if !isEmpty()
+    {
+      root.intersect( D );
+      if root.bisect_dim==-1 then root.Domain.clear();
+    }
+    
+  }
+  
+  
+  
+  
+  
+  iter these ()
+  {
+    
+    const q = new Queue( MDNode(rank,stridable) );
+    var node: MDNode(rank,stridable);
+
+    q.enqueue( root );
+    
+    while !q.isEmpty()
+    {
+      node = q.dequeue();
+
+      if node.bisect_dim==0 then yield node.Domain;
+      else
+      {
+        if node.left then q.enqueue( node.left );
+        if node.right then q.enqueue( node.right );
+      }
+    }
+  }
+  
+  
+  
+  iter nodes () : MDNode(rank,stridable)
+  {
+    
+    const q = new Queue( MDNode(rank,stridable) );
+    var node: MDNode(rank,stridable);
+  
+    if root then q.enqueue( root );
+    
+    while !q.isEmpty()
+    {
+      node = q.dequeue();
+      yield node;
+      
+      if node.left  then q.enqueue( node.left );
+      if node.right then q.enqueue( node.right );
+    }
+  }
+    
+
+  
+  //---- Print as an array of 0's and 1's ----
+  
+  proc prettyPrint ()
+  {
+    var A: [root.Domain] int;
+    for D in these() do A(D) = 1;
+    writeln(A);
+  }
+
+  
 }
-// /|''''''''''''''''''''''''''''''''''''''''''''''''/|
-//< |    MultiDomain = MultiDomain - MultiDomain    < |
-// \|................................................\|
+
+// /|"""""""""""""""""""""""""""/|
+//< |    class: MultiDomain    < |
+// \|___________________________\|
 
 
-// /|""""""""""""""""""""""""""""""/|
-//< |    Subtraction overloads    < |
-// \|______________________________\|
+
+
+
+//|\""""""""""""""""""""""|\
+//| >    class: MDNode    | >
+//|/______________________|/
+
+//-------------------------------------------------------------------
+// The MDNode class represents a node in the tree structure that 
+// constitutes a MultiDomain.  It consists of a domain, a descriptor 
+// of whether it is filled, a description of a hyperplane separating 
+// its domain, and left/right child nodes.
+//
+// The separatrix is described by bisect_dim, the dimension to which it
+// is orthogonal, and right_low, its index in that dimension, which
+// is the lower bound of the right child.
+//------------------------------------------------------------------
+
+class MDNode
+{
+  
+  param rank:      int;
+  param stridable: bool;
+  
+  var Domain:    domain(rank,stridable=stridable);
+
+  var bisect_dim: int = -1;  // Indicates temporary, unfilled status
+  var right_low:  int = 0;
+
+  var left, right:  MDNode(rank,stridable);
+
+
+
+  proc ~MDNode () {}  // Can't clear children here or node merging breaks
+  
+
+  proc clearChildren ()
+  {
+    if left  then { left.clearChildren();   delete left;  left = nil; }
+    if right then { right.clearChildren();  delete right;  right = nil; }
+  }
+
+
+  proc copy () : MDNode(rank,stridable)
+  {
+    const new_node = new MDNode(rank, stridable);
+
+    new_node.Domain     = Domain;
+    new_node.bisect_dim = bisect_dim;
+    new_node.right_low  = right_low;
+    
+    if left  then new_node.left  = left.copy();
+    if right then new_node.right = right.copy();
+    
+    return new_node;
+  }
+
+
+  //|\''''''''''''''''''''''''''''''''|\
+  //| >    method: locateBisection    | >
+  //|/................................|/
+
+  proc locateBisection ( D: domain(rank,stridable=stridable) )
+  {
+    
+    //===> Choose bisection dimension ===>
+    
+    var dim_length     = 0;
+    var max_dim_length = 0;
+    bisect_dim = 0;
+    
+    for d in 1..rank
+    {
+
+      //--------------------------------------------------------------------
+      // We know that D and Domain are not disjoint, so dimension d may be 
+      // split as long as D.dim(d) does not strictly contain Domain.dim(d).
+      //--------------------------------------------------------------------
+
+      if D.low(d) > Domain.low(d) || D.high(d) < Domain.high(d)
+      {
+
+        dim_length = Domain.dim(d).length;
+
+        if dim_length > max_dim_length {
+          max_dim_length = dim_length;
+          bisect_dim = d;
+        }
+
+      }
+      
+    }
+    
+    //<==== Choose bisection dimension <===
+    
+    
+    //---- Set bisection index (low index of right child) ----
+    //---------------------------------------------------------------------
+    // (Comment-only shorthand d = bisect_dim)
+    // The larger offset indicates the bisection closer to the midpoint of
+    // Domain.dim(d).  This follows from the fact that
+    //    low_offset + high_offset + D.width(d) = Domain.width(d)
+    // where D.width = D.high - D.low.
+    //---------------------------------------------------------------------
+    
+    if bisect_dim > 0
+    {    
+      
+      var low_offset  = D.low(bisect_dim) - Domain.low(bisect_dim);
+      var high_offset = Domain.high(bisect_dim) - D.high(bisect_dim);
+      
+      if low_offset > high_offset then
+        right_low = D.low(bisect_dim);
+      else
+        right_low = D.high(bisect_dim) + Domain.stride(bisect_dim);
+    }
+    
+  }
+
+  // /|''''''''''''''''''''''''''''''''/|
+  //< |    method: locateBisection    < |
+  // \|................................\|
+
+
+
+
+  //|\''''''''''''''''''''|\
+  //| >    method: add    | >
+  //|/....................|/
+  
+  //-------------------------------------------------------------------
+  // This method can be called on a node for which:
+  //
+  // bisect_dim == -1 : Just created by the parent node, unfilled.
+  // bisect_dim ==  0 : Filled, not bisected.  Nothing happens.
+  // bisect_dim  >  0 : Already bisected; has at least one child node.
+  //-------------------------------------------------------------------
+  
+  proc add ( D: domain(rank, stridable=stridable) )
+  {
+  
+    //---- Locate bisection of node is unfilled ----
+    //-------------------------------------------------------------
+    // This should only occur if the node has just been created by
+    // its parent.
+    //-------------------------------------------------------------
+  
+    if bisect_dim == -1 then locateBisection(D); 
+    
+    
+    //-------------------------------------------------------------------
+    // If bisect_dim == 0 at this point, then we're done.  It means
+    // that either the node was filled on entry, or locateBisection left
+    // bisect_dim=0 because D contains Domain.
+    //-------------------------------------------------------------------
+    
+    
+    //---- If bisected, create and add to children as necessary ----
+    
+    if bisect_dim > 0
+    {
+      
+      //---- Left child ----
+      
+      if D.low(bisect_dim) <= right_low - Domain.stride(bisect_dim)
+      {
+        if left==nil then createLeft( filled=false );
+        left.add( D );
+      }
+      
+      
+      //---- Right child ----
+      
+      if D.high(bisect_dim) >= right_low
+      {
+        if right==nil then createRight( filled=false );
+        right.add( D );
+      }
+      
+      
+      //---- Check whether children can be merged ----
+      
+      if left!=nil && right!=nil then
+        if left.bisect_dim==0 && right.bisect_dim==0
+        {
+          delete left;
+          left = nil;
+
+          delete right;
+          right = nil;
+
+          bisect_dim = 0;
+        }
+      
+      
+    }
+    
+  }
+  // /|''''''''''''''''''''/|
+  //< |    method: add    < |
+  // \|....................\|
+
+
+
+
+  //|\'''''''''''''''''''''''''|\
+  //| >    method: subtract    | >
+  //|/.........................|/
+  
+  proc subtract ( D: domain(rank, stridable=stridable) )
+  {
+        
+    //---- If node is filled, then either bisect or unfill ----
+    
+    if bisect_dim == 0
+    {
+      locateBisection(D);
+
+      if bisect_dim == 0 then bisect_dim = -1;
+      else
+      {
+        createLeft( filled=true );
+        createRight( filled=true );
+      }
+    }
+    
+        
+    
+    //-----------------------------------------------------------------
+    // Subtract from children if necessary.  Note that if this node is
+    // bisected but a child doesn't exist, then that child's space is
+    // empty, and there is no subtraction to take place.
+    //-----------------------------------------------------------------
+    
+    if bisect_dim > 0
+    {
+      
+      //---- Left child ----
+      
+      if D.low(bisect_dim) <= right_low - Domain.stride(bisect_dim)  &&  left!=nil
+      {
+        left.subtract( D );
+        if left.bisect_dim == -1 then { delete left;  left=nil; }
+      }
+
+
+      //---- Right child ----
+
+      if D.high(bisect_dim) >= right_low  &&  right!=nil
+      {
+        right.subtract( D );
+        if right.bisect_dim == -1 then { delete right;  right=nil; }
+      }
+    }
+    
+  }
+  
+  // /|'''''''''''''''''''''''''/|
+  //< |    method: subtract    < |
+  // \|.........................\|
+
+
+
+
+
+  //|\''''''''''''''''''''''''''|\
+  //| >    method: intersect    | >
+  //|/..........................|/
+  
+  proc intersect ( D: domain(rank,stridable=stridable) )
+  {
+
+    if bisect_dim == 0
+    {
+      Domain = Domain(D);
+      if Domain.numIndices==0 then bisect_dim = -1; 
+    }
+
+
+    //---- If the node is bisected... ----
+
+    else
+    {
+
+      var intersects_left  = intersectsLeft(D);
+      var intersects_right = intersectsRight(D);
+      
+      
+      //------------------------------------------------------------
+      // If D intersects both sides of Domain, then both children
+      // need to be intersected, if they exist.  A child may become
+      // unfilled in the intersection process (as intersectsLeft
+      // and intersectsRight only test bounding boxes), so this
+      // node may need to delete them.  Then, if both children are
+      // removed, this node marks itself unfilled.
+      //------------------------------------------------------------
+      
+      if intersects_left && intersects_right
+      {
+        
+        if left
+        {
+          left.intersect(D);
+          if left.bisect_dim==-1  then { delete left;   left = nil; }
+        } 
+
+        if right
+        {
+          right.intersect(D);
+          if right.bisect_dim==-1 then { delete right;  right = nil; }
+        }
+        
+        if left==nil && right==nil then bisect_dim = -1;
+        else Domain = Domain(D);
+      }
+      
+      
+      //----------------------------------------------------------------------
+      // If D only intersects the left side of Domain, then the right
+      // child may be immediately removed.  Furthermore, the intersection
+      // will remove this node's bisector, so this node becomes redundant
+      // with its left child.  Hence, if the left child survives intersection
+      // with D, it is merged with this node.
+      //----------------------------------------------------------------------
+      
+      else if intersects_left
+      {
+        if right { right.clearChildren();  delete right;  right = nil; }
+        
+        if left { left.intersect(D);  merge(left); }
+        else bisect_dim = -1;
+      }
+      
+      //-----------------------------------------------------
+      // Same as the previous case, but for the right child.
+      //-----------------------------------------------------
+      
+      else
+      {
+        if left { left.clearChildren();  delete left; left = nil; }
+        
+        if right { right.intersect(D);  merge(right); }
+        else bisect_dim = -1;
+      }
+
+    }
+    
+  }
+  
+  // /|''''''''''''''''''''''''''/|
+  //< |    method: intersect    < |
+  // \|..........................\|
+
+
+
+  proc intersectsLeft( D: domain(rank, stridable=stridable) )
+  {
+    assert( bisect_dim>0, "Error: Called MDNode.intersectsLeft with bisect_dim<=0");
+    return D.low(bisect_dim) <= right_low - Domain.stride(bisect_dim);
+  }
+  
+  
+  proc intersectsRight( D: domain(rank, stridable=stridable) )
+  {
+    assert( bisect_dim>0, "Error: Called MDNode.intersectsRight with bisect_dim<=0");
+    return D.high(bisect_dim) >= right_low;
+  }
+
+
+  proc createLeft ( filled: bool=true )
+  {
+    assert( bisect_dim>0, "Error: Called MDNode.createLeft with bisect_dim<=0.");
+    
+    var subranges: rank*range(stridable=stridable);
+    
+    for d in 1..rank            do subranges(d) = Domain.dim(d);
+    for d in bisect_dim+1..rank do subranges(d) = Domain.dim(d);    
+    
+    subranges(bisect_dim) = Domain.low(bisect_dim) .. right_low-Domain.stride(bisect_dim) by Domain.stride(bisect_dim);
+    
+    var child_domain: domain(rank, stridable=stridable) = subranges;
+    
+    if filled then left = new MDNode( rank, stridable, child_domain, 0 );
+    else           left = new MDNode( rank, stridable, child_domain, -1 );
+    
+  }
+
+
+  proc createRight ( filled: bool=true )
+  {
+    assert( bisect_dim>0, "Error: Called MDNode.createRight with bisect_dim<=0.");
+    
+    var subranges: rank*range(stridable=stridable);
+    
+    for d in 1..rank            do subranges(d) = Domain.dim(d);
+    for d in bisect_dim+1..rank do subranges(d) = Domain.dim(d);
+    
+    subranges(bisect_dim) = right_low .. Domain.high(bisect_dim) by Domain.stride(bisect_dim);
+    
+    var child_domain: domain(rank, stridable=stridable) = subranges;
+    
+    if filled then right = new MDNode( rank, stridable, child_domain, 0 );
+    else           right = new MDNode( rank, stridable, child_domain, -1 );
+  }
+
+
+}
+
+// /|""""""""""""""""""""""/|
+//< |    class: MDNode    < |
+// \|______________________\|
+
+
+
+
+
+
+
+
+//|\"""""""""""""""""""""""""""""""""""""""|\
+//| >    method: MDNode.extendToContain    | >
+//|/_______________________________________|/
+
+//---------------------------------------------------------------
+// This method extends the existing MDNode through a series
+// of extensions acroos hyperplanes, creating a structure that
+// contains the input domain D.  The return value is a reference
+// to the new root of the structure.
+//---------------------------------------------------------------
+
+proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : MDNode(rank,stridable)
+{
+  
+  // writeln("Beginning MDNode.extendToContain on node with ", Domain, " ", left!=nil, " ", filled);
+  // writeln("  Input domain is ", D);
+  
+  var new_root: MDNode(rank,stridable);
+  
+  
+  //===> Select the shortest dimension to extend ===>
+  
+  var dim_length     = 0;
+  var min_dim_length = Domain.numIndices+1;
+  var ext_d          = 0;
+    
+  for d in 1..rank {
+    
+    if D.high(d) > Domain.high(d) || D.low(d) < Domain.low(d) {
+      dim_length = Domain.dim(d).length;
+      
+      if dim_length < min_dim_length {
+        min_dim_length = dim_length;
+        ext_d = d;
+      }
+    }
+    
+  }
+  
+  //<=== Select the shortest dimension to extend <===
+  
+  
+  //---- If ext_d==0, that means D is contained in this.Domain, and this is the new root ----
+  
+  if ext_d == 0 then new_root = this;
+  
+  
+  //---- Otherwise, we split along dimension ext_d ----
+    
+  else {
+
+    //---- Declare and prepare ----
+    
+    var s = Domain.stride(ext_d);
+    var ext_index: int;
+    
+    var parent:  MDNode(rank,stridable);
+    // var sibling: MDNode(rank,stridable);
+    
+    var subranges: rank*range(stridable=stridable);
+    var D_temp:    domain(rank,stridable=stridable);
+    
+    for d in 1..ext_d-1    do subranges(d) = Domain.dim(d);  
+    for d in ext_d+1..rank do subranges(d) = Domain.dim(d);
+    
+    
+    //===> Create parent and sibling node ===>   
+    
+    var low_extension  = max( Domain.low(ext_d) - D.low(ext_d), 0 );
+    var high_extension = max( D.high(ext_d) - Domain.high(ext_d), 0 );
+
+
+    //---- Extend in the low direction, if that's the smaller extension option ----
+    
+    if ( low_extension < high_extension && low_extension > 0)  ||  ( high_extension == 0 )
+    {
+      ext_index = Domain.low(ext_d);
+      
+      // subranges(ext_d) = D.low(ext_d) .. ext_index-s by s;
+      // D_temp           = subranges;
+      // sibling          = new MDNode( rank, stridable, D_temp, false );
+      
+      subranges(ext_d) = D.low(ext_d) .. Domain.high(ext_d) by s;
+      D_temp           = subranges;
+      parent            = new MDNode( rank, stridable, D_temp );
+      parent.bisect_dim = ext_d;
+      parent.right_low  = ext_index;
+      
+      // parent.left  = sibling;
+      parent.right = this;
+       
+    }
+    
+    //---- Otherwise, extend in the high direction ----
+    
+    else
+    {
+  
+      ext_index = Domain.high(ext_d) + s;
+
+      // subranges(ext_d) = ext_index .. D.high(ext_d) by s;
+      // D_temp           = subranges;
+      // sibling          = new MDNode( rank, stridable, D_temp, false );
+      // sibling.filled   = false;
+      
+      subranges(ext_d)  = Domain.low(ext_d) .. D.high(ext_d) by s;
+      D_temp            = subranges;
+      parent            = new MDNode( rank, stridable, D_temp );
+      parent.bisect_dim = ext_d;
+      parent.right_low  = ext_index;
+      
+      parent.left  = this;
+      // parent.right = sibling;
+    }
+    
+    //<=== Create parent and sibling node <===
+    
+    
+    //---- Now extend the parent; the new root returns down the call chain ----
+    
+    new_root = parent.extendToContain( D );
+    
+  }
+  
+  
+  return new_root;
+  
+}
+
+// /|""""""""""""""""""""""""""""""""""""""|
+//< |    method: MDNode.extendToContain    |
+// \|______________________________________|
+
+
+
+
+
+
 
 
 
 
 
 //|\"""""""""""""""""""""""""""""|\
-//| >    MultiDomain.subtract    | >
+//| >    method: MDNode.merge    | >
 //|/_____________________________|/
-proc MultiDomain.subtract(E: domain)
-  where E.type == domains.eltType
+
+//-------------------------------------------------------------
+// Merges one MDNode with another.  The caller acquires all
+// the data of the argument, and then the argument is deleted.
+//-------------------------------------------------------------
+
+proc MDNode.merge( node: MDNode )
 {
-  if domains.numElements>0 {
-    assert(tuplify(E.stride) == stride,
-	         "error: Elements of a MultiDomain must have equal stride.");
-  }
-
-  var difference = this - E;
-  this.subindices = difference.subindices;
-  this.domains = difference.domains;
-  delete difference;
+  
+  this.Domain     = node.Domain;
+  this.bisect_dim = node.bisect_dim;
+  this.right_low  = node.right_low;
+  this.left       = node.left;
+  this.right      = node.right;
+  
+  delete node;
+  
 }
-// /|"""""""""""""""""""""""""""""/|
-//< |    MultiDomain.subtract    < |
-// \|_____________________________\|
-
-
-
-
-
-
-
-
-
-
-
-
-// //|\""""""""""""""""""""""""""|\
-// //| >    equality overload    | >
-// //|/__________________________|/
-// proc ==(S1: MultiDomain, S2: MultiDomain) {
-//   var S_diff = S1 - S2;
-// 
-//   if S_diff.subindices.numIndices==0 then
-//     return true;
-//   else
-//     return false;
-// 
-// }
-// // /|""""""""""""""""""""""""""/|
-// //< |    equality overload    < |
-// // \|__________________________\|
-
-
-// proc main {
-//   
-//   var full_D = [1..10, 1..10];
-//  
-//   var mD = new MultiDomain(2, false);
-//   mD.add(full_D);
-//   mD.subtract([3..5, 4..9]);
-//   mD.subtract([4..8, 1..5]);
-// 
-//   var I: [full_D] int;
-//   for D in mD do I(D)=1;
-// 
-//   writeln("");
-//   writeln("Full domain: ", full_D);
-//   writeln("MultiDomain: ", mD);  
-//   writeln(I);
-// 
-//   var mArray = new MultiArray(2, false, int);
-//   mArray.allocate(mD);
-//   for A in mArray do A.value = 2;
-//   
-//   for (D,A) in (mD,mArray) do I(D) = A.value;
-//   writeln("");
-//   writeln(I);
-// 
-// 
-// 
-// 
-//   var full_D_strided = [1..21 by 2, -5..31 by 3];
-//   var mD_strided = new MultiDomain(2,true);
-//   mD_strided.add(full_D_strided);
-//   mD_strided.subtract([5..13 by 2, -5..1 by 3]);
-//   mD_strided.subtract([9..15 by 2, 1..38 by 3]);
-// 
-//   var I_strided: [full_D_strided] int;
-//   for D in mD_strided do I_strided(D)=1;
-// 
-//   writeln("");
-//   writeln("Full domain: ", full_D_strided);
-//   writeln("MultiDomain: ", mD_strided);  
-//   writeln(I_strided );
-//   
-//   var mArray_strided = new MultiArray(2,true,int);
-//   mArray_strided.allocate(mD_strided);
-//   for A in mArray_strided do A.value = 2;
-//   
-//   for (D,A) in (mD_strided,mArray_strided) do I_strided(D) = A.value;
-//   writeln("");
-//   writeln(I_strided);
-// 
-// }
+// /|""""""""""""""""""""""""""""|
+//< |    method: MDNode.merge    |
+// \|____________________________|

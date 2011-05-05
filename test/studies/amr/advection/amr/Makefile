@@ -20,7 +20,7 @@ DIM = 2
 
 
 output: _output AMRAdvectionCTU.out
-	./AMRAdvectionCTU.out --dataParTasksPerLocale=2
+	./AMRAdvectionCTU.out
 
 AMRAdvectionCTU.out: $(SOURCES)
 	chpl $(SOURCES) -M $(MISC_LIB) -M $(GRID_LIB) -M $(LEVEL_LIB) -M $(CF_LIB) -M $(AMR_LIB) --set dimension=$(DIM) -o AMRAdvectionCTU.out
