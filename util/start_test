@@ -66,7 +66,7 @@
 #   -execopts  <option list>          ""
 #   -launchcmd <launcher command>     ""
 #   -norecurse
-#   -componly
+#   -comp-only
 #   -performance
 #   -generate-graphs
 #   -startdate <MM/DD/YY>
@@ -100,7 +100,7 @@
 # way to do so is by specifying "-compopts --no-cc-warnings" to
 # reverse the effects of that flag.
 #
-# The -componly option specifies that this testing run should only
+# The -comp-only option specifies that this testing run should only
 # be compiled and not executed; this causes success of a test to
 # be related to the success or failure of the compile step, not to
 # its execution.
@@ -795,7 +795,7 @@ while ( $#argv > 0 )
 		echo "          -execopts <options>   (currently: '')"
                 echo "          -launchcmd <command>  (currently: '')"
                 echo "          -norecurse"
-		echo "          -componly"
+		echo "          -comp-only"
                 echo "          -performance"
                 echo "          -generate-graphs"
 		echo "          -startdate <MM/DD/YY> (currently: '')"
