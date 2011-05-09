@@ -1,4 +1,4 @@
-a# USAGE: the intent of this file is to keep track of current
+# USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.  We start
 # with general regressions that are seen across a wide variety of
 # platforms, and then move onto linux64 regressions since those are
@@ -41,7 +41,7 @@ performance-specific regressions
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/14/11, 04/22/11, 04/26/11, 04/29/11, 04/30/11, 05/04/11)
+[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/14/11, 04/22/11, 04/26/11, 04/29/11, 04/30/11, 05/04/11, 05/09/11)
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -59,16 +59,14 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
-failed since added (05/01/11)
------------------------------
-[Error matching program output for domains/sungeun/assoc/stress --doSerial=false (--cc-warnings -sparSafe=true) (1-2)]
-
 nondet. source file empty error message from chpl
 -------------------------------------------------
 [Error matching compiler output for release/examples/spec/Records/recordInheritance] (04/10/11)
 
 nondet. valgrind "the impossible has happened"
 ----------------------------------------------
+[Error matching program output for domains/sungeun/assoc/stress --doSerial=false --numAdds=5000 (--cc-warnings -sparSafe=true) (1-3)] (05/08/11)
+[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce] (05/08/11)
 [Error matching program output for studies/sudoku/dinan/search/sudoku-reduce3] (04/10/11)
 
 invalid write of size 1
@@ -91,13 +89,17 @@ internal valgrind stuff 'the impossible has happened'
 no-local regressions
 ====================
 
+maxThreadsPerLocale unbounded but ... warning
+---------------------------------------------
+[Error matching program output for domains/sungeun/assoc/stress --doSerial=false --numAdds=5000 (--cc-warnings --no-local -sparSafe=true) (1-3)]
+
 nondet. out-of-memory error
 ---------------------------
 [Error matching program output for stress/deitz/test_10k_begins]
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )] (04/14/11, 04/22/11, 04/25/11, 05/01/11)
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )] (04/14/11, 04/22/11, 04/25/11, 05/01/11, 05/07/11)
 
 nondet. execution timeout
 -------------------------
@@ -132,19 +134,14 @@ seg fault (?)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-exceeds maxThreadsPerLocale for GASNet (05/05/11 -- should now be fixed)
-------------------------------------------------------------------------
-[Error matching program output for domains/sungeun/assoc/stress --doSerial=false --maxThreadsPerLocale=500 -nl 1 (--cc-warnings -sparSafe=false) (2-2)]
-[Error matching program output for domains/sungeun/assoc/stress --doSerial=false --maxThreadsPerLocale=500 -nl 1 (--cc-warnings -sparSafe=true) (1-2)]
-
 nondet. race on which index generates error message?
 ----------------------------------------------------
 [Error matching program output for domains/sungeun/sparse/index_not_in_domain_1] (04/12/11)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/11/11, 04/15/11, 04/22/11, 04/29/11, 05/03/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11)
+[Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/11/11, 04/15/11, 04/22/11, 04/29/11, 05/03/11, 05/08/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11, 05/06/11)
 
 too many warnings/different warning format?
 -------------------------------------------
@@ -225,10 +222,6 @@ gdb output differences
 xt-cle-specific failures
 ========================
 
-failed since added (04/30/11)
------------------------------
-[Error matching program output for domains/sungeun/assoc/stress --doSerial=false (--cc-warnings -sparSafe=true) (1-2)]
-
 redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
 [Error matching compiler output for associative/waynew/indef2]
@@ -237,6 +230,10 @@ redeclaration of identifier in scope (01/24/11)
 =====================================
 cray-xt-cray/cce-specific regressions
 =====================================
+
+unreachable loop warning (05/08/11 -- weekend run)
+--------------------------------------------------
+*90-some tests*
 
 unreachable loop warning (05/03/11)
 -----------------------------------
@@ -407,18 +404,17 @@ sig_send: wait for sig_complete event failed
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
 [Error matching program output for users/jglewis/badGetModule]
 
-
 ========================
 xmt-specific regressions
 ========================
 
+assertion failed: f.is_FILBlock() || f.is_FILScope() || f.is_FILEndScope()
+--------------------------------------------------------------------------
+[Error matching compiler output for release/examples/primers/arrays]
+
 unreachable loop warning (05/03/11)
 -----------------------------------
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/hpcc/stream-ep]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for release/examples/hpcc/variants/stream-promoted]
-[Error matching program output for release/examples/primers/reductions]
+[Error matching compiler output for release/examples/hpcc/fft]
 
 unresolved sync variable calls (04/09/11 -- once spec examples added)
 ---------------------------------------------------------------------
@@ -426,6 +422,22 @@ unresolved sync variable calls (04/09/11 -- once spec examples added)
 [Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar]
 [Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/syncMethods]
 [Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/syncStmt1]
+
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11)
+
+
+=======================================================
+xmt-sim specific regressions (in addition to the above)
+=======================================================
+
+unreachable loop warning (05/03/11)
+-----------------------------------
+[Error matching program output for release/examples/hpcc/stream-ep]
+[Error matching program output for release/examples/hpcc/stream]
+[Error matching program output for release/examples/hpcc/variants/stream-promoted]
+[Error matching program output for release/examples/primers/reductions]
 
 array index out of bounds due to bug in XMT compiler
 ----------------------------------------------------
@@ -436,10 +448,6 @@ array index out of bounds due to bug in XMT compiler
 sparse regression recurred after latest range changes (03/17/11)
 ----------------------------------------------------------------
 [Error matching program output for release/examples/primers/sparse]
-
-nondet. compilation timeout
----------------------------
-[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11)
 
 execution timeouts
 ------------------
