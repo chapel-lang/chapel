@@ -11,7 +11,8 @@ typedef mutex_p* mutex_pp;
 
 void mutex_new_init(mutex_pp lockAddr);
 
-#define mutex_init(lockAddr) mutex_new_init((mutex_pp) lockAddr)
+#define mutex_init(lockAddr) *lockAddr = (mutex_p) chpl_thread_mutexNew() 
+//#mutex_new_init((mutex_pp) lockAddr)
 #define mutex_lock(lockAddr)  chpl_thread_mutexLock((mutex_p) *lockAddr)
 #define mutex_unlock(lockAddr) chpl_thread_mutexUnlock((mutex_p) *lockAddr)
 

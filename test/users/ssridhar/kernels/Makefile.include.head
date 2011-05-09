@@ -18,10 +18,3 @@ endif
 
 TARGET_SRCS = $(wildcard *.chpl)
 TARGETS = $(TARGET_SRCS:%.chpl=%)
-
-default: all
-
-all: $(TARGETS)
-
-clean:
-	rm -rf $(TARGETS) *_real c_*
