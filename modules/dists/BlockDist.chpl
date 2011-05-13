@@ -297,11 +297,11 @@ proc Block.writeThis(x:Writer) {
     x.writeln("  [", locid, "] locale ", locDist(locid).locale.uid, " owns chunk: ", locDist(locid).myChunk);
 }
 
-proc Block.dsiIndexLocale(ind: idxType) where rank == 1 {
+proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc Block.dsiIndexLocale(ind: rank*idxType) where rank > 1 {
+proc Block.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 

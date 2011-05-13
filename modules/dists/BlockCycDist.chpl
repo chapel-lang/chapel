@@ -145,11 +145,11 @@ proc BlockCyclic.writeThis(x:Writer) {
 //
 // convert an index into a locale value
 //
-proc BlockCyclic.dsiIndexLocale(ind: idxType) where rank == 1 {
+proc BlockCyclic.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(idxToLocaleInd(ind));
 }
 
-proc BlockCyclic.dsiIndexLocale(ind: rank*idxType) {
+proc BlockCyclic.dsiIndexToLocale(ind: rank*idxType) {
   return targetLocales(idxToLocaleInd(ind));
 }
 

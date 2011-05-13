@@ -368,7 +368,7 @@ proc ReplicatedDom.dsiBuildRectangularDom(param rank: int,
 // Given an index, this should return the locale that owns that index.
 // (This is the implementation of dmap.idxToLocale().)
 // For ReplicatedDist, we point it to the current locale.
-proc ReplicatedDist.dsiIndexLocale(indexx): locale {
+proc ReplicatedDist.dsiIndexToLocale(indexx): locale {
   return here;
 }
 

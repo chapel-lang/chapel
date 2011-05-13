@@ -15,7 +15,7 @@ class DefaultDist: BaseDist {
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDom(rank, idxType, this, dom);
 
-  proc dsiIndexLocale(ind) return this.locale;
+  proc dsiIndexToLocale(ind) return this.locale;
 
   proc dsiClone() return this;
 

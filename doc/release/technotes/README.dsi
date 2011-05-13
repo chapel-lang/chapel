@@ -433,7 +433,7 @@ each of them could be implemented later, when the need arises.
 The "unresolved call" compilation errors could be used
 as an indication of what procedure(s) need to be defined.
 
-proc GlobalDistribution.dsiIndexLocale(indexx): locale
+proc GlobalDistribution.dsiIndexToLocale(indexx): locale
   Given an index 'indexx', returns the locale that "owns" that index,
   i.e. on which the corresponding data is located.
   This is used to implement idxToLocale() on the 'dmap' wrapper.

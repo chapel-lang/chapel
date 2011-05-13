@@ -283,11 +283,11 @@ proc Cyclic.idxToLocaleInd(ind: rank*idxType) {
     return x;
 }
 
-proc Cyclic.dsiIndexLocale(i: idxType) where rank == 1 {
+proc Cyclic.dsiIndexToLocale(i: idxType) where rank == 1 {
   return targetLocs(idxToLocaleInd(i));
 }
 
-proc Cyclic.dsiIndexLocale(i: rank*idxType) {
+proc Cyclic.dsiIndexToLocale(i: rank*idxType) {
   return targetLocs(idxToLocaleInd(i));
 }
 
