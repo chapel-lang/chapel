@@ -20,6 +20,10 @@ general regressions (seem to happen in most configurations)
 general nondeterministic regressions (could happen in any configuration)
 ========================================================================
 
+nondet. race on output
+----------------------
+[Error matching program output for release/examples/primers/taskParallel]
+
 nondet. bad output
 ------------------
 [Error matching program output for studies/dijkstra/driverEdgeBtw] (04/12/11, 04/17/11)
@@ -41,7 +45,7 @@ performance-specific regressions
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/14/11, 04/22/11, 04/26/11, 04/29/11, 04/30/11, 05/04/11, 05/09/11)
+[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/14/11, 04/22/11, 04/26/11, 04/29/11, 04/30/11, 05/04/11, 05/09/11, 05/10/11, 05/13/11)
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -95,7 +99,7 @@ maxThreadsPerLocale unbounded but ... warning
 
 nondet. out-of-memory error
 ---------------------------
-[Error matching program output for stress/deitz/test_10k_begins]
+[Error matching program output for stress/deitz/test_10k_begins] (05/12/11)
 
 nondet. compilation timeout
 ---------------------------
@@ -103,8 +107,9 @@ nondet. compilation timeout
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (04/22/11)
-[Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky] (05/03/11)
+[Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (05/10/11, 05/12/11, 05/14/11, 05/15/11)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (04/22/11, 05/16/11)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky] (05/03/11, 05/10/11)
 [Error: Timed out executing program studies/shootout/fannkuch-redux/fannkuch-redux  --N=10 (--cc-warnings --no-local  ) (0-2)] (04/22/11, 04/24/11, 04/28/11, 04/30/11, 05/01/11)
 
 internal error SYM0172 (02/09/10)
@@ -270,7 +275,7 @@ precision issues (?) -- is there a floating point flag we need to throw?
 
 nondet. compilation timeouts
 ----------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main]
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (05/15/11)
 [Error: Timed out compilation for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky]
 
 
@@ -425,7 +430,7 @@ unresolved sync variable calls (04/09/11 -- once spec examples added)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11)
+[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11, 05/14/11, 05/15/11)
 
 
 =======================================================
