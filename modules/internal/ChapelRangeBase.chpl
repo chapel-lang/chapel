@@ -232,7 +232,7 @@ proc rangeBase.member(i: idxType)
   if stridable
   {
     var s = abs(_stride):idxType;
-    if (i - al) % s != 0
+    if chpl__diffMod(i, al, s) != 0
       then return false;
   }
   return true;
@@ -337,12 +337,10 @@ proc rangeBase.alignHigh()
 
 proc rangeBase.indexOrder(i: idxType)
 {
+  type strType = chpl__signedType(idxType);
   if ! member(i) then return (-1):idxType;
   if ! stridable then return i - _low;
-  if _stride > 0 then
-    return (i - this.alignedLow) / _stride;
-  else
-    return (this.alignedHigh - i) / (- _stride);
+  else return ((i:strType - this.first:strType) / _stride):idxType;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
