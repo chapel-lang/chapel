@@ -689,7 +689,7 @@ while ( $#argv > 0 )
 		shift
                 if ($argv[1] =~ "/*") then
                     set execopts = "$execopts --memLeaksLog=$argv[1]"
-                else if
+                else
                     set execopts = "$execopts --memLeaksLog=$cwd/$argv[1]"
                 endif
 		setenv CHPL_MEM_LEAK_TESTING true
