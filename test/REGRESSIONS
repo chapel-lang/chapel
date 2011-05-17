@@ -169,6 +169,10 @@ verbose output now shows launch command (10/31/08)
 [Error matching program output for multilocale/numLocales/bradc/testVFlag]
 [Error matching program output for multilocale/numLocales/bradc/testVerboseFlag]
 
+"*** Caught a fatal signal: SIGSEGV(11)" (intermittent)
+-------------------------------------------------------
+[Error matching program output for studies/graph500/v1/main] (5/17/2011)
+
 
 ==============================================
 gasnet-fast regressions (other than the above)
