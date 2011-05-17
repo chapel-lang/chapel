@@ -1,0 +1,25 @@
+bug: crashes with "*** glibc detected *** a.out: double free or corruption (fasttop): 0x000000000064d050 ***"
+
+... with comm=none. This happens when this piece of generated code:
+
+    T35 = (T16.vlock_DOLLAR_);
+    _CHECK_NIL(T35, 1809, "/users/vass/inf/sdir/chapel/modules/internal/ChapelArray.chpl");
+    chpl___TILDA__syncvar4(T35);
+    chpl_free((void*)T35, 1809, "/users/vass/inf/sdir/chapel/modules/internal/ChapelArray.chpl"); T35 = NULL;
+
+occurs 3 times in a row (replacing T35 with T36 and T37 in the 2nd and
+3rd copies, respectively).
+
+ChapelArray.chpl:1809  is the line with the 'for' below (in of chpl__initCopy)
+(yes, the commented out lines were actually commented out in my version):
+
+  for e in irc {
+    //pragma "no copy" /*pragma "insert auto destroy"*/ var ee = e;
+    if i > size {
+      size = size * 2;
+      D = [1..size];
+    }
+    //A(i) = ee;
+    A(i) = e;
+    i = i + 1;
+  }

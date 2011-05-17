@@ -1,0 +1,3 @@
+bug: crashes with "*** glibc detected *** a.out: double free or corruption (fasttop): 0x000000000064d050 ***"
+
+This is a variation on array-of-records-crash-1.
