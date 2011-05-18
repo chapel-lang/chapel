@@ -14,9 +14,6 @@ proc BFS ( root : vertex_id, ParentTree, G )
   var Active_Level = new Level_Set (Vertex_List);
   var Next_Level = new Level_Set (Vertex_List);
 
-// Lock currently needed as associative domain add is not thread safe
-
-  var node_add_lock$ : sync bool = true;
   var Root_vertex : vertex_id = root;
 
   ParentTree[root] = root;
@@ -39,9 +36,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
           if (visited$ (v).readFE() < 0 )
           {
               visited$ (v).writeEF (1);
-              node_add_lock$.readFE();
               Next_Level.Members.add (v);
-              node_add_lock$.writeEF (true);
               ParentTree (v) = u;
           }
           else

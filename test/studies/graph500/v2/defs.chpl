@@ -5,18 +5,18 @@ module Graph500_defs
 {
 
   use BlockDist;
-  config param DISTRIBUTION_TYPE = "BLOCK";
+  config param DISTRIBUTION_TYPE = ""; //"BLOCK";
   config param REPRODUCIBLE_PROBLEMS = true;
   config const ENABLE_PRINTOUTS = false;
   config param RMAT_WITH_NOISE = true;
   config param RMAT_WITH_SHUFFLE = true;
   config param DEBUG_GRAPH_GENERATOR = false && ENABLE_PRINTOUTS;
   config const SCALE = 6;
-         const N_VERTICES = 1 << SCALE;
   config const EDGEFACTOR = 8;
-         const N_RAWEDGES = N_VERTICES*EDGEFACTOR;
-         const NUMROOTS = 4;
-         const NUM_CANDIDATES = 1024;
+  const N_VERTICES = 1 << SCALE;
+  const N_RAWEDGES = N_VERTICES*EDGEFACTOR;
+  const NUMROOTS = 4;
+  const NUM_CANDIDATES = 1024;
 
 
 // The data structure used to store the edges is an array of records
@@ -51,15 +51,21 @@ module Graph500_defs
     type vertex_id = int;
 
     record vertex_struct {
+
+      // constructor
+      proc vertex_struct(nd: domain(1)) {
+        this.nd = nd;
+        vlock$ = true;
+      }
+
 //      var dist: (this will be the user distribution)
       var nd: domain(1);
       var Neighbors : [nd] vertex_id;
       var neighbor_count: int=0;
       var self_edges: int=0;
       var duplicates: int=0;
-      var vlock$: sync bool = true;
+      var vlock$: sync bool;
 
-   
       proc is_a_neighbor (new_vertex_ID: vertex_id) {
          var is_member: bool = false;
          forall n in Neighbors (1..neighbor_count) {
@@ -107,14 +113,14 @@ module Graph500_defs
     }
 
     class Graph {
-      const nvertices;
-      var   Vertices : [nvertices] vertex_struct;
+      const my_vertices;
+      const Histogram;
+      // commenting out the explicit type of Vertices below exposes the bug
+      // that's distilled to test/users/vass/km/array-of-records-crash-*
+      var   Vertices: [my_vertices] vertex_struct
+                 = [i in my_vertices] new vertex_struct(nd=[1..Histogram[i]]);
 
       proc   Neighbors ( v : vertex_id ) {return Vertices (v).Neighbors;}
-
-//      proc   n_Neighbors (v : vertex_id )
-//      {return Vertices(v).neighbor_count;}
-
     }
 
 

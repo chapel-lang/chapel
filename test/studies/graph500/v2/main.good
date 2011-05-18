@@ -2,4 +2,6 @@ Problem Dimensions
               Scale: 6
  Number of Vertices: 64
         Edge factor: 8
-DONE
+Before graph construction
+After graph construction
+BFS.chpl:34: error: halt reached - array index out of bounds: (0)

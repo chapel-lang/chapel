@@ -35,9 +35,19 @@ module Graph500_main
   writeln ( " Number of Vertices: ", N_VERTICES );
   writeln ( "        Edge factor: ", EDGEFACTOR );
 
+ if ENABLE_PRINTOUTS then
+  coforall loc in Locales do
+    {
+    on loc do
+      writeln("Locale ID: ", loc.id, " of ", numLocales);
+      writeln("Locale ID: ", loc.id, " Number of cores " , loc.numCores);
+    }
+
+
   const edge_range =  1..N_RAWEDGES;
 
   var Edges:[edgelist_domain] directed_vertex_pair;
+  var Histogram:[vertex_domain] int=0;
 
   var generation_time: Timer;
   var construction_time: Timer;
@@ -51,6 +61,15 @@ module Graph500_main
 
  if ENABLE_PRINTOUTS then
   writeln("Time for Scalable Data Generator = ", generation_time.elapsed()); 
+
+// Generate a histogram from the Edges to guide the distribution of the graph
+// We will need the updates to Hist to be atomic
+  for e in Edges do {
+     var u = e.start;
+     var v = e.end;
+     Histogram[u] += 1;
+     Histogram[v] += 1;
+  }
 
 // Check min/max Node ID's
 
@@ -68,8 +87,16 @@ module Graph500_main
  }
 
   construction_time.start();
+
+// Optimally here we would use the histogram to define a domain distribution
+// Here we are still using a fixed Block distribution
+  if ENABLE_PRINTOUTS then
+   writeln ("Histogram: ",Histogram);
+  writeln ("Before graph construction");
  
-  var G = new Graph (vertex_domain);
+  var G = new Graph (vertex_domain, Histogram);
+
+  writeln ("After graph construction");
   constructGraph (Edges, G);
 
   construction_time.stop();
@@ -120,8 +147,8 @@ module Graph500_main
      }
      else
      {
-       if ENABLE_PRINTOUTS then
-        writeln("Root not a valid candidate");
+        if ENABLE_PRINTOUTS then
+         writeln("Root not a valid candidate");
         candidate += 1;
      }
 

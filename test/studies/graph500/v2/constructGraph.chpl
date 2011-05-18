@@ -66,6 +66,9 @@ proc constructGraph(Edges:[?ArrD] , G)
 //        for v in G.Vertices do
 //            v.vlock$.writeEF(true);
 
+// Uncovered another issue with printing if vlock$ is defined as a sync 
+// variable
+
       }
 
 }
