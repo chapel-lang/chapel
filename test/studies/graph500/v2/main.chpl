@@ -47,7 +47,7 @@ module Graph500_main
   const edge_range =  1..N_RAWEDGES;
 
   var Edges:[edgelist_domain] directed_vertex_pair;
-  var Histogram:[vertex_domain] int=0;
+  var Histogram:[vertex_domain] vertex_id=0;
 
   var generation_time: Timer;
   var construction_time: Timer;
@@ -65,11 +65,14 @@ module Graph500_main
 // Generate a histogram from the Edges to guide the distribution of the graph
 // We will need the updates to Hist to be atomic
   for e in Edges do {
-     var u = e.start;
-     var v = e.end;
+     var u: vertex_id = e.start;
+     var v: vertex_id = e.end;
      Histogram[u] += 1;
      Histogram[v] += 1;
   }
+
+  writeln("verify count: ", + reduce Histogram);
+
 
 // Check min/max Node ID's
 
@@ -90,13 +93,9 @@ module Graph500_main
 
 // Optimally here we would use the histogram to define a domain distribution
 // Here we are still using a fixed Block distribution
-  if ENABLE_PRINTOUTS then
-   writeln ("Histogram: ",Histogram);
-  writeln ("Before graph construction");
  
   var G = new Graph (vertex_domain, Histogram);
 
-  writeln ("After graph construction");
   constructGraph (Edges, G);
 
   construction_time.stop();

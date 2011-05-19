@@ -5,7 +5,8 @@ module Graph500_defs
 {
 
   use BlockDist;
-  config param DISTRIBUTION_TYPE = ""; //"BLOCK";
+//  config param DISTRIBUTION_TYPE = "BLOCK";
+  config param DISTRIBUTION_TYPE = "";
   config param REPRODUCIBLE_PROBLEMS = true;
   config const ENABLE_PRINTOUTS = false;
   config param RMAT_WITH_NOISE = true;
@@ -51,20 +52,13 @@ module Graph500_defs
     type vertex_id = int;
 
     record vertex_struct {
-
-      // constructor
-      proc vertex_struct(nd: domain(1)) {
-        this.nd = nd;
-        vlock$ = true;
-      }
-
 //      var dist: (this will be the user distribution)
       var nd: domain(1);
       var Neighbors : [nd] vertex_id;
       var neighbor_count: int=0;
       var self_edges: int=0;
       var duplicates: int=0;
-      var vlock$: sync bool;
+      var vlock$: sync bool = true;
 
       proc is_a_neighbor (new_vertex_ID: vertex_id) {
          var is_member: bool = false;
@@ -106,6 +100,7 @@ module Graph500_defs
       }
          
       proc grow_helper() { 
+          halt("Should not call grow_helper");
           var new_nd = Neighbors.numElements + 1;
           nd = [1..new_nd];
       }
@@ -115,12 +110,19 @@ module Graph500_defs
     class Graph {
       const my_vertices;
       const Histogram;
-      // commenting out the explicit type of Vertices below exposes the bug
-      // that's distilled to test/users/vass/km/array-of-records-crash-*
-      var   Vertices: [my_vertices] vertex_struct
-                 = [i in my_vertices] new vertex_struct(nd=[1..Histogram[i]]);
+      var   Vertices : [my_vertices] vertex_struct;
 
       proc   Neighbors ( v : vertex_id ) {return Vertices (v).Neighbors;}
+
+//      proc   n_Neighbors (v : vertex_id )
+//      {return Vertices(v).neighbor_count;}
+
+      proc Graph (my_vertices, Histogram){
+         forall i in my_vertices {
+            Vertices[i].nd = [1..Histogram[i]];
+         }
+      }
+
     }
 
 

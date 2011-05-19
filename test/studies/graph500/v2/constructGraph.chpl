@@ -5,6 +5,8 @@ module Construct_Graph
 {
 // Code to construct graph from the Edges (the array of Chapels records 
 // containing the vertex pairs )
+// The space for the Neighbor list has already been allocated using a Histogram
+// of the Edgelist
 
 
 proc constructGraph(Edges:[?ArrD] , G) 
@@ -14,10 +16,11 @@ proc constructGraph(Edges:[?ArrD] , G)
 // Note that graph for Graph500 benchmark is undirected
 // Self edges are removed, duplicates are noted
 
+// Note that code currently crashes if this is run in parallel
       forall e in Edges do {
 //      for e in Edges do {
-        var u = e.start;
-        var v = e.end;
+        var u: vertex_id = e.start;
+        var v: vertex_id = e.end;
 
         if ( v != u ) then {
           if G.Vertices (u).is_a_neighbor(v) then {
@@ -33,6 +36,10 @@ proc constructGraph(Edges:[?ArrD] , G)
         else {
           G.Vertices (u).add_self_edge();
         }
+      }
+
+      forall v in G.Vertices do {
+        v.nd  = [1..v.neighbor_count];
       }
 
 
@@ -61,13 +68,6 @@ proc constructGraph(Edges:[?ArrD] , G)
         writeln (" # of edges   # of nodes ");
         for count in 0..max_edges do
           writeln (count, "  ", edge_count (count) );
-
-//        writeln ("Graph G", G);
-//        for v in G.Vertices do
-//            v.vlock$.writeEF(true);
-
-// Uncovered another issue with printing if vlock$ is defined as a sync 
-// variable
 
       }
 
