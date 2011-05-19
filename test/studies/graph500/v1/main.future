@@ -1,0 +1,15 @@
+bug: under GASNet: *** Caught a fatal signal: SIGSEGV(11) on node XX/YY
+
+NO crashes have been observed with comm=none, as of this writing.
+
+The GASNet crash is INTERMITTENT.
+I often get it when running the program right after compilation.
+
+For the record, when running with GASNET_BACKTRACE=1,
+the thread that catches SIGSEGV has the following at the bottom of the stack:
+
+#22 0x00000000006bc483 in gasnet_barrier_wait (id=0, flags=1) at /users/vass/chapel/third-party/gasnet/GASNet-1.14.2/extended-ref/gasnet_extended_refbarrier.c:1279
+#23 0x0000000000690800 in chpl_comm_barrier (msg=0x8450b9 "chpl_comm_exit_all") at comm-gasnet.c:394
+#24 0x000000000066e5fd in chpl_exit_common (status=0, all=1) at chplexit.c:20
+#25 0x000000000066e647 in chpl_exit_all (status=0) at chplexit.c:34
+#26 0x000000000066a071 in main (argc=3, argv=0x7fff411f5d68) at main.c:104
