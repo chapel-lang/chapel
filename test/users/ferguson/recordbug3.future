@@ -1,0 +1,4 @@
+bug: crashes with "*** glibc detected *** a.out: double free or corruption (fasttop): 0x0000000000649c30 ***"
+
+The cause may be similar to that for
+recordInClass and/or array-of-records-crash tests.
