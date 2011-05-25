@@ -1,5 +1,4 @@
-use Types;
-
+// Internal modules
 use ChapelBase;
 use ChapelNumLocales;
 use ChapelThreads;
@@ -20,4 +19,6 @@ use DefaultSparse;
 use DefaultOpaque;
 use ChapelUtil;
 
+// Standard modules.
+use Types;
 use Math;
