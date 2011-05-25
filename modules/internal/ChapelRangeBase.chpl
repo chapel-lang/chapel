@@ -99,48 +99,44 @@ proc rangeBase.last
 
 // Returns the low index, properly aligned.
 // The aligned low bound may be higher than the high bound.
+// The client must check that the low bound exists before calling this function.
 pragma "inline"
 proc rangeBase.alignedLow : idxType
 {
-  if ! this.hasLowBound() then
-    halt("alignedLow -- No low bound defined for this range.");
-  else
-  {
-    if ! stridable then return _low;
-    else
-      // Adjust _low upward by the difference between _alignment and _low.
-      return _low + chpl__diffMod(_alignment, _low, _stride);
-  }
+  if ! stridable then return _low;
+
+  // Adjust _low upward by the difference between _alignment and _low.
+  return _low + chpl__diffMod(_alignment, _low, _stride);
 }
 
 // Returns the high index, properly aligned.
 // The aligned high bound may be lower than the low bound.
+// The client must check that the high bound exists before calling this function.
 pragma "inline"
 proc rangeBase.alignedHigh : idxType
 {
-  if ! this.hasHighBound() then
-    halt("alignedHigh -- No high bound defined for this range.");
-  else
-  {
-    if ! stridable then return _high;
-    else
-      // Adjust _high downward by the difference between _high and _alignment.
-      return _high - chpl__diffMod(_high, _alignment, _stride);
-  }
+  if ! stridable then return _high;
+
+  // Adjust _high downward by the difference between _high and _alignment.
+  return _high - chpl__diffMod(_high, _alignment, _stride);
 }
 
-// Returns the number of elements in this range.
+// Returns the number of elements in this range, cast to the index type.
+// Note that the result will be wrong if the index is signed 
+// and the low and high bounds differ by more than max(idxType).
 proc rangeBase.length
 {
   if boundedType != BoundedRangeType.bounded then
     compilerError("Unbounded range has infinite length.");
+
+  if _low > _high then return 0:idxType;
+
+  if !stridable then
+    return _high - _low + 1;
   else
   {
-    if _low > _high then
-      return 0:idxType;
-
     var s = abs(_stride): idxType;
-    return (_high - this.alignedLow) / s + 1;
+    return (this.alignedHigh - this.alignedLow) / s + 1;
   }
 }
 
@@ -156,32 +152,29 @@ proc rangeBase.hasLowBound() param
 proc rangeBase.hasHighBound() param
   return boundedType == BoundedRangeType.bounded || boundedType == BoundedRangeType.boundedHigh;
 
+pragma "inline"
+proc rangeBase.isDegenerate()
+where boundedType == BoundedRangeType.bounded
+  return this.alignedLow > this.alignedHigh;
+
+pragma "inline"
+proc rangeBase.isDegenerate()
+  return false;
+
 pragma "inline" 
 proc rangeBase.hasFirst()
 {
-  if _stride > 0
-  {
-    if ! hasLowBound() then return false;
-  }
-  else
-  {
-    if ! hasHighBound() then return false;
-  }
-  return true;
+  if this.isDegenerate() then return false;
+  if ! stridable then return hasLowBound();
+  return if _stride > 0 then hasLowBound() else hasHighBound();
 }
     
 pragma "inline" 
 proc rangeBase.hasLast()
 {
-  if _stride > 0
-  {
-    if ! hasHighBound() then return false;
-  }
-  else
-  {
-    if ! hasLowBound() then return false;
-  }
-  return true;
+  if this.isDegenerate() then return false;
+  if ! stridable then return hasHighBound();
+  return if _stride > 0 then hasHighBound() else hasLowBound();
 }
 
 // Returns true if this range is naturally aligned, false otherwise.

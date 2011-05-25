@@ -108,6 +108,8 @@ proc range.range(type idxType = int,
 //////////////////////////////////////////////////////////////////////////////////
 // Range builders for bounded ranges
 // Range builders are used by the parser to create literal ranges.
+// hilde sez: I think that these need to be spelled out explicitly
+// because param loop unrolling is performed before generic expansion.
 //
 proc _build_range(low: int, high: int)
   return new range(idxType = int, _low = low, _high = high);
@@ -121,6 +123,7 @@ proc _build_range(low: uint(64), high: uint(64))
 
 //////////////////////////////////////////////////////////////////////////////////
 // Range builders for unbounded ranges
+// hilde sez: Ditto here: Generic types don't work.
 //
 proc _build_range(param bt: BoundedRangeType, bound: int)
   return new range(int, bt, false, bound, bound);

@@ -1,3 +1,6 @@
+// ChapelBase.chpl
+//
+
 _extern proc chpl_config_has_value(name, module_name): bool;
 _extern proc chpl_config_get_value(name, module_name): string;
 
@@ -1015,68 +1018,6 @@ proc _waitEndCount() {
   _waitEndCount(e);
 }
 
-//
-// casts
-//
-proc chpl__isType(type t) param return true;
-proc chpl__isType(e) param return false;
-
-proc _isPrimitiveType(type t) param return
-  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64)) |
-  (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
-  (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
-  (t == real(32)) | (t == real(64)) |
-// BLC: Why aren't imaginaries here?  Someone should try this
-  (t == string) | (_isVolatileType(t) && _isPrimitiveType(_volToNon(t)));
-
-proc _isSimpleScalarType(type t) param return
-  _isBooleanType(t) | _isIntegralType(t) | _isFloatType(t);
-
-proc _isBooleanType(type t) param return
-  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64));
-
-proc _isIntegralType(type t) param return
-  _isSignedType(t) || _isUnsignedType(t);
-
-proc _isSignedType(type t) param return
-  (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
-
-
-proc _isUnsignedType(type t) param return
-  (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
-
-proc _isEnumeratedType(type t) param {
-  proc isEnum(type t: enumerated) param return true;
-  proc isEnum(type t) param return false;
-  return isEnum(t);
-}
-
-proc _isComplexType(type t) param return
-  (t == complex(64)) | (t == complex(128));
-
-proc _isFloatType(type t) param return
-  (t == real(32)) | (t == real(64)) |
-  (t == imag(32)) | (t == imag(64));
-
-proc _isRealType(type t) param return
-  (t == real(32)) | (t == real(64));
-
-proc _isImagType(type t) param return
-  (t == imag(32)) | (t == imag(64));
-
-proc _isVolatileType(type t) param
-  return ((t == volatile bool) | (t == volatile bool(8)) | 
-          (t == volatile bool(16)) | (t == volatile bool(32)) | 
-          (t == volatile bool(64)) |  (t == volatile int) | 
-          (t == volatile int(8)) | (t == volatile int(16)) | 
-          (t == volatile int(32)) | (t == volatile int(64)) | 
-          (t == volatile uint(8)) | (t == volatile uint(16)) | 
-          (t == volatile uint(32)) | (t == volatile uint(64)) | 
-          (t == volatile real(32)) | (t == volatile real(64)) | 
-          (t == volatile imag(32)) | (t == volatile imag(64))
-          );
-//  (t == volatile string);
-
 proc _volToNon(type t) type {
   if (t == volatile bool) {
     return bool;
@@ -1117,33 +1058,6 @@ proc _volToNon(type t) type {
   }
 }
 
-
-// Returns the signed equivalent of the input type.
-proc chpl__signedType(type t) type 
-{
-  if ! _isIntegralType(t) then
-    compilerError("range idxType is non-integral: ", typeToString(t));
-
-  return int(numBits(t));
-}
-
-// Returns true if it is legal to coerce t1 to t2, false otherwise.
-proc chpl__legalIntCoerce(type t1, type t2) param
-{
-  if (_isSignedType(t2)) {
-    if (_isSignedType(t1)) {
-      return (numBits(t1) <= numBits(t2));
-    } else {
-      return (numBits(t1) < numBits(t2));
-    }
-  } else {
-    if (_isSignedType(t1)) {
-      return false;
-    } else {
-      return (numBits(t1) <= numBits(t2));
-    }
-  }
-}
 
 pragma "command line setting"
 proc _command_line_cast(param s: string, type t, x) return _cast(t, x);
