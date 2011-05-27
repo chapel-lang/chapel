@@ -7,7 +7,12 @@ use BlockDist, Time;
 // Use the user modules for computing HPCC problem sizes and for
 // defining RA's random stream of values
 //
-use HPCCProblemSize, RARandomStream, myParams;
+use HPCCProblemSize, RARandomStream;
+
+//
+// Use the common module for defining STM related flags
+//
+use myParams;
 
 //
 // The number of tables as well as the element and index types of
@@ -100,17 +105,7 @@ proc main() {
     on TableDist.idxToLocale(indexMask(r, n)) {
       const myR = r;
       const myIndex = indexMask(myR, n);
-      if forkFast {
-	if safeUpdates then 
-	  local atomic T(myIndex) ^= myR;
-	else
-	  local T(myIndex) ^= myR;
-      } else {
-	if safeUpdates then 
-	  atomic T(myIndex) ^= myR;
-	else
-	  T(myIndex) ^= myR;
-      }
+      T(myIndex) ^= myR;
     }
   
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -140,6 +135,9 @@ proc verifyResults() {
   //
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
+  //
+  // Turn on STM statistics
+  //
   if trackStmStats then startStmStats();
 
   var startTime = getCurrentTime();
@@ -152,14 +150,14 @@ proc verifyResults() {
     on TableDist.idxToLocale(indexMask(r, n)) {
       const myR = r;
       const myIndex = indexMask(myR, n);
-      if forkFast then
-	local atomic T(myIndex) ^= myR;
-      else
-	atomic T(myIndex) ^= myR;
+      atomic T(myIndex) ^= myR;
     }
 
   const verifyTime = getCurrentTime() - startTime;
 
+  //
+  // Turn off STM statistics
+  //
   if trackStmStats then stopStmStats();
 
   //

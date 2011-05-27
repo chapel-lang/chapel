@@ -47,8 +47,8 @@ config const errorTolerance = 1e-2;
 // parameters, input and output arrays, and/or statistics
 //
 config const printParams = true,
-             printArrays = false,
-             printStats = true;
+  printArrays = false,
+  printStats = true;
 
 //
 // TableDist is a 1D block distribution for domains storing indices
@@ -75,7 +75,7 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 // T is the distributed table itself, storing a variable of type
 // elemType for each index in TableSpace.
 //
-var T$: [TableSpace] sync elemType;
+var T: [TableSpace] elemType;
 
 //
 // The program entry point
@@ -88,7 +88,7 @@ proc main() {
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
-  [i in TableSpace] T$(i).writeXF(i);
+  [i in TableSpace] T(i) = i;
 
   const startTime = getCurrentTime();              // capture the start time
 
@@ -105,7 +105,7 @@ proc main() {
     on TableDist.idxToLocale(indexMask(r, n)) {
       const myR = r;
       const myIndex = indexMask(myR, n);
-      T$(myIndex).writeXF(T$(myIndex).readXX() ^ myR);
+      local T(myIndex) ^= myR;
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -133,7 +133,12 @@ proc verifyResults() {
   //
   // Print the table, if requested
   //
-  if (printArrays) then writeln("After updates, T is: ", T$.readXX(), "\n");
+  if (printArrays) then writeln("After updates, T is: ", T, "\n");
+
+  //
+  // Turn on STM statistics
+  //
+  if trackStmStats then startStmStats();
 
   var startTime = getCurrentTime();
 
@@ -145,23 +150,27 @@ proc verifyResults() {
     on TableDist.idxToLocale(indexMask(r, n)) {
       const myR = r;
       const myIndex = indexMask(myR, n);
-      T$(myIndex) ^= myR;
+      local atomic T(myIndex) ^= myR;
     }
 
   const verifyTime = getCurrentTime() - startTime;
 
   //
+  // Turn off STM statistics
+  //
+  if trackStmStats then stopStmStats();
+
+  //
   // Print the table again after the updates have been reversed
   //
-  if (printArrays) then 
-    writeln("After verification, T is: ", T$.readXX(), "\n");
+  if (printArrays) then writeln("After verification, T is: ", T, "\n");
 
   //
   // Compute the number of table positions that weren't reverted
   // correctly.  This is an indication of the number of conflicting
   // updates.
   //
-  const numErrors = + reduce [i in TableSpace] (T$(i) != i);
+  const numErrors = + reduce [i in TableSpace] (T(i) != i);
   if (printStats) {
     writeln("Number of errors is: ", numErrors, "\n");
     writeln("Verification time = ", verifyTime);

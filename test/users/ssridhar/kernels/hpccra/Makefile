@@ -1,4 +1,4 @@
-include ../Makefile.include
+include ../Makefile.include.head
 
 raSTM: ../myParams.chpl ../HPCCProblemSize.chpl ../$(RNG).chpl ra.chpl ../dummystm.h
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^
@@ -10,5 +10,7 @@ raSTM: ../myParams.chpl ../HPCCProblemSize.chpl ../$(RNG).chpl ra.chpl ../dummys
 raMLA: ../myParams.chpl ../HPCCProblemSize.chpl ../$(RNG).chpl ../MutexLock.chpl ../MutexLock.h raMLA.chpl
 	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^ 
 
-%: %.chpl 
-	$(CHPL) -o $@$(IA) $(FLAGS) --savec c_$@$(IA) $^ ../myParams.chpl ../HPCCProblemSize.chpl ../$(RNG).chpl
+raMLA-alternate: ../myParams.chpl ../HPCCProblemSize.chpl ../$(RNG).chpl ../MutexLock.chpl ../MutexLock.h raMLA.chpl
+	$(CHPL) -o $@ $(FLAGS) --savec c_$@ $^ 
+
+include ../Makefile.include.foot

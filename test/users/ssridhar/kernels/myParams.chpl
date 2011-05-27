@@ -16,9 +16,14 @@ module myParams {
   config param forkFast = false;
 
   //
-  // use on construct
+  // use on construct (for data locality)
   //
   config param useOn = false;
+
+  //
+  // use on construct (for lock affinity)
+  //
+  config param useAffinity = false;
 
   //
   // seed for random number generator

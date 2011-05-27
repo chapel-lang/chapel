@@ -7,7 +7,12 @@ use BlockDist, Time;
 // Use the user modules for computing HPCC problem sizes and for
 // defining RA's random stream of values
 //
-use HPCCProblemSize, RARandomStream, myParams;
+use HPCCProblemSize, RARandomStream;
+
+//
+// Use the common module for defining STM related flags
+//
+use myParams;
 
 //
 // Extern declarations for mutex routines
@@ -28,15 +33,24 @@ type elemType = randType,
 //
 config const n = computeProblemSize(numTables, elemType,
                                     returnLog2=true, retType=indexType),
-  N_U = 2**(n+2),
-  lockMask: uint(64) = 1;
+  N_U = 2**(n+2);
+
+//
+// Configuration constant defining the ratio of the data array to lock
+// array and mask for obtainting index of the lock from table index.
+// 
+const lockMask: uint(64) = 1;
 
 //
 // Constants defining the problem size (m) and a bit mask for table
 // indexing
 //
-const m = 2**n, 
-  lk = 2**(n-lockMask);
+const m = 2**n;
+
+//
+// Constant defining the size of the lock array
+//
+const lk = 2**(n-lockMask);
 
 //
 // Configuration constant defining the number of errors to allow (as a
@@ -60,8 +74,12 @@ config const printParams = true,
 // across the locales.
 //
 const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
-  UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1])),
-    LockDist = new dmap(new Block(boundingBox=[0..lk-1]));
+  UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1]));
+
+//
+// Define new domain map for lock array.
+//
+const LockDist = new dmap(new Block(boundingBox=[0..lk-1]));
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -72,8 +90,12 @@ const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
 // indices 0..N_U-1.
 //
 const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
-      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1],
-      LockSpace: domain (1, indexType) dmapped LockDist = [0..lk-1];
+  Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
+
+// 
+// Define indexset for lock array.
+//
+const LockSpace: domain (1, indexType) dmapped LockDist = [0..lk-1];
 
 //
 // T is the distributed table itself, storing a variable of type
@@ -98,6 +120,10 @@ proc main() {
   // i in TableSpace"
   //
   [i in TableSpace] T(i) = i;
+
+  //
+  // Initialize lock array in parallel. mutex_init is defined in
+  // MutexLock.h and allocates/initializes the mutex locks. 
   [i in LockSpace] {
     TLock(i) = 0;
     mutex_init(TLock(i));
@@ -119,17 +145,7 @@ proc main() {
       const myR = r;
       const myIndex = indexMask(myR, n);
       const myLock = myIndex >> lockMask;
-      if forkFast {
-	local {
-	  if safeUpdates then mutex_lock(TLock(myLock));
-	  T(myIndex) ^= myR;
-	  if safeUpdates then mutex_unlock(TLock(myLock));
-	}
-      } else {
-	if safeUpdates then mutex_lock(TLock(myLock));
-	T(myIndex) ^= myR;
-	if safeUpdates then mutex_unlock(TLock(myLock));
-      }
+      T(myIndex) ^= myR;
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -159,8 +175,6 @@ proc verifyResults() {
   //
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
-  if trackStmStats then startStmStats();
-
   var startTime = getCurrentTime();
 
   //
@@ -172,22 +186,12 @@ proc verifyResults() {
       const myR = r;
       const myIndex = indexMask(myR, n);
       const myLock = myIndex >> lockMask;
-      if forkFast {
-	local {
-	  mutex_lock(TLock(myLock));
-	  T(myIndex) ^= myR;
-	  mutex_unlock(TLock(myLock));
-	}
-      } else {
-	mutex_lock(TLock(myLock));
-	T(myIndex) ^= myR;
-	mutex_unlock(TLock(myLock));
-      }
+      mutex_lock(TLock(myLock));
+      T(myIndex) ^= myR;
+      mutex_unlock(TLock(myLock));
     }
 
   const verifyTime = getCurrentTime() - startTime;
-
-  if trackStmStats then stopStmStats();
 
   //
   // Print the table again after the updates have been reversed
