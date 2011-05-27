@@ -1,6 +1,6 @@
 use BlockDist, Time;
 
-use HPCCProblemSize, RARandomStream; 
+use HPCCProblemSize, RARandomStream;
 
 use myParams, MutexLock;
 
@@ -36,33 +36,44 @@ var TLock: [LockSpace] mutex_p;
 //
 // Mutex Lock Array version
 // Acquire lock corresponding to smaller index first. 
+// Locality optimization: Optimize access to data array T
 // Might fail in cases where lock is not in the same locale
 //
-proc swapValuesMLA(myRIdx, mySIdx) {
+proc swapValuesMLA(myRIdx, mySIdx, mySLocale) {
+  var y: elemType;
   const myRLock = myRIdx >> lockMask;
   const mySLock = mySIdx >> lockMask;
-  
+
   if (myRLock < mySLock) {
     mutex_lock(TLock(myRLock));
     mutex_lock(TLock(mySLock));
     const x = T(myRIdx);
-    T(myRIdx) = T(mySIdx);
-    T(mySIdx) = x;
+    on mySLocale {
+      y = T(mySIdx);
+      T(mySIdx) = x;      
+    }      
+    T(myRIdx) = y;
     mutex_unlock(TLock(mySLock));
     mutex_unlock(TLock(myRLock));
   } else if (myRLock > mySLock) {
     mutex_lock(TLock(mySLock));
     mutex_lock(TLock(myRLock));
     const x = T(myRIdx);
-    T(myRIdx) = T(mySIdx);
-    T(mySIdx) = x;
+    on mySLocale {
+      y = T(mySIdx);
+      T(mySIdx) = x;      
+    }      
+    T(myRIdx) = y;
     mutex_unlock(TLock(myRLock));
     mutex_unlock(TLock(mySLock));
   } else {
     mutex_lock(TLock(myRLock));
     const x = T(myRIdx);
-    T(myRIdx) = T(mySIdx);
-    T(mySIdx) = x;
+    on mySLocale {
+      y = T(mySIdx);
+      T(mySIdx) = x;      
+    }      
+    T(myRIdx) = y;
     mutex_unlock(TLock(myRLock));
   }
 }
@@ -70,9 +81,10 @@ proc swapValuesMLA(myRIdx, mySIdx) {
 //
 // Mutex Lock Array version
 // Acquire lock corresponding to smaller index first. 
-// Affinity optimization: Optimze access to lock array TLock
+// Locality + Affinity optimization
 //
-proc swapValuesMLAAffinity(myRIdx, mySIdx) {
+proc swapValuesMLAAffinity(myRIdx, mySIdx, mySLocale) {
+  var y: elemType;
   const myRLock = myRIdx >> lockMask;
   const mySLock = mySIdx >> lockMask;
   const myRLockLocale: locale = LockDist.idxToLocale(myRLock);
@@ -82,25 +94,44 @@ proc swapValuesMLAAffinity(myRIdx, mySIdx) {
     on myRLockLocale do mutex_lock(TLock(myRLock));
     on mySLockLocale do mutex_lock(TLock(mySLock));
     const x = T(myRIdx);
-    T(myRIdx) = T(mySIdx);
-    T(mySIdx) = x;
+    on mySLocale {
+      y = T(mySIdx);
+      T(mySIdx) = x;      
+    }      
+    T(myRIdx) = y;
     on mySLockLocale do mutex_unlock(TLock(mySLock));
     on myRLockLocale do mutex_unlock(TLock(myRLock));
   } else if (myRLock > mySLock) {
     on mySLockLocale do mutex_lock(TLock(mySLock));
     on myRLockLocale do mutex_lock(TLock(myRLock));
     const x = T(myRIdx);
-    T(myRIdx) = T(mySIdx);
-    T(mySIdx) = x;
+    on mySLocale {
+      y = T(mySIdx);
+      T(mySIdx) = x;      
+    }      
+    T(myRIdx) = y;
     on myRLockLocale do mutex_unlock(TLock(myRLock));
     on mySLockLocale do mutex_unlock(TLock(mySLock));
   } else {
     on myRLockLocale do mutex_lock(TLock(myRLock));
     const x = T(myRIdx);
-    T(myRIdx) = T(mySIdx);
-    T(mySIdx) = x;
+    on mySLocale {
+      y = T(mySIdx);
+      T(mySIdx) = x;      
+    }      
+    T(myRIdx) = y;
     on myRLockLocale do mutex_unlock(TLock(myRLock));
   }
+}
+
+proc swapValues(myRIdx, mySIdx, mySLocale) {
+  var y: elemType;
+  const x = T(myRIdx);
+  on mySLocale {
+    y = T(mySIdx);
+    T(mySIdx) = x;      
+  }      
+  T(myRIdx) = y;
 }
 
 proc main() {
@@ -118,9 +149,8 @@ proc main() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
-      const x = T(myRIdx);
-      T(myRIdx) = T(mySIdx);
-      T(mySIdx) = x;
+      const mySLocale: locale = TableDist.idxToLocale(mySIdx);
+      swapValues(myRIdx, mySIdx, mySLocale);
     }
 
   const execTime = getCurrentTime() - startTime;  // capture the end time
@@ -144,10 +174,11 @@ proc swap() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
+      const mySLocale: locale = TableDist.idxToLocale(mySIdx);
       if useAffinity then
-	swapValuesMLAAffinity(myRIdx, mySIdx);
+	swapValuesMLAAffinity(myRIdx, mySIdx, mySLocale);
       else
-	swapValuesMLA(myRIdx, mySIdx);
+	swapValuesMLA(myRIdx, mySIdx, mySLocale);
     }
   
   const execTime = getCurrentTime() - startTime;  // capture the end time

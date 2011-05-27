@@ -1,6 +1,8 @@
 use BlockDist, Time;
 
-use HPCCProblemSize, RARandomStream, myParams; 
+use HPCCProblemSize, RARandomStream;
+
+use myParams; 
 
 const numTables = 1;
 type indexType = randType,
@@ -30,67 +32,25 @@ var T$: [TableSpace] sync elemType;
 // Sync Data Array version
 // Acquire lock corresponding to smaller index first. 
 // No locality optimization
-// Might fail in cases where lock is not in the same locale
 //
-proc swapValuesSDA(myR: indexType, myS: indexType) {
-  var x, y: elemType;
-  
-  if (myR < myS) {
-    x = T$(myR);
-    T$(myR) = T$(myS);
-    T$(myS) = x;
-  } else if (myR > myS) {
-    x = T$(myS);
-    T$(myS) = T$(myR);
-    T$(myR) = x;
-  } else {
-    x = T$(myR);
-    T$(myR) = x;
+proc swapValuesSDA(myRIdx, mySIdx) {
+  if (myRIdx < mySIdx) {
+    const x = T$(myRIdx);
+    T$(myRIdx) = T$(mySIdx);
+    T$(mySIdx) = x;
+    /* const x = T$(myRIdx); */
+    /* const y = T$(mySIdx); */
+    /* T$(mySIdx) = x; */
+    /* T$(myRIdx) = y; */
+  } else if (myRIdx > mySIdx) {
+    const x = T$(mySIdx);
+    T$(mySIdx) = T$(myRIdx);
+    T$(myRIdx) = x;
+    /* const x = T$(mySIdx); */
+    /* const y = T$(myRIdx); */
+    /* T$(myRIdx) = x; */
+    /* T$(mySIdx) = y; */
   }
-}
-
-//
-// Sync Data Array version
-// Acquire lock corresponding to smaller index first. 
-// Locality optimization: Optimze access to data array T
-//
-proc swapValuesSDALocality(myR: indexType, myS: indexType, mySLocale: locale) {
-  var x, y: elemType;
-
-  if (myR < myS) {
-    x = T$(myR);
-    on mySLocale {
-      y = T$(myS);
-      T$(myS) = x;      
-    }      
-    T$(myR) = y;
-  } else if (myR > myS) {
-    on mySLocale {
-      y = T$(myS);
-      T$(myS) = T$(myR);      
-    }      
-    T$(myR) = y;
-  } else {
-    x = T$(myR);
-    T$(myR) = x;
-  }
-}
-
-proc swapValues(myR: indexType, myS: indexType) {
-  var x, y: elemType;
-  x = T$(myR).readXX();
-  T$(myR).writeXF(T$(myS).readXX());
-  T$(myS).writeXF(x);      
-}
-
-proc swapValuesLocality(myR: indexType, myS: indexType, mySLocale: locale) {
-  var x, y: elemType;
-  x = T$(myR).readXX();
-  on mySLocale {
-    y = T$(myS).readXX();
-    T$(myS).writeXF(x);      
-  }      
-  T$(myR).writeXF(y);
 }
 
 proc main() {
@@ -100,44 +60,44 @@ proc main() {
 
   // UNSYNC -- no synchronization 
 
-  var startTime = getCurrentTime();               // capture the start time
+  const startTime = getCurrentTime();            // capture the start time
 
   forall ( , r, s) in (Updates, RAStream(seed1), RAStream(seed2)) do
     on TableDist.idxToLocale(indexMask(r, n)) {
-      const myR = indexMask(r, n);
-      const myS = indexMask(s, n);
-      if useOn {
-	const mySLocale: locale = TableDist.idxToLocale(myS);
-	swapValuesLocality(myR, myS, mySLocale);
-      } else {
-	swapValues(myR, myS);
-      }
+      const myR = r;
+      const myS = s;
+      const myRIdx = indexMask(myR, n);
+      const mySIdx = indexMask(myS, n);
+      const x = T$(myRIdx).readXX();
+      T$(myRIdx).writeXF(T$(mySIdx).readXX());
+      T$(mySIdx).writeXF(x);
     }
 
-  var execTime = getCurrentTime() - startTime;   // capture the end time
+  const execTime = getCurrentTime() - startTime;  // capture the end time
 
   if (printStats) {
     writeln("UNSYNC: Execution time = ", execTime);
     writeln("UNSYNC: Performance (GUPS) = ", (N_U / execTime) * 1e-9);
   }
 
+  swap();
+}
+
+proc swap() {
   // SDA -- sync data array
 
-  startTime = getCurrentTime();                  // capture the start time
+  const startTime = getCurrentTime();             // capture the start time
 
   forall ( , r, s) in (Updates, RAStream(seed1), RAStream(seed2)) do
     on TableDist.idxToLocale(indexMask(r, n)) {
-      const myR = indexMask(r, n);
-      const myS = indexMask(s, n);
-      if useOn {
-	const mySLocale: locale = TableDist.idxToLocale(myS);
-	swapValuesSDALocality(myR, myS, mySLocale);
-      } else {
-	swapValuesSDA(myR, myS);
-      }
+      const myR = r;
+      const myS = s;
+      const myRIdx = indexMask(myR, n);
+      const mySIdx = indexMask(myS, n);
+      swapValuesSDA(myRIdx, mySIdx);
     }
-      
-  execTime = getCurrentTime() - startTime;       // capture the end time
+
+  const execTime = getCurrentTime() - startTime;  // capture the end time
   
   if (printStats) {
     writeln("SDA: Execution time = ", execTime);
@@ -149,8 +109,6 @@ proc printConfiguration() {
   if (printParams) {
     if (printStats) then writeln("Number of Locales = ", numLocales);
     printProblemSize(elemType, 1, m);
-    writeln("useOn = ", useOn);
-    writeln("useAffinity = ", useAffinity);
     writeln("Number of updates = ", N_U, "\n");
   }
 }

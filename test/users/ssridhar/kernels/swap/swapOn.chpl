@@ -28,6 +28,16 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 
 var T: [TableSpace] elemType;
 
+proc swapValues(myRIdx, mySIdx, mySLocale) {
+  var y: elemType;
+  const x = T(myRIdx);
+  on mySLocale {
+    y = T(mySIdx);
+    T(mySIdx) = x;      
+  }
+  T(myRIdx) = y;
+}
+
 proc main() {
   printConfiguration(); 
   
@@ -43,9 +53,8 @@ proc main() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
-      const x = T(myRIdx);
-      T(myRIdx) = T(mySIdx);
-      T(mySIdx) = x;
+      const mySLocale: locale = TableDist.idxToLocale(mySIdx);
+      swapValues(myRIdx, mySIdx, mySLocale);
     }
 
   const execTime = getCurrentTime() - startTime;  // capture the end time
@@ -73,11 +82,8 @@ proc swap() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
-      atomic {
-	const x = T(myRIdx);
-	T(myRIdx) = T(mySIdx);
-	T(mySIdx) = x;
-      }
+      const mySLocale: locale = TableDist.idxToLocale(mySIdx);
+      atomic swapValues(myRIdx, mySIdx, mySLocale);
     }
 
   const execTime = getCurrentTime() - startTime;  // capture the end time
