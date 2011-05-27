@@ -34,10 +34,10 @@ var TLock$: [LockSpace] sync elemType;
 //
 // Sync Lock Array version
 // Acquire lock corresponding to smaller index first.
-// No locality optimization
+// Locality optimization: Optimize access to data array T
 // Might fail in cases where lock is not in the same locale
 //
-proc updateValuesSLA(myR, myS, myRIdx, mySIdx) {
+proc updateValuesSLA(myR, myS, myRIdx, mySIdx, mySLocale) {
   const myRLock = myRIdx >> lockMask;
   const mySLock = mySIdx >> lockMask;
   var x: elemType;
@@ -46,20 +46,32 @@ proc updateValuesSLA(myR, myS, myRIdx, mySIdx) {
     TLock$(myRLock);
     TLock$(mySLock);
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
+    on mySLocale { 
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T(mySIdx1) -= myS1;
+    }
     TLock$(mySLock) = true;
-    TLock$(myRLock) = true; 
+    TLock$(myRLock) = true;
   } else if (myRLock > mySLock) {
     TLock$(mySLock);
     TLock$(myRLock);
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
-    TLock$(myRLock) = true; 
+    on mySLocale { 
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T(mySIdx1) -= myS1;
+    }
+    TLock$(myRLock) = true;
     TLock$(mySLock) = true;
   } else {
     TLock$(myRLock);
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
+    on mySLocale { 
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T(mySIdx1) -= myS1;
+    }
     TLock$(myRLock) = true;
   }
 }
@@ -67,9 +79,9 @@ proc updateValuesSLA(myR, myS, myRIdx, mySIdx) {
 //
 // Sync Lock Array version
 // Acquire lock corresponding to smaller index first.
-// Affinity optimization: Optimze access to lock array
+// Locality + Affinity optimization
 //
-proc updateValuesSLAAffinity(myR, myS, myRIdx, mySIdx) {
+proc updateValuesSLAAffinity(myR, myS, myRIdx, mySIdx, mySLocale) {
   const myRLock = myRIdx >> lockMask;
   const mySLock = mySIdx >> lockMask;
   const myRLockLocale: locale = LockDist.idxToLocale(myRLock);
@@ -78,22 +90,46 @@ proc updateValuesSLAAffinity(myR, myS, myRIdx, mySIdx) {
 
   if (myRLock < mySLock) {
     on myRLockLocale do TLock$(myRLock);
-    on mySLockLocale do TLock$(mySLock);
+    // Combine lock acquire and data update if lock
+    // and data are on the same locale
+    if (mySLockLocale == mySLocale) {
+      on mySLocale { 
+	const mySIdx1 = mySIdx;
+	const myS1 = myS;
+	const mySLock1 = mySLock;
+	TLock$(mySLock1);
+	T(mySIdx1) -= myS1;
+      }
+    } else {
+      on mySLockLocale do TLock$(mySLock);
+      on mySLocale { 
+	const mySIdx1 = mySIdx;
+	const myS1 = myS;
+	T(mySIdx1) -= myS1;
+      }
+    }
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
     on mySLockLocale do TLock$(mySLock) = true;
     on myRLockLocale do TLock$(myRLock) = true;
   } else if (myRLock > mySLock) {
     on mySLockLocale do TLock$(mySLock);
     on myRLockLocale do TLock$(myRLock);
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
+    on mySLocale { 
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T(mySIdx1) -= myS1;
+    }
     on myRLockLocale do TLock$(myRLock) = true;
     on mySLockLocale do TLock$(mySLock) = true;
   } else {
     on myRLockLocale do TLock$(myRLock);
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
+    on mySLocale { 
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T(mySIdx1) -= myS1;
+    }
     on myRLockLocale do TLock$(myRLock) = true;
   }
 }
@@ -112,8 +148,13 @@ proc main() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
+      const mySLocale: locale = TableDist.idxToLocale(mySIdx);
       T(myRIdx) += myR;
-      T(mySIdx) += myS;
+      on mySLocale {
+	const mySIdx1 = mySIdx;
+	const myS1 = myS;
+	T(mySIdx1) += myS1;
+      }
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
@@ -144,10 +185,11 @@ proc verifyResults() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
+      const mySLocale: locale = TableDist.idxToLocale(mySIdx);
       if useAffinity then
-	updateValuesSLAAffinity(myR, myS, myRIdx, mySIdx);
+	updateValuesSLAAffinity(myR, myS, myRIdx, mySIdx, mySLocale);
       else
-	updateValuesSLA(myR, myS, myRIdx, mySIdx);
+	updateValuesSLA(myR, myS, myRIdx, mySIdx, mySLocale);
     }
 
   const verifyTime = getCurrentTime() - startTime; 

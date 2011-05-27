@@ -2,7 +2,7 @@ use BlockDist, Time;
 
 use HPCCProblemSize, RARandomStream; 
 
-use myParams;
+use MutexLock, myParams;
 
 type indexType = randType,
   elemType = randType;
@@ -29,47 +29,59 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
   LockSpace: domain (1, indexType) dmapped LockDist = [0..lk-1];
 
 var T: [TableSpace] elemType;
-var TLock$: [LockSpace] sync elemType;
+var TLock: [LockSpace] mutex_p;
 
 //
-// Sync Lock Array version
+// Mutex Lock Array version
 // Acquire lock corresponding to smaller index first.
-// No locality optimization
+// Locality optimization: Optimize access to data array T
 // Might fail in cases where lock is not in the same locale
 //
-proc updateValuesSLA(myR, myS, myRIdx, mySIdx) {
+proc updateValuesMLA(myR, myS, myRIdx, mySIdx, mySLocale) {
   const myRLock = myRIdx >> lockMask;
   const mySLock = mySIdx >> lockMask;
   var x: elemType;
 
   if (myRLock < mySLock) {
-    TLock$(myRLock);
-    TLock$(mySLock);
+    mutex_lock(TLock(myRLock));
+    mutex_lock(TLock(mySLock));
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
-    TLock$(mySLock) = true;
-    TLock$(myRLock) = true; 
+    on mySLocale { 
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T(mySIdx1) -= myS1;
+    }
+    mutex_unlock(TLock(mySLock));
+    mutex_unlock(TLock(myRLock));
   } else if (myRLock > mySLock) {
-    TLock$(mySLock);
-    TLock$(myRLock);
+    mutex_lock(TLock(mySLock));
+    mutex_lock(TLock(myRLock));
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
-    TLock$(myRLock) = true; 
-    TLock$(mySLock) = true;
+    on mySLocale { 
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T(mySIdx1) -= myS1;
+    }
+    mutex_unlock(TLock(myRLock));
+    mutex_unlock(TLock(mySLock));
   } else {
-    TLock$(myRLock);
+    mutex_lock(TLock(myRLock));
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
-    TLock$(myRLock) = true;
+    on mySLocale { 
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T(mySIdx1) -= myS1;
+    }
+    mutex_unlock(TLock(myRLock));
   }
 }
 
 //
-// Sync Lock Array version
+// Mutex Lock Array version
 // Acquire lock corresponding to smaller index first.
-// Affinity optimization: Optimze access to lock array
+// Locality + Affinity optimization
 //
-proc updateValuesSLAAffinity(myR, myS, myRIdx, mySIdx) {
+proc updateValuesMLAAffinity(myR, myS, myRIdx, mySIdx, mySLocale) {
   const myRLock = myRIdx >> lockMask;
   const mySLock = mySIdx >> lockMask;
   const myRLockLocale: locale = LockDist.idxToLocale(myRLock);
@@ -77,24 +89,48 @@ proc updateValuesSLAAffinity(myR, myS, myRIdx, mySIdx) {
   var x: elemType;
 
   if (myRLock < mySLock) {
-    on myRLockLocale do TLock$(myRLock);
-    on mySLockLocale do TLock$(mySLock);
+    on myRLockLocale do mutex_lock(TLock(myRLock));
+    // Combine lock acquire and data update if lock
+    // and data are on the same locale
+    if (mySLockLocale == mySLocale) {
+      on mySLocale { 
+	const mySIdx1 = mySIdx;
+	const myS1 = myS;
+	const mySLock1 = mySLock;
+	mutex_lock(TLock(mySLock1));
+	T(mySIdx1) -= myS1;
+      }
+    } else {
+      on mySLockLocale do mutex_lock(TLock(mySLock));
+      on mySLocale { 
+	const mySIdx1 = mySIdx;
+	const myS1 = myS;
+	T(mySIdx1) -= myS1;
+      }
+    }
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
-    on mySLockLocale do TLock$(mySLock) = true;
-    on myRLockLocale do TLock$(myRLock) = true;
+    on mySLockLocale do mutex_unlock(TLock(mySLock));
+    on myRLockLocale do mutex_unlock(TLock(myRLock));
   } else if (myRLock > mySLock) {
-    on mySLockLocale do TLock$(mySLock);
-    on myRLockLocale do TLock$(myRLock);
+    on mySLockLocale do mutex_lock(TLock(mySLock));
+    on myRLockLocale do mutex_lock(TLock(myRLock));
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
-    on myRLockLocale do TLock$(myRLock) = true;
-    on mySLockLocale do TLock$(mySLock) = true;
+    on mySLocale { 
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T(mySIdx1) -= myS1;
+    }
+    on myRLockLocale do mutex_unlock(TLock(myRLock));
+    on mySLockLocale do mutex_unlock(TLock(mySLock));
   } else {
-    on myRLockLocale do TLock$(myRLock);
+    on myRLockLocale do mutex_lock(TLock(myRLock));
     T(myRIdx) -= myR;
-    T(mySIdx) -= myS;
-    on myRLockLocale do TLock$(myRLock) = true;
+    on mySLocale { 
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T(mySIdx1) -= myS1;
+    }
+    on myRLockLocale do mutex_unlock(TLock(myRLock));
   }
 }
 
@@ -102,7 +138,7 @@ proc main() {
   printConfiguration(); 
   
   [i in TableSpace] T(i) = 0;
-  [i in LockSpace] TLock$(i).writeXF(true);
+  [i in LockSpace] mutex_init(TLock(i));
  
   const startTime = getCurrentTime();               // capture the start time
 
@@ -112,8 +148,13 @@ proc main() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
+      const mySLocale: locale = TableDist.idxToLocale(mySIdx);
       T(myRIdx) += myR;
-      T(mySIdx) += myS;
+      on mySLocale {
+	const mySIdx1 = mySIdx;
+	const myS1 = myS;
+	T(mySIdx1) += myS1;
+      }
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
@@ -144,10 +185,11 @@ proc verifyResults() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
+      const mySLocale: locale = TableDist.idxToLocale(mySIdx);
       if useAffinity then
-	updateValuesSLAAffinity(myR, myS, myRIdx, mySIdx);
+	updateValuesMLAAffinity(myR, myS, myRIdx, mySIdx, mySLocale);
       else
-	updateValuesSLA(myR, myS, myRIdx, mySIdx);
+	updateValuesMLA(myR, myS, myRIdx, mySIdx, mySLocale);
     }
 
   const verifyTime = getCurrentTime() - startTime; 

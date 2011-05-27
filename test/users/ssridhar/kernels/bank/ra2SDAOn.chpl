@@ -1,8 +1,8 @@
 use BlockDist, Time;
 
-use HPCCProblemSize, RARandomStream;
+use HPCCProblemSize, RARandomStream; 
 
-use myParams; 
+use myParams;
 
 type indexType = randType,
   elemType = randType;
@@ -24,12 +24,43 @@ const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
 const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
       Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
 
-var T: [TableSpace] elemType;
+var T$: [TableSpace] sync elemType;
+
+proc updateValuesSDA(myR, myS, myRIdx, mySIdx, mySLocale) {
+  if (myRIdx < mySIdx) {
+    // Acquire myRIdx Lock
+    // Acquire mySIdx Lock, update mySIdx entry, and release lock   
+    // Update myRIdx entry and release lock
+    const x = T$(myRIdx);
+    on mySLocale {
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T$(mySIdx1) -= myS1;
+    }
+    T$(myRIdx) = x - myR;
+  } else if (myRIdx > mySIdx) {
+    // Acquire mySIdx Lock
+    // Acquire myRIdx Lock, update myRIdx entry, and release lock
+    // Update mySIdx entry and release lock
+    on mySLocale {
+      const mySIdx1 = mySIdx;
+      T$(mySIdx1);
+    }
+    T$(myRIdx) -= myR;
+    on mySLocale {
+      const mySIdx1 = mySIdx;
+      const myS1 = myS;
+      T$(mySIdx1) = T$(mySIdx1).readXX() - myS1;
+    }
+  } else {
+    T$(myRIdx) -= (2 * myR);
+  }
+}
 
 proc main() {
   printConfiguration(); 
   
-  [i in TableSpace] T(i) = 0;
+  [i in TableSpace] T$(i).writeXF(0);
  
   const startTime = getCurrentTime();               // capture the start time
 
@@ -39,8 +70,13 @@ proc main() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
-      T(myRIdx) += myR;
-      T(mySIdx) += myS;
+      const mySLocale = TableDist.idxToLocale(mySIdx);
+      T$(myRIdx).writeXF(T$(myRIdx).readXX() + myR);
+      on mySLocale {
+	const mySIdx1 = mySIdx;
+	const myS1 = myS;
+	T$(mySIdx1).writeXF(T$(mySIdx1).readXX() + myS1);
+      }
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
@@ -53,15 +89,15 @@ proc printConfiguration() {
   if (printParams) {
     if (printStats) then writeln("Number of Locales = ", numLocales);
     printProblemSize(elemType, 1, m);
+    writeln("Atomic Update = ", safeUpdates);
+    writeln("UseOn = ", useOn);
     writeln("RNG = ", whichRNG());
     writeln("Number of updates = ", N_U, "\n");
   }
 }
 
 proc verifyResults() {
-  if (printArrays) then writeln("After updates, T is: ", T, "\n");
-
-  if (trackStmStats) then startStmStats();
+  if (printArrays) then writeln("After updates, T is: ", T$, "\n");
 
   var startTime = getCurrentTime();
 
@@ -71,19 +107,15 @@ proc verifyResults() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
-      atomic {
-	T(myRIdx) -= myR;
-	T(mySIdx) -= myS;
-      }
+      const mySLocale: locale = TableDist.idxToLocale(mySIdx);
+      updateValuesSDA(myR, myS, myRIdx, mySIdx, mySLocale);
     }
 
   const verifyTime = getCurrentTime() - startTime; 
-  
-  if trackStmStats then stopStmStats();
 
-  if (printArrays) then writeln("After verification, T is: ", T, "\n");
+  if (printArrays) then writeln("After verification, T is: ", T$, "\n");
 
-  const numErrors = + reduce [i in TableSpace] (T(i) != 0);
+  const numErrors = + reduce [i in TableSpace] (T$(i) != 0);
   if (printStats) {
     writeln("Number of errors is: ", numErrors, "\n");
     writeln("Verification time = ", verifyTime);

@@ -39,8 +39,16 @@ proc main() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
+      const mySLocale: locale = TableDist.idxToLocale(mySIdx);
       T(myRIdx) += myR;
-      T(mySIdx) += myS;
+      on mySLocale {
+	const mySIdx1 = mySIdx;
+	const myS1 = myS;
+	if forkFast then 
+	  local T(mySIdx1) += myS1;
+	else
+	  T(mySIdx1) += myS1;
+      }
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
@@ -71,9 +79,14 @@ proc verifyResults() {
       const myS = s;
       const myRIdx = indexMask(myR, n);
       const mySIdx = indexMask(myS, n);
+      const mySLocale: locale = TableDist.idxToLocale(mySIdx);
       atomic {
 	T(myRIdx) -= myR;
-	T(mySIdx) -= myS;
+	on mySLocale {
+	  const mySIdx1 = mySIdx;
+	  const myS1 = myS;
+	  T(mySIdx1) -= myS1;
+	}
       }
     }
 

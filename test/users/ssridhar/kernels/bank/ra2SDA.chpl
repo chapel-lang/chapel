@@ -2,6 +2,8 @@ use BlockDist, Time;
 
 use HPCCProblemSize, RARandomStream; 
 
+use myParams;
+
 type indexType = randType,
   elemType = randType;
 
@@ -24,86 +26,24 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 
 var T$: [TableSpace] sync elemType;
 
-config param safeUpdates: bool = false;
-config param useOn: bool = false;
-config param seed1: randType = 0;
-config param seed2: randType = 0x7fff;
-
-proc updateValues(myR: indexType, myS: indexType, factor: int(64), mySLocale: locale) {
-  const myRIdx = indexMask(myR, n);
-  const mySIdx = indexMask(myS, n);
-  const myRVal = myS * factor:uint(64);
-  const mySVal = myR * factor:uint(64); 
-
+proc updateValuesSDA(myR, myS, myRIdx, mySIdx) {
   if (myRIdx < mySIdx) {
-    var x: elemType;
-
     // Acquire myRIdx Lock
-    local x = T$(myRIdx);
-
-    // Acquire mySIdx Lock, update mySIdx entry, and release lock   
-    if useOn then
-      on mySLocale {
-	const mySIdx1 = mySIdx;
-	const mySVal1 = mySVal;
-	local T$(mySIdx1) += mySVal1;
-      }
-    else 
-      T$(mySIdx) += mySVal;	
-
-    // Update myRIdx entry and release lock
-    local T$(myRIdx) = x + myRVal;
-
+    // Acquire mySIdx Lock, update mySIdx entry, and release mySIdx lock   
+    // Update myRIdx entry and release myRIdx lock
+    const x = T$(myRIdx);
+    T$(mySIdx) -= myS;	
+    T$(myRIdx) = x - myR;
   } else if (myRIdx > mySIdx) {
-
     // Acquire mySIdx Lock
-    if useOn then 
-      on mySLocale {
-	const mySIdx1 = mySIdx;
-	local T$(mySIdx1);
-      }
-    else
-      T$(mySIdx);
-
-    // Acquire myRIdx Lock, update myRIdx entry, and release lock
-    local T$(myRIdx) += myRVal;
-
-    // Update mySIdx entry and release lock
-    if useOn then 
-      on mySLocale {
-	const mySIdx1 = mySIdx;
-	const mySVal1 = mySVal;
-	local T$(mySIdx1) = T$(mySIdx1).readXX() + mySVal1;
-      }
-    else
-      T$(mySIdx) = T$(mySIdx).readXX() + mySVal;
-
+    // Acquire myRIdx Lock, update myRIdx entry, and release myRIdx lock
+    // Update mySIdx entry and release mySIdx lock
+    const x = T$(mySIdx);
+    T$(myRIdx) -= myR;
+    T$(mySIdx) = x - myS;
   } else {
-    local T$(myRIdx) += (2 * myRVal);
-  }
-}
-
-proc updateValuesNoSync(myR: indexType, myS: indexType, mySLocale: locale) {
-  const myRIdx = indexMask(myR, n);
-  const mySIdx = indexMask(myS, n);
-  const myRVal = myS;
-  const mySVal = myR;
-
-  if (myRIdx != mySIdx) {
-    // Update myRIdx entry
-    local T$(myRIdx).writeXF(T$(myRIdx).readXX() + myRVal);
-
-    // Update mySIdx entry   
-    if useOn then
-      on mySLocale {
-	const mySIdx1 = mySIdx;
-	const mySVal1 = mySVal;
-	local T$(mySIdx1).writeXF(T$(mySIdx1).readXX() + mySVal1);
-      }
-    else 
-      T$(mySIdx).writeXF(T$(mySIdx).readXX() + mySVal);
-  } else {
-    local T$(myRIdx).writeXF(T$(myRIdx).readXX() + (2 * myRVal));
+    // Special case: cannot acquire same lock twice
+    T$(myRIdx) -= (2 * myR);
   }
 }
 
@@ -118,11 +58,10 @@ proc main() {
     on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
-      const mySLocale = TableDist.idxToLocale(indexMask(myS, n));
-      if safeUpdates then
-	updateValues(myR, myS, 1, mySLocale);
-      else 
-	updateValuesNoSync(myR, myS, mySLocale);
+      const myRIdx = indexMask(myR, n);
+      const mySIdx = indexMask(myS, n);
+      T$(myRIdx).writeXF(T$(myRIdx).readXX() + myR);
+      T$(mySIdx).writeXF(T$(mySIdx).readXX() + myS);
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
@@ -151,8 +90,9 @@ proc verifyResults() {
     on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
-      const mySLocale = TableDist.idxToLocale(indexMask(myS, n));
-      updateValues(myR, myS, -1, mySLocale);
+      const myRIdx = indexMask(myR, n);
+      const mySIdx = indexMask(myS, n);
+      updateValuesSDA(myR, myS, myRIdx, mySIdx);
     }
 
   const verifyTime = getCurrentTime() - startTime; 

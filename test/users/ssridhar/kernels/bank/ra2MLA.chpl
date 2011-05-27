@@ -31,121 +31,70 @@ const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
 var T: [TableSpace] elemType;
 var TLock: [LockSpace] mutex_p;
 
-proc updateValues(myR: indexType, myS: indexType, factor: int(64), mySLocale: locale) {
-  const myRIdx = indexMask(myR, n);
-  const mySIdx = indexMask(myS, n);
-  const myRVal = myS * factor:uint(64);
-  const mySVal = myR * factor:uint(64); 
+//
+// Mutex Lock Array version
+// Acquire lock corresponding to smaller index first.
+// No locality optimization
+// Might fail in cases where lock is not in the same locale
+//
+proc updateValuesMLA(myR, myS, myRIdx, mySIdx) {
   const myRLock = myRIdx >> lockMask;
   const mySLock = mySIdx >> lockMask;
   var x: elemType;
 
   if (myRLock < mySLock) {
-    // Acquire myRLock
-    local mutex_lock(TLock(myRLock));
-
-    // Acquire mySIndex Lock, update mySIdx entry
-    if useOn then
-      on mySLocale { //LockDist.idxToLocale(mySLock) {
-	const mySIdx1 = mySIdx;
-	const mySVal1 = mySVal;
-	const mySLock1 = mySLock;
-	if forkFast then
-	  local {
-	    mutex_lock(TLock(mySLock1));
-	    T(mySIdx1) += mySVal1;
-	  }
-	else {
-	  mutex_lock(TLock(mySLock1));
-	  T(mySIdx1) += mySVal1;
-	}
-      }
-    else {
-      on mySLocale { //LockDist.idxToLocale(mySLock) {
-	const mySLock1 = mySLock;
-	if forkFast then mutex_lock(TLock(mySLock1));
-	else mutex_lock(TLock(mySLock1));
-      }
-      T(mySIdx) += mySVal;
-    }
-
-    // Update myRIdx
-    local T(myRIdx) += myRVal;
-
-    // Release mySIdx Lock
-    on mySLocale { // LockDist.idxToLocale(mySLock) {
-      const mySLock1 = mySLock;
-      if forkFast then local mutex_unlock(TLock(mySLock1));
-      else mutex_unlock(TLock(mySLock1));
-    }
-
-    // Release myRLock
-    local mutex_unlock(TLock(myRLock)); 
-
+    mutex_lock(TLock(myRLock));
+    mutex_lock(TLock(mySLock));
+    T(myRIdx) -= myR;
+    T(mySIdx) -= myS;
+    mutex_unlock(TLock(mySLock));
+    mutex_unlock(TLock(myRLock)); 
   } else if (myRLock > mySLock) {
-    // Acquire mySIdx Lock
-    on mySLocale { // LockDist.idxToLocale(mySLock) {
-      const mySLock1 = mySLock;
-      if forkFast then local mutex_lock(TLock(mySLock1));
-      else mutex_lock(TLock(mySLock1));
-    }
-    
-    // Acquire myRLock and update myRIdx
-    local {
-      mutex_lock(TLock(myRLock));
-      T(myRIdx) += myRVal;
-    }
-
-    // Update mySIdx
-    if useOn then
-      on TableDist.idxToLocale(mySIdx) {
-	const mySIdx1 = mySIdx;
-	const mySVal1 = mySVal;
-	if forkFast then local T(mySIdx1) += mySVal1;
-	else T(mySIdx1) += mySVal1;
-      }
-    else
-      T(mySIdx) += mySVal;
-
-    // Release myRLock
-    local mutex_unlock(TLock(myRLock)); 
-
-    // Release mySIdx Lock
-    on mySLocale { // LockDist.idxToLocale(mySLock) {
-      const mySLock1 = mySLock;
-      if forkFast then local mutex_unlock(TLock(mySLock1));
-      else mutex_unlock(TLock(mySLock1));
-    }
-
+    mutex_lock(TLock(mySLock));
+    mutex_lock(TLock(myRLock));
+    T(myRIdx) -= myR;
+    T(mySIdx) -= myS;
+    mutex_unlock(TLock(myRLock)); 
+    mutex_unlock(TLock(mySLock));
   } else {
-    local {
-      mutex_lock(TLock(myRLock));
-      T(myRIdx) += myRVal;
-      T(mySIdx) += mySVal;
-      mutex_unlock(TLock(myRLock));
-    } 
+    mutex_lock(TLock(myRLock));
+    T(myRIdx) -= myR;
+    T(mySIdx) -= myS;
+    mutex_unlock(TLock(myRLock));
   }
 }
 
-proc updateValuesNoSync(myR: indexType, myS: indexType, mySLocale: locale) {
-  const myRIdx = indexMask(myR, n);
-  const mySIdx = indexMask(myS, n);
-  const myRVal = myS;
-  const mySVal = myR;
+//
+// Mutex Lock Array version
+// Acquire lock corresponding to smaller index first.
+// Affinity optimization: Optimze access to lock array
+//
+proc updateValuesMLAAffinity(myR, myS, myRIdx, mySIdx) {
+  const myRLock = myRIdx >> lockMask;
+  const mySLock = mySIdx >> lockMask;
+  const myRLockLocale: locale = LockDist.idxToLocale(myRLock);
+  const mySLockLocale: locale = LockDist.idxToLocale(mySLock);
+  var x: elemType;
 
-  if (myRIdx != mySIdx) {
-    local T(myRIdx) += myRVal;
-    if useOn then
-      on mySLocale {
-	const mySVal1 = mySVal;
-	const mySIdx1 = mySIdx;
-	if forkFast then local T(mySIdx1) += mySVal1;
-	else T(mySIdx1) += mySVal1;
-      }
-    else 
-      T(mySIdx) += mySVal;
+  if (myRLock < mySLock) {
+    on myRLockLocale do mutex_lock(TLock(myRLock));
+    on mySLockLocale do mutex_lock(TLock(mySLock));
+    T(myRIdx) -= myR;
+    T(mySIdx) -= myS;
+    on mySLockLocale do mutex_unlock(TLock(mySLock));
+    on myRLockLocale do mutex_unlock(TLock(myRLock));
+  } else if (myRLock > mySLock) {
+    on mySLockLocale do mutex_lock(TLock(mySLock));
+    on myRLockLocale do mutex_lock(TLock(myRLock));
+    T(myRIdx) -= myR;
+    T(mySIdx) -= myS;
+    on myRLockLocale do mutex_unlock(TLock(myRLock));
+    on mySLockLocale do mutex_unlock(TLock(mySLock));
   } else {
-    local T(myRIdx) += (2 * myRVal);
+    on myRLockLocale do mutex_lock(TLock(myRLock));
+    T(myRIdx) -= myR;
+    T(mySIdx) -= myS;
+    on myRLockLocale do mutex_unlock(TLock(myRLock));
   }
 }
 
@@ -153,7 +102,7 @@ proc main() {
   printConfiguration(); 
   
   [i in TableSpace] T(i) = 0;
-  [i in LockSpace]  mutex_init(TLock(i));
+  [i in LockSpace] mutex_init(TLock(i));
  
   const startTime = getCurrentTime();               // capture the start time
 
@@ -161,13 +110,10 @@ proc main() {
     on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
-      if safeUpdates {
-	const mySLocale: locale = LockDist.idxToLocale(indexMask(myS, n) >> lockMask);
-	updateValues(myR, myS, 1, mySLocale);
-      } else {
-	const mySLocale: locale = TableDist.idxToLocale(indexMask(myS, n));
-	updateValuesNoSync(myR, myS, mySLocale);
-      }
+      const myRIdx = indexMask(myR, n);
+      const mySIdx = indexMask(myS, n);
+      T(myRIdx) += myR;
+      T(mySIdx) += myS;
     }
 
   const execTime = getCurrentTime() - startTime;   // capture the end time
@@ -196,8 +142,12 @@ proc verifyResults() {
     on TableDist.idxToLocale(indexMask(r, n)) { 
       const myR = r;
       const myS = s;
-      const mySLocale: locale = LockDist.idxToLocale(indexMask(myS, n) >> lockMask);
-      updateValues(myR, myS, -1, mySLocale);
+      const myRIdx = indexMask(myR, n);
+      const mySIdx = indexMask(myS, n);
+      if useAffinity then
+	updateValuesMLAAffinity(myR, myS, myRIdx, mySIdx);
+      else
+	updateValuesMLA(myR, myS, myRIdx, mySIdx);
     }
 
   const verifyTime = getCurrentTime() - startTime; 
