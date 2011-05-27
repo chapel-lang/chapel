@@ -233,9 +233,36 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
 
 
 Expr*
-CondStmt::fold_cond_stmt() {
+CondStmt::fold_cond_stmt()
+{
+  // deadBlockElimination() can get rid of the condition expression 
+  // without getting rid of the parent if.  We do that here.
+  if (! condExpr)
+  {
+    this->remove();
+    return NULL;
+  }
+
+  // Similarly, deadBlockElimination() can kill the THEN expression
+  if (! thenStmt)
+  {
+    // Two cases:
+    // If elseExpr is also null, just kill the whole IF.
+    if (! elseStmt)
+    {
+      this->remove();
+      return NULL;
+    }
+    // Otherwise, invert the condition and move the else clause into the THEN slot.
+    Expr* cond = new CallExpr(PRIM_UNARY_LNOT, condExpr);
+    this->replaceChild(condExpr, cond);
+    this->replaceChild(thenStmt, elseStmt);
+    this->replaceChild(elseStmt, NULL);
+  }
+
   Expr* result = NULL;
-  if (SymExpr* cond = toSymExpr(condExpr)) {
+  if (SymExpr* cond = toSymExpr(condExpr))
+  {
     if (VarSymbol* var = toVarSymbol(cond->var)) {
       if (var->immediate &&
           var->immediate->const_kind == NUM_KIND_UINT &&
