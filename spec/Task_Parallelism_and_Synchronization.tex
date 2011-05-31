@@ -64,10 +64,10 @@ outfile=$2
 sort $outfile > $outfile.2
 mv $outfile.2 $outfile
 \end{chapelprediff}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 output from main task
 output from spawned task
-\end{chapeloutput}
+\end{chapelprintoutput}
 executes two \chpl{writeln} statements that output the strings to the
 terminal, but the ordering is purposely unspecified.  There is no
 guarantee as to which statement will execute first.  When the
@@ -130,10 +130,10 @@ begin {
 writeln("output from main task");
 finishedMainOutput$\mbox{{\bf \$}}$ = true;
 \end{chapel}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 output from main task
 output from spawned task
-\end{chapeloutput}
+\end{chapelprintoutput}
 modifies the example in~\rsec{Begin}.  When the read of the sync
 variable is encountered in the spawned task, the task waits until the
 sync variable is assigned in the main task.
@@ -154,9 +154,9 @@ begin count$\mbox{{\bf \$}}$ += 1;
 while count$\mbox{{\bf \$}}$.readFF() != 3 do ;
 writeln("count is: ", count$\mbox{{\bf \$}}$);
 \end{chapelpost}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 count is: 3
-\end{chapeloutput}
+\end{chapelprintoutput}
 spawns three tasks to increment \chpl{count$\mbox{{\bf \$}}$}.
 If \chpl{count$\mbox{{\bf \$}}$} was not a sync variable, this code
 would be unsafe because between the points at which one task

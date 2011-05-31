@@ -112,7 +112,8 @@ in this context~(\rsec{Implicit_Statement_Bool_Conversions}).
 The integral types can be parameterized by the number of bits used to
 represent them.  Valid bit-sizes are 8, 16, 32, and 64.  
 The default signed integral type, \chpl{int}, and the
-default unsigned integral type, \chpl{uint}, are 32 bits.
+default unsigned integral type, \chpl{uint}, are treated as distinct types (for
+the purposes of type resolution) but behave like int(64) and uint(64) respectively.
 
 The integral types and their ranges are given in the following table:
 
@@ -125,10 +126,10 @@ The integral types and their ranges are given in the following table:
 {\tt uint(8)} & 0 & 255 \\
 {\tt int(16)} & -32768 & 32767 \\
 {\tt uint(16)} & 0 & 65535 \\
-{\tt int(32)}, {\tt int} & -2147483648 & 2147483647 \\
-{\tt uint(32)}, {\tt uint} & 0 & 4294967295 \\
-{\tt int(64)} & -9223372036854775808 & 9223372036854775807 \\
-{\tt uint(64)} & 0 & 18446744073709551615 \\
+{\tt int(32)} & -2147483648 & 2147483647 \\
+{\tt uint(32)} & 0 & 4294967295 \\
+{\tt int(64)}, {\tt int} & -9223372036854775808 & 9223372036854775807 \\
+{\tt uint(64)}, {\tt uint} & 0 & 18446744073709551615 \\
 \hline
 \end{tabular}
 \end{center}

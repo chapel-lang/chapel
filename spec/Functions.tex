@@ -270,12 +270,12 @@ proc foo(x: int, y: int) { writeln(x); writeln(y); }
 foo(x=2, y=3);
 foo(y=3, x=2);
 \end{chapel}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 2
 3
 2
 3
-\end{chapeloutput}
+\end{chapelprintoutput}
 named argument passing is used to map the actual arguments to the
 formal arguments.  The two function calls are equivalent.
 \end{chapelexample}
@@ -307,14 +307,14 @@ foo();
 foo(7);
 foo(y=5);
 \end{chapel}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 5
 7
 7
 7
 5
 5
-\end{chapeloutput}
+\end{chapelprintoutput}
 default values are specified for the formal arguments \chpl{x}
 and \chpl{y}.  The three calls to \chpl{foo} are equivalent to the
 following three calls where the actual arguments are

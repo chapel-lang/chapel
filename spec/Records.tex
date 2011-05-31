@@ -264,8 +264,14 @@ of another variable's record.
 \index{records!assignment}
 
 In record assignment, the fields of the record on the left-hand side
-of the assignment are assigned the corresponding field values of the record
-on the right-hand side of the assignment.
+of the assignment are overwritten with the values in the corresponding fields of the record
+on the right-hand side as if by assignment.  The correspondence is established by
+field name.  Specifically, the fields in the record on the left-hand side are
+enumerated by name.  For each, the matching field in the right-hand is assigned
+to the field having the same name on the left-hand side.  Since records can
+contain fields of any type, the definition of assignment is applied recursively
+until all assignments are resolved in terms of fundamental types.
+
 Record assignment is generic and structural in that the
 right-hand side expression can be of any type as long as it
 contains at least the same fields (by name) as the record on the left-hand
@@ -280,6 +286,14 @@ Fields on the right-hand side that do not exist on the left-hand side
 are ignored during record assignment.  For example, when a base record is
 assigned a derived record, just the fields that exist in the base
 record are assigned.
+
+%REVIEW: hilde
+%Deviation from the C requirement of layout-compatibility means that the memcpy
+%optimization is surrendered in most cases.  However, in the specific case that
+%the RHS is of a type derived from the LHS type, the records *will* be layout
+%compatible and the optimization can be applied.  It is also fairly simple for
+%the compiler to determine whether two records are layout-compatible, even if
+%there is no inheritance relationship between them.
 
 Assignment from record to a variable of class type is not permitted.
 
@@ -439,15 +453,18 @@ record UniqueID {
 writeln(new UniqueID());  // create and use a record value without a variable
 writeln(new UniqueID());
 \end{chapel}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 (time = 1/1/1011)
 (time = 2/2/2022)
 (id = 1)
 (id = 2)
-\end{chapeloutput}
+\end{chapelprintoutput}
 The variable \chpl{timestampDefault} is initialized with \chpl{TimeStamp}'s
 default initializer. The expression \chpl{new TimeStamp} creates a record that
-is assigned to \chpl{timestampCustom}.  It effectively initializes \chpl{timestampCustom} via a call to the constructor with desired arguments. The records created with \chpl{new UniqueID()} are discarded after they are used.
+is assigned to \chpl{timestampCustom}.  It effectively
+initializes \chpl{timestampCustom} via a call to the constructor with desired
+arguments. The records created with \chpl{new UniqueID()} are discarded after
+they are used.
 \end{chapelexample}
 
 As with classes, the user can provide his own constructors
@@ -491,11 +508,11 @@ proc modifyMyColor(inout mc: MyColor, newcolor: int) {
 modifyMyColor(mc2, 7);   // mc2 is affected because of the 'inout' intent
 printMyColor(mc2);
 \end{chapel}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 my color is 0
 my color is 0
 my color is 7
-\end{chapeloutput}
+\end{chapelprintoutput}
 The assignment to \chpl{mc1.color} affects only the record stored
 in \chpl{mc1}. The record in \chpl{mc2} is not affected by
 the assignment to \chpl{mc1} or by the assignment in \chpl{printMyColor}.
