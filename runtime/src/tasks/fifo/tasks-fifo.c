@@ -690,7 +690,7 @@ int32_t  chpl_task_getNumBlockedTasks(void) {
 // Get a new task ID.
 //
 static chpl_taskID_t get_next_task_id(void) {
-  static chpl_taskID_t       id = 0;
+  static chpl_taskID_t       id = chpl_nullTaskID + 1;
 
   chpl_taskID_t              next_id;
 
