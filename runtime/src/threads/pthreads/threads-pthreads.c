@@ -120,8 +120,6 @@ void chpl_thread_yield(void) {
 }
 
 
-// Thread callbacks for the FIFO tasking layer
-
 void chpl_thread_init(int32_t maxThreadsPerLocale,
                       uint64_t callStackSize,
                       void(*threadBeginFn)(void*),
