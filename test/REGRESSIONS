@@ -45,7 +45,7 @@ performance-specific regressions
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/14/11, 04/22/11, 04/26/11, 04/29/11, 04/30/11, 05/04/11, 05/09/11, 05/10/11, 05/13/11)
+[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/14/11, 04/22/11, 04/26/11, 04/29/11, 04/30/11, 05/04/11, 05/09/11, 05/10/11, 05/13/11, 05/29/11)
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -62,6 +62,10 @@ memory leaks regressions
 =============================
 valgrind-specific regressions
 =============================
+
+nondet. output reordering
+-------------------------
+[Error matching program output for exits/bradc/child_remains_after_parent] (05/29/11)
 
 nondet. source file empty error message from chpl
 -------------------------------------------------
@@ -99,7 +103,7 @@ maxThreadsPerLocale unbounded but ... warning
 
 nondet. out-of-memory error
 ---------------------------
-[Error matching program output for stress/deitz/test_10k_begins] (05/12/11, 05/17/11)
+[Error matching program output for stress/deitz/test_10k_begins] (05/12/11, 05/17/11, 05/20/11)
 
 nondet. compilation timeout
 ---------------------------
@@ -110,7 +114,7 @@ nondet. execution timeout
 [Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (05/10/11, 05/12/11, 05/14/11, 05/15/11)
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (04/22/11, 05/16/11)
 [Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky] (05/03/11, 05/10/11)
-[Error: Timed out executing program studies/shootout/fannkuch-redux/fannkuch-redux  --N=10 (--cc-warnings --no-local  ) (0-2)] (04/22/11, 04/24/11, 04/28/11, 04/30/11, 05/01/11)
+[Error: Timed out executing program studies/shootout/fannkuch-redux/fannkuch-redux  --N=10 (--cc-warnings --no-local  ) (0-2)] (04/22/11, 04/24/11, 04/28/11, 04/30/11, 05/01/11, 05/19/11)
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -146,7 +150,8 @@ nondet. race on which index generates error message?
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/11/11, 04/15/11, 04/22/11, 04/29/11, 05/03/11, 05/08/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11, 05/06/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11, 05/06/11, 05/19/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (05/23/11, 05/25/11)
 
 too many warnings/different warning format?
 -------------------------------------------
@@ -173,6 +178,9 @@ verbose output now shows launch command (10/31/08)
 gasnet-fast regressions (other than the above)
 ==============================================
 
+nondet. execution timeout
+-------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (06/01/11)
 
 ==============================
 block distribution regressions
@@ -192,6 +200,10 @@ timeouts
 ===========================
 darwin-specific regressions
 ===========================
+
+??? (ever since checked in -- may now be fixed but regressions haven't run?)
+----------------------------------------------------------------------------
+[Error matching program output for studies/graph500/v1/main]
 
 ??? (ever since checked in)
 ---------------------------
@@ -235,9 +247,9 @@ redeclaration of identifier in scope (01/24/11)
 cray-xt-cray/cce-specific regressions
 =====================================
 
-unreachable loop warning (05/08/11 -- weekend run)
---------------------------------------------------
-*90-some tests*
+new unreachable loop warning (05/29/11)
+---------------------------------------
+[Error matching program output for arrays/deitz/jacobi-unoptimized]
 
 wrong result due to reliance on wraparound in signed integers in test itself
 ----------------------------------------------------------------------------
@@ -264,8 +276,29 @@ precision issues (?) -- is there a floating point flag we need to throw?
 
 nondet. compilation timeouts
 ----------------------------
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3a] (05/29/11)
+[Error: Timed out compilation for studies/graph500/v2/main] (05/29/11)
 [Error: Timed out compilation for users/franzf/v0/chpl/main] (05/15/11)
 [Error: Timed out compilation for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky]
+
+consistent compiler timeouts
+----------------------------
+[Error: Timed out compilation for classes/bradc/arrayInClass/genericArrayInClass-otharrs]
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3]
+[Error: Timed out compilation for multilocale/deitz/linked/test_linked3b]
+[Error: Timed out compilation for sparse/parallel/sparse-csr-iter-dom-arr-zipper]
+[Error: Timed out compilation for sparse/parallel/sparse-iter-dom-arr-zipper]
+[Error: Timed out compilation for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
+[Error: Timed out compilation for studies/amr/diffusion/level/Level_DiffusionBE_driver]
+[Error: Timed out compilation for studies/cholesky/jglewis/version2/elemental/strided/test_elemental_cholesky_explicitly_symmetric_strided]
+[Error: Timed out compilation for studies/cholesky/jglewis/version2/elemental/unsymmetric_indices/test_elemental_cholesky_unsymmetric_ranges]
+[Error: Timed out compilation for studies/madness/aniruddha/madchap/test_likepy]
+[Error: Timed out compilation for studies/madness/common/test_likepy]
+[Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_likepy]
+[Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_mul]
+[Error: Timed out compilation for studies/ssca2/sungeun/SSCA2_main]
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )]
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v3.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )]
 
 
 =============================================================
@@ -324,10 +357,6 @@ exp2 not supported:
 ==================================================================
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
-
-alignment prints out incorrectly (04/25/11)
--------------------------------------------
-[Error matching program output for types/range/hilde/align]
 
 NAN/INFINITY undefined in generated code (03/28/11)
 ---------------------------------------------------
@@ -415,12 +444,21 @@ unresolved sync variable calls (04/09/11 -- once spec examples added)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11, 05/14/11, 05/15/11, 05/17/11)
+[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11, 05/14/11, 05/15/11, 05/17/11, 05/21/11, 05/25/11, 05/27/11)
 
 
 =======================================================
 xmt-sim specific regressions (in addition to the above)
 =======================================================
+
+warning: full/empty bit modified on less than word-sized data (05/24/11)
+(due to new release candidate)
+------------------------------------------------------------------------
+*all*
+
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for release/examples/primers/arrays] (05/27/11, 05/31/11)
 
 array index out of bounds due to bug in XMT compiler
 ----------------------------------------------------
@@ -443,6 +481,10 @@ execution timeouts
 =======================
 baseline-specific tests
 =======================
+
+.good assumes dead code elimination has run (since added)
+---------------------------------------------------------
+[Error matching program output for optimizations/hilde/removeUnreachable]
 
 never worked (02/24/11)
 -----------------------
