@@ -94,7 +94,7 @@ void chpl_thread_mutexUnlock(chpl_thread_mutex_p mutex) {
 }
 
 
-// Thread id
+// Thread management
 
 chpl_thread_id_t chpl_thread_getId(void) {
   void* val = pthread_getspecific(thread_id_key);
@@ -104,8 +104,6 @@ chpl_thread_id_t chpl_thread_getId(void) {
   return (chpl_thread_id_t) (intptr_t) val;
 }
 
-
-// Thread yield
 
 void chpl_thread_yield(void) {
   int last_cancel_state;
