@@ -212,7 +212,7 @@ static bool deadBlockElimination(FnSymbol* fn)
         forv_Vec(Expr, expr, bb->exprs)
         {
           if (! expr->parentExpr)
-            continue;	// This node is no longer in the tree.
+            continue;   // This node is no longer in the tree.
 
           CondStmt* cond = toCondStmt(expr->parentExpr);
           if (cond && cond->condExpr == expr)
