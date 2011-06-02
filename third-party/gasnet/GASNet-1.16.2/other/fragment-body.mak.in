@@ -1,0 +1,62 @@
+# $Header: /var/local/cvs/gasnet/other/fragment-body.mak.in,v 1.7 2009/09/18 23:33:36 phargrov Exp $
+# ----------------------------------------------------------------------
+# Following section @configure_input@
+
+# ----------------------------------------------------------------------
+# Directory-based options
+
+GASNET_INCLUDES = @SYS_HEADER_INST@ -I###INSTALL_PREFIX###/include -I###INSTALL_PREFIX###/include/#conduit_name#-conduit $(CONDUIT_INCLUDES) $(CONDUIT_INCLUDES_#THREAD_MODEL#)
+GASNET_LIBDIRS = -L###INSTALL_PREFIX###/lib $(CONDUIT_LIBDIRS) $(CONDUIT_LIBDIRS_#THREAD_MODEL#)
+
+# Textual lines containing the string "###NOINSTALL###" are removed by the install process
+# (must be one continuous line) ###NOINSTALL###
+GASNET_INCLUDES = @SYS_HEADER_BLD@ -I@TOP_SRCDIR@ -I@TOP_SRCDIR@/#conduit_name#-conduit -I@TOP_SRCDIR@/other $(CONDUIT_INCLUDES) $(CONDUIT_INCLUDES_#THREAD_MODEL#) -I@TOP_SRCDIR@/extended-ref -I@TOP_BUILDDIR@  ###NOINSTALL###
+GASNET_LIBDIRS = -L@TOP_BUILDDIR@/#conduit_name#-conduit $(CONDUIT_LIBDIRS) $(CONDUIT_LIBDIRS_#THREAD_MODEL#) ###NOINSTALL###
+
+# ----------------------------------------------------------------------
+# C compiler and options
+
+GASNET_CC = @CC@
+
+GASNET_OPT_CFLAGS = @CFLAGS@ $(CONDUIT_OPT_CFLAGS) $(CONDUIT_OPT_CFLAGS_#THREAD_MODEL#)
+GASNET_MISC_CFLAGS = @MISC_CFLAGS@ $(CONDUIT_MISC_CFLAGS) $(CONDUIT_MISC_CFLAGS_#THREAD_MODEL#)
+GASNET_MISC_CPPFLAGS = @MISC_CPPFLAGS@ $(CONDUIT_MISC_CPPFLAGS) $(CONDUIT_MISC_CPPFLAGS_#THREAD_MODEL#)
+
+GASNET_EXTRADEFINES_SEQ = 
+GASNET_EXTRADEFINES_PAR = @GASNET_THREAD_DEFINES@
+GASNET_EXTRADEFINES_PARSYNC = @GASNET_THREAD_DEFINES@
+
+GASNET_DEFINES = -DGASNET_#THREAD_MODEL# $(GASNET_EXTRADEFINES_#THREAD_MODEL#) $(CONDUIT_DEFINES) $(CONDUIT_DEFINES_#THREAD_MODEL#)
+
+# ----------------------------------------------------------------------
+# Documented compilation convenience aliases
+
+GASNET_CFLAGS = $(GASNET_OPT_CFLAGS) $(GASNET_MISC_CFLAGS) $(MANUAL_CFLAGS)
+GASNET_CPPFLAGS = $(GASNET_MISC_CPPFLAGS) $(GASNET_DEFINES) $(GASNET_INCLUDES)
+
+# ----------------------------------------------------------------------
+# linker and options
+
+GASNET_LD = $(GASNET_LD_OVERRIDE)
+
+# linker flags that GASNet clients should use 
+GASNET_LDFLAGS = $(GASNET_LDFLAGS_OVERRIDE) $(CONDUIT_LDFLAGS) $(CONDUIT_LDFLAGS_#THREAD_MODEL#) $(MANUAL_LDFLAGS)
+
+GASNET_EXTRALIBS_SEQ = 
+GASNET_EXTRALIBS_PAR = @GASNET_THREAD_LIBS@
+GASNET_EXTRALIBS_PARSYNC = @GASNET_THREAD_LIBS@
+
+# libraries that GASNet clients should append to link line
+GASNET_LIBS =                             \
+    $(GASNET_LIBDIRS)                     \
+    -lgasnet-#conduit_name#-#thread_model# \
+    $(CONDUIT_LIBS)                       \
+    $(CONDUIT_LIBS_#THREAD_MODEL#)        \
+    $(GASNET_EXTRALIBS_#THREAD_MODEL#)    \
+    @GASNET_PSHM_LIBS@                    \
+    @LIBGCC@                              \
+    @LIBS@                                \
+    @LIBM@                                \
+    $(MANUAL_LIBS)
+
+# ----------------------------------------------------------------------

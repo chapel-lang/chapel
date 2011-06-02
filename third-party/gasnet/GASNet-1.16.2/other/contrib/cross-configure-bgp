@@ -1,0 +1,145 @@
+#!/bin/sh
+
+# This is an automatically-generated cross-configuration setup script
+
+################################################
+# Usage Instructions: 
+#  1. fill in the following values to point to the target and host compilers:
+
+if test "$USE_GCC" != "" ; then
+# GCC-based compilers
+CC='/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -Wno-unused' ; export CC  # vanilla target C compiler
+CXX='/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -Wno-unused' ; export CXX  # vanilla target C++ compiler
+# for dynamic linking add: -dynamic -Wl,-rpath,/bgsys/drivers/V1R1M2_500_2007-071213P/ppc/runtime/SPI
+else
+# XLC-based compilers
+CC='bgxlc_r -qarch=450d -qtune=450' ; export CC  # vanilla target C compiler
+CXX='bgxlC_r -qarch=450d -qtune=450' ; export CXX  # vanilla target C++ compiler
+# for dynamic linking add: -qnostaticlink -Wl,-rpath,/bgsys/drivers/V1R1M2_500_2007-071213P/ppc/runtime/SPI
+fi
+
+# Host C compiler
+# NOTE: you may need to set GCC_EXEC_PREFIX=/usr/bin/
+# to get the correct assembler if gcc is your host compiler
+HOST_CC='/usr/bin/gcc' ; export HOST_CC
+HOST_CFLAGS='-g -O2' ; export HOST_CFLAGS
+
+# Host C++ compiler - required by Titanium, not required for UPC or GASNet
+HOST_CXX='/usr/bin/g++' ; export HOST_CXX
+HOST_CXXFLAGS='' ; export HOST_CXXFLAGS
+
+# Optional additional settings: (see configure --help for complete list)
+
+if test "$USE_GCC" != "" ; then
+# GCC-based compilers
+MPI_CC='mpicc' ; export MPI_CC     # MPI-enabled C compiler
+else
+# XLC-based compilers
+MPI_CC='mpixlc -qarch=450d -qtune=450' ; export MPI_CC     # MPI-enabled C compiler
+fi
+#MPI_CFLAGS='' ; export MPI_CFLAGS  # flags for MPI_CC
+#MPI_LIBS='' ; export MPI_LIBS      # libs for linking with MPI_CC
+# system batch submit command:
+# The following MPIRUN_CMD is specific to the Intrepid BG/P system at Argonne 
+# Leadership Computing Facility (ALCF).  Please find detailed information about
+# the 'qsub' and 'cobalt-mpirun' commands in the following ALCF web pages:
+# https://wiki.alcf.anl.gov/index.php/Job_Scheduling_Policy
+# https://wiki.alcf.anl.gov/index.php/Queuing
+# https://wiki.alcf.anl.gov/index.php/FAQ
+MPIRUN_CMD='qsub -q prod-devel -t 1:00:00 -n %N %C' ; export MPIRUN_CMD  # launch command for MPI jobs
+MPIRUN_CMD_BATCH='cobalt-mpirun %N %C' ; export MPIRUN_CMD_BATCH  # launch command for MPI inside the batch script
+
+# BEWARE: the mpirun below boots its own partition on the BG/L, which may disrupt the system resource scheduler and anger the admins
+#MPIRUN_CMD='mpirun -timeout 600 -np %N %V -verbose 0 -cwd %D -exe %P -args "%A"' ; export MPIRUN_CMD  # launch command for MPI jobs
+# --disable-aligned-segments because /proc/sys/kernel/randomize_va_space==1
+
+
+#check which compute node OS to link against either the default compute node kernel or the Argonne
+if test "$USE_LINUX" != ""; then
+#MMAP and BG/P linux don't play well together so disabling it for now... until we hear better
+CROSS_HAVE_MMAP='0' ; export CROSS_HAVE_MMAP
+EXTRA_CONFIGURE_ARGS='--enable-dcmf-linux --disable-aligned-segments --disable-udp --disable-amudp' ; export EXTRA_CONFIGURE_ARGS  # misc configure args to pass
+EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --with-feature-list=os_bgp_linux"
+else
+CROSS_HAVE_MMAP='1' ; export CROSS_HAVE_MMAP
+EXTRA_CONFIGURE_ARGS='-with-max-pthreads-per-node=4 --disable-dcmf-linux --disable-udp --disable-amudp' ; export EXTRA_CONFIGURE_ARGS  # misc configure args to pass
+EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --with-feature-list=os_bgp"
+fi
+
+#EXTRA_CONFIGURE_ARGS='--disable-aligned-segments --enable-mpi --disable-udp --disable-amudp' ; export EXTRA_CONFIGURE_ARGS  # misc configure args to pass
+
+# 2. Fill in the canonical target machine type. You can usually obtain this
+#   by running config-aux/config.guess on the target machine
+TARGET_ID='powerpc-bgp-linux'
+
+# 3. Review the automatically-detected settings below and make corrections as necessary.
+
+# 4. Place this output script in your top-level source directory and run it,
+#   passing it any additional configure arguments as usual (see configure --help).
+
+################################################
+# AUTOMATICALLY DETECTED SETTINGS:
+
+# The system VM page size (ie mmap granularity, even if swapping is not supported)
+
+CROSS_PAGESIZE='4096' ; export CROSS_PAGESIZE
+
+# Does the system stack grow up?
+
+CROSS_STACK_GROWS_UP='0' ; export CROSS_STACK_GROWS_UP
+
+# Is char a signed type?
+
+CROSS_CHAR_IS_SIGNED='0' ; export CROSS_CHAR_IS_SIGNED
+
+# Basic primitive C type sizes (in bytes)
+
+CROSS_SIZEOF_CHAR='1' ; export CROSS_SIZEOF_CHAR
+CROSS_SIZEOF_SHORT='2' ; export CROSS_SIZEOF_SHORT
+CROSS_SIZEOF_INT='4' ; export CROSS_SIZEOF_INT
+CROSS_SIZEOF_LONG='4' ; export CROSS_SIZEOF_LONG
+CROSS_SIZEOF_LONG_LONG='8' ; export CROSS_SIZEOF_LONG_LONG
+CROSS_SIZEOF_VOID_P='4' ; export CROSS_SIZEOF_VOID_P
+CROSS_SIZEOF_SIZE_T='4' ; export CROSS_SIZEOF_SIZE_T
+CROSS_SIZEOF_PTRDIFF_T='4' ; export CROSS_SIZEOF_PTRDIFF_T
+
+# System signal values
+
+CROSS_SIGHUP='1' ; export CROSS_SIGHUP
+CROSS_SIGINT='2' ; export CROSS_SIGINT
+CROSS_SIGQUIT='3' ; export CROSS_SIGQUIT
+CROSS_SIGKILL='9' ; export CROSS_SIGKILL
+CROSS_SIGTERM='15' ; export CROSS_SIGTERM
+CROSS_SIGUSR1='10' ; export CROSS_SIGUSR1
+
+
+SRCDIR=`dirname $0`
+if test ! -f "$SRCDIR/configure" ; then
+  echo "ERROR: The $0 script should be placed in the same directory as the configure script before execution"
+  exit 1
+fi
+# Detect the build host machine type
+HOST_ARG=`echo "$@" | grep -e --host`
+HOST_APPEND=
+if test "$HOST_ARG" = ""; then
+  oldCC_FOR_BUILD="$CC_FOR_BUILD"
+  oldHOST_CC="$HOST_CC"
+  oldCC="$CC"
+  CC_FOR_BUILD=
+  HOST_CC=
+  CC=
+  if test "$HOST_ID" = ""; then
+    HOST_ID=`$SRCDIR/config-aux/config.guess`
+  fi
+  if test "$HOST_ID" = ""; then
+    echo 'ERROR: failed to auto-detect build host. Please run with --host=machineid to identify the host machine running this script'
+    exit 1
+  else
+    HOST_APPEND="--host=$HOST_ID"
+  fi
+  CC_FOR_BUILD="$oldCC_FOR_BUILD"
+  HOST_CC="$oldHOST_CC"
+  CC="$oldCC"
+fi
+# Now that everything is setup, run the actual configure script
+$SRCDIR/configure --enable-cross-compile $HOST_APPEND --build=$TARGET_ID --target=$TARGET_ID --program-prefix='' $EXTRA_CONFIGURE_ARGS "$@"

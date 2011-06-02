@@ -1,0 +1,38 @@
+GASNet smp-conduit documentation
+Dan Bonachea <bonachea@cs.berkeley.edu>
+$Revision: 1.2 $
+
+User Information:
+-----------------
+
+smp-conduit provides a single-node loopback GASNet implementation for 
+smp or uniprocessor systems lacking network hardware or API's.
+It should be extremely portable and run anywhere with a POSIX-like environment.
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+Known problems:
+---------------
+
+* See the Berkeley UPC Bugzilla server for details on known bugs.
+
+Future work:
+------------
+
+===============================================================================
+
+Design Overview:
+----------------
+
+All puts/gets are local accesses (with the locality check removed at compile
+time), and all AM handlers execute synchronously on the calling thread. Segment
+alignment is trivially guaranteed.
+

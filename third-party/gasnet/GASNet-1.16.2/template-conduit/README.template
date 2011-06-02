@@ -1,0 +1,74 @@
+README file for template-conduit
+================================
+Dan Bonachea <bonachea@cs.berkeley.edu>
+$Revision: 1.13 $
+
+This file contains a template to help implementors get started in implementing a
+GASNet conduit. It is not a functioning conduit - merely a "skeleton" with most
+of the infrastructure in place so one can start filling in code specific to the
+conduit network.
+
+To use the template:
+
+* Choose a conduit name - pick something relatively short and descriptive
+
+* Copy the template-conduit directory to conduitname-conduit
+
+* Do a global search-and-replace on the files for the following patterns:
+  <CONDUITNAME> => your conduit name, all in upper-case
+  <conduitname> => your conduit name, all in lower-case
+  (be sure not to insert any extraneous space characters around the names)
+
+* Add your new directory to the top-level Makefile.am and any necessary
+  configuration/enabling checks to the configure.in script. Ideally conduit
+  detection should be fully automated, only requiring interaction from the user
+  in cases where required drivers are installed in non-standard places (and not
+  in the PATH).  The CONDUIT_BEGIN/CONDUIT_END macros in configure.in should be
+  used to add your conduit to the CONDUITS variable when it is enabled.  Please
+  refer to the configure.in checks for other conduits as a pattern for how to
+  structure your conduit checks.  This includes creating an AM_CONDITIONAL()
+  called USE_<CONDUITNAME>_CONDUIT, which should be used to control the
+  building of your conduit and any associated libraries in other/. 
+
+* Edit configure.in and update the AC_OUTPUT() call with entries for 
+  <conduitname>-conduit/Makefile, <conduitname>-conduit/conduit.mak,
+  and any other configure-generated files you create.
+
+* Any new files you add to the conduit must be placed in the 
+  "CONDUIT_FILELIST" variable of <conduitname>-conduit/Makefile.am, 
+  any new .c files to be compiled into your conduit library must go into
+  the CONDUIT_SOURCELIST variable of that same file.
+  See <conduitname>-conduit/Makefile.am for comments on controlling other
+  aspects of the library build process, such as include paths, etc.
+  In general, ANY files you add to the repository (even documentation!)
+  MUST appear somewhere in a Makefile.am file or they will be omitted from
+  the GASNet distribution. See online documentation for automake for more info.
+
+* Fill in any compilation settings required for GASNet clients and tests using your 
+  conduit (eg linker flags and libraries) in <conduitname>-conduit/conduit.mak.in. 
+
+* Start filling in code specific to your conduit
+  Several places in the template are marked with ### to indicate a place where
+  you must fill in conduit-specific values or code
+
+* If possible, add auto-detection for your network hardware to 
+  gasneti_check_portable_conduit() in gasnet_internal.c
+
+* Delete this file (<conduitname>-conduit/README.template) file 
+
+* Fill in conduit documentation in <conduitname>-conduit/README
+
+The template is already setup to use the reference implementation of the
+extended API, so you're recommended to start by implementing the core API, then
+once that's done you can optionally choose to tune further by dropping in a
+conduit-specific implementation of the extended API.
+
+All GASNet developers are required to follow the GASNet coding standards outlined 
+in the top-level README. Please take a moment to read and understand these NOW.
+It's especially important that you do NOT make trivial and/or non-meaningful 
+changes to the code or makefile framework inherited from template-conduit 
+(e.g. re-indenting lines, moving code into different files, renaming existing 
+identifiers, etc.) as this makes it more difficult to patch your conduit if 
+a bug is discovered in template-conduit or a GASNet-wide change is required.
+
+

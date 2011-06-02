@@ -1,0 +1,45 @@
+#!/bin/sh
+#   $Source: /var/local/cvs/gasnet/unBootstrap,v $
+#     $Date: 2009/03/27 03:09:35 $
+# $Revision: 1.21 $
+# Terms of use are as specified in license.txt
+# Description:
+# This scripts undoes the effects of a "Bootstrap", 
+#  removing all the automatically generated files and
+#  returning the source tree back to a fully "clean" state
+
+rm -Rf autom4te*.cache
+rm -f Makefile.in              \
+      configure                \
+      gasnet_config.h.in       \
+      aclocal.m4               \
+      config.status            \
+      stamp-h.in               \
+      config-aux/Makefile.in   \
+      config-aux/Makefile      \
+      elan-conduit/Makefile.in \
+      dcmf-conduit/Makefile.in   \
+      dcmf-conduit/contrib/Makefile.in   \
+      gm-conduit/Makefile.in   \
+      gm-conduit/contrib/Makefile.in   \
+      ibv-conduit/Makefile.in  \
+      ibv-conduit/contrib/Makefile.in \
+      lapi-conduit/Makefile.in \
+      mpi-conduit/Makefile.in  \
+      mpi-conduit/contrib/Makefile.in   \
+      portals-conduit/Makefile.in  \
+      smp-conduit/Makefile.in  \
+      udp-conduit/Makefile.in  \
+      sci-conduit/Makefile.in \
+      sci-conduit/contrib/Makefile.in   \
+      vapi-conduit/Makefile.in \
+      vapi-conduit/contrib/Makefile.in   \
+      shmem-conduit/Makefile.in \
+      template-conduit/Makefile.in \
+      other/Makefile.in        \
+      other/ammpi/Makefile.in  \
+      other/amudp/Makefile.in  \
+      other/contrib/Makefile.in \
+      other/firehose/Makefile.in \
+      other/testspawn/Makefile.in \
+      tests/Makefile

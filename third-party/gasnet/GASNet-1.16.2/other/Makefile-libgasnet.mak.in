@@ -1,0 +1,206 @@
+# This Makefile fragment is used to build GASNet libraries
+# it is not meant to be used directly 
+# @configure_input@
+
+.PHONY: do-libgasnet-seq do-libgasnet-par do-libgasnet-parsync  \
+        do-libgasnet_tools-seq do-libgasnet_tools-par do-libgasnet_tools  \
+        do-libgasnet check-exports do-pthreads-error 
+
+VPATH=$(srcdir)
+
+thread_defines = @GASNET_THREAD_DEFINES@
+SEPARATE_CC = @SEPARATE_CC@
+
+@USE_PLPA_TRUE@PLPA_INCLUDES = -I$(top_srcdir)/other/plpa/src/libplpa
+@USE_PLPA_TRUE@PLPA_SOURCES  = $(top_srcdir)/other/plpa/src/libplpa/plpa_api_probe.c \
+@USE_PLPA_TRUE@                $(top_srcdir)/other/plpa/src/libplpa/plpa_dispatch.c
+
+@USE_PSHM_TRUE@PSHM_SOURCES  = $(top_srcdir)/gasnet_pshm.c
+
+TOOLLIBINCLUDES =         \
+        @SYS_HEADER_BLD@  \
+        -I$(srcdir)       \
+        -I$(top_srcdir)   \
+        -I$(top_builddir) \
+        -I$(top_srcdir)/other \
+	$(PLPA_INCLUDES)
+
+LIBINCLUDES = $(TOOLLIBINCLUDES) \
+        -I$(top_srcdir)/extended-ref  
+
+
+TOOLLIBDEFINES =                    \
+        $(LIBGASNET_THREAD_DEFINES) \
+        @GASNET_MACHINE_DEFINES@ 
+
+LIBDEFINES =                        \
+	$(TOOLLIBDEFINES)	    \
+        -DGASNET_$(THREAD_MODEL)    
+
+@BUILDCONFIG_DEBUG_FALSE@ TOOLLIB_DEBUGFLAGS = -DNDEBUG
+TOOLLIBCFLAGS =                   \
+        -DGASNETT_BUILDING_TOOLS  \
+        @CFLAGS@                  \
+        @MISC_CFLAGS@             \
+        $(TOOLLIBDEFINES)         \
+	$(TOOLLIB_DEBUGFLAGS)     \
+	$(TOOLLIBINCLUDES)	  \
+	$${keeptmps:+@KEEPTMP_CFLAGS@} \
+	$(MANUAL_LIBCFLAGS)
+
+LIBCFLAGS =                       \
+        @CFLAGS@                  \
+        @MISC_CFLAGS@             \
+        $(LIBDEFINES)             \
+        $(CONDUIT_EXTRALIBCFLAGS) \
+	$(LIBINCLUDES)		  \
+	$${keeptmps:+@KEEPTMP_CFLAGS@} \
+	$(MANUAL_LIBCFLAGS)
+
+libgasnet_tools_sources =            \
+	$(top_srcdir)/gasnet_tools.c \
+	$(PLPA_SOURCES)
+
+libgasnet_sources =                                         \
+        $(CONDUIT_SOURCELIST)                               \
+        $(libgasnet_tools_sources)                          \
+        $(PSHM_SOURCES)                                     \
+        $(top_srcdir)/extended-ref/gasnet_extended_refvis.c \
+        $(top_srcdir)/extended-ref/gasnet_extended_refcoll.c\
+        $(top_srcdir)/extended-ref/gasnet_coll_putget.c     \
+        $(top_srcdir)/extended-ref/gasnet_coll_eager.c      \
+        $(top_srcdir)/extended-ref/gasnet_coll_rvous.c      \
+        $(top_srcdir)/extended-ref/gasnet_coll_team.c				\
+        $(top_srcdir)/extended-ref/gasnet_coll_hashtable.c   \
+        $(top_srcdir)/gasnet_internal.c                     \
+        $(top_srcdir)/gasnet_trace.c                        \
+        $(top_srcdir)/gasnet_mmap.c                         \
+	$(top_srcdir)/gasnet_diagnostic.c
+
+libgasnet_objects = \
+	`for file in $(libgasnet_sources) ; do echo \`basename $$file .c\`.o ; done` \
+	$(CONDUIT_SPECIAL_OBJS)
+
+libgasnet_tools_dependencies =  \
+        $(CONFIG_HEADER)        \
+        $(top_srcdir)/*.[ch]    \
+        $(top_srcdir)/other/*.h
+
+libgasnet_dependencies =                  \
+        $(libgasnet_tools_dependencies)   \
+        $(srcdir)/*.[ch]                  \
+        $(top_srcdir)/extended-ref/*.[ch] \
+        $(top_srcdir)/other/smp-collectives/*.[ch] \
+	$(CONDUIT_SOURCELIST)             \
+	$(CONDUIT_EXTRAHEADERS)           \
+	$(CONDUIT_EXTRADEPS)
+
+# library targets 
+THREAD_MODEL=SEQ
+THREAD_MODEL_LC=`echo "$(THREAD_MODEL)" | @AWK@ '{print tolower($$0)}'`
+LIBGASNET_NAME=libgasnet-$(CONDUIT_NAME)
+do-libgasnet: $(CONDUIT_SPECIAL_OBJS)
+	@mkdir -p .$(THREAD_MODEL)
+	@libgasnet_objects="$(libgasnet_objects)" ; libgasnet_objects=`echo $$libgasnet_objects` ; \
+	pwd=`@PWD_PROG@`; keeptmps='$(KEEPTMPS)'; \
+	if test -z '$(KEEPTMPS)'; then rmcmd="&& rm -f $$libgasnet_objects"; fi; \
+	if test -n '$(SEPARATE_CC)' ; then \
+	  compcmd="for file in $(libgasnet_sources) ; do $(CC) $(LIBCFLAGS) -c "'$$file'" || exit "'$$?'" ; done" ; \
+	else \
+	  compcmd="$(CC) $(LIBCFLAGS) -c $(libgasnet_sources)" ; \
+	fi ; \
+	cmd="$$compcmd && \
+	$(AR) cru $$pwd/$(LIBGASNET_NAME)-$(THREAD_MODEL_LC).a $$libgasnet_objects && \
+	$(RANLIB) $$pwd/$(LIBGASNET_NAME)-$(THREAD_MODEL_LC).a $$rmcmd"; \
+	echo " --- BUILDING $(LIBGASNET_NAME)-$(THREAD_MODEL_LC).a --- " ; \
+        echo $$cmd ; cd .$(THREAD_MODEL) ; eval $$cmd
+	@test -n '$(KEEPTMPS)' || rm -Rf .$(THREAD_MODEL)
+
+set_dirs = top_srcdir=`cd $(top_srcdir); @PWD_PROG@`         \
+           top_builddir=`cd $(top_builddir); @PWD_PROG@`     \
+           srcdir=`cd $(srcdir); @PWD_PROG@`                 \
+           builddir=`@PWD_PROG@`                             
+
+do-libgasnet-seq: $(libgasnet_dependencies) $(CONDUIT_SEQ_HOOK)
+	@$(MAKE) THREAD_MODEL=SEQ                            \
+	  LIBGASNET_THREAD_DEFINES=                          \
+          $(set_dirs) do-libgasnet
+
+do-libgasnet-par: $(libgasnet_dependencies) $(CONDUIT_PAR_HOOK)
+	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(MAKE) THREAD_MODEL=PAR                            \
+          LIBGASNET_THREAD_DEFINES="$(thread_defines)"       \
+          $(set_dirs) do-libgasnet
+
+do-libgasnet-parsync: $(libgasnet_dependencies) $(CONDUIT_PARSYNC_HOOK)
+	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(MAKE) THREAD_MODEL=PARSYNC                        \
+          LIBGASNET_THREAD_DEFINES="$(thread_defines)"       \
+          $(set_dirs) do-libgasnet
+
+do-libgasnet_tools:
+	@keeptmps="$(KEEPTMPS)" ;                            \
+	 $(MAKE)                                             \
+	  LIBCFLAGS="$(TOOLLIBCFLAGS)"                       \
+          LIBGASNET_NAME=libgasnet_tools		     \
+	  libgasnet_sources="$(libgasnet_tools_sources)"     \
+          do-libgasnet
+
+do-libgasnet_tools-seq: $(libgasnet_tools_dependencies)
+	@$(MAKE) THREAD_MODEL=SEQ                            \
+	  LIBGASNET_THREAD_DEFINES=                          \
+          $(set_dirs) do-libgasnet_tools
+
+do-libgasnet_tools-par: $(libgasnet_tools_dependencies)
+	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(MAKE) THREAD_MODEL=PAR                            \
+          LIBGASNET_THREAD_DEFINES="$(thread_defines) -DGASNETT_THREAD_SAFE" \
+          $(set_dirs) do-libgasnet_tools
+
+
+do-pthreads-error: 
+	@echo "ERROR: pthreads support was not detected at configure time"
+	@echo "       try re-running configure with --enable-pthreads"
+	@exit 1
+
+# bug1613: avoid automake infinite recursion here, because top-level Makefile includes this
+# fragment and also provides the rules for rebuilding config.status
+#cd $(top_builddir)/other && $(MAKE) Makefile-libgasnet.mak
+$(top_builddir)/other/Makefile-libgasnet.mak: $(top_srcdir)/other/Makefile-libgasnet.mak.in
+	cd $(top_builddir) && CONFIG_FILES=other/Makefile-libgasnet.mak CONFIG_HEADERS= ./config.status
+
+@GNU_NM_TRUE@check-exports: $(libraries)
+@GNU_NM_TRUE@	@echo Checking libgasnet exports...
+@GNU_NM_TRUE@	@if test x$(CHECK_EXPORTS) = x0; then                                       \
+@GNU_NM_TRUE@	  echo Skipped by user request ;                                            \
+@GNU_NM_TRUE@	  exit 0 ;                                                                  \
+@GNU_NM_TRUE@	 fi ;                                                                       \
+@GNU_NM_TRUE@	 failed=0 ;                                                                 \
+@GNU_NM_TRUE@	 for lib in $(libraries) ; do                                               \
+@GNU_NM_TRUE@	  echo ;                                                                    \
+@GNU_NM_TRUE@	  echo $$lib: ;                                                             \
+@GNU_NM_TRUE@	  @NM@ --defined-only $$lib |                                               \
+@GNU_NM_TRUE@	    grep -v -e ' [\._]*gasnetc_' -e ' [\._]*gasneti_' -e ' [\._]*gasnete_'  \
+@GNU_NM_TRUE@		    -e ' [\._]*gasnet_' -e ' [\._]*gasnett_'                        \
+@GNU_NM_TRUE@		    -e ' [\._]*fh_' -e ' [\._]*firehose_'                           \
+@GNU_NM_TRUE@		    -e ' [\._]*fhi_' -e ' [\._]*fhc_' -e ' [\._]*fhsmp_' -e ' [\._]*fhuni_' \
+@GNU_NM_TRUE@		    -e ' [\._]*myxml_' -e ' [\._]*smp_coll_'                        \
+@GNU_NM_TRUE@		    -e ' W _bgp_Make_[a-zA-Z]*_UCI' -e ' [\._]*emutls_'             \
+@GNU_NM_TRUE@		    -e __FUNCTION__ -e __PRETTY_FUNCTION__ -e ' [\._]*DWinfo'       \
+@GNU_NM_TRUE@               -e ' [\._]*debug_info_seg' -e ' [\._]*debug_abbrev_seg'         \
+@GNU_NM_TRUE@               -e ' [\._]*debug_frame_seg' -e ' [\._]*debug_line_seg'          \
+@GNU_NM_TRUE@               -e ' [\._]*stab' -e ' [\._]*gnu_dev_' -e '^00* W '  |           \
+@GNU_NM_TRUE@	    @PERL@ -n -e 'print if /^[0-9a-fA-F]+\s+[A-Z]\s+/' > .$$lib.exp;        \
+@GNU_NM_TRUE@	  if test -s .$$lib.exp ; then                                              \
+@GNU_NM_TRUE@	    cat .$$lib.exp ;                                                        \
+@GNU_NM_TRUE@	    echo FAILED ;                                                           \
+@GNU_NM_TRUE@	    failed=1 ;                                                              \
+@GNU_NM_TRUE@	  else                                                                      \
+@GNU_NM_TRUE@	    echo PASSED ;                                                           \
+@GNU_NM_TRUE@	  fi ;                                                                      \
+@GNU_NM_TRUE@	  rm -f .$$lib.exp ;                                                        \
+@GNU_NM_TRUE@	done ; exit $$failed
+
+@GNU_NM_FALSE@check-exports: $(libraries)
+@GNU_NM_FALSE@	@echo check-exports test SKIPPED
+
