@@ -189,6 +189,7 @@ class BaseArr {
   proc canCopyFromHost param return false;
 
   proc dsiGetBaseDom(): BaseDom {
+    halt("internal error: dsiGetBaseDom is not implemented");
     return nil;
   }
 

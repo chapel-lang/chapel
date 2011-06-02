@@ -141,6 +141,17 @@ proc _build_range(param bt: BoundedRangeType)
 //# Predicates
 //#
 
+// isBoundedRange(r) = true if 'r' is a (fully) bounded range
+
+proc isBoundedRange(r)           param
+  return false;
+
+proc isBoundedRange(r: range(?)) param
+  return r.hasLowBound() && r.hasHighBound();
+
+proc isBoundedRange(param B: BoundedRangeType) param
+  return B == BoundedRangeType.bounded;
+
 // Returns true if this range has a low bound.
 proc range.hasLowBound() param
   return boundedType == BoundedRangeType.bounded ||
@@ -284,13 +295,23 @@ proc range.alignHigh()
   return this;
 }
 
-// Returns the ordinal of this index within the sequence described by this range.
+// Returns the ordinal of 'i' within this range's represented sequence.
 proc range.indexOrder(i: idxType)
 {
   if this.isAmbiguous() then
     __primitive("chpl_error", "indexOrder -- Undefined on a range with ambiguous alignment.");
 
   return _base.indexOrder(i);
+}
+
+// Opposite of indexOrder: returns the ord-th element of this range's
+// represented sequence.
+proc range.orderToIndex(ord: integral): idxType
+{
+  if isAmbiguous() then
+    halt("invoking orderToIndex on a range that is ambigously aligned");
+
+  return _base.orderToIndex(ord);
 }
 
 //////////////////////////////////////////////////////////////////////////////////

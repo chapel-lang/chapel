@@ -1,4 +1,4 @@
-bug: alignment is not printed for certain ambiguously-aligned ranges
+bug: alignment is not printed for certain unambiguously-aligned ranges
 
 Right now, the expression:  .. by 3 align 0  is printed out as:  .. by 3
                            ..7 by 3 align 1                     ..7 by 3
