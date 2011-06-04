@@ -431,14 +431,17 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
     // Use the internal function for untranslate to avoid having to do
     // extra work to negate the offset
     var zeroedLocalPart = whole((...locDom.myBlock.getIndices())).chpl__unTranslate(wholeLow);
+    var gotEmptyDim = false;
     for param i in 1..rank {
       var dim = zeroedLocalPart.dim(i);
       var wholestride = whole.dim(i).stride;
       if dim.last >= dim.first then
         result(i) = (dim.first / wholestride)..(dim.last / wholestride) by (dim.stride / wholestride);
       else
-        result(i) = 1..0 by 1;
+        gotEmptyDim = true;
     }
+    if gotEmptyDim then
+      ; // nothing to do
     if numTasks == 1 {
       if debugCyclicDist then
         writeln(here.id, ": leader whole: ", whole,
@@ -447,11 +450,13 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
       yield result;
     } else {
 
-      coforall taskid in 0:uint(64)..#numTasks {
+      coforall taskid in 0..#numTasks {
         var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
         const low = result(parDim).first, high = result(parDim).high;
         const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
                                       high, low, low);
+        // similar to BlockDist
+        assert(lo <= hi);
         splitRanges(parDim) = result(parDim)(lo..hi);
         if debugCyclicDist then
           writeln(here.id, ": leader whole: ", whole,

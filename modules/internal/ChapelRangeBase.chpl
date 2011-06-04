@@ -823,7 +823,7 @@ iter rangeBase.these(param tag: iterator) where tag == iterator.leader
       yield tuple(0..v-1);
     else
     {
-      coforall chunk in 0..numChunks-1
+      coforall chunk in 0..#numChunks
       {
         const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
         if debugChapelRange then

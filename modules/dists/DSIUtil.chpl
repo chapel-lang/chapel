@@ -19,59 +19,79 @@ proc getDataParMinGranularity() {
 // helper functions for determining the number of chunks and the
 //   dimension to chunk over
 //
-proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges) {
+proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
+                        param adjustToOneDim = true): (int,int)
+{
   param rank=ranges.size;
-  var numElems: uint(64) = 1;
+  type EC = uint(64); // type for element counts
+  var numElems = 1:EC;
   for param i in 1..rank do {
-    numElems *= ranges(i).length:uint(64);
+    numElems *= ranges(i).length:EC;
   }
 
   var numChunks = _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems);
+  if numChunks == 0 then
+    return (0,-1);
+  assert(numChunks > 0);
 
   // Dimension to parallelize (eventually should "block" thespace)
   var parDim = -1;
   var maxDim = -1;
-  var maxElems = min(uint(64));
+  var maxElems = min(EC);
   // break/continue don't work with param loops (known future)
   for /* param */ i in 1..rank do {
-    if ranges(i).length:uint(64) >= numChunks {
+    const curElems = ranges(i).length:EC;
+    if curElems >= numChunks:EC {
       parDim = i;
       break;
     }
-    if ranges(i).length:uint(64) > maxElems {
-      maxElems = ranges(i).length:uint(64);
+    if curElems > maxElems {
+      maxElems = curElems;
       maxDim = i;
     }
   }
-  if parDim == -1 then
+
+  if parDim == -1 {
     parDim = maxDim;
+
+    // In those cases where parallelization is done over a single dimension
+    // (which will be parDim), ensure these are no extraneous chunks.
+    if adjustToOneDim && maxElems < numChunks:EC then
+      numChunks = maxElems:int;
+  }
 
   return (numChunks, parDim);
 }
 
-proc _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems) {
+// returns 0 if no numElems <= 0
+proc _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems): int {
   assert(numElems >= 0);
-  const unumElems = numElems:uint(64);
-  const runningTasks = here.runningTasks();
-  var numChunks: uint(64) =
-    if ignoreRunning then maxTasks:uint(64)
-    else if runningTasks-1 < maxTasks // don't include self
-      then (maxTasks-runningTasks+1):uint(64)
-      else 1:uint(64);
+  if numElems == 0 then
+    return 0;
+
+  type EC = uint(64); // type for element counts
+  const unumElems = numElems:EC;
+  var numChunks = maxTasks:int;
+  if !ignoreRunning {
+    const otherTasks = here.runningTasks() - 1; // don't include self
+    numChunks = if otherTasks < maxTasks
+      then (maxTasks-otherTasks):int
+      else 1;
+  }
 
   if minSize > 0 then
     // This is approximate
-    while (unumElems < minSize:uint(64)*numChunks) && (numChunks > 1) {
+    while (unumElems < (minSize*numChunks):EC) && (numChunks > 1) {
         numChunks -= 1;
     }
 
-  if numChunks > unumElems then numChunks = unumElems;
+  if numChunks:EC > unumElems then numChunks = unumElems:int;
 
   return numChunks;
 }
 
 // How many tasks should be spawned to service numElems elements.
-proc _computeNumChunks(numElems) {
+proc _computeNumChunks(numElems): int {
   // copy some machinery from DefaultRectangularDom
   var numTasks = if dataParTasksPerLocale==0
                  then here.numCores
@@ -79,8 +99,7 @@ proc _computeNumChunks(numElems) {
   var ignoreRunning = dataParIgnoreRunningTasks;
   var minIndicesPerTask = dataParMinGranularity;
   var numChunks = _computeNumChunks(numTasks, ignoreRunning,
-                                    minIndicesPerTask, numElems)
-                  :numElems.type;
+                                    minIndicesPerTask, numElems);
   return numChunks;
 }
 

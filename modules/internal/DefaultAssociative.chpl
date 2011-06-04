@@ -147,7 +147,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     if numChunks == 1 {
       yield (0..numIndices-1, this);
     } else {
-      coforall chunk in 0..numChunks-1 {
+      coforall chunk in 0..#numChunks {
         const (lo, hi) = _computeBlock(numIndices, numChunks,
                                        chunk, numIndices-1);
         if debugDefaultAssoc then
@@ -368,47 +368,8 @@ class DefaultAssociativeArr: BaseArr {
   }
 
   iter these(param tag: iterator) where tag == iterator.leader {
-    if debugDefaultAssoc then
-      writeln("*** In array leader code:");
-    const numTasks = if dataParTasksPerLocale==0 then here.numCores
-                     else dataParTasksPerLocale;
-    const ignoreRunning = dataParIgnoreRunningTasks;
-    const minIndicesPerTask = dataParMinGranularity;
-    // We are simply slicing up the table here.  Trying to do something
-    //  more intelligent (like evenly dividing up the full slots, led
-    //  to poor speed ups.
-    // This requires that leader's domain matches that of the array.
-    const numIndices = dom.tableSize;
-
-    if debugAssocDataPar {
-      writeln("### numTasks = ", numTasks);
-      writeln("### ignoreRunning = ", ignoreRunning);
-      writeln("### minIndicesPerTask = ", minIndicesPerTask);
-    }
-
-    if debugDefaultAssoc then
-      writeln("    numTasks=", numTasks, " (", ignoreRunning,
-              "), minIndicesPerTask=", minIndicesPerTask);
-
-    var numChunks = _computeNumChunks(numTasks, ignoreRunning,
-                                      minIndicesPerTask,
-                                      numIndices);
-    if debugDefaultAssoc then
-      writeln("    numChunks=", numChunks, "length=", numIndices);
-
-    if debugAssocDataPar then writeln("### numChunks=", numChunks);
-
-    if numChunks == 1 {
-      yield (0..numIndices-1, dom);
-    } else {
-      coforall chunk in 0..numChunks-1 {
-        const (lo, hi) = _computeBlock(numIndices, numChunks,
-                                       chunk, numIndices-1);
-        if debugDefaultAssoc then
-          writeln("*** AI[", chunk, "]: tuple = ", tuple(lo..hi));
-        yield (lo..hi, dom);
-      }
-    }
+    for follower in dom.these(tag) do
+      yield follower;
   }
 
   iter these(param tag: iterator, follower) var where tag == iterator.follower {
