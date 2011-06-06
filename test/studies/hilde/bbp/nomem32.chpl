@@ -10,6 +10,10 @@
 //
 _extern proc printf(s...);
 
+use Time;
+
+config param perfTest = false;
+
 type I1 = int; // Handy typedef so we can substitute int(64) later.
 type I2 = int(64); // A double-length integer
 
@@ -36,12 +40,22 @@ var digits: [digitDom] int(8);
 
 proc main
 {
+  var t: Timer;
+  if perfTest then t.start();
+
   for n in digitDom.dim(1) by blkSz align 0 do
   {
     var nd = next_block(n);
     if debug > 0 then {write("= ");print_digits(n, nd);writeln();}
     update_digits(n, nd);
   }
+
+  if perfTest then
+  {
+    t.stop();
+    writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));
+  }
+
   write_out();
 }
 

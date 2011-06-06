@@ -6,6 +6,9 @@
 // the next digit is proportional to the index of the digit itself.
 //
 
+use Time;
+
+config param perfTest = false;
 
 type I1 = int; // Handy typedef so we can substitute int(64) later.
 type I2 = int(64);  // A double-length integer
@@ -37,12 +40,22 @@ var remainders: [0..extend, 1..4] I1;
 
 proc main
 {
+  var t: Timer;
+  if perfTest then t.start();
+
   start_digit(start);
   for d in start .. extend do
   {
     var nd = next_digit(d);
     update_digits(d, nd);
   }
+
+  if perfTest then
+  {
+    t.stop();
+    writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));
+  }
+
   write_out();
 }
 
