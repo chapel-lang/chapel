@@ -1404,14 +1404,16 @@ pragma "inline" proc =(a: [], b) {
   return a;
 }
 
-proc =(a: [], b: _tuple) where isEnumArr(a) || isRectangularArr(a) {
-  if isEnumArr(a) {
+proc =(a: [], b: _tuple) where isEnumArr(a) {
     if b.size != a.numElements then
       halt("tuple array initializer size mismatch");
     for (i,j) in (chpl_enumerate(index(a.domain)), 1..) {
       a(i) = b(j);
     }
-  } else {
+    return a;
+}
+
+proc =(a: [], b: _tuple) where isRectangularArr(a) {
     proc chpl__tupleInit(j, param rank: int, b: _tuple) {
       const stride = a.domain.dim(a.rank-rank+1).stride,
             start = a.domain.dim(a.rank-rank+1).first;
@@ -1430,8 +1432,7 @@ proc =(a: [], b: _tuple) where isEnumArr(a) || isRectangularArr(a) {
     }
     var j: a.rank*int;
     chpl__tupleInit(j, a.rank, b);
-  }
-  return a;
+    return a;
 }
 
 proc _desync(type t) where t: _syncvar || t: _singlevar {
