@@ -1,5 +1,4 @@
-This test hangs (with high CPU utilization) some of the time
-with the qthreads tasking layer.
+bug: (intermittent) This test hangs (with high CPU utilization) with the qthreads tasking layer.
 
 It does not happen all the time.
 The FIFO works as expected.
