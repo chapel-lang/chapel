@@ -340,7 +340,7 @@ void chpl_stm_tx_store(chpl_stm_tx_p tx, void* srcaddr, void* dstaddr, size_t si
 
 void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* srcaddr, size_t size, int ln, chpl_string fn) {
   assert(tx != NULL);
-  assert(tx->status == TX_ACTIVE);
+  assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   assert(srclocale != MYLOCALE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0);
   CHPL_STM_STATS_START(tx->counters, STATS_TX_GET);
@@ -350,7 +350,7 @@ void chpl_stm_tx_get(chpl_stm_tx_p tx, void* dstaddr, int32_t srclocale, void* s
 
 void chpl_stm_tx_put(chpl_stm_tx_p tx, void* srcaddr, int32_t dstlocale, void* dstaddr, size_t size, int ln, chpl_string fn) {
   assert(tx != NULL);
-  assert(tx->status == TX_ACTIVE);
+  assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   assert(dstlocale != MYLOCALE);
   assert(dstaddr != NULL && srcaddr != NULL && size > 0); 
   CHPL_STM_STATS_START(tx->counters, STATS_TX_PUT);
@@ -372,6 +372,7 @@ void chpl_stm_tx_fork(chpl_stm_tx_p tx, int dstlocale, chpl_fn_int_t fid, void *
 
 void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memDescInt_t description, int32_t ln, chpl_string fn) { 
   void *tmp;
+  assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   CHPL_STM_STATS_START(tx->counters, STATS_TX_MALLOC);
   tmp = gtm_tx_malloc_memset(tx, number, size, description, ln, fn);
   CHPL_STM_STATS_STOP(tx->counters, STATS_TX_MALLOC, size);
@@ -379,6 +380,7 @@ void* chpl_stm_tx_malloc(chpl_stm_tx_p tx, size_t number, size_t size, chpl_memD
 }
 
 void chpl_stm_tx_free(chpl_stm_tx_p tx, void* ptr, int32_t ln, chpl_string fn) { 
+  assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   CHPL_STM_STATS_START(tx->counters, STATS_TX_FREE);
   gtm_tx_free_memset(tx, ptr, ln, fn);
   CHPL_STM_STATS_STOP(tx->counters, STATS_TX_FREE, 0);

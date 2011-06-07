@@ -39,6 +39,7 @@ typedef struct {
 } tx_put_t;
 
 typedef struct {
+  void* txdesc;
   int32_t txid;
   int32_t txlocale;
   int32_t caller;
@@ -48,5 +49,13 @@ typedef struct {
   size_t argsize;        
   char arg[0];         // list of arguments to fork function
 } tx_fork_t;
+
+typedef struct {
+  void* txdesc;
+  int* commstatus;
+  int status;
+  int32_t numremlocales;
+  int32_t* remlocales;
+} tx_forksignal_t;
 
 #endif

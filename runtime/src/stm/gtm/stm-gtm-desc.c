@@ -94,20 +94,21 @@ void gtm_tx_cleanup(chpl_stm_tx_p tx) {
 void gtm_tx_comm_register(chpl_stm_tx_p tx, int32_t dstlocale) {
   int i;
 
-  assert(tx->status == TX_ACTIVE);
+  assert(tx->status == TX_ACTIVE || tx->status == TX_AMACTIVE);
   assert(dstlocale != MYLOCALE);
 
-  if (tx->id == -1) {
+  if (tx->remlocales == NULL) {
     // First time we are doing a remote operation
     // Allocate and initialize remote locales array
-    assert(tx->numremlocales == -1 && tx->remlocales == NULL);
     tx->remlocales = (int32_t*) chpl_malloc(NLOCALES, 
 					    sizeof(int32_t), 
 					    CHPL_RT_MD_STM_TX_REMLOCALES, 
 					    0, 0);
     for (i = 0; i < NLOCALES; i++) 
       tx->remlocales[i] = -1;
-    
+  }
+
+  if (tx->id == -1) {
     // Get a global id for this transaction
     for (i = 0; i < MAXTDS; i++) {
       chpl_thread_mutexLock(&gtmTxArrayLock[i]);
@@ -123,22 +124,23 @@ void gtm_tx_comm_register(chpl_stm_tx_p tx, int32_t dstlocale) {
       chpl_error("Run out of tx descriptors", 0, 0);
   }
  
-  assert(tx->remlocales != NULL);
-
-  // Register the remote operation
-  for (i = 0; i <= tx->numremlocales; i++) {
-    if (tx->remlocales[i] == dstlocale) return;
+  // Register the remote operation is targeted at any
+  // remote locale other than the originating locale itself
+  if (dstlocale != tx->locale) {
+    for (i = 0; i <= tx->numremlocales; i++) {
+      if (tx->remlocales[i] == dstlocale) return;
+    }
+    tx->numremlocales++;
+    tx->remlocales[tx->numremlocales] = dstlocale; 
   }
-  tx->numremlocales++;
-  tx->remlocales[tx->numremlocales] = dstlocale; 
 }
 
 chpl_stm_tx_p gtm_tx_comm_create(int32_t txid, int32_t txlocale, int32_t txstatus) {
   chpl_stm_tx_p tx = NULL;
 
   assert(txid >= 0 && txid < MAXTDS);
-  assert(txlocale != MYLOCALE);
   assert(txstatus != TX_IDLE);
+
   if (txstatus == TX_ACTIVE) { 
     if ((tx = gtmTxArray[txlocale][txid]) == NULL) {
       tx = gtm_tx_create(txid, txlocale);
@@ -155,6 +157,12 @@ chpl_stm_tx_p gtm_tx_comm_create(int32_t txid, int32_t txlocale, int32_t txstatu
       chpl_error("Descriptor not found for abort.", 0, 0);
     }
     tx->status = TX_AMABORT;
+  } else if (txstatus == TX_AMACTIVE) {
+    if ((tx = gtmTxArray[txlocale][txid]) == NULL) {
+      chpl_error("Descriptor not found", 0, 0);
+    }
+    if (tx->status == TX_IDLE)
+      tx->status = txstatus;
   } else {
     chpl_error("Descriptor setup for comm operation failed.", 0, 0);
   }
