@@ -16,7 +16,8 @@ type I2 = int(64);  // A double-length integer
 config const start : I1 = 1;	// The starting (fractional) digit.
 	// Digits are number 0, 1, 2, where 0 is the units position
 	// Digit 1 is the hex digit in just to the right of the hexadecimal point, etc.
-config const count : I1 = 10000;	// How many digits to compute and print.
+config const count : I1 = 	// How many digits to compute and print.
+  if perfTest then 10000 else 1000;
 
 const end = start + count - 1;
 
