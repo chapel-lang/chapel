@@ -373,6 +373,11 @@ for infile in args:
             sys.stdout.write('*** Removing empty directory %s/%s\n'%
                              (options.outdir,curdir))
 
-sys.stdout.write('\n%d total Chapel code environments\n'%(TotalTests+TotalIgnored))
-sys.stdout.write('\t%d tests generated (%d futures)\n'%(TotalTests, TotalFutures))
-sys.stdout.write('\t%d examples ignored (%d in examples)\n'%(TotalIgnored, TotalExamples))
+
+if options.verbose:
+    sys.stdout.write("DONE\n\n");
+
+sys.stdout.write('Total tests generated: %d\n'%(TotalTests))
+sys.stdout.write('\tFutures: %d\n'%(TotalFutures))
+sys.stdout.write('Ignored examples: %d\n'%(TotalExamples))
+sys.stdout.write('Ignored code segments: %d\n'%(TotalIgnored-TotalExamples))
