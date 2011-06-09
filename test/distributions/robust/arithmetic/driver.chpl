@@ -1,6 +1,6 @@
-use BlockDist, CyclicDist, BlockCycDist;
+use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist;
 
-enum DistType { default, block, cyclic, blockcyclic };
+enum DistType { default, block, cyclic, blockcyclic, replicated };
 
 config param distType: DistType = DistType.default;
 
@@ -54,6 +54,16 @@ proc setupDistributions() {
             new dmap(new BlockCyclic(startIdx=(0:int(64),0:int(64)), blocksize=(2,3)))
            );
   }
+  if distType == DistType.replicated {
+    return (
+            new dmap(new ReplicatedDist()),
+            new dmap(new ReplicatedDist()),
+            new dmap(new ReplicatedDist()),
+            new dmap(new ReplicatedDist()),
+            new dmap(new ReplicatedDist())
+           );
+  }
+  halt("unexpected 'distType': ", distType);
 }
 
 const (Dist1D, Dist2D, Dist3D, Dist4D, Dist2D64) = setupDistributions();
