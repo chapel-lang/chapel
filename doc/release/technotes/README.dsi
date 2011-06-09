@@ -234,25 +234,32 @@ iter GlobalDomain.these(param tag: iterator, follower) where tag == iterator.fol
 
     // densification of a domain is a tuple of densifications
     // of ranges for each dimension
-    densify(Dwhole, Dsub) =
-      ( densify(Dwhole.dim(1), Dsub.dim(1)),
+    densify(Dsub, Dwhole) =
+      ( densify(Dsub.dim(1), Dwhole.dim(1)),
         ...,
-        densify(Dwhole.dim(DD), Dsub.dim(DD)) )
+        densify(Dsub.dim(DD), Dwhole.dim(DD)) )
 
     // densification of a range is the sequence of densifications
     // of its elements, preserving their order
     if Rsub describes the sequence
       i_1, ..., i_N
-    densify(Rwhole, Rsub) describes the sequence
-      densify(Rwhole, i_1), ..., densify(Rwhole, i_N)
+    then densify(Rsub, Rwhole) describes the sequence
+      densify(i_1, Rwhole), ..., densify(i_N, Rwhole)
 
     For example, densify(Rwhole, Rwhole) == 0.. #(Rwhole.length)
 
-    [TODO: define densification of a range via its low, high, stride
-     and put the corresponding procedure (and its reversal) in DSIUtil.chpl.]
-
     // densification of an index is its indexOrder
-    densify(Rwhole, i) = Rwhole.indexOrder(i)
+    densify(i, Rwhole) = Rwhole.indexOrder(i)
+
+  The optional module DSIUtil provides the following implementations
+  of densifications and the reverse transformation:
+
+    densify(Dsub, Dwhole)
+    densify(RSsub, RSwhole)  // on tuples of ranges
+    densify(Rsub, Rwhole)
+    unDensify(Dsub, Dwhole)
+    unDensify(RSsub, RSwhole)  // on tuples of ranges
+    unDensify(Rsub, Rwhole)
 
   Hint: when developing a new domain map, skip densification and
   de-densification, but ensure it is used in zippering only

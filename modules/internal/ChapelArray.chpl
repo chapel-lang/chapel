@@ -514,6 +514,12 @@ record _domain {
       return 1;
   }
 
+  proc idxType type {
+    if isOpaqueDom(this) then
+      compilerError("opaque domains do not currently support .idxType");
+    return _value.idxType;
+  }
+
   proc stridable param where isRectangularDom(this) {
     return _value.stridable;
   }

@@ -379,7 +379,7 @@ proc rangeBase.orderToIndex(i: integral): idxType
            " that is larger than the range's number of indices ", this.length);
   }
 
-  return this.first + (i * this.stride):idxType;
+  return chpl__addRangeStrides(this.first, this.stride, i);
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -1060,6 +1060,19 @@ proc chpl__add(a: ?t, b: t)
   return a + b;
 }
 
+// Get the simple expression 'start + stride*count' to typecheck.
+// Use example: low + i:idxType * stride.
+// Use explicit conversions, no other additional runtime work.
+proc chpl__addRangeStrides(start, stride, count): start.type {
+  proc convert(a,b) param
+    return ( a.type == int(64) && b.type == uint(64) ) ||
+           ( a.type == uint(64) && b.type == int(64) );
+
+  proc mul(a,b) return if convert(a,b) then a:int(64) * b:int(64) else a * b;
+  proc add(a,b) return if convert(a,b) then a:int(64) + b:int(64) else a + b;
+
+  return add(start, mul(stride, count)) :start.type;
+}
 
 // Returns (gcd(u, v), x) where x is set such that
 // u*x + v*y = gcd(u, v) assuming u and v are non-negative.

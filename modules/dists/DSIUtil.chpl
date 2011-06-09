@@ -179,18 +179,205 @@ proc _factor(param rank: int, value) {
 // type, and shape of 'dom' but for which the indices in each
 // dimension start at zero and have unit stride.
 //
-proc computeZeroBasedDomain(dom: domain) {
+proc computeZeroBasedDomain(dom: domain)
+  return [(...computeZeroBasedRanges(dom.dims()))];
+
+proc computeZeroBasedRanges(ranges: _tuple) {
   proc helper(first, rest...) {
     if rest.size > 1 then
       return (0..#first.length, (...helper((...rest))));
     else
       return (0..#first.length, 0..#rest(1).length);
   }
-  if dom.rank > 1 then
-    return [(...helper((...dom.dims())))];
+  if ranges.size > 1 then
+    return helper((...ranges));
   else
-    return [0..#dom.dim(1).length];
+    return tuple(0..#ranges(1).length);
 }
+
+//
+// densify(): returns a DSI densification of a
+// sub-domain / tuple of ranges / a single range w.r.t.
+// the "whole" (of same kind).
+//
+// The caller must ensure the sub's indices are a subset
+// of the whole's. The sub ranges presently must be bounded.
+//
+// The returned domains/ranges are always stridable
+// (because we cannot discern non-stridability at compile time).
+//
+// densify(dom,dom) should return the same result as
+// computeZeroBasedDomain(dom).
+//
+// userErrors indicates whether errors (such as 'sub' is not a
+// subset of 'whole') should be reported with halt() (if true)
+// or with assert() (if false).
+//
+
+// would like 'whole: domain(?IT,?r,?)'
+proc densify(sub: domain, whole: domain, userErrors = true) : domain(whole.rank, whole.idxType, true)
+{
+
+  type argtypes = (sub, whole).type;
+  _densiCheck(sub.rank == whole.rank, argtypes);
+  _densiIdxCheck(sub.idxType, whole.idxType,  argtypes);
+  return [(...densify(sub.dims(), whole.dims(), userErrors))];
+}
+
+// the desired type of 'wholes': ?rank * range(?IT,?,?)
+proc densify(subs, wholes, userErrors = true)
+  where isTuple(subs) && isTuple(wholes)
+{
+  type argtypes = (subs, wholes).type;
+  _densiCheck(wholes.size == subs.size, argtypes);
+  _densiCheck(chpl__isRange(subs(1)), argtypes);
+  _densiCheck(chpl__isRange(wholes(1)), argtypes);
+  _densiEnsureBounded(subs(1));
+  _densiIdxCheck(subs(1).idxType, wholes(1).idxType, argtypes);
+
+  param rank = wholes.size;
+  type IT = wholes(1).idxType;
+  var result: rank * range(IT, BoundedRangeType.bounded, true);
+
+  for param d in 1..rank {
+    _densiCheck(chpl__isRange(subs(d)), argtypes);
+    _densiCheck(chpl__isRange(wholes(d)), argtypes);
+    _densiIdxCheck(wholes(d).idxType, IT, argtypes);
+    _densiEnsureBounded(subs(d));
+    _densiIdxCheck(subs(d).idxType, wholes(d).idxType, argtypes);
+
+    result(d) = densify(subs(d), wholes(d), userErrors);
+  }
+  return result;
+}
+
+proc densify(s: range(?,?B,?), w: range(?IT,?,?), userErrors=true) : range(IT,B,true)
+{
+  _densiEnsureBounded(s);
+  _densiIdxCheck(s.idxType, IT, (s,w).type);
+
+  proc ensure(cond, args...) {
+    if userErrors then { if !cond then halt((...args)); }
+    else                               assert(cond, (...args));
+  }
+
+  if s.length == 0 {
+    return 1:IT .. 0:IT;
+
+  } else {
+    ensure(w.length > 0, "densify(s=", s, ", w=", w, "): w is empty while s is not");
+
+    var low: IT = w.indexOrder(s.first);
+    ensure(low >= 0, "densify(s=", s, ", w=", w, "): s.first is not in w");
+
+    if s.length == 1 {
+      // The "several indices" case should produce the same answer. We still
+      // include this special (albeit infrequent) case because it's so short.
+      return low .. low;
+
+    } else {
+      // several indices
+      var high: IT = w.indexOrder(s.last);
+      ensure(high >= 0, "densify(s=", s, ", w=", w, "): s.last is not in w");
+
+      // ensure s is a subsequence of w
+      ensure(s.stride % w.stride == 0, "densify(s=", s, ", w=", w, "): s.stride is not a multiple of w.stride");
+      const stride = s.stride / w.stride;
+
+      if stride < 0 then low <=> high;
+
+      assert(low <= high, "densify(s=", s, ", w=", w, "): got low (", low, ") larger than high (", high, ")");
+      return low .. high by stride;
+    }
+  }
+}
+
+proc _densiEnsureBounded(arg) {
+  if !isBoundedRange(arg) then compilerError("densify() currently requires that sub-ranges be bounded", 2);
+}
+
+// not sure what kind of relationship we want to enforce
+proc _densiIdxCheck(type subIdxType, type wholeIdxType, type argtypes) {
+  _densiCheck(chpl__legalIntCoerce(subIdxType, wholeIdxType), argtypes, errlevel=3);
+}
+
+proc _densiCheck(param cond, type argtypes, param errlevel = 2) {
+  if !cond then compilerError("densify() is defined only on matching domains, ranges, and quasi-homogenous tuples of ranges (except stridability and range boundedness do not need to match), but is invoked on ", typeToString(argtypes), errlevel);
+}
+
+//
+// unDensify: reverse the densification of a range:
+//   unDensify( densify(sub,whole), whole) == sub
+//
+// We have to declare the results stridable because we cannot assure
+// at compile time that they won't be.
+//
+
+proc unDensify(dense: domain, whole: domain, userErrors = true) : domain(whole.rank, whole.idxType, true)
+{
+  type argtypes = (dense, whole).type;
+  _undensCheck(dense.rank == whole.rank, argtypes);
+  return [(...unDensify(dense.dims(), whole.dims(), userErrors))];
+}
+
+// the desired type of 'wholes': ?rank * range(?IT,?,?)
+proc unDensify(denses, wholes, userErrors = true)
+  where isTuple(denses) && isTuple(wholes)
+{
+  type argtypes = (denses, wholes).type;
+  _undensCheck(wholes.size == denses.size, argtypes);
+  _undensCheck(chpl__isRange(denses(1)), argtypes);
+  _undensCheck(chpl__isRange(wholes(1)), argtypes);
+  _undensEnsureBounded(denses(1));
+
+  param rank = wholes.size;
+  type IT = wholes(1).idxType;
+  var result: rank * range(IT, BoundedRangeType.bounded, true);
+
+  for param d in 1..rank {
+    _undensCheck(chpl__isRange(denses(d)), argtypes);
+    _undensCheck(chpl__isRange(wholes(d)), argtypes);
+    _undensCheck(chpl__legalIntCoerce(wholes(d).idxType, IT), argtypes);
+    _undensEnsureBounded(denses(d));
+
+    result(d) = unDensify(denses(d), wholes(d));
+  }
+  return result;
+}
+
+proc unDensify(dense: range(?,?B,?), whole: range(?IT,?,?)) : range(IT,B,true)
+{
+  _undensEnsureBounded(dense);
+  if whole.boundedType == BoundedRangeType.boundedNone then
+    compilerError("unDensify(): the 'whole' argument must have at least one bound");
+
+  // ensure we can call dense.first below
+  if dense.length == 0 then
+    return 1:IT .. 0:IT;
+
+  if ! whole.hasFirst() then
+    halt("unDensify() is invoked with the 'whole' range that has no first index");
+
+  var low :IT = whole.orderToIndex(dense.first);
+  // should we special-case dense.length==1?
+  // if dense.length == 1 then return low .. low;
+  const stride = whole.stride * dense.stride;
+  var high :IT = chpl__addRangeStrides(low, stride, dense.length - 1);
+  assert(high == whole.orderToIndex(dense.last));
+  if stride < 0 then low <=> high;
+
+  assert(low <= high, "unDensify(dense=", dense, ", whole=", whole, "): got low (", low, ") larger than high (", high, ")");
+  return low .. high by stride;
+}
+
+proc _undensEnsureBounded(arg) {
+  if !isBoundedRange(arg) then compilerError("unDensify() currently requires that the densified ranges be bounded", 2);
+}
+
+proc _undensCheck(param cond, type argtypes, param errlevel = 2) {
+  if !cond then compilerError("unDensify() is defined only on matching domains, ranges, and quasi-homogenous tuples of ranges, but is invoked on ", typeToString(argtypes), errlevel);
+}
+
 
 //
 // setupTargetLocalesArray

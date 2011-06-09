@@ -841,6 +841,14 @@ D has 0 indices.
 \end{chapelexample}
 
 \begin{protohead}
+proc $Domain$.idxType type
+\end{protohead}
+\begin{protobody}
+Returns the domain type's \chpl{idxType}.
+This function is not available on opaque domains.
+\end{protobody}
+
+\begin{protohead}
 proc $Domain$.indexOrder(i: index($Domain$)): dim_type
 \end{protohead}
 \begin{protobody}
@@ -1001,14 +1009,14 @@ type.
 proc $Domain$.rank param : int
 \end{protohead}
 \begin{protobody}
-Returns the rank of the domain as a parameter int.
+Returns the rank of the domain.
 \end{protobody}
 
 \begin{protohead}
 proc $Domain$.stridable param : bool
 \end{protohead}
 \begin{protobody}
-Returns whether or not the domain is stridable as a parameter bool.
+Returns whether or not the domain is stridable.
 \end{protobody}
 
 \begin{protohead}
