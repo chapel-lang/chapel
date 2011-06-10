@@ -192,6 +192,9 @@ A class or record defined within another class is a nested class (or record).
 Nested classes or records can refer to fields and methods in the outer class (or
 record) implicitly, or explicitly by means of an \chpl{outer} reference.
 
+A nested class (or record) can be referenced only within
+its immediately enclosing class (or record).
+
 \section{Inheritance}
 \label{Inheritance}
 \index{inheritance}
@@ -201,11 +204,14 @@ record) implicitly, or explicitly by means of an \chpl{outer} reference.
 
 A \emph{derived} class can inherit from one or more other classes by
 listing those classes in the derived class declaration.
+%REVIEW:vass: do we want to allow multiple base classes in the spec?
+%REVIEW:vass: need to define "base" class and add it to index, if useful
 When inheriting from multiple base classes, only one of the base classes
 may contain fields.  The other classes can only define methods.  Note
 that a class can still be derived from a class that contains fields
 which is itself derived from a class that contains fields.  
 
+%REVIEW:vass: the below ("tree") does not match the above ("multiple base classes")
 These restrictions on inheritance induce a class hierarchy which has the form of
 a tree.  A variable referring to an instance of class \chpl{C} can be
 cast to any type that is an ancestor of \chpl{C}.  Note that casts to more- and
@@ -299,6 +305,7 @@ field be shadowed by a subclass.
 \index{multiple inheritance}
 \index{classes!inheritance!multiple}
 
+%REVIEW:vass: need to decide as a group whether we want this in the spec
 A class can be derived from multiple base classes provided that only
 one of the base classes contains fields either directly or from base
 classes that it is derived from.  The methods defined by the other
@@ -338,6 +345,10 @@ value results in a run-time error.
 \index{default initialization!classes}
 \index{initialization!classes!default}
 
+%REVIEW:vass:this does not correspond to the current implementation:
+% * when invoking the compiler-generated constructor, default initialization
+%   does not happen;
+% * in many cases (?), fields' initialization expressions are not invoked.
 When an instance of a class (an object) is created, it is brought to a
 known and legal state first, before it can be accessed or operated upon.
 This is done through default initialization.
@@ -384,7 +395,7 @@ a compiler-generated constructor for that class is created automatically.
 
 A user-defined constructor is a constructor method explicitly declared
 in the program.  A constructor declaration has the same
-syntax as a function declaration, except that the name of the function matches
+syntax as a method declaration, except that the name of the function matches
 the name of the class, and there is no return type specifier.
 
 A constructor for a given class is called by placing the \chpl{new} operator
@@ -453,7 +464,7 @@ requirements. See Section~\ref{Generic_User_Constructors} for details.
 A compiler-generated constructor for a class is created automatically
 if there are no constructors for that class in the program.
 The compiler-generated constructor has one argument for every field in the class,
-each of which has a default value equal to the field's initializer (if present) or default value (if not).
+each of which has a default value equal to the field's initializer (if present) or default value of the field's type (if not).
 The list of fields (and hence arguments) includes fields inherited from superclasses, type aliases
 and parameter fields, if any.
 The order of the arguments in the argument list matches the order of the field declarations
@@ -506,10 +517,6 @@ value of the corresponding actual argument.
 % But overall I do not feel that this refactoring is a win, especially
 % because we now need to define the magic (and I am not sure presently
 % it is defined formally enough).
-% 
-% Higher-level remark: we may want to leave this as-is for now
-% in light of an upcoming discussion (and potential revision) of Chapel's
-% constructor story.
 
 \begin{chapelexample}{defaultConstructor.chpl}
 Given the class
