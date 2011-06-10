@@ -93,6 +93,11 @@ int main(int argc, char* argv[]) {
   chpl_task_init(maxThreadsPerLocale, callStackSize); 
   chpl_init_chpl_rt_utils();
 
+  //
+  // start communication tasks as necessary
+  //
+  chpl_comm_startPollingTask();
+
   recordExecutionCommand(argc, argv);
 
   chpl_comm_barrier("barrier before main");

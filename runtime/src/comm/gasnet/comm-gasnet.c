@@ -228,11 +228,12 @@ int32_t chpl_comm_maxThreadsLimit(void) {
   return GASNETI_MAX_THREADS-1;
 }
 
-static int done = 0;
+static volatile int alldone = 0;
+static volatile int pollingdone = 0;
 
 static void polling(void* x) {
-  chpl_task_perPthreadInit();
-  GASNET_BLOCKUNTIL(done);
+  GASNET_BLOCKUNTIL(alldone);
+  pollingdone = 1;
 }
 
 #ifdef GASNET_NEEDS_MAX_SEGSIZE
@@ -266,8 +267,6 @@ static void chpl_comm_gasnet_set_max_segsize() {
 }
 #endif
 
-static pthread_t polling_thread;
-
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   int status;
 
@@ -289,21 +288,42 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 
+}
+
+void chpl_comm_startPollingTask(void) {
   //
   // Start polling thread on locale 0.  (On other locales, main enters
   // into a barrier wait, so the polling thread is unnecessary.)
   //
-  // This should call a special function in the threading interface
-  // but we have not yet initialized chapel threads!
-  //
   if (chpl_localeID == 0) {
-    status = pthread_create(&polling_thread, NULL, (void*(*)(void*))polling, 0);
-    if (status)
+    int status = chpl_task_createCommTask(polling, NULL);
+    if (status) {
+      alldone = 1;
+      pollingdone = 1;
       chpl_internal_error("unable to start polling thread for gasnet");
+    }
   }
 
   // clear diags
   memset(&chpl_comm_commDiagnostics, 0, sizeof(chpl_commDiagnostics));
+}
+
+void chpl_comm_stopPollingTask(void) {
+  //
+  // This only needs to be done on locale 0 (the only one using a
+  // polling thread), but there's no harm in doing it everywhere.
+  //
+  //  printf("[%d] setting alldone to 1\n", chpl_localeID);
+  //
+  alldone = 1;
+
+  //
+  // On locale 0 (the only one to use a polling thread) make sure the
+  // polling thread is done before going on
+  //
+  if (chpl_localeID == 0) {
+    while (!pollingdone) {}
+  }
 }
 
 //
@@ -395,7 +415,7 @@ void chpl_comm_barrier(const char *msg) {
 }
 
 static void chpl_comm_exit_common(int status) {
-  int* ack = &done;
+  int* ack = (int*)&alldone;
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
@@ -406,10 +426,7 @@ static void chpl_comm_exit_common(int status) {
     if (loopback) {
       gasnet_exit(2);
     }
-    if ( pthread_join(polling_thread, NULL ) ) { // cleanup 
-      loopback = 1;
-      chpl_internal_error("Polling thread join failed.");
-    } 
+    chpl_comm_stopPollingTask();
   }
 
   chpl_comm_barrier("chpl_comm_exit_common_gasnet_exit"); 
@@ -425,7 +442,7 @@ void chpl_comm_exit_any_dirty(int status) {
   // kill the polling thread on locale 0, but other than that...
   // clean up nothing; just ask GASNet to exit
   // GASNet will then kill all other locales.
-  int* ack = &done;
+  int* ack = (int*)&alldone;
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
@@ -436,10 +453,7 @@ void chpl_comm_exit_any_dirty(int status) {
     if (loopback) {
       gasnet_exit(2);
     }
-    if ( pthread_join(polling_thread, NULL ) ) { // cleanup 
-      loopback = 1;
-      chpl_internal_error("Polling thread join failed.");
-    } 
+    chpl_comm_stopPollingTask();
   }
 
   gasnet_exit(status);

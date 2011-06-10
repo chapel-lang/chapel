@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <sys/resource.h>
 #include <unistd.h>
+#include <pthread.h>
 
 static size_t threadCallStackSize = 0;
 
@@ -97,7 +98,10 @@ void chpl_thread_init(int32_t maxThreadsPerLocale,
   }
 }
 
-void chpl_thread_perPthreadInit(void) { }
+int chpl_thread_createCommThread(chpl_fn_p fn, void* arg) {
+  pthread_t polling_thread;
+  return pthread_create(&polling_thread, NULL, (void*(*)(void*))fn, arg);
+}
 
 void chpl_thread_exit(void) { }
 

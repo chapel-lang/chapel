@@ -127,6 +127,9 @@ void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   (*chpl_ftable[fid])(arg);
 }
 
+void chpl_comm_startPollingTask(void) { }
+void chpl_comm_stopPollingTask(void) { }
+
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }
 void chpl_startVerboseCommHere() { }

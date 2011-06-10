@@ -1749,6 +1749,15 @@ void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
 }
 
+void chpl_comm_startPollingTask(void) {
+  // Ultimately, pthread_create() stuff from chpl_comm_init should be
+  // moved here.
+}
+
+void chpl_comm_stopPollingTask(void) {
+  // And similarly, cleanup stuff should go here.
+}
+
 void chpl_startVerboseComm() {
   chpl_verbose_comm = 1;
   chpl_comm_no_debug_private = 1;

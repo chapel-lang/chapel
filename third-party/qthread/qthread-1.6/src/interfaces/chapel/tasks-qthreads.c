@@ -164,8 +164,10 @@ void chpl_task_callMain(void (*chpl_main)(void))
     chpl_main();
 }
 
-void chpl_task_perPthreadInit(void)
-{}
+int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
+  pthread_t polling_thread;
+  return pthread_create(&polling_thread, NULL, (void*(*)(void*))fn, arg);
+}
 
 void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              void             *arg,

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "chplexit.h"
 #include "chpl-comm.h"
 #include "chpl_mem.h"
@@ -503,6 +504,15 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
 void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
                           int32_t arg_size, int32_t arg_tid) {
   chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
+}
+
+void chpl_comm_startPollingTask(void) {
+  // Ultimately the pthread code from above to create the polling thread
+  // should be moved down here
+}
+
+void chpl_comm_stopPollingTask(void) {
+  // And that thread should be stopped here
 }
 
 void chpl_startVerboseComm() { }

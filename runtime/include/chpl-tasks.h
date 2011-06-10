@@ -64,8 +64,14 @@ typedef chpl_sync_aux_t chpl_single_aux_t;
 void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize);
 void chpl_task_exit(void);        // called by the main task
 
-// tasking init for any threads created outside of the tasking/threading layer
-void chpl_task_perPthreadInit(void);
+//
+// Have the tasking layer create a dedicated task to help the
+// communication layer by running function 'fn' with argument 'arg'.
+// This task should be quite dedicated (e.g., get its own system
+// thread) in order to be responsive and not be held up by other
+// user-level tasks. returns 0 on success, nonzero on failure.
+//
+int chpl_task_createCommTask(chpl_fn_p fn, void* arg);
 
 //
 // Have the tasking layer call the 'chpl_main' function pointer

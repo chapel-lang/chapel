@@ -218,7 +218,10 @@ static void* initial_pthread_func(void* ignore) {
   return NULL;
 }
 
-void chpl_thread_perPthreadInit(void) { }
+int chpl_thread_createCommThread(chpl_fn_p fn, void* arg) {
+  pthread_t polling_thread;
+  return pthread_create(&polling_thread, NULL, (void*(*)(void*))fn, arg);
+}
 
 void chpl_thread_exit(void) {
   chpl_bool debug = false;

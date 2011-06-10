@@ -187,6 +187,17 @@ void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
                          int32_t arg_size, int32_t arg_tid);
 
 //
+// This is a hook that's called after the Chapel tasking layer has
+// been set up which permits the communication layer to start a
+// polling/progress task if necessary.  If not, this can be a no-op.
+// One of the goals of this call is to avoid having to put
+// pthread_create() style calls into the communication code in order
+// to have all tasking/threading owned by the task layer.
+//
+void chpl_comm_startPollingTask(void);
+void chpl_comm_stopPollingTask(void);
+
+//
 // Comm diagnostics stuff
 //
 typedef struct _chpl_commDiagnostics {

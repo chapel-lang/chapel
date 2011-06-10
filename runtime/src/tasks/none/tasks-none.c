@@ -127,6 +127,10 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
 
 void chpl_task_exit(void) { }
 
+int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
+  chpl_thread_createCommThread(fn, arg);
+}
+
 void chpl_task_callMain(void (*chpl_main)(void)) {
   chpl_main();
 }

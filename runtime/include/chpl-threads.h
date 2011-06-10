@@ -18,10 +18,14 @@
 void chpl_thread_init(int32_t, uint64_t, void(*)(void*), void(*)(void));
 
 //
-// Initialize the threading layer, for a secondary pthread created by,
-// in all cases currently, the comm layer.
+// Create a thread for a communication task to run function 'fn' with
+// argument 'arg'.  This thread should be quite dedicated (e.g., get
+// its own system thread) in order to be responsive and not be held up
+// by other user-level tasks. returns 0 on success, nonzero on
+// failure.
+
 //
-void chpl_thread_perPthreadInit(void);
+int chpl_thread_createCommThread(chpl_fn_p fn, void* arg);
 
 //
 // Shut down the threading layer.
