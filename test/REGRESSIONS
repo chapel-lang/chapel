@@ -145,13 +145,14 @@ gasnet-everything regressions (other than the above)
 
 nondet. race on which index generates error message?
 ----------------------------------------------------
-[Error matching program output for domains/sungeun/sparse/index_not_in_domain_1] (04/12/11)
+[Error matching program output for domains/sungeun/sparse/index_not_in_domain_1] (04/12/11, 06/10/11)
 
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/11/11, 04/15/11, 04/22/11, 04/29/11, 05/03/11, 05/08/11)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11, 05/06/11, 05/19/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (05/23/11, 05/25/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (05/23/11, 05/25/11, 06/06/11, 06/08/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (06/02/11)
 
 too many warnings/different warning format?
 -------------------------------------------
@@ -162,7 +163,6 @@ execution timeouts
 ------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul]
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy]
 
 memory stuff
 ------------
@@ -280,6 +280,7 @@ nondet. compilation timeouts
 [Error: Timed out compilation for studies/graph500/v2/main] (05/29/11)
 [Error: Timed out compilation for users/franzf/v0/chpl/main] (05/15/11)
 [Error: Timed out compilation for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky]
+[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (06/06/11)
 
 consistent compiler timeouts
 ----------------------------
