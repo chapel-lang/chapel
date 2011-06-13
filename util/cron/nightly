@@ -735,6 +735,13 @@ if ($runtests == 0) {
 #
     if (!($memleaks eq "")) {
         mysystem("$chapeldir/util/devel/analyzeMemLeaksLog /tmp/$memleaks > $logdir/$memleaks");
+
+        # Update the memory leaks status for performance testing runs to
+        #  generate graphs for the memory leaks data
+        #
+        # This is not ideal (we may be a day behind depending on when
+        #  the tests finish), but it good enough for now.
+        mysystem("cd $testdir && cp $logdir/$memleaks ./memleaks.exec.out.tmp && $chapeldir/util/test/computePerfStats memleaks $logdir");
     }
 }
 
