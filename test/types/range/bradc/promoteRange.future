@@ -1,0 +1,5 @@
+semantic: promotion of ".." operator?
+
+This test asks the question whether we should disable the promotion of
+the ".."  operator on the grounds that it is more often confusing than
+useful.

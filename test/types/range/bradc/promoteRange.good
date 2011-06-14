@@ -1,0 +1,2 @@
+promoteRange.chpl:1: error: The range operator can only take integer values of matching type as its bounds
+promoteRange.chpl:2: error: The range operator can only take integer values of matching type as its bounds
