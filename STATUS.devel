@@ -126,6 +126,8 @@ Modules and Functions
   compiler error or compile and run.
   # functions/deitz/test_arg_type_is_value_error.future
   # functions/vass/return-type-function-failure.future
+- Recursive functions that return arrays are not yet supported
+  # functions/dinan/array_return_from_recursive.future
 - Recursive functions with default argument values may not work.
   # users/csep524/recRetArr.future
 - Param functions can return runtime variables.
