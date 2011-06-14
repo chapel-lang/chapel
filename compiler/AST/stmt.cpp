@@ -14,6 +14,8 @@ void codegenStmt(FILE* outfile, Expr* stmt) {
       fprintf(outfile, "/* ZLINE: %d %s */\n", stmt->lineno, stmt->getModule()->filename);
     } 
   }
+  if (fGenIDS)
+    fprintf(outfile, "/* %7d */ ", stmt->id);
 }
 
 
