@@ -830,6 +830,34 @@ record _domain {
   proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 }  // record _domain
 
+proc chpl_countDomHelp(dom, counts) {
+  var ranges = dom.dims();
+  for param i in 1..dom.rank do
+    ranges(i) = ranges(i) # counts(i);
+  return dom[(...ranges)];
+}  
+
+proc #(dom: domain, counts: integral) where isRectangularDom(dom) && dom.rank == 1 {
+  return chpl_countDomHelp(dom, tuple(counts));
+}
+
+proc #(dom: domain, counts) where isRectangularDom(dom) && isTuple(counts) {
+  if (counts.size != dom.rank) then
+    compilerError("the domain and tuple arguments of # must have the same rank");
+  return chpl_countDomHelp(dom, counts);
+}
+
+proc #(arr: [], counts: integral) where isRectangularArr(arr) && arr.rank == 1 {
+  return arr[arr.domain#counts];
+}
+
+proc #(arr: [], counts) where isRectangularArr(arr) && isTuple(counts) {
+  if (counts.size != arr.rank) then
+    compilerError("the domain and array arguments of # must have the same rank");
+  return arr[arr.domain#counts];
+}
+
+
 proc _getNewDist(value) {
   return new dmap(value);
 }

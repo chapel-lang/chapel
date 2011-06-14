@@ -465,6 +465,17 @@ are the first column of \chpl{A}.
 \end{chapelexample}
 
 
+\section{Count Operator}
+\label{Count_Operator_Arrays}
+\index{arrays!count operator}
+
+The \chpl{#} operator can be applied to dense rectangular arrays with
+a tuple argument whose size matches the rank of the array (or
+optionally an integer in the case of a 1D array).  The operator is
+equivalent to applying the \chpl{#} oeprator to the array's domain and
+using the result to slice the array as described in
+Section~\ref{Rectangular_Array_Slicing}.
+
 
 \section{Array Arguments to Functions}
 \label{Array_Arguments_To_Functions}

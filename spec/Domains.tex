@@ -781,6 +781,18 @@ a \chpl{rank} equal to the number of dimensions that were sliced by
 ranges rather than integers.
 
 
+\subsection{Count Operator}
+\label{Count_Operator_Domains}
+\index{domains!count operator}
+
+The \chpl{#} operator can be applied to dense rectangular domains with
+a tuple argument whose size matches the rank of the domain (or
+optionally an integer in the case of a 1D domain).  The operator is
+equivalent to applying the \chpl{#} operator to the component ranges
+of the domain and then using them to slice the domain as in
+Section~\ref{Range_Based_Slicing}.
+
+
 \subsection{Adding and Removing Domain Indices}
 \label{Adding_and_Removing_Domain_Indices}
 \index{domains!adding indices}
