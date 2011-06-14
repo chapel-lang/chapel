@@ -676,15 +676,15 @@ if ($runtests == 0) {
     }
     
     if ($status == 0) {
-        print MAIL "--- Unresolved Errors ($morechars) ----------------------------------\n";
-        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
-        print MAIL "\n";
-    }
-    
-    if ($status == 0) {
         print MAIL "--- Passing Future tests ($morechars) -------------------------------\n";
         print MAIL `grep "$futuremarker" $sortedsummary | grep "Success"`;
         print MAIL "\n";    
+    }
+    
+    if ($status == 0) {
+        print MAIL "--- Unresolved Errors ($morechars) ----------------------------------\n";
+        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+        print MAIL "\n";
     }
     
     if ($status == 0) {
