@@ -4,7 +4,7 @@
 use Time;
 
 config const n = 10;
-config param timer = false;
+config const timer : bool = false;
 
 var t : Timer;
 
