@@ -51,6 +51,7 @@ static bool
 isDerefType(Type* type) {
   return (type->symbol->hasFlag(FLAG_ARRAY) ||
           type->symbol->hasFlag(FLAG_DOMAIN) ||
+          type->symbol->hasFlag(FLAG_DISTRIBUTION) ||
           type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 }
 

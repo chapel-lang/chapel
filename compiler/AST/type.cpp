@@ -906,6 +906,53 @@ bool isReferenceType(Type* t) {
   return t->symbol->hasFlag(FLAG_REF);
 }
 
+bool isRefCountedType(Type* t) {
+  // We may eventually want to add a separate flag and provide users
+  //  with an interface to declare reference counted types that will
+  //  be "automatically" reference counted when needed
+  return (t->symbol->hasFlag(FLAG_ARRAY) ||
+          t->symbol->hasFlag(FLAG_DOMAIN) ||
+          t->symbol->hasFlag(FLAG_DISTRIBUTION));
+}
+
+bool isRecordWrappedType(Type* t) {
+  // Same deal as with isRefCountedType()
+  // Currently this is the same as isRefCountedType()
+  return (t->symbol->hasFlag(FLAG_ARRAY) ||
+          t->symbol->hasFlag(FLAG_DOMAIN) ||
+          t->symbol->hasFlag(FLAG_DISTRIBUTION));
+}
+
+bool
+isDistClass(Type* type) {
+  if (type->symbol->hasFlag(FLAG_BASE_DIST))
+    return true;
+  forv_Vec(Type, pt, type->dispatchParents)
+    if (isDistClass(pt))
+      return true;
+  return false;
+}
+
+bool
+isDomainClass(Type* type) {
+  if (type->symbol->hasFlag(FLAG_BASE_DOMAIN))
+    return true;
+  forv_Vec(Type, pt, type->dispatchParents)
+    if (isDomainClass(pt))
+      return true;
+  return false;
+}
+
+bool
+isArrayClass(Type* type) {
+  if (type->symbol->hasFlag(FLAG_BASE_ARRAY))
+    return true;
+  forv_Vec(Type, t, type->dispatchParents)
+    if (isArrayClass(t))
+      return true;
+  return false;
+}
+
 
 static Vec<TypeSymbol*> typesToStructurallyCodegen;
 static Vec<TypeSymbol*> typesToStructurallyCodegenList;

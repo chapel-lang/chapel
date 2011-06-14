@@ -20,7 +20,6 @@ bool normalized = false;
 static void checkUseBeforeDefs();
 static void flattenGlobalFunctions();
 static void insertUseForExplicitModuleCalls(void);
-static bool isDistClass(Type* type);
 static void processSyntacticDistributions(CallExpr* call);
 static bool is_void_return(CallExpr* call);
 static void normalize_returns(FnSymbol* fn);
@@ -56,6 +55,7 @@ void normalize(void) {
     }
     if (call->isPrimitive(PRIM_DELETE)) {
       VarSymbol* tmp = newTemp();
+      SET_LINENO(call);
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
       call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
@@ -285,16 +285,6 @@ insertUseForExplicitModuleCalls(void) {
       block->addUse(mod);
     }
   }
-}
-
-static bool
-isDistClass(Type* type) {
-  if (type->symbol->hasFlag(FLAG_BASE_DIST))
-    return true;
-  forv_Vec(Type, pt, type->dispatchParents)
-    if (isDistClass(pt))
-      return true;
-  return false;
 }
 
 static void

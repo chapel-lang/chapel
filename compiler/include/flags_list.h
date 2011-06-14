@@ -20,6 +20,7 @@ symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an 
 symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated runtime type (value)" )
 symbolFlag( FLAG_AUTO_II , npr, "auto ii" , ncm )
 symbolFlag( FLAG_BASE_ARRAY , ypr, "base array" , ncm )
+symbolFlag( FLAG_BASE_DOMAIN , ypr, "base domain" , ncm )
 symbolFlag( FLAG_BASE_DIST , ypr, "base dist" , ncm )
 symbolFlag( FLAG_BEGIN , npr, "begin" , ncm )
 symbolFlag( FLAG_BEGIN_BLOCK , npr, "begin block" , ncm )

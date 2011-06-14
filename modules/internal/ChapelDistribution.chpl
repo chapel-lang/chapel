@@ -63,6 +63,7 @@ class BaseDist {
 //
 // Abstract domain classes
 //
+pragma "base domain"
 class BaseDom {
   var _domCnt$: sync int = 0; // domain reference count and lock
   var _arrs: list(BaseArr);   // arrays declared over this domain

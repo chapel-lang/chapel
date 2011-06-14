@@ -95,3 +95,12 @@ proc rankDomain(param rank, extent) {
 //
 var next_i = 0;
 proc next() { next_i += 1; return next_i; }
+
+//
+// Compare C pointers (there are cases where we want to do this for
+//  testing purposes)
+//
+pragma "inline"
+proc dist_eq(a, b) return __primitive("ptr_eq", a._value:object, b._value:object);
+pragma "inline"
+proc dist_neq(a, b) return __primitive("ptr_neq", a._value:object, b._value:object);

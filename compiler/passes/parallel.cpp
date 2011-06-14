@@ -78,7 +78,7 @@ bundleArgs(CallExpr* fcall) {
   }
 
   // insert autoCopy for array/domain/distribution before begin call
-  // and insert autoDestroy at end of begin function.
+  // and insert autoDestroy at end of begin function (i.e., reference count)
   if (fn->hasFlag(FLAG_BEGIN)) {
     for_actuals(arg, fcall) {
       SymExpr* s = toSymExpr(arg);
@@ -87,9 +87,7 @@ bundleArgs(CallExpr* fcall) {
       if (isReferenceType(baseType)) {
         baseType = arg->typeInfo()->getField("_val", true)->type;
       }
-      if (baseType->symbol->hasFlag(FLAG_ARRAY) ||
-          baseType->symbol->hasFlag(FLAG_DOMAIN) ||
-          baseType->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+      if (isRefCountedType(baseType)) {
         FnSymbol* autoCopyFn = getAutoCopy(baseType);
         FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
         VarSymbol* valTmp = newTemp(baseType);
@@ -380,18 +378,16 @@ makeHeapAllocations() {
            is_real_type(def->sym->type) ||
            def->sym->type == dtBool ||
            (isRecord(def->sym->type) &&
-            !def->sym->type->symbol->hasFlag(FLAG_ARRAY) &&
-            !def->sym->type->symbol->hasFlag(FLAG_DOMAIN) &&
-            !def->sym->type->symbol->hasFlag(FLAG_DISTRIBUTION) &&
-            !def->sym->type->symbol->hasFlag(FLAG_SYNC)))) {
+            !isRecordWrappedType(def->sym->type) &&
+            // sync/single are currently classes, so this shouldn't matter
+            !def->sym->type->symbol->hasFlag(FLAG_SYNC) &&
+            !def->sym->type->symbol->hasFlag(FLAG_SINGLE)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
         for_defs(se, defMap, def->sym) {
           se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
         }
-      } else if (def->sym->type->symbol->hasFlag(FLAG_ARRAY) ||
-                 def->sym->type->symbol->hasFlag(FLAG_DOMAIN) ||
-                 def->sym->type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+      } else if (isRecordWrappedType(def->sym->type)) {
         ModuleSymbol* mod = toModuleSymbol(def->parentSymbol);
         Expr* stmt = mod->initFn->body->body.head;
         bool found = false;
