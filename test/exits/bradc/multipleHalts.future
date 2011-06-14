@@ -1,7 +1,0 @@
-bug: when we hit a halt, we should only have one of the halts be processed
-
-This test shows that if we hit a halt, we potentially have the same locale
-process it multiple times.  This can cause the failure to join polling
-thread message in GASNet.  I have a fix for this, but am currently planning
-to commit it after the release unless there is a groundswell of popular
-opinion to get it in.

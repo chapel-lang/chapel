@@ -1,5 +1,3 @@
---noisy=true                     # length.error.good (future: FIX ME)
---lo=-1073741823 --hi=1073741824 # length.error.good (future: FIX ME)
 --lo=-1073741823 --hi=1073741823
 --lo=0 --hi=0
 --lo=10 --hi=10

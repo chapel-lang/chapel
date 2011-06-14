@@ -1,4 +1,0 @@
-bug: cannot use "new dist(distClass)" within a _domain record method
-
-This test shows that "new dist" cannot be used in a _domain record's method,
-while it recordMethodNewDist.chpl shows that it works from other records.
