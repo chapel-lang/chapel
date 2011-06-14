@@ -119,6 +119,9 @@ proc _build_range(low: int(64), high: int(64))
   return new range(int(64), _low = low, _high = high);
 proc _build_range(low: uint(64), high: uint(64))
   return new range(uint(64), _low = low, _high = high);
+proc _build_range(low, high) {
+  compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+}
 
 
 //////////////////////////////////////////////////////////////////////////////////
