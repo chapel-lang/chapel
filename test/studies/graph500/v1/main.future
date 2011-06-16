@@ -1,0 +1,13 @@
+bug: 'data' field in DefaultRectangularArr freed when still in use
+
+The data field (class _ddata) is being freed in dsiReallocate() via a
+direct call to dsiDestroyData(), but it may still be in use due to
+calls that copy the field (i.e., reindexing, slicing, or rank change).
+
+There needs to be some sort of tracking of references to the data
+field.  It seems possible to roll this into the current reference
+counting on arrays.
+
+This tests periodically seg faults with --no-local and GASNet.  It
+consistently fails valgrind testing with --no-local.
+

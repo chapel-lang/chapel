@@ -76,6 +76,11 @@ TODOs from email:
   believe.
 
 
+Data Parallelism
+----------------
+* clarify what it means to say that a forall loop is serializable.
+
+
 Generics
 --------
 * add mention of the new 'depth' argument for compilerWarning/Error

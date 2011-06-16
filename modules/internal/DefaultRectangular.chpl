@@ -6,16 +6,16 @@ class DefaultDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
     return new DefaultRectangularDom(rank, idxType, stridable, this);
 
-  proc dsiNewAssociativeDom(type idxType)
-    return new DefaultAssociativeDom(idxType, this);
+  proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
+    return new DefaultAssociativeDom(idxType, parSafe, this);
 
-  proc dsiNewOpaqueDom(type idxType)
-    return new DefaultOpaqueDom(this);
+  proc dsiNewOpaqueDom(type idxType, param parSafe: bool)
+    return new DefaultOpaqueDom(this, parSafe);
 
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDom(rank, idxType, this, dom);
 
-  proc dsiIndexLocale(ind) return this.locale;
+  proc dsiIndexToLocale(ind) return this.locale;
 
   proc dsiClone() return this;
 
@@ -121,8 +121,6 @@ class DefaultRectangularDom: BaseRectangularDom {
 
     if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
 
-    if numChunks == 0 then return;	// Avoid problems with 0:uint(64) - 1 below.
-
     if (CHPL_TARGET_PLATFORM != "xmt") {
       if numChunks == 1 {
         if rank == 1 {
@@ -139,7 +137,7 @@ class DefaultRectangularDom: BaseRectangularDom {
           locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
         if debugDefaultDist then
           writeln("*** DI: locBlock = ", locBlock);
-        coforall chunk in 0..numChunks-1 {
+        coforall chunk in 0..#numChunks {
           var tuple: rank*range(idxType) = locBlock;
           const (lo,hi) = _computeBlock(locBlock(parDim).length,
                                         numChunks, chunk,

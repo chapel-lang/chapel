@@ -25,12 +25,15 @@ clobber: FORCE
 
 qthread-config: FORCE
 	mkdir -p $(QTHREAD_BUILD_DIR)
-	cd $(QTHREAD_BUILD_DIR) && $(QTHREAD_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(QTHREAD_INSTALL_DIR)
+	cd $(QTHREAD_BUILD_DIR) && $(QTHREAD_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(QTHREAD_INSTALL_DIR) --enable-interfaces=chapel CHPL_HOME=$(CURDIR)/$(CHAPEL_ROOT)
 
 qthread-build: FORCE
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE)
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE) install
 
 qthread: qthread-config qthread-build
+
+qthread-reconfig:
+	cd $(QTHREAD_SUBDIR) && autoreconf -f -i
 
 FORCE:

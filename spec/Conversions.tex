@@ -21,7 +21,7 @@ numeric types~(\rsec{Implicit_Enumeration_Conversions}), between class
 types~(\rsec{Implicit_Class_Conversions}), and between record
 types~(\rsec{Implicit_Record_Conversions}).  A special set of implicit
 conversions are allowed from compile-time constants of type \chpl{int}
-and \chpl{int(64)} to other smaller numeric types if the value is in
+to other smaller numeric types if the value is in
 the range of the smaller numeric
 type~(\rsec{Implicit_Compile_Time_Constant_Conversions}).  Lastly,
 implicit conversions are supported from integral and class types to
@@ -33,9 +33,9 @@ statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 \index{conversions!numeric}
 \index{conversions!bool}
 
-Implicit conversions among fundamental numeric types are always allowed, so long as all
-values that can be represented in the source type can also be represented in the
-target type without loss of precision.
+Implicit conversions among fundamental numeric types are always allowed, so long
+as all values that can be represented in the source type can also be represented
+in the target type without loss of precision.
 When the implicit conversion is from an integral to a real type, source
 types are converted to type \chpl{int} before determining if the
 conversion is valid.
@@ -51,10 +51,6 @@ precision.
 % consistent behavior that does not lead to surprising results.  EVERY ``if''
 % costs money: which is to say that if a behavior can be described simply, it can
 % be implemented simply.
-% A general description like the one above makes the spec comprehensive.  It
-% will continue to be correct, even if additional types are added later -- while
-% stating each permissible conversion explicitly is not only verbose, it is a
-% path to the spec's obsolescence.
 % The ``In addition'' clause above is inconsistent with the section on
 % Explicit conversions, below.  One or the other should be fixed.
 
@@ -66,19 +62,9 @@ size is 32 in Chapel, we did not follow the lead of C\# in this regard
 since it seemed unfortunate to favor \chpl{real(32)} over \chpl{real}
 in the default case.  That is, given the \chpl{sqrt} function defined
 over \chpl{real(32)} and \chpl{real}, it is preferable to choose the
-version over \chpl{real} when calling with an actual of
+\chpl{int} version over the \chpl{real} version when calling with an actual of
 type \chpl{int} rather than lose precision and half of the bits to
 call the \chpl{real(32)} version.
-
-Additionally, we don't allow implicit conversions from \chpl{int(8)}
-or \chpl{int(16)} to \chpl{real(32)} because to do so would result in
-an ambiguity when computing, e.g., \chpl{int(8) + int(8)}.
-%NOTE:
-%Both of these restrictions proceed naturally from the above, since conversion
-%of an int(8) or int(16) to any real type involves first converting to int
-%(which is int(32) by default), whereby the first legal implicit conversion to
-%real is real(64).  Implicit conversions cannot imply a loss of precision, so
-%there is no implicit conversion path to real(32).
 \end{rationale}
 
 Implicit numeric conversions may thus be tabulated as follows:

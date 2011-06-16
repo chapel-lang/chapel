@@ -399,6 +399,8 @@ else:
 if (os.getenv('CHPL_TEST_VGRND_EXE')=='on' and vgrbin):
     valgrindbin = 'valgrind'
     valgrindbinopts = chpl_valgrind_opts.split()+['-q']
+    if (os.getenv('CHPL_COMM', 'none')!='none'):
+        valgrindbinopts+=['--trace-children=yes']
 else:
     valgrindbin = None
     valgrindbinopts = None

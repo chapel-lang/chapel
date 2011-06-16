@@ -127,6 +127,9 @@ void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   (*chpl_ftable[fid])(arg);
 }
 
+void chpl_comm_startPollingTask(void) { }
+void chpl_comm_stopPollingTask(void) { }
+
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }
 void chpl_startVerboseCommHere() { }
@@ -137,8 +140,13 @@ void chpl_stopCommDiagnostics() { }
 void chpl_startCommDiagnosticsHere() { }
 void chpl_stopCommDiagnosticsHere() { }
 
+void chpl_resetCommDiagnosticsHere() { }
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) { }
 
 int32_t chpl_numCommGets(void) { return 0; }
+int32_t chpl_numCommNBGets(void) { return 0; }
+int32_t chpl_numCommTestNBGets(void) { return 0; }
+int32_t chpl_numCommWaitNBGets(void) { return 0; }
 int32_t chpl_numCommPuts(void) { return 0; }
 int32_t chpl_numCommForks(void) { return 0; }
 int32_t chpl_numCommFastForks(void) { return 0; }

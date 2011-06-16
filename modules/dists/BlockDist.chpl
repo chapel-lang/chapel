@@ -297,11 +297,11 @@ proc Block.writeThis(x:Writer) {
     x.writeln("  [", locid, "] locale ", locDist(locid).locale.uid, " owns chunk: ", locDist(locid).myChunk);
 }
 
-proc Block.dsiIndexLocale(ind: idxType) where rank == 1 {
+proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc Block.dsiIndexLocale(ind: rank*idxType) where rank > 1 {
+proc Block.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -565,12 +565,17 @@ iter BlockDom.these(param tag: iterator) where tag == iterator.leader {
     if (numTasks == 1) {
       yield locBlock;
     } else {
-      coforall taskid in 0:uint(64)..#numTasks {
+      coforall taskid in 0..#numTasks {
         var tuple: rank*range(idxType) = locBlock;
         const (lo,hi) = _computeBlock(locBlock(parDim).length, numTasks, taskid,
                                       locBlock(parDim).high,
                                       locBlock(parDim).low,
                                       locBlock(parDim).low);
+        // If the following fails, we should make _computeChunkStuff()
+        // return smaller numTasks in that case - for more even partitioning
+        // of indices over tasks. Also, do not yield a tuple of ranges
+        // if the cart. product of those ranges is the empty set (of indices).
+        assert(lo <= hi);
         tuple(parDim) = lo..hi;
         yield tuple;
       }

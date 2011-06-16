@@ -66,7 +66,7 @@
 #   -execopts  <option list>          ""
 #   -launchcmd <launcher command>     ""
 #   -norecurse
-#   -componly
+#   -comp-only
 #   -performance
 #   -generate-graphs
 #   -startdate <MM/DD/YY>
@@ -100,7 +100,7 @@
 # way to do so is by specifying "-compopts --no-cc-warnings" to
 # reverse the effects of that flag.
 #
-# The -componly option specifies that this testing run should only
+# The -comp-only option specifies that this testing run should only
 # be compiled and not executed; this causes success of a test to
 # be related to the success or failure of the compile step, not to
 # its execution.
@@ -689,7 +689,7 @@ while ( $#argv > 0 )
 		shift
                 if ($argv[1] =~ "/*") then
                     set execopts = "$execopts --memLeaksLog=$argv[1]"
-                else if
+                else
                     set execopts = "$execopts --memLeaksLog=$cwd/$argv[1]"
                 endif
 		setenv CHPL_MEM_LEAK_TESTING true
@@ -795,7 +795,7 @@ while ( $#argv > 0 )
 		echo "          -execopts <options>   (currently: '')"
                 echo "          -launchcmd <command>  (currently: '')"
                 echo "          -norecurse"
-		echo "          -componly"
+		echo "          -comp-only"
                 echo "          -performance"
                 echo "          -generate-graphs"
 		echo "          -startdate <MM/DD/YY> (currently: '')"
@@ -921,13 +921,13 @@ setenv EXECOPTS "$execopts"
 echo \[launchcmd: \"$launchcmd\"\] |& $tee -a $logtmp
 setenv LAUNCHCMD "$launchcmd"
 
-echo \[comm: \"$comm\"\] |& tee -a $logtmp
+echo \[comm: \"$comm\"\] |& $tee -a $logtmp
 setenv CHPL_COMM $comm
 
 if ($numlocales == "0") then
-    echo \[numlocales: \"\(default\)\"\] |& tee -a $logtmp
+    echo \[numlocales: \"\(default\)\"\] |& $tee -a $logtmp
 else
-    echo \[numlocales: \"$numlocales\"\] |& tee -a $logtmp
+    echo \[numlocales: \"$numlocales\"\] |& $tee -a $logtmp
 endif
 setenv NUMLOCALES "$numlocales"
 
@@ -946,16 +946,48 @@ if ($?CHPL_SYSTEM_PREDIFF) then
     endif
 endif
 
+# Set up vars for performance testing/graphing
+if ($performance || $gengraphs) then
+    if ($?CHPL_TEST_PERF_DIR) then
+        set perfdir = $CHPL_TEST_PERF_DIR
+    else
+	set perfdir = ./perfdat/`uname -n`
+    endif
+    set createGraphs = $utildir/createGraphs
+    set viewGraphs = $utildir/viewGraphs
+endif
+
+# Auto-generate tests from the spec
 if ("$dirlist" == "" && "$testlist" == "") then
     pushd $CHPL_HOME >& /dev/null
     set chplhome = $cwd
     if (("$invocationDir" == "$CHPL_HOME" || "$invocationDir" == "$CHPL_HOME/test") && ($clean_only == 0)) then
-        echo \[Generating tests from the Chapel Spec in $chplhome/spec\]
-        set autogen=`make spectests`
-        set exitval = $?
-        if ( $exitval != 0 ) then
-            echo \[Error generating Spec tests.  Run \'make spectests\' in $chplhome for more info\]
-            exit $exitval
+        echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
+        if ($performance) then
+            set blah=`make spectests >& test/spectests.exec.out.tmp`
+            set exitval = $?            
+            if ( $exitval != 0 ) then
+                echo \[Error generating Spec tests.  Run \'make spectests\' in $chplhome for more info\] |& $tee -a $logfile
+                exit $exitval
+            endif
+            pushd $CHPL_HOME/test >& /dev/null
+            set blah=`$utildir/computePerfStats spectests "$perfdir"`
+            set exitval = $?
+            if ( $exitval != 0 ) then
+                echo \[Error computing perf stats for Spec tests\] |& $tee -a $logfile
+                exit $exitval
+            endif
+            rm spectests.exec.out.tmp
+            popd >& /dev/null
+        else
+            if ("$gengraphs" == "") then
+                set autogen=`make spectests` # capture output to keep it quiet
+                set exitval = $?
+                if ( $exitval != 0 ) then
+                    echo \[Error generating Spec tests.  Run \'make spectests\' in $chplhome for more info\] |& $tee -a $logfile
+                    exit $exitval
+                endif
+            endif
         endif
     endif
     popd >& /dev/null
@@ -964,6 +996,21 @@ if ("$dirlist" == "" && "$testlist" == "") then
     else
         set dirlist = "."
     endif
+endif
+
+# Generate graphs for top level .graph files
+if ($performance || $gengraphs) then
+    # We do the exact same thing below for each test directory, but since
+    #  I do not know how to write functions in csh, this will have to do
+    set graphfiles = `find . -maxdepth 1 -name \*.graph`
+    foreach gfile ($graphfiles)
+        set graphfile = `basename $gfile`
+        echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
+        $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
+        if ($? == 0) then
+            echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
+        endif
+    end
 endif
 
 # get absolute path for each directory
@@ -982,7 +1029,7 @@ echo \[tests: \"$testlist\"] |& $tee -a $logtmp
 if ($recurse == 1) then
     echo \[directories: \"$absdirs\"] |& $tee -a $logtmp
 else
-    echo \[directories: \(nonrecursive\): \"$absdirs\"] |& tee -a $logtmp
+    echo \[directories: \(nonrecursive\): \"$absdirs\"] |& $tee -a $logtmp
 endif
 
 #if logfile directory exists, then get absolute path for
@@ -1009,25 +1056,15 @@ endif
 mv $logtmp $logfile
 
 
-# Set up vars for performance testing/graphing
-if ($performance || $gengraphs) then
-    echo ""
-    echo "[Checking for duplicate performance data filenames]" |& tee -a $logfile
-    # NOTE: this logic is currently repeated in sub_test
-    if ($?CHPL_TEST_PERF_DIR) then
-        set perfdir = $CHPL_TEST_PERF_DIR
-    else
-	set perfdir = ./perfdat/`uname -n`
-    endif
-    set createGraphs = $utildir/createGraphs
-    set viewGraphs = $utildir/viewGraphs
-endif
-
 # If we are running the performance tests, then check for unique .dat
 #  filenames.  Issue a error and exit if we have specified a common
 #  common directory via CHPL_TEST_PERF_DIR otherwise issue a warning.
 # NOTE: I am not proud of having written the following.
 if ($performance) then
+    echo ""
+    echo "[Checking for duplicate performance data filenames]" |& $tee -a $logfile
+    # NOTE: this logic is currently repeated in sub_test
+
     # find all the .perfkeys files and grep any .dat files names from them
     set perffiles = `find . -name \*.perfkeys -print -exec grep "^#[[:space:]]*file:" {} \;`
     # dummy element at the end to handle the last file
@@ -1052,10 +1089,10 @@ if ($performance) then
     set duperror = 0
     foreach token ($perfcount)
         if ($?CHPL_TEST_PERF_DIR) then
-            echo "[Error: Duplicate performance data filenames ($token.dat)]" |& tee -a $logfile
+            echo "[Error: Duplicate performance data filenames ($token.dat)]" |& $tee -a $logfile
             set duperror = 1
         else
-            echo "[Warning: Duplicate performance data filenames ($token.dat)]" |& tee -a $logfile
+            echo "[Warning: Duplicate performance data filenames ($token.dat)]" |& $tee -a $logfile
         endif
     end
     rm $yucktmpfile
@@ -1065,6 +1102,14 @@ if ($performance) then
     echo ""
 endif
 
+
+#
+# Environment setup complete, print out the current Chapel environment
+#
+echo "" | & $tee -a $logfile
+echo "### Chapel Environment ###" | & $tee -a $logfile
+$CHPL_HOME/util/printchplenv | & $tee -a $logfile
+echo "##########################" | & $tee -a $logfile
 
 #
 # Utility functions
@@ -1121,16 +1166,7 @@ foreach test ($testlist)
             set graphfile = `basename $testname .chpl`.graph
             if (-e $graphfile) then
                 echo "[Executing createGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
-                $createGraphs "$graphfile" "$perfdir" "$startdate" |& tee -a $logfile
-                if ($? == 0) then
-                    echo "[Executing viewGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
-                    $viewGraphs "$perfdir" |& tee -a $logfile
-                    if ($?) then
-                        echo "[Error generating graphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
-                    else
-                        echo "[Success generating graphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
-                    endif
-                endif
+                $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
             endif
         endif
     endif
@@ -1250,22 +1286,21 @@ foreach testType ($testTypes)
                 foreach gfile ($graphfiles)
                     set graphfile = `basename $gfile`
                     echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                    $createGraphs "$graphfile" "$perfdir" "$startdate" "False" |& tee -a $logfile
+                    $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
                     if ($? == 0) then
                         echo "[Success generating graphs for $graphfile in $perfdir]" |& $tee -a $logfile
                     endif
                 end
 
-                if ("$graphfiles" != "") then
-                    echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                    $viewGraphs "$perfdir" |& tee -a $logfile
-                    # Ignore return code
-
-                endif
             endif
         end
     end
 end
+
+if ($gengraphs) then
+    echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
+    $viewGraphs "$perfdir" |& $tee -a $logfile
+endif
 
 # return to where we started
 cd $invocationDir

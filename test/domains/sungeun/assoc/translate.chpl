@@ -1,3 +1,4 @@
+config param parSafe = true;
 config const n = 7;
 
 //
@@ -13,7 +14,7 @@ proc dit(D, lo, hi) {
     writeln(my_translate(D, i));
 }
 
-var D1: domain(int);
+var D1: domain(int, parSafe=parSafe);
 D1 += n+2;
 D1 += n+1;
 D1 += n;

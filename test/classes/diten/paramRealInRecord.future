@@ -1,3 +1,0 @@
-bug: real param in record causes C compiler errors
-
-The generated type of this record is something like "R_1.0". 

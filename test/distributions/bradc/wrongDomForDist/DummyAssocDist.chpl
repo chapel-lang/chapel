@@ -1,5 +1,5 @@
 class MyDist : BaseDist {
-  proc dsiNewAssociativeDom(type idxType) {
+  proc dsiNewAssociativeDom(type idxType, param parSafe:bool) {
     return new MyDom();
   }
 

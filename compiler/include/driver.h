@@ -84,6 +84,7 @@ extern int squelch_header_errors;
 extern bool fWarnPromotion;
 extern bool fReportOptimizedOn;
 extern bool fReportScalarReplace;
+extern bool fReportDeadBlocks;
 
 extern bool debugCCode, optimizeCCode;
 

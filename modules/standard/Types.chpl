@@ -1,3 +1,57 @@
+// Types.chpl
+//
+// Standard type routines.
+//
+
+
+// Returns the signed equivalent of the input type.
+proc chpl__signedType(type t) type 
+{
+  if ! _isIntegralType(t) then
+    compilerError("range idxType is non-integral: ", typeToString(t));
+
+  return int(numBits(t));
+}
+
+
+// Returns true if it is legal to coerce t1 to t2, false otherwise.
+proc chpl__legalIntCoerce(type t1, type t2) param
+{
+  if (_isSignedType(t2)) {
+    if (_isSignedType(t1)) {
+      return (numBits(t1) <= numBits(t2));
+    } else {
+      return (numBits(t1) < numBits(t2));
+    }
+  } else {
+    if (_isSignedType(t1)) {
+      return false;
+    } else {
+      return (numBits(t1) <= numBits(t2));
+    }
+  }
+}
+
+
+// Returns the type with which both s and t are compatible
+// That is, both s and t can be coerced to the returned type.
+proc chpl__commonType(type s, type t) type
+{
+  if ! _isIntegralType(s) then
+    compilerError("Type ", typeToString(s) , " is non-integral: ");
+  if ! _isIntegralType(t) then
+    compilerError("Type ", typeToString(t) , " is non-integral: ");
+
+  if numBits(s) > numBits(t) then return s;
+  if numBits(s) < numBits(t) then return t;
+
+  if _isSignedType(s) && ! _isSignedType(t) ||
+     _isSignedType(t) && ! _isSignedType(s) then
+    compilerError("Types ", typeToString(s) , " and ", typeToString(t), " are incompatible.");
+
+  return s;
+}
+
 //
 // numBits(type) -- returns the number of bits in a type
 //

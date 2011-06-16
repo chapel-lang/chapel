@@ -1,3 +1,6 @@
+// ChapelBase.chpl
+//
+
 _extern proc chpl_config_has_value(name, module_name): bool;
 _extern proc chpl_config_get_value(name, module_name): string;
 
@@ -1016,7 +1019,7 @@ proc _waitEndCount() {
 }
 
 //
-// casts
+// type predicates
 //
 proc chpl__isType(type t) param return true;
 proc chpl__isType(e) param return false;
@@ -1117,33 +1120,6 @@ proc _volToNon(type t) type {
   }
 }
 
-
-// Returns the signed equivalent of the input type.
-proc chpl__signedType(type t) type 
-{
-  if ! _isIntegralType(t) then
-    compilerError("range idxType is non-integral: ", typeToString(t));
-
-  return int(numBits(t));
-}
-
-// Returns true if it is legal to coerce t1 to t2, false otherwise.
-proc chpl__legalIntCoerce(type t1, type t2) param
-{
-  if (_isSignedType(t2)) {
-    if (_isSignedType(t1)) {
-      return (numBits(t1) <= numBits(t2));
-    } else {
-      return (numBits(t1) < numBits(t2));
-    }
-  } else {
-    if (_isSignedType(t1)) {
-      return false;
-    } else {
-      return (numBits(t1) <= numBits(t2));
-    }
-  }
-}
 
 pragma "command line setting"
 proc _command_line_cast(param s: string, type t, x) return _cast(t, x);

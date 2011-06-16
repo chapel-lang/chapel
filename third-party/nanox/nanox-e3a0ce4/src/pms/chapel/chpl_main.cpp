@@ -50,6 +50,21 @@ void nanos_chapel_pre_init ( void * dummy )
 }
 
 //
+// Used for debugging purposes only
+//
+static int32_t chpl_localeID = -1;
+
+#define PRINTF_DEF printf
+
+#ifndef BRAD_DEBUGGING
+#define NANOX_SANITY_CHECK(routine)
+#else
+#define NANOX_SANITY_CHECK(routine) \
+  if (nanos::myThread == NULL) { fprintf(stderr, "[%d:%ld] non-Nanox thread detected in chpl_task_%s()\n", chpl_localeID, pthread_self(), #routine); } \
+  else { fprintf(stderr, "[%d:%d:%ld] thread in chpl_task_%s()\n", chpl_localeID, (nanos::myThread)->getId(), pthread_self(), #routine); }
+#endif
+
+//
 // interface function with begin-statement
 //
 void chpl_task_begin(chpl_fn_p fp,
@@ -58,7 +73,7 @@ void chpl_task_begin(chpl_fn_p fp,
                      chpl_bool serial_state,
                      chpl_task_list_p ltask) 
 {
-
+  NANOX_SANITY_CHECK(begin);
    assert(!ltask);
 
    WD * wd = NEW WD( NEW SMPDD( fp ), 0, 0, a );
@@ -67,7 +82,10 @@ void chpl_task_begin(chpl_fn_p fp,
 
 // Tasks
 
-void nanos_chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+void nanos_chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize, 
+                          int32_t init_chpl_localeID) {
+   NANOX_SANITY_CHECK(init);
+
    fatal_cond0(!chapel_hooked, "Chapel layer has not been correctly initialized");
 
    sys.setInitialMode( System::POOL );
@@ -75,11 +93,15 @@ void nanos_chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
    sys.setNumPEs(maxThreadsPerLocale);
    sys.start();
 
+   NANOX_SANITY_CHECK(init);
+
    //
    // TODO: Should verify that callStackSize is a reasonable value and
    // use it to set Nanos++'s task callstack size.
    //
    taskCallStackSize = callStackSize;
+
+   chpl_localeID = init_chpl_localeID;
 
 /*  tp = chpl_alloc(sizeof(thread_private_data_t), CHPL_RT_MD_THREAD_PRIVATE_DATA, 0, 0);
   threadlayer_set_thread_private_data(tp);
@@ -88,11 +110,13 @@ void nanos_chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
 
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
+  NANOX_SANITY_CHECK(callMain);
   chpl_main();
 }
 
 void chpl_task_exit()
 {
+  NANOX_SANITY_CHECK(exit);
    sys.finish();
 }
 
@@ -101,40 +125,48 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
                              int32_t task_list_locale,
                              chpl_bool call_chpl_begin,
                              int lineno, chpl_string filename) {
+  NANOX_SANITY_CHECK(addToTaskList);
     chpl_fn_p fp = chpl_ftable[fid];
     chpl_task_begin(fp, arg, false, false, NULL);
 }
 
 void chpl_task_processTaskList(chpl_task_list_p task_list)
 {
+  NANOX_SANITY_CHECK(processTaskList);
 }
 
 void chpl_task_executeTasksInList(chpl_task_list_p task_list)
 {
+  NANOX_SANITY_CHECK(executeTasksInList);
 }
 
 void chpl_task_freeTaskList(chpl_task_list_p task_list)
 {
+  NANOX_SANITY_CHECK(freeTaskList);
 }
 
 //TODO
 void chpl_task_sleep(int secs)
 {
+  NANOX_SANITY_CHECK(sleep);
   sleep(secs);
 }
 
 //TODO
 chpl_bool chpl_task_getSerial(void)
 {
+  NANOX_SANITY_CHECK(getSerial);
   return 0;
 }
 
 //TODO
 void chpl_task_setSerial(chpl_bool state)
 {
+  NANOX_SANITY_CHECK(setSerial);
 }
 
 uint64_t chpl_task_getCallStackSize(void) {
+  NANOX_SANITY_CHECK(getCallStackSize);
   return taskCallStackSize;
 }
 
@@ -143,22 +175,26 @@ uint64_t chpl_task_getCallStackSize(void) {
 
 uint32_t chpl_task_getNumQueuedTasks(void)
 {
+  NANOX_SANITY_CHECK(getNumQueuedTasks);
    return sys.getReadyNum();
 }
 
 uint32_t chpl_task_getNumRunningTasks(void)
 {
+  NANOX_SANITY_CHECK(getNumRunningTasks);
   return sys.getRunningTasks();
 }
 
 int32_t  chpl_task_getNumBlockedTasks(void)
 {
+  NANOX_SANITY_CHECK(getNumBlockedTasks);
   return sys.getTaskNum() - sys.getReadyNum() -  sys.getRunningTasks();
 }
 
 //TODO
 chpl_taskID_t chpl_task_getId(void)
 {
+  NANOX_SANITY_CHECK(getId);
   return myThread->getCurrentWD()->getId();
 }
 
@@ -166,31 +202,36 @@ chpl_taskID_t chpl_task_getId(void)
 
 int32_t  chpl_task_getMaxThreads(void)
 {
+  NANOX_SANITY_CHECK(getMaxThreads);
    // TODO: Alex
    return 0;
 }
 
 int32_t  chpl_task_getMaxThreadsLimit(void)
 {
+  NANOX_SANITY_CHECK(getMaxThreadsLimit);
    // TODO: Alex
    return 0;
 }
 
 uint32_t chpl_task_getNumThreads(void)
 {
+  NANOX_SANITY_CHECK(getNumThreads);
    return sys.getNumWorkers();
 }
 
 uint32_t chpl_task_getNumIdleThreads(void)
 {
+  NANOX_SANITY_CHECK(getNumIdleThreads);
     return sys.getIdleNum();
 }
 
-void chpl_task_perPthreadInit(void) {
-  // TODO: This function is called for any pthreads that are created
-  // outside the tasking layer -- for example, a progress thread used
-  // to ensure progress in a one-sided communication layer that needs
-  // software support.  If anything needs to be done with these
-  // threads to help them coexist with those owned by the tasking
-  // layer, it should be done here.
+int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
+  NANOX_SANITY_CHECK(createCommTask);
+
+  // TODO: Eventually, we will want to make this task more dedicated
+  // than your average Nanos task, but for now we believe this should
+  // work as long as the number of threads Nanos is using is > 1.
+  chpl_task_begin(fn, arg, true, false, NULL);
+  return 0;
 }

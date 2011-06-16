@@ -108,6 +108,8 @@ proc range.range(type idxType = int,
 //////////////////////////////////////////////////////////////////////////////////
 // Range builders for bounded ranges
 // Range builders are used by the parser to create literal ranges.
+// hilde sez: I think that these need to be spelled out explicitly
+// because param loop unrolling is performed before generic expansion.
 //
 proc _build_range(low: int, high: int)
   return new range(idxType = int, _low = low, _high = high);
@@ -117,10 +119,14 @@ proc _build_range(low: int(64), high: int(64))
   return new range(int(64), _low = low, _high = high);
 proc _build_range(low: uint(64), high: uint(64))
   return new range(uint(64), _low = low, _high = high);
+proc _build_range(low, high) {
+  compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+}
 
 
 //////////////////////////////////////////////////////////////////////////////////
 // Range builders for unbounded ranges
+// hilde sez: Ditto here: Generic types don't work.
 //
 proc _build_range(param bt: BoundedRangeType, bound: int)
   return new range(int, bt, false, bound, bound);
@@ -137,6 +143,17 @@ proc _build_range(param bt: BoundedRangeType)
 //################################################################################
 //# Predicates
 //#
+
+// isBoundedRange(r) = true if 'r' is a (fully) bounded range
+
+proc isBoundedRange(r)           param
+  return false;
+
+proc isBoundedRange(r: range(?)) param
+  return r.hasLowBound() && r.hasHighBound();
+
+proc isBoundedRange(param B: BoundedRangeType) param
+  return B == BoundedRangeType.bounded;
 
 // Returns true if this range has a low bound.
 proc range.hasLowBound() param
@@ -159,8 +176,8 @@ proc range.hasLast()
 // Returns true if this range is naturally aligned, false otherwise.
 // Note that this does not indicate if the range is ambiguously aligned.
 pragma "inline"
-proc range.isAligned()
-  return _base.isAligned();
+proc range.isNaturallyAligned()
+  return _base.isNaturallyAligned();
 
 // Returns true if the alignment of this range is ambiguous.
 // After a stride whose absolute value is 2 or greater is applied, 
@@ -281,13 +298,23 @@ proc range.alignHigh()
   return this;
 }
 
-// Returns the ordinal of this index within the sequence described by this range.
+// Returns the ordinal of 'i' within this range's represented sequence.
 proc range.indexOrder(i: idxType)
 {
   if this.isAmbiguous() then
     __primitive("chpl_error", "indexOrder -- Undefined on a range with ambiguous alignment.");
 
   return _base.indexOrder(i);
+}
+
+// Opposite of indexOrder: returns the ord-th element of this range's
+// represented sequence.
+proc range.orderToIndex(ord: integral): idxType
+{
+  if isAmbiguous() then
+    halt("invoking orderToIndex on a range that is ambigously aligned");
+
+  return _base.orderToIndex(ord);
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -371,7 +398,7 @@ proc by(r : range(?), str)
   var temp = chpl__by(r._base, str);
   var result = new range(temp.idxType, temp.boundedType, temp.stridable);
   result._base = temp;
-  result._aligned = r._aligned || chpl__hasAlignment(result);
+  result._aligned = r._aligned || !r.isAmbiguous() && chpl__hasAlignment(result);
   return result;
 }
 

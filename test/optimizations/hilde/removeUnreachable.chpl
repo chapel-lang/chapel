@@ -7,7 +7,8 @@ proc foo(param gnarly : bool = false, reeg: int)
 
   // when gnarly is false, this code should not be reachable
   // and the compiler error should not fire.
-  compilerError("How did we get here?");
+  // compilerError("How did we get here?");
+  return 0;
 }
 
 proc main()

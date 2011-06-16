@@ -80,30 +80,26 @@ removeWrapRecords() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_SET_MEMBER)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (se->var->type->symbol->hasFlag(FLAG_ARRAY) ||
-            se->var->type->symbol->hasFlag(FLAG_DOMAIN)) {
+        if (isRecordWrappedType(se->var->type)) {
           call->primitive = primitives[PRIM_MOVE];
           call->get(2)->remove();
         }
       }
     } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (se->var->type->symbol->hasFlag(FLAG_ARRAY) ||
-            se->var->type->symbol->hasFlag(FLAG_DOMAIN)) {
+        if (isRecordWrappedType(se->var->type)) {
           call->primitive = primitives[PRIM_SET_REF];
           call->get(2)->remove();
         }
       }
     } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (se->var->type->symbol->hasFlag(FLAG_ARRAY) ||
-            se->var->type->symbol->hasFlag(FLAG_DOMAIN)) {
+        if (isRecordWrappedType(se->var->type)) {
           call->replace(se->remove());
         }
         if (se->var->type->symbol->hasFlag(FLAG_REF)) {
           Type* vt = se->getValType();
-          if (vt->symbol->hasFlag(FLAG_ARRAY) ||
-              vt->symbol->hasFlag(FLAG_DOMAIN)) {
+          if (isRecordWrappedType(vt)) {
             call->replace(new CallExpr(PRIM_GET_REF, se->remove()));
           }
         }
@@ -136,7 +132,7 @@ removeWrapRecords() {
   forv_Vec(ClassType, ct, gClassTypes) {
     if (ct->symbol->hasFlag(FLAG_DATA_CLASS)) {
       if (TypeSymbol* ts = getDataClassType(ct->symbol)) {
-        if (ts->hasFlag(FLAG_ARRAY) || ts->hasFlag(FLAG_DOMAIN)) {
+        if (isRecordWrappedType(ts->typeInfo())) {
           setDataClassType(ct->symbol, ts->type->getField("_value")->type->symbol);
         }
       }
@@ -147,15 +143,14 @@ removeWrapRecords() {
 
 static Type*
 getWrapRecordBaseType(Type* type) {
-  if (type->symbol->hasFlag(FLAG_ARRAY) ||
-      type->symbol->hasFlag(FLAG_DOMAIN)) {
+  if (isRecordWrappedType(type)) {
     return type->getField("_value")->type;
   } else if (type->symbol->hasFlag(FLAG_REF)) {
     Type* vt = type->getValType();
-    if (vt->symbol->hasFlag(FLAG_ARRAY) ||
-        vt->symbol->hasFlag(FLAG_DOMAIN)) {
+    if (isRecordWrappedType(vt)) {
       return vt->getField("_value")->type->refType;
     }
   }
   return NULL;
 }
+

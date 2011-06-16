@@ -4,5 +4,6 @@ Qthreads README for Chapel
 
 Local modifications:
 
-* On 2011/04/20 we changed "chpltasks.h" to "chpl-tasks.h" in
-  shims/chapel/src/tasks-qthreads.c.
+* Added chpl_task_createCommTask() in place of
+  chpl_task_perPthreadInit() to reflect interface change on Chapel's
+  part.

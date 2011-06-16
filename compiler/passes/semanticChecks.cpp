@@ -15,6 +15,9 @@ check_functions(FnSymbol* fn) {
   if (!strcmp(fn->name, "these") && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'these' must have parentheses");
 
+  if (fn->retTag == RET_PARAM && fn->retExprType != NULL)
+    USR_WARN(fn, "providing an explicit return type on a 'param' function currently leads to incorrect results; as a workaround, remove the return type specification in function '%s'", fn->name);
+
   Vec<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
   bool isIterator = fn->hasFlag(FLAG_ITERATOR_FN);
@@ -243,6 +246,18 @@ checkResolved(void) {
             USR_FATAL_CONT(def, "enumerator '%s' is not an int parameter", def->sym->name);
         }
       }
+    }
+  }
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_CHPL_FREE)) {
+      // Statements of the form 'delete x' (PRIM_DELETE) are replace
+      //  during the normalize pass with a call to the destructor
+      //  followed by a call to chpl_free(), so here we just check
+      //  if the type of the variable being passed to chpl_free()
+      //  is a record.
+      if (isRecord(call->get(1)->typeInfo()))
+        USR_FATAL_CONT(call, "delete not allowed on records");
     }
   }
 }

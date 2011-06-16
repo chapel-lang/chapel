@@ -6,124 +6,187 @@
 #include "stmt.h"
 #include "view.h"
 
-BasicBlock::BasicBlock(int init_id) : id(init_id) {}
+BasicBlock::BasicBlock()
+  : id(nextid++) {}
 
 #define BB_START()                              \
-  basicBlock = new BasicBlock(id++)
+  basicBlock = new BasicBlock()
 
+// The assert tests that the expression we are adding to this basic block
+// has not already been deleted.
 #define BB_ADD(expr)                            \
+  INT_ASSERT(expr);                             \
   basicBlock->exprs.add(expr)
 
 #define BB_ADD_LS(exprls)                       \
-  for_alist(expr, exprls) {               \
+  for_alist(expr, exprls) {                     \
     BB_ADD(expr);                               \
   }
 
 #define BB_STOP()                               \
-  fn->basicBlocks->add(basicBlock);             \
-  basicBlock = NULL
+  fn->basicBlocks->add(Steal());
 
 #define BB_RESTART()                            \
   BB_STOP();                                    \
   BB_START()
 
 #define BBB(stmt)                               \
-  if (stmt) {                                   \
-    buildBasicBlocks(fn, stmt);                 \
+    buildBasicBlocks(fn, stmt)
+
+#define BB_THREAD(src, dst)                     \
+  dst->ins.add(src);                            \
+  src->outs.add(dst)
+
+//# Statics
+BasicBlock* BasicBlock::basicBlock;
+Map<LabelSymbol*,Vec<BasicBlock*>*> BasicBlock::gotoMaps;
+Map<LabelSymbol*,BasicBlock*> BasicBlock::labelMaps;
+int BasicBlock::nextid;
+
+
+// Returns true if the class invariants have been preserved.
+bool BasicBlock::isOK()
+{
+  // Right now we just test that all entries are valid.
+  forv_Vec(Expr, expr, exprs)
+    if (expr == 0) return false;
+  return true;
+}
+
+// Reset the shared statics.
+void BasicBlock::reset(FnSymbol* fn)
+{
+  if (fn->basicBlocks)
+  {
+    forv_Vec(BasicBlock, bb, *fn->basicBlocks)
+      delete bb;
+    delete fn->basicBlocks;
   }
+  fn->basicBlocks = new Vec<BasicBlock*>();
+  gotoMaps.clear();
+  labelMaps.clear();
+  nextid = 0;
+}
 
-#define BB_THREAD(in, out) \
-  out->ins.add(in); \
-  in->outs.add(out)
+BasicBlock* BasicBlock::Steal()
+{
+  BasicBlock* temp = basicBlock;
+  basicBlock = 0;
+  return temp;
+}
 
-void buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
-  static BasicBlock* basicBlock;
-  static Map<LabelSymbol*,Vec<BasicBlock*>*> gotoMaps;
-  static Map<LabelSymbol*,BasicBlock*> labelMaps;
-  static int id;
-  if (!stmt) {
-    if (fn->basicBlocks) {
-      forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-        delete bb;
-      }
-      delete fn->basicBlocks;
-    }
-    fn->basicBlocks = new Vec<BasicBlock*>();
-    gotoMaps.clear();
-    labelMaps.clear();
-    id = 0;
-    BB_START();
-    BBB(fn->body);
-    BB_STOP();
-  } else {
-    if (BlockStmt* s = toBlockStmt(stmt)) {
-      if (s->blockInfo) {
-        BasicBlock* top = basicBlock;
-        BB_RESTART();
-        BB_ADD(s->blockInfo);
-        BasicBlock* loopTop = basicBlock;
-        for_alist(stmt, s->body) {
-          BBB(stmt);
-        }
-        BasicBlock* loopBottom = basicBlock;
-        BB_RESTART();
-        BasicBlock* bottom = basicBlock;
-        BB_THREAD(top, loopTop);
-        BB_THREAD(loopBottom, bottom);
-        BB_THREAD(loopBottom, loopTop);
-        BB_THREAD(top, bottom);
-      } else {
-        for_alist(stmt, s->body) {
-          BBB(stmt);
-        }
-      }
-    } else if (CondStmt* s = toCondStmt(stmt)) {
-      BB_ADD(s->condExpr);
+// This is the top-level (public) builder function.
+void buildBasicBlocks(FnSymbol* fn)
+{
+  BasicBlock::reset(fn);
+  BasicBlock::basicBlock = new BasicBlock();
+  BasicBlock::buildBasicBlocks(fn, fn->body);
+  fn->basicBlocks->add(BasicBlock::Steal());
+}
+
+void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
+{
+  if (!stmt) return;
+
+  if (BlockStmt* s = toBlockStmt(stmt))
+  {
+    // If a loop statement.
+    if (s->blockInfo)
+    {
       BasicBlock* top = basicBlock;
       BB_RESTART();
-      BasicBlock* thenTop = basicBlock;
-      BBB(s->thenStmt);
-      BasicBlock* thenBottom = basicBlock;
+      // Assumes that blockInfo is never null.
+      BB_ADD(s->blockInfo);
+      BasicBlock* loopTop = basicBlock;
+      for_alist(stmt, s->body) {
+        BBB(stmt);
+      }
+      BasicBlock* loopBottom = basicBlock;
       BB_RESTART();
-      BasicBlock* elseTop = basicBlock;
+      BasicBlock* bottom = basicBlock;
+      BB_THREAD(top, loopTop);
+      BB_THREAD(loopBottom, bottom);
+      BB_THREAD(loopBottom, loopTop);
+      BB_THREAD(top, bottom);
+    }
+    else
+    {
+      for_alist(stmt, s->body)
+        BBB(stmt);
+    }
+  }
+  else if (CondStmt* s = toCondStmt(stmt))
+  {
+    INT_ASSERT(s->condExpr);
+    BB_ADD(s->condExpr);
+    BasicBlock* top = basicBlock;
+    BB_RESTART();
+    BB_THREAD(top, basicBlock);
+    BBB(s->thenStmt);
+    BasicBlock* thenBottom = basicBlock;
+    BB_RESTART();
+    if (s->elseStmt)
+    {
+      BB_THREAD(top, basicBlock);
       BBB(s->elseStmt);
       BasicBlock* elseBottom = basicBlock;
       BB_RESTART();
-      BasicBlock* bottom = basicBlock;
-      BB_THREAD(top, thenTop);
-      BB_THREAD(top, elseTop);
-      BB_THREAD(thenBottom, bottom);
-      BB_THREAD(elseBottom, bottom);
-    } else if (GotoStmt* s = toGotoStmt(stmt)) {
-      LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->var);
-      if (BasicBlock* bb = labelMaps.get(label)) {
-        BB_THREAD(basicBlock, bb);
-      } else {
-        Vec<BasicBlock*>* vbb = gotoMaps.get(label);
-        if (!vbb)
-          vbb = new Vec<BasicBlock*>();
-        vbb->add(basicBlock);
-        gotoMaps.put(label, vbb);
-      }
-      BB_RESTART();
+      BB_THREAD(elseBottom, basicBlock);
+    }
+    else
+      BB_THREAD(top, basicBlock);
+    BB_THREAD(thenBottom, basicBlock);
+  } else if (GotoStmt* s = toGotoStmt(stmt)) {
+    LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->var);
+    if (BasicBlock* bb = labelMaps.get(label)) {
+      BB_THREAD(basicBlock, bb);
     } else {
-      DefExpr* def = toDefExpr(stmt);
-      if (def && toLabelSymbol(def->sym)) {
+      Vec<BasicBlock*>* vbb = gotoMaps.get(label);
+      if (!vbb)
+        vbb = new Vec<BasicBlock*>();
+      vbb->add(basicBlock);
+      gotoMaps.put(label, vbb);
+    }
+    BB_ADD(s); // Put the goto at the end of its block.
+    BB_RESTART();
+  } else {
+    DefExpr* def = toDefExpr(stmt);
+    if (def && toLabelSymbol(def->sym)) {
+      // If a label appears in the middle of a block,
+      // we start a new block.
+      if (basicBlock->exprs.count() > 0)
+      {
         BasicBlock* top = basicBlock;
         BB_RESTART();
-        BasicBlock* bottom = basicBlock;
-        BB_THREAD(top, bottom);
-        LabelSymbol* label = toLabelSymbol(def->sym);
-        if (Vec<BasicBlock*>* vbb = gotoMaps.get(label)) {
-          forv_Vec(BasicBlock, basicBlock, *vbb) {
-            BB_THREAD(basicBlock, bottom);
-          }
+        BB_THREAD(top, basicBlock);
+      }
+      BB_ADD(def); // Put the label def at the start of its block.
+
+      // OK, this statement is a label def, so get the label.
+      LabelSymbol* label = toLabelSymbol(def->sym);
+
+      // See if we have any unresolved references to this label,
+      // and resolve them.
+      if (Vec<BasicBlock*>* vbb = gotoMaps.get(label)) {
+        forv_Vec(BasicBlock, bb, *vbb) {
+          BB_THREAD(bb, basicBlock);
         }
-        labelMaps.put(label, bottom);
-      } else
-        BB_ADD(stmt);
-    }
+      }
+      labelMaps.put(label, basicBlock);
+    } else
+      BB_ADD(stmt);
   }
+}
+
+// Returns true if the basic block structure is OK, false otherwise.
+bool verifyBasicBlocks(FnSymbol* fn)
+{
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks)
+  {
+    if (! bb->isOK())
+      return false;
+  }
+  return true;
 }
 
 void buildLocalsVectorMap(FnSymbol* fn,
@@ -250,7 +313,10 @@ void printBasicBlocks(FnSymbol* fn) {
     }
     printf("\n");
     forv_Vec(Expr, expr, b->exprs) {
-      list_view_noline(expr);
+      if (expr)
+        list_view_noline(expr);
+      else
+        printf("0 (null)\n");
     }
     printf("\n");
   }

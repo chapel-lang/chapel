@@ -23,7 +23,7 @@ typedef uint64_t chpl_taskID_t;
 //
 typedef struct {
   volatile chpl_bool  is_full;
-  threadlayer_mutex_t lock;
+  chpl_thread_mutex_t lock;
 } chpl_sync_aux_t;
 
 #endif

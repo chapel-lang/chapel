@@ -101,6 +101,7 @@ buildDefaultWrapper(FnSymbol* fn,
   bool specializeDefaultConstructor =
     fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) &&
     !fn->_this->type->symbol->hasFlag(FLAG_SYNC) &&
+    !fn->_this->type->symbol->hasFlag(FLAG_SINGLE) &&
     !fn->_this->type->symbol->hasFlag(FLAG_REF);
   if (specializeDefaultConstructor) {
     wrapper->removeFlag(FLAG_TEMP);
@@ -137,8 +138,7 @@ buildDefaultWrapper(FnSymbol* fn,
         wrapper->insertAtTail(new DefExpr(temp));
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_SET_REF, wrapper_formal)));
       } else if (specializeDefaultConstructor && wrapper_formal->typeExpr &&
-                 (wrapper_formal->type->symbol->hasFlag(FLAG_ARRAY) ||
-                  wrapper_formal->type->symbol->hasFlag(FLAG_DOMAIN))) {
+                 isRefCountedType(wrapper_formal->type)) {
         temp = newTemp();
         if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
           if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)

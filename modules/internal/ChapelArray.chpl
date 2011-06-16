@@ -133,13 +133,15 @@ proc chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
   return _newDomain(d.newRectangularDom(rank, idxType, stridable));
 
 pragma "has runtime type"
-proc chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
-  return _newDomain(d.newAssociativeDom(idxType));
+proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+                                  param parSafe: bool = true) type
+  return _newDomain(d.newAssociativeDom(idxType, parSafe));
 
 pragma "has runtime type"
-proc chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
+proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+                                  param parSafe: bool = true) type
  where idxType == _OpaqueIndex
-  return _newDomain(d.newOpaqueDom(idxType));
+  return _newDomain(d.newOpaqueDom(idxType, parSafe));
 
 // This function has no 'has runtime type' pragma since the idxType of
 // opaque domains is _OpaqueIndex, not opaque.  This function is
@@ -159,7 +161,11 @@ proc chpl__convertValueToRuntimeType(dom: domain) type
                             dom._value.idxType, dom._value.stridable);
 
 proc chpl__convertValueToRuntimeType(dom: domain) type
- where dom._value:BaseAssociativeDom || dom._value:BaseOpaqueDom
+ where dom._value:BaseAssociativeDom
+  return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
+
+proc chpl__convertValueToRuntimeType(dom: domain) type
+ where dom._value:BaseOpaqueDom
   return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
 
 proc chpl__convertValueToRuntimeType(dom: domain) type
@@ -261,7 +267,7 @@ proc chpl__distributed(d: _distribution, type domainType) type {
     return chpl__buildSparseDomainRuntimeType(d, dom._value.parentDom);
   } else {
     var dom: domainType;
-    return chpl__buildDomainRuntimeType(d, dom._value.idxType);
+    return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
   }
 }
 
@@ -403,8 +409,8 @@ record _distribution {
     return x;
   }
 
-  proc newAssociativeDom(type idxType) {
-    var x = _value.dsiNewAssociativeDom(idxType);
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -416,8 +422,9 @@ record _distribution {
     return x;
   }
 
-  proc newAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
-    var x = _value.dsiNewAssociativeDom(idxType);
+  proc newAssociativeDom(type idxType, param parSafe: bool=true)
+  where _isEnumeratedType(idxType) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -432,8 +439,8 @@ record _distribution {
     return x;
   }
 
-  proc newOpaqueDom(type idxType) {
-    var x = _value.dsiNewOpaqueDom(idxType);
+  proc newOpaqueDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewOpaqueDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -458,7 +465,7 @@ record _distribution {
     return x;
   }
 
-  proc idxToLocale(ind) return _value.dsiIndexLocale(ind);
+  proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
   proc writeThis(x: Writer) {
     _value.writeThis(x);
@@ -505,6 +512,12 @@ record _domain {
       return _value.rank;
     else
       return 1;
+  }
+
+  proc idxType type {
+    if isOpaqueDom(this) then
+      compilerError("opaque domains do not currently support .idxType");
+    return _value.idxType;
   }
 
   proc stridable param where isRectangularDom(this) {
@@ -816,6 +829,34 @@ record _domain {
 
   proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 }  // record _domain
+
+proc chpl_countDomHelp(dom, counts) {
+  var ranges = dom.dims();
+  for param i in 1..dom.rank do
+    ranges(i) = ranges(i) # counts(i);
+  return dom[(...ranges)];
+}  
+
+proc #(dom: domain, counts: integral) where isRectangularDom(dom) && dom.rank == 1 {
+  return chpl_countDomHelp(dom, tuple(counts));
+}
+
+proc #(dom: domain, counts) where isRectangularDom(dom) && isTuple(counts) {
+  if (counts.size != dom.rank) then
+    compilerError("the domain and tuple arguments of # must have the same rank");
+  return chpl_countDomHelp(dom, counts);
+}
+
+proc #(arr: [], counts: integral) where isRectangularArr(arr) && arr.rank == 1 {
+  return arr[arr.domain#counts];
+}
+
+proc #(arr: [], counts) where isRectangularArr(arr) && isTuple(counts) {
+  if (counts.size != arr.rank) then
+    compilerError("the domain and array arguments of # must have the same rank");
+  return arr[arr.domain#counts];
+}
+
 
 proc _getNewDist(value) {
   return new dmap(value);
@@ -1397,14 +1438,16 @@ pragma "inline" proc =(a: [], b) {
   return a;
 }
 
-proc =(a: [], b: _tuple) where isEnumArr(a) || isRectangularArr(a) {
-  if isEnumArr(a) {
+proc =(a: [], b: _tuple) where isEnumArr(a) {
     if b.size != a.numElements then
       halt("tuple array initializer size mismatch");
     for (i,j) in (chpl_enumerate(index(a.domain)), 1..) {
       a(i) = b(j);
     }
-  } else {
+    return a;
+}
+
+proc =(a: [], b: _tuple) where isRectangularArr(a) {
     proc chpl__tupleInit(j, param rank: int, b: _tuple) {
       const stride = a.domain.dim(a.rank-rank+1).stride,
             start = a.domain.dim(a.rank-rank+1).first;
@@ -1423,8 +1466,7 @@ proc =(a: [], b: _tuple) where isEnumArr(a) || isRectangularArr(a) {
     }
     var j: a.rank*int;
     chpl__tupleInit(j, a.rank, b);
-  }
-  return a;
+    return a;
 }
 
 proc _desync(type t) where t: _syncvar || t: _singlevar {
@@ -1800,12 +1842,13 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   var A: [D] iteratorIndexType(irc);
 
   for e in irc {
-    pragma "no copy" pragma "insert auto destroy" var ee = e;
+    //pragma "no copy" /*pragma "insert auto destroy"*/ var ee = e;
     if i > size {
       size = size * 2;
       D = [1..size];
     }
-    A(i) = ee;
+    //A(i) = ee;
+    A(i) = e;
     i = i + 1;
   }
   D = [1..i-1];

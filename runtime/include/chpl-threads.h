@@ -15,28 +15,32 @@
 //
 // Initialize the threading layer.
 //
-void threadlayer_init(int32_t, uint64_t, void(*)(void*), void(*)(void));
+void chpl_thread_init(int32_t, uint64_t, void(*)(void*), void(*)(void));
 
 //
-// Initialize the threading layer, for a secondary pthread created by,
-// in all cases currently, the comm layer.
+// Create a thread for a communication task to run function 'fn' with
+// argument 'arg'.  This thread should be quite dedicated (e.g., get
+// its own system thread) in order to be responsive and not be held up
+// by other user-level tasks. returns 0 on success, nonzero on
+// failure.
+
 //
-void threadlayer_perPthreadInit(void);
+int chpl_thread_createCommThread(chpl_fn_p fn, void* arg);
 
 //
 // Shut down the threading layer.
 //
-void threadlayer_exit(void);
+void chpl_thread_exit(void);
 
 //
 // Can the thread layer create another thread?
 //
-chpl_bool threadlayer_can_start_thread(void);
+chpl_bool chpl_thread_canCreate(void);
 
 //
 // Create a new thread.
 //
-int threadlayer_thread_create(void*);
+int chpl_thread_create(void*);
 
 //
 // Destroy the calling thread.  The threading layer is allowed to return
@@ -45,17 +49,17 @@ int threadlayer_thread_create(void*);
 // layer is actually prohibited from destroying the thread if doing so
 // would leave no threads running on the processor.
 //
-void threadlayer_thread_destroy(void);
+void chpl_thread_destroy(void);
 
 //
 // Get the calling thread's unique identifier.
 //
-threadlayer_threadID_t threadlayer_thread_id(void);
+chpl_thread_id_t chpl_thread_getId(void);
 
 //
 // Yield the processor, so that some other thread can run on it.
 //
-void threadlayer_yield(void);
+void chpl_thread_yield(void);
 
 //
 // Thread private data
@@ -65,33 +69,33 @@ void threadlayer_yield(void);
 // the threading layer also needs to store some data private to each
 // thread, it must make other arrangements to do so.
 //
-void  threadlayer_set_thread_private_data(void*);
-void* threadlayer_get_thread_private_data(void);
+void  chpl_thread_setPrivateData(void*);
+void* chpl_thread_getPrivateData(void);
 
 //
 // Get the maximum number of threads that can exist.
 //
-uint32_t threadlayer_get_max_threads(void);
+uint32_t chpl_thread_getMaxThreads(void);
 
 //
 // Get the number of threads currently in existence.
 //
-uint32_t threadlayer_get_num_threads(void);
+uint32_t chpl_thread_getNumThreads(void);
 
 //
 // Get the current thread stack size, and the limit on thread stack size.
 //
-uint64_t threadlayer_call_stack_size(void);
-uint64_t threadlayer_call_stack_size_limit(void);
+uint64_t chpl_thread_getCallStackSize(void);
+uint64_t chpl_thread_getCallStackSizeLimit(void);
 
 //
 // Mutexes, and operations upon them.
 //
-typedef threadlayer_mutex_t* threadlayer_mutex_p;
+typedef chpl_thread_mutex_t* chpl_thread_mutex_p;
 
-void threadlayer_mutex_init(threadlayer_mutex_p);
-threadlayer_mutex_p threadlayer_mutex_new(void);
-void threadlayer_mutex_lock(threadlayer_mutex_p);
-void threadlayer_mutex_unlock(threadlayer_mutex_p);
+void chpl_thread_mutexInit(chpl_thread_mutex_p);
+chpl_thread_mutex_p chpl_thread_mutexNew(void);
+void chpl_thread_mutexLock(chpl_thread_mutex_p);
+void chpl_thread_mutexUnlock(chpl_thread_mutex_p);
 
 #endif

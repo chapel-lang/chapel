@@ -199,6 +199,13 @@ bool isUnion(Type* t);
 
 bool isReferenceType(Type* t);
 
+bool isRefCountedType(Type* t);
+bool isRecordWrappedType(Type* t);
+
+bool isDistClass(Type* type);
+bool isDomainClass(Type* type);
+bool isArrayClass(Type* type);
+
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 void genTypeStructureIndex(FILE *outfile, TypeSymbol* typesym);
 void codegenTypeStructures(FILE* hdrfile);

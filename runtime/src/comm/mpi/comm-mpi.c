@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "chplexit.h"
 #include "chpl-comm.h"
 #include "chpl_mem.h"
@@ -505,6 +506,15 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
 }
 
+void chpl_comm_startPollingTask(void) {
+  // Ultimately the pthread code from above to create the polling thread
+  // should be moved down here
+}
+
+void chpl_comm_stopPollingTask(void) {
+  // And that thread should be stopped here
+}
+
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }
 void chpl_startVerboseCommHere() { }
@@ -515,7 +525,22 @@ void chpl_stopCommDiagnostics() { }
 void chpl_startCommDiagnosticsHere() { }
 void chpl_stopCommDiagnosticsHere() { }
 
+void chpl_resetCommDiagnosticsHere() { }
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+  cd->put = -1;
+  cd->get = -1;
+  cd->get_nb = -1;
+  cd->get_nb_test = -1;
+  cd->get_nb_wait = -1;
+  cd->fork = -1;
+  cd->fork_fast = -1;
+  cd->fork_nb = -1;
+}
+
 int32_t chpl_numCommGets(void) { return -1; }
+int32_t chpl_numCommNBGets(void) { return -1; }
+int32_t chpl_numCommTestNBGets(void) { return -1; }
+int32_t chpl_numCommWaitNBGets(void) { return -1; }
 int32_t chpl_numCommPuts(void) { return -1; }
 int32_t chpl_numCommForks(void) { return -1; }
 int32_t chpl_numCommFastForks(void) { return -1; }

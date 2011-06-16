@@ -64,8 +64,7 @@ void buildDefaultFunctions(void) {
       }
       if (ClassType* ct = toClassType(type->type)) {
         if (isRecord(ct)) {
-          if (!(ct->symbol->hasFlag(FLAG_DOMAIN) ||
-                ct->symbol->hasFlag(FLAG_ARRAY))) {
+          if (!isRecordWrappedType(ct)) {
             build_record_equality_function(ct);
             build_record_inequality_function(ct);
           }
@@ -158,6 +157,8 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->addFlag(FLAG_TEMP);
   if (ct->symbol->hasFlag(FLAG_SYNC)) 
     fn->addFlag(FLAG_SYNC);
+  if (ct->symbol->hasFlag(FLAG_SINGLE)) 
+    fn->addFlag(FLAG_SINGLE);
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(_this);

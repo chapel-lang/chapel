@@ -283,11 +283,11 @@ proc Cyclic.idxToLocaleInd(ind: rank*idxType) {
     return x;
 }
 
-proc Cyclic.dsiIndexLocale(i: idxType) where rank == 1 {
+proc Cyclic.dsiIndexToLocale(i: idxType) where rank == 1 {
   return targetLocs(idxToLocaleInd(i));
 }
 
-proc Cyclic.dsiIndexLocale(i: rank*idxType) {
+proc Cyclic.dsiIndexToLocale(i: rank*idxType) {
   return targetLocs(idxToLocaleInd(i));
 }
 
@@ -437,7 +437,9 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
       if dim.last >= dim.first then
         result(i) = (dim.first / wholestride)..(dim.last / wholestride) by (dim.stride / wholestride);
       else
-        result(i) = 1..0 by 1;
+        // _computeChunkStuff should have produced no tasks for this
+        // If this ain't going to happen, could force numTasks=0 here instead.
+        assert(numTasks == 0);
     }
     if numTasks == 1 {
       if debugCyclicDist then
@@ -447,11 +449,13 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
       yield result;
     } else {
 
-      coforall taskid in 0:uint(64)..#numTasks {
+      coforall taskid in 0..#numTasks {
         var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
         const low = result(parDim).first, high = result(parDim).high;
         const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
                                       high, low, low);
+        // similar to BlockDist
+        assert(lo <= hi);
         splitRanges(parDim) = result(parDim)(lo..hi);
         if debugCyclicDist then
           writeln(here.id, ": leader whole: ", whole,

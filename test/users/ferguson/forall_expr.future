@@ -1,0 +1,109 @@
+bug: (intermittent) This test hangs (with high CPU utilization) with the qthreads tasking layer.
+
+It does not happen all the time.
+The FIFO works as expected.
+
+Debug stack traces with qthreads:
+
+[mppf@friday bencher]$ gdb ./a.out
+GNU gdb (GDB) Fedora (7.1-34.fc13)
+Copyright (C) 2010 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-redhat-linux-gnu".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /home/mppf/benchmarks_game/bencher/a.out...done.
+(gdb) run
+Starting program: /home/mppf/benchmarks_game/bencher/a.out 
+[Thread debugging using libthread_db enabled]
+[New Thread 0x7ffff6dd5700 (LWP 4165)]
+[New Thread 0x7ffff63d4700 (LWP 4166)]
+[New Thread 0x7ffff59d3700 (LWP 4167)]
+^C
+Program received signal SIGINT, Interrupt.
+0x00007ffff7ddc5ee in qt_threadqueue_dequeue_blocking (q=0x69ef50)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/threadqueues.c:328
+328             next_ptr = QPTR(QPTR(head)->next);
+Missing separate debuginfos, use: debuginfo-install glibc-2.12.2-1.x86_64 gmp-4.3.1-6.fc13.x86_64
+(gdb) bt
+#0  0x00007ffff7ddc5ee in qt_threadqueue_dequeue_blocking (q=0x69ef50)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/threadqueues.c:328
+#1  0x00007ffff7dd9a39 in qthread_shepherd (arg=0x67fbc0)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/qthread.c:452
+#2  0x0000000000000000 in ?? ()
+(gdb) thread apply all bt
+
+Thread 4 (Thread 0x7ffff59d3700 (LWP 4167)):
+#0  0x00007ffff7ddc608 in qt_threadqueue_dequeue_blocking (q=0x813af0)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/threadqueues.c:330
+#1  0x00007ffff7dd9a39 in qthread_shepherd (arg=0x67fd58)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/qthread.c:452
+#2  0x0000003be1607761 in start_thread () from /lib64/libpthread.so.0
+#3  0x0000003be0ee098d in clone () from /lib64/libc.so.6
+
+Thread 3 (Thread 0x7ffff63d4700 (LWP 4166)):
+#0  qt_threadqueue_dequeue_blocking (q=0x797710)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/threadqueues.c:326
+#1  0x00007ffff7dd9a39 in qthread_shepherd (arg=0x67fcd0)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/qthread.c:452
+#2  0x0000003be1607761 in start_thread () from /lib64/libpthread.so.0
+#3  0x0000003be0ee098d in clone () from /lib64/libc.so.6
+
+Thread 2 (Thread 0x7ffff6dd5700 (LWP 4165)):
+#0  qt_threadqueue_dequeue_blocking (q=0x71b330)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/threadqueues.c:326
+#1  0x00007ffff7dd9a39 in qthread_shepherd (arg=0x67fc48)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/qthread.c:452
+#2  0x0000003be1607761 in start_thread () from /lib64/libpthread.so.0
+#3  0x0000003be0ee098d in clone () from /lib64/libc.so.6
+
+Thread 1 (Thread 0x7ffff7dbe700 (LWP 4162)):
+#0  0x00007ffff7ddc5ee in qt_threadqueue_dequeue_blocking (q=0x69ef50)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/threadqueues.c:328
+#1  0x00007ffff7dd9a39 in qthread_shepherd (arg=0x67fbc0)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/qthread.c:452
+#2  0x0000000000000000 in ?? ()
+(gdb) c
+Continuing.
+^C
+Program received signal SIGINT, Interrupt.
+qt_threadqueue_dequeue_blocking (q=0x69ef50)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/threadqueues.c:331
+331                     if (next_ptr == NULL) { // is queue empty?
+(gdb) thread apply all bt
+
+Thread 4 (Thread 0x7ffff59d3700 (LWP 4167)):
+#0  qt_threadqueue_dequeue_blocking (q=0x813af0)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/threadqueues.c:331
+#1  0x00007ffff7dd9a39 in qthread_shepherd (arg=0x67fd58)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/qthread.c:452
+#2  0x0000003be1607761 in start_thread () from /lib64/libpthread.so.0
+#3  0x0000003be0ee098d in clone () from /lib64/libc.so.6
+
+Thread 3 (Thread 0x7ffff63d4700 (LWP 4166)):
+#0  qt_threadqueue_dequeue_blocking (q=0x797710)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/threadqueues.c:326
+#1  0x00007ffff7dd9a39 in qthread_shepherd (arg=0x67fcd0)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/qthread.c:452
+#2  0x0000003be1607761 in start_thread () from /lib64/libpthread.so.0
+#3  0x0000003be0ee098d in clone () from /lib64/libc.so.6
+
+Thread 2 (Thread 0x7ffff6dd5700 (LWP 4165)):
+#0  qt_threadqueue_dequeue_blocking (q=0x71b330)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/threadqueues.c:326
+#1  0x00007ffff7dd9a39 in qthread_shepherd (arg=0x67fc48)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/qthread.c:452
+#2  0x0000003be1607761 in start_thread () from /lib64/libpthread.so.0
+#3  0x0000003be0ee098d in clone () from /lib64/libc.so.6
+
+Thread 1 (Thread 0x7ffff7dbe700 (LWP 4162)):
+#0  qt_threadqueue_dequeue_blocking (q=0x69ef50)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/threadqueues.c:331
+#1  0x00007ffff7dd9a39 in qthread_shepherd (arg=0x67fbc0)
+    at /home/mppf/chapel/svn_ferguson/third-party/qthread/qthread-1.5.1/src/qthread.c:452
+#2  0x0000000000000000 in ?? ()
+(gdb) 
+

@@ -246,10 +246,10 @@ for i in D.dim(1) do
     A[i,j] = 7 * i**2 + j;
 writeln(A);
 \end{chapel}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 8 9 10 11 12 13 14
 29 30 31 32 33 34 35
-\end{chapeloutput}
+\end{chapelprintoutput}
 \end{chapelexample}
 
 \subsection{Associative Domains}
@@ -781,6 +781,18 @@ a \chpl{rank} equal to the number of dimensions that were sliced by
 ranges rather than integers.
 
 
+\subsection{Count Operator}
+\label{Count_Operator_Domains}
+\index{domains!count operator}
+
+The \chpl{#} operator can be applied to dense rectangular domains with
+a tuple argument whose size matches the rank of the domain (or
+optionally an integer in the case of a 1D domain).  The operator is
+equivalent to applying the \chpl{#} operator to the component ranges
+of the domain and then using them to slice the domain as in
+Section~\ref{Range_Based_Slicing}.
+
+
 \subsection{Adding and Removing Domain Indices}
 \label{Adding_and_Removing_Domain_Indices}
 \index{domains!adding indices}
@@ -834,11 +846,19 @@ writeln("D has ", D.numIndices, " indices.");
 D.clear();
 writeln("D has ", D.numIndices, " indices.");
 \end{chapel}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 D has 3 indices.
 D has 0 indices.
-\end{chapeloutput}
+\end{chapelprintoutput}
 \end{chapelexample}
+
+\begin{protohead}
+proc $Domain$.idxType type
+\end{protohead}
+\begin{protobody}
+Returns the domain type's \chpl{idxType}.
+This function is not available on opaque domains.
+\end{protobody}
 
 \begin{protohead}
 proc $Domain$.indexOrder(i: index($Domain$)): dim_type
@@ -1001,14 +1021,14 @@ type.
 proc $Domain$.rank param : int
 \end{protohead}
 \begin{protobody}
-Returns the rank of the domain as a parameter int.
+Returns the rank of the domain.
 \end{protobody}
 
 \begin{protohead}
 proc $Domain$.stridable param : bool
 \end{protohead}
 \begin{protobody}
-Returns whether or not the domain is stridable as a parameter bool.
+Returns whether or not the domain is stridable.
 \end{protobody}
 
 \begin{protohead}

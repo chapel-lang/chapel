@@ -559,7 +559,7 @@ if ($launchcmd) {
     $testflags = "-launchcmd \"$launchcmd\" $testflags";
 }
 if ($componly == 1) {
-    $testflags = "$testflags -componly";
+    $testflags = "$testflags -comp-only";
 }
 
 if ($runtests == 0) {
@@ -676,15 +676,15 @@ if ($runtests == 0) {
     }
     
     if ($status == 0) {
-        print MAIL "--- Unresolved Errors ($morechars) ----------------------------------\n";
-        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
-        print MAIL "\n";
-    }
-    
-    if ($status == 0) {
         print MAIL "--- Passing Future tests ($morechars) -------------------------------\n";
         print MAIL `grep "$futuremarker" $sortedsummary | grep "Success"`;
         print MAIL "\n";    
+    }
+    
+    if ($status == 0) {
+        print MAIL "--- Unresolved Errors ($morechars) ----------------------------------\n";
+        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+        print MAIL "\n";
     }
     
     if ($status == 0) {
@@ -735,6 +735,13 @@ if ($runtests == 0) {
 #
     if (!($memleaks eq "")) {
         mysystem("$chapeldir/util/devel/analyzeMemLeaksLog /tmp/$memleaks > $logdir/$memleaks");
+
+        # Update the memory leaks status for performance testing runs to
+        #  generate graphs for the memory leaks data
+        #
+        # This is not ideal (we may be a day behind depending on when
+        #  the tests finish), but it good enough for now.
+        mysystem("cd $testdir && cp $logdir/$memleaks ./memleaks.exec.out.tmp && $chapeldir/util/test/computePerfStats memleaks $logdir");
     }
 }
 

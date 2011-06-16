@@ -575,7 +575,7 @@ void build_constructor(ClassType* ct) {
 
   SET_LINENO(ct);
 
-  if (ct->symbol->hasFlag(FLAG_SYNC))
+  if (ct->symbol->hasFlag(FLAG_SYNC) || ct->symbol->hasFlag(FLAG_SINGLE))
     ct->defaultValue = NULL;
 
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
@@ -614,7 +614,9 @@ void build_constructor(ClassType* ct) {
   ArgSymbol* meme = NULL;
   CallExpr* superCall = NULL;
   CallExpr* allocCall = NULL;
-  if (ct->symbol->hasFlag(FLAG_REF) || ct->symbol->hasFlag(FLAG_SYNC)) {
+  if (ct->symbol->hasFlag(FLAG_REF) ||
+      ct->symbol->hasFlag(FLAG_SYNC) ||
+      ct->symbol->hasFlag(FLAG_SINGLE)) {
     allocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
                          newMemDesc(ct->symbol->name));
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));

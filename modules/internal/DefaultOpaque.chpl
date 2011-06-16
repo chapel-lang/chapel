@@ -1,14 +1,15 @@
 class DefaultOpaqueDom: BaseOpaqueDom {
   type idxType = _OpaqueIndex;
+  param parSafe: bool;
   var dist: DefaultDist;
-  var adomain: DefaultAssociativeDom(idxType=_OpaqueIndex);
+  var adomain: DefaultAssociativeDom(idxType=_OpaqueIndex, parSafe=parSafe);
 
   proc linksDistribution() param return false;
   proc dsiLinksDistribution()     return false;
 
-  proc DefaultOpaqueDom(dist: DefaultDist) {
+  proc DefaultOpaqueDom(dist: DefaultDist, param parSafe: bool) {
     this.dist = dist;
-    adomain = new DefaultAssociativeDom(_OpaqueIndex, dist);
+    adomain = new DefaultAssociativeDom(_OpaqueIndex, dist, parSafe=parSafe);
   }
 
   proc ~DefaultOpaqueDom() {
@@ -52,7 +53,7 @@ class DefaultOpaqueDom: BaseOpaqueDom {
   }
 
   proc dsiBuildArray(type eltType) {
-    var ia = new DefaultOpaqueArr(eltType=eltType, idxType=idxType, dom=this);
+    var ia = new DefaultOpaqueArr(eltType=eltType, idxType=idxType, parSafe=parSafe, dom=this);
     return ia;
   }
 }
@@ -68,9 +69,11 @@ proc DefaultOpaqueArr.dsiSerialWrite(f: Writer) {
 class DefaultOpaqueArr: BaseArr {
   type eltType;
   type idxType;
+  param parSafe: bool;
 
-  var dom: DefaultOpaqueDom(idxType=idxType);
-  var anarray = new DefaultAssociativeArr(eltType=eltType, idxType=idxType, dom=dom.adomain);
+  var dom: DefaultOpaqueDom(idxType=idxType, parSafe=parSafe);
+  var anarray = new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
+                                          parSafeDom=parSafe, dom=dom.adomain);
 
   proc ~DefaultOpaqueArr() {
     delete anarray;

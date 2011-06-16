@@ -114,8 +114,6 @@ void
 buildDefUseChains(FnSymbol* fn,
                   Map<SymExpr*,Vec<SymExpr*>*>& DU,
                   Map<SymExpr*,Vec<SymExpr*>*>& UD) {
-  buildBasicBlocks(fn);
-
   Vec<SymExpr*> defs;
   Map<SymExpr*,int> defMap;
   Vec<SymExpr*> useSet;

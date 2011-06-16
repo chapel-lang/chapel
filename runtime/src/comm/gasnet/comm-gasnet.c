@@ -17,14 +17,7 @@
 #endif
 
 static chpl_sync_aux_t chpl_comm_diagnostics_sync;
-static int chpl_comm_gets = 0;
-static int chpl_comm_nb_gets = 0;
-static int chpl_comm_test_nb_gets = 0;
-static int chpl_comm_wait_nb_gets = 0;
-static int chpl_comm_puts = 0;
-static int chpl_comm_forks = 0;
-static int chpl_comm_fast_forks = 0;
-static int chpl_comm_nb_forks = 0;
+static chpl_commDiagnostics chpl_comm_commDiagnostics;
 static int chpl_comm_no_debug_private = 0;
 
 //
@@ -235,11 +228,12 @@ int32_t chpl_comm_maxThreadsLimit(void) {
   return GASNETI_MAX_THREADS-1;
 }
 
-static int done = 0;
+static volatile int alldone = 0;
+static volatile int pollingdone = 0;
 
 static void polling(void* x) {
-  chpl_task_perPthreadInit();
-  GASNET_BLOCKUNTIL(done);
+  GASNET_BLOCKUNTIL(alldone);
+  pollingdone = 1;
 }
 
 #ifdef GASNET_NEEDS_MAX_SEGSIZE
@@ -273,8 +267,6 @@ static void chpl_comm_gasnet_set_max_segsize() {
 }
 #endif
 
-static pthread_t polling_thread;
-
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   int status;
 
@@ -296,17 +288,41 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 
+}
+
+void chpl_comm_startPollingTask(void) {
   //
   // Start polling thread on locale 0.  (On other locales, main enters
   // into a barrier wait, so the polling thread is unnecessary.)
   //
-  // This should call a special function in the threading interface
-  // but we have not yet initialized chapel threads!
+  if (chpl_localeID == 0) {
+    int status = chpl_task_createCommTask(polling, NULL);
+    if (status) {
+      alldone = 1;
+      pollingdone = 1;
+      chpl_internal_error("unable to start polling thread for gasnet");
+    }
+  }
+
+  // clear diags
+  memset(&chpl_comm_commDiagnostics, 0, sizeof(chpl_commDiagnostics));
+}
+
+void chpl_comm_stopPollingTask(void) {
+  //
+  // This only needs to be done on locale 0 (the only one using a
+  // polling thread), but there's no harm in doing it everywhere.
+  //
+  //  printf("[%d] setting alldone to 1\n", chpl_localeID);
+  //
+  alldone = 1;
+
+  //
+  // On locale 0 (the only one to use a polling thread) make sure the
+  // polling thread is done before going on
   //
   if (chpl_localeID == 0) {
-    status = pthread_create(&polling_thread, NULL, (void*(*)(void*))polling, 0);
-    if (status)
-      chpl_internal_error("unable to start polling thread for gasnet");
+    while (!pollingdone) {}
   }
 }
 
@@ -399,7 +415,7 @@ void chpl_comm_barrier(const char *msg) {
 }
 
 static void chpl_comm_exit_common(int status) {
-  int* ack = &done;
+  int* ack = (int*)&alldone;
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
@@ -410,10 +426,7 @@ static void chpl_comm_exit_common(int status) {
     if (loopback) {
       gasnet_exit(2);
     }
-    if ( pthread_join(polling_thread, NULL ) ) { // cleanup 
-      loopback = 1;
-      chpl_internal_error("Polling thread join failed.");
-    } 
+    chpl_comm_stopPollingTask();
   }
 
   chpl_comm_barrier("chpl_comm_exit_common_gasnet_exit"); 
@@ -429,7 +442,7 @@ void chpl_comm_exit_any_dirty(int status) {
   // kill the polling thread on locale 0, but other than that...
   // clean up nothing; just ask GASNet to exit
   // GASNet will then kill all other locales.
-  int* ack = &done;
+  int* ack = (int*)&alldone;
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
@@ -440,10 +453,7 @@ void chpl_comm_exit_any_dirty(int status) {
     if (loopback) {
       gasnet_exit(2);
     }
-    if ( pthread_join(polling_thread, NULL ) ) { // cleanup 
-      loopback = 1;
-      chpl_internal_error("Polling thread join failed.");
-    } 
+    chpl_comm_stopPollingTask();
   }
 
   gasnet_exit(status);
@@ -482,7 +492,7 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
       printf("%d: %s:%d: remote put to %d\n", chpl_localeID, fn, ln, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_puts++;
+      chpl_comm_commDiagnostics.put++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
     gasnet_put(locale, raddr, addr, size); // node, dest, src, size
@@ -503,7 +513,7 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
       printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_gets++;
+      chpl_comm_commDiagnostics.get++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
     gasnet_get(addr, locale, raddr, size); // dest, node, src, size
@@ -522,7 +532,7 @@ void chpl_comm_get_nb(void* addr, int32_t locale, void* raddr,
   } else {
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_nb_gets++;
+      chpl_comm_commDiagnostics.get_nb++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
     *token = gasnet_get_nb(addr, locale, raddr, size); // dest, node, src, size
@@ -539,7 +549,7 @@ int chpl_comm_test_get_nb(chpl_comm_get_nb_token_t *token,
            chpl_localeID, fn, ln, token);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
-    chpl_comm_test_nb_gets++;
+    chpl_comm_commDiagnostics.get_nb_test++;
     chpl_sync_unlock(&chpl_comm_diagnostics_sync);
   }
   return gasnet_try_syncnb(*token)==GASNET_OK;
@@ -552,7 +562,7 @@ void chpl_comm_wait_get_nb(chpl_comm_get_nb_token_t *token,
            chpl_localeID, fn, ln, token);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
-    chpl_comm_wait_nb_gets++;
+    chpl_comm_commDiagnostics.get_nb_wait++;
     chpl_sync_unlock(&chpl_comm_diagnostics_sync);
   }
   gasnet_wait_syncnb(*token);
@@ -575,7 +585,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
       printf("%d: remote task created on %d\n", chpl_localeID, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_forks++;
+      chpl_comm_commDiagnostics.fork++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
 
@@ -649,7 +659,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
       printf("%d: remote non-blocking task created on %d\n", chpl_localeID, locale);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_nb_forks++;
+      chpl_comm_commDiagnostics.fork_nb++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
     if (passArg) {
@@ -679,7 +689,7 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
                chpl_localeID, locale);
       if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
         chpl_sync_lock(&chpl_comm_diagnostics_sync);
-        chpl_comm_fast_forks++;
+        chpl_comm_commDiagnostics.fork_fast++;
         chpl_sync_unlock(&chpl_comm_diagnostics_sync);
       }
       info = (fork_t *) &infod;
@@ -759,36 +769,48 @@ void chpl_stopCommDiagnosticsHere() {
   chpl_comm_diagnostics = 0;
 }
 
+void chpl_resetCommDiagnosticsHere() {
+  chpl_sync_lock(&chpl_comm_diagnostics_sync);
+  memset(&chpl_comm_commDiagnostics, 0, sizeof(chpl_commDiagnostics));
+  chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+}
+
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+  chpl_sync_lock(&chpl_comm_diagnostics_sync);
+  memcpy(cd, &chpl_comm_commDiagnostics, sizeof(chpl_commDiagnostics));
+  chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+}
+
 int32_t chpl_numCommGets(void) {
-  return chpl_comm_gets;
+  return chpl_comm_commDiagnostics.get;
 }
 
 int32_t chpl_numCommNBGets(void) {
-  return chpl_comm_nb_gets;
+  return chpl_comm_commDiagnostics.get_nb;
 }
 
 int32_t chpl_numCommTestNBGets(void) {
-  return chpl_comm_test_nb_gets;
+  return chpl_comm_commDiagnostics.get_nb_test;
 }
 
 int32_t chpl_numCommWaitNBGets(void) {
-  return chpl_comm_wait_nb_gets;
+  return chpl_comm_commDiagnostics.get_nb_wait;
 }
 
 int32_t chpl_numCommPuts(void) {
-  return chpl_comm_puts;
+  return chpl_comm_commDiagnostics.put;
 }
 
 int32_t chpl_numCommFastForks(void) {
-  return chpl_comm_fast_forks;
+  return chpl_comm_commDiagnostics.fork_fast;
 }
 
 int32_t chpl_numCommForks(void) {
-  return chpl_comm_forks;
+  return chpl_comm_commDiagnostics.fork;
 }
 
 int32_t chpl_numCommNBForks(void) {
-  return chpl_comm_nb_forks;
+  return chpl_comm_commDiagnostics.fork_nb;
 }
 
 
