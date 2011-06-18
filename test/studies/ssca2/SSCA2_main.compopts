@@ -1,0 +1,3 @@
+# For now, only test torus graph stencil v1 in the interest of (compilation) time
+#  FYI: array_rep works, but v2 & v3 need parallel Neighbor list iterators
+-M SSCA2_Modules SSCA2_Modules/SSCA2_kernels.chpl SSCA2_Modules/analyze_torus_graphs_stencil_rep_v1.chpl -sBUILD_TORUS_VERSIONS=true -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast
