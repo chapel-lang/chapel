@@ -15,6 +15,9 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+missing output files (06/16/11)
+-------------------------------
+[Error cannot locate compiler output comparison file users/vass/crash1callDestructorsMain.good]
 
 ========================================================================
 general nondeterministic regressions (could happen in any configuration)
@@ -97,6 +100,15 @@ internal valgrind stuff 'the impossible has happened'
 no-local regressions
 ====================
 
+timeouts since introduced (06/19/11)
+------------------------------------
+[Error: Timed out compilation for studies/ssca2/SSCA2_main]
+[Error: Timed out compilation for studies/ssca2/SSCA2_main_atomic]
+
+warning about serialized assignment (06/14/11)
+----------------------------------------------
+[Error matching program output for domains/sungeun/assoc/minus_equals (--cc-warnings --no-local -sparSafe=true) (1-0)]
+
 maxThreadsPerLocale unbounded but ... warning
 ---------------------------------------------
 [Error matching program output for domains/sungeun/assoc/stress --doSerial=false --numAdds=5000 (--cc-warnings --no-local -sparSafe=true) (1-3)]
@@ -143,12 +155,14 @@ seg fault (?)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-nondet. race on which index generates error message?
-----------------------------------------------------
-[Error matching program output for domains/sungeun/sparse/index_not_in_domain_1] (04/12/11, 06/10/11)
+missing output files (06/16/11)
+-------------------------------
+[Error cannot locate compiler output comparison file users/vass/crash1callDestructorsMain.good]
+[Error cannot locate compiler output comparison file users/vass/crash2VarSymbolTypeNULL.good]
 
 nondet. execution timeout
 -------------------------
+[Error: Timed out executing program studies/sudoku/dinan/sudoku] (06/19/11)
 [Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/11/11, 04/15/11, 04/22/11, 04/29/11, 05/03/11, 05/08/11)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11, 05/06/11, 05/19/11)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (05/23/11, 05/25/11, 06/06/11, 06/08/11)
@@ -278,7 +292,7 @@ nondet. compilation timeouts
 ----------------------------
 [Error: Timed out compilation for multilocale/deitz/linked/test_linked3a] (05/29/11)
 [Error: Timed out compilation for studies/graph500/v2/main] (05/29/11)
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (05/15/11)
+[Error: Timed out compilation for users/franzf/v0/chpl/main] (05/15/11, 06/12/11)
 [Error: Timed out compilation for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky]
 [Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (06/06/11)
 
@@ -358,6 +372,11 @@ exp2 not supported:
 ==================================================================
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
+
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for npb/cg/bradc/cg-sparse] (06/13/11)
+[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )] (06/13/11)
 
 NAN/INFINITY undefined in generated code (03/28/11)
 ---------------------------------------------------
@@ -479,9 +498,36 @@ execution timeouts
 [Error: Timed out executing program release/examples/primers/timers]
 
 
+====================
+nanox-specific tests
+====================
+
+execution timeouts (ever since testing started)
+-----------------------------------------------
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter]
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncSpinWait]
+
+
+===========================
+nanox+gasnet-specific tests
+===========================
+
+execution timeouts (ever since testing started)
+-----------------------------------------------
+***4-6 per night since testing started***
+
+
 =======================
 baseline-specific tests
 =======================
+
+amount of leaked memory changes (06/15/11)
+------------------------------------------
+[Error matching program output for memory/figueroa/LeakedMemory5]
+
+bad output (06/14/11)
+---------------------
+[Error matching program output for users/ferguson/recordbug3]
 
 .good assumes dead code elimination has run (since added)
 ---------------------------------------------------------
