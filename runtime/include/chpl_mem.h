@@ -3,8 +3,10 @@
 
 #ifndef LAUNCHER
 
+#include "sys_basic.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include "arg.h"
 #include "chpltypes.h"
 #include "chpl-tasks.h"
@@ -69,7 +71,9 @@ const char* chpl_rt_memDescs[] = {
   "arrays for localesPerRealm",
   "thread private data",
   "thread callee function pointer and argument",
-  "thread list descriptor"
+  "thread list descriptor",
+  "io buffer or bytes",
+  "gmp data",
 };
 #endif
 typedef enum {
@@ -118,6 +122,8 @@ typedef enum {
   CHPL_RT_MD_LOCALES_PER_REALM,
   CHPL_RT_MD_THREAD_PRIVATE_DATA,
   CHPL_RT_MD_THREAD_LIST_DESCRIPTOR,
+  CHPL_RT_MD_IO_BUFFER,
+  CHPL_RT_MD_GMP,
   CHPL_RT_MD_NUM
 } chpl_rt_enum_memDescs;
 extern const char* chpl_memDescs[];
@@ -132,6 +138,15 @@ void chpl_initHeap(void* start, size_t size);
   chpl_malloc(1, size, description, lineno, filename)
 void* chpl_malloc(size_t number, size_t size, chpl_memDescInt_t description,
                   int32_t lineno, chpl_string filename);
+static inline
+void* chpl_calloc(size_t number, size_t size, chpl_memDescInt_t description,
+                  int32_t lineno, chpl_string filename)
+{
+  void* ptr = chpl_malloc(number, size, description, lineno, filename);
+  memset(ptr, 0, number*size);
+  return ptr;
+}
+
 void* chpl_realloc(void* ptr, size_t number, size_t size, 
                    chpl_memDescInt_t description,
                    int32_t lineno, chpl_string filename);
