@@ -240,7 +240,7 @@ pragma "inline" proc -(a: int(64)) return __primitive("u-", a);
 pragma "inline" proc -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", typeToString(a.type)); }
 pragma "inline" proc -(a: real(?w)) return __primitive("u-", a);
 pragma "inline" proc -(a: imag(?w)) return __primitive("u-", a);
-pragma "inline" proc -(a: complex(?w)) return (-a.re, -a.im):complex;
+pragma "inline" proc -(a: complex(?w)) return (-a.re, -a.im):complex(w);
 
 pragma "inline" proc +(param a: int(32)) param return a;
 pragma "inline" proc +(param a: int(64)) param return a;
@@ -265,15 +265,15 @@ pragma "inline" proc +(a: uint(32), b: uint(32)) return __primitive("+", a, b);
 pragma "inline" proc +(a: uint(64), b: uint(64)) return __primitive("+", a, b);
 pragma "inline" proc +(a: real(?w), b: real(w)) return __primitive("+", a, b);
 pragma "inline" proc +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
-pragma "inline" proc +(a: complex(?w), b: complex(w)) return (a.re+b.re, a.im+b.im):complex;
+pragma "inline" proc +(a: complex(?w), b: complex(w)) return (a.re+b.re, a.im+b.im):complex(w);
 pragma "inline" proc +(a: string, b: string) return __primitive("string_concat", a, b);
 
-pragma "inline" proc +(a: real(?w), b: imag(w)) return (a, _i2r(b)):complex;
-pragma "inline" proc +(a: imag(?w), b: real(w)) return (b, _i2r(a)):complex;
-pragma "inline" proc +(a: real(?w), b: complex(w*2)) return (a+b.re, b.im):complex;
-pragma "inline" proc +(a: complex(?w), b: real(w/2)) return (a.re+b, a.im):complex;
-pragma "inline" proc +(a: imag(?w), b: complex(w*2)) return (b.re, _i2r(a)+b.im):complex;
-pragma "inline" proc +(a: complex(?w), b: imag(w/2)) return (a.re, a.im+_i2r(b)):complex;
+pragma "inline" proc +(a: real(?w), b: imag(w)) return (a, _i2r(b)):complex(w*2);
+pragma "inline" proc +(a: imag(?w), b: real(w)) return (b, _i2r(a)):complex(w*2);
+pragma "inline" proc +(a: real(?w), b: complex(w*2)) return (a+b.re, b.im):complex(w*2);
+pragma "inline" proc +(a: complex(?w), b: real(w/2)) return (a.re+b, a.im):complex(w);
+pragma "inline" proc +(a: imag(?w), b: complex(w*2)) return (b.re, _i2r(a)+b.im):complex(w*2);
+pragma "inline" proc +(a: complex(?w), b: imag(w/2)) return (a.re, a.im+_i2r(b)):complex(w);
 
 pragma "inline" proc -(a: int(32), b: int(32)) return __primitive("-", a, b);
 pragma "inline" proc -(a: int(64), b: int(64)) return __primitive("-", a, b);
@@ -281,14 +281,14 @@ pragma "inline" proc -(a: uint(32), b: uint(32)) return __primitive("-", a, b);
 pragma "inline" proc -(a: uint(64), b: uint(64)) return __primitive("-", a, b);
 pragma "inline" proc -(a: real(?w), b: real(w)) return __primitive("-", a, b);
 pragma "inline" proc -(a: imag(?w), b: imag(w)) return __primitive("-", a, b);
-pragma "inline" proc -(a: complex(?w), b: complex(w)) return (a.re-b.re, a.im-b.im):complex;
+pragma "inline" proc -(a: complex(?w), b: complex(w)) return (a.re-b.re, a.im-b.im):complex(w);
 
-pragma "inline" proc -(a: real(?w), b: imag(w)) return (a, -_i2r(b)):complex;
-pragma "inline" proc -(a: imag(?w), b: real(w)) return (-b, _i2r(a)):complex;
-pragma "inline" proc -(a: real(?w), b: complex(w*2)) return (a-b.re, -b.im):complex;
-pragma "inline" proc -(a: complex(?w), b: real(w/2)) return (a.re-b, a.im):complex;
-pragma "inline" proc -(a: imag(?w), b: complex(w*2)) return (-b.re, _i2r(a)-b.im):complex;
-pragma "inline" proc -(a: complex(?w), b: imag(w/2)) return (a.re, a.im-_i2r(b)):complex;
+pragma "inline" proc -(a: real(?w), b: imag(w)) return (a, -_i2r(b)):complex(w*2);
+pragma "inline" proc -(a: imag(?w), b: real(w)) return (-b, _i2r(a)):complex(w*2);
+pragma "inline" proc -(a: real(?w), b: complex(w*2)) return (a-b.re, -b.im):complex(w*2);
+pragma "inline" proc -(a: complex(?w), b: real(w/2)) return (a.re-b, a.im):complex(w);
+pragma "inline" proc -(a: imag(?w), b: complex(w*2)) return (-b.re, _i2r(a)-b.im):complex(w*2);
+pragma "inline" proc -(a: complex(?w), b: imag(w/2)) return (a.re, a.im-_i2r(b)):complex(w);
 
 pragma "inline" proc +(param a: int(32), param b: int(32)) param return __primitive("+", a, b);
 pragma "inline" proc +(param a: int(64), param b: int(64)) param return __primitive("+", a, b);
@@ -310,14 +310,14 @@ pragma "inline" proc *(a: uint(32), b: uint(32)) return __primitive("*", a, b);
 pragma "inline" proc *(a: uint(64), b: uint(64)) return __primitive("*", a, b);
 pragma "inline" proc *(a: real(?w), b: real(w)) return __primitive("*", a, b);
 pragma "inline" proc *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
-pragma "inline" proc *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex;
+pragma "inline" proc *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex(w);
 
 pragma "inline" proc *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
 pragma "inline" proc *(a: imag(?w), b: real(w)) return _r2i(_i2r(a)*b);
-pragma "inline" proc *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex;
-pragma "inline" proc *(a: complex(?w), b: real(w/2)) return (a.re*b, a.im*b):complex;
-pragma "inline" proc *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex;
-pragma "inline" proc *(a: complex(?w), b: imag(w/2)) return (-a.im*_i2r(b), a.re*_i2r(b)):complex;
+pragma "inline" proc *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex(w*2);
+pragma "inline" proc *(a: complex(?w), b: real(w/2)) return (a.re*b, a.im*b):complex(w);
+pragma "inline" proc *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex(w*2);
+pragma "inline" proc *(a: complex(?w), b: imag(w/2)) return (-a.im*_i2r(b), a.re*_i2r(b)):complex(w);
 
 pragma "inline" proc /(a: int(32), b: int(32)) return __primitive("/", a, b);
 pragma "inline" proc /(a: int(64), b: int(64)) return __primitive("/", a, b);
@@ -327,21 +327,21 @@ pragma "inline" proc /(a: real(?w), b: real(w)) return __primitive("/", a, b);
 pragma "inline" proc /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
 pragma "inline" proc /(a: complex(?w), b: complex(w))
   return let d = b.re*b.re+b.im*b.im in
-    ((a.re*b.re+a.im*b.im)/d, (a.im*b.re-a.re*b.im)/d):complex;
+  ((a.re*b.re+a.im*b.im)/d, (a.im*b.re-a.re*b.im)/d):complex(w);
 
 pragma "inline" proc /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
 pragma "inline" proc /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
 pragma "inline" proc /(a: real(?w), b: complex(w*2))
   return let d = b.re*b.re+b.im*b.im in
-    (a*b.re/d, -a*b.im/d):complex;
+  (a*b.re/d, -a*b.im/d):complex(w*2);
 pragma "inline" proc /(a: complex(?w), b: real(w/2))
-  return (a.re/b, a.im/b):complex;
+return (a.re/b, a.im/b):complex(w);
 pragma "inline" proc /(a: imag(?w), b: complex(w*2))
   return let d = b.re*b.re+b.im*b.im in
-    (_i2r(a)*b.im/d, _i2r(a)*b.re/d):complex;
+  (_i2r(a)*b.im/d, _i2r(a)*b.re/d):complex(w*2);
 pragma "inline" proc /(a: complex(?w), b: imag(w/2))
   return let d = _i2r(b)*_i2r(b) in
-    (a.im/_i2r(b), -a.re/_i2r(b)):complex;
+  (a.im/_i2r(b), -a.re/_i2r(b)):complex(w);
 
 pragma "inline" proc *(param a: int(32), param b: int(32)) param return __primitive("*", a, b);
 pragma "inline" proc *(param a: int(64), param b: int(64)) param return __primitive("*", a, b);
