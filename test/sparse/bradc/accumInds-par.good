@@ -37,3 +37,5 @@ DSps is: [
  (10, 1) (10, 10)
 ]
 
+Adding this line to make this always fail to avoid nondeterministic futures.
+This should be removed once someone implements task-safe sparsity.
