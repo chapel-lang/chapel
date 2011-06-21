@@ -1,0 +1,37 @@
+#!/bin/sh
+
+RINC=$CHPL_HOME/runtime/include
+RSRC=$CHPL_HOME/runtime/src
+
+gcc -o deque_test -g deque_test.c -DSIMPLE_TEST -I $RINC $RSRC/deque.c -Wall &&
+gcc -o qbuffer_test -g qbuffer_test.c -DSIMPLE_TEST -I $RINC $RSRC/qbuffer.c $RSRC/sys.c $RSRC/deque.c -Wall &&
+gcc -o qio_test -g qio_test.c -DSIMPLE_TEST -I $RINC $RSRC/qio.c $RSRC/sys.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread &&
+gcc -o qio_formatted_test -g qio_formatted_test.c -DSIMPLE_TEST -I $RINC $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread &&
+
+RETVAL=$?
+
+runtest() {
+  EXE=$1
+  DESC=$2
+  $EXE > /dev/null
+  RETVAL=$?
+  if [ $RETVAL -eq 0 ]
+  then
+    echo "[Success matching C I/O test $EXE $DESC]"
+  else
+    echo "[Error matching C I/O test $EXE $DESC]"
+  fi
+}
+
+if [ $RETVAL -eq 0 ]
+then
+  echo "[Success compiling C I/O tests]"
+
+  runtest ./deque_test "Deque Test"
+  runtest ./qbuffer_test "Buffer Test"
+  runtest ./qio_test "I/O Test"
+  runtest ./qio_formatted_test "Formatted I/O Test"
+else
+  echo "[Error compiling C I/O tests]"
+fi
+
