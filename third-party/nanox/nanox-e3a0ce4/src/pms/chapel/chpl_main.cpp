@@ -90,7 +90,7 @@ void nanos_chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize,
 
    sys.setInitialMode( System::POOL );
    sys.setUntieMaster(true);
-   sys.setNumPEs(maxThreadsPerLocale);
+   sys.setNumPEs(4);
    sys.start();
 
    NANOX_SANITY_CHECK(init);
