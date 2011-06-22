@@ -8,6 +8,16 @@ Block Array Index Map
 4 4 4 4 5 5 5 5
 4 4 4 4 5 5 5 5
 
+Block Array Index Map
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+1 1 1 1 1 1 1 1
+2 2 2 2 2 2 2 2
+3 3 3 3 3 3 3 3
+3 3 3 3 3 3 3 3
+4 4 4 4 4 4 4 4
+5 5 5 5 5 5 5 5
+
 Cyclic Array Index Map
 0 1 0 1 0 1 0 1
 2 3 2 3 2 3 2 3
