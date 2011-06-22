@@ -100,11 +100,6 @@ internal valgrind stuff 'the impossible has happened'
 no-local regressions
 ====================
 
-timeouts since introduced (06/19/11)
-------------------------------------
-[Error: Timed out compilation for studies/ssca2/SSCA2_main]
-[Error: Timed out compilation for studies/ssca2/SSCA2_main_atomic]
-
 warning about serialized assignment (06/14/11)
 ----------------------------------------------
 [Error matching program output for domains/sungeun/assoc/minus_equals (--cc-warnings --no-local -sparSafe=true) (1-0)]
@@ -502,32 +497,30 @@ execution timeouts
 nanox-specific tests
 ====================
 
-execution timeouts (ever since testing started)
------------------------------------------------
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter]
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncSpinWait]
+execution timeouts (ever since switching to 4 shepherds)
+--------------------------------------------------------
+[Error: Timed out executing program release/examples/primers/taskParallel]
 
 
 ===========================
 nanox+gasnet-specific tests
 ===========================
 
-execution timeouts (ever since testing started)
------------------------------------------------
-***4-6 per night since testing started***
+execution timeouts (ever since switching to 4 shepherds)
+--------------------------------------------------------
+[Error: Timed out executing program release/examples/hello4-datapar-dist]
+[Error: Timed out executing program release/examples/hpcc/fft]
+[Error: Timed out executing program release/examples/hpcc/hpl]
+[Error: Timed out executing program release/examples/hpcc/ra]
+[Error: Timed out executing program release/examples/hpcc/stream]
+[Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop]
+[Error: Timed out executing program release/examples/hpcc/variants/stream-promoted]
+
 
 
 =======================
 baseline-specific tests
 =======================
-
-amount of leaked memory changes (06/15/11)
-------------------------------------------
-[Error matching program output for memory/figueroa/LeakedMemory5]
-
-bad output (06/14/11)
----------------------
-[Error matching program output for users/ferguson/recordbug3]
 
 .good assumes dead code elimination has run (since added)
 ---------------------------------------------------------
