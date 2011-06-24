@@ -205,7 +205,7 @@ const char* extended_errors[] = {
 
 // allocates and returns an error string in *string_out
 // which must be freed.
-err_t sys_strerror(int error, const char** string_out)
+err_t sys_strerror(err_t error, const char** string_out)
 {
   // normal errors are in normal places.
   // EAI_AGAIN... etc are at 10000 + num.
@@ -264,6 +264,13 @@ err_t sys_strerror(int error, const char** string_out)
 
   *string_out = buf;
   return err_out;
+}
+
+const char* sys_strerror_str(err_t error, err_t* strerr_err)
+{
+  const char* ret = NULL;
+  *strerr_err = sys_strerror(error, &ret);
+  return ret;
 }
 
 // returns an allocated string in string_out, which must be freed.

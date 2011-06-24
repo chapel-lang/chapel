@@ -114,6 +114,10 @@ void* qbytes_data(qbytes_t* b)
   return b->data;
 }
 
+typedef enum {
+  QB_PART_FLAGS_EXTENDABLE_TO_ENTIRE_BYTES = 1,
+} qbuffer_part_flags_t;
+
 typedef struct qbuffer_part_s {
   // part refers to the region
   // [bytes->data + skip_bytes, bytes->data + skip_bytes + len_bytes)
@@ -121,6 +125,7 @@ typedef struct qbuffer_part_s {
   int64_t skip_bytes;
   int64_t len_bytes; // does not include skip_bytes
   int64_t end_offset; // in bytes; subtract len_bytes from this to get start_offset
+  qbuffer_part_flags_t flags;
   // for unicode strings, we might add a end_in_characters
 } qbuffer_part_t;
 
@@ -189,6 +194,9 @@ void qbuffer_release(qbuffer_ptr_t buf)
 {
   DO_RELEASE(buf, qbuffer_destroy_free);
 }
+
+void qbuffer_extend_back(qbuffer_t* buf);
+void qbuffer_extend_front(qbuffer_t* buf);
 
 /* Append a bytes_t to a buffer group.
  */
@@ -402,6 +410,9 @@ err_t qbuffer_copyout(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
  * Returns an error if we would exceed ret_len
  * */
 err_t qbuffer_copyin(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, const void* ptr, size_t ret_len);
+
+err_t qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_iter_t dst_end,
+                            qbuffer_t* src, qbuffer_iter_t src_start, qbuffer_iter_t src_end);
 
 /* Overwrites the qbuffer buffers with a fixed byte.
  * */

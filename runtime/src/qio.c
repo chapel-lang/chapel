@@ -812,6 +812,7 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
   file->ref_cnt = 1;
   file->fp = fp;
   file->fd = fd;
+  file->buf = NULL;
   file->fdflags = fdflags;
   file->initial_length = initial_length;
   file->initial_pos = initial_pos;
@@ -863,12 +864,19 @@ err_t _qio_file_do_close(qio_file_t* f)
     f->mmap = NULL;
   }
 
+  if( f->buf ) {
+    qbuffer_release(f->buf);
+    f->buf = NULL;
+  }
+
   if( f->fp ) {
     rc = fclose(f->fp);
     if( rc ) err = errno;
     f->fp = NULL;
     f->fd = -1;
-  } else if( f->fd >= 0 ) {
+  }
+  
+  if( f->fd >= 0 ) {
     err = sys_close(f->fd);
     if( err ) {
       newerr = qio_file_path(f, &path);
@@ -944,6 +952,65 @@ err_t qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mode
   }
 
   return qio_file_init(file_out, NULL, fd, iohints, style);
+}
+
+// If buf is NULL, we create a new buffer. flags indicates readable/writeable/seekable.
+// (default fdflags should be QIO_FDFLAG_READABLE|QIO_FDFLAG_WRITEABLE|QIO_FDFLAG_SEEKABLE
+err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t fdflags, qio_hint_t iohints, qio_style_t* style)
+{
+  qio_file_t* file = NULL;
+  err_t err;
+
+  file = qio_calloc(sizeof(qio_file_t), 1);
+  if( ! file ) {
+    return ENOMEM;
+  }
+
+  if( !buf ) {
+    // create with ref count = 1
+    err = qbuffer_create(&file->buf);
+    if( err ) goto error;
+  } else {
+    // retain..
+    file->buf = buf;
+    qbuffer_retain(file->buf);
+  }
+
+  file->ref_cnt = 1;
+  file->fp = NULL;
+  file->fd = -1;
+  file->fdflags = fdflags;
+  file->hints = choose_io_method(fdflags, iohints, 0, qbuffer_len(file->buf),
+                                 (fdflags & QIO_FDFLAG_READABLE) > 0,
+                                 (fdflags & QIO_FDFLAG_WRITEABLE) > 0);
+  // force method to be QIO_METHOD_MEMORY.
+  // force type to be buffered.
+  // leave old hints, but for a memory channel we're almost
+  // certainly going to ignore them all.
+  file->hints = (file->hints & QIO_HINTMASK) | QIO_METHOD_MEMORY | QIO_CH_BUFFERED;
+
+  file->initial_length = qbuffer_end_offset(file->buf);
+  file->initial_pos = qbuffer_start_offset(file->buf);
+  file->mmap = NULL;
+  
+  err = qio_lock_init(&file->lock);
+  if( err ) goto error;
+
+  file->max_initial_position = -1;
+
+  *file_out = file;
+  return 0;
+
+error:
+  qbuffer_release(file->buf);
+  qio_free(file);
+
+  return err;
+}
+
+err_t qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, qio_style_t* style)
+{
+  return qio_file_open_mem_ext(file_out, buf, QIO_FDFLAG_READABLE|QIO_FDFLAG_WRITEABLE|QIO_FDFLAG_SEEKABLE, 0, style);
 }
 
 static
@@ -1069,6 +1136,30 @@ err_t qio_file_path(qio_file_t* f, const char** string_out)
   return qio_file_path_for_fd(f->fd, string_out);
 }
 
+
+err_t qio_file_length(qio_file_t* f, int64_t *len_out)
+{
+  struct stat stats;
+  err_t err;
+
+  // Lock necessary for MEMORY buffers
+  // but not necessary for file descriptors
+  err = qio_lock(& f->lock);
+  if( err ) return err;
+
+  if( f->buf ) {
+    err = 0;
+    *len_out = qbuffer_len(f->buf);
+  } else {
+    stats.st_size = 0;
+    err = sys_fstat(f->fd, &stats);
+    *len_out = stats.st_size;
+  }
+
+  qio_unlock(& f->lock);
+
+  return err;
+}
 
 
 
@@ -1239,6 +1330,8 @@ err_t _qio_channel_final_flush_unlocked(qio_channel_t* ch)
   qio_chtype_t type = ch->hints & QIO_CHTYPEMASK;
   struct stat stats;
 
+  if( type == QIO_CHTYPE_CLOSED ) return 0;
+
   err = _qio_channel_flush_unlocked(ch);
   if( err ) {
     return err;
@@ -1248,22 +1341,32 @@ err_t _qio_channel_final_flush_unlocked(qio_channel_t* ch)
   // the file under the right circumstances. See the comment
   // next to the declaration of qio_file->max_initial_position.
   if( type == QIO_CH_BUFFERED &&
-      method == QIO_METHOD_MMAP &&
+      (method == QIO_METHOD_MMAP || method == QIO_METHOD_MEMORY) &&
       (ch->flags & QIO_FDFLAG_WRITEABLE) ) {
     err = qio_lock(&ch->file->lock);
     if( !err ) {
       int64_t max_space_made = ch->u.buffered.av_end;
       int64_t max_written = ch->u.buffered.av_start;
 
-      stats.st_size = 0;
-      // We got the lock. Update the space in the file.
-      err = sys_fstat(ch->file->fd, &stats);
+      if( method == QIO_METHOD_MMAP ) {
+        stats.st_size = 0;
+        // We got the lock. Update the space in the file.
+        err = sys_fstat(ch->file->fd, &stats);
 
-      if( !err &&
-          stats.st_size == max_space_made &&
-          ch->file->max_initial_position == ch->start_pos ) {
-        // Truncate the file.
-        err = sys_ftruncate(ch->file->fd, max_written );
+        if( !err &&
+            stats.st_size == max_space_made &&
+            ch->file->max_initial_position == ch->start_pos ) {
+          // Truncate the file.
+          err = sys_ftruncate(ch->file->fd, max_written );
+        }
+      } else {
+        // MEMORY
+        // trim the file's buffer so that it's only max_written
+        // long.
+        int64_t cur_end = qbuffer_end_offset(ch->file->buf);
+        if( cur_end > max_written ) {
+          qbuffer_trim_back( ch->file->buf, cur_end - max_written );
+        }
       }
 
       qio_unlock(&ch->file->lock);
@@ -1292,7 +1395,7 @@ err_t _qio_channel_final_flush_unlocked(qio_channel_t* ch)
   if( err ) return err;
 
 
-  ch->hints |= QIO_CHTYPEMASK; // set to invalid type so funcs return EINVAL
+  ch->hints |= QIO_CHTYPE_CLOSED; // set to invalid type so funcs return EINVAL
 
   return 0;
 }
@@ -1437,6 +1540,103 @@ err_t _buffered_makespace_atleast(qio_channel_t* ch, int64_t amt)
 
   if( return_eof ) return EEOF;
   else return 0;
+}
+
+static
+err_t _buffered_get_memory_file_lock_held(qio_channel_t* ch, int64_t amt, int writing)
+{
+  qio_buffered_channel_t* heavy = & ch->u.buffered;
+  err_t err;
+  int eof = 0;
+  int64_t start, end;
+  qbuffer_iter_t fstart;
+  qbuffer_iter_t fend;
+
+
+  if( heavy->av_end != qbuffer_end_offset(&heavy->buf) ) {
+    return EINVAL;
+  }
+
+
+  start = qbuffer_end_offset(&heavy->buf);
+  end = start + amt;
+
+  // do not exceed end_pos.
+  if( end > ch->end_pos ) {
+    end = ch->end_pos;
+  }
+
+  // Do we need to add to the buffer, if we're
+  // writing?
+  if( writing ) {
+    if( end > qbuffer_end_offset(ch->file->buf) ) {
+      // Try extending the last part in the buffer
+      // if it can be extended.
+      qbuffer_extend_back(ch->file->buf);
+    }
+
+    while( end > qbuffer_end_offset(ch->file->buf) ) {
+      // add an IO chunk.
+      qbytes_t* iobuf = NULL;
+      err = qbytes_create_iobuf(&iobuf);
+      if( err ) goto error;
+      err = qbuffer_append(ch->file->buf, iobuf, 0, qbytes_len(iobuf));
+      qbytes_release(iobuf);
+      if( err ) goto error;
+    }
+  }
+
+  // Set fstart and fend to the position of start/end in the
+  // file's buffer.
+  fstart = qbuffer_iter_at(ch->file->buf, start);
+  fend = fstart;
+  qbuffer_iter_advance(ch->file->buf, &fend, end - start);
+
+  // round 'end' forward to the end of a chunk,
+  // so that we only read entire chunks into our buffer.
+  qbuffer_iter_ceil_part(ch->file->buf, &fend);
+
+  // Do not allow writing past end_pos.
+  if( fend.offset > ch->end_pos ) {
+    fend = fstart;
+    qbuffer_iter_advance(ch->file->buf, &fend, end - start);
+  }
+
+  // If we're not going to get all the requested data, return EEOF.
+  if( qbuffer_iter_num_bytes(fstart, fend) < amt ) eof = 1;
+
+  // Now append the bytes objects in the file's buffer
+  // from fstart to fend to our channel buffer.
+  // This just copies pointers and increases reference counts.
+  err = qbuffer_append_buffer(&heavy->buf, ch->file->buf, fstart, fend);
+  if( err ) goto error;
+
+  // Update av_end to be pointing to the end of the buffer.
+  heavy->av_end += qbuffer_iter_num_bytes(fstart, fend);
+
+  // OK!
+  err = 0;
+  // make sure to return EEOF if we ran out of room.
+  if( eof ) err = EEOF;
+
+error:
+  return err;
+}
+
+
+static
+err_t _buffered_get_memory(qio_channel_t* ch, int64_t amt, int writing)
+{
+  err_t err;
+  // lock the file's buffer, which protects
+  // access to file->buf.
+  err = qio_lock(&ch->file->lock);
+  if( err ) return err;
+
+  err = _buffered_get_memory_file_lock_held(ch, amt, writing);
+
+  qio_unlock(&ch->file->lock);
+  return err;
 }
 
 static
@@ -1599,6 +1799,7 @@ err_t _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
         err = qio_freadv(ch->file->fp, &heavy->buf, read_start, read_end, &num_read);
         break;
       case QIO_METHOD_MMAP:
+      case QIO_METHOD_MEMORY:
         err = EINVAL; // should've been handled outside this method!
         break;
       // no default to get warnings when new methods are added
@@ -1759,6 +1960,7 @@ err_t _qio_buffered_behind(qio_channel_t* ch, int flushall)
           err = qio_fwritev(ch->file->fp, &heavy->buf, write_start, write_end, &num_written);
           break;
         case QIO_METHOD_MMAP:
+        case QIO_METHOD_MEMORY:
           // do nothing; mmap already puts data.
           // We could call msync here if we were feeling really pushy.
           err = 0;
@@ -1820,6 +2022,8 @@ err_t _qio_buffered_require(qio_channel_t* ch, int64_t amt, int writing)
 
   if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_MMAP ) {
     err = _buffered_get_mmap(ch, n_needed, writing);
+  } else if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_MEMORY ) {
+    err = _buffered_get_memory(ch, n_needed, writing);
   } else {
     if( ch->flags & QIO_FDFLAG_READABLE ) {
       // we're reading the data. So read some data!
@@ -1976,6 +2180,25 @@ err_t _qio_unbuffered_write(qio_channel_t* ch, const void* ptr, ssize_t len_in, 
             num_written = 0;
           }
           break;
+        case QIO_METHOD_MEMORY:
+          /* This could be supported, but for
+           * now, only buffered memory-only channels will work.
+           */
+          /* what we would need to do:
+          // lock the file lock
+          //
+          // make sure space is available in the file's buffer,
+          // growing the buffer if necessary
+          //
+          // copy the data in to the file's buffer
+          //
+          // update something so we can remove extra space
+          // from the end of the buffer when we're all done.
+          //
+          // unlock the file lock
+          */
+          err = EINVAL;
+          break;
         // no default to get warnings when new methods are added
       }
       if( err ) {
@@ -2040,6 +2263,22 @@ err_t _qio_unbuffered_read(qio_channel_t* ch, void* ptr, ssize_t len_in, ssize_t
             err = EINVAL;
             num_read = 0;
           }
+          break;
+        case QIO_METHOD_MEMORY:
+          /* This could be supported, but for
+           * now, only buffered memory-only channels will work.
+           */
+          /* what we would have to do:
+          // lock the file lock
+          //
+          // make sure space is available in the file's buffer
+          //
+          // copy the data from the file's buffer
+          qbuffer_copyout();
+          //
+          // unlock the file lock
+          */
+          err = EINVAL;
           break;
         // no default to get warnings when new methods are added
       }
@@ -2151,6 +2390,7 @@ err_t _qio_channel_require_unlocked(qio_channel_t* ch, int64_t space, int writin
   return _qio_buffered_require(ch, space, writing); 
 }
 
+/*
 static
 void switch_mmap_to_pwrite(qio_channel_t* ch)
 {
@@ -2162,6 +2402,7 @@ void switch_mmap_to_pwrite(qio_channel_t* ch)
     hints |= method; // set to PREAD/PWRITE
   }
 }
+*/
 
 // Only returns  EINVAL if unknown buffer type or a locking error.
 int64_t qio_channel_offset_unlocked(qio_channel_t* ch)
@@ -2206,11 +2447,12 @@ err_t qio_channel_offset(const int threadsafe, qio_channel_t* ch, int64_t* offse
 static
 err_t _qio_channel_put_bytes_unlocked(qio_channel_t* ch, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes)
 {
-  int64_t av_bytes;
   qio_buffered_channel_t* heavy;
   error_t err;
+  int64_t use_len, use_skip, copylen;
 
   qio_chtype_t type = ch->hints & QIO_CHTYPEMASK;
+  qio_method_t method = ch->hints & QIO_METHODMASK;
 
   if( type != QIO_CH_BUFFERED ) return EINVAL;
 
@@ -2219,21 +2461,113 @@ err_t _qio_channel_put_bytes_unlocked(qio_channel_t* ch, qbytes_t* bytes, int64_
   // advance past any data put in cached_cur
   _qio_buffered_advance_cached(ch);
 
-  // invalidate the remainder of the data in the current part.
-  av_bytes = qbuffer_end_offset(&heavy->buf) - heavy->av_end;
-  qbuffer_trim_back(& heavy->buf, av_bytes);
+  // check that we don't write past the channel's region.
+  {
+    int64_t start, end;
+    start = _right_mark_start(heavy);
+    end = start + len_bytes;
+    if( end > ch->end_pos ) {
+      end = ch->end_pos;
+    }
+    use_len = end - start;
+    use_skip = skip_bytes;
+  }
 
-  // Stop using mmap.
-  switch_mmap_to_pwrite(ch);
+  // Now, if we're using MMAP, we need to copy the data
+  // to the mmap'd region, extending it if necessary.
+  // In general, this probably doesn't make sense (because
+  // the system will read the data before writing it).
+  // However, we default to pwrite when writing, and besides
+  // that, when appending, the system will avoid the read
+  // (since the file will have just had space allocated and
+  // so the filesystem can know it's all zeros anyway).
+  //
+  // Meanwhile, if we're using MEMORY, and we
+  // have some blocks in our buffer, we want to copy
+  // from bytes to the blocks.
+  //
+  // Once we run out of blocks, we'll:
+  //   for MEMORY, append to the file's buffer and channel's buffer
+  //   for others, append to the channel's buffer
 
-  // now add the bytes.
-  err = qbuffer_append(& heavy->buf, bytes, skip_bytes, len_bytes);
+  // If we're using MEMORY, lock the file
+  if( method == QIO_METHOD_MEMORY ) {
+    err = qio_lock(&ch->file->lock);
+    if( err ) return err;
+  }
 
-  // did we get to a different part? If so, call write()
-  err = _qio_buffered_behind(ch, false);
+  // Adjust our channel buffer
+  if( method == QIO_METHOD_MMAP ) {
+    // extend the file and our buffer.
+    err = _buffered_get_mmap(ch, use_len, true);
+    if( err ) goto error; // can't have EOF because we're writing.
+  } else if( method == QIO_METHOD_MEMORY ) {
+    // get any bytes from the channel but without adding
+    err = _buffered_get_memory_file_lock_held(ch, use_len, false);
+    if( err == EEOF ) err = 0; // ignore EOF, we'll just append in a moment.
+    if( err ) goto error;
+  } else {
+    // Remove everything after write-mark from the channel buffer
+    // so we can zero-copy the bytes in here.
+    heavy->av_end = _right_mark_start(heavy);
+    qbuffer_trim_back(& heavy->buf, qbuffer_end_offset(&heavy->buf) - heavy->av_end);
+  }
+
+  if( heavy->av_end != qbuffer_end_offset(&heavy->buf) ) {
+   err = EINVAL;
+   goto error;
+  }
+
+  // Now, copy data from bytes in as long as there's
+  // buffer area to copy in to.
+  copylen = heavy->av_end - _right_mark_start( heavy );
+  if( copylen > 0 ) {
+    err = qbuffer_copyin(& heavy->buf,
+                         _right_mark_start_iter( heavy ),
+                         qbuffer_end(&heavy->buf),
+                         VOID_PTR_ADD(bytes->data, use_skip), copylen);
+    if( err ) goto error;
+
+    use_skip += copylen;
+    use_len -= copylen;
+
+    // Update the channel position.
+    _set_right_mark_start(heavy, _right_mark_start(heavy) + copylen);
+  }
+
+  // Now, append bytes until there's no more appending to do.
+  if( use_len > 0 ) {
+    if( method == QIO_METHOD_MMAP ) return EINVAL;
+
+    // If we're a MEMORY buffer, append to the file->buf.
+    // We take care of locking file above
+    if( method == QIO_METHOD_MEMORY ) {
+      err = qbuffer_append( ch->file->buf, bytes, use_skip, use_len);
+      if( err ) goto error;
+    }
+
+    // Append to the channel.
+    err = qbuffer_append(& heavy->buf, bytes, use_skip, use_len);
+    if( err ) goto error;
+
+    // Update the channel position.
+    heavy->av_end = qbuffer_end_offset(&heavy->buf);
+    _set_right_mark_start(heavy, _right_mark_start(heavy) + use_len);
+  }
+
+  err = 0;
+
+error:
+  if( method == QIO_METHOD_MEMORY ) {
+    qio_unlock(&ch->file->lock);
+  }
+
   if( err ) return err;
 
-  return 0;
+  // if there was no error...
+  // did we get to a different part? If so, call write()
+  err = _qio_buffered_behind(ch, false);
+  return err;
 }
 
 err_t qio_channel_put_bytes(const int threadsafe, qio_channel_t* ch, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes)
@@ -2265,11 +2599,13 @@ err_t qio_channel_put_bytes(const int threadsafe, qio_channel_t* ch, qbytes_t* b
 static
 err_t _qio_channel_put_buffer_unlocked(qio_channel_t* ch, qbuffer_t* src, qbuffer_iter_t src_start, qbuffer_iter_t src_end)
 {
-  int64_t av_bytes;
   qio_buffered_channel_t* heavy;
   error_t err;
+  int64_t use_len, copylen;
+  qbuffer_iter_t src_copy_end;
 
   qio_chtype_t type = ch->hints & QIO_CHTYPEMASK;
+  qio_method_t method = ch->hints & QIO_METHODMASK;
 
   if( type != QIO_CH_BUFFERED ) return EINVAL;
 
@@ -2278,22 +2614,105 @@ err_t _qio_channel_put_buffer_unlocked(qio_channel_t* ch, qbuffer_t* src, qbuffe
   // advance past any data put in cached_cur
   _qio_buffered_advance_cached(ch);
 
-  // invalidate the remainder of the data in the current part.
-  av_bytes = qbuffer_end_offset(&heavy->buf) - heavy->av_end;
-  qbuffer_trim_back(& heavy->buf, av_bytes);
+  // check that we don't write past the channel's region.
+  {
+    int64_t start, end;
 
-  // Stop using mmap.
-  switch_mmap_to_pwrite(ch);
+    start = _right_mark_start(heavy);
+    end = start + qbuffer_iter_num_bytes(src_start, src_end);
+    if( end > ch->end_pos ) {
+      end = ch->end_pos;
+      src_end = src_start;
+      qbuffer_iter_advance(src, &src_end, end - start);
+    }
+    use_len = qbuffer_iter_num_bytes(src_start, src_end);
+  }
 
-  // now add the buffer.
-  err = qbuffer_append_buffer(& heavy->buf, src, src_start, src_end);
+  // see comment in _qio_channel_put_bytes_unlocked for more info...
+
+  // If we're using MEMORY, lock the file
+  if( method == QIO_METHOD_MEMORY ) {
+    err = qio_lock(&ch->file->lock);
+    if( err ) return err;
+  }
+
+  // Adjust our channel buffer
+  if( method == QIO_METHOD_MMAP ) {
+    // extend the file and our buffer.
+    err = _buffered_get_mmap(ch, use_len, true);
+    if( err ) goto error; // can't have EOF because we're writing.
+  } else if( method == QIO_METHOD_MEMORY ) {
+    // get any bytes from the channel but without adding
+    err = _buffered_get_memory_file_lock_held(ch, use_len, false);
+    if( err == EEOF ) err = 0; // ignore EOF, we'll just append in a moment.
+    if( err ) goto error;
+  } else {
+    // Remove everything after write-mark from the channel buffer
+    // so we can zero-copy the bytes in here.
+    heavy->av_end = _right_mark_start(heavy);
+    qbuffer_trim_back(& heavy->buf, qbuffer_end_offset(&heavy->buf) - heavy->av_end);
+  }
+
+  if( heavy->av_end != qbuffer_end_offset(&heavy->buf) ) {
+    err = EINVAL;
+    goto error;
+  }
+
+  // Now, copy data from src_buffer in as long as there's
+  // buffer area to copy in to.
+  copylen = heavy->av_end - _right_mark_start(heavy);
+  if( copylen > 0 ) {
+    src_copy_end = src_start;
+    qbuffer_iter_advance(src, &src_copy_end, copylen);
+
+    err = qbuffer_copyin_buffer(& heavy->buf,
+                                _right_mark_start_iter(heavy),
+                                qbuffer_end(&heavy->buf),
+                                src,
+                                src_start,
+                                src_copy_end);
+    if( err ) goto error;
+
+    qbuffer_iter_advance(src, &src_start, copylen);
+    use_len -= copylen;
+
+    // Update the channel position.
+    _set_right_mark_start(heavy, _right_mark_start(heavy) + copylen);
+  }
+
+  // Now, append bytes until there's no more appending to do.
+  if( use_len > 0 ) {
+    if( method == QIO_METHOD_MMAP ) return EINVAL;
+
+    // If we're a MEMORY buffer, append to the file->buf.
+    // We take care of locking file above
+    if( method == QIO_METHOD_MEMORY ) {
+      err = qbuffer_append_buffer( ch->file->buf, src, src_start, src_end);
+      if( err ) goto error;
+    }
+
+    // Append to the channel.
+    err = qbuffer_append_buffer(& heavy->buf, src, src_start, src_end);
+    if( err ) goto error;
+
+    // Update the channel position.
+    heavy->av_end = qbuffer_end_offset(&heavy->buf);
+    _set_right_mark_start(heavy, _right_mark_start(heavy) + use_len);
+  }
+
+  err = 0;
+
+error:
+  if( method == QIO_METHOD_MEMORY ) {
+    qio_unlock(&ch->file->lock);
+  }
+
   if( err ) return err;
 
+  // if there was no error...
   // did we get to a different part? If so, call write()
   err = _qio_buffered_behind(ch, false);
-  if( err ) return err;
-
-  return 0;
+  return err;
 }
 
 err_t qio_channel_put_buffer(const int threadsafe, qio_channel_t* ch, qbuffer_t* src, qbuffer_iter_t src_start, qbuffer_iter_t src_end)

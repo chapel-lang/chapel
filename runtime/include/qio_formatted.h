@@ -441,6 +441,7 @@ err_t qio_channel_write_complex(const int threadsafe, const int byteorder, qio_c
 // -2 -- 2 bytes of length before
 // -4 -- 4 bytes of length before
 // -8 -- 8 bytes of length before
+// -10 -- variable byte length before (hi-bit 1 means more, little endian)
 // -0x01XX -- read until terminator XX is read
 //  + -- nonzero positive -- read exactly this length.
 err_t qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* ch, const char** out, ssize_t* len_out);
@@ -450,6 +451,7 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
 // -2 -- 2 bytes of length before
 // -4 -- 4 bytes of length before
 // -8 -- 8 bytes of length before
+// -10 -- variable byte length before (hi-bit 1 means more, little endian)
 // -0x01XX -- read until terminator XX is read
 //  + -- nonzero positive -- read exactly this length.
 err_t qio_channel_write_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* ch, const char* ptr, ssize_t len);

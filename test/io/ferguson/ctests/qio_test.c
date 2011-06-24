@@ -32,8 +32,21 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
   char* fhints;
   FILE* writefp = NULL;
   FILE* readfp = NULL;
+  int memory;
 
   ch_hints = (ch_hints & ~ QIO_CHTYPEMASK) | type;
+
+  memory = 0;
+
+  if( (file_hints & QIO_METHODMASK) == QIO_METHOD_MEMORY ||
+      (ch_hints & QIO_METHODMASK) == QIO_METHOD_MEMORY ) {
+    memory = 1;
+  }
+  if( memory ) {
+    file_hints = (file_hints & ~ QIO_METHODMASK ) | QIO_METHOD_MEMORY;
+    ch_hints = (ch_hints & ~ QIO_METHODMASK ) | QIO_METHOD_MEMORY;
+  }
+  if( memory && type == QIO_CH_UNBUFFERED ) return;
 
   fhints = qio_hints_to_string(file_hints);
   chhints = qio_hints_to_string(ch_hints);
@@ -53,16 +66,21 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
   assert(chunk);
   assert(got_chunk);
 
-  // Open a temporary file.
-  err = qio_file_open_tmp(&f, file_hints, NULL);
-  assert(!err);
-
-  // Rewind the file
-  {
-    off_t off;
-
-    err = sys_lseek(f->fd, start, SEEK_SET, &off);
+  if( memory ) {
+    err = qio_file_open_mem_ext(&f, NULL, QIO_FDFLAG_READABLE|QIO_FDFLAG_WRITEABLE|QIO_FDFLAG_SEEKABLE, file_hints, NULL);
     assert(!err);
+  } else {
+    // Open a temporary file.
+    err = qio_file_open_tmp(&f, file_hints, NULL);
+    assert(!err);
+
+    // Rewind the file
+    {
+      off_t off;
+
+      err = sys_lseek(f->fd, start, SEEK_SET, &off);
+      assert(!err);
+    }
   }
 
   // Create a "write to file" channel.
@@ -109,7 +127,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
   qio_channel_release(writing);
 
   // Check that the file is the right length.
-  {
+  if( !memory ) {
     struct stat stats;
     err = sys_fstat(f->fd, &stats);
     assert(!err);
@@ -120,7 +138,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
   // and read the data.
   
   // Rewind the file 
-  {
+  if( !memory ) {
     off_t off;
 
     sys_lseek(f->fd, start, SEEK_SET, &off);
@@ -184,10 +202,11 @@ void check_channels(void)
   int nchunkszs = sizeof(chunkszs)/sizeof(int64_t);
   qio_chtype_t type;
   char threadsafe;
-  qio_hint_t hints[] = {QIO_METHOD_DEFAULT, QIO_METHOD_READWRITE, QIO_METHOD_PREADPWRITE, QIO_METHOD_FREADFWRITE, QIO_METHOD_MMAP, QIO_METHOD_PREADPWRITE | QIO_HINT_NOFAST};
+  qio_hint_t hints[] = {QIO_METHOD_DEFAULT, QIO_METHOD_READWRITE, QIO_METHOD_PREADPWRITE, QIO_METHOD_FREADFWRITE, QIO_METHOD_MEMORY, QIO_METHOD_MMAP, QIO_METHOD_PREADPWRITE | QIO_HINT_NOFAST};
   int nhints = sizeof(hints)/sizeof(qio_hint_t);
   int file_hint, ch_hint;
 
+  check_channel(0, QIO_CH_BUFFERED, 0, 1, 1, 0, QIO_METHOD_MEMORY);
   //check_channel(0, QIO_CH_UNBUFFERED, 0, 1, 1, 1, QIO_METHOD_READWRITE | QIO_HINT_NOFAST );
   //check_channel(0, QIO_CH_BUFFERED, 0, 1, 1, 0, QIO_METHOD_MMAP, 1);
   check_channel(0, QIO_CH_BUFFERED, 0, 1, 1, 0, 0 );

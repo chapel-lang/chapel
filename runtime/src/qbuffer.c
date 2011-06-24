@@ -15,8 +15,7 @@
 
 // 64kb blocks... note tile64 page size is 64K
 // this really should be a multiple of page size...
-
-
+// but we can't know page size at compile time
 size_t qbytes_iobuf_size = 64*1024;
 
 // prototypes.
@@ -324,8 +323,39 @@ err_t qbuffer_init_part(qbuffer_part_t* p, qbytes_t* bytes, int64_t skip_bytes, 
   p->skip_bytes = skip_bytes;
   p->len_bytes = len_bytes;
   p->end_offset = end_offset;
+  p->flags = 0;
+
+  if( skip_bytes == 0 && len_bytes == bytes->len ) p->flags |= QB_PART_FLAGS_EXTENDABLE_TO_ENTIRE_BYTES;
 
   return 0;
+}
+
+void qbuffer_extend_back(qbuffer_t* buf)
+{
+  if( deque_size(sizeof(qbuffer_part_t), &buf->deque) > 0 ) {
+    // Get the last part.
+    qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr( sizeof(qbuffer_part_t), deque_last(sizeof(qbuffer_part_t), &buf->deque));
+    if( (qbp->flags & QB_PART_FLAGS_EXTENDABLE_TO_ENTIRE_BYTES) &&
+        qbp->len_bytes < qbp->bytes->len ) {
+      qbp->end_offset = (qbp->end_offset - qbp->len_bytes) + qbp->bytes->len;
+      qbp->len_bytes = qbp->bytes->len;
+      buf->offset_end = qbp->end_offset;
+    }
+  }
+}
+
+void qbuffer_extend_front(qbuffer_t* buf)
+{
+  if( deque_size(sizeof(qbuffer_part_t), &buf->deque) > 0 ) {
+    // Get the first part.
+    qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr( sizeof(qbuffer_part_t), deque_begin(& buf->deque));
+    if( (qbp->flags & QB_PART_FLAGS_EXTENDABLE_TO_ENTIRE_BYTES) &&
+        qbp->skip_bytes > 0 ) {
+      qbp->len_bytes = qbp->bytes->len;
+      qbp->skip_bytes = 0;
+      buf->offset_start = qbp->end_offset - qbp->len_bytes;
+    }
+  }
 }
 
 err_t qbuffer_append(qbuffer_t* buf, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes)
@@ -471,6 +501,7 @@ void qbuffer_trim_back(qbuffer_t* buf, int64_t remove_bytes)
         // Keep only a part of this chunk.
         int64_t remove_here = qbp->end_offset - new_end;
         qbp->len_bytes -= remove_here;
+        qbp->end_offset -= remove_here;
         break; // this is the last one.
       }
     } else {
@@ -923,6 +954,46 @@ error:
   return err;
 }
 
+err_t qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_iter_t dst_end,
+                            qbuffer_t* src, qbuffer_iter_t src_start, qbuffer_iter_t src_end)
+{
+  int64_t dst_num_bytes = qbuffer_iter_num_bytes(dst_start, dst_end);
+  ssize_t dst_num_parts = qbuffer_iter_num_parts(dst_start, dst_end);
+  int64_t src_num_bytes = qbuffer_iter_num_bytes(src_start, src_end);
+  ssize_t src_num_parts = qbuffer_iter_num_parts(src_start, src_end);
+  struct iovec* iov = NULL;
+  size_t iovcnt;
+  size_t i;
+  int iov_onstack;
+  err_t err;
+  qbuffer_iter_t dst_cur, dst_cur_end;
+ 
+  if( dst == src ) return EINVAL;
+  if( dst_num_bytes < 0 || dst_num_parts < 0 || dst_start.offset < dst->offset_start || dst_end.offset > dst->offset_end ) return EINVAL;
+  if( src_num_bytes < 0 || src_num_parts < 0 || src_start.offset < src->offset_start || src_end.offset > src->offset_end ) return EINVAL;
+
+  MAYBE_STACK_ALLOC(src_num_parts*sizeof(struct iovec), iov, iov_onstack);
+  if( ! iov ) return ENOMEM;
+
+  err = qbuffer_to_iov(src, src_start, src_end, src_num_parts, iov, NULL, &iovcnt);
+  if( err ) goto error;
+
+  dst_cur = dst_start;
+  for( i = 0; i < iovcnt; i++ ) {
+    dst_cur_end = dst_cur;
+    qbuffer_iter_advance(dst, &dst_cur_end, iov[i].iov_len);
+    err = qbuffer_copyin(dst, dst_cur, dst_cur_end, iov[i].iov_base, iov[i].iov_len);
+    if( err ) goto error;
+    dst_cur = dst_cur_end;
+  }
+
+  MAYBE_STACK_FREE(iov, iov_onstack);
+  return 0;
+
+error:
+  MAYBE_STACK_FREE(iov, iov_onstack);
+  return err;
+}
 
 err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, unsigned char byte)
 {

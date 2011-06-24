@@ -7,6 +7,7 @@ gcc -o deque_test -g deque_test.c -DSIMPLE_TEST -I $RINC $RSRC/deque.c -Wall &&
 gcc -o qbuffer_test -g qbuffer_test.c -DSIMPLE_TEST -I $RINC $RSRC/qbuffer.c $RSRC/sys.c $RSRC/deque.c -Wall &&
 gcc -o qio_test -g qio_test.c -DSIMPLE_TEST -I $RINC $RSRC/qio.c $RSRC/sys.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread &&
 gcc -o qio_formatted_test -g qio_formatted_test.c -DSIMPLE_TEST -I $RINC $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread &&
+gcc -o qio_memfile_test -g qio_memfile_test.c -DSIMPLE_TEST -I $RINC $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread
 
 RETVAL=$?
 
@@ -31,6 +32,7 @@ then
   runtest ./qbuffer_test "Buffer Test"
   runtest ./qio_test "I/O Test"
   runtest ./qio_formatted_test "Formatted I/O Test"
+  runtest ./qio_memfile_test "Memory File Test"
 else
   echo "[Error compiling C I/O tests]"
 fi

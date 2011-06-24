@@ -195,6 +195,8 @@ module Sys {
 
   _extern proc sys_init_sys_sockaddr(inout addr:sys_sockaddr_t);
   _extern proc sys_strerror(error:err_t, inout string_out:string):err_t;
+  _extern proc sys_strerror_str(error:err_t, inout string_out:string):err_t;
+const char* sys_strerror_str(int error, err_t* err_in_strerror);
   _extern proc sys_readlink(path:string, inout string_out):err_t;
   _extern proc sys_readlink(path:string, inout string_out):err_t;
   _extern proc sys_open(pathname:string, flags:c_int, mode:mode_t, inout fd_out:fd_t):err_t;

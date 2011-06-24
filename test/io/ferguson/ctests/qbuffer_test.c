@@ -197,8 +197,19 @@ void test_qbuffer_iterators(qbuffer_t* buf, qbytes_t** qb, int num, int skip, in
     assert( flat->len == flat2->len );
     assert( 0 == memcmp(flat->data, flat2->data, flat->len) );
 
-    qbytes_release(flat);
+
+    // clear flat
+    memset(flat->data, 0, flat->len);
+
+    // now copy the data back out.
+    err = qbuffer_copyout(buf, start, end, flat->data, flat->len);
+    assert(!err);
+
+    assert( flat->len == flat2->len );
+    assert( 0 == memcmp(flat->data, flat2->data, flat->len) );
+
     qbytes_release(flat2);
+    qbytes_release(flat);
   }
   
 
@@ -321,11 +332,154 @@ void test_qbuffer(void)
   }
 }
 
+void test_qbuffer_two(void)
+{
+  // We create two buffers and call 
+  // copyin_buffer
+  qbuffer_t bufa, bufb, bufab1, bufab2;
+  qbytes_t* b[8];
+  qbytes_t* a[8];
+  qbytes_t* bufa_flat;
+  qbytes_t* bufb_flat;
+  qbytes_t* bufab1_flat;
+  qbytes_t* bufab2_flat;
+  qbytes_t* bufb2_flat;
+  int i,j, x,y;
+  err_t err;
+
+  // create some bytes objects...
+  i = 0;
+  err = qbytes_create_calloc(&b[i], 10);
+  assert(!err);
+  fill_test_data(b[i], i);
+  i++;
+
+  err = qbytes_create_calloc(&b[i], 20);
+  assert(!err);
+  fill_test_data(b[i], i);
+  i++;
+
+  err = qbytes_create_calloc(&b[i], 30);
+  assert(!err);
+  fill_test_data(b[i], i);
+  i++;
+
+  err = qbytes_create_calloc(&b[i], 40);
+  assert(!err);
+  fill_test_data(b[i], i);
+  i++;
+
+  // create some bytes objects...
+  x = 0;
+  err = qbytes_create_calloc(&a[x], 10);
+  assert(!err);
+  fill_test_data(a[x], x);
+  x++;
+
+  err = qbytes_create_calloc(&a[x], 7);
+  assert(!err);
+  fill_test_data(a[x], x);
+  x++;
+
+  err = qbytes_create_calloc(&a[x], 29);
+  assert(!err);
+  fill_test_data(a[x], x);
+  x++;
+
+  err = qbytes_create_calloc(&a[x], 100);
+  assert(!err);
+  fill_test_data(a[x], x);
+  x++;
+
+
+  err = qbuffer_init(&bufa);
+  assert(!err);
+  err = qbuffer_init(&bufb);
+  assert(!err);
+  err = qbuffer_init(&bufab1);
+  assert(!err);
+  err = qbuffer_init(&bufab2);
+  assert(!err);
+
+  for( j = 0; j < i; j++ ) {
+    err = qbuffer_append(&bufb, b[j], 0, b[j]->len);
+    assert(!err);
+  }
+  for( y = 0; y < x; y++ ) {
+    err = qbuffer_append(&bufa, a[y], 0, a[y]->len);
+    assert(!err);
+  }
+
+  err = qbuffer_flatten(&bufa, qbuffer_begin(&bufa), qbuffer_end(&bufa), &bufa_flat);
+  assert(!err);
+
+  err = qbuffer_flatten(&bufb, qbuffer_begin(&bufb), qbuffer_end(&bufb), &bufb_flat);
+  assert(!err);
+
+  // construct ab1 with append
+  err = qbuffer_append(&bufab1, bufa_flat, 0, bufa_flat->len);
+  assert(!err);
+  err = qbuffer_append(&bufab1, bufb_flat, 0, bufb_flat->len);
+  assert(!err);
+  
+  err = qbuffer_flatten(&bufab1, qbuffer_begin(&bufab1), qbuffer_end(&bufab1), &bufab1_flat);
+  assert(!err);
+
+  // construct ab2 with qbuffer_append_buffer
+  err = qbuffer_append_buffer(&bufab2, &bufa, qbuffer_begin(&bufa), qbuffer_end(&bufa));
+  assert(!err);
+  err = qbuffer_append_buffer(&bufab2, &bufb, qbuffer_begin(&bufb), qbuffer_end(&bufb));
+  assert(!err);
+
+  err = qbuffer_flatten(&bufab2, qbuffer_begin(&bufab2), qbuffer_end(&bufab2), &bufab2_flat);
+  assert(!err);
+
+  assert( bufab1_flat->len == bufab2_flat->len);
+  assert( 0 == memcmp(bufab1_flat->data, bufab2_flat->data, bufab1_flat->len) );
+
+  {
+    qbuffer_iter_t end = qbuffer_begin(&bufab1);
+    qbuffer_iter_advance(&bufab1, &end, qbuffer_len(&bufb));
+
+    // Now try overwriting some data in bufab1 with the data in bufb.
+    err = qbuffer_copyin_buffer(&bufab1, qbuffer_begin(&bufab1), end,
+                                &bufb, qbuffer_begin(&bufb), qbuffer_end(&bufb));
+    assert(!err);
+
+    // Now check that bufab1 starts with b.
+    err = qbuffer_flatten(&bufab1, qbuffer_begin(&bufab1), end, &bufb2_flat);
+    assert(!err);
+
+    assert( bufb2_flat->len == bufb_flat->len);
+    assert( 0 == memcmp(bufb_flat->data, bufb2_flat->data, bufb_flat->len) );
+  }
+
+  qbytes_release(bufa_flat);
+  qbytes_release(bufb_flat);
+  qbytes_release(bufab1_flat);
+  qbytes_release(bufab2_flat);
+  qbytes_release(bufb2_flat);
+
+  qbuffer_destroy(&bufb);
+  qbuffer_destroy(&bufa);
+  qbuffer_destroy(&bufab1);
+  qbuffer_destroy(&bufab2);
+
+  for( j = 0; j < i; j++ ) {
+    qbytes_release(b[j]);
+  }
+  for( y = 0; y < x; y++ ) {
+    qbytes_release(a[y]);
+  }
+}
+
 int main(int argc, char** argv)
 {
   test_qbytes();
 
   test_qbuffer();
+
+  test_qbuffer_two();
 
   return 0;
 }

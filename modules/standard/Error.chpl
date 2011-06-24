@@ -7,7 +7,8 @@ module Error {
     // than saving the error.
     proc onError(syserr:err_t, path:string, offset:int(64)) {
       var errstr:string;
-      //sys_strerror(syserr, errstr); fails to compile multilocale
+      var strerror_err:err_t;
+      errstr = sys_strerror_str(syserr, strerror_err); 
       if path == "" {
         halt("Unhandled system error ", syserr, " ", errstr);
       } else {
@@ -35,7 +36,8 @@ module Error {
         err.onError(syserr, path, offset);
       } else {
         var errstr:string;
-        //sys_strerror(syserr, errstr); fails to compile multilocale
+        var strerror_err:err_t;
+        errstr = sys_strerror_str(syserr, strerror_err); 
         if path == "" {
           halt("Unhandled system error ", syserr, " ", errstr);
         } else {

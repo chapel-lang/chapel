@@ -31,12 +31,13 @@ typedef struct {
   uint64_t count; // how many times owner has locked.
 } qio_lock_t;
 
-// TODO XXX this should be chpl_nullTaskID
-#define NULL_OWNER 0x7fffffffffffffffll
+#define NULL_OWNER chpl_nullTaskID
 
 static inline err_t qio_lock(qio_lock_t* x) {
   // recursive mutex based on glibc pthreads implementation
   int64_t id = chpl_task_getId();
+
+  assert( id != NULL_OWNER );
 
   // check whether we already hold the mutex.
   if( x->owner == id ) {
@@ -150,7 +151,7 @@ typedef enum {
   QIO_FDFLAG_READABLE = 2,
   QIO_FDFLAG_WRITEABLE = 4,
   QIO_FDFLAG_SEEKABLE = 8,
-  QIO_FDFLAG_CLOSED = 16, // means channel/file was closed.
+  //QIO_FDFLAG_CLOSED = 16, // means channel/file was closed.
 } qio_fdflag_t;
 
 typedef enum {
@@ -178,6 +179,7 @@ char* qio_chtype_to_string(qio_chtype_t type);
  */
 
 #define QIO_CHTYPEMASK 0x000f
+#define QIO_CHTYPE_CLOSED 0x000f
 #define QIO_HINT_AFTERCHTYPE 0x0010
 
 typedef enum {
@@ -185,14 +187,14 @@ typedef enum {
   QIO_METHOD_PREADPWRITE = 2*QIO_HINT_AFTERCHTYPE,
   QIO_METHOD_FREADFWRITE = 3*QIO_HINT_AFTERCHTYPE,
   QIO_METHOD_MMAP = 4*QIO_HINT_AFTERCHTYPE,
+  QIO_METHOD_MEMORY = 5*QIO_HINT_AFTERCHTYPE,
   //QIO_METHOD_LIBEVENT,
-  //QIO_METHOD_MEMORY,
 } qio_method_t;
 #define QIO_METHODMASK 0x00f0
 #define QIO_HINT_AFTERMETHOD 0x0100
 #define QIO_METHOD_DEFAULT 0
 #define QIO_MIN_METHOD QIO_METHOD_READWRITE
-#define QIO_MAX_METHOD QIO_METHOD_MMAP
+#define QIO_MAX_METHOD QIO_METHOD_MEMORY
 
 enum {
   QIO_HINT_RANDOM       = QIO_HINT_AFTERMETHOD,
@@ -272,6 +274,9 @@ char* qio_hints_to_string(qio_hint_t hint)
       case QIO_METHOD_MMAP:
         strcat(buf, " mmap"); ok = 1;
         break;
+      case QIO_METHOD_MEMORY:
+        strcat(buf, " memory"); ok = 1;
+        break;
       // no default to get warned if any are added.
     }
   }
@@ -295,8 +300,19 @@ typedef struct qio_file_s {
   long ref_cnt;
 
   // these fields are fixed for the life of the object
+  // and indicate how the file is backed.
+  // We could potentially also support a "virtual file"
+  // that handled pread/pwrite by calling some routine,
+  // but mostly 
+  // An (arguably) better solution is to put 
   FILE* fp; // if fp is set, fd == fileno(fp)
   fd_t fd; // -1 if not set
+  qbuffer_t* buf; // NULL if not set.
+                  // if set, fp==NULL, fd==-1, is memory-only file.
+                  // Note a qbuffer is not thread-safe, and
+                  // so access to this must be protected
+                  // by the file's lock.
+
   qio_fdflag_t fdflags;
   qio_hint_t hints;
 
@@ -334,6 +350,9 @@ typedef struct qio_file_s {
   // the checks before truncating will fail. If the truncating
   // happens first, the file will be extended and zero-filled
   // again (by the OS).
+  //
+  // The locking discipline is that channel locks must
+  // always be held before a file lock.
   qio_lock_t lock;
   int64_t max_initial_position;
 
@@ -347,6 +366,8 @@ typedef qio_file_t* qio_file_ptr_t;
 err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints, qio_style_t* style);
 err_t qio_file_open(qio_file_t** file_out, const char* path, int flags, mode_t mode, qio_hint_t iohints, qio_style_t* style);
 err_t qio_file_open_access(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, qio_style_t* style);
+err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t fdflags, qio_hint_t iohints, qio_style_t* style);
+err_t qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, qio_style_t* style);
 
 err_t qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, qio_style_t* style);
 
@@ -415,6 +436,11 @@ void qio_file_set_style(qio_file_t* f, qio_style_t* style)
 {
   f->style = *style;
 }
+
+// Return the current length of a file.
+// Calls stat for a file descriptor
+// Calls fflush on a FILE* first.
+err_t qio_file_length(qio_file_t* f, int64_t *len_out);
 
 /* CHANNELS ..... */
 
@@ -493,11 +519,46 @@ void qio_file_set_style(qio_file_t* f, qio_style_t* style)
  */
 #define MARK_INITIAL_STACK_SZ 2
 typedef struct qio_buffered_channel_s {
+  /* When reading, we 'require' then read from
+   * right_mark_start to (potentially) heavy->av_end
+   * and then move right_mark_start forward
+   * (that is in qio_buffered_read)
+   *
+   * When writing, we 'require' then write to 
+   * right_mark_start to (potentially) end_iter(heavy->buf)
+   * and then move right_mark_start forward
+   * (that is in qio_buffered_write)
+   *
+   * When 'requiring', with MMAP, buffered_get_mmap
+   * we put mmap'd data into buffer and update av_end to end of buffer.
+   *
+   * When 'requiring', with MEMORY, buffered_get_memory
+   * we but file->buffer data into buffer, update av_end to end of buffer.
+   *
+   * When 'requiring', with pread, buffered_read_atleast
+   * we allocate bufferspace (appending without updating av_end)
+   * and then read, updating av_end to point to 1st not-yet-read byte.
+   *
+   * When 'requiring', with pwrite, buffered_makespace_atleast
+   * we allocate bufferspace (appending without updating av_end)
+   * and then update av_end to be the end of the buffer.
+   *
+   * right_mark_start is av_start or mark_space[mark_next-1].
+   */
+
   /* Each buffer is divided into these sections:
    * _________________________________________________________________
    * |write-behind | user writeable/readable | read-ahead/buffer space|
-   *
+   *             av_start                  av_end
+   *                  right_mark_start
    * the available section is ready for user read/write.
+   * Space to the right of av_end is allocated but not yet read
+   * (if we're reading). When writing, av_end == end of buf,
+   * and so there is no extra space on the right. If one day
+   * we do read-modify-write (which isn't supported in the initial version),
+   * there might be between av_end and the end of the buffer
+   * even when writing... but it might be easier to do read-modify-write
+   * by coupling together 2 channels with the zero-copy capabilities.
    */
 
   int64_t av_start;
@@ -569,6 +630,8 @@ err_t _qio_channel_init_unbuffered(qio_channel_t* ch, qio_file_t* file, qio_hint
 err_t _qio_channel_init_buffered(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 err_t _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 
+
+// maybe want to use INT64_MAX for end if it's not to be restricted.
 err_t qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 
 
