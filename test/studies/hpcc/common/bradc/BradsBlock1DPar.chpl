@@ -664,7 +664,7 @@ class LocBlock1DArr {
         where iterator == IteratorType.leader {
   }
 
-  proc newThese(param iterator: IteratorType, followThis) var
+  proc newThese(param iterator: IteratorType, followThis) // var
         where iterator == IteratorType.follower {
   }
 

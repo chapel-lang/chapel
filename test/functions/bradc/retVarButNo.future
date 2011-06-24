@@ -1,4 +1,0 @@
-bug: procedure declared var, but returns nothing
-
-This test shows that if a var procedure returns nothing, it results in
-an internal error.
