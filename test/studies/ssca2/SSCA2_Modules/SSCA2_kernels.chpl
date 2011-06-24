@@ -241,7 +241,6 @@ module SSCA2_kernels
     // process that executes instances of the outermost loop.
     // -----------------------------------------------------------------------
     {       
-      if DEBUG_KERNEL4 then startVerboseComm();
       const vertex_domain = G.vertices;
 
       // Had to change declaration below
@@ -410,7 +409,6 @@ module SSCA2_kernels
 
       }; // closure of outer embarassingly parallel forall
   
-      if DEBUG_KERNEL4 then stopVerboseComm();
 
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();

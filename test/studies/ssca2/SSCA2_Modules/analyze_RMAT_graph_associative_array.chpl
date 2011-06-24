@@ -86,13 +86,13 @@ module analyze_RMAT_graph_associative_array {
       // FYI: no fast follower opt
       iter   edge_weight(v : index (vertices), param tag: iterator)
       where tag == iterator.leader {
-        for block in Row(v).Row_Neighbors._value.these(tag) do
+        for block in Row(v).Weight._value.these(tag) do
           yield block;
       }
 
       iter   edge_weight(v : index (vertices), param tag: iterator, follower)
       where tag == iterator.follower {
-        for elem in Row(v).Row_Neighbors._value.these(tag, follower) do
+        for elem in Row(v).Weight._value.these(tag, follower) do
           yield elem;
       }
 
