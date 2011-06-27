@@ -62,7 +62,7 @@ for l in log:
         largestWeights = True
         newlog.append(nl)
     elif nl[0:36]=='Approximating Betweenness Centrality':
-        largestWeights = True
+        largestWeights = False
     else:
         if vertexNeighbors and nl!='':
             vnInfo[graphNum].append('['+str(graphNum)+'] '+nl)
