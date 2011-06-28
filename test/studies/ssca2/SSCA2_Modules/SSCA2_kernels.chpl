@@ -243,11 +243,9 @@ module SSCA2_kernels
     {       
       const vertex_domain = G.vertices;
 
-      // Had to change declaration below
-      //    type Sparse_Vertex_List = sparse subdomain ( G.vertices );
-      // to accommodate block distribution of G.vertices
+      // Use an associative domain to represent the sparse vertex list
 
-      type Sparse_Vertex_List = sparse subdomain ( [(...vertex_domain.dims())] );
+      type Sparse_Vertex_List = domain(index(vertex_domain));
 
       var Between_Cent$ : [vertex_domain] sync real = 0.0;
       var Sum_Min_Dist$ : sync real = 0.0;
@@ -272,7 +270,7 @@ module SSCA2_kernels
   	var min_distance$  : [vertex_domain] sync int       = -1;
 	var path_count$    : [vertex_domain] sync real (64) = 0.0;
 	var depend         : [vertex_domain] real           = 0.0;
-	var Lcl_Sum_Min_Dist                             = 0.0;
+	var Lcl_Sum_Min_Dist: sync real                     = 0.0;
 
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
@@ -286,9 +284,6 @@ module SSCA2_kernels
   
 	var current_distance : int = 0;
   
-	// lock needed only because sparse domain add is not threadsafe
-	var node_add_lock$ : sync bool = true;
- 
 	// establish the initial level sets for the
 	// breadth-first traversal from s
 
@@ -327,11 +322,9 @@ module SSCA2_kernels
 		      if  min_distance$ (v) . readFE () < 0  then
 			{ 
 			  min_distance$ (v).writeEF (current_distance);
-                          node_add_lock$.readFE ();
 			  Next_Level.Members.add (v);
 			  if VALIDATE_BC then
 			    Lcl_Sum_Min_Dist += current_distance;
-                          node_add_lock$.writeEF ( true );
 			}
 		      else
                         // could min_distance$(v) be < current_distance?
