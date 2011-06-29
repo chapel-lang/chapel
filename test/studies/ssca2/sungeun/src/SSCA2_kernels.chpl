@@ -66,8 +66,7 @@ module SSCA2_kernels
       //        	                         [ w in G.edge_weight (s) ] w;
 
       forall s in G.vertices do
-	// for w in G.edge_weight (s) do // eventually forall
-        forall w in G.Row(s).Weight do
+        forall w in G.edge_weight (s) do
 	  heaviest_edge_weight$ = max ( w, heaviest_edge_weight$ );
 
       // ---------------------------------------------
@@ -76,8 +75,7 @@ module SSCA2_kernels
       // ---------------------------------------------
 
       forall s in G.vertices do
-	// for (t, w) in ( G.Neighbors (s), G.edge_weight (s) )  do
-        forall (t, w) in ( G.Neighbors(s), G.Row(s).Weight ) do
+        forall (t, w) in ( G.Neighbors (s), G.edge_weight (s) ) do
 
 	  // should be forall, requires a custom parallel iterator in the 
 	  // random graph case and zippering for associative domains may 
@@ -143,11 +141,6 @@ module SSCA2_kernels
       
       forall ( x, y ) in Heavy_Edge_List do {
 	var Active_Level, Next_Level : domain ( index (vertex_domain) );
-
-	// the associative domain operations are not thread-safe.  So locks 
-	// are needed to protect domain add and domain membership cannot be 
-	// used to determine whether or not to add edges to the subgraph
-
 	var min_distance$            : [vertex_domain] sync int = -1;
 	  
 	if DEBUG_KERNEL3 then 
@@ -218,7 +211,7 @@ module SSCA2_kernels
     var Members  : Sparse_Vertex_List;
     var previous : Level_Set (Sparse_Vertex_List);
   }
-  
+  use ReplicatedDist;
 
   // ==================================================================
   //                              KERNEL 4
@@ -248,14 +241,13 @@ module SSCA2_kernels
     // process that executes instances of the outermost loop.
     // -----------------------------------------------------------------------
     {       
-      if DEBUG_KERNEL4 then startVerboseComm();
       const vertex_domain = G.vertices;
-       
+
       // Had to change declaration below
       //    type Sparse_Vertex_List = sparse subdomain ( G.vertices );
       // to accommodate block distribution of G.vertices
 
-      type Sparse_Vertex_List = sparse subdomain ( [(...vertex_domain.dims())] );
+      type Sparse_Vertex_List = domain(index(vertex_domain));
 
       var Between_Cent$ : [vertex_domain] sync real = 0.0;
       var Sum_Min_Dist$ : sync real = 0.0;
@@ -268,8 +260,7 @@ module SSCA2_kernels
   
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
-      forall s in starting_vertices do on vertex_domain.dist.idxToLocale(s) {
-      // forall s in starting_vertices do {// }
+      for/*all*/ s in starting_vertices do {
 
 	if DEBUG_KERNEL4 then writeln ( "expanding from starting node ", s );
 
@@ -278,10 +269,10 @@ module SSCA2_kernels
 	// for each instance of the parallel for loop
 	// --------------------------------------------------
   
-  	var min_distance$  : [vertex_domain] sync int       = -1;
+  	var min_distance$  : [vertex_domain] sync int       = -1; //why?
 	var path_count$    : [vertex_domain] sync real (64) = 0.0;
 	var depend         : [vertex_domain] real           = 0.0;
-	var Lcl_Sum_Min_Dist                             = 0.0;
+	var Lcl_Sum_Min_Dist: sync real                     = 0.0;
 
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
@@ -290,27 +281,30 @@ module SSCA2_kernels
 	// paths from s to this node.  The number of paths in moderate
 	// sized tori exceeds 2**64.
   
-	var Active_Level = new Level_Set (Sparse_Vertex_List);
-	var Next_Level   = new Level_Set (Sparse_Vertex_List);
-  
+	var Active_Level: [rcDomain] Level_Set (Sparse_Vertex_List);
+        var Next_Level: [rcDomain] Level_Set (Sparse_Vertex_List);
+        var Active_Remaining: [LocaleSpace] bool = true;
+
+        coforall loc in Locales do on loc {
+          rcLocal(Active_Level) = new Level_Set (Sparse_Vertex_List);
+          rcLocal(Active_Level).previous = nil;
+          rcLocal(Next_Level) = new Level_Set (Sparse_Vertex_List);
+          rcLocal(Next_Level).previous = rcLocal(Active_Level);
+        }
+
 	var current_distance : int = 0;
   
-	// lock needed only because sparse domain add is not threadsafe
-	var node_add_lock$ : sync bool = true;
- 
 	// establish the initial level sets for the
 	// breadth-first traversal from s
 
-	Active_Level.Members.add ( s );
-	Next_Level.Members.clear ();
+        on s {
+          rcLocal(Active_Level).Members.add ( s );
+          rcLocal(Next_Level).Members.clear ();
+          min_distance$ (s) . writeFF (0);
+          path_count$ (s) . writeFF (1);
+        }
 
-	min_distance$ (s) . writeFF (0);
-	Active_Level.previous = nil;
-	Next_Level.previous   = Active_Level;
-  
-	path_count$ (s) . writeFF (1);
-  
-	while Active_Level.Members.numIndices > 0 do { 
+	while || reduce Active_Remaining do { 
   
 	    // ------------------------------------------------
 	    // expand the neighbor sets for all vertices at the
@@ -318,11 +312,12 @@ module SSCA2_kernels
 	    // ------------------------------------------------
       
 	    current_distance += 1;
+            // for remote value forwarding
+            const current_distance_c = current_distance;
+            coforall loc in Locales do on loc {
+             forall u in rcLocal(Active_Level).Members do { // sparse
 
-	    forall u in Active_Level.Members  do on vertex_domain.dist.idxToLocale(u) { // sparse
-
-	      // for (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do {//}
-              forall (v, w) in ( G.Neighbors (u), G.Row(u).Weight ) do {
+              forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do on v {
 
 		// should be forall, requires a custom parallel iterator in the
 		// random graph case and zippering for associative domains
@@ -336,16 +331,14 @@ module SSCA2_kernels
 		    { 
 		      if  min_distance$ (v) . readFE () < 0  then
 			{ 
-			  min_distance$ (v).writeEF (current_distance);
-                          node_add_lock$.readFE ();
-			  Next_Level.Members.add (v);
+			  min_distance$ (v).writeEF (current_distance_c);
+			  rcLocal(Next_Level).Members.add (v);
 			  if VALIDATE_BC then
-			    Lcl_Sum_Min_Dist += current_distance;
-                          node_add_lock$.writeEF ( true );
+			    Lcl_Sum_Min_Dist += current_distance_c;
 			}
 		      else
                         // could min_distance$(v) be < current_distance?
-			min_distance$ (v) . writeEF (current_distance);
+			min_distance$ (v) . writeEF (current_distance_c);
 		    }
 
 		// ------------------------------------------------
@@ -356,17 +349,21 @@ module SSCA2_kernels
 		// the previous, the current or the next level.
 		// ------------------------------------------------
   
-		if  min_distance$ (v).readFF () == current_distance  
+		if  min_distance$ (v).readFF () == current_distance_c  
 		  then
 		    path_count$ (v) += path_count$ (u).readFF ();
 	      }
 	    };
   
-	    Active_Level = Next_Level;
-	    Next_Level   = new Level_Set (Sparse_Vertex_List);
+            rcLocal(Active_Level) = rcLocal(Next_Level);
+            rcLocal(Next_Level)   = new Level_Set (Sparse_Vertex_List);
         
-	    Next_Level.Members.clear ();
-	    Next_Level.previous = Active_Level;
+	    // rcLocal(Next_Level).Members.clear ();
+	    rcLocal(Next_Level).previous = rcLocal(Active_Level);
+
+            Active_Remaining[here.id] = rcLocal(Active_Level).Members.numIndices:bool;
+
+            }
 
 	  };  // end forward pass
 
@@ -385,42 +382,43 @@ module SSCA2_kernels
 	  writeln ( " graph diameter from starting node ", s, 
 		    "  is ", graph_diameter );
 
-	delete Next_Level;	               // it's empty
-	Next_Level   = Active_Level.previous;  // back up to last level
-	delete Active_Level;
-	Active_Level = Next_Level;
+        coforall loc in Locales do on loc {
+          delete rcLocal(Next_Level);	               // it's empty
+          rcLocal(Next_Level)   = rcLocal(Active_Level).previous;  // back up to last level
+          delete rcLocal(Active_Level);
+          rcLocal(Active_Level) = rcLocal(Next_Level);
   
-	for current_distance in 2 .. graph_diameter by -1 do {
+          for current_distance in 2 .. graph_diameter by -1 do {
 
-	  Next_Level   = Active_Level.previous;
-	  delete Active_Level;
-	  Active_Level = Next_Level;
+            rcLocal(Next_Level)   = rcLocal(Active_Level).previous;
+            delete rcLocal(Active_Level);
+            rcLocal(Active_Level) = rcLocal(Next_Level);
 
-	  // inner reduction should parallelize eventually; compiler
-	  // serializes it today (and warns us that it did)
+            // inner reduction should parallelize eventually; compiler
+            // serializes it today (and warns us that it did)
 
-	  forall u in Active_Level.Members do
-	    {
-	      depend (u) = + reduce 
-		[ (v, w)  in ( G.Neighbors (u), G.Row(u).Weight ) ]
-		if ( min_distance$ (v).readFF () == current_distance ) && 
-		( ( FILTERING && w % 8 != 0 || !FILTERING ) )
-		then
-		  ( path_count$ (u) . readFF () / 
-		    path_count$ (v) . readFF () )      *
-		    ( 1.0 + depend (v) );
+            forall u in rcLocal(Active_Level).Members do
+              {
+                depend (u) = + reduce 
+                  [ (v, w)  in ( G.Neighbors (u), G.edge_weight (u) ) ]
+                  if ( min_distance$ (v).readFF () == current_distance ) && 
+                  ( ( FILTERING && w % 8 != 0 || !FILTERING ) )
+                  then
+                    ( path_count$ (u) . readFF () / 
+                      path_count$ (v) . readFF () )      *
+                      ( 1.0 + depend (v) );
 
-	      // do not need conditional u != s
+                // do not need conditional u != s
 
-	      Between_Cent$ (u) += depend (u);
-	    }
-	};
-	delete Active_Level;
+                Between_Cent$ (u) += depend (u);
+              }
+          };
+          delete rcLocal(Active_Level);
+        }
 
       }; // closure of outer embarassingly parallel forall
-  
-      if DEBUG_KERNEL4 then stopVerboseComm();
 
+  
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();
 	var K4_time = stopwatch.elapsed ();

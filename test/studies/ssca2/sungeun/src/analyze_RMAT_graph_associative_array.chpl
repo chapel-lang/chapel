@@ -78,12 +78,23 @@ module analyze_RMAT_graph_associative_array {
 
       proc   Neighbors  ( v : index (vertices) ) {return Row (v).Row_Neighbors;}
 
-      // NEED PARALLEL ITERATOR FOR EDGE_WEIGHT BELOW.  
-      // Not implemented yet in compiler. 
-
       iter   edge_weight (v : index (vertices) ) var {
-	for w in Row (v).Weight do
-	  yield w;}  // var iterator to avoid a copy
+        for w in Row (v).Weight do
+          yield w;}  // var iterator to avoid a copy
+
+      // Simply forward the domain's parallel iterator
+      // FYI: no fast follower opt
+      iter   edge_weight(v : index (vertices), param tag: iterator)
+      where tag == iterator.leader {
+        for block in Row(v).Weight._value.these(tag) do
+          yield block;
+      }
+
+      iter   edge_weight(v : index (vertices), param tag: iterator, follower)
+      where tag == iterator.follower {
+        for elem in Row(v).Weight._value.these(tag, follower) do
+          yield elem;
+      }
 
       proc   n_Neighbors (v : index (vertices) ) 
       {return Row (v).Row_Neighbors.numIndices;}
