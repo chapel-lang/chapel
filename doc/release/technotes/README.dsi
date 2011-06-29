@@ -187,6 +187,10 @@ iter GlobalDomain.these(param tag: iterator, follower) where tag == iterator.fol
   invoked implicitly to implement parallel iteration over this domain.
   (The serial iterator must also be defined for parallel iteration.)
 
+  The presentation below is tailored to the use of leader/follower iterators
+  in domain maps. For a more general discussion, see
+    $CHPL_HOME/examples/primers/leaderfollower.chpl
+
   The job of the leader iterator is to:
    * subdivide the given domain into subdomains,
    * introduce parallelism between these subdomains, and
