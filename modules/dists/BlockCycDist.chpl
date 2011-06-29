@@ -36,22 +36,22 @@ class BlockCyclic : BaseDist {
   const lowIdx: rank*idxType;
   const blocksize: rank*int(32);
   const targetLocDom: domain(rank);
-  const targetLocs: [targetLocDom] locale;
+  const targetLocales: [targetLocDom] locale;
   const locDist: [targetLocDom] LocBlockCyclic(rank, idxType);
 
   var tasksPerLocale: int; // tasks per locale for forall iteration
 
-  proc BlockCyclic(param rank: int,
-                  type idxType = int(64),
-                  low: rank*idxType,
-                  blk: rank*int(32),
-                  targetLocales: [] locale = thisRealm.Locales, 
-                  tasksPerLocale = 0) {
-    lowIdx = low;
-    blocksize = blk;
+  proc BlockCyclic(startIdx,  // ?nd*?idxType
+                   blocksize,     // nd*int
+                   targetLocales: [] locale = thisRealm.Locales, 
+                   tasksPerLocale = 0,
+                   param rank = startIdx.size,
+                   type idxType = startIdx(1).type) {
+    this.lowIdx = startIdx;
+    this.blocksize = blocksize;
     if rank == 1 {
       targetLocDom = [0..#targetLocales.numElements]; // 0-based for simplicity
-      targetLocs = targetLocales;
+      this.targetLocales = targetLocales;
     } else if targetLocales.rank == 1 then {
 
       // BLC: Common code, factor out
@@ -61,11 +61,11 @@ class BlockCyclic : BaseDist {
       for param i in 1..rank do
         ranges(i) = 0..factors(i)-1;
       targetLocDom = [(...ranges)];
-      for (loc1, loc2) in (targetLocs, targetLocales) do
+      for (loc1, loc2) in (this.targetLocales, targetLocales) do
         loc1 = loc2;
       if debugBlockCyclicDist {
         writeln(targetLocDom);
-        writeln(targetLocs);
+        writeln(this.targetLocales);
       }
     } else {
       if targetLocales.rank != rank then
@@ -80,12 +80,12 @@ class BlockCyclic : BaseDist {
       targetLocDom = [(...ranges)];
       if debugBlockCyclicDist then writeln(targetLocDom);
 
-      targetLocs = reshape(targetLocales, targetLocDom);
-      if debugBlockCyclicDist then writeln(targetLocs);
+      this.targetLocales = reshape(targetLocales, targetLocDom);
+      if debugBlockCyclicDist then writeln(this.targetLocales);
     }
 
     coforall locid in targetLocDom do
-      on targetLocs(locid) do
+      on this.targetLocales(locid) do
         locDist(locid) = new LocBlockCyclic(rank, idxType, locid, this);
 
     if tasksPerLocale == 0 then
@@ -102,20 +102,20 @@ class BlockCyclic : BaseDist {
     lowIdx = other.lowIdx;
     blocksize = other.blocksize;
     targetLocDom = other.targetLocDom;
-    targetLocs = other.targetLocs;
+    targetLocales = other.targetLocales;
     locDist = other.locDist;
     tasksPerLocale = other.tasksPerLocale;
   }
 
   proc dsiClone() {
-    return new BlockCyclic(rank, idxType, lowIdx, blocksize, targetLocs, tasksPerLocale);
+    return new BlockCyclic(lowIdx, blocksize, targetLocales, tasksPerLocale);
   }
 }
 
 //
-// create a new arithmetic domain over this distribution
+// create a new rectangular domain over this distribution
 //
-proc BlockCyclic.dsiNewArithmeticDom(param rank: int, type idxType,
+proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
                            param stridable: bool) {
   if idxType != this.idxType then
     compilerError("BlockCyclic domain index type does not match distribution's");
@@ -135,7 +135,7 @@ proc BlockCyclic.writeThis(x:Writer) {
   x.writeln("-------");
   x.writeln("distributes: ", lowIdx, "...");
   x.writeln("in chunks of: ", blocksize);
-  x.writeln("across locales: ", targetLocs);
+  x.writeln("across locales: ", targetLocales);
   x.writeln("indexed via: ", targetLocDom);
   x.writeln("resulting in: ");
   for locid in targetLocDom do
@@ -145,12 +145,12 @@ proc BlockCyclic.writeThis(x:Writer) {
 //
 // convert an index into a locale value
 //
-proc BlockCyclic.dsiIndexLocale(ind: idxType) where rank == 1 {
-  return targetLocs(idxToLocaleInd(ind));
+proc BlockCyclic.dsiIndexToLocale(ind: idxType) where rank == 1 {
+  return targetLocales(idxToLocaleInd(ind));
 }
 
-proc BlockCyclic.dsiIndexLocale(ind: rank*idxType) {
-  return targetLocs(idxToLocaleInd(ind));
+proc BlockCyclic.dsiIndexToLocale(ind: rank*idxType) {
+  return targetLocales(idxToLocaleInd(ind));
 }
 
 //
@@ -175,8 +175,19 @@ proc BlockCyclic.getStarts(inds, locid) {
     const mystr = locDist(locid).myStarts(i).stride;
     if (domlo != lowIdx(i)) {
       if (domlo <= domhi) {
-        writeln("domlo = ", domlo, "; lowIdx(", i, ") = ", lowIdx(i));
-        halt("BLC: need to handle the case where low bound is not the start");
+        if (domlo > lowIdx(i)) {
+	  const off = (domlo - mylo)%mystr;
+	  if (off == 0) {
+	    lo = domlo;
+	    hi = domhi;
+	  } else {
+	    lo = domlo-off;
+	    hi = domhi;
+//	    halt("BLC: need to handle unaligned low");
+	  }
+	} else {
+	  halt("BLC: need to handle domain low less than lowIdx");
+        }	  
       } else {
         lo = domlo;
         hi = domhi;
@@ -195,7 +206,7 @@ proc BlockCyclic.getStarts(inds, locid) {
 // determine which locale owns a particular index
 //
 // TODO: I jotted down a note during the code review asking whether
-// targetLocs.numElements and boundingbox.numIndices should be
+// targetLocales.numElements and boundingbox.numIndices should be
 // captured locally, or captured in the default dom/array implementation
 // or inlined.  Not sure what that point was anymore, though.  Maybe
 // someone else can help me remember it (since it was probably someone
@@ -215,7 +226,7 @@ proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   var locInd: rank*int;
   for param i in 1..rank {
     const ind0 = ind(i) - lowIdx(i);
-    locInd(i) = (ind(i) / blocksize(i)) % targetLocDom.dim(i).length;  
+    locInd(i) = ((ind0 / blocksize(i)) % targetLocDom.dim(i).length): int; 
   }
   return locInd;
 }
@@ -269,7 +280,7 @@ proc LocBlockCyclic.writeThis(x:Writer) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
-class BlockCyclicDom: BaseArithmeticDom {
+class BlockCyclicDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
@@ -291,9 +302,9 @@ class BlockCyclicDom: BaseArithmeticDom {
   //  const startLoc: index(dist.targetLocDom);
 
   var pid: int = -1; // privatized object id
-
-  proc getBaseDist() return dist;
 }
+
+proc BlockCyclicDom.dsiDims() return whole.dims();
 
 proc BlockCyclicDom.dsiDim(d: int) return whole.dim(d);
 
@@ -308,8 +319,9 @@ iter BlockCyclicDom.these(param tag: iterator) where tag == iterator.leader {
   if (precomputedNumTasks != 1) then
     halt("Can't use more than one task per locale with Block-Cyclic currently");
   coforall locDom in locDoms do on locDom {
-    var tmpblock:rank*range(idxType);
+      var tmpblock:rank*range(idxType, stridable=stridable);
     for i in locDom.myStarts {
+      //      writeln("[", here.id, "] starting at ", i);
       for param j in 1..rank {
         // TODO: support a tuple-oriented iteration of vectors to avoid this?
         var lo: idxType;
@@ -317,13 +329,25 @@ iter BlockCyclicDom.these(param tag: iterator) where tag == iterator.leader {
           lo = i;
         else
           lo = i(j);
-        tmpblock(j) = lo..min(lo + dist.blocksize(j)-1, 
-                              whole.dim(j).high);
+        tmpblock(j) = max(lo, whole.dim(j).low)..
+	              min(lo + dist.blocksize(j)-1, whole.dim(j).high);
+        //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
+        tmpblock(j) = whole.dim(j)[tmpblock(j)];
+        //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
+        if rank == 1 then
+          lo = whole.low;
+        else
+          lo = whole.low(j);
+        //        writeln("lo = ", lo);
+        tmpblock(j) = tmpblock(j).chpl__unTranslate(lo);
+        //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
       }
 
       var retblock: rank*range(idxType);
       for param i in 1..rank {
-        retblock(i) = tmpblock(i) - whole.dim(i).low;
+        retblock(i) = (tmpblock(i).low / whole.dim(i).stride:idxType)..
+                        #tmpblock(i).length;
+          //        retblock(i) = (tmpblock(i) - whole.dim(i).low);
       }
       //      writeln(here.id, ": Domain leader yielding", retblock);
       yield retblock;
@@ -380,7 +404,7 @@ proc BlockCyclicDom.dsiHigh return whole.high;
 proc BlockCyclicDom.dsiStride return whole.stride;
 
 //
-// INTERFACE NOTES: Could we make setIndices() for an arithmetic
+// INTERFACE NOTES: Could we make setIndices() for a rectangular
 // domain take a domain rather than something else?
 //
 proc BlockCyclicDom.dsiSetIndices(x: domain) {
@@ -408,19 +432,17 @@ proc BlockCyclicDom.dsiGetIndices() {
   return whole.getIndices();
 }
 
-proc BlockCyclicDom.getDist(): BlockCyclic(idxType) {
-  return dist;
-}
+proc BlockCyclicDom.dsiMyDist() return dist;
 
 proc BlockCyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom do
-    on dist.targetLocs(localeIdx) do
+    on dist.targetLocales(localeIdx) do
       if (locDoms(localeIdx) == nil) then
         locDoms(localeIdx) = new LocBlockCyclicDom(rank, idxType, stridable, this, 
                                                    dist.getStarts(whole, localeIdx));
       else {
         locDoms(localeIdx).myStarts = dist.getStarts(whole, localeIdx);
-        locDoms(localeIdx).myFlatInds = [0:uint(64)..#locDoms(localeIdx).computeFlatInds()];
+        locDoms(localeIdx).myFlatInds = [0:int(64)..#locDoms(localeIdx).computeFlatInds()];
       }
   if debugBlockCyclicDist then
     enumerateBlocks();
@@ -428,7 +450,7 @@ proc BlockCyclicDom.setup() {
 
 proc BlockCyclicDom.enumerateBlocks() {
   for locidx in dist.targetLocDom {
-    on dist.targetLocs(locidx) do locDoms(locidx).enumerateBlocks();
+    on dist.targetLocales(locidx) do locDoms(locidx).enumerateBlocks();
   }
 }
 
@@ -459,7 +481,7 @@ proc BlockCyclicDom.dsiIndexOrder(i) {
   return whole.indexOrder(i);
 }
 
-proc BlockCyclicDom.dsiBuildArithmeticDom(param rank: int, type idxType,
+proc BlockCyclicDom.dsiBuildRectangularDom(param rank: int, type idxType,
                                          param stridable: bool,
                                          ranges: rank*range(idxType,
                                                             BoundedRangeType.bounded,
@@ -497,7 +519,7 @@ class LocBlockCyclicDom {
   // indices back to the local index type.
   //
   var myStarts: domain(rank, idxType, stridable=true);
-  var myFlatInds: domain(1, uint(64)) = [0:uint(64)..#computeFlatInds()];
+  var myFlatInds: domain(1, int(64)) = [0:int(64)..#computeFlatInds()];
 }
 
 //
@@ -505,8 +527,8 @@ class LocBlockCyclicDom {
 //
 proc LocBlockCyclicDom.computeFlatInds() {
   //  writeln("myStarts = ", myStarts);
-  const numBlocks: uint(64) = * reduce [d in 1..rank] (myStarts.dim(d).length):uint(64),
-    indsPerBlk: uint(64) = * reduce [d in 1..rank] (globDom.dist.blocksize(d)):uint(64);
+  const numBlocks: int(64) = * reduce [d in 1..rank] (myStarts.dim(d).length):int(64),
+    indsPerBlk: int(64) = * reduce [d in 1..rank] (globDom.dist.blocksize(d)):int(64);
   //  writeln("Total number of inds = ", numBlocks * indsPerBlk);
   return numBlocks * indsPerBlk;
 }
@@ -588,8 +610,8 @@ proc BlockCyclicArr.dsiGetBaseDom() return dom;
 
 proc BlockCyclicArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
-    on dom.dist.targetLocs(localeIdx) {
-      locArr(localeIdx) = new LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx));
+    on dom.dist.targetLocales(localeIdx) {
+      locArr(localeIdx) = new LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx), dom.locDoms(localeIdx));
       if this.locale == here then
         myLocArr = locArr(localeIdx);
     }
@@ -601,9 +623,7 @@ proc BlockCyclicArr.dsiSupportsPrivatization() param return true;
 proc BlockCyclicArr.dsiGetPrivatizeData() return 0;
 
 proc BlockCyclicArr.dsiPrivatize(privatizeData) {
-  var dompid = dom.pid;
-  var thisdom = dom;
-  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+  var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
   var c = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   c.locArr = locArr;
   for localeIdx in dom.dist.targetLocDom do
@@ -619,7 +639,7 @@ proc BlockCyclicArr.dsiPrivatize(privatizeData) {
 //
 proc BlockCyclicArr.dsiAccess(i: idxType) var where rank == 1 {
   if myLocArr then /* TODO: reenable */ /* local */ {
-    if myLocArr.locDom.myStarts.member(i) then
+    if myLocArr.indexDom.myStarts.member(i) then  // TODO: This could be beefed up; true for indices other than starts
       return myLocArr.this(i);
   }
   //  var loci = dom.dist.idxToLocaleInd(i);
@@ -648,38 +668,9 @@ iter BlockCyclicArr.these() var {
     yield dsiAccess(i);
 }
 
-//
-// TODO: Rewrite this to reuse more of the global domain iterator
-// logic?  (e.g., can we forward the forall to the global domain
-// somehow?
-//
 iter BlockCyclicArr.these(param tag: iterator) where tag == iterator.leader {
-  const precomputedNumTasks = dom.dist.tasksPerLocale;
-  const precomputedWholeLow = dom.whole.low;
-  if (precomputedNumTasks != 1) then
-    halt("Can't use more than one task per locale with Block-Cyclic currently");
-  coforall locDom in dom.locDoms do on locDom {
-    var tmpblock:rank*range(idxType);
-    for i in locDom.myStarts {
-      for param j in 1..rank {
-        // TODO: support a tuple-oriented iteration of vectors to avoid this?
-        var lo: idxType;
-        if rank == 1 then
-          lo = i;
-        else
-          lo = i(j);
-        tmpblock(j) = lo..min(lo + dom.dist.blocksize(j)-1, 
-                              dom.whole.dim(j).high);
-      }
-
-      var retblock: rank*range(idxType);
-      for param i in 1..rank {
-        retblock(i) = tmpblock(i) - dom.whole.dim(i).low;
-      }
-      //      writeln(here.id, ": Array leader yielding", retblock);
-      yield retblock;
-    }
-  }
+  for yieldThis in dom.these(tag) do
+    yield yieldThis;
 }
 
 iter BlockCyclicArr.these(param tag: iterator, follower) var where tag == iterator.follower {
@@ -726,19 +717,19 @@ proc BlockCyclicArr.dsiSerialWrite(f: Writer) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim)._low;
+    i(dim) = dom.dsiDim(dim).low;
   label next while true {
     f.write(dsiAccess(i));
-    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
+    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
       f.write(" ");
-      i(rank) += dom.dsiDim(rank)._stride:idxType;
+      i(rank) += dom.dsiDim(rank).stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
-          i(dim) += dom.dsiDim(dim)._stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
+          i(dim) += dom.dsiDim(dim).stride:idxType;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom.dsiDim(dim2)._low;
+            i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
         }
@@ -751,12 +742,16 @@ proc BlockCyclicArr.dsiSerialWrite(f: Writer) {
 proc BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
   var alias = new BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
   for i in dom.dist.targetLocDom {
-    on dom.dist.targetLocs(i) {
-      alias.locArr[i] = new LocBlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[alias.locArr[i].locDom.myStarts]);
+    on dom.dist.targetLocales(i) {
+      alias.locArr[i] = new LocBlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, allocDom=locArr[i].allocDom, indexDom=d.locDoms[i], myElems=>locArr[i].myElems);
     }
   }
 
   return alias;
+}
+
+proc BlockCyclicArr.dsiReindex(dom) {
+  compilerError("reindexing not yet implemented for Block-Cyclic");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -771,7 +766,8 @@ class LocBlockCyclicArr {
   //
   // LEFT LINK: a reference to the local domain class for this array and locale
   //
-  const locDom: LocBlockCyclicDom(rank, idxType, stridable);
+  const allocDom: LocBlockCyclicDom(rank, idxType, stridable);
+  const indexDom: LocBlockCyclicDom(rank, idxType, stridable);
 
 
   // STATE:
@@ -779,13 +775,13 @@ class LocBlockCyclicArr {
   //
   // the block of local array data
   //
-  var myElems: [locDom.myFlatInds] eltType;
+  var myElems: [allocDom.myFlatInds] eltType;
 
   // TODO: need to be able to access these, but is this the right place?
-  const blocksize: [1..rank] uint(64) = [d in 1..rank] locDom.globDom.dist.blocksize(d): uint(64);
-  const low = locDom.globDom.dsiLow;
-  const locsize: [1..rank] uint(64) = [d in 1..rank] locDom.globDom.dist.targetLocDom.dim(d).length: uint(64);
-  const numblocks: [1..rank] uint(64) = [d in 1..rank] (locDom.myStarts.dim(d).length):uint(64);
+  const blocksize: [1..rank] int(64) = [d in 1..rank] allocDom.globDom.dist.blocksize(d): int(64);
+  const low = allocDom.globDom.dsiLow;
+  const locsize: [1..rank] int(64) = [d in 1..rank] allocDom.globDom.dist.targetLocDom.dim(d).length: int(64);
+  const numblocks: [1..rank] int(64) = [d in 1..rank] (allocDom.myStarts.dim(d).length):int(64);
 
 }
 
@@ -794,7 +790,7 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t, dim = 1) where t == idxType {
   //  writeln("blksize");
   const blksize = blocksize(dim);
   //  writeln("ind0");
-  const ind0 = (i - low): uint(64);
+  const ind0 = (i - low): int(64);
   //  writeln("blkNum");
   const blkNum = ind0 / (blksize * locsize(dim));
   //  writeln("blkOff");
@@ -807,11 +803,11 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
   if (false) {  // CMO
     var blkmults = * scan [d in 1..rank] blocksize(d);
     //    writeln("blkmults = ", blkmults);
-    var numwholeblocks: uint(64) = 0;
-    var blkOff: uint(64) = 0;
+    var numwholeblocks: int(64) = 0;
+    var blkOff: int(64) = 0;
     for param d in rank..1 by -1 {
       const blksize = blocksize(d);
-      const ind0 = (i(d) - low(d)): uint(64);
+      const ind0 = (i(d) - low(d)): int(64);
       const blkNum = ind0 / (blksize * locsize(d));
       const blkDimOff = ind0 % blksize;
       if (d != rank) {
@@ -824,16 +820,16 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
     return (numwholeblocks * blocksize(rank)) + blkOff;
   } else { // RMO
     //TODO: want negative scan: var blkmults = * scan [d in 1..rank] blocksize(d);
-    var blkmults: [1..rank] uint(64);
+    var blkmults: [1..rank] int(64);
     blkmults(rank) = blocksize(rank);
     for d in rank-1..1 by -1 do
       blkmults(d) = blkmults(d+1) * blocksize(d);
     //    writeln("blkmults = ", blkmults);
-    var numwholeblocks: uint(64) = 0;
-    var blkOff: uint(64) = 0;
+    var numwholeblocks: int(64) = 0;
+    var blkOff: int(64) = 0;
     for param d in 1..rank {
       const blksize = blocksize(d);
-      const ind0 = (i(d) - low(d)): uint(64);
+      const ind0 = (i(d) - low(d)): int(64);
       const blkNum = ind0 / (blksize * locsize(d));
       const blkDimOff = ind0 % blksize;
       if (d != 1) {

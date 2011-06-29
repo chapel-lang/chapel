@@ -40,8 +40,8 @@ class GPUDist: BaseDist {
     threadPerBlock = threadsPerBlock;
   }
 
-  proc dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
-    return new GPUArithmeticDom(rank, idxType, stridable, this);
+  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
+    return new GPURectangularDom(rank, idxType, stridable, this);
   }
 }
 
@@ -50,7 +50,7 @@ class GPUDist: BaseDist {
 // other locales.  This just sets it up on this locale.
 //
 
-class GPUArithmeticDom: BaseArithmeticDom {
+class GPURectangularDom: BaseRectangularDom {
   param rank : int;
   type idxType;
   param stridable: bool;
@@ -62,7 +62,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
   const threadPerBlock : int;
   const numBlocks : int;
 
-  proc GPUArithmeticDom(param rank, type idxType, param stridable, dist) {
+  proc GPURectangularDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;
   }
 
@@ -72,6 +72,8 @@ class GPUArithmeticDom: BaseArithmeticDom {
       ranges(i) = emptyRange;
   }
   
+  proc dsiMyDist() return dist;
+
   proc dsiGetIndices() return ranges;
 
   proc dsiSetIndices(x) {
@@ -184,39 +186,39 @@ class GPUArithmeticDom: BaseArithmeticDom {
 
   proc dsiLow {
     if rank == 1 {
-      return ranges(1)._low;
+      return ranges(1).low;
     } else {
       var result: rank*idxType;
       for param i in 1..rank do
-        result(i) = ranges(i)._low;
+        result(i) = ranges(i).low;
       return result;
     }
   }
 
   proc dsiHigh {
     if rank == 1 {
-      return ranges(1)._high;
+      return ranges(1).high;
     } else {
       var result: rank*idxType;
       for param i in 1..rank do
-        result(i) = ranges(i)._high;
+        result(i) = ranges(i).high;
       return result;
     }
   }
 
   proc dsiStride {
     if rank == 1 {
-      return ranges(1)._stride;
+      return ranges(1).stride;
     } else {
-      var result: rank*chpl__idxTypeToStrType(idxType);
+      var result: rank*chpl__signedType(idxType);
       for param i in 1..rank do
-        result(i) = ranges(i)._stride;
+        result(i) = ranges(i).stride;
       return result;
     }
   }
 
   proc dsiBuildArray(type eltType) {
-    return new GPUArithmeticArr(eltType=eltType, rank=rank, idxType=idxType, 
+    return new GPURectangularArr(eltType=eltType, rank=rank, idxType=idxType, 
 		    		stridable=stridable, dom=this, 
 				low_val=ranges(1).low);
   }
@@ -225,7 +227,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     proc isRange(r: range(?e,?b,?s)) param return 1;
     proc isRange(r) param return 0;
 
-    var d = new GPUArithmeticDom(rank, idxType, stridable, dist);
+    var d = new GPURectangularDom(rank, idxType, stridable, dist);
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
@@ -236,7 +238,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
     return d;
   }
 
-  proc dsiBuildArithmeticDom(param rank: int, type idxType,
+  proc dsiBuildRectangularDom(param rank: int, type idxType,
                             param stridable: bool,
                             ranges: rank*range(idxType,
                             BoundedRangeType.bounded,
@@ -246,7 +248,7 @@ class GPUArithmeticDom: BaseArithmeticDom {
   if rank != dist.rank then
     compilerError("Block domain rank does not match distribution's");
 
-  var dom = new GPUArithmeticDom(rank=rank, idxType=idxType,
+  var dom = new GPURectangularDom(rank=rank, idxType=idxType,
                                  dist=dist, stridable=stridable);
   dom.dsiSetIndices(ranges);
   return dom;
@@ -254,24 +256,24 @@ class GPUArithmeticDom: BaseArithmeticDom {
 
 
   proc translate(off: rank*idxType) {
-    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
+    var x = new GPURectangularDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dsiDim(i).translate(off(i));
     return x;
   }
 
   proc chpl__unTranslate(off: rank*idxType) {
-    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
+    var x = new GPURectangularDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dsiDim(i).chpl__unTranslate(off(i));
     return x;
   }
 
   proc interior(off: rank*idxType) {
-    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
+    var x = new GPURectangularDom(rank, idxType, stridable, dist);
     for i in 1..rank do {
-      if ((off(i) > 0) && (dsiDim(i)._high+1-off(i) < dsiDim(i)._low) ||
-          (off(i) < 0) && (dsiDim(i)._low-1-off(i) > dsiDim(i)._high)) {
+      if ((off(i) > 0) && (dsiDim(i).high+1-off(i) < dsiDim(i).low) ||
+          (off(i) < 0) && (dsiDim(i).low-1-off(i) > dsiDim(i).high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
       x.ranges(i) = dsiDim(i).interior(off(i));
@@ -280,17 +282,17 @@ class GPUArithmeticDom: BaseArithmeticDom {
   }
 
   proc exterior(off: rank*idxType) {
-    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
+    var x = new GPURectangularDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = dsiDim(i).exterior(off(i));
     return x;
   }
 
   proc expand(off: rank*idxType) {
-    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
+    var x = new GPURectangularDom(rank, idxType, stridable, dist);
     for i in 1..rank do {
       x.ranges(i) = ranges(i).expand(off(i));
-      if (x.ranges(i)._low > x.ranges(i)._high) {
+      if (x.ranges(i).low > x.ranges(i).high) {
         halt("***Error: Degenerate dimension created in dimension ", i, "***");
       }
     }
@@ -298,20 +300,20 @@ class GPUArithmeticDom: BaseArithmeticDom {
   }  
 
   proc expand(off: idxType) {
-    var x = new GPUArithmeticDom(rank, idxType, stridable, dist);
+    var x = new GPURectangularDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       x.ranges(i) = ranges(i).expand(off);
     return x;
   }
 }
 
-class GPUArithmeticArr: BaseArr {
+class GPURectangularArr: BaseArr {
   type eltType;
   param rank : int;
   type idxType;
   param stridable: bool;
 
-  var dom : GPUArithmeticDom(rank=rank, idxType=idxType,
+  var dom : GPURectangularDom(rank=rank, idxType=idxType,
                                          stridable=stridable);
   var off: rank*idxType;
   var blk: rank*idxType;
@@ -358,8 +360,8 @@ class GPUArithmeticArr: BaseArr {
 
   proc initialize() {
     for param dim in 1..rank {
-      off(dim) = dom.dsiDim(dim)._low;
-      str(dim) = dom.dsiDim(dim)._stride;
+      off(dim) = dom.dsiDim(dim).low;
+      str(dim) = dom.dsiDim(dim).stride;
     }
     blk(rank) = 1:idxType;
     for param dim in 1..rank-1 by -1 do
@@ -381,28 +383,28 @@ class GPUArithmeticArr: BaseArr {
     return data(sum);
   }
 
-  proc dsiReindex(d: GPUArithmeticDom) {
+  proc dsiReindex(d: GPURectangularDom) {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 1..rank do
       if d.dsiDim(i).length != dom.dsiDim(i).length then
         halt("extent in dimension ", i, " does not match actual");
-    var alias = new GPUArithmeticArr(eltType=eltType, rank=d.rank,
+    var alias = new GPURectangularArr(eltType=eltType, rank=d.rank,
                                      idxType=d.idxType,
                                      stridable=d.stridable, dom=d);
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
-      alias.off(i) = d.dsiDim(i)._low;
-      alias.blk(i) = (blk(i) * dom.dsiDim(i)._stride / str(i)) : d.idxType;
-      alias.str(i) = d.dsiDim(i)._stride;
+      alias.off(i) = d.dsiDim(i).low;
+      alias.blk(i) = (blk(i) * dom.dsiDim(i).stride / str(i)) : d.idxType;
+      alias.str(i) = d.dsiDim(i).stride;
     }
     alias.computeFactoredOffs();
     return alias;
   }
 
-  proc dsiSlice(d: GPUArithmeticDom) {
-    var alias = new GPUArithmeticArr(eltType=eltType, rank=rank,
+  proc dsiSlice(d: GPURectangularDom) {
+    var alias = new GPURectangularArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
                                          dom=d);
@@ -411,7 +413,7 @@ class GPUArithmeticArr: BaseArr {
     alias.blk = blk;
     alias.str = str;
     for param i in 1..rank {
-      alias.off(i) = d.dsiDim(i)._low;
+      alias.off(i) = d.dsiDim(i).low;
     }
     alias.computeFactoredOffs();
     return alias;
@@ -431,7 +433,7 @@ class GPUArithmeticArr: BaseArr {
     proc isRange(r: range(?e,?b,?s)) param return 1;
     proc isRange(r) param return 0;
 
-    var alias = new GPUArithmeticArr(eltType=eltType, rank=newRank,
+    var alias = new GPURectangularArr(eltType=eltType, rank=newRank,
                                          idxType=idxType,
                                          stridable=newStridable, dom=d);
     alias.data = data;
@@ -439,7 +441,7 @@ class GPUArithmeticArr: BaseArr {
     var i = 1;
     for param j in 1..args.size {
       if isRange(args(j)) {
-        alias.off(i) = d.dsiDim(i)._low;
+        alias.off(i) = d.dsiDim(i).low;
         alias.blk(i) = blk(j);
         alias.str(i) = str(j);
         i += 1;
@@ -452,7 +454,7 @@ class GPUArithmeticArr: BaseArr {
 
   proc dsiReallocate(d: domain) {
     if (d._value.type == dom.type) {
-      var copy = new GPUArithmeticArr(eltType=eltType, rank=rank,
+      var copy = new GPURectangularArr(eltType=eltType, rank=rank,
                                           idxType=idxType,
                                           stridable=d._value.stridable,
                                           dom=d._value);
@@ -472,30 +474,30 @@ class GPUArithmeticArr: BaseArr {
   }
 }
 
-proc GPUArithmeticDom.dsiSerialWrite(f: Writer) {
+proc GPURectangularDom.dsiSerialWrite(f: Writer) {
   f.write("[", dsiDim(1));
   for i in 2..rank do
     f.write(", ", dsiDim(i));
   f.write("]");
 }
 
-proc GPUArithmeticArr.dsiSerialWrite(f: Writer) {
+proc GPURectangularArr.dsiSerialWrite(f: Writer) {
   if dom.numIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim)._low;
+    i(dim) = dom.dsiDim(dim).low;
   label next while true {
     f.write(dsiAccess(i));
-    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
+    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
       f.write(" ");
-      i(rank) += dom.dsiDim(rank)._stride:idxType;
+      i(rank) += dom.dsiDim(rank).stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
-          i(dim) += dom.dsiDim(dim)._stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
+          i(dim) += dom.dsiDim(dim).stride:idxType;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom.dsiDim(dim2)._low;
+            i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
         }

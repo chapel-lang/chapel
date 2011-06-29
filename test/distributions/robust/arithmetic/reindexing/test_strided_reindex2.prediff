@@ -9,13 +9,27 @@ dist = 'default'
 searchstring='distType=DistType.'
 s = string.rfind(compopts, searchstring)
 
-print compopts
 
 if s != -1:
     opt = compopts[s+len(searchstring):len(compopts)]
     dist = opt.split()[0]
 
-print dist
+if dist=='cyclic':
+    # expected error, but preserve only the unique error messages (e.g., | sort | uniq )
+    execlog = sys.argv[2]
+    f = open(execlog, 'r')
+    lines = f.readlines()
+    lines.sort()
+    f.close()
+    newlines = list()
+    last = ''
+    for l in lines:
+        if l != last:
+            newlines.append(l)
+        last = l
+    f = open(execlog, 'w')
+    f.writelines(newlines)
+    f.close()
 
 goodfn=testname+'.'+dist+'.good'
 if os.path.isfile(goodfn):

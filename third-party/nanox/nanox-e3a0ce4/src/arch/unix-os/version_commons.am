@@ -1,0 +1,7 @@
+os_sources = \
+	$(top_srcdir)/src/arch/unix-os/os.hpp \
+	$(top_srcdir)/src/arch/unix-os/os.cpp \
+	$(END) 
+
+common_libadd = -lrt
+

@@ -13,13 +13,14 @@
 #include <sys/time.h>
 
 #include <chpl_md.h>
-#include <comm_printf_macros.h>
+#include <chpl-comm-printf-macros.h>
 
 #include "arg.h"
 #include "config.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
+#include "chpl-comm-compiler-macros.h"
 #include "chplcopygc.h"
 #include "chplexit.h"
 #include <chplfp.h>
@@ -29,7 +30,7 @@
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chplsys.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
 #include "chplgpu.h"

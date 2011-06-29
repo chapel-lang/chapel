@@ -4,10 +4,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define chpl_rt_type_id_chpl__class_id CHPL_TYPE_enum
-
 typedef enum {
   CHPL_TYPE_chpl_bool,
+  CHPL_TYPE_chpl_bool8,
+  CHPL_TYPE_chpl_bool16,
+  CHPL_TYPE_chpl_bool32,
+  CHPL_TYPE_chpl_bool64,
   CHPL_TYPE_enum,
   CHPL_TYPE_int8_t,
   CHPL_TYPE_int16_t,
@@ -28,6 +30,10 @@ typedef enum {
   CHPL_TYPE__cfile,
   CHPL_TYPE_chpl_task_list_p,
   CHPL_TYPE__timervalue,
+  CHPL_TYPE_chpl_sync_aux_t,
+  CHPL_TYPE_chpl_single_aux_t,
+  CHPL_TYPE_chpl_taskID_t,
+  CHPL_TYPE__symbol,
   CHPL_TYPE_CLASS_REFERENCE,
   CHPL_TYPE_DONE
 } chplType;
@@ -92,6 +98,31 @@ typedef struct __complex128 { _real64 re; _real64 im; } _complex128;
 typedef const char*         chpl_string;
 typedef int64_t              _symbol;
 
+#define CHPL_DEFINE_VOLATILE_TYPEDEF(t) typedef volatile t chpl_volatile_##t
+
+// volatile types
+
+CHPL_DEFINE_VOLATILE_TYPEDEF(chpl_bool);
+CHPL_DEFINE_VOLATILE_TYPEDEF(chpl_bool8);
+CHPL_DEFINE_VOLATILE_TYPEDEF(chpl_bool16);
+CHPL_DEFINE_VOLATILE_TYPEDEF(chpl_bool32);
+CHPL_DEFINE_VOLATILE_TYPEDEF(chpl_bool64);
+
+CHPL_DEFINE_VOLATILE_TYPEDEF(int8_t);
+CHPL_DEFINE_VOLATILE_TYPEDEF(int16_t);
+CHPL_DEFINE_VOLATILE_TYPEDEF(int32_t);
+CHPL_DEFINE_VOLATILE_TYPEDEF(int64_t);
+
+CHPL_DEFINE_VOLATILE_TYPEDEF(uint8_t);
+CHPL_DEFINE_VOLATILE_TYPEDEF(uint16_t);
+CHPL_DEFINE_VOLATILE_TYPEDEF(uint32_t);
+CHPL_DEFINE_VOLATILE_TYPEDEF(uint64_t);
+
+CHPL_DEFINE_VOLATILE_TYPEDEF(_real32);
+CHPL_DEFINE_VOLATILE_TYPEDEF(_real64);
+
+CHPL_DEFINE_VOLATILE_TYPEDEF(_imag32);
+CHPL_DEFINE_VOLATILE_TYPEDEF(_imag64);
 
 // macros for Chapel min/max -> C stdint.h or values.h min/max
 #define MIN_INT8            INT8_MIN

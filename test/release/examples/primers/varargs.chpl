@@ -1,14 +1,14 @@
 /*
- * Varargs Example
+ * Varargs Primer
  *
- * This example demonstrates functions with variable length arguments lists.
+ * This primer demonstrates procedures with variable length arguments lists.
  *
  */
 //
-// Functions can be defined with variable length argument lists. The following
-// function accepts integer arguments and defines the parameter n as the
-// number of arguments passed to the current call. The args argument is an
-// n-tuple of int values.
+// Procedures can be defined with variable length argument lists. The
+// following procedure accepts integer arguments and defines the
+// parameter n as the number of arguments passed to the current
+// call. The args argument is an n-tuple of int values.
 //
 proc intWriteln(args: int ...?n) {
   for i in 1..n {
@@ -23,7 +23,7 @@ intWriteln(1, 2, 3, 4);
 
 //
 // By eliding the type of the args argument, the variable arguments can be
-// made generic. The following function takes n arguments of any type and
+// made generic. The following procedure takes n arguments of any type and
 // writes them on a single line. Here, args is a heterogeneous n-tuple, so a
 // parameter for loop is used to unroll the loop body so that the index "i"
 // is a parameter and each write() call can be instantiated independently.
@@ -40,7 +40,7 @@ proc anyTypeWriteln(args...?n) {
 anyTypeWriteln(1, 2.0, 3.14 + 2.72i);
 
 //
-// Variable arguments can also be types instead of values. This function
+// Variable arguments can also be types instead of values. This procedure
 // accepts a variable number of types and returns a tuple containing the
 // default values for each type.
 //
@@ -51,13 +51,13 @@ proc defaultValues(type args...?n) {
 
 //
 // Write the default values of each of these types. Because the defaultValues
-// function returns a tuple, it is destructured before being passed to the
-// writer function by using the tuple destructuring expression: (...Tuple).
+// procedure returns a tuple, it is destructured before being passed to the
+// writer procedure by using the tuple destructuring expression: (...Tuple).
 //
 anyTypeWriteln((...defaultValues(int, complex, bool, 2*real)));
 
 //
-// This function uses Euclid's algorithm to compute the greatest common
+// This procedure uses Euclid's algorithm to compute the greatest common
 // divisor of two integers. It is the base case for a version below that
 // finds the gcd of any number of integers.
 //

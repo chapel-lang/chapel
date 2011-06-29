@@ -1,9 +1,0 @@
-bug: "error: unable to resolve return type" when asserting equality on domains
-
-Right now we get:
-
-domain-equality-operator-2.chpl:14: error: unable to resolve return type
-
-It is unclear whether this is due to the == equality getting promoted
-over the domains (then, see domain-equality-operator-1.*) or due to
-some bug in the compiler.

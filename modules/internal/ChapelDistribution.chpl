@@ -19,8 +19,13 @@ class BaseDist {
   pragma "dont disable remote value forwarding"
   proc destroyDist(dom: BaseDom = nil) {
     var cnt = _distCnt$ - 1;
-    if cnt < 0 then
-      halt("distribution reference count is negative!");
+    if !noRefCount {
+      if cnt < 0 then
+        halt("distribution reference count is negative!");
+    } else {
+      if cnt > 0 then
+        halt("distribution reference count has been modified!");
+    }
     if dom then
       on dom do
         _doms.remove(dom);
@@ -28,19 +33,20 @@ class BaseDist {
     return cnt;
   }
 
-  proc dsiNewArithmeticDom(param rank: int, type idxType, param stridable: bool) {
-    compilerError("arithmetic domains not supported by this distribution");
+  proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
+    compilerError("rectangular domains not supported by this distribution");
   }
 
-  proc dsiNewAssociativeDom(type idxType) {
+  proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
     compilerError("associative domains not supported by this distribution");
   }
 
-  proc dsiNewAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
+  proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
+  where _isEnumeratedType(idxType) {
     compilerError("enumerated domains not supported by this distribution");
   }
 
-  proc dsiNewOpaqueDom(type idxType) {
+  proc dsiNewOpaqueDom(type idxType, param parSafe: bool) {
     compilerError("opaque domains not supported by this distribution");
   }
 
@@ -57,29 +63,38 @@ class BaseDist {
 //
 // Abstract domain classes
 //
+pragma "base domain"
 class BaseDom {
   var _domCnt$: sync int = 0; // domain reference count and lock
   var _arrs: list(BaseArr);   // arrays declared over this domain
 
-  proc getBaseDist(): BaseDist {
+  proc dsiMyDist(): BaseDist {
+    halt("internal error: dsiMyDist is not implemented");
     return nil;
   }
 
   pragma "dont disable remote value forwarding"
   proc destroyDom(arr: BaseArr = nil) {
     var cnt = _domCnt$ - 1;
-    if cnt < 0 then
-      halt("domain reference count is negative!");
+    if !noRefCount {
+      if cnt < 0 then
+        halt("domain reference count is negative!");
+    } else {
+      if cnt > 0 then
+        halt("domain reference count has been modified!");
+    }
     if arr then
       on arr do
         _arrs.remove(arr);
     _domCnt$ = cnt;
-    if cnt == 0 {
-      var dist = getBaseDist();
-      if dist then on dist {
-        var cnt = dist.destroyDist(this);
-        if cnt == 0 then
-          delete dist;
+    if !noRefCount {
+      if cnt == 0 && dsiLinksDistribution() {
+        var dist = dsiMyDist();
+        on dist {
+          var cnt = dist.destroyDist(this);
+          if cnt == 0 then
+            delete dist;
+        }
       }
     }
     return cnt;
@@ -108,23 +123,26 @@ class BaseDom {
   // default distribution's reference count and add domains to the
   // default distribution's list of domains
   proc linksDistribution() param return true;
+
+  // dynamically-dispatched counterpart of linksDistribution
+  proc dsiLinksDistribution() return true;
 }
 
-class BaseArithmeticDom : BaseDom {
+class BaseRectangularDom : BaseDom {
   proc dsiClear() {
     halt("clear not implemented for this distribution");
   }
 
   proc clearForIteratableAssign() {
-    compilerError("Illegal assignment to an arithmetic domain");
+    compilerError("Illegal assignment to a rectangular domain");
   }
 
   proc dsiAdd(x) {
-    compilerError("Cannot add indices to an arithmetic domain");
+    compilerError("Cannot add indices to a rectangular domain");
   }
 
   proc dsiRemove(x) {
-    compilerError("Cannot remove indices from an arithmetic domain");
+    compilerError("Cannot remove indices from a rectangular domain");
   }
 }
 
@@ -172,14 +190,20 @@ class BaseArr {
   proc canCopyFromHost param return false;
 
   proc dsiGetBaseDom(): BaseDom {
+    halt("internal error: dsiGetBaseDom is not implemented");
     return nil;
   }
 
   pragma "dont disable remote value forwarding"
   proc destroyArr(): int {
     var cnt = _arrCnt$ - 1;
-    if cnt < 0 then
-      halt("array reference count is negative!");
+    if !noRefCount {
+      if cnt < 0 then
+        halt("array reference count is negative!");
+    } else {
+      if cnt > 0 then
+        halt("array reference count has been modified!");
+    }
     _arrCnt$ = cnt;
     if cnt == 0 {
       if _arrAlias {
@@ -191,11 +215,15 @@ class BaseArr {
       } else {
         dsiDestroyData();
       }
-      var dom = dsiGetBaseDom();
-      on dom {
-        var cnt = dom.destroyDom(this);
-        if cnt == 0 then
-          delete dom;
+    }
+    if !noRefCount {
+      if cnt == 0 {
+        var dom = dsiGetBaseDom();
+        on dom {
+          var cnt = dom.destroyDom(this);
+          if cnt == 0 then
+            delete dom;
+        }
       }
     }
     return cnt;

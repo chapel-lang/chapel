@@ -1,1 +1,1 @@
-plus_equals_illegal_1.chpl:9: error: Cannot add indices to an arithmetic domain
+plus_equals_illegal_1.chpl:9: error: Cannot add indices to a rectangular domain

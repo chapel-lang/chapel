@@ -500,6 +500,7 @@ if ($valgrind == 0) {
 }
 if ($examples == 1) {
     if ($parnodefile eq "") {
+        mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
         $testflags = "$testflags release/examples";
     } else {
         mysystem("cd $testdir && find release/examples -type d > DIRFILE", 
@@ -550,6 +551,7 @@ if (!($memleaks eq "")) {
 }
 if ($nolocal == 1) {
     $testflags = "$testflags -compopts --no-local";
+    $ENV{'CHPL_TEST_NO_LOCAL'} = true;
 }
 if (!($suppressions eq "")) {
     $testflags = "$testflags -suppress $suppressions";
@@ -558,7 +560,7 @@ if ($launchcmd) {
     $testflags = "-launchcmd \"$launchcmd\" $testflags";
 }
 if ($componly == 1) {
-    $testflags = "$testflags -componly";
+    $testflags = "$testflags -comp-only";
 }
 
 if ($runtests == 0) {
@@ -639,13 +641,14 @@ if ($runtests == 0) {
     if ($status == 0) {
         $newfailures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
         $newresolved = `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
+        $passingfutures = `grep "$futuremarker" $sortedsummary | grep "Success" | wc -l`; chomp($passingfutures);
         $newfailures += 0;
         $shortstatus = "$newfailures/$curfail";
     } else {
         $shortstatus = "build/test failed";
     }
 
-    if ($newfailures == 0 && $newresolved == 0) {
+    if ($newfailures == 0 && $newresolved == 0 && $passingfutures == 0) {
         print "Mailing to minimal group\n";
         $recipient = $nochangerecipient;
     } else {
@@ -675,15 +678,15 @@ if ($runtests == 0) {
     }
     
     if ($status == 0) {
-        print MAIL "--- Unresolved Errors ($morechars) ----------------------------------\n";
-        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
-        print MAIL "\n";
-    }
-    
-    if ($status == 0) {
         print MAIL "--- Passing Future tests ($morechars) -------------------------------\n";
         print MAIL `grep "$futuremarker" $sortedsummary | grep "Success"`;
         print MAIL "\n";    
+    }
+    
+    if ($status == 0) {
+        print MAIL "--- Unresolved Errors ($morechars) ----------------------------------\n";
+        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+        print MAIL "\n";
     }
     
     if ($status == 0) {
@@ -734,6 +737,13 @@ if ($runtests == 0) {
 #
     if (!($memleaks eq "")) {
         mysystem("$chapeldir/util/devel/analyzeMemLeaksLog /tmp/$memleaks > $logdir/$memleaks");
+
+        # Update the memory leaks status for performance testing runs to
+        #  generate graphs for the memory leaks data
+        #
+        # This is not ideal (we may be a day behind depending on when
+        #  the tests finish), but it good enough for now.
+        mysystem("cd $testdir && cp $logdir/$memleaks ./memleaks.exec.out.tmp && $chapeldir/util/test/computePerfStats memleaks $logdir");
     }
 }
 

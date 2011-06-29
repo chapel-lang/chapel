@@ -1,3 +1,5 @@
+config param noRefCount = false;
+
 var privatizeLock$: sync int;
 
 pragma "privatized class"
@@ -45,7 +47,7 @@ proc _reprivatize(value) {
   proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
     var newValue = originalValue;
     if hereID != here.uid {
-      newValue = __primitive("chpl_getPrivatizedClass", newValue, pid);
+      newValue = chpl_getPrivatizedCopy(newValue.type, pid);
       newValue.dsiReprivatize(parentValue, reprivatizeData);
     }
     cobegin {
@@ -128,16 +130,18 @@ pragma "has runtime type"
 proc chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
                                  type idxType = int(32),
                                  param stridable: bool = false) type
-  return _newDomain(d.newArithmeticDom(rank, idxType, stridable));
+  return _newDomain(d.newRectangularDom(rank, idxType, stridable));
 
 pragma "has runtime type"
-proc chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
-  return _newDomain(d.newAssociativeDom(idxType));
+proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+                                  param parSafe: bool = true) type
+  return _newDomain(d.newAssociativeDom(idxType, parSafe));
 
 pragma "has runtime type"
-proc chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
+proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+                                  param parSafe: bool = true) type
  where idxType == _OpaqueIndex
-  return _newDomain(d.newOpaqueDom(idxType));
+  return _newDomain(d.newOpaqueDom(idxType, parSafe));
 
 // This function has no 'has runtime type' pragma since the idxType of
 // opaque domains is _OpaqueIndex, not opaque.  This function is
@@ -152,16 +156,26 @@ proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain) type
   return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
 
 proc chpl__convertValueToRuntimeType(dom: domain) type
- where dom._value:BaseArithmeticDom
+ where dom._value:BaseRectangularDom
   return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
                             dom._value.idxType, dom._value.stridable);
+
+proc chpl__convertValueToRuntimeType(dom: domain) type
+ where dom._value:BaseAssociativeDom
+  return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
+
+proc chpl__convertValueToRuntimeType(dom: domain) type
+ where dom._value:BaseOpaqueDom
+  return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
 
 proc chpl__convertValueToRuntimeType(dom: domain) type
  where dom._value:BaseSparseDom
   return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
 
-proc chpl__convertValueToRuntimeType(dom: domain) type
-  return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
+proc chpl__convertValueToRuntimeType(dom: domain) type {
+  compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, BaseOpaqueDom, or BaseSparseDom", 0);
+  return 0; // dummy
+}
 
 //
 // Support for array types
@@ -180,7 +194,8 @@ proc chpl__getDomainFromArrayType(type arrayType) {
   proc help() {
     D._value._domCnt$ += 1;
   }
-  help();
+  if !noRefCount then
+    help();
   return D;
 }
 
@@ -214,7 +229,7 @@ proc chpl__buildDomainExpr(ranges: range(?) ...?rank) {
 // Support for distributed domain expression, e.g., [1..3, 1..3] distributed Dist
 //
 proc chpl__distributed(d: _distribution, dom: domain) {
-  if isArithmeticDom(dom) {
+  if isRectangularDom(dom) {
     var distDom: domain(dom.rank, dom._value.idxType, dom._value.stridable) dmapped d = dom;
     return distDom;
   } else {
@@ -227,9 +242,9 @@ proc chpl__distributed(d: _distribution, ranges: range(?) ...?rank) {
   return chpl__distributed(d, chpl__buildDomainExpr((...ranges)));
 }
 
-proc chpl__isArithmeticDomType(type domainType) param {
+proc chpl__isRectangularDomType(type domainType) param {
   var dom: domainType;
-  return isArithmeticDom(dom);
+  return isRectangularDom(dom);
 }
 
 proc chpl__isSparseDomType(type domainType) param {
@@ -238,7 +253,7 @@ proc chpl__isSparseDomType(type domainType) param {
 }
 
 proc chpl__distributed(d: _distribution, type domainType) type {
-  if chpl__isArithmeticDomType(domainType) {
+  if chpl__isRectangularDomType(domainType) {
     var dom: domainType;
     return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
                                         dom._value.stridable);
@@ -252,7 +267,7 @@ proc chpl__distributed(d: _distribution, type domainType) type {
     return chpl__buildSparseDomainRuntimeType(d, dom._value.parentDom);
   } else {
     var dom: domainType;
-    return chpl__buildDomainRuntimeType(d, dom._value.idxType);
+    return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
   }
 }
 
@@ -278,13 +293,13 @@ proc chpl__buildIndexType(d: domain) type
 proc chpl__buildIndexType(type idxType) type where idxType == opaque
   return _OpaqueIndex;
 
-proc isArithmeticDom(d: domain) param {
-  proc isArithmeticDomClass(dc: BaseArithmeticDom) param return true;
-  proc isArithmeticDomClass(dc) param return false;
-  return isArithmeticDomClass(d._value);
+proc isRectangularDom(d: domain) param {
+  proc isRectangularDomClass(dc: BaseRectangularDom) param return true;
+  proc isRectangularDomClass(dc) param return false;
+  return isRectangularDomClass(d._value);
 }
 
-proc isArithmeticArr(a: []) param return isArithmeticDom(a.domain);
+proc isRectangularArr(a: []) param return isRectangularDom(a.domain);
 
 proc isIrregularDom(d: domain) param {
   return isSparseDom(d) || isAssociativeDom(d) || isOpaqueDom(d);
@@ -357,10 +372,7 @@ record _distribution {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -371,8 +383,10 @@ record _distribution {
       on _value {
         var cnt = _value.destroyDist();
         if cnt == 0 {
-          _value.dsiDestroyDistClass();
-          delete _value;
+          if !noRefCount {
+            _value.dsiDestroyDistClass();
+            delete _value;
+          }
         }
       }
     }
@@ -382,32 +396,42 @@ record _distribution {
     return _newDistribution(_value.dsiClone());
   }
 
-  proc newArithmeticDom(param rank: int, type idxType, param stridable: bool) {
-    var x = _value.dsiNewArithmeticDom(rank, idxType, stridable);
+  proc newRectangularDom(param rank: int, type idxType, param stridable: bool) {
+    var x = _value.dsiNewRectangularDom(rank, idxType, stridable);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
-      _value._distCnt$ = cnt + 1;
+      if !noRefCount then
+        _value._distCnt$ = cnt + 1;
+      else
+        _value._distCnt$ = cnt;
     }
     return x;
   }
 
-  proc newAssociativeDom(type idxType) {
-    var x = _value.dsiNewAssociativeDom(idxType);
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
-      _value._distCnt$ = cnt + 1;
+      if !noRefCount then
+        _value._distCnt$ = cnt + 1;
+      else
+        _value._distCnt$ = cnt;
     }
     return x;
   }
 
-  proc newAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
-    var x = _value.dsiNewAssociativeDom(idxType);
+  proc newAssociativeDom(type idxType, param parSafe: bool=true)
+  where _isEnumeratedType(idxType) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
-      _value._distCnt$ = cnt + 1;
+      if !noRefCount then
+        _value._distCnt$ = cnt + 1;
+      else
+        _value._distCnt$ = cnt;
     }
     const enumTuple = _enum_enumerate(idxType);
     for param i in 1..enumTuple.size do
@@ -415,12 +439,15 @@ record _distribution {
     return x;
   }
 
-  proc newOpaqueDom(type idxType) {
-    var x = _value.dsiNewOpaqueDom(idxType);
+  proc newOpaqueDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewOpaqueDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
-      _value._distCnt$ = cnt + 1;
+      if !noRefCount then
+        _value._distCnt$ = cnt + 1;
+      else
+        _value._distCnt$ = cnt;
     }
     return x;
   }
@@ -430,12 +457,15 @@ record _distribution {
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
-      _value._distCnt$ = cnt + 1;
+      if !noRefCount then
+        _value._distCnt$ = cnt + 1;
+      else
+        _value._distCnt$ = cnt;
     }
     return x;
   }
 
-  proc idxToLocale(ind) return _value.dsiIndexLocale(ind);
+  proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
   proc writeThis(x: Writer) {
     _value.writeThis(x);
@@ -458,10 +488,7 @@ record _domain {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -471,8 +498,9 @@ record _domain {
     if !_isPrivatized(_valueType) {
       on _value {
         var cnt = _value.destroyDom();
-        if cnt == 0 then
-          delete _value;
+        if !noRefCount then
+          if cnt == 0 then
+            delete _value;
       }
     }
   }
@@ -480,13 +508,19 @@ record _domain {
   proc dist return _getDistribution(_value.dist);
 
   proc rank param {
-    if isArithmeticDom(this) || isSparseDom(this) then
+    if isRectangularDom(this) || isSparseDom(this) then
       return _value.rank;
     else
       return 1;
   }
 
-  proc stridable param where isArithmeticDom(this) {
+  proc idxType type {
+    if isOpaqueDom(this) then
+      compilerError("opaque domains do not currently support .idxType");
+    return _value.idxType;
+  }
+
+  proc stridable param where isRectangularDom(this) {
     return _value.stridable;
   }
 
@@ -525,9 +559,10 @@ record _domain {
     for param i in 1..rank {
       r(i) = _value.dsiDim(i)(ranges(i));
     }
-    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType, stridable, r);
-    if d.linksDistribution() then
-      d.dist._distCnt$ += 1;
+    var d = _value.dsiBuildRectangularDom(rank, _value.idxType, stridable, r);
+    if !noRefCount then
+      if d.linksDistribution() then
+        d.dist._distCnt$ += 1;
     return _newDomain(d);
   }
 
@@ -574,7 +609,10 @@ record _domain {
     proc help() {
       var cnt = _value._domCnt$; // lock
       _value._arrs.append(x);
-      _value._domCnt$ = cnt + 1; // unlock
+      if !noRefCount then
+        _value._domCnt$ = cnt + 1; // unlock
+      else
+        _value._domCnt$ = cnt;    // unlock
     }
     help();
     return _newArray(x);
@@ -602,11 +640,14 @@ record _domain {
   proc low return _value.dsiLow;
   proc high return _value.dsiHigh;
   proc stride return _value.dsiStride;
+  proc alignment return _value.dsiAlignment;
   proc first return _value.dsiFirst;
   proc last return _value.dsiLast;
+  proc alignedLow return _value.dsiAlignedLow;
+  proc alignedHigh return _value.dsiAlignedHigh;
 
   proc member(i) {
-    if isArithmeticDom(this) then
+    if isRectangularDom(this) then
       return _value.dsiMember(_makeIndexTuple(rank, i));
     else
       return _value.dsiMember(i);
@@ -622,85 +663,143 @@ record _domain {
     return pos;
   }
 
+  proc expand(off: rank*_value.idxType) where !isRectangularDom(this) {
+    if isAssociativeDom(this) then
+      compilerError("expand not supported on associative domains");
+    else if isOpaqueDom(this) then
+      compilerError("expand not supported on opaque domains");
+    else if isSparseDom(this) then
+      compilerError("expand not supported on sparse domains");
+    else
+      compilerError("expand not supported on this domain type");
+  }
   proc expand(off: _value.idxType ...rank) return expand(off);
   proc expand(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do {
       ranges(i) = ranges(i).expand(off(i));
-      if (ranges(i)._low > ranges(i)._high) {
+      if (ranges(i).low > ranges(i).high) {
         halt("***Error: Degenerate dimension created in dimension ", i, "***");
       }
     }
 
-    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+    var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+    if !noRefCount then
+      if (d.linksDistribution()) then
+        d.dist._distCnt$ += 1;
     return _newDomain(d);
   }
   proc expand(off: _value.idxType) where rank > 1 {
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = dim(i).expand(off);
-    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+    var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
+    if !noRefCount then
+      if (d.linksDistribution()) then
       d.dist._distCnt$ += 1;
     return _newDomain(d);
   }
 
+  proc exterior(off: rank*_value.idxType) where !isRectangularDom(this) {
+    if isAssociativeDom(this) then
+      compilerError("exterior not supported on associative domains");
+    else if isOpaqueDom(this) then
+      compilerError("exterior not supported on opaque domains");
+    else if isSparseDom(this) then
+      compilerError("exterior not supported on sparse domains");
+    else
+      compilerError("exterior not supported on this domain type");
+  }
   proc exterior(off: _value.idxType ...rank) return exterior(off);
   proc exterior(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = dim(i).exterior(off(i));
-    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+    var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+    if !noRefCount then
+      if (d.linksDistribution()) then
+        d.dist._distCnt$ += 1;
     return _newDomain(d);
    }
                   
+  proc interior(off: rank*_value.idxType) where !isRectangularDom(this) {
+    if isAssociativeDom(this) then
+      compilerError("interior not supported on associative domains");
+    else if isOpaqueDom(this) then
+      compilerError("interior not supported on opaque domains");
+    else if isSparseDom(this) then
+      compilerError("interior not supported on sparse domains");
+    else
+      compilerError("interior not supported on this domain type");
+  }
   proc interior(off: _value.idxType ...rank) return interior(off);
   proc interior(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do {
-      if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
-          (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
+      if ((off(i) > 0) && (dim(i).high+1-off(i) < dim(i).low) ||
+          (off(i) < 0) && (dim(i).low-1-off(i) > dim(i).high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
       ranges(i) = _value.dsiDim(i).interior(off(i));
     }
-    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+    var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+    if !noRefCount then
+      if (d.linksDistribution()) then
+        d.dist._distCnt$ += 1;
     return _newDomain(d);
-   }
+  }
 
-  proc translate(off: _value.idxType ...rank) return translate(off);
-  proc translate(off: rank*_value.idxType) {
+  //
+  // NOTE: We eventually want to support translate on other domain types
+  //
+  proc translate(off) where !isRectangularDom(this) {
+    if isAssociativeDom(this) then
+      compilerError("translate not supported on associative domains");
+    else if isOpaqueDom(this) then
+      compilerError("translate not supported on opaque domains");
+    else if isSparseDom(this) then
+      compilerError("translate not supported on sparse domains");
+    else
+      compilerError("translate not supported on this domain type");
+  }
+  //
+  // Notice that the type of the offset does not have to match the
+  // index type.  This is handled in the range.translate().
+  //
+  proc translate(off: ?t ...rank) return translate(off);
+  proc translate(off) where isTuple(off) {
+    if off.size != rank then
+      compilerError("the domain and offset arguments of translate() must be of the same rank");
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = _value.dsiDim(i).translate(off(i));
-    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+    var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+    if !noRefCount then
+      if (d.linksDistribution()) then
+        d.dist._distCnt$ += 1;
     return _newDomain(d);
    }
 
+  //
+  // intended for internal use only:
+  //
   proc chpl__unTranslate(off: _value.idxType ...rank) return chpl__unTranslate(off);
   proc chpl__unTranslate(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = dim(i).chpl__unTranslate(off(i));
-    var d = _value.dsiBuildArithmeticDom(rank, _value.idxType,
+    var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                          _value.stridable, ranges);
-    if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+    if !noRefCount then
+      if (d.linksDistribution()) then
+        d.dist._distCnt$ += 1;
     return _newDomain(d);
-   }
+  }
 
   proc setIndices(x) {
     _value.dsiSetIndices(x);
@@ -731,16 +830,50 @@ record _domain {
   proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 }  // record _domain
 
+proc chpl_countDomHelp(dom, counts) {
+  var ranges = dom.dims();
+  for param i in 1..dom.rank do
+    ranges(i) = ranges(i) # counts(i);
+  return dom[(...ranges)];
+}  
+
+proc #(dom: domain, counts: integral) where isRectangularDom(dom) && dom.rank == 1 {
+  return chpl_countDomHelp(dom, tuple(counts));
+}
+
+proc #(dom: domain, counts) where isRectangularDom(dom) && isTuple(counts) {
+  if (counts.size != dom.rank) then
+    compilerError("the domain and tuple arguments of # must have the same rank");
+  return chpl_countDomHelp(dom, counts);
+}
+
+proc #(arr: [], counts: integral) where isRectangularArr(arr) && arr.rank == 1 {
+  return arr[arr.domain#counts];
+}
+
+proc #(arr: [], counts) where isRectangularArr(arr) && isTuple(counts) {
+  if (counts.size != arr.rank) then
+    compilerError("the domain and array arguments of # must have the same rank");
+  return arr[arr.domain#counts];
+}
+
+
 proc _getNewDist(value) {
   return new dmap(value);
 }
 
 proc +(d: domain, i: index(d)) {
-  return d.translate(i);
+  if isRectangularDom(d) then
+    compilerError("Cannot add indices to a rectangular domain");
+  else
+    compilerError("Cannot add indices to this domain type");
 }
 
 proc +(i, d: domain) where i: index(d) {
-  return d.translate(i);
+  if isRectangularDom(d) then
+    compilerError("Cannot add indices to a rectangular domain");
+  else
+    compilerError("Cannot add indices to this domain type");
 }
 
 proc +(d: domain, i: index(d)) where isIrregularDom(d) {
@@ -764,14 +897,17 @@ proc +(d1: domain, d2: domain) where
 }
 
 proc +(d1: domain, d2: domain) {
-  if (isArithmeticDom(d1) || isArithmeticDom(d2)) then
-    compilerError("Cannot add indices to an arithmetic domain");
+  if (isRectangularDom(d1) || isRectangularDom(d2)) then
+    compilerError("Cannot add indices to a rectangular domain");
   else
     compilerError("Cannot add indices to this domain type");
 }
 
 proc -(d: domain, i: index(d)) {
-  return d.chpl__unTranslate(i);
+  if isRectangularDom(d) then
+    compilerError("Cannot remove indices from a rectangular domain");
+  else
+    compilerError("Cannot remove indices from this domain type");
 }
 
 proc -(d: domain, i: index(d)) where isIrregularDom(d) {
@@ -790,12 +926,71 @@ proc -(d1: domain, d2: domain) where
 }
 
 proc -(d1: domain, d2: domain) {
-  if (isArithmeticDom(d1) || isArithmeticDom(d2)) then
-    compilerError("Cannot remove indices from an arithmetic domain");
+  if (isRectangularDom(d1) || isRectangularDom(d2)) then
+    compilerError("Cannot remove indices from a rectangular domain");
   else
     compilerError("Cannot remove indices from this domain type");
 }
 
+pragma "inline" proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
+                                                      isRectangularDom(d2) {
+  if d1._value.rank != d2._value.rank then return false;
+  for param i in 1..d1._value.rank do
+    if (d1.dim(i) != d2.dim(i)) then return false;
+  return true;
+}
+
+pragma "inline" proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
+                                                      isRectangularDom(d2) {
+  if d1._value.rank != d2._value.rank then return true;
+  for param i in 1..d1._value.rank do
+    if (d1.dim(i) != d2.dim(i)) then return true;
+  return false;
+}
+
+pragma "inline" proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
+                                                       isAssociativeDom(d2)) {
+  if d1.numIndices != d2.numIndices then return false;
+  for idx in d1 do
+    if !d2.member(idx) then return false;
+  return true;
+}
+
+pragma "inline" proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
+                                                       isAssociativeDom(d2)) {
+  if d1.numIndices != d2.numIndices then return true;
+  for idx in d1 do
+    if !d2.member(idx) then return true;
+  return false;
+}
+
+pragma "inline" proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
+                                                       isSparseDom(d2)) {
+  if d1.numIndices != d2.numIndices then return false;
+  if d1._value.parentDom != d2._value.parentDom then return false;
+  for idx in d1 do
+    if !d2.member(idx) then return false;
+  return true;
+}
+
+pragma "inline" proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
+                                                       isSparseDom(d2)) {
+  if d1.numIndices != d2.numIndices then return true;
+  if d1._value.parentDom != d2._value.parentDom then return true;
+  for idx in d1 do
+    if !d2.member(idx) then return true;
+  return false;
+}
+
+// any combinations not handled by the above
+
+pragma "inline" proc ==(d1: domain, d2: domain) param {
+  return false;
+}
+
+pragma "inline" proc !=(d1: domain, d2: domain) param {
+  return true;
+}
 
 
 //
@@ -811,10 +1006,7 @@ record _array {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -824,8 +1016,9 @@ record _array {
     if !_isPrivatized(_valueType) {
       on _value {
         var cnt = _value.destroyArr();
-        if cnt == 0 then
-          delete _value;
+        if !noRefCount then
+          if cnt == 0 then
+            delete _value;
       }
     }
   }
@@ -835,15 +1028,15 @@ record _array {
   proc rank param return this.domain.rank;
 
   pragma "inline"
-  proc this(i: rank*_value.idxType) var {
-    if isArithmeticArr(this) || isSparseArr(this) then
+  proc this(i: rank*_value.dom.idxType) var {
+    if isRectangularArr(this) || isSparseArr(this) then
       return _value.dsiAccess(i);
     else
       return _value.dsiAccess(i(1));
   }
 
   pragma "inline"
-  proc this(i: _value.idxType ...rank) var
+  proc this(i: _value.dom.idxType ...rank) var
     return this(i);
 
   //
@@ -859,7 +1052,7 @@ record _array {
     return this((...d.getIndices()));
 
   proc checkSlice(ranges: range(?) ...rank) {
-    for param i in 1.._value.rank do
+    for param i in 1.._value.dom.rank do
       if !_value.dom.dsiDim(i).boundsCheck(ranges(i)) then
         halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
   }
@@ -875,20 +1068,23 @@ record _array {
       d._value._domCnt$ += 1;
       a._arrAlias._arrCnt$ += 1;
     }
-    help();
+    if !noRefCount then
+      help();
     return _newArray(a);
   }
 
-  proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
+  proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
     if boundsChecking then
       checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
     var d = _dom((...args));
-    d._value._domCnt$ += 1;
+    if !noRefCount then
+      d._value._domCnt$ += 1;
     var a = _value.dsiRankChange(d._value, rank, stridable, args);
     a._arrAlias = _value;
-    a._arrAlias._arrCnt$ += 1;
+    if !noRefCount then
+      a._arrAlias._arrCnt$ += 1;
     return _newArray(a);
   }
 
@@ -898,16 +1094,16 @@ record _array {
         halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
-  // Special cases of local slices for DefaultArithmeticArrs because
+  // Special cases of local slices for DefaultRectangularArrs because
   // we can't take an alias of the ddata class within that class
-  proc localSlice(r: range(?)... rank) where _value.type: DefaultArithmeticArr {
+  proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularArr {
     if boundsChecking then
       checkSlice((...r));
     var dom = _dom((...r));
     return chpl__localSliceDefaultArithArrHelp(dom);
   }
 
-  proc localSlice(d: domain) where _value.type: DefaultArithmeticArr {
+  proc localSlice(d: domain) where _value.type: DefaultRectangularArr {
     if boundsChecking then
       checkSlice((...d.getIndices()));
 
@@ -948,7 +1144,8 @@ record _array {
       _value.dom._domCnt$ += 1;
       x._arrAlias._arrCnt$ += 1;
     }
-    help();
+    if !noRefCount then
+      help();
     return _newArray(x);
   }
 
@@ -969,7 +1166,8 @@ record _array {
       newDom._value._domCnt$ += 1;
       x._arrAlias._arrCnt$ += 1;
     }
-    help();
+    if !noRefCount then
+      help();
     return _newArray(x);
   }
 
@@ -998,7 +1196,7 @@ record _array {
 // Helper functions
 //
 
-proc isCollapsedDimension(r: range(?e,?b,?s)) param return false;
+proc isCollapsedDimension(r: range(?e,?b,?s,?a)) param return false;
 proc isCollapsedDimension(r) param return true;
 
 
@@ -1094,11 +1292,10 @@ proc =(a: _distribution, b: _distribution) {
 
 proc =(a: domain, b: domain) {
   if !isIrregularDom(a) && !isIrregularDom(b) {
-    var bc = b;
     for e in a._value._arrs do {
-      on e do e.dsiReallocate(bc);
+      on e do e.dsiReallocate(b);
     }
-    a.setIndices(bc.getIndices());
+    a.setIndices(b.getIndices());
   } else {
     //
     // BLC: It's tempting to do a clear + add here, but because
@@ -1144,9 +1341,10 @@ proc =(d: domain, r: range(?)) {
 }
 
 //
-// Return true if t is a tuple of ranges that is legal to assign to domain d
+// Return true if t is a tuple of ranges that is legal to assign to
+// rectangular domain d
 //
-proc chpl__isLegalRngTupDomAssign(d, t) param {
+proc chpl__isLegalRectTupDomAssign(d, t) param {
   proc isRangeTuple(a) param {
     proc isRange(r: range(?e,?b,?s)) param return true;
     proc isRange(r) param return false;
@@ -1170,7 +1368,7 @@ proc chpl__isLegalRngTupDomAssign(d, t) param {
   return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
 }
 
-proc =(d: domain, rt: _tuple) where chpl__isLegalRngTupDomAssign(d, rt) {
+proc =(d: domain, rt: _tuple) where chpl__isLegalRectTupDomAssign(d, rt) {
   d = [(...rt)];
   return d;
 }
@@ -1213,9 +1411,9 @@ proc chpl__serializeAssignment(a: [], b) param {
   // could let them fall through, but then we get multiple warnings for a
   // single assignment statement which feels like overkill
   //
-  if ((!isArithmeticArr(a) && !isAssociativeArr(a) && !isSparseArr(a)) ||
+  if ((!isRectangularArr(a) && !isAssociativeArr(a) && !isSparseArr(a)) ||
       (chpl__isArray(b) &&
-       !isArithmeticArr(b) && !isAssociativeArr(b) && !isSparseArr(b))) then
+       !isRectangularArr(b) && !isAssociativeArr(b) && !isSparseArr(b))) then
     return true;
   return false;
 }
@@ -1240,14 +1438,16 @@ pragma "inline" proc =(a: [], b) {
   return a;
 }
 
-proc =(a: [], b: _tuple) where isEnumArr(a) || isArithmeticArr(a) {
-  if isEnumArr(a) {
+proc =(a: [], b: _tuple) where isEnumArr(a) {
     if b.size != a.numElements then
       halt("tuple array initializer size mismatch");
     for (i,j) in (chpl_enumerate(index(a.domain)), 1..) {
       a(i) = b(j);
     }
-  } else {
+    return a;
+}
+
+proc =(a: [], b: _tuple) where isRectangularArr(a) {
     proc chpl__tupleInit(j, param rank: int, b: _tuple) {
       const stride = a.domain.dim(a.rank-rank+1).stride,
             start = a.domain.dim(a.rank-rank+1).first;
@@ -1266,8 +1466,7 @@ proc =(a: [], b: _tuple) where isEnumArr(a) || isArithmeticArr(a) {
     }
     var j: a.rank*int;
     chpl__tupleInit(j, a.rank, b);
-  }
-  return a;
+    return a;
 }
 
 proc _desync(type t) where t: _syncvar || t: _singlevar {
@@ -1281,11 +1480,11 @@ proc _desync(type t) {
 }
 
 proc =(a: [], b: _desync(a.eltType)) {
-  if isArithmeticArr(a) {
+  if isRectangularArr(a) {
     forall e in a do
       e = b;
   } else {
-    compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+    compilerWarning("Whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for e in a do
       e = b;
   }
@@ -1299,9 +1498,10 @@ proc by(a: domain, b) {
   var t = _makeIndexTuple(a.rank, b, expand=true);
   for param i in 1..a.rank do
     r(i) = a.dim(i) by t(i);
-  var d = a._value.dsiBuildArithmeticDom(a.rank, a._value.idxType, true, r);
-  if (d.linksDistribution()) then
-    d.dist._distCnt$ += 1;
+  var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
+  if !noRefCount then
+    if (d.linksDistribution()) then
+      d.dist._distCnt$ += 1;
   return _newDomain(d);
 }
 
@@ -1600,7 +1800,7 @@ proc chpl__initCopy(a: _distribution) {
 
 proc chpl__initCopy(a: domain) {
   var b: a.type;
-  if isArithmeticDom(a) && isArithmeticDom(b) {
+  if isRectangularDom(a) && isRectangularDom(b) {
     b.setIndices(a.getIndices());
   } else {
     // TODO: These should eventually become forall loops, hence the
@@ -1642,12 +1842,13 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   var A: [D] iteratorIndexType(irc);
 
   for e in irc {
-    pragma "no copy" pragma "insert auto destroy" var ee = e;
+    //pragma "no copy" /*pragma "insert auto destroy"*/ var ee = e;
     if i > size {
       size = size * 2;
       D = [1..size];
     }
-    A(i) = ee;
+    //A(i) = ee;
+    A(i) = e;
     i = i + 1;
   }
   D = [1..i-1];

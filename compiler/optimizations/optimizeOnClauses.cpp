@@ -8,6 +8,9 @@
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
+#ifdef DEBUG
+#include "stmt.h"
+#endif
 
 //
 // Return true if this primitive function is safe for fast on optimization
@@ -190,6 +193,9 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
     return true;
 
   if (fn->hasFlag(FLAG_NON_BLOCKING))
+    return false;
+
+  if (fn->hasFlag(FLAG_EXTERN))
     return false;
 
   visited->add_exclusive(fn);

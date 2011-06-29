@@ -75,9 +75,6 @@ module SSCA2_kernels
       // of all edges  matching the heaviest weight
       // ---------------------------------------------
 
-      var domain_add_lock$ : sync bool = true; // associative domain add
-                                               // is not threadsafe
-
       forall s in G.vertices do
 	// for (t, w) in ( G.Neighbors (s), G.edge_weight (s) )  do
         forall (t, w) in ( G.Neighbors(s), G.Row(s).Weight ) do
@@ -87,9 +84,7 @@ module SSCA2_kernels
 	  // also present a problem
 
 	  if w == heaviest_edge_weight$.readXX () then {
-	    domain_add_lock$.readFE ();
 	    heavy_edge_list.add ( (s,t) ); 
-	    domain_add_lock$.writeEF (true);
 	  };
 
       if PRINT_TIMING_STATISTICS then {
@@ -153,8 +148,6 @@ module SSCA2_kernels
 	// are needed to protect domain add and domain membership cannot be 
 	// used to determine whether or not to add edges to the subgraph
 
-	var edge_add_lock$           : sync bool = true; 
-	var node_add_lock$           : sync bool = true; 
 	var min_distance$            : [vertex_domain] sync int = -1;
 	  
 	if DEBUG_KERNEL3 then 
@@ -178,10 +171,8 @@ module SSCA2_kernels
 	      if min_distance$ (w).readXX () < 0 then {
 
 		if min_distance$ (w).readFE () < 0 then {
-		  node_add_lock$.readFE ();
 		  Next_Level.add (w);
 		  Heavy_Edge_Subgraph ( (x, y) ).nodes.add (w);
-		  node_add_lock$.writeEF ( true );
 		  min_distance$ (w).writeEF (path_length);
 		}
 		else
@@ -191,9 +182,7 @@ module SSCA2_kernels
 	      // min_distance$ must have been set by some thread by now
 
 	      if min_distance$ (w).readFF () == path_length then {
-		edge_add_lock$.readFE ();
 		Heavy_Edge_Subgraph ( (x, y) ).edges.add ( (v, w) );
-		edge_add_lock$.writeEF ( true );
 	      }
 	    }
 	  }
@@ -306,7 +295,7 @@ module SSCA2_kernels
   
 	var current_distance : int = 0;
   
-	// lock needed only because associative domain add is not threadsafe
+	// lock needed only because sparse domain add is not threadsafe
 	var node_add_lock$ : sync bool = true;
  
 	// establish the initial level sets for the
@@ -348,11 +337,11 @@ module SSCA2_kernels
 		      if  min_distance$ (v) . readFE () < 0  then
 			{ 
 			  min_distance$ (v).writeEF (current_distance);
-			  node_add_lock$.readFE ();
+                          node_add_lock$.readFE ();
 			  Next_Level.Members.add (v);
 			  if VALIDATE_BC then
 			    Lcl_Sum_Min_Dist += current_distance;
-			  node_add_lock$.writeEF ( true );
+                          node_add_lock$.writeEF ( true );
 			}
 		      else
                         // could min_distance$(v) be < current_distance?

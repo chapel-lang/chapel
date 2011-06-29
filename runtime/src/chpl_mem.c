@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <limits.h>
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #define CHPL_MEM_C
 #include "chpl_mem.h"
 #include "chplmemtrack.h"

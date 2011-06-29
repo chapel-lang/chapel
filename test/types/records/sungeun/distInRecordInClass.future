@@ -1,0 +1,7 @@
+bug: Records (and probably classes) with fields that are distributions do not always work.
+
+I haven't fully pounded out what it takes to get distributions to
+behave like arrays and domains (first class values), but it seems that
+they will probably have runtime types.  There is specialized code to
+"process syntactic distribution" as it was first implemented, and
+likely this and the module code will be need to be updated.

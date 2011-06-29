@@ -5,10 +5,9 @@
 $tasks=$ARGV[0];
 $threads=$ARGV[1];
 
-unless (($tasks eq "fifo" && $threads eq pthreads) ||
+unless (($tasks =~ /^dev-tasks-1|fifo$/ &&
+         $threads =~ /^dev-threads-1|none|pthreads$/) ||
 	($tasks eq "mta" && $threads eq "none") ||
-	($tasks eq "dev-tasks-1" &&
-	 $threads =~ /^pthreads|dev-threads-1$/) ||
 	($tasks eq "nanox" && $threads eq "none") ||
 	($tasks eq "qthreads" && $threads eq "none") ||
 	($tasks eq "none" && $threads eq "none")) {

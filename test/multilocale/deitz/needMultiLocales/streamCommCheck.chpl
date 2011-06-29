@@ -26,33 +26,55 @@ proc main() {
   writeln("A: ", A);
 
   var Diagnostics = getCommDiagnostics();
-  var (gets, puts, forks, fforks, nbforks) = + reduce Diagnostics;
+  var gets = + reduce Diagnostics.get;
+  var nbgets = + reduce Diagnostics.get_nb;
+  var testnbgets = + reduce Diagnostics.get_nb_test;
+  var waitnbgets = + reduce Diagnostics.get_nb_wait;
+  var puts = + reduce Diagnostics.put;
+  var forks = + reduce Diagnostics.fork;
+  var fforks = + reduce Diagnostics.fork_fast;
+  var nbforks = + reduce Diagnostics.fork_nb;
 
   if verbose then
-    writeln((gets, puts, forks, fforks, nbforks));
+    writeln(Diagnostics);
 
   if gets != 0 {
-    writeln((gets, puts, forks, fforks, nbforks));
+    writeln(Diagnostics);
     halt("comm unexpected number of gets");
   }
 
+  if nbgets != 0 {
+    writeln(Diagnostics);
+    halt("comm unexpected number of non-blocking gets");
+  }
+
+  if testnbgets != 0 {
+    writeln(Diagnostics);
+    halt("comm unexpected number of test non-blocking gets");
+  }
+
+  if waitnbgets != 0 {
+    writeln(Diagnostics);
+    halt("comm unexpected number of test non-blocking gets");
+  }
+
   if puts != 0 {
-    writeln((gets, puts, forks, fforks, nbforks));
+    writeln(Diagnostics);
     halt("comm unexpected number of puts");
   }
 
   if forks != 1 {
-    writeln((gets, puts, forks, fforks, nbforks));
+    writeln(Diagnostics);
     halt("comm unexpected number of forks");
   }
 
   if fforks != 0 {
-    writeln((gets, puts, forks, fforks, nbforks));
+    writeln(Diagnostics);
     halt("comm unexpected number of fast forks");
   }
 
   if nbforks != 1 {
-    writeln((gets, puts, forks, fforks, nbforks));
+    writeln(Diagnostics);
     halt("comm unexpected number of non-blocking forks");
   }
 }

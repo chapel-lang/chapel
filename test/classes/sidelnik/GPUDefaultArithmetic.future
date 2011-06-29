@@ -1,9 +1,0 @@
-???: Is this still an issue?
-
-Was:
-
-bug: Segfault is occuring when wrapping a class with "pragma data class"
-
-When using the pragma "data class" on line 317, I am seeing a segmentation fault
-that occurs randomly. This is used in conjunction with the call "__primitive("array_get", this, sum)" on line 432.
-If we were to comment out line 317 and line 432 (using 433 instead), the segfault does not occur.

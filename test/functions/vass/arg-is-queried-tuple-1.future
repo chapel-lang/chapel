@@ -1,0 +1,7 @@
+feature request: for a formal of a homogenous type whose component type is generic, allow querying of that generic type's parameters, as well as the tuple size
+
+While the sample code looks reasonable to me, currently I get:
+
+arg-is-queried-tuple-1.chpl:1: syntax error: near '*'
+
+This is simlar to arg-is-queried-vararg-1.chpl.

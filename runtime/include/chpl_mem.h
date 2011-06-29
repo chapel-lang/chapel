@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include "arg.h"
 #include "chpltypes.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 
 //
 // chpl_rt_memDescs is an array of descriptions of memory allocations
@@ -117,7 +117,6 @@ typedef enum {
   CHPL_RT_MD_TASK_LIST_DESCRIPTOR,
   CHPL_RT_MD_LOCALES_PER_REALM,
   CHPL_RT_MD_THREAD_PRIVATE_DATA,
-  CHPL_RT_MD_THREAD_CALLEE,
   CHPL_RT_MD_THREAD_LIST_DESCRIPTOR,
   CHPL_RT_MD_NUM
 } chpl_rt_enum_memDescs;

@@ -1,4 +1,4 @@
-use DefaultArithmetic;
+use DefaultRectangular;
 
 class locale {
   const myRealm: realm;
@@ -32,8 +32,11 @@ class locale {
   }
 
   proc callStackSize: uint(64) {
+    // Locales may have differing call stack sizes.
     _extern proc chpl_task_getCallStackSize(): uint(64);
-    return chpl_task_getCallStackSize();
+    var retval: uint(64);
+    on this do retval = chpl_task_getCallStackSize();
+    return retval;
   }
 
   proc writeThis(f: Writer) {
@@ -112,10 +115,33 @@ proc locale.blockedTasks() {
   return blockedTasks;
 }
 
+proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
+  return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
+
 
 //
 // multi-locale diagnostics/debugging support
 //
+
+// There should be a type like this declared in chpl-comm.h with a single
+// function that returns the C struct.  We're not doing it that way yet
+// due to some shortcomings in our extern records implementation.
+// Once that gets sorted out, we can turn this into an _extern record,
+// and remove the 8 or so individual functions below that return the
+// various counters.
+record chpl_commDiagnostics {
+  var get: int(32);
+  var get_nb: int(32);
+  var get_nb_test: int(32);
+  var get_nb_wait: int(32);
+  var put: int(32);
+  var fork: int(32);
+  var fork_fast: int(32);
+  var fork_nb: int(32);
+};
+
+type commDiagnostics = chpl_commDiagnostics;
+
 _extern proc chpl_startVerboseComm();
 _extern proc chpl_stopVerboseComm();
 _extern proc chpl_startVerboseCommHere();
@@ -124,6 +150,8 @@ _extern proc chpl_startCommDiagnostics();
 _extern proc chpl_stopCommDiagnostics();
 _extern proc chpl_startCommDiagnosticsHere();
 _extern proc chpl_stopCommDiagnosticsHere();
+_extern proc chpl_resetCommDiagnosticsHere();
+_extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
 
 proc startVerboseComm() { chpl_startVerboseComm(); }
 proc stopVerboseComm() { chpl_stopVerboseComm(); }
@@ -135,25 +163,40 @@ proc stopCommDiagnostics() { chpl_stopCommDiagnostics(); }
 proc startCommDiagnosticsHere() { chpl_startCommDiagnosticsHere(); }
 proc stopCommDiagnosticsHere() { chpl_stopCommDiagnosticsHere(); }
 
+proc resetCommDiagnostics(realmID: int(32) = 0) {
+  for loc in Realms(realmID).Locales do on loc do
+    resetCommDiagnosticsHere();
+}
+
+proc resetCommDiagnosticsHere(realmID: int(32) = 0) {
+  chpl_resetCommDiagnosticsHere();
+}
 
 // TODO: generalize this for multiple realms by returning a manhattan
 // array
+// See note above regarding extern records
 _extern proc chpl_numCommGets(): int(32);
+_extern proc chpl_numCommNBGets(): int(32);
+_extern proc chpl_numCommTestNBGets(): int(32);
+_extern proc chpl_numCommWaitNBGets(): int(32);
 _extern proc chpl_numCommPuts(): int(32);
 _extern proc chpl_numCommForks(): int(32);
 _extern proc chpl_numCommFastForks(): int(32);
 _extern proc chpl_numCommNBForks(): int(32);
 
 proc getCommDiagnostics(realmID: int(32) = 0) {
-  var D: [Realms(realmID).LocaleSpace] 5*int;
+  var D: [Realms(realmID).LocaleSpace] commDiagnostics;
   const r = Realms(realmID);
   for loc in r.Locales do on loc {
-    const gets = chpl_numCommGets();
-    const puts = chpl_numCommPuts();
-    const forks = chpl_numCommForks();
-    const fforks = chpl_numCommFastForks();
-    const nbforks = chpl_numCommNBForks();
-    D(loc.id) = (gets, puts, forks, fforks, nbforks);
+    // See note above regarding extern records
+    D(loc.id).get = chpl_numCommGets();
+    D(loc.id).put = chpl_numCommPuts();
+    D(loc.id).fork = chpl_numCommForks();
+    D(loc.id).fork_fast = chpl_numCommFastForks();
+    D(loc.id).fork_nb = chpl_numCommNBForks();
+    D(loc.id).get_nb = chpl_numCommNBGets();
+    D(loc.id).get_nb_test = chpl_numCommTestNBGets();
+    D(loc.id).get_nb_wait = chpl_numCommWaitNBGets();
   }
   return D;
 }

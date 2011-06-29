@@ -22,7 +22,7 @@ describes the memory consistency model.
 The term \emph{task} is used to refer to a distinct context of
 execution that may be running concurrently.
 
-\subsection{Unstructured Task-Parallel Constructs}
+\section{Unstructured Task-Parallel Constructs}
 \label{unstructured_task_parallelism}
 
 Chapel provides a simple construct, the begin statement, to spawn
@@ -36,7 +36,7 @@ introduce concurrency may be easier to use in many common cases.  They
 can be implemented using only the unstructured constructs described in
 this section.
 
-\subsubsection{The Begin Statement}
+\subsection{The Begin Statement}
 \label{Begin}
 \index{begin@\chpl{begin}}
 
@@ -51,11 +51,8 @@ begin-statement:
 Control continues concurrently with the statement following the
 begin statement.
 
-\begin{example}
+\begin{chapelexample}{beginUnordered.chpl}
 The code
-\begin{chapelpre}
-% test_beginUnordered.chpl
-\end{chapelpre}
 \begin{chapel}
 begin writeln("output from spawned task");
 writeln("output from main task");
@@ -67,10 +64,10 @@ outfile=$2
 sort $outfile > $outfile.2
 mv $outfile.2 $outfile
 \end{chapelprediff}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 output from main task
 output from spawned task
-\end{chapeloutput}
+\end{chapelprintoutput}
 executes two \chpl{writeln} statements that output the strings to the
 terminal, but the ordering is purposely unspecified.  There is no
 guarantee as to which statement will execute first.  When the
@@ -79,13 +76,13 @@ the \chpl{writeln} statement within it.  However, execution will
 continue immediately with the next statement.
 In~\rsec{Sync_Variables}, this same example will be synchronized so
 that the output from the spawned task always happens second.
-\end{example}
+\end{chapelexample}
 
 The following statements may not be lexically enclosed in
 begin statements: break statements, continue statements,
 yield statements, and return statements.
 
-\subsubsection{Sync Variables}
+\subsection{Sync Variables}
 \label{Sync_Variables}
 \index{synchronization variables!sync@\chpl{sync}}
 \index{sync@\chpl{sync}}
@@ -122,11 +119,8 @@ sync-type:
 If a sync variable declaration has an initialization expression, then
 the variable is initially full, otherwise it is initially empty.
 
-\begin{example}
+\begin{chapelexample}{beginOrdered.chpl}
 The code
-\begin{chapelpre}
-% test_beginOrdered.chpl
-\end{chapelpre}
 \begin{chapel}
 var finishedMainOutput$\mbox{{\bf \$}}$: sync bool;
 begin {
@@ -136,23 +130,20 @@ begin {
 writeln("output from main task");
 finishedMainOutput$\mbox{{\bf \$}}$ = true;
 \end{chapel}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 output from main task
 output from spawned task
-\end{chapeloutput}
+\end{chapelprintoutput}
 modifies the example in~\rsec{Begin}.  When the read of the sync
 variable is encountered in the spawned task, the task waits until the
 sync variable is assigned in the main task.
-\end{example}
+\end{chapelexample}
 
-\begin{example}
+\begin{chapelexample}{syncCounter.chpl}
 Sync variables are useful for tallying data from multiple tasks as
 well.  A sync variable of type \chpl{int} is read and then written
 during an update so the full-empty semantics make these updates atomic
 when used in a stylized way.  The code
-\begin{chapelpre}
-% test_syncCounter.chpl
-\end{chapelpre}
 \begin{chapel}
 var count$\mbox{{\bf \$}}$: sync int = 0;
 begin count$\mbox{{\bf \$}}$ += 1;
@@ -163,15 +154,15 @@ begin count$\mbox{{\bf \$}}$ += 1;
 while count$\mbox{{\bf \$}}$.readFF() != 3 do ;
 writeln("count is: ", count$\mbox{{\bf \$}}$);
 \end{chapelpost}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 count is: 3
-\end{chapeloutput}
+\end{chapelprintoutput}
 spawns three tasks to increment \chpl{count$\mbox{{\bf \$}}$}.
 If \chpl{count$\mbox{{\bf \$}}$} was not a sync variable, this code
 would be unsafe because between the points at which one task
 reads \chpl{count$\mbox{{\bf \$}}$} and
 writes \chpl{count$\mbox{{\bf \$}}$}, another task may increment it.
-\end{example}
+\end{chapelexample}
 
 \index{sync types!records and classes}
 If the base type of a sync type is a class or a record, the sync
@@ -191,7 +182,7 @@ For generic formal arguments with unspecified types
 is \chpl{sync} is ``read'' before being passed to the function and the
 generic formal argument's type is set to the base type of the actual.
 
-\subsubsection{Single Variables}
+\subsection{Single Variables}
 \label{Single_Variables}
 \index{synchronization variables!single@\chpl{single}}
 \index{single@\chpl{single}}
@@ -209,11 +200,8 @@ single-type:
   `single' type-specifier
 \end{syntax}
 
-\begin{example}
+\begin{chapelexample}{singleVar.chpl}
 In the code
-\begin{chapelpre}
-% test_singleVar.chpl
-\end{chapelpre}
 \begin{chapel}
 class Tree {
   var isLeaf: bool;
@@ -245,11 +233,11 @@ the single variable \chpl{x$\mbox{{\bf \$}}$} is assigned by an
 asynchronous task created with the begin statement.  The task
 returning the sum waits on the reading of \chpl{x$\mbox{{\bf \$}}$}
 until it has been assigned.
-\end{example}
+\end{chapelexample}
 
-\subsubsection{Predefined Single and Sync Methods}
+\subsection{Predefined Single and Sync Methods}
 \label{Functions_on_Synchronization_Variables}
-\index{synchronization variables!built-in methods on}
+\index{synchronization variables!predefined methods on}
 
 The following methods are defined for variables of sync and single
 type.
@@ -354,12 +342,10 @@ disables the implicit application of these methods.
 
 \end{rationale}
 
-\begin{example}
+\begin{chapelexample}{syncMethods.chpl}
 Given the following declarations
-\begin{chapelpre}
-% test_syncMethods.chpl
-\end{chapelpre}
 \begin{chapel}
+{ // }
 var x$\mbox{{\bf \$}}$: sync int;
 var y$\mbox{{\bf \$}}$: single int;
 var z: int;
@@ -370,19 +356,16 @@ x$\mbox{{\bf \$}}$ = 5;
 y$\mbox{{\bf \$}}$ = 6;
 z = x$\mbox{{\bf \$}}$ + y$\mbox{{\bf \$}}$;
 \end{chapel}
-\begin{chapelpost}
+\begin{chapelnoprint}
 writeln((x$\mbox{{\bf \$}}$.readXX(), y$\mbox{{\bf \$}}$, z));
-\end{chapelpost}
-\begin{chapeloutput}
-(5, 6, 11)
-\end{chapeloutput}
-is equivalent to
-\begin{chapelpre}
-% test_syncMethods2.chpl
+// {
+}
+{ // }
 var x$\mbox{{\bf \$}}$: sync int;
 var y$\mbox{{\bf \$}}$: single int;
 var z: int;
-\end{chapelpre}
+\end{chapelnoprint}
+is equivalent to
 \begin{chapel}
 x$\mbox{{\bf \$}}$.writeEF(5);
 y$\mbox{{\bf \$}}$.writeEF(6);
@@ -390,13 +373,16 @@ z = x$\mbox{{\bf \$}}$.readFE() + y$\mbox{{\bf \$}}$.readFF();
 \end{chapel}
 \begin{chapelpost}
 writeln((x$\mbox{{\bf \$}}$.readXX(), y$\mbox{{\bf \$}}$, z));
+// {
+}
 \end{chapelpost}
 \begin{chapeloutput}
 (5, 6, 11)
+(5, 6, 11)
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
-\subsection{Structured Task-Parallel Constructs}
+\section{Structured Task-Parallel Constructs}
 \label{structured_task_parallelism}
 
 Chapel provides two constructs, the cobegin and coforall statements,
@@ -408,7 +394,7 @@ All four of these constructs can be implemented through judicious uses
 of the unstructured task-parallel constructs described in the previous
 section.
 
-\subsubsection{The Cobegin Statement}
+\subsection{The Cobegin Statement}
 \label{Cobegin}
 \index{cobegin@\chpl{cobegin}}
 
@@ -427,10 +413,9 @@ cobegin statements: break statements, continue statements, and
 return statements.  Yield statement may only be lexically enclosed in
 cobegin statements in parallel iterators~\rsec{Parallel_Iterators}.
 
-\begin{example}
+\begin{chapelexample}{cobeginAndEquivalent.chpl}
 The cobegin statement
 \begin{chapelpre}
-% test_cobeginAndEquivalent.chpl
 var s1, s2: sync int;
 proc stmt1() { s1; }
 proc stmt2() { s2; s1 = 1; }
@@ -457,9 +442,9 @@ s1$\mbox{{\bf \$}}$; s2$\mbox{{\bf \$}}$; s3$\mbox{{\bf \$}}$;
 Each begin statement is executed concurrently but control does not
 continue past the final line above until each of the single variables
 is written, thereby ensuring that each of the functions has finished.
-\end{example}
+\end{chapelexample}
 
-\subsubsection{The Coforall Loop}
+\subsection{The Coforall Loop}
 \label{Coforall}
 \index{coforall@\chpl{coforall}}
 \index{coforall loops}
@@ -486,10 +471,9 @@ coforall statements: break statements, continue statements, and
 return statements.  Yield statement may only be lexically enclosed in
 coforall statements in parallel iterators~\rsec{Parallel_Iterators}.
 
-\begin{example}
+\begin{chapelexample}{coforallAndEquivalent.chpl}
 The coforall statement
 \begin{chapelpre}
-% test_coforallAndEquivalent.chpl
 iter iterator() { for i in 1..3 do yield i; }
 proc body() { }
 \end{chapelpre}
@@ -528,9 +512,9 @@ variable reaches zero, the single
 variable \chpl{finished$\mbox{{\bf \$}}$} is used to signal that all
 of the tasks have completed.  Thus control does not continue past the
 last line until all of the tasks have completed.
-\end{example}
+\end{chapelexample}
 
-\subsubsection{The Sync Statement}
+\subsection{The Sync Statement}
 \label{Sync_Statement}
 \index{sync@\chpl{sync}}
 
@@ -546,14 +530,13 @@ sync statements: break statements, continue statements, and
 return statements.  Yield statement may only be lexically enclosed in
 sync statements in parallel iterators~\rsec{Parallel_Iterators}.
 
-\begin{example}
+\begin{chapelexample}{syncStmt1.chpl}
 The sync statement can be used to wait for many dynamically spawned
 tasks.  Given the \chpl{Tree} class defined in the example
 in~\rsec{Single_Variables} and an instance of this class
 called \chpl{tree}, the code
 \begin{chapelpre}
-% test_syncStmt1.chpl
-use test\_singleVar;
+use singleVar;
 proc requiresUpdate(tree: Tree) {
   return tree.value == 1;
 }
@@ -587,12 +570,11 @@ function \chpl{requiresUpdate} evaluates to true.
 irrelevant.)  The call to \chpl{concurrentUpdate} is made within
 a \chpl{sync} statement to ensure that each of the spawned update
 tasks finishes before execution continues.
-\end{example}
+\end{chapelexample}
 
-\begin{example}
+\begin{chapelexample}{syncStmt2.chpl}
 The sync statement
 \begin{chapelpre}
-% test_syncStmt2.chpl
 proc stmt1() { }
 proc stmt2() { }
 \end{chapelpre}
@@ -615,9 +597,9 @@ except that if begin statements are dynamically encountered
 when \chpl{stmt1()} or \chpl{stmt2()} are executed, then the former
 code will wait for these begin statements to complete whereas the
 latter code will not.
-\end{example}
+\end{chapelexample}
 
-\subsubsection{The Serial Statement}
+\subsection{The Serial Statement}
 \label{Serial}
 \index{serial@\chpl{serial}}
 
@@ -634,13 +616,12 @@ any dynamically encountered code that would result in new tasks is
 executed without spawning any new tasks.  In effect, execution is
 serialized.
 
-\begin{example}
+\begin{chapelexample}{serialStmt1.chpl}
 Given the \chpl{Tree} class defined in the example
 in~\rsec{Single_Variables} and an instance of this class
 called \chpl{tree}, the code
 \begin{chapelpre}
-% test_serialStmt1.chpl
-use test\_singleVar;
+use singleVar;
 proc requiresUpdate(tree: Tree) {
   return tree.value == 1;
 }
@@ -673,12 +654,11 @@ a tree using cobegin statements to update the left and right subtrees
 in parallel.  The serial statement inhibits concurrent execution on
 the tree for nodes that are deeper than four levels in the tree.  This
 constrains the number of tasks that will be used for the update.
-\end{example}
+\end{chapelexample}
 
-\begin{example}
+\begin{chapelexample}{serialStmt2.chpl}
 The code
 \begin{chapelpre}
-% test_serialStmt2.chpl
 proc stmt1() { write(1); }
 proc stmt2() { write(2); }
 proc stmt3() { write(3); }
@@ -715,9 +695,9 @@ writeln();
 \end{chapeloutput}
 because the expression evaluated to determine whether to serialize
 always evaluates to true.
-\end{example}
+\end{chapelexample}
 
-\subsection{Atomic Statements}
+\section{Atomic Statements}
 \label{Atomic_Transactions}
 \label{atomicity}
 \index{atomic transactions}
@@ -744,10 +724,9 @@ atomic-statement:
   `atomic' statement
 \end{syntax}
 
-\begin{example}
+\begin{chapelexample}{atomicStmt1.chpl}
 The following code illustrates one possible use of atomic statements:
 \begin{chapelpre}
-% test_atomicStmt1.chpl
 class MyList {
   var val: int;
   var next: MyList;
@@ -797,17 +776,16 @@ the first comparison and subsequently read to
 initialize \chpl{last}. The variables eventually owned by this task
 are \chpl{found}, \chpl{head}, \chpl{obj}, and the various \chpl{next}
 fields on examined objects.
-\end{example}
+\end{chapelexample}
 
 The effect of an atomic statement is dynamic.
 
-\begin{example}
+\begin{chapelexample}{atomicStmt2.chpl}
 If there is a method associated with a list that removes an object,
 that method may not be parallel safe, but could be invoked safely inside an
 atomic statement:
 \begin{chapelpre}
-% test_atomicStmt2.chpl
-use test\_atomicStmt1;
+use atomicStmt1;
 found = false;
 \end{chapelpre}
 \begin{chapel}
@@ -823,22 +801,15 @@ writeln(found);
 true
 true
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
-\subsection{Memory Consistency Model}
+\section{Memory Consistency Model}
 \label{Memory_Consistency}
 \index{memory consistency model}
 
 \begin{openissue}
 This section is largely forthcoming.
 \end{openissue}
-
-We have been greatly helped in the design of Chapel's memory
-consistency model by discussions in and readings for a seminar at the
-University of Washington run by Dan Grossman and Luis Ceze as well as
-the following paper: {\bf Jeremy Mason, William Pugh, and Sarita
-V. Adve.}  {\bf The Java memory model.}  In {\bf Proceedings of the
-32nd Symposium on Principles of Programming Languages}.  2005.
 
 The Chapel memory consistency model is defined for programs that are
 {\em data-race-free}.  Programs that are {\em data-race-free} are
@@ -852,10 +823,13 @@ synchronize a program.  It is an error to write to the same memory
 location or read from and write to the same memory location in two
 different tasks without any intervening synchronization.
 
-\begin{example}
+\begin{chapelexample}{syncSpinWait.chpl}
 This has the direct consequence that one task cannot spin-wait on a
 variable while another task writes to that variable.  The behavior of
 the following code is undefined:
+\begin{chapelpre}
+if false { // }
+\end{chapelpre}
 \begin{chapel}
 var x: int;
 cobegin {
@@ -863,12 +837,13 @@ cobegin {
   x = 1;
 }
 \end{chapel}
+\begin{chapelnoprint}
+// {
+}
+\end{chapelnoprint}
 While codes are more efficient in most cases if one avoids
 spin-waiting altogether, this code could be rewritten with defined
 behavior as follows:
-\begin{chapelpre}
-% test_syncSpinWait.chpl
-\end{chapelpre}
 \begin{chapel}
 var x$\mbox{{\bf \$}}$: sync int;
 cobegin {
@@ -882,4 +857,4 @@ In this code, the first statement in the cobegin statement executes a
 loop until the variable is set to one.  The second statement in the
 cobegin statement sets the variable to one.  Neither of these
 statements block.
-\end{example}
+\end{chapelexample}

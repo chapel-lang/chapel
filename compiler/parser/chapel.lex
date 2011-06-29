@@ -61,6 +61,7 @@ floatLiteral     {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
 
 %%
 
+align            processToken(TALIGN);
 atomic           processToken(TATOMIC);
 begin            processToken(TBEGIN);
 break            processToken(TBREAK);
@@ -116,6 +117,7 @@ type             processToken(TTYPE);
 union            processToken(TUNION);
 use              processToken(TUSE);
 var              processToken(TVAR);
+volatile         processToken(TVOLATILE);
 when             processToken(TWHEN);
 where            processToken(TWHERE);
 while            processToken(TWHILE);

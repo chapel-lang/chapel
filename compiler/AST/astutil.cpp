@@ -195,8 +195,9 @@ static int isDefAndOrUse(SymExpr* se) {
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
           (!strcmp(fn->name, "=") && fn->getFormal(1) == arg && isRecord(arg->type)) ||
-          arg->type->symbol->hasFlag(FLAG_ARRAY) || // pass by reference
-          arg->type->symbol->hasFlag(FLAG_DOMAIN)) { // pass by reference
+          arg->type->symbol->hasFlag(FLAG_ARRAY) ||
+          arg->type->symbol->hasFlag(FLAG_DOMAIN) ||
+          arg->type->symbol->hasFlag(FLAG_DISTRIBUTION)) { // pass by reference
         return 3;
         // also use; do not "continue"
       } else if (arg->intent == INTENT_OUT) {

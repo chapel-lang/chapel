@@ -231,13 +231,13 @@ sub feed_nodes {
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
-                    systemd ("$rem_cmd 2>&1 | grep -i error:");
+                    systemd ("$rem_cmd 2>&1 | grep -i 'Error in paratest.client:'");
                 }
                 $partial_errors = `grep -a "^\\[Error" $logfile`;
                 if ($partial_errors =~ /^\[Error/) {
                     @errors = split /^/m, $partial_errors;
 		    if ($show_all_errors) {
-		        print "\n:( \n@errors";
+		        print "\n:( \n @errors";
 		    } else {
 		        chomp $errors[0];
 			print "\n:( " . $errors[0] . "\n";

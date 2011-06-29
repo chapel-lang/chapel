@@ -1,0 +1,9 @@
+bug: cannot query a domain type's parameters
+
+Querying a domain type's parameters sounds legitimate,
+even though the spec does not explicitly calls a domain type "generic".
+
+However, currently I get:
+
+  arg-is-queried-domain.chpl:2: error: 'chpl__buildDomainRuntimeType' undeclared
+  arg-is-queried-domain.chpl:6: error: 'chpl__buildDomainRuntimeType' undeclared

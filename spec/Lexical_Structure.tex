@@ -1,14 +1,16 @@
 \sekshun{Lexical Structure}
 \label{Lexical_Structure}
+\index{lexical structure}
 
 This section describes the lexical components of Chapel programs.
 The purpose of lexical analysis is
 to separate the raw input stream into a sequence of tokens suitable
 for input to the parser.  
 
-\subsection{Comments}
+\section{Comments}
 \label{Comments}
 \index{comments}
+\index{lexical structure!comment}
 
 Two forms of comments are supported.  All text following the
 consecutive characters {\tt //} and before the end of the line is in a
@@ -32,7 +34,7 @@ proc main() {
 \end{chapel}
 \end{example}
 
-\subsection{White Space}
+\section{White Space}
 \label{White_Space}
 \index{white space}
 
@@ -40,9 +42,10 @@ White-space characters are spaces, tabs, line feeds, and carriage
 returns.  Along with comments, they delimit tokens, but are otherwise
 ignored.
 
-\subsection{Case Sensitivity}
+\section{Case Sensitivity}
 \label{Case_Sensitivity}
 \index{case sensitivity}
+\index{lexical structure!case sensitivity}
 
 Chapel is a case sensitive language.
 
@@ -51,15 +54,17 @@ The following identifiers are considered
 distinct: \chpl{chapel}, \chpl{Chapel}, and \chpl{CHAPEL}.
 \end{example}
 
-\subsection{Tokens}
+\section{Tokens}
 \label{Tokens}
+\index{lexical structure!token}
 
 Tokens include identifiers, keywords, literals, operators, and
 punctuation.
 
-\subsubsection{Identifiers}
+\subsection{Identifiers}
 \label{Identifiers}
 \index{identifiers}
+\index{lexical structure!identifier}
 
 An identifier in Chapel is a sequence of characters that starts with a
 lowercase or uppercase letter or an underscore and is optionally
@@ -103,14 +108,15 @@ identifiers: \chpl{Cray1}, \chpl{syncvar$\mbox{{\tt \$}}$},
 \chpl{legalIdentifier}, and \chpl{legal_identifier}.
 \end{example}
 
-\subsubsection{Keywords}
+\subsection{Keywords}
 \label{Keywords}
 \index{keywords}
-\index{reserved words}
+\index{lexical structure!keyword}
 
 The following identifiers are reserved as keywords:
 
-\begin{tabular}{lllll}
+\begin{tabular}{llllll}
+&
 \begin{chapel}
 atomic
 begin
@@ -122,9 +128,9 @@ coforall
 config
 const
 continue
-\end{chapel} & \begin{chapel}
 delete
 dmapped
+\end{chapel} & \begin{chapel}
 do
 domain
 else
@@ -134,10 +140,10 @@ for
 forall
 if
 in
-\end{chapel} & \begin{chapel}
 index
 inout
 iter
+\end{chapel} & \begin{chapel}
 label
 let
 local
@@ -149,8 +155,8 @@ on
 opaque
 otherwise
 out
-\end{chapel} & \begin{chapel}
 param
+\end{chapel} & \begin{chapel}
 proc
 range
 record
@@ -177,6 +183,8 @@ yield
 $$
 \end{chapel} \\
 \begin{invisible}
+by
+\end{invisible} & \begin{invisible}
 otherwise
 \end{invisible} & \begin{invisible}
 otherwise
@@ -200,9 +208,10 @@ otherwise
 \end{invisible}
 \end{tabular}
 
-\subsubsection{Literals}
+\subsection{Literals}
 \label{Literals}
 \label{Primitive_Type_Literals}
+\index{lexical structure!literal}
 
 \index{literals!primitive type}
 Bool literals are designated by the following syntax:
@@ -240,11 +249,11 @@ binary-digit: one of
   `0' `1'
 \end{syntax}
 
+All integer literals have the type \chpl{uint}.
+
 \begin{rationale}
 Why are there no suffixes on integral literals?  Suffixes, like those
-in C, are not necessary.  The type of an integer literal is the first
-type of the following that can hold the value of the
-digits: \chpl{int}, \chpl{int(64)}, \chpl{uint(64)}.  Explicit
+in C, are not necessary.  Explicit
 conversions can then be used to change the type of the literal to
 another integer size.
 \end{rationale}
@@ -317,8 +326,11 @@ hexadecimal-escape-character:
   `$\backslash$x' hexadecimal-digits
 \end{syntax}
 
-\subsubsection{Operators and Punctuation}
+\subsection{Operators and Punctuation}
 \label{Operators_and_Punctuation}
+\index{lexical structure!operator}
+\index{operator!lexical structure}
+\index{lexical structure!punctuation}
 
 The following operators and punctuation are defined in the syntax of
 the language:
@@ -347,8 +359,11 @@ the language:
 \end{tabular}
 \end{center}
 
-\subsubsection{Grouping Tokens}
+\subsection{Grouping Tokens}
 \label{Grouping_Tokens}
+\index{lexical structure!braces}
+\index{lexical structure!parentheses}
+\index{lexical structure!brackets}
 
 The following braces are part of the Chapel language:
 \begin{center}

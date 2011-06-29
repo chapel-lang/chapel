@@ -1,12 +1,11 @@
 \sekshun{Input and Output}
 \label{Input_and_Output}
 
-Chapel provides a built-in \chpl{file} class to handle input and
-output to files using functions and methods
-called \chpl{read}, \chpl{readln},
+Chapel provides a predefined \chpl{file} class to handle input and
+output to files using the functions \chpl{read}, \chpl{readln},
 \chpl{write}, and \chpl{writeln}.
 
-\subsection{The {\em file} type}
+\section{The {\em file} type}
 \index{file type}
 
 The file class contains the following fields:
@@ -57,7 +56,7 @@ Additionally, the file type supports the
 methods \chpl{read}, \chpl{readln}, \chpl{write}, and \chpl{writeln} for 
 input and output as discussed in~\rsec{filewrite} and~\rsec{fileread}.
 
-\subsection{Standard files {\em stdout}, {\em stdin}, and {\em stderr}}
+\section{Standard files {\em stdout}, {\em stdin}, and {\em stderr}}
 \index{file type!standard files stdin, stdout, stderr}
 \index{stdin@\chpl{stdin}}
 \index{stdout@\chpl{stdout}}
@@ -67,7 +66,7 @@ The files \chpl{stdout}, \chpl{stdin}, and \chpl{stderr} are
 predefined and map to standard output, standard input, and standard
 error as implemented in a platform dependent fashion.
 
-\subsection{The {\em write}, {\em writeln}, {\em read}, and {\em readln} 
+\section{The {\em write}, {\em writeln}, {\em read}, and {\em readln} 
 functions}
 \index{writeln@\chpl{writeln}}
 \index{write@\chpl{write}}
@@ -76,43 +75,69 @@ functions}
 \index{read}
 \index{write}
 
-The built-in function \chpl{write} can take an arbitrary number of
-arguments and writes each of the arguments out in turn
-to \chpl{stdout}.  The built-in function \chpl{writeln} has the same
-semantics as \chpl{write} but outputs an {\em end-of-line} character
-after writing out the arguments.  The built-in function \chpl{read}
-can take an arbitrary number of arguments and reads each of the
-arguments in turn from \chpl{stdin}.  The built-in function \chpl{readln}
-also takes an arbitrary number of arguments, reading each argument from
-\chpl{stdin}.  These arguments may be entered on a single line or on multiple
-lines.  After all arguments of the \chpl{readln} call are read, an 
-end-of-line character is expected to be read, ignoring any additional 
-input between the last argument read and the end-of-line character.
+The predefined function \chpl{write} takes an arbitrary number of
+arguments and prints each out in turn to \chpl{stdout}.  The predefined
+function \chpl{writeln} is identical to \chpl{write} except that it
+outputs an additional {\em end-of-line} character after writing out
+the argument expressions.  Both of these functions will generate their
+output atomically with respect to other calls to these functions from
+other tasks.
+
+The predefined function \chpl{read} takes an arbitrary number of
+variable expressions and reads into each in turn from \chpl{stdin}.
+Any whitespace is skipped over and is used only to separate one
+argument from the next.  The predefined function \chpl{readln} is
+identical except that upon reading all of its arguments it scans ahead
+in the input stream until just after the next {\em end-of-line}
+character.
 
 The \chpl{read} and \chpl{readln} functions are also defined to take
 an arbitrary number of types as arguments.  In this case, the
-semantics are the same except that the value returned is a tuple of
-the values that were read.  If only one type is read, the value is not
-returned in a tuple, but is returned directly.
+functions read an expression of each argument type.  In the event that
+a single type is specified, the return value is the value that was
+read; if multiple types are specified, a tuple of the values is
+returned.
 
 These functions are wrappers for the methods on files described next.
 
-\begin{example}
+\begin{chapelexample}{writeln.chpl}
 The \chpl{writeln} wrapper function allows for a simple implementation
 of the {\em Hello-World} program:
 \begin{chapel}
 writeln("Hello, World!");
 \end{chapel}
+\begin{chapelprintoutput}
+Hello, World!
+\end{chapelprintoutput}
+\end{chapelexample}
+
+\begin{example}
+The following code shows three ways to read values into a pair of
+variables \chpl{x} and \chpl{y}:
+\begin{chapel}
+var x: int;
+var y: real;
+
+/* reading into variable expressions */
+read(x, y);
+
+/* reading via a single type argument */
+x = read(int);
+y = read(real);
+
+/* reading via multiple type arguments */
+(x, y) = read(int, real);
+\end{chapel}
 \end{example}
 
-\subsection{User-Defined {\em writeThis} methods}
+\section{User-Defined {\em writeThis} methods}
 
 To define the output for a given type, the user must define a method
 called \chpl{writeThis} on that type that takes a single argument of
 \chpl{Writer} type.  If such a method does not exist, a default method is
 created.
 
-\subsection{The {\em write} and {\em writeln} method on files}
+\section{The {\em write} and {\em writeln} method on files}
 \label{filewrite}
 \index{write!on files}
 
@@ -126,14 +151,14 @@ does not explicitly create one for.
 A lock is used to ensure that output is serialized across multiple
 tasks.
 
-\subsubsection{The {\em write} and {\em writeln} method on strings}
+\subsection{The {\em write} and {\em writeln} method on strings}
 \label{stringwrite}
 \index{write!on strings}
 
 The \chpl{write} and \chpl{writeln} methods can also be called on
 strings to write the output to a string instead of a file.
 
-\subsubsection{Generalized {\em write} and {\em writeln}}
+\subsection{Generalized {\em write} and {\em writeln}}
 \label{writer}
 \index{Writer@\chpl{Writer}}
 
@@ -142,7 +167,7 @@ class to allow user-defined classes to be written to.  If a class is
 defined to be a subclass of Writer, it must override
 the \chpl{writeIt} method that takes a \chpl{string} as an argument.
 
-\begin{example}
+\begin{chapelexample}{Writer.chpl}
 The following code defines a subclass of \chpl{Writer} that overrides
 the \chpl{writeIt} method to allow it to be written to.  It also
 overrides the \chpl{writeThis} method to override the default way that
@@ -162,12 +187,15 @@ var c = new C();
 c.write(41, 32, 23, 14);
 writeln(c);
 \end{chapel}
+\begin{chapelprintoutput}
+4321
+\end{chapelprintoutput}
 The \chpl{C} class filters the arguments sent to it, printing out only
 the first letter.  The output to the above is thus \chpl{4321}.
-\end{example}
+\end{chapelexample}
 
 
-\subsection{The {\em read} and {\em readln} methods on files}
+\section{The {\em read} and {\em readln} methods on files}
 \label{fileread}
 \index{read!on files}
 
@@ -195,7 +223,7 @@ var x = stdin.read(int);
 \end{example}
 
 
-\subsection{Default {\em read} and {\em write} methods}
+\section{Default {\em read} and {\em write} methods}
 \index{write!default methods}
 \index{read!default methods}
 

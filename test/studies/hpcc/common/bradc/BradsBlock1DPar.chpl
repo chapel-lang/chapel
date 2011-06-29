@@ -341,7 +341,7 @@ class Block1DDom {
     // support? (esp. given how frequent this seems likely to be?)
     //
     for locDom in locDoms do
-      yield locDom.myBlock - whole.low;
+      yield locDom.myBlock.translate(-whole.low);
   }
 
 
@@ -664,7 +664,7 @@ class LocBlock1DArr {
         where iterator == IteratorType.leader {
   }
 
-  proc newThese(param iterator: IteratorType, followThis) var
+  proc newThese(param iterator: IteratorType, followThis) // var
         where iterator == IteratorType.follower {
   }
 

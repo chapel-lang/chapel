@@ -43,6 +43,7 @@ To run Chapel on multiple locales, the following steps are required:
    * Please see platforms/README.xt-cle for more info on why we use
      the mpi conduit.
 
+
 3) Advanced GASNet users can set CHPL_GASNET_SEGMENT to choose a
    memory segment to use with GASNet.  Current defaults are:
 
@@ -51,32 +52,24 @@ To run Chapel on multiple locales, the following steps are required:
        (other)                           everything
 
 
-4) Chapel developers may want to set CHPL_COMM_DEBUG in order to turn
-   GASNet's debugging mode on.  Otherwise, the default is to leave
-   debugging off.
-
-
-5) Make sure you are in CHPL_HOME:
+4) Re-make the compiler and runtime from CHPL_HOME:
 
      cd $CHPL_HOME
-
-
-6) Re-make the compiler and runtime as necessary:
-
      gmake
 
    Or:
 
+     cd $CHPL_HOME
      make
 
    Note that the runtime libraries used by the Chapel compiler are
    based on your choices of conduit, substrate, and debugging mode
-   (steps 2, 3, and 4), so the runtime directory will need to be
+   (steps 2, 3, and 9), so the runtime directory will need to be
    recompiled for each variation in these settings that you use for a
    given choice of target platform, compiler, and launcher.
 
 
-7) Set up GASNet environment variables for execution:
+5) Set up GASNet environment variables for execution:
 
    (a) Set up variables telling GASNet how to spawn program instances.
        Most of our experience to date has been with two options:
@@ -114,22 +107,28 @@ To run Chapel on multiple locales, the following steps are required:
        but your mileage may vary.
 
 
-8) Compile your Chapel program as usual:
+6) Compile your Chapel program as usual:
 
-     chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
+     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
-9) When you compile a Chapel program for multiple locales, you should
-   typically see two binaries (e.g., hello-multiloc and
-   hello-multiloc_real).  The first binary contains code to launch the
-   Chapel program onto the compute nodes using a GASNet run command.
-   The second contains the program code itself.  You can use the -v
-   flag to see the commands used to launch your program.  See
+7) When you compile a Chapel program for multiple locales, you should
+   typically see two binaries (e.g., hello6-taskpar-dist and
+   hello6-taskpar-dist_real).  The first binary contains code to
+   launch the Chapel program onto the compute nodes using a GASNet run
+   command.  The second contains the program code itself.  You can use
+   the -v flag to see the commands used to launch your program.  See
    README.launcher for further details.
 
 
-10) Multi-locale executions require the number of locales to be
-    specified on the command line.  Other than this, execute your
-    Chapel program as usual.  For example:
+8) Multi-locale executions require the number of locales to be
+   specified on the command line.  Other than this, execute your
+   Chapel program as usual.  For example:
 
-      ./hello-multiloc -nl 2
+     ./hello6-taskpar-dist -nl 2
+
+
+9) Advanced users may want to set CHPL_COMM_DEBUG in order to enable
+   GASNet's internal sanity checking. (It is off by default.)
+   You need to re-make the compiler and runtime when changing
+   this setting (step 4).

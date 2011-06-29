@@ -5,9 +5,11 @@ CHPL = chpl
 
 TARGETS = \
 	hello \
-	hello-module \
-	hello-multicore \
-	hello-multiloc \
+	hello2-module \
+	hello3-datapar \
+	hello4-datapar-dist \
+	hello5-taskpar \
+	hello6-taskpar-dist \
 
 REALS = $(TARGETS:%=%_real)
 
@@ -22,13 +24,13 @@ clean: FORCE
 	cd hpcc && $(MAKE) clean
 
 primers: FORCE
-	cd primers && $(MAKE) all
+	cd primers && $(MAKE)
 
 programs: FORCE
-	cd programs && $(MAKE) all
+	cd programs && $(MAKE)
 
 hpcc: FORCE
-	cd hpcc && $(MAKE) all
+	cd hpcc && $(MAKE)
 
 %: %.chpl
 	$(CHPL) -o $@ $<

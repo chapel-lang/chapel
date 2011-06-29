@@ -26,8 +26,6 @@ class CSRDom: BaseSparseDom {
   var rowStart: [rowDom] idxType;      // would like index(nnzDom)
   var colIdx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
-  proc getBaseDist() return dist;
-
   proc CSRDom(param rank, type idxType, 
                                dist: CSR,
                                parentDom: domain(rank, idxType)) {
@@ -43,6 +41,8 @@ class CSRDom: BaseSparseDom {
     nnzDom = [1..nnzDomSize];
     dsiClear();
   }
+
+  proc dsiMyDist() return dist;
 
   proc dsiNumIndices return nnz;
 
@@ -79,10 +79,6 @@ class CSRDom: BaseSparseDom {
   iter these(param tag: iterator) where tag == iterator.leader {
     // same as DefaultSparseDom's leader
     const numElems = nnz;
-    if numElems <= 0 then {
-      if debugCSR then writeln("CSRDom leader: nothing to do (", numElems,
-                               " elements)");
-    } else {
       const numChunks = _computeNumChunks(numElems);
       //writeln("leader- rowRange=", rowRange, " colRange=", colRange, "\n",
       //        "        rowStart=", rowStart, " colIdx=", colIdx);
@@ -90,7 +86,7 @@ class CSRDom: BaseSparseDom {
         writeln("CSRDom leader: ", numChunks, " chunks, ", numElems, " elems");
 
       // split our numElems elements over numChunks tasks
-      if numChunks <= 1 then
+      if numChunks == 1 then
         yield (this, 1, numElems);
       else
         coforall chunk in 1..numChunks do
@@ -98,7 +94,6 @@ class CSRDom: BaseSparseDom {
       // TODO: to handle large numElems and numChunks faster, it would be great
       // to run the binary search in _private_findStartRow smarter, e.g.
       // pass to the tasks created in 'coforall' smaller ranges to search over.
-    }  // if numElems
   }
 
   iter these(param tag: iterator, follower: (?,?,?)) where tag == iterator.follower {
@@ -228,7 +223,7 @@ class CSRDom: BaseSparseDom {
     // shift all of the arrays up and initialize nonzeroes if
     // necessary 
     //
-    // BLC: Note: if arithmetic arrays had a user-settable
+    // BLC: Note: if rectangular arrays had a user-settable
     // initialization value, we could set it to be the IRV and skip
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
@@ -272,7 +267,7 @@ class CSRDom: BaseSparseDom {
     // shift all of the arrays up and initialize nonzeroes if
     // necessary 
     //
-    // BLC: Note: if arithmetic arrays had a user-settable
+    // BLC: Note: if rectangular arrays had a user-settable
     // initialization value, we could set it to be the IRV and skip
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable

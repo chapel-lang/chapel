@@ -1,0 +1,18 @@
+semantic: domain equality (range equality, really)
+
+This test was written to ask the similar questions as
+test/ranges/bradc/rangeEquality.chpl for domains.
+
+As noted in the range version of the .future, my proposed answer for
+the third comparison differs here from ranges because of the fact that
+domains are intended to define index sets, so arguably we should be
+using set equality rather than ordered equality.
+
+I don't feel 100% confident of this final point.  In particular, I
+could imagine an argument that says "rectangular domains are ordered
+therefore we could/should take order into account in computing
+equality" and I'm open to this argument.  This question is very
+closely tied to the one asked in domainOrder.chpl in this same
+directory.
+
+More extensive tests are in test/domains/sungeun/rect|assoc|sparse.

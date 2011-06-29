@@ -1,2 +1,2 @@
-privatizedDomainErrorMessage.chpl:12: error: unresolved call 'foo(BlockDom(1,int,0))'
+privatizedDomainErrorMessage.chpl:12: error: unresolved call 'foo(BlockDom(1,int,false))'
 privatizedDomainErrorMessage.chpl:3: note: candidates are: foo(A: C)

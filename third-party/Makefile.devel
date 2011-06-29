@@ -4,11 +4,9 @@ armci: FORCE
 mpich1: FORCE
 	cd mpich1 && $(MAKE)
 
-nanox: FORCE
-	cd nanox && $(MAKE)
-
 openmpi: FORCE
 	cd openmpi && $(MAKE)
 
-qthread: FORCE
-	cd qthread && $(MAKE)
+pvm: FORCE
+	cd pvm && $(MAKE)
+

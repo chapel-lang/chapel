@@ -1,6 +1,12 @@
+Types
+-----
+* add volatile types
+
 Classes
 -------
 * add destructors description
+* indicate that parentheses-less methods are statically dispatched,
+  just like fields
 
 Expressions
 -----------
@@ -33,6 +39,10 @@ Functions
 * define function resolution for type functions (perhaps by difference from
   resolution for regular functions)
   ** insert a reference to that in the Generics' Type Constructor section
+* rename "function" to "procedure" throughout the spec; add the "non-iterator"
+  specifier (where appropriate), which was removed in r18389/r18390;
+  perhaps also add the "non-method" specifier, at least at the top
+  of the Procedures chapter
 
 
 Domains and Arrays
@@ -66,17 +76,21 @@ TODOs from email:
   believe.
 
 
+Data Parallelism
+----------------
+* clarify what it means to say that a forall loop is serializable.
+
+
 Generics
 --------
 * add mention of the new 'depth' argument for compilerWarning/Error
 
-I/O
----
+Input and Output
+----------------
 * show file constructor or at least mention that the default constructor
   exists
 * show default values for fields of file
 * examples showing how to open and close a file
-* improve description of readln() (and maybe all 4 I/O commands)
 
 Task Parallelism and Synchronization
 ------------------------------------
@@ -87,6 +101,7 @@ Task Parallelism and Synchronization
 
 Standard Modules
 ----------------
+* document logBasePow2() in Math.chpl (if we want to keep it)
 * in Sort module, add definition that < is used to do the sort.
 * add description of List module such as it is
 

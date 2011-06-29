@@ -115,7 +115,10 @@ class ClassType : public Type {
 
 class PrimitiveType : public Type {
  public:
-  PrimitiveType(Symbol *init_defaultVal = NULL);
+  PrimitiveType* volType; 
+  PrimitiveType* nonvolType;
+  bool isInternalType;
+  PrimitiveType(Symbol *init_defaultVal = NULL, bool internalType=false);
   void verify(); 
   DECLARE_COPY(PrimitiveType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -134,11 +137,10 @@ TYPE_EXTERN Type* dtIteratorClass;
 TYPE_EXTERN Type* dtIntegral;
 TYPE_EXTERN Type* dtAnyComplex;
 TYPE_EXTERN Type* dtNumeric;
-TYPE_EXTERN Type* dtEnumerated;
+TYPE_EXTERN Type* dtAnyEnumerated;
 TYPE_EXTERN PrimitiveType* dtNil;
 TYPE_EXTERN PrimitiveType* dtUnknown;
 TYPE_EXTERN PrimitiveType* dtVoid;
-TYPE_EXTERN Type* dtObject;
 TYPE_EXTERN PrimitiveType* dtValue;
 TYPE_EXTERN PrimitiveType* dtMethodToken;
 TYPE_EXTERN PrimitiveType* dtTypeDefaultToken;
@@ -162,9 +164,7 @@ TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtTaskList;
 
-//
 // standard module types
-//
 TYPE_EXTERN ClassType* dtArray;
 TYPE_EXTERN ClassType* dtChapelFile;
 TYPE_EXTERN ClassType* dtWriter;
@@ -172,6 +172,10 @@ TYPE_EXTERN ClassType* dtBaseArr;
 TYPE_EXTERN ClassType* dtBaseDom;
 TYPE_EXTERN ClassType* dtDist;
 TYPE_EXTERN ClassType* dtTuple;
+TYPE_EXTERN ClassType* dtLocale;
+
+// base object type (for all classes)
+TYPE_EXTERN Type* dtObject;
 
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
@@ -195,7 +199,15 @@ bool isUnion(Type* t);
 
 bool isReferenceType(Type* t);
 
+bool isRefCountedType(Type* t);
+bool isRecordWrappedType(Type* t);
+
+bool isDistClass(Type* type);
+bool isDomainClass(Type* type);
+bool isArrayClass(Type* type);
+
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
+void genTypeStructureIndex(FILE *outfile, TypeSymbol* typesym);
 void codegenTypeStructures(FILE* hdrfile);
 void codegenTypeStructureInclude(FILE* outfile);
 

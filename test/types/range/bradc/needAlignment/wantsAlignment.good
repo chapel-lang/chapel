@@ -1,0 +1,33 @@
+(1..10 by 2).expand(3) yields:
+-2..13 by 2 align 1
+-1
+1
+3
+5
+7
+9
+11
+13
+(1..9 by 2).expand(3) yields:
+-2..12 by 2 align 1
+-1
+1
+3
+5
+7
+9
+11
+(1..10 by 2).exterior(3) yields:
+11..13 by 2
+11
+13
+(1..9 by 2).exterior(3) yields:
+10..12 by 2 align 1
+11
+1..10 by 2 by -1 yields:
+1..10 by -2 align 1
+9
+7
+5
+3
+1

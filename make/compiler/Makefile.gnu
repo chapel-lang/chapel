@@ -78,6 +78,7 @@ ifdef CHPL_DEVELOPER
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
 RUNTIME_GEN_CFLAGS += -Wno-unused
+WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 
 

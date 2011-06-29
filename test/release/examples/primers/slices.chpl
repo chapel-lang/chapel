@@ -1,4 +1,6 @@
-/*  This example program demonstrates the use of array slicing and
+/*  Slicing Primer    
+
+    This example program demonstrates the use of array slicing and
     reindexing.  
 
     In this program, diagonal blocks (or slices) of A are initialized
@@ -18,7 +20,7 @@
     for the diagonal blocks in two of the three cases.  One of these 
     array aliases uses reindexing of the domain of the array alias.
     The initialization of the blocks is handled in either initBlock
-    or initBlock2.  The function initBlock does not reindex the domain
+    or initBlock2.  The procedure initBlock does not reindex the domain
     of the input array while initBlock2 does.
 */
 
@@ -32,7 +34,7 @@ proc main() {
   // Variable declarations for the range vec, and for the domain D
   // and array A.  Vec is used to define the ranges of each dimension
   // of D and it is later used in the iterator for the for loop statements
-  // which call the init function for each diagonal block of A.
+  // which call the init procedure for each diagonal block of A.
   const vec = 1..n;
   var D = [vec,vec];
   var A:[D] int;
@@ -78,7 +80,7 @@ proc main() {
   // to each diagonal block.  This alias is then sent to initBlock2
   // where the domain of the array argument is reindexed.
   writeln("Initializing the diagonal blocks of A."); 
-  writeln("Reindexing of array argument in init function definition. ");
+  writeln("Reindexing of array argument in init procedure definition. ");
   for subvec in blockIter(vec,blk) {
     var Ablock => A[subvec,subvec];
     initBlock2(Ablock);
@@ -97,7 +99,7 @@ iter blockIter(vec:range,blk) {
   }
 }
 
-// This function sets each element of A to be the value of its
+// This procedure sets each element of A to be the value of its
 // row index.
 proc initBlock(A) {
   for (i,j) in A.domain {
@@ -105,9 +107,9 @@ proc initBlock(A) {
   }
 }
 
-// This function reindexes the domain of the array argument to
+// This procedure reindexes the domain of the array argument to
 // be of [1..blk,1..blk].  It expects arrays to be blk x blk.
-// This function sets each element of A to be the value of its
+// The procedure  sets each element of A to be the value of its
 // row index.
 proc initBlock2(A: [1..blk,1..blk]) {
   for (i,j) in A.domain {

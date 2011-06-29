@@ -12,7 +12,8 @@
 #include "chplrt.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
+#include "chpl-comm-compiler-macros.h"
 #include "error.h"
 
 #define NANSTRING "nan"
@@ -69,7 +70,9 @@ chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl
     return string_copy(x->addr, lineno, filename);
   else {
     chpl_string s;
-    CHPL_COMM_WIDE_GET_STRING(s, *x, lineno, filename);
+    CHPL_COMM_WIDE_GET_STRING(s, *x,
+                              -CHPL_TYPE_chpl_string /* this is unfortunate */,
+                              lineno, filename);
     return s;
   }
 }

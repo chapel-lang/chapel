@@ -3,11 +3,12 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "chplexit.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chpl_mem.h"
 #include "chplrt.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "error.h"
 #include "chplsys.h"
 #include "mpi.h"
@@ -331,13 +332,13 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 }
 
 
-void chpl_comm_broadcast_private(int id, int size) {
+void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   int i;
   PRINTF("broadcast private");
 
   for (i = 0; i < chpl_numLocales; i++) {
     if (i != chpl_localeID) {
-      chpl_comm_put(chpl_private_broadcast_table[id], i, chpl_private_broadcast_table[id], size, 0, 0);
+      chpl_comm_put(chpl_private_broadcast_table[id], i, chpl_private_broadcast_table[id], size, -1, 1, 0, 0);
     }
   }
 }
@@ -378,7 +379,10 @@ void chpl_comm_exit_any(int status) {
 }
 
 
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
+                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    int ln, chpl_string fn) {
+  const int32_t size = elemSize*len;
   if (chpl_localeID == locale) {
     memmove(raddr, addr, size);
   } else {
@@ -406,7 +410,10 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr, int32_t size, int l
 }
 
 
-void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int ln, chpl_string fn) {
+void  chpl_comm_get(void *addr, int32_t locale, void* raddr,
+                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    int ln, chpl_string fn) {
+  const int size = elemSize*len;
   if (chpl_localeID == locale) {
     memmove(addr, raddr, size);
   } else {
@@ -434,7 +441,8 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr, int32_t size, int l
 }
 
 
-void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
+                     int32_t arg_size, int32_t arg_tid) {
   if (chpl_localeID == locale) {
     (*chpl_ftable[fid])(arg);
   } else {
@@ -459,7 +467,8 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
 }
 
 
-void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
+void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
+                        int32_t arg_size, int32_t arg_tid) {
   if (chpl_localeID == locale) {
     void* argCopy = chpl_malloc(1, arg_size, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
     _chplForkedTaskArg* rpcArg = chpl_malloc(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
@@ -492,8 +501,18 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg, int arg_size) 
 }
 
 // Just call chpl_comm_fork()
-void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg, int arg_size) {
-  chpl_comm_fork(locale, fid, arg, arg_size);
+void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
+                          int32_t arg_size, int32_t arg_tid) {
+  chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
+}
+
+void chpl_comm_startPollingTask(void) {
+  // Ultimately the pthread code from above to create the polling thread
+  // should be moved down here
+}
+
+void chpl_comm_stopPollingTask(void) {
+  // And that thread should be stopped here
 }
 
 void chpl_startVerboseComm() { }
@@ -506,7 +525,22 @@ void chpl_stopCommDiagnostics() { }
 void chpl_startCommDiagnosticsHere() { }
 void chpl_stopCommDiagnosticsHere() { }
 
+void chpl_resetCommDiagnosticsHere() { }
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+  cd->put = -1;
+  cd->get = -1;
+  cd->get_nb = -1;
+  cd->get_nb_test = -1;
+  cd->get_nb_wait = -1;
+  cd->fork = -1;
+  cd->fork_fast = -1;
+  cd->fork_nb = -1;
+}
+
 int32_t chpl_numCommGets(void) { return -1; }
+int32_t chpl_numCommNBGets(void) { return -1; }
+int32_t chpl_numCommTestNBGets(void) { return -1; }
+int32_t chpl_numCommWaitNBGets(void) { return -1; }
 int32_t chpl_numCommPuts(void) { return -1; }
 int32_t chpl_numCommForks(void) { return -1; }
 int32_t chpl_numCommFastForks(void) { return -1; }

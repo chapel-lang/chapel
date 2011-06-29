@@ -20,7 +20,7 @@
 #
 source ~/.chapelcshrc-cron-xmt-sim
 
-# XMT cross-compile test
+# XMT simulation test
 $CHPL_HOME/util/cron/nightly -cron -examples
 
 #
@@ -28,6 +28,9 @@ $CHPL_HOME/util/cron/nightly -cron -examples
 # for the MTA compiler
 #
 source ~/.chapelcshrc-cron-xmt
+
+# XMT compile for hardware test
+$CHPL_HOME/util/cron/nightly -cron -examples -componly
 
 # 
 setenv CHPL_HOST_PLATFORM $CHPL_TARGET_PLATFORM

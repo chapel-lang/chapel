@@ -15,17 +15,17 @@ This directory contains the following documentation:
   README.prereqs     : prerequisites for using Chapel
   README.threads     : explains how Chapel tasks are implemented using threads
 
-  platforms/         : platform-specific notes
-    README.cx-linux  : notes for Cray CX1/CX1000 (TM) users running Linux
-    README.cygwin    : notes for Cygwin users
-    README.ibm       : notes for IBM users
-    README.macosx    : notes for Mac users
-    README.marenostrum : notes for MareNostrum users at BSC
-    README.sgi       : notes for SGI Altix users
-    README.xmt       : notes for Cray XMT (TM) users
-    README.xe-cle    : notes for Cray XE (TM) users running the Cray Linux
-                       Environment (TM) (CLE)
-    README.xt-cle    : notes for Cray XT (TM) users running CLE
+  platforms/           : platform-specific notes:
+    README.cx-linux    :  Cray CX1/CX1000 (TM) running Linux
+    README.cygwin      :  Cygwin
+    README.ibm         :  IBM
+    README.macosx      :  Mac
+    README.marenostrum :  MareNostrum (at BSC)
+    README.sgi         :  SGI Altix
+    README.xmt         :  Cray XMT (TM)
+    README.xe-cle      :  Cray XE (TM) running CLE
+                          (the Cray Linux Environment (TM))
+    README.xt-cle      :  Cray XT (TM) running CLE
 
   chapelLanguageSpec.pdf : the current draft of the Chapel language
                            specification
@@ -33,13 +33,15 @@ This directory contains the following documentation:
   quickReference.pdf : a one-sheet, tri-fold overview of Chapel syntax
                        for quick reference
 
-  technotes/                : technical notes about our implementation
-    README.comm-diagnostics : technical note about tracking communication events
-    README.extern           : technical note on calling external C routines
-    README.firstClassFns    : technical note on first-class functions
-    README.format           : technical note on value-to-string formatting
-    README.gmp              : technical note on a prototype GMP module
-    README.multirealm       : technical note on multi-realm execution
+  technotes/                : technical notes about our implementation:
+    README.comm-diagnostics :  tracking communication events
+    README.dsi              :  requirements/guidelines on writing a domain map
+    README.extern           :  calling external C routines
+    README.firstClassFns    :  first-class functions
+    README.format           :  value-to-string formatting
+    README.gmp              :  a prototype GMP module
+    README.local            :  the 'local' statement
+    README.volatile         :  support for volatile types
 
 
 --------------------

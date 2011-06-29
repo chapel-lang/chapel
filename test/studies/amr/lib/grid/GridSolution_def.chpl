@@ -23,18 +23,6 @@ class GridSolution {
   var current_time: real;
   
   
-  //|\''''''''''''''|\
-  //| >    clear    | >
-  //|/..............|/
-  
-  proc clear() {
-    delete old_data;
-    delete current_data;
-  }
-  // /|''''''''''''''/|
-  //< |    clear    < |
-  // \|..............\|
-
 
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
@@ -48,6 +36,22 @@ class GridSolution {
   // /|''''''''''''''''''''/|
   //< |    constructor    < |
   // \|....................\|
+  
+  
+  
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
+  
+  proc ~GridSolution () 
+  {
+    delete old_data;
+    delete current_data;
+  }
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
+  
   
 }
 // /|"""""""""""""""""""""""""""/|

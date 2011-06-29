@@ -1,3 +1,6 @@
+// ChapelBase.chpl
+//
+
 _extern proc chpl_config_has_value(name, module_name): bool;
 _extern proc chpl_config_get_value(name, module_name): string;
 
@@ -33,6 +36,9 @@ config param CHPL_COMM: string = "unset";
 if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");
 }
+
+config param warnMaximalRange = false;	// Warns if integer rollover will cause
+					// the iterator to yield zero times.
 
 pragma "inline" proc +(s: string, x: numeric)
   return s + x:string;
@@ -234,7 +240,7 @@ pragma "inline" proc -(a: int(64)) return __primitive("u-", a);
 pragma "inline" proc -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", typeToString(a.type)); }
 pragma "inline" proc -(a: real(?w)) return __primitive("u-", a);
 pragma "inline" proc -(a: imag(?w)) return __primitive("u-", a);
-pragma "inline" proc -(a: complex(?w)) return (-a.re, -a.im):complex;
+pragma "inline" proc -(a: complex(?w)) return (-a.re, -a.im):complex(w);
 
 pragma "inline" proc +(param a: int(32)) param return a;
 pragma "inline" proc +(param a: int(64)) param return a;
@@ -259,15 +265,15 @@ pragma "inline" proc +(a: uint(32), b: uint(32)) return __primitive("+", a, b);
 pragma "inline" proc +(a: uint(64), b: uint(64)) return __primitive("+", a, b);
 pragma "inline" proc +(a: real(?w), b: real(w)) return __primitive("+", a, b);
 pragma "inline" proc +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
-pragma "inline" proc +(a: complex(?w), b: complex(w)) return (a.re+b.re, a.im+b.im):complex;
+pragma "inline" proc +(a: complex(?w), b: complex(w)) return (a.re+b.re, a.im+b.im):complex(w);
 pragma "inline" proc +(a: string, b: string) return __primitive("string_concat", a, b);
 
-pragma "inline" proc +(a: real(?w), b: imag(w)) return (a, _i2r(b)):complex;
-pragma "inline" proc +(a: imag(?w), b: real(w)) return (b, _i2r(a)):complex;
-pragma "inline" proc +(a: real(?w), b: complex(w*2)) return (a+b.re, b.im):complex;
-pragma "inline" proc +(a: complex(?w), b: real(w/2)) return (a.re+b, a.im):complex;
-pragma "inline" proc +(a: imag(?w), b: complex(w*2)) return (b.re, _i2r(a)+b.im):complex;
-pragma "inline" proc +(a: complex(?w), b: imag(w/2)) return (a.re, a.im+_i2r(b)):complex;
+pragma "inline" proc +(a: real(?w), b: imag(w)) return (a, _i2r(b)):complex(w*2);
+pragma "inline" proc +(a: imag(?w), b: real(w)) return (b, _i2r(a)):complex(w*2);
+pragma "inline" proc +(a: real(?w), b: complex(w*2)) return (a+b.re, b.im):complex(w*2);
+pragma "inline" proc +(a: complex(?w), b: real(w/2)) return (a.re+b, a.im):complex(w);
+pragma "inline" proc +(a: imag(?w), b: complex(w*2)) return (b.re, _i2r(a)+b.im):complex(w*2);
+pragma "inline" proc +(a: complex(?w), b: imag(w/2)) return (a.re, a.im+_i2r(b)):complex(w);
 
 pragma "inline" proc -(a: int(32), b: int(32)) return __primitive("-", a, b);
 pragma "inline" proc -(a: int(64), b: int(64)) return __primitive("-", a, b);
@@ -275,14 +281,14 @@ pragma "inline" proc -(a: uint(32), b: uint(32)) return __primitive("-", a, b);
 pragma "inline" proc -(a: uint(64), b: uint(64)) return __primitive("-", a, b);
 pragma "inline" proc -(a: real(?w), b: real(w)) return __primitive("-", a, b);
 pragma "inline" proc -(a: imag(?w), b: imag(w)) return __primitive("-", a, b);
-pragma "inline" proc -(a: complex(?w), b: complex(w)) return (a.re-b.re, a.im-b.im):complex;
+pragma "inline" proc -(a: complex(?w), b: complex(w)) return (a.re-b.re, a.im-b.im):complex(w);
 
-pragma "inline" proc -(a: real(?w), b: imag(w)) return (a, -_i2r(b)):complex;
-pragma "inline" proc -(a: imag(?w), b: real(w)) return (-b, _i2r(a)):complex;
-pragma "inline" proc -(a: real(?w), b: complex(w*2)) return (a-b.re, -b.im):complex;
-pragma "inline" proc -(a: complex(?w), b: real(w/2)) return (a.re-b, a.im):complex;
-pragma "inline" proc -(a: imag(?w), b: complex(w*2)) return (-b.re, _i2r(a)-b.im):complex;
-pragma "inline" proc -(a: complex(?w), b: imag(w/2)) return (a.re, a.im-_i2r(b)):complex;
+pragma "inline" proc -(a: real(?w), b: imag(w)) return (a, -_i2r(b)):complex(w*2);
+pragma "inline" proc -(a: imag(?w), b: real(w)) return (-b, _i2r(a)):complex(w*2);
+pragma "inline" proc -(a: real(?w), b: complex(w*2)) return (a-b.re, -b.im):complex(w*2);
+pragma "inline" proc -(a: complex(?w), b: real(w/2)) return (a.re-b, a.im):complex(w);
+pragma "inline" proc -(a: imag(?w), b: complex(w*2)) return (-b.re, _i2r(a)-b.im):complex(w*2);
+pragma "inline" proc -(a: complex(?w), b: imag(w/2)) return (a.re, a.im-_i2r(b)):complex(w);
 
 pragma "inline" proc +(param a: int(32), param b: int(32)) param return __primitive("+", a, b);
 pragma "inline" proc +(param a: int(64), param b: int(64)) param return __primitive("+", a, b);
@@ -304,14 +310,14 @@ pragma "inline" proc *(a: uint(32), b: uint(32)) return __primitive("*", a, b);
 pragma "inline" proc *(a: uint(64), b: uint(64)) return __primitive("*", a, b);
 pragma "inline" proc *(a: real(?w), b: real(w)) return __primitive("*", a, b);
 pragma "inline" proc *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
-pragma "inline" proc *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex;
+pragma "inline" proc *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex(w);
 
 pragma "inline" proc *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
 pragma "inline" proc *(a: imag(?w), b: real(w)) return _r2i(_i2r(a)*b);
-pragma "inline" proc *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex;
-pragma "inline" proc *(a: complex(?w), b: real(w/2)) return (a.re*b, a.im*b):complex;
-pragma "inline" proc *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex;
-pragma "inline" proc *(a: complex(?w), b: imag(w/2)) return (-a.im*_i2r(b), a.re*_i2r(b)):complex;
+pragma "inline" proc *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex(w*2);
+pragma "inline" proc *(a: complex(?w), b: real(w/2)) return (a.re*b, a.im*b):complex(w);
+pragma "inline" proc *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex(w*2);
+pragma "inline" proc *(a: complex(?w), b: imag(w/2)) return (-a.im*_i2r(b), a.re*_i2r(b)):complex(w);
 
 pragma "inline" proc /(a: int(32), b: int(32)) return __primitive("/", a, b);
 pragma "inline" proc /(a: int(64), b: int(64)) return __primitive("/", a, b);
@@ -321,21 +327,21 @@ pragma "inline" proc /(a: real(?w), b: real(w)) return __primitive("/", a, b);
 pragma "inline" proc /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
 pragma "inline" proc /(a: complex(?w), b: complex(w))
   return let d = b.re*b.re+b.im*b.im in
-    ((a.re*b.re+a.im*b.im)/d, (a.im*b.re-a.re*b.im)/d):complex;
+  ((a.re*b.re+a.im*b.im)/d, (a.im*b.re-a.re*b.im)/d):complex(w);
 
 pragma "inline" proc /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
 pragma "inline" proc /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
 pragma "inline" proc /(a: real(?w), b: complex(w*2))
   return let d = b.re*b.re+b.im*b.im in
-    (a*b.re/d, -a*b.im/d):complex;
+  (a*b.re/d, -a*b.im/d):complex(w*2);
 pragma "inline" proc /(a: complex(?w), b: real(w/2))
-  return (a.re/b, a.im/b):complex;
+return (a.re/b, a.im/b):complex(w);
 pragma "inline" proc /(a: imag(?w), b: complex(w*2))
   return let d = b.re*b.re+b.im*b.im in
-    (_i2r(a)*b.im/d, _i2r(a)*b.re/d):complex;
+  (_i2r(a)*b.im/d, _i2r(a)*b.re/d):complex(w*2);
 pragma "inline" proc /(a: complex(?w), b: imag(w/2))
   return let d = _i2r(b)*_i2r(b) in
-    (a.im/_i2r(b), -a.re/_i2r(b)):complex;
+  (a.im/_i2r(b), -a.re/_i2r(b)):complex(w);
 
 pragma "inline" proc *(param a: int(32), param b: int(32)) param return __primitive("*", a, b);
 pragma "inline" proc *(param a: int(64), param b: int(64)) param return __primitive("*", a, b);
@@ -571,7 +577,7 @@ pragma "inline" proc _cond_test(x) {
 }
 
 pragma "inline" proc _cond_test(x: _iteratorRecord) {
-  compilerError("iterator or promoted expression used in if or while condition");
+  compilerError("iterator or promoted expression ", typeToString(x.type), " used in if or while condition");
 }
 
 proc _cond_invalid(x: object) param return false;
@@ -1013,7 +1019,7 @@ proc _waitEndCount() {
 }
 
 //
-// casts
+// type predicates
 //
 proc chpl__isType(type t) param return true;
 proc chpl__isType(e) param return false;
@@ -1023,7 +1029,8 @@ proc _isPrimitiveType(type t) param return
   (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
   (t == real(32)) | (t == real(64)) |
-  (t == string);
+// BLC: Why aren't imaginaries here?  Someone should try this
+  (t == string) | (_isVolatileType(t) && _isPrimitiveType(_volToNon(t)));
 
 proc _isSimpleScalarType(type t) param return
   _isBooleanType(t) | _isIntegralType(t) | _isFloatType(t);
@@ -1060,21 +1067,59 @@ proc _isRealType(type t) param return
 proc _isImagType(type t) param return
   (t == imag(32)) | (t == imag(64));
 
-proc chpl__idxTypeToStrType(type t) type {
-  if (t == uint(8)) {
+proc _isVolatileType(type t) param
+  return ((t == volatile bool) | (t == volatile bool(8)) | 
+          (t == volatile bool(16)) | (t == volatile bool(32)) | 
+          (t == volatile bool(64)) |  (t == volatile int) | 
+          (t == volatile int(8)) | (t == volatile int(16)) | 
+          (t == volatile int(32)) | (t == volatile int(64)) | 
+          (t == volatile uint(8)) | (t == volatile uint(16)) | 
+          (t == volatile uint(32)) | (t == volatile uint(64)) | 
+          (t == volatile real(32)) | (t == volatile real(64)) | 
+          (t == volatile imag(32)) | (t == volatile imag(64))
+          );
+//  (t == volatile string);
+
+proc _volToNon(type t) type {
+  if (t == volatile bool) {
+    return bool;
+  } else if (t == volatile bool(8)) {
+    return bool(8);
+  } else if (t == volatile bool(16)) {
+    return bool(16);
+  } else if (t == volatile bool(32)) {
+    return bool(32);
+  } else if (t == volatile bool(64)) {
+    return bool(64);
+  } else if (t == volatile int(8)) {
     return int(8);
-  } else if (t == uint(16)) {
+  } else if (t == volatile int(16)) {
     return int(16);
-  } else if (t == uint(32)) {
+  } else if (t == volatile int(32)) {
     return int(32);
-  } else if (t == uint(64)) {
+  } else if (t == volatile int(64)) {
     return int(64);
-  } else if (t == int(8) || t == int(16) || t == int(32) || t == int(64)) {
-    return t;
+  } else if (t == volatile uint(8)) {
+    return uint(8);
+  } else if (t == volatile uint(16)) {
+    return uint(16);
+  } else if (t == volatile uint(32)) {
+    return uint(32);
+  } else if (t == volatile uint(64)) {
+    return uint(64); 
+  } else if (t == volatile real(32)) {
+    return real(32);
+  } else if (t == volatile real(64)) {
+    return real(64);
+  } else if (t == volatile imag(32)) {
+    return imag(32);
+  } else if (t == volatile imag(64)) {
+    return imag(64);
   } else {
-    compilerError("range idxType is non-integral: ", typeToString(t));
+    compilerError(typeToString(t), " is not a volatile type");
   }
 }
+
 
 pragma "command line setting"
 proc _command_line_cast(param s: string, type t, x) return _cast(t, x);
@@ -1123,6 +1168,57 @@ pragma "inline" proc _cast(type t, x) where x:object && t:x && (x.type != t)
 
 pragma "inline" proc _cast(type t, x:_nilType) where t == _nilType
   return nil;
+
+pragma "inline" proc _cast(type t, x: volatile bool) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile bool(8)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile bool(16)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile bool(32)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile bool(64)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile int(8)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile int(16)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile int(32)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile int(64)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile uint(8)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile uint(16)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile uint(32)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile uint(64)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile real(32)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile real(64)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile imag(32)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
+pragma "inline" proc _cast(type t, x: volatile imag(64)) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
 
 //
 // casts to complex
@@ -1280,20 +1376,23 @@ pragma "inline" proc chpl__initCopy(x: _tuple) {
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: _distribution) {
-  if x._value then
-    on x._value do x._value._distCnt$ += 1;
+  if !noRefCount then
+    if x._value then
+      on x._value do x._value._distCnt$ += 1;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: domain) {
-  on x._value do x._value._domCnt$ += 1;
+  if !noRefCount then
+    on x._value do x._value._domCnt$ += 1;
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: []) {
-  on x._value do x._value._arrCnt$ += 1;
+  if !noRefCount then
+    on x._value do x._value._arrCnt$ += 1;
   return x;
 }
 

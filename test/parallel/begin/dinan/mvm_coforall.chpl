@@ -29,7 +29,7 @@ if !quiet {
 
 coforall i in A.domain.dim(1) {
   for j in A.domain.dim(2) {
-    C[i] += A[i,j] * B[i];
+    C[i] += A[i,j] * B[j];
   }
 }
 

@@ -10,13 +10,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <comm_printf_macros.h>
+#include <chpl-comm-printf-macros.h>
 
 #include "chplcast.h"
 #include "chplio.h"
 #include "chpl_mem.h"
 #include "chplrt.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
 #include "error.h"

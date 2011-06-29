@@ -1,0 +1,5 @@
+# NOTE: we are ignoring 'Verification'
+perfkeys: Execution time =
+graphkeys: cg-sparse
+graphtitle: CG (sparse)
+ylabel: Time (seconds)

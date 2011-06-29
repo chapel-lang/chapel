@@ -206,6 +206,7 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   for_fields(field, ct) {
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     fieldMap.put(field, var);
+    SET_LINENO(sym);
     sym->defPoint->insertBefore(new DefExpr(var));
     if (sym->hasFlag(FLAG_TEMP))
       var->addFlag(FLAG_TEMP);
@@ -305,6 +306,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
   for_fields(field, ct) {
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     fieldMap.put(field, var);
+    SET_LINENO(sym);
     sym->defPoint->insertBefore(new DefExpr(var));
     if (sym->hasFlag(FLAG_TEMP))
       var->addFlag(FLAG_TEMP);
@@ -319,6 +321,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
   for_defs(se, defMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call) {
+        SET_LINENO(sym);
         INT_ASSERT(call->isPrimitive(PRIM_MOVE));
         Symbol *rhs;
         if (isSymExpr(call->get(2))) {
@@ -366,6 +369,7 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
   //
   for_uses(se, useMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      SET_LINENO(sym);
       if (call && call->isPrimitive(PRIM_MOVE)) {
         SymExpr* lhs = toSymExpr(call->get(1));
         for_fields(field, ct) {

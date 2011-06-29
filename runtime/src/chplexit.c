@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "chpl_rt_utils_static.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chplexit.h"
 #include "chpl_mem.h"
 #include "chplmemtrack.h"
@@ -18,9 +18,10 @@ static void chpl_exit_common(int status, int all) {
   }
   if (all) {
     chpl_comm_barrier("chpl_comm_exit_all");
-    chpl_task_exit();
     if (!_runInGDB())
       chpl__autoDestroyRuntimeGlobals();
+    chpl_comm_stopPollingTask();
+    chpl_task_exit();
     chpl_reportMemInfo();
     chpl_comm_exit_all(status);
   } else {

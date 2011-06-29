@@ -118,6 +118,7 @@ static void legalizeName(Symbol* sym) {
     case '?': ch = subChar(sym, ch, "_QUESTION_"); break;
     case '$': ch = subChar(sym, ch, "_DOLLAR_"); break;
     case '~': ch = subChar(sym, ch, "_TILDA_"); break;
+    case '.': ch = subChar(sym, ch, "_DOT_"); break;
     default: break;
     }
   }
@@ -593,6 +594,11 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
     fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n", 
             (numGlobalsOnHeap ? numGlobalsOnHeap : 1));
+    fprintf(hdrfile, "\nconst int chpl_heterogeneous = ");
+    if (fHeterogeneous)
+      fprintf(hdrfile, " 1;\n");
+    else
+      fprintf(hdrfile, " 0;\n");
     fprintf(hdrfile, "\nconst char* chpl_memDescs[] = {\n");
     bool first = true;
     forv_Vec(const char*, memDesc, memDescsVec) {
@@ -640,6 +646,11 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       fprintf(hdrfile, "\nextern const int chpl_numGlobalsOnHeap;\n");
       fprintf(hdrfile, "\nextern void** chpl_globals_registry;\n");
       fprintf(hdrfile, "\nextern void* chpl_globals_registry_static[];\n");
+      fprintf(hdrfile, "\nconst int chpl_heterogeneous = ");
+      if (fHeterogeneous)
+        fprintf(hdrfile, " 1;\n");
+      else
+        fprintf(hdrfile, " 0;\n");
       fprintf(hdrfile, "\nextern const char* chpl_memDescs[];\n");
       fprintf(hdrfile, "\nextern const int chpl_num_memDescs;\n");
     }
@@ -710,12 +721,6 @@ void codegen(void) {
   openCFile(&mainfile, "_main", "c");
   fprintf(mainfile.fptr, "#include \"chpl__header.h\"\n");
 
-  if (fHeterogeneous) {
-    fprintf(hdrfile.fptr, "#ifndef CHPL_COMM_HETEROGENEOUS\n");
-    fprintf(hdrfile.fptr, "#define CHPL_COMM_HETEROGENEOUS\n");
-    fprintf(hdrfile.fptr, "#endif\n");
-  }
-
   if (fGPU) {
     openCFile(&gpusrcfile, "chplGPU", "cu");
     forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -745,8 +750,17 @@ void codegen(void) {
   if (!fRuntime)
     codegen_config(mainfile.fptr);
 
-  if (fHeterogeneous)
+  if (fHeterogeneous) {
     codegenTypeStructureInclude(mainfile.fptr);
+    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+      if ((ts->type != dtOpaque) &&
+          (!toPrimitiveType(ts->type) ||
+           (toPrimitiveType(ts->type) &&
+            !toPrimitiveType(ts->type)->isInternalType))) {
+      registerTypeToStructurallyCodegen(ts);
+      }
+    }
+  }
 
   ChainHashMap<char*, StringHashFns, int> filenames;
   forv_Vec(ModuleSymbol, currentModule, allModules) {

@@ -1,5 +1,6 @@
 
 use Grid_def;
+use MultiDomain_def;
 
 
 //|\""""""""""""""""""""|\
@@ -35,6 +36,7 @@ class Level {
   // These domains index the possible cells occupied by a grid on 
   // the level.
   //--------------------------------------------------------------
+  
   const possible_ghost_cells: domain(dimension, stridable=true);
   const possible_cells:       subdomain(possible_ghost_cells);
 
@@ -45,28 +47,15 @@ class Level {
   // type Grid.  It initializes to empty, and new indices are added via
   // the 'add' method.
   //
-  // The fields 'sibling_overlaps' and 'boundary' are arrays declared
+  // The fields 'sibling_ghost_regions' and 'boundary' are arrays declared
   // on 'grids'; as seen here, the syntax is identical to that for
   // arithmetic domains.  Iteration syntax is the same as well.
   //---------------------------------------------------------------------
-  var grids:            domain(Grid);
-  var sibling_overlaps: [grids] SiblingOverlap;
-  var boundary:         [grids] MultiDomain(dimension,stridable=true);
 
+  var grids:                 domain(Grid);
+  var sibling_ghost_regions: [grids] SiblingGhostRegion;
+  var boundary:              [grids] MultiDomain(dimension,stridable=true);
 
-  //|\''''''''''''''|\
-  //| >    clear    | >
-  //|/..............|/
-  
-  proc clear () {
-    for grid in grids {
-      delete sibling_overlaps(grid);
-      delete boundary(grid);
-    }
-  }
-  // /|''''''''''''''/|
-  //< |    clear    < |
-  // \|..............\|
 
 
   //|\''''''''''''''''''''|\
@@ -88,23 +77,45 @@ class Level {
     dx = (x_high - x_low) / n_cells;
 
 
-    //==== Possible cells ====
+    //---- Possible cells ----
     var ranges: dimension*range(stridable = true);
-    for d in dimensions do
-      ranges(d) = 1 .. #2*n_cells(d) by 2;
+    for d in dimensions do ranges(d) = 1 .. 2*n_cells(d)-1 by 2;
     possible_cells = ranges;
 
-    //==== Possible ghost cells ====
+
+    //---- Possible ghost cells ----
     //---------------------------------------------------------------
     // The 'expand' method of an arithmetic domain extends both its
     // lower and upper bounds by the input.  In this case, the input
     // must be multiplied by 2 because a cell is 2 indices wide.
     //---------------------------------------------------------------
+
     possible_ghost_cells = possible_cells.expand(2*n_ghost_cells);    
+
   }
   // /|''''''''''''''''''''/|
   //< |    constructor    < |
   // \|....................\|
+  
+  
+  
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
+  
+  proc ~Level () 
+  {
+    for grid in grids
+    {
+      delete sibling_ghost_regions(grid);          
+      delete boundary(grid);    
+      delete grid;
+    }
+  }
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
+  
   
 
   //|\''''''''''''''''''''''''''''|\
@@ -252,23 +263,30 @@ proc Level.addGrid(
 // can safely compute how they overlap with one another.
 //----------------------------------------------------------------
 
-proc Level.complete () {
+proc Level.complete ()
+{
 
-  //==== Safety check ====
-  assert(is_complete == false,
-	 "Attempted to complete a completed level.");
+  //---- Safety check ----
+  assert( !is_complete, "Attempted to complete a completed level." );
 
-  //==== Set overlap and boundary data ====
-  for grid in grids {
-    sibling_overlaps(grid) = new SiblingOverlap(this,grid);
+
+  //---- Set overlap and boundary data ----
+
+  for grid in grids 
+  {
+    sibling_ghost_regions(grid) = new SiblingGhostRegion(this,grid);
     
     boundary(grid) = new MultiDomain(dimension,stridable=true);
-    boundary(grid).add(grid.ghost_multidomain);
-    for overlap_domain in sibling_overlaps(grid).domains do
-      boundary(grid).subtract(overlap_domain);
+
+    for D in grid.ghost_domains do boundary(grid).add( D );
+
+    for overlap in sibling_ghost_regions(grid).overlaps do
+      boundary(grid).subtract( overlap );
   }
 
-  //==== Finish ====
+
+  //---- Finish ----
+  
   is_complete = true;
 
 }
@@ -279,9 +297,9 @@ proc Level.complete () {
 
 
 
-//|\"""""""""""""""""""""""""""""|\
-//| >    SiblingOverlap class    | >
-//|/_____________________________|/
+//|\"""""""""""""""""""""""""""""""""|\
+//| >    SiblingGhostRegion class    | >
+//|/_________________________________|/
 
 //----------------------------------------------------------------------
 // Describes the overlap of a Grid with its siblings on a Level.
@@ -293,37 +311,29 @@ proc Level.complete () {
 // only be built once all grids have been added to a level.
 //----------------------------------------------------------------------
 
-class SiblingOverlap {
+class SiblingGhostRegion {
 
   const neighbors: domain(Grid);
-  const domains:   [neighbors] domain(dimension,stridable=true);
-
-
-  //|\''''''''''''''''|\
-  //| >    clear()    | >
-  //|/................|/
-  proc clear() {
-    neighbors.clear();
-  }
-  // /|''''''''''''''''/|
-  //< |    clear()    < |
-  // \|................\|
+  const overlaps:  [neighbors] domain(dimension,stridable=true);
   
   
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
   
-  proc SiblingOverlap (
+  proc SiblingGhostRegion (
     level: Level,
     grid:  Grid)
   {
-    for sibling in level.grids {
-      if sibling != grid {
+    for sibling in level.grids 
+    {
+      if sibling != grid 
+      {
         var overlap = grid.extended_cells( sibling.cells );
-        if overlap.numIndices>0 {
+        if overlap.numIndices>0 
+        {
           neighbors.add(sibling);
-          domains(sibling) = overlap;
+          overlaps(sibling) = overlap;
         }
       }      
     }
@@ -332,6 +342,19 @@ class SiblingOverlap {
   //< |    constructor    < |
   // \|....................\|
   
+  
+  
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
+  
+  proc ~SiblingGhostRegion () {}
+
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
+  
+  
  
   //|\'''''''''''''''''''''''''|\
   //| >    these() iterator    | >
@@ -339,7 +362,7 @@ class SiblingOverlap {
   
   //--------------------------------------------------------------
   // A these() iterator allows iteration over the object:
-  //    for (nbr,overlap) in sibling_overlaps(grid) ...
+  //    for (nbr,overlap) in sibling_ghost_regions(grid) ...
   // In this case, it's designed so that iteration will provide
   // both each neighboring grid and the associated domain of
   // overlap, which is what will be needed to access the relevant
@@ -348,16 +371,16 @@ class SiblingOverlap {
   
   iter these() {
     for nbr in neighbors do
-      yield (nbr, domains(nbr));
+      yield (nbr, overlaps(nbr));
   }
   // /|'''''''''''''''''''''''''/|
   //< |    these() iterator    < |
   // \|.........................\|
   
 }
-// /|"""""""""""""""""""""""""""""/|
-//< |    SiblingOverlap class    < |
-// \|_____________________________\|
+// /|"""""""""""""""""""""""""""""""""/|
+//< |    SiblingGhostRegion class    < |
+// \|_________________________________\|
 
 
 

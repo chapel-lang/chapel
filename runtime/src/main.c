@@ -2,13 +2,13 @@
 #include "chpl_rt_utils_static.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
-#include "chplcomm.h"
+#include "chpl-comm.h"
 #include "chplexit.h"
 #include "chplio.h"
 #include "chpl_mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "config.h"
 #include "error.h"
 #include <stdint.h>
@@ -92,6 +92,11 @@ int main(int argc, char* argv[]) {
   //
   chpl_task_init(maxThreadsPerLocale, callStackSize); 
   chpl_init_chpl_rt_utils();
+
+  //
+  // start communication tasks as necessary
+  //
+  chpl_comm_startPollingTask();
 
   recordExecutionCommand(argc, argv);
 

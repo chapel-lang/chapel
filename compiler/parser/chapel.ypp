@@ -62,13 +62,13 @@
 //
 // keywords (alphabetical)
 //
-%token TATOMIC TBEGIN TBREAK TBY TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST
+%token TALIGN TATOMIC TBEGIN TBREAK TBY TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST
 %token TCONTINUE TDEF TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXTERN TFOR
 %token TFORALL TIF TIN TINDEX TINOUT TITER TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS
 %token TMODULE TNEW TNIL TON TOTHERWISE TOUT TPARAM TPLUSPLUS TPRAGMA
 %token TPRIMITIVE TPRIMITIVELOOP TPROC TRECORD TREDUCE TRETURN TSCAN TSELECT TSERIAL
-%token TSINGLE TSPARSE TSUBDOMAIN TSYNC TTHEN TTYPE TUNION TUSE TVAR TWHEN
-%token TWHERE TWHILE TYIELD
+%token TSINGLE TSPARSE TSUBDOMAIN TSYNC TTHEN TTYPE TUNION TUSE TVAR TVOLATILE
+%token TWHEN TWHERE TWHILE TYIELD
 
 //
 // operators and punctuation (alphabetical)
@@ -91,8 +91,8 @@
 %left TNOELSE
 %left TELSE
 %left TCOMMA
-%left TFOR TFORALL TIF TSYNC TSINGLE
-%left TBY THASH
+%left TFOR TFORALL TIF TSYNC TSINGLE TVOLATILE
+%left TALIGN TBY THASH
 %left TIN
 %left TDOTDOT
 %left TOR
@@ -514,6 +514,7 @@ fn_ident:
 | TNOT           { $$ = "!"; }
 | TBY            { $$ = "by"; } 
 | THASH          { $$ = "#"; }
+| TALIGN         { $$ = "align"; }
 ;
 
 opt_formal_ls:
@@ -661,10 +662,7 @@ var_decl_stmt_inner_ls:
 
 var_decl_stmt_inner:
   ident opt_type opt_init_expr
-    {
-      VarSymbol* var = new VarSymbol($1);
-      $$ = buildChapelStmt(new DefExpr(var, $3, $2));
-    }
+    { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1), $3, $2)); }
 | ident opt_domain TALIAS expr
     {
       VarSymbol* var = new VarSymbol($1);
@@ -902,6 +900,7 @@ binary_op_expr:
 | expr TOR expr            { $$ = buildLogicalOrExpr($1, $3); }
 | expr TEXP expr           { $$ = new CallExpr("**", $1, $3); }
 | expr TBY expr            { $$ = new CallExpr("by", $1, $3); }
+| expr TALIGN expr         { $$ = new CallExpr("align", $1, $3); }
 | expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
 | expr TDMAPPED expr  {
                         if (strcmp(CHPL_TARGET_PLATFORM, "xmt")) {
@@ -922,7 +921,8 @@ unary_op_expr:
 ;
 
 lhs_expr:
-  ident         { $$ = new UnresolvedSymExpr($1); }
+  TVOLATILE ident                 { $$ = new UnresolvedSymExpr($2, true); }
+| ident                           { $$ = new UnresolvedSymExpr($1); }
 | call_expr
 | dot_expr
 | parenthesized_expr

@@ -1,5 +1,5 @@
 COMM_LAUNCHER_SRCS = \
-        comm-armci_locales.c \
+        comm-armci-locales.c \
 
 COMM_SRCS = \
 	$(COMM_LAUNCHER_SRCS) \

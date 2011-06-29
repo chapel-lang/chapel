@@ -78,7 +78,8 @@ module SSCA2_kernels
       //        	                         [ w in G.edge_weight (s) ] w;
 
       forall s in G.vertices do
-	for w in G.edge_weight (s) do // eventually forall
+	// for w in G.edge_weight (s) do // eventually forall
+        forall w in G.Row(s).Weight do
 	  atomic heaviest_edge_weight = max ( w, heaviest_edge_weight );
 
       // ---------------------------------------------
@@ -87,7 +88,8 @@ module SSCA2_kernels
       // ---------------------------------------------
 
       forall s in G.vertices do
-	for (t, w) in ( G.Neighbors (s), G.edge_weight (s) )  do
+	// for (t, w) in ( G.Neighbors (s), G.edge_weight (s) )  do
+        forall (t, w) in ( G.Neighbors(s), G.Row(s).Weight ) do
 
 	  // should be forall, requires a custom parallel iterator in the 
 	  // random graph case and zippering for associative domains may 
@@ -169,7 +171,7 @@ module SSCA2_kernels
 	    
 	  forall v in Active_Level do {
 
-	    for w in G.Neighbors (v) do { // eventually, will be forall
+	    forall w in G.Neighbors (v) do { // eventually, will be forall
 
 	      atomic if min_distance (w) < 0 then {
 		Next_Level.add (w);
@@ -179,9 +181,10 @@ module SSCA2_kernels
 			 
 	      // min_distance must have been set by some thread by now
 
-	      if min_distance (w) == path_length then
-		atomic
+              atomic {
+                if min_distance (w) == path_length then
 		  Heavy_Edge_Subgraph ( (x, y) ).edges.add ( (v, w) );
+              }
 	    }
 	  }
   
@@ -336,9 +339,10 @@ module SSCA2_kernels
 		// time this code is reached, whether  v  lies in
 		// the previous, the current or the next level.
 		// ------------------------------------------------
-  
-		if  min_distance (v)== current_distance then
-		  atomic path_count (v) += path_count (u);
+                atomic {
+                  if  min_distance (v)== current_distance then
+                    path_count (v) += path_count (u);
+                }
 	      }
 	    };
   
