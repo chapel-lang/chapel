@@ -47,6 +47,25 @@ module Error {
       }
     }
   }
-
+  proc seterr(err:ErrorHandler, err2:ErrorHandler, syserr:err_t, path="", offset:int(64)=-1)
+  {
+    if( syserr ) {
+      if( err != nil ) {
+        err.onError(syserr, path, offset);
+      } else if( err2 != nil ){
+        err2.onError(syserr, path, offset);
+      } else {
+        var errstr:string;
+        var strerror_err:err_t;
+        errstr = sys_strerror_str(syserr, strerror_err); 
+        if path == "" {
+          halt("Unhandled system error ", syserr, " ", errstr);
+        } else {
+          halt("Unhandled system error ", syserr, " ", errstr,
+               " with file ", path, " : ", offset);
+        }
+      }
+    }
+  }
 }
 

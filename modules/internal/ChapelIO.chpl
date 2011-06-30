@@ -1,3 +1,17 @@
+use SysBasic;
+
+// These should really just be use IO,
+// but I get scope-resolve errors if
+// they're not here as well. I'm guessing
+// it's a problem because this is an
+// internal module.
+use Sys;
+use Buffers;
+use Error;
+use IO;
+
+/*
+
 _extern proc chpl_cstdin(): _file;
 _extern proc chpl_cstdout(): _file;
 _extern proc chpl_cstderr(): _file;
@@ -416,6 +430,9 @@ proc _tuple2string(t) {
     s.write(t(i));
   return s;
 }
+*/
+
+_extern proc chpl_error_noexit(message:string, lineno:int(32), filename:string);
 
 proc assert(test: bool) {
   if !test then
@@ -423,8 +440,12 @@ proc assert(test: bool) {
 }
 
 proc assert(test: bool, args ...?numArgs) {
-  if !test then
-    __primitive("chpl_error", "assert failed - "+_tuple2string(args));
+  if !test {
+    chpl_error_noexit("assert failed - ", -1, "");
+    writeln(args);
+    //exit(1);
+    __primitive("chpl_error", "assert failed");
+  }
 }
 
 proc halt() {
@@ -432,7 +453,10 @@ proc halt() {
 }
 
 proc halt(args ...?numArgs) {
-  __primitive("chpl_error", "halt reached - "+_tuple2string(args));
+  chpl_error_noexit("halt reached - ", -1, "");
+  writeln(args);
+    //exit(1);
+  __primitive("chpl_error", "halt reached");
 }
 
 proc _debugWrite(args...?n) {
@@ -466,9 +490,11 @@ proc _debugWriteln() {
   _debugWrite("\n");
 }
 
+/*
 proc _ddata.writeThis(f: Writer) {
   halt("cannot write the _ddata class");
 }
+*/
 
 proc format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
   if fmt.substring(1) == "#" {
@@ -510,6 +536,8 @@ proc _getoutputformat(s: string):string {
 // will output a message to indicate that a portion of the code has been
 // parallelized.
 //
+
+/*
 config param chpl__testParFlag = false;
 var chpl__testParOn = false;
 
@@ -531,3 +559,4 @@ proc chpl__testPar(args...) where chpl__testParFlag == true {
     writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
   }
 }
+*/

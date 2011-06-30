@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 
 typedef int c_int;
@@ -27,18 +28,23 @@ typedef void* c_ptr;
 typedef int err_t;
 typedef int fd_t;
 typedef wchar_t c_wchar_t;
+typedef FILE* c_file;
 
-#define c_nil NULL
+static inline c_file chpl_cstdin(void) { return stdin; }
+static inline c_file chpl_cstdout(void) { return stdout; }
+static inline c_file chpl_cstderr(void) { return stderr; }
 
-#define EXTEND_ERROR_OFFSET 1000
-#define GAI_ERROR_OFFSET (EXTEND_ERROR_OFFSET+10000)
+enum { c_nil = NULL }
+
+enum { EXTEND_ERROR_OFFSET = 1000 }
+enum { GAI_ERROR_OFFSET = (EXTEND_ERROR_OFFSET+10000) }
 
 // EEOF 
-#define EEOF (EXTEND_ERROR_OFFSET+0) 
-// ESHORT is -2
-#define ESHORT (EXTEND_ERROR_OFFSET+1)
-#define EFORMAT (EXTEND_ERROR_OFFSET+2)
-#define EXTEND_ERROR_NUM 3
+enum { EEOF = (EXTEND_ERROR_OFFSET+0),
+       ESHORT = (EXTEND_ERROR_OFFSET+1),
+       EFORMAT (EXTEND_ERROR_OFFSET+2),
+     }
+enum { EXTEND_ERROR_NUM = 3 }
 
 #define PTR_ADDBYTES(ptr,nbytes) ((void*) ( ((unsigned char*)ptr) + nbytes))
 

@@ -1739,3 +1739,19 @@ pragma "inline" proc <=(param a: int(64), b: uint(64)) {
 }
 
 
+proc numFields(type t) param {
+  return __primitive("num fields", t);
+}
+
+proc fieldNumToName(type t, param i) param {
+  return __primitive("field num to name", t, i);
+}
+
+proc fieldValueByNum(x, param i) {
+  return __primitive("field value by num", x, i);
+}
+
+proc fieldValueByName(x, param name) {
+  compilerError("Not yet implemented");
+  return __primitive("field value by name", x, name);
+}

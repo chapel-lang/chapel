@@ -21,10 +21,10 @@ static void build_union_assignment_function(ClassType* ct);
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
 
-static void buildDefaultReadFunction(ClassType* type);
-static void buildDefaultReadFunction(EnumType* type);
+//static void buildDefaultReadFunction(ClassType* type);
+//static void buildDefaultReadFunction(EnumType* type);
 
-static void buildDefaultWriteFunction(ClassType* type);
+//static void buildDefaultWriteFunction(ClassType* type);
 static void buildStringCastFunction(EnumType* type);
 
 static void buildDefaultDestructor(ClassType* ct);
@@ -56,12 +56,12 @@ void buildDefaultFunctions(void) {
       if (type->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS))
         continue;
       if (EnumType* et = toEnumType(type->type)) {
-        buildDefaultReadFunction(et);
+        //buildDefaultReadFunction(et);
         buildStringCastFunction(et);
-      } else if (ClassType* ct = toClassType(type->type)) {
-        buildDefaultReadFunction(ct);
-        buildDefaultWriteFunction(ct);
-      }
+      } /* else if (ClassType* ct = toClassType(type->type)) {
+        //buildDefaultReadFunction(ct);
+        //buildDefaultWriteFunction(ct);
+      }*/
       if (ClassType* ct = toClassType(type->type)) {
         if (isRecord(ct)) {
           if (!isRecordWrappedType(ct)) {
@@ -692,6 +692,8 @@ static void build_record_hash_function(ClassType *ct) {
   normalize(fn);
 }
 
+#if 0
+use recorderator for default read/write functions
 
 static void buildDefaultReadFunction(ClassType* ct) {
   if (function_exists("read", 3, dtMethodToken, dtChapelFile, ct))
@@ -902,7 +904,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
   normalize(fn);
   ct->methods.add(fn);
 }
-
+#endif
 
 static void buildStringCastFunction(EnumType* et) {
   if (function_exists("_cast", 2, dtString, et))

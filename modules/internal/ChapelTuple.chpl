@@ -93,7 +93,7 @@ proc _tuple.this(i : integral) var {
 //
 // tuple methods
 //
-proc _tuple.writeThis(f: Writer) {
+proc _tuple.writeThis(f: channel) {
   f.write("(", this(1));
   for param i in 2..size do
     f.write(", ", this(i));

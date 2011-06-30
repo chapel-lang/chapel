@@ -15,6 +15,13 @@ module SysBasic {
   _extern type mode_t = uint(32);
   _extern type socklen_t = int(32);
 
+  // C File type
+  _extern type c_file = uint(32);
+  // stdin/stdout/sterr
+  _extern proc chpl_cstdin():c_file;
+  _extern proc chpl_cstdout():c_file;
+  _extern proc chpl_cstderr():c_file;
+
   // system error number.
   _extern type err_t = c_int;
 

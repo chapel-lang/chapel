@@ -47,6 +47,17 @@ void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
   chpl_exit_any(1);
 }
 
+void chpl_error_noexit(const char* message, int32_t lineno, chpl_string filename) {
+  spinhaltIfAlreadyExiting();
+  fflush(stdout);
+  if (lineno > 0)
+    fprintf(stderr, "%s:%" PRId32 ": error: ", filename, lineno);
+  else if (filename)
+    fprintf(stderr, "%s: error: ", filename);
+  else
+    fprintf(stderr, "error: ");
+}
+
 
 void chpl_internal_error(const char* message) {
   spinhaltIfAlreadyExiting();

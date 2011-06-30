@@ -3310,6 +3310,53 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIM_COUNT_NUM_REALMS)) {
       result = new SymExpr(new_IntSymbol(getNumRealms()));
       call->replace(result);
+    } else if (call->isPrimitive(PRIM_NUM_FIELDS)) {
+      ClassType* classtype = toClassType(toSymExpr(call->get(1))->var->type);
+      result = new SymExpr(new_IntSymbol(classtype->fields.length));
+
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_FIELD_NUM_TO_NAME)) {
+      ClassType* classtype = toClassType(toSymExpr(call->get(1))->var->type);
+      int fieldnum = toVarSymbol(toSymExpr(call->get(2))->var)->immediate->int_value();
+      int fieldcount = 0;
+      const char* name = NULL;
+      for_fields(field, classtype) {
+        fieldcount++;
+        if (fieldcount == fieldnum) {
+          name = field->name;
+        }
+      }
+      result = new SymExpr(new_StringSymbol(name));
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
+      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+      int fieldnum = toVarSymbol(toSymExpr(call->get(2))->var)->immediate->int_value();
+      int fieldcount = 0;
+      for_fields(field, classtype) {
+        fieldcount++;
+        if (fieldcount == fieldnum) {
+          result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(), 
+                                new_StringSymbol(field->name));
+          break;
+        }
+      }
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NAME)) {
+      /*
+      ClassType* classtype = toClassType(call->get(1)->typeinfo());
+      int fieldname = toVarSymbol(toSymExpr(call->get(2))->var)->immediate->int_value();
+      int fieldcount = 0;
+      const char* name = NULL;
+      for_fields(field, classtype) {
+        fieldcount++;
+        if (fieldcount == fieldnum) {
+          Expr* base = call->get(1)->remove();
+          call->replace(new CallExpr(".", call->get(1)->copy(), 
+                                     new_StringSymbol(field->name)));
+          break;
+        }
+      }
+      */
     } else if (call->isPrimitive(PRIM_IS_STAR_TUPLE_TYPE)) {
       Type* tupleType = call->get(1)->typeInfo();
       INT_ASSERT(tupleType->symbol->hasFlag(FLAG_TUPLE));

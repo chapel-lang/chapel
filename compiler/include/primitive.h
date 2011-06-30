@@ -214,6 +214,11 @@ enum PrimitiveTag {
 
   PRIM_VMT_CALL, // virtual method call
 
+  PRIM_NUM_FIELDS,
+  PRIM_FIELD_NUM_TO_NAME,
+  PRIM_FIELD_VALUE_BY_NUM,
+  PRIM_FIELD_VALUE_BY_NAME,
+
   NUM_KNOWN_PRIMS
 };
 

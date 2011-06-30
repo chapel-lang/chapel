@@ -550,6 +550,11 @@ initPrimitive() {
   prim_def(PRIM_GET_SVEC_MEMBER_VALUE, "get svec member value", returnInfoGetTupleMember, false, true);
 
   prim_def(PRIM_VMT_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
+
+  prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
+  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
+  prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);
+  prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

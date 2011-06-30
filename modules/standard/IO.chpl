@@ -254,6 +254,7 @@ module IO {
 
   _extern proc qio_file_path_for_fd(fd:fd_t, inout path:string):err_t;
   _extern proc qio_file_path_for_fp(fp:_file, inout path:string):err_t;
+  _extern proc qio_file_path(f:qio_file_ptr_t, inout path:string):err_t;
 
   _extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
   _extern proc qio_channel_write_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
@@ -355,7 +356,7 @@ module IO {
   _extern type qio_hint_t = c_int;
   type iohint_t = qio_hint_t;
 
-  record fileX {
+  record file {
     var home:locale;
     var _file_internal:qio_file_ptr_t;
     var onErr:ErrorHandler;
@@ -366,28 +367,64 @@ module IO {
   // used for giving old warnings anyways...
   enum FileAccessMode { read, write };
 
-
-  // This file constructor exists to throw a warning for old I/O code.
-/*  fileX.fileX(filename:string="",
-              mode:FileAccessMode=FileAccessMode.read,
-              path:string=".") {
-    compilerError("This program is using old-style I/O which is no longer supported.\n" +
+  param _oldioerr="This program is using old-style I/O which is no longer supported.\n" +
                   "See doc/README.io.\n" +
                   "You'll probably want something like:\n" +
                   "var f = open(filename).writing()\n" + 
                   "or\n" + 
-                  "var f = open(filename).reading()\n");
+                  "var f = open(filename).reading()\n";
+ 
+  // This file constructor exists to throw an error for old I/O code.
+  proc file.file(filename:string="",
+                 mode:FileAccessMode=FileAccessMode.read,
+                 path:string=".") {
+    compilerError(_oldioerr);
   }
-*/
+  proc file.open() {
+    compilerError(_oldioerr);
+  }
+  proc file.filename var : string {
+    compilerError(_oldioerr + "file.filename is no longer supported");
+  }
+  proc file.mode var {
+    compilerError(_oldioerr + "file.mode is no longer supported");
+  }
+  proc file.isOpen: bool {
+    compilerError(_oldioerr + "file.isOpen is no longer supported");
+  }
+
+  // The Writer class exists to throw an error for old I/O code.
+  class Writer {
+    proc writeIt(s:string) {
+      compilerError(_oldioerr + "Writer no longer supported");
+    }
+    proc lockWrite() {
+      compilerError(_oldioerr + "Writer no longer supported");
+    }
+    proc unlockWrite() {
+      compilerError(_oldioerr + "Writer no longer supported");
+    }
+    proc write(args ...?n) {
+      compilerError(_oldioerr + "Writer no longer supported");
+    }
+    proc writeln(args ...?n) {
+      compilerError(_oldioerr + "Writer no longer supported");
+    }
+    proc writeln() {
+      compilerError(_oldioerr + "Writer no longer supported");
+    }
+  }
+
+
   // TODO -- shouldn't have to write this this way!
-  proc chpl__initCopy(x: fileX) {
+  proc chpl__initCopy(x: file) {
     on x.home {
       qio_file_retain(x._file_internal);
     }
     return x;
   }
 
-  proc =(ret:fileX, x:fileX) {
+  proc =(ret:file, x:file) {
     // retain -- release
     on x.home {
       qio_file_retain(x._file_internal);
@@ -405,20 +442,20 @@ module IO {
   }
 
   // Open a file from a system file descriptor
-  /*proc fileX.fileX(fd: fd_t, hints:iohint_t=0, err:ErrorHandler=nil) {
+  /*proc file.file(fd: fd_t, hints:iohint_t=0, err:ErrorHandler=nil) {
     seterr(err, qio_file_init(_file_internal, fd, hints));
   }
-  proc fileX.fileX(path:string, access:string, hints:iohint_t=0, err:ErrorHandler=nil) {
+  proc file.file(path:string, access:string, hints:iohint_t=0, err:ErrorHandler=nil) {
     seterr(err, qio_file_open_access(_file_internal, path, access, hints), path);
   }*/
 
-  proc fileX.fileX(onErr:ErrorHandler=nil) {
+  proc file.file(onErr:ErrorHandler=nil) {
     this.home = here;
     this._file_internal = QIO_FILE_PTR_NULL;
     this.onErr = onErr;
   }
 
-  proc fileX.~fileX() {
+  proc file.~file() {
     on this.home {
       qio_file_release(_file_internal);
       this._file_internal = QIO_FILE_PTR_NULL;
@@ -426,12 +463,12 @@ module IO {
   }
 
   /*
-  proc fileX.lock() {
+  proc file.lock() {
     on this.home {
       seterr(nil, qio_file_lock(_file_internal));
     }
   }
-  proc fileX.unlock() {
+  proc file.unlock() {
     on this.home {
       qio_file_unlock(_file_internal);
     }
@@ -441,7 +478,7 @@ module IO {
   // File style cannot be modified after the file is created;
   // this prevents race conditions;
   // channel style is protected by channel lock, can be modified.
-  proc fileX._style:iostyle {
+  proc file._style:iostyle {
     var ret:iostyle;
     on this.home {
       var local_style:iostyle;
@@ -451,7 +488,7 @@ module IO {
     return ret;
   }
   /*
-  proc fileX._set_style(style:iostyle) {
+  proc file._set_style(style:iostyle) {
     on this.home {
       var local_style:iostyle = style;
       qio_file_set_style(_file_internal, local_style);
@@ -462,24 +499,43 @@ module IO {
 
   /* Close a file.
      Alternately, file will be closed when it is no longer referred to */
-  proc fileX.close(onErr:ErrorHandler=nil) {
-    seterr(onErr, qio_file_close(_file_internal));
+  proc file.close(onErr:ErrorHandler=nil) {
+    on this.home {
+      seterr(onErr, this.onErr, qio_file_close(_file_internal));
+    }
   }
+
   /* Sync a file to disk. */
-  proc fileX.fsync(onErr:ErrorHandler=nil) {
-    seterr(onErr, qio_file_sync(_file_internal));
+  proc file.fsync(onErr:ErrorHandler=nil) {
+    on this.home {
+      seterr(onErr, this.onErr, qio_file_sync(_file_internal));
+    }
+  }
+
+  /* Get the path to a file. */
+  proc file.getPath(onErr:ErrorHandler=nil) : string {
+    var ret:string;
+    on this.home {
+      var tmp:string;
+      seterr(onErr, this.onErr, qio_file_path(_file_internal, tmp));
+      ret = tmp;
+    }
+   return ret; 
+  }
+  proc file.path : string {
+    return this.getPath(nil);
   }
 
 
   proc open(path:string, access:string, hints:iohint_t=0, style:iostyle = defaultStyle(), onErr:ErrorHandler=nil) {
     var local_style = style;
-    var ret = new fileX(onErr);
+    var ret = new file(onErr);
     seterr(onErr, qio_file_open_access(ret._file_internal, path, access, hints, local_style), path);
     return ret;
   }
   proc openfd(fd: fd_t, hints:iohint_t=0, style:iostyle = defaultStyle(), onErr:ErrorHandler=nil) {
     var local_style = style;
-    var ret = new fileX(onErr);
+    var ret = new file(onErr);
     var e = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints, local_style);
     if e != 0 {
       var path:string;
@@ -488,9 +544,9 @@ module IO {
     }
     return ret;
   }
-  proc openfp(fp: _file, hints:iohint_t=0, style:iostyle = defaultStyle(), onErr:ErrorHandler=nil) {
+  proc openfp(fp: _file, hints:iohint_t=0, style:iostyle = defaultStyle(), onErr:ErrorHandler=nil):file {
     var local_style = style;
-    var ret = new fileX(onErr);
+    var ret = new file(onErr);
     var e = qio_file_init(ret._file_internal, fp, -1, hints, local_style);
     if e != 0 {
       var path:string;
@@ -502,7 +558,7 @@ module IO {
 
   proc opentmp(hints:iohint_t=0, style:iostyle = defaultStyle(), onErr:ErrorHandler=nil) {
     var local_style = style;
-    var ret = new fileX(onErr);
+    var ret = new file(onErr);
     seterr(onErr, qio_file_open_tmp(ret._file_internal, hints, local_style));
     return ret;
   }
@@ -515,7 +571,7 @@ module IO {
     param kind:iokind;
     var home:locale;
     var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
-    var onErr:ErrorHandler;
+    var onErr:ErrorHandler; /* starts out as file.onErr, but can be set to something else */
   }
 
   // TODO -- shouldn't have to write this this way!
@@ -542,12 +598,15 @@ module IO {
     return ret;
   }
 
-  proc channel.channel(param writing:bool, param kind:iokind, f:fileX, hints:c_int, start:int(64), end:int(64), style:iostyle, onErr:ErrorHandler) {
+  proc channel.channel(param writing:bool, param kind:iokind, f:file, hints:c_int, start:int(64), end:int(64), style:iostyle, onErr:ErrorHandler) {
     on f.home {
       this.home = here;
       this.onErr = onErr;
+      if( this.onErr == nil ) {
+        this.onErr = f.onErr;
+      }
       var local_style = style;
-      seterr(this.onErr, qio_channel_create(this._channel_internal, f._file_internal, hints, !writing, writing, start, end, local_style));
+      seterr(onErr, this.onErr, qio_channel_create(this._channel_internal, f._file_internal, hints, !writing, writing, start, end, local_style));
     }
   }
 
@@ -571,7 +630,7 @@ module IO {
 
   proc channel.lock() {
     on this.home {
-      seterr(nil, qio_channel_lock(_channel_internal));
+      seterr(this.onErr, qio_channel_lock(_channel_internal));
     }
   }
   proc channel.unlock() {
@@ -604,7 +663,7 @@ module IO {
   }
   */
 
-  proc fileX.reader(param kind=iokind.dynamic, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil) {
+  proc file.reader(param kind=iokind.dynamic, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil): channel(false, kind) {
     var ret:channel(false, kind);
     on this.home {
       ret = new channel(false, kind, this, hints, start, end, style, onErr);
@@ -612,7 +671,7 @@ module IO {
     return ret;
   }
   // for convenience..
-  proc fileX.lines(start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil) {
+  proc file.lines(start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil) {
     style.string_format = 0;
     style.string_end = 0x0a; // '\n'
 
@@ -625,7 +684,7 @@ module IO {
   }
 
 
-  proc fileX.writer(param kind=iokind.dynamic, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil) {
+  proc file.writer(param kind=iokind.dynamic, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil): channel(true,kind) {
     var ret:channel(true, kind);
     on this.home {
       ret = new channel(true, kind, this, hints, start, end, style, onErr);
@@ -823,7 +882,7 @@ module IO {
     if e == 0 then return true;
     else if e == EEOF then return false;
     else {
-      seterr(nil, e);
+      seterr(nil, this.onErr, e); // TODO -- include path and offset
       return false;
     }
   }
@@ -842,7 +901,7 @@ module IO {
     if e == 0 then return true;
     else if e == EEOF then return false;
     else {
-      seterr(onErr, e);
+      seterr(onErr, this.onErr, e); // TODO -- include path and offset
       return false;
     }
   }
@@ -865,7 +924,7 @@ module IO {
     if e == 0 then return true;
     else if e == EEOF then return false;
     else {
-      seterr(onErr, e);
+      seterr(onErr, this.onErr, e); // TODO -- include path and offset
       return false;
     }
   }
@@ -886,7 +945,7 @@ module IO {
     if e == 0 then return true;
     else if e == EEOF then return false;
     else {
-      seterr(onErr, e);
+      seterr(onErr, this.onErr, e); // TODO -- include path and offset
       return false;
     }
   }
@@ -898,14 +957,40 @@ module IO {
   proc channel.readln(inout args ...?k,
                       onErr:ErrorHandler):bool {
     var nl = new ioNewline();
-    return this.readln((...args), nl, onErr=onErr);
+    return this.read((...args), nl, onErr=onErr);
   }
-  proc channel.read(inout args ...?k,
+  proc channel.readln(inout args ...?k,
                     style:iostyle,
                     onErr:ErrorHandler=nil):bool {
     var nl = new ioNewline();
-    return this.readln((...args), nl, style=style, onErr=onErr);
+    return this.read((...args), nl, style=style, onErr=onErr);
   }
+  proc channel.read(type t) {
+    var tmp:t;
+    var didread = this.read(tmp);
+    if !didread then seterr(nil, this.onErr, EEOF); // TODO -- include path and offset
+    return tmp;
+  }
+  proc channel.read(type t, onErr:ErrorHandler) {
+    var tmp:t;
+    var didread = this.read(tmp);
+    if !didread then seterr(onErr, this.onErr, EEOF); // TODO -- include path and offset
+    return tmp;
+  }
+  proc channel.read(type t, style:iostyle, onErr:ErrorHandler=nil) {
+    var tmp:t;
+    var didread = this.read(tmp);
+    if !didread then seterr(onErr, this.onErr, EEOF); // TODO -- include path and offset
+    return tmp;
+  }
+
+
+  proc channel.readln(type t) {
+    var tmp:t;
+    this.readln(tmp);
+    return tmp;
+  }
+
 
   proc channel.write(args ...?k):bool {
     var e:err_t = 0;
@@ -920,7 +1005,7 @@ module IO {
     }
     if e == 0 then return true;
     else {
-      seterr(nil, e);
+      seterr(nil, this.onErr, e); // TODO -- include path and offset
       return false;
     }
   }
@@ -938,7 +1023,7 @@ module IO {
     }
     if e == 0 then return true;
     else {
-      seterr(onErr, e);
+      seterr(onErr, this.onErr, e); // TODO -- include path and offset
       return false;
     }
   }
@@ -961,7 +1046,7 @@ module IO {
     }
     if e == 0 then return true;
     else {
-      seterr(onErr, e);
+      seterr(onErr, this.onErr, e); // TODO -- include path and offset
       return false;
     }
   }
@@ -984,7 +1069,7 @@ module IO {
     on this.home {
       e = qio_channel_flush(true, _channel_internal);
     }
-    seterr(onErr, e);
+    seterr(onErr, this.onErr, e); // TODO -- include path and offset
   }
 
   proc channel.modifyStyle(f:func(iostyle, void))
@@ -1069,5 +1154,59 @@ module IO {
 
      */
 
+  // And now, the toplevel items.
+  const stdin:channel(false, iokind.dynamic) = openfp(chpl_cstdin()).reader(); 
+  const stdout:channel(true, iokind.dynamic) = openfp(chpl_cstdout()).writer(); 
+  const stderr:channel(true, iokind.dynamic) = openfp(chpl_cstderr()).writer(); 
+
+  proc write(args ...?n) {
+    stdout.write((...args));
+    stdout.flush();
+  }
+  proc writeln(args ...?n) {
+    stdout.writeln((...args));
+    stdout.flush();
+  }
+  proc writeln() {
+    stdout.writeln();
+    stdout.flush();
+  }
+
+  proc read(inout args ...?n) {
+    stdin.read((...args));
+  }
+  proc readln(inout args ...?n) {
+    stdin.readln((...args));
+  }
+  proc readln() {
+    stdin.readln();
+  }
+  proc readln(type t) {
+    return stdin.readln(t);
+  }
+
+  // Read/write tuples of types.
+  proc file.readln(type t ...?numTypes) where numTypes > 1 {
+    var tupleVal: t;
+    for param i in 1..numTypes-1 do
+      tupleVal(i) = this.read(t(i));
+    tupleVal(numTypes) = this.readln(t(numTypes));
+    return tupleVal;
+  }
+
+  proc file.read(type t ...?numTypes) where numTypes > 1 {
+    var tupleVal: t;
+    for param i in 1..numTypes do
+      tupleVal(i) = this.read(t(i));
+    return tupleVal;
+  }
+
+  proc readln(type t ...?numTypes) where numTypes > 1 {
+    return stdin.readln((...t));
+  }
+
+  proc read(type t ...?numTypes) where numTypes > 1 {
+    return stdin.read((...t));
+  }
 }
 
