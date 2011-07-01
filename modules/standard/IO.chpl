@@ -1155,7 +1155,7 @@ module IO {
      */
 
   // And now, the toplevel items.
-  const stdin:channel(false, iokind.dynamic) = openfp(chpl_cstdin()).reader(); 
+/*  const stdin:channel(false, iokind.dynamic) = openfp(chpl_cstdin()).reader(); 
   const stdout:channel(true, iokind.dynamic) = openfp(chpl_cstdout()).writer(); 
   const stderr:channel(true, iokind.dynamic) = openfp(chpl_cstderr()).writer(); 
 
@@ -1208,5 +1208,6 @@ module IO {
   proc read(type t ...?numTypes) where numTypes > 1 {
     return stdin.read((...t));
   }
+  */
 }
 

@@ -9,7 +9,72 @@ use Sys;
 use Buffers;
 use Error;
 use IO;
+  const stdin:channel(false, iokind.dynamic) = openfp(chpl_cstdin()).reader(); 
+  const stdout:channel(true, iokind.dynamic) = openfp(chpl_cstdout()).writer(); 
+  const stderr:channel(true, iokind.dynamic) = openfp(chpl_cstderr()).writer(); 
 
+  proc write(args ...?n) {
+    stdout.write((...args));
+    stdout.flush();
+  }
+  proc writeln(args ...?n) {
+    stdout.writeln((...args));
+    stdout.flush();
+  }
+  proc writeln() {
+    stdout.writeln();
+    stdout.flush();
+  }
+
+  proc read(inout args ...?n) {
+    stdin.read((...args));
+  }
+  proc readln(inout args ...?n) {
+    stdin.readln((...args));
+  }
+  proc readln() {
+    stdin.readln();
+  }
+  proc readln(type t) {
+    return stdin.readln(t);
+  }
+
+  // Read/write tuples of types.
+  proc file.readln(type t ...?numTypes) where numTypes > 1 {
+    var tupleVal: t;
+    for param i in 1..numTypes-1 do
+      tupleVal(i) = this.read(t(i));
+    tupleVal(numTypes) = this.readln(t(numTypes));
+    return tupleVal;
+  }
+
+  proc file.read(type t ...?numTypes) where numTypes > 1 {
+    var tupleVal: t;
+    for param i in 1..numTypes do
+      tupleVal(i) = this.read(t(i));
+    return tupleVal;
+  }
+
+  proc readln(type t ...?numTypes) where numTypes > 1 {
+    return stdin.readln((...t));
+  }
+
+  proc read(type t ...?numTypes) where numTypes > 1 {
+    return stdin.read((...t));
+  }
+
+// TODO -- we need to replace Writer with channel!
+class Writer {
+  proc write(args ...?n) { }
+  proc writeln(args ...?n) { }
+  proc writeln() { }
+}
+/*const stderr = new Writer();
+
+  proc write(args ...?n) { }
+  proc writeln(args ...?n) { }
+  proc writeln() { }
+*/
 /*
 
 _extern proc chpl_cstdin(): _file;
@@ -452,6 +517,10 @@ proc halt() {
   __primitive("chpl_error", "halt reached");
 }
 
+proc halt(s:string) {
+  __primitive("chpl_error", "halt reached - " + s);
+}
+
 proc halt(args ...?numArgs) {
   chpl_error_noexit("halt reached - ", -1, "");
   writeln(args);
@@ -537,7 +606,6 @@ proc _getoutputformat(s: string):string {
 // parallelized.
 //
 
-/*
 config param chpl__testParFlag = false;
 var chpl__testParOn = false;
 
@@ -559,4 +627,4 @@ proc chpl__testPar(args...) where chpl__testParFlag == true {
     writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
   }
 }
-*/
+

@@ -34,17 +34,17 @@ static inline c_file chpl_cstdin(void) { return stdin; }
 static inline c_file chpl_cstdout(void) { return stdout; }
 static inline c_file chpl_cstderr(void) { return stderr; }
 
-enum { c_nil = NULL }
+#define c_nil NULL;
 
-enum { EXTEND_ERROR_OFFSET = 1000 }
-enum { GAI_ERROR_OFFSET = (EXTEND_ERROR_OFFSET+10000) }
+enum { EXTEND_ERROR_OFFSET = 1000 };
+enum { GAI_ERROR_OFFSET = (EXTEND_ERROR_OFFSET+10000) };
 
 // EEOF 
 enum { EEOF = (EXTEND_ERROR_OFFSET+0),
        ESHORT = (EXTEND_ERROR_OFFSET+1),
-       EFORMAT (EXTEND_ERROR_OFFSET+2),
-     }
-enum { EXTEND_ERROR_NUM = 3 }
+       EFORMAT = (EXTEND_ERROR_OFFSET+2),
+     };
+enum { EXTEND_ERROR_NUM = 3 };
 
 #define PTR_ADDBYTES(ptr,nbytes) ((void*) ( ((unsigned char*)ptr) + nbytes))
 
