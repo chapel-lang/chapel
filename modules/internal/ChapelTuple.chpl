@@ -94,10 +94,14 @@ proc _tuple.this(i : integral) var {
 // tuple methods
 //
 proc _tuple.writeThis(f: Writer) {
-  f.write("(", this(1));
-  for param i in 2..size do
-    f.write(", ", this(i));
-  f.write(")");
+  if size == 0 then f.write("()"); // handle zero-length tuples
+  else {
+    f.write("(", this(1));
+    for param i in 2..size {
+      f.write(", ", this(i));
+    }
+    f.write(")");
+  }
 }
 
 //

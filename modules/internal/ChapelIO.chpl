@@ -15,11 +15,12 @@
   _extern type socklen_t = int(32);
 
   // C File type
-  _extern type c_file = uint(32);
+  //type c_file = _file;
+
   // stdin/stdout/sterr
-  _extern proc chpl_cstdin():c_file;
-  _extern proc chpl_cstdout():c_file;
-  _extern proc chpl_cstderr():c_file;
+  _extern proc chpl_cstdin():_file;
+  _extern proc chpl_cstdout():_file;
+  _extern proc chpl_cstderr():_file;
 
   // system error number.
   _extern type err_t = c_int;
@@ -169,6 +170,9 @@
 //use Error;
 //use IO;
 
+  // here's what we need from Sys
+  _extern proc sys_strerror_str(error:err_t, inout err_in_strerror:err_t):string;
+
 
   class ErrorHandler {
     // override this method to get error handling other
@@ -178,10 +182,9 @@
       var strerror_err:err_t;
       errstr = sys_strerror_str(syserr, strerror_err); 
       if path == "" {
-        halt("Unhandled system error ", syserr, " ", errstr);
+        __primitive("chpl_error", "Unhandled system error " + syserr:string + " " + errstr);
       } else {
-        halt("Unhandled system error ", syserr, " ", errstr,
-             " with file ", path, " : ", offset);
+        __primitive("chpl_error", "Unhandled system error " + syserr:string + " " + errstr); // TODO file:offset
       }
     }
   }
@@ -207,10 +210,11 @@
         var strerror_err:err_t;
         errstr = sys_strerror_str(syserr, strerror_err); 
         if path == "" {
-          halt("Unhandled system error ", syserr, " ", errstr);
+          __primitive("chpl_error", "Unhandled system error " + syserr + " " + errstr);
         } else {
-          halt("Unhandled system error ", syserr, " ", errstr,
-               " with file ", path, " : ", offset);
+          __primitive("chpl_error", "Unhandled system error " + syserr:string + " " + errstr); // TODO file:offset
+          //__primitive("chpl_error", "Unhandled system error " + syserr + " " +
+          //            errstr + " with file " + path " : " + offset);
         }
       }
     }
@@ -227,10 +231,9 @@
         var strerror_err:err_t;
         errstr = sys_strerror_str(syserr, strerror_err); 
         if path == "" {
-          halt("Unhandled system error ", syserr, " ", errstr);
+          __primitive("chpl_error", "Unhandled system error " + syserr + " " + errstr);
         } else {
-          halt("Unhandled system error ", syserr, " ", errstr,
-               " with file ", path, " : ", offset);
+          __primitive("chpl_error", "Unhandled system error " + syserr + " " + errstr); // TODO file:offset
         }
       }
     }
@@ -567,8 +570,8 @@
     QIO_FDFLAG_SEEKABLE
   */
 
-  _extern type qio_fdflag_t = c_int;
-  type fdflag_t = qio_fdflag_t;
+  _extern type fdflag_t = c_int;
+//  type fdflag_t = qio_fdflag_t; commented out because of too many statics
 
   /* Access hints describe how a file will be used.
      These can help optimize.
@@ -587,12 +590,12 @@
   }
   */
 
-  _extern type qio_hint_t = c_int;
-  type iohint_t = qio_hint_t;
+  _extern type iohint_t = c_int;
+  //type iohint_t = qio_hint_t;
 
   record file {
-    var home:locale;
-    var _file_internal:qio_file_ptr_t;
+    var home_uid:int;
+    var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
     var onErr:ErrorHandler;
   }
 
@@ -653,7 +656,7 @@
 
   // TODO -- shouldn't have to write this this way!
   proc chpl__initCopy(x: file) {
-    on x.home {
+    on __primitive("chpl_on_locale_num", x.home_uid) {
       qio_file_retain(x._file_internal);
     }
     return x;
@@ -661,16 +664,16 @@
 
   proc =(ret:file, x:file) {
     // retain -- release
-    on x.home {
+    on __primitive("chpl_on_locale_num", x.home_uid) {
       qio_file_retain(x._file_internal);
     }
 
-    on ret.home {
+    on __primitive("chpl_on_locale_num", ret.home_uid) {
       qio_file_release(ret._file_internal);
     }
 
     // compiler will do this copy.
-    ret.home = x.home;
+    ret.home_uid = x.home_uid;
     ret.onErr = x.onErr;
     ret._file_internal = x._file_internal;
     return ret;
@@ -685,13 +688,14 @@
   }*/
 
   proc file.file(onErr:ErrorHandler=nil) {
-    this.home = here;
+    var tmp:int;
+    this.home_uid = __primitive("_get_locale", tmp);
     this._file_internal = QIO_FILE_PTR_NULL;
     this.onErr = onErr;
   }
 
   proc file.~file() {
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       qio_file_release(_file_internal);
       this._file_internal = QIO_FILE_PTR_NULL;
     }
@@ -699,12 +703,12 @@
 
   /*
   proc file.lock() {
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       seterr(nil, qio_file_lock(_file_internal));
     }
   }
   proc file.unlock() {
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       qio_file_unlock(_file_internal);
     }
   }
@@ -715,7 +719,7 @@
   // channel style is protected by channel lock, can be modified.
   proc file._style:iostyle {
     var ret:iostyle;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       var local_style:iostyle;
       qio_file_get_style(_file_internal, local_style);
       ret = local_style;
@@ -724,7 +728,7 @@
   }
   /*
   proc file._set_style(style:iostyle) {
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       var local_style:iostyle = style;
       qio_file_set_style(_file_internal, local_style);
     }
@@ -735,14 +739,14 @@
   /* Close a file.
      Alternately, file will be closed when it is no longer referred to */
   proc file.close(onErr:ErrorHandler=nil) {
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       seterr(onErr, this.onErr, qio_file_close(_file_internal));
     }
   }
 
   /* Sync a file to disk. */
   proc file.fsync(onErr:ErrorHandler=nil) {
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       seterr(onErr, this.onErr, qio_file_sync(_file_internal));
     }
   }
@@ -750,7 +754,7 @@
   /* Get the path to a file. */
   proc file.getPath(onErr:ErrorHandler=nil) : string {
     var ret:string;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       var tmp:string;
       seterr(onErr, this.onErr, qio_file_path(_file_internal, tmp));
       ret = tmp;
@@ -804,14 +808,14 @@
   record channel {
     param writing:bool;
     param kind:iokind;
-    var home:locale;
+    var home_uid:int;
     var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
     var onErr:ErrorHandler; /* starts out as file.onErr, but can be set to something else */
   }
 
   // TODO -- shouldn't have to write this this way!
   proc chpl__initCopy(x: channel) {
-    on x.home {
+    on __primitive("chpl_on_locale_num", x.home_uid) {
       qio_channel_retain(x._channel_internal);
     }
     return x;
@@ -819,23 +823,23 @@
 
   proc =(ret:channel, x:channel) {
     // retain -- release
-    on x.home {
+    on __primitive("chpl_on_locale_num", x.home_uid) {
       qio_channel_retain(x._channel_internal);
     }
 
-    on ret.home {
+    on __primitive("chpl_on_locale_num", ret.home_uid) {
       qio_channel_release(ret._channel_internal);
     }
 
-    ret.home = x.home;
+    ret.home_uid = x.home_uid;
     ret._channel_internal = x._channel_internal;
     ret.onErr = x.onErr;
     return ret;
   }
 
   proc channel.channel(param writing:bool, param kind:iokind, f:file, hints:c_int, start:int(64), end:int(64), style:iostyle, onErr:ErrorHandler) {
-    on f.home {
-      this.home = here;
+    on __primitive("chpl_on_locale_num", f.home_uid) {
+      this.home_uid = f.home_uid;
       this.onErr = onErr;
       if( this.onErr == nil ) {
         this.onErr = f.onErr;
@@ -846,7 +850,7 @@
   }
 
   proc channel.~channel() {
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       qio_channel_release(_channel_internal);
       this._channel_internal = QIO_CHANNEL_PTR_NULL;
     }
@@ -854,22 +858,16 @@
 
   // Used to represent "\n", but never escaped...
   record ioNewline {
-    proc writeThis(inout ch: channel):err_t {
-      return qio_channel_write_newline(false, ch._channel_internal);
-    }
-    proc readThis(inout ch: channel):err_t {
-      return qio_channel_skip_past_newline(false, ch._channel_internal);
-    }
   }
 
 
   proc channel.lock() {
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       seterr(this.onErr, qio_channel_lock(_channel_internal));
     }
   }
   proc channel.unlock() {
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       qio_channel_unlock(_channel_internal);
     }
   }
@@ -877,7 +875,7 @@
   // you should have a lock before you use these...
   proc channel._style():iostyle {
     var ret:iostyle;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       var local_style:iostyle;
       qio_channel_get_style(_channel_internal, local_style);
       ret = local_style;
@@ -885,7 +883,7 @@
     return ret;
   }
   proc channel._set_style(style:iostyle) {
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       var local_style:iostyle = style;
       qio_channel_set_style(_channel_internal, local_style);
     }
@@ -900,7 +898,7 @@
 
   proc file.reader(param kind=iokind.dynamic, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil): channel(false, kind) {
     var ret:channel(false, kind);
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       ret = new channel(false, kind, this, hints, start, end, style, onErr);
     }
     return ret;
@@ -912,7 +910,7 @@
 
     param kind = iokind.dynamic;
     var ret:ItemReader(string, kind);
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       ret = new ItemReader(string, kind, new channel(false, kind, this, hints, start, end, style, onErr));
     }
     return ret;
@@ -921,7 +919,7 @@
 
   proc file.writer(param kind=iokind.dynamic, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil): channel(true,kind) {
     var ret:channel(true, kind);
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       ret = new channel(true, kind, this, hints, start, end, style, onErr);
     }
     return ret;
@@ -930,6 +928,9 @@
   proc _isIoPrimitiveType(type t) param return
     _isPrimitiveType(t) || _isComplexType(t) ||
     _isImagType(t) || _isEnumeratedType(t);
+
+   proc _isIoPrimitiveTypeOrNewline(type t) param return
+    _isIoPrimitiveType(t) || t == ioNewline;
  
   // Read routines for all primitive types.
   proc channel._read_text_internal(out x:?t):err_t where _isIoPrimitiveType(t) {
@@ -953,9 +954,10 @@
       // handle string
       var len:ssize_t;
       return qio_channel_scan_string(false, _channel_internal, x, len);
+    } else if _isEnumeratedType(t) {
+      compilerError("Enumerated types not yet supported in text channel.read (_read_text_internal)");
     } else {
-      compilerError("Unknown primitive type in _read_text_internal", typeToString(t));
-      halt("Unknown primitive type in _read_text_internal", typeToString(t));
+      compilerError("Unknown primitive type in _read_text_internal ", typeToString(t));
     }
     return EINVAL;
   }
@@ -977,8 +979,11 @@
     } else if t == string {
       // handle string
       return qio_channel_print_string(false, _channel_internal, x, x.length);
+    } else if _isEnumeratedType(t) {
+      var s = x:string;
+      return qio_channel_print_string(false, _channel_internal, s, s.length);
     } else {
-      compilerError("Unknown primitive type in _read_text_internal", typeToString(t));
+      compilerError("Unknown primitive type in _write_text_internal ", typeToString(t));
     }
     return EINVAL;
   }
@@ -1004,8 +1009,10 @@
       // handle string
       var len:ssize_t;
       return qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, len);
+    } else if _isEnumeratedType(t) {
+      compilerError("Enumerated types not yet supported in binary channel.read (_read_binary_internal)");
     } else {
-      compilerError("Unknown primitive type in _read_text_internal", typeToString(t));
+      compilerError("Unknown primitive type in _read_binary_internal ", typeToString(t));
     }
   }
 
@@ -1025,15 +1032,21 @@
       return qio_channel_write_complex(false, byteorder, _channel_internal, re, im, numBytes(x.re.type));
     } else if t == string {
       return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, x.length);
+    } else if _isEnumeratedType(t) {
+      var i:int(64) = x; // TODO -- detect size of enum?
+      compilerWarning("enumerated type writing binary to 8-bytes");
+      return qio_channel_write_int(false, byteorder, _channel_internal, i, numBytes(i.type), _isSignedType(i.type));
     } else {
-      halt("Unknown primitive type");
+      halt("Unknown primitive type in write_binary_internal " + typeToString(t));
     }
   }
 
   // Channel must be locked, must be running on this.home
-  proc channel._read_one_internal(param kind:iokind, out x:?t):err_t where _isIoPrimitiveType(t) {
+  proc channel._read_one_internal(param kind:iokind, out x:?t):err_t where _isIoPrimitiveTypeOrNewline(t) {
     var e:err_t = EINVAL;
-    if kind == iokind.dynamic {
+    if t == ioNewline {
+      return qio_channel_skip_past_newline(false, _channel_internal);
+    } else if kind == iokind.dynamic {
       var binary:uint(8) = qio_channel_binary(_channel_internal);
       var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
       if binary {
@@ -1057,7 +1070,7 @@
   /*
   proc channel.read_one(param kind:iokind, err:ErrorHandler, out x:?t) where _isPrimitiveType(t) {
     var e:err_t;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       e = this._read_one_internal(kind, x);
       this.unlock();
@@ -1066,9 +1079,11 @@
   }*/
 
   // Channel must be locked, must be running on this.home
-  proc channel._write_one_internal(param kind:iokind, x:?t):err_t where _isIoPrimitiveType(t) {
+  proc channel._write_one_internal(param kind:iokind, x:?t):err_t where _isIoPrimitiveTypeOrNewline(t) {
     var e:err_t = EINVAL;
-    if kind == iokind.dynamic {
+    if t == ioNewline {
+      return qio_channel_write_newline(false, _channel_internal);
+    } else if kind == iokind.dynamic {
       var binary:uint(8) = qio_channel_binary(_channel_internal);
       var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
       if binary {
@@ -1086,13 +1101,28 @@
     return e;
   }
   proc channel._write_one_internal(param kind:iokind, x:?t):err_t {
-    return x.writeThis(this);
+    proc isNilObject(val) {
+      proc helper(o: object) return o == nil;
+      proc helper(o)         return false;
+      return helper(val);
+    }
+
+    if isNilObject(x) then
+      return _write_one_internal(kind, "nil");
+    else {
+      var err:err_t;
+      var writer = new Writer(ch=this, err=0);
+      x.writeThis(writer);
+      err = writer.err;
+      delete writer;
+      return err;
+    }
   }
 
   /*
   proc channel.write_one(param kind:iokind, err:error, x:?t) where _isPrimitiveType(t) {
     var e:err_t;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       e = this._write_one_internal(kind, x);
       this.unlock();
@@ -1105,7 +1135,7 @@
      false if we encountered EOF (or possibly another error and didn't halt)*/
   proc channel.read(inout args ...?k):bool {
     var e:err_t = 0;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       for param i in 1..k {
         if e == 0 {
@@ -1124,7 +1154,7 @@
   proc channel.read(inout args ...?k,
                     onErr:ErrorHandler):bool {
     var e:err_t = 0;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       for param i in 1..k {
         if e == 0 {
@@ -1144,7 +1174,7 @@
                     style:iostyle,
                     onErr:ErrorHandler=nil):bool {
     var e:err_t = 0;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       var save_style = this._style();
       this._set_style(style);
@@ -1166,7 +1196,7 @@
 
   proc channel.readline(inout arg:string, onErr:ErrorHandler=nil):bool {
     var e:err_t = 0;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       var save_style = this._style();
       var mystyle = defaultStyle().text();
@@ -1226,10 +1256,9 @@
     return tmp;
   }
 
-
   proc channel.write(args ...?k):bool {
     var e:err_t = 0;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       for param i in 1..k {
         if e == 0 {
@@ -1247,7 +1276,7 @@
   proc channel.write(args ...?k,
                      onErr:ErrorHandler):bool {
     var e:err_t = 0;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       for param i in 1..k {
         if e == 0 {
@@ -1267,7 +1296,7 @@
                      style:iostyle,
                      onErr:ErrorHandler = nil):bool {
     var e:err_t = 0;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       var save_style = this._style();
       this._set_style(style);
@@ -1301,7 +1330,7 @@
 
   proc channel.flush(onErr:ErrorHandler = nil) {
     var e:err_t;
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       e = qio_channel_flush(true, _channel_internal);
     }
     seterr(onErr, this.onErr, e); // TODO -- include path and offset
@@ -1309,7 +1338,7 @@
 
   proc channel.modifyStyle(f:func(iostyle, void))
   {
-    on this.home {
+    on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       var style = this._style();
       f(style);
@@ -1446,12 +1475,9 @@
   */
 
 
-  const stdin:channel(true, iokind.dynamic);
- //  = openfp(chpl_cstdin()).reader(); 
-  const stdout:channel(true, iokind.dynamic);
- // = openfp(chpl_cstdout()).writer(); 
-  const stderr:channel(true, iokind.dynamic);
- // = openfp(chpl_cstderr()).writer(); 
+  const stdin:channel(true, iokind.dynamic) = openfp(chpl_cstdin()).reader(); 
+  const stdout:channel(true, iokind.dynamic) = openfp(chpl_cstdout()).writer(); 
+  const stderr:channel(true, iokind.dynamic) = openfp(chpl_cstderr()).writer(); 
 
   proc write(args ...?n) {
     stdout.write((...args));
@@ -1480,7 +1506,7 @@
   }
 
   // Read/write tuples of types.
-  proc file.readln(type t ...?numTypes) where numTypes > 1 {
+  proc channel.readln(type t ...?numTypes) where numTypes > 1 {
     var tupleVal: t;
     for param i in 1..numTypes-1 do
       tupleVal(i) = this.read(t(i));
@@ -1488,7 +1514,7 @@
     return tupleVal;
   }
 
-  proc file.read(type t ...?numTypes) where numTypes > 1 {
+  proc channel.read(type t ...?numTypes) where numTypes > 1 {
     var tupleVal: t;
     for param i in 1..numTypes do
       tupleVal(i) = this.read(t(i));
@@ -1504,11 +1530,86 @@
   }
 
 // TODO -- we need to replace Writer with channel!
-class Writer {
+/*class Writer {
   proc write(args ...?n) { }
   proc writeln(args ...?n) { }
   proc writeln() { }
+}*/
+class Writer {
+  var ch:channel(true, iokind.dynamic);
+  var err:err_t;
+  proc write(args ...?k) {
+    for param i in 1..k {
+      if err == 0 {
+        err = ch._write_one_internal(iokind.dynamic, args(i));
+      }
+    }
+  }
+  proc writeln(args ...?k) {
+    for param i in 1..k {
+      if err == 0 {
+        err = ch._write_one_internal(iokind.dynamic, args(i));
+      }
+    }
+
+    var nl = new ioNewline();
+    if err == 0 then err = ch._write_one_internal(iokind.dynamic, nl);
+  }
+  proc writeln() {
+    var nl = new ioNewline();
+    if err == 0 then err = ch._write_one_internal(iokind.dynamic, nl);
+  }
 }
+
+class Reader {
+  var ch:channel(false, iokind.dynamic);
+  var err:err_t;
+  proc read(args ...?k):bool {
+    for param i in 1..k {
+      if err == 0 {
+        err = ch._read_one_internal(iokind.dynamic, args(i));
+      }
+    }
+
+    if err == EEOF {
+      err = 0;
+      return false;
+    } else {
+      return true;
+    }
+  }
+  proc readln(args ...?k):bool {
+    for param i in 1..k {
+      if err == 0 {
+        err = ch._read_one_internal(iokind.dynamic, args(i));
+      }
+    }
+
+    var nl = new ioNewline();
+    if err == 0 then err = ch._read_one_internal(iokind.dynamic, nl);
+
+    if err == EEOF {
+      err = 0;
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  proc readln():bool {
+    var nl = new ioNewline();
+    if err == 0 then err = ch._read_one_internal(iokind.dynamic, nl);
+
+    if err == EEOF {
+      err = 0;
+      return false;
+    } else {
+      return true;
+    }
+  }
+}
+
+
 /*const stderr = new Writer();
 
   proc write(args ...?n) { }
@@ -1999,11 +2100,24 @@ proc _debugWriteln() {
   _debugWrite("\n");
 }
 
-/*
 proc _ddata.writeThis(f: Writer) {
   halt("cannot write the _ddata class");
 }
-*/
+
+proc enumerated.writeThis(f: Writer) {
+  f.write(this:string);
+}
+
+proc bool.writeThis(f: Writer) {
+  f.write(this:string);
+}
+
+
+proc chpl_taskID_t.writeThis(f: Writer) {
+  var tmp : uint(64) = this : uint(64);
+  f.write(tmp : string);
+}
+
 
 proc format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
   if fmt.substring(1) == "#" {

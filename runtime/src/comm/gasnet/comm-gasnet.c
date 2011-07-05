@@ -114,7 +114,10 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
 static void fork_large_wrapper(fork_t* f) {
   void* arg = chpl_malloc(1, f->arg_size, CHPL_RT_MD_AM_FORK_ARG, 0, 0);
 
-  chpl_comm_get(arg, f->caller, *(void**)f->arg,
+  void* f_arg;
+  memcpy(&f_arg, f->arg, sizeof(void*));
+
+  chpl_comm_get(arg, f->caller, f_arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
   (*chpl_ftable[f->fid])(arg);
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
@@ -156,7 +159,10 @@ static void AM_fork_nb(gasnet_token_t  token,
 static void fork_nb_large_wrapper(fork_t* f) {
   void* arg = chpl_malloc(1, f->arg_size, CHPL_RT_MD_AM_NB_FORK_ARG, 0, 0);
 
-  chpl_comm_get(arg, f->caller, *(void**)f->arg,
+  void* f_arg;
+  memcpy(&f_arg, f->arg, sizeof(void*));
+
+  chpl_comm_get(arg, f->caller, f_arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
                                       FREE,
@@ -190,7 +196,11 @@ static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) 
 }
 
 static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
-  chpl_free(*(void**)(*(fork_t**)buf)->arg, 0, 0);
+  fork_t* f = *(fork_t**)buf;
+  void* f_arg;
+  memcpy(&f_arg, f->arg, sizeof(void*));
+
+  chpl_free(f_arg, 0, 0);
   chpl_free(*(void**)buf, 0, 0);
 }
 

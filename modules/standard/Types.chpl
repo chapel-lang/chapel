@@ -82,9 +82,11 @@ proc numBits(type t) param where t == complex(128) return 128;
 // numBytes(type) -- returns the number of bytes in a type
 //
 
-param bitsPerByte = 8;
-
-proc numBytes(type t) param return numBits(t)/bitsPerByte;
+//param bitsPerByte = 8; can't use a variable because
+// want to use numBytes from within internal/ChapelIO
+// and that leads to a known bug... and bits per byte
+// is always going to be 8 anyways.
+proc numBytes(type t) param return numBits(t)/8;
 
 //
 // min(type) -- returns the minimum value a type can store

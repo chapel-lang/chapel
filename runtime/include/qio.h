@@ -14,6 +14,16 @@
 
 #define DEBUG_QIO 0
 
+typedef enum {
+  QIO_FDFLAG_UNK  = 1,
+  QIO_FDFLAG_READABLE = 2,
+  QIO_FDFLAG_WRITEABLE = 4,
+  QIO_FDFLAG_SEEKABLE = 8,
+  //QIO_FDFLAG_CLOSED = 16, // means channel/file was closed.
+} qio_fdflag_t;
+
+typedef uint32_t qio_hint_t;
+
 // The qio lock must be re-entrant in order to handle
 // e.g. qio_printf, which has will lock the lock, then
 // call printf, which will call cookie write, and lock the lock again.
@@ -25,6 +35,12 @@
 //        write(16) for example
 
 #ifdef _chplrt_H_
+// also export iohint_t and fdflag_t
+typedef qio_hint_t iohint_t;
+typedef qio_fdflag_t fdflag_t;
+
+
+// make a re-entrant lock.
 typedef struct {
   chpl_sync_aux_t sv;
   int64_t owner; // task ID of owner.
@@ -147,14 +163,6 @@ err_t qio_send(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
               int64_t* num_sent_out);
 
 typedef enum {
-  QIO_FDFLAG_UNK  = 1,
-  QIO_FDFLAG_READABLE = 2,
-  QIO_FDFLAG_WRITEABLE = 4,
-  QIO_FDFLAG_SEEKABLE = 8,
-  //QIO_FDFLAG_CLOSED = 16, // means channel/file was closed.
-} qio_fdflag_t;
-
-typedef enum {
   QIO_CH_UNBUFFERED = 1,
   QIO_CH_BUFFERED
 } qio_chtype_t;
@@ -224,7 +232,6 @@ enum {
   QIO_HINT_NOFAST       = QIO_HINT_NOREUSE<<1,
 };
 
-typedef uint32_t qio_hint_t;
 
 #define QIO_NUM_HINT_BITS 8
 #define QIO_HINTMASK 0xffff00

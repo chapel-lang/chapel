@@ -243,6 +243,31 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
     signal(SIGINT, SIGINT_handler);
   }
 
+  // set main thread private data, so that chpl_task_getID() can be called from chpl_rt_utils_init.
+  {  thread_private_data_t *tp = (thread_private_data_t*)
+                                  chpl_alloc(sizeof(thread_private_data_t),
+                                             CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                             0, 0);
+
+    tp->ptask = (task_pool_p) chpl_alloc(sizeof(task_pool_t),
+                                         CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                         0, 0);
+    tp->ptask->id           = get_next_task_id();
+    tp->ptask->fun          = NULL;
+    tp->ptask->arg          = NULL;
+    tp->ptask->serial_state = false;
+    tp->ptask->ltask        = NULL;
+    tp->ptask->begun        = true;
+    tp->ptask->filename     = "main program";
+    tp->ptask->lineno       = 0;
+    tp->ptask->next         = NULL;
+
+    tp->lockRprt = NULL;
+
+    chpl_thread_setPrivateData(tp);
+  }
+
+
   initialized = true;
 }
 
@@ -256,28 +281,7 @@ void chpl_task_exit(void) {
 
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
-  thread_private_data_t *tp = (thread_private_data_t*)
-                                chpl_alloc(sizeof(thread_private_data_t),
-                                           CHPL_RT_MD_THREAD_PRIVATE_DATA,
-                                           0, 0);
-
-  tp->ptask = (task_pool_p) chpl_alloc(sizeof(task_pool_t),
-                                       CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
-                                       0, 0);
-  tp->ptask->id           = get_next_task_id();
-  tp->ptask->fun          = NULL;
-  tp->ptask->arg          = NULL;
-  tp->ptask->serial_state = false;
-  tp->ptask->ltask        = NULL;
-  tp->ptask->begun        = true;
-  tp->ptask->filename     = "main program";
-  tp->ptask->lineno       = 0;
-  tp->ptask->next         = NULL;
-
-  tp->lockRprt = NULL;
-
-  chpl_thread_setPrivateData(tp);
-
+  thread_private_data_t *tp = chpl_thread_getPrivateData();
   if (taskreport) {
     chpldev_taskTable_add(tp->ptask->id,
                           tp->ptask->lineno, tp->ptask->filename,
