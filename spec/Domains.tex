@@ -713,7 +713,7 @@ variable using either parentheses or square brackets.
 
 \begin{syntax}
 domain-slice-expression:
-  domain-slice-expression \[ domain-expression \]
+  domain-slice-expression [ domain-expression ]
   domain-slice-expression ( domain-expression )
 \end{syntax}
 
@@ -732,7 +732,7 @@ the intersection of the domain's index set and the slicing index set.
 The type and domain map of the result match the domain being sliced.
 
 \begin{openissue}
-Ccan we say that it is an alias in the case of sparse/associative?
+Can we say that it is an alias in the case of sparse/associative?
 \end{openissue}
 
 \subsubsection{Range-based Slicing}
