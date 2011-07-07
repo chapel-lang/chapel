@@ -15,10 +15,6 @@ i# USAGE: the intent of this file is to keep track of current
 general regressions (seem to happen in most configurations)
 ===========================================================
 
-missing output files (06/16/11)
--------------------------------
-[Error cannot locate compiler output comparison file users/vass/crash1callDestructorsMain.good]
-
 incorrectly retired future (06/25/11)
 -------------------------------------
 [Error matching program output for distributions/vass/dmap-var-decl]
@@ -154,11 +150,6 @@ seg fault (?)
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
-
-missing output files (06/16/11)
--------------------------------
-[Error cannot locate compiler output comparison file users/vass/crash1callDestructorsMain.good]
-[Error cannot locate compiler output comparison file users/vass/crash2VarSymbolTypeNULL.good]
 
 nondet. execution timeout
 -------------------------
