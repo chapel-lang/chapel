@@ -52,6 +52,7 @@ while (@ARGV) {
         $dist = shift @ARGV;
     } elsif ($flag eq "-memleaks") {
         $memleaks = shift @ARGV;
+        $examples = 1;
     } elsif ($flag eq "-suppress") {
         $suppressions = shift @ARGV;
     } elsif ($flag eq "-componly") {
@@ -499,8 +500,8 @@ if ($valgrind == 0) {
     $testflags = "$testflags -futures";
 }
 if ($examples == 1) {
+    mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
     if ($parnodefile eq "") {
-        mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
         $testflags = "$testflags release/examples";
     } else {
         mysystem("cd $testdir && find release/examples -type d > DIRFILE", 
@@ -510,9 +511,6 @@ if ($examples == 1) {
 }
 if (!($dist eq "")) {
     $testflags = "$testflags distributions/robust/arithmetic";
-}
-if (!($memleaks eq "")) {
-    $testflags = "$testflags release/examples";
 }
 if ($parnodefile eq "") {
 } else {
