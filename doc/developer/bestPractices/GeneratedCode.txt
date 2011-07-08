@@ -114,6 +114,11 @@ define sdirs
       -g --savec DIRECTORY2 --c-line-numbers
 
 
+* GDB's TUI mode is discussed in CompilerDebugging.txt and, e.g., here:
+
+      http://davis.lbl.gov/Manuals/GDB/gdb_21.html
+
+
 * To see the IDs of the AST nodes in the generated code
   (see CompilerIRTricks.txt):
 
