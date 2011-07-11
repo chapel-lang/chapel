@@ -1,0 +1,17 @@
+.TH qthread_num_shepherds 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_num_shepherds
+\- returns the number of shepherds
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I qthread_shepherd_id_t
+.br
+.B qthread_num_shepherds
+();
+.SH DESCRIPTION
+This function returns the number of shepherds. This value is one larger than the largest valid shepherd id.
+.SH SEE ALSO
+.BR qthread_retloc (3),
+.BR qthread_stackleft (3),
+.BR qthread_id (3)
