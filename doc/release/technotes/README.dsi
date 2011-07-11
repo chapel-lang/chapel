@@ -622,7 +622,7 @@ proc Global.dsiSupportsPrivatization() param return true;
 
 class Global ... {
   ...
-  var pid = pidNotYetPrivatized;
+  var pid = -1;
   ...
 }
   The field 'pid' should be provided as shown.
@@ -729,7 +729,7 @@ Notes:
   been privatized.
 ** A GlobalArray is privatized after its GlobalDomain, which is
    privatized after its GlobalDistribution.
-** The 'pid' field is set to a different value than pidNotYetPrivatized
+** The 'pid' field is set to a different value than -1
    when an object is privatized.
 
 Here is an example of using it for privatizing GlobalDomain,
