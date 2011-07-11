@@ -70,9 +70,6 @@ proc GlobalDistribution.GlobalDistribution() // or with arguments
   an array of locales over which to distribute, with 'Locales'
   as the default value.
 
-proc GlobalDistribution.dsiSupportsPrivatization() param: bool return false;
-  This procedure should be provided as shown unless privatization is supported.
-
 proc GlobalDistribution.dsiClone(): GlobalDistribution
   Returns a duplicate of 'this'.
 
@@ -135,9 +132,6 @@ proc GlobalDomain.GlobalDomain() // or with arguments
   Constructor(s)  These are not regulated by DSI - their specifics are
   at the domain map implementer's discretion.
 
-proc GlobalDomain.dsiSupportsPrivatization() param: bool return false;
-  This procedure should be provided as shown unless privatization is supported.
-
 proc GlobalDomain.dsiMyDist() return dist;
   Returns this domain's domain map. This procedure should be provided as shown.
   (Exception: see dsiLinksDistribution().)
@@ -184,8 +178,8 @@ iter GlobalDomain.these()
 iter GlobalDomain.these(param tag: iterator) where tag == iterator.leader
 iter GlobalDomain.these(param tag: iterator, follower) where tag == iterator.follower
   The "leader" and "follower" iterators (defined below). They are
-  invoked implicitly to implement parallel iteration over this domain.
-  (The serial iterator must also be defined for parallel iteration.)
+  invoked implicitly to implement parallel ("forall") loops over this domain.
+  The serial iterator must also be defined for "forall" loops to work.
 
   The presentation below is tailored to the use of leader/follower iterators
   in domain maps. For a more general discussion, see
@@ -220,9 +214,10 @@ iter GlobalDomain.these(param tag: iterator, follower) where tag == iterator.fol
   whether and how to support their interoperability in this situation.
   That is, whether and how the description from the leader of one
   zippered item is handled by the follower of another item.
-  One approach could be to support zippering of like items
-  [example? e.g. associative domains over the same type?]
-  and generate a compile-time or run-time error otherwise.
+  For example, one could support zippering of similar items
+  [example? e.g. associative domains over the same type?],
+  and generate a compile-time or run-time error when the items
+  are not "similar".
 
   DSI requires interoperability betweem domain maps only
   for *rectangular* domains, by prescribing:
@@ -331,9 +326,6 @@ proc GlobalArray.GlobalArray() // or with arguments
   Constructor(s)  These are not regulated by DSI - their specifics are
   at the domain map implementer's discretion.
 
-proc GlobalArray.dsiSupportsPrivatization() param: bool return false;
-  This procedure should be provided as shown unless privatization is supported.
-
 proc GlobalDomain.dsiBuildArray(type eltType) : GlobalArray(eltType, this.type)
   This method is invoked when the Chapel program is creating
   an array value over the domain 'this' with the element type 'eltType'.
@@ -349,7 +341,7 @@ proc GlobalArray.dsiAccess(indexx) var: eltType {
   Given an index, returns the corresponding array element (as an l-value).
 
   The domain map implementer is allowed to restrict the type of indexx
-  that this method accepts. 
+  that this method accepts.
 
 proc GlobalArray.dsiSerialWrite(f: Writer): void
   Writes out the array to the given Writer (e.g. a file or stdout) serially.
@@ -461,7 +453,7 @@ proc GlobalDistribution.dsiIndexToLocale(indexx): locale
   This is used to implement idxToLocale() on the 'dmap' wrapper.
 
   The domain map implementer is allowed to restrict the type of indexx
-  that this method accepts. 
+  that this method accepts.
 
 proc GlobalDomain.dsiDim(dim: int): range(idxType,
                                           BoundedRangeType.bounded,
@@ -566,9 +558,9 @@ What is privatization?
 ----------------------
 
 Privatization of an object 'X' means providing a local copy of X on
-each locale. Such a copy is called the "privatized" object.
-On X.locale, X itself serves as the privatized object.
-We refer to X as the "original" object.
+each locale. Such a copy is called the "privatized copy".
+On X.locale, X itself serves as the privatized copy.
+We refer to X as the "original object".
 
 Privatization aims at reducing communication between locales.
 When X needs to be accessed (by reading its fields or invoking
@@ -593,19 +585,25 @@ by each global descriptor class that chooses to support privatization.
 
 The domain map implementation must provide methods to:
 * create a privatized copy given the original object, and
-* update a privatized copy when the original object changes
+* update a privatized copy when some other privatized copy changes
   (see "reprivatization" below).
 
 The Chapel implementation:
 * invokes DSI privatization methods to create or update privatized copies, and
 * redirects original object accesses to its privatized copies.
 
+The Chapel implementation creates privatized copies (over *all* locales)
+greedily as follows (if that class supports privatization):
+* of a GlobalDistribution - when it is wrapped in 'new dmap'
+  and when that wrapper is copied;
+* of a GlobalDomain or GlobalArray - when the corresponding
+  Chapel domain or array is created.
+
 What is reprivatization?
 ------------------------
 
-Should a privatized object be modified (either the original object
-or any of its privatized copies), the changes need to be propagated
-to all the other privatized copies.
+Should any privatized copy be modified, the changes need to be
+propagated to all the other privatized copies.
 This propagation is called reprivatization.
 
 The domain map implementation provides methods to update a privatized copy.
@@ -620,12 +618,11 @@ class that chooses to support privatization.
 
 proc Global.dsiSupportsPrivatization() param return true;
   Returns 'true' to indicate that privatization is supported.
-  (This is a change to the earlier definitions.)
   NOTE: do not specify the return type (due to a bug in the compiler).
 
 class Global ... {
   ...
-  var pid: int = -1;
+  var pid = pidNotYetPrivatized;
   ...
 }
   The field 'pid' should be provided as shown.
@@ -697,14 +694,15 @@ Here is a simple example:
     // run the check on each locale
     on loc {
       // value2 to be different from value1
-      var temp = value2;
+      var valTemp = value2;
+      const idxTemp = (an index (tuple) that is mapped to the locale 'loc');
       local {
         // Access the array.
 	// This statement succeeds if there is no communication.
-        temp = A[an index that is mapped to the locale 'loc'];
+        valTemp = A[idxTemp];
       }
       // reference the read value
-      assert(temp == value1);
+      assert(valTemp == value1);
     }
 
 Tip: privatized copies should reference privatized copies
@@ -731,8 +729,8 @@ Notes:
   been privatized.
 ** A GlobalArray is privatized after its GlobalDomain, which is
    privatized after its GlobalDistribution.
-** The 'pid' field is set to a non-negative value when
-   an object is privatized.
+** The 'pid' field is set to a different value than pidNotYetPrivatized
+   when an object is privatized.
 
 Here is an example of using it for privatizing GlobalDomain,
 assuming that GlobalDistribution also supports privatization:
