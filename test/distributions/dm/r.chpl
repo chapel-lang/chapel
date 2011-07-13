@@ -8,6 +8,7 @@ use d;
 
 class vdist {
   // REQ over how many locales
+  // todo: can the Dimensional do without this one?
   var numLocales: int;
 
   // locale ID in our dimension of the locale this instance is on
@@ -184,15 +185,10 @@ proc vdom.dsiAccess1d(indexx: idxType): (locIdT, stoSzT) {
   return (localLocID, wholeR.indexOrder(indexx): stoSzT);
 }
 
-// REQ for iterating over array elements.
-// Yield tuples (locId, iterable) s.t. the following results in
-// traversing all array elements in order:
-//   for (l,itr) in dsiSerialArrayIterator1d() do
-//    for ix in itr do
-//      yield (local storage on locale l)[ix]
-iter vdom.dsiSerialArrayIterator1d() {
-  assert(localLocIDlegit);
-  yield (localLocID, 0..#wholeR.length);
+// REQ yield the densified range to be used in the leader iterator
+// on this descriptor's locale, when there is only a single task.
+iter vlocdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
+  yield 0..#locWholeR.length;
 }
 
 // REQ yield the densified range to be used in the leader iterator
@@ -204,6 +200,17 @@ proc vlocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int) {
   const (startIx, endIx) = _computeChunkStartEnd(locWholeR.length,
                                                  numTasks, taskid+1);
   return startIx - 1 .. endIx - 1;
+}
+
+// REQ for iterating over array elements.
+// Yield tuples (locId, iterable) s.t. the following results in
+// traversing all array elements in order:
+//   for (l,itr) in dsiSerialArrayIterator1d() do
+//    for ix in itr do
+//      yield (local storage on locale l)[ix]
+iter vdom.dsiSerialArrayIterator1d() {
+  assert(localLocIDlegit);
+  yield (localLocID, 0..#wholeR.length);
 }
 
 // REQ for array follower iterator.
@@ -231,7 +238,6 @@ iter vdom.dsiFollowerArrayIterator1d(denseRange) {
 // 1-d distribution - block
 
 class sdist {
-  // REQ over how many locales
   const numLocales: int;
 
   // the type of bbStart, bbLength
@@ -259,7 +265,7 @@ class sdom {
 }
 
 class slocdom {
-  const myLocId: locIdT;
+  const myLocId: locIdT; // presently unused
   var myRange;
 }
 
@@ -405,6 +411,22 @@ proc sdom.dsiAccess1d(indexx: idxType): (locIdT, stoSzT) {
   return (locId, storageOffset:stoSzT);
 }
 
+iter slocdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
+  const locRange = densify(myRange, globDD.wholeR, userErrors=false);
+  yield locRange;
+}
+
+proc slocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int) {
+  const locRange = densify(myRange, globDD.wholeR, userErrors=false);
+  // Copied straight from BlockDom leader - replace locBlock(parDim)->locRange.
+  const (lo, hi) = _computeBlock(locRange.length, numTasks, taskid,
+                                 locRange.high, locRange.low, locRange.low);
+
+  // If this can occasionally be an empty range, add a check to Dimensional
+  // to not yield anything in such a case.
+  return lo..hi;
+}
+
 iter sdom.dsiSerialArrayIterator1d() {
   // By the nature of the Block distribution, the indices are assigned to
   // locales contiguously. But reverse the order if so does our range.
@@ -454,14 +476,4 @@ iter sdom.dsiFollowerArrayIterator1d(denseRange) {
       }
     }
   }
-}
-
-proc slocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int) {
-  const locRange = densify(myRange, globDD.wholeR, userErrors=false);
-  // Copied straight from BlockDom leader - replace locBlock(parDim)->locRange.
-  const (lo, hi) = _computeBlock(locRange.length, numTasks, taskid,
-                                 locRange.high, locRange.low, locRange.low);
-
-  // Is it possible that this will occasionally be an empty range?
-  return lo..hi;
 }

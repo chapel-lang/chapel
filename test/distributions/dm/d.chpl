@@ -102,10 +102,9 @@ class DimensionalDom : BaseRectangularDom {
   var whole: domainT;
 
   // convenience - our instantiation of LocDimensionalDom
-  proc lddTypeArg1 type  return domainT;
-  proc lddTypeArg2 type  return (dom1.dsiNewLocalDom1d(0).type,
-                                 dom2.dsiNewLocalDom1d(0).type);
-  proc locDdescType type  return LocDimensionalDom(lddTypeArg1, lddTypeArg2);
+  proc locDdescType type  return LocDimensionalDom(domainT,
+                                                dom1.dsiNewLocalDom1d(0).type,
+                                                dom2.dsiNewLocalDom1d(0).type);
 
   // local domain descriptors
   var localDdescs: [dist.targetIds] locDdescType; // not reprivatized
@@ -124,8 +123,8 @@ class LocDimensionalDom {
   // (although it might be doable to have such a link).
   var myBlock;
 
-  // a tuple of subordinate 1-d local domain descriptors
-  var local1dDdescs;
+  // subordinate 1-d local domain descriptors
+  var doml1, doml2;
 
   // how much storage to allocate for an array on our locale
   var myStorageDom: domain(myBlock.rank, stoSzT, false);
@@ -189,6 +188,8 @@ proc DimensionalDist.checkInvariants(): void {
   assert(targetIds.idxType == locIdT, "DimensionalDist-targetIdx.idxType");
   assert(targetIds == [0..#numLocs1, 0..#numLocs2],
          "DimensionalDist-targetIds");
+  assert(di1.numLocales == numLocs1, "DimensionalDist-numLocales-1");
+  assert(di2.numLocales == numLocs2, "DimensionalDist-numLocales-2");
   assert(rank == targetLocales.rank, "DimensionalDist-rank");
   assert(rank == 2, "DimensionalDist-rank==2");
   assert(dataParTasksPerLocale > 0, "DimensionalDist-dataParTasksPerLocale");
@@ -435,9 +436,9 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
     // a constant factor of extra time on top of that.
     forall locDdesc in result.localDdescs do
       if locDdesc.locale == here {
-        if lg1 then locDdesc.local1dDdescs(1)
+        if lg1 then locDdesc.doml1
                       .dsiStoreLocalDescToPrivatizedGlobalDesc1d(dom1new);
-        if lg2 then locDdesc.local1dDdescs(2)
+        if lg2 then locDdesc.doml2
                       .dsiStoreLocalDescToPrivatizedGlobalDesc1d(dom2new);
       }
 
@@ -458,7 +459,7 @@ proc DimensionalDom.dsiGetReprivatizeData() {
 }
 
 proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
-  _traceddd(this, "dsiReprivatize on ", here.id);
+  _traceddd(this, ".dsiReprivatize on ", here.id);
 
   assert(this.rank == other.rank &&
          this.idxType == other.idxType &&
@@ -536,10 +537,10 @@ proc DimensionalDist.dsiNewRectangularDom(param rank: int,
   coforall (loc, locIds, locDdesc)
    in (targetLocales, targetIds, result.localDdescs) do
     on loc {
-      const defaultVal1: result.lddTypeArg1;
+      const defaultVal1: result.domainT;
       const locD1 = dom1.dsiNewLocalDom1d(locIds(1));
       const locD2 = dom2.dsiNewLocalDom1d(locIds(2));
-      locDdesc = new LocDimensionalDom(defaultVal1, (locD1, locD2));
+      locDdesc = new LocDimensionalDom(defaultVal1, locD1, locD2);
     }
 
   return result;
@@ -575,8 +576,8 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
 // in the intersection of the old and new domains' index sets
 proc LocDimensionalDom._dsiLocalSetIndicesHelper(globDD, locId) {
   // we query the *global* subordinate 1-d domain descriptors
-  var myRange1 = local1dDdescs(1).dsiSetLocalIndices1d(globDD(1),locId(1));
-  var myRange2 = local1dDdescs(2).dsiSetLocalIndices1d(globDD(2),locId(2));
+  var myRange1 = doml1.dsiSetLocalIndices1d(globDD(1),locId(1));
+  var myRange2 = doml2.dsiSetLocalIndices1d(globDD(2),locId(2));
 
   myBlock = [myRange1, myRange2];
   myStorageDom = [0:stoSzT..#myRange1.length:stoSzT,
@@ -772,52 +773,68 @@ iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
         _traceddc(traceDimensionalDist || traceDimensionalDistIterators,
                   "  leader on ", here.id, " ", lls, " - no tasks");
 
+      type followT = densify(myDims, whole.dims()).type;
+
       if numTasks == 1 then {
-        const follow = densify(myDims, whole.dims());
-        _traceddc(traceDimensionalDistIterators,
-                  "  leader on ", lls, " single task -> ", follow);
-        yield follow;
+
+        for r1 in locDdesc.doml1.dsiMyDensifiedRangeForSingleTask1d(dom1) do
+          for r2 in locDdesc.doml2.dsiMyDensifiedRangeForSingleTask1d(dom2) do
+          {
+            const follow: followT = (r1, r2);
+            _traceddc(traceDimensionalDistIterators,
+                      "  leader on ", lls, " single task -> ", follow);
+            yield follow;
+          }
 
       } else {
         coforall taskid in 0..#numTasks {
-          var follow: densify(myDims, whole.dims()).type;
-          // follow(parDim) is this task's share of myDims(parDim);
-          // follow(d!=parDim) is the entire myDims(d);
-          // in both cases, they are densified w.r.t. 'whole'.
 
-          // We have a param loop because need a param to index local1dDdescs.
-          // TODO: make local1dDdescs homogenous (introduce a superclass
-          // of subordinate 1-d local domain descriptors?).
+          // For a dimension other than 'parDim', all yields should
+          // produce, collectively, all the indices in this dimension.
+          // For 'parDim' - only the 'taskid'-th share of all indices.
           //
-          for param dd in 1..rank do if dd == parDim {
+          iter iter1d(param dd, dom1d, loc1d) {
+            const dummy: followT;
+            type resultT = dummy(dd).type;
+            if dd == parDim {
+              // no iterators here, so far
+              yield loc1d.dsiMyDensifiedRangeForTaskID1d
+                (dom1d, taskid, numTasks) : resultT;
+            } else {
+              for r in loc1d.dsiMyDensifiedRangeForSingleTask1d(dom1d) do
+                yield r: resultT;
+            }
+          }
 
-            const dom1d = if dd==1 then dom1 else if dd==2 then dom2 else nil;
-            const myPiece = locDdesc.local1dDdescs(dd).
-              dsiMyDensifiedRangeForTaskID1d(dom1d, taskid, numTasks);
+          // Bug note: computing 'myDims(dd)' instead of passing 'myDim'
+          // would trip an assertion in the compiler.
+          iter iter1dCheck(param dd, dom1d, loc1d, myDim) {
+            for myPiece in iter1d(dd, dom1d, loc1d) {
 
-            // ensure we got a subset
-            assert(densify(myDims(dd), whole.dim(dd))(myPiece) == myPiece);
+              // ensure we got a subset
+              assert(densify(myDim, whole.dim(dd))(myPiece) == myPiece);
 
-            // Similar to the assert 'lo <= hi' in BlockDom leader.
-            // Upon a second thought, if there is a legitimate reason
-            // why dsiMyDensifiedRangeForTaskID1d() does not agree
-            // with _computeChunkStuff (i.e. the latter returns more tasks
-            // than the former wants to use) - fine. Then, replace assert with
-            //   if myPiece.length == 0 then do not yield anything
-            assert(myPiece.length > 0);
+              // Similar to the assert 'lo <= hi' in BlockDom leader.
+              // Upon a second thought, if there is a legitimate reason
+              // why dsiMyDensifiedRangeForTaskID1d() does not agree
+              // with _computeChunkStuff (i.e. the latter returns more tasks
+              // than the former wants to use) - fine. Then, replace assert with
+              //   if myPiece.length == 0 then do not yield anything
+              assert(myPiece.length > 0);
 
-            // apply myPiece
-            follow(dd) = myPiece;
+              yield myPiece;
+            }
+          }
 
-          } else { // dd != parDim
-            follow(dd) = densify(myDims(dd), whole.dim(dd));
+          for r1 in iter1dCheck(1, dom1, locDdesc.doml1, myDims(1)) do
+            for r2 in iter1dCheck(2, dom2, locDdesc.doml2, myDims(2)) do
+            {
+              const follow: followT = (r1, r2);
+              _traceddc(traceDimensionalDistIterators, "  leader on ", lls,
+                        " task ", taskid, "/", numTasks, " -> ", follow);
 
-          } // for dd
-
-          _traceddc(traceDimensionalDistIterators, "  leader on ", lls,
-                    " task ", taskid, "/", numTasks, " -> ", follow);
-
-          yield follow;
+              yield follow;
+            }
         }
       } // if numTasks
     } // coforall ... on locDdesc
