@@ -191,7 +191,11 @@ iter vlocdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   yield 0..#locWholeR.length;
 }
 
-// REQ yield the densified range to be used in the leader iterator
+// REQ whether this distribution can handle only a single task per locale.
+proc vdom.dsiSingleTaskPerLocaleOnly1d() param return true;
+
+// REQ unless dsiSingleTaskPerLocaleOnly() is true.
+// Yield the densified range to be used in the leader iterator
 // on this descriptor's locale for task 'taskid' of 0..#numTasks.
 // Currently the DSI framework computes numTasks based on dsiSetLocalIndices1d
 // and handles the case numTasks <= 1.
@@ -415,6 +419,8 @@ iter slocdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   const locRange = densify(myRange, globDD.wholeR, userErrors=false);
   yield locRange;
 }
+
+proc sdom.dsiSingleTaskPerLocaleOnly1d() param return false;
 
 proc slocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int) {
   const locRange = densify(myRange, globDD.wholeR, userErrors=false);

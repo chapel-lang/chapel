@@ -747,27 +747,49 @@ iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
   //
   coforall (lls, locDdesc) in (overTargetIds, localDdescs[overTargetIds]) do
     on locDdesc {
-      // mimic BlockDom leader
+      // mimic BlockDom leader, except computing parDim is more involved here
 
-      // For now we handle almost everything ourselves. I.e. we consult the
-      // subordinate 1-d distribution only for parDim only when numTasks>1.
-      // We assume that myBlock already has most of what we need to know.
-      // The only reason for doing so is simplicity (e.g. make the interface to
-      // the subordinate 1-d distributions smaller). Change this if needed.
+      // Note: we consult myBlock (via myDims), not the 1-d descriptors,
+      // to learn how many indices each dimension has.
+      // TODO: myBlock -> myStorageDom
       const myDims = locDdesc.myBlock.dims();
+      assert(rank == 2); // relied upon in a few places below
+
+      // when we know which dimension should be the parallel one
+      proc compute1dNTPD(param parDim): (int,int) {
+        const myNumIndices = myDims(1).length * myDims(2).length;
+        const cnc:int =
+          _computeNumChunks(maxTasks, ignoreRunning, minSize, myNumIndices);
+        return ( min(cnc, myDims(parDim).length:int), parDim );
+      }
+
       const (numTasks, parDim) =
-        // a debugging hook
-        if fakeDimensionalDistParDim <= 0 then
-          _computeChunkStuff(maxTasks, ignoreRunning, minSize, myDims)
+        if fakeDimensionalDistParDim > 0 then
+          // a debugging hook
+          compute1dNTPD(fakeDimensionalDistParDim)
         else
-          ( min(_computeNumChunks(maxTasks, ignoreRunning, minSize,
-                                  locDdesc.myBlock.numIndices),
-                locDdesc.myBlock.dim(fakeDimensionalDistParDim).length):int,
-            fakeDimensionalDistParDim:int);
+          // For now, handle all four combinations explicitly.
+          // Will need to generalize this to arbitrary no. of dimensions.
+          //
+          if dom1.dsiSingleTaskPerLocaleOnly1d() then
+            if dom2.dsiSingleTaskPerLocaleOnly1d() then
+              (1, 1)
+            else
+              compute1dNTPD(2)
+          else
+            if dom2.dsiSingleTaskPerLocaleOnly1d() then
+              compute1dNTPD(1)
+            else
+              _computeChunkStuff(maxTasks, ignoreRunning, minSize, myDims);
 
 
       // parDim gotta point to one of the dimensions that we have
       assert(numTasks == 0 || (1 <= parDim && parDim <= rank));
+
+      // parDim cannot point to a single-task-only dimension
+      assert(numTasks <= 1 ||
+             ( (parDim !=1 || !dom1.dsiSingleTaskPerLocaleOnly1d()) &&
+               (parDim !=2 || !dom2.dsiSingleTaskPerLocaleOnly1d()) ));
 
       if numTasks == 0 then
         _traceddc(traceDimensionalDist || traceDimensionalDistIterators,
@@ -796,7 +818,7 @@ iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
           iter iter1d(param dd, dom1d, loc1d) {
             const dummy: followT;
             type resultT = dummy(dd).type;
-            if dd == parDim {
+            if !dom1d.dsiSingleTaskPerLocaleOnly1d() && dd == parDim {
               // no iterators here, so far
               yield loc1d.dsiMyDensifiedRangeForTaskID1d
                 (dom1d, taskid, numTasks) : resultT;
