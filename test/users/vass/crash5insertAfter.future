@@ -1,0 +1,4 @@
+bug: compiler crashes with an assertion: Cannot call insertAfter on Expr not in a list [expr.cpp:146]
+
+It trips over something in missing_plus() in the normalize pass.
+(This currently happens even if missing_plus() is not invoked from anywhere.)
