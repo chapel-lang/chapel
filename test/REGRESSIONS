@@ -184,6 +184,11 @@ verbose output now shows launch command (10/31/08)
 gasnet-fast regressions (other than the above)
 ==============================================
 
+nondet. execution failure (index not in domain)
+-----------------------------------------------
+[Error matching program output for domains/sungeun/assoc/minus_equals   -nl 1 (--cc-warnings -sparSafe=true) (1-0)] (07/09/11, 07/15/11)
+
+
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (06/01/11)
@@ -244,6 +249,10 @@ gdb output differences
 xt-cle-specific failures
 ========================
 
+'non-zero time to write a line' failure
+---------------------------------------
+[Error matching program output for release/examples/spec/Statements/use]
+
 redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
 [Error matching compiler output for associative/waynew/indef2]
@@ -252,6 +261,10 @@ redeclaration of identifier in scope (01/24/11)
 =====================================
 cray-xt-cray/cce-specific regressions
 =====================================
+
+seg fault during Chapel compilation (07/10/11)
+----------------------------------------------
+*all*
 
 new unreachable loop warning (05/29/11)
 ---------------------------------------
@@ -500,15 +513,15 @@ nanox-specific tests
 
 nondet. core dump
 -----------------
-[Error matching program output for release/examples/primers/taskParallel] (06/23/11, 07/02/11)
+[Error matching program output for release/examples/primers/taskParallel] (06/23/11, 07/02/11, 07/08/11, 07/15/11)
 
 nondet. incorrect output
 ------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (06/23/11, 06/26/11, 06/30/11, 07/04/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (06/23/11, 06/26/11, 06/30/11, 07/04/11, 07/07/11, 07/13/11, 07/15/11)
 
 nondet. execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
-[Error: Timed out executing program release/examples/primers/taskParallel] (06/24/11, 07/03/11)
+[Error: Timed out executing program release/examples/primers/taskParallel] (06/24/11, 07/03/11, 07/16/11)
 [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (07/03/11)
 
 
@@ -520,7 +533,8 @@ nondet. execution timeouts
 --------------------------
 [Error: Timed out executing program release/examples/hello6-taskpar-dist] (07/02/11)
 [Error: Timed out executing program release/examples/hpcc/stream] (06/26/11, 07/05/11)
-[Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop] (07/02/11)
+[Error: Timed out executing program release/examples/hpcc/ra] (07/18/11)
+[Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop] (07/02/11, 07/13/11, 07/16/11)
 [Error: Timed out executing program release/examples/hpcc/variants/stream-promoted] (06/27/11, 07/01/11)
 
 execution timeouts (ever since switching to 4 shepherds)
@@ -528,8 +542,60 @@ execution timeouts (ever since switching to 4 shepherds)
 [Error: Timed out executing program release/examples/hello4-datapar-dist]
 [Error: Timed out executing program release/examples/hpcc/fft]
 [Error: Timed out executing program release/examples/hpcc/hpl]
-[Error: Timed out executing program release/examples/hpcc/ra]
 
+
+=======================
+qthreads-specific tests
+=======================
+
+failed since testing started (likely call stack size issues)
+------------------------------------------------------------
+[Error matching program output for release/examples/hello4-datapar-dist]
+[Error matching program output for release/examples/hpcc/fft]
+[Error matching program output for release/examples/hpcc/hpl]
+[Error matching program output for release/examples/hpcc/ptrans]
+[Error matching program output for release/examples/hpcc/stream-ep]
+[Error matching program output for release/examples/hpcc/stream]
+[Error matching program output for release/examples/hpcc/variants/stream-promoted]
+[Error matching program output for release/examples/primers/arrays]
+[Error matching program output for release/examples/primers/distributions]
+[Error matching program output for release/examples/primers/fileIO]
+[Error matching program output for release/examples/primers/reductions]
+[Error matching program output for release/examples/programs/jacobi]
+[Error matching program output for release/examples/programs/norm]
+[Error matching program output for release/examples/spec/Arrays/slicing]
+[Error matching program output for release/examples/spec/Arrays/sparse-error]
+[Error matching program output for release/examples/spec/Arrays/whole-array-ops]
+[Error matching program output for release/examples/spec/Classes/thisMethod]
+[Error matching program output for release/examples/spec/Data_Parallelism/forallFilter]
+[Error matching program output for release/examples/spec/Data_Parallelism/promotion]
+[Error matching program output for release/examples/spec/Functions/variable-functions]
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncSpinWait]
+
+
+==============================
+qthreads+gasnet-specific tests
+==============================
+
+[Error matching program output for release/examples/hello2-module]
+[Error matching program output for release/examples/hello3-datapar]
+[Error matching program output for release/examples/hello5-taskpar]
+[Error matching program output for release/examples/hello6-taskpar-dist]
+[Error matching program output for release/examples/hello]
+[Error matching program output for release/examples/hpcc/ra]
+[Error matching program output for release/examples/hpcc/variants/ra-cleanloop]
+[Error matching program output for release/examples/primers/locales]
+[Error matching program output for release/examples/primers/sparse]
+[Error matching program output for release/examples/programs/beer]
+[Error matching program output for release/examples/programs/genericStack]
+[Error matching program output for release/examples/programs/prodCons]
+[Error matching program output for release/examples/programs/quicksort]
+[Error matching program output for release/examples/spec/Arrays/assign]
+[Error matching program output for release/examples/spec/Data_Parallelism/reduce-loc]
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/beginOrdered]
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/beginUnordered]
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2]
+[Error matching program output for release/examples/spec/Tuples/aliasing]
 
 
 =======================
