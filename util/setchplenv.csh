@@ -3,7 +3,7 @@
 # shallow test to see if we are in the correct directory
 # Just probe to see if we have a few essential subdirectories --
 # indicating that we are probably in a Chapel root directory.
-if ( ! -d "util" || ! -d "spec" || ! -d "runtime" || ! -d "modules" ) then
+if ( ! -d "util" || ! -d "compiler" || ! -d "runtime" || ! -d "modules" ) then
    echo "Error: source util/setchplenv from within the chapel directory"
    exit
 endif
