@@ -151,7 +151,7 @@ err_t _append_char(char** buf, size_t* buf_len, size_t* buf_max, wchar_t chr)
 // -10 -- variable byte length before (hi-bit 1 means more, little endian)
 // -0x01XX -- read until terminator XX is read
 //  + -- nonzero positive -- read exactly this length.
-err_t qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* ch, const char** out, ssize_t* len_out)
+err_t qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* ch, const char** out, ssize_t* len_out, ssize_t maxlen)
 {
   err_t err;
   uint8_t term = 0;
@@ -164,6 +164,8 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
   int found_term=0;
   ssize_t len;
   int64_t amt = 0;
+
+  if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -210,6 +212,10 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
   if( err ) goto rewind;
 
   if( num > (SSIZE_MAX-1) ) {
+    err = EOVERFLOW;
+    goto rewind;
+  }
+  if( num > maxlen ) {
     err = EOVERFLOW;
     goto rewind;
   }
@@ -262,7 +268,7 @@ unlock:
 }
 
 // allocates and returns a string.
-err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const char** out, ssize_t* len_out)
+err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const char** out, ssize_t* len_out, ssize_t maxlen)
 {
   err_t err;
   char* ret = NULL;
@@ -277,6 +283,9 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const cha
   int handle_u;
   unsigned long conv;
   qio_style_t* style;
+  ssize_t nread = 0;
+
+  if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -332,7 +341,7 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const cha
   }
 
   err = 0;
-  while( !err ) {
+  for( nread = 0; nread < maxlen && !err; nread++ ) {
     err = qio_channel_read_char(false, ch, &chr);
     if( err ) break;
 
@@ -405,6 +414,63 @@ unlock:
       *out = ret;
       *len_out = ret_len;
     }
+  }
+
+  return err;
+}
+
+err_t qio_channel_scan_match(const int threadsafe, qio_channel_t* ch, const char* match, int skipws)
+{
+  err_t err;
+  wchar_t chr = -1;
+  ssize_t nread = 0;
+
+  if( match[0] == '\0' ) return EINVAL;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+
+
+  err = qio_channel_mark(false, ch);
+  if( err ) goto unlock;
+
+  if( skipws ) {
+    while( 1 ) {
+      err = qio_channel_read_char(false, ch, &chr);
+      if( err ) break;
+      if( ! iswspace(chr) ) break;
+    }
+  } else {
+    err = qio_channel_read_char(false, ch, &chr);
+  }
+
+  if( err == 0 && chr == match[0] ) {
+    for( nread = 1; match[nread]; nread++ ) {
+      err = qio_channel_read_char(false, ch, &chr);
+      if( err ) break;
+      if( chr != match[nread]) break;
+    }
+  }
+
+  if( err == 0 ) {
+    if( match[nread] == '\0' ) {
+      // we matched the whole thing!
+      err = 0;
+    } else {
+      err = EFORMAT;
+    }
+  }
+
+  if( err ) {
+    qio_channel_revert_unlocked(ch);
+  } else {
+    qio_channel_commit_unlocked(ch);
+  }
+unlock:
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
   }
 
   return err;

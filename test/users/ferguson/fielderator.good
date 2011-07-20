@@ -1,0 +1,10 @@
+x
+3
+y
+hi
+z
+17.23
+has .something 1
+has .nothing 0
+Calling .something
+got z 17.23

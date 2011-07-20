@@ -1,3 +1,15 @@
+// These should really just be use IO,
+// but I get scope-resolve errors if
+// they're not here as well. I'm guessing
+// it's a problem because this is an
+// internal module.
+
+
+//use SysBasic;
+// BEGIN SysBasic.chpl
+
+//module SysBasic {
+
   /* BASIC TYPES */
   _extern type c_uint = uint(32);
   _extern type c_int = int(32);
@@ -158,21 +170,18 @@
   _extern const EWOULDBLOCK:err_t;
   _extern const EXDEV:err_t;
   _extern const EXFULL:err_t;
+//}
 
+// END SysBasic.chpl
 
-// These should really just be use IO,
-// but I get scope-resolve errors if
-// they're not here as well. I'm guessing
-// it's a problem because this is an
-// internal module.
-//use Sys;
-//use Buffers;
 //use Error;
-//use IO;
+// BEGIN Error.chpl
+
+//module Error {
+//  use SysBasic;
 
   // here's what we need from Sys
   _extern proc sys_strerror_str(error:err_t, inout err_in_strerror:err_t):string;
-
 
   class ErrorHandler {
     // override this method to get error handling other
@@ -238,7 +247,16 @@
       }
     }
   }
+//}
 
+// END Error.chpl
+//use IO;
+// BEGIN IO.chpl
+
+
+//module IO {
+  //use SysBasic;
+  //use Error;
 
 
   enum iokind {
@@ -482,6 +500,10 @@
   _extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_written:ssize_t):err_t;
   _extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
 
+  _extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+  _extern proc qio_channel_revert(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+  _extern proc qio_channel_commit(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+
   /*
   _extern proc qio_scanf(threadsafe:c_int, ch:qio_channel_ptr_t, inout nmatched:c_int, fmt:string, inout args...?numargs):err_t;
   _extern proc qio_scanf1(threadsafe:c_int, ch:qio_channel_ptr_t, fmt:string, inout arg):err_t;
@@ -502,7 +524,7 @@
   _extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
   _extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
 
-  _extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, inout s:string, inout len:ssize_t):err_t;
+  _extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, inout s:string, inout len:ssize_t, maxlen:ssize_t):err_t;
   _extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, s:string, len:ssize_t):err_t;
 
   _extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
@@ -520,9 +542,10 @@
   _extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
   _extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
-  _extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr:string, inout len:ssize_t):err_t;
+  _extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr:string, inout len:ssize_t, maxlen:ssize_t):err_t;
   _extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:string, len:ssize_t):err_t;
  
+  _extern proc qio_channel_scan_match(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, skipws:c_int):err_t;
   //type iostyle = qio_style_t;
 
   proc defaultStyle():iostyle {
@@ -931,12 +954,41 @@
 
    proc _isIoPrimitiveTypeOrNewline(type t) param return
     _isIoPrimitiveType(t) || t == ioNewline;
- 
+
   // Read routines for all primitive types.
   proc channel._read_text_internal(out x:?t):err_t where _isIoPrimitiveType(t) {
     if writing then compilerError("read on write-only channel");
 
-    if _isIntegralType(t) || _isBooleanType(t) {
+    if _isBooleanType(t) {
+      var err:err_t;
+      var got:bool;
+
+      err = qio_channel_scan_match(false, _channel_internal, "true", 1);
+      if err == 0 then got = true;
+      else {
+        err = qio_channel_scan_match(false, _channel_internal, "false", 1);
+        if err == 0 then got = false;
+        else {
+          err = qio_channel_scan_match(false, _channel_internal, "1", 1);
+          if err == 0 then got = true;
+          else {
+            err = qio_channel_scan_match(false, _channel_internal, "0", 1);
+            if err == 0 then got = false;
+            else {
+              err = qio_channel_scan_match(false, _channel_internal, "yes", 1);
+              if err == 0 then got = true;
+              else {
+                err = qio_channel_scan_match(false, _channel_internal, "no", 1);
+                if err == 0 then got = false;
+              }
+            }
+          }
+        }
+      }
+
+      if err == 0 then x = got;
+      return err;
+    } else if _isIntegralType(t) {
       // handles bool (as unsigned), int types
       return qio_channel_scan_int(false, _channel_internal, x, numBytes(t), _isSignedType(t));
     } else if _isFloatType(t) {
@@ -953,7 +1005,7 @@
     } else if t == string {
       // handle string
       var len:ssize_t;
-      return qio_channel_scan_string(false, _channel_internal, x, len);
+      return qio_channel_scan_string(false, _channel_internal, x, len, -1);
     } else if _isEnumeratedType(t) {
       compilerError("Enumerated types not yet supported in text channel.read (_read_text_internal)");
     } else {
@@ -965,9 +1017,16 @@
   proc channel._write_text_internal(x:?t):err_t where _isIoPrimitiveType(t) {
     if !writing then compilerError("write on read-only channel");
 
-    if _isIntegralType(t) || _isBooleanType(t) {
+    if _isBooleanType(t) {
+      if x {
+        return qio_channel_print_string(false, _channel_internal, "true", 4);
+      } else {
+        return qio_channel_print_string(false, _channel_internal, "false", 5);
+      }
+    } else if _isIntegralType(t) {
       // handles bool (as unsigned), int types
       return qio_channel_print_int(false, _channel_internal, x, numBytes(t), _isSignedType(t));
+ 
     } else if _isFloatType(t) {
       // handles real, imag
       return qio_channel_print_float(false, _channel_internal, x, numBytes(t));
@@ -991,7 +1050,19 @@
   proc channel._read_binary_internal(param byteorder:iokind, out x:?t):err_t where _isIoPrimitiveType(t) {
     if writing then compilerError("read on write-only channel");
 
-    if _isIntegralType(t) || _isBooleanType(t) {
+    if _isBooleanType(t) {
+      var zero_one:uint(8);
+      var err:err_t;
+      err = qio_channel_read_int(false, byteorder, _channel_internal, zero_one, 1, 0);
+      if err == 0 {
+        if zero_one == 0 {
+          x = false;
+        } else {
+          x = true;
+        }
+      }
+      return err;
+    } else if _isIntegralType(t) {
       // handles bool (as unsigned), int types
       return qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(t), _isSignedType(t));
     } else if _isFloatType(t) {
@@ -1008,7 +1079,7 @@
     } else if t == string {
       // handle string
       var len:ssize_t;
-      return qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, len);
+      return qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, len, -1);
     } else if _isEnumeratedType(t) {
       compilerError("Enumerated types not yet supported in binary channel.read (_read_binary_internal)");
     } else {
@@ -1019,7 +1090,15 @@
   proc channel._write_binary_internal(param byteorder:iokind, x:?t):err_t where _isIoPrimitiveType(t) {
     if !writing then compilerError("write on read-only channel");
 
-    if _isIntegralType(t) || _isBooleanType(t) {
+    if _isBooleanType(t) {
+      var zero_one:uint(8);
+      if x {
+        zero_one = 1;
+      } else {
+        zero_one = 0;
+      }
+      return qio_channel_write_int(false, byteorder, _channel_internal, zero_one, 1, 0);
+    } else if _isIntegralType(t) {
       // handles bool (as unsigned), int types
       return qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(t), _isSignedType(t));
     } else if _isFloatType(t) {
@@ -1112,7 +1191,38 @@
     else {
       var err:err_t;
       var writer = new Writer(ch=this, err=0);
-      x.writeThis(writer);
+      if( __primitive("has method by name", t, "writeThis") ) {
+        x.writeThis(writer);
+      } else {
+        var binary:uint(8) = qio_channel_binary(_channel_internal);
+
+        param num_fields = __primitive("num fields", t);
+
+        if binary==0 {
+         if isClassType(t) then writer.write("{");
+         else writer.write("(");
+        }
+
+        // default writeThis method.
+        for param i in 1..num_fields {
+          if isClassType(t) && (__primitive("field num to name", t, i) == "super") {
+            // don't write super=
+          } else {
+            if binary==0 {
+              writer.write(__primitive("field num to name", t, i));
+              writer.write(" = ");
+            }
+            writer.write(__primitive("field value by num", x, i));
+            if binary==0 {
+              if i < num_fields then writer.write(", ");
+            }
+          }
+        }
+        if binary==0 {
+         if isClassType(t) then writer.write("}");
+         else writer.write(")");
+        }
+      }
       err = writer.err;
       delete writer;
       return err;
@@ -1529,516 +1639,92 @@
     return stdin.read((...t));
   }
 
-// TODO -- we need to replace Writer with channel!
-/*class Writer {
-  proc write(args ...?n) { }
-  proc writeln(args ...?n) { }
-  proc writeln() { }
-}*/
-class Writer {
-  var ch:channel(true, iokind.dynamic);
-  var err:err_t;
-  proc write(args ...?k) {
-    for param i in 1..k {
-      if err == 0 {
-        err = ch._write_one_internal(iokind.dynamic, args(i));
+  // TODO -- we need to replace Writer with channel!
+  /*class Writer {
+    proc write(args ...?n) { }
+    proc writeln(args ...?n) { }
+    proc writeln() { }
+  }*/
+  class Writer {
+    var ch:channel(true, iokind.dynamic);
+    var err:err_t;
+    proc write(args ...?k) {
+      for param i in 1..k {
+        if err == 0 {
+          err = ch._write_one_internal(iokind.dynamic, args(i));
+        }
+      }
+    }
+    proc writeln(args ...?k) {
+      for param i in 1..k {
+        if err == 0 {
+          err = ch._write_one_internal(iokind.dynamic, args(i));
+        }
+      }
+
+      var nl = new ioNewline();
+      if err == 0 then err = ch._write_one_internal(iokind.dynamic, nl);
+    }
+    proc writeln() {
+      var nl = new ioNewline();
+      if err == 0 then err = ch._write_one_internal(iokind.dynamic, nl);
+    }
+  }
+
+  class Reader {
+    var ch:channel(false, iokind.dynamic);
+    var err:err_t;
+    proc read(args ...?k):bool {
+      for param i in 1..k {
+        if err == 0 {
+          err = ch._read_one_internal(iokind.dynamic, args(i));
+        }
+      }
+
+      if err == EEOF {
+        err = 0;
+        return false;
+      } else {
+        return true;
+      }
+    }
+    proc readln(args ...?k):bool {
+      for param i in 1..k {
+        if err == 0 {
+          err = ch._read_one_internal(iokind.dynamic, args(i));
+        }
+      }
+
+      var nl = new ioNewline();
+      if err == 0 then err = ch._read_one_internal(iokind.dynamic, nl);
+
+      if err == EEOF {
+        err = 0;
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    proc readln():bool {
+      var nl = new ioNewline();
+      if err == 0 then err = ch._read_one_internal(iokind.dynamic, nl);
+
+      if err == EEOF {
+        err = 0;
+        return false;
+      } else {
+        return true;
       }
     }
   }
-  proc writeln(args ...?k) {
-    for param i in 1..k {
-      if err == 0 {
-        err = ch._write_one_internal(iokind.dynamic, args(i));
-      }
-    }
+//}
 
-    var nl = new ioNewline();
-    if err == 0 then err = ch._write_one_internal(iokind.dynamic, nl);
-  }
-  proc writeln() {
-    var nl = new ioNewline();
-    if err == 0 then err = ch._write_one_internal(iokind.dynamic, nl);
-  }
-}
+// END IO.chpl
+//use IO;
 
-class Reader {
-  var ch:channel(false, iokind.dynamic);
-  var err:err_t;
-  proc read(args ...?k):bool {
-    for param i in 1..k {
-      if err == 0 {
-        err = ch._read_one_internal(iokind.dynamic, args(i));
-      }
-    }
 
-    if err == EEOF {
-      err = 0;
-      return false;
-    } else {
-      return true;
-    }
-  }
-  proc readln(args ...?k):bool {
-    for param i in 1..k {
-      if err == 0 {
-        err = ch._read_one_internal(iokind.dynamic, args(i));
-      }
-    }
-
-    var nl = new ioNewline();
-    if err == 0 then err = ch._read_one_internal(iokind.dynamic, nl);
-
-    if err == EEOF {
-      err = 0;
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  proc readln():bool {
-    var nl = new ioNewline();
-    if err == 0 then err = ch._read_one_internal(iokind.dynamic, nl);
-
-    if err == EEOF {
-      err = 0;
-      return false;
-    } else {
-      return true;
-    }
-  }
-}
-
-
-/*const stderr = new Writer();
-
-  proc write(args ...?n) { }
-  proc writeln(args ...?n) { }
-  proc writeln() { }
-*/
-/*
-
-_extern proc chpl_cstdin(): _file;
-_extern proc chpl_cstdout(): _file;
-_extern proc chpl_cstderr(): _file;
-_extern proc chpl_cerrno(): string;
-_extern proc chpl_cnullfile(): _file;
-_extern proc chpl_fopen(filename: string, modestring: string): _file;
-_extern proc chpl_fclose(file: _file): int;
-_extern proc chpl_fflush(file: _file): int;
-_extern proc chpl_fprintf(file: _file, s: string): int;
-_extern proc chpl_format(fmt: string, x): string;
-
-// class file
-//
-//  chapel-level implementations of read, write, writeln
-//  chapel-level implementations of assert, halt
-
-enum FileAccessMode { read, write };
-
-//
-// functions on _file primitive type, the C file pointer type
-//
-pragma "inline" proc =(a: _file, b: _file) return b;
-pragma "inline" proc ==(a: _file, b: _file) return __primitive("==", a, b);
-pragma "inline" proc !=(a: _file, b: _file) return __primitive("!=", a, b);
-
-pragma "inline" proc _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
-  return __primitive("_fscan_literal", fp, val, ignoreWhiteSpace);
-
-const stdin  = new file("stdin", FileAccessMode.read, "/dev", chpl_cstdin());
-const stdout = new file("stdout", FileAccessMode.write, "/dev", chpl_cstdout());
-const stderr = new file("stderr", FileAccessMode.write, "/dev", chpl_cstderr());
-
-class file: Writer {
-  var filename : string = "";
-  var mode : FileAccessMode = FileAccessMode.read;
-  var path : string = ".";
-  var _fp : _file;
-  var _lock : sync uint(64);    // for serializing output
-
-  proc open() {
-    on this {
-      if this == stdin || this == stdout || this == stderr then
-        halt("***Error: It is not necessary to open \"", filename, "\"***");
-
-      var fullFilename = path + "/" + filename;
-
-      var modestring: string;
-      select mode {
-        when FileAccessMode.read  do modestring = "r";
-        when FileAccessMode.write do modestring = "w";
-      }
-      _fp = chpl_fopen(fullFilename, modestring);
-
-      if _fp == chpl_cnullfile() {
-        const err = chpl_cerrno();
-        halt("***Error: Unable to open \"", fullFilename, "\": ", err, "***");
-      }
-    }
-  }
-
-  proc _checkFileStateChangeLegality(state) {
-    if (isOpen) {
-      halt("Cannot change ", state, " of file ", path, "/", filename, 
-           " while it is open");
-    }
-  }
-
-  proc filename var : string {
-    if setter then
-      _checkFileStateChangeLegality("filename");
-    return filename;
-  }
-
-  proc path var : string {
-    if setter then
-      _checkFileStateChangeLegality("path");
-    return path;
-  }
-
-  proc mode var {
-    if setter then
-      _checkFileStateChangeLegality("mode");
-    return mode;
-  }
-
-  proc isOpen: bool {
-    var openStatus: bool = false;
-    if (_fp != chpl_cnullfile()) {
-      openStatus = true;
-    }
-    return openStatus;
-  }
-  
-  proc close() {
-    on this {
-      if (this == stdin || this == stdout || this == stderr) {
-        halt("***Error: You may not close \"", filename, "\"***");
-      }
-      if (_fp == chpl_cnullfile()) {
-        var fullFilename = path + "/" + filename;
-        halt("***Error: Trying to close \"", fullFilename, 
-             "\" which isn't open***");
-      }
-      var returnVal: int = chpl_fclose(_fp);
-      if (returnVal < 0) {
-        var fullFilename = path + "/" + filename;
-        const err = chpl_cerrno();
-        halt("***Error: The close of \"", fullFilename, "\" failed: ", err, 
-             "***");
-      }
-      _fp = chpl_cnullfile();
-    }
-  }
-}
-
-proc file.writeThis(f: Writer) {
-  f.write("(filename = ",this.filename);
-  f.write(", path = ",this.path);
-  f.write(", mode = ",this.mode);
-  f.write(")");
-}
-
-proc file.flush() {
-  on this do chpl_fflush(_fp);
-}
-
-proc file.eof {
-  _extern proc feof(fp: _file): int;  // This should be a c_int not Chapel 'int'
-  return (feof(_fp) != 0);
-}
-
-
-proc _checkOpen(f: file, isRead: bool) {
-  if !f.isOpen {
-    var fullFilename:string = f.path + "/" + f.filename;
-    if isRead {
-      halt("***Error: You must open \"", fullFilename, 
-           "\" before trying to read from it***");
-    } else {
-      halt("***Error: You must open \"", fullFilename, 
-           "\" before trying to write to it***");
-    }
-  }
-}
-
-proc file.readln() {
-  on this {
-    if !isOpen then
-      _checkOpen(this, isRead=true);
-    __primitive("_readToEndOfLine",_fp);
-  }
-}
-
-proc file.readln(inout list ...?n) {
-  read((...list));
-  on this {
-    __primitive("_readToEndOfLine",_fp);
-  }
-} 
-
-proc file.readln(type t) {
-  var val: t;
-  this.readln(val);
-  return val;
-}
-
-proc file.read(inout first, inout rest ...?n) {
-  read(first);
-  for param i in 1..n do
-    read(rest(i));
-}
-
-proc file.read(inout val: int) {
-  if !isOpen then
-    _checkOpen(this, isRead=true);
-  var x: int;
-  on this {
-    x = __primitive("_fscan_int32", _fp);
-  }
-  val = x;
-}
-
-proc file.read(inout val: uint) {
-  if !isOpen then
-    _checkOpen(this, isRead=true);
-  var x: uint;
-  on this {
-    x = __primitive("_fscan_uint32", _fp);
-  }
-  val = x;
-}
-
-proc file.read(inout val: real) {
-  if !isOpen then
-    _checkOpen(this, isRead=true);
-  var x: real;
-  on this {
-    x = __primitive("_fscan_real64", _fp);
-  }
-  val = x;
-}
-
-proc file.read(inout val: complex) {
-  var realPart: real;
-  var imagPart: real;
-  var imagI: string;
-  var matchingCharWasRead: int;
-  var isNeg: bool;
-
-  read(realPart);
-  on this {
-    matchingCharWasRead = _readLitChar(_fp, "+", true);
-  }
-  if (matchingCharWasRead != 1) {
-    on this {
-      matchingCharWasRead = _readLitChar(_fp, "-", true);
-    }
-    if (matchingCharWasRead != 1) {
-      halt("***Error: Incorrect format for complex numbers***");
-    }
-    isNeg = true;
-  }
-
-  read(imagPart);
-  on this {
-    matchingCharWasRead = _readLitChar(_fp, "i", false);
-  }
-  if (matchingCharWasRead != 1) {
-    halt("***Error: Incorrect format for complex numbers***");
-  }
-
-  val.re = realPart;
-  if (isNeg) {
-    val.im = -imagPart;
-  } else {
-    val.im = imagPart;
-  }
-}
-
-proc file.read(inout val: string) {
-  if !isOpen then
-    _checkOpen(this, isRead=true);
-  var x: string;
-  on this {
-    x = __primitive("_fscan_string", _fp);
-  }
-  val = x;
-}
-
-proc file.read(inout val: bool) {
-  var s: string;
-  this.read(s);
-  if (s == "true") {
-    val = true;
-  } else if (s == "false") {
-    val = false;
-  } else {
-    halt("read of bool value that is neither true nor false");
-  }
-}
-
-proc file.read(type t) {
-  var val: t;
-  this.read(val);
-  return val;
-}
-
-proc string.writeThis(f: Writer) {
-  f.writeIt(this);
-}
-
-proc numeric.writeThis(f: Writer) {
-  f.writeIt(this:string);
-}
-
-proc enumerated.writeThis(f: Writer) {
-  f.writeIt(this:string);
-}
-
-proc bool.writeThis(f: Writer) {
-  f.writeIt(this:string);
-}
-
-proc chpl_taskID_t.writeThis(f: Writer) {
-  var tmp : uint(64) = this : uint(64);
-  f.writeIt(tmp : string);
-}
-
-proc file.writeIt(s: string) {
-  if !isOpen then
-    _checkOpen(this, isRead = false);
-  if mode != FileAccessMode.write then
-    halt("***Error: ", path, "/", filename, " not open for writing***");
-  var status = chpl_fprintf(_fp, s);
-  if status < 0 {
-    const err = chpl_cerrno();
-    halt("***Error: Write failed: ", err, "***");
-  }
-}
-
-class StringClass: Writer {
-  var s: string;
-  proc writeIt(s: string) { this.s += s; }
-}
-
-pragma "ref this" pragma "dont disable remote value forwarding"
-proc string.write(args ...?n) {
-  var sc = new StringClass(this);
-  sc.write((...args));
-  this = sc.s;
-  delete sc;
-}
-
-proc file.lockWrite() {
-  var me: uint(64) = __primitive("task_id") : uint(64);
-  if _lock.isFull then
-    if _lock.readXX() == me then
-      return false;
-  _lock = me;
-  return true;
-}
-
-proc file.unlockWrite() {
-  _lock.reset();
-}
-
-class Writer {
-  proc writeIt(s: string) { }
-  proc lockWrite() return false;
-  proc unlockWrite() { }
-  proc write(args ...?n) {
-    proc isNilObject(val) {
-      proc helper(o: object) return o == nil;
-      proc helper(o)         return false;
-      return helper(val);
-    }
-
-    on this {
-      var need_release: bool;
-      need_release = lockWrite();
-      for param i in 1..n do
-        if isNilObject(args(i)) then
-          "nil".writeThis(this);
-        else
-          args(i).writeThis(this);
-      if need_release then
-        unlockWrite();
-    }
-  }
-  proc writeln(args ...?n) {
-    write((...args), "\n");
-  }
-  proc writeln() {
-    write("\n");
-  }
-}
-
-proc write(args ...?n) {
-  stdout.write((...args));
-  stdout.flush();
-}
-
-proc writeln(args ...?n) {
-  stdout.writeln((...args));
-  stdout.flush();
-}
-
-proc writeln() {
-  stdout.writeln();
-  stdout.flush();
-}
-
-proc read(inout args ...?n) {
-  stdin.read((...args));
-}
-
-proc readln(inout args ...?n) {
-  stdin.readln((...args));
-}
-
-proc readln() {
-  stdin.readln();
-}
-
-proc readln(type t) {
-  return stdin.readln(t);
-}
-
-proc read(type t)
-  return stdin.read(t);
-
-proc file.readln(type t ...?numTypes) where numTypes > 1 {
-  var tupleVal: t;
-  for param i in 1..numTypes-1 do
-    tupleVal(i) = this.read(t(i));
-  tupleVal(numTypes) = this.readln(t(numTypes));
-  return tupleVal;
-}
-
-proc file.read(type t ...?numTypes) where numTypes > 1 {
-  var tupleVal: t;
-  for param i in 1..numTypes do
-    tupleVal(i) = this.read(t(i));
-  return tupleVal;
-}
-
-proc readln(type t ...?numTypes) where numTypes > 1
-  return stdin.readln((...t));
-
-proc read(type t ...?numTypes) where numTypes > 1
-  return stdin.read((...t));
-  
-proc _tuple2string(t) {
-  var s: string;
-  for param i in 1..t.size do
-    s.write(t(i));
-  return s;
-}
-*/
-
-_extern proc chpl_error_noexit(message:string, lineno:int(32), filename:string);
+_extern proc chpl_exit_backtrace(exit_code:c_int);
 
 proc assert(test: bool) {
   if !test then
@@ -2047,10 +1733,12 @@ proc assert(test: bool) {
 
 proc assert(test: bool, args ...?numArgs) {
   if !test {
-    chpl_error_noexit("assert failed - ", -1, "");
-    writeln(args);
+    //chpl_error_noexit("assert failed - ", -1, "");
+    __primitive("chpl_error_noexit", "assert failed");
+    stderr.writeln(args);
+    chpl_exit_backtrace(1);
     //exit(1);
-    __primitive("chpl_error", "assert failed");
+    //__primitive("chpl_error", "assert failed");
   }
 }
 
@@ -2063,10 +1751,12 @@ proc halt(s:string) {
 }
 
 proc halt(args ...?numArgs) {
-  chpl_error_noexit("halt reached - ", -1, "");
-  writeln(args);
-    //exit(1);
-  __primitive("chpl_error", "halt reached");
+  //chpl_error_noexit("halt reached - ", -1, "");
+  __primitive("chpl_error_noexit", "assert failed");
+  stderr.writeln(args);
+  chpl_exit_backtrace(1);
+  //exit(1);
+  //__primitive("chpl_error", "halt reached");
 }
 
 proc _debugWrite(args...?n) {
@@ -2104,6 +1794,7 @@ proc _ddata.writeThis(f: Writer) {
   halt("cannot write the _ddata class");
 }
 
+/* these should not be needed
 proc enumerated.writeThis(f: Writer) {
   f.write(this:string);
 }
@@ -2111,11 +1802,11 @@ proc enumerated.writeThis(f: Writer) {
 proc bool.writeThis(f: Writer) {
   f.write(this:string);
 }
-
+*/
 
 proc chpl_taskID_t.writeThis(f: Writer) {
   var tmp : uint(64) = this : uint(64);
-  f.write(tmp : string);
+  f.write(tmp);
 }
 
 

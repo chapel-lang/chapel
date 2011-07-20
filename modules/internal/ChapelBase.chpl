@@ -1755,3 +1755,9 @@ proc fieldValueByName(x, param name) {
   compilerError("Not yet implemented");
   return __primitive("field value by name", x, name);
 }
+
+
+proc isClassType(type t) param where t:object return true;
+proc isClassType(type t) return false;
+
+

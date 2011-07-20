@@ -444,7 +444,7 @@ err_t qio_channel_write_complex(const int threadsafe, const int byteorder, qio_c
 // -10 -- variable byte length before (hi-bit 1 means more, little endian)
 // -0x01XX -- read until terminator XX is read
 //  + -- nonzero positive -- read exactly this length.
-err_t qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* ch, const char** out, ssize_t* len_out);
+err_t qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* ch, const char** out, ssize_t* len_out, ssize_t maxlen);
 
 // string binary style:
 // -1 -- 1 byte of length before
@@ -456,6 +456,9 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
 //  + -- nonzero positive -- read exactly this length.
 err_t qio_channel_write_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* ch, const char* ptr, ssize_t len);
 
+
+err_t qio_channel_scan_bool(const int threadsafe, qio_channel_t* ch, uint8_t* out);
+err_t qio_channel_print_bool(const int threadsafe, qio_channel_t* ch, uint8_t num);
 
 err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* ch, void* out, size_t len, int issigned);
 err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* ch, void* out, size_t len);
@@ -561,7 +564,10 @@ err_t qio_channel_write_newline(const int threadsafe, qio_channel_t* ch)
   return qio_channel_write_amt(threadsafe, ch, &c, 1);
 }
 
-err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const char** out, ssize_t* len_out);
+err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const char** out, ssize_t* len_out, ssize_t maxlen);
+
+// returns 0 if it matched, or EFORMAT if it did not.
+err_t qio_channel_scan_match(const int threadsafe, qio_channel_t* ch, const char* match, int skipws);
 
 err_t qio_channel_print_string(const int threadsafe, qio_channel_t* ch, const char* ptr, ssize_t len);
 

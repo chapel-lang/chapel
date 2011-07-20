@@ -530,6 +530,7 @@ initPrimitive() {
   prim_def("chpl_setMemFlags", returnInfoVoid, true);
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
+  prim_def(PRIM_RT_ERROR_NOEXIT, "chpl_error_noexit", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
 
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid, true);
@@ -555,6 +556,7 @@ initPrimitive() {
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
   prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);
   prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
+  prim_def(PRIM_HAS_METHOD_BY_NAME, "has method by name", returnInfoInt32);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

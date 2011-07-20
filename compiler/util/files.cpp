@@ -444,6 +444,9 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   }
   fprintf(makefile.fptr, " %s\n", ccflags);
   fprintf(makefile.fptr, "COMP_GEN_LFLAGS =");
+  if (debugCCode) {
+    fprintf(makefile.fptr, " $(DEBUG_LFLAGS)");
+  }
   fprintf(makefile.fptr, " %s\n", ldflags);
   fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);

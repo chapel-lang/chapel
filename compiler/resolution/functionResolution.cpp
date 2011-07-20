@@ -3342,21 +3342,39 @@ preFold(Expr* expr) {
       }
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NAME)) {
-      /*
-      ClassType* classtype = toClassType(call->get(1)->typeinfo());
-      int fieldname = toVarSymbol(toSymExpr(call->get(2))->var)->immediate->int_value();
+      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+      Immediate* imm = toVarSymbol(toSymExpr(call->get(2))->var)->immediate;
+
+      // fail horribly if immediate is not a string .
+      INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
+
+      const char* fieldname = imm->v_string;
       int fieldcount = 0;
-      const char* name = NULL;
       for_fields(field, classtype) {
         fieldcount++;
-        if (fieldcount == fieldnum) {
-          Expr* base = call->get(1)->remove();
-          call->replace(new CallExpr(".", call->get(1)->copy(), 
-                                     new_StringSymbol(field->name)));
+        if ( 0 == strcmp(field->name,  fieldname) ) {
+          result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(), 
+                                new_StringSymbol(field->name));
           break;
         }
       }
-      */
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_HAS_METHOD_BY_NAME)) {
+      Type* type = toSymExpr(call->get(1))->var->type;
+      Immediate* imm = toVarSymbol(toSymExpr(call->get(2))->var)->immediate;
+
+      // fail horribly if immediate is not a string .
+      INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
+
+      const char* methodname = imm->v_string;
+      int found = 0;
+      forv_Vec(FnSymbol*, method, type->methods) {
+        if( 0 == strcmp(method->name, methodname) ) {
+          found = 1;
+        }
+      }
+      result = new SymExpr(new_IntSymbol(found));
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_STAR_TUPLE_TYPE)) {
       Type* tupleType = call->get(1)->typeInfo();
       INT_ASSERT(tupleType->symbol->hasFlag(FLAG_TUPLE));

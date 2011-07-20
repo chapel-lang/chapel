@@ -8,11 +8,14 @@ extern int verbosity;
 
 void chpl_warning(const char* message, int32_t lineno, chpl_string filename);
 void chpl_error(const char* message, int32_t lineno, chpl_string filename);
-void chpl_error_noexit(const char* message, int32_t lineno, chpl_string filename);
 void chpl_internal_error(const char* message);
 #undef printf
 void chpl_msg(int verbose_level, const char* fmt, ...)
   __attribute__((format(printf, 2, 3)));
 #define printf PRINTF_DEF
+
+void chpl_error_noexit(const char* message, int32_t lineno, chpl_string filename);
+void chpl_exit_backtrace(int);
+int chpl_getexe_path(char* dst, size_t max_dst);
 
 #endif

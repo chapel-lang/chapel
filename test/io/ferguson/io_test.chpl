@@ -4,12 +4,13 @@ config const noisy = false;
 
 proc testio(param typ:iokind, style:iostyle, x)
 {
-  if noisy then writeln("Testing ",typ," ",typeToString(x.type)," ",style.binary," ",style.byteorder," ",style.str_style);
+  if noisy then writeln("Testing ",typ:int(64)," ",typeToString(x.type)," ",style.binary:int(64)," ",style.byteorder:int(64)," ",style.str_style);
   var f = opentmp();
   {
     var ch = f.writer(typ, style=style);
     if noisy then writeln("Writing ", x);
     ch.write(x);
+    ch.flush();
   }
   {
     var ch = f.reader(typ, style=style);
@@ -76,6 +77,7 @@ proc test_readlines()
     var ch = f.writer();
     ch.writeln("a b");
     ch.writeln("c d");
+    ch.flush();
   }
 
   if noisy then writeln("Testing readlines: channel.readline(line)");
@@ -128,6 +130,9 @@ proc main() {
   //testio(dynamic, defaultStyle().text(), 100:uint(8));
   //testio(dynamic, defaultStyle().text(), 57.24e23:real(32));
   testio(dynamic, defaultStyle().text(), 997.89+200.124i);
+
+  testio(true);
+  testio(false);
 
   testio(100:int(8));
   testio(-100:int(8));

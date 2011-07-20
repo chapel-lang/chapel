@@ -47,6 +47,7 @@ endif
 #
 ifeq ($(DEBUG), 1)
 CFLAGS += $(DEBUG_CFLAGS)
+LDFLAGS += $(DEBUG_LFLAGS)
 endif
 
 ifeq ($(OPTIMIZE), 1)
