@@ -8,7 +8,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <chplfp.h>
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
 #include "chpltimers.h"
 #include "chpltypes.h"

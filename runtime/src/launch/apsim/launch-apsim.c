@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "chpllaunch.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "error.h"
 
 #define WRAP_TO_STR(x) TO_STR(x)

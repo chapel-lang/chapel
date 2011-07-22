@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 
 #define HASHSIZE 1019
 

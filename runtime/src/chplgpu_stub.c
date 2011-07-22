@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "chplrt.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplgpu.h"
 void gpuAllocate(void **data, size_t size) {
   *data = chpl_alloc ( size, CHPL_RT_MD_CHAPEL_CODE, 0, 0 );

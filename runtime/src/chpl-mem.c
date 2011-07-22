@@ -8,7 +8,7 @@
 #include <limits.h>
 #include "chpl-comm.h"
 #define CHPL_MEM_C
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chpltypes.h"

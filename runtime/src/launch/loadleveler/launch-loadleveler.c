@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "chpllaunch.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
 

@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include "chplexit.h"
 #include "chpl-comm.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
 #include "chpl-tasks.h"
 #include "error.h"

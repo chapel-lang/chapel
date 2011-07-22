@@ -9,7 +9,7 @@
 
 #include "chpl-comm.h"
 #include "chpl-comm-heap-macros.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
 #include "error.h"
 

@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "chpllaunch.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "error.h"
 
 // from ../gasnetrun_ibv/launch-gasnetrun_ibv.c:

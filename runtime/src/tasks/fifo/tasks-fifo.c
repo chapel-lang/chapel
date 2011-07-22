@@ -10,7 +10,7 @@
 #include "chpl_rt_utils_static.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
 #include "chpl-tasks.h"
 #include "error.h"

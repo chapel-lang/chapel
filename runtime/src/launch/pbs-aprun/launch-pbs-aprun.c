@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include "chpllaunch.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
 

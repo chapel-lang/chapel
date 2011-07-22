@@ -4,7 +4,7 @@
 //
 #include "chplrt.h"
 #include "chpl-comm.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 
 #include <stdint.h>
 #include <string.h>
