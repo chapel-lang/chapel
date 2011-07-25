@@ -103,7 +103,7 @@ void nanos_chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize,
 
    chpl_localeID = init_chpl_localeID;
 
-/*  tp = chpl_alloc(sizeof(thread_private_data_t), CHPL_RT_MD_THREAD_PRIVATE_DATA, 0, 0);
+/*  tp = chpl_mem_alloc(sizeof(thread_private_data_t), CHPL_RT_MD_THREAD_PRIVATE_DATA, 0, 0);
   threadlayer_set_thread_private_data(tp);
   tp->serial_state = false;*/
 }
