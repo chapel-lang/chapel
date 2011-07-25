@@ -4,13 +4,13 @@
 #include "chpl-mem.h"
 #include "chplgpu.h"
 void gpuAllocate(void **data, size_t size) {
-  *data = chpl_alloc ( size, CHPL_RT_MD_CHAPEL_CODE, 0, 0 );
+  *data = chpl_mem_alloc ( size, CHPL_RT_MD_CHAPEL_CODE, 0, 0 );
   printf("gpuAllocate: Allocated %u bytes at %p\n", (unsigned int)size, *data);
 }
 
 void gpuFree(void **data) {
-  chpl_free( *data, 0, 0);
-  //printf("Freed data : gpuFree (chpl_free) at %p\n", data);
+  chpl_mem_free( *data, 0, 0);
+  //printf("Freed data : gpuFree (chpl_mem_free) at %p\n", data);
   printf("Freed data : gpuFree\n");
 }
 

@@ -114,7 +114,7 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
   if (!walltime) {
     walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   }
-  optionString = chpl_malloc(maxOptLength, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  optionString = chpl_mem_allocMany(maxOptLength, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
 
   length += snprintf(optionString + length, maxOptLength - length,
                      "-z -V -I -N Chpl-%.10s", genFilename);

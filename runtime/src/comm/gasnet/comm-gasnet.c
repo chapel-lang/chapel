@@ -100,17 +100,17 @@ static void fork_wrapper(fork_t *f) {
                                       SIGNAL,
                                       &(f->ack),
                                       sizeof(f->ack)));
-  chpl_free(f, 0, 0);
+  chpl_mem_free(f, 0, 0);
 }
 
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
-  fork_t *f = (fork_t*)chpl_malloc(nbytes, sizeof(char), CHPL_RT_MD_AM_FORK_DATA, 0, 0);
+  fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char), CHPL_RT_MD_AM_FORK_DATA, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_begin((chpl_fn_p)fork_wrapper, (void*)f, true, f->serial_state, NULL);
 }
 
 static void fork_large_wrapper(fork_t* f) {
-  void* arg = chpl_malloc(1, f->arg_size, CHPL_RT_MD_AM_FORK_ARG, 0, 0);
+  void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_AM_FORK_ARG, 0, 0);
 
   chpl_comm_get(arg, f->caller, *(void**)f->arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
@@ -119,15 +119,15 @@ static void fork_large_wrapper(fork_t* f) {
                                       SIGNAL,
                                       &(f->ack),
                                       sizeof(f->ack)));
-  chpl_free(f, 0, 0);
-  chpl_free(arg, 0, 0);
+  chpl_mem_free(f, 0, 0);
+  chpl_mem_free(arg, 0, 0);
 }
 
 ////GASNET - can we send as much of user data as possible initially
 ////           hide data copy by making get non-blocking
 ////GASNET - can we allocate f big enough so as not to need malloc in wrapper
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
-  fork_t* f = (fork_t*)chpl_malloc(1, nbytes, CHPL_RT_MD_AM_FORK_LARGE_DATA, 0, 0);
+  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_AM_FORK_LARGE_DATA, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_begin((chpl_fn_p)fork_large_wrapper, (void*)f,
              true, f->serial_state, NULL);
@@ -138,21 +138,21 @@ static void fork_nb_wrapper(fork_t *f) {
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-  chpl_free(f, 0, 0);
+  chpl_mem_free(f, 0, 0);
 }
 
 static void AM_fork_nb(gasnet_token_t  token,
                         void           *buf,
                         size_t          nbytes) {
-  fork_t *f = (fork_t*)chpl_malloc(nbytes, sizeof(char),
-                                   CHPL_RT_MD_AM_NB_FORK_DATA, 0, 0);
+  fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
+                                          CHPL_RT_MD_AM_NB_FORK_DATA, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)f,
              true, f->serial_state, NULL);
 }
 
 static void fork_nb_large_wrapper(fork_t* f) {
-  void* arg = chpl_malloc(1, f->arg_size, CHPL_RT_MD_AM_NB_FORK_ARG, 0, 0);
+  void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_AM_NB_FORK_ARG, 0, 0);
 
   chpl_comm_get(arg, f->caller, *(void**)f->arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
@@ -161,12 +161,12 @@ static void fork_nb_large_wrapper(fork_t* f) {
                                       &(f->ack),
                                       sizeof(f->ack)));
   (*chpl_ftable[f->fid])(arg);
-  chpl_free(f, 0, 0);
-  chpl_free(arg, 0, 0);
+  chpl_mem_free(f, 0, 0);
+  chpl_mem_free(arg, 0, 0);
 }
 
 static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
-  fork_t* f = (fork_t*)chpl_malloc(1, nbytes, CHPL_RT_MD_AM_NB_FORK_LARGE_DATA, 0, 0);
+  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_AM_NB_FORK_LARGE_DATA, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_begin((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
              true, f->serial_state, NULL);
@@ -188,8 +188,8 @@ static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) 
 }
 
 static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
-  chpl_free(*(void**)(*(fork_t**)buf)->arg, 0, 0);
-  chpl_free(*(void**)buf, 0, 0);
+  chpl_mem_free(*(void**)(*(fork_t**)buf)->arg, 0, 0);
+  chpl_mem_free(*(void**)buf, 0, 0);
 }
 
 // this is currently unused; it's intended to be used to implement
@@ -282,7 +282,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
 #undef malloc
   seginfo_table = (gasnet_seginfo_t*)malloc(chpl_numLocales*sizeof(gasnet_seginfo_t));
-#define malloc dont_use_malloc_use_chpl_malloc_instead
+#define malloc dont_use_malloc_use_chpl_mem_allocMany_instead
   GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, chpl_numLocales));
 #endif
 
@@ -343,9 +343,9 @@ void chpl_comm_init_shared_heap(void) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   void* heapStart = chpl_numGlobalsOnHeap*sizeof(void*) + (char*)seginfo_table[chpl_localeID].addr;
   size_t heapSize = seginfo_table[chpl_localeID].size - chpl_numGlobalsOnHeap*sizeof(void*);
-  chpl_initHeap(heapStart, heapSize);
+  chpl_mem_init(heapStart, heapSize);
 #else
-  chpl_initHeap(NULL, 0);
+  chpl_mem_init(NULL, 0);
 #endif
 }
 
@@ -375,7 +375,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   int payloadSize = size + sizeof(priv_bcast_t);
 
   if (payloadSize <= gasnet_AMMaxMedium()) {
-    priv_bcast_t* pbp = chpl_malloc(1, payloadSize, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
+    priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
     memcpy(pbp->data, chpl_private_broadcast_table[id], size);
     pbp->id = id;
     pbp->size = size;
@@ -384,11 +384,11 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
         GASNET_Safe(gasnet_AMRequestMedium0(locale, PRIV_BCAST, pbp, payloadSize));
       }
     }
-    chpl_free(pbp, 0, 0);
+    chpl_mem_free(pbp, 0, 0);
   } else {
     int maxpayloadsize = gasnet_AMMaxMedium();
     int maxsize = maxpayloadsize - sizeof(priv_bcast_large_t);
-    priv_bcast_large_t* pblp = chpl_malloc(1, maxpayloadsize, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
+    priv_bcast_large_t* pblp = chpl_mem_allocMany(1, maxpayloadsize, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
     pblp->id = id;
     for (offset = 0; offset < size; offset += maxsize) {
       int thissize = size - offset;
@@ -403,7 +403,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
         }
       }
     }
-    chpl_free(pblp, 0, 0);
+    chpl_mem_free(pblp, 0, 0);
   }
 }
 
@@ -594,7 +594,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
     } else {
       info_size = sizeof(fork_t) + sizeof(void*);
     }
-    info = (fork_t*)chpl_malloc(1, info_size, CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+    info = (fork_t*)chpl_mem_allocMany(1, info_size, CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
     info->caller = chpl_localeID;
     info->ack = &done;
     info->serial_state = chpl_task_getSerial();
@@ -619,7 +619,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
       chpl_task_yield();
     }
 #endif
-    chpl_free(info, 0, 0);
+    chpl_mem_free(info, 0, 0);
   }
 }
 
@@ -636,7 +636,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
   } else {
     info_size = sizeof(fork_t) + sizeof(void*);
   }
-  info = (fork_t*)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
   info->caller = chpl_localeID;
   info->ack = (int*)info; // pass address to free after get in large case
   info->serial_state = chpl_task_getSerial();
@@ -646,7 +646,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
     if (arg_size)
       memcpy(&(info->arg), arg, arg_size);
   } else {
-    argCopy = chpl_malloc(1, arg_size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+    argCopy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
     memcpy(argCopy, arg, arg_size);
     memcpy(&(info->arg), &argCopy, sizeof(void*));
   }
@@ -664,7 +664,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
     }
     if (passArg) {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
-      chpl_free(info, 0, 0);
+      chpl_mem_free(info, 0, 0);
     } else {
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB_LARGE, info, info_size));
     }

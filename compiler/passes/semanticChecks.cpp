@@ -258,8 +258,8 @@ checkResolved(void) {
     if (call->isPrimitive(PRIM_CHPL_FREE)) {
       // Statements of the form 'delete x' (PRIM_DELETE) are replace
       //  during the normalize pass with a call to the destructor
-      //  followed by a call to chpl_free(), so here we just check
-      //  if the type of the variable being passed to chpl_free()
+      //  followed by a call to chpl_mem_free(), so here we just check
+      //  if the type of the variable being passed to chpl_mem_free()
       //  is a record.
       if (isRecord(call->get(1)->typeInfo()))
         USR_FATAL_CONT(call, "delete not allowed on records");

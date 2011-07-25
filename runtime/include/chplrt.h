@@ -41,7 +41,7 @@ extern int chpl_threads_initialized;
 #define _ARRAY_SET_SVEC(x, i, v) CHPL_ASSIGN_SVEC(((x)->_data[i]), v)
 
 #define _ARRAY_ALLOC(x, type, size, lineno, filename) \
-  (x)->_data = (size == 0) ? (void*)(0x0) : chpl_malloc(size, sizeof(type), CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename)
+  (x)->_data = (size == 0) ? (void*)(0x0) : chpl_mem_allocMany(size, sizeof(type), CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename)
 
 #define _WIDE_ARRAY_ALLOC(x, type, size, lineno, filename)              \
   do {                                                                 \
@@ -54,7 +54,7 @@ extern int chpl_threads_initialized;
   for(i = 0; i < (x)->size; i++) call
 
 #define _ARRAY_FREE(x, lineno, filename) \
-  chpl_free((x)->_data, lineno, filename)
+  chpl_mem_free((x)->_data, lineno, filename)
 
 #define _WIDE_ARRAY_FREE(x, lineno, filename)                          \
   do {                                                                 \
@@ -68,10 +68,10 @@ extern int chpl_threads_initialized;
 
 #define _noop(x)
 
-#define malloc  dont_use_malloc_use_chpl_malloc_instead
-#define calloc  dont_use_calloc_use_chpl_malloc_instead
-#define free    dont_use_free_use_chpl_free_instead
-#define realloc dont_use_realloc_use_chpl_realloc_instead
+#define malloc  dont_use_malloc_use_chpl_mem_allocMany_instead
+#define calloc  dont_use_calloc_use_chpl_mem_allocMany_instead
+#define free    dont_use_free_use_chpl_mem_free_instead
+#define realloc dont_use_realloc_use_chpl_mem_realloc_instead
 #define exit    dont_use_exit_use_chpl_exit_instead
 
 #endif // LAUNCHER

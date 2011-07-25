@@ -1624,7 +1624,7 @@ pragma "inline" proc _checkIterator(x) {
 
 pragma "inline"
 proc _freeIterator(ic: _iteratorClass) {
-  __primitive("chpl_free", ic);
+  __primitive("chpl_mem_free", ic);
 }
 
 pragma "inline"

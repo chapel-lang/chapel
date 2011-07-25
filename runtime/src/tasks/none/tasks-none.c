@@ -168,9 +168,9 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
     // and append it to the end of the task pool for later execution
     chpl_task_pool_p task;
 
-    task = (chpl_task_pool_p)chpl_alloc(sizeof(task_pool_t),
-                                        CHPL_RT_MD_TASK_DESCRIPTOR,
-                                        0, 0);
+    task = (chpl_task_pool_p)chpl_mem_alloc(sizeof(task_pool_t),
+                                            CHPL_RT_MD_TASK_DESCRIPTOR,
+                                            0, 0);
     task->id = next_taskID++;
     task->fun = fp;
     task->arg = a;
@@ -241,7 +241,7 @@ launch_next_task(void) {
     chpl_task_setSerial(task->serial_state);
 
     (*task->fun)(task->arg);
-    chpl_free(task, 0, 0);
+    chpl_mem_free(task, 0, 0);
 
     //
     // restore state

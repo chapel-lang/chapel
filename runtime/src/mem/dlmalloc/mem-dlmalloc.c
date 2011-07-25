@@ -20,7 +20,7 @@ void chpl_md_initHeap(void* start, size_t size) {
 
 void* chpl_md_malloc(size_t size, int32_t lineno, chpl_string filename) {
   if (!heapInitialized) {
-    chpl_error("chpl_malloc called before the heap is initialized", lineno, filename);
+    chpl_error("chpl_mem_allocMany called before the heap is initialized", lineno, filename);
   }
   return mspace_malloc(chpl_heap, size);
 }
@@ -28,7 +28,7 @@ void* chpl_md_malloc(size_t size, int32_t lineno, chpl_string filename) {
 
 void chpl_md_free(void* memAlloc, int32_t lineno, chpl_string filename) {
   if (!heapInitialized) {
-    chpl_error("chpl_free called before the heap is initialized", lineno, filename);
+    chpl_error("chpl_mem_free called before the heap is initialized", lineno, filename);
   }
   mspace_free(chpl_heap, memAlloc);
 }

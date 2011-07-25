@@ -599,7 +599,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       fprintf(hdrfile, " 1;\n");
     else
       fprintf(hdrfile, " 0;\n");
-    fprintf(hdrfile, "\nconst char* chpl_memDescs[] = {\n");
+    fprintf(hdrfile, "\nconst char* chpl_mem_descs[] = {\n");
     bool first = true;
     forv_Vec(const char*, memDesc, memDescsVec) {
       if (!first)
@@ -608,7 +608,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       first = false;
     }
     fprintf(hdrfile, "\n};\n");
-    fprintf(hdrfile, "\nconst int chpl_num_memDescs = %d;\n", memDescsVec.n);
+    fprintf(hdrfile, "\nconst int chpl_mem_numDescs = %d;\n", memDescsVec.n);
 
     //
     // add table of private-broadcast constants
@@ -651,8 +651,8 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
         fprintf(hdrfile, " 1;\n");
       else
         fprintf(hdrfile, " 0;\n");
-      fprintf(hdrfile, "\nextern const char* chpl_memDescs[];\n");
-      fprintf(hdrfile, "\nextern const int chpl_num_memDescs;\n");
+      fprintf(hdrfile, "\nextern const char* chpl_mem_descs[];\n");
+      fprintf(hdrfile, "\nextern const int chpl_mem_numDescs;\n");
     }
     fprintf(hdrfile, "#endif\n");
   }

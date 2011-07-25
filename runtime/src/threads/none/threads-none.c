@@ -33,8 +33,8 @@ void chpl_thread_mutexInit(chpl_thread_mutex_p mutex) {
 
 chpl_thread_mutex_p chpl_thread_mutexNew(void) {
   chpl_thread_mutex_p m;
-  m = (chpl_thread_mutex_p) chpl_alloc(sizeof(chpl_thread_mutex_t),
-                                       CHPL_RT_MD_MUTEX, 0, 0);
+  m = (chpl_thread_mutex_p) chpl_mem_alloc(sizeof(chpl_thread_mutex_t),
+                                           CHPL_RT_MD_MUTEX, 0, 0);
   chpl_thread_mutexInit(m);
   return m;
 }

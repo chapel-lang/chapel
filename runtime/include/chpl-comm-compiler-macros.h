@@ -26,8 +26,8 @@
     const char* chpl_macro_tmp = str;                                   \
     size_t chpl_macro_len = strlen(chpl_macro_tmp) + 1;                 \
     (wide).locale = chpl_localeID;                                      \
-    (wide).addr = chpl_malloc(chpl_macro_len, sizeof(char),             \
-                              CHPL_RT_MD_SET_WIDE_STRING, 0, 0);        \
+    (wide).addr = chpl_mem_allocMany(chpl_macro_len, sizeof(char),      \
+                                     CHPL_RT_MD_SET_WIDE_STRING, 0, 0); \
     strncpy((char*)(wide).addr, chpl_macro_tmp, chpl_macro_len);        \
     (wide).size = chpl_macro_len;                                       \
   } while (0)
@@ -129,10 +129,9 @@
 
 #define CHPL_COMM_WIDE_GET_STRING(local, wide, tid, ln, fn)             \
   do {                                                                  \
-    char* chpl_macro_tmp = chpl_malloc((wide).size,                     \
-                                       sizeof(char),                    \
-                                       CHPL_RT_MD_GET_WIDE_STRING,      \
-                                       -1, "<internal>");               \
+    char* chpl_macro_tmp =                                              \
+      chpl_mem_allocMany((wide).size, sizeof(char),                     \
+                         CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>"); \
     if (chpl_localeID == (wide).locale)                                 \
       memcpy(chpl_macro_tmp, (wide).addr, (wide).size);                 \
     else                                                                \

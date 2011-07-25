@@ -55,7 +55,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 void chpl_comm_init_shared_heap(void) {
-  chpl_initHeap(NULL, 0);
+  chpl_mem_init(NULL, 0);
 }
 
 void chpl_comm_rollcall(void) {
@@ -99,7 +99,7 @@ static void fork_nb_wrapper(fork_t* f) {
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-  chpl_free(f, 0, 0);
+  chpl_mem_free(f, 0, 0);
 }
 
 void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
@@ -108,7 +108,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
   int     info_size;
 
   info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)

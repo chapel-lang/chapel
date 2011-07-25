@@ -10,68 +10,12 @@
 #include "chpl-tasks.h"
 
 //
-// chpl_rt_memDescs is an array of descriptions of memory allocations
-// used in the runtime.  When defining new strings (for new instances
-// of chpl_malloc or chpl_realloc in the runtime), be sure to define a
-// new enumerated constant directly below used to index into the
-// array.  Then you can use your enumeration in the call to
-// chpl_malloc or chpl_realloc.  The compiler generates a separate
-// array of descriptions; indices into the compiler-generated array
-// start after the last index into this array.  This array is externed
-// immediately after the definition of the enumeration.
+// When defining a new allocation type (for new instances of chpl_mem_allocMany
+// or chpl_mem_realloc in the runtime), define both a new enumeration constant
+// below and the corresponding descriptive string in the table defined in
+// chpl-mem.c:chpl_mem_descString().  Then you can use your enumeration in
+// a call to chpl_mem_allocMany(), chpl_mem_realloc(), or chpl_mem_descString().
 //
-#ifndef CHPL_MEM_C
-extern const char* chpl_rt_memDescs[];
-#else
-const char* chpl_rt_memDescs[] = {
-  "unknown",
-  "chapel runtime code data",
-  "chapel execution command buffer",
-  "array elements",
-  "set wide string",
-  "get wide string",
-  "private broadcast data",
-  "remote fork data",
-  "remote fork non-blocking data",
-  "remote GPC data",
-  "remote GPC header addr",
-  "remote GPC header",
-  "remote GPC copy of data",
-  "remote GPC fork data",
-  "active message fork data",
-  "active message fork arg",
-  "active message fork large data",
-  "active message fork non-blocking data",
-  "active message fork non-blocking arg",
-  "active message fork non-blocking large data",
-  "remote fork arg",
-  "command buffer",
-  "pvm list of nodes",
-  "pvm spawn thing",
-  "private objects array",
-  "garbage collection heap",
-  "garbage collection space pointer",
-  "glom strings data",
-  "string copy data",
-  "string concat data",
-  "string strided select data",
-  "config arg copy data",
-  "config table data",
-  "locale name buffer",
-  "serial flag",
-  "task descriptor",
-  "task descriptor link",               // reserved for future use
-  "task stack",                         // reserved for future use
-  "mutex",
-  "lock report data",
-  "task pool descriptor",
-  "task list descriptor",
-  "arrays for localesPerRealm",
-  "thread private data",
-  "thread callee function pointer and argument",
-  "thread list descriptor"
-};
-#endif
 typedef enum {
   CHPL_RT_MD_UNKNOWN = 0,
   CHPL_RT_MD_CHAPEL_CODE,
@@ -119,27 +63,27 @@ typedef enum {
   CHPL_RT_MD_THREAD_PRIVATE_DATA,
   CHPL_RT_MD_THREAD_LIST_DESCRIPTOR,
   CHPL_RT_MD_NUM
-} chpl_rt_enum_memDescs;
-extern const char* chpl_memDescs[];
-extern const int chpl_num_memDescs;
-typedef int16_t chpl_memDescInt_t;
-const char* chpl_memDescString(chpl_memDescInt_t mdi);
+} chpl_mem_rtMemDesc_t;
+extern const int chpl_mem_numDescs;
+typedef int16_t chpl_mem_descInt_t;
+const char* chpl_mem_descString(chpl_mem_descInt_t mdi);
 
-void chpl_initHeap(void* start, size_t size);
+void chpl_mem_init(void* start, size_t size);
 
-#define CHPL_ALLOC_PERMIT_ZERO(s,d,l,f) ((s == 0) ? NULL : chpl_alloc(s,d,l,f))
-#define chpl_alloc(size, description, lineno, filename) \
-  chpl_malloc(1, size, description, lineno, filename)
-void* chpl_malloc(size_t number, size_t size, chpl_memDescInt_t description,
+#define chpl_mem_allocPermitZero(s,d,l,f) ((s == 0) ? NULL : chpl_mem_alloc(s,d,l,f))
+#define chpl_mem_alloc(size, description, lineno, filename) \
+  chpl_mem_allocMany(1, size, description, lineno, filename)
+void* chpl_mem_allocMany(size_t number, size_t size, chpl_mem_descInt_t description,
                   int32_t lineno, chpl_string filename);
-void* chpl_realloc(void* ptr, size_t number, size_t size, 
-                   chpl_memDescInt_t description,
+void* chpl_mem_realloc(void* ptr, size_t number, size_t size, 
+                   chpl_mem_descInt_t description,
                    int32_t lineno, chpl_string filename);
-void  chpl_free(void* ptr, int32_t lineno, chpl_string filename);
+void  chpl_mem_free(void* ptr, int32_t lineno, chpl_string filename);
 
 extern int heapInitialized;
 
 void chpl_md_initHeap(void* start, size_t size);
+void chpl_md_exitHeap(void);
 void* chpl_md_malloc(size_t chunk, int32_t, chpl_string);
 void chpl_md_free(void* memAlloc, int32_t, chpl_string);
 void* chpl_md_realloc(void* memAlloc, size_t newChunk, int32_t, chpl_string);
@@ -149,10 +93,10 @@ void* chpl_md_realloc(void* memAlloc, size_t newChunk, int32_t, chpl_string);
 #include <stdlib.h>
 #include "arg.h"
 
-#define chpl_malloc(number, size, description, lineno, filename)        \
+#define chpl_mem_allocMany(number, size, description, lineno, filename)        \
   malloc((number)*(size))
 
-#define chpl_free(ptr, lineno, filename)        \
+#define chpl_mem_free(ptr, lineno, filename)        \
   free(ptr)
 
 #endif // LAUNCHER
