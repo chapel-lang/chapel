@@ -65,6 +65,11 @@ int32_t chpl_comm_maxThreadsLimit(void);
 //
 void chpl_comm_init(int *argc_p, char ***argv_p);
 
+//
+// Allow the communication layer to do any secondary initialization it needs
+// to, after the memory layer is initialized.
+//
+void chpl_comm_post_mem_init(void);
 
 //
 // if possible, run in gdb (because the user threw the --gdb flag)
@@ -84,7 +89,11 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
 //
 void chpl_comm_rollcall(void);
 
-void chpl_comm_init_shared_heap(void);
+//
+// Inform callers as to the communication layer's desired starting address
+// and length for the shared heap, if any.
+//
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p);
 
 //
 // allocate chpl_globals_registry or make it point to

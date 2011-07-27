@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+
+#include "chpl-comm.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
@@ -11,10 +13,24 @@
 
 static mspace chpl_heap;
 
-void chpl_md_initHeap(void* start, size_t size) {
-  if (!start || !size)
+static void* saved_heap_start;
+static size_t saved_heap_size;
+
+
+void chpl_md_initHeap(void) {
+  chpl_comm_desired_shared_heap(&saved_heap_start, &saved_heap_size);
+  if (!saved_heap_start || !saved_heap_size)
     chpl_error("Must have a shared segment", 0, 0);
-  chpl_heap = create_mspace_with_base(start, size, 1);
+  chpl_heap = create_mspace_with_base(saved_heap_start, saved_heap_size, 1);
+}
+
+
+void chpl_md_exitHeap(void) { }
+
+
+void chpl_md_actual_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = saved_heap_start;
+  *size_p  = saved_heap_size;
 }
 
 

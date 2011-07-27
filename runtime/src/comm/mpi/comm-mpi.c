@@ -306,9 +306,19 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 }
 
 
+void chpl_comm_post_mem_init(void) { }
+
+
 void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID,
             chpl_numLocales, chpl_localeName());
+}
+
+
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  // Use the regular malloc/free implementation
+  *start_p = NULL;
+  *size_p  = 0;
 }
 
 
@@ -341,12 +351,6 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
       chpl_comm_put(chpl_private_broadcast_table[id], i, chpl_private_broadcast_table[id], size, -1, 1, 0, 0);
     }
   }
-}
-
-
-void chpl_comm_init_shared_heap(void) {
-  // Use the regular malloc/free implementation
-  chpl_mem_init(NULL, 0);
 }
 
 

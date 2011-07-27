@@ -49,7 +49,8 @@ int main(int argc, char* argv[]) {
   int runInGDB;
 
   chpl_comm_init(&argc, &argv);
-  chpl_comm_init_shared_heap();
+  chpl_mem_init();
+  chpl_comm_post_mem_init();
 
   chpl_comm_barrier("about to leave comm init code");
   chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale

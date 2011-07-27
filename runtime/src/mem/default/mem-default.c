@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+
+#include "chpl-comm.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
@@ -12,9 +14,22 @@
 #undef free
 #undef realloc
 
-void chpl_md_initHeap(void* start, size_t size) {
+void chpl_md_initHeap(void) {
+  void* start;
+  size_t size;
+
+  chpl_comm_desired_shared_heap(&start, &size);
   if (start || size)
     chpl_error("set CHPL_MEM to a more appropriate mem type", 0, 0);
+}
+
+
+void chpl_md_exitHeap(void) { }
+
+
+void chpl_md_actual_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = NULL;
+  *size_p  = 0;
 }
 
 

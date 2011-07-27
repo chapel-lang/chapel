@@ -113,9 +113,19 @@ const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
 }
 
 
-void chpl_mem_init(void* start, size_t size) {
-  chpl_md_initHeap(start, size);
+void chpl_mem_init(void) {
+  chpl_md_initHeap();
   heapInitialized = 1;
+}
+
+
+void chpl_mem_exit(void) {
+  chpl_md_exitHeap();
+}
+
+
+void chpl_mem_actual_shared_heap(void** start_p, size_t* size_p) {
+  chpl_md_actual_shared_heap(start_p, size_p);
 }
 
 

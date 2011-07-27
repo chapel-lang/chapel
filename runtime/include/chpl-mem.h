@@ -68,22 +68,35 @@ extern const int chpl_mem_numDescs;
 typedef int16_t chpl_mem_descInt_t;
 const char* chpl_mem_descString(chpl_mem_descInt_t mdi);
 
-void chpl_mem_init(void* start, size_t size);
+void chpl_mem_init(void);
+void chpl_mem_exit(void);
 
-#define chpl_mem_allocPermitZero(s,d,l,f) ((s == 0) ? NULL : chpl_mem_alloc(s,d,l,f))
+//
+// Inform callers as to the memory layer's actual starting address
+// and length for the shared heap, if that is known.  The *start_p
+// value will be set to NULL if the memory layer does not know this
+// information.
+//
+void chpl_mem_actual_shared_heap(void** start_p, size_t* size_p);
+
+#define chpl_mem_allocPermitZero(s,d,l,f) ((s == 0) \
+                                           ? NULL \
+                                           : chpl_mem_alloc(s,d,l,f))
 #define chpl_mem_alloc(size, description, lineno, filename) \
   chpl_mem_allocMany(1, size, description, lineno, filename)
-void* chpl_mem_allocMany(size_t number, size_t size, chpl_mem_descInt_t description,
-                  int32_t lineno, chpl_string filename);
+void* chpl_mem_allocMany(size_t number, size_t size,
+                         chpl_mem_descInt_t description,
+                         int32_t lineno, chpl_string filename);
 void* chpl_mem_realloc(void* ptr, size_t number, size_t size, 
-                   chpl_mem_descInt_t description,
-                   int32_t lineno, chpl_string filename);
+                       chpl_mem_descInt_t description,
+                       int32_t lineno, chpl_string filename);
 void  chpl_mem_free(void* ptr, int32_t lineno, chpl_string filename);
 
 extern int heapInitialized;
 
-void chpl_md_initHeap(void* start, size_t size);
+void chpl_md_initHeap(void);
 void chpl_md_exitHeap(void);
+void chpl_md_actual_shared_heap(void** start_p, size_t* size_p);
 void* chpl_md_malloc(size_t chunk, int32_t, chpl_string);
 void chpl_md_free(void* memAlloc, int32_t, chpl_string);
 void* chpl_md_realloc(void* memAlloc, size_t newChunk, int32_t, chpl_string);

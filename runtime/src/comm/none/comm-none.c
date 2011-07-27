@@ -40,6 +40,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_localeID = 0;
 }
 
+void chpl_comm_post_mem_init(void) { }
+
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   int i;
   char* command = chpl_glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' --args ",
@@ -54,12 +56,13 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 1;
 }
 
-void chpl_comm_init_shared_heap(void) {
-  chpl_mem_init(NULL, 0);
-}
-
 void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single locale\n");
+}
+
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = NULL;
+  *size_p  = 0;
 }
 
 void chpl_comm_alloc_registry(int numGlobals) { 

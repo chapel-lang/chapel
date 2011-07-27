@@ -143,16 +143,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   ghndl = ARMCI_Gpc_register(gpc_call_handler);
 }
 
+void chpl_comm_post_mem_init(void) { }
+
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   chpl_error("--gdb not yet implemented for ARMCI", gdbArgnum, 
              "<command-line>");
   return 0;
-}
-
-void chpl_comm_init_shared_heap(void) {
-  void* heapStart = chpl_numGlobalsOnHeap*sizeof(void*) + (char*)globalPtrs[chpl_localeID];
-  size_t heapSize = _MAX_ARMCI_MEMSZ - chpl_numGlobalsOnHeap*sizeof(void*);
-  chpl_mem_init(heapStart, heapSize);
 }
 
 //
@@ -166,6 +162,12 @@ void chpl_comm_rollcall(void) {
   // Something like the following should work:
   chpl_msg(2, "executing on locale %d of %d locale(s)\n", chpl_localeID, 
             chpl_numLocales);
+}
+
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = chpl_numGlobalsOnHeap * sizeof(void*)
+             + (char*)globalPtrs[chpl_localeID];
+  *size_p  = _MAX_ARMCI_MEMSZ - chpl_numGlobalsOnHeap * sizeof(void*);
 }
 
 void chpl_comm_alloc_registry(int numGlobals) {

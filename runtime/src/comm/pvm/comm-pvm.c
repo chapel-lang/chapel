@@ -1214,6 +1214,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   return;
 }
 
+void chpl_comm_post_mem_init(void) { }
+
 //
 // No support for gdb for now
 //
@@ -1286,8 +1288,9 @@ void chpl_comm_rollcall(void) {
   return;
 }
 
-void chpl_comm_init_shared_heap(void) {
-  chpl_mem_init(NULL, 0);
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = NULL;
+  *size_p  = 0;
   return;
 }
 

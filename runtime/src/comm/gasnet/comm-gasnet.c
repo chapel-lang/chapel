@@ -290,6 +290,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
 }
 
+void chpl_comm_post_mem_init(void) { }
+
 void chpl_comm_startPollingTask(void) {
   //
   // Start polling thread on locale 0.  (On other locales, main enters
@@ -339,13 +341,15 @@ void chpl_comm_rollcall(void) {
            chpl_numLocales, chpl_localeName());
 }
 
-void chpl_comm_init_shared_heap(void) {
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
-  void* heapStart = chpl_numGlobalsOnHeap*sizeof(void*) + (char*)seginfo_table[chpl_localeID].addr;
-  size_t heapSize = seginfo_table[chpl_localeID].size - chpl_numGlobalsOnHeap*sizeof(void*);
-  chpl_mem_init(heapStart, heapSize);
+  *start_p = chpl_numGlobalsOnHeap * sizeof(void*) 
+             + (char*)seginfo_table[chpl_localeID].addr;
+  *size_p  = seginfo_table[chpl_localeID].size
+             - chpl_numGlobalsOnHeap * sizeof(void*);
 #else
-  chpl_mem_init(NULL, 0);
+  *start_p = NULL;
+  *size_p  = 0;
 #endif
 }
 

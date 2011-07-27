@@ -23,8 +23,10 @@ static void chpl_exit_common(int status, int all) {
     chpl_comm_stopPollingTask();
     chpl_task_exit();
     chpl_reportMemInfo();
+    chpl_mem_exit();
     chpl_comm_exit_all(status);
   } else {
+    chpl_mem_exit();
     chpl_comm_exit_any(status);
   }
   exit(status);
