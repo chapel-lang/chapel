@@ -167,6 +167,7 @@ Optional Settings
         none     : do not support multiple tasks
 
    CHPL_THREADS:
+        minimal  : use one thread (the process itself)
         pthreads : use POSIX threads (pthreads)
         none     : no threading
 
@@ -174,15 +175,15 @@ Optional Settings
 
         CHPL_TASKS    CHPL_THREADS
         ----------    ------------
-        fifo          pthreads
+        fifo          pthreads, minimal (with limitations)
         mta           none
         nanox         none
         qthreads      none
         none          none
 
    If the CHPL_TASKS variable is set, the CHPL_THREADS variable will
-   default to the corresponding value shown above.  If both are unset,
-   they default to values based on $CHPL_TARGET_PLATFORM:
+   default to the first corresponding value shown above.  If both are
+   unset, they default to values based on $CHPL_TARGET_PLATFORM:
 
         platform     tasks    threads
         --------     -----    -------

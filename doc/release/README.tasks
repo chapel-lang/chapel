@@ -159,6 +159,19 @@ currently they only return meaningful values for the FIFO tasking and
 pthreads threading layers.
 
 
+CHPL_TASKS == fifo, CHPL_THREADS == minimal
+--------------------------------------------
+
+FIFO tasking also works with "minimal" threading.  This combination
+does have limitations, however.  In minimal threading there is just
+one thread, which is the process itself.  The effect is essentially
+equivalent to using pthreads threading with maxThreadsPerLocale=1.
+Deadlock can occur if a program requires more than one task to be
+active at the same time.  For more details, see the relevant portions
+of the discussion of CHPL_TASKS==fifo and CHPL_THREADS==minimal,
+above.
+
+
 CHPL_TASKS == mta, CHPL_THREADS == none
 ---------------------------------------
 
