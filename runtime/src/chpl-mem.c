@@ -124,8 +124,8 @@ void chpl_mem_exit(void) {
 }
 
 
-void chpl_mem_actual_shared_heap(void** start_p, size_t* size_p) {
-  chpl_md_actual_shared_heap(start_p, size_p);
+void chpl_mem_actualSharedHeap(void** start_p, size_t* size_p) {
+  chpl_md_actualSharedHeap(start_p, size_p);
 }
 
 

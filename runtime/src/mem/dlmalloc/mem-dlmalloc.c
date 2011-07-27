@@ -28,7 +28,7 @@ void chpl_md_initHeap(void) {
 void chpl_md_exitHeap(void) { }
 
 
-void chpl_md_actual_shared_heap(void** start_p, size_t* size_p) {
+void chpl_md_actualSharedHeap(void** start_p, size_t* size_p) {
   *start_p = saved_heap_start;
   *size_p  = saved_heap_size;
 }

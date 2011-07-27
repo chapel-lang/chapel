@@ -77,7 +77,7 @@ void chpl_mem_exit(void);
 // value will be set to NULL if the memory layer does not know this
 // information.
 //
-void chpl_mem_actual_shared_heap(void** start_p, size_t* size_p);
+void chpl_mem_actualSharedHeap(void** start_p, size_t* size_p);
 
 #define chpl_mem_allocPermitZero(s,d,l,f) ((s == 0) \
                                            ? NULL \
@@ -96,7 +96,7 @@ extern int heapInitialized;
 
 void chpl_md_initHeap(void);
 void chpl_md_exitHeap(void);
-void chpl_md_actual_shared_heap(void** start_p, size_t* size_p);
+void chpl_md_actualSharedHeap(void** start_p, size_t* size_p);
 void* chpl_md_malloc(size_t chunk, int32_t, chpl_string);
 void chpl_md_free(void* memAlloc, int32_t, chpl_string);
 void* chpl_md_realloc(void* memAlloc, size_t newChunk, int32_t, chpl_string);
