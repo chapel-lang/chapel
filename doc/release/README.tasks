@@ -210,21 +210,7 @@ try Nanos++ tasking, please take the following steps
       unset CHPL_THREADS
       unset CHPL_COMM 
 
-2b) Ensure that your dynamic library path includes the directory
-
-      $CHPL_HOME/third-party/nanox/install/<platform>-<compiler>/lib/performance
-
-    where <platform> and <compiler> are the outputs of these commands,
-    respectively:
-
-      $CHPL_HOME/util/chplenv/platform --target
-      $CHPL_HOME/util/chplenv/compiler --target
-
-    for example, with this command:
-
-      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$CHPL_HOME/third-party/nanox/install/`$CHPL_HOME/util/chplenv/platform --target`-`$CHPL_HOME/util/chplenv/compiler --target`/lib/performance"
-
-2c) Set this variable:
+2b) Set this variable:
 
       export CHPL_TASKS=nanox
 
