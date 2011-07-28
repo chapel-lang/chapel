@@ -94,12 +94,12 @@ void  chpl_mem_free(void* ptr, int32_t lineno, chpl_string filename);
 
 extern int heapInitialized;
 
-void chpl_md_initHeap(void);
-void chpl_md_exitHeap(void);
-void chpl_md_actualSharedHeap(void** start_p, size_t* size_p);
-void* chpl_md_malloc(size_t chunk, int32_t, chpl_string);
-void chpl_md_free(void* memAlloc, int32_t, chpl_string);
-void* chpl_md_realloc(void* memAlloc, size_t newChunk, int32_t, chpl_string);
+void chpl_mem_layerInit(void);
+void chpl_mem_layerExit(void);
+void chpl_mem_layerActualSharedHeap(void**, size_t*);
+void* chpl_mem_layerAlloc(size_t, int32_t, chpl_string);
+void* chpl_mem_layerRealloc(void*, size_t, int32_t, chpl_string);
+void chpl_mem_layerFree(void*, int32_t, chpl_string);
 
 #else // LAUNCHER
 

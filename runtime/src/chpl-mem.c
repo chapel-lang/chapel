@@ -114,18 +114,18 @@ const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
 
 
 void chpl_mem_init(void) {
-  chpl_md_initHeap();
+  chpl_mem_layerInit();
   heapInitialized = 1;
 }
 
 
 void chpl_mem_exit(void) {
-  chpl_md_exitHeap();
+  chpl_mem_layerExit();
 }
 
 
 void chpl_mem_actualSharedHeap(void** start_p, size_t* size_p) {
-  chpl_md_actualSharedHeap(start_p, size_p);
+  chpl_mem_layerActualSharedHeap(start_p, size_p);
 }
 
 
@@ -133,21 +133,13 @@ void* chpl_mem_allocMany(size_t number, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, chpl_string filename) {
   size_t chunk = computeChunkSize(number, size, false, lineno, filename);
-  void* memAlloc = chpl_md_malloc(chunk, lineno, filename);
+  void* memAlloc = chpl_mem_layerAlloc(chunk, lineno, filename);
   if (chunk != 0) {
     confirm(memAlloc, description, lineno, filename);
   }
   chpl_track_malloc(memAlloc, chunk, number, size, description,
                     lineno, filename);
   return memAlloc;
-}
-
-
-void chpl_mem_free(void* memAlloc, int32_t lineno, chpl_string filename) {
-  if (memAlloc != NULL) {
-    chpl_track_free(memAlloc, lineno, filename);
-    chpl_md_free(memAlloc, lineno, filename);
-  }
 }
 
 
@@ -169,7 +161,7 @@ void* chpl_mem_realloc(void* memAlloc, size_t number, size_t size,
 
   chpl_track_realloc1(memAlloc, number, size, description, lineno, filename);
 
-  moreMemAlloc = chpl_md_realloc(memAlloc, newChunk, lineno, filename);
+  moreMemAlloc = chpl_mem_layerRealloc(memAlloc, newChunk, lineno, filename);
 
   confirm(moreMemAlloc, description, lineno, filename);
 
@@ -177,4 +169,12 @@ void* chpl_mem_realloc(void* memAlloc, size_t number, size_t size,
                       description, lineno, filename);
 
   return moreMemAlloc;
+}
+
+
+void chpl_mem_free(void* memAlloc, int32_t lineno, chpl_string filename) {
+  if (memAlloc != NULL) {
+    chpl_track_free(memAlloc, lineno, filename);
+    chpl_mem_layerFree(memAlloc, lineno, filename);
+  }
 }
