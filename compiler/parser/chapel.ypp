@@ -62,12 +62,16 @@
 //
 // keywords (alphabetical)
 //
-%token TALIGN TATOMIC TBEGIN TBREAK TBY TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST
-%token TCONTINUE TDEF TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXTERN TFOR
-%token TFORALL TIF TIN TINDEX TINOUT TITER TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS
-%token TMODULE TNEW TNIL TON TOTHERWISE TOUT TPARAM TPLUSPLUS TPRAGMA
-%token TPRIMITIVE TPRIMITIVELOOP TPROC TRECORD TREDUCE TRETURN TSCAN TSELECT TSERIAL
-%token TSINGLE TSPARSE TSUBDOMAIN TSYNC TTHEN TTYPE TUNION TUSE TVAR TVOLATILE
+%token TALIGN TATOMIC TBEGIN TBREAK TBY
+%token TCHECKED TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
+%token TDEF TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXTERN
+%token TFOR TFORALL TIF TIN TINDEX TINOUT TITER
+%token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
+%token TNEW TNIL TON TOTHERWISE TOUT
+%token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
+%token TRECORD TREDUCE TRETURN
+%token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
+%token TSYNC TTHEN TTYPE TUNION TUSE TVAR TVOLATILE
 %token TWHEN TWHERE TWHILE TYIELD
 
 //
@@ -114,7 +118,7 @@
 %left TDOT TLP TLSBR
 
 %type <flag> opt_config
-%type <b> opt_extern
+%type <b> opt_extern opt_checked_tag 
  
 %type <pt> opt_intent_tag opt_this_intent_tag
 
@@ -138,7 +142,7 @@
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
 %type <pblockstmt> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
 
-%type <pblockstmt> function_body_stmt
+%type <pblockstmt> function_body_stmt opt_function_body_stmt
 
 %type <pexpr> when_stmt
 %type <pblockstmt> when_stmt_ls
@@ -424,7 +428,7 @@ fn_decl_stmt:
       captureTokens = 0;
       $3->userString = astr(captureString);
     }
-  opt_ret_tag opt_type opt_where_part function_body_stmt
+  opt_ret_tag opt_type opt_where_part opt_checked_tag opt_function_body_stmt
     {
       FnSymbol* fn = $3;
       // ProcIter: remove this outer 'if' after transition
@@ -442,7 +446,12 @@ fn_decl_stmt:
         fn->retExprType = new BlockStmt($6, BLOCK_SCOPELESS);
       if ($7)
         fn->where = new BlockStmt($7);
-      fn->insertAtTail($8);
+      if ($8)
+        fn->addFlag(FLAG_SEPARATELY_TYPE_CHECKED);
+      if ($9)
+        fn->insertAtTail($9);
+      else
+        fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
       $$ = buildChapelStmt(new DefExpr(fn));
     }
 ;
@@ -553,6 +562,11 @@ opt_intent_tag:
 | TTYPE   { $$ = INTENT_TYPE; }
 ;
 
+opt_checked_tag:
+            { $$ = false; }
+| TCHECKED  { $$ = true; }
+;
+
 opt_this_intent_tag:
          { $$ = INTENT_BLANK; }
 | TPARAM { $$ = INTENT_PARAM; }
@@ -570,6 +584,11 @@ opt_ret_tag:
 | TVAR      { $$ = RET_VAR; }
 | TPARAM    { $$ = RET_PARAM; }
 | TTYPE     { $$ = RET_TYPE; }
+;
+
+opt_function_body_stmt:
+  TSEMI     { $$ = NULL; }
+| function_body_stmt
 ;
 
 function_body_stmt:

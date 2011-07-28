@@ -1645,7 +1645,7 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
 }
 
 
-static Expr* buildOnExpr(Expr* expr) {
+static Expr* extractLocaleID(Expr* expr) {
   // If the on <x> expression is a primitive_on_locale_num, we just want
   // to strip off the primitive and have the naked integer value be the
   // locale ID.
@@ -1679,7 +1679,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     }
   }
 
-  CallExpr* onExpr = new CallExpr(PRIM_GET_REF, buildOnExpr(expr));
+  CallExpr* onExpr = new CallExpr(PRIM_GET_REF, extractLocaleID(expr));
 
   BlockStmt* body = toBlockStmt(stmt);
 
@@ -1710,6 +1710,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   }
 
   if (beginBlock) {
+    // Execute the construct "on x begin ..." asynchronously.
     Symbol* tmp = newTemp();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));
     body->insertAtHead(new DefExpr(tmp));
@@ -1717,6 +1718,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     beginBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
     return body;
   } else {
+    // Otherwise, wait for the "on" statement to complete.
     BlockStmt* block = buildChapelStmt();
     Symbol* tmp = newTemp();
     block->insertAtTail(new DefExpr(tmp));

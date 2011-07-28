@@ -177,7 +177,7 @@ compareSymbol(const void* v1, const void* v2) {
 // neither set and add the name to the first set; the second set may
 // be omitted
 //
-// the uniquie numbering is based on the map uniquifyNameCounts which
+// the unique numbering is based on the map uniquifyNameCounts which
 // can be cleared to reset
 //
 static Map<const char*, int> uniquifyNameCounts;
@@ -350,7 +350,16 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
 
   if (fRuntime) {
     chpl_main->cname = astr("chpl_init_", mainModules.v[0]->name);
+    // Rip the guts out of the chpl__init_ChapelBase() routine and throw them away!
     baseModule->initFn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, gVoid)));
+    // as if this makes any sense <hilde>.
+
+    // With this section commented out, we'll generate the same code for the
+    // runtime as for an actual program.  Some linkers will flag this as a
+    // double-definition error, so this is not a solution.
+    // The real solution is to generate just the header in a Chapel program and
+    // then link against the runtime library to pick up the definition for this routine.
+
     fprintf(hdrfile, "#ifndef _%s_H_\n", mainModules.v[0]->name);
     fprintf(hdrfile, "#define _%s_H_\n", mainModules.v[0]->name);
     fprintf(hdrfile, "#include \"stdchplrt.h\"\n");
@@ -581,11 +590,16 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
 
   fprintf(hdrfile, "\n/*** Global Variables ***/\n\n");
   forv_Vec(VarSymbol, varSymbol, globals) {
+
+// hilde sez: No reason to suppose that the runtime can link without these in general.
+    // Globals in the runtime are marked static
+    // And those in ChapelBase are not emitted at all :-(
     if (fRuntime) {
       if (varSymbol->defPoint->parentSymbol == baseModule)
         continue;
       fprintf(hdrfile, "static ");
     }
+
     varSymbol->codegenDef(hdrfile);
   }
 

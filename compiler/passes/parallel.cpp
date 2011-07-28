@@ -697,6 +697,7 @@ parallel(void) {
         fn->insertFormalAtTail(arg1);
         fn->insertFormalAtTail(arg2);
       }
+
       if (fn) {
         nestedFunctions.add(fn);
         CallExpr* call = new CallExpr(fn);
@@ -717,6 +718,7 @@ parallel(void) {
       }
     }
   }
+
   flattenNestedFunctions(nestedFunctions);
 
   compute_call_sites();

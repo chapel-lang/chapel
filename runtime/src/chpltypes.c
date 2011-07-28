@@ -81,8 +81,15 @@ chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl
 
 
 chpl_string
-string_copy(chpl_string x, int32_t lineno, chpl_string filename) {
-  char *z = (char*)chpl_mem_allocMany(strlen(x)+1, sizeof(char),
+string_copy(chpl_string x, int32_t lineno, chpl_string filename)
+{
+  char *z;
+
+  // hilde sez: if the input string is null, just return null.
+  if (x == NULL)
+    return NULL;
+
+  z = (char*)chpl_mem_allocMany(strlen(x)+1, sizeof(char),
                                       CHPL_RT_MD_STRING_COPY_DATA,
                                       lineno, filename);
   return strcpy(z, x);

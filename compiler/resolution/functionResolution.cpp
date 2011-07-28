@@ -2207,7 +2207,7 @@ formalRequiresTemp(ArgSymbol* formal) {
   if (formal->intent == INTENT_PARAM ||
       formal->intent == INTENT_TYPE ||
       formal->intent == INTENT_REF ||
-      !strcmp("this", formal->name) ||
+      (!strcmp("this", formal->name) && (!fLibraryCompile)) ||
       formal->hasFlag(FLAG_IS_MEME) ||
       (formal == toFnSymbol(formal->defPoint->parentSymbol)->_outer) ||
       formal->hasFlag(FLAG_TYPE_VARIABLE) ||
@@ -2494,6 +2494,7 @@ static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name
 static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *parent, AList &arg_list, bool isFormal, Type *retType) {
   FnSymbol *parent_method = new FnSymbol("this");
   ArgSymbol *thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
+  parent_method->addFlag(FLAG_FUNCTION_THIS);
   parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   parent_method->insertFormalAtTail(thisParentSymbol);
   parent_method->_this = thisParentSymbol;
@@ -2700,6 +2701,7 @@ createFunctionAsValue(CallExpr *call) {
   build_type_constructor(ct);
 
   FnSymbol *thisMethod = new FnSymbol("this");
+  thisMethod->addFlag(FLAG_FUNCTION_THIS);
   ArgSymbol *thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
   thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   thisMethod->insertFormalAtTail(thisSymbol);
@@ -3975,7 +3977,7 @@ resolveFns(FnSymbol* fn) {
     return;
   resolvedFns.put(fn, true);
 
-  if (fn->hasFlag(FLAG_EXTERN))
+  if ((fn->hasFlag(FLAG_EXTERN))||(fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
     return;
 
   if (fn->hasFlag(FLAG_AUTO_II))
@@ -4502,12 +4504,23 @@ resolve() {
   resolveFns(chpl_main);
   USR_STOP();
 
-  if (fRuntime) {
+  // hilde sez: This check may be unnecessary.
+  // That is, we may be able to resolve exported functions always
+  // in which case, there may be no reason to have a checked keyword (see below).
+  if (fRuntime || fLibraryCompile) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXPORT)) {
         resolveFormals(fn);
         resolveFns(fn);
       }
+    }
+  }
+
+  // separate compilation -- Resolve functions named "this" or flagged with the "checked" keyword.
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if ((fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED)) || (fn->hasFlag(FLAG_FUNCTION_THIS))) {
+      resolveFormals(fn);
+      resolveFns(fn);
     }
   }
 
