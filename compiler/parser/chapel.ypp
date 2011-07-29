@@ -51,6 +51,7 @@
   FnSymbol* pfnsymbol;
   Flag flag;
   ProcIter procIter;
+  FlagSet* flagSet;
 };
 
 //
@@ -64,8 +65,8 @@
 //
 %token TALIGN TATOMIC TBEGIN TBREAK TBY
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDEF TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXTERN
-%token TFOR TFORALL TIF TIN TINDEX TINOUT TITER
+%token TDEF TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN
+%token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TON TOTHERWISE TOUT
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
@@ -165,6 +166,7 @@
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
 %type <procIter> proc_or_iter_or_def
+%type <flagSet> fn_decl_flags
 
 %% 
 
@@ -416,40 +418,55 @@ lambda_decl_expr:
     }
 ;
 
+fn_decl_flags:
+            { $$ = new FlagSet(); }
+| fn_decl_flags TINLINE { $1->set(FLAG_INLINE); $$ = $1; }
+| fn_decl_flags TEXPORT { $1->set(FLAG_EXPORT); $$ = $1; }
+
+// hilde sez: How come we capture tokens from fn_decl_stmt_inner 
+// when parsing a full-up function but not an extern?
+
 fn_decl_stmt:
   extern_fn_decl_stmt
-| proc_or_iter_or_def
+| fn_decl_flags proc_or_iter_or_def
     {
+      // Sets up to capture tokens while parsing the next grammar nonterminal.
       captureTokens = 1;
       captureString[0] = '\0';
     }
   fn_decl_stmt_inner
     {
+      // Stop capturing and save the result.
       captureTokens = 0;
-      $3->userString = astr(captureString);
+      $4->userString = astr(captureString);
     }
   opt_ret_tag opt_type opt_where_part opt_function_body_stmt
     {
-      FnSymbol* fn = $3;
-      // ProcIter: remove this outer 'if' after transition
-      if ($1 == ProcIter_DEF) {
+      FnSymbol* fn = $4;
+
+      fn->flags |= *$1; delete $1; $1 = 0;
+
+      // ProcIter: remove this entire 'if-else' clause
+      // after transition is complete (Mar 2012 or thereafter).
+      if ($2 == ProcIter_DEF) {
           // nothing
       } else {
           fn->addFlag(FLAG_PROC_ITER_KW_USED);
-          if ($1 == ProcIter_ITER)
+          if ($2 == ProcIter_ITER)
             fn->addFlag(FLAG_ITERATOR_FN);
       }
-      fn->retTag = $5;
-      if ($5 == RET_VAR)
+      fn->retTag = $6;
+      if ($6 == RET_VAR)
         fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
-      if ($6)
-        fn->retExprType = new BlockStmt($6, BLOCK_SCOPELESS);
       if ($7)
-        fn->where = new BlockStmt($7);
+        fn->retExprType = new BlockStmt($7, BLOCK_SCOPELESS);
       if ($8)
-        fn->insertAtTail($8);
+        fn->where = new BlockStmt($8);
+      if ($9)
+        fn->insertAtTail($9);
       else
         fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
+      fn->parseCheck();
       $$ = buildChapelStmt(new DefExpr(fn));
     }
 ;

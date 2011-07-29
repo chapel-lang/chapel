@@ -475,6 +475,12 @@ FnSymbol::~FnSymbol() {
 }
 
 
+void FnSymbol::parseCheck() {
+  // For now, just checks that flags are consistent.
+  if (hasFlag(FLAG_INLINE) && (hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN)))
+    USR_FATAL_CONT(this, "External and exported functions cannot be inlined.");
+}
+
 void FnSymbol::verify() {
   Symbol::verify();
   if (astTag != E_FnSymbol) {
