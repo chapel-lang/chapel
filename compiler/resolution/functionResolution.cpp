@@ -4516,9 +4516,9 @@ resolve() {
     }
   }
 
-  // separate compilation -- Resolve functions named "this" or flagged with the "checked" keyword.
+  // separate compilation -- Resolve functions named "this".
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if ((fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED)) || (fn->hasFlag(FLAG_FUNCTION_THIS))) {
+    if (fn->hasFlag(FLAG_FUNCTION_THIS)) {
       resolveFormals(fn);
       resolveFns(fn);
     }

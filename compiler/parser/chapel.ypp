@@ -63,7 +63,7 @@
 // keywords (alphabetical)
 //
 %token TALIGN TATOMIC TBEGIN TBREAK TBY
-%token TCHECKED TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
+%token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
 %token TDEF TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXTERN
 %token TFOR TFORALL TIF TIN TINDEX TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
@@ -118,7 +118,7 @@
 %left TDOT TLP TLSBR
 
 %type <flag> opt_config
-%type <b> opt_extern opt_checked_tag 
+%type <b> opt_extern
  
 %type <pt> opt_intent_tag opt_this_intent_tag
 
@@ -428,7 +428,7 @@ fn_decl_stmt:
       captureTokens = 0;
       $3->userString = astr(captureString);
     }
-  opt_ret_tag opt_type opt_where_part opt_checked_tag opt_function_body_stmt
+  opt_ret_tag opt_type opt_where_part opt_function_body_stmt
     {
       FnSymbol* fn = $3;
       // ProcIter: remove this outer 'if' after transition
@@ -447,9 +447,7 @@ fn_decl_stmt:
       if ($7)
         fn->where = new BlockStmt($7);
       if ($8)
-        fn->addFlag(FLAG_SEPARATELY_TYPE_CHECKED);
-      if ($9)
-        fn->insertAtTail($9);
+        fn->insertAtTail($8);
       else
         fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
       $$ = buildChapelStmt(new DefExpr(fn));
@@ -560,11 +558,6 @@ opt_intent_tag:
 | TCONST  { $$ = INTENT_CONST; }
 | TPARAM  { $$ = INTENT_PARAM; }
 | TTYPE   { $$ = INTENT_TYPE; }
-;
-
-opt_checked_tag:
-            { $$ = false; }
-| TCHECKED  { $$ = true; }
 ;
 
 opt_this_intent_tag:
