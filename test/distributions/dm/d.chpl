@@ -36,9 +36,6 @@ type locCntT = uint(32);
 // convention: a locale ID is between 0 and (num. locales 1d - 1)
 type locIdT =  int(32);
 
-// ... local storage size and indices (0-based)
-type stoSzT  = uint(32);
-
 param invalidLocID =
   // encode 'max(locIdT)' as a compile-time expression
   2 ** (numBits(locIdT) - 1 - _isSignedType(locIdT):int);
@@ -62,6 +59,7 @@ class DimensionalDist : BaseDist {
   // the domains' idxType that we support
   type idxType = int;
   // the type of the corresponding domain/array indices
+  // todo: it does not really apply to dsiIndexToLocale()
   proc indexT type  return if rank == 1 then idxType else rank * idxType;
 
   // the count and size of each dimension of targetLocales
@@ -97,14 +95,32 @@ class DimensionalDom : BaseRectangularDom {
   // subordinate 1-d global domain descriptors
   var dom1, dom2; // not reprivatized
 
-  // this is our index set; we store it here so we can get to it easily
-  // although it is not necessary, strictly speaking
+  // This is our index set; we store it here so we can get to it easily.
+  // Although strictly speaking it is not necessary.
   var whole: domainT;
 
+  // This is the idxType of the "storage index ranges" to be produced
+  // by dsiSetLocalIndices1d(). It needs to be uniform across dimensions,
+  // and 'idxType' is the easiest choice (although not the most general).
+  proc stoIndexT type  return idxType;
+
+  // helper for locDdescType: any of storage index ranges can be stridable
+  proc stoStridable param {
+    proc stoStridable1d(dom1d) param {
+      const dummy = dom1d.dsiNewLocalDom1d(0:locIdT)
+        .dsiSetLocalIndices1d(dom1d, 0:locIdT);
+      return dummy.stridable;
+    }
+    return stoStridable1d(dom1) || stoStridable1d(dom2);
+  }
+
+  proc stoRangeT type  return range(stoIndexT, stridable = stoStridable);
+  proc stoDomainT type  return domain(rank, stoIndexT, stoStridable);
+
   // convenience - our instantiation of LocDimensionalDom
-  proc locDdescType type  return LocDimensionalDom(domainT,
-                                                dom1.dsiNewLocalDom1d(0).type,
-                                                dom2.dsiNewLocalDom1d(0).type);
+  proc locDdescType type  return LocDimensionalDom(stoDomainT,
+                                         dom1.dsiNewLocalDom1d(0:locIdT).type,
+                                         dom2.dsiNewLocalDom1d(0:locIdT).type);
 
   // local domain descriptors
   var localDdescs: [dist.targetIds] locDdescType; // not reprivatized
@@ -114,20 +130,20 @@ class DimensionalDom : BaseRectangularDom {
 }
 
 class LocDimensionalDom {
+  type myStorageDomT;
 
-  // myBlock: which of the indices reside on this locale,
-  // as reported by the subordinate 1-d descriptors.
+  // myStorageDom: what storage to allocate for an array on our locale.
+  // Its indices are not necessarily user indices. However,
+  // we use it to learn *how many* indices there are on our locale.
   //
-  // Btw it is really a subdomain(DimensionalDom.whole).
-  // We do not declare it as such to avoid the link to the global descriptor
-  // (although it might be doable to have such a link).
-  var myBlock;
+  // Currently there are no direct constraints on how many indices
+  // should go on each locale. An indirect constraint is that dsiAccess1d()
+  // should work (as desired for the given distribution).
+  //
+  var myStorageDom: myStorageDomT;
 
   // subordinate 1-d local domain descriptors
   var doml1, doml2;
-
-  // how much storage to allocate for an array on our locale
-  var myStorageDom: domain(myBlock.rank, stoSzT, false);
 }
 
 class DimensionalArr : BaseArr {
@@ -536,13 +552,10 @@ proc DimensionalDist.dsiNewRectangularDom(param rank: int,
   // result.whole is initialized to the default value (empty domain)
   coforall (loc, locIds, locDdesc)
    in (targetLocales, targetIds, result.localDdescs) do
-    on loc {
-      const defaultVal1: result.domainT;
-      const locD1 = dom1.dsiNewLocalDom1d(locIds(1));
-      const locD2 = dom2.dsiNewLocalDom1d(locIds(2));
-      locDdesc = new LocDimensionalDom(defaultVal1, locD1, locD2);
-    }
-
+    on loc do
+      locDdesc = new LocDimensionalDom(result.stoDomainT,
+                                     doml1 = dom1.dsiNewLocalDom1d(locIds(1)),
+                                     doml2 = dom2.dsiNewLocalDom1d(locIds(2)));
   return result;
 }
 
@@ -568,23 +581,20 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
 
   coforall (locId, locDD) in (dist.targetIds, localDdescs) do
     on locDD do
-      locDD._dsiLocalSetIndicesHelper((dom1, dom2), locId);
+      locDD._dsiLocalSetIndicesHelper(stoRangeT, (dom1, dom2), locId);
 }
 
 // not part of DSI
 // TODO: need to preserve the old contents
 // in the intersection of the old and new domains' index sets
-proc LocDimensionalDom._dsiLocalSetIndicesHelper(globDD, locId) {
-  // we query the *global* subordinate 1-d domain descriptors
-  var myRange1 = doml1.dsiSetLocalIndices1d(globDD(1),locId(1));
-  var myRange2 = doml2.dsiSetLocalIndices1d(globDD(2),locId(2));
+proc LocDimensionalDom._dsiLocalSetIndicesHelper(type stoRangeT, globDD, locId) {
+  var myRange1: stoRangeT = doml1.dsiSetLocalIndices1d(globDD(1),locId(1));
+  var myRange2: stoRangeT = doml2.dsiSetLocalIndices1d(globDD(2),locId(2));
 
-  myBlock = [myRange1, myRange2];
-  myStorageDom = [0:stoSzT..#myRange1.length:stoSzT,
-                  0:stoSzT..#myRange2.length:stoSzT];
+  myStorageDom = [myRange1, myRange2];
 
-  _traceddd("DimensionalDom.dsiSetIndices on ", here.id, " ", locId, " <- ",
-           myBlock, "  storage ", myRange1.length, "*", myRange2.length);
+  _traceddd("DimensionalDom.dsiSetIndices on ", here.id, " ", locId,
+            "  storage ", myStorageDom);
 }
 
 proc DimensionalDom.dsiGetIndices(): domainT {
@@ -660,8 +670,8 @@ proc DimensionalArr.dsiAccess(indexx: dom.indexT) var: eltType {
                   " 2-tuples; got an array index of the type ",
                   typeToString(indexx.type));
 
-  const (l1,i1):(locIdT, stoSzT) = dom.dom1.dsiAccess1d(indexx(1));
-  const (l2,i2):(locIdT, stoSzT) = dom.dom2.dsiAccess1d(indexx(2));
+  const (l1,i1):(locIdT, dom.stoIndexT) = dom.dom1.dsiAccess1d(indexx(1));
+  const (l2,i2):(locIdT, dom.stoIndexT) = dom.dom2.dsiAccess1d(indexx(2));
   const locAdesc = localAdescs[l1,l2];
 //writeln("locAdesc.myStorageArr on ", locAdesc.myStorageArr.locale.id);
   return locAdesc.myStorageArr(i1,i2);
@@ -688,7 +698,7 @@ proc DimensionalArr.dsiSerialWrite(f: Writer): void {
       for (l2,r2) in dom.dom2.dsiSerialArrayIterator1d() do
         for i2 in r2 {
           const locAdesc = localAdescs[l1,l2];
-          const elem = locAdesc.myStorageArr(i1:stoSzT,i2:stoSzT);
+          const elem = locAdesc.myStorageArr(i1,i2);
           if nextD2 then f.write(" ");
           f.write(elem);
           nextD2 = true;
@@ -721,20 +731,19 @@ iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
 
   // A hook for the Replicated distribution.
   // If this is not enough, consult the subordinate 1-d descriptors
-  // instead of this and 'myDims = locDdesc.myBlock.dims()' below.
+  // instead of this and 'myDims = locDdesc.myStorageDom.dims()' below.
   proc helpTargetIds(dom1d, param dd) {
-    if dom1d.dsiIsReplicated() {
+    if dom1d.dsiIsReplicated1d() {
       if !dom1d.dsiUsesLocalLocID1d() then
-        compilerError("DimensionalDist: currently, when a subordinate 1d distribution has dsiIsReplicated()==true, it also must have dsiUsesLocalLocID1d()==true");
+        compilerError("DimensionalDist: currently, when a subordinate 1d distribution has dsiIsReplicated1d()==true, it also must have dsiUsesLocalLocID1d()==true");
       const (ix, legit) = dom1d.dsiGetLocalLocID1d();
       // we should only run this on target locales
       assert(legit);
-      // not writing 'ix..#1' because it seems inefficient for this simple use
       return ix..ix;
     } else
       return dist.targetIds.dim(dd);
   }
-  const overTargetIds = if dom1.dsiIsReplicated() || dom2.dsiIsReplicated()
+  const overTargetIds = if dom1.dsiIsReplicated1d() || dom2.dsiIsReplicated1d()
     then [helpTargetIds(dom1,1), helpTargetIds(dom2,2)]
     else dist.targetIds; // in this case, avoid re-building the domain
 
@@ -749,10 +758,9 @@ iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
     on locDdesc {
       // mimic BlockDom leader, except computing parDim is more involved here
 
-      // Note: we consult myBlock (via myDims), not the 1-d descriptors,
+      // Note: we consult myStorageDom (via myDims), not the 1-d descriptors,
       // to learn how many indices each dimension has.
-      // TODO: myBlock -> myStorageDom
-      const myDims = locDdesc.myBlock.dims();
+      const myDims = locDdesc.myStorageDom.dims();
       assert(rank == 2); // relied upon in a few places below
 
       // when we know which dimension should be the parallel one
@@ -864,14 +872,6 @@ iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
 } // leader iterator - domain
 
 
-//== leader iterator - array
-
-iter DimensionalArr.these(param tag: iterator) where tag == iterator.leader {
-  for follower in dom.these(tag) do
-    yield follower;
-}
-
-
 //== follower iterator - domain
 
 iter DimensionalDom.these(param tag: iterator, follower) where tag == iterator.follower {
@@ -893,18 +893,34 @@ iter DimensionalArr.these() var {
   _traceddd(this, ".serial iterator");
   assert(dom.rank == 2);
 
-  // TODO: is this the right approach?
+  // Cache the set of tuples for the inner loop.
+  // todo: Make this conditional on the size of the outer loop,
+  // to reduce overhead in some cases?
+  //
+  const dim2tuples = dom.dom2.dsiSerialArrayIterator1d();
+
+  // TODO: is this the right approach (ditto for 2nd dimension)?
   // e.g. is it right that the *global* subordinate 1-d descriptors are used?
   for (l1,r1) in dom.dom1.dsiSerialArrayIterator1d() do
-    for (l2,r2) in dom.dom2.dsiSerialArrayIterator1d() do
-      {
-        const locAdesc = localAdescs[l1,l2];
-        _traceddc(traceDimensionalDistIterators,
-                  "  locAdesc", (l1,l2), " on ", locAdesc.locale);
-        for i1 in r1 do
+    for i1 in r1 do
+      for (l2,r2) in dim2tuples do
+        {
+          // Could cache locAdesc like for the follower iterator,
+          // but that's less needed here.
+          const locAdesc = localAdescs[l1,l2];
+          _traceddc(traceDimensionalDistIterators,
+                    "  locAdesc", (l1,l2), " on ", locAdesc.locale);
           for i2 in r2 do
-            yield locAdesc.myStorageArr(i1:stoSzT, i2:stoSzT);
-      }
+            yield locAdesc.myStorageArr(i1, i2);
+        }
+}
+
+
+//== leader iterator - array
+
+iter DimensionalArr.these(param tag: iterator) where tag == iterator.leader {
+  for follower in dom.these(tag) do
+    yield follower;
 }
 
 
@@ -921,9 +937,14 @@ iter DimensionalArr.these(param tag: iterator, follower) var where tag == iterat
 
   // TODO: is this the right approach? (similar to serial)
   // e.g. is it right that the *global* subordinate 1-d descriptors are used?
+  //
+  // TODO: can we avoid calling the inner dsiFollowerArrayIterator1d()
+  // more than once? Can we create a more efficient interface?
+  //
   for (l1,i1) in dom.dom1.dsiFollowerArrayIterator1d(follower(1)) do
     for (l2,i2) in dom.dom2.dsiFollowerArrayIterator1d(follower(2)) do
       {
+        // reuse the cache or index into the array?
         if l1 != lastl1 || l2 != lastl2 {
           lastl1 = l1;
           lastl2 = l2;
@@ -934,6 +955,6 @@ iter DimensionalArr.these(param tag: iterator, follower) var where tag == iterat
 
 //writeln("DimensionalArr follower on ", here.id, "  l=(", l1, ",", l2, ")  i=(", i1, ",", i2, ")");
 
-        yield lastLocAdesc.myStorageArr(i1:stoSzT, i2:stoSzT);
+        yield lastLocAdesc.myStorageArr(i1, i2);
       }
 }

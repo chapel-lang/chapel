@@ -9,11 +9,12 @@ config const s1 = 1;
 config const s2 = 3;
 setupLocales(s1, s2); //, true);
 
-var vdf = new vdist(1);
-var sdf = new sdist(3, 1, 8);
-var dm = new dmap(new DimensionalDist(mylocs, vdf, sdf, "dm"));
+var phase = 1;
+proc leapphase() { phase += 10; fphase(phase); }
 
 proc test(d) {
+  leapphase();
+
   hd("testing ", d);
   tl();
 
@@ -30,12 +31,31 @@ proc test(d) {
     msg(i, " at ", vd.dsiAccess1d(i));
   tl();
 
+  hd("for");
+  msgserial(d);
+  tl();
+
   hd("forall");
   forall i in d do msg(i);
   tl();
 }
 
-test([1..1, 0..9] dmapped dm);
-test([1..1, 0..9 by -1] dmapped dm);
-test([1..1, 0..9 by -2] dmapped dm);
-test([1..1, 0..9 by 3] dmapped dm);
+proc testsuite(type T) {
+  leapphase();
+  hd("testsuite(", typeToString(T), ")");
+  tl();
+
+  const vdf = new vdist(1);
+  const sdf = new sdist(3, 1:T, 8:T);
+  const dm = new dmap(new DimensionalDist(mylocs, vdf, sdf, "dm", idxType=T));
+
+  test([1:T..1:T, 0:T..9:T       ] dmapped dm);
+  test([1:T..1:T, 0:T..9:T by -1 ] dmapped dm);
+  test([1:T..1:T, 0:T..9:T by -2 ] dmapped dm);
+  test([1:T..1:T, 0:T..9:T by  3 ] dmapped dm);
+}
+
+testsuite(int);
+testsuite(uint);
+testsuite(int(64));
+testsuite(uint(64));
