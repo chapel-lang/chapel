@@ -58,6 +58,19 @@ pvm/
   See also: pvm/README
 
 
+tcmalloc/
+  Summary: The Google perf-tools memory allocator (tcmalloc) which we
+           use to support malloc/free calls when running programs using
+           Cray's Gemini network interconnect chip
+
+  License: The BSD license (see tcmalloc/tcmalloc-*/COPYING)
+
+  Contact: For more information, please refer to:
+           http://code.google.com/p/google-perftools/
+
+  See also: tcmalloc/README
+
+
 txt2man/
   Summary: Marc Vertes' shell script for converting text files to man
            pages.  We use this to generate the Chapel man page
