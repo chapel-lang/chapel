@@ -35,12 +35,14 @@ COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
+RUNTIME_CXXFLAGS = $(CFLAGS)
 GEN_CFLAGS = -std=c99
 
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
 ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` = ppc970 && echo -arch ppc64)
 RUNTIME_CFLAGS += $(ARCH)
+RUNTIME_CXXFLAGS += $(ARCH)
 # the -D_POSIX_C_SOURCE flag prevents nonstandard functions from polluting the global name space
 GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH)
 GEN_LFLAGS += $(ARCH)
@@ -77,6 +79,7 @@ endif
 ifdef CHPL_DEVELOPER
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
+RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_GEN_CFLAGS += -Wno-unused
 WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
