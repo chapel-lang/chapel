@@ -960,7 +960,7 @@ for testname in testsrc:
                 status = p.returncode
 
                 if status == 222:
-                exectimeout = True
+                    exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
                     if not onlyone:
@@ -981,7 +981,7 @@ for testname in testsrc:
                 try:
                     output = SuckOutputWithTimeout(p.stdout, timeout)
                 except ReadTimeoutException:
-            exectimeout = True
+                    exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
                     if not onlyone:
@@ -1007,7 +1007,7 @@ for testname in testsrc:
             execlogfile.write('%s'%(output))
             execlogfile.close()
 
-        if not exectimeout:
+            if not exectimeout:
                 if systemPrediff:
                     sys.stdout.write('[Executing system-wide prediff]\n')
                     sys.stdout.flush()
