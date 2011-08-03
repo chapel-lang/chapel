@@ -40,6 +40,22 @@ static void add_to_where_clause(ArgSymbol* formal, Expr* expr, CallExpr* query);
 static void fixup_query_formals(FnSymbol* fn);
 static void change_method_into_constructor(FnSymbol* fn);
 
+static void warn_proc_iter(void)
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    if (!(fn->hasFlag(FLAG_TEMP) || fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))
+        && !fn->hasFlag(FLAG_PROC_ITER_KW_USED))
+    {
+      if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+        INT_ASSERT(!fn->hasFlag(FLAG_EXTERN)); // should be ensured by parser
+        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'iter'");
+      } else {
+        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'proc'");
+      }
+    }
+  }
+}
 
 void normalize(void) {
   // tag iterators and replace delete statements with calls to ~chpl_destroy
@@ -68,18 +84,10 @@ void normalize(void) {
   }
   USR_STOP();  // ProcIter: remove this after transition (not needed)
 
+  // ProcIter: remove this entire 'if' after transition
+  warn_proc_iter();
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    // ProcIter: remove this entire 'if' after transition
-    if (!(fn->hasFlag(FLAG_TEMP) || fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))
-        && !fn->hasFlag(FLAG_PROC_ITER_KW_USED))
-    {
-      if (fn->hasFlag(FLAG_ITERATOR_FN)) {
-        INT_ASSERT(!fn->hasFlag(FLAG_EXTERN)); // should be ensured by parser
-        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'iter'");
-      } else {
-        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'proc'");
-      }
-    }
     SET_LINENO(fn);
     if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
@@ -720,30 +728,51 @@ fix_def_expr(VarSymbol* var) {
 }
 
 static void hack_resolve_types(ArgSymbol* arg) {
+  // Look only at unknown or arbitrary types.
   if (arg->type == dtUnknown || arg->type == dtAny) {
-    if (!arg->hasFlag(FLAG_TYPE_VARIABLE) && !arg->typeExpr && arg->defaultExpr) {
-      SymExpr* se = NULL;
-      if (arg->defaultExpr->body.length == 1)
-        se = toSymExpr(arg->defaultExpr->body.tail);
-      if (!se || se->var != gTypeDefaultToken) {
-        arg->typeExpr = arg->defaultExpr->copy();
-        insert_help(arg->typeExpr, NULL, arg);
+    if (!arg->typeExpr) {
+      if (!arg->hasFlag(FLAG_TYPE_VARIABLE) && arg->defaultExpr) {
+        SymExpr* se = NULL;
+        if (arg->defaultExpr->body.length == 1)
+          se = toSymExpr(arg->defaultExpr->body.tail);
+        if (!se || se->var != gTypeDefaultToken) {
+          arg->typeExpr = arg->defaultExpr->copy();
+          insert_help(arg->typeExpr, NULL, arg);
+        }
       }
-    }
-    if (arg->typeExpr && arg->typeExpr->body.length == 1) {
-      Type* type = arg->typeExpr->body.only()->typeInfo();
-      if (type != dtUnknown && type != dtAny) {
-        arg->type = type;
-        arg->typeExpr->remove();
+    } else {
+      INT_ASSERT(arg->typeExpr);
+
+      // If there is a simple type expression, and its type is something more specific than
+      // dtUnknown or dtAny, then replace the type expression with that type.
+      // hilde sez: don't we lose information here?
+      if (arg->typeExpr->body.length == 1) {
+        Type* type = arg->typeExpr->body.only()->typeInfo();
+        if (type != dtUnknown && type != dtAny) {
+          // This test ensures that we are making progress.
+          arg->type = type;
+          arg->typeExpr->remove();
+        }
       }
     }
   }
 }
 
+// Replaces formals whose type is computed by chpl__buildArrayRuntimeType
+// with the generic _array type.
+// I think this prepares the function to be instantiated with various argument types.
+// That is, it reaches through one level in the type hierarchy -- treating all
+// arrays equally and then resolving using the element type.
+// But this is something of a kludge.  The expansion of arrays 
+// w.r.t. generic argument types should be done during expansion and resolution,
+// not up front like this. <hilde>
 static void fixup_array_formals(FnSymbol* fn) {
   for_formals(arg, fn) {
     if (arg->typeExpr) {
+      // The argument has a type expression
       CallExpr* call = toCallExpr(arg->typeExpr->body.tail);
+      // Not sure why we select the tail here....
+
       //if (call && call->isNamed("chpl__buildDomainExpr")) {
         //CallExpr* arrayTypeCall = new CallExpr("chpl__buildArrayRuntimeType");
         //call->insertBefore(arrayTypeCall);
@@ -751,7 +780,11 @@ static void fixup_array_formals(FnSymbol* fn) {
         //call = arrayTypeCall;
       //}
       if (call && call->isNamed("chpl__buildArrayRuntimeType")) {
-        if (ArgSymbol* arg = toArgSymbol(call->parentSymbol)) {
+        // We are building an array type.
+        if (ArgSymbol* larg = toArgSymbol(call->parentSymbol)) {
+          // Isn't this the arg we started out with? <hilde>
+          INT_ASSERT(larg == arg);
+
           bool noDomain = (isSymExpr(call->get(1))) ? toSymExpr(call->get(1))->var == gNil : false;
           DefExpr* queryDomain = toDefExpr(call->get(1));
           bool noEltType = (call->numActuals() == 1);
@@ -760,13 +793,21 @@ static void fixup_array_formals(FnSymbol* fn) {
           Vec<SymExpr*> symExprs;
           collectSymExprs(fn, symExprs);
 
+          // Replace the type expression with "_array".
+          // I dunno.  Maybe we should keep the typeExpr around and just fix up the type. <hilde>
           arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_SCOPELESS));
+
+          // If we have an element type, replace reference to its symbol with
+          // "arg.eltType", so we use the instantiated element type.
           if (queryEltType) {
             forv_Vec(SymExpr, se, symExprs) {
               if (se->var == queryEltType->sym)
                 se->replace(new CallExpr(".", arg, new_StringSymbol("eltType")));
             }
           } else if (!noEltType) {
+            // The element type is supplied, but it is null.
+            // Add a new where clause "eltType == arg.eltType".
+            INT_ASSERT(queryEltType == NULL);
             if (!fn->where) {
               fn->where = new BlockStmt(new SymExpr(gTrue));
               insert_help(fn->where, NULL, fn);
@@ -779,12 +820,18 @@ static void fixup_array_formals(FnSymbol* fn) {
               new CallExpr("==", call->get(2)->remove(),
                 new CallExpr(".", arg, new_StringSymbol("eltType"))));
           }
+
           if (queryDomain) {
+            // Array type is built using a domain.
+            // If we match the domain symbol, replace it with arg._dom.
             forv_Vec(SymExpr, se, symExprs) {
               if (se->var == queryDomain->sym)
                 se->replace(new CallExpr(".", arg, new_StringSymbol("_dom")));
             }
           } else if (!noDomain) {
+            // The domain argument is supplied but NULL.
+            INT_ASSERT(queryDomain == NULL);
+
             VarSymbol* tmp = newTemp("_reindex");
             tmp->addFlag(FLAG_EXPR_TEMP);
             forv_Vec(SymExpr, se, symExprs) {
@@ -912,6 +959,7 @@ fixup_query_formals(FnSymbol* fn) {
         if (se->var == def->sym)
           se->replace(new CallExpr(PRIM_TYPEOF, formal));
       }
+      // Consider saving as origTypeExpr instead?
       formal->typeExpr->remove();
       formal->type = dtAny;
     } else if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {

@@ -2202,21 +2202,39 @@ resolveCall(CallExpr* call, bool errorCheck) {
   }
 }
 
+// Returns true if the formal needs an internal temporary, false otherwise.
 static bool
 formalRequiresTemp(ArgSymbol* formal) {
+// We mostly just weed out the negative cases.
+
+  // Look at intents.  No temporaries for param, type or ref intents.
   if (formal->intent == INTENT_PARAM ||
       formal->intent == INTENT_TYPE ||
       formal->intent == INTENT_REF ||
-      (!strcmp("this", formal->name) && (!fLibraryCompile)) ||
-      formal->hasFlag(FLAG_IS_MEME) ||
-      (formal == toFnSymbol(formal->defPoint->parentSymbol)->_outer) ||
+      (formal->intent == INTENT_BLANK &&
+       formal->type->symbol->hasFlag(FLAG_REF)))
+    return false;
+
+  // Some more obscure call-by-ref cases.
+  if (formal->hasFlag(FLAG_IS_MEME) ||
       formal->hasFlag(FLAG_TYPE_VARIABLE) ||
-      formal->instantiatedParam ||
-      formal->type == dtMethodToken ||
-      (formal->type->symbol->hasFlag(FLAG_REF) &&
-       formal->intent == INTENT_BLANK) ||
       formal->hasFlag(FLAG_NO_FORMAL_TMP))
     return false;
+  // The fLibraryCompile flag was added to support separate compilation.
+  // Several code generation functions crash if it is not there.
+  // This makes exported object arguments read-only which is not what we want.
+  if (!strcmp("this", formal->name)) 
+    // hilde sez: This shouldn't be special-cased.
+    // We ought to tag "this" variables as call-by-ref.
+    if (!fLibraryCompile)
+      // So call-by-ref is cancelled if we are compiling an exported function.
+      return false;
+
+  if (formal == toFnSymbol(formal->defPoint->parentSymbol)->_outer ||
+      formal->instantiatedParam ||
+      formal->type == dtMethodToken)
+    return false;
+
   return true;
 }
 
@@ -4504,21 +4522,9 @@ resolve() {
   resolveFns(chpl_main);
   USR_STOP();
 
-  // hilde sez: This check may be unnecessary.
-  // That is, we may be able to resolve exported functions always
-  // in which case, there may be no reason to have a checked keyword (see below).
-  if (fRuntime || fLibraryCompile) {
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_EXPORT)) {
-        resolveFormals(fn);
-        resolveFns(fn);
-      }
-    }
-  }
-
-  // separate compilation -- Resolve functions named "this".
+  // We need to resolve functions that will be exported.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_FUNCTION_THIS)) {
+    if (fn->hasFlag(FLAG_EXPORT)) {
       resolveFormals(fn);
       resolveFns(fn);
     }

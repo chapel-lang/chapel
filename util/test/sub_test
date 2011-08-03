@@ -68,6 +68,8 @@
 #    executable>, <log>, <compiler executable>)
 # PREEXEC: Script to execute before executing test program (arguments: <test
 #    executable>, <log>, <compiler executable>)
+# PRECOMP: Script to execute before running the compiler (arguments: <test
+#    executable>, <log>, <compiler executable>).
 #
 #
 # TEST-SPECIFIC FILES:  These setting override or augment the directory-wide
@@ -91,6 +93,7 @@
 # .killtimeout: Kill timeout (overrides KILLTIMEOUT)
 # .catfiles: Additional list of files whose contents are added to end of
 #    test output
+# .precomp: Additional script to execute before compiling the test
 # .prediff: Additional script to execute before diff'ing output
 # .preexec: Additional script to execute before executing test program
 # .perfkeys: Existence indicates a performance test.  Contents specifies
@@ -470,7 +473,12 @@ if envExecopts != None:
 # sys.stdout.write('globalExecopts=%s\n'%(globalExecopts))
 
 #
-# Global PREDIFF & PREEXEC
+# Global PRECOMP, PREDIFF & PREEXEC
+#
+if os.access('./PRECOMP', os.R_OK|os.X_OK):
+    globalPrecomp='./PRECOMP'
+else:
+    globalPrecomp=None
 #
 if os.access('./PREDIFF',os.R_OK|os.X_OK):
     globalPrediff='./PREDIFF'
@@ -538,6 +546,7 @@ for testname in testsrc:
     testfuturesfile=False
     noexecfile=False
     execoptsfile=False
+    precomp=None
     prediff=None
     preexec=None
 
@@ -598,6 +607,10 @@ for testname in testsrc:
         elif (suffix=='.noexec' and os.access(f, os.R_OK)):
             noexecfile=True
             executebin=False
+
+        elif (suffix=='.precomp' and os.access(f, os.R_OK|os.X_OK)):
+            sys.stdout.write('[found file %s]\n'%f)
+            precomp=f
 
         elif (suffix=='.prediff' and os.access(f, os.R_OK|os.X_OK)):
             prediff=f
@@ -679,6 +692,22 @@ for testname in testsrc:
         else:
             compoptsnum += 1
             complog = execname+'.'+str(compoptsnum)+'.comp.out.tmp'
+
+        #
+        # Run the precompile script
+        #
+        if globalPrecomp:
+            sys.stdout.write('[Executing ./PRECOMP]\n')
+            sys.stdout.flush()
+            subprocess.Popen(['./PRECOMP',
+                             execname,complog,compiler]).wait()
+
+        if precomp:
+            sys.stdout.write('[Executing precomp %s.precomp]\n'%(execname))
+            sys.stdout.flush()
+            subprocess.Popen(['./'+execname+'.precomp',
+                             execname,complog,compiler]).wait()
+
 
         #
         # Build the test program
@@ -931,7 +960,7 @@ for testname in testsrc:
                 status = p.returncode
 
                 if status == 222:
-	            exectimeout = True
+                exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
                     if not onlyone:
@@ -952,7 +981,7 @@ for testname in testsrc:
                 try:
                     output = SuckOutputWithTimeout(p.stdout, timeout)
                 except ReadTimeoutException:
-		    exectimeout = True
+            exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
                     if not onlyone:
@@ -978,7 +1007,7 @@ for testname in testsrc:
             execlogfile.write('%s'%(output))
             execlogfile.close()
 
-	    if not exectimeout:
+        if not exectimeout:
                 if systemPrediff:
                     sys.stdout.write('[Executing system-wide prediff]\n')
                     sys.stdout.flush()

@@ -763,11 +763,19 @@ hasGenericArgs(FnSymbol* fn) {
 }
 
 
+// Tag the given function as generic.
+// Returns true if there was a change, false otherwise.
 bool FnSymbol::tag_generic() {
   if (hasFlag(FLAG_GENERIC))
-    return false;
+    return false;  // Already generic, no change.
+
   if (int result = hasGenericArgs(this)) {
+    // This function has generic arguments, so mark it as generic.
     addFlag(FLAG_GENERIC);
+
+    // If the return type is not completely unknown (which is generic enough)
+    // and this function is a type constructor function,
+    // then mark its return type as generic.
     if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
       retType->symbol->addFlag(FLAG_GENERIC);
       if (result == 2)
