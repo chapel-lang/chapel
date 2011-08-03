@@ -37,16 +37,16 @@ void chpl_mem_layerInit(void)
 
       if (sscanf(p, "%zi%c", &size, &units) != 2
           || strchr("kKmMgG", units) == NULL) {
-	printf("Cannot parse TCMALLOC_PREALLOCATED_HEAP environment variable; "
+        printf("Cannot parse TCMALLOC_PREALLOCATED_HEAP environment variable; "
                "assume 4m\n");
-	size = 4 * 1024 * 1024;
+        size = 4 * 1024 * 1024;
       }
       else {
-	switch (units) {
-	case 'k' : case 'K': size *= 1024;               break;
-	case 'm' : case 'M': size *= 1024 * 1024;        break;
-	case 'g' : case 'G': size *= 1024 * 1024 * 1024; break;
-	}
+        switch (units) {
+        case 'k' : case 'K': size *= 1024;               break;
+        case 'm' : case 'M': size *= 1024 * 1024;        break;
+        case 'g' : case 'G': size *= 1024 * 1024 * 1024; break;
+        }
       }
     }
   }
