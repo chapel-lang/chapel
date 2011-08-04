@@ -1081,7 +1081,11 @@
       var len:ssize_t;
       return qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, len, -1);
     } else if _isEnumeratedType(t) {
-      compilerError("Enumerated types not yet supported in binary channel.read (_read_binary_internal)");
+      var i:enum_mintype(t);
+      var err:err_t;
+      err = qio_channel_read_int(false, byteorder, _channel_internal, i, numBytes(i.type), _isSignedType(i.type));
+      x = i;
+      return err;
     } else {
       compilerError("Unknown primitive type in _read_binary_internal ", typeToString(t));
     }
@@ -1112,8 +1116,7 @@
     } else if t == string {
       return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, x.length);
     } else if _isEnumeratedType(t) {
-      var i:int(64) = x; // TODO -- detect size of enum?
-      compilerWarning("enumerated type writing binary to 8-bytes");
+      var i:enum_mintype(t) = x:enum_mintype(t);
       return qio_channel_write_int(false, byteorder, _channel_internal, i, numBytes(i.type), _isSignedType(i.type));
     } else {
       halt("Unknown primitive type in write_binary_internal " + typeToString(t));

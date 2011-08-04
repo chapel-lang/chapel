@@ -3312,12 +3312,22 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_NUM_FIELDS)) {
       ClassType* classtype = toClassType(toSymExpr(call->get(1))->var->type);
+
+      INT_ASSERT( classtype != NULL );
+
       result = new SymExpr(new_IntSymbol(classtype->fields.length));
 
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_NUM_TO_NAME)) {
       ClassType* classtype = toClassType(toSymExpr(call->get(1))->var->type);
-      int fieldnum = toVarSymbol(toSymExpr(call->get(2))->var)->immediate->int_value();
+
+      INT_ASSERT( classtype != NULL );
+
+      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
+
+      INT_ASSERT( var != NULL );
+
+      int fieldnum = var->immediate->int_value();
       int fieldcount = 0;
       const char* name = NULL;
       for_fields(field, classtype) {
@@ -3330,7 +3340,14 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
       ClassType* classtype = toClassType(call->get(1)->typeInfo());
-      int fieldnum = toVarSymbol(toSymExpr(call->get(2))->var)->immediate->int_value();
+
+      INT_ASSERT( classtype != NULL );
+
+      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
+
+      INT_ASSERT( var != NULL );
+
+      int fieldnum = var->immediate->int_value();
       int fieldcount = 0;
       for_fields(field, classtype) {
         fieldcount++;
@@ -3343,8 +3360,12 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NAME)) {
       ClassType* classtype = toClassType(call->get(1)->typeInfo());
-      Immediate* imm = toVarSymbol(toSymExpr(call->get(2))->var)->immediate;
+      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
+      INT_ASSERT( var != NULL );
 
+      Immediate* imm = var->immediate;
+
+      INT_ASSERT( classtype != NULL );
       // fail horribly if immediate is not a string .
       INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
 
@@ -3361,8 +3382,13 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_HAS_METHOD_BY_NAME)) {
       Type* type = toSymExpr(call->get(1))->var->type;
-      Immediate* imm = toVarSymbol(toSymExpr(call->get(2))->var)->immediate;
+      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
 
+      INT_ASSERT( var != NULL );
+
+      Immediate* imm = var->immediate;
+
+      INT_ASSERT( type != NULL );
       // fail horribly if immediate is not a string .
       INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
 
@@ -3373,7 +3399,40 @@ preFold(Expr* expr) {
           found = 1;
         }
       }
-      result = new SymExpr(new_IntSymbol(found));
+
+      if( found )
+        result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
+
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_ENUM_MIN_BITS) || call->isPrimitive(PRIM_ENUM_IS_SIGNED)) {
+      EnumType* et = toEnumType(toSymExpr(call->get(1))->var->type);
+
+      INT_ASSERT( et != NULL );
+
+      if( ! et->integerType ) {
+        // Make sure to resolve all enum types.
+        for_enums(def, et) {
+          if (def->init) {
+            resolve_type_expr(def->init);
+          }
+        }
+        // Now try computing the enum size...
+        et->sizeAndNormalize();
+      }
+
+      INT_ASSERT(et->integerType != NULL);
+
+      result = NULL;
+      if( call->isPrimitive(PRIM_ENUM_MIN_BITS) ) {
+        result = new SymExpr(new_IntSymbol(get_width(et->integerType)));
+      } else if( call->isPrimitive(PRIM_ENUM_IS_SIGNED) ) {
+        if( is_int_type(et->integerType) )
+          result = new SymExpr(gTrue);
+        else
+          result = new SymExpr(gFalse);
+      }
       call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_STAR_TUPLE_TYPE)) {
       Type* tupleType = call->get(1)->typeInfo();

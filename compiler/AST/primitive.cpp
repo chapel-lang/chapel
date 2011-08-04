@@ -556,7 +556,10 @@ initPrimitive() {
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
   prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);
   prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
-  prim_def(PRIM_HAS_METHOD_BY_NAME, "has method by name", returnInfoInt32);
+  prim_def(PRIM_HAS_METHOD_BY_NAME, "has method by name", returnInfoBool);
+
+  prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
+  prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

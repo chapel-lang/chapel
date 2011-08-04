@@ -121,3 +121,24 @@ iter chpl_enumerate(type t: enumerated) {
   for i in 1..enumTuple.size do
     yield enumTuple(i);
 }
+
+proc enum_minbits(type t: enumerated) param {
+  return __primitive( "enum min bits", t);
+}
+proc enum_issigned(type t: enumerated) param {
+  return __primitive( "enum is signed", t);
+}
+proc enum_mintype(type t: enumerated) type {
+  param minbits = enum_minbits(t);
+  param signed = enum_issigned(t);
+  if signed {
+    return int(minbits);
+  } else {
+    return uint(minbits);
+  }
+}
+
+proc numBits(type t: enumerated) param {
+  return numBits(enum_mintype(t));
+}
+

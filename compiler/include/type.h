@@ -71,6 +71,8 @@ class Type : public BaseAST {
 class EnumType : public Type {
  public:
   AList constants; // EnumSymbols
+  PrimitiveType* integerType; // what integer type contains all of this enum values?
+                              // if this is NULL it will just be recomputed when needed.
 
   EnumType();
   ~EnumType();
@@ -80,6 +82,11 @@ class EnumType : public Type {
 
   void codegenDef(FILE* outfile);
   int codegenStructure(FILE* outfile, const char* baseoffset);
+
+  // computes integerType and does the next=last+1 assignments.
+  // This will only really work after the function resolution.
+  void sizeAndNormalize();
+  PrimitiveType* getIntegerType();
 };
 
 

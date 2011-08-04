@@ -442,8 +442,40 @@ static void build_enum_enumerate_function(EnumType* et) {
   call->insertAtHead(new_IntSymbol(call->numActuals()));
 
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+
   normalize(fn);
 }
+
+/*
+static Type* get_enum_inttype(EnumType* et) {
+  
+}
+
+static void build_enum_inttype_function(EnumType* et) {
+  // Build a function that returns the integer type
+  //  in which to store the enum.
+  FnSymbol* fn = new FnSymbol("_enum_inttype");
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  arg->addFlag(FLAG_TYPE_VARIABLE);
+  fn->insertFormalAtTail(arg);
+  fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
+
+  et->symbol->defPoint->insertAfter(new DefExpr(fn));
+
+  // Generate the tuple of enum values for the given enum type
+  CallExpr* call = new CallExpr("_construct__tuple");
+  for_enums(constant, et) {
+    printf("_enum_inttype enum symbol name %s cname %s\n", constant->name, constant->cname);
+  }
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+  fn->retTag = RET_TYPE;
+
+  printf("_enum_inttype ret tag is %i\n", fn->retTag);
+
+  normalize(fn);
+}
+*/
 
 
 static void build_enum_cast_function(EnumType* et) {

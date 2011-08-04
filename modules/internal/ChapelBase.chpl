@@ -1758,6 +1758,6 @@ proc fieldValueByName(x, param name) {
 
 
 proc isClassType(type t) param where t:object return true;
-proc isClassType(type t) return false;
+proc isClassType(type t) param return false;
 
 
