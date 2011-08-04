@@ -385,6 +385,9 @@ static void normalize_returns(FnSymbol* fn) {
       retval->addFlag(FLAG_TYPE_VARIABLE);
     if (fn->hasFlag(FLAG_MAYBE_TYPE))
       retval->addFlag(FLAG_MAYBE_TYPE);
+    // If the function has a specified return type (and is not a var function),
+    // declare and initialize the return value up front,
+    // and set the specified_return_type flag.
     if (fn->retExprType && fn->retTag != RET_VAR) {
       BlockStmt* retExprType = fn->retExprType->copy();
       if (isIterator)
@@ -399,6 +402,9 @@ static void normalize_returns(FnSymbol* fn) {
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIM_RETURN, retval));
   }
+
+  // Now, for each return statement appearing in the function body,
+  // move the value of its body into the declared return value.
   bool label_is_used = false;
   forv_Vec(CallExpr, ret, rets) {
     SET_LINENO(ret);

@@ -100,6 +100,8 @@ symbolFlag( FLAG_REF_THIS , ypr, "ref this" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_COPY , ypr, "removable auto copy" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_DESTROY , ypr, "removable auto destroy" , ncm )
 symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
+// Based on how this is used, I suggest renaming it to return_value_has_initializer
+// or something similar <hilde>.
 symbolFlag( FLAG_SPECIFIED_RETURN_TYPE , npr, "specified return type" , ncm )
 symbolFlag( FLAG_SUPER_CLASS , npr, "super class" , ncm )
 symbolFlag( FLAG_SYNC , ypr, "sync" , ncm )

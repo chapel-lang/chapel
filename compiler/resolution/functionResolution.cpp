@@ -4681,6 +4681,11 @@ resolve() {
           resolveCall(distCall);
           resolveFns(distCall->isResolved());
         } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
+          // We don't expect initialization code for an externally defined type,
+          // so remove the flag which tells checkReturnPaths() to expect it.
+          FnSymbol* fn = toFnSymbol(init->parentSymbol);
+          if (fn)
+            fn->removeFlag(FLAG_SPECIFIED_RETURN_TYPE);
           init->replace(init->get(1)->remove());
         } else {
           INT_ASSERT(type->defaultConstructor);

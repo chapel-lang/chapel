@@ -1,8 +1,0 @@
-The problems are the warnings:
-uninit_test.chpl:24: In function 'tests1':
-uninit_test.chpl:24: warning: control reaches end of function that returns a value [semanticChecks.cpp:231]
-uninit_test.chpl:33: In function 'tests2':
-uninit_test.chpl:33: warning: control reaches end of function that returns a value [semanticChecks.cpp:231]
-uninit_test.chpl:39: In function 'tests3':
-uninit_test.chpl:39: warning: control reaches end of function that returns a value [semanticChecks.cpp:231]
-

@@ -200,6 +200,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret) {
 
 static void
 checkReturnPaths(FnSymbol* fn) {
+  // Check to see if the function returns a value.
   if (fn->hasFlag(FLAG_ITERATOR_FN) ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "chpl__buildArrayRuntimeType") ||
@@ -210,13 +211,21 @@ checkReturnPaths(FnSymbol* fn) {
       fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_AUTO_II))
-    return;
+    return; // No.
+
+  // Check to see if the returned value is initialized.
   Symbol* ret = fn->getReturnSymbol();
-  if (VarSymbol* var = toVarSymbol(ret))
+  VarSymbol* var = toVarSymbol(ret);
+  if (var)
+  {
+    // If it has an immediate initializer, it is initialized.
     if (var->immediate)
       return;
+  }
+
   if (isEnumSymbol(ret))
     return;
+
   int result = isDefinedAllPaths(fn->body, ret);
 
   //
